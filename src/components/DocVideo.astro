@@ -1,0 +1,134 @@
+---
+/**
+ * Inline demo video — the motion equivalent of <ZoomImage>.
+ *
+ * Use it instead of an animated GIF: same silent autoplaying loop, a fraction of
+ * the bytes. Videos load and start with the page — deliberately native `autoplay`
+ * rather than JS-driven playback, because Astro's ClientRouter swaps the DOM on
+ * navigation and script-timed playback is unreliable across those transitions.
+ *
+ * Videos live in src/assets/shared/video/. Resolution is by filename, so the id
+ * needs no path: <DocVideo id="ai-editor-restyle.mp4" alt="..." />
+ *
+ * An optional poster (same base name, .webp) sits next to the video and shows
+ * before playback starts. Without one the frame is empty until the video loads.
+ */
+interface Props {
+  id: string;
+  width?: string;
+  /** Describes the demo for screen readers. Required in practice — a silent loop says nothing on its own. */
+  alt?: string;
+  /** Poster filename in src/assets/shared/video/. Shown before playback starts. */
+  poster?: string;
+  /** Shows native controls and suppresses autoplay. For anything longer than a short loop. */
+  controls?: boolean;
+  className?: string;
+}
+
+const { id, width = '700px', alt, poster, controls = false, className } = Astro.props;
+
+// `?url` emits the file into _astro/ with a content hash, so updating a demo
+// busts its own cache. Files served from public/ would keep the same URL and
+// need a rename instead.
+const allVideos = import.meta.glob<string>('/src/assets/**/*.{mp4,webm}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+// Scoped to the video folder on purpose: a second eager glob over every image in
+// src/assets would repeat the ~2000-entry scan ZoomImage already does.
+const allPosters = import.meta.glob<string>('/src/assets/shared/video/**/*.{webp,png,jpg,jpeg}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const filenameOf = (value: string) => value.split('/').pop() || value;
+
+const resolve = (map: Record<string, string>, wanted: string) => {
+  const target = filenameOf(wanted);
+  for (const [path, url] of Object.entries(map)) {
+    if (filenameOf(path) === target) return url;
+  }
+  return undefined;
+};
+
+const videoSrc = resolve(allVideos, id);
+const posterSrc = poster ? resolve(allPosters, poster) : undefined;
+
+const numericWidth = parseInt(width.replace('px', ''), 10) || 700;
+---
+
+{videoSrc ? (
+  <video
+    class:list={['doc-video', 'rounded-lg', 'shadow-sm', 'block', 'mx-auto', className]}
+    src={videoSrc}
+    poster={posterSrc}
+    width={numericWidth}
+    style={{ width: width, maxWidth: '100%', height: 'auto' }}
+    aria-label={alt || id}
+    muted
+    loop
+    playsinline
+    preload="auto"
+    controls={controls || undefined}
+    autoplay={!controls || undefined}
+    data-autoplay={controls ? undefined : 'true'}
+  >
+    <p>{alt || id}</p>
+  </video>
+) : (
+  <div class="p-4 border border-red-200 bg-red-50 text-red-600 rounded-md text-sm">
+    Video not found: <code>{id}</code>
+  </div>
+)}
+
+<style>
+  .doc-video {
+    background: var(--bg-secondary, #f8fafc);
+  }
+
+  /* Autoplaying loops have no controls, so the whole frame is the play/pause target. */
+  .doc-video[data-autoplay] {
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  // Playback is native: `autoplay muted loop` on the element itself, so it survives
+  // Astro's ClientRouter DOM swaps without depending on script timing. This handler
+  // exists only to honour the reduced-motion preference, which no HTML attribute covers.
+  const applyReducedMotion = () => {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    document.querySelectorAll<HTMLVideoElement>('video.doc-video[data-autoplay]').forEach(video => {
+      video.autoplay = false;
+      video.controls = true;
+      video.pause();
+    });
+  };
+
+  // Click anywhere on a controls-less loop to pause or resume it.
+  const bindToggle = () => {
+    document.querySelectorAll<HTMLVideoElement>('video.doc-video[data-autoplay]').forEach(video => {
+      if (video.dataset.docVideoBound) return;
+      video.dataset.docVideoBound = 'true';
+      video.addEventListener('click', () => {
+        if (video.paused) {
+          void video.play().catch(() => undefined);
+        } else {
+          video.pause();
+        }
+      });
+    });
+  };
+
+  const init = () => {
+    applyReducedMotion();
+    bindToggle();
+  };
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>
