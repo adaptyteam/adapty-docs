@@ -1,3 +1,4 @@
+import { stripComments } from './generate-md.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -92,6 +93,10 @@ async function getLocaleReusableComponents(baseComponents, locale) {
 function stripContent(content, reusableComponents) {
     let processed = content;
 
+    // 0. Remove MDX/HTML comments before anything else, so hidden unreleased
+    // features and TODOs never reach the LLM bundles.
+    processed = stripComments(processed);
+
     // 1. Remove imports
     processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
 
@@ -115,8 +120,7 @@ function stripContent(content, reusableComponents) {
         processed = processed.replace(regex, componentContent);
     }
 
-    // 4. Remove HTML comments
-    processed = processed.replace(/<!--[\s\S]*?-->/g, '');
+    // 4. HTML comments are already gone — stripComments() handled them in step 0.
 
     // 5. Clean extra empty lines
     processed = processed.replace(/\n{3,}/g, '\n\n');

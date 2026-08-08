@@ -168,13 +168,75 @@ ${content}
 
     // 4. Remove other self-closing component tags that we might want to strip?
     // For now, let's keep others unless specific instruction, but user said "Remove everything extra".
-    // Let's strip standard HTML comments
-    processed = processed.replace(/<!--[\s\S]*?-->/g, '');
+    // Strip HTML and MDX comments. Both render to nothing on the site, so authors
+    // use them to hide unreleased features and TODOs — without this they leak into
+    // the .md exports and llms-full.txt and read as shipped documentation.
+    processed = stripComments(processed);
 
     // 5. Clean extra empty lines created by stripping
     processed = processed.replace(/\n{3,}/g, '\n\n');
 
     return processed.trim();
+}
+
+// Remove `{/* ... */}` and `<!-- ... -->` comments, including multi-line ones,
+// while leaving fenced code blocks untouched. Snippets legitimately contain both
+// — an AndroidManifest example, a JSX sample — and those must survive verbatim.
+export function stripComments(content) {
+    const PAIRS = [['{/*', '*/}'], ['<!--', '-->']];
+    const lines = content.split('\n');
+    const out = [];
+    let inFence = false;
+    let closer = null;
+
+    for (const line of lines) {
+        if (/^\s*(```|~~~)/.test(line)) {
+            inFence = !inFence;
+            out.push(line);
+            continue;
+        }
+        if (inFence) {
+            out.push(line);
+            continue;
+        }
+
+        let rest = line;
+        let kept = '';
+
+        // Finish a comment that opened on an earlier line.
+        if (closer) {
+            const end = rest.indexOf(closer);
+            if (end === -1) continue;
+            rest = rest.slice(end + closer.length);
+            closer = null;
+        }
+
+        // Consume every comment that opens on this line.
+        for (;;) {
+            let next = null;
+            for (const [open, close] of PAIRS) {
+                const at = rest.indexOf(open);
+                if (at !== -1 && (next === null || at < next.at)) next = { at, open, close };
+            }
+            if (!next) {
+                kept += rest;
+                break;
+            }
+            kept += rest.slice(0, next.at);
+            const after = rest.slice(next.at + next.open.length);
+            const end = after.indexOf(next.close);
+            if (end === -1) {
+                closer = next.close;
+                break;
+            }
+            rest = after.slice(end + next.close.length);
+        }
+
+        // Drop lines that were nothing but a comment; keep genuine blank lines.
+        if (kept.trim() || !line.trim()) out.push(kept.trimEnd());
+    }
+
+    return out.join('\n');
 }
 
 function cleanFrontmatter(content) {
