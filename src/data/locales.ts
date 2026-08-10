@@ -1,6 +1,7 @@
-export const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', 'es', 'ja', 'vi', 'fr'] as const;
+// Order here drives the order of the language dropdown in the header.
+export const SUPPORTED_LOCALES = ['zh', 'tr', 'ru', 'fr', 'vi', 'es', 'ja'] as const;
 export type Locale = typeof SUPPORTED_LOCALES[number];
-export const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', tr: 'Türkçe', ru: 'Русский', es: 'Español', ja: '日本語', vi: 'Tiếng Việt', fr: 'Français' };
+export const LOCALE_NAMES: Record<Locale, string> = { zh: '中文', tr: 'Türkçe', ru: 'Русский', fr: 'Français', vi: 'Tiếng Việt', es: 'Español', ja: '日本語' };
 
 /**
  * Returns the subset of SUPPORTED_LOCALES to build in this run.
