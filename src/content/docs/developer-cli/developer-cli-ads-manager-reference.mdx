@@ -1,0 +1,631 @@
+---
+title: "Ads Manager commands for the Adapty Developer CLI"
+description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, automations, and metrics."
+metadataTitle: "Ads Manager CLI Commands | Adapty Docs"
+---
+
+This article lists every [Ads Manager](adapty-ads-manager) command in the Adapty CLI, with its arguments, flags, and accepted values. Ads Manager commands live under the `adapty asa` topic.
+
+:::link
+For prerequisites, safe write practices, and task-based examples, see [Manage Ads Manager from the CLI](developer-cli-ads-manager).
+:::
+
+These commands need a connected Apple Ads account and an active Ads Manager subscription. Run [`adapty asa whoami`](#adapty-asa-whoami) to check both. For the rest of the CLI, see the [command reference](developer-cli-reference).
+
+## Global flags \{#global-flags\}
+
+These flags are available on all Ads Manager commands.
+
+| Flag | Description |
+|---|---|
+| `--json` | Output as JSON instead of formatted text |
+| `--help` | Show command help |
+
+All `list` commands also accept pagination flags:
+
+| Flag | Default | Description |
+|---|---|---|
+| `--page` | `1` | Page number |
+| `--page-size` | `20` | Items per page (max: 100) |
+
+All commands that change your account accept these flags:
+
+| Flag | Description |
+|---|---|
+| `--yes`, `-y` | Apply without asking for confirmation. Required when the output is piped or `--json` is used |
+| `--idempotency-key` | Fixed key for this write. A repeat with the same key and body within 24 hours returns the stored result instead of applying the change again |
+
+Ads Manager commands take no `--app` flag. The scope is the company that your token belongs to. `--app` exists on some `list` commands as a filter only.
+
+## List filters \{#list-filters\}
+
+Filters narrow the query itself, not the printed page. An unfiltered `keywords list` pages through every keyword in the account, so scope each read to the level you need.
+
+| Filter | Accepted by |
+|---|---|
+| `--campaign-group` | All lists in this table |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `product-pages`, `creatives` |
+| `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--status` | `campaigns`, `ad-groups`, `ads` (`ENABLED` or `PAUSED`), `keywords` (`ACTIVE` or `PAUSED`) |
+| `--search` | All lists except `product-pages` and `creatives`. Case-insensitive substring match on the name |
+
+`--campaign-group`, `--app`, `--campaign`, and `--ad-group` take the UUIDs printed by the matching `list` command, and each one is repeatable:
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --ad-group <other-ad-group-id>
+```
+
+An ID that belongs to another company matches nothing, so the page comes back empty instead of returning an error.
+
+## Account \{#account\}
+
+### adapty asa whoami
+
+Show the company, how Ads Manager access was granted, and whether Apple Ads is connected.
+
+```bash
+adapty asa whoami
+```
+
+Run this command first. It reports whether the two prerequisites for every other command are met.
+
+### adapty asa connect
+
+Link an Apple Ads account to Adapty.
+
+```bash
+adapty asa connect
+```
+
+The command prints an Apple authorization link and waits until Apple reports the account as connected.
+
+| Flag | Default | Description |
+|---|---|---|
+| `--wait` / `--no-wait` | `--wait` | Wait until Apple Ads reports as connected. `--no-wait` returns immediately |
+| `--timeout` | `300` | Seconds to wait for the browser step |
+
+### adapty asa orgs list
+
+List the campaign groups (Apple Ads organizations) available to your company.
+
+```bash
+adapty asa orgs list
+```
+
+The ID returned here is the `--org` value for [`campaigns create`](#adapty-asa-campaigns-create).
+
+Accepts [pagination flags](#global-flags).
+
+### adapty asa apps list
+
+List the apps promoted in Apple Ads.
+
+```bash
+adapty asa apps list
+```
+
+Accepts [pagination flags](#global-flags).
+
+## Campaigns \{#campaigns\}
+
+### adapty asa campaigns list
+
+List [campaigns](ads-manager-create-campaign). Returns metadata only — read performance numbers with [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa campaigns list --app <app-id> --status PAUSED
+```
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--search`, and `--status` [list filters](#list-filters).
+
+### adapty asa campaigns get
+
+Get details for a specific campaign.
+
+```bash
+adapty asa campaigns get <campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `campaign-id` | Campaign ID (UUID) |
+
+### adapty asa campaigns create
+
+Create a campaign.
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--org` | Yes | Campaign group ID (UUID). See [`orgs list`](#adapty-asa-orgs-list) |
+| `--name` | Yes | Campaign name |
+| `--adam-id` | Yes | App Store app ID (`adam_id`) |
+| `--country` | Yes | Country or region code. Repeat for several: `--country US --country CA` |
+| `--daily-budget` | Yes | Daily budget as a plain amount, for example `50` or `12.50` |
+| `--budget` | No | Lifetime budget |
+| `--target-cpa` | No | Target cost per acquisition |
+| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--bidding-strategy` | No | `MANUAL_CPT` or `MAX_CONVERSIONS`. Apple defaults to `MANUAL_CPT` |
+| `--ad-channel-type` | No | `SEARCH` or `DISPLAY`. Default: `SEARCH` |
+| `--billing-event` | No | `TAPS` or `IMPRESSIONS`. Default: `TAPS` |
+| `--supply-source` | No | Supply source, repeatable. Default: `APPSTORE_SEARCH_RESULTS` |
+| `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+### adapty asa campaigns update
+
+Update an existing campaign.
+
+```bash
+adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
+```
+
+| Argument | Description |
+|---|---|
+| `campaign-id` | Campaign ID (UUID) |
+
+| Flag | Description |
+|---|---|
+| `--name` | New campaign name |
+| `--status` | `ENABLED` or `PAUSED` |
+| `--country` | Replaces the country list. Repeat for several |
+| `--daily-budget` | New daily budget |
+| `--budget` | New lifetime budget |
+| `--target-cpa` | New target cost per acquisition |
+| `--bidding-strategy` | `MANUAL_CPT` or `MAX_CONVERSIONS` |
+| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+
+At least one flag is required.
+
+## Ad groups \{#ad-groups\}
+
+### adapty asa ad-groups list
+
+List [ad groups](ads-manager-create-ad-group). Returns metadata only — read performance numbers with [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--search`, and `--status` [list filters](#list-filters).
+
+### adapty asa ad-groups get
+
+Get details for a specific ad group.
+
+```bash
+adapty asa ad-groups get <ad-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ad-group-id` | Ad group ID (UUID) |
+
+### adapty asa ad-groups create
+
+Create an ad group in a campaign.
+
+```bash
+adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--campaign` | Yes | Campaign ID (UUID) |
+| `--name` | Yes | Ad group name |
+| `--default-bid` | Yes | Default bid as a plain amount, for example `1.20` |
+| `--cpa-goal` | No | Cost per acquisition goal |
+| `--pricing-model` | No | `CPC` or `CPM`. Apple requires one on every ad group. Default: `CPC` |
+| `--start-time` | No | Schedule start (`YYYY-MM-DD`). Defaults to today |
+| `--end-time` | No | Schedule end (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | No | Let Apple add keywords automatically |
+| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+### adapty asa ad-groups update
+
+Update an existing ad group.
+
+```bash
+adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
+```
+
+| Argument | Description |
+|---|---|
+| `ad-group-id` | Ad group ID (UUID) |
+
+| Flag | Description |
+|---|---|
+| `--name` | New ad group name |
+| `--status` | `ENABLED` or `PAUSED` |
+| `--default-bid` | New default bid |
+| `--cpa-goal` | New cost per acquisition goal |
+| `--start-time` | Schedule start (`YYYY-MM-DD`) |
+| `--end-time` | Schedule end (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | Let Apple add keywords automatically |
+| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+
+At least one flag is required. The parent campaign is resolved on the server and is never passed.
+
+## Keywords \{#keywords\}
+
+Keyword commands are applied as a batch of at most 100 items per call. See [Manage keywords](ads-manager-manage-keywords) for the dashboard equivalent.
+
+### adapty asa keywords list
+
+List targeting keywords. Returns metadata only — read performance numbers with [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
+```
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search`, and `--status` [list filters](#list-filters). Filter by `--ad-group` — without a filter, this is the widest read in the topic.
+
+### adapty asa keywords add
+
+Add targeting keywords to an ad group.
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --text "running shoes" --text "trail shoes" --bid 1.20
+```
+
+Read the keywords from a file instead, one per line:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--ad-group` | Yes | Ad group ID (UUID). The campaign is resolved from it |
+| `--text` | Yes, unless `--from-file` is used | Keyword text. Repeat for several |
+| `--from-file` | No | File with one keyword per line. Combined with any `--text` values |
+| `--bid` | No | Bid per keyword as a plain amount |
+| `--match-type` | No | `BROAD` or `EXACT`. Default: `BROAD` |
+| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--status` | No | `ACTIVE` or `PAUSED`. Default: `ACTIVE` |
+
+One invalid ID fails the whole batch before Apple is called. Apple can still reject individual keywords, and each rejection is reported with its reason.
+
+### adapty asa keywords update
+
+Change the bid, status, text, or match type of one or more keywords.
+
+```bash
+adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
+```
+
+| Argument | Description |
+|---|---|
+| `keyword-id` | Keyword ID (UUID). Pass several as extra arguments |
+
+| Flag | Description |
+|---|---|
+| `--bid` | New bid |
+| `--status` | `ACTIVE` or `PAUSED` |
+| `--match-type` | `BROAD` or `EXACT` |
+| `--text` | New keyword text. Only meaningful for a single keyword |
+| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+
+One change is applied to every ID passed.
+
+## Negative keywords \{#negative-keywords\}
+
+### adapty asa negative-keywords list
+
+List negative keywords. Rows with an empty `ad_group_id` are campaign-level.
+
+```bash
+adapty asa negative-keywords list --campaign <campaign-id>
+```
+
+| Flag | Description |
+|---|---|
+| `--campaign-level-only` | Keep only campaign-level rows |
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, and `--search` [list filters](#list-filters).
+
+### adapty asa negative-keywords add
+
+Add negative keywords to an ad group or a campaign.
+
+```bash
+adapty asa negative-keywords add --ad-group <ad-group-id> --text free
+```
+
+Apply them to every ad group of a campaign instead:
+
+```bash
+adapty asa negative-keywords add --campaign <campaign-id> --all-ad-groups --text free
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--ad-group` | One of `--ad-group` or `--campaign` | Ad group ID (UUID). The campaign is resolved from it |
+| `--campaign` | One of `--ad-group` or `--campaign` | Campaign ID (UUID) |
+| `--text` | Yes | Keyword text. Repeat for several |
+| `--all-ad-groups` | No | Apply to every ad group of the campaign instead of the campaign itself. Requires `--campaign` |
+| `--match-type` | No | `BROAD` or `EXACT`. Default: `EXACT` |
+| `--status` | No | `ACTIVE` or `PAUSED`. Default: `ACTIVE` |
+
+`--ad-group` and `--campaign` are mutually exclusive. Pass exactly one.
+
+## Search terms \{#search-terms\}
+
+### adapty asa search-terms list
+
+List the search terms that triggered your ads. Use it to find new keywords and new negative keywords.
+
+```bash
+adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--date-from` | Today | Start of the reporting period (`YYYY-MM-DD`) |
+| `--date-to` | Today | End of the reporting period (`YYYY-MM-DD`) |
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, and `--search` [list filters](#list-filters).
+
+This command shares an analytics pool with [`asa metrics`](#metrics). See [Errors](#errors).
+
+## Ads \{#ads\}
+
+### adapty asa ads list
+
+List [ads](ads-manager-manage-ads). The `serving_state_reasons` field explains why an ad is not running.
+
+```bash
+adapty asa ads list --ad-group <ad-group-id>
+```
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--campaign`, `--ad-group`, `--search`, and `--status` [list filters](#list-filters). This list has no `--app` filter, because ads belong to ad groups.
+
+### adapty asa ads get
+
+Get details for a specific ad.
+
+```bash
+adapty asa ads get <ad-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ad-id` | Ad ID (UUID) |
+
+### adapty asa ads create
+
+Create an ad in an ad group.
+
+```bash
+adapty asa ads create --ad-group <ad-group-id> --creative-id 4321 --name "Summer ad"
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--ad-group` | Yes | Ad group ID (UUID). The campaign is resolved from it |
+| `--creative-id` | Yes | Apple creative ID. See [`creatives list`](#adapty-asa-creatives-list) |
+| `--name` | Yes | Ad name |
+| `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+### adapty asa ads update
+
+Update an existing ad.
+
+```bash
+adapty asa ads update <ad-id> --status PAUSED
+```
+
+| Argument | Description |
+|---|---|
+| `ad-id` | Ad ID (UUID) |
+
+| Flag | Description |
+|---|---|
+| `--name` | New ad name |
+| `--status` | `ENABLED` or `PAUSED` |
+
+At least one flag is required. The creative and the parent ad group are fixed at creation.
+
+## Creatives \{#creatives\}
+
+### adapty asa creatives list
+
+List the creatives available for new ads.
+
+```bash
+adapty asa creatives list --app <app-id>
+```
+
+The `creative_id` returned here is the `--creative-id` value for [`ads create`](#adapty-asa-ads-create).
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group` and `--app` [list filters](#list-filters).
+
+## Product pages \{#product-pages\}
+
+### adapty asa product-pages list
+
+List the custom product pages available to your apps.
+
+```bash
+adapty asa product-pages list --app <app-id>
+```
+
+Accepts [pagination flags](#global-flags) and the `--campaign-group` and `--app` [list filters](#list-filters).
+
+### adapty asa product-pages sync
+
+Refresh the custom product pages from App Store Connect.
+
+```bash
+adapty asa product-pages sync --adam-id 123456
+```
+
+| Flag | Description |
+|---|---|
+| `--adam-id` | Limit the refresh to one app. Omit to cover every app |
+
+The refresh is queued rather than performed immediately. A successful response also means a sync is already running or there is nothing to sync.
+
+## Automations \{#automations\}
+
+The CLI stores the rule JSON you give it — it does not build rules. See [Automations](ads-manager-automations) for what each rule type does, and [Run automation rules](developer-cli-ads-manager#run-automation-rules) for how to produce a rule file.
+
+### adapty asa automations list
+
+List [automation rules](ads-manager-automations). The `status` field is `1` for active and `0` for stopped.
+
+```bash
+adapty asa automations list
+```
+
+Accepts [pagination flags](#global-flags).
+
+### adapty asa automations get
+
+Get a specific automation rule, including its conditions and actions.
+
+```bash
+adapty asa automations get <automation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Automation rule ID (UUID) |
+
+### adapty asa automations create
+
+Create an automation rule from a JSON rule file.
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+| Flag | Description |
+|---|---|
+| `--file` | JSON file with the rule body, or `-` to read from standard input |
+| `--run-now` | Queue the first run right after the rule is stored |
+
+`--file` is required.
+
+### adapty asa automations update
+
+Change an automation rule: stop it, rename it, or replace parts of the rule.
+
+```bash
+adapty asa automations update <automation-id> --stop
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Automation rule ID (UUID) |
+
+| Flag | Description |
+|---|---|
+| `--start` | Activate the rule |
+| `--stop` | Stop the rule and clear its next run |
+| `--name` | New rule name |
+| `--file` | JSON file with the parts to change, or `-` to read from standard input |
+
+`--start` and `--stop` are mutually exclusive. A file passed here must not contain `internal_id`.
+
+### adapty asa automations run
+
+Run an automation rule once, outside its schedule.
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Automation rule ID (UUID) |
+
+| Flag | Description |
+|---|---|
+| `--dry-run` | Evaluate the rule and log the result without changing anything in Apple Ads |
+
+The run is queued, and the command prints a run ID. Read the outcome with [`automations runs`](#adapty-asa-automations-runs).
+
+### adapty asa automations runs
+
+List past runs of an automation rule, including dry runs.
+
+```bash
+adapty asa automations runs <automation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Automation rule ID (UUID) |
+
+Accepts [pagination flags](#global-flags).
+
+## Metrics \{#metrics\}
+
+### adapty asa metrics
+
+Query metrics for any level of the account over a date range.
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--entity` | Yes | What to report on: `campaign`, `ad-group`, `keyword`, or `ad` |
+| `--date-from` | Yes | Start of the period (`YYYY-MM-DD`) |
+| `--date-to` | Yes | End of the period (`YYYY-MM-DD`) |
+| `--metric` | No | Metric name, repeatable. Omit for every metric |
+| `--group-by` | No | Break the rows down by `country`, `day`, `week`, `month`, `quarter`, or `year`. Repeatable |
+| `--by-days` | No | Renewal window in days for cohort metrics, repeatable. Maximum 16 per call. Omit for the dashboard defaults |
+| `--order-by` | No | Metric or field to sort by |
+| `--order-by-day` | No | Rank by a cohort metric at this renewal window. Must be one of the `--by-days` values |
+| `--order` | No | `asc` or `desc`. Default: `desc` |
+
+Accepts [pagination flags](#global-flags).
+
+`--metric` takes the metric names that Ads Manager tracks. See [Metrics](adapty-ads-manager-metrics) for the full list and how each one is calculated.
+
+There is no `ltv` metric. Lifetime value is a cohort metric read at a renewal window, so `--by-days` is how you ask for the day-7 or day-90 value:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
+```
+
+`--order-by-day` ranks the rows by one of those windows, which returns the top campaigns by day-90 ROAS in a single call.
+
+### adapty asa metrics overview
+
+Query totals for a period, bucketed by a unit of time.
+
+```bash
+adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --period-unit week
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--entity` | Yes | What to report on: `campaign`, `ad-group`, `keyword`, or `ad` |
+| `--date-from` | Yes | Start of the period (`YYYY-MM-DD`) |
+| `--date-to` | Yes | End of the period (`YYYY-MM-DD`) |
+| `--period-unit` | No | Bucket size: `day`, `week`, `month`, `quarter`, or `year`. Default: `day` |
+| `--metric` | No | Metric name, repeatable. Omit for every metric |
+| `--by-days` | No | Renewal window in days for cohort metrics, repeatable. Maximum 16 per call |
+
+On this command, `--metric` accepts cohort roots only — `revenue`, `roas`, and `arpu` — not their `gross_`, `proceeds_`, or `net_` variants. This command has no ordering flags and no pagination.
+
+## Errors \{#errors\}
+
+| Status | Code | Meaning |
+|---|---|---|
+| `402` | `ads_manager_subscription_required` | The company has no active Ads Manager subscription |
+| `404` | — | The entity does not exist, or it belongs to another company |
+| `409` | `cli_idempotency_in_progress` | A write with the same idempotency key is still running |
+| `422` | `cli_idempotency_key_reuse` | The same idempotency key was used with a different request body |
+| `429` | `cli_analytics_busy` | The analytics pool is busy. The wait is in the `Retry-After` header |
+| `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
+
+Metrics and the search terms list share one analytics pool per company, limited to two concurrent queries. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.

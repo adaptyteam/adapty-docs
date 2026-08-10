@@ -1,0 +1,126 @@
+---
+title: "Manage Ads Manager from the CLI"
+description: "Run Apple Ads campaigns, keywords, and automation rules from the terminal with the Adapty Developer CLI."
+metadataTitle: "Ads Manager in the Developer CLI | Adapty Docs"
+---
+
+The Adapty CLI can manage your [Ads Manager](adapty-ads-manager) account from the terminal, under the `adapty asa` topic. It covers campaigns, ad groups, keywords, ads, product pages, automation rules, and metrics.
+
+Use it for the work that a browser makes slow: adding several hundred keywords from a file, pulling metrics into a script or a spreadsheet, and running the same setup across several campaigns. For everything else, the [dashboard](https://app.adapty.io) remains faster.
+
+:::warning
+The CLI cannot delete anything. Campaigns, ads, and automation rules can be created, updated, and paused from the terminal, but deleting them is only possible in the dashboard.
+:::
+
+## Before you start
+
+Ads Manager commands use the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart).
+
+Two further conditions apply to every `adapty asa` command:
+
+- **A connected Apple Ads account**: Connect it with `adapty asa connect`, or in the dashboard as described in [Get started with Adapty Ads Manager](adapty-ads-manager-get-started).
+- **An active Ads Manager subscription**: Without one, every command fails with `402 ads_manager_subscription_required`.
+
+One command reports both:
+
+```bash
+adapty asa whoami
+```
+
+Three behaviors differ from the rest of the CLI:
+
+- **There is no `--app` flag**: The scope is the company your token belongs to. `--app` exists on some `list` commands as a filter only.
+- **Writes reach Apple directly**: Each command that changes your account prints the request body and asks for confirmation before sending it. There is no staging step.
+- **Reads are cheap, writes are not**: Run `list` commands and `--dry-run` freely. Treat everything else as irreversible.
+
+To skip the confirmation prompt in a script, pass `--yes`. Under `--json` or in a pipe, a write command refuses instead of waiting for an answer that will never arrive, so `--yes` is required there.
+
+## Find the IDs you need
+
+Every command takes UUIDs, and every UUID comes from a `list` command. Work down the hierarchy:
+
+```bash
+adapty asa orgs list
+adapty asa campaigns list --campaign-group <campaign-group-id>
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Scope each read with a filter. Filters narrow the query rather than the printed page, so a scoped read is cheap while an unscoped one pages through the whole account. `adapty asa keywords list` without `--ad-group` is the widest read in the topic.
+
+These lists return metadata only. Performance numbers come from [`asa metrics`](#pull-metrics-into-a-script).
+
+## Add keywords in bulk
+
+Adding keywords one at a time is the main reason to leave the dashboard. Put one keyword per line in a text file:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 1.20 --match-type EXACT
+```
+
+Keywords are applied as a batch of at most 100 per call. Split larger lists across several calls.
+
+Two kinds of failure are possible, and they behave differently. An invalid ID fails the whole batch before Apple is called, so nothing is applied. Apple can also reject individual keywords — the rest are still added, and each rejection is reported with its reason. Check the summary line rather than the exit code alone.
+
+Start with a handful of keywords and check the result before sending a full file.
+
+## Pull metrics into a script
+
+`asa metrics` reports on any level of the account over a date range. Add `--json` to get machine-readable output:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
+```
+
+`--metric` takes the names that Ads Manager tracks. See [Metrics](adapty-ads-manager-metrics) for the full list.
+
+Cohort metrics work differently from the rest. There is no `ltv` metric, because lifetime value is read at a renewal window rather than on a date. Ask for the window instead:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90 --order-by-day 90
+```
+
+This returns your campaigns ranked by day-90 ROAS. Up to 16 windows fit in one call.
+
+Metrics and the search terms list share one analytics pool per company, limited to two concurrent queries. A busy pool answers `429` with the wait in the `Retry-After` header. Run these queries in sequence rather than in parallel.
+
+## Run automation rules \{#run-automation-rules\}
+
+The CLI does not build [automation rules](ads-manager-automations) — it stores the JSON you give it. The fastest way to get a valid rule file is to build one rule in the dashboard, then read it back:
+
+```bash
+adapty asa automations get <automation-id> --json > rule.json
+```
+
+Edit that file and use it as the template for new rules:
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+When you pass a file to `automations update`, remove the `internal_id` field first — the update is rejected if it is present.
+
+Test a rule before letting it change bids:
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+A dry run evaluates the conditions and logs what the rule would do without touching Apple Ads. Runs are queued rather than performed immediately, so the command prints a run ID and the outcome appears in `adapty asa automations runs`.
+
+## Re-run scripts safely
+
+Every write sends an idempotency key. The CLI generates one per invocation and retries once after a network error, so a request that failed in transit is never applied twice.
+
+In a script, pin the key yourself so the whole pipeline can be re-run:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50 --idempotency-key winter-push-2026 --yes
+```
+
+Re-running the same command within 24 hours returns the stored result and prints `Already applied earlier` instead of creating a second campaign. The same key with a different body fails with `422`, which catches an edited script that reuses a key by mistake.
+
+## What's next
+
+- [Ads Manager commands](developer-cli-ads-manager-reference) — every command with its arguments, flags, and accepted values.
+- [Automations](ads-manager-automations) — what each rule type does and which actions it can take.
+- [Metrics](adapty-ads-manager-metrics) — the metric names accepted by `--metric` and how each one is calculated.
