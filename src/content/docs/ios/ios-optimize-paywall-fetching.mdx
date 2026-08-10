@@ -23,7 +23,7 @@ See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPol
 ## Preload placements
 
 :::info
-These methods are available starting from iOS SDK version 4.1.
+These methods are available starting from SDK version 4.1.
 :::
 
 `preloadFlows` and `preloadOnboardings` fetch placements into the SDK cache ahead of time. A later `getFlow` or `getOnboarding` call for the same placement then resolves from cache instead of the network, so the paywall renders without a visible wait.
@@ -64,14 +64,30 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
 
 - `placementIds` (required): the placements to preload. Blank and duplicate IDs are ignored.
 - `locale` (optional, `preloadOnboardings` only): the onboarding locale to cache.
-- `loadTimeout` (optional): timeout in seconds for the whole batch, not per placement. Defaults to 5 seconds.
+- `loadTimeout` (optional): timeout in seconds for the whole batch, not per placement. Defaults to 5 seconds, and values below 1 second are raised to 1 second.
 
 **Behavior worth knowing:**
 
 - The methods throw only after attempting every placement, and the error aggregates the per-placement failures. A failure for one placement doesn't stop the others.
-- If a placement can't be fetched for the user's audience, the SDK automatically falls back to the default-audience variation for that placement.
+- If a placement times out or fails with a network error, the SDK falls back to the default-audience variation for that placement. Other failures are reported as-is.
 - If the timeout fires before the audience-targeted fetch completes, the SDK still attempts the default-audience variation within the remaining budget.
 - Preloading only warms the cache. It doesn't return content — you still call `getFlow` or `getOnboarding` to display it.
+
+### Find out which placement failed
+
+The thrown error is a single `AdaptyError` covering the whole batch, with the code `networkFailed` (2002). To see the individual failures, read its `preloadErrors` property — a dictionary keyed by placement ID:
+
+```swift showLineNumbers
+do {
+    try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"])
+} catch {
+    for (placementId, placementError) in error.preloadErrors ?? [:] {
+        // log or retry the individual placement
+    }
+}
+```
+
+`preloadErrors` is `nil` for any error that didn't come from a preload call, so treat a `nil` value as "not a preload failure" rather than "no failures".
 
 To warm the cache without waiting for audience segmentation at all, use the default-audience variants:
 
