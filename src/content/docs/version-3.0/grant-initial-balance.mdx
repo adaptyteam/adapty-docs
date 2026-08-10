@@ -1,0 +1,77 @@
+---
+title: "Grant an initial balance"
+description: "Give new users a starting virtual currency balance through the server-side API, and backfill existing users when you launch a new currency."
+metadataTitle: "Grant an initial balance | Adapty Docs"
+---
+
+:::link
+Main article: [Virtual currencies](virtual-currencies)
+:::
+
+Every profile starts with a balance of 0 in every currency, and [linked products](create-virtual-currency#link-products) only grant credits on a purchase or a renewal. So a user who has not bought anything never receives credits automatically.
+
+You can still give new users a starting balance: a welcome bonus, a free trial allowance, or a set of lives. Grant it from your backend through the [server-side API](getting-started-with-server-side-api), after you identify the user.
+
+## Grant the balance for a new user
+
+1. **Identify the user first**: A balance belongs to one profile and never moves to another one, so grant the credits only after the profile has a customer user ID. Identify the user in your app through the SDK (see [Identify users](ios-quickstart-identify)) or from your backend through the server-side API.
+
+    Granting to an anonymous profile is the most common mistake here. Anonymous profiles are tied to one app installation, so the user loses the credits when they reinstall your app or open it on another device. See [Balances, profiles, and devices](virtual-currency-balance#balances-profiles-and-devices) for the full picture.
+
+2. **Grant the credits**: Call [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) with a positive `amount`. This example grants 500 tokens:
+
+    ```bash title="Grant an initial balance"
+    curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+      -H "Authorization: Api-Key {your secret key}" \
+      -H "adapty-customer-user-id: user-42" \
+      -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
+      -H "Content-Type: application/json" \
+      -d '{
+            "items": [{"currency_code": "TOKENS", "amount": 500}],
+            "metadata": {"reason": "initial_balance"}
+          }'
+    ```
+
+    The response returns the new balance:
+
+    ```json title="Response"
+    {
+      "transaction_id": "3a9f8e21-5d4c-4b7a-9e01-8c6d2f4b1a37",
+      "balances": [
+        { "code": "TOKENS", "name": "Tokens", "balance": 500, "held": 0, "available": 500 }
+      ]
+    }
+    ```
+
+    Credits granted this way never expire, unlike the per-cycle credits of a linked subscription.
+
+    The `metadata` field is optional. A tag such as `reason: initial_balance` makes the grant easy to recognize in the [transaction history](api-adapty/operations/listVirtualCurrencyTransactions), and to separate from purchase credits in your own reporting.
+
+3. **Record the grant in your database**: Store the fact that this user received their initial balance, so a repeated sign-in or a retried job doesn't grant it twice. The next section explains why this record is necessary.
+
+## Grant it exactly once
+
+Your own database is the source of truth for whether a user has received their initial balance. Two approaches that look sufficient are not:
+
+- **`Idempotency-Key` protects one call, not one user**: Retrying a request with the same key returns the original result instead of granting again, so a single call is safe to retry after a timeout. Adapty remembers each key for up to an hour, per profile. After that, the same key grants again, so the header can't tell you months later whether a user already got their initial balance. Generate a fresh key for each new grant.
+- **Reading the balance first proves nothing**: A balance of 0 means either that the user was never granted credits, or that they were granted and spent them all. [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances) can't tell the two apart.
+
+So check your own record before you call the API, and write the record after a successful response.
+
+## Backfill existing users
+
+When you create a currency, every existing profile starts at 0, and [product links only apply going forward](create-virtual-currency#link-products). To give your current users a starting balance, run a one-off backfill from your backend.
+
+1. In your own database, collect the customer user IDs to grant to.
+2. For each one, call [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) as shown above. There is no bulk endpoint: one request grants to one profile, and a single request can cover up to 20 currencies for that profile.
+3. Keep the per-user record from the previous section as you go, so you can stop the job and resume it without granting twice.
+4. Stay under the rate limit of 600 requests per minute per app. A request over the limit fails with `rate_limited`, so throttle the job and retry the failed users.
+
+:::tip
+Backfill only the users you want to reach, such as active or paying ones. Credits granted through the API never expire, so a balance you hand out now stays on the profile until the user spends it.
+:::
+
+## Next steps
+
+- Spend the balance and read it at runtime: [Virtual currency quickstart](virtual-currency-quickstart).
+- Check what a user holds and audit every change: [Virtual currency balance](virtual-currency-balance).
