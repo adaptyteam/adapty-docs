@@ -78,20 +78,19 @@ Before asking the user anything, do your own homework — both documentation res
 
 **Article discovery** (when the user doesn't specify which article to update):
 
-**Start with sidebar files** (`src/data/sidebars/*.json`) to narrow your search:
+**Start with the context mill, not with a search.** Invoke the `context-mill` skill's lookup mode: pick the one or two zones the task lands in, read those zone briefs whole, then use the roster to reach the articles. A brief carries what no search can — which article owns a topic, how tickets phrase it (`Ticket language`), what else moves when this moves (`Ripple rules`), and where the area's boundary against a neighbouring zone falls. Do this before grepping anything; grep is the fallback for what the brief cannot settle, not the opening move.
 
-Sidebar files define the docs navigation structure. Each file is a JSON array of `{type: "category", label, id, items: [...]}` with nested `{type: "doc", label, id}` entries. Use them to:
+**Then use the sidebar files** (`src/data/sidebars/*.json`) for the two things they alone answer — placement and neighbours, not discovery:
 
-- **Filter by sidebar type**: Match the feature to the right sidebar before searching content:
-  - `tutorial.json` — Dashboard features, general configuration, getting started. If the feature is Dashboard-only, search here and nowhere else.
-  - `ios.json`, `android.json`, `react-native.json`, `flutter.json`, `unity.json`, `capacitor.json`, `kmp.json` — SDK platform-specific docs. For SDK features, search only the relevant platform sidebar.
-  - `api.json` — Server-side API docs.
 - **Use hierarchy for priority**: Articles higher in the sidebar are more general/important. Deeply nested articles are more specific/niche. When multiple articles match, prioritize those higher in the sidebar hierarchy — they're more likely to be overview/root pages that many readers land on.
 - **Identify neighbors**: The sidebar shows which articles are siblings. Neighboring articles in the same category often need coordinated updates.
+- **Confirm which navigation a new article belongs in**: `tutorial.json` for Dashboard and general configuration; `ios.json`, `android.json`, `react-native.json`, `flutter.json`, `unity.json`, `capacitor.json`, `kmp.json` per SDK platform; `api.json` for the API reference.
 
-After narrowing via sidebar, proceed with content search. Prefer the context-mill skill's lookup mode (grep `.claude/context-mill/docs-map.jsonl` + `docs-enrichment.jsonl`) over grepping raw MDX — it is cheaper and also matches task-language terms that don't appear literally in articles:
+Remember a folder is not a platform and a filename is not a topic — some `version-3.0/*` files are iOS-only, and filenames are frozen for SEO while content moves on. The zone roster, not the path, tells you what an article is.
 
-1. **Search by feature keywords**: Grep for the feature name, UI element names, and related terms across the context-mill map (fall back to the relevant docs if the map misses)
+If the zone brief and roster still leave candidates open, search the map:
+
+1. **Search by feature keywords**: Grep for the feature name, UI element names, and related terms across `.claude/context-mill/docs-map.jsonl` (`title`, `headings`, `symbols`, `links`), falling back to the relevant docs if the map misses
 2. **Search by product area**: If the task mentions "autopilot," search for all articles containing "autopilot." If it mentions "A/B tests," find every article that covers A/B test configuration, results, or related workflows.
 3. **Think about ripple effects**: A feature change may affect more than the obvious article. Ask yourself:
    - Does this feature appear in a **getting started** or **quickstart** guide?

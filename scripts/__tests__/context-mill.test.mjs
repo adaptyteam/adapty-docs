@@ -8,7 +8,10 @@ import {
   extractSymbols,
   extractComponents,
   extractLinks,
-  diffStatus,
+  duplicateIds,
+  parseSpec,
+  shapeHash,
+  apiHash,
 } from '../context-mill/lib.mjs';
 
 const SAMPLE = `---
@@ -277,35 +280,8 @@ test('extractLinks finds internal doc ids from md links, Button, CustomDocCardLi
   );
 });
 
-test('diffStatus classifies new, stale, deleted; ignores orphans and drafts', () => {
-  const map = [
-    { id: 'a', hash: 'h1', orphan: false, draft: false },
-    { id: 'b', hash: 'h2-new', orphan: false, draft: false },
-    { id: 'c', hash: 'h3', orphan: true, draft: false },
-    { id: 'e', hash: 'h5', orphan: false, draft: true },
-  ];
-  const enrichment = [
-    { id: 'a', for_hash: 'h1' },
-    { id: 'b', for_hash: 'h2-old' },
-    { id: 'd', for_hash: 'h4' },
-  ];
-  const { newIds, staleIds, deletedIds } = diffStatus(map, enrichment);
-  assert.deepEqual(newIds, []);        // c is orphan, e is draft — not expected
-  assert.deepEqual(staleIds, ['b']);
-  assert.deepEqual(deletedIds, ['d']);
-});
 
-test('diffStatus reports unenriched non-orphan articles as new', () => {
-  const map = [{ id: 'x', hash: 'h', orphan: false, draft: false }];
-  const { newIds } = diffStatus(map, []);
-  assert.deepEqual(newIds, ['x']);
-});
 
-test('diffStatus does not report an unenriched draft article as new', () => {
-  const map = [{ id: 'x', hash: 'h', orphan: false, draft: true }];
-  const { newIds } = diffStatus(map, []);
-  assert.deepEqual(newIds, []);
-});
 
 // --- Issue 1: extractLinks must not treat images as doc links ---
 
@@ -429,4 +405,97 @@ test('extractSymbols stoplist rejects control-flow keywords used with parens, ke
   assert.ok(!symbols.includes('switch'));
   assert.ok(!symbols.includes('return'));
   assert.ok(symbols.includes('getPaywall'));
+});
+
+test('shapeHash ignores prose and depends on title, headings, sidebars', () => {
+  const a = shapeHash({ title: 'T', headings: ['One', 'Two'], sidebars: ['ios'] });
+  const b = shapeHash({ title: 'T', headings: ['One', 'Two'], sidebars: ['ios'] });
+  const c = shapeHash({ title: 'T', headings: ['One'], sidebars: ['ios'] });
+  const d = shapeHash({ title: 'T', headings: ['One', 'Two'], sidebars: ['android'] });
+  assert.equal(a, b);
+  assert.notEqual(a, c);
+  assert.notEqual(a, d);
+  assert.match(a, /^[0-9a-f]{12}$/);
+});
+
+test('shapeHash is stable against sidebar order and tolerates a null title', () => {
+  assert.equal(
+    shapeHash({ title: null, headings: ['H'], sidebars: ['ios', 'android'] }),
+    shapeHash({ title: null, headings: ['H'], sidebars: ['android', 'ios'] }),
+  );
+});
+
+test('apiHash depends on the symbol set, not its order', () => {
+  assert.equal(apiHash(['Adapty.activate', 'getPaywall']), apiHash(['getPaywall', 'Adapty.activate']));
+  assert.notEqual(apiHash(['Adapty.activate']), apiHash(['Adapty.activate', 'getPaywall']));
+  assert.match(apiHash([]), /^[0-9a-f]{12}$/);
+});
+
+test('apiHash deduplicates, so a merged symbol list hashes as a set', () => {
+  assert.equal(apiHash(['Adapty.activate', 'Adapty.activate']), apiHash(['Adapty.activate']));
+});
+
+// A published API spec belongs to the corpus even though it is not an article:
+// an endpoint change IS a docs change. Its structure maps onto the same narrow
+// hashes — URL paths behave like headings, operationIds like symbols.
+test('parseSpec builds a record whose headings are paths and symbols are operationIds', () => {
+  const spec = [
+    'openapi: 3.0.0',
+    'info:',
+    '  title: Adapty server-side API',
+    '  description: The API for your backend.',
+    'paths:',
+    '  /profiles/:',
+    '    post:',
+    '      operationId: createProfile',
+    '    get:',
+    '      operationId: getProfile',
+    '  /transactions/:',
+    '    post:',
+    '      operationId: setTransaction',
+    '',
+  ].join('\n');
+  const r = parseSpec({ id: 'adapty-api', relPath: 'src/api-reference/specs/adapty-api.yaml', content: spec, name: 'Server-side API v2' });
+  assert.equal(r.kind, 'spec');
+  assert.equal(r.title, 'Adapty server-side API');
+  assert.deepEqual(r.headings, ['/profiles/', '/transactions/']);
+  assert.deepEqual(r.symbols, ['createProfile', 'getProfile', 'setTransaction']);
+  // Not an orphan: a spec is reachable at its own route, it is simply not a
+  // sidebar doc entry — and that is what makes the partition demand a zone.
+  assert.equal(r.orphan, false);
+  assert.deepEqual(r.sidebars, []);
+  assert.match(r.api_hash, /^[0-9a-f]{12}$/);
+});
+
+test('parseSpec api_hash tracks operationIds, shape_hash tracks paths', () => {
+  const base = 'info:\n  title: T\npaths:\n  /a/:\n    get:\n      operationId: getA\n';
+  const renamed = 'info:\n  title: T\npaths:\n  /a/:\n    get:\n      operationId: fetchA\n';
+  const added = 'info:\n  title: T\npaths:\n  /a/:\n    get:\n      operationId: getA\n  /b/:\n    get:\n      operationId: getB\n';
+  const mk = (c) => parseSpec({ id: 's', relPath: 'p.yaml', content: c, name: 'S' });
+  assert.notEqual(mk(base).api_hash, mk(renamed).api_hash);
+  assert.equal(mk(base).shape_hash, mk(renamed).shape_hash);
+  assert.notEqual(mk(base).shape_hash, mk(added).shape_hash);
+});
+
+test('parseSpec falls back to the config name and survives an empty spec', () => {
+  const r = parseSpec({ id: 'x', relPath: 'x.yaml', content: 'openapi: 3.0.0\n', name: 'Fallback Name' });
+  assert.equal(r.title, 'Fallback Name');
+  assert.deepEqual(r.headings, []);
+  assert.deepEqual(r.symbols, []);
+});
+
+// A spec id keeps its extension because `web-api.yaml` and `web-api.mdx` are
+// two different documents that would otherwise share the id `web-api` and
+// silently overwrite each other in every id-keyed Map downstream.
+test('duplicateIds names records that share an id', () => {
+  const records = [
+    { id: 'web-api', path: 'a/web-api.mdx' },
+    { id: 'web-api', path: 'b/web-api.yaml' },
+    { id: 'quickstart', path: 'a/quickstart.mdx' },
+  ];
+  assert.deepEqual(duplicateIds(records), ['web-api -> a/web-api.mdx, b/web-api.yaml']);
+});
+
+test('duplicateIds is empty for a clean corpus', () => {
+  assert.deepEqual(duplicateIds([{ id: 'a', path: 'a.mdx' }, { id: 'a.yaml', path: 'a.yaml' }]), []);
 });

@@ -33,7 +33,7 @@ If the input is too vague to determine what changed, who it affects, or where it
 
 The writing-planner will:
 1. Parse the input and extract what changed
-2. Research affected articles and existing content
+2. Research affected articles and existing content — it does this zone-first through the `context-mill` skill, so don't pre-empt it with your own grep of the docs tree
 3. Assess documentation scope (small / medium / large)
 4. Interview the user for details it can't infer
 5. Produce a documentation plan

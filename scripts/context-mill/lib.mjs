@@ -54,6 +54,22 @@ export function contentHash(content) {
   return crypto.createHash('sha256').update(content).digest('hex').slice(0, 12);
 }
 
+// Narrow hashes: a zone brief depends on an article's structure and API surface,
+// not on its prose, so a typo fix or a reworded paragraph produces no drift.
+export function shapeHash({ title, headings, sidebars }) {
+  // Sorted here (not just by the caller) so the hash is independent of
+  // whatever order `sidebars` arrives in — don't remove this as a
+  // "redundant" sort; extract.mjs also sorts, but for a different reason
+  // (stable JSONL output), not to satisfy this function's contract.
+  const payload = JSON.stringify([title ?? '', headings ?? [], [...(sidebars ?? [])].sort()]);
+  return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 12);
+}
+
+export function apiHash(symbols) {
+  const payload = [...new Set(symbols ?? [])].sort().join('\n');
+  return crypto.createHash('sha256').update(payload).digest('hex').slice(0, 12);
+}
+
 // Guards the "bare call name" pass below against control-flow keywords and
 // declaration/builtin words across our 7 SDK languages that happen to be
 // followed by "(" (e.g. `if (x)`, `switch (z)`, `init(...)`) so they aren't
@@ -224,24 +240,63 @@ export function extractLinks(text) {
   return [...links].sort();
 }
 
-export function diffStatus(mapEntries, enrichmentEntries) {
-  const enrichById = new Map(enrichmentEntries.map(e => [e.id, e]));
-  const mapIds = new Set(mapEntries.map(m => m.id));
-  const newIds = [];
-  const staleIds = [];
-  for (const entry of mapEntries) {
-    // Orphaned/draft articles are skipped for new/stale reporting, but note
-    // this means an orphaned article's *existing* enrichment record is
-    // never reported as `deleted` either (its id is still in `mapIds`) — it
-    // just silently persists, unreviewed, until the article is un-orphaned
-    // or actually removed from the map.
-    if (entry.orphan || entry.draft) continue;
-    const enriched = enrichById.get(entry.id);
-    if (!enriched) newIds.push(entry.id);
-    else if (enriched.for_hash !== entry.hash) staleIds.push(entry.id);
+// Everything downstream keys records by id — Maps, drift snapshots, brief
+// references — so two records sharing one id do not error, they silently
+// overwrite each other. Worth a hard failure: `web-api.mdx` and `web-api.yaml`
+// collided exactly this way the first time specs entered the map.
+export function duplicateIds(records) {
+  const byId = new Map();
+  for (const r of records) {
+    if (!byId.has(r.id)) byId.set(r.id, []);
+    byId.get(r.id).push(r.path);
   }
-  const deletedIds = enrichmentEntries
-    .filter(e => !mapIds.has(e.id))
-    .map(e => e.id);
-  return { newIds: newIds.sort(), staleIds: staleIds.sort(), deletedIds: deletedIds.sort() };
+  return [...byId.entries()]
+    .filter(([, paths]) => paths.length > 1)
+    .map(([id, paths]) => `${id} -> ${paths.sort().join(', ')}`)
+    .sort();
+}
+
+// A published OpenAPI spec belongs to the corpus even though it is not an
+// article: for the server-side and web APIs the spec *is* the reference, so an
+// endpoint change is a docs change. The narrow hashes map over cleanly — URL
+// paths play the part of headings (shape_hash moves when an endpoint is added
+// or removed) and operationIds the part of code symbols (api_hash moves when one
+// is renamed). `name` is the label from api-reference/config.json, used only
+// when the spec omits `info.title`.
+export function parseSpec({ id, relPath, content, name }) {
+  let doc;
+  try { doc = yaml.load(content) ?? {}; }
+  catch (err) { throw new Error(`${relPath} is not valid YAML: ${err.message}`); }
+  const paths = Object.keys(doc.paths ?? {}).sort();
+  const operations = [];
+  for (const item of Object.values(doc.paths ?? {})) {
+    // A path item also carries non-operation keys (`parameters`, `summary`),
+    // so the operationId presence check is what selects real operations.
+    for (const op of Object.values(item ?? {})) {
+      if (op && typeof op === 'object' && op.operationId) operations.push(String(op.operationId));
+    }
+  }
+  const symbols = [...new Set(operations)].sort();
+  const title = doc.info?.title ?? name ?? id;
+  return {
+    id,
+    kind: 'spec',
+    path: relPath,
+    // A spec is reachable at its own route (`/docs/api-adapty`), it just is not
+    // a sidebar doc entry — so `sidebars` is empty while `orphan` is false, and
+    // that is precisely what makes the partition demand a zone for it.
+    sidebars: [],
+    orphan: false,
+    draft: false,
+    title,
+    description: doc.info?.description?.split('\n')[0].trim() || null,
+    slug: null,
+    headings: paths,
+    symbols,
+    components: [],
+    links: [],
+    content_hash: contentHash(content),
+    shape_hash: shapeHash({ title, headings: paths, sidebars: [] }),
+    api_hash: apiHash(symbols),
+  };
 }

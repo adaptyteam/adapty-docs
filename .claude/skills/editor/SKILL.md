@@ -42,7 +42,7 @@ Use AskUserQuestion tool. Do not proceed until task is clear.
 ### Phase 2: Research Existing Patterns
 
 1. Read neighboring articles in the same sidebar section — match tone, depth, structure
-2. Check for existing content on this topic — avoid duplication. Use the context-mill skill's lookup mode (grep `.claude/context-mill/docs-map.jsonl` + `docs-enrichment.jsonl`) instead of grepping the docs tree
+2. Check for existing content on this topic — avoid duplication. Read the zone brief for the area (`context-mill` skill, lookup mode) rather than grepping the docs tree: its `Boundaries` section exists precisely to answer "does this already live somewhere else, and where", and its roster lists every article in the area with its role. A term search can only tell you which files mention a word; the brief tells you which one owns the topic
 3. Identify linking opportunities
 4. Note conventions: frontmatter format, component usage, heading levels
 5. Load references as needed

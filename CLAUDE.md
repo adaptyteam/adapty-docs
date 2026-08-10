@@ -35,9 +35,22 @@ customSlug: "override-url"  # Optional URL override
 
 **Do not add `keywords` to frontmatter unless the user explicitly asks.** Keywords feed doc search; adding speculative keywords pollutes search results. When writing or editing an article, leave `keywords` out entirely (or untouched if already present). Only populate it on explicit request, and keep it to a few terms.
 
-### Navigation and Article Discovery
+### Article Discovery
 
-The `src/data/sidebars/` folder stores JSON representations of the docs' structure and article hierarchy. The sidebar files reference articles by their filename-based `id`:
+**Do not `grep`, `find`, or `glob` the docs to find the right article — and do not read sidebar JSON to find it either.** Use the **context mill**: invoke the `context-mill` skill (lookup mode). The corpus is partitioned into 34 zones, each with a brief in `.claude/context-mill/zones/<zone>.md` that carries what no search can:
+
+- which article **owns** a topic, and where the boundary against a neighbouring zone falls;
+- **how tickets phrase things** versus how the docs phrase them, with the cause attached (`Ticket language`);
+- **what else moves** when this moves (`Ripple rules`), including the seven-platform families;
+- where **ground truth** for a claim lives (`Sources of truth`) — often an SDK repo or backend, not a doc.
+
+Run `npm run mill` then `npm run mill:status` first: the map is regenerated from disk and the drift report tells you which zones changed since anyone last reviewed them. `.claude/context-mill/docs-map.jsonl` is the searchable index (title, headings, code symbols, links, sidebars) for candidates a brief can't settle.
+
+The four published OpenAPI specs are part of the zoned corpus. **For the server-side and web APIs the spec is the maintained reference**, so an endpoint or field change means editing `src/api-reference/specs/*.yaml`, not a hand-written object article.
+
+### Navigation and Placement
+
+Sidebars answer a different question than discovery: **where an article sits**, and what its neighbours are. The `src/data/sidebars/` folder stores JSON representations of the docs' structure, referencing articles by their filename-based `id`:
 
 ```json
 {
@@ -47,8 +60,6 @@ The `src/data/sidebars/` folder stores JSON representations of the docs' structu
 }
 ```
 
-Do not `grep`, `find`, or `glob` the docs to find the right article. **Always use sidebar JSON files as the source of truth** for article discovery. They determine the content of the navigation sidebar when the reader is viewing a specific section of the docs.
-
 1. The `tutorial.json` sidebar is visible when the user views the Dashboard docs. It includes non-framework-specific articles that cover general subjects and the use of the Adapty Dashboard.
 2. Framework-specific sidebar files are visible when viewing SDK documentation for that specific framework. They named after the framework (`ios.json`, `android.json`, `react-native.json`, `flutter.json`, `unity.json`, `kmp.json`, `capacitor.json`).
 3. The `api.json` file contains the API documentation sidebar. The OpenAPI specs it references live in `src/api-reference/specs/`.
@@ -57,7 +68,8 @@ Do not `grep`, `find`, or `glob` the docs to find the right article. **Always us
 
 - To add an article to navigation, add its id to the appropriate sidebar JSON.
 - Do not rely on the file's name to determine its content. For SEO purposes, some filenames remain unchanged, even as their content changes over time.
-- Some legacy articles are explicitly excluded from the sidebar. Such articles are available via direct link but can't be discovered spontaneously.
+- **A folder is not a platform.** Subdirectories organise nothing but themselves — some `version-3.0/*` files are iOS-only. Cross-check the sidebars before reverting or deleting any file under `src/content/docs`.
+- Some legacy articles are explicitly excluded from the sidebar. Such articles are available via direct link but can't be discovered spontaneously — which is exactly why a link that resolves can still be a dead end, and why `npm run check-links` cannot catch it.
 
 ### Images
 
