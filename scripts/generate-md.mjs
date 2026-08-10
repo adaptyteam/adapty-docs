@@ -264,6 +264,13 @@ function cleanFrontmatter(content) {
     return content.replace(frontmatterRegex, `---\n${keptLines.join('\n')}\n---\n\n`);
 }
 
+// Mirrors the check in generate-platform-llms-full.mjs.
+function isDraft(content) {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) return false;
+    return /^draft:\s*true\s*$/m.test(match[1]);
+}
+
 async function processFiles(dir, reusableComponents, englishFiles) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
 
@@ -274,6 +281,11 @@ async function processFiles(dir, reusableComponents, englishFiles) {
             await processFiles(fullPath, reusableComponents, englishFiles);
         } else if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.mdx'))) {
             const rawContent = await fs.readFile(fullPath, 'utf-8');
+
+            // `draft: true` pages are skipped by the site router, so they must not
+            // get a .md export either — otherwise the content stays fetchable at
+            // /docs/<slug>.md even though the page itself 404s.
+            if (isDraft(rawContent)) continue;
 
             // Clean Frontmatter
             let content = cleanFrontmatter(rawContent);
@@ -319,6 +331,8 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
         if (!entry.isFile() || (!entry.name.endsWith('.md') && !entry.name.endsWith('.mdx'))) continue;
 
         const rawContent = await fs.readFile(path.join(localeDir, entry.name), 'utf-8');
+        if (isDraft(rawContent)) continue;
+
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
 
