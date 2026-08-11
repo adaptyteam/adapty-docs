@@ -1,26 +1,26 @@
 ---
 title: "Начальная интеграция со Stripe"
 description: "Интегрируйте Stripe с Adapty для бесперебойной обработки платежей по подпискам."
-metadataTitle: "Руководство по интеграции со Stripe | Документация Adapty"
-keywords: ['stripe', 'интеграция со stripe']
+metadataTitle: "Гайд по интеграции Stripe | Документация Adapty"
+keywords: ['stripe', 'stripe integration']
 rank: 50
 ---
 
-Adapty поддерживает web2app-флоу подписок, отслеживая веб-платежи и подписки, оформленные через [Stripe](https://stripe.com/).
+Adapty поддерживает web2app флоу подписок, отслеживая веб-платежи и подписки, совершённые через [Stripe](https://stripe.com/).
 
-Интеграция охватывает покупки, инициированные через веб (Stripe Checkout, hosted payment pages или кастомные веб-флоу), и синхронизирует их с доступом в мобильном приложении и аналитикой.
+Эта интеграция охватывает покупки, совершённые через веб (Stripe Checkout, хостинговые платёжные страницы, Payment Links или кастомные веб-флоу), и синхронизирует их с доступом в мобильном приложении и аналитикой.
 
-Она полезна в следующих сценариях:
+Она пригодится в следующих случаях:
 
-- Автоматическое предоставление доступа к платным функциям пользователям, которые оплатили на сайте, а затем установили приложение и вошли в аккаунт
-- Хранение всей аналитики подписок в едином дашборде Adapty (включая когорты, прогнозы и весь остальной аналитический инструментарий)
+- Автоматически предоставлять доступ к платным функциям пользователям, которые купили подписку на сайте, а потом установили приложение и вошли в свой аккаунт
+- Собирать всю аналитику по подпискам в едином дашборде Adapty (включая когорты, прогнозы и остальной инструментарий аналитики)
 
-Несмотря на то что веб-покупки становятся всё популярнее для приложений, Apple App Store разрешает использование альтернативных платёжных систем вместо встроенных покупок только для цифровых товаров и только в США. Убедитесь, что вы не продвигаете веб-подписки внутри приложения для других стран — иначе приложение может быть отклонено или заблокировано.
+Несмотря на то что веб-покупки становятся всё популярнее, Apple App Store разрешает систему, отличную от встроенных покупок для цифровых товаров, только в США. Не продвигайте веб-подписки внутри приложения для пользователей из других стран — иначе ваше приложение может быть отклонено или заблокировано.
 
 Ниже описаны шаги по настройке интеграции со Stripe.
 
 :::important
-Эта интеграция ориентирована на отслеживание и синхронизацию веб-покупок через Stripe. Если вам нужно направить пользователей из приложения на веб-страницу оплаты, см. [Веб-пейволы](web-paywall).
+Эта интеграция предназначена для отслеживания и синхронизации веб-покупок через Stripe. Если вам нужно перенаправлять пользователей из приложения на веб-чекаут, см. раздел [Веб-пейволы](web-paywall).
 :::
 
 ## 1\. Подключите Stripe к Adapty \{#1-connect-stripe-to-adapty\}
@@ -106,7 +106,8 @@ Adapty поддерживает web2app-флоу подписок, отслеж�
 
 4. Вставьте URL вебхука из Adapty в поле **Endpoint URL**. Выберите **Latest API version** в поле **Version** вебхука. Затем выберите следующие события:
 
-   - charge.refunded
+  - charge.refunded
+   - checkout.session.completed
    - customer.subscription.created
    - customer.subscription.deleted
    - customer.subscription.paused
@@ -213,34 +214,60 @@ ID продуктов в Stripe выглядят как `prod_...`, а ID цен
 
 После добавления всех необходимых продуктов следующий шаг — сообщить Stripe, какой пользователь совершает покупку, чтобы Adapty мог её зафиксировать.
 
-## 4\. Обогатите покупки на сайте идентификатором пользователя \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
+## 4\. Обогащение веб-покупок идентификатором пользователя \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
 
-Adapty полагается исключительно на вебхуки от Stripe для предоставления и обновления уровней доступа пользователей. Однако для корректной работы интеграции вам нужно передавать дополнительную информацию со своей стороны при работе со Stripe.
+Adapty использует вебхуки от Stripe как единственный источник информации для предоставления и обновления уровней доступа пользователей. Однако для корректной работы интеграции вам необходимо передавать дополнительные данные со своей стороны при работе со Stripe.
 
-Чтобы уровни доступа были согласованы на всех платформах (веб и мобайл), необходимо использовать единый идентификатор пользователя, который Adapty сможет распознать из вебхуков. Это может быть email пользователя, номер телефона или любой другой ID из вашей системы авторизации.
+Чтобы уровни доступа были согласованы на разных платформах (веб или мобильные), необходимо использовать единый идентификатор пользователя, по которому Adapty сможет опознать пользователя из вебхуков. Это может быть email, номер телефона или любой другой ID из вашей системы авторизации. В Adapty это значение называется `customer_user_id`.
 
-Определите, какой идентификатор вы хотите использовать для идентификации пользователей. Затем найдите в коде место, где инициируется платёж через Stripe, и добавьте этот идентификатор в объект `metadata` объекта [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) или [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) как `customer_user_id`:
+:::warning
+Обязательный ID пользователя
+
+Без него мы не сможем найти этого пользователя и предоставить ему уровень доступа на мобильном устройстве.
+:::
+
+Adapty считывает ID пользователя из **одного** источника — того, который выбран в **Profile creation behavior** в [App Settings → Stripe](https://app.adapty.io/settings/stripe). Это не цепочка резервных вариантов: если выбранный источник пуст для конкретной транзакции, покупка остаётся анонимной, даже если ID присутствует в другом месте данных Stripe. См. [Profile creation behavior](stripe#profile-creation-behavior) — там описаны все доступные источники.
+
+Выберите вариант, соответствующий тому, как вы создаёте покупки в Stripe.
+
+### Сессии оформления заказа и подписки, созданные через Stripe API \{#checkout-sessions-and-subscriptions-created-via-the-stripe-api\}
+
+Оставьте параметр **Profile creation behavior** в значении **Use customer_user_id from metadata (default)**. Затем найдите в своём коде место, где инициализируется платёж через Stripe, и добавьте этот идентификатор пользователя в объект `metadata` объекта [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) или [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) под ключом `customer_user_id`:
 
 ```json showLineNumbers title="Stripe Metadata contents"
 {'customer_user_id': "YOUR_USER_ID"}
 ```
 
-Это единственное дополнение в коде, которое вам нужно сделать. После этого Adapty будет разбирать все вебхуки от Stripe, извлекать `metadata` и корректно связывать подписки с вашими пользователями.
-
-:::warning
-Идентификатор пользователя обязателен
-
-В противном случае у нас нет возможности сопоставить пользователя и предоставить ему уровень доступа на мобильном устройстве.
-
-Если вы не передаёте `customer_user_id` в `metadata`, у вас будет возможность настроить Adapty так, чтобы он искал `customer_user_id` в других местах: в поле `email` объекта Customer в Stripe или в поле `client_reference_id` объекта Session в Stripe.
-
-Подробнее о настройке поведения при создании профиля читайте [ниже](stripe#profile-creation-behavior).
-:::
+Это единственное, что нужно добавить в ваш код. После этого Adapty будет обрабатывать все вебхуки от Stripe, извлекать `metadata` и правильно связывать подписки с вашими пользователями.
 
 :::note
-Объект Customer в Stripe также обязателен
+Также требуется создать покупателя в Stripe
 
-Если вы используете Checkout Sessions, [убедитесь, что создаёте Customer в Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation), установив `customer_creation` в значение `always`.
+Если вы используете Checkout Sessions, [убедитесь, что создаёте Stripe Customer](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation), установив `customer_creation` в значение `always`.
+:::
+
+### Payment Links (без кода) \{#payment-links-no-code\}
+
+Если вы продаёте через [Stripe Payment Links](https://docs.stripe.com/payment-links) и у вас нет бэкенда для установки `metadata`, передайте ID пользователя в параметре запроса `client_reference_id` в ссылке:
+
+```text title="Payment Link with a user ID"
+https://buy.stripe.com/your_link?client_reference_id=YOUR_USER_ID
+```
+
+Stripe сохраняет это значение в Checkout Session и передаёт его в Adapty в событии `checkout.session.completed`. Это работает как для подписок, так и для разовых покупок.
+
+:::warning
+Сначала переключите поведение создания профилей
+
+Adapty читает `client_reference_id` только если в [App Settings → Stripe](https://app.adapty.io/settings/stripe) для параметра **Profile creation behavior** выбрано значение **Use client_reference_id**. В противном случае покупка создаёт анонимный профиль.
+
+Настройка применяется ко всему приложению: как только вы переключитесь на `client_reference_id`, Adapty перестанет читать `customer_user_id` из метаданных для остальных ваших Stripe-флоу.
+:::
+
+:::important
+Убедитесь, что ваш вебхук отправляет `checkout.session.completed`
+
+Adapty автоматически включает это событие при создании webhook-эндпоинта для нового подключения Stripe, но уже существующие эндпоинты не обновляет. Если вы подключили Stripe до того, как была добавлена поддержка Payment Links, откройте [Developers → Webhooks](https://dashboard.stripe.com/webhooks) в Stripe, выберите эндпоинт Adapty, нажмите **Edit destination** и добавьте `checkout.session.completed` в список событий. Signing secret менять не нужно.
 :::
 
 ## 5\. Предоставьте доступ пользователям на мобильном устройстве \{#5-provide-access-to-users-on-the-mobile\}
@@ -261,11 +288,11 @@ Adapty полагается исключительно на вебхуки от 
 
 Adapty должна привязать покупку к [профилю пользователя](profiles-crm), чтобы он был доступен на мобильном устройстве — поэтому по умолчанию профили создаются при получении вебхуков от Stripe. Вы можете выбрать, что использовать в качестве идентификатора пользователя в Adapty:
 
-1. **По умолчанию и рекомендуется:** `customer_user_id`, переданный в metadata на [шаге 4 выше](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
-2. `email` из объекта Customer в Stripe (см. [документацию Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
-3. `client_reference_id` из объекта Session в Stripe (см. [документацию Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id))
+1. **По умолчанию и рекомендуется: используйте customer_user_id из метаданных** — `customer_user_id`, который вы указали в метаданных на [шаге 4 выше](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+2. **Используйте email из объекта Customer в Stripe** (см. [документацию Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
+3. **Используйте client_reference_id** из объекта Session в Stripe (см. [документацию Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id)) — этот вариант подходит для [Payment Links](stripe#payment-links-no-code)
 
-Вы можете настроить, какой идентификатор использовать, в [App Settings → Stripe](https://app.adapty.io/settings/stripe).
+Вы можете настроить, какой ID использовать, в [App Settings → Stripe](https://app.adapty.io/settings/stripe). Adapty использует только выбранный вами источник для каждой транзакции Stripe в приложении — резервный вариант с другими источниками не используется.
 
 :::warning
 **Примечание:** если конкретная транзакция из Stripe не содержит указанного идентификатора, профиль не будет создан вовсе. Транзакция останется анонимной до тех пор, пока её не подхватит какой-либо профиль (например, если вы воспользуетесь [S2S validate](api-adapty/operations/validateStripePurchase) и вручную сообщите нам об этой транзакции).
@@ -331,9 +358,11 @@ ID счетов (invoice) в Stripe могут совпадать в Test- и Li
 
 ### Разовые покупки через Stripe Checkout или Payment Links \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
 
-Adapty отслеживает разовые (не подписочные) покупки через Stripe Checkout (`mode=payment`) или Payment Links только в том случае, если Stripe генерирует счёт (invoice) для покупки. По умолчанию Stripe не создаёт счёт для разовых покупок через Checkout. В этом случае `payment_intent.succeeded` приходит без данных о счёте, чего недостаточно для записи транзакции в Adapty.
+Adapty фиксирует разовые покупки (не подписки), совершённые через Stripe Checkout (`mode=payment`) или Payment Links, на основе события `checkout.session.completed`. Убедитесь, что это событие включено на вашем вебхук-эндпойнте Adapty в Stripe — эндпойнты, созданные до того, как Adapty добавила поддержку Payment Links, его не содержат. Как проверить — см. [шаг 4](stripe#payment-links-no-code).
 
-Чтобы отслеживать разовые покупки через Checkout в Adapty, [включите создание счёта](https://docs.stripe.com/payments/checkout/receipts?payment-ui=stripe-hosted#paid-invoices-hosted) при создании сессии. Тогда Stripe сгенерирует счёт и отправит связанные события `invoice.created` и `invoice.updated`, которые Adapty обработает для записи транзакции.
+Adapty берёт продукт из первой позиции сессии, поэтому если сессия включает несколько продуктов, будет записан только первый.
+
+Возвраты средств за такие покупки пока не применяются: Stripe отправляет `charge.refunded`, но Adapty не отзывает доступ для разовой покупки, оформленной через Checkout или Payment Link. Возвраты по подпискам и разовым покупкам, выставленным через счёт Stripe, работают в обычном режиме.
 
 ## Получите больше от данных Stripe \{#get-more-from-your-stripe-data\}
 После интеграции со Stripe Adapty сразу готова предоставлять аналитику. Чтобы максимально использовать данные Stripe, вы можете настроить дополнительные интеграции Adapty для пересылки событий Stripe — и собрать всю аналитику подписок в едином дашборде Adapty.
@@ -359,8 +388,10 @@ Adapty отслеживает разовые (не подписочные) по�
 - [Posthog](posthog)
 
 ### Поддерживаемые события Stripe \{#supported-stripe-events\}
+
 Adapty поддерживает следующие события Stripe:
 - charge.refunded
+- checkout.session.completed
 - customer.subscription.created
 - customer.subscription.deleted
 - customer.subscription.paused
