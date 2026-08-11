@@ -26,7 +26,9 @@ All `list` commands also accept pagination flags:
 | Flag | Default | Description |
 |---|---|---|
 | `--page` | `1` | Page number |
-| `--page-size` | `20` | Items per page (max: 100) |
+| `--page-size` | `100` | Items per page (max: 1000) |
+
+Ads Manager pages are larger than in the rest of the CLI. Prefer one large page over a loop of small ones.
 
 All commands that change your account accept these flags:
 
@@ -43,12 +45,14 @@ Filters narrow the query itself, not the printed page. An unfiltered `keywords l
 
 | Filter | Accepted by |
 |---|---|
-| `--campaign-group` | All lists in this table |
-| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `product-pages`, `creatives` |
+| `--campaign-group` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`, `creatives`, `product-pages` |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `creatives`, `product-pages` |
 | `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
 | `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
 | `--status` | `campaigns`, `ad-groups`, `ads` (`ENABLED` or `PAUSED`), `keywords` (`ACTIVE` or `PAUSED`) |
-| `--search` | All lists except `product-pages` and `creatives`. Case-insensitive substring match on the name |
+| `--search` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`. Case-insensitive substring match on the name |
+
+`adapty asa apps list`, `orgs list`, `automations list`, and `automations runs` take no filters. They accept pagination flags only.
 
 `--campaign-group`, `--app`, `--campaign`, and `--ad-group` take the UUIDs printed by the matching `list` command, and each one is repeatable:
 
@@ -93,7 +97,14 @@ List the campaign groups (Apple Ads organizations) available to your company.
 adapty asa orgs list
 ```
 
-The ID returned here is the `--org` value for [`campaigns create`](#adapty-asa-campaigns-create).
+Each row carries two identifiers, and they are not interchangeable:
+
+| Field | Used as |
+|---|---|
+| `internal_id` | The UUID that `--org` takes on [`campaigns create`](#adapty-asa-campaigns-create), and that `--campaign-group` takes as a [list filter](#list-filters) |
+| `org_id` | Apple's numeric organization ID. Both flags reject it |
+
+`--org` exists only on `campaigns create`. No list command accepts it.
 
 Accepts [pagination flags](#global-flags).
 
@@ -104,6 +115,13 @@ List the apps promoted in Apple Ads.
 ```bash
 adapty asa apps list
 ```
+
+Each row carries two identifiers, and they are not interchangeable:
+
+| Field | Used as |
+|---|---|
+| `internal_id` | The UUID that `--app` takes as a [list filter](#list-filters) |
+| `adam_id` | Apple's numeric App Store ID, taken by `--adam-id` on [`campaigns create`](#adapty-asa-campaigns-create) and [`product-pages sync`](#adapty-asa-product-pages-sync) |
 
 Accepts [pagination flags](#global-flags).
 
@@ -468,7 +486,7 @@ adapty asa product-pages sync --adam-id 123456
 |---|---|
 | `--adam-id` | Limit the refresh to one app. Omit to cover every app |
 
-The refresh is queued rather than performed immediately. A successful response also means a sync is already running or there is nothing to sync.
+The refresh is queued rather than performed immediately, and the command confirms with `Sync queued.` If the same refresh is already in flight, it reports `Already running; nothing new was queued.` instead.
 
 ## Automations \{#automations\}
 
@@ -586,9 +604,23 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 | `--order-by-day` | No | Rank by a cohort metric at this renewal window. Must be one of the `--by-days` values |
 | `--order` | No | `asc` or `desc`. Default: `desc` |
 
-Accepts [pagination flags](#global-flags).
+Accepts [pagination flags](#global-flags). This command takes no [list filters](#list-filters) — narrow the report by entity level and period, then match the rows against the IDs from a scoped `list` command.
 
-`--metric` takes the metric names that Ads Manager tracks. See [Metrics](adapty-ads-manager-metrics) for the full list and how each one is calculated.
+Each row is one entity, aggregated on the server and sorted by `--order-by`. A top-N question is therefore a single call — set `--order-by` and `--page-size N` rather than paging through the results and adding them up:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+`--metric` takes the metric names that Ads Manager tracks, in dashboard nomenclature — for example `spend`, `taps`, or `gross_roas`. See [Metrics](adapty-ads-manager-metrics) for the full list and how each one is calculated. A name that does not exist fails with the valid names listed in the error.
+
+The length of the reporting period is capped by the coarsest `--group-by` value. To report on a longer period, coarsen the grouping rather than splitting the request into several calls:
+
+| Coarsest `--group-by` | Maximum period |
+|---|---|
+| `day`, or no period grouping | 90 days |
+| `week` | 180 days |
+| `month` and coarser | 365 days |
 
 There is no `ltv` metric. Lifetime value is a cohort metric read at a renewal window, so `--by-days` is how you ask for the day-7 or day-90 value:
 
@@ -615,7 +647,17 @@ adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2
 | `--metric` | No | Metric name, repeatable. Omit for every metric |
 | `--by-days` | No | Renewal window in days for cohort metrics, repeatable. Maximum 16 per call |
 
-On this command, `--metric` accepts cohort roots only — `revenue`, `roas`, and `arpu` — not their `gross_`, `proceeds_`, or `net_` variants. This command has no ordering flags and no pagination.
+This command returns the totals for the whole entity level plus a per-period series, so it answers "how much did I spend or earn overall" in one call. It has no ordering flags and no pagination.
+
+On this command, `--metric` accepts cohort roots only — `revenue`, `roas`, and `arpu` — not their `gross_`, `proceeds_`, or `net_` variants.
+
+The length of the reporting period is capped by `--period-unit`:
+
+| `--period-unit` | Maximum period |
+|---|---|
+| `day` | 90 days |
+| `week` | 180 days |
+| `month` and coarser | 365 days |
 
 ## Competitors \{#competitors\}
 
@@ -648,4 +690,6 @@ The first call for a set of apps can take tens of seconds while the data is prep
 | `429` | `cli_analytics_busy` | The analytics pool is busy. The wait is in the `Retry-After` header |
 | `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
 
-Metrics and the search terms list share one analytics pool per company, limited to two concurrent queries. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
+Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
+
+The CLI handles short waits for you. On a `429` that is not a cool-down, if `Retry-After` is 60 seconds or less, the command waits for that long and retries once, reporting the wait on standard error.
