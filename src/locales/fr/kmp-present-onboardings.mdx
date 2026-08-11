@@ -1,0 +1,137 @@
+---
+title: "Présenter les onboardings dans le SDK Kotlin Multiplatform"
+description: "Découvrez comment présenter efficacement les onboardings pour augmenter vos conversions."
+metadataTitle: "Présentation des onboardings | Documentation Adapty"
+---
+
+:::warning
+**Les onboardings sont dépréciés dans le SDK v4 et seront supprimés dans une prochaine version.** Ils ne reçoivent plus de correctifs ni d'améliorations. Utilisez les [flows](kmp-get-pb-paywalls) à la place : contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — offrant des animations plus fluides, un rendu natif cohérent, des temps de chargement plus rapides et aucune dépendance à l'environnement WebView. Consultez [Obtenir des flows & paywalls](kmp-get-pb-paywalls) et [Afficher des flows & paywalls](kmp-present-paywalls) pour commencer.
+:::
+
+Si vous avez personnalisé un onboarding via le builder, vous n'avez pas besoin de vous soucier de son rendu dans le code de votre application Kotlin Multiplatform pour l'afficher à l'utilisateur. Un tel onboarding contient à la fois ce qui doit être affiché et comment cela doit l'être.
+
+Avant de commencer, assurez-vous que :
+
+1. Vous avez installé le [SDK Adapty Kotlin Multiplatform](sdk-installation-kotlin-multiplatform) 3.16.1 ou une version ultérieure.
+2. Vous avez [créé un onboarding](create-onboarding).
+3. Vous avez ajouté l'onboarding à un [placement](placements).
+
+Le SDK Adapty Kotlin Multiplatform offre deux façons de présenter les onboardings :
+
+- **Avec Compose Multiplatform**
+- **Sans Compose Multiplatform**
+
+## Avec Compose Multiplatform \{#with-compose-multiplatform\}
+
+Pour afficher un onboarding, utilisez la méthode `view.present()` sur la `view` créée par la méthode `createOnboardingView`. Chaque `view` ne peut être utilisée qu'une seule fois. Si vous devez afficher l'onboarding à nouveau, appelez `createOnboardingView` une nouvelle fois pour créer une nouvelle instance de `view`.
+
+:::warning
+Réutiliser la même `view` sans la recréer peut entraîner une erreur.
+:::
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(onboarding = onboarding).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+### Configurer le style de présentation iOS \{#configure-ios-presentation-style\}
+
+Configurez la façon dont l'onboarding est présenté sur iOS en passant le paramètre `iosPresentationStyle` à la méthode `present()`. Le paramètre accepte les valeurs `AdaptyUIIOSPresentationStyle.FULLSCREEN` (par défaut) ou `AdaptyUIIOSPresentationStyle.PAGESHEET`.
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    val view = AdaptyUI.createOnboardingView(onboarding = onboarding).getOrNull()
+    view?.present(iosPresentationStyle = AdaptyUIIOSPresentationStyle.PAGESHEET)
+}
+```
+
+### Personnaliser l'ouverture des liens dans les onboardings \{#customize-how-links-open-in-onboardings\}
+
+Par défaut, les liens dans les onboardings s'ouvrent dans un navigateur intégré à l'application. Cela offre une expérience utilisateur fluide en affichant les pages web directement dans votre application, permettant aux utilisateurs de les consulter sans changer d'app.
+
+Si vous préférez ouvrir les liens dans un navigateur externe, vous pouvez personnaliser ce comportement en définissant le paramètre `externalUrlsPresentation` sur `AdaptyWebPresentation.EXTERNAL_BROWSER` :
+
+```kotlin showLineNumbers
+
+viewModelScope.launch {
+    AdaptyUI.createOnboardingView(
+        onboarding = onboarding,
+        externalUrlsPresentation = AdaptyWebPresentation.EXTERNAL_BROWSER // default – IN_APP_BROWSER
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+## Sans Compose Multiplatform \{#without-compose-multiplatform\}
+
+:::note
+`createNativeOnboardingView` fait partie du module principal `io.adapty:adapty-kmp`. Si votre projet n'utilise pas Compose Multiplatform, vous n'avez pas besoin de la dépendance `io.adapty:adapty-kmp-ui`.
+:::
+
+Pour intégrer un onboarding sans Compose Multiplatform, appelez `createNativeOnboardingView`. Cette méthode retourne un `AdaptyNativeOnboardingView` que vous ajoutez à votre layout :
+
+<Tabs>
+<TabItem value="android" label="Android">
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val nativeView = AdaptyUI.createNativeOnboardingView(
+    context = context,
+    viewModelStoreOwner = activity,
+    onboarding = onboarding,
+    observer = myOnboardingObserver,
+)
+
+// Embed in your Compose layout:
+AndroidView(
+    factory = { nativeView.view },
+    modifier = Modifier.fillMaxSize()
+)
+```
+</TabItem>
+<TabItem value="ios" label="iOS">
+Les méthodes par défaut de l'interface KMP devenant `@required` en Swift, vous ne pouvez pas implémenter `AdaptyUIOnboardingsEventsObserver` directement depuis Swift. Déclarez d'abord une classe de base ouverte dans `iosMain` :
+
+```kotlin showLineNumbers title="iosMain (Kotlin)"
+open class BaseOnboardingObserver : AdaptyUIOnboardingsEventsObserver
+```
+
+Puis sous-classez-la en Swift, en ne redéfinissant que ce dont vous avez besoin :
+
+```swift showLineNumbers title="Swift"
+class MyOnboardingObserver: BaseOnboardingObserver {
+    override func onboardingViewOnCloseAction(
+        view: AdaptyUIOnboardingView,
+        meta: AdaptyUIOnboardingMeta,
+        actionId: String
+    ) {
+        // remove nativeView from your view hierarchy
+    }
+}
+
+let nativeView = AdaptyUI.shared.createNativeOnboardingView(
+    onboarding: onboarding,
+    observer: MyOnboardingObserver()
+)
+// nativeView.viewController is a UIViewController.
+// Add it to your SwiftUI view or UIKit hierarchy.
+```
+</TabItem>
+</Tabs>
+
+### Supprimer la vue \{#dispose-the-view\}
+
+Appelez `dispose()` lors de la suppression de la vue de votre layout. Cela désenregistre le listener d'événements et libère les ressources internes.
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+nativeView.dispose()
+```

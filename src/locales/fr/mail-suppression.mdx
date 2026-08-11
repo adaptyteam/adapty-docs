@@ -1,0 +1,72 @@
+---
+title: "Désabonnement et suppression dans Adapty Mail"
+description: "Comment Adapty Mail cesse d'envoyer des e-mails aux utilisateurs — via le désabonnement, les bounces SES, les plaintes et le mécanisme de condition d'arrêt."
+metadataTitle: "Désabonnement et suppression | Adapty Mail | Documentation Adapty"
+keywords: ['adapty mail', 'suppression', 'bounce', 'plainte', 'condition d arrêt']
+---
+
+Adapty Mail cesse d'envoyer des e-mails à un utilisateur dans deux cas distincts :
+
+- **Suppression** : L'utilisateur est exclu de tous les envois futurs dans ce projet (désabonné, bounce, plainte, rejet ou limitation de débit).
+- **Condition d'arrêt** : La séquence en cours de l'utilisateur est annulée parce qu'il a converti. Il n'est pas supprimé et reste éligible aux autres campagnes.
+
+Ces deux mécanismes sont propres à chaque projet. Une suppression dans un projet Adapty n'affecte pas les autres.
+
+## Désabonnement \{#unsubscribe\}
+
+Chaque e-mail envoyé par Adapty Mail contient un lien de désabonnement dans le pied de page.
+
+1. L'utilisateur clique sur le lien. Adapty Mail ouvre une page de confirmation.
+2. L'utilisateur confirme. Le backend marque le profil avec `suppression_reason = 'unsubscribe'`, annule la séquence restante et exclut le profil des envois futurs dans le projet.
+
+Le token dans l'URL de désabonnement encode le `profile_id` et le `scheduled_email_id`, donc aucune connexion n'est requise.
+
+:::note
+Adapty Mail envoie également l'en-tête `List-Unsubscribe: <URL>, <mailto:>` accompagné de `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Gmail et Yahoo l'exigent pour les expéditeurs en masse (RFC 8058). Les clients qui prennent en charge cet en-tête proposent un bouton de désabonnement en un clic directement depuis la boîte de réception — sans page de confirmation.
+:::
+
+## Suppression automatique \{#automatic-suppression\}
+
+Adapty Mail écoute les événements de livraison AWS SES via SNS et supprime l'utilisateur immédiatement dans l'un des cas suivants :
+
+| Événement | Code de raison | Signification                                                                              |
+| --------- | -------------- | ------------------------------------------------------------------------------------------ |
+| Bounce    | `bounce`       | L'adresse e-mail est invalide, la boîte aux lettres est pleine ou le domaine n'existe pas. |
+| Plainte   | `complaint`    | L'utilisateur a marqué l'e-mail comme spam.                                                |
+| Rejet     | `reject`       | SES a rejeté le message avant l'envoi.                                                     |
+| Limitation | `throttle`    | Le débit d'envoi a dépassé les limites de sécurité du domaine.                             |
+
+Pour chaque événement, le résultat est le même : l'utilisateur est ajouté à la liste de suppression, la séquence restante est annulée et il est exclu des envois futurs dans le projet.
+
+:::important
+Adapty Mail ne fait **pas** la distinction entre les hard bounces et les soft bounces. Tout bounce — y compris les situations temporaires comme une boîte aux lettres pleine — supprime l'utilisateur immédiatement. Il n'y a pas de fenêtre de nouvelle tentative.
+:::
+
+## Condition d'arrêt \{#stop-condition\}
+
+Lorsqu'un utilisateur convertit en cours de séquence, Adapty Mail annule ses e-mails restants avec la raison `stop_condition`. La conversion signifie que l'état de son abonnement atteint **Subscribed**, ou que l'état de son achat unique atteint **Purchased**.
+
+La condition d'arrêt est différente de la suppression :
+
+- **Suppression** : Exclut l'utilisateur de tous les envois futurs dans le projet.
+- **Condition d'arrêt** : Annule uniquement la séquence en cours. L'utilisateur reste éligible aux autres campagnes — par exemple, un flow de renouvellement ou de reconquête ciblant les abonnés actifs.
+
+Les annulations par condition d'arrêt apparaissent aux côtés des suppressions dans les analyses de campagne.
+
+## Gérer la suppression \{#managing-suppression\}
+
+Adapty Mail ne dispose pas d'interface dans le tableau de bord pour consulter ou retirer les utilisateurs supprimés. Pour annuler la suppression d'un profil — par exemple, quelqu'un qui a accidentellement marqué un e-mail de test comme spam — contactez le support Adapty.
+
+## Ce qu'Adapty Mail gère pour la conformité \{#what-adapty-mail-handles-for-compliance\}
+
+Adapty Mail inclut :
+
+- **Lien de désabonnement** : Inclus dans le pied de page de chaque e-mail, traité immédiatement à la confirmation de l'utilisateur.
+- **En-têtes List-Unsubscribe** : Envoyés avec chaque e-mail pour un désabonnement en un clic depuis la boîte de réception (RFC 8058).
+- **Suppression automatique** : Déclenchée lors des événements SES de bounce, plainte, rejet et limitation de débit.
+
+Éléments dont vous êtes responsable :
+
+- **Adresse postale physique** : CAN-SPAM en exige une dans le pied de page de l'e-mail. Adapty Mail ne l'injecte pas — ajoutez-la dans la conception de votre campagne.
+- **Consentement explicite à l'opt-in** : Collectez-le avant de transmettre l'adresse e-mail d'un utilisateur à Adapty. Voir [Collecter les e-mails des utilisateurs](mail-collect-emails).
+- **Demandes d'effacement RGPD** : Adapty Mail n'expose pas de point de terminaison « supprimer mes données ». Contactez le support Adapty si un utilisateur invoque son droit à l'effacement.

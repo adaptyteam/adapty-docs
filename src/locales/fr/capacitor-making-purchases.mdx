@@ -1,0 +1,167 @@
+---
+title: "Make purchases in mobile app in Capacitor SDK"
+description: "Guide on handling in-app purchases and subscriptions using Adapty."
+metadataTitle: "Gestion des achats intégrés dans Adapty | Documentation Adapty"
+keywords: ['makePurchase', 'offer code']
+rank: 100
+displayed_sidebar: sdkcapacitor
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import OfferCodesInfo from '@site/src/locales/fr/reusable/OfferCodesInfo.mdx';
+
+Afficher des paywalls dans votre application mobile est une étape essentielle pour donner aux utilisateurs accès à des contenus ou services premium. Cependant, se contenter d'afficher ces paywalls suffit à gérer les achats uniquement si vous utilisez le [Paywall Builder](adapty-paywall-builder) pour personnaliser vos paywalls.
+
+Si vous n'utilisez pas le Paywall Builder, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et débloquer le contenu souhaité. Cette méthode sert de point d'entrée pour que les utilisateurs interagissent avec les paywalls et effectuent leurs transactions.
+
+Si votre paywall comporte une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'appliquera automatiquement au moment de l'achat.
+
+Assurez-vous d'avoir effectué la [configuration initiale](quickstart) sans sauter une seule étape. Sans cela, nous ne pouvons pas valider les achats.
+
+## Effectuer un achat \{#make-purchase\}
+
+:::note
+**Vous utilisez le [Paywall Builder](adapty-paywall-builder) ?** Les achats sont traités automatiquement — vous pouvez ignorer cette étape.
+
+**Vous cherchez un guide pas à pas ?** Consultez le [guide de démarrage rapide](capacitor-implement-paywalls-manually) pour des instructions d'implémentation complètes avec tout le contexte nécessaire.
+:::
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ product });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('User is now subscribed!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+Paramètres de la requête :
+
+| Paramètre   | Présence | Description                                                                                                                 |
+| :---------- | :------- |:----------------------------------------------------------------------------------------------------------------------------|
+| **product** | requis | Un objet [`AdaptyPaywallProduct`](https://capacitor.adapty.io/interfaces/adaptypaywallproduct) récupéré depuis le flow via `getPaywallProducts`. |
+
+Paramètres de la réponse :
+
+| Paramètre | Description                                                                                                                                                                                                                                                                                                                                         |
+|---------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **result** | Un objet [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) avec un champ `type` indiquant le résultat de l'achat (`'success'`, `'user_cancelled'` ou `'pending'`) et un champ `profile` contenant l'[`AdaptyProfile`](https://capacitor.adapty.io/interfaces/adaptyprofile) mis à jour en cas d'achat réussi. |
+
+## Changer d'abonnement lors d'un achat \{#change-subscription-when-making-a-purchase\}
+
+Lorsqu'un utilisateur opte pour un nouvel abonnement plutôt que de renouveler l'abonnement actuel, le comportement dépend du store :
+
+- Pour l'App Store, l'abonnement est mis à jour automatiquement au sein du groupe d'abonnements. Si un utilisateur achète un abonnement d'un groupe alors qu'il en a déjà un d'un autre groupe, les deux abonnements seront actifs en même temps.
+- Pour Google Play, l'abonnement n'est pas mis à jour automatiquement. Vous devez gérer le changement dans le code de votre application mobile comme décrit ci-dessous.
+
+Pour remplacer un abonnement par un autre sur Android, appelez la méthode `.makePurchase()` avec le paramètre supplémentaire suivant :
+
+```typescript showLineNumbers
+
+try {
+  const result = await adapty.makePurchase({ 
+    product,
+    params: {
+      android: {
+        subscriptionUpdateParams: {
+          oldSubVendorProductId: 'old_product_id',
+          prorationMode: 'charge_prorated_price'
+        },
+        isOfferPersonalized: true
+      }
+    }
+  });
+  
+  if (result.type === 'success') {
+    const isSubscribed = result.profile?.accessLevels?.['YOUR_ACCESS_LEVEL']?.isActive;
+    
+    if (isSubscribed) {
+      // Grant access to the paid features
+      console.log('Subscription updated successfully!');
+    }
+  } else if (result.type === 'user_cancelled') {
+    console.log('Purchase cancelled by user');
+  } else if (result.type === 'pending') {
+    console.log('Purchase is pending');
+  }
+} catch (error) {
+  console.error('Purchase failed:', error);
+}
+```
+
+Paramètre de requête supplémentaire :
+
+| Paramètre  | Présence | Description                                                  |
+| :--------- | :------- | :----------------------------------------------------------- |
+| **params** | optionnel | Un objet de type [`MakePurchaseParamsInput`](https://capacitor.adapty.io/types/makepurchaseparamsinput) contenant les paramètres d'achat spécifiques à chaque plateforme. |
+
+La structure `MakePurchaseParamsInput` comprend :
+
+```typescript
+{
+  android: {
+    subscriptionUpdateParams: {
+      oldSubVendorProductId: 'old_product_id',
+      prorationMode: 'charge_prorated_price'
+    },
+    isOfferPersonalized: true
+  }
+}
+```
+
+Vous pouvez en savoir plus sur les abonnements et les modes de remplacement dans la documentation Google Developer :
+
+- [À propos des modes de remplacement](https://developer.android.com/google/play/billing/subscriptions#replacement-modes)
+- [Recommandations de Google pour les modes de remplacement](https://developer.android.com/google/play/billing/subscriptions#replacement-recommendations)
+- Mode de remplacement [`CHARGE_PRORATED_PRICE`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#CHARGE_PRORATED_PRICE()). Remarque : cette méthode n'est disponible que pour les mises à niveau d'abonnement. Les rétrogradations ne sont pas prises en charge.
+- Mode de remplacement [`DEFERRED`](https://developer.android.com/reference/com/android/billingclient/api/BillingFlowParams.SubscriptionUpdateParams.ReplacementMode#DEFERRED()). Remarque : le changement d'abonnement effectif n'intervient qu'à la fin de la période de facturation de l'abonnement en cours.
+
+### Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
+
+Si les utilisateurs de votre application peuvent acheter des [plans prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, souscrire un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour les plans prépayés.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    android: {
+        pendingPrepaidPlansEnabled: true,
+    },
+  }
+});
+```
+
+## Utiliser des codes de réduction sur iOS \{#redeem-offer-codes-in-ios\}
+
+<OfferCodesInfo />
+
+Pour afficher la feuille de saisie de code de réduction dans votre application :
+
+```typescript showLineNumbers
+
+try {
+  await adapty.presentCodeRedemptionSheet();
+} catch (error) {
+  console.error('Failed to present code redemption sheet:', error);
+}
+```
+
+:::danger
+D'après nos observations, la feuille de saisie de code de réduction peut ne pas fonctionner de manière fiable dans certaines applications. Nous recommandons de rediriger l'utilisateur directement vers l'App Store.
+
+Pour ce faire, vous devez ouvrir une URL au format suivant :
+`https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
+:::

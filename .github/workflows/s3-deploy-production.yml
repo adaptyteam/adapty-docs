@@ -21,6 +21,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+          # Exclude src/assets (87% of checkout bytes; this job only reads
+          # `git log`). sparse-checkout without `filter` ⇒ fetch uses
+          # --filter=blob:none, so it cuts transferred bytes too.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
       - id: check
         run: |
           if [ "${{ github.event_name }}" = "workflow_run" ]; then
@@ -45,9 +52,27 @@ jobs:
       group: check-internal-links-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
+      # No fetch-depth: 0 here. The link checker only ever runs
+      # `git diff --name-only <base>` (base tree vs working tree) and
+      # `git show <base>:<path>` — no merge-base, no log, no history walk — so
+      # two disconnected shallow commits are enough. Under the blobless fetch
+      # that sparse-checkout enables, fetch-depth: 0 costs ~182 MB of commits
+      # and trees for all 623 branches; one commit costs ~0.7 MB.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Exclude src/assets (87% of checkout bytes; unused by this job).
+          # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
+      # Fetch only the tag being diffed against, at depth 1. `git diff <tag>`
+      # compares that tag's trees to the working tree, so no connecting
+      # history is required.
+      - name: Fetch diff base
+        run: |
+          git fetch --filter=blob:none --depth=1 origin \
+            '+refs/tags/last-production-deploy:refs/tags/last-production-deploy'
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -68,9 +93,21 @@ jobs:
       group: check-localized-links-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
     steps:
+      # See check-internal-links above: only tree-level diffs against the tag
+      # are needed, so a depth-1 checkout plus a depth-1 tag fetch replaces the
+      # ~182 MB blobless full-history fetch.
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          # Exclude src/assets (87% of checkout bytes; unused by this job).
+          # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
+      - name: Fetch diff base
+        run: |
+          git fetch --filter=blob:none --depth=1 origin \
+            '+refs/tags/last-production-deploy:refs/tags/last-production-deploy'
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -86,6 +123,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Exclude src/assets (87% of checkout bytes). lint-mdx.mjs walks all
+          # of src/ but only yields .mdx, so the missing dir is simply not
+          # listed. sparse-checkout without `filter` ⇒ fetch uses blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -100,6 +145,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Exclude src/assets (87% of checkout bytes). check-mdx-parse.mjs
+          # scans src/content/docs, src/locales, src/components/reusable only.
+          # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -163,7 +216,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es, ja, vi]
+        locale: [zh, tr, ru, es, ja, vi, fr]
     concurrency:
       group: build-locale-full-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -207,6 +260,20 @@ jobs:
           path: build/${{ matrix.locale }}/
           retention-days: 1
 
+      # Astro writes hashed assets to the shared build/_astro/ at the output
+      # root, NOT inside build/<locale>/. Uploading only the locale directory
+      # above therefore dropped every CSS chunk unique to this locale's build,
+      # so locale pages referenced /docs/_astro/*.css files that were never
+      # deployed (only build-en's _astro/ reached S3) and rendered unstyled —
+      # callouts lost their box, Tabs lost their tab strip. Asset filenames are
+      # content-hashed, so merging every locale's _astro/ with English's at
+      # deploy time is collision-free by construction.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.locale }}-assets
+          path: build/_astro/
+          retention-days: 1
+
   deploy-full:
     needs: [build-en, build-locale-full]
     runs-on: ubuntu-latest
@@ -220,7 +287,14 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
+      # Only needed for the `git tag` push at the end — the deployed bytes all
+      # come from artifacts, so skip src/assets (87% of checkout bytes).
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -257,6 +331,22 @@ jobs:
           name: build-vi
           path: build/vi/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-fr
+          path: build/fr/
+
+      # Merge every locale build's hashed assets into the shared _astro/
+      # alongside English's (which arrived with the build-en artifact above).
+      # Content-hashed filenames mean identical names carry identical bytes, so
+      # this cannot clobber English assets. Without this, locale pages 404 on
+      # the CSS chunks unique to their own build.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*-assets
+          merge-multiple: true
+          path: build/_astro/
+
       - name: Deploy
         uses: reggionick/s3-deploy@v4
         with:
@@ -282,7 +372,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es, ja, vi]
+        locale: [zh, tr, ru, es, ja, vi, fr]
     concurrency:
       group: build-locale-only-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -327,6 +417,14 @@ jobs:
           path: build/${{ matrix.locale }}/
           retention-days: 1
 
+      # See build-locale-full: Astro emits hashed assets to build/_astro/ at the
+      # output root, so the locale directory alone is not self-contained.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-tr-only-${{ matrix.locale }}-assets
+          path: build/_astro/
+          retention-days: 1
+
   deploy-translations:
     needs: build-locale-only
     runs-on: ubuntu-latest
@@ -340,7 +438,14 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
+      # Only needed for the `git tag` push at the end — the deployed bytes all
+      # come from artifacts, so skip src/assets (87% of checkout bytes).
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -372,8 +477,28 @@ jobs:
           name: build-tr-only-vi
           path: build/vi/
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-tr-only-fr
+          path: build/fr/
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-tr-only-*-assets
+          merge-multiple: true
+          path: build/_astro/
+
+      # Publish the locale builds' hashed CSS/JS chunks. Deliberately WITHOUT
+      # --delete: this job must never prune _astro/, because English's assets
+      # live in the same prefix and are not present in this build. Orphaned
+      # chunks accumulate here and are pruned by the next full deploy, which
+      # syncs the complete build/ with delete-removed.
+      - name: Deploy locale build assets to S3
+        run: |
+          aws s3 sync build/_astro/ s3://${{ secrets.S3_BUCKET }}/_astro/
+
       # Sync locale directories to S3 using AWS CLI —
-      # only overwrites zh/, tr/, ru/, es/, ja/, and vi/ prefixes, leaves English untouched.
+      # only overwrites zh/, tr/, ru/, es/, ja/, vi/, and fr/ prefixes, leaves English untouched.
       - name: Deploy translations to S3
         run: |
           aws s3 sync build/zh/ s3://${{ secrets.S3_BUCKET }}/zh/ --delete
@@ -382,12 +507,13 @@ jobs:
           aws s3 sync build/es/ s3://${{ secrets.S3_BUCKET }}/es/ --delete
           aws s3 sync build/ja/ s3://${{ secrets.S3_BUCKET }}/ja/ --delete
           aws s3 sync build/vi/ s3://${{ secrets.S3_BUCKET }}/vi/ --delete
+          aws s3 sync build/fr/ s3://${{ secrets.S3_BUCKET }}/fr/ --delete
 
       - name: Invalidate locale paths
         run: |
           aws cloudfront create-invalidation \
             --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} \
-            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*" "/ja/*" "/vi/*"
+            --paths "/zh/*" "/tr/*" "/ru/*" "/es/*" "/ja/*" "/vi/*" "/fr/*"
 
       - name: Update deployment tag
         run: |

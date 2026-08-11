@@ -1,0 +1,131 @@
+---
+title: "Comment fonctionnent les profils"
+description: "Comprenez comment Adapty crée, suit et associe les profils utilisateurs — notamment les profils anonymes, les utilisateurs identifiés et les relations parent/héritier."
+metadataTitle: "Comment fonctionnent les profils Adapty | Documentation Adapty"
+keywords: ['profil', 'customer_user_id', 'profil anonyme', 'profil parent', 'profil héritier', 'enregistrement de profil']
+---
+
+import Sharingaccesslevel from '@site/src/locales/fr/reusable/sharingaccesslevel.md';
+
+Chaque utilisateur de votre application dispose d'un profil Adapty qui suit ses achats, événements et état d'abonnement. Comprendre comment les profils sont créés et liés vous aide à éviter les bugs d'intégration, la fragmentation des données et à interpréter les informations dans la section [Profils](profiles-crm).
+
+## Création de profil \{#profile-creation\}
+
+Adapty crée automatiquement un profil la première fois qu'un utilisateur ouvre votre application.
+
+**Sans Customer User ID**, le profil est anonyme. Un nouveau profil anonyme est créé à chaque fois que :
+- Un utilisateur réinstalle l'application
+- Un utilisateur se déconnecte de votre application (lorsque votre application appelle `Adapty.logout()`)
+
+Les achats sont liés à l'installation de l'application, et non à une identité utilisateur persistante.
+
+**Avec un Customer User ID**, le profil persiste entre les réinstallations et sur plusieurs appareils. Utiliser un Customer User ID vous permet de :
+
+1. Suivre un utilisateur entre les réinstallations de l'application et sur plusieurs appareils.
+2. Retrouver des utilisateurs via leur Customer User ID dans la section [**Profiles**](profiles-crm).
+3. Utiliser le Customer User ID dans l'[API côté serveur](getting-started-with-server-side-api).
+4. Adapty envoie le Customer User ID à toutes les intégrations.
+
+Le comportement du profil avec un Customer User ID dépend du moment où vous le définissez :
+
+- **Lors de l'activation du SDK** : Adapty utilise le profil existant associé à ce Customer User ID (pour les utilisateurs de retour) ou crée un nouveau profil (pour les nouveaux utilisateurs).
+- **Après l'activation du SDK** : Adapty crée un profil anonyme lors de l'activation. Lorsque vous identifiez l'utilisateur par la suite, Adapty associe le Customer User ID au profil anonyme (pour les nouveaux utilisateurs) ou bascule vers le profil existant avec cet ID (pour les utilisateurs de retour).
+
+**Quelle approche utiliser :**
+
+- **Customer User ID disponible au lancement de l'application** (par exemple, stocké depuis une session précédente) — transmettez-le à `activate()` lors de l'initialisation du SDK.
+- **Les utilisateurs se connectent après le lancement de l'application** — appelez `identify()` après l'authentification. Adapty associe l'ID au profil actuel (si l'ID est nouveau) ou bascule vers le profil existant (si l'ID existe déjà).
+- **Les utilisateurs peuvent acheter avant de se connecter** — appelez `identify()` après la connexion. Si le Customer User ID existe déjà dans Adapty, récupérez le profil ensuite pour synchroniser le niveau d'accès actuel.
+
+Pour les détails d'implémentation, consultez le guide SDK [identification des utilisateurs](identifying-users).
+
+:::note
+Si un utilisateur de retour a précédemment utilisé votre application sans Customer User ID, ces profils anonymes ne sont pas automatiquement fusionnés lorsque vous commencez à identifier lors de l'activation du SDK. Pour conserver l'historique complet de ces utilisateurs, utilisez `identify()` après la connexion à la place.
+:::
+
+## Profils parent et héritier \{#parent-and-inheritor-profiles\}
+
+Lorsqu'un même abonnement côté store est associé à plusieurs profils Adapty, Adapty traite ces profils comme une chaîne : un profil **parent** et un ou plusieurs profils **héritiers** qui partagent l'accès issu du même achat.
+
+Cela se produit lorsque :
+
+- Le [partage d'accès payant entre comptes utilisateurs](sharing-paid-access-between-user-accounts) est activé et qu'un utilisateur se connecte sur un appareil où un profil différent avait précédemment effectué l'achat.
+- Un utilisateur réinstalle l'application sans `customer_user_id`, et le nouveau profil récupère l'achat de l'installation précédente.
+- Des utilisateurs identifiés différents restaurent des achats sur le même appareil.
+- Une application est transférée entre des Team IDs Apple et la nouvelle application récupère les achats effectués sous l'ancien Team ID.
+
+**Comment le parent est sélectionné.**
+
+Le parent est le **premier profil à enregistrer l'achat** — déterminé par l'ordre des reçus d'achat dans Adapty, et non par l'ordre de création des profils. Par exemple : vous installez l'application sans effectuer d'achat, puis vous réinstallez et achetez un abonnement. Le second profil devient le parent car c'est lui qui a effectué l'achat. Le premier profil devient l'héritier et obtient l'accès via le partage.
+
+**Comment les événements sont distribués :**
+
+- **Événements transactionnels** (achats, renouvellements, annulations, problèmes de facturation, délais de grâce, remboursements) : Apparaissent uniquement sur le profil **parent** qui a effectué l'achat. Tous les renouvellements et mises à jour d'abonnements continuent d'apparaître sur ce profil.
+- **Événements `access_level_updated`** : Apparaissent sur les profils **parent et héritier** à chaque changement d'état du niveau d'accès. Cela permet de maintenir tous les profils connectés informés de leur statut d'accès actuel.
+
+Le profil parent affiche l'historique complet des transactions. Les profils héritiers affichent uniquement leurs mises à jour de niveau d'accès et un lien vers le profil parent dans la section **Access level**.
+
+<Zoom>
+  <img src="/assets/shared/img/98d0dad-non-original_profile.webp"
+  style={{
+    border: '1px solid #727272',
+    width: '700px',
+    display: 'block',
+    margin: '0 auto'
+  }}
+/>
+</Zoom>
+
+**Suivi du même abonnement sur plusieurs profils.**
+
+Chaque profil héritier possède son propre `profile_id`, donc `profile_id` n'est pas stable au sein d'une chaîne. Pour identifier le même abonnement sur plusieurs profils — par exemple lors du rapprochement d'événements webhook ou de la correspondance entre profils du tableau de bord et un utilisateur sous-jacent — utilisez plutôt l'identifiant côté store.
+
+| Champ | Utilisation |
+| --- | --- |
+| `store_original_transaction_id` | Identifier une chaîne d'abonnement sur plusieurs profils. Unique par abonnement Apple. |
+| `profiles_sharing_access_level` (champ webhook) | Tous les profils actuellement autorisés par l'abonnement, lorsque le partage est activé. |
+| `profile_id` | **Non** adapté au suivi cross-profil — chaque héritier possède le sien. |
+
+## Transactions sans profil \{#transactions-without-profiles\}
+
+Certaines transactions dans Adapty ne sont rattachées à aucun profil — elles apparaissent dans les analyses et les exports mais pas dans la liste des Profils. Cela se produit pour les **notifications store serveur à serveur (S2S)** envoyées pour des utilisateurs dont les comptes ne se sont jamais connectés à votre application via le SDK Adapty. Les sources connues sont :
+
+- Notifications S2S de l'App Store (y compris les événements de remboursement)
+- Notifications S2S de Google Play
+- Événements webhook Stripe et Paddle
+
+Ces transactions :
+
+- **Apparaissent dans les graphiques analytiques** (elles sont comptabilisées dans les métriques globales)
+- **Apparaissent dans les exports** (S3, GCS, BigQuery) avec `profile_id` défini à `null`
+- **N'apparaissent pas dans la liste des Profils** — il n'y a aucun profil auquel les rattacher
+
+Si vous constatez plus d'événements dans les analyses ou les exports que vous n'en trouvez dans l'interface Profils, la différence correspond probablement à ces transactions sans profil. Pour les trouver dans un export, filtrez les lignes où `profile_id IS NULL`.
+
+## Partage de l'accès payant entre comptes utilisateurs \{#sharing-paid-access-between-user-accounts\}
+
+:::link
+Article principal : [Partage de l'accès payant entre comptes utilisateurs](sharing-paid-access-between-user-accounts)
+:::
+
+Pour définir votre politique de partage de niveau d'accès, sur la page des paramètres [**General**](general), sélectionnez une option de partage. Vous pouvez définir une politique distincte pour l'[environnement sandbox](test-purchases-in-sandbox).
+
+<Sharingaccesslevel />
+
+## Horodatages d'événements avec des dates futures (Apple/iOS) \{#event-timestamps-with-future-dates-appleios\}
+
+Ce comportement est spécifique à l'App Store d'Apple. Le système de notifications de Google Play n'envoie pas d'événements à l'avance.
+
+Les horodatages d'événements dans les profils et les intégrations peuvent afficher des dates futures car Apple envoie les événements de renouvellement à l'avance.
+
+- **Pourquoi cela se produit** : Apple fait cela pour s'assurer que les abonnements se renouvellent automatiquement avant leur expiration, évitant ainsi toute interruption de service pour les utilisateurs. Pour plus de détails, consultez le Forum des développeurs Apple : [Server Notifications for Subscriptions](https://developer.apple.com/forums/tags/app-store-server-notifications).
+- **Types d'événements concernés** : En général, cela s'applique aux renouvellements d'abonnements et aux conversions d'essai vers payant. Ces événements peuvent avoir des horodatages futurs car Apple en notifie les systèmes à l'avance.
+- **Autres types d'événements** : Les achats intégrés supplémentaires et les changements de plan d'abonnement sont enregistrés avec leurs horodatages réels car ces événements ne peuvent pas être prédits à l'avance.
+- **Impact sur les analyses et le flux d'événements** : Ces événements n'apparaîtront dans **Analytics** et dans le **Event Feed** qu'une fois leurs horodatages dépassés. Les événements avec des horodatages futurs ne sont affichés dans aucune de ces sections.
+- **Impact sur les intégrations** : Adapty envoie les événements aux intégrations dès leur réception. Si un événement a un horodatage futur, Adapty l'envoie à votre intégration avec l'horodatage futur inchangé.
+
+## Étapes suivantes \{#next-steps\}
+
+- Pour utiliser le tableau de bord Profils afin de trouver et gérer les utilisateurs, consultez [Profils](profiles-crm).
+- Pour configurer l'identification des utilisateurs dans votre application, consultez le guide SDK [identification des utilisateurs](identifying-users).
+- Pour configurer la politique de partage d'accès, consultez [Partage de l'accès payant entre comptes utilisateurs](sharing-paid-access-between-user-accounts).

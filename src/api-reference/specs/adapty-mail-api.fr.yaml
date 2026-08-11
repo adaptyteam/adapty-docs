@@ -1,0 +1,364 @@
+openapi: 3.1.0
+info:
+  title: Adapty Mail API
+  version: 1.0.0
+  description: |
+    L'API Adapty Mail vous permet d'envoyer des profils utilisateurs et des événements de transaction à Adapty Mail directement
+    depuis votre serveur, sans faire transiter les données par le SDK Adapty.
+
+    Utilisez-la pour :
+
+    - Ajouter des abonnés lorsque vous n'avez pas encore de base dans Adapty Mail.
+    - Réutiliser la base d'abonnés de vos autres applications.
+    - Alimenter Adapty Mail en mode serveur à serveur, avec votre backend comme source de vérité.
+
+    Un profil avec une adresse e-mail suffit pour le flow **never purchased**. Tous les autres flows
+    (renewal cancelled, billing issue, expired, refunded) sont pilotés par l'historique des achats, donc ces
+    profils nécessitent également des événements de transaction pour être placés dans le bon flow.
+
+    Pour une procédure pas à pas, consultez [Envoyer des e-mails et des transactions via l'API Adapty Mail](/docs/mail-send-data-via-api).
+servers:
+  - url: https://api-mail.adapty.io
+    description: Serveur de production
+paths:
+  /api/v1/profile/save/:
+    post:
+      summary: Enregistrer un profil
+      description: |
+        Crée ou met à jour un profil dans Adapty Mail. Un profil contient l'adresse e-mail de l'utilisateur et des attributs
+        qu'Adapty Mail utilise pour identifier les destinataires et créer des [segments](/docs/mail-segments).
+
+        Identifiez chaque utilisateur par un `external_profile_id` stable. L'envoi du même `external_profile_id`
+        met à jour le profil existant plutôt que de créer un doublon.
+      operationId: saveProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDTO'
+            examples:
+              basic:
+                summary: Profil avec une adresse e-mail, prêt pour le flow "never purchased"
+                value:
+                  external_profile_id: "user_12345"
+                  external_created_at: "2026-06-01T10:30:00Z"
+                  email: "jane@example.com"
+                  country: "US"
+                  custom_attributes:
+                    plan: "trial"
+      responses:
+        '200':
+          description: Profil enregistré avec succès. Le corps de la réponse est un objet vide.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Validation échouée — un champ obligatoire est manquant ou invalide. `field_name` indique quel champ est concerné.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "email"
+        '403':
+          description: Clé API secrète manquante ou invalide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+  /api/v1/profile/transaction-event/save/:
+    post:
+      summary: Enregistrer un événement de transaction
+      description: |
+        Enregistre un événement de transaction de store pour un profil. Adapty Mail utilise les événements de transaction pour placer
+        les profils dans des flows basés sur les achats — le `event_type` correspond à des flows tels que renewal cancelled,
+        billing issue, expired et refunded — ainsi que pour l'attribution des revenus.
+
+        Envoyez ces événements au fur et à mesure que vous traitez les achats, les renouvellements et les annulations. Seul le
+        flow **never purchased** fonctionne sans eux.
+      operationId: saveTransactionEvent
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionEventDTO'
+            examples:
+              basic:
+                summary: Un nouvel achat d'abonnement mensuel
+                value:
+                  event_type: "subscription_started"
+                  event_id: "evt_abc123"
+                  event_datetime: "2026-06-10T14:20:05Z"
+                  external_profile_id: "user_12345"
+                  store: "app_store"
+                  store_product_id: "premium_monthly"
+                  store_transaction_id: "1000000123456789"
+                  store_original_transaction_id: "1000000123456789"
+                  purchased_at: "2026-06-10T14:20:00Z"
+                  originally_purchased_at: "2026-06-10T14:20:00Z"
+                  price_usd: "9.99"
+                  expires_at: "2026-07-10T14:20:00Z"
+      responses:
+        '200':
+          description: Événement de transaction enregistré avec succès. Le corps de la réponse est un objet vide.
+          content:
+            application/json:
+              schema:
+                type: object
+              examples:
+                default:
+                  value: {}
+        '400':
+          description: Validation échouée — un champ obligatoire est manquant ou invalide. `field_name` indique quel champ est concerné.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Field required"
+                        error_code: "base_error"
+                        status_code: 400
+                        field_name: "event_type"
+        '403':
+          description: Clé API secrète manquante ou invalide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+components:
+  securitySchemes:
+    apikeyAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: |
+        Authentifiez chaque requête avec votre clé API secrète Adapty Mail, envoyée dans l'en-tête **Authorization**
+        avec la valeur `Bearer {your_secret_api_key}`, par exemple `Bearer secret_live_...`.
+
+        Retrouvez cette clé dans Adapty Mail sous **Settings**. La clé est spécifique au projet — elle identifie le
+        projet auquel appartiennent les données, de sorte que les endpoints de profil et de transaction n'ont pas besoin d'un identifiant de projet.
+  schemas:
+    ProfileDTO:
+      type: object
+      required:
+        - external_profile_id
+        - external_created_at
+        - email
+      properties:
+        external_profile_id:
+          type: string
+          description: |
+            Identifiant stable pour l'utilisateur, géré par votre application ou votre backend. Réutilisez la même valeur dans
+            les requêtes afin qu'Adapty Mail associe les e-mails, les clics et les achats à un seul profil. N'utilisez jamais un
+            identifiant anonyme ou propre à une installation.
+        external_created_at:
+          type: string
+          format: date-time
+          description: |
+            La date de création de l'utilisateur, au format ISO 8601 (par exemple, `"2026-06-01T10:30:00Z"`).
+            Vous pouvez utiliser cette date dans les segments.
+        email:
+          type: string
+          format: email
+          description: L'adresse e-mail de l'utilisateur. Adapty Mail envoie les campagnes à cette adresse.
+        first_name:
+          type: string
+          description: Le prénom de l'utilisateur.
+        last_name:
+          type: string
+          description: Le nom de famille de l'utilisateur.
+        gender:
+          type: string
+          description: Le genre de l'utilisateur.
+        birthday:
+          type: string
+          format: date
+          description: La date de naissance de l'utilisateur, au format ISO 8601 (par exemple, `"1990-05-21"`).
+        country:
+          type: string
+          description: Le pays de l'utilisateur sous forme de code ISO 3166-1 alpha-2 en majuscules à deux lettres (par exemple, `US`).
+        store_country:
+          type: string
+          description: La région du store de l'utilisateur sous forme de code ISO 3166-1 alpha-2 en majuscules à deux lettres (par exemple, `US`).
+        custom_attributes:
+          type: object
+          description: |
+            Paires clé-valeur arbitraires (valeurs de type chaîne ou nombre) à associer au profil. Utilisez-les pour
+            créer des [segments](/docs/mail-segments) — par exemple, `plan`, `signup_source` ou `trial_days`.
+        device_info:
+          $ref: '#/components/schemas/DeviceInfoDTO'
+    DeviceInfoDTO:
+      type: object
+      required:
+        - platform
+      properties:
+        platform:
+          type: string
+          description: La plateforme utilisée par l'utilisateur, par exemple `iOS` ou `Android`.
+        device:
+          type: string
+          description: Le modèle de l'appareil, par exemple `iPhone15,2`.
+        os:
+          type: string
+          description: La version du système d'exploitation, par exemple `17.5`.
+        locale:
+          type: string
+          description: La locale de l'utilisateur, par exemple `en-US`.
+        timezone:
+          type: string
+          description: Le fuseau horaire de l'utilisateur, par exemple `America/New_York`.
+        app_version:
+          type: string
+          description: La version de votre application utilisée par l'utilisateur, par exemple `3.1.0`.
+    TransactionEventDTO:
+      type: object
+      required:
+        - event_type
+        - event_id
+        - event_datetime
+        - external_profile_id
+        - store
+        - store_product_id
+        - store_transaction_id
+        - store_original_transaction_id
+        - purchased_at
+        - originally_purchased_at
+      properties:
+        event_type:
+          $ref: '#/components/schemas/TransactionEventType'
+        event_id:
+          type: string
+          description: Identifiant unique de cet événement, géré par votre système. Utilisez-le pour garantir l'idempotence des événements.
+        event_datetime:
+          type: string
+          format: date-time
+          description: Date et heure d'enregistrement de l'événement, au format ISO 8601.
+        external_profile_id:
+          type: string
+          description: Le même `external_profile_id` stable que vous envoyez lors de l'enregistrement du profil. Associe la transaction au bon profil.
+        store:
+          type: string
+          description: Le store dont provient la transaction, par exemple `app_store`, `play_store` ou `stripe`.
+        store_product_id:
+          type: string
+          description: Identifiant du produit acheté dans le store.
+        store_transaction_id:
+          type: string
+          description: Identifiant de cette transaction dans le store.
+        store_original_transaction_id:
+          type: string
+          description: Identifiant de la première transaction dans la chaîne d'abonnement. Pour le premier achat, il est égal à `store_transaction_id`.
+        purchased_at:
+          type: string
+          format: date-time
+          description: Date et heure à laquelle cette transaction a eu lieu, au format ISO 8601.
+        originally_purchased_at:
+          type: string
+          format: date-time
+          description: Date et heure du premier achat de l'abonnement, au format ISO 8601.
+        price_usd:
+          type: string
+          description: Le montant de la transaction en USD, sous forme de chaîne décimale (par exemple, `"9.99"`).
+        expires_at:
+          type: string
+          format: date-time
+          description: Date et heure d'expiration de l'abonnement, au format ISO 8601. À omettre pour les achats non liés à un abonnement.
+        offer:
+          $ref: '#/components/schemas/Offer'
+    TransactionEventType:
+      type: string
+      description: Le type d'événement de transaction. Les flows basés sur les achats sont déclenchés par ces valeurs.
+      enum:
+        - subscription_started
+        - subscription_renewed
+        - subscription_renewal_cancelled
+        - subscription_renewal_reactivated
+        - billing_issue_detected
+        - entered_grace_period
+        - subscription_refunded
+        - subscription_expired
+        - non_subscription_purchase
+        - non_subscription_purchase_refunded
+    Offer:
+      type: object
+      description: Détails d'une offre promotionnelle ou de lancement appliquée à la transaction.
+      required:
+        - category
+        - offer_type
+      properties:
+        category:
+          $ref: '#/components/schemas/OfferCategory'
+        offer_type:
+          $ref: '#/components/schemas/OfferType'
+        offer_id:
+          type: string
+          description: Identifiant de l'offre dans le store, le cas échéant.
+    OfferCategory:
+      type: string
+      enum:
+        - introductory
+        - promotional
+        - offer_code
+        - win_back
+    OfferType:
+      type: string
+      enum:
+        - free_trial
+        - pay_as_you_go
+        - pay_up_front
+    Errors:
+      type: object
+      description: Réponse d'erreur standard. Chaque échec renvoie un statut 4XX avec cette structure.
+      properties:
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              message:
+                type: string
+                description: Description lisible de l'erreur.
+              error_code:
+                type: string
+                description: Identifiant d'erreur lisible par une machine.
+              status_code:
+                type: integer
+                description: Code de statut HTTP pour cette erreur.
+              field_name:
+                type: string
+                description: Le champ de la requête à l'origine de l'erreur, ou `null` si l'erreur n'est pas liée à un champ spécifique.

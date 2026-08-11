@@ -7,32 +7,66 @@ displayed_sidebar: sdkkmp
 
 <SDKv4>
 
-## Bu neden önemli \{#why-this-is-important\}
+## Bu neden önemlidir \{#why-this-is-important\}
 
-Adapty bir flow için yerelleştirme seçerken ve özel bir paywall için remote config okurken locale kodları devreye girer.
+Locale kodları, Adapty'nin bir flow veya onboarding için yerelleştirme seçerken ve özel paywall'lar için remote config okurken devreye girer.
 
-Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty desteklediği her platformda tek bir dahili standarda dayanır. Bu standardı anlamak, kullanıcının hangi yerelleştirmeyi alacağını öngörmenize yardımcı olur.
+Locale kodları karmaşık bir yapıya sahiptir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty, desteklediği her platformda tek bir dahili standarda dayanır. Bu standardı anlamak, kullanıcının hangi yerelleştirmeyi alacağını öngörmenize yardımcı olur.
 
 ## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
 
 Adapty, yerel ayar kodları için hafif değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, tire ile ayrılmış küçük harf alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
-## Yerel kod eşleştirme \{#locale-code-matching\}
+## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, kullanıcının yerel ayarıyla eşleşen yerelleştirmeyi ararken şu adımları izler:
+SDK v4'te flow'lar ve onboarding'ler yerel ayar kodlarını farklı şekillerde eşleştirir: flow'lar cihazda SDK tarafından, onboarding'ler ise Adapty sunucusu tarafından yerelleştirilir.
 
-1. Yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgilerle (`-`) değiştirilir
-2. Adapty, tam olarak eşleşen yerel kod için yerelleştirmeyi arar
+### Flow'lar ve Paywall Builder Paywallları \{#flows-and-paywall-builder-paywalls\}
+
+Paywall Builder'da oluşturulmuş bir paywall, SDK v4'te flow olarak sunulur; dolayısıyla aşağıdaki kural her ikisi için de geçerlidir.
+
+Eşleşme tam olarak yapılır. SDK, ilettiğiniz kodu flow'un yerelleştirme kodlarıyla karakter karakter karşılaştırır: büyük/küçük harf dönüşümü yapmaz, alt çizgi (`_`) ile kısa çizgiyi (`-`) birbirinin yerine kullanmaz ve dil alt etiketine geri dönmez. `pt-br` yerelleştirmesine sahip bir flow için yalnızca `pt-br` eşleşir: `pt-BR`, `pt_BR` ve `pt-PT` hiçbiri eşleşmez.
+
+Kod hiçbir yerelleştirmeyle eşleşmediğinde, flow sessizce [varsayılan yerel ayarında](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) render edilir — SDK hata döndürmez ve uyarı kaydetmez.
+
+Kod eşleştiğinde, Adapty eşleşen yerelleştirmeyi varsayılan olanla birleştirir: eşleşen yerelleştirmenin tanımlamadığı string'ler ve asset'ler varsayılan yerelleştirmeden alınır.
+
+Yerel ayar kodunu atlamak, flow'un varsayılan yerelleştirmesini istemekle aynı şey değildir: SDK sabit olarak `en` kullanır. Varsayılan yerel ayarı `de` olan ve `en` yerelleştirmesi bulunan bir flow, `en` yerelleştirmesi varken `en` ile görüntülenir; yalnızca `en` yerelleştirmesi yoksa `de`'ye geri döner.
+
+:::warning
+Locale kodunu tam olarak kontrol panelinde yapılandırıldığı şekilde iletin — küçük harfli alt etiketler kısa çizgiyle ayrılmış olmalıdır. Platform locale tanımlayıcısını olduğu gibi geçirmeyin: Android'de `Locale.getDefault().toLanguageTag()` `pt-BR` döndürür; iOS'ta `NSLocale.currentLocale.localeIdentifier` `pt_BR` döndürür. Her ikisi de varsayılan yerelleştirmeye geri düşer. Değeri uygulamanızda iletmeden önce dönüştürün.
+:::
+
+### Onboardings
+
+Onboarding'ler sunucuda yerelleştirilir ve sunucu kuralları diğer biçimlere de tolerans gösterir. [`getOnboarding`](kmp-get-onboardings) fonksiyonuna bir `locale` değeri ilettiğinizde:
+
+1. Locale dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgi (`-`) ile değiştirilir
+2. Adapty, tam olarak eşleşen locale koduyla yerelleştirmeyi arar
 3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen yerelleştirmeyi arar
-4. Yine eşleşme bulunamazsa, Adapty varsayılan `en` yerelleştirmesini döndürür
+4. Yine eşleşme bulunamazsa, Adapty onboarding'in varsayılan locale'ine ait içeriği döndürür
 
-Bu sayede `'pt_BR'`, `pt-BR` ve `pt-br` hepsi aynı yerelleştirmeye karşılık gelir.
+Bu sayede `pt_BR`, `pt-BR` ve `pt-br` hepsi aynı onboarding yerelleştirmesine çözümlenir.
 
 ## Yerelleştirmeleri Uygulamak \{#implementing-localizations\}
 
-SDK v4'te bir flow çekerken locale kodu göndermenize gerek yok.
+SDK v4'te flow çekerken bir yerel ayar kodu göndermenize gerek yok — `getFlow`, flow'u tüm yerelleştirmeleriyle birlikte döndürür ve Adapty, flow görünümü oluşturulurken uygun olanı uygular.
 
-- **Flow Builder ve Paywall Builder paywallları**: Adapty, yerelleştirmeyi cihazdan ve builder'da yapılandırdığınız yerelleştirmelerden otomatik olarak çözümler. Flow'u `createFlowView` ile render edin — locale koduna gerek yok.
-- **Özel (remote config) paywalllar**: `getFlow`, yapılandırılmış her yerelleştirmeyi `flow.remoteConfigs` içinde döndürür. Her giriş, bir `locale` kodu ve `dataMap` içeren bir `AdaptyRemoteConfig`'tir. Kullanıcıyla eşleşen girişi kendi fallback mantığınızla seçin:
+- **Builder'da oluşturulan flow'lar**: SDK, cihaz yerel ayarını okumaz; bu nedenle uygulamanızda çözümleyip `createFlowView` fonksiyonunun `locale` parametresi olarak geçin. Bu parametre isteğe bağlıdır — belirtmezseniz flow `en` dilinde görüntülenir ya da flow'un `en` yerelleştirmesi yoksa [varsayılan yerel ayarında](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir.
+
+  ```kotlin showLineNumbers
+  import com.adapty.kmp.AdaptyUI
+
+  AdaptyUI.createFlowView(flow = flow, locale = "es")
+      .onSuccess { view ->
+          view.present()
+      }
+      .onError { error ->
+          // handle the error
+      }
+  ```
+
+`createNativeFlowView` ve `AdaptyUIFlowPlatformView` composable'ı aynı isteğe bağlı `locale` parametresini alır. `view.locale`, view'ın hangi yerelleştirmeyle oluşturulduğunu bildirir. Hem `locale` parametresi hem de `view.locale`, Kotlin Multiplatform SDK 4.0.1-beta.1 veya daha yenisini gerektirir.
+- **Özel (remote config) paywaller**: `getFlow`, yapılandırılmış tüm yerelleştirmeleri `flow.remoteConfigs` içinde döndürür. Her giriş, bir `locale` kodu ve bir `dataMap` içeren `AdaptyRemoteConfig` nesnesidir. Kullanıcıyla eşleşen girişi kendi yedek mantığınızla seçin:
 
 ```kotlin showLineNumbers
 
@@ -47,7 +81,7 @@ Adapty.getFlow("YOUR_PLACEMENT_ID")
     }
 ```
 
-Yukarıdaki locale kod eşleştirme kuralları, Adapty'nin her remote config üzerinde saklanan `locale` kodlarını nasıl normalleştirdiğini açıklar.
+Adapty, bu `locale` kodlarını [Adapty'de Locale kodu standardı](#locale-code-standard-at-adapty) bölümünde açıklanan formatta saklar. SDK, remote config'leri bir locale ile eşleştirmez; dolayısıyla hangi girişin uygulanacağına uygulamanız karar verir.
 
 </SDKv4>
 
@@ -65,12 +99,13 @@ Adapty, locale kodları için hafifçe değiştirilmiş bir [BCP 47 standardı](
 
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, istemci tarafı SDK'dan yerel ayar koduyla bir çağrı aldığında ve paywall için ilgili yerelleştirmeyi aramaya başladığında şu adımlar gerçekleşir:
+Adapty, istemci tarafı SDK'dan yerel ayar koduyla bir çağrı alıp paywall'ın ilgili yerelleştirmesini aramaya başladığında şu adımlar gerçekleşir:
 
-1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`), kısa çizgiyle (`-`) değiştirilir.
-2. Tam olarak eşleşen yerel ayar koduna sahip yerelleştirme aranır.
-3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve bu kodla eşleşen yerelleştirme aranır.
-4. Yine eşleşme bulunamazsa varsayılan `en` yerelleştirmesi döndürülür.
+1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Ardından tam olarak eşleşen yerel ayar koduna sahip yerelleştirme aranır
+3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır
+4. Yine eşleşme bulunamazsa, paywall'ın varsayılan yerel ayarına ait içerik döndürülür
+
 Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alacaktır.
 ## Lokalizasyonları uygulama: önerilen yöntem \{#implementing-localizations-recommended-way\}
 

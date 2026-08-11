@@ -1,25 +1,119 @@
 ---
-title: "Unity SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanma"
-description: "Adapty SDK ile Unity uygulamanızdaki paywalls'ı nasıl yerelleştireceğinizi öğrenin."
-metadataTitle: "Paywall'ları Yerelleştirme | Unity SDK | Adapty Dokümanları"
+title: "Unity SDK'da yerelleştirmeleri ve yerel ayar kodlarını kullanın"
+description: "Adapty SDK ile Unity uygulamanızdaki paywallları nasıl yerelleştireceğinizi öğrenin."
+metadataTitle: "Paywallları Yerelleştirme | Unity SDK | Adapty Dokümanları"
 ---
+
+<SDKv4>
 
 ## Bu neden önemli \{#why-this-is-important\}
 
-Yerel ayar kodlarının devreye girdiği birkaç senaryo vardır; örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'u almaya çalıştığınızda.
+Locale kodları, Adapty bir flow veya onboarding için yerelleştirme seçerken ve özel bir paywall için remote config okurken devreye girer.
 
-Yerel ayar kodları karmaşık olup platformdan platforma farklılık gösterebileceğinden, desteklediğimiz tüm platformlar için dahili bir standarda dayanıyoruz. Ancak bu kodlar karmaşık olduğundan, sunucumuza tam olarak ne gönderdiğinizi ve ardından ne olduğunu anlamanız son derece önemlidir; bu sayede her zaman beklediğiniz sonucu alırsınız.
+Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty, desteklediği her platformda tek bir iç standarda dayanır. Bu standardı anlamak, bir kullanıcının hangi yerelleştirmeyi alacağını tahmin etmenize yardımcı olur.
+
 ## Adapty'de yerel ayar kodu standardı \{#locale-code-standard-at-adapty\}
 
 Adapty, yerel ayar kodları için biraz değiştirilmiş bir [BCP 47 standardı](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgilerle ayrılmış küçük harf alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+## Locale kod eşleştirme \{#locale-code-matching\}
+
+SDK v4'te, flow'lar ve onboarding'ler locale kodlarını farklı şekilde eşleştirir: flow'lar cihazda SDK tarafından, onboarding'ler ise Adapty sunucusu tarafından yerelleştirilir.
+
+### Flow'lar ve Paywall Builder paywallları
+
+Paywall Builder'da oluşturulan bir paywall, SDK v4'te flow olarak sunulur; dolayısıyla aşağıdaki kural her ikisi için de geçerlidir.
+
+Eşleşme tam olarak yapılır. SDK, ilettiğiniz kodu flow'un yerelleştirme kodlarıyla karakter karakter karşılaştırır: büyük/küçük harf dönüşümü yapmaz, alt çizgileri (`_`) kısa çizgilerle (`-`) değiştirmez ve yalnızca dil alt etiketine geri dönmez. `pt-br` yerelleştirmesine sahip bir flow için yalnızca `pt-br` eşleşir: `pt-BR`, `pt_BR` ve `pt-PT` hiçbiri eşleşmez.
+
+Kod hiçbir yerelleştirmeyle eşleşmediğinde, flow [varsayılan locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)'unda sessizce gösterilir — SDK hata döndürmez ve uyarı loglamaz.
+
+Kod eşleştiğinde ise Adapty, eşleşen yerelleştirmeyi varsayılan olanla birleştirir: eşleşen yerelleştirmede tanımlanmayan string ve asset'ler varsayılan yerelleştirmeden alınır.
+
+Yerel ayar kodunu atlamak, flow'un varsayılan yerelleştirmesini istemekle aynı şey değildir: SDK sabit olarak `en` kullanır. Varsayılan yerel ayarı `de` olan bir flow, `en` yerelleştirmesi varsa `en` dilinde görüntülenir; yalnızca `en` yerelleştirmesi yoksa `de` diline geri döner.
+
+:::warning
+Yerel ayar kodunu tam olarak kontrol panelinde yapılandırıldığı şekilde geçirin — küçük harfli alt etiketler tire ile ayrılmış olarak. Sistem yerel ayar tanımlayıcısını olduğu gibi geçirmeyin: `CultureInfo.CurrentCulture.Name` ifadesi `pt-BR` döndürür ve bu varsayılan yerelleştirmeye geri döner. Değeri uygulamanızda dönüştürdükten sonra geçirin.
+:::
+
+### Onboarding'ler \{#onboardings\}
+
+Onboarding'ler sunucu tarafında yerelleştirilir ve sunucu kuralları diğer formatları da kabul eder. [`GetOnboarding`](unity-get-onboardings) fonksiyonuna bir `Locale` geçtiğinizde:
+
+1. Locale dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Adapty, tam olarak eşleşen locale koduyla yerelleştirmeyi arar
+3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi (`pt-br` için `pt`) alır ve eşleşen yerelleştirmeyi arar
+4. Yine eşleşme bulunamazsa, Adapty onboarding'in varsayılan locale'i için içeriği döndürür
+
+Bu sayede `pt_BR`, `pt-BR` ve `pt-br` hepsi aynı onboarding yerelleştirmesine çözümlenir.
+
+## Yerelleştirmeleri uygulama \{#implementing-localizations\}
+
+SDK v4'te flow çekerken bir locale kodu iletmezsiniz; flow'un görünümü oluşturulduğunda yerelleştirilir.
+
+- **Flow Builder ve Paywall Builder paywallları**: SDK cihaz dilini okumaz, bu yüzden bunu uygulamanızda çözümleyin ve [view oluştururken iletin](#choose-the-localization-of-a-flow). Dil kodu isteğe bağlıdır — belirtmezseniz flow `en` dilinde veya flow'un `en` yerelleştirmesi yoksa varsayılan dilinde görüntülenir.
+- **Özel (remote config) paywalllar**: `GetFlow`, yapılandırılmış tüm yerelleştirmeleri `flow.RemoteConfigs` içinde döndürür. Her giriş, bir `Locale` kodu ve değerlerin yer aldığı bir `Dictionary` içeren `AdaptyRemoteConfig` nesnesidir. Kullanıcıyla eşleşen girişi kendi geri dönüş mantığınızla seçin:
+
+```csharp showLineNumbers
+using System.Linq;
+using AdaptySDK;
+
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var config = flow.RemoteConfigs.FirstOrDefault(c => c.Locale == "en")
+        ?? flow.RemoteConfigs.FirstOrDefault();
+    // read your values from config?.Dictionary
+});
+```
+
+Adapty, `Locale` kodlarını [Adapty'deki Locale kodu standardı](#locale-code-standard-at-adapty) bölümünde açıklanan biçimde saklar. SDK, remote config'leri bir locale ile eşleştirmez; dolayısıyla hangi girişin uygulanacağına uygulamanız karar verir.
+
+### Bir flow'un yerelleştirmesini seçme \{#choose-the-localization-of-a-flow\}
+
+Bir flow veya paywall'ı belirli bir yerelleştirmeyle oluşturmak için, görünümü oluştururken `SetLocale` metoduna locale kodunu geçin:
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetLocale("pt-br");
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // view.Locale — the localization the view was built with
+});
+```
+
+`view.Locale` ile görünüm, gerçekte hangi yerelleştirmeyle oluşturulduğunu raporlar: eğer istediğiniz yerelleştirme mevcutsa o yerelleştirmeyi, aksi takdirde flow'un varsayılan yerelleştirmesini kullanır.
+
+</SDKv4>
+
+<SDKv3>
+
+## Bu Neden Önemli \{#why-this-is-important\}
+
+Locale kodlarının devreye girdiği birkaç senaryo vardır — örneğin, uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı çekmeye çalışırken.
+
+Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebileceğinden, desteklediğimiz tüm platformlar için dahili bir standarda güveniyoruz. Ancak bu kodlar karmaşık olduğu için, doğru yerelleştirmeyi almak adına sunucumuza tam olarak ne gönderdiğinizi ve bundan sonra ne olduğunu anlamanız son derece önemlidir; böylece her zaman beklediğinizi alırsınız.
+
+## Adapty'de locale kodu standardı \{#locale-code-standard-at-adapty\}
+
+Locale kodları için Adapty, hafifçe değiştirilmiş [BCP 47 standardını](https://en.wikipedia.org/wiki/IETF_language_tag) kullanır: her kod, kısa çizgilerle ayrılmış küçük harfli alt etiketlerden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
+
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, istemci tarafı SDK'dan yerel ayar koduyla birlikte bir çağrı aldığında ve paywall'ın ilgili yerelleştirmesini aramaya başladığında şunlar gerçekleşir:
+Adapty, istemci tarafı SDK'dan yerel ayar koduyla birlikte bir çağrı aldığında, paywall'a ait karşılıklı bir yerelleştirme aramaya başlar ve şu adımlar gerçekleşir:
 
 1. Gelen yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
 2. Ardından tam olarak eşleşen yerel ayar koduna sahip yerelleştirme aranır
 3. Eşleşme bulunamazsa, ilk kısa çizgiden önceki alt dize alınır (`pt-br` için `pt`) ve eşleşen yerelleştirme aranır
-4. Yine eşleşme bulunamazsa, varsayılan `en` yerelleştirmesi döndürülür
+4. Yine eşleşme bulunamazsa, paywall'un varsayılan yerel ayarındaki içerik döndürülür
+
 Bu sayede `'pt_BR'` gönderen bir iOS cihazı, `pt-BR` gönderen bir Android cihazı ve `pt-br` gönderen başka bir cihaz aynı sonucu alır.
 ## Yerelleştirmeleri uygulama: önerilen yol \{#implementing-localizations-recommended-way\}
 
@@ -124,4 +218,5 @@ public class PaywallManager : MonoBehaviour
 Bu yaklaşımı birkaç nedenden dolayı önermediğimizi belirtmek gerekir:
 1. iOS'ta tercih edilen diller ile mevcut yerel ayar (locale) aynı şey değildir. Yerelleştirmenin doğru seçilmesini istiyorsanız, ya yerelleştirilmiş string dosyalarıyla önerilen yaklaşımı kullandığınızda kutudan çıktığı gibi çalışan Apple'ın mantığına güvenmeniz ya da bunu kendiniz yeniden oluşturmanız gerekir.
 2. Adapty'nin sunucusunun tam olarak ne alacağını tahmin etmek güçtür. Örneğin iOS'ta, bir cihazda `ar_OM@numbers='latn'` gibi bir yerel ayar elde edip sunucumuza gönderebilirsiniz. Bu durumda aradığınız `ar-om` yerelleştirmesini değil, büyük ihtimalle beklemediğiniz `ar` yerelleştirmesini alırsınız.
-Bu yaklaşımı kullanmaya karar verirseniz, ilgili tüm kullanım senaryolarını kapsadığınızdan emin olun.
+Bu yaklaşımı kullanmaya karar verseniz bile — tüm ilgili kullanım durumlarını kapsadığınızdan emin olun.
+</SDKv3>

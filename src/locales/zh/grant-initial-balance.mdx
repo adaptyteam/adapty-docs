@@ -1,0 +1,77 @@
+---
+title: "授予初始余额"
+description: "通过服务端 API 为新用户设置虚拟货币初始余额，并在推出新货币时为现有用户补录数据。"
+metadataTitle: "授予初始余额 | Adapty 文档"
+---
+
+:::link
+主要文章：[虚拟货币](virtual-currencies)
+:::
+
+每个用户画像在所有货币中的初始余额均为 0，而[关联产品](create-virtual-currency#link-products)仅在发生购买或续订时才会发放积分。因此，从未购买过任何内容的用户将不会自动获得积分。
+
+您仍然可以为新用户设置初始余额：欢迎奖励、免费试用配额或生命值。在识别用户身份后，通过[服务器端 API](getting-started-with-server-side-api) 从您的后端进行发放。
+
+## 为新用户授予余额 \{#grant-the-balance-for-a-new-user\}
+
+1. **首先确认用户身份**：余额归属于特定用户画像，且不可转移至其他用户画像，因此请在用户画像拥有 customer user ID 之后再授予积分。你可以通过 SDK 在应用内识别用户（参见[识别用户](ios-quickstart-identify)），也可以通过服务端 API 从后端进行识别。
+
+向匿名用户画像授予积分是最常见的错误。匿名用户画像与单次应用安装绑定，用户重新安装应用或在其他设备上打开时，积分会丢失。完整说明请参阅[余额、用户画像与设备](virtual-currency-balance#balances-profiles-and-devices)。
+
+2. **授予积分**：调用 [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction)，传入正数 `amount`。以下示例授予 500 个代币：
+
+```bash title="Grant an initial balance"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "items": [{"currency_code": "TOKENS", "amount": 500}],
+           "metadata": {"reason": "initial_balance"}
+         }'
+   ```
+
+   响应返回新余额：
+
+```json title="Response"
+    {
+      "transaction_id": "3a9f8e21-5d4c-4b7a-9e01-8c6d2f4b1a37",
+      "balances": [
+        { "code": "TOKENS", "name": "Tokens", "balance": 500, "held": 0, "available": 500 }
+      ]
+    }
+    ```
+
+    以这种方式授予的积分永不过期，与关联订阅的按周期积分不同。
+
+    `metadata` 字段为可选项。添加类似 `reason: initial_balance` 的标签，可以让该授予操作在[交易历史](api-adapty/operations/listVirtualCurrencyTransactions)中易于识别，也便于在自定义报告中与购买积分区分开来。
+
+3. **在数据库中记录发放情况**：存储该用户已获得初始余额的事实，防止重复登录或重试任务导致二次发放。下一节将说明为何必须保留此记录。
+
+## 精确授予一次 \{#grant-it-exactly-once\}
+
+你自己的数据库才是判断用户是否已收到初始余额的真实来源。有两种看似可行的方案实际上都不够可靠：
+
+- **`Idempotency-Key` 只保护单次调用，而非单个用户**：用相同的 key 重试请求时，系统会返回原始结果而不会再次发放，因此单次调用可以在超时后安全重试。Adapty 会为每个用户画像记住每个 key，最长保留一小时。超过这个时间后，同一个 key 将再次触发发放，所以该请求头无法在数月后告知某个用户是否已获得过初始余额。请为每次新的发放生成一个新 key。
+- **事先读取余额无法说明任何问题**：余额为 0 可能意味着该用户从未被发放过虚拟货币，也可能意味着已发放但全部消耗完了。[查看虚拟货币余额](api-adapty/operations/listVirtualCurrencyBalances)无法区分这两种情况。
+
+因此，在调用 API 之前请先检查自己的记录，并在收到成功响应后写入记录。
+
+## 为现有用户补填余额 \{#backfill-existing-users\}
+
+创建虚拟货币后，所有现有用户画像的初始余额均为 0，且[产品关联仅对之后的购买生效](create-virtual-currency#link-products)。如需为现有用户设置初始余额，请从后端执行一次性批量补填操作。
+
+1. 在您自己的数据库中，收集需要授予权益的客户用户 ID。
+2. 对每个用户，按上文所示调用 [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction)。该接口不支持批量操作：每次请求仅针对一个用户画像，但单次请求最多可为该用户画像涵盖 20 种虚拟货币。
+3. 在执行过程中，持续保存上一节所述的每用户记录，以便在任务中断后能够续跑，而不会重复授予。
+4. 请遵守每个应用每分钟 600 次请求的速率限制。超出限制的请求会返回 `rate_limited` 错误，因此需对任务进行限速，并对失败的用户进行重试。
+
+:::tip
+只回填您想要触达的用户，例如活跃用户或付费用户。通过 API 授予的积分永不过期，因此现在发放的余额将一直保留在用户画像中，直到用户消费为止。
+:::
+
+## 后续步骤 \{#next-steps\}
+
+- 消费余额并在运行时读取它：[虚拟货币快速入门](virtual-currency-quickstart)。
+- 查看用户持有量并审计每次变更：[虚拟货币余额](virtual-currency-balance)。

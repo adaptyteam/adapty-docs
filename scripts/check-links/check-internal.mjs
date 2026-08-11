@@ -106,18 +106,61 @@ function slugify(text) {
 
 const headingIdCache = new Map();
 
+/**
+ * Custom heading id, in both the plain and the escaped form.
+ *
+ * English source writes `## Title {#custom-id}`. Translated files keep the
+ * English id but MDX-escape the braces — `## 标题 \{#custom-id\}` (23,787
+ * headings across src/locales). The original `/\{#([^}]+)\}\s*$/` captured the
+ * trailing backslash, so every escaped id read as a different (and therefore
+ * missing) anchor — 2,342 false positives vs 148 real ones. That is why locale
+ * anchor checking was disabled; this pattern is what re-enables it.
+ */
+const CUSTOM_HEADING_ID_RE = /\\?\{#([^}\\]+)\\?\}\s*$/;
+
 function collectHeadingIds(content, ids) {
   const headingRe = /^#{1,6}\s+(.+)$/gm;
   let m;
   while ((m = headingRe.exec(content)) !== null) {
     const raw = m[1].trim();
-    const customMatch = raw.match(/\{#([^}]+)\}\s*$/);
+    const customMatch = raw.match(CUSTOM_HEADING_ID_RE);
     if (customMatch) {
       ids.add(customMatch[1]);
     } else {
       ids.add(slugify(raw));
     }
   }
+
+  // Explicit id="..." attributes (JSX/HTML in MDX) are real anchor targets too.
+  const idAttrRe = /\bid=["']([^"']+)["']/g;
+  while ((m = idAttrRe.exec(content)) !== null) ids.add(m[1]);
+}
+
+/**
+ * Heading ids for one document's content, as the site would render them.
+ *
+ * Resets the shared slugger first: github-slugger de-duplicates repeated
+ * headings by appending -1, -2, so state must not leak between files.
+ */
+export function headingIdsFromContent(content) {
+  const ids = new Set();
+  slugger.reset();
+  collectHeadingIds(content, ids);
+  return ids;
+}
+
+/**
+ * Directories to look for an imported reusable snippet in, most specific first.
+ * A localized file imports the same `@site/src/components/reusable/X.md` path as
+ * its English source, but the headings it actually renders come from the
+ * locale's own translated copy under `src/locales/<code>/reusable/`.
+ */
+function reusableSearchDirs(filePath) {
+  const dirs = [];
+  const localeMatch = filePath.match(/^(.*[/\\]src[/\\]locales[/\\][^/\\]+)[/\\]/);
+  if (localeMatch) dirs.push(path.join(localeMatch[1], 'reusable'));
+  dirs.push('src/components/reusable');
+  return dirs;
 }
 
 async function getHeadingIds(filePath) {
@@ -130,12 +173,15 @@ async function getHeadingIds(filePath) {
 
     // Also collect headings from imported reusable components
     const reusableImports = extractReusableImports(content);
+    const searchDirs = reusableSearchDirs(filePath);
     for (const fileName of reusableImports) {
-      try {
-        const reusablePath = path.join('src/components/reusable', fileName);
-        const reusableContent = await readFile(reusablePath, 'utf-8');
-        collectHeadingIds(reusableContent, ids);
-      } catch { /* reusable file not found — skip */ }
+      for (const dir of searchDirs) {
+        try {
+          const reusableContent = await readFile(path.join(dir, fileName), 'utf-8');
+          collectHeadingIds(reusableContent, ids);
+          break; // first hit wins (locale copy over the English original)
+        } catch { /* not in this dir — try the next */ }
+      }
     }
   } catch { /* ignore */ }
   headingIdCache.set(filePath, ids);
@@ -182,7 +228,7 @@ export { buildDocIndex };
  * Check an internal doc link. Resolves slug to file, checks anchors,
  * falls back to live site for redirects.
  */
-export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors = false }) {
+export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs, skipAnchors = false, sourcePath = null }) {
   // Self-referential absolute URLs (https://adapty.io/docs/<...>) are internal
   // links written the long way — reduce them to the internal path so they
   // resolve against the repo index. On a miss, the live fallback then hits the
@@ -191,7 +237,18 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs,
   if (internalPath !== null) url = internalPath;
 
   const [urlWithoutAnchor, anchor] = url.split('#');
-  if (!urlWithoutAnchor) return { ok: true, status: 'anchor-only' };
+
+  // Same-page anchor (`#heading`): the target is the source file's own heading
+  // set. Without `sourcePath` there's nothing to resolve against, so fall back
+  // to the old permissive behaviour rather than inventing a failure.
+  if (!urlWithoutAnchor) {
+    if (!anchor || skipAnchors || !sourcePath) return { ok: true, status: 'anchor-only' };
+    const headings = await getHeadingIds(sourcePath);
+    if (!headings.has(decodeURIComponent(anchor))) {
+      return { ok: true, anchorMissing: `#${anchor} not found on this page` };
+    }
+    return { ok: true, status: 'found' };
+  }
 
   if (MALFORMED_URL_RE.test(urlWithoutAnchor)) {
     const badPrefix = urlWithoutAnchor.match(/^([a-z])https?/i)[0];
@@ -254,7 +311,7 @@ export async function checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs,
 
   if (anchor && !skipAnchors) {
     const headings = await getHeadingIds(filePath);
-    if (!headings.has(anchor)) {
+    if (!headings.has(decodeURIComponent(anchor))) {
       return { ok: true, anchorMissing: `#${anchor} not found` };
     }
   }

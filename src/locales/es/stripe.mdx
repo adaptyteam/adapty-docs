@@ -1,26 +1,26 @@
 ---
 title: "Integración inicial con Stripe"
-description: "Integra Stripe con Adapty para procesar pagos de suscripciones sin problemas."
+description: "Integra Stripe con Adapty para procesar pagos de suscripciones sin fricciones."
 metadataTitle: "Guía de integración con Stripe | Documentación de Adapty"
 keywords: ['stripe', 'integración con stripe']
 rank: 50
 ---
 
-Adapty admite flujos de suscripción web2app mediante el seguimiento de pagos y suscripciones realizados a través de [Stripe](https://stripe.com/).
+Adapty admite flows de web2app rastreando los pagos y suscripciones realizados a través de [Stripe](https://stripe.com/).
 
-Esta integración cubre compras iniciadas desde la web (Stripe Checkout, páginas de pago alojadas o flujos web personalizados) y las sincroniza con el acceso a la app móvil y la analítica.
+Esta integración cubre las compras iniciadas desde la web (Stripe Checkout, páginas de pago alojadas, Payment Links o flujos web personalizados) y las sincroniza con el acceso en la app móvil y los análisis.
 
 Es útil en los siguientes escenarios:
 
-- Proporcionar acceso automático a funciones de pago para usuarios que compraron en la web pero luego instalaron la app e iniciaron sesión en su cuenta
-- Tener toda la analítica de suscripciones en un único Adapty Dashboard (incluyendo cohortes, predicciones y el resto de herramientas de analítica)
+- Proporcionar automáticamente acceso a las funciones de pago a usuarios que compraron en la web pero que posteriormente instalaron la app e iniciaron sesión en su cuenta
+- Tener todos los análisis de suscripciones en un único Adapty Dashboard (incluidas cohortes, predicciones y el resto de nuestras herramientas de análisis)
 
-Aunque las compras web son cada vez más populares para las apps, el App Store de Apple permite un sistema diferente al de las compras in-app para productos digitales únicamente en EE. UU. Asegúrate de no promocionar tus suscripciones web dentro de tu app para otros países. De lo contrario, tu app podría ser rechazada o vetada.
+Aunque las compras web son cada vez más populares para las apps, Apple App Store permite un sistema diferente al de las compras in-app únicamente para bienes digitales y solo en EE. UU. Asegúrate de no promocionar tus suscripciones web dentro de tu app para otros países. De lo contrario, tu app podría ser rechazada o eliminada.
 
-Los pasos a continuación describen cómo configurar la integración con Stripe.
+Los pasos a continuación explican cómo configurar la integración con Stripe.
 
 :::important
-Esta integración se centra en el seguimiento y sincronización de compras web de Stripe. Si necesitas enviar usuarios desde la app a un checkout web, consulta [Web paywalls](web-paywall).
+Esta integración se centra en el seguimiento y la sincronización de compras web realizadas con Stripe. Si necesitas enviar usuarios desde la app a un checkout web, consulta [Web paywalls](web-paywall).
 :::
 
 ## 1\. Conecta Stripe a Adapty \{#1-connect-stripe-to-adapty\}
@@ -106,7 +106,8 @@ En la parte inferior del pop-up de permisos, puedes seleccionar si instalar la a
 
 4. Pega la URL del webhook de Adapty en el campo **Endpoint URL**. Luego elige **Latest API version** en el campo **Version** del webhook. A continuación, selecciona los siguientes eventos:
 
-   - charge.refunded
+- charge.refunded
+   - checkout.session.completed
    - customer.subscription.created
    - customer.subscription.deleted
    - customer.subscription.paused
@@ -215,32 +216,58 @@ Una vez que hayas añadido todos los productos necesarios, el siguiente paso es 
 
 ## 4\. Enriquece las compras web con tu ID de usuario \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
 
-Adapty depende de los webhooks de Stripe para proporcionar y actualizar los niveles de acceso de los usuarios como única fuente de información. Pero debes proporcionar información adicional desde tu lado cuando trabajas con Stripe para que esta integración funcione correctamente.
+Adapty se basa en los webhooks de Stripe para proporcionar y actualizar los niveles de acceso de los usuarios como única fuente de información. Sin embargo, debes proporcionar información adicional desde tu lado cuando trabajes con Stripe para que esta integración funcione correctamente.
 
-Para que los niveles de acceso sean consistentes entre plataformas (web o móvil), debes asegurarte de que haya un único ID de usuario en el que confiar y que Adapty pueda reconocer a partir de los webhooks. Podría ser el correo electrónico del usuario, su número de teléfono o cualquier otro ID del sistema de autorización que estés utilizando.
+Para que los niveles de acceso sean coherentes entre plataformas (web o móvil), debes asegurarte de que haya un único ID de usuario en el que basarte, que Adapty pueda reconocer a través de los webhooks. Puede ser el correo electrónico del usuario, su número de teléfono o cualquier otro ID del sistema de autenticación que estés utilizando. Adapty denomina este valor `customer_user_id`.
 
-Determina qué ID deseas usar para identificar a tus usuarios. Luego, accede a la parte de tu código que inicializa el pago a través de Stripe y añade este ID de usuario al objeto `metadata` de [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) o del objeto [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) como `customer_user_id`, así:
+:::warning
+El ID de usuario es obligatorio
+
+Sin él, no tenemos forma de identificar a este usuario y otorgarle el nivel de acceso en el móvil.
+:::
+
+Adapty lee el ID de usuario desde **una** fuente — la seleccionada en **Profile creation behavior** en [App Settings → Stripe](https://app.adapty.io/settings/stripe). No es una cadena de respaldo: si la fuente seleccionada está vacía para una transacción concreta, la compra queda anónima aunque el ID esté presente en otro lugar de los datos de Stripe. Consulta [Profile creation behavior](stripe#profile-creation-behavior) para ver todas las fuentes disponibles.
+
+Elige la opción que coincida con cómo creas las compras en Stripe.
+
+### Sesiones de pago y suscripciones creadas a través de la API de Stripe \{#checkout-sessions-and-subscriptions-created-via-the-stripe-api\}
+
+Mantén **Profile creation behavior** configurado en **Use customer_user_id from metadata (default)**. Luego, accede a la parte de tu código que inicializa el pago a través de Stripe — y añade este ID de usuario al objeto `metadata` de [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata) (`sub_...`) o de [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata) (`ses_...`) como `customer_user_id`, así:
 
 ```json showLineNumbers title="Stripe Metadata contents"
 {'customer_user_id': "YOUR_USER_ID"}
 ```
 
-Esta sencilla adición es lo único que tienes que hacer en tu código. Después de eso, Adapty analizará todos los webhooks que reciba de Stripe, extraerá estos `metadata` y asociará correctamente las suscripciones con tus clientes.
-
-:::warning
-El ID de usuario es obligatorio
-
-De lo contrario, no tenemos forma de identificar a este usuario y proporcionarle el nivel de acceso en el móvil.
-
-Si no proporcionas `customer_user_id` en los `metadata`, tendrás la opción de hacer que Adapty busque `customer_user_id` en otros lugares: bien en el `email` del objeto Customer de Stripe, bien en el `client_reference_id` de la Session de Stripe.
-
-Obtén más información sobre cómo configurar el comportamiento de creación de perfiles [a continuación](stripe#profile-creation-behavior)
-:::
+Esta simple adición es lo único que tienes que hacer en tu código. Después de eso, Adapty procesará todos los webhooks que reciba de Stripe, extraerá este `metadata` y asociará correctamente las suscripciones con tus clientes.
 
 :::note
-El Customer de Stripe también es obligatorio
+También se requiere un cliente en Stripe
 
-Si estás usando Checkout Sessions, [asegúrate de crear un Customer de Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation) estableciendo `customer_creation` en `always`.
+Si utilizas Checkout Sessions, [asegúrate de crear un Stripe Customer](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation) configurando `customer_creation` en `always`.
+:::
+
+### Links de pago (sin código) \{#payment-links-no-code\}
+
+Si vendes mediante [Stripe Payment Links](https://docs.stripe.com/payment-links) y no tienes backend para establecer `metadata`, pasa el ID de usuario en el parámetro de consulta `client_reference_id` del enlace:
+
+```text title="Payment Link with a user ID"
+https://buy.stripe.com/your_link?client_reference_id=YOUR_USER_ID
+```
+
+Stripe almacena este valor en la Checkout Session y lo envía a Adapty en el evento `checkout.session.completed`. Funciona tanto para suscripciones como para compras únicas.
+
+:::warning
+Cambia primero el comportamiento de creación de perfiles
+
+Adapty solo lee `client_reference_id` si **Profile creation behavior** en [App Settings → Stripe](https://app.adapty.io/settings/stripe) está configurado como **Use client_reference_id**. De lo contrario, la compra crea un perfil anónimo.
+
+La configuración se aplica a toda la app: una vez que cambias a `client_reference_id`, Adapty deja de leer `customer_user_id` de los metadatos para el resto de tus flows de Stripe.
+:::
+
+:::important
+Asegúrate de que tu webhook envíe `checkout.session.completed`
+
+Adapty habilita este evento automáticamente cuando crea el endpoint de webhook para una nueva conexión de Stripe, pero nunca actualiza los endpoints que ya existen. Si conectaste Stripe antes de que se admitieran los Payment Links, abre [Developers → Webhooks](https://dashboard.stripe.com/webhooks) en Stripe, selecciona el endpoint de Adapty, haz clic en **Edit destination** y añade `checkout.session.completed` a los eventos. Mantén el signing secret tal como está.
 :::
 
 ## 5\. Proporciona acceso a los usuarios en el móvil \{#5-provide-access-to-users-on-the-mobile\}
@@ -261,11 +288,11 @@ Tus usuarios ya pueden completar compras en la web y acceder a las funciones de 
 
 Adapty debe vincular una compra a un [perfil de cliente](profiles-crm) para que esté disponible en el móvil; por eso, de forma predeterminada, crea perfiles al recibir webhooks de Stripe. Puedes elegir qué usar como ID de usuario del cliente en Adapty:
 
-1. **Predeterminado y recomendado:** el `customer_user_id` que proporcionaste en los metadatos en el [paso 4 anterior](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
-2. `email` en el objeto Customer de Stripe (consulta la [documentación de Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
-3. `client_reference_id` en el objeto Session de Stripe (consulta la [documentación de Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id))
+1. **Por defecto y recomendado: Usar customer_user_id de los metadatos** — el `customer_user_id` que proporcionaste en los metadatos en el [paso 4 anterior](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)
+2. **Usar el email del objeto Customer de Stripe** (ver [documentación de Stripe](https://docs.stripe.com/api/customers/object#customer_object-email))
+3. **Usar client_reference_id** del objeto Session de Stripe (ver [documentación de Stripe](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id)) — la opción a usar con [Payment Links](stripe#payment-links-no-code)
 
-Puedes configurar qué ID deseas usar en [App Settings → Stripe](https://app.adapty.io/settings/stripe).
+Puedes configurar qué ID quieres usar en [**App Settings** → **Stripe**](https://app.adapty.io/settings/stripe). Adapty utiliza únicamente el origen que selecciones aquí para cada transacción de Stripe en la app; no recurre a los demás orígenes como alternativa.
 
 :::warning
 **Nota:** si una transacción concreta de Stripe no contiene el ID especificado, no crearemos un perfil en absoluto. Esta transacción permanecerá anónima hasta que algún perfil la recoja (por ejemplo, si usas [S2S validate](api-adapty/operations/validateStripePurchase) después e informas manualmente sobre esta transacción).
@@ -329,11 +356,13 @@ Establece **Invoice numbering** en la pestaña [**Stripe settings** -> **Billing
 
 Incluso con la configuración anterior, si eliminas una factura, Stripe puede reutilizar ese ID para nuevas facturas del mismo cliente. Lo mejor es evitar eliminar facturas siempre que sea posible.
 
-### Compras únicas a través de Stripe Checkout o Payment Links \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
+### Compras únicas mediante Stripe Checkout o Payment Links \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
 
-Adapty realiza el seguimiento de compras únicas (no de suscripción) realizadas a través de Stripe Checkout (`mode=payment`) o Payment Links solo si Stripe genera una factura para la compra. De forma predeterminada, Stripe no crea una factura para compras únicas de Checkout. En este caso, `payment_intent.succeeded` llega sin datos de factura, lo cual no es suficiente para que Adapty registre la transacción.
+Adapty registra las compras únicas (que no son suscripciones) realizadas a través de Stripe Checkout (`mode=payment`) o Payment Links a partir del evento `checkout.session.completed`. Asegúrate de que este evento esté habilitado en tu endpoint de webhook de Adapty en Stripe — los endpoints creados antes de que Adapty añadiera compatibilidad con Payment Links no lo incluyen. Consulta el [paso 4](stripe#payment-links-no-code) para saber cómo comprobarlo.
 
-Para realizar el seguimiento de compras únicas de Checkout en Adapty, [activa la creación de facturas](https://docs.stripe.com/payments/checkout/receipts?payment-ui=stripe-hosted#paid-invoices-hosted) cuando crees la sesión. Stripe generará entonces una factura y emitirá los eventos `invoice.created` e `invoice.updated` relacionados, que Adapty procesa para registrar la transacción.
+Adapty toma el producto del primer elemento de línea de la sesión, por lo que una sesión que vende varios productos solo registra el primero.
+
+Los reembolsos para estas compras aún no se aplican: Stripe entrega `charge.refunded`, pero Adapty no revoca el acceso para una compra única realizada a través de Checkout o un Payment Link. Los reembolsos de suscripciones y de compras únicas facturadas a través de una factura de Stripe funcionan con normalidad.
 
 ## Aprovecha al máximo tus datos de Stripe \{#get-more-from-your-stripe-data\}
 Una vez que te integres con Stripe, Adapty está listo para proporcionar insights de inmediato. Para sacar el máximo partido a tus datos de Stripe, puedes configurar integraciones adicionales de Adapty para reenviar eventos de Stripe, reuniendo toda la analítica de suscripciones en un único Adapty Dashboard.
@@ -359,8 +388,10 @@ Integraciones que puedes usar para reenviar y analizar tus eventos de Stripe:
 - [Posthog](posthog)
 
 ### Eventos de Stripe compatibles \{#supported-stripe-events\}
+
 Adapty admite los siguientes eventos de Stripe:
 - charge.refunded
+- checkout.session.completed
 - customer.subscription.created
 - customer.subscription.deleted
 - customer.subscription.paused

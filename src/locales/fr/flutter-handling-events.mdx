@@ -1,0 +1,600 @@
+---
+title: "Flutter - Gérer les événements de flow et de paywall"
+description: "Découvrez comment gérer les événements liés aux abonnements dans Flutter avec Adapty pour suivre efficacement les interactions des utilisateurs."
+metadataTitle: "Gestion des événements dans Flutter | Documentation Adapty"
+keywords: ['event', 'flowViewDidAppear', 'flowViewDidDisappear', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'flowViewDidReceiveAnalyticEvent', 'paywallViewDidAppear', 'paywallViewDidDisappear', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/fr/reusable/PaywallAction.md';
+
+<SDKv4>
+
+:::important
+Ce guide couvre la gestion des événements pour les achats, les restaurations, la sélection de produits et le rendu. La fermeture de la vue et l'ouverture de liens sont gérées par l'implémentation par défaut de `flowViewDidPerformAction` — consultez notre [guide sur la gestion des actions de bouton](flutter-handle-paywall-actions) pour les remplacer ou gérer des actions de bouton personnalisées.
+:::
+
+Les flows et paywalls configurés avec le builder n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les appuis sur des boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le flow ou le paywall. Découvrez comment répondre à ces événements ci-dessous.
+
+Pour contrôler ou surveiller les processus qui se déroulent sur l'écran du flow ou du paywall dans votre application mobile, implémentez les méthodes `AdaptyUIFlowsEventsObserver` et définissez l'observateur avant d'afficher un écran :
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setFlowsEventsObserver(this);
+```
+
+Trois méthodes d'observateur sont **obligatoires** — votre classe ne compilera pas sans elles : `flowViewDidFinishPurchase`, `flowViewDidFinishRestore` et `flowViewDidReceiveError`. Toutes les autres méthodes sont optionnelles. Pour détacher un observateur précédemment défini, passez `null` à `setFlowsEventsObserver`.
+
+<SampleApp />
+
+Les exemples d'événements ci-dessous montrent les propriétés disponibles sur chaque objet, avec des valeurs illustratives dans les commentaires.
+
+### Événements générés par l'utilisateur \{#user-generated-events\}
+
+#### Vue apparue \{#view-appeared\}
+
+Cette méthode est invoquée lorsque la vue du flow ou du paywall est affichée à l'écran.
+
+:::note
+Sur iOS, également invoquée lorsqu'un utilisateur appuie sur le [bouton de paywall web](web-paywall#step-2a-add-a-web-purchase-button) dans un paywall, et qu'un paywall web s'ouvre dans un navigateur intégré.
+:::
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidAppear(AdaptyUIFlowView view) {
+}
+```
+
+#### Vue disparue \{#view-disappeared\}
+
+Cette méthode est invoquée lorsque la vue du flow ou du paywall est fermée depuis l'écran.
+
+:::note
+Sur iOS, également invoquée lorsqu'un [paywall web](web-paywall#step-2a-add-a-web-purchase-button) ouvert depuis un paywall dans un navigateur intégré disparaît de l'écran.
+:::
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+}
+```
+
+#### Sélection de produit \{#product-selection\}
+
+Si un produit est sélectionné pour l'achat (par un utilisateur ou par le système), cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void flowViewDidSelectProduct(AdaptyUIFlowView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
+}
+```
+</Details>
+
+#### Achat démarré \{#started-purchase\}
+
+Si un utilisateur lance le processus d'achat, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void flowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
+}
+```
+</Details>
+
+#### Achat terminé \{#finished-purchase\}
+
+Cette méthode est **obligatoire**. Elle est invoquée lorsqu'un achat réussit, que l'utilisateur annule son achat, ou que l'achat semble en attente :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishPurchase(AdaptyUIFlowView view, 
+                               AdaptyPaywallProduct product, 
+                               AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```dart
+void flowViewDidFinishPurchase(AdaptyUIFlowView view,
+                               AdaptyPaywallProduct product,
+                               AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
+  }
+}
+```
+</Details>
+
+:::info
+Contrairement à la v3, cette méthode n'a pas de comportement par défaut — la vue n'est plus fermée automatiquement après un achat réussi. Décidez vous-même de la suite : continuez le flow ou appelez `view.dismiss()`. Consultez [Répondre aux actions de bouton](flutter-handle-paywall-actions) pour plus de détails sur la fermeture d'un écran.
+:::
+
+#### Navigation de paiement web terminée \{#finished-web-payment-navigation\}
+
+Cette méthode est invoquée après une tentative d'ouverture d'un [paywall web](web-paywall) pour un produit spécifique. Cela inclut les tentatives de navigation réussies et échouées :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishWebPaymentNavigation(AdaptyUIFlowView view, 
+                                           AdaptyPaywallProduct? product, 
+                                           AdaptyError? error) {
+}
+```
+
+**Paramètres :**
+
+| Paramètre   | Description                                                                                                       |
+|:------------|:------------------------------------------------------------------------------------------------------------------|
+| **product** | Un `AdaptyPaywallProduct` pour lequel le paywall web a été ouvert. Peut être `null`.                              |
+| **error**   | Un objet `AdaptyError` si la navigation vers le paywall web a échoué ; `null` si la navigation a réussi.          |
+
+#### Achat échoué \{#failed-purchase\}
+
+Cette méthode est invoquée lorsqu'un achat échoue (par exemple, en raison de problèmes de paiement ou d'erreurs réseau). Elle ne se déclenche **pas** pour les annulations initiées par l'utilisateur ou les transactions en attente — celles-ci sont gérées par `flowViewDidFinishPurchase` :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailPurchase(AdaptyUIFlowView view, 
+                             AdaptyPaywallProduct product, 
+                             AdaptyError error) {
+}
+```
+
+#### Restauration démarrée \{#started-restore\}
+
+Si un utilisateur lance le processus de restauration, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidStartRestore(AdaptyUIFlowView view) {
+}
+```
+
+#### Restauration réussie \{#successful-restore\}
+
+Cette méthode est **obligatoire**. Si la restauration d'un achat réussit, elle sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran si l'utilisateur possède le `accessLevel` requis. Consultez le sujet [Statut d'abonnement](flutter-listen-subscription-changes) pour savoir comment le vérifier et le sujet [Répondre aux actions de bouton](flutter-handle-paywall-actions) pour savoir comment fermer un écran.
+
+#### Restauration échouée \{#failed-restore\}
+
+Si la restauration d'un achat échoue, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+
+### Récupération des données et rendu \{#data-fetching-and-rendering\}
+
+#### Erreurs de chargement des produits \{#product-loading-errors\}
+
+Si vous ne passez pas le tableau de produits lors de l'initialisation, AdaptyUI récupérera les objets nécessaires depuis le serveur par lui-même. Si cette opération échoue, AdaptyUI signalera l'erreur en invoquant cette méthode :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidFailLoadingProducts(AdaptyUIFlowView view, AdaptyError error) {
+}
+```
+
+#### Erreurs de vue \{#view-errors\}
+
+Cette méthode est **obligatoire**. Elle remplace la méthode `paywallViewDidFailRendering` de la v3 : les erreurs qui surviennent pendant le rendu de l'interface, ainsi que les autres erreurs de vue, sont signalées en l'appelant. Une fois que vous l'implémentez, la fermeture est de votre responsabilité — nous recommandons de fermer la vue en cas de telles erreurs, ce qui correspond également au comportement par défaut intégré du SDK lorsqu'aucun observateur n'est défini :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+  // log the error and dismiss the broken view
+  view.dismiss();
+}
+```
+
+Dans une situation normale, les erreurs de rendu ne devraient pas se produire, donc si vous en rencontrez une, veuillez nous le signaler.
+
+### Événements analytiques \{#analytics-events\}
+
+La méthode optionnelle `flowViewDidReceiveAnalyticEvent` est réservée aux événements analytiques personnalisés d'un flow. Les flows n'émettent pas encore ces événements vers votre code, vous n'avez donc pas besoin de l'implémenter.
+
+### Gérer les achats en mode observateur \{#handle-purchases-in-observer-mode\}
+
+Si vous avez activé le SDK en [mode observateur](implement-observer-mode-flutter) et présentez un flow ou un paywall rendu par Adapty, le SDK n'effectue pas les achats à votre place. Lorsqu'un utilisateur appuie sur le bouton d'achat ou de restauration, le SDK appelle votre `AdaptyUIObserverModeResolver` à la place. Consultez [Présenter des flows en mode observateur](flutter-present-flows-in-observer-mode) pour la configuration complète.
+
+### Gérer les requêtes système \{#handle-system-requests\}
+
+Le `AdaptyUISystemRequestsHandler` (enregistré via `AdaptyUI().setSystemRequestsHandler(...)`) est réservé aux requêtes système d'un flow : les invites de permission du système d'exploitation (comme les notifications push ou l'accès à la caméra) et les demandes d'avis App Store. Les flows ne déclenchent pas encore ces requêtes, vous n'avez donc pas besoin d'enregistrer un handler.
+
+Si vous en enregistrez un, notez que `handlePermission` est la méthode obligatoire de la classe — demandez la permission avec votre propre code, puis retournez `AdaptyUIPermissionResult.granted()` ou `AdaptyUIPermissionResult.denied()` ; `handleAppReviewRequest` est optionnel.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Ce guide couvre la gestion des événements pour les achats, les restaurations, la sélection de produits et le rendu des paywalls. Vous devez également implémenter la gestion des boutons (fermeture du paywall, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de bouton](flutter-handle-paywall-actions) pour plus de détails.
+:::
+
+Les paywalls configurés avec le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les appuis sur des boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le paywall. Découvrez comment répondre à ces événements ci-dessous.
+
+:::warning
+
+Ce guide est uniquement pour les **paywalls du nouveau Paywall Builder** qui nécessitent Adapty SDK v3.0 ou une version ultérieure.
+
+:::
+
+Pour contrôler ou surveiller les processus qui se déroulent sur l'écran du paywall dans votre application mobile, implémentez les méthodes `AdaptyUIPaywallsEventsObserver` et définissez l'observateur avant d'afficher un écran :
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setPaywallsEventsObserver(this);
+```
+
+<SampleApp />
+
+Les exemples d'événements ci-dessous montrent les propriétés disponibles sur chaque objet, avec des valeurs illustratives dans les commentaires.
+
+### Événements générés par l'utilisateur \{#user-generated-events\}
+
+#### Paywall apparu \{#paywall-appeared\}
+
+Cette méthode est invoquée lorsque la vue du paywall est affichée à l'écran.
+
+:::note
+Sur iOS, également invoquée lorsqu'un utilisateur appuie sur le [bouton de paywall web](web-paywall#step-2a-add-a-web-purchase-button) dans un paywall, et qu'un paywall web s'ouvre dans un navigateur intégré.
+:::
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidAppear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Paywall disparu \{#paywall-disappeared\}
+
+Cette méthode est invoquée lorsque la vue du paywall est fermée depuis l'écran.
+
+:::note
+Sur iOS, également invoquée lorsqu'un [paywall web](web-paywall#step-2a-add-a-web-purchase-button) ouvert depuis un paywall dans un navigateur intégré disparaît de l'écran.
+:::
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidDisappear(AdaptyUIPaywallView view) {
+}
+```
+
+#### Sélection de produit \{#product-selection\}
+
+Si un produit est sélectionné pour l'achat (par un utilisateur ou par le système), cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidSelectProduct(AdaptyUIPaywallView view, String productId) {
+  // productId is a String:
+  productId; // 'premium_monthly'
+}
+```
+</Details>
+
+#### Achat démarré \{#started-purchase\}
+
+Si un utilisateur lance le processus d'achat, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidStartPurchase(AdaptyUIPaywallView view, AdaptyPaywallProduct product) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId;        // 'premium_monthly'
+  product.localizedTitle;         // 'Premium Monthly'
+  product.localizedDescription;   // 'Premium subscription for 1 month'
+  product.price.amount;           // 9.99            (double)
+  product.price.currencyCode;     // 'USD'
+  product.price.localizedString;  // '$9.99'
+}
+```
+</Details>
+
+#### Achat terminé \{#finished-purchase\}
+
+Cette méthode est invoquée lorsqu'un achat réussit, que l'utilisateur annule son achat, ou que l'achat semble en attente :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view, 
+                                  AdaptyPaywallProduct product, 
+                                  AdaptyPurchaseResult purchaseResult) {
+    switch (purchaseResult) {
+      case AdaptyPurchaseResultSuccess(profile: final profile):
+        // successful purchase
+        break;
+      case AdaptyPurchaseResultPending():
+        // purchase is pending
+        break;
+      case AdaptyPurchaseResultUserCancelled():
+        // user cancelled the purchase
+        break;
+      default:
+        break;
+    }
+}
+```
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFinishPurchase(AdaptyUIPaywallView view,
+                                  AdaptyPaywallProduct product,
+                                  AdaptyPurchaseResult purchaseResult) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  switch (purchaseResult) {
+    case AdaptyPurchaseResultSuccess(profile: final profile):
+      // profile — AdaptyProfile:
+      profile.accessLevels['premium']?.isActive;  // true
+      profile.accessLevels['premium']?.expiresAt; // DateTime(2027, 2, 15, 10, 30)
+      break;
+    case AdaptyPurchaseResultPending():
+      // no additional data
+      break;
+    case AdaptyPurchaseResultUserCancelled():
+      // no additional data
+      break;
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran dans ce cas. Consultez [Répondre aux actions de bouton](flutter-handle-paywall-actions) pour plus de détails sur la fermeture d'un écran de paywall.
+
+#### Navigation de paiement web terminée \{#finished-web-payment-navigation\}
+
+Cette méthode est invoquée après une tentative d'ouverture d'un [paywall web](web-paywall) pour un produit spécifique. Cela inclut les tentatives de navigation réussies et échouées :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view, 
+                                               AdaptyPaywallProduct? product, 
+                                               AdaptyError? error) {
+}
+```
+
+**Paramètres :**
+
+| Paramètre   | Description                                                                                                       |
+|:------------|:------------------------------------------------------------------------------------------------------------------|
+| **product** | Un `AdaptyPaywallProduct` pour lequel le paywall web a été ouvert. Peut être `null`.                              |
+| **error**   | Un objet `AdaptyError` si la navigation vers le paywall web a échoué ; `null` si la navigation a réussi.          |
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFinishWebPaymentNavigation(AdaptyUIPaywallView view,
+                                               AdaptyPaywallProduct? product,
+                                               AdaptyError? error) {
+  // product — AdaptyPaywallProduct?:
+  product?.vendorProductId; // 'premium_monthly'
+
+  if (error == null) {
+    // navigation succeeded
+  } else {
+    // error — AdaptyError:
+    error.code;    // AdaptyErrorCode.networkFailed (2005)
+    error.message; // 'Network request failed'
+    error.detail;  // platform-specific underlying error, or null
+  }
+}
+```
+</Details>
+
+#### Achat échoué \{#failed-purchase\}
+
+Cette méthode est invoquée lorsqu'un achat échoue (par exemple, en raison de problèmes de paiement ou d'erreurs réseau). Elle ne se déclenche **pas** pour les annulations initiées par l'utilisateur ou les transactions en attente — celles-ci sont gérées par `paywallViewDidFinishPurchase` :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view, 
+                                AdaptyPaywallProduct product, 
+                                AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFailPurchase(AdaptyUIPaywallView view,
+                                AdaptyPaywallProduct product,
+                                AdaptyError error) {
+  // product — AdaptyPaywallProduct:
+  product.vendorProductId; // 'premium_monthly'
+
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productPurchaseFailed (1006)
+  error.message; // 'Product purchase failed.'
+  error.detail;  // platform-specific underlying error, or null
+}
+```
+</Details>
+
+#### Restauration démarrée \{#started-restore\}
+
+Si un utilisateur lance le processus de restauration, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidStartRestore(AdaptyUIPaywallView view) {
+}
+```
+
+#### Restauration réussie \{#successful-restore\}
+
+Si la restauration d'un achat réussit, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFinishRestore(AdaptyUIPaywallView view, AdaptyProfile profile) {
+  // profile — AdaptyProfile:
+  profile.accessLevels['premium']?.isActive;            // true
+  profile.accessLevels['premium']?.expiresAt;           // DateTime(2027, 2, 15, 10, 30)
+  profile.subscriptions['premium_monthly']?.isActive;   // true
+  profile.subscriptions['premium_monthly']?.expiresAt;  // DateTime(2027, 2, 15, 10, 30)
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran si l'utilisateur possède le `accessLevel` requis. Consultez le sujet [Statut d'abonnement](flutter-listen-subscription-changes) pour savoir comment le vérifier et le sujet [Répondre aux actions de bouton](flutter-handle-paywall-actions) pour savoir comment fermer un écran de paywall.
+
+#### Restauration échouée \{#failed-restore\}
+
+Si la restauration d'un achat échoue, cette méthode sera invoquée :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFailRestore(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.receiveRestoredTransactionsFailed (1011)
+  error.message; // 'Error occurred in the process of restoring purchases.'
+  error.detail;  // platform-specific underlying error, or null
+}
+```
+</Details>
+
+### Récupération des données et rendu \{#data-fetching-and-rendering\}
+
+#### Erreurs de chargement des produits \{#product-loading-errors\}
+
+Si vous ne passez pas le tableau de produits lors de l'initialisation, AdaptyUI récupérera les objets nécessaires depuis le serveur par lui-même. Si cette opération échoue, AdaptyUI signalera l'erreur en invoquant cette méthode :
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFailLoadingProducts(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.productRequestFailed (1002)
+  error.message; // 'Unable to fetch available In-App Purchase products at the moment.'
+  error.detail;  // platform-specific underlying error, or null
+}
+```
+</Details>
+
+#### Erreurs de rendu \{#rendering-errors\}
+
+Si une erreur survient pendant le rendu de l'interface, elle sera signalée en appelant cette méthode. Par défaut (depuis la v3.15.2), le paywall est automatiquement fermé lorsqu'une erreur de rendu se produit, mais vous pouvez modifier ce comportement si nécessaire.
+
+```dart showLineNumbers title="Flutter"
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // Default behavior: view.dismiss()
+  // Override with custom logic if needed, for example:
+  // - Log the error
+  // - Show an error message to the user
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```dart
+void paywallViewDidFailRendering(AdaptyUIPaywallView view, AdaptyError error) {
+  // error — AdaptyError:
+  error.code;    // AdaptyErrorCode.jsException (4105)
+  error.message; // 'An exception was thrown from JS during AdaptyUI flow execution.'
+  error.detail;  // platform-specific underlying error, or null
+
+  // Default behavior: view.dismiss()
+}
+```
+</Details>
+
+Dans une situation normale, de telles erreurs ne devraient pas se produire, donc si vous en rencontrez une, veuillez nous le signaler.
+
+</SDKv3>

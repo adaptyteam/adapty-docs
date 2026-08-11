@@ -1,0 +1,144 @@
+---
+title: "Configurer votre domaine d'envoi pour Adapty Mail"
+description: "Ajoutez des enregistrements DNS, vérifiez votre domaine et comprenez le warm-up pour qu'Adapty Mail puisse envoyer en votre nom."
+metadataTitle: "Configuration du domaine d'envoi | Adapty Mail | Documentation Adapty"
+keywords: ['adapty mail', 'domaine d''envoi', 'DNS', 'DKIM', 'SPF', 'DMARC', 'délivrabilité', 'warm-up']
+---
+
+Adapty Mail envoie vos campagnes depuis votre propre domaine — et non depuis une adresse partagée — ce qui vous permet de garder la maîtrise de votre réputation d'expéditeur. La configuration se fait une seule fois, et toutes vos campagnes utilisent le même domaine vérifié. Pour les étapes essentielles, consultez la section domaine dans [Débuter avec Adapty Mail](mail-get-started#2-set-up-your-sending-domain). Cet article couvre la configuration complète, le fonctionnement de la vérification et le comportement automatique de warm-up.
+
+## Prérequis \{#requirements\}
+
+- **Domaine apex** : renseignez votre domaine racine (par exemple `yourapp.com`), pas un sous-domaine. Les entrées comme `app.yourapp.com` sont rejetées lors de la validation.
+- **Enregistrements NS actifs** : le domaine doit être résolvable. Adapty Mail effectue une résolution DNS lors de la configuration et refuse les domaines sans enregistrements NS valides.
+- **Un domaine par projet Adapty** : un domaine ne peut pas être partagé entre plusieurs projets. Si le domaine est déjà enregistré dans un projet — qu'il vous appartienne ou non — la configuration échoue.
+
+## Configurer votre domaine d'envoi \{#set-up-your-sending-domain\}
+
+L'assistant de configuration comporte trois écrans : saisir le domaine, confirmer les sous-domaines générés, puis ajouter les enregistrements DNS. Tout se passe dans **Settings → Email Domains**.
+
+1. **Saisissez votre domaine.** Tapez votre domaine apex dans le champ **Domain** et cliquez sur **Preview**. Adapty Mail valide le format (ASCII, deux labels, sans tirets en début ou fin, TLD de 2 caractères minimum) et vérifie que le DNS est résolvable.
+
+   <ZoomImage id="mail-email-domains.webp" width="500px" />
+
+2. **Confirmez les sous-domaines.** Adapty Mail génère deux sous-domaines d'envoi avec des préfixes fixes — `mail.yourapp.com` et `email.yourapp.com` — chacun avec sa propre identité SES. Il crée également un sous-domaine Mail-From sous chacun d'eux (`hello.mail.yourapp.com` et `hello.email.yourapp.com`). Vérifiez-les puis cliquez sur **Confirm**.
+
+   <ZoomImage id="confirm-subdomains.webp" width="500px" />
+
+3. **Ajoutez les enregistrements DNS.** Le dernier écran liste tous les enregistrements à ajouter — 10 au total, 5 par sous-domaine d'envoi, plus un enregistrement DMARC optionnel sur le domaine racine. Utilisez **Download CSV** pour exporter la liste complète, ou copiez les enregistrements un par un dans votre bureau d'enregistrement. Cliquez sur **Done** une fois les enregistrements en place.
+
+   <ZoomImage id="email-domains.webp" width="500px" />
+
+<Details>
+<summary>Référence des enregistrements DNS</summary>
+
+Pour chaque sous-domaine d'envoi (`mail.yourapp.com` et `email.yourapp.com`), ajoutez :
+
+**DKIM — 3 enregistrements CNAME.** Signatures cryptographiques prouvant que l'e-mail n'a pas été altéré en transit.
+
+| Champ  | Format                              |
+| ------ | ----------------------------------- |
+| Type   | CNAME                               |
+| Nom    | `{token}._domainkey.{subdomain}`    |
+| Valeur | `{token}.dkim.amazonses.com`        |
+
+**Mail-From — 1 enregistrement MX.** Gère les bounces.
+
+| Champ    | Format                                                         |
+| -------- | -------------------------------------------------------------- |
+| Type     | MX                                                             |
+| Nom      | `hello.{subdomain}` (par exemple, `hello.mail.yourapp.com`)    |
+| Priorité | `10`                                                           |
+| Valeur   | `feedback-smtp.{region}.amazonses.com`                         |
+
+**SPF — 1 enregistrement TXT.** Autorise Adapty à envoyer en votre nom.
+
+| Champ  | Format                                 |
+| ------ | -------------------------------------- |
+| Type   | TXT                                    |
+| Nom    | `hello.{subdomain}`                    |
+| Valeur | `"v=spf1 include:amazonses.com ~all"`  |
+
+Sur votre domaine racine, ajoutez l'enregistrement DMARC optionnel :
+
+| Champ  | Format                |
+| ------ | --------------------- |
+| Type   | TXT                   |
+| Nom    | `_dmarc.{domain}`     |
+| Valeur | `v=DMARC1; p=reject`  |
+
+Les tokens, la région et toutes les autres valeurs sont fournis par AWS SES lors de la configuration. Copiez-les toujours depuis l'écran des enregistrements DNS dans Adapty Mail, et non depuis cette référence.
+
+</Details>
+
+## Fonctionnement de la vérification \{#how-verification-works\}
+
+Une fois les enregistrements DNS en place, Adapty Mail interroge le DNS automatiquement, et vous pouvez également déclencher des vérifications manuellement.
+
+- **Interrogation automatique** : elle démarre 5 minutes après votre soumission, puis l'intervalle double à chaque tour — 10 min, 20 min, 40 min — avant de plafonner à 60 min. Elle se poursuit jusqu'à ce que les enregistrements soient trouvés ou que la fenêtre de 7 jours se ferme.
+- **Vérification manuelle** : cliquez sur **Check Verification** pour forcer une vérification immédiate. Un délai de 60 secondes s'applique entre deux vérifications manuelles — si vous l'activez trop vite, le message *"Verification check is on cooldown."* s'affiche.
+- **États de statut** : le DKIM et le Mail-From de chaque sous-domaine sont suivis indépendamment avec les statuts **Pending**, **Success** ou **Failed**. Un domaine est considéré entièrement vérifié uniquement lorsque les quatre statuts affichent **Success**.
+- **Délai de 7 jours** : si la vérification ne se termine pas dans les 7 jours, l'identité est marquée **Failed**. Vos enregistrements DNS restent dans votre bureau d'enregistrement — saisissez à nouveau le domaine dans **Settings → Email Domains** pour démarrer une nouvelle fenêtre.
+- **Après la vérification** : si vous supprimez ou modifiez des enregistrements DNS par la suite, AWS SES finit par dégrader l'identité. Conservez les enregistrements en place aussi longtemps que vous souhaitez envoyer.
+- **Propagation DNS** : elle prend généralement quelques minutes, mais peut aller jusqu'à 48 heures dans de rares cas.
+
+## Warm-up du domaine \{#domain-warm-up\}
+
+Les nouveaux domaines n'ont aucune réputation auprès des fournisseurs de messagerie comme Gmail ou Yahoo, et des envois à volume élevé depuis un domaine tout neuf risquent d'atterrir dans les spams. Adapty Mail gère le warm-up automatiquement en augmentant progressivement votre limite d'envoi quotidienne sur 14 paliers. Aucune configuration n'est nécessaire.
+
+### Fonctionnement des paliers \{#how-tiers-work\}
+
+Votre domaine démarre au **Palier 1** (200 envois/jour) et avance automatiquement tant que les métriques de délivrabilité restent saines. Si les taux de bounce augmentent ou que les taux de plaintes grimpent, la progression est suspendue et peut reculer jusqu'à ce que la réputation se rétablisse.
+
+| Palier | Limite quotidienne |
+| ------ | ------------------ |
+| 1      | 200                |
+| 2      | 400                |
+| 3      | 800                |
+| 4      | 1 500              |
+| 5      | 2 500              |
+| 6      | 4 000              |
+| 7      | 6 000              |
+| 8      | 8 000              |
+| 9      | 10 000             |
+| 10     | 13 000             |
+| 11     | 16 000             |
+| 12     | 20 000             |
+| 13     | 25 000             |
+| 14     | 30 000             |
+
+Votre palier actuel et votre limite quotidienne sont affichés dans **Settings → Email Domains**.
+
+### Impact sur le lancement selon la taille de l'audience \{#impact-on-launch-by-audience-size\}
+
+| Taille de l'audience  | Effet au lancement                              |
+| --------------------- | ----------------------------------------------- |
+| Moins de 200 contacts | Toute l'audience est atteinte dès le premier jour |
+| 200 à 2 000 contacts  | La livraison s'étale sur plusieurs jours        |
+| Plus de 2 000 contacts | La livraison s'étale sur 1 à 2 semaines        |
+
+:::tip
+Lancez votre première campagne dès que la vérification DNS est terminée. Plus vous commencez à envoyer tôt, plus vite votre domaine progresse dans les paliers et atteint sa capacité quotidienne maximale.
+:::
+
+## Limitations \{#limitations\}
+
+- **Un domaine par projet** : vous ne pouvez avoir qu'un seul domaine d'envoi par projet Adapty. Pour passer à un autre domaine, contactez le support — le tableau de bord ne propose pas d'action « changer de domaine ».
+- **Unicité inter-projets** : un domaine déjà enregistré dans un autre projet ne peut pas être réutilisé. Si vous voyez *"Domain is already registered to another project"*, choisissez un domaine différent ou contactez le support.
+- **Les domaines vérifiés ne peuvent pas être supprimés** : une fois qu'un sous-domaine atteint le statut **Success**, le tableau de bord bloque la suppression. Les domaines en attente peuvent être supprimés, mais vous devrez tout de même retirer manuellement les enregistrements DNS de votre bureau d'enregistrement.
+- **Préfixes de sous-domaines fixes** : `mail.`, `email.`, et le préfixe Mail-From `hello.` sont codés en dur — ils ne peuvent pas être personnalisés. Si ces sous-domaines sont déjà utilisés dans votre DNS, la configuration entrera en conflit.
+- **Domaines apex uniquement** : les entrées de sous-domaines, les points finaux et les noms d'hôte à un seul label sont rejetés.
+- **Pas de domaines internationalisés** : Punycode et IDN ne sont pas pris en charge. Le domaine doit être en ASCII uniquement.
+
+## Dépannage \{#troubleshooting\}
+
+| Problème                                                                              | Solution                                                                                                                                          |
+| ------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "Enter a valid domain (e.g. example.com)"                                             | Vérifiez la saisie : domaine apex uniquement, ASCII uniquement, TLD de 2 caractères minimum, sans tirets en début ou fin.                         |
+| "Domain does not have valid DNS records"                                              | Le domaine apex lui-même doit être résolvable. Vérifiez que vos enregistrements NS sont actifs avant de réessayer.                                |
+| "Domain is already registered to another project"                                     | Choisissez un autre domaine, ou contactez le support si vous pensez que l'enregistrement est une erreur.                                          |
+| "Verification check is on cooldown"                                                   | Attendez 60 secondes entre deux vérifications manuelles. L'interrogation automatique se poursuit en arrière-plan.                                 |
+| Vérification bloquée sur Pending                                                      | Vérifiez que les enregistrements DNS correspondent exactement — sans points finaux, cibles CNAME correctes. Le DNS peut prendre jusqu'à 48 heures à se propager. |
+| "Cannot delete domain: one or more identities have been successfully verified"        | Un domaine vérifié ne peut pas être retiré du tableau de bord. Contactez le support pour obtenir de l'aide.                                       |
+| E-mails classés en spam                                                               | Vérifiez que votre enregistrement DMARC est publié. Les nouveaux domaines ont besoin d'un temps de warm-up — consultez [Warm-up du domaine](#domain-warm-up). |
+| Taux de bounce élevé                                                                  | Assurez-vous que votre liste d'audience contient des adresses valides et ayant donné leur consentement. Les bounces ralentissent ou suspendent la progression dans les paliers. |

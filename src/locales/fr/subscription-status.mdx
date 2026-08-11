@@ -1,0 +1,113 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK iOS"
+description: "Suivez et gérez le statut d'abonnement des utilisateurs dans Adapty pour améliorer la rétention."
+metadataTitle: "Comprendre le statut d'abonnement | Documentation Adapty"
+keywords: ['getProfile', 'cache']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md'; 
+
+Avec Adapty, suivre le statut d'abonnement est simple. Vous n'avez pas à insérer manuellement des identifiants de produits dans votre code. Il vous suffit de vérifier le statut d'abonnement d'un utilisateur en contrôlant l'existence d'un [niveau d'accès](access-level) actif.
+
+Avant de commencer à vérifier le statut d'abonnement, configurez les [notifications serveur App Store](enable-app-store-server-notifications).
+
+## Niveau d'accès et objet AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Les niveaux d'accès sont des propriétés de l'objet [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile). Nous recommandons de récupérer le profil au démarrage de votre application, par exemple lorsque vous [identifiez un utilisateur](identifying-users#set-customer-user-id-on-configuration), puis de le mettre à jour à chaque modification. Vous pouvez ainsi utiliser l'objet profil sans avoir à le redemander constamment.
+
+Pour être notifié des mises à jour du profil, écoutez les changements comme décrit dans la section [Écouter les mises à jour du statut d'abonnement](subscription-status#listening-for-subscription-status-updates) ci-dessous.
+
+<SampleApp />
+
+## Récupérer le niveau d'accès depuis le serveur \{#retrieving-the-access-level-from-the-server\}
+
+Pour obtenir le niveau d'accès depuis le serveur, utilisez la méthode `.getProfile()` :
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+Paramètres de la réponse :
+
+| Paramètre | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --------- |------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Un objet [AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile). En général, il suffit de vérifier le statut du niveau d'accès du profil pour déterminer si l'utilisateur bénéficie d'un accès premium à l'application.</p><p></p><p>La méthode `.getProfile` fournit le résultat le plus à jour, car elle interroge toujours l'API. Si, pour une raison quelconque (par exemple, absence de connexion Internet), le SDK Adapty ne parvient pas à récupérer les informations depuis le serveur, les données en cache sont retournées. Il est également important de noter que le SDK Adapty met à jour le cache `AdaptyProfile` régulièrement afin de maintenir ces informations aussi à jour que possible.</p> |
+
+La méthode `.getProfile()` vous fournit le profil utilisateur depuis lequel vous pouvez obtenir le statut du niveau d'accès. Vous pouvez avoir plusieurs niveaux d'accès par application. Par exemple, si vous avez une application de journal et que vous vendez des abonnements à différents sujets indépendamment, vous pouvez créer des niveaux d'accès « sports » et « science ». Mais la plupart du temps, vous n'aurez besoin que d'un seul niveau d'accès ; dans ce cas, vous pouvez simplement utiliser le niveau d'accès par défaut « premium ».
+
+Voici un exemple pour vérifier le niveau d'accès « premium » par défaut :
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    let isPremium = profile.accessLevels["premium"]?.isActive ?? false
+    // grant access to premium features
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get(), 
+       profile.accessLevels["premium"]?.isActive ?? false {
+        // grant access to premium features
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Écouter les mises à jour du statut d'abonnement \{#listening-for-subscription-status-updates\}
+
+Chaque fois que l'abonnement d'un utilisateur change, Adapty déclenche un événement.
+
+Pour recevoir les messages d'Adapty, vous devez effectuer quelques configurations supplémentaires :
+
+```swift showLineNumbers
+Adapty.delegate = self
+
+// To receive subscription updates, extend `AdaptyDelegate` with this method:
+nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+    // handle any changes to subscription state
+}
+```
+
+Adapty déclenche également un événement au démarrage de l'application. Dans ce cas, le statut d'abonnement en cache est transmis.
+
+### Cache du statut d'abonnement \{#subscription-status-cache\}
+
+Le cache implémenté dans le SDK Adapty stocke le statut d'abonnement du profil. Cela signifie que même si le serveur est indisponible, les données en cache restent accessibles pour fournir des informations sur le statut d'abonnement du profil.
+
+Il est toutefois important de noter qu'il n'est pas possible d'interroger directement le cache. Le SDK interroge périodiquement le serveur toutes les minutes pour vérifier les éventuelles mises à jour liées au profil. En cas de modifications — nouvelles transactions ou autres changements — elles sont transmises aux données en cache afin de les maintenir synchronisées avec le serveur.

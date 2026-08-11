@@ -1,0 +1,101 @@
+---
+title: "Fonctionnement des analytiques Adapty"
+description: "Découvrez comment les analytiques Adapty fonctionnent pour suivre efficacement les performances des abonnements."
+metadataTitle: "Fonctionnement des analytiques Adapty | Documentation Adapty"
+---
+
+Cet article décrit le fonctionnement des analytiques Adapty : quelles données elles affichent, d'où viennent ces données et comment elles sont traitées. Il explique aussi les choix de conception qui distinguent Adapty Analytics, et en quoi ils vous sont utiles.
+
+## Adapty Analytics vs analytiques du store \{#adapty-analytics-vs-store-analytics\}
+
+- **Variété des données** : les stores ne peuvent afficher que leurs propres données et n'ont pas accès au comportement des utilisateurs dans l'app.
+
+        Adapty peut combiner les données de plusieurs stores, ainsi que des sources supplémentaires — plateformes marketing et réseaux publicitaires. Le SDK Adapty suit les interactions des utilisateurs avec les paywalls et les onboardings.
+
+- **Fréquence de mise à jour** : les app stores mettent généralement leurs données à jour une fois par jour, ce qui peut limiter votre capacité à prendre des décisions en temps réel.
+
+        Adapty propose des analytiques [proches du temps réel](#data-processing).
+
+- **Métriques avancées** : les app stores affichent des métriques de base telles que les téléchargements, les revenus et les taux de rétention.
+
+        Adapty calcule également des métriques avancées, comme les revenus récurrents ou le revenu moyen par utilisateur. Des sections dédiées analysent les problèmes d'abonnement : attrition des utilisateurs, échecs de facturation, etc. Consultez l'article [Tableau comparatif des métriques](metric-comparison-table) pour la liste complète.
+
+- **Prédictions** : Adapty utilise des algorithmes avancés de machine learning pour [prédire la LTV et les revenus futurs](predicted-ltv-and-revenue).
+
+
+## Les données et leurs sources \{#data-and-its-sources\}
+
+Adapty Analytics traite les données suivantes dans des [graphiques et tableaux](analytics) :
+
+- Les [événements d'abonnement](events) générés tout au long du cycle de vie de l'utilisateur — démarrages d'essai, achats, renouvellements, annulations, échecs de facturation, remboursements. Adapty les agrège dans les [graphiques analytiques](analytics) et les transmet en temps réel aux [webhooks](webhook), au [fil d'événements](event-feed) et aux [intégrations basées sur les événements](analytics-integration).
+- Les [données de transaction](revenue) — revenus, remboursements, pays de l'acheteur, etc.
+- Les **données applicatives** telles que le nombre d'installations ou les [interactions avec les paywalls](paywalls).
+- Les [données d'attribution pour les transactions](attribution-integration) : sources de trafic et campagnes publicitaires.
+
+Ces données proviennent des sources suivantes :
+
+- Le <InlineTooltip tooltip="SDK Adapty">[iOS](ios-sdk-overview), [Android](android-sdk-overview), [React Native](react-native-sdk-overview), [Flutter](flutter-sdk-overview), [Unity](unity-sdk-overview), [Kotlin Multiplatform](kmp-sdk-overview), [Capacitor](capacitor-sdk-overview) </InlineTooltip> remonte les données de comportement utilisateur depuis l'intérieur de l'app. Si Adapty gère votre flux d'achat, le SDK partage des informations de première main sur les événements d'achat. Si vous utilisez le [mode observateur](observer-vs-full-mode), le SDK reçoit les [rapports d'événements](report-transactions-observer-mode) que vous configurez manuellement.
+- Les stores utilisent une communication serveur à serveur pour notifier Adapty des transactions (essais, renouvellements d'abonnement, annulations, etc.).
+- Les [services d'attribution](attribution-integration) tiers (Appsflyer, Adjust, Branch, etc.) partagent les données sur les sources de trafic et les campagnes publicitaires. Si vous configurez [Adapty Attribution](adapty-user-acquisition), Adapty peut gérer vos données de campagne publicitaire de manière autonome, sans passer par cette étape.
+- Les utilisateurs peuvent [importer manuellement des données de transactions historiques](importing-historical-data-to-adapty) pour qu'Adapty les analyse et les affiche.
+
+Un problème avec l'une des sources peut impacter la qualité globale de vos données analytiques. Consultez la section [Dépannage](#troubleshooting) pour plus d'informations.
+
+## Intégrations tierces \{#third-party-integrations\}
+
+Vous pouvez activer [Adapty Attribution](adapty-user-acquisition) pour enrichir les capacités analytiques d'Adapty avec des données de campagnes publicitaires. Cela vous aidera à découvrir les corrélations entre les dépenses publicitaires et le comportement des utilisateurs.
+
+De même, vous pouvez [exporter](analytics-integration) des données analytiques vers des plateformes tierces ou un [serveur privé](webhook), et analyser les données d'Adapty sur une autre plateforme.
+
+## Traitement des données \{#data-processing\}
+
+Adapty propose des analytiques proches du temps réel, ce qui permet aux utilisateurs de réagir rapidement aux changements dans les métriques clés.
+
+- **Graphiques analytiques** : les données apparaissent avec un **délai de 15 à 30 minutes** après qu'une transaction a lieu. Adapty a besoin de ce délai pour valider la transaction, appliquer les commissions et taxes, et agréger les données.
+- **[Fil d'événements](event-feed)** : se met à jour en temps réel, dès que les stores délivrent un événement.
+- **[Webhooks](webhook) et intégrations basées sur les événements** (AppsFlyer, Branch, etc.) : Adapty transmet les événements au fur et à mesure — le délai de 15 à 30 minutes des graphiques analytiques ne s'applique pas. Le service destinataire peut introduire son propre délai de traitement.
+
+Chaque interface a son propre timing. Un même événement peut apparaître à des moments légèrement différents dans les graphiques, le fil d'événements et vos intégrations. De petits décalages entre eux sont attendus.
+
+## Commissions et taxes \{#commissions-and-taxes\}
+
+Lorsque vous consultez les graphiques liés aux revenus, vous pouvez choisir entre **Revenus bruts**, **Revenus après commissions** et **Revenus après commissions et taxes**.
+
+### Commissions \{#commissions\}
+
+Les stores déduisent une commission de chaque transaction. Si votre organisation est inscrite à un programme de commission réduite, modifiez vos paramètres Adapty pour ajuster les calculs du taux de commission :
+
+* [Programme Small Business de l'App Store](app-store-small-business-program)
+* [Programme de frais de service réduits](google-reduced-service-fee) de Google
+
+Les stores signalent automatiquement si d'autres facteurs réduisent votre commission de transaction :
+
+* [Renouvellements pour les abonnements App Store de plus d'un an](https://developer.apple.com/app-store/subscriptions/) — commission de 15 %
+* Taux spécifiques par pays (par exemple, [21 % pour les apps App Store distribuées au Japon](https://developer.apple.com/support/app-distribution-in-japan/#business-terms))
+
+### Taxes \{#taxes\}
+
+**Adapty ne calcule pas les taxes.** Apple et Google déterminent le taux de taxe applicable à chaque transaction et le communiquent à Adapty, qui affiche la valeur telle quelle.
+
+Le taux de taxe affiché pour une transaction donnée dépend de :
+
+- Le **pays de facturation de l'acheteur** et le taux de taxe local en vigueur.
+- Les **règles de gestion fiscale du store**. Dans certaines juridictions, le store collecte et reverse la taxe au nom du développeur ; dans d'autres, c'est la responsabilité du développeur.
+- Pour les transactions App Store, la **catégorie fiscale** assignée à l'app ou à l'achat intégré (livres, actualités, vidéos, etc.) — les catégories peuvent être taxées à des taux différents selon les règles locales.
+
+Les taux de taxe peuvent varier significativement d'une app à l'autre — et même entre transactions au sein d'une même app — en raison de la diversité des pays des acheteurs, des règles de gestion fiscale des stores et (pour l'App Store) de la catégorie fiscale attribuée.
+
+Pour les règles officielles, consultez la documentation officielle des stores :
+
+- [App Store : Comprendre les taxes](https://developer.apple.com/help/app-store-connect/making-payments-to-apple/understanding-taxes/)
+- [Google Play : Taux de taxe et TVA](https://support.google.com/googleplay/android-developer/answer/138000)
+
+## Dépannage \{#troubleshooting\}
+
+:::link
+Article principal : [Écarts et dépannage](discrepancies-and-troubleshooting)
+:::
+
+* Une source de données mal configurée ou manquante peut affecter négativement l'ensemble du système analytique. Si vous rencontrez des problèmes de données, vérifiez que vos intégrations avec les stores et les plateformes tierces sont configurées et actives.
+
+* Si vous comparez les graphiques Adapty à d'autres plateformes analytiques, vous pouvez constater des écarts. Il s'agit d'un comportement attendu qui peut résulter de différences dans le traitement des données. Lisez l'article [guide des écarts](discrepancies-and-troubleshooting) pour en savoir plus sur les causes courantes des écarts de données.

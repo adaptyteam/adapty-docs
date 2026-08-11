@@ -1,0 +1,30 @@
+---
+title: "Optimiser la récupération des paywalls dans le SDK iOS"
+description: "Récupérez les paywalls Adapty de manière fiable : timing, mise en cache et patterns de secours pour iOS."
+metadataTitle: "Optimiser la récupération des paywalls | SDK iOS | Documentation Adapty"
+---
+
+Une récupération de paywall fiable sur iOS repose sur trois éléments : un rendu rapide, le retour du paywall ciblé par audience, et un repli élégant en cas de réseau lent. Les règles ci-dessous couvrent le timing, la mise en cache et les patterns de secours pour y parvenir.
+
+:::tip
+Ces règles supposent que `Adapty.activate()` et `Adapty.identify()` ont déjà été résolus. Voir [Ordre d'appel dans le SDK iOS](ios-sdk-call-order).
+:::
+
+## Règles et pièges \{#rules-and-pitfalls\}
+
+| À faire | À éviter | Pourquoi |
+|---|---|---|
+| Récupérez le placement que vous êtes sur le point d'afficher.                                                                                  | Pré-charger tous les placements simultanément au lancement.        | La pré-récupération en masse bloque le thread principal et provoque un écran noir pendant la salve.                                  |
+| Appelez `getPaywall` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `onProfileUpdate`. | Appeler `getPaywall` dans `App.init()`.                     | L'attribution n'est pas encore disponible. Le paywall se résout sur l'audience par défaut et ignore silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                             | Attendre indéfiniment sur `getPaywall`.                     | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application.     |
+
+Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
+
+## Optimiser pour une mauvaise connectivité \{#tune-for-poor-connectivity\}
+
+Pour les marchés avec une connectivité systématiquement mauvaise (zones rurales, transports en commun, régions affectées par le routage) :
+
+- Définissez `fetchPolicy: .returnCacheDataElseLoad` sur chaque récupération sauf la toute première.
+- Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans le tableau de bord Adapty.
+- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours lorsque le timeout se déclenche.
+- Ne conditionnez pas l'affichage du paywall à `getProfile()`. Appelez `getPaywall` indépendamment pour qu'un profil lent ne bloque pas l'interface.

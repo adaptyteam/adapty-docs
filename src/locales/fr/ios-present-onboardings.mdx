@@ -1,0 +1,135 @@
+---
+title: "Présenter les onboardings dans le SDK iOS"
+description: "Découvrez comment présenter des onboardings sur iOS pour booster vos conversions et vos revenus."
+metadataTitle: "Présenter les onboardings sur iOS | Documentation Adapty"
+keywords: ['getOnboardingConfiguration']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+
+:::tip
+**À partir du SDK v4**, vous pouvez créer des [flows](get-pb-paywalls) comme alternative plus puissante aux onboardings. Contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — ce qui vous offre des animations plus fluides, un rendu cohérent avec l'interface iOS, des temps de chargement plus rapides et aucune dépendance à l'environnement WebView. Consultez [Obtenir des flows et paywalls](get-pb-paywalls) et [Afficher des flows et paywalls](ios-present-paywalls) pour démarrer.
+:::
+
+Si vous avez personnalisé un onboarding avec le builder, vous n'avez pas à vous soucier de son rendu dans votre code d'application mobile pour l'afficher à l'utilisateur. Un tel onboarding contient à la fois ce qui doit être affiché et la façon dont il doit l'être.
+
+Avant de commencer, assurez-vous que :
+
+1. Vous avez installé [le SDK Adapty iOS](sdk-installation-ios) version 3.8.0 ou ultérieure.
+2. Vous avez [créé un onboarding](create-onboarding).
+3. Vous avez ajouté l'onboarding à un [placement](placements).
+
+## Présenter des onboardings en Swift \{#present-onboardings-in-swift\}
+
+Pour afficher l'onboarding visuel sur l'écran de l'appareil, procédez comme suit :
+
+1. Obtenez la configuration de vue de l'onboarding avec la méthode `.getOnboardingConfiguration`.
+2. Initialisez l'onboarding visuel que vous souhaitez afficher avec la méthode `.onboardingController` :
+
+   Paramètres de la requête :
+
+   | Paramètre                        | Présence  | Description                                                                                                                                                              |
+   |:---------------------------------|:----------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+   | **onboarding configuration**     | requis    | Un objet `AdaptyUI.OnboardingConfiguration` contenant toutes les propriétés de l'onboarding. Utilisez la méthode `AdaptyUI.getOnboardingConfiguration` pour l'obtenir. |
+   | **delegate**                     | requis    | Un `AdaptyOnboardingControllerDelegate` pour écouter les événements de l'onboarding.                                                                                    |
+
+   Retourne :
+
+   | Objet                            | Description                                                    |
+   |:---------------------------------|:---------------------------------------------------------------|
+   | **AdaptyOnboardingController**   | Un objet représentant l'écran d'onboarding demandé             |
+
+3. Une fois l'objet créé avec succès, vous pouvez l'afficher à l'écran de l'appareil :
+
+   ```swift showLineNumbers title="Swift"
+   import Adapty
+   import AdaptyUI
+   
+   // 0. Get an onboarding if you haven't done it yet     
+   let onboarding = try await Adapty.getOnboarding(placementId: "YOUR_PLACEMENT_ID")
+   
+   // 1. Obtain the onboarding view configuration:
+   let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+   // 2. Create Onboarding View Controller
+   let onboardingController = try AdaptyUI.onboardingController(
+       with: configuration,
+       delegate: <AdaptyOnboardingControllerDelegate>
+   ) 
+
+   // 3. Present it to the user
+   present(onboardingController, animated: true)
+   ```
+
+## Présenter des onboardings en SwiftUI \{#present-onboardings-in-swiftui\}
+
+Pour afficher l'onboarding visuel sur l'écran de l'appareil en SwiftUI :
+
+```swift showLineNumbers title="SwiftUI"
+// 1. Obtain the onboarding view configuration:
+let configuration = try AdaptyUI.getOnboardingConfiguration(forOnboarding: onboarding)
+
+// 2. Display the Onboarding View within your view hierarchy
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: { Text("Your Placeholder View") },
+    onCloseAction: { action in
+        // hide the onboarding view
+    },
+    onError: { error in
+         // handle the error
+    }
+)
+```
+
+## Ajouter des transitions fluides entre l'écran de démarrage et l'onboarding \{#add-smooth-transitions-between-the-splash-screen-and-onboarding\}
+
+Par défaut, entre l'écran de démarrage et l'onboarding, un écran de chargement s'affiche jusqu'à ce que l'onboarding soit entièrement chargé. Si vous souhaitez rendre cette transition plus fluide, vous pouvez la personnaliser et soit prolonger l'écran de démarrage, soit afficher autre chose.
+
+Pour cela, définissez un placeholder (ce qui sera affiché pendant le chargement de l'onboarding). Si vous définissez un placeholder, l'onboarding se chargera en arrière-plan et s'affichera automatiquement une fois prêt.
+
+<Tabs>
+<TabItem value="swift" label="UIKit">
+```swift showLineNumbers
+
+extension YourOnboardingManagerClass: AdaptyOnboardingControllerDelegate {
+   func onboardingsControllerLoadingPlaceholder(
+      _ controller: AdaptyOnboardingController
+      ) -> UIView? {
+         // instantiate and return the UIView which will be presented while onboarding is being loaded
+   }
+}
+```
+</TabItem>
+
+<TabItem value="swiftui" label="SwiftUI">
+```swift showLineNumbers
+AdaptyOnboardingView(
+    configuration: configuration,
+    placeholder: { 
+        // define your placeholder view, which will be presented while onboarding is being loaded
+    },
+    // the rest of the implementation
+)
+```
+</TabItem>
+
+</Tabs>
+
+## Personnaliser l'ouverture des liens dans les onboardings \{#customize-how-links-open-in-onboardings\}
+
+:::important
+La personnalisation de l'ouverture des liens dans les onboardings est prise en charge à partir du SDK Adapty v3.15.1.
+:::
+
+Par défaut, les liens dans les onboardings s'ouvrent dans un navigateur intégré à l'application. Cela offre une expérience utilisateur fluide en affichant les pages web directement dans votre application, sans avoir à changer d'app.
+
+Si vous préférez ouvrir les liens dans un navigateur externe, vous pouvez personnaliser ce comportement en définissant le paramètre `externalUrlsPresentation` sur `.externalBrowser` :
+
+```swift showLineNumbers
+
+let configuration = try AdaptyUI.getOnboardingConfiguration(
+    forOnboarding: onboarding,
+    externalUrlsPresentation: .externalBrowser // default – .inAppBrowser
+)
+```

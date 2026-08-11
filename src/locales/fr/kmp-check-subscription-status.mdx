@@ -1,0 +1,116 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK Kotlin Multiplatform"
+description: "Apprenez à vérifier le statut d'abonnement dans votre application Kotlin Multiplatform avec Adapty."
+metadataTitle: "Vérifier le statut d'abonnement | Documentation Adapty"
+keywords: ['getProfile', 'statut abonnement']
+rank: 95
+displayed_sidebar: sdkkmp
+---
+
+Pour décider si les utilisateurs peuvent accéder au contenu payant ou voir un paywall, vous devez vérifier leur [niveau d'accès](access-level) dans le profil.
+
+Cet article vous montre comment accéder à l'état du profil pour décider ce que les utilisateurs doivent voir — afficher un paywall ou leur donner accès aux fonctionnalités payantes.
+
+## Obtenir le statut d'abonnement \{#get-subscription-status\}
+
+Quand vous décidez d'afficher un paywall ou du contenu payant à un utilisateur, vous vérifiez son [niveau d'accès](access-level) dans son profil. Vous avez deux options :
+
+- Appelez `getProfile` si vous avez besoin des données de profil les plus récentes immédiatement (comme au lancement de l'application) ou si vous souhaitez forcer une mise à jour.
+- Configurez des **mises à jour automatiques du profil** pour conserver une copie locale qui se rafraîchit automatiquement à chaque changement de statut d'abonnement.
+
+### Récupérer le profil \{#get-profile\}
+
+La façon la plus simple d'obtenir le statut d'abonnement est d'utiliser la méthode `getProfile` pour accéder au profil :
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+### Écouter les mises à jour d'abonnement \{#listen-to-subscription-updates\}
+
+Pour recevoir automatiquement les mises à jour du profil dans votre application :
+
+1. Utilisez `Adapty.setOnProfileUpdatedListener()` pour écouter les changements de profil — Adapty appellera automatiquement cette méthode chaque fois que le statut d'abonnement de l'utilisateur change.
+2. Stockez les données du profil mis à jour quand cette méthode est appelée, afin de pouvoir les utiliser partout dans votre application sans effectuer de requêtes réseau supplémentaires.
+
+```kotlin showLineNumbers
+class SubscriptionManager {
+    private var currentProfile: AdaptyProfile? = null
+    
+    init {
+        // Listen for profile updates
+        Adapty.setOnProfileUpdatedListener { profile ->
+            currentProfile = profile
+            // Update UI, unlock content, etc.
+        }
+    }
+    
+    // Use stored profile instead of calling getProfile()
+    fun hasAccess(): Boolean {
+        return currentProfile?.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+    }
+}
+```
+
+:::note
+Adapty appelle automatiquement le listener de mise à jour du profil au démarrage de votre application, fournissant ainsi les données d'abonnement en cache même si l'appareil est hors ligne.
+:::
+
+## Associer le profil à la logique des paywalls \{#connect-profile-with-paywall-logic\}
+
+Lorsque vous devez prendre des décisions immédiates sur l'affichage des paywalls ou l'accès aux fonctionnalités payantes, vous pouvez vérifier directement le profil de l'utilisateur. Cette approche est utile dans des scénarios comme le lancement de l'application, l'accès aux sections premium ou avant l'affichage de contenu spécifique.
+
+```kotlin showLineNumbers
+private fun checkAccessAndShowPaywall() {
+    // First, check if user has access
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasAccess = profile.accessLevels?.get("YOUR_ACCESS_LEVEL")?.isActive == true
+            
+            if (!hasAccess) {
+                // User doesn't have access, show paywall
+                showPaywall()
+            } else {
+                // User has access, show premium content
+                showPremiumContent()
+            }
+        }
+        .onError { error ->
+            // If we can't check access, show paywall as fallback
+            showPaywall()
+        }
+}
+
+private fun showPaywall() {
+    // Get and display paywall using the KMP SDK
+    Adapty.getPaywall("YOUR_PLACEMENT_ID")
+        .onSuccess { paywall ->
+            if (paywall.hasViewConfiguration) {
+                val paywallView = AdaptyUI.createPaywallView(paywall = paywall)
+                paywallView?.present()
+            } else {
+                // Handle remote config paywall or show custom UI
+                handleRemoteConfigPaywall(paywall)
+            }
+        }
+        .onError { error ->
+            // Handle paywall loading error
+            showError("Unable to load paywall")
+        }
+}
+
+private fun showPremiumContent() {
+    // Show your premium content here
+    // This is where you unlock paid features
+}
+```
+
+## Étapes suivantes \{#next-steps\}
+
+Maintenant que vous savez comment suivre le statut d'abonnement, apprenez à [travailler avec les profils utilisateurs](kmp-quickstart-identify) pour vous assurer qu'ils peuvent accéder à ce qu'ils ont payé.

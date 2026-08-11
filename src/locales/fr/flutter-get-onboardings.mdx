@@ -1,0 +1,102 @@
+---
+title: "Récupérer les onboardings avec le SDK Flutter"
+description: "Apprenez à récupérer les onboardings dans Adapty pour Flutter."
+metadataTitle: "Récupérer les onboardings dans Adapty | Documentation Adapty"
+keywords: ['getOnboarding', 'getOnboardingForDefaultAudience']
+displayed_sidebar: sdkflutter
+---
+
+:::warning
+**Les onboardings sont dépréciés dans le SDK v4 et seront supprimés dans une prochaine version.** Ils ne reçoivent plus de correctifs ni d'améliorations. Utilisez plutôt les [flows](flutter-get-pb-paywalls) : contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — offrant des animations plus fluides, une apparence native cohérente, des temps de chargement plus rapides et aucune dépendance au runtime WebView. Consultez [Obtenir les flows et paywalls](flutter-get-pb-paywalls) et [Afficher les flows et paywalls](flutter-present-paywalls) pour démarrer.
+:::
+
+Après avoir [conçu la partie visuelle de votre onboarding](design-onboarding) avec le builder dans l'Adapty Dashboard, vous pouvez l'afficher dans votre application Flutter. La première étape consiste à récupérer l'onboarding associé au placement et sa configuration d'affichage, comme décrit ci-dessous.
+
+Avant de commencer, assurez-vous que :
+
+1. Vous avez installé le [SDK Flutter Adapty](sdk-installation-flutter) version 3.8.0 ou supérieure.
+2. Vous avez [créé un onboarding](create-onboarding).
+3. Vous avez ajouté l'onboarding à un [placement](placements).
+
+## Récupérer un onboarding \{#fetch-onboarding\}
+
+Lorsque vous créez un [onboarding](onboardings) avec notre builder no-code, il est stocké sous forme de conteneur avec une configuration que votre application doit récupérer et afficher. Ce conteneur gère l'ensemble de l'expérience — quel contenu apparaît, comment il est présenté et comment les interactions utilisateur (comme les réponses à des quiz ou les saisies de formulaires) sont traitées. Le conteneur suit également automatiquement les événements analytiques, vous n'avez donc pas besoin d'implémenter un suivi des vues séparé.
+
+Pour de meilleures performances, récupérez la configuration de l'onboarding tôt afin de laisser suffisamment de temps aux images pour se télécharger avant de les afficher aux utilisateurs.
+
+Pour obtenir un onboarding, utilisez la méthode `getOnboarding` :
+
+```dart showLineNumbers
+try {
+  final onboarding = await Adapty().getOnboarding(placementId: "YOUR_PLACEMENT_ID");
+} on AdaptyError catch (e) {
+    //handle error
+} catch (e) { 
+    //handle error
+}
+```
+
+Ensuite, appelez la méthode `createOnboardingView` pour obtenir la vue que vous allez afficher.
+
+:::warning
+Le résultat de la méthode `createOnboardingView` ne peut être utilisé qu'une seule fois. Si vous avez besoin de l'utiliser à nouveau, appelez de nouveau la méthode `createOnboardingView`. L'appeler deux fois sans recréer peut entraîner l'erreur `AdaptyUIError.viewAlreadyPresented`.
+:::
+
+```dart showLineNumbers
+
+try {
+    final onboardingView = await Adapty().createOnboardingView(onboarding: onboarding);
+} on AdaptyError catch (e) { 
+    //handle error
+} catch (e) { 
+    //handle error
+}
+```
+
+Paramètres :
+
+| Paramètre | Présence | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+|---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | requis | L'identifiant du [Placement](placements) souhaité. C'est la valeur que vous avez spécifiée lors de la création d'un placement dans l'Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| **locale** | <p>optionnel</p><p>défaut : `en`</p> | <p>L'identifiant de la localisation de l'onboarding. Ce paramètre doit être un code de langue composé d'un ou deux sous-tags séparés par le caractère moins (**-**). Le premier sous-tag est pour la langue, le second est pour la région.</p><p></p><p>Exemple : `en` désigne l'anglais, `pt-br` représente le portugais brésilien.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| **fetchPolicy** | défaut : `.reloadRevalidatingCacheData` | <p>Par défaut, le SDK essaie de charger les données depuis le serveur et retourne les données en cache en cas d'échec. Nous recommandons cette option car elle garantit que vos utilisateurs obtiennent toujours les données les plus récentes.</p><p></p><p>Cependant, si vous pensez que vos utilisateurs ont une connexion internet instable, envisagez d'utiliser `.returnCacheDataElseLoad` pour retourner les données en cache si elles existent. Dans ce cas, les utilisateurs pourraient ne pas obtenir les toutes dernières données, mais ils bénéficieront de temps de chargement plus rapides, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, il est donc sans risque de l'utiliser pendant la session pour éviter les requêtes réseau.</p><p></p><p>Notez que le cache reste intact lors du redémarrage de l'application et n'est effacé que lors de la désinstallation ou d'un nettoyage manuel.</p><p></p><p>Le SDK Adapty stocke les onboardings localement en deux couches : le cache régulièrement mis à jour décrit ci-dessus et les onboardings de secours. Nous utilisons également un CDN pour récupérer les onboardings plus rapidement et un serveur de secours indépendant au cas où le CDN serait inaccessible. Ce système est conçu pour vous garantir toujours la dernière version de vos onboardings tout en assurant la fiabilité même lorsque la connexion internet est limitée.</p> |
+| **loadTimeout** | défaut : 5 sec | <p>Cette valeur limite le délai d'attente pour cette méthode. Si le délai est atteint, les données en cache ou le fallback local seront retournés.</p><p>Notez que dans de rares cas, cette méthode peut expirer légèrement après le délai spécifié dans `loadTimeout`, car l'opération peut impliquer différentes requêtes en coulisses.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+
+Paramètres de réponse :
+
+| Paramètre | Description                                                                                                                                                |
+|:----------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Onboarding      | Un objet [`AdaptyOnboarding`](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyOnboarding-class.html) contenant : l'identifiant et la configuration de l'onboarding, le Remote Config, et plusieurs autres propriétés. |
+
+## Accélérer la récupération de l'onboarding avec l'onboarding de l'audience par défaut \{#speed-up-onboarding-fetching-with-default-audience-onboarding\}
+
+En général, les onboardings sont récupérés presque instantanément, vous n'avez donc pas à vous soucier d'accélérer ce processus. Cependant, si vous avez de nombreuses audiences et onboardings et que vos utilisateurs ont une connexion internet faible, la récupération d'un onboarding peut prendre plus de temps que souhaité. Dans ces situations, vous pourriez vouloir afficher un onboarding par défaut pour garantir une expérience utilisateur fluide plutôt que de n'afficher aucun onboarding.
+
+Pour y remédier, vous pouvez utiliser la méthode `getOnboardingForDefaultAudience`, qui récupère l'onboarding du placement spécifié pour l'audience **All Users**. Cependant, il est crucial de comprendre que l'approche recommandée reste de récupérer l'onboarding avec la méthode `getOnboarding`, comme décrit dans la section [Récupérer un onboarding](#fetch-onboarding) ci-dessus.
+
+:::warning
+Préférez `getOnboarding` à `getOnboardingForDefaultAudience`, car cette dernière présente des limitations importantes :
+
+- **Problèmes de compatibilité** : Peut créer des problèmes lors de la prise en charge de plusieurs versions de l'application, nécessitant soit des designs rétrocompatibles, soit d'accepter que les anciennes versions puissent s'afficher incorrectement.
+- **Pas de personnalisation** : Affiche uniquement le contenu pour l'audience « All Users », supprimant le ciblage basé sur le pays, l'attribution ou les attributs personnalisés.
+
+Si une récupération plus rapide l'emporte sur ces inconvénients pour votre cas d'utilisation, utilisez `getOnboardingForDefaultAudience` comme indiqué ci-dessous. Sinon, utilisez `getOnboarding` comme décrit [ci-dessus](#fetch-onboarding).
+:::
+
+```dart showLineNumbers
+try {
+    final onboarding = await Adapty().getOnboardingForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
+} on AdaptyError catch (adaptyError) {
+    // handle error
+} catch (e) {
+    // handle unknown error
+}
+```
+
+Paramètres :
+
+| Paramètre       | Présence                                | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+|-----------------|-----------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **placementId** | requis                                | L'identifiant du [Placement](placements) souhaité. C'est la valeur que vous avez spécifiée lors de la création d'un placement dans l'Adapty Dashboard.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **locale**      | <p>optionnel</p><p>défaut : `en`</p>     | <p>L'identifiant de la localisation de l'onboarding. Ce paramètre doit être un code de langue composé d'un ou deux sous-tags séparés par le caractère moins (**-**). Le premier sous-tag est pour la langue, le second est pour la région.</p><p></p><p>Exemple : `en` désigne l'anglais, `pt-br` représente le portugais brésilien.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **fetchPolicy** | défaut : `.reloadRevalidatingCacheData` | <p>Par défaut, le SDK essaie de charger les données depuis le serveur et retourne les données en cache en cas d'échec. Nous recommandons cette option car elle garantit que vos utilisateurs obtiennent toujours les données les plus récentes.</p><p></p><p>Cependant, si vous pensez que vos utilisateurs ont une connexion internet instable, envisagez d'utiliser `.returnCacheDataElseLoad` pour retourner les données en cache si elles existent. Dans ce cas, les utilisateurs pourraient ne pas obtenir les toutes dernières données, mais ils bénéficieront de temps de chargement plus rapides, quelle que soit la qualité de leur connexion. Le cache est mis à jour régulièrement, il est donc sans risque de l'utiliser pendant la session pour éviter les requêtes réseau.</p><p></p><p>Notez que le cache reste intact lors du redémarrage de l'application et n'est effacé que lors de la désinstallation ou d'un nettoyage manuel.</p><p></p><p>Le SDK Adapty stocke les onboardings localement en deux couches : le cache régulièrement mis à jour décrit ci-dessus et les onboardings de secours. Nous utilisons également un CDN pour récupérer les onboardings plus rapidement et un serveur de secours indépendant au cas où le CDN serait inaccessible. Ce système est conçu pour vous garantir toujours la dernière version de vos onboardings tout en assurant la fiabilité même lorsque la connexion internet est limitée.</p> |

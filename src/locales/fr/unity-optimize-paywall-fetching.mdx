@@ -1,0 +1,32 @@
+---
+title: "Optimiser la récupération des paywalls dans le SDK Unity"
+description: "Récupérez les paywalls Adapty de manière fiable : timing, mise en cache et patterns de secours pour Unity."
+metadataTitle: "Optimiser la récupération des paywalls | SDK Unity | Documentation Adapty"
+---
+
+Une récupération de paywall fiable dans Unity fait trois choses : s'affiche rapidement, renvoie le paywall ciblé par audience et bascule gracieusement sur un fallback quand le réseau est lent. Les règles ci-dessous couvrent le timing, la mise en cache et les patterns de secours pour y parvenir.
+
+:::tip
+Les règles supposent que `Adapty.Activate()` et `Adapty.Identify()` ont déjà été résolus. Voir [Ordre des appels dans le SDK Unity](unity-sdk-call-order).
+:::
+
+Les conseils ci-dessous utilisent les noms de méthodes de la v3. Dans le SDK v4, `GetPaywall` est renommé en `GetFlow` (voir le [guide de migration](migration-to-unity-sdk-v4)) — toutes les règles s'appliquent sans changement.
+
+## Règles et pièges \{#rules-and-pitfalls\}
+
+| À faire | À ne pas faire | Pourquoi |
+|---|---|---|
+| Récupérez le placement que vous êtes sur le point d'afficher.                                                                                  | Pré-charger tous les placements simultanément au démarrage.        | Le pré-chargement en masse bloque le thread principal et provoque un écran noir pendant la rafale.                                  |
+| Récupérez `GetPaywall` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `Activate` ou après le déclenchement de `OnLoadLatestProfile`. | Appeler `GetPaywall` dans `Awake()`.                        | L'attribution n'est pas encore arrivée. Le paywall est résolu par rapport à l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                             | Attendre `GetPaywall` indéfiniment.                     | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à la résolution du réseau — ou ferment l'application.     |
+
+Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products-unity) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
+
+## Optimiser pour une connexion défaillante \{#tune-for-poor-connectivity\}
+
+Pour les marchés où la connexion est régulièrement mauvaise (zones rurales, transports en commun, régions touchées par des problèmes de routage) :
+
+- Définissez `fetchPolicy` sur `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` pour chaque appel, sauf le tout premier.
+- Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
+- Réglez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours lorsque le délai expire.
+- Ne conditionnez pas l'affichage du paywall à `GetProfile`. Appelez `GetPaywall` indépendamment pour éviter qu'un profil lent ne bloque l'interface.

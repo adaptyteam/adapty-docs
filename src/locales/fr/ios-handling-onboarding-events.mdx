@@ -1,0 +1,326 @@
+---
+title: "Gérer les événements d'onboarding dans le SDK iOS"
+description: "Gérez les événements liés à l'onboarding sur iOS avec Adapty."
+metadataTitle: "Gestion des événements d'onboarding sur iOS | Documentation Adapty"
+toc_max_heading_level: 4
+keywords: ['onCloseAction', 'AdaptyOnboardingsCloseAction', 'onStateUpdatedAction', 'onPaywallAction', 'didFinishLoading', 'onAnalyticsEvent']
+---
+
+:::tip
+**À partir du SDK v4**, vous pouvez créer des [flows](get-pb-paywalls) comme alternative plus puissante aux onboardings. Contrairement aux onboardings qui s'exécutent dans une WebView, les flows s'affichent nativement sur l'appareil — offrant des animations plus fluides, un rendu cohérent avec iOS, des temps de chargement plus rapides et aucune dépendance au runtime WebView. Consultez [Récupérer les flows et paywalls](get-pb-paywalls) et [Afficher les flows et paywalls](ios-present-paywalls) pour commencer.
+:::
+
+Avant de commencer, vérifiez que :
+
+1. Vous avez installé le [SDK Adapty iOS](sdk-installation-ios) en version 3.8.0 ou ultérieure.
+2. Vous avez [créé un onboarding](create-onboarding).
+3. Vous avez ajouté l'onboarding à un [placement](placements).
+
+Les onboardings configurés avec le builder génèrent des événements auxquels votre app peut réagir. Découvrez ci-dessous comment gérer ces événements.
+
+Pour contrôler ou surveiller les processus qui se déroulent sur l'écran d'onboarding dans votre application mobile, implémentez les méthodes de `AdaptyOnboardingControllerDelegate`.
+
+## Actions personnalisées \{#custom-actions\}
+
+Dans le builder, vous pouvez ajouter une action **personnalisée** à un bouton et lui attribuer un identifiant.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-1.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+Vous pouvez ensuite utiliser cet identifiant dans votre code et le traiter comme une action personnalisée. Par exemple, si un utilisateur appuie sur un bouton personnalisé tel que **Login** ou **Allow notifications**, la méthode déléguée `onboardingController` sera déclenchée avec le cas `.custom(id:)` et le paramètre `actionId` correspond à l'**Action ID** défini dans le builder. Vous pouvez créer vos propres identifiants, par exemple "allowNotifications".
+
+```swift showLineNumbers    
+func onboardingController(_ controller: AdaptyOnboardingController, onCustomAction action: AdaptyOnboardingsCustomAction) {
+    if action.actionId == "allowNotifications" {
+        // Request notification permissions
+    }
+}
+    
+func onboardingController(_ controller: AdaptyOnboardingController, didFailWithError error: AdaptyUIError) {
+    // Handle errors
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```json
+{
+  "actionId": "allowNotifications",
+  "meta": {
+    "onboardingId": "onboarding_123",
+    "screenClientId": "profile_screen",
+    "screenIndex": 0,
+    "screensTotal": 3
+  }
+}
+```
+</Details>
+
+## Fermeture de l'onboarding \{#closing-onboarding\}
+
+L'onboarding est considéré comme fermé lorsqu'un utilisateur appuie sur un bouton auquel l'action **Close** est associée.
+
+<Zoom>
+  <img src="/assets/shared/img/ios-events-2.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+:::important
+Notez que vous devez gérer ce qui se passe lorsqu'un utilisateur ferme l'onboarding. Par exemple, vous devez arrêter d'afficher l'onboarding lui-même.
+:::
+Par exemple :
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onCloseAction action: AdaptyOnboardingsCloseAction) {
+    controller.dismiss(animated: true)
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```json
+{
+  "action_id": "close_button",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "final_screen",
+    "screen_index": 3,
+    "total_screens": 4
+  }
+}
+```
+
+</Details>
+
+## Ouverture d'un paywall \{#opening-a-paywall\}
+
+:::tip
+Gérez cet événement pour ouvrir un paywall si vous souhaitez l'afficher à l'intérieur de l'onboarding. Si vous voulez ouvrir un paywall après la fermeture de l'onboarding, il existe une approche plus directe : gérez [`AdaptyOnboardingsCloseAction`](#closing-onboarding) et ouvrez un paywall sans vous appuyer sur les données de l'événement.
+:::
+
+La méthode la plus fluide pour utiliser des paywalls dans les onboardings consiste à définir l'action ID comme étant égal à l'identifiant de placement du paywall. Ainsi, après le déclenchement de `AdaptyOnboardingsOpenPaywallAction`, vous pouvez utiliser l'identifiant de placement pour récupérer et ouvrir le paywall immédiatement.
+
+Notez qu'une seule vue (paywall ou onboarding) peut être affichée à l'écran à la fois. Si vous présentez un paywall par-dessus un onboarding, vous ne pouvez pas contrôler l'onboarding en arrière-plan par programmation. Tenter de fermer l'onboarding fermera le paywall à la place, laissant l'onboarding visible. Pour éviter cela, fermez toujours la vue de l'onboarding avant de présenter le paywall.
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, onPaywallAction action: AdaptyOnboardingsOpenPaywallAction) {
+    // Dismiss onboarding before presenting the flow
+    controller.dismiss(animated: true) {
+        Task {
+            do {
+                // Get the flow using the placement ID from the action
+                let flow = try await Adapty.getFlow(placementId: action.actionId)
+
+                // Get the flow configuration
+                let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+                    forFlow: flow
+                )
+
+                // Create and present the flow controller
+                let flowController = try AdaptyUI.flowController(
+                    with: flowConfiguration,
+                    delegate: self
+                )
+
+                // Present the flow from the root view controller
+                if let rootVC = UIApplication.shared.windows.first?.rootViewController {
+                    rootVC.present(flowController, animated: true)
+                }
+            } catch {
+                // Handle any errors that occur during flow loading
+                print("Failed to present flow: \(error)")
+            }
+        }
+    }
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```json
+{
+    "action_id": "premium_offer_1",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "pricing_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Fin du chargement de l'onboarding \{#finishing-loading-onboarding\}
+
+Lorsqu'un onboarding finit de se charger, cette méthode est appelée :
+
+```swift showLineNumbers
+func onboardingController(_ controller: AdaptyOnboardingController, didFinishLoading action: OnboardingsDidFinishLoadingAction) {
+    // Handle loading completion
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```json
+{
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "welcome_screen",
+        "screen_index": 0,
+        "total_screens": 4
+    }
+}
+```
+
+</Details>
+
+## Suivi de la navigation \{#tracking-navigation\}
+
+La méthode `onAnalyticsEvent` est appelée lorsque divers événements analytiques se produisent durant le flow d'onboarding.
+
+L'objet `event` peut être de l'un des types suivants :
+|Type | Description |
+|------------|-------------|
+| `onboardingStarted` | Lorsque l'onboarding a été chargé |
+| `screenPresented` | Lorsqu'un écran est affiché |
+| `screenCompleted` | Lorsqu'un écran est complété. Inclut un `elementId` optionnel (identifiant de l'élément complété) et une `reply` optionnelle (réponse de l'utilisateur). Déclenché lorsque les utilisateurs effectuent une action pour quitter l'écran. |
+| `secondScreenPresented` | Lorsque le deuxième écran est affiché |
+| `userEmailCollected` | Déclenché lorsque l'e-mail de l'utilisateur est collecté via le champ de saisie |
+| `onboardingCompleted` | Déclenché lorsqu'un utilisateur atteint un écran avec l'ID `final`. Si vous avez besoin de cet événement, [attribuez l'ID `final` au dernier écran](design-onboarding). |
+| `unknown` | Pour tout type d'événement non reconnu. Inclut `name` (le nom de l'événement inconnu) et `meta` (métadonnées supplémentaires) |
+
+Chaque événement inclut des informations `meta` contenant :
+| Champ | Description |
+|------------|-------------|
+| `onboardingId` | Identifiant unique du flow d'onboarding |
+| `screenClientId` | Identifiant de l'écran actuel |
+| `screenIndex` | Position de l'écran actuel dans le flow |
+| `screensTotal` | Nombre total d'écrans dans le flow |
+
+Voici un exemple d'utilisation des événements analytiques pour le suivi :
+
+```swift
+func onboardingController(_ controller: AdaptyOnboardingController, onAnalyticsEvent event: AdaptyOnboardingsAnalyticsEvent) {
+    switch event {
+    case .onboardingStarted(let meta):
+        // Track onboarding start
+        trackEvent("onboarding_started", meta: meta)
+    case .screenPresented(let meta):
+        // Track screen presentation
+        trackEvent("screen_presented", meta: meta)
+    case .screenCompleted(let meta, let elementId, let reply):
+        // Track screen completion with user response
+        trackEvent("screen_completed", meta: meta, elementId: elementId, reply: reply)
+    case .onboardingCompleted(let meta):
+        // Track successful onboarding completion
+        trackEvent("onboarding_completed", meta: meta)
+    case .unknown(let meta, let name):
+        // Handle unknown events
+        trackEvent(name, meta: meta)
+    // Handle other cases as needed
+    }
+}
+```
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```javascript
+// onboardingStarted
+{
+  "name": "onboarding_started",
+  "meta": {
+    "onboarding_id": "onboarding_123",
+    "screen_cid": "welcome_screen",
+    "screen_index": 0,
+    "total_screens": 4
+  }
+}
+
+// screenPresented
+
+{
+    "name": "screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "interests_screen",
+        "screen_index": 2,
+        "total_screens": 4
+    }
+}
+
+// screenCompleted
+
+{
+    "name": "screen_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    },
+    "params": {
+        "element_id": "profile_form",
+        "reply": "success"
+    }
+}
+
+// secondScreenPresented
+
+{
+    "name": "second_screen_presented",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// userEmailCollected
+
+{
+    "name": "user_email_collected",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "profile_screen",
+        "screen_index": 1,
+        "total_screens": 4
+    }
+}
+
+// onboardingCompleted
+
+{
+    "name": "onboarding_completed",
+    "meta": {
+        "onboarding_id": "onboarding_123",
+        "screen_cid": "final_screen",
+        "screen_index": 3,
+        "total_screens": 4
+    }
+}
+
+```
+
+</Details>
