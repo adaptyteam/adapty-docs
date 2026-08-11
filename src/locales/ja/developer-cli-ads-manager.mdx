@@ -1,0 +1,147 @@
+---
+title: "CLIからAds Managerを管理する"
+description: "Adapty Developer CLIを使って、ターミナルからApple Adsのキャンペーン、キーワード、自動化ルールを実行します。"
+metadataTitle: "Developer CLIのAds Manager | Adapty ドキュメント"
+---
+
+Adapty CLIでは、`adapty asa`トピックの下で、ターミナルから[Ads Manager](adapty-ads-manager)アカウントを管理できます。キャンペーン、広告グループ、キーワード、広告、プロダクトページ、自動化ルール、指標、競合調査などに対応しています。
+
+ブラウザでは時間がかかる作業に活用しましょう。たとえば、AIエージェントに広告パフォーマンスへのライブアクセスを提供したり、ファイルから数百件のキーワードを追加したり、複数のキャンペーンに同じ設定を適用したりする場合です。それ以外の作業は、[ダッシュボード](https://app.adapty.io)の方が速いです。
+
+:::warning
+CLIでは削除操作はできません。キャンペーン、広告、自動化ルールはターミナルから作成・更新・一時停止できますが、削除はダッシュボードからのみ可能です。
+:::
+
+## 始める前に \{#before-you-start\}
+
+Ads Manager のコマンドは、CLI の他の機能と同じインストール・ログイン手順を使用します。まだ設定していない場合は、[クイックスタートガイド](developer-cli-quickstart)のステップ 1 と 2 を参照してください。
+
+### 前提条件 \{#prerequisites\}
+
+すべての `adapty asa` コマンドには、さらに次の2つの条件が必要です：
+
+- **Apple Ads アカウントの接続**: `adapty asa connect` を使うか、[Adapty Ads Manager を始める](adapty-ads-manager-get-started)で説明されているダッシュボードから接続してください。
+- **有効な Ads Manager サブスクリプション**: これがない場合、すべてのコマンドが `402 ads_manager_subscription_required` で失敗します。
+
+次のコマンドで両方を確認できます：
+
+```bash
+adapty asa whoami
+```
+
+### CLIの他の部分との違い \{#differences-from-the-rest-of-the-cli\}
+
+- **`--app` フラグはありません**: スコープはトークンが属する会社です。`--app` は一部の `list` コマンドにフィルターとしてのみ存在します。
+- **書き込みはAppleに直接届きます**: アカウントを変更するコマンドはリクエスト本文を表示し、送信前に確認を求めます。ステージング手順はありません。
+- **読み取りは低コスト、書き込みは高コスト**: `list` コマンドと `--dry-run` は自由に使用できます。それ以外はすべて不可逆的なものとして扱ってください。
+
+確認プロンプトをスクリプト内でスキップするには、`--yes` を渡してください。`--json` モードまたはパイプ経由では、書き込みコマンドは応答を無限に待つ代わりに拒否するため、`--yes` が必要です。
+
+## 必要なIDを確認する \{#find-the-ids-you-need\}
+
+各コマンドはUUIDを必要とし、すべてのUUIDは`list`コマンドから取得します。階層に沿って順番に実行してください。
+
+```bash
+adapty asa orgs list
+adapty asa campaigns list --campaign-group <campaign-group-id>
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+各読み取りにはフィルターを指定してスコープを絞ってください。フィルターは表示されるページではなくクエリ自体を絞り込むため、スコープを指定した読み取りはコストが低く、指定しない場合はアカウント全体をページングします。`--ad-group`を指定しない`adapty asa keywords list`は、このトピックの中で最も広範な読み取りです。
+
+これらのリストはメタデータのみを返します。パフォーマンスの数値は [`asa metrics`](#query-metrics-from-agents-and-scripts) から取得できます。
+
+## キーワードを一括追加する \{#add-keywords-in-bulk\}
+
+キーワードを1件ずつ追加するのは、ダッシュボードを離れる主な理由です。テキストファイルに1行1キーワードで記述してください：
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 1.20 --match-type EXACT
+```
+
+キーワードは1回の呼び出しにつき最大100件のバッチとして適用されます。リストがそれ以上の場合は、複数回に分けて呼び出してください。
+
+失敗には2種類あり、挙動が異なります。IDが無効な場合はAppleへのリクエスト前にバッチ全体が失敗し、何も適用されません。Appleが個々のキーワードを拒否した場合は、残りは追加され、各拒否の理由が報告されます。終了コードだけでなく、サマリー行を必ず確認してください。
+
+まず少数のキーワードで試し、結果を確認してからファイル全体を送信してください。
+
+## エージェントやスクリプトから指標を取得する \{#query-metrics-from-agents-and-scripts\}
+
+`asa metrics` は、アカウントの任意のレベルで日付範囲を指定して指標をレポートします。AIエージェントやスクリプトで結果を直接利用するには、`--json` を追加してください：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
+```
+
+`--metric` には、Ads Manager が追跡する指標名を指定します。全一覧は[指標](adapty-ads-manager-metrics)を参照してください。
+
+コホート指標は他の指標とは動作が異なります。`ltv` 指標は存在しません。ライフタイムバリューは日付ではなくリニューアルウィンドウで読み取られるためです。代わりにウィンドウを指定してください：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90 --order-by-day 90
+```
+
+これにより、day-90 ROAS 順にランク付けされたキャンペーンが返されます。1 回の呼び出しで最大 16 個のウィンドウを指定できます。
+
+各行は 1 つのエンティティを表し、サーバー側で集計・ソート済みです。「支出上位 5 件のキャンペーン」を調べる場合も、全ページをスキャンする必要はなく、1 回の呼び出しで完結します：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+指標と検索語リストは、1社あたり1つのアナリティクス予算を共有します：1分間に5回、10秒以内に最大2回のコール制限があります。ポーリングせず、必要な質問を1回で絞り込みましょう。レポート期間もグループ化の粒度によって上限が決まります — 日次で90日、週次で180日、月次で365日 — レポートの期間を広げるには、複数のコールに分割するのではなく、`--group-by` を粗く設定してください。
+
+## 競合アプリのキーワードを確認する \{#check-competitor-keywords\}
+
+1回のコマンドで、App Storeの最大5つのアプリが入札しているキーワードを取得できます：
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027 --json
+```
+
+期間と対象国はサーバー側で固定されており（直近の完全な月、全国対象）、フラグはアプリIDのみです。アプリのセットに対する初回の呼び出しは、数十秒かかる場合があります。
+
+スケジュールに従って競合他社のキーワードデータをレポートに取り込む際に使用します。結果をフィルタリングしたり、国ごとに比較したり、見つかったキーワードをキャンペーンに直接追加したりするには、ダッシュボードの [Market Intelligence](ads-manager-market-intelligence) を使用してください。
+
+## 自動化ルールを実行する \{#run-automation-rules\}
+
+CLI は[自動化ルール](ads-manager-automations)をビルドしません — 渡した JSON をそのまま保存します。有効なルールファイルを最短で取得するには、ダッシュボードでルールを 1 つ作成してから読み返します:
+
+```bash
+adapty asa automations get <automation-id> --json > rule.json
+```
+
+そのファイルを編集して、新しいルールのテンプレートとして使用します:
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+`automations update` にファイルを渡す場合は、事前に `internal_id` フィールドを削除してください — このフィールドが含まれていると更新が拒否されます。
+
+ルールを適用する前にテストする:
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+ドライランは条件を評価し、Apple Ads に触れることなくルールが何をするかをログに記録します。実行はすぐに実行されるのではなくキューに追加されるため、コマンドは実行 ID を表示し、結果は `adapty asa automations runs` に表示されます。
+
+## スクリプトを安全に再実行する \{#re-run-scripts-safely\}
+
+すべての書き込みにはべき等性キーが付与されます。CLIは呼び出しごとにキーを生成し、ネットワークエラー後に1回リトライするため、途中で失敗したリクエストが二重に適用されることはありません。
+
+スクリプトでは、パイプライン全体を再実行できるよう、キーを自分で固定してください:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50 --idempotency-key winter-push-2026 --yes
+```
+
+Re-running the same command within 24 hours returns the stored result and prints `Already applied earlier` instead of creating a second campaign. The same key with a different body fails with `422`, which catches an edited script that reuses a key by mistake.
+
+## 次のステップ \{#whats-next\}
+
+- [AIコーディングツールでApple広告を管理する](developer-cli-ads-manager-skill) — `ads-manager` スキルをインストールして、Claude Code、Copilot CLI、Codex、またはGemini CLIでこれらのコマンドを実行できるようにします。
+- [Ads Managerコマンド](developer-cli-ads-manager-reference) — すべてのコマンドと引数、フラグ、使用可能な値。
+- [オートメーション](ads-manager-automations) — 各ルールタイプの動作と実行できるアクション。
+- [指標](adapty-ads-manager-metrics) — `--metric` で使用できる指標名と各指標の計算方法。

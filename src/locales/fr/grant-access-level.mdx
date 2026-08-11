@@ -1,0 +1,315 @@
+---
+title: "Accorder des niveaux d'accès manuellement"
+description: "Déverrouillez manuellement les fonctionnalités payantes pour des utilisateurs ou groupes d'utilisateurs spécifiques"
+metadataTitle: "Guides | API | Documentation Adapty"
+displayed_sidebar: APISidebar
+---
+
+Si vous avez besoin de **déverrouiller manuellement des fonctionnalités premium** pour des utilisateurs ou groupes d'utilisateurs spécifiques, vous pouvez le faire via l'API Adapty. C'est utile pour les campagnes promotionnelles, l'accès investisseur ou les cas particuliers de support client.
+
+Dans ce guide, vous apprendrez à identifier les utilisateurs et à leur accorder des niveaux d'accès par programmation.
+
+#### Exemples d'utilisation \{#sample-use-cases\}
+
+- **Codes promo** : Lorsqu'un utilisateur saisit un code promo valide dans votre application, accordez-lui automatiquement accès aux fonctionnalités premium.
+
+- **Accès investisseurs/bêta-testeurs** : Offrez un accès premium aux investisseurs ou aux bêta-testeurs en vérifiant leurs attributs personnalisés.
+
+:::note
+**Codes promo Google Play** : Un achat effectué en utilisant un code promo Google Play peut arriver sans `orderId`. La validation des achats uniques (hors abonnement) d'Adapty nécessite un `orderId`, donc ces remboursements ne sont ni validés ni accordés automatiquement. Accordez l'accès manuellement en suivant les étapes ci-dessous — l'API côté serveur ne dépend pas d'un `orderId`.
+:::
+
+## Étape 1. Identifier les utilisateurs \{#step-1-identify-users\}
+
+Adapty utilise `customer_user_id` pour identifier les utilisateurs sur toutes les plateformes et tous les appareils. C'est essentiel pour garantir que les utilisateurs conservent leur accès après avoir réinstallé l'application ou changé d'appareil.
+
+Vous devez créer cet identifiant une seule fois. Lorsque des utilisateurs s'inscrivent pour la première fois depuis l'application, vous pouvez transmettre leur `customer_user_id` lors de l'activation du SDK, ou utiliser la méthode `identify` si le SDK a été activé avant l'inscription.
+
+:::important
+Si vous identifiez les nouveaux utilisateurs après l'activation du SDK, le SDK créera d'abord un profil anonyme (il ne peut pas fonctionner sans). Lorsque vous appelez `identify` avec un customer user ID, un nouveau profil sera créé.
+
+Ce comportement est normal et n'affectera pas la précision des analyses. En savoir plus [ici](ios-quickstart-identify).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)" default>
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") { error -> // Unique for each user
+    if (error == null) {
+        // successful identify
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Android (Java)" default>
+```java showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID", error -> {
+    if (error == null) {
+        // successful identify
+    }
+});
+```
+</TabItem>
+<TabItem value="react-native" label="React Native" default>
+```typescript showLineNumbers
+try {
+    await adapty.identify("YOUR_USER_ID"); // Unique for each user
+    // successfully identified
+} catch (error) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId); // Unique for each user
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+Adapty.Identify("YOUR_USER_ID", (error) => { // Unique for each user
+  if(error == null) {
+    // successful identify
+  }
+});
+```
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+```kotlin showLineNumbers
+Adapty.identify("YOUR_USER_ID") // Unique for each user
+    .onSuccess {
+        // successful identify
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor" default>
+```typescript showLineNumbers
+try {
+  await adapty.identify({ customerUserId: "YOUR_USER_ID" });
+  // successfully identified
+} catch (error) {
+  // handle the error
+}
+```
+</TabItem>
+</Tabs>
+
+## Étape 2. Accorder un niveau d'accès via l'API \{#step-2-grant-access-level-via-api\}
+
+Une fois qu'un utilisateur est identifié avec un `customer_user_id`, vous pouvez lui accorder des niveaux d'accès via l'API côté serveur. Cet appel API accordera le niveau d'accès à l'utilisateur, lui permettant d'accéder aux fonctionnalités payantes sans avoir réellement effectué d'achat.
+
+Consultez la référence complète de la méthode [ici](api-adapty/operations/grantAccessLevel).
+
+:::tip
+Vous pouvez contrôler l'accès des utilisateurs en ajoutant un attribut personnalisé (par exemple, Beta tester ou Investor) dans l'Adapty Dashboard.
+Au lancement de votre application, [vérifiez cet attribut dans le profil de l'utilisateur](subscription-status) pour accorder l'accès automatiquement.
+Pour mettre à jour l'accès, modifiez simplement l'attribut dans le tableau de bord.
+:::
+
+```bash
+curl --request POST \
+  --url https://api.adapty.io/api/v2/server-side-api/purchase/profile/grant/access-level/ \
+  --header 'Accept: application/json' \
+  --header 'Authorization: Api-Key YOUR_SECRET_API_KEY' \
+  --header 'Content-Type: application/json' \
+  --header 'adapty-customer-user-id: CUSTOMER_USER_ID' \
+  --data '{
+  "access_level_id": "YOUR_ACCESS_LEVEL"
+}'
+```
+
+## Étape 3. Vérifier l'accès dans l'application \{#step-3-verify-access-in-the-app\}
+
+Après avoir accordé l'accès via l'API, le profil de l'utilisateur sera automatiquement mis à jour. Récupérez son profil pour vérifier son statut d'abonnement et débloquer les fonctionnalités premium.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+
+    if profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+// handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="swift-callback" label="iOS (Swift-Callback)" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        if profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="android" label="Android (Kotlin)" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val profile = result.value
+            // check the access
+            if (profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive == true) {
+                // grant access to premium features
+            }
+        }
+        is AdaptyResult.Error -> {
+            val error = result.error
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+
+```java showLineNumbers
+Adapty.getProfile(result -> {
+    if (result instanceof AdaptyResult.Success) {
+        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
+        // check the access
+        if (profile.getAccessLevels().get("YOUR_ACCESS_LEVEL_ID") != null && profile.getAccessLevels().get("YOUR_ACCESS_LEVEL_ID").getIsActive()) {
+            // grant access to premium features
+        }
+
+    } else if (result instanceof AdaptyResult.Error) {
+        AdaptyError error = ((AdaptyResult.Error) result).getError();
+        // handle the error
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="react-native" label="React Native" default>
+
+```typescript showLineNumbers
+try {
+    const profile = await adapty.getProfile();
+    // check the access
+    if (profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive) {
+        // grant access to premium features
+    }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+
+```dart showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+  if (profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive ?? false) {
+      // grant access to premium features
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+
+```csharp showLineNumbers
+Adapty.GetProfile((profile, error) => {
+  if (error != null) {
+    // handle the error
+    return;
+  }
+
+  // check the access
+  if (profile.AccessLevels["YOUR_ACCESS_LEVEL_ID"]?.IsActive ?? false) {
+      // grant access to premium features
+  }
+});
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform" default>
+
+```kotlin showLineNumbers
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // check the access
+        if (profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive == true) {
+            // grant access to premium features
+        }
+    }
+    .onError { error ->
+        // handle the error
+    }
+```
+
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor" default>
+
+```typescript showLineNumbers
+try {
+  const profile = await adapty.getProfile();
+  // check the access
+  if (profile.accessLevels["YOUR_ACCESS_LEVEL_ID"]?.isActive) {
+      // grant access to premium features
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
