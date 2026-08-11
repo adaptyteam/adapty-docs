@@ -8,28 +8,49 @@ customSlug: /react-native-localizations-and-locale-codes
 <SDKv4>
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Mã ngôn ngữ (locale code) được dùng khi Adapty chọn bản địa hóa cho một flow và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
+Mã ngôn ngữ (locale code) được dùng khi Adapty chọn bản dịch cho một flow hoặc onboarding, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, vì vậy Adapty sử dụng một chuẩn nội bộ thống nhất trên mọi nền tảng được hỗ trợ. Hiểu được chuẩn đó sẽ giúp bạn dự đoán người dùng sẽ nhận được bản địa hóa nào.
+Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty dùng một tiêu chuẩn nội bộ thống nhất trên tất cả các nền tảng được hỗ trợ. Hiểu được tiêu chuẩn đó giúp bạn dự đoán bản dịch nào người dùng sẽ nhận được.
+
 ## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
 
 Đối với mã ngôn ngữ, Adapty sử dụng tiêu chuẩn [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) được chỉnh sửa nhẹ: mỗi mã bao gồm các subtag viết thường, phân cách bằng dấu gạch nối. Ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
 ## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
-Khi Adapty tìm kiếm bản địa hóa phù hợp với ngôn ngữ của người dùng, quá trình diễn ra như sau:
+Trong SDK v4, flow và onboarding khớp mã ngôn ngữ theo các cách khác nhau: flow được SDK bản địa hóa ngay trên thiết bị, còn onboarding được bản địa hóa bởi máy chủ Adapty.
 
-1. Chuỗi ngôn ngữ được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
-2. Adapty tìm kiếm bản địa hóa có mã ngôn ngữ khớp hoàn toàn
-3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` cho `pt-br`) và tìm kiếm bản địa hóa phù hợp
-4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo ngôn ngữ mặc định của flow
+### Flow và paywall Paywall Builder
 
-Bằng cách này, `'pt_BR'`, `pt-BR`, và `pt-br` đều phân giải về cùng một bản địa hóa.
+Paywall được tạo bằng Paywall Builder sẽ được phân phối dưới dạng flow trong SDK v4, vì vậy quy tắc dưới đây áp dụng cho cả hai.
+
+Kết quả khớp là tuyệt đối. SDK so sánh mã bạn truyền vào với mã bản địa hóa của flow theo từng ký tự: không thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không quay về dùng thẻ con ngôn ngữ. Với một flow có bản địa hóa `pt-br`, chỉ `pt-br` mới khớp: `pt-BR`, `pt_BR`, và `pt-PT` đều không khớp.
+
+Khi mã code không khớp với bất kỳ localization nào, flow sẽ tự động hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — SDK không trả về lỗi và không ghi cảnh báo.
+
+Khi mã code khớp, Adapty sẽ gộp localization đó với localization mặc định: các chuỗi văn bản và tài nguyên mà localization được khớp không định nghĩa sẽ được lấy từ localization mặc định.
+
+Bỏ qua mã ngôn ngữ không đồng nghĩa với việc yêu cầu ngôn ngữ mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có ngôn ngữ mặc định là `de` vẫn hiển thị bằng `en` nếu nó có bản dịch `en`, và chỉ dùng `de` làm dự phòng khi không có bản dịch `en`.
+
+:::warning
+Truyền mã ngôn ngữ đúng như cách cấu hình trong dashboard — các subtag viết thường, phân cách bằng dấu gạch ngang. Đừng truyền trực tiếp định danh locale của thiết bị: `getLocales()[0].languageTag` từ [`react-native-localize`](https://github.com/zoontek/react-native-localize) trả về `pt-BR`, và sẽ fallback về bản ngôn ngữ mặc định. Hãy chuyển đổi giá trị trong app trước khi truyền vào.
+:::
+
+### Onboardings
+
+Onboardings được bản địa hóa trên server, và các quy tắc của server chấp nhận nhiều định dạng khác nhau. Khi bạn truyền `locale` vào [`getOnboarding`](react-native-get-onboardings):
+
+1. Chuỗi locale được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Adapty tìm bản địa hóa có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm bản địa hóa phù hợp
+4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo ngôn ngữ mặc định của onboarding
+
+Điều này giúp `pt_BR`, `pt-BR` và `pt-br` đều phân giải về cùng một bản dịch onboarding.
 
 ## Triển khai bản địa hóa \{#implementing-localizations\}
 
 Trong SDK v4, bạn không cần truyền mã locale khi tải flow — `getFlow` trả về flow cùng với tất cả các bản địa hóa, và Adapty sẽ áp dụng một bản khi view của flow được xây dựng.
 
-- **Flow được tạo trong builder**: SDK không đọc locale của thiết bị, vì vậy hãy tự xử lý trong ứng dụng của bạn và truyền nó qua tham số `locale` của `createFlowView`, hoặc qua prop `params` của component `AdaptyFlowView` được nhúng vào. Đây là tùy chọn — nếu bỏ qua, flow sẽ hiển thị bằng `en`, hoặc bằng [locale mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) nếu flow không có bản dịch `en`. Khi bạn yêu cầu một localization mà flow không có, giao diện sẽ tự động dùng locale mặc định của flow mà không báo lỗi, và bất kỳ chuỗi nào mà localization được chọn thiếu sẽ được lấy từ localization mặc định.
+- **Flow được xây dựng trong builder**: SDK không tự đọc locale của thiết bị, vì vậy hãy xử lý trong app của bạn và truyền vào qua tham số `locale` của `createFlowView`, hoặc qua prop `params` của component `AdaptyFlowView` nhúng vào. Tham số này không bắt buộc — nếu bỏ qua, flow sẽ hiển thị theo ngôn ngữ `en`, hoặc theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) nếu flow không có bản dịch `en`.
 
   ```typescript showLineNumbers
   import { createFlowView } from 'react-native-adapty';
@@ -47,11 +68,12 @@ const config = flow.remoteConfigs?.find((c) => c.lang === 'en') ?? flow.remoteCo
 // read your values from config?.data
 ```
 
-Các quy tắc khớp mã locale ở trên mô tả cách Adapty chuẩn hóa các mã `lang` được lưu trên mỗi remote config.
+Adapty lưu trữ các mã `lang` theo định dạng được mô tả trong [Tiêu chuẩn mã ngôn ngữ tại Adapty](#locale-code-standard-at-adapty). SDK không tự động khớp Remote Config với ngôn ngữ, vì vậy việc áp dụng mục nào là tùy thuộc vào ứng dụng của bạn.
 
 </SDKv4>
 
 <SDKv3>
+
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
 Có một vài tình huống mà mã locale phát huy vai trò — chẳng hạn, khi bạn cần lấy đúng paywall theo ngôn ngữ hiện tại của ứng dụng.

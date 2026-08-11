@@ -9,33 +9,51 @@ displayed_sidebar: sdkandroid
 
 ## 为什么这很重要 \{#why-this-is-important\}
 
-当 Adapty 为流程选择本地化语言，以及当您读取自定义付费墙的远程配置时，语言区域代码就会发挥作用。
+当 Adapty 为流程或用户引导选择本地化内容，以及当您读取自定义付费墙的远程配置时，语言区域代码就会发挥作用。
 
-语言区域代码较为复杂，在不同平台之间可能存在差异，因此 Adapty 在其支持的所有平台中统一采用同一套内部标准。了解该标准有助于您预测用户最终会收到哪个本地化版本。
+语言区域代码较为复杂，且在不同平台之间可能存在差异，因此 Adapty 在其所有支持的平台上统一采用一套内部标准。理解这套标准有助于您预测用户将获得哪个本地化版本。
 
 ## Adapty 的语言区域代码标准 \{#locale-code-standard-at-adapty\}
 
 Adapty 使用略经修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)作为语言区域代码规范：每个代码由小写子标签组成，以连字符分隔。示例如下：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
 
-## 语言区域代码匹配 \{#locale-code-matching\}
+## 语言代码匹配 \{#locale-code-matching\}
 
-当 Adapty 为用户查找匹配的本地化语言时，会按以下步骤执行：
+在 SDK v4 中，流程与用户引导的语言代码匹配方式有所不同：流程由设备上的 SDK 进行本地化，而用户引导则由 Adapty 服务器负责本地化。
 
-1. 将语言区域字符串转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
-2. Adapty 查找与完整语言区域代码完全匹配的本地化内容
-3. 如果未找到匹配项，Adapty 会截取第一个连字符之前的子字符串（例如 `pt-br` 对应 `pt`），并查找匹配的本地化内容
-4. 如果仍未找到匹配项，Adapty 将返回该流程默认语言区域的内容
+### 流程与付费墙编辑工具付费墙 \{#flows-and-paywall-builder-paywalls\}
 
-这样，`'pt_BR'`、`pt-BR` 和 `pt-br` 都会解析到同一个本地化。
+在 SDK v4 中，用付费墙编辑工具构建的付费墙会以流程的形式下发，因此以下规则同时适用于两者。
+
+匹配规则为精确匹配。SDK 会逐字符比较你传入的代码与流程本地化代码：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于包含 `pt-br` 本地化的流程，只有 `pt-br` 能匹配：`pt-BR`、`pt_BR` 和 `pt-PT` 均无法匹配。
+
+当代码未匹配到任何本地化时，流程会静默地以其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染——SDK 不会返回错误，也不会记录警告。
+
+当代码匹配时，Adapty 会将该本地化与默认本地化合并：匹配到的本地化中未定义的字符串和资源将从默认本地化中获取。
+
+省略语言代码并不等同于请求流程的默认本地化：SDK 会固定替换为 `en`。如果一个流程的默认语言是 `de`，只要该流程存在 `en` 本地化，就仍会以 `en` 渲染；只有在没有 `en` 本地化时，才会回退到 `de`。此行为适用于 Android SDK 4.0.1 及更高版本——在 4.0.0 中，省略语言代码会渲染流程的默认本地化。
+
+:::warning
+请严格按照看板中配置的格式传递语言区域代码——使用连字符分隔的小写子标签。不要直接传递系统语言区域标识符：`Locale.getDefault().toLanguageTag()` 返回 `pt-BR`，`Locale.getDefault().toString()` 返回 `pt_BR`，两者都会回退到默认本地化。请在传递前在应用中对该值进行转换。
+:::
+
+### 用户引导 \{#onboardings\}
+
+用户引导在服务端完成本地化，服务端规则对格式有一定的兼容性。当你将 `locale` 传入 [`getOnboarding`](android-get-onboardings) 时：
+
+1. locale 字符串会被转换为小写，所有下划线（`_`）替换为连字符（`-`）
+2. Adapty 查找与完整 locale 代码完全匹配的本地化内容
+3. 若未找到匹配项，Adapty 截取第一个连字符前的子字符串（例如 `pt-br` 取 `pt`），并查找对应的本地化内容
+4. 若仍未找到匹配项，Adapty 返回该用户引导默认语言的内容
+
+这样一来，`pt_BR`、`pt-BR` 和 `pt-br` 都会解析到同一个用户引导本地化配置。
 
 ## 实现本地化 \{#implementing-localizations\}
 
 在 SDK v4 中，获取流程时无需传入语言区域代码——`getFlow` 会返回包含所有本地化内容的流程。
 
-- **在编辑工具中构建的流程**：SDK 不会读取设备语言，请在应用中自行解析并通过 `AdaptyUI.getFlowConfiguration` 的 `locale` 参数传入。该参数为可选项——省略时流程以 `en` 渲染，若流程没有 `en` 本地化则使用其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)。若请求的本地化语言不存在，视图会静默回退到流程默认语言，所选本地化中缺失的字符串也会从默认语言中补全。
-
-默认使用 `en` 渲染需要 Android SDK 4.0.1。在 4.0.0 中，省略 `locale` 会渲染流程的默认本地化。
-- **自定义（远程配置）付费墙**：`getFlow` 会在 `flow.remoteConfigs` 中返回所有已配置的本地化内容。每个条目包含一个 `locale` 代码和配置内容（`jsonString`，或解析后的 `dataMap`）。请根据用户情况选择对应条目，并自行设置回退逻辑：
+- **在编辑工具中构建的流程**：SDK 不会读取设备语言，因此请在您的应用中解析语言设置，并将其作为 `locale` 参数传入 `AdaptyUI.getFlowConfiguration`。该参数为可选项——省略时，流程将以 `en` 渲染；若流程没有 `en` 本地化，则使用其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)。
+- **自定义（远程配置）付费墙**：`getFlow` 会在 `flow.remoteConfigs` 中返回所有已配置的本地化内容。每个条目包含 `locale` 代码和配置内容（`jsonString` 或已解析的 `dataMap`）。请自行实现回退逻辑，选取与用户匹配的条目：
 
 ```kotlin showLineNumbers
 Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -53,7 +71,7 @@ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
 }
 ```
 
-上述语言区域代码匹配规则描述了 Adapty 如何规范化每个远程配置中存储的 `locale` 代码。
+Adapty 以[Adapty 的语言代码标准](#locale-code-standard-at-adapty)中描述的格式存储这些 `locale` 代码。SDK 不会将远程配置与语言代码进行匹配，因此具体应用哪个条目由你的应用自行决定。
 
 </SDKv4>
 

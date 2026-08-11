@@ -8,9 +8,9 @@ metadataTitle: "Bản địa hóa Paywall | Unity SDK | Tài liệu Adapty"
 
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Mã ngôn ngữ (locale code) được dùng khi Adapty chọn bản địa hóa cho một flow, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
+Mã locale được sử dụng khi Adapty chọn bản dịch cho một flow hoặc onboarding, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, vì vậy Adapty dựa trên một tiêu chuẩn nội bộ thống nhất cho mọi nền tảng mà nó hỗ trợ. Hiểu rõ tiêu chuẩn đó giúp bạn dự đoán bản địa hóa nào người dùng sẽ nhận được.
+Mã locale khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty sử dụng một tiêu chuẩn nội bộ thống nhất trên tất cả các nền tảng mà nó hỗ trợ. Hiểu được tiêu chuẩn đó giúp bạn dự đoán bản dịch nào mà người dùng sẽ nhận được.
 
 ## Tiêu chuẩn mã locale tại Adapty \{#locale-code-standard-at-adapty\}
 
@@ -18,21 +18,41 @@ Mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, v�
 
 ## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
-Khi Adapty tìm kiếm bản dịch phù hợp với ngôn ngữ của người dùng, quá trình diễn ra như sau:
+Trong SDK v4, các flow và onboarding khớp mã ngôn ngữ theo cách khác nhau: flow được bản địa hóa bởi SDK trên thiết bị, còn onboarding được bản địa hóa bởi máy chủ Adapty.
 
-1. Chuỗi ngôn ngữ được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch nối (`-`)
-2. Adapty tìm kiếm bản dịch có mã ngôn ngữ khớp hoàn toàn
-3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch nối đầu tiên (`pt` đối với `pt-br`) và tìm kiếm bản dịch phù hợp
-4. Nếu vẫn không tìm thấy, Adapty trả về bản dịch mặc định `en`
+### Flow và paywall Paywall Builder \{#flows-and-paywall-builder-paywalls\}
 
-Theo cách này, `'pt_BR'`, `pt-BR` và `pt-br` đều trỏ đến cùng một bản dịch.
+Paywall được xây dựng trong Paywall Builder sẽ được phân phối dưới dạng flow trong SDK v4, vì vậy quy tắc dưới đây áp dụng cho cả hai.
+
+Kết quả khớp là tuyệt đối chính xác. SDK so sánh mã bạn truyền vào với mã ngôn ngữ của flow theo từng ký tự một: không thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không tự động dùng subtag ngôn ngữ. Với một flow có ngôn ngữ `pt-br`, chỉ `pt-br` mới khớp: `pt-BR`, `pt_BR`, và `pt-PT` đều không khớp.
+
+Khi mã ngôn ngữ không khớp với bất kỳ localization nào, flow sẽ tự động hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — SDK không trả về lỗi và không ghi cảnh báo nào.
+
+Khi mã ngôn ngữ khớp, Adapty sẽ hợp nhất localization đó với localization mặc định: các chuỗi và tài nguyên mà localization được khớp không định nghĩa sẽ được lấy từ localization mặc định.
+
+Bỏ qua mã locale không đồng nghĩa với việc yêu cầu localization mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có locale mặc định là `de` vẫn hiển thị bằng `en` khi nó có localization `en`, và chỉ fallback về `de` khi không có.
+
+:::warning
+Truyền mã locale chính xác như cấu hình trên dashboard — các subtag viết thường, phân tách bằng dấu gạch ngang. Đừng truyền trực tiếp system locale identifier: `CultureInfo.CurrentCulture.Name` trả về `pt-BR`, và nó sẽ fallback về localization mặc định. Hãy chuyển đổi giá trị trong app trước khi truyền vào.
+:::
+
+### Onboardings
+
+Onboardings được bản địa hóa trên server, và các quy tắc của server chấp nhận nhiều định dạng khác nhau. Khi bạn truyền `Locale` vào [`GetOnboarding`](unity-get-onboardings):
+
+1. Chuỗi locale được chuyển về chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Adapty tìm kiếm bản địa hóa có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm kiếm bản địa hóa phù hợp
+4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo locale mặc định của onboarding
+
+Theo cách này, `pt_BR`, `pt-BR`, và `pt-br` đều được phân giải thành cùng một bản địa hóa onboarding.
 
 ## Triển khai bản địa hóa \{#implementing-localizations\}
 
 Trong SDK v4, bạn không cần truyền mã ngôn ngữ khi lấy một flow — flow sẽ được bản địa hóa khi view của nó được tạo.
 
-- **Paywall được tạo bằng Flow Builder và Paywall Builder**: Adapty tự động xác định bản địa hóa dựa trên thiết bị và các bản địa hóa bạn đã cấu hình trong builder, nên `CreateFlowView` không cần mã locale. Để tự chọn bản địa hóa, hãy [ghi đè khi tạo view](#override-the-localization-of-a-flow).
-- **Paywall tùy chỉnh (remote config)**: `GetFlow` trả về tất cả các bản địa hóa đã cấu hình trong `flow.RemoteConfigs`. Mỗi mục là một `AdaptyRemoteConfig` với mã `Locale` và một `Dictionary` các giá trị. Chọn mục phù hợp với người dùng, kèm theo fallback của riêng bạn:
+- **Paywall được xây dựng bằng Flow Builder và Paywall Builder**: SDK không đọc ngôn ngữ thiết bị, vì vậy hãy xử lý trong ứng dụng của bạn và [truyền vào khi tạo view](#choose-the-localization-of-a-flow). Mã ngôn ngữ là tùy chọn — bỏ qua nó và flow sẽ hiển thị bằng `en`, hoặc bằng ngôn ngữ mặc định khi flow không có bản dịch `en`.
+- **Paywall tùy chỉnh (remote config)**: `GetFlow` trả về tất cả các bản dịch đã cấu hình trong `flow.RemoteConfigs`. Mỗi mục là một `AdaptyRemoteConfig` với mã `Locale` và một `Dictionary` các giá trị. Chọn mục phù hợp với người dùng, với logic dự phòng của riêng bạn:
 
 ```csharp showLineNumbers
 using System.Linq;
@@ -50,11 +70,11 @@ Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
 });
 ```
 
-Các quy tắc khớp mã ngôn ngữ ở trên mô tả cách Adapty chuẩn hóa các mã `Locale` được lưu trữ trong mỗi Remote Config.
+Adapty lưu trữ các mã `Locale` theo định dạng được mô tả trong [Tiêu chuẩn mã Locale tại Adapty](#locale-code-standard-at-adapty). SDK không tự động khớp Remote Config với một locale, vì vậy việc áp dụng mục nào là tùy thuộc vào ứng dụng của bạn.
 
-### Ghi đè bản địa hóa của một flow \{#override-the-localization-of-a-flow\}
+### Chọn ngôn ngữ cho một flow \{#choose-the-localization-of-a-flow\}
 
-Để hiển thị một flow hoặc paywall với một bản địa hóa cụ thể thay vì bản mà Adapty tự động xác định từ thiết bị, hãy truyền mã locale vào `SetLocale` khi tạo view:
+Để hiển thị một flow hoặc paywall với ngôn ngữ cụ thể, truyền mã locale vào `SetLocale` khi bạn tạo view:
 
 ```csharp showLineNumbers
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -70,7 +90,7 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 });
 ```
 
-Chế độ xem báo cáo bản địa hóa mà nó thực sự được xây dựng với trong `view.Locale`: bản địa hóa bạn đã yêu cầu khi bản địa hóa đó tồn tại, và bản địa hóa mặc định của flow trong trường hợp còn lại.
+View báo cáo localization mà nó thực sự được xây dựng với trong `view.Locale`: localization bạn đã yêu cầu nếu localization đó tồn tại, và localization mặc định của flow nếu không có.
 
 </SDKv4>
 

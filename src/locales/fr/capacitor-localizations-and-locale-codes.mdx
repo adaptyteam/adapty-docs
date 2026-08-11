@@ -10,9 +10,9 @@ displayed_sidebar: sdkcapacitor
 
 ## Pourquoi c'est important \{#why-this-is-important\}
 
-Les codes de langue entrent en jeu lorsqu'Adapty choisit la localisation pour un flow et lorsque vous lisez un Remote Config pour un paywall personnalisé.
+Les codes de locale entrent en jeu lorsqu'Adapty choisit la localisation pour un flow ou un onboarding, et lorsque vous lisez un Remote Config pour un paywall personnalisé.
 
-Les codes de langue sont complexes et peuvent varier d'une plateforme à l'autre. Adapty s'appuie donc sur un standard interne unique pour toutes les plateformes qu'il prend en charge. Comprendre ce standard vous aide à anticiper quelle localisation reçoit un utilisateur.
+Les codes de locale sont complexes et peuvent varier d'une plateforme à l'autre. Adapty s'appuie donc sur un standard interne unique, commun à toutes les plateformes qu'il prend en charge. Comprendre ce standard vous permet d'anticiper quelle localisation reçoit un utilisateur.
 
 ## Standard des codes de langue chez Adapty \{#locale-code-standard-at-adapty\}
 
@@ -20,20 +20,40 @@ Pour les codes de langue, Adapty utilise une version légèrement modifiée du [
 
 ## Correspondance des codes de langue \{#locale-code-matching\}
 
-Lorsqu'Adapty recherche la localisation qui correspond à la locale d'un utilisateur, voici ce qui se passe :
+Dans le SDK v4, les flows et les onboardings font correspondre les codes de langue différemment : les flows sont localisés par le SDK sur l'appareil, les onboardings par le serveur Adapty.
+
+### Flows et paywalls Paywall Builder \{#flows-and-paywall-builder-paywalls\}
+
+Un paywall créé dans le Paywall Builder est livré sous forme de flow dans le SDK v4, donc la règle ci-dessous s'applique aux deux.
+
+La correspondance est exacte. Le SDK compare le code que vous transmettez avec les codes de localisation du flow caractère par caractère : il ne modifie pas la casse, ne remplace pas les tirets bas (`_`) par des tirets (`-`), et ne se replie pas sur le sous-tag de langue. Pour un flow avec une localisation `pt-br`, seul `pt-br` correspond : `pt-BR`, `pt_BR` et `pt-PT` ne correspondent pas.
+
+Lorsque le code ne correspond à aucune localisation, le flow s'affiche silencieusement dans sa [locale par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — le SDK ne renvoie pas d'erreur et n'enregistre pas d'avertissement.
+
+Lorsque le code correspond, Adapty fusionne la localisation avec la localisation par défaut : les chaînes et les ressources que la localisation correspondante ne définit pas sont reprises depuis la localisation par défaut.
+
+Omettre le code de langue n'est pas la même chose que demander la localisation par défaut du flow : le SDK utilise un `en` fixe. Un flow dont la langue par défaut est `de` s'affiche quand même en `en` s'il possède une localisation `en`, et ne bascule vers `de` que s'il n'en a pas.
+
+:::warning
+Passez le code de langue exactement tel qu'il est configuré dans le tableau de bord — sous-balises en minuscules séparées par des tirets. Ne transmettez pas un identifiant de locale système tel quel : `navigator.language` renvoie `pt-BR`, ce qui entraîne un retour à la localisation par défaut. Convertissez la valeur dans votre application avant de la transmettre.
+:::
+
+### Onboardings
+
+Les onboardings sont localisés côté serveur, et les règles du serveur acceptent d'autres formats. Lorsque vous passez un `locale` à [`getOnboarding`](capacitor-get-onboardings) :
 
 1. La chaîne de locale est convertie en minuscules et tous les underscores (`_`) sont remplacés par des tirets (`-`)
 2. Adapty recherche la localisation dont le code de locale correspond exactement
 3. Si aucune correspondance n'est trouvée, Adapty extrait la sous-chaîne avant le premier tiret (`pt` pour `pt-br`) et recherche la localisation correspondante
-4. Si aucune correspondance n'est encore trouvée, Adapty renvoie le contenu dans la locale par défaut du flow
+4. Si aucune correspondance n'est trouvée non plus, Adapty retourne le contenu dans la locale par défaut de l'onboarding
 
-Cette approche permet à `'pt_BR'`, `pt-BR` et `pt-br` de tous correspondre à la même localisation.
+Cette approche permet à `pt_BR`, `pt-BR` et `pt-br` de tous pointer vers la même localisation d'onboarding.
 
-## Implémentation des localisations \{#implementing-localizations\}
+## Implémenter les localisations \{#implementing-localizations\}
 
-Dans le SDK v4, vous ne transmettez pas de code de langue lorsque vous récupérez un flow — `getFlow` renvoie le flow avec toutes ses localisations, et Adapty en applique une au moment où la vue du flow est construite.
+Dans le SDK v4, vous ne passez pas de code de langue lors de la récupération d'un flow — `getFlow` renvoie le flow avec toutes ses localisations, et Adapty en applique une au moment de la construction de la vue du flow.
 
-- **Flows construits dans le builder** : le SDK ne lit pas la langue de l'appareil, donc déterminez-la dans votre application et transmettez-la comme option `locale` de `createFlowView`. C'est facultatif — omettez-la et le flow s'affiche en `en`, ou dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) si le flow ne possède pas de localisation `en`. Si vous demandez une localisation que le flow n'a pas, la vue revient à la langue par défaut du flow sans erreur, et les chaînes manquantes dans la localisation choisie sont récupérées depuis celle par défaut.
+- **Flows construits dans le builder** : le SDK ne lit pas la langue du système, vous devez donc la résoudre dans votre app et la passer comme option `locale` de `createFlowView`. C'est optionnel — omettez-la et le flow s'affiche en `en`, ou dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) si le flow ne possède pas de localisation `en`.
 
 ```typescript showLineNumbers
   import { createFlowView } from '@adapty/capacitor';
@@ -51,7 +71,7 @@ const config = flow.remoteConfigs?.find((c) => c.lang === 'en') ?? flow.remoteCo
 // read your values from config?.data
 ```
 
-Les règles de correspondance des codes de langue décrites ci-dessus expliquent comment Adapty normalise les codes `lang` stockés dans chaque Remote Config.
+Adapty stocke ces codes `lang` dans le format décrit dans [Standard des codes de locale dans Adapty](#locale-code-standard-at-adapty). Le SDK ne fait pas correspondre les Remote Configs à une locale, c'est donc à votre application de choisir quelle entrée appliquer.
 
 </SDKv4>
 

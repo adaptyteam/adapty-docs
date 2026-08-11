@@ -9,28 +9,49 @@ displayed_sidebar: sdkcapacitor
 <SDKv4>
 ## 为什么这很重要 \{#why-this-is-important\}
 
-当 Adapty 为流程选择本地化版本，以及当你为自定义付费墙读取远程配置时，语言区域代码就会发挥作用。
+区域设置代码在以下情况下会发挥作用：Adapty 为流程或用户引导选择本地化内容，以及您为自定义付费墙读取远程配置时。
 
-语言区域代码较为复杂，不同平台之间可能存在差异，因此 Adapty 在其支持的所有平台上统一采用一套内部标准。了解这套标准，有助于你预测用户最终会获取哪个本地化版本。
+区域设置代码较为复杂，且在不同平台之间可能存在差异，因此 Adapty 在其支持的所有平台上采用统一的内部标准。了解该标准有助于您预测用户会收到哪种本地化内容。
+
 ## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
 
 Adapty 的语言代码基于略作修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
-## 语言区域代码匹配 \{#locale-code-matching\}
+## 语言代码匹配 \{#locale-code-matching\}
 
-当 Adapty 为用户查找匹配的本地化内容时，会按以下步骤进行：
+在 SDK v4 中，流程和用户引导的语言代码匹配方式有所不同：流程由 SDK 在设备端完成本地化，而用户引导则由 Adapty 服务器完成本地化。
 
-1. 将语言区域字符串转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
-2. Adapty 查找与完整语言区域代码完全匹配的本地化内容
-3. 如果未找到匹配项，Adapty 取第一个连字符前的子字符串（例如 `pt-br` 对应 `pt`），并查找匹配的本地化内容
-4. 如果仍未找到匹配项，Adapty 返回该流程默认语言区域的内容
+### 流程与付费墙编辑工具付费墙 \{#flows-and-paywall-builder-paywalls\}
 
-这样，`'pt_BR'`、`pt-BR` 和 `pt-br` 都能解析到同一个本地化。
+在 SDK v4 中，通过付费墙编辑工具构建的付费墙会以流程的形式交付，因此以下规则同时适用于两者。
+
+匹配规则为精确匹配。SDK 会逐字符比较你传入的代码与流程本地化代码：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于带有 `pt-br` 本地化配置的流程，只有 `pt-br` 能够匹配：`pt-BR`、`pt_BR` 和 `pt-PT` 均无法匹配。
+
+当代码未匹配任何本地化时，流程会静默地以其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染——SDK 不会返回错误，也不会打印警告。
+
+当代码匹配成功时，Adapty 会将该本地化与默认本地化合并：匹配的本地化中未定义的字符串和资源将从默认本地化中获取。
+
+省略语言代码与请求流程的默认本地化并不相同：SDK 会固定替换为 `en`。如果某个流程的默认语言为 `de`，但它包含 `en` 本地化，则仍会以 `en` 渲染；只有在没有 `en` 本地化时，才会回退到 `de`。
+
+:::warning
+请严格按照看板中配置的格式传递语言代码——小写子标签，以连字符分隔。不要直接传入系统语言标识符：`navigator.language` 返回的是 `pt-BR`，这会导致回退到默认本地化。请在应用中先对该值进行转换，再传递给 SDK。
+:::
+
+### 用户引导 \{#onboardings\}
+
+用户引导的本地化在服务端进行，服务端规则对其他格式有一定的容错性。当你向 [`getOnboarding`](capacitor-get-onboardings) 传入 `locale` 时：
+
+1. locale 字符串会被转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
+2. Adapty 查找与完整 locale 代码完全匹配的本地化内容
+3. 如果未找到匹配项，Adapty 取第一个连字符之前的子字符串（例如 `pt-br` 取 `pt`），并查找匹配的本地化内容
+4. 如果仍未找到匹配项，Adapty 返回该用户引导默认语言的内容
+
+这样，`pt_BR`、`pt-BR` 和 `pt-br` 都会解析为同一个用户引导本地化。
 
 ## 实现本地化 \{#implementing-localizations\}
 
-在 SDK v4 中，获取流程时无需传入语言区域代码——`getFlow` 会返回包含所有本地化内容的流程，Adapty 在构建流程视图时会自动应用相应的本地化。
+在 SDK v4 中，获取流程时无需传入语言代码——`getFlow` 会返回包含所有本地化内容的流程，Adapty 会在构建流程视图时应用相应的本地化。
 
-- **在构建工具中创建的流程**：SDK 不会读取设备语言，请在应用中自行解析后通过 `createFlowView` 的 `locale` 参数传入。该参数为可选项——省略时流程将以 `en` 渲染，若流程不包含 `en` 本地化版本则以其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染。若请求的本地化版本不存在，视图会静默回退至流程默认语言，所选本地化版本中缺失的字符串也会从默认语言中补全。
+- **在编辑器中构建的流程**：SDK 不会读取设备语言，因此需要在应用中自行解析，并通过 `createFlowView` 的 `locale` 选项传入。该参数为可选项——若省略，流程将以 `en` 渲染；若流程没有 `en` 本地化，则使用其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染。
 
 ```typescript showLineNumbers
   import { createFlowView } from '@adapty/capacitor';
@@ -48,11 +69,12 @@ const config = flow.remoteConfigs?.find((c) => c.lang === 'en') ?? flow.remoteCo
 // read your values from config?.data
 ```
 
-上述语言代码匹配规则描述了 Adapty 如何对每个远程配置中存储的 `lang` 代码进行规范化处理。
+Adapty 将 `lang` 代码以[Adapty 的语言代码标准](#locale-code-standard-at-adapty)中描述的格式存储。SDK 不会将远程配置与语言区域进行匹配，因此使用哪个条目由您的应用决定。
 
 </SDKv4>
 
 <SDKv3>
+
 ## 为什么这很重要 \{#why-this-is-important\}
 
 在某些场景下，区域设置代码会发挥关键作用——例如，当你需要根据应用的当前语言获取正确的付费墙时。

@@ -8,9 +8,9 @@ metadataTitle: "Quản lý Localizations & Locale Codes | Tài liệu Adapty"
 
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Mã ngôn ngữ được sử dụng khi Adapty chọn bản dịch cho một flow, cũng như khi bạn đọc Remote Config cho một paywall tùy chỉnh.
+Mã ngôn ngữ (locale code) được sử dụng khi Adapty chọn bản dịch cho một flow hoặc onboarding, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty dựa trên một chuẩn nội bộ thống nhất trên mọi nền tảng mà nó hỗ trợ. Hiểu được chuẩn đó giúp bạn dự đoán được bản dịch nào người dùng sẽ nhận được.
+Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty dựa vào một tiêu chuẩn nội bộ thống nhất cho mọi nền tảng mà nó hỗ trợ. Hiểu được tiêu chuẩn đó giúp bạn dự đoán bản dịch nào người dùng sẽ nhận được.
 
 ## Tiêu chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
 
@@ -18,14 +18,34 @@ Adapty sử dụng phiên bản được điều chỉnh nhẹ của [chuẩn BC
 
 ## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
-Khi Adapty tìm kiếm bản địa hóa phù hợp với ngôn ngữ của người dùng, quá trình diễn ra như sau:
+Trong SDK v4, flow và onboarding khớp mã ngôn ngữ theo cách khác nhau: flow được bản địa hóa bởi SDK trên thiết bị, còn onboarding được bản địa hóa bởi server Adapty.
 
-1. Chuỗi ngôn ngữ được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
-2. Adapty tìm kiếm bản địa hóa có mã ngôn ngữ khớp hoàn toàn
-3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm kiếm bản địa hóa phù hợp
-4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo ngôn ngữ mặc định của flow
+### Flow và paywall Paywall Builder \{#flows-and-paywall-builder-paywalls\}
 
-Cách này giúp `'pt_BR'`, `pt-BR`, và `pt-br` đều phân giải về cùng một bản địa hóa.
+Paywall được xây dựng trong Paywall Builder được phân phối dưới dạng flow trong SDK v4, vì vậy quy tắc dưới đây áp dụng cho cả hai.
+
+Kết quả khớp là tuyệt đối. SDK so sánh code bạn truyền vào với các mã ngôn ngữ của flow theo từng ký tự một: không thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không dự phòng về language subtag. Với flow có ngôn ngữ `pt-br`, chỉ `pt-br` mới khớp: `pt-BR`, `pt_BR`, và `pt-PT` đều không khớp.
+
+Khi mã code không khớp với ngôn ngữ nào, flow sẽ tự động hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — SDK không trả về lỗi và không ghi cảnh báo.
+
+Khi mã code khớp, Adapty sẽ gộp ngôn ngữ đó với ngôn ngữ mặc định: các chuỗi văn bản và tài nguyên không được định nghĩa trong ngôn ngữ khớp sẽ được lấy từ ngôn ngữ mặc định.
+
+Bỏ qua mã ngôn ngữ không giống với việc yêu cầu bản địa hóa mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có ngôn ngữ mặc định là `de` vẫn hiển thị bằng `en` nếu flow đó có bản địa hóa `en`, và chỉ dùng `de` làm phương án dự phòng khi không có bản địa hóa `en`.
+
+:::warning
+Hãy truyền mã ngôn ngữ chính xác như cách đã cấu hình trong dashboard — các subtag viết thường, cách nhau bằng dấu gạch ngang. Đừng truyền trực tiếp identifier ngôn ngữ hệ thống: `Locale.current.identifier` trả về `pt_BR` và `Locale.current.identifier(.bcp47)` trả về `pt-BR`, cả hai đều sẽ fallback về localization mặc định. Hãy chuyển đổi giá trị trong ứng dụng của bạn trước khi truyền vào.
+:::
+
+### Onboardings
+
+Onboarding được bản địa hóa trên server, và các quy tắc của server chấp nhận nhiều định dạng khác nhau. Khi bạn truyền `locale` vào [`getOnboarding`](get-onboardings):
+
+1. Chuỗi locale được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Adapty tìm bản địa hóa có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm bản địa hóa khớp với chuỗi đó
+4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo locale mặc định của onboarding
+
+Bằng cách này, `pt_BR`, `pt-BR`, và `pt-br` đều phân giải về cùng một bản địa hóa onboarding.
 
 ## Triển khai các bản địa hóa \{#implementing-localizations\}
 
@@ -45,7 +65,7 @@ do {
 }
 ```
 
-Các quy tắc khớp mã locale ở trên mô tả cách Adapty chuẩn hóa các mã `locale` được lưu trên mỗi remote config.
+Adapty lưu trữ các mã `locale` theo định dạng được mô tả trong [Tiêu chuẩn mã locale tại Adapty](#locale-code-standard-at-adapty). SDK không tự khớp Remote Config với một locale, vì vậy việc áp dụng mục nào là tùy thuộc vào ứng dụng của bạn.
 
 </SDKv4>
 
