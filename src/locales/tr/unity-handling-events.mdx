@@ -1,7 +1,7 @@
 ---
-title: "Paywall olaylarını yönet"
-description: "Adapty SDK ile Unity uygulamanızda paywall olaylarını nasıl yöneteceğinizi öğrenin."
-metadataTitle: "Paywall Olaylarını Yönet | Unity SDK | Adapty Dokümanları"
+title: "Flow ve paywall olaylarını yönetme - Unity"
+description: "Unity uygulamanızda flow ve paywall olaylarını yönetin."
+metadataTitle: "Flow Olaylarını Yönetme - Unity | Adapty Dokümanları"
 customSlug: /unity-handling-events
 displayed_sidebar: sdkunity
 ---
@@ -9,14 +9,485 @@ displayed_sidebar: sdkunity
 import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/tr/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-Bu rehber; satın alma, geri yükleme, ürün seçimi ve paywall render işlemlerine ait olay yönetimini kapsar. Ayrıca buton işlemlerini de (paywallı kapatma, bağlantı açma vb.) uygulamanız gerekir. Ayrıntılar için [buton aksiyonlarını yönetme rehberimize](unity-handle-paywall-actions) bakın.
+Bu kılavuz, satın almalar, yeniden yüklemeler, ürün seçimi ve flow rendering için event yönetimini kapsar. Ayrıca buton işleme (flow'u kapatma, bağlantı açma vb.) özelliklerini de uygulamanız gerekir. Ayrıntılar için [flow aksiyonlarını yönetme kılavuzumuza](unity-handle-paywall-actions) bakın.
 :::
 
-[Paywall Builder](adapty-paywall-builder) ile yapılandırılan paywall'lar, satın alma ve geri yükleme işlemleri için ek kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; buton tıklamaları (kapat butonları, URL'ler, ürün seçimleri vb.) ve paywall üzerinde gerçekleştirilen satın alma ile ilgili aksiyonlara dair bildirimleri kapsar. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+[Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) ile yapılandırılan flow'lar ve paywall'lar, satın alma yapmak ve geri yüklemek için ekstra kod gerektirmez. Ancak, uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar; düğme basışlarını (kapat düğmeleri, URL'ler, ürün seçimleri vb.) ve satın alma ile ilgili eylemlere ait bildirimleri içerir. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
+
+<SampleApp />
+
+## Olayları Yönetme \{#handling-events\}
+
+Mobil uygulamanızdaki flow ekranında gerçekleşen süreçleri kontrol etmek veya izlemek için `IAdaptyFlowsEventsListener` arayüzünü uygulayın ve `Adapty.SetFlowsEventsListener()` ile kaydedin:
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowEventsHandler : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // Implement all interface methods below
+}
+```
+
+:::note
+Bu metodlar, flow olaylarına yanıt vermek için kendi özel mantığınızı eklediğiniz yerlerdir. SDK bunlara herhangi bir varsayılan davranış uygulamaz: başarılı bir satın alma veya hata, görünümü otomatik olarak kapatmaz — uygun olduğunda `view.Dismiss(...)` metodunu kendiniz çağırın.
+:::
+
+### Kullanıcı tarafından tetiklenen olaylar
+
+#### Flow göründü \{#flow-appeared\}
+
+Flow görünümü ekranda sunulduğunda tetiklenir.
+
+:::note
+iOS'ta, bir kullanıcı flow içindeki [web paywall düğmesine](web-paywall#step-2a-add-a-web-purchase-button) dokunduğunda ve web paywall uygulama içi bir tarayıcıda açıldığında da tetiklenir.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+```
+
+#### Flow kayboldu \{#flow-disappeared\}
+
+Flow görünümü ekrandan kapatıldığında tetiklenir.
+
+:::note
+iOS'ta, bir flow içinde uygulama içi tarayıcıda açılan [web paywall](web-paywall#step-2a-add-a-web-purchase-button)'ın ekrandan kaybolması durumunda da tetiklenir.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+```
+
+#### Ürün seçimi \{#product-selection\}
+
+Bir ürün satın alma için seçildiğinde (kullanıcı veya sistem tarafından) tetiklenir.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidSelectProduct(
+    AdaptyUIFlowView view,
+    string productId
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### Satın alma başlatıldı \{#started-purchase\}
+
+Bir kullanıcı satın alma işlemini başlattığında tetiklenir.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product
+) { }
+```
+
+:::note
+[Observer mode](unity-present-flows-in-observer-mode)'da, bir flow'dan başlatılan satın almalar `IAdaptyUIObserverModeResolver`'ınıza iletilir.
+:::
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Başarılı, iptal edilmiş veya beklemedeki satın alma \{#successful-canceled-or-pending-purchase\}
+
+Satın alma başarılı olursa, kullanıcı satın almayı iptal ederse ya da satın alma beklemede görünürse bu metod çağrılır. Kullanıcı iptalleri ve beklemedeki ödemeler (örn. ebeveyn onayı gerekmesi) bu metodu tetikler, `FlowViewDidFailPurchase` metodunu değil.
+
+Flow, satın alma işleminden sonra siz kapatana kadar açık kalmaya devam eder; bu nedenle kullanıcı erişim kazandıktan sonra `view.Dismiss(...)` metodunu kendiniz çağırın:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchasedResult
+) {
+    switch (purchasedResult.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Check if user has access to premium features
+            if (purchasedResult.Profile != null
+                && purchasedResult.Profile.AccessLevels.TryGetValue("premium", out var premium)
+                && premium.IsActive) {
+                view.Dismiss(null);
+            }
+            break;
+        case AdaptyPurchaseResultType.Pending:
+            // Handle pending purchase (e.g., user will pay offline with cash)
+            break;
+        case AdaptyPurchaseResultType.UserCancelled:
+            // Handle user cancellation
+            break;
+        default:
+            break;
+    }
+}
+```
+
+<Details>
+<summary>Etkinlik örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+Başarılı satın alma durumunda flow ekranını kapatmanızı öneririz.
+
+#### Başarısız satın alma \{#failed-purchase\}
+
+Bir satın alma hata nedeniyle başarısız olursa bu metot çağrılır. StoreKit/Google Play Billing hataları (ödeme kısıtlamaları, geçersiz ürünler, ağ hataları), işlem doğrulama hataları ve sistem hataları bu kapsama girer. Kullanıcı iptalleri `FlowViewDidFinishPurchase`'i iptal edilmiş sonucuyla tetikler; bekleyen ödemeler ise bu metodu tetiklemez.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### Geri yükleme başladı \{#started-restore\}
+
+Kullanıcı geri yükleme sürecini başlattığında tetiklenir:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+```
+
+#### Başarılı geri yükleme \{#successful-restore\}
+
+Satın alma geri yükleme işlemi başarıyla tamamlandığında çağrılır. Siz kapatana kadar flow açık kalır:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishRestore(
+    AdaptyUIFlowView view,
+    AdaptyProfile profile
+) {
+    // Check if user has access to premium features
+    if (profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive) {
+        view.Dismiss(null);
+    }
+}
+```
+
+<Details>
+<summary>Etkinlik örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+`accessLevel` erişimine sahip kullanıcı için ekranı kapatmanızı öneririz. Bunu nasıl kontrol edeceğinizi öğrenmek için [Abonelik durumu](unity-listen-subscription-changes) konusuna bakın.
+
+#### Başarısız geri yükleme \{#failed-restore\}
+
+Satın alma geri yüklemesi başarısız olduğunda tetiklenir:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailRestore(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Web ödeme navigasyonu tamamlandı \{#finished-web-payment-navigation\}
+
+Satın alma için bir [web paywall](web-paywall) açmaya çalışıldıktan sonra (başarılı veya başarısız olsun), bu metod çağrılacaktır:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishWebPaymentNavigation(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+**Parametreler:**
+- `product`: Web paywall'ın açıldığı (veya açılmaya çalışıldığı) ürün ya da `null`
+- `error`: Web paywall başarıyla açıldıysa `null`, başarısız olduysa bir `AdaptyError`
+
+<Details>
+<summary>Olay örnekleri (Genişletmek için tıklayın)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": null,
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### Veri çekme ve render işlemleri \{#data-fetching-and-rendering\}
+
+#### Ürün yükleme hataları \{#product-loading-errors\}
+
+Ürün yükleme başarısız olduğunda tetiklenir ve `AdaptyError` döndürür. Başlatma sırasında ürün dizisini geçmediyseniz AdaptyUI gerekli nesneleri sunucudan kendi alır. Bu işlem başarısız olabilir; AdaptyUI hatayı bu metodu çağırarak bildirir:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailLoadingProducts(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### Render ve çalışma zamanı hataları \{#rendering-and-runtime-errors\}
+
+Arayüz render edilirken bir hata oluşursa veya satın alma dışında başka bir çalışma zamanı hatası meydana gelirse, bu metot tarafından raporlanır. View otomatik olarak kapatılmaz — isterseniz `view.Dismiss(...)` metodunu kendiniz çağırın:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveError(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+Normal koşullarda bu tür hatalar oluşmamalıdır; eğer bununla karşılaşırsanız lütfen bize bildirin.
+
+#### Analitik olayları \{#analytics-events\}
+
+`FlowViewDidReceiveAnalyticEvent`, bir flow'dan gelen özel analitik olaylar için ayrılmıştır. Flow'lar henüz bu olayları kodunuza iletmediğinden metot gövdesini boş bırakın — `IAdaptyFlowsEventsListener` bir C# arayüzü olduğundan metotun yine de mevcut olması gerekir:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) { }
+```
+
+### Sistem isteklerini yönetme \{#handle-system-requests\}
+
+`IAdaptyUISystemRequestsHandler` (`Adapty.SetSystemRequestsHandler(...)` aracılığıyla kaydedilir), bir flow'dan gelen sistem istekleri için ayrılmıştır: OS izin istemleri (push bildirimleri veya kamera erişimi gibi) ve uygulama inceleme istekleri. Flow'lar henüz bu istekleri tetiklemiyor, dolayısıyla bir handler kaydetmenize gerek yok.
+
+### Navigasyon \{#navigation\}
+
+#### Android sistem geri düğmesi \{#android-system-back-button\}
+
+Android sistem geri düğmesi (veya geri hareketi), `FlowViewDidPerformAction`'a `SystemBack` eylemi olarak iletilir ve flow'u kendiliğinden kapatmaz — kullanıcı, flow'dan builder'da tanımladığınız bir yol aracılığıyla çıkar; örneğin bir **Close** düğmesi veya `on_device_back` eylemi gibi. Sistem geri düğmesinin flow'u kapatmasını istiyorsanız, eylemi kendiniz ele alın:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Flow aksiyonlarını işlemeyle ilgili tam aksiyon listesi için [flow aksiyonlarını işleme kılavuzuna](unity-handle-paywall-actions) bakın.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Bu kılavuz, satın almalar, yenileme işlemleri, ürün seçimi ve paywall oluşturma için olay yönetimini ele almaktadır. Ayrıca buton işlemlerini de (paywallı kapatma, bağlantı açma vb.) uygulamanız gerekmektedir. Ayrıntılar için [buton eylemlerini yönetme kılavuzumuza](unity-handle-paywall-actions) bakın.
+:::
+
+[Paywall Builder](adapty-paywall-builder) ile yapılandırılan paywalllar, satın alma ve geri yükleme işlemleri için ekstra kod gerektirmez. Ancak uygulamanızın yanıt verebileceği bazı olaylar üretirler. Bu olaylar arasında düğme basımları (kapat düğmeleri, URL'ler, ürün seçimleri vb.) ve paywall'da gerçekleştirilen satın alma işlemlerine ilişkin bildirimler yer alır. Bu olaylara nasıl yanıt vereceğinizi aşağıda öğrenebilirsiniz.
 
 :::warning
-Bu rehber yalnızca Adapty SDK v3.3.0 veya üzerini gerektiren **yeni Paywall Builder paywall'ları** içindir.
+Bu kılavuz yalnızca Adapty SDK v3.3.0 veya üstünü gerektiren **yeni Paywall Builder paywallları** içindir.
 :::
 
 <SampleApp />
@@ -202,7 +673,7 @@ public void PaywallViewDidFailPurchase(
 ```
 
 <Details>
-<summary>Olay örneği (Genişletmek için tıklayın)</summary>
+<summary>Event example (Click to expand)</summary>
 
 ```javascript
 {
@@ -225,9 +696,9 @@ public void PaywallViewDidFailPurchase(
 ```
 </Details>
 
-#### Geri yükleme başladı \{#started-restore\}
+#### Restore başlatıldı \{#started-restore\}
 
-Kullanıcı geri yükleme sürecini başlattığında tetiklenir:
+Kullanıcı restore işlemini başlattığında çağrılır:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
@@ -352,11 +823,11 @@ public void PaywallViewDidFinishWebPaymentNavigation(
 ```
 </Details>
 
-### Veri çekme ve render işlemleri \{#data-fetching-and-rendering\}
+### Veri çekme ve render etme \{#data-fetching-and-rendering\}
 
 #### Ürün yükleme hataları \{#product-loading-errors\}
 
-Ürün yükleme başarısız olduğunda tetiklenir ve `AdaptyError` döndürür. Başlatma sırasında ürün dizisini geçmediyseniz AdaptyUI gerekli nesneleri sunucudan kendi alır. Bu işlem başarısız olabilir; AdaptyUI hatayı bu metodu çağırarak bildirir:
+Ürün yükleme başarısız olduğunda tetiklenir ve `AdaptyError` sağlar. Başlatma sırasında ürün dizisini geçmediyseniz, AdaptyUI gerekli nesneleri sunucudan kendisi alır. Bu işlem başarısız olabilir ve AdaptyUI hatayı bu yöntemi çağırarak bildirir:
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -408,4 +879,7 @@ public void PaywallViewDidFailRendering(
 ```
 </Details>
 
-Normal koşullarda bu tür hatalar yaşanmamalıdır; böyle bir hatayla karşılaşırsanız lütfen bize bildirin.
+Normal koşullarda bu tür hatalar oluşmamalıdır; eğer böyle bir hatayla karşılaşırsanız lütfen bize bildirin.
+
+
+</SDKv3>

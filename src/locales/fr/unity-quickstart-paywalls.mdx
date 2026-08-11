@@ -1,0 +1,265 @@
+---
+title: "Activer les achats avec Flow Builder dans le SDK Unity"
+description: "Guide de démarrage rapide pour activer les achats intégrés avec Adapty Flow Builder."
+metadataTitle: "Adapty Flow Builder Démarrage rapide | Documentation Adapty"
+customSlug: /unity-quickstart-paywalls
+displayed_sidebar: sdkunity
+keywords: ['flows unity', 'flow builder', 'GetFlow', 'paywall', 'paywall builder', 'getPaywall']
+rank: 60
+---
+
+Ce guide utilise les APIs du SDK Adapty Unity v4 (bêta). Si vous utilisez la v3, consultez le [guide de migration](migration-to-unity-sdk-v4) pour les noms de méthodes correspondants.
+
+Pour activer les achats intégrés, vous devez comprendre trois concepts clés :
+
+- [**Produits**](product) – tout ce que les utilisateurs peuvent acheter (abonnements, consommables, accès à vie)
+- [**Flows**](adapty-flow-builder) – séquences d'écrans qui présentent des produits aux utilisateurs, construites dans le Flow Builder sans code. Le SDK les récupère via `GetFlow`. Si vous préférez créer l'interface dans votre propre code, utilisez un paywall à la place — voir [Implémenter des paywalls manuellement](unity-quickstart-manual).
+- [**Placements**](placements) – où et quand vous affichez des flows dans votre application (par exemple `main`, `onboarding`, `settings`). Vous associez des flows à des placements dans le tableau de bord, puis vous les demandez par ID de placement dans votre code. Cela facilite l'exécution de tests A/B et l'affichage de flows différents selon les utilisateurs.
+
+Adapty vous propose trois façons d'activer les achats dans votre application. Choisissez celle qui correspond à vos besoins :
+
+| Implémentation | Complexité | Quand l'utiliser |
+|---|---|---|
+| Adapty Flow Builder | ✅ Facile | Vous [créez un flow complet et prêt à l'achat dans le builder no-code](quickstart-paywalls). Adapty le rend automatiquement et gère en coulisses tout le flow d'achat, la validation des reçus et la gestion des abonnements. |
+| Paywalls créés manuellement | 🟡 Moyen | Vous implémentez l'interface de votre paywall dans le code de votre application, mais récupérez tout de même l'objet flow depuis Adapty pour conserver une flexibilité dans les offres de produits. Consultez le [guide](unity-quickstart-manual). |
+| Mode Observer | 🔴 Difficile | Vous disposez déjà de votre propre infrastructure de gestion des achats et souhaitez continuer à l'utiliser. Notez que le mode Observer présente certaines limitations dans Adapty. Consultez l'[article](observer-vs-full-mode). |
+
+:::important
+**Les étapes ci-dessous montrent comment implémenter un flow créé dans l'Adapty Flow Builder.**
+
+Si vous préférez construire l'UI du paywall vous-même, consultez [Implémenter les paywalls manuellement](unity-quickstart-manual).
+:::
+
+Pour afficher un flow créé dans l'Adapty Flow Builder, dans le code de votre application, il vous suffit de :
+
+1. **Récupérer le flow** : Obtenez-le depuis Adapty.
+2. **L'afficher et Adapty gérera les achats pour vous** : Affichez la vue dans votre application.
+3. **Gérer les actions des boutons** : Associez les interactions utilisateur aux réponses de votre application. Par exemple, ouvrir des liens ou fermer le flow lorsque les utilisateurs cliquent sur des boutons.
+
+## Avant de commencer \{#before-you-start\}
+
+Avant de commencer, effectuez ces étapes :
+
+1. Connectez votre application à l'[App Store](initial_ios) et/ou à [Google Play](initial-android) dans Adapty Dashboard.
+2. [Créez vos produits](create-product) dans Adapty.
+3. [Créez un flow et ajoutez-y des produits](create-paywall).
+4. [Créez un placement et ajoutez votre flow](create-placement).
+5. [Installez et activez le SDK Adapty](sdk-installation-unity) dans le code de votre application.
+
+:::tip
+Le moyen le plus rapide d'effectuer ces étapes est de suivre le [guide de démarrage rapide](quickstart) ou de créer des flows et des placements à l'aide du [CLI développeur](developer-cli-quickstart).
+:::
+
+## 1. Récupérer le flow \{#1-get-the-flow\}
+
+Vos flows sont associés à des placements configurés dans le tableau de bord. Les placements vous permettent d'afficher des flows différents selon les audiences ou de lancer des [tests A/B](ab-tests).
+
+Pour récupérer un flow créé dans l'Adapty Flow Builder, vous devez :
+
+1. Récupérer l'objet `flow` par l'ID du [placement](placements) en utilisant la méthode `GetFlow`.
+
+2. Créer la vue du flow à l'aide de la méthode `CreateFlowView`. La vue contient les éléments d'interface et le style nécessaires à l'affichage du flow. Si le flow n'a pas de vue configurée, `CreateFlowView` retourne une erreur — gérez-la dans le callback.
+
+:::important
+Pour afficher la vue, vous devez activer le bouton **Show on device** dans le Flow Builder. Sinon, `CreateFlowView` retournera une erreur et le flow ne s'affichera pas.
+:::
+
+```csharp showLineNumbers
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // Create the flow view
+    AdaptyUI.CreateFlowView(flow, (view, error) => {
+        if (error != null) {
+            // the flow has no view configured, or view creation failed
+            return;
+        }
+
+        // view - the flow view ready to be presented
+    });
+});
+```
+
+:::info
+Ce démarrage rapide fournit la configuration minimale requise pour afficher un flow. Pour les détails de configuration avancée, consultez notre [guide sur la récupération des flows](unity-get-pb-paywalls).
+:::
+
+## 2. Afficher le flow \{#2-display-the-flow\}
+
+Maintenant que vous avez la vue du flow, il suffit d'ajouter quelques lignes pour l'afficher.
+
+Pour afficher le flow, utilisez la méthode `view.Present()` sur le `view` créé par la méthode `CreateFlowView`. Chaque `view` ne peut être utilisé qu'une seule fois : après l'avoir fermé, appelez à nouveau `CreateFlowView` pour afficher le flow une nouvelle fois.
+
+```csharp showLineNumbers title="Unity"
+view.Present((error) => {
+    // handle the error
+});
+```
+
+:::info
+Pour plus de détails sur la façon d'afficher un flow, consultez notre [guide](unity-present-paywalls).
+:::
+
+## 3. Gérer les actions des boutons \{#handle-button-actions\}
+
+Lorsque les utilisateurs cliquent sur des boutons dans le flow, le SDK Unity gère automatiquement les achats et la restauration. Cependant, d'autres boutons ont des identifiants personnalisés ou prédéfinis et nécessitent une gestion des actions dans votre code.
+
+Par exemple, votre flow dispose probablement d'un bouton de fermeture et d'URLs à ouvrir (par exemple, les conditions d'utilisation et la politique de confidentialité). Pour gérer ces actions, votre classe doit implémenter l'interface `IAdaptyFlowsEventsListener` et s'enregistrer en tant qu'écouteur.
+
+Notez que le flow reste ouvert après un achat réussi. Si vous souhaitez le fermer une fois l'achat terminé, fermez la vue dans le callback `FlowViewDidFinishPurchase`.
+
+:::tip
+Consultez nos guides sur la gestion des [actions](unity-handle-paywall-actions) et des [événements](unity-handling-events) de bouton.
+:::
+
+```csharp showLineNumbers title="Unity"
+public class YourClass : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        // Register this class as the flows events listener
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // IAdaptyFlowsEventsListener method - handles button actions
+    public void FlowViewDidPerformAction(
+        AdaptyUIFlowView view,
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                AdaptyUI.OpenUrl(action.Value, AdaptyWebPresentation.ExternalBrowser, null);
+                break;
+            default:
+                break;
+        }
+    }
+
+    // IAdaptyFlowsEventsListener method - dismiss the flow after a purchase
+    public void FlowViewDidFinishPurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        AdaptyPurchaseResult purchasedResult
+    ) {
+        if (purchasedResult.Type != AdaptyPurchaseResultType.UserCancelled) {
+            view.Dismiss(null);
+        }
+    }
+}
+```
+
+## Prochaines étapes
+
+<SupportForum />
+
+Votre flow est prêt à être affiché dans l'application. Testez vos achats dans le [sandbox App Store](test-purchases-in-sandbox) ou sur [Google Play Store](testing-on-android) pour vous assurer de pouvoir effectuer un achat test depuis le flow.
+
+Ensuite, vous devez [vérifier le niveau d'accès des utilisateurs](unity-check-subscription-status) pour vous assurer d'afficher un flow ou de donner accès aux fonctionnalités payantes aux bons utilisateurs.
+
+## Exemple complet \{#full-example\}
+
+Voici comment intégrer toutes ces étapes dans votre application.
+
+```csharp showLineNumbers
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowManager : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    [SerializeField] private string placementId = "YOUR_PLACEMENT_ID";
+
+    void Start()
+    {
+        // Register for flow events
+        Adapty.SetFlowsEventsListener(this);
+        GetAndDisplayFlow();
+    }
+
+    private void GetAndDisplayFlow()
+    {
+        Adapty.GetFlow(placementId, (flow, error) => {
+            if (error != null) {
+                Debug.LogError("Error getting flow: " + error.Message);
+                return;
+            }
+
+            CreateAndPresentFlowView(flow);
+        });
+    }
+
+    private void CreateAndPresentFlowView(AdaptyFlow flow)
+    {
+        AdaptyUI.CreateFlowView(flow, (view, error) => {
+            if (error != null) {
+                // the flow has no view configured — use custom logic
+                Debug.LogError("Error creating flow view: " + error.Message);
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    Debug.LogError("Error presenting flow: " + presentError.Message);
+                    return;
+                }
+
+                Debug.Log("Flow presented successfully");
+            });
+        });
+    }
+
+    // IAdaptyFlowsEventsListener implementation
+    public void FlowViewDidPerformAction(
+        AdaptyUIFlowView view,
+        AdaptyUIUserAction action
+    ) {
+        switch (action.Type) {
+            case AdaptyUIUserActionType.Close:
+                Debug.Log("Close button pressed");
+                view.Dismiss(null);
+                break;
+            case AdaptyUIUserActionType.OpenUrl:
+                AdaptyUI.OpenUrl(action.Value, AdaptyWebPresentation.ExternalBrowser, null);
+                break;
+            default:
+                break;
+        }
+    }
+
+    public void FlowViewDidFinishPurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        AdaptyPurchaseResult purchasedResult
+    ) {
+        if (purchasedResult.Type != AdaptyPurchaseResultType.UserCancelled) {
+            view.Dismiss(null);
+        }
+    }
+
+    // Required interface methods (implement as needed)
+    public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+    public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+    public void FlowViewDidSelectProduct(AdaptyUIFlowView view, string productId) { }
+    public void FlowViewDidStartPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product) { }
+    public void FlowViewDidFailPurchase(AdaptyUIFlowView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+    public void FlowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) { }
+    public void FlowViewDidFailRestore(AdaptyUIFlowView view, AdaptyError error) { }
+    public void FlowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) { }
+    public void FlowViewDidFailLoadingProducts(AdaptyUIFlowView view, AdaptyError error) { }
+    public void FlowViewDidFinishWebPaymentNavigation(AdaptyUIFlowView view, AdaptyPaywallProduct product, AdaptyError error) { }
+    public void FlowViewDidReceiveAnalyticEvent(AdaptyUIFlowView view, string name, IDictionary<string, object> @params) { }
+
+    public void ShowFlow()
+    {
+        GetAndDisplayFlow();
+    }
+}
+```

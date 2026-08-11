@@ -1,0 +1,132 @@
+---
+title: "Identifier les utilisateurs dans le SDK Flutter"
+description: "Identifiez les utilisateurs dans Adapty pour améliorer les expériences d'abonnement personnalisées."
+metadataTitle: "Identification des utilisateurs dans Adapty | Documentation Adapty"
+displayed_sidebar: sdkflutter
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import CrossDeviceDetection from '@site/src/locales/fr/reusable/CrossDeviceDetection.mdx';
+
+Adapty crée un identifiant de profil interne pour chaque utilisateur. Si vous disposez de votre propre système d'authentification, vous devriez définir votre propre Customer User ID. Vous pouvez retrouver les utilisateurs par leur Customer User ID dans la section [Profiles](profiles-crm) et l'utiliser dans l'[API côté serveur](getting-started-with-server-side-api), qui sera envoyé à toutes les intégrations.
+
+### Définir le Customer User ID lors de la configuration \{#setting-customer-user-id-on-configuration\}
+
+Si vous disposez d'un identifiant utilisateur au moment de la configuration, passez-le simplement en tant que paramètre `customerUserId` à la méthode `.activate()` :
+
+```dart showLineNumbers title="Dart"
+   try {
+       await Adapty().activate(
+           configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+             ..withCustomerUserId(YOUR_CUSTOMER_USER_ID)
+       );
+   } catch (e) {
+       // handle the error
+   }
+```
+
+<SampleApp />
+
+### Définir le Customer User ID après la configuration \{#setting-customer-user-id-after-configuration\}
+
+Si vous ne disposez pas d'un identifiant utilisateur lors de la configuration du SDK, vous pouvez le définir ultérieurement à tout moment avec la méthode `.identify()`. Les cas les plus courants d'utilisation de cette méthode sont après l'inscription ou l'authentification, lorsque l'utilisateur passe d'un utilisateur anonyme à un utilisateur authentifié.
+
+```dart showLineNumbers
+try {
+  await Adapty().identify(customerUserId);
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Paramètres de la requête :
+
+- **Customer User ID** (obligatoire) : un identifiant utilisateur sous forme de chaîne de caractères.
+
+:::warning
+Resoumission de données utilisateur importantes
+
+Dans certains cas, par exemple lorsqu'un utilisateur se reconnecte à son compte, les serveurs d'Adapty disposent déjà d'informations sur cet utilisateur. Dans ces situations, le SDK Adapty bascule automatiquement vers le nouvel utilisateur. Si vous avez transmis des données à l'utilisateur anonyme, comme des attributs personnalisés ou des attributions provenant de réseaux tiers, vous devez les soumettre à nouveau pour l'utilisateur identifié.
+
+Il est également important de noter que vous devez redemander tous les paywalls et produits après avoir identifié l'utilisateur, car les données du nouvel utilisateur peuvent être différentes.
+:::
+
+### Déconnexion et reconnexion \{#logging-out-and-logging-in\}
+
+Vous pouvez déconnecter l'utilisateur à tout moment en appelant la méthode `.logout()` :
+
+```dart showLineNumbers
+try {
+  await Adapty().logout();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle unknown error
+}
+```
+
+Vous pouvez ensuite reconnecter l'utilisateur en utilisant la méthode `.identify()`.
+
+## Assigner un `appAccountToken` (iOS) \{#assign-appaccounttoken-ios\}
+
+[`appAccountToken`](https://developer.apple.com/documentation/storekit/product/purchaseoption/appaccounttoken(_:)) est un **UUID** qui vous permet de lier les transactions App Store à l'identité interne de vos utilisateurs.  
+StoreKit associe ce token à chaque transaction, afin que votre backend puisse relier les données App Store à vos utilisateurs.
+
+Utilisez un UUID stable généré par utilisateur et réutilisez-le pour le même compte sur tous les appareils.
+Cela garantit que les achats et les notifications App Store restent correctement associés.
+
+Vous pouvez définir le token de deux façons : lors de l'activation du SDK ou lors de l'identification de l'utilisateur.
+
+:::important
+Vous devez toujours passer `appAccountToken` en même temps que `customerUserId`.
+Si vous ne passez que le token, il ne sera pas inclus dans la transaction.
+:::
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, iosAppAccountToken: "YOUR_APP_ACCOUNT_TOKEN");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+### Définir des identifiants de compte masqués (Android) \{#set-obfuscated-account-ids-android\}
+
+Google Play exige des identifiants de compte masqués pour certains cas d'utilisation afin de renforcer la confidentialité et la sécurité des utilisateurs. Ces identifiants permettent à Google Play d'identifier les achats tout en gardant les informations des utilisateurs anonymes, ce qui est particulièrement important pour la prévention des fraudes et l'analyse.
+
+Vous devrez peut-être définir ces identifiants si votre application traite des données utilisateur sensibles ou si vous devez vous conformer à des réglementations spécifiques en matière de confidentialité. Les identifiants masqués permettent à Google Play de suivre les achats sans exposer les identifiants réels des utilisateurs.
+
+```dart showLineNumbers
+// During configuration:
+try {
+   await Adapty().activate(
+       configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+         ..withCustomerUserId(YOUR_CUSTOMER_USER_ID, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID")
+   );
+} catch (e) {
+   // handle the error
+}
+// Or when identifying users
+try {
+    await Adapty().identify(customerUserId, androidObfuscatedAccountId: "OBFUSCATED_ACCOUNT_ID");
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+}
+```
+
+## Détecter les utilisateurs sur plusieurs appareils \{#detect-users-across-devices\}
+
+<CrossDeviceDetection />

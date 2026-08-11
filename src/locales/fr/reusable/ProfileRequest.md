@@ -1,0 +1,15 @@
+
+| Paramètre          | Type          | Requis | Nullable | Description                                                  |
+| :----------------- | :------------ | -------- | -------- | :----------------------------------------------------------- |
+| first_name         | String        | Non       | Oui      | Le prénom de votre utilisateur final.                                  |
+| last_name          | String        | Non       | Oui      | Le nom de famille de votre utilisateur final.                                   |
+| gender             | String        | Non       | Oui      | Le genre de votre utilisateur final.                                      |
+| email              | String        | Non       | Oui      | L'adresse e-mail de votre utilisateur final.                                       |
+| phone_number       | String        | Non       | Oui      | Le numéro de téléphone de votre utilisateur final.                                |
+| birthday           | ISO 8601 date | Non       | Non       | La date de naissance de votre utilisateur final.                                    |
+| ip_country         | String        | Non       | Non       | Pays de l'utilisateur final au format ISO 3166-2. Ce paramètre doit être transmis si la requête est effectuée depuis le serveur et non depuis le client, afin de définir le pays actuel. Dans le cas contraire, nous déterminons le pays à partir de l'adresse IP de la requête. |
+| store_country      | String        | Non       | Oui      | Pays du store de l'utilisateur final.                         |
+| store              | String        | Non       | Oui      | La plateforme que l'utilisateur utilise pour effectuer des achats dans votre application. Valeurs possibles : `app_store`, `play_store` ou `stripe`. |
+| analytics_disabled | Boolean       | Non       | Non       | <p>Option pour désactiver les analyses externes. Lorsque les analyses sont désactivées, les événements ne sont plus envoyés aux intégrations, et les champs `idfa`, `idfv` et `advertising_id` deviennent nullable.</p><p>ON : Les analyses externes sont désactivées pour cet utilisateur.</p><p>OFF : Les analyses sont actives par défaut.</p> |
+| custom_attributes  | Array         | Non       | Non       | <p>Permet de définir jusqu'à 30 attributs personnalisés pour le profil. Si vous utilisez le tableau `custom_attributes`, au moins une paire clé-valeur est requise.</p><p>**Clé :** Doit être une chaîne de 30 caractères maximum, composée uniquement de lettres, chiffres, tirets, points et underscores.</p><p>**Valeur :** Doit être une chaîne ou un nombre flottant de 30 caractères maximum. Les booléens et les entiers seront convertis en nombres flottants. Pour supprimer un attribut, envoyez une valeur vide ou `null`.</p> |
+| installation_meta  | Object        | Non       | Non       | Contient des informations sur l'application spécifique sur un appareil spécifique, structurées sous la forme d'un objet [Installation Meta](server-side-api-objects#installation-meta). |

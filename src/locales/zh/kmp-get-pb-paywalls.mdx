@@ -1,18 +1,223 @@
 ---
-title: "在 Kotlin Multiplatform SDK 中获取付费墙编辑工具付费墙及其配置"
-description: "了解如何在 Adapty 中为您的 Kotlin Multiplatform 应用检索付费墙编辑工具付费墙，以更好地控制订阅。"
-metadataTitle: "在 Adapty 中检索付费墙编辑工具付费墙 | Adapty 文档"
+title: "获取流程与付费墙 - Kotlin Multiplatform"
+description: "在 Kotlin Multiplatform 应用中从 Adapty 获取流程和付费墙。"
+metadataTitle: "获取流程与付费墙 - Kotlin Multiplatform | Adapty 文档"
 displayed_sidebar: sdkkmp
-keywords: ['getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
+keywords: ['getFlow', 'createFlowView', 'getFlowForDefaultAudience', 'getPaywall', 'hasViewConfiguration', 'createPaywallView', 'getPaywallForDefaultAudience']
 rank: 70
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 
-在 Adapty 看板中[使用新版付费墙编辑工具设计付费墙的视觉部分](adapty-paywall-builder)后，您可以在移动应用中展示该付费墙。此流程的第一步是获取与版位关联的付费墙及其视图配置，具体步骤如下所述。
+<SDKv4>
+
+<MethodPromo method="getFlow" />
+
+在[设计好您的流程或付费墙编辑工具付费墙](adapty-paywall-builder)后，您可以在移动应用中展示它。第一步是获取与版位关联的流程或付费墙及其视图配置，具体操作如下所述。
+
+<SampleApp />
+
+<details>
+   <summary>在您的移动应用中开始展示流程之前（点击展开）</summary>
+
+1. 在 Adapty 看板中[创建产品](create-product)。
+2. 在 Adapty 看板中[创建流程/付费墙并将产品添加到其中](create-paywall)。
+3. 在 Adapty 看板中[创建版位并将流程/付费墙添加到其中](create-placement)。
+4. 在您的移动应用中安装 [Adapty SDK](sdk-installation-kotlin-multiplatform)。
+</details>
+
+## 获取流程/付费墙 \{#fetch-flowpaywall\}
+
+如果你已使用流程编辑工具或付费墙编辑工具设计了流程或付费墙，则无需在移动端代码中手动处理其渲染逻辑来向用户展示。此类流程或付费墙本身已包含展示内容与展示方式的全部配置。不过，你仍需通过版位获取其 ID 及视图配置，然后在移动端应用中将其呈现出来。
+
+为确保最佳性能，请尽早获取流程或付费墙及其[视图配置](kmp-get-pb-paywalls#fetch-the-view-configuration)，以便在向用户展示之前有足够的时间下载图片。
+
+使用 `getFlow` 方法获取流程或付费墙：
+
+```kotlin showLineNumbers
+
+Adapty.getFlow(
+    placementId = "YOUR_PLACEMENT_ID",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { flow ->
+    // the requested flow/paywall
+}.onError { error ->
+    // handle the error
+}
+```
+
+参数：
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | 目标[版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，失败时返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果你认为用户的网络连接不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存存在时直接返回缓存数据。这样用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制在本地存储流程和付费墙：上述定期更新的缓存，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速获取，并在 CDN 不可用时提供独立的备用服务器。这套系统旨在确保你始终获取最新版本，同时在网络条件较差的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。达到超时后，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能由多个请求组成。</p><p>对于 Kotlin Multiplatform：你可以使用扩展函数创建 `Duration`，例如 `5.seconds`，其中 `.seconds` 来自 `kotlin.time.Duration.Companion.seconds`。</p> |
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- | :---------- |
+| Flow   | 一个 `AdaptyFlow` 对象，包含版位、标识符（`instanceIdentity`、`variationId`）、名称、付费墙变体（`paywalls`——`AdaptyFlowPaywall` 列表）以及远程配置（`remoteConfigs`——每个语言区域对应一条记录）。如需预加载产品、自定义 UI 或以编程方式检查，请调用 `getPaywallProducts(flow)`。 |
+
+## 获取视图配置 \{#fetch-the-view-configuration\}
+
+获取流程或付费墙后，使用 `createFlowView` 方法一步完成视图配置的加载和视图的创建。无需单独检查任何标志：如果该版位是在 **Flow Builder**（流程）或 **Paywall Builder**（付费墙）中设计的，`createFlowView` 将返回已准备好展示的视图。如果该版位是没有编辑工具界面的自定义付费墙，`createFlowView` 将返回 `AdaptyResult.Error`——[将其作为远程配置付费墙处理](present-remote-config-paywalls-kmp)。
+
+:::important
+请确保在 Flow Builder 中启用 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
+:::
+
+```kotlin showLineNumbers
+
+AdaptyUI.createFlowView(
+    flow = flow,
+    loadTimeout = 5.seconds,
+    preloadProducts = true
+).onSuccess { view ->
+    // use view
+}.onError { error ->
+    // the flow has no view configured, or view creation failed
+}
+```
+
+| 参数                           | 是否必填       | 描述                                                         |
+| :--------------------------- | :------------- | :----------------------------------------------------------- |
+| **flow**                     | 必填           | 通过 `Adapty.getFlow` 获取的 `AdaptyFlow` 对象。 |
+| **locale**                   | 选填           | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。省略此参数时，视图将以 `en` 渲染；若流程没有 `en` 本地化，则使用流程的默认本地化。详见[本地化与语言代码](kmp-localizations-and-locale-codes)。 |
+| **loadTimeout**              | 选填           | 该值限制此方法的超时时间。达到超时后，将返回缓存数据或本地备用数据。注意在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能由多个请求组成。可使用 `kotlin.time.Duration.Companion` 中的扩展函数，如 `5.seconds`。 |
+| **preloadProducts**          | 选填           | 设为 `true` 可预加载产品以提升性能。启用后，产品将提前加载，从而减少显示流程或付费墙所需的时间。 |
+| **productPurchaseParams**    | 选填           | [`AdaptyProductIdentifier`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-product-identifier/) 到 [`AdaptyPurchaseParameters`](https://kmp.adapty.io/adapty/com.adapty.kmp.models/-adapty-purchase-parameters/) 的映射。用于为流程或付费墙中的各个产品配置特定的购买参数，例如个性化优惠或订阅更新参数。 |
+
+:::note
+如果您使用多种语言，请了解如何添加[付费墙编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)。
+:::
+
+加载完成后，[展示流程或付费墙](kmp-present-paywalls)。
+
+## 为默认目标受众获取流程或付费墙以加快加载速度 \{#get-a-flow-or-paywall-for-a-default-audience-to-fetch-it-faster\}
+
+通常情况下，流程和付费墙几乎可以即时获取，无需担心速度问题。但如果你的目标受众和版位数量较多，且用户的网络连接较差，获取流程或付费墙可能会比预期慢。在这种情况下，你可能希望显示默认的流程或付费墙，以确保流畅的用户体验，而不是什么都不展示。
+
+为了解决这个问题，您可以使用 `getFlowForDefaultAudience` 方法，该方法会获取指定版位中 **All Users** 目标受众的流程或付费墙。但需要特别注意的是，推荐的做法是通过 `getFlow` 方法来获取流程或付费墙，详情请参见上方的[获取流程/付费墙](#fetch-flowpaywall)章节。
+
+:::warning
+为什么我们推荐使用 `getFlow`
+
+`getFlowForDefaultAudience` 方法存在以下几个明显的缺点：
+
+- **潜在的向后兼容性问题**：如果你需要针对不同的应用版本（当前版本和未来版本）展示不同的流程，可能会遇到挑战。你要么设计出兼容当前（旧版）版本的流程，要么接受使用当前（旧版）版本的用户可能遇到流程无法渲染的问题。
+- **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的同一流程，这意味着你将失去个性化定向能力（包括基于国家、营销归因或自定义属性的定向）。
+
+如果你愿意接受这些缺点以换取更快的流程或付费墙加载速度，请按如下方式使用 `getFlowForDefaultAudience` 方法。否则请继续使用[上文](#fetch-flowpaywall)介绍的 `getFlow`。
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getFlowForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+).onSuccess { flow ->
+    // the requested flow
+}.onError { error ->
+    // handle the error
+}
+```
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此方式，因为它可确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存数据存在时优先返回缓存。这种情况下，用户获取到的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍会保留，仅在应用重新安装或手动清理时才会被清除。</p> |
+
+## 自定义资源 \{#customize-assets\}
+
+要自定义流程或付费墙中的图片和视频，请实现自定义资源。
+
+主图和视频有预定义的 ID：`hero_image` 和 `hero_video`。在自定义资源包中，你通过这些 ID 来定位相应元素并自定义其行为。
+
+对于其他图片和视频，你需要在 Adapty 看板中[设置自定义 ID](custom-media)。
+
+例如，你可以：
+
+- 向部分用户显示不同的图片或视频。
+- 在远程主图加载时，先显示本地预览图。
+- 在播放视频前，先显示预览图。
+
+以下是如何通过 map 提供自定义资源的示例：
+
+:::info
+Kotlin Multiplatform SDK 仅支持本地资源。如需使用远程内容，请在将其用于自定义资源之前，先将其下载并缓存到本地。
+:::
+
+```kotlin showLineNumbers
+// Import generated Res class for accessing resources
+
+viewModelScope.launch {
+    // Get URIs for bundled resources using Res.getUri()
+    val heroImagePath = Res.getUri("files/images/hero_image.png")
+    val demoVideoPath = Res.getUri("files/videos/demo_video.mp4")
+
+    // Or read image as byte data
+    val imageByteData = Res.readBytes("files/images/avatar.png")
+
+    // Create custom assets map
+    val customAssets: Map<String, AdaptyCustomAsset> = mapOf(
+        // Load image from app resources (bundled with the app)
+        // Files should be placed in commonMain/composeResources/files/
+        "hero_image" to AdaptyCustomAsset.localImageResource(
+            path = heroImagePath
+        ),
+
+        // Or use image byte data
+        "avatar" to AdaptyCustomAsset.localImageData(
+            data = imageByteData
+        ),
+
+        // Load video from app resources
+        "demo_video" to AdaptyCustomAsset.localVideoResource(
+            path = demoVideoPath
+        ),
+
+        // Or use a video file from device storage
+        "intro_video" to AdaptyCustomAsset.localVideoFile(
+            path = "/path/to/local/video.mp4"
+        ),
+
+        // Apply custom brand colors
+        "brand_primary" to AdaptyCustomAsset.color(
+            colorHex = "#FF6B35"
+        ),
+
+        // Create gradient background
+        "card_gradient" to AdaptyCustomAsset.linearGradient(
+            colors = listOf("#1E3A8A", "#3B82F6", "#60A5FA"),
+            stops = listOf(0.0f, 0.5f, 1.0f)
+        )
+    )
+
+    // Use custom assets when creating the flow view
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customAssets = customAssets
+    ).onSuccess { view ->
+        // Present the flow with custom assets
+        view.present()
+    }.onError { error ->
+        // Handle the error - the flow will fall back to default appearance
+    }
+}
+```
+
+:::note
+如果某个资源未找到或加载失败，流程或付费墙将回退至在编辑工具中配置的默认外观。
+:::
+
+</SDKv4>
+
+<SDKv3>
+
+在 [Adapty 看板中使用新版付费墙编辑工具完成付费墙的视觉设计](adapty-paywall-builder)后，即可在移动应用中展示该付费墙。第一步是获取与版位关联的付费墙及其视图配置，具体如下所述。
 
 请注意，本主题涉及使用付费墙编辑工具自定义的付费墙。如果您是手动实现付费墙，请参阅[在移动应用中为远程配置付费墙获取付费墙和产品](fetch-paywalls-and-products-kmp)主题。
 
@@ -21,10 +226,10 @@ import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 <details>
    <summary>在移动应用中展示付费墙之前（点击展开）</summary>
 
-1. 在 Adapty 看板中[创建您的产品](create-product)。
+1. 在 Adapty 看板中[创建产品](create-product)。
 2. 在 Adapty 看板中[创建付费墙并将产品添加到其中](create-paywall)。
 3. 在 Adapty 看板中[创建版位并将付费墙添加到其中](create-placement)。
-4. 在您的移动应用中安装 [Adapty SDK](sdk-installation-kotlin-multiplatform)。
+4. 在移动应用中安装 [Adapty SDK](sdk-installation-kotlin-multiplatform)。
 </details>
 
 ## 获取使用付费墙编辑工具设计的付费墙 \{#fetch-paywall-designed-with-paywall-builder\}
@@ -36,8 +241,6 @@ import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 使用 `getPaywall` 方法获取付费墙：
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
 Adapty.getPaywall(
     placementId = "YOUR_PLACEMENT_ID",
@@ -77,8 +280,6 @@ Adapty.getPaywall(
 使用 `createPaywallView` 方法加载视图配置。
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.AdaptyUI
-import kotlin.time.Duration.Companion.seconds
 
 if (paywall.hasViewConfiguration) {
     AdaptyUI.createPaywallView(
@@ -126,9 +327,6 @@ if (paywall.hasViewConfiguration) {
 :::
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
 Adapty.getPaywallForDefaultAudience(
     placementId = "YOUR_PLACEMENT_ID",
@@ -172,11 +370,7 @@ Kotlin Multiplatform SDK 仅支持本地素材。对于远程内容，您应在�
 :::
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.AdaptyUI
-import com.adapty.kmp.models.AdaptyCustomAsset
-import kotlinx.coroutines.launch
 // Import generated Res class for accessing resources
-import myapp.composeapp.generated.resources.Res
 
 viewModelScope.launch {
     // Get URIs for bundled resources using Res.getUri()
@@ -235,5 +429,7 @@ viewModelScope.launch {
 ```
 
 :::note
-如果某个素材未找到或加载失败，付费墙将回退至付费墙编辑工具中配置的默认外观。
+如果某个资源未找到或加载失败，付费墙将回退到在付费墙编辑工具中配置的默认外观。
 :::
+
+</SDKv3>

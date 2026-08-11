@@ -9,6 +9,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Exclude src/assets (87% of checkout bytes). lint-mdx.mjs walks all
+          # of src/ but only yields .mdx, so the missing dir is simply not
+          # listed. sparse-checkout without `filter` ⇒ fetch uses blob:none.
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
       - uses: actions/setup-node@v4
         with:
           node-version: 20
@@ -65,7 +73,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        locale: [zh, tr, ru, es, ja, vi]
+        locale: [zh, tr, ru, es, ja, vi, fr]
     concurrency:
       group: build-locale-${{ matrix.locale }}-${{ github.workflow }}-${{ github.ref }}
       cancel-in-progress: true
@@ -108,6 +116,16 @@ jobs:
           path: build/${{ matrix.locale }}/
           retention-days: 1
 
+      # Astro writes hashed assets to build/_astro/ at the output root, not
+      # inside build/<locale>/, so the locale directory alone is not
+      # self-contained. Without this, locale pages 404 on the CSS chunks unique
+      # to their own build and render unstyled.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.locale }}-assets
+          path: build/_astro/
+          retention-days: 1
+
   deploy:
     needs: [build-en, build-locale]
     runs-on: ubuntu-latest
@@ -121,7 +139,14 @@ jobs:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
     steps:
+      # Only needed for the `git tag` push at the end — the deployed bytes all
+      # come from artifacts, so skip src/assets (87% of checkout bytes).
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*
+            !/src/assets
+          sparse-checkout-cone-mode: false
 
       - uses: actions/download-artifact@v4
         with:
@@ -157,6 +182,20 @@ jobs:
         with:
           name: build-vi
           path: build/vi/
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-fr
+          path: build/fr/
+
+      # Merge every locale build's hashed assets into the shared _astro/
+      # alongside English's. Filenames are content-hashed, so identical names
+      # carry identical bytes and English assets cannot be clobbered.
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: build-*-assets
+          merge-multiple: true
+          path: build/_astro/
 
       - name: Deploy
         uses: reggionick/s3-deploy@v4

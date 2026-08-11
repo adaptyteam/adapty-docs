@@ -1,0 +1,81 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK Flutter"
+description: "Suivez et gérez le statut d'abonnement des utilisateurs dans Adapty pour améliorer la rétention client dans votre app Flutter."
+metadataTitle: "Comprendre le statut d'abonnement | Documentation Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+
+Avec Adapty, suivre le statut d'abonnement est simple. Pas besoin d'insérer manuellement des identifiants de produits dans votre code. Il vous suffit de vérifier la présence d'un [niveau d'accès](access-level) actif pour confirmer l'abonnement d'un utilisateur.
+
+<details>
+   <summary>Avant de vérifier le statut d'abonnement (cliquez pour développer)</summary>
+
+- Pour iOS, configurez les [notifications serveur App Store](enable-app-store-server-notifications)
+- Pour Android, configurez les [notifications en temps réel pour les développeurs (RTDN)](enable-real-time-developer-notifications-rtdn)
+</details>
+
+## Niveau d'accès et objet AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Les niveaux d'accès sont des propriétés de l'objet [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html). Nous recommandons de récupérer le profil au démarrage de l'application, par exemple lorsque vous [identifiez un utilisateur](flutter-identifying-users#setting-customer-user-id-on-configuration), puis de le mettre à jour à chaque modification. Vous pouvez ainsi utiliser l'objet profil sans le redemander à chaque fois.
+
+Pour être notifié des mises à jour du profil, écoutez les changements comme décrit dans la section [Écouter les mises à jour de profil, y compris les niveaux d'accès](flutter-listen-subscription-changes) ci-dessous.
+
+<SampleApp />
+
+## Récupérer le niveau d'accès depuis le serveur \{#retrieving-the-access-level-from-the-server\}
+
+Pour obtenir le niveau d'accès depuis le serveur, utilisez la méthode `.getProfile()` :
+
+```dart showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  // check the access
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+Paramètres de réponse :
+
+| Paramètre | Description                                                  |
+| --------- | ------------------------------------------------------------ |
+| Profile   | <p>Un objet [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html). En général, il suffit de vérifier le statut du niveau d'accès du profil pour déterminer si l'utilisateur bénéficie d'un accès premium à l'app.</p><p></p><p>La méthode `.getProfile` fournit le résultat le plus à jour car elle interroge toujours l'API. Si, pour une raison quelconque (par exemple, absence de connexion internet), le SDK Adapty ne parvient pas à récupérer les informations depuis le serveur, les données du cache sont renvoyées. Il est également important de noter que le SDK Adapty met à jour régulièrement le cache `AdaptyProfile` afin de maintenir ces informations aussi à jour que possible.</p> |
+
+La méthode `.getProfile()` vous fournit le profil utilisateur depuis lequel vous pouvez obtenir le statut du niveau d'accès. Vous pouvez avoir plusieurs niveaux d'accès par app. Par exemple, si vous avez une application d'actualités et vendez des abonnements à différentes thématiques indépendamment, vous pouvez créer les niveaux d'accès "sports" et "science". Mais la plupart du temps, un seul niveau d'accès suffit ; dans ce cas, vous pouvez simplement utiliser le niveau d'accès "premium" par défaut.
+
+Voici un exemple de vérification du niveau d'accès "premium" par défaut :
+
+```dart showLineNumbers
+try {
+  final profile = await Adapty().getProfile();
+  if (profile?.accessLevels['premium']?.isActive ?? false) {
+        // grant access to premium features
+    }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+
+### Écouter les mises à jour du statut d'abonnement \{#listening-for-subscription-status-updates\}
+
+Chaque fois que l'abonnement d'un utilisateur change, Adapty déclenche un événement.
+
+Pour recevoir les messages d'Adapty, une configuration supplémentaire est nécessaire :
+
+```dart showLineNumbers
+Adapty().didUpdateProfileStream.listen((profile) {
+  // handle any changes to subscription state
+});
+```
+
+Adapty déclenche également un événement au démarrage de l'application. Dans ce cas, le statut d'abonnement mis en cache est transmis.
+
+### Cache du statut d'abonnement \{#subscription-status-cache\}
+
+Le cache implémenté dans le SDK Adapty stocke le statut d'abonnement du profil. Ainsi, même si le serveur est indisponible, les données en cache restent accessibles pour fournir les informations relatives au statut d'abonnement du profil.
+
+Il est cependant important de noter qu'il n'est pas possible d'interroger directement le cache. Le SDK interroge périodiquement le serveur toutes les minutes pour détecter les mises à jour ou modifications liées au profil. En cas de changements, comme de nouvelles transactions ou d'autres mises à jour, ceux-ci sont envoyés dans le cache afin de le maintenir synchronisé avec le serveur.

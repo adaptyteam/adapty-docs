@@ -51,15 +51,43 @@ try {
 
 ### Configuraciones específicas por plataforma \{#platform-specific-configurations\}
 
-#### iOS: Activar el Modo Infantil con CocoaPods \{#ios-enable-kids-mode-using-cocoapods\}
+#### iOS \{#ios\}
+
+<SDKv4>
+
+Aunque deshabilites la recopilación de IDFA en el código (como se indica arriba), tu build sigue incluyendo los frameworks `AdSupport` y `AppTrackingTransparency`. La categoría Kids de la App Store no los permite. Y dado que el SDK v4 instala el SDK nativo de iOS a través de Swift Package Manager, no hay ningún paso en el Podfile para eliminarlos.
+
+Para cumplir con los requisitos de Apple, añade el comando `adapty-kids-mode` que incluye el SDK al `postinstall` de tu app. Habilita el trait `KidsMode` del SDK, que excluye ese código de la compilación. El comando se vuelve a aplicar en cada instalación:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-kids-mode"
+  }
+}
+```
+
+Luego reinstala y vuelve a resolver los paquetes de iOS, y compila con **Xcode 26** o posterior:
+
+```sh showLineNumbers title="Shell"
+npm install
+npx cap sync ios
+```
+
+Para desactivar el Modo Infantil, ejecuta `adapty-kids-mode disable` y vuelve a sincronizar.
+
+</SDKv4>
+
+<SDKv3>
 
 Si usas CocoaPods para iOS, también puedes activar el Modo Infantil a nivel nativo:
 
 1. Actualiza tu Podfile:
 
-   - Si **no** tienes una sección `post_install`, añade todo el bloque de código que aparece a continuación.
-   - Si **sí** tienes una sección `post_install`, combina las líneas resaltadas con la tuya.
-```ruby showLineNumbers title="Podfile"
+  - Si **no** tienes una sección `post_install`, añade el bloque de código completo que aparece a continuación.
+   - Si **sí** tienes una sección `post_install`, combina las líneas resaltadas en ella.
+
+   ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)
      installer.pods_project.targets.each do |target|
        next unless target.name == 'Adapty'
@@ -77,38 +105,11 @@ Si usas CocoaPods para iOS, también puedes activar el Modo Infantil a nivel nat
        File.write(xc, File.read(xc).gsub(/\s*-framework\s+"?AdSupport"?/, ''))
      end
    end
-```groovy showLineNumbers title="build.gradle"
-   android {
-       defaultConfig {
-           manifestPlaceholders = [AdaptyKidsMode: "true"]
-       }
-   }
-   ```
 
-#### iOS: Enable Kids Mode using CocoaPods \{#ios-enable-kids-mode-using-cocoapods\}
-
-1. Añade la siguiente función al final de tu `Podfile`:
-
-   ```ruby showLineNumbers title="Podfile"
-   def adapty_enable_kids_mode(installer)
-     installer.pods_project.targets.each do |target|
-       if target.name == 'Adapty'
-         target.build_configurations.each do |config|
-           config.build_settings['OTHER_SWIFT_FLAGS'] ||= ['$(inherited)']
-           config.build_settings['OTHER_SWIFT_FLAGS'] << '-DADAPTY_KIDS_MODE'
-         end
-       end
-     end
-   end
-   ```
-
-2. Llama a esta función dentro del bloque `post_install`:
-
-   ```ruby showLineNumbers title="Podfile"
    post_install do |installer|
-     # ... mantén el cuerpo post_install existente (Flutter añade uno automáticamente) ...
+     # ... keep your existing post_install body (Flutter adds one automatically) ...
 
-     adapty_enable_kids_mode(installer)   # <-- habilita el Modo Kids de Adapty
+     adapty_enable_kids_mode(installer)   # <-- enable Adapty Kids Mode
    end
    ```
 
@@ -118,18 +119,28 @@ Si usas CocoaPods para iOS, también puedes activar el Modo Infantil a nivel nat
    pod install
    ```
 
-#### Android: Habilitar el Modo Kids con Gradle \{#android-enable-kids-mode-using-gradle\}
+</SDKv3>
 
-En Android, también puedes habilitar el Modo Kids a nivel nativo añadiendo lo siguiente al `build.gradle` de tu aplicación:
-```groovy showLineNumbers title="android/app/build.gradle"
-android {
-    defaultConfig {
-        // ... existing config ...
+#### Android: eliminar el permiso de ID publicitario \{#android-remove-the-advertising-id-permission\}
 
-        // Enable Kids Mode
-        buildConfigField "boolean", "ADAPTY_KIDS_MODE", "true"
-    }
-}
+Establecer `adIdCollectionDisabled: true` (más arriba) evita que Adapty recopile el ID publicitario, pero el SDK sigue declarando el permiso `AD_ID`. Si tu app está dirigida **únicamente** a niños y compila contra Android 13 (API 33) o superior, Google Play te prohíbe incluso solicitarlo.
+
+Realiza dos adiciones en tu elemento `<manifest>`:
+
+1. Declara el espacio de nombres `tools` (el manifiesto predeterminado de Capacitor no lo incluye).
+2. Añade una entrada `<uses-permission>` para `AD_ID` con `tools:node="remove"` para eliminarlo.
+
+```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission
+        android:name="com.google.android.gms.permission.AD_ID"
+        tools:node="remove" />
+
+    <!-- your existing manifest content -->
+</manifest>
 ```
 
 ## Próximos pasos \{#next-steps\}

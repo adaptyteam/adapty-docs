@@ -1,21 +1,204 @@
 ---
-title: "Реагирование на действия кнопок в Unity SDK"
-description: "Обрабатывайте действия кнопок пейвола в Unity с помощью Adapty для лучшей монетизации приложения."
-metadataTitle: "Обработка действий кнопок пейвола | Документация Adapty"
+title: "Реагирование на действия флоу - Unity"
+description: "Обрабатывайте действия кнопок из флоу и пейволов в вашем Unity-приложении."
+metadataTitle: "Реагирование на действия флоу - Unity | Документация Adapty"
 toc_max_heading_level: 4
 rank: 40
 keywords: ['кнопка пейвола', 'кнопка', 'действия кнопок пейвола', 'обработка действий']
 ---
 
-Если вы создаёте пейволы с помощью Paywall Builder, важно правильно настроить кнопки:
+<SDKv4>
 
-1. Добавьте [кнопку в Paywall Builder](paywall-buttons) и назначьте ей готовое действие или создайте собственный ID действия.
+Если вы создаёте флоу или пейволы с помощью Flow Builder или Paywall Builder от Adapty, важно правильно настроить кнопки:
+
+1. Добавьте [кнопку в билдере](paywall-buttons) и назначьте ей готовое действие или создайте свой идентификатор действия.
 2. Напишите код в приложении для обработки каждого назначенного действия.
 
-В этом гайде показано, как обрабатывать пользовательские и стандартные действия в коде.
+В этом гайде показано, как обрабатывать кастомные и готовые действия в коде.
 
 :::warning
-**Только покупки и восстановления обрабатываются автоматически.** Все остальные действия кнопок — закрытие пейволов, открытие ссылок и т. д. — требуют реализации обработчиков в коде приложения.
+**Покупки и восстановления обрабатываются автоматически.** Все остальные действия кнопок — закрытие флоу, открытие ссылок и т. д. — требуют реализации обработчика в коде приложения.
+:::
+
+## Настройте слушатель событий флоу \{#set-up-the-flows-events-listener\}
+
+Чтобы обрабатывать действия флоу, реализуйте интерфейс `IAdaptyFlowsEventsListener` и зарегистрируйте его с помощью `Adapty.SetFlowsEventsListener()`. Это следует сделать на раннем этапе жизненного цикла приложения — как правило, в главной сцене или при инициализации приложения.
+
+```csharp showLineNumbers title="Unity"
+using AdaptySDK;
+
+public class FlowsListener : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // implement all IAdaptyFlowsEventsListener methods here
+}
+```
+
+`IAdaptyFlowsEventsListener` — это C# интерфейс, поэтому реализуйте все его методы — полный список см. в разделе [Обработка событий флоу и пейвола](unity-handling-events). В примерах ниже показан только метод `FlowViewDidPerformAction`.
+
+Все действия с кнопками поступают в коллбэк `FlowViewDidPerformAction(view, action)` в виде объекта `AdaptyUIUserAction` с `Type` равным `Close`, `SystemBack`, `OpenUrl` или `Custom`, а также необязательным полем `Value` (URL или идентификатор пользовательского действия).
+
+## Закрытие флоу и пейволов \{#close-flows-and-paywalls\}
+
+Чтобы добавить кнопку закрытия флоу или пейвола:
+
+1. В билдере добавьте кнопку и назначьте ей действие **Close**.
+2. В коде приложения реализуйте обработчик действия `Close`, который закрывает флоу.
+
+:::info
+Закрытое представление уничтожается и не может быть показано повторно. Чтобы отобразить флоу ещё раз, вызовите `CreateFlowView` снова.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Обработка системной кнопки «Назад» на Android \{#handle-the-android-system-back-button\}
+
+Нажатие системной кнопки «Назад» на Android (или использование жеста «назад») генерирует действие типа `SystemBack`. Само по себе оно не закрывает флоу — флоу остаётся открытым, и пользователь выходит из него через путь, который вы определяете: например, кнопку **Close** или действие `on_device_back` в билдере. Если вы хотите, чтобы системная кнопка «Назад» закрывала флоу, обработайте это действие самостоятельно:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Открытие URL из флоу и пейволов \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Если вы хотите добавить группу ссылок (например, пользовательское соглашение и восстановление покупок), добавьте элемент **Link** в билдере и обрабатывайте его так же, как кнопки с действием **Open URL**.
+:::
+
+Чтобы добавить кнопку, открывающую ссылку из флоу или пейвола (например, **Terms of use** или **Privacy policy**):
+
+1. В билдере добавьте кнопку, назначьте ей действие **Open URL** и введите нужный URL.
+2. В коде приложения реализуйте обработчик действия `OpenUrl`, который открывает полученный URL.
+
+Use the `AdaptyUI.OpenUrl` method to open the URL natively, honoring the external or in-app browser option (`action.OpenIn`) configured in the builder:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.OpenUrl:
+            var urlString = action.Value;
+            if (!string.IsNullOrWhiteSpace(urlString)) {
+                AdaptyUI.OpenUrl(
+                    urlString,
+                    action.OpenIn ?? AdaptyWebPresentation.ExternalBrowser,
+                    (error) => {
+                        // handle the error
+                    }
+                );
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Войдите в приложение \{#log-into-the-app\}
+
+Чтобы добавить кнопку, которая авторизует пользователей в вашем приложении:
+
+1. В конструкторе добавьте кнопку и назначьте ей действие **Custom** с ID `login`.
+2. В коде приложения реализуйте обработчик кастомного действия `login`, который идентифицирует пользователя.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "login") {
+                // Navigate to login scene
+                SceneManager.LoadScene("LoginScene");
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Обработка пользовательских действий \{#handle-custom-actions\}
+
+Чтобы добавить кнопку для обработки произвольных действий:
+
+1. В конструкторе добавьте кнопку, назначьте ей действие **Custom** и задайте ID.
+2. В коде приложения реализуйте обработчик для созданного вами ID действия.
+
+Например, если у вас есть другой набор предложений по подписке или разовые покупки, вы можете добавить кнопку, которая откроет другой флоу или пейвол:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "openNewFlow") {
+                // Display another flow or paywall
+                ShowAlternativeFlow();
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+
+private void ShowAlternativeFlow() {
+    // Implement your logic to show an alternative flow
+}
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Если вы создаёте пейволы с помощью Adapty Paywall Builder, важно правильно настроить кнопки:
+
+1. Добавьте [кнопку в Paywall Builder](paywall-buttons) и назначьте ей готовое действие или создайте собственный ID действия.
+2. Напишите в приложении код для обработки каждого назначенного действия.
+
+В этом гайде показано, как обрабатывать в коде как пользовательские, так и готовые действия.
+
+:::warning
+**Покупки и восстановления обрабатываются автоматически.** Все остальные действия кнопок — закрытие пейволов, открытие ссылок и т. д. — требуют реализации обработчиков в коде приложения.
 :::
 
 ## Закрытие пейволов \{#close-paywalls\}
@@ -96,7 +279,6 @@ public void PaywallViewDidPerformAction(
     }
 }
 ```
-
 ## Обработка пользовательских действий \{#handle-custom-actions\}
 
 Чтобы добавить кнопку для обработки любых других действий:
@@ -128,3 +310,4 @@ private void ShowAlternativePaywall() {
     // Implement your logic to show alternative paywall
 }
 ```
+</SDKv3>

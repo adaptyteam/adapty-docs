@@ -1,0 +1,270 @@
+---
+title: "Amazon S3 dans l'attribution Adapty"
+description: "Exportez les données d'acquisition utilisateur vers S3 pour des analyses et des rapports avancés."
+metadataTitle: "Amazon S3 | Attribution Adapty | Documentation Adapty"
+keywords: ['adapty attribution', 'adapty ua', 'acquisition utilisateur', 's3', 'amazon']
+---
+
+L'intégration d'Adapty Attribution avec Amazon S3 vous permet de stocker les données de vos campagnes d'acquisition utilisateur de façon sécurisée en un seul endroit. Vous pouvez ainsi enregistrer les performances de vos campagnes, les données d'attribution et les événements d'acquisition dans votre bucket Amazon S3 sous forme de fichiers .csv.  
+Pour configurer cette intégration, il vous suffit de suivre quelques étapes simples dans AWS Console et dans le tableau de bord Adapty Attribution.
+
+:::note
+Adapty Attribution envoie vos données toutes les **24h** à 4h00 UTC.
+
+Chaque fichier contient les données des événements créés sur l'ensemble de la journée calendaire précédente en UTC. Par exemple, les données exportées automatiquement à 4h00 UTC le 8 mars contiendront tous les événements créés le 7 mars de 00:00:00 à 23:59:59 UTC.
+:::
+
+## Comment configurer l'intégration Amazon S3 \{#how-to-set-up-amazon-s3-integration\}
+
+Pour commencer à recevoir des données, vous aurez besoin des identifiants suivants :
+
+1. Access key ID
+2. Secret access key
+3. Nom du bucket S3
+4. Nom du dossier dans le bucket S3
+
+:::note
+Répertoires imbriqués
+
+Vous pouvez spécifier des répertoires imbriqués dans le champ du nom du bucket Amazon S3, par exemple : adapty-ua-events/com.sample-app
+:::
+
+### Étape 1. Créer les identifiants Amazon S3 \{#step-1-create-amazon-s3-credentials\}
+
+Ce guide vous aide à créer les identifiants nécessaires dans votre AWS Console.
+
+#### 1.1. Créer une politique d'accès \{#11-create-access-policy\}
+
+1. Accédez au [tableau de bord des politiques IAM](https://us-east-1.console.aws.amazon.com/iamv2/home?region=us-east-1#/policies) dans votre AWS Console
+2. Sélectionnez l'option **Create Policy**
+
+<Zoom>
+  <img src="/assets/shared/img/7af075c-CleanShot_2023-03-21_at_10.52.002x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Dans l'éditeur de politique, collez le JSON suivant et remplacez `adapty-s3-integration-test` par le nom de votre bucket :
+
+```json showLineNumbers title="Json"
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListObjectsInBucket",
+            "Effect": "Allow",
+            "Action": "s3:ListBucket",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        },
+        {
+            "Sid": "AllowAllObjectActions",
+            "Effect": "Allow",
+            "Action": "s3:*Object",
+            "Resource": [
+                "arn:aws:s3:::adapty-s3-integration-test/*",
+                "arn:aws:s3:::adapty-s3-integration-test"
+            ]
+        },
+        {
+            "Sid": "AllowBucketLocation",
+            "Effect": "Allow",
+            "Action": "s3:GetBucketLocation",
+            "Resource": "arn:aws:s3:::adapty-s3-integration-test"
+        }
+    ]
+}
+```
+
+<Zoom>
+  <img src="/assets/shared/img/d4e474a-CleanShot_2023-03-21_at_10.56.212x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Une fois la politique configurée, vous pouvez ajouter des tags (facultatif), puis cliquer sur **Next** pour passer à l'étape finale
+5. Dans cette étape, donnez un nom à votre politique et cliquez sur le bouton **Create policy** pour finaliser la création
+
+<Zoom>
+  <img src="/assets/shared/img/7dcb02f-CleanShot_2023-03-21_at_11.03.372x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+#### 1.2. Créer un utilisateur IAM \{#12-create-iam-user\}
+
+Pour permettre à Adapty Attribution de charger des rapports de données brutes dans votre bucket, vous devez lui fournir l'Access Key ID et la Secret Access Key d'un utilisateur disposant d'un accès en écriture sur le bucket concerné.
+
+1. Accédez à la console IAM et sélectionnez la [section Utilisateurs](https://console.aws.amazon.com/iamv2/home#/users)
+2. Cliquez sur le bouton **Add users**
+
+<Zoom>
+  <img src="/assets/shared/img/bb612c8-CleanShot_2023-03-21_at_11.12.392x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+3. Donnez un nom à l'utilisateur, choisissez **Access key – Programmatic access**, puis passez aux permissions
+
+<Zoom>
+  <img src="/assets/shared/img/467ee4d-j6aoX.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+4. Pour l'étape suivante, sélectionnez l'option **Add user to group**, puis cliquez sur le bouton **Create group**
+
+<Zoom>
+  <img src="/assets/shared/img/bfd0e80-CleanShot_2023-03-21_at_11.24.592x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+5. Ensuite, donnez un nom à votre groupe d'utilisateurs et sélectionnez la politique que vous avez créée précédemment
+6. Une fois la politique sélectionnée, cliquez sur le bouton **Create group** pour finaliser le processus
+
+<Zoom>
+  <img src="/assets/shared/img/df29c12-CleanShot_2023-03-21_at_11.28.052x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+7. Après avoir créé le groupe, **sélectionnez-le** et passez à l'étape suivante
+
+<Zoom>
+  <img src="/assets/shared/img/1f3722e-CleanShot_2023-03-21_at_11.36.192x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+8. C'est la dernière étape de cette section ; cliquez simplement sur le bouton **Create User**
+
+<Zoom>
+  <img src="/assets/shared/img/ea43722-CleanShot_2023-03-21_at_11.40.462x.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+9. Enfin, vous pouvez soit **télécharger les identifiants au format .csv**, soit les copier-coller directement depuis le tableau de bord
+
+<Zoom>
+  <img src="/assets/shared/img/bcf35e1-S3created.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Étape 2. Configurer l'intégration dans Adapty Attribution \{#step-2-configure-integration-in-adapty-attribution\}
+
+1. Accédez à [**Integrations** -> **Amazon S3**](https://app.adapty.io/ua/integrations/s3)
+2. Activez le bouton **Export install events to Amazon S3**.
+3. Remplissez les champs suivants pour établir la connexion entre Amazon S3 et les profils Adapty Attribution :
+
+| Champ                        | Description                                                  |
+|:-----------------------------| :----------------------------------------------------------- |
+| **Access Key ID**            | Identifiant unique utilisé pour authentifier l'accès d'un utilisateur ou d'une application à un service AWS. Retrouvez cet identifiant dans le [fichier csv](ua-amazon-s3#step-1-create-amazon-s3-credentials) téléchargé. |
+| **Secret Access Key**        | Clé privée utilisée conjointement avec l'Access Key ID pour authentifier l'accès d'un utilisateur ou d'une application à un service AWS. Retrouvez cette clé dans le [fichier csv](ua-amazon-s3#step-1-create-amazon-s3-credentials) téléchargé. |
+| **S3 Bucket Name**           | Nom unique au monde identifiant un bucket S3 spécifique dans le cloud AWS. Les buckets S3 sont un service de stockage simple permettant de stocker et de récupérer des objets de données, comme des fichiers et des images, dans le cloud. |
+| **Folder Inside the Bucker** | Nom du dossier que vous souhaitez créer dans le bucket S3 sélectionné. Notez que S3 simule les dossiers à l'aide de préfixes de clés d'objet, qui correspondent essentiellement à des noms de dossiers. |
+| **Region** (Optionnel)        | Retrouvez votre région dans AWS Management Console sous votre compte utilisateur IAM.                                                                                                                                                                                  |
+
+<ZoomImage id="ua-amazon-s3.webp" width="700px" />
+
+## Export manuel des données \{#manual-data-export\}
+
+En plus de l'export automatique des données d'événements vers Amazon S3, Adapty Attribution propose également une fonctionnalité d'export manuel de fichiers. Cette fonctionnalité vous permet de sélectionner une date précise pour les données d'acquisition utilisateur et de les exporter manuellement dans votre bucket S3, pour un contrôle total sur les données exportées et le moment de leur export.
+
+## Structure de la table \{#table-structure\}
+
+Dans l'intégration AWS S3, Adapty Attribution fournit une table pour stocker l'historique des événements d'installation. Cette table contient des informations sur le profil utilisateur, les revenus et les produits, le store d'origine, entre autres points de données.
+
+:::warning
+Notez que cette structure peut évoluer avec le temps — de nouvelles données peuvent être introduites par nos soins ou par les tiers avec lesquels nous travaillons. Assurez-vous que le code qui traite ces données est suffisamment robuste et s'appuie sur des champs spécifiques, et non sur la structure dans son ensemble.
+:::
+
+Voici la structure de la table pour les événements :
+
+| Colonne                  | Description                               |
+|--------------------------|-------------------------------------------|
+| `adapty_profile_id`      | Identifiant unique du profil Adapty       |
+| `install_id`             | Identifiant unique de l'installation      |
+| `created_at`             | Horodatage de création de l'enregistrement (ISO 8601) |
+| `installed_at`           | Horodatage d'installation de l'application (ISO 8601) |
+| `store`                  | Store (`ios`, `android`)                  |
+| `country`                | Code pays de l'utilisateur (ISO 3166-1 alpha-2) |
+| `ip_address`             | Adresse IP du client                      |
+| `idfa`                   | Identifiant iOS pour les annonceurs       |
+| `idfv`                   | Identifiant iOS pour les vendeurs         |
+| `gaid`                   | Identifiant publicitaire Google (Android) |
+| `android_id`             | Identifiant de l'appareil Android         |
+| `app_set_id`             | Android App Set ID                        |
+| `channel`                | Canal d'attribution                       |
+| `campaign_id`            | Identifiant de la campagne                |
+| `campaign_name`          | Nom de la campagne                        |
+| `adset_id`               | Identifiant du groupe d'annonces          |
+| `adset_name`             | Nom du groupe d'annonces                  |
+| `ad_id`                  | Identifiant de l'annonce                  |
+| `ad_name`                | Nom de l'annonce                          |
+| `keyword_id`             | Identifiant du mot-clé                    |
+| `keyword_name`           | Nom du mot-clé                            |
+| `asa_org_id`             | Identifiant d'organisation Apple Search Ads |
+| `asa_keyword_match_type` | Type de correspondance du mot-clé ASA (`Exact`, `Broad`) |
+| `asa_attribution`        | Données d'attribution ASA (chaîne JSON)   |
+| `asa_conversion_type`    | Type de conversion ASA                    |
+| `asa_country_or_region`  | Pays ou région ASA                        |
+| `asa_creative_set_name`  | Nom du jeu de créatifs ASA                |
+| `fbclid`                 | Facebook Click ID                         |
+| `ttclid`                 | TikTok Click ID                           |
+| `utm_source`             | Paramètre source UTM                      |
+| `utm_medium`             | Paramètre medium UTM                      |
+| `utm_campaign`           | Paramètre campagne UTM                    |
+| `utm_term`               | Paramètre terme UTM                       |
+| `utm_content`            | Paramètre contenu UTM                     |

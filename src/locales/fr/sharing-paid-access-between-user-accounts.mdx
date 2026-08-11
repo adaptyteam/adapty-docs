@@ -1,0 +1,112 @@
+---
+title: "Partage de l'accès payant entre comptes utilisateurs"
+description: "Partage de l'accès payant entre différents comptes utilisateurs pour les utilisateurs disposant de plusieurs appareils ou de plusieurs profils dans l'application"
+metadataTitle: "Partage de l'accès payant entre différents comptes utilisateurs pour garantir que l'utilisateur ne perd pas l'accès à ses achats | Documentation Adapty"
+---
+
+Lorsqu'un utilisateur effectue un achat, Adapty attribue un nouveau [niveau d'accès](access-level) à son [profil](identifying-users) actif. Ce niveau d'accès autorise l'acheteur à accéder au contenu payant.
+
+Le profil de l'acheteur peut changer par inadvertance s'il réinstalle votre application ou se connecte à un nouveau compte dans l'application. Pour garantir un accès ininterrompu, Adapty partage automatiquement le niveau d'accès de l'utilisateur entre le profil d'origine et les profils suivants.
+
+Cette approche convient à la plupart des applications. Mais si votre logique métier l'exige, vous pouvez choisir une politique de partage d'accès payant plus restrictive.
+
+Ouvrez la page [General Settings](https://app.adapty.io/settings/general) pour définir une politique de partage de niveau d'accès. Pour faciliter les tests, vous pouvez modifier ce paramètre uniquement pour [l'environnement sandbox](#sharing-paid-access-on-sandbox).
+
+<Details>
+
+:::important
+Si votre application n'authentifie pas les utilisateurs, vous pouvez ignorer ce paramètre. Les profils anonymes associés au même compte store *partagent toujours* leur niveau d'accès.
+:::
+
+    <summary>Quelle politique de partage d'accès choisir ? (Cliquez pour développer)</summary>
+
+    | Mon application...                                                    | Meilleure option                                             |
+    | ------------------------------------------------------------ | ------------------------------------------------------------ |
+    | N'a pas de fonctionnalité d'authentification et utilise uniquement les identifiants de profil anonymes d'Adapty. | Utilisez le paramètre **Enabled (default)**. |
+    | Peut authentifier les utilisateurs, mais leur permet d'effectuer des achats sans compte. | Activez le paramètre **Transfer access to new user**. Les utilisateurs pourront s'inscrire et récupérer leurs achats anonymes. |
+    | Exige la création d'un compte avant un achat, mais peut associer un seul produit à plusieurs Customer User IDs. | Activez le paramètre **Transfer access to new user**. Plusieurs comptes pourront accéder au produit, mais uniquement de façon séquentielle. |
+    | Exige la création d'un compte avant un achat, avec des règles strictes liant les achats à un seul Customer User ID. | **Désactivez** le partage de niveau d'accès. |
+</Details>
+
+<Zoom>
+  <img src="/assets/shared/img/sharing-paid-access.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+## Enabled (default) \{#enabled-default\}
+
+Ce paramètre convient le mieux aux applications **sans authentification intégrée**. Après l'achat, tous les profils associés au même compte store *héritent* automatiquement du niveau d'accès.
+
+* Si un utilisateur se connecte à votre application avec de nouveaux identifiants, il conserve l'accès au contenu payant.
+* Si un utilisateur réinstalle votre application après une réinitialisation d'usine, il conserve l'accès au contenu payant.
+* Si un utilisateur installe l'application sur d'autres appareils avec le même compte store, l'achat est disponible sur tous les appareils, même si chaque instance de l'application possède son propre profil client.
+
+## Transfer access to new user \{#transfer-access-to-new-user\}
+
+Ce paramètre convient le mieux aux applications qui autorisent les achats **avec ou sans authentification**, ou qui souhaitent appliquer une politique **un appareil par utilisateur**.
+
+Adapty limite l'accès à un achat à 1 identifiant client à la fois. Le propriétaire de l'appareil peut réinstaller l'application, se connecter et se déconnecter, mais ne peut pas accéder au même produit depuis plus d'un identifiant client simultanément.
+
+Lorsque ce paramètre est activé, les profils anonymes (par exemple, un profil qui devient actif après la déconnexion de l'utilisateur) héritent toujours du niveau d'accès du dernier identifiant client actif. Cela est nécessaire pour éviter toute perte d'accès ultérieure.
+
+:::warning
+Lorsque vous désactivez le paramètre par défaut et activez **Transfer access to new user**, Adapty ne met pas immédiatement à jour les niveaux d'accès des profils clients existants.
+
+Le basculement se produit lorsqu'un utilisateur déclenche un nouvel événement store : par exemple, lors du renouvellement de l'abonnement ou de la restauration de ses achats.
+:::
+
+:::important
+Adapty révoque l'ancien profil uniquement lorsque le nouveau profil possède un [Customer User ID](identifying-users#set-customer-user-id-on-configuration) au moment où le SDK propage la transaction. Si `restorePurchases` s'exécute sur un profil anonyme, l'ancien Customer User ID et le nouveau profil anonyme se retrouvent tous deux avec le niveau d'accès. L'ancien profil est révoqué plus tard, lorsque vous identifiez le profil anonyme.
+
+Pour éviter cela, appelez les méthodes du SDK dans l'ordre : `activate` → `identify` → `restorePurchases`.
+:::
+
+## Désactiver le partage d'accès payant \{#disable-paid-access-sharing\}
+
+Ce paramètre est **uniquement adapté** aux applications avec une **authentification obligatoire** ou une implémentation indépendante de la gestion des accès. Dans les autres cas, les utilisateurs pourraient ne pas pouvoir accéder à leurs achats, et votre application risque **d'échouer à la vérification obligatoire du store**.
+
+Si vous désactivez le partage d'accès payant, Adapty lie le produit à l'[identifiant client](identifying-users#set-customer-user-id-on-configuration) actif au moment de l'achat et ne partage pas le niveau d'accès avec d'autres profils clients. Cette politique permet une distribution stricte du produit en 1 pour 1.
+
+:::warning
+Lorsque vous désactivez le partage d'accès payant, vous empêchez les identifiants clients d'hériter de l'accès payant. Si un identifiant client a hérité d'un accès payant par le passé, cela ne peut pas être révoqué automatiquement.
+:::
+
+:::important
+En cas d'urgence, vous devrez peut-être [supprimer un profil utilisateur](api-adapty/operations/deleteProfile) pour que le prochain profil disponible (identifié ou anonyme) puisse revendiquer son niveau d'accès.
+:::
+
+## Référence pratique \{#practical-reference\}
+
+Une fois le mode choisi, les contrats ci-dessous décrivent ce à quoi s'attendre : quels profils voient l'accès, quand l'ancien profil le perd, et quels événements webhook se déclenchent.
+
+| Mode | Plusieurs profils partagent un même achat ? | Ancien profil révoqué lors du transfert ? | Quand l'ancien profil est révoqué | Événements webhook lorsqu'un second profil revendique l'abonnement |
+| --- | --- | --- | --- | --- |
+| **Enabled (default)** | Oui — chaque profil qui restaure ou se connecte hérite de l'accès | Jamais | N/A | `access_level_updated` (`is_active=true`) pour chaque nouveau profil qui hérite |
+| **Transfer access to new user** | Non — exclusif, mais transférable entre profils | Oui | Immédiatement lorsque le nouvel appareil identifié propage la transaction (`restorePurchases`, identify ou le prochain événement côté store) | Nouveau profil : `access_level_updated` (`is_active=true`). Ancien profil : `access_level_updated` (`is_active=false`) |
+| **Disabled** | Non — un Customer User ID par achat, de façon permanente | N/A — l'accès n'est jamais transféré | N/A | Aucun pour le second profil. Le SDK n'affiche aucun accès pour celui-ci |
+
+## Partage de l'accès payant en sandbox \{#sharing-paid-access-on-sandbox\}
+
+Vous pouvez définir une politique de partage d'accès payant spécifiquement pour l'environnement sandbox. Lorsque vous testez des achats dans l'environnement sandbox, attendez-vous au comportement suivant :
+
+* Apple stocke les informations sur vos achats passés dans l'historique d'achats du compte. Le SDK Adapty peut également y accéder.
+* Si vous réinstallez l'application et qu'Adapty détecte que le produit a déjà été acheté, le profil actif héritera du niveau d'accès.
+* Si Apple détecte un achat existant pour le produit, il ne vous permettra pas d'effectuer le même achat deux fois, même si le profil actif ne possède pas le niveau d'accès nécessaire.
+
+Ce comportement se produit **indépendamment de votre paramètre de partage d'accès payant**. Votre application n'affiche pas le paywall, vous ne pouvez pas acheter le produit. La seule solution est de **vider l'historique d'achats de votre compte**. Suivez le [guide de test sandbox](test-purchases-in-sandbox) pour des instructions détaillées.
+
+:::warning
+Les abonnements sandbox sur Apple se renouvellent automatiquement toutes les quelques minutes. Ces renouvellements rapides peuvent modifier quel profil Adapty considère comme [parent](how-profiles-work#parent-and-inheritor-profiles) — un comportement en chaîne que la production reproduit rarement. Testez le mode que vous utilisez en production et confirmez le comportement avec un vrai Apple ID avant de tirer des conclusions à partir du sandbox.
+:::
+
+## Partage de l'accès payant dans les analyses \{#paid-access-sharing-in-analytics\}
+
+* Adapty enregistre les transactions au fur et à mesure qu'elles se produisent. Une seule transaction peut être associée à plusieurs profils, mais n'est comptabilisée qu'une seule fois.
+* Si deux profils ou plus partagent le même niveau d'accès, l'achat est attribué au [profil parent](how-profiles-work#parent-and-inheritor-profiles).
+* L'héritage du niveau d'accès n'a pas d'impact sur les statistiques d'installation. Pour déterminer comment Adapty comptabilise les installations, vous pouvez sélectionner l'une des deux [définitions d'installation](installs#counting-modes) disponibles sur la page des paramètres.

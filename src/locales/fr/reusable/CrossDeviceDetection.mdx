@@ -1,0 +1,22 @@
+---
+no_index: true
+---
+
+Lors de l'activation du SDK, il lit automatiquement les droits existants de l'utilisateur depuis StoreKit (iOS) ou Google Play Billing (Android) et les synchronise avec le backend Adapty. Un abonnement actif apparaît sur le profil Adapty sans que l'application n'appelle `restorePurchases`.
+
+Ce qui **ne** se produit **pas** automatiquement, c'est la reconnaissance qu'un profil sur un nouvel appareil appartient au même utilisateur que le profil sur l'appareil d'origine. Adapty fait correspondre les profils par Customer User ID, donc la continuité d'identité dépend de ce que vous utilisez comme CUID.
+
+**Ce qu'Adapty peut détecter entre les appareils**
+
+| Votre configuration | Ce qu'Adapty détecte | Ce que vous devez faire |
+| --- | --- | --- |
+| Customer User ID = `device_id` (sans connexion à l'application) | Le nouvel appareil reçoit un CUID différent et donc un profil différent. L'abonnement se synchronise avec le nouveau profil via un événement **Access level updated**, mais `subscription_started` ne se déclenche pas — le nouveau profil est traité comme un héritier de l'achat d'origine. Les analyses basées sur `subscription_started` sous-compteront les utilisateurs de retour. | Utilisez un identifiant de compte stable comme Customer User ID pour qu'un utilisateur de retour corresponde au profil existant sur tous les appareils. |
+| Customer User ID = identifiant de compte stable (connexion sur chaque appareil) | Le SDK synchronise automatiquement l'abonnement lors de l'appel `activate()`, et `identify()` fait correspondre le profil existant par CUID. | Aucune configuration supplémentaire n'est nécessaire — l'identité et l'abonnement se résolvent automatiquement. |
+| Héritier du partage familial Apple | Le membre de la famille reçoit l'abonnement uniquement via un événement **Access level updated** — `subscription_started` ne se déclenche pas. | Écoutez **Access level updated**. Consultez [Apple Family Sharing](apple-family-sharing) pour la matrice complète des événements. |
+| Même compte Apple/Google, utilisateurs in-app différents | Le premier profil à enregistrer l'achat devient le parent. Les profils suivants voient l'abonnement via une chaîne d'héritiers, avec un seul événement **Access level updated**. | Exigez une connexion, puis choisissez un [mode de partage](sharing-paid-access-between-user-accounts) adapté à votre modèle. |
+
+**Restaurer les achats sur un nouvel appareil**
+
+Proposez un bouton « Restaurer les achats » initié par l'utilisateur sur votre paywall. Les directives App Review d'Apple (règle 3.1.1) l'exigent, et il sert de solution de secours quand la synchronisation automatique rate un cas limite. Ce bouton doit appeler `restorePurchases` dans votre SDK.
+
+Un appel programmatique à `restorePurchases` au premier lancement n'est pas nécessaire pour une utilisation normale — le SDK effectue déjà l'équivalent lors de l'appel `activate()`. Réservez les appels programmatiques pour forcer une vérification fraîche du reçu, par exemple lors du débogage d'un accès manquant après la fin de `activate()`.

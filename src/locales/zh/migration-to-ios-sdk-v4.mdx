@@ -1,10 +1,11 @@
 ---
-title: "将 Adapty iOS SDK 迁移至 v4.0"
-description: "通过将付费墙 API 替换为流程 API，迁移至 Adapty iOS SDK v4.0（测试版），兼容流程编辑工具和付费墙编辑工具。"
-metadataTitle: "迁移至 Adapty iOS SDK v4.0（测试版）| Adapty 文档"
+title: "迁移 Adapty iOS SDK 至 v4.0"
+description: "通过将付费墙 API 替换为流程 API，迁移至 Adapty iOS SDK v4.0，兼容流程编辑工具和付费墙编辑工具。"
+metadataTitle: "迁移至 Adapty iOS SDK v4.0 | Adapty 文档"
 ---
 
-Adapty iOS SDK 4.0（测试版）引入了流程概念，并对付费墙相关 API 进行了相应重命名。新 API 同时兼容全新的 Flow Builder 和现有的付费墙编辑工具——无需在 Adapty 看板侧进行任何配置变更。
+Adapty iOS SDK 4.0 引入了流程概念，并相应地对付费墙 API 进行了重命名。新 API 同时兼容全新的流程编辑工具和现有的付费墙编辑工具——无需在 Adapty 看板侧进行任何配置变更。
+
 ## 快速参考 \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -30,33 +31,37 @@ Adapty iOS SDK 4.0 将最低部署目标从 iOS 13.0 提升至 **iOS 15.0**。�
 Adapty iOS SDK 4.0 已放弃对 CocoaPods 的支持。请改用 [Swift Package Manager](sdk-installation-ios#install-adapty-sdk) 安装 SDK。
 
 如果你的项目仍在使用 CocoaPods，请从 `Podfile` 中移除 `Adapty` 和 `AdaptyUI` pods，运行 `pod install` 将其清理，然后在 Xcode 中通过 **File → Add Package Dependency**，使用 `https://github.com/adaptyteam/AdaptySDK-iOS.git` 添加该包。
-## Kids 模式：独立产品替换为 Package Trait \{#kids-mode-separate-products-replaced-by-a-package-trait\}
+## 儿童模式：独立产品替换为 Package Trait \{#kids-mode-separate-products-replaced-by-a-package-trait\}
 
-在 v3 中，你通过选择独立的 **Adapty_KidsMode** 和 **AdaptyUI_KidsMode** Package 产品并重命名导入来启用 [Kids 模式](kids-mode)。从 `4.0.0-beta.2` 起，这些产品已被移除。Kids 模式现在是常规 Adapty Package 上名为 `KidsMode` 的 Swift Package Trait——启用后，整个 SDK 中的 IDFA 和 AdSupport 将被编译移除。
+在 v3 中，启用[儿童模式](kids-mode)需要选择独立的 **Adapty_KidsMode** 和 **AdaptyUI_KidsMode** 包产品并重命名导入。在 v4.0 中，这些产品已被移除。儿童模式现在是常规 Adapty 包中名为 `KidsMode` 的 Swift Package Trait——启用后，整个 SDK 中的 IDFA 和 AdSupport 都会被编译排除。
 
-迁移步骤如下：
+迁移步骤：
+
 1. 在 **Choose Package Products** 窗口中，选择常规的 **Adapty** 和 **AdaptyUI** 产品，而非 **Adapty_KidsMode** 和 **AdaptyUI_KidsMode**。
 
-2. 启用 `KidsMode` trait。在 Xcode 26.4 或更高版本中，在项目的 **Package Dependencies** 视图中为 AdaptySDK-iOS 依赖项启用该 trait。如果你在 `Package.swift` 中将 Adapty 添加为依赖项（需要 `swift-tools-version` 6.1 或更高版本），则在该文件中启用：
-```swift showLineNumbers title="Package.swift"
+2. 启用 `KidsMode` trait。在 Xcode 26.4 或更高版本中，在项目的 **Package Dependencies** 视图里为 AdaptySDK-iOS 依赖项启用该 trait。如果你在 `Package.swift` 中添加 Adapty 作为依赖项（需要 `swift-tools-version` 6.1 或更高版本），可以在此处启用：
+
+   ```swift showLineNumbers title="Package.swift"
    .package(
        url: "https://github.com/adaptyteam/AdaptySDK-iOS.git",
-       exact: "4.0.0-beta.2",
+       from: "4.0.2",
        traits: ["KidsMode"]
    )
    ```
 
-3. 将您的导入改回常规模块：
+3. 将 import 改回常规模块：
 
-   ```diff showLineNumbers
+```diff showLineNumbers
    - import Adapty_KidsMode
    - import AdaptyUI_KidsMode
    + import Adapty
    + import AdaptyUI
    ```
+
 :::note
-Xcode 26.4 之前的版本无法通过 UI 为 Xcode 项目启用 traits。在这种情况下，请添加一个本地 Swift 包，使其依赖 Adapty 并启用 `KidsMode` trait，然后让应用目标依赖该包。
+早于 26.4 版本的 Xcode 无法通过 UI 为 Xcode 项目启用 traits。此时，请添加一个本地 Swift 包，让其依赖启用了 `KidsMode` trait 的 Adapty，然后让你的应用目标依赖该包。
 :::
+
 ## 已移除的 API \{#removed-apis\}
 
 - **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — 已移除。所有产品现在均包含优惠信息，因此不再需要单独的资格验证步骤。
@@ -86,6 +91,10 @@ Xcode 26.4 之前的版本无法通过 UI 为 Xcode 项目启用 traits。在这
 - let products = try await Adapty.getPaywallProducts(paywall: paywall)
 + let products = try await Adapty.getPaywallProducts(flow: flow)
 ```
+### 备用文件 \{#fallback-files\}
+
+备用文件的格式[在 SDK v4 中发生了变化](fallback-flows)。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 下载新文件，并将其打包到您的应用中。
+
 ## 追踪付费墙展示 \{#tracking-paywall-views\}
 ### logShowPaywall(_:) → logShowFlow(_:)
 
@@ -96,9 +105,10 @@ Xcode 26.4 之前的版本无法通过 UI 为 Xcode 项目启用 traits。在这
 + try await Adapty.logShowFlow(flow)
 ```
 与 v3 一样，在显示由[流程编辑工具](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)渲染的流程或付费墙时，无需调用此方法——Adapty 会自动追踪这些浏览记录。
-## didFinishPurchase 现在是必填项 \{#didfinishpurchase-is-now-required\}
+## didFinishPurchase 现在是必须实现的 \{#didfinishpurchase-is-now-required\}
 
-在 v3 中，`didFinishPurchase` 是可选的：如果你没有实现它，付费墙会在购买成功后自动关闭。从 `4.0.0-beta.2` 开始，这个默认的自动关闭逻辑已被移除，这样流程在购买成功后可以继续执行——例如，继续展示流程中剩余的页面。现在由你来决定购买后的行为：关闭页面，或者什么都不做以让流程继续。
+在 v3 中，`didFinishPurchase` 是可选的：如果你没有实现它，付费墙会在购买成功后自动关闭。在 v4.0 中，这个默认的自动关闭行为已被移除，以便流程在购买成功后可以继续——例如，展示流程的后续页面。现在由你决定购买完成后的行为：关闭页面，或者什么都不做以让流程继续。
+
 - **UIKit**：`AdaptyFlowControllerDelegate` 的实现者必须实现 `didFinishPurchase` —— 该方法不再提供默认实现。
 - **SwiftUI**：`.flow(...)` 和 `AdaptyFlowView(...)` 的 `didFinishPurchase` 闭包现在为非可选类型，与 `didFailPurchase` 和 `didFinishRestore` 保持一致。
 

@@ -1,0 +1,216 @@
+---
+title: "Identifier les utilisateurs dans le SDK iOS"
+description: "Guide de démarrage rapide pour configurer Adapty pour la gestion des abonnements intégrés."
+metadataTitle: "Guide de démarrage rapide Adapty | Documentation Adapty"
+keywords: ['identifier', 'identification des utilisateurs', 'customeruserid']
+rank: 100
+---
+
+:::important
+Ce guide vous concerne si vous disposez de votre propre système d'authentification. Vous y apprendrez comment travailler avec les profils utilisateur dans Adapty afin de les aligner avec votre système d'authentification existant.
+:::
+
+La façon dont vous gérez les achats des utilisateurs dépend du modèle d'authentification de votre application :
+- Si votre application n'utilise pas d'authentification backend et ne stocke pas de données utilisateur, consultez la [section sur les utilisateurs anonymes](#anonymous-users).
+- Si votre application dispose (ou disposera) d'une authentification backend, consultez la [section sur les utilisateurs identifiés](#identified-users).
+
+**Concepts clés** :
+- Les **profils** sont les entités nécessaires au fonctionnement du SDK. Adapty les crée automatiquement.
+- Ils peuvent être anonymes **(sans customer user ID)** ou identifiés **(avec customer user ID)**.
+- Vous fournissez le **customer user ID** pour faire le lien entre les profils Adapty et votre système d'authentification interne.
+
+Voici les différences entre utilisateurs anonymes et identifiés :
+
+|                              | Utilisateurs anonymes                                        | Utilisateurs identifiés                                                              |
+|------------------------------|--------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| **Gestion des achats**       | Restauration des achats au niveau du store                   | Historique des achats conservé sur tous les appareils via leur customer user ID      |
+| **Gestion des profils**      | Nouveau profil à chaque réinstallation                       | Le même profil sur toutes les sessions et tous les appareils                         |
+| **Persistance des données**  | Les données des utilisateurs anonymes sont liées à l'installation de l'app | Les données des utilisateurs identifiés persistent entre les installations           |
+
+## Utilisateurs anonymes \{#anonymous-users\}
+
+Si vous n'avez pas d'authentification backend, **vous n'avez pas besoin de gérer l'authentification dans le code de l'application** :
+
+1. Lors de l'activation du SDK au premier lancement de l'app, Adapty **crée un nouveau profil pour l'utilisateur**.
+2. Lorsque l'utilisateur effectue un achat dans l'app, cet achat est **associé à son profil Adapty et à son compte store**.
+3. Lorsque l'utilisateur **réinstalle** l'app ou l'installe sur un **nouvel appareil**, Adapty **crée un nouveau profil anonyme lors de l'activation**.
+4. Si l'utilisateur a déjà effectué des achats dans votre application, ses achats sont automatiquement synchronisés depuis l'App Store lors de l'activation du SDK.
+
+:::note
+Les restaurations depuis une sauvegarde se comportent différemment des réinstallations. Par défaut, lorsqu'un utilisateur restaure depuis une sauvegarde, le SDK conserve les données en cache et ne crée pas de nouveau profil. Vous pouvez configurer ce comportement avec le paramètre `clearDataOnBackup`. [En savoir plus](sdk-installation-ios#clear-data-on-backup-restore).
+:::
+
+Ainsi, avec des utilisateurs anonymes, de nouveaux profils seront créés à chaque installation, mais ce n'est pas un problème car, dans les analyses Adapty, vous pouvez [configurer ce qui sera considéré comme une nouvelle installation](general#4-installs-definition-for-analytics).
+
+Pour les utilisateurs anonymes, vous devez compter les installations par **ID d'appareil**. Dans ce cas, chaque installation de l'application sur un appareil est comptée comme une installation, y compris les réinstallations.
+
+## Utilisateurs identifiés \{#identified-users\}
+
+Vous avez deux options pour identifier les utilisateurs dans l'application :
+
+- [**Lors de la connexion/inscription :**](#during-loginsignup) Si les utilisateurs se connectent après le démarrage de votre application, appelez `identify()` avec un customer user ID lorsqu'ils s'authentifient.
+
+- [**Lors de l'activation du SDK :**](#during-the-sdk-activation) Si vous disposez déjà d'un customer user ID stocké au lancement de l'application, envoyez-le lors de l'appel à `activate()`.
+
+:::important
+Par défaut, lorsqu'Adapty reçoit un achat d'un Customer User ID actuellement associé à un autre Customer User ID, le niveau d'accès est partagé, de sorte que les deux profils ont un accès payant. Vous pouvez configurer ce paramètre pour transférer l'accès payant d'un profil à un autre ou désactiver complètement le partage. Consultez l'[article](general#6-sharing-paid-access-between-user-accounts) pour plus de détails.
+:::
+
+<Zoom>
+  <img src="/assets/shared/img/identify-diagram.webp"
+  style={{
+    border: '1px solid #727272', /* border width and color */
+    width: '700px', /* image width */
+    display: 'block', /* for alignment */
+    margin: '0 auto' /* center alignment */
+  }}
+/>
+</Zoom>
+
+### Lors de la connexion/inscription \{#during-loginsignup\}
+
+Si vous identifiez les utilisateurs après le lancement de l'application (par exemple, après qu'ils se soient connectés ou inscrits), utilisez la méthode `identify` pour définir leur customer user ID.
+
+- Si vous **n'avez pas encore utilisé ce customer user ID**, Adapty le liera automatiquement au profil actuel.
+- Si vous **avez déjà utilisé ce customer user ID pour identifier l'utilisateur**, Adapty basculera vers le profil associé à ce customer user ID.
+
+:::important
+Les customer user IDs doivent être uniques pour chaque utilisateur. Si vous codez en dur la valeur du paramètre, tous les utilisateurs seront considérés comme un seul.
+:::
+
+Attendez toujours que `identify` soit résolu (`await`) avant d'appeler d'autres méthodes du SDK. Les appels simultanés produisent l'erreur `#3006 profileWasChanged` ou atterrissent sur le profil anonyme. Voir [Ordre des appels dans le SDK iOS](ios-sdk-call-order).
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.identify("YOUR_USER_ID") // Unique for each user
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// User IDs must be unique for each user
+Adapty.identify("YOUR_USER_ID") { error in
+    if let error {
+        // handle the error
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Lors de l'activation du SDK \{#during-the-sdk-activation\}
+
+Si vous connaissez déjà un customer user ID au moment d'activer le SDK, vous pouvez l'inclure dans la méthode `activate` plutôt que d'appeler `identify` séparément.
+
+Si vous connaissez un customer user ID mais ne le définissez qu'après l'activation, cela signifie qu'à l'activation, Adapty créera un nouveau profil anonyme et ne basculera vers le profil existant qu'après votre appel à `identify`.
+
+Vous pouvez passer un customer user ID existant (que vous avez déjà utilisé) ou un nouveau. Si vous en passez un nouveau, le profil créé lors de l'activation sera automatiquement lié à ce customer user ID.
+
+:::note
+Par défaut, la création de profils anonymes n'affecte pas les tableaux de bord d'analyse, car les installations sont comptées en fonction des ID d'appareils.
+
+Un ID d'appareil représente une seule installation de l'application depuis le store sur un appareil et n'est régénéré qu'après la réinstallation de l'app.
+Il ne dépend pas du fait qu'il s'agisse d'une première ou d'une nouvelle installation, ni de l'utilisation d'un customer user ID existant.
+
+La création d'un profil (lors de l'activation du SDK ou de la déconnexion), la connexion ou la mise à jour de l'app sans réinstallation ne génère pas d'événements d'installation supplémentaires.
+
+Si vous souhaitez compter les installations en fonction des utilisateurs uniques plutôt que des appareils, accédez à **App settings** et configurez [**Installs definition for analytics**](general#4-installs-definition-for-analytics).
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+do {
+  try await Adapty.activate(with: configurationBuilder.build())
+} catch {
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+// Place in the app main struct for SwiftUI or in AppDelegate for UIKit
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+        .with(customerUserId: "YOUR_USER_ID") // Customer user IDs must be unique for each user. If you hardcode the parameter value, all users will be considered as one.
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+
+</TabItem>
+
+</Tabs>
+
+### Déconnecter les utilisateurs \{#log-users-out\}
+
+Si votre application dispose d'un bouton de déconnexion, utilisez la méthode `logout`.
+
+:::important
+La déconnexion d'un utilisateur crée un nouveau profil anonyme pour cet utilisateur.
+:::
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    try await Adapty.logout()
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.logout { error in
+    if error == nil {
+        // successful logout
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+:::info
+Pour reconnecter les utilisateurs à l'application, utilisez la méthode `identify`.
+:::
+
+### Autoriser les achats sans connexion \{#allow-purchases-without-login\}
+
+Si vos utilisateurs peuvent effectuer des achats avant et après leur connexion à votre application, vous devez vous assurer qu'ils conserveront leur accès après la connexion :
+
+1. Lorsqu'un utilisateur non connecté effectue un achat, Adapty le lie à son ID de profil anonyme.
+2. Lorsque l'utilisateur se connecte à son compte, Adapty bascule vers son profil identifié.
+    - S'il s'agit d'un nouveau customer user ID (par exemple, l'achat a été effectué avant l'inscription), Adapty attribue le customer user ID au profil actuel, de sorte que tout l'historique des achats est conservé.
+    - S'il s'agit d'un customer user ID existant (déjà lié à un profil), vous devez récupérer le niveau d'accès réel après le changement de profil. Vous pouvez soit appeler [`getProfile`](ios-check-subscription-status) juste après l'identification, soit [écouter les mises à jour du profil](ios-check-subscription-status) pour que les données se synchronisent automatiquement.
+
+## Prochaines étapes \{#next-steps\}
+
+Félicitations ! Vous avez implémenté la logique de paiement intégré dans votre application ! Nous vous souhaitons tout le succès possible pour la monétisation de votre app !
+
+Pour tirer encore plus parti d'Adapty, vous pouvez explorer ces sujets :
+- [**Tests**](test-purchases-in-sandbox) : Vérifiez que tout fonctionne comme prévu
+- [**Onboardings**](ios-onboardings) : Engagez vos utilisateurs avec des onboardings et favorisez la rétention
+- [**Intégrations**](configuration) : Intégrez des services d'attribution marketing et d'analyse en une seule ligne de code
+- [**Définir des attributs de profil personnalisés**](setting-user-attributes) : Ajoutez des attributs personnalisés aux profils utilisateur et créez des segments pour lancer des tests A/B ou afficher des paywalls différents selon les utilisateurs

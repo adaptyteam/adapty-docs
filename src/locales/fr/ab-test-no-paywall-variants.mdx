@@ -1,0 +1,194 @@
+---
+title: "Ajouter des variantes de test A/B sans flows ni paywalls"
+description: "Lancez un test A/B où une variante ignore le flow ou le paywall, en utilisant un indicateur de Remote Config pour contrôler son affichage."
+metadataTitle: "Variantes de test A/B sans flows ni paywalls | Documentation Adapty"
+---
+
+Vous pouvez mesurer l'impact de votre flow ou paywall en lançant un test A/B avec une variante vide. Une variante affiche votre flow/paywall ; l'autre n'affiche rien. Votre application lit un indicateur dans le Remote Config pour décider si elle doit effectuer le rendu.
+
+## Fonctionnement \{#how-it-works\}
+
+La configuration utilise deux flows/paywalls dans le même placement :
+
+- **Flow/Paywall A** : le flow ou paywall que vous souhaitez tester, avec `show_paywall` défini sur `true` dans son Remote Config.
+- **Flow/Paywall B** : un flow ou paywall vide avec `show_paywall` défini sur `false` dans son Remote Config.
+
+Quand le SDK retourne un flow ou un paywall, votre application lit l'indicateur `show_paywall`. Si la valeur est `true`, l'application effectue le rendu. Si la valeur est `false`, l'application ignore le rendu et l'utilisateur continue sans rien voir.
+
+## 1. Ajouter l'indicateur show_paywall dans le Remote Config \{#1-add-the-show_paywall-flag-in-remote-config\}
+
+Vous avez besoin de deux flows ou paywalls dans le même placement : Flow/Paywall A (celui que vous voulez tester) et Flow/Paywall B (un flow/paywall vide). Ajoutez un champ `show_paywall` à chacun afin que votre application puisse se brancher sur la même clé pour les deux variantes.
+
+Pour ajouter l'indicateur au Flow/Paywall A :
+
+1. Ouvrez la section [**Flows**](https://app.adapty.io/flows)/[**Paywalls**](https://app.adapty.io/paywalls) dans le menu principal d'Adapty et sélectionnez Flow/Paywall A.
+2. Ouvrez la section **Remote config**.
+3. Créez un champ avec le nom `show_paywall` et la valeur `true`. Dans la vue **JSON**, l'entrée ressemble à ceci :
+
+   ```json showLineNumbers
+   {
+     "show_paywall": true
+   }
+   ```
+
+4. Enregistrez les modifications.
+
+Répétez les mêmes étapes pour Flow/Paywall B, mais définissez `show_paywall` sur `false`.
+
+Pour plus de détails sur le Remote Config, consultez [Personnaliser un flow avec le Remote Config](customize-flow-with-remote-config) ou [Concevoir un paywall avec le Remote Config](customize-paywall-with-remote-config).
+
+:::tip
+Définir `show_paywall` sur les deux variantes permet de conserver un chemin de code identique pour les deux groupes et facilite l'ajout de nouvelles variantes par la suite.
+:::
+
+## 2. Configurer le test A/B \{#2-set-up-the-ab-test\}
+
+1. [Créez un test A/B](run_stop_ab_tests) sur le placement et ajoutez les deux flows/paywalls comme variantes.
+2. Définissez les poids des variantes pour répartir le trafic entre les utilisateurs qui voient le flow/paywall et ceux qui ne le voient pas.
+
+## 3. Vérifier l'indicateur dans votre application \{#3-check-the-flag-in-your-app\}
+
+Lisez `show_paywall` depuis le Remote Config retourné par le SDK. Si l'indicateur est à `false`, ignorez le rendu et laissez l'utilisateur continuer.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    let showPaywall = config?.dictionary?["show_paywall"] as? Bool ?? true
+
+    if showPaywall {
+        // render the flow or paywall
+    }
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="kotlin" label="Android">
+
+```kotlin showLineNumbers
+Adapty.getPaywall("YOUR_PLACEMENT_ID") { result ->
+    when (result) {
+        is AdaptyResult.Success -> {
+            val paywall = result.value
+            val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+            if (showPaywall) {
+                // Render the paywall
+            }
+        }
+        is AdaptyResult.Error -> {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
+
+<TabItem value="react-native" label="React Native">
+
+```typescript showLineNumbers
+try {
+  const paywall = await adapty.getPaywall({ placementId: "YOUR_PLACEMENT_ID" });
+  const showPaywall = paywall.remoteConfig?.data?.["show_paywall"] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter">
+
+```dart showLineNumbers
+try {
+  final paywall = await Adapty().getPaywall(id: "YOUR_PLACEMENT_ID");
+  final bool showPaywall = paywall.remoteConfig?.dictionary?['show_paywall'] as bool? ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="unity" label="Unity">
+
+```csharp showLineNumbers
+Adapty.GetPaywall("YOUR_PLACEMENT_ID", (paywall, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var showPaywall = paywall.RemoteConfig?.Dictionary?["show_paywall"] as bool? ?? true;
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+});
+```
+
+</TabItem>
+
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+```kotlin showLineNumbers
+Adapty.getPaywall(
+    placementId = "YOUR_PLACEMENT_ID"
+).onSuccess { paywall ->
+    val showPaywall = paywall.remoteConfig?.dataMap?.get("show_paywall") as? Boolean ?: true
+
+    if (showPaywall) {
+        // Render the paywall
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="capacitor" label="Capacitor">
+
+```typescript showLineNumbers
+
+try {
+  const paywall = await adapty.getPaywall({ placementId: 'YOUR_PLACEMENT_ID' });
+  const showPaywall = paywall.remoteConfig?.data?.['show_paywall'] ?? true;
+
+  if (showPaywall) {
+    // Render the paywall
+  }
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+La valeur de secours `true` maintient le flow/paywall visible lorsque l'indicateur est absent, de sorte que les flows/paywalls existants sans cet indicateur ne sont pas affectés.
+
+:::important
+Si vous effectuez le rendu du paywall vous-même (sans le [Flow Builder](adapty-flow-builder) ni le [Paywall Builder](adapty-paywall-builder)), appelez [`logShowFlow` (SDK iOS v4+) / `logShowPaywall`](present-remote-config-paywalls#track-paywall-view-events) lorsque vous affichez Flow/Paywall A. Sans cela, Adapty ne peut pas comptabiliser les vues dans le test. N'enregistrez pas de vue pour Flow/Paywall B, puisqu'il n'est jamais affiché.
+:::
+
+## Prochaines étapes \{#next-steps\}
+
+- [Créer, lancer et arrêter un test A/B](run_stop_ab_tests) — Configurez le test incluant les deux variantes
+- [Résultats et métriques du test A/B](results-and-metrics) — Comparez la variante vide avec votre flow/paywall

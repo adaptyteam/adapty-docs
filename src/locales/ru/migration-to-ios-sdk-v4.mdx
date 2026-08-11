@@ -1,10 +1,11 @@
 ---
-title: "Миграция iOS SDK Adapty до версии v4.0"
-description: "Мигрируйте на Adapty iOS SDK v4.0 (beta): замените paywall API на flow API, совместимые как с Flow Builder, так и с Paywall Builder."
-metadataTitle: "Миграция на Adapty iOS SDK v4.0 (beta) | Документация Adapty"
+title: "Миграция Adapty iOS SDK на v4.0"
+description: "Миграция на Adapty iOS SDK v4.0: замена paywall API на flow API, совместимые как с Flow Builder, так и с Paywall Builder."
+metadataTitle: "Миграция на Adapty iOS SDK v4.0 | Документация Adapty"
 ---
 
-Adapty iOS SDK 4.0 (beta) вводит флоу и переименовывает paywall API соответственно. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется.
+Adapty iOS SDK 4.0 вводит флоу и переименовывает API пейволов. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется.
+
 ## Краткий справочник \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -30,33 +31,37 @@ Adapty iOS SDK 4.0 повышает минимальный deployment target с 
 Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. Устанавливайте SDK через [Swift Package Manager](sdk-installation-ios#install-adapty-sdk).
 
 Если ваш проект всё ещё использует CocoaPods, удалите поды `Adapty` и `AdaptyUI` из `Podfile`, выполните `pod install`, чтобы убрать их, а затем добавьте пакет в Xcode через **File → Add Package Dependency**, указав `https://github.com/adaptyteam/AdaptySDK-iOS.git`.
-## Режим Kids Mode: отдельные продукты заменены на параметр пакета \{#kids-mode-separate-products-replaced-by-a-package-trait\}
+## Kids Mode: отдельные продукты заменены на трейт пакета \{#kids-mode-separate-products-replaced-by-a-package-trait\}
 
-В v3 вы включали [Kids Mode](kids-mode), выбирая отдельные продукты пакета **Adapty_KidsMode** и **AdaptyUI_KidsMode** и переименовывая импорты. Начиная с `4.0.0-beta.2`, эти продукты удалены. Kids Mode теперь является параметром Swift-пакета (Swift package trait) под названием `KidsMode` для обычного пакета Adapty — его включение исключает IDFA и AdSupport из всего SDK на уровне компиляции.
+В v3 [Kids Mode](kids-mode) включался выбором отдельных продуктов **Adapty_KidsMode** и **AdaptyUI_KidsMode** с переименованием импортов. В v4.0 эти продукты удалены. Теперь Kids Mode — это трейт Swift-пакета с именем `KidsMode` для обычного пакета Adapty: при его включении IDFA и AdSupport исключаются из компиляции во всём SDK.
 
-Чтобы выполнить миграцию:
+Чтобы перейти на новую версию:
+
 1. В окне **Choose Package Products** выберите обычные продукты **Adapty** и **AdaptyUI** вместо **Adapty_KidsMode** и **AdaptyUI_KidsMode**.
 
-2. Включите трейт `KidsMode`. В Xcode 26.4 и новее включите его для зависимости AdaptySDK-iOS в разделе **Package Dependencies** вашего проекта. Если вы добавляете Adapty как зависимость в `Package.swift` (требуется `swift-tools-version` 6.1 или новее), включите его там:
-```swift showLineNumbers title="Package.swift"
+2. Включите трейт `KidsMode`. В Xcode 26.4 или новее включите его для зависимости AdaptySDK-iOS в разделе **Package Dependencies** вашего проекта. Если вы добавляете Adapty как зависимость в `Package.swift` (требуется `swift-tools-version` 6.1 или новее), включите его там:
+
+   ```swift showLineNumbers title="Package.swift"
    .package(
        url: "https://github.com/adaptyteam/AdaptySDK-iOS.git",
-       exact: "4.0.0-beta.2",
+       from: "4.0.2",
        traits: ["KidsMode"]
    )
    ```
 
-3. Измените импорты обратно на обычные модули:
+3. Верните импорты обратно на обычные модули:
 
-   ```diff showLineNumbers
+```diff showLineNumbers
    - import Adapty_KidsMode
    - import AdaptyUI_KidsMode
    + import Adapty
    + import AdaptyUI
    ```
+
 :::note
-Версии Xcode ранее 26.4 не позволяют включить трейты для проекта Xcode через интерфейс. В таком случае создайте небольшой локальный Swift-пакет, зависящий от Adapty с включённым трейтом `KidsMode`, и добавьте зависимость от этого пакета в целевой объект вашего приложения.
+Версии Xcode ниже 26.4 не позволяют включать трейты для проекта Xcode через интерфейс. В таком случае создайте небольшой локальный Swift-пакет, который зависит от Adapty с включённым трейтом `KidsMode`, и добавьте зависимость от этого пакета в таргет приложения.
 :::
+
 ## Удалённые API \{#removed-apis\}
 
 - **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — удалён. Все продукты теперь включают информацию об офере, поэтому отдельный проход для определения доступности больше не нужен.
@@ -86,6 +91,10 @@ Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. �
 - let products = try await Adapty.getPaywallProducts(paywall: paywall)
 + let products = try await Adapty.getPaywallProducts(flow: flow)
 ```
+### Резервные файлы \{#fallback-files\}
+
+Формат резервного файла [изменился в SDK v4](fallback-flows). Скачайте новый файл в разделе **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и добавьте его в ваше приложение.
+
 ## Отслеживание просмотров пейвола \{#tracking-paywall-views\}
 ### logShowPaywall(_:) → logShowFlow(_:)
 
@@ -98,7 +107,8 @@ Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. �
 Как и в v3, вам не нужно вызывать этот метод при отображении флоу или пейволов, отрисованных с помощью [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder) — Adapty отслеживает эти просмотры автоматически.
 ## didFinishPurchase теперь обязателен \{#didfinishpurchase-is-now-required\}
 
-В v3 `didFinishPurchase` был необязательным: если вы его не реализовывали, пейвол закрывался автоматически после успешной покупки. Начиная с `4.0.0-beta.2`, эта реализация авто-закрытия по умолчанию удалена, чтобы флоу мог продолжить работу после успешной покупки — например, показать оставшиеся экраны флоу. Теперь вы сами решаете, что происходит после покупки: закрыть экран или ничего не делать, чтобы флоу продолжился.
+В v3 `didFinishPurchase` был необязательным: если вы его не реализовывали, пейвол закрывался автоматически после успешной покупки. В v4.0 эта автоматическая логика закрытия убрана, чтобы флоу мог продолжаться после успешной покупки — например, чтобы показать оставшиеся экраны флоу. Теперь вы сами решаете, что происходит после покупки: закрыть экран или ничего не делать и дать флоу продолжить выполнение.
+
 - **UIKit**: те, кто реализует `AdaptyFlowControllerDelegate`, должны реализовать `didFinishPurchase` — у него больше нет реализации по умолчанию.
 - **SwiftUI**: замыкание `didFinishPurchase` в `.flow(...)` и `AdaptyFlowView(...)` теперь обязательно, как и `didFailPurchase` и `didFinishRestore`.
 

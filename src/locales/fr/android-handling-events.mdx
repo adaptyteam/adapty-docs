@@ -1,0 +1,940 @@
+---
+title: "Gérer les événements de flow et de paywall - Android"
+description: "Gérez les événements de flow et de paywall dans votre application Android."
+metadataTitle: "Gestion des événements de flow - Android | Documentation Adapty"
+toc_max_heading_level: 4
+keywords: ['AdaptyFlowEventListener', 'onActionPerformed', 'onProductSelected', 'onPurchaseStarted', 'onPurchaseFinished', 'onPurchaseFailure', 'onRestoreSuccess', 'onRestoreFailure', 'onAwaitingPurchaseParams', 'onLoadingProductsFailure', 'onError']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+import PaywallAction from '@site/src/locales/fr/reusable/PaywallAction.md';
+
+<SDKv4>
+
+:::important
+Ce guide couvre la gestion des événements liés aux achats, restaurations, sélections de produits et au rendu des flows. Vous devez également implémenter la gestion des boutons (fermeture du flow, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de boutons](android-handle-paywall-actions) pour plus de détails.
+:::
+
+Les flows et paywalls configurés avec le [Flow Builder](adapty-flow-builder) ou le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les pressions sur les boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats. Découvrez ci-dessous comment répondre à ces événements.
+
+<SampleApp />
+
+Si vous avez besoin de contrôler ou surveiller les processus qui se déroulent sur l'écran d'achat, implémentez les méthodes `AdaptyFlowEventListener`.
+
+Si vous souhaitez conserver le comportement par défaut dans certains cas, vous pouvez étendre `AdaptyFlowDefaultEventListener` et ne remplacer que les méthodes que vous souhaitez modifier.
+
+Voici les comportements par défaut de `AdaptyFlowDefaultEventListener`.
+
+### Événements générés par l'utilisateur \{#user-generated-events\}
+
+#### Sélection d'un produit \{#product-selection\}
+
+Si un produit est sélectionné pour achat (par l'utilisateur ou par le système), cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onProductSelected(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Achat initié \{#started-purchase\}
+
+Si un utilisateur lance le processus d'achat, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseStarted(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+La méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [Android - Afficher les paywalls du Paywall Builder en mode Observer](android-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Achat réussi, annulé ou en attente \{#successful-canceled-or-pending-purchase\}
+
+Si l'achat réussit, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
+}
+```
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran dans ce cas.
+
+La méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [Android - Afficher les paywalls du Paywall Builder en mode Observer](android-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Achat échoué \{#failed-purchase\}
+
+Si un achat échoue en raison d'une erreur, cette méthode sera invoquée. Cela inclut les erreurs Google Play Billing (restrictions de paiement, produits invalides, pannes réseau), les échecs de vérification de transaction et les erreurs système. Notez que les annulations par l'utilisateur déclenchent `onPurchaseFinished` avec un résultat annulé, et les paiements en attente ne déclenchent pas cette méthode.
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFailure(
+    error: AdaptyError,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+La méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [Android - Afficher les paywalls du Paywall Builder en mode Observer](android-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Navigation vers le paiement web terminée \{#finished-web-payment-navigation\}
+
+Cette méthode est invoquée après une tentative d'ouverture d'un [paywall web](web-paywall) pour un produit spécifique. Cela inclut les tentatives de navigation réussies et échouées :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**Paramètres :**
+
+| Paramètre   | Description                                                                                                  |
+|:------------|:-------------------------------------------------------------------------------------------------------------|
+| **product** | Un `AdaptyPaywallProduct` pour lequel le paywall web a été ouvert. Peut être `null`.                         |
+| **error**   | Un objet `AdaptyError` si la navigation vers le paywall web a échoué ; `null` si la navigation a réussi.     |
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Restauration réussie \{#successful-restore\}
+
+Si la restauration d'un achat réussit, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreSuccess(
+    profile: AdaptyProfile,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran si l'utilisateur possède le `accessLevel` requis. Consultez la rubrique [Statut de l'abonnement](android-listen-subscription-changes) pour savoir comment le vérifier.
+
+#### Restauration échouée \{#failed-restore\}
+
+Si `Adapty.restorePurchases()` échoue, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreFailure(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Mise à niveau d'abonnement \{#upgrade-subscription\}
+
+Lorsqu'un utilisateur tente d'acheter un nouvel abonnement alors qu'un autre est déjà actif, vous pouvez contrôler la façon dont le nouvel achat doit être géré en remplaçant cette méthode. Vous avez deux options :
+
+1. **Remplacer l'abonnement actuel** par le nouveau :
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyFlowEventListener.PurchaseParamsCallback,
+): AdaptyFlowEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyFlowEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **Conserver les deux abonnements** (ajouter le nouveau séparément) :
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyFlowEventListener.PurchaseParamsCallback,
+): AdaptyFlowEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyFlowEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+Si vous ne remplacez pas cette méthode, le comportement par défaut est de conserver les deux abonnements actifs (équivalent à utiliser `AdaptyPurchaseParameters.Empty`).
+:::
+
+Vous pouvez également définir des paramètres d'achat supplémentaires si nécessaire :
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // optional - for replacing current subscription
+    .withOfferPersonalized(true) // optional - if using personalized pricing
+    .build()
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
+### Récupération de données et rendu \{#data-fetching-and-rendering\}
+
+#### Erreurs de chargement des produits \{#product-loading-errors\}
+
+Si vous ne transmettez pas les produits lors de l'initialisation, AdaptyUI récupérera les objets nécessaires depuis le serveur par lui-même. Si cette opération échoue, AdaptyUI signalera l'erreur en invoquant cette méthode :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onLoadingProductsFailure(
+    error: AdaptyError,
+    context: Context,
+): Boolean = false
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Si vous retournez `true`, AdaptyUI relancera la requête dans 2 secondes.
+
+#### Erreurs de rendu \{#rendering-errors\}
+
+Si une erreur survient lors du rendu de l'interface, elle sera signalée en appelant cette méthode :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onError(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+Dans une situation normale, de telles erreurs ne devraient pas se produire, donc si vous en rencontrez une, veuillez nous le faire savoir.
+
+### Navigation \{#navigation\}
+
+#### Bouton retour système \{#system-back-button\}
+
+Par défaut, un flow ne peut pas être fermé avec le bouton retour système ou le geste de retour — l'utilisateur le quitte via un chemin que vous définissez, comme un bouton **Fermer** ou une action `on_device_back` dans le builder. Si vous souhaitez que le bouton retour système ferme le flow, remplacez `onBackPressed` et retournez `false` pour laisser votre activité ou fragment hôte gérer l'appui :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onBackPressed(context: Context): Boolean {
+    return false // let the host handle the back press (e.g. finish the activity or pop the fragment)
+}
+```
+
+Ce callback n'est invoqué que lorsqu'aucune action `on_device_back` n'est configurée pour l'écran actuel — une action configurée prend la priorité et est gérée en interne. Retournez `true` pour consommer l'appui (comportement par défaut), ou `false` pour laisser la gestion du retour de l'hôte s'exécuter.
+
+### Événements réservés \{#reserved-events\}
+
+`AdaptyFlowEventListener` déclare quelques callbacks pour des fonctionnalités que les flows n'utilisent pas encore. Vous n'avez pas besoin de les implémenter — `AdaptyFlowDefaultEventListener` fournit déjà des implémentations vides par défaut.
+
+| Méthode | Description |
+|:--------|:------------|
+| **onAnalyticEvent** | Réservé pour les événements analytiques personnalisés d'un flow. Les flows n'émettent pas encore ces événements vers votre code, vous n'avez donc pas besoin de l'implémenter. |
+| **onShowAppRate** | Réservé pour les demandes d'évaluation d'application depuis un flow. Les flows ne déclenchent pas encore de demandes d'évaluation, vous n'avez donc pas besoin de l'implémenter. |
+| **onShowRequestPermission** | Réservé pour les demandes d'autorisation système (comme les notifications push ou l'accès à la caméra) depuis un flow. Les flows ne déclenchent pas encore de demandes d'autorisation, vous n'avez donc pas besoin de l'implémenter. |
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Ce guide couvre la gestion des événements liés aux achats, restaurations, sélections de produits et au rendu des paywalls. Vous devez également implémenter la gestion des boutons (fermeture du paywall, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de boutons](android-handle-paywall-actions) pour plus de détails.
+:::
+
+Les paywalls configurés avec le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les pressions sur les boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le paywall. Découvrez ci-dessous comment répondre à ces événements.
+
+:::warning
+Ce guide concerne uniquement les **nouveaux paywalls du Paywall Builder** qui nécessitent le SDK Adapty v3.0 ou une version ultérieure.
+:::
+
+<SampleApp />
+
+Si vous avez besoin de contrôler ou surveiller les processus qui se déroulent sur l'écran d'achat, implémentez les méthodes `AdaptyUiEventListener`.
+
+Si vous souhaitez conserver le comportement par défaut dans certains cas, vous pouvez étendre `AdaptyUiDefaultEventListener` et ne remplacer que les méthodes que vous souhaitez modifier.
+
+Voici les comportements par défaut de `AdaptyUiDefaultEventListener`.
+
+### Événements générés par l'utilisateur \{#user-generated-events\}
+
+#### Sélection d'un produit \{#product-selection\}
+
+Si un produit est sélectionné pour achat (par l'utilisateur ou par le système), cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onProductSelected(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Achat initié \{#started-purchase\}
+
+Si un utilisateur lance le processus d'achat, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseStarted(
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+La méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [Android - Afficher les paywalls du Paywall Builder en mode Observer](android-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Achat réussi, annulé ou en attente \{#successful-canceled-or-pending-purchase\}
+
+Si l'achat réussit, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFinished(
+    purchaseResult: AdaptyPurchaseResult,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {
+    if (purchaseResult !is AdaptyPurchaseResult.UserCanceled)
+        context.getActivityOrNull()?.onBackPressed()
+}
+```
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```javascript
+// Successful purchase
+{
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Cancelled purchase
+{
+  "purchaseResult": {
+    "type": "UserCanceled"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+
+// Pending purchase
+{
+  "purchaseResult": {
+    "type": "Pending"
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran dans ce cas.
+
+La méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [Android - Afficher les paywalls du Paywall Builder en mode Observer](android-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Achat échoué \{#failed-purchase\}
+
+Si un achat échoue en raison d'une erreur, cette méthode sera invoquée. Cela inclut les erreurs Google Play Billing (restrictions de paiement, produits invalides, pannes réseau), les échecs de vérification de transaction et les erreurs système. Notez que les annulations par l'utilisateur déclenchent `onPurchaseFinished` avec un résultat annulé, et les paiements en attente ne déclenchent pas cette méthode.
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onPurchaseFailure(
+    error: AdaptyError,
+    product: AdaptyPaywallProduct,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  },
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+La méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [Android - Afficher les paywalls du Paywall Builder en mode Observer](android-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Navigation vers le paiement web terminée \{#finished-web-payment-navigation\}
+
+Cette méthode est invoquée après une tentative d'ouverture d'un [paywall web](web-paywall) pour un produit spécifique. Cela inclut les tentatives de navigation réussies et échouées :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onFinishWebPaymentNavigation(
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?,
+    context: Context,
+) {}
+```
+
+**Paramètres :**
+
+| Paramètre   | Description                                                                                                  |
+|:------------|:-------------------------------------------------------------------------------------------------------------|
+| **product** | Un `AdaptyPaywallProduct` pour lequel le paywall web a été ouvert. Peut être `null`.                         |
+| **error**   | Un objet `AdaptyError` si la navigation vers le paywall web a échoué ; `null` si la navigation a réussi.     |
+
+<Details>
+<summary>Exemples d'événements (cliquer pour développer)</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_navigation_failed",
+    "message": "Failed to open web paywall",
+    "details": {
+      "underlyingError": "Browser unavailable"
+    }
+  }
+}
+```
+</Details>
+
+#### Restauration réussie \{#successful-restore\}
+
+Si la restauration d'un achat réussit, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreSuccess(
+    profile: AdaptyProfile,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran si l'utilisateur possède le `accessLevel` requis. Consultez la rubrique [Statut de l'abonnement](android-listen-subscription-changes) pour savoir comment le vérifier.
+
+#### Restauration échouée \{#failed-restore\}
+
+Si `Adapty.restorePurchases()` échoue, cette méthode sera invoquée :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRestoreFailure(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Mise à niveau d'abonnement \{#upgrade-subscription\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="new" label="SDK version 3.10.0 or later" default>
+
+Lorsqu'un utilisateur tente d'acheter un nouvel abonnement alors qu'un autre est déjà actif, vous pouvez contrôler la façon dont le nouvel achat doit être géré en remplaçant cette méthode. Vous avez deux options :
+
+1. **Remplacer l'abonnement actuel** par le nouveau :
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(
+        AdaptyPurchaseParameters.Builder()
+            .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...))
+            .build()
+    )
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+2. **Conserver les deux abonnements** (ajouter le nouveau séparément) :
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingPurchaseParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onPurchaseParamsReceived: AdaptyUiEventListener.PurchaseParamsCallback,
+): AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked {
+    onPurchaseParamsReceived(AdaptyPurchaseParameters.Empty)
+    return AdaptyUiEventListener.PurchaseParamsCallback.IveBeenInvoked
+}
+```
+
+:::note
+Si vous ne remplacez pas cette méthode, le comportement par défaut est de conserver les deux abonnements actifs (équivalent à utiliser `AdaptyPurchaseParameters.Empty`).
+:::
+
+Vous pouvez également définir des paramètres d'achat supplémentaires si nécessaire :
+```kotlin
+AdaptyPurchaseParameters.Builder()
+    .withSubscriptionUpdateParams(AdaptySubscriptionUpdateParameters(...)) // optional - for replacing current subscription
+    .withOfferPersonalized(true) // optional - if using personalized pricing
+    .build()
+```
+
+</TabItem>
+<TabItem value="old" label="SDK version earlier than 3.10.0" default>
+
+Si un nouvel abonnement est acheté alors qu'un autre est encore actif, remplacez cette méthode pour substituer l'abonnement actuel par le nouveau. Si l'abonnement actif doit rester actif et que le nouveau est ajouté séparément, appelez `onSubscriptionUpdateParamsReceived(null)` :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onAwaitingSubscriptionUpdateParams(
+    product: AdaptyPaywallProduct,
+    context: Context,
+    onSubscriptionUpdateParamsReceived: SubscriptionUpdateParamsCallback,
+) {
+    onSubscriptionUpdateParamsReceived(AdaptySubscriptionUpdateParameters(...))
+}
+```
+
+</TabItem>
+</Tabs>
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_yearly",
+    "localizedTitle": "Premium Yearly",
+    "localizedDescription": "Premium subscription for 1 year",
+    "localizedPrice": "$99.99",
+    "price": 99.99,
+    "currencyCode": "USD"
+  },
+  "subscriptionUpdateParams": {
+    "replacementMode": "with_time_proration"
+  }
+}
+```
+</Details>
+
+### Récupération de données et rendu \{#data-fetching-and-rendering\}
+
+#### Erreurs de chargement des produits \{#product-loading-errors\}
+
+Si vous ne transmettez pas les produits lors de l'initialisation, AdaptyUI récupérera les objets nécessaires depuis le serveur par lui-même. Si cette opération échoue, AdaptyUI signalera l'erreur en invoquant cette méthode :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onLoadingProductsFailure(
+    error: AdaptyError,
+    context: Context,
+): Boolean = false
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Si vous retournez `true`, AdaptyUI relancera la requête dans 2 secondes.
+
+#### Erreurs de rendu \{#rendering-errors\}
+
+Si une erreur survient lors du rendu de l'interface, elle sera signalée en appelant cette méthode :
+
+```kotlin showLineNumbers title="Kotlin"
+public override fun onRenderingError(
+    error: AdaptyError,
+    context: Context,
+) {}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+Dans une situation normale, de telles erreurs ne devraient pas se produire, donc si vous en rencontrez une, veuillez nous le faire savoir.
+</SDKv3>

@@ -1,46 +1,167 @@
 ---
 title: "在 Kotlin Multiplatform SDK 中获取远程配置付费墙的付费墙和产品"
-description: "在 Adapty Kotlin Multiplatform SDK 中获取付费墙和产品，以提升用户变现效果。"
-metadataTitle: "获取付费墙和产品 | Kotlin Multiplatform SDK | Adapty 文档"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Kotlin Multiplatform']
+description: "在 Adapty Kotlin Multiplatform SDK 中获取付费墙和产品，以增强用户变现能力。"
+metadataTitle: "获取付费墙与产品 | Kotlin Multiplatform SDK | Adapty 文档"
+keywords: ['getFlow', 'getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getFlowForDefaultAudience', 'getPaywallForDefaultAudience', 'remote config', 'Kotlin Multiplatform']
 displayed_sidebar: sdkkmp
 rank: 95
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem'; 
-import Details from '@site/src/components/Details';
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md'; 
 
-在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。如需了解如何获取付费墙编辑工具自定义付费墙的相关指导，请参阅[获取付费墙编辑工具付费墙及其配置](kmp-get-pb-paywalls)。
+<SDKv4>
+
+在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本文内容涉及远程配置和自定义付费墙。如需了解如何获取在 **Flow Builder** 或 **Paywall Builder** 中配置的流程或付费墙，请参阅[获取流程与付费墙](kmp-get-pb-paywalls)。
 
 <SampleApp />
 
 <details>
-   <summary>在您开始在移动应用中获取付费墙和产品之前（点击展开）</summary>
+   <summary>开始在移动应用中获取流程和产品之前（点击展开）</summary>
+
+   1. 在 Adapty 看板中[创建产品](create-product)。
+
+2. 在 Adapty 看板中[创建流程或付费墙并将产品添加其中](create-paywall)。
+
+3. 在 Adapty 看板中[创建版位并将流程或付费墙添加到版位中](create-placement)。
+
+4. 在移动应用中[安装 Adapty SDK](sdk-installation-kotlin-multiplatform)。
+</details>
+
+## 获取流程信息 \{#fetch-flow-information\}
+
+在 Adapty 中，[产品](product) 是将 App Store 和 Google Play 商品整合在一起的集合体。这些跨平台产品被集成到流程和付费墙中，让你能够在移动应用的特定版位展示它们。
+
+要展示产品，你需要通过 `getFlow` 方法从某个[版位](placements)获取 `AdaptyFlow`。
+
+:::important
+**不要硬编码产品 ID。** 唯一需要硬编码的 ID 是版位 ID。流程是远程配置的，因此产品数量和可用优惠随时可能发生变化。你的应用必须动态处理这些变化——如果今天流程返回两个产品，明天返回三个，则应在无需修改代码的情况下全部展示。
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getFlow(
+    placementId = "YOUR_PLACEMENT_ID", 
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default,
+    loadTimeout = 5.seconds
+).onSuccess { flow ->
+    // the requested flow
+}.onError { error ->
+    // handle the error
+}
+```
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存存在时直接返回缓存数据。这种情况下，用户获取的数据可能不是最新的，但加载速度更快，不受网络质量影响。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制存储流程和付费墙：上述定期更新的缓存，以及[备用付费墙](kmp-use-fallback-paywalls)。我们还使用 CDN 来加快流程和付费墙的加载速度，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终获取最新版本的流程和付费墙，同时在网络条件较差的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值用于限制此方法的超时时间。达到超时时间后，将返回缓存数据或本地备用内容。</p><p></p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为该操作在底层可能由多个不同请求组成。</p> |
+
+不要硬编码产品 ID！由于流程是远程配置的，可用产品的数量以及特殊优惠（例如免费试用）都可能随时间变化。请确保您的代码能够处理这些场景。
+
+例如，如果您最初获取到 2 个产品，应用应显示这 2 个产品；如果之后获取到 3 个产品，应用无需修改任何代码即可显示全部 3 个产品。唯一需要硬编码的是版位 ID。
+
+响应参数：
+
+| 参数 | 描述                                                                                                                                                  |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow      | 一个 `AdaptyFlow` 对象，包含：流程标识符、付费墙变体（`paywalls` — 每个变体有各自的产品标识符）、`remoteConfigs` 列表（每个已配置的语言环境对应一条记录），以及其他若干属性。如需获取该流程的产品，请调用 `getPaywallProducts(flow)`。 |
+
+:::note
+在 v4 中，`getFlow` 没有 `locale` 参数。当你使用 `createFlowView` 渲染流程时，本地化会自动解析。对于自定义付费墙，所有可用的语言区域会一并通过 `flow.remoteConfigs` 返回——选择与用户设备或应用设置相匹配的语言区域即可。详情请参阅[本地化与语言区域代码](kmp-localizations-and-locale-codes)。
+:::
+
+## 获取产品 \{#fetch-products\}
+
+获取流程后，你可以查询与其对应的产品数组：
+
+```kotlin showLineNumbers
+Adapty.getPaywallProducts(flow).onSuccess { products ->
+    // the requested products
+}.onError { error ->
+    // handle the error
+}
+```
+
+响应参数：
+
+| 参数 | 描述 |
+| :-------- |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Products  | [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他若干属性。 |
+
+在实现自定义流程设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象中的这些属性。以下列出了最常用的属性，完整的属性说明请参阅上方链接文档。
+
+| 属性 | 描述 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title** | 若要显示产品名称，请使用 `product.localizedTitle`。请注意，此本地化基于用户在商店中选择的国家/地区，而非设备本身的语言环境。 |
+| **Price** | 若要显示本地化价格，请使用 `product.price.localizedString`。此本地化基于设备的语言环境信息。您也可以通过 `product.price.amount` 以数字形式获取价格，该值以本地货币表示。若要获取对应的货币符号，请使用 `product.price.currencySymbol`。 |
+| **Subscription Period** | 若要显示订阅周期（如周、月、年等），请使用 `product.subscriptionDetails?.localizedSubscriptionPeriod`。此本地化基于设备的语言环境。若要以编程方式获取订阅周期，请使用 `product.subscriptionDetails?.subscriptionPeriod`。通过该属性可访问 `unit` 枚举以获取时长单位（即 DAY、WEEK、MONTH、YEAR 或 UNKNOWN）。`numberOfUnits` 值表示周期单位的数量。例如，对于按季度计费的订阅，`unit` 属性值为 `MONTH`，`numberOfUnits` 属性值为 `3`。 |
+| **Introductory Offer** | 若要显示标记或其他指示符来表明订阅包含新用户优惠，请查看 `product.subscriptionDetails?.introductoryOfferPhases` 属性。这是一个列表，最多可包含两个折扣阶段：免费试用阶段和优惠价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：枚举类型，取值为 `FREE_TRIAL`、`PAY_AS_YOU_GO`、`PAY_UPFRONT` 和 `UNKNOWN`。免费试用对应 `FREE_TRIAL` 类型。<br/>• `price`：折扣价格的数值形式。免费试用时该值为 `0`。<br/>• `localizedNumberOfPeriods`：根据设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段显示为 `3 days`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的各项详细信息，其用法与上一部分关于订阅周期的说明相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言环境格式化后的折扣订阅周期字符串。 |
+
+## 使用默认目标受众流程加速流程获取 \{#speed-up-flow-fetching-with-default-audience-flow\}
+
+通常情况下，流程的获取几乎是即时完成的，无需担心速度问题。但如果您配置了大量目标受众和版位，且用户的网络连接较差，流程的获取时间可能会超出预期。在这种情况下，您可能希望先展示一个默认流程，以确保流畅的用户体验，而不是什么都不显示。
+
+为了解决这个问题，你可以使用 `getFlowForDefaultAudience` 方法，该方法会获取指定版位中针对 **All Users** 目标受众的流程。但请务必了解，推荐的做法是通过 `getFlow` 方法获取流程，详见上方的[获取流程信息](fetch-paywalls-and-products-kmp#fetch-flow-information)章节。
+
+:::warning
+为什么我们推荐使用 `getFlow`
+
+`getFlowForDefaultAudience` 方法存在以下几个明显的缺点：
+
+- **潜在的向后兼容性问题**：如果需要针对不同应用版本（当前版本和未来版本）展示不同的流程，可能会遇到挑战。你要么设计兼容当前（旧版）的流程，要么接受使用当前（旧版）的用户可能遇到流程无法渲染的问题。
+- **失去定向能力**：所有用户都将看到针对 **All Users** 目标受众设计的同一流程，这意味着你将失去个性化定向能力（包括基于国家、营销归因或自定义属性的定向）。
+
+如果你愿意接受这些缺点以换取更快的流程获取速度，请按如下方式使用 `getFlowForDefaultAudience` 方法。否则，请继续使用[上文](fetch-paywalls-and-products-kmp#fetch-flow-information)介绍的 `getFlow`。
+:::
+
+```kotlin showLineNumbers
+
+Adapty.getFlowForDefaultAudience(
+    placementId = "YOUR_PLACEMENT_ID",
+    fetchPolicy = AdaptyPaywallFetchPolicy.Default
+).onSuccess { flow ->
+    // the requested flow
+}.onError { error ->
+    // handle the error
+}
+```
+
+| 参数 | 是否必填 | 描述 |
+|---------|--------|-----------|
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，失败时返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`——在缓存存在时直接返回缓存数据。这样用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存仍然保留，只有在重新安装应用或手动清除时才会被清空。</p> |
+
+</SDKv4>
+
+<SDKv3>
+
+在展示远程配置和自定义付费墙之前，您需要先获取相关信息。请注意，本主题涉及远程配置和自定义付费墙。如需了解如何获取付费墙编辑工具自定义付费墙的相关指导，请参阅[获取付费墙编辑工具的付费墙及其配置](kmp-get-pb-paywalls)。
+
+<SampleApp />
+
+<details>
+   <summary>在您的移动应用中开始获取付费墙和产品之前（点击展开）</summary>
 
    1. 在 Adapty 看板中[创建您的产品](create-product)。
 
-2. 在 Adapty 看板中[创建付费墙并将产品整合到付费墙中](create-paywall)。
+2. 在 Adapty 看板中[创建付费墙并将产品添加到付费墙中](create-paywall)。
 
-3. 在 Adapty 看板中[创建版位并将付费墙整合到版位中](create-placement)。
+3. 在 Adapty 看板中[创建版位并将付费墙添加到版位中](create-placement)。
 
 4. 在您的移动应用中[安装 Adapty SDK](sdk-installation-kotlin-multiplatform)。
 </details>
 
 ## 获取付费墙信息 \{#fetch-paywall-information\}
 
-在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的组合体。这些跨平台产品被整合到付费墙中，使您能够在特定的移动应用版位中展示它们。
+在 Adapty 中，[产品](product)是 App Store 和 Google Play 产品的组合体。这些跨平台产品被集成到付费墙中，让你可以在移动应用的特定版位展示它们。
 
-要展示产品，您需要使用 `getPaywall` 方法从某个[版位](placements)获取[付费墙](paywalls)。
+要展示产品，你需要使用 `getPaywall` 方法从某个[版位](placements)获取[付费墙](paywalls)。
 
 :::important
-**不要硬编码产品 ID。** 您唯一需要硬编码的 ID 是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能变化。您的应用必须动态处理这些变化——如果今天付费墙返回两个产品，明天返回三个，则无需修改代码即可全部展示。
+**不要硬编码产品 ID。** 唯一需要硬编码的是版位 ID。付费墙是远程配置的，因此产品数量和可用优惠随时可能发生变化。你的应用必须动态处理这些变化——如果一个付费墙今天返回两个产品，明天返回三个，则无需修改代码即可全部展示。
 :::
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
 Adapty.getPaywall(
     placementId = "YOUR_PLACEMENT_ID", 
@@ -56,23 +177,24 @@ Adapty.getPaywall(
 
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为由一个或多个子标签组成的语言代码，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p> |
-| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 将尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐此方式，因为它可确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存存在时返回缓存数据。在这种情况下，用户可能无法获得最新数据，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在重启应用后仍会保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将付费墙存储在两个层级：上述定期更新的缓存和[备用付费墙](kmp-use-fallback-paywalls)。我们还使用 CDN 来加快付费墙获取速度，并在 CDN 不可访问时使用独立的备用服务器。此系统旨在确保您始终获得最新版本的付费墙，同时即使在网络连接不稳定的情况下也能保证可靠性。</p> |
-| **loadTimeout** | 默认值：5 秒 | <p>此值限制该方法的超时时间。如果超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作可能在底层包含不同的请求。</p> |
+| **placementId** | 必填 | [版位](placements)的标识符。即您在 Adapty 看板中创建版位时所指定的值。 |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p> |
+| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存数据存在时优先返回缓存。这样虽然用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在重启应用后仍会保留，只有在卸载重装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制存储付费墙：上述定期更新的缓存层，以及[备用付费墙](kmp-use-fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终能获取最新版本的付费墙，同时在网络条件较差时也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为底层操作可能涉及多个请求。</p> |
 
-不要硬编码产品 ID！由于付费墙是远程配置的，可用产品、产品数量和特殊优惠（例如免费试用）可能随时变化。请确保您的代码能够处理这些场景。  
-例如，如果您最初获取到 2 个产品，您的应用应显示这 2 个产品。但如果您后来获取到 3 个产品，您的应用应显示全部 3 个产品，而无需修改任何代码。您唯一需要硬编码的是版位 ID。
+不要硬编码产品 ID！由于付费墙是远程配置的，可用产品、产品数量以及特殊优惠（如免费试用）都可能随时变化。请确保你的代码能够处理这些情况。
+
+例如，如果你最初获取到 2 个产品，应用应显示这 2 个产品；但如果之后获取到 3 个产品，应用应在无需修改代码的情况下显示全部 3 个。唯一需要硬编码的只有版位 ID。
 
 响应参数：
 
 | 参数 | 描述 |
 | :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Paywall   | 一个 [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/) 对象，包含：产品 ID 列表、付费墙标识符、远程配置以及其他几个属性。 |
+| Paywall   | 一个 [`AdaptyPaywall`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall/) 对象，包含：产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
 
 ## 获取产品 \{#fetch-products\}
 
-获取付费墙后，您可以查询与其对应的产品数组：
+获取付费墙后，你可以查询与其对应的产品数组：
 
 ```kotlin showLineNumbers
 Adapty.getPaywallProducts(paywall).onSuccess { products ->
@@ -85,41 +207,36 @@ Adapty.getPaywallProducts(paywall).onSuccess { products ->
 响应参数：
 
 | 参数 | 描述 |
-| :-------- |:----------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Products  | [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长以及其他几个属性。 |
+| :-------- |:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Products  | [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象列表，包含：产品标识符、产品名称、价格、货币、订阅时长及其他多个属性。 |
 
-在实现您自己的付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象中的这些属性。以下是最常用的属性，但请参阅链接文档以获取所有可用属性的完整详情。
+在实现自定义付费墙设计时，您可能需要访问 [`AdaptyPaywallProduct`](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-paywall-product/) 对象中的这些属性。以下列出了最常用的属性，完整的属性列表请参阅链接文档。
 
 | 属性 | 描述 |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Title** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户选择的商店国家/地区，而非设备本身的语言环境。 |
-| **Price** | 要显示本地化版本的价格，请使用 `product.price.localizedString`。此本地化基于设备的语言环境信息。您也可以使用 `product.price.amount` 以数字形式访问价格。该值将以本地货币提供。要获取相关货币符号，请使用 `product.price.currencySymbol`。 |
-| **Subscription Period** | 要显示订阅周期（例如周、月、年等），请使用 `product.subscriptionDetails?.localizedSubscriptionPeriod`。此本地化基于设备的语言环境。要以编程方式获取订阅周期，请使用 `product.subscriptionDetails?.subscriptionPeriod`。从中您可以访问 `unit` 枚举以获取时长（即 DAY、WEEK、MONTH、YEAR 或 UNKNOWN）。`numberOfUnits` 值将获取周期单位的数量。例如，对于季度订阅，您会在 unit 属性中看到 `MONTH`，在 numberOfUnits 属性中看到 `3`。 |
-| **Introductory Offer** | 要显示徽章或其他指示器以表明订阅包含新用户优惠，请查看 `product.subscriptionDetails?.introductoryOfferPhases` 属性。这是一个最多可包含两个折扣阶段的列表：免费试用阶段和优惠价格阶段。每个阶段对象中包含以下有用属性：<br/>• `paymentMode`：枚举，值为 `FREE_TRIAL`、`PAY_AS_YOU_GO`、`PAY_UPFRONT` 和 `UNKNOWN`。免费试用属于 `FREE_TRIAL` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时此处为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `3 days`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的各个详情。其对优惠的使用方式与上一节所述相同。<br/>• `localizedSubscriptionPeriod`：以用户语言环境格式化的折扣订阅周期。 |
+| **标题** | 要显示产品标题，请使用 `product.localizedTitle`。注意，本地化基于用户所选的商店国家/地区，而非设备本身的语言区域设置。 |
+| **价格** | 要显示本地化价格，请使用 `product.price.localizedString`。该本地化基于设备的语言区域信息。也可以通过 `product.price.amount` 以数字形式获取价格，值将以当地货币提供。要获取对应的货币符号，请使用 `product.price.currencySymbol`。 |
+| **订阅周期** | 要显示周期（如周、月、年等），请使用 `product.subscriptionDetails?.localizedSubscriptionPeriod`。该本地化基于设备语言区域。要以编程方式获取订阅周期，请使用 `product.subscriptionDetails?.subscriptionPeriod`。从中可以访问 `unit` 枚举以获取时长单位（即 DAY、WEEK、MONTH、YEAR 或 UNKNOWN）。`numberOfUnits` 值表示周期单位的数量。例如，对于季度订阅，`unit` 属性为 `MONTH`，`numberOfUnits` 属性为 `3`。 |
+| **新用户优惠** | 要显示徽标或其他指示符以表明订阅包含新用户优惠，请查看 `product.subscriptionDetails?.introductoryOfferPhases` 属性。这是一个列表，最多包含两个折扣阶段：免费试用阶段和新用户优惠价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：枚举值为 `FREE_TRIAL`、`PAY_AS_YOU_GO`、`PAY_UPFRONT` 和 `UNKNOWN`。免费试用对应 `FREE_TRIAL` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时此处为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示 `3 days`。<br/>• `subscriptionPeriod`：也可以通过此属性获取优惠周期的各项详细信息，其使用方式与上一节中描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化的折扣订阅周期。 |
 
-## 使用默认目标受众付费墙加快付费墙获取速度 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
+## 使用默认受众付费墙加速付费墙获取 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
 
-通常，付费墙获取速度几乎是即时的，因此您无需担心加快此过程。但是，如果您有大量目标受众和付费墙，且用户的网络连接较弱，获取付费墙可能比您期望的时间更长。在这种情况下，您可能希望显示默认付费墙，以确保流畅的用户体验，而不是完全不显示付费墙。
+通常情况下，付费墙的获取几乎是即时完成的，无需担心速度问题。但如果你配置了大量目标受众和付费墙，且用户的网络连接较弱，付费墙的加载时间可能会比预期更长。在这种情况下，你可能希望先展示一个默认付费墙，以保证流畅的用户体验，而不是让用户看到空白页面。
 
-为解决此问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法获取指定版位针对 **All Users** 目标受众的付费墙。但是，至关重要的是要理解，推荐的方法是通过 `getPaywall` 方法获取付费墙，如上文[获取付费墙信息](fetch-paywalls-and-products-kmp#fetch-paywall-information)部分所述。
+为了解决这个问题，您可以使用 `getPaywallForDefaultAudience` 方法，该方法会获取指定版位中针对 **All Users** 目标受众的付费墙。但请务必了解，推荐的方式是通过 `getPaywall` 方法来获取付费墙，详情请参阅上方的[获取付费墙信息](fetch-paywalls-and-products-kmp#fetch-paywall-information)章节。
 
 :::warning
 为什么我们推荐使用 `getPaywall`
 
-`getPaywallForDefaultAudience` 方法存在一些显著缺点：
+`getPaywallForDefaultAudience` 方法存在以下几个明显缺陷：
 
-- **潜在的向后兼容性问题**：如果您需要为不同的应用版本（当前版本和未来版本）显示不同的付费墙，您可能会面临挑战。您要么必须设计支持当前（旧版）版本的付费墙，要么接受使用当前（旧版）版本的用户可能遇到付费墙无法渲染的问题。
-- **失去精准定向**：所有用户都将看到为 **All Users** 目标受众设计的相同付费墙，这意味着您将失去个性化定向功能（包括基于国家/地区、营销归因或您自己的自定义属性）。
+- **潜在的向后兼容性问题**：如果你需要为不同的应用版本（当前版本和未来版本）展示不同的付费墙，可能会遇到挑战。你要么需要设计兼容当前（旧版）版本的付费墙，要么接受当前（旧版）用户可能遇到付费墙无法渲染的问题。
+- **定向能力缺失**：所有用户都会看到为 **All Users** 目标受众设计的同一个付费墙，这意味着你将失去个性化定向能力（包括基于国家、营销归因或自定义属性的定向）。
 
-如果您愿意接受这些缺点以从更快的付费墙获取中受益，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请坚持使用上文[所述](fetch-paywalls-and-products-kmp#fetch-paywall-information)的 `getPaywall`。
+如果您愿意接受这些不足之处以换取更快的付费墙获取速度，请按如下方式使用 `getPaywallForDefaultAudience` 方法。否则，请继续使用[上文](fetch-paywalls-and-products-kmp#fetch-paywall-information)所述的 `getPaywall`。
 :::
 
 ```kotlin showLineNumbers
-import com.adapty.kmp.Adapty
-import com.adapty.kmp.models.AdaptyPaywall
-import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
-import com.adapty.kmp.models.onError
-import com.adapty.kmp.models.onSuccess
 
 Adapty.getPaywallForDefaultAudience(
     placementId = "YOUR_PLACEMENT_ID",
@@ -135,5 +252,7 @@ Adapty.getPaywallForDefaultAudience(
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
 | **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为由一个或多个子标签组成的语言代码，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p> |
-| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 将尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐此方式，因为它可确保用户始终获得最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存存在时返回缓存数据。在这种情况下，用户可能无法获得最新数据，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全的。</p><p></p><p>请注意，缓存在重启应用后仍会保留，只有在重新安装应用或手动清理时才会被清除。</p> |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p> |
+| **fetchPolicy** | 默认值：`AdaptyPaywallFetchPolicy.Default` | <p>默认情况下，SDK 会尝试从服务器加载数据，如果失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络连接不稳定，可以考虑使用 `AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad`，在缓存数据存在时直接返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在卸载重装应用或手动清除时才会被清空。</p> |
+
+</SDKv3>

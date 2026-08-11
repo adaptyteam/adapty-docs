@@ -1,0 +1,119 @@
+---
+title: "Flow'ları Observer modunda sunma - React Native"
+description: "React Native uygulamanızda Observer modunda flow'ları ve Paywall Builder paywall'larını sunun; satın alma işlemlerini kendi kodunuzla yönetin."
+metadataTitle: "Flow'ları Observer modunda sunma - React Native | Adapty Dokümanları"
+---
+
+Builder ile bir flow veya paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir flow veya paywall, hem ne gösterilmesi gerektiğini hem de nasıl gösterilmesi gerektiğini içerir.
+
+:::warning
+Bu bölüm yalnızca [Observer modu](observer-vs-full-mode) için geçerlidir. Observer modunda çalışmıyorsanız, [Flow'ları ve paywall'ları görüntüleme](react-native-present-paywalls) konusuna bakın.
+:::
+
+:::info
+Bu özellik, Adapty React Native SDK 4.0 veya sonrasını gerektirir — daha önce yalnızca yerel iOS ve Android SDK'larında mevcuttu. Yükseltmek için [migration kılavuzuna](migration-to-react-native-sdk-v4) bakın.
+:::
+
+<details>
+   <summary>Flow'ları sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+
+1. Adapty'nin [App Store ile](initial_ios) ve [Google Play ile](initial-android) ilk entegrasyonunu kurun.
+   2. Adapty SDK'yı kurun ve yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. [React Native SDK kurulum kılavuzuna](sdk-installation-reactnative) başvurun.
+   3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+   4. [Builder'larda flow'lar veya paywaller yapılandırın](create-paywall) ve bunlara ürünler atayın.
+   5. [Placement'lar oluşturun ve flow'larınızı veya paywalllerinizi bunlara atayın](create-placement).
+   6. Mobil uygulama kodunuzda [flow'ları ve yapılandırmalarını alın](react-native-get-pb-paywalls).
+
+</details>
+
+Observer modunda SDK, satın alma işlemlerini sizin yerinize gerçekleştirmez. Kullanıcı Adapty tarafından oluşturulan bir flow veya paywall'da satın alma ya da geri yükleme butonuna dokunduğunda, SDK sizin `onObserverPurchaseInitiated` veya `onObserverRestoreInitiated` olay işleyicinizi çağırır — satın alma veya geri yükleme işlemini orada kendi kodunuzla gerçekleştirin.
+
+## Observer modu olay işleyicilerini ayarlayın \{#set-the-observer-mode-event-handlers\}
+
+Diğer platformlardan farklı olarak, ayrı bir çözümleyici nesnesi yoktur — işleyiciler normal [olay işleyicilerinin](react-native-handling-events-1) bir parçasıdır; bu nedenle sunduğunuz her flow'da bunları ayarlayın.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+React component için işleyicileri `AdaptyFlowView`'a prop olarak geçirin:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, [flow]);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+:::note
+Gömülü bileşende, bir işleyicinin döndürdüğü değer flow'u kapatmaz — başarılı bir satın alma veya geri yükleme işleminden sonra bileşeni kendiniz unmount edin.
+:::
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Modal sunum için, oluşturduğunuz view üzerinde işleyicileri ayarlayın:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+`onObserverPurchaseInitiated` işleyicisi, kullanıcının bir satın alma başlattığını; `onObserverRestoreInitiated` ise kullanıcının bir geri yükleme başlattığını size bildirir. Buna yanıt olarak özel satın alma veya geri yükleme flow'unuzu tetikleyin.
+
+Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'ya bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi işlemlerin düzgün çalışması için gereklidir:
+
+| Callback           | Description                                                                                     |
+| :----------------- | :---------------------------------------------------------------------------------------------- |
+| onStartPurchase()  | Satın alma başladığında AdaptyUI'ya bildirimde bulunmak için bu callback çağrılmalıdır.         |
+| onFinishPurchase() | Satın alma tamamlandığında AdaptyUI'ya bildirimde bulunmak için bu callback çağrılmalıdır.      |
+| onStartRestore()   | Geri yükleme başladığında AdaptyUI'ya bildirimde bulunmak için bu callback çağrılmalıdır.       |
+| onFinishRestore()  | Geri yükleme tamamlandığında AdaptyUI'ya bildirimde bulunmak için bu callback çağrılmalıdır.    |
+
+## Flow'u sunun \{#present-the-flow\}
+
+Flow'u her zamanki gibi sunun: [flow'u alın ve görünümünü oluşturun](react-native-get-pb-paywalls), ardından [sunun](react-native-present-paywalls). Herhangi bir ek parametre gerekmez — handler'lar yalnızca SDK `observerMode: true` ile etkinleştirildiğinde tetiklenir.
+
+:::warning
+[İşlemi raporlamayı ve paywall ile ilişkilendirmeyi](report-transactions-observer-mode-react-native) unutmayın. Aksi takdirde Adapty işlemi tanımayacak ve satın almanın kaynak paywall'ını belirleyemeyecektir.
+:::

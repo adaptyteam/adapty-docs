@@ -1,27 +1,94 @@
 ---
 title: "Sử dụng localizations và locale codes trong iOS SDK"
-description: "Quản lý app localizations và locale codes để tiếp cận người dùng toàn cầu trong ứng dụng iOS của bạn."
+description: "Quản lý localizations và locale codes để tiếp cận người dùng toàn cầu trong ứng dụng iOS của bạn."
 metadataTitle: "Quản lý Localizations & Locale Codes | Tài liệu Adapty"
 ---
 
+<SDKv4>
+
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Có một vài tình huống mà locale codes phát huy tác dụng — ví dụ, khi bạn muốn lấy đúng paywall cho localization hiện tại của ứng dụng.
+Mã ngôn ngữ (locale code) được sử dụng khi Adapty chọn bản dịch cho một flow hoặc onboarding, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Vì locale codes khá phức tạp và có thể khác nhau tùy nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng localization — từ đó luôn nhận được kết quả như mong muốn.
+Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty dựa vào một tiêu chuẩn nội bộ thống nhất cho mọi nền tảng mà nó hỗ trợ. Hiểu được tiêu chuẩn đó giúp bạn dự đoán bản dịch nào người dùng sẽ nhận được.
 
 ## Tiêu chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
 
 Adapty sử dụng phiên bản được điều chỉnh nhẹ của [chuẩn BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): mỗi code gồm các subtag viết thường, phân cách bằng dấu gạch ngang. Ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
 
-## Đối khớp locale code \{#locale-code-matching\}
+## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
-Khi Adapty nhận được lệnh gọi từ SDK phía client kèm theo locale code và bắt đầu tìm localization tương ứng của paywall, quá trình diễn ra như sau:
+Trong SDK v4, flow và onboarding khớp mã ngôn ngữ theo cách khác nhau: flow được bản địa hóa bởi SDK trên thiết bị, còn onboarding được bản địa hóa bởi server Adapty.
 
-1. Chuỗi locale đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
-2. Hệ thống tìm kiếm localization có locale code khớp hoàn toàn
-3. Nếu không tìm thấy, hệ thống lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm localization phù hợp
-4. Nếu vẫn không tìm thấy, hệ thống trả về localization mặc định `en`
+### Flow và paywall Paywall Builder \{#flows-and-paywall-builder-paywalls\}
+
+Paywall được xây dựng trong Paywall Builder được phân phối dưới dạng flow trong SDK v4, vì vậy quy tắc dưới đây áp dụng cho cả hai.
+
+Kết quả khớp là tuyệt đối. SDK so sánh code bạn truyền vào với các mã ngôn ngữ của flow theo từng ký tự một: không thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không dự phòng về language subtag. Với flow có ngôn ngữ `pt-br`, chỉ `pt-br` mới khớp: `pt-BR`, `pt_BR`, và `pt-PT` đều không khớp.
+
+Khi mã code không khớp với ngôn ngữ nào, flow sẽ tự động hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — SDK không trả về lỗi và không ghi cảnh báo.
+
+Khi mã code khớp, Adapty sẽ gộp ngôn ngữ đó với ngôn ngữ mặc định: các chuỗi văn bản và tài nguyên không được định nghĩa trong ngôn ngữ khớp sẽ được lấy từ ngôn ngữ mặc định.
+
+Bỏ qua mã ngôn ngữ không giống với việc yêu cầu bản địa hóa mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có ngôn ngữ mặc định là `de` vẫn hiển thị bằng `en` nếu flow đó có bản địa hóa `en`, và chỉ dùng `de` làm phương án dự phòng khi không có bản địa hóa `en`.
+
+:::warning
+Hãy truyền mã ngôn ngữ chính xác như cách đã cấu hình trong dashboard — các subtag viết thường, cách nhau bằng dấu gạch ngang. Đừng truyền trực tiếp identifier ngôn ngữ hệ thống: `Locale.current.identifier` trả về `pt_BR` và `Locale.current.identifier(.bcp47)` trả về `pt-BR`, cả hai đều sẽ fallback về localization mặc định. Hãy chuyển đổi giá trị trong ứng dụng của bạn trước khi truyền vào.
+:::
+
+### Onboardings
+
+Onboarding được bản địa hóa trên server, và các quy tắc của server chấp nhận nhiều định dạng khác nhau. Khi bạn truyền `locale` vào [`getOnboarding`](get-onboardings):
+
+1. Chuỗi locale được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Adapty tìm bản địa hóa có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm bản địa hóa khớp với chuỗi đó
+4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo locale mặc định của onboarding
+
+Bằng cách này, `pt_BR`, `pt-BR`, và `pt-br` đều phân giải về cùng một bản địa hóa onboarding.
+
+## Triển khai các bản địa hóa \{#implementing-localizations\}
+
+Trong SDK v4, bạn không cần truyền mã ngôn ngữ khi lấy một flow — `getFlow` trả về flow cùng với tất cả các bản địa hóa của nó.
+
+- **Flow được xây dựng trong builder**: SDK không đọc ngôn ngữ thiết bị, vì vậy hãy tự xác định trong app của bạn và truyền vào `AdaptyUI.getFlowConfiguration(forFlow:locale:)`. Tham số này là tùy chọn — bỏ qua nó và flow sẽ hiển thị bằng `en`, hoặc theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) nếu flow không có bản địa hóa `en`.
+- **Paywall tùy chỉnh (remote config)**: `getFlow` trả về tất cả các bản địa hóa đã cấu hình trong `flow.remoteConfigs`. Mỗi mục có một mã `locale` và nội dung config (`jsonString`, hoặc `dictionary` đã được phân tích). Hãy chọn mục phù hợp với người dùng, với logic dự phòng do bạn tự định nghĩa:
+
+```swift showLineNumbers
+do {
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let config = flow.remoteConfigs.first(where: { $0.locale == "en" })
+        ?? flow.remoteConfigs.first
+    // read your values from config?.dictionary
+} catch {
+    // handle the error
+}
+```
+
+Adapty lưu trữ các mã `locale` theo định dạng được mô tả trong [Tiêu chuẩn mã locale tại Adapty](#locale-code-standard-at-adapty). SDK không tự khớp Remote Config với một locale, vì vậy việc áp dụng mục nào là tùy thuộc vào ứng dụng của bạn.
+
+</SDKv4>
+
+<SDKv3>
+
+## Tại sao điều này quan trọng \{#why-this-is-important\}
+
+Có một vài tình huống mà mã ngôn ngữ (locale codes) đóng vai trò quan trọng — ví dụ, khi bạn cần lấy đúng paywall cho ngôn ngữ hiện tại của ứng dụng.
+
+Vì mã ngôn ngữ khá phức tạp và có thể khác nhau tùy từng nền tảng, chúng tôi sử dụng một tiêu chuẩn nội bộ thống nhất cho tất cả các nền tảng được hỗ trợ. Tuy nhiên, chính vì sự phức tạp đó, bạn cần hiểu rõ mình đang gửi gì lên server để nhận đúng bản ngôn ngữ mong muốn — và điều gì sẽ xảy ra tiếp theo.
+
+## Tiêu chuẩn mã ngôn ngữ tại Adapty \{#locale-code-standard-at-adapty\}
+
+Đối với mã ngôn ngữ, Adapty sử dụng chuẩn [BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag) có chỉnh sửa nhỏ: mỗi mã gồm các subtag viết thường, phân cách nhau bằng dấu gạch ngang. Ví dụ: `en` (tiếng Anh), `pt-br` (tiếng Bồ Đào Nha (Brazil)), `zh` (tiếng Trung giản thể), `zh-hant` (tiếng Trung phồn thể).
+
+## Khớp mã ngôn ngữ \{#locale-code-matching\}
+
+Khi Adapty nhận được lệnh gọi từ SDK phía client kèm theo mã ngôn ngữ và bắt đầu tìm kiếm bản dịch tương ứng cho paywall, quá trình diễn ra như sau:
+
+1. Chuỗi ngôn ngữ đầu vào được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay bằng dấu gạch ngang (`-`)
+2. Hệ thống tìm kiếm bản dịch có mã ngôn ngữ khớp hoàn toàn
+3. Nếu không tìm thấy, hệ thống lấy phần chuỗi trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm kiếm bản dịch khớp với phần đó
+4. Nếu vẫn không tìm thấy, hệ thống trả về nội dung theo ngôn ngữ mặc định của paywall
 
 Nhờ vậy, một thiết bị iOS gửi `'pt_BR'`, một thiết bị Android gửi `pt-BR`, và một thiết bị khác gửi `pt-br` đều nhận được cùng một kết quả.
 
@@ -61,4 +128,6 @@ Lưu ý rằng chúng tôi không khuyến nghị cách này vì một số lý 
 1. Trên iOS, ngôn ngữ ưa thích và locale hiện tại không giống nhau. Nếu muốn localization được chọn đúng, bạn phải hoặc dựa vào logic của Apple — vốn hoạt động tốt nếu bạn dùng cách được khuyến nghị với các file localized string — hoặc tự tái tạo lại logic đó.
 2. Khó dự đoán chính xác server của Adapty sẽ nhận được gì. Ví dụ, trên iOS, có thể thu được locale như `ar_OM@numbers='latn'` trên thiết bị và gửi lên server. Với lệnh gọi này, bạn sẽ không nhận được localization `ar-om` như mong muốn, mà thay vào đó là `ar` — điều này có thể nằm ngoài dự tính.
 
-Nếu bạn vẫn quyết định dùng cách này — hãy đảm bảo đã xử lý hết tất cả các trường hợp liên quan.
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
+
+</SDKv3>

@@ -1,24 +1,26 @@
 ---
-title: "Kotlin Multiplatform SDKでペイウォール取得を最適化する"
-description: "Adapty ペイウォールを確実に取得: Kotlin Multiplatformのタイミング、キャッシュ、フォールバックパターン。"
+title: "Kotlin Multiplatform SDKでのペイウォール取得の最適化"
+description: "Adapty ペイウォールを確実に取得する: Kotlin Multiplatform のタイミング、キャッシュ、フォールバックパターン。"
 metadataTitle: "ペイウォール取得の最適化 | Kotlin Multiplatform SDK | Adapty ドキュメント"
 ---
 
-Kotlin Multiplatformでペイウォールを確実に取得するには、3つのことを行う必要があります: 高速にレンダリングする、オーディエンスに合わせたペイウォールを返す、ネットワークが遅いときでも適切にフォールバックする。以下のルールは、これを実現するためのタイミング、キャッシュ、フォールバックパターンをカバーしています。
+Kotlin Multiplatform での信頼性の高いペイウォール取得には、3つの要件があります: 高速なレンダリング、オーディエンスターゲティングに基づくペイウォールの返却、そしてネットワークが遅い場合のグレースフルなフォールバックです。以下のルールでは、これを実現するためのタイミング、キャッシュ、フォールバックパターンについて説明します。
 
 :::tip
-このルールは、`Adapty.activate()` と `Adapty.identify()` がすでに完了していることを前提としています。[Kotlin Multiplatform SDKでのコール順序](kmp-sdk-call-order)を参照してください。
+以下のルールは、`Adapty.activate()` および `Adapty.identify()` がすでに解決済みであることを前提としています。詳細は [Kotlin Multiplatform SDK の呼び出し順序](kmp-sdk-call-order) を参照してください。
 :::
+
+以下のアドバイスでは v3 のメソッド名を使用しています。SDK v4 では `getPaywall` が `getFlow` に名称変更されていますが（[移行ガイド](migration-to-kmp-sdk-v4) を参照）、すべてのルールはそのまま適用されます。
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| 推奨 | 非推奨 | 理由 |
+| こうする | こうしない | 理由 |
 |---|---|---|
-| 表示しようとしているプレースメントを取得する。                                                                                                                | 起動時にすべてのプレースメントを一括でプリフェッチする。        | 一括プリフェッチはメインスレッドをブロックし、バースト中にブラックスクリーンが発生する。                                                  |
-| アトリビューションが解決される機会を与えた後（例: `activate` から1〜2秒後、または `setOnProfileUpdatedListener` が発火した後）に `getPaywall` を取得する。 | アプリ起動時に `getPaywall` を呼び出す。                       | アトリビューションがまだ確定していない。ペイウォールがデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが無効になる。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                                                           | `getPaywall` を無期限に待ち続ける。                     | タイムアウトがない場合、接続が悪いユーザーにはネットワークが解決されるまで（またはアプリを閉じるまで）空白の画面が表示される。     |
+| 表示しようとしているプレースメントだけ取得する。                                                                                                                | 起動時にすべてのプレースメントを一括プリフェッチする。        | 一括プリフェッチはメインスレッドをブロックし、バースト中にブラックスクリーンが発生する。                                                  |
+| アトリビューションが解決する時間を確保してから `getPaywall` を取得する（例：`activate` の 1〜2 秒後、または `setOnProfileUpdatedListener` が発火した後）。 | アプリ起動時に `getPaywall` を呼び出す。                       | アトリビューションがまだ反映されていないため、ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントや ASA のパーソナライズが暗黙的にスキップされる。 |
+| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                                                           | `getPaywall` を無期限に待ち続ける。                     | タイムアウトがないと、通信状況の悪いユーザーはネットワークが解決するまで白紙の画面を見続けるか、アプリを閉じてしまう。     |
 
-`fetchPolicy` と `loadTimeout` パラメーターについては[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-kmp)を、適切なプレースメントの選び方については[プレースメント](placements)を参照してください。
+[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-kmp)で`fetchPolicy`と`loadTimeout`パラメーターのリファレンスを確認し、[プレースメント](placements)で適切なプレースメントの選び方を参照してください。
 
 ## 接続が不安定な環境向けの調整 \{#tune-for-poor-connectivity\}
 

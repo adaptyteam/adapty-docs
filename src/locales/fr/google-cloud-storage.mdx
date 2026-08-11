@@ -1,0 +1,184 @@
+---
+title: "Google Cloud Storage"
+description: "Intégrez Google Cloud Storage avec Adapty pour un stockage sécurisé des données."
+metadataTitle: "Intégration Google Cloud Storage | Documentation Adapty"
+---
+
+import UsdConversion from '@site/src/locales/fr/reusable/UsdConversion.md';
+
+Activez l'intégration Google Cloud Storage pour stocker de manière sécurisée les [événements d'abonnement](events) et les [données de visites de paywall](paywall-metrics) dans un emplacement centralisé : votre bucket Google Cloud Storage.
+
+Chaque jour à 4h00 UTC, Adapty téléverse des fichiers .csv contenant les données de la veille vers vos buckets. Vous pouvez choisir de recevoir les données d'**événements**, les données de **visites de paywall**, ou **les deux**. Vous pouvez également exporter ces données [manuellement](#manual-data-export) à tout moment, pour n'importe quelle période.
+
+Pour configurer l'intégration, [générez une clé d'accès au bucket](#create-google-cloud-storage-credentials) dans votre console Google Cloud, puis [ajoutez-la dans vos paramètres Adapty](#set-up-google-cloud-storage-integration).
+
+## Calendrier et durée des téléversements \{#upload-schedule-and-duration\}
+
+Adapty téléverse les données vers Google Cloud Storage toutes les 24 heures, à 04:00 UTC.
+
+Les fichiers contiennent les données des événements créés durant le jour calendaire précédent (UTC). Le fichier téléversé le 8 mars contiendra tous les événements créés le 7 mars, de 00:00:00 à 23:59:59 UTC.
+
+Le processus peut prendre jusqu'à plusieurs heures selon le nombre total de fichiers en attente et la quantité de données que vous avez personnellement demandée. Si Adapty inclut des données historiques dans votre premier téléversement, celui-ci sera plus long que les téléversements quotidiens suivants.
+
+## Configurer l'intégration Google Cloud Storage \{#set-up-google-cloud-storage-integration\}
+
+Vous devez disposer d'une clé de compte de service Google Cloud valide avec un **accès en écriture**. Pour la générer, suivez les étapes de la section [créer des identifiants](#create-google-cloud-storage-credentials).
+
+:::warning
+Vous pouvez utiliser des buckets différents avec des identifiants différents pour les événements et les visites de paywall. Cependant, si **l'un ou l'autre** ensemble d'identifiants est invalide, [**les deux téléversements échoueront**](#troubleshooting).
+:::
+
+Accédez à [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), puis ouvrez l'onglet souhaité (**Events** ou **Paywall visits**). Activez l'intégration.
+
+Téléversez le fichier contenant votre **clé de compte de service Google Cloud**. Indiquez le **bucket** et le **dossier** cibles. Enregistrez vos modifications.
+
+<ZoomImage id="google-cloud-storage-setup.webp" width="700px" />
+
+### Paramètres optionnels pour les données d'événements \{#optional-settings-for-event-data\}
+
+Vous pouvez spécifier les événements à inclure dans le rapport et définir des noms personnalisés pour ces événements. Consultez l'article [événements](events) pour la liste complète des événements disponibles.
+
+<ZoomImage id="event-specific-settings.webp" width="700px" />
+
+| Nom | Valeur par défaut | Description |
+| ------------------------------ | ----------------- | ----------- |
+| Exclude historical events      | true    |   Exclure les informations sur les événements survenus avant l'intégration du SDK Adapty dans votre application. <br /> <br />Si votre plateforme d'analyse a reçu des événements d'abonnement **avant** que vous commenciez à utiliser Adapty, cette option garantit qu'elle ne reçoit pas de doublons. <Details summary="Exemple pratique"><p>Un utilisateur a souscrit un abonnement mensuel le 10 janvier. La mise à jour du 1er mars de votre application est la première à inclure le SDK Adapty. <br /> <br /> Si ce paramètre est **activé**, le rapport n'inclura ni l'événement « abonnement démarré » de janvier, ni l'événement « renouvellement d'abonnement » de février. Il **inclura** l'événement « renouvellement d'abonnement » du 10 mars.</p> </Details> |
+| Include events without profile | false | Inclure les transactions non liées à un profil utilisateur, ou qui ne peuvent pas être immédiatement associées à un utilisateur spécifique. Cela peut inclure des achats effectués avant l'installation du SDK Adapty, ou des transactions reçues via des notifications serveur. |
+| Send user attributes           | false |    Inclure les [attributs utilisateur personnalisés](setting-user-attributes), tels que les données utilisateur et les données d'utilisation de l'application. Sélectionnez cette option si votre forfait OneSignal prend en charge plus de 10 tags. Notez que le dépassement des limites de tags peut entraîner des erreurs.  |
+
+## Créer des identifiants Google Cloud Storage \{#create-google-cloud-storage-credentials\}
+
+Ce guide vous aidera à créer les identifiants nécessaires dans votre console Google Cloud Platform.
+
+Pour qu'Adapty puisse téléverser des rapports de données brutes dans votre bucket, la clé du compte de service est requise, ainsi qu'un accès en écriture au bucket correspondant. En fournissant la clé du compte de service et en accordant l'accès en écriture au bucket, vous permettez à Adapty de transférer de manière sécurisée et efficace les rapports de données brutes depuis sa plateforme vers votre environnement de stockage.
+
+:::warning
+Veuillez noter que nous ne prenons en charge que l'autorisation par clé HMAC de compte de service. Il est donc essentiel de s'assurer que votre clé HMAC de compte de service dispose des rôles « Storage Object Viewer », « Storage Legacy Bucket Writer » et « Storage Object Creator » pour permettre un accès correct à Google Cloud Storage.
+:::
+
+1. Pour commencer, accédez à la section [IAM](https://console.cloud.google.com/projectselector2/iam-admin/serviceaccounts) de votre compte Google Cloud et choisissez le projet concerné ou créez-en un nouveau.
+
+  <ZoomImage id="30a81ef-CleanShot_2023-03-17_at_15.22.142x.webp" width="700px" />
+
+
+1. Ensuite, créez un nouveau compte de service pour Adapty en cliquant sur le bouton « + CREATE SERVICE ACCOUNT ».
+
+    <ZoomImage id="98f8ebf-CleanShot_2023-03-17_at_15.40.062x.webp" width="700px" />
+
+2. Remplissez les champs de la première étape, car les accès seront accordés ultérieurement. Pour en savoir plus sur cette page, consultez la documentation [ici](https://docs.cloud.google.com/iam/docs/service-accounts-create).
+
+    <ZoomImage id="2190c50-CleanShot_2023-03-17_at_15.48.552x.webp" width="700px" />
+
+3. Pour créer et télécharger une [clé JSON privée](https://docs.cloud.google.com/iam/docs/keys-create-delete), accédez à la section KEYS et cliquez sur le bouton « ADD KEY ».
+
+    <ZoomImage id="8a45468-CleanShot_2023-03-17_at_15.58.092x.webp" width="700px" />
+
+4. Dans la section DETAILS, repérez la valeur Email associée au compte de service récemment créé et copiez-la. Cette information sera nécessaire pour les étapes suivantes afin d'autoriser le compte et lui permettre d'écrire dans le bucket.
+
+    <ZoomImage id="6ccd0f0-CleanShot_2023-03-17_at_16.03.162x.webp" width="700px" />
+    
+
+5. Pour continuer, accédez à la page [Buckets](https://console.cloud.google.com/storage/browser) de Google Cloud Storage et sélectionnez un bucket existant ou créez-en un nouveau pour stocker les rapports de données d'événements ou de visites d'Adapty. Accédez ensuite à la section PERMISSIONS et sélectionnez l'option [GRANT ACCESS](https://docs.cloud.google.com/identity/docs/how-to?hl=en).
+
+    <ZoomImage id="3cdd937-CleanShot_2023-03-17_at_16.14.232x.webp" width="700px" />
+
+6. Dans la section PERMISSIONS, saisissez l'Email du compte de service obtenu à la cinquième étape, puis choisissez le rôle Storage Object Creator. Enfin, cliquez sur SAVE pour appliquer les modifications.
+
+
+    <ZoomImage id="62801f4-CleanShot_2023-03-17_at_16.17.312x.webp" width="700px" />
+
+    Pensez à noter le nom du bucket pour référence ultérieure.
+
+## Export manuel des données \{#manual-data-export\}
+
+En plus de l'export automatique des données d'événements vers Google Cloud Storage, Adapty propose également une fonctionnalité d'export manuel de fichiers. Grâce à cette fonctionnalité, vous pouvez sélectionner un intervalle de temps spécifique pour les données d'événements et les exporter manuellement vers votre bucket GCS. Vous avez ainsi un meilleur contrôle sur les données exportées et le moment de l'export.
+
+La plage de dates spécifiée sera utilisée pour exporter les événements créés de la Date A à 00:00:00 UTC jusqu'à la Date B à 23:59:59 UTC.
+
+<ZoomImage id="e347308-CleanShot_2023-03-17_at_17.39.452x.webp" width="700px" />
+
+## Structure des données \{#data-structure\}
+
+Adapty utilise des fichiers `.csv` pour exporter les données sous forme tabulaire.
+
+:::warning
+Le contenu des événements peut évoluer au fil du temps, avec de nouvelles données introduites par nous-mêmes ou par des tiers avec lesquels nous travaillons. Assurez-vous que le code qui les traite est suffisamment robuste et s'appuie sur des champs spécifiques, et non sur la structure dans son ensemble.
+:::
+
+### Événements \{#events\}
+
+Vous pouvez [modifier](#optional-settings-for-event-data) la liste des événements inclus dans vos rapports.
+
+<UsdConversion />
+
+| Colonne | Description |
+|------|-----------|
+| **profile_id** | Identifiant utilisateur Adapty. |
+| **event_type** | Nom de l'événement en minuscules. Consultez la section [Événements](events) pour connaître les types d'événements. |
+| **event_datetime** | Date au format ISO 8601. |
+| **transaction_id** | Identifiant unique d'une transaction, comme un achat ou un renouvellement. |
+| **original_transaction_id** | Identifiant de la transaction d'achat d'origine. |
+| **subscription_expires_at** | Date d'expiration de l'abonnement. Généralement dans le futur. |
+| **environment** | Peut être Sandbox ou Production. |
+| **revenue_usd** | Revenus en USD. Peut être vide. |
+| **proceeds_usd** | Recettes en USD. Peut être vide. |
+| **net_revenue_usd** | Revenus nets (revenus après taxes) en USD. Peut être vide. |
+| **tax_amount_usd** | Montant déduit pour les taxes en USD. Peut être vide. |
+| **revenue_local** | Revenus en devise locale. Peut être vide. |
+| **proceeds_local** | Recettes en devise locale. Peut être vide. |
+| **net_revenue_local** | Revenus nets (revenus après taxes) en devise locale. Peut être vide. |
+| **tax_amount_local** | Montant déduit pour les taxes en devise locale. Peut être vide. |
+| **customer_user_id** | Identifiant utilisateur développeur. Par exemple, il peut s'agir de votre UUID utilisateur, email, ou tout autre identifiant. Null si vous ne l'avez pas défini. |
+| **store** | Peut être *app_store* ou *play_store*. |
+| **product_id** | Identifiant du produit dans l'Apple App Store, le Google Play Store, ou Stripe. |
+| **base_plan_id** | [Identifiant du plan de base](https://support.google.com/googleplay/android-developer/answer/12154973) dans le Google Play Store ou [identifiant de prix](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) dans Stripe. |
+| **developer_id** | Identifiant développeur (SDK) du paywall depuis lequel la transaction est originaire. |
+| **ab_test_name** | Nom du test A/B depuis lequel la transaction est originaire. |
+| **ab_test_revision** | Révision du test A/B depuis lequel la transaction est originaire. |
+| **paywall_name** | Nom du paywall depuis lequel la transaction est originaire. |
+| **paywall_revision** | Révision du paywall depuis lequel la transaction est originaire. |
+| **profile_country** | Pays du profil déterminé par Adapty, sur la base de l'adresse IP. |
+| **install_date** | Date ISO 8601 de l'installation. |
+| **idfv** | [identifierForVendor](https://developer.apple.com/documentation/uikit/uidevice/identifierforvendor) sur les appareils iOS |
+| **idfa** | [advertisingIdentifier](https://developer.apple.com/documentation/adsupport/asidentifiermanager/advertisingidentifier) sur les appareils iOS |
+| **advertising_id** | L'Advertising ID est un code unique attribué par le système d'exploitation Android que les annonceurs peuvent utiliser pour identifier de manière unique l'appareil d'un utilisateur |
+| **ip_address** | IP de l'appareil (peut être IPv4 ou IPv6, IPv4 étant préférée lorsqu'elle est disponible). Elle est mise à jour à chaque changement d'IP de l'appareil |
+| **cancellation_reason** | <p>La raison pour laquelle l'utilisateur a annulé un abonnement.</p><p></p><p>Valeurs possibles :</p><p>**iOS & Android** — *voluntarily_cancelled*, *billing_error*, *refund*</p><p>**iOS uniquement** — *price_increase*, *product_was_not_available*, *unknown*, *upgraded*</p><p> **Android uniquement** — *new_subscription_replace*, *cancelled_by_developer*</p> |
+| **android_app_set_id** | Un [AppSetId](https://developer.android.com/design-for-safety/privacy-sandbox/reference/adservices/appsetid/AppSetId) - identifiant réinitialisable par l'utilisateur, unique par appareil et par compte développeur, destiné aux cas d'utilisation publicitaires non monétaires. |
+| **android_id** | Sur Android 8.0 (API niveau 26) et les versions supérieures de la plateforme, un nombre de 64 bits (exprimé sous forme de chaîne hexadécimale), unique pour chaque combinaison de clé de signature d'application, d'utilisateur et d'appareil. Pour plus de détails, consultez la [documentation développeur Android](https://developer.android.com/reference/android/provider/Settings.Secure#ANDROID_ID). |
+| **device** | Le nom du modèle d'appareil visible par l'utilisateur final. |
+| **currency** | Le code de devise à 3 lettres (ISO-4217) de la transaction. |
+| **store_country** | Pays du profil déterminé par le store Apple/Google. |
+| **attribution_source** | Source d'attribution. |
+| **attribution_network_user_id** | Identifiant attribué à l'utilisateur par la source d'attribution. |
+| **attribution_status** | Peut être organic, non_organic ou unknown. |
+| **attribution_channel** | Nom du canal marketing. |
+| **attribution_campaign** | Nom de la campagne marketing. |
+| **attribution_ad_group** | Groupe d'annonces d'attribution. |
+| **attribution_ad_set** | Ensemble d'annonces d'attribution. |
+| **attribution_creative** | Mot-clé créatif d'attribution. |
+| **attributes** | JSON des [attributs utilisateur personnalisés](setting-user-attributes#custom-user-attributes). Cela inclut tous les attributs personnalisés que vous avez configurés pour être envoyés depuis votre application mobile. Pour l'activer, activez l'option **Send User Attributes** dans la page [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook). |
+| **integration_ids**             | Tous les identifiants d'intégration associés à un profil. Dictionnaire. Exemple : &#123;&#39;mixpanel_user_id&#39;: &#39;mixpanelUserId-test&#39;, &#39;facebook_anonymous_id&#39;: &#39;facebookAnonymousId-test&#39;&#125;                                                                                                                         |
+
+### Visites de paywall \{#paywall-visits\}
+
+| Colonne               | Description                                                                                                  |
+| :-------------------- | :----------------------------------------------------------------------------------------------------------- |
+| **profile_id**        | Identifiant utilisateur Adapty.                                                                              |
+| **customer_user_id**  | Identifiant utilisateur développeur. Par exemple, il peut s'agir de votre UUID utilisateur, email, ou tout autre identifiant. Null si vous ne l'avez pas défini. |
+| **profile_country**   | Pays du profil déterminé par le store Apple/Google.                                                          |
+| **install_date**      | Date ISO 8601 de l'installation.                                                                             |
+| **store**             | Peut être *app_store* ou *play_store*.                                                                       |
+| **paywall_showed_at** | La date à laquelle le paywall a été affiché à l'utilisateur.                                                 |
+| **developer_id**      | Identifiant développeur (SDK) du paywall depuis lequel la transaction est originaire.                        |
+| **ab_test_name**      | Nom du test A/B depuis lequel la transaction est originaire.                                                 |
+| **ab_test_revision**  | Révision du test A/B depuis lequel la transaction est originaire.                                            |
+| **paywall_name**      | Nom du paywall depuis lequel la transaction est originaire.                                                  |
+| **paywall_revision**  | Révision du paywall depuis lequel la transaction est originaire.                                             |
+
+
+## Dépannage \{#troubleshooting\}
+
+Adapty vérifie la validité de vos clés d'accès **avant** de commencer le téléversement. Même si une seule de vos clés Google Cloud Storage est invalide, Adapty **interrompt le téléversement** et génère une erreur.
+
+Pour garantir des téléversements ininterrompus, remplacez vos clés avant leur expiration. Si vous mettez à jour la clé pour les **événements**, n'oubliez pas de mettre à jour également la clé pour les **visites de paywall**, et vice versa.

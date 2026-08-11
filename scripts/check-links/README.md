@@ -72,9 +72,11 @@ How localized checking differs from the English run:
   translated page that exists only as a locale file (no English source) is an
   orphan that 404s in production, and links to it must be flagged — overlaying
   locale pages would mask exactly that breakage.
-- **Anchor fragments (`#heading`) are not validated.** The translator preserves
-  English anchor ids verbatim (as escaped `\{#id\}` on translated headings), so
-  anchors carry over from English; the English run owns anchor validation.
+- **Same-page anchors (`#heading`) are validated** against the locale file's own
+  headings — translations do drift from the English ids they're supposed to
+  preserve, and only the locale run can see that. **Cross-page anchors are not**:
+  those resolve against the English index (resolution here is locale-independent),
+  so the English run already owns them.
 - Only **outgoing** links from in-scope files are checked. Incoming-link
   breakage detection is skipped — translations mirror English filenames and
   preserve anchor ids, so they can't break an incoming link the English check
@@ -121,7 +123,11 @@ Links that work but point to the wrong place. Reported but don't block CI.
 
 - **Redirects** — URL resolves but redirects to a different destination
 - **Internal redirects** — slug not in source files, but the live site (CloudFront) resolves it to a different page
-- **Missing anchors** — page exists but the `#fragment` target is absent from the page headings
+- **Missing anchors** — the `#fragment` target is absent from the target page's headings.
+  Covers both cross-page links (`article#heading`) and same-page ones (`#heading`), the
+  latter resolved against the source file's own headings. Heading ids come from
+  `github-slugger` (matching rehype-slug), plus custom `{#id}` / escaped `\{#id\}`
+  suffixes and explicit `id="..."` attributes.
 
 ### Manual check required
 

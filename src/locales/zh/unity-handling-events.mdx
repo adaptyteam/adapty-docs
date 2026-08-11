@@ -1,7 +1,7 @@
 ---
-title: "处理付费墙事件"
-description: "了解如何使用 Adapty SDK 在 Unity 应用中处理付费墙事件。"
-metadataTitle: "处理付费墙事件 | Unity SDK | Adapty 文档"
+title: "处理流程与付费墙事件 - Unity"
+description: "在 Unity 应用中处理流程和付费墙事件。"
+metadataTitle: "处理流程事件 - Unity | Adapty 文档"
 customSlug: /unity-handling-events
 displayed_sidebar: sdkunity
 ---
@@ -9,11 +9,482 @@ displayed_sidebar: sdkunity
 import SampleApp from '@site/src/locales/zh/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/zh/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-本指南涵盖购买、恢复、产品选择以及付费墙渲染的事件处理。你还必须实现按钮处理（关闭付费墙、打开链接等）。详情请参阅[处理按钮操作指南](unity-handle-paywall-actions)。
+本指南涵盖购买、恢复、产品选择和流程渲染的事件处理。你还需要实现按钮处理（关闭流程、打开链接等）。详情请参阅[处理流程操作指南](unity-handle-paywall-actions)。
 :::
 
-使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复操作。但它们会触发一些事件供应用响应，包括按钮点击（关闭按钮、URL、产品选择等）以及付费墙上购买相关操作的通知。以下介绍如何响应这些事件。
+使用[流程编辑工具](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)配置的流程和付费墙无需额外代码即可完成购买和恢复购买操作。不过，它们会生成一些你的应用可以响应的事件，包括按钮点击（关闭按钮、URL、产品选择等）以及购买相关操作的通知。请参阅下文了解如何响应这些事件。
+
+<SampleApp />
+
+## 处理事件 \{#handling-events\}
+
+如需控制或监听移动应用中流程屏幕上发生的过程，请实现 `IAdaptyFlowsEventsListener` 接口，并通过 `Adapty.SetFlowsEventsListener()` 进行注册：
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowEventsHandler : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // Implement all interface methods below
+}
+```
+
+:::note
+这些方法用于添加响应流程事件的自定义逻辑。SDK 不会对其应用任何默认行为：购买成功或发生错误时，视图不会自动关闭——请在适当时机自行调用 `view.Dismiss(...)`。
+:::
+
+### 用户生成的事件 \{#user-generated-events\}
+
+#### 流程出现 \{#flow-appeared\}
+
+当流程视图在屏幕上展示时触发。
+
+:::note
+在 iOS 上，当用户点击流程内的[网页付费墙按钮](web-paywall#step-2a-add-a-web-purchase-button)、并在应用内浏览器中打开网页付费墙时，也会触发此事件。
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+```
+
+#### 流程消失 \{#flow-disappeared\}
+
+当流程视图从屏幕上关闭时触发。
+
+:::note
+在 iOS 上，当从流程内嵌浏览器打开的 [web 付费墙](web-paywall#step-2a-add-a-web-purchase-button) 从屏幕上消失时也会触发。
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+```
+
+#### 产品选择 \{#product-selection\}
+
+当用户或系统选择某个产品进行购买时触发。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidSelectProduct(
+    AdaptyUIFlowView view,
+    string productId
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### 开始购买 \{#started-purchase\}
+
+当用户发起购买流程时触发。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product
+) { }
+```
+
+:::note
+在[观察者模式](unity-present-flows-in-observer-mode)下，从流程中发起的购买会被传递到您的 `IAdaptyUIObserverModeResolver`，而非此回调。
+:::
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 购买成功、取消或待处理 \{#successful-canceled-or-pending-purchase\}
+
+当购买成功、用户取消购买或购买处于待处理状态时，此方法将被调用。用户取消以及待处理支付（例如需要家长批准）会触发此方法，而不是 `FlowViewDidFailPurchase`。
+
+流程在购买完成后会保持打开状态，直到你主动关闭它，因此请在用户获得访问权限后自行调用 `view.Dismiss(...)`：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchasedResult
+) {
+    switch (purchasedResult.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Check if user has access to premium features
+            if (purchasedResult.Profile != null
+                && purchasedResult.Profile.AccessLevels.TryGetValue("premium", out var premium)
+                && premium.IsActive) {
+                view.Dismiss(null);
+            }
+            break;
+        case AdaptyPurchaseResultType.Pending:
+            // Handle pending purchase (e.g., user will pay offline with cash)
+            break;
+        case AdaptyPurchaseResultType.UserCancelled:
+            // Handle user cancellation
+            break;
+        default:
+            break;
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+我们建议在购买成功后关闭流程页面。
+
+#### 购买失败 \{#failed-purchase\}
+
+如果购买因错误而失败，将调用此方法。这包括 StoreKit/Google Play Billing 错误（支付限制、无效产品、网络故障）、交易验证失败以及系统错误。请注意，用户取消操作会触发 `FlowViewDidFinishPurchase` 并返回已取消的结果，待处理的支付不会触发此方法。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### 开始恢复 \{#started-restore\}
+
+当用户发起恢复流程时触发：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+```
+
+#### 恢复成功 \{#successful-restore\}
+
+当购买恢复成功时触发。恢复完成后，流程界面仍会保持打开状态，直到你手动关闭它：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishRestore(
+    AdaptyUIFlowView view,
+    AdaptyProfile profile
+) {
+    // Check if user has access to premium features
+    if (profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive) {
+        view.Dismiss(null);
+    }
+}
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+我们建议在用户已拥有所需 `accessLevel` 时关闭该页面。请参阅[订阅状态](unity-listen-subscription-changes)主题，了解如何检查。
+
+#### 恢复失败 \{#failed-restore\}
+
+当购买恢复失败时触发：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailRestore(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### 完成网页支付导航 \{#finished-web-payment-navigation\}
+
+尝试打开[网页付费墙](web-paywall)进行购买（无论成功或失败）后，将调用此方法：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishWebPaymentNavigation(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+**参数：**
+- `product`：打开（或尝试打开）网页付费墙所对应的产品，或为 `null`
+- `error`：若网页付费墙成功打开则为 `null`，若失败则为 `AdaptyError`
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": null,
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### 数据获取与渲染 \{#data-fetching-and-rendering\}
+
+#### 产品加载错误 \{#product-loading-errors\}
+
+当产品加载失败时触发，并提供 `AdaptyError`。如果你在初始化时未传入产品数组，AdaptyUI 会自行从服务器获取所需对象。该操作可能失败，AdaptyUI 将通过调用此方法报告错误：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailLoadingProducts(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### 渲染和运行时错误 \{#rendering-and-runtime-errors\}
+
+如果在界面渲染过程中发生错误，或出现其他非购买类运行时错误，该方法会上报此错误。视图不会自动关闭——如需关闭，请手动调用 `view.Dismiss(...)`：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveError(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>事件示例（点击展开）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+正常情况下不应出现此类错误，如果您遇到了，请告知我们。
+
+#### 分析事件 \{#analytics-events\}
+
+`FlowViewDidReceiveAnalyticEvent` 预留用于处理来自流程的自定义分析事件。目前流程尚未向您的代码发送此类事件，因此方法体保持为空即可——`IAdaptyFlowsEventsListener` 是一个 C# 接口，所以该方法仍然必须存在：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) { }
+```
+
+### 处理系统请求 \{#handle-system-requests\}
+
+`IAdaptyUISystemRequestsHandler`（通过 `Adapty.SetSystemRequestsHandler(...)` 注册）专门用于处理流程中的系统请求：包括操作系统权限提示（如推送通知或摄像头访问权限）以及应用评价请求。目前流程尚未触发这些请求，因此无需注册处理程序。
+
+### 导航 \{#navigation\}
+
+#### Android 系统返回按钮 \{#android-system-back-button\}
+
+Android 系统返回按钮（或返回手势）会以 `SystemBack` 动作的形式传递给 `FlowViewDidPerformAction`，不会自动关闭流程——用户需要通过你定义的路径离开流程，例如 **Close** 按钮或编辑工具中的 `on_device_back` 动作。如果你希望系统返回按钮能关闭流程，请自行处理该动作：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+有关所有操作的完整列表，请参阅[处理流程操作的指南](unity-handle-paywall-actions)。
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+本指南涵盖购买、恢复、产品选择和付费墙渲染的事件处理。你还必须实现按钮操作的处理（关闭付费墙、打开链接等）。详情请参阅我们的[处理按钮操作指南](unity-handle-paywall-actions)。
+:::
+
+使用[付费墙编辑工具](adapty-paywall-builder)配置的付费墙无需额外代码即可完成购买和恢复购买操作。但是，这些付费墙会生成一些事件，您的应用可以对这些事件作出响应。这些事件包括按钮点击（关闭按钮、URL、产品选择等），以及付费墙上与购买相关操作的通知。请阅读下文了解如何响应这些事件。
 
 :::warning
 本指南仅适用于**新版付费墙编辑工具付费墙**，需要 Adapty SDK v3.3.0 或更高版本。
@@ -225,9 +696,9 @@ public void PaywallViewDidFailPurchase(
 ```
 </Details>
 
-#### 开始恢复 \{#started-restore\}
+#### 开始恢复购买 \{#started-restore\}
 
-当用户发起恢复流程时触发：
+当用户发起恢复购买流程时触发：
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
@@ -356,7 +827,7 @@ public void PaywallViewDidFinishWebPaymentNavigation(
 
 #### 产品加载错误 \{#product-loading-errors\}
 
-当产品加载失败时触发，并提供 `AdaptyError`。如果你在初始化时未传入产品数组，AdaptyUI 会自行从服务器获取所需对象。该操作可能失败，AdaptyUI 将通过调用此方法报告错误：
+当产品加载失败时触发，并提供 `AdaptyError`。如果您在初始化时未传入产品数组，AdaptyUI 将自行从服务器获取所需对象。该操作可能失败，AdaptyUI 会通过调用此方法来报告错误：
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -408,4 +879,7 @@ public void PaywallViewDidFailRendering(
 ```
 </Details>
 
-正常情况下不应出现此类错误，如果你遇到了，请告知我们。
+正常情况下不应出现此类错误，如果您遇到了，请告知我们。
+
+
+</SDKv3>

@@ -1,7 +1,7 @@
 ---
-title: "ペイウォールイベントの処理"
-description: "Adapty SDK を使用して Unity アプリでペイウォールイベントを処理する方法を学びましょう。"
-metadataTitle: "ペイウォールイベントの処理 | Unity SDK | Adapty ドキュメント"
+title: "フローとペイウォールのイベントを処理する - Unity"
+description: "Unityアプリでフローとペイウォールのイベントを処理します。"
+metadataTitle: "フローイベントの処理 - Unity | Adapty ドキュメント"
 customSlug: /unity-handling-events
 displayed_sidebar: sdkunity
 ---
@@ -9,11 +9,482 @@ displayed_sidebar: sdkunity
 import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
 import PaywallAction from '@site/src/locales/ja/reusable/PaywallAction.md';
 
+<SDKv4>
+
 :::important
-このガイドでは、購入・復元・プロダクト選択・ペイウォールのレンダリングに関するイベント処理を説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の実装も必要です。詳細は[ボタンアクションの処理ガイド](unity-handle-paywall-actions)をご覧ください。
+このガイドでは、購入・復元・プロダクト選択・フロー描画に関するイベント処理について説明します。ボタン操作（フローを閉じる、リンクを開くなど）の処理も実装する必要があります。詳細については、[フローアクションの処理に関するガイド](unity-handle-paywall-actions)を参照してください。
 :::
 
-[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元のために追加コードは不要です。ただし、アプリが応答できるいくつかのイベントが生成されます。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連のアクションへの通知が含まれます。以下でこれらのイベントへの対応方法を説明します。
+[フローBuilder](adapty-flow-builder)や[ペイウォールビルダー](adapty-paywall-builder)で作成したフローやペイウォールは、購入や復元のために追加のコードは必要ありません。ただし、アプリが応答できるイベントが発生します。イベントには、ボタン押下（閉じるボタン、URL、プロダクト選択など）や、購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
+
+<SampleApp />
+
+## イベントの処理 \{#handling-events\}
+
+フロー画面上で発生するプロセスをモバイルアプリ内で制御・監視するには、`IAdaptyFlowsEventsListener` インターフェースを実装し、`Adapty.SetFlowsEventsListener()` で登録します。
+
+```csharp showLineNumbers title="Unity"
+using UnityEngine;
+using AdaptySDK;
+
+public class FlowEventsHandler : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // Implement all interface methods below
+}
+```
+
+:::note
+これらのメソッドには、フローイベントに応答するカスタムロジックを追加します。SDKはこれらに対してデフォルトの動作を適用しません。購入の成功やエラーが発生しても、ビューは自動的に閉じられません。適切なタイミングで `view.Dismiss(...)` を自分で呼び出してください。
+:::
+
+### ユーザー生成イベント \{#user-generated-events\}
+
+#### フローが表示された \{#flow-appeared\}
+
+フロービューが画面に表示されたときに呼び出されます。
+
+:::note
+iOS では、ユーザーがフロー内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてウェブペイウォールがアプリ内ブラウザで開いたときにも呼び出されます。
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidAppear(AdaptyUIFlowView view) { }
+```
+
+#### フローが非表示になった \{#flow-disappeared\}
+
+フロービューが画面から消えたときに呼び出されます。
+
+:::note
+iOSでは、フローのアプリ内ブラウザから開かれた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも呼び出されます。
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidDisappear(AdaptyUIFlowView view) { }
+```
+
+#### プロダクトの選択 \{#product-selection\}
+
+プロダクトが（ユーザーまたはシステムによって）購入のために選択されたときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidSelectProduct(
+    AdaptyUIFlowView view,
+    string productId
+) { }
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+````javascript
+{
+  "productId": "premium_monthly"
+}
+````
+</Details>
+
+#### 購入の開始 \{#started-purchase\}
+
+ユーザーが購入プロセスを開始したときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product
+) { }
+```
+
+:::note
+[オブザーバーモード](unity-present-flows-in-observer-mode)では、フローから開始された購入は `IAdaptyUIObserverModeResolver` に配信されます。
+:::
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 購入成功、キャンセル、または保留中の場合 \{#successful-canceled-or-pending-purchase\}
+
+購入が成功した場合、ユーザーが購入をキャンセルした場合、または購入が保留中（例：保護者の承認が必要な場合）に、このメソッドが呼び出されます。ユーザーによるキャンセルや保留中の支払いは、`FlowViewDidFailPurchase` ではなくこのメソッドをトリガーします。
+
+フローは購入後も閉じずに表示されたままになるため、ユーザーがアクセス権を取得したら `view.Dismiss(...)` を自分で呼び出してください。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchasedResult
+) {
+    switch (purchasedResult.Type) {
+        case AdaptyPurchaseResultType.Success:
+            // Check if user has access to premium features
+            if (purchasedResult.Profile != null
+                && purchasedResult.Profile.AccessLevels.TryGetValue("premium", out var premium)
+                && premium.IsActive) {
+                view.Dismiss(null);
+            }
+            break;
+        case AdaptyPurchaseResultType.Pending:
+            // Handle pending purchase (e.g., user will pay offline with cash)
+            break;
+        case AdaptyPurchaseResultType.UserCancelled:
+            // Handle user cancellation
+            break;
+        default:
+            break;
+    }
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCancelled"
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+```
+</Details>
+
+購入が成功した場合は、フロー画面を閉じることをお勧めします。
+
+#### 購入失敗 \{#failed-purchase\}
+
+エラーにより購入が失敗した場合、このメソッドが呼び出されます。これには、StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、およびシステムエラーが含まれます。なお、ユーザーによるキャンセルは `FlowViewDidFinishPurchase` をキャンセル結果で呼び出し、保留中の支払いはこのメソッドを呼び出しません。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### 復元開始 \{#started-restore\}
+
+ユーザーが復元プロセスを開始したときに呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
+```
+
+#### 復元成功 \{#successful-restore\}
+
+購入の復元が成功したときに呼び出されます。フローは、あなたが閉じるまで復元後も開いたままです：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishRestore(
+    AdaptyUIFlowView view,
+    AdaptyProfile profile
+) {
+    // Check if user has access to premium features
+    if (profile.AccessLevels.TryGetValue("premium", out var premium) && premium.IsActive) {
+        view.Dismiss(null);
+    }
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることを推奨します。確認方法については、[サブスクリプションのステータス](unity-listen-subscription-changes) を参照してください。
+
+#### 復元の失敗 \{#failed-restore\}
+
+購入の復元が失敗した場合に呼び出されます:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailRestore(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### ウェブ決済のナビゲーション完了 \{#finished-web-payment-navigation\}
+
+購入のために[ウェブペイウォール](web-paywall)を開こうとした後（成功・失敗を問わず）、このメソッドが呼び出されます。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFinishWebPaymentNavigation(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyError error
+) { }
+```
+
+**パラメータ：**
+- `product`: ウェブペイウォールが開かれた（または開こうとした）プロダクト、もしくは `null`
+- `error`: ウェブペイウォールが正常に開いた場合は `null`、失敗した場合は `AdaptyError`
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// Successful navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed navigation
+{
+  "product": null,
+  "error": {
+    "code": "wrong_param",
+    "message": "Current method is not available for this product",
+    "details": {
+      "underlyingError": "Product not configured for web purchases"
+    }
+  }
+}
+```
+</Details>
+
+### データ取得とレンダリング \{#data-fetching-and-rendering\}
+
+#### プロダクト読み込みエラー \{#product-loading-errors\}
+
+プロダクトの読み込みに失敗し、`AdaptyError` が提供されたときに呼び出されます。初期化時にプロダクト配列を渡さなかった場合、AdaptyUI はサーバーから必要なオブジェクトを自動的に取得します。この処理が失敗した場合、AdaptyUI はこのメソッドを呼び出してエラーを報告します。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidFailLoadingProducts(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### レンダリングおよびランタイムエラー \{#rendering-and-runtime-errors\}
+
+インターフェースのレンダリング中にエラーが発生した場合、またはその他の購入以外のランタイムエラーが発生した場合、このメソッドによって報告されます。ビューは自動的に閉じられません。必要に応じて `view.Dismiss(...)` を呼び出してください：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveError(
+    AdaptyUIFlowView view,
+    AdaptyError error
+) { }
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render flow interface",
+    "details": {
+      "underlyingError": "Invalid flow configuration"
+    }
+  }
+}
+```
+</Details>
+
+通常の状況では、このようなエラーは発生しないはずです。もし遭遇した場合は、ご連絡ください。
+
+#### アナリティクスイベント \{#analytics-events\}
+
+`FlowViewDidReceiveAnalyticEvent`はフローからのカスタム分析イベント専用です。フローはまだこれらのイベントをコードに送信しないため、メソッドの本体は空のままにしてください。ただし、`IAdaptyFlowsEventsListener`はC#インターフェースなので、メソッド自体は必ず実装する必要があります。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) { }
+```
+
+### システムリクエストの処理 \{#handle-system-requests\}
+
+`IAdaptyUISystemRequestsHandler`（`Adapty.SetSystemRequestsHandler(...)` で登録）は、フローからのシステムリクエスト（プッシュ通知やカメラアクセスなどの OS 権限プロンプト、アプリレビューリクエストなど）のために予約されています。フローはまだこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
+
+### ナビゲーション \{#navigation\}
+
+#### Androidのシステム戻るボタン \{#android-system-back-button\}
+
+Androidのシステム戻るボタン（または戻るジェスチャー）は、`FlowViewDidPerformAction`に`SystemBack`アクションとして渡されますが、それだけではフローは閉じられません。ユーザーがフローを終了するには、**Close**ボタンやビルダーの`on_device_back`アクションなど、あなたが定義したパスを通る必要があります。システムの戻るボタンでフローを閉じたい場合は、自分でアクションを処理してください：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+フローアクションの完全なリストについては、[フローアクションの処理に関するガイド](unity-handle-paywall-actions)を参照してください。
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+このガイドでは、購入・復元・プロダクト選択・ペイウォールのレンダリングに関するイベント処理について説明します。ボタン操作（ペイウォールを閉じる、リンクを開くなど）の処理も実装する必要があります。詳しくは[ボタンアクションの処理に関するガイド](unity-handle-paywall-actions)をご覧ください。
+:::
+
+[ペイウォールビルダー](adapty-paywall-builder)で設定したペイウォールは、購入や復元のために追加のコードは不要です。ただし、アプリが反応できるいくつかのイベントが生成されます。これらのイベントには、ボタン押下（閉じるボタン、URL、プロダクト選択など）やペイウォール上での購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
 
 :::warning
 このガイドは、Adapty SDK v3.3.0 以降が必要な**新しいペイウォールビルダーのペイウォール**専用です。
@@ -202,7 +673,7 @@ public void PaywallViewDidFailPurchase(
 ```
 
 <Details>
-<summary>イベント例（クリックして展開）</summary>
+<summary>イベントの例（クリックして展開）</summary>
 
 ```javascript
 {
@@ -225,9 +696,9 @@ public void PaywallViewDidFailPurchase(
 ```
 </Details>
 
-#### 復元開始 \{#started-restore\}
+#### リストアの開始 \{#started-restore\}
 
-ユーザーが復元プロセスを開始したときに呼び出されます。
+ユーザーがリストアプロセスを開始したときに呼び出されます：
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }
@@ -352,11 +823,11 @@ public void PaywallViewDidFinishWebPaymentNavigation(
 ```
 </Details>
 
-### データ取得とレンダリング \{#data-fetching-and-rendering\}
+### データの取得とレンダリング \{#data-fetching-and-rendering\}
 
 #### プロダクト読み込みエラー \{#product-loading-errors\}
 
-プロダクトの読み込みに失敗し、`AdaptyError` が提供されたときに呼び出されます。初期化時にプロダクト配列を渡さなかった場合、AdaptyUI はサーバーから必要なオブジェクトを自動的に取得します。この処理が失敗した場合、AdaptyUI はこのメソッドを呼び出してエラーを報告します。
+プロダクトの読み込みに失敗したときに呼び出され、`AdaptyError` を提供します。初期化時にプロダクト配列を渡さなかった場合、AdaptyUI は必要なオブジェクトをサーバーから自動的に取得します。この操作が失敗した場合、AdaptyUI は以下のメソッドを呼び出してエラーを報告します：
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidFailLoadingProducts(
@@ -366,7 +837,7 @@ public void PaywallViewDidFailLoadingProducts(
 ```
 
 <Details>
-<summary>イベント例（クリックして展開）</summary>
+<summary>イベントの例（クリックして展開）</summary>
 
 ```javascript
 {
@@ -408,4 +879,7 @@ public void PaywallViewDidFailRendering(
 ```
 </Details>
 
-通常の状況ではこのようなエラーは発生しないはずです。もし遭遇した場合はお知らせください。
+通常、このようなエラーは発生しないはずです。もし遭遇した場合は、ご連絡ください。
+
+
+</SDKv3>

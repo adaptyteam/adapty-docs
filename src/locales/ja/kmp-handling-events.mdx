@@ -1,30 +1,499 @@
 ---
-title: "Kotlin Multiplatform - ペイウォールイベントの処理"
-description: "Adaptyのイベントトラッキングツールを使って、Kotlin Multiplatformのサブスクリプションイベントを効率的に処理します。"
-metadataTitle: "Kotlin Multiplatformでのイベント処理 | Adapty ドキュメント"
+title: "フロー & ペイウォールイベントの処理 - Kotlin Multiplatform"
+description: "Kotlin Multiplatform アプリでフローおよびペイウォールイベントを処理します。"
+metadataTitle: "フローイベントの処理 - Kotlin Multiplatform | Adapty ドキュメント"
 toc_max_heading_level: 4
-keywords: ['AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
+keywords: ['AdaptyUIFlowsEventsObserver', 'flowViewDidPerformAction', 'flowViewDidSelectProduct', 'flowViewDidStartPurchase', 'flowViewDidFinishPurchase', 'flowViewDidFailPurchase', 'flowViewDidStartRestore', 'flowViewDidFinishRestore', 'flowViewDidFailRestore', 'flowViewDidFailLoadingProducts', 'flowViewDidReceiveError', 'AdaptyUIPaywallsEventsObserver', 'paywallViewDidPerformAction', 'paywallViewDidSelectProduct', 'paywallViewDidStartPurchase', 'paywallViewDidFinishPurchase', 'paywallViewDidFailPurchase', 'paywallViewDidStartRestore', 'paywallViewDidFinishRestore', 'paywallViewDidFailRestore', 'paywallViewDidFailLoadingProducts', 'paywallViewDidFailRendering']
 ---
 
 import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md';
 
-[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元を行うための追加コードは不要です。ただし、アプリが対応できるいくつかのイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連のアクションに関する通知が含まれます。以下でこれらのイベントへの対応方法を説明します。
+<SDKv4>
+
+:::important
+このガイドでは、購入・復元・プロダクト選択・フローのレンダリングに関するイベント処理について説明します。ボタン処理（フローを閉じる、リンクを開くなど）も別途実装する必要があります。詳細は[フローアクションの処理に関するガイド](kmp-handle-paywall-actions)をご覧ください。
+:::
+
+[Flow Builder](adapty-flow-builder) または [Paywall Builder](adapty-paywall-builder) で設定されたフローやペイウォールは、購入や復元のために追加コードは不要です。ただし、アプリが応答できるイベントが生成されます。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
+
+モバイルアプリのフロースクリーンで発生するプロセスを制御・監視するには、`AdaptyUIFlowsEventsObserver` インターフェースのメソッドを実装し、`AdaptyUI.setFlowsEventsObserver()` でオブザーバーを登録してください。一部のメソッドはよく使われるシナリオを自動的に処理するデフォルト実装が用意されているため、変更したいメソッドのみオーバーライドしてください。
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+    // override only the methods you want to change
+})
+```
+
+:::note
+これらのメソッドは、フローイベントに応答するカスタムロジックを追加する場所です。`view.dismiss()` を使用してフローを閉じたり、その他の必要なカスタム動作を実装したりできます。なお、`dismiss()` はサスペンド関数です。コールバック内では、オブザーバーの `mainUiScope` を使って起動してください：`mainUiScope.launch { view.dismiss() }`。
+:::
+
+### ユーザー生成イベント \{#user-generated-events\}
+
+#### フローの表示と非表示 \{#flow-appearance-and-disappearance\}
+
+フローが表示または非表示になると、次のメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidAppear(view: AdaptyUIFlowView) {
+    // Handle flow appearance
+    // You can track analytics or update UI here
+}
+
+override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+    // Handle flow disappearance
+    // You can track analytics or update UI here
+}
+```
+
+:::note
+- iOS では、ユーザーがフロー内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてアプリ内ブラウザでウェブペイウォールが開いたときにも、`flowViewDidAppear` が呼び出されます。
+- iOS では、フローからアプリ内ブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも、`flowViewDidDisappear` が呼び出されます。
+:::
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// Flow appeared
+{
+  // No additional data
+}
+
+// Flow disappeared
+{
+  // No additional data
+}
+```
+</Details>
+
+#### プロダクトの選択 \{#product-selection\}
+
+ユーザーが購入するプロダクトを選択すると、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidSelectProduct(view: AdaptyUIFlowView, productId: String) {
+    // Handle product selection
+    // You can update UI or track analytics here
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+{
+  "productId": "premium_monthly"
+}
+```
+</Details>
+
+#### 購入の開始 \{#started-purchase\}
+
+ユーザーが購入プロセスを開始すると、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartPurchase(view: AdaptyUIFlowView, product: AdaptyPaywallProduct) {
+    // Handle purchase start
+    // You can show loading indicators or track analytics here
+}
+```
+
+:::note
+[オブザーバーモード](kmp-present-flows-in-observer-mode)では、フローから開始された購入は`AdaptyUIObserverModeResolver`に配信されます。
+:::
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### 購入の成功、キャンセル、または保留 \{#successful-canceled-or-pending-purchase\}
+
+購入が完了すると、このメソッドが呼び出されます。デフォルトでは何も行われません。購入後もフローは開いたままなので、ユーザーがアクセスを取得したら `view.dismiss()` を自分で呼び出してください。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    when (purchaseResult) {
+        is AdaptyPurchaseResult.Success -> {
+            // Check if user has access to premium features
+            if (purchaseResult.profile.accessLevels["premium"]?.isActive == true) {
+                mainUiScope.launch { view.dismiss() }
+            }
+        }
+        AdaptyPurchaseResult.Pending -> {
+            // Handle pending purchase (e.g., user will pay offline with cash)
+        }
+        AdaptyPurchaseResult.UserCanceled -> {
+            // Handle user cancellation
+        }
+    }
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Pending purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "Pending"
+  }
+}
+
+// User canceled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "UserCanceled"
+  }
+}
+```
+</Details>
+
+購入が成功した場合は、フロー画面を閉じることをおすすめします。
+
+#### 購入失敗 \{#failed-purchase\}
+
+エラーにより購入が失敗した場合、このメソッドが呼び出されます。これには、StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、およびシステムエラーが含まれます。なお、ユーザーによるキャンセルは `flowViewDidFinishPurchase` をキャンセル結果で呼び出すため、このメソッドはトリガーされません。保留中の支払いもこのメソッドをトリガーしません。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailPurchase(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct,
+    error: AdaptyError
+) {
+    // Add your purchase failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+#### リストアの開始 \{#started-restore\}
+
+ユーザーがリストア処理を開始すると、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidStartRestore(view: AdaptyUIFlowView) {
+    // Handle restore start
+    // You can show loading indicators or track analytics here
+}
+```
+
+#### 購入の復元成功 \{#successful-restore\}
+
+購入の復元が成功した場合、このメソッドが呼び出されます。デフォルトでは何も行いません — 復元後もフローは開いたままであり、明示的に閉じるまで表示され続けます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishRestore(view: AdaptyUIFlowView, profile: AdaptyProfile) {
+    // Add your successful restore handling logic here
+    // For example: show success message, update UI, or dismiss the flow
+
+    // Check if user has access to premium features
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        mainUiScope.launch { view.dismiss() }
+    }
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+必要な `accessLevel` をユーザーが持っている場合は、画面を閉じることをおすすめします。確認方法については、[サブスクリプションのステータス](subscription-status)を参照してください。
+
+#### 復元の失敗 \{#failed-restore\}
+
+`Adapty.restorePurchases()` が失敗した場合、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailRestore(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your restore failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+#### Webペイメントナビゲーションの完了 \{#web-payment-navigation-completion\}
+
+ユーザーが[ウェブペイウォール](web-paywall)を使用して購入プロセスを開始した場合、このメソッドが呼び出されます：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFinishWebPaymentNavigation(
+    view: AdaptyUIFlowView,
+    product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) {
+    if (error != null) {
+        // Handle web payment navigation error
+    } else {
+        // Handle successful web payment navigation
+    }
+}
+```
+
+<Details>
+<summary>イベントの例（クリックして展開）</summary>
+
+```javascript
+// Successful web payment navigation
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": null
+}
+
+// Failed web payment navigation
+{
+  "product": null,
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+### データの取得とレンダリング \{#data-fetching-and-rendering\}
+
+#### プロダクト読み込みエラー \{#product-loading-errors\}
+
+初期化時にプロダクトを渡さなかった場合、AdaptyUI はサーバーから必要なオブジェクトを自動で取得します。この操作が失敗した場合、AdaptyUI は次のメソッドを呼び出してエラーを通知します。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidFailLoadingProducts(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Add your product loading failure handling logic here
+    // For example: show error message, retry option, or custom error handling
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+#### レンダリングエラーとランタイムエラー \{#rendering-and-runtime-errors\}
+
+インターフェースのレンダリング中にエラーが発生した場合、またはその他の購入以外のランタイムエラーが発生した場合、このメソッドによって報告されます。デフォルトでは、エラー発生時にフローが閉じられます。フローを開いたままにしたり、独自のハンドリングを追加したりするには、このメソッドをオーバーライドしてください：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveError(view: AdaptyUIFlowView, error: AdaptyError) {
+    // Handle the error
+    // The default implementation dismisses the flow;
+    // once you override this method, dismissal is up to you
+}
+```
+
+<Details>
+<summary>イベント例（クリックして展開）</summary>
+
+```javascript
+{
+    "error": {
+        "code": "rendering_failed",
+            "message": "Failed to render flow interface",
+            "details": {
+            "underlyingError": "Invalid flow configuration"
+        }
+    }
+}
+```
+</Details>
+
+通常の状況では、このようなエラーは発生しないはずです。もし遭遇した場合は、ぜひお知らせください。
+
+#### アナリティクスイベント \{#analytics-events\}
+
+`flowViewDidReceiveAnalyticEvent` コールバックは、フローからのカスタムアナリティクスイベント用に予約されています。フローはまだこれらのイベントをコードに送出しないため、実装する必要はありません：
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String
+) {
+    // Reserved for custom analytic events from a flow
+}
+```
+
+### ナビゲーション \{#navigation\}
+
+#### Android のシステムバックボタン \{#android-system-back-button\}
+
+デフォルトでは、Android のシステムバックボタンやバックジェスチャーでフローを閉じることはできません。デフォルトの `flowViewDidPerformAction` 実装は、`CloseAction` の場合のみフローを閉じ、`AndroidSystemBackAction` は無視します。そのため、ユーザーは **Close** ボタンやビルダーの `on_device_back` アクションなど、あなたが定義したパスを通じてフローを離れます。システムバックボタンでフローを閉じたい場合は、アクションを自分で処理してください。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidPerformAction(view: AdaptyUIFlowView, action: AdaptyUIAction) {
+    when (action) {
+        is AdaptyUIAction.CloseAction ->
+            mainUiScope.launch { view.dismiss() } // default behavior
+        is AdaptyUIAction.AndroidSystemBackAction ->
+            mainUiScope.launch { view.dismiss() } // not handled by default
+        is AdaptyUIAction.OpenUrlAction ->
+            AdaptyUI.openWebUrl(action.url, action.openIn) // default behavior
+        else -> Unit
+    }
+}
+```
+
+[フロー操作の処理に関するガイド](kmp-handle-paywall-actions)で、すべての操作の一覧をご確認ください。
+
+</SDKv4>
+
+<SDKv3>
+
+[ペイウォールビルダー](adapty-paywall-builder)で設定されたペイウォールは、購入や復元を行うために追加のコードは必要ありません。ただし、アプリが応答できるいくつかのイベントが発生します。これらのイベントには、ボタン操作（閉じるボタン、URL、プロダクト選択など）や、ペイウォール上で行われた購入関連アクションの通知が含まれます。これらのイベントへの対応方法については、以下をご覧ください。
 
 :::warning
 このガイドは**新しいペイウォールビルダーのペイウォール**専用です。
 :::
 
-モバイルアプリのペイウォール画面で発生するプロセスを制御・監視するには、`AdaptyUIPaywallsEventsObserver` インターフェースのメソッドを実装してください。一部のメソッドには、一般的なシナリオを自動的に処理するデフォルト実装があります。
+モバイルアプリのペイウォール画面で発生するプロセスを制御・監視するには、`AdaptyUIPaywallsEventsObserver` インターフェースのメソッドを実装します。一部のメソッドには、一般的なシナリオを自動的に処理するデフォルト実装が用意されています。
 
 :::note
-これらのメソッドは、ペイウォールイベントに応じたカスタムロジックを追加する場所です。`view.dismiss()` を使ってペイウォールを閉じることも、その他のカスタム動作を実装することもできます。
+これらのメソッドは、ペイウォールイベントへの応答としてカスタムロジックを追加する場所です。`view.dismiss()` でペイウォールを閉じたり、必要に応じてその他のカスタム動作を実装したりできます。
 :::
 
 ## ユーザー生成イベント \{#user-generated-events\}
 
-### ペイウォールの表示・非表示 \{#paywall-appearance-and-disappearance\}
+### ペイウォールの表示と非表示 \{#paywall-appearance-and-disappearance\}
 
-ペイウォールが表示または非表示になると、これらのメソッドが呼び出されます：
+ペイウォールが表示または非表示になったとき、以下のメソッドが呼び出されます：
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidAppear(view: AdaptyUIPaywallView) {
@@ -39,12 +508,12 @@ override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
 ```
 
 :::note
-- iOS では、ユーザーがペイウォール内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてアプリ内ブラウザでウェブペイウォールが開いたときにも、`paywallViewDidAppear` が呼び出されます。
-- iOS では、ペイウォールからアプリ内ブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えたときにも、`paywallViewDidDisappear` が呼び出されます。
+- iOSでは、ユーザーがペイウォール内の[ウェブペイウォールボタン](web-paywall#step-2a-add-a-web-purchase-button)をタップしてインアプリブラウザでウェブペイウォールが開いた場合にも、`paywallViewDidAppear`が呼び出されます。
+- iOSでは、ペイウォールからインアプリブラウザで開いた[ウェブペイウォール](web-paywall#step-2a-add-a-web-purchase-button)が画面から消えた場合にも、`paywallViewDidDisappear`が呼び出されます。
 :::
 
 <Details>
-<summary>イベント例（クリックして展開）</summary>
+<summary>イベントの例（クリックして展開）</summary>
 
 ```javascript
 // Paywall appeared
@@ -59,7 +528,7 @@ override fun paywallViewDidDisappear(view: AdaptyUIPaywallView) {
 ```
 </Details>
 
-### プロダクト選択 \{#product-selection\}
+### プロダクトの選択 \{#product-selection\}
 
 ユーザーが購入するプロダクトを選択すると、このメソッドが呼び出されます：
 
@@ -108,9 +577,9 @@ override fun paywallViewDidStartPurchase(view: AdaptyUIPaywallView, product: Ada
 ```
 </Details>
 
-### 購入成功・キャンセル・保留 \{#successful-canceled-or-pending-purchase\}
+### 購入成功、キャンセル、または保留中 \{#successful-canceled-or-pending-purchase\}
 
-購入が成功すると、このメソッドが呼び出されます。デフォルトでは、ユーザーによってキャンセルされた場合を除き、ペイウォールを自動的に閉じます：
+購入が成功した場合、このメソッドが呼び出されます。デフォルトでは、ユーザーによってキャンセルされた場合を除き、自動的にペイウォールを閉じます：
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishPurchase(
@@ -199,7 +668,7 @@ override fun paywallViewDidFinishPurchase(
 
 ### 購入失敗 \{#failed-purchase\}
 
-エラーにより購入が失敗すると、このメソッドが呼び出されます。これには StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、システムエラーが含まれます。なお、ユーザーによるキャンセルの場合は、キャンセル結果とともに `paywallViewDidFinishPurchase` が呼び出され、保留中の支払いではこのメソッドは呼び出されません。
+購入がエラーにより失敗した場合、このメソッドが呼び出されます。これには、StoreKit/Google Play Billing エラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、システムエラーが含まれます。なお、ユーザーによるキャンセルは、キャンセル結果として `paywallViewDidFinishPurchase` をトリガーします。また、保留中の支払いはこのメソッドをトリガーしません。
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailPurchase(
@@ -236,9 +705,9 @@ override fun paywallViewDidFailPurchase(
 ```
 </Details>
 
-### 復元開始 \{#started-restore\}
+### リストアの開始 \{#started-restore\}
 
-ユーザーが復元プロセスを開始すると、このメソッドが呼び出されます：
+ユーザーがリストアプロセスを開始した場合、このメソッドが呼び出されます：
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidStartRestore(view: AdaptyUIPaywallView) {
@@ -247,9 +716,9 @@ override fun paywallViewDidStartRestore(view: AdaptyUIPaywallView) {
 }
 ```
 
-### 復元成功 \{#successful-restore\}
+### 購入の復元に成功した場合 \{#successful-restore\}
 
-購入の復元が成功すると、このメソッドが呼び出されます：
+購入の復元が成功した場合、以下のメソッドが呼び出されます。
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: AdaptyProfile) {
@@ -264,7 +733,7 @@ override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: Ada
 ```
 
 <Details>
-<summary>イベント例（クリックして展開）</summary>
+<summary>イベントの例（クリックして展開）</summary>
 
 ```javascript
 {
@@ -288,11 +757,11 @@ override fun paywallViewDidFinishRestore(view: AdaptyUIPaywallView, profile: Ada
 ```
 </Details>
 
-ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることをお勧めします。確認方法については、[サブスクリプションステータス](subscription-status)を参照してください。
+ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることをお勧めします。確認方法については、[サブスクリプションのステータス](subscription-status)を参照してください。
 
-### 復元失敗 \{#failed-restore\}
+### 復元失敗時 \{#failed-restore\}
 
-`Adapty.restorePurchases()` が失敗すると、このメソッドが呼び出されます：
+`Adapty.restorePurchases()` が失敗した場合、このメソッドが呼び出されます：
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailRestore(view: AdaptyUIPaywallView, error: AdaptyError) {
@@ -317,9 +786,9 @@ override fun paywallViewDidFailRestore(view: AdaptyUIPaywallView, error: AdaptyE
 ```
 </Details>
 
-### ウェブ決済ナビゲーション完了 \{#web-payment-navigation-completion\}
+### ウェブ決済ナビゲーションの完了 \{#web-payment-navigation-completion\}
 
-ユーザーが[ウェブペイウォール](web-paywall)を使って購入プロセスを開始すると、このメソッドが呼び出されます：
+ユーザーが[ウェブペイウォール](web-paywall)を使用して購入プロセスを開始した場合、このメソッドが呼び出されます：
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFinishWebPaymentNavigation(
@@ -336,7 +805,7 @@ override fun paywallViewDidFinishWebPaymentNavigation(
 ```
 
 <Details>
-<summary>イベント例（クリックして展開）</summary>
+<summary>イベントの例（クリックして展開）</summary>
 
 ```javascript
 // Successful web payment navigation
@@ -366,11 +835,11 @@ override fun paywallViewDidFinishWebPaymentNavigation(
 ```
 </Details>
 
-## データ取得とレンダリング \{#data-fetching-and-rendering\}
+## データの取得とレンダリング \{#data-fetching-and-rendering\}
 
-### プロダクト読み込みエラー \{#product-loading-errors\}
+### プロダクトの読み込みエラー \{#product-loading-errors\}
 
-初期化時にプロダクトを渡さない場合、AdaptyUI は必要なオブジェクトをサーバーから自動的に取得します。この操作が失敗した場合、AdaptyUI はこのメソッドを呼び出してエラーを報告します：
+初期化時にプロダクトを渡さない場合、AdaptyUI はサーバーから必要なオブジェクトを自動的に取得します。この操作が失敗した場合、AdaptyUI は次のメソッドを呼び出してエラーを通知します。
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error: AdaptyError) {
@@ -380,7 +849,7 @@ override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error:
 ```
 
 <Details>
-<summary>イベント例（クリックして展開）</summary>
+<summary>イベントの例（クリックして展開）</summary>
 
 ```javascript
 {
@@ -397,7 +866,7 @@ override fun paywallViewDidFailLoadingProducts(view: AdaptyUIPaywallView, error:
 
 ### レンダリングエラー \{#rendering-errors\}
 
-インターフェースのレンダリング中にエラーが発生した場合、このメソッドによって報告されます：
+インターフェースのレンダリング中にエラーが発生した場合、このメソッドで報告されます：
 
 ```kotlin showLineNumbers title="Kotlin"
 override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: AdaptyError) {
@@ -423,4 +892,5 @@ override fun paywallViewDidFailRendering(view: AdaptyUIPaywallView, error: Adapt
 ```
 </Details>
 
-通常の状況では、このようなエラーは発生しないはずです。もし遭遇した場合は、ぜひお知らせください。
+通常の状況ではこのようなエラーは発生しないため、もし遭遇した場合はお知らせください。
+</SDKv3>

@@ -1,49 +1,49 @@
 ---
-title: "Kích hoạt mua hàng trong paywall tùy chỉnh của bạn trong Kotlin Multiplatform SDK"
-description: "Tích hợp Adapty SDK vào paywall tùy chỉnh Kotlin Multiplatform của bạn để kích hoạt in-app purchase."
-metadataTitle: "Hướng dẫn nhanh Adapty | Tài liệu Adapty"
-keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getPaywall']
+title: "Bật tính năng mua hàng trong paywall tùy chỉnh với Kotlin Multiplatform SDK"
+description: "Tích hợp Adapty SDK vào các paywall tùy chỉnh Kotlin Multiplatform của bạn để bật tính năng in-app purchase."
+metadataTitle: "Hướng dẫn Bắt đầu Nhanh Adapty | Tài liệu Adapty"
+keywords: ['paywalls kmp', 'sdk kmp', 'paywall', 'getFlow', 'getPaywall']
 ---
 
-Hướng dẫn này mô tả cách tích hợp Adapty vào paywall tùy chỉnh của bạn. Bạn hoàn toàn kiểm soát việc triển khai paywall, trong khi Adapty SDK lo việc lấy sản phẩm, xử lý mua hàng mới và khôi phục các giao dịch trước đó.
+Hướng dẫn này mô tả cách tích hợp Adapty vào các paywall tùy chỉnh của bạn. Bạn hoàn toàn kiểm soát việc triển khai paywall, trong khi Adapty SDK tự động lấy sản phẩm, xử lý các giao dịch mua mới và khôi phục các giao dịch trước đó. Hướng dẫn này sử dụng các API của Adapty Kotlin Multiplatform SDK v4 (beta) — nếu bạn đang dùng v3, hãy xem [hướng dẫn migration](migration-to-kmp-sdk-v4) để biết tên các phương thức tương ứng.
 
 :::important
-**Hướng dẫn này dành cho các nhà phát triển đang triển khai paywall tùy chỉnh.** Nếu bạn muốn cách đơn giản nhất để kích hoạt mua hàng, hãy sử dụng [Adapty Paywall Builder](kmp-quickstart-paywalls). Với Paywall Builder, bạn tạo paywall trong trình chỉnh sửa trực quan không cần code, Adapty tự động xử lý toàn bộ logic mua hàng, và bạn có thể thử nghiệm các thiết kế khác nhau mà không cần phát hành lại ứng dụng.
+**Hướng dẫn này dành cho các developer đang triển khai paywall tùy chỉnh.** Nếu bạn muốn cách đơn giản nhất để bật tính năng mua hàng, hãy sử dụng [Adapty Flow Builder](kmp-quickstart-paywalls). Với Flow Builder, bạn tạo các flow trong trình chỉnh sửa trực quan không cần code, Adapty xử lý toàn bộ logic mua hàng tự động, và bạn có thể thử nghiệm các thiết kế khác nhau mà không cần phát hành lại ứng dụng.
 :::
 
 ## Trước khi bắt đầu \{#before-you-start\}
 
 ### Thiết lập sản phẩm \{#set-up-products\}
 
-Để kích hoạt in-app purchase, bạn cần hiểu ba khái niệm chính:
+Để kích hoạt in-app purchase, bạn cần nắm rõ ba khái niệm chính:
 
 - [**Sản phẩm**](product) – bất cứ thứ gì người dùng có thể mua (gói đăng ký, consumable, quyền truy cập trọn đời)
-- [**Paywalls**](paywalls) – các cấu hình xác định sản phẩm nào sẽ được cung cấp. Trong Adapty, paywall là cách duy nhất để lấy sản phẩm, nhưng thiết kế này cho phép bạn thay đổi sản phẩm, giá cả và ưu đãi mà không cần chỉnh sửa code ứng dụng.
-- [**Placements**](placements) – nơi và thời điểm bạn hiển thị paywall trong ứng dụng (như `main`, `onboarding`, `settings`). Bạn thiết lập paywall cho các placement trên dashboard, sau đó yêu cầu chúng bằng placement ID trong code. Điều này giúp bạn dễ dàng chạy A/B test và hiển thị paywall khác nhau cho từng người dùng.
+- [**Paywalls**](paywalls) – cấu hình xác định những sản phẩm nào sẽ được hiển thị. Trong Adapty, paywall là cách duy nhất để lấy sản phẩm, nhưng thiết kế này cho phép bạn chỉnh sửa sản phẩm, giá cả và ưu đãi mà không cần thay đổi code ứng dụng. Trong SDK v4, các biến thể paywall cho một placement được mang bởi đối tượng **flow** — bạn lấy một flow và truy vấn các sản phẩm của nó.
+- [**Placements**](placements) – nơi và thời điểm hiển thị paywall trong ứng dụng của bạn (ví dụ như `main`, `onboarding`, `settings`). Bạn thiết lập paywall cho các placement trong dashboard, sau đó yêu cầu chúng theo placement ID trong code. Điều này giúp bạn dễ dàng chạy A/B test và hiển thị các paywall khác nhau cho các người dùng khác nhau.
 
-Hãy đảm bảo bạn hiểu các khái niệm này ngay cả khi bạn làm việc với paywall tùy chỉnh. Về cơ bản, đây chỉ là cách bạn quản lý các sản phẩm bán trong ứng dụng.
+Hãy đảm bảo bạn hiểu những khái niệm này ngay cả khi làm việc với paywall tùy chỉnh của mình. Về cơ bản, đây chỉ là cách bạn quản lý các sản phẩm bán trong ứng dụng.
 
-Để triển khai paywall tùy chỉnh, bạn cần tạo một **paywall** và thêm nó vào một **placement**. Thiết lập này cho phép bạn lấy sản phẩm. Để hiểu những gì cần làm trên dashboard, hãy làm theo hướng dẫn nhanh [tại đây](quickstart).
+Để triển khai paywall tùy chỉnh, bạn cần tạo một **paywall** và thêm nó vào một **placement**. Thiết lập này cho phép bạn lấy danh sách sản phẩm. Để hiểu những gì cần thực hiện trên dashboard, hãy làm theo hướng dẫn quickstart [tại đây](quickstart).
 
 ### Quản lý người dùng \{#manage-users\}
 
-Bạn có thể làm việc có hoặc không có xác thực backend từ phía mình.
+Bạn có thể làm việc có hoặc không có xác thực backend ở phía mình.
 
-Tuy nhiên, Adapty SDK xử lý người dùng ẩn danh và đã xác định theo cách khác nhau. Đọc [hướng dẫn nhanh về xác định người dùng](kmp-quickstart-identify) để hiểu các đặc điểm cụ thể và đảm bảo bạn đang làm việc với người dùng đúng cách.
+Tuy nhiên, Adapty SDK xử lý người dùng ẩn danh và người dùng đã xác định theo cách khác nhau. Đọc [hướng dẫn nhanh về xác định người dùng](kmp-quickstart-identify) để hiểu rõ sự khác biệt và đảm bảo bạn đang làm việc với người dùng đúng cách.
 
 ## Bước 1. Lấy sản phẩm \{#step-1-get-products\}
 
-Để lấy sản phẩm cho paywall tùy chỉnh của bạn, bạn cần:
+Để lấy danh sách sản phẩm cho paywall tùy chỉnh, bạn cần:
 
-1. Lấy đối tượng `paywall` bằng cách truyền ID [placement](placements) vào phương thức `getPaywall`.
-2. Lấy mảng sản phẩm cho paywall này bằng phương thức `getPaywallProducts`.
+1. Lấy đối tượng `flow` bằng cách truyền ID [placement](placements) vào phương thức `getFlow`.
+2. Lấy mảng sản phẩm cho flow này bằng phương thức `getPaywallProducts`.
 
 ```kotlin showLineNumbers
 
 fun loadPaywall() {
-    Adapty.getPaywall(placementId = "YOUR_PLACEMENT_ID")
-        .onSuccess { paywall ->
-            Adapty.getPaywallProducts(paywall = paywall)
+    Adapty.getFlow(placementId = "YOUR_PLACEMENT_ID")
+        .onSuccess { flow ->
+            Adapty.getPaywallProducts(flow = flow)
                 .onSuccess { products ->
                     // Use products to build your custom paywall UI
                 }
@@ -57,9 +57,9 @@ fun loadPaywall() {
 }
 ```
 
-## Bước 2. Chấp nhận mua hàng \{#step-2-accept-purchases\}
+## Bước 2. Xử lý thanh toán \{#step-2-accept-purchases\}
 
-Khi người dùng nhấn vào một sản phẩm trong paywall tùy chỉnh, hãy gọi phương thức `makePurchase` với sản phẩm được chọn. Phương thức này sẽ xử lý luồng mua hàng và trả về hồ sơ người dùng đã cập nhật.
+Khi người dùng chọn một sản phẩm trên paywall tùy chỉnh của bạn, hãy gọi phương thức `makePurchase` với sản phẩm đã chọn. Phương thức này sẽ xử lý flow thanh toán và trả về hồ sơ người dùng đã được cập nhật.
 
 ```kotlin showLineNumbers
 
@@ -85,11 +85,11 @@ fun purchaseProduct(product: AdaptyPaywallProduct) {
 }
 ```
 
-## Bước 3. Khôi phục giao dịch \{#step-3-restore-purchases\}
+## Bước 3. Khôi phục giao dịch mua \{#step-3-restore-purchases\}
 
-Các cửa hàng ứng dụng yêu cầu tất cả ứng dụng có gói đăng ký phải cung cấp cách để người dùng khôi phục giao dịch của họ.
+Các cửa hàng ứng dụng yêu cầu tất cả ứng dụng có gói đăng ký phải cung cấp cách để người dùng có thể khôi phục giao dịch mua của họ.
 
-Gọi phương thức `restorePurchases` khi người dùng nhấn nút khôi phục. Phương thức này sẽ đồng bộ lịch sử mua hàng của họ với Adapty và trả về hồ sơ người dùng đã cập nhật.
+Gọi phương thức `restorePurchases` khi người dùng nhấn nút khôi phục. Thao tác này sẽ đồng bộ lịch sử giao dịch mua của họ với Adapty và trả về hồ sơ người dùng đã được cập nhật.
 
 ```kotlin showLineNumbers
 
@@ -104,10 +104,28 @@ fun restorePurchases() {
 }
 ```
 
+## Bước 4. Kiểm tra trạng thái gói đăng ký \{#step-4-check-the-subscription-status\}
+
+Sau khi mua hàng hoặc khôi phục, hãy kiểm tra [mức độ truy cập](access-level) của người dùng để quyết định có hiển thị paywall hay mở khóa các tính năng trả phí. Các phương thức `makePurchase` và `restorePurchases` đã trả về hồ sơ người dùng đã cập nhật; khi bạn cần trạng thái hiện tại ở bất kỳ nơi nào khác trong ứng dụng, hãy dùng phương thức `getProfile`:
+
+```kotlin showLineNumbers
+
+fun checkPremiumAccess() {
+    Adapty.getProfile()
+        .onSuccess { profile ->
+            val hasPremiumAccess = profile.accessLevels["premium"]?.isActive == true
+            // Grant access to paid features if hasPremiumAccess is true
+        }
+        .onError { error ->
+            // Handle the error
+        }
+}
+```
+
+Để biết thêm các cách kiểm tra và theo dõi trạng thái gói đăng ký, bao gồm lắng nghe cập nhật theo thời gian thực, xem [Kiểm tra trạng thái gói đăng ký](kmp-check-subscription-status).
+
 ## Các bước tiếp theo \{#next-steps\}
 
 <SupportForum />
 
-Paywall của bạn đã sẵn sàng để hiển thị trong ứng dụng. Hãy kiểm tra giao dịch trong [sandbox App Store](test-purchases-in-sandbox) hoặc [Google Play Store](testing-on-android) để đảm bảo bạn có thể hoàn tất một giao dịch thử nghiệm từ paywall. Để xem cách hoạt động trong một triển khai thực tế, hãy xem [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) trong ứng dụng mẫu của chúng tôi, minh họa cách xử lý mua hàng với xử lý lỗi và quản lý trạng thái đúng cách.
-
-Tiếp theo, [kiểm tra xem người dùng đã hoàn tất giao dịch chưa](kmp-check-subscription-status) để xác định có nên hiển thị paywall hay cấp quyền truy cập vào các tính năng trả phí.
+Paywall của bạn đã sẵn sàng để hiển thị trong ứng dụng. Hãy kiểm tra các giao dịch mua trong [sandbox App Store](test-purchases-in-sandbox) hoặc [Google Play Store](testing-on-android) để đảm bảo bạn có thể hoàn thành một giao dịch mua thử từ paywall. Để xem cách hoạt động trong một triển khai thực tế, hãy tham khảo [AppViewModel.kt](https://github.com/adaptyteam/AdaptySDK-KMP/blob/main/example/composeMultiplatformApp/composeApp/src/commonMain/kotlin/com/adapty/exampleapp/AppViewModel.kt) trong ứng dụng mẫu của chúng tôi, minh họa cách xử lý giao dịch mua với error handling và quản lý trạng thái phù hợp.

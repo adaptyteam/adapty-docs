@@ -1,0 +1,648 @@
+---
+title: "Gérer les événements de flow et de paywall - iOS"
+description: "Gérez les événements de flow et de paywall dans votre application iOS."
+metadataTitle: "Gérer les événements de flow - iOS | Documentation Adapty"
+toc_max_heading_level: 4
+keywords: ['event', 'AdaptyFlowControllerDelegate', 'AdaptyPaywallControllerDelegate', 'flowController', 'didSelectProduct', 'didStartPurchase', 'didFinishPurchase', 'didFailPurchase', 'didFinishRestoreWith', 'didFailRestoreWith', 'didFailLoadingProductsWith', 'didFailRenderingWith', 'didReceiveError', 'didFinishWebPaymentNavigation']
+---
+
+<SDKv4>
+
+:::important
+Ce guide couvre la gestion des événements pour les achats, les restaurations, la sélection de produits et l'affichage des paywalls. Vous devez également implémenter la gestion des boutons (fermeture du paywall, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions de boutons](handle-paywall-actions) pour en savoir plus.
+:::
+
+Les flows et les paywalls n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les pressions sur des boutons (boutons de fermeture, URLs, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats. Découvrez ci-dessous comment répondre à ces événements.
+
+:::tip
+
+Vous voulez voir un exemple concret d'intégration du SDK Adapty dans une application mobile ? Consultez nos [applications exemples](sample-apps), qui illustrent la configuration complète, notamment l'affichage des paywalls, les achats et les autres fonctionnalités de base.
+
+:::
+
+## Gestion des événements dans SwiftUI \{#handling-events-in-swiftui\}
+
+Pour contrôler ou surveiller les processus qui se déroulent sur l'écran de flow ou de paywall dans votre application mobile, utilisez le modificateur `.flow` dans SwiftUI :
+
+```swift showLineNumbers title="Swift"
+@State var flowPresented = false
+
+var body: some View {
+    Text("Hello, AdaptyUI!")
+        .flow(
+            isPresented: $flowPresented,
+            flowConfiguration: flowConfiguration,
+            didPerformAction: { action in
+                switch action {
+                    case .close:
+                        flowPresented = false
+                    case let .openURL(url):
+                        // handle opening the URL (incl. for terms and privacy)
+                    default:
+                        // handle other actions
+                }
+            },
+            didSelectProduct: { product in /* Handle the event */ },
+            didStartPurchase: { product in /* Handle the event */ },
+            didFinishPurchase: { product, purchaseResult in /* dismiss, or do nothing to let the flow continue */ },
+            didFailPurchase: { product, error in /* handle the error */ },
+            didStartRestore: { /* Handle the event */ },
+            didFinishRestore: { profile in /* check access level and dismiss */ },
+            didFailRestore: { error in /* handle the error */ },
+            didReceiveError: { error in
+                flowPresented = false
+            },
+            didFailLoadingProducts: { error in
+                // Return `true` to retry loading
+                return false
+            }
+        )
+}
+```
+
+Vous pouvez n'enregistrer que les paramètres de fermeture dont vous avez besoin et omettre ceux dont vous n'avez pas besoin.
+
+| Paramètre              | Requis   | Description                                                                                                                                                                                                                                         |
+|:-----------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**        | requis   | Un binding qui détermine si l'écran du flow ou du paywall est affiché.                                                                                                                                                                              |
+| **flowConfiguration**  | requis   | Un objet `AdaptyUI.FlowConfiguration` contenant les détails visuels du flow ou du paywall. Consultez [Obtenir des flows et des paywalls](get-pb-paywalls) pour plus de détails.                                                                     |
+| **didFinishPurchase**  | requis   | Appelé lorsque `Adapty.makePurchase()` se termine avec succès. Le flow ne se ferme pas automatiquement — définissez votre binding de présentation sur `false` ici, ou ne faites rien pour laisser le flow continuer après l'achat.                  |
+| **didFailPurchase**    | requis   | Appelé lorsque `Adapty.makePurchase()` échoue.                                                                                                                                                                                                      |
+| **didFinishRestore**   | requis   | Appelé lorsque `Adapty.restorePurchases()` se termine avec succès.                                                                                                                                                                                  |
+| **didFailRestore**     | requis   | Appelé lorsque `Adapty.restorePurchases()` échoue.                                                                                                                                                                                                  |
+| **didReceiveError**    | requis   | Appelé lorsque le flow rencontre une erreur de rendu ou une erreur d'exécution provenant du script du flow (par exemple, une exception JavaScript, code `AdaptyUIError` `4105`). En cas d'erreur de rendu, [contactez le support Adapty](mailto:support@adapty.io). |
+| **placeholderBuilder** | optionnel | Une fonction pour afficher la vue de remplacement pendant le chargement du flow ou du paywall. Par défaut, une `ProgressView`.                                                                                                                      |
+| **fullScreen**         | optionnel | Détermine si le flow ou le paywall s'affiche en plein écran ou sous forme de feuille. Par défaut `true`.                                                                                                                                            |
+| **didAppear**          | optionnel | Appelé lorsque la vue du flow ou du paywall apparaît à l'écran.                                                                                                                                                                                     |
+| **didDisappear**       | optionnel | Appelé lorsque la vue du flow ou du paywall a été fermée.                                                                                                                                                                                           |
+| **didPerformAction**   | optionnel | Appelé lorsqu'un utilisateur clique sur un bouton. Deux identifiants d'action sont prédéfinis : `close` et `openURL` ; les autres sont personnalisés et peuvent être définis dans le builder.                                                       |
+| **didSelectProduct**   | optionnel | Appelé lorsqu'un produit est sélectionné pour l'achat par l'utilisateur ou par le système.                                                                                                                                                          |
+| **didStartPurchase**   | optionnel | Appelé lorsque l'utilisateur commence le processus d'achat.                                                                                                                                                                                         |
+| **didFinishWebPaymentNavigation** | optionnel | Appelé lorsque la navigation de paiement web se termine.                                                                                                                                                                           |
+| **didStartRestore**    | optionnel | Appelé lorsque l'utilisateur démarre le processus de restauration.                                                                                                                                                                                  |
+| **didFailLoadingProducts** | optionnel | Appelé lorsque des erreurs surviennent pendant le chargement des produits. Retournez `true` pour relancer le chargement.                                                                                                                        |
+| **didPartiallyLoadProducts** | optionnel | Appelé lorsque les produits sont partiellement chargés.                                                                                                                                                                                    |
+| **showAlertItem**      | optionnel | Un binding qui gère l'affichage des éléments d'alerte au-dessus du flow ou du paywall.                                                                                                                                                             |
+| **showAlertBuilder**   | optionnel | Une fonction pour afficher la vue d'alerte.                                                                                                                                                                                                         |
+
+## Gestion des événements dans UIKit \{#handling-events-in-uikit\}
+
+Pour les applications UIKit, les événements sont gérés via le protocole `AdaptyFlowControllerDelegate`. Consultez [Afficher les flows & paywalls - iOS](ios-present-paywalls) pour savoir comment configurer `AdaptyFlowController` avec `AdaptyFlowControllerDelegate`.
+
+Le protocole déclare 13 méthodes. Quatre d'entre elles n'ont pas d'implémentation par défaut et doivent être implémentées lors de la conformité : `didFinishPurchase`, `didFailPurchase`, `didFinishRestoreWith` et `didFailRestoreWith`. Les autres fournissent des implémentations no-op par défaut et peuvent être remplacées si vous souhaitez un comportement personnalisé. Les méthodes sont regroupées ci-dessous par objectif.
+
+### Cycle de vie \{#lifecycle\}
+
+```swift showLineNumbers title="Swift"
+func flowControllerDidAppear(_ controller: AdaptyFlowController) { }
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) { }
+```
+
+Ces méthodes se déclenchent lorsque la vue du flow ou du paywall est affichée ou masquée.
+
+### Actions utilisateur \{#user-actions\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didPerform action: AdaptyUI.Action
+) { }
+```
+
+Cas de `AdaptyUI.Action` :
+- `.close` — par défaut, ferme le contrôleur. Surchargez cette action pour maintenir le contrôleur à l'écran ou effectuer un nettoyage supplémentaire.
+- `.openURL(url:)` — par défaut, ouvre l'URL avec `UIApplication.shared.open(...)`.
+- `.custom(id:)` — déclenché pour les boutons avec un identifiant d'action personnalisé défini dans le builder.
+
+### Sélection du produit \{#product-selection\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didSelectProduct product: AdaptyPaywallProduct
+) { }
+```
+
+Invoqué lorsqu'un produit est sélectionné pour achat par l'utilisateur ou par le système. Le produit contient toutes les informations sur l'offre (l'éligibilité est déterminée automatiquement en v4 — il n'existe pas de type `AdaptyPaywallProductWithoutDeterminingOffer` distinct).
+
+### Événements d'achat \{#purchase-events\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didStartPurchase product: AdaptyPaywallProduct
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishPurchase product: AdaptyPaywallProduct,
+    purchaseResult: AdaptyPurchaseResult
+) {
+    if !purchaseResult.isPurchaseCancelled {
+        controller.dismiss(animated: true) // or do nothing to let the flow continue
+    }
+}
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+`didFinishPurchase` et `didFailPurchase` n'ont pas d'implémentation par défaut et doivent être implémentés. Le contrôleur ne se ferme pas automatiquement après un achat réussi — appelez `controller.dismiss(animated:)` le moment venu, ou ne faites rien pour laisser un flow multi-écrans continuer après l'achat.
+
+### Événements de restauration \{#restore-events\}
+
+```swift showLineNumbers title="Swift"
+func flowControllerDidStartRestore(_ controller: AdaptyFlowController) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+`didFinishRestoreWith` et `didFailRestoreWith` n'ont pas d'implémentation par défaut. Vérifiez que le `AdaptyProfile` retourné contient le niveau d'accès souhaité avant de fermer le contrôleur.
+
+### Erreurs de flow et erreurs de chargement des produits \{#flow-errors-and-product-loading-errors\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveError error: AdaptyUIError
+) { }
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    // Return `true` to retry product loading; default returns `false`.
+    return false
+}
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didPartiallyLoadProducts failedIds: [String]
+) { }
+```
+
+`didReceiveError` se déclenche pour les erreurs de rendu et les erreurs d'exécution provenant du script du flow (exceptions JavaScript, code `AdaptyUIError` `4105`). Pour les erreurs de rendu, [contactez le support Adapty](mailto:support@adapty.io). Pour les erreurs de chargement, retournez `true` depuis `didFailLoadingProductsWith` pour réessayer — utile en cas de problèmes réseau passagers.
+
+### Navigation de paiement web \{#web-payment-navigation\}
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didFinishWebPaymentNavigation product: AdaptyPaywallProduct?,
+    error: AdaptyError?
+) { }
+```
+
+Invoqué après la fin d'une navigation de paiement web, qu'elle ait réussi ou échoué.
+
+</SDKv4>
+
+<SDKv3>
+
+:::important
+Ce guide couvre la gestion des événements pour les achats, les restaurations, la sélection de produits et le rendu des paywalls. Vous devez également implémenter la gestion des boutons (fermeture du paywall, ouverture de liens, etc.). Consultez notre [guide sur la gestion des actions des boutons](handle-paywall-actions) pour plus de détails.
+:::
+
+Les paywalls configurés avec le [Paywall Builder](adapty-paywall-builder) n'ont pas besoin de code supplémentaire pour effectuer et restaurer des achats. Cependant, ils génèrent certains événements auxquels votre application peut réagir. Ces événements incluent les pressions sur des boutons (boutons de fermeture, URL, sélections de produits, etc.) ainsi que des notifications sur les actions liées aux achats effectuées sur le paywall. Découvrez ci-dessous comment réagir à ces événements.
+
+Ce guide concerne uniquement les **paywalls du nouveau Paywall Builder**, qui nécessitent le SDK Adapty v3.0 ou une version ultérieure.
+
+:::tip
+
+Vous souhaitez voir un exemple concret d'intégration du SDK Adapty dans une application mobile ? Consultez nos [exemples d'applications](sample-apps), qui illustrent la configuration complète, notamment l'affichage des paywalls, les achats et d'autres fonctionnalités de base.
+
+:::
+
+## Gestion des événements dans SwiftUI \{#handling-events-in-swiftui\}
+
+Pour contrôler ou surveiller les processus se déroulant sur l'écran du paywall dans votre application mobile, utilisez le modificateur `.paywall` dans SwiftUI :
+
+```swift showLineNumbers title="Swift"
+@State var paywallPresented = false
+
+var body: some View {
+	Text("Hello, AdaptyUI!")
+			.paywall(
+          isPresented: $paywallPresented,
+          paywall: paywall,
+          viewConfiguration: viewConfig,
+          didPerformAction: { action in
+              switch action {
+                  case .close:
+                      paywallPresented = false
+                  case let .openURL(url):
+                      // handle opening the URL (incl. for terms and privacy)
+                  default:
+                      // handle other actions
+              }
+          },
+          didSelectProduct: { /* Handle the event */  },
+          didStartPurchase: { /* Handle the event */ },
+          didFinishPurchase: { product, info in /* Handle the event */ },
+          didFailPurchase: { product, error in /* Handle the event */ },
+          didStartRestore: { /* Handle the event */ },
+          didFinishRestore: { /* Handle the event */ },
+          didFailRestore: { /* Handle the event */ },
+          didFailRendering: { error in
+              paywallPresented = false
+          },
+          didFailLoadingProducts: { error in
+              return false
+          }
+      )
+}
+```
+
+Vous pouvez n'enregistrer que les paramètres de closure dont vous avez besoin, et omettre ceux dont vous n'avez pas besoin. Dans ce cas, les paramètres de closure inutilisés ne seront pas créés.
+
+| Paramètre                         | Requis   | Description                                                                                                                                                                                                                                                                                                                                   |
+|:----------------------------------|:---------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **isPresented**                   | requis   | Un binding qui gère l'affichage ou non de l'écran du paywall.                                                                                                                                                                                                                                                                                 |
+| **paywallConfiguration**          | requis   | Un objet `AdaptyUI.PaywallConfiguration` contenant les détails visuels du paywall. Utilisez la méthode `AdaptyUI.paywallConfiguration(for:products:viewConfiguration:observerModeResolver:tagResolver:timerResolver:)`. Consultez la rubrique [Récupérer les paywalls du Paywall Builder et leur configuration](get-pb-paywalls) pour plus de détails. |
+| **didFailPurchase**               | requis   | Déclenché lorsqu'un achat échoue en raison d'erreurs (ex. : paiement non autorisé, problème réseau, produit invalide). Non déclenché en cas d'annulation par l'utilisateur ou de paiement en attente.                                                                                                                                        |
+| **didFinishRestore**              | requis   | Déclenché lorsqu'un achat se termine avec succès.                                                                                                                                                                                                                                                                                             |
+| **didFailRestore**                | requis   | Déclenché lorsque la restauration d'un achat échoue.                                                                                                                                                                                                                                                                                          |
+| **didFailRendering**              | requis   | Déclenché si une erreur survient lors du rendu de l'interface. Dans ce cas, [contactez le support Adapty](mailto:support@adapty.io).                                                                                                                                                                                                          |
+| **fullScreen**                    | optionnel | Détermine si le paywall s'affiche en plein écran ou en modal. Par défaut à `true`.                                                                                                                                                                                                                                                            |
+| **didAppear**                     | optionnel | Déclenché lorsque la vue du paywall apparaît à l'écran. Également déclenché lorsqu'un utilisateur appuie sur le [bouton de paywall web](web-paywall#step-2a-add-a-web-purchase-button) dans un paywall et qu'un paywall web s'ouvre dans un navigateur intégré.                                                                               |
+| **didDisappear**                  | optionnel | Déclenché lorsque la vue du paywall est fermée. Également déclenché lorsqu'un [paywall web](web-paywall#step-2a-add-a-web-purchase-button) ouvert depuis un paywall dans un navigateur intégré disparaît de l'écran.                                                                                                                          |
+| **didPerformAction**              | optionnel | Déclenché lorsqu'un utilisateur clique sur un bouton. Les différents boutons ont des identifiants d'action différents. Deux identifiants sont prédéfinis : `close` et `openURL`, les autres sont personnalisés et peuvent être définis dans le builder.                                                                                        |
+| **didSelectProduct**              | optionnel | Déclenché lorsqu'un produit est sélectionné pour l'achat (par l'utilisateur ou par le système).                                                                                                                                                                                                                                               |
+| **didStartPurchase**              | optionnel | Déclenché lorsque l'utilisateur commence le processus d'achat.                                                                                                                                                                                                                                                                                |
+| **didFinishPurchase**             | optionnel | Déclenché lorsqu'un achat se termine avec succès.                                                                                                                                                                                                                                                                                             |
+| **didFinishWebPaymentNavigation** | optionnel | Déclenché après une tentative d'ouverture d'un [paywall web](web-paywall) pour un achat, qu'elle ait réussi ou échoué.                                                                                                                                                                                                                        |
+| **didStartRestore**               | optionnel | Déclenché lorsque l'utilisateur lance le processus de restauration.                                                                                                                                                                                                                                                                           |
+| **didFailLoadingProducts**        | optionnel | Déclenché lorsque des erreurs surviennent pendant le chargement des produits. Retournez `true` pour relancer le chargement.                                                                                                                                                                                                                    |
+| **didPartiallyLoadProducts**      | optionnel | Déclenché lorsque les produits sont partiellement chargés.                                                                                                                                                                                                                                                                                    |
+| **showAlertItem**                 | optionnel | Un binding qui gère l'affichage des éléments d'alerte au-dessus du paywall.                                                                                                                                                                                                                                                                   |
+| **showAlertBuilder**              | optionnel | Une fonction pour afficher la vue d'alerte.                                                                                                                                                                                                                                                                                                   |
+| **placeholderBuilder**            | optionnel | Une fonction pour afficher la vue de remplacement pendant le chargement du paywall.                                                                                                                                                                                                                                                           |
+
+## Gestion des événements dans UIKit \{#handling-events-in-uikit\}
+
+Pour contrôler ou surveiller les processus qui se déroulent sur l'écran du paywall dans votre application mobile, implémentez les méthodes `AdaptyPaywallControllerDelegate`.
+
+### Événements générés par l'utilisateur \{#user-generated-events\}
+
+#### Sélection d'un produit \{#product-selection\}
+
+Lorsqu'un utilisateur sélectionne un produit pour l'acheter, cette méthode est appelée :
+
+```swift showLineNumbers title="Swift"
+    func paywallController(
+        _ controller: AdaptyPaywallController,
+        didSelectProduct product: AdaptyPaywallProductWithoutDeterminingOffer
+    ) { }
+```
+
+<Details>
+<summary>Exemple d'événement (cliquer pour agrandir)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Achat démarré \{#started-purchase\}
+
+Si un utilisateur initie le processus d'achat, cette méthode sera invoquée :
+
+```swift showLineNumbers title="Swift"
+func paywallController(_ controller: AdaptyPaywallController,
+                       didStartPurchase product: AdaptyPaywallProduct) {
+}
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+Cette fonction ne sera pas appelée en mode Observer. Consultez la rubrique [iOS - Présenter les paywalls Paywall Builder en mode Observer](ios-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Achat démarré via un paywall web \{#started-purchase-using-a-web-paywall\}
+
+Si un utilisateur initie le processus d'achat via un [paywall web](web-paywall), cette méthode sera invoquée :
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        shouldContinueWebPaymentNavigation product: AdaptyPaywallProduct
+    ) {
+    }
+```
+
+<Details>
+<summary>Exemple d'événement (Cliquez pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  }
+}
+```
+</Details>
+
+#### Achat réussi ou annulé \{#successful-or-canceled-purchase\}
+
+Si l'achat réussit, cette méthode sera appelée :
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFinishPurchase product: AdaptyPaywallProductWithoutDeterminingOffer,
+    purchaseResult: AdaptyPurchaseResult
+) { }
+}
+```
+
+<Details>
+<summary>Exemples d'événements (Cliquez pour développer)</summary>
+
+```javascript
+// Successful purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "success",
+    "profile": {
+      "accessLevels": {
+        "premium": {
+          "id": "premium",
+          "isActive": true,
+          "expiresAt": "2024-02-15T10:30:00Z"
+        }
+      }
+    }
+  }
+}
+
+// Cancelled purchase
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "purchaseResult": {
+    "type": "cancelled"
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer le paywall dans ce cas.
+
+Cette méthode ne sera pas invoquée en mode Observer. Consultez la rubrique [iOS - Présenter les paywalls du Paywall Builder en mode Observer](ios-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Achat échoué \{#failed-purchase\}
+
+Si un achat échoue en raison d'une erreur, cette méthode est appelée. Cela inclut les erreurs StoreKit (restrictions de paiement, produits invalides, échecs réseau), les échecs de vérification de transaction et les erreurs système. Notez que les annulations utilisateur déclenchent `didFinishPurchase` avec un résultat annulé, et les paiements en attente ne déclenchent pas cette méthode.
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailPurchase product: AdaptyPaywallProduct,
+    error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Exemple d'événement (Cliquez pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "purchase_failed",
+    "message": "Purchase failed due to insufficient funds",
+    "details": {
+      "underlyingError": "Insufficient funds in account"
+    }
+  }
+}
+```
+</Details>
+
+Elle ne sera pas invoquée en mode Observer. Consultez la rubrique [iOS - Présenter des paywalls Paywall Builder en mode Observer](ios-present-paywall-builder-paywalls-in-observer-mode) pour plus de détails.
+
+#### Échec d'un achat via un paywall web \{#failed-purchase-using-a-web-paywall\}
+
+Si `Adapty.openWebPaywall()` échoue, cette méthode sera invoquée :
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+        _ controller: AdaptyPaywallController,
+        didFailWebPaymentNavigation product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) { }
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```javascript
+{
+  "product": {
+    "vendorProductId": "premium_monthly",
+    "localizedTitle": "Premium Monthly",
+    "localizedDescription": "Premium subscription for 1 month",
+    "localizedPrice": "$9.99",
+    "price": 9.99,
+    "currencyCode": "USD"
+  },
+  "error": {
+    "code": "web_payment_failed",
+    "message": "Web payment navigation failed",
+    "details": {
+      "underlyingError": "Network connection error"
+    }
+  }
+}
+```
+</Details>
+
+#### Restauration réussie \{#successful-restore\}
+
+Si la restauration d'un achat réussit, cette méthode sera invoquée :
+
+```swift showLineNumbers title="Swift"
+func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFinishRestoreWith profile: AdaptyProfile
+) { }
+```
+
+<Details>
+<summary>Exemple d'événement (Cliquez pour développer)</summary>
+
+```javascript
+{
+  "profile": {
+    "accessLevels": {
+      "premium": {
+        "id": "premium",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    },
+    "subscriptions": [
+      {
+        "vendorProductId": "premium_monthly",
+        "isActive": true,
+        "expiresAt": "2024-02-15T10:30:00Z"
+      }
+    ]
+  }
+}
+```
+</Details>
+
+Nous recommandons de fermer l'écran si l'utilisateur dispose du `accessLevel` requis. Consultez la rubrique [Statut de l'abonnement](subscription-status) pour savoir comment le vérifier.
+
+#### Échec de la restauration \{#failed-restore\}
+
+Si la restauration d'un achat échoue, cette méthode sera appelée :
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController, 
+    didFailRestoreWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Exemple d'événement (Cliquez pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "restore_failed",
+    "message": "Purchase restoration failed",
+    "details": {
+      "underlyingError": "No previous purchases found"
+    }
+  }
+}
+```
+</Details>
+
+### Récupération et rendu des données \{#data-fetching-and-rendering\}
+
+#### Erreurs de chargement des produits \{#product-loading-errors\}
+
+Si vous ne transmettez pas le tableau de produits lors de l'initialisation, AdaptyUI récupérera lui-même les objets nécessaires depuis le serveur. Si cette opération échoue, AdaptyUI signalera l'erreur en appelant cette méthode :
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailLoadingProductsWith error: AdaptyError
+) -> Bool {
+    return true
+}
+```
+
+<Details>
+<summary>Exemple d'événement (Cliquez pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "products_loading_failed",
+    "message": "Failed to load products from the server",
+    "details": {
+      "underlyingError": "Network timeout"
+    }
+  }
+}
+```
+</Details>
+
+Si vous renvoyez `true`, AdaptyUI répétera la requête après 2 secondes.
+
+#### Erreurs de rendu \{#rendering-errors\}
+
+Si une erreur survient lors du rendu de l'interface, elle sera signalée par cette méthode :
+
+```swift showLineNumbers title="Swift"
+public func paywallController(
+    _ controller: AdaptyPaywallController,
+    didFailRenderingWith error: AdaptyError
+) { }
+```
+
+<Details>
+<summary>Exemple d'événement (cliquez pour développer)</summary>
+
+```javascript
+{
+  "error": {
+    "code": "rendering_failed",
+    "message": "Failed to render paywall interface",
+    "details": {
+      "underlyingError": "Invalid paywall configuration"
+    }
+  }
+}
+```
+</Details>
+
+Dans une situation normale, de telles erreurs ne devraient pas se produire. Si vous en rencontrez une, veuillez nous en informer.
+
+</SDKv3>

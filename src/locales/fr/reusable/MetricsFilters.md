@@ -1,0 +1,18 @@
+| Name                     | Type                         | Required           | Description                                                  |
+| ------------------------ | ---------------------------- | ------------------ | ------------------------------------------------------------ |
+| date                     | array of String values(data) | :heavy_plus_sign:  | Saisissez la date ou la période pour laquelle vous souhaitez récupérer les données du graphique. |
+| compare_date             | array of String values(data) | :heavy_minus_sign: | Si vous comparez deux dates ou périodes, saisissez ici la plus ancienne et la plus récente dans le paramètre `date`. |
+| store                    | array of String values       | :heavy_minus_sign: | Filtrez par le store où l'achat a été effectué. Les valeurs possibles sont **app_store**, **play_store**, **stripe**, ainsi que tout identifiant de store personnalisé. Si vous utilisez un store personnalisé, saisissez son identifiant tel que défini dans l'Adapty Dashboard. |
+| country                  | array of String values       | :heavy_minus_sign: | Filtrez par le code pays à 2 lettres où l'achat a eu lieu, selon les codes de la norme ISO 3166-1. |
+| store_product_id         | array of String values       | :heavy_minus_sign: | Identifiant unique d'un produit dans le store. Vous pouvez consulter cet identifiant dans la section [**Products**](https://app.adapty.io/products) de l'Adapty Dashboard. |
+| duration                 | array of String              | :heavy_minus_sign: | Précisez la durée de l'abonnement. Les valeurs possibles sont : <ul><li>Weekly</li><li>Monthly</li><li>2 months</li><li>3 months</li><li>6 months</li><li>Annual</li><li>Lifetime</li><li>Uncategorized</li></ul> |
+| attribution_source       | array of String values       | :heavy_minus_sign: | L'intégration source pour l'attribution. Options possibles :<ul><li>adjust</li><li>airbridge</li><li>apple_search_ads</li><li>appsflyer</li><li>branch</li><li>custom</li></ul> |
+| attribution_status       | array of String values       | :heavy_minus_sign: | Indique si l'attribution est organique ou non organique. Les valeurs possibles sont : <ul><li>organic</li><li>non-organic</li><li>unknown</li></ul> |
+| attribution_channel      | array of String values       | :heavy_minus_sign: | Canal marketing à l'origine de la transaction.               |
+| attribution_campaign     | array of String values       | :heavy_minus_sign: | Campagne marketing à l'origine de la transaction.            |
+| attribution_adgroup      | array of String values       | :heavy_minus_sign: | Groupe publicitaire d'attribution à l'origine de la transaction. |
+| attribution_adset        | array of String values       | :heavy_minus_sign: | Ensemble publicitaire d'attribution à l'origine de la transaction. |
+| attribution_creative     | array of String values       | :heavy_minus_sign: | Éléments visuels ou textuels spécifiques d'une annonce ou d'une campagne, suivis pour mesurer leur efficacité (ex. : clics, conversions). |
+| offer_category       | array of String values       | :heavy_minus_sign: | Précisez les catégories d'offres pour lesquelles vous souhaitez récupérer des données. Les valeurs possibles sont :<ul><li>introductory</li><li>promotional</li><li>winback</li></ul> |
+| offer_type           | array of String values       | :heavy_minus_sign: | Précisez les types d'offres pour lesquels vous souhaitez récupérer des données. Les valeurs possibles sont :<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul> |
+| offer_id             | array of String values       | :heavy_minus_sign: | Précisez les offres spécifiques pour lesquelles vous souhaitez récupérer des données.   |

@@ -1,0 +1,91 @@
+---
+title: "Observer modunda flow'ları sunma - Kotlin Multiplatform"
+description: "Kotlin Multiplatform uygulamanızda Observer modunda flow'ları ve Paywall Builder paywall'larını sunun, satın almaları kendi kodunuzla yönetin."
+metadataTitle: "Observer modunda flow'ları sunma - Kotlin Multiplatform | Adapty Dokümanları"
+keywords: ['observer mode', 'AdaptyUIObserverModeResolver', 'setObserverModeResolver', 'flow']
+---
+
+Builder ile bir flow veya paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir flow veya paywall, hem neyin gösterileceğini hem de nasıl gösterileceğini içerir.
+
+:::warning
+Bu bölüm yalnızca [Observer modu](observer-vs-full-mode) için geçerlidir. Observer modunda çalışmıyorsanız [Flow'ları ve paywall'ları görüntüleme](kmp-present-paywalls) konusuna bakın.
+:::
+
+:::info
+Bu özellik, Adapty Kotlin Multiplatform SDK 4.0 (beta) veya sonrasını gerektirir — daha önce yalnızca native iOS ve Android SDK'larında mevcuttu. Yükseltmek için [migration rehberine](migration-to-kmp-sdk-v4) bakın.
+:::
+
+<details>
+   <summary>Flow sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+
+1. Adapty'nin [App Store ile](initial_ios) ve [Google Play ile](initial-android) başlangıç entegrasyonunu yapın.
+   2. Adapty SDK'yı yükleyin ve yapılandırın. Yapılandırma builder'ında `withObserverMode(true)` çağırdığınızdan emin olun. [Kotlin Multiplatform SDK kurulum kılavuzuna](sdk-installation-kotlin-multiplatform#activate-adapty-sdk) bakın.
+   3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+   4. [Builder'larda flow'lar veya paywall'lar yapılandırın](create-paywall) ve bunlara ürünler atayın.
+   5. [Placement'lar oluşturun ve flow'larınızı ya da paywall'larınızı bunlara atayın](create-placement).
+   6. Mobil uygulama kodunuzda [flow'ları ve yapılandırmalarını çekin](kmp-get-pb-paywalls).
+
+</details>
+
+Observer modunda SDK, satın alma işlemlerini sizin adınıza gerçekleştirmez. Kullanıcı Adapty tarafından render edilen bir flow veya paywall'da satın alma ya da geri yükleme düğmesine dokunduğunda, SDK `AdaptyUIObserverModeResolver`'ınızı çağırır — satın alma veya geri yükleme işlemini orada kendi kodunuzla gerçekleştirin.
+
+1. `AdaptyUIObserverModeResolver` arayüzünü uygulayın:
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUIObserverModeResolver
+   import com.adapty.kmp.models.AdaptyPaywallProduct
+   import com.adapty.kmp.models.AdaptyUIFlowView
+
+   class MyObserverModeResolver : AdaptyUIObserverModeResolver {
+       override fun observerModeDidInitiatePurchase(
+           view: AdaptyUIFlowView,
+           product: AdaptyPaywallProduct,
+           onStartPurchase: () -> Unit,
+           onFinishPurchase: () -> Unit
+       ) {
+           onStartPurchase() // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase() // the view hides the loading indicator
+       }
+
+       override fun observerModeDidInitiateRestore(
+           view: AdaptyUIFlowView,
+           onStartRestore: () -> Unit,
+           onFinishRestore: () -> Unit
+       ) {
+           onStartRestore()
+           // restore purchases with your own code, then:
+           onFinishRestore()
+       }
+   }
+   ```
+
+`observerModeDidInitiatePurchase` metodu, kullanıcının bir satın alma işlemi başlattığını; `observerModeDidInitiateRestore` ise kullanıcının geri yükleme işlemi başlattığını size bildirir. Buna yanıt olarak özel satın alma veya geri yükleme flow'unuzu tetikleyin.
+
+Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'ya bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi doğru flow davranışı için gereklidir:
+
+| Callback           | Description                                                                      |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Satın alma işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.  |
+   | onFinishPurchase() | Satın alma işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır. |
+   | onStartRestore()   | Geri yükleme işleminin başladığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.   |
+   | onFinishRestore()  | Geri yükleme işleminin tamamlandığını AdaptyUI'ya bildirmek için bu callback çağrılmalıdır.  |
+
+Flow, kodunuz çalışırken açık kalır — başarılı bir satın alma veya geri yükleme işleminin ardından onu kendiniz kapatmanız gerekir.
+
+2. Herhangi bir ekranı göstermeden önce resolver'ı kaydedin:
+
+   ```kotlin showLineNumbers
+   import com.adapty.kmp.AdaptyUI
+
+   AdaptyUI.setObserverModeResolver(MyObserverModeResolver())
+   ```
+
+   Kayıtlı bir resolver olmadan, flow görünümünün satın alma işlemini kodunuza aktarma yolu yoktur ve kullanıcı satın alma düğmesine bastığında hiçbir şey olmaz.
+
+3. Flow view'u her zamanki gibi oluşturup sunun: [flow'u çekip view'unu oluşturun](kmp-get-pb-paywalls), ardından [sunun](kmp-present-paywalls). Ekstra parametre gerekmez — resolver kaydedildikten sonra, Adapty tarafından render edilen her flow veya paywall, satın alma ve geri yüklemeleri bu resolver üzerinden yönlendirir.
+
+:::warning
+[İşlemi raporlamayı ve paywall ile ilişkilendirmeyi](report-transactions-observer-mode-kmp) unutmayın. Aksi takdirde Adapty işlemi tanımaz ve satın almanın kaynak paywall'ını belirleyemez.
+:::

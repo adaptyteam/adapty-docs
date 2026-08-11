@@ -32,6 +32,10 @@ const VI_REFUSAL =
   'Tôi không thấy tài liệu MDX đầy đủ để dịch. Bạn chỉ gửi một đoạn mã. ' +
   'Vui lòng cung cấp tài liệu MDX đầy đủ cần dịch.';
 
+const FR_REFUSAL =
+  "Je ne vois pas le document MDX complet à traduire. Vous n'avez envoyé qu'un fragment de code. " +
+  'Veuillez fournir le document MDX complet à traduire.';
+
 for (const [label, refusal] of [
   ['ru', RU_REFUSAL],
   ['zh', ZH_REFUSAL],
@@ -39,6 +43,7 @@ for (const [label, refusal] of [
   ['es', ES_REFUSAL],
   ['ja', JA_REFUSAL],
   ['vi', VI_REFUSAL],
+  ['fr', FR_REFUSAL],
 ]) {
   test(`localized refusal is detected (${label})`, () => {
     assert.equal(looksLikeRefusal(refusal), true, `${label} refusal should be flagged`);
@@ -139,6 +144,24 @@ test('a normal translated body is NOT flagged (vi)', () => {
     '',
     '</TabItem>',
     '</Tabs>',
+  ].join('\n');
+  assert.equal(looksLikeRefusal(ok), false);
+});
+
+test('a normal translated body is NOT flagged (fr)', () => {
+  // Legit prose that mentions "bloc de code" and "traduction" without the
+  // refusal-meta scoping words must not be flagged.
+  const ok = [
+    'Activez les modules SDK Adapty et AdaptyUI. Les paramètres restent inchangés, laissez-les tels quels.',
+    'Ce bloc de code montre comment initialiser le SDK.',
+    '',
+    '```swift showLineNumbers',
+    '// In your AppDelegate class:',
+    'import Adapty',
+    'Adapty.activate(with: configurationBuilder) { error in',
+    '  // handle the error',
+    '}',
+    '```',
   ].join('\n');
   assert.equal(looksLikeRefusal(ok), false);
 });

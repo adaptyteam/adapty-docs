@@ -1,0 +1,97 @@
+---
+title: "Mode Enfants dans le SDK React Native"
+description: "Activez facilement le Mode Enfants pour respecter les politiques d'Apple et Google. Aucune collecte d'IDFA, GAID ou données publicitaires dans le SDK React Native."
+metadataTitle: "Mode Enfants dans le SDK React Native | Documentation Adapty"
+---
+
+Si votre application React Native est destinée aux enfants, vous devez respecter les politiques d'[Apple](https://developer.apple.com/kids/) et de [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si vous utilisez le SDK Adapty, quelques étapes simples vous permettront de le configurer pour répondre à ces politiques et passer les revues des stores.
+
+:::important
+Sur iOS, le Mode Enfants est activé via le trait du package Swift `KidsMode`, qui exclut à la compilation tout le code lié à l'IDFA, AdSupport et AppTrackingTransparency. Il nécessite le SDK v4 (qui installe le SDK iOS natif via Swift Package Manager) et **Xcode 26** ou une version ultérieure. Voir [Modifications dans votre Podfile iOS](#updates-in-your-ios-podfile) ci-dessous.
+:::
+
+## Ce qui est requis \{#whats-required\}
+
+Vous devez configurer le SDK Adapty pour désactiver la collecte de :
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [Adresse IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+De plus, nous recommandons d'utiliser l'identifiant utilisateur avec précaution. Un identifiant au format `<Prénom.Nom>` sera assurément considéré comme une collecte de données personnelles, tout comme l'utilisation d'une adresse e-mail. Pour le Mode Enfants, la bonne pratique consiste à utiliser des identifiants aléatoires ou anonymisés (par exemple, des identifiants hachés ou des UUID générés par l'appareil) pour garantir la conformité.
+
+## Activation du Mode Enfants \{#enabling-kids-mode\}
+
+### Modifications dans l'Adapty Dashboard \{#updates-in-the-adapty-dashboard\}
+
+Dans l'Adapty Dashboard, vous devez désactiver la collecte des adresses IP. Pour ce faire, rendez-vous dans [App settings](https://app.adapty.io/settings/general) et cliquez sur **Disable IP address collection** sous **Collect users' IP address**.
+
+### Modifications dans le code de votre application mobile \{#updates-in-your-mobile-app-code\}
+
+Pour respecter les politiques, désactivez la collecte de l'IDFA de l'utilisateur (iOS), du GAID/AAID (Android) et de l'adresse IP lors de l'activation du SDK Adapty :
+
+```typescript showLineNumbers title="App.tsx"
+
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  // Disable IP address collection
+  ipAddressCollectionDisabled: true,
+
+  // Disable IDFA collection on iOS
+  ios: {
+    idfaCollectionDisabled: true,
+  },
+
+  // Disable Google Advertising ID collection on Android
+  android: {
+    adIdCollectionDisabled: true,
+  },
+});
+```
+
+### Modifications dans votre Podfile iOS \{#updates-in-your-ios-podfile\}
+
+Pour la catégorie Enfants de l'App Store (ou la conformité COPPA), le SDK iOS natif doit être compilé avec le trait du package Swift `KidsMode`, qui exclut à la compilation tout le code lié à l'IDFA, AdSupport et AppTrackingTransparency. React Native installe le SDK natif via Swift Package Manager, qui ne peut pas transmettre les traits de package ; le SDK fournit donc un helper Podfile qui applique le trait à votre place. Cette étape nécessite **Xcode 26** ou une version ultérieure.
+
+Dans `ios/Podfile`, importez le helper et appelez-le **après** `react_native_post_install` :
+
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_kids_mode.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+# ...
+
+post_install do |installer|
+  react_native_post_install(
+    installer,
+    config[:reactNativePath],
+    :mac_catalyst_enabled => false
+  )
+
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Puis exécutez `pod install` :
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install
+```
+
+Pour confirmer que le Mode Enfants est actif, vérifiez que la ligne de log `adapty.activate(...)` indique `kids_mode_enabled: true`. Conservez l'appel au helper dans `post_install` de façon permanente — React Native recrée les références au package Swift à chaque `pod install`, et le helper réapplique le trait à chaque fois.
+
+### Modifications dans votre manifest Android \{#updates-in-your-android-manifest\}
+
+:::note
+Si votre application cible **uniquement** les enfants et est compilée contre Android 13 (API 33) ou supérieur, Google Play exige que vous ne demandiez pas la permission `AD_ID`. Un autre SDK dans votre application (analytics, attribution ou publicités) peut ajouter cette permission via la fusion de manifests. Définir `adIdCollectionDisabled` empêche Adapty de collecter l'ID, mais ne supprime pas une permission déclarée par un autre SDK.
+:::
+
+Pour supprimer la permission, ajoutez ce qui suit à l'intérieur de l'élément `<manifest>` de `android/app/src/main/AndroidManifest.xml`. L'élément `<manifest>` doit déclarer `xmlns:tools="http://schemas.android.com/tools"`.
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission
+    android:name="com.google.android.gms.permission.AD_ID"
+    tools:node="remove" />
+```

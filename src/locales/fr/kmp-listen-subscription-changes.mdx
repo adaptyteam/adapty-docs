@@ -1,0 +1,75 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK Kotlin Multiplatform"
+description: "Suivez et gérez le statut d'abonnement des utilisateurs dans Adapty pour améliorer la rétention client dans votre application Kotlin Multiplatform."
+metadataTitle: "Comprendre le statut d'abonnement | Documentation Adapty"
+keywords: ['getProfile']
+---
+
+import SampleApp from '@site/src/locales/fr/reusable/SampleApp.md';
+
+Avec Adapty, suivre le statut d'abonnement est simple. Vous n'avez pas besoin d'insérer manuellement des identifiants de produits dans votre code. Vous pouvez vérifier le statut d'abonnement d'un utilisateur en contrôlant l'existence d'un [niveau d'accès](access-level) actif.
+
+Avant de commencer à vérifier le statut d'abonnement, configurez les [notifications développeur en temps réel (RTDN)](enable-real-time-developer-notifications-rtdn).
+
+## Niveau d'accès et objet AdaptyProfile \{#access-level-and-the-adaptyprofile-object\}
+
+Les niveaux d'accès sont des propriétés de l'objet [AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/). Nous vous recommandons de récupérer le profil au démarrage de votre application, par exemple lorsque vous [identifiez un utilisateur](android-identifying-users#setting-customer-user-id-on-configuration), puis de le mettre à jour dès qu'une modification survient. Vous pouvez ainsi utiliser l'objet profil sans avoir à le redemander à chaque fois.
+
+Pour être notifié des mises à jour du profil, écoutez les changements de profil comme décrit dans la section [Écouter les mises à jour du profil, y compris les niveaux d'accès](android-listen-subscription-changes) ci-dessous.
+
+<SampleApp />
+
+## Récupérer le niveau d'accès depuis le serveur \{#retrieving-the-access-level-from-the-server\}
+
+Pour obtenir le niveau d'accès depuis le serveur, utilisez la méthode `.getProfile()` :
+
+```kotlin showLineNumbers
+
+Adapty.getProfile().onSuccess { profile ->
+    // check the access
+}.onError { error ->
+    // handle the error
+}
+```
+
+Paramètres de la réponse :
+
+| Paramètre | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------- |-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Profile   | <p>Un objet [AdaptyProfile](https://kmp.adapty.io///adapty/com.adapty.kmp.models/-adapty-profile/). En général, il suffit de vérifier le statut du niveau d'accès du profil pour déterminer si l'utilisateur bénéficie d'un accès premium à l'application.</p><p></p><p>La méthode `.getProfile` fournit le résultat le plus récent car elle interroge toujours l'API. Si, pour une raison quelconque (par exemple, absence de connexion internet), le SDK Adapty ne parvient pas à récupérer les informations depuis le serveur, les données du cache sont renvoyées. Il est également important de noter que le SDK Adapty met à jour le cache `AdaptyProfile` régulièrement, afin de maintenir ces informations aussi à jour que possible.</p> |
+
+La méthode `.getProfile()` vous fournit le profil utilisateur à partir duquel vous pouvez obtenir le statut du niveau d'accès. Vous pouvez avoir plusieurs niveaux d'accès par application. Par exemple, si vous avez une application de presse et vendez des abonnements à différents sujets indépendamment, vous pouvez créer des niveaux d'accès « sports » et « science ». Mais la plupart du temps, vous n'aurez besoin que d'un seul niveau d'accès ; dans ce cas, vous pouvez simplement utiliser le niveau d'accès « premium » par défaut.
+
+Voici un exemple de vérification du niveau d'accès « premium » par défaut :
+
+```kotlin showLineNumbers
+
+Adapty.getProfile().onSuccess { profile ->
+    if (profile.accessLevels["premium"]?.isActive == true) {
+        // grant access to premium features
+    }
+}.onError { error ->
+    // handle the error
+}
+```
+
+### Écouter les mises à jour du statut d'abonnement \{#listening-for-subscription-status-updates\}
+
+Chaque fois que l'abonnement d'un utilisateur change, Adapty déclenche un événement.
+
+Pour recevoir les messages d'Adapty, vous devez effectuer quelques configurations supplémentaires :
+
+```kotlin showLineNumbers
+
+Adapty.setOnProfileUpdatedListener { profile ->
+    // handle any changes to subscription state
+}
+```
+
+Adapty déclenche également un événement au démarrage de l'application. Dans ce cas, le statut d'abonnement mis en cache est transmis.
+
+### Cache du statut d'abonnement \{#subscription-status-cache\}
+
+Le cache intégré au SDK Adapty stocke le statut d'abonnement du profil. Ainsi, même si le serveur est indisponible, les données en cache restent accessibles pour fournir des informations sur le statut d'abonnement du profil.
+
+Il est toutefois important de noter qu'il n'est pas possible d'interroger directement le cache. Le SDK interroge périodiquement le serveur toutes les minutes pour vérifier les mises à jour ou modifications liées au profil. Si des modifications sont détectées, comme de nouvelles transactions ou d'autres mises à jour, elles sont transmises aux données en cache afin de les maintenir synchronisées avec le serveur.

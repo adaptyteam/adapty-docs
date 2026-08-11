@@ -7,6 +7,7 @@ keywords: ['events']
 ---
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
+import UsdConversion from '@site/src/components/reusable/UsdConversion.md';
 
 Adapty sends webhooks in response to subscription events. This section defines these event types and the data contained in each webhook.
 
@@ -46,6 +47,10 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
     "cohort_name": "All Users",
     "environment": "Production",
     "price_local": 4.99,
+    "original_price_usd": 4.99,
+    "original_price_local": 4.99,
+    "discount_amount_usd": 0,
+    "discount_amount_local": 0,
     "base_plan_id": "b1",
     "developer_id": "onboarding_placement",
     "ab_test_name": "onboarding_ab_test",
@@ -203,6 +208,8 @@ The [Access Level Updated](webhook-event-types-and-fields#for-access-level-updat
 
 The event properties for most event types are consistent (except for **Access Level Updated** event, which is described in its own section). Below is a comprehensive table highlighting properties and indicating if they belong to specific events.
 
+<UsdConversion />
+
 | Field                         | Type          | Description                                                                                                                                                                                                                                                                                                                                                      |
 |:------------------------------|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **ab_test_name**              | String        | Name of the [Adapty A/B test](ab-tests) where the transaction originated.                                                                                                                                                                                                                                                                                        |
@@ -213,14 +220,18 @@ The event properties for most event types are consistent (except for **Access Le
 | **consecutive_payments**      | Integer       | The number of periods, that a user is subscribed to without interruptions. Includes the current period.                                                                                                                                                                                                                                                          |
 | **currency**                  | String        | Local currency.                                                                                                                                                                                                                                                                                                                                                  |
 | **developer_id**              | String        | The ID of the [placement](placements) where the transaction originated.                                                                                                                                                                                                                                                                                          |
+| **discount_amount_local**     | Float         | The discount applied to the transaction: the standard price minus the amount actually charged, before the Apple/Google cut, in local currency. `0` for a full-price purchase. For a free trial, equals the full standard price (`original_price_local`), since nothing is charged. `null` when an offer applied but the standard price is unknown (see `original_price_local`). Always `null` for App Store pay-up-front offers: the single up-front charge covers multiple billing periods, so it can't be compared with the per-period standard price. |
+| **discount_amount_usd**       | Float         | The value of `discount_amount_local` in USD. |
 | **environment**               | String        | Possible values are `Sandbox` or `Production`.                                                                                                                                                                                                                                                                                                                   |
 | **event_datetime**            | ISO 8601 date | The date and time of the event. The same as on the root level of the event.                                                                                                                                                                                                                                                                                      |
+| **original_price_local**      | Float         | The product's standard, non-discounted price before the Apple/Google cut, in local currency. For subscriptions, this is the renewal price. Equals `price_local` for a full-price purchase and always equals `price_local` for one-time purchases, as stores don't report a separate standard price for them. `null` for a discounted purchase when the store reports no reliable standard price (for example, auto-renew is off, the renewal still carries an offer, or a product change is pending). |
+| **original_price_usd**        | Float         | Same as `original_price_local`, in USD. |
 | **original_purchase_date**    | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction.                                                                                |
 | **original_transaction_id**   | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>                                                                           |
 | **paywall_name**              | String        | Name of the paywall where the transaction originated.                                                                                                                                                                                                                                                                                                            |
 | **paywall_revision**          | String        | Revision of the paywall where the transaction originated. The default value is 1.                                                                                                                                                                                                                                                                                |
-| **price_local**               | Float         | Product price before Apple/Google cut in local currency.                                                                                                                                                                                                                                                                                                         |
-| **price_usd**                 | Float         | Product price before Apple/Google cut in USD.                                                                                                                                                                                                                                                                                                                    |
+| **price_local**               | Float         | The amount charged for the transaction before the Apple/Google cut, in local currency. `null` for free trials, since nothing is charged.                                                                                                                                                                                                                         |
+| **price_usd**                 | Float         | The amount charged for the transaction before the Apple/Google cut, in USD. `null` for free trials, since nothing is charged.                                                                                                                                                                                                                                    |
 | **profile_country**           | String        | Determined by Adapty, based on profile IP.                                                                                                                                                                                                                                                                                                                       |
 | **profile_event_id**          | UUID          | Unique event ID that can be used for deduplication.                                                                                                                                                                                                                                                                                                              |
 | **profile_has_access_level**  | Boolean       | A boolean that indicates whether the profile has an active access level.                                                                                                                                                                                                                                                                                         |
@@ -234,6 +245,7 @@ The event properties for most event types are consistent (except for **Access Le
 | **store_country**             | String        | The country sent to us by the app store.                                                                                                                                                                                                                                                                                                                         |
 | **store_offer_category**      | String        | Applied offer category. Possible values are `introductory`, `promotional`, `winback`.                                                                                                                                                                                                                                                                            |
 | **store_offer_discount_type** | String        | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`.                                                                                                                                                                                                                                                                       |
+| **store_offer_number_of_periods** | Integer   | Number of base billing periods an offer discounts (1 or more). Present only when an offer applies. `null` for App Store pay-up-front offers and when the store doesn't report the offer duration. |
 | **subscription_expires_at**   | ISO 8601 date | The Expiration date of subscription. Usually in the future.                                                                                                                                                                                                                                                                                                      |
 | **transaction_id**            | String        | Unique identifier for a transaction.                                                                                                                                                                                                                                                                                                                             |
 | **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                                                   |
@@ -278,6 +290,10 @@ Event types that have the tax and revenue event properties:
     "currency": "USD",
     "price_usd": 4.99,
     "price_local": 4.99,
+    "original_price_usd": 4.99,
+    "original_price_local": 4.99,
+    "discount_amount_usd": 0,
+    "discount_amount_local": 0,
     "proceeds_usd": 4.2415,
     "proceeds_local": 4.2415,
     "net_revenue_usd": 4.2415,

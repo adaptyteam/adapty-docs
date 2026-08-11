@@ -1,0 +1,119 @@
+---
+title: "Observerモードでフローを表示する - React Native"
+description: "React NativeアプリのObserverモードでフローとペイウォールビルダーのペイウォールを表示し、独自のコードで購入を処理します。"
+metadataTitle: "ObserverモードでフローをPresent - React Native | Adapty ドキュメント"
+---
+
+ビルダーを使用してフローやペイウォールをカスタマイズした場合、それをモバイルアプリのコードでレンダリングしてユーザーに表示することを心配する必要はありません。フローやペイウォールには、表示する内容と表示方法の両方が含まれています。
+
+:::warning
+このセクションは[オブザーバーモード](observer-vs-full-mode)のみを対象としています。オブザーバーモードで作業していない場合は、[フローとペイウォールの表示](react-native-present-paywalls)トピックを参照してください。
+:::
+
+:::info
+この機能は Adapty React Native SDK 4.0 以降が必要です。以前はネイティブの iOS および Android SDK でのみ利用可能でした。アップグレードするには[移行ガイド](migration-to-react-native-sdk-v4)を参照してください。
+:::
+
+<details>
+   <summary>フローの表示を始める前に（クリックして展開）</summary>
+
+1. Adapty の [App Store との初期連携](initial_ios)および [Google Play との初期連携](initial-android) を設定します。
+   2. Adapty SDK をインストールして設定します。`observerMode` パラメーターを `true` に設定してください。[React Native SDK インストールガイド](sdk-installation-reactnative)を参照してください。
+   3. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+   4. [ビルダーでフローまたはペイウォールを設定](create-paywall)し、プロダクトを割り当てます。
+   5. [プレースメントを作成し、フローまたはペイウォールを割り当てます](create-placement)。
+   6. モバイルアプリのコードで[フローとその設定を取得](react-native-get-pb-paywalls)します。
+
+</details>
+
+オブザーバーモードでは、SDKが代わりに購入処理を行うことはありません。ユーザーがAdaptyのフローやペイウォールで購入ボタンまたは復元ボタンをタップすると、SDKはあなたの `onObserverPurchaseInitiated` または `onObserverRestoreInitiated` イベントハンドラーを呼び出します。そこで自前のコードを使って購入または復元を実行してください。
+
+## オブザーバーモードのイベントハンドラーを設定する \{#set-the-observer-mode-event-handlers\}
+
+他のプラットフォームとは異なり、専用のリゾルバーオブジェクトはありません。ハンドラーは通常の[イベントハンドラー](react-native-handling-events-1)の一部です。そのため、表示するすべてのフローに設定してください。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+React コンポーネントの場合は、`AdaptyFlowView` の props としてハンドラーを渡します。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, [flow]);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+:::note
+組み込みコンポーネントでは、ハンドラーが返す値によってフローが閉じられるわけではありません。購入やリストアが成功した後は、ご自身でコンポーネントをアンマウントしてください。
+:::
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+モーダル表示の場合は、作成したビューにハンドラーを設定します。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+</TabItem>
+</Tabs>
+
+`onObserverPurchaseInitiated` ハンドラーはユーザーが購入を開始したことを通知し、`onObserverRestoreInitiated` はユーザーが復元を開始したことを通知します。これに応じて、独自の購入または復元フローを起動してください。
+
+また、購入または復元の進行状況を AdaptyUI に通知するために、以下のコールバックを呼び出すことを忘れないでください。これは、ローダーの表示など、フローを適切に動作させるために必要です：
+
+| コールバック        | 説明                                                                      |
+| :----------------- | :------------------------------------------------------------------------------- |
+| onStartPurchase()  | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。  |
+| onFinishPurchase() | 購入が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
+| onStartRestore()   | リストアが開始されたことを AdaptyUI に通知するために呼び出すコールバックです。   |
+| onFinishRestore()  | リストアが完了したことを AdaptyUI に通知するために呼び出すコールバックです。  |
+
+## フローを表示する \{#present-the-flow\}
+
+通常と同じ手順でフローを表示します: [フローを取得してビューを作成](react-native-get-pb-paywalls)し、[表示](react-native-present-paywalls)します。追加のパラメータは不要です — ハンドラーは SDK が `observerMode: true` で有効化された場合にのみ発火します。
+
+:::warning
+[トランザクションを報告し、ペイウォールと紐付ける](report-transactions-observer-mode-react-native)ことを忘れないでください。これを行わないと、Adapty はトランザクションを認識できず、購入元のペイウォールを特定できません。
+:::

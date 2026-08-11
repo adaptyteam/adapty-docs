@@ -1,0 +1,312 @@
+---
+title: "Intégrations analytiques"
+description: "Intégrez des outils d'analyse avec Adapty pour suivre et optimiser les abonnements utilisateurs."
+metadataTitle: "Guide d'intégration analytique | Documentation Adapty"
+---
+
+import UsdConversion from '@site/src/locales/fr/reusable/UsdConversion.md';
+
+Adapty envoie tous les [événements d'abonnement](events) aux services d'analyse, tels qu'[Amplitude](amplitude), [Mixpanel](mixpanel) et [AppMetrica](appmetrica). Vous pouvez également recevoir ces événements sur votre serveur via l'intégration [webhook](webhook). Le mieux dans tout ça, c'est que vous n'avez rien à faire : nous nous chargeons d'envoyer les événements à votre place. Configurez simplement l'intégration dans l'Adapty Dashboard.
+
+Adapty prend en charge l'intégration avec les services d'analyse tiers suivants :
+
+- [Amplitude](amplitude)
+- [AppMetrica](appmetrica)
+- [Firebase and Google Analytics](firebase-and-google-analytics)
+- [Mixpanel](mixpanel)
+- [PostHog](posthog)
+- [SplitMetrics Acquire](splitmetrics)
+
+:::note
+Votre outil d'analyse n'est pas dans la liste ?
+
+Faites-le nous savoir ! [Soumettez une demande de fonctionnalité](https://adapty.featurebase.app/en?b=6979f233ebd3cffd4f425ba0) et nous étudierons son ajout.
+:::
+
+## Propriétés des événements \{#event-properties\}
+
+Les événements webhook sont envoyés au format JSON. Tous les événements suivent la même structure, mais leurs champs varient selon le type d'événement, le store et votre configuration spécifique.
+
+<UsdConversion /> 
+
+| Propriété                     | Type          | Description                                                  |
+| ----------------------------- | ------------- | ------------------------------------------------------------ |
+| **profile_id**                | uuid          | Identifiant utilisateur Adapty.                              |
+| **currency**                  | str           | Devise locale (USD par défaut).                              |
+| **price_usd**                 | float         | Prix du produit avant commission Apple/Google. Chiffre d'affaires brut. |
+| **proceeds_usd**              | float         | Prix du produit après commission Apple/Google. Chiffre d'affaires net. |
+| **net_revenue_usd**           | float         | Revenu net (après commission Apple/Google et taxes) en USD. Peut être vide. |
+| **price_local**               | float         | Prix du produit avant commission Apple/Google en devise locale. Chiffre d'affaires brut. |
+| **proceeds_local**            | float         | Prix du produit après commission Apple/Google en devise locale. Chiffre d'affaires net. |
+| **transaction_id**            | str           | Identifiant unique d'une transaction, comme un achat ou un renouvellement. |
+| **original_transaction_id**   | str           | Identifiant de transaction de l'achat d'origine.             |
+| **purchase_date**             | ISO 8601 date | Date et heure de l'achat du produit.                         |
+| **original_purchase_date**    | ISO 8601 date | Date et heure de l'achat d'origine.                          |
+| **environment**               | str           | Peut être _Sandbox_ ou _Production_.                         |
+| **vendor_product_id**         | str           | ID du produit sur l'Apple App Store, le Google Play Store ou Stripe. |
+| **base_plan_id**              | str           | [ID du plan de base](https://support.google.com/googleplay/android-developer/answer/12154973) sur le Google Play Store ou [ID de prix](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) sur Stripe. |
+| **event_datetime**            | ISO 8601 date | Date et heure de l'événement.                                |
+| **store**                     | str           | Peut être _app_store_ ou _play_store_.                       |
+| **trial_duration**            | str           | Durée de la période d'essai en jours. Envoyée au format « {} days », par exemple « 7 days ». |
+| **cancellation_reason**       | str           | <p>Raison pour laquelle l'utilisateur a annulé un abonnement.</p><p></p><p>Valeurs possibles :</p><p>iOS & Android</p><p>_voluntarily_cancelled_, _billing_error_, _refund_</p><p>iOS</p><p>_price_increase_, _product_was_not_available_, _unknown_</p><p>Android</p><p>_new_subscription_replace_, _cancelled_by_developer_</p> |
+| **subscription_expires_at**   | ISO 8601 date | Date d'expiration de l'abonnement. Généralement dans le futur. |
+| **consecutive_payments**      | int           | Nombre de périodes consécutives pendant lesquelles l'utilisateur est abonné sans interruption. Inclut la période actuelle. |
+| **rate_after_first_year**     | bool          | Booléen indiquant que l'abonnement bénéficie d'un taux de commission réduit (généralement 15 %) après un an de renouvellement continu. Les taux varient selon l'éligibilité au programme et le pays. Voir [Commission du store et taxes](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) pour plus de détails. |
+| **promotional_offer_id**      | str           | ID de l'offre promotionnelle, tel qu'indiqué dans la section Produits de l'Adapty Dashboard. |
+| **store_offer_category**      | str           | Peut être _introductory_ ou _promotional_.                   |
+| **store_offer_discount_type** | str           | Peut être _free_trial_, _pay_as_you_go_ ou _pay_up_front_.   |
+| **paywall_name**              | str           | Nom du paywall depuis lequel la transaction a été initiée.   |
+| **paywall_revision**          | int           | Révision du paywall depuis lequel la transaction a été initiée. La valeur est définie à 1. |
+| **developer_id**              | str           | ID développeur (SDK) du placement depuis lequel la transaction a été initiée. |
+| **ab_test_name**              | str           | Nom du test A/B depuis lequel la transaction a été initiée.  |
+| **ab_test_revision**          | int           | Révision du test A/B depuis lequel la transaction a été initiée. La valeur est définie à 1. |
+| **cohort_name**               | str           | Nom de l'audience à laquelle appartient le profil.           |
+| **profile_event_id**          | uuid          | Identifiant unique de l'événement, utilisable pour la déduplication. |
+| **store_country**             | str           | Pays transmis par le store.                                  |
+| **profile_ip_address**        | str           | Adresse IP du profil (IPv4 ou IPv6, avec préférence pour IPv4 si disponible). Mise à jour à chaque changement d'IP de l'appareil. |
+| **profile_country**           | str           | Déterminé par Adapty, à partir de l'IP du profil.            |
+| **profile_total_revenue_usd** | float         | Revenu total du profil, remboursements inclus.               |
+| **variation_id**              | uuid          | Identifiant unique du paywall sur lequel l'achat a été effectué. |
+| **access_level_id**           | str           | ID du niveau d'accès payant.                                 |
+| **is_active**                 | bool          | Booléen indiquant si le niveau d'accès payant est actif pour le profil. |
+| **will_renew**                | bool          | Booléen indiquant si le niveau d'accès payant sera renouvelé. |
+| **is_refund**                 | bool          | Booléen indiquant si la transaction a été remboursée.        |
+| **is_lifetime**               | bool          | Booléen indiquant si le niveau d'accès payant est à vie.     |
+| **is_in_grace_period**        | bool          | Booléen indiquant si le profil est en délai de grâce.        |
+| **starts_at**                 | ISO 8601 date | Date et heure auxquelles le niveau d'accès payant commence pour l'utilisateur. |
+| **renewed_at**                | ISO 8601 date | Date et heure auxquelles le niveau d'accès payant sera renouvelé. |
+| **expires_at**                | ISO 8601 date | Date et heure auxquelles le niveau d'accès payant expirera.  |
+| **activated_at**              | ISO 8601 date | Date et heure auxquelles le niveau d'accès payant a été activé. |
+| **billing_issue_detected_at** | ISO 8601 date | Date et heure du problème de facturation.                    |
+| **profile_has_access_level**  | Bool          | Booléen indiquant si le profil dispose d'un niveau d'accès actif (webhook uniquement). |
+
+Chaque événement possède les propriétés suivantes :
+
+`transaction_id, original_transaction_id, purchase_date, original_purchase_date, environment, vendor_product_id, event_datetime, store`. 
+
+En outre, certains événements ont des propriétés supplémentaires. Pour les événements `subscription_refunded` et `non_subscription_purchase_refunded`, les valeurs de `price_usd` et `proceeds_usd` doivent obligatoirement être fournies en tant que propriétés supplémentaires.
+
+| Nom de l'événement                  | Propriétés                                                   |
+| :---------------------------------- | :----------------------------------------------------------- |
+| **subscription\_initial\_purchase** | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_renewed**           | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **subscription\_cancelled**         | cancellation\_reason, trial\_duration                        |
+| **trial\_started**                  | subscription\_expires\_at, trial\_duration                   |
+| **trial\_converted**                | price\_usd, proceeds\_usd, subscription\_expires\_at, consecutive\_payments, rate\_after\_first\_year, trial\_duration |
+| **trial\_cancelled**                | cancellation\_reason, trial\_duration                        |
+| **non\_subscription\_purchase**     | price\_usd, proceeds\_usd                                    |
+| **billing\_issue\_detected**        | subscription\_expires\_at, trial\_duration                   |
+| **entered\_grace\_period**          | subscription\_expires\_at, trial\_duration                   |
+
+Exemple d'événement
+
+```json title="Json"
+{
+    "price_usd": 9.99,
+    "proceeds_usd": 6.99,
+    "transaction_id": "1000000628581600",
+    "original_transaction_id": "1000000628581600",
+    "purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "original_purchase_date": "2020-02-18T18:40:22.000000+0000",
+    "environment": "Sandbox",
+    "vendor_product_id": "premium",
+    "event_datetime": "2020-02-18T18:40:22.000000+0000",
+    "store": "app_store"
+}
+```
+
+Adapty envoie les événements à votre serveur et aux systèmes d'analyse tiers.
+
+La propriété **profile_ip_address** est synchronisée avec l'IP actuelle de l'appareil. À chaque fois que les serveurs Adapty reçoivent des informations du SDK, l'IP est mise à jour si elle diffère de celle enregistrée.
+
+### Définir l'identifiant du profil \{#setting-the-profiles-identifier\}
+
+- Définissez l'identifiant du profil pour l'outil d'analyse sélectionné en utilisant les instructions pour <InlineTooltip tooltip="instructions pour définir les attributs utilisateur dans votre application">[iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes) et [Unity](unity-setting-user-attributes)</InlineTooltip>.
+
+:::warning
+Éviter les doublons
+
+N'oubliez pas de désactiver l'envoi d'événements d'abonnement depuis les appareils et votre serveur pour éviter les doublons.
+:::
+
+### Désactiver l'analyse externe pour un client spécifique \{#disabling-external-analytics-for-a-specific-customer\}
+
+Vous pouvez vouloir arrêter d'envoyer des événements analytiques pour un client spécifique. C'est utile si votre application propose une option de désactivation des services d'analyse.
+
+Pour désactiver l'analyse externe pour un client, utilisez la méthode `updateProfile()`. Créez un objet `AdaptyProfileParameters.Builder` et définissez la valeur correspondante.  
+Lorsque l'analyse externe est bloquée, Adapty n'envoie plus aucun événement à aucune intégration pour cet utilisateur. Si vous souhaitez désactiver une intégration pour tous les utilisateurs de votre application, désactivez-la simplement dans l'Adapty Dashboard.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+```swift showLineNumbers
+let builder = AdaptyProfileParameters.Builder()
+    .with(analyticsDisabled: true)
+
+Adapty.updateProfile(parameters: builder.build())
+```
+</TabItem>
+<TabItem value="kotlin" label="Kotlin" default>
+```kotlin showLineNumbers
+val parameters = AdaptyProfileParameters(
+    analyticsDisabled = true
+)
+
+Adapty.updateProfile(parameters) { error ->
+    if (error == null) {
+        // successful update
+    }
+}
+```
+</TabItem>
+<TabItem value="java" label="Java" default>
+```java showLineNumbers ]
+AdaptyProfileParameters.Builder builder = new AdaptyProfileParameters.Builder()
+    .withExternalAnalyticsDisabled(true);
+
+Adapty.updateProfile(builder.build());
+```
+</TabItem>
+<TabItem value="flutter" label="Flutter" default>
+```javascript showLineNumbers
+final builder = AdaptyProfileParametersBuilder()
+  ..setAnalyticsDisabled(true);
+
+try {
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+}
+```
+</TabItem>
+<TabItem value="unity" label="Unity" default>
+```csharp showLineNumbers
+var builder = new AdaptyProfileParameters.Builder()
+    .SetAnalyticsDisabled(true);
+
+Adapty.UpdateProfile(builder.Build(), (error) => {
+    if(error != null) {
+      // handle the error
+    }
+});
+```
+</TabItem>
+<TabItem value="rn" label="React Native (TS)" default>
+```typescript showLineNumbers
+adapty.updateProfile({ analyticsDisabled: true });
+```
+</TabItem>
+</Tabs>
+
+### Désactiver la collecte des identifiants publicitaires \{#disable-collection-of-advertising-identifiers\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS" default>
+Vous pouvez désactiver la collecte de l'IDFA en utilisant la propriété `idfaCollectionDisabled`. Assurez-vous de l'appeler avant la méthode `.activate()`.
+
+```swift showLineNumbers
+// In your AppDelegate class:
+
+let configurationBuilder =
+    AdaptyConfiguration
+        .builder(withAPIKey: "PUBLIC_SDK_KEY")
+ // highlight-start
+        .with(idfaCollectionDisabled: true) // set to `true`
+// highlight-end
+
+Adapty.activate(with: configurationBuilder.build()) { error in
+  // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+Vous pouvez désactiver la collecte de l'AAID/GAID en utilisant la propriété `withAdIdCollectionDisabled` lors de l'activation du SDK Adapty :
+
+```swift showLineNumbers
+override fun onCreate() {
+    super.onCreate()
+    Adapty.activate(
+      applicationContext,
+      AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    )  
+}
+```
+
+</TabItem>
+
+<TabItem value="java" label="Android (Java)" default>
+Vous pouvez désactiver la collecte de l'AAID/GAID en utilisant la propriété `withAdIdCollectionDisabled` lors de l'activation du SDK Adapty :
+
+```swift showLineNumbers 
+@Override
+public void onCreate() {
+    super.onCreate();
+    Adapty.activate(
+      applicationContext,
+      new AdaptyConfig.Builder("PUBLIC_SDK_KEY")
+      // highlight-start
+          .withAdIdCollectionDisabled(true) // set to `true`
+      // highlight-end
+          .build()
+    );
+}
+```
+
+</TabItem>
+
+<TabItem value="flutter" label="Flutter" default>
+Vous pouvez désactiver la collecte de l'IDFA avec la propriété `withAppleIdfaCollectionDisabled` et celle du Google/Android Advertising ID avec `withGoogleAdvertisingIdCollectionDisabled`. Définissez-les sur `true` lors de l'activation du SDK Adapty :
+
+```dart showLineNumbers
+try {
+    await Adapty().activate(
+        configuration: AdaptyConfiguration(apiKey: 'YOUR_API_KEY')
+ // highlight-start
+          ..withGoogleAdvertisingIdCollectionDisabled(true), // set to `true`
+          ..withAppleIdfaCollectionDisabled(true), // set to `true`
+// highlight-end
+    );
+} catch (e) {
+    // handle the error
+}
+```
+</TabItem>
+
+<TabItem value="unity" label="Unity" default>
+Vous pouvez désactiver la collecte de l'IDFA avec la propriété `SetIDFACollectionDisabled` lors de l'activation du SDK Adapty. La collecte de l'AAID/GAID ne peut pas être désactivée pour l'instant.
+
+```dart showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_API_KEY")
+ // highlight-start
+    .SetIDFACollectionDisabled(true); // set to `true`
+ // highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+}
+```
+
+</TabItem>
+
+<TabItem value="rn" label="React Native" default>
+Vous pouvez également désactiver la collecte de l'IDFA avec la propriété `idfaCollectionDisabled` lors de l'activation du SDK Adapty, ou désactiver la collecte de l'AAID/GAID avec la propriété `adIdCollectionDisabled`.
+
+```typescript showLineNumbers
+adapty.activate('PUBLIC_SDK_KEY', {
+  // highlight-start 
+  ios: {
+      idfaCollectionDisabled: true, // set to `true`
+  }, 
+  android: {
+      adIdCollectionDisabled: true,
+  },
+  // highlight-end
+});
+```
+</TabItem>
+</Tabs>

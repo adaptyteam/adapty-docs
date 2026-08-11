@@ -1,25 +1,119 @@
 ---
 title: "在 Unity SDK 中使用本地化和语言代码"
-description: "了解如何使用 Adapty SDK 对 Unity 应用中的付费墙进行本地化。"
+description: "了解如何在 Unity 应用中使用 Adapty SDK 对付费墙进行本地化。"
 metadataTitle: "付费墙本地化 | Unity SDK | Adapty 文档"
 ---
 
-## 为什么这很重要 \{#why-this-is-important\}
+<SDKv4>
 
-在某些场景下，语言区域代码会发挥关键作用——例如，当你需要根据应用当前的本地化设置获取对应的付费墙时。
+## 这为什么重要 \{#why-this-is-important\}
 
-由于语言区域代码较为复杂，且在不同平台之间可能存在差异，我们对所有支持的平台统一使用一套内部标准。正因为这些代码比较复杂，了解你实际发送给服务器的内容、以及后续的处理逻辑就显得尤为重要——这样你才能始终获取到预期的本地化结果。
+当 Adapty 为流程或用户引导选择本地化语言，以及当你读取自定义付费墙的远程配置时，都会用到语言区域代码。
+
+语言区域代码较为复杂，在不同平台之间可能存在差异，因此 Adapty 在所有支持的平台上统一采用一套内部标准。了解该标准有助于你预判用户最终会收到哪种本地化内容。
+
 ## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
 
 在语言代码方面，Adapty 采用了经过少量调整的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。例如：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+## 语言代码匹配 \{#locale-code-matching\}
+
+在 SDK v4 中，流程和用户引导的语言代码匹配方式有所不同：流程由 SDK 在设备端本地化，用户引导则由 Adapty 服务器负责本地化。
+
+### 流程与付费墙编辑工具付费墙 \{#flows-and-paywall-builder-paywalls\}
+
+在付费墙编辑工具中构建的付费墙，在 SDK v4 中以流程形式交付，因此以下规则同时适用于两者。
+
+匹配规则为精确匹配。SDK 会逐字符对比您传入的代码与流程本地化代码：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于包含 `pt-br` 本地化的流程，只有 `pt-br` 能够匹配：`pt-BR`、`pt_BR` 和 `pt-PT` 均无法匹配。
+
+当代码未匹配到任何本地化时，流程会静默地以其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染——SDK 不会返回错误，也不会记录警告。
+
+当代码匹配成功时，Adapty 会将匹配到的本地化与默认本地化合并：匹配到的本地化中未定义的字符串和资源，将从默认本地化中获取。
+
+省略语言代码并不等同于请求流程的默认本地化：SDK 会固定替换为 `en`。若某个流程的默认语言是 `de`，但该流程存在 `en` 本地化，则仍会以 `en` 渲染；只有当该流程没有 `en` 本地化时，才会回退到 `de`。
+
+:::warning
+传递语言代码时，请严格按照看板中的配置格式——小写子标签，以连字符分隔。不要直接传入系统语言标识符：`CultureInfo.CurrentCulture.Name` 返回的是 `pt-BR`，会回退到默认本地化。请在应用中先转换该值，再传入。
+:::
+
+### 用户引导 \{#onboardings\}
+
+用户引导在服务端完成本地化，服务端规则兼容多种格式。当你将 `Locale` 传入 [`GetOnboarding`](unity-get-onboardings) 时：
+
+1. 语言区域字符串会转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
+2. Adapty 查找与完整语言区域代码完全匹配的本地化内容
+3. 若未找到匹配项，Adapty 截取第一个连字符之前的子字符串（例如 `pt-br` 取 `pt`），并查找匹配的本地化内容
+4. 若仍未找到匹配项，Adapty 返回该用户引导默认语言区域的内容
+
+这样，`pt_BR`、`pt-BR` 和 `pt-br` 都会解析到同一个用户引导本地化版本。
+
+## 实现本地化 \{#implementing-localizations\}
+
+在 SDK v4 中，获取流程时无需传入语言区域代码——流程在创建视图时完成本地化。
+
+- **Flow Builder 和付费墙编辑工具付费墙**：SDK 不会读取设备语言环境，因此请在应用中自行解析并[在创建视图时传入](#choose-the-localization-of-a-flow)。语言环境代码为可选项——若省略，流程将以 `en` 渲染；若流程中没有 `en` 本地化版本，则使用其默认语言环境。
+- **自定义（远程配置）付费墙**：`GetFlow` 会在 `flow.RemoteConfigs` 中返回所有已配置的本地化版本。每个条目都是一个 `AdaptyRemoteConfig`，包含 `Locale` 代码和值的 `Dictionary`。请根据用户情况选择匹配的条目，并自行处理回退逻辑：
+
+```csharp showLineNumbers
+using System.Linq;
+using AdaptySDK;
+
+Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    var config = flow.RemoteConfigs.FirstOrDefault(c => c.Locale == "en")
+        ?? flow.RemoteConfigs.FirstOrDefault();
+    // read your values from config?.Dictionary
+});
+```
+
+Adapty 使用 [Adapty 的语言区域代码标准](#locale-code-standard-at-adapty) 中描述的格式存储 `Locale` 代码。SDK 不会自动将远程配置与语言区域匹配，因此应由您的应用决定使用哪条配置。
+
+### 选择流程的本地化语言 \{#choose-the-localization-of-a-flow\}
+
+要以特定本地化语言渲染流程或付费墙，请在创建视图时将语言区域代码传递给 `SetLocale`：
+
+```csharp showLineNumbers
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetLocale("pt-br");
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // view.Locale — the localization the view was built with
+});
+```
+
+请求的本地化语言存在时，`view.Locale` 会显示实际构建时使用的本地化语言；否则显示该流程的默认本地化语言。
+
+</SDKv4>
+
+<SDKv3>
+
+## 为什么这很重要 \{#why-this-is-important\}
+
+在某些场景下，语言区域代码会发挥关键作用——例如，当你需要为应用当前的本地化语言获取正确的付费墙时。
+
+由于语言区域代码较为复杂，且在不同平台之间可能存在差异，我们在所支持的所有平台上统一采用内部标准。正因为这些代码比较复杂，了解你向服务器发送的具体内容、以及后续处理流程就显得尤为重要——这样你才能始终获得预期的本地化结果。
+
+## Adapty 中的语言代码标准 \{#locale-code-standard-at-adapty\}
+
+在语言代码方面，Adapty 使用略经修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，以连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
+
 ## 语言区域代码匹配 \{#locale-code-matching\}
 
-当 Adapty 收到客户端 SDK 传入的语言区域代码并开始查找对应的付费墙本地化版本时，流程如下：
+当 Adapty 从客户端 SDK 收到含有语言区域代码的请求并开始查找对应付费墙本地化内容时，流程如下：
 
 1. 传入的语言区域字符串转换为小写，所有下划线（`_`）替换为连字符（`-`）
-2. 查找与完整语言区域代码完全匹配的本地化版本
-3. 如果未找到匹配项，则取第一个连字符前的子字符串（例如 `pt-br` 取 `pt`），再次查找匹配的本地化版本
-4. 如果仍未找到匹配项，则返回默认的 `en` 本地化版本
+2. 然后查找完全匹配该语言区域代码的本地化内容
+3. 如果未找到匹配项，则截取第一个连字符前的子字符串（如 `pt-br` 取 `pt`），再次查找匹配的本地化内容
+4. 如果仍未找到匹配项，则返回该付费墙默认语言区域的内容
+
 这样，发送 `'pt_BR'` 的 iOS 设备、发送 `pt-BR` 的 Android 设备以及发送 `pt-br` 的其他设备，都会得到相同的结果。
 ## 实现本地化：推荐方式 \{#implementing-localizations-recommended-way\}
 
@@ -124,4 +218,5 @@ public class PaywallManager : MonoBehaviour
 请注意，我们不建议使用此方法，原因如下：
 1. 在 iOS 上，首选语言与当前语言区域并不相同。如果想让本地化正确生效，要么依赖 Apple 的内置逻辑（使用推荐的本地化字符串文件方案时开箱即用），要么自行重新实现该逻辑。
 2. 很难预测 Adapty 服务器实际会收到什么内容。例如，在 iOS 上，设备可能上报类似 `ar_OM@numbers='latn'` 这样的语言区域标识，并将其发送到我们的服务器。而服务器收到后，返回的不会是你期望的 `ar-om` 本地化内容，而是 `ar`，这往往会让人感到意外。
-如果你仍决定采用这种方式，请确保已覆盖所有相关的使用场景。
+Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
+</SDKv3>

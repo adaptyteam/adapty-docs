@@ -1,24 +1,26 @@
 ---
 title: "Tối ưu hóa việc tải paywall trong Kotlin Multiplatform SDK"
-description: "Tải paywall Adapty đáng tin cậy: thời điểm, bộ nhớ đệm, và các phương án dự phòng cho Kotlin Multiplatform."
-metadataTitle: "Tối ưu hóa tải paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
+description: "Tải paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Kotlin Multiplatform."
+metadataTitle: "Tối ưu hóa việc tải paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
 ---
 
-Việc tải paywall đáng tin cậy trong Kotlin Multiplatform cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall đã được nhắm mục tiêu theo đối tượng, và có phương án dự phòng hợp lý khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ đệm, và các phương án dự phòng để đạt được điều đó.
+Một lần tải paywall đáng tin cậy trên Kotlin Multiplatform cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng mục tiêu, và xử lý dự phòng mượt mà khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
 
 :::tip
-Các quy tắc này giả định `Adapty.activate()` và `Adapty.identify()` đã được giải quyết xong. Xem [Thứ tự gọi trong Kotlin Multiplatform SDK](kmp-sdk-call-order).
+Các quy tắc sau đây giả định `Adapty.activate()` và `Adapty.identify()` đã được thực thi xong. Xem [Thứ tự gọi trong Kotlin Multiplatform SDK](kmp-sdk-call-order).
 :::
 
-## Quy tắc và những lỗi cần tránh \{#rules-and-pitfalls\}
+Các hướng dẫn dưới đây sử dụng tên phương thức của v3. Trong SDK v4, `getPaywall` được đổi tên thành `getFlow` (xem [hướng dẫn migration](migration-to-kmp-sdk-v4)) — mọi quy tắc đều áp dụng không thay đổi.
+
+## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 
 | Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Tải placement bạn sắp hiển thị.                                                                                                                | Tải trước tất cả các placement đồng thời khi khởi chạy.        | Tải trước hàng loạt sẽ chặn luồng chính và gây ra màn hình đen trong thời gian đó.                                  |
-| Gọi `getPaywall` sau khi attribution đã có cơ hội được xử lý — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getPaywall` khi khởi chạy ứng dụng.                       | Attribution chưa được xử lý xong. Paywall sẽ được giải quyết dựa trên đối tượng mặc định và bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement.                                                           | Chờ `getPaywall` vô thời hạn.                     | Không có timeout, người dùng ở vùng kết nối kém sẽ thấy màn hình trống cho đến khi mạng phục hồi — hoặc đóng ứng dụng.     |
+| Fetch placement mà bạn sắp hiển thị.                                                                                                                | Prefetch tất cả các placement đồng thời khi khởi chạy.        | Bulk prefetch chặn main thread và gây ra màn hình đen trong suốt quá trình tải.                                  |
+| Fetch `getPaywall` sau khi attribution có thời gian để resolve — ví dụ: 1–2 giây sau khi `activate` hoặc sau khi `setOnProfileUpdatedListener` được kích hoạt. | Gọi `getPaywall` khi khởi chạy ứng dụng.                       | Attribution chưa được xử lý xong. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                                                           | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ đóng ứng dụng.     |
 
-Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-kmp) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-kmp) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
 ## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
 

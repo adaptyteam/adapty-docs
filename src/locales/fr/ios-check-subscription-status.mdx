@@ -1,0 +1,131 @@
+---
+title: "Vérifier le statut d'abonnement dans le SDK iOS"
+description: "Découvrez comment vérifier le statut d'abonnement dans votre application iOS avec Adapty."
+metadataTitle: "Vérifier le statut d'abonnement | Documentation Adapty"
+displayed_sidebar: sdkios
+keywords: ['getProfile', 'statut abonnement']
+rank: 100
+---
+
+Pour décider si les utilisateurs peuvent accéder au contenu payant ou voir un paywall, vous devez vérifier leur [niveau d'accès](access-level) dans le profil.
+
+Cet article vous montre comment accéder à l'état du profil pour décider ce que les utilisateurs doivent voir — s'il faut leur afficher un paywall ou leur accorder l'accès aux fonctionnalités payantes.
+
+## Obtenir le statut d'abonnement \{#get-subscription-status\}
+
+Lorsque vous décidez d'afficher un paywall ou du contenu payant à un utilisateur, vous vérifiez son [niveau d'accès](access-level) dans son profil. Deux options s'offrent à vous :
+
+- Appelez `getProfile` si vous avez besoin des données de profil les plus récentes immédiatement (par exemple au lancement de l'application) ou si vous souhaitez forcer une mise à jour.
+- Configurez des **mises à jour automatiques du profil** pour conserver une copie locale qui se rafraîchit automatiquement dès que le statut d'abonnement change.
+
+:::important
+Par défaut, le niveau d'accès `premium` existe déjà dans Adapty. Si vous n'avez pas besoin de configurer plus d'un niveau d'accès, vous pouvez simplement utiliser `premium`.
+:::
+
+### Récupérer le profil \{#get-profile\}
+
+La façon la plus simple d'obtenir le statut d'abonnement est d'utiliser la méthode `getProfile` pour accéder au profil :
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+do {
+    let profile = try await Adapty.getProfile()
+    
+    if profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+        // grant access to premium features
+    }
+} catch {
+    // handle the error
+}
+```
+</TabItem>
+<TabItem value="swift-callback" label="Swift-Callback" default>
+
+```swift showLineNumbers
+Adapty.getProfile { result in
+    if let profile = try? result.get() {
+        // check the access
+        profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false {
+            // grant access to premium features
+        }
+    }
+}
+```
+</TabItem>
+</Tabs>
+
+### Écouter les mises à jour d'abonnement \{#listen-to-subscription-updates\}
+
+Si vous souhaitez recevoir automatiquement les mises à jour du profil dans votre application :
+
+1. Conformez un type de votre choix au protocole `AdaptyDelegate` et implémentez la méthode `didLoadLatestProfile` — Adapty appellera automatiquement cette méthode dès que le statut d'abonnement de l'utilisateur change. Dans l'exemple ci-dessous, nous utilisons un type `SubscriptionManager` pour gérer les flux d'abonnement et le profil de l'utilisateur. Ce type peut être injecté en tant que dépendance ou configuré comme singleton dans une application UIKit, ou ajouté à l'environnement SwiftUI depuis la structure principale de l'application.
+2. Stockez les données de profil mises à jour lorsque cette méthode est appelée, afin de pouvoir les utiliser dans toute votre application sans effectuer de requêtes réseau supplémentaires.
+
+```swift
+class SubscriptionManager: AdaptyDelegate {
+
+    nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
+        let hasAccess = profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+        // Update UI, unlock content, etc.
+    }
+}
+
+// Set delegate after Adapty activation
+Adapty.delegate = subscriptionManager
+```
+
+:::note
+Adapty appelle automatiquement `didLoadLatestProfile` au démarrage de votre application, fournissant les données d'abonnement en cache même si l'appareil est hors ligne.
+:::
+
+## Connecter le profil à la logique des paywalls \{#connect-profile-with-paywall-logic\}
+
+Lorsque vous devez prendre des décisions immédiates concernant l'affichage de paywalls ou l'accès aux fonctionnalités payantes, vous pouvez vérifier directement le profil de l'utilisateur. Cette approche est utile dans des scénarios comme le lancement de l'application, l'accès à des sections premium, ou avant d'afficher un contenu spécifique.
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+```swift
+private func checkAccessLevel() async -> Bool {
+    do {
+        let profile = try await Adapty.getProfile()
+        return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+    } catch {
+        print("Error checking access level: \(error)")
+        return false
+    }
+}
+
+// In your initialization logic:
+let hasAccess = await checkAccessLevel()
+if !hasAccess {
+    paywallPresented = true // Show paywall if no access
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+```swift
+private func checkAccessLevel() async throws -> Bool {
+    let profile = try await Adapty.getProfile()
+    return profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive ?? false
+}
+
+// In your initialization logic:
+let hasAccess = try await checkAccessLevel()
+if !hasAccess {
+    presentPaywall(with: paywallConfiguration)
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Étapes suivantes \{#next-steps\}
+
+Maintenant que vous savez comment suivre le statut d'abonnement, [découvrez comment travailler avec les profils utilisateurs](ios-quickstart-identify) pour vous assurer qu'il s'aligne avec votre système d'authentification existant et les autorisations de partage d'accès payant.
+
+Si vous n'avez pas votre propre système d'authentification, ce n'est pas un problème, Adapty gérera les utilisateurs pour vous, mais vous pouvez quand même lire le [guide](ios-quickstart-identify) pour comprendre comment Adapty fonctionne avec les utilisateurs anonymes.

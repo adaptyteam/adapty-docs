@@ -1,0 +1,91 @@
+---
+title: "Observer modunda flow'ları gösterme - Unity"
+description: "Observer modunda Unity uygulamanızda flow'ları ve Paywall Builder paywall'larını gösterin; satın almaları kendi kodunuzla yönetin."
+metadataTitle: "Observer modunda flow'ları gösterme - Unity | Adapty Dokümanları"
+keywords: ['observer mode', 'IAdaptyUIObserverModeResolver', 'SetObserverModeResolver', 'flow']
+---
+
+Builder ile bir flow veya paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Böyle bir flow veya paywall, hem neyin hem de nasıl gösterileceğini zaten içerir.
+
+:::warning
+Bu bölüm yalnızca [Observer modu](observer-vs-full-mode) için geçerlidir. Observer modunda çalışmıyorsanız [Flow ve paywall'ları görüntüleme](unity-present-paywalls) konusuna bakın.
+:::
+
+:::info
+Bu özellik Adapty Unity SDK 4.0 (beta) veya üzerini gerektirir — daha önce yalnızca iOS ve Android native SDK'larında mevcuttu. Yükseltmek için [migration kılavuzuna](migration-to-unity-sdk-v4) bakın.
+:::
+
+<details>
+   <summary>Flow sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+
+1. Adapty'nin [App Store ile](initial_ios) ve [Google Play ile](initial-android) ilk entegrasyonunu kurun.
+   2. Adapty SDK'yı yükleyin ve yapılandırın. Yapılandırma builder'ında `SetObserverMode(true)` çağrısını yapmayı unutmayın. [Unity SDK kurulum kılavuzuna](sdk-installation-unity#activate-adapty-module-of-adapty-sdk) bakın.
+   3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
+   4. [Builder'larda flow'lar veya paywall'lar yapılandırın](create-paywall) ve bunlara ürün atayın.
+   5. [Placement'lar oluşturun ve flow'larınızı veya paywall'larınızı bunlara atayın](create-placement).
+   6. Mobil uygulama kodunuzda [flow'ları ve yapılandırmalarını alın](unity-get-pb-paywalls).
+
+</details>
+
+Observer modunda SDK, satın alma işlemlerini sizin yerinize gerçekleştirmez. Kullanıcı Adapty tarafından render edilen bir flow veya paywall'da satın alma ya da geri yükleme butonuna dokunduğunda, SDK sizin `IAdaptyUIObserverModeResolver`'ınızı çağırır — satın alma veya geri yükleme işlemini orada kendi kodunuzla gerçekleştirin.
+
+1. `IAdaptyUIObserverModeResolver` arayüzünü uygulayın:
+
+   ```csharp showLineNumbers
+   using System;
+   using AdaptySDK;
+
+   public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+   {
+       public void FlowViewDidInitiatePurchase(
+           AdaptyUIFlowView view,
+           AdaptyPaywallProduct product,
+           Action onStartPurchase,
+           Action onFinishPurchase
+       )
+       {
+           onStartPurchase(); // the view shows its loading indicator
+           // make the purchase with your own code,
+           // then report the transaction to Adapty and call:
+           onFinishPurchase(); // the view hides the loading indicator
+       }
+
+       public void FlowViewDidInitiateRestore(
+           AdaptyUIFlowView view,
+           Action onStartRestore,
+           Action onFinishRestore
+       )
+       {
+           onStartRestore();
+           // restore purchases with your own code, then:
+           onFinishRestore();
+       }
+   }
+   ```
+
+`FlowViewDidInitiatePurchase` yöntemi, kullanıcının bir satın alma başlattığını; `FlowViewDidInitiateRestore` ise bir geri yükleme başlattığını size bildirir. Buna yanıt olarak özel satın alma veya geri yükleme flow'unuzu tetikleyin.
+
+   Ayrıca, satın alma veya geri yükleme sürecini AdaptyUI'ya bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi gösterme gibi flow'un doğru çalışması için gereklidir:
+
+| Callback           | Description                                                                      |
+   | :----------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase()  | Satın alma işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.  |
+   | onFinishPurchase() | Satın alma işleminin tamamlandığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır. |
+   | onStartRestore()   | Geri yükleme işleminin başladığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.   |
+   | onFinishRestore()  | Geri yükleme işleminin tamamlandığını AdaptyUI'a bildirmek için bu callback çağrılmalıdır.  |
+
+Flow, kodunuz çalışırken açık kalır — başarılı bir satın alma veya geri yükleme işleminin ardından onu kendiniz kapatmanız gerekir.
+
+2. Herhangi bir ekran göstermeden önce resolver'ı kaydedin:
+
+   ```csharp showLineNumbers
+   Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+   ```
+
+   Kayıtlı bir resolver olmadan, flow görünümünün satın alma işlemini kodunuza iletmesinin bir yolu yoktur ve kullanıcı satın alma butonuna bastığında hiçbir şey olmaz.
+
+3. Flow görünümünü her zamanki gibi oluşturun ve gösterin: [flow'u alın ve görünümünü oluşturun](unity-get-pb-paywalls), ardından [gösterin](unity-present-paywalls). Ekstra parametre gerekmez — resolver bir kez kaydedildiğinde, Adapty tarafından render edilen her flow veya paywall, satın alma ve geri yüklemeleri bu resolver üzerinden yönlendirir.
+
+:::warning
+[İşlemi raporlamayı ve paywall ile ilişkilendirmeyi](report-transactions-observer-mode-unity) unutmayın. Aksi takdirde Adapty işlemi tanımaz ve satın almanın kaynak paywall'unu belirleyemez.
+:::

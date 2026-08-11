@@ -1,29 +1,266 @@
 ---
 title: "PostHog"
-description: ""
-metadataTitle: ""
+description: "Kullanıcıların ne satın aldığını uygulamada ne yaptıklarıyla ilişkilendirmek için Adapty abonelik etkinliklerini PostHog'a gönderin."
+metadataTitle: "PostHog | Adapty Dokümanları"
 ---
 
-PostHog, kullanıcı davranışını takip etmek, ürün kullanımını görselleştirmek ve retention analizi yapmak için araçlar sunan bir analitik platformdur. Etkinlik takibi, kullanıcı akışları ve özellik bayrakları gibi özellikleriyle ürününüzü daha iyi anlamanıza ve geliştirmenize yardımcı olmak için tasarlanmıştır.
-PostHog'u Adapty ile entegre etmek; deneme başlangıçları, yenilemeler ve iptaller gibi abonelikle ilgili olayları sorunsuz biçimde izlemenizi sağlar. Bu olayları PostHog'a göndererek abonelik değişikliklerinin kullanıcı davranışını nasıl etkilediğini analiz edebilir, paywall performansını değerlendirebilir ve mevcut analitik iş akışınız içinde monetizasyon stratejilerinize dair daha derin içgörüler elde edebilirsiniz.
-## Entegrasyon Özellikleri \{#integration-characteristics\}
+import AccessLevelUpdatedEventFeed from '@site/src/locales/tr/reusable/AccessLevelUpdatedEventFeed.mdx';
 
-| Entegrasyon özelliği | Açıklama |
-| -------------------------- | ------------------------------------------------------------ |
-| Zamanlama | Gerçek zamanlı; etkinlikler PostHog kontrol panelinde hemen görünmeyebilir. |
-| Veri yönü | Adapty etkinlikleri, Adapty sunucusundan PostHog sunucusuna gönderilir. |
-| Adapty entegrasyon noktası | <ul><li> Mobil uygulama kodunda PostHog ve Adapty SDK'ları</li><li> Adapty sunucusu</li></ul> |
+Adapty, abonelik etkinliklerini (satın almalar, yenilemeler, iadeler, deneme başlangıçları) PostHog'un etkinlik akışına aktarabilir; böylece bu veriler geri kalan verilerinizle birleşir.
 
-## PostHog etkinlik yapısı \{#posthog-event-structure\}
+Her etkinlik; gelir, para birimi, mağaza ve ürün ayrıntılarını, ayrıca satın almayı oluşturan paywall ve A/B testi varyantını içerir. Veriler PostHog'a ulaştığında herhangi bir PostHog aracı bunları kullanabilir.
 
-Adapty, seçilen etkinlikleri [PostHog Entegrasyon sayfasındaki](https://app.adapty.io/integrations/posthog) **Events names** bölümünde yapılandırıldığı şekilde PostHog'a gönderir. Her etkinlik şu yapıya sahiptir:
+Adapty'nin abonelik etkinlikleri, PostHog'da halihazırda takip ettiğiniz her şeye bir gelir boyutu ekler:
+
+- **Hangi uygulama içi eylemler bir aboneliği öngörür?** `trial_started` ve `subscription_started` ile kendi PostHog event'lerinizi ilişkilendirerek satın almaya yol açan davranışı bulun.
+- **Hangi deney varyantı daha fazla kazandırdı?** Herhangi bir ürün değişikliği için PostHog deneyinde metrik olarak Adapty'nin gelir event'lerini kullanın. Adapty'nin [A/B testleri](ab-tests) paywall'ları ve onboarding'leri kapsar.
+- **İade öncesinde ne olur?** `subscription_refunded` üzerine bir insight oluşturun, ardından arkasındaki kişileri açıp oturum kayıtlarını izleyin.
+- **Hatalar yenilemeleri etkiler mi?** Hata takibini `subscription_renewal_cancelled` ile çapraz karşılaştırın; bu event, kullanıcı otomatik yenilemeyi kapatar kapatmaz tetiklenir — `subscription_expired`'dan çok önce.
+- **Aboneler serbest kullanıcılara kıyasla nasıl bir elde tutma oranı gösterir?** Türetilmiş erişim durumu üzerinden kohort ve elde tutma eğrileri oluşturun — bkz. [Abone ile serbest kullanıcıyı nasıl ayırt edersiniz](#how-to-tell-a-subscriber-from-a-free-user).
+- **Hangi paywall ve varyant geliri yarattı?** Satın alma event'leri, bunları üreten paywall ve varyantı taşır; böylece geliri paywall'a göre ayrıştırabilirsiniz. Görüntülemeden satın almaya oranını ölçmek için PostHog SDK'sıyla paywall görüntülemelerini yakalayın.
+- **Her iki veri seti genelinde soru sorun** — insight'lar veya SQL ile.
+
+## Entegrasyon nasıl çalışır \{#how-the-integration-works\}
+
+PostHog, her kullanıcıyı `distinct_id` adı verilen bir string ile tanımlar. Bu entegrasyonun tamamı, Adapty ve PostHog'un söz konusu string üzerinde anlaşmasına dayanır.
+
+1. PostHog SDK, kullanıcıya bir `distinct_id` atar. İlk başlatmada bu dize cihaz kapsamlı ve anonimdir. Ancak giriş yapıldığında özel bir değer atayabilir ya da çıkış yapıldığında sıfırlayabilirsiniz.
+2. Her uygulama başlatmasında, `Adapty.activate()` çağrısından sonra ve herhangi bir satın alma gerçekleşmeden önce, `setIntegrationIdentifier()` ile `distinct_id` değerini Adapty'ye aktarın. Adapty, bu değeri kullanıcının Adapty profiline `posthog_distinct_user_id` olarak ekler.
+3. Kullanıcı bir deneme başlattığında veya satın alma yaptığında, Adapty'nin sunucuları olayı ilgili `distinct_id` ile birlikte PostHog'un capture API'sine gönderir. Bu alışveriş, uygulamanızın dışında sunucular arasında gerçekleşir.
+4. PostHog, olayı söz konusu `distinct_id`'ye sahip kişiye bağlar; böylece abonelik geliri, kullanıcının uygulamanızda yaptığı diğer her şeyin yanında görünür.
+
+### Adapty'nin ID'sini PostHog ile Eşleştirin \{#match-adaptys-id-to-posthogs\}
+
+Her iki sistemin de aynı kullanıcı için aynı `distinct_id` değerini kullanması gerekir; aksi takdirde bir kişi birbirine bağlı olmayan iki ayrı varlığa bölünür. Bu durumu önlemenin iki yolu vardır ve hangisinin uygun olduğu, satın alma işleminin ne zaman gerçekleşebildiğine bağlıdır.
+
+**Satın alma için giriş zorunluysa**, kullanıcı giriş yaptığı anda **Customer User ID** değerinizle PostHog'un `identify()` fonksiyonunu çağırın. Başka bir değer olmadığında Adapty de bu değeri kullanır, dolayısıyla her iki sistem eşleşir.
+
+**Anonim kullanıcılar satın alma yapabiliyorsa**, PostHog'un `distinct_id` değerini okuyun ve `setIntegrationIdentifier` ile Adapty'ye iletin. Bunu `Adapty.activate()` sonrasında her başlatmada ve her PostHog `reset()` sonrasında çağırın. Anonim profillerin Customer User ID'si olmadığından, PostHog'un kendi ID'si her iki sistemin de paylaşabileceği tek değerdir — bakınız [Uygulama kodunuzu yapılandırın](#configure-your-app-code).
+
+Hangi yöntemi seçerseniz seçin, bu değerin yeniden yükleme sonrasında da geçerliliğini koruması gerekir. Adapty her yeniden yüklemede yeni bir profil oluşturur; PostHog ise cihaz başına yeni bir anonim `distinct_id` üretir. Dolayısıyla her iki sistem de kendi başına bu boşluğu kapatamaz. Adapty, ücretli erişimi kullanıcının anonim profilleri arasında aktarır; ancak bu, access level'ları birbirine bağlar — analytics kimliğini değil. Devralan profil, yine kendi ID'si altında event göndermeye devam eder. Kendi backend'inizin sahip olduğu kalıcı bir ID olmadan, yeniden yükleme yapan bir abone PostHog'da öncesinde hiç satın alma yapmamış, yalnızca yenilemesi olan yeni bir kullanıcı olarak görünür.
+
+:::warning
+PostHog, kişi birleştirme işlemleri sırasında belirli değerleri engeller: `null`, `undefined`, `None`, `0`, `anonymous`, `guest`, `distinct_id`, `id`, `email`, `true`, `false`, `[object Object]`, `NaN`, boş dizeler ve bunların tırnaklı varyantları. Paylaştığınız değerin bu değerlerden birini asla alamayacağından emin olun. PostHog, UUID kullanmanızı veya göndermeden önce bu listeyle doğrulama yapmanızı önerir. Bkz. [PostHog kimlik çözümleme rehberi](https://posthog.com/docs/product-analytics/identity-resolution).
+:::
+
+Eşleşmeyen kimlikler veri parçalanmasına yol açar — daha fazlası için bkz. [Bir kullanıcı birkaç kişi olarak görünüyor](#one-user-appears-as-several-persons-in-posthog).
+
+:::important
+Adapty'nin eventleri kişi özellikleri taşır; bu da her birini PostHog'un terminolojisinde *tanımlanmış event* yapar — PostHog bu tür eventleri işlemek için anonim olanlara kıyasla 4 kata kadar daha fazla ücret alır. Adapty, abonelik yaşam döngüsündeki her değişiklik için bir event gönderir; bu nedenle hacim, istemci tarafı analizlerine kıyasla küçük kalır. Yine de eşleşen kimlikler kullanmaya değer: PostHog neredeyse her durumda kullanıcıları tanımlamanızı önerir.
+:::
+
+## Kurulum talimatları \{#setup-instructions\}
+
+### PostHog proje token'ınızı kopyalayın \{#copy-your-posthog-project-token\}
+
+1. Verilerinizin barındırıldığı dağıtıma — [US Cloud](https://us.posthog.com/) veya [EU Cloud](https://eu.posthog.com/) — giriş yapın ve bağlamak istediğiniz projeyi seçin.
+
+2. **Settings** > **Project** > **General** bölümüne gidin ve **Project token & ID** kısmını bulun.
+
+   <ZoomImage id="posthog-settings.webp" width="700px" alt="PostHog proje ayarları: Project token, Project ID ve Region gösteriliyor" />
+
+3. **Project token**'ı kopyalayın. `phc_` ile başlar. PostHog, bu token'ın yalnızca yazma amaçlı ve yayınlanmasının güvenli olduğunu belirtir; dolayısıyla yenilemenize gerek yoktur.
+
+### Adapty'yi Yapılandırın \{#configure-adapty\}
+
+1. Adapty Kontrol Paneli'nde [**Integrations** > **PostHog**](https://app.adapty.io/integrations/posthog) bölümünü açın.
+
+2. **PostHog** geçişini etkinleştirin.
+
+3. Token'ı **Project API key** alanına yapıştırın. Adapty, kaydetme sırasında bunu PostHog üzerinden doğrular — token geçersizse, olayları sessizce düşürmek yerine anında hata verir.
+
+4. "Sunucu konumu" bölümü kurulumunuza göre değişir.
+
+- **PostHog Cloud** kullanıyorsanız, **Region** alanını giriş yaptığınız dağıtıma göre ayarlayın — `US Cloud` veya `EU Cloud`. PostHog Instance URL alanını boş bırakın.
+   - **Kendi örneğinizi** çalıştırıyorsanız, **Self-hosted** seçeneğini belirleyin ve **PostHog Instance URL** alanını doldurun. Bölge seçmeyin. Adapty'nin örneğe proxy / VPN olmadan erişebilmesi gerekir.
+
+5. **How the revenue data should be send** seçeneğinin altında, Adapty'nin hangi gelir verisini göndereceğini belirleyin. Üç seçenek, [Adapty Analytics gelir görünümleriyle](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) eşleşir; dolayısıyla seçiminiz, PostHog rakamlarınızın uyum sağlaması gereken görünümü de belirler.
+
+| Seçenek | Adapty'nin gönderdiği |
+   | --- | --- |
+   | **Gross revenue** | Alıcının ödediği tam tutar; komisyon ve vergi düşülmeden önce. Varsayılan. |
+   | **Proceeds after store commission** | Mağaza komisyonu düşüldükten sonraki tutar; vergi hâlâ dahil. |
+   | **Proceeds after store commission and taxes** | Her ikisi de düşüldükten sonraki tutar. |
+
+6. Kalan seçenekleri ayarlayın:
+
+| Geçiş | Açık olduğunda | Varsayılan |
+   | --- | --- | --- |
+   | **Report user's currency** | Adapty, her satışı USD yerine alıcının ödeme yaptığı para biriminde raporlar. | Kapalı |
+   | **Send trial price** | Deneme başlangıçları aksi hâlde sıfır gelir olarak geçer. Bunu açarak her birine bir yer tutucu fiyat atayabilirsiniz; **Trial price percentage** alanı görünür — abonelik fiyatının yüzde kaçının deneme için raporlanacağını buraya girin. `%60` değerinde, 10 dolarlık bir abonelik 6 dolar olarak gönderilir. | Kapalı |
+   | **Exclude historical events** | Adapty, kullanıcının Adapty SDK içeren bir derleme yüklemesinden önce gerçekleşen olayları atlar. | **Açık** |
+
+7. **Events names** bölümünde istediğiniz etkinlikleri yeniden adlandırın veya devre dışı bırakın. PostHog boş olmayan her etkinlik adını kabul ettiğinden, mevcut taksonominizin gerektirdiği adları kullanabilirsiniz.
+
+8. **Save**'e tıklayın.
+
+<ZoomImage id="posthog-on.webp" width="700px" alt="Adapty Dashboard PostHog integration page with the toggle, key, server location, revenue settings, and event names" />
+
+### Sandbox verilerini üretimden uzak tutun \{#keep-sandbox-data-out-of-production\}
+
+Adapty, sandbox ve üretim işlemlerini aynı entegrasyon üzerinden gönderir; dolayısıyla ikisi de aynı PostHog projesine düşer. Entegrasyon yalnızca bir **Project API key** alır; başka bir yere yönlendirmek için ayrı bir sandbox anahtarı yoktur.
+
+Geliştirme sürümünüze kendi PostHog projesini vermek de sandbox olaylarını üretim projesinden uzak tutmaz. Sandbox, **mağaza işleminin** bir özelliğidir, sürümünüzün değil. App Store incelemesi ve TestFlight satın almaları, üretim sürümünden gerçekleştirilen sandbox işlemleridir.
+
+Bunun yerine, ikisini sorgularla ayırın. Her olay, `Sandbox` veya `Production` olarak ayarlanmış bir `environment` özelliği içerir. Gerçek geliri izole etmek için filtreleyin:
+
+```sql
+WHERE properties.environment = 'Production'
+```
+
+### Uygulama kodunuzu yapılandırın \{#configure-your-app-code\}
+
+1. PostHog SDK'sından mevcut `distinct_id` değerini alın:
+
+   - **Her uygulama başlangıcında**, `Adapty.activate()` çağrısından sonra ve herhangi bir satın alma gerçekleşmeden önce. PostHog, daha önceki olayları [farklı bir kişiye](#one-user-appears-as-several-persons-in-posthog) bağlar.
+   - **PostHog'un `reset()` fonksiyonu çağrıldıktan sonra**; çoğu uygulama bunu oturumu kapatma sırasında çalıştırır. `reset()` yeni bir anonim kimlik oluşturur ve bunu önceki kişiyle ilişkilendirmez; bu nedenle eski bir değer, az önce oturumu kapatan kullanıcıya işaret etmeye devam eder.
+
+2. Bu değeri `setIntegrationIdentifier()` ile Adapty'ye iletin.
+
+:::note
+PostHog'un `identify()` fonksiyonunu çağırdıktan sonra ekstra bir çağrı yapmanıza gerek yoktur. PostHog, anonim kişiyi tanımlananla birleştirdiğinden Adapty olayları aynı şekilde çözümlenir. Bkz. [Adapty'nin ID'sini PostHog ile Eşleştirme](#match-adaptys-id-to-posthogs).
+:::
+
+<SdkIntegrationNote />
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+```swift showLineNumbers
+
+let distinctId = PostHogSDK.shared.getDistinctId()
+
+do {
+    try await Adapty.setIntegrationIdentifier(.posthogDistinctUserId(distinctId))
+} catch {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)">
+
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId())
+) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Android (Java)">
+
+```java showLineNumbers
+Adapty.setIntegrationIdentifier(
+    AdaptyIntegrationIdentifier.posthogDistinctUserId(PostHog.distinctId()),
+    error -> {
+        if (error != null) {
+            // handle the error
+        }
+    }
+);
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+
+try {
+    final distinctId = await Posthog().getDistinctId();
+
+    await Adapty().setIntegrationIdentifier(
+        key: "posthog_distinct_user_id",
+        value: distinctId,
+    );
+} on AdaptyError catch (adaptyError) {
+    // handle the error
+} catch (e) {
+    // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+
+const posthog = usePostHog();
+
+try {
+    await adapty.setIntegrationIdentifier(
+        "posthog_distinct_user_id",
+        posthog.getDistinctId()
+    );
+} catch (error) {
+    // handle `AdaptyError`
+}
+```
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor (TS)">
+
+PostHog'un Capacitor eklentisi, PostHog tarafından değil, [Capawesome](https://capawesome.io/plugins/posthog/) tarafından topluluk tarafından sürdürülmektedir. Distinct ID'yi eklentinin `getDistinctId` metoduyla okuyun ve `setIntegrationIdentifier` ile Adapty'ye aktarın.
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+Distinct ID'yi PostHog'un [`getDistinctId()`](https://posthog.com/docs/libraries/kmp) metoduyla okuyun ve `setIntegrationIdentifier` ile Adapty'ye aktarın.
+
+</TabItem>
+<TabItem value="unity" label="Unity (C#)">
+
+PostHog, Windows, Mac, Linux, iOS, Android ve WebGL için [resmi bir Unity SDK'sı](https://posthog.com/docs/libraries/unity) sunmaktadır. `PostHog.DistinctId` değerini okuyun ve `Adapty.SetIntegrationIdentifier(key, value, completionHandler)` ile Adapty'ye iletin.
+
+</TabItem>
+</Tabs>
+
+### Entegrasyonu doğrulayın \{#verify-the-integration\}
+
+1. Bir sandbox satın alımı tetikleyin, ardından Adapty Kontrol Paneli'ndeki **Event Feed** bölümünü açın. Her teslimat denemesi sonucuyla birlikte görüntülenir. Adapty, kaydettiğinizde **Project API key**'inizi ve instance URL'sini doğrular; bu nedenle bu aşamadaki hatalar nadirdir. Olası nedenler:
+
+   - **Çalışmayı durduran bir anahtar.** Entegrasyon anahtarını silerseniz PostHog `401` döndürür.
+   - **Yanıt vermeyi durduran bir instance.** Adapty 10 saniye sonra beklemeyi keser. Self-hosted dağıtımları etkileyebilir.
+
+   Başarısız bir olayın üzerine gelerek PostHog'un yanıtını okuyun.
+
+2. PostHog'da [**Activity**](https://us.posthog.com/activity/explore) görünümünü açın ve etkinliği arayın. Satın alma işleminizin `environment` özelliği `Sandbox` olmalıdır.
+3. O kişinin profilini açın ve **Distinct IDs** sekmesini kontrol edin. Uygulamanızın kendi etkinlikleri ile Adapty'nin sunucu etkinlikleri aynı kişiye ait olmalıdır. Aynı kullanıcı için iki farklı kişi görünüyorsa ID'ler eşleşmiyor demektir — bakınız [Bir kullanıcı PostHog'da birden fazla kişi olarak görünüyor](#one-user-appears-as-several-persons-in-posthog).
+
+:::note
+Adapty'nin event'leri hiçbir zaman uygulamanızın kendi PostHog hata ayıklama çıktısına ulaşmaz. Adapty bunları kendi sunucularından gönderir, bu nedenle hiçbir zaman uygulamanızın SDK'sından geçmez. Yerel günlüğün boş olması, entegrasyon hakkında hiçbir şey söylemez.
+:::
+
+## PostHog'da geliri raporlama \{#report-revenue-in-posthog\}
+
+Adapty Analytics, gelir rakamları için gerçeğin kaynağı olmaya devam eder; çünkü bu veriler eksiksiz mağaza verisinden hesaplanır ve PostHog yalnızca bu entegrasyonun ilettiği bilgileri alır. Ürün metriklerinizin yanında PostHog kontrol panelinde de geliri görmek istiyorsanız, PostHog'un [Revenue Analytics](https://posthog.com/docs/revenue-analytics/managed-views) özelliği, belirlediğiniz etkinlik özelliklerinden bu veriyi okur. PostHog'da **Data management** > **Revenue** bölümünü açın ve şu eşleştirmeleri yapın:
+
+| PostHog alanı | Adapty özelliği |
+| --- | --- |
+| Revenue | `price_usd`, `proceeds_usd` veya `net_revenue_usd` — [Gelir verilerinin nasıl gönderilmesi gerektiği](#configure-adapty) bölümünde seçtiğiniz seçenekle eşleştirin |
+| Currency | `currency` ya da USD olarak raporluyorsanız statik bir para birimi belirleyin |
+| Product | `vendor_product_id` |
+| Subscription | `original_transaction_id` |
+
+PostHog'un "values are in cents" seçeneğini **kapalı** bırakın. Adapty ondalıklı tutarlar gönderir, kuruş cinsinden değil.
+
+## PostHog olay yapısı \{#posthog-event-structure\}
+
+Adapty, [PostHog entegrasyon sayfasındaki](https://app.adapty.io/integrations/posthog) **Events names** bölümünde etkinleştirdiğiniz olayları, her olay için bir capture isteği gönderecek şekilde iletir:
 
 ```json showLineNumbers
 {
+  "api_key": "phc_YOUR_PROJECT_TOKEN",
   "distinct_id": "john.doe@example.com",
-  "timestamp": "2025-01-08T11:06:12+00:00",
+  "timestamp": "2026-01-08T11:06:12+00:00",
   "event": "subscription_started",
   "properties": {
+    "$ip": "10.168.1.1",
+    "$geoip_time_zone": "America/New_York",
+    "$geoip_disable": true,
     "$set": {
       "email": "user@example.com",
       "first_name": "John",
@@ -32,158 +269,172 @@ Adapty, seçilen etkinlikleri [PostHog Entegrasyon sayfasındaki](https://app.ad
       "gender": "male",
       "os": "iOS"
     },
-    "timezone": "America/New_York",
-    "ip_address": "10.168.1.1",
     "*": "{{other_event_properties}}"
   }
 }
 ```
 
-Parametreler:
+| Parametre | Tür | Açıklama |
+| --- | --- | --- |
+| `api_key` | String | PostHog **Project API key**'iniz. |
+| `distinct_id` | String | PostHog'daki kişiyi tanımlar. Adapty bulduğu ilk değeri kullanır — bkz. [distinct ID önceliği](#distinct-id-priority). |
+| `timestamp` | ISO 8601 tarih ve saat | Etkinliğin gerçekleştiği zaman. Yenilemeler ve deneme dönüşümleri gelecekteki bir tarihle gösterilebilir — bkz. [Etkinlikler PostHog'da gerçekleşmeden önce görünür](#events-appear-in-posthog-before-they-happen). |
+| `event` | String | **Events names** bölümünde belirlediğiniz ad. |
+| `properties` | Object | Adapty'nin [etkinlik özellikleri](messaging#event-properties), [IP ve konum özellikleri](#ip-and-location-properties) ve [`$set`](#person-properties). Adapty, değeri olmayan özellikleri atlar.|
 
-| **Parametre**   | **Tür**             | **Açıklama**                                              |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **distinct_id** | String               | Kullanıcı için benzersiz tanımlayıcı (ör. `profile.posthog_distinct_user_id`, `customer_user_id` veya `profile_id`). |
-| **timestamp**   | ISO 8601 tarih ve saat | Etkinliğin tarihi ve saati.                              |
-| **event**       | String               | [PostHog yapılandırmasının](https://app.adapty.io/integrations/posthog) Events names bölümünde tanımladığınız etkinlik adı. |
-| **properties**  | Object               | [properties.$set](posthog#propertiesset-parameters) parametrelerini ve tüm [etkinliğe özgü özellikleri](messaging#event-properties) içerir. Her özellik isteğe bağlıdır; eksik olması durumunda PostHog'a gönderilmez. |
+Yalnızca webhook'a özgü beş özellik burada hiçbir zaman görünmez — [Sınırlamalar](#limitations) bölümüne bakın.
 
-### properties.$set parametreleri \{#propertiesset-parameters\}
+### Farklı ID önceliği \{#distinct-id-priority\}
 
-Her `properties.$set` nesne parametresi isteğe bağlıdır; eksik olması durumunda PostHog'a gönderilmez.
+Adapty, tespit ettiği ilk değeri kullanır:
 
-| **Parametre**   | **Tür**             | **Açıklama**                                              |
-| --------------- | -------------------- | ------------------------------------------------------------ |
-| **email**           | String        | Kullanıcının e-posta adresi.                                        |
-| **first_name**      | String        | Kullanıcının adı.                                           |
-| **last_name**       | String        | Kullanıcının soyadı.                                            |
-| **birthday**        | String (Date) | Kullanıcının doğum tarihi.                                        |
-| **gender**          | String        | Kullanıcının cinsiyeti.                                               |
-| **os**              | String        | Kullanıcının cihazının işletim sistemi.                       |
+| Öncelik | Değer | Ayarlayan |
+| --- | --- | --- |
+| 1 | `posthog_distinct_user_id` | `setIntegrationIdentifier` çağrınız |
+| 2 | **Customer User ID** | `Adapty.activate()` veya `Adapty.identify()` |
+| 3 | Adapty'nin dahili profil ID'si | Adapty, her zaman mevcut |
 
-## PostHog entegrasyonunu kurma \{#setting-up-posthog-integration\}
+Adapty bu sıralamayı her olay için ayrı ayrı değerlendirir; bir kez kullanıcı başına değil. `setIntegrationIdentifier` çağrınız gerçekleşmeden önce tetiklenen bir olay, daha düşük öncelikli bir ID altına düşer ve PostHog aynı kullanıcı için ikinci bir kişi kaydeder.
 
-1. Adapty Kontrol Paneli'nde [Integrations -> PostHog](https://app.adapty.io/integrations/posthog) sayfasını açın ve geçişi etkinleştirin.
+[Adapty'nin ID'sini PostHog'la eşleştir](#match-adaptys-id-to-posthogs) bölümündeki iki kurulumdan birini seç, ardından herhangi bir event tetiklenmeden önce bu değeri yerleştir. Zaten bölünmüş kişiler için [Bir kullanıcı PostHog'da birden fazla kişi olarak görünüyor](#one-user-appears-as-several-persons-in-posthog) bölümüne bak.
 
-   <Zoom>
-     <img src="/assets/shared/img/posthog-on.webp"
-     style={{
-       border: 'none', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
+### IP ve konum özellikleri \{#ip-and-location-properties\}
 
-2. [PostHog Kontrol Paneli](https://posthog.com/)'ne giriş yapın.
+Adapty event'lerini konuma göre segmentlere ayırmak için `store_country` ve `profile_country` özelliklerini kullanın. Adapty, PostHog'un konum aramasını devre dışı bırakır; bu nedenle PostHog kendi `$geoip_*` değerlerini eklemez. Aşağıdaki üç özellik event başına geçerlidir, dolayısıyla proje ayarlarınız ve kendi event'leriniz bundan etkilenmez.
 
-3. **Settings -> Project** bölümüne gidin.
+| Özellik | Değer | Etki |
+| --- | --- | --- |
+| `$ip` | Kullanıcının IP adresi | PostHog bunu etkinlikte saklar. Adapty aynı değeri `x-forwarded-for` başlığı olarak gönderir. |
+| `$geoip_time_zone` | Kullanıcının saat dilimi | Adapty bu değeri doğrudan ayarlar. |
+| `$geoip_disable` | Her zaman `true` | Bu etkinlik için PostHog'un konum aramasını devre dışı bırakır. |
 
-4. **Project** penceresinde **Project ID** bölümüne kadar aşağı kaydırın ve **Project API key** değerini kopyalayın.
+### Kişi özellikleri \{#person-properties\}
 
-5. API anahtarını Adapty Kontrol Paneli'ndeki **Project API key** alanına yapıştırın. PostHog, sunucudan sunucuya entegrasyon için özel bir Sandbox modu sunmaz.
+`$set` içindeki her şey, bir event özelliği yerine PostHog **kişi** özelliği olur. PostHog, kişi özelliklerini tek bir event'e değil, kişiye bağlar; dolayısıyla bu özellikler belirli bir anı değil, kullanıcının mevcut durumunu tanımlar. Adapty, değeri olmayan alanları atlar ve hiçbirinde değer yoksa `$set`'i tamamen kaldırır.
 
-6. **PostHog Deployment** seçeneğinizi belirleyin:
-   | Seçenek | Açıklama                                                  |
-   | ------ | ------------------------------------------------------------ |
-   | us/eu  | Varsayılan PostHog barındırmalı dağıtımlar.                          |
-   | Custom | Kendi barındırdığınız örnekler için. Örnek URL'nizi **PostHog Instance URL** alanına girin. |
+| Parametre | Tür | Açıklama |
+| --- | --- | --- |
+| `email` | String | Kullanıcının e-posta adresi. |
+| `first_name` | String | Kullanıcının adı. |
+| `last_name` | String | Kullanıcının soyadı. |
+| `birthday` | String (date) | Kullanıcının doğum tarihi. |
+| `gender` | String | Kullanıcının cinsiyeti. |
+| `os` | String | Kullanıcının cihazının işletim sistemi. |
 
-7. (isteğe bağlı) Kendi barındırdığınız bir PostHog dağıtımı kullanıyorsanız, dağıtımınızın adresini **PostHog Instance URL** alanına girin.
+## Kısıtlamalar \{#limitations\}
 
-8. (isteğe bağlı) **Reporting Proceeds**, **Exclude Historical Events**, **Report User's Currency** ve **Send Trial Price** gibi ayarları düzenleyin. Bu seçenekler hakkında ayrıntılı bilgi için [Integration settings](configuration#integration-settings) bölümüne bakın.
+- **Access level veya abonelik durumu yok.** `access_level_updated` eventi yalnızca [webhook entegrasyonlarına](webhook) özeldir; bu nedenle Adapty, PostHog'a kullanıcının şu anda neye erişimi olduğunu açıklayan herhangi bir alan göndermez — bkz. [Abone ile ücretsiz kullanıcıyı nasıl ayırt edersiniz](#how-to-tell-a-subscriber-from-a-free-user).
+- **Geçmiş veri aktarımı yok.** Adapty, entegrasyonu etkinleştirdiğiniz andan itibaren eventleri iletir. Geçmiş satın almalar PostHog'a hiçbir zaman ulaşmaz.
+- **PostHog, Adapty eventlerine coğrafi konum eklemez.** PostHog, konumu eventin kaynağının IP adresinden tahmin eder. Adapty eventlerinin kaynağı her zaman bir Adapty sunucusudur — kullanıcının cihazı değil. Veri kirliliğini önlemek için Adapty, PostHog'a bu sorguyu atlamasını söyler. Adapty, `$geoip_time_zone`, `store_country` ve `profile_country` alanlarını doldurur — ancak daha ayrıntılı konum verisi göndermez.
+- **Adapty eventlerini kaynağa göre filtreleyemezsiniz.** PostHog, gönderen SDK'yı `$lib` alanına kaydeder — `posthog-ios`, `posthog-android`, `web` — ancak Adapty, SDK aracılığı olmadan doğrudan PostHog API'sine gönderim yaptığından bu özellik boş kalır. Bunun yerine event adına göre filtreleyin.
 
-9. (isteğe bağlı) **Events names** bölümünde PostHog'a hangi etkinliklerin gönderileceğini özelleştirebilirsiniz. İstemediğiniz etkinlikleri devre dışı bırakın veya gerektiğinde yeniden adlandırın.
+## Sorun Giderme \{#troubleshooting\}
 
-10. Kurulumu tamamlamak için **Save**'e tıklayın.
+- [Olaylar PostHog'da görünmüyor](#events-dont-appear-in-posthog)
+- [`access_level_updated` Event Feed'de başarısız olarak görünüyor](#access_level_updated-shows-as-failed-in-the-event-feed)
+- [Bir kullanıcı PostHog'da birden fazla kişi olarak görünüyor](#one-user-appears-as-several-persons-in-posthog)
+- [PostHog'daki gelir Adapty Analytics ile eşleşmiyor](#revenue-in-posthog-doesnt-match-adapty-analytics)
+- [Olaylar PostHog'da gerçekleşmeden önce görünüyor](#events-appear-in-posthog-before-they-happen)
+- [Adapty olaylarında ülke veya şehir verisi yok](#no-country-or-city-data-on-adapty-events)
+- [Abone ile ücretsiz kullanıcıyı nasıl ayırt edersiniz](#how-to-tell-a-subscriber-from-a-free-user)
+- [Paywall görüntülemeleri PostHog'da görünmüyor](#paywall-views-dont-appear-in-posthog)
 
-## SDK yapılandırması \{#sdk-configuration\}
+#### Olaylar PostHog'da görünmüyor \{#events-dont-appear-in-posthog\}
 
-PostHog'dan attribution verisi alabilmek için `distinctId` değerini aşağıda gösterildiği gibi Adapty'e iletin:
+- Önce Adapty **Event Feed**'i kontrol edin. Başarısız bir teslimat, PostHog'un döndürdüğü hatayı gösterir.
+- Başarılı bir teslimat, PostHog'un etkinliği sakladığını garanti etmez. PostHog, payload ve key geçerli olduğunda `200 OK` döndürür; ancak adı olmayan veya boş `distinct_id` içeren etkinlikleri sessizce atar.
+- Aradığınız etkinliğin entegrasyon ayarlarında etkin olduğunu doğrulayın.
+- PostHog'u kendiniz barındırıyorsanız, sunucunun `/capture` adresinde Adapty'nin POST isteklerini kabul ettiğinden emin olun. Başarılı bir yapılandırma bu erişimin var olduğunu garanti etmez — Adapty, key'inizin geçerliliğini kontrol etmek için farklı bir uç nokta kullanır.
 
-<SdkIntegrationNote />
+#### `access_level_updated` Event Feed'de başarısız olarak görünüyor
 
-<Tabs groupId="current-os" queryString>
+<AccessLevelUpdatedEventFeed />
 
-<TabItem value="swift" label="Swift" default>
+#### PostHog'da bir kullanıcı birkaç kişi olarak görünüyor
 
-```swift showLineNumbers
-do {
-    let distinctId = PostHogSDK.shared.getDistinctId()
+PostHog, çoğu ayrılmayı sonradan geri alamaz — bkz. [Adapty'nin ID'sini PostHog'unkiyle eşleştirme](#match-adaptys-id-to-posthogs).
 
-    try await Adapty.setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId
-    )
-} catch {
-    // handle the error
-}
-```
+##### ID'ler neden ayrışır \{#why-the-ids-diverge\}
 
-</TabItem>
+Adapty'nin gönderdiği her olay, kullanıcının Adapty profilindeki bir `distinct_id` taşır — bkz. [Distinct ID önceliği](#distinct-id-priority). Adapty bu değeri, uygulamanız `setIntegrationIdentifier` çağırdığında değil, olayı gönderdiği anda okur. Bir Adapty olayının `distinct_id`'si, uygulama kurulumunun dahili `distinct_id`'sinden farklıysa PostHog bu iki tür olayı farklı kişilere atar.
 
-<TabItem value="kotlin" label="Kotlin" default>
-```kotlin showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId()) { error ->
-    if (error != null) {
-        // handle the error
-    }
+Uyuşmazlığın üç farklı nedeni vardır:
 
-```
+1. **Uygulamanız platformlardan birinde `setIntegrationIdentifier` çağrısı yapmıyor.** Adapty, Customer User ID'ye veya anonim profil ID'sine geri döner. Yayınladığınız her platformu kontrol edin.
+2. **`setIntegrationIdentifier` çağrısı çok geç yapılıyor.** Bu çağrıdan önce gerçekleşen abonelik olayları, yedek ID ile kaydedilir.
+3. **PostHog'a `identify()` ile gönderdiğiniz ID, integration identifier olarak ayarladığınızdan farklı.** Adapty yalnızca en son ilettiğiniz değeri saklar ve bunu kendisi güncellemez. PostHog'un `reset()` fonksiyonu yeni bir anonim ID atar; bu durumda Adapty'de eski ID kalır — bu yüzden her `reset()` çağrısının ardından `setIntegrationIdentifier` fonksiyonunu tekrar çağırın.
 
- </TabItem>
+Üçünü de düzeltin; PostHog o andan itibaren kullanıcı başına tek bir kişi kaydeder.
 
-<TabItem value="java" label="Java" default>
+##### İlk identify() çağrısında ayrışan kullanıcı ID'lerini birleştirin \{#merge-diverging-user-ids-at-the-first-identify-call\}
 
-```java showLineNumbers
-Adapty.setIntegrationIdentifier("posthog_distinct_user_id", PostHog.distinctId(), error -> {
-    if (error != null) {
-        // handle the error
-    }
-});
-```
+Uygulamanızın ayrışan ID'leri uzlaştırmak için tek bir penceresi vardır: PostHog'un `identify()` fonksiyonuna yapılan **ilk çağrı**. PostHog, uygulama kurulumunun olaylarını bu çağrıda belirttiğiniz kişiyle birleştirir; bu nedenle Adapty'nin gönderdiği ID'yi kullanın — bkz. [Adapty'nin ID'sini PostHog'unki ile Eşleştirin](#match-adaptys-id-to-posthogs). Bu çağrının ardından PostHog, uygulama kurulumunu tanımlanmış olarak kabul eder ve iki tanımlı kişiyi birleştirmeyi reddeder.
 
-</TabItem>
+##### Reddedilen bir birleştirmeyi kontrol edin \{#check-for-a-refused-merge\}
 
-<TabItem value="flutter" label="Flutter" default>
-```javascript showLineNumbers
-try {
-    final distinctId = await Posthog().getDistinctId();
+PostHog'un bir kullanıcıyı iki kişi olarak kaydettiğini doğrulamak için PostHog'da [**Data management** > **Ingestion warnings**](https://us.posthog.com/data-management/ingestion-warnings) bölümünü açın ve `Refused to merge an already identified user` hatasını arayın.
 
-    await Adapty().setIntegrationIdentifier(
-        key: "posthog_distinct_user_id",
-        value: distinctId,
-    );
-} catch (e) {
-    // handle the error
-}
-```
+PostHog ayrıca ID, kendi rezerve değerlerinden biri olduğunda birleştirmeleri engeller — liste için [Adapty'nin ID'sini PostHog'la eşleştirme](#match-adaptys-id-to-posthogs) bölümüne bakın.
 
-</TabItem>
+##### Mevcut bir bölünmeyi onarma \{#repair-an-existing-split\}
 
-<TabItem value="unity" label="Unity" default>
+Ne `identify()` ne de `alias()`, [birleştirme penceresi](#merge-diverging-user-ids-at-the-first-identify-call) kapandıktan sonra bir ayrışmayı geri alabilir. Zorla birleştirme için yalnızca PostHog'un `$merge_dangerously` özelliği kullanılabilir. PostHog bunu geri alınamaz, herhangi bir güvence içermeyen ve yalnızca uygulama hatalarından tek seferlik kurtarma amacıyla tasarlanmış olarak belgelemektedir.
 
-Unity için resmi bir PostHog SDK'sı bulunmamaktadır.
+Bunu bir ayar olarak değil, bir event olarak gönderirsiniz ve iki kişiyi adlandırır. Yön, hangisinin devam edeceğine karar verir:
 
-</TabItem>
+| Alan | Değer |
+| --- | --- |
+| `distinct_id` | Birleştirme işleminden sağ çıkan kişi |
+| `properties.alias` | İçine birleştirilen kişi — olayları ve `distinct_id`'si hayatta kalana aktarılır |
 
-<TabItem value="rn" label="React Native (TS)" default>
-```typescript showLineNumbers
+Herhangi bir şey göndermeden önce hangi tarafın hayatta kalacağına karar verin. Adapty kişisi abonelik geçmişini, uygulamanızın kişisi ise uygulama içi davranışları tutar. Herhangi bir toplu düzeltme yapmadan önce tek bir kullanıcıyı bu işlemden geçirip sonucu kontrol edin. PostHog'un [Kullanıcılar nasıl birleştirilir](https://posthog.com/docs/product-analytics/identify#how-to-merge-users) sayfasında SDK'larının her biri için payload bilgisi yer almaktadır.
 
-// ...
-const posthog = usePostHog();
+#### PostHog'daki gelir Adapty Analytics ile eşleşmiyor \{#revenue-in-posthog-doesnt-match-adapty-analytics\}
 
-// ...
-try {
-  await adapty.setIntegrationIdentifier("posthog_distinct_user_id", posthog.getDistinctId());
-} catch (error) {
-  // handle `AdaptyError`
-}
-```
+Adapty ve PostHog aynı olayları farklı şekillerde işler. Bu farklılıklar neredeyse tüm uyumsuzlukların kaynağıdır.
 
-</TabItem>
+- **Her Adapty olayı, [Gelir verilerinin nasıl gönderileceği](#configure-adapty) altındaki her seçenek için birer tane olmak üzere üç farklı gelir miktarı taşır.** PostHog özellikleriyle eşleşme şekilleri şöyledir:
 
-</Tabs>
+| Adapty Analytics | Olay özelliği (USD cinsinden) | Olay özelliği (Alıcının para birimi cinsinden) |
+  | --- | --- | --- |
+  | Brüt gelir | `price_usd` | `price_local` |
+  | Mağaza komisyonu sonrası gelir | `proceeds_usd` | `proceeds_local` |
+  | Mağaza komisyonu ve vergiler sonrası gelir | `net_revenue_usd` | `net_revenue_local` |
 
-Adapty artık PostHog'a event gönderecek ve oradan attribution alacak.
+  Satırlar arasında karşılaştırma yapıldığında, komisyon, vergi veya her ikisine eşit bir fark ortaya çıkar. Adapty, **Report user's currency** ayarından bağımsız olarak her olayda altı özelliğin tamamını gönderir.
+
+- **Adapty her gelir olayını bir dönemde sayar; PostHog insight'ı yalnızca eklediğiniz olayları sayar.** `subscription_renewed` olayını atlarsanız, yerleşik herhangi bir uygulamanın gelirinin büyük bölümünü kaybedersiniz.
+
+- **Adapty'nin tarih aralığı son günün tamamını kapsar; `timestamp` filtresi ise verdiğiniz ana kadar sayar.** Adapty'de 1 Temmuz – 15 Temmuz, 15 Temmuz 23:59:59'a kadar olan tüm olayları içerir. PostHog'da `timestamp < 2026-07-15` o günün tamamını dışarıda bırakır — `timestamp < 2026-07-16` kullanın.
+
+- **Adapty Analytics, sandbox ile production'ı birbirinden ayırır; PostHog ise ikisini karıştırır.** `properties.environment = 'Production'` filtresini uygulayın — bkz. [Sandbox verilerini production'dan uzak tutun](#keep-sandbox-data-out-of-production).
+
+- **Adapty uygulamanızın raporlama saat dilimini kullanır; PostHog ise UTC alır.** Entegrasyonlar, [App Settings](general#3-reporting-timezone) kısmında ne ayarladığınızdan bağımsız olarak her zaman UTC zaman damgaları alır. UTC ile 1 Temmuz 23:30'daki bir satın alma, raporlama saat diliminiz +02:00 ise Adapty'de 2 Temmuz'a düşerken PostHog bunu 1 Temmuz'da saklar.
+
+- **PostHog'da geçmiş olaylar eksik.** İki ayrı sınır eski olayların dışarıda kalmasına neden olur; bu yüzden daha önceki abonelikler ve yenilemeler yalnızca Adapty Analytics'e ulaşır. Kendi PostHog SDK'nızın yakaladığı olaylar bundan etkilenmez.
+
+- **Geçmiş olayları hariç tut** seçeneği, [PostHog entegrasyon sayfasındaki](https://app.adapty.io/integrations/posthog) bir geçiş düğmesidir ve varsayılan olarak açıktır. Adapty, profil oluşturulmadan önceki tarihli olayları göndermez; Event Feed'de her biri süresi dolmuş olarak işaretlenir. Kullanıcının Adapty olayları bu nedenle ilk Adapty derlemesini başlattıkları andan itibaren başlar. Geçmişe dönük olayların o noktadan itibaren iletilmesine izin vermek için bu seçeneği kapatın.
+  - **Geçmiş veri doldurmama** bir [kalıcı kısıtlamadır](#limitations). Adapty olayları işledikçe gönderir ve entegrasyonu etkinleştirmeden önce işlediği olaylara geri dönmez.
+
+- **Entegrasyon ayarlarında devre dışı bıraktığınız olaylar PostHog'a hiçbir zaman ulaşmaz.** Adapty Analytics bunları yine de sayar. [Configure Adapty](#configure-adapty) bölümündeki **Events names** kısmını kontrol edin.
+
+#### Olaylar PostHog'da gerçekleşmeden önce görünüyor \{#events-appear-in-posthog-before-they-happen\}
+
+Yenilemeler ve deneme süresi dönüşümleri için Apple, Adapty'yi etkinlik gerçekleşmeden önce bilgilendirir. Adapty bu etkinlikleri, gelecekteki `timestamp` değerini değiştirmeden anında iletir. Adapty Analytics ise bu etkinlikleri o zaman gelene kadar bekletir; bu nedenle PostHog, Adapty'nin henüz raporlamadığı etkinlikleri gösterebilir. İkisi de doğrudur. Bunları hariç tutmak için `timestamp` üzerinde filtre uygulayın — bkz. [Gelecek tarihli etkinlik zaman damgaları](how-profiles-work#event-timestamps-with-future-dates-appleios).
+
+#### Adapty etkinliklerinde ülke veya şehir verisi yok \{#no-country-or-city-data-on-adapty-events\}
+
+Bunun yerine `store_country` ve `profile_country` özelliklerini kullanın. PostHog'un kendi `$geoip_*` değerleri Adapty event'lerinde boş kalır — bkz. [IP ve konum özellikleri](#ip-and-location-properties).
+
+#### Abone ile ücretsiz kullanıcıyı nasıl ayırt edersiniz \{#how-to-tell-a-subscriber-from-a-free-user\}
+
+Adapty event raporları, kullanıcının mevcut erişimini göstermez. `$set` yalnızca `email`, `first_name`, `last_name`, `birthday`, `gender` ve `os` içerir. Access level'ları tanımlayan event özellikleri yalnızca `access_level_updated` event'inde doldurulur ve Adapty bu event'i yalnızca webhook entegrasyonuyla paylaşır.
+
+İki yol vardır:
+
+- PostHog içindeki durumu olay geçmişinden türetin. En son Adapty olayı `subscription_started`, `subscription_renewed` veya `trial_converted` olan bir kişinin şu anda erişimi vardır; en son olayı `subscription_expired`, `trial_expired` veya `subscription_refunded` olan kişinin erişimi yoktur.
+- `access_level_updated` almak için [webhook entegrasyonunu](webhook) kullanın, ardından bunu kendiniz PostHog'a iletin. PostHog'un capture API'si kendi payload yapısını beklediğinden, bu sizin tarafınızda bir dönüşüm adımı gerektirir — Adapty'nin webhook payload'ı değiştirilmeden PostHog'a gönderilemez.
+
+#### Paywall görüntülemeleri PostHog'da görünmüyor \{#paywall-views-dont-appear-in-posthog\}
+
+Adapty'nin SDK'sı, paywall, flow ve onboarding etkileşimlerini yalnızca Adapty Analytics için kaydeder. Adapty'nin sunucusu, abonelik olaylarını entegrasyonlara iletir; ancak bu etkileşimler abonelik olayı değildir. Webhook'lar da bunları içermez. Paywall'ı gösterdiğiniz yerde PostHog'un SDK'sını kullanarak bu etkileşimleri kendiniz kaydedin.

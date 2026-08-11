@@ -2,25 +2,25 @@
 title: "与 Stripe 的初始集成"
 description: "将 Stripe 与 Adapty 集成，实现无缝的订阅支付处理。"
 metadataTitle: "Stripe 集成指南 | Adapty 文档"
-keywords: ['stripe', 'stripe 集成']
+keywords: ['stripe', 'stripe integration']
 rank: 50
 ---
 
 Adapty 通过追踪通过 [Stripe](https://stripe.com/) 完成的网页支付和订阅，支持 web2app 订阅流程。
 
-此集成涵盖网页端发起的购买（Stripe Checkout、托管支付页面或自定义网页流程），并将其与移动应用的访问权限和数据分析进行同步。
+此集成涵盖通过 Web 发起的购买（Stripe Checkout、托管支付页面、Payment Links 或自定义 Web 流程），并将其与移动端应用的访问权限及数据分析进行同步。
 
-适用于以下场景：
+以下场景适合使用此集成：
 
-- 为在网页端完成购买、之后安装应用并登录账户的用户自动开通付费功能
-- 在单一 Adapty 看板中查看所有订阅分析数据（包括同期群、趋势预测及其他分析工具）
+- 自动为在 Web 端完成购买、随后安装应用并登录账号的用户开放付费功能的访问权限
+- 在单一 Adapty 看板中汇总所有订阅数据（包括同期群分析、趋势预测以及我们的其他分析工具）
 
-尽管网页端购买在应用中越来越普遍，但 Apple App Store 目前仅允许美国地区对数字商品采用应用内购买以外的支付方式。请确保不要在其他国家的应用内推广您的网页订阅，否则应用可能会被拒审或下架。
+尽管网页购买对应用来说越来越普遍，但 Apple App Store 仅允许在美国地区针对数字商品使用区别于应用内购买的其他购买方式。请确保不要在其他国家/地区的应用内推广你的网页订阅，否则你的应用可能会被拒审或封禁。
 
 以下步骤介绍如何配置 Stripe 集成。
 
 :::important
-本集成的重点是追踪和同步 Stripe 网页端购买。如果您需要将用户从应用引导至网页结算页面，请参阅[网页付费墙](web-paywall)。
+本集成侧重于追踪和同步 Stripe 网页购买记录。如果你需要将用户从应用引导至网页结账页面，请参阅[网页付费墙](web-paywall)。
 :::
 
 ## 1\. 将 Stripe 连接到 Adapty \{#1-connect-stripe-to-adapty\}
@@ -106,7 +106,8 @@ Adapty 通过追踪通过 [Stripe](https://stripe.com/) 完成的网页支付和
 
 4. 将 Adapty 的 webhook URL 粘贴到 **Endpoint URL** 字段中。然后在 webhook 的 **Version** 字段中选择 **Latest API version**，并选择以下事件：
 
-   - charge.refunded
+  - charge.refunded
+   - checkout.session.completed
    - customer.subscription.created
    - customer.subscription.deleted
    - customer.subscription.paused
@@ -213,34 +214,60 @@ Stripe 中的产品 ID 格式为 `prod_...`，价格 ID 格式为 `price_...`。
 
 添加完所有必要产品后，下一步是告知 Stripe 哪位用户正在完成购买，以便 Adapty 能够识别！
 
-## 4\. 在网页端购买中附加用户 ID \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
+## 4\. 通过用户 ID 丰富网页端购买信息 \{#4-enrich-purchases-made-on-the-web-with-your-user-id\}
 
-Adapty 依赖来自 Stripe 的 webhook 作为唯一数据来源，用于为用户提供和更新访问等级。但在使用 Stripe 时，您需要从您这端提供额外信息，才能确保集成正常运行。
+Adapty 依赖 Stripe 的 webhook 来为用户提供和更新访问等级，这是唯一的信息来源。但若要让此集成正常工作，你需要在 Stripe 端提供额外的信息。
 
-为了让访问等级在各平台（网页或移动端）保持一致，您需要确保使用单一用户 ID，让 Adapty 能够通过 webhook 识别该用户。这可以是用户的邮箱、手机号，或您所使用的授权系统中的任意其他 ID。
+为了确保访问等级在各平台（网页端或移动端）之间保持一致，你需要确保有一个统一的用户 ID，让 Adapty 能够通过 Webhook 识别该用户。这个 ID 可以是用户的邮箱、手机号，或你所使用的授权系统中的任何其他 ID。Adapty 将这个值称为 `customer_user_id`。
 
-确定您希望用于识别用户的 ID。然后在代码中找到通过 Stripe 初始化支付的部分，并将该用户 ID 以 `customer_user_id` 为键添加到 [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata)（`sub_...`）或 [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata)（`ses_...`）对象的 `metadata` 字段中，如下所示：
+:::warning
+用户 ID 是必填项
+
+没有它，我们将无法匹配该用户，也无法在移动端为其提供相应的访问等级。
+:::
+
+Adapty 从**一个**来源读取用户 ID — 即在 [App Settings → Stripe](https://app.adapty.io/settings/stripe) 的 **Profile creation behavior** 中选择的来源。这不是备用链：如果所选来源在某笔交易中为空，即使该 ID 存在于 Stripe 数据的其他位置，该购买也将保持匿名。所有可用来源的详情请参阅 [Profile creation behavior](stripe#profile-creation-behavior)。
+
+根据您在 Stripe 中创建购买的方式选择相应选项。
+
+### 通过 Stripe API 创建的结账会话和订阅 \{#checkout-sessions-and-subscriptions-created-via-the-stripe-api\}
+
+将 **Profile creation behavior** 保持为 **Use customer_user_id from metadata (default)**。然后，找到代码中初始化 Stripe 支付的部分，将该用户 ID 以 `customer_user_id` 为键，添加到 [Stripe Subscription](https://docs.stripe.com/api/subscriptions/object#subscription_object-metadata)（`sub_...`）或 [Checkout Session](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-metadata)（`ses_...`）对象的 `metadata` 中，如下所示：
 
 ```json showLineNumbers title="Stripe Metadata contents"
 {'customer_user_id': "YOUR_USER_ID"}
 ```
 
-这一简单的改动是您在代码层面唯一需要做的事情。之后，Adapty 会解析从 Stripe 接收到的所有 webhook，提取该 `metadata`，并将订阅正确关联到您的客户。
-
-:::warning
-用户 ID 是必填项
-
-否则，我们将无法匹配该用户并在移动端为其授予访问等级。
-
-如果您没有在 `metadata` 中提供 `customer_user_id`，可以选择让 Adapty 在其他位置查找 `customer_user_id`：要么使用 Stripe 客户对象中的 `email`，要么使用 Stripe Session 中的 `client_reference_id`。
-
-了解更多关于配置用户画像创建行为的信息，请参阅[下方内容](stripe#profile-creation-behavior)。
-:::
+这个简单的添加是你在代码中唯一需要做的事情。完成后，Adapty 将解析从 Stripe 收到的所有 webhook，提取此 `metadata` 并将订阅正确关联到你的客户。
 
 :::note
-Stripe 中的 Customer 也是必需的
+Stripe 中也需要创建 Customer
 
-如果您使用 Checkout Sessions，请[确保创建了 Stripe Customer](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation)，将 `customer_creation` 设置为 `always`。
+如果您使用的是 Checkout Sessions，请[确保创建 Stripe Customer](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-customer_creation)，将 `customer_creation` 设置为 `always`。
+:::
+
+### 付款链接（无需代码）\{#payment-links-no-code\}
+
+如果你通过 [Stripe Payment Links](https://docs.stripe.com/payment-links) 销售商品，且没有后端来设置 `metadata`，可以在链接的 `client_reference_id` 查询参数中传入用户 ID：
+
+```text title="Payment Link with a user ID"
+https://buy.stripe.com/your_link?client_reference_id=YOUR_USER_ID
+```
+
+Stripe 会将此值保存在 Checkout Session 中，并通过 `checkout.session.completed` 事件传递给 Adapty。这对订阅和一次性购买均有效。
+
+:::warning
+请先切换用户画像创建行为
+
+Adapty 仅在 [App Settings → Stripe](https://app.adapty.io/settings/stripe) 中的 **Profile creation behavior** 设置为 **Use client_reference_id** 时，才会读取 `client_reference_id`。否则，购买行为将创建一个匿名用户画像。
+
+该设置对整个应用生效：一旦切换为 `client_reference_id`，Adapty 将不再从元数据中读取其他 Stripe 流程的 `customer_user_id`。
+:::
+
+:::important
+请确保您的 webhook 发送 `checkout.session.completed`
+
+Adapty 在为新的 Stripe 连接创建 webhook 端点时会自动启用此事件，但不会更新已有的端点。如果你在支持 Payment Links 之前已连接 Stripe，请在 Stripe 中打开 [Developers → Webhooks](https://dashboard.stripe.com/webhooks)，选择 Adapty 端点，点击 **Edit destination**，然后将 `checkout.session.completed` 添加到事件列表中。签名密钥保持不变。
 :::
 
 ## 5\. 为移动端用户开通访问权限 \{#5-provide-access-to-users-on-the-mobile\}
@@ -261,11 +288,11 @@ Stripe 中的 Customer 也是必需的
 
 Adapty 需要将购买记录与[客户用户画像](profiles-crm)绑定，才能在移动端使用——因此默认情况下，它会在收到 Stripe 的 webhook 时创建用户画像。您可以选择将以下内容用作 Adapty 中的客户用户 ID：
 
-1. **默认且推荐：** 您在[上方第 4 步](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id)的 metadata 中提供的 `customer_user_id`
-2. Stripe 客户对象中的 `email`（参见 [Stripe 文档](https://docs.stripe.com/api/customers/object#customer_object-email)）
-3. Stripe Session 对象中的 `client_reference_id`（参见 [Stripe 文档](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id)）
+1. **默认且推荐：使用元数据中的 customer_user_id** — 即您在[上方步骤 4](stripe#4-enrich-purchases-made-on-the-web-with-your-user-id) 的元数据中提供的 `customer_user_id`
+2. **使用 Stripe Customer 对象中的 email**（参见 [Stripe 文档](https://docs.stripe.com/api/customers/object#customer_object-email)）
+3. **使用 Stripe Session 对象中的 client_reference_id**（参见 [Stripe 文档](https://docs.stripe.com/api/checkout/sessions/create#create_checkout_session-client_reference_id)）— 适用于 [Payment Links](stripe#payment-links-no-code) 场景
 
-您可以在 [App Settings → Stripe](https://app.adapty.io/settings/stripe) 中配置使用哪种 ID。
+您可以在 [App Settings → Stripe](https://app.adapty.io/settings/stripe) 中配置要使用的 ID 类型。Adapty 会将此处选择的来源用于应用内所有 Stripe 交易，不会回退到其他来源。
 
 :::warning
 **注意：** 如果来自 Stripe 的某笔交易不包含指定的 ID，我们将不会创建用户画像。该交易将保持匿名状态，直到被某个用户画像认领（例如，如果您之后使用 [S2S validate](api-adapty/operations/validateStripePurchase) 手动告知我们该交易信息）。
@@ -329,11 +356,13 @@ Stripe 的发票 ID 在测试环境和正式环境之间可能重叠。为避免
 
 即使进行了上述配置，如果您删除了某张发票，Stripe 可能会将该 ID 重新分配给同一客户的新发票。因此请尽量避免删除发票。
 
-### 通过 Stripe Checkout 或 Payment Links 进行的一次性购买 \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
+### 通过 Stripe Checkout 或付款链接进行一次性购买 \{#one-time-purchases-via-stripe-checkout-or-payment-links\}
 
-Adapty 仅在 Stripe 为购买生成发票时，才会追踪通过 Stripe Checkout（`mode=payment`）或 Payment Links 完成的一次性（非订阅）购买。默认情况下，Stripe 不会为一次性 Checkout 购买创建发票。在这种情况下，`payment_intent.succeeded` 事件不包含发票数据，Adapty 无法据此记录交易。
+Adapty 通过 `checkout.session.completed` 事件记录经由 Stripe Checkout（`mode=payment`）或付款链接完成的一次性（非订阅）购买。请确保在 Stripe 中的 Adapty webhook 端点上已启用此事件——在 Adapty 添加付款链接支持之前创建的端点不包含该事件。请参阅[第 4 步](stripe#payment-links-no-code)了解如何检查。
 
-要在 Adapty 中追踪一次性 Checkout 购买，请在创建 session 时[启用发票创建](https://docs.stripe.com/payments/checkout/receipts?payment-ui=stripe-hosted#paid-invoices-hosted)。这样 Stripe 就会生成发票并触发相关的 `invoice.created` 和 `invoice.updated` 事件，Adapty 通过处理这些事件来记录交易。
+Adapty 从会话的第一个订单项中获取产品，因此同时销售多个产品的会话仅记录第一个产品。
+
+这些购买的退款尚未生效：Stripe 会发送 `charge.refunded` 事件，但对于通过 Checkout 或 Payment Link 购买的一次性商品，Adapty 不会撤销访问权限。通过 Stripe 发票结算的订阅和一次性购买的退款仍可正常处理。
 
 ## 充分利用您的 Stripe 数据 \{#get-more-from-your-stripe-data\}
 完成 Stripe 集成后，Adapty 即可立即提供数据洞察。为充分利用您的 Stripe 数据，您可以设置额外的 Adapty 集成来转发 Stripe 事件——将所有订阅分析数据汇聚到单一 Adapty 看板中。
@@ -359,8 +388,10 @@ Adapty 仅在 Stripe 为购买生成发票时，才会追踪通过 Stripe Checko
 - [Posthog](posthog)
 
 ### 支持的 Stripe 事件 \{#supported-stripe-events\}
+
 Adapty 支持以下 Stripe 事件：
 - charge.refunded
+- checkout.session.completed
 - customer.subscription.created
 - customer.subscription.deleted
 - customer.subscription.paused

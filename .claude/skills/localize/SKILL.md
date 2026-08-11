@@ -60,7 +60,9 @@ To collect real phrasings, translate the known English refusals into the new lan
 
 ### 1c. `src/locales/ui-strings.ts`
 
-Add translations for every key in every group. Groups: `feedback`, `header`, `search`, `articleButtons`, `toc`, `mobileSidebar`, `footer`. Pattern:
+Add translations for every key in every group. Groups: `feedback`, `header`, `search`, `articleButtons`, `installTools`, `toc`, `mobileSidebar`, `footer`. Pattern:
+
+The `installTools` group covers the "Install tools" article-toolbar button and the "Install agent tools" modal (`src/components/ArticleButtons.astro` + `src/components/InstallToolsModal.astro`). Tool tab labels and shell commands come from `src/data/agent-tools.json` and are deliberately **not** localized — only the `installTools` strings need translating.
 
 ```ts
 question: { en: 'Was this page helpful?', zh: '...', tr: '...', '{LOCALE}': '...' },
@@ -571,7 +573,7 @@ strategy:
 |---|------|---------|
 | 1a | Add to `SUPPORTED_LOCALES` + `LOCALE_NAMES` | `src/data/locales.ts` |
 | 1b | Add to `LANGUAGE_NAMES` + `METADATA_TITLE_SUFFIXES` + localized `REFUSAL_PATTERNS` (+ regression test) | `scripts/translate.mjs`, `scripts/__tests__/refusal-detection.test.mjs` |
-| 1c | Add UI string translations for all groups | `src/locales/ui-strings.ts` |
+| 1c | Add UI string translations for all groups (incl. `installTools` — Install tools button + modal) | `src/locales/ui-strings.ts` |
 | 1d | Add dictionary translations | `src/locales/dictionary.json` |
 | 1e | Add to `LOCALE_INDEX` + `data-index-name-{LOCALE}` attr | `src/components/Search.astro` |
 | 1f | Add locale key to `T` object (~20 strings) | `src/components/Homepage.tsx` |
