@@ -5,6 +5,11 @@ reviewed_shape:
 reviewed_at:
 ---
 
+<!-- Stub: every section below is unwritten. Blank means nobody has recorded the
+     rule yet — never that the zone has no rule, and never that the topic is
+     undocumented. Fall back to docs-map.jsonl and the articles, and say which
+     section was blank so it gets filled once. -->
+
 ## What this is
 
 Adapty's Server-Side API v2 — the REST API a developer's own backend calls to manage subscribers and entitlements without going through a mobile SDK: creating or updating a profile, granting or checking an access level programmatically, and syncing purchases made outside Apple/Google (web checkouts, custom stores) into Adapty so entitlements and analytics stay accurate. It's the backend counterpart to the SDKs — reached for when a server needs authoritative, server-to-server control over subscription state, e.g. granting a promo access level or reconciling a payment taken through a custom billing system. Authorization mechanics (API keys, request/response format) and the OpenAPI reference spec live here as guides. Readers are backend developers integrating Adapty server-to-server, not app developers embedding a mobile SDK.

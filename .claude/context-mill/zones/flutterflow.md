@@ -5,6 +5,11 @@ reviewed_shape:
 reviewed_at:
 ---
 
+<!-- Stub: every section below is unwritten. Blank means nobody has recorded the
+     rule yet — never that the zone has no rule, and never that the topic is
+     undocumented. Fall back to docs-map.jsonl and the articles, and say which
+     section was blank so it gets filled once. -->
+
 ## What this is
 
 The Adapty plugin for FlutterFlow, a separate low-code app-building platform — not one of the seven SDK platforms Adapty ships native SDKs for. It covers adding the Adapty library as a FlutterFlow project dependency, wiring up its actions (fetch products, add them to a paywall page the developer designs in FlutterFlow itself, enable purchase, check subscription/access status), and the plugin's action and data-type reference. The plugin explicitly does not support Adapty's own paywall builder (developers must design their paywall in FlutterFlow) or web app compilation. Readers are FlutterFlow users adding subscriptions to their app, not Flutter SDK developers — despite the name overlap, this has nothing to do with the native Flutter SDK.

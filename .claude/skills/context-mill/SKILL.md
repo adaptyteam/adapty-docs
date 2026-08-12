@@ -107,6 +107,13 @@ Zone-first, not grep-first.
 not every topic needs an equivalent on all seven platforms, and article names vary in wording, so an
 empty roster cell means "nothing under this family key", never "missing".
 
+**An empty section is unwritten, not settled.** Twelve zones are still stubs, and a stub's judgment
+sections are blank. A blank `What we document, what we don't` means nobody has written the rule down
+yet — never that the zone has no rules, and never that the topic is undocumented. Same for a blank
+`Sources of truth`: it does not mean the claim has no source, only that no one recorded which one.
+When a section you need is blank, fall back to steps 5–6 — the map, then the article bodies — and name
+the blank section in your report, so Mode 3 fills it once instead of the next agent guessing at it again.
+
 Do not grep `src/content/docs` until steps 1–5 are exhausted: the map plus the briefs already carry
 titles, headings, symbols, and the task-language synonyms ("Ticket language" section) that a raw grep
 misses.
@@ -257,21 +264,27 @@ Three maintenance operations, most to least frequent:
 
 ## State of the data layer
 
-Bootstrapped as of 2026-08-10. `zones.json` (34 zones), `zones/` (34 briefs), `sources.md` and
-`platforms.md` all exist, the partition is complete, and `mill:status` prints a real per-zone drift
-report — so every mode above works as written and there is no fallback path to take.
+Bootstrapped as of 2026-08-10, recounted 2026-08-12. `zones.json` (35 zones), `zones/` (35 briefs),
+`sources.md` and `platforms.md` all exist, the partition is complete, and `mill:status` prints a real
+per-zone drift report — so every mode above works as written and there is no fallback path to take.
 
 Two things are worth knowing rather than rediscovering:
 
 - **`rollouts/` does not exist yet.** Nothing is broken: `mill:new-rollout <slug>` creates the directory
   on first use, and `mill:status` treats an absent rollouts directory as a state, not an error. The first
   real cross-platform rollout authors the first file.
-- **Brief depth is uneven, and the drift report says which is which.** Four zones are reviewed
-  (`integrations`, `sdk-migrations`, `flow-design`, `flow-logic`); the other 30 are marked `stub`, meaning
-  their judgment sections are still empty even though all 34 now have a written `Ticket language` table
-  and a rendered roster. A stub is a real answer for routing and a weak one for judgment — when a lookup
-  in a stub zone comes out shallow, that is the signal to deepen it through interview mode, not evidence
-  that the zone is wrong.
+- **Brief depth is uneven, and `mill:status` says which is which — read it, don't assume from this
+  list.** As of 2026-08-12: 4 zones carry a `reviewed_at` (3 of those 4 already show
+  `reviewed_shape out of date`, meaning a human vouched for them and the corpus has moved since),
+  19 are `drafted, unreviewed`, and 12 are stubs — `ab-tests`, `access-levels`, `ai-advisory`,
+  `app-and-account-settings`, `flutterflow`, `migration-from-competitors`, `onboardings-legacy`,
+  `other-apis`, `retention-messaging`, `server-side-api`, `subscribers-and-profiles`, `web-payments`.
+  A stub scaffolded by `mill:new-zone` has the five section headings, a rendered roster, and nothing
+  else — no `Ticket language` table, no prose. So a stub is a real answer for routing and no answer at
+  all for judgment: it tells you which articles are in scope and stays silent on everything else. A
+  shallow lookup in a stub zone is the signal to deepen it through interview mode, never evidence that
+  the zone is wrong or that the topic is undocumented — see "An empty section is unwritten, not settled"
+  in Mode 1.
 
 The Phase 1 layers this skill used before zoning are gone: `docs-enrichment.jsonl` was retired
 2026-08-10 and its curated search terms now live in the briefs' `Ticket language` sections. `aliases.md`

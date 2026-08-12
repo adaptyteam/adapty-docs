@@ -5,6 +5,11 @@ reviewed_shape:
 reviewed_at:
 ---
 
+<!-- Stub: every section below is unwritten. Blank means nobody has recorded the
+     rule yet — never that the zone has no rule, and never that the topic is
+     undocumented. Fall back to docs-map.jsonl and the articles, and say which
+     section was blank so it gets filled once. -->
+
 ## What this is
 
 The no-code onboarding builder that predates Flow Builder: creating an onboarding as a series of screens with interactive questions and variables, designing those screens, and placing the onboarding via a placement. Adapty has stopped adding features to this builder — new onboarding work is expected to go through Flow Builder instead, and the entry article (`onboardings`) says so explicitly. Only 3 articles remain in this zone, and readers are marketers maintaining an onboarding built before Flow Builder existed.

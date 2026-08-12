@@ -5,6 +5,11 @@ reviewed_shape:
 reviewed_at:
 ---
 
+<!-- Stub: every section below is unwritten. Blank means nobody has recorded the
+     rule yet — never that the zone has no rule, and never that the topic is
+     undocumented. Fall back to docs-map.jsonl and the articles, and say which
+     section was blank so it gets filled once. -->
+
 ## What this is
 
 The Adapty dashboard's own account and app configuration screens: app details (name, icon, timezone, SDK/API keys, Small Business Program status), entering Apple/Google store credentials so Adapty can talk to the stores, account/billing management, team member permissions, and transferring an app to a different Adapty account. Readers are the person administering the Adapty account or app on the dashboard, not a developer writing app integration code. It's the "settings" surface, distinct from any feature's own configuration — a paywall's or flow's settings live in paywalls-legacy or flow-design/flow-logic, not here.

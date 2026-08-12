@@ -5,6 +5,11 @@ reviewed_shape:
 reviewed_at:
 ---
 
+<!-- Stub: every section below is unwritten. Blank means nobody has recorded the
+     rule yet — never that the zone has no rule, and never that the topic is
+     undocumented. Fall back to docs-map.jsonl and the articles, and say which
+     section was blank so it gets filled once. -->
+
 ## What this is
 
 Entitlements: defining named access levels (e.g. the auto-created `premium`), assigning them to products

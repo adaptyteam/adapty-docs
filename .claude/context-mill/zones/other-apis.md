@@ -5,6 +5,11 @@ reviewed_shape:
 reviewed_at:
 ---
 
+<!-- Stub: every section below is unwritten. Blank means nobody has recorded the
+     rule yet — never that the zone has no rule, and never that the topic is
+     undocumented. Fall back to docs-map.jsonl and the articles, and say which
+     section was blank so it gets filled once. -->
+
 ## What this is
 
 A grouping of Adapty's non-Server-Side-API-v2 HTTP APIs: the Web API (lets a web app fetch a paywall by placement ID and record paywall views/purchases from a website), and the Analytics Export API (pulls raw subscription and revenue event data out of Adapty for a data warehouse or BI tool). Each is its own versioned surface with its own auth scheme and request/response docs, distinct from the general Server-Side API v2. Readers are developers building an integration against one specific API, most often to pull analytics data out of Adapty or drive a paywall on a website.

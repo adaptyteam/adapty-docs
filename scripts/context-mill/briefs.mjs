@@ -225,11 +225,21 @@ export function referencedArticleIds(text) {
 // nobody has thought about yet. It scaffolds the required sections only — an
 // empty optional heading is an invitation to fill it with something invented, so
 // those get added by whoever actually has the content.
+//
+// The notice goes ABOVE the first heading on purpose. `isStub` reads a section as
+// empty only when its body is empty, so a notice placed inside one would flip the
+// zone to `drafted, unreviewed` and make an untouched scaffold look like work —
+// the exact confusion `briefState` exists to prevent.
+const STUB_NOTICE = '<!-- Stub: every section below is unwritten. Blank means nobody has recorded the\n'
+  + '     rule yet — never that the zone has no rule, and never that the topic is\n'
+  + '     undocumented. Fall back to docs-map.jsonl and the articles, and say which\n'
+  + '     section was blank so it gets filled once. -->';
+
 export function briefTemplate(zoneId) {
   const body = REQUIRED_SECTIONS.map(name => (
     name === 'Articles'
       ? `## Articles\n<!-- mill:auto:roster -->\n<!-- /mill:auto -->`
       : `## ${name}\n`
   )).join('\n');
-  return `---\nzone: ${zoneId}\nsources: []\nreviewed_shape:\nreviewed_at:\n---\n\n${body}\n`;
+  return `---\nzone: ${zoneId}\nsources: []\nreviewed_shape:\nreviewed_at:\n---\n\n${STUB_NOTICE}\n\n${body}\n`;
 }
