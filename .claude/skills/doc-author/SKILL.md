@@ -89,6 +89,16 @@ Present the draft and ask for feedback. The user may:
 
 Repeat this phase until the user approves.
 
+### Phase 4.5: Report back to the zone brief
+
+Once the draft is approved, close the loop on the context the task started from. **REQUIRED SUB-SKILL:** invoke `context-mill` and follow **Mode 4 — Autolog**.
+
+The point is not to append prose to a brief. It is that whoever wrote this article has just been in the SDK repo, the backend module or the spec, and that is the cheapest moment there will ever be to test what the brief claims. Report a **diff**: what the source says that the brief doesn't, **what the brief says that turned out wrong** — lead with that, it is the highest-value output — and what could not be verified.
+
+Two rules the sub-skill states and that you must not soften: edit the brief only where command output settles it, dated; and never run `mill:reviewed`, because that is the owner saying "I read this and it is right", not a side effect of shipping an article.
+
+Skip only if the whole task ran on the user's prose and no source was opened.
+
 ### Phase 5: Skill Evolution (When Needed)
 
 If user feedback at any phase contradicts a skill's instructions, evaluate whether the feedback represents:

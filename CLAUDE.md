@@ -124,6 +124,17 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 
 - Use `-` for unordered lists, not `*`.
 
+## Writing rules (always apply)
+
+These apply to every doc edit, however small. They are the rules no linter can check — the mechanical ones (banned words, overclaim candidates, vague verbs, spatial metaphors, roadmap leaks) run automatically via `scripts/lint-prose.mjs` on each MDX edit. Its hits are candidates for judgment, not errors. For a full review or a new article, invoke the `editor` skill, which carries the complete rule set and a pass order.
+
+- **Every referent must resolve.** For each `this`, `that`, `it`, `the X` on first mention, count, and temporal word (`already`, `later`, `still`) — can the reader name what it points at? This is the most common defect by a wide margin.
+- **After any edit, re-read the whole bullet or paragraph** from the start, not just the clause you changed. Fixing a clause in isolation is how the next defect gets introduced.
+- **Instructions run Goal → Location → Action**, one location per sentence. ✅ "To create a paywall, in the **Paywalls** section, click **Create paywall**."
+- **Steps state their purpose, not the penalty for skipping them.** ✅ "To show the copy to users, add it to a placement." Warnings are the exception — those state the consequence.
+- **Names come from the source, not from memory.** Grep the frontend for a UI label before bolding it, and quote typos as-is. Use the vendor's own noun. Never a competitor's word — `entitlements` is RevenueCat's; Adapty says **access levels**.
+- **Don't document what the UI already says, and don't document a bug.** Skip "click **Save** to save"; keep only the scope or limit the control doesn't advertise. If behavior is broken, write the prescription ("Don't archive a live flow — remove it from every placement first"), not the defect.
+
 ## Code blocks
 
 ````markdown

@@ -162,8 +162,46 @@ Deepens one zone's brief.
 
 ## Mode 4 — Autolog
 
-After any task that touched a zone: append to that zone's "Gaps and misses" what had to be discovered
-from scratch, and where the user corrected the agent. A zone nobody touches needs no refresh.
+Run this at the end of **any** task that touched a zone — writing an article, fixing a defect, reading
+code to answer a question. It is how the briefs stay current, and it is the one mode that pays for itself
+on work you were doing anyway: you have just been in the code, which is exactly when the zone's claims
+are cheapest to test.
+
+**Treat the brief as a hypothesis and the code as the check.** The most valuable thing this mode produces
+is not new prose — it is finding that the brief is *wrong*. That happened repeatedly on 2026-08-11/12: a
+brief said the store never writes prices back to Adapty (there is a second price table), another put a
+UTC claim in doubt that turned out correct, another asserted three claims about Adapty Mail that a
+five-week-old checkout had made stale.
+
+### Report, don't silently edit
+
+Produce a **diff against the brief**, in your final report to the user:
+
+1. What you learned from the source that the brief does not say.
+2. **What the brief says that you found to be wrong** — lead with this.
+3. What you could not verify, and which mechanism you looked for.
+
+Then edit the brief only where **both** hold: you have command output that settles it, and the edit is
+dated with the evidence named. Everything else stays a proposal for the owner.
+
+Why the asymmetry: a wrong brief is worse than a missing one, because it is authoritative — it becomes the
+context every later agent trusts without re-checking. And if agents append to briefs freely during article
+work, every zone sits in `drafted, unreviewed` forever and that state stops distinguishing anything.
+
+### Never
+
+- **Never run `mill:reviewed`.** That is the owner's act of saying "I read this and it is right", not a
+  side effect of touching a zone.
+- **Never write an absence you have not tested** — put the grep in the text, and prefer "documented only
+  as X" over "undocumented". Mislocated is far more common than missing.
+- **Never delete or contradict a claim you merely failed to confirm.** Say you could not confirm it, and
+  name the mechanism you looked for.
+
+### Mechanical parts that need no permission
+
+Run `npm run mill`. The roster re-renders and `sources:` follows from what the sections cite — both are
+script-owned, so there is no judgment to defer. What you must not touch by hand is anything between the
+`mill:auto` markers.
 
 ## Judgment rules
 

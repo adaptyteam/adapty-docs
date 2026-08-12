@@ -55,7 +55,7 @@ Example: "Configure A/B Tests" → `#configure-ab-tests`
 - Internal links must resolve to existing pages
 - Check relative paths are correct: `../config` not `config/`
 - Anchor links must match heading slugs (lowercase, hyphenated)
-- Use descriptive link text: "See Installation guide" not "click here"
+- Link *text* rules live in SKILL.md → Key Review Area 9
 
 ### Import Statement Issues
 - Verify component imports resolve
