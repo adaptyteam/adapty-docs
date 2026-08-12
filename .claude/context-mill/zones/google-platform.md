@@ -1,6 +1,6 @@
 ---
 zone: google-platform
-sources: []
+sources: [dashboard-backend]
 reviewed_shape:
 reviewed_at:
 ---

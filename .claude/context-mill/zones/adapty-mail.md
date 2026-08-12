@@ -1,6 +1,6 @@
 ---
 zone: adapty-mail
-sources: []
+sources: [mail-api-spec, mail-backend, mail-frontend]
 reviewed_shape:
 reviewed_at:
 ---

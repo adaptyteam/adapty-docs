@@ -1,6 +1,6 @@
 ---
 zone: apple-platform
-sources: []
+sources: [dashboard-backend, dashboard-interface]
 reviewed_shape:
 reviewed_at:
 ---

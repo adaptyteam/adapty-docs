@@ -1,6 +1,6 @@
 ---
 zone: integrations
-sources: []
+sources: [analytics-export-api-spec, dashboard-backend, dashboard-interface, server-side-api-spec, ua-service]
 reviewed_shape: 99bfe705d975
 reviewed_at: 2026-08-10
 ---

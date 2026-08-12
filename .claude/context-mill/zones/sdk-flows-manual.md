@@ -1,6 +1,6 @@
 ---
 zone: sdk-flows-manual
-sources: []
+sources: [android-sdk, flutter-sdk, ios-sdk, jscore, kmp-sdk, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---

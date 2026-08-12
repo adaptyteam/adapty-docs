@@ -1,6 +1,6 @@
 ---
 zone: sdk-onboardings
-sources: []
+sources: [android-sdk, capacitor-sdk, dashboard-interface, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---

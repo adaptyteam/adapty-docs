@@ -93,3 +93,33 @@ export function formatRefsReport(states) {
   }
   return out.join('\n');
 }
+
+// A brief names a repo or a spec file, not a registry id — it says
+// `noty-wave-backend` because that is the directory a reader would cd into, and
+// `adapty-api.yaml` because that is the file they would open. The registry calls
+// those `mail-backend` and `server-side-api-spec`. Scanning for ids alone found
+// zero sources in 14 of 34 briefs that plainly depend on several, so the
+// tooling learns the synonyms instead of asking writers to memorise ids.
+//
+// The alias is the path's last segment: a clone's directory name, or a spec's
+// filename. Deliberately not the remote URL — nobody writes that in prose.
+export function sourceAliases(source) {
+  const aliases = [source.id];
+  const tail = source.path?.split('/').filter(Boolean).pop();
+  if (tail && tail !== source.id) aliases.push(tail);
+  return aliases;
+}
+
+// Source ids cited anywhere in `text`, matched by any alias, in backticks or in
+// bold — writers use both and one brief bolds every source it names. A bare
+// mention still does not count, for the same reason the dangling-id check
+// ignores one: unmarked prose is about a topic, not a reference to a repo.
+export function citedSources(text, sources) {
+  const cited = new Set();
+  for (const source of sources) {
+    for (const alias of sourceAliases(source)) {
+      if (text.includes(`\`${alias}\``) || text.includes(`**${alias}**`)) { cited.add(source.id); break; }
+    }
+  }
+  return [...cited].sort();
+}

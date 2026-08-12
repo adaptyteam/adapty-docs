@@ -1,6 +1,6 @@
 ---
 zone: analytics
-sources: []
+sources: [analytics-export-api-spec, dashboard-backend]
 reviewed_shape:
 reviewed_at:
 ---

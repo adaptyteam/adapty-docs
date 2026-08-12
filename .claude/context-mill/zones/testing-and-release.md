@@ -1,6 +1,6 @@
 ---
 zone: testing-and-release
-sources: []
+sources: [android-sdk, dashboard-backend, ios-sdk, jscore, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---

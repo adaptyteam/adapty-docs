@@ -1,6 +1,6 @@
 ---
 zone: attribution
-sources: []
+sources: [ua-service]
 reviewed_shape:
 reviewed_at:
 ---

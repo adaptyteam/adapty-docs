@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { parseSources, sourceErrors, matchesPattern, formatRefsReport } from '../context-mill/sources.mjs';
+import { parseSources, sourceErrors, matchesPattern, formatRefsReport , sourceAliases, citedSources } from '../context-mill/sources.mjs';
 
 const SOURCES = `# Sources of truth
 
@@ -115,4 +115,60 @@ test('formatRefsReport reports a failed inspection in the source block, not as n
   assert.match(out, /git inspection failed: fatal: ambiguous argument 'origin\/dev'/);
   assert.doesNotMatch(out, /no branches match ref_pattern/);
   assert.doesNotMatch(out, /up to date/);
+});
+
+// Briefs name repos and spec files, not registry ids: a zone brief says
+// `noty-wave-backend` or `adapty-api.yaml` because that is what a reader greps
+// for. The registry calls those `mail-backend` and `server-side-api-spec`. So a
+// scan for ids alone badly under-counts — it found zero sources in 14 of 34
+// briefs that demonstrably depend on several. Match on the path's basename too,
+// and keep the prose free to use whichever name reads better.
+test('sourceAliases covers the id, a clone directory name, and a spec filename', () => {
+  assert.deepEqual(
+    sourceAliases({ id: 'mail-backend', path: '~/Documents/noty-wave-backend', kind: 'local-clone' }),
+    ['mail-backend', 'noty-wave-backend'],
+  );
+  assert.deepEqual(
+    sourceAliases({ id: 'server-side-api-spec', path: 'src/api-reference/specs/adapty-api.yaml', kind: 'in-repo-spec' }),
+    ['server-side-api-spec', 'adapty-api.yaml'],
+  );
+  // No path is not a crash — the id is still an alias.
+  assert.deepEqual(sourceAliases({ id: 'lonely' }), ['lonely']);
+});
+
+test('citedSources finds a source by any alias, and only inside backticks', () => {
+  const sources = [
+    { id: 'mail-backend', path: '~/Documents/noty-wave-backend', kind: 'local-clone' },
+    { id: 'ua-service', path: '~/Documents/adapty-user-acquisition', kind: 'local-clone' },
+    { id: 'ios-sdk', path: '~/Documents/AdaptySDK-iOS', kind: 'local-clone' },
+  ];
+  const body = [
+    'Flow semantics live in `noty-wave-backend`, `src/app/campaign_context/`.',
+    'The install model is in `adapty-user-acquisition` — not in any SDK.',
+    'Mentioning ios-sdk outside backticks must not count.',
+  ].join('\n');
+  assert.deepEqual(citedSources(body, sources), ['mail-backend', 'ua-service']);
+});
+
+test('citedSources returns each source once however many times it is cited', () => {
+  const sources = [{ id: 'server-side-api-spec', path: 'src/api-reference/specs/adapty-api.yaml', kind: 'in-repo-spec' }];
+  const body = 'See `adapty-api.yaml`, then `adapty-api.yaml` again, and `server-side-api-spec`.';
+  assert.deepEqual(citedSources(body, sources), ['server-side-api-spec']);
+});
+
+// Writers mark a source however reads best — one brief bolds them, the rest
+// backtick them. Requiring a particular delimiter would mean a real dependency
+// goes unrecorded because of punctuation, so both count. This is safe in a way
+// a general pattern would not be: the match is against a closed set of 20 known
+// names, so a UI label in bold cannot collide with it.
+test('citedSources matches a bolded source name as well as a backticked one', () => {
+  const sources = [
+    { id: 'dashboard-interface', path: '~/Documents/adapty-dashboard-interface', kind: 'local-clone' },
+    { id: 'dashboard-backend', path: '~/Documents/adapty-dashboard-api', kind: 'local-clone' },
+  ];
+  const body = [
+    '- **dashboard-interface** — the dashboard labels in the quickstart steps.',
+    '- `dashboard-backend` — the set of stores it routes to.',
+  ].join('\n');
+  assert.deepEqual(citedSources(body, sources), ['dashboard-backend', 'dashboard-interface']);
 });

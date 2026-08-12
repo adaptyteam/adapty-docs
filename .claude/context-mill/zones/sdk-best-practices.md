@@ -1,6 +1,6 @@
 ---
 zone: sdk-best-practices
-sources: []
+sources: [android-sdk, capacitor-sdk, flutter-sdk, ios-sdk, jscore, rn-sdk, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---

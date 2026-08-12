@@ -1,6 +1,6 @@
 ---
 zone: server-side-api
-sources: []
+sources: [dashboard-backend, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---

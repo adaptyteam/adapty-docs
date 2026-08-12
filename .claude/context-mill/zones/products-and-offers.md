@@ -1,6 +1,6 @@
 ---
 zone: products-and-offers
-sources: []
+sources: [dashboard-backend, dashboard-interface, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---

@@ -1,6 +1,6 @@
 ---
 zone: agent-tooling
-sources: []
+sources: [adapty-cli, analytics-export-api-spec, capacitor-sdk, dashboard-backend, developer-api-spec, jscore, kmp-sdk, sdk-integration-skill, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---

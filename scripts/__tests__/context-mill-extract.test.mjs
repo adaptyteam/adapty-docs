@@ -985,3 +985,34 @@ test('unreviewed on an unknown zone exits 1', async () => {
     assert.equal(out.code, 1);
   } finally { await rmScratch(dir); }
 });
+
+// Frontmatter `sources:` and the prose that cites sources are two records of the
+// same fact, so they drift. They were populated in sync once; the next edit to a
+// `Sources of truth` section breaks that silently unless something notices.
+// Reported, never fatal: naming a source in prose without listing it is untidy,
+// not broken, and a hard failure here would punish someone mid-edit.
+test('status reports a source cited in the brief but missing from its frontmatter, and still exits 0', async () => {
+  const dir = await mkScratch();
+  try {
+    const record = makeRecord('art-a');
+    await writeMap(dir, [record]);
+    await writeZones(dir, { zones: [{ id: 'z1', title: 'Z1', kind: 'flat' }], articles: { 'art-a': { zone: 'z1', role: 'entry' } } });
+    await writeSources(dir, [
+      '## ios-sdk — iOS SDK',
+      'path: ~/Documents/AdaptySDK-iOS',
+      'remote: https://example.com/ios.git',
+      'default_ref: origin/master',
+      'kind: local-clone',
+      '',
+    ].join('\n'));
+    // Cites ios-sdk by its clone directory name, declares nothing.
+    await writeBrief(dir, 'z1', makeBrief('z1', {
+      overrides: { 'Sources of truth': 'Method names live in `AdaptySDK-iOS` at its default ref.' },
+    }));
+    const { code, stdout } = await runCli(dir, ['status']);
+    assert.equal(code, 0);
+    assert.match(stdout, /z1\s+.*undeclared sources: ios-sdk/);
+  } finally {
+    await rmScratch(dir);
+  }
+});

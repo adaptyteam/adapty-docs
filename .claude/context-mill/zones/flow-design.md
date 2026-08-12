@@ -1,6 +1,6 @@
 ---
 zone: flow-design
-sources: []
+sources: [dashboard-interface]
 reviewed_shape: f5a30d497568
 reviewed_at: 2026-08-10
 ---

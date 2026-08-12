@@ -1,6 +1,6 @@
 ---
 zone: sdk-quickstart
-sources: []
+sources: [android-sdk, dashboard-interface, jscore, kmp-sdk, sdk-integration-skill]
 reviewed_shape:
 reviewed_at:
 ---

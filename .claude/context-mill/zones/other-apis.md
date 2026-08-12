@@ -1,6 +1,6 @@
 ---
 zone: other-apis
-sources: []
+sources: [analytics-export-api-spec, mail-api-spec, web-api-spec]
 reviewed_shape:
 reviewed_at:
 ---

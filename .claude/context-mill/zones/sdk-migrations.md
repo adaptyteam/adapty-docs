@@ -1,6 +1,6 @@
 ---
 zone: sdk-migrations
-sources: []
+sources: [android-sdk, capacitor-sdk, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unity-sdk]
 reviewed_shape: ecbc934e7292
 reviewed_at: 2026-08-10
 ---

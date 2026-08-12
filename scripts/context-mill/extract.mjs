@@ -15,7 +15,7 @@ import {
 import { loadZones, partitionErrors, zoneHash, zoneDrift, snapshotZone, normalizeZones, stateOrphans } from './zones.mjs';
 import { buildRows, renderRoster, undeclaredMatrixKeys } from './roster.mjs';
 import { missingSections, replaceAutoBlock, isStub, briefState, parseBrief, referencedArticleIds, sectionBody, briefTemplate } from './briefs.mjs';
-import { parseSources, sourceErrors, formatRefsReport } from './sources.mjs';
+import { parseSources, sourceErrors, formatRefsReport, citedSources } from './sources.mjs';
 import { inspectSource, existsOnDisk, readDocsLog } from './git.mjs';
 import { coChanges, parseLog } from './cochange.mjs';
 import { parseRollout, rolloutErrors, rolloutTemplate } from './rollouts.mjs';
@@ -268,8 +268,10 @@ async function status() {
   // sources.md is authored in a later phase, exactly like zones.json — skip
   // the sources: cross-check silently until then.
   let sourceIds = null;
+  let sourceList = [];
   try {
-    sourceIds = new Set(parseSources(await fs.readFile(SOURCES_FILE, 'utf-8')).map(s => s.id));
+    sourceList = parseSources(await fs.readFile(SOURCES_FILE, 'utf-8'));
+    sourceIds = new Set(sourceList.map(s => s.id));
   } catch { /* not authored yet */ }
 
   // ZONE DRIFT first: with ~40 zones vs. hundreds of unassigned articles at
@@ -329,6 +331,16 @@ async function status() {
       if (sourceIds) {
         const unknownSources = (fm.sources ?? []).filter(id => !sourceIds.has(id));
         if (unknownSources.length) { notes.push(`unknown sources: ${unknownSources.join(', ')}`); process.exitCode = 1; }
+        // The other direction: prose naming a source the frontmatter omits. The
+        // two are one fact recorded twice, so they drift — populated in sync
+        // once, then the next edit to a `Sources of truth` section breaks it
+        // silently. Reported and never fatal, because an undeclared source is
+        // untidy rather than broken, and failing here would punish a mid-edit
+        // brief. `citedSources` matches a clone directory or a spec filename as
+        // well as the id, since that is how briefs actually name them.
+        const declared = new Set(fm.sources ?? []);
+        const undeclared = citedSources(brief, sourceList).filter(id => !declared.has(id));
+        if (undeclared.length) notes.push(`undeclared sources: ${undeclared.join(', ')}`);
       }
     }
     const rows = buildRows(zoneId, map, zonesData);

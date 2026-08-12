@@ -1,6 +1,6 @@
 ---
 zone: flow-logic
-sources: []
+sources: [dashboard-interface, ios-sdk, jscore]
 reviewed_shape: fd915eb8bdcf
 reviewed_at: 2026-08-10
 ---
