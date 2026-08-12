@@ -53,13 +53,17 @@ Adapty.getProfile(result -> {
 
 ## Common error codes
 
-| Error Code | Description | Solution |
-|------------|-------------|----------|
-| 1000 | No product IDs found | Check product configuration in dashboard |
-| 1001 | Network error | Check internet connection |
-| 1002 | Invalid SDK key | Verify your SDK key |
-| 1003 | Can't make payments | Device doesn't support payments |
-| 1004 | Product not available | Product not configured in store |
+`AdaptyError.code` is an `AdaptyErrorCode` enum value, not a number — compare it against the enum constant, not against the numeric code. The numbers below are shown only because they are what a log line or a support ticket usually carries.
+
+| Error code | Number | Description | Solution |
+|------------|--------|-------------|----------|
+| `AdaptyErrorCode.NO_PRODUCT_IDS_FOUND` | 1000 | None of the products in the paywall are available in the store. | See [Fix for Code-1000 noProductIDsFound error](InvalidProductIdentifiers-kmp). |
+| `AdaptyErrorCode.CANT_MAKE_PAYMENTS` | 1003 | In-app purchases are not allowed on this device. | See [Fix for Code-1003 cantMakePayments error](cantMakePayments-kmp). |
+| `AdaptyErrorCode.PRODUCT_NOT_FOUND` | 22 | The product requested for purchase is not available in the store. | Check that the product is configured in the store and in the Adapty Dashboard. |
+| `AdaptyErrorCode.NETWORK_FAILED` | 2005 | The network request failed. | Ask the user to check their connection, or retry the call. |
+| `AdaptyErrorCode.ADAPTY_NOT_INITIALIZED` | 20 | The SDK was not activated before the call. | Wait for `Adapty.activate` to complete before any other SDK call. |
+
+For the full list of codes, see `AdaptyErrorCode` in the [SDK models reference](https://kmp.adapty.io/adapty/).
 
 ## Handle specific errors
 
@@ -79,7 +83,7 @@ Adapty.getPaywall("main") { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1001 -> {
+                AdaptyErrorCode.NETWORK_FAILED -> {
                     // Network error - show offline message
                     showOfflineMessage()
                 }
@@ -103,7 +107,7 @@ Adapty.getPaywall("main", result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1001:
+            case NETWORK_FAILED:
                 // Network error - show offline message
                 showOfflineMessage();
                 break;
@@ -135,11 +139,11 @@ product.makePurchase { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1003 -> {
+                AdaptyErrorCode.CANT_MAKE_PAYMENTS -> {
                     // Can't make payments
                     showPaymentNotAvailableMessage()
                 }
-                1004 -> {
+                AdaptyErrorCode.PRODUCT_NOT_FOUND -> {
                     // Product not available
                     showProductNotAvailableMessage()
                 }
@@ -164,11 +168,11 @@ product.makePurchase(result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1003:
+            case CANT_MAKE_PAYMENTS:
                 // Can't make payments
                 showPaymentNotAvailableMessage();
                 break;
-            case 1004:
+            case PRODUCT_NOT_FOUND:
                 // Product not available
                 showProductNotAvailableMessage();
                 break;
@@ -204,7 +208,7 @@ fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && retryCount < maxRetries) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && retryCount < maxRetries) {
                         // Network error - retry
                         retryCount++
                         Handler(Looper.getMainLooper()).postDelayed({
@@ -238,7 +242,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
                     // Use paywall
                 } else if (result instanceof AdaptyResult.Error) {
                     AdaptyError error = ((AdaptyResult.Error) result).getError();
-                    if (error.getCode() == 1001 && retryCount.get() < maxRetries) {
+                    if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && retryCount.get() < maxRetries) {
                         // Network error - retry
                         retryCount.incrementAndGet();
                         new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
@@ -277,7 +281,7 @@ class PaywallManager {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && cachedPaywall != null) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
                         // Network error - use cached paywall
                         showPaywall(cachedPaywall!!)
                         showOfflineIndicator()
@@ -306,7 +310,7 @@ public class PaywallManager {
                 showPaywall(paywall);
             } else if (result instanceof AdaptyResult.Error) {
                 AdaptyError error = ((AdaptyResult.Error) result).getError();
-                if (error.getCode() == 1001 && cachedPaywall != null) {
+                if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
                     // Network error - use cached paywall
                     showPaywall(cachedPaywall);
                     showOfflineIndicator();
@@ -326,4 +330,4 @@ public class PaywallManager {
 
 - [Fix for Code-1000 noProductIDsFound error](InvalidProductIdentifiers-kmp)
 - [Fix for Code-1003 cantMakePayments error](cantMakePayments-kmp)
-- [Complete API reference](https://android.adapty.io) - Full SDK documentation
+- [Complete API reference](https://kmp.adapty.io/adapty/) - Full SDK documentation
