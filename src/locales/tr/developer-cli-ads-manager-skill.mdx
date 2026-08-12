@@ -1,0 +1,113 @@
+---
+title: "Yapay Zeka Kodlama Aracıyla Apple Ads'i Yönetin"
+description: "Claude Code, Copilot CLI, Codex veya Gemini CLI'nin Adapty CLI aracılığıyla Apple Ads kampanyalarınızı yönetebilmesi için ads-manager becerisini yükleyin."
+metadataTitle: "Ads Manager Yapay Zeka Becerisi | Adapty Dokümanları"
+---
+
+import AdsManagerSkill from '@site/src/locales/tr/reusable/AdsManagerSkill.mdx';
+
+`ads-manager` skill'i, bir AI kodlama aracının Apple Ads hesabınızı [Adapty CLI](developer-cli-ads-manager) üzerinden yönetmesini sağlar. Düz bir dille soru sorun; hangi komutların yanıt vereceğini bulur, önce hesabı okur ve Apple'a bir şey ulaşmadan önce yapılacak yazma işlemini önerir.
+
+Skill, yapması kolay hataları barındıran Ads Manager yüzeyinin bölümlerini taşıyan bir dizi talimattır: her flag'in hangi tanımlayıcıyı kabul ettiği, her listenin hangi filtreyi aldığı, bir toplu işleme kaç anahtar kelime sığdığı ve hangi çağrıların ücretli olduğu.
+
+## Ne işe yarar \{#what-it-handles\}
+
+- **Okuma performansı**: Bir soruyu yanıtlayan tek bir çağrıyı seçer; sonuçları sayfalayarak geçmek yerine. Üst-N sorusunun sıralı bir çağrı gerektirdiğini ve varlıkları saymanın hiç metrik çağrısı gerektirmediğini bilir.
+- **Yapısal değişiklikler**: Kampanyaları, reklam gruplarını, reklamları ve anahtar kelimeleri doğru sırayla oluşturup günceller; alt öğeyi yazmadan önce üst öğeyi okur.
+- **Anahtar kelime çalışması**: Anahtar kelimeleri toplu olarak ekler ve yeniden teklif verir; arama terimlerini anahtar kelimelere ve negatif anahtar kelimelere dönüştürür.
+- **Otomasyonlar**: Kural tabanlı otomasyonları kurar ve canlı tekliflere dokunmadan önce bunları kuru çalıştırır.
+- **Rakip araştırması**: Rakip uygulamaların teklif verdiği anahtar kelimeleri çeker.
+
+## Neler yapmaz \{#what-it-will-not-do\}
+
+Bu beceri her yazma işlemini geri döndürülemez olarak değerlendirir, çünkü öyledir — CLI'ın silme komutu yoktur ve değişiklikler saniyeler içinde Apple'a ulaşır.
+
+- Bir ID veya bütçeyi tahmin etmek yerine, yazmadan önce okur.
+- Para harcayan her komuttan önce sorar ve komutu siz çalıştırırken CLI'ın kendi onay istemini yerinde bırakır.
+- Zincirdeki her yazma işlemine bir idempotency anahtarı sabitler; böylece belirsiz bir sonucun ardından yeniden çalıştırmak ikinci bir kampanya oluşturmaz.
+- Küçük gruplara öncelik verir; böylece Apple'dan gelen kısmi bir ret kolayca okunabilir kalır.
+
+:::note
+Skill, komutları önerir ve hazırlar. Metrikleri okumak ve kuru çalıştırmalar hiçbir şeye mal olmaz, ancak canlı bir reklam hesabını değiştiren her şeyi onaylamak sizin sorumluluğunuzdadır.
+:::
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+<AdsManagerSkill />
+
+## Örnek promptlar \{#example-prompts\}
+
+Skill, komutları, bunların hangi sırayla oluşturulduğunu ve hangilerinin para harcadığını zaten taşıdığından, bir promptun bunların hiçbirini açıklamasına gerek yoktur. Promptu, skill'in kendi başına çözemeyeceği şeyler için yazın: kampanyaları neye göre değerlendirdiğiniz (metrik ve zaman aralığı), karşılaştırma yaptığınız referans değer ve almak istediğiniz cevabın şekli.
+
+### Zaten yönettiğiniz bir hesabı denetleyin \{#audit-an-account-you-already-run\}
+
+Kampanyalar yayındayken paranın nereye gittiğini öğrenmek istediğinizde bunu kullanın. İhtiyaç duyduğu her komut bir okuma işlemidir, dolayısıyla hesabınızda hiçbir şey değişmez.
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### İlk kampanyalarınızı başlatın \{#launch-your-first-campaigns\}
+
+Apple Ads hesabınız boşsa bunu kullanın. Beceri, kampanyaları varsayılan olarak duraklatılmış şekilde oluşturur; bu komut, planı okuyuncaya kadar bunu böyle tutar.
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## AI Agent'tan farkı \{#how-it-differs-from-the-ai-agent\}
+
+Adapty Ads Manager'ın kontrol panelinde yerleşik bir [AI Agent](ads-manager-ai-agent) da bulunur. İkisi farklı ihtiyaçlara yanıt verir:
+
+| | AI Agent | ads-manager skill |
+|---|---|---|
+| Nerede çalışır | Adapty kontrol paneli | Terminalinizde, AI kodlama aracınızda |
+| Ne yapar | Analiz eder ve önerir | Analiz eder, önerir ve komutları çalıştırır |
+| Kurulum | Yok | Adapty CLI ve skill |
+
+Hesabınızda neler olduğunu öğrenmek için AI Agent'ı kullanın. Değişikliğin gerçekleştirilmesini de istediğinizde ise skill'i kullanın.
+
+## Sırada ne var \{#whats-next\}
+
+- [CLI ile Ads Manager'ı yönetin](developer-cli-ads-manager) — aynı işlemleri bir yapay zeka aracı olmadan elle yapın.
+- [Ads Manager komutları](developer-cli-ads-manager-reference) — her komut, argümanları, bayrakları ve kabul edilen değerleriyle.

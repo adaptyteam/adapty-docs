@@ -182,7 +182,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | handling-events-1 |  |  | react-native-handling-events-1 |  |  |  |  |
 | localizations-and-locale-codes | localizations-and-locale-codes | android-localizations-and-locale-codes | react-native-localizations-and-locale-codes | flutter-localizations-and-locale-codes | unity-localizations-and-locale-codes | kmp-localizations-and-locale-codes | capacitor-localizations-and-locale-codes |
 | paywalls | ios-paywalls | android-paywalls | react-native-paywalls | flutter-paywalls | unity-paywalls | kmp-paywalls | capacitor-paywalls |
-| present-flows-in-observer-mode |  |  | react-native-present-flows-in-observer-mode | flutter-present-flows-in-observer-mode |  | kmp-present-flows-in-observer-mode | capacitor-present-flows-in-observer-mode |
+| present-flows-in-observer-mode |  |  | react-native-present-flows-in-observer-mode | flutter-present-flows-in-observer-mode | unity-present-flows-in-observer-mode | kmp-present-flows-in-observer-mode | capacitor-present-flows-in-observer-mode |
 | present-paywall-builder-paywalls-in-observer-mode | ios-present-paywall-builder-paywalls-in-observer-mode |  |  |  |  |  |  |
 | present-paywalls | ios-present-paywalls | android-present-paywalls | react-native-present-paywalls | flutter-present-paywalls | unity-present-paywalls | kmp-present-paywalls | capacitor-present-paywalls |
 | troubleshoot-paywall-builder | ios-troubleshoot-paywall-builder | android-troubleshoot-paywall-builder | react-native-troubleshoot-paywall-builder | flutter-troubleshoot-paywall-builder | unity-troubleshoot-paywall-builder | kmp-troubleshoot-paywall-builder |  |
@@ -197,7 +197,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | android-get-pb-paywalls | — | dev | 8 | android |
 | android-handle-paywall-actions | — | dev | 7 | android |
 | android-handling-events | — | dev | 6 | android |
-| android-localizations-and-locale-codes | — | dev | 9 | android |
+| android-localizations-and-locale-codes | — | dev | 11 | android |
 | android-paywalls | entry | dev | 4 | android |
 | android-present-paywalls | — | dev | 8 | android |
 | android-troubleshoot-paywall-builder | — | dev | 3 | android |
@@ -206,7 +206,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | capacitor-get-pb-paywalls | — | dev | 8 | capacitor |
 | capacitor-handle-paywall-actions | — | dev | 7 | capacitor |
 | capacitor-handling-events | — | dev | 3 | capacitor |
-| capacitor-localizations-and-locale-codes | — | dev | 9 | capacitor |
+| capacitor-localizations-and-locale-codes | — | dev | 11 | capacitor |
 | capacitor-paywalls | entry | dev | 4 | capacitor |
 | capacitor-present-flows-in-observer-mode | — | dev | 0 | capacitor |
 | capacitor-present-paywalls | — | dev | 7 | capacitor |
@@ -215,7 +215,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flutter-get-pb-paywalls | — | dev | 10 | flutter |
 | flutter-handle-paywall-actions | — | dev | 8 | flutter |
 | flutter-handling-events | — | dev | 7 | flutter |
-| flutter-localizations-and-locale-codes | — | dev | 9 | flutter |
+| flutter-localizations-and-locale-codes | — | dev | 11 | flutter |
 | flutter-paywalls | entry | dev | 4 | flutter |
 | flutter-present-flows-in-observer-mode | — | dev | 0 | flutter |
 | flutter-present-paywalls | — | dev | 10 | flutter |
@@ -234,18 +234,18 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | kmp-get-pb-paywalls | — | dev | 8 | kmp |
 | kmp-handle-paywall-actions | — | dev | 11 | kmp |
 | kmp-handling-events | — | dev | 16 | kmp |
-| kmp-localizations-and-locale-codes | — | dev | 9 | kmp |
+| kmp-localizations-and-locale-codes | — | dev | 11 | kmp |
 | kmp-paywalls | entry | dev | 4 | kmp |
 | kmp-present-flows-in-observer-mode | — | dev | 0 | kmp |
 | kmp-present-paywalls | — | dev | 14 | kmp |
 | kmp-troubleshoot-paywall-builder | — | dev | 2 | kmp |
 | kmp-use-fallback-paywalls | — | dev | 1 | kmp |
 | kmp-web-paywalls | — | dev | 2 | kmp |
-| localizations-and-locale-codes | — | dev | 9 | ios |
+| localizations-and-locale-codes | — | dev | 11 | ios |
 | react-native-get-pb-paywalls | — | dev | 8 | react-native |
 | react-native-handle-paywall-actions | — | dev | 7 | react-native |
 | react-native-handling-events-1 | — | dev | 3 | react-native |
-| react-native-localizations-and-locale-codes | — | dev | 9 | react-native |
+| react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
 | react-native-present-flows-in-observer-mode | — | dev | 2 | react-native |
 | react-native-present-paywalls | — | dev | 14 | react-native |
@@ -254,12 +254,13 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | react-native-use-fallback-paywalls-expo | — | dev | 2 | react-native |
 | react-native-use-fallback-paywalls-pure | — | dev | 4 | react-native |
 | react-native-web-paywall | — | dev | 2 | react-native |
-| unity-get-pb-paywalls | — | dev | 5 | unity |
-| unity-handle-paywall-actions | — | dev | 4 | unity |
-| unity-handling-events | — | dev | 3 | unity |
-| unity-localizations-and-locale-codes | — | dev | 5 | unity |
+| unity-get-pb-paywalls | — | dev | 10 | unity |
+| unity-handle-paywall-actions | — | dev | 10 | unity |
+| unity-handling-events | — | dev | 8 | unity |
+| unity-localizations-and-locale-codes | — | dev | 12 | unity |
 | unity-paywalls | entry | dev | 4 | unity |
-| unity-present-paywalls | — | dev | 2 | unity |
+| unity-present-flows-in-observer-mode | — | dev | 0 | unity |
+| unity-present-paywalls | — | dev | 4 | unity |
 | unity-troubleshoot-paywall-builder | — | dev | 3 | unity |
 | unity-use-fallback-paywalls | — | dev | 1 | unity |
 | unity-web-paywalls | — | dev | 2 | unity |

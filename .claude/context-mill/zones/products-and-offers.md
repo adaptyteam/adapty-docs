@@ -147,6 +147,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
 | delete-product | — | marketer | 0 | tutorial |
 | edit-product | — | marketer | 4 | tutorial |
 | google-play-offers | — | marketer | 1 | tutorial |
+| grant-initial-balance | — | marketer | 4 | tutorial |
 | offers | entry | marketer | 1 | tutorial |
 | offers-in-stores | entry | marketer | 0 | tutorial |
 | product | entry | marketer | 0 | tutorial |

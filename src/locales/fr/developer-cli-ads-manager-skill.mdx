@@ -1,0 +1,113 @@
+---
+title: "Gérer Apple Ads avec un outil de codage IA"
+description: "Installez la compétence ads-manager pour que Claude Code, Copilot CLI, Codex ou Gemini CLI puissent gérer vos campagnes Apple Ads via l'Adapty CLI."
+metadataTitle: "Compétence IA Ads Manager | Documentation Adapty"
+---
+
+import AdsManagerSkill from '@site/src/locales/fr/reusable/AdsManagerSkill.mdx';
+
+La compétence `ads-manager` permet à un outil de codage IA d'opérer votre compte Apple Ads via l'[Adapty CLI](developer-cli-ads-manager). Posez une question en langage naturel, et il détermine quelles commandes y répondent, lit d'abord le compte, puis propose l'écriture avant que quoi que ce soit n'atteigne Apple.
+
+Une compétence est un ensemble d'instructions que votre outil IA charge à la demande. Celle-ci couvre les parties de la surface Ads Manager les plus susceptibles d'erreurs : quel identifiant chaque option accepte, quel filtre chaque liste prend, combien de mots-clés tiennent dans un lot, et quels appels coûtent de l'argent.
+
+## Ce que ça gère \{#what-it-handles\}
+
+- **Performance de lecture** : Choisit le seul appel qui répond à une question plutôt que de parcourir les résultats page par page. Il sait qu'une question sur les N premiers résultats correspond à un appel ordonné, et que compter des entités ne nécessite aucun appel de métriques.
+- **Modifications structurelles** : Crée et met à jour des campagnes, groupes d'annonces, annonces et mots-clés dans le bon ordre, en lisant l'entité parente avant d'écrire l'entité enfant.
+- **Travail sur les mots-clés** : Ajoute et revalorise les mots-clés par lots, et récolte les termes de recherche pour les convertir en mots-clés et mots-clés négatifs.
+- **Automatisations** : Configure des automatisations basées sur des règles et les exécute en mode test avant qu'elles ne touchent aux enchères en production.
+- **Recherche concurrentielle** : Récupère les mots-clés sur lesquels les applications concurrentes enchérissent.
+
+## Ce qu'il ne fera pas \{#what-it-will-not-do\}
+
+L'outil traite chaque écriture comme irréversible, parce qu'elle l'est — la CLI n'a pas de suppression, et les modifications parviennent à Apple en quelques secondes.
+
+- Il lit avant d'écrire, plutôt que de deviner un ID ou un budget.
+- Il demande confirmation avant toute commande qui engage de l'argent, et laisse en place la propre invite de confirmation de la CLI quand c'est vous qui exécutez la commande.
+- Il associe une clé d'idempotence à chaque écriture dans une chaîne, afin qu'une nouvelle exécution après un résultat incertain ne crée pas une deuxième campagne.
+- Il préfère les petits lots, pour qu'un rejet partiel d'Apple reste facile à lire.
+
+:::note
+La compétence recommande et prépare des commandes. La lecture des métriques et les simulations ne coûtent rien, mais vous restez responsable d'approuver tout ce qui modifie un compte publicitaire actif.
+:::
+
+## Installer la compétence \{#install-the-skill\}
+
+<AdsManagerSkill />
+
+## Exemples de prompts \{#example-prompts\}
+
+La compétence intègre déjà les commandes, leur ordre d'exécution et celles qui dépensent de l'argent — inutile de le préciser dans le prompt. Rédigez le prompt pour ce que la compétence ne peut pas déduire seule : la métrique et la fenêtre temporelle sur lesquelles vous évaluez vos campagnes, la référence à laquelle vous les comparez, et la forme de réponse attendue.
+
+### Auditer un compte que vous gérez déjà \{#audit-an-account-you-already-run\}
+
+Utilisez cette option lorsque vos campagnes sont actives et que vous souhaitez savoir où va l'argent. Chaque commande requise est une lecture, donc rien dans votre compte ne change.
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### Lancez vos premières campagnes \{#launch-your-first-campaigns\}
+
+Utilisez cette option lorsque le compte Apple Ads est vide. La compétence crée des campagnes en pause par défaut, et cette invite maintient cet état jusqu'à ce que vous ayez lu le plan.
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## En quoi il diffère de l'agent IA \{#how-it-differs-from-the-ai-agent\}
+
+Adapty Ads Manager dispose également d'un [agent IA](ads-manager-ai-agent) intégré dans le tableau de bord. Les deux répondent à des besoins différents :
+
+| | Agent IA | compétence ads-manager |
+|---|---|---|
+| Où il s'exécute | Le tableau de bord Adapty | Votre terminal, dans votre outil de développement IA |
+| Ce qu'il fait | Analyse et recommande | Analyse, recommande et exécute les commandes |
+| Configuration | Aucune | Adapty CLI et la compétence |
+
+Utilisez l'agent IA pour savoir ce qui se passe dans votre compte. Utilisez la compétence lorsque vous souhaitez que la modification soit également effectuée.
+
+## Et ensuite \{#whats-next\}
+
+- [Gérer Ads Manager depuis la CLI](developer-cli-ads-manager) — les mêmes tâches manuellement, sans outil IA.
+- [Commandes Ads Manager](developer-cli-ads-manager-reference) — chaque commande avec ses arguments, ses options et les valeurs acceptées.

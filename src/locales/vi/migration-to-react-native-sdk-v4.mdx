@@ -1,10 +1,11 @@
 ---
-title: "Migrate Adapty React Native SDK sang v. 4.0"
-description: "Migrate sang Adapty React Native SDK v4.0 (beta) bằng cách thay thế các API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
-metadataTitle: "Migrate sang Adapty React Native SDK v4.0 (beta) | Tài liệu Adapty"
+title: "Migrate Adapty React Native SDK to v4.0"
+description: "Migrate sang Adapty React Native SDK v4.0 bằng cách thay thế các paywall API bằng flow API, tương thích với cả Flow Builder và Paywall Builder."
+metadataTitle: "Migrate lên Adapty React Native SDK v4.0 | Tài liệu Adapty"
 ---
 
-Adapty React Native SDK 4.0 (beta) giới thiệu flows và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+Adapty React Native SDK 4.0 giới thiệu các flow và đổi tên các paywall API tương ứng. Các API mới hoạt động được với cả Flow Builder mới lẫn Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+
 ## Tham chiếu nhanh \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -19,7 +20,8 @@ Adapty React Native SDK 4.0 (beta) giới thiệu flows và đổi tên các API
 | `onPaywallShown` | `onAppeared` |
 | `onPaywallClosed` | `onDisappeared` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` giữ nguyên tên — các sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` giờ nhận một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các phương thức view `present`, `dismiss`, `setEventHandlers`, và `showDialog`, cùng các event handler `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, và `onAndroidSystemBack` giữ nguyên tên như trong v3. Một số hành vi mặc định đã thay đổi — xem [Thay đổi hành vi mặc định](#default-behavior-changes).
+`AdaptyPaywallProduct` giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` bây giờ nhận một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa — thay vào đó hãy truyền nó vào `createFlowView`. Các phương thức view `present`, `dismiss`, `setEventHandlers`, và `showDialog`, cùng các event handler `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, và `onAndroidSystemBack` giữ nguyên tên như trong v3. Một số hành vi mặc định đã thay đổi — xem [Thay đổi hành vi mặc định](#default-behavior-changes).
+
 ## Phiên bản iOS tối thiểu \{#minimum-ios-version\}
 
 Adapty React Native SDK 4.0 nâng phiên bản iOS deployment target tối thiểu từ iOS 13.0 lên **iOS 15.0**. Hãy đặt iOS deployment target của bạn thành 15.0 hoặc cao hơn trước khi nâng cấp.
@@ -29,9 +31,9 @@ Adapty React Native SDK 4.0 nâng phiên bản iOS deployment target tối thi�
 v4.0 là bản phát hành thử nghiệm (pre-release), vì vậy hãy chỉ định chính xác phiên bản — npm không tự động chọn các phiên bản pre-release qua cú pháp caret/tilde:
 
 ```bash showLineNumbers
-npm install react-native-adapty@4.0.0
+npm install react-native-adapty@4.0.2
 # or
-yarn add react-native-adapty@4.0.0
+yarn add react-native-adapty@4.0.2
 ```
 ### iOS: Các SDK native hiện được phân phối qua Swift Package Manager \{#ios-native-sdks-now-come-through-swift-package-manager\}
 
@@ -50,7 +52,8 @@ Thêm config plugin [`expo-build-properties`](https://docs.expo.dev/versions/lat
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic"
+            "useFrameworks": "dynamic",
+            "buildReactNativeFromSource": true
           }
         }
       ]
@@ -58,6 +61,8 @@ Thêm config plugin [`expo-build-properties`](https://docs.expo.dev/versions/lat
   }
 }
 ```
+
+`buildReactNativeFromSource` là bắt buộc trên **Expo SDK 57 trở lên**. Expo SDK 57 đi kèm với React Native framework được build sẵn mà các package khác không thể truy cập header khi frameworks là dynamic, khiến iOS build thất bại với các lỗi như `'React/RCTBridge.h' file not found` trong `expo-updates` hoặc `@expo/ui`. Build React Native từ source sẽ tránh được xung đột này, nhưng đổi lại thời gian build iOS sẽ lâu hơn. Trên Expo SDK 56 trở xuống, bạn có thể bỏ qua tùy chọn này.
 
 Sau đó cài plugin và tạo lại native project:
 
@@ -73,11 +78,13 @@ Thêm dynamic frameworks vào iOS target, sau đó cài lại pods:
 ```ruby showLineNumbers title="ios/Podfile"
 use_frameworks! :linkage => :dynamic
 ```
+
 ```bash showLineNumbers
 cd ios && pod install --repo-update
 ```
 
-Nếu trước đây bạn đã kéo `Adapty`, `AdaptyUI`, hoặc `AdaptyPlugin` dưới dạng sub-dependencies của CocoaPods, hãy xóa các dòng `pod 'Adapty'`, `pod 'AdaptyUI'`, hoặc `pod 'AdaptyPlugin'` khỏi `Podfile` trước.
+Nếu trước đây bạn đã kéo `Adapty`, `AdaptyUI`, hoặc `AdaptyPlugin` dưới dạng sub-dependencies của CocoaPods, hãy xóa các dòng `pod 'Adapty'`, `pod 'AdaptyUI'`, hoặc `pod 'AdaptyPlugin'` trong `Podfile` trước.
+
 :::warning
 Chuyển từ liên kết tĩnh mặc định sang dynamic framework có thể xung đột với các thư viện chưa hỗ trợ modular headers, và không tương thích với Flipper. Nếu gặp lỗi build, xem bài viết này về [tích hợp Swift Package Manager với thư viện React Native](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries).
 :::
@@ -86,14 +93,18 @@ Xem [Cài đặt Adapty SDK](sdk-installation-reactnative) để biết hướng
 ## Lấy flows \{#fetching-flows\}
 ### getPaywall → getFlow
 
-Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` bị xóa — khi render một flow, locale sẽ được tự động xác định; với các paywall tùy chỉnh, tất cả locale được trả về trong `flow.remoteConfigs`:
+Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` chuyển từ lệnh gọi fetch sang `createFlowView`; với các paywall tùy chỉnh, tất cả locale được trả về trong `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
++ const view = await createFlowView(flow, { locale: 'en' });
 ```
 
-`getPaywallForDefaultAudience` được đổi tên theo cách tương tự:
+`locale` là tùy chọn trong `createFlowView`: bỏ qua nó và view sẽ hiển thị bằng `en`, hoặc theo ngôn ngữ mặc định của flow khi flow không có `en`. Yêu cầu SDK 4.0.2 trở lên — xem [Localizations và mã locale](react-native-localizations-and-locale-codes).
+
+`getPaywallForDefaultAudience` được đổi tên tương tự:
+
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');

@@ -93,13 +93,14 @@ or developer can see and click.
 | builder-loaders-and-progress-bars | — | marketer, dev | 6 | tutorial |
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
-| builder-ui | — | marketer, dev | 14 | tutorial |
+| builder-ui | — | marketer, dev | 15 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
+| flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-metrics | — | marketer, dev | 24 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
-| onboarding-actions | — | marketer, dev | 20 | tutorial |
+| onboarding-actions | — | marketer, dev | 21 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
@@ -107,7 +108,7 @@ or developer can see and click.
 | paywall-builder-templates | — | marketer, dev | 5 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 3 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
-| paywall-product-block | — | marketer, dev | 6 | tutorial |
+| paywall-product-block | — | marketer, dev | 7 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
 | show-plans-bottom-sheet | — | marketer, dev | 11 | tutorial |

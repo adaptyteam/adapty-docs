@@ -156,8 +156,11 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
+| developer-cli-ads-manager | entry | dev | 10 | api |
+| developer-cli-ads-manager-reference | — | dev | 49 | api |
+| developer-cli-ads-manager-skill | — | dev | 8 | api |
 | developer-cli-authentication | — | dev | 7 | api |
-| developer-cli-quickstart | — | dev | 8 | api |
+| developer-cli-quickstart | — | dev | 11 | api |
 | developer-cli-reference | — | dev | 31 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |

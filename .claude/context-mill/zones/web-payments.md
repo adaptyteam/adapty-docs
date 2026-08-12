@@ -26,7 +26,7 @@ up a non-store purchase channel.
 | custom-store | — | dev | 1 | tutorial |
 | paddle | — | dev | 12 | tutorial |
 | payment-integrations | entry | dev | 0 | tutorial |
-| stripe | — | dev | 16 | tutorial |
+| stripe | — | dev | 18 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

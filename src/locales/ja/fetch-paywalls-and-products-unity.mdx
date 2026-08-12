@@ -1,28 +1,163 @@
 ---
-title: "Unity SDKでリモートコンフィグペイウォールのペイウォールとプロダクトを取得する"
-description: "Adapty Unity SDKでペイウォールとプロダクトを取得し、ユーザーのマネタイズを強化する。"
+title: "Unityにおけるリモートコンフィグペイウォールのペイウォールとプロダクトの取得"
+description: "AdaptyのUnity SDKでペイウォールとプロダクトを取得し、ユーザーの収益化を強化する方法を説明します。"
 metadataTitle: "ペイウォールとプロダクトの取得 | Unity SDK | Adapty ドキュメント"
-keywords: ['getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'getPaywallForDefaultAudience', 'remote config', 'Unity']
+keywords: ['GetFlow', 'getPaywall', 'getPaywallProducts', 'getPaywallProductsWithoutDeterminingOffer', 'GetFlowForDefaultAudience', 'getPaywallForDefaultAudience', 'remote config', 'Unity']
 displayed_sidebar: sdkunity
 rank: 70
 ---
 
 import SampleApp from '@site/src/locales/ja/reusable/SampleApp.md'; 
 
-リモートコンフィグやカスタムペイウォールを表示する前に、それらの情報を取得する必要があります。このトピックはリモートコンフィグおよびカスタムペイウォールに関するものです。ペイウォールビルダーでカスタマイズしたペイウォールの取得方法については、[ペイウォールビルダーのペイウォールと設定の取得](unity-get-pb-paywalls)を参照してください。
+<SDKv4>
+
+リモートコンフィグとカスタムペイウォールを表示する前に、それらに関する情報を取得する必要があります。このトピックはリモートコンフィグとカスタムペイウォールに関するものです。**Flow Builder** または **Paywall Builder** でカスタマイズされたフローやペイウォールの取得方法については、[フローとペイウォールの取得](unity-get-pb-paywalls)を参照してください。
 
 <SampleApp />
 
 <details>
-   <summary>モバイルアプリでペイウォールとプロダクトの取得を始める前に（クリックして展開）</summary>
+   <summary>モバイルアプリでフローとプロダクトの取得を始める前に（クリックして展開）</summary>
 
-   1. Adapty ダッシュボードで[プロダクトを作成する](create-product)。
+   1. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
 
-2. Adapty ダッシュボードで[ペイウォールを作成し、プロダクトをペイウォールに組み込む](create-paywall)。
+2. [フローまたはペイウォールを作成し、プロダクトをそこに組み込む](create-paywall)（Adapty ダッシュボード内）。
 
-3. Adapty ダッシュボードで[プレースメントを作成し、ペイウォールをプレースメントに組み込む](create-placement)。
+3. [プレースメントを作成し、フローまたはペイウォールをプレースメントに組み込む](create-placement)（Adapty ダッシュボード内）。
 
-4. モバイルアプリに[Adapty SDKをインストールする](sdk-installation-unity)。
+4. [Adapty SDK をインストールする](sdk-installation-unity)（モバイルアプリに）。
+</details>
+
+## フローの情報を取得する \{#fetch-flow-information\}
+
+Adapty では、[プロダクト](product)は App Store と Google Play 両方のプロダクトを組み合わせたものです。これらのクロスプラットフォームプロダクトはフローやペイウォールに統合されており、モバイルアプリの特定のプレースメント内に表示することができます。
+
+プロダクトを表示するには、`GetFlow` メソッドを使って[プレースメント](placements)のいずれかから `AdaptyFlow` を取得する必要があります。
+
+:::important
+**プロダクト ID をハードコードしないでください。** ハードコードするのはプレースメント ID のみです。フローはリモートで設定されるため、プロダクトの数や利用可能なオファーはいつでも変更される可能性があります。アプリはこれらの変更を動的に処理する必要があります。今日はフローが 2 つのプロダクトを返し、明日は 3 つを返す場合でも、コードを変更せずにすべてを表示できるようにしてください。
+:::
+
+```csharp showLineNumbers
+Adapty.GetFlow(
+    "YOUR_PLACEMENT_ID",
+    AdaptyPlacementFetchPolicy.Default,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        // flow - the requested flow
+    }
+);
+```
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **fetchPolicy** | デフォルト: `AdaptyPlacementFetchPolicy.Default` | <p>デフォルトでは、SDK はサーバーからデータの読み込みを試み、失敗した場合はキャッシュされたデータを返します。ユーザーが常に最新のデータを取得できるため、この方法を推奨します。</p><p></p><p>ただし、ユーザーが不安定なインターネット環境で利用していると想定される場合は、`AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` の使用を検討してください。キャッシュが存在する場合はそちらを返します。この場合、最新データを取得できないことがありますが、インターネット接続が不安定でも読み込みを高速化できます。キャッシュは定期的に更新されるため、セッション中にネットワークリクエストを避ける目的で安全に使用できます。</p><p></p><p>キャッシュはアプリを再起動しても保持され、アプリの再インストール時または手動でのクリア時にのみ削除されます。</p><p></p><p>Adapty SDK はフローとペイウォールを 2 層で保存します。1 つは上述の定期更新キャッシュ、もう 1 つは[フォールバックペイウォール](unity-use-fallback-paywalls)です。また、フローとペイウォールの取得を高速化するために CDN を使用し、CDN に接続できない場合に備えてスタンドアロンのフォールバックサーバーも用意しています。このシステムは、インターネット接続が制限された状況でも信頼性を確保しつつ、常に最新バージョンのフローとペイウォールを取得できるよう設計されています。</p> |
+| **loadTimeout** | デフォルト: 5 秒 | <p>このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。</p><p></p><p>このメソッドは内部で複数のリクエストを処理する場合があるため、まれに `loadTimeout` で指定した時間よりもわずかに遅れてタイムアウトすることがあります。</p> |
+
+プロダクトIDをハードコードしないでください！フローはリモートで設定されるため、利用可能なプロダクト、プロダクトの数、特別オファー（無料トライアルなど）は随時変更される可能性があります。これらのシナリオにコードが対応できるようにしてください。
+
+例えば、最初に2つのプロダクトを取得した場合、アプリはその2つのプロダクトを表示する必要があります。その後3つのプロダクトを取得した場合は、コードを変更することなく3つすべてを表示できる必要があります。ハードコードする必要があるのは、プレースメントIDのみです。
+
+レスポンスパラメータ：
+
+| パラメーター | 説明                                                                                                                                                  |
+| :-------- | :----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Flow      | `AdaptyFlow` オブジェクト。フロー識別子、ペイウォールのバリエーション（`Paywalls` — それぞれ独自のプロダクト識別子を持つ）、`RemoteConfigs` リスト（設定済みロケールごとに1エントリ）、およびその他のプロパティを含みます。フローのプロダクトを取得するには、`GetPaywallProducts(flow)` を呼び出してください。 |
+
+:::note
+v4では、`GetFlow`に`locale`パラメーターはありません。`CreateFlowView`でフローをレンダリングする際、ローカライゼーションは自動的に解決されます。カスタムペイウォールの場合、利用可能なすべてのロケールが`flow.RemoteConfigs`にまとめて返されます。ユーザーのデバイスやアプリの設定に合ったロケールを選択してください。詳細は[ローカライゼーションとロケールコード](unity-localizations-and-locale-codes)を参照してください。
+:::
+
+## プロダクトの取得 \{#fetch-products\}
+
+フローを取得したら、それに対応するプロダクトの配列を取得できます：
+
+```csharp showLineNumbers
+Adapty.GetPaywallProducts(flow, (products, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // products - the requested products array
+});
+```
+
+レスポンスパラメーター：
+
+| パラメータ | 説明                                                                                                                                                                                 |
+| :-------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Products  | `AdaptyPaywallProduct` オブジェクトのリスト。プロダクト識別子、プロダクト名、価格、通貨、サブスクリプション期間、その他いくつかのプロパティを含みます。 |
+
+独自のフロー設計を実装する際、`AdaptyPaywallProduct` オブジェクトのプロパティにアクセスする必要があります。以下に最もよく使用されるプロパティを示します。
+
+| プロパティ | 説明 |
+|-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| **Title** | プロダクトのタイトルを表示するには、`product.LocalizedTitle` を使用します。ローカライズはデバイスのロケールではなく、ユーザーが選択したストアの国に基づいて行われます。 |
+| **Price** | ローカライズされた価格を表示するには、`product.Price.LocalizedString` を使用します。このローカライズはデバイスのロケール情報に基づいています。`product.Price.Amount` を使用して数値として価格を取得することもできます。値はローカル通貨で提供されます。関連する通貨記号を取得するには、`product.Price.CurrencySymbol` を使用します。 |
+| **Subscription Period** | 期間（週、月、年など）を表示するには、`product.Subscription?.LocalizedPeriod` を使用します。このローカライズはデバイスのロケールに基づいています。サブスクリプション期間をプログラムで取得するには、`product.Subscription?.Period` を使用します。そこから `Unit` 列挙型にアクセスして長さを取得できます（`AdaptySubscriptionPeriodUnit.Day`、`AdaptySubscriptionPeriodUnit.Week`、`AdaptySubscriptionPeriodUnit.Month`、`AdaptySubscriptionPeriodUnit.Year`、または `AdaptySubscriptionPeriodUnit.Unknown`）。`NumberOfUnits` の値で期間単位の数を取得できます。たとえば、四半期ごとのサブスクリプションの場合、Unit プロパティに `AdaptySubscriptionPeriodUnit.Month`、NumberOfUnits プロパティに `3` が表示されます。 |
+| **Introductory Offer** | サブスクリプションに初回オファーが含まれていることを示すバッジなどのインジケーターを表示するには、`product.Subscription?.Offer?.Phases` プロパティを確認してください。これは最大2つの割引フェーズ（無料トライアルフェーズと初回価格フェーズ）を含むことができるリストです。各フェーズオブジェクトには以下の便利なプロパティが含まれています：<br/>• `PaymentMode`：`AdaptyPaymentMode.FreeTrial`、`AdaptyPaymentMode.PayAsYouGo`、`AdaptyPaymentMode.PayUpFront`、`AdaptyPaymentMode.Unknown` の値を持つ列挙型。無料トライアルは `AdaptyPaymentMode.FreeTrial` タイプになります。<br/>• `Price`：割引価格を含む `AdaptyPrice` オブジェクト — 数値には `Price.Amount`、表示には `Price.LocalizedString` を使用します。無料トライアルの場合は `Price.Amount` が `0` になります。<br/>• `LocalizedNumberOfPeriods`：デバイスのロケールを使用してローカライズされた、オファーの長さを説明する文字列。たとえば、3日間のトライアルオファーの場合、このフィールドには `"3 days"` が表示されます。<br/>• `SubscriptionPeriod`：あるいは、このプロパティでオファー期間の個別の詳細を取得できます。オファーに対して前のセクションで説明したものと同じ方法で機能します。<br/>• `LocalizedSubscriptionPeriod`：ユーザーのロケールに合わせてフォーマットされた割引のサブスクリプション期間。 |
+
+## デフォルトオーディエンスフローによるフロー取得の高速化 \{#speed-up-flow-fetching-with-default-audience-flow\}
+
+通常、フローの取得はほぼ瞬時に行われるため、この処理を高速化することを特に気にする必要はありません。ただし、オーディエンスやプレースメントの数が多く、ユーザーのインターネット接続が不安定な場合は、フローの取得に予想以上の時間がかかることがあります。そのような状況では、何も表示しないよりもスムーズなユーザー体験を提供するために、デフォルトのフローを表示したい場合があるでしょう。
+
+これに対処するには、`GetFlowForDefaultAudience` メソッドを使用できます。このメソッドは、指定されたプレースメントの **All Users** オーディエンス向けフローを取得します。ただし、推奨されるアプローチは `GetFlow` メソッドでフローを取得することであり、詳細は上記の [フロー情報の取得](fetch-paywalls-and-products-unity#fetch-flow-information) セクションを参照してください。
+
+:::warning
+`GetFlow` を推奨する理由
+
+`GetFlowForDefaultAudience` メソッドにはいくつかの重大な欠点があります：
+
+- **後方互換性の問題**: 異なるアプリバージョン（現行バージョンと将来のバージョン）で異なるフローを表示する必要がある場合、課題が生じる可能性があります。現行（レガシー）バージョンに対応したフローを設計するか、現行（レガシー）バージョンのユーザーがレンダリングされないフローで問題に遭遇することを受け入れるかのどちらかになります。
+- **ターゲティングの喪失**: すべてのユーザーが **All Users** オーディエンス向けに設計された同一のフローを見ることになり、国、マーケティングのアトリビューション、または独自のカスタム属性に基づくパーソナライズされたターゲティングが失われます。
+
+これらのデメリットを受け入れてでも高速なフローフェッチのメリットを活用したい場合は、以下のように `GetFlowForDefaultAudience` メソッドを使用してください。そうでない場合は、[上記](#fetch-paywalls-and-products-unity#fetch-flow-information)の `GetFlow` を使用してください。
+:::
+
+```csharp showLineNumbers
+Adapty.GetFlowForDefaultAudience(
+    "YOUR_PLACEMENT_ID",
+    AdaptyPlacementFetchPolicy.Default,
+    (flow, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+
+        // flow - the requested flow
+    }
+);
+```
+
+| パラメーター | 必須/任意 | 説明 |
+|---------|--------|-----------|
+| **placementId** | 必須 | [プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
+| **fetchPolicy** | デフォルト: `AdaptyPlacementFetchPolicy.Default` | <p>デフォルトでは、SDK はサーバーからデータを読み込もうとし、失敗した場合はキャッシュされたデータを返します。この方式ではユーザーが常に最新のデータを取得できるため、こちらを推奨します。</p><p></p><p>ただし、ユーザーがインターネット接続の不安定な環境にいると想定される場合は、`AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` を使用することで、キャッシュが存在する場合はキャッシュデータを返すようにできます。この場合、最新データが取得できないことがありますが、接続状況に関わらず読み込みが速くなります。キャッシュはセッション中に定期的に更新されるため、ネットワークリクエストを省くためにキャッシュを利用しても問題ありません。</p><p></p><p>なお、キャッシュはアプリを再起動しても保持され、アプリの再インストール時または手動でクリアした場合にのみ削除されます。</p> |
+
+</SDKv4>
+
+<SDKv3>
+
+リモートコンフィグとカスタムペイウォールを紹介する前に、それらに関する情報を取得する必要があります。このトピックはリモートコンフィグとカスタムペイウォールに関するものです。ペイウォールビルダーでカスタマイズされたペイウォールの取得方法については、[ペイウォールビルダーのペイウォールと設定の取得](unity-get-pb-paywalls)を参照してください。
+
+<SampleApp />
+
+<details>
+   <summary>モバイルアプリでペイウォールとプロダクトの取得を開始する前に（クリックして展開）</summary>
+
+   1. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
+
+2. [ペイウォールを作成し、プロダクトをペイウォールに組み込む](create-paywall)（Adapty ダッシュボード内）。
+
+3. [プレースメントを作成し、ペイウォールをプレースメントに組み込む](create-placement)（Adapty ダッシュボード内）。
+
+4. [Adapty SDK をインストールする](sdk-installation-unity)（モバイルアプリ内）。
 </details>
 
 ## ペイウォール情報の取得 \{#fetch-paywall-information\}
@@ -87,10 +222,10 @@ Adapty.GetPaywallProducts(paywall, (products, error) => {
 
 | プロパティ | 説明 |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Title** | プロダクトのタイトルを表示するには `product.LocalizedTitle` を使用してください。ローカライゼーションはデバイス自体のロケールではなく、ユーザーが選択しているストアの国に基づきます。 |
-| **Price** | ローカライズされた価格を表示するには `product.Price.LocalizedString` を使用してください。このローカライゼーションはデバイスのロケール情報に基づきます。`product.Price.Amount` を使用して価格を数値として取得することもできます。値はローカル通貨で提供されます。関連する通貨記号を取得するには `product.Price.CurrencySymbol` を使用してください。 |
-| **Subscription Period** | 期間（週、月、年など）を表示するには `product.Subscription?.LocalizedPeriod` を使用してください。このローカライゼーションはデバイスのロケールに基づきます。プログラムでサブスクリプション期間を取得するには `product.Subscription?.Period` を使用してください。そこから `Unit` 列挙型にアクセスして長さを取得できます（`AdaptySubscriptionPeriodUnit.Day`、`AdaptySubscriptionPeriodUnit.Week`、`AdaptySubscriptionPeriodUnit.Month`、`AdaptySubscriptionPeriodUnit.Year`、または `AdaptySubscriptionPeriodUnit.Unknown`）。`NumberOfUnits` の値で期間単位の数を取得できます。例えば、四半期サブスクリプションの場合、Unit プロパティに `AdaptySubscriptionPeriodUnit.Month`、NumberOfUnits プロパティに `3` が表示されます。 |
-| **Introductory Offer** | サブスクリプションに初回オファーが含まれているかをバッジなどで示すには、`product.Subscription?.Offer?.Phases` プロパティを確認してください。これは最大2つの割引フェーズ（無料トライアルフェーズと初回価格フェーズ）を含むことができるリストです。各フェーズオブジェクトには以下の便利なプロパティが含まれます:<br/>• `PaymentMode`: `AdaptyPaymentMode.FreeTrial`、`AdaptyPaymentMode.PayAsYouGo`、`AdaptyPaymentMode.PayUpFront`、`AdaptyPaymentMode.Unknown` の値を持つ列挙型。無料トライアルは `AdaptyPaymentMode.FreeTrial` 型になります。<br/>• `Price`: 割引価格（数値）。無料トライアルの場合は `0` になります。<br/>• `LocalizedNumberOfPeriods`: オファーの長さをデバイスのロケールでローカライズした文字列。例えば、3日間のトライアルオファーの場合、このフィールドに `"3 days"` が表示されます。<br/>• `SubscriptionPeriod`: オファー期間の個別の詳細をこのプロパティで取得することもできます。オファーに対しても前のセクションと同様に機能します。<br/>• `LocalizedSubscriptionPeriod`: ユーザーのロケールに対応した割引のサブスクリプション期間のフォーマット済み文字列。 |
+| **Title** | プロダクトのタイトルを表示するには、`product.LocalizedTitle` を使用します。なお、このローカライズはデバイスのロケールではなく、ユーザーが選択したストアの国に基づきます。 |
+| **Price** | 価格のローカライズされた表示には `product.Price.LocalizedString` を使用します。このローカライズはデバイスのロケール情報に基づきます。数値として価格を取得するには `product.Price.Amount` を使用します。値はローカル通貨で提供されます。対応する通貨記号を取得するには `product.Price.CurrencySymbol` を使用します。 |
+| **Subscription Period** | 期間（週、月、年など）を表示するには `product.Subscription?.LocalizedPeriod` を使用します。このローカライズはデバイスのロケールに基づきます。サブスクリプション期間をプログラムで取得するには `product.Subscription?.Period` を使用します。そこから `Unit` 列挙型にアクセスして期間の長さを取得できます（`AdaptySubscriptionPeriodUnit.Day`、`AdaptySubscriptionPeriodUnit.Week`、`AdaptySubscriptionPeriodUnit.Month`、`AdaptySubscriptionPeriodUnit.Year`、または `AdaptySubscriptionPeriodUnit.Unknown`）。`NumberOfUnits` の値で期間の単位数を取得できます。例えば、四半期ごとのサブスクリプションの場合、`Unit` プロパティには `AdaptySubscriptionPeriodUnit.Month`、`NumberOfUnits` プロパティには `3` が表示されます。 |
+| **Introductory Offer** | サブスクリプションに初回オファーが含まれているかどうかをバッジなどで表示するには、`product.Subscription?.Offer?.Phases` プロパティを確認します。これは最大2つの割引フェーズ（無料トライアルフェーズと初回価格フェーズ）を含むリストです。各フェーズオブジェクトには以下の便利なプロパティが含まれています：<br/>• `PaymentMode`：`AdaptyPaymentMode.FreeTrial`、`AdaptyPaymentMode.PayAsYouGo`、`AdaptyPaymentMode.PayUpFront`、`AdaptyPaymentMode.Unknown` の値を持つ列挙型。無料トライアルは `AdaptyPaymentMode.FreeTrial` 型になります。<br/>• `Price`：割引価格を持つ `AdaptyPrice` オブジェクト。数値には `Price.Amount`、表示には `Price.LocalizedString` を使用します。無料トライアルの場合は `Price.Amount` に `0` が入ります。<br/>• `LocalizedNumberOfPeriods`：オファーの期間をデバイスのロケールでローカライズした文字列。例えば、3日間のトライアルオファーの場合、このフィールドには `"3 days"` が表示されます。<br/>• `SubscriptionPeriod`：オファー期間の個別の詳細をこのプロパティで取得することもできます。オファーに対しても前のセクションで説明した方法と同様に機能します。<br/>• `LocalizedSubscriptionPeriod`：ユーザーのロケールに合わせてフォーマットされた割引のサブスクリプション期間。 |
 
 ## デフォルトオーディエンスペイウォールでペイウォール取得を高速化する \{#speed-up-paywall-fetching-with-default-audience-paywall\}
 
@@ -125,3 +260,4 @@ Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) 
 | **placementId** | 必須 | 対象の[プレースメント](placements)の識別子。Adapty ダッシュボードでプレースメントを作成する際に指定した値です。 |
 | **locale** | <p>任意</p><p>デフォルト: `en`</p> | <p>ペイウォールのローカライゼーションの識別子。このパラメータはマイナス（**-**）文字で区切られた1つまたは2つのサブタグで構成される言語コードを指定します。最初のサブタグは言語、2番目は地域を表します。</p><p></p><p>例: `en` は英語、`pt-br` はブラジルポルトガル語を表します。</p> |
 | **fetchPolicy** | デフォルト: `.reloadRevalidatingCacheData` | <p>デフォルトでは、SDKはサーバーからデータを読み込もうとし、失敗した場合はキャッシュデータを返します。ユーザーが常に最新のデータを取得できるため、このオプションを推奨します。</p><p></p><p>ただし、ユーザーのインターネット接続が不安定だと思われる場合は、`.returnCacheDataElseLoad` を使用してキャッシュデータが存在する場合に返すことを検討してください。この場合、ユーザーは最新データを取得できないことがありますが、通信状況に関わらず読み込みが速くなります。キャッシュは定期的に更新されるため、セッション中のネットワークリクエスト削減に安全に使用できます。</p><p></p><p>キャッシュはアプリの再起動後も保持され、アプリの再インストールまたは手動でのクリア時のみ削除されます。</p><p></p><p>Adapty SDKはペイウォールをローカルに2層で保存します。上記の定期更新キャッシュとフォールバックペイウォールです。また、CDNを使用してペイウォールを高速に取得し、CDNが利用できない場合のスタンドアロンフォールバックサーバーも用意しています。このシステムは、インターネット接続が不安定な環境でも常に最新バージョンのペイウォールを確実に取得できるよう設計されています。</p> |
+</SDKv3>

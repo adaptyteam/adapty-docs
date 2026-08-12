@@ -180,7 +180,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | fetch-paywalls-and-products-flutter | — | dev | 6 | flutter |
 | fetch-paywalls-and-products-kmp | — | dev | 6 | kmp |
 | fetch-paywalls-and-products-react-native | — | dev | 6 | react-native |
-| fetch-paywalls-and-products-unity | — | dev | 3 | unity |
+| fetch-paywalls-and-products-unity | — | dev | 6 | unity |
 | flutter-implement-paywalls-manually | entry | dev | 2 | flutter |
 | flutter-making-purchases | — | dev | 4 | flutter |
 | flutter-quickstart-manual | — | dev | 8 | flutter |
@@ -209,7 +209,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | present-remote-config-paywalls-flutter | — | dev | 4 | flutter |
 | present-remote-config-paywalls-kmp | — | dev | 4 | kmp |
 | present-remote-config-paywalls-react-native | — | dev | 4 | react-native |
-| present-remote-config-paywalls-unity | — | dev | 2 | unity |
+| present-remote-config-paywalls-unity | — | dev | 4 | unity |
 | react-native-implement-paywalls-manually | entry | dev | 2 | react-native |
 | react-native-making-purchases | — | dev | 4 | react-native |
 | react-native-quickstart-manual | — | dev | 7 | react-native |
@@ -225,7 +225,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | restore-purchase | — | dev | 0 | ios |
 | unity-implement-paywalls-manually | entry | dev | 2 | unity |
 | unity-making-purchases | — | dev | 4 | unity |
-| unity-quickstart-manual | — | dev | 7 | unity |
+| unity-quickstart-manual | — | dev | 8 | unity |
 | unity-restore-purchase | — | dev | 0 | unity |
 | unity-troubleshoot-purchases | — | dev | 6 | unity |
 <!-- /mill:auto -->

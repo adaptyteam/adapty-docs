@@ -1,0 +1,113 @@
+---
+title: "Quản lý Apple Ads bằng công cụ lập trình AI"
+description: "Cài đặt kỹ năng ads-manager để Claude Code, Copilot CLI, Codex, hoặc Gemini CLI có thể chạy các chiến dịch Apple Ads của bạn thông qua Adapty CLI."
+metadataTitle: "Kỹ năng AI Quản lý Quảng cáo | Tài liệu Adapty"
+---
+
+import AdsManagerSkill from '@site/src/locales/vi/reusable/AdsManagerSkill.mdx';
+
+Kỹ năng `ads-manager` cho phép công cụ AI hỗ trợ lập trình vận hành tài khoản Apple Ads của bạn thông qua [Adapty CLI](developer-cli-ads-manager). Chỉ cần đặt câu hỏi bằng ngôn ngữ thông thường, công cụ sẽ tự xác định những lệnh nào cần thiết, đọc thông tin tài khoản trước, rồi đề xuất thao tác ghi trước khi bất kỳ thay đổi nào được gửi đến Apple.
+
+Một skill là tập hợp các hướng dẫn mà công cụ AI của bạn tải theo yêu cầu. Skill này bao gồm những phần của giao diện Ads Manager dễ gây nhầm lẫn nhất: định danh nào được mỗi flag chấp nhận, bộ lọc nào áp dụng cho từng danh sách, một batch chứa tối đa bao nhiêu từ khóa, và những lệnh nào phát sinh chi phí.
+
+## Tính năng xử lý \{#what-it-handles\}
+
+- **Hiệu suất đọc dữ liệu**: Chọn đúng một lệnh gọi để trả lời câu hỏi thay vì phải duyệt qua nhiều trang kết quả. Biết rằng câu hỏi top-N là một lệnh gọi có sắp xếp, và đếm thực thể không cần gọi metrics.
+- **Thay đổi cấu trúc**: Tạo và cập nhật chiến dịch, nhóm quảng cáo, quảng cáo và từ khóa theo đúng thứ tự, đọc thực thể cha trước khi ghi thực thể con.
+- **Làm việc với từ khóa**: Thêm và đặt lại giá thầu từ khóa theo lô, đồng thời thu thập các cụm từ tìm kiếm thành từ khóa và từ khóa phủ định.
+- **Tự động hóa**: Thiết lập các quy tắc tự động hóa và chạy thử nghiệm trước khi áp dụng lên giá thầu thực.
+- **Nghiên cứu đối thủ**: Lấy danh sách từ khóa mà các ứng dụng cạnh tranh đang đấu giá.
+
+## Những gì nó sẽ không làm \{#what-it-will-not-do\}
+
+Skill này coi mọi thao tác ghi là không thể hoàn tác, vì thực tế là như vậy — CLI không có lệnh xóa, và các thay đổi sẽ đến Apple trong vài giây.
+
+- Nó đọc trước khi ghi, thay vì tự đoán ID hoặc ngân sách.
+- Nó hỏi trước bất kỳ lệnh nào tốn tiền, và giữ nguyên lời nhắc xác nhận của chính CLI khi bạn là người chạy lệnh đó.
+- Nó gắn một idempotency key cho mỗi lần ghi trong một chuỗi, để nếu chạy lại sau một kết quả không rõ ràng thì không tạo thêm campaign thứ hai.
+- Nó ưu tiên các lô nhỏ, để khi Apple từ chối một phần thì vẫn dễ đọc.
+
+:::note
+Skill này đề xuất và chuẩn bị các lệnh. Việc đọc chỉ số và chạy thử không tốn chi phí, nhưng bạn vẫn chịu trách nhiệm phê duyệt mọi thay đổi ảnh hưởng đến tài khoản quảng cáo đang hoạt động.
+:::
+
+## Cài đặt skill \{#install-the-skill\}
+
+<AdsManagerSkill />
+
+## Ví dụ về các prompt \{#example-prompts\}
+
+Skill đã biết sẵn các lệnh, thứ tự thực thi, và lệnh nào tốn tiền — nên bạn không cần giải thích những điều đó trong prompt. Hãy tập trung vào những gì skill không thể tự suy ra: chỉ số và khoảng thời gian bạn dùng để đánh giá chiến dịch, mốc so sánh bạn muốn dùng, và định dạng câu trả lời bạn mong muốn.
+
+### Kiểm tra tài khoản đang chạy \{#audit-an-account-you-already-run\}
+
+Dùng khi các chiến dịch đang hoạt động và bạn muốn biết tiền đang chảy về đâu. Mọi lệnh cần thiết đều là lệnh đọc, nên không có gì trong tài khoản của bạn bị thay đổi.
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### Khởi chạy chiến dịch đầu tiên \{#launch-your-first-campaigns\}
+
+Dùng cách này khi tài khoản Apple Ads còn trống. Kỹ năng tạo các chiến dịch ở trạng thái tạm dừng theo mặc định, và prompt này giữ nguyên như vậy cho đến khi bạn đã đọc kế hoạch.
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## Sự khác biệt so với AI Agent \{#how-it-differs-from-the-ai-agent\}
+
+Adapty Ads Manager cũng có tích hợp sẵn [AI Agent](ads-manager-ai-agent) trong dashboard. Hai công cụ này phục vụ các nhu cầu khác nhau:
+
+| | AI Agent | ads-manager skill |
+|---|---|---|
+| Chạy ở đâu | Adapty dashboard | Terminal của bạn, trong công cụ AI coding |
+| Chức năng | Phân tích và đề xuất | Phân tích, đề xuất và thực thi lệnh |
+| Thiết lập | Không cần | Adapty CLI cộng với skill |
+
+Dùng AI Agent để tìm hiểu những gì đang xảy ra trong tài khoản của bạn. Dùng skill khi bạn muốn thay đổi đó được thực hiện luôn.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Quản lý Ads Manager từ CLI](developer-cli-ads-manager) — thực hiện các thao tác tương tự theo cách thủ công, không cần công cụ AI.
+- [Các lệnh Ads Manager](developer-cli-ads-manager-reference) — toàn bộ lệnh với các đối số, cờ và giá trị được chấp nhận.

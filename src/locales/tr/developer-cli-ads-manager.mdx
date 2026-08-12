@@ -1,0 +1,147 @@
+---
+title: "CLI ile Ads Manager Yönetimi"
+description: "Adapty Developer CLI ile Apple Ads kampanyalarını, anahtar kelimeleri ve otomasyon kurallarını terminalden yönetin."
+metadataTitle: "Developer CLI'da Ads Manager | Adapty Dokümanları"
+---
+
+Adapty CLI, `adapty asa` konusu altında [Ads Manager](adapty-ads-manager) hesabınızı terminalden yönetebilir. Kampanyalar, reklam grupları, anahtar kelimeler, reklamlar, ürün sayfaları, otomasyon kuralları, metrikler ve rakip araştırmalarını kapsar.
+
+Bir tarayıcıyı yavaşlatan işler için kullanın: bir yapay zeka ajanına reklam performansınıza canlı erişim vermek, bir dosyadan birkaç yüz anahtar kelime eklemek ve aynı kurulumu birkaç kampanyada çalıştırmak. Diğer her şey için [kontrol paneli](https://app.adapty.io) daha hızlı kalır.
+
+:::warning
+CLI hiçbir şeyi silemez. Kampanyalar, reklamlar ve otomasyon kuralları terminalden oluşturulabilir, güncellenebilir ve duraklatılabilir; ancak silme işlemleri yalnızca kontrol panelinden yapılabilir.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+Ads Manager komutları, CLI'nin geri kalanıyla aynı kurulum ve oturum açma bilgilerini kullanır. Henüz bunu yapmadıysanız, [hızlı başlangıç kılavuzunun](developer-cli-quickstart) 1. ve 2. adımlarını izleyin.
+
+### Ön Koşullar \{#prerequisites\}
+
+Her `adapty asa` komutu için iki ek koşul geçerlidir:
+
+- **Bağlı bir Apple Ads hesabı**: `adapty asa connect` komutuyla veya kontrol panelinde [Adapty Ads Manager'ı kullanmaya başlama](adapty-ads-manager-get-started) bölümünde açıklandığı şekilde bağlayın.
+- **Aktif bir Ads Manager aboneliği**: Abonelik olmadan her komut `402 ads_manager_subscription_required` hatasıyla başarısız olur.
+
+İkisini birden raporlayan komut:
+
+```bash
+adapty asa whoami
+```
+
+### CLI'nin Geri Kalanından Farkları \{#differences-from-the-rest-of-the-cli\}
+
+- **`--app` bayrağı yoktur**: Kapsam, token'ınızın ait olduğu şirkettir. `--app` yalnızca bazı `list` komutlarında filtre olarak bulunur.
+- **Yazma işlemleri doğrudan Apple'a ulaşır**: Hesabınızda değişiklik yapan her komut, göndermeden önce istek gövdesini yazdırır ve onay ister. Bir hazırlık (staging) adımı yoktur.
+- **Okumalar ucuz, yazmalar değil**: `list` komutlarını ve `--dry-run` seçeneğini özgürce kullanın. Diğer her şeye geri alınamaz gözüyle bakın.
+
+Bir komut dosyasında onay istemini atlamak için `--yes` parametresini kullanın. `--json` modunda veya bir pipe içinde, bir yazma komutu hiçbir zaman gelmeyecek bir yanıtı beklemek yerine reddeder; bu nedenle `--yes` burada zorunludur.
+
+## İhtiyacınız olan ID'leri bulun \{#find-the-ids-you-need\}
+
+Her komut UUID alır ve her UUID bir `list` komutundan gelir. Hiyerarşide aşağıya doğru ilerleyin:
+
+```bash
+adapty asa orgs list
+adapty asa campaigns list --campaign-group <campaign-group-id>
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Her okumayı bir filtre ile kapsamlandırın. Filtreler, yazdırılan sayfayı değil sorguyu daraltır; bu nedenle kapsamlı bir okuma ucuzken kapsamsız bir okuma tüm hesabı sayfa sayfa tarar. `--ad-group` belirtmeden kullanılan `adapty asa keywords list`, konudaki en geniş okumadır.
+
+Bu listeler yalnızca meta veri döndürür. Performans rakamları [`asa metrics`](#query-metrics-from-agents-and-scripts) ile alınır.
+
+## Toplu anahtar kelime ekleme \{#add-keywords-in-bulk\}
+
+Anahtar kelimeleri tek tek eklemek, kontrol panelini kullanmak zorunda kalmanın başlıca nedenidir. Her satıra bir anahtar kelime gelecek şekilde bir metin dosyası oluşturun:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 1.20 --match-type EXACT
+```
+
+Anahtar kelimeler, çağrı başına en fazla 100'lük gruplar hâlinde uygulanır. Daha büyük listeleri birden fazla çağrıya bölün.
+
+İki tür hata mümkündür ve bunlar farklı davranır. Geçersiz bir ID, Apple çağrılmadan önce tüm toplu işlemi başarısız kılar; dolayısıyla hiçbir şey uygulanmaz. Apple ise bazı anahtar kelimeleri tek tek reddedebilir — geri kalanlar yine de eklenir ve her red, gerekçesiyle birlikte raporlanır. Yalnızca çıkış koduna değil, özet satırına da bakın.
+
+Tam bir dosya göndermeden önce birkaç anahtar kelimeyle başlayıp sonucu kontrol edin.
+
+## Temsilcilerden ve komut dosyalarından metrik sorgulama \{#query-metrics-from-agents-and-scripts\}
+
+`asa metrics`, bir tarih aralığında hesabın herhangi bir düzeyinde raporlama yapar. Bir yapay zeka temsilcisi veya komut dosyasının sonucu doğrudan tüketebilmesi için `--json` ekleyin:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
+```
+
+`--metric`, Ads Manager'ın izlediği adları alır. Tam liste için [Metrikler](adapty-ads-manager-metrics) bölümüne bakın.
+
+Kohort metrikleri diğerlerinden farklı çalışır. `ltv` metriği yoktur; çünkü yaşam boyu değer bir tarihe göre değil, yenileme penceresine göre okunur. Bunun yerine pencereyi belirtin:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90 --order-by-day 90
+```
+
+Bu komut, kampanyalarınızı 90. gün ROAS değerine göre sıralar. Tek bir çağrıya en fazla 16 pencere sığar.
+
+Her satır tek bir entity'yi temsil eder; sunucu tarafında zaten toplanmış ve sıralanmıştır. Dolayısıyla "harcamaya göre en iyi beş kampanya" sorusunu yanıtlamak için her sayfayı dolaşmak yerine tek bir çağrı yeterlidir:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+Metrikler ve arama terimleri listesi, şirket başına tek bir analytics bütçesini paylaşır: dakikada 5 çağrı ve herhangi bir 10 saniyede en fazla 2. Polling yapmak yerine tek seferinde dar bir soru sorun. Raporlama dönemi, gruplama inceliğiyle de sınırlandırılmıştır — güne göre 90 gün, haftaya göre 180, aya göre 365 — bu nedenle raporu genişletmek için daha fazla çağrıya bölmek yerine `--group-by` seçeneğini kaba tutun.
+
+## Rakip anahtar kelimeleri kontrol edin \{#check-competitor-keywords\}
+
+Tek bir komutla, aynı anda en fazla beş App Store uygulamasının teklif verdiği anahtar kelimeleri görebilirsiniz:
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027 --json
+```
+
+Dönem ve ülkeler sunucu tarafında sabit tutulur — her ülke genelinde son tam ay — dolayısıyla komutun uygulama ID'lerinin ötesinde herhangi bir parametresi yoktur. Belirli bir uygulama kümesi için ilk çağrı onlarca saniye sürebilir.
+
+Rakip anahtar kelime verilerini bir rapora düzenli aralıklarla çekmek için bunu kullanın. Sonuçları filtrelemek, ülkeleri yan yana karşılaştırmak veya bulduğunuz anahtar kelimeleri doğrudan bir kampanyaya eklemek için kontrol panelindeki [Market Intelligence](ads-manager-market-intelligence) bölümünü kullanın.
+
+## Otomasyon kurallarını çalıştırma \{#run-automation-rules\}
+
+CLI, [otomasyon kuralları](ads-manager-automations) oluşturmaz — yalnızca verdiğiniz JSON'ı depolar. Geçerli bir kural dosyası edinmenin en hızlı yolu, kontrol panelinde bir kural oluşturup geri okumaktır:
+
+```bash
+adapty asa automations get <automation-id> --json > rule.json
+```
+
+Bu dosyayı düzenleyip yeni kurallar için şablon olarak kullanın:
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+Bir dosyayı `automations update` komutuna geçirdiğinizde, önce `internal_id` alanını kaldırın — mevcut olması durumunda güncelleme reddedilir.
+
+Bir kuralın teklifleri değiştirmesine izin vermeden önce test edin:
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+Kuru çalıştırma (dry run), koşulları değerlendirir ve Apple Ads'e dokunmadan kuralın ne yapacağını kaydeder. Çalıştırmalar hemen gerçekleştirilmek yerine kuyruğa alındığından, komut bir çalıştırma kimliği yazdırır ve sonuç `adapty asa automations runs` içinde görünür.
+
+## Script'leri güvenle yeniden çalıştırma \{#re-run-scripts-safely\}
+
+Her yazma işlemi bir idempotency anahtarı gönderir. CLI, her çağrı için bir tane oluşturur ve ağ hatasından sonra bir kez yeniden dener; bu sayede iletim sırasında başarısız olan bir istek hiçbir zaman iki kez uygulanmaz.
+
+Bir script içinde, tüm pipeline'ın yeniden çalıştırılabilmesi için anahtarı kendiniz sabitleyin:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50 --idempotency-key winter-push-2026 --yes
+```
+
+Aynı komutu 24 saat içinde tekrar çalıştırmak, kaydedilen sonucu döndürür ve ikinci bir kampanya oluşturmak yerine `Already applied earlier` mesajını yazdırır. Aynı key ile farklı bir body gönderilmesi `422` hatasıyla sonuçlanır; bu da key'i yanlışlıkla yeniden kullanan düzenlenmiş bir script'i yakalar.
+
+## Sıradaki adımlar \{#whats-next\}
+
+- [Apple Ads'i bir AI kodlama aracıyla yönetin](developer-cli-ads-manager-skill) — Claude Code, Copilot CLI, Codex veya Gemini CLI'nın bu komutları sizin için çalıştırabilmesi için `ads-manager` skill'ini yükleyin.
+- [Ads Manager komutları](developer-cli-ads-manager-reference) — tüm komutlar, argümanları, flag'leri ve kabul edilen değerleriyle birlikte.
+- [Otomasyonlar](ads-manager-automations) — her kural türünün ne yaptığı ve hangi aksiyonları alabileceği.
+- [Metrikler](adapty-ads-manager-metrics) — `--metric` tarafından kabul edilen metrik adları ve her birinin nasıl hesaplandığı.

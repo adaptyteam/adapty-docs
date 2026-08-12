@@ -173,7 +173,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
 | cantMakePayments-unity | — | dev | 0 | unity |
 | capacitor-handle-errors | — | dev | 10 | capacitor |
 | capacitor-reference | entry | dev | 0 | capacitor |
-| error-handling-on-flutter-react-native-unity | entry | dev | 5 | flutter |
+| error-handling-on-flutter-react-native-unity | entry | dev | 6 | flutter |
 | flutter-reference | entry | dev | 0 | flutter |
 | ios-reference | entry | dev | 0 | ios |
 | ios-sdk-error-handling | entry | dev | 4 | ios |

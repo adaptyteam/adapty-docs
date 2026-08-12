@@ -175,7 +175,7 @@ Delta from `scope.md` only.
 | kids-mode-flutter | — | dev | 4 | flutter |
 | kids-mode-kmp | — | dev | 4 | kmp |
 | kids-mode-react-native | — | dev | 6 | react-native |
-| kids-mode-unity | — | dev | 4 | unity |
+| kids-mode-unity | — | dev | 11 | unity |
 | kmp-deal-with-att | — | dev | 0 | kmp |
 | kmp-identifying-users | — | dev | 6 | kmp |
 | kmp-listen-subscription-changes | — | dev | 4 | kmp |

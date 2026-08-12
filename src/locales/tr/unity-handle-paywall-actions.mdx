@@ -1,21 +1,204 @@
 ---
-title: "Unity SDK'da düğme eylemlerine yanıt verme"
-description: "Daha iyi uygulama monetizasyonu için Unity'de Adapty kullanarak paywall düğme eylemlerini yönetin."
-metadataTitle: "Paywall düğme eylemlerini yönetme | Adapty Dokümanları"
+title: "Flow aksiyonlarına yanıt verme - Unity"
+description: "Unity uygulamanızda flow'lar ve paywalllerden gelen buton aksiyonlarını yönetin."
+metadataTitle: "Flow Aksiyonlarına Yanıt Verme - Unity | Adapty Dokümanları"
 toc_max_heading_level: 4
 rank: 40
-keywords: ['paywall düğmesi', 'düğme', 'paywall düğme eylemleri', 'eylemleri yönetme']
+keywords: ['paywall butonu', 'buton', 'paywall buton aksiyonları', 'aksiyonları yönet']
 ---
 
-Adapty Paywall Builder kullanarak paywall oluşturuyorsanız, düğmeleri doğru şekilde yapılandırmanız gerekir:
+<SDKv4>
 
-1. [Paywall builder'da bir düğme ekleyin](paywall-buttons) ve bu düğmeye mevcut bir eylem atayın ya da özel bir eylem ID'si oluşturun.
-2. Uygulamanızın kodunda, atadığınız her eylemi işleyecek kodu yazın.
+Adapty Flow Builder veya Paywall Builder kullanarak flow'lar ya da paywalllar oluşturuyorsanız, butonları doğru şekilde yapılandırmanız son derece önemlidir:
 
-Bu rehber, özel ve hazır eylemleri kodunuzda nasıl yöneteceğinizi göstermektedir.
+1. [Builder'da bir buton ekleyin](paywall-buttons) ve ona mevcut bir eylem atayın ya da özel bir eylem ID'si oluşturun.
+2. Atadığınız her eylemi işlemek için uygulamanıza kod yazın.
+
+Bu kılavuz, kodunuzda özel ve mevcut eylemleri nasıl işleyeceğinizi gösterir.
 
 :::warning
-**Yalnızca satın almalar ve geri yüklemeler otomatik olarak işlenir.** Paywallları kapatma veya bağlantı açma gibi diğer tüm düğme eylemleri için uygulama kodunuzda ilgili işleyicileri uygulamanız gerekir.
+**Yalnızca satın almalar ve geri yüklemeler otomatik olarak işlenir.** Flow'ları kapatmak veya bağlantı açmak gibi diğer tüm buton eylemleri, uygulama kodunda uygun bir yanıt implementasyonu gerektirir.
+:::
+
+## Flow olayları dinleyicisini ayarlayın \{#set-up-the-flows-events-listener\}
+
+Flow aksiyonlarını yönetmek için `IAdaptyFlowsEventsListener` arayüzünü uygulayın ve `Adapty.SetFlowsEventsListener()` ile kaydedin. Bu işlem uygulamanızın yaşam döngüsünün başında, genellikle ana sahnenizde veya uygulama başlatma kodunuzda yapılmalıdır.
+
+```csharp showLineNumbers title="Unity"
+using AdaptySDK;
+
+public class FlowsListener : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // implement all IAdaptyFlowsEventsListener methods here
+}
+```
+
+`IAdaptyFlowsEventsListener`, tüm metotlarını uygulamanız gereken bir C# arayüzüdür — tam liste için bkz. [Flow & paywall olaylarını yönetme](unity-handling-events). Aşağıdaki örnekler yalnızca `FlowViewDidPerformAction` metodunu göstermektedir.
+
+Tüm buton eylemleri, `FlowViewDidPerformAction(view, action)` callback'ine `Close`, `SystemBack`, `OpenUrl` veya `Custom` türünde bir `Type` ile birlikte isteğe bağlı bir `Value` (URL veya özel eylem kimliği) içeren bir `AdaptyUIUserAction` nesnesi olarak ulaşır.
+
+## Flow'ları ve paywall'ları kapatma \{#close-flows-and-paywalls\}
+
+Flow'unuzu veya paywall'ınızı kapatacak bir buton eklemek için:
+
+1. Builder'da bir buton ekleyin ve **Close** eylemini atayın.
+2. Uygulama kodunuzda, flow'u kapatan `Close` eylemi için bir işleyici uygulayın.
+
+:::info
+Kapatılan bir görünüm yok edilir ve tekrar gösterilemez. Flow'u bir kez daha görüntülemek için `CreateFlowView`'ı tekrar çağırın.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Android sistem geri düğmesini yönetme \{#handle-the-android-system-back-button\}
+
+Android sistem geri düğmesine basmak (veya geri hareketini kullanmak), `SystemBack` türünde bir eylem tetikler. Bu eylem flow'u kendiliğinden kapatmaz — flow açık kalır ve kullanıcı, builder'da tanımladığınız bir yol üzerinden (örneğin bir **Close** düğmesi veya `on_device_back` eylemi) flow'dan çıkar. Sistem geri düğmesinin flow'u kapatmasını istiyorsanız, eylemi kendiniz ele alın:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Flow ve paywall'lardan URL açma \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Bir grup bağlantı eklemek istiyorsanız (örneğin, kullanım koşulları ve satın alma geri yükleme), builder'da bir **Link** öğesi ekleyin ve bunu **Open URL** eylemine sahip butonlarla aynı şekilde işleyin.
+:::
+
+Flow'unuzdan veya paywall'ınızdan bir bağlantı açan bir buton eklemek için (örneğin, **Terms of use** veya **Privacy policy**):
+
+1. Builder'da bir buton ekleyin, **Open URL** eylemini atayın ve açmak istediğiniz URL'yi girin.
+2. Uygulama kodunuzda, alınan URL'yi açan `OpenUrl` eylemi için bir işleyici uygulayın.
+
+`AdaptyUI.OpenUrl` metodunu kullanarak URL'yi yerel olarak açın; builder'da yapılandırılan harici veya uygulama içi tarayıcı seçeneğine (`action.OpenIn`) uyun:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.OpenUrl:
+            var urlString = action.Value;
+            if (!string.IsNullOrWhiteSpace(urlString)) {
+                AdaptyUI.OpenUrl(
+                    urlString,
+                    action.OpenIn ?? AdaptyWebPresentation.ExternalBrowser,
+                    (error) => {
+                        // handle the error
+                    }
+                );
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Uygulamaya giriş yapma \{#log-into-the-app\}
+
+Kullanıcıların uygulamanıza giriş yapmasını sağlayan bir buton eklemek için:
+
+1. Builder'da bir buton ekleyin ve **Custom** eylemini `login` ID'siyle atayın.
+2. Uygulama kodunuzda, kullanıcınızı tanımlayan `login` özel eylemi için bir işleyici uygulayın.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "login") {
+                // Navigate to login scene
+                SceneManager.LoadScene("LoginScene");
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Özel işlemleri yönetin \{#handle-custom-actions\}
+
+Başka işlemleri yöneten bir buton eklemek için:
+
+1. Builder'da bir buton ekleyin, **Custom** eylemini atayın ve bir ID verin.
+2. Uygulama kodunuzda, oluşturduğunuz eylem ID'si için bir işleyici uygulayın.
+
+Örneğin, başka bir abonelik teklifi veya tek seferlik satın alma seçeneğiniz varsa, başka bir flow veya paywall görüntüleyen bir buton ekleyebilirsiniz:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "openNewFlow") {
+                // Display another flow or paywall
+                ShowAlternativeFlow();
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+
+private void ShowAlternativeFlow() {
+    // Implement your logic to show an alternative flow
+}
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Adapty paywall builder kullanarak paywall oluşturuyorsanız, düğmeleri doğru şekilde yapılandırmanız kritik öneme sahiptir:
+
+1. [Paywall builder'a bir düğme ekleyin](paywall-buttons) ve bu düğmeye önceden tanımlanmış bir eylem atayın ya da özel bir eylem kimliği oluşturun.
+2. Atadığınız her eylemi işlemek için uygulamanızda kod yazın.
+
+Bu kılavuz, özel ve önceden tanımlanmış eylemlerin kodunuzda nasıl ele alınacağını gösterir.
+
+:::warning
+**Yalnızca satın almalar ve geri yüklemeler otomatik olarak işlenir.** Paywallları kapatma veya bağlantı açma gibi diğer tüm düğme eylemleri, uygulama kodunda uygun yanıtların uygulanmasını gerektirir.
 :::
 
 ## Paywallları kapatma \{#close-paywalls\}
@@ -96,7 +279,6 @@ public void PaywallViewDidPerformAction(
     }
 }
 ```
-
 ## Özel eylemleri yönetme \{#handle-custom-actions\}
 
 Diğer eylemleri yöneten bir düğme eklemek için:
@@ -128,3 +310,4 @@ private void ShowAlternativePaywall() {
     // Implement your logic to show alternative paywall
 }
 ```
+</SDKv3>

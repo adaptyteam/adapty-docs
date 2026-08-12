@@ -106,7 +106,7 @@ core in-app paywall/subscription product.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| adapty-mail | entry | marketer | 4 | tutorial |
+| adapty-mail | entry | marketer | 6 | tutorial |
 | mail-ab-testing | — | marketer | 7 | tutorial |
 | mail-analytics | — | marketer | 9 | tutorial |
 | mail-brand | — | marketer | 8 | tutorial |
