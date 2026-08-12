@@ -1,0 +1,123 @@
+---
+title: "Migrer le SDK iOS Adapty vers v4.1"
+description: "Migrez vers le SDK iOS Adapty v4.1 : activez Adapty Attribution explicitement, adoptez les API d'attribution externe renommées et re-téléchargez votre fichier de secours."
+metadataTitle: "Migration vers le SDK iOS Adapty v4.1 | Documentation Adapty"
+---
+
+Le SDK iOS Adapty 4.1 change la façon dont Adapty Attribution est activé, renomme les API d'attribution externe et modifie le format du fichier de secours. Il rétablit également la prise en charge des achats intégrés promus sur l'App Store, qui avaient été supprimés dans la version 4.0.
+
+:::warning
+Les API renommées constituent une rupture nette. Les anciens noms sont supprimés sans autre forme de procès — ils ne sont pas dépréciés, et il n'existe aucun typealias ni annotation `@available(renamed:)` pour assurer la transition. Tout code qui compilait avec 4.0.x ne compilera plus avec 4.1 tant que vous n'aurez pas renommé chaque point d'appel listé ci-dessous.
+:::
+
+## Référence rapide \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution activée automatiquement | Adapty Attribution désactivée par défaut ; activez-la avec `.with(adaptyAttributionEnabled: true)` |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `Adapty.updateAttribution(_ attributionJson: String, source:)` | Supprimée de l'API publique ; passez un dictionnaire à la place |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, avec une nouvelle valeur `.custom` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AdaptySubscriptionOfferType` enum | `AdaptySubscriptionOfferType` struct ; `.code` supprimé |
+| Fichier de secours téléchargé pour la v4.0 | Nouveau format de fichier de secours ; téléchargez à nouveau le fichier |
+| Achats intégrés promus non pris en charge | Méthode de délégation `didReceivePromotedPurchase(_:)` et `AdaptyPromotedProduct` |
+
+## L'attribution Adapty est désactivée par défaut \{#adapty-attribution-is-disabled-by-default\}
+
+Dans les versions 4.0 et antérieures, le SDK enregistrait automatiquement les installations pour [l'attribution Adapty](user-acquisition). À partir de la version 4.1, cette fonctionnalité est désactivée par défaut : le SDK n'enregistre plus les installations, et les callbacks de délégué `onInstallationDetailsSuccess` et `onInstallationDetailsFail` ne se déclenchent jamais. `getCurrentInstallationStatus()` retourne `.notAvailable`.
+
+Si vous utilisez l'attribution Adapty, activez-la lors de l'activation du SDK :
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+Si vous n'utilisez pas Adapty Attribution, aucune modification n'est nécessaire.
+
+## Renommage des API d'attribution externe \{#renamed-external-attribution-apis\}
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+La méthode qui transmet les données d'attribution d'un fournisseur externe (Adjust, AppsFlyer, Branch, Tenjin, ou un fournisseur personnalisé) est renommée, et son paramètre `source` est renommé en `provider` :
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### La surcharge avec chaîne JSON est supprimée \{#the-json-string-overload-is-removed\}
+
+Dans la version 4.0, les données d'attribution pouvaient être transmises soit sous forme de dictionnaire `[AnyHashable: Any]`, soit sous forme de chaîne JSON `String`. En 4.1, seule la surcharge avec dictionnaire est publique — la surcharge avec chaîne JSON est réservée aux SDK cross-platform d'Adapty. Désérialisez le JSON avant de le transmettre :
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attributionJson, source: .adjust)
++ guard let attribution = try JSONSerialization.jsonObject(
++     with: Data(attributionJson.utf8)
++ ) as? [AnyHashable: Any] else { return }
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Le type est renommé. Les fournisseurs prédéfinis conservent les mêmes noms : `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Il est toujours conforme à `ExpressibleByStringLiteral`, donc les arguments sous forme de littéraux de chaîne continuent de compiler. Si vous stockez le fournisseur dans une variable `String`, encapsulez-le : `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+
+La version 4.1 ajoute également une valeur prédéfinie `.custom` pour les fournisseurs qu'Adapty n'intègre pas directement. Dans la version 4.0, cette valeur n'était disponible qu'en tant que littéral de chaîne `"custom"`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+La propriété du profil qui liste les fournisseurs d'attribution appliqués au profil est renommée. Le type de ses éléments change en conséquence :
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferType est désormais une struct \{#adaptysub scriptionoffertype-is-now-a-struct\}
+
+`AdaptySubscriptionOfferType` — le type de `AdaptySubscriptionOffer.offerType` — passe d'une enum à une struct `RawRepresentable`, afin que le backend puisse introduire de nouveaux types d'offres sans mise à jour du SDK :
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+Ce changement affecte votre code de trois manières :
+
+- **Les instructions `switch` exhaustives ne compilent plus.** Un struct n'ayant pas d'ensemble fixe de cas, le compilateur ne peut pas prouver qu'un switch est exhaustif. Ajoutez une branche `default` :
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` est supprimé.** Les codes d'offre ne sont plus signalés via `AdaptySubscriptionOffer.offerType`. Supprimez tout `case .code`. Voir [Utiliser les codes d'offre sur iOS](making-purchases#redeem-offer-codes-in-ios) pour la gestion des codes d'offre.
+- **La conformité `Codable` est supprimée.** Si vous encodiez ou décodiez `AdaptySubscriptionOfferType` directement, persistez `offerType.rawValue` (un `String`) à la place et reconstruisez la valeur avec `AdaptySubscriptionOfferType(rawValue:)`.
+
+Les comparaisons avec les valeurs prédéfinies restent inchangées : `.introductory`, `.promotional` et `.winBack` fonctionnent toujours dans les vérifications `==` et comme patterns `case`.
+
+## Fichiers de secours \{#fallback-files\}
+
+Le format du [fichier de secours](fallback-flows) a changé dans le SDK 4.1. Téléchargez à nouveau le fichier depuis **[Placements](https://app.adapty.io/placements)** > **Fallbacks** et intégrez-le à votre application, même si vous en aviez déjà téléchargé un pour la version 4.0.
+
+:::warning
+Cette étape ne génère aucune erreur de compilation. Si vous la sautez, le SDK rejette le fichier obsolète et chaque placement perd son paywall de secours.
+:::
+
+## Retour des achats intégrés promus sur l'App Store \{#app-store-promoted-in-app-purchases-return\}
+
+SDK 4.1 rétablit la prise en charge des achats intégrés promus sur l'App Store, que [4.0 avait supprimée](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed). Il s'agit d'une nouvelle fonctionnalité, pas d'une étape de migration : elle ne modifie aucun comportement de la version 4.0.
+
+Si vous migrez depuis la version 3.x et utilisiez `shouldAddStorePayment(for:)` avec `AdaptyDeferredProduct`, adoptez la nouvelle méthode de délégué `didReceivePromotedPurchase(_:)` avec `AdaptyPromotedProduct` à la place. Contrairement à `shouldAddStorePayment`, la nouvelle méthode ne retourne pas de valeur : si vous ne l'implémentez pas, le SDK démarre l'achat immédiatement ; pour différer l'achat, implémentez-la, stockez le produit et passez-le à `makePurchase` ultérieurement. Consultez [Achats intégrés depuis l'App Store](making-purchases#in-app-purchases-from-the-app-store).
+
+:::warning
+Le nouveau mécanisme repose sur StoreKit 2 et nécessite **iOS 16.4** ou version ultérieure. La méthode `shouldAddStorePayment` de la version 3.x fonctionnait sur des versions iOS antérieures. Sur les appareils en dessous d'iOS 16.4, `didReceivePromotedPurchase` ne se déclenche jamais et les achats promus n'atteignent pas votre application.
+:::

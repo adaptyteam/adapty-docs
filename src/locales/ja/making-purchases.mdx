@@ -96,14 +96,49 @@ Adapty.makePurchase(product: product) { result in
 **注意：** Apple の StoreKit バージョンが v2.0 未満、かつ Adapty SDK バージョンが v2.9.0 未満の場合は、代わりに [Apple App Store 共有シークレット](app-store-connection-configuration#step-5-enter-app-store-shared-secret)を提供する必要があります。このメソッドは現在 Apple によって非推奨とされています。
 :::
 
-## App Store からのアプリ内課金 \{#in-app-purchases-from-the-app-store\}
+## App Storeからのアプリ内課金 \{#in-app-purchases-from-the-app-store\}
 
-ユーザーが App Store で購入を開始し、トランザクションがアプリに引き継がれる場合、2つの選択肢があります：
+ユーザーがApp Storeで購入を開始し、そのトランザクションがアプリに引き継がれると、SDKは`AdaptyPromotedProduct`オブジェクトを引数として`didReceivePromotedPurchase`デリゲートメソッドを呼び出します。この場合、2つの選択肢があります。
 
-- **トランザクションを即座に処理する：** `shouldAddStorePayment` で `true` を返します。これにより、Apple の購入システム画面がすぐに表示されます。
-- **後処理のためにプロダクトオブジェクトを保存する：** `shouldAddStorePayment` で `false` を返し、後で保存したプロダクトを使って `makePurchase` を呼び出します。購入をトリガーする前にユーザーにカスタム画面を表示したい場合に便利です。
+- **トランザクションをすぐに処理する:** `didReceivePromotedPurchase` を実装しない。デフォルトの実装ではすぐに購入が開始され、Apple の購入システム画面が自動的に表示される。
+- **プロダクトオブジェクトを後で処理するために保存する:** `didReceivePromotedPurchase` を実装し、プロダクトを保存しておき、後から保存したプロダクトを使って `makePurchase` を呼び出す。購入をトリガーする前にユーザーにカスタムの画面を表示したい場合に便利。
 
-完全なコード例を以下に示します：
+プロモーション対象のプロダクトにサブスクリプションオファーが付いている場合、SDKは購入時に自動的に適用します。オファーはApp Storeの購入インテントから読み取られ、iOS 18.0以降で利用可能です。iOS 16.4〜17.xでは、`subscriptionOffer`は常に`nil`となり、通常価格で購入が進みます。
+
+完全なスニペットはこちらです：
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    // 1. Store the product object to defer the transaction.
+    // To process the transaction immediately instead, don't implement this method —
+    // the default implementation starts the purchase right away.
+    nonisolated func didReceivePromotedPurchase(_ product: AdaptyPromotedProduct) {
+        // store the product object
+    }
+
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyPromotedProduct = // get the product object from 1.
+        do {
+            let purchaseResult = try await Adapty.makePurchase(product: storedProduct)
+            // process the purchase result
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+:::warning
+`didReceivePromotedPurchase` APIはSDKバージョン4.1以降で利用可能で、**iOS 16.4**以降が必要です。SDKバージョン4.0はプロモートされたアプリ内課金をまったくサポートしておらず、iOS 16.4未満のデバイスではこのメソッドは呼び出されません。それより古いiOSバージョンでプロモート購入が必要な場合は、SDK 3.xを使用し、以下に示す`shouldAddStorePayment`を引き続きご利用ください。
+:::
+
+<Details summary="Adapty SDK 3.xをご利用の場合">
+
+SDK 3.xでは、SDKは代わりに`shouldAddStorePayment`デリゲートメソッドを呼び出します：
+
+- **即座にトランザクションを処理する:** `shouldAddStorePayment` で `true` を返します。これにより、Appleの購入システム画面がすぐに表示されます。
+- **後で処理するためにプロダクトオブジェクトを保存する:** `shouldAddStorePayment` で `false` を返し、後で保存したプロダクトを使って `makePurchase` を呼び出します。
 
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
@@ -127,6 +162,8 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
+
+</Details>
 
 ## iOS でオファーコードを利用する \{#redeem-offer-codes-in-ios\}
 

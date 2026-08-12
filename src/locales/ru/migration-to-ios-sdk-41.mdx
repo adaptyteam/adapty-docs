@@ -1,0 +1,123 @@
+---
+title: "Миграция Adapty iOS SDK на v4.1"
+description: "Миграция на Adapty iOS SDK v4.1: явное включение Adapty Attribution, переименованные API внешней атрибуции и повторная загрузка резервного файла."
+metadataTitle: "Миграция на Adapty iOS SDK v4.1 | Документация Adapty"
+---
+
+В Adapty iOS SDK 4.1 изменён способ включения Adapty Attribution, переименованы API внешней атрибуции и изменён формат резервного файла. Также возвращена поддержка продвигаемых встроенных покупок в App Store, которая была удалена в версии 4.0.
+
+:::warning
+Переименованные API — это жёсткий разрыв. Старые имена удалены полностью — они не помечены как устаревшие, и никаких typealiases или аннотаций `@available(renamed:)` для совместимости нет. Код, который компилировался с 4.0.x, не скомпилируется на 4.1, пока вы не переименуете все точки вызова, перечисленные ниже.
+:::
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Атрибуция Adapty включена автоматически | Атрибуция Adapty отключена по умолчанию; включите с помощью `.with(adaptyAttributionEnabled: true)` |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `Adapty.updateAttribution(_ attributionJson: String, source:)` | Удалено из публичного API; передавайте словарь вместо этого |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, с новым значением `.custom` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Перечисление `AdaptySubscriptionOfferType` | Структура `AdaptySubscriptionOfferType`; `.code` удалён |
+| Резервный файл загружен для 4.0 | Новый формат резервного файла; загрузите файл повторно |
+| Promoted in-app purchases не поддерживаются | Метод делегата `didReceivePromotedPurchase(_:)` и `AdaptyPromotedProduct` |
+
+## Adapty Attribution отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}
+
+В версии 4.0 и более ранних SDK автоматически регистрировал установки для [Adapty Attribution](user-acquisition). Начиная с версии 4.1, эта функция отключена по умолчанию: SDK не регистрирует установки, а колбэки делегата `onInstallationDetailsSuccess` и `onInstallationDetailsFail` никогда не срабатывают. `getCurrentInstallationStatus()` возвращает `.notAvailable`.
+
+Если вы используете Adapty Attribution, включите её при активации SDK:
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+Если вы не используете Adapty Attribution, никаких изменений не требуется.
+
+## Переименованные внешние API атрибуции \{#renamed-external-attribution-apis\}
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+Метод, передающий данные атрибуции от внешнего провайдера (Adjust, AppsFlyer, Branch, Tenjin или пользовательского), переименован, а параметр `source` переименован в `provider`:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### Перегрузка с JSON-строкой удалена \{#the-json-string-overload-is-removed\}
+
+В версии 4.0 данные атрибуции принимались либо как словарь `[AnyHashable: Any]`, либо как JSON-строка `String`. В версии 4.1 публичным остался только вариант со словарём — перегрузка с JSON-строкой зарезервирована для кросс-платформенных SDK Adapty. Десериализуйте JSON перед передачей данных:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attributionJson, source: .adjust)
++ guard let attribution = try JSONSerialization.jsonObject(
++     with: Data(attributionJson.utf8)
++ ) as? [AnyHashable: Any] else { return }
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Тип переименован. Предопределённые провайдеры сохраняют прежние имена: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Тип по-прежнему соответствует `ExpressibleByStringLiteral`, поэтому строковые литералы продолжают компилироваться. Если провайдер хранится в переменной `String`, оберните его: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+
+В версии 4.1 добавлено предопределённое значение `.custom` для провайдеров, с которыми Adapty не интегрируется напрямую. В версии 4.0 то же значение было доступно только в виде строкового литерала `"custom"`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Свойство профиля, которое перечисляет провайдеры атрибуции, применённые к профилю, переименовано. Тип его элементов изменяется соответственно:
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferType теперь является структурой \{#adaptysubscriptionoffertype-is-now-a-struct\}
+
+`AdaptySubscriptionOfferType` — тип свойства `AdaptySubscriptionOffer.offerType` — меняется с перечисления на структуру `RawRepresentable`, чтобы бэкенд мог добавлять новые типы офферов без обновления SDK:
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+Это затрагивает ваш код в трёх аспектах:
+
+- **Исчерпывающие операторы `switch` больше не компилируются.** У структуры нет фиксированного набора кейсов, поэтому компилятор не может подтвердить полноту switch. Добавьте ветку `default`:
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` удалён.** Промокоды офферов больше не передаются через `AdaptySubscriptionOffer.offerType`. Удалите все ветки `case .code`. Подробнее см. в разделе [Погашение промокодов на iOS](making-purchases#redeem-offer-codes-in-ios).
+- **Поддержка `Codable` удалена.** Если вы кодировали или декодировали `AdaptySubscriptionOfferType` напрямую, сохраняйте `offerType.rawValue` (тип `String`) и восстанавливайте значение через `AdaptySubscriptionOfferType(rawValue:)`.
+
+Сравнения с предопределёнными значениями работают без изменений: `.introductory`, `.promotional` и `.winBack` по-прежнему можно использовать в проверках `==` и в качестве паттернов `case`.
+
+## Резервные файлы \{#fallback-files\}
+
+Формат [резервного файла](fallback-flows) изменился в SDK 4.1. Скачайте файл заново в разделе **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и добавьте его в приложение, даже если вы уже скачивали его для версии 4.0.
+
+:::warning
+Этот шаг не вызывает ошибок компиляции. Если пропустить его, SDK отклонит устаревший файл и все плейсменты лишатся резервного пейвола.
+:::
+
+## Возврат поддержки продвигаемых встроенных покупок App Store \{#app-store-promoted-in-app-purchases-return\}
+
+SDK 4.1 восстанавливает поддержку продвигаемых встроенных покупок App Store, которая была [удалена в версии 4.0](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed). Это новая функциональность, а не шаг миграции: поведение версии 4.0 не изменяется.
+
+Если вы мигрируете с версии 3.x и использовали `shouldAddStorePayment(for:)` с `AdaptyDeferredProduct`, перейдите на новый метод делегата `didReceivePromotedPurchase(_:)` с `AdaptyPromotedProduct`. В отличие от `shouldAddStorePayment`, новый метод не возвращает значение: если вы его не реализуете, SDK немедленно начинает покупку; чтобы отложить её, реализуйте метод, сохраните продукт и передайте его в `makePurchase` позже. См. [Встроенные покупки из App Store](making-purchases#in-app-purchases-from-the-app-store).
+
+:::warning
+Новый механизм построен на StoreKit 2 и требует **iOS 16.4** или выше. Метод `shouldAddStorePayment` в версии 3.x работал на более ранних версиях iOS. На устройствах ниже iOS 16.4 `didReceivePromotedPurchase` никогда не срабатывает, и продвигаемые покупки не доходят до приложения.
+:::
