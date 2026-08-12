@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  REQUIRED_SECTIONS, parseBrief, missingSections, replaceAutoBlock, isStub,
+  REQUIRED_SECTIONS, OPTIONAL_SECTIONS, parseBrief, missingSections, replaceAutoBlock, isStub,
   referencedArticleIds, sectionBody, briefTemplate, briefState,
 } from '../context-mill/briefs.mjs';
 
@@ -50,7 +50,7 @@ test('parseBrief reads frontmatter and section order', () => {
   assert.equal(brief.fm.zone, 'webhooks');
   assert.deepEqual(brief.fm.sources, ['dashboard-api']);
   assert.equal(brief.fm.reviewed_shape, 'abc123abc123');
-  assert.deepEqual(brief.sections, REQUIRED_SECTIONS);
+  for (const name of REQUIRED_SECTIONS) assert.ok(brief.sections.includes(name), name);
 });
 
 test('missingSections is empty for a complete brief', () => {
@@ -58,9 +58,11 @@ test('missingSections is empty for a complete brief', () => {
 });
 
 test('missingSections names every absent section', () => {
-  const trimmed = BRIEF.replace('## Ripple rules\nProperty tables are duplicated in messaging.\n\n', '')
+  // Both removed sections must be *required* ones — an absent optional section
+  // is not a defect, so removing 'Ripple rules' here would prove nothing.
+  const trimmed = BRIEF.replace('## Sources of truth\ndashboard-api, integrations module.\n\n', '')
     .replace('## Boundaries\nserver-side-api is pull, this is push.\n\n', '');
-  assert.deepEqual(missingSections(trimmed), ['Ripple rules', 'Boundaries']);
+  assert.deepEqual(missingSections(trimmed), ['Sources of truth', 'Boundaries']);
 });
 
 test('replaceAutoBlock swaps only the block content and keeps the markers', () => {
@@ -226,4 +228,49 @@ test('briefState names stub, drafted and reviewed distinctly', () => {
   assert.equal(briefState({ stub: true, reviewedAt: '2026-08-10' }), 'stub');
   assert.equal(briefState({ stub: false, reviewedAt: null }), 'drafted, unreviewed');
   assert.equal(briefState({ stub: false, reviewedAt: '2026-08-10' }), 'reviewed_at: 2026-08-10');
+});
+
+// The template used to oblige ten sections, six of which the docs owner does not
+// read. Obliging prose nobody wants is how a brief acquires invented content, so
+// only the sections that carry weight are required now; the rest are written when
+// someone actually has something to say.
+test('REQUIRED_SECTIONS holds only the load-bearing five, and the rest are optional', () => {
+  assert.deepEqual(REQUIRED_SECTIONS, [
+    'What this is',
+    'Sources of truth',
+    "What we document, what we don't",
+    'Articles',
+    'Boundaries',
+  ]);
+  for (const name of ['Surfaces', 'Reader jobs', 'Ripple rules', 'Ticket language', 'Gaps and misses']) {
+    assert.ok(OPTIONAL_SECTIONS.includes(name), `${name} should be optional`);
+    assert.ok(!REQUIRED_SECTIONS.includes(name), `${name} should not be required`);
+  }
+});
+
+test('missingSections ignores an absent optional section', () => {
+  const lean = [
+    '---', 'zone: z', '---', '',
+    '## What this is', 'A zone.', '',
+    '## Sources of truth', 'The SDK repo.', '',
+    "## What we document, what we don't", 'Not the plumbing.', '',
+    '## Articles', '<!-- mill:auto:roster -->', '<!-- /mill:auto -->', '',
+    '## Boundaries', 'Against the neighbour.', '',
+  ].join('\n');
+  assert.deepEqual(missingSections(lean), []);
+  assert.equal(isStub(lean), false);
+});
+
+// `stub` now measures the absence of what the owner values, not of ten headings.
+test('isStub ignores optional sections and fires on a required one', () => {
+  const base = [
+    '---', 'zone: z', '---', '',
+    '## What this is', 'A zone.', '',
+    '## Sources of truth', 'SOT', '',
+    "## What we document, what we don't", 'Scope', '',
+    '## Articles', '<!-- mill:auto:roster -->', '<!-- /mill:auto -->', '',
+    '## Boundaries', 'B', '',
+  ].join('\n');
+  assert.equal(isStub(base), false);
+  assert.equal(isStub(base.replace('## Sources of truth\nSOT', '## Sources of truth\n')), true);
 });

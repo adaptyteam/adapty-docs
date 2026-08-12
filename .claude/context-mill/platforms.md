@@ -9,6 +9,21 @@ quirks, and the release-branch scope rule. Ids match `PLATFORMS` in
 one platform's release branch, never edit another platform's docs. If work surfaces something that
 belongs to a different platform, spin off a separate task instead of touching it in the same pass.
 
+> **The version numbers below go stale fast — re-establish before writing any of them into a doc.**
+> Measured drift after five days: on 2026-08-11 React Native's `origin/master` was already at `4.0.2`
+> (recorded as `4.0.1`), Flutter's `pubspec.yaml` at `4.0.3` (recorded as `4.0.1`), and Capacitor at
+> `4.0.1-beta.1` while this file still called v4 unreleased there. Treat every number here as "roughly
+> where the platform was on the date stated", never as a fact to quote. One command re-establishes all
+> of them:
+>
+> ```bash
+> for r in iOS Android React-Native Flutter Unity KMP Capacitor; do printf '%s: ' "$r"; git -C ~/Documents/AdaptySDK-$r describe --tags --long origin/master 2>/dev/null || echo '(clone missing)'; done
+> ```
+>
+> What does *not* rot is everything else in this file — which repo is ground truth, where a public API
+> is actually declared, the local quirks. Those are why the file exists; the version lines are a
+> convenience that has to be re-checked.
+
 Version state established 2026-08-06 from each clone's tags and remote branches — see `sources.md` for
 exactly which `git` calls were used per repo (`describe --tags --long` against `default_ref`,
 `ls-remote --heads` for in-flight branches). Not from institutional memory or the local clone's
@@ -133,7 +148,15 @@ and a newer `origin/release/4.0.1-beta.1`.
 - The public API is defined in `jscore`, not this repo — same caveat as `react-native`. The
   checked-out `release/4.0.0` branch pins `@adapty/core@4.0.0-beta.1`; check `jscore`'s current state
   before writing docs against that pin, since v4 hasn't shipped here yet and the pin may move again.
-- No Kids Mode mechanism — confirmed by grepping this repo and `jscore`'s `src/` tree for
-  `kidsMode`/`KidsMode`/`kids_mode`: zero hits in either.
+- **Kids Mode: this entry used to say "no mechanism". That was wrong — corrected 2026-08-11.** The
+  original check grepped this clone's *working tree* (`release/4.0.0`) for `kidsMode`/`KidsMode`/
+  `kids_mode` and found nothing, which was true of that ref and false of the SDK. On `origin/master`
+  the mechanism exists: `package.json` declares a `adapty-kids-mode` bin. Two lessons, both of which
+  this entry is now the standing example of: the spelling was **hyphenated**, so the camel/snake grep
+  could not have found it; and a local clone sits on whatever branch someone left it on, so an absence
+  established against the working tree says nothing about the SDK. Grep `origin/master` — or better,
+  `git show <ref>:<path>` — and vary the casing before concluding a mechanism does not exist.
+  (`jscore` genuinely has zero `kids` hits; the mechanism lives in the wrapper repo, which is why the
+  jscore half of the original check was a red herring rather than an error.)
 - SPM-only iOS packaging — confirmed directly: `Package.swift` present under the repo root, no
   `Podfile` or `.podspec` anywhere in `ios/`.

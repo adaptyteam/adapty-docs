@@ -11,7 +11,7 @@ import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { fileURLToPath } from 'node:url';
-import { REQUIRED_SECTIONS } from '../context-mill/briefs.mjs';
+import { REQUIRED_SECTIONS, OPTIONAL_SECTIONS } from '../context-mill/briefs.mjs';
 import { zoneHash, snapshotZone } from '../context-mill/zones.mjs';
 import { rolloutTemplate } from '../context-mill/rollouts.mjs';
 
@@ -131,7 +131,10 @@ function makeRecord(id, overrides = {}) {
 // judgment section gets real, non-placeholder prose by default so a fixture
 // is "complete" unless a test deliberately hollows out or omits a section.
 function makeBrief(zoneId, { omit = [], overrides = {}, reviewedShape = '', reviewedAt = '', sources = [] } = {}) {
-  const sections = REQUIRED_SECTIONS.filter(name => !omit.includes(name));
+  // Optional sections are no longer scaffolded, so a fixture that wants one
+  // (to exercise the dangling-id scan, say) introduces it through `overrides`.
+  const extras = OPTIONAL_SECTIONS.filter(name => Object.hasOwn(overrides, name));
+  const sections = [...REQUIRED_SECTIONS, ...extras].filter(name => !omit.includes(name));
   const body = sections.map(name => {
     if (Object.hasOwn(overrides, name)) return `## ${name}\n${overrides[name]}`;
     if (name === 'Articles') return '## Articles\n<!-- mill:auto:roster -->\n_No articles assigned yet._\n<!-- /mill:auto -->';
@@ -245,9 +248,10 @@ test('status reports a stub brief as a warning and still exits 0 when nothing el
     const record = makeRecord('art-a');
     await writeMap(dir, [record]);
     await writeZones(dir, { zones: [{ id: 'z1', title: 'Z1', kind: 'flat' }], articles: { 'art-a': { zone: 'z1', role: 'entry' } } });
-    // 'Surfaces' present but empty -> isStub() flags it, but this alone must
-    // not flip the exit code.
-    await writeBrief(dir, 'z1', makeBrief('z1', { overrides: { Surfaces: '' } }));
+    // A required judgment section present but empty -> isStub() flags it, but
+    // this alone must not flip the exit code. 'Surfaces' would no longer do:
+    // it is optional now, so its emptiness is not a defect.
+    await writeBrief(dir, 'z1', makeBrief('z1', { overrides: { 'Sources of truth': '' } }));
     const { code, stdout } = await runCli(dir, ['status']);
     assert.equal(code, 0);
     assert.match(stdout, /z1\s+.*stub/);

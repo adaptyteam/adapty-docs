@@ -13,7 +13,164 @@ The "Flows & paywalls" category of each platform SDK — the app code that prese
 
 ## Sources of truth
 
+Four classes of claim, four different places to read.
+
+**1. "What is the method called, what does it take, what does it return."** The platform SDK repo at
+the ref named in `platforms.md` / `sources.md` — never the local clone's checked-out branch, which on
+several of these repos is task-specific and behind its own remote. Two layout facts this zone needs
+that the registry doesn't carry, because on every native platform the presentation API sits in a
+different module from the core fetch API:
+
+- **ios-sdk** — fetch in `Sources/` (`getFlow`, `getFlowForDefaultAudience`:
+  `Sources/Placements/Adapty+Placements.swift`, `Sources/Adapty+Completion.swift`); the entire
+  presentation surface in a separate top-level directory, `Sources.AdaptyUI/` (`getFlowConfiguration`
+  at `Sources.AdaptyUI/AdaptyUI+Public.swift:297`). Confirmed on `origin/master`.
+- **android-sdk** — presentation is the `adapty-ui` module:
+  `adapty-ui/src/main/java/com/adapty/ui/AdaptyUI.kt` (`getFlowConfiguration` at line 166, on
+  `origin/master`).
+- **kmp-sdk** — the committed ABI dumps `adapty/api/adapty.klib.api` and
+  `adapty/api/android/adapty.api` are the fastest complete read of the public surface: every
+  `AdaptyUI` entry point with its full parameter list in one file. Read them at
+  `origin/release/4.0.0`; `origin/main` is still v3.
+- **rn-sdk / capacitor-sdk plus jscore** — split, and *both* halves are needed for this zone. The
+  function the doc names lives in the platform repo (`src/ui/create-flow-view.ts` in
+  `AdaptySDK-React-Native`); its parameter *shape* is a `jscore` type (`src/ui-builder/types.ts`).
+  `jscore`'s `cross_platform.yaml` is the bridge contract — it enumerates every request and event the
+  wrappers can carry (`AdaptyUICreateFlowView.Request`, `FlowViewEvent.*`) and is the tie-breaker when
+  a wrapper's own types look narrower than the native surface.
+- **flutter-sdk** — `lib/src/`, where the deprecation strings themselves carry facts worth quoting:
+  `lib/src/adapty.dart` deprecates the `locale` argument of `getFlow`/`getFlowForDefaultAudience` with
+  the reason attached ("the locale is applied when the flow view is built — pass it to
+  AdaptyUI.createFlowView or AdaptyUIFlowPlatformView instead").
+
+The per-platform generated reference sites (`swift.adapty.io`, `android.adapty.io`, `kmp.adapty.io`,
+`capacitor.adapty.io`, `unity.adapty.io`) are downstream of those repos, not an independent check.
+They are a citation target only, and used sparingly — about ten such links across all 69 articles.
+
+**2. Which events and callbacks exist.** The observer/delegate/resolver declaration itself, not the
+doc's section list and not the migration guide that announced it. iOS: `AdaptyFlowControllerDelegate`
+and `AdaptyObserverModeResolver`, both in `Sources.AdaptyUI/AdaptyUI+Public.swift` (lines 50 and 220).
+KMP: the ABI dump above, which also names the registration calls (`setFlowsEventsObserver`,
+`setObserverModeResolver`, `setSystemRequestsHandler`). Cross-platform: the `FlowViewEvent.*`
+definitions in `jscore`'s `cross_platform.yaml`.
+
+**3. Everything the SDK does not own** — which in this zone is most of the interesting behaviour,
+because the flow is dashboard-authored data that the SDK only renders. `dashboard-backend`
+(`origin/develop`) owns:
+
+- the view configuration and the flow's localization set —
+  `src/portal/in_app_context/domains/value_objects/flow_front_config/` (`flow_front_config.py`, and
+  `localization_catalog.py`, whose `default_locale` field defaults to `'en'`);
+- whether a flow can render on device at all — `FlowVersionPublicationStatus`, eight states from
+  `publishing` to `published`
+  (`src/portal/in_app_context/domains/enums/flow_version_publication_status.py`), with
+  `publication_status is None` meaning never published (`domains/entities/flow_version.py:87`).
+
+`dashboard-interface` owns builder control labels, with a trap this zone walks into: **"Show on
+device" is a legacy-Paywall-Builder control.** The label exists at
+`packages/builder/src/widgets/BuilderMenuTree/BuilderMenuTree.tsx:33` and in
+`apps/web/src/pages/ab-section/ui/PaywallBuilder/ui/PaywallBuilderMenu/ui/CreateLegacyBuilderBlock/CreateLegacyBuilderBlock.tsx:59`;
+grepping `packages/unified-builder` (the Flow Builder) for `Show on device` and `showOnDevice` returns
+nothing. All seven `troubleshoot-paywall-builder` articles answer a failed configuration fetch with
+that toggle — right for a Paywall Builder paywall, unverified for a flow, where the publication
+pipeline above is what to check.
+
+Locale resolution is genuinely **split**, so neither side settles it alone: normalization is
+client-side (`AdaptyLocale.normalizedIdentifier` replaces `_` with `-`, and `languageCode` takes the
+substring before the first `-`/`_` — `Sources/Placements/Entities/AdaptyLocale.swift`), while *which*
+localization a user ends up with is decided against the flow's catalogue and default locale in the
+backend. Never state a fallback outcome from an SDK repo alone.
+
+Asset, timer, and custom-tag **IDs** (`hero_image`, `hero_video`, dashboard-assigned custom media IDs,
+Timer IDs) are authored in the builder — the SDK only keys off the strings. A claim about which IDs
+exist belongs to `flow-design`'s sources, not to any repo listed here.
+
+**4. Claims that must never be inferred from a neighbouring platform's article.** Seven near-identical
+articles per topic make "the iOS article says X" the cheapest and most dangerous move available in
+this zone. Three claim classes have already broken exactly that way, and all three defects are in the
+corpus right now:
+
+- **Which call a parameter belongs to.** Locale is a parameter of the *fetch*, not of view creation —
+  and conflating the two is a live trap. Verified 2026-08-11: Flutter's `getFlowForDefaultAudience`
+  takes `String? locale` (`AdaptySDK-Flutter` `lib/src/adapty.dart`), while KMP's `createFlowView`
+  takes no string at all — its ABI dump reads
+  `createFlowView(AdaptyFlow, Duration?, Boolean, Map<String,String>?, Map<String,LocalDateTime>?, Map<String,AdaptyCustomAsset>?, Map<ProductIdentifier,PurchaseParameters>?)`
+  (`AdaptySDK-KMP` `adapty/api/adapty.klib.api:1672`). So the four `*-localizations-and-locale-codes`
+  articles saying `createFlowView` "takes no locale parameter" are **correct**, and a first pass at this
+  brief wrongly called them wrong by citing a locale param that lives on the fetch call. Check which
+  method a parameter hangs off before writing that a doc is stale.
+- **The outcome of omitting an optional argument.** One question, three answers inside one family:
+  `localizations-and-locale-codes` (iOS) says the flow "renders in `en`, or in its default locale if
+  the flow has no `en` localization"; `android-localizations-and-locale-codes` says "renders in its
+  default locale"; the other four say "default locale — on iOS, in `en` when the flow has an English
+  localization." `jscore`'s own docstring on that field says only "the flow's default localization is
+  used." Settle it against the backend catalogue, not against a sibling.
+- **Property names on the "same" object.** The remote-config entry is `dictionary` on iOS, `dataMap`
+  on Android and KMP, `lang`/`data` on React Native and Capacitor, `data`/`dictionary` on Flutter. A
+  property name is a per-wrapper fact; read that wrapper.
+
+Read `platforms.md` before writing any v4 sentence here. Unity is this zone's v3-only surface: none of
+its nine articles carries an `<SDKv4>` block, and `unity-paywalls` still heads its card list "Adapty
+Paywall Builder" where the other six entry pages say "Adapty Flow Builder & Paywall Builder."
+
 ## What we document, what we don't
+
+Only the delta from `scope.md`; its corpus-wide rules are not restated.
+
+- **At depth: the call sequence a builder-rendered flow needs, per platform, and nothing past it.**
+  Fetch (`get-pb-paywalls`), create and present the view (`present-paywalls`), the event surface
+  (`handling-events`), the button/action callback (`handle-paywall-actions`), plus three side
+  capabilities (`localizations-and-locale-codes`, `use-fallback-paywalls`, `web-paywall`). Full
+  parameter tables for the methods this zone owns are written inline — `get-pb-paywalls` carries three
+  in its v4 block alone — and the generated reference site is linked only for a type's exhaustive
+  property list.
+- **`troubleshoot-paywall-builder` is not a general troubleshooting reference.** Six of the seven carry
+  the same two causes and nothing else (configuration fetch fails → the **Show on device** toggle;
+  doubled view count → a manual `logShowFlow`/`logShowPaywall` call that a builder-rendered flow
+  already makes), then close with an "Other issues" section pointing at the platform's migration
+  guides; KMP has only the two causes. A new symptom either fits that shape — one issue, one reason,
+  one solution — or it belongs in the article that owns the mechanism.
+- **The boundary against `sdk-flows-manual` is who renders, and it decides what gets written, not just
+  where it lives.** Same reader, same three steps: fetch, show, buy. When Adapty renders, everything
+  the developer writes is a **handler** — this zone documents the callback the rendered view invokes,
+  what the view does before and after it, and how to register it. When the developer renders, they
+  write the **call** (`getPaywallProducts`, `makePurchase`, `restorePurchases`), and that is
+  `sdk-flows-manual`, even when the paywall came out of Flow Builder. The corpus holds this line
+  precisely today: grep all 69 articles for `makePurchase|restorePurchases` and every one of the 20
+  hits is a row in a callback table ("Invoked when `Adapty.makePurchase()` completes successfully").
+  Not one article shows a purchase call as a step, and a new one must not.
+- **Observer mode is the same rule under pressure.** `present-flows-in-observer-mode` (iOS:
+  `ios-present-paywall-builder-paywalls-in-observer-mode`) documents the resolver and its
+  start/finish callbacks, then stops: activating with `observerMode` links out to the platform's
+  installation article, and reporting the transaction is a closing `:::warning` linking
+  `report-transactions-observer-mode` in `sdk-flows-manual`. Don't absorb either half.
+- **Mentioned and linked, never explained here:** the builder-side authoring of whatever is being
+  displayed (`adapty-paywall-builder` 30 links from this zone, `paywall-buttons` 17, `custom-media`
+  13 — all `flow-design`/`flow-logic`); the fallback file's contents and how to obtain it
+  (`fallback-paywalls`, `local-fallback-paywalls`, `fallback-flows`); and the web paywall's dashboard
+  configuration, which is this zone's single most-linked outbound target (`web-paywall`, 39 links,
+  owned by `paywalls-legacy`).
+- **How thin a per-platform article may get, and the two mechanisms that decide whether that's safe.**
+  A reusable, when drift would be a defect: `FallbackPaywallIntroduction` carries the concept and the
+  "download the files first" prerequisite into all eight fallback articles, which is why five of them
+  are a single `## Configuration` section — where the file goes, one `setFallback` call, done.
+  `PaywallAction` carries the "you must also implement button handling" pointer into five of the seven
+  `handling-events` articles. `SampleApp` appears in 18 of the 69. **Hand-copied prose, where nobody
+  made a reusable, is the failure mode:** the whole front half of the
+  `localizations-and-locale-codes` family ("Why this is important", "Locale code standard at Adapty",
+  "Locale code matching") is platform-independent and duplicated verbatim across all seven files with
+  no snippet behind it. Treat platform-independent prose with no reusable behind it as seven copies to
+  edit, not one.
+- **The seven `paywalls` entry pages carry no prose.** All seven are `CustomDocCardList` routing
+  between builder-rendered and manual, plus one `:::tip`. That is the intended shape — don't grow them
+  into overviews.
+- **31 of the 69 articles document two API generations in one file.** `<SDKv4>`/`<SDKv3>` wrap the
+  whole article (each of the 31 contains exactly one `<SDKv4>`), the reader picks a generation with the
+  tab switcher wired up in `src/pages/[...slug].astro`, and `scripts/generate-md.mjs` unwraps v4 while
+  prefixing v3 with an LLM warning for the markdown export. Two scope consequences: the v3 block is
+  maintained legacy text that a v4 edit usually leaves untouched, so decide explicitly rather than
+  deleting it; and a version block cannot wrap a single section, so "document this for v4 only" means
+  restructuring the article, not adding a third wrapper.
 
 ## Articles
 <!-- mill:auto:roster -->

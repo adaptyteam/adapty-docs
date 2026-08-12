@@ -13,7 +13,138 @@ The "Implement paywalls manually" category of each platform SDK: fetching paywal
 
 ## Sources of truth
 
+`platforms.md` and `sources.md` hold the repo paths, `default_ref`s and per-platform version
+state. This section says which *file inside* them answers which question, and deliberately
+repeats no version numbers — those drift, and several already have since 2026-08-06.
+
+- **"What is this method called, what does it take, what does it return, what must be called
+  first" — the platform SDK repo, at a named ref.** Verified entry points: `ios-sdk`'s
+  `Sources/`, where the async and callback forms of the same call live in *different* files
+  (`getFlow` is declared in both `Sources/Placements/Adapty+Placements.swift:23` and
+  `Sources/Adapty+Completion.swift:171`, so grepping one file misses an overload);
+  `android-sdk`'s `adapty/src/main/java/com/adapty/Adapty.kt` for the public surface plus
+  `com/adapty/utils/` for the wrapper types it takes; `flutter-sdk`'s `lib/src/adapty.dart`;
+  `unity-sdk`'s `Packages/com.adapty.unity-sdk/Runtime/Adapty.cs` together with
+  `Adapty.Overloads.cs`, which is where the shorter overloads are; `kmp-sdk`'s checked-in API
+  dumps `adapty/api/adapty.klib.api` and `adapty/api/adapty.api` — the fastest exact-signature
+  reference in the whole set. For React Native and Capacitor the `jscore` rule needs one
+  refinement: the **argument shape** is in the wrapper (`src/adapty-handler.ts` for RN,
+  `src/adapty.ts` + `src/types/adapty-plugin.ts` for Capacitor — RN's `reportTransaction` is
+  positional, Capacitor's takes an options object), while the **bridge contract**, i.e. which
+  parameters exist and which are required, is `cross_platform.yaml` in `jscore`. Do not grep
+  `jscore`'s `src/` for a method name: `src/adapty-handler.ts` there is a five-line placeholder
+  interface on `origin/master`, so the search comes back empty and reads as "this method
+  doesn't exist."
+- **Name the ref, not just the repo — a local clone is often on a stale or task-specific
+  branch, and the answer changes between refs.** Worked example: `making-purchases`'s
+  "In-app purchases from the App Store" section is written against `shouldAddStorePayment` and
+  `AdaptyDeferredProduct`, and `git grep -l 'shouldAddStorePayment\|AdaptyDeferredProduct'
+  origin/master` in `ios-sdk` returns **nothing at all** — while the same grep against
+  `origin/release/4.1.0` returns eight files, carrying the feature under different names
+  (`AdaptyDelegate.didReceivePromotedPurchase(_ product: AdaptyPromotedProduct)`,
+  `Adapty.makePromotedPurchase`). One repo, two refs, two incompatible answers.
+- **Observer mode and manual reporting: the SDK owns one half of the truth, the store owns the
+  other.** The **SDK half** is whether the flag exists, what it switches off, and whether a
+  call is refused — read in code, because the refusal is an internal error mapped to a
+  different public name. Verified in `ios-sdk` `origin/master`:
+  `Sources/StoreKit/TransactionManager.swift:117` (`guard !observerMode else { return
+  .success(()) }` — the SDK stops syncing unfinished transactions) and
+  `Sources/StoreKit/Entities/AdaptyUnfinishedTransaction.swift:18`, whose `finish()` throws
+  `notAllowedInObserveMode`, which `Sources/Errors/InternalAdaptyError.swift:97` maps to the
+  public `.cantMakePayments`. Grepping for the public name alone never finds the mechanism, and
+  the mechanism is per-platform: the same grep for `cantMakePayments` over `android-sdk`
+  `origin/master`'s `adapty/src/main/java` returns zero hits, as does `CANT_MAKE_PAYMENTS` and
+  `1003`. The **store half** is what a valid transaction identifier *is* and who is responsible
+  for finishing or acknowledging it — Google Play's `purchase.getOrderId()` on the Billing
+  Library `Purchase`, Apple's StoreKit transaction (or its id). Adapty never mints these; the
+  store does, and the store's own documentation is the reference for their shape, lifetime and
+  acknowledgment deadlines. On a "we reported it and nothing arrived" ticket the SDK tells you
+  whether the call was accepted, and only the store tells you whether the identifier was the
+  right one to send.
+- **Never infer a per-platform claim from the neighbouring platform's article** — seven
+  near-identical files make "the iOS article says X" the cheapest and most dangerous inference
+  available in this zone. Three verified traps: (1) `reportTransaction`'s first argument differs
+  in *kind*, not just in name — iOS takes the StoreKit transaction object (and at 4.0.2 the
+  public overloads are `StoreKit.Transaction` / `VerificationResult<Transaction>`, documented
+  SK2-only, with the `String` overload `package`-scoped rather than public), Android takes
+  `TransactionInfo.fromPurchase(purchase)` with `TransactionInfo.fromId(String)` also public
+  (`adapty/src/main/java/com/adapty/utils/TransactionInfo.kt:24,33`), and Flutter, React
+  Native, Unity, KMP and Capacitor all take a plain string id. (2) Unity's public surface is
+  PascalCase (`Adapty.GetPaywall`, `Adapty.MakePurchase`, `Adapty.LogShowPaywall`), so a
+  case-sensitive grep for `logShowPaywall` over this roster finds 6 of the 7
+  `present-remote-config-paywalls` articles and makes
+  `present-remote-config-paywalls-unity` look like it is missing the call — it isn't, it spells
+  it `LogShowPaywall`. (3) Version state is not uniform across platforms (see `platforms.md`),
+  and the corpus reflects that: `grep -c '<SDKv4>\|<SDKv3>'` across all 64 files hits only the
+  six non-Unity `fetch-paywalls-and-products*` articles, the six non-Unity
+  `present-remote-config-paywalls*` articles, and
+  `android-present-paywall-builder-paywalls-in-observer-mode` —
+  `fetch-paywalls-and-products-unity` carries `getPaywall` only. Whether a v4 API even exists
+  for a platform is a fact to look up per platform, not a shape to copy.
+- **Store- and dashboard-side prerequisites are not this zone's ground truth.** Product,
+  paywall and placement configuration, store connection, and what observer mode *is* all belong
+  to other zones and are linked out, not verified here — see the next section for the list.
+
 ## What we document, what we don't
+
+The zone's delta from `scope.md`, not a restatement of it.
+
+- **At depth: the Adapty call, its arguments, and its result — in each platform's own
+  language.** `getFlow`/`getPaywall` plus `getPaywallProducts`, `makePurchase`,
+  `restorePurchases`, `logShowPaywall`, `reportTransaction`, and the `observerMode` activation
+  flag. That per-platform signature and its result handling is the entire reason seven copies of
+  each family exist, and it is the one thing a per-platform article may never delegate.
+- **We never write the reader's own purchase code.** Observer mode means they keep their
+  StoreKit or Billing Library implementation, and every article stops at its edge. Verified
+  absence, with the grep: `launchBillingFlow`, `acknowledgePurchase`, `consumeAsync`,
+  `Product.purchase(`, `SKPaymentQueue` and `StoreKit.Product.purchase` match **zero** of the 64
+  articles. The only representation of the reader's code anywhere in the zone is the placeholder
+  identifier `yourBillingClient` — 15 files, one line each in the seven
+  `implement-paywalls-manually` and seven `implement-observer-mode` pages, and ten occurrences in
+  `android-present-paywall-builder-paywalls-in-observer-mode`. Keep it a stub: naming a real
+  store API in one of these snippets invites the reader to treat our snippet as the supported
+  call path, which is exactly the thing observer mode does not promise.
+- **Store mechanics: document the knob Adapty exposes, link out for the semantics behind it.**
+  `android-making-purchases` gives `AdaptySubscriptionUpdateParameters` and
+  `withEnablePendingPrepaidPlans`, then hands replacement/proration-mode *meaning* to four
+  developer.android.com links rather than restating Google's rules; `making-purchases` gives
+  `presentCodeRedemptionSheet()` and links Apple for offer codes; `ios-transaction-management` —
+  the one article that reaches furthest into the store — gives `appAccountToken`,
+  `jwsTransaction` and `transactionFinishBehavior: .manual`, and links Apple for what a JWS
+  actually is. Do state what breaks *in Adapty* when the reader gets the store part wrong; do
+  not re-document the store.
+- **Boundary against `sdk-flows-display`, expressed as what gets written.** Display owns
+  everything that exists only because Adapty is doing the rendering: view creation and
+  presentation, action and event callbacks, rendering errors, locale resolution, fallback files.
+  This zone owns everything the reader must call because nothing is rendering for them. The
+  clearest tell is that the same fact is written with opposite instructions on each side:
+  `restore-purchase` opens by telling the reader that a builder-rendered flow restores
+  automatically and they can skip the page, and `present-remote-config-paywalls` exists
+  precisely because a hand-rendered paywall logs no impression, making `logShowPaywall`
+  mandatory here and wrong there. So a fact that touches both paths gets written twice, once as
+  "call this" and once as "the view does this for you" — never copied across as one paragraph.
+  Fetching splits on the same line: `fetch-paywalls-and-products` is fetch-for-products,
+  `get-pb-paywalls` is fetch-for-rendering. And because `ios-present-paywall-builder-paywalls-in-observer-mode`
+  and the four `*-present-flows-in-observer-mode` articles sit in display while
+  `android-present-paywall-builder-paywalls-in-observer-mode` sits here, any observer-mode change
+  lands in both zones — check both before calling the work done.
+- **What a per-platform article may omit because a shared article covers it.** Established by
+  counting outbound links across all 64 files, most-linked first: `placements` (53),
+  `adapty-paywall-builder` (41), `observer-vs-full-mode` (22), `quickstart` (21), `product` (20),
+  `create-product` / `create-placement` / `create-paywall` (16 each), `initial-android` (13),
+  `add-remote-config-locale` (13), then `test-purchases-in-sandbox` and the
+  `sdk-installation-*` family. So dashboard product/paywall/placement setup, store connection,
+  SDK installation, what observer mode *is* and when to choose it, remote-config localization,
+  and sandbox testing are all linked and never restated. An article here that re-explains
+  placements or re-lists the store setup steps is over-scoped, not thorough.
+- **Only two pieces of text in this zone are shared rather than rewritten:** the `SampleApp.md`
+  reusable (21 of 64 — every `fetch-paywalls-and-products`, `making-purchases` and
+  `restore-purchase` article) and `OfferCodesInfo.mdx` (6, i.e. every `making-purchases` article
+  except Android's, since offer codes are Apple-only). Everything else is deliberately
+  re-written per platform, which is the correct reading of `scope.md`'s duplication rule here:
+  the code differs on every platform, so a reusable would have nothing identical to hold. The
+  Android omission is also the model for a platform-inapplicable topic — leave the section out
+  rather than writing "not supported on Android."
 
 ## Articles
 <!-- mill:auto:roster -->
@@ -128,7 +259,7 @@ config ↔ custom JSON, access level ↔ entitlement) live in `aliases.md` and a
 | "app rejected for not checking offer eligibility", "intro offer wasn't applied" | Split by cause: the eligibility fields come from `fetch-paywalls-and-products`; applying the offer at purchase time is `making-purchases`. |
 | "restore button", "lost the subscription after reinstalling", "no access on a new device", "App Store requires a restore button" | `restore-purchase`. Worth stating up front: there is nothing to implement if the flow is builder-rendered — restore is built into it, so this only matters for custom UI. |
 | "purchase succeeded but access level didn't update", "user charged twice", "makePurchase fired multiple times", "Billing unavailable / response code 3", "sandbox purchase stuck" | `troubleshoot-purchases` (no Capacitor article exists — say so rather than guessing a target). |
-| "cantMakePayments", "makePurchase does nothing", "purchase silently refused" | `troubleshoot-purchases` — the usual cause is observer mode being on, where the SDK deliberately refuses to run the purchase. Not a store or configuration failure. |
+| "cantMakePayments", "makePurchase does nothing", "purchase silently refused" | `troubleshoot-purchases` for the symptom; `cantMakePayments` in `sdk-errors-events` for the error. **Observer mode is a genuine cause on iOS, alongside device restrictions** — `Sources/Adapty.swift` builds `purchaser` only `if !observerMode`, and `makePurchase` opens with `guard let purchaser = sdk.purchaser else { throw .cantMakePayments() }`, so observer mode plus `makePurchase` raises 1003 through a nil collaborator rather than a named observer-mode error. A "correction" on 2026-08-11 removed this claim after grepping only for `notAllowedInObserveMode`; that grep tests one mechanism, not the claim, and the claim was right. Android's enum has no `CANT_MAKE_PAYMENTS`, so don't carry the code across platforms. |
 | "keep our existing IAP code and just get Adapty analytics", "partial integration", "SDK won't finish/close transactions" | `implement-observer-mode` for the setup and the constraint; the mandatory follow-up call is `report-transactions-observer-mode`. A ticket that stops at the first article is usually the reason transactions later go missing. |
 | "observer-mode purchases missing from analytics", "purchase not attributed to the A/B variation" | `report-transactions-observer-mode`. Reporting is not optional, the paywall variation must be passed explicitly to get attribution, and older Android SDKs need an extra `restorePurchases` call. |
 | "observer mode but we still want Adapty's UI" | Android only in this zone: `android-present-paywall-builder-paywalls-in-observer-mode`. Every other platform's version of this article sits in sdk-flows-display — check there before concluding it doesn't exist. |

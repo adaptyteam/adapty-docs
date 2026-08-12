@@ -13,7 +13,148 @@ The pre-Flow-Builder paywall system: creating a paywall as a remotely-configured
 
 ## Sources of truth
 
+Almost nothing here is a "which repo" question — the repos are the ones in `sources.md`. It is a **which
+version line** question, and the answer is a constant in the SDK, never a version number lifted from an
+article's prose.
+
+**The generation boundary is three numbers, all readable from code.** Every one of them was read at a
+named ref, not inferred:
+
+- **UI schema / builder version** — `AdaptyUISchema.formatVersion` + `builderVersion` in
+  `Sources.UIBuilder/Versions.swift`: `"4.4.0"` / `"4_4"` at iOS tag `3.17.3`, `"5.0.0"` / `"5_0"` on
+  iOS `origin/master` (4.0.2). This, not a product name, is the legacy-builder ↔ Flow-Builder line, and
+  the SDK puts it **on the wire**: `FetchPlacementRequest.swift` sends `builder_version` /
+  `builder_config_format_version`, and the path segment itself flips — `/sdk/in-apps/…/paywall/variations/…`
+  at 3.17.3 becomes `/sdk/in-apps/…/flow/variations/…` on master. Consequence for this zone: a v3 app
+  cannot be served flow content, which is *why* the v3-scoped articles stay correct for their readers.
+  Android's mirror is `FORMAT_VERSION_5_0_0 = "5.0.0"` in `adapty-ui/…/internal/utils/consts.kt`.
+- **Fallback file format version** — `Adapty.fallbackFormatVersion` in `Sources/Versions.swift`: `9` at
+  iOS `3.17.3`, `10` on iOS `origin/master`; Android `CURRENT_FALLBACK_PAYWALL_VERSION = 10` in
+  `FallbackVariationRetriever.kt` on `origin/master`. iOS gates on **exact equality**
+  (`guard formatVersion == Adapty.fallbackFormatVersion`) and emits one of two messages depending on
+  which side is newer — "Download a new one from the Adapty Dashboard" vs "Please update the AdaptySDK."
+  So `fallback-paywalls` is the version-9 file and its flow twin is version-10, and "not interchangeable"
+  is enforced in *both* directions, which is the sentence to write rather than a bare version note.
+  `local-fallback-paywalls` describes the dialog that produces both, so it is not version-scoped.
+- **The paywall's own generation flag, dashboard-side** — `PaywallResponse` in
+  `src/api-reference/specs/adapty-api.yaml` declares `use_paywall_builder` **and**
+  `use_paywall_builder_legacy` as required booleans. That pair, not a filename, is the authoritative
+  three-way split (no builder / pre-v3 legacy builder / newer builder) behind `migrate-paywalls`'
+  "move it to the newer builder first."
+
+**What v4 did and did not remove.** `AdaptyPaywall` is gone as a public entity on both GA v4 platforms —
+iOS `origin/master` has `Sources/Placements/Entities/AdaptyFlow.swift` and `AdaptyFlowPaywall.swift` and
+no `AdaptyPaywall` (only `AdaptyPaywallProduct` survives); Android `origin/master` has only
+`adapty/src/main/java/com/adapty/models/AdaptyFlow.kt`. But `AdaptyFlow` declares
+`public let paywalls: [AdaptyFlowPaywall]`, so products still reach the app through a paywall object —
+that is the mechanical basis for `create-paywall` not being superseded. Two renames mark the line and
+must not be generalised past it: `logShowPaywall` → `logShowFlow` (present at 3.17.3, absent on master),
+while `openWebPaywall` is present unchanged at *both* refs in `Sources/WebPaywall/Adapty+WebPaywall.swift`
+— which is why `web-paywall` is current for both generations and `paywall-metrics`' logging sentence is
+version-split.
+
+**Claims that must NOT be copied across the two generations.** This zone's standing hazard is a
+near-identical title on the flow side; three confirmed traps:
+
+- **Remote config changed shape, not just name.** v3: `AdaptyPaywall.remoteConfig: AdaptyRemoteConfig?`
+  — singular, optional. v4: `AdaptyFlow.remoteConfigs: [AdaptyRemoteConfig]` — an array, and it is on the
+  *flow*, absent from `AdaptyFlowPaywall` entirely. Any runtime-reading sentence in
+  `customize-paywall-with-remote-config` or `add-remote-config-locale` is therefore not portable to the
+  flow twin, and the flow twin's is not portable back.
+- **Who logs the view depends on the config's format, not on the SDK version.** Both GA platforms keep a
+  legacy-format branch inside the v4 renderer and auto-log the view for it: Android
+  `ViewConfigurationMapper.kt` sets `isLegacyFormat`, consumed in `FlowReducer.kt` to add a
+  `LogShowFlow` effect on `FlowEntered`; iOS `AdaptyUIFlowViewModel.logShowFlow()` guards on
+  `viewConfiguration.formatVersion.isLegacyVersion` and logs `"logShowFlow skipped (non-legacy view
+  configuration)"` otherwise. So `paywall-metrics`' "you forgot to call it" diagnosis belongs to
+  *manually rendered* remote-config paywalls; for a builder-made legacy paywall the SDK does it. Checked
+  on iOS and Android only — do not extend to the other five without evidence.
+- **No flow endpoint exists on the maintained Server-side API.** `adapty-api.yaml` has `listPaywalls`,
+  `getPaywall`, `updatePaywall` and no flow path at all. Never infer an `updateFlow` by analogy, and note
+  the reverse: the server-side push route in `customize-paywall-with-remote-config` has no flow
+  counterpart to defer to.
+
+**Where the dashboard side of a legacy paywall is defined.** All in `dashboard-interface` at
+`origin/master`, and it is *not* one package:
+
+- **The legacy visual builder is `packages/builder` (`@adapty/builder`)** — widgets `BuilderMenuTree`,
+  `BuilderPreview`, `TemplateLibrary`, `TestOnDevice`, `BuilderLocalizationsWidget`. The flow-era builder
+  is the separate `packages/unified-builder` (`@flows/monorepo`); `sources.md`'s "builder labels live in
+  `unified-builder`" rule is a flow-era rule and does not answer a legacy-builder question.
+- **The legacy paywall's non-builder surface lives under `apps/web/src/pages/ab-section/`** —
+  `paywall-list`, `paywall-form`, `paywall-metric`. That placement inside the A/B subtree is historical,
+  not a hint that these topics belong to `ab-tests`. In-code the legacy builder is called `BuilderV3`
+  (`paywall-form/ui/BuilderV3/`), and the same form carries `WebPaywallSection` and the
+  legacy→flow conversion entry points (`RecreateAsFlowButton`, `MigrateBuilderBanner`), whose logic is
+  `packages/paywall-builder-migration` (`convertPaywallToFlow`, `normalizeLegacyPaywall`).
+- **The remote-config editor is shared by both generations** — `apps/web/src/features/remoteConfig/`
+  (`JSONTable`, `LocalizationTable`, `SelectLocales`, `usePaywallTranslation`, plus a distinct
+  `DeprecatedRemoteConfig` rendered by `paywall-form/PaywallPage.tsx`). This is why the two remote-config
+  articles legitimately look alike on the dashboard side and diverge only in the SDK — the shared module
+  is a fact about the UI, never a licence to share SDK text.
+- **Semantics are backend-owned, in `dashboard-backend` at `origin/develop`, `src/portal/in_app_context/`.**
+  Paywall **state is derived, never stored**: `get_state_annotation` in
+  `infrastructure/repositories/paywall/paywall_repository/paywall_repository.py` computes `ARCHIVED` from
+  `is_deleted=True` and `LIVE` from existence in a non-deleted placement audience; the enum in
+  `domains/enums/state.py` is `live` / `inactive` / `draft` / `archived`. The rules the articles state are
+  exception classes in `domains/exceptions/paywall.py` — `NotDraftPaywallCanNotBeChanged` (the frozen
+  -products rule), `PaywallInUseCannotBeRemoved` with `PaywallUsingInValue{placements, ab_tests}` (the two
+  archive blockers, confirmed exactly as `archive-paywalls` names them),
+  `PaywallMustHaveDefaultRemoteConfigError` and `PaywallShouldNotContainTheSameRemoteConfigsError` (the
+  locale rules behind `add-remote-config-locale`), and `PaywallBelongsToFlowError` — a paywall owned by a
+  flow cannot be edited through the legacy surface at all, which is the hard edge of this zone's
+  applicability.
+
+**Two source gaps to state rather than paper over.** The web paywall editor is **not ours**:
+`paywall-form/ui/WebPaywallSection/lib/webPaywallBuilder.ts` SSOs to `app.funnelfox.com/login/adapty`, so
+nothing inside that editor — Stripe key fields, hand-typed plans and prices, Publish vs Preview — has a
+registered source. Verify it in-product or with the team; never by analogy to the Adapty builder. And on
+**Unity and KMP**, flows exist in code on the beta branches only (zero flow symbols on `origin/main` for
+either; `AdaptyFlow` / `AdaptyUIFlowPlatformView` present on `origin/release/4.0.0` for both) — so "this
+zone is still the live answer there" is a statement about their GA line with an expiry date, not about the
+SDK, and it should be re-checked against `platforms.md` before being written into any article.
+
 ## What we document, what we don't
+
+Delta from `scope.md` only. The one rule that decides everything else: **this zone is kept alive for the
+readers and links it already has, so we correct it and we do not grow it.**
+
+- **For the genuinely superseded articles we write corrections, not content.** Factual fixes, changed
+  limits and blockers, and anything that stops being true when a version boundary moves — yes. New
+  procedures, new screenshots, expanded conceptual framing, a new `##` section — no. Without this line
+  every reader question turns into a rewrite of a generation we are not selling. The superseded set is
+  small and named in `Ticket language`; the rest of the roster has no flow-era equivalent and is written
+  normally, at full depth, including new content.
+- **Never write a version number you got from an article.** `scope.md` already requires evidence for
+  per-platform applicability; the zone-specific form is that *version* applicability must trace to a
+  constant or to a symbol's presence at a named ref (see `Sources of truth`), because "SDK v3 and earlier"
+  in prose is a summary of a number, and the number moves. An article's own version note is not evidence
+  for another article's.
+- **A repurposed id is frozen.** Some ids here were kept and pointed at new content so old URLs keep
+  resolving, and one legacy-looking id now belongs to `flow-design` outright. Editing consequences:
+  never rename or delete an id to make it match its content — the id *is* the URL, and the inbound links
+  and search results are the entire reason the page still exists; never infer the generation from the id,
+  and never "fix" an id that reads wrong; and never give a *new* article an id that reads like a legacy
+  one. When a repurposed article's subject has moved on, the fix is to correct the body and cross-link,
+  not to move the file.
+- **Against `flow-design` / `flow-logic`, the split is by mechanism, and each side writes only its own.**
+  Where both generations have a live article on one topic — remote config, per-locale remote config,
+  fallbacks, metrics — each documents its own mechanism and links across; neither absorbs the other into
+  a single article with version blocks, because those wrap a whole article and not a section. Do not
+  reuse a snippet across the two generations even where the wording currently matches: the shared
+  dashboard module behind the remote-config editors makes identical text a coincidence, not a contract,
+  and the SDK shapes underneath it differ.
+- **The only-home articles are written for a reader who may be on either generation.** The lifecycle set
+  and the metrics, locale and web-paywall articles have no flow counterpart, so a flow-era reader lands
+  here by necessity. They must not be phrased as if the reader is on the old generation, and their
+  absence on the flow side is never reported as a gap.
+- **We do not document the conversion path from here.** The dashboard has one
+  (`RecreateAsFlowButton` / `convertPaywallToFlow`), and the decision to convert belongs to `flow-logic`'s
+  `migrate-to-flows`. No article in this zone grows a "and here's how to move to flows" procedure; a
+  cross-link is the whole of our obligation.
+- **Two things that still do not earn a doc here**, beyond `scope.md`'s list: a legacy-builder design
+  procedure — the canvas docs were deliberately removed from navigation, so restoring them is not a fix
+  — and a per-generation duplicate of a screenshot set for a dashboard screen both generations share.
 
 ## Articles
 <!-- mill:auto:roster -->

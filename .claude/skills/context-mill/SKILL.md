@@ -16,6 +16,7 @@ with shared judgment (who reads it, what's internal, what ripples) — rather th
 | `zones/<zone>.md` | human + agent | **Zone brief** — judgment about one area: what it is, sources of truth, what's in/out of scope, reader jobs, ripple rules, boundaries, ticket language, gaps and misses. One to two pages. |
 | `zones.json` | human via agent | Machine layer: `article id → zone/role/audience`, plus the zone list (id, title, kind). Edited only via `mill:assign` / `mill:new-zone`, never by hand. |
 | `platforms.md` | human | Per-platform facts: ground-truth source id, current SDK version state, local quirks, the release-branch scope rule. |
+| `scope.md` | human | **Corpus-wide scope rules** — what earns a doc, what doesn't, depth and duplication policy, which claims need evidence first. A zone brief's `What we document, what we don't` carries only its delta from this file. Read it before deciding how much of a change to write up. |
 | `sources.md` | human | Catalog of ground-truth code/spec sources (repo path, remote, default ref, branch pattern). |
 | `rollouts/<slug>.md` | agent, reviewed by human | State of one feature rolling across platforms: canon decided on the first platform, a per-platform table, open questions. |
 | `.zone-state.json` | script | Snapshot of member hashes at the last `mill:reviewed <zone>`, used to compute drift. Never hand-edit. |
@@ -24,6 +25,17 @@ with shared judgment (who reads it, what's internal, what ripples) — rather th
 the roster lives inside `<!-- mill:auto:roster -->` … `<!-- /mill:auto -->` markers and is rewritten
 by `npm run mill` on every run — never edit inside those markers. Everything outside them is judgment
 the script must never touch.
+
+**Disproving a mechanism is not disproving the claim.** The commonest way this project has produced a
+confident falsehood is: pick the mechanism you assume is behind a claim, grep for it, find nothing,
+declare the claim false. A worked example that cost two wrong edits — "observer mode causes
+`cantMakePayments`" was removed after grepping `notAllowedInObserveMode` and finding it only in error
+definitions. The real path never mentions that name: `purchaser` is constructed only when observer mode
+is off, and `makePurchase` throws `cantMakePayments` when it is nil. The docs had been right; the grep
+tested a hypothesis and was reported as testing the claim. Before writing "X is not the cause", state
+which mechanism you looked for and ask what *else* could produce the same symptom — a nil collaborator,
+a guard clause, a mapping table, a config branch. If you cannot enumerate the alternatives, you have a
+hypothesis, not a finding.
 
 **`Gaps and misses` is a claim, not a finding — verify before repeating it.** A gap entry says something
 is *absent*, and absence is the one thing a brief cannot establish by reading its own zone: the answer is

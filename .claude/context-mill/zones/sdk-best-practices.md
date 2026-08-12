@@ -13,7 +13,127 @@ The "Best practices" category of each platform SDK: recommended SDK call order d
 
 ## Sources of truth
 
+The articles here are recommendations, so "verify it" splits by claim class. Three classes have a real
+ground truth; one has none, and pretending otherwise is how this zone goes wrong.
+
+- **A hard ordering constraint is a property of the platform's activation gate, and you read the gate.**
+  iOS (`ios-sdk`, `origin/master`, tag `4.0.2`): `Sources/Adapty+Shared.swift`'s `activatedSDK`, plus
+  `profileManager(withProfileId:)` / `createdProfileManager` in `Sources/Adapty.swift`; the codes are in
+  `Sources/Errors/AdaptyError.swift` (`notActivated = 2002`, `profileWasChanged = 3006`). Android
+  (`android-sdk`, `origin/master`, tag `4.0.1`): the `isActivated` boolean in `adapty/.../com/adapty/Adapty.kt`,
+  re-checked at the top of every public method, with `ADAPTY_NOT_INITIALIZED(20)` and
+  `PROFILE_WAS_CHANGED(3006)` in `errors/AdaptyErrorCode.kt`. **The two gates do not behave the same, so
+  this class cannot be mirrored:** iOS's `activatedSDK` *awaits* an activation already in flight
+  (`case let .activating(task): return await task.value`) and throws `notActivated` only when activation
+  was never started, while Android's check fails the call immediately. Every article in the family
+  currently says a call "before or in parallel with `activate()`" fails — exact for Android, half-true
+  for iOS.
+- **A version floor is checkable by tag, and for the JS platforms only through the pin.**
+  `appliedAttributionSources` is absent from `ios-sdk` tag `3.17.0` and present at `3.17.1`
+  (`git grep -c appliedAttributionSources <tag> -- 'Sources/*'`: nothing, then
+  `Sources/Profile/Entities/AdaptyProfile.swift`) — the floor the iOS article prints. Flutter's different
+  floor is real, not a typo: absent at `flutter-sdk` `3.16.0`, present at `3.17.0`. For React Native and
+  Capacitor the printed number is the **wrapper's** tag, derivable only by reading that tag's
+  `@adapty/core` pin and then `jscore`: `rn-sdk` `v3.17.0` pins core `3.17.0` (field absent), `v3.17.1`
+  pins `3.17.2` (present), and `capacitor-sdk` `v3.17.1` pins the same core. Reading `jscore` alone gives
+  `3.17.2` — the wrong number to print in an RN or Capacitor article.
+- **The AA family's scope limit ("first launch only") is SDK behaviour, not an assumption.**
+  `ios-sdk` `Sources/Profile/Adapty+UpdateASAToken.swift` on `origin/master`: `updateASATokenIfNeed`
+  returns early unless `appleSearchAdsSyncDate(for:)` is nil, fetches the token in a detached `Task`,
+  posts it, then stamps the sync date — one fetch per profile, delivered back through the ordinary
+  profile-response path. The value is `AdaptyAttributionSource(rawValue: "apple_search_ads")`
+  (`Sources/Profile/Entities/AdaptyAttributionSource.swift`); `jscore` types it as the bare string and
+  makes the array optional (`src/types/index.ts`), which is why the RN and Capacitor snippets use
+  `?.includes(...)`.
+- **Every number in the timing advice is an unrecorded judgment call.** "1–2 seconds after `activate`",
+  "`loadTimeout` 3–5 s", "a 3–5 second timer", "30 s of listening", "usually arrives within a few
+  seconds" — none traces to code, a spec, or a ticket. The only adjacent checkable fact is that
+  `loadTimeout` defaults to 5 s, stated in `fetch-paywalls-and-products`, so "3–5 s" is a deliberate
+  tightening of a documented default. The founding commits carry one-line messages with no ticket or PR
+  reference (`15266851c` "SDK initialization order", `1cb17272d` "Guide — Optimize paywall fetching",
+  both 2026-05-11), and `sources.md` registers no ticket or support-case source at all. So these numbers
+  can be changed by a new judgment but cannot be "corrected against the source" — there is none. The
+  same holds for "bulk prefetch blocks the main thread and produces a black screen": a runtime claim with
+  no code anchor, and `git grep "DispatchQueue.main\|@MainActor" origin/master -- Sources/Placements` in
+  `ios-sdk` returns zero hits, so the fetch path itself never hops to the main thread.
+- **There is no canonical copy of a recommendation — each platform's article is authoritative for its own
+  platform, and the families were seeded as one template.** All seven `sdk-call-order` articles were
+  created in a single commit (`15266851c`) and remain line-for-line identical apart from symbol names,
+  launch hooks, listener names, error names and link ids (`diff` the iOS file against each of the other
+  six); `optimize-paywall-fetching` likewise (`1cb17272d`). So a difference between two platforms is
+  either meaningful or a miss, and the kind of difference tells you which:
+  - **A different recommended *pattern* can be deliberate.** The `Ticket language` table records the one
+    that is, and it is intentional by structure, not just wording: `ios-show-aa-targeted-paywall` and
+    `flutter-show-aa-targeted-paywall` are built around a timeout branch that calls
+    `getPaywallForDefaultAudience`, and `react-native-show-aa-targeted-paywall` /
+    `capacitor-show-aa-targeted-paywall` have no timeout branch at all.
+  - **A difference in *symbol-naming era* is always a miss, and it is mechanically checkable** against
+    the platform's `default_ref` in `platforms.md`. As of this pass: iOS GA v4 exposes only
+    `getFlow`/`getFlowForDefaultAudience` (no `Adapty.getPaywall(placementId:)` on `origin/master`),
+    Android GA v4 the same in `Adapty.kt`, and React Native GA v4 the `get_flow` bridge method with no
+    `get_paywall` in `jscore` — yet all three platforms' articles here use v3 names with no v4 note,
+    while Flutter, KMP and Capacitor carry an explicit "in SDK v4 `getPaywall` is renamed to `getFlow`"
+    line (grep `getFlow\|SDK v4` across the 25 articles: hits only in the `flutter-`, `kmp-` and
+    `capacitor-` files). Each note arrived with that platform's own v4 docs pass; iOS's only
+    post-founding edit was cosmetic, and the Android and RN v4 passes never opened these files. Unity's
+    v3 names are correct — its GA line (`unity-sdk`, `origin/main`, tag `3.17.0`) really does expose
+    `GetPaywall`.
+  - **A floor and the symbols around it must agree.** `capacitor-show-aa-targeted-paywall` requires
+    "Capacitor SDK 3.17.1 or later" but writes `getFlow` throughout, and at the core that
+    `capacitor-sdk` `v3.17.1` pins (`jscore` `v3.17.2`) the bridge method is `get_paywall`; `get_flow`
+    arrives only in v4, which Capacitor has not released. The symbols were rewritten by the Capacitor v4
+    pass without revisiting the floor.
+- **Never carry across platforms without re-reading that platform's repo:** the activation/identify
+  failure mode, the error name and code, the profile-update mechanism a recommendation hangs off
+  (`didLoadLatestProfile`, `setOnProfileUpdatedListener`, `didUpdateProfileStream`, `onLatestProfileLoad`,
+  `OnLoadLatestProfile` — five shapes, and Flutter's article additionally has to pair the stream with one
+  `getProfile()` because it doesn't replay), the parameter spelling (`loadTimeout` everywhere except
+  `loadTimeoutMs` in `jscore`), and the version floor. For the AA family, also whether the platform
+  exposes `appliedAttributionSources` on the line the docs target: Unity does on its GA line
+  (`AppliedAttributionSources` in `Packages/com.adapty.unity-sdk/Runtime/Models/AdaptyProfile.cs`,
+  `origin/main`), KMP only on the unreleased v4 beta
+  (`adapty/src/commonMain/kotlin/com/adapty/kmp/models/AdaptyProfile.kt` on `origin/release/4.0.0`;
+  absent from `origin/main`).
+
 ## What we document, what we don't
+
+Delta from `scope.md` only. This zone writes recommendations, so the scope question is which
+recommendations become articles and which stay where the mechanism is documented.
+
+- **A recommendation earns its own article only when the failure it prevents is silent *and* more than
+  one existing article would otherwise have to repeat it.** Both hold for the two families that have
+  prose: the wrong-audience paywall comes back with no error at all, and a call racing activation on iOS
+  is awaited rather than rejected (see *Sources of truth*), so a reader never sees a signal to search on.
+  And `sdk-call-order` is linked inbound from three separate places on every platform — all eight install
+  articles (`sdk-installation-ios`, `sdk-installation-unity`, and the six others), all seven identify
+  articles (`ios-quickstart-identify` and its siblings), and the platform's error-handling article (five
+  ids, including `error-handling-on-flutter-react-native-unity`) — which is what extraction is for.
+- **A recommendation that concerns exactly one call stays with the call.** The standing advice against
+  `getFlowForDefaultAudience` is a `:::warning` inside `fetch-paywalls-and-products` (zone
+  `sdk-flows-manual`), stating its two drawbacks next to the method itself. It never became a
+  best-practice article, and that is the right shape — copy it.
+- **Against `sdk-flows-manual` / `sdk-flows-display`: they own the call, this zone owns the timing around
+  it.** An article here may name a method and say when to call it, in what order, and what to do when
+  it's slow — never how to call it, what it returns, or what a parameter means. Concretely: this zone
+  writes "set `loadTimeout` to 3–5 seconds"; the parameter table, the 5 s default and the per-platform
+  spelling stay in the family's `fetch-paywalls-and-products`. Working test: if the sentence would still
+  be true with the parameter reference deleted, it belongs here.
+- **Against `sdk-quickstart`: that zone writes the path that works, this zone writes only what to do
+  differently once it does.** A rule that changes the first integration is a quickstart edit, not a new
+  article here — which is why the install and identify articles link *out* to `sdk-call-order` instead of
+  restating it.
+- **Code here exists to show control flow, not API usage.** Only the four AA articles carry code fences;
+  the other 21 articles in the roster have none (fenced blocks counted across all 25). What those examples
+  implement is a race, a timeout and a deduplication flag — the API calls inside them are one line each,
+  and the platform's own how-to article is what a reader follows to write them.
+- **Per-platform applicability, this zone's version of the `scope.md` rule: a recommendation may be
+  extended to another platform only after that platform's own SDK is shown to expose the mechanism the
+  recommendation hangs off, read at the ref `platforms.md` names for it.** "It ships an iOS target, so
+  Apple Ads attribution applies" is exactly the same-toolchain inference `scope.md` forbids, and running
+  the check gives two different answers for two platforms that argument would treat alike: Unity exposes
+  `AppliedAttributionSources` on its GA line, KMP only on its unreleased v4 beta. Neither result makes
+  the absent article a gap — an empty cell isn't one — but they decide what *could* be written and
+  against which version.
 
 ## Articles
 <!-- mill:auto:roster -->

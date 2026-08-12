@@ -2,24 +2,43 @@ import { parseFrontmatter, splitFences } from './lib.mjs';
 
 // Exact strings, in order. The validator and the roster renderer both match on
 // them, so renaming a section here is a breaking change to every brief.
+//
+// Trimmed 2026-08-10 from ten sections to five. The docs owner reviewed a full
+// brief and found real value in three things — `Sources of truth`, `What we
+// document, what we don't`, and the script-rendered `Articles` roster — and the
+// evidence backed her: nearly every false claim produced while writing these
+// briefs was born in a free-form section with nothing in it to check against.
+// Obliging prose nobody reads is how a brief acquires invented content, so the
+// rest are optional now: written where someone has something to say, never
+// scaffolded as an empty slot waiting to be filled.
 export const REQUIRED_SECTIONS = [
   'What this is',
-  'Surfaces',
   'Sources of truth',
   "What we document, what we don't",
   'Articles',
+  'Boundaries',
+];
+
+// Recognised but never demanded. `Ticket language` is here rather than gone
+// because it earns its place with a different reader: it routed a context-free
+// agent through three of four tickets in the acceptance test, which is exactly
+// the case where work is handed to an agent instead of done by the owner.
+// `Boundaries` stayed required because the `editor` skill's duplication check
+// depends on it.
+export const OPTIONAL_SECTIONS = [
+  'Surfaces',
   'Reader jobs',
   'Ripple rules',
-  'Boundaries',
   'Ticket language',
   'Gaps and misses',
 ];
 
 // Sections that must have prose for a brief to count as complete rather than a
-// bootstrap stub. `Articles` is excluded — the script fills it.
+// bootstrap stub. `Articles` is excluded — the script fills it. Now that the
+// required list is the valued one, `stub` finally measures the absence of what
+// matters rather than the absence of ten headings.
 const JUDGMENT_SECTIONS = [
-  'What this is', 'Surfaces', 'Sources of truth', "What we document, what we don't",
-  'Reader jobs', 'Ripple rules', 'Boundaries',
+  'What this is', 'Sources of truth', "What we document, what we don't", 'Boundaries',
 ];
 
 // Headings are detected in fence-stripped text: a brief can legitimately contain
@@ -171,7 +190,7 @@ const MARKUP_WORDS = new Set([
   'flat', 'sdk-matrix', 'version-matrix',
   // Bare SDK method names, written without the `Adapty.` prefix or parentheses
   // that would otherwise disqualify them.
-  'activate', 'identify', 'logout', 'register',
+  'activate', 'identify', 'logout', 'register', 'purchaser',
   // Field, payload and status words quoted from a ticket or a response body.
   'detail', 'format', 'null', 'draft', 'email', 'locale', 'cid', 'organic',
   'channel', 'payload', 'amount', 'price', 'value', 'error', 'date', 'data',
@@ -182,7 +201,7 @@ const MARKUP_WORDS = new Set([
   // apart from an article id — they have to be excluded by name.
   'adapty-customer-user-id', 'adapty-profile-id',
   // Plural concepts that read like ids but name no article.
-  'flows', 'audiences',
+  'flows', 'audiences', 'beta',
   // External package and skill-repo names, not articles in this corpus.
   'adapty-cli', 'adapty-sdk-integration', 'expo-secure-store',
 ]);
@@ -203,7 +222,9 @@ export function referencedArticleIds(text) {
 
 // A scaffold is deliberately a stub: `mill:status` will keep reporting it as one
 // until the judgment sections are filled, which is the honest state of a zone
-// nobody has thought about yet.
+// nobody has thought about yet. It scaffolds the required sections only — an
+// empty optional heading is an invitation to fill it with something invented, so
+// those get added by whoever actually has the content.
 export function briefTemplate(zoneId) {
   const body = REQUIRED_SECTIONS.map(name => (
     name === 'Articles'

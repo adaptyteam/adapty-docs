@@ -142,6 +142,12 @@ remote: https://gitlab.adapty.io/adapty/adapty-dashboard-api.git
 default_ref: origin/develop
 kind: local-clone
 
+> **This clone goes stale faster than any other here — never read its working tree.** Measured
+> 2026-08-12: the local checkout sat at 2026-05-20 while `origin/develop` was at 2026-08-11, **1,989
+> commits ahead**. Two separate reviews found real differences between the two (a proceeds rate that
+> exists on the ref and not in the tree, among others). Always `git show origin/develop:<path>` or
+> `git grep <pattern> origin/develop -- <path>`. Note the default ref is `develop`, not `master`.
+
 Integration form field labels, `required` flags, and hint text shown on the dashboard's integration
 setup screens come from `portal/integration_context/constants/share.py` in this repo — confirmed at
 `src/portal/integration_context/constants/share.py` (e.g. the Mixpanel data-residency field's title and
@@ -206,3 +212,98 @@ Locale-translated copies sit alongside it (`developer-api.es.yaml`, `.ja.yaml`, 
 nothing, because the English source has no content to translate. Open question: why this file is still
 committed at all — flagging it here rather than deleting it, since deletion is out of scope for this
 registry task.
+
+## adapty-cli — Developer CLI
+
+path: ~/Documents/adapty-cli
+remote: https://github.com/adaptyteam/adapty-cli
+default_ref: origin/main
+ref_pattern: release/*
+kind: local-clone
+
+Ground truth for everything the `agent-tooling` zone says about the CLI: its command surface
+(`src/commands/**`), the device-code login flow (`src/commands/auth/login.ts`), the token resolution
+order (`src/lib/auth.ts` — note it reads `ADAPTY_TOKEN` from the environment *before* the config file,
+which the docs don't mention) and the config location (`src/lib/config.ts`, via oclif's `configDir`).
+There is no committed oclif manifest, so the TypeScript is the only surface description.
+
+**This CLI drives the one Adapty API with no published spec** — `api-admin.adapty.io/api/v1/developer`,
+set as `DEFAULT_API_URL` in `src/lib/api-client.ts`. `developer-api.yaml` in this repo is an empty stub
+(`paths: {}`), so unlike every other API surface there is nothing to quote: read the client.
+
+Registered 2026-08-11. It was missing until then, which is why CLI claims had no registered source.
+
+## sdk-integration-skill — Adapty SDK integration skill
+
+path: ~/Documents/adapty-sdk-integration-skill
+remote: https://github.com/adaptyteam/adapty-sdk-integration-skill.git
+default_ref: origin/main
+ref_pattern: release/*
+kind: local-clone
+
+The packaged skill the `agent-tooling` zone documents. **The dependency runs the other way from every
+other source here: this repo is pinned to our published docs, not to the SDKs.**
+`scripts/lint-symbols.mjs` resolves every Adapty symbol it mentions against `adapty.io/docs`'s
+`llms.txt`, and a cron files a `skill-drift` issue when our docs move — so a rename on our side breaks
+the skill, and the skill is never upstream of us.
+
+The gap that lint does *not* close is version pins: it checks symbols, never versions. So skill and docs
+can go stale together on a pre-release pin (its `references/kmp.md` pins `4.0.0-beta.1` while the KMP SDK
+has since tagged `4.0.1-beta.1`).
+
+Registered 2026-08-11, same reason as `adapty-cli`.
+
+## ua-service — Adapty User Acquisition service
+
+path: ~/Documents/adapty-user-acquisition
+remote: https://gitlab.adapty.io/adapty/adapty-user-acquisition.git
+default_ref: origin/develop
+ref_pattern: release/*
+kind: local-clone
+
+The service behind `api-ua.adapty.io`, and ground truth for almost everything the `attribution` zone
+claims. **Note `default_ref` is `origin/develop`, not `origin/master`** — `git symbolic-ref
+refs/remotes/origin/HEAD` resolves there. Reading `master` or the working tree will mislead you.
+
+The attribution data model lives here and **in no SDK**: the SDKs carry an opaque JSON payload string,
+so an SDK repo can confirm how to read install data but never what is in it. Two lists that look alike
+and are not: the wire `channel` value (produced by a small partner map plus free text a marketer typed
+into a tracking link's Channel field) versus the analytics reporting taxonomy — `organic` legitimately
+exists only in the second. The daily export's writer and cron also live here, so a column difference
+between the three storage articles is drift, never a product difference.
+
+Registered 2026-08-11.
+
+## mail-backend — Adapty Mail backend (noty-wave)
+
+path: ~/Documents/noty-wave-backend
+remote: https://gitlab.adapty.io/noty-wave/backend.git
+default_ref: origin/develop
+ref_pattern: release/*
+kind: local-clone
+
+Ground truth for the `adapty-mail` zone: flow/trigger semantics, send eligibility, suppression, and the
+warm-up ladder. **`default_ref` is `origin/develop`.** The vocabulary does not match the docs — no
+backend symbol is called "flow" — so read the mapping in the zone brief before grepping for one.
+
+**The public API surface is decided by the auth dependency, not by the OpenAPI tag.** Only the routes
+taking the project-scoped Adapty Mail secret key are public; the same `Profile` tag also holds routes
+that take a dashboard account session and are internal. A route being visible in Swagger or a network
+tab is not evidence it may be documented.
+
+Registered 2026-08-11.
+
+## mail-frontend — Adapty Mail dashboard (noty-wave)
+
+path: ~/Documents/noty-wave-frontend
+remote: https://gitlab.adapty.io/noty-wave/frontend.git
+default_ref: origin/develop
+ref_pattern: release/*
+kind: local-clone
+
+Where a Mail dashboard control's enabled/disabled state is decided — useful when an article claims a
+setup ordering. Worked example: the *Enable Adapty integration* button is gated on a field the backend
+computes as "has an active flow **or** has ever called the ingestion API", and the gate is UI-only. So
+"enable sending last" is sound ordering advice, not an enforced invariant, and must not be written as one.
+
+Registered 2026-08-11.

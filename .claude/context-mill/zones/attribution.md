@@ -19,7 +19,87 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 
 ## Sources of truth
 
+- **TODO(owner): register the UA service in `sources.md`.** Nothing in the registry covers it, yet it
+  owns almost every fact in this zone: it is the service behind api-ua.adapty.io. Clone is
+  `~/Documents/adapty-user-acquisition`, remote `https://gitlab.adapty.io/adapty/adapty-user-acquisition.git`,
+  and its real default ref is `origin/develop` (from `git symbolic-ref refs/remotes/origin/HEAD`), not
+  `master`. Until it has an entry, a task must name the module it read.
+- **The attribution data model is defined entirely in that service, not in any SDK.** The wire object is
+  `InstallOutAttributionDTO` in `src/app/attribution_context/applications/dto/install_dto.py` (exactly
+  seven fields: channel, campaign_id, campaign_name, adset_id, adset_name, ad_id, ad_name), and it is
+  built by `_project_attribution()` against the whitelist `ATTRIBUTION_PROJECTION_FIELDS` in
+  `src/app/attribution_context/applications/services/install_service.py`. Inside the object all seven
+  keys are always emitted and any of them may be `null`; the *object itself* is omitted from the payload
+  when `attribution_data['matching_tier']` is empty — i.e. when no click matched.
+- **Settle the organic contradiction in favour of the prose, not the field table.** `ua-attribution-data`
+  offers `organic` as an example `channel` value while also saying the object is absent when attribution
+  could not be determined. Only the second statement is what the code does: an unattributed install has
+  an empty matching_tier and therefore carries no attribution object to put `organic` in. `channel` on
+  the projection is always the *matched click's* channel, and a click whose channel cannot be determined
+  is discarded at ingestion rather than stored as organic.
+- **Channel is not a closed enum on the SDK wire, and the dashboard's channel list is a different list.**
+  Two producers only: a four-entry `PARTNER_ID_TO_CHANNEL` map in
+  `src/app/campaign_context/applications/constants/partners.py`, and an explicit `channel` query
+  parameter on manual tracking links — free text, whatever the marketer typed in the **Channel** field.
+  The thirteen-value `ALL_CHANNELS` list in
+  `src/app/analytics_context/applications/constants/advertising_channels.py` is the analytics/reporting
+  taxonomy (it is where `organic` legitimately lives). Never document one as the other.
+- **Where the SDK's side ends.** The SDKs carry no attribution field names at all — `payload` is an
+  opaque JSON string (`AdaptyInstallationDetails.Payload.jsonString`, iOS and Android alike), so the SDK
+  repos can confirm *how* to read the data and never *what* is in it. Setting attribution from app code
+  is the other product: `updateAttribution(_:source:)` writes third-party MMP data to the Adapty core
+  profile and its own doc comment points at attribution-integration in the `integrations` zone. Apple
+  Search Ads data does not arrive on the tracking-link path either — `attribution_data_asa` sits in
+  `CORE_OWNED_KEYS` and reaches this service from Adapty core, which is why the export's `asa_*` columns
+  exist without any ASA tracking link.
+- **"Deferred" is backend-owned and has two producers, not one.** `_build_deferred_response()` merges the
+  campaign's own stored `ios_deferred_data`/`android_deferred_data` (persisted fields on
+  `src/app/campaign_context/infrastructure/models/campaign_model.py`) with the click's query parameters,
+  click values winning. Both land at the top level of `payload`, outside the attribution object.
+- **The export destinations share one writer and a schedule the articles state loosely.** All three
+  storage articles describe the same 39-column install CSV produced by `_format_installs_to_csv()` in
+  `src/app/export_context/applications/services/export_service.py`; `storage_type` selects only the
+  upload adapter, so a column difference between the three articles is drift, never a product
+  difference. The schedule is `@cron('0 2,4,6 * * *')` on `daily_export_scheduler` in
+  `src/app/export_context/infrastructure/ports/tasks/daily_export.py`: three runs a day, each
+  idempotently creating or retrying *yesterday's* job, and skipped outright for companies that are
+  neither paid nor in trial. "Every 24h at 4:00 UTC" is the articles' phrasing, not the code's.
+- **Some claims are the ad network's and cannot be verified here.** Meta token expiration and the
+  `ads_read` permission, system-user token generation, whether Meta approves an ad URL, TikTok's
+  Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
+  them one sentence and a link out; do not restate them as Adapty behaviour, and do not treat a support
+  report about them as a docs defect until the provider's own docs are checked.
+
 ## What we document, what we don't
+
+- **Adapty's own acquisition product gets documented end to end; an MMP gets only its Adapty-side
+  wiring.** Everything in this roster is Adapty Attribution: tracking links, campaign configuration and
+  its matching settings, the analytics and metrics pages, the install payload the app receives, and the
+  daily export out. When the reader's attribution comes from a third-party MMP instead, we document the
+  Adapty-side call and stop — the MMP's console, SDK, identifiers and attribution model are its own
+  docs. The reliable tell for which product a task is about is the API surface it touches:
+  `onInstallationDetailsSuccess` is this zone, `updateAttribution` is the `integrations` zone.
+- **Campaign-platform setup is a deliberate exception, and a narrow one.** `meta-create-campaign` and
+  `tiktok-create-campaign` walk another vendor's UI — objective, ad set, targeting, creative — because a
+  campaign built wrongly breaks attribution silently and the reader blames Adapty. We stop at anything
+  that cannot change what Adapty receives: bidding strategy, creative advice, audience building,
+  billing, account structure. Two things must survive every edit to those guides, because they are the
+  only load-bearing steps: where the click link goes, and the rule that splits it across **Website URL**
+  and **URL parameters** so the ad gets approved.
+- **A bounded context in the backend is not a documented integration.** The UA service also carries a
+  Google Ads context (metrics queries plus conversion upload) and Adjust and AppsFlyer ingest contexts,
+  while the articles say native spend integrations are Meta and TikTok only. Do not add an integration
+  article, and do not widen "currently — Meta Ads and TikTok for Business", on the strength of that code
+  existing; confirm shipped status with product first. This is the zone's most tempting wrong edit.
+- **Boundary with `ads-manager`, stated as what gets written.** All Apple Search Ads *campaign
+  management* writing — connection flow, bids, automations, keyword work — belongs to `ads-manager`. Here
+  ASA appears only as a channel value and as the `asa_*` columns in the export, and this zone never
+  re-explains how ASA campaigns are run even when a reader arrives with an ASA question.
+- **Boundary with `integrations`, stated the same way.** Writing about a destination's own wire format,
+  its credentials screen, and its identifier call belongs there; writing about install, click and
+  campaign data entering or leaving Adapty Attribution belongs here. The sharp case: a new column in
+  this zone's install CSV is written here, a new webhook or subscription-export field is written there,
+  and neither implies the other — same providers, different products, separately maintained schemas.
 
 ## Articles
 <!-- mill:auto:roster -->
@@ -82,7 +162,7 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
 | How a ticket says it | Where it actually lives |
 |---|---|
 | "export attribution data to a bucket", "which S3 article do I follow", "MinIO / DigitalOcean Spaces / Wasabi", "self-hosted object storage" | `ua-custom-s3` is the answer for anything S3-*compatible* — it is the only one of the three with a **Custom Endpoint URL** field, and that field is the whole distinction. Real AWS → `ua-amazon-s3` (the only one carrying the IAM policy + access-key walkthrough). GCP → `ua-google-cloud-storage` (Service Account HMAC key only, and it needs three roles: Storage Object Viewer, Storage Legacy Bucket Writer, Storage Object Creator). |
-| "yesterday's data isn't in the bucket", "why isn't this streaming", "re-export a specific day" | Same three articles. There is no streaming: one CSV per *previous full UTC calendar day*, written daily at 4:00 UTC, plus a manual per-date export. A gap in the bucket is almost always the schedule, not a broken connection. |
+| "yesterday's data isn't in the bucket", "why isn't this streaming", "re-export a specific day" | Same three articles. There is no streaming: one CSV per *previous full UTC calendar day*, plus a manual per-date export. **Corrected 2026-08-11 against `origin/develop`:** the schedule is `@cron('0 2,4,6 * * *')` — three runs a day at 02:00, 04:00 and 06:00 UTC, each idempotently creating or retrying *yesterday's* job — not the single 4:00 run all three articles state. And the likelier cause of an empty bucket is not the schedule at all: the scheduler skips companies that are neither paid nor in trial, which no article mentions. Rule out the account state before the connection. |
 | "does the export include IDFA / fbclid / the ASA fields", "what columns are in the dump" | The column table in each of `ua-amazon-s3`, `ua-custom-s3`, `ua-google-cloud-storage`. Read the one the customer actually uses — the tables are **not** identical: `ua-custom-s3` documents `bundle_id`, device brand/model, and OS/app/SDK version, the other two do not. Treat that as suspected doc drift, not a product difference, before telling anyone a field is unavailable. |
 | "S3 export" with no other context | Decide direction and product first. The three `ua-*` storage articles export *Adapty Attribution's install events*; `s3-exports` / `google-cloud-storage` in **integrations** export the main dashboard's *subscription events*. Same provider, different product, different table — and the wrong one is a plausible-looking wrong answer. |
 | "read which ad drove this install from app code", "personalize onboarding by campaign", "organic vs paid inside the app" | `ua-attribution-data`. Fields arrive in a nested `attribution` object inside the `payload` of `onInstallationDetailsSuccess`, and `payload` is escaped JSON the app parses itself. Every field is optional. Note the article says two things about organic installs — that `channel` can be `organic`, *and* that the `attribution` object is absent when attribution could not be determined — so app code has to handle both shapes. |
