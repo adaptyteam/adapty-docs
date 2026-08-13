@@ -109,6 +109,7 @@ or developer can see and click.
 | paywall-builder-templates | — | marketer, dev | 5 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 3 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
+| paywall-onboarding-builder-deprecation | migration | marketer, dev | 3 | tutorial |
 | paywall-product-block | — | marketer, dev | 7 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
@@ -153,10 +154,11 @@ or developer can see and click.
 ## Ripple rules
 
 - **`adapty-flow-builder` ↔ `migrate-to-flows`: verified duplicated content, not just co-change.** Both
-  articles carry the identical "Flows are currently supported on iOS, Android, React Native, Flutter,
-  and Capacitor SDK v4 and up" `:::important` callout, word-for-word, and embed the same YouTube video
-  (`8Cby6lVGI0o`). Cochange confirms this pair moves together (3× in `mill:cochange flow-logic`); a
-  platform-support change to Flow Builder must update both copies of this sentence, not one.
+  articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
+  word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
+  SDK platforms support flows), and embed the same YouTube video (`8Cby6lVGI0o`). Cochange confirms
+  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow Builder
+  must update both copies of this sentence, not one.
 - **`adapty-flow-builder` ↔ `builder-ui` ↔ `paywall-builder-templates` ↔ `flow-builder-recipes` ↔
   `onboarding-flow-tutorial`: the hub cluster.** Cochange shows every pair in this set at 1–3× (e.g.
   `adapty-flow-builder`+`builder-ui` 3×, `builder-ui`+`paywall-builder-templates` 2×). Directly confirmed
