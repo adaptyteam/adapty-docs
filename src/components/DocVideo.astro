@@ -2,14 +2,15 @@
 /**
  * Inline demo video — the motion equivalent of <ZoomImage>.
  *
- * Use it instead of an animated GIF: same silent autoplaying loop, a fraction of
- * the bytes. Loops start playing as they scroll into view, driven by an
- * IntersectionObserver rather than a native `autoplay` attribute — `autoplay`
- * forces the browser to download every video in full at page load, so a page
- * with several demos saturates slow connections before the first one can start.
- * With `preload="metadata"` a video costs a few KB until it approaches the
- * viewport. The observer re-arms on `astro:page-load`, which keeps playback
- * working across Astro ClientRouter DOM swaps.
+ * Use it instead of an animated GIF: same silent autoplaying loop, a fraction
+ * of the bytes, and no player chrome — the loop can't be paused, exactly like
+ * a GIF. Playback is driven by an IntersectionObserver rather than a native
+ * `autoplay` attribute: `autoplay` forces the browser to download every video
+ * in full at page load, so a page with several demos saturates slow
+ * connections before the first one can start. With `preload="metadata"` a
+ * video costs a few KB until it approaches the viewport. The observer re-arms
+ * on `astro:page-load`, which keeps playback working across Astro ClientRouter
+ * DOM swaps.
  *
  * Videos live in src/assets/shared/video/. Resolution is by filename, so the id
  * needs no path: <DocVideo id="ai-editor-restyle.mp4" alt="..." />
@@ -94,20 +95,16 @@ const numericWidth = parseInt(width.replace('px', ''), 10) || 700;
   .doc-video {
     background: var(--bg-secondary, #f8fafc);
   }
-
-  /* Autoplaying loops have no controls, so the whole frame is the play/pause target. */
-  .doc-video[data-autoplay] {
-    cursor: pointer;
-  }
 </style>
 
 <script>
   // Playback is viewport-driven: each loop starts when it scrolls near the
-  // viewport and pauses when it leaves, so a page full of demos downloads one
-  // video's bytes at a time instead of all of them at page load. This module
-  // runs once per visit; `astro:page-load` re-arms it after every ClientRouter
-  // DOM swap, and the observer is rebuilt each time so it never watches
-  // elements from a previous page.
+  // viewport and pauses when it leaves (resuming on re-entry), so a page full
+  // of demos downloads one video's bytes at a time instead of all of them at
+  // page load. There is deliberately no user-facing pause — the loop behaves
+  // like a GIF. This module runs once per visit; `astro:page-load` re-arms it
+  // after every ClientRouter DOM swap, and the observer is rebuilt each time
+  // so it never watches elements from a previous page.
   let observer: IntersectionObserver | undefined;
 
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -116,7 +113,7 @@ const numericWidth = parseInt(width.replace('px', ''), 10) || 700;
     entries.forEach(entry => {
       const video = entry.target as HTMLVideoElement;
       if (entry.isIntersecting) {
-        if (!video.dataset.userPaused) void video.play().catch(() => undefined);
+        void video.play().catch(() => undefined);
       } else {
         video.pause();
       }
@@ -134,25 +131,6 @@ const numericWidth = parseInt(width.replace('px', ''), 10) || 700;
     });
   };
 
-  // Click anywhere on a controls-less loop to pause or resume it. A manual
-  // pause sticks: the observer won't restart the video when it re-enters the
-  // viewport.
-  const bindToggle = () => {
-    document.querySelectorAll<HTMLVideoElement>('video.doc-video[data-autoplay]').forEach(video => {
-      if (video.controls || video.dataset.docVideoBound) return;
-      video.dataset.docVideoBound = 'true';
-      video.addEventListener('click', () => {
-        if (video.paused) {
-          delete video.dataset.userPaused;
-          void video.play().catch(() => undefined);
-        } else {
-          video.dataset.userPaused = 'true';
-          video.pause();
-        }
-      });
-    });
-  };
-
   const observeLoops = () => {
     observer?.disconnect();
     if (reducedMotion()) return;
@@ -165,7 +143,6 @@ const numericWidth = parseInt(width.replace('px', ''), 10) || 700;
 
   const init = () => {
     applyReducedMotion();
-    bindToggle();
     observeLoops();
   };
 
