@@ -121,7 +121,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
 | ua-tiktok | — | marketer, analyst | 9 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 1 | tutorial |
-| user-acquisition | — | marketer, analyst | 6 | tutorial |
+| user-acquisition | — | marketer, analyst | 7 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
