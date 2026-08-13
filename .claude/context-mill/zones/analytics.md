@@ -158,9 +158,9 @@ here unchanged and are not restated.
 | active-trials | — | analyst | 3 | tutorial |
 | analytics | entry | analyst | 11 | tutorial |
 | analytics-cohorts | — | analyst | 10 | tutorial |
-| analytics-conversion | — | analyst | 17 | tutorial |
+| analytics-conversion | — | analyst | 22 | tutorial |
 | analytics-funnels | — | analyst | 7 | tutorial |
-| analytics-retention | — | analyst | 4 | tutorial |
+| analytics-retention | — | analyst | 5 | tutorial |
 | arppu | — | analyst | 5 | tutorial |
 | arpu | — | analyst | 5 | tutorial |
 | arr | — | analyst | 6 | tutorial |
@@ -171,7 +171,7 @@ here unchanged and are not restated.
 | charts | entry | analyst | 3 | tutorial |
 | churned-expired-subscriptions | — | analyst | 3 | tutorial |
 | controls-filters-grouping-compare-proceeds | — | analyst | 8 | tutorial |
-| discrepancies-and-troubleshooting | — | analyst | 18 | tutorial |
+| discrepancies-and-troubleshooting | — | analyst | 19 | tutorial |
 | expired-churned-trials | — | analyst | 3 | tutorial |
 | grace-period | — | analyst | 3 | tutorial |
 | grace-period-converted | — | analyst | 4 | tutorial |

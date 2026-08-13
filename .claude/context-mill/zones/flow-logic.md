@@ -98,6 +98,7 @@ or developer can see and click.
 | fallback-flows | — | marketer, dev | 4 | tutorial |
 | flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
+| flow-common-issues | reference | marketer, dev | 3 | tutorial |
 | flow-metrics | — | marketer, dev | 24 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
 | onboarding-actions | — | marketer, dev | 21 | tutorial |
@@ -162,16 +163,31 @@ or developer can see and click.
   in git history: commit `660fd74dd` ("New videos + YouTube playlist callout") touched all five in one
   pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow Builder
   narrative, its embedded videos, or its "what you can build" list ripples across this whole cluster.
-- **`builder-save-publish#troubleshooting` is the single canonical list of "blocks previewing and
-  publishing" conditions, and it is under-linked from where those conditions actually originate.**
-  Six separate `:::important` callouts across `onboarding-actions.mdx` (Show/Hide, Show alert, Set
-  variable, Purchase, Custom action, incomplete conditional rule) and two more in `paywall-product-block`
-  (unassigned product element/group) and one in `customize-flow-with-remote-config` (invalid JSON) all
-  point back to this one section — and the reusable `<FlowBuildErrors/>` snippet is imported by both
-  `builder-save-publish.mdx` and `paywall-device-compatibility-preview.mdx`. Adding a new
-  publish-blocking condition anywhere in the builder needs a new callout at its source article *and* an
-  entry in `FlowBuildErrors` — co-change mining alone would likely miss this (it's a shared-reusable
-  pattern, not a same-commit pattern), which is exactly the kind of rule the read-through was for.
+- **`flow-common-issues#a-flow-wont-preview-or-publish` is the single canonical list of "blocks
+  previewing and publishing" conditions.** Adding a new publish-blocking condition anywhere in the
+  builder needs a new callout at its source article *and* an entry in that section — co-change mining
+  alone would likely miss this, which is exactly the kind of rule the read-through was for.
+
+  **Moved 2026-08-13** (this branch): the list used to live at `builder-save-publish#troubleshooting`,
+  rendered from the reusable `<FlowBuildErrors/>` in both `builder-save-publish.mdx` and
+  `paywall-device-compatibility-preview.mdx`. It now lives inline on the new `flow-common-issues`
+  article, both former hosts carry a cross-link instead, and all 13 inbound links were repointed.
+  `FlowBuildErrors.mdx` is deliberately **left on disk but unreferenced from English** — seven
+  `src/locales/*` copies of the two former hosts still import it, and deleting it would break their
+  build until the translation workflow regenerates them. It joins 12 other already-orphaned reusables
+  (`for f in src/components/reusable/*; do grep -rl "reusable/$(basename $f)" src/content/docs src/components; done`),
+  so the orphan is normal here rather than a defect. Delete it once the locale copies regenerate.
+
+  **The previous version of this rule undercounted the inbound links** — it named 9 across 3 articles
+  (six callouts in `onboarding-actions`, two in `paywall-product-block`, one in
+  `customize-flow-with-remote-config`). `grep -rn "builder-save-publish#troubleshooting\|builder-save-publish#publish-a-flow" src/content/docs/`
+  returned **13 across 5**. The three it missed: `onboarding-actions.mdx` actually had **eight**, not
+  six (the brief's list omits the **Select product** callout at line 188 and the "see the full list"
+  summary at line 300); `onboarding-text.mdx:163` (empty **Open URL** action) was not mentioned at all;
+  and `paywall-layout-and-products.mdx:53` (a deleted screen orphaning its **Navigate to Screen**
+  action) pointed at `#publish-a-flow` — the publish *instructions*, not the error list — so a grep for
+  `#troubleshooting` alone would never have found it. When re-auditing this rule, grep for the article
+  id without an anchor.
 - **`paywall-product-block` ("Set up purchases") is the canon for two duplicated micro-recipes, not just
   a cross-link target.** The "add a purchase button: On tap → Purchase → `products.selectedProduct`"
   steps are re-explained near-verbatim (not just linked) in `basic-paywall-screen`, `paywall-with-tabs`,
@@ -233,12 +249,14 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "hide an element for some users", "show only if the user is on trial", "progress bar", "step indicator", "spinner while the answer is processed" | Element-shaped tickets that are really behaviour: a state-based rule is `onboarding-element-visibility` (which also settles precedence against a Show/Hide *action* in `onboarding-actions`); progress/loading elements are `builder-loaders-and-progress-bars` because they are driven by flow state. Neither is `flow-design`. |
 | "price renders empty", "trial price missing for some users", "localized price in body text", "variable name with dots" | `onboarding-variables`. The usual cause is not a typo: offer variables resolve to empty for users who aren't eligible for that offer, so the text needs a fallback. |
 | "monthly/yearly toggle", "segmented control", "highlight one plan and hide the rest", "slide-up plan picker", "features per tier", "crossed-out price", "percent-off badge" | The recipes, chosen by mechanic rather than by look: `paywall-with-tabs` (multiple product groups on one screen), `show-plans-bottom-sheet` (Show/Hide action), `paywall-features-per-product` (condition on the selected product), `strikethrough-price` (product-variable binding). `flow-builder-recipes` is the index if the ticket is vague, and every one of them assumes the base screen from `basic-paywall-screen` already exists. |
-| "push the change to users", "does saving make it live", "draft vs published", "flow status", "publish blocked/publish error", "swap a font without breaking older app builds" | `builder-save-publish` — saving is not publishing, the "Flow status" table decodes the Flows-page column, and `#troubleshooting` (shared `FlowBuildErrors` reusable) is the canonical block list. Font/asset availability is an app-version compatibility constraint documented here and in `paywall-builder-templates`, not a typography question for `flow-design`: custom fonts do **not** ship with the flow, so changing one on a published flow means duplicating it and targeting the copy at app versions that bundle the file. |
+| "push the change to users", "does saving make it live", "draft vs published", "flow status", "publish blocked/publish error", "swap a font without breaking older app builds" | `builder-save-publish` — saving is not publishing, and the "Flow status" table decodes the Flows-page column. **The canonical block list moved to `flow-common-issues` on 2026-08-13** (see Ripple rules); `builder-save-publish#troubleshooting` survives as a cross-link, so route a "publish blocked" ticket to `flow-common-issues` directly. Font/asset availability is an app-version compatibility constraint documented here and in `paywall-builder-templates`, not a typography question for `flow-design`: custom fonts do **not** ship with the flow, so changing one on a published flow means duplicating it and targeting the copy at app versions that bundle the file. |
 | "test on device", "QR code", "prices are wrong in the preview", "iPad view", "check it before publishing" | `paywall-device-compatibility-preview`. Preview and Test-on-device can't reach the stores, so displayed prices aren't real — expected, not a bug. `migrate-to-flows` carries a near-duplicate of the same caveat. |
 | "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "where users drop off", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (there is no registered metrics spec; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
 | "change copy without an app release", "hard-paywall flag", "server-driven values", "per-locale JSON" | `customize-flow-with-remote-config` for authoring the JSON. Reading it at runtime (`remoteConfig` dictionary vs `jsonString`, `remoteConfigs` on the flow) is `sdk-flows-manual` — a different zone from the one that renders the flow. |
 | "flow won't load without internet", "offline flow", "fallback file was generated for another SDK version" | `fallback-flows` for downloading and scoping the file; wiring it into app code is `sdk-flows-display`'s fallback family. The SDK-version stamp on the file is the usual cause of "the fallback loads but looks wrong". |
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
+| "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
+| "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
 
 ## Gaps and misses
 
@@ -258,6 +276,15 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 - Five articles re-explain the purchase-button wiring steps instead of linking to `paywall-product-block`
   for them (see "Ripple rules"). Worth a deliberate editorial pass to replace duplication with links, but
   that's a content decision for the owner, not something this brief should decide unilaterally.
+- **`flow-common-issues` (added 2026-08-13) is the zone's troubleshooting page, and nothing links into it
+  except the two former hosts of the publish-blocker list.** Its other sections have no inbound links at
+  all, so a reader configuring the thing that breaks won't find the entry: the natural sources are
+  `onboarding-actions#set-variable` for the Select-product case and `flow-design`'s `custom-media` for the
+  upload case. Deliberately deferred by the owner while cases are still being added — do a single
+  discovery pass once the page settles, rather than a callout per case.
+- **Tooling note:** `mill:assign` rejects `--role=troubleshooting`; the valid set is `entry`, `how-to`,
+  `reference`, `conceptual`, `migration`, `legacy-orphan` (`scripts/context-mill/zones.mjs:8`), so this
+  article is filed as `reference`.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
