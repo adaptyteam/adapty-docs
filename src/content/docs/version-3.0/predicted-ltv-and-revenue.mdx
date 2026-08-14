@@ -15,37 +15,48 @@ Adapty Predictions are designed to help you answer the following questions:
 
 With Adapty Predictions, you can make data-driven decisions about revenue and growth.
 
-Adapty's prediction model estimates the long-term revenue potential of your app's user cohorts. For each cohort, it projects how revenue, the number of paying subscribers, and average LTV will evolve over time. This helps you make informed decisions about user acquisition, marketing strategies, and product development.
+Adapty's prediction model estimates the long-term revenue potential of your app's user cohorts. For each cohort, it projects how revenue, the number of paying users, and average LTV will evolve over time. This helps you make informed decisions about user acquisition, marketing strategies, and product development.
 
-Adapty offers predicted lifetime value (LTV) and predicted revenue for cohorts of paying subscribers. Predictions are displayed on the cohort analysis page for 3, 6, 9, 12, 18, and 24 months after cohort creation.
+Adapty offers predicted lifetime value (LTV) and predicted revenue for cohorts of paying users. Predictions are displayed on the cohort analysis page for 3, 6, 9, 12, 18, and 24 months after cohort creation.
 
 For apps with very limited history, the model falls back to cross-app averages, so predictions for newer apps may not fully reflect their specific user behavior.
 
 ## How the model works
 
-Adapty's prediction model uses retention patterns from historical cohort data to project future revenue and LTV.
+Adapty's prediction model uses growth patterns from historical cohort data to project future revenue and LTV.
 
-For each combination of app and subscription type, the model measures how paying subscribers and total revenue change from one renewal period to the next. It calculates two retention rates — one for subscribers, one for revenue — based on the app's past cohorts. These rates are then applied to new cohorts to project their growth over 3, 6, 9, 12, 18, and 24 months after cohort creation. The data used is completely anonymized.
+For each combination of app and product type, the model measures how a cohort's cumulative revenue and cumulative number of paying users grow between fixed points in the cohort's life, counted in days from the day the cohort started. The intervals between those points are short while a cohort is young and get longer as it ages — days at first, then months, then quarters. Adapty measures a pair of growth coefficients for each interval: one for revenue, one for paying users.
+
+To project a cohort, Adapty takes the last of those points the cohort has reached and chains the coefficients forward from there to the day that matches the horizon you selected — day 90 for the 3-month prediction, day 365 for the 12-month one, up to day 730 for 24 months. The data used is completely anonymized.
+
+Coefficients are measured separately per product type: weekly, monthly, 2-month, 3-month, 6-month, and annual subscriptions, plus lifetime and one-time purchases. A cohort's prediction is the sum of the projections for every product type its users bought.
 
 The model produces two values for each cohort:
 
 - **Predicted revenue**: The total revenue a cohort is projected to generate within the selected horizon.
-- **Predicted LTV**: The predicted revenue divided by the predicted number of paying subscribers in the cohort.
+- **Predicted LTV**: The predicted revenue divided by the predicted number of paying users in the cohort.
 
-### App-specific and cross-app weights
+### App-specific and cross-app coefficients
 
-By default, predictions for a cohort use retention weights learned from that app's own historical cohorts, reflecting its specific user behavior.
+By default, a cohort's prediction uses coefficients learned from that app's own past cohorts of the same product type, reflecting its specific user behavior. An app gets its own coefficients for a product type once it has at least two cohorts large enough to measure.
 
-When an app doesn't have enough history for a particular prediction horizon, Adapty falls back to retention weights averaged across all apps of the same subscription type. For example, a 12-month projection for an app that's only six months old uses the cross-app fallback. This fallback is applied independently per horizon, so the same cohort can use the app's own weights for the 3-month prediction and cross-app weights for the 12-month prediction.
+The two sources mix inside a single prediction: where the app's own history doesn't cover an interval, Adapty fills that step with coefficients averaged across all apps selling that product type. So a young app can project its first weeks from its own data and the rest of the year from cross-app averages.
 
 ### Availability and updates
 
-Predictions become available after a cohort completes its first renewal period — typically one week after creation for weekly subscriptions and about four weeks for monthly subscriptions. After that, predictions are updated daily using the latest transactional data, so they stay current with the cohort's behavior.
+Predictions are built for weekly and monthly cohorts only. With the **Cohort length** control set to day, quarter, or year, the prediction columns stay empty.
+
+For weekly and monthly cohorts, availability depends on how long the cohort has existed, not on which products its users bought. A cohort gets its first prediction once both of these are true:
+
+- Its install period has fully elapsed — a week after the cohort starts for a weekly cohort length, a month for a monthly one. Until then the cohort is still collecting installs, and its curve is still filling up.
+- It is older than your app's typical trial length plus about a week. A cohort's revenue only starts landing once its first trials convert, so the longer your trial, the later predictions appear.
+
+After that, predictions are recalculated daily from the latest transaction data, so they stay current with the cohort's behavior.
 
 ### Limitations
 
-- **Data quality**: Unusual cohort behavior or cohorts with very few paying subscribers reduce accuracy. Cohorts with fewer than 30 paying subscribers are excluded from the model's training data.
-- **New apps**: Apps without sufficient history use cross-app fallback weights, which may not reflect the app's specific user behavior.
+- **Data quality**: Unusual cohort behavior or a small number of paying users reduces accuracy. Cohorts with fewer than 30 paying users get no prediction, and they're excluded from the model's training data.
+- **New apps**: Apps without sufficient history use cross-app coefficients, which may not reflect the app's specific user behavior.
 - **Cohort age**: Predictions for a given horizon are hidden once the cohort exceeds that horizon. For example, 3-month predictions stop showing after three months, and no predictions are shown for cohorts older than 24 months.
 
 ## In the Dashboard
@@ -64,7 +75,7 @@ To view predictions, navigate to the Cohort analysis page in your Adapty dashboa
 />
 </Zoom>
 
-The **Predicted revenue** column shows the estimated total revenue a cohort of subscribers is expected to generate during the selected time frame after cohort creation. This value is calculated using Adapty's prediction model, based on the app's historical cohort retention patterns.
+The **Predicted revenue** column shows the estimated total revenue a cohort of paying users is expected to generate during the selected time frame after cohort creation. This value is calculated using Adapty's prediction model, based on the app's historical cohort growth patterns.
 
 The **Predicted LTV** column shows the estimated lifetime value of each user in the selected cohort. This value is calculated by dividing the predicted revenue by the predicted number of paying users in the cohort.
 
@@ -92,8 +103,10 @@ You can filter predicted revenue and LTV by product. By default, predictions are
 
 When a prediction can't be produced for a cohort, the Predicted Revenue and Predicted LTV columns show em-dashes (—) instead of values. This can happen for several reasons:
 
-- **Insufficient time since cohort creation**: Predictions become available only after the cohort completes its first renewal period — around one week for weekly subscriptions and about four weeks for monthly subscriptions.
-- **Small cohort size**: Too few paying subscribers to produce a reliable projection.
+- **Unsupported cohort length**: The **Cohort length** control is set to day, quarter, or year. Predictions are built for weekly and monthly cohorts only.
+- **Unsupported filter or comparison**: The table is filtered by placement, audience, paywall, or A/B test, or a comparison period is turned on. Filters by product, product duration, country, store, and attribution data keep predictions.
+- **Insufficient time since cohort creation**: The cohort's install period hasn't fully elapsed yet, or the cohort is younger than your app's typical trial length. See [Availability and updates](#availability-and-updates).
+- **Small cohort size**: Fewer than 30 paying users — too few to produce a reliable projection.
 - **Unusual cohort behavior**: The cohort deviates significantly from the patterns the model expects. Waiting a few weeks may resolve this as more data accumulates.
 - **Horizon exceeded**: The cohort is older than the selected prediction horizon. For example, the 3-month prediction is hidden after three months, the 12-month prediction after twelve months, and no predictions are shown for cohorts older than 24 months.
 
