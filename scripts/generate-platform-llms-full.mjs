@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
@@ -305,8 +306,13 @@ async function buildPlatformFullFiles(outputDir, sidebarFiles, reusableComponent
 
             const fullContent = await generatePlatformFullContent(platformName, sidebarData, reusableComponents, locale);
 
+            // Standalone per-platform file carries the note; the copy embedded
+            // in the combined llms-full.txt does not (its header already has it).
+            const noteAnchor = '\nThis file contains the complete content of all documentation pages for this platform.\n';
+            const standaloneContent = fullContent.replace(noteAnchor, `${noteAnchor}\n${LLM_SKILL_NOTE}\n`);
+
             const outputPath = path.join(outputDir, `${platformName}-llms-full.txt`);
-            await fs.writeFile(outputPath, fullContent);
+            await fs.writeFile(outputPath, standaloneContent);
             console.log(`✓ Generated ${path.relative(OUTPUT_DIR, outputPath)}`);
 
             allPlatformContents.push([platformName, fullContent]);
@@ -317,6 +323,7 @@ async function buildPlatformFullFiles(outputDir, sidebarFiles, reusableComponent
 
     let combinedFull = '# Adapty Documentation (Full Content)\n\n';
     combinedFull += '> Complete documentation content across all platforms.\n\n';
+    combinedFull += `${LLM_SKILL_NOTE}\n\n`;
     if (locale) combinedFull += `Locale: ${locale}\n\n`;
     combinedFull += `Generated on: ${new Date().toISOString()}\n\n---\n`;
     for (const [, content] of allPlatformContents) combinedFull += content;
