@@ -8,15 +8,15 @@ info:
 
     使用场景：
 
-    - 在 Adapty Mail 中尚无用户基础时添加订阅者。
-    - 复用其他应用的订阅者基础。
-    - 以您的后端作为数据来源，通过服务器到服务器的方式向 Adapty Mail 提供数据。
+    - 当您在 Adapty Mail 中尚无用户群时，添加订阅者。
+    - 复用其他应用中的订阅者群。
+    - 以您的后端作为数据源，以服务端对服务端的方式向 Adapty Mail 提供数据。
 
-    包含电子邮件的用户画像足以触发 **从未购买** 流程。其他所有流程
-    （取消续订、账单问题、已过期、已退款）均由购买历史驱动，因此这些
-    用户画像还需要交易事件才能被纳入正确的流程。
+    包含电子邮件地址的用户画像足以触发**从未购买**流程。其他所有流程
+    （续订已取消、账单问题、已过期、已退款）均由购买历史驱动，因此这些
+    用户画像还需要提供交易事件，才能进入正确的流程。
 
-    有关分步操作说明，请参阅 [通过 Adapty Mail API 发送电子邮件和交易数据](/docs/mail-send-data-via-api)。
+    如需分步操作指南，请参阅 [通过 Adapty Mail API 发送邮件和交易数据](/docs/mail-send-data-via-api)。
 servers:
   - url: https://api-mail.adapty.io
     description: 生产服务器
@@ -25,10 +25,10 @@ paths:
     post:
       summary: 保存用户画像
       description: |
-        在 Adapty Mail 中创建或更新用户画像。用户画像包含用户的电子邮件和属性，
+        在 Adapty Mail 中创建或更新用户画像。用户画像包含用户的电子邮件及属性，
         Adapty Mail 使用这些信息来识别收件人并构建[市场细分](/docs/mail-segments)。
 
-        通过稳定的 `external_profile_id` 标识每个用户。再次发送相同的 `external_profile_id`
+        请使用稳定的 `external_profile_id` 标识每位用户。再次发送相同的 `external_profile_id`
         将更新现有用户画像，而不会创建重复记录。
       operationId: saveProfile
       security:
@@ -41,17 +41,17 @@ paths:
               $ref: '#/components/schemas/ProfileDTO'
             examples:
               basic:
-                summary: 包含电子邮件、可用于"从未购买"流程的用户画像
+                summary: Profile with an email, ready for the "never purchased" flow
                 value:
-                  external_profile_id: "user_12345"
-                  external_created_at: "2026-06-01T10:30:00Z"
-                  email: "jane@example.com"
-                  country: "US"
+                  external_profile_id: user_12345
+                  external_created_at: '2026-06-01T10:30:00Z'
+                  email: jane@example.com
+                  country: US
                   custom_attributes:
-                    plan: "trial"
+                    plan: trial
       responses:
         '200':
-          description: 用户画像保存成功。响应体为空对象。
+          description: 用户画像保存成功。响应正文为空对象。
           content:
             application/json:
               schema:
@@ -60,7 +60,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: 验证失败——必填字段缺失或无效。`field_name` 指示出错的字段。
+          description: 验证失败——必填字段缺失或无效。`field_name` 字段指明了具体是哪个字段。
           content:
             application/json:
               schema:
@@ -69,12 +69,12 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "email"
+                        field_name: email
         '403':
-          description: 缺少或无效的密钥 API 密钥。
+          description: 缺少 Secret API 密钥或密钥无效。
           content:
             application/json:
               schema:
@@ -83,18 +83,89 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
+                        field_name: null
+  /api/v1/profile/delete/:
+    post:
+      summary: 删除用户画像
+      description: |
+        清除用户画像的个人数据并取消其已计划的邮件。用于履行数据删除权请求。
+
+        通过 `external_profile_id`、`customer_user_id` 和 `email` 的任意组合来识别用户画像——Adapty Mail 的解析方式与保存时相同。
+
+        删除操作不可逆。后续携带相同标识符的 [保存用户画像](#operation/saveProfile) 请求不会重新创建该用户画像。该请求具有幂等性：删除一个已被删除的用户画像会成功返回且不做任何更改。
+      operationId: deleteProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDeleteDTO'
+            examples:
+              byExternalProfileId:
+                summary: 通过保存用户画像时发送的标识符进行删除
+                value:
+                  external_profile_id: user_12345
+              byEmail:
+                summary: 通过电子邮件地址进行删除
+                value:
+                  email: jane@example.com
+      responses:
+        '204':
+          description: 用户画像已删除。响应无正文。
+        '400':
+          description: 未提供任何标识符。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: At least one of external_profile_id, customer_user_id or email must be provided
+                        error_code: missing_identifier
+                        status_code: 400
+                        field_name: null
+        '403':
+          description: 缺少或无效的 Secret API 密钥。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
+                        status_code: 403
+                        field_name: null
+        '404':
+          description: 未找到与您发送的标识符匹配的用户画像。
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Profile not found
+                        error_code: profile_not_found_error
+                        status_code: 404
                         field_name: null
   /api/v1/profile/transaction-event/save/:
     post:
       summary: 保存交易事件
       description: |
-        为用户画像记录一条商店交易事件。Adapty Mail 使用交易事件将用户画像纳入基于购买的流程——
-        `event_type` 对应取消续订、账单问题、已过期和已退款等流程——并用于收入归因。
+        为用户画像记录一条商店交易事件。Adapty Mail 使用交易事件将用户画像纳入基于购买行为的流程——`event_type` 对应续订已取消、账单问题、已过期和已退款等流程——同时用于收入归因。
 
-        在处理购买、续订和取消操作时发送这些事件。只有 **从未购买** 流程不需要交易事件即可运行。
+        请在处理购买、续订和取消操作时发送这些事件。只有**从未购买**流程无需事件即可运行。
       operationId: saveTransactionEvent
       security:
         - apikeyAuth: []
@@ -106,23 +177,23 @@ paths:
               $ref: '#/components/schemas/TransactionEventDTO'
             examples:
               basic:
-                summary: 一次新的月度订阅购买
+                summary: A new monthly subscription purchase
                 value:
-                  event_type: "subscription_started"
-                  event_id: "evt_abc123"
-                  event_datetime: "2026-06-10T14:20:05Z"
-                  external_profile_id: "user_12345"
-                  store: "app_store"
-                  store_product_id: "premium_monthly"
-                  store_transaction_id: "1000000123456789"
-                  store_original_transaction_id: "1000000123456789"
-                  purchased_at: "2026-06-10T14:20:00Z"
-                  originally_purchased_at: "2026-06-10T14:20:00Z"
-                  price_usd: "9.99"
-                  expires_at: "2026-07-10T14:20:00Z"
+                  event_type: subscription_started
+                  event_id: evt_abc123
+                  event_datetime: '2026-06-10T14:20:05Z'
+                  external_profile_id: user_12345
+                  store: app_store
+                  store_product_id: premium_monthly
+                  store_transaction_id: '1000000123456789'
+                  store_original_transaction_id: '1000000123456789'
+                  purchased_at: '2026-06-10T14:20:00Z'
+                  originally_purchased_at: '2026-06-10T14:20:00Z'
+                  price_usd: '9.99'
+                  expires_at: '2026-07-10T14:20:00Z'
       responses:
         '200':
-          description: 交易事件保存成功。响应体为空对象。
+          description: 交易事件已成功保存。响应体为空对象。
           content:
             application/json:
               schema:
@@ -131,7 +202,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: 验证失败——必填字段缺失或无效。`field_name` 指示出错的字段。
+          description: 验证失败——必填字段缺失或无效。`field_name` 指示具体字段。
           content:
             application/json:
               schema:
@@ -140,12 +211,12 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "event_type"
+                        field_name: event_type
         '403':
-          description: 缺少或无效的密钥 API 密钥。
+          description: 密钥 API key 缺失或无效。
           content:
             application/json:
               schema:
@@ -154,8 +225,8 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
                         field_name: null
 components:
@@ -165,11 +236,11 @@ components:
       in: header
       name: Authorization
       description: |
-        使用您的 Adapty Mail 密钥 API 密钥对每个请求进行身份验证，将其作为 **Authorization**
-        请求头发送，值格式为 `Bearer {your_secret_api_key}`，例如 `Bearer secret_live_...`。
+        使用您的 Adapty Mail 密钥对每个请求进行身份验证，将其作为 **Authorization** 请求头发送，
+        值格式为 `Bearer {your_secret_api_key}`，例如 `Bearer secret_live_...`。
 
-        在 Adapty Mail 的 **Settings** 中找到此密钥。该密钥与项目绑定——它标识数据所属的
-        项目，因此用户画像和交易端点无需传入项目 ID。
+        在 Adapty Mail 的**设置**中找到该密钥。该密钥与项目绑定——它标识数据所属的项目，
+        因此用户画像和交易相关接口无需传入项目 ID。
   schemas:
     ProfileDTO:
       type: object
@@ -181,9 +252,8 @@ components:
         external_profile_id:
           type: string
           description: |
-            由您的应用或后端持有的用户稳定标识符。在多次请求中复用相同的值，
-            以便 Adapty Mail 将电子邮件、点击和购买关联到同一用户画像。
-            切勿使用匿名或按安装生成的标识符。
+            用户的稳定标识符，由您的应用或后端持有。在所有请求中复用相同的值，
+            以便 Adapty Mail 将电子邮件、点击和购买关联到同一个用户画像。请勿使用匿名标识符或按安装生成的标识符。
         external_created_at:
           type: string
           format: date-time
@@ -193,7 +263,16 @@ components:
         email:
           type: string
           format: email
-          description: 用户的电子邮件地址。Adapty Mail 将营销邮件投递至此地址。
+          description: |
+            用户的电子邮件地址。Adapty Mail 将营销活动投递至该地址。
+
+            该地址为一次性写入：在用户画像创建时设置，后续保存不会覆盖。
+        customer_user_id:
+          type: string
+          description: |
+            用户在您自有系统中的标识符（如果 Adapty 也能识别该标识符）。Adapty Mail
+            使用它来识别同时通过 Adapty SDK 触达的用户，从而使两个来源共享同一个用户画像，
+            而不是产生重复记录并向同一用户发送两封邮件。
         first_name:
           type: string
           description: 用户的名字。
@@ -212,14 +291,37 @@ components:
           description: 用户所在国家/地区，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
         store_country:
           type: string
-          description: 用户的商店地区，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
+          description: 用户的商店区域，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
         custom_attributes:
           type: object
           description: |
-            附加到用户画像的任意键值对（字符串或数字类型的值）。可用于构建
-            [市场细分](/docs/mail-segments)——例如 `plan`、`signup_source` 或 `trial_days`。
+            附加到用户画像的任意键值对（字符串或数字类型的值）。可用于构建[市场细分](/docs/mail-segments)——
+            例如 `plan`、`signup_source` 或 `trial_days`。
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
+    ProfileDeleteDTO:
+      type: object
+      description: |
+        要删除的用户画像标识符。请至少提供 `external_profile_id`、
+        `customer_user_id` 或 `email` 之一。
+      anyOf:
+        - required:
+            - external_profile_id
+        - required:
+            - customer_user_id
+        - required:
+            - email
+      properties:
+        external_profile_id:
+          type: string
+          description: 保存用户画像时您所发送的标识符。
+        customer_user_id:
+          type: string
+          description: 用户在您自有系统中的标识符。
+        email:
+          type: string
+          format: email
+          description: 用户画像中的电子邮件地址。
     DeviceInfoDTO:
       type: object
       required:
@@ -227,7 +329,7 @@ components:
       properties:
         platform:
           type: string
-          description: 用户所使用的平台，例如 `iOS` 或 `Android`。
+          description: 用户所在的平台，例如 `iOS` 或 `Android`。
         device:
           type: string
           description: 设备型号，例如 `iPhone15,2`。
@@ -261,41 +363,53 @@ components:
           $ref: '#/components/schemas/TransactionEventType'
         event_id:
           type: string
-          description: 由您的系统持有的此事件唯一标识符。用于保证事件的幂等性。
+          description: 此事件的唯一标识符，由您的系统管理。用于确保事件的幂等性。
         event_datetime:
           type: string
           format: date-time
           description: 事件的记录时间，采用 ISO 8601 格式。
         external_profile_id:
           type: string
-          description: 与保存用户画像时相同的稳定 `external_profile_id`。用于将交易关联到对应的用户画像。
+          description: |
+            与保存用户画像时所使用的 `external_profile_id` 相同的稳定标识符。用于将交易与正确的用户画像关联。
+
+            您可以在用户画像存在之前发送交易。Adapty Mail 会将该事件以未关联状态存储，并在下一次携带相同标识符的保存操作时将其与用户画像关联。
+        customer_user_id:
+          type: string
+          description: |
+            用户在您自己系统中的标识符。当 `external_profile_id` 无法匹配用户画像时，Adapty Mail 将使用此字段查找对应的用户画像。该字段不会存储在事件上。
+        email:
+          type: string
+          format: email
+          description: |
+            买家的电子邮件地址。当两个标识符均无法匹配用户画像时，Adapty Mail 将使用此字段查找对应的用户画像。该字段不会存储在事件上。
         store:
           type: string
           description: 交易来源的商店，例如 `app_store`、`play_store` 或 `stripe`。
         store_product_id:
           type: string
-          description: 商店中已购产品的标识符。
+          description: 所购产品在商店中的标识符。
         store_transaction_id:
           type: string
           description: 此交易在商店中的标识符。
         store_original_transaction_id:
           type: string
-          description: 订阅链中首次交易的标识符。对于首次购买，此值与 `store_transaction_id` 相同。
+          description: 订阅链中第一笔交易的标识符。对于首次购买，此值与 `store_transaction_id` 相同。
         purchased_at:
           type: string
           format: date-time
-          description: 此交易的发生时间，采用 ISO 8601 格式。
+          description: 此交易发生的时间，采用 ISO 8601 格式。
         originally_purchased_at:
           type: string
           format: date-time
           description: 订阅首次购买的时间，采用 ISO 8601 格式。
         price_usd:
           type: string
-          description: 交易金额（以美元计），采用十进制字符串格式（例如 `"9.99"`）。
+          description: 交易金额（以美元计），以十进制字符串表示（例如 `"9.99"`）。
         expires_at:
           type: string
           format: date-time
-          description: 订阅到期或已到期的时间，采用 ISO 8601 格式。非订阅类购买请忽略此字段。
+          description: 订阅的到期时间或已到期时间，采用 ISO 8601 格式。一次性购买无需填写此字段。
         offer:
           $ref: '#/components/schemas/Offer'
     TransactionEventType:
@@ -314,7 +428,7 @@ components:
         - non_subscription_purchase_refunded
     Offer:
       type: object
-      description: 适用于此交易的促销活动或新用户优惠的详细信息。
+      description: 应用于交易的促销活动或新用户优惠的详细信息。
       required:
         - category
         - offer_type
@@ -325,7 +439,7 @@ components:
           $ref: '#/components/schemas/OfferType'
         offer_id:
           type: string
-          description: 商店中该优惠的标识符（如有）。
+          description: 商店中优惠的标识符（如有）。
     OfferCategory:
       type: string
       enum:
@@ -341,7 +455,7 @@ components:
         - pay_up_front
     Errors:
       type: object
-      description: 标准错误响应。每次失败均返回包含此结构的 4XX 状态码。
+      description: 标准错误响应。每次失败都会返回一个包含此结构的 4XX 状态。
       properties:
         errors:
           type: array
@@ -350,13 +464,13 @@ components:
             properties:
               message:
                 type: string
-                description: 错误的可读描述。
+                description: 人类可读的错误描述。
               error_code:
                 type: string
                 description: 机器可读的错误标识符。
               status_code:
                 type: integer
-                description: 此错误对应的 HTTP 状态码。
+                description: 此错误的 HTTP 状态码。
               field_name:
                 type: string
-                description: 导致错误的请求字段，若错误与特定字段无关则为 `null`。
+                description: 导致错误的请求字段，如果错误与字段无关则为 `null`。

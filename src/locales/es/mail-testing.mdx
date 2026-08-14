@@ -1,0 +1,82 @@
+---
+title: "Prueba tu flow de Adapty Mail"
+description: "Haz pasar a un usuario de prueba por Adapty Mail para confirmar que los emails se envían, el checkout procesa el pago y el acceso llega a tu app."
+metadataTitle: "Prueba tu flow | Adapty Mail | Documentación de Adapty"
+---
+
+Antes de lanzar una campaña a usuarios reales, haz pasar a un usuario de prueba por toda la cadena: la dirección de email llega a Adapty Mail, la campaña se envía, el destinatario hace clic hasta el checkout, el pago se completa y tu app concede el acceso.
+
+Tienes dos formas de probar. La cadena en vivo ejercita la automatización y te cuesta un pago real que reembolsas después. Un envío de prueba omite la automatización y te permite pagar con una tarjeta de prueba de Stripe. Ejecuta la cadena en vivo al menos una vez antes de lanzar.
+
+## Antes de empezar \{#before-you-start\}
+
+La cadena funciona de extremo a extremo solo cuando todo lo siguiente es verdad:
+
+- **Dominio de envío**: Tu dominio está verificado en **Settings → Email Domains**. Consulta [Configura tu dominio de envío](mail-sending-domain).
+- **Checkout**: Tu paywall web está creado y publicado. Un paywall sin publicar devuelve un error cuando el CTA intenta abrirlo. Consulta [Configura el checkout](mail-checkout).
+- **Campaña vinculada a un flow**: Una campaña por sí sola queda en borrador y no envía nada. Vincúlala a una fila de un flow para activarla. Consulta [Crea un flow](mail-create-flow).
+- **Integración con Adapty**: La integración está habilitada en **Settings → Integrations** para que los eventos de suscripción lleguen a Adapty Mail.
+
+## Prueba la cadena en vivo \{#test-the-live-chain\}
+
+Esta ruta ejecuta tu campaña exactamente como la experimenta un usuario real, lo que significa que el CTA abre tu checkout de producción y el pago es real.
+
+1. **Acorta el primer retraso.** En el editor de la campaña, establece el campo **Delay** del primer correo en un minuto o dos, para no tener que esperar tu horario real. Restaura los retrasos después de la prueba.
+
+   <ZoomImage id="mail-campaign-email-delay.webp" width="600px" alt="El campo Delay del primer correo, configurado en 0 días, 0 horas y 1 minuto" />
+
+2. **Crea un usuario de prueba.** En tu app, regístrate con una dirección de correo electrónico que no tenga ningún perfil en el proyecto. Cada ejecución necesita una dirección nueva, ya que un perfil que ya haya pasado por la campaña no volverá a entrar en ella.
+
+3. **Espera el primer correo.** Adapty Mail programa el envío para el momento del trigger más el retraso que hayas configurado, y después recoge los correos pendientes una vez por minuto. La entrega añade unos minutos más.
+
+4. **Abre el correo y haz clic en el CTA.** Llegarás a tu checkout con la dirección de correo electrónico ya rellenada.
+
+5. **Completa el pago.** Paga con una tarjeta real y luego reembolsala en Stripe.
+
+## Prueba el correo y el checkout de forma independiente \{#test-the-email-and-checkout-on-their-own\}
+
+Para revisar el correo y el checkout sin esperar a la automatización, usa **Send test email** en el editor de campaña. El botón permanece desactivado hasta que tu dominio de envío esté verificado y la campaña tenga un paywall web seleccionado.
+
+El modal tiene dos configuraciones:
+
+- **Environment**: **Production** abre tu checkout real con productos reales. **Sandbox** abre la versión de prueba, donde la tarjeta de prueba de Stripe `4242 4242 4242 4242` funciona con cualquier fecha de vencimiento futura y cualquier CVC. Sandbox solo está disponible para un paywall generado con productos sandbox — un paywall que añadiste por URL muestra *"This paywall has no sandbox products, so only production is available."*
+- **Profile**: Opcional. Selecciona un perfil para enviar el correo a la dirección de ese perfil y rellenar el CTA con sus IDs. Déjalo vacío para enviarlo a la dirección de tu propia cuenta con un ID de perfil de marcador de posición.
+
+Un envío de prueba es un correo independiente, separado de la cadena en vivo. Confirma que el correo se renderiza correctamente y que el proceso de pago funciona, pero no te dice nada sobre si la automatización se activa. Para verificar la automatización, ejecuta [la cadena en vivo](#test-the-live-chain).
+
+<ZoomImage id="mail-send-test-email-modal.webp" width="600px" alt="Send test email modal with Sandbox unavailable and a profile selected" />
+
+## Confirmar el acceso en tu app \{#confirm-access-in-your-app\}
+
+Una vez procesado el pago, la suscripción llega al perfil de Adapty del usuario y tu app detecta el nivel de acceso.
+
+Adapty registra un pago sandbox como una transacción sandbox, así que asegúrate de que tu nivel de acceso acepta transacciones sandbox antes de tratar un nivel de acceso ausente como un error.
+
+## Leer el historial del journey \{#read-the-journey\}
+
+Para ver lo que Adapty Mail registró, ve a **Profiles**, abre tu perfil de prueba y consulta la línea de tiempo del **Journey**. Esta línea de tiempo etiqueta cada correo electrónico con indicadores que muestran hasta dónde llegó:
+
+| Chip | Significado |
+| --- | --- |
+| **Scheduled** | El email tiene una hora de envío y Adapty Mail aún no lo ha enviado. |
+| **Cancelled** | El email no se enviará. Una compra cancela todos los emails pendientes de la secuencia. |
+| **Sent** | Adapty Mail envió el email y aún no tiene confirmación de entrega. |
+| **Delivered** | El servidor de correo receptor aceptó el email. Este chip reemplaza **Sent**. |
+| **Opened** | Se cargó el píxel de seguimiento. |
+| **Clicked** | El destinatario hizo clic en un enlace. Despliega el email para ver qué enlaces se pulsaron y la compra que generaron. |
+| **Bounced** | La entrega falló. |
+| **Spam report** | El destinatario marcó el email como spam. |
+| **Unsubscribed** | El destinatario se dio de baja. Adapty Mail lo excluye de todas las campañas del proyecto; consulta [Cancelación de suscripción y supresión](mail-suppression). |
+
+Una prueba exitosa muestra el primer correo llegando a **Clicked**, la compra atribuida a él y el resto de la secuencia en **Cancelled**.
+
+:::note
+Las aperturas son cargas de píxeles, y Apple Mail Privacy Protection las precarga, por lo que ver un chip **Opened** que no generaste tú es normal. Consulta [Análisis de campañas](mail-analytics) para saber qué cuenta cada métrica.
+:::
+
+## Más información \{#learn-more\}
+
+- **[Crear una campaña](mail-create-campaign)**: Contenido del email, retrasos y duración de la secuencia.
+- **[Configurar el checkout](mail-checkout)**: Anatomía del checkout y cómo la personalización rellena el CTA.
+- **[Perfiles](mail-profiles)**: La vista completa del perfil detrás de la línea de tiempo del journey.
+- **[Cancelar suscripción y supresión](mail-suppression)**: Por qué un perfil deja de recibir emails.

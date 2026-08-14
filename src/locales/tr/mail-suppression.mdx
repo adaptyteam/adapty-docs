@@ -1,72 +1,72 @@
 ---
 title: "Adapty Mail'de abonelik iptali ve engelleme"
-description: "Adapty Mail'in kullanıcılara gönderimi nasıl durdurduğu — abonelik iptali, SES geri dönüşleri, şikayetler ve durdurma koşulu mekanizması."
+description: "Adapty Mail'in kullanıcılara mesaj göndermeyi durdurma yöntemleri — abonelik iptali, SES bounce'ları, şikayetler ve durdurma koşulu mekanizması."
 metadataTitle: "Abonelik İptali ve Engelleme | Adapty Mail | Adapty Dokümanları"
-keywords: ['adapty mail', 'engelleme', 'geri dönüş', 'şikayet', 'durdurma koşulu']
+keywords: ['adapty mail', 'engelleme', 'bounce', 'şikayet', 'durdurma koşulu']
 ---
 
-Adapty Mail, bir kullanıcıya gönderimi iki farklı koşulda durdurur:
+Adapty Mail, bir kullanıcıya mesaj göndermeyi iki farklı koşulda durdurur:
 
-- **Engelleme**: Kullanıcı, bu projedeki gelecekteki tüm gönderimlerden hariç tutulur (abonelik iptali, geri dönüş, şikayet, red veya kısıtlama).
-- **Durdurma koşulu**: Kullanıcı dönüşüm gerçekleştirdiğinde mevcut dizisi iptal edilir. Kullanıcı engellenmez ve diğer kampanyalar için uygun olmaya devam eder.
+- **Baskılama (Suppression)**: Kullanıcı bu projedeki tüm gelecek gönderimlerden dışlanır (abonelikten çıkmış, geri dönen, şikayet eden, reddedilen veya kısıtlanan).
+- **Durdurma koşulu (Stop condition)**: Kullanıcının mevcut dizisi, dönüşüm gerçekleştirdiği için iptal edilir. Kullanıcı baskılanmaz ve diğer kampanyalara hâlâ uygun kalır.
 
-Her iki mekanizma da proje bazında çalışır. Bir Adapty projesindeki engelleme, diğerini etkilemez.
+Her iki mekanizma da proje bazındadır. Bir Adapty projesindeki baskılama diğerini etkilemez.
 
-## Abonelik iptali \{#unsubscribe\}
+## Abonelikten Çıkma \{#unsubscribe\}
 
-Adapty Mail'in gönderdiği her e-postanın alt bilgisinde bir abonelik iptali bağlantısı bulunur.
+Adapty Mail'in gönderdiği her e-postanın alt bölümünde bir abonelikten çıkma bağlantısı bulunur.
 
 1. Kullanıcı bağlantıya tıklar. Adapty Mail bir onay sayfası açar.
-2. Kullanıcı onaylar. Arka uç, profili `suppression_reason = 'unsubscribe'` olarak işaretler, kalan diziyi iptal eder ve profili projedeki gelecekteki gönderimlerden hariç tutar.
+2. Kullanıcı onaylar. Arka uç, profili `suppression_reason = 'unsubscribe'` ile işaretler, kalan diziyi iptal eder ve profili projedeki gelecekteki gönderimlerin dışında bırakır.
 
-Abonelik iptali URL'sindeki token, `profile_id` ve `scheduled_email_id` bilgilerini içerir; bu nedenle giriş yapılması gerekmez.
+Abonelikten çıkma URL'sindeki token, `profile_id` ve `scheduled_email_id` bilgilerini kodladığından giriş yapılması gerekmez.
 
 :::note
-Adapty Mail ayrıca her e-postayla birlikte `List-Unsubscribe: <URL>, <mailto:>` başlığını ve `List-Unsubscribe-Post: List-Unsubscribe=One-Click` başlığını gönderir. Gmail ve Yahoo, toplu göndericiler için bunu zorunlu kılar (RFC 8058). Bu başlığı destekleyen istemciler, gelen kutusundan doğrudan tek tıkla abonelik iptali düğmesi sunar — onay sayfası gerekmez.
+Adapty Mail, `List-Unsubscribe: <URL>, <mailto:>` başlığını `List-Unsubscribe-Post: List-Unsubscribe=One-Click` ile birlikte gönderir. Gmail ve Yahoo, toplu göndericiler için bunu zorunlu kılar (RFC 8058). Bu başlığı destekleyen istemciler, gelen kutusunda doğrudan tek tıkla abonelikten çıkma butonu sunar — herhangi bir onay sayfası gösterilmez.
 :::
 
 ## Otomatik engelleme \{#automatic-suppression\}
 
-Adapty Mail, AWS SES teslimat olaylarını SNS aracılığıyla dinler ve aşağıdaki olaylardan herhangi birinde kullanıcıyı hemen engeller:
+Adapty Mail, AWS SES teslimat olaylarını SNS üzerinden dinler ve aşağıdaki durumların herhangi birinde kullanıcıyı anında engeller:
 
-| Olay       | Neden kodu  | Ne anlama gelir                                                                         |
-| ---------- | ----------- | --------------------------------------------------------------------------------------- |
-| Geri dönüş | `bounce`    | E-posta adresi geçersiz, posta kutusu dolu veya alan adı mevcut değil.                  |
-| Şikayet    | `complaint` | Kullanıcı e-postayı spam olarak işaretledi.                                             |
-| Red        | `reject`    | SES mesajı göndermeden önce reddetti.                                                   |
-| Kısıtlama  | `throttle`  | Gönderim hızı alan adı güvenlik limitlerini aştı.                                       |
+| Olay | Neden kodu | Ne anlama gelir |
+| --------- | ----------- | ------------------------------------------------------------------------------- |
+| Bounce | `bounce` | E-posta adresi geçersiz, posta kutusu dolu veya alan adı mevcut değil. |
+| Complaint | `complaint` | Kullanıcı e-postayı spam olarak işaretledi. |
+| Reject | `reject` | SES, mesajı göndermeden önce reddetti. |
+| Throttle | `throttle` | Gönderim hızı, alan adı güvenlik limitlerini aştı. |
 
-Her olay için sonuç aynıdır: kullanıcı engelleme listesine eklenir, kalan dizi iptal edilir ve kullanıcı projedeki gelecekteki gönderimlerden hariç tutulur.
+Her etkinlik için sonuç aynıdır: kullanıcı suppression listesine eklenir, kalan sıra iptal edilir ve gelecekteki proje gönderilerinden hariç tutulurlar.
 
 :::important
-Adapty Mail, kalıcı ve geçici geri dönüşleri **birbirinden ayırt etmez**. Dolu bir posta kutusu gibi geçici koşullar dahil her türlü geri dönüş, kullanıcıyı hemen engeller. Yeniden deneme penceresi yoktur.
+Adapty Mail, kalıcı ve geçici bounce'lar arasında **ayrım yapmaz**. Dolu bir posta kutusu gibi geçici durumlar da dahil olmak üzere herhangi bir bounce — kullanıcıyı anında bastırır. Yeniden deneme penceresi yoktur.
 :::
 
 ## Durdurma koşulu \{#stop-condition\}
 
-Bir kullanıcı dizinin ortasında dönüşüm gerçekleştirdiğinde, Adapty Mail kalan e-postalarını `stop_condition` nedeniyle iptal eder. Dönüşüm, kullanıcının abonelik durumunun **Subscribed** (Abone olundu) veya tek seferlik satın alma durumunun **Purchased** (Satın alındı) olarak güncellenmesi anlamına gelir.
+Bir kullanıcı sıra ortasında dönüşüm gerçekleştirdiğinde, Adapty Mail kalan e-postalarını `stop_condition` nedeniyle iptal eder. Dönüşüm, kullanıcının abonelik durumunun **Subscribed** (Abone) veya tek seferlik satın alma durumunun **Purchased** (Satın Alındı) seviyesine ulaşması anlamına gelir.
 
-Durdurma koşulu, engellemeden farklıdır:
+Durdurma koşulu, bastırmadan farklıdır:
 
-- **Engelleme**: Kullanıcıyı projedeki tüm gelecekteki gönderimlerden hariç tutar.
-- **Durdurma koşulu**: Yalnızca mevcut diziyi iptal eder. Kullanıcı diğer kampanyalar için uygun olmaya devam eder — örneğin aktif aboneleri hedefleyen bir yenileme veya geri kazanma flow'u.
+- **Bastırma**: Kullanıcıyı projedeki tüm gelecek gönderimlerden dışlar.
+- **Durdurma koşulu**: Yalnızca mevcut sırayı iptal eder. Kullanıcı diğer kampanyalara hâlâ uygun kalır — örneğin, aktif aboneleri hedefleyen bir yenileme veya geri kazanma teklifi flow'u.
 
-Durdurma koşulu iptalleri, kampanya analizlerinde engellemelerle birlikte görünür.
+Durdurma koşulundan kaynaklanan iptaller, kampanya analitiğinde bastırmalı gönderimlerle birlikte görünür.
 
-## Engellemeyi yönetme \{#managing-suppression\}
+## Bastırmayı yönetme \{#managing-suppression\}
 
-Adapty Mail'in engellenen kullanıcıları görüntülemek veya kaldırmak için kontrol paneli arayüzü yoktur. Bir profili engellemeden çıkarmak için — örneğin, yanlışlıkla bir test e-postasını spam olarak işaretleyen biri — Adapty destek ekibiyle iletişime geçin.
+Adapty Mail'in, bastırılmış kullanıcıları görüntülemek veya kaldırmak için bir kontrol paneli arayüzü yoktur. Bir profili bastırma listesinden çıkarmak için — örneğin test e-postasını yanlışlıkla spam olarak işaretleyen biri — Adapty destek ekibiyle iletişime geçin.
 
-## Adapty Mail'in uyumluluk açısından yönettiği konular \{#what-adapty-mail-handles-for-compliance\}
+## Adapty Mail'in uyumluluk konusundaki sorumlulukları \{#what-adapty-mail-handles-for-compliance\}
 
 Adapty Mail şunlarla birlikte gelir:
 
-- **Abonelik iptali bağlantısı**: Her e-postanın alt bilgisine eklenir, kullanıcı onayladıktan hemen sonra işleme alınır.
-- **List-Unsubscribe başlıkları**: Gelen kutusundan tek tıkla abonelik iptali için her e-postayla gönderilir (RFC 8058).
-- **Otomatik engelleme**: SES geri dönüşü, şikayet, red ve kısıtlama olaylarında tetiklenir.
+- **Abonelikten çıkma bağlantısı**: Her e-posta alt bilgisine eklenir, kullanıcı onayının hemen ardından işleme alınır.
+- **List-Unsubscribe başlıkları**: Gelen kutusundan tek tıkla abonelikten çıkma için her e-postayla gönderilir (RFC 8058).
+- **Otomatik engelleme**: SES geri dönme, şikayet, reddetme ve kısıtlama olaylarında tetiklenir.
 
-Sizin sorumluluğunuzda olan kısımlar:
+Sorumluluğunuzda olan kısımlar:
 
-- **Fiziksel posta adresi**: CAN-SPAM, e-postanın alt bilgisinde bir adres bulunmasını zorunlu kılar. Adapty Mail bunu otomatik eklemez — kampanya tasarımınıza kendiniz ekleyin.
-- **Açık katılım onayı**: Kullanıcının e-posta adresini Adapty'ye iletmeden önce bunu toplayın. Bkz. [Kullanıcı e-postalarını toplama](mail-collect-emails).
-- **GDPR silme talepleri**: Adapty Mail, "verilerimi sil" uç noktası sunmaz. Bir kullanıcı silme hakkını kullanırsa Adapty destek ekibiyle koordineli şekilde hareket edin.
+- **Fiziksel posta adresi**: CAN-SPAM, e-posta alt bilgisinde bir adres bulunmasını zorunlu kılar. Adapty Mail bunu otomatik olarak eklemez — kampanya tasarımınıza kendiniz ekleyin.
+- **Açık onay (opt-in)**: Bir kullanıcının e-posta adresini Adapty'e iletmeden önce onayını alın. Bkz. [Kullanıcı e-postalarını toplama](mail-collect-emails).
+- **GDPR silme talepleri**: Profilin tanımlayıcılarını Adapty Mail API'sindeki [Profili sil](api-mail/operations/deleteProfile) endpoint'ine gönderin. Adapty Mail, profilin kişisel verilerini siler ve zamanlanmış e-postalarını iptal eder. Silme işlemi kalıcıdır: aynı tanımlayıcılarla sonradan yapılan bir kayıt, profili yeniden oluşturmaz.

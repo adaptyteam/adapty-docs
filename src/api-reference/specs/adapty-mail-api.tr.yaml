@@ -3,34 +3,35 @@ info:
   title: Adapty Mail API
   version: 1.0.0
   description: |
-    Adapty Mail API, kullanıcı profillerini ve işlem olaylarını doğrudan sunucunuzdan Adapty Mail'e
-    göndermenizi sağlar; verilerin Adapty SDK üzerinden yönlendirilmesine gerek kalmaz.
+    Adapty Mail API, kullanıcı profillerini ve işlem olaylarını Adapty SDK üzerinden yönlendirmeden
+    doğrudan sunucunuzdan Adapty Mail'e göndermenizi sağlar.
 
     Kullanım alanları:
 
-    - Henüz Adapty Mail'de bir tabanınız yokken aboneler eklemek.
+    - Adapty Mail'de henüz bir tabanınız yokken aboneler eklemek.
     - Diğer uygulamalarınızdaki abone tabanını yeniden kullanmak.
-    - Adapty Mail'i sunucudan sunucuya beslemek; arka ucunuz gerçeğin kaynağı olarak kullanılır.
+    - Adapty Mail'i sunucudan sunucuya beslemek; arka ucunuzu gerçeğin kaynağı olarak kullanmak.
 
-    E-posta adresi olan bir profil, **hiç satın alma yapmamış** flow için yeterlidir. Diğer tüm flow'lar
-    (yenileme iptal edildi, ödeme sorunu, süresi doldu, iade edildi) satın alma geçmişiyle yürütülür;
-    bu nedenle söz konusu profillerin doğru flow'a yerleştirilebilmesi için işlem olaylarına da ihtiyacı vardır.
+    E-posta adresi olan bir profil, **hiç satın alma yapmamış** flow için yeterlidir. Diğer tüm
+    flow'lar (yenileme iptal edildi, ödeme sorunu, süresi doldu, iade edildi) satın alma geçmişiyle
+    yönlendirilir; bu nedenle bu profillerin doğru flow'a yerleştirilebilmesi için işlem olaylarına
+    da ihtiyacı vardır.
 
     Adım adım açıklama için bkz. [Adapty Mail API aracılığıyla e-posta ve işlem gönderme](/docs/mail-send-data-via-api).
 servers:
   - url: https://api-mail.adapty.io
-    description: Production server
+    description: Üretim sunucusu
 paths:
   /api/v1/profile/save/:
     post:
-      summary: Profil kaydet
+      summary: Profili kaydet
       description: |
-        Adapty Mail'de bir profil oluşturur veya günceller. Profil, Adapty Mail'in alıcıları tanımlamak
-        ve [segmentler](/docs/mail-segments) oluşturmak için kullandığı kullanıcı e-postasını ve
-        özelliklerini taşır.
+        Adapty Mail'de bir profil oluşturur veya günceller. Profil, kullanıcının e-posta adresini ve
+        Adapty Mail'in alıcıları tanımlamak ve [segmentler](/docs/mail-segments) oluşturmak için kullandığı
+        nitelikleri taşır.
 
-        Her kullanıcıyı kararlı bir `external_profile_id` ile tanımlayın. Aynı `external_profile_id`'yi
-        tekrar göndermek, yinelenen bir profil oluşturmak yerine mevcut profili günceller.
+        Her kullanıcıyı kalıcı bir `external_profile_id` ile tanımlayın. Aynı `external_profile_id`
+        tekrar gönderildiğinde yeni bir kayıt oluşturmak yerine mevcut profil güncellenir.
       operationId: saveProfile
       security:
         - apikeyAuth: []
@@ -42,14 +43,14 @@ paths:
               $ref: '#/components/schemas/ProfileDTO'
             examples:
               basic:
-                summary: E-posta adresi olan ve "hiç satın alma yapmamış" flow'a hazır profil
+                summary: Profile with an email, ready for the "never purchased" flow
                 value:
-                  external_profile_id: "user_12345"
-                  external_created_at: "2026-06-01T10:30:00Z"
-                  email: "jane@example.com"
-                  country: "US"
+                  external_profile_id: user_12345
+                  external_created_at: '2026-06-01T10:30:00Z'
+                  email: jane@example.com
+                  country: US
                   custom_attributes:
-                    plan: "trial"
+                    plan: trial
       responses:
         '200':
           description: Profil başarıyla kaydedildi. Yanıt gövdesi boş bir nesnedir.
@@ -61,7 +62,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: Doğrulama başarısız — gerekli bir alan eksik veya geçersiz. `field_name` hangi alanın sorunlu olduğunu gösterir.
+          description: Doğrulama başarısız — zorunlu bir alan eksik veya geçersiz. `field_name` hangi alanın hatalı olduğunu gösterir.
           content:
             application/json:
               schema:
@@ -70,10 +71,10 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "email"
+                        field_name: email
         '403':
           description: Gizli API anahtarı eksik veya geçersiz.
           content:
@@ -84,21 +85,97 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
+                        field_name: null
+  /api/v1/profile/delete/:
+    post:
+      summary: Profili sil
+      description: |
+        Bir profilin kişisel verilerini siler ve zamanlanmış e-postalarını iptal eder. Bunu
+        silinme hakkı taleplerini yerine getirmek için kullanın.
+
+        Profili `external_profile_id`, `customer_user_id` ve `email` alanlarının herhangi bir
+        kombinasyonuyla tanımlayın — Adapty Mail, profili kaydetmede yaptığı gibi çözümler.
+
+        Silme işlemi kalıcıdır. Aynı tanımlayıcıları taşıyan sonraki bir [Profili kaydet](#operation/saveProfile)
+        isteği profili yeniden oluşturmaz. İstek idempotent'tir: zaten silinmiş olan bir profili
+        silmek başarılı olur ve hiçbir şeyi değiştirmez.
+      operationId: deleteProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDeleteDTO'
+            examples:
+              byExternalProfileId:
+                summary: Profili kaydederken gönderdiğiniz tanımlayıcıyla sil
+                value:
+                  external_profile_id: user_12345
+              byEmail:
+                summary: E-posta adresiyle sil
+                value:
+                  email: jane@example.com
+      responses:
+        '204':
+          description: Profil silindi. Yanıt gövdesi yoktur.
+        '400':
+          description: Hiçbir tanımlayıcı sağlanmadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: At least one of external_profile_id, customer_user_id or email must be provided
+                        error_code: missing_identifier
+                        status_code: 400
+                        field_name: null
+        '403':
+          description: Gizli API anahtarı eksik veya geçersiz.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
+                        status_code: 403
+                        field_name: null
+        '404':
+          description: Gönderdiğiniz tanımlayıcılarla eşleşen profil bulunamadı.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Profile not found
+                        error_code: profile_not_found_error
+                        status_code: 404
                         field_name: null
   /api/v1/profile/transaction-event/save/:
     post:
-      summary: İşlem olayı kaydet
+      summary: İşlem olayını kaydet
       description: |
-        Bir profil için mağaza işlem olayı kaydeder. Adapty Mail, profilleri satın alma tabanlı
-        flow'lara yerleştirmek için işlem olaylarını kullanır — `event_type` değeri; yenileme iptal
-        edildi, ödeme sorunu, süresi doldu ve iade edildi gibi flow'larla eşleşir — ve gelir
-        attribution'ı için de bu olaylardan yararlanır.
+        Bir profil için store işlem olayını kaydeder. Adapty Mail, profilleri satın alma tabanlı
+        flow'lara yerleştirmek için işlem olaylarını kullanır — `event_type`, yenileme iptal edildi,
+        faturalama sorunu, süresi doldu ve iade edildi gibi flow'larla eşleşir — ve gelir attribution
+        için kullanılır.
 
-        Satın almaları, yenilemeleri ve iptalleri işlerken bu olayları gönderin. Yalnızca
-        **hiç satın alma yapmamış** flow bunlar olmadan çalışır.
+        Bu olayları satın alma, yenileme ve iptal işlemlerini gerçekleştirirken gönderin. Yalnızca
+        **hiç satın almamış** flow'u bunlar olmadan çalışır.
       operationId: saveTransactionEvent
       security:
         - apikeyAuth: []
@@ -110,20 +187,20 @@ paths:
               $ref: '#/components/schemas/TransactionEventDTO'
             examples:
               basic:
-                summary: Yeni bir aylık abonelik satın alımı
+                summary: A new monthly subscription purchase
                 value:
-                  event_type: "subscription_started"
-                  event_id: "evt_abc123"
-                  event_datetime: "2026-06-10T14:20:05Z"
-                  external_profile_id: "user_12345"
-                  store: "app_store"
-                  store_product_id: "premium_monthly"
-                  store_transaction_id: "1000000123456789"
-                  store_original_transaction_id: "1000000123456789"
-                  purchased_at: "2026-06-10T14:20:00Z"
-                  originally_purchased_at: "2026-06-10T14:20:00Z"
-                  price_usd: "9.99"
-                  expires_at: "2026-07-10T14:20:00Z"
+                  event_type: subscription_started
+                  event_id: evt_abc123
+                  event_datetime: '2026-06-10T14:20:05Z'
+                  external_profile_id: user_12345
+                  store: app_store
+                  store_product_id: premium_monthly
+                  store_transaction_id: '1000000123456789'
+                  store_original_transaction_id: '1000000123456789'
+                  purchased_at: '2026-06-10T14:20:00Z'
+                  originally_purchased_at: '2026-06-10T14:20:00Z'
+                  price_usd: '9.99'
+                  expires_at: '2026-07-10T14:20:00Z'
       responses:
         '200':
           description: İşlem olayı başarıyla kaydedildi. Yanıt gövdesi boş bir nesnedir.
@@ -135,7 +212,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: Doğrulama başarısız — gerekli bir alan eksik veya geçersiz. `field_name` hangi alanın sorunlu olduğunu gösterir.
+          description: Doğrulama başarısız — zorunlu bir alan eksik veya geçersiz. `field_name` hangi alanın sorunlu olduğunu gösterir.
           content:
             application/json:
               schema:
@@ -144,12 +221,12 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "event_type"
+                        field_name: event_type
         '403':
-          description: Gizli API anahtarı eksik veya geçersiz.
+          description: Eksik veya geçersiz gizli API anahtarı.
           content:
             application/json:
               schema:
@@ -158,8 +235,8 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
                         field_name: null
 components:
@@ -169,11 +246,11 @@ components:
       in: header
       name: Authorization
       description: |
-        Her isteği Adapty Mail gizli API anahtarınızla kimlik doğrulaması yapın; anahtar **Authorization**
+        Her isteği Adapty Mail gizli API anahtarınızla kimlik doğrulayın; anahtar **Authorization**
         başlığında `Bearer {your_secret_api_key}` değeriyle gönderilir, örneğin `Bearer secret_live_...`.
 
-        Bu anahtarı Adapty Mail'de **Settings** altında bulabilirsiniz. Anahtar projeye özgüdür — verinin
-        ait olduğu projeyi tanımlar; bu nedenle profil ve işlem uç noktaları bir proje kimliği almaz.
+        Bu anahtarı Adapty Mail'de **Settings** altında bulabilirsiniz. Anahtar projeye özgüdür — ait
+        olduğu projeyi tanımlar; bu nedenle profil ve işlem uç noktaları bir proje kimliği almaz.
   schemas:
     ProfileDTO:
       type: object
@@ -185,19 +262,31 @@ components:
         external_profile_id:
           type: string
           description: |
-            Uygulamanıza veya arka ucunuza ait olan, kullanıcıya özgü kararlı tanımlayıcı. Adapty Mail'in
-            e-postaları, tıklamaları ve satın almaları tek bir profile bağlayabilmesi için istekler arasında
-            aynı değeri kullanın. Anonim veya kurulum başına bir tanımlayıcı asla kullanmayın.
+            Uygulamanıza veya backend'inize ait, kullanıcıya özgü kalıcı tanımlayıcı. Adapty Mail'in
+            e-postaları, tıklamaları ve satın almaları tek bir profile bağlayabilmesi için istekler
+            arasında aynı değeri kullanın. Anonim veya kurulum başına oluşturulan bir tanımlayıcı
+            kullanmayın.
         external_created_at:
           type: string
           format: date-time
           description: |
-            ISO 8601 biçiminde kullanıcı oluşturma zamanı (örneğin `"2026-06-01T10:30:00Z"`).
+            ISO 8601 formatında kullanıcı oluşturma zamanı (örneğin, `"2026-06-01T10:30:00Z"`).
             Bu tarihi segmentlerde kullanabilirsiniz.
         email:
           type: string
           format: email
-          description: Kullanıcının e-posta adresi. Adapty Mail kampanyaları bu adrese iletir.
+          description: |
+            Kullanıcının e-posta adresi. Adapty Mail kampanyaları bu adrese iletir.
+
+            Adres yalnızca bir kez yazılabilir: profil oluşturulduğunda ayarlanır ve sonraki
+            kaydetmeler üzerine yazmaz.
+        customer_user_id:
+          type: string
+          description: |
+            Adapty'nin de tanıdığı, kullanıcının kendi sisteminizdeki tanımlayıcısı. Adapty Mail,
+            Adapty SDK aracılığıyla da erişen kişiyi tanımak için bunu kullanır; böylece iki kaynak
+            aynı kişiye iki kez e-posta gönderecek bir kopya oluşturmak yerine tek bir profili
+            paylaşır.
         first_name:
           type: string
           description: Kullanıcının adı.
@@ -210,21 +299,44 @@ components:
         birthday:
           type: string
           format: date
-          description: ISO 8601 biçiminde kullanıcının doğum tarihi (örneğin `"1990-05-21"`).
+          description: ISO 8601 formatında kullanıcının doğum tarihi (örneğin, `"1990-05-21"`).
         country:
           type: string
-          description: Kullanıcının ülkesi; iki harfli büyük harf ISO 3166-1 alfa-2 kodu olarak belirtilir (örneğin `US`).
+          description: Kullanıcının ülkesi, iki harfli büyük harf ISO 3166-1 alfa-2 kodu olarak (örneğin, `US`).
         store_country:
           type: string
-          description: Kullanıcının mağaza bölgesi; iki harfli büyük harf ISO 3166-1 alfa-2 kodu olarak belirtilir (örneğin `US`).
+          description: Kullanıcının mağaza bölgesi, iki harfli büyük harf ISO 3166-1 alfa-2 kodu olarak (örneğin, `US`).
         custom_attributes:
           type: object
           description: |
-            Profile eklenecek rastgele anahtar-değer çiftleri (dize veya sayı değerleri). Bunları
-            [segmentler](/docs/mail-segments) oluşturmak için kullanın — örneğin `plan`, `signup_source`
-            veya `trial_days`.
+            Profile eklenecek isteğe bağlı anahtar-değer çiftleri (dize veya sayı değerleri).
+            [Segmentler](/docs/mail-segments) oluşturmak için kullanın — örneğin, `plan`,
+            `signup_source` veya `trial_days`.
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
+    ProfileDeleteDTO:
+      type: object
+      description: |
+        Silinecek profil için tanımlayıcılar. `external_profile_id`,
+        `customer_user_id` veya `email` alanlarından en az birini gönderin.
+      anyOf:
+        - required:
+            - external_profile_id
+        - required:
+            - customer_user_id
+        - required:
+            - email
+      properties:
+        external_profile_id:
+          type: string
+          description: Profili kaydederken gönderdiğiniz tanımlayıcı.
+        customer_user_id:
+          type: string
+          description: Kullanıcının kendi sisteminizdeki tanımlayıcısı.
+        email:
+          type: string
+          format: email
+          description: Profildeki e-posta adresi.
     DeviceInfoDTO:
       type: object
       required:
@@ -232,7 +344,7 @@ components:
       properties:
         platform:
           type: string
-          description: Kullanıcının bulunduğu platform, örneğin `iOS` veya `Android`.
+          description: Kullanıcının kullandığı platform, örneğin `iOS` veya `Android`.
         device:
           type: string
           description: Cihaz modeli, örneğin `iPhone15,2`.
@@ -266,46 +378,62 @@ components:
           $ref: '#/components/schemas/TransactionEventType'
         event_id:
           type: string
-          description: Sisteminize ait bu olaya özgü benzersiz tanımlayıcı. Olayları idempotent tutmak için kullanın.
+          description: Bu olaya ait benzersiz tanımlayıcı; kendi sisteminize aittir. Olayların idempotent kalmasını sağlamak için kullanın.
         event_datetime:
           type: string
           format: date-time
-          description: ISO 8601 biçiminde olayın kaydedildiği zaman.
+          description: Olayın kaydedildiği zaman, ISO 8601 formatında.
         external_profile_id:
           type: string
-          description: Profili kaydederken gönderdiğiniz kararlı `external_profile_id` ile aynı değer. İşlemi doğru profile bağlar.
+          description: |
+            Profili kaydederken gönderdiğiniz aynı kararlı `external_profile_id`. İşlemi
+            doğru profile bağlar.
+
+            Profil henüz mevcut olmadan önce bir işlem gönderebilirsiniz. Adapty Mail, olayı
+            bağlanmamış olarak saklar ve aynı tanımlayıcıyı taşıyan bir sonraki kayıtta profile bağlar.
+        customer_user_id:
+          type: string
+          description: |
+            Kullanıcının kendi sisteminizdeki tanımlayıcısı. Adapty Mail, `external_profile_id`
+            eşleşmediğinde profili bulmak için bunu kullanır. Olayda saklanmaz.
+        email:
+          type: string
+          format: email
+          description: |
+            Alıcının e-posta adresi. Adapty Mail, hiçbir tanımlayıcı eşleşmediğinde profili
+            bulmak için bunu kullanır. Olayda saklanmaz.
         store:
           type: string
-          description: İşlemin geldiği mağaza, örneğin `app_store`, `play_store` veya `stripe`.
+          description: İşlemin geldiği mağaza; örneğin `app_store`, `play_store` veya `stripe`.
         store_product_id:
           type: string
           description: Mağazada satın alınan ürünün tanımlayıcısı.
         store_transaction_id:
           type: string
-          description: Mağazadaki bu işlemin tanımlayıcısı.
+          description: Bu işlemin mağazadaki tanımlayıcısı.
         store_original_transaction_id:
           type: string
-          description: Abonelik zincirindeki ilk işlemin tanımlayıcısı. İlk satın almada bu değer `store_transaction_id` ile aynıdır.
+          description: Abonelik zincirindeki ilk işlemin tanımlayıcısı. İlk satın alma için bu değer `store_transaction_id` ile aynıdır.
         purchased_at:
           type: string
           format: date-time
-          description: ISO 8601 biçiminde bu işlemin gerçekleştiği zaman.
+          description: Bu işlemin gerçekleştiği zaman, ISO 8601 formatında.
         originally_purchased_at:
           type: string
           format: date-time
-          description: ISO 8601 biçiminde aboneliğin ilk satın alındığı zaman.
+          description: Aboneliğin ilk satın alındığı zaman, ISO 8601 formatında.
         price_usd:
           type: string
-          description: İşlem tutarı USD cinsinden ondalık dize olarak (örneğin `"9.99"`).
+          description: İşlem tutarı USD cinsinden, ondalık dize olarak (örneğin `"9.99"`).
         expires_at:
           type: string
           format: date-time
-          description: ISO 8601 biçiminde aboneliğin sona erdiği veya sona ereceği zaman. Abonelik dışı satın almalar için belirtmeyin.
+          description: Aboneliğin sona erdiği veya sona ereceği zaman, ISO 8601 formatında. Abonelik olmayan satın almalar için belirtmeyin.
         offer:
           $ref: '#/components/schemas/Offer'
     TransactionEventType:
       type: string
-      description: İşlem olayının türü. Satın alma tabanlı flow'lar bu değerler tarafından tetiklenir.
+      description: İşlem olayının türü. Satın alma tabanlı akışlar bu değerler tarafından tetiklenir.
       enum:
         - subscription_started
         - subscription_renewed
@@ -319,7 +447,7 @@ components:
         - non_subscription_purchase_refunded
     Offer:
       type: object
-      description: İşleme uygulanan promosyon teklifi veya başlangıç teklifinin ayrıntıları.
+      description: İşleme uygulanan promosyon teklifi veya başlangıç teklifine ait ayrıntılar.
       required:
         - category
         - offer_type
@@ -330,7 +458,7 @@ components:
           $ref: '#/components/schemas/OfferType'
         offer_id:
           type: string
-          description: Varsa mağazadaki teklifin tanımlayıcısı.
+          description: Varsa, mağazadaki teklifin tanımlayıcısı.
     OfferCategory:
       type: string
       enum:
@@ -346,7 +474,7 @@ components:
         - pay_up_front
     Errors:
       type: object
-      description: Standart hata yanıtı. Her başarısız istek bu yapıyla birlikte 4XX durum kodu döndürür.
+      description: Standart hata yanıtı. Her başarısız istek bu yapıyla birlikte 4XX durumu döndürür.
       properties:
         errors:
           type: array
@@ -364,4 +492,4 @@ components:
                 description: Bu hataya ait HTTP durum kodu.
               field_name:
                 type: string
-                description: Hataya neden olan istek alanı; hata alana özgü değilse `null`.
+                description: Hataya neden olan istek alanı veya hata belirli bir alana özgü değilse `null`.
