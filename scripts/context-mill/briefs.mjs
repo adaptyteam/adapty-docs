@@ -194,7 +194,7 @@ const MARKUP_WORDS = new Set([
   // Field, payload and status words quoted from a ticket or a response body.
   'detail', 'format', 'null', 'draft', 'email', 'locale', 'cid', 'organic',
   'channel', 'payload', 'amount', 'price', 'value', 'error', 'date', 'data',
-  'offer', 'store', 'subscription', 'metadata',
+  'offer', 'store', 'subscription', 'metadata', 'source',
   // Access-level and other configured identifiers a reader types verbatim.
   'premium',
   // HTTP header names: lowercase and hyphenated, so shape alone cannot tell them

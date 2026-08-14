@@ -288,6 +288,12 @@ Ground truth for the `adapty-mail` zone: flow/trigger semantics, send eligibilit
 warm-up ladder. **`default_ref` is `origin/develop`.** The vocabulary does not match the docs — no
 backend symbol is called "flow" — so read the mapping in the zone brief before grepping for one.
 
+**There is no `main` here. Production is `origin/master`** (checked 2026-08-14; the other branches are
+`develop` and a `stage` last touched 2026-03-31). Asking "is this live?" means diffing `develop` against
+`master`, not against `main` — a `main` lookup fails outright and invites a fallback to `develop` that
+answers a different question. On 2026-08-14 the two were identical (`develop` `1a147338` ⊂ `master`
+`47d3d279`, empty tree diff), so develop-verified facts were shippable; that is a snapshot, not a rule.
+
 **The public API surface is decided by the auth dependency, not by the OpenAPI tag.** Only the routes
 taking the project-scoped Adapty Mail secret key are public; the same `Profile` tag also holds routes
 that take a dashboard account session and are internal. A route being visible in Swagger or a network
@@ -307,15 +313,30 @@ default_ref: origin/develop
 ref_pattern: release/*
 kind: local-clone
 
+**Production is `origin/master`, and the `main` branch here is a decoy** — it exists but was abandoned
+on 2026-03-27, 491 commits behind (checked 2026-08-14). `master` `78402bf` then contained all of
+`develop` `8b5613a` plus one unrelated banner commit.
+
 Where a Mail dashboard control's enabled/disabled state is decided — useful when an article claims a
 setup ordering. Worked example: the *Enable Adapty integration* button is gated on a field the backend
 computes as "has an active flow **or** has ever called the ingestion API", and the gate is UI-only. So
 "enable sending last" is sound ordering advice, not an enforced invariant, and must not be written as one.
 
 Also the canonical source for **user-visible strings** — nav labels, chip labels, modal copy, disabled-state
-hints. Worked example: the profile list is under a **Profiles** nav item, not "CRM"; and `SES_META` in
-`features/crm/lib/meta.ts` is where the Journey chip labels are defined, including that **Delivered**
-supersedes **Sent** rather than following it.
+hints. Worked examples: the profile list is under a **Profiles** nav item, not "CRM"; `SES_META` in
+`features/crm/lib/meta.ts` defines the Journey chip labels, while the precedence between them —
+**Delivered** supersedes **Sent** rather than following it — is `buildChips` in `features/crm/ui/Journey.tsx`
+(corrected 2026-08-14; this entry credited `meta.ts` for both). And **Settings' tabs are Company /
+Project / DNS** (`TAB_LABELS` in `src/pages/settings/ui/SettingsPage.tsx`) — the docs described a
+"Settings → Email Domains" and a "Settings → Integrations" tab for weeks after `a49eb74` (2026-07-23)
+folded the domain UI into DNS. Section headings inside a tab are not tabs; grep the labels, don't infer
+the path from the section name.
+
+**The dashboard deep-links three of our slugs**, so those filenames are frozen: `mail-get-started`,
+`mail-send-data-via-api`, and `web-paywall-configuration` (grep `DOCS_URL` in `src/`). Renaming one — or
+adding a `customSlug` — 404s from inside the product, and the link checker can't catch it because the
+caller isn't in this repo. Moving an article between sidebar categories is safe; URLs come from the
+filename alone. Re-grep before any Mail rename.
 
 Read at `8b5613a` (2026-08-13).
 
