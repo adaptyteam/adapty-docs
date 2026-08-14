@@ -51,6 +51,15 @@ core in-app paywall/subscription product.
   paths (nothing but `config.json` references it; there is no generator), which makes the live service
   spec a strict superset of it and not a docs source: a path present there and absent from the YAML is
   internal by construction.
+- **`profile/delete/` is idempotent only for the identifier-based paths, never for email** (verified
+  2026-08-14 against backend `master`). Deletion resolves through the same ladder as save, and the
+  `profile_source_identity` rows survive the wipe — so a repeat carrying `external_profile_id` or
+  `customer_user_id` still finds the tombstone, `ProfileApp.delete` no-ops on `is_deleted`, and the
+  caller gets 204 again. A repeat carrying only `email` returns 404: `Profile.delete()` nulls `email`
+  and `ProfileRepository.get_by_filters` additionally filters `is_deleted == False`, so an email has
+  nothing left to match, and `SourceIdentityKeyCollection.factory` never promotes an email to an
+  identity key. Never write a flat "the request is idempotent" — the spec did, with `byEmail` as its
+  worked example, which documented the one path that fails.
 - **Which profile a payload belongs to is decided by one ladder**,
   `ProfileApp.resolve_profile` in `profile_context/applications/profile.py`: the sender's own
   `(source, external_profile_id)` in the `profile_source_identity` link table, then `customer_user_id`
@@ -62,6 +71,25 @@ core in-app paywall/subscription product.
   was dropped from `profile_model` outright (migration `2026_08_07_1449`), so any claim that profiles are
   keyed by it is now false. The design record is `docs/specs/MULTI_SOURCE_PROFILES.md` in the backend —
   **its `Status: approved design, not implemented` header is stale**, releases 1–5 have all landed.
+- **"FunnelFox" means three different things here, at three different stages** (checked 2026-08-14).
+  **(1) The checkout engine — implemented and live.** `FunnelFoxAdapter` in
+  `campaign_context/infrastructure/adapters/external/funnel_fox.py` makes real calls (`auth_adapty`,
+  `create_funnel`, `is_funnel_published`, `get_stripe_account`, `get_stripe_products`), and
+  `WebPaywall.ff_funnel` is a field on the entity — every AI-generated checkout *is* a FunnelFox funnel,
+  which is why sandbox test emails route through the FF `/preview/` page. **(2) A profile source —
+  half-built.** `ProfileSource.FUNNELFOX` is accepted and the resolution ladder merges it, but nothing
+  in noty-wave *sends* it; the sender is the `adaptymail` integration on the FunnelFox side.
+  **(3) A partner workspace — stubs.** `FunnelFoxPartnerAccountAdapter.authorize` and all three
+  `FunnelFoxPartnerWorkspaceAdapter` methods raise `NotImplementedError(... not implemented yet)`, and
+  no branch for it exists in either noty-wave repo. Do not document (2) or (3) as available. When
+  writing about (1), avoid framing it as an "integration" the reader sets up — it's the builder they
+  already use, and a reader who connected FunnelFox for checkout will otherwise think they've done the
+  data integration.
+- **Self-serve and partner are distinct product experiences, and the docs must carry both.** A company
+  created by self-serve signup has `linked_partners: []`; `adapty_integration_available` on the project
+  decides whether the **Adapty Integration** section on Settings → Project renders at all and which
+  sending step the onboarding checklist shows. So "enable the Adapty integration" is not universal advice — for a
+  self-serve project that section does not exist, and the equivalent step is posting to the API.
 - **CTA placeholders are per-source and the old single form is gone.** `BuildCtaUrlService` substitutes
   `{email}`, `{scheduled_email_id}`, and `{<source>.external_profile_id}` for each of the three sources;
   migration `2026_08_07_0800` rewrote stored `web_paywall.url` values from `{external_profile_id}`. The
@@ -85,6 +113,17 @@ core in-app paywall/subscription product.
   all. The check is also UI-only — `AdaptyIntegrationApp.enable()` takes no flow into account — so
   "Enable sending last" is correct ordering advice, not an enforced invariant, and must not be written as
   one.
+- **Settings has three tabs — Company, Project, DNS — and neither "Email Domains" nor "Integrations"
+  is one of them.** `TAB_LABELS` in `noty-wave-frontend`, `src/pages/settings/ui/SettingsPage.tsx`, is
+  the ground truth. The domain wizard is an **Email domains** section inside **DNS**, and the
+  integration is an **Adapty Integration** section inside **Project**. Commit `a49eb74` (2026-07-23)
+  removed `EmailDomainsTab` and folded it into DNS, which is when the old paths went stale; the docs
+  carried `Settings → Email Domains` in eight places and `Settings → Integrations` in three until
+  2026-08-14. Two button labels sit behind the same `hasFlows` gate and are easy to swap by mistake:
+  **Enable Adapty integration** on first setup, plain **Enable** when a disabled integration already
+  exists. The tooltip is *"Set up at least one flow before enabling Adapty integration"* with no
+  trailing period. Read these strings before writing any navigation path here — a tab rename ships
+  without a docs ticket, and nothing in this repo catches it.
 
 ## What we document, what we don't
 
@@ -126,10 +165,11 @@ core in-app paywall/subscription product.
 | mail-analytics | — | marketer | 9 | tutorial |
 | mail-brand | — | marketer | 8 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
-| mail-collect-emails | — | marketer | 3 | tutorial |
+| mail-collect-emails | — | marketer | 6 | tutorial |
 | mail-create-campaign | — | marketer | 4 | tutorial |
 | mail-create-flow | — | marketer | 4 | tutorial |
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
+| mail-entry-points | entry | marketer | 0 | tutorial |
 | mail-flows | entry | marketer | 5 | tutorial |
 | mail-get-started | — | marketer | 11 | tutorial |
 | mail-profiles | — | marketer | 7 | tutorial |
@@ -142,6 +182,21 @@ core in-app paywall/subscription product.
 ## Reader jobs
 
 ## Ripple rules
+
+- **Adding a new entry point** (the FunnelFox source, when it ships) is a pure addition — the
+  2026-08-14 restructure shaped every touchpoint as a list so nothing needs rewriting. Create the
+  article, add it under the **Entry points** category in `tutorial.json` beside `mail-collect-emails`
+  and `mail-send-data-via-api`, then add one bullet to each of these four forks: `mail-entry-points`
+  (the category landing page, which also feeds the `CustomDocCardList`), `mail-get-started` §1
+  *Connect your data*, `mail-get-started` §6 *Start sending* (what "start sending" means for that
+  source), and `adapty-mail`'s *Requirements*. Nothing in those passages counts the entry points —
+  phrasing like "both paths" and "the two sources" was deliberately removed, so **don't reintroduce a
+  count**. Note the API belongs *inside* Entry points, not in a section of its own: a sibling
+  "Server API" category was tried and dropped — it collided with the existing top-level **Server API**
+  category (Adapty's own server-side API) and hid the self-serve path from anyone browsing the nav.
+  Also check `mail-checkout`'s placeholder table, which currently omits `{funnelfox.external_profile_id}`
+  even though the dashboard lists it, and `adapty-mail-api.yaml`, which omits the `source` enum for the
+  same reason. Both are deliberate deferrals, not oversights.
 
 ## Boundaries
 
@@ -171,8 +226,9 @@ live in `aliases.md` and are deliberately not repeated here.
 
 | How a ticket says it | Where it actually lives |
 |---|---|
-| "everything is configured but nothing is sending", "Enable button is greyed out", "campaign stuck in draft" | `mail-get-started` step 6 — the setup order is load-bearing and this is the classic failure. **Enable sending comes last**: the Adapty integration toggle in Settings → Integrations is disabled until at least one flow row exists ("Set up at least one flow before enabling Adapty integration"). A campaign is a separate blocker — it has no publish action and stays `draft` until attached to a flow (`mail-create-campaign`). |
-| "our app doesn't collect emails", "no login in the app", "not enough recipients to launch" | `mail-collect-emails`. Two values, in order: a stable `customer_user_id` first (there's no profile to attach an email to otherwise), then `email` via `updateProfile`. Anonymous profiles and profiles with no email are excluded from delivery *and* from campaign analytics. The 30–50% coverage target is a launch gate, not 100%. |
+| "everything is configured but nothing is sending", "Enable button is greyed out", "campaign stuck in draft" | `mail-get-started` step 6 (**"Start sending"** since the 2026-08-14 restructure) — the setup order is load-bearing and this is the classic failure. **Sending comes last, on both paths**: the Adapty integration toggle on Settings → Project is disabled until at least one flow row exists ("Set up at least one flow before enabling Adapty integration"), and on the API path, profiles posted before setup finishes never receive anything. The product itself branches here — `OnboardingChecklist` appends `PARTNER_SENDING_STEP` ("Enable sending" → Settings) or `SELF_SERVE_SENDING_STEP` ("Start sending" → deep-links our `mail-send-data-via-api`) depending on `adapty_integration_available`, so the docs must keep both branches. A campaign is a separate blocker — it has no publish action and stays `draft` until attached to a flow (`mail-create-campaign`). |
+| "our app doesn't collect emails", "no login in the app", "not enough recipients to launch", "how do I connect Adapty to Mail" | `mail-collect-emails` — **retitled "Connect Adapty to Adapty Mail" on 2026-08-14 and now the Adapty *integration* page**, not just an email-collection guide. Filename kept for SEO per the CLAUDE.md convention, so the slug still reads `mail-collect-emails`. It absorbed `mail-get-started`'s SDK-setup and enable-sending sections, and is the whole Adapty path end to end: observer mode → identify → `updateProfile` → enable the integration. Two values, in order: a stable `customer_user_id` first (there's no profile to attach an email to otherwise), then `email` via `updateProfile`. Anonymous profiles and profiles with no email are excluded from delivery *and* from campaign analytics. The 30–50% coverage target is a launch gate, not 100%. |
+| "which payment provider does Mail support", "can we use Paddle / PayPal" | `mail-checkout`. **Stripe only for the generated checkout** — `FunnelFoxAdapter.get_stripe_account` / `get_stripe_products` are the only provider calls in the backend, and neither noty-wave repo mentions Paddle or PayPal. Any other provider works only via **Use your own hosted paywall**, where payment happens entirely on the customer's side and Adapty Mail just redirects with substituted placeholders. Corrected 2026-08-14: `adapty-mail` and `mail-get-started` both listed "Stripe, Paddle, or PayPal" flatly, which pointed readers down the AI-generated path with a provider it can't use. |
 | "checkout link errors out", "user not identified at checkout", "purchase not attributed to the email" | `mail-checkout`. Three distinct causes: the web paywall was never **published**; `Adapty.identify()` wasn't called before the email was sent; or the manual URL is missing the identity placeholder. Corrected 2026-08-14 — this row named a **`cid` parameter, which exists in neither repo**; see the CTA-placeholder bullet in Sources of truth for the real list. The attribution mechanism itself (last-click on `scheduled_email_id`, back-filled only onto purchases with no existing attribution that post-date the click) is documented in `mail-analytics` — personalization placeholders are a separate mechanism from attribution. |
 | "launch the campaign", "schedule the sequence", "change who gets it and when" | Split by which half of the pair it is. Content (copy, images, delays, email count) is `mail-create-campaign`; trigger + audience + going live is a **flow row** — `mail-create-flow` for the mechanics, `mail-flows` for the concepts. Nearly every "campaign doesn't send" ticket is really a flow-row ticket. |
 | "wrong sequence went out", "the broad audience swallowed my targeted one", "All Users row rejected on save" | `mail-flows` priority: rows are walked top to bottom, the first matching segment wins, later rows are never evaluated for that user. The backend rejects saves where an **All Users** row isn't last. |
@@ -180,7 +236,7 @@ live in `aliases.md` and are deliberately not repeated here.
 | "change the targeting on a running flow", "can't edit the segment filters", "combine two conditions with OR" | `mail-segments`. Filters lock as soon as the segment is Live (name and description stay editable) — to retarget, create a new segment and swap the flow row. Filters are AND-only, one filter per field, and there's no audience-size preview. |
 | "emails going to spam", "why can we only send 200 a day", "delivery is trickling out over a week" | `mail-sending-domain` — warm-up, not a bug or a plan limit. Every new domain starts at Tier 1 (200/day) and climbs 14 tiers automatically; bounce or complaint rates pause and can reverse advancement. Audience size determines how long launch spreads out. |
 | "domain verification stuck", "we want to send from a subdomain", "change or delete our sending domain" | `mail-sending-domain`. Apex domains only; the `mail.`/`email.`/`hello.` prefixes are hardcoded; one domain per project and globally unique across projects; a 7-day verification window (records survive it); manual checks have a 60-second cooldown; **verified domains can't be deleted or swapped from the dashboard — that's a support request**. |
-| "this specific person stopped getting emails", "take someone off the suppression list", "GDPR erasure request" | `mail-suppression`. Two mechanisms that read alike and aren't: **suppression** excludes the profile from all future sends in the project (unsubscribe, bounce, complaint, reject, throttle), while a **stop condition** only cancels the current sequence because the user converted — they stay eligible for other campaigns. Any bounce suppresses immediately, including a full mailbox; there's no soft/hard split and no retry. **Unsuppressing** still has no UI and is a support request. **Erasure no longer is** — corrected 2026-08-14: `POST /api/v1/profile/delete/` erases PII and cancels scheduled emails, resolving the profile by any of `external_profile_id` / `customer_user_id` / `email`, and it's final (a later save with the same identifiers won't resurrect the profile). The one manual dashboard action is per-profile **Unsubscribe** on `mail-profiles`. |
+| "this specific person stopped getting emails", "take someone off the suppression list", "GDPR erasure request" | `mail-suppression`. Two mechanisms that read alike and aren't: **suppression** excludes the profile from all future sends in the project (unsubscribe, bounce, complaint, reject, throttle), while a **stop condition** only cancels the current sequence because the user converted — they stay eligible for other campaigns. Any bounce suppresses immediately, including a full mailbox; there's no soft/hard split and no retry. **Unsuppressing** still has no UI and is a support request. **Erasure no longer is** — corrected 2026-08-14: `POST /api/v1/profile/delete/` erases PII and cancels scheduled emails, resolving the profile by any of `external_profile_id` / `customer_user_id` / `email`, and it's final (a later save with the same identifiers won't resurrect the profile). If the ticket is about retries or a 404 on a second call, the answer is the identifier used, not a bug — see the `profile/delete/` idempotency bullet in Sources of truth. The one manual dashboard action is per-profile **Unsubscribe** on `mail-profiles`. |
 | "open rate is impossibly high", "bounce numbers don't break down", "range too wide warning" | `mail-analytics`. Opens are pixel loads and Apple Mail Privacy Protection pre-fetches them on iOS 15+ — clicks and revenue are the trustworthy signals. Bounces collapse hard and soft into one count. Counts are eventually consistent, not streaming. |
 | "attributed revenue doesn't match LTV", "which email drove the purchase" | `mail-profiles` for the per-customer view and the definition split (attributed revenue = purchases after engaging with a campaign; LTV = all revenue from all sources), `mail-analytics` for the aggregate view and the attribution rule. |
 | "how do I test this before launch", "send myself a test email", "sandbox is greyed out", "I paid but nothing shows in the app" | `mail-testing`. Two paths that prove different things, and conflating them is the whole failure mode: the **live chain** (fresh address → shortened delay → real card → refund) is the only one that exercises the automation, while **Send test email** is a standalone send that proves the email renders and the checkout takes payment and nothing else. Three constraints that surprise people: the test goes to the **logged-in account's address** unless a profile is picked in the modal, **Sandbox is unavailable for a manual-URL paywall** (it routes through the FF `/preview/` page, which needs a funnel with sandbox products), and the 1-minute `MIN_DELAY` floor applies only to **AI-generated plans** (`EmailPlanItemDTO`) — the manual save path has no delay validator. Journey chip semantics live here too: **Delivered** replaces **Sent** rather than following it. |

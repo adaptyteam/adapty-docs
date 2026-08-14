@@ -8,18 +8,14 @@ import ZoomImage from '@site/src/components/ZoomImage';
 
 In this guide, you will set up Adapty Mail and launch your first email flow.
 
-:::note
-You can also send data to Adapty Mail from your own server, without the Adapty SDK. If you already hold user emails and purchases on your backend, or you import subscribers from another source, see [Send emails and transactions via the Adapty Mail API](mail-send-data-via-api).
-:::
-
 The setup has six parts:
 
-1. [Configure your Adapty SDK](#1-configure-your-adapty-sdk)
+1. [Connect your data](#1-connect-your-data)
 2. [Set up your sending domain](#2-set-up-your-sending-domain)
 3. [Create a web paywall](#3-create-a-web-paywall)
 4. [Generate a campaign with AI](#4-generate-a-campaign-with-ai)
 5. [Launch a flow](#5-launch-a-flow)
-6. [Enable sending](#6-enable-sending)
+6. [Start sending](#6-start-sending)
 
 :::tip
 If you signed up to Adapty Mail through Adapty, your **brand profile** is created automatically from your project's store URL. Open **Brand** anytime to review or refine it — see [Brand](mail-brand). If you signed up standalone, set up your brand on the same page before generating campaigns or web paywalls.
@@ -30,34 +26,20 @@ If you signed up to Adapty Mail through Adapty, your **brand profile** is create
 Make sure these are in place before you start:
 
 - **DNS access**: You can add records to your root domain.
-- **Web payment provider**: You have a Stripe, Paddle, or PayPal account with your subscription products configured.
+- **Payments**: You have a Stripe account with your subscription products configured. To use a different provider, host the checkout yourself — see [Set up checkout](mail-checkout).
 
-## 1. Configure your Adapty SDK
+## 1. Connect your data
+
+Adapty Mail needs purchase history (so it can attribute revenue back to the email that drove each conversion), a stable user identifier, and an email address for each user. Prepare the [entry point](mail-entry-points) that matches where that data already lives — you'll open the tap in Step 6, once the rest of the setup can act on what arrives:
+
+- **Adapty**: If your app runs the Adapty SDK, wire up user identification and email collection. Leave the integration itself switched off for now — Adapty Mail blocks it until you have a flow. See [Connect Adapty to Adapty Mail](mail-collect-emails).
+- **Adapty Mail API**: If your backend is the source of truth, get your secret key from **Settings** and build your requests, but don't post yet. Profiles that arrive before setup finishes never receive anything. See [Send emails and transactions via the Adapty Mail API](mail-send-data-via-api).
+
+You can use more than one entry point at once. Adapty Mail matches incoming data on `customer_user_id` and email address, so a person it hears about from several sources still gets one profile and one sequence.
 
 :::important
 Adapty Mail is a **standalone product**. You can use it even if your paywalls, subscriptions, or analytics aren't handled by Adapty — migrating your entire stack is not required.
-
-To get accurate revenue data, the minimum setup is to install the Adapty SDK in observer mode and enable App Store server notifications.
 :::
-
-Adapty Mail needs three things from your app: purchase data (so it can attribute revenue back to the email that drove each conversion), a stable user identifier, and user emails.
-
-1. **Let Adapty track your revenue.** The first step depends on whether you already have in-app purchases implemented:
-   - If you **already have in-app purchases implemented with Adapty**, you don't need to do anything else at this stage.
-   - If you **already have in-app purchases implemented without Adapty** and don't plan to migrate to Adapty, install the Adapty SDK for your platform in observer mode. At this stage you only need to add the SDK to your project, activate it with observer mode enabled, and report transactions. Platform guides: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
-   - If you **don't have in-app purchases implemented yet and want to use Adapty**, complete the steps from the [quickstart guide](quickstart) to delegate handling purchases to Adapty.
-
-   Then [enable App Store server notifications in Adapty](enable-app-store-server-notifications) to receive revenue-related updates directly from the App Store.
-
-2. **Set up user identification.** Pass a stable ID — your backend user ID, Firebase UID, or similar — either by calling `Adapty.identify()` or by passing `customerUserId` to `.activate()` at SDK startup. The `customer_user_id` is how Adapty Mail matches campaigns, clicks, and purchases back to the right profile.
-
-   Platform guides: [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
-
-3. **Collect user emails.** Once a user provides their email in your app (for example, at sign-up or checkout), pass it to Adapty by calling `updateProfile` with the email attribute. Every recipient of a campaign needs this value.
-
-   Platform guides: [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Unity](unity-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Capacitor](capacitor-setting-user-attributes).
-
-   If your app doesn't yet collect emails, see [Email collection strategies](mail-collect-emails#email-collection-strategies).
 
 ## 2. Set up your sending domain
 
@@ -67,7 +49,7 @@ Open Adapty Mail: Click the Adapty logo in the header and choose **Mail**.
 
 Adapty Mail sends from your own domain. You add DNS records once — all campaigns use the same verified domain.
 
-1. In Adapty Mail, go to **Settings → Email Domains**.
+1. In Adapty Mail, go to **Settings → DNS**.
 2. Enter your root domain (for example, `yourapp.com`) and click **Preview**. Only apex domains are accepted — subdomains like `app.yourapp.com` are rejected at input.
 
 <ZoomImage id="mail-email-domains.webp" width="500px" />
@@ -81,7 +63,7 @@ Adapty Mail sends from your own domain. You add DNS records once — all campaig
    - 1 MX record (Mail-From) per subdomain
    - 1 TXT record (SPF, `v=spf1 include:amazonses.com ~all`) per subdomain
 5. Optionally, add a DMARC TXT record on your root domain (recommended).
-6. Return to **Settings → Email Domains** and click **Check Verification**.
+6. Return to **Settings → DNS** and click **Check Verification**.
 
 <ZoomImage id="email-domains.webp" width="500px" />
 
@@ -90,7 +72,7 @@ Verification timing at a glance:
 - **Automatic polling**: First check runs about 5 minutes after you submit. Intervals grow to once per hour until records are found.
 - **Manual check**: Click **Check Verification** any time to trigger an immediate check.
 - **DNS propagation**: Usually minutes, up to 48 hours in rare cases.
-- **Verification window**: 7 days. If it lapses, your DNS records stay in place — re-enter your domain in **Settings → Email Domains** to start a new window.
+- **Verification window**: 7 days. If it lapses, your DNS records stay in place — re-enter your domain in **Settings → DNS** to start a new window.
 
 For details on each record type and domain warm-up, see [Set up your sending domain](mail-sending-domain).
 
@@ -129,7 +111,7 @@ The paywall must be published before it can serve checkout traffic. Unpublished 
    https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
 
-   The Create page lists every available placeholder. See [Set up checkout](mail-checkout#use-your-own-hosted-paywall) for what each one resolves to.
+   The Create page lists the placeholders you can use. See [Set up checkout](mail-checkout#use-your-own-hosted-paywall) for what each one resolves to.
 3. Save and publish.
 
 For checkout funnel anatomy and how personalization works, see [Set up checkout](mail-checkout).
@@ -191,35 +173,27 @@ You can add more than one segment → campaign row to the same trigger; they run
 
 <ZoomImage id="mail-flow-details.webp" width="500px" />
 
-## 6. Enable sending
+## 6. Start sending
 
-Until now your campaign is wired up but not actually firing — the **Adapty integration** that syncs subscription events into Adapty Mail is still off. Turning it on is the final switch: events start flowing, segments start matching, and emails start sending.
+Your campaign is wired up but not firing yet — no user data is reaching Adapty Mail. Starting the flow of data is the last step, and each entry point from Step 1 starts differently:
 
-This step is unblocked only after Step 5. Before you launch a flow, the **Enable** button in **Settings → Integrations** is disabled with the tooltip *"Set up at least one flow before enabling Adapty integration."*
+- **Adapty**: In Adapty Mail, go to **Settings → Project** and click **Enable Adapty integration**. The button is disabled until you complete Step 5, with the tooltip *"Set up at least one flow before enabling Adapty integration"*. See [Connect Adapty to Adapty Mail](mail-collect-emails#4-enable-sending).
+- **Adapty Mail API**: Start posting profiles and transaction events. Profiles you send before finishing this setup never receive anything, which is why this step comes last. See [Send emails and transactions via the Adapty Mail API](mail-send-data-via-api).
 
-1. In Adapty Mail, go to **Settings → Integrations**.
-2. Click **Enable Adapty integration** (or **Enable** if the integration already exists from a previous setup).
-
-When enabled, Adapty sends every subscription event — new subscriptions, renewals, trials, conversions, refunds, billing issues — into Adapty Mail. These events drive segment membership, campaign routing, and stop-conditions that pause a sequence when a user converts.
-
-<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
-
-:::note
-The **Adapty integration** toggle in Settings is *not* the same as the Adapty partner workspace that signed you into Adapty Mail. The partner workspace is what created your account and (if you signed up via Adapty) your brand. The integration toggle here controls event syncing — it has to be turned on per project.
-:::
+From here, users who match your segment receive the campaign as soon as they hit the trigger. Before you let real users in, [test the whole chain](mail-testing) with one test user.
 
 ## Troubleshooting
 
 | Issue                          | Solution                                                                                                                 |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | DNS verification stuck         | Check that records match exactly — no trailing dots, correct CNAME targets. Wait 5–10 minutes, then click **Check Verification** again |
-| Verification window expired    | Your records remain in place. Re-enter your domain in **Settings → Email Domains** to start a new window                  |
+| Verification window expired    | Your records remain in place. Re-enter your domain in **Settings → DNS** to start a new window                  |
 | Generation failed or timed out | Check your internet connection and try again. If the issue persists, contact Adapty support                              |
 
 ## Learn more
 
 - **[Test your flow](mail-testing)**: Run a test user through the whole chain before you launch.
-- **[Collect user emails](mail-collect-emails)**: Strategies for getting email coverage if your app doesn't collect them yet.
+- **[Connect Adapty to Adapty Mail](mail-collect-emails)**: SDK setup, and strategies for getting email coverage if your app doesn't collect them yet.
 - **[Set up your sending domain](mail-sending-domain)**: DNS record details, warm-up tiers, and troubleshooting.
 - **[Set up checkout](mail-checkout)**: Checkout funnel anatomy and personalization.
 - **[Campaign analytics](mail-analytics)**: Track delivery, engagement, and revenue.
