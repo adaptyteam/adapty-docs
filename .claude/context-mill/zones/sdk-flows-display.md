@@ -38,6 +38,22 @@ different module from the core fetch API:
   `jscore`'s `cross_platform.yaml` is the bridge contract — it enumerates every request and event the
   wrappers can carry (`AdaptyUICreateFlowView.Request`, `FlowViewEvent.*`) and is the tie-breaker when
   a wrapper's own types look narrower than the native surface.
+
+  Two things about *which* `jscore` ref to read, learned 2026-08-14 while documenting RN 4.0.3:
+
+  - **The wrapper pins core to an exact commit SHA, and that SHA is usually on no branch.** RN's
+    `package.json` on `origin/release/4.0.3` reads
+    `"@adapty/core": "4.0.2-dev.7f2916d50c20823a81b13bead46906975bdf70d4"`, which `git cat-file -t`
+    cannot resolve in the local `jscore` clone. `git fetch origin <sha>` and then reading
+    `FETCH_HEAD:<path>` is what makes the shipped surface readable. Reading a branch tip instead is how
+    this project previously documented a stale API — the pinned SHA *is* the release, so prefer it over
+    `origin/master` whenever the two disagree.
+  - **The two JS wrappers have genuinely diverged; neither is simply older.** On 2026-08-14,
+    `origin/release/capacitor` still declared `onAppeared: () => EventHandlerResult` and a narrower
+    `FlowEventView` (`id` plus optional `placementId`/`variationId`, no `locale`), against the RN pin's
+    required `placementId`/`variationId` plus `locale?`. So a Capacitor event payload is a different
+    shape from RN's, not a previous version of the same one — never carry one wrapper's field list to
+    the other without reading `release/capacitor`.
 - **flutter-sdk** — `lib/src/`, where the deprecation strings themselves carry facts worth quoting:
   `lib/src/adapty.dart` deprecates the `locale` argument of `getFlow`/`getFlowForDefaultAudience` with
   the reason attached ("the locale is applied when the flow view is built — pass it to
@@ -90,15 +106,25 @@ articles per topic make "the iOS article says X" the cheapest and most dangerous
 this zone. Three claim classes have already broken exactly that way, and all three defects are in the
 corpus right now:
 
-- **Which call a parameter belongs to.** Locale is a parameter of the *fetch*, not of view creation —
-  and conflating the two is a live trap. Verified 2026-08-11: Flutter's `getFlowForDefaultAudience`
-  takes `String? locale` (`AdaptySDK-Flutter` `lib/src/adapty.dart`), while KMP's `createFlowView`
-  takes no string at all — its ABI dump reads
+- **Which call a parameter belongs to — and it now differs per platform, so there is no corpus-wide
+  answer to quote.** Verified 2026-08-11: Flutter's `getFlowForDefaultAudience` takes `String? locale`
+  (`AdaptySDK-Flutter` `lib/src/adapty.dart`), while KMP's `createFlowView` takes no string at all — its
+  ABI dump reads
   `createFlowView(AdaptyFlow, Duration?, Boolean, Map<String,String>?, Map<String,LocalDateTime>?, Map<String,AdaptyCustomAsset>?, Map<ProductIdentifier,PurchaseParameters>?)`
-  (`AdaptySDK-KMP` `adapty/api/adapty.klib.api:1672`). So the four `*-localizations-and-locale-codes`
-  articles saying `createFlowView` "takes no locale parameter" are **correct**, and a first pass at this
-  brief wrongly called them wrong by citing a locale param that lives on the fetch call. Check which
-  method a parameter hangs off before writing that a doc is stale.
+  (`AdaptySDK-KMP` `adapty/api/adapty.klib.api:1672`). On those two, locale is a parameter of the
+  *fetch*, and their `*-localizations-and-locale-codes` articles are **correct** to say `createFlowView`
+  takes no locale parameter; a first pass at this brief wrongly called them wrong by citing a locale
+  param that lives on the fetch call.
+  **Corrected 2026-08-14 — the generalization no longer holds for React Native.** `git log --oneline
+  origin/master` in `AdaptySDK-JS-Core` shows `e96aefd feat(flow): add locale to
+  CreateFlowViewParamsInput` and `da747f1 feat(flow): expose locale on AdaptyUiView` landing below
+  `a98f216 chore: bump version to 4.0.1`, so core v4.0.1 → RN 4.0.2 puts `locale` on view creation and
+  `locale?` on the returned `FlowViewController`. `react-native-localizations-and-locale-codes`
+  documents that, correctly, and it is this brief that was stale. Capacitor is not there yet (see the
+  divergence note in bullet 1 above). KMP and Flutter were not re-checked on 2026-08-14, so treat the
+  2026-08-11 finding as still standing for them. The lesson survives the correction, only narrower:
+  check which method a parameter hangs off **on the platform you are writing**, before writing that a
+  doc is stale.
 - **The outcome of omitting an optional argument.** One question, three answers inside one family:
   `localizations-and-locale-codes` (iOS) says the flow "renders in `en`, or in its default locale if
   the flow has no `en` localization"; `android-localizations-and-locale-codes` says "renders in its
