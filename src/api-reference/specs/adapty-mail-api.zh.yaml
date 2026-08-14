@@ -91,11 +91,13 @@ paths:
     post:
       summary: 删除用户画像
       description: |
-        清除用户画像的个人数据并取消其已计划的邮件。用于履行数据删除权请求。
+        清除用户画像的个人数据并取消其计划发送的邮件。可用于履行数据删除权请求。
 
-        通过 `external_profile_id`、`customer_user_id` 和 `email` 的任意组合来识别用户画像——Adapty Mail 的解析方式与保存时相同。
+        通过 `external_profile_id`、`customer_user_id` 和 `email` 的任意组合来标识用户画像——Adapty Mail 的解析方式与保存时相同。
 
-        删除操作不可逆。后续携带相同标识符的 [保存用户画像](#operation/saveProfile) 请求不会重新创建该用户画像。该请求具有幂等性：删除一个已被删除的用户画像会成功返回且不做任何更改。
+        删除操作不可撤销。之后使用相同标识符发起的 [保存用户画像](#operation/saveProfile) 请求不会重新创建该用户画像。
+
+        通过 `external_profile_id` 或 `customer_user_id` 重复删除操作时，请求会再次成功但不会产生任何变化。若仅通过 `email` 重复删除，则会返回 `404`：因为删除操作会清除已存储的邮件地址，导致无法再通过邮件进行匹配。
       operationId: deleteProfile
       security:
         - apikeyAuth: []
@@ -107,16 +109,16 @@ paths:
               $ref: '#/components/schemas/ProfileDeleteDTO'
             examples:
               byExternalProfileId:
-                summary: 通过保存用户画像时发送的标识符进行删除
+                summary: 通过保存用户画像时提供的标识符进行删除
                 value:
                   external_profile_id: user_12345
               byEmail:
-                summary: 通过电子邮件地址进行删除
+                summary: 通过邮件地址进行删除
                 value:
                   email: jane@example.com
       responses:
         '204':
-          description: 用户画像已删除。响应无正文。
+          description: 用户画像已删除。响应无正文内容。
         '400':
           description: 未提供任何标识符。
           content:
@@ -132,7 +134,7 @@ paths:
                         status_code: 400
                         field_name: null
         '403':
-          description: 缺少或无效的 Secret API 密钥。
+          description: API 密钥缺失或无效。
           content:
             application/json:
               schema:
@@ -146,7 +148,7 @@ paths:
                         status_code: 403
                         field_name: null
         '404':
-          description: 未找到与您发送的标识符匹配的用户画像。
+          description: 未找到与所提供标识符匹配的用户画像。
           content:
             application/json:
               schema:

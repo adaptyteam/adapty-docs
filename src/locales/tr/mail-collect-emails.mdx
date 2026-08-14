@@ -1,45 +1,94 @@
 ---
-title: "Adapty Mail için kullanıcı e-postalarını toplama"
-description: "Adapty'nin kampanyalarla kullanıcılarınıza ulaşabilmesi için kullanıcı e-postalarını ve sabit tanımlayıcıları iletin."
-metadataTitle: "Kullanıcı E-postalarını Toplama | Adapty Mail | Adapty Dokümanları"
+title: "Adapty'yi Adapty Mail'e Bağlayın"
+description: "Adapty SDK'yı zaten çalıştıran bir uygulamadan profilleri, e-postaları ve satın almaları Adapty Mail'e gönderin."
+metadataTitle: "Adapty Entegrasyonu | Adapty Mail | Adapty Dokümanları"
 keywords: ['adapty mail', 'e-posta toplama']
 ---
 
-Adapty Mail'in kullanıcılara ulaşabilmesi için her kullanıcıya ait sabit bir `customer_user_id` ve bir e-posta adresi gerekir. Bir kampanya başlatmadan önce her ikisini de uygulama kodunuzda ayarlayın.
-## Kullanıcı e-postalarını toplama \{#collect-user-emails\}
+Adapty, Adapty Mail'in giriş noktalarından biridir — uygulamanız halihazırda Adapty SDK'sını çalıştırıyorsa bunu kullanın. Adapty; profilleri, e-posta adreslerini ve abonelik olaylarını Adapty Mail'e iletir. Adapty Mail ise bunları alıcıları seçmek, her kişiyi bir flow'a yerleştirmek ve satın almayı yönlendiren e-postaya geliri atfetmek için kullanır.
 
-Adapty'ye kullanıcı başına iki değer iletilmesi gerekir: kullanıcıyı tanımlayan sabit bir `customer_user_id` ve e-postanın kendisi. Önce tanımlama yapılmalıdır; aksi takdirde Adapty'nin e-postayı ekleyeceği bir profil olmaz.
+Uygulamanız Adapty SDK'sını çalıştırmıyorsa aynı verileri sunucunuzdan gönderin — bkz. [Adapty Mail API aracılığıyla e-posta ve işlem gönderme](mail-send-data-via-api).
 
-1. **Kullanıcıyı tanımlayın.** Sabit bir ID iletin — backend kullanıcı ID'niz, Firebase UID'niz veya benzer bir değer. Bunu SDK başlangıcında `.activate()` fonksiyonuna `customerUserId` olarak geçirebilir ya da daha sonra (örneğin girişte) `Adapty.identify()` çağırabilirsiniz. Her iki durumda da ID, herhangi bir paywall gösterilmeden önce ayarlanmış olmalıdır.
+:::important
+Adapty Mail **bağımsız bir üründür**. Paywall'larınız, abonelikleriniz veya analizleriniz Adapty tarafından yönetilmese bile kullanabilirsiniz — tüm altyapınızı taşımanız gerekmiyor.
+
+Doğru gelir verisi almak için gereken minimum kurulum, Adapty SDK'yı gözlemci modunda yüklemek ve App Store sunucu bildirimlerini etkinleştirmektir.
+:::
+
+Adapty Mail, uygulamanızdan üç şeye ihtiyaç duyar: satın alma verisi (her dönüşümü o dönüşümü sağlayan e-postaya bağlayabilmek için), kararlı bir kullanıcı tanımlayıcısı ve kullanıcı e-postaları. Bu üçünü ayarlayın, ardından gönderimi açın.
+
+## 1. Adapty'nin gelirinizi takip etmesine izin verin \{#1-let-adapty-track-your-revenue\}
+
+İlk adım, uygulamanızda halihazırda uygulama içi satın alma işlemlerinizin olup olmadığına bağlıdır:
+
+- **Adapty ile uygulama içi satın almalarınız zaten uygulanmışsa**, bu aşamada başka bir şey yapmanıza gerek yok.
+- **Adapty olmadan uygulama içi satın almalarınız zaten uygulanmışsa** ve Adapty'e geçiş yapmayı planlamıyorsanız, platformunuz için Adapty SDK'yı observer mode ile yükleyin. Bu aşamada yalnızca SDK'yı projenize eklemeniz, observer mode etkin şekilde başlatmanız ve işlemleri raporlamanız gerekiyor. Platform kılavuzları: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+- **Uygulama içi satın almalarınız henüz uygulanmamışsa ve Adapty kullanmak istiyorsanız**, satın alma işlemlerini Adapty'e devretmek için [hızlı başlangıç kılavuzundaki](quickstart) adımları tamamlayın.
+
+Ardından, App Store'dan gelir ile ilgili güncellemeleri doğrudan almak için [Adapty'de App Store sunucu bildirimlerini etkinleştirin](enable-app-store-server-notifications).
+
+## 2. Kullanıcılarınızı Tanımlayın \{#2-identify-your-users\}
+
+Stabil bir ID — backend kullanıcı kimliğiniz, Firebase UID'niz veya benzeri — geçirin; bunu SDK başlatılırken `.activate()` metoduna `customerUserId` olarak iletebilir ya da daha sonra (örneğin giriş sırasında) `Adapty.identify()` çağırarak yapabilirsiniz. Her iki durumda da herhangi bir paywall gösterilmeden önce ID'yi ayarlayın. `customer_user_id`, Adapty Mail'in kampanyaları, tıklamaları ve satın alımları doğru profile eşleştirmek için kullandığı bilgidir.
+
 Platform kılavuzları: [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
 
-2. **E-postayı iletin.** Kullanıcı e-posta adresini girer girmez, `email` parametresini kullanarak `updateProfile` aracılığıyla Adapty'e gönderin.
+## 3. Kullanıcı e-postalarını toplayın \{#collect-user-emails\}
+
+Bir kullanıcı uygulamanızda e-postasını girdikten sonra (örneğin kayıt veya ödeme sırasında), `email` özelliğiyle `updateProfile` çağrısı yaparak bunu Adapty'e iletin. Bir kampanyanın her alıcısı için bu değer gereklidir.
+
 Platform kılavuzları: [iOS](setting-user-attributes), [Android](android-setting-user-attributes), [React Native](react-native-setting-user-attributes), [Flutter](flutter-setting-user-attributes), [Unity](unity-setting-user-attributes), [Kotlin Multiplatform](kmp-setting-user-attributes), [Capacitor](capacitor-setting-user-attributes).
+
 :::important
-- Her zaman **kararlı** bir `customer_user_id` kullanın, anonim tanımlayıcı kullanmayın. Kullanıcı uygulamayı kaldırıp yeniden yüklerse, Adapty bu ID'yi kullanarak yeniden yüklemeyi mevcut profile bağlar ve satın almaları doğru kullanıcıya atar.
-- E-postaları toplayıp Adapty'ye göndermeden önce kullanıcıdan açık onay alın. Hedef pazarlarınızda GDPR, CAN-SPAM ve benzeri düzenlemelere uyum sağlamak sizin sorumluluğunuzdadır.
+- Her zaman **kararlı** bir `customer_user_id` iletin, anonim tanımlayıcı kullanmayın. Bir kullanıcı uygulamanızı kaldırıp yeniden yüklediğinde, Adapty bu ID'yi kullanarak yeniden yüklemeyi mevcut profille ilişkilendirir ve satın almaları doğru kullanıcıya bağlar.
+- E-posta toplamadan ve Adapty'e göndermeden önce kullanıcıdan açık onay alın. GDPR, CAN-SPAM ve hedef pazarlarınızdaki benzer düzenlemelere uyum sağlamak sizin sorumluluğunuzdadır.
 :::
 
 <Details>
 <summary>E-posta kapsamınızı doğrulayın</summary>
 
-Toplamayı uyguladıktan sonra Adapty'de kapsamı kontrol edin:
-1. **Müşteriler → Profiller** bölümüne gidin.
-2. E-posta adresi eklenmiş profillere göre filtreleyin.
+Koleksiyonu uyguladıktan sonra Adapty'de kapsamı kontrol edin:
 
-Aktif kullanıcılarınızın en az %30-50'sinde e-posta bilgisi bulunduğundan emin olduktan sonra ilk kampanyanızı başlatın. %100'ü beklemenize gerek yok; %30'a ulaşır ulaşmaz başlatabilirsiniz. Daha sonra e-posta adresi ekleyen kullanıcılar, koşulları sağladıklarında aktif kampanyalara otomatik olarak dahil edilir.
+1. **Customers → Profiles** bölümüne gidin.
+2. E-posta adresi girilmiş profillere göre filtreleyin.
+
+Aktif kullanıcılarınız arasında en az %30–50 e-posta kapsama oranına ulaştıktan sonra ilk kampanyanızı başlatın. %100'ü beklemenize gerek yok — %30'a ulaştığınızda başlatabilirsiniz. Daha sonra e-posta adresi sağlayan kullanıcılar, koşulları sağladıklarında aktif kampanyalara otomatik olarak dahil edilir.
 
 </Details>
-## E-posta toplama stratejileri \{#email-collection-strategies\}
+
+### E-posta toplama stratejileri \{#email-collection-strategies\}
 
 Çoğu uygulama varsayılan olarak e-posta toplamaz. Uygulamanızın mevcut durumuna uyan yaklaşımı seçin.
-| Strateji | En uygun kullanım | Nasıl çalışır |
+
+| Strateji | En iyi kullanım | Nasıl çalışır |
 | ---------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Mevcut kimlik doğrulama** | Herhangi bir giriş sistemi olan uygulamalar | E-posta zaten elinizde — kullanıcı kimlik doğrulamasından geçtikten sonra Adapty'ye iletin. Nereden okuyacağınızı öğrenmek için aşağıdaki auth yöntemi referansına bakın. |
-| **Paywall öncesi e-posta kapısı** | Kimlik doğrulaması olmayan uygulamalar — sağlık, wellness, astroloji, fotoğraf editörleri | Onboarding ile paywall arasına tek bir e-posta giriş ekranı ekleyin. Kullanıcılar zaten zaman harcadığından dönüşüm oranı genellikle %70–90 arasında seyreder. |
-| **Web paywall builder checkout** | Minimal SDK çalışması; e-posta web'de toplanır | Web paywall builder'ın ilk ekranı e-postayı toplar ve Adapty'ye iletir — uygulama içi bir kapı henüz canlıya alınmadan bir kampanyaya tıklayan kullanıcılar için kullanışlıdır. |
-| **Onboarding adımı** | Quiz tabanlı onboarding (fitness, beslenme, eğitim) | Onboarding'in 2–3. adımına bir e-posta giriş alanı yerleştirin. Bunu değer sunumu olarak çerçeveleyin ("Kişiselleştirilmiş planınızı e-posta ile göndereceğiz") ve adımın atlanabilir olmasından kaçının. |
-| **Adapty Mail API** | E-postaları Adapty SDK'sı olmadan sunucunuzdan göndermek | Profilleri Adapty Mail API'sinin [Profil kaydet](api-mail/operations/saveProfile) uç noktasına gönderin. Bkz. [Adapty Mail API aracılığıyla e-posta ve işlem gönderme](mail-send-data-via-api). |
+| **Mevcut kimlik doğrulama** | Herhangi bir giriş formu olan uygulamalar | E-postaya zaten sahipsiniz — kullanıcı kimliğini doğruladıktan sonra Adapty'ye iletin. |
+| **Paywall öncesi e-posta kapısı** | Kimlik doğrulaması olmayan uygulamalar — sağlık, wellness, astroloji, fotoğraf editörleri | Onboarding ile paywall arasına tek bir e-posta girişi ekranı ekleyin. Kullanıcılar zaten zaman harcadığından dönüşüm oranı genellikle %70–90 arasında seyreder. |
+| **Web paywall builder checkout** | Minimal SDK çalışması; e-posta web'de yakalanır | Web paywall builder'ın ilk ekranı e-postayı toplar ve Adapty'ye iletir — uygulama içi bir kapı yayına girmeden önce kampanyaya tıklayan kullanıcılar için kullanışlıdır. |
+| **Onboarding adımı** | Quiz tabanlı onboarding (fitness, beslenme, eğitim) | Onboarding'in 2–3. adımına bir e-posta giriş alanı ekleyin. Bunu değer sunumu olarak çerçevelendirin ("Kişiselleştirilmiş planınızı e-postayla göndereceğiz") ve bu adımın atlanabilir olmasından kaçının. |
+| **Adapty Mail API** | E-postaları Adapty SDK'sı olmadan sunucunuzdan göndermek | Profilleri Adapty Mail API'nin [Profili kaydet](api-mail/operations/saveProfile) endpoint'ine gönderin. Bkz. [Adapty Mail API aracılığıyla e-posta ve işlem gönderme](mail-send-data-via-api). |
+
+## 4. Gönderimi etkinleştirin \{#enable-sending\}
+
+Bu adıma, kurulumun geri kalanı tamamlandıktan sonra geri dönün. Adapty Mail, en az bir flow oluşturulmadan **Enable** düğmesini devre dışı bırakır ve şu ipucunu gösterir: *"Set up at least one flow before enabling Adapty integration"* — bu nedenle önce gönderim domain'inizi, ödeme sayfanızı, kampanyanızı ve flow'unuzu tamamlayın. Bkz. [Adapty Mail'e başlarken](mail-get-started).
+
+Entegrasyonu açmak son adımdır: olaylar akmaya, segmentler eşleşmeye ve e-postalar gönderilmeye başlar.
+
+1. Adapty Mail'de **Settings → Project** bölümüne gidin ve **Adapty Integration** kısmını bulun.
+2. **Enable Adapty integration** seçeneğine tıklayın (önceki bir kurulumdan entegrasyon zaten mevcutsa **Enable** olarak görünebilir).
+
+Etkinleştirildiğinde Adapty, yeni abonelikler, yenilemeler, denemeler, dönüşümler, iadeler ve ödeme sorunları gibi tüm abonelik olaylarını Adapty Mail'e gönderir. Bu olaylar segment üyeliğini, kampanya yönlendirmesini ve bir kullanıcı dönüştüğünde diziyi durduran koşulları yönetir.
+
+<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
+
+:::note
+**Adapty Entegrasyonu** bölümü yalnızca bir Adapty çalışma alanına bağlı projeler için görünür. Adapty Mail'e doğrudan kaydolduysanız ve projeniz bağlı değilse bu bölüm görünmez — verilerinizi bunun yerine [Adapty Mail API](mail-send-data-via-api) aracılığıyla gönderin.
+:::
+
+:::note
+Ayarlar'daki **Adapty integration** geçiş düğmesi, sizi Adapty Mail'e giriş yaptıran Adapty iş ortağı çalışma alanıyla *aynı şey değildir*. İş ortağı çalışma alanı, hesabınızı (ve Adapty üzerinden kaydolduysanız markanızı) oluşturan şeydir. Buradaki entegrasyon geçiş düğmesi ise etkinlik senkronizasyonunu kontrol eder — her proje için ayrı ayrı etkinleştirilmesi gerekir.
+:::
+
 ## Sınırlamalar \{#limitations\}
 
 - **Anonim kullanıcılar**: Sabit bir `customer_user_id` olmayan kullanıcılar kampanya alamaz. Hesap oluştururken veya giriş yaparken bu kullanıcıları tanımlayın — o andan itibaren sağladıkları e-posta, Adapty profilleriyle eşleştirilir.
