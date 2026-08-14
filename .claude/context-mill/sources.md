@@ -197,10 +197,12 @@ Registered in `config.json` as slug `api-export-analytics`.
 path: src/api-reference/specs/adapty-mail-api.yaml
 kind: in-repo-spec
 
-Registered in `config.json` as slug `api-mail`. Public surface is 2 Profile endpoints
-(`saveProfile`, `saveTransactionEvent`) at `api-mail.adapty.io`, auth is the Adapty Mail secret key as
-a Bearer token — the rest of the underlying service is internal. Don't expand documented scope beyond
-those two endpoints from reading this spec file alone.
+Registered in `config.json` as slug `api-mail`. Public surface is 3 Profile endpoints
+(`saveProfile`, `deleteProfile`, `saveTransactionEvent`) at `api-mail.adapty.io`, auth is the Adapty
+Mail secret key as a Bearer token — the rest of the underlying service is internal. Don't expand
+documented scope beyond those three endpoints from reading this spec file alone. Count corrected
+2026-08-14: `deleteProfile` shipped after this entry was written, so treat the number here as a
+snapshot and re-check the auth dependency in `mail-backend` before relying on it.
 
 ## developer-api-spec — Developer API (stub, not maintained)
 path: src/api-reference/specs/developer-api.yaml
@@ -291,7 +293,11 @@ taking the project-scoped Adapty Mail secret key are public; the same `Profile` 
 that take a dashboard account session and are internal. A route being visible in Swagger or a network
 tab is not evidence it may be documented.
 
-Registered 2026-08-11.
+`docs/specs/` holds design records — useful, but **read the migrations and the code before trusting a
+spec's `Status:` header**. `MULTI_SOURCE_PROFILES.md` still says "approved design, not implemented"
+while all five of its releases have shipped.
+
+Registered 2026-08-11. Read at `1a147338` (2026-08-13).
 
 ## mail-frontend — Adapty Mail dashboard (noty-wave)
 
@@ -305,5 +311,12 @@ Where a Mail dashboard control's enabled/disabled state is decided — useful wh
 setup ordering. Worked example: the *Enable Adapty integration* button is gated on a field the backend
 computes as "has an active flow **or** has ever called the ingestion API", and the gate is UI-only. So
 "enable sending last" is sound ordering advice, not an enforced invariant, and must not be written as one.
+
+Also the canonical source for **user-visible strings** — nav labels, chip labels, modal copy, disabled-state
+hints. Worked example: the profile list is under a **Profiles** nav item, not "CRM"; and `SES_META` in
+`features/crm/lib/meta.ts` is where the Journey chip labels are defined, including that **Delivered**
+supersedes **Sent** rather than following it.
+
+Read at `8b5613a` (2026-08-13).
 
 Registered 2026-08-11.

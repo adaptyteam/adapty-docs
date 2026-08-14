@@ -30,7 +30,7 @@ A new endpoint, a changed request/response shape, a new field or an auth change 
 
 Two facts that are easy to get wrong here:
 
-- **The Mail API spec is bigger than the public surface.** Only two Profile endpoints are public — `saveProfile` and `saveTransactionEvent`, on `api-mail.adapty.io`, authenticated with the Adapty Mail secret key from Settings as a Bearer token and scoped to one project. The rest of the spec is internal; do not document it as if a customer can call it.
+- **The Mail API spec is bigger than the public surface.** Three Profile endpoints are public — `saveProfile`, `deleteProfile`, and `saveTransactionEvent`, on `api-mail.adapty.io`, authenticated with the Adapty Mail secret key from Settings as a Bearer token and scoped to one project. Corrected 2026-08-14: this said two, before `profile/delete/` shipped. The rest of the service's routes are internal; do not document them as if a customer can call them. Two fields on the save schemas are new and easy to miss — `customer_user_id` (the cross-system matching key) and, on transaction events, `email`; both are matching hints that are never stored on the event. The `source` enum (`adapty | funnelfox | custom`) is deliberately **left out of the published spec**: a customer backend should only ever send the `custom` default, and the other two values name internal senders.
 - **Registering a new API surface touches four places**, not one: the spec YAML, `src/api-reference/config.json`, the `api.json` sidebar, and `RUNTIME_ROUTE_PREFIXES` in the link checker (its pages are runtime routes, so links into them look broken otherwise). Model bearer auth as `apiKey`/header — the code-sample generator only injects `apiKey`. Links out of a spec description must be absolute `/docs/…`.
 
 ## What we document, what we don't
@@ -39,7 +39,7 @@ Two facts that are easy to get wrong here:
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| adapty-mail-api.yaml | reference | dev | 2 | — |
+| adapty-mail-api.yaml | reference | dev | 3 | — |
 | export-analytics-api | — | dev | 1 | api |
 | export-analytics-api-authorization | — | dev | 5 | api |
 | export-analytics-api-requests | — | dev | 2 | api |
@@ -82,7 +82,7 @@ never the answer. Corpus-wide synonyms live in `aliases.md` and are not repeated
 | "record the purchase / transaction from our website in Adapty" | **Not the Web API** — it has only three endpoints and none of them takes a transaction. Profile creation and transactions are `server-side-api`; a hosted Stripe/Paddle/custom-store sync is `web-payments`. `web-api` points at the observer-mode article in `sdk-flows-manual` for the variation-ID linking pattern, which is the same on web. |
 | "404 profile not found", "which ID identifies the user" | The profile must exist before you call the Web API — `web-api` makes creating it step 1, via `server-side-api`. `recordPaywallView` and `addAttribution` 404 with a profile-not-found error; `getPaywall`'s 404 instead means the variation wasn't found. Either `customer_user_id` (your ID) or `profile_id` (Adapty's) identifies the user — `web-api-requests` shows where each appears in the dashboard. |
 | "attach campaign / UTM data to web users" | `web-api.yaml`, `addAttribution` — custom attribution only (status, channel, campaign, ad group, ad set, creative). Attribution that comes from a network integration is `attribution`. |
-| "push subscribers or purchase history to Adapty Mail from our backend" | `adapty-mail-api.yaml`, but only `saveProfile` and `saveTransactionEvent` are public — treat the rest of the spec as internal. A profile with just an email reaches the *never purchased* flow only; every purchase-driven flow (renewal cancelled, billing issue, expired, refunded) needs transaction events too. Dashboard setup, segments and the step-by-step walkthrough are `adapty-mail`. |
+| "push subscribers or purchase history to Adapty Mail from our backend", "delete a user's data from Adapty Mail" | `adapty-mail-api.yaml` — `saveProfile`, `saveTransactionEvent`, and `deleteProfile` are public; treat the rest of the service as internal. A profile with just an email reaches the *never purchased* flow only; every purchase-driven flow (renewal cancelled, billing issue, expired, refunded) needs transaction events too. Dashboard setup, segments and the step-by-step walkthrough are `adapty-mail`. |
 | "Postman collection", "test environment variables" | `web-api-requests` and `export-analytics-api-requests` — these two pages are essentially just the collection download plus variable names, and one shared environment covers the server-side, web and export APIs. |
 
 ## Gaps and misses
