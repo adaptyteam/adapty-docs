@@ -48,12 +48,17 @@ different module from the core fetch API:
     `FETCH_HEAD:<path>` is what makes the shipped surface readable. Reading a branch tip instead is how
     this project previously documented a stale API — the pinned SHA *is* the release, so prefer it over
     `origin/master` whenever the two disagree.
-  - **The two JS wrappers have genuinely diverged; neither is simply older.** On 2026-08-14,
-    `origin/release/capacitor` still declared `onAppeared: () => EventHandlerResult` and a narrower
-    `FlowEventView` (`id` plus optional `placementId`/`variationId`, no `locale`), against the RN pin's
-    required `placementId`/`variationId` plus `locale?`. So a Capacitor event payload is a different
-    shape from RN's, not a previous version of the same one — never carry one wrapper's field list to
-    the other without reading `release/capacitor`.
+  - **`jscore`'s `origin/release/capacitor` branch is a decoy — never read it to learn what Capacitor
+    ships.** It looks authoritative and is stale: on 2026-08-14 it still declared
+    `onAppeared: () => EventHandlerResult` and a narrower `FlowEventView` (`id` plus optional
+    `placementId`/`variationId`, no `locale`), and `git merge-base --is-ancestor` puts both locale
+    commits (`e96aefd`, `da747f1`) *outside* it, so it predates core v4.0.1. What Capacitor actually
+    ships is whatever its own `package.json` pins: `AdaptySDK-Capacitor` `origin/master`
+    (`4.0.1-beta.1`) pins the published `@adapty/core: 4.0.1` and does carry the locale work —
+    `FlowViewController.locale` sits at `src/ui-builder/flow-view-controller.ts:52`. The rule for both
+    JS wrappers is the same and has no exception: read the wrapper's core pin, then read that ref.
+    A first pass at this note read the branch instead and concluded the two wrappers' event payloads
+    had diverged into different shapes, when Capacitor was simply one core version behind.
 - **flutter-sdk** — `lib/src/`, where the deprecation strings themselves carry facts worth quoting:
   `lib/src/adapty.dart` deprecates the `locale` argument of `getFlow`/`getFlowForDefaultAudience` with
   the reason attached ("the locale is applied when the flow view is built — pass it to
@@ -120,8 +125,9 @@ corpus right now:
   CreateFlowViewParamsInput` and `da747f1 feat(flow): expose locale on AdaptyUiView` landing below
   `a98f216 chore: bump version to 4.0.1`, so core v4.0.1 → RN 4.0.2 puts `locale` on view creation and
   `locale?` on the returned `FlowViewController`. `react-native-localizations-and-locale-codes`
-  documents that, correctly, and it is this brief that was stale. Capacitor is not there yet (see the
-  divergence note in bullet 1 above). KMP and Flutter were not re-checked on 2026-08-14, so treat the
+  documents that, correctly, and it is this brief that was stale. Capacitor has the same locale work
+  via core 4.0.1 (see the `release/capacitor` decoy note in bullet 1 above). KMP and Flutter were not
+  re-checked on 2026-08-14, so treat the
   2026-08-11 finding as still standing for them. The lesson survives the correction, only narrower:
   check which method a parameter hangs off **on the platform you are writing**, before writing that a
   doc is stale.
