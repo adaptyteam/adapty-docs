@@ -3,7 +3,7 @@ info:
   title: Adapty Mail API
   version: 1.0.0
   description: |
-    L'API Adapty Mail vous permet d'envoyer des profils utilisateurs et des événements de transaction à Adapty Mail directement
+    L'API Adapty Mail vous permet d'envoyer des profils utilisateur et des événements de transaction à Adapty Mail directement
     depuis votre serveur, sans faire transiter les données par le SDK Adapty.
 
     Utilisez-la pour :
@@ -13,10 +13,10 @@ info:
     - Alimenter Adapty Mail en mode serveur à serveur, avec votre backend comme source de vérité.
 
     Un profil avec une adresse e-mail suffit pour le flow **never purchased**. Tous les autres flows
-    (renewal cancelled, billing issue, expired, refunded) sont pilotés par l'historique des achats, donc ces
-    profils nécessitent également des événements de transaction pour être placés dans le bon flow.
+    (renewal cancelled, billing issue, expired, refunded) sont pilotés par l'historique d'achats, donc ces
+    profils ont également besoin d'événements de transaction pour être placés dans le bon flow.
 
-    Pour une procédure pas à pas, consultez [Envoyer des e-mails et des transactions via l'API Adapty Mail](/docs/mail-send-data-via-api).
+    Pour un guide étape par étape, consultez [Envoyer des e-mails et des transactions via l'API Adapty Mail](/docs/mail-send-data-via-api).
 servers:
   - url: https://api-mail.adapty.io
     description: Serveur de production
@@ -25,11 +25,11 @@ paths:
     post:
       summary: Enregistrer un profil
       description: |
-        Crée ou met à jour un profil dans Adapty Mail. Un profil contient l'adresse e-mail de l'utilisateur et des attributs
-        qu'Adapty Mail utilise pour identifier les destinataires et créer des [segments](/docs/mail-segments).
+        Crée ou met à jour un profil dans Adapty Mail. Un profil contient l'adresse e-mail de l'utilisateur et les attributs
+        qu'Adapty Mail utilise pour identifier les destinataires et construire des [segments](/docs/mail-segments).
 
-        Identifiez chaque utilisateur par un `external_profile_id` stable. L'envoi du même `external_profile_id`
-        met à jour le profil existant plutôt que de créer un doublon.
+        Identifiez chaque utilisateur par un `external_profile_id` stable. Envoyer le même `external_profile_id`
+        à nouveau met à jour le profil existant plutôt que d'en créer un doublon.
       operationId: saveProfile
       security:
         - apikeyAuth: []
@@ -41,14 +41,14 @@ paths:
               $ref: '#/components/schemas/ProfileDTO'
             examples:
               basic:
-                summary: Profil avec une adresse e-mail, prêt pour le flow "never purchased"
+                summary: Profile with an email, ready for the "never purchased" flow
                 value:
-                  external_profile_id: "user_12345"
-                  external_created_at: "2026-06-01T10:30:00Z"
-                  email: "jane@example.com"
-                  country: "US"
+                  external_profile_id: user_12345
+                  external_created_at: '2026-06-01T10:30:00Z'
+                  email: jane@example.com
+                  country: US
                   custom_attributes:
-                    plan: "trial"
+                    plan: trial
       responses:
         '200':
           description: Profil enregistré avec succès. Le corps de la réponse est un objet vide.
@@ -60,7 +60,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: Validation échouée — un champ obligatoire est manquant ou invalide. `field_name` indique quel champ est concerné.
+          description: Échec de la validation — un champ obligatoire est manquant ou invalide. `field_name` indique quel champ est concerné.
           content:
             application/json:
               schema:
@@ -69,10 +69,10 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "email"
+                        field_name: email
         '403':
           description: Clé API secrète manquante ou invalide.
           content:
@@ -83,20 +83,94 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
+                        field_name: null
+  /api/v1/profile/delete/:
+    post:
+      summary: Supprimer un profil
+      description: |
+        Efface les données personnelles d'un profil et annule ses e-mails planifiés. Utilisez cette opération pour répondre à une demande de droit à l'effacement.
+
+        Identifiez le profil par n'importe quelle combinaison de `external_profile_id`, `customer_user_id` et `email` — Adapty Mail résout le profil de la même manière qu'il le fait lors de l'enregistrement.
+
+        L'effacement est définitif. Une requête ultérieure [Save profile](#operation/saveProfile) portant les mêmes identifiants ne recrée pas le profil.
+
+        Répétez une suppression par `external_profile_id` ou `customer_user_id` et elle réussit à nouveau sans rien modifier. Répétez-en une qui ne portait que `email` et elle retourne `404` : l'effacement supprime l'adresse stockée, de sorte qu'un e-mail n'a plus rien à faire correspondre.
+      operationId: deleteProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDeleteDTO'
+            examples:
+              byExternalProfileId:
+                summary: Supprimer par l'identifiant envoyé lors de l'enregistrement du profil
+                value:
+                  external_profile_id: user_12345
+              byEmail:
+                summary: Supprimer par adresse e-mail
+                value:
+                  email: jane@example.com
+      responses:
+        '204':
+          description: Profil supprimé. La réponse ne contient pas de corps.
+        '400':
+          description: Aucun identifiant n'a été fourni.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: At least one of external_profile_id, customer_user_id or email must be provided
+                        error_code: missing_identifier
+                        status_code: 400
+                        field_name: null
+        '403':
+          description: Clé API secrète manquante ou invalide.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
+                        status_code: 403
+                        field_name: null
+        '404':
+          description: Aucun profil ne correspond aux identifiants envoyés.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Profile not found
+                        error_code: profile_not_found_error
+                        status_code: 404
                         field_name: null
   /api/v1/profile/transaction-event/save/:
     post:
       summary: Enregistrer un événement de transaction
       description: |
         Enregistre un événement de transaction de store pour un profil. Adapty Mail utilise les événements de transaction pour placer
-        les profils dans des flows basés sur les achats — le `event_type` correspond à des flows tels que renewal cancelled,
-        billing issue, expired et refunded — ainsi que pour l'attribution des revenus.
+        les profils dans des flows basés sur les achats — l'`event_type` correspond à des flows tels que renouvellement annulé,
+        problème de facturation, expiré et remboursé — ainsi que pour l'attribution des revenus.
 
-        Envoyez ces événements au fur et à mesure que vous traitez les achats, les renouvellements et les annulations. Seul le
-        flow **never purchased** fonctionne sans eux.
+        Envoyez ces événements lorsque vous gérez des achats, des renouvellements et des annulations. Seul le
+        flow **jamais acheté** fonctionne sans eux.
       operationId: saveTransactionEvent
       security:
         - apikeyAuth: []
@@ -108,20 +182,20 @@ paths:
               $ref: '#/components/schemas/TransactionEventDTO'
             examples:
               basic:
-                summary: Un nouvel achat d'abonnement mensuel
+                summary: A new monthly subscription purchase
                 value:
-                  event_type: "subscription_started"
-                  event_id: "evt_abc123"
-                  event_datetime: "2026-06-10T14:20:05Z"
-                  external_profile_id: "user_12345"
-                  store: "app_store"
-                  store_product_id: "premium_monthly"
-                  store_transaction_id: "1000000123456789"
-                  store_original_transaction_id: "1000000123456789"
-                  purchased_at: "2026-06-10T14:20:00Z"
-                  originally_purchased_at: "2026-06-10T14:20:00Z"
-                  price_usd: "9.99"
-                  expires_at: "2026-07-10T14:20:00Z"
+                  event_type: subscription_started
+                  event_id: evt_abc123
+                  event_datetime: '2026-06-10T14:20:05Z'
+                  external_profile_id: user_12345
+                  store: app_store
+                  store_product_id: premium_monthly
+                  store_transaction_id: '1000000123456789'
+                  store_original_transaction_id: '1000000123456789'
+                  purchased_at: '2026-06-10T14:20:00Z'
+                  originally_purchased_at: '2026-06-10T14:20:00Z'
+                  price_usd: '9.99'
+                  expires_at: '2026-07-10T14:20:00Z'
       responses:
         '200':
           description: Événement de transaction enregistré avec succès. Le corps de la réponse est un objet vide.
@@ -133,7 +207,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: Validation échouée — un champ obligatoire est manquant ou invalide. `field_name` indique quel champ est concerné.
+          description: Échec de la validation — un champ obligatoire est manquant ou invalide. `field_name` indique le champ concerné.
           content:
             application/json:
               schema:
@@ -142,10 +216,10 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "event_type"
+                        field_name: event_type
         '403':
           description: Clé API secrète manquante ou invalide.
           content:
@@ -156,8 +230,8 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
                         field_name: null
 components:
@@ -167,11 +241,11 @@ components:
       in: header
       name: Authorization
       description: |
-        Authentifiez chaque requête avec votre clé API secrète Adapty Mail, envoyée dans l'en-tête **Authorization**
-        avec la valeur `Bearer {your_secret_api_key}`, par exemple `Bearer secret_live_...`.
+        Authentifiez chaque requête avec votre clé API secrète Adapty Mail, envoyée en tant qu'en-tête **Authorization**
+        avec la valeur `Bearer {your_secret_api_key}`, par exemple, `Bearer secret_live_...`.
 
-        Retrouvez cette clé dans Adapty Mail sous **Settings**. La clé est spécifique au projet — elle identifie le
-        projet auquel appartiennent les données, de sorte que les endpoints de profil et de transaction n'ont pas besoin d'un identifiant de projet.
+        Vous trouverez cette clé dans Adapty Mail sous **Settings**. La clé est spécifique au projet — elle identifie le
+        projet auquel les données appartiennent, ainsi les endpoints de profil et de transaction ne nécessitent pas d'ID de projet.
   schemas:
     ProfileDTO:
       type: object
@@ -183,9 +257,9 @@ components:
         external_profile_id:
           type: string
           description: |
-            Identifiant stable pour l'utilisateur, géré par votre application ou votre backend. Réutilisez la même valeur dans
-            les requêtes afin qu'Adapty Mail associe les e-mails, les clics et les achats à un seul profil. N'utilisez jamais un
-            identifiant anonyme ou propre à une installation.
+            Identifiant stable pour l'utilisateur, géré par votre application ou votre backend. Réutilisez la même valeur dans toutes les
+            requêtes afin qu'Adapty Mail associe les e-mails, les clics et les achats à un seul profil. N'utilisez jamais un identifiant
+            anonyme ou propre à une installation.
         external_created_at:
           type: string
           format: date-time
@@ -195,7 +269,17 @@ components:
         email:
           type: string
           format: email
-          description: L'adresse e-mail de l'utilisateur. Adapty Mail envoie les campagnes à cette adresse.
+          description: |
+            L'adresse e-mail de l'utilisateur. Adapty Mail envoie les campagnes à cette adresse.
+
+            L'adresse est en écriture unique : elle est définie lors de la création du profil et les enregistrements ultérieurs ne
+            l'écrasent pas.
+        customer_user_id:
+          type: string
+          description: |
+            L'identifiant de l'utilisateur dans votre propre système, si vous en avez un qu'Adapty connaît également. Adapty
+            Mail l'utilise pour reconnaître une personne qui l'atteint également via le SDK, afin que les deux
+            sources partagent un seul profil au lieu de produire un doublon qui envoie un e-mail à la même personne deux fois.
         first_name:
           type: string
           description: Le prénom de l'utilisateur.
@@ -211,10 +295,10 @@ components:
           description: La date de naissance de l'utilisateur, au format ISO 8601 (par exemple, `"1990-05-21"`).
         country:
           type: string
-          description: Le pays de l'utilisateur sous forme de code ISO 3166-1 alpha-2 en majuscules à deux lettres (par exemple, `US`).
+          description: Le pays de l'utilisateur sous forme de code ISO 3166-1 alpha-2 à deux lettres en majuscules (par exemple, `US`).
         store_country:
           type: string
-          description: La région du store de l'utilisateur sous forme de code ISO 3166-1 alpha-2 en majuscules à deux lettres (par exemple, `US`).
+          description: La région du store de l'utilisateur sous forme de code ISO 3166-1 alpha-2 à deux lettres en majuscules (par exemple, `US`).
         custom_attributes:
           type: object
           description: |
@@ -222,6 +306,29 @@ components:
             créer des [segments](/docs/mail-segments) — par exemple, `plan`, `signup_source` ou `trial_days`.
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
+    ProfileDeleteDTO:
+      type: object
+      description: |
+        Identifiants du profil à supprimer. Envoyez au moins un des champs `external_profile_id`,
+        `customer_user_id` ou `email`.
+      anyOf:
+        - required:
+            - external_profile_id
+        - required:
+            - customer_user_id
+        - required:
+            - email
+      properties:
+        external_profile_id:
+          type: string
+          description: L'identifiant que vous avez envoyé lors de l'enregistrement du profil.
+        customer_user_id:
+          type: string
+          description: L'identifiant de l'utilisateur dans votre propre système.
+        email:
+          type: string
+          format: email
+          description: L'adresse e-mail associée au profil.
     DeviceInfoDTO:
       type: object
       required:
@@ -229,22 +336,22 @@ components:
       properties:
         platform:
           type: string
-          description: La plateforme utilisée par l'utilisateur, par exemple `iOS` ou `Android`.
+          description: La plateforme sur laquelle se trouve l'utilisateur, par exemple `iOS` ou `Android`.
         device:
           type: string
-          description: Le modèle de l'appareil, par exemple `iPhone15,2`.
+          description: Modèle de l'appareil, par exemple `iPhone15,2`.
         os:
           type: string
-          description: La version du système d'exploitation, par exemple `17.5`.
+          description: Version du système d'exploitation, par exemple `17.5`.
         locale:
           type: string
-          description: La locale de l'utilisateur, par exemple `en-US`.
+          description: La langue et région de l'utilisateur, par exemple `en-US`.
         timezone:
           type: string
           description: Le fuseau horaire de l'utilisateur, par exemple `America/New_York`.
         app_version:
           type: string
-          description: La version de votre application utilisée par l'utilisateur, par exemple `3.1.0`.
+          description: Version de votre application utilisée par l'utilisateur, par exemple `3.1.0`.
     TransactionEventDTO:
       type: object
       required:
@@ -270,7 +377,23 @@ components:
           description: Date et heure d'enregistrement de l'événement, au format ISO 8601.
         external_profile_id:
           type: string
-          description: Le même `external_profile_id` stable que vous envoyez lors de l'enregistrement du profil. Associe la transaction au bon profil.
+          description: |
+            Le même `external_profile_id` stable que vous envoyez lors de l'enregistrement du profil. Associe la
+            transaction au bon profil.
+
+            Vous pouvez envoyer une transaction avant que le profil n'existe. Adapty Mail conserve l'événement
+            sans association et le lie au profil lors du prochain enregistrement portant le même identifiant.
+        customer_user_id:
+          type: string
+          description: |
+            L'identifiant de l'utilisateur dans votre propre système. Adapty Mail l'utilise pour retrouver le profil lorsque
+            `external_profile_id` ne correspond à aucun profil. Il n'est pas stocké sur l'événement.
+        email:
+          type: string
+          format: email
+          description: |
+            L'adresse e-mail de l'acheteur. Adapty Mail l'utilise pour retrouver le profil lorsqu'aucun
+            identifiant ne correspond. Elle n'est pas stockée sur l'événement.
         store:
           type: string
           description: Le store dont provient la transaction, par exemple `app_store`, `play_store` ou `stripe`.
@@ -286,7 +409,7 @@ components:
         purchased_at:
           type: string
           format: date-time
-          description: Date et heure à laquelle cette transaction a eu lieu, au format ISO 8601.
+          description: Date et heure de cette transaction, au format ISO 8601.
         originally_purchased_at:
           type: string
           format: date-time
@@ -297,12 +420,12 @@ components:
         expires_at:
           type: string
           format: date-time
-          description: Date et heure d'expiration de l'abonnement, au format ISO 8601. À omettre pour les achats non liés à un abonnement.
+          description: Date et heure d'expiration de l'abonnement, au format ISO 8601. À omettre pour les achats uniques.
         offer:
           $ref: '#/components/schemas/Offer'
     TransactionEventType:
       type: string
-      description: Le type d'événement de transaction. Les flows basés sur les achats sont déclenchés par ces valeurs.
+      description: Le type d'événement de transaction. Les flux basés sur les achats sont déclenchés par ces valeurs.
       enum:
         - subscription_started
         - subscription_renewed
@@ -316,7 +439,7 @@ components:
         - non_subscription_purchase_refunded
     Offer:
       type: object
-      description: Détails d'une offre promotionnelle ou de lancement appliquée à la transaction.
+      description: Détails d'une offre promotionnelle ou d'une offre de lancement appliquée à la transaction.
       required:
         - category
         - offer_type
@@ -352,7 +475,7 @@ components:
             properties:
               message:
                 type: string
-                description: Description lisible de l'erreur.
+                description: Description de l'erreur lisible par un humain.
               error_code:
                 type: string
                 description: Identifiant d'erreur lisible par une machine.

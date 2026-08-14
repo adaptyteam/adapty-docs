@@ -9,9 +9,9 @@ displayed_sidebar: sdkandroid
 
 ## Tại sao điều này quan trọng \{#why-this-is-important\}
 
-Mã ngôn ngữ (locale code) được dùng khi Adapty chọn bản địa hóa cho một flow, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
+Mã ngôn ngữ được sử dụng khi Adapty chọn bản dịch cho một flow hoặc onboarding, và khi bạn đọc Remote Config cho một paywall tùy chỉnh.
 
-Mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, vì vậy Adapty dùng một tiêu chuẩn nội bộ thống nhất trên mọi nền tảng được hỗ trợ. Hiểu rõ tiêu chuẩn đó giúp bạn dự đoán được bản địa hóa nào người dùng sẽ nhận được.
+Mã ngôn ngữ khá phức tạp và có thể khác nhau giữa các nền tảng, vì vậy Adapty dựa trên một tiêu chuẩn nội bộ thống nhất cho mọi nền tảng mà nó hỗ trợ. Hiểu rõ tiêu chuẩn đó giúp bạn dự đoán được bản dịch nào người dùng sẽ nhận được.
 
 ## Chuẩn locale code tại Adapty \{#locale-code-standard-at-adapty\}
 
@@ -19,23 +19,41 @@ Mã ngôn ngữ khá phức tạp và có thể khác nhau tùy nền tảng, v�
 
 ## Khớp mã ngôn ngữ \{#locale-code-matching\}
 
-Khi Adapty tìm kiếm bản dịch phù hợp với ngôn ngữ của người dùng, quá trình diễn ra như sau:
+Trong SDK v4, flow và onboarding khớp mã ngôn ngữ theo các cách khác nhau: flow được bản địa hóa bởi SDK trên thiết bị, còn onboarding được bản địa hóa bởi máy chủ Adapty.
 
-1. Chuỗi ngôn ngữ được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
-2. Adapty tìm kiếm bản dịch có mã ngôn ngữ khớp hoàn toàn
-3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` từ `pt-br`) và tìm kiếm bản dịch phù hợp
-4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo ngôn ngữ mặc định của flow
+### Flow và paywall được tạo bằng Paywall Builder \{#flows-and-paywall-builder-paywalls\}
 
-Bằng cách này, `'pt_BR'`, `pt-BR`, và `pt-br` đều được phân giải về cùng một bản địa hóa.
+Paywall được tạo trong Paywall Builder sẽ được phân phối dưới dạng flow trong SDK v4, vì vậy quy tắc dưới đây áp dụng cho cả hai.
+
+Khớp là chính xác tuyệt đối. SDK so sánh mã bạn truyền vào với mã ngôn ngữ của flow theo từng ký tự: không thay đổi chữ hoa/thường, không thay thế dấu gạch dưới (`_`) bằng dấu gạch ngang (`-`), và không quay về subtag ngôn ngữ. Với một flow có ngôn ngữ `pt-br`, chỉ `pt-br` mới khớp: `pt-BR`, `pt_BR`, và `pt-PT` đều không khớp.
+
+Khi mã không khớp với bất kỳ bản địa hóa nào, flow sẽ tự động hiển thị theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — SDK không trả về lỗi và không ghi cảnh báo.
+
+Khi mã khớp, Adapty sẽ hợp nhất bản địa hóa đó với bản mặc định: các chuỗi và tài nguyên mà bản địa hóa được khớp không định nghĩa sẽ được lấy từ bản địa hóa mặc định.
+
+Bỏ qua mã locale không giống với việc yêu cầu localization mặc định của flow: SDK sẽ thay thế bằng `en` cố định. Một flow có locale mặc định là `de` vẫn hiển thị bằng `en` nếu nó có localization `en`, và chỉ dự phòng về `de` khi không có. Điều này áp dụng cho Android SDK 4.0.1 trở lên — trong 4.0.0, bỏ qua mã locale sẽ hiển thị localization mặc định của flow.
+
+:::warning
+Truyền mã ngôn ngữ chính xác như cách đã cấu hình trong dashboard — các subtag viết thường và cách nhau bằng dấu gạch ngang. Đừng truyền trực tiếp locale identifier của hệ thống: `Locale.getDefault().toLanguageTag()` trả về `pt-BR` và `Locale.getDefault().toString()` trả về `pt_BR`, và cả hai đều sẽ dùng bản ngôn ngữ mặc định. Hãy chuyển đổi giá trị trong ứng dụng của bạn trước khi truyền vào.
+:::
+
+### Onboardings
+
+Onboardings được bản địa hóa trên máy chủ, và các quy tắc máy chủ chấp nhận nhiều định dạng khác nhau. Khi bạn truyền `locale` vào [`getOnboarding`](android-get-onboardings):
+
+1. Chuỗi locale được chuyển thành chữ thường và tất cả dấu gạch dưới (`_`) được thay thế bằng dấu gạch ngang (`-`)
+2. Adapty tìm kiếm bản địa hóa có mã locale khớp hoàn toàn
+3. Nếu không tìm thấy, Adapty lấy chuỗi con trước dấu gạch ngang đầu tiên (`pt` trong `pt-br`) và tìm kiếm bản địa hóa khớp
+4. Nếu vẫn không tìm thấy, Adapty trả về nội dung theo locale mặc định của onboarding
+
+Theo cách này, `pt_BR`, `pt-BR` và `pt-br` đều phân giải thành cùng một bản dịch onboarding.
 
 ## Triển khai bản địa hóa \{#implementing-localizations\}
 
 Trong SDK v4, bạn không cần truyền mã ngôn ngữ khi tải một flow — `getFlow` trả về flow cùng với tất cả các bản địa hóa của nó.
 
-- **Flow được xây dựng trong builder**: SDK không tự đọc ngôn ngữ của thiết bị, vì vậy hãy xác định ngôn ngữ trong ứng dụng của bạn và truyền nó vào tham số `locale` của `AdaptyUI.getFlowConfiguration`. Tham số này không bắt buộc — bỏ qua nó và flow sẽ hiển thị bằng `en`, hoặc theo [ngôn ngữ mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) khi flow không có bản dịch `en`. Khi bạn yêu cầu một ngôn ngữ mà flow không hỗ trợ, giao diện sẽ tự động dùng ngôn ngữ mặc định của flow mà không báo lỗi, và các chuỗi văn bản thiếu trong ngôn ngữ đã chọn sẽ được lấy từ ngôn ngữ mặc định.
-
-Rendering trong `en` theo mặc định yêu cầu Android SDK 4.0.1. Trong 4.0.0, bỏ qua `locale` sẽ render bản địa hóa mặc định của flow.
-- **Paywall tùy chỉnh (remote config)**: `getFlow` trả về tất cả bản địa hóa đã cấu hình trong `flow.remoteConfigs`. Mỗi entry có mã `locale` và nội dung config (`jsonString`, hoặc `dataMap` đã được parse). Chọn entry phù hợp với người dùng, kết hợp với logic fallback của riêng bạn:
+- **Flow được xây dựng trong builder**: SDK không đọc locale của thiết bị, vì vậy hãy xác định locale trong ứng dụng của bạn và truyền nó vào đối số `locale` của `AdaptyUI.getFlowConfiguration`. Đối số này là tùy chọn — bỏ qua nó và flow sẽ hiển thị bằng `en`, hoặc bằng [locale mặc định](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) khi flow không có bản địa hóa `en`.
+- **Paywall tùy chỉnh (remote config)**: `getFlow` trả về tất cả các bản địa hóa đã cấu hình trong `flow.remoteConfigs`. Mỗi mục có một mã `locale` và nội dung config (`jsonString`, hoặc `dataMap` đã được phân tích cú pháp). Chọn mục phù hợp với người dùng, với phương án dự phòng của riêng bạn:
 
 ```kotlin showLineNumbers
 Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -53,7 +71,7 @@ Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
 }
 ```
 
-Các quy tắc khớp mã ngôn ngữ ở trên mô tả cách Adapty chuẩn hóa các mã `locale` được lưu trữ trên mỗi Remote Config.
+Adapty lưu trữ các mã `locale` theo định dạng được mô tả trong [Tiêu chuẩn mã ngôn ngữ tại Adapty](#locale-code-standard-at-adapty). SDK không so khớp Remote Config với ngôn ngữ, vì vậy việc áp dụng mục nào là tùy thuộc vào ứng dụng của bạn.
 
 </SDKv4>
 

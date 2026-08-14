@@ -14,11 +14,87 @@ Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya han resuelto.
 
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Carga el placement que vas a mostrar.                                                                                  | Precarga todos los placements de forma concurrente al iniciar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante la ráfaga.                                  |
-| Llama a `getPaywall` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o cuando se dispare `onProfileUpdate`. | Llama a `getPaywall` en `App.init()`.                     | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
-| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperes a `getPaywall` indefinidamente.                     | Sin un tiempo límite, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o cierran la app.     |
+| Obtén el placement que vas a mostrar, o calienta la caché con [`preloadFlows`](#preload-placements) (SDK 4.1+). | Lanza tus propias llamadas `getFlow` concurrentes al inicio. | Una ráfaga de prefetch manual bloquea el hilo principal y produce una pantalla en negro. `preloadFlows` está diseñado para esto y comparte un único presupuesto de tiempo de espera para todo el lote. |
+| Llama a `getPaywall` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras que se dispare `onProfileUpdate`. | Llama a `getPaywall` en `App.init()`.                     | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperes indefinidamente a que `getPaywall` responda.                     | Sin un tiempo de espera, los usuarios con mala conectividad ven una pantalla en blanco hasta que se resuelve la red — o cierran la app.     |
 
 Consulta [Cargar paywalls y productos](fetch-paywalls-and-products) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
+
+## Precarga de placements \{#preload-placements\}
+
+:::info
+Estos métodos están disponibles a partir de la versión 4.1 del SDK.
+:::
+
+`preloadFlows` y `preloadOnboardings` obtienen los placements en la caché del SDK con antelación. Una llamada posterior a `getFlow` o `getOnboarding` para el mismo placement se resuelve desde la caché en lugar de la red, por lo que el paywall se muestra sin espera visible.
+
+Úsalos cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que `activate` e `identify` resuelvan, para el paywall detrás de un botón que el usuario todavía no ha pulsado.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(
+    placementIds: ["onboarding", "main_paywall"],
+    loadTimeout: 5
+)
+
+try await Adapty.preloadOnboardings(
+    placementIds: ["intro"],
+    locale: "en",
+    loadTimeout: 5
+)
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
+    if let error {
+        // at least one placement failed to preload
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**Parámetros:**
+
+- `placementIds` (requerido): los placements a precargar. Los IDs en blanco y duplicados se ignoran.
+- `locale` (opcional, solo `preloadOnboardings`): el idioma del onboarding a cachear.
+- `loadTimeout` (opcional): tiempo de espera en segundos para todo el lote, no por placement. El valor predeterminado es 5 segundos, y los valores por debajo de 1 segundo se elevan a 1 segundo.
+
+**Comportamiento a tener en cuenta:**
+
+- Los métodos solo lanzan un error después de intentar cada placement, y el error agrupa los fallos de cada placement. El fallo en un placement no detiene los demás.
+- Si un placement agota el tiempo de espera o falla con un error de red, el SDK recurre a la variación de audiencia predeterminada para ese placement. Los demás fallos se notifican tal cual.
+- Si el tiempo de espera se agota antes de que finalice la petición con audiencia específica, el SDK sigue intentando la variación de audiencia predeterminada con el tiempo restante.
+- La precarga solo calienta la caché. No devuelve contenido: aún tienes que llamar a `getFlow` o `getOnboarding` para mostrarlo.
+
+### Averigua qué placement falló \{#find-out-which-placement-failed\}
+
+El error lanzado es un único `AdaptyError` que cubre todo el lote, con el código `networkFailed` (2002). Para ver los fallos individuales, consulta su propiedad `preloadErrors` — un diccionario cuya clave es el ID del placement:
+
+```swift showLineNumbers
+do {
+    try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"])
+} catch {
+    for (placementId, placementError) in error.preloadErrors ?? [:] {
+        // log or retry the individual placement
+    }
+}
+```
+
+`preloadErrors` es `nil` para cualquier error que no provenga de una llamada de precarga, así que trata un valor `nil` como "no es un fallo de precarga" en lugar de "sin fallos".
+
+Para calentar la caché sin esperar a la segmentación de audiencia en absoluto, usa las variantes de audiencia por defecto:
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
 
 ## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
 

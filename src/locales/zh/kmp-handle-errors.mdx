@@ -5,11 +5,11 @@ metadataTitle: "错误处理 | Kotlin Multiplatform SDK | Adapty 文档"
 displayed_sidebar: sdkkmp
 ---
 
-本页介绍 Adapty Kotlin Multiplatform SDK 中的错误处理。
+本页介绍 Adapty Kotlin Multiplatform SDK 中的错误处理方式。
 
 ## 错误处理基础 \{#error-handling-basics\}
 
-所有 Adapty SDK 方法都会返回成功或错误结果。请务必同时处理这两种情况：
+Adapty SDK 的所有方法都会返回成功或错误结果。请务必处理这两种情况：
 
 <Tabs groupId="current-os" queryString>
 
@@ -48,15 +48,19 @@ Adapty.getProfile(result -> {
 </TabItem>
 </Tabs>
 
-## 常见错误码 \{#common-error-codes\}
+## 常见错误代码 \{#common-error-codes\}
 
-| 错误码 | 说明 | 解决方案 |
-|--------|------|----------|
-| 1000 | 未找到产品 ID | 检查看板中的产品配置 |
-| 1001 | 网络错误 | 检查网络连接 |
-| 1002 | SDK 密钥无效 | 验证您的 SDK 密钥 |
-| 1003 | 无法完成支付 | 设备不支持支付功能 |
-| 1004 | 产品不可用 | 产品未在商店中配置 |
+`AdaptyError.code` 是一个 `AdaptyErrorCode` 枚举值，而非数字——请与枚举常量进行比较，不要与数字代码进行比较。下方列出的数字仅供参考，通常出现在日志记录或支持工单中。
+
+| 错误代码 | 编号 | 描述 | 解决方案 |
+|------------|--------|-------------|----------|
+| `AdaptyErrorCode.NO_PRODUCT_IDS_FOUND` | 1000 | 付费墙中的产品在商店中均不可用。 | 请参阅 [Code-1000 noProductIDsFound 错误修复方案](InvalidProductIdentifiers-kmp)。 |
+| `AdaptyErrorCode.CANT_MAKE_PAYMENTS` | 1003 | 此设备不允许应用内购买。 | 请参阅 [Code-1003 cantMakePayments 错误修复方案](cantMakePayments-kmp)。 |
+| `AdaptyErrorCode.PRODUCT_NOT_FOUND` | 22 | 请求购买的产品在商店中不可用。 | 请检查该产品是否已在商店和 Adapty 看板中正确配置。 |
+| `AdaptyErrorCode.NETWORK_FAILED` | 2005 | 网络请求失败。 | 提示用户检查网络连接，或重试该调用。 |
+| `AdaptyErrorCode.ADAPTY_NOT_INITIALIZED` | 20 | 调用前未激活 SDK。 | 请等待 `Adapty.activate` 完成后再进行其他 SDK 调用。 |
+
+完整的错误码列表，请参阅 [SDK 模型参考](https://kmp.adapty.io/adapty/) 中的 `AdaptyErrorCode`。
 
 ## 处理特定错误 \{#handle-specific-errors\}
 
@@ -76,7 +80,7 @@ Adapty.getPaywall("main") { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1001 -> {
+                AdaptyErrorCode.NETWORK_FAILED -> {
                     // Network error - show offline message
                     showOfflineMessage()
                 }
@@ -100,7 +104,7 @@ Adapty.getPaywall("main", result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1001:
+            case NETWORK_FAILED:
                 // Network error - show offline message
                 showOfflineMessage();
                 break;
@@ -132,11 +136,11 @@ product.makePurchase { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1003 -> {
+                AdaptyErrorCode.CANT_MAKE_PAYMENTS -> {
                     // Can't make payments
                     showPaymentNotAvailableMessage()
                 }
-                1004 -> {
+                AdaptyErrorCode.PRODUCT_NOT_FOUND -> {
                     // Product not available
                     showProductNotAvailableMessage()
                 }
@@ -161,11 +165,11 @@ product.makePurchase(result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1003:
+            case CANT_MAKE_PAYMENTS:
                 // Can't make payments
                 showPaymentNotAvailableMessage();
                 break;
-            case 1004:
+            case PRODUCT_NOT_FOUND:
                 // Product not available
                 showProductNotAvailableMessage();
                 break;
@@ -201,7 +205,7 @@ fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && retryCount < maxRetries) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && retryCount < maxRetries) {
                         // Network error - retry
                         retryCount++
                         Handler(Looper.getMainLooper()).postDelayed({
@@ -235,7 +239,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
                     // Use paywall
                 } else if (result instanceof AdaptyResult.Error) {
                     AdaptyError error = ((AdaptyResult.Error) result).getError();
-                    if (error.getCode() == 1001 && retryCount.get() < maxRetries) {
+                    if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && retryCount.get() < maxRetries) {
                         // Network error - retry
                         retryCount.incrementAndGet();
                         new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
@@ -254,7 +258,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
 </TabItem>
 </Tabs>
 
-### 回退至缓存数据 \{#fallback-to-cached-data\}
+### 备用缓存数据 \{#fallback-to-cached-data\}
 
 <Tabs groupId="current-os" queryString>
 
@@ -274,7 +278,7 @@ class PaywallManager {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && cachedPaywall != null) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
                         // Network error - use cached paywall
                         showPaywall(cachedPaywall!!)
                         showOfflineIndicator()
@@ -303,12 +307,12 @@ public class PaywallManager {
                 showPaywall(paywall);
             } else if (result instanceof AdaptyResult.Error) {
                 AdaptyError error = ((AdaptyResult.Error) result).getError();
-                if (error.getCode() == 1001 && cachedPaywall != null) {
-                    // Network error - use cached paywall
+                if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
+                    // 网络错误 - 使用缓存的付费墙
                     showPaywall(cachedPaywall);
                     showOfflineIndicator();
                 } else {
-                    // No cache available or other error
+                    // 无缓存或其他错误
                     showErrorMessage(error.getMessage());
                 }
             }
@@ -323,4 +327,4 @@ public class PaywallManager {
 
 - [修复 Code-1000 noProductIDsFound 错误](InvalidProductIdentifiers-kmp)
 - [修复 Code-1003 cantMakePayments 错误](cantMakePayments-kmp)
-- [完整 API 参考](https://android.adapty.io) - 完整的 SDK 文档
+- [完整 API 参考](https://kmp.adapty.io/adapty/) - 完整 SDK 文档

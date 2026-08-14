@@ -8,28 +8,49 @@ displayed_sidebar: sdkflutter
 <SDKv4>
 ## Bu neden önemli \{#why-this-is-important\}
 
-Adapty bir flow için yerelleştirme seçerken ve özel paywall için remote config okurken locale kodları devreye girer.
+Locale kodları, Adapty bir flow veya onboarding için lokalizasyon seçerken ve özel bir paywall için remote config okurken devreye girer.
 
-Locale kodları karmaşık bir yapıya sahiptir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty desteklediği her platformda tek bir iç standarda dayanır. Bu standardı anlamak, bir kullanıcının hangi yerelleştirmeyi alacağını önceden tahmin etmenizi sağlar.
+Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty, desteklediği her platformda tek bir dahili standarda dayanır. Bu standardı anlamak, bir kullanıcının hangi lokalizasyonu alacağını tahmin etmenize yardımcı olur.
+
 ## Adapty'de dil kodu standardı \{#locale-code-standard-at-adapty\}
 
 Dil kodları için Adapty, [BCP 47 standardının](https://en.wikipedia.org/wiki/IETF_language_tag) hafifçe değiştirilmiş bir versiyonunu kullanır: her kod, tire ile ayrılmış küçük harf alt etiketlerinden oluşur. Bazı örnekler: `en` (İngilizce), `pt-br` (Portekizce (Brezilya)), `zh` (Basitleştirilmiş Çince), `zh-hant` (Geleneksel Çince).
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, bir kullanıcının yerel ayarıyla eşleşen lokalizasyonu ararken şu adımlar izlenir:
+SDK v4'te flow'lar ve onboarding'ler yerel ayar kodlarını farklı şekilde eşleştirir: flow'lar cihazda SDK tarafından, onboarding'ler ise Adapty sunucusu tarafından yerelleştirilir.
 
-1. Yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`), kısa çizgi (`-`) ile değiştirilir
-2. Adapty, tam olarak eşleşen yerel ayar koduna sahip lokalizasyonu arar
-3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen lokalizasyonu arar
-4. Yine eşleşme bulunamazsa, Adapty flow'un varsayılan yerel ayarındaki içeriği döndürür
+### Flow'lar ve Paywall Builder paywallları
 
-Bu sayede `'pt_BR'`, `pt-BR` ve `pt-br` hepsi aynı yerelleştirmeye çözümlenir.
+Paywall Builder'da oluşturulan bir paywall, SDK v4'te flow olarak iletilir; bu nedenle aşağıdaki kural her ikisini de kapsar.
+
+Eşleşme tam olarak yapılır. SDK, ilettiğiniz kodu flow'un lokalizasyon kodlarıyla karakter karakter karşılaştırır: büyük/küçük harf dönüşümü yapmaz, alt çizgileri (`_`) kısa çizgiyle (`-`) değiştirmez ve dil alt etiketine geri dönmez. `pt-br` lokalizasyonuna sahip bir flow için yalnızca `pt-br` eşleşir: `pt-BR`, `pt_BR` ve `pt-PT` hiçbiri eşleşmez.
+
+Kod hiçbir lokalizasyonla eşleşmediğinde, flow sessizce [varsayılan locale](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) ile render edilir — SDK hata döndürmez veya uyarı kaydetmez.
+
+Kod eşleştiğinde ise Adapty, eşleşen lokalizasyonu varsayılan olanla birleştirir: eşleşen lokalizasyonun tanımlamadığı string'ler ve asset'ler varsayılan lokalizasyondan alınır.
+
+Yerel ayar kodunu atlamak, flow'un varsayılan yerelleştirmesini istemekle aynı şey değildir: SDK sabit olarak `en` kullanır. Varsayılan yerel ayarı `de` olan bir flow, `en` yerelleştirmesi varsa yine `en` dilinde görüntülenir; yalnızca `en` yerelleştirmesi yoksa `de` diline geri döner.
+
+:::warning
+Locale kodunu kontrol panelinde yapılandırıldığı şekliyle, yani küçük harfli alt etiketler tire ile ayrılmış olarak geçirin. Sistem locale tanımlayıcısını olduğu gibi geçirmeyin: `Platform.localeName` `pt_BR` döndürür ve `PlatformDispatcher.instance.locale.toLanguageTag()` `pt-BR` döndürür; her ikisi de varsayılan yerelleştirmeye geri düşer. Geçirmeden önce değeri uygulamanızda dönüştürün.
+:::
+
+### Onboarding'ler \{#onboardings\}
+
+Onboarding'ler sunucu tarafında yerelleştirilir ve sunucu kuralları diğer formatları da kabul eder. [`getOnboarding`](flutter-get-onboardings) fonksiyonuna bir `locale` değeri geçtiğinizde:
+
+1. Locale dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Adapty, tam olarak eşleşen locale koduyla yerelleştirmeyi arar
+3. Eşleşme bulunamazsa Adapty, ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen yerelleştirmeyi arar
+4. Yine eşleşme bulunamazsa Adapty, onboarding'in varsayılan locale'ine ait içeriği döndürür
+
+`pt_BR`, `pt-BR` ve `pt-br` şeklindeki yazımların hepsi aynı onboarding yerelleştirmesine çözümlenir.
 
 ## Lokalizasyonları uygulama \{#implementing-localizations\}
 
 SDK v4'te, bir flow çekerken locale kodu iletmenize gerek yoktur — `getFlow`, flow'u tüm lokalizasyonlarıyla birlikte döndürür ve Adapty, flow görünümü oluşturulurken uygun olanı uygular. `getFlow` ve `getFlowForDefaultAudience` fonksiyonlarının `locale` argümanının flow'lar üzerinde hiçbir etkisi yoktur; bu argüman kullanımdan kaldırılmış olup bir uyarı kaydeder.
 
-- **Builder'da oluşturulan flow'lar**: SDK cihazın dilini okumaz, bu nedenle dili uygulamanızda belirleyip `createFlowView` veya `AdaptyUIFlowPlatformView`'ın `locale` argümanı olarak geçirin. Bu argüman isteğe bağlıdır — atarsanız flow `en` dilinde görüntülenir ya da `en` yerelleştirmesi yoksa [varsayılan dilde](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir. Flow'da bulunmayan bir yerelleştirme talep ettiğinizde, görünüm hata vermeden flow'un varsayılan diline döner; seçilen yerelleştirmede eksik olan dizeler ise varsayılan yerelleştirmeden alınır.
+- **Builder'da oluşturulan flow'lar**: SDK cihaz dilini okumaz, bu nedenle dili uygulamanızda belirleyip `createFlowView` veya `AdaptyUIFlowPlatformView` fonksiyonunun `locale` argümanı olarak geçirin. Argüman isteğe bağlıdır — atlanırsa flow `en` dilinde gösterilir ya da flow'un `en` yerelleştirmesi yoksa [varsayılan dil](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) kullanılır.
 
 `AdaptyUIFlowView.locale`, görünümün hangi yerelleştirmeyle oluşturulduğunu bildirir. Flutter SDK 4.0.3 ile birlikte yerel iOS 4.0.2 ve Android 4.0.1 sürümlerini gerektirir; daha eski yerel SDK'larda `null` döner.
 - **Özel (remote config) paywalls**: `getFlow`, `flow.remoteConfigs` içindeki tüm yapılandırılmış yerelleştirmeleri döndürür. Her giriş bir `locale` kodu ve yapılandırma içeriği (`data` dizesi veya ayrıştırılmış `dictionary`) içerir. Kullanıcıyla eşleşen girişi kendi yedek mekanizmanızla seçin:
@@ -42,11 +63,12 @@ final config = flow.remoteConfigs.firstWhereOrNull((c) => c.locale == 'en') ??
 // read your values from config?.dictionary
 ```
 
-Yukarıdaki yerel ayar kodu eşleştirme kuralları, Adapty'nin her remote config üzerinde depolanan `locale` kodlarını nasıl normalleştirdiğini açıklar.
+Adapty, `locale` kodlarını [Adapty'deki Locale kodu standardı](#locale-code-standard-at-adapty) bölümünde açıklanan formatta saklar. SDK, remote config'leri bir locale ile eşleştirmez; hangi girişin uygulanacağına uygulamanız karar verir.
 
 </SDKv4>
 
 <SDKv3>
+
 ## Bu neden önemli \{#why-this-is-important\}
 
 Locale kodlarının devreye girdiği birkaç senaryo vardır; örneğin uygulamanızın mevcut yerelleştirmesi için doğru paywall'ı çekmeye çalışırken.

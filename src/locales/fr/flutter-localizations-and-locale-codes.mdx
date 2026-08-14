@@ -9,7 +9,7 @@ displayed_sidebar: sdkflutter
 
 ## Pourquoi c'est important \{#why-this-is-important\}
 
-Les codes de langue entrent en jeu lorsqu'Adapty choisit la localisation pour un flow, et lorsque vous lisez un Remote Config pour un paywall personnalisé.
+Les codes de langue entrent en jeu lorsqu'Adapty choisit la localisation pour un flow ou un onboarding, et lorsque vous lisez un Remote Config pour un paywall personnalisé.
 
 Les codes de langue sont complexes et peuvent varier d'une plateforme à l'autre. C'est pourquoi Adapty s'appuie sur un standard interne unique pour toutes les plateformes qu'il prend en charge. Comprendre ce standard vous permet de prévoir quelle localisation un utilisateur reçoit.
 
@@ -19,20 +19,40 @@ Pour les codes de langue, Adapty utilise une version légèrement modifiée du [
 
 ## Correspondance des codes de langue \{#locale-code-matching\}
 
-Lorsqu'Adapty cherche la localisation correspondant à la langue d'un utilisateur, voici ce qui se passe :
+Dans le SDK v4, les flows et les onboardings associent les codes de langue différemment : les flows sont localisés par le SDK sur l'appareil, les onboardings par le serveur Adapty.
 
-1. La chaîne de langue est convertie en minuscules et tous les traits de soulignement (`_`) sont remplacés par des tirets (`-`)
-2. Adapty recherche la localisation dont le code de langue correspond exactement
-3. Si aucune correspondance n'est trouvée, Adapty extrait la sous-chaîne avant le premier tiret (`pt` pour `pt-br`) et recherche la localisation correspondante
-4. Si aucune correspondance n'est trouvée non plus, Adapty retourne le contenu dans la langue par défaut du flow
+### Flows et paywalls Paywall Builder
 
-Cette approche permet à `'pt_BR'`, `pt-BR` et `pt-br` de tous pointer vers la même localisation.
+Un paywall créé dans le Paywall Builder est livré en tant que flow dans le SDK v4, donc la règle ci-dessous couvre les deux.
+
+La correspondance est exacte. Le SDK compare le code que vous transmettez avec les codes de localisation du flow caractère par caractère : il ne modifie pas la casse, ne remplace pas les tirets bas (`_`) par des tirets (`-`), et ne se replie pas sur le sous-tag de langue. Pour un flow avec une localisation `pt-br`, seul `pt-br` correspond : `pt-BR`, `pt_BR` et `pt-PT` ne correspondent pas.
+
+Lorsque le code ne correspond à aucune localisation, le flow s'affiche silencieusement dans sa [locale par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — le SDK ne retourne pas d'erreur et ne consigne pas d'avertissement.
+
+Lorsque le code correspond, Adapty fusionne la localisation avec la localisation par défaut : les chaînes et les ressources que la localisation correspondante ne définit pas sont issues de la localisation par défaut.
+
+Omettre le code de langue ne revient pas à demander la localisation par défaut du flow : le SDK substitue un `en` fixe. Un flow dont la langue par défaut est `de` s'affiche quand même en `en` s'il possède une localisation `en`, et ne revient au `de` qu'en l'absence de celle-ci.
+
+:::warning
+Passez le code de langue exactement tel qu'il est configuré dans le tableau de bord — sous-balises en minuscules séparées par des tirets. Ne passez pas directement un identifiant de locale système : `Platform.localeName` renvoie `pt_BR` et `PlatformDispatcher.instance.locale.toLanguageTag()` renvoie `pt-BR`, et les deux utilisent la localisation par défaut en repli. Convertissez la valeur dans votre application avant de la passer.
+:::
+
+### Onboardings
+
+Les onboardings sont localisés côté serveur, et les règles du serveur tolèrent d'autres formats. Lorsque vous passez un `locale` à [`getOnboarding`](flutter-get-onboardings) :
+
+1. La chaîne de locale est convertie en minuscules et tous les underscores (`_`) sont remplacés par des tirets (`-`)
+2. Adapty recherche la localisation dont le code de locale correspond exactement
+3. Si aucune correspondance n'est trouvée, Adapty extrait la sous-chaîne avant le premier tiret (`pt` pour `pt-br`) et cherche la localisation correspondante
+4. Si aucune correspondance n'est encore trouvée, Adapty renvoie le contenu dans la locale par défaut de l'onboarding
+
+Cette approche permet à `pt_BR`, `pt-BR` et `pt-br` de tous pointer vers la même localisation d'onboarding.
 
 ## Implémenter les localisations \{#implementing-localizations\}
 
 Avec le SDK v4, vous n'avez pas besoin de passer un code de langue lors de la récupération d'un flow — `getFlow` retourne le flow avec toutes ses localisations, et Adapty en applique une au moment de la construction de la vue du flow. L'argument `locale` de `getFlow` et `getFlowForDefaultAudience` n'a aucun effet sur les flows ; il est déprécié et génère un avertissement dans les logs.
 
-- **Flows construits dans le builder** : le SDK ne lit pas la locale de l'appareil, donc résolvez-la dans votre app et passez-la comme argument `locale` de `createFlowView` ou `AdaptyUIFlowPlatformView`. L'argument est optionnel — omettez-le et le flow s'affichera en `en`, ou dans sa [locale par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) si le flow n'a pas de localisation `en`. Si vous demandez une localisation que le flow ne possède pas, la vue se rabat sur la locale par défaut du flow sans erreur, et les chaînes manquantes dans la localisation choisie proviennent de la locale par défaut.
+- **Flows créés dans le builder** : le SDK ne lit pas les paramètres régionaux de l'appareil, donc résolvez-les dans votre application et passez-les comme argument `locale` de `createFlowView` ou `AdaptyUIFlowPlatformView`. L'argument est facultatif — omettez-le et le flow s'affiche en `en`, ou dans sa [langue par défaut](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) quand le flow n'a pas de localisation `en`.
 
 `AdaptyUIFlowView.locale` indique la localisation avec laquelle la vue a été construite. Cette fonctionnalité nécessite Flutter SDK 4.0.3 avec les versions natives iOS 4.0.2 et Android 4.0.1, et renvoie `null` avec des SDK natifs plus anciens.
 - **Paywalls personnalisés (Remote Config)** : `getFlow` retourne toutes les localisations configurées dans `flow.remoteConfigs`. Chaque entrée contient un code `locale` et le contenu de la configuration (chaîne `data` ou le `dictionary` parsé). Sélectionnez l'entrée qui correspond à l'utilisateur, avec votre propre fallback :
@@ -45,7 +65,7 @@ final config = flow.remoteConfigs.firstWhereOrNull((c) => c.locale == 'en') ??
 // read your values from config?.dictionary
 ```
 
-Les règles de correspondance des codes de locale décrites ci-dessus expliquent comment Adapty normalise les codes `locale` stockés sur chaque Remote Config.
+Adapty stocke ces codes `locale` dans le format décrit dans [Standard de code locale dans Adapty](#locale-code-standard-at-adapty). Le SDK ne fait pas correspondre les Remote Configs à une locale, c'est donc à votre application de choisir quelle entrée appliquer.
 
 </SDKv4>
 

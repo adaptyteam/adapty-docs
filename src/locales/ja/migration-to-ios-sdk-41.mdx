@@ -1,0 +1,127 @@
+---
+title: "Adapty iOS SDK を v4.1 へ移行する"
+description: "Adapty iOS SDK v4.1 への移行: Adapty Attribution を明示的に有効化し、名称変更された外部アトリビューション API を採用し、フォールバックファイルを再ダウンロードしてください。"
+metadataTitle: "Adapty iOS SDK v4.1 への移行 | Adapty ドキュメント"
+---
+
+Adapty iOS SDK 4.1 では、Adapty Attribution の有効化方法が変更され、外部アトリビューション API の名称が変わり、フォールバックファイルのフォーマットも変更されています。また、4.0 で削除されていた App Store プロモートのアプリ内課金サポートが復活しました。
+
+:::warning
+名前が変更されたAPIは完全な互換性の破壊を意味します。古い名前は完全に削除されており、非推奨扱いではなく、typealiasや`@available(renamed:)`アノテーションによる移行手段も用意されていません。4.0.xでコンパイルできていたコードは、以下に示すすべての呼び出し箇所を修正するまで4.1でコンパイルエラーになります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty アトリビューションがデフォルトで有効 | Adapty アトリビューションはデフォルトで無効。`.with(adaptyAttributionEnabled: true)` でオプトイン |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `Adapty.updateAttribution(_ attributionJson: String, source:)` | パブリック API から削除。代わりにディクショナリを渡してください |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`（新しい `.custom` 値を追加） |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AdaptySubscriptionOfferType` 列挙型 | `AdaptySubscriptionOfferType` 構造体。`.code` は削除 |
+| 4.0 用フォールバックファイル | 新しいフォールバックファイル形式。ファイルを再度ダウンロードしてください |
+| プロモートされたアプリ内課金は非対応 | `didReceivePromotedPurchase(_:)` デリゲートメソッドと `AdaptyPromotedProduct` |
+
+## ⚠️ Adapty アトリビューションはデフォルトで無効になっています \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+SDK 4.1 にアップデートしてオプトインしない場合、[Adapty アトリビューション](user-acquisition)は無通知で機能しなくなります — インストールの記録が停止しても、警告は一切表示されません。
+:::
+
+4.0 以前のバージョンでは、SDK は [Adapty Attribution](user-acquisition) のインストール登録を自動的に行っていました。4.1 からはデフォルトでオフになっています。SDK はインストールを登録せず、`onInstallationDetailsSuccess` および `onInstallationDetailsFail` デリゲートコールバックは呼び出されません。`getCurrentInstallationStatus()` は `.notAvailable` を返します。
+
+Adapty Attribution を使用する場合は、SDK を有効化する際に有効にしてください：
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+Adapty Attributionを使用していない場合、変更は必要ありません。
+
+## 外部アトリビューション API の名称変更 \{#renamed-external-attribution-apis\}
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、またはカスタム）からのアトリビューションデータを渡すメソッドの名前が変更され、`source` パラメーターが `provider` に改名されました：
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### JSON文字列オーバーロードの削除 \{#the-json-string-overload-is-removed\}
+
+4.0では、アトリビューションデータを `[AnyHashable: Any]` 辞書またはJSON `String` のどちらでも渡せました。4.1では、辞書のオーバーロードのみが公開されており、JSON文字列のオーバーロードはAdaptyのクロスプラットフォームSDK向けに予約されています。渡す前にJSONをデシリアライズしてください。
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attributionJson, source: .adjust)
++ guard let attribution = try JSONSerialization.jsonObject(
++     with: Data(attributionJson.utf8)
++ ) as? [AnyHashable: Any] else { return }
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+型が改名されました。定義済みのプロバイダー名は変わりません：`.appleAds`、`.adjust`、`.appsflyer`、`.branch`、`.tenjin`。引き続き `ExpressibleByStringLiteral` に準拠しているため、文字列リテラルの引数はそのままコンパイルできます。プロバイダーを `String` 変数に保持している場合は、`AdaptyExternalAttributionProvider(rawValue: yourProvider)` のようにラップしてください。
+
+また、4.1 では Adapty が直接統合していないプロバイダー向けに定義済みの `.custom` 値が追加されました。4.0 では同じ値は文字列リテラル `"custom"` としてのみ使用できました。
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+プロファイルに適用されたアトリビューションプロバイダーの一覧を返すプロファイルプロパティの名前が変更されました。それに伴い、要素の型名も変更されています。
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferTypeが構造体になりました \{#adaptysubscriptionoffertype-is-now-a-struct\}
+
+`AdaptySubscriptionOfferType` — `AdaptySubscriptionOffer.offerType` の型 — は、バックエンドがSDKを更新せずに新しいオファータイプを導入できるよう、enumから`RawRepresentable`構造体に変更されました：
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+この変更はコードに3つの影響を与えます：
+
+- **`switch`文の網羅チェックがコンパイルエラーになります。** 構造体にはケースの固定セットがないため、コンパイラは`switch`が網羅的であることを証明できません。`default`ブランチを追加してください:
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` が削除されました。** オファーコードは `AdaptySubscriptionOffer.offerType` で報告されなくなりました。`case .code` ブランチがあれば削除してください。オファーコードの処理については、[iOS でのオファーコードの引き換え](making-purchases#redeem-offer-codes-in-ios)を参照してください。
+- **`Codable` 準拠が削除されました。** `AdaptySubscriptionOfferType` を直接エンコード・デコードしていた場合は、代わりに `offerType.rawValue`（`String`）を保存し、`AdaptySubscriptionOfferType(rawValue:)` で値を再構築してください。
+
+定義済みの値との比較は変わらず使用できます。`.introductory`、`.promotional`、`.winBack` は引き続き `==` による比較や `case` パターンとして機能します。
+
+## フォールバックファイル \{#fallback-files\}
+
+[フォールバックファイル](fallback-flows)のフォーマットは SDK 4.1 で変更されました。すでに 4.0 用にダウンロード済みの場合でも、**[Placements](https://app.adapty.io/placements)** > **Fallbacks** から再度ファイルをダウンロードし、アプリにバンドルしてください。
+
+:::warning
+この手順を省略してもコンパイルエラーは発生しません。ただし、省略すると SDK が古いファイルを拒否し、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
+
+## App Store のプロモーション対象アプリ内課金の復活 \{#app-store-promoted-in-app-purchases-return\}
+
+SDK 4.1 では、[4.0 で削除された](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed) App Store のプロモーション対象アプリ内課金のサポートが復活しました。これは新機能であり、移行手順ではありません。4.0 の動作に変更はありません。
+
+3.x から移行した場合、`shouldAddStorePayment(for:)` を `AdaptyDeferredProduct` とともに使用していたのであれば、新しい `didReceivePromotedPurchase(_:)` デリゲートメソッドと `AdaptyPromotedProduct` に切り替えてください。`shouldAddStorePayment` とは異なり、新しいメソッドは戻り値を返しません。実装しない場合、SDK はすぐに購入を開始します。購入を遅延させるには、このメソッドを実装してプロダクトを保存し、後で `makePurchase` にそのプロダクトを渡してください。詳細は[App Store からのアプリ内課金](making-purchases#in-app-purchases-from-the-app-store)を参照してください。
+
+:::warning
+新しいメカニズムはStoreKit 2上に構築されており、**iOS 16.4**以降が必要です。3.x の `shouldAddStorePayment` メソッドはそれ以前のiOSバージョンでも動作していました。iOS 16.4未満のデバイスでは、`didReceivePromotedPurchase` は発火せず、プロモーション購入はアプリに届きません。
+:::

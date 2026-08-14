@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
+import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
@@ -330,7 +331,7 @@ function parseItems(items, ctx, depth = 0) {
 // localized output. `labels` is the parsed _sidebar-labels.json (empty for
 // English).
 async function buildSidebarFiles(outputDir, sidebarFiles, ctx) {
-    let allContent = '# Adapty Documentation\n\n> Adapty is an in-app purchase platform for mobile apps. It handles subscriptions, one-time purchases, and consumables — from purchase processing and receipt validation to analytics, A/B testing, and integrations.\n\n';
+    let allContent = `# Adapty Documentation\n\n> Adapty is an in-app purchase platform for mobile apps. It handles subscriptions, one-time purchases, and consumables — from purchase processing and receipt validation to analytics, A/B testing, and integrations.\n\n${LLM_SKILL_NOTE}\n\n`;
 
     for (const file of sidebarFiles) {
         if (!file.endsWith('.json')) continue;
@@ -344,7 +345,13 @@ async function buildSidebarFiles(outputDir, sidebarFiles, ctx) {
         let items = Array.isArray(sidebarData) ? sidebarData : [];
         sidebarContent += parseItems(items, ctx);
 
-        await fs.writeFile(path.join(outputDir, `${platformName}-llms.txt`), sidebarContent);
+        // Standalone per-platform file carries the note; the section appended
+        // to the combined llms.txt does not (the combined header already has it).
+        const standaloneContent = sidebarContent.replace(
+            `# ${platformName} Documentation\n\n`,
+            `# ${platformName} Documentation\n\n${LLM_SKILL_NOTE}\n\n`,
+        );
+        await fs.writeFile(path.join(outputDir, `${platformName}-llms.txt`), standaloneContent);
         console.log(`Generated: ${path.relative(OUTPUT_DIR, path.join(outputDir, `${platformName}-llms.txt`))}`);
 
         allContent += sidebarContent + '\n---\n\n';

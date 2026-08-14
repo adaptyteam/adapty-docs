@@ -8,28 +8,49 @@ displayed_sidebar: sdkflutter
 <SDKv4>
 ## 为什么这很重要 \{#why-this-is-important\}
 
-当 Adapty 为流程选择本地化语言，以及你读取自定义付费墙的远程配置时，语言区域代码就会发挥作用。
+当 Adapty 为流程或用户引导选择本地化版本，以及当你读取自定义付费墙的远程配置时，都会用到语言区域代码。
 
-语言区域代码较为复杂，在不同平台之间可能存在差异，因此 Adapty 在其支持的所有平台上统一采用一套内部标准。了解这一标准，有助于你预测用户最终会收到哪个本地化版本。
+语言区域代码较为复杂，且因平台而异，因此 Adapty 在其支持的所有平台上统一采用一套内部标准。了解这套标准，有助于你准确预测用户最终会收到哪个本地化版本。
+
 ## Adapty 的语言代码标准 \{#locale-code-standard-at-adapty\}
 
 Adapty 的语言代码采用略经修改的 [BCP 47 标准](https://en.wikipedia.org/wiki/IETF_language_tag)：每个代码由小写子标签组成，各子标签之间用连字符分隔。示例：`en`（英语）、`pt-br`（葡萄牙语（巴西））、`zh`（简体中文）、`zh-hant`（繁体中文）。
 ## 语言区域代码匹配 \{#locale-code-matching\}
 
-当 Adapty 查找与用户语言区域匹配的本地化内容时，会按以下步骤处理：
+在 SDK v4 中，流程和用户引导的语言区域代码匹配方式有所不同：流程由设备上的 SDK 进行本地化，而用户引导则由 Adapty 服务器处理本地化。
 
-1. 将语言区域字符串转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
-2. Adapty 查找与完整语言区域代码完全匹配的本地化内容
-3. 如果未找到匹配项，Adapty 截取第一个连字符之前的子字符串（例如 `pt-br` 取 `pt`），并查找匹配的本地化内容
-4. 如果仍未找到匹配项，Adapty 返回该流程默认语言区域的内容
+### 流程与付费墙编辑工具付费墙 \{#flows-and-paywall-builder-paywalls\}
 
-这样，`'pt_BR'`、`pt-BR` 和 `pt-br` 都会解析到同一个本地化配置。
+在付费墙编辑工具中构建的付费墙，在 SDK v4 中以流程的形式交付，因此以下规则同时适用于两者。
+
+匹配规则为精确匹配。SDK 会逐字符比较你传入的代码与流程的本地化代码：不会转换大小写，不会将下划线（`_`）替换为连字符（`-`），也不会回退到语言子标签。对于具有 `pt-br` 本地化的流程，只有 `pt-br` 能匹配：`pt-BR`、`pt_BR` 和 `pt-PT` 均无法匹配。
+
+当代码未匹配到任何本地化时，流程会静默地以其[默认语言环境](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)渲染——SDK 不会返回错误，也不会记录警告。
+
+当代码匹配成功时，Adapty 会将该本地化与默认本地化合并：已匹配本地化中未定义的字符串和资源，将从默认本地化中获取。
+
+省略语言代码并不等同于请求流程的默认本地化：SDK 会固定替换为 `en`。如果一个流程的默认语言设置为 `de`，但同时存在 `en` 本地化版本，则仍会以 `en` 渲染；只有在没有 `en` 本地化版本时，才会回退到 `de`。
+
+:::warning
+请严格按照看板中配置的格式传入语言区域代码——小写子标签之间用连字符分隔。不要直接传入系统语言区域标识符：`Platform.localeName` 返回 `pt_BR`，`PlatformDispatcher.instance.locale.toLanguageTag()` 返回 `pt-BR`，这两种格式都会回退到默认本地化。请在应用中转换该值后再传入。
+:::
+
+### 用户引导 \{#onboardings\}
+
+用户引导的本地化在服务端完成，服务端规则兼容多种格式。当你向 [`getOnboarding`](flutter-get-onboardings) 传入 `locale` 时：
+
+1. locale 字符串会被转换为小写，并将所有下划线（`_`）替换为连字符（`-`）
+2. Adapty 查找与完整 locale 代码完全匹配的本地化内容
+3. 如果未找到匹配项，Adapty 会截取第一个连字符之前的子字符串（例如 `pt-br` 取 `pt`），再次查找匹配的本地化内容
+4. 如果仍未找到匹配项，Adapty 将返回该用户引导默认语言的内容
+
+这样，`pt_BR`、`pt-BR` 和 `pt-br` 都会解析到同一个用户引导本地化。
 
 ## 实现本地化 \{#implementing-localizations\}
 
 在 SDK v4 中，获取流程时无需传入语言区域代码——`getFlow` 会返回包含所有本地化内容的流程，Adapty 会在构建流程视图时应用其中一个。`getFlow` 和 `getFlowForDefaultAudience` 中的 `locale` 参数对流程无效，该参数已废弃，调用时会输出警告日志。
 
-- **在编辑工具中构建的流程**：SDK 不会读取设备语言，请在您的应用中自行获取并通过 `createFlowView` 或 `AdaptyUIFlowPlatformView` 的 `locale` 参数传入。该参数为可选项——省略时流程将以 `en` 渲染，如果流程没有 `en` 本地化，则使用其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)。当您请求的语言在流程中不存在时，视图会静默回退到流程默认语言，所选语言缺少的字符串也会从默认语言中获取。
+- **在编辑工具中构建的流程**：SDK 不读取设备语言，因此需要在应用中自行解析并将其作为 `locale` 参数传入 `createFlowView` 或 `AdaptyUIFlowPlatformView`。该参数为可选项——省略时流程将以 `en` 渲染，或在流程没有 `en` 本地化时使用其[默认语言](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale)。
 
 `AdaptyUIFlowView.locale` 报告视图构建时使用的本地化语言。该功能需要 Flutter SDK 4.0.3 配合 iOS 原生 4.0.2 和 Android 4.0.1 版本，使用旧版原生 SDK 时返回 `null`。
 - **自定义（远程配置）付费墙**：`getFlow` 在 `flow.remoteConfigs` 中返回所有已配置的本地化内容。每个条目包含 `locale` 语言代码和配置内容（`data` 字符串，或已解析的 `dictionary`）。请自行选择匹配用户的条目并设置回退逻辑：
@@ -42,11 +63,12 @@ final config = flow.remoteConfigs.firstWhereOrNull((c) => c.locale == 'en') ??
 // read your values from config?.dictionary
 ```
 
-上述语言区域代码匹配规则描述了 Adapty 如何对每个远程配置中存储的 `locale` 代码进行规范化处理。
+Adapty 以 [Adapty 语言区域代码标准](#locale-code-standard-at-adapty) 中描述的格式存储这些 `locale` 代码。SDK 不会将远程配置与语言区域进行匹配，因此具体使用哪个条目由你的应用自行决定。
 
 </SDKv4>
 
 <SDKv3>
+
 ## 为什么这很重要 \{#why-this-is-important\}
 
 有几种情况下需要用到语言区域代码——例如，当你尝试为当前应用的本地化版本获取正确的付费墙时。

@@ -1,61 +1,72 @@
 ---
-title: "Adapty Mail 中的退订与抑制"
-description: "Adapty Mail 停止向用户发送邮件的方式——通过退订、SES 退信、投诉以及停止条件机制。"
-metadataTitle: "退订与抑制 | Adapty Mail | Adapty 文档"
-keywords: ['adapty mail', '抑制', '退信', '投诉', '停止条件']
+title: "Adapty Mail 中的退订与抑制机制"
+description: "Adapty Mail 停止向用户发送邮件的方式——通过退订、SES 退信、投诉及停止条件机制。"
+metadataTitle: "退订与抑制机制 | Adapty Mail | Adapty 文档"
+keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
 ---
 
-Adapty Mail 在以下两种不同情况下会停止向用户发送邮件：
-- **抑制**：用户将被排除在该项目所有后续推送之外（包括取消订阅、退信、投诉、拒绝或限流）。
-- **停止条件**：用户当前的序列因已转化而取消。用户不会被抑制，仍可参与其他营销活动。
+Adapty Mail 会在以下两种不同情况下停止向用户发送邮件：
 
-两种机制均按项目生效。在一个 Adapty 项目中设置的抑制不会影响其他项目。
+- **抑制（Suppression）**：用户将被从该项目的所有后续发送中排除（已退订、已退信、已投诉、已拒绝或已限流）。
+- **停止条件（Stop condition）**：用户当前的序列因其已完成转化而被取消。用户不会被抑制，仍可参与其他活动。
+
+两种机制均按项目维度生效。在某个 Adapty 项目中的抑制不会影响其他项目。
+
 ## 取消订阅 \{#unsubscribe\}
 
-Adapty Mail 发出的每封邮件页脚都包含一个取消订阅链接。
+Adapty Mail 发送的每封邮件底部都包含取消订阅链接。
 
-1. 用户点击该链接，Adapty Mail 会打开一个确认页面。
-2. 用户确认后，后端将该用户画像标记为 `suppression_reason = 'unsubscribe'`，取消剩余的邮件序列，并将该用户画像从项目后续的邮件发送中排除。
+1. 用户点击链接，Adapty Mail 打开确认页面。
+2. 用户确认后，后端将该用户画像标记为 `suppression_reason = 'unsubscribe'`，取消剩余的序列发送，并将该用户画像从项目后续发送中排除。
 
-取消订阅 URL 中的令牌包含 `profile_id` 和 `scheduled_email_id`，因此无需登录即可完成操作。
+取消订阅 URL 中的令牌已编码了 `profile_id` 和 `scheduled_email_id`，因此无需登录即可完成操作。
+
 :::note
 Adapty Mail 在发送邮件时，会同时附带 `List-Unsubscribe: <URL>, <mailto:>` 请求头以及 `List-Unsubscribe-Post: List-Unsubscribe=One-Click`。Gmail 和 Yahoo 要求批量发件人遵循此规范（RFC 8058）。支持该请求头的邮件客户端会在收件箱中直接显示一键退订按钮，无需跳转确认页面。
 :::
-## 自动抑制 \{#automatic-suppression\}
 
-Adapty Mail 通过 SNS 监听 AWS SES 的投递事件，并在发生以下任意情况时立即抑制该用户：
+## 自动屏蔽 \{#automatic-suppression\}
+
+Adapty Mail 通过 SNS 监听 AWS SES 的投递事件，并在发生以下任意情况时立即屏蔽该用户：
+
 | 事件 | 原因代码 | 含义 |
 | --------- | ----------- | ------------------------------------------------------------------------------- |
-| Bounce | `bounce` | 电子邮件地址无效、邮箱已满或域名不存在。 |
-| Complaint | `complaint` | 用户将该邮件标记为垃圾邮件。 |
+| Bounce | `bounce` | 邮箱地址无效、邮箱已满或域名不存在。 |
+| Complaint | `complaint` | 用户将邮件标记为垃圾邮件。 |
 | Reject | `reject` | SES 在发送前拒绝了该邮件。 |
-| Throttle | `throttle` | 发送速率超出了域名安全限制。 |
-对于每个事件，结果都相同：用户被加入抑制名单，剩余序列被取消，并在该项目中排除在未来发送之外。
+| Throttle | `throttle` | 发送速率超过了域名安全限制。 |
+
+对于每个事件，处理结果都相同：该用户会被加入屏蔽名单，剩余的序列会被取消，并且在该项目中不再向其发送邮件。
 
 :::important
-Adapty Mail **不区分**硬退信和软退信。任何退信——包括邮箱已满等临时情况——都会立即抑制该用户，不存在重试窗口。
+Adapty Mail **不**区分硬退信和软退信。任何退信——包括收件箱已满等临时状况——都会立即屏蔽该用户，没有重试窗口。
 :::
+
 ## 停止条件 \{#stop-condition\}
 
-当用户在序列进行中完成转化时，Adapty Mail 会以 `stop_condition` 为原因取消其剩余的待发邮件。转化是指用户的订阅状态变为 **Subscribed**，或一次性购买状态变为 **Purchased**。
+当用户在序列进行中完成转化时，Adapty Mail 会以 `stop_condition` 为原因取消其剩余待发邮件。转化是指用户的订阅状态达到 **Subscribed**，或一次性购买状态达到 **Purchased**。
 
-停止条件与抑制不同：
+停止条件与抑制（suppression）不同：
 
-- **抑制**：将用户从该项目的所有后续发送中排除。
-- **停止条件**：仅取消当前序列。用户仍可参与其他营销活动——例如，面向活跃订阅者的续订流程或赢回优惠流程。
-停止条件取消与抑制一同显示在营销活动分析中。
-## 管理抑制名单 \{#managing-suppression\}
+- **抑制（Suppression）**：将用户从该项目所有后续发送中排除。
+- **停止条件（Stop condition）**：仅取消当前序列。用户仍可参与其他营销活动——例如，针对活跃订阅者的续订或赢回优惠流程。
 
-Adapty Mail 目前没有用于查看或移除被抑制用户的看板界面。如需解除对某个用户画像的抑制——例如某人误将测试邮件标记为垃圾邮件——请联系 Adapty 客服支持。
-## Adapty Mail 负责的合规事项 \{#what-adapty-mail-handles-for-compliance\}
+停止条件取消与抑制一同出现在活动分析中。
 
-Adapty Mail 内置以下合规功能：
+## 管理抑制列表 \{#managing-suppression\}
 
-- **退订链接**：每封邮件页脚均包含退订链接，用户确认后立即生效。
-- **List-Unsubscribe 标头**：每封邮件均附带该标头，支持在收件箱一键退订（RFC 8058）。
-- **自动屏蔽**：在 SES 退回、投诉、拒绝和限流事件触发时自动生效。
+Adapty Mail 没有专门的看板界面用于查看或移除被抑制的用户。如需解除某个用户画像的抑制状态（例如，某人不小心将测试邮件标记为垃圾邮件），请联系 Adapty 支持团队。
 
-以下部分由您负责：
-- **实际邮寄地址**：CAN-SPAM 法规要求在邮件页脚注明。Adapty Mail 不会自动插入，请在设计活动时手动添加。
-- **明确的订阅同意**：在将用户邮箱传入 Adapty 之前，请先收集用户的明确授权。详见[收集用户邮箱](mail-collect-emails)。
-- **GDPR 数据删除请求**：Adapty Mail 未提供"删除我的数据"接口。如有用户行使数据删除权，请联系 Adapty 支持团队协助处理。
+## Adapty Mail 处理的合规事项 \{#what-adapty-mail-handles-for-compliance\}
+
+Adapty Mail 内置了以下功能：
+
+- **退订链接**：包含在每封邮件的页脚中，用户确认后立即生效。
+- **List-Unsubscribe 标头**：随每封邮件发送，支持在收件箱中一键退订（RFC 8058）。
+- **自动抑制**：在 SES 退信、投诉、拒绝和限流事件触发时自动生效。
+
+您需要自行负责的部分：
+
+- **实际邮寄地址**：CAN-SPAM 要求在邮件页脚中注明。Adapty Mail 不会自动注入此信息——请在设计营销活动时手动添加。
+- **明确的选择加入同意**：在将用户邮箱传递给 Adapty 之前，请先收集用户同意。参见[将 Adapty 连接到 Adapty Mail](mail-collect-emails)。
+- **GDPR 删除请求**：将用户画像的标识符发送至 Adapty Mail API 的[删除用户画像](api-mail/operations/deleteProfile)端点。Adapty Mail 将清除该用户画像的个人数据并取消其已计划的邮件发送。删除操作不可逆：之后即使使用相同标识符再次保存，也不会重新创建该用户画像。

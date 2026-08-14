@@ -9,9 +9,9 @@ customSlug: /react-native-localizations-and-locale-codes
 
 ## Bu neden önemli \{#why-this-is-important\}
 
-Locale kodları, Adapty bir flow için yerelleştirmeyi seçtiğinde ve özel bir paywall için remote config okuduğunuzda devreye girer.
+Locale kodları, Adapty'nin bir flow veya onboarding için lokalizasyonu seçerken ve özel bir paywall için remote config okurken devreye girer.
 
-Locale kodları karmaşıktır ve platformdan platforma değişebilir, bu yüzden Adapty desteklediği her platformda tek bir dahili standart kullanır. Bu standardı anlamak, bir kullanıcının hangi yerelleştirmeyi aldığını tahmin etmenize yardımcı olur.
+Locale kodları karmaşık olabilir ve platformdan platforma farklılık gösterebilir; bu nedenle Adapty, desteklediği tüm platformlarda tek bir dahili standarda dayanır. Bu standardı anlamak, kullanıcının hangi lokalizasyonu alacağını öngörmenize yardımcı olur.
 
 ## Adapty'de locale kodu standardı \{#locale-code-standard-at-adapty\}
 
@@ -19,20 +19,40 @@ Locale kodları için Adapty, hafifçe değiştirilmiş bir [BCP 47 standardı](
 
 ## Yerel ayar kodu eşleştirme \{#locale-code-matching\}
 
-Adapty, kullanıcının yerel ayarıyla eşleşen lokalizasyonu ararken şu adımlar izlenir:
+SDK v4'te, flow'lar ve onboarding'ler yerel ayar kodlarını farklı şekilde eşleştirir: flow'lar cihazda SDK tarafından, onboarding'ler ise Adapty sunucusu tarafından yerelleştirilir.
 
-1. Yerel ayar dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
-2. Adapty, tam olarak eşleşen yerel ayar koduna sahip lokalizasyonu arar
-3. Eşleşme bulunamazsa, Adapty ilk kısa çizgiden önceki alt dizeyi alır (`pt-br` için `pt`) ve eşleşen lokalizasyonu arar
-4. Yine eşleşme bulunamazsa, Adapty flow'un varsayılan yerel ayarı için içeriği döndürür
+### Flow'lar ve Paywall Builder paywallları
 
-Bu sayede `'pt_BR'`, `pt-BR` ve `pt-br` hepsi aynı yerelleştirmeye çözümlenir.
+Paywall Builder'da oluşturulan bir paywall, SDK v4'te flow olarak sunulur; dolayısıyla aşağıdaki kural her ikisi için de geçerlidir.
+
+Eşleşme birebir gerçekleşir. SDK, ilettiğiniz kodu flow'un lokalizasyon kodlarıyla karakter karakter karşılaştırır: büyük/küçük harf dönüşümü yapmaz, alt çizgileri (`_`) tire (`-`) ile değiştirmez ve yalnızca dil etiketiyle eşleşmeye çalışmaz. `pt-br` lokalizasyonuna sahip bir flow için yalnızca `pt-br` eşleşir: `pt-BR`, `pt_BR` ve `pt-PT` hiçbiri eşleşmez.
+
+Kod hiçbir yerelleştirmeyle eşleşmediğinde, flow sessizce [varsayılan dilde](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir — SDK hata döndürmez ve uyarı kaydetmez.
+
+Kod eşleştiğinde ise Adapty, eşleşen yerelleştirmeyi varsayılan olanla birleştirir: eşleşen yerelleştirmede tanımlanmayan metin ve görseller varsayılan yerelleştirmeden alınır.
+
+Locale kodunu atlamak, flow'un varsayılan yerelleştirmesini istemekle aynı şey değildir: SDK sabit olarak `en` kullanır. Varsayılan locale'i `de` olan bir flow, `en` yerelleştirmesi varsa `en` olarak görüntülenir; yalnızca `en` yerelleştirmesi yoksa `de`'ye geri döner.
+
+:::warning
+Yerel ayar kodunu kontrol panelinde yapılandırıldığı şekliyle iletin — küçük harfli alt etiketler tire ile ayrılmış olmalıdır. Cihaz yerel ayar tanımlayıcısını olduğu gibi geçirmeyin: [`react-native-localize`](https://github.com/zoontek/react-native-localize) içindeki `getLocales()[0].languageTag` `pt-BR` döndürür ve bu varsayılan yerelleştirmeye geri döner. Değeri iletmeden önce uygulamanızda dönüştürün.
+:::
+
+### Onboarding'ler \{#onboardings\}
+
+Onboarding'ler sunucu tarafında yerelleştirilir ve sunucu kuralları diğer biçimleri de kabul eder. [`getOnboarding`](react-native-get-onboardings) fonksiyonuna bir `locale` değeri ilettiğinizde:
+
+1. Locale dizesi küçük harfe dönüştürülür ve tüm alt çizgiler (`_`) kısa çizgiyle (`-`) değiştirilir
+2. Adapty, tam olarak eşleşen locale koduyla yerelleştirmeyi arar
+3. Eşleşme bulunamazsa Adapty, ilk kısa çizgiden önceki alt dizeyi (`pt-br` için `pt`) alır ve eşleşen yerelleştirmeyi arar
+4. Yine eşleşme bulunamazsa Adapty, onboarding'in varsayılan locale'i için içeriği döndürür
+
+Bu sayede `pt_BR`, `pt-BR` ve `pt-br` hepsi aynı onboarding yerelleştirmesine çözümlenir.
 
 ## Yerelleştirmeleri Uygulama \{#implementing-localizations\}
 
 SDK v4'te, bir flow çekerken yerel ayar kodu geçirmezsiniz — `getFlow`, tüm yerelleştirmeleriyle birlikte flow'u döndürür ve Adapty, flow görünümü oluşturulurken uygun olanı uygular.
 
-- **Builder'da oluşturulan flow'lar**: SDK cihazın dilini okumaz, bu nedenle uygulamanızda dili kendiniz belirleyip `createFlowView` fonksiyonunun `locale` parametresi olarak ya da gömülü `AdaptyFlowView` bileşeninin `params` prop'u olarak geçirin. Bu parametre zorunlu değildir; belirtmezseniz flow `en` dilinde görüntülenir ya da flow'un `en` yerelleştirmesi yoksa [varsayılan dil](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) kullanılır. Flow'da bulunmayan bir yerelleştirme talep ettiğinizde, görünüm hata vermeden flow'un varsayılan diline döner ve seçilen yerelleştirmede eksik olan metinler varsayılan yerelleştirmeden alınır.
+- **Builder'da oluşturulan flow'lar**: SDK cihazın yerel ayarını okumaz; bu nedenle uygulamanızda çözümleyip `createFlowView` fonksiyonunun `locale` parametresi olarak ya da gömülü `AdaptyFlowView` bileşeninin `params` prop'u aracılığıyla geçirin. Bu parametre isteğe bağlıdır — belirtmezseniz flow `en` dilinde görüntülenir; flow'un `en` yerelleştirmesi yoksa [varsayılan yerel ayarında](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) görüntülenir.
 
   ```typescript showLineNumbers
   import { createFlowView } from 'react-native-adapty';
@@ -50,7 +70,7 @@ const config = flow.remoteConfigs?.find((c) => c.lang === 'en') ?? flow.remoteCo
 // read your values from config?.data
 ```
 
-Yukarıdaki locale kodu eşleştirme kuralları, Adapty'nin her remote config'te saklanan `lang` kodlarını nasıl normalleştirdiğini açıklar.
+Adapty, bu `lang` kodlarını [Adapty'deki yerel ayar kodu standardı](#locale-code-standard-at-adapty) bölümünde açıklanan biçimde saklar. SDK, remote config'leri bir yerel ayarla eşleştirmez; dolayısıyla hangi girişin uygulanacağına uygulamanız karar verir.
 
 </SDKv4>
 

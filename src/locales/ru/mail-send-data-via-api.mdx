@@ -6,12 +6,13 @@ metadataTitle: "Отправка данных через Adapty Mail API | До�
 
 Adapty Mail API позволяет отправлять профили пользователей и транзакции в Adapty Mail напрямую с вашего сервера, минуя SDK Adapty. Используйте его, если вы хотите:
 - Добавляйте подписчиков, если у вас ещё нет базы в Adapty Mail.
-- Повторно используйте базу подписчиков из других ваших приложений.
-- Передавайте данные в Adapty Mail напрямую с сервера, используя бэкенд как источник истины.
+- Переиспользуйте базу подписчиков из других ваших приложений.
+- Передавайте данные в Adapty Mail напрямую с сервера, используя ваш бэкенд как источник истины.
 
 :::note
-**API или SDK?** Большинство приложений передают данные в Adapty Mail через Adapty SDK, который автоматически собирает email-адреса и покупки. Выбирайте API, если в вашем приложении нет Adapty SDK, если данные уже хранятся на вашем сервере или если вы импортируете подписчиков из другого источника.
+**API или SDK?** Большинство приложений передают данные в Adapty Mail через SDK Adapty, который автоматически собирает email-адреса и информацию о покупках — см. [Подключение Adapty к Adapty Mail](mail-collect-emails). Используйте API, если в вашем приложении нет SDK Adapty, если данные уже хранятся на вашем сервере или если вы импортируете подписчиков из другого источника. API можно также использовать совместно с другой точкой входа: Adapty Mail сопоставляет входящие данные по `customer_user_id` и email-адресу и хранит один профиль на каждого пользователя.
 :::
+
 ## Перед началом работы \{#before-you-start\}
 
 :::warning
@@ -38,6 +39,8 @@ Adapty Mail API позволяет отправлять профили поль�
 :::important
 Всегда передавайте стабильный `external_profile_id` — никогда анонимный или привязанный к конкретной установке. Adapty Mail использует его, чтобы связывать письма, клики и покупки с одним профилем.
 :::
+Если тот же пользователь также подключается к Adapty Mail через SDK, добавьте `customer_user_id` — ваш собственный идентификатор пользователя, который вы передаёте в `Adapty.identify()`. Adapty Mail использует его для сопоставления и объединяет оба источника в одном профиле, вместо того чтобы создавать дубликат и отправлять письма дважды.
+
 ```bash
 curl --request POST \
   --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
@@ -83,7 +86,28 @@ curl --request POST \
   }'
 ```
 
-Список всех доступных полей см. в справочнике [события сохранения транзакции](api-mail/operations/saveTransactionEvent).
+See the [Save transaction event](api-mail/operations/saveTransactionEvent) reference for every available field.
+
+You can send a transaction before the profile exists. Adapty Mail keeps the event unattached, then links it to the profile on the next save that includes the same `external_profile_id`.
+
+## Удаление профиля \{#delete-a-profile\}
+
+Чтобы выполнить запрос на удаление данных, отправьте идентификаторы профиля на `/api/v1/profile/delete/`. Adapty Mail удалит персональные данные профиля и отменит его запланированные письма.
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/delete/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345"
+  }'
+```
+
+Идентифицируйте профиль по `external_profile_id`, `customer_user_id` или `email` — укажите хотя бы один из них. Удаление необратимо: повторное сохранение с теми же идентификаторами не пересоздаёт профиль.
+
+Чтобы повторный запрос был безопасным, идентифицируйте профиль по `external_profile_id` или `customer_user_id`. Повторное удаление, в котором указан только `email`, вернёт `404`, так как удаление очищает сохранённый адрес. Подробнее см. в справочнике [Удаление профиля](api-mail/operations/deleteProfile).
+
 ### Привяжите события к флоу \{#map-your-events-to-flows\}
 
 Отправляйте `event_type`, соответствующий произошедшему событию. Adapty Mail определяет состояние профиля на основе истории событий и направляет его в подходящее флоу.

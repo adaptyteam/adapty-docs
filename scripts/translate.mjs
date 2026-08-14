@@ -2967,6 +2967,21 @@ async function translateApiSpecBatchSections(
   }
 
   const merged = mergeYamlSections(sourceDoc, localeDoc, newSectionContents);
+
+  // A garbled section translation (model commentary instead of YAML) makes
+  // mergeYamlSections silently drop that subtree — a spec missing `info`
+  // once shipped this way. Refuse to write (and to record the hash, which
+  // would make the damage permanent) unless the merged document still has
+  // every required top-level key and parses as YAML.
+  const mergedDoc = yaml.load(merged);
+  for (const requiredKey of ["openapi", "info", "paths"]) {
+    if (!mergedDoc?.[requiredKey]) {
+      throw new Error(
+        `merged ${lang} spec lost top-level '${requiredKey}' — a section translation is not valid YAML; refusing to write`,
+      );
+    }
+  }
+
   await fs.writeFile(localePath, merged, "utf-8");
 
   const fHash = await fileHash(spec.full);

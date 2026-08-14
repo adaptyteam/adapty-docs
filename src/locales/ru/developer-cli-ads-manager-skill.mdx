@@ -1,0 +1,113 @@
+---
+title: "Управление Apple Ads с помощью AI-инструмента для кодинга"
+description: "Установите навык ads-manager, чтобы Claude Code, Copilot CLI, Codex или Gemini CLI могли управлять вашими кампаниями Apple Ads через Adapty CLI."
+metadataTitle: "AI-навык Ads Manager | Документация Adapty"
+---
+
+import AdsManagerSkill from '@site/src/locales/ru/reusable/AdsManagerSkill.mdx';
+
+Навык `ads-manager` позволяет инструменту AI-кодирования управлять вашим аккаунтом Apple Ads через [Adapty CLI](developer-cli-ads-manager). Задайте вопрос на обычном языке — инструмент определит, какие команды дадут ответ, сначала прочитает данные аккаунта и предложит изменение на ваше утверждение, прежде чем что-либо попадёт в Apple.
+
+Навык — это набор инструкций, которые ваш AI-инструмент загружает по запросу. Этот навык охватывает те части Ads Manager, где легко ошибиться: какой идентификатор принимает каждый флаг, какой фильтр поддерживает каждый список, сколько ключевых слов умещается в одном пакете и какие вызовы стоят денег.
+
+## Что он обрабатывает \{#what-it-handles\}
+
+- **Производительность чтения**: выбирает единственный вызов, который отвечает на вопрос, вместо того чтобы листать результаты. Знает, что вопрос «топ-N» — это один упорядоченный вызов, а подсчёт сущностей вообще не требует вызова метрик.
+- **Структурные изменения**: создаёт и обновляет кампании, группы объявлений, объявления и ключевые слова в правильном порядке, читая родительскую сущность перед записью дочерней.
+- **Работа с ключевыми словами**: добавляет ключевые слова и пересматривает ставки пакетами, а также переносит поисковые запросы в ключевые слова и минус-слова.
+- **Автоматизации**: настраивает автоматизации на основе правил и делает пробный запуск перед тем, как они затронут реальные ставки.
+- **Анализ конкурентов**: собирает ключевые слова, по которым делают ставки конкурирующие приложения.
+
+## Что он не делает \{#what-it-will-not-do\}
+
+Навык расценивает каждую запись как необратимую — потому что так оно и есть: у CLI нет команды удаления, а изменения достигают Apple за секунды.
+
+- Перед записью он читает данные, а не угадывает ID или бюджет.
+- Он запрашивает подтверждение перед любой командой, которая тратит деньги, и сохраняет собственный запрос подтверждения CLI на случай, если команду выполняете вы.
+- Он привязывает ключ идемпотентности к каждой записи в цепочке, чтобы повторный запуск после неясного результата не создавал вторую кампанию.
+- Он предпочитает небольшие пакеты, чтобы частичный отказ от Apple было легко прочитать.
+
+:::note
+Навык рекомендует команды и подготавливает их к выполнению. Чтение метрик и тестовые запуски бесплатны, но вы по-прежнему несёте ответственность за подтверждение любых изменений в реальном рекламном аккаунте.
+:::
+
+## Установите скилл \{#install-the-skill\}
+
+<AdsManagerSkill />
+
+## Примеры промптов \{#example-prompts\}
+
+Навык уже содержит команды, порядок их компоновки и информацию о том, какие из них тратят деньги, — так что промпт не обязан всего этого описывать. Пишите промпт о том, что навык не может определить самостоятельно: метрику и период, по которым вы оцениваете кампании, ориентир для сравнения и формат, в котором хотите получить ответ.
+
+### Проверка уже запущенного аккаунта \{#audit-an-account-you-already-run\}
+
+Используйте это, когда кампании уже запущены и вы хотите понять, куда уходят деньги. Все необходимые команды — на чтение, так что ничего в вашем аккаунте не изменится.
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### Запустите свои первые кампании \{#launch-your-first-campaigns\}
+
+Используйте это, когда аккаунт Apple Ads пуст. Навык создаёт кампании в приостановленном состоянии по умолчанию, и этот промпт удерживает это до тех пор, пока вы не ознакомитесь с планом.
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## Чем это отличается от AI Agent \{#how-it-differs-from-the-ai-agent\}
+
+В дашборде Adapty Ads Manager также есть встроенный [AI Agent](ads-manager-ai-agent). Они решают разные задачи:
+
+| | AI Agent | навык ads-manager |
+|---|---|---|
+| Где работает | Дашборд Adapty | Ваш терминал, в вашем AI-инструменте для кода |
+| Что делает | Анализирует и даёт рекомендации | Анализирует, даёт рекомендации и выполняет команды |
+| Настройка | Не требуется | Adapty CLI плюс навык |
+
+Используйте AI Agent, чтобы понять, что происходит в вашем аккаунте. Используйте навык, когда хотите, чтобы изменения были выполнены автоматически.
+
+## Что дальше \{#whats-next\}
+
+- [Управление Ads Manager через CLI](developer-cli-ads-manager) — те же задачи вручную, без AI-инструмента.
+- [Команды Ads Manager](developer-cli-ads-manager-reference) — все команды с аргументами, флагами и допустимыми значениями.

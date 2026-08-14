@@ -89,12 +89,48 @@ Adapty.makePurchase(product: product) { result in
 :::
 ## Встроенные покупки из App Store \{#in-app-purchases-from-the-app-store\}
 
-Когда пользователь инициирует покупку в App Store и транзакция передаётся в ваше приложение, у вас есть два варианта:
+Когда пользователь инициирует покупку в App Store и транзакция переходит в ваше приложение, SDK вызывает метод делегата `didReceivePromotedPurchase` с объектом `AdaptyPromotedProduct`. У вас есть два варианта:
 
-- **Обработать транзакцию немедленно:** Верните `true` в `shouldAddStorePayment`. Это сразу откроет экран покупки Apple.
-- **Сохранить объект продукта для последующей обработки:** Верните `false` в `shouldAddStorePayment`, а затем вызовите `makePurchase` с сохранённым продуктом позже. Это может быть полезно, если перед запуском покупки нужно показать пользователю что-то своё.
+- **Немедленно обработать транзакцию:** не реализуйте `didReceivePromotedPurchase`. Реализация по умолчанию сразу запускает покупку, и экран системы покупок Apple отображается автоматически.
+- **Сохранить объект продукта для последующей обработки:** реализуйте `didReceivePromotedPurchase`, сохраните продукт, а затем вызовите `makePurchase` с сохранённым продуктом позже. Это может быть полезно, если перед запуском покупки нужно показать пользователю что-то нестандартное.
 
-Вот полный фрагмент кода:
+Если продвигаемый продукт содержит подписочное предложение, SDK применяет его при покупке автоматически. Предложение считывается из намерения покупки App Store, которое раскрывает его на iOS 18.0 и выше. На iOS 16.4–17.x `subscriptionOffer` всегда равен `nil`, и покупка проходит по базовой цене.
+
+Полный фрагмент кода:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    // 1. Store the product object to defer the transaction.
+    // To process the transaction immediately instead, don't implement this method —
+    // the default implementation starts the purchase right away.
+    nonisolated func didReceivePromotedPurchase(_ product: AdaptyPromotedProduct) {
+        // store the product object
+    }
+
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyPromotedProduct = // get the product object from 1.
+        do {
+            let purchaseResult = try await Adapty.makePurchase(product: storedProduct)
+            // process the purchase result
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+:::warning
+API `didReceivePromotedPurchase` доступен начиная с SDK версии 4.1 и требует **iOS 16.4** или выше. SDK версии 4.0 не поддерживает promoted in-app purchases вовсе, а на устройствах ниже iOS 16.4 метод никогда не вызывается. Если вам нужны promoted-покупки на более ранних версиях iOS, оставайтесь на SDK 3.x и используйте `shouldAddStorePayment`, как показано ниже.
+:::
+
+<Details summary="Используете Adapty SDK 3.x?">
+
+В SDK 3.x вместо этого SDK вызывает делегатный метод `shouldAddStorePayment`:
+
+- **Немедленно обработайте транзакцию:** Верните `true` в `shouldAddStorePayment`. Это сразу запустит экран покупки Apple.
+- **Сохраните объект продукта для последующей обработки:** Верните `false` в `shouldAddStorePayment`, затем вызовите `makePurchase` с сохранённым продуктом позже.
+
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
@@ -117,6 +153,8 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
+
+</Details>
 
 ## Активация промокодов в iOS \{#redeem-offer-codes-in-ios\}
 

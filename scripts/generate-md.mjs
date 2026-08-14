@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withSkillNote } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DOCS_DIR = path.resolve(__dirname, '../src/content/docs');
@@ -293,6 +294,8 @@ async function processFiles(dir, reusableComponents, englishFiles) {
             // Strip and Inline
             content = stripContent(content, reusableComponents);
 
+            content = withSkillNote(content);
+
             // Determine output filename (flattened basename logic)
             let basename = entry.name.replace(/\.(md|mdx)$/, '');
             basename = MD_BASENAME_OVERRIDES.get(basename) ?? basename;
@@ -335,6 +338,7 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
 
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
+        content = withSkillNote(content);
 
         const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
         const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;

@@ -8,30 +8,50 @@ metadataTitle: "Localizar Paywalls | SDK de Unity | Documentación de Adapty"
 
 ## Por qué esto es importante \{#why-this-is-important\}
 
-Los códigos de idioma entran en juego cuando Adapty selecciona la localización para un flow y cuando lees un Remote Config para un paywall personalizado.
+Los códigos de idioma entran en juego cuando Adapty selecciona la localización para un flow o un onboarding, y cuando lees un Remote Config para un paywall personalizado.
 
 Los códigos de idioma son complejos y pueden variar de una plataforma a otra, por lo que Adapty utiliza un estándar interno único en todas las plataformas que admite. Entender ese estándar te ayuda a predecir qué localización recibirá cada usuario.
 
 ## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
 
 Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código se compone de subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués (Brasil)), `zh` (chino simplificado), `zh-hant` (chino tradicional).
-## Coincidencia de código de idioma \{#locale-code-matching\}
+## Coincidencia de códigos de idioma \{#locale-code-matching\}
 
-Cuando Adapty busca la localización que coincide con el idioma de un usuario, ocurre lo siguiente:
+En SDK v4, los flows y los onboardings coinciden con los códigos de idioma de forma diferente: los flows se localizan mediante el SDK en el dispositivo, los onboardings mediante el servidor de Adapty.
 
-1. La cadena de idioma se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`)
-2. Adapty busca la localización con el código de idioma que coincida exactamente
-3. Si no se encuentra ninguna coincidencia, Adapty toma la subcadena antes del primer guion (`pt` para `pt-br`) y busca la localización correspondiente
-4. Si tampoco se encuentra ninguna coincidencia, Adapty devuelve la localización predeterminada `en`
+### Flows y paywalls del Paywall Builder
 
-De este modo, `'pt_BR'`, `pt-BR` y `pt-br` se resuelven todas a la misma localización.
+Un paywall construido en el Paywall Builder se entrega como un flow en el SDK v4, por lo que la regla siguiente aplica a ambos.
+
+La coincidencia es exacta. El SDK compara el código que proporcionas con los códigos de localización del flow carácter a carácter: no cambia las mayúsculas, no reemplaza los guiones bajos (`_`) por guiones (`-`) ni recurre a la subtag de idioma. Para un flow con la localización `pt-br`, solo `pt-br` coincide: `pt-BR`, `pt_BR` y `pt-PT` no lo hacen.
+
+Cuando el código no coincide con ninguna localización, el flow se renderiza silenciosamente en su [localización predeterminada](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — el SDK no devuelve un error ni registra ninguna advertencia.
+
+Cuando el código coincide, Adapty combina la localización con la predeterminada: las cadenas y recursos que la localización coincidente no define se obtienen de la localización predeterminada.
+
+Omitir el código de idioma no es lo mismo que solicitar la localización predeterminada del flow: el SDK sustituye un `en` fijo. Un flow cuyo idioma predeterminado es `de` se renderiza en `en` si tiene una localización para `en`, y solo vuelve a `de` cuando no la tiene.
+
+:::warning
+Pasa el código de idioma exactamente como está configurado en el dashboard: subtags en minúsculas separadas por guiones. No pases un identificador de locale del sistema tal cual: `CultureInfo.CurrentCulture.Name` devuelve `pt-BR`, y vuelve a la localización predeterminada. Convierte el valor en tu app antes de pasarlo.
+:::
+
+### Onboardings
+
+Los onboardings se localizan en el servidor, y las reglas del servidor toleran otros formatos. Cuando pasas un `Locale` a [`GetOnboarding`](unity-get-onboardings):
+
+1. La cadena de configuración regional se convierte a minúsculas y todos los guiones bajos (`_`) se reemplazan por guiones (`-`)
+2. Adapty busca la localización con el código de configuración regional que coincida exactamente
+3. Si no se encuentra ninguna coincidencia, Adapty toma la subcadena anterior al primer guión (`pt` para `pt-br`) y busca la localización correspondiente
+4. Si tampoco se encuentra ninguna coincidencia, Adapty devuelve el contenido para la configuración regional predeterminada del onboarding
+
+Esta forma, `pt_BR`, `pt-BR` y `pt-br` resuelven a la misma localización de onboarding.
 
 ## Implementación de localizaciones \{#implementing-localizations\}
 
 En SDK v4, no se pasa un código de idioma al obtener un flow; el flow se localiza cuando se crea su vista.
 
-- **Paywalls de Flow Builder y Paywall Builder**: Adapty resuelve la localización automáticamente a partir del dispositivo y las localizaciones que configuraste en el builder, por lo que `CreateFlowView` no necesita ningún código de idioma. Para elegir la localización tú mismo, [sobreescríbela al crear la vista](#override-the-localization-of-a-flow).
-- **Paywalls personalizados (Remote Config)**: `GetFlow` devuelve todas las localizaciones configuradas en `flow.RemoteConfigs`. Cada entrada es un `AdaptyRemoteConfig` con un código `Locale` y un `Dictionary` de valores. Selecciona la entrada que corresponda al usuario, con tu propio fallback:
+- **Paywalls de Flow Builder y Paywall Builder**: el SDK no lee el idioma del dispositivo, así que resuélvelo en tu app y [pásalo al crear la vista](#choose-the-localization-of-a-flow). El código de idioma es opcional: omítelo y el flow se renderizará en `en`, o en su idioma predeterminado si el flow no tiene localización `en`.
+- **Paywalls personalizados (Remote Config)**: `GetFlow` devuelve todas las localizaciones configuradas en `flow.RemoteConfigs`. Cada entrada es un `AdaptyRemoteConfig` con un código `Locale` y un `Dictionary` de valores. Selecciona la entrada que corresponda al usuario, con tu propia lógica de respaldo:
 
 ```csharp showLineNumbers
 using System.Linq;
@@ -49,11 +69,11 @@ Adapty.GetFlow("YOUR_PLACEMENT_ID", (flow, error) => {
 });
 ```
 
-Las reglas de coincidencia de códigos de idioma descritas anteriormente explican cómo Adapty normaliza los códigos `Locale` almacenados en cada Remote Config.
+Adapty almacena los códigos `Locale` en el formato descrito en [Estándar de código de idioma en Adapty](#locale-code-standard-at-adapty). El SDK no compara los Remote Configs con un idioma automáticamente, así que es tu app quien decide qué entrada aplicar.
 
-### Sobrescribir la localización de un flow \{#override-the-localization-of-a-flow\}
+### Elige la localización de un flow \{#choose-the-localization-of-a-flow\}
 
-Para renderizar un flow o paywall con una localización específica en lugar de la que Adapty resuelve desde el dispositivo, pasa el código de idioma a `SetLocale` al crear la vista:
+Para renderizar un flow o paywall con una localización específica, pasa el código de idioma a `SetLocale` al crear la vista:
 
 ```csharp showLineNumbers
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -69,7 +89,7 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 });
 ```
 
-La vista informa la localización con la que fue construida en `view.Locale`: la que solicitaste si esa localización existe, o la localización predeterminada del flow en caso contrario.
+La vista informa de la localización con la que se ha construido en `view.Locale`: la que solicitaste si esa localización existe, o la localización predeterminada del flow en caso contrario.
 
 </SDKv4>
 

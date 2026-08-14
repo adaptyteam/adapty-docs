@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
 
 // Generates a dedicated `flows-llms.txt` index for the Flows feature, mirroring
 // the approach in generate-llms.mjs (markdown links to `.md` doc exports).
@@ -228,6 +229,7 @@ async function main() {
     let out = '# Adapty Flows — Documentation\n\n';
     out += '> Adapty Flows (Beta) let you build paywalls and onboarding flows visually in the Flow Builder and ship them without app releases. ';
     out += 'This index links the Flow Builder guide plus the per-platform SDK v4 migration and flow/paywall integration docs.\n\n';
+    out += `${LLM_SKILL_NOTE}\n\n`;
 
     // Section 1: Flow Builder
     out += '## Flow Builder\n';

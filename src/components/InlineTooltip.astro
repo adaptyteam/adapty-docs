@@ -11,8 +11,8 @@ const { tooltip } = Astro.props;
     {tooltip}
   </span>
   
-  <span class="tooltip-popup absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 translate-y-2 w-max max-w-[320px] 
-              opacity-0 invisible transition-all duration-200 ease-out z-[9999] pointer-events-none 
+  <span class="tooltip-popup fixed left-0 top-0 translate-y-2 w-max max-w-[320px]
+              opacity-0 invisible transition-[opacity,transform] duration-200 ease-out z-[9999] pointer-events-none
               group-hover:opacity-100 group-hover:visible group-hover:translate-y-0 group-hover:pointer-events-auto
               group-[.force-closed]:opacity-0 group-[.force-closed]:invisible group-[.force-closed]:pointer-events-none
               before:absolute before:-bottom-3 before:left-0 before:w-full before:h-4 before:content-['']">
@@ -23,7 +23,7 @@ const { tooltip } = Astro.props;
       <span class="tooltip-inner block" data-astro-rerun>
         <slot />
       </span>
-      <span class="tooltip-arrow absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[var(--bg-primary)] after:content-[''] after:absolute after:top-[-7px] after:left-[-6px] after:border-l-[6px] after:border-l-transparent after:border-r-[6px] after:border-r-transparent after:border-t-[6px] after:border-t-[var(--border-primary)] after:-z-10"></span>
+      <span class="tooltip-arrow absolute top-full -translate-x-1/2 w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-t-[6px] border-t-[var(--bg-primary)] after:content-[''] after:absolute after:top-[-7px] after:left-[-6px] after:border-l-[6px] after:border-l-transparent after:border-r-[6px] after:border-r-transparent after:border-t-[6px] after:border-t-[var(--border-primary)] after:-z-10"></span>
     </span>
   </span>
 </span>
@@ -32,6 +32,48 @@ const { tooltip } = Astro.props;
   function closeAllTooltips() {
     document.querySelectorAll('[data-tooltip-wrapper][data-open]').forEach(w => {
       w.removeAttribute('data-open');
+    });
+  }
+
+  const GAP = 8; // space between trigger and popup
+  const EDGE = 8; // minimum distance from the viewport edge
+
+  /* The popup is position: fixed so no scrollable ancestor can clip it — tables set
+     overflow-x: auto, which forces overflow-y to auto and would otherwise cut it off.
+     Fixed positioning means the coordinates have to be computed here. */
+  function positionTooltip(wrapper) {
+    const trigger = wrapper.querySelector('.tooltip-trigger');
+    const popup = wrapper.querySelector('.tooltip-popup');
+    const arrow = wrapper.querySelector('.tooltip-arrow');
+    if (!trigger || !popup) return;
+
+    const t = trigger.getBoundingClientRect();
+    const width = popup.offsetWidth;
+    const height = popup.offsetHeight;
+
+    let left = t.left + t.width / 2 - width / 2;
+    left = Math.max(EDGE, Math.min(left, window.innerWidth - width - EDGE));
+
+    // Prefer above the trigger; flip below when there isn't room.
+    const below = t.top - height - GAP < EDGE;
+    const top = below ? t.bottom + GAP : t.top - height - GAP;
+
+    popup.style.left = left + 'px';
+    popup.style.top = top + 'px';
+    wrapper.classList.toggle('tooltip-below', below);
+
+    // Keep the arrow pointing at the trigger even when the popup is clamped.
+    if (arrow) {
+      const centre = t.left + t.width / 2 - left;
+      arrow.style.left = Math.max(14, Math.min(centre, width - 14)) + 'px';
+    }
+  }
+
+  function repositionVisible() {
+    document.querySelectorAll('[data-tooltip-wrapper]').forEach(wrapper => {
+      if (wrapper.hasAttribute('data-open') || wrapper.matches(':hover')) {
+        positionTooltip(wrapper);
+      }
     });
   }
 
@@ -58,6 +100,10 @@ const { tooltip } = Astro.props;
         wrapper.classList.add('force-closed');
       });
 
+      // Position before the CSS hover state reveals it
+      wrapper.addEventListener('mouseenter', () => positionTooltip(wrapper));
+      trigger.addEventListener('focus', () => positionTooltip(wrapper));
+
       // Reset force-closed state when mouse leaves the wrapper
       wrapper.addEventListener('mouseleave', () => {
         wrapper.classList.remove('force-closed');
@@ -71,6 +117,7 @@ const { tooltip } = Astro.props;
         if (!isOpen) {
           wrapper.setAttribute('data-open', '');
           wrapper.classList.remove('force-closed');
+          positionTooltip(wrapper);
         }
       });
 
@@ -85,6 +132,9 @@ const { tooltip } = Astro.props;
     window.__tooltipDocListenerAttached = true;
     document.addEventListener('click', () => closeAllTooltips());
     document.addEventListener('astro:page-load', initTooltips);
+    // Fixed coordinates go stale on any scroll, including inside a scrollable table
+    window.addEventListener('scroll', repositionVisible, true);
+    window.addEventListener('resize', repositionVisible);
   }
   initTooltips();
 </script>
@@ -111,8 +161,28 @@ const { tooltip } = Astro.props;
   [data-tooltip-wrapper][data-open] .tooltip-popup {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
     pointer-events: auto;
+  }
+
+  /* Flipped below the trigger: the hover bridge and the arrow move to the top edge */
+  .tooltip-below .tooltip-popup::before {
+    bottom: auto;
+    top: -12px;
+  }
+
+  .tooltip-below .tooltip-arrow {
+    top: auto;
+    bottom: 100%;
+    border-top-color: transparent;
+    border-bottom: 6px solid var(--bg-primary);
+  }
+
+  .tooltip-below .tooltip-arrow::after {
+    top: auto;
+    bottom: -7px;
+    border-top-color: transparent;
+    border-bottom: 6px solid var(--border-primary);
   }
 
   /* Custom typography for tooltip content */

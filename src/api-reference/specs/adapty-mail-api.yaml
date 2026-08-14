@@ -87,6 +87,85 @@ paths:
                         error_code: "secret_key_does_not_exist_error"
                         status_code: 403
                         field_name: null
+  /api/v1/profile/delete/:
+    post:
+      summary: Delete profile
+      description: |
+        Erases a profile's personal data and cancels its scheduled emails. Use it to fulfil a
+        right-to-erasure request.
+
+        Identify the profile by any combination of `external_profile_id`, `customer_user_id`, and
+        `email` — Adapty Mail resolves the profile the same way it does on save.
+
+        Erasure is final. A later [Save profile](#operation/saveProfile) request carrying the same
+        identifiers doesn't recreate the profile.
+
+        Repeat a deletion by `external_profile_id` or `customer_user_id` and it succeeds again
+        without changing anything. Repeat one that carried only `email` and it returns `404`:
+        erasure clears the stored address, so an email has nothing left to match.
+      operationId: deleteProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDeleteDTO'
+            examples:
+              byExternalProfileId:
+                summary: Delete by the identifier you sent when saving the profile
+                value:
+                  external_profile_id: "user_12345"
+              byEmail:
+                summary: Delete by email address
+                value:
+                  email: "jane@example.com"
+      responses:
+        '204':
+          description: Profile deleted. The response has no body.
+        '400':
+          description: No identifier was provided.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "At least one of external_profile_id, customer_user_id or email must be provided"
+                        error_code: "missing_identifier"
+                        status_code: 400
+                        field_name: null
+        '403':
+          description: Missing or invalid secret API key.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Secret key doesn't exist"
+                        error_code: "secret_key_does_not_exist_error"
+                        status_code: 403
+                        field_name: null
+        '404':
+          description: No profile matches the identifiers you sent.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: "Profile not found"
+                        error_code: "profile_not_found_error"
+                        status_code: 404
+                        field_name: null
   /api/v1/profile/transaction-event/save/:
     post:
       summary: Save transaction event
@@ -195,7 +274,17 @@ components:
         email:
           type: string
           format: email
-          description: The user's email address. Adapty Mail delivers campaigns to this address.
+          description: |
+            The user's email address. Adapty Mail delivers campaigns to this address.
+
+            The address is write-once: it is set when the profile is created and later saves don't
+            overwrite it.
+        customer_user_id:
+          type: string
+          description: |
+            The user's identifier in your own system, if you have one that Adapty also knows. Adapty
+            Mail uses it to recognize a person who also reaches it through the Adapty SDK, so the two
+            sources share one profile instead of producing a duplicate that mails the same person twice.
         first_name:
           type: string
           description: The user's first name.
@@ -222,6 +311,26 @@ components:
             build [segments](/docs/mail-segments) — for example, `plan`, `signup_source`, or `trial_days`.
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
+    ProfileDeleteDTO:
+      type: object
+      description: |
+        Identifiers for the profile to erase. Send at least one of `external_profile_id`,
+        `customer_user_id`, or `email`.
+      anyOf:
+        - required: [external_profile_id]
+        - required: [customer_user_id]
+        - required: [email]
+      properties:
+        external_profile_id:
+          type: string
+          description: The identifier you sent when saving the profile.
+        customer_user_id:
+          type: string
+          description: The user's identifier in your own system.
+        email:
+          type: string
+          format: email
+          description: The email address on the profile.
     DeviceInfoDTO:
       type: object
       required:
@@ -270,7 +379,23 @@ components:
           description: When the event was recorded, in ISO 8601 format.
         external_profile_id:
           type: string
-          description: The same stable `external_profile_id` you send when saving the profile. Links the transaction to the right profile.
+          description: |
+            The same stable `external_profile_id` you send when saving the profile. Links the
+            transaction to the right profile.
+
+            You can send a transaction before the profile exists. Adapty Mail stores the event
+            unattached and links it to the profile on the next save that carries the same identifier.
+        customer_user_id:
+          type: string
+          description: |
+            The user's identifier in your own system. Adapty Mail uses it to find the profile when
+            `external_profile_id` doesn't match one. It isn't stored on the event.
+        email:
+          type: string
+          format: email
+          description: |
+            The buyer's email address. Adapty Mail uses it to find the profile when neither
+            identifier matches one. It isn't stored on the event.
         store:
           type: string
           description: The store the transaction came from, for example, `app_store`, `play_store`, or `stripe`.
