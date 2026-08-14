@@ -215,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 item.innerHTML = `
                     ${breadcrumbsHtml}
-                    <div class="text-[14px] font-bold text-primary group-hover:text-accent transition-colors mb-0.5 line-clamp-1 search-title">${title}</div>
+                    <div class="text-[14px] font-semibold text-primary group-hover:text-accent transition-colors mb-0.5 line-clamp-1 search-title">${title}</div>
                     ${hit.description ? `<div class="text-[12px] text-secondary line-clamp-2 leading-relaxed font-medium search-desc">${hit.description}</div>` : ''}
                 `;
 

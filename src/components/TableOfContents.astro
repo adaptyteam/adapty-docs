@@ -21,19 +21,22 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
 
 <nav class="toc-nav hidden xl:block shrink-0">
     <h5 class="toc-title">{t.onThisPage}</h5>
-    <ul class="space-y-3">
-        {tocHeadings.map(h => (
-            <li class:list={[{ 'pl-4': h.depth === 3 }]}>
-                <a 
-                    href={`#${h.slug}`} 
-                    class="toc-link"
-                    data-slug={h.slug}
-                >
-                    {h.text}
-                </a>
-            </li>
-        ))}
-    </ul>
+    <div class="toc-body">
+        <div class="toc-indicator" aria-hidden="true"></div>
+        <ul class="space-y-3">
+            {tocHeadings.map(h => (
+                <li class:list={[{ 'pl-4': h.depth === 3 }]}>
+                    <a
+                        href={`#${h.slug}`}
+                        class="toc-link"
+                        data-slug={h.slug}
+                    >
+                        {h.text}
+                    </a>
+                </li>
+            ))}
+        </ul>
+    </div>
     
     <script>
         // ---- Tab-aware TOC ----
@@ -109,47 +112,71 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
         function initTOC() {
             const headings = Array.from(document.querySelectorAll('article h2, article h3'));
             if (headings.length === 0) return;
-            
-            let currentActiveId = '';
+
+            let currentRangeKey = '';
             let isScrollingFromClick = false; // Flag to prevent updates during programmatic scroll
-            
-            function setActiveLink(id) {
-                if (currentActiveId === id) return;
-                currentActiveId = id;
-                
-                // Remove active from all
-                document.querySelectorAll('.toc-link').forEach(l => {
-                    l.classList.remove('toc-active');
-                });
-                
-                // Add to current
-                const link = document.querySelector(`.toc-link[data-slug="${id}"]`);
-                if (link) {
-                    link.classList.add('toc-active');
-                    // Scroll ToC to keep active link visible
-                    const nav = link.closest('.toc-nav');
-                    if (nav) {
-                        const title = nav.querySelector('.toc-title');
-                        const titleHeight = title ? title.offsetHeight : 0;
-                        const linkTop = link.offsetTop;
-                        const linkBottom = linkTop + link.offsetHeight;
-                        const navScrollTop = nav.scrollTop;
-                        const navHeight = nav.clientHeight;
-                        if (linkTop < navScrollTop + titleHeight) {
-                            nav.scrollTo({ top: linkTop - titleHeight, behavior: 'smooth' });
-                        } else if (linkBottom > navScrollTop + navHeight) {
-                            nav.scrollTo({ top: linkBottom - navHeight, behavior: 'smooth' });
-                        }
+
+            // Highlight the RANGE of sections currently in the viewport: color their
+            // links and stretch the rail indicator to cover them (it can span several
+            // sections at once).
+            function setActiveRange(ids) {
+                const key = ids.join('|');
+                const keyChanged = currentRangeKey !== key;
+                if (keyChanged) {
+                    currentRangeKey = key;
+                    document.querySelectorAll('.toc-link').forEach(l => {
+                        l.classList.toggle('toc-active', ids.includes(l.getAttribute('data-slug')));
+                    });
+                }
+                // Geometry recomputes unconditionally: the nav may have just become
+                // visible (viewport resize) or links may have moved (tab filtering).
+
+                const body = document.querySelector('.toc-body');
+                const indicator = document.querySelector('.toc-indicator');
+                const links = ids
+                    .map(id => document.querySelector(`.toc-link[data-slug="${id}"]`))
+                    .filter(l => l && l.offsetParent !== null);
+
+                if (!body || !indicator) return;
+                if (links.length === 0) {
+                    indicator.style.opacity = '0';
+                    return;
+                }
+
+                const bodyRect = body.getBoundingClientRect();
+                const rects = links.map(l => l.getBoundingClientRect());
+                const top = Math.min(...rects.map(r => r.top)) - bodyRect.top;
+                const bottom = Math.max(...rects.map(r => r.bottom)) - bodyRect.top;
+                indicator.style.top = `${top}px`;
+                indicator.style.height = `${bottom - top}px`;
+                indicator.style.opacity = '1';
+
+                // Scroll ToC to keep the start of the range visible (only when the
+                // range actually moved — not on every scroll tick)
+                if (!keyChanged) return;
+                const link = links[0];
+                const nav = link.closest('.toc-nav');
+                if (nav) {
+                    const title = nav.querySelector('.toc-title');
+                    const titleHeight = title ? title.offsetHeight : 0;
+                    const linkTop = link.offsetTop;
+                    const linkBottom = linkTop + link.offsetHeight;
+                    const navScrollTop = nav.scrollTop;
+                    const navHeight = nav.clientHeight;
+                    if (linkTop < navScrollTop + titleHeight) {
+                        nav.scrollTo({ top: linkTop - titleHeight, behavior: 'smooth' });
+                    } else if (linkBottom > navScrollTop + navHeight) {
+                        nav.scrollTo({ top: linkBottom - navHeight, behavior: 'smooth' });
                     }
                 }
             }
-            
-            // Find which heading is currently most visible
+
+            // Find which sections are currently on screen
             function updateActiveHeading() {
                 // Don't update if we're scrolling from a click
                 if (isScrollingFromClick) return;
-                
-                const headerOffset = 120; // Offset from top to determine "active" point
+
+                const headerOffset = 120; // Reading position under the sticky header
                 const scrollY = window.scrollY;
                 const windowHeight = window.innerHeight;
                 const documentHeight = document.documentElement.scrollHeight;
@@ -157,39 +184,34 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
                 const currentHeadings = visibleHeadings();
                 if (currentHeadings.length === 0) return;
 
-                // Check if we're at the bottom of the page
-                // If the user has scrolled to near the bottom, always highlight the last item
-                // This handles cases where the last section is too short to reach the top offset
-                if (scrollY + windowHeight >= documentHeight - 50) {
-                     const lastHeading = currentHeadings[currentHeadings.length - 1];
-                     const id = lastHeading?.getAttribute('id');
-                     if (id) {
-                         setActiveLink(id);
-                         return;
-                     }
-                }
-
-                // Find the last heading that is above or at the headerOffset
-                // This mimics standard "scroll spy" behavior: the section you are reading
-                // is the one whose header you most recently passed.
-                let activeHeading = currentHeadings[0];
-
-                for (const heading of currentHeadings) {
-                    const rect = heading.getBoundingClientRect();
-
-                    if (rect.top <= headerOffset) {
-                        activeHeading = heading;
-                    } else {
-                        // Since headings are in order, once we find one below the offset,
-                        // we know the previous one (stored in activeHeading) is the correct one.
-                        break;
+                // A heading's section runs from its top to the next visible heading's top.
+                // Collect every section that intersects the reading window.
+                const tops = currentHeadings.map(h => h.getBoundingClientRect().top);
+                const ids = [];
+                for (let i = 0; i < currentHeadings.length; i++) {
+                    const secTop = tops[i];
+                    const secBottom = i + 1 < tops.length ? tops[i + 1] : documentHeight - scrollY;
+                    // Section still on screen below the header, and started above the fold
+                    if (secBottom > headerOffset && secTop < windowHeight - 40) {
+                        const id = currentHeadings[i].getAttribute('id');
+                        if (id) ids.push(id);
                     }
                 }
-                
-                const id = activeHeading?.getAttribute('id');
-                if (id) {
-                    setActiveLink(id);
+
+                // Above the first heading (intro) — point at the first section
+                if (ids.length === 0) {
+                    const firstId = currentHeadings[0].getAttribute('id');
+                    if (firstId) ids.push(firstId);
                 }
+
+                // At the very bottom, make sure the last section is included even if
+                // it's too short to cross the reading offset
+                if (scrollY + windowHeight >= documentHeight - 50) {
+                    const lastId = currentHeadings[currentHeadings.length - 1].getAttribute('id');
+                    if (lastId && !ids.includes(lastId)) ids.push(lastId);
+                }
+
+                setActiveRange(ids);
             }
             
             // Update on scroll with throttling
@@ -224,6 +246,12 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
             };
             
             window.addEventListener('scroll', handleScroll, { passive: true });
+
+            // Re-sync when the viewport changes (the ToC appears/disappears at xl)
+            window.addEventListener('resize', () => {
+                currentRangeKey = '';
+                updateActiveHeading();
+            }, { passive: true });
             
             // Handle direct clicks on TOC links
             document.querySelectorAll('.toc-link').forEach(link => {
@@ -232,9 +260,9 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
                     if (slug) {
                         // 1. Set Flag
                         isScrollingFromClick = true;
-                        
+
                         // 2. Optimistically update UI
-                        setActiveLink(slug);
+                        setActiveRange([slug]);
                         
                         // 3. Clear any pending auto-updates
                         if (ticking) ticking = false;
@@ -264,7 +292,6 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
   .toc-nav {
     width: 100%;
     padding-left: 1.5rem;
-    border-left: 1px solid var(--border-primary);
     overflow-y: auto;
     /* Smooth scrolling within TOC */
     scroll-behavior: smooth;
@@ -293,7 +320,7 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
   
   .toc-title {
     font-size: 11px;
-    font-weight: 700;
+    font-weight: 600;
     color: var(--text-tertiary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -306,27 +333,53 @@ const tocHeadings = headings.filter(h => h.depth >= 2 && h.depth <= 3);
     z-index: 10;
   }
   
+  /* Rail: a continuous track along the whole list; the indicator segment slides
+     and stretches over the sections currently on screen. */
+  .toc-body {
+    position: relative;
+    padding-left: 0.875rem;
+  }
+
+  .toc-body::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    border-radius: 2px;
+    background: var(--border-primary);
+  }
+
+  .toc-indicator {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 2px;
+    height: 0;
+    border-radius: 2px;
+    background: var(--accent-primary);
+    opacity: 0;
+    transition: top 0.25s ease, height 0.25s ease, opacity 0.2s ease;
+    z-index: 1;
+  }
+
   .toc-link {
     display: block;
     font-size: 13px;
     color: var(--text-secondary);
-    transition: all 0.2s ease;
+    transition: color 0.2s ease;
     line-clamp: 2;
     font-weight: 500;
     line-height: 1.375;
-    border-left: 2px solid transparent;
-    padding-left: 0.75rem;
-    margin-left: -0.75rem;
   }
-  
+
   .toc-link:hover {
     color: var(--text-primary);
-    border-left-color: var(--border-primary);
   }
-  
+
   .toc-link.toc-active {
     color: var(--accent-primary);
-    border-left-color: var(--accent-primary);
   }
 
   .toc-nav li.toc-tab-hidden {
