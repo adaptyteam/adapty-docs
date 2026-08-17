@@ -133,12 +133,12 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 2 | tutorial |
-| ua-paddle | — | marketer, analyst | 5 | tutorial |
+| ua-paddle | — | marketer, analyst | 6 | tutorial |
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
-| ua-stripe | — | marketer, analyst | 5 | tutorial |
+| ua-stripe | — | marketer, analyst | 6 | tutorial |
 | ua-tiktok | — | marketer, analyst | 9 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 1 | tutorial |
-| ua-web-pixel | — | marketer, analyst | 5 | tutorial |
+| ua-web-pixel | — | marketer, analyst | 6 | tutorial |
 | user-acquisition | — | marketer, analyst | 7 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
