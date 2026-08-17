@@ -81,6 +81,15 @@ inside Adapty instead of Apple's own console.
   from Apple through explicit proxy endpoints. Adapty passes all of this through verbatim: their meaning,
   their constraints and their review requirements are Apple's, and Apple's docs are where a reader goes
   for them.
+- **Keyword Suggester and Search Popularity (launched 2026-08-16) sit on a third API surface**, not the
+  ASA admin API: `apps/web/src/shared/asa/insights/api/transport.ts` on `origin/master` calls
+  `/v1/suggestions/{phrases,categories}/query` and `/v1/insights/apps/search-term-popularity/query`.
+  Neither endpoint takes an adamId, so neither page has an app/campaign scope picker, and the Keyword
+  Suggester route mounts without the Apple-Ads-connection wrapper (comment in
+  `KeywordSuggesterPageContent.tsx`). The load-bearing copy — the forbidden-language glossary
+  (popularity ≠ search volume, categories ≠ keywords), the 50-token list cap, the 6-hour cache — lives in
+  `apps/web/src/features/asa/keywordSuggester/config/constants.ts` and
+  `searchPopularity/config/constants.ts`. Verified via `git show origin/master:<path>` 2026-08-17.
 - TODO(owner): **the ASA service that computes all of the above is not a registered source and is not
   cloned.** The frontend points at `api-asa-admin.adapty.io` (`apps/web/src/libs/asa/sdk.tsx`), and
   `dashboard-backend` carries none of it — grepping `origin/develop` for `asa-metadata`,
@@ -146,10 +155,12 @@ inside Adapty instead of Apple's own console.
 | ads-manager-create-ad-group | — | marketer | 5 | tutorial |
 | ads-manager-create-campaign | — | marketer | 6 | tutorial |
 | ads-manager-create-segments | — | marketer | 2 | tutorial |
+| ads-manager-keyword-suggester | — | marketer | 4 | tutorial |
 | ads-manager-manage-ads | — | marketer | 5 | tutorial |
 | ads-manager-manage-keywords | — | marketer | 12 | tutorial |
 | ads-manager-market-intelligence | — | marketer | 6 | tutorial |
 | ads-manager-overview | — | marketer | 3 | tutorial |
+| ads-manager-search-popularity | — | marketer | 4 | tutorial |
 | ads-manager-settings | — | marketer | 3 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
