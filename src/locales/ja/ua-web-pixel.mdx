@@ -1,0 +1,82 @@
+---
+title: "Adapty ウェブピクセルの設定"
+description: "ウェブファネルに Adapty ウェブピクセルをインストールして、Stripe または Paddle 経由の購入を、それを促した広告にアトリビュートします。"
+metadataTitle: "ウェブピクセル | Adapty アトリビューション | Adapty ドキュメント"
+---
+
+ウェブファネルでユーザーを獲得している場合、Adapty ウェブピクセルはファネルへの各訪問を、その訪問を促した広告と紐づけます。ピクセルは訪問者ごとにクリック ID を割り当てます。訪問者が購入すると、そのクリック ID をトランザクションとともに渡すことで、Adapty アトリビューションが購入を正確なキャンペーン・広告セット・広告に紐づけます。
+
+ピクセルは Meta Ads および TikTok for Business のキャンペーンで利用できます。
+
+:::tip
+ピクセルは広告へのアクセスのみを紐付けます。購入自体を Adapty のアトリビューションに取り込むには、[Stripe](ua-stripe) または [Paddle](ua-paddle) を連携してください。
+:::
+
+## 仕組み \{#how-it-works\}
+
+ページ読み込み時、ピクセルは以下の処理を行います：
+
+- 訪問者に `click_id` を割り当て、7日間ブラウザに保存します。
+- ページURLから広告シグナルを取得します：Meta（`fbclid`）およびTikTok（`ttclid`）のクリックID、キャンペーン・広告セット・広告の識別子と名前、および `utm_*` パラメーターが対象です。
+- `click_id` と取得したシグナルをバックグラウンドでAdaptyに送信します。
+
+チェックアウト時には、`click_id` のみをトランザクションに付与します。Adaptyはそれをピクセルが既に送信したシグナルと照合し、広告チャネルを自動的に判別します。
+
+## 始める前に \{#before-you-start\}
+
+[Meta Ads](ua-facebook) または [TikTok for Business](ua-tiktok) を Adapty アトリビューションに連携し、キャンペーン設定を追加してください。Adapty はキャンペーン設定ごとにピクセルスニペットを生成するため、スニペットをコピーするにはキャンペーン設定が必要です。
+
+## ピクセルをインストールする \{#install-the-pixel\}
+
+1. Adapty Attribution で、Meta Ads または TikTok のキャンペーン設定を開きます。
+2. **General** タブで **Web funnel** セクションを展開し、**Pixel snippet** フィールドの値をコピーします。
+
+<ZoomImage id="ua-web-pixel-snippet.webp" width="700px" alt="Adapty Attribution のキャンペーン設定の Web funnel セクションにある Pixel snippet フィールド" />
+
+3. ファネルのすべてのページの `<head>` にスニペットを貼り付けます。
+
+```html
+<script async src="https://api-ua.adapty.io/pixel/loader.js" data-code="YOUR_CODE"></script>
+```
+
+`data-code` の値はアプリとキャンペーンを識別するものです。これは公開識別子であり、シークレットではありません。
+
+## 広告 URLにタグを付ける \{#tag-your-ad-urls\}
+
+ピクセルはランディングページの URL から広告データを読み取ります。広告ネットワークはクリック ID（`fbclid` または `ttclid`）を自動的に付加し、ネットワークを識別しますが、キャンペーン・広告セット・広告までは特定できません。購入を特定の広告まで紐付けるには、トラッキングパラメーターを広告に追加してください：
+
+1. キャンペーン設定の **Web funnel** セクションで、**Ad URL parameters** フィールドの値をコピーします。
+
+<ZoomImage id="ua-web-pixel-url-params.webp" width="700px" alt="Ad URL parameters field in the Web funnel section of a campaign configuration in Adapty Attribution" />
+
+2. 広告ネットワークで、**広告**レベルに値を貼り付けます：
+   - **Meta**: 広告の **URL parameters** フィールドに貼り付けます。
+   - **TikTok**: 広告のリンク先URL下にある **Build URL parameters** に貼り付けます。
+
+値にはネットワークマクロが含まれています。ネットワークはクリック時に、実際のキャンペーン・広告セット・広告の値に置き換えます。
+
+パラメーターには `utm_*` の値が含まれていないため、独自の分析用にUTMスキームをそのまま使い続けることができます — Adapty では必要ありません。
+
+## 同意の管理 \{#manage-consent\}
+
+ピクセルはファーストパーティクッキーと localStorage のエントリを書き込み、ページ読み込み時に広告クリック ID を読み取ります。ファネルのデータ管理者はあなた自身であり、その法的根拠もあなたが保有します。
+
+デフォルトでは、ピクセルはページ読み込み時に動作します。同意に基づいて制御したい場合は、スニペットに `data-consent="denied"` を追加してください。これにより、クッキーバナーから同意を付与するまで、ピクセルはデータの保存も送信も行いません。
+
+```js
+window.adaptyPixel.grantConsent();  // start capture
+window.adaptyPixel.revokeConsent(); // clear stored state and stop
+window.adaptyPixel.getConsent();    // 'granted' | 'denied'
+```
+
+:::warning
+EU/EEA のトラフィックに対しては、同意を取得した上でピクセルをゲートしてください。ePrivacy 規則ではブラウザストレージへの事前同意が必要であり、ファーストパーティアトリビューションピクセルも例外ではありません。
+:::
+
+スニペットは非同期で読み込まれるため、`<script>` タグの直後の行では `window.adaptyPixel` は存在しません。同意 API は同意バナーのコールバックから呼び出すか、早期呼び出しの場合は `if (window.adaptyPixel) { ... }` でガードしてください。
+
+## 使用上の注意 \{#usage-notes\}
+
+- **シングルページファネル**: クライアントサイドのナビゲーションでは同じ `click_id` が保持されるため、シングルページアプリとして構築されたファネルは追加設定なしで動作します。
+- **Click ID の安定性**: ページ読み込み時またはチェックアウト時に `click_id` を読み取ると、同じ値が返されます。訪問者が新しい広告から再度ファネルに入った場合は、最新の広告クリックが優先されます。
+- **更新（リニューアル）**: `click_id` は初回トランザクションにのみ付与してください。Adapty はトライアルのコンバージョンやサブスクリプションの更新を、サブスクリプション自体を通じてアトリビュートします。

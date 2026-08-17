@@ -1,0 +1,82 @@
+---
+title: "Adapty web pixel'i kurma"
+description: "Stripe veya Paddle üzerinden yapılan satın almaların onlara yol açan reklamlarla ilişkilendirilebilmesi için web pixel'ini web funnel'ınıza yükleyin."
+metadataTitle: "Web pixel | Adapty Attribution | Adapty Dokümanları"
+---
+
+Kullanıcıları bir web funnel aracılığıyla ediniyorsanız, Adapty web pixel'i her funnel ziyaretini onu getiren reklamla ilişkilendirir. Pixel, her ziyaretçiye bir click ID atar. Ziyaretçi ödeme yaptığında, bu click ID'yi işlemle birlikte iletirsiniz; Adapty Attribution da satın almayı tam olarak ilgili kampanya, reklam seti ve reklama bağlar.
+
+Piksel, Meta Ads ve TikTok for Business kampanyaları için kullanılabilir.
+
+:::tip
+Piksel yalnızca reklam ziyaretlerini eşleştirir. Satın alma işlemlerini Adapty Attribution'a aktarmak için [Stripe](ua-stripe) veya [Paddle](ua-paddle) bağlantısını kurun.
+:::
+
+## Nasıl çalışır \{#how-it-works\}
+
+Sayfa yüklendiğinde, pixel şunları yapar:
+
+- Ziyaretçiye bir `click_id` atar ve bunu tarayıcıda 7 gün boyunca saklar.
+- Sayfa URL'sinden reklam sinyallerini yakalar: Meta (`fbclid`) ve TikTok (`ttclid`) tıklama kimliklerini, kampanya, reklam seti ve reklam tanımlayıcıları ile adlarını ve `utm_*` parametrelerini.
+- `click_id`'yi ve yakalanan sinyalleri arka planda Adapty'e gönderir.
+
+Ödeme sırasında yalnızca `click_id`'yi işleme eklersiniz. Adapty bunu, pixel'in daha önce gönderdiği sinyallerle eşleştirir ve reklam kanalını otomatik olarak belirler.
+
+## Başlamadan önce \{#before-you-start\}
+
+[Meta Ads](ua-facebook) veya [TikTok for Business](ua-tiktok) bağlantısını Adapty Attribution'a bağlayın ve bir kampanya yapılandırması ekleyin. Adapty, pixel kodunu her kampanya yapılandırması için oluşturduğundan, kodu kopyalamak için bir yapılandırmaya ihtiyacınız vardır.
+
+## Pikseli yükleyin \{#install-the-pixel\}
+
+1. Adapty Attribution'da Meta Ads veya TikTok kampanya yapılandırmanızı açın.
+2. **General** sekmesinde **Web funnel** bölümünü genişletin ve **Pixel snippet** alanının değerini kopyalayın.
+
+<ZoomImage id="ua-web-pixel-snippet.webp" width="700px" alt="Adapty Attribution'daki bir kampanya yapılandırmasının Web funnel bölümündeki Pixel snippet alanı" />
+
+3. Snippet'i huninizdeki her sayfanın `<head>` bölümüne yapıştırın:
+
+```html
+<script async src="https://api-ua.adapty.io/pixel/loader.js" data-code="YOUR_CODE"></script>
+```
+
+`data-code` değeri, uygulamanızı ve kampanyanızı tanımlar. Bu, gizli bir bilgi değil, herkese açık bir tanımlayıcıdır.
+
+## Reklam URL'lerinizi etiketleyin \{#tag-your-ad-urls\}
+
+Pixel, reklam verilerini açılış sayfası URL'nizden okur. Reklam ağları kendi tıklama kimliklerini (`fbclid` veya `ttclid`) otomatik olarak ekler; bu kimlik ağı tanımlar ancak kampanya, reklam seti veya reklamı belirtmez. Satın almaları tam reklama kadar ilişkilendirebilmek için reklamlarınıza takip parametrelerini ekleyin:
+
+1. Kampanya yapılandırmasının **Web funnel** bölümünde **Ad URL parameters** alanının değerini kopyalayın.
+
+<ZoomImage id="ua-web-pixel-url-params.webp" width="700px" alt="Adapty Attribution'daki bir kampanya yapılandırmasının Web funnel bölümündeki Ad URL parameters alanı" />
+
+2. Reklam ağında değeri **reklam** düzeyinde yapıştırın:
+   - **Meta**: Reklamın **URL parameters** alanına.
+   - **TikTok**: Reklamın hedef URL'si altında **Build URL parameters** alanına.
+
+Değer, ağ makrolarını içerir. Ağ, tıklama anında bunları gerçek kampanya, reklam seti ve reklam değerleriyle değiştirir.
+
+Parametreler `utm_*` değerleri içermez; bu nedenle kendi analizleriniz için kendi UTM şemanızı kullanmaya devam edebilirsiniz — Adapty bunu gerektirmez.
+
+## Onayı yönetme \{#manage-consent\}
+
+Piksel, sayfa yüklenirken birinci taraf çerezi ve localStorage girişi yazar; ayrıca reklam tıklama kimliklerini okur. Huninin veri sorumlusu sizsiniz ve bu veriler için yasal dayanağa sahip olmanız gerekmektedir.
+
+Varsayılan olarak piksel, sayfa yüklendiğinde çalışır. Onay mekanizmasına bağlamak istiyorsanız snippet'e `data-consent="denied"` ekleyin — piksel, çerez bannerınızdan onay verene kadar hiçbir şey depolamaz veya göndermez:
+
+```js
+window.adaptyPixel.grantConsent();  // start capture
+window.adaptyPixel.revokeConsent(); // clear stored state and stop
+window.adaptyPixel.getConsent();    // 'granted' | 'denied'
+```
+
+:::warning
+AB/AEA trafiği için piksel kullanımını izne bağlayın. ePrivacy kuralları, tarayıcı depolaması için önceden onay alınmasını zorunlu kılmaktadır; birinci taraf attribution pikseli bu zorunluluktan muaf değildir.
+:::
+
+Kod parçacığı asenkron olarak yüklendiğinden, `window.adaptyPixel` `<script>` etiketinin hemen ardından gelen satırda mevcut olmaz. Rıza API'sini, onay banner'ınızın callback'inden çağırın ya da erken bir çağrıyı `if (window.adaptyPixel) { ... }` ile koruma altına alın.
+
+## Kullanım notları \{#usage-notes\}
+
+- **Tek sayfalık funnel'lar**: İstemci tarafı navigasyon aynı `click_id`'yi korur, bu nedenle tek sayfalık uygulama olarak oluşturulan bir funnel ekstra kurulum gerektirmez.
+- **Click ID kararlılığı**: `click_id`'yi sayfa yüklenirken veya ödeme sırasında okumak aynı değeri döndürür. Ziyaretçi yeni bir reklamdan funnel'a yeniden girerse, en son reklam tıklaması geçerli olur.
+- **Yenilemeler**: `click_id`'yi yalnızca ilk işleme ekleyin. Adapty, deneme dönüşümlerini ve abonelik yenilemelerini aboneliğin kendisi aracılığıyla ilişkilendirir.

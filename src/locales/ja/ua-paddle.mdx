@@ -1,0 +1,71 @@
+---
+title: "PaddleをAdapty Attributionと連携する"
+description: "PaddleアカウントをAdapty Attributionに接続して、ウェブファネルの購入・更新・返金・チャージバックを、それを促した広告にアトリビューションします。"
+metadataTitle: "Paddle連携 | Adapty Attribution | Adapty ドキュメント"
+---
+
+PaddleアカウントをAdapty Attributionに接続することで、ウェブファネルでの購入を、それを誘導した広告に紐づけることができます。接続後は、Paddleからの購入・更新・返金・チャージバックがAdapty Attributionの分析画面に表示され、コンバージョンイベントを広告ネットワークに送り返してキャンペーンの最適化に活用できます。
+
+## 仕組み \{#how-it-works\}
+
+1. [Adapty ウェブピクセル](ua-web-pixel)がファネルの訪問者全員にクリック ID を割り当て、ランディング URL から広告データを取得します。
+2. チェックアウト時に、ファネルがクリック ID を Paddle トランザクションに紐付けます。
+3. Adapty は自身の Paddle アカウントに作成した Webhook 経由でトランザクションを受信し、広告クリックと照合します。
+
+:::note
+ウェブ購入にはアプリのインストールイベントがないため、Adapty はサブスクリプションの初回請求日をコホート日として使用します。
+:::
+
+## はじめる前に \{#before-you-start\}
+
+ファネルに [Adapty ウェブピクセルを設定](ua-web-pixel)してください。ピクセルがなければクリック ID が存在せず、トランザクションを広告に紐付けることができません。
+
+## ステップ1. チェックアウト時にクリックIDを付与する \{#step-1-attach-the-click-id-at-checkout\}
+
+チェックアウトを開くか、トランザクションを作成する際に、クリックIDを取得し、`adpt_click_id` キーで Paddle の `customData` に追加します。
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+
+customData: { adpt_click_id: adptClickId }
+```
+
+クリックIDは最初のトランザクションにのみ付与してください。Paddle はサブスクリプションのカスタムデータを更新トランザクションにコピーするため、Adapty は自動的に更新・返金・チャージバックのアトリビューションを行います。
+
+`click_id` は短いランダムな識別子であり、シークレットでも個人データでもありません。Paddle ダッシュボードで確認できますが、これは想定された動作です。
+
+## ステップ 2. Paddleアカウントを連携する \{#step-2-connect-your-paddle-account\}
+
+まず、Paddleでキーを作成します。Paddleダッシュボードの **Developer Tools → Authentication** に移動し、以下の権限を持つAPIキーを作成してください。
+
+| リソース | アクセス |
+|---|---|
+| Transactions | Read |
+| Adjustments | Read |
+| Notification settings | Write |
+
+Adapty は通知設定への書き込みアクセスを使って、支払いを配信する Webhook の宛先を自動作成します。Paddle 側で手動設定する必要はありません。それ以外はすべて読み取り専用です。Adapty は支払いデータへの書き込みは行いません。必要な権限が欠けているキーは、接続時にエラーが発生し、不足している権限の名前が表示されます。
+
+:::warning
+ライブキーを使用してください。Paddleのキーは環境ごとに異なり、サンドボックスイベントはAdaptyに届いた時点で破棄されます。サンドボックスキーで接続すると**Valid**と表示されますが、データは一切表示されません。インテグレーションを確認するには、ライブキーを接続して実際の購入を行ってください。
+:::
+
+次に、Adaptyにキーを追加します：
+
+1. Adapty Attributionで、[**Integrations > Paddle**](https://app.adapty.io/ua/integrations/paddle)に移動します。
+2. **API key**にキーを貼り付けます。必要に応じて**Name**を入力してアカウントを区別できます（デフォルトではキーの末尾4文字が使用されます）。
+3. **Connect**をクリックします。
+
+<ZoomImage id="ua-paddle-connect.webp" width="500px" alt="Adapty Attribution の Paddle インテグレーションページにある、APIキーと名前フィールドを含む Paddle アカウント接続フォーム" />
+
+接続済みのアカウントは、環境・キーのステータス・Webhook の状態とともにテーブルに表示されます。この接続は設定中のアプリに適用されます。別のアプリで同じ Paddle アカウントの支払いを受け取るには、そのアプリにも同じキーを追加してください。
+
+Adapty は、アカウントを接続した時点以降のトランザクションをインポートします。それ以前のトランザクションを取り込むには、[support@adapty.io](mailto:support@adapty.io) までお問い合わせください。
+
+## インテグレーションの確認 \{#verify-the-integration\}
+
+ファネルを通じて実際に購入を行ってください。Adapty はサンドボックス購入を除外します。購入は数時間以内に [Adapty アトリビューション アナリティクス](ua-analytics) に表示されます。[タグ付きURL](ua-web-pixel) を使った広告経由で訪問した場合、その購入はキャンペーン・広告セット・広告に紐づけられます。それ以外はオーガニックとしてカウントされます。
+
+## コンバージョンイベントを広告ネットワークに送信する \{#send-conversion-events-to-the-ad-network\}
+
+ウェブ経由のアトリビューション購入は、キャンペーンの他のイベントと同じイベントマッピングに従います。キャンペーン設定の **Events names** セクションで有効にしたイベントが、そのキャンペーンに関連付けたピクセルに送信されます。マッピングの設定については、[Meta Ads](ua-facebook) と [TikTok for Business](ua-tiktok) を参照してください。
