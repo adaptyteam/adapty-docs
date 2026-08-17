@@ -104,8 +104,7 @@ v4 kéo các iOS SDK gốc (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) thông qua Swi
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic",
-            "buildReactNativeFromSource": true
+            "useFrameworks": "dynamic"
           }
         }
       ]
@@ -114,8 +113,6 @@ v4 kéo các iOS SDK gốc (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) thông qua Swi
 }
 ```
 
-`buildReactNativeFromSource` là bắt buộc trên **Expo SDK 57 trở lên**. Expo SDK 57 đi kèm với React Native framework được build sẵn mà các package khác không thể truy cập header khi frameworks ở chế độ dynamic, khiến iOS build thất bại với các lỗi như `'React/RCTBridge.h' file not found` trong `expo-updates` hoặc `@expo/ui`. Build React Native từ source giúp tránh xung đột này, nhưng tốn thời gian build iOS hơn. Với Expo SDK 56 trở xuống, bạn có thể bỏ qua tùy chọn này.
-
 Sau đó cài đặt plugin và tạo lại native project:
 
 ```sh
@@ -123,7 +120,9 @@ npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
 
-Xem [Hướng dẫn migration SDK React Native của Adapty lên v4](migration-to-react-native-sdk-v4) để biết toàn bộ các bước migration.
+Nếu bản build iOS gặp lỗi `'React/RCTBridge.h' file not found`, xem [mục khắc phục sự cố này](#react-header-not-found).
+
+Xem [Migrate Adapty React Native SDK lên v4](migration-to-react-native-sdk-v4) để biết hướng dẫn migration đầy đủ.
 
 ## Kích hoạt module Adapty của Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -391,6 +390,43 @@ Nếu dự án của bạn cũng sử dụng `expo-secure-store`, hãy tắt thi
 Tùy chọn `replaceAndroidBackupConfig` mặc định là `false`. Khi được bật, nó cho phép plugin Adapty kiểm soát các quy tắc sao lưu Android.
 Thêm `"configureAndroidBackup": false` nếu bạn sử dụng `expo-secure-store` để tránh cảnh báo, vì cấu hình sao lưu của SecureStore sẽ được Adapty xử lý.
 :::important
-Cài đặt này chỉ áp dụng các yêu cầu sao lưu cho Adapty, AppsFlyer và expo-secure-store.
-Nếu các thư viện khác trong dự án của bạn có quy tắc sao lưu tùy chỉnh, bạn sẽ cần tự cấu hình thủ công.
+Thiết lập này chỉ đáp ứng các yêu cầu backup cho Adapty, AppsFlyer, và expo-secure-store.
+Nếu các thư viện khác trong dự án của bạn định nghĩa các quy tắc backup tùy chỉnh, bạn sẽ cần cấu hình thủ công.
 :::
+
+#### Build iOS thất bại với lỗi `'React/RCTBridge.h' file not found` \{#react-header-not-found\}
+
+Khi [bật dynamic frameworks cho Adapty SDK 4.0](#adapty-sdk-40-enable-swift-package-manager), quá trình build iOS có thể thất bại trong `expo-updates`, `@expo/ui`, hoặc một package khác có mã nguồn Objective-C:
+
+```
+error: 'React/RCTBridge.h' file not found
+```
+
+Lỗi này xuất phát từ một bug trong package `expo-modules-autolinking` (một dependency của `expo`). Các phiên bản bị ảnh hưởng là 57.0.5–57.0.9 (Expo SDK 57) và 56.0.19–56.0.21 (Expo SDK 56); bug đã được sửa trong phiên bản 57.0.10 và 56.0.22.
+
+Để khắc phục lỗi build, hãy cập nhật `expo-modules-autolinking` lên phiên bản đã sửa và tạo lại native project:
+
+```sh
+npm update expo-modules-autolinking
+npx expo prebuild --clean
+```
+
+Nếu phiên bản đã sửa chưa có cho Expo SDK của bạn, hãy build React Native từ source. Cách này sẽ vượt qua bug nhưng sẽ làm tăng thời gian build iOS:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ]
+  }
+}
+```
