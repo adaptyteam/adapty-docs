@@ -89,13 +89,16 @@ or developer can see and click.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | adapty-flow-builder | entry | marketer, dev | 3 | tutorial |
+| archive-flows | — | marketer, dev | 2 | tutorial |
 | basic-paywall-screen | — | marketer, dev | 11 | tutorial |
 | builder-loaders-and-progress-bars | — | marketer, dev | 6 | tutorial |
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
+| copy-flows | — | marketer, dev | 2 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
+| filter-flows | — | marketer, dev | 5 | tutorial |
 | flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 3 | tutorial |
