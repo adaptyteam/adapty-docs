@@ -21,7 +21,7 @@ export const UI_STRINGS = {
     signUpFree:    { en: 'Sign Up for Free', zh: '免费注册',   tr: 'Ücretsiz Kaydol',   ru: 'Зарегистрироваться',       es: 'Registrarse gratis', ja: '無料で登録', vi: 'Đăng ký miễn phí', fr: 'S\'inscrire gratuitement' },
   },
   search: {
-    placeholder: { en: 'Search documentation...', zh: '搜索文档...',       tr: 'Dokümantasyonda ara...',  ru: 'Поиск...',                es: 'Buscar en la documentación...', ja: 'ドキュメントを検索...', vi: 'Tìm trong tài liệu...', fr: 'Rechercher dans la documentation...' },
+    placeholder: { en: 'Search docs...',          zh: '搜索文档...',       tr: 'Dokümanlarda ara...',     ru: 'Поиск...',                es: 'Buscar en los docs...',         ja: 'ドキュメントを検索...', vi: 'Tìm trong tài liệu...', fr: 'Rechercher dans les docs...' },
     noResults:   { en: 'No results found.',        zh: '未找到相关结果。', tr: 'Sonuç bulunamadı.',       ru: 'Результаты не найдены.', es: 'No se han encontrado resultados.', ja: '結果が見つかりませんでした。', vi: 'Không tìm thấy kết quả.', fr: 'Aucun résultat trouvé.' },
   },
   articleButtons: {
