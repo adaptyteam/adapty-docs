@@ -10,10 +10,10 @@ import SandboxExclusion from '@site/src/components/reusable/SandboxExclusion.mdx
 
 Adapty exchanges data with [AppsFlyer](https://www.appsflyer.com/) in both directions. AppsFlyer tells Adapty which campaign brought each user. Adapty tells AppsFlyer what that user paid — purchases, renewals, trials, and refunds, with revenue and product details attached.
 
-- **View the whole subscription lifecycle, not just the first purchase.** Renewals and trial conversions are store events, with no app session for AppsFlyer's client-side SDK to report. Adapty receives subscription events server-side and forwards them to AppsFlyer, so campaign figures keep updating long after the initial install.
+- **View the whole subscription lifecycle, not just the first purchase.** Renewals and trial conversions are store events, with no app session for AppsFlyer's client-side SDK to report. Adapty receives subscription events server-side and forwards them to AppsFlyer, so campaign figures keep updating long after the initial install. Refunds travel the same way, and AppsFlyer deducts them from campaign revenue.
 - **Optimize your ad campaigns with subscription event data.** AppsFlyer relays in-app events from Adapty onward to your ad networks as *postbacks*. The services that manage your ad budget can optimize on what users actually paid.
-- **Account for refunds in campaign revenue.** AppsFlyer deducts refunds received from Adapty from campaign revenue.
 - **Filter Adapty analytics by campaign.** Adapty saves AppsFlyer's attribution on each profile, down to the ad set and creative, and [subscription charts](charts) can filter by it.
+- **Show a different paywall per campaign.** Adapty [segments](segments) filter on the same attribution fields — campaign, ad set, and creative. Use a segment as an [audience](audience) to match the paywall to the ad that brought the user.
 
 :::tip
 Your Adapty account already includes two tools for paid campaigns. [Adapty Ads Manager](adapty-ads-manager) runs your Apple Ads campaigns; [Adapty Attribution](adapty-user-acquisition) covers Meta Ads and TikTok. Both report ROAS and LTV straight from your Adapty purchase data, and both are free to start — see [pricing](https://adapty.io/pricing).
@@ -25,9 +25,9 @@ Your Adapty account already includes two tools for paid campaigns. [Adapty Ads M
 
 Adapty receives attribution data from AppsFlyer, and sends subscription events back to it. Both depend on one value: the **AppsFlyer ID**, a string AppsFlyer generates when your app first launches.
 
-1. When the user installs your app, the AppsFlyer SDK assigns them a unique ID. Read the user's ID with the `getAppsFlyerUID` method from the AppsFlyer SDK.
-2. Use the `setIntegrationIdentifier()` method of the Adapty SDK to pass this data to Adapty. Adapty stores the value on the user's profile as `appsflyer_id`.
-3. Use Adapty's `updateExternalAttribution()` method to send AppsFlyer's attribution data to Adapty. The user's Adapty profile is updated with their AppsFlyer attribution data.
+1. When the user installs your app, the AppsFlyer SDK assigns them a unique ID.
+2. Your app passes that ID to Adapty, which stores it on the user's profile as `appsflyer_id`.
+3. Your app also passes AppsFlyer's attribution data to Adapty, which saves it on the same profile.
 4. Later, when the user triggers a subscription event — for example,  starts a trial or buys a product, Adapty's servers post the event to AppsFlyer's S2S API with the same `appsflyer_id`.
 5. AppsFlyer matches the ID to the install it already attributed, so the purchase inherits that install's campaign and media source.
 
@@ -35,7 +35,7 @@ Adapty receives attribution data from AppsFlyer, and sends subscription events b
 
 Before you start:
 
-- **Confirm your AppsFlyer plan accepts attribution events.** AppsFlyer's entry-level **Zero** package doesn't: its API rejects every event Adapty sends with `403 Forbidden`.
+- **Confirm your AppsFlyer plan accepts S2S in-app events.** AppsFlyer's entry-level **Zero** package doesn't: its API rejects every event Adapty sends with `403 Forbidden`.
 - **Ship the AppsFlyer SDK in your app.** The AppsFlyer ID that the integration depends on exists only after that SDK initializes. A server-side integration alone won't produce the ID.
 - **Turn off every other attribution integration.** Adapty accepts one attribution source per profile and can't overwrite an existing value. On iOS, non-organic [Apple Ads attribution](apple-search-ads) always takes priority — see [Select a single attribution source](attribution-integration#select-a-single-attribution-source).
 
@@ -349,7 +349,7 @@ A successful delivery doesn't guarantee AppsFlyer keeps the event. AppsFlyer ret
 
 Each `appsflyer_id` identifies one install, and every event carrying that ID inherits the install's attribution — the campaign that produced it, or none if the install was organic. AppsFlyer needs 20–30 seconds or more to attribute a new install. An event that arrives before then has no attribution to inherit, so AppsFlyer marks it unattributed organic.
 
-First-launch purchases are the ones at risk — trials that started within seconds after app launch. Delay your paywall artificially for AppsFlyer to finish processing the install.
+Expect first-launch purchases to report as organic — trials that start within seconds of app launch. To avoid it, delay your paywall long enough for AppsFlyer to finish processing the install.
 
 If every event looks organic, not just the occasional first-launch purchase, the cause is attribution rather than timing: another source claimed the profile first. See [Select a single attribution source](attribution-integration#select-a-single-attribution-source).
 
@@ -375,7 +375,7 @@ Adapty and AppsFlyer count the same purchases differently. These differences acc
 - **Purchases from profiles without `appsflyer_id` never reach AppsFlyer.** They stay in Adapty Analytics. See [Events don't reach AppsFlyer](#events-dont-reach-appsflyer).
 - **AppsFlyer shows only the revenue figure you selected in Adapty.** The **How the revenue data should be send** setting decides whether Adapty sends gross revenue, proceeds, or net revenue. Comparing that against another Adapty Analytics view produces a gap equal to the commission, the tax, or both.
 - **Adapty uses your app's reporting timezone; AppsFlyer receives UTC.** Integrations always get UTC timestamps, whatever you set in [App Settings](general#3-reporting-timezone). A purchase at 23:30 UTC on Jul 1 lands on Jul 2 in Adapty if your reporting timezone is +02:00.
-- **AppsFlyer is missing historical events.** There are two probable causes. **Exclude historical events** is on by default, so a user's AppsFlyer history starts at their first launch of an Adapty build. Adapty also never backfills events it processed before you enabled the integration.
+- **AppsFlyer is missing historical events.** There are two probable causes. With **Exclude historical events** on, a user's AppsFlyer history starts at their first launch of an Adapty build. Adapty also never backfills events it processed before you enabled the integration.
 - **Sandbox purchases reach the AppsFlyer app named by the Sandbox key.** When that's the production app, test purchases inflate its revenue. See [Keep sandbox data out of production](#keep-sandbox-data-out-of-production).
 - **Events turned off in the integration never reach AppsFlyer.** Adapty Analytics still counts them. Review the **Events names** section — turning off `subscription_renewed` removes most of the revenue for any established app.
 
