@@ -1,0 +1,66 @@
+---
+title: "購入結果への対応"
+description: "購入結果ごとにアプリコードで対応し、購入成功時に2つ目のフローを開く方法を説明します。"
+metadataTitle: "購入結果への対応 | フロービルダー | Adapty ドキュメント"
+---
+
+購入が完了すると、Adapty SDK はその結果をアプリに返します。アプリが何らかの処理を行うまで、画面上は何も変わりません。アプリはペイウォールを閉じたり、再試行のために開いたままにしたり、購入を確認する2つ目のフローを開いたりすることができます。
+
+ビルダーでは購入結果に基づく分岐はできません。購入完了時に発火する[トリガー](onboarding-actions#trigger-types)も、その結果を保持する[変数](onboarding-variables)も存在しないためです。そのため、この遷移は購入結果を受け取るアプリのコードで処理する必要があります。
+
+作業は3つのパートに分かれます：
+
+- 購入後のフローを作成し、専用のプレースメントに割り当てる。
+- アプリのコードで購入結果に基づいて分岐する。
+- 成功時にペイウォールを閉じ、購入後のフローを表示する。
+
+## 始める前に \{#before-you-start\}
+
+- フローを使用するには Adapty SDK v4.0 以降が必要です。
+- ペイウォールを作成してください。例えば、[基本的なペイウォール画面の作成](basic-paywall-screen)のレシピを参考にしてください。
+
+## 1. 購入後のフローを作成する \{#1-build-the-post-purchase-flow\}
+
+[フローを作成します](paywall-builder-templates)。このフローは購入後に実行されるため、プロダクトは不要です。ユーザーをアプリ自身のUIに戻すには、最後の画面に **Close Flow** アクションを持つボタンを追加してください。
+
+<ZoomImage id="post-purchase-flow-close-action.webp" width="700px" alt="Post-purchase flow in the builder with a Thank you screen, the Start button selected, and its On Tap trigger set to the Close Flow action" />
+
+カスタムアクションは、フローに複数の出口がある場合に使用してください。ボタンをそれぞれ独自のアクション IDで複数作成することで、アプリ側で **Set up now** と **Set up later** を区別できるようになります。
+
+[**カスタムアクション**](onboarding-actions#custom-actions)を使用してください。
+
+## 2. 購入後フローを専用プレースメントに追加する \{#2-add-the-post-purchase-flow-to-its-own-placement\}
+
+アプリから購入後フローを取得するには、専用のプレースメントに割り当てる必要があります。ペイウォールのプレースメントでは代用できません。1つのプレースメントはオーディエンスごとに1つのフローしか提供できないためです。
+
+1. [フローを公開する](builder-save-publish)。
+2. [フロープレースメントを作成する](create-placement)。**Placement ID** をメモしておいてください。アプリはこのIDを使ってフローを取得します。
+3. 購入後フローを新しいプレースメントに割り当てる。
+
+## 3. 購入結果に応じて処理を分岐する \{#3-branch-on-the-purchase-result\}
+
+アプリは2つのコールバックで購入結果を受け取ります。
+
+- **Completion**: 購入が完了しました — 成功、ユーザーによるキャンセル、または承認待ち（例：保護者の承認）のいずれかです。3つを区別するには、結果のタイプを確認してください。成功時には、更新された `AdaptyProfile` が結果に含まれます。
+- **Failure**: エラーにより購入が停止し、コールバックには `AdaptyError` が含まれます — 購入制限、無効なプロダクト、ネットワーク障害、またはトランザクション検証エラーが原因です。
+
+コールバック名とシグネチャ: [iOS](ios-handling-events) | [Android](android-handling-events) | [React Native](react-native-handling-events-1) | [Flutter](flutter-handling-events) | [Unity](unity-handling-events) | [Kotlin Multiplatform](kmp-handling-events) | [Capacitor](capacitor-handling-events)
+
+結果に応じて処理を分岐してください:
+
+- 成功時はペイウォールを閉じ、購入後のフローを表示します。
+- キャンセル・保留中の支払い・失敗時はペイウォールを開いたままにします。
+
+:::note
+リストア処理は専用のコールバックでレポートされ、再インストールや機種変更をしたユーザーにも対応しています。返されたプロファイルに[アクセスレベル](access-level)がアクティブになっていることを確認し、通常と同じようにフローを閉じて表示してください。このコールバックには別のフローを割り当てましょう — 購入のお礼を伝えるスクリーンはリストアには適していません。
+:::
+
+## 4. 購入後フローの読み込みと表示 \{#4-load-and-present-the-post-purchase-flow\}
+
+待ち時間なく購入後フローを開くには、ハンドラー内ではなく、ペイウォールと並行して事前に取得してください。SDK は事前に画像をダウンロードしてキャッシュします。
+
+複数のプレースメントを一度にキャッシュウォームアップするには、[`preloadFlows`](ios-optimize-paywall-fetching#preload-placements)（SDK 4.1+）を使用してください。
+
+フローとペイウォールの取得: [iOS](get-pb-paywalls) | [Android](android-get-pb-paywalls) | [React Native](react-native-get-pb-paywalls) | [Flutter](flutter-get-pb-paywalls) | [Unity](unity-get-pb-paywalls) | [Kotlin Multiplatform](kmp-get-pb-paywalls) | [Capacitor](capacitor-get-pb-paywalls)
+
+フローとペイウォールの表示: [iOS](ios-present-paywalls) | [Android](android-present-paywalls) | [React Native](react-native-present-paywalls) | [Flutter](flutter-present-paywalls) | [Unity](unity-present-paywalls) | [Kotlin Multiplatform](kmp-present-paywalls) | [Capacitor](capacitor-present-paywalls)
