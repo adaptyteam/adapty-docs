@@ -1,0 +1,62 @@
+---
+title: "Unity SDK'da flow ekranı görüntülemelerini takip edin"
+description: "Unity uygulamanızda bir kullanıcı flow ekranı her açtığında etkinlik alın ve bunu ürün analitiğinize iletin."
+metadataTitle: "Flow ekranı görüntülemelerini takip edin | Unity SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içinde her ekran açtığında, SDK uygulamanıza bir `flow_screen_showed` etkinliği bildirir. Bunu Amplitude, Mixpanel veya kullandığınız herhangi bir ürün analitiği aracına ileterek flow ekranlarını uygulamanızın geri kalan etkinlikleriyle birlikte analiz edebilirsiniz.
+
+:::tip
+Kullanıcıların bir flow'da ne kadar ilerlediğini görmek için herhangi bir koda ihtiyacınız yok — [flow metrikleri](flow-metrics) zaten Adapty Kontrol Paneli'nde görüntülenmeleri, tamamlanmaları ve ekran başına düşüş oranlarını gösteriyor. Bu kılavuzu, aynı verilere kendi analitiğinizde ihtiyaç duyduğunuzda ve Adapty'nin bilmediği olaylarla birleştirmek istediğinizde kullanın.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty Unity SDK v4 veya üzeri**: Flow analytics callback'i daha önceki sürümlerde mevcut değildir.
+- **Bu özellik gönderildikten sonra yayınlanmış bir flow sürümü**: Adapty, bir flow yayınladığında ekran olaylarını oluşturur; dolayısıyla bu tarihten önce son kez yayınlanan bir flow hiçbir şey raporlamaz. Uygulamanıza hiçbir olay ulaşmıyorsa flow'un yeni bir sürümünü yayınlayıp tekrar deneyin.
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Ekran görüntülemeleri, diğer tüm flow olaylarıyla aynı analytics callback'ine ulaşır. Bunu nereye kaydedeceğinizi öğrenmek için [Flow ve paywall olaylarını işleme](unity-handling-events) bölümüne bakın.
+
+## Her ekran görüntülemesini analitiğinize iletin \{#forward-every-screen-view-to-your-analytics\}
+
+Başka bir şey okumadan önce event adını eşleştirin; çünkü bir flow, aynı callback üzerinden başka event'lar da raporlar.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+
+    var screenId = @params["instanceId"];
+    var screenOrder = @params["screen_order"];
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Kullanıcı sona ulaştığında kod çalıştırma \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen`, flow'un ilerleyemeyeceği bir ekranda `true` değerini alır. Builder'da bunun için bir buton aksiyonu eklemeden içerik kilidini açmak, onboarding'i tamamlandı olarak işaretlemek veya kendi tamamlanma event'inizi göndermek için kullanabilirsiniz.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+    if (!(@params["is_last_screen"] is bool isLast) || !isLast) return;
+
+    // The user reached the end of the flow.
+}
+```
+
+Son ekrana ulaşmak, flow'u kapatmakla aynı şey değildir. Kullanıcı son ekranı görüp herhangi bir işlem yapmadan flow'u kapatabilir; ayrıca dallanmalı bir flow birden fazla farklı ekranda sona erebilir. Flow'un kendisinin kapandığını anlamak için bunun yerine `FlowViewDidDisappear` kullanın.

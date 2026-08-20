@@ -1,0 +1,63 @@
+---
+title: "iOS SDKでフロースクリーンのビュー数を計測する"
+description: "iOSアプリでユーザーがフロースクリーンを開くたびにイベントを受け取り、プロダクトアナリティクスに転送する方法を説明します。"
+metadataTitle: "フロースクリーンビューの計測 | iOS SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)内のスクリーンを開くたびに、SDKはアプリへ `flow_screen_showed` イベントを通知します。これをAmplitude、Mixpanel、または使用中のプロダクトアナリティクスツールに転送することで、フロースクリーンのデータをアプリの他のイベントと合わせて分析できます。
+
+:::tip
+フローのどこまでユーザーが進んだかを確認するだけなら、コードは不要です。[フローの指標](flow-metrics)で、Adapty ダッシュボード上のビュー数、完了数、画面ごとの離脱率をすでに確認できます。同じデータを自社のアナリティクスで利用したい場合や、Adapty が把握していないイベントと組み合わせたい場合は、このガイドを参照してください。
+:::
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+
+- **Adapty iOS SDK v4以降**：フローの分析コールバックは、それ以前のバージョンには存在しません。
+- **この機能がリリースされた後に公開されたフローバージョン**：Adaptは、フローを公開する際にスクリーンイベントを生成するため、それ以前に最後に公開されたフローは何も報告しません。イベントがアプリに届かない場合は、フローの新しいバージョンを公開して再試行してください。
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+画面の表示は、他のすべてのフローイベントと同じ分析コールバックに届きます。登録方法については、[フロー＆ペイウォールイベントの処理](ios-handling-events)を参照してください。
+
+## 全スクリーンビューをアナリティクスに送信する \{#forward-every-screen-view-to-your-analytics\}
+
+フローは同じコールバックを通じて他のイベントも報告するため、他の情報を読み取る前にイベント名でマッチングしてください。
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    guard name == "flow_screen_showed" else { return }
+
+    let screenId = params["instanceId"] as? String
+    let screenOrder = params["screen_order"] as? Int
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## ユーザーが最後の画面に到達したときにコードを実行する \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` は、フローがそれ以上進めない画面で `true` になります。これを使って、ビルダーにボタンアクションを追加しなくても、コンテンツのアンロック、オンボーディング完了のマーク付け、独自の完了イベントの送信などが行えます。
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    guard name == "flow_screen_showed",
+          params["is_last_screen"] as? Bool == true
+    else { return }
+
+    // The user reached the end of the flow.
+}
+```
+
+フローの最後の画面に到達することと、フローが閉じられることは同じではありません。ユーザーは最終画面を見てから何もアクションを取らずにフローを閉じることができますし、分岐のあるフローは複数の異なる画面で終わることがあります。フロー自体が消えたことを検知するには、UIKit では `flowControllerDidDisappear`、SwiftUI では `didDisappear` クロージャを使用してください。

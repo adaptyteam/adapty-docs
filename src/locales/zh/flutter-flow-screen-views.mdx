@@ -1,0 +1,62 @@
+---
+title: "在 Flutter SDK 中追踪流程页面浏览"
+description: "每当用户在 Flutter 应用中打开流程页面时接收事件，并将其转发至您的产品分析工具。"
+metadataTitle: "追踪流程页面浏览 | Flutter SDK | Adapty 文档"
+---
+
+每当用户打开[流程](adapty-flow-builder)中的某个页面时，SDK 会向您的应用上报一个 `flow_screen_showed` 事件。将其转发至 Amplitude、Mixpanel 或您使用的任何产品分析工具，即可将流程页面的数据与应用内其他事件一并进行分析。
+
+:::tip
+若想了解用户在流程中的完成情况，无需编写任何代码——[流程数据图表](flow-metrics)已在 Adapty 看板中展示查看次数、完成次数及每屏的流失情况。如需将这些数据导入自有分析系统，并与 Adapty 未记录的事件关联，请参阅本指南。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+你需要准备以下内容：
+
+- **Adapty Flutter SDK v4 或更高版本**：早期版本不支持流程分析回调。
+- **在此功能发布后重新发布的流程版本**：Adapty 在发布流程时生成屏幕事件，因此在该功能上线之前最后一次发布的流程不会上报任何数据。如果应用没有收到任何事件，请重新发布一个新版本的流程后再试。
+
+## 你将收到的内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+屏幕浏览事件与所有其他流程事件一样，都会触发同一个分析回调。注册方式请参阅[处理流程与付费墙事件](flutter-handling-events)。
+
+## 将每个屏幕浏览事件转发至您的分析工具 \{#forward-every-screen-view-to-your-analytics\}
+
+在读取任何其他内容之前，先匹配事件名称，因为流程会通过同一个回调上报其他事件。
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+
+  final screenId = params['instanceId'];
+  final screenOrder = params['screen_order'];
+
+  // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## 在用户到达最后一屏时执行代码 \{#run-code-when-a-user-reaches-the-end\}
+
+当流程无法继续前进时，`is_last_screen` 的值为 `true`。利用它可以解锁内容、标记用户引导已完成，或发送自定义完成事件，无需在编辑工具中为按钮添加额外操作。
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+  if (params['is_last_screen'] != true) return;
+
+  // The user reached the end of the flow.
+}
+```
+
+到达最后一个屏幕并不等同于关闭流程。用户可能看到最后一个屏幕后，未做任何操作便关闭了流程；而分支流程也可能在多个不同屏幕上结束。若要确认流程本身已消失，请改用 `flowViewDidDisappear`。
