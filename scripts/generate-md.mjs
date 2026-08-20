@@ -149,7 +149,7 @@ ${content}
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(
         /<SkillPromo\b[^>]*\/>/g,
-        'For a fully automated integration, use the [adapty-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill): it runs the whole integration from your AI coding tool in one command.'
+        'For a fully automated integration, use the [adapty-integration skill](https://github.com/adaptyteam/adapty-skills): it runs the whole integration from your AI coding tool in one command.'
     );
 
     // Convert <ProductMap /> into a proper markdown table. The component is
