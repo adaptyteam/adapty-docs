@@ -1,0 +1,67 @@
+---
+title: "Track flow screen views in Kotlin Multiplatform SDK"
+description: "Receive an event every time a user opens a flow screen in your Kotlin Multiplatform app, and forward it to your product analytics."
+metadataTitle: "Track flow screen views | Kotlin Multiplatform SDK | Adapty Docs"
+---
+
+Every time a user opens a screen in a [flow](adapty-flow-builder), the SDK reports a `flow_screen_showed` event to your app. Forward it to Amplitude, Mixpanel, or whichever product analytics you run, so you can analyze flow screens together with the rest of your app's events.
+
+:::tip
+To see how far users get through a flow, you don't need any code — [flow metrics](flow-metrics) already show views, completions, and per-screen drop-off in the Adapty Dashboard. Use this guide when you need the same data in your own analytics, joined with events Adapty doesn't know about.
+:::
+
+## Before you start
+
+You need:
+
+- **Adapty Kotlin Multiplatform SDK v4 or later**: The flow analytics callback doesn't exist in earlier versions.
+- **A flow version published after this feature shipped**: Adapty generates the screen events when it publishes a flow, so a flow you last published before then reports nothing. If no events reach your app, publish a new version of the flow and try again.
+
+## What you receive
+
+<FlowScreenShowedParams />
+
+Kotlin Multiplatform delivers these parameters as a raw JSON string, so decode `paramsJsonString` before you read any of them.
+
+Screen views reach the same analytics callback as every other flow event. See [Handle flow & paywall events](kmp-handling-events) for where to register it.
+
+## Forward every screen view to your analytics
+
+Match on the event name before you read anything else, because a flow reports other events through the same callback.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+    val screenOrder = params["screen_order"]?.jsonPrimitive?.intOrNull
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Run code when a user reaches the end
+
+`is_last_screen` is `true` on a screen the flow can't advance past. Use it to unlock content, mark onboarding as done, or send a completion event of your own, without adding a button action in the builder for it.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+Reaching the last screen is not the same as closing the flow. A user can see the final screen and dismiss the flow without acting on it, and a branching flow can end on several different screens. To know that the flow itself went away, use `flowViewDidDisappear` instead.
