@@ -1,0 +1,278 @@
+---
+title: "Process data from flows in React Native SDK"
+description: "Save and use data your users enter in flows in your React Native app with Adapty SDK."
+metadataTitle: "Process data from flows | React Native SDK | Adapty Docs"
+---
+
+When a user types into an input field, answers a quiz, or flips a toggle in a [flow](adapty-flow-builder), the SDK passes the value to your app through its analytics callback.
+
+Apps most often use that data to:
+
+- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account without a second sign-up screen.
+- **Save answers and preferences**: Keep what a user picked so your app can act on it later, or [write it to their Adapty profile](react-native-setting-user-attributes) as custom attributes.
+- **Customize the flows a user sees later**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Feed your own analytics**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
+
+You don't set anything up in the builder — inputs and selectable groups report their values automatically.
+
+## Before you start
+
+You need:
+
+- **Adapty React Native SDK v4 or later**: The flow event handlers don't exist in earlier versions.
+- **A flow built in the [Flow Builder](adapty-flow-builder)**: Only flows report input values through this callback.
+- **A recently published flow version**: A flow reports input values only if you published it after this feature became available. If nothing reaches your handler, publish a new version of the flow and try again.
+
+## Receive input values
+
+Input values reach the same handler as every other analytics event from a flow, under the event name `flow_user_input`. Register `onAnalytics` alongside your other flow event handlers:
+
+```javascript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+A flow reports other analytics events through this handler as well, such as screen views. Match on `name` before you read anything else, or your handler will run on events that carry no input. See [Handle flow & paywall events](react-native-handling-events-1) for the rest of them.
+
+`params.payload` is a JSON **string**, not an object — parse it before you read the answer:
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.payload !== 'string') return;
+
+  const input = JSON.parse(params.payload);
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId;
+
+  switch (input.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = input.value;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      const date = new Date(input.value);
+      break;
+    }
+    case 'single_choice': {
+      const option = input.value;
+      break;
+    }
+    case 'multi_choice': {
+      const options = input.value;
+      break;
+    }
+    case 'toggle': {
+      const isOn = input.value;
+      break;
+    }
+  }
+}
+```
+
+## What arrives in the handler
+
+| Parameter                | Description                                                                                                                                                                |
+|:-------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `name`                   | The event name. Input values reach you as `flow_user_input`.                                                                                                               |
+| `params.instanceId`      | The ID of the screen the input is on. An Element ID is unique within one screen but can repeat across screens, so use `instanceId` together with `element_id` to tell two fields apart. |
+| `params.payload`         | A JSON string holding the answer. Parse it to read `element_id`, `element_type`, and `value`.                                                                              |
+| `params.isCustomerEvent` | `true` for events meant for your own analytics.                                                                                                                            |
+| `params.isBackendEvent`  | `false` for `flow_user_input`. Adapty doesn't receive or store what users enter — these values reach your app and nowhere else.                                            |
+
+The parsed `payload` holds:
+
+| Field          | Description                                                                                                     |
+|:---------------|:------------------------------------------------------------------------------------------------------------------|
+| `version`      | The format version of the payload, currently `1`. Compare it against `1` before parsing to guard against later changes. |
+| `element_id`   | The **Element ID** of the input or selectable group the value came from.                                        |
+| `element_type` | The type of element that sent the value. It tells you how to read `value`.                                      |
+| `value`        | What the user entered or selected. Its shape depends on `element_type`.                                         |
+
+<FlowInputValueTypes />
+
+## Event examples
+
+These examples show the properties available on each event, with illustrative values in comments.
+
+<Details>
+<summary>Text, email, number, and phone input (Click to expand)</summary>
+
+```javascript
+onAnalytics(name, params) {
+  name;                      // 'flow_user_input'
+  params.instanceId;         // 'scr_J260KU5q'
+  params.isCustomerEvent;    // true
+  params.isBackendEvent;     // false
+  params.payload;            // '{"version":1,"element_id":"email","element_type":"email_input","value":"jane@example.com"}'
+
+  // payload, once parsed:
+  input.version;             // 1
+  input.element_id;          // 'email'
+  input.element_type;        // 'email_input'
+  input.value;               // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>Date, time, and date-time pickers (Click to expand)</summary>
+
+```javascript
+onAnalytics(name, params) {
+  // payload, once parsed:
+  input.element_id;    // 'birthday'
+  input.element_type;  // 'date_picker'
+  input.value;         // 645408000000   (Unix milliseconds — 1990-06-15)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```javascript
+onAnalytics(name, params) {
+  // payload, once parsed:
+  input.element_id;    // 'experience'
+  input.element_type;  // 'single_choice'
+  input.value;         // { id: 'pro', title: 'I train professionally' }
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```javascript
+onAnalytics(name, params) {
+  // payload, once parsed:
+  input.element_id;    // 'interests'
+  input.element_type;  // 'multi_choice'
+  input.value;         // [{ id: 'sports', title: 'Sports' },
+                       //  { id: 'music',  title: 'Music' }]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```javascript
+onAnalytics(name, params) {
+  // payload, once parsed:
+  input.element_id;    // 'reminders'
+  input.element_type;  // 'toggle'
+  input.value;         // true   (boolean)
+}
+```
+</Details>
+
+## Delivery and limitations
+
+<FlowInputLimitations />
+
+The SDK tells you the flow closed through `onDisappeared`. Collect answers as they arrive and act on the full set there.
+
+## Use cases
+
+### Register users on your backend
+
+Collect values as they arrive and send them once the flow closes, so that one request carries a complete set of answers.
+
+The flow disappears whether a user finished it or abandoned it partway. Guard on the fields you need before you call your backend.
+
+```javascript showLineNumbers title="React Native"
+const flowAnswers = {};
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.payload === 'string') {
+      const input = JSON.parse(params.payload);
+      flowAnswers[input.element_id] = input.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### Enrich user profiles with data
+
+To link what a user entered to their profile and avoid asking for the same details twice, [update the user profile](react-native-setting-user-attributes) as the values come in.
+
+For example, if your flow has a text input with the Element ID `name` and an email input with the Element ID `email`:
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.payload !== 'string') return;
+
+  const input = JSON.parse(params.payload);
+  const profileParams = {};
+
+  switch (input.element_id) {
+    case 'name':
+      profileParams.firstName = input.value;
+      break;
+    case 'email':
+      profileParams.email = input.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch(error => {
+    // handle the error
+  });
+}
+```
+
+### Customize flows shown later
+
+Quiz answers can also decide what a user sees at a later [placement](placements) — a different flow, or a different paywall inside it.
+
+For example, ask users about their experience with sport in your onboarding flow, then show each group its own flow with different products and copy.
+
+1. Add a [quiz](onboarding-quizzes) to your flow and give each option a meaningful [Element ID](flow-selectable-elements).
+2. Handle the answers and [set custom attributes](react-native-setting-user-attributes) for the user.
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.payload !== 'string') return;
+
+  const input = JSON.parse(params.payload);
+  if (input.element_id !== 'experience') return;
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user picked
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: input.value.id },
+    })
+    .catch(error => {
+      // handle the error
+    });
+}
+```
+
+3. [Create a segment](segments) for each custom attribute value.
+4. Create a [placement](placements) and add an [audience](audience) for each segment.
+5. [Display the flow](react-native-present-paywalls) for that placement in your app.
