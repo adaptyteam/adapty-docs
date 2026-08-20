@@ -188,7 +188,7 @@ core in-app paywall/subscription product.
 | adapty-mail | entry | marketer | 4 | tutorial |
 | mail-ab-testing | — | marketer | 7 | tutorial |
 | mail-analytics | — | marketer | 9 | tutorial |
-| mail-brand | — | marketer | 8 | tutorial |
+| mail-brand | — | marketer | 10 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
 | mail-collect-emails | — | marketer | 6 | tutorial |
 | mail-create-campaign | — | marketer | 4 | tutorial |

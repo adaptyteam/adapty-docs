@@ -21,7 +21,8 @@ reviewed_at:
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | retention-messaging | entry | — | 1 | tutorial |
-| retention-messaging-create | — | — | 6 | tutorial |
+| retention-messaging-analytics | — | — | 2 | tutorial |
+| retention-messaging-create | — | — | 8 | tutorial |
 | retention-messaging-setup | — | — | 6 | tutorial |
 <!-- /mill:auto -->
 ## Boundaries
