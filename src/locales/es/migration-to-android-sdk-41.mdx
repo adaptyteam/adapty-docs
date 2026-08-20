@@ -1,0 +1,75 @@
+---
+title: "Migrar el SDK de Adapty para Android a v4.1"
+description: "Migra al SDK de Adapty para Android v4.1: activa Adapty Attribution de forma explícita y adopta las APIs de atribución externa renombradas."
+metadataTitle: "Migración al SDK de Adapty para Android v4.1 | Documentación de Adapty"
+---
+
+El SDK de Adapty para Android 4.1 cambia la forma en que se activa Adapty Attribution y renombra las APIs de atribución externa.
+
+:::warning
+Las APIs renombradas son un cambio radical. `AdaptyAttributionSource` se elimina por completo — no está deprecada ni existe un typealias para hacer de puente. El código que compila contra 4.0.x no compilará en 4.1 hasta que renombres todos los puntos de llamada indicados a continuación.
+:::
+
+## Referencia rápida \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Atribución de Adapty habilitada automáticamente | Atribución de Adapty deshabilitada por defecto; actívala con `.withAdaptyAttributionEnabled(true)` |
+| `Adapty.updateAttribution(attribution, source)` | `Adapty.updateExternalAttribution(attribution, provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, con un nuevo valor `CUSTOM` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+## Instalación \{#installation\}
+
+Establece la versión de `adapty-bom` en `4.1.0` (o posterior) y sincroniza el proyecto. El BOM resuelve automáticamente las versiones correspondientes de `android-sdk` y `android-ui`. Consulta [Instalar el SDK de Adapty](sdk-installation-android) para ver las declaraciones de dependencias.
+
+:::note
+Google Play Billing Library 8 y el cambio de comportamiento de `restorePurchases` llegaron en la versión 4.0.2, no en la 4.1. Si actualizas desde 4.0.0 o 4.0.1, lee también [Restaurar compras](android-restore-purchase) y la [guía de migración a Billing Library 8](https://developer.android.com/google/play/billing/migrate-gpblv8) de Google.
+:::
+
+## La atribución de Adapty está desactivada por defecto \{#adapty-attribution-is-disabled-by-default\}
+
+En la versión 4.0 y anteriores, el SDK registraba las instalaciones para [Atribución de Adapty](user-acquisition) de forma automática. A partir de la versión 4.1, esto está desactivado por defecto: el SDK no registra instalaciones, el listener configurado con `setOnInstallationDetailsListener` no se dispara nunca, y `getCurrentInstallationStatus` devuelve `AdaptyInstallationStatus.Determined.NotAvailable`.
+
+Si utilizas la atribución de Adapty, actívala al inicializar el SDK:
+
+```diff showLineNumbers
+  val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+  Adapty.activate(applicationContext, config)
+```
+
+Si no usas Adapty Attribution, no es necesario hacer ningún cambio.
+
+## APIs de atribución externa renombradas \{#renamed-external-attribution-apis\}
+
+### updateAttribution → updateExternalAttribution
+
+El método que pasa datos de atribución de un proveedor externo (Adjust, AppsFlyer, Branch, Tenjin o uno personalizado) cambia de nombre, y su parámetro `source` pasa a llamarse `provider`:
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error -> /* handle the error */ }
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST) { error -> /* handle the error */ }
+```
+
+Se conservan ambas sobrecargas: `attribution` puede ser un `Map<String, Any>` o un `String` JSON.
+
+El callback se activa una vez que el backend acepta los datos para su procesamiento asíncrono. Un resultado exitoso no significa que los datos ya se hayan aplicado al perfil.
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+El tipo ha sido renombrado, y los valores predefinidos conservan sus nombres: `APPLE_ADS`, `ADJUST`, `APPSFLYER`, `BRANCH` y `TENJIN`. Para cualquier otro proveedor, constrúyelo a partir de una cadena: `AdaptyExternalAttributionProvider("your_provider")`.
+
+La versión 4.1 también añade un valor predefinido `CUSTOM` para proveedores con los que Adapty no se integra directamente. En la 4.0, ese mismo valor solo estaba disponible como la cadena `"custom"`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+La propiedad del perfil que lista los proveedores de atribución aplicados al perfil cambia de nombre. El tipo de sus elementos cambia en consecuencia:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.APPLE_ADS)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```
