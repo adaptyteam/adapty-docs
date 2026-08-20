@@ -41,28 +41,40 @@ Le paywall doit être publié avant de pouvoir traiter le trafic de paiement. Le
 
 Pour les détails concernant le fournisseur de paiement dans le builder (comptes Stripe, mode test ou live, configuration des produits), consultez [Configuration du paywall web](web-paywall-configuration).
 
-### Utiliser votre propre paywall hébergé
+### Utilisez votre propre paywall hébergé \{#use-your-own-hosted-paywall\}
 
-1. Sur la page Create, sélectionnez **Enter URL manually**.
-2. Collez l'URL de votre paywall hébergé avec des paramètres de substitution en tant que paramètres de requête. Adapty Mail les remplace pour chaque destinataire afin que la page puisse identifier le visiteur. Exemple :
+Sur cette voie, Adapty Mail envoie les destinataires vers une page que vous hébergez et remplace les valeurs de chaque destinataire dans l'URL. Tout ce qui se passe après le clic — l'offre, le paiement, la personnalisation — se passe de votre côté, avec n'importe quel prestataire de paiement.
 
-   ```
+1. Dans **Web Paywalls → Create**, sélectionnez **Enter URL manually**.
+2. Collez l'URL de votre paywall hébergé avec des espaces réservés en tant que paramètres de requête. Adapty Mail les remplace par destinataire afin que la page puisse identifier le visiteur. Exemple :
+
+```
    https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
-3. Enregistrez.
+3. Donnez un **Name** au paywall et enregistrez-le. Il est ensuite disponible pour être associé à des campagnes.
 
-La page Create liste les paramètres de substitution disponibles et coche chacun de ceux qu'elle détecte dans l'URL que vous collez. Voici ceux à privilégier :
+La page de création liste les variables que vous pouvez utiliser et coche chacune de celles qu'elle trouve dans l'URL que vous collez :
 
 | Placeholder | Value |
 | --- | --- |
 | `{email}` | L'adresse e-mail du destinataire. |
 | `{adapty.external_profile_id}` | L'ID de profil du destinataire dans Adapty. |
+| `{funnelfox.external_profile_id}` | L'ID de profil du destinataire dans FunnelFox. |
 | `{custom.external_profile_id}` | L'ID utilisateur que vous avez envoyé via l'[API Mail Adapty](mail-send-data-via-api). |
 | `{scheduled_email_id}` | L'ID de l'e-mail qui contenait le lien. |
 
-La page propose également un placeholder par source de profil, elle peut donc lister des sources depuis lesquelles votre projet n'envoie pas de données. Un placeholder pour lequel le destinataire n'a aucune valeur est résolu en chaîne vide, donc il n'atteindra jamais votre page sous forme de texte brut.
+Les trois paramètres d'ID de profil correspondent chacun à une source depuis laquelle un profil peut arriver, et la page les liste tous, que votre projet les utilise ou non. Choisissez celui qui correspond à la façon dont vous envoyez les données : `{adapty.external_profile_id}` pour l'[intégration Adapty](mail-collect-emails), `{custom.external_profile_id}` pour l'[API](mail-send-data-via-api). Un paramètre pour lequel le destinataire n'a pas de valeur se résout en chaîne vide, il n'apparaîtra donc jamais dans votre page sous forme de texte brut — et un paramètre qu'Adapty Mail ne reconnaît pas est transmis tel quel.
 
-Ce chemin fonctionne avec n'importe quel fournisseur de paiement — Adapty Mail gère uniquement la redirection et la substitution de paramètres ; le paiement et la personnalisation se font entièrement de votre côté.
+#### Ce que votre page doit faire \{#what-your-page-has-to-do\}
+
+La part d'Adapty Mail s'arrête à la redirection. Deux tâches vous incombent :
+
+- **Identifier le visiteur avant le début du paiement** : lisez l'ID de profil ou l'e-mail depuis la chaîne de requête et associez-le à l'achat, afin que le paiement soit rattaché au client à qui l'e-mail a été envoyé.
+- **Signaler l'achat en retour** : Adapty Mail ne voit jamais un paiement effectué via votre propre fournisseur, et un achat qu'il ne connaît pas n'est comptabilisé ni comme conversion ni comme revenu attribué dans [Analytics](mail-analytics) — pire encore, le reste de la séquence continue d'être envoyé à quelqu'un qui a déjà acheté. Transmettez-le via la méthode qui transporte déjà vos données : l'[intégration Adapty](mail-collect-emails), ou un [événement de transaction](mail-send-data-via-api#send-transaction-events) sur l'API Adapty Mail.
+
+#### Testez avant de lancer
+
+**Send test email** vérifie que l'email s'affiche correctement et que votre page encaisse les paiements, mais **Sandbox** n'est pas sélectionnable pour un paywall ajouté par URL — la fenêtre modale indique *"This paywall has no sandbox products, so only production is available."* Un test envoie donc vers votre page de production avec de vrais produits : utilisez une vraie carte et remboursez-la, ou faites pointer l'URL vers votre propre environnement de test le temps de vérifier la configuration. Voir [Testez votre configuration](mail-testing#test-the-email-and-checkout-on-their-own).
 
 ## À quoi ressemble le processus de paiement \{#what-the-checkout-looks-like\}
 
@@ -104,6 +116,6 @@ Les paramètres d'un paywall généré sont définis automatiquement — aucune 
 
 | Problème | Solution |
 |---|---|
-| Le lien de paiement ne s'ouvre pas | Vérifiez que le paywall est publié dans le web paywall builder |
-| L'utilisateur n'est pas identifié au moment du paiement | Confirmez que `Adapty.identify()` a bien été appelé avec l'identifiant utilisateur correct avant l'envoi de l'e-mail |
-| L'achat n'est pas attribué à l'e-mail | Vérifiez que le paramètre `cid` est présent dans l'URL de paiement — contactez le support si des paramètres sont manquants |
+| Le lien de paiement ne s'ouvre pas | Vérifiez que le paywall est publié dans le constructeur de paywall web |
+| L'utilisateur n'est pas identifié au moment du paiement | Confirmez que `Adapty.identify()` a été appelé avec le bon identifiant utilisateur avant l'envoi de l'e-mail |
+| L'achat n'est pas attribué à l'e-mail | L'attribution suit le clic sur le CTA de l'e-mail : le destinataire doit accéder au paiement via ce lien, et l'achat doit parvenir à Adapty Mail sur le même profil. Un achat déjà attribué à un e-mail précédent conserve cette attribution |

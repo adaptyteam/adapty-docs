@@ -102,7 +102,7 @@ Each row carries two identifiers, and they are not interchangeable:
 | Field | Used as |
 |---|---|
 | `internal_id` | The UUID that `--org` takes on [`campaigns create`](#adapty-asa-campaigns-create), and that `--campaign-group` takes as a [list filter](#list-filters) |
-| `org_id` | Apple's numeric organization ID. Both flags reject it |
+| `org_id` | Apple's numeric organization ID, taken by `--org-id` on [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create). `--org` and `--campaign-group` reject it |
 
 `--org` exists only on `campaigns create`. No list command accepts it.
 
@@ -197,6 +197,90 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 | `--currency` | Currency code for the amounts in this call. Default: `USD` |
 
 At least one flag is required.
+
+### adapty asa campaigns bulk-create
+
+Create a whole campaign structure — campaigns with nested ad groups, keywords, negative keywords, and ads — in one operation.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Convert a native Apple Ads bulk template instead of writing the JSON:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Flag | Default | Description |
+|---|---|---|
+| `--file` | — | JSON file with the campaign structure, or `-` to read from standard input |
+| `--from-file` | — | Apple Ads bulk template to convert on the server: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) or a [keywords `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Apple's numeric organization ID (`org_id`). See [`orgs list`](#adapty-asa-orgs-list). Required with `--from-file` |
+| `--preview` | — | With `--from-file`: print the converted structure and stop. Nothing is created |
+| `--wait` / `--no-wait` | `--wait` | Poll the operation until it finishes. `--no-wait` prints the operation ID and returns |
+| `--poll-interval` | `5` | Seconds between progress polls |
+| `--timeout` | `900` | Maximum seconds to wait for the operation to finish |
+
+Exactly one of `--file` and `--from-file` is required.
+
+The structure names the campaign group at the top level and nests everything else:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` takes Apple's numeric organization ID; use `campaign_group_internal_id` to pass the UUID instead. A node with a `payload` is created. A node that names an existing entity by its `id` is an anchor — use one to add ad groups to an existing campaign, and add `update_payload` to change the entity in the same operation. Each campaign nests `ad_groups`, and each ad group nests `keywords`, `negative_keywords`, and `ads`. A campaign also takes `negative_keywords` directly for campaign-level ones.
+
+The whole structure is validated before anything is created, and a rejection lists every invalid node. With `--from-file`, conversion issues are reported with their sheet, row, and column; conversion warnings do not stop the submission, but conversion errors abort it. Before sending, the command reports how many campaigns, ad groups, keywords, negative keywords, and ads the structure contains and asks for confirmation.
+
+The command then polls the operation and prints progress until one of three final statuses:
+
+| Status | Meaning |
+|---|---|
+| `success` | Every object was created |
+| `partial` | Some objects were not created. Each failure is printed with Apple's error |
+| `failed` | The operation failed, and the command exits non-zero |
+
+If the operation has not finished after `--timeout` seconds, the command returns and prints the [`bulk-status`](#adapty-asa-campaigns-bulk-status) call to run later.
+
+### adapty asa campaigns bulk-status
+
+Show the progress of one bulk operation: the status, the object counts, and the per-object log.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `operation-id` | Operation ID (UUID) printed by [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) |
+
+The `status` field is `pending`, `running`, `success`, `partial`, or `failed`. The `counts` block reports how many objects are applied, failed, and pending out of the total.
+
+Accepts [pagination flags](#global-flags).
 
 ## Ad groups \{#ad-groups\}
 

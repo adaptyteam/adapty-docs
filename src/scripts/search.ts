@@ -27,12 +27,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (!searchInput || !searchResults || !searchContainer) return;
 
+    // An element rendered but hidden (e.g. Tailwind `hidden xl:flex`) has no boxes.
+    const isVisible = (el: HTMLElement) =>
+        !!(el.offsetWidth || el.offsetHeight || el.getClientRects().length);
+
     // Cmd+K / Ctrl+K keyboard shortcut to focus search
     document.addEventListener('keydown', (e) => {
         // Check for Cmd+K (Mac) or Ctrl+K (Windows/Linux)
         if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
             e.preventDefault();
-            searchInput.focus();
+
+            if (isVisible(searchInput)) {
+                searchInput.focus();
+                return;
+            }
+
+            // Below xl the header field is hidden and search lives in the overlay.
+            // Click the trigger that's actually on screen so the overlay's own
+            // open handler (DocsLayout.astro) stays the single source of truth.
+            const trigger = Array.from(
+                document.querySelectorAll<HTMLElement>('[data-search-trigger]')
+            ).find(isVisible);
+            trigger?.click();
         }
     });
 
@@ -215,7 +231,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 item.innerHTML = `
                     ${breadcrumbsHtml}
-                    <div class="text-[14px] font-bold text-primary group-hover:text-accent transition-colors mb-0.5 line-clamp-1 search-title">${title}</div>
+                    <div class="text-[14px] font-semibold text-primary group-hover:text-accent transition-colors mb-0.5 line-clamp-1 search-title">${title}</div>
                     ${hit.description ? `<div class="text-[12px] text-secondary line-clamp-2 leading-relaxed font-medium search-desc">${hit.description}</div>` : ''}
                 `;
 

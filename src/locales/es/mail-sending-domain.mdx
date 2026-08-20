@@ -1,132 +1,194 @@
 ---
 title: "Configura tu dominio de envío para Adapty Mail"
-description: "Añade registros DNS, verifica tu dominio y entiende el calentamiento para que Adapty Mail pueda enviar correos en tu nombre."
+description: "Añade registros DNS, verifica tus dominios de envío y comprende el proceso de warm-up para que Adapty Mail pueda enviar en tu nombre."
 metadataTitle: "Configuración del dominio de envío | Adapty Mail | Documentación de Adapty"
-keywords: ['adapty mail', 'dominio de envío', 'DNS', 'DKIM', 'SPF', 'DMARC', 'entregabilidad', 'calentamiento']
+keywords: ['adapty mail', 'dominio de envío', 'DNS', 'DKIM', 'SPF', 'DMARC', 'entregabilidad', 'warm-up']
 ---
-Adapty Mail envía campañas desde tu propio dominio — no desde una dirección compartida — para que la reputación del remitente quede bajo tu control. Lo configuras una sola vez y todas las campañas usan ese mismo dominio verificado. Para los pasos mínimos, consulta la sección de dominio en [Primeros pasos con Adapty Mail](mail-get-started#2-set-up-your-sending-domain). Este artículo cubre la configuración completa, cómo funciona la verificación y el comportamiento de calentamiento automático.
+
+Adapty Mail envía campañas desde tu propio dominio, no desde una dirección compartida, por lo que la reputación del remitente queda bajo tu control. Con un dominio verificado es suficiente para empezar, y un proyecto puede tener hasta cinco. Para los pasos mínimos, consulta la sección de dominios en [Primeros pasos con Adapty Mail](mail-get-started#2-set-up-your-sending-domain). Este artículo cubre la configuración completa, cómo funciona la verificación, cómo se comporta el calentamiento automático y qué cambia cuando envías desde más de un dominio.
+
 ## Requisitos \{#requirements\}
 
-- **Dominio raíz (apex)**: introduce tu dominio raíz (por ejemplo, `yourapp.com`), no un subdominio. Las entradas como `app.yourapp.com` se rechazan en la validación.
-- **Registros NS activos**: el dominio debe resolver. Adapty Mail realiza una consulta DNS durante la configuración y rechaza dominios sin registros NS válidos.
-- **Un dominio por proyecto de Adapty**: un dominio no puede compartirse entre proyectos. Si el dominio ya está registrado en cualquier proyecto —el tuyo o el de otra persona—, la configuración falla.
+- **Dominio apex**: Introduce tu dominio raíz (por ejemplo, `yourapp.com`), no un subdominio. Las entradas como `app.yourapp.com` se rechazan en la validación. Adapty Mail crea el host de envío como subdominio de este.
+- **Registros NS activos**: El dominio debe resolver. Adapty Mail realiza una consulta DNS durante la configuración y rechaza dominios sin registros NS válidos.
+- **Un proyecto por dominio**: Un dominio no puede compartirse entre proyectos. Si ya está registrado en algún proyecto —tuyo o de otra persona— la configuración falla.
+- **Hasta cinco dominios por proyecto**: Cada uno se verifica y calienta por separado.
 
-## Configura tu dominio de envío \{#set-up-your-sending-domain\}
+## Añadir un dominio de envío \{#add-a-sending-domain\}
 
-El asistente de configuración tiene tres pantallas: introducir el dominio, confirmar los subdominios generados y añadir los registros DNS. Las tres se encuentran en **Settings → DNS**.
+La configuración de dominios se encuentra en **Settings → DNS**, en la sección **Email domains**.
 
-1. **Introduce tu dominio.** Escribe tu dominio raíz en el campo **Domain** y haz clic en **Preview**. Adapty Mail valida el formato (ASCII, dos etiquetas, sin guiones al inicio o al final, TLD de 2+ caracteres) y comprueba que el DNS resuelve.
+1. Para registrar un dominio, haz clic en **Add domain**.
+2. En el campo **Domain**, escribe tu dominio apex, por ejemplo `yourapp.com`.
+3. En el campo **Sending subdomain**, escribe el prefijo desde el que se enviarán tus correos, o déjalo vacío para usar `mail`. La indicación debajo del campo muestra el host resultante: *Emails will be sent from mail.yourapp.com*.
+4. Haz clic en **Add domain**. Adapty Mail valida los datos, registra el dominio y añade una tarjeta con todos los registros DNS que necesita el dominio.
 
-   <ZoomImage id="mail-email-domains.webp" width="500px" />
+<ZoomImage id="mail-email-domains.webp" width="500px" alt="Add domain form with Domain and Sending subdomain fields" />
 
-2. **Confirma los subdominios.** Adapty Mail genera dos subdominios de envío con prefijos fijos — `mail.yourapp.com` y `email.yourapp.com` — cada uno con su propia identidad SES. También crea un subdominio Mail-From bajo cada uno (`hello.mail.yourapp.com` y `hello.email.yourapp.com`). Revísalos y haz clic en **Confirm**.
+5. Añade cada registro de la tarjeta a tu DNS en tu registrador, exactamente como se muestra. La tarjeta los agrupa por lo que autentican — [Qué registros añades](#which-records-you-add) cubre cada grupo y cuáles son obligatorios. Para exportar todos a la vez, haz clic en **Export** y elige **CSV**, **GoDaddy zone file** o **Cloudflare zone file**.
+6. Haz clic en **Check** para verificar de inmediato, o cierra la tarjeta — Adapty Mail comprueba el DNS por sí solo.
 
-   <ZoomImage id="confirm-subdomains.webp" width="500px" />
-3. **Agrega los registros DNS.** La pantalla final muestra todos los registros que debes añadir: 10 en total, 5 por subdominio de envío, más un registro DMARC opcional en el dominio raíz. Usa **Download CSV** para exportar la lista completa, o copia los registros uno a uno en tu registrar. Haz clic en **Done** cuando los registros estén configurados.
+  <ZoomImage id="email-domains.webp" width="700px" alt="Tarjeta de dominio expandida que muestra grupos de registros DNS y el progreso de verificación" />
 
-   <ZoomImage id="email-domains.webp" width="500px" />
+El contador y el anillo en el encabezado de la tarjeta muestran cuántos registros requeridos se han verificado, por lo que solo se completan cuando todos ellos se resuelven.
+
+### Elección del subdominio de envío \{#choosing-the-sending-subdomain\}
+
+El prefijo forma parte de la dirección De que ven todos los destinatarios, por lo que Adapty Mail valida la etiqueta antes de registrar el dominio:
+
+- Usa letras minúsculas, dígitos y guiones, sin guión al principio ni al final, con un máximo de 63 caracteres.
+- `www`, `smtp`, `admin`, `api`, `mx` y `dkim` están reservados.
+- Se rechazan las etiquetas ofensivas y las que suplantan a marcas conocidas, como `paypal`. Las palabras de marketing habituales como `news`, `offers` o `hello` se aceptan sin problema.
+- El prefijo queda fijo en cuanto se registra el dominio. Para enviar desde un host diferente, elimina el dominio y vuelve a añadirlo, o añade un segundo dominio.
+
+## Qué registros se añaden \{#which-records-you-add\}
+
+La tarjeta muestra los registros en tres grupos, más un registro opcional en tu dominio raíz. Los nombres de esta sección asumen el dominio `yourapp.com` y el prefijo predeterminado `mail`.
+
+| Grupo | Registros | Qué hace |
+| --- | --- | --- |
+| **Infraestructura de envío** en `mail.yourapp.com` | 3 CNAMEs DKIM, más un MX y un TXT SPF en `hello.mail.yourapp.com` | Firma tus campañas y redirige los rebotes a Adapty Mail |
+| **Buzón de calentamiento** en `mail.yourapp.com` | CNAMEs DKIM, un MX, un TXT de verificación de dominio, un TXT SPF y un TXT DMARC en `_dmarc.mail.yourapp.com` | Gestiona el buzón que construye tu reputación como remitente durante el [calentamiento](#domain-warm-up) |
+| **Medios y redirecciones** en `go.yourapp.com` | Un CNAME para el host, un TXT de propiedad `_cf-custom-hostname.go.yourapp.com` y un CNAME `_acme-challenge.go.yourapp.com` | Sirve las imágenes y los enlaces rastreados de tus correos desde tu propio dominio |
+| **Política DMARC** en `yourapp.com` (opcional) | Un registro TXT en `_dmarc.yourapp.com` | Indica a los proveedores receptores cómo tratar el correo que no supera la autenticación |
+
+Cada registro de los tres primeros grupos es obligatorio, incluidos los de `go.yourapp.com` — la configuración permanece incompleta mientras ese host no esté verificado. El registro DMARC en tu dominio raíz es una sugerencia y no se contabiliza en el progreso de la tarjeta.
+
+Todos los registros de autenticación están bajo el subdominio de envío, por lo que los registros SPF y DMARC que tu dominio raíz ya tiene para el correo corporativo habitual no se modifican.
 
 <Details>
 <summary>Referencia de registros DNS</summary>
 
-Para cada subdominio de envío (`mail.yourapp.com` y `email.yourapp.com`), añade:
+**DKIM — 3 registros CNAME.** Firmas criptográficas que demuestran que el correo no fue alterado en tránsito.
 
-**DKIM — 3 registros CNAME.** Firmas criptográficas que verifican que el correo no fue modificado en tránsito.
-| Campo | Formato                             |
+| Campo | Formato                              |
 | ----- | ----------------------------------- |
 | Tipo  | CNAME                               |
-| Nombre | `{token}._domainkey.{subdomain}`   |
+| Nombre | `{token}._domainkey.mail.yourapp.com` |
 | Valor | `{token}.dkim.amazonses.com`        |
 
-**Mail-From — 1 registro MX.** Gestiona los rebotes.
-| Campo    | Formato                                                   |
-| -------- | --------------------------------------------------------- |
-| Type     | MX                                                        |
-| Name     | `hello.{subdomain}` (por ejemplo, `hello.mail.yourapp.com`) |
-| Priority | `10`                                                      |
-| Value    | `feedback-smtp.{region}.amazonses.com`                    |
+**MAIL FROM — 1 registro MX.** Gestiona los rebotes.
 
-**SPF — 1 registro TXT.** Autoriza a Adapty para enviar correos en tu nombre.
-| Campo | Formato                                |
+| Campo    | Formato                                                  |
+| -------- | -------------------------------------------------------- |
+| Tipo     | MX                                                       |
+| Nombre   | `hello.mail.yourapp.com`                                 |
+| Prioridad | `10`                                                    |
+| Valor    | `feedback-smtp.{region}.amazonses.com`                   |
+
+**MAIL FROM — 1 registro TXT.** Autoriza a Adapty a enviar en tu nombre.
+
+| Field | Format                                 |
 | ----- | -------------------------------------- |
 | Type  | TXT                                    |
-| Name  | `hello.{subdomain}`                    |
+| Name  | `hello.mail.yourapp.com`               |
 | Value | `"v=spf1 include:amazonses.com ~all"`  |
 
-En tu dominio raíz, añade el registro DMARC opcional:
+**DMARC — 1 registro TXT en tu dominio raíz.** Opcional, pero recomendado.
 
-| Campo | Formato               |
+| Field | Format                |
 | ----- | --------------------- |
 | Type  | TXT                   |
-| Name  | `_dmarc.{domain}`     |
+| Name  | `_dmarc.yourapp.com`  |
 | Value | `v=DMARC1; p=reject`  |
-Los tokens, la región y cualquier otro valor provienen de AWS SES en el momento de la configuración. Cópialos siempre desde la pantalla de registros DNS en Adapty Mail, no desde esta referencia.
+
+El buzón de calentamiento y los registros de `go.yourapp.com` siguen las mismas estructuras, con nombres y valores emitidos por los proveedores de correo y alojamiento que utiliza Adapty Mail. Los tokens, regiones, nombres de host y valores de propiedad se generan en el momento de la configuración — cópialos desde la tarjeta de dominio o una exportación, nunca desde esta referencia.
 
 </Details>
+
 ## Cómo funciona la verificación \{#how-verification-works\}
 
-Una vez que los registros DNS están configurados, Adapty Mail sondea el DNS automáticamente, aunque también puedes activar las comprobaciones manualmente.
-- **Sondeo automático**: El sondeo comienza 1 minuto después de enviar, luego duplica el intervalo en cada ronda — 2, 4, 8, 16 min — hasta alcanzar un máximo de 32 min. Continúa hasta que se encuentren registros o se cierre la ventana de 7 días.
-- **Comprobación manual**: Haz clic en **Check Verification** para forzar una comprobación inmediata. Hay un período de espera de 10 segundos entre comprobaciones manuales — si se activa demasiado rápido, se devuelve el mensaje *"Verification check is on cooldown."*
-- **Estados de verificación**: El DKIM y el Mail-From de cada subdominio se rastrean de forma independiente como **Pending**, **Success** o **Failed**. Un dominio se considera completamente verificado solo cuando los cuatro estados muestran **Success**.
-- **Plazo de 7 días**: Si la verificación no se completa en 7 días, la identidad se marca como **Failed**. Los registros DNS permanecen en tu registrador — vuelve a introducir el dominio en **Settings → DNS** para iniciar una nueva ventana.
-- **Tras la verificación**: Si eliminas o cambias los registros DNS más adelante, AWS SES acabará degradando la identidad. Mantén los registros en su lugar mientras tengas previsto enviar.
-- **Propagación DNS**: Normalmente tarda minutos; en casos excepcionales puede tardar hasta 48 horas.
+Una vez que los registros están en su lugar, Adapty Mail sondea el DNS automáticamente, aunque también puedes activar las comprobaciones manualmente.
 
-## Warm-up del dominio \{#domain-warm-up\}
+- **Sondeo automático**: La primera comprobación se ejecuta 1 minuto después de añadir el dominio, luego el intervalo se duplica — 2, 4, 8 minutos, etc. — hasta estabilizarse en una vez por hora. El sondeo continúa hasta que los registros se resuelven o se cierra la ventana de 7 días.
+- **Comprobación manual**: Haz clic en **Check** para ejecutar una comprobación de inmediato. Hay un tiempo de espera de 10 segundos entre comprobaciones manuales; si lo intentas demasiado pronto, el dashboard responde *"Please wait before checking again"*.
+- **Resultados por registro**: Cada registro se resuelve contra el DNS en tiempo real y se marca como verificado solo cuando la respuesta coincide con lo que emitió Adapty Mail. Un registro que existe con un valor diferente permanece sin verificar, igual que uno que falta.
+- **Plazo de 7 días**: Si la verificación no se completa en 7 días, el dominio se marca como fallido. Tus registros DNS permanecen en tu registrador — añade el dominio de nuevo en **Settings → DNS** para iniciar una nueva ventana.
+- **Tras la verificación**: Si eliminas o cambias los registros más adelante, el proveedor de correo acabará degradando el dominio. Mantenlos en su lugar mientras tengas previsto enviar mensajes.
+- **Propagación DNS**: Normalmente tarda minutos; en casos excepcionales puede llegar a 48 horas.
 
-Los dominios nuevos no tienen reputación ante proveedores de correo como Gmail o Yahoo, por lo que envíos de gran volumen desde un dominio recién creado corren el riesgo de acabar en spam. Adapty Mail gestiona el warm-up automáticamente aumentando tu límite de envíos diarios a lo largo de 14 niveles. No requiere ninguna configuración.
+## Configurar el nombre del remitente \{#set-the-sender-name\}
+
+Una vez verificado un dominio, su tarjeta muestra el campo **Email sender name**. Adapty Mail lo rellena con el nombre de tu proyecto y envía desde `hello@` en tu subdominio de envío, por lo que el texto de ayuda del campo muestra la línea De completa: *Your Company &lt;hello@mail.yourapp.com&gt;*. El nombre es por dominio: un proyecto que envía desde dos dominios tiene dos nombres que configurar.
+
+## Calentamiento de dominio \{#domain-warm-up\}
+
+Los dominios nuevos no tienen reputación ante proveedores de correo como Gmail o Yahoo, por lo que enviar grandes volúmenes desde un dominio recién creado puede hacer que los mensajes acaben en spam. Adapty Mail calienta cada dominio por su cuenta, de dos maneras que funcionan en paralelo. Ninguna requiere configuración.
+
+**Un buzón de calentamiento.** En cuanto el DNS se verifica, Adapty Mail crea un buzón en tu subdominio de envío y lo entrega a un servicio de calentamiento, que intercambia correos conversacionales ordinarios desde él. La tarjeta del dominio muestra en qué fase se encuentra el buzón. El tráfico de calentamiento necesita los registros MX, DKIM y SPF del grupo de calentamiento: mientras cualquiera de ellos no esté verificado, la tarjeta mostrará *Awaiting DNS record verification* y no se producirá ningún calentamiento.
+
+**Un límite de envío diario que aumenta gradualmente.** Tus campañas se miden de forma independiente al buzón de calentamiento, distribuidas en 20 niveles.
 
 ### Cómo funcionan los niveles \{#how-tiers-work\}
 
-Tu dominio empieza en el **Nivel 1** (200 envíos/día) y sube de nivel de uno en uno, de forma automática. Un dominio avanza cuando agota el límite diario de su nivel actual —tanto los envíos realizados como los intentos limitados cuentan para ese total— y el límite superior entra en vigor al día siguiente. El avance depende únicamente del volumen y los niveles solo suben: no hay retroceso automático a un nivel inferior.
+Tu dominio comienza en el **Nivel 1** (100 envíos/día) y sube un nivel a la vez, de forma automática. Un dominio avanza cuando agota el cupo diario de su nivel actual — tanto los envíos realizados como los intentos limitados cuentan para ese cupo — y el límite superior entra en vigor al día siguiente. El primer día en un nuevo nivel, el cupo se libera de forma gradual a lo largo del día en lugar de estar disponible todo de golpe. El avance depende únicamente del volumen, y los niveles solo suben: no hay retroceso automático. A partir del último nivel, el dominio envía sin límite diario.
 
-| Tier | Daily limit |
-| ---- | ----------- |
-| 1    | 200         |
-| 2    | 400         |
-| 3    | 800         |
-| 4    | 1,500       |
-| 5    | 2,500       |
-| 6    | 4,000       |
-| 7    | 6,000       |
-| 8    | 8,000       |
-| 9    | 10,000      |
-| 10   | 13,000      |
-| 11   | 16,000      |
-| 12   | 20,000      |
-| 13   | 25,000      |
-| 14   | 30,000      |
-
-Tu nivel actual y el límite diario se muestran en **Settings → DNS**.
+| Nivel | Límite diario |
+| ----- | ------------- |
+| 1     | 100           |
+| 2     | 200           |
+| 3     | 300           |
+| 4     | 500           |
+| 5     | 750           |
+| 6     | 1.000         |
+| 7     | 1.500         |
+| 8     | 2.500         |
+| 9     | 3.500         |
+| 10    | 5.000         |
+| 11    | 7.000         |
+| 12    | 9.000         |
+| 13    | 12.000        |
+| 14    | 15.000        |
+| 15    | 19.000        |
+| 16    | 24.000        |
+| 17    | 30.000        |
+| 18    | 37.000        |
+| 19    | 46.000        |
+| 20    | 57.000        |
 
 ### Impacto en el lanzamiento según el tamaño de la audiencia \{#impact-on-launch-by-audience-size\}
 
-| Tamaño de la audiencia | Efecto al lanzar                              |
+| Tamaño de la audiencia | Efecto en el lanzamiento                      |
 | ---------------------- | --------------------------------------------- |
-| Menos de 200 usuarios  | Se alcanza a toda la audiencia el primer día  |
-| 200–2.000 usuarios     | La entrega se distribuye en varios días       |
-| Más de 2.000 usuarios  | La entrega se distribuye en 1 o 2 semanas     |
+| Menos de 100 usuarios  | Toda la audiencia recibe el mensaje el día uno |
+| 100–2.000 usuarios     | El envío se distribuye a lo largo de varios días |
+| Más de 2.000 usuarios  | El envío se distribuye a lo largo de 1–2 semanas |
 
 :::tip
 Lanza tu primera campaña en cuanto se complete la verificación DNS. Cuanto antes empieces a enviar, antes avanzará tu dominio por los niveles y alcanzará la capacidad diaria máxima.
 :::
 
+## Enviar desde más de un dominio \{#send-from-more-than-one-domain\}
+
+Cada dominio mantiene su propio nivel, cuota y reputación, por lo que añadir un segundo dominio aumenta el límite de lo que el proyecto puede enviar en un día.
+
+Para añadir uno, ve a **Settings → DNS** y, al final de la lista **Email domains** —debajo de los registros del último dominio—, haz clic en **Add domain**. A partir de ahí, el proceso es el mismo formulario y los mismos pasos que con [tu primer dominio](#add-a-sending-domain): elige el dominio y su subdominio de envío, añade los registros que aparecen y verifícalos. El nuevo dominio entra en el Nivel 1 y sube su propio escalón desde ahí, mientras que el dominio que ya verificaste sigue enviando con su límite actual.
+
+Cuando llega el momento de enviar un correo, Adapty Mail prueba los dominios del proyecto en orden y envía desde el primero que tenga capacidad disponible:
+
+- **Lo más reciente primero.** Se prefiere un dominio añadido más tarde sobre uno más antiguo.
+- **Un dominio por destinatario por campaña.** El primer dominio que envía un correo a un destinatario en una campaña sigue gestionando los correos de esa campaña para ese destinatario, de modo que la dirección De no cambia a mitad de la secuencia. Este emparejamiento tiene prioridad sobre el orden anterior: el correo se envía con el dominio recordado o no se envía, por lo que si ese dominio ha superado su cuota, se descarta aunque otro dominio tenga capacidad disponible.
+- **Los perfiles anteriores al 23 de julio de 2026 permanecen en tu dominio más antiguo** — la dirección De que ya han visto.
+- **Un correo descartado es una supresión, no un reintento.** Solo cuando todos los dominios candidatos han superado su límite diario se descarta el correo, lo que cancela la secuencia de ese destinatario y suprime el perfil con el motivo de limitación. Consulta [Supresión y cancelaciones de suscripción](mail-suppression).
+
 ## Limitaciones \{#limitations\}
-- **Un dominio por proyecto**: Solo puedes tener un dominio de envío por proyecto de Adapty. Para cambiarlo, contacta con soporte — el dashboard no tiene ninguna acción de "cambiar dominio".
-- **Unicidad entre proyectos**: Un dominio ya registrado en otro proyecto no puede reutilizarse. Si ves *"Domain is already registered to another project"*, elige un dominio diferente o contacta con soporte.
-- **Los dominios verificados no se pueden eliminar**: Una vez que cualquier subdominio alcanza el estado **Success**, el dashboard bloquea su eliminación. Los dominios pendientes sí se pueden eliminar, pero aun así deberás eliminar manualmente los registros DNS desde tu registrador.
-- **Prefijos de subdominio fijos**: `mail.`, `email.` y el prefijo Mail-From `hello.` están predefinidos — no se pueden personalizar. Si esos subdominios ya están en uso en tu DNS, la configuración entrará en conflicto.
-- **Solo dominios apex**: Los subdominios, los puntos finales y los nombres de host de una sola etiqueta son rechazados.
-- **Sin dominios internacionalizados**: Punycode e IDN no están soportados. El dominio debe ser solo ASCII.
+- **Un prefijo de envío por dominio**: Elígelo al registrar el dominio; no se puede cambiar después.
+- **Solo dominios apex**: Se rechazan las entradas con subdominios, puntos finales y nombres de host de una sola etiqueta.
+- **Sin dominios internacionalizados**: Punycode e IDN no están disponibles. El dominio debe ser solo ASCII.
+- **Eliminar es permanente**: El envío desde el dominio se detiene de inmediato, se elimina el progreso de verificación, y se pierden el buzón de calentamiento y la reputación acumulada. Tus registros DNS permanecen en tu registrador — elimínalos tú mismo.
+- **Unicidad entre proyectos**: No se puede reutilizar un dominio registrado en otro proyecto. Si ves *"Domain is already registered to another project"*, elige un dominio diferente o contacta con el soporte.
+
 ## Solución de problemas \{#troubleshooting\}
-| Problema                                                                                | Solución                                                                                                                                                        |
-| --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| "Enter a valid domain (e.g. example.com)"                                               | Comprueba el valor introducido: solo apex, solo ASCII, TLD de 2 o más caracteres, sin guiones al inicio ni al final.                                            |
-| "Domain does not have valid DNS records"                                                | El dominio apex debe resolver correctamente. Confirma que tus registros NS están activos antes de volver a intentarlo.                                          |
-| "Domain is already registered to another project"                                       | Elige un dominio diferente o contacta con soporte si crees que el registro es un error.                                                                         |
-| "Verification check is on cooldown"                                                     | Espera 10 segundos entre comprobaciones manuales. El sondeo automático continúa en segundo plano.                                                               |
-| La verificación se queda bloqueada en Pendiente                                         | Comprueba que los registros DNS coincidan exactamente: sin puntos finales, destinos CNAME correctos. La propagación DNS puede tardar hasta 48 horas.            |
-| "Cannot delete domain: one or more identities have been successfully verified"          | Un dominio verificado no se puede eliminar desde el dashboard. Contacta con soporte para obtener ayuda.                                                         |
-| Los correos van a la carpeta de spam                                                    | Confirma que tu registro DMARC está publicado. Los dominios nuevos necesitan un período de calentamiento — consulta [Calentamiento de dominio](#domain-warm-up). |
-| Tasa de rebote alta                                                                     | Verifica que tu lista de audiencia contiene direcciones válidas con opt-in. Consulta [Supresión](mail-suppression) para saber qué ocurre con una dirección que rebota. |
+| Problema                                                                       | Solución                                                                                                                  |
+| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| "Enter a valid domain (e.g. example.com)"                                      | Revisa el campo: solo dominio raíz, solo ASCII, TLD de 2 o más caracteres, sin guiones al principio ni al final.          |
+| "Domain does not have valid DNS records"                                       | El dominio raíz en sí debe poder resolverse. Confirma que tus registros NS estén activos antes de volver a intentarlo.    |
+| "Domain is already registered to another project"                              | Elige un dominio diferente o contacta con soporte si crees que el registro es un error.                                   |
+| "This subdomain cannot be used"                                                | La etiqueta está reservada o fue rechazada por el filtro. Elige otra — consulta [Elegir el subdominio de envío](#choosing-the-sending-subdomain). |
+| "Please wait before checking again"                                            | Espera 10 segundos entre comprobaciones manuales. La verificación automática continúa en segundo plano.                   |
+| Los registros no se verifican                                                  | Comprueba que coincidan exactamente: sin puntos finales, destinos CNAME correctos, un valor por registro. La propagación DNS puede tardar hasta 48 horas. |
+| El calentamiento muestra "Awaiting DNS record verification"                    | Los registros MX, DKIM y SPF del buzón de calentamiento aún no están verificados. Agrégalos o corrígelos y haz clic en **Check**. |
+| El grupo `go.` no se pone en verde                                             | La tarjeta muestra el motivo debajo del host. Confirma sus registros CNAME y TXT y haz clic en **Check** — el dominio no estará completamente configurado hasta que este host esté activo. |
+| "Cannot delete: some identities are verified"                                  | El dominio se configuró antes del calentamiento automático y no se puede eliminar desde el dashboard. Contacta con soporte. |
+| Los correos van a spam                                                         | Confirma que tu registro DMARC esté publicado. Los dominios nuevos necesitan tiempo de calentamiento — consulta [Calentamiento del dominio](#domain-warm-up). |
+| Tasa de rebote alta                                                            | Verifica que tu lista de audiencia contenga direcciones válidas y con consentimiento. Consulta [Supresión](mail-suppression) para saber qué ocurre con una dirección que genera un rebote. |

@@ -286,23 +286,24 @@ const showHreflang = !isFullWidth && !noindex;
             
             <div class:list={[
                 "flex",
-                isFullWidth ? "w-full px-0 h-full items-start" : "px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 py-8 lg:py-12 gap-8 xl:gap-12 2xl:gap-16 items-start"
+                isFullWidth ? "w-full px-0 h-full items-start" : "px-4 sm:px-6 md:px-8 lg:px-10 xl:px-12 2xl:px-16 py-8 lg:py-12 gap-10 xl:gap-14 2xl:gap-20 items-start"
             ]}>
                 <article class:list={[
-                    isFullWidth ? "w-full h-full" : "flex-1 min-w-0 prose prose-slate dark:prose-invert docs-prose",
+                    isFullWidth ? "w-full h-full" : "flex-1 min-w-0 prose prose-sm prose-slate dark:prose-invert docs-prose",
                     !isFullWidth && !hideRightColumn && "max-w-4xl",
-                    !isFullWidth && "prose-headings:font-bold prose-headings:tracking-tight prose-headings:scroll-mt-24",
-                    !isFullWidth && "prose-h1:text-3xl lg:prose-h1:text-4xl prose-h1:mb-6 lg:prose-h1:mb-8",
+                    !isFullWidth && "prose-headings:font-semibold prose-headings:tracking-tight prose-headings:scroll-mt-24",
+                    !isFullWidth && "prose-h1:text-2xl prose-h1:tracking-[-0.02em] prose-h1:mb-6 lg:prose-h1:mb-8",
+                    !isFullWidth && "prose-h2:text-[17px] prose-h3:text-[15px] prose-h2:mt-10 prose-h3:mt-8",
                     !isFullWidth && "prose-a:font-medium prose-a:no-underline prose-a:hover:underline",
-                    !isFullWidth && "prose-img:rounded-2xl prose-img:shadow-xl",
-                    !isFullWidth && "prose-pre:rounded-2xl prose-pre:shadow-2xl",
-                    !isFullWidth && "prose-blockquote:border-l-4 prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-2xl prose-blockquote:not-italic",
+                    !isFullWidth && "prose-img:rounded-lg prose-img:shadow-none",
+                    !isFullWidth && "prose-pre:rounded-[10px] prose-pre:shadow-none",
+                    !isFullWidth && "prose-blockquote:py-2 prose-blockquote:px-6 prose-blockquote:rounded-r-lg prose-blockquote:not-italic",
                     !isFullWidth && "prose-strong:font-semibold",
                     !isFullWidth && !hideRightColumn && "max-w-[75ch]",
                     !isFullWidth ? "xl:max-w-none" : ""
                 ]}>
                     {!isFullWidth && (
-                        <div class="lg:mb-0 mb-4 overflow-x-auto scrollbar-hide">
+                        <div class="lg:mb-0 mb-2 overflow-x-auto scrollbar-hide">
                             <Breadcrumbs items={breadcrumbs} />
                         </div>
                     )}
@@ -808,7 +809,7 @@ const showHreflang = !isFullWidth && !noindex;
                 cursor: default;
                 z-index: 9998;
                 transition: all 0.2s ease;
-                font-family: 'Inter', system-ui, sans-serif;
+                font-family: 'Manrope', 'Inter', system-ui, sans-serif;
                 opacity: 0;
                 transform: translateX(5px);
                 animation: askAiLabelFadeIn 0.6s ease forwards;
@@ -923,11 +924,52 @@ const showHreflang = !isFullWidth && !noindex;
     <!-- End LiveChat Widget -->
 
     <script>
+      // Recolor Shiki token <span> colors for dark mode (CSS cannot reach into
+      // Shiki's inline per-token `style="color:..."` attributes, so this stays
+      // in JS). Stores the original (light-mode) color on first run and
+      // restores it when light mode is active again.
+      function adjustTokenBrightness(code) {
+        const isDark = document.documentElement.classList.contains('dark');
+        const tokens = code.querySelectorAll('span[style*="color"], span[data-original-color]');
+
+        tokens.forEach(token => {
+          if (!token.hasAttribute('data-original-color')) {
+            token.setAttribute('data-original-color', token.style.color);
+          }
+
+          const originalColor = token.getAttribute('data-original-color');
+          if (!originalColor) return;
+
+          if (isDark) {
+            const colorMatch = originalColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+            if (colorMatch) {
+              const [, r, g, b] = colorMatch.map(Number);
+
+              // Calculate brightness (perceived luminance)
+              const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
+
+              // If color is very dark (black or near-black), lighten to the dark-mode token color
+              if (brightness < 50) {
+                token.style.setProperty('color', 'rgb(212, 212, 216)', 'important'); // #d4d4d8
+              } else {
+                // Otherwise brighten by 50%
+                const newR = Math.min(255, Math.floor(r * 1.5));
+                const newG = Math.min(255, Math.floor(g * 1.5));
+                const newB = Math.min(255, Math.floor(b * 1.5));
+                token.style.setProperty('color', `rgb(${newR}, ${newG}, ${newB})`, 'important');
+              }
+            }
+          } else {
+            // Light mode: restore original color
+            token.style.setProperty('color', originalColor, 'important');
+          }
+        });
+      }
+
       function enhanceCodeBlocks() {
         const preElements = document.querySelectorAll('article pre:not(.processed)');
-        const isDark = document.documentElement.classList.contains('dark');
 
-        preElements.forEach((pre, index) => {
+        preElements.forEach((pre) => {
           // Skip pres inside the API reference code-samples block — that component
           // owns its own header, copy button, and Shiki syntax highlighting.
           if (pre.closest('.api-code-samples')) {
@@ -935,366 +977,66 @@ const showHreflang = !isFullWidth && !noindex;
             return;
           }
           pre.classList.add('processed');
-          
-          // Mark that JS has processed this element (for CSS to remove filter)
+
+          // Mark that JS has processed this element (for CSS to remove the brightness filter)
           pre.setAttribute('data-js-enhanced', 'true');
-          
-          // Force remove Shiki inline background styles and apply dark mode
-          if (isDark) {
-            pre.style.setProperty('background-color', '#1a1f2e', 'important');
-            pre.style.setProperty('background', '#1a1f2e', 'important');
-          } else {
-            pre.style.setProperty('background-color', '#ffffff', 'important');
-            pre.style.setProperty('background', '#ffffff', 'important');
-          }
-          
+
           const code = pre.querySelector('code');
-          if (!code) return;
-          
-          // Brighten code tokens in dark mode for better contrast
-          const tokens = code.querySelectorAll('span[style*="color"]');
-          tokens.forEach(token => {
-            // Store original color if not already stored
-            if (!token.hasAttribute('data-original-color')) {
-              token.setAttribute('data-original-color', token.style.color);
-            }
-            
-            // Get the original color
-            const originalColor = token.getAttribute('data-original-color');
-            
-            if (isDark && originalColor) {
-              const colorMatch = originalColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-              if (colorMatch) {
-                const [_, r, g, b] = colorMatch.map(Number);
-                
-                // Calculate brightness (perceived luminance)
-                const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-                
-                // If color is very dark (black or near-black), invert to white
-                if (brightness < 50) {
-                  token.style.setProperty('color', 'rgb(226, 232, 240)', 'important'); // #e2e8f0
-                } else {
-                  // Otherwise brighten by 50%
-                  const newR = Math.min(255, Math.floor(r * 1.5));
-                  const newG = Math.min(255, Math.floor(g * 1.5));
-                  const newB = Math.min(255, Math.floor(b * 1.5));
-                  token.style.setProperty('color', `rgb(${newR}, ${newG}, ${newB})`, 'important');
-                }
-              }
-            } else if (originalColor) {
-              // Light mode: restore original color
-              token.style.setProperty('color', originalColor, 'important');
-            }
-          });
+          if (code) {
+            adjustTokenBrightness(code);
+          }
 
           // Extract metadata from the pre tag (populated by Shiki transformer)
           const title = pre.getAttribute('data-title') || '';
-          
+
+          const wrapper = document.createElement('div');
+          wrapper.className = 'code-block-wrapper';
           if (title) {
-              const wrapper = document.createElement('div');
-              wrapper.className = 'code-block-wrapper';
-              wrapper.setAttribute('data-title', title);
-              
-              // Apply dark mode background to wrapper
-              if (isDark) {
-                wrapper.style.backgroundColor = '#1a1f2e';
-                wrapper.style.background = '#1a1f2e';
-              }
-              
-              // Copy button
-              const copyBtn = document.createElement('button');
-              copyBtn.className = 'copy-button';
-              copyBtn.textContent = 'Copy';
-              
-              if (isDark) {
-                copyBtn.classList.add('dark'); // Add a class if needed, or rely on parent theme
-              }
-              
-              copyBtn.onclick = async () => {
-                  try {
-                      await navigator.clipboard.writeText(pre.textContent || '');
-                      (window as any).docsTrack?.('docs_code_copied', {
-                          language: pre.getAttribute('data-language') || undefined,
-                          title,
-                      });
-                      copyBtn.textContent = 'Copied!';
-                      copyBtn.classList.add('copied');
-
-                      // Force inline styles for success state (requested by user)
-                      if (isDark) {
-                          copyBtn.style.setProperty('color', '#a78bfa', 'important'); // Brand purple light
-                          copyBtn.style.setProperty('border-color', '#a78bfa', 'important');
-                          copyBtn.style.setProperty('background-color', '#1e293b', 'important');
-                      } else {
-                          copyBtn.style.setProperty('color', '#6720ff', 'important'); // Brand purple
-                          copyBtn.style.setProperty('border-color', '#6720ff', 'important');
-                          copyBtn.style.setProperty('background-color', '#ffffff', 'important');
-                      }
-
-                      setTimeout(() => {
-                          copyBtn.textContent = 'Copy';
-                          copyBtn.classList.remove('copied');
-                          
-                          // Reset inline styles to let CSS classes take over or set to default
-                          if (isDark) {
-                              copyBtn.style.setProperty('background-color', '#334155', 'important');
-                              copyBtn.style.setProperty('color', '#cbd5e1', 'important');
-                              copyBtn.style.setProperty('border-color', '#475569', 'important');
-                          } else {
-                              copyBtn.style.setProperty('background-color', '#ffffff', 'important');
-                              copyBtn.style.setProperty('color', '#64748b', 'important');
-                              copyBtn.style.setProperty('border-color', '#cbd5e1', 'important');
-                          }
-                      }, 2000);
-                  } catch (err) {
-                      console.error('Failed to copy text: ', err);
-                  }
-              };
-              
-              pre.parentNode?.insertBefore(wrapper, pre);
-              wrapper.appendChild(copyBtn);
-              wrapper.appendChild(pre);
-              
-              // Force styles again after adding to DOM
-              setTimeout(() => {
-                if (isDark) {
-                  copyBtn.style.cssText = `
-                    background-color: #334155 !important;
-                    background: #334155 !important;
-                    color: #cbd5e1 !important;
-                    border: 1px solid #475569 !important;
-                    border-color: #475569 !important;
-                    position: absolute !important;
-                    top: 0.625rem !important;
-                    right: 0.625rem !important;
-                    padding: 0.375rem 0.75rem !important;
-                    font-size: 11px !important;
-                    font-weight: 600 !important;
-                    border-radius: 0.5rem !important;
-                    opacity: 1 !important;
-                    cursor: pointer !important;
-                    z-index: 30 !important;
-                    transition: all 0.2s !important;
-                  `;
-                }
-              }, 0);
-          } else {
-             // Wrap without title for consistancy or just style pre
-             const wrapper = document.createElement('div');
-              wrapper.className = 'code-block-wrapper';
-             
-             // Apply dark mode background to wrapper
-              if (isDark) {
-                wrapper.style.backgroundColor = '#1a1f2e';
-                wrapper.style.background = '#1a1f2e';
-              }
-             
-             // Copy button (no title offset)
-              const copyBtn = document.createElement('button');
-              copyBtn.className = 'copy-button';
-              copyBtn.textContent = 'Copy';
-              
-              // Add data attribute for dark mode
-              if (isDark) {
-                copyBtn.setAttribute('data-theme', 'dark');
-              }
-              
-              // Apply dark mode styles with cssText (most aggressive method)
-              // Apply dark mode styles with cssText
-              if (isDark) {
-                copyBtn.style.cssText = `
-                  background-color: #334155 !important;
-                  background: #334155 !important;
-                  color: #cbd5e1 !important;
-                  border: 1px solid #475569 !important;
-                  border-color: #475569 !important;
-                  position: absolute !important;
-                  top: 0.625rem !important;
-                  right: 0.625rem !important;
-                  padding: 0.375rem 0.75rem !important;
-                  font-size: 11px !important;
-                  font-weight: 600 !important;
-                  border-radius: 0.5rem !important;
-                  opacity: 1 !important;
-                  cursor: pointer !important;
-                  z-index: 30 !important;
-                  transition: all 0.2s !important;
-                `;
-              } else {
-                copyBtn.style.cssText = `
-                  background-color: #ffffff !important;
-                  background: #ffffff !important;
-                  color: #64748b !important;
-                  border: 1px solid #cbd5e1 !important;
-                  position: absolute !important;
-                  top: 0.625rem !important;
-                  right: 0.625rem !important;
-                  padding: 0.375rem 0.75rem !important;
-                  font-size: 11px !important;
-                  font-weight: 600 !important;
-                  border-radius: 0.5rem !important;
-                  opacity: 1 !important;
-                  cursor: pointer !important;
-                  z-index: 30 !important;
-                  transition: all 0.2s !important;
-                `;
-              }
- 
-               copyBtn.onclick = async () => {
-                  try {
-                      await navigator.clipboard.writeText(pre.textContent || '');
-                      (window as any).docsTrack?.('docs_code_copied', {
-                          language: pre.getAttribute('data-language') || undefined,
-                      });
-                      copyBtn.textContent = 'Copied!';
-                      copyBtn.classList.add('copied');
-
-                      // Force inline styles for success state
-                      if (isDark) {
-                          copyBtn.style.setProperty('color', '#a78bfa', 'important');
-                          copyBtn.style.setProperty('border-color', '#a78bfa', 'important');
-                          copyBtn.style.setProperty('background-color', '#1e293b', 'important');
-                      } else {
-                          copyBtn.style.setProperty('color', '#6720ff', 'important');
-                          copyBtn.style.setProperty('border-color', '#6720ff', 'important');
-                          copyBtn.style.setProperty('background-color', '#ffffff', 'important');
-                      }
-
-                      setTimeout(() => {
-                          copyBtn.textContent = 'Copy';
-                          copyBtn.classList.remove('copied');
-                          
-                          // Reset inline styles
-                          if (isDark) {
-                              copyBtn.style.setProperty('background-color', '#334155', 'important');
-                              copyBtn.style.setProperty('color', '#cbd5e1', 'important');
-                              copyBtn.style.setProperty('border-color', '#475569', 'important');
-                          } else {
-                              copyBtn.style.setProperty('background-color', '#ffffff', 'important');
-                              copyBtn.style.setProperty('color', '#64748b', 'important');
-                              copyBtn.style.setProperty('border-color', '#cbd5e1', 'important');
-                          }
-                      }, 2000);
-                  } catch (err) {
-                      console.error('Failed to copy text: ', err);
-                  }
-              };
-
-              pre.parentNode?.insertBefore(wrapper, pre);
-              wrapper.appendChild(copyBtn);
-              wrapper.appendChild(pre);
-              
-              // Force styles again after adding to DOM
-              setTimeout(() => {
-                if (isDark) {
-                  copyBtn.style.cssText = `
-                    background-color: #334155 !important;
-                    background: #334155 !important;
-                    color: #cbd5e1 !important;
-                    border: 1px solid #475569 !important;
-                    border-color: #475569 !important;
-                    position: absolute !important;
-                    top: 0.625rem !important;
-                    right: 0.625rem !important;
-                    padding: 0.375rem 0.75rem !important;
-                    font-size: 11px !important;
-                    font-weight: 600 !important;
-                    border-radius: 0.5rem !important;
-                    opacity: 1 !important;
-                    cursor: pointer !important;
-                    z-index: 30 !important;
-                    transition: all 0.2s !important;
-                  `;
-                }
-              }, 0);
+            wrapper.setAttribute('data-title', title);
           }
-        });
-        
-        // Also force styles on all existing copy buttons
-        if (isDark) {
-          document.querySelectorAll('.copy-button').forEach(btn => {
-            (btn as HTMLElement).style.cssText = `
-              background-color: #334155 !important;
-              background: #334155 !important;
-              color: #cbd5e1 !important;
-              border: 1px solid #475569 !important;
-              border-color: #475569 !important;
-              position: absolute !important;
-              top: 0.625rem !important;
-              right: 0.625rem !important;
-              padding: 0.375rem 0.75rem !important;
-              font-size: 11px !important;
-              font-weight: 600 !important;
-              border-radius: 0.5rem !important;
-              opacity: 0 !important;
-              cursor: pointer !important;
-              z-index: 30 !important;
-              transition: all 0.2s !important;
-            `;
-          });
-        }
-      }
-      
-      // Re-run enhancement when theme changes
-      window.addEventListener('themechange', () => {
-        const isDark = document.documentElement.classList.contains('dark');
 
-        // Update existing code blocks without recreating wrappers
+          // Copy button — structure and state only, all visuals come from CSS
+          const copyBtn = document.createElement('button');
+          copyBtn.className = 'copy-button';
+          copyBtn.textContent = 'Copy';
+
+          copyBtn.onclick = async () => {
+            try {
+              await navigator.clipboard.writeText(pre.textContent || '');
+              (window as any).docsTrack?.('docs_code_copied', {
+                language: pre.getAttribute('data-language') || undefined,
+                title: title || undefined,
+              });
+              copyBtn.textContent = 'Copied!';
+              copyBtn.classList.add('copied');
+
+              setTimeout(() => {
+                copyBtn.textContent = 'Copy';
+                copyBtn.classList.remove('copied');
+              }, 2000);
+            } catch (err) {
+              console.error('Failed to copy text: ', err);
+            }
+          };
+
+          pre.parentNode?.insertBefore(wrapper, pre);
+          wrapper.appendChild(copyBtn);
+          wrapper.appendChild(pre);
+        });
+      }
+
+      // Re-run token brightness adjustment when theme changes.
+      // Backgrounds, borders, and button chrome are handled by CSS via the
+      // `.dark` class and need no JS involvement here.
+      window.addEventListener('themechange', () => {
         document.querySelectorAll('article pre').forEach(pre => {
           // Skip pres inside the API reference code-samples block — they are
           // self-styled by Shiki and the component, not by the global enhancer.
           if (pre.closest('.api-code-samples')) return;
 
-          // Update background colors
-          if (isDark) {
-            pre.style.setProperty('background-color', '#1a1f2e', 'important');
-            pre.style.setProperty('background', '#1a1f2e', 'important');
-          } else {
-            pre.style.setProperty('background-color', '#ffffff', 'important');
-            pre.style.setProperty('background', '#ffffff', 'important');
-          }
-          
-          // Update token colors
           const code = pre.querySelector('code');
           if (code) {
-            const tokens = code.querySelectorAll('span[data-original-color]');
-            tokens.forEach(token => {
-              const originalColor = token.getAttribute('data-original-color');
-              if (isDark && originalColor) {
-                const colorMatch = originalColor.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
-                if (colorMatch) {
-                  const [_, r, g, b] = colorMatch.map(Number);
-                  
-                  // Calculate brightness (perceived luminance)
-                  const brightness = (r * 0.299 + g * 0.587 + b * 0.114);
-                  
-                  // If color is very dark (black or near-black), convert to light grey
-                  if (brightness < 50) {
-                    token.style.setProperty('color', 'rgb(226, 232, 240)', 'important'); // #e2e8f0
-                  } else {
-                    // Otherwise brighten by 50%
-                    const newR = Math.min(255, Math.floor(r * 1.5));
-                    const newG = Math.min(255, Math.floor(g * 1.5));
-                    const newB = Math.min(255, Math.floor(b * 1.5));
-                    token.style.setProperty('color', `rgb(${newR}, ${newG}, ${newB})`, 'important');
-                  }
-                }
-              } else if (originalColor) {
-                token.style.setProperty('color', originalColor, 'important');
-              }
-            });
-          }
-          
-          // Update wrapper background if it exists
-          const wrapper = pre.closest('.code-block-wrapper');
-          if (wrapper) {
-            if (isDark) {
-              wrapper.style.backgroundColor = '#1a1f2e';
-              wrapper.style.background = '#1a1f2e';
-            } else {
-              wrapper.style.backgroundColor = '#f8fafc';
-              wrapper.style.background = '#f8fafc';
-            }
+            adjustTokenBrightness(code);
           }
         });
       });
@@ -1387,21 +1129,21 @@ const showHreflang = !isFullWidth && !noindex;
   .docs-prose :global(strong a),
   .docs-prose :global(a strong) {
     color: var(--accent-primary);
-    font-weight: 700;
+    font-weight: 600;
   }
-  
+
   .docs-prose :global(blockquote) {
-    border-color: var(--accent-primary);
-    background: color-mix(in srgb, var(--accent-primary) 5%, transparent);
+    border-left: 3px solid var(--border-secondary);
+    background: var(--bg-secondary);
     color: var(--text-secondary);
   }
-  
+
   .docs-prose :global(img) {
     border-color: var(--border-primary);
   }
   
-  .docs-prose :global(code) {
-    color: var(--accent-primary);
+  .docs-prose :global(:not(pre) > code) {
+    color: var(--text-secondary);
   }
   
   .docs-prose :global(pre) {
@@ -1412,8 +1154,8 @@ const showHreflang = !isFullWidth && !noindex;
   :root.dark .docs-prose :global(pre),
   html.dark .docs-prose :global(pre),
   .dark .docs-prose :global(pre) {
-    background-color: #1a1f2e !important;
-    background: #1a1f2e !important;
+    background-color: var(--bg-code) !important;
+    background: var(--bg-code) !important;
   }
 
   /* Apply brightness filter initially, remove once JS has enhanced */

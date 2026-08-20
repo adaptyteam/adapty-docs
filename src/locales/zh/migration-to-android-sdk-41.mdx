@@ -1,0 +1,78 @@
+---
+title: "迁移 Adapty Android SDK 至 v4.1"
+description: "迁移至 Adapty Android SDK v4.1：显式启用 Adapty Attribution 并采用重命名后的外部归因 API。"
+metadataTitle: "迁移至 Adapty Android SDK v4.1 | Adapty 文档"
+---
+
+Adapty Android SDK 4.1 更改了 Adapty Attribution 的启用方式，并对外部归因 API 进行了重命名。
+
+:::warning
+重命名的 API 是一次硬性中断。`AdaptyAttributionSource` 已被彻底移除——它不是废弃状态，也没有提供类型别名作为过渡。凡是能在 4.0.x 上编译通过的代码，在升级到 4.1 后都将因以下调用点未完成重命名而编译失败。
+:::
+
+## 快速参考 \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty 归因默认启用 | Adapty 归因默认禁用；通过 `.withAdaptyAttributionEnabled(true)` 启用 |
+| `Adapty.updateAttribution(attribution, source)` | `Adapty.updateExternalAttribution(attribution, provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`，新增 `CUSTOM` 值 |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+## 安装 \{#installation\}
+
+将 `adapty-bom` 版本设置为 `4.1.0`（或更高版本）并同步项目。BOM 会自动为您解析匹配的 `android-sdk` 和 `android-ui` 版本。依赖项声明请参阅[安装 Adapty SDK](sdk-installation-android)。
+
+:::note
+如果您从 4.0.0 或 4.0.1 升级，4.0.2 中的两项变更也同样适用：
+
+- Adapty 默认使用 Google Play Billing Library 8，而不是 7.0.0。
+- 当没有可恢复的购买记录时，`restorePurchases` 会成功完成并返回当前用户画像，而不是以 `NO_PURCHASES_TO_RESTORE` 报错。请参阅[恢复购买](android-restore-purchase)。
+:::
+
+## Adapty 归因功能默认关闭 \{#adapty-attribution-is-disabled-by-default\}
+
+在 4.0 及更早版本中，SDK 会自动为 [Adapty 归因](user-acquisition) 注册安装记录。从 4.1 版本开始，该功能默认关闭：SDK 不再注册安装记录，通过 `setOnInstallationDetailsListener` 设置的监听器不会触发，`getCurrentInstallationStatus` 返回 `AdaptyInstallationStatus.Determined.NotAvailable`。
+
+如果你使用 Adapty 归因功能，请在激活 SDK 时将其启用：
+
+```diff showLineNumbers
+  val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+  Adapty.activate(applicationContext, config)
+```
+
+如果你不使用 Adapty Attribution，则无需任何更改。
+
+## 重命名的外部归因 API \{#renamed-external-attribution-apis\}
+
+### updateAttribution → updateExternalAttribution
+
+将外部归因数据（来自 Adjust、AppsFlyer、Branch、Tenjin 或自定义渠道）传递给 Adapty 的方法已重命名，其 `source` 参数也重命名为 `provider`：
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error -> /* handle the error */ }
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST) { error -> /* handle the error */ }
+```
+
+两种重载方式均保留：`attribution` 可以是 `Map<String, Any>` 或 JSON `String`。
+
+回调在后端接受数据进行异步处理后触发。成功结果并不意味着数据已经应用到用户画像。
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+该类型已重命名，预定义值保持原名不变：`APPLE_ADS`、`ADJUST`、`APPSFLYER`、`BRANCH` 和 `TENJIN`。对于其他提供商，可通过字符串构建：`AdaptyExternalAttributionProvider("your_provider")`。
+
+4.1 还为 Adapty 未直接集成的提供商新增了预定义值 `CUSTOM`。在 4.0 中，相同的值只能以字符串 `"custom"` 的形式使用。
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+列出已应用到用户画像的归因提供商的属性已重命名，其元素类型也随之更改：
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.APPLE_ADS)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```

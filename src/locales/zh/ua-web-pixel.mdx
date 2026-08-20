@@ -1,0 +1,82 @@
+---
+title: "配置 Adapty 网页像素"
+description: "在您的网页漏斗或落地页上安装 Adapty 网页像素，以便通过 Stripe 或 Paddle 完成的购买能归因到对应的广告。"
+metadataTitle: "网页像素 | Adapty 归因 | Adapty 文档"
+---
+
+如果您通过网页漏斗或落地页获取用户，Adapty 网页像素可以将每次访问与带来它的广告关联起来。像素会为每位访客分配一个点击 ID。当访客付款时，您将该点击 ID 随交易一起传递，Adapty 归因就会将购买匹配到具体的广告系列、广告组和广告。
+
+该像素适用于 Meta Ads 和 TikTok for Business 广告系列。
+
+:::tip
+该像素仅匹配广告访问。如需将购买事件本身引入 Adapty 归因，请连接 [Stripe](ua-stripe) 或 [Paddle](ua-paddle)。
+:::
+
+## 工作原理 \{#how-it-works\}
+
+页面加载时，像素会执行以下操作：
+
+- 为访客分配一个 `click_id`，并将其存储在浏览器中，有效期 7 天。
+- 从页面 URL 中捕获广告信号：Meta（`fbclid`）和 TikTok（`ttclid`）点击 ID、广告系列、广告组和广告的标识符与名称，以及 `utm_*` 参数。
+- 在后台将 `click_id` 和捕获到的信号发送给 Adapty。
+
+结账时，你只需将 `click_id` 附加到交易中。Adapty 会将其与像素已发送的信号进行匹配，并自动识别广告渠道。
+
+## 开始之前 \{#before-you-start\}
+
+将 [Meta Ads](ua-facebook) 或 [TikTok for Business](ua-tiktok) 接入 Adapty 归因，并添加广告系列配置。Adapty 会为每个广告系列配置生成像素代码片段，因此需要先完成配置才能复制代码片段。
+
+## 安装像素 \{#install-the-pixel\}
+
+1. 在 Adapty Attribution 中，打开您的 Meta Ads 或 TikTok 广告系列配置。
+2. 在 **General** 标签页中，展开 **Web funnel** 部分，复制 **Pixel snippet** 字段的值。
+
+<ZoomImage id="ua-web-pixel-snippet.webp" width="700px" alt="Pixel snippet field in the Web funnel section of a campaign configuration in Adapty Attribution" />
+
+3. 将代码片段粘贴到您漏斗每个页面的 `<head>` 标签中：
+
+```html
+<script async src="https://api-ua.adapty.io/pixel/loader.js" data-code="YOUR_CODE"></script>
+```
+
+`data-code` 的值用于标识您的应用和推广活动，是公开标识符，并非敏感信息。
+
+## 为您的广告 URL 添加标签 \{#tag-your-ad-urls\}
+
+像素从您的落地页 URL 中读取广告数据。广告网络会自动附加其自身的点击 ID（`fbclid` 或 `ttclid`），这可以识别广告网络，但无法识别具体的广告系列、广告组或广告。若要将购买行为归因到具体广告，请在您的广告中添加追踪参数：
+
+1. 在广告系列配置的 **Web funnel** 部分，复制 **Ad URL parameters** 字段的值。
+
+<ZoomImage id="ua-web-pixel-url-params.webp" width="700px" alt="Ad URL parameters field in the Web funnel section of a campaign configuration in Adapty Attribution" />
+
+2. 在广告网络中，将该值粘贴到**广告**层级：
+   - **Meta**：粘贴到广告的 **URL parameters** 字段。
+   - **TikTok**：在广告目标 URL 下方，粘贴到 **Build URL parameters**。
+
+该值包含网络宏，广告网络会在用户点击时将其替换为实际的广告系列、广告组和广告值。
+
+这些参数不包含 `utm_*` 值，因此你可以保留自己的 UTM 方案用于自有分析——Adapty 不要求使用 UTM。
+
+## 管理同意授权 \{#manage-consent\}
+
+像素会写入第一方 Cookie 和 localStorage 条目，并在页面加载时读取广告点击 ID。您是漏斗的数据控制者，负责承担相应的法律依据。
+
+默认情况下，像素在页面加载时即开始运行。如需在用户授权后再启动，请在代码片段中添加 `data-consent="denied"` —— 在您通过 Cookie 横幅授予同意之前，像素不会存储或发送任何数据：
+
+```js
+window.adaptyPixel.grantConsent();  // start capture
+window.adaptyPixel.revokeConsent(); // clear stored state and stop
+window.adaptyPixel.getConsent();    // 'granted' | 'denied'
+```
+
+:::warning
+对欧盟/欧洲经济区流量，请在获得用户同意后再启用像素追踪。根据 ePrivacy 规定，浏览器存储需事先取得用户同意，第一方归因像素不在豁免范围之内。
+:::
+
+该代码片段以异步方式加载，因此在 `<script>` 标签后的下一行代码中 `window.adaptyPixel` 尚不存在。请从您的同意横幅回调中调用同意 API，或在提前调用时加上 `if (window.adaptyPixel) { ... }` 守卫判断。
+
+## 使用说明 \{#usage-notes\}
+
+- **单页漏斗**：客户端导航保持相同的 `click_id`，因此构建为单页应用的漏斗无需额外配置即可正常工作。
+- **Click ID 稳定性**：在页面加载时或结账时读取 `click_id` 返回的值相同。如果访客从新广告重新进入漏斗，则以最新的广告点击为准。
+- **续订**：仅将 `click_id` 附加到初始交易。Adapty 通过订阅本身归因试用转化和订阅续订。

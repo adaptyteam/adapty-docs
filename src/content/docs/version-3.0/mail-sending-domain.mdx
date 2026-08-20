@@ -1,146 +1,203 @@
 ---
 title: "Set up your sending domain for Adapty Mail"
-description: "Add DNS records, verify your domain, and understand warm-up so Adapty Mail can send on your behalf."
+description: "Add DNS records, verify your sending domains, and understand warm-up so Adapty Mail can send on your behalf."
 metadataTitle: "Sending Domain Setup | Adapty Mail | Adapty Docs"
 keywords: ['adapty mail', 'sending domain', 'DNS', 'DKIM', 'SPF', 'DMARC', 'deliverability', 'warm-up']
 ---
 import Details from '@site/src/components/Details';
 import ZoomImage from '@site/src/components/ZoomImage';
 
-Adapty Mail sends campaigns from your own domain — not from a shared address — so sender reputation stays under your control. You set this up once, and every campaign uses the same verified domain. For the minimum steps, see the domain section in [Get started with Adapty Mail](mail-get-started#2-set-up-your-sending-domain). This article covers the full setup, how verification works, and the automatic warm-up behavior.
+Adapty Mail sends campaigns from your own domain — not from a shared address — so sender reputation stays under your control. One verified domain is enough to launch, and a project can hold up to five. For the minimum steps, see the domain section in [Get started with Adapty Mail](mail-get-started#2-set-up-your-sending-domain). This article covers the full setup, how verification works, how automatic warm-up behaves, and what changes once you send from more than one domain.
 
 ## Requirements
 
-- **Apex domain**: Submit your root domain (for example, `yourapp.com`), not a subdomain. Inputs like `app.yourapp.com` are rejected at validation.
+- **Apex domain**: Submit your root domain (for example, `yourapp.com`), not a subdomain. Inputs like `app.yourapp.com` are rejected at validation. Adapty Mail creates the sending host as a subdomain of it.
 - **Active NS records**: The domain must resolve. Adapty Mail performs a DNS lookup during setup and refuses domains without valid NS records.
-- **One domain per Adapty project**: A domain can't be shared across projects. If the domain is already registered to any project — yours or someone else's — setup fails.
+- **One project per domain**: A domain can't be shared across projects. If it's already registered to any project — yours or someone else's — setup fails.
+- **Up to five domains per project**: Each one verifies and warms up on its own.
 
-## Set up your sending domain
+## Add a sending domain
 
-The setup wizard has three screens: enter the domain, confirm the generated subdomains, and add the DNS records. All three live in **Settings → DNS**.
+Domain setup lives in **Settings → DNS**, in the **Email domains** section.
 
-1. **Enter your domain.** Type your apex domain into the **Domain** field and click **Preview**. Adapty Mail validates the format (ASCII, two labels, no leading or trailing hyphens, TLD of 2+ characters) and checks that DNS resolves.
+1. To register a domain, click **Add domain**.
+2. In the **Domain** field, type your apex domain, for example `yourapp.com`.
+3. In the **Sending subdomain** field, type the prefix your emails go out from, or leave it empty to use `mail`. The hint under the field spells out the resulting host: *Emails will be sent from mail.yourapp.com*.
+4. Click **Add domain**. Adapty Mail validates the input, registers the domain, and adds a card for it with every DNS record the domain needs.
 
-   <ZoomImage id="mail-email-domains.webp" width="500px" />
+   <ZoomImage id="mail-email-domains.webp" width="500px" alt="Add domain form with Domain and Sending subdomain fields" />
 
-2. **Confirm subdomains.** Adapty Mail generates two sending subdomains with fixed prefixes — `mail.yourapp.com` and `email.yourapp.com` — each with its own SES identity. It also creates a Mail-From subdomain under each (`hello.mail.yourapp.com` and `hello.email.yourapp.com`). Review them and click **Confirm**.
+5. Add every record on the card to your DNS at your registrar, exactly as shown. The card groups them by what they authenticate — [Which records you add](#which-records-you-add) covers each group and which ones are required. To take the whole set at once, click **Export** and pick **CSV**, **GoDaddy zone file**, or **Cloudflare zone file**.
+6. Click **Check** to verify right away, or leave the card — Adapty Mail polls DNS on its own.
 
-   <ZoomImage id="confirm-subdomains.webp" width="500px" />
+   <ZoomImage id="email-domains.webp" width="700px" alt="Expanded domain card showing DNS record groups and verification progress" />
 
-3. **Add DNS records.** The final screen lists every record to add — 10 total, 5 per sending subdomain, plus one optional DMARC record on the root. Use **Download CSV** to export the full list, or copy the records one by one into your registrar. Click **Done** when records are in place.
+:::warning
+**On Cloudflare, every CNAME must be DNS only.** Cloudflare proxies new records by default, so a CNAME you add by hand ends up **Proxied** (the orange cloud) and resolves to Cloudflare's own address instead of the target Adapty Mail issued — it never verifies. Click the cloud to switch each CNAME to **DNS only**. The **Cloudflare zone file** export sets DNS only for you, so imported records need no change.
+:::
 
-   <ZoomImage id="email-domains.webp" width="500px" />
+The counter and ring in the card header track how many required records have verified, so they fill only once every one of them resolves.
+
+### Choosing the sending subdomain
+
+The prefix becomes part of the From address every recipient sees, so Adapty Mail validates the label before it registers the domain:
+
+- Use lowercase letters, digits, and hyphens, with no leading or trailing hyphen, up to 63 characters.
+- `www`, `smtp`, `admin`, `api`, `mx`, and `dkim` are reserved.
+- Offensive labels and labels that impersonate a well-known brand — `paypal`, for example — are rejected. Ordinary marketing words such as `news`, `offers`, or `hello` pass.
+- The prefix is fixed once the domain is registered. To send from a different host, delete the domain and add it again, or add a second domain.
+
+## Which records you add
+
+The card lists the records in three groups, plus one optional record on your root domain. Names in this section assume the domain `yourapp.com` and the default `mail` prefix.
+
+| Group | Records | What it does |
+| --- | --- | --- |
+| **Sending infrastructure** on `mail.yourapp.com` | 3 DKIM CNAMEs, plus an MX and an SPF TXT on `hello.mail.yourapp.com` | Signs your campaigns and routes bounces back to Adapty Mail |
+| **Warmup mailbox** on `mail.yourapp.com` | DKIM CNAMEs, an MX, a domain-verification TXT, an SPF TXT, and a DMARC TXT on `_dmarc.mail.yourapp.com` | Runs the mailbox that builds your sender reputation during [warm-up](#domain-warm-up) |
+| **Media & redirects** on `go.yourapp.com` | A CNAME for the host, a `_cf-custom-hostname.go.yourapp.com` ownership TXT, and an `_acme-challenge.go.yourapp.com` CNAME | Serves the images and tracked links in your emails from your own domain |
+| **DMARC policy** on `yourapp.com` (optional) | One TXT record on `_dmarc.yourapp.com` | Tells receiving providers how to treat mail that fails authentication |
+
+Every record in the first three groups is required, including the ones on `go.yourapp.com` — setup stays incomplete while that host is unverified. The DMARC record on your root domain is a suggestion and isn't counted in the card's progress.
+
+All authentication records sit under the sending subdomain, so the SPF and DMARC records your root domain already carries for your regular business mail stay untouched.
 
 <Details>
 <summary>DNS record reference</summary>
-
-For each sending subdomain (`mail.yourapp.com` and `email.yourapp.com`), add:
 
 **DKIM — 3 CNAME records.** Cryptographic signatures that prove the email wasn't altered in transit.
 
 | Field | Format                              |
 | ----- | ----------------------------------- |
 | Type  | CNAME                               |
-| Name  | `{token}._domainkey.{subdomain}`    |
+| Name  | `{token}._domainkey.mail.yourapp.com` |
 | Value | `{token}.dkim.amazonses.com`        |
 
-**Mail-From — 1 MX record.** Handles bounces.
+**MAIL FROM — 1 MX record.** Handles bounces.
 
 | Field    | Format                                                   |
 | -------- | -------------------------------------------------------- |
 | Type     | MX                                                       |
-| Name     | `hello.{subdomain}` (for example, `hello.mail.yourapp.com`) |
+| Name     | `hello.mail.yourapp.com`                                 |
 | Priority | `10`                                                     |
 | Value    | `feedback-smtp.{region}.amazonses.com`                   |
 
-**SPF — 1 TXT record.** Authorizes Adapty to send on your behalf.
+**MAIL FROM — 1 TXT record.** Authorizes Adapty to send on your behalf.
 
 | Field | Format                                 |
 | ----- | -------------------------------------- |
 | Type  | TXT                                    |
-| Name  | `hello.{subdomain}`                    |
+| Name  | `hello.mail.yourapp.com`               |
 | Value | `"v=spf1 include:amazonses.com ~all"`  |
 
-On your root domain, add the optional DMARC record:
+**DMARC — 1 TXT record on your root domain.** Optional, and recommended.
 
 | Field | Format                |
 | ----- | --------------------- |
 | Type  | TXT                   |
-| Name  | `_dmarc.{domain}`     |
+| Name  | `_dmarc.yourapp.com`  |
 | Value | `v=DMARC1; p=reject`  |
 
-Tokens, region, and any other values come from AWS SES at setup time. Always copy them from the DNS records screen in Adapty Mail, not from this reference.
+The warm-up mailbox and `go.yourapp.com` records follow the same shapes, with names and values issued by the mail and hosting providers Adapty Mail uses. Tokens, regions, hostnames, and ownership values are all generated at setup time — copy them from the domain card or an export, never from this reference.
 
 </Details>
 
 ## How verification works
 
-Once DNS records are in place, Adapty Mail polls DNS automatically, and you can also trigger checks manually.
+Once the records are in place, Adapty Mail polls DNS automatically, and you can also trigger checks yourself.
 
-- **Automatic polling**: Polling starts 1 minute after you submit, then doubles each round — 2, 4, 8, 16 min — before capping at 32 min. It continues until records are found or the 7-day window closes.
-- **Manual check**: Click **Check Verification** to force an immediate check. There's a 10-second cooldown between manual checks — triggering too fast returns *"Verification check is on cooldown."*
-- **Status states**: Each subdomain's DKIM and Mail-From are tracked independently as **Pending**, **Success**, or **Failed**. A domain is considered fully verified only when all four statuses read **Success**.
-- **7-day deadline**: If verification doesn't complete in 7 days, the identity is marked **Failed**. Your DNS records stay in your registrar — re-enter the domain in **Settings → DNS** to start a new window.
-- **After verification**: If you remove or change DNS records later, AWS SES eventually downgrades the identity. Keep the records in place for as long as you plan to send.
+- **Automatic polling**: The first check runs 1 minute after you add the domain, then the interval doubles — 2, 4, 8 minutes and up — until it settles at once per hour. Polling continues until the records resolve or the 7-day window closes.
+- **Manual check**: Click **Check** to run a check immediately. There's a 10-second cooldown between manual checks; too soon and the dashboard answers *"Please wait before checking again"*.
+- **Per-record results**: Each record is resolved against live DNS and marked verified only when the answer matches what Adapty Mail issued. A record that exists with a different value stays unverified, same as a missing one.
+- **7-day deadline**: If verification doesn't finish within 7 days, the domain is marked failed. Your DNS records stay in your registrar — add the domain again in **Settings → DNS** to start a new window.
+- **After verification**: If you remove or change the records later, the mail provider eventually downgrades the domain. Keep them in place for as long as you plan to send.
 - **DNS propagation**: Usually takes minutes; can take up to 48 hours in rare cases.
+
+## Set the sender name
+
+Once a domain is verified, its card gains an **Email sender name** field. Adapty Mail fills it with your project name and sends from `hello@` on your sending subdomain, so the field's hint shows the whole From line — *Your Company &lt;hello@mail.yourapp.com&gt;*. The name is per domain: a project sending from two domains has two to set.
 
 ## Domain warm-up
 
-New domains have no reputation with email providers like Gmail or Yahoo, so high-volume sends from a fresh domain risk landing in spam. Adapty Mail handles warm-up automatically by ramping your daily send limit across 14 tiers. No configuration needed.
+New domains have no reputation with email providers like Gmail or Yahoo, so high-volume sends from a fresh domain risk landing in spam. Adapty Mail warms every domain up on its own, in two ways that run at the same time. Neither needs configuration.
+
+**A warm-up mailbox.** As soon as DNS verifies, Adapty Mail creates a mailbox on your sending subdomain and hands it to a warm-up service, which exchanges ordinary conversational mail from it. The domain card shows which phase the mailbox is in. Warm-up traffic needs the warm-up group's MX, DKIM, and SPF records: while any of them is unverified, the card reads *Awaiting DNS record verification* and no warm-up happens.
+
+**A daily send limit that climbs.** Your campaigns are metered separately from the warm-up mailbox, across 20 tiers.
 
 ### How tiers work
 
-Your domain starts at **Tier 1** (200 sends/day) and moves up one tier at a time, automatically. A domain advances once it has used up its current tier's daily allowance — both sends and throttled attempts count toward it — and the higher limit takes effect the following day. Advancement is driven by volume alone, and tiers only move upward: there is no automatic step back down to a lower tier.
+Your domain starts at **Tier 1** (100 sends/day) and moves up one tier at a time, automatically. A domain advances once it has used up its current tier's daily allowance — both sends and throttled attempts count toward it — and the higher limit takes effect the following day. On a tier's first day the allowance is released gradually through the day rather than all at once. Advancement is driven by volume alone, and tiers only move upward: there is no automatic step back down. Past the last tier the domain sends without a daily limit.
 
 | Tier | Daily limit |
 | ---- | ----------- |
-| 1    | 200         |
-| 2    | 400         |
-| 3    | 800         |
-| 4    | 1,500       |
-| 5    | 2,500       |
-| 6    | 4,000       |
-| 7    | 6,000       |
-| 8    | 8,000       |
-| 9    | 10,000      |
-| 10   | 13,000      |
-| 11   | 16,000      |
-| 12   | 20,000      |
-| 13   | 25,000      |
-| 14   | 30,000      |
-
-Your current tier and daily limit are shown in **Settings → DNS**.
+| 1    | 100         |
+| 2    | 200         |
+| 3    | 300         |
+| 4    | 500         |
+| 5    | 750         |
+| 6    | 1,000       |
+| 7    | 1,500       |
+| 8    | 2,500       |
+| 9    | 3,500       |
+| 10   | 5,000       |
+| 11   | 7,000       |
+| 12   | 9,000       |
+| 13   | 12,000      |
+| 14   | 15,000      |
+| 15   | 19,000      |
+| 16   | 24,000      |
+| 17   | 30,000      |
+| 18   | 37,000      |
+| 19   | 46,000      |
+| 20   | 57,000      |
 
 ### Impact on launch by audience size
 
 | Audience size    | Effect at launch                    |
 | ---------------- | ----------------------------------- |
-| Under 200 users  | Full audience reached on day one    |
-| 200–2,000 users  | Delivery spreads over several days  |
+| Under 100 users  | Full audience reached on day one    |
+| 100–2,000 users  | Delivery spreads over several days  |
 | 2,000+ users     | Delivery spreads over 1–2 weeks     |
 
 :::tip
 Launch your first campaign as soon as DNS verification completes. The sooner you start sending, the sooner your domain advances through tiers and reaches full daily capacity.
 :::
 
+## Send from more than one domain
+
+Every domain keeps its own tier, allowance, and reputation, so a second domain raises the ceiling on what the project can send in a day.
+
+To add one, go to **Settings → DNS** and, at the end of the **Email domains** list — below the last domain's records — click **Add domain**. From there it's the same form and the same steps as [your first domain](#add-a-sending-domain): pick the domain and its sending subdomain, add the records it lists, and verify them. The new domain enters at Tier 1 and climbs its own ladder from there, while the domain you already verified keeps sending at its current limit.
+
+When an email is due, Adapty Mail tries the project's domains in order and sends from the first one with room left:
+
+- **Newest first.** A domain added later is preferred over an older one.
+- **One domain per recipient per campaign.** The first domain that emails a recipient in a campaign keeps carrying that campaign's emails to them, so the From address stays the same mid-sequence. That pairing outranks the order above: the email goes out on the remembered domain or not at all, so if that domain is over quota, it's dropped even when another domain has room.
+- **Profiles from before 23 July 2026 stay on your oldest domain** — the From address they have already seen.
+- **A dropped email is a suppression, not a retry.** Only when every candidate domain is over its daily limit is the email dropped, which cancels that recipient's sequence and suppresses the profile with the throttle reason. See [Suppression and unsubscribes](mail-suppression).
+
 ## Limitations
 
-- **One domain per project**: You can only have one sending domain per Adapty project. To switch to a different domain, contact support — the dashboard has no "change domain" action.
-- **Cross-project uniqueness**: A domain already registered to another project can't be reused. If you see *"Domain is already registered to another project"*, pick a different domain or reach out to support.
-- **Verified domains can't be deleted**: Once any subdomain reaches **Success**, the dashboard blocks deletion. Pending domains can be deleted, but you still need to remove the DNS records manually from your registrar.
-- **Fixed subdomain prefixes**: `mail.`, `email.`, and the `hello.` Mail-From prefix are hardcoded — they can't be customized. If those subdomains are already in use in your DNS, setup will conflict.
+- **One sending prefix per domain**: Choose it when you register the domain; it can't be changed afterward.
 - **Apex domains only**: Subdomain inputs, trailing dots, and single-label hostnames are rejected.
 - **No internationalized domains**: Punycode and IDN aren't supported. The domain must be ASCII-only.
+- **Deleting is permanent**: Sending from the domain stops immediately, its verification progress is deleted, and the warm-up mailbox and the reputation it accumulated are gone. Your DNS records stay in your registrar — remove them yourself.
+- **Cross-project uniqueness**: A domain registered to another project can't be reused. If you see *"Domain is already registered to another project"*, pick a different domain or reach out to support.
 
 ## Troubleshooting
 
 | Issue                                                                          | Solution                                                                                                                  |
 | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
-| "Enter a valid domain (e.g. example.com)"                                      | Check the input: apex only, ASCII only, TLD of 2+ characters, no leading or trailing hyphens.                             |
-| "Domain does not have valid DNS records"                                       | The apex domain itself must resolve. Confirm your NS records are active before retrying.                                  |
-| "Domain is already registered to another project"                              | Pick a different domain, or contact support if you believe the registration is a mistake.                                 |
-| "Verification check is on cooldown"                                            | Wait 10 seconds between manual checks. Automatic polling continues in the background.                                     |
-| Verification stuck on Pending                                                  | Check that DNS records match exactly — no trailing dots, correct CNAME targets. DNS can take up to 48 hours to propagate. |
-| "Cannot delete domain: one or more identities have been successfully verified" | A verified domain can't be removed from the dashboard. Contact support for assistance.                                    |
-| Emails going to spam                                                           | Confirm your DMARC record is published. New domains need warm-up time — review [Domain warm-up](#domain-warm-up).         |
+| "Enter a valid domain (e.g. example.com)"                                      | Check the input: apex only, ASCII only, TLD of 2+ characters, no leading or trailing hyphens.                              |
+| "Domain does not have valid DNS records"                                       | The apex domain itself must resolve. Confirm your NS records are active before retrying.                                   |
+| "Domain is already registered to another project"                              | Pick a different domain, or contact support if you believe the registration is a mistake.                                  |
+| "This subdomain cannot be used"                                                | The label is reserved or was rejected by screening. Pick another one — see [Choosing the sending subdomain](#choosing-the-sending-subdomain). |
+| "Please wait before checking again"                                            | Wait 10 seconds between manual checks. Automatic polling continues in the background.                                      |
+| Records stay unverified                                                        | Check that they match exactly — no trailing dots, correct CNAME targets, one value per record. DNS can take up to 48 hours to propagate. |
+| CNAMEs stay unverified on Cloudflare                                           | The records are **Proxied**. Switch each one to **DNS only**, then click **Check**.                                        |
+| Warm-up reads "Awaiting DNS record verification"                               | The warm-up mailbox's MX, DKIM, and SPF records aren't verified yet. Add or correct them, then click **Check**.             |
+| The `go.` group won't turn green                                               | The card shows the reason under the host. Confirm its CNAME and TXT records, then click **Check** — the domain isn't fully set up until this host is active. |
+| "Cannot delete: some identities are verified"                                  | The domain was set up before automatic warm-up and can't be removed from the dashboard. Contact support.                    |
+| Emails going to spam                                                           | Confirm your DMARC record is published. New domains need warm-up time — review [Domain warm-up](#domain-warm-up).           |
 | High bounce rate                                                               | Verify your audience list contains valid, opted-in addresses. See [Suppression](mail-suppression) for what happens to an address that bounces. |

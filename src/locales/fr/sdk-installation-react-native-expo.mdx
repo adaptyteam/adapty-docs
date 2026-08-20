@@ -60,7 +60,7 @@ La compilation pour iOS nécessite **Swift 6.0** ou une version ultérieure. Le 
 Expo Go ne prend pas en charge les modules natifs personnalisés, vous pouvez donc l'utiliser uniquement avec le [**mode mock**](#set-up-mock-mode-for-expo-go--expo-web) pour le développement UI/logique (pas d'achats réels ni de rendu AdaptyUI/Paywall Builder).
 :::
 
-1. Installez le SDK Adapty (cela installe également `@adapty/core` automatiquement) :
+1. Installez le SDK Adapty :
    ```sh
    npx expo install react-native-adapty
    npx expo prebuild
@@ -111,8 +111,7 @@ v4 récupère les SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) via Swif
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic",
-            "buildReactNativeFromSource": true
+            "useFrameworks": "dynamic"
           }
         }
       ]
@@ -121,14 +120,14 @@ v4 récupère les SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) via Swif
 }
 ```
 
-`buildReactNativeFromSource` est requis à partir d'**Expo SDK 57 et versions ultérieures**. Expo SDK 57 embarque un framework React Native prébuild dont les headers ne sont pas accessibles aux autres packages lorsque les frameworks sont dynamiques, ce qui entraîne des erreurs de build iOS du type `'React/RCTBridge.h' file not found` dans `expo-updates` ou `@expo/ui`. Compiler React Native depuis les sources permet d'éviter ce conflit, au prix de builds iOS plus longs. Avec Expo SDK 56 ou antérieur, cette option peut être omise.
-
-Installez ensuite le plugin et regénérez le projet natif :
+Installez ensuite le plugin et régénérez le projet natif :
 
 ```sh
 npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
+
+Si le build iOS échoue avec `'React/RCTBridge.h' file not found`, consultez [l'entrée de dépannage correspondante](#react-header-not-found).
 
 Consultez [Migrer le SDK Adapty React Native vers la v4](migration-to-react-native-sdk-v4) pour la migration complète.
 
@@ -426,6 +425,43 @@ L'option `replaceAndroidBackupConfig` est `false` par défaut. Lorsqu'elle est a
 Ajoutez `"configureAndroidBackup": false` si vous utilisez `expo-secure-store` pour éviter les avertissements, car la configuration de sauvegarde de SecureStore sera désormais gérée par Adapty.
 
 :::important
-Cette configuration respecte uniquement les exigences de sauvegarde pour Adapty, AppsFlyer et expo-secure-store.
+Cette configuration ne respecte les exigences de sauvegarde que pour Adapty, AppsFlyer et expo-secure-store.
 Si d'autres bibliothèques de votre projet définissent des règles de sauvegarde personnalisées, vous devrez les configurer manuellement.
 :::
+
+#### La compilation iOS échoue avec `'React/RCTBridge.h' file not found` \{#react-header-not-found\}
+
+Avec les [frameworks dynamiques activés pour Adapty SDK 4.0](#adapty-sdk-40-enable-swift-package-manager), la compilation iOS peut échouer dans `expo-updates`, `@expo/ui` ou un autre package contenant des sources Objective-C :
+
+```
+error: 'React/RCTBridge.h' file not found
+```
+
+Le problème est causé par un bug dans le paquet `expo-modules-autolinking` (une dépendance d'`expo`). Les versions concernées sont 57.0.5–57.0.9 (Expo SDK 57) et 56.0.19–56.0.21 (Expo SDK 56) ; le bug est corrigé dans les versions 57.0.10 et 56.0.22.
+
+Pour corriger le build, mettez à jour `expo-modules-autolinking` vers la version corrigée et régénérez le projet natif :
+
+```sh
+npm update expo-modules-autolinking
+npx expo prebuild
+```
+
+Si la version corrigée n'est pas encore disponible pour votre version d'Expo SDK, compilez React Native depuis les sources à la place. Cela contourne le bug au prix de builds iOS plus longs :
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ]
+  }
+}
+```

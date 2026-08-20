@@ -64,6 +64,21 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   `src/app/export_context/infrastructure/ports/tasks/daily_export.py`: three runs a day, each
   idempotently creating or retrying *yesterday's* job, and skipped outright for companies that are
   neither paid nor in trial. "Every 24h at 4:00 UTC" is the articles' phrasing, not the code's.
+- **Web-payment attribution (Stripe, Paddle, the web pixel) lives in this zone and this service** — added
+  2026-08-17 while writing `ua-stripe`/`ua-paddle`/`ua-web-pixel`. The UA service carries `stripe_context`
+  and `paddle_context` (merchant API keys, auto-provisioned webhooks, 2-hourly polling sync at
+  `@cron('0 */2 * * *')`), and a single web-transactions assembly
+  (`analytics_context/.../web_assembly_service.py`, `@cron('*/30 * * * *')`) that unions Stripe ∪ Paddle ∪
+  FunnelFox by invoice into `events_transaction`. The checkout-side contract is one metadata key,
+  `adpt_click_id`, defined in `src/app/shared/utils/web_click_metadata.py` and read from Stripe `metadata`
+  and Paddle `custom_data`; the repo's own client-facing guide is `docs/web-attribution-pixel-integration.md`.
+  The pixel snippet is per campaign configuration (`build_web_snippet` in
+  `campaign_context/.../campaign_service.py` returns `None` for partners other than Meta/TikTok). Channel
+  for these transactions comes from `channel_of` in `src/app/shared/utils/channel_sources.py`:
+  fbclid → facebook, ttclid → tiktok, `utm_source`+`utm_medium=paid` fallback, else organic — no google on
+  this path. Stripe/Paddle cohort = the subscription's first charge date
+  (`clickhouse_web_assembly_repository.py`), matching FunnelFox's first-paid-date rule. Test-mode/sandbox
+  events are dropped on arrival on every path, so a test key connects, shows Valid, and yields nothing.
 - **Some claims are the ad network's and cannot be verified here.** Meta token expiration and the
   `ads_read` permission, system-user token generation, whether Meta approves an ad URL, TikTok's
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
@@ -118,9 +133,12 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 2 | tutorial |
+| ua-paddle | — | marketer, analyst | 6 | tutorial |
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
+| ua-stripe | — | marketer, analyst | 6 | tutorial |
 | ua-tiktok | — | marketer, analyst | 9 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 1 | tutorial |
+| ua-web-pixel | — | marketer, analyst | 6 | tutorial |
 | user-acquisition | — | marketer, analyst | 7 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

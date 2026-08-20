@@ -50,17 +50,18 @@ v4 以降、Adapty React Native SDK はネイティブ依存関係の CocoaPods 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
 
 :::important
-[Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/)（カスタム開発ビルド）は、ExpoプロジェクトでAdaptyを使用するために必要です。
+[Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/)（カスタム開発ビルド）は、Expo プロジェクトで Adapty を使用するために必要です。
 
-Expo Goはカスタムネイティブモジュールをサポートしていないため、UI/ロジック開発用の[**モックモード**](#set-up-mock-mode-for-expo-go--expo-web)でのみ使用できます（実際の購入やAdaptyUI/ペイウォールビルダーのレンダリングはありません）。
+Expo Go はカスタムネイティブモジュールをサポートしていないため、UI/ロジック開発用の[**モックモード**](#set-up-mock-mode-for-expo-go--expo-web)でのみ使用できます（実際の購入および AdaptyUI/ペイウォールビルダーのレンダリングは利用不可）。
 :::
 
-1. Adapty SDKをインストールします（`@adapty/core`も自動的にインストールされます）：
+1. Adapty SDK をインストールします:
    ```sh
    npx expo install react-native-adapty
    npx expo prebuild
    ```
-2. EASまたはローカルビルドを使用して、開発用アプリをビルドします：
+2. EAS またはローカルビルドを使用して、開発用アプリをビルドします:
+
 <Tabs>
    <TabItem value="eas" label="EAS build" default>
       ```sh
@@ -104,8 +105,7 @@ v4はCocoaPodsのサブ依存関係の代わりに、Swift Package Manager経由
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic",
-            "buildReactNativeFromSource": true
+            "useFrameworks": "dynamic"
           }
         }
       ]
@@ -114,16 +114,16 @@ v4はCocoaPodsのサブ依存関係の代わりに、Swift Package Manager経由
 }
 ```
 
-`buildReactNativeFromSource` は **Expo SDK 57 以降で必要**です。Expo SDK 57 はプリビルド済みの React Native フレームワークを同梱していますが、フレームワークがダイナミックになると他のパッケージがそのヘッダーにアクセスできなくなるため、`expo-updates` や `@expo/ui` で `'React/RCTBridge.h' file not found` のようなエラーが発生して iOS ビルドが失敗します。React Native をソースからビルドすることでこの競合を回避できますが、iOS ビルドの時間は長くなります。Expo SDK 56 以前はこのオプションを省略できます。
-
-次に、プラグインをインストールしてネイティブプロジェクトを再生成します：
+次に、プラグインをインストールしてネイティブプロジェクトを再生成します:
 
 ```sh
 npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
 
-完全な移行手順については、[Adapty React Native SDK を v4 へ移行する](migration-to-react-native-sdk-v4)を参照してください。
+iOS ビルドで `'React/RCTBridge.h' file not found` が発生した場合は、[トラブルシューティング項目](#react-header-not-found)を参照してください。
+
+完全な移行手順については、[Adapty React Native SDK を v4 に移行する](migration-to-react-native-sdk-v4)を参照してください。
 
 ## Adapty SDK の Adapty モジュールを有効化する \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -394,3 +394,40 @@ is also present at [io.adapty:android-sdk:3.12.0] AndroidManifest.xml:9:18-70 va
 このセットアップは、Adapty、AppsFlyer、および expo-secure-store のバックアップ要件にのみ対応しています。
 プロジェクト内の他のライブラリがカスタムバックアップルールを定義している場合は、手動で設定する必要があります。
 :::
+
+#### `'React/RCTBridge.h' file not found` で iOS ビルドが失敗する \{#react-header-not-found\}
+
+[Adapty SDK 4.0 で動的フレームワークを有効化](#adapty-sdk-40-enable-swift-package-manager)すると、`expo-updates`、`@expo/ui`、または Objective-C ソースを含む他のパッケージで iOS ビルドが失敗する場合があります:
+
+```
+error: 'React/RCTBridge.h' file not found
+```
+
+この問題は `expo-modules-autolinking` パッケージ（`expo` の依存パッケージ）のバグが原因です。影響を受けるバージョンは 57.0.5〜57.0.9（Expo SDK 57）および 56.0.19〜56.0.21（Expo SDK 56）で、57.0.10 および 56.0.22 でバグが修正されています。
+
+ビルドを修正するには、`expo-modules-autolinking` を修正済みバージョンに更新し、ネイティブプロジェクトを再生成してください：
+
+```sh
+npm update expo-modules-autolinking
+npx expo prebuild
+```
+
+お使いの Expo SDK 向けの修正済みバージョンがまだ利用できない場合は、代わりに React Native をソースからビルドしてください。iOS のビルド時間は長くなりますが、バグを回避できます：
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ]
+  }
+}
+```

@@ -1,0 +1,90 @@
+---
+title: "Stripe'ı Adapty Attribution ile Entegre Edin"
+description: "Stripe hesabınızı Adapty Attribution'a bağlayarak web hunisi satın alımlarını, yenilemeleri, iadeleri ve geri ödemeleri bunları yönlendiren reklamlara atfedebilirsiniz."
+metadataTitle: "Stripe entegrasyonu | Adapty Attribution | Adapty Dokümanları"
+---
+
+Web satış huninizdeki satın almaları, onları yönlendiren reklamlara bağlamak için Stripe hesabınızı Adapty Attribution'a bağlayın. Bağlandıktan sonra Stripe'tan gelen satın almalar, yenilemeler, iadeler ve geri ödeme talepleri Adapty Attribution analizlerinde görünür; dönüşüm etkinlikleri ise kampanya optimizasyonu için reklam ağlarına gönderilebilir.
+
+## Nasıl Çalışır \{#how-it-works\}
+
+1. [Adapty web pixel](ua-web-pixel), her funnel ziyaretçisine bir tıklama kimliği atar ve açılış URL'sindeki reklam verilerini yakalar.
+2. Ödeme sırasında, funnel'ınız tıklama kimliğini Stripe işlemine ekler.
+3. Adapty, Stripe hesabınızda oluşturduğu bir webhook aracılığıyla işlemi alır ve bunu reklam tıklamasıyla eşleştirir.
+
+:::note
+Web satın alımlarında uygulama kurulum olayı bulunmadığından Adapty, kohort tarihi olarak aboneliğin ilk ücretlendirme tarihini kullanır.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+Funnel'ınızda [Adapty web pixel'ini kurun](ua-web-pixel). Pixel olmadan eklenecek tıklama kimliği bulunmaz ve işlemler reklamlara atanamaz.
+
+## Adım 1. Ödeme sırasında click ID'yi ekleyin \{#step-1-attach-the-click-id-at-checkout\}
+
+İşlemi oluştururken click ID'yi okuyun ve `adpt_click_id` anahtarı altında Stripe `metadata`'sına ekleyin:
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+```
+
+Değer, tek seferlik ödemeler için **PaymentIntent** üzerinde ya da tekrarlayan ödemeler için **Subscription** üzerinde yer almalıdır; çünkü Adapty bu nesneleri okur. Bunları doğrudan oluşturuyorsanız:
+
+```js
+metadata: { adpt_click_id: adptClickId }
+```
+
+Stripe Checkout kullanıyorsanız, metadata'yı iç içe geçmiş nesnelere ekleyin. Checkout Session'ın kendisindeki metadata, PaymentIntent veya Subscription'a kopyalanmaz; dolayısıyla oraya bırakılan bir click ID Adapty'ye hiç ulaşmaz:
+
+```js
+stripe.checkout.sessions.create({
+  // ...
+  payment_intent_data: { metadata: { adpt_click_id: adptClickId } }, // one-off payments
+  subscription_data:   { metadata: { adpt_click_id: adptClickId } }, // subscriptions
+})
+```
+
+:::warning
+PaymentIntent'i oluştururken metadata'yı ayarlayın, sonradan güncelleyerek değil. Stripe, ödeme oluşturulduğu anda metadata'yı charge üzerine kopyalar; bu nedenle sonradan eklenen bir click ID asla Adapty'ye ulaşmaz.
+:::
+
+`click_id`, kısa ve rastgele bir tanımlayıcıdır; gizli bir bilgi ya da kişisel veri değildir. Stripe kontrol panelinizde görünür olması beklenen bir durumdur.
+
+## Adım 2. Stripe hesabınızı bağlayın \{#step-2-connect-your-stripe-account\}
+
+Önce Stripe'ta anahtarı oluşturun. Stripe kontrol panelinizde **Developers → API keys** bölümüne gidin ve şu izinlerle kısıtlı bir anahtar oluşturun:
+
+| Kaynak | Erişim |
+|---|---|
+| Charges | Read |
+| Refunds | Read |
+| Invoices | Read |
+| Balance transactions | Read |
+| Disputes | Read |
+| Webhook endpoints | Write |
+
+Webhook endpoint'lerinde yazma erişimi, Adapty'nin ödemelerinizi ileten webhook'u oluşturmasına olanak tanır — Stripe'ta elle yapılandırılacak bir şey yoktur. Geri kalan her şey salt okunur kalır: Adapty, ödeme verilerinize hiçbir zaman yazmaz. Gerekli izne sahip olmayan bir anahtar, eksik izni belirten bir hatayla bağlantı sırasında reddedilir.
+
+:::warning
+Canlı anahtar kullanın. Adapty test modundaki ödemeleri geldiği anda iptal ettiğinden, test anahtarı (`rk_test_...`) başarıyla bağlanır ve **Valid** olarak görünür, ancak hiçbir veri görünmez. Entegrasyonu doğrulamak için canlı anahtarı bağlayın ve gerçek bir satın alma işlemi gerçekleştirin.
+:::
+
+Ardından, anahtarı Adapty'e ekleyin:
+
+1. Adapty Attribution'da [**Integrations > Stripe**](https://app.adapty.io/ua/integrations/stripe) sayfasına gidin.
+2. Anahtarı **API key** alanına yapıştırın. İsteğe bağlı olarak, hesapları birbirinden ayırt etmek için bir **Name** girin — varsayılan olarak Adapty, anahtarın son 4 karakterini kullanır.
+3. **Connect** düğmesine tıklayın.
+
+<ZoomImage id="ua-stripe-connect.webp" width="500px" alt="Adapty Attribution'daki Stripe entegrasyon sayfasında API anahtarı ve Ad alanlarını içeren Stripe hesabı bağlama formu" />
+
+Bağlanan hesap, ortamı, anahtar durumu ve webhook durumuyla birlikte tabloda görünür. Bağlantı, yapılandırdığınız uygulamaya uygulanır. Aynı Stripe hesabının ödemelerini başka bir uygulamada da almak için aynı anahtarı oraya da ekleyin.
+
+Adapty, hesabı bağladığınız andan itibaren işlemleri içe aktarır. Daha önceki işlemleri de dahil etmek için [support@adapty.io](mailto:support@adapty.io) adresinden bizimle iletişime geçin.
+
+## Entegrasyonu doğrulayın \{#verify-the-integration\}
+
+Funnelınız üzerinden gerçek bir satın alma yapın — Adapty test modundaki satın almaları dikkate almaz. Satın alma, birkaç saat içinde [Adapty Attribution analitiğinde](ua-analytics) görünmelidir. Ziyaretiniz [etiketli URL'ler](ua-web-pixel) içeren bir reklamdan geldiyse, satın alma ilgili kampanyaya, reklam setine ve reklama atfedilir; aksi hâlde organik olarak sayılır.
+
+## Dönüşüm etkinliklerini reklam ağına gönderme \{#send-conversion-events-to-the-ad-network\}
+
+İlişkilendirilmiş web satın alımları, kampanyanın geri kalanıyla aynı etkinlik eşlemesini takip eder: kampanya yapılandırmasının **Events names** bölümünde etkinleştirdiğiniz etkinlikler, kampanyayla ilişkilendirdiğiniz piksele geri gönderilir. Eşleme kurulumu için [Meta Ads](ua-facebook) ve [TikTok for Business](ua-tiktok) sayfalarına bakın.
