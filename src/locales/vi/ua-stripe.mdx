@@ -1,0 +1,90 @@
+---
+title: "Tích hợp Stripe với Adapty Attribution"
+description: "Kết nối tài khoản Stripe của bạn với Adapty Attribution để gán attribution cho các giao dịch mua hàng qua web-funnel, gia hạn, hoàn tiền và chargeback với quảng cáo đã tạo ra chúng."
+metadataTitle: "Tích hợp Stripe | Adapty Attribution | Tài liệu Adapty"
+---
+
+Kết nối tài khoản Stripe của bạn với Adapty Attribution để attribution các lượt mua trong web funnel với các quảng cáo đã dẫn dắt chúng. Sau khi kết nối, các giao dịch mua, gia hạn, hoàn tiền và chargeback từ Stripe sẽ xuất hiện trong analytics của Adapty Attribution, và các sự kiện chuyển đổi có thể được gửi lại cho các mạng quảng cáo để tối ưu hóa chiến dịch.
+
+## Cách hoạt động \{#how-it-works\}
+
+1. [Adapty web pixel](ua-web-pixel) gán cho mỗi khách truy cập một click ID và ghi lại dữ liệu quảng cáo từ URL landing page.
+2. Khi thanh toán, funnel của bạn đính kèm click ID vào giao dịch Stripe.
+3. Adapty nhận giao dịch qua webhook mà nó tạo trong tài khoản Stripe của bạn và khớp với lần nhấp quảng cáo.
+
+:::note
+Giao dịch mua trên web không có sự kiện cài đặt ứng dụng, vì vậy Adapty sử dụng ngày tính phí đầu tiên của gói đăng ký làm ngày cohort.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+[Cài đặt Adapty web pixel](ua-web-pixel) trên funnel của bạn. Nếu không có pixel, sẽ không có click ID để đính kèm và các giao dịch sẽ không thể được attribution cho quảng cáo.
+
+## Bước 1. Gắn click ID vào checkout \{#step-1-attach-the-click-id-at-checkout\}
+
+Khi tạo giao dịch, hãy đọc click ID và thêm vào `metadata` của Stripe dưới key `adpt_click_id`:
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+```
+
+Giá trị này phải nằm trên **PaymentIntent** (với thanh toán một lần) hoặc trên **Subscription** (với thanh toán định kỳ), vì đó là những đối tượng mà Adapty đọc. Nếu bạn tạo chúng trực tiếp:
+
+```js
+metadata: { adpt_click_id: adptClickId }
+```
+
+Nếu bạn sử dụng Stripe Checkout, hãy đặt metadata trong các đối tượng lồng nhau. Metadata trên chính Checkout Session sẽ không được sao chép sang PaymentIntent hay Subscription, vì vậy click ID đặt ở đó sẽ không bao giờ đến được Adapty:
+
+```js
+stripe.checkout.sessions.create({
+  // ...
+  payment_intent_data: { metadata: { adpt_click_id: adptClickId } }, // one-off payments
+  subscription_data:   { metadata: { adpt_click_id: adptClickId } }, // subscriptions
+})
+```
+
+:::warning
+Hãy thiết lập metadata khi bạn tạo PaymentIntent, không phải bằng cách cập nhật sau đó. Stripe sao chép metadata vào charge tại thời điểm charge được tạo, vì vậy một click ID được thêm vào sau này sẽ không bao giờ đến được Adapty.
+:::
+
+`click_id` là một mã định danh ngẫu nhiên ngắn, không phải bí mật và không phải dữ liệu cá nhân. Nó hiển thị trên Stripe dashboard của bạn, điều này là bình thường.
+
+## Bước 2. Kết nối tài khoản Stripe của bạn \{#step-2-connect-your-stripe-account\}
+
+Đầu tiên, hãy tạo key trong Stripe. Trong Stripe dashboard của bạn, vào **Developers → API keys** và tạo một restricted key với các quyền sau:
+
+| Tài nguyên | Quyền truy cập |
+|---|---|
+| Charges | Read |
+| Refunds | Read |
+| Invoices | Read |
+| Balance transactions | Read |
+| Disputes | Read |
+| Webhook endpoints | Write |
+
+Quyền ghi trên các endpoint webhook cho phép Adapty tạo webhook để xử lý thanh toán của bạn — bạn không cần tự cấu hình thủ công trong Stripe. Mọi thứ khác vẫn ở chế độ chỉ đọc: Adapty không bao giờ ghi vào dữ liệu thanh toán của bạn. Một key thiếu quyền bắt buộc sẽ bị từ chối ngay khi kết nối và hiển thị lỗi nêu rõ quyền còn thiếu.
+
+:::warning
+Sử dụng live key. Adapty loại bỏ các giao dịch ở chế độ test ngay khi nhận được, do đó test key (`rk_test_...`) vẫn kết nối thành công và hiển thị là **Valid**, nhưng không có dữ liệu nào xuất hiện. Để xác minh tích hợp, hãy kết nối live key và thực hiện một giao dịch mua thực.
+:::
+
+Sau đó, thêm key vào Adapty:
+
+1. Trong Adapty Attribution, truy cập [**Integrations > Stripe**](https://app.adapty.io/ua/integrations/stripe).
+2. Dán key vào **API key**. Tùy chọn, nhập **Name** để phân biệt các tài khoản — mặc định, Adapty sử dụng 4 ký tự cuối của key.
+3. Nhấp **Connect**.
+
+<ZoomImage id="ua-stripe-connect.webp" width="500px" alt="Connect a Stripe account form with API key and Name fields on the Stripe integration page in Adapty Attribution" />
+
+Tài khoản đã kết nối sẽ xuất hiện trong bảng cùng với môi trường, trạng thái khóa và trạng thái webhook. Kết nối này áp dụng cho ứng dụng bạn đang cấu hình. Để nhận thanh toán từ cùng tài khoản Stripe đó trong một ứng dụng khác, hãy thêm khóa tương tự vào ứng dụng đó.
+
+Adapty nhập các giao dịch kể từ thời điểm bạn kết nối tài khoản. Để nhập các giao dịch trước đó, hãy liên hệ với chúng tôi tại [support@adapty.io](mailto:support@adapty.io).
+
+## Xác minh tích hợp \{#verify-the-integration\}
+
+Thực hiện một giao dịch mua thực sự qua phễu của bạn — Adapty loại bỏ các giao dịch ở chế độ thử nghiệm. Giao dịch mua sẽ xuất hiện trong [Adapty Attribution analytics](ua-analytics) sau vài giờ. Nếu lượt truy cập của bạn đến từ một quảng cáo có [URL được gắn thẻ](ua-web-pixel), giao dịch mua sẽ được attribution cho chiến dịch, nhóm quảng cáo và quảng cáo đó; nếu không, nó sẽ được tính là organic.
+
+## Gửi sự kiện chuyển đổi đến mạng quảng cáo \{#send-conversion-events-to-the-ad-network\}
+
+Các giao dịch mua hàng trên web được attributed sẽ tuân theo cùng một mapping sự kiện như phần còn lại của chiến dịch: các sự kiện bạn bật trong phần **Events names** của cấu hình chiến dịch sẽ được gửi lại đến pixel mà bạn đã liên kết với chiến dịch đó. Xem hướng dẫn thiết lập mapping cho [Meta Ads](ua-facebook) và [TikTok for Business](ua-tiktok).

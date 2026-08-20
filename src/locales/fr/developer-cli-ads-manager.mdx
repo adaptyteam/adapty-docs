@@ -1,0 +1,147 @@
+---
+title: "Gérer Ads Manager depuis la CLI"
+description: "Lancez des campagnes Apple Ads, des mots-clés et des règles d'automatisation depuis le terminal avec la CLI développeur d'Adapty."
+metadataTitle: "Ads Manager dans la CLI développeur | Documentation Adapty"
+---
+
+La CLI Adapty vous permet de gérer votre compte [Ads Manager](adapty-ads-manager) depuis le terminal, via la commande `adapty asa`. Elle couvre les campagnes, les groupes d'annonces, les mots-clés, les annonces, les pages produit, les règles d'automatisation, les métriques et la recherche concurrentielle.
+
+Utilisez-le pour les tâches que le navigateur ralentit : donner à un agent IA un accès en direct à vos performances publicitaires, ajouter plusieurs centaines de mots-clés depuis un fichier, ou appliquer la même configuration sur plusieurs campagnes. Pour tout le reste, le [tableau de bord](https://app.adapty.io) reste plus rapide.
+
+:::warning
+La CLI ne peut rien supprimer. Les campagnes, annonces et règles d'automatisation peuvent être créées, mises à jour et mises en pause depuis le terminal, mais leur suppression n'est possible que depuis le tableau de bord.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Les commandes d'Ads Manager utilisent la même installation et la même connexion que le reste de la CLI. Si vous ne l'avez pas encore configuré, suivez les étapes 1 et 2 du [guide de démarrage rapide](developer-cli-quickstart).
+
+### Prérequis \{#prerequisites\}
+
+Deux conditions supplémentaires s'appliquent à chaque commande `adapty asa` :
+
+- **Un compte Apple Ads connecté** : Connectez-le avec `adapty asa connect`, ou depuis le tableau de bord comme décrit dans [Premiers pas avec Adapty Ads Manager](adapty-ads-manager-get-started).
+- **Un abonnement Ads Manager actif** : Sans celui-ci, chaque commande échoue avec `402 ads_manager_subscription_required`.
+
+Une seule commande fournit les deux informations :
+
+```bash
+adapty asa whoami
+```
+
+### Différences avec le reste du CLI \{#differences-from-the-rest-of-the-cli\}
+
+- **Pas de flag `--app`** : Le périmètre correspond à la société associée à votre token. `--app` existe sur certaines commandes `list` uniquement comme filtre.
+- **Les écritures atteignent Apple directement** : Chaque commande qui modifie votre compte affiche le corps de la requête et demande une confirmation avant l'envoi. Il n'y a pas d'étape intermédiaire.
+- **Les lectures sont sans risque, pas les écritures** : Utilisez librement les commandes `list` et `--dry-run`. Considérez tout le reste comme irréversible.
+
+Pour ignorer l'invite de confirmation dans un script, passez `--yes`. Sous `--json` ou dans un pipe, une commande d'écriture refuse plutôt que d'attendre une réponse qui n'arrivera jamais, donc `--yes` est requis dans ce cas.
+
+## Trouver les identifiants dont vous avez besoin \{#find-the-ids-you-need\}
+
+Chaque commande utilise des UUID, et chaque UUID provient d'une commande `list`. Descendez dans la hiérarchie :
+
+```bash
+adapty asa orgs list
+adapty asa campaigns list --campaign-group <campaign-group-id>
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Affinez chaque lecture avec un filtre. Les filtres limitent la requête plutôt que la page affichée, donc une lecture filtrée est légère tandis qu'une lecture sans filtre parcourt l'intégralité du compte. `adapty asa keywords list` sans `--ad-group` est la lecture la plus large de cette rubrique.
+
+Ces listes ne renvoient que des métadonnées. Les chiffres de performance proviennent de [`asa metrics`](#query-metrics-from-agents-and-scripts).
+
+## Ajouter des mots-clés en lot \{#add-keywords-in-bulk\}
+
+Ajouter des mots-clés un par un est la principale raison de quitter le tableau de bord. Placez un mot-clé par ligne dans un fichier texte :
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 1.20 --match-type EXACT
+```
+
+Les mots-clés sont appliqués par lots de 100 au maximum par appel. Répartissez les listes plus longues sur plusieurs appels.
+
+Deux types d'échec sont possibles, et ils se comportent différemment. Un identifiant invalide fait échouer tout le lot avant qu'Apple soit appelé, donc rien n'est appliqué. Apple peut également rejeter des mots-clés individuels — les autres sont quand même ajoutés, et chaque rejet est signalé avec sa raison. Vérifiez la ligne de résumé plutôt que le seul code de sortie.
+
+Commencez par quelques mots-clés et vérifiez le résultat avant d'envoyer un fichier complet.
+
+## Interroger les métriques depuis des agents et des scripts \{#query-metrics-from-agents-and-scripts\}
+
+`asa metrics` génère des rapports à n'importe quel niveau du compte sur une plage de dates. Ajoutez `--json` pour qu'un agent IA ou un script puisse consommer le résultat directement :
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
+```
+
+`--metric` accepte les noms suivis par Ads Manager. Consultez [Métriques](adapty-ads-manager-metrics) pour la liste complète.
+
+Les métriques de cohorte fonctionnent différemment des autres. Il n'y a pas de métrique `ltv`, car la valeur à vie est lue à une fenêtre de renouvellement plutôt qu'à une date. Demandez la fenêtre à la place :
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90 --order-by-day 90
+```
+
+Cela retourne vos campagnes classées par ROAS à 90 jours. Jusqu'à 16 fenêtres peuvent tenir dans un seul appel.
+
+Chaque ligne correspond à une entité, déjà agrégée et triée côté serveur. Une question du type « top cinq campagnes par dépenses » est donc un seul appel, et non un parcours de toutes les pages :
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+Les métriques et la liste des termes de recherche partagent un même quota d'analyse par compte : 5 appels par minute, et au maximum 2 sur toute période de 10 secondes. Posez une question précise une seule fois plutôt que de faire du polling. La période de rapport est également limitée selon la granularité choisie — 90 jours par jour, 180 par semaine, 365 par mois — élargissez donc un rapport en assouplissant `--group-by`, plutôt qu'en le découpant en plusieurs appels.
+
+## Vérifier les mots-clés des concurrents \{#check-competitor-keywords\}
+
+Une seule commande renvoie les mots-clés sur lesquels les applications concurrentes enchérissent, pour jusqu'à cinq applications de l'App Store à la fois :
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027 --json
+```
+
+La période et les pays sont fixés côté serveur — le dernier mois complet, dans tous les pays — donc la commande n'a pas d'autres options que les identifiants d'application. Le premier appel pour un ensemble d'applications peut prendre plusieurs dizaines de secondes.
+
+Utilisez ceci pour extraire des données de mots-clés concurrents dans un rapport selon un planning. Pour filtrer les résultats, comparer des pays côte à côte, ou ajouter directement les mots-clés trouvés à une campagne, utilisez [Market Intelligence](ads-manager-market-intelligence) dans le tableau de bord.
+
+## Exécuter les règles d'automatisation \{#run-automation-rules\}
+
+Le CLI ne crée pas les [règles d'automatisation](ads-manager-automations) — il stocke le JSON que vous lui fournissez. La façon la plus rapide d'obtenir un fichier de règle valide est de créer une règle dans le tableau de bord, puis de la relire :
+
+```bash
+adapty asa automations get <automation-id> --json > rule.json
+```
+
+Modifiez ce fichier et utilisez-le comme modèle pour de nouvelles règles :
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+Lorsque vous passez un fichier à `automations update`, supprimez d'abord le champ `internal_id` — la mise à jour est rejetée s'il est présent.
+
+Testez une règle avant de la laisser modifier les enchères :
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+Un dry run évalue les conditions et consigne ce que la règle ferait sans toucher à Apple Ads. Les runs sont mis en file d'attente plutôt qu'exécutés immédiatement, donc la commande affiche un ID de run et le résultat apparaît dans `adapty asa automations runs`.
+
+## Ré-exécuter les scripts en toute sécurité \{#re-run-scripts-safely\}
+
+Chaque écriture envoie une clé d'idempotence. Le CLI en génère une par invocation et effectue une nouvelle tentative après une erreur réseau, ce qui garantit qu'une requête ayant échoué en transit n'est jamais appliquée deux fois.
+
+Dans un script, définissez vous-même la clé pour pouvoir relancer tout le pipeline :
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50 --idempotency-key winter-push-2026 --yes
+```
+
+Re-exécuter la même commande dans les 24 heures renvoie le résultat stocké et affiche `Already applied earlier` au lieu de créer une deuxième campagne. La même clé avec un corps différent échoue avec `422`, ce qui permet de détecter un script modifié qui réutilise une clé par erreur.
+
+## Et maintenant ? \{#whats-next\}
+
+- [Gérer Apple Ads avec un outil de code IA](developer-cli-ads-manager-skill) — installez le plugin Apple Ads pour que Claude Code, Copilot CLI, Codex ou Gemini CLI puissent exécuter ces commandes pour vous.
+- [Commandes Ads Manager](developer-cli-ads-manager-reference) — toutes les commandes avec leurs arguments, options et valeurs acceptées.
+- [Automatisations](ads-manager-automations) — ce que fait chaque type de règle et les actions qu'il peut déclencher.
+- [Métriques](adapty-ads-manager-metrics) — les noms de métriques acceptés par `--metric` et le mode de calcul de chacune.

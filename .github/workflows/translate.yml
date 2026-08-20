@@ -162,6 +162,20 @@ jobs:
           include-hidden-files: true
           retention-days: 1
 
+      # translate.mjs writes localized API specs to src/api-reference/specs/
+      # (e.g. adapty-api.zh.yaml) — outside src/locales/, so the locale
+      # artifact above doesn't carry them. Without this artifact the apply
+      # job silently drops the translated specs while still committing their
+      # hash caches, permanently marking the stale specs as up to date.
+      - name: Upload localized API specs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: specs-${{ matrix.locale }}
+          path: src/api-reference/specs/*.${{ matrix.locale }}.yaml
+          if-no-files-found: ignore
+          retention-days: 1
+
       # On failure, preserve the locale's state under a distinct artifact name
       # so the operator can recover translations without paying for another
       # Claude batch. Distinct from the success artifact so the apply job
@@ -222,6 +236,15 @@ jobs:
           path: /tmp/translated/
           pattern: locale-*
 
+      # Kept in a separate directory so the locale-* loop below never
+      # mistakes a specs artifact for a locale directory.
+      - name: Download localized API specs
+        if: needs.setup.outputs.changed != ''
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/translated-specs/
+          pattern: specs-*
+
       # Replace each locale's checked-out state with the artifact's contents.
       # rsync --delete ensures the locale dir exactly matches what the
       # translate script wrote (any files removed during translation, e.g.
@@ -240,6 +263,18 @@ jobs:
             # itself.
             rm -rf "src/locales/$locale"/* "src/locales/$locale"/.[!.]*
             cp -a "$dir"/. "src/locales/$locale/"
+          done
+
+      # Localized API specs live in src/api-reference/specs/ next to the
+      # English sources; overwrite-in-place is enough (one file per
+      # spec × locale, never deleted here — spec deletions are handled by
+      # the delete step below).
+      - name: Apply localized API specs
+        if: needs.setup.outputs.changed != ''
+        run: |
+          shopt -s nullglob
+          for f in /tmp/translated-specs/specs-*/*.yaml; do
+            cp "$f" src/api-reference/specs/
           done
 
       # Remove translated files and hash caches for deleted source content.
@@ -304,7 +339,11 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add src/locales/
+          # Stage locale content AND localized API specs — the specs live in
+          # src/api-reference/specs/ (adapty-api.zh.yaml etc.). Staging only
+          # src/locales/ used to drop the translated specs while committing
+          # their hash caches, so the stale specs were forever "up to date".
+          git add src/locales/ src/api-reference/specs/
           if git diff --staged --quiet; then
             echo "No translation changes to commit."
             exit 0
@@ -313,7 +352,8 @@ jobs:
           # Surface any spurious working-tree dirt so the next failure is easier
           # to diagnose. `--autostash` below stashes/pops these around the
           # rebase — they're not intended for the commit (we only staged
-          # src/locales/), but without --autostash the rebase aborts.
+          # src/locales/ and src/api-reference/specs/), but without
+          # --autostash the rebase aborts.
           echo "::group::Working-tree status after commit"
           git status --porcelain
           echo "::endgroup::"

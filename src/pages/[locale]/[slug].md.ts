@@ -9,8 +9,7 @@
 
 import type { APIRoute } from 'astro';
 import apiConfig from '../../api-reference/config.json';
-import { loadSpec } from '../../api-reference/lib/load-spec';
-import { buildApiSpec } from '../../api-reference/lib/model';
+import { buildLocalizedApiSpec } from '../../api-reference/lib/localized-spec';
 import { buildSpecMarkdown } from '../../api-reference/lib/build-spec-md';
 import { getBuildLocales } from '../../data/locales';
 
@@ -30,11 +29,10 @@ export async function getStaticPaths() {
 }
 
 export const GET: APIRoute = async ({ props }) => {
-  const { specFile, api, locale } = props as { specFile: string; api: any; locale: string };
+  const { api, locale } = props as { api: any; locale: string };
   const baseUrl = (import.meta.env.BASE_URL ?? '/').replace(/\/+$/, '');
   const localeBase = `${baseUrl}/${locale}`;
-  const deref = await loadSpec(specFile, locale);
-  const spec = buildApiSpec(deref, api, localeBase);
+  const spec = await buildLocalizedApiSpec(api, locale, localeBase);
 
   const md = buildSpecMarkdown(spec, { baseUrl: `${PUBLIC_BASE_URL}/${locale}` });
   return new Response(md, {

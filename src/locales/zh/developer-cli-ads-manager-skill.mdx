@@ -1,0 +1,156 @@
+---
+title: "使用 AI 编码工具管理 Apple Ads"
+description: "安装 Apple Ads 插件，让 Claude Code、Copilot CLI、Codex 或 Gemini CLI 通过 Adapty CLI 运行你的 Apple Ads 广告系列。"
+metadataTitle: "Apple Ads AI 插件 | Adapty 文档"
+---
+
+import AdsManagerSkill from '@site/src/locales/zh/reusable/AdsManagerSkill.mdx';
+
+[Apple Ads 插件](https://github.com/adaptyteam/apple-ads-cli)让 AI 编程工具能够通过 [Adapty CLI](developer-cli-ads-manager) 操作你的 Apple Ads 账户。用自然语言提问，它会自动判断需要执行哪些命令，先读取账户信息，再将写入操作提交给你确认，任何变更都不会直接发送到 Apple。
+
+技能是 AI 工具按需加载的一组指令。该插件内置三个技能——一个负责运行账户的操作员、一个只读审计员，以及一个策略规划师——另附用于周期性任务的 Playbook（如每周检查、同期群 ROAS 复盘和预算重新分配）、包含品类专属关键词分类体系与初始经济模型的垂直行业指南，以及将最常见操作简化为单行命令的[斜杠命令](#slash-commands)。这些内容共同覆盖了 Ads Manager 中最容易出错的部分：每个标志接受哪种标识符、每个列表使用哪种过滤器、一批关键词最多能放多少个，以及哪些调用会产生费用。
+
+## 它处理的内容 \{#what-it-handles\}
+
+- **读取性能**：直接选用能回答问题的单次调用，而非逐页翻阅结果。它知道"Top-N"问题只需一次有序调用，统计实体数量根本不需要指标调用。
+- **结构变更**：按正确顺序创建和更新广告系列、广告组、广告及关键词，写入子实体前先读取父实体。
+- **关键词操作**：批量添加关键词并调整出价，同时将搜索词转化为关键词和否定关键词。
+- **自动化**：配置基于规则的自动化任务，并在触达真实出价前进行试运行。
+- **竞品调研**：获取竞品应用所投放的关键词。
+- **账户审计**：`apple-ads-audit` 技能在不做任何修改的前提下，检查账户健康状况、投放状态、账户结构及重复关键词。
+- **从零规划**：`apple-ads-strategy` 技能根据您对应用的描述，设计账户结构、关键词分类体系及初始预算——无需 Apple Ads 账户或 CLI。
+
+## 它不会做什么 \{#what-it-will-not-do\}
+
+该插件将每次写入操作视为不可逆的，因为确实如此——CLI 没有删除功能，而且更改会在几秒内同步到 Apple。
+
+- 它会在写入之前先读取数据，而不是猜测 ID 或预算。
+- 在任何涉及花费金钱的命令执行前，它都会先询问确认，并且当你亲自运行命令时，它会保留 CLI 自身的确认提示。
+- 它会为链式写入中的每次操作绑定一个幂等性密钥，这样在结果不明确后重新运行时，不会创建第二个广告系列。
+- 它倾向于小批量操作，这样来自 Apple 的部分拒绝结果也便于阅读。
+
+:::note
+技能会推荐并准备相关命令。读取数据指标和演练测试不收取任何费用，但对于任何会修改正式广告账户的操作，审批责任由您自行承担。
+:::
+
+## 安装插件 \{#install-the-plugin\}
+
+<AdsManagerSkill />
+
+## Benchmarks 插件 \{#benchmarks-plugin\}
+
+同一市场中还提供一个可选的配套插件 [`apple-ads-benchmarks`](https://github.com/adaptyteam/apple-ads-benchmarks)——这是 Adapty 发布的订阅类应用 Apple Ads 基准数据，以本地数据包的形式提供，供 AI 工具直接查询：涵盖 90 个国家、22 个 App Store 类别和 59 个细分赛道的点击率、转化率、CPT 和 CPA，以及订阅者经济指标（如第一年 LTV）。该插件完全离线运行，无需 Apple Ads 账户、无需 CLI，也无需 Adapty 订阅。
+
+在深入研究账户之前，先用它判断某个数字是否有问题："德国健身应用的 CPT 4 美元高吗？"——这首先是一个基准对比的问题。
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add adaptyteam/apple-ads-cli
+claude plugin install apple-ads-benchmarks@adapty
+```
+
+**Any other tool**
+
+```bash
+npx skills add adaptyteam/apple-ads-benchmarks --all
+```
+
+:::note
+基准 CPA 是每次下载的费用，而非每次安装的费用；CR 是点击到下载的转化率，而非试用到付费的转化率。对比时请确保使用相同的定义。
+:::
+
+## 斜杠命令 \{#slash-commands\}
+
+在 Claude Code 中，该插件还新增了九个 `/asa-*` 命令。每个命令都是一个现成的提示词，会自动匹配适合该任务的技能和操作手册，因此你只需输入命令，无需自己编写提示词：
+
+| 命令 | 功能说明 |
+|---|---|
+| `/asa-review` | 每周例行检查——方向、安装量对比、异常数据及下一步行动 |
+| `/asa-audit` | 只读账户健康状态或实时结构审计 |
+| `/asa-bids` | 按同期群 ROAS 审查并调整出价 |
+| `/asa-budget` | 跨广告系列重新分配预算 |
+| `/asa-harvest` | 将搜索词归集为精确匹配关键词和否定关键词 |
+| `/asa-negatives` | 从搜索词中挖掘范围最窄的安全否定关键词 |
+| `/asa-opportunities` | 从市场情报中发现竞品关键词机会 |
+| `/asa-cpp` | 将关键词意图路由至现有自定义产品页及广告 |
+| `/asa-launch` | 规划并启动新的 Apple Search Ads 广告系列 |
+
+Slash commands install with the Claude Code plugin. In other tools, ask for the same jobs in plain language — the skills carry the same playbooks.
+
+## 示例提示词 \{#example-prompts\}
+
+这些技能本身已经包含了相关命令、执行顺序以及哪些操作会产生费用，因此提示词无需逐一说明这些内容。只需告诉技能它无法自行判断的部分：你用来衡量广告系列的数据指标与时间窗口、用于对比的基准值，以及你期望的答案形式。
+
+### 审查已运行的账户 \{#audit-an-account-you-already-run\}
+
+当广告活动已上线、你想了解资金流向时使用此功能。所有操作均为只读命令，不会对账户做任何更改。
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### 启动您的第一批广告系列 \{#launch-your-first-campaigns\}
+
+当 Apple Ads 帐户为空时使用此功能。该操作符技能会默认创建暂停状态的广告系列，在您阅读计划之前，此提示会保持该状态。
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## 与 AI Agent 的区别 \{#how-it-differs-from-the-ai-agent\}
+
+Adapty Ads Manager 在看板中还内置了一个 [AI Agent](ads-manager-ai-agent)。两者满足不同的需求：
+
+| | AI Agent | Apple Ads 插件 |
+|---|---|---|
+| 运行位置 | Adapty 看板 | 你的终端，在 AI 编程工具中 |
+| 功能 | 分析并提供建议 | 分析、提供建议并执行命令 |
+| 配置 | 无需配置 | 需安装 Adapty CLI 及插件 |
+
+如果你只是想了解账户的情况，使用 AI Agent；如果你还想让变更自动执行，使用插件。
+
+## 下一步 \{#whats-next\}
+
+- [通过 CLI 管理 Ads Manager](developer-cli-ads-manager) — 不借助 AI 工具，手动完成相同操作。
+- [Ads Manager 命令](developer-cli-ads-manager-reference) — 包含所有命令及其参数、标志和可接受值的完整参考。

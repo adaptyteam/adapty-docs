@@ -48,15 +48,19 @@ Adapty.getProfile(result -> {
 </TabItem>
 </Tabs>
 
-## Các mã lỗi thường gặp \{#common-error-codes\}
+## Mã lỗi thường gặp \{#common-error-codes\}
 
-| Mã lỗi | Mô tả | Giải pháp |
-|------------|-------------|----------|
-| 1000 | Không tìm thấy ID sản phẩm | Kiểm tra cấu hình sản phẩm trong dashboard |
-| 1001 | Lỗi mạng | Kiểm tra kết nối internet |
-| 1002 | SDK key không hợp lệ | Xác minh lại SDK key của bạn |
-| 1003 | Không thể thực hiện thanh toán | Thiết bị không hỗ trợ thanh toán |
-| 1004 | Sản phẩm không khả dụng | Sản phẩm chưa được cấu hình trong cửa hàng |
+`AdaptyError.code` là giá trị enum `AdaptyErrorCode`, không phải số — hãy so sánh với hằng số enum, không phải với mã số. Các con số dưới đây chỉ được hiển thị vì đó là thứ thường xuất hiện trong dòng log hoặc ticket hỗ trợ.
+
+| Mã lỗi | Số | Mô tả | Giải pháp |
+|------------|--------|-------------|----------|
+| `AdaptyErrorCode.NO_PRODUCT_IDS_FOUND` | 1000 | Không có sản phẩm nào trong paywall khả dụng trên cửa hàng. | Xem [Cách xử lý lỗi Code-1000 noProductIDsFound](InvalidProductIdentifiers-kmp). |
+| `AdaptyErrorCode.CANT_MAKE_PAYMENTS` | 1003 | Thiết bị này không cho phép thực hiện in-app purchase. | Xem [Cách xử lý lỗi Code-1003 cantMakePayments](cantMakePayments-kmp). |
+| `AdaptyErrorCode.PRODUCT_NOT_FOUND` | 22 | Sản phẩm được yêu cầu mua không khả dụng trên cửa hàng. | Kiểm tra xem sản phẩm đã được cấu hình trên cửa hàng và trong Adapty Dashboard chưa. |
+| `AdaptyErrorCode.NETWORK_FAILED` | 2005 | Yêu cầu mạng thất bại. | Yêu cầu người dùng kiểm tra kết nối, hoặc thử lại. |
+| `AdaptyErrorCode.ADAPTY_NOT_INITIALIZED` | 20 | SDK chưa được kích hoạt trước khi thực hiện lệnh gọi. | Chờ `Adapty.activate` hoàn tất trước khi thực hiện bất kỳ lệnh gọi SDK nào khác. |
+
+Để xem danh sách đầy đủ các mã lỗi, hãy tham khảo `AdaptyErrorCode` trong [tài liệu tham khảo mô hình SDK](https://kmp.adapty.io/adapty/).
 
 ## Xử lý các lỗi cụ thể \{#handle-specific-errors\}
 
@@ -76,7 +80,7 @@ Adapty.getPaywall("main") { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1001 -> {
+                AdaptyErrorCode.NETWORK_FAILED -> {
                     // Network error - show offline message
                     showOfflineMessage()
                 }
@@ -100,7 +104,7 @@ Adapty.getPaywall("main", result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1001:
+            case NETWORK_FAILED:
                 // Network error - show offline message
                 showOfflineMessage();
                 break;
@@ -132,11 +136,11 @@ product.makePurchase { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1003 -> {
+                AdaptyErrorCode.CANT_MAKE_PAYMENTS -> {
                     // Can't make payments
                     showPaymentNotAvailableMessage()
                 }
-                1004 -> {
+                AdaptyErrorCode.PRODUCT_NOT_FOUND -> {
                     // Product not available
                     showProductNotAvailableMessage()
                 }
@@ -161,11 +165,11 @@ product.makePurchase(result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1003:
+            case CANT_MAKE_PAYMENTS:
                 // Can't make payments
                 showPaymentNotAvailableMessage();
                 break;
-            case 1004:
+            case PRODUCT_NOT_FOUND:
                 // Product not available
                 showProductNotAvailableMessage();
                 break;
@@ -180,7 +184,7 @@ product.makePurchase(result -> {
 </TabItem>
 </Tabs>
 
-## Chiến lược khôi phục sau lỗi \{#error-recovery-strategies\}
+## Chiến lược khôi phục lỗi \{#error-recovery-strategies\}
 
 ### Thử lại khi gặp lỗi mạng \{#retry-on-network-errors\}
 
@@ -201,7 +205,7 @@ fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && retryCount < maxRetries) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && retryCount < maxRetries) {
                         // Network error - retry
                         retryCount++
                         Handler(Looper.getMainLooper()).postDelayed({
@@ -235,7 +239,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
                     // Use paywall
                 } else if (result instanceof AdaptyResult.Error) {
                     AdaptyError error = ((AdaptyResult.Error) result).getError();
-                    if (error.getCode() == 1001 && retryCount.get() < maxRetries) {
+                    if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && retryCount.get() < maxRetries) {
                         // Network error - retry
                         retryCount.incrementAndGet();
                         new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
@@ -254,7 +258,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
 </TabItem>
 </Tabs>
 
-### Dùng dữ liệu đã lưu cache khi có lỗi \{#fallback-to-cached-data\}
+### Dự phòng với dữ liệu đã cache \{#fallback-to-cached-data\}
 
 <Tabs groupId="current-os" queryString>
 
@@ -274,7 +278,7 @@ class PaywallManager {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && cachedPaywall != null) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
                         // Network error - use cached paywall
                         showPaywall(cachedPaywall!!)
                         showOfflineIndicator()
@@ -303,12 +307,12 @@ public class PaywallManager {
                 showPaywall(paywall);
             } else if (result instanceof AdaptyResult.Error) {
                 AdaptyError error = ((AdaptyResult.Error) result).getError();
-                if (error.getCode() == 1001 && cachedPaywall != null) {
-                    // Network error - use cached paywall
+                if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
+                    // Lỗi mạng - dùng paywall đã cache
                     showPaywall(cachedPaywall);
                     showOfflineIndicator();
                 } else {
-                    // No cache available or other error
+                    // Không có cache hoặc lỗi khác
                     showErrorMessage(error.getMessage());
                 }
             }
@@ -323,4 +327,4 @@ public class PaywallManager {
 
 - [Sửa lỗi Code-1000 noProductIDsFound](InvalidProductIdentifiers-kmp)
 - [Sửa lỗi Code-1003 cantMakePayments](cantMakePayments-kmp)
-- [Tài liệu tham khảo API đầy đủ](https://android.adapty.io) - Tài liệu SDK hoàn chỉnh
+- [Tài liệu tham khảo API đầy đủ](https://kmp.adapty.io/adapty/) - Tài liệu SDK đầy đủ

@@ -1,85 +1,76 @@
 ---
-title: "Adapty Mail を始めよう"
-description: "Adapty Mail をセットアップして、最初のメールフローを起動しましょう。"
-metadataTitle: "Adapty Mail を始めよう | Adapty ドキュメント"
+title: "Adapty Mailを始める"
+description: "Adapty Mailをセットアップして、最初のメールフローを起動しましょう。"
+metadataTitle: "Adapty Mailを始める | Adapty ドキュメント"
 keywords: ['adapty mail']
 ---
 
-このガイドでは、Adapty Mail をセットアップして、最初のメールフローを起動する手順を説明します。
-:::note
-Adapty SDK を使わず、独自のサーバーから Adapty Mail にデータを送ることも可能です。ユーザーのメールアドレスや購入情報をバックエンドで管理している場合、または別のソースからサブスクライバーをインポートする場合は、[Adapty Mail API 経由でメールとトランザクションを送信する](mail-send-data-via-api)をご参照ください。
-:::
+このガイドでは、Adapty Mailをセットアップして最初のメールフローを起動する方法を説明します。
 
 セットアップは6つのパートに分かれています：
-1. [Adapty SDK を設定する](#1-configure-your-adapty-sdk)
+
+1. [データを接続する](#1-connect-your-data)
 2. [送信ドメインを設定する](#2-set-up-your-sending-domain)
 3. [ウェブペイウォールを作成する](#3-create-a-web-paywall)
-4. [AI でキャンペーンを生成する](#4-generate-a-campaign-with-ai)
+4. [AIでキャンペーンを生成する](#4-generate-a-campaign-with-ai)
 5. [フローを起動する](#5-launch-a-flow)
-6. [送信を有効にする](#6-enable-sending)
+6. [送信を開始する](#6-start-sending)
+
 :::tip
 Adapty 経由で Adapty Mail にサインアップした場合、**ブランドプロファイル**はプロジェクトのストア URL から自動的に作成されます。**Brand** をいつでも開いて確認・修正できます — [ブランド](mail-brand)を参照してください。スタンドアロンでサインアップした場合は、キャンペーンやウェブペイウォールを作成する前に同じページでブランドを設定してください。
 :::
 ## 始める前に \{#before-you-start\}
 
-開始前に以下を確認してください：
+始める前に、以下を準備してください：
 
-- **DNSアクセス**: ルートドメインにレコードを追加できること。
-- **Web決済プロバイダー**: サブスクリプションプロダクトが設定済みのStripe、Paddle、またはPayPalアカウントを持っていること。
+- **DNS アクセス**: ルートドメインにレコードを追加できること。
+- **決済**: サブスクリプションプロダクトが設定済みの Stripe アカウントを持っていること。別のプロバイダーを使用する場合は、チェックアウトを自分でホストしてください — [チェックアウトの設定](mail-checkout)を参照してください。
 
-## 1. Adapty SDKを設定する \{#1-configure-your-adapty-sdk\}
+## 1. データを接続する \{#1-connect-your-data\}
+
+Adapty Mail が機能するには、購入履歴（メールが各コンバージョンを促した際にその収益を紐づけるため）、安定したユーザー識別子、そして各ユーザーのメールアドレスが必要です。データがすでに存在する場所に合った[エントリーポイント](mail-entry-points)を用意してください。残りのセットアップが受信データに対応できるようになったら、ステップ 6 でタップを開きます：
+
+- **Adapty**: アプリが Adapty SDK を使用している場合は、ユーザー識別とメールの収集を設定してください。インテグレーション自体はまだオフのままにしておきます。フローが作成されるまで、Adapty Mail によってブロックされます。詳細は[Adapty と Adapty Mail を接続する](mail-collect-emails)を参照してください。
+- **Adapty Mail API**: バックエンドが信頼できる情報源である場合は、**Settings** からシークレットキーを取得してリクエストを作成してください。ただし、まだ送信しないでください。セットアップが完了する前に受信したプロファイルには何も送信されません。詳細は[Adapty Mail API を使ったメールとトランザクションの送信](mail-send-data-via-api)を参照してください。
+
+複数のエントリポイントを同時に使用することができます。Adapty Mail は`customer_user_id`とメールアドレスで受信データを照合するため、複数のソースから情報が届いた場合でも、1つのプロファイルと1つのシーケンスにまとめられます。
 
 :::important
-Adapty Mailは**スタンドアロンプロダクト**です。ペイウォール、サブスクリプション、アナリティクスをAdaptyで管理していなくても利用できます。既存のスタック全体を移行する必要はありません。
-
-正確な収益データを取得するには、最低限の設定としてAdapty SDKをオブザーバーモードでインストールし、App Serverの通知を有効にしてください。
+Adapty Mail は**スタンドアロン製品**です。ペイウォール、サブスクリプション、アナリティクスをAdaptyで管理していなくても利用できます。スタック全体を移行する必要はありません。
 :::
 
-Adapty Mailがアプリに必要なものは3つです。購入データ（各コンバージョンを誘導したメールに収益を紐付けるため）、安定したユーザー識別子、そしてユーザーのメールアドレスです。
-1. **Adaptyで収益を追跡する。** 最初のステップは、すでにアプリ内課金を実装しているかどうかによって異なります：
-   - **AdaptyでアプリIn内課金をすでに実装している**場合は、この段階で追加の作業は不要です。
-   - **Adaptyを使わずにアプリ内課金をすでに実装していて**、Adaptyへの移行を予定していない場合は、各プラットフォームのAdapty SDKをオブザーバーモードでインストールしてください。この段階では、SDKをプロジェクトに追加し、オブザーバーモードを有効にして起動し、トランザクションを報告するだけで構いません。プラットフォーム別ガイド：[iOS](implement-observer-mode)、[Android](implement-observer-mode-android)、[React Native](implement-observer-mode-react-native)、[Flutter](implement-observer-mode-flutter)、[Unity](implement-observer-mode-unity)、[Kotlin Multiplatform](implement-observer-mode-kmp)、[Capacitor](implement-observer-mode-capacitor)。
-   - **アプリ内課金をまだ実装しておらず、Adaptyを使いたい**場合は、[クイックスタートガイド](quickstart)の手順に従って、購入処理をAdaptyに委任してください。
-次に、[Adapty で App Store サーバー通知を有効化](enable-app-store-server-notifications)して、App Store から収益関連の更新を直接受け取れるようにします。
-
-2. **ユーザー識別を設定する。** バックエンドのユーザー ID、Firebase UID などの安定した ID を、`Adapty.identify()` を呼び出すか、SDK 起動時に `.activate()` へ `customerUserId` として渡すことで設定します。`customer_user_id` は、Adapty Mail がキャンペーン、クリック、購入を正しいプロファイルに紐付けるための識別子です。
-プラットフォームガイド: [iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), [Capacitor](capacitor-identifying-users).
-
-3. **ユーザーのメールアドレスを収集する。** ユーザーがアプリ内でメールアドレスを入力したタイミング（サインアップやチェックアウトなど）で、`updateProfile` にメール属性を指定して Adapty に渡してください。キャンペーンの受信者全員にこの値が必要です。
-プラットフォーム別ガイド: [iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Unity](unity-setting-user-attributes)、[Kotlin Multiplatform](kmp-setting-user-attributes)、[Capacitor](capacitor-setting-user-attributes)
-
-アプリでまだメールアドレスを収集していない場合は、[メール収集戦略](mail-collect-emails#email-collection-strategies)をご覧ください。
 ## 2. 送信ドメインを設定する \{#2-set-up-your-sending-domain\}
 
-Adapty Mail を開く: ヘッダーの Adapty ロゴをクリックして **Mail** を選択します。
+Adapty Mail を開きます。ヘッダーの Adapty ロゴをクリックして、**Mail** を選択してください。
 
 <ZoomImage id="product-switcher.webp" width="500px" alt="Adapty product switcher" />
 
-Adapty Mail はあなた自身のドメインから送信します。DNS レコードを一度追加すれば、すべてのキャンペーンで同じ検証済みドメインが使われます。
+Adapty Mail はあなた自身のドメインから送信します。DNS レコードを一度追加すれば、すべてのキャンペーンで同じ確認済みドメインが使用されます。
 
-1. Adapty Mail で **Settings → Email Domains** に移動します。
-2. ルートドメイン（例：`yourapp.com`）を入力し、**Preview** をクリックします。受け付けられるのは apex ドメインのみです。`app.yourapp.com` のようなサブドメインは入力時に拒否されます。
+1. Adapty Mail で **Settings → DNS** に移動し、**Email domains** セクションの **Add domain** をクリックします。
+2. **Domain** フィールドに、ルートドメイン（例：`yourapp.com`）を入力します。受け付けるのは apex ドメインのみで、`app.yourapp.com` のようなサブドメインは入力時に拒否されます。
+3. **Sending subdomain** フィールドに、メール送信元のプレフィックスを入力するか、空白のままにして `mail` を使用します。メールは `hello@mail.yourapp.com` から送信されます。
+4. **Add domain** をクリックします。
 
 <ZoomImage id="mail-email-domains.webp" width="500px" />
-3. Adaptly は2つの送信サブドメイン（`mail.yourapp.com` と `email.yourapp.com`）を生成します。**Confirm** をクリックして、必要な DNS レコードを表示します。
 
-<ZoomImage id="confirm-subdomains.webp" width="500px" />
+5. ドメインレジストラで、新しいドメインカードに表示されているすべての DNS レコードを追加します。レコードは3つのグループに分かれています。送信サブドメインの DKIM および MAIL FROM レコード、ドメインのウォームアップに使用するメールボックスのレコード、画像やトラッキングリンクを配信する `go.yourapp.com` のレコードです。各グループが何を認証するかについては、[追加するレコード](mail-sending-domain#which-records-you-add)を参照してください。まとめてエクスポートするには、**Export** をクリックします。
+6. 必要に応じて、ルートドメインに推奨の DMARC TXT レコードを追加します（推奨）。
+7. **Check** をクリックしてすぐに検証するか、カードを離れて Adapty Mail が DNS をポーリングするのを待ちます。
 
-4. ドメインレジストラーで、表示された 10 件の DNS レコードを追加します（サブドメインごとに 5 件）:
-   - サブドメインごとに CNAME レコード 3 件（DKIM）
-   - サブドメインごとに MX レコード 1 件（Mail-From）
-   - サブドメインごとに TXT レコード 1 件（SPF、`v=spf1 include:amazonses.com ~all`）
-5. 任意で、ルートドメインに DMARC TXT レコードを追加します（推奨）。
-6. **Settings → Email Domains** に戻り、**Check Verification** をクリックします。
-<ZoomImage id="email-domains.webp" width="500px" />
+<ZoomImage id="email-domains.webp" width="700px" />
 
-確認のタイミングについて：
+確認タイミングの概要：
 
-- **自動ポーリング**：送信後約5分で最初のチェックが実行されます。レコードが見つかるまで、間隔は最大1時間ごとに拡大されます。
-- **手動チェック**：**Check Verification** をクリックすると、いつでも即座にチェックを実行できます。
-- **DNS伝播**：通常は数分で完了しますが、まれに最大48時間かかる場合があります。
-- **確認ウィンドウ**：7日間です。期限が切れても、DNSレコードはそのまま残ります。**Settings → Email Domains** でドメインを再入力すると、新しいウィンドウが開始されます。
-各レコードタイプとドメインウォームアップの詳細については、[送信ドメインの設定](mail-sending-domain)を参照してください。
+- **自動ポーリング**：ドメインを追加してから1分後に最初のチェックが実行され、レコードが見つかるまで最長1時間ごとになるよう間隔が2倍ずつ延びていきます。
+- **手動チェック**：**Check** をクリックすると、いつでも即時チェックを実行できます。
+- **DNS 伝播**：通常は数分以内ですが、まれに最大48時間かかる場合があります。
+- **確認ウィンドウ**：7日間です。期限が切れても DNS レコードはそのまま残ります — **Settings → DNS** でドメインを再度追加すると、新しいウィンドウが開始されます。
+
+送信を開始するには、認証済みドメインが1つあれば十分です。プロジェクトには最大5つまで登録でき、残りは後から追加できます。
+
+各レコードタイプとドメインのウォームアップについて詳しくは、[送信ドメインの設定](mail-sending-domain)を参照してください。
+
 ## 3. Webペイウォールを作成する \{#3-create-a-web-paywall\}
 
 すべてのメールはWebペイウォールにリンクしています — CTAをクリックしたユーザーが訪れるチェックアウトページです。2つの選択肢があります：
@@ -104,17 +95,19 @@ Adapty Mail はあなた自身のドメインから送信します。DNS レコ�
 :::important
 ペイウォールは公開しないとチェックアウトのトラフィックを処理できません。未公開のペイウォールは、ユーザーがメールのチェックアウトリンクをクリックするとエラーを返します。
 :::
-### オプションB: 独自のホスト済みペイウォールを使用する \{#option-b-use-your-own-hosted-paywall\}
+### オプション B: 独自のホスト型ペイウォールを使用する \{#option-b-use-your-own-hosted-paywall\}
 
-1. **Enter URL manually**を選択します。
-2. ホスト済みペイウォールのURLを貼り付けます。URLにはクエリパラメーターとして`{email}`と`{external_profile_id}`のプレースホルダーを含める必要があります — Adapty Mailが受信者ごとにこれらを埋め込むことで、チェックアウトページが訪問者を識別できるようになります。例：
+1. **Enter URL manually** を選択します。
+2. プレースホルダーをクエリパラメーターとして含む、ホスト型ペイウォールの URL を貼り付けます。Adapty Mail は受信者ごとにプレースホルダーを置換するため、チェックアウトページで訪問者を識別できます。例：
 
    ```
-   https://example.com/paywall?email={email}&profile={external_profile_id}
+   https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
+
+   作成ページには使用できるプレースホルダーの一覧が表示されます。各プレースホルダーの解決値については、[チェックアウトの設定](mail-checkout#use-your-own-hosted-paywall) を参照してください。
 3. 保存して公開します。
 
-チェックアウトファネルの構造とパーソナライゼーションの仕組みについては、[チェックアウトの設定](mail-checkout)をご覧ください。
+チェックアウトファネルの構造とパーソナライズの仕組みについては、[チェックアウトの設定](mail-checkout)をご覧ください。
 
 <ZoomImage id="generate-web-paywall.webp" width="500px" />
 
@@ -165,30 +158,27 @@ AIがメールシーケンス全体を自動生成します — コピー、デ�
 :::
 
 <ZoomImage id="mail-flow-details.webp" width="500px" />
-## 6. 送信を有効にする \{#6-enable-sending\}
+## 6. 送信を開始する \{#start-sending\}
 
-ここまでの設定でキャンペーンは接続されていますが、まだ実際には動作していません。サブスクリプションイベントを Adapty Mail に同期する **Adapty integration** がまだオフになっているためです。これをオンにすることが最後のステップです。イベントが流れ始め、セグメントがマッチし始め、メールが送信され始めます。
+キャンペーンは設定済みですが、まだ動いていません。ユーザーデータが Adapty Mail に届いていない状態です。データの流れを開始することが最後のステップで、ステップ1で選んだエントリーポイントによって手順が異なります。
 
-このステップはステップ 5 が完了した後にのみ実行できます。フローを起動する前は、**Settings → Integrations** の **Enable** ボタンが無効になっており、*「Set up at least one flow before enabling Adapty integration.」* というツールチップが表示されます。
-1. Adapty Mail で、**Settings → Integrations** に移動します。
-2. **Enable Adapty integration**（または、以前のセットアップからインテグレーションが既に存在する場合は **Enable**）をクリックします。
+- **Adapty**: Adapty Mail で **Settings → Project** に移動し、**Enable Adapty integration** をクリックします。このボタンはステップ 5 が完了するまで無効化されており、*「Set up at least one flow before enabling Adapty integration」* というツールチップが表示されます。詳細は [Adapty を Adapty Mail に接続する](mail-collect-emails#4-enable-sending) をご覧ください。
+- **Adapty Mail API**: プロファイルとトランザクションイベントの送信を開始します。このセットアップが完了する前に送信したプロファイルには何も送信されません。そのため、このステップは最後に行います。詳細は [Adapty Mail API 経由でメールとトランザクションを送信する](mail-send-data-via-api) をご覧ください。
 
-有効にすると、Adapty はすべてのサブスクリプションイベント（新規サブスクリプション、更新、トライアル、コンバージョン、返金、請求の問題）を Adapty Mail に送信します。これらのイベントにより、セグメントのメンバーシップ、キャンペーンのルーティング、およびユーザーがコンバートしたときにシーケンスを一時停止するストップ条件が機能します。
+ここから、セグメントに一致するユーザーがトリガーを実行すると、すぐにキャンペーンを受け取ります。実際のユーザーを対象にする前に、テストユーザー1人を使って[フロー全体をテスト](mail-testing)してください。
 
-<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
-:::note
-**Settings** の **Adapty integration** トグルは、Adapty Mail にサインインした Adapty パートナーワークスペースとは異なります。パートナーワークスペースはアカウントを作成し（Adapty 経由でサインアップした場合は）ブランドを作成したものです。ここにある integration トグルはイベントの同期を制御するもので、プロジェクトごとに有効にする必要があります。
-:::
 ## トラブルシューティング \{#troubleshooting\}
 | 問題 | 解決策 |
 | ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| DNS検証がスタックしている | レコードが正確に一致していることを確認してください（末尾のドット不要、CNAMEターゲットが正しいか）。5〜10分待ってから **Check Verification** をクリックしてください |
-| 検証ウィンドウが期限切れ | レコードはそのまま残っています。**Settings → Email Domains** でドメインを再入力して新しいウィンドウを開始してください |
-| 生成に失敗またはタイムアウト | インターネット接続を確認して再試行してください。問題が解決しない場合は、Adaptyサポートにお問い合わせください |
-## 詳細情報 \{#learn-more\}
+| DNS 検証が完了しない | レコードが正確に一致しているか確認してください（末尾のドット不要、正しい CNAME ターゲット）。5〜10 分待ってから **Check** をクリックしてください |
+| 検証ウィンドウの有効期限切れ | レコードはそのまま残っています。**Settings → DNS** でドメインを再登録して、新しいウィンドウを開始してください |
+| 生成に失敗またはタイムアウト | インターネット接続を確認して、もう一度お試しください。問題が続く場合は Adapty サポートにお問い合わせください |
 
-- **[ユーザーメールアドレスの収集](mail-collect-emails)**: アプリでまだ収集していない場合のメールカバレッジ取得戦略。
-- **[送信ドメインの設定](mail-sending-domain)**: DNSレコードの詳細、ウォームアップ階層、トラブルシューティング。
-- **[チェックアウトの設定](mail-checkout)**: チェックアウトファネルの構造とパーソナライゼーション。
-- **[キャンペーンアナリティクス](mail-analytics)**: 配信、エンゲージメント、収益のトラッキング。
-- **[A/B テスト](mail-ab-testing)**: 複数のシーケンスバージョンのテスト。
+## 詳細はこちら \{#learn-more\}
+
+- **[フローのテスト](mail-testing)**：ローンチ前に、テストユーザーでフロー全体を通して確認しましょう。
+- **[Adapty を Adapty Mail に接続する](mail-collect-emails)**：SDK のセットアップと、アプリでメールアドレスを収集していない場合のカバレッジ確保の方法。
+- **[送信ドメインの設定](mail-sending-domain)**：DNS レコードの詳細、ウォームアップの段階的な設定、トラブルシューティング。
+- **[チェックアウトの設定](mail-checkout)**：チェックアウトファネルの構成とパーソナライズ。
+- **[キャンペーン分析](mail-analytics)**：配信、エンゲージメント、収益の追跡。
+- **[A/B テスト](mail-ab-testing)**：複数のシーケンスバージョンのテスト。

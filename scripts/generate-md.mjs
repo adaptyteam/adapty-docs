@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { withSkillNote } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DOCS_DIR = path.resolve(__dirname, '../src/content/docs');
@@ -168,13 +169,75 @@ ${content}
 
     // 4. Remove other self-closing component tags that we might want to strip?
     // For now, let's keep others unless specific instruction, but user said "Remove everything extra".
-    // Let's strip standard HTML comments
-    processed = processed.replace(/<!--[\s\S]*?-->/g, '');
+    // Strip HTML and MDX comments. Both render to nothing on the site, so authors
+    // use them to hide unreleased features and TODOs — without this they leak into
+    // the .md exports and llms-full.txt and read as shipped documentation.
+    processed = stripComments(processed);
 
     // 5. Clean extra empty lines created by stripping
     processed = processed.replace(/\n{3,}/g, '\n\n');
 
     return processed.trim();
+}
+
+// Remove `{/* ... */}` and `<!-- ... -->` comments, including multi-line ones,
+// while leaving fenced code blocks untouched. Snippets legitimately contain both
+// — an AndroidManifest example, a JSX sample — and those must survive verbatim.
+export function stripComments(content) {
+    const PAIRS = [['{/*', '*/}'], ['<!--', '-->']];
+    const lines = content.split('\n');
+    const out = [];
+    let inFence = false;
+    let closer = null;
+
+    for (const line of lines) {
+        if (/^\s*(```|~~~)/.test(line)) {
+            inFence = !inFence;
+            out.push(line);
+            continue;
+        }
+        if (inFence) {
+            out.push(line);
+            continue;
+        }
+
+        let rest = line;
+        let kept = '';
+
+        // Finish a comment that opened on an earlier line.
+        if (closer) {
+            const end = rest.indexOf(closer);
+            if (end === -1) continue;
+            rest = rest.slice(end + closer.length);
+            closer = null;
+        }
+
+        // Consume every comment that opens on this line.
+        for (;;) {
+            let next = null;
+            for (const [open, close] of PAIRS) {
+                const at = rest.indexOf(open);
+                if (at !== -1 && (next === null || at < next.at)) next = { at, open, close };
+            }
+            if (!next) {
+                kept += rest;
+                break;
+            }
+            kept += rest.slice(0, next.at);
+            const after = rest.slice(next.at + next.open.length);
+            const end = after.indexOf(next.close);
+            if (end === -1) {
+                closer = next.close;
+                break;
+            }
+            rest = after.slice(end + next.close.length);
+        }
+
+        // Drop lines that were nothing but a comment; keep genuine blank lines.
+        if (kept.trim() || !line.trim()) out.push(kept.trimEnd());
+    }
+
+    return out.join('\n');
 }
 
 function cleanFrontmatter(content) {
@@ -202,6 +265,13 @@ function cleanFrontmatter(content) {
     return content.replace(frontmatterRegex, `---\n${keptLines.join('\n')}\n---\n\n`);
 }
 
+// Mirrors the check in generate-platform-llms-full.mjs.
+function isDraft(content) {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) return false;
+    return /^draft:\s*true\s*$/m.test(match[1]);
+}
+
 async function processFiles(dir, reusableComponents, englishFiles) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
 
@@ -213,11 +283,18 @@ async function processFiles(dir, reusableComponents, englishFiles) {
         } else if (entry.isFile() && (entry.name.endsWith('.md') || entry.name.endsWith('.mdx'))) {
             const rawContent = await fs.readFile(fullPath, 'utf-8');
 
+            // `draft: true` pages are skipped by the site router, so they must not
+            // get a .md export either — otherwise the content stays fetchable at
+            // /docs/<slug>.md even though the page itself 404s.
+            if (isDraft(rawContent)) continue;
+
             // Clean Frontmatter
             let content = cleanFrontmatter(rawContent);
 
             // Strip and Inline
             content = stripContent(content, reusableComponents);
+
+            content = withSkillNote(content);
 
             // Determine output filename (flattened basename logic)
             let basename = entry.name.replace(/\.(md|mdx)$/, '');
@@ -257,8 +334,11 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
         if (!entry.isFile() || (!entry.name.endsWith('.md') && !entry.name.endsWith('.mdx'))) continue;
 
         const rawContent = await fs.readFile(path.join(localeDir, entry.name), 'utf-8');
+        if (isDraft(rawContent)) continue;
+
         let content = cleanFrontmatter(rawContent);
         content = stripContent(content, components);
+        content = withSkillNote(content);
 
         const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');
         const basename = MD_BASENAME_OVERRIDES.get(rawBasename) ?? rawBasename;

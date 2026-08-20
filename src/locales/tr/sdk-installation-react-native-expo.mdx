@@ -130,17 +130,17 @@ v4'ten itibaren, Adapty React Native SDK artık yerel bağımlılıklarının Co
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
 
 :::important
-Bir Expo projesinde Adapty'yi kullanmak için [Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (özel bir geliştirme derlemesi) gereklidir.
+[Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (özel bir geliştirme derlemesi), Adapty'yi bir Expo projesinde kullanmak için gereklidir.
 
-Expo Go özel yerel modülleri desteklemez, bu yüzden onu yalnızca UI/mantık geliştirmesi için [**mock modu**](#set-up-mock-mode-for-expo-go--expo-web) ile kullanabilirsiniz (gerçek satın almalar ve AdaptyUI/Paywall Builder render'ı olmadan).
+Expo Go özel native modülleri desteklemediğinden, yalnızca UI/mantık geliştirme amacıyla [**mock modunda**](#set-up-mock-mode-for-expo-go--expo-web) kullanabilirsiniz (gerçek satın alma işlemi ve AdaptyUI/Paywall Builder render'ı yoktur).
 :::
 
-1. Adapty SDK'yı yükleyin (bu, `@adapty/core`'u da otomatik olarak yükler):
+1. Adapty SDK'yı yükleyin:
    ```sh
    npx expo install react-native-adapty
    npx expo prebuild
    ```
-2. Uygulamanızı EAS veya yerel derleme kullanarak geliştirme için derleyin:
+2. EAS veya yerel derleme kullanarak uygulamanızı geliştirme için derleyin:
 
    <Tabs>
    <TabItem value="eas" label="EAS derlemesi" default>
@@ -186,8 +186,7 @@ v4, yerel iOS SDK'larını (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) CocoaPods alt 
         "expo-build-properties",
         {
           "ios": {
-            "useFrameworks": "dynamic",
-            "buildReactNativeFromSource": true
+            "useFrameworks": "dynamic"
           }
         }
       ]
@@ -196,16 +195,16 @@ v4, yerel iOS SDK'larını (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) CocoaPods alt 
 }
 ```
 
-`buildReactNativeFromSource`, **Expo SDK 57 ve sonrasında** zorunludur. Expo SDK 57, önceden derlenmiş bir React Native framework'ü ile birlikte gelir; frameworkler dinamik olduğunda diğer paketler bu framework'ün başlık dosyalarına erişemez ve iOS derlemesi `expo-updates` veya `@expo/ui` içinde `'React/RCTBridge.h' file not found` gibi hatalarla başarısız olur. React Native'i kaynaktan derlemek bu çakışmayı önler, ancak iOS derleme sürelerini uzatır. Expo SDK 56 ve öncesinde bu seçeneği atlayabilirsiniz.
-
-Ardından eklentiyi yükleyin ve native projeyi yeniden oluşturun:
+Ardından eklentiyi yükleyin ve yerel projeyi yeniden oluşturun:
 
 ```sh
 npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
 
-Tam migration için [Adapty React Native SDK'yı v4'e Taşıma](migration-to-react-native-sdk-v4) bölümüne bakın.
+iOS derlemesi `'React/RCTBridge.h' file not found` hatasıyla başarısız olursa [sorun giderme kaydına](#react-header-not-found) bakın.
+
+Tam migration için bkz. [Adapty React Native SDK'yı v4'e taşıma](migration-to-react-native-sdk-v4).
 
 ## Adapty SDK'nın Adapty modülünü etkinleştirme \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -480,6 +479,43 @@ Projeniz aynı zamanda `expo-secure-store` kullanıyorsa, çakışmayı önlemek
 `replaceAndroidBackupConfig` seçeneği varsayılan olarak `false`'tur. Etkinleştirildiğinde, Adapty eklentisinin Android yedekleme kurallarını yönetmesine olanak tanır.
 `expo-secure-store` kullanıyorsanız uyarıları önlemek için `"configureAndroidBackup": false` ekleyin; çünkü SecureStore'un yedekleme yapılandırması artık Adapty tarafından yönetilecektir.
 :::important
-Bu kurulum yalnızca Adapty, AppsFlyer ve expo-secure-store için yedekleme gereksinimlerini dikkate alır.
-Projenizde başka kütüphaneler özel yedekleme kuralları tanımlıyorsa, bunları manuel olarak yapılandırmanız gerekir.
+Bu kurulum yalnızca Adapty, AppsFlyer ve expo-secure-store için yedekleme gereksinimlerini karşılar.
+Projenizdeki diğer kütüphaneler özel yedekleme kuralları tanımlıyorsa, bunları manuel olarak yapılandırmanız gerekir.
 :::
+
+#### iOS derlemesi `'React/RCTBridge.h' file not found` hatasıyla başarısız oluyor \{#react-header-not-found\}
+
+[Adapty SDK 4.0 için dinamik framework'ler etkinleştirildiğinde](#adapty-sdk-40-enable-swift-package-manager), iOS derlemesi `expo-updates`, `@expo/ui` veya Objective-C kaynaklarına sahip başka bir pakette başarısız olabilir:
+
+```
+error: 'React/RCTBridge.h' file not found
+```
+
+`expo-modules-autolinking` paketindeki (bir `expo` bağımlılığı) bir hata bu soruna yol açmaktadır. Etkilenen sürümler 57.0.5–57.0.9 (Expo SDK 57) ve 56.0.19–56.0.21 (Expo SDK 56)'dır; hata 57.0.10 ve 56.0.22'de giderilmiştir.
+
+Derlemeyi düzeltmek için `expo-modules-autolinking`'i düzeltilmiş sürüme güncelleyin ve native projeyi yeniden oluşturun:
+
+```sh
+npm update expo-modules-autolinking
+npx expo prebuild
+```
+
+Expo SDK'nız için düzeltilmiş sürüm henüz mevcut değilse, bunun yerine React Native'i kaynaktan derleyin. Bu yöntem, iOS derlemelerinin daha uzun sürmesi pahasına hatayı aşmanızı sağlar:
+
+```json title="app.json"
+{
+  "expo": {
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "dynamic",
+            "buildReactNativeFromSource": true
+          }
+        }
+      ]
+    ]
+  }
+}
+```

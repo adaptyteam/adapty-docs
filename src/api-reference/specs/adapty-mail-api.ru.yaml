@@ -4,19 +4,19 @@ info:
   version: 1.0.0
   description: |
     Adapty Mail API позволяет отправлять профили пользователей и события транзакций в Adapty Mail напрямую
-    с вашего сервера, без передачи данных через SDK.
+    с вашего сервера, минуя SDK.
 
     Используйте его для:
 
     - Добавления подписчиков, если у вас ещё нет базы в Adapty Mail.
     - Повторного использования базы подписчиков из других ваших приложений.
-    - Передачи данных в Adapty Mail в режиме server-to-server, когда ваш бэкенд является источником данных.
+    - Передачи данных в Adapty Mail по схеме сервер-сервер, где ваш бэкенд является источником истины.
 
     Профиль с email достаточен для флоу **never purchased**. Все остальные флоу
     (renewal cancelled, billing issue, expired, refunded) основаны на истории покупок, поэтому для таких
     профилей также необходимо передавать события транзакций, чтобы они попали в нужный флоу.
 
-    Пошаговое руководство см. в [Send emails and transactions via the Adapty Mail API](/docs/mail-send-data-via-api).
+    Пошаговое руководство см. в [Отправка email-рассылок и транзакций через Adapty Mail API](/docs/mail-send-data-via-api).
 servers:
   - url: https://api-mail.adapty.io
     description: Продакшн-сервер
@@ -26,10 +26,10 @@ paths:
       summary: Сохранить профиль
       description: |
         Создаёт или обновляет профиль в Adapty Mail. Профиль содержит email пользователя и атрибуты,
-        которые Adapty Mail использует для идентификации получателей и построения [сегментов](/docs/mail-segments).
+        которые Adapty Mail использует для идентификации получателей и формирования [сегментов](/docs/mail-segments).
 
-        Идентифицируйте каждого пользователя с помощью стабильного `external_profile_id`. Повторная отправка
-        того же `external_profile_id` обновляет существующий профиль, а не создаёт дубликат.
+        Идентифицируйте каждого пользователя по стабильному `external_profile_id`. Повторная отправка того же `external_profile_id`
+        обновляет существующий профиль, а не создаёт дубликат.
       operationId: saveProfile
       security:
         - apikeyAuth: []
@@ -41,14 +41,14 @@ paths:
               $ref: '#/components/schemas/ProfileDTO'
             examples:
               basic:
-                summary: Профиль с email, готовый для флоу "never purchased"
+                summary: Profile with an email, ready for the "never purchased" flow
                 value:
-                  external_profile_id: "user_12345"
-                  external_created_at: "2026-06-01T10:30:00Z"
-                  email: "jane@example.com"
-                  country: "US"
+                  external_profile_id: user_12345
+                  external_created_at: '2026-06-01T10:30:00Z'
+                  email: jane@example.com
+                  country: US
                   custom_attributes:
-                    plan: "trial"
+                    plan: trial
       responses:
         '200':
           description: Профиль успешно сохранён. Тело ответа — пустой объект.
@@ -60,7 +60,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: Ошибка валидации — обязательное поле отсутствует или содержит недопустимое значение. `field_name` указывает, какое поле вызвало ошибку.
+          description: Ошибка валидации — обязательное поле отсутствует или содержит недопустимое значение. Поле `field_name` указывает, какое именно поле вызвало ошибку.
           content:
             application/json:
               schema:
@@ -69,10 +69,10 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "email"
+                        field_name: email
         '403':
           description: Секретный API-ключ отсутствует или недействителен.
           content:
@@ -83,20 +83,94 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
+                        field_name: null
+  /api/v1/profile/delete/:
+    post:
+      summary: Удалить профиль
+      description: |
+        Удаляет персональные данные профиля и отменяет его запланированные письма. Используйте этот метод для выполнения запроса на удаление данных в соответствии с правом на забвение.
+
+        Идентифицируйте профиль с помощью любой комбинации `external_profile_id`, `customer_user_id` и `email` — Adapty Mail разрешает профиль так же, как и при сохранении.
+
+        Удаление является необратимым. Последующий запрос [Save profile](#operation/saveProfile) с теми же идентификаторами не пересоздаёт профиль.
+
+        Повторное удаление по `external_profile_id` или `customer_user_id` завершится успешно, не изменив ничего. Повторное удаление только по `email` вернёт `404`: удаление очищает сохранённый адрес, поэтому email не соответствует ни одной записи.
+      operationId: deleteProfile
+      security:
+        - apikeyAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileDeleteDTO'
+            examples:
+              byExternalProfileId:
+                summary: Удалить по идентификатору, переданному при сохранении профиля
+                value:
+                  external_profile_id: user_12345
+              byEmail:
+                summary: Удалить по адресу электронной почты
+                value:
+                  email: jane@example.com
+      responses:
+        '204':
+          description: Профиль удалён. Тело ответа отсутствует.
+        '400':
+          description: Идентификатор не был указан.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: At least one of external_profile_id, customer_user_id or email must be provided
+                        error_code: missing_identifier
+                        status_code: 400
+                        field_name: null
+        '403':
+          description: Отсутствует или недействителен секретный API-ключ.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
+                        status_code: 403
+                        field_name: null
+        '404':
+          description: Ни один профиль не соответствует переданным идентификаторам.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Errors'
+              examples:
+                default:
+                  value:
+                    errors:
+                      - message: Profile not found
+                        error_code: profile_not_found_error
+                        status_code: 404
                         field_name: null
   /api/v1/profile/transaction-event/save/:
     post:
       summary: Сохранить событие транзакции
       description: |
-        Записывает событие транзакции стора для профиля. Adapty Mail использует события транзакций для
-        помещения профилей в флоу на основе покупок — `event_type` соответствует флоу, таким как
-        renewal cancelled, billing issue, expired и refunded — а также для атрибуции выручки.
+        Записывает событие транзакции стора для профиля. Adapty Mail использует события транзакций для помещения
+        профилей в флоу на основе покупок — `event_type` соответствует таким флоу, как отмена продления,
+        проблема с оплатой, истечение срока действия и возврат средств — а также для атрибуции дохода.
 
-        Отправляйте эти события по мере обработки покупок, продлений и отмен. Без них работает только
-        флоу **never purchased**.
+        Отправляйте эти события по мере обработки покупок, продлений и отмен. Только флоу
+        **never purchased** работает без них.
       operationId: saveTransactionEvent
       security:
         - apikeyAuth: []
@@ -108,23 +182,23 @@ paths:
               $ref: '#/components/schemas/TransactionEventDTO'
             examples:
               basic:
-                summary: Новая покупка ежемесячной подписки
+                summary: A new monthly subscription purchase
                 value:
-                  event_type: "subscription_started"
-                  event_id: "evt_abc123"
-                  event_datetime: "2026-06-10T14:20:05Z"
-                  external_profile_id: "user_12345"
-                  store: "app_store"
-                  store_product_id: "premium_monthly"
-                  store_transaction_id: "1000000123456789"
-                  store_original_transaction_id: "1000000123456789"
-                  purchased_at: "2026-06-10T14:20:00Z"
-                  originally_purchased_at: "2026-06-10T14:20:00Z"
-                  price_usd: "9.99"
-                  expires_at: "2026-07-10T14:20:00Z"
+                  event_type: subscription_started
+                  event_id: evt_abc123
+                  event_datetime: '2026-06-10T14:20:05Z'
+                  external_profile_id: user_12345
+                  store: app_store
+                  store_product_id: premium_monthly
+                  store_transaction_id: '1000000123456789'
+                  store_original_transaction_id: '1000000123456789'
+                  purchased_at: '2026-06-10T14:20:00Z'
+                  originally_purchased_at: '2026-06-10T14:20:00Z'
+                  price_usd: '9.99'
+                  expires_at: '2026-07-10T14:20:00Z'
       responses:
         '200':
-          description: Событие транзакции успешно сохранено. Тело ответа — пустой объект.
+          description: Событие транзакции успешно сохранено. Тело ответа представляет собой пустой объект.
           content:
             application/json:
               schema:
@@ -133,7 +207,7 @@ paths:
                 default:
                   value: {}
         '400':
-          description: Ошибка валидации — обязательное поле отсутствует или содержит недопустимое значение. `field_name` указывает, какое поле вызвало ошибку.
+          description: Ошибка валидации — обязательное поле отсутствует или содержит недопустимое значение. `field_name` указывает, какое именно поле.
           content:
             application/json:
               schema:
@@ -142,10 +216,10 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Field required"
-                        error_code: "base_error"
+                      - message: Field required
+                        error_code: base_error
                         status_code: 400
-                        field_name: "event_type"
+                        field_name: event_type
         '403':
           description: Секретный API-ключ отсутствует или недействителен.
           content:
@@ -156,8 +230,8 @@ paths:
                 default:
                   value:
                     errors:
-                      - message: "Secret key doesn't exist"
-                        error_code: "secret_key_does_not_exist_error"
+                      - message: Secret key doesn't exist
+                        error_code: secret_key_does_not_exist_error
                         status_code: 403
                         field_name: null
 components:
@@ -167,11 +241,11 @@ components:
       in: header
       name: Authorization
       description: |
-        Аутентифицируйте каждый запрос с помощью секретного API-ключа Adapty Mail, передавая его в заголовке **Authorization**
+        Аутентифицируйте каждый запрос с помощью секретного API-ключа Adapty Mail, передаваемого в заголовке **Authorization**
         со значением `Bearer {your_secret_api_key}`, например `Bearer secret_live_...`.
 
         Найдите этот ключ в Adapty Mail в разделе **Settings**. Ключ привязан к конкретному проекту — он идентифицирует
-        проект, которому принадлежат данные, поэтому эндпоинты профиля и транзакций не принимают идентификатор проекта.
+        проект, которому принадлежат данные, поэтому эндпоинты профилей и транзакций не требуют передачи идентификатора проекта.
   schemas:
     ProfileDTO:
       type: object
@@ -183,9 +257,7 @@ components:
         external_profile_id:
           type: string
           description: |
-            Стабильный идентификатор пользователя, принадлежащий вашему приложению или бэкенду. Используйте одно
-            и то же значение в разных запросах, чтобы Adapty Mail связывал письма, клики и покупки с одним профилем.
-            Никогда не используйте анонимный или привязанный к установке идентификатор.
+            Стабильный идентификатор пользователя, принадлежащий вашему приложению или бэкенду. Используйте одно и то же значение во всех запросах, чтобы Adapty Mail связывал электронные письма, клики и покупки с одним профилем. Никогда не используйте анонимный идентификатор или идентификатор, привязанный к установке.
         external_created_at:
           type: string
           format: date-time
@@ -195,7 +267,14 @@ components:
         email:
           type: string
           format: email
-          description: Email-адрес пользователя. Adapty Mail доставляет рассылки на этот адрес.
+          description: |
+            Адрес электронной почты пользователя. Adapty Mail доставляет кампании на этот адрес.
+
+            Адрес задаётся один раз: он устанавливается при создании профиля и последующие сохранения не перезаписывают его.
+        customer_user_id:
+          type: string
+          description: |
+            Идентификатор пользователя в вашей собственной системе, если он есть и Adapty также его знает. Adapty Mail использует его для распознавания пользователя, который также взаимодействует с системой через SDK Adapty, чтобы оба источника использовали один профиль вместо создания дубликата, который отправлял бы письма одному человеку дважды.
         first_name:
           type: string
           description: Имя пользователя.
@@ -211,17 +290,39 @@ components:
           description: Дата рождения пользователя в формате ISO 8601 (например, `"1990-05-21"`).
         country:
           type: string
-          description: Страна пользователя в виде двухбуквенного кода ISO 3166-1 alpha-2 в верхнем регистре (например, `US`).
+          description: Страна пользователя в виде двухбуквенного кода ISO 3166-1 alpha-2 (например, `US`).
         store_country:
           type: string
-          description: Регион стора пользователя в виде двухбуквенного кода ISO 3166-1 alpha-2 в верхнем регистре (например, `US`).
+          description: Регион стора пользователя в виде двухбуквенного кода ISO 3166-1 alpha-2 (например, `US`).
         custom_attributes:
           type: object
           description: |
-            Произвольные пары ключ-значение (строковые или числовые значения) для добавления к профилю. Используйте их для
-            построения [сегментов](/docs/mail-segments) — например, `plan`, `signup_source` или `trial_days`.
+            Произвольные пары ключ-значение (строковые или числовые значения), прикреплённые к профилю. Используйте их для построения [сегментов](/docs/mail-segments) — например, `plan`, `signup_source` или `trial_days`.
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
+    ProfileDeleteDTO:
+      type: object
+      description: |
+        Идентификаторы профиля для удаления. Укажите хотя бы один из параметров: `external_profile_id`,
+        `customer_user_id` или `email`.
+      anyOf:
+        - required:
+            - external_profile_id
+        - required:
+            - customer_user_id
+        - required:
+            - email
+      properties:
+        external_profile_id:
+          type: string
+          description: Идентификатор, переданный при сохранении профиля.
+        customer_user_id:
+          type: string
+          description: Идентификатор пользователя в вашей системе.
+        email:
+          type: string
+          format: email
+          description: Адрес электронной почты, привязанный к профилю.
     DeviceInfoDTO:
       type: object
       required:
@@ -263,17 +364,33 @@ components:
           $ref: '#/components/schemas/TransactionEventType'
         event_id:
           type: string
-          description: Уникальный идентификатор этого события, принадлежащий вашей системе. Используйте его для обеспечения идемпотентности событий.
+          description: Уникальный идентификатор события в вашей системе. Используйте его для обеспечения идемпотентности событий.
         event_datetime:
           type: string
           format: date-time
           description: Время записи события в формате ISO 8601.
         external_profile_id:
           type: string
-          description: Тот же стабильный `external_profile_id`, который вы передаёте при сохранении профиля. Связывает транзакцию с нужным профилем.
+          description: |
+            Тот же стабильный `external_profile_id`, который вы передаёте при сохранении профиля. Связывает
+            транзакцию с нужным профилем.
+
+            Вы можете отправить транзакцию до того, как профиль создан. Adapty Mail сохранит событие
+            без привязки и свяжет его с профилем при следующем сохранении с тем же идентификатором.
+        customer_user_id:
+          type: string
+          description: |
+            Идентификатор пользователя в вашей системе. Adapty Mail использует его для поиска профиля, если
+            `external_profile_id` не совпадает ни с одним из существующих. Не сохраняется в событии.
+        email:
+          type: string
+          format: email
+          description: |
+            Адрес электронной почты покупателя. Adapty Mail использует его для поиска профиля, если
+            ни один из идентификаторов не совпадает ни с одним из существующих. Не сохраняется в событии.
         store:
           type: string
-          description: Стор, из которого пришла транзакция, например `app_store`, `play_store` или `stripe`.
+          description: Стор, из которого поступила транзакция, например `app_store`, `play_store` или `stripe`.
         store_product_id:
           type: string
           description: Идентификатор приобретённого продукта в сторе.
@@ -297,7 +414,7 @@ components:
         expires_at:
           type: string
           format: date-time
-          description: Время истечения или истёкшего срока действия подписки в формате ISO 8601. Не указывайте для разовых покупок.
+          description: Время истечения или истёкшего срока действия подписки в формате ISO 8601. Не указывается для разовых покупок.
         offer:
           $ref: '#/components/schemas/Offer'
     TransactionEventType:
@@ -316,7 +433,7 @@ components:
         - non_subscription_purchase_refunded
     Offer:
       type: object
-      description: Детали promotional offer или introductory offer, применённого к транзакции.
+      description: Сведения о promotional offer или introductory offer, применённом к транзакции.
       required:
         - category
         - offer_type
@@ -327,7 +444,7 @@ components:
           $ref: '#/components/schemas/OfferType'
         offer_id:
           type: string
-          description: Идентификатор офера в сторе, если применимо.
+          description: Идентификатор предложения в сторе, если применимо.
     OfferCategory:
       type: string
       enum:
@@ -343,7 +460,7 @@ components:
         - pay_up_front
     Errors:
       type: object
-      description: Стандартный ответ об ошибке. Каждый сбой возвращает статус 4XX с этой структурой.
+      description: Стандартный ответ об ошибке. Каждый сбой возвращает статус 4XX с такой структурой.
       properties:
         errors:
           type: array
@@ -352,7 +469,7 @@ components:
             properties:
               message:
                 type: string
-                description: Описание ошибки в читаемом виде.
+                description: Описание ошибки в человекочитаемом формате.
               error_code:
                 type: string
                 description: Машиночитаемый идентификатор ошибки.

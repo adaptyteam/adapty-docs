@@ -87,14 +87,50 @@ Parámetros de la respuesta:
 :::warning
 **Nota:** si todavía usas una versión de StoreKit de Apple inferior a v2.0 y una versión del SDK de Adapty inferior a v2.9.0, debes proporcionar el [secreto compartido de Apple App Store](app-store-connection-configuration#step-5-enter-app-store-shared-secret) en su lugar. Este método está actualmente obsoleto según Apple.
 :::
-## Compras in-app desde el App Store
+## Compras in-app desde el App Store \{#in-app-purchases-from-the-app-store\}
 
-Cuando un usuario inicia una compra en el App Store y la transacción llega a tu app, tienes dos opciones:
+Cuando un usuario inicia una compra en el App Store y la transacción llega a tu app, el SDK llama al método delegado `didReceivePromotedPurchase` con un objeto `AdaptyPromotedProduct`. Tienes dos opciones:
 
-- **Procesar la transacción inmediatamente:** Devuelve `true` en `shouldAddStorePayment`. Esto activará la pantalla del sistema de compra de Apple de inmediato.
-- **Guardar el objeto de producto para procesarlo más tarde:** Devuelve `false` en `shouldAddStorePayment` y luego llama a `makePurchase` con el producto guardado más adelante. Esto puede ser útil si necesitas mostrar algo personalizado al usuario antes de iniciar una compra.
+- **Procesar la transacción de inmediato:** No implementes `didReceivePromotedPurchase`. La implementación por defecto inicia la compra de inmediato, y la pantalla del sistema de compras de Apple aparece automáticamente.
+- **Guardar el objeto de producto para procesarlo más tarde:** Implementa `didReceivePromotedPurchase`, guarda el producto y luego llama a `makePurchase` con el producto almacenado cuando lo necesites. Esto puede ser útil si necesitas mostrar algo personalizado al usuario antes de iniciar la compra.
 
-Aquí tienes el fragmento completo:
+Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente en el momento de la compra. La oferta se lee desde la intención de compra de la App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, `subscriptionOffer` es siempre `nil` y la compra se procesa al precio base.
+
+Este es el fragmento completo:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    // 1. Store the product object to defer the transaction.
+    // To process the transaction immediately instead, don't implement this method —
+    // the default implementation starts the purchase right away.
+    nonisolated func didReceivePromotedPurchase(_ product: AdaptyPromotedProduct) {
+        // store the product object
+    }
+
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyPromotedProduct = // get the product object from 1.
+        do {
+            let purchaseResult = try await Adapty.makePurchase(product: storedProduct)
+            // process the purchase result
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+:::warning
+La API `didReceivePromotedPurchase` está disponible a partir de la versión 4.1 del SDK y requiere **iOS 16.4** o posterior. La versión 4.0 del SDK no admite compras in-app promocionadas en absoluto, y en dispositivos con iOS inferior a 16.4 el método nunca se activa. Si necesitas compras promocionadas en versiones anteriores de iOS, quédate en el SDK 3.x y usa `shouldAddStorePayment` como se muestra a continuación.
+:::
+
+<Details summary="¿Usas Adapty SDK 3.x?">
+
+En el SDK 3.x, el SDK llama al método delegado `shouldAddStorePayment` en su lugar:
+
+- **Procesar la transacción de inmediato:** Devuelve `true` en `shouldAddStorePayment`. Esto activará la pantalla del sistema de compra de Apple al instante.
+- **Almacenar el objeto de producto para procesarlo más tarde:** Devuelve `false` en `shouldAddStorePayment` y, después, llama a `makePurchase` con el producto almacenado cuando lo necesites.
+
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     nonisolated func shouldAddStorePayment(for product: AdaptyDeferredProduct) -> Bool {
@@ -117,6 +153,8 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
+
+</Details>
 
 ## Canjear códigos de oferta en iOS \{#redeem-offer-codes-in-ios\}
 

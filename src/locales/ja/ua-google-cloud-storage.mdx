@@ -5,15 +5,21 @@ metadataTitle: "Google Cloud Storage | Adapty アトリビューション | Adap
 keywords: ['adapty attribution', 'adapty ua', 'ユーザー獲得', 'google cloud', 'gcs']
 ---
 
-Adapty AttributionとGoogle Cloud Storageの連携により、ユーザー獲得キャンペーンデータを一か所に安全に保存できます。キャンペーンパフォーマンスデータ、アトリビューションデータ、ユーザー獲得イベントを.csvファイルとしてGoogle Cloud Storageバケットに保存できます。  
-この連携を設定するには、Google Cloud ConsoleとAdapty Attribution ダッシュボードでいくつかの簡単な手順を実行する必要があります。
+Adapty AttributionとGoogle Cloud Storageの統合により、ユーザー獲得キャンペーンデータを安全に一元管理できます。キャンペーンのパフォーマンスデータ、アトリビューションデータ、ユーザー獲得イベントを.csvファイルとしてGoogle Cloud Storageバケットに保存できます。  
+この統合をセットアップするには、Google Cloud ConsoleとAdapty Attribution ダッシュボードでいくつかの手順を行う必要があります。
 
 :::note
 スケジュール
 
-Adapty Attributionは毎日UTC 4:00にGoogle Cloud Storageへデータを送信します。
-各ファイルには、UTC基準で前日の1日分（カレンダーデー）に作成されたイベントのデータが含まれます。たとえば、3月8日 4:00 UTC に自動エクスポートされるデータには、3月7日の 00:00:00〜23:59:59 UTC に作成されたすべてのイベントが含まれます。
+Adapty Attribution は、カレンダー上の1日分のファイルセットを Google Cloud Storage にエクスポートします。エクスポートスケジューラーは1日3回（**02:00**、**04:00**、**06:00 UTC**）実行されます。各実行では、前日のエクスポートジョブが存在しない場合は新規作成し、以前の実行が失敗していた場合は再試行します。そのため、データは通常 02:00 の実行後に反映され、それ以降の実行は失敗時のリカバリー用です。
+
+各ファイルには、UTC の前日のカレンダー日全体で作成されたイベントのデータが含まれます。たとえば、3月8日にエクスポートされたデータには、UTC の3月7日の 00:00:00 から 23:59:59 までに作成されたすべてのイベントが含まれます。
 :::
+
+:::warning
+スケジュールエクスポートは、有料プランまたはトライアル中の企業でのみ実行されます。どちらにも該当しない場合、スケジューラーはエクスポートをスキップし、ダッシュボードでインテグレーションが有効になっていてもファイルを書き込みません。バケットが空で設定が正しく見える場合は、まずプランのステータスを確認してください。
+:::
+
 ## Google Cloud Storage 連携の設定方法 \{#how-to-set-up-google-cloud-storage-integration\}
 
 ### ステップ 1. Google Cloud Storage の認証情報を作成する \{#step-1-create-google-cloud-storage-credentials\}
@@ -153,18 +159,24 @@ Google Cloud Storage 連携では、Adapty アトリビューションがイン�
 イベントのテーブル構造は以下のとおりです。
 | カラム                   | 説明                                      |
 |--------------------------|-------------------------------------------|
-| `adapty_profile_id`      | Adapty プロファイルの一意識別子           |
+| `adapty_profile_id`      | Adaptyプロファイルの一意識別子            |
 | `install_id`             | インストールの一意識別子                  |
-| `created_at`             | レコード作成タイムスタンプ（ISO 8601）    |
-| `installed_at`           | アプリインストールタイムスタンプ（ISO 8601） |
+| `created_at`             | レコード作成日時（ISO 8601）              |
+| `installed_at`           | アプリインストール日時（ISO 8601）        |
 | `store`                  | アプリストア（`ios`、`android`）          |
 | `country`                | ユーザーの国コード（ISO 3166-1 alpha-2）  |
-| `ip_address`             | クライアント IP アドレス                  |
-| `idfa`                   | iOS 広告識別子（IDFA）                    |
-| `idfv`                   | iOS ベンダー識別子（IDFV）                |
-| `gaid`                   | Google 広告 ID（Android）                 |
-| `android_id`             | Android デバイス ID                       |
+| `ip_address`             | クライアントIPアドレス                    |
+| `idfa`                   | iOS広告主識別子                           |
+| `idfv`                   | iOSベンダー識別子                         |
+| `gaid`                   | Google広告ID（Android）                   |
+| `android_id`             | AndroidデバイスID                         |
 | `app_set_id`             | Android App Set ID                        |
+| `bundle_id`              | アプリバンドル識別子（例：`com.example.app`） |
+| `device_brand`           | デバイスブランド（例：`Apple`、`Samsung`）|
+| `device_model`           | デバイスモデル（例：`iPhone15,2`）        |
+| `os_version`             | OSのメジャーバージョン                    |
+| `app_version`            | Adapty SDKが報告するアプリバージョン      |
+| `sdk_version`            | Adapty SDKバージョン                      |
 | `channel`                | アトリビューションチャネル                |
 | `campaign_id`            | キャンペーン識別子                        |
 | `campaign_name`          | キャンペーン名                            |
@@ -174,16 +186,17 @@ Google Cloud Storage 連携では、Adapty アトリビューションがイン�
 | `ad_name`                | 広告名                                    |
 | `keyword_id`             | キーワード識別子                          |
 | `keyword_name`           | キーワード名                              |
-| `asa_org_id`             | Apple Search Ads 組織 ID                  |
-| `asa_keyword_match_type` | ASA キーワードマッチタイプ（`Exact`、`Broad`） |
-| `asa_attribution`        | ASA アトリビューションデータ（JSON 文字列） |
-| `asa_conversion_type`    | ASA コンバージョンタイプ                  |
-| `asa_country_or_region`  | ASA の国またはリージョン                  |
-| `asa_creative_set_name`  | ASA クリエイティブセット名                |
-| `fbclid`                 | Facebook クリック ID                      |
-| `ttclid`                 | TikTok クリック ID                        |
-| `utm_source`             | UTM source パラメータ                     |
-| `utm_medium`             | UTM medium パラメータ                     |
-| `utm_campaign`           | UTM campaign パラメータ                   |
-| `utm_term`               | UTM term パラメータ                       |
-| `utm_content`            | UTM content パラメータ                    |
+| `asa_org_id`             | Apple Search Ads組織ID                    |
+| `asa_keyword_match_type` | ASAキーワードマッチタイプ（`Exact`、`Broad`） |
+| `asa_attribution`        | ASAアトリビューションデータ（JSON文字列） |
+| `asa_conversion_type`    | ASAコンバージョンタイプ                   |
+| `asa_country_or_region`  | ASAの国または地域                         |
+| `asa_creative_set_name`  | ASAクリエイティブセット名                 |
+| `fbclid`                 | FacebookクリックID                        |
+| `ttclid`                 | TikTokクリックID                          |
+| `utm_source`             | UTMソースパラメータ                       |
+| `utm_medium`             | UTMメディアパラメータ                     |
+| `utm_campaign`           | UTMキャンペーンパラメータ                 |
+| `utm_term`               | UTMタームパラメータ                       |
+| `utm_content`            | UTMコンテンツパラメータ                   |
+| `click_time`             | アトリビューションされたクリックのタイムスタンプ（Unix秒）。インストールにクリックが紐づいていない場合は空。 |

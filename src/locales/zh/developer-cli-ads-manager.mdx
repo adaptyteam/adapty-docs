@@ -1,0 +1,147 @@
+---
+title: "从 CLI 管理 Ads Manager"
+description: "使用 Adapty Developer CLI 在终端中运行 Apple Ads 广告系列、关键词和自动化规则。"
+metadataTitle: "Developer CLI 中的 Ads Manager | Adapty 文档"
+---
+
+Adapty CLI 可以通过 `adapty asa` 主题从终端管理你的 [Ads Manager](adapty-ads-manager) 账户。它涵盖广告系列、广告组、关键词、广告、产品页面、自动化规则、数据图表和竞品研究。
+
+将浏览器操作中耗时的工作交给它来处理：让 AI 代理实时访问广告效果数据、从文件中批量添加数百个关键词，以及跨多个推广活动执行相同的配置。其他情况下，使用[看板](https://app.adapty.io)会更快。
+
+:::warning
+CLI 无法删除任何内容。推广活动、广告和自动化规则可以在终端中创建、更新和暂停，但只能在看板中删除。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+Ads Manager 命令与 CLI 其他功能共用同一套安装和登录方式。如果尚未完成配置，请参照[快速入门指南](developer-cli-quickstart)中的第 1 步和第 2 步进行操作。
+
+### 前提条件 \{#prerequisites\}
+
+每条 `adapty asa` 命令还需满足以下两个条件：
+
+- **已连接 Apple Ads 账户**：使用 `adapty asa connect` 连接，或按照 [Adapty Ads Manager 入门指南](adapty-ads-manager-get-started) 中的说明在看板中完成连接。
+- **有效的 Ads Manager 订阅**：若无订阅，每条命令都会返回 `402 ads_manager_subscription_required` 错误。
+
+以下命令可同时查看上述两项状态：
+
+```bash
+adapty asa whoami
+```
+
+### 与其他 CLI 命令的区别 \{#differences-from-the-rest-of-the-cli\}
+
+- **没有 `--app` 标志**：操作范围是你的 Token 所属公司。`--app` 仅在部分 `list` 命令中作为过滤条件存在。
+- **写操作直接触达 Apple**：每个会修改账户的命令都会打印请求体，并在发送前要求你确认。没有预发布步骤。
+- **读操作代价低，写操作代价高**：可以随意执行 `list` 命令和 `--dry-run`。其他所有操作都应视为不可逆。
+
+要在脚本中跳过确认提示，请传入 `--yes`。在 `--json` 模式下或管道中，写入命令会拒绝执行而非等待一个永远不会到来的输入，因此在这些情况下必须使用 `--yes`。
+
+## 查找所需 ID \{#find-the-ids-you-need\}
+
+每条命令都需要 UUID，而每个 UUID 都来自对应的 `list` 命令。按层级逐步获取：
+
+```bash
+adapty asa orgs list
+adapty asa campaigns list --campaign-group <campaign-group-id>
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+每次查询都应配合过滤条件来缩小范围。过滤条件收窄的是查询本身，而非仅限于输出结果，因此带范围的查询开销很小，而不带范围的查询则会翻遍整个账户的数据。不加 `--ad-group` 直接运行 `adapty asa keywords list` 是本主题中读取范围最广的操作。
+
+这些列表仅返回元数据。性能数据请通过 [`asa metrics`](#query-metrics-from-agents-and-scripts) 获取。
+
+## 批量添加关键词 \{#add-keywords-in-bulk\}
+
+逐个添加关键词是离开看板的主要原因。将每个关键词单独放在文本文件的一行中：
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 1.20 --match-type EXACT
+```
+
+关键词以每次最多 100 个的批量方式提交。如果列表较大，请拆分为多次调用。
+
+可能出现两种失败情况，且两者的表现不同。ID 无效会在调用 Apple 之前导致整批请求失败，因此没有任何内容会被应用。Apple 也可能拒绝单个关键词——其余关键词仍会正常添加，每条拒绝都会附带说明原因。请以摘要行为准，而非单纯依赖退出码。
+
+先发送少量关键词并确认结果，再发送完整文件。
+
+## 从代理程序和脚本中查询数据图表 \{#query-metrics-from-agents-and-scripts\}
+
+`asa metrics` 可对账户任意层级的数据按日期范围进行报告。添加 `--json` 参数后，AI 代理程序或脚本可直接使用输出结果：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
+```
+
+`--metric` 接受 Ads Manager 所追踪的指标名称。完整列表请参阅[数据图表](adapty-ads-manager-metrics)。
+
+同期群数据图表的工作方式与其他数据图表不同。不存在 `ltv` 指标，因为生命周期价值是按续订窗口而非按日期读取的。请改为指定窗口：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90 --order-by-day 90
+```
+
+这将返回按第 90 天 ROAS 排名的广告系列。单次调用最多可容纳 16 个窗口。
+
+每行代表一个实体，已在服务器端完成聚合和排序。因此，"按消耗金额排名前五的广告系列"这类问题只需一次调用，无需遍历每一页：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+数据图表和搜索词列表共享同一个分析预算：每分钟 5 次调用，任意 10 秒内最多 2 次。尽量一次性提出精确的问题，而不是反复轮询。报告周期也受分组粒度的限制——按天最多 90 天，按周最多 180 天，按月最多 365 天——如需扩大报告范围，请通过粗化 `--group-by` 来实现，而不是拆分成更多次调用。
+
+## 查看竞品关键词 \{#check-competitor-keywords\}
+
+一条命令即可返回竞争对手应用所投放的关键词，每次最多支持五个 App Store 应用：
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027 --json
+```
+
+时间周期和国家/地区由服务端固定——取最近一个完整月份，覆盖所有国家/地区——因此该命令除应用 ID 外无其他参数。首次查询某组应用时，可能需要数十秒才能返回结果。
+
+使用此功能可按计划将竞品关键词数据拉取到报告中。如需筛选结果、对比不同国家/地区的数据，或将找到的关键词直接添加到推广活动，请使用看板中的 [Market Intelligence](ads-manager-market-intelligence)。
+
+## 运行自动化规则 \{#run-automation-rules\}
+
+CLI 不会构建[自动化规则](ads-manager-automations)——它只存储你提供的 JSON。获取有效规则文件最快的方式是在看板中创建一条规则，然后将其读取出来：
+
+```bash
+adapty asa automations get <automation-id> --json > rule.json
+```
+
+编辑该文件，并将其作为新规则的模板：
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+向 `automations update` 传入文件时，请先删除 `internal_id` 字段——如果该字段存在，更新操作将被拒绝。
+
+在正式让规则修改出价之前，先进行测试：
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+模拟运行会评估所有条件，并记录规则将执行的操作，但不会对 Apple Ads 做任何实际修改。运行任务会进入队列而非立即执行，因此该命令会输出一个运行 ID，执行结果可在 `adapty asa automations runs` 中查看。
+
+## 安全地重复运行脚本 \{#re-run-scripts-safely\}
+
+每次写入操作都会携带一个幂等性密钥。CLI 在每次调用时自动生成一个，并在网络错误后重试一次，因此传输过程中失败的请求不会被重复执行。
+
+在脚本中，可以自行固定密钥，从而安全地重复运行整个流水线：
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50 --idempotency-key winter-push-2026 --yes
+```
+
+在 24 小时内重复执行相同命令，系统会返回已存储的结果并打印 `Already applied earlier`，而不会创建第二个活动。使用相同键名但请求体不同的情况会返回 `422` 错误，从而捕获那些因脚本错误而重复使用键名的情况。
+
+## 后续步骤 \{#whats-next\}
+
+- [使用 AI 编程工具管理 Apple Ads](developer-cli-ads-manager-skill) — 安装 Apple Ads 插件，让 Claude Code、Copilot CLI、Codex 或 Gemini CLI 替你执行这些命令。
+- [Ads Manager 命令](developer-cli-ads-manager-reference) — 每个命令的参数、标志及可用值。
+- [自动化](ads-manager-automations) — 每种规则类型的功能及其可执行的操作。
+- [数据图表](adapty-ads-manager-metrics) — `--metric` 支持的指标名称及各指标的计算方式。

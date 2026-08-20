@@ -1,0 +1,147 @@
+---
+title: "Quản lý Ads Manager từ CLI"
+description: "Chạy các chiến dịch Apple Ads, từ khóa và quy tắc tự động từ terminal với Adapty Developer CLI."
+metadataTitle: "Ads Manager trong Developer CLI | Tài liệu Adapty"
+---
+
+Adapty CLI có thể quản lý tài khoản [Ads Manager](adapty-ads-manager) của bạn từ terminal, thông qua chủ đề `adapty asa`. CLI hỗ trợ quản lý chiến dịch, nhóm quảng cáo, từ khóa, quảng cáo, trang sản phẩm, quy tắc tự động, chỉ số và nghiên cứu đối thủ cạnh tranh.
+
+Dùng nó cho những việc mà trình duyệt xử lý chậm: cấp cho AI agent quyền truy cập trực tiếp vào hiệu suất quảng cáo, thêm vài trăm từ khóa từ một file, và chạy cùng một thiết lập trên nhiều chiến dịch. Với mọi thứ còn lại, [dashboard](https://app.adapty.io) vẫn nhanh hơn.
+
+:::warning
+CLI không thể xóa bất cứ thứ gì. Các chiến dịch, quảng cáo và quy tắc tự động có thể được tạo, cập nhật và tạm dừng từ terminal, nhưng việc xóa chúng chỉ có thể thực hiện trên dashboard.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Các lệnh Ads Manager sử dụng cùng cài đặt và đăng nhập với phần còn lại của CLI. Nếu bạn chưa thiết lập, hãy làm theo bước 1 và 2 của [hướng dẫn quickstart](developer-cli-quickstart).
+
+### Điều kiện tiên quyết \{#prerequisites\}
+
+Hai điều kiện sau áp dụng cho mọi lệnh `adapty asa`:
+
+- **Tài khoản Apple Ads đã kết nối**: Kết nối bằng `adapty asa connect`, hoặc trên dashboard như mô tả trong [Bắt đầu với Adapty Ads Manager](adapty-ads-manager-get-started).
+- **Gói đăng ký Ads Manager đang hoạt động**: Nếu không có, mọi lệnh sẽ thất bại với lỗi `402 ads_manager_subscription_required`.
+
+Một lệnh duy nhất báo cáo cả hai:
+
+```bash
+adapty asa whoami
+```
+
+### Điểm khác biệt so với phần còn lại của CLI \{#differences-from-the-rest-of-the-cli\}
+
+- **Không có flag `--app`**: Phạm vi là công ty mà token của bạn thuộc về. `--app` chỉ tồn tại trên một số lệnh `list` với vai trò bộ lọc.
+- **Thao tác ghi tác động trực tiếp đến Apple**: Mỗi lệnh thay đổi tài khoản của bạn sẽ in ra nội dung request và yêu cầu xác nhận trước khi gửi. Không có bước staging.
+- **Đọc thì rẻ, ghi thì không**: Chạy lệnh `list` và `--dry-run` thoải mái. Còn lại hãy xem như không thể hoàn tác.
+
+Để bỏ qua lời nhắc xác nhận trong một script, hãy truyền `--yes`. Khi dùng `--json` hoặc trong một pipe, lệnh ghi sẽ từ chối thay vì chờ câu trả lời không bao giờ đến, vì vậy `--yes` là bắt buộc trong trường hợp đó.
+
+## Tìm các ID bạn cần \{#find-the-ids-you-need\}
+
+Mỗi lệnh đều yêu cầu UUID, và mọi UUID đều lấy từ lệnh `list`. Làm theo thứ tự phân cấp sau:
+
+```bash
+adapty asa orgs list
+adapty asa campaigns list --campaign-group <campaign-group-id>
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Hãy giới hạn phạm vi mỗi lần đọc bằng bộ lọc. Bộ lọc thu hẹp truy vấn thay vì chỉ lọc kết quả hiển thị, nên đọc có phạm vi sẽ nhẹ hơn nhiều so với đọc không có phạm vi vì phải duyệt qua toàn bộ tài khoản. `adapty asa keywords list` không có `--ad-group` là lệnh đọc rộng nhất trong phần này.
+
+Các danh sách này chỉ trả về metadata. Số liệu hiệu suất đến từ [`asa metrics`](#query-metrics-from-agents-and-scripts).
+
+## Thêm từ khóa hàng loạt \{#add-keywords-in-bulk\}
+
+Thêm từng từ khóa một là lý do chính để rời khỏi dashboard. Đặt mỗi từ khóa trên một dòng trong tệp văn bản:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 1.20 --match-type EXACT
+```
+
+Từ khóa được áp dụng theo từng lô tối đa 100 từ mỗi lần gọi. Hãy chia danh sách lớn hơn thành nhiều lần gọi.
+
+Có hai loại lỗi có thể xảy ra, và chúng hoạt động khác nhau. Một ID không hợp lệ sẽ làm hỏng toàn bộ batch trước khi Apple được gọi, nên không có gì được áp dụng. Apple cũng có thể từ chối từng keyword riêng lẻ — các keyword còn lại vẫn được thêm vào, và mỗi lần từ chối được báo cáo kèm theo lý do. Hãy kiểm tra dòng tóm tắt thay vì chỉ dựa vào mã thoát.
+
+Bắt đầu với một vài keyword và kiểm tra kết quả trước khi gửi cả file.
+
+## Truy vấn chỉ số từ agent và script \{#query-metrics-from-agents-and-scripts\}
+
+`asa metrics` báo cáo ở bất kỳ cấp độ nào của tài khoản trong một khoảng thời gian. Thêm `--json` để AI agent hoặc script có thể đọc kết quả trực tiếp:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
+```
+
+`--metric` nhận các tên mà Ads Manager theo dõi. Xem [Chỉ số](adapty-ads-manager-metrics) để có danh sách đầy đủ.
+
+Các chỉ số cohort hoạt động khác với phần còn lại. Không có chỉ số `ltv`, vì giá trị vòng đời được đọc theo cửa sổ gia hạn chứ không phải theo ngày. Hãy truyền cửa sổ thay thế:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90 --order-by-day 90
+```
+
+Lệnh này trả về danh sách các chiến dịch được xếp hạng theo ROAS ngày 90. Một lần gọi có thể chứa tối đa 16 cửa sổ.
+
+Mỗi hàng là một entity, đã được tổng hợp và sắp xếp sẵn trên server. Câu hỏi "top 5 chiến dịch theo chi tiêu" vì vậy chỉ cần một lần gọi, không cần duyệt qua từng trang:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+Metrics và danh sách search terms dùng chung một ngân sách analytics theo công ty: 5 lần gọi mỗi phút, tối đa 2 lần trong mỗi 10 giây. Hãy đặt câu hỏi cụ thể một lần thay vì liên tục polling. Khoảng thời gian báo cáo cũng bị giới hạn tùy theo cách bạn nhóm dữ liệu — 90 ngày theo ngày, 180 ngày theo tuần, 365 ngày theo tháng — vì vậy hãy mở rộng báo cáo bằng cách thưa hơn `--group-by`, không phải bằng cách tách thành nhiều lần gọi hơn.
+
+## Kiểm tra từ khóa của đối thủ cạnh tranh \{#check-competitor-keywords\}
+
+Một lệnh duy nhất trả về các từ khóa mà các ứng dụng cạnh tranh đang đặt giá thầu, cho tối đa năm ứng dụng App Store cùng một lúc:
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027 --json
+```
+
+Khoảng thời gian và quốc gia được cố định trên máy chủ — tháng đầy đủ gần nhất, trên toàn bộ các quốc gia — vì vậy lệnh này không có cờ nào ngoài các app ID. Lần gọi đầu tiên cho một tập hợp ứng dụng có thể mất hàng chục giây.
+
+Sử dụng công cụ này để tự động lấy dữ liệu từ khóa của đối thủ và đưa vào báo cáo theo lịch định kỳ. Để lọc kết quả, so sánh các quốc gia với nhau, hoặc thêm trực tiếp các từ khóa tìm được vào chiến dịch, hãy dùng [Market Intelligence](ads-manager-market-intelligence) trên dashboard.
+
+## Chạy automation rules \{#run-automation-rules\}
+
+CLI không tạo [automation rules](ads-manager-automations) — nó chỉ lưu trữ JSON bạn cung cấp. Cách nhanh nhất để có file rule hợp lệ là tạo một rule trong dashboard, rồi đọc lại:
+
+```bash
+adapty asa automations get <automation-id> --json > rule.json
+```
+
+Chỉnh sửa file đó và dùng làm mẫu để tạo rule mới:
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+Khi bạn truyền file vào `automations update`, hãy xóa trường `internal_id` trước — lệnh cập nhật sẽ bị từ chối nếu trường này có mặt.
+
+Kiểm tra một quy tắc trước khi để nó thay đổi giá thầu:
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+Dry run sẽ đánh giá các điều kiện và ghi lại những gì quy tắc sẽ thực hiện mà không tác động đến Apple Ads. Các lần chạy được xếp vào hàng đợi thay vì thực hiện ngay lập tức, vì vậy lệnh sẽ in ra một run ID và kết quả sẽ xuất hiện trong `adapty asa automations runs`.
+
+## Chạy lại script an toàn \{#re-run-scripts-safely\}
+
+Mỗi lần ghi đều gửi kèm một idempotency key. CLI tạo một key cho mỗi lần chạy và thử lại một lần nếu xảy ra lỗi mạng, đảm bảo một request bị lỗi giữa chừng sẽ không bao giờ được áp dụng hai lần.
+
+Trong script, hãy tự đặt key để toàn bộ pipeline có thể chạy lại:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50 --idempotency-key winter-push-2026 --yes
+```
+
+Re-running the same command within 24 hours returns the stored result and prints `Already applied earlier` instead of creating a second campaign. The same key with a different body fails with `422`, which catches an edited script that reuses a key by mistake.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Quản lý Apple Ads bằng công cụ AI](developer-cli-ads-manager-skill) — cài plugin Apple Ads để Claude Code, Copilot CLI, Codex hoặc Gemini CLI có thể chạy các lệnh này cho bạn.
+- [Lệnh Ads Manager](developer-cli-ads-manager-reference) — tất cả các lệnh kèm đối số, flag và giá trị được chấp nhận.
+- [Automations](ads-manager-automations) — mỗi loại rule hoạt động như thế nào và có thể thực hiện những action gì.
+- [Chỉ số](adapty-ads-manager-metrics) — tên các chỉ số được chấp nhận bởi `--metric` và cách tính từng chỉ số.

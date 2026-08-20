@@ -48,15 +48,19 @@ Adapty.getProfile(result -> {
 </TabItem>
 </Tabs>
 
-## Códigos de error más comunes \{#common-error-codes\}
+## Códigos de error comunes \{#common-error-codes\}
 
-| Código de error | Descripción | Solución |
-|------------|-------------|----------|
-| 1000 | No se encontraron IDs de producto | Revisa la configuración de productos en el dashboard |
-| 1001 | Error de red | Verifica la conexión a internet |
-| 1002 | Clave SDK inválida | Verifica tu clave SDK |
-| 1003 | No se pueden realizar pagos | El dispositivo no admite pagos |
-| 1004 | Producto no disponible | El producto no está configurado en el store |
+`AdaptyError.code` es un valor enum de tipo `AdaptyErrorCode`, no un número; compáralo contra la constante del enum, no contra el código numérico. Los números que aparecen a continuación se muestran únicamente porque son los que suele mostrar una línea de log o un ticket de soporte.
+
+| Código de error | Número | Descripción | Solución |
+|------------|--------|-------------|----------|
+| `AdaptyErrorCode.NO_PRODUCT_IDS_FOUND` | 1000 | Ninguno de los productos del paywall está disponible en el store. | Consulta [Solución para el error Code-1000 noProductIDsFound](InvalidProductIdentifiers-kmp). |
+| `AdaptyErrorCode.CANT_MAKE_PAYMENTS` | 1003 | Las compras in-app no están permitidas en este dispositivo. | Consulta [Solución para el error Code-1003 cantMakePayments](cantMakePayments-kmp). |
+| `AdaptyErrorCode.PRODUCT_NOT_FOUND` | 22 | El producto solicitado para la compra no está disponible en el store. | Comprueba que el producto esté configurado en el store y en el Adapty Dashboard. |
+| `AdaptyErrorCode.NETWORK_FAILED` | 2005 | La solicitud de red ha fallado. | Pide al usuario que compruebe su conexión o vuelve a intentar la llamada. |
+| `AdaptyErrorCode.ADAPTY_NOT_INITIALIZED` | 20 | El SDK no se activó antes de realizar la llamada. | Espera a que `Adapty.activate` se complete antes de realizar cualquier otra llamada al SDK. |
+
+Para ver la lista completa de códigos, consulta `AdaptyErrorCode` en la [referencia de modelos del SDK](https://kmp.adapty.io/adapty/).
 
 ## Gestión de errores específicos \{#handle-specific-errors\}
 
@@ -76,7 +80,7 @@ Adapty.getPaywall("main") { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1001 -> {
+                AdaptyErrorCode.NETWORK_FAILED -> {
                     // Network error - show offline message
                     showOfflineMessage()
                 }
@@ -100,7 +104,7 @@ Adapty.getPaywall("main", result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1001:
+            case NETWORK_FAILED:
                 // Network error - show offline message
                 showOfflineMessage();
                 break;
@@ -132,11 +136,11 @@ product.makePurchase { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1003 -> {
+                AdaptyErrorCode.CANT_MAKE_PAYMENTS -> {
                     // Can't make payments
                     showPaymentNotAvailableMessage()
                 }
-                1004 -> {
+                AdaptyErrorCode.PRODUCT_NOT_FOUND -> {
                     // Product not available
                     showProductNotAvailableMessage()
                 }
@@ -161,11 +165,11 @@ product.makePurchase(result -> {
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1003:
+            case CANT_MAKE_PAYMENTS:
                 // Can't make payments
                 showPaymentNotAvailableMessage();
                 break;
-            case 1004:
+            case PRODUCT_NOT_FOUND:
                 // Product not available
                 showProductNotAvailableMessage();
                 break;
@@ -201,7 +205,7 @@ fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && retryCount < maxRetries) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && retryCount < maxRetries) {
                         // Network error - retry
                         retryCount++
                         Handler(Looper.getMainLooper()).postDelayed({
@@ -235,7 +239,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
                     // Use paywall
                 } else if (result instanceof AdaptyResult.Error) {
                     AdaptyError error = ((AdaptyResult.Error) result).getError();
-                    if (error.getCode() == 1001 && retryCount.get() < maxRetries) {
+                    if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && retryCount.get() < maxRetries) {
                         // Network error - retry
                         retryCount.incrementAndGet();
                         new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
@@ -274,7 +278,7 @@ class PaywallManager {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && cachedPaywall != null) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
                         // Network error - use cached paywall
                         showPaywall(cachedPaywall!!)
                         showOfflineIndicator()
@@ -303,7 +307,7 @@ public class PaywallManager {
                 showPaywall(paywall);
             } else if (result instanceof AdaptyResult.Error) {
                 AdaptyError error = ((AdaptyResult.Error) result).getError();
-                if (error.getCode() == 1001 && cachedPaywall != null) {
+                if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
                     // Network error - use cached paywall
                     showPaywall(cachedPaywall);
                     showOfflineIndicator();
@@ -323,4 +327,4 @@ public class PaywallManager {
 
 - [Solución para el error Code-1000 noProductIDsFound](InvalidProductIdentifiers-kmp)
 - [Solución para el error Code-1003 cantMakePayments](cantMakePayments-kmp)
-- [Referencia completa de la API](https://android.adapty.io) - Documentación completa del SDK
+- [Referencia completa de la API](https://kmp.adapty.io/adapty/) - Documentación completa del SDK

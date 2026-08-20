@@ -1,0 +1,71 @@
+---
+title: "Integrar Paddle con Adapty Attribution"
+description: "Conecta tu cuenta de Paddle con Adapty Attribution para atribuir compras, renovaciones, reembolsos y contracargos del funnel web a los anuncios que los generaron."
+metadataTitle: "Integración con Paddle | Adapty Attribution | Documentación de Adapty"
+---
+
+Conecta tu cuenta de Paddle con Adapty Attribution para atribuir las compras realizadas en tu embudo web a los anuncios que las generaron. Una vez conectada, las compras, renovaciones, reembolsos y contracargos de Paddle aparecen en los análisis de Adapty Attribution, y los eventos de conversión pueden enviarse de vuelta a las redes publicitarias para optimizar las campañas.
+
+## Cómo funciona \{#how-it-works\}
+
+1. El [píxel web de Adapty](ua-web-pixel) asigna un click ID a cada visitante del funnel y captura los datos del anuncio desde la URL de destino.
+2. En el momento del pago, tu funnel adjunta el click ID a la transacción de Paddle.
+3. Adapty recibe la transacción a través de un webhook que crea en tu cuenta de Paddle y la asocia al clic en el anuncio.
+
+:::note
+Las compras web no tienen evento de instalación de la app, por lo que Adapty utiliza la fecha del primer cargo de la suscripción como fecha de cohorte.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+[Configura el píxel web de Adapty](ua-web-pixel) en tu embudo. Sin el píxel, no hay ningún ID de clic que asociar y las transacciones no podrán atribuirse a los anuncios.
+
+## Paso 1. Adjunta el click ID en el checkout \{#step-1-attach-the-click-id-at-checkout\}
+
+Cuando abras el checkout o crees la transacción, lee el click ID y añádelo al `customData` de Paddle bajo la clave `adpt_click_id`:
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+
+customData: { adpt_click_id: adptClickId }
+```
+
+Adjunta el click ID únicamente a la transacción inicial. Paddle copia los datos personalizados de una suscripción en las transacciones de renovación, por lo que Adapty atribuye automáticamente las renovaciones, los reembolsos y los contracargos.
+
+El `click_id` es un identificador aleatorio corto, no es un secreto ni datos personales. Es visible en tu Paddle dashboard, lo cual es normal.
+
+## Paso 2. Conecta tu cuenta de Paddle \{#step-2-connect-your-paddle-account\}
+
+Primero, crea la clave en Paddle. En tu dashboard de Paddle, ve a **Developer Tools → Authentication** y crea una clave de API con estos permisos:
+
+| Recurso | Acceso |
+|---|---|
+| Transactions | Read |
+| Adjustments | Read |
+| Notification settings | Write |
+
+El acceso de escritura en la configuración de notificaciones permite a Adapty crear el destino del webhook que entrega tus pagos; no hay nada que configurar manualmente en Paddle. Todo lo demás permanece en solo lectura: Adapty nunca escribe en tus datos de pago. Una clave sin un permiso requerido se rechaza al conectar con un error que indica cuál falta.
+
+:::warning
+Usa una clave de producción. Las claves de Paddle son específicas por entorno, y Adapty descarta los eventos de sandbox en cuanto llegan, por lo que una clave de sandbox se conecta correctamente y aparece como **Valid**, pero no se registra ningún dato. Para verificar la integración, conecta la clave de producción y realiza una compra real.
+:::
+
+Luego, añade la clave en Adapty:
+
+1. En Adapty Attribution, ve a [**Integrations > Paddle**](https://app.adapty.io/ua/integrations/paddle).
+2. Pega la clave en **API key**. Opcionalmente, escribe un **Name** para distinguir las cuentas — por defecto, Adapty usa los últimos 4 caracteres de la clave.
+3. Haz clic en **Connect**.
+
+<ZoomImage id="ua-paddle-connect.webp" width="500px" alt="Connect a Paddle account form with API key and Name fields on the Paddle integration page in Adapty Attribution" />
+
+La cuenta conectada aparece en la tabla con su entorno, estado de la clave y estado del webhook. La conexión se aplica a la app que estás configurando. Para recibir los pagos de la misma cuenta de Paddle en otra app, añade la misma clave allí.
+
+Adapty importa las transacciones a partir del momento en que conectas la cuenta. Para importar transacciones anteriores, contáctanos en [support@adapty.io](mailto:support@adapty.io).
+
+## Verificar la integración \{#verify-the-integration\}
+
+Realiza una compra real a través de tu funnel — Adapty descarta las compras sandbox. La compra debería aparecer en [Adapty Attribution analytics](ua-analytics) en un par de horas. Si tu visita provino de un anuncio con [URLs etiquetadas](ua-web-pixel), la compra se atribuye a esa campaña, conjunto de anuncios y anuncio; de lo contrario, se contabiliza como orgánica.
+
+## Enviar eventos de conversión a la red publicitaria \{#send-conversion-events-to-the-ad-network\}
+
+Las compras web atribuidas siguen el mismo mapeo de eventos que el resto de la campaña: los eventos que actives en la sección **Events names** de la configuración de la campaña se envían de vuelta al píxel que asociaste con la campaña. Consulta la configuración del mapeo para [Meta Ads](ua-facebook) y [TikTok for Business](ua-tiktok).

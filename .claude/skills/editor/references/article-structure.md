@@ -220,9 +220,9 @@ Configure these settings:
 6. Platform differences
 
 ### Troubleshooting Guides
-- Organize by symptom, not cause
-- Clear symptom descriptions as headings
-- Diagnostic steps before solutions
+Entry order and symptom-first headings are covered in SKILL.md → Key Review Area 12
+(Framing and order). Applies to a single troubleshooting entry inside any article, not
+just to whole troubleshooting guides.
 
 ### API Reference
 - Present tense: "Returns" not "Will return"
