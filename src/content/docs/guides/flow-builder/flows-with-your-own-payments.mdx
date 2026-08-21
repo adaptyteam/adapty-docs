@@ -31,26 +31,61 @@ Adapty takes over:
 
 Nothing about your billing changes. Adapty renders the flow and hands the purchase tap to your code, which makes the charge.
 
-## Do you need products in Adapty?
+## Create your products in Adapty
 
-It depends on whether a flow renders your price.
+Skip this section if nothing in your flow shows a price or takes a purchase — a flow of onboarding screens alone needs no products in Adapty.
 
-| Your setup | Products in Adapty | Why |
-| :--- | :--- | :--- |
-| Observer mode only, no Adapty-rendered flow | Optional | `reportTransaction` takes the store transaction, and Adapty resolves the product from it. A product in Adapty gives you cleaner grouping in charts and integrations. |
-| A flow renders a price | Required | The price on the card comes from the product in Adapty. Without it, the flow won't save or publish, and a purchase tap never reaches your code. |
-| A flow shows prices as static text | Optional | The flow saves and publishes. You write prices by hand, you can't A/B test them, you lose product-level analytics, and your code maps the tapped element to your own product. |
+As soon as a screen presents products, create a product in Adapty for each subscription or one-time purchase it offers. A flow reads the price on the card from the product, so the card shows the current store price, you can A/B test that price, and Adapty groups revenue by product in analytics.
 
-A product in Adapty points at the store product you already sell. Creating one doesn't move billing to Adapty.
+A product in Adapty points at the store product you already sell, so creating one doesn't move billing: your code still makes every charge. Each product names an access level, and in Observer mode Adapty doesn't grant it — your code keeps owning access — but a product needs one.
+
+The [Adapty CLI](developer-cli) creates products without opening the dashboard. Install it (Node.js 18 or later) and sign in:
+
+```bash
+npm install -g adapty
+```
+
+```bash
+adapty auth login
+```
+
+Get your app ID, then the access level to attach — every new app starts with a `premium` one:
+
+```bash
+adapty apps list
+```
+
+```bash
+adapty access-levels list --app <app-id>
+```
+
+Then create one Adapty product for each store product you sell, using the product IDs from App Store Connect and Google Play Console:
+
+```bash
+adapty products create --app <app-id> --title "Monthly" --access-level-id <access-level-id> --period monthly --ios-product-id com.example.monthly --android-product-id com.example.monthly --android-base-plan-id monthly
+```
+
+Pass `--period lifetime` for a one-time purchase, and `--stripe-product-id` with `--stripe-price-id` (or the Paddle pair) for something you sell on the web. [`products create`](developer-cli-reference#adapty-products-create) lists every flag. Store product IDs can't be changed after creation, so pointing a product at a different store product means creating a new product.
 
 :::warning
 A product element with nothing assigned blocks saving and publishing, so you find out in the builder. A **Purchase** action with no product set saves fine and fails on the device — the button does nothing. Set a product on every Purchase action.
 :::
 
+<Details summary="Or skip products and write prices as static text">
+
+A flow with no product element saves and publishes, so you can type prices into the text and have your own code decide what a tap buys. What it costs you:
+
+- You keep every price in two places — the store and the flow's text — and they drift as soon as you change one.
+- No price A/B tests, which is most of what a flow is for.
+- Charts and integrations group revenue less cleanly, since Adapty only learns the product from the transaction you report.
+- Your code maps each tapped element to a product, instead of receiving one from the flow.
+
+</Details>
+
 ## Set it up
 
 1. **Activate the SDK in Observer mode.** Turn on `observerMode` when you configure the SDK: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
-2. **Create your products in Adapty**, if [Do you need products in Adapty?](#do-you-need-products-in-adapty) says you need them. See [Create product](create-product).
+2. **Create your products in Adapty**, unless nothing in the flow shows a price. One CLI command per product — see [Create your products in Adapty](#create-your-products-in-adapty).
 3. **Build the flow.** See [the Flow Builder](adapty-flow-builder) for the screens, [set up purchases](paywall-product-block) for products on a paywall screen, and [create a placement](create-placement) to decide where the flow appears in your app.
 4. **Present the flow and make the purchase in your own code.** Adapty hands the purchase tap to a handler you register.
 5. **Report the transaction** with the flow's `variationId`, so the purchase reaches analytics attributed to the variation that produced it.
