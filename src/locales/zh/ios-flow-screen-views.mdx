@@ -1,0 +1,63 @@
+---
+title: "在 iOS SDK 中追踪流程页面浏览"
+description: "每当用户在 iOS 应用中打开流程页面时接收事件，并将其转发至产品分析工具。"
+metadataTitle: "追踪流程页面浏览 | iOS SDK | Adapty 文档"
+---
+
+每当用户打开[流程](adapty-flow-builder)中的一个页面时，SDK 会向你的应用报告一个 `flow_screen_showed` 事件。将其转发至 Amplitude、Mixpanel 或你使用的任意产品分析工具，即可将流程页面的数据与应用中其他事件一起进行分析。
+
+:::tip
+若要查看用户在流程中的进度，无需编写任何代码——[流程数据图表](flow-metrics)已在 Adapty 看板中提供了浏览量、完成率和每屏流失情况。如果你需要将这些数据导入自己的分析系统，并与 Adapty 未记录的事件关联，请参考本指南。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty iOS SDK v4 或更高版本**：旧版本中不存在流程分析回调。
+- **在此功能发布后发布的流程版本**：Adapty 在发布流程时生成屏幕事件，因此在此之前最后一次发布的流程不会上报任何数据。如果应用未收到任何事件，请发布新版本的流程后重试。
+
+## 您收到的内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+屏幕浏览事件与所有其他流程事件共用同一个分析回调。注册方式请参阅[处理流程与付费墙事件](ios-handling-events)。
+
+## 将每次页面浏览转发到您的分析系统 \{#forward-every-screen-view-to-your-analytics\}
+
+在读取其他内容之前，先匹配事件名称，因为流程会通过同一回调上报其他事件。
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    guard name == "flow_screen_showed" else { return }
+
+    let screenId = params["instanceId"] as? String
+    let screenOrder = params["screen_order"] as? Int
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## 当用户到达末尾时执行代码 \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` 在流程无法继续前进的屏幕上为 `true`。使用它来解锁内容、标记用户引导为已完成，或发送自定义完成事件，而无需在编辑工具中为其添加按钮操作。
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    guard name == "flow_screen_showed",
+          params["is_last_screen"] as? Bool == true
+    else { return }
+
+    // The user reached the end of the flow.
+}
+```
+
+到达最后一个屏幕并不等同于关闭流程。用户可能看到最终屏幕后直接关闭流程而未采取任何操作，而分支流程也可能在多个不同的屏幕上结束。如需知道流程本身何时消失，请在 UIKit 中使用 `flowControllerDidDisappear`，或在 SwiftUI 中使用 `didDisappear` 回调。

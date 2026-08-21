@@ -1,0 +1,67 @@
+---
+title: "Kotlin Multiplatform SDKでフロースクリーンの表示をトラッキングする"
+description: "Kotlin Multiplafromアプリでユーザーがフロースクリーンをひらくたびにイベントをうけとり、プロダクトアナリティクスに転送します。"
+metadataTitle: "フロースクリーンの表示をトラッキングする | Kotlin Multiplatform SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)内のスクリーンをひらくたびに、SDKはアプリへ `flow_screen_showed` イベントを報告します。このイベントをAmplitude、Mixpanel、または使用中のプロダクトアナリティクスツールに転送することで、フロースクリーンの動向をアプリの他のイベントと合わせて分析できます。
+
+:::tip
+フローのどこまでユーザーが進んだかを確認するだけなら、コードは不要です。[フロー指標](flow-metrics)でビュー数、完了数、画面ごとの離脱率をAdapty ダッシュボードで確認できます。このガイドは、同じデータを独自のアナリティクスに取り込んだり、Adaptyが把握していないイベントと組み合わせたりしたい場合に活用してください。
+:::
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+
+- **Adapty Kotlin Multiplatform SDK v4 以降**：フロー分析コールバックはそれより前のバージョンには存在しません。
+- **この機能のリリース後に公開されたフローバージョン**：Adapty はフローを公開するときにスクリーンイベントを生成するため、それ以前に最後に公開したフローはイベントを報告しません。アプリにイベントが届かない場合は、フローの新しいバージョンを公開して再試行してください。
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Kotlin Multiplatform ではこれらのパラメータは生の JSON 文字列として渡されるため、読み取る前に `paramsJsonString` をデコードしてください。
+
+画面ビューは、他のすべてのフローイベントと同じ分析コールバックに届きます。登録方法については、[フローとペイウォールのイベントを処理する](kmp-handling-events) をご覧ください。
+
+## すべての画面表示をアナリティクスに転送する \{#forward-every-screen-view-to-your-analytics\}
+
+コールバックを通じてフローが他のイベントも報告するため、他の情報を読む前にまずイベント名で照合してください。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+    val screenOrder = params["screen_order"]?.jsonPrimitive?.intOrNull
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## ユーザーが最後の画面に到達したときにコードを実行する \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` は、フローがこれ以上進めない画面で `true` になります。これを使って、コンテンツのアンロック、オンボーディングの完了マーク、独自の完了イベントの送信などを、ビルダーでボタンアクションを追加せずに行えます。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+フローの最終スクリーンに到達することと、フローを閉じることは同じではありません。ユーザーは最終スクリーンを表示した後、何もアクションを取らずにフローを閉じることができます。また、分岐のあるフローは複数の異なるスクリーンで終了する可能性があります。フロー自体が消えたことを検知するには、代わりに `flowViewDidDisappear` を使用してください。

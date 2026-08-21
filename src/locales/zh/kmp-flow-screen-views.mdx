@@ -1,0 +1,67 @@
+---
+title: "在 Kotlin Multiplatform SDK 中追踪流程页面浏览"
+description: "每当用户在 Kotlin Multiplatform 应用中打开流程页面时接收事件，并将其转发至您的产品分析工具。"
+metadataTitle: "追踪流程页面浏览 | Kotlin Multiplatform SDK | Adapty 文档"
+---
+
+每当用户在[流程](adapty-flow-builder)中打开某个页面时，SDK 都会向您的应用上报一个 `flow_screen_showed` 事件。将其转发至 Amplitude、Mixpanel 或您使用的任意产品分析工具，即可将流程页面数据与应用的其他事件一同分析。
+
+:::tip
+要查看用户在流程中的进度，无需任何代码——[流程数据图表](flow-metrics)已在 Adapty 看板中展示了浏览量、完成量以及每个屏幕的流失情况。当你需要将这些数据导入自己的分析系统，并与 Adapty 未知的事件进行关联时，请参考本指南。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty Kotlin Multiplatform SDK v4 或更高版本**：早期版本中不存在流程分析回调。
+- **在此功能上线后发布的流程版本**：Adapty 在发布流程时生成屏幕事件，因此在此之前最后一次发布的流程不会上报任何数据。如果应用未收到任何事件，请发布一个新版本的流程后重试。
+
+## 您收到的内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Kotlin Multiplatform 以原始 JSON 字符串的形式传递这些参数，因此请在读取任何参数之前先解码 `paramsJsonString`。
+
+屏幕浏览事件与其他所有流程事件使用相同的分析回调。请参阅[处理流程与付费墙事件](kmp-handling-events)了解注册方式。
+
+## 将每个屏幕浏览事件转发到您的分析系统 \{#forward-every-screen-view-to-your-analytics\}
+
+在读取其他内容之前，请先匹配事件名称，因为流程会通过同一回调上报其他事件。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+    val screenOrder = params["screen_order"]?.jsonPrimitive?.intOrNull
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## 当用户到达末尾时执行代码 \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` 在流程无法继续前进的屏幕上为 `true`。你可以利用它来解锁内容、标记用户引导已完成，或发送自定义的完成事件，无需在编辑工具中为此添加按钮动作。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+到达最后一屏并不等同于关闭流程。用户可能看到最后一屏后直接关闭流程而不采取任何操作，而且分支流程可能在多个不同的屏幕上结束。如需知道流程本身何时消失，请改用 `flowViewDidDisappear`。

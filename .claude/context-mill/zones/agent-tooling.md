@@ -43,7 +43,7 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   TODO(owner): is the env-var token path deliberately undocumented — a CI/headless story we don't
   support yet — or a gap in `developer-cli-authentication`?
 - **The skill — `adapty-sdk-integration-skill`, `origin/main`. Also not in `sources.md`.** Content is
-  `skills/adapty-sdk-integration/SKILL.md` plus `references/<platform>.md`. It is not generated from the
+  `skills/adapty-integration/SKILL.md` plus `references/<platform>.md`. It is not generated from the
   SDKs: it is **pinned to our published docs**, and `scripts/lint-symbols.mjs` says so in its own header
   ("the docs are verified against SDK sources by the docs team's own release process, so 'symbol appears
   in the docs' transitively means 'symbol exists in the SDK'. This lint closes the remaining gap:
@@ -102,7 +102,7 @@ The delta that matters here is that most of the surface belongs to someone else 
 on one side, a non-deterministic agent on the other.
 
 - **We document what to hand the tool and in what order; we never document the tool's own UI.** An
-  install command, the `/adapty-sdk-integration` invocation, and "use plan mode if your tool has one"
+  install command, the `/adapty-integration` invocation, and "use plan mode if your tool has one"
   are in scope. A walkthrough of Cursor's settings, an editor screenshot, or an MCP config file is not —
   it belongs to someone else's release schedule, and per `scope.md` the reader can see it anyway.
   Confirmed as current practice: `adapty-cursor` mentions plan mode in a single clause and delegates
@@ -211,7 +211,7 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 | How a ticket says it | Where it actually lives |
 |---|---|
 | "vibe code the integration", "have Cursor/Claude add Adapty to my app", "AI pair-programming for IAP" | Two competing families, and `manage-adapty-with-ai` is the router between them: `adapty-sdk-integration-skill*` = one command, the agent drives the whole thing; `adapty-cursor*` = staged walkthrough where the developer feeds docs and reviews each step. Pick by how much control the reader wants, not by tool. |
-| "which skill do I install", "the skill didn't set up my app/products" | Three *different* skills, easily conflated. `adapty-sdk-integration` (own repo, marketplace/`gh skill`/`npx skills` install) does the full app-code integration. The `adapty-cli` skill only drives dashboard entities through the CLI — it's linked from `developer-cli`, `developer-cli-quickstart`, `developer-cli-authentication`, and from the dashboard-setup step of every `adapty-cursor*`. The third, adapty-cli-setup (ships in the apple-ads-cli plugin), only installs and authenticates the CLI in agent sessions — `developer-cli-cowork` is the article that has readers install it. |
+| "which skill do I install", "the skill didn't set up my app/products" | Three *different* skills, easily conflated. `adapty-integration` (own repo, marketplace/`gh skill`/`npx skills` install) does the full app-code integration. The `adapty-cli` skill only drives dashboard entities through the CLI — it's linked from `developer-cli`, `developer-cli-quickstart`, `developer-cli-authentication`, and from the dashboard-setup step of every `adapty-cursor*`. The third, adapty-cli-setup (ships in the apple-ads-cli plugin), only installs and authenticates the CLI in agent sessions — `developer-cli-cowork` is the article that has readers install it. |
 | "the skill stalled", "the agent went off the rails halfway" | The `adapty-sdk-integration-skill*` pages. The skill is beta and the documented fallback is the matching `adapty-cursor*` guide — that redirect is the answer, not a bug report. |
 | "which key does my agent need", "agent got 401", "where's the API key" | The single commonest confusion in this zone, and it splits three ways. SDK integration (`adapty-cursor*`, `adapty-sdk-integration-skill*`) = **public SDK key**, passed to `activate`. Analytics and backend guides (`export-analytics-with-ai`, `server-side-api-with-ai`) = **secret app-specific key**, and note the base URLs differ (`api-admin.adapty.io` for analytics vs `api.adapty.io` for server-side). The CLI (`developer-cli-authentication`) uses **no key at all** — browser device-code login. **Refined 2026-08-11 against `adapty-cli` `origin/main`:** the docs describe only the device-code path, but the CLI checks `ADAPTY_TOKEN` in the environment *before* it reads the config file, and the config location is oclif's `configDir` (`~/.config/adapty/config.json` by default on darwin, overridable via `XDG_CONFIG_HOME`), not a fixed path. So "no key at all" is true of the documented flow and false of the tool — a reader debugging a 401 in CI needs the env-var branch, which no article mentions. |
 | "MCP server for Adapty", "connect Adapty to my agent via MCP" | `manage-adapty-with-ai`. There is no first-party Adapty MCP server. Context7 is third-party and indexes only code snippets, not prose; the CLI is the "agent can actually act" path; analytics needs only a fetch-capable tool. |

@@ -1,0 +1,62 @@
+---
+title: "Theo dõi lượt xem màn hình flow trong Flutter SDK"
+description: "Nhận sự kiện mỗi khi người dùng mở một màn hình flow trong ứng dụng Flutter của bạn, và chuyển tiếp sự kiện đó đến hệ thống phân tích sản phẩm."
+metadataTitle: "Theo dõi lượt xem màn hình flow | Flutter SDK | Tài liệu Adapty"
+---
+
+Mỗi khi người dùng mở một màn hình trong [flow](adapty-flow-builder), SDK sẽ gửi sự kiện `flow_screen_showed` đến ứng dụng của bạn. Hãy chuyển tiếp sự kiện này đến Amplitude, Mixpanel, hoặc bất kỳ công cụ phân tích sản phẩm nào bạn đang dùng, để có thể phân tích các màn hình flow cùng với các sự kiện còn lại của ứng dụng.
+
+:::tip
+Để xem người dùng đi được đến đâu trong một flow, bạn không cần viết bất kỳ đoạn code nào — [chỉ số flow](flow-metrics) đã hiển thị lượt xem, lượt hoàn thành và tỷ lệ thoát theo từng màn hình ngay trong Adapty Dashboard. Hãy dùng hướng dẫn này khi bạn cần dữ liệu tương tự trong hệ thống analytics của riêng mình, kết hợp với các sự kiện mà Adapty không theo dõi.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Flutter SDK v4 trở lên**: Callback phân tích flow không tồn tại trong các phiên bản cũ hơn.
+- **Một phiên bản flow được xuất bản sau khi tính năng này ra mắt**: Adapty tạo các sự kiện màn hình khi xuất bản một flow, vì vậy các flow bạn xuất bản trước thời điểm đó sẽ không báo cáo gì. Nếu không có sự kiện nào đến ứng dụng của bạn, hãy xuất bản phiên bản mới của flow và thử lại.
+
+## Những gì bạn nhận được \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Lượt xem màn hình được gửi đến cùng callback analytics như mọi sự kiện flow khác. Xem [Xử lý sự kiện flow & paywall](flutter-handling-events) để biết nơi đăng ký.
+
+## Chuyển tiếp mọi lượt xem màn hình đến analytics của bạn \{#forward-every-screen-view-to-your-analytics\}
+
+Hãy kiểm tra tên sự kiện trước khi đọc bất kỳ thông tin nào khác, vì một flow báo cáo các sự kiện khác qua cùng một callback.
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+
+  final screenId = params['instanceId'];
+  final screenOrder = params['screen_order'];
+
+  // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Chạy code khi người dùng đến màn hình cuối cùng \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` là `true` trên màn hình mà flow không thể tiến xa hơn. Dùng nó để mở khóa nội dung, đánh dấu onboarding là đã hoàn thành, hoặc gửi sự kiện hoàn thành theo cách của bạn, mà không cần thêm button action trong builder.
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+  if (params['is_last_screen'] != true) return;
+
+  // The user reached the end of the flow.
+}
+```
+
+Việc người dùng đến màn hình cuối không đồng nghĩa với việc đóng flow. Người dùng có thể xem màn hình cuối rồi thoát flow mà không thực hiện bất kỳ hành động nào, và một flow có nhánh có thể kết thúc ở nhiều màn hình khác nhau. Để biết chính xác khi nào flow biến mất, hãy dùng `flowViewDidDisappear` thay thế.

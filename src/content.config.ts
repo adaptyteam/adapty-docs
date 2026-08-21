@@ -12,6 +12,7 @@ const docs = defineCollection({
     rank: z.number().optional(),
     customSlug: z.string().optional(),
     draft: z.boolean().optional(),
+    noindex: z.boolean().optional(),
   }),
 });
 

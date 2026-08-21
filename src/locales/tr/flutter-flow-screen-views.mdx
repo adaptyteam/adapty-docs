@@ -1,0 +1,62 @@
+---
+title: "Flutter SDK'da flow ekran görüntülemelerini takip etme"
+description: "Flutter uygulamanızda bir kullanıcı flow ekranı her açtığında event alın ve bunu ürün analitiğinize iletin."
+metadataTitle: "Flow ekran görüntülemelerini takip etme | Flutter SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içindeki bir ekranı her açtığında, SDK uygulamanıza bir `flow_screen_showed` eventi bildirir. Bunu Amplitude, Mixpanel veya kullandığınız herhangi bir ürün analitiğine ileterek flow ekranlarını uygulamanızın diğer eventleriyle birlikte analiz edebilirsiniz.
+
+:::tip
+Kullanıcıların bir flow'da ne kadar ilerlediğini görmek için herhangi bir koda ihtiyacınız yok — [flow metrikleri](flow-metrics) Adapty Kontrol Paneli'nde görüntüleme, tamamlama ve ekran bazlı çıkış verilerini zaten gösteriyor. Bu kılavuzu, aynı verilere kendi analitiğinizde ihtiyaç duyduğunuzda ve bunları Adapty'nin bilmediği olaylarla birleştirmek istediğinizde kullanın.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty Flutter SDK v4 veya üzeri**: Flow analytics callback'i daha eski sürümlerde mevcut değildir.
+- **Bu özellik yayınlandıktan sonra yayımlanan bir flow versiyonu**: Adapty, bir flow'u yayımladığında ekran etkinliklerini oluşturur; bu nedenle daha önce yayımladığınız bir flow hiçbir şey raporlamaz. Uygulamanıza hiç etkinlik gelmiyorsa flow'un yeni bir versiyonunu yayımlayıp tekrar deneyin.
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Ekran görüntülemeleri, diğer tüm flow olaylarıyla aynı analitik callback'e ulaşır. Bunu nereye kaydedeceğinizi öğrenmek için [Flow ve paywall olaylarını yönetme](flutter-handling-events) bölümüne bakın.
+
+## Her ekran görüntülemesini analitik sisteminize iletin \{#forward-every-screen-view-to-your-analytics\}
+
+Callback, aynı flow üzerinden başka olayları da raporladığından, diğer her şeyi okumadan önce olay adıyla eşleştirme yapın.
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+
+  final screenId = params['instanceId'];
+  final screenOrder = params['screen_order'];
+
+  // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Kullanıcı sona ulaştığında kod çalıştırma \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen`, flow'un ilerleyemeyeceği bir ekranda `true` olur. Builder'da bunun için bir buton aksiyonu eklemeden içerik kilidini açmak, onboarding'i tamamlandı olarak işaretlemek veya kendi tamamlanma event'inizi göndermek için kullanabilirsiniz.
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+  if (params['is_last_screen'] != true) return;
+
+  // The user reached the end of the flow.
+}
+```
+
+Bir flow'un son ekranına ulaşmak, flow'u kapatmakla aynı şey değildir. Kullanıcı son ekranı görebilir ve herhangi bir işlem yapmadan flow'u kapatabilir; üstelik dallanan bir flow birkaç farklı ekranda sona erebilir. Flow'un kendisinin kapandığını öğrenmek için bunun yerine `flowViewDidDisappear` kullanın.

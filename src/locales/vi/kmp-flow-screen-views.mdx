@@ -1,0 +1,67 @@
+---
+title: "Theo dõi lượt xem màn hình flow trong Kotlin Multiplatform SDK"
+description: "Nhận sự kiện mỗi khi người dùng mở màn hình flow trong ứng dụng Kotlin Multiplatform của bạn và chuyển tiếp sự kiện đó tới công cụ phân tích sản phẩm của bạn."
+metadataTitle: "Theo dõi lượt xem màn hình flow | Kotlin Multiplatform SDK | Tài liệu Adapty"
+---
+
+Mỗi khi người dùng mở một màn hình trong [flow](adapty-flow-builder), SDK sẽ báo cáo sự kiện `flow_screen_showed` tới ứng dụng của bạn. Hãy chuyển tiếp sự kiện này tới Amplitude, Mixpanel, hoặc bất kỳ công cụ phân tích sản phẩm nào bạn đang dùng, để có thể phân tích các màn hình flow cùng với toàn bộ sự kiện còn lại của ứng dụng.
+
+:::tip
+Để xem người dùng đi được bao xa trong một flow, bạn không cần viết code — [chỉ số flow](flow-metrics) đã hiển thị lượt xem, tỷ lệ hoàn thành và tỷ lệ thoát theo từng màn hình ngay trong Adapty Dashboard. Hãy dùng hướng dẫn này khi bạn cần dữ liệu đó trong hệ thống analytics của riêng mình, kết hợp với các sự kiện mà Adapty không theo dõi.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Kotlin Multiplatform SDK v4 trở lên**: Callback analytics của flow không tồn tại trong các phiên bản cũ hơn.
+- **Một phiên bản flow được publish sau khi tính năng này ra mắt**: Adapty tạo ra các sự kiện màn hình khi publish một flow, vì vậy một flow bạn đã publish trước đó sẽ không báo cáo gì cả. Nếu không có sự kiện nào đến ứng dụng của bạn, hãy publish phiên bản mới của flow và thử lại.
+
+## Những gì bạn nhận được \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Kotlin Multiplatform truyền các tham số này dưới dạng chuỗi JSON thô, vì vậy hãy decode `paramsJsonString` trước khi đọc bất kỳ tham số nào.
+
+Lượt xem màn hình được ghi nhận trong cùng callback analytics với mọi sự kiện flow khác. Xem [Xử lý sự kiện flow & paywall](kmp-handling-events) để biết nơi đăng ký callback.
+
+## Chuyển tiếp mọi lượt xem màn hình đến analytics của bạn \{#forward-every-screen-view-to-your-analytics\}
+
+Kiểm tra tên sự kiện trước khi đọc bất cứ điều gì khác, vì một flow báo cáo các sự kiện khác thông qua cùng một callback.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+    val screenOrder = params["screen_order"]?.jsonPrimitive?.intOrNull
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Chạy code khi người dùng đến màn hình cuối \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` là `true` khi flow không thể tiến thêm từ màn hình đó. Dùng nó để mở khóa nội dung, đánh dấu onboarding là đã hoàn thành, hoặc gửi sự kiện hoàn tất theo cách của bạn — mà không cần thêm hành động nút trong builder.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+Reaching the last screen is not the same as closing the flow. A user can see the final screen and dismiss the flow without acting on it, and a branching flow can end on several different screens. To know that the flow itself went away, use `flowViewDidDisappear` instead.
