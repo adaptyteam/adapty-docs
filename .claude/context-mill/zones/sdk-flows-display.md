@@ -228,7 +228,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 |---|---|---|---|---|
 | android-get-pb-paywalls | — | dev | 8 | android |
 | android-handle-paywall-actions | — | dev | 7 | android |
-| android-handling-events | — | dev | 6 | android |
+| android-handling-events | — | dev | 7 | android |
 | android-localizations-and-locale-codes | — | dev | 11 | android |
 | android-paywalls | entry | dev | 4 | android |
 | android-present-paywalls | — | dev | 8 | android |
@@ -237,7 +237,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | android-web-paywall | — | dev | 2 | android |
 | capacitor-get-pb-paywalls | — | dev | 8 | capacitor |
 | capacitor-handle-paywall-actions | — | dev | 7 | capacitor |
-| capacitor-handling-events | — | dev | 3 | capacitor |
+| capacitor-handling-events | — | dev | 4 | capacitor |
 | capacitor-localizations-and-locale-codes | — | dev | 11 | capacitor |
 | capacitor-paywalls | entry | dev | 4 | capacitor |
 | capacitor-present-flows-in-observer-mode | — | dev | 0 | capacitor |
@@ -256,7 +256,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flutter-web-paywall | — | dev | 1 | flutter |
 | get-pb-paywalls | — | dev | 10 | ios |
 | handle-paywall-actions | — | dev | 7 | ios |
-| ios-handling-events | — | dev | 13 | ios |
+| ios-handling-events | — | dev | 14 | ios |
 | ios-paywalls | entry | dev | 4 | ios |
 | ios-present-paywall-builder-paywalls-in-observer-mode | — | dev | 0 | ios |
 | ios-present-paywalls | — | dev | 8 | ios |
@@ -276,7 +276,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | localizations-and-locale-codes | — | dev | 11 | ios |
 | react-native-get-pb-paywalls | — | dev | 8 | react-native |
 | react-native-handle-paywall-actions | — | dev | 7 | react-native |
-| react-native-handling-events-1 | — | dev | 3 | react-native |
+| react-native-handling-events-1 | — | dev | 4 | react-native |
 | react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
 | react-native-present-flows-in-observer-mode | — | dev | 2 | react-native |

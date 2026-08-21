@@ -109,7 +109,7 @@ or developer can see and click.
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 8 | tutorial |
-| paywall-builder-templates | — | marketer, dev | 5 | tutorial |
+| paywall-builder-templates | — | marketer, dev | 6 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 3 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 3 | tutorial |
