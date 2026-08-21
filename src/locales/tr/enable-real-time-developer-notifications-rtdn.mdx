@@ -1,198 +1,102 @@
 ---
-title: "Google Play Console'da Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN) Etkinleştirme"
-description: "Adapty için Google Play Console'da Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN) etkinleştirerek kritik olaylar hakkında bilgi sahibi olun ve veri doğruluğunu koruyun. İade ve diğer önemli olaylar için Play Store'dan anında güncelleme almak üzere RTDN'yi nasıl kuracağınızı öğrenin"
-metadataTitle: "Google Play Console: Adapty için Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN) Etkinleştirme | Adapty Dokümanları"
-
+title: "Google Play Console'da Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN) Etkinleştirin"
+description: "Adapty'nin Pub/Sub konu adını Google Play Console'a yapıştırarak yenilemelerin, iptallerin ve iadelerin gerçek zamanlı olarak Adapty'ye ulaşmasını sağlayın."
+metadataTitle: "Google Play Console'da RTDN'yi Etkinleştirin | Adapty Dokümanları"
 ---
 
-Gerçek zamanlı geliştirici bildirimlerini (RTDN) kurmak, veri doğruluğu açısından kritik öneme sahiptir; bu sayede Play Store'dan iade bilgileri ve diğer olaylar dahil güncellemeleri anında alabilirsiniz.
+Google Play; yenilemeleri, iptalleri, iadeleri ve ödeme sorunlarını gerçek zamanlı geliştirici bildirimleri aracılığıyla Adapty'ye iletir. Bu olaylar uygulamanız kapalıyken gerçekleştiğinden Adapty SDK bunları raporlayamaz.
 
-## Bildirimleri Etkinleştirme \{#enable-notifications\}
+## Başlamadan önce \{#before-you-start\}
 
-1. **Google Cloud Pub/Sub**'ın etkin olduğundan emin olun. [Bu bağlantıyı](https://console.cloud.google.com/flows/enableapi?apiid=pubsub) açın ve uygulama projenizi seçin. **Google Cloud Pub/Sub**'ı henüz etkinleştirmediyseniz burada etkinleştirmeniz gerekir.
+[Google Play Store entegrasyonunu yapılandırın](google-play-store-connection-configuration). Adapty, konu adını anahtar dosyanızdan otomatik olarak oluşturur; bu nedenle dosyayı yüklemeden önce kopyalanacak bir şey yoktur.
 
-<Zoom>
-  <img src="/assets/shared/img/pubsub.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Bildirimleri etkinleştirme \{#enable-notifications\}
 
-2. Adapty üst menüsünden [**App settings > Android SDK**](https://app.adapty.io/settings/android-sdk) sayfasına gidin ve **Google Play RTDN topic name** başlığının yanındaki **Enable Pub/Sub API** alanının içeriğini kopyalayın.
+1. Adapty Kontrol Paneli'nde [**App settings** > **Android SDK**](https://app.adapty.io/settings/android-sdk) bölümünü açın ve **Google Play RTDN topic name** altındaki konu adını kopyalayın. `projects/` ile başlar.
 
-<Zoom>
-  <img src="/assets/shared/img/a72ff2d-copy_topic.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+   <ZoomImage id="gp-adapty-topic-name.webp" width="700px" alt="Google Play RTDN topic name section in Adapty App settings, with the generated topic name" />
 
-<p> </p>
+2. [Google Play Console](https://play.google.com/console/)'u açın, uygulamanızı seçin ve **Monetize with Play** > **Monetization setup** bölümüne gidin.
 
-:::note
-**Enable Pub/Sub API** alanının içeriği yanlış bir formattaysa (doğru format `projects/...` ile başlar), yardım için [Enable Pub/Sub API alanındaki yanlış formatı düzeltme](enable-real-time-developer-notifications-rtdn#fixing-incorrect-format-in-enable-pubsub-api-field) bölümüne bakın.
+3. **Google Play Billing** bölümünde **Enable real-time notifications** onay kutusunu seçin.
+
+4. Topic adını **Topic name** alanına yapıştırın.
+
+5. **Save changes** düğmesine tıklayın.
+
+   <ZoomImage id="gp-rtdn-monetization-setup.webp" width="700px" alt="Google Play Console'daki Monetization setup sayfası; Enable real-time notifications onay kutusunu ve Topic name alanını göstermektedir" />
+
+## Bağlantıyı doğrulayın \{#verify-the-connection\}
+
+1. **Monetization setup** sayfasında, **Topic name** alanının altındaki **Send test notification** düğmesine tıklayın.
+
+2. Adapty'de [**App settings** > **Android SDK**](https://app.adapty.io/settings/android-sdk) sayfasına geri dönün. Adapty bildirimi aldıktan sonra, **Google Play RTDN topic name** bölümündeki durum etiketi **Active** olarak görünür.
+
+   <ZoomImage id="gp-adapty-rtdn-active.webp" width="700px" alt="Google Play RTDN topic name section in Adapty showing the Active status tag" />
+
+## Ham Google olaylarını iletme \{#forward-raw-google-events\}
+
+Adapty, Google'dan gelen her bildirimi çözümleyerek kendi olayına dönüştürür; bu olay bir profile ve bir ürüne eşlenir, gelir bilgisi de eklenir. Google'ın orijinal mesajını da almak istiyorsanız, endpoint'inizi **App settings** > **Android SDK** bölümündeki **URL for forwarding raw Google events to your webhook** alanına ekleyin.
+
+Adapty, Pub/Sub mesajını Google'ın gönderdiği haliyle, herhangi bir şey ayrıştırmadan önce iletir: base64 kodlu, Google'ın alan adları ve sayısal bildirim türleri kullanılarak ve satın alma işlemi Adapty profili yerine token ile tanımlanarak. Google, formatı [RTDN referansı](https://developer.android.com/google/play/billing/rtdn-reference) sayfasında belgelemektedir.
+
+## RTDN sorun giderme \{#rtdn-troubleshooting\}
+
+### Konu adı eksik
+
+RTDN kurulumu, Adapty'den bir konu adı kopyalamakla başlar. Eğer burada hiçbir şey yoksa devam edemezsiniz: Play Console'daki **Topic name**, Google Play'e olayların nereye gönderileceğini bildiren alandır ve bu adın tek kaynağı Adapty'dir.
+
+Adapty, anahtar dosyasını kaydettiğinizde Cloud projenizde konuyu oluşturur. Geçerli bir ad `projects/` ile başlar; örneğin `projects/your-project-id/topics/adapty-prod-3f7a1c2e-9b4d-4e8f-a1b2-c3d4e5f60718`. Adapty konuyu oluşturamadıysa bölümde kısa bir mesaj ve ad yerine **Recreate Pub/Sub topic** butonu görünür; bu mesaj neyin yanlış gittiğini açıklar:
+
+| Ne görürsünüz | Ne anlama gelir | Ne yapmalısınız |
+| --- | --- | --- |
+| **To set the Google Play RTDN topic name first upload a valid service account key file above.** | Adapty'nin bu uygulama için anahtar dosyası yok | [Anahtar dosyasını yükleyin](google-play-store-connection-configuration) |
+| **Enable Pub/Sub API** | Cloud Pub/Sub API, ilgili Cloud projesinde kapalı | Adapty'nin gösterdiği bağlantıyı takip edin, ardından **Recreate Pub/Sub topic** butonuna tıklayın |
+| **Grant permissions** | Servis hesabının o projede **Pub/Sub Admin** rolü yok | [**IAM & Admin** > **IAM**](https://console.cloud.google.com/iam-admin/iam) bölümünde servis hesabını düzenleyin ve **Pub/Sub** > **Pub/Sub Admin** rolünü ekleyin, ardından **Recreate Pub/Sub topic** butonuna tıklayın |
+
+Konu oluşturulana kadar Play Console'a yapıştıracak bir şey olmadığından Google Play etkinlik göndermeye başlamaz ve Adapty yenilemeleri, iptalleri ve iadeleri kaçırır.
+
+**Recreate Pub/Sub topic** işlemi, daha önce yüklediğiniz anahtar dosyasıyla kurulumu yeniden çalıştırır; dosyayı tekrar yüklemenize gerek kalmaz.
+
+### Konu yeniden oluşturulamıyor \{#recreating-the-topic-fails\}
+
+Google Play'in konunuza yayın yapabilmesi için Adapty, `google-play-developer-notifications@system.gserviceaccount.com` adresine bu izni verir. Bu hesap Google'a aittir, şirketinize değil.
+
+Şirketler çoğunlukla Google Cloud'u yalnızca kendi alan adlarındaki hesaplara izin verecek şekilde yapılandırır. Bu şirket genelindeki kurallar organizasyon politikaları olarak adlandırılır ve bunlardan ikisi, dış bir hesaba verilen izni reddeder; bu nedenle konu oluşturulamaz.
+
+1. [Google Cloud Console'u](https://console.cloud.google.com/) açın ve anahtar dosyasının geldiği projeyi seçin.
+
+2. **IAM & Admin** > **Organization Policies** bölümüne gidin.
+
+   <ZoomImage id="google-cloud-IAM-and-Admin.webp" width="700px" alt="Google Cloud Console gezintisindeki IAM and Admin bölümü" />
+
+3. **Domain restricted contacts** politikasını bulun, **Actions** menüsünü açın ve **Edit policy** seçeneğine tıklayın.
+
+   <ZoomImage id="google-cloud-policy-action.webp" width="700px" alt="Actions menüsü açık şekilde organizasyon politikaları listesi" />
+
+4. **Override parent's policy** seçeneğini işaretleyin, **Policy enforcement** değerini **Replace** olarak ayarlayın ve ardından **Add a rule** seçeneğine tıklayın.
+
+   <ZoomImage id="google-cloud-edit-policy.webp" width="700px" alt="Override parent's policy seçeneğinin gösterildiği politika düzenleme sayfası" />
+
+5. **Policy values** altında **Allow All** seçeneğini belirleyin ve ardından **Set policy** seçeneğine tıklayın.
+
+<ZoomImage id="google-cloud-allow-all-policy.webp" width="700px" alt="New rule section with Allow All selected as the policy value" />
+
+6. **Domain restricted sharing** politikası için de aynı adımları tekrarlayın.
+
+7. Adapty'de topic'i yeniden oluşturun.
+
+:::warning
+Topic oluşturulur oluşturulmaz her iki politikayı da **Inherit parent's policy** olarak geri alın. **Allow All** olarak ayarlı kaldığı sürece bu proje, yalnızca Google'ın bildirim hizmetiyle değil, alan adınız dışındaki herhangi bir Google hesabıyla erişim izinleri ve paylaşım kabul eder.
 :::
 
-3. [Google Play Console](https://play.google.com/console/)'u açın, uygulamanızı seçin ve **Monetize with Play** -> **Monetization setup** bölümüne gidin. **Google Play Billing** bölümünde **Enable real-time notifications** onay kutusunu işaretleyin.
+## Sonraki adımlar \{#next-steps\}
 
-4. Adapty **App Settings**'de kopyaladığınız **Enable Pub/Sub API** alanının içeriğini **Topic name** alanına yapıştırın.
-5. Google Play Console'da **Save changes**'e tıklayın.
-
-<Zoom>
-  <img src="/assets/shared/img/e55ba0e-paste_topic_name.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Bildirimleri Test Etme \{#test-notifications\}
-
-Gerçek zamanlı geliştirici bildirimlerine başarıyla abone olup olmadığınızı kontrol etmek için:
-
-1. Google Play Console ayarlarındaki değişiklikleri kaydedin.
-2. Google Play Console'daki **Topic name** alanının altında **Send test notification**'a tıklayın.
-
-<Zoom>
-  <img src="/assets/shared/img/rtdn-test.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-3. Adapty'de [**App settings > Android SDK**](https://app.adapty.io/settings/android-sdk) sayfasına gidin. Test bildirimi gönderildiyse, konu adının üzerinde durumunu göreceksiniz.
-
-<Zoom>
-  <img src="/assets/shared/img/rtdn-adapty-test.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Enable Pub/Sub API Alanındaki Yanlış Formatı Düzeltme \{#fixing-incorrect-format-in-enable-pubsub-api-field\}
-
-**Enable Pub/Sub API** alanının içeriği yanlış bir formattaysa (doğru format `projects/...` ile başlar), sorunu gidermek için şu adımları izleyin:
-
-### 1. API Etkinleştirme ve İzinleri Doğrulama \{#1-verify-api-enablement-and-permissions\}
-
-Gerekli tüm API'lerin etkinleştirildiğinden ve izinlerin servis hesabına doğru şekilde verildiğinden emin olun. Bu adımları daha önce tamamlamış olsanız bile, hiçbir alt adımın atlanmadığından emin olmak için tekrar gözden geçirmeniz önemlidir. Aşağıdaki bölümlerdeki adımları tekrarlayın:
-
-1. [Google Play Console'da Geliştirici API'lerini Etkinleştirme](enabling-of-devepoler-api)
-2. [Google Cloud Console'da Servis Hesabı Oluşturma](create-service-account)
-3. [Google Play Console'da Servis Hesabına İzin Verme](grant-permissions-to-service-account)
-4. [Google Play Console'da Servis Hesabı Anahtar Dosyası Oluşturma](create-service-account-key-file)
-5. [Google Play Store Entegrasyonunu Yapılandırma](google-play-store-connection-configuration)
-
-### 2. Alan Politikalarını Düzenleme \{#2-adjust-domain-policies\}
-
-**Domain restricted contacts** ve **Domain restricted sharing** politikalarını değiştirin:
-
-1. [Google Cloud Console](https://console.cloud.google.com/)'u açın ve uygulamanızı yönetmek için servis hesabını oluşturduğunuz projeyi seçin.
-2. **Quick Access** bölümünde **IAM & Admin**'i seçin.
-
-   <Zoom>
-     <img src="/assets/shared/img/google-cloud-IAM-and-Admin.webp"
-     style={{
-       border: '1px solid #727272', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-3. Sol panelde **Organization Policies**'i seçin.
-4. **Domain restricted contacts** politikasını bulun.
-
-   <Zoom>
-     <img src="/assets/shared/img/google-cloud-policy-action.webp"
-     style={{
-       border: '1px solid #727272', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-5. **Actions** sütunundaki üç nokta düğmesine tıklayın ve **Edit policy**'yi seçin.
-6. Politika düzenleme penceresinde:
-   1. **Policy source** altında **Override parent's policy** radyo düğmesini seçin.
-   2. **Policy enforcement** altında **Replace** radyo düğmesini seçin.
-   3. **Rules** altında **ADD A RULE** düğmesine tıklayın.
-
-      <Zoom>
-        <img src="/assets/shared/img/google-cloud-edit-policy.webp"
-        style={{
-          border: '1px solid #727272', /* border width and color */
-          width: '700px', /* image width */
-          display: 'block', /* for alignment */
-          margin: '0 auto' /* center alignment */
-        }}
-      />
-      </Zoom>
-
-   4. **New rule** -> **Policy values** altında **Allow All**'u seçin.
-
-      <Zoom>
-        <img src="/assets/shared/img/google-cloud-allow-all-policy.webp"
-        style={{
-          border: '1px solid #727272', /* border width and color */
-          width: '700px', /* image width */
-          display: 'block', /* for alignment */
-          margin: '0 auto' /* center alignment */
-        }}
-      />
-      </Zoom>
-
-   5. **SET POLICY**'ye tıklayın.
-7. **Domain restricted sharing** politikası için 4-6. adımları tekrarlayın.
-
-Son olarak, **Google Play RTDN topic name** başlığının yanındaki **Enable Pub/Sub API** alanının içeriğini yeniden oluşturun. Alan artık doğru formatta olacaktır.
-
-Gerçek Zamanlı Geliştirici Bildirimlerini (RTDN) başarıyla etkinleştirdikten sonra güncellenen politikalar için **Policy source**'u **Inherit parent's policy** olarak geri aldığınızdan emin olun.
-
-## Ham Olay Yönlendirme \{#raw-events-forwarding\}
-
-Bazen Google'dan ham S2S olaylarını almaya devam etmek isteyebilirsiniz. Adapty kullanırken bunları almaya devam etmek için endpoint'inizi **URL for forwarding raw Google events** alanına eklemeniz yeterlidir; ham olayları Google'dan geldiği gibi ileteceğiz.
-
-<Zoom>
-<img src="/assets/shared/img/e388892-001774-September-22-GhkjOFbT.webp"
-style={{
-border: '1px solid #727272', /* border width and color */
-width: '700px', /* image width */
-display: 'block', /* for alignment */
-margin: '0 auto' /* center alignment */
-}}
-/>
-</Zoom>
-
----
-**Sırada ne var**
-
-Adapty SDK'yı şu platformlar için kurun:
+Uygulamanızın kullandığı her framework için [Adapty SDK'yı yükleyin](installation-of-adapty-sdks). Bunu yapana kadar uygulamanız paywall gösteremez veya satın alımları Adapty'ye bildiremez.
 
 - [Android](sdk-installation-android)
 - [React Native](sdk-installation-reactnative)
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)

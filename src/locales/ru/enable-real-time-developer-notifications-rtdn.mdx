@@ -1,199 +1,104 @@
 ---
-title: "Включение уведомлений в реальном времени (RTDN) в Google Play Console"
-description: "Будьте в курсе важных событий и обеспечьте точность данных, включив уведомления в реальном времени (RTDN) в Google Play Console для Adapty. Узнайте, как настроить RTDN для получения мгновенных обновлений о возвратах и других событиях из Play Store"
-metadataTitle: "Google Play Console: Включение уведомлений в реальном времени (RTDN) для Adapty | Документация Adapty"
-
+title: "Включение уведомлений в режиме реального времени (RTDN) в Google Play Console"
+description: "Вставьте название Pub/Sub топика Adapty в Google Play Console, чтобы данные о продлениях, отменах и возвратах поступали в Adapty в режиме реального времени."
+metadataTitle: "Включение RTDN в Google Play Console | Документация Adapty"
 ---
 
-Настройка уведомлений в реальном времени (RTDN) необходима для обеспечения точности данных: она позволяет мгновенно получать обновления из Play Store, включая информацию о возвратах и других событиях.
+Google Play сообщает Adapty о продлениях, отменах, возвратах и проблемах с оплатой через уведомления в режиме реального времени. Эти события происходят, когда ваше приложение закрыто, поэтому SDK не может их зафиксировать самостоятельно.
+
+## Прежде чем начать \{#before-you-start\}
+
+[Настройте интеграцию с Google Play Store](google-play-store-connection-configuration). Adapty генерирует название топика из вашего ключевого файла, поэтому ничего копировать не нужно — пока вы его не загрузите.
 
 ## Включение уведомлений \{#enable-notifications\}
 
-1. Убедитесь, что **Google Cloud Pub/Sub** включён. Перейдите по [этой ссылке](https://console.cloud.google.com/flows/enableapi?apiid=pubsub) и выберите проект вашего приложения. Если вы ещё не включили **Google Cloud Pub/Sub**, сделайте это здесь.
+1. Откройте [**App settings** > **Android SDK**](https://app.adapty.io/settings/android-sdk) в дашборде Adapty и скопируйте название топика в разделе **Google Play RTDN topic name**. Оно начинается с `projects/`.
 
-<Zoom>
-  <img src="/assets/shared/img/pubsub.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+   <ZoomImage id="gp-adapty-topic-name.webp" width="700px" alt="Google Play RTDN topic name section in Adapty App settings, with the generated topic name" />
 
-2. Перейдите в [**App settings > Android SDK**](https://app.adapty.io/settings/android-sdk) из верхнего меню Adapty и скопируйте содержимое поля **Enable Pub/Sub API** рядом с заголовком **Google Play RTDN topic name**.
+2. Откройте [Google Play Console](https://play.google.com/console/), выберите своё приложение и перейдите в **Monetize with Play** > **Monetization setup**.
 
-<Zoom>
-  <img src="/assets/shared/img/a72ff2d-copy_topic.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+3. В разделе **Google Play Billing** установите флажок **Enable real-time notifications**.
 
-<p> </p>
+4. Вставьте имя топика в поле **Topic name**.
 
-:::note
-Если содержимое поля **Enable Pub/Sub API** имеет неправильный формат (правильный формат начинается с `projects/...`), обратитесь к разделу [Исправление неправильного формата в поле Enable Pub/Sub API](enable-real-time-developer-notifications-rtdn#fixing-incorrect-format-in-enable-pubsub-api-field) за помощью.
+5. Нажмите **Save changes**.
 
+   <ZoomImage id="gp-rtdn-monetization-setup.webp" width="700px" alt="Monetization setup page in Google Play Console, showing the Enable real-time notifications checkbox and Topic name field" />
+
+## Проверьте подключение \{#verify-the-connection\}
+
+1. На странице **Monetization setup** нажмите кнопку **Send test notification** под полем **Topic name**.
+
+2. Вернитесь в [**App settings** > **Android SDK**](https://app.adapty.io/settings/android-sdk) в Adapty. Как только Adapty получит уведомление, тег статуса в разделе **Google Play RTDN topic name** изменится на **Active**.
+
+   <ZoomImage id="gp-adapty-rtdn-active.webp" width="700px" alt="Google Play RTDN topic name section in Adapty showing the Active status tag" />
+
+## Пересылка необработанных событий Google \{#forward-raw-google-events\}
+
+Adapty декодирует каждое уведомление от Google и преобразует его в собственное событие, привязанное к профилю и продукту, с добавлением данных о доходе. Чтобы также получать оригинальные сообщения от Google, укажите ваш эндпоинт в поле **URL for forwarding raw Google events to your webhook** в **App settings** > **Android SDK**.
+
+Adapty отправляет сообщение Pub/Sub именно в том виде, в котором его прислал Google, без какого-либо предварительного разбора: в кодировке base64, с именами полей и числовыми типами уведомлений от Google, с идентификацией покупки по токену, а не по профилю Adapty. Формат задокументирован в [справочнике RTDN](https://developer.android.com/google/play/billing/rtdn-reference) от Google.
+
+## Устранение неполадок RTDN \{#rtdn-troubleshooting\}
+
+### Название топика отсутствует
+
+Настройка RTDN начинается с копирования названия топика из Adapty. Если его нет, продолжить не получится: **Topic name** в Play Console — это то, куда Google Play отправляет события, и название берётся исключительно из Adapty.
+
+Adapty создаёт топик в вашем Cloud-проекте при сохранении файла ключа. Корректное имя начинается с `projects/`, например `projects/your-project-id/topics/adapty-prod-3f7a1c2e-9b4d-4e8f-a1b2-c3d4e5f60718`. Если Adapty не смог его создать, в разделе вместо имени отображаются краткое сообщение об ошибке и кнопка **Recreate Pub/Sub topic**, которая объясняет, что пошло не так:
+
+| Что вы видите | Что это означает | Что делать |
+| --- | --- | --- |
+| **To set the Google Play RTDN topic name first upload a valid service account key file above.** | У Adapty нет файла ключа для этого приложения | [Загрузите файл ключа](google-play-store-connection-configuration) |
+| **Enable Pub/Sub API** | Cloud Pub/Sub API отключён в этом Cloud-проекте | Перейдите по ссылке, которую показывает Adapty, затем нажмите **Recreate Pub/Sub topic** |
+| **Grant permissions** | У сервисного аккаунта нет роли **Pub/Sub Admin** в этом проекте | В [**IAM & Admin** > **IAM**](https://console.cloud.google.com/iam-admin/iam) отредактируйте сервисный аккаунт и добавьте **Pub/Sub** > **Pub/Sub Admin**, затем нажмите **Recreate Pub/Sub topic** |
+
+Пока топик не существует, в Play Console нечего вставлять, а значит Google Play не отправляет события — и Adapty не получает данные о продлениях, отменах и возвратах.
+
+**Recreate Pub/Sub topic** повторно запускает настройку с уже загруженным ключевым файлом, так что загружать его заново не нужно.
+
+### Воссоздание топика завершается ошибкой \{#recreating-the-topic-fails\}
+
+Google Play нужно разрешение на публикацию в ваш топик, поэтому Adapty выдаёт его аккаунту `google-play-developer-notifications@system.gserviceaccount.com`. Этот аккаунт принадлежит Google, а не вашей компании.
+
+Компании нередко настраивают Google Cloud так, чтобы доступ был разрешён только аккаунтам из собственного домена. Такие правила на уровне всей организации называются политиками организации, и две из них запрещают выдачу разрешений внешнему аккаунту — из-за этого топик и не создаётся.
+
+Расслабьте обе политики для этого проекта, пересоздайте тему, затем восстановите их. Редактирование политик организации обычно требует прав администратора, поэтому может понадобиться помощь того, кто управляет Google Cloud вашей компании.
+
+1. Откройте [Google Cloud Console](https://console.cloud.google.com/) и выберите проект, из которого получен файл ключа.
+
+2. Перейдите в **IAM & Admin** > **Organization Policies**.
+
+   <ZoomImage id="google-cloud-IAM-and-Admin.webp" width="700px" alt="Раздел IAM and Admin в навигации Google Cloud Console" />
+
+3. Найдите политику **Domain restricted contacts**, откройте её меню **Actions** и нажмите **Edit policy**.
+
+   <ZoomImage id="google-cloud-policy-action.webp" width="700px" alt="Organization policies list with the Actions menu open" />
+
+4. Выберите **Override parent's policy**, установите **Policy enforcement** в значение **Replace**, затем нажмите **Add a rule**.
+
+   <ZoomImage id="google-cloud-edit-policy.webp" width="700px" alt="Policy editing page with the Override parent's policy option" />
+
+5. В разделе **Policy values** выберите **Allow All**, затем нажмите **Set policy**.
+
+<ZoomImage id="google-cloud-allow-all-policy.webp" width="700px" alt="New rule section with Allow All selected as the policy value" />
+
+6. Повторите то же самое для политики **Domain restricted sharing**.
+
+7. Пересоздайте топик в Adapty.
+
+:::warning
+Сразу после создания топика верните обе политики в значение **Inherit parent's policy**. Пока установлено **Allow All**, проект принимает предоставление доступа и совместное использование для любого аккаунта Google за пределами вашего домена, а не только для службы уведомлений Google.
 :::
 
-3. Откройте [Google Play Console](https://play.google.com/console/), выберите своё приложение и перейдите в **Monetize with Play** -> **Monetization setup**. В разделе **Google Play Billing** установите флажок **Enable real-time notifications**.
+## Следующие шаги \{#next-steps\}
 
-4. Вставьте содержимое поля **Enable Pub/Sub API**, скопированное в **App Settings** Adapty, в поле **Topic name**.
-5. Нажмите **Save changes** в Google Play Console.
-
-<Zoom>
-  <img src="/assets/shared/img/e55ba0e-paste_topic_name.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Тестирование уведомлений \{#test-notifications\}
-
-Чтобы проверить, успешно ли вы подписались на уведомления в реальном времени:
-
-1. Сохраните изменения в настройках Google Play Console.
-2. В Google Play Console под полем **Topic name** нажмите **Send test notification**.
-
-<Zoom>
-  <img src="/assets/shared/img/rtdn-test.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-3. Перейдите в [**App settings > Android SDK**](https://app.adapty.io/settings/android-sdk) в Adapty. Если тестовое уведомление было отправлено, вы увидите его статус над названием топика.
-
-<Zoom>
-  <img src="/assets/shared/img/rtdn-adapty-test.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Исправление неправильного формата в поле Enable Pub/Sub API \{#fixing-incorrect-format-in-enable-pubsub-api-field\}
-
-Если содержимое поля **Enable Pub/Sub API** имеет неправильный формат (правильный формат начинается с `projects/...`), выполните следующие шаги для устранения проблемы:
-
-### 1. Проверка активации API и прав доступа \{#1-verify-api-enablement-and-permissions\}
-
-Убедитесь, что все необходимые API включены и права доступа к сервисному аккаунту настроены правильно. Даже если вы уже выполняли эти шаги, пройдите их повторно, чтобы не пропустить ни одного. Повторите шаги из следующих разделов:
-
-1. [Включение API разработчика в Google Play Console](enabling-of-devepoler-api)
-2. [Создание сервисного аккаунта в Google Cloud Console](create-service-account)
-3. [Выдача прав сервисному аккаунту в Google Play Console](grant-permissions-to-service-account)
-4. [Создание файла ключа сервисного аккаунта в Google Play Console](create-service-account-key-file)
-5. [Настройка интеграции с Google Play Store](google-play-store-connection-configuration)
-
-### 2. Изменение политик домена \{#2-adjust-domain-policies\}
-
-Измените политики **Domain restricted contacts** и **Domain restricted sharing**:
-
-1. Откройте [Google Cloud Console](https://console.cloud.google.com/) и выберите проект, в котором создан сервисный аккаунт для управления вашим приложением.
-2. В разделе **Quick Access** выберите **IAM & Admin**.
-
-   <Zoom>
-     <img src="/assets/shared/img/google-cloud-IAM-and-Admin.webp"
-     style={{
-       border: '1px solid #727272', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-3. На левой панели выберите **Organization Policies**.
-4. Найдите политику **Domain restricted contacts**.
-
-   <Zoom>
-     <img src="/assets/shared/img/google-cloud-policy-action.webp"
-     style={{
-       border: '1px solid #727272', /* border width and color */
-       width: '700px', /* image width */
-       display: 'block', /* for alignment */
-       margin: '0 auto' /* center alignment */
-     }}
-   />
-   </Zoom>
-
-5. Нажмите кнопку с многоточием в столбце **Actions** и выберите **Edit policy**.
-6. В окне редактирования политики:
-   1. В разделе **Policy source** выберите переключатель **Override parent's policy**.
-   2. В разделе **Policy enforcement** выберите переключатель **Replace**.
-   3. В разделе **Rules** нажмите кнопку **ADD A RULE**.
-
-      <Zoom>
-        <img src="/assets/shared/img/google-cloud-edit-policy.webp"
-        style={{
-          border: '1px solid #727272', /* border width and color */
-          width: '700px', /* image width */
-          display: 'block', /* for alignment */
-          margin: '0 auto' /* center alignment */
-        }}
-      />
-      </Zoom>
-
-   4. В разделе **New rule** -> **Policy values** выберите **Allow All**.
-
-      <Zoom>
-        <img src="/assets/shared/img/google-cloud-allow-all-policy.webp"
-        style={{
-          border: '1px solid #727272', /* border width and color */
-          width: '700px', /* image width */
-          display: 'block', /* for alignment */
-          margin: '0 auto' /* center alignment */
-        }}
-      />
-      </Zoom>
-
-   5. Нажмите **SET POLICY**.
-7. Повторите шаги 4–6 для политики **Domain restricted sharing**.
-
-После этого пересоздайте содержимое поля **Enable Pub/Sub API** рядом с заголовком **Google Play RTDN topic name**. Теперь поле будет в правильном формате.
-
-Не забудьте вернуть **Policy source** в значение **Inherit parent's policy** для обновлённых политик после успешного включения уведомлений в реальном времени (RTDN).
-
-## Переадресация необработанных событий \{#raw-events-forwarding\}
-
-В некоторых случаях вам может потребоваться получать необработанные S2S-события от Google. Чтобы продолжать их получать при использовании Adapty, просто добавьте свой эндпоинт в поле **URL for forwarding raw Google events** — мы будем передавать события в том виде, в котором они приходят от Google.
-
-<Zoom>
-<img src="/assets/shared/img/e388892-001774-September-22-GhkjOFbT.webp"
-style={{
-border: '1px solid #727272', /* border width and color */
-width: '700px', /* image width */
-display: 'block', /* for alignment */
-margin: '0 auto' /* center alignment */
-}}
-/>
-</Zoom>
-
----
-**Что дальше**
-
-Настройте Adapty SDK для:
+[Установите SDK](installation-of-adapty-sdks) для каждого фреймворка, который использует ваше приложение. Без этого приложение не сможет показывать пейволы и отправлять данные о покупках в Adapty.
 
 - [Android](sdk-installation-android)
 - [React Native](sdk-installation-reactnative)
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)
