@@ -172,17 +172,17 @@ most, deliberately — so the exception needs stating rather than assuming.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | android-products | — | dev | 4 | tutorial |
-| create-service-account | — | dev | 0 | tutorial |
-| create-service-account-key-file | — | dev | 0 | tutorial |
-| enable-real-time-developer-notifications-rtdn | — | dev | 6 | tutorial |
-| enabling-of-devepoler-api | — | dev | 0 | tutorial |
+| create-service-account | — | dev | 3 | tutorial |
+| create-service-account-key-file | — | dev | 4 | tutorial |
+| enable-real-time-developer-notifications-rtdn | — | dev | 8 | tutorial |
+| enabling-of-devepoler-api | — | dev | 3 | tutorial |
 | google-platform-resources | entry | dev | 3 | tutorial |
 | google-play-data-safety | — | dev | 7 | tutorial |
 | google-play-quota-increase | — | dev | 3 | tutorial |
-| google-play-store-connection-configuration | — | dev | 2 | tutorial |
+| google-play-store-connection-configuration | — | dev | 3 | tutorial |
 | google-reduced-service-fee | — | dev | 7 | tutorial |
-| grant-permissions-to-service-account | — | dev | 0 | tutorial |
-| initial-android | entry | dev | 1 | tutorial |
+| grant-permissions-to-service-account | — | dev | 3 | tutorial |
+| initial-android | entry | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
