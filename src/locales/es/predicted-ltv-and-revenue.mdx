@@ -21,22 +21,33 @@ Para aplicaciones con un historial muy limitado, el modelo recurre a promedios e
 
 El modelo de predicción de Adapty utiliza patrones de crecimiento de datos históricos de cohortes para proyectar los ingresos futuros y el LTV.
 
-Para cada combinación de aplicación y tipo de producto, el modelo mide cómo crecen los ingresos acumulados y el número acumulado de usuarios de pago de una cohorte entre puntos fijos de su vida, contados en días desde el día en que comenzó la cohorte. Los intervalos entre esos puntos son cortos cuando la cohorte es joven y se van alargando a medida que envejece: primero días, luego meses, luego trimestres. Adapty mide un par de coeficientes de crecimiento para cada intervalo: uno para los ingresos y otro para los usuarios de pago.
+Para cada combinación de app y tipo de producto, el modelo mide cómo crecen los ingresos acumulados y el número acumulado de usuarios de pago de una cohorte entre puntos fijos de su vida, contados en días desde que comenzó la cohorte. Los intervalos entre esos puntos son cortos cuando la cohorte es joven y se van alargando a medida que envejece: primero días, luego meses, luego trimestres. Adapty mide un par de coeficientes de crecimiento para cada intervalo: uno para los ingresos y otro para los usuarios de pago. Ambas métricas son netas de reembolsos: un reembolso resta su importe de los ingresos de la cohorte y elimina a ese usuario del recuento de usuarios de pago.
 
 Para proyectar una cohorte, Adapty toma el último de esos puntos que la cohorte ha alcanzado y encadena los coeficientes hacia adelante desde ahí hasta el día que corresponde al horizonte seleccionado: el día 90 para la predicción de 3 meses, el día 365 para la de 12 meses y hasta el día 730 para la de 24 meses. Los datos utilizados están completamente anonimizados.
 
 Los coeficientes se miden por separado según el tipo de producto: suscripciones semanales, mensuales, de 2 meses, de 3 meses, de 6 meses y anuales, además de compras de por vida y compras únicas. La predicción de una cohorte es la suma de las proyecciones de cada tipo de producto que compraron sus usuarios.
 
-El modelo genera dos valores para cada cohorte:
+El modelo produce dos valores para cada cohorte:
 
-- **Predicted revenue**: Los ingresos totales que se proyecta que generará una cohorte dentro del horizonte seleccionado.
-- **Predicted LTV**: El Predicted revenue dividido entre el número previsto de usuarios de pago en la cohorte.
+- **Predicted revenue**: Los ingresos totales, menos los reembolsos, que se proyecta que generará una cohorte dentro del horizonte seleccionado.
+- **Predicted LTV**: Los ingresos previstos divididos por el número previsto de usuarios de pago en la cohorte.
 
 ### Coeficientes específicos de la app y entre apps \{#app-specific-and-cross-app-coefficients\}
 
 Por defecto, la predicción de una cohorte utiliza coeficientes calculados a partir de las propias cohortes anteriores de esa app para el mismo tipo de producto, lo que refleja el comportamiento específico de sus usuarios. Una app obtiene sus propios coeficientes para un tipo de producto en cuanto tiene al menos dos cohortes lo suficientemente grandes como para poder medirse.
 
 Los dos orígenes se combinan dentro de una única predicción: donde el historial propio de la app no cubre un intervalo, Adapty rellena ese paso con coeficientes promediados entre todas las apps que venden ese tipo de producto. Así, una app reciente puede proyectar sus primeras semanas a partir de sus propios datos y el resto del año a partir de promedios entre apps.
+
+### Calibración y límites mínimos \{#calibration-and-floors\}
+
+Los coeficientes encadenados presentan una desviación que se acentúa en las cohortes con menos historial del que partir. Adapty mide esa desviación durante el entrenamiento: la curva de cada app vuelve a predecir sus propias cohortes completadas a partir de puntos anteriores de su evolución, y la diferencia entre la proyección y lo que esas cohortes generaron realmente se convierte en un factor de corrección para ese tipo de producto, ese horizonte y esa cantidad de historial observado. Cada predicción se multiplica por el factor correspondiente al tiempo que lleva observada la cohorte, de modo que la corrección es mayor en las cohortes más recientes, donde la proyección se extiende más lejos.
+
+La corrección se inclina deliberadamente hacia abajo para los tipos de producto que el modelo tiende a sobreestimar. Las suscripciones semanales, mensuales, de 2 meses, de 3 meses y de 6 meses reciben un factor de ingresos que tira la proyección hacia abajo en lugar de centrarla, y para las suscripciones semanales ese sesgo es más fuerte durante las primeras dos semanas de una cohorte. Las suscripciones anuales, los accesos de por vida y las compras únicas no reciben ningún sesgo. El factor de usuarios de pago nunca se corrige, de modo que la precaución se refleja en los ingresos previstos y, a través de ellos, en el LTV predicho.
+
+Tras la corrección se aplican dos límites mínimos:
+
+- Una predicción nunca es inferior a lo que la cohorte ya ha generado hasta ese horizonte. Si una cohorte ya ha generado más de lo que indicaba su proyección a 3 meses, se muestra el ingreso realizado como la predicción a 3 meses.
+- Un horizonte más largo nunca muestra menos que uno más corto. Los ingresos predichos y los usuarios de pago predichos son acumulativos, por lo que la predicción a 12 meses es al menos igual a la de 9 meses.
 
 ### Disponibilidad y actualizaciones \{#availability-and-updates\}
 
@@ -69,7 +80,7 @@ Para ver las predicciones, ve a la página de análisis de cohortes en tu Adapty
   }}
 />
 </Zoom>
-La columna **Predicted revenue** muestra los ingresos totales estimados que se espera que genere una cohorte de usuarios de pago durante el período de tiempo seleccionado tras la creación de la cohorte. Este valor se calcula utilizando el modelo de predicción de Adapty, basado en los patrones históricos de crecimiento de cohortes de la aplicación.
+La columna **Predicted revenue** muestra los ingresos totales estimados, menos los reembolsos, que se espera que genere una cohorte de usuarios de pago durante el período de tiempo seleccionado tras la creación de la cohorte. Este valor se calcula utilizando el modelo de predicción de Adapty, basado en los patrones históricos de crecimiento de cohortes de la app.
 
 La columna **Predicted LTV** muestra el valor de vida estimado de cada usuario en la cohorte seleccionada. Este valor se calcula dividiendo los ingresos predichos entre el número predicho de usuarios de pago en la cohorte.
 

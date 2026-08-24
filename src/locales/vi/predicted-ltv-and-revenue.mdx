@@ -21,7 +21,7 @@ Adapty cung cấp giá trị vòng đời dự đoán (LTV) và doanh thu dự �
 
 Mô hình dự đoán của Adapty sử dụng các mẫu tăng trưởng từ dữ liệu cohort lịch sử để dự báo doanh thu và LTV trong tương lai.
 
-Đối với mỗi tổ hợp ứng dụng và loại sản phẩm, mô hình đo lường mức độ tăng trưởng của doanh thu tích lũy và số lượng người dùng trả phí tích lũy của một cohort giữa các điểm cố định trong vòng đời của cohort đó, tính bằng số ngày kể từ ngày cohort bắt đầu. Khoảng cách giữa các điểm này ngắn khi cohort còn mới và dài dần theo thời gian — ban đầu là theo ngày, sau đó theo tháng, rồi theo quý. Adapty đo một cặp hệ số tăng trưởng cho mỗi khoảng: một hệ số cho doanh thu, một hệ số cho số người dùng trả phí.
+Đối với mỗi tổ hợp ứng dụng và loại sản phẩm, mô hình đo lường mức tăng trưởng lũy kế của doanh thu và số lượng người dùng trả phí trong cohort giữa các mốc cố định trong vòng đời của cohort, tính theo số ngày kể từ ngày cohort bắt đầu. Khoảng cách giữa các mốc này ngắn khi cohort còn non trẻ và dần dài hơn khi cohort già đi — ban đầu tính theo ngày, sau đó theo tháng, rồi theo quý. Adapty đo một cặp hệ số tăng trưởng cho mỗi khoảng thời gian: một cho doanh thu, một cho số người dùng trả phí. Cả hai chỉ số đều đã trừ hoàn tiền: một lần hoàn tiền sẽ khấu trừ số tiền tương ứng khỏi doanh thu của cohort và loại người dùng đó khỏi tổng số người dùng trả phí.
 
 Để dự đoán cho một cohort, Adapty lấy điểm cuối cùng mà cohort đó đã đạt được và nối tiếp các hệ số về phía trước từ điểm đó đến ngày tương ứng với khoảng thời gian bạn đã chọn — ngày thứ 90 cho dự đoán 3 tháng, ngày thứ 365 cho dự đoán 12 tháng, và lên đến ngày thứ 730 cho 24 tháng. Dữ liệu được sử dụng hoàn toàn ẩn danh.
 
@@ -29,14 +29,25 @@ Các hệ số được đo riêng theo từng loại sản phẩm: gói đăng 
 
 Mô hình tạo ra hai giá trị cho mỗi cohort:
 
-- **Predicted revenue**: Tổng doanh thu mà một cohort được dự đoán sẽ tạo ra trong khoảng thời gian đã chọn.
-- **Predicted LTV**: Predicted revenue chia cho số lượng người dùng trả phí được dự đoán trong cohort đó.
+- **Predicted revenue**: Tổng doanh thu, trừ hoàn tiền, mà một cohort được dự đoán sẽ tạo ra trong khoảng thời gian đã chọn.
+- **Predicted LTV**: Predicted revenue chia cho số lượng người dùng trả phí được dự đoán trong cohort.
 
 ### Hệ số riêng theo ứng dụng và hệ số chung \{#app-specific-and-cross-app-coefficients\}
 
 Theo mặc định, dự đoán của một cohort sử dụng các hệ số được học từ các cohort trong quá khứ của chính ứng dụng đó với cùng loại sản phẩm, phản ánh hành vi người dùng đặc thù của ứng dụng. Một ứng dụng sẽ có hệ số riêng cho một loại sản phẩm khi có ít nhất hai cohort đủ lớn để đo lường.
 
 Hai nguồn này kết hợp với nhau trong một dự đoán duy nhất: khi lịch sử của ứng dụng không đủ dữ liệu cho một khoảng thời gian, Adapty sẽ lấp đầy bước đó bằng các hệ số được tính trung bình từ tất cả các ứng dụng bán cùng loại sản phẩm. Nhờ vậy, một ứng dụng mới có thể dự đoán vài tuần đầu từ dữ liệu của chính mình, và phần còn lại của năm từ mức trung bình của các ứng dụng khác.
+
+### Hiệu chỉnh và ngưỡng tối thiểu \{#calibration-and-floors\}
+
+Các hệ số chuỗi có xu hướng lệch, và độ lệch lớn nhất ở những cohort có ít lịch sử nhất để dự đoán. Adapty đo lường độ lệch đó trong quá trình huấn luyện: đường cong của từng ứng dụng sẽ tự dự đoán lại các cohort đã hoàn chỉnh từ những thời điểm sớm hơn trong vòng đời của chúng, và khoảng cách giữa dự đoán với doanh thu thực tế mà các cohort đó đạt được sẽ trở thành hệ số hiệu chỉnh cho từng loại sản phẩm, khoảng thời gian dự đoán, và lượng lịch sử đã quan sát được. Mỗi dự đoán được nhân với hệ số tương ứng với mức độ quan sát của cohort, vì vậy hiệu chỉnh lớn nhất ở những cohort trẻ nhất — nơi dự đoán phải vươn xa nhất về phía trước.
+
+Sự điều chỉnh này cố ý nghiêng về phía thấp hơn đối với các loại sản phẩm mà mô hình thường có xu hướng dự đoán quá cao. Các gói đăng ký theo tuần, tháng, 2 tháng, 3 tháng và 6 tháng sẽ được áp dụng một hệ số doanh thu kéo dự đoán xuống thay vì giữ ở mức trung tâm; đối với gói đăng ký theo tuần, mức độ nghiêng này mạnh nhất trong hai tuần đầu tiên của một cohort. Các gói đăng ký hàng năm, quyền truy cập trọn đời và sản phẩm mua một lần không bị áp dụng bất kỳ sự nghiêng nào. Hệ số người dùng trả phí không bao giờ bị điều chỉnh nghiêng, do đó sự thận trọng chỉ tác động lên doanh thu dự đoán và, thông qua đó, lên LTV dự đoán.
+
+Sau khi áp dụng điều chỉnh, hai mức sàn sẽ được áp dụng:
+
+- Dự đoán không bao giờ thấp hơn những gì cohort đó đã kiếm được tính đến thời điểm dự đoán. Một cohort đã kiếm được nhiều hơn mức dự đoán 3 tháng sẽ hiển thị doanh thu thực tế làm dự đoán 3 tháng.
+- Khoảng thời gian dài hơn không bao giờ hiển thị thấp hơn khoảng thời gian ngắn hơn. Doanh thu dự đoán và số người dùng trả phí dự đoán đều là lũy kế, vì vậy dự đoán 12 tháng ít nhất phải bằng dự đoán 9 tháng.
 
 ### Tính khả dụng và cập nhật \{#availability-and-updates\}
 
@@ -69,9 +80,9 @@ Sau đó, các dự đoán được tính toán lại hàng ngày dựa trên d�
   }}
 />
 </Zoom>
-Cột **Predicted revenue** hiển thị tổng doanh thu ước tính mà một cohort người dùng trả phí được kỳ vọng tạo ra trong khoảng thời gian đã chọn kể từ khi cohort được tạo. Giá trị này được tính toán dựa trên mô hình dự đoán của Adapty, sử dụng các mẫu tăng trưởng cohort lịch sử của ứng dụng.
+Cột **Predicted revenue** hiển thị tổng doanh thu ước tính, sau khi trừ hoàn tiền, mà một cohort người dùng trả phí dự kiến sẽ tạo ra trong khoảng thời gian đã chọn kể từ khi cohort được tạo. Giá trị này được tính toán bằng mô hình dự đoán của Adapty, dựa trên các mẫu tăng trưởng cohort lịch sử của ứng dụng.
 
-Cột **Predicted LTV** hiển thị giá trị trọn đời ước tính của mỗi người dùng trong cohort đã chọn. Giá trị này được tính bằng cách chia doanh thu dự đoán cho số lượng người dùng trả phí dự đoán trong cohort.
+Cột **Predicted LTV** hiển thị giá trị vòng đời ước tính của mỗi người dùng trong cohort đã chọn. Giá trị này được tính bằng cách chia doanh thu dự đoán cho số lượng người dùng trả phí dự đoán trong cohort.
 
 ### Chọn khoảng thời gian dự đoán \{#select-the-horizon\}
 

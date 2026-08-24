@@ -21,22 +21,33 @@ Geçmişi çok sınırlı uygulamalar için model, uygulama genelindeki ortalama
 
 Adapty'nin tahmin modeli, gelecekteki geliri ve LTV'yi tahmin etmek için geçmiş kohort verilerindeki büyüme kalıplarını kullanır.
 
-Her uygulama ve ürün türü kombinasyonu için model, bir kohortun birikimli gelirinin ve birikimli ödeme yapan kullanıcı sayısının, kohortun başladığı günden itibaren gün cinsinden sayılan sabit noktalar arasında nasıl büyüdüğünü ölçer. Bu noktalar arasındaki aralıklar, kohort gençken kısa olup kohort yaşlandıkça uzar — önce günler, sonra aylar, ardından çeyrekler. Adapty, her aralık için bir büyüme katsayısı çifti ölçer: biri gelir için, diğeri ödeme yapan kullanıcılar için.
+Her uygulama ve ürün türü kombinasyonu için model, bir kohortun kümülatif gelirinin ve kümülatif ödeme yapan kullanıcı sayısının, kohortun başladığı günden itibaren gün cinsinden ölçülen sabit noktalar arasında nasıl büyüdüğünü ölçer. Bu noktalar arasındaki aralıklar, kohort genç iken kısa tutulur ve kohort yaşlandıkça uzar — önce günler, sonra aylar, ardından çeyrekler. Adapty her aralık için bir çift büyüme katsayısı ölçer: biri gelir için, diğeri ödeme yapan kullanıcılar için. Her iki ölçüm de iadelerden arındırılmıştır: bir iade, tutarını kohortun gelirinden düşer ve o kullanıcıyı ödeme yapan kullanıcı sayısından çıkarır.
 
 Bir kohortu tahmin etmek için Adapty, o kohortun ulaştığı son noktayı alır ve seçtiğiniz ufka karşılık gelen güne kadar katsayıları oradan ileriye doğru zincirler — 3 aylık tahmin için 90. gün, 12 aylık için 365. gün, 24 ay için ise 730. güne kadar. Kullanılan veriler tamamen anonimleştirilmiştir.
 
 Katsayılar, ürün türüne göre ayrı ayrı ölçülür: haftalık, aylık, 2 aylık, 3 aylık, 6 aylık ve yıllık abonelikler ile süresiz erişim ve tek seferlik satın almalar. Bir kohortun tahmini, kullanıcılarının satın aldığı her ürün türü için yapılan tahminlerin toplamıdır.
 
-Model, her kohort için iki değer üretir:
+Model her kohort için iki değer üretir:
 
-- **Tahmin edilen gelir**: Bir kohortun seçilen süre içinde elde etmesi beklenen toplam gelir.
-- **Tahmin edilen LTV**: Tahmin edilen gelirin, kohortdaki tahmini ödeme yapan kullanıcı sayısına bölünmesiyle elde edilen değer.
+- **Tahmin edilen gelir**: Bir kohortun seçilen zaman dilimi içinde üreteceği tahmini toplam gelir; iadeler düşülmüş olarak hesaplanır.
+- **Tahmin edilen LTV**: Tahmin edilen gelirin, kohorttaki tahmini ödeme yapan kullanıcı sayısına bölünmesiyle elde edilir.
 
 ### Uygulamaya özgü ve uygulamalar arası katsayılar \{#app-specific-and-cross-app-coefficients\}
 
 Varsayılan olarak, bir kohortun tahmini; o uygulamanın aynı ürün türündeki geçmiş kohortlarından öğrenilen katsayıları kullanır ve bu katsayılar uygulamaya özgü kullanıcı davranışını yansıtır. Bir uygulama, belirli bir ürün türü için kendi katsayılarını edinebilmek amacıyla en az iki adet ölçüm yapılabilecek büyüklükte kohorta sahip olmalıdır.
 
 İki kaynak tek bir tahmin içinde harmanlanır: uygulamanın kendi geçmişi belirli bir aralığı kapsamadığında, Adapty o adımı aynı ürün türünü satan tüm uygulamaların ortalamasından elde edilen katsayılarla doldurur. Böylece yeni bir uygulama, ilk haftalarını kendi verisinden, yılın geri kalanını ise uygulamalar arası ortalamalardan yola çıkarak tahmin edebilir.
+
+### Kalibrasyon ve taban değerler \{#calibration-and-floors\}
+
+Zincirleme katsayılar zamanla kayar ve bu kayma, geçmişi en az olan kohortlarda en belirgin biçimde görülür. Adapty bu kaymayı eğitim sırasında ölçer: Her uygulamanın eğrisi, tamamlanmış kohortlarını yaşamlarının önceki noktalarından yeniden tahmin eder; bu projeksiyon ile söz konusu kohortların gerçekte elde ettiği gelir arasındaki fark, o ürün türü, zaman ufku ve gözlem geçmişi uzunluğu için bir düzeltme faktörüne dönüşür. Her tahmin, kohortun ne kadar süreyle gözlemlendiğiyle eşleşen faktörle çarpılır; dolayısıyla en genç kohortlarda düzeltme en büyük olur, çünkü projeksiyon o kohortta en uzak noktaya ulaşmak zorundadır.
+
+Düzeltme, modelin aşırıya kaçma eğiliminde olduğu ürün türleri için bilinçli olarak düşük tarafa doğru yaslanır. Haftalık, aylık, 2 aylık, 3 aylık ve 6 aylık abonelikler, tahmini aşağıya çeken bir gelir faktörü alır; haftalık aboneliklerde bu yönelim, bir kohortun ilk iki haftasında en güçlü şekilde hissedilir. Yıllık, süresiz erişim ve tek seferlik satın almalar herhangi bir yönelim almaz. Ödeme yapan kullanıcı faktörü hiçbir zaman yönlendirilmez; bu nedenle ihtiyatlı yaklaşım tahmin edilen gelire ve oradan da tahmin edilen LTV'ye yansır.
+
+Düzeltmenin ardından iki alt sınır uygulanır:
+
+- Bir tahmin, kohortun o ufka kadar zaten kazandığı miktarın altına hiçbir zaman düşmez. 3 aylık projeksiyonundan daha fazlasını zaten kazanmış olan bir kohort, gerçekleşmiş gelirini 3 aylık tahmin olarak gösterir.
+- Daha uzun bir ufuk, daha kısa olandan hiçbir zaman daha az göstermez. Tahmini gelir ve tahmini ödeyen kullanıcılar her ikisi de kümülatif olduğundan, 12 aylık tahmin en az 9 aylık tahmin kadar olur.
 
 ### Kullanılabilirlik ve güncellemeler \{#availability-and-updates\}
 
@@ -69,9 +80,9 @@ Tahminleri görüntülemek için Adapty kontrol panelinizde Kohort analizi sayfa
   }}
 />
 </Zoom>
-**Tahmini gelir** sütunu, ödeme yapan kullanıcılardan oluşan bir kohortun, kohort oluşturulduktan sonra seçilen zaman diliminde elde etmesi beklenen toplam tahmini geliri gösterir. Bu değer, uygulamanın geçmiş kohort büyüme kalıplarına dayanarak Adapty'nin tahmin modeli kullanılarak hesaplanır.
+**Tahmini gelir** sütunu, ödeme yapan kullanıcılardan oluşan bir kohortun, kohort oluşturulduktan sonra seçilen zaman dilimi içinde iade düşüldükten sonra elde etmesi beklenen toplam tahmini geliri gösterir. Bu değer, uygulamanın geçmiş kohort büyüme kalıplarına dayanarak Adapty'nin tahmin modeli kullanılarak hesaplanır.
 
-**Tahmini LTV** sütunu, seçilen kohortun her bir kullanıcısının tahmini yaşam boyu değerini gösterir. Bu değer, tahmini gelirin kohorttaki tahmini ödeme yapan kullanıcı sayısına bölünmesiyle hesaplanır.
+**Tahmini LTV** sütunu, seçilen kohortdaki her kullanıcının tahmini yaşam boyu değerini gösterir. Bu değer, tahmini gelirin kohorttaki tahmini ödeme yapan kullanıcı sayısına bölünmesiyle hesaplanır.
 
 ### Ufku seçin \{#select-the-horizon\}
 
