@@ -25,7 +25,7 @@ For apps with very limited history, the model falls back to cross-app averages, 
 
 Adapty's prediction model uses growth patterns from historical cohort data to project future revenue and LTV.
 
-For each combination of app and product type, the model measures how a cohort's cumulative revenue and cumulative number of paying users grow between fixed points in the cohort's life, counted in days from the day the cohort started. The intervals between those points are short while a cohort is young and get longer as it ages — days at first, then months, then quarters. Adapty measures a pair of growth coefficients for each interval: one for revenue, one for paying users.
+For each combination of app and product type, the model measures how a cohort's cumulative revenue and cumulative number of paying users grow between fixed points in the cohort's life, counted in days from the day the cohort started. The intervals between those points are short while a cohort is young and get longer as it ages — days at first, then months, then quarters. Adapty measures a pair of growth coefficients for each interval: one for revenue, one for paying users. Both measures are net of refunds: a refund subtracts its amount from the cohort's revenue and drops that user from its paying-user count.
 
 To project a cohort, Adapty takes the last of those points the cohort has reached and chains the coefficients forward from there to the day that matches the horizon you selected — day 90 for the 3-month prediction, day 365 for the 12-month one, up to day 730 for 24 months. The data used is completely anonymized.
 
@@ -33,7 +33,7 @@ Coefficients are measured separately per product type: weekly, monthly, 2-month,
 
 The model produces two values for each cohort:
 
-- **Predicted revenue**: The total revenue a cohort is projected to generate within the selected horizon.
+- **Predicted revenue**: The total revenue, minus refunds, a cohort is projected to generate within the selected horizon.
 - **Predicted LTV**: The predicted revenue divided by the predicted number of paying users in the cohort.
 
 ### App-specific and cross-app coefficients
@@ -41,6 +41,17 @@ The model produces two values for each cohort:
 By default, a cohort's prediction uses coefficients learned from that app's own past cohorts of the same product type, reflecting its specific user behavior. An app gets its own coefficients for a product type once it has at least two cohorts large enough to measure.
 
 The two sources mix inside a single prediction: where the app's own history doesn't cover an interval, Adapty fills that step with coefficients averaged across all apps selling that product type. So a young app can project its first weeks from its own data and the rest of the year from cross-app averages.
+
+### Calibration and floors
+
+Chained coefficients drift, and the drift is largest for cohorts with the least history to project from. Adapty measures that drift during training: each app's curve re-predicts its own completed cohorts from earlier points in their lives, and the gap between the projection and what those cohorts earned becomes a correction factor for that product type, horizon, and amount of observed history. Every prediction is multiplied by the factor matching how far the cohort has been observed, so the correction is largest for the youngest cohorts, where the projection reaches furthest ahead.
+
+The correction leans deliberately low for the product types the model tends to overshoot. Weekly, monthly, 2-month, 3-month, and 6-month subscriptions get a revenue factor that pulls the projection down rather than centering it, and for weekly subscriptions the lean is strongest in a cohort's first two weeks. Annual, lifetime, and one-time purchases get no lean. The paying-user factor is never leaned, so the caution lands in predicted revenue and, through it, in predicted LTV.
+
+Two floors apply after the correction:
+
+- A prediction never falls below what the cohort has already earned by that horizon. A cohort that has already earned more than its 3-month projection shows its realized revenue as the 3-month prediction.
+- A longer horizon never shows less than a shorter one. Predicted revenue and predicted paying users are both cumulative, so the 12-month prediction is at least the 9-month one.
 
 ### Availability and updates
 
@@ -74,7 +85,7 @@ To view predictions, navigate to the Cohort analysis page in your Adapty dashboa
 />
 </Zoom>
 
-The **Predicted revenue** column shows the estimated total revenue a cohort of paying users is expected to generate during the selected time frame after cohort creation. This value is calculated using Adapty's prediction model, based on the app's historical cohort growth patterns.
+The **Predicted revenue** column shows the estimated total revenue, minus refunds, a cohort of paying users is expected to generate during the selected time frame after cohort creation. This value is calculated using Adapty's prediction model, based on the app's historical cohort growth patterns.
 
 The **Predicted LTV** column shows the estimated lifetime value of each user in the selected cohort. This value is calculated by dividing the predicted revenue by the predicted number of paying users in the cohort.
 
