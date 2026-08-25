@@ -103,6 +103,14 @@ function stripContent(content, reusableComponents) {
 
     // 2. Remove Zoom and ZoomImage tags
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
+
+    // Drop YouTube embeds — a bare iframe URL teaches a plain-text reader
+    // nothing. Three forms are matched: the <YouTube /> component, and the
+    // div-wrapped and bare iframes that predate it, which src/locales still
+    // carries until each file is retranslated from its English source.
+    processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
+    processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
 
     // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
