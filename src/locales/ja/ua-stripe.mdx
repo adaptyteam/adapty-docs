@@ -1,0 +1,90 @@
+---
+title: "Stripe と Adapty アトリビューションの連携"
+description: "Stripe アカウントを Adapty アトリビューションに接続して、ウェブファネルの購入・更新・返金・チャージバックを広告に紐付けます。"
+metadataTitle: "Stripe 連携 | Adapty アトリビューション | Adapty ドキュメント"
+---
+
+StripeアカウントをAdapty Attributionに連携することで、ウェブファネルでの購入を、その購入を生んだ広告に紐づけることができます。連携後は、Stripeからの購入・更新・返金・チャージバックがAdapty Attributionのアナリティクスに表示され、コンバージョンイベントを広告ネットワークに送り返してキャンペーンの最適化に活用できます。
+
+## 仕組み \{#how-it-works\}
+
+1. [Adapty ウェブピクセル](ua-web-pixel)がファネルの訪問者ごとにクリック ID を割り当て、ランディング URL から広告データを取得します。
+2. チェックアウト時に、ファネルがクリック ID を Stripe トランザクションに付加します。
+3. Adapty は自身の Stripe アカウントに作成した Webhook 経由でトランザクションを受け取り、広告クリックと照合します。
+
+:::note
+ウェブ購入にはアプリインストールイベントがないため、Adapty はサブスクリプションの初回請求日をコホート日として使用します。
+:::
+
+## 始める前に \{#before-you-start\}
+
+[Adapty ウェブピクセルを設定する](ua-web-pixel)ことで、ファネルにピクセルを配置してください。ピクセルがなければクリック ID を紐付けられないため、トランザクションを広告に紐付けることができません。
+
+## ステップ 1. チェックアウト時にクリック ID を付与する \{#step-1-attach-the-click-id-at-checkout\}
+
+トランザクションを作成する際に、クリック ID を読み取り、`adpt_click_id` キーを使って Stripe の `metadata` に追加します。
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+```
+
+一回払いの場合は **PaymentIntent** に、定期払いの場合は **Subscription** に値を設定する必要があります。Adapty はこれらのオブジェクトを読み取るためです。直接作成する場合は次のようにします。
+
+```js
+metadata: { adpt_click_id: adptClickId }
+```
+
+Stripe Checkout を使用する場合は、ネストされたオブジェクトにメタデータを設定してください。Checkout Session 自体のメタデータは PaymentIntent やサブスクリプションにコピーされないため、そこに残されたクリック ID は Adapty に届きません：
+
+```js
+stripe.checkout.sessions.create({
+  // ...
+  payment_intent_data: { metadata: { adpt_click_id: adptClickId } }, // one-off payments
+  subscription_data:   { metadata: { adpt_click_id: adptClickId } }, // subscriptions
+})
+```
+
+:::warning
+PaymentIntentを作成する際にメタデータを設定してください。後から更新する方法は使わないでください。Stripeは課金が作成された時点でメタデータをチャージにコピーするため、後から追加したクリックIDはAdaptyに届きません。
+:::
+
+`click_id`は短いランダムな識別子であり、シークレットでも個人データでもありません。Stripeダッシュボードで確認できますが、これは想定された動作です。
+
+## ステップ 2. Stripe アカウントを連携する \{#step-2-connect-your-stripe-account\}
+
+まず、Stripe でキーを作成します。Stripe ダッシュボードで **Developers → API keys** に移動し、以下の権限を持つ制限付きキーを作成してください。
+
+| リソース | アクセス |
+|---|---|
+| Charges | Read |
+| Refunds | Read |
+| Invoices | Read |
+| Balance transactions | Read |
+| Disputes | Read |
+| Webhook endpoints | Write |
+
+Webhookエンドポイントへの書き込みアクセス権により、AdaptyはStripeでWebhookを自動作成します。手動での設定は不要です。それ以外はすべて読み取り専用で、Adaptyがお客様の決済データに書き込むことはありません。必要な権限が不足しているキーは、接続時にエラーとして拒否され、不足している権限の名前が表示されます。
+
+:::warning
+本番用キーを使用してください。Adaptyはテストモードの決済を受信時に破棄するため、テストキー（`rk_test_...`）で接続しても **Valid** と表示されますが、データは一切反映されません。連携を確認するには、本番用キーで接続し、実際の購入を行ってください。
+:::
+
+次に、Adapty にキーを追加します：
+
+1. Adapty Attribution で [**Integrations > Stripe**](https://app.adapty.io/ua/integrations/stripe) に移動します。
+2. **API key** にキーを貼り付けます。任意で **Name** を入力すると、アカウントを区別しやすくなります。デフォルトでは、Adapty はキーの末尾 4 文字を使用します。
+3. **Connect** をクリックします。
+
+<ZoomImage id="ua-stripe-connect.webp" width="500px" alt="Adapty Attribution の Stripe インテグレーションページにある、API key と Name フィールドを含む Stripe アカウント接続フォーム" />
+
+接続されたアカウントは、環境・キーのステータス・Webhookの状態とともにテーブルに表示されます。この接続は、設定中のアプリに適用されます。別のアプリで同じStripeアカウントの支払いを受け取るには、そのアプリにも同じキーを追加してください。
+
+Adaptyは、アカウントを接続した時点以降のトランザクションをインポートします。それ以前のトランザクションを取り込むには、[support@adapty.io](mailto:support@adapty.io) までお問い合わせください。
+
+## インテグレーションの確認 \{#verify-the-integration\}
+
+実際のファネルを通じて購入を行ってください — Adapty はテストモードの購入を除外します。購入は数時間以内に [Adapty アトリビューション アナリティクス](ua-analytics) に表示されます。[タグ付きURL](ua-web-pixel) を使った広告からの流入であれば、その購入はキャンペーン・広告セット・広告に紐づけられます。それ以外の場合はオーガニックとしてカウントされます。
+
+## コンバージョンイベントを広告ネットワークに送信する \{#send-conversion-events-to-the-ad-network\}
+
+アトリビューション済みのウェブ購入は、キャンペーンの他のイベントマッピングと同じルールに従います。キャンペーン設定の **Events names** セクションで有効にしたイベントが、キャンペーンに関連付けられたピクセルに送り返されます。マッピングの設定については、[Meta Ads](ua-facebook) および [TikTok for Business](ua-tiktok) を参照してください。

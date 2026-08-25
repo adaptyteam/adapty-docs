@@ -10,12 +10,92 @@ iOS'ta güvenilir bir paywall getirme işlemi üç şeyi başarır: hızlı rend
 Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` işlemlerinin tamamlandığını varsayar. Bkz. [iOS SDK'da çağrı sırası](ios-sdk-call-order).
 :::
 ## Kurallar ve tuzaklar \{#rules-and-pitfalls\}
-| Bunu yap | Bunu yapma | Neden |
+| Bunu yapın | Bunu yapmayın | Neden |
 |---|---|---|
-| Göstermek üzere olduğunuz placement'ı çekin. | Başlangıçta tüm placement'ları eş zamanlı olarak önceden çekin. | Toplu önceden çekme ana thread'i bloke eder ve burst sırasında siyah ekrana yol açar. |
-| `getPaywall` işlevini attribution'ın çözülmesine fırsat tanıdıktan sonra çekin — örneğin `activate` işlevinden 1–2 saniye sonra ya da `onProfileUpdate` tetiklendikten sonra. | `getPaywall` işlevini `App.init()` sırasında çağırın. | Attribution henüz gelmemiştir. Paywall, varsayılan kitleye göre çözümlenir ve segmentleri ile ASA kişiselleştirmesini sessizce atlar. |
-| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall` işleminin bitmesini süresiz bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf olan kullanıcılar ağ çözülene kadar boş bir ekran görür — ya da uygulamayı kapatır. |
-`fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products) sayfasına, doğru placement'ı seçmek için ise [Placement'lar](placements) sayfasına bakın.
+| Göstermek üzere olduğunuz placement'ı getirin ya da önbelleği [`preloadFlows`](#preload-placements) ile ısıtın (SDK 4.1+). | Başlatmada kendi eş zamanlı `getFlow` çağrılarınızı yayın. | Elle hazırlanmış bir prefetch patlaması ana iş parçacığını bloke eder ve siyah ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve toplu işlem boyunca tek bir zaman aşımı bütçesini paylaşır. |
+| `getPaywall`'ı, attribution'ın çözüme kavuşmasına fırsat tanındıktan sonra çağırın — örneğin `activate`'ten 1–2 saniye sonra ya da `onProfileUpdate` tetiklendikten sonra. | `getPaywall`'ı `App.init()`'te çağırın. | Attribution henüz gelmemiştir. Paywall, varsayılan kitleye göre çözümlenir ve sessizce segment ile ASA kişiselleştirmesini atlar. |
+| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall`'ı süresiz olarak bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş bir ekran görür — ya da uygulamayı kapatır. |
+
+Herhangi bir fetch işleminde — sıradan bir `getPaywall` dahil — `loadTimeout` tetiklendiğinde, SDK önbellekte bir varyant varsa onu döndürür; yoksa kalan süre içinde varsayılan kitle (**All Users**) varyantını çeker. Hedefleme o istek için kaybolur, ertelenmez: segmentler ve attribution tabanlı kitleler sonuç için geçerli olmaz.
+
+`fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri çekme](fetch-paywalls-and-products) sayfasına, doğru placement'ı seçmek için [Placement'lar](placements) sayfasına bakın.
+
+## Placement'ları önceden yükleyin \{#preload-placements\}
+
+:::info
+Bu yöntemler SDK 4.1 sürümünden itibaren kullanılabilir.
+:::
+
+`preloadFlows` ve `preloadOnboardings`, placement'ları önceden SDK önbelleğine çeker. Aynı placement için sonraki bir `getFlow` veya `getOnboarding` çağrısı, ağ yerine önbellekten çözümlenir; böylece paywall görünür bir bekleme olmadan gösterilir.
+
+Bu yöntemleri, oturumun hangi placement'lara ihtiyaç duyacağını bildiğinizde ancak henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` çözümlendikten hemen sonra, kullanıcının henüz dokunmadığı bir düğmenin arkasındaki paywall için.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(
+    placementIds: ["onboarding", "main_paywall"],
+    loadTimeout: 5
+)
+
+try await Adapty.preloadOnboardings(
+    placementIds: ["intro"],
+    locale: "en",
+    loadTimeout: 5
+)
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
+    if let error {
+        // at least one placement failed to preload
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**Parametreler:**
+
+- `placementIds` (zorunlu): Önceden yüklenecek placement'lar. Boş ve tekrarlanan kimlikler göz ardı edilir.
+- `locale` (isteğe bağlı, yalnızca `preloadOnboardings`): Önbelleğe alınacak onboarding dili.
+- `loadTimeout` (isteğe bağlı): Her placement için değil, tüm toplu işlem için saniye cinsinden zaman aşımı. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler 1 saniyeye yükseltilir.
+
+**Bilinmesi gereken davranışlar:**
+
+- Metodlar yalnızca tüm placement'lar denendikten sonra hata fırlatır ve hata, placement başına yaşanan başarısızlıkları bir araya getirir. Bir placement'taki hata diğerlerini durdurmaz.
+- Bir placement zaman aşımına uğrarsa veya ağ hatasıyla başarısız olursa, SDK o placement için varsayılan kitle varyasyonuna geri döner. Diğer hatalar olduğu gibi raporlanır.
+- Zaman aşımı, kitleye yönelik fetch tamamlanmadan önce devreye girerse, SDK kalan süre içinde varsayılan kitle varyasyonunu almayı yine de dener.
+- Önbellekleme yalnızca cache'i ısıtır. İçerik döndürmez — içeriği görüntülemek için yine de `getFlow` veya `getOnboarding` çağırmanız gerekir.
+
+### Hangi placement'ın başarısız olduğunu öğrenin \{#find-out-which-placement-failed\}
+
+Fırlatılan hata, `networkFailed` (2002) koduyla tüm batch'i kapsayan tek bir `AdaptyError`'dır. Bireysel hataları görmek için `preloadErrors` özelliğini okuyun — placement ID'sine göre anahtarlanmış bir sözlük:
+
+```swift showLineNumbers
+do {
+    try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"])
+} catch {
+    for (placementId, placementError) in error.preloadErrors ?? [:] {
+        // bireysel placement'ı logla veya yeniden dene
+    }
+}
+```
+
+`preloadErrors`, herhangi bir preload çağrısından kaynaklanmayan hatalar için `nil` değerini alır; bu nedenle `nil` değerini "preload hatası yok" olarak değil, "preload başarısızlığı değil" olarak değerlendirin.
+
+Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan kitle varyantlarını kullanın:
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
+
 ## Bağlantı sorunları için ayarlar \{#tune-for-poor-connectivity\}
 
 Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunlarından etkilenen bölgeler):

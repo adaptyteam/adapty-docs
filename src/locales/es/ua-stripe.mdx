@@ -1,0 +1,90 @@
+---
+title: "Integrar Stripe con Adapty Attribution"
+description: "Conecta tu cuenta de Stripe con Adapty Attribution para atribuir compras, renovaciones, reembolsos y contracargos del funnel web a los anuncios que los generaron."
+metadataTitle: "Integración con Stripe | Adapty Attribution | Documentación de Adapty"
+---
+
+Conecta tu cuenta de Stripe a Adapty Attribution para atribuir las compras realizadas en tu embudo web a los anuncios que las generaron. Una vez conectada, las compras, renovaciones, reembolsos y contracargos de Stripe aparecen en los análisis de Adapty Attribution, y los eventos de conversión pueden enviarse de vuelta a las redes publicitarias para optimizar las campañas.
+
+## Cómo funciona \{#how-it-works\}
+
+1. El [píxel web de Adapty](ua-web-pixel) asigna un click ID a cada visitante del funnel y captura los datos del anuncio desde la URL de la página de destino.
+2. En el checkout, tu funnel adjunta el click ID a la transacción de Stripe.
+3. Adapty recibe la transacción a través de un webhook que crea en tu cuenta de Stripe y la asocia al clic del anuncio.
+
+:::note
+Las compras web no tienen evento de instalación de la app, por lo que Adapty utiliza la fecha del primer cobro de la suscripción como fecha de cohorte.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+[Configura el píxel web de Adapty](ua-web-pixel) en tu embudo. Sin el píxel, no hay ningún ID de clic que adjuntar y las transacciones no pueden atribuirse a los anuncios.
+
+## Paso 1. Adjunta el click ID en el checkout \{#step-1-attach-the-click-id-at-checkout\}
+
+Cuando crees la transacción, lee el click ID y añádelo al `metadata` de Stripe bajo la clave `adpt_click_id`:
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+```
+
+El valor debe quedar en el **PaymentIntent** para pagos únicos o en la **Subscription** para pagos recurrentes, ya que son los objetos que lee Adapty. Si los creas directamente:
+
+```js
+metadata: { adpt_click_id: adptClickId }
+```
+
+Si usas Stripe Checkout, define los metadatos en los objetos anidados. Los metadatos de la propia sesión de Checkout no se copian al PaymentIntent ni a la Subscription, por lo que un click ID dejado ahí nunca llega a Adapty:
+
+```js
+stripe.checkout.sessions.create({
+  // ...
+  payment_intent_data: { metadata: { adpt_click_id: adptClickId } }, // one-off payments
+  subscription_data:   { metadata: { adpt_click_id: adptClickId } }, // subscriptions
+})
+```
+
+:::warning
+Establece los metadatos al crear el PaymentIntent, no actualizándolos después. Stripe copia los metadatos en el cargo en el momento en que se crea, por lo que un click ID añadido posteriormente nunca llega a Adapty.
+:::
+
+El `click_id` es un identificador aleatorio corto, no es un secreto ni un dato personal. Es visible en tu dashboard de Stripe, lo cual es lo esperado.
+
+## Paso 2. Conecta tu cuenta de Stripe \{#step-2-connect-your-stripe-account\}
+
+Primero, crea la clave en Stripe. En tu dashboard de Stripe, ve a **Developers → API keys** y crea una clave restringida con estos permisos:
+
+| Recurso | Acceso |
+|---|---|
+| Charges | Read |
+| Refunds | Read |
+| Invoices | Read |
+| Balance transactions | Read |
+| Disputes | Read |
+| Webhook endpoints | Write |
+
+El acceso de escritura en los endpoints de webhook permite a Adapty crear el webhook que entrega tus pagos — no hay nada que configurar manualmente en Stripe. Todo lo demás es de solo lectura: Adapty nunca escribe en tus datos de pago. Una clave sin un permiso requerido se rechaza en el momento de la conexión con un error que indica el permiso que falta.
+
+:::warning
+Usa una clave en modo live. Adapty descarta los pagos en modo de prueba a medida que llegan, por lo que una clave de prueba (`rk_test_...`) se conecta correctamente y aparece como **Valid**, pero nunca aparecerá ningún dato. Para verificar la integración, conecta la clave live y realiza una compra real.
+:::
+
+A continuación, añade la clave en Adapty:
+
+1. En Adapty Attribution, ve a [**Integrations > Stripe**](https://app.adapty.io/ua/integrations/stripe).
+2. Pega la clave en **API key**. Opcionalmente, introduce un **Name** para distinguir las cuentas; por defecto, Adapty usa los últimos 4 caracteres de la clave.
+3. Haz clic en **Connect**.
+
+<ZoomImage id="ua-stripe-connect.webp" width="500px" alt="Connect a Stripe account form with API key and Name fields on the Stripe integration page in Adapty Attribution" />
+
+La cuenta conectada aparece en la tabla con su entorno, el estado de la clave y el estado del webhook. La conexión se aplica a la app que estás configurando. Para recibir los pagos de la misma cuenta de Stripe en otra app, añade la misma clave en esa app.
+
+Adapty importa las transacciones a partir del momento en que conectas la cuenta. Para importar transacciones anteriores, contáctanos en [support@adapty.io](mailto:support@adapty.io).
+
+## Verificar la integración \{#verify-the-integration\}
+
+Realiza una compra real a través de tu funnel: Adapty descarta las compras en modo de prueba. La compra debería aparecer en [Adapty Attribution analytics](ua-analytics) en un par de horas. Si tu visita provino de un anuncio con [URLs etiquetadas](ua-web-pixel), la compra se atribuye a esa campaña, conjunto de anuncios y anuncio; de lo contrario, se contabiliza como orgánica.
+
+## Enviar eventos de conversión a la red publicitaria \{#send-conversion-events-to-the-ad-network\}
+
+Las compras web atribuidas siguen el mismo mapeo de eventos que el resto de la campaña: los eventos que actives en la sección **Events names** de la configuración de la campaña se envían de vuelta al píxel que asociaste con la campaña. Consulta la configuración del mapeo para [Meta Ads](ua-facebook) y [TikTok for Business](ua-tiktok).

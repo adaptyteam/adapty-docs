@@ -1,21 +1,203 @@
 ---
-title: "Xử lý hành động nút trong Unity SDK"
-description: "Xử lý hành động nút trên paywall trong Unity bằng Adapty để tối ưu hóa doanh thu ứng dụng."
-metadataTitle: "Xử lý hành động nút trên paywall | Tài liệu Adapty"
+title: "Phản hồi các hành động flow - Unity"
+description: "Xử lý các hành động nút từ flow và paywall trong ứng dụng Unity của bạn."
+metadataTitle: "Phản hồi các hành động flow - Unity | Tài liệu Adapty"
 toc_max_heading_level: 4
 rank: 40
 keywords: ['nút paywall', 'nút', 'hành động nút paywall', 'xử lý hành động']
 ---
 
-Nếu bạn đang xây dựng paywall bằng Adapty Paywall Builder, việc thiết lập nút đúng cách là rất quan trọng:
+<SDKv4>
 
-1. Thêm [nút trong Paywall Builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo ID hành động tùy chỉnh.
-2. Viết code trong ứng dụng để xử lý từng hành động bạn đã gán.
+Nếu bạn đang xây dựng flow hoặc paywall bằng Adapty Flow Builder hoặc Paywall Builder, việc thiết lập các nút đúng cách là rất quan trọng:
 
-Hướng dẫn này hướng dẫn cách xử lý các hành động tùy chỉnh và hành động có sẵn trong code của bạn.
+1. Thêm một [nút trong builder](paywall-buttons) và gán cho nó một hành động có sẵn hoặc tạo ID hành động tùy chỉnh.
+2. Viết code trong ứng dụng của bạn để xử lý từng hành động bạn đã gán.
+
+Hướng dẫn này trình bày cách xử lý các hành động tùy chỉnh và hành động có sẵn trong code của bạn.
 
 :::warning
-**Chỉ có giao dịch mua và khôi phục được xử lý tự động.** Tất cả các hành động nút khác, chẳng hạn như đóng paywall hoặc mở liên kết, đều cần được xử lý trong code của ứng dụng.
+**Chỉ có giao dịch mua và khôi phục được xử lý tự động.** Tất cả các hành động nút khác, chẳng hạn như đóng flow hoặc mở liên kết, đều cần được xử lý đúng cách trong code ứng dụng.
+:::
+
+## Thiết lập trình lắng nghe sự kiện flow \{#set-up-the-flows-events-listener\}
+
+Để xử lý các hành động của flow, hãy triển khai interface `IAdaptyFlowsEventsListener` và đăng ký nó với `Adapty.SetFlowsEventsListener()`. Bước này nên được thực hiện sớm trong vòng đời ứng dụng, thường là trong scene chính hoặc khi khởi tạo ứng dụng.
+
+```csharp showLineNumbers title="Unity"
+using AdaptySDK;
+
+public class FlowsListener : MonoBehaviour, IAdaptyFlowsEventsListener
+{
+    void Start()
+    {
+        Adapty.SetFlowsEventsListener(this);
+    }
+
+    // implement all IAdaptyFlowsEventsListener methods here
+}
+```
+
+`IAdaptyFlowsEventsListener` là một C# interface, vì vậy hãy implement tất cả các phương thức của nó — xem [Xử lý sự kiện flow & paywall](unity-handling-events) để biết danh sách đầy đủ. Các ví dụ dưới đây chỉ hiển thị phương thức `FlowViewDidPerformAction`.
+
+Tất cả các hành động của nút đều được truyền vào callback `FlowViewDidPerformAction(view, action)` dưới dạng đối tượng `AdaptyUIUserAction` với `Type` là `Close`, `SystemBack`, `OpenUrl`, hoặc `Custom`, cùng với một `Value` tùy chọn (URL hoặc ID hành động tùy chỉnh).
+
+## Đóng flow và paywall \{#close-flows-and-paywalls\}
+
+Để thêm nút đóng flow hoặc paywall:
+
+1. Trong builder, thêm một nút và gán cho nó hành động **Close**.
+2. Trong code ứng dụng, implement một handler cho hành động `Close` để ẩn flow đi.
+
+:::info
+Một view đã bị đóng sẽ bị hủy và không thể hiển thị lại. Để hiển thị lại flow, hãy gọi `CreateFlowView` một lần nữa.
+:::
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Xử lý nút back hệ thống Android \{#handle-the-android-system-back-button\}
+
+Nhấn nút back hệ thống Android (hoặc dùng cử chỉ vuốt back) sẽ phát ra một action có kiểu `SystemBack`. Action này không tự đóng flow — flow vẫn giữ nguyên và người dùng thoát khỏi nó theo con đường bạn định nghĩa, chẳng hạn nút **Close** hoặc action `on_device_back` trong builder. Nếu bạn muốn nút back hệ thống đóng flow, hãy tự xử lý action đó:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+        case AdaptyUIUserActionType.SystemBack:
+            view.Dismiss(null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Mở URL từ flow và paywall \{#open-urls-from-flows-and-paywalls\}
+
+:::tip
+Nếu bạn muốn thêm một nhóm liên kết (ví dụ: điều khoản sử dụng và khôi phục giao dịch), hãy thêm một phần tử **Link** trong builder và xử lý nó theo cách tương tự như các nút với hành động **Open URL**.
+:::
+
+Để thêm một nút mở liên kết từ flow hoặc paywall của bạn (ví dụ: **Terms of use** hoặc **Privacy policy**):
+
+1. Trong builder, thêm một nút, gán cho nó hành động **Open URL**, và nhập URL bạn muốn mở.
+2. Trong code ứng dụng của bạn, triển khai một handler cho hành động `OpenUrl` để mở URL nhận được.
+
+Sử dụng phương thức `AdaptyUI.OpenUrl` để mở URL theo cách native, tôn trọng tùy chọn mở bằng trình duyệt ngoài hay trình duyệt trong ứng dụng (`action.OpenIn`) đã được cấu hình trong builder:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.OpenUrl:
+            var urlString = action.Value;
+            if (!string.IsNullOrWhiteSpace(urlString)) {
+                AdaptyUI.OpenUrl(
+                    urlString,
+                    action.OpenIn ?? AdaptyWebPresentation.ExternalBrowser,
+                    (error) => {
+                        // handle the error
+                    }
+                );
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+## Đăng nhập vào ứng dụng \{#log-into-the-app\}
+
+Để thêm nút cho phép người dùng đăng nhập vào ứng dụng:
+
+1. Trong builder, thêm một nút và gán cho nó hành động **Custom** với ID `login`.
+2. Trong mã ứng dụng của bạn, triển khai trình xử lý cho hành động tùy chỉnh `login` để xác định người dùng.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "login") {
+                // Navigate to login scene
+                SceneManager.LoadScene("LoginScene");
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+## Xử lý các hành động tùy chỉnh \{#handle-custom-actions\}
+
+Để thêm một nút xử lý bất kỳ hành động nào khác:
+
+1. Trong builder, thêm một nút, gán cho nó hành động **Custom**, và gán cho nó một ID.
+2. Trong code ứng dụng của bạn, triển khai một handler cho ID hành động mà bạn đã tạo.
+
+Ví dụ: nếu bạn có một bộ ưu đãi gói đăng ký khác hoặc các sản phẩm mua một lần, bạn có thể thêm một nút để hiển thị một flow hoặc paywall khác:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Custom:
+            if (action.Value == "openNewFlow") {
+                // Display another flow or paywall
+                ShowAlternativeFlow();
+            }
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+
+private void ShowAlternativeFlow() {
+    // Implement your logic to show an alternative flow
+}
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Nếu bạn đang xây dựng paywall bằng Adapty paywall builder, việc thiết lập các nút bấm đúng cách là rất quan trọng:
+
+1. Thêm [nút bấm trong paywall builder](paywall-buttons) và gán cho nó một action có sẵn hoặc tạo một custom action ID mới.
+2. Viết code trong ứng dụng để xử lý từng action bạn đã gán.
+
+Hướng dẫn này mô tả cách xử lý các custom action và action có sẵn trong code của bạn.
+
+:::warning
+**Chỉ có giao dịch mua và khôi phục mua hàng được xử lý tự động.** Tất cả các action nút bấm khác, chẳng hạn như đóng paywall hoặc mở liên kết, đều cần bạn tự triển khai xử lý trong code ứng dụng.
 :::
 
 ## Đóng paywall \{#close-paywalls\}
@@ -127,3 +309,4 @@ private void ShowAlternativePaywall() {
     // Implement your logic to show alternative paywall
 }
 ```
+</SDKv3>

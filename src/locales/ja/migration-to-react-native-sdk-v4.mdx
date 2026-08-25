@@ -1,10 +1,11 @@
 ---
-title: "Adapty React Native SDK を v. 4.0 に移行する"
-description: "ペイウォール API をフロー API に置き換えることで、Adapty React Native SDK v4.0（ベータ版）に移行します。フロービルダーとペイウォールビルダーの両方に対応しています。"
-metadataTitle: "Adapty React Native SDK v4.0（ベータ版）への移行 | Adapty ドキュメント"
+title: "Adapty React Native SDK を v4.0 へ移行する"
+description: "ペイウォール API をフロー API に置き換えることで Adapty React Native SDK v4.0 へ移行します。Flow Builder と Paywall Builder の両方に対応しています。"
+metadataTitle: "Adapty React Native SDK v4.0 への移行 | Adapty ドキュメント"
 ---
 
-Adapty React Native SDK 4.0（ベータ版）ではフローが導入され、ペイウォール API の名称が変更されました。新しい API はフロービルダーと既存のペイウォールビルダーの両方に対応しており、Adapty ダッシュボード側での設定変更は不要です。
+Adapty React Native SDK 4.0 ではフローが導入され、それに伴いペイウォール API の名称が変更されました。新しい API は新しい Flow Builder と既存のペイウォールビルダーの両方で動作します。Adapty ダッシュボード側の設定変更は不要です。
+
 ## クイックリファレンス \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -19,7 +20,8 @@ Adapty React Native SDK 4.0（ベータ版）ではフローが導入され、�
 | `onPaywallShown` | `onAppeared` |
 | `onPaywallClosed` | `onDisappeared` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` はその名前を維持しています — プロダクトは引き続きフローに属しており、`getPaywallProducts` は `AdaptyFlow` を引数として受け取るようになりました。`getFlow` および `getFlowForDefaultAudience` メソッドは `locale` パラメータを受け取らなくなりました。ビューメソッドの `present`、`dismiss`、`setEventHandlers`、`showDialog`、およびイベントハンドラの `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished`、`onAndroidSystemBack` はいずれも v3 と同じ名前を維持しています。デフォルトの動作に一部変更があります — 詳細は[デフォルト動作の変更](#default-behavior-changes)を参照してください。
+`AdaptyPaywallProduct` は名前が変わりません — プロダクトは引き続きフローに属しており、`getPaywallProducts` は `AdaptyFlow` を受け取るようになりました。`getFlow` および `getFlowForDefaultAudience` メソッドは `locale` パラメータを受け取らなくなりました — 代わりに `createFlowView` に渡してください。ビューメソッドの `present`、`dismiss`、`setEventHandlers`、`showDialog`、およびイベントハンドラの `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished`、`onAndroidSystemBack` は v3 と同じ名前を維持しています。一部のデフォルト動作が変更されました — [デフォルト動作の変更点](#default-behavior-changes) を参照してください。
+
 ## 最低 iOS バージョン \{#minimum-ios-version\}
 
 Adapty React Native SDK 4.0 では、iOS の最低デプロイメントターゲットが iOS 13.0 から **iOS 15.0** に引き上げられました。アップグレードの前に、iOS デプロイメントターゲットを 15.0 以降に設定してください。
@@ -29,9 +31,9 @@ Adapty React Native SDK 4.0 では、iOS の最低デプロイメントターゲ
 v4.0 はプレリリース版のため、正確なバージョンを指定してインストールしてください。npm はキャレット/チルダの範囲指定ではプレリリース版を選択しません。
 
 ```bash showLineNumbers
-npm install react-native-adapty@4.0.0
+npm install react-native-adapty@4.0.2
 # or
-yarn add react-native-adapty@4.0.0
+yarn add react-native-adapty@4.0.2
 ```
 ### iOS：ネイティブ SDK が Swift Package Manager 経由で提供されるようになりました \{#ios-native-sdks-now-come-through-swift-package-manager\}
 
@@ -59,41 +61,50 @@ yarn add react-native-adapty@4.0.0
 }
 ```
 
-次に、プラグインをインストールしてネイティブプロジェクトを再生成します：
+次に、プラグインをインストールしてネイティブプロジェクトを再生成します。
 
 ```bash showLineNumbers
 npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
 
-#### Bare React Native \{#bare-react-native\}
+iOSビルドが`'React/RCTBridge.h' file not found`で失敗する場合は、`expo-modules-autolinking`をExpo SDK 57では57.0.10以降、Expo SDK 56では56.0.22以降に更新してください。詳細と回避策については[トラブルシューティングの項目](sdk-installation-react-native-expo#react-header-not-found)を参照してください。
 
-iOS ターゲットにダイナミックフレームワークを追加し、pod を再インストールします：
+#### Bare React Native
+
+iOSターゲットにダイナミックフレームワークを追加し、podを再インストールします：
 
 ```ruby showLineNumbers title="ios/Podfile"
 use_frameworks! :linkage => :dynamic
 ```
+
 ```bash showLineNumbers
 cd ios && pod install --repo-update
 ```
 
-以前に `Adapty`、`AdaptyUI`、または `AdaptyPlugin` を CocoaPods のサブ依存関係として追加していた場合は、まず `Podfile` から `pod 'Adapty'`、`pod 'AdaptyUI'`、`pod 'AdaptyPlugin'` の行を削除してください。
+以前に `Adapty`、`AdaptyUI`、または `AdaptyPlugin` を CocoaPods のサブ依存関係として追加していた場合は、まず `Podfile` から `pod 'Adapty'`、`pod 'AdaptyUI'`、`pod 'AdaptyPlugin'` の記述を削除してください。
+
 :::warning
-デフォルトの静的リンクからダイナミックフレームワークへの切り替えは、モジュラーヘッダーをまだサポートしていないライブラリと競合する可能性があり、Flipper とは互換性がありません。ビルドの問題が発生した場合は、[Swift Package Manager と React Native ライブラリの統合に関する記事](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries)を参照してください。
+デフォルトの静的リンクからダイナミックフレームワークに切り替えると、モジュラーヘッダーに対応していないライブラリと競合したり、Flipper と互換性の問題が生じる場合があります。ビルドエラーが発生した場合は、[React Native ライブラリへの Swift Package Manager の統合に関するこちらの記事](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries)を参照してください。
 :::
 
-完全なセットアップ手順については、[Adapty SDK のインストール](sdk-installation-reactnative)を参照してください。
+インストール方法の詳細については、[Adapty SDK のインストール](sdk-installation-reactnative)を参照してください。
+
 ## フローの取得 \{#fetching-flows\}
 ### getPaywall → getFlow
 
-返り値の型が `AdaptyPaywall` から `AdaptyFlow` に変更され、`locale` パラメータが削除されました。フローをレンダリングする際、ロケールは自動的に解決されます。カスタムペイウォールの場合、すべてのロケールは `flow.remoteConfigs` で返されます。
+返り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` パラメーターはフェッチ呼び出しから `createFlowView` に移動します。カスタムペイウォールの場合、すべてのロケールは `flow.remoteConfigs` に含まれます：
 
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
++ const view = await createFlowView(flow, { locale: 'en' });
 ```
 
-`getPaywallForDefaultAudience` も同様にリネームされます。
+`createFlowView` の `locale` はオプションです。省略すると `en` でレンダリングされるか、フローに `en` ローカライゼーションがない場合はフローのデフォルトロケールで表示されます。SDK 4.0.2 以降が必要です。詳しくは[ローカライゼーションとロケールコード](react-native-localizations-and-locale-codes)を参照してください。
+
+`getPaywallForDefaultAudience` も同様に名前が変更されています。
+
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
@@ -107,6 +118,10 @@ cd ios && pod install --repo-update
 - const products = await adapty.getPaywallProducts(paywall);
 + const products = await adapty.getPaywallProducts(flow);
 ```
+### フォールバックファイル \{#fallback-files\}
+
+フォールバックファイルのフォーマットは [SDK v4 で変更されました](fallback-flows)。新しいファイルを **[Placements](https://app.adapty.io/placements)** > **Fallbacks** からダウンロードして、アプリにバンドルしてください。
+
 ## データモデル \{#data-model\}
 
 `getFlow` は `AdaptyPaywall` の代わりに `AdaptyFlow` を返し、オブジェクトの構造が変わりました：

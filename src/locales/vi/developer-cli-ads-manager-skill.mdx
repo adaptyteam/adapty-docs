@@ -1,0 +1,156 @@
+---
+title: "Quản lý Apple Ads bằng công cụ mã hóa AI"
+description: "Cài đặt plugin Apple Ads để Claude Code, Copilot CLI, Codex, hoặc Gemini CLI có thể chạy các chiến dịch Apple Ads của bạn thông qua Adapty CLI."
+metadataTitle: "Plugin AI cho Apple Ads | Tài liệu Adapty"
+---
+
+import AdsManagerSkill from '@site/src/locales/vi/reusable/AdsManagerSkill.mdx';
+
+[Plugin Apple Ads](https://github.com/adaptyteam/apple-ads-cli) cho phép công cụ lập trình AI vận hành tài khoản Apple Ads của bạn thông qua [Adapty CLI](developer-cli-ads-manager). Bạn chỉ cần đặt câu hỏi bằng ngôn ngữ tự nhiên, công cụ sẽ tự tìm ra các lệnh phù hợp, đọc tài khoản trước, rồi đề xuất thao tác ghi trước khi bất kỳ thay đổi nào được gửi đến Apple.
+
+Một skill là tập hợp các hướng dẫn mà công cụ AI của bạn tải theo yêu cầu. Plugin đi kèm với ba skill — một operator để vận hành tài khoản, một auditor chỉ đọc, và một planner chiến lược — cùng với các playbook cho những công việc định kỳ như kiểm tra hàng tuần, đánh giá ROAS theo cohort, và phân bổ lại ngân sách, hướng dẫn theo ngành dọc với phân loại từ khóa đặc thù cho từng danh mục và kinh tế học khởi đầu, cùng các [slash command](#slash-commands) giúp biến những công việc phổ biến nhất thành một dòng lệnh duy nhất. Kết hợp lại, chúng xử lý những phần trong giao diện Ads Manager dễ mắc lỗi nhất: mỗi flag nhận mã định danh nào, mỗi danh sách lọc theo tiêu chí gì, một batch chứa được bao nhiêu từ khóa, và những lệnh nào tốn chi phí.
+
+## Tính năng xử lý \{#what-it-handles\}
+
+- **Hiệu suất đọc**: Chọn đúng một lệnh gọi để trả lời câu hỏi thay vì phân trang qua kết quả. Nó biết rằng câu hỏi top-N là một lệnh gọi có sắp xếp, và rằng việc đếm các thực thể không cần lệnh gọi metrics nào cả.
+- **Thay đổi cấu trúc**: Tạo và cập nhật các campaign, ad group, quảng cáo và từ khóa theo đúng thứ tự, đọc thực thể cha trước khi ghi thực thể con.
+- **Làm việc với từ khóa**: Thêm và đặt lại bid cho từ khóa theo lô, và thu thập các search term thành từ khóa và từ khóa phủ định.
+- **Tự động hóa**: Thiết lập các tự động hóa dựa trên quy tắc và chạy thử trước khi chúng tác động đến bid thực tế.
+- **Nghiên cứu đối thủ**: Lấy danh sách từ khóa mà các ứng dụng cạnh tranh đang bid.
+- **Kiểm tra tài khoản**: Skill `apple-ads-audit` kiểm tra tình trạng tài khoản, trạng thái phân phối, cấu trúc và từ khóa trùng lặp mà không thay đổi bất cứ điều gì.
+- **Lập kế hoạch từ đầu**: Skill `apple-ads-strategy` thiết kế cấu trúc tài khoản, phân loại từ khóa và ngân sách khởi điểm dựa trên mô tả ứng dụng của bạn — không cần tài khoản Apple Ads hay CLI.
+
+## Plugin này sẽ không làm gì \{#what-it-will-not-do\}
+
+Plugin này coi mọi thao tác ghi là không thể hoàn tác, vì thực tế là vậy — CLI không có lệnh xóa, và các thay đổi sẽ đến Apple trong vòng vài giây.
+
+- Plugin đọc trước khi ghi, thay vì đoán ID hay ngân sách.
+- Plugin hỏi xác nhận trước bất kỳ lệnh nào tốn tiền, và giữ nguyên prompt xác nhận của CLI khi chính bạn là người chạy lệnh.
+- Plugin gắn một idempotency key vào mỗi lần ghi trong một chuỗi, để khi chạy lại sau một kết quả không rõ ràng sẽ không tạo ra chiến dịch thứ hai.
+- Plugin ưu tiên xử lý theo lô nhỏ, để khi Apple từ chối một phần vẫn dễ đọc kết quả.
+
+:::note
+Các kỹ năng đề xuất và chuẩn bị các lệnh. Việc đọc chỉ số và chạy thử không tốn phí, nhưng bạn vẫn chịu trách nhiệm phê duyệt mọi thay đổi đối với tài khoản quảng cáo đang hoạt động.
+:::
+
+## Cài đặt plugin \{#install-the-plugin\}
+
+<AdsManagerSkill />
+
+## Plugin Benchmarks \{#benchmarks-plugin\}
+
+Cùng một marketplace còn có một công cụ đi kèm tùy chọn, [`apple-ads-benchmarks`](https://github.com/adaptyteam/apple-ads-benchmarks) — dữ liệu cơ sở Apple Ads do Adapty công bố dành cho các ứng dụng có gói đăng ký, được đóng gói dưới dạng dữ liệu cục bộ mà công cụ AI của bạn có thể truy vấn: tỷ lệ nhấp, tỷ lệ chuyển đổi, CPT và CPA trên 90 quốc gia, 22 thể loại App Store và 59 lĩnh vực, cùng với các chỉ số kinh tế của người dùng đăng ký như LTV năm đầu tiên. Plugin hoạt động hoàn toàn offline, không cần tài khoản Apple Ads, không cần CLI và không cần gói đăng ký Adapty.
+
+Dùng nó để đánh giá xem một con số có đáng lo ngại không trước khi đi sâu vào tài khoản: "CPT $4 có cao không cho ứng dụng fitness ở Đức?" là câu hỏi về benchmark trước tiên.
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add adaptyteam/apple-ads-cli
+claude plugin install apple-ads-benchmarks@adapty
+```
+
+**Bất kỳ công cụ nào khác**
+
+```bash
+npx skills add adaptyteam/apple-ads-benchmarks --all
+```
+
+:::note
+CPA benchmark là chi phí mỗi lượt tải xuống, không phải chi phí mỗi lượt cài đặt, và CR là tỷ lệ nhấn-đến-tải-xuống, không phải tỷ lệ dùng thử-đến-trả-phí. So sánh từng chỉ số với dữ liệu của bạn theo cùng một định nghĩa.
+:::
+
+## Lệnh slash \{#slash-commands\}
+
+Trong Claude Code, plugin này cũng thêm chín lệnh `/asa-*`. Mỗi lệnh là một prompt được tạo sẵn, chọn đúng kỹ năng và playbook cho một công việc phổ biến, vì vậy bạn chỉ cần gõ lệnh thay vì tự viết prompt:
+
+| Lệnh | Chức năng |
+|---|---|
+| `/asa-review` | Kiểm tra hàng tuần — định hướng, so sánh lượt cài đặt, điểm bất thường và một hành động cụ thể |
+| `/asa-audit` | Kiểm tra sức khỏe tài khoản chỉ đọc hoặc kiểm tra cấu trúc trực tiếp |
+| `/asa-bids` | Xem xét và điều chỉnh giá thầu theo cohort ROAS |
+| `/asa-budget` | Phân bổ lại ngân sách giữa các chiến dịch |
+| `/asa-harvest` | Thu thập cụm từ tìm kiếm thành từ khóa exact và từ khóa phủ định |
+| `/asa-negatives` | Khai thác cụm từ tìm kiếm để lấy từ khóa phủ định an toàn và hẹp nhất |
+| `/asa-opportunities` | Tìm cơ hội từ khóa của đối thủ từ Market Intelligence |
+| `/asa-cpp` | Định tuyến ý định từ khóa đến Custom Product Page và quảng cáo hiện có |
+| `/asa-launch` | Lên kế hoạch và khởi chạy chiến dịch Apple Search Ads mới |
+
+Slash commands install with the Claude Code plugin. In other tools, ask for the same jobs in plain language — the skills carry the same playbooks.
+
+## Ví dụ về prompt \{#example-prompts\}
+
+Các skill đã chứa sẵn các lệnh, thứ tự thực thi và những lệnh nào tiêu tiền, vì vậy prompt không cần phải liệt kê lại những điều đó. Hãy viết prompt cho những gì skill không thể tự xác định được: chỉ số và khoảng thời gian bạn dùng để đánh giá chiến dịch, mức chuẩn bạn so sánh, và dạng kết quả bạn muốn nhận lại.
+
+### Kiểm tra tài khoản đang chạy \{#audit-an-account-you-already-run\}
+
+Dùng khi các chiến dịch đang hoạt động và bạn muốn biết tiền đang chảy về đâu. Mọi lệnh cần thiết đều là lệnh đọc, nên không có gì trong tài khoản của bạn bị thay đổi.
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### Khởi chạy chiến dịch đầu tiên của bạn \{#launch-your-first-campaigns\}
+
+Dùng tùy chọn này khi tài khoản Apple Ads còn trống. Kỹ năng vận hành sẽ tạo các chiến dịch ở trạng thái tạm dừng theo mặc định, và prompt này giữ nguyên trạng thái đó cho đến khi bạn đã đọc xong kế hoạch.
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## Điểm khác biệt so với AI Agent \{#how-it-differs-from-the-ai-agent\}
+
+Adapty Ads Manager cũng có [AI Agent](ads-manager-ai-agent) tích hợp sẵn trên dashboard. Hai công cụ này phục vụ các nhu cầu khác nhau:
+
+| | AI Agent | Apple Ads plugin |
+|---|---|---|
+| Chạy ở đâu | Adapty Dashboard | Terminal của bạn, trong công cụ AI coding |
+| Chức năng | Phân tích và đề xuất | Phân tích, đề xuất, và thực thi lệnh |
+| Cài đặt | Không cần | Adapty CLI kèm plugin |
+
+Dùng AI Agent khi bạn muốn tìm hiểu điều gì đang xảy ra trong tài khoản. Dùng plugin khi bạn muốn thay đổi đó được thực hiện luôn.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Quản lý Ads Manager từ CLI](developer-cli-ads-manager) — thực hiện các thao tác tương tự theo cách thủ công, không cần công cụ AI.
+- [Các lệnh Ads Manager](developer-cli-ads-manager-reference) — toàn bộ lệnh với các đối số, cờ và giá trị được chấp nhận.

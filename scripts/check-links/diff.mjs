@@ -17,8 +17,8 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { readFile } from 'node:fs/promises';
 import path from 'node:path';
-import { getAllDocFiles, extractLinks, extractReusableImports, categorizeLinks } from './scan.mjs';
-import { checkInternalLink, buildDocIndex, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
+import { getAllDocFiles, extractLinks, extractReusableImports, categorizeLinks, linkKey, uniqueByKey } from './scan.mjs';
+import { checkInternalLink, buildDocIndex, headingIdsFromContent, isLoginRedirect, isCaptchaRedirect } from './check-internal.mjs';
 import { checkExternalUrl, closeBrowser } from './check-external.mjs';
 import { classifyResults } from './classify.mjs';
 import { loadConfig } from './config.mjs';
@@ -59,30 +59,14 @@ async function getDeletedOrRenamedFiles(diffBase) {
 // ── Heading diff ─────────────────────────────────────────────────
 
 /**
- * Extract heading IDs from markdown content (matches check-internal.mjs logic).
+ * Extract heading IDs from markdown content.
+ *
+ * Delegates to check-internal.mjs rather than reimplementing: this used to be a
+ * hand-rolled "simplified slugify" that drifted from the real github-slugger
+ * output and carried the same escaped-`\{#id\}` parsing bug, so removed-heading
+ * detection disagreed with anchor validation on the same file.
  */
-function extractHeadingIds(content) {
-  const ids = new Set();
-  const headingRe = /^#{1,6}\s+(.+)$/gm;
-  let m;
-  while ((m = headingRe.exec(content)) !== null) {
-    const raw = m[1].trim();
-    const customMatch = raw.match(/\{#([^}]+)\}\s*$/);
-    if (customMatch) {
-      ids.add(customMatch[1]);
-    } else {
-      // Simplified slugify matching github-slugger behavior
-      ids.add(raw
-        .toLowerCase()
-        .replace(/<[^>]+>/g, '')
-        .replace(/[^\w\s-]/g, '')
-        .replace(/\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, ''));
-    }
-  }
-  return ids;
-}
+const extractHeadingIds = headingIdsFromContent;
 
 /**
  * Get the old version of a file from the diff base.
@@ -316,7 +300,8 @@ export async function orchestrateDiff(config) {
   // 4. Combine and deduplicate links to check
   const allLinks = [...outgoingLinks, ...incomingLinks];
   const allInternal = [...internalLinks, ...incomingLinks.filter(l => !/^https?:\/\//.test(l.url))];
-  const uniqueInternalUrls = [...new Set(allInternal.map(l => l.url))];
+  // Deduped by linkKey, not by URL: same-page anchors resolve per source file.
+  const uniqueInternalLinks = uniqueByKey(allInternal);
   const uniqueExternalUrls = [...new Set(externalLinks.map(l => l.url))];
 
   // 5. Load config
@@ -344,15 +329,17 @@ export async function orchestrateDiff(config) {
 
   // 7. Check internal links
   if (!externalOnly) {
-    console.log(`Checking ${uniqueInternalUrls.length} internal links...`);
-    const internalResultsByUrl = new Map();
-    for (const url of uniqueInternalUrls) {
-      if (mdExtUrls.has(url)) continue;
-      internalResultsByUrl.set(url, await checkInternalLink(url, { docsDir, liveSiteBase, timeoutMs }));
+    console.log(`Checking ${uniqueInternalLinks.length} internal links...`);
+    const internalResultsByKey = new Map();
+    for (const link of uniqueInternalLinks) {
+      if (mdExtUrls.has(link.url)) continue;
+      internalResultsByKey.set(linkKey(link), await checkInternalLink(link.url, {
+        docsDir, liveSiteBase, timeoutMs, sourcePath: link.sourcePath,
+      }));
     }
 
     for (const link of allInternal) {
-      const result = internalResultsByUrl.get(link.url);
+      const result = internalResultsByKey.get(linkKey(link));
       if (!result) continue;
       if (!result.ok) {
         errors.push({ ...link, type: 'internal', status: result.status, error: result.error });

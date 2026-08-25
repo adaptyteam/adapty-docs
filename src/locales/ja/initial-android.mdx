@@ -1,64 +1,69 @@
 ---
 title: "Google Playとの初期連携"
-description: "AndroidでAdaptyを始め、効率的なサブスクリプション管理のためにアプリをセットアップする方法を解説します。"
-metadataTitle: "Androidのスタートガイド | Adapty ドキュメント"
+description: "Google PlayアプリをAdaptyに接続する方法：Developer APIの有効化、サービスアカウントの作成、およびAndroid購入の検証に使用するキーのアップロード手順を説明します。"
+metadataTitle: "Google Playとの初期連携 | Adapty ドキュメント"
 ---
 
-Adaptyへようこそ！私たちの目標は、皆さんがすぐに使い始め、最良の結果を得られるようサポートすることです。このガイドは、Google Play ストアでアプリを公開している場合に、Adaptyを導入する手順を説明します。
+Google PlayアカウントをAdaptyに接続することで、AdaptyのサーバーからPlay Storeのプロダクトを読み取り、購入を検証し、Androidのサブスクリプションイベントを受信できるようになります。
 
-AdaptyをモバイルアプリへUnityするには、Google PlayとSDKの両方のレベルでアプリとAdaptyを接続する必要があります。手順は多く見えるかもしれませんが、Adapty ダッシュボードに組み込まれたオンボーディング、もしくは以下の手順に従うことでスムーズに進められ、通常1時間以内に完了します。
+:::important
+各ストアは個別に接続され、それぞれの接続は独立しています。アプリをApp Storeでも配信している場合は、[App Store Connect連携を設定](initial_ios)してください。
+:::
 
-<div style={{
-    maxWidth: '560px',
-    margin: '0 auto 2rem',
-    position: 'relative',
-    aspectRatio: '16/9',
-    width: '100%'
-}}>
-    <iframe
-        style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%'
-        }}
-        src="https://www.youtube.com/embed/7dN50n5bcLc?si=c2znttIb--4VcrRO"
-        title="YouTube video player"
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerPolicy="strict-origin-when-cross-origin"
-        allowFullScreen
-    />
-</div>
+セットアップには約1時間かかります。Adapty ダッシュボードの組み込みオンボーディングでも同じ内容を案内しているので、1つの画面で完結させたい場合はそちらをご利用ください。
+
+<YouTube id="7dN50n5bcLc" />
+
+## 始める前に \{#before-you-start\}
+
+AppleとはことなAり、Googleは開発者エコシステムをGoogle Play ConsoleとGoogle Cloud Consoleという2つの別製品に分けており、この設定は両方に関わります。
+
+### 含まれる内容 \{#whats-involved\}
+
+- **サービスアカウント**: 個人ではなくマシン用のGoogle アカウントです。Adapty が Google Cloud および Google Play Console にアクセスできるよう、新しいサービスアカウントを作成する必要があります。
+- **Google Cloud Console**: Google の汎用インフラプラットフォームです。Play Store 自体にはAPI 認証情報がないため、こちらで作成します。Cloud Console を使用して、Developer API の有効化、サービスアカウントの作成、および必要な権限の一部付与を行います。Adapty がこれらの権限を必要とするのは、更新・キャンセル・返金の情報を受け取るためです。また、Adapty が Google に認証するために必要なサービスアカウントキーファイルもここからダウンロードできます。
+- **Google Play Console**: アプリを公開してサブスクリプションを販売する場所です。Play Console を使用して、サービスアカウントに残りの必要な権限を付与します。Adapty がこれらの権限を必要とするのは、プロダクト情報の読み取りと購入の検証を行うためです。また、リアルタイムデベロッパー通知（RTDN）を有効にすることで、Play Store と Adapty 間の通信ラインを設定します。
+
+### 必要なアクセス権限 \{#required-access-privileges\}
+
+| コンソール | 必要なもの |
+| --- | --- |
+| Google Cloud Console | プロジェクトを新規作成する場合は **Project Creator** (`roles/resourcemanager.projectCreator`)。サービスアカウントを作成するには **Service Account Creator** (`roles/iam.serviceAccountCreator`)、プロジェクト権限を付与するには **Project IAM Admin** (`roles/resourcemanager.projectIamAdmin`) が必要です。**Owners** はこの3つすべてをデフォルトで実行できます。 |
+| Google Play Console | **Admin (all permissions)**。これにはユーザーを招待する権限が含まれており、サービスアカウントを招待する際に必要です。 |
+
+Google はデフォルトで新しい組織の全員に **Project Creator** を付与するため、すでに持っている可能性が高いです。ただし、厳格に管理された企業の組織では、この権限が取り消されている場合があります。
+
+### 必要なリソース \{#required-resources\}
+
+**Google Cloud プロジェクト。** まだお持ちでない場合は[こちらで作成](https://console.cloud.google.com/projectcreate)してください。すでに何かを運用しているプロジェクトを再利用しても構いません。このプロジェクトを使って、Developer API を有効化し、Adapty 用のサービスアカウントを作成します。
+
+プロジェクトは Play Console のアプリとは独立しています。1 つのプロジェクトで複数のアプリの通信を管理できます。各アプリはプロジェクト内に独自のトピック（通信キュー）を持ちます。
+
+Google のサービスを Adapty に接続する際は、最初から最後まで**同じプロジェクト**を使用してください。個人のプロジェクトより、チームが所有するプロジェクトを選ぶことをおすすめします。キーとトピックは、アプリが存在する限りそこに存在し続けます。
 
 ## 初期連携のチェックリスト \{#checklist-for-the-initial-integration\}
 
-- [ ] Adaptyでアカウントを作成し、モバイルアプリ名とカテゴリを入力すると、Adaptyプラットフォーム内でアプリが設定されます。
-- [ ] Google Cloud ConsoleでDeveloper APIを[有効化する](enabling-of-devepoler-api)
-- [ ] Google Cloud Consoleで[サービスアカウントを作成する](create-service-account)
-- [ ] Google Play Consoleで[サービスアカウントに権限を付与する](grant-permissions-to-service-account)
-- [ ] Google Cloud Consoleで[サービスアカウントキーファイルを生成する](create-service-account-key-file)
-- [ ] Adapty ダッシュボードで[Google Play連携を設定する](google-play-store-connection-configuration)
-- [ ] Google Play Consoleで[リアルタイム デベロッパー通知（RTDN）を有効化する](enable-real-time-developer-notifications-rtdn)
-- [ ] Adapty SDKをインストールして設定する（必要なフレームワーク向けのSDKを1つ以上インストールしてください）
-  - [ ] [Android向けAdapty SDKをインストールする](sdk-installation-android)
-  - [ ] [React Native向けAdapty SDKをインストールする](sdk-installation-reactnative)
-  - [ ] [Flutter向けAdapty SDKをインストールする](sdk-installation-flutter)
-  - [ ] [Kotlin Multiplatform向けAdapty SDKをインストールする](sdk-installation-kotlin-multiplatform)
-  - [ ] [Unity向けAdapty SDKをインストールする](sdk-installation-unity)
-- [ ] アプリケーションをビルドして実行する。スナップショットやサンドボックス環境での実行で問題ありません。
+1. Google Cloud Consoleで[Developer APIを有効化](enabling-of-devepoler-api)する。
+2. Google Cloud Consoleで[サービスアカウントを作成](create-service-account)する。
+3. Google Play Consoleで[サービスアカウントに必要な権限を付与](grant-permissions-to-service-account)する。
+4. Google Cloud Consoleで[サービスアカウントのキーファイルを生成](create-service-account-key-file)する。
+5. Adapty ダッシュボードで[キーファイルとパッケージ名をAdaptyにアップロード](google-play-store-connection-configuration)する。新しいサービスアカウントが有効になるまで少なくとも24時間かかり、それまでAdaptyはプロダクトを読み取れない。この待ち時間をスキップするには、Google Play Consoleで[任意のプロダクト説明を編集して保存](create-service-account-key-file#activate-the-account-immediately)する。
+6. Adaptyが生成するトピック名を使って、Google Play Consoleで[リアルタイム デベロッパー通知（RTDN）を有効化](enable-real-time-developer-notifications-rtdn)する。
+7. アプリが使用する各フレームワーク向けに[Adapty SDKをインストール](installation-of-adapty-sdks)する：
+   - [Android](sdk-installation-android)
+   - [React Native](sdk-installation-reactnative)
+   - [Flutter](sdk-installation-flutter)
+   - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
+   - [Unity](sdk-installation-unity)
+   - [Capacitor](sdk-installation-capacitor)
+8. リリース前に実機で[アプリ内課金をテスト](testing-on-android)する。
 
-:::note
-変更が反映されるまで最低24時間かかりますが、[回避策](https://stackoverflow.com/a/60691844)があります。[Google Play Console](https://play.google.com/apps/publish/)で任意のアプリケーションを開き、**Monetize**セクションで**Products** → **Subscriptions**/**In-app products**に進みます。任意のプロダクトの説明を変更して保存してください。これで動作するようになります。アプリ内の変更は元に戻して構いません。
-:::
+## 次のステップ \{#next-steps\}
 
-初期連携が完了したら、[Adaptyの機能を使い始める](product)ことができます。
+インテグレーションが完了したら、[Adaptyの機能を使い始める](product)ことができます。
 
-ペイウォールやプロダクトをモバイルアプリに表示したり、アナリティクスを動作させたりするには、アプリのコードを変更する必要があります。具体的には、少なくとも[ペイウォールを表示する](android-quickstart-paywalls)ことが必要で、ペイウォールビルダーで作成されていないペイウォールを使用している場合は、アプリ内で[購入処理を実装する](android-making-purchases)必要があります。
+ペイウォールを表示するには、インテグレーションに加えてアプリのコードが必要です。最低限、[ペイウォールを表示する](android-quickstart-paywalls)手順と、自分でペイウォールをレンダリングする場合は[購入フローを処理する](android-making-purchases)手順を確認してください。
 
-:::danger
-アプリのリリース前にリリースチェックリストを確認してください
-
-アプリケーションをリリースする前に、[リリースチェックリスト](release-checklist)を必ずしっかりと確認してください。このチェックリストは、すべての必要な手順が完了していることを確認し、連携の成功を評価するための基準を提供します。
+:::tip
+アプリをリリースする前に、[リリースチェックリスト](release-checklist)を確認してください。
 :::

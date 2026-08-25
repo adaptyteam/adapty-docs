@@ -1,0 +1,90 @@
+---
+title: "Intégrer Stripe avec Adapty Attribution"
+description: "Connectez votre compte Stripe à Adapty Attribution pour attribuer les achats, renouvellements, remboursements et rétrofacturations du tunnel web aux publicités qui les ont générés."
+metadataTitle: "Intégration Stripe | Adapty Attribution | Documentation Adapty"
+---
+
+Connectez votre compte Stripe à Adapty Attribution pour attribuer les achats effectués dans votre funnel web aux publicités qui les ont générés. Une fois connecté, les achats, renouvellements, remboursements et contestations de paiement Stripe apparaissent dans les analyses Adapty Attribution, et les événements de conversion peuvent être renvoyés aux réseaux publicitaires pour optimiser les campagnes.
+
+## Comment ça fonctionne \{#how-it-works\}
+
+1. Le [pixel web Adapty](ua-web-pixel) attribue un identifiant de clic à chaque visiteur du funnel et capture les données publicitaires depuis l'URL de la page d'atterrissage.
+2. Au moment du paiement, votre funnel associe l'identifiant de clic à la transaction Stripe.
+3. Adapty reçoit la transaction via un webhook qu'il crée dans votre compte Stripe et la fait correspondre au clic publicitaire.
+
+:::note
+Les achats web n'ont pas d'événement d'installation d'application, donc Adapty utilise la date du premier prélèvement de l'abonnement comme date de cohorte.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+[Configurez le pixel web Adapty](ua-web-pixel) sur votre entonnoir. Sans le pixel, il n'y a pas d'identifiant de clic à associer, et les transactions ne peuvent pas être attribuées aux publicités.
+
+## Étape 1. Associer le click ID au moment du paiement \{#step-1-attach-the-click-id-at-checkout\}
+
+Lorsque vous créez la transaction, récupérez le click ID et ajoutez-le aux `metadata` Stripe sous la clé `adpt_click_id` :
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+```
+
+La valeur doit se retrouver sur le **PaymentIntent** pour les paiements uniques ou sur la **Subscription** pour les paiements récurrents, car ce sont ces objets qu'Adapty lit. Si vous les créez directement :
+
+```js
+metadata: { adpt_click_id: adptClickId }
+```
+
+Si vous utilisez Stripe Checkout, définissez les métadonnées dans les objets imbriqués. Les métadonnées de la Checkout Session elle-même ne sont pas copiées vers le PaymentIntent ni vers l'abonnement, donc un click ID placé à cet endroit n'atteint jamais Adapty :
+
+```js
+stripe.checkout.sessions.create({
+  // ...
+  payment_intent_data: { metadata: { adpt_click_id: adptClickId } }, // one-off payments
+  subscription_data:   { metadata: { adpt_click_id: adptClickId } }, // subscriptions
+})
+```
+
+:::warning
+Définissez les métadonnées au moment de la création du PaymentIntent, et non en les modifiant après coup. Stripe copie les métadonnées sur le paiement au moment où il est créé, donc un click ID ajouté ultérieurement n'atteindra jamais Adapty.
+:::
+
+Le `click_id` est un identifiant aléatoire court, ni un secret ni une donnée personnelle. Il est visible dans votre tableau de bord Stripe, ce qui est normal.
+
+## Étape 2. Connectez votre compte Stripe \{#step-2-connect-your-stripe-account\}
+
+Commencez par créer la clé dans Stripe. Dans votre tableau de bord Stripe, rendez-vous dans **Developers → API keys** et créez une clé restreinte avec les permissions suivantes :
+
+| Ressource | Accès |
+|---|---|
+| Charges | Read |
+| Refunds | Read |
+| Invoices | Read |
+| Balance transactions | Read |
+| Disputes | Read |
+| Webhook endpoints | Write |
+
+L'accès en écriture sur les endpoints webhook permet à Adapty de créer le webhook qui reçoit vos paiements — aucune configuration manuelle n'est nécessaire dans Stripe. Tout le reste est en lecture seule : Adapty n'écrit jamais dans vos données de paiement. Une clé ne disposant pas d'une permission requise est rejetée à la connexion, avec un message d'erreur indiquant la permission manquante.
+
+:::warning
+Utilisez une clé live. Adapty ignore les paiements en mode test dès leur réception, donc une clé de test (`rk_test_...`) se connecte avec succès et apparaît comme **Valid**, mais aucune donnée n'est jamais visible. Pour vérifier l'intégration, connectez la clé live et effectuez un vrai achat.
+:::
+
+Ensuite, ajoutez la clé dans Adapty :
+
+1. Dans Adapty Attribution, accédez à [**Integrations > Stripe**](https://app.adapty.io/ua/integrations/stripe).
+2. Collez la clé dans **API key**. Vous pouvez également saisir un **Name** pour distinguer les comptes — par défaut, Adapty utilise les 4 derniers caractères de la clé.
+3. Cliquez sur **Connect**.
+
+<ZoomImage id="ua-stripe-connect.webp" width="500px" alt="Formulaire de connexion d'un compte Stripe avec les champs API key et Name sur la page d'intégration Stripe dans Adapty Attribution" />
+
+Le compte connecté apparaît dans le tableau avec son environnement, le statut de la clé et l'état du webhook. La connexion s'applique à l'application que vous configurez. Pour recevoir les paiements du même compte Stripe dans une autre application, ajoutez-y la même clé.
+
+Adapty importe les transactions à partir du moment où vous connectez le compte. Pour importer des transactions antérieures, contactez-nous à l'adresse [support@adapty.io](mailto:support@adapty.io).
+
+## Vérifier l'intégration \{#verify-the-integration\}
+
+Effectuez un vrai achat via votre funnel — Adapty ignore les achats en mode test. L'achat devrait apparaître dans [Adapty Attribution analytics](ua-analytics) dans les deux heures. Si votre visite provient d'une publicité avec des [URLs taguées](ua-web-pixel), l'achat est attribué à cette campagne, à cet ensemble de publicités et à cette publicité ; sinon, il est comptabilisé comme organique.
+
+## Envoyer des événements de conversion au réseau publicitaire \{#send-conversion-events-to-the-ad-network\}
+
+Les achats web attribués suivent le même mappage d'événements que le reste de la campagne : les événements que vous activez dans la section **Events names** de la configuration de la campagne sont renvoyés au pixel que vous avez associé à la campagne. Consultez la configuration du mappage pour [Meta Ads](ua-facebook) et [TikTok for Business](ua-tiktok).

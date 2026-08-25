@@ -1,0 +1,67 @@
+---
+title: "Отслеживание просмотров экранов флоу в Kotlin Multiplatform SDK"
+description: "Получайте событие каждый раз, когда пользователь открывает экран флоу в вашем Kotlin Multiplatform приложении, и передавайте его в вашу продуктовую аналитику."
+metadataTitle: "Отслеживание просмотров экранов флоу | Kotlin Multiplatform SDK | Документация Adapty"
+---
+
+Каждый раз, когда пользователь открывает экран [флоу](adapty-flow-builder), SDK отправляет в ваше приложение событие `flow_screen_showed`. Передавайте его в Amplitude, Mixpanel или любую другую продуктовую аналитику, которую вы используете, — так вы сможете анализировать экраны флоу вместе с остальными событиями приложения.
+
+:::tip
+Чтобы увидеть, как далеко пользователи проходят флоу, код не нужен — [метрики флоу](flow-metrics) уже показывают просмотры, завершения и отвал на каждом экране в дашборде Adapty. Используйте этот гайд, когда вам нужны те же данные в собственной аналитике вместе с событиями, о которых Adapty ничего не знает.
+:::
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty Kotlin Multiplatform SDK v4 или выше**: коллбэк аналитики флоу отсутствует в более ранних версиях.
+- **Версия флоу, опубликованная после выхода этой функции**: Adapty генерирует события экранов при публикации флоу, поэтому флоу, опубликованный до этого момента, не отправляет никаких данных. Если события не поступают в ваше приложение, опубликуйте новую версию флоу и попробуйте снова.
+
+## Что вы получаете \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+В Kotlin Multiplatform эти параметры передаются в виде строки JSON, поэтому перед чтением любого из них декодируйте `paramsJsonString`.
+
+Просмотры экранов поступают в тот же аналитический колбэк, что и все остальные события флоу. Место их регистрации описано в разделе [Обработка событий флоу и пейвола](kmp-handling-events).
+
+## Передавайте каждый просмотр экрана в свою аналитику \{#forward-every-screen-view-to-your-analytics\}
+
+Сначала проверяйте имя события, прежде чем читать остальные данные, — флоу передаёт другие события через тот же коллбэк.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+    val screenOrder = params["screen_order"]?.jsonPrimitive?.intOrNull
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Выполнение кода, когда пользователь достигает конца \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` равно `true` на экране, после которого флоу не может продвинуться дальше. Используйте это, чтобы открыть контент, отметить онбординг как завершённый или отправить собственное событие завершения — без добавления действия кнопки в Paywall Builder.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+Достижение последнего экрана не равнозначно закрытию флоу. Пользователь может увидеть финальный экран и закрыть флоу, не совершив никаких действий, а флоу с ветвлением может завершаться на нескольких разных экранах. Чтобы отследить момент, когда флоу исчез, используйте вместо этого `flowViewDidDisappear`.

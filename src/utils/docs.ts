@@ -10,9 +10,11 @@ type DocEntry = CollectionEntry<'docs'>;
  */
 export function findDocEntry(allDocs: DocEntry[], docId: string): DocEntry | undefined {
   return allDocs.find(d =>
-    d.id === docId ||
-    d.id.replace(/\.(md|mdx)$/, '') === docId ||
-    d.id.split('/').pop()?.replace(/\.(md|mdx)$/, '') === docId
+    typeof d.id === 'string' && (
+      d.id === docId ||
+      d.id.replace(/\.(md|mdx)$/, '') === docId ||
+      d.id.split('/').pop()?.replace(/\.(md|mdx)$/, '') === docId
+    )
   );
 }
 
@@ -130,13 +132,13 @@ export function buildBreadcrumbs(
       if (!href) {
         const candidateId = item.link?.id || item.id;
         if (candidateId) {
-          const docExists = allDocs.some(d =>
-            d.id === candidateId ||
-            d.id.replace(/\.(md|mdx)$/, '') === candidateId ||
-            d.id.split('/').pop()?.replace(/\.(md|mdx)$/, '') === candidateId
-          );
-          if (docExists) {
-            href = `${baseUrl}/${candidateId}`.replace(/\/+/g, '/');
+          const doc = findDocEntry(allDocs, candidateId);
+          if (doc) {
+            // A doc with `customSlug` is only served at that slug — the
+            // id-named URL is an English-only redirect stub that locale routes
+            // never build. Link to the real slug (e.g. what-is-adapty → "/").
+            const slug = doc.data.customSlug || `/${candidateId}`;
+            href = `${baseUrl}/${slug}`.replace(/\/+/g, '/');
           }
         }
       }

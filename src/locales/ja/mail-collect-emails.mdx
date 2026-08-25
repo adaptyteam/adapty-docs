@@ -1,52 +1,93 @@
 ---
-title: "Adapty Mailのユーザーメール収集"
-description: "ユーザーメールと安定した識別子をAdaptyに渡して、キャンペーンがユーザーに届くようにします。"
-metadataTitle: "ユーザーメールの収集 | Adapty Mail | Adapty ドキュメント"
-keywords: ['adapty mail', 'email collection']
+title: "Adapty を Adapty Mail に接続する"
+description: "Adapty SDK がすでに稼働しているアプリから、プロファイル、メールアドレス、購入情報を Adapty Mail に送信します。"
+metadataTitle: "Adapty インテグレーション | Adapty Mail | Adapty ドキュメント"
+keywords: ['adapty mail', 'メール収集']
 ---
 
-Adapty Mailがメールを配信するには、各ユーザーに対して安定した `customer_user_id` とメールアドレスが必要です。キャンペーンを開始する前に、アプリのコードで両方を設定しておきましょう。
+Adapty は Adapty Mail のエントリーポイントの一つです。アプリがすでに Adapty SDK を使用している場合に活用できます。Adapty はプロファイル、メールアドレス、サブスクリプションイベントを Adapty Mail に渡し、Adapty Mail はそれらを使って受信者を選定し、各ユーザーをフローに振り分け、購入につながったメールに収益をアトリビュートします。
 
-## ユーザーメールの収集 \{#collect-user-emails\}
-
-各ユーザーについて、Adaptyに渡す必要がある値は2つです。ユーザーを識別する安定した `customer_user_id` と、メールアドレスそのものです。識別が先決です。識別なしでは、Adaptyにはメールを紐付けるプロファイルがありません。
-
-1. **ユーザーを識別する。** バックエンドのユーザーID、Firebase UID などの安定したIDを渡します。SDKの起動時に `.activate()` の `customerUserId` として渡すか、後から（例えばログイン時に）`Adapty.identify()` を呼び出す方法があります。いずれの場合も、ペイウォールを表示する前にIDを設定する必要があります。
-
-    プラットフォームガイド: [iOS](identifying-users)、[Android](android-identifying-users)、[React Native](react-native-identifying-users)、[Flutter](flutter-identifying-users)、[Unity](unity-identifying-users)、[Kotlin Multiplatform](kmp-identifying-users)、[Capacitor](capacitor-identifying-users)。
-
-2. **メールアドレスを渡す。** ユーザーがメールアドレスを提供したら、すぐに `updateProfile` の `email` パラメーターを使ってAdaptyに送信します。
-
-    プラットフォームガイド: [iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Unity](unity-setting-user-attributes)、[Kotlin Multiplatform](kmp-setting-user-attributes)、[Capacitor](capacitor-setting-user-attributes)。
+アプリが Adapty SDK を使用していない場合は、代わりにサーバーから同じデータを送信してください。詳細は[Adapty Mail API を使用したメールとトランザクションの送信](mail-send-data-via-api)をご覧ください。
 
 :::important
-- `customer_user_id` は常に**安定した**値を渡してください。匿名の識別子は使用しないでください。ユーザーがアプリをアンインストールして再インストールした場合、AdaptyはこのIDを使って再インストールを既存のプロファイルに紐付け、購入を正しいユーザーに帰属させます。
-- メールアドレスをAdaptyに収集・送信する前に、ユーザーから明示的な同意を取得してください。対象市場におけるGDPR、CAN-SPAMおよび類似の規制への準拠はお客様の責任となります。
+Adapty Mail は**スタンドアロンプロダクト**です。ペイウォール、サブスクリプション、分析をAdaptyで管理していなくても利用できます。スタック全体の移行は不要です。
+
+正確な収益データを得るための最小限のセットアップは、オブザーバーモードでAdapty SDKをインストールし、App Serverの通知を有効にすることです。
+:::
+
+Adapty Mail がアプリに必要とするものは3つです。購入データ（各コンバージョンを促したメールに収益を紐付けるため）、安定したユーザー識別子、そしてユーザーのメールアドレスです。この3つをセットアップしてから、送信をオンにしてください。
+
+## 1. Adaptyで収益をトラッキングする \{#1-let-adapty-track-your-revenue\}
+
+最初のステップは、アプリ内課金がすでに実装済みかどうかによって異なります。
+
+- **すでに Adapty でアプリ内課金を実装済みの場合**、この段階で追加の作業は不要です。
+- **Adapty を使わずにアプリ内課金を実装済みで、Adapty への移行を予定していない場合**、お使いのプラットフォーム向け Adapty SDK をオブザーバーモードでインストールしてください。この段階では、SDK をプロジェクトに追加し、オブザーバーモードを有効にして起動し、トランザクションを報告するだけで構いません。プラットフォーム別ガイド: [iOS](implement-observer-mode)、[Android](implement-observer-mode-android)、[React Native](implement-observer-mode-react-native)、[Flutter](implement-observer-mode-flutter)、[Unity](implement-observer-mode-unity)、[Kotlin Multiplatform](implement-observer-mode-kmp)、[Capacitor](implement-observer-mode-capacitor)。
+- **アプリ内課金をまだ実装しておらず、Adapty を使用したい場合**、[クイックスタートガイド](quickstart)の手順に従って、購入処理を Adapty に委任してください。
+
+次に、[AdaptyでApp Storeサーバー通知を有効にして](enable-app-store-server-notifications)、App Storeから収益関連の更新を直接受け取りましょう。
+
+## 2. ユーザーを識別する \{#2-identify-your-users\}
+
+安定したID（バックエンドのユーザーID、Firebase UIDなど）を渡してください。方法は2つあります。SDK起動時に`.activate()`の`customerUserId`として渡すか、後から（例：ログイン時に）`Adapty.identify()`を呼び出すかのいずれかです。どちらの方法でも、ペイウォールを表示する前にIDを設定してください。Adapty Mailがキャンペーン、クリック、購入を正しいプロファイルに紐づけるために、`customer_user_id`が使われます。
+
+プラットフォームガイド: [iOS](identifying-users)、[Android](android-identifying-users)、[React Native](react-native-identifying-users)、[Flutter](flutter-identifying-users)、[Unity](unity-identifying-users)、[Kotlin Multiplatform](kmp-identifying-users)、[Capacitor](capacitor-identifying-users)。
+
+## 3. ユーザーのメールアドレスを収集する \{#collect-user-emails\}
+
+ユーザーがアプリ内でメールアドレスを入力したら（例：サインアップ時やチェックアウト時）、`email` 属性を指定して `updateProfile` を呼び出し、Adapty に渡してください。キャンペーンの受信者全員にこの値が必要です。
+
+プラットフォームガイド: [iOS](setting-user-attributes)、[Android](android-setting-user-attributes)、[React Native](react-native-setting-user-attributes)、[Flutter](flutter-setting-user-attributes)、[Unity](unity-setting-user-attributes)、[Kotlin Multiplatform](kmp-setting-user-attributes)、[Capacitor](capacitor-setting-user-attributes)
+
+:::important
+- 常に**安定した** `customer_user_id` を渡してください。匿名の識別子は使用しないでください。ユーザーがアプリをアンインストールして再インストールした場合、Adapty はこの ID を使って再インストールを既存のプロファイルに紐付け、購入を正しいユーザーに帰属させます。
+- メールアドレスを収集して Adapty に送信する前に、ユーザーから明示的な同意を得てください。対象市場における GDPR、CAN-SPAM、およびその他の関連規制への準拠はお客様の責任となります。
 :::
 
 <Details>
-<summary>メール収集のカバレッジを確認する</summary>
+<summary>メールのカバレッジを確認する</summary>
 
-収集を実装したら、Adaptyでカバレッジを確認しましょう。
+収集を実装したら、Adapty でカバレッジを確認してください：
 
 1. **Customers → Profiles** に移動します。
-2. メールアドレスが設定されているプロファイルでフィルタリングします。
+2. メールが設定されているプロファイルでフィルタリングします。
 
-最初のキャンペーンを開始する前に、アクティブユーザーの少なくとも30〜50%のメールカバレッジを目標にしてください。100%になるまで待つ必要はありません。30%に達したらすぐに開始しましょう。後でメールアドレスを提供したユーザーは、条件を満たした時点でアクティブなキャンペーンに自動的に登録されます。
+最初のキャンペーンを開始する前に、アクティブユーザーのメールカバレッジが少なくとも30〜50%になることを目標にしてください。100%になるまで待つ必要はありません。30%に達したらすぐに開始しましょう。後からメールを提供したユーザーは、条件を満たした時点でアクティブなキャンペーンに自動的に登録されます。
 
 </Details>
 
-## メール収集の戦略 \{#email-collection-strategies\}
+### メールの収集方法 \{#email-collection-strategies\}
 
-多くのアプリはデフォルトではメールを収集しません。アプリの現状に合ったアプローチを選んでください。
+多くのアプリはデフォルトではメールを収集しません。アプリの現状に合わせたアプローチを選んでください。
 
-| 戦略                               | 最適なケース                                                         | 仕組み                                                                                                                                               |
+| 戦略 | 最適なケース | 仕組み |
 | ---------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **既存の認証**                     | ログイン機能のあるアプリ                                             | すでにメールアドレスを持っているので、ユーザーが認証した後にAdaptyへ渡すだけです。どこで読み取るかは以下の認証方法リファレンスを参照してください。     |
-| **ペイウォール前のメールゲート**   | 認証なしのアプリ（健康・ウェルネス・占星術・フォトエディターなど）  | オンボーディングとペイウォールの間にメール入力画面を1つ追加します。ユーザーがすでに時間を投資しているため、コンバージョンは通常70〜90%に達します。   |
-| **Webペイウォールビルダーのチェックアウト** | SDKの作業を最小限に抑え、Webでメールを収集する場合              | Webペイウォールビルダーの最初の画面でメールアドレスを収集し、Adaptyに渡します。アプリ内ゲートが稼働する前にキャンペーンをクリックしたユーザーに有効です。 |
-| **オンボーディングのステップ**     | クイズ形式のオンボーディング（フィットネス・栄養・教育）            | オンボーディングの2〜3ステップ目にメール入力を配置します。価値の提供として訴求し（「パーソナライズされたプランをメールでお送りします」など）、スキップ可能にしないようにしましょう。 |
-| **Adapty Mail API**                | AdaptyのSDKを使わずにサーバーからメールを送信する場合              | Adapty Mail APIの [プロファイルを保存](api-mail/operations/saveProfile) エンドポイントにプロファイルを送信します。詳細は [Adapty Mail APIを使ったメールとトランザクションの送信](mail-send-data-via-api) を参照してください。 |
+| **既存の認証** | 何らかのログイン機能を持つアプリ | ユーザー認証後にメールアドレスを取得済みなので、それを Adapty に渡すだけで済みます。 |
+| **ペイウォール前のメールゲート** | 認証なしのアプリ（ヘルス、ウェルネス、占星術、フォトエディター等） | オンボーディングとペイウォールの間にメール入力画面を1つ追加します。ユーザーはすでに時間を投資しているため、コンバージョン率は通常70〜90%になります。 |
+| **Webペイウォールビルダーのチェックアウト** | SDKの実装を最小限にしたい場合、またはWeb上でメールを取得する場合 | Webペイウォールビルダーの最初の画面でメールアドレスを収集し、Adapty に渡します。アプリ内ゲートが稼働する前にキャンペーンをクリックしたユーザーに有効です。 |
+| **オンボーディングのステップ** | クイズ形式のオンボーディング（フィットネス、栄養、教育） | オンボーディングの2〜3ステップ目にメール入力を配置します。「パーソナライズされたプランをメールでお送りします」のように価値提供としてフレーミングし、スキップ可能にしないことが重要です。 |
+| **Adapty Mail API** | Adapty SDK を使わずサーバーからメールを送信する場合 | Adapty Mail API の [Save profile](api-mail/operations/saveProfile) エンドポイントにプロファイルを送信します。詳細は[Adapty Mail API を使ったメールとトランザクションの送信](mail-send-data-via-api)をご覧ください。 |
+
+## 4. 送信を有効にする \{#4-enable-sending\}
+
+この手順は、他の設定がすべて完了してから行ってください。Adapty Mail は、フローが1つも設定されていない状態では **Enable** ボタンを無効にします。その際、*「Set up at least one flow before enabling Adapty integration」* というツールチップが表示されます。まずは送信ドメイン、チェックアウト、キャンペーン、フローの設定を完了させてください。詳細は [Adapty Mail を始める](mail-get-started) を参照してください。
+
+インテグレーションをオンにすることが最後のステップです。これにより、イベントの流入・セグメントのマッチング・メールの送信が開始されます。
+
+1. Adapty Mailで、**Settings → Project** に移動し、**Adapty Integration** セクションを見つけます。
+2. **Enable Adapty integration**（または、以前のセットアップからすでに連携が存在する場合は **Enable**）をクリックします。
+
+有効にすると、Adaptyはすべてのサブスクリプションイベント（新規サブスクリプション、更新、トライアル、コンバージョン、返金、請求の問題）をAdapty Mailに送信します。これらのイベントは、セグメントのメンバーシップ、キャンペーンのルーティング、およびユーザーがコンバージョンした際にシーケンスを一時停止するストップ条件を制御します。
+
+<ZoomImage id="adapty-mail-adapty-integration.webp" width="500px" />
+
+:::note
+**Adapty Integration** セクションは、Adaptyワークスペースに紐づいているプロジェクトのみに表示されます。Adapty Mailに直接サインアップしてプロジェクトが紐づいていない場合、このセクションは表示されません。代わりに [Adapty Mail API](mail-send-data-via-api) を使ってデータを送信してください。
+:::
+
+:::note
+Settingsの**Adapty integration**トグルは、Adapty Mailにサインインするために使用したAdaptyパートナーワークスペースとは*異なります*。パートナーワークスペースはあなたのアカウントを作成したもので、（Adapty経由でサインアップした場合は）ブランドも作成しています。ここのintegrationトグルはイベントの同期を制御するもので、プロジェクトごとに有効にする必要があります。
+:::
 
 ## 制限事項 \{#limitations\}
 

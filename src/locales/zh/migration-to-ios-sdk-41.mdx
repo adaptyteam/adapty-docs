@@ -1,0 +1,127 @@
+---
+title: "迁移 Adapty iOS SDK 至 v4.1"
+description: "迁移至 Adapty iOS SDK v4.1：显式启用 Adapty Attribution、采用重命名后的外部归因 API，并重新下载备用文件。"
+metadataTitle: "迁移至 Adapty iOS SDK v4.1 | Adapty 文档"
+---
+
+Adapty iOS SDK 4.1 更改了 Adapty Attribution 的启用方式，重命名了外部归因 API，并更改了备用文件格式。此外，该版本还恢复了对 App Store 应用内购买推广功能的支持（该功能在 4.0 版本中已被移除）。
+
+:::warning
+重命名的 API 是一次硬性中断。旧名称已被彻底移除——它们不是被废弃，也没有类型别名或 `@available(renamed:)` 注解来做兼容桥接。凡是能在 4.0.x 下编译通过的代码，在升级到 4.1 后都将因以下调用位置未重命名而导致编译失败。
+:::
+
+## 快速参考 \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| 默认启用 Adapty 归因 | 默认禁用 Adapty 归因；通过 `.with(adaptyAttributionEnabled: true)` 启用 |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `Adapty.updateAttribution(_ attributionJson: String, source:)` | 已从公共 API 中移除；请改为传入字典 |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`，新增 `.custom` 值 |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AdaptySubscriptionOfferType` 枚举 | `AdaptySubscriptionOfferType` 结构体；`.code` 已移除 |
+| 适用于 4.0 的备用付费墙文件 | 新备用付费墙文件格式；请重新下载文件 |
+| 不支持应用内推荐购买 | `didReceivePromotedPurchase(_:)` 代理方法和 `AdaptyPromotedProduct` |
+
+## ⚠️ Adapty 归因功能默认禁用 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+如果你升级到 SDK 4.1 但未主动开启该功能，[Adapty 归因](user-acquisition)将悄无声息地失效——安装事件将停止上报，且不会有任何警告提示。
+:::
+
+在 4.0 及更早版本中，SDK 会自动为 [Adapty Attribution](user-acquisition) 注册安装事件。从 4.1 版本开始，此功能默认关闭：SDK 不再注册安装事件，`onInstallationDetailsSuccess` 和 `onInstallationDetailsFail` 委托回调也不会触发。`getCurrentInstallationStatus()` 返回 `.notAvailable`。
+
+如果你使用 Adapty Attribution，请在激活 SDK 时启用该功能：
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+如果您不使用 Adapty 归因功能，则无需进行任何更改。
+
+## 重命名的外部归因 API \{#renamed-external-attribution-apis\}
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+将外部归因提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义来源）的归因数据传递给 Adapty 的方法已重命名，其 `source` 参数也已重命名为 `provider`：
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### JSON 字符串重载已移除 \{#the-json-string-overload-is-removed\}
+
+4.0 版本接受以 `[AnyHashable: Any]` 字典或 JSON `String` 两种形式传入归因数据。在 4.1 版本中，只有字典重载是公开的——JSON 字符串重载保留给 Adapty 的跨平台 SDK 使用。请在传入之前先对 JSON 进行反序列化：
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attributionJson, source: .adjust)
++ guard let attribution = try JSONSerialization.jsonObject(
++     with: Data(attributionJson.utf8)
++ ) as? [AnyHashable: Any] else { return }
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+该类型已重命名。预定义的渠道名称保持不变：`.appleAds`、`.adjust`、`.appsflyer`、`.branch`、`.tenjin`。该类型仍然遵循 `ExpressibleByStringLiteral` 协议，因此字符串字面量参数无需修改即可继续编译。如果你将渠道存储在 `String` 变量中，请使用以下方式包装：`AdaptyExternalAttributionProvider(rawValue: yourProvider)`。
+
+4.1 还新增了预定义的 `.custom` 值，适用于 Adapty 未直接集成的渠道。在 4.0 中，相同的值只能通过字符串字面量 `"custom"` 来使用。
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+用户画像中列出已应用归因提供商的属性已重命名，其元素类型也随之更改：
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferType 现在是一个结构体 \{#adaptysubscriptionoffertype-is-now-a-struct\}
+
+`AdaptySubscriptionOfferType` —— `AdaptySubscriptionOffer.offerType` 的类型 —— 从枚举改为 `RawRepresentable` 结构体，这样后端无需更新 SDK 即可引入新的优惠类型：
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+这一改动会从以下三个方面影响你的代码：
+
+- **穷举式 `switch` 语句将无法编译。** 结构体没有固定的 case 集合，编译器无法验证 switch 是否穷举完整。请添加 `default` 分支：
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` 已移除。** 优惠码不再通过 `AdaptySubscriptionOffer.offerType` 上报。请删除所有 `case .code` 分支。有关优惠码的处理方式，请参阅 [在 iOS 中兑换优惠码](making-purchases#redeem-offer-codes-in-ios)。
+- **`Codable` 支持已移除。** 如果你曾直接对 `AdaptySubscriptionOfferType` 进行编解码，请改为持久化 `offerType.rawValue`（类型为 `String`），并通过 `AdaptySubscriptionOfferType(rawValue:)` 重建该值。
+
+与预定义值的比较保持不变：`.introductory`、`.promotional` 和 `.winBack` 在 `==` 检查和 `case` 模式中仍然有效。
+
+## 备用文件 \{#fallback-files\}
+
+[备用文件](fallback-flows) 的格式在 SDK 4.1 中发生了变化。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 重新下载该文件并将其打包到应用中，即使你已经为 4.0 下载过一份也需要重新下载。
+
+:::warning
+跳过此步骤不会产生编译错误。但如果跳过，SDK 将拒绝旧版文件，所有版位都会失去备用付费墙。
+:::
+
+## App Store 推广应用内购买回归 \{#app-store-promoted-in-app-purchases-return\}
+
+SDK 4.1 恢复了对 App Store 推广应用内购买的支持，该功能曾在 [4.0 中被移除](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed)。这是一项新功能，而非迁移步骤：不会改变任何 4.0 的现有行为。
+
+如果你从 3.x 迁移，并且曾将 `shouldAddStorePayment(for:)` 与 `AdaptyDeferredProduct` 配合使用，请改用新的 `didReceivePromotedPurchase(_:)` 代理方法，并将类型替换为 `AdaptyPromotedProduct`。与 `shouldAddStorePayment` 不同，新方法无需返回值：如果不实现该方法，SDK 会立即发起购买；如需延迟购买，请实现该方法，保存产品对象，之后再将其传入 `makePurchase`。详见[从 App Store 发起的应用内购买](making-purchases#in-app-purchases-from-the-app-store)。
+
+:::warning
+新机制基于 StoreKit 2，需要 **iOS 16.4** 或更高版本。3.x 的 `shouldAddStorePayment` 方法支持更低的 iOS 版本。在 iOS 16.4 以下的设备上，`didReceivePromotedPurchase` 永远不会触发，推广购买也无法到达你的应用。
+:::

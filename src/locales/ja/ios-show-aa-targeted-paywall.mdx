@@ -1,44 +1,48 @@
 ---
-title: "iOS SDK の初回起動時に AA ターゲティングのペイウォールを表示する"
-description: "AdaptyProfile.appliedAttributionSources を使って、iOS で Apple Ads のアトリビューションを待ってからペイウォールをリクエストする方法。"
-metadataTitle: "初回起動時に AA ターゲットのペイウォールを表示する | iOS SDK | Adapty ドキュメント"
+title: "iOSSDKの初回起動時にAA対象ペイウォールを表示する"
+description: "AdaptyProfile.appliedExternalAttributionProvidersを使用して、iOSでApple Ads アトリビューションを待ってからペイウォールをリクエストします。"
+metadataTitle: "初回起動時にAA対象ペイウォールを表示する | iOS SDK | Adapty ドキュメント"
 ---
 
-Apple Ads（AA）のアトリビューションは、`Adapty.activate()` の後に非同期で届きます。`getPaywall` を早いタイミングで呼び出すと、アトリビューションがまだ反映されていないことが多く、Adapty はデフォルトのオーディエンスに対してプレースメントを解決してしまいます — つまり AA セグメントのペイウォールが適用されません。`AdaptyProfile.appliedAttributionSources` を使うと、AA アトリビューションがプロファイルに適用されたタイミングをアプリが検知できるため、AA セグメントが正しく解決されるまでペイウォールのリクエストを待機させられます。
+Apple Ads (AA) のアトリビューションは `Adapty.activate()` の後に非同期で届きます。`getPaywall` を早めに呼び出すと、アトリビューションがまだ反映されていないことが多く、Adapty はデフォルトオーディエンスに基づいてプレースメントを解決してしまいます。その結果、AA セグメント向けのペイウォールが表示されません。`AdaptyProfile.appliedExternalAttributionProviders` を使うと、AA のアトリビューションがプロファイルに適用されたタイミングをアプリ側で検知できるため、AA セグメントが正しく解決されるまでペイウォールのリクエストを待機させることができます。
 
-## はじめる前に \{#before-you-start\}
+## 始める前に \{#before-you-start\}
 
 必要なもの：
 - Adapty iOS SDK **3.17.1** 以降。
-- Adapty でアプリの Apple Ads を設定済みであること。詳しくは [Apple Ads](apple-search-ads) を参照してください。
+- Adapty でアプリに Apple Ads が設定済みであること。[Apple Ads](apple-search-ads) を参照してください。
+
+:::note
+以下の例では、SDK 4.1 以降のプロパティ名 `appliedExternalAttributionProviders` を使用しています。SDK バージョン 3.17.1〜4.0 では、プロパティ名は `appliedAttributionSources` です。
+:::
 
 ## 仕組み \{#how-it-works\}
 
-`Adapty.activate()` の後、SDK はバックグラウンドで Apple から Apple Ads のアトリビューションをリクエストし、その結果を Adapty のバックエンドに転送します。AA がプロファイルのアクティブなアトリビューションソースになると、SDK は更新された `AdaptyProfile` を配信します。この `appliedAttributionSources` 配列には `.appleAds` が含まれています。
+`Adapty.activate()` を呼び出すと、SDK はバックグラウンドで Apple Ads のアトリビューションを Apple に問い合わせ、その結果を Adapty のバックエンドに転送します。AA がそのプロファイルのアクティブなアトリビューションソースになると、SDK は更新された `AdaptyProfile` を返します。この `AdaptyProfile` の `appliedExternalAttributionProviders` 配列には `.appleAds` が含まれています。
 
 配列が空の場合、以下のいずれかを意味します：
 
 - このプロファイルの Apple Ads アトリビューションがまだ処理されていない。
-- アトリビューションが届いていない。
+- アトリビューションがまったく届いていない。
 
-配列が空でも `getPaywall` の呼び出し自体は安全です — Adapty は現在のプロファイル状態に一致するオーディエンス（通常はデフォルトのオーディエンス）に対してリクエストを解決します。
+空の配列を渡しても、`getPaywall` は安全に呼び出せます — Adapty は現在のプロファイル状態に一致するオーディエンス（通常はデフォルトオーディエンス）に基づいてリクエストを解決します。
 
 :::important
-この待機処理は**初回起動時のみ**適用されます。Apple Ads のアトリビューションが一度記録されると、プロファイルに永続的に保存されます。2 回目以降の起動では、キャッシュされたプロファイルにすでに `.appleAds` が `appliedAttributionSources` に含まれているため、`didLoadLatestProfile` はその値ですぐに発火し、`getPaywall` は遅延なく Apple Ads セグメントのペイウォールを返します。
+この待機は**初回起動時のみ**適用されます。Apple Ads のアトリビューションが一度記録されると、プロファイルに永続的に保存されます。以降の起動では、キャッシュされたプロファイルにすでに `appliedExternalAttributionProviders` 内の `.appleAds` が含まれており、`didLoadLatestProfile` はその値とともに即座に発火し、`getPaywall` は遅延なく Apple Ads のセグメントに対応したペイウォールを返します。
 :::
 
 ## 実装 \{#implementation\}
 
 初回起動時は、プロファイル内の `.appleAds` を監視しながら、厳格なタイムアウトを設定してください — Apple Ads のアトリビューションが届かない場合でも、ユーザーにはペイウォールを表示する必要があります。
 
-1. **SDK を有効化します。** [iOS SDK のインストールと設定](sdk-installation-ios) を参照してください。
-2. **`AdaptyDelegate` に準拠して `didLoadLatestProfile` を実装することでプロファイルの更新を購読します。** デリゲートをまだ設定していない場合は、[サブスクリプションのアップデートを監視する](ios-check-subscription-status#listen-to-subscription-updates) を参照してください。
-3. **`appliedAttributionSources` に `.appleAds` が含まれているか監視します。** 含まれている場合にペイウォールをリクエストすると、Adapty は AA セグメントのバリアントを返します：
+1. **SDKを有効化します。** [iOS SDKのインストールと設定](sdk-installation-ios)を参照してください。
+2. **`AdaptyDelegate`に準拠し、`didLoadLatestProfile`を実装してプロファイルの更新を購読します。** デリゲートをまだ設定していない場合は、[サブスクリプションの更新を監視する](ios-check-subscription-status#listen-to-subscription-updates)を参照してください。
+3. **`appliedExternalAttributionProviders`内の`.appleAds`を監視します。** それが表示されたら、ペイウォールをリクエストします — AdaptyはAAセグメント化されたバリアントを返します。
 
 ```swift
 extension <YourAdaptyDelegateImpl>: AdaptyDelegate {
     nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
-        if profile.appliedAttributionSources.contains(where: { $0 == .appleAds }) {
+        if profile.appliedExternalAttributionProviders.contains(where: { $0 == .appleAds }) {
             // load paywall via Adapty.getPaywall(placementId:)
         }
     }
@@ -112,7 +116,7 @@ enum PaywallLoader {
     @MainActor
     private static func waitForAttribution() async {
         for await profile in ProfileObserver.shared.$profile.values {
-            if profile?.appliedAttributionSources.contains(.appleAds) == true { return }
+            if profile?.appliedExternalAttributionProviders.contains(.appleAds) == true { return }
         }
     }
 }

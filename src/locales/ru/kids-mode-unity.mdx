@@ -1,10 +1,12 @@
 ---
 title: "Режим для детей в Unity SDK"
-description: "Легко включите режим для детей, чтобы соответствовать политикам Apple и Google. В Unity SDK не собираются IDFA, GAID или рекламные данные."
+description: "Легко включите режим для детей в соответствии с правилами Apple и Google. В Unity SDK не собираются данные IDFA, GAID или рекламные данные."
 metadataTitle: "Режим для детей в Unity SDK | Документация Adapty"
 ---
 
-Если ваше Unity-приложение предназначено для детей, вы обязаны соблюдать политики [Apple](https://developer.apple.com/kids/) и [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Если вы используете Adapty SDK, несколько простых шагов помогут настроить его в соответствии с этими политиками и пройти проверку в сторах.
+<SDKv4>
+
+Если ваше приложение на Unity предназначено для детей, вы обязаны соблюдать правила [Apple](https://developer.apple.com/kids/) и [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Если вы используете Adapty SDK, несколько простых шагов помогут настроить его в соответствии с этими требованиями и успешно пройти проверку в стором.
 
 ## Что нужно сделать? \{#whats-required\}
 
@@ -22,10 +24,97 @@ metadataTitle: "Режим для детей в Unity SDK | Документац
 
 В дашборде Adapty необходимо отключить сбор IP-адресов. Для этого перейдите в [App settings](https://app.adapty.io/settings/general) и нажмите **Disable IP address collection** в разделе **Collect users' IP address**.
 
-### Изменения в коде мобильного приложения \{#updates-in-your-mobile-app-code\}
+### Обновления в коде вашего приложения \{#updates-in-your-app-code\}
 
-Поддержка режима для детей в Unity появится в ближайшее время!
+Отключите сбор Android Advertising ID и IP-адреса при активации SDK:
 
-Пока вы можете воспользоваться гайдами для нативных платформ:
-- [Режим для детей в iOS SDK](kids-mode) — настройка для iOS
-- [Режим для детей в Android SDK](kids-mode-android) — настройка для Android
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+На iOS вызывать `SetAppleIDFACollectionDisabled` не нужно — включение режима Kids Mode для сборки iOS (см. ниже) автоматически отключает сбор IDFA в конфигурации SDK.
+
+### Включение Kids Mode для сборки iOS \{#enable-kids-mode-for-the-ios-build\}
+
+:::important
+В iOS Kids Mode — это трейт Swift-пакета с именем `KidsMode`. При его включении из бинарного файла SDK исключаются IDFA, AdSupport и AppTrackingTransparency. Требуется SDK версии 4.0 или новее — который устанавливает нативный iOS SDK через Swift Package Manager — и **Xcode 26** или новее, так как более ранние версии Xcode не поддерживают трейты Swift-пакетов.
+:::
+
+1. В Unity Editor перейдите в **Player Settings** > **Other Settings** и добавьте `ADAPTY_KIDS_MODE` в **Scripting Define Symbols** для платформы iOS.
+2. Соберите проект для iOS как обычно. Adapty включает трейт `KidsMode` в ссылке на пакет AdaptySDK-iOS в сгенерированном Xcode-проекте и принудительно устанавливает `apple_idfa_collection_disabled` в конфигурации среды выполнения.
+
+:::warning
+Добавляйте define в **Player Settings**, а не в профиль сборки. Scripting defines из профиля сборки попадают в сборки редактора только после перекомпиляции Unity, поэтому сборка, запущенная в той же сессии, может создать бинарник, который во время выполнения сообщает о Kids Mode, всё ещё линкуя IDFA. Adapty прерывает iOS-сборку при обнаружении такого состояния. `BuildPlayerOptions.extraScriptingDefines` не поддерживается вовсе, поскольку никогда не достигает сборок редактора.
+:::
+
+### Обновления в Android manifest \{#updates-in-your-android-manifest\}
+
+Если ваше приложение ориентировано **только** на детей и компилируется под Android 13 (API 33) или выше, Google Play требует не запрашивать разрешение `AD_ID`. Отключение сбора в настройках SDK останавливает сбор идентификатора Adapty, но не удаляет разрешение, которое другой плагин объявляет через слияние манифестов.
+
+Чтобы удалить разрешение, включите **Custom Main Manifest** в **Player Settings** > **Publishing Settings**, затем добавьте следующее внутри элемента `<manifest>` файла `Assets/Plugins/Android/AndroidManifest.xml`. Элемент `<manifest>` должен объявлять `xmlns:tools="http://schemas.android.com/tools"`.
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission
+    android:name="com.google.android.gms.permission.AD_ID"
+    tools:node="remove" />
+```
+
+</SDKv4>
+
+<SDKv3>
+
+Если ваше Unity-приложение предназначено для детей, вы должны соблюдать политики [Apple](https://developer.apple.com/kids/) и [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Если вы используете Adapty SDK, несколько простых шагов помогут настроить его в соответствии с этими требованиями и пройти проверку в сторах.
+
+## Что нужно настроить? \{#whats-required\}
+
+Необходимо настроить SDK, чтобы отключить сбор:
+
+- [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
+- [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
+- [IP-адреса](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+Кроме того, рекомендуем осторожно обращаться с пользовательским ID. ID в формате `<FirstName.LastName>` однозначно считается сбором персональных данных — как и использование email. Для режима «Для детей» рекомендуется использовать случайные или анонимизированные идентификаторы (например, хешированные ID или UUID, сгенерированные на устройстве) — это обеспечит соответствие требованиям.
+
+## Включение режима Kids Mode \{#enabling-kids-mode\}
+
+### Обновления в дашборде Adapty
+
+В дашборде Adapty необходимо отключить сбор IP-адресов. Для этого перейдите в [App settings](https://app.adapty.io/settings/general) и нажмите **Disable IP address collection** в разделе **Collect users' IP address**.
+
+### Изменения в коде вашего приложения \{#updates-in-your-app-code\}
+
+Отключите сбор Android Advertising ID и IP-адреса при активации SDK:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+### Включение режима Kids Mode для iOS-сборки \{#enable-kids-mode-for-the-ios-build\}
+
+Для полного исключения кода IDFA и AdSupport из iOS-бинарника требуется Adapty Unity SDK 4.0 или выше. Обновитесь с помощью [гайда по миграции](migration-to-unity-sdk-v4), затем следуйте инструкциям для SDK 4.0 на этой странице.
+
+На SDK 3.x можно отключить сбор IDFA в конфигурации SDK с помощью `SetAppleIDFACollectionDisabled(true)`, однако код IDFA и AdSupport останется в бинарнике. О нативных параметрах конфигурации читайте в разделах [Kids Mode в iOS SDK](kids-mode) и [Kids Mode в Android SDK](kids-mode-android).
+
+</SDKv3>

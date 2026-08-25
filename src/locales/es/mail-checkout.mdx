@@ -35,15 +35,39 @@ El paywall debe estar publicado antes de que pueda gestionar el tráfico de chec
 Para ver los detalles del proveedor de pagos dentro del builder (cuentas de Stripe, modo de prueba o producción, configuración de productos), consulta [Configuración del paywall web](web-paywall-configuration).
 ### Usa tu propio paywall alojado \{#use-your-own-hosted-paywall\}
 
-1. En la página de creación, selecciona **Enter URL manually**.
-2. Pega la URL de tu paywall. Debe incluir los marcadores `{email}` y `{external_profile_id}` como parámetros de consulta — Adapty Mail los rellena por destinatario para que la página sepa quién es el visitante. Ejemplo:
+En esta opción, Adapty Mail redirige a los destinatarios a una página que tú alojas y sustituye los valores de cada destinatario en la URL. Todo lo que ocurre tras el clic —la oferta, el pago, la personalización— es responsabilidad tuya, con cualquier proveedor de pagos.
 
-   ```
-   https://example.com/paywall?email={email}&profile={external_profile_id}
-   ```
-3. Guarda.
+1. En **Web Paywalls → Create**, selecciona **Enter URL manually**.
+2. Pega la URL de tu paywall alojado con marcadores de posición como parámetros de consulta. Adapty Mail los sustituye por destinatario para que la página pueda identificar al visitante. Ejemplo:
 
-Esta opción funciona con cualquier proveedor de pagos — Adapty Mail solo gestiona la redirección y la sustitución de parámetros; el pago y la personalización ocurren íntegramente en tu lado.
+```
+   https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
+   ```
+3. Dale al paywall un **Name** y guárdalo. Después estará disponible para adjuntarlo a campañas.
+
+La página de creación muestra los marcadores de posición que puedes usar y marca cada uno que encuentra en la URL que pegues:
+
+| Placeholder | Value |
+| --- | --- |
+| `{email}` | La dirección de correo electrónico del destinatario. |
+| `{adapty.external_profile_id}` | El ID de perfil del destinatario en Adapty. |
+| `{funnelfox.external_profile_id}` | El ID de perfil del destinatario en FunnelFox. |
+| `{custom.external_profile_id}` | El ID de usuario que enviaste a través de la [API de Adapty Mail](mail-send-data-via-api). |
+| `{scheduled_email_id}` | El ID del correo electrónico que contenía el enlace. |
+
+Los tres marcadores de perfil son uno por cada fuente de la que puede llegar un perfil, y la página los enumera todos independientemente de si tu proyecto los utiliza. Usa el que corresponda a cómo envías los datos: `{adapty.external_profile_id}` para la [integración de Adapty](mail-collect-emails), `{custom.external_profile_id}` para la [API](mail-send-data-via-api). Un marcador para el que el destinatario no tiene valor se resuelve como una cadena vacía, por lo que nunca llega a tu página como texto literal; y un marcador que Adapty Mail no reconoce se transmite tal como lo escribiste.
+
+#### Qué debe hacer tu página \{#what-your-page-has-to-do\}
+
+La parte de Adapty Mail termina en la redirección. Dos tareas son tuyas:
+
+- **Identifica al visitante antes de que comience el pago**: Lee el ID de perfil o el correo electrónico de la cadena de consulta y vincúlalo a la compra, para que el pago quede registrado en el cliente al que se envió el correo.
+- **Comunica la compra de vuelta**: Adapty Mail nunca ve un pago procesado en tu propio proveedor, y una compra que no conoce no cuenta ni como conversión ni como ingresos atribuidos en [Analytics](mail-analytics); peor aún, el resto de la secuencia sigue enviándose a alguien que ya compró. Envíala por la vía que ya gestiona tus datos: la [integración de Adapty](mail-collect-emails) o un [evento de transacción](mail-send-data-via-api#send-transaction-events) en la API de Adapty Mail.
+
+#### Pruébalo antes de lanzar \{#test-it-before-launching\}
+
+**Send test email** comprueba que el correo se renderiza y que tu página acepta pagos, pero **Sandbox** no está disponible para un paywall añadido por URL: el modal indica *"This paywall has no sandbox products, so only production is available."* Por tanto, el test va a tu página real con productos reales: usa una tarjeta de crédito y solicita el reembolso, o apunta la URL a tu propio entorno de pruebas mientras verificas la integración. Consulta [Prueba tu configuración](mail-testing#test-the-email-and-checkout-on-their-own).
+
 ## Cómo se ve el checkout \{#what-the-checkout-looks-like\}
 
 Cuando un usuario hace clic en un enlace de checkout, aterriza en la **Main conversion page**. Después de intentar el pago, ve **Payment success** o **Payment failed** — solo se muestra una por intento.
@@ -69,17 +93,18 @@ Un mensaje de celebración con los próximos pasos y una imagen generada por IA.
 Un mensaje amigable que invita al usuario a intentarlo de nuevo. El estado del checkout se conserva.
 ## Cómo funciona la personalización \{#how-personalization-works\}
 
-Cada correo contiene una URL de pago única con el `customer_user_id` y la dirección de email del destinatario incorporados como parámetros:
+El enlace CTA de cada correo apunta a una URL de checkout creada específicamente para su destinatario. Antes del envío, Adapty Mail sustituye cada marcador de posición en la URL de tu paywall por los valores de ese destinatario:
 
 ```
-https://your-funnel.com/?cid={{customer_user_id}}&email={{email}}
+https://example.com/paywall?email=jane@example.com&adapty_profile_id=6f2a...c91
 ```
 
-Adapty genera estas URLs automáticamente al enviar cada correo; no se requiere ninguna configuración en el constructor de paywalls web. Cuando el usuario hace clic, el constructor lee los parámetros para identificarlo. Una vez completada la compra, Adapty asocia el ingreso al correo concreto que generó la conversión. Estos datos aparecen en [Analíticas de campaña](mail-analytics).
+Un paywall generado recibe estos parámetros automáticamente — no se necesita ninguna configuración en el Paywall Builder web. Para un paywall añadido por URL, tú eliges qué marcadores de posición incluir. Cuando el usuario hace clic, la página de pago lee los parámetros para identificarle. Cuando se completa una compra, Adapty asocia el ingreso al correo electrónico concreto que generó la conversión. Estos datos aparecen en [Análisis de campaña](mail-analytics).
+
 ## Solución de problemas \{#troubleshooting\}
 
 | Problema | Solución |
 |---|---|
 | El enlace de pago no se abre | Verifica que el paywall esté publicado en el web paywall builder |
-| El usuario no está identificado en el pago | Confirma que `Adapty.identify()` se llamó con el ID de usuario correcto antes de enviar el correo |
-| La compra no se atribuye al correo | Comprueba que el parámetro `cid` esté presente en la URL de pago — contacta con soporte si faltan parámetros |
+| El usuario no está identificado en el pago | Confirma que se haya llamado a `Adapty.identify()` con el ID de usuario correcto antes de enviar el correo |
+| La compra no se atribuye al correo | La atribución sigue el clic en el CTA del correo, por lo que el destinatario debe llegar al pago a través de ese enlace y la compra debe llegar a Adapty Mail en el mismo perfil. Una compra ya atribuida a un correo anterior conserva esa atribución |

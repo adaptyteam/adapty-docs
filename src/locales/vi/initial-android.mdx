@@ -1,64 +1,69 @@
 ---
 title: "Tích hợp ban đầu với Google Play"
-description: "Bắt đầu với Adapty trên Android và thiết lập ứng dụng để quản lý gói đăng ký hiệu quả."
-metadataTitle: "Bắt đầu với Android | Tài liệu Adapty"
+description: "Kết nối ứng dụng Google Play của bạn với Adapty: bật Developer APIs, tạo service account và tải lên key để xác thực các giao dịch mua trên Android."
+metadataTitle: "Tích hợp ban đầu với Google Play | Tài liệu Adapty"
 ---
 
-Chúng tôi rất vui khi có bạn đồng hành cùng Adapty! Mục tiêu hàng đầu của chúng tôi là giúp bạn bắt đầu nhanh chóng và đạt được kết quả tốt nhất. Hướng dẫn này được thiết kế để giúp bạn bắt đầu với Adapty nếu ứng dụng của bạn có trên Google Play Store.
+Kết nối tài khoản Google Play của bạn với Adapty để máy chủ của chúng tôi có thể đọc các sản phẩm trên Play Store, xác thực giao dịch mua và nhận các sự kiện gói đăng ký trên Android.
 
-Việc tích hợp Adapty vào ứng dụng di động của bạn bao gồm việc thiết lập kết nối giữa ứng dụng và Adapty ở cả cấp độ Google Play lẫn SDK. Mặc dù quá trình này có vẻ khá phức tạp, nhưng nếu làm theo hướng dẫn onboarding tích hợp sẵn trong Adapty Dashboard hoặc các chỉ dẫn bên dưới, bạn sẽ thấy đơn giản hơn nhiều — thường không mất quá 1 giờ.
+:::important
+Mỗi cửa hàng được kết nối riêng và các kết nối này độc lập với nhau. Nếu ứng dụng của bạn cũng có trên App Store, hãy [cấu hình tích hợp App Store Connect](initial_ios).
+:::
 
-<div style={{
-    maxWidth: '560px',
-    margin: '0 auto 2rem',
-    position: 'relative',
-    aspectRatio: '16/9',
-    width: '100%'
-}}>
-    <iframe
-        style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%'
-        }}
-        src="https://www.youtube.com/embed/7dN50n5bcLc?si=c2znttIb--4VcrRO"
-        title="YouTube video player"
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerPolicy="strict-origin-when-cross-origin"
-        allowFullScreen
-    />
-</div>
+Quá trình thiết lập mất khoảng một tiếng. Onboarding tích hợp trong Adapty Dashboard cũng hướng dẫn các bước tương tự nếu bạn muốn thực hiện trong một cửa sổ duy nhất.
+
+<YouTube id="7dN50n5bcLc" />
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Không giống như Apple, Google chia hệ sinh thái nhà phát triển của mình thành hai sản phẩm riêng biệt — Google Play Console và Google Cloud Console — và thiết lập này liên quan đến cả hai.
+
+### Những gì liên quan \{#whats-involved\}
+
+- **Service account**: Tài khoản Google dành cho máy móc, không phải con người. Bạn cần tạo một service account mới để cấp cho Adapty quyền truy cập vào Google Cloud và Google Play Console.
+- **Google Cloud Console**: Nền tảng hạ tầng đa năng của Google. Play Store không có thông tin xác thực API riêng, vì vậy bạn phải tạo chúng tại đây. Dùng Cloud Console để bật Developer API, tạo service account và cấp cho nó một số quyền cần thiết. Adapty cần những quyền này để nhận thông tin về các lần gia hạn, hủy đăng ký và hoàn tiền. File khóa của service account — dùng để Adapty xác thực với Google — cũng được tải xuống từ đây.
+- **Google Play Console**: Nơi bạn phát hành ứng dụng và bán gói đăng ký. Dùng Play Console để cấp cho service account phần còn lại của các quyền cần thiết. Adapty cần những quyền này để đọc danh sách sản phẩm và xác thực giao dịch mua. Ngoài ra, đây cũng là nơi bạn bật thông báo nhà phát triển theo thời gian thực (RTDN) để thiết lập kênh liên lạc giữa Play Store và Adapty.
+
+### Đặc quyền truy cập cần thiết \{#required-access-privileges\}
+
+| Console | Những gì bạn cần |
+| --- | --- |
+| Google Cloud Console | **Project Creator** (`roles/resourcemanager.projectCreator`) để tạo project, nếu bạn chưa có. **Service Account Creator** (`roles/iam.serviceAccountCreator`) để tạo service account, và **Project IAM Admin** (`roles/resourcemanager.projectIamAdmin`) để cấp quyền project cho nó. **Owners** có thể thực hiện cả ba việc trên ngay từ đầu. |
+| Google Play Console | **Admin (all permissions)**, bao gồm quyền mời người dùng — bạn cần quyền này để mời service account. |
+
+Google cấp quyền **Project Creator** cho mọi người trong tổ chức mới theo mặc định, vì vậy bạn có thể đã có quyền này rồi. Tuy nhiên, một tổ chức doanh nghiệp có chính sách bảo mật chặt chẽ có thể đã thu hồi quyền đó.
+
+### Tài nguyên cần thiết \{#required-resources\}
+
+**Một dự án Google Cloud.** [Tạo mới](https://console.cloud.google.com/projectcreate) nếu bạn chưa có, hoặc dùng lại một dự án đang chạy. Bạn sử dụng dự án này để bật các Developer API và tạo service account cho Adapty.
+
+Dự án này độc lập với ứng dụng trên Play Console. Một dự án có thể quản lý giao tiếp của nhiều ứng dụng. Mỗi ứng dụng sẽ có topic riêng — một hàng đợi giao tiếp — bên trong dự án.
+
+Khi kết nối các dịch vụ của Google với Adapty, bạn cần **sử dụng cùng một project** từ đầu đến cuối. Nên ưu tiên dùng project của team thay vì project cá nhân — vì key và topic sẽ tồn tại ở đó trong suốt vòng đời của ứng dụng.
 
 ## Danh sách kiểm tra cho tích hợp ban đầu \{#checklist-for-the-initial-integration\}
 
-- [ ] Sau khi tạo tài khoản trong Adapty và cung cấp tên cũng như danh mục ứng dụng di động, chúng tôi sẽ thiết lập ứng dụng cho bạn trên nền tảng Adapty.
-- [ ] [Bật Developer APIs](enabling-of-devepoler-api) trong Google Cloud Console
-- [ ] [Tạo service account](create-service-account) trong Google Cloud Console
-- [ ] [Cấp quyền cho service account](grant-permissions-to-service-account) trong Google Play Console
-- [ ] [Tạo file khóa service account](create-service-account-key-file) trong Google Cloud Console
-- [ ] [Cấu hình tích hợp Google Play](google-play-store-connection-configuration) trong Adapty Dashboard
-- [ ] [Bật Real-time developer notifications (RTDN)](enable-real-time-developer-notifications-rtdn) trong Google Play Console
-- [ ] Cài đặt và cấu hình Adapty SDK (bạn có thể cài đặt SDK cho một hoặc nhiều framework tùy theo nhu cầu)
-  - [ ] [Cài đặt Adapty SDK cho Android](sdk-installation-android)
-  - [ ] [Cài đặt Adapty SDK cho React Native](sdk-installation-reactnative)
-  - [ ] [Cài đặt Adapty SDK cho Flutter](sdk-installation-flutter)
-  - [ ] [Cài đặt Adapty SDK cho Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
-  - [ ] [Cài đặt Adapty SDK cho Unity](sdk-installation-unity)
-- [ ] Build ứng dụng và chạy thử. Chạy dưới dạng snapshot hoặc trong môi trường sandbox là đủ.
+1. [Bật Developer APIs](enabling-of-devepoler-api) trong Google Cloud Console.
+2. [Tạo service account](create-service-account) trong Google Cloud Console.
+3. [Cấp quyền cần thiết cho service account](grant-permissions-to-service-account) trong Google Play Console.
+4. [Tạo file key cho service account](create-service-account-key-file) trong Google Cloud Console.
+5. [Tải file key và package name lên Adapty](google-play-store-connection-configuration) trong Adapty Dashboard. Service account mới cần ít nhất 24 giờ để kích hoạt, và Adapty không thể đọc sản phẩm của bạn cho đến khi đó — để bỏ qua thời gian chờ này, hãy [chỉnh sửa và lưu bất kỳ mô tả sản phẩm nào](create-service-account-key-file#activate-the-account-immediately) trong Google Play Console.
+6. [Bật Real-time developer notifications (RTDN)](enable-real-time-developer-notifications-rtdn) trong Google Play Console, sử dụng tên topic mà Adapty tạo ra.
+7. [Cài đặt Adapty SDK](installation-of-adapty-sdks) cho từng framework mà app của bạn sử dụng:
+   - [Android](sdk-installation-android)
+   - [React Native](sdk-installation-reactnative)
+   - [Flutter](sdk-installation-flutter)
+   - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
+   - [Unity](sdk-installation-unity)
+   - [Capacitor](sdk-installation-capacitor)
+8. [Kiểm tra in-app purchase](testing-on-android) trên thiết bị thật trước khi phát hành.
 
-:::note
-Các thay đổi thường mất ít nhất 24 giờ để có hiệu lực, nhưng có một [mẹo nhỏ](https://stackoverflow.com/a/60691844). Trong [Google Play Console](https://play.google.com/apps/publish/), mở bất kỳ ứng dụng nào và trong phần **Monetize**, vào **Products** -> **Subscriptions**/**In-app products**. Thay đổi mô tả của bất kỳ sản phẩm nào rồi lưu lại. Mọi thứ sẽ hoạt động ngay, sau đó bạn có thể hoàn tác các thay đổi đó.
-:::
+## Các bước tiếp theo \{#next-steps\}
 
-Sau khi hoàn tất tích hợp ban đầu, bạn [có thể bắt đầu sử dụng các tính năng của Adapty](product).
+Sau khi tích hợp xong, bạn có thể [bắt đầu sử dụng các tính năng của Adapty](product).
 
-Hãy lưu ý rằng để paywall và sản phẩm hiển thị trong ứng dụng di động của bạn, cũng như để analytics hoạt động, bạn cần thực hiện các thay đổi trong code của ứng dụng. Cụ thể, bạn cần [hiển thị paywall](android-quickstart-paywalls) ít nhất, và nếu bạn đang sử dụng paywall không được tạo bằng Paywall Builder, hãy [xử lý quy trình mua hàng](android-making-purchases) trong ứng dụng của bạn.
+Để hiển thị paywall, bạn cần thêm code vào ứng dụng: tối thiểu là [hiển thị paywall](android-quickstart-paywalls), và [xử lý quá trình mua hàng](android-making-purchases) nếu bạn tự render paywall.
 
-:::danger
-Xem lại danh sách kiểm tra trước khi phát hành ứng dụng
-
-Trước khi phát hành ứng dụng, hãy xem xét kỹ [Release Checklist](release-checklist). Danh sách này đảm bảo bạn đã hoàn thành tất cả các bước cần thiết và cung cấp các tiêu chí để đánh giá mức độ thành công của quá trình tích hợp.
+:::tip
+Trước khi phát hành ứng dụng, hãy xem qua [Danh sách kiểm tra trước khi phát hành](release-checklist).
 :::

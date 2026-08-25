@@ -5,7 +5,10 @@ metadataTitle: "Интеграция Adjust для аналитики подпи
 
 ---
 
-[Adjust](https://www.adjust.com/) — одна из ведущих платформ Mobile Measurement Partner (MMP), которая собирает и представляет данные маркетинговых кампаний. Это помогает компаниям отслеживать эффективность своих кампаний.
+import AccessLevelUpdatedEventFeed from '@site/src/locales/ru/reusable/AccessLevelUpdatedEventFeed.mdx';
+
+[Adjust](https://www.adjust.com/) — одна из ведущих платформ Mobile Measurement Partner (MMP), которая собирает и представляет данные из маркетинговых кампаний. Это помогает компаниям отслеживать эффективность своих кампаний.
+
 Adapty предоставляет полный набор данных, позволяющий отслеживать [события подписки](events) из сторов в одном месте. С Adapty вы легко увидите, как ведут себя ваши подписчики, узнаете, что им нравится, и сможете общаться с ними точечно и эффективно. Данная интеграция позволяет отслеживать события подписки в Adjust и точно анализировать, какой доход приносят ваши кампании.
 
 Интеграция между Adapty и Adjust работает двумя основными способами.
@@ -110,36 +113,31 @@ Adapty будет отправлять события подписок в Adjust
 - Adjust не поддерживает IPv6. Если вы отключите сбор IP-адресов в SDK в разделе **App settings** или при активации SDK, на сервер может быть отправлен только IPv6, и отслеживание может не работать — оставьте сбор IP-адресов в SDK включённым, чтобы гарантировать использование IPv4.
 
 :::
-### Подключите приложение к Adjust \{#connect-your-app-to-adjust\}
+### Подключите ваше приложение к Adjust \{#connect-your-app-to-adjust\}
 
-После выполнения описанных выше шагов добавьте в своё приложение два следующих метода. Они обеспечат взаимодействие между вашим приложением и Adjust:
+После выполнения описанных выше шагов добавьте в приложение два метода ниже. Они обеспечат связь между вашим приложением и Adjust:
 
 1. **Для отправки данных о подписках в Adjust**: передайте идентификатор устройства Adjust в метод SDK `setIntegrationIdentifier()`
-2. **Для получения данных атрибуции от Adjust**: обновите данные атрибуции с помощью метода SDK `updateAttribution()`
+2. **Для получения данных атрибуции из Adjust**: обновите данные атрибуции с помощью метода SDK `updateExternalAttribution()` (до версии SDK 4.1 назывался `updateAttribution()`)
 
 Для Adjust версии 5.0 и выше используйте следующий пример:
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
+
 ```swift showLineNumbers
 class AdjustModuleImplementation {
     func updateAdjustAdid() {
         Adjust.adid { adid in
             guard let adid else { return }
-            // Adapty SDK 4.x
             Adapty.setIntegrationIdentifier(.adjustDeviceId(adid))
-            // Adapty SDK 3.x
-            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
         }
     }
 
     func updateAdjustAttribution() {
         Adjust.attribution { attribution in
             guard let attribution = attribution?.dictionary() else { return }
-            // Adapty SDK 4.x
-            Adapty.updateAttribution(attribution, source: .adjust)
-            // Adapty SDK 3.x
-            Adapty.updateAttribution(attribution, source: "adjust")
+            Adapty.updateExternalAttribution(attribution, provider: .adjust)
         }
     }
 }
@@ -152,7 +150,7 @@ class AdjustModuleImplementation {
 Adjust.getAdid { adid ->
     if (adid == null) return@getAdid
 
-    Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
+    Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.adjustDeviceId(adid)) { error ->
         if (error != null) {
             // handle the error
         }
@@ -160,9 +158,9 @@ Adjust.getAdid { adid ->
 }
 
 Adjust.getAttribution { attribution ->
-    if (attribution == null) return@getAttribution
+    val attributionJson = attribution?.jsonResponse ?: return@getAttribution
 
-    Adapty.updateAttribution(attribution, "adjust") { error ->
+    Adapty.updateExternalAttribution(attributionJson, AdaptyExternalAttributionProvider.ADJUST) { error ->
         // handle the error
     }
 }
@@ -170,11 +168,12 @@ Adjust.getAttribution { attribution ->
 
 </TabItem>
 <TabItem value="java" label="Android (Java)" default>
+
 ```java showLineNumbers
 Adjust.getAdid(adid -> {
     if (adid == null) return;
 
-    Adapty.setIntegrationIdentifier("adjust_device_id", adid, error -> {
+    Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.adjustDeviceId(adid), error -> {
         if (error != null) {
             // handle the error
         }
@@ -182,9 +181,9 @@ Adjust.getAdid(adid -> {
 });
 
 Adjust.getAttribution(attribution -> {
-    if (attribution == null) return;
+    if (attribution == null || attribution.jsonResponse == null) return;
 
-    Adapty.updateAttribution(attribution, "adjust", error -> {
+    Adapty.updateExternalAttribution(attribution.jsonResponse, AdaptyExternalAttributionProvider.ADJUST, error -> {
         // handle the error
     });
 });
@@ -192,6 +191,7 @@ Adjust.getAttribution(attribution -> {
 
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
+
 ```typescript showLineNumbers
 
 var adjustConfig = new AdjustConfig(appToken, environment);
@@ -354,3 +354,6 @@ Adapty отправляет выбранные события в Adjust, как 
 ### Расхождение в данных о доходах \{#revenue-discrepancy\}
 
 Если между Adapty и Adjust есть расхождение в данных о доходах, это может быть связано с тем, что не все пользователи используют версию приложения с Adapty SDK. Чтобы обеспечить согласованность данных, вы можете обязать пользователей обновить приложение до версии с Adapty SDK.
+### `access_level_updated` отображается как неудачное в Event Feed \{#access_level_updated-shows-as-failed-in-the-event-feed\}
+
+<AccessLevelUpdatedEventFeed />

@@ -1,38 +1,47 @@
 ---
 title: "iOS SDK'da ilk başlatmada AA hedefli paywall gösterme"
-description: "AdaptyProfile.appliedAttributionSources kullanarak iOS'ta paywall istemeden önce Apple Ads attribution'ını bekleyin."
+description: "AdaptyProfile.appliedExternalAttributionProviders kullanarak iOS'ta paywall isteğinden önce Apple Ads attribution'ını bekleme."
 metadataTitle: "İlk başlatmada AA hedefli paywall gösterme | iOS SDK | Adapty Dokümanları"
 ---
 
-Apple Ads (AA) attribution, `Adapty.activate()` çağrısından sonra asenkron olarak gelir. `getPaywall` fonksiyonunu erken çağırırsanız, attribution henüz gelmemiş olabilir ve Adapty, placement'ı varsayılan kitle üzerinden çözümleyerek AA segmentine göre ayarlanmış paywallları atlayabilir. `AdaptyProfile.appliedAttributionSources`, uygulamanın AA attribution'ının profile uygulanıp uygulanmadığını tespit etmesini sağlar; böylece paywall isteği, AA segmentasyonunun doğru şekilde çözümleneceği ana kadar bekletilebilir.
+Apple Ads (AA) attribution, `Adapty.activate()` çağrısından sonra asenkron olarak gelir. `getPaywall`'ı erken çağırırsanız, attribution henüz gelmemiş olabilir ve Adapty, placement'ı varsayılan kitleye göre çözümler — AA segmentli paywalllarınızı atlayarak. `AdaptyProfile.appliedExternalAttributionProviders`, uygulamanın AA attribution'ının profile ne zaman uygulandığını tespit etmesine olanak tanır; böylece paywall isteği, AA segmentasyonunun doğru şekilde çözümleneceği ana kadar bekleyebilir.
+
 ## Başlamadan önce \{#before-you-start\}
 
 İhtiyacınız olanlar:
 - Adapty iOS SDK **3.17.1** veya üzeri.
-- Uygulamanız için Adapty'de Apple Ads yapılandırılmış olması. Bkz. [Apple Ads](apple-search-ads).
+- Adapty'de uygulama için yapılandırılmış Apple Ads. Bkz. [Apple Ads](apple-search-ads).
+
+:::note
+Aşağıdaki örnekler, SDK 4.1+ özellik adı olan `appliedExternalAttributionProviders` kullanmaktadır. SDK 3.17.1–4.0 sürümlerinde bu özellik `appliedAttributionSources` olarak adlandırılır.
+:::
+
 ## Nasıl çalışır \{#how-it-works\}
 
-`Adapty.activate()` çağrısının ardından SDK, arka planda Apple'dan Apple Ads attribution bilgisini talep eder ve sonucu Adapty'nin backend'ine iletir. AA, profil için aktif attribution kaynağı haline geldiğinde SDK, `appliedAttributionSources` dizisinde `.appleAds` içeren güncellenmiş bir `AdaptyProfile` döndürür.
+`Adapty.activate()` çağrısının ardından SDK, arka planda Apple'dan Apple Ads attribution verisini talep eder ve sonucu Adapty'nin backend'ine iletir. AA, profil için aktif attribution kaynağı haline geldiğinde SDK, `appliedExternalAttributionProviders` dizisinde `.appleAds` içeren güncellenmiş bir `AdaptyProfile` iletir.
 
-Boş bir dizi şu anlara gelebilir:
+Boş bir dizi şu anlamlara gelebilir:
 
-- Bu profil için Apple Ads attribution henüz işlenmemiş olabilir.
-- Hiç attribution gelmemiş olabilir.
-Boş bir dizi ile bile `getPaywall` çağrısı güvenlidir — Adapty, isteği mevcut profil durumuna uyan kitleye göre (genellikle varsayılan kitle) çözümler.
+- Bu profil için Apple Ads attribution henüz işlenmemiştir.
+- Hiç attribution verisi ulaşmamıştır.
+
+Boş bir dizi ile bile `getPaywall` çağrısı güvenlidir — Adapty, isteği mevcut profil durumuna uyan kitleye göre çözümler; genellikle varsayılan kitle kullanılır.
 
 :::important
-Bekleme yalnızca **ilk başlatma** için geçerlidir. Apple Ads attribution kaydedildikten sonra profilde kalıcı olarak saklanır. Sonraki her başlatmada önbelleğe alınmış profil zaten `appliedAttributionSources` içinde `.appleAds` değerini taşır, `didLoadLatestProfile` bu değerle anında tetiklenir ve `getPaywall` herhangi bir gecikme olmadan Apple Ads segmentine uygun paywall'ı döndürür.
+Bekleme yalnızca **ilk başlatma** için geçerlidir. Apple Ads attribution bir kez kaydedildikten sonra, profilde kalıcı olarak saklanır. Sonraki her başlatmada, önbelleğe alınmış profil zaten `appliedExternalAttributionProviders` içinde `.appleAds` değerini taşır; `didLoadLatestProfile` bu değerle anında tetiklenir ve `getPaywall`, Apple Ads segmentine göre uyarlanmış paywall'ı herhangi bir gecikme olmadan döndürür.
 :::
+
 ## Uygulama \{#implementation\}
 
 İlk açılışta profilde `.appleAds` değerini izleyin ve sert bir zaman aşımı uygulayın — Apple Ads attribution hiç gelmese bile, o kullanıcıların yine de bir paywall görmesi gerekir.
 1. **SDK'yı etkinleştirin.** Bkz. [iOS SDK'yı yükle ve yapılandır](sdk-installation-ios).
-2. **Profil güncellemelerini dinleyin:** `AdaptyDelegate`'e uyum sağlayarak `didLoadLatestProfile`'ı uygulayın. Delegate'i henüz ayarlamadıysanız bkz. [Abonelik güncellemelerini dinle](ios-check-subscription-status#listen-to-subscription-updates).
-3. **`appliedAttributionSources` içinde `.appleAds` çıkıp çıkmadığını takip edin.** Göründüğünde paywall'ı isteyin — Adapty, AA segmentine göre belirlenmiş varyantı döndürecektir:
+2. **Profil güncellemelerine abone olun:** `AdaptyDelegate`'i uygulayarak `didLoadLatestProfile`'ı implemente edin. Delegate'i henüz ayarlamadıysanız bkz. [Abonelik güncellemelerini dinle](ios-check-subscription-status#listen-to-subscription-updates).
+3. **`appliedExternalAttributionProviders` içinde `.appleAds` çıkıp çıkmadığını takip edin.** Göründüğünde paywall'ı isteyin — Adapty, AA segmentine göre belirlenmiş varyantı döndürür:
+
 ```swift
 extension <YourAdaptyDelegateImpl>: AdaptyDelegate {
     nonisolated func didLoadLatestProfile(_ profile: AdaptyProfile) {
-        if profile.appliedAttributionSources.contains(where: { $0 == .appleAds }) {
+        if profile.appliedExternalAttributionProviders.contains(where: { $0 == .appleAds }) {
             // load paywall via Adapty.getPaywall(placementId:)
         }
     }
@@ -50,11 +59,11 @@ Aşağıdaki implementasyon, attribution ile bir zaman aşımını yarıştırı
 - `timeout` süresi önce dolarsa, `getPaywallForDefaultAudience(placementId:)` aracılığıyla önceden yüklenmiş varsayılan kitle paywall'u döndürülür.
 ```swift title="PaywallLoader.swift"
 
-/// Attribution uygulanmasına bağlı bir paywallın nasıl getirileceğini gösterir;
-/// attribution zamanında gelmezse varsayılan kitle paywallına geri düşer.
+/// Demonstrates how to fetch a paywall that depends on attribution being applied,
+/// falling back to the default-audience paywall if attribution doesn't arrive in time.
 ///
-/// Durumsuz ve bağımsızdır: her çağrı kendi varsayılan kitle ön getirme işlemini
-/// başlatır ve bunu attribution + segmentli getirme ile yarıştırır.
+/// Stateless and self-contained: every call kicks off its own default-audience
+/// prefetch and races it against attribution + segmented fetch.
 enum PaywallLoader {
     static func getPaywallOrDefault(
         placementId: String,
@@ -62,47 +71,47 @@ enum PaywallLoader {
     ) async throws -> AdaptyPaywall {
         struct TimedOut: Error {}
 
-        // Varsayılan kitle isteğini hemen başlat; böylece yüklemek için tam
-        // `timeout` süresi olur. Başarı durumunda iptal edilir, zaman aşımında
-        // sonucu beklenir — hiçbir zaman yinelenen ağ çağrısı yapılmaz.
+        // Kick off the default-audience request immediately so it has the full
+        // `timeout` window to load. We'll either cancel it on success or await
+        // its result on timeout — never a duplicate network call.
         let defaultPaywallTask = Task {
             try await Adapty.getPaywallForDefaultAudience(placementId: placementId)
         }
 
         do {
-            // İki alt görevi yarıştır: hangisi önce biterse o kazanır.
+            // Race two child tasks: whichever finishes first wins.
             let result = try await withThrowingTaskGroup(of: AdaptyPaywall.self) { group in
-                // 1. Attribution'ı bekle, ardından Adapty'den segmentli paywallı iste.
+                // 1. Wait for attribution, then ask Adapty for the segmented paywall.
                 group.addTask {
                     await waitForAttribution()
                     return try await Adapty.getPaywall(placementId: placementId)
                 }
-                // 2. Zaman bombası: `timeout` saniye sonra `TimedOut` fırlatır.
+                // 2. Time-bomb: throws `TimedOut` after `timeout` seconds.
                 group.addTask {
                     try await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
                     throw TimedOut()
                 }
                 guard let value = try await group.next() else { throw CancellationError() }
-                group.cancelAll() // Kaybedeni durdur (uyuyan görev veya attribution bekleyen).
+                group.cancelAll() // stop the loser (sleeper or the attribution wait).
                 return value
             }
-            // Segmentli paywall kazandı — varsayılan kitle ön getirme artık gerekli değil.
+            // Segmented paywall won — we no longer need the default-audience prefetch.
             defaultPaywallTask.cancel()
             return result
         } catch is TimedOut {
-            // Attribution zamanında uygulanamadı — önceden yüklenen varsayılanı döndür
-            // (zaten tamamlandıysa anında, değilse devam eden isteği bekle).
+            // Attribution didn't apply in time — return the prefetched default
+            // (instant if already done, otherwise we await the in-flight request).
             return try await defaultPaywallTask.value
         }
     }
 
-    /// İstenen attribution kaynağına sahip bir profil gözlemlenene kadar askıya alır.
-    /// `@Published.values`, abonelikte mevcut profili hemen yayımlar; bu nedenle
-    /// attribution zaten uygulanmışsa ilk iterasyonda geri döner.
+    /// Suspends until a profile with the desired attribution source is observed.
+    /// `@Published.values` emits the current profile immediately on subscription,
+    /// so this returns on the first iteration if attribution is already applied.
     @MainActor
     private static func waitForAttribution() async {
         for await profile in ProfileObserver.shared.$profile.values {
-            if profile?.appliedAttributionSources.contains(.appleAds) == true { return }
+            if profile?.appliedExternalAttributionProviders.contains(.appleAds) == true { return }
         }
     }
 }

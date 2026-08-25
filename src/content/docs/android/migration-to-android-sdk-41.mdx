@@ -1,0 +1,78 @@
+---
+title: "Migrate Adapty Android SDK to v4.1"
+description: "Migrate to Adapty Android SDK v4.1: enable Adapty Attribution explicitly and adopt the renamed external attribution APIs."
+metadataTitle: "Migrating to Adapty Android SDK v4.1 | Adapty Docs"
+---
+
+Adapty Android SDK 4.1 changes how Adapty Attribution is enabled and renames the external attribution APIs.
+
+:::warning
+The renamed APIs are a hard break. `AdaptyAttributionSource` is removed outright — it isn't deprecated, and there is no typealias to bridge it. Code that compiles against 4.0.x will fail to compile on 4.1 until you rename every call site listed below.
+:::
+
+## Quick reference
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution enabled automatically | Adapty Attribution disabled by default; opt in with `.withAdaptyAttributionEnabled(true)` |
+| `Adapty.updateAttribution(attribution, source)` | `Adapty.updateExternalAttribution(attribution, provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, with a new `CUSTOM` value |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+## Installation
+
+Set the `adapty-bom` version to `4.1.0` (or later) and sync the project. The BOM resolves the matching `android-sdk` and `android-ui` versions for you. See [Install Adapty SDK](sdk-installation-android) for the dependency declarations.
+
+:::note
+If you upgrade from 4.0.0 or 4.0.1, two changes from 4.0.2 apply as well:
+
+- Adapty works with Google Play Billing Library 8 by default, instead of 7.0.0.
+- `restorePurchases` completes successfully when there is nothing to restore and returns the current profile, instead of failing with `NO_PURCHASES_TO_RESTORE`. See [Restore purchases](android-restore-purchase).
+:::
+
+## Adapty Attribution is disabled by default
+
+In 4.0 and earlier, the SDK registered installs for [Adapty Attribution](user-acquisition) automatically. Starting from 4.1, this is off by default: the SDK doesn't register installs, the listener set with `setOnInstallationDetailsListener` never fires, and `getCurrentInstallationStatus` returns `AdaptyInstallationStatus.Determined.NotAvailable`.
+
+If you use Adapty Attribution, enable it when activating the SDK:
+
+```diff showLineNumbers
+  val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+  Adapty.activate(applicationContext, config)
+```
+
+If you don't use Adapty Attribution, no changes are needed.
+
+## Renamed external attribution APIs
+
+### updateAttribution → updateExternalAttribution
+
+The method that passes attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) is renamed, and its `source` parameter is renamed to `provider`:
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error -> /* handle the error */ }
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST) { error -> /* handle the error */ }
+```
+
+Both overloads are kept: `attribution` can be a `Map<String, Any>` or a JSON `String`.
+
+The callback fires once the backend accepts the data for asynchronous processing. A successful result doesn't mean the data has already been applied to the profile.
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+The type is renamed, and the predefined values keep their names: `APPLE_ADS`, `ADJUST`, `APPSFLYER`, `BRANCH`, and `TENJIN`. For any other provider, construct one from a string: `AdaptyExternalAttributionProvider("your_provider")`.
+
+4.1 also adds a predefined `CUSTOM` value for providers Adapty doesn't integrate with directly. In 4.0 the same value was only available as the string `"custom"`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+The profile property that lists the attribution providers applied to the profile is renamed. Its element type changes accordingly:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.APPLE_ADS)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```

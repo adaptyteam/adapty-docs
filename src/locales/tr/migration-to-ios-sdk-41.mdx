@@ -1,0 +1,127 @@
+---
+title: "Adapty iOS SDK'yı v4.1'e Geçirme"
+description: "Adapty iOS SDK v4.1'e geçiş: Adapty Attribution'ı açıkça etkinleştirin, yeniden adlandırılmış harici attribution API'larını benimseyin ve yedek dosyanızı yeniden indirin."
+metadataTitle: "Adapty iOS SDK v4.1'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty iOS SDK 4.1, Adapty Attribution'ın nasıl etkinleştirileceğini değiştiriyor, harici attribution API'larını yeniden adlandırıyor ve yedek dosya formatını değiştiriyor. Ayrıca 4.0'da kaldırılan App Store'da tanıtılan uygulama içi satın alma desteğini geri getiriyor.
+
+:::warning
+Yeniden adlandırılan API'ler tam anlamıyla bir kırılma noktasıdır. Eski isimler tamamen kaldırılmıştır — deprecated değil, ve bunları köprülemek için herhangi bir typealias veya `@available(renamed:)` anotasyonu da bulunmamaktadır. 4.0.x'e karşı derlenen kod, aşağıda listelenen her çağrı noktasını yeniden adlandırmadan 4.1'de derlenmeyecektir.
+:::
+
+## Hızlı başvuru \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution varsayılan olarak etkin | Adapty Attribution varsayılan olarak devre dışı; `.with(adaptyAttributionEnabled: true)` ile etkinleştirin |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `Adapty.updateAttribution(_ attributionJson: String, source:)` | Herkese açık API'den kaldırıldı; bunun yerine bir dictionary kullanın |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, yeni `.custom` değeriyle birlikte |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AdaptySubscriptionOfferType` enum | `AdaptySubscriptionOfferType` struct; `.code` kaldırıldı |
+| 4.0 için indirilen yedek dosya | Yeni yedek dosya formatı; dosyayı yeniden indirin |
+| Tanıtılan uygulama içi satın almalar desteklenmiyor | `didReceivePromotedPurchase(_:)` delegate metodu ve `AdaptyPromotedProduct` |
+
+## ⚠️ Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+SDK 4.1'e günceller ve opt-in yapmazsanız, [Adapty Attribution](user-acquisition) sessizce çalışmayı durdurur — yüklemeler kaydedilmez ve sizi uyaran hiçbir şey olmaz.
+:::
+
+4.0 ve önceki sürümlerde SDK, [Adapty Attribution](user-acquisition) için kurulumları otomatik olarak kaydediyordu. 4.1'den itibaren bu özellik varsayılan olarak kapalıdır: SDK kurulumları kaydetmez ve `onInstallationDetailsSuccess` ile `onInstallationDetailsFail` delegate callback'leri hiçbir zaman tetiklenmez. `getCurrentInstallationStatus()` ise `.notAvailable` döndürür.
+
+Adapty Attribution kullanıyorsanız, SDK'yı etkinleştirirken bu özelliği açın:
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+Adapty Attribution kullanmıyorsanız herhangi bir değişiklik yapmanıza gerek yoktur.
+
+## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+Harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi ileten metot yeniden adlandırıldı ve `source` parametresinin adı `provider` olarak değiştirildi:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### JSON string aşırı yüklemesi kaldırıldı \{#the-json-string-overload-is-removed\}
+
+4.0 sürümünde attribution verisi `[AnyHashable: Any]` sözlüğü ya da JSON `String` olarak kabul ediliyordu. 4.1 sürümünde yalnızca sözlük aşırı yüklemesi herkese açıktır — JSON string aşırı yüklemesi Adapty'nin çoklu platform SDK'ları için ayrılmıştır. Aktarmadan önce JSON'ı ayrıştırın:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attributionJson, source: .adjust)
++ guard let attribution = try JSONSerialization.jsonObject(
++     with: Data(attributionJson.utf8)
++ ) as? [AnyHashable: Any] else { return }
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Tür yeniden adlandırıldı. Önceden tanımlı sağlayıcılar aynı adları korur: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. `ExpressibleByStringLiteral`'a uymaya devam ettiği için string literal argümanlar derlemeye devam eder. Sağlayıcıyı bir `String` değişkeninde saklıyorsanız, şu şekilde sarmalayın: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+
+4.1 ayrıca Adapty'nin doğrudan entegre olmadığı sağlayıcılar için önceden tanımlı bir `.custom` değeri ekler. 4.0'da aynı değer yalnızca `"custom"` string literal olarak kullanılabiliyordu.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Profile'e uygulanan attribution sağlayıcılarını listeleyen profil özelliği yeniden adlandırıldı. Buna bağlı olarak öğe türü de değişti:
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferType artık bir struct
+
+`AdaptySubscriptionOfferType` — `AdaptySubscriptionOffer.offerType` türü — enum'dan `RawRepresentable` struct'a dönüştürüldü; böylece backend, SDK güncellemesi gerektirmeden yeni teklif türleri sunabilir:
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+Bu değişiklik kodunuzu üç şekilde etkiler:
+
+- **Kapsamlı `switch` ifadeleri artık derlenmez.** Bir struct'ın sabit bir case kümesi yoktur, bu nedenle derleyici bir switch'in kapsamlı olduğunu kanıtlayamaz. Bir `default` dalı ekleyin:
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` kaldırıldı.** Teklif kodları artık `AdaptySubscriptionOffer.offerType` üzerinden raporlanmıyor. `case .code` dalını kaldırın. Teklif kodlarını yönetmek için bkz. [iOS'ta teklif kodlarını kullanma](making-purchases#redeem-offer-codes-in-ios).
+- **`Codable` uyumluluğu kaldırıldı.** `AdaptySubscriptionOfferType`'ı doğrudan encode/decode ediyorsanız, bunun yerine `offerType.rawValue` (`String`) değerini saklayın ve `AdaptySubscriptionOfferType(rawValue:)` ile değeri yeniden oluşturun.
+
+Önceden tanımlanmış değerlere karşı yapılan karşılaştırmalar değişmeden kalır: `.introductory`, `.promotional` ve `.winBack`, `==` kontrollerinde ve `case` kalıpları olarak çalışmaya devam eder.
+
+## Yedek dosyalar
+
+[Yedek dosya](fallback-flows) formatı SDK 4.1 ile değişti. **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden dosyayı tekrar indirip uygulamanıza ekleyin; 4.0 için daha önce indirmiş olsanız bile.
+
+:::warning
+Bu adım derleme hatası vermez. Atlarsanız, SDK güncel olmayan dosyayı reddeder ve tüm placement'lar yedeklerini kaybeder.
+:::
+
+## App Store'da öne çıkan uygulama içi satın almaların geri dönüşü \{#app-store-promoted-in-app-purchases-return\}
+
+SDK 4.1, [4.0'ın kaldırdığı](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed) App Store'da öne çıkan uygulama içi satın alma desteğini yeniden sunuyor. Bu, bir geçiş adımı değil yeni bir özelliktir: 4.0 davranışını değiştirmez.
+
+3.x sürümünden geçiş yapıyorsanız ve `AdaptyDeferredProduct` ile birlikte `shouldAddStorePayment(for:)` kullandıysanız, bunun yerine `AdaptyPromotedProduct` ile yeni `didReceivePromotedPurchase(_:)` delegate metodunu benimseyin. `shouldAddStorePayment`'tan farklı olarak, yeni metot bir değer döndürmez: eğer implement etmezseniz SDK satın alma işlemini hemen başlatır; satın almayı ertelemek için metodu implement edin, ürünü saklayın ve daha sonra `makePurchase`'a iletin. Bkz. [App Store'dan uygulama içi satın almalar](making-purchases#in-app-purchases-from-the-app-store).
+
+:::warning
+Yeni mekanizma StoreKit 2 üzerine kurulmuştur ve **iOS 16.4** veya üzerini gerektirir. 3.x sürümündeki `shouldAddStorePayment` metodu daha eski iOS sürümlerinde çalışıyordu. iOS 16.4 altındaki cihazlarda `didReceivePromotedPurchase` hiçbir zaman tetiklenmez ve promosyonlu satın almalar uygulamanıza ulaşmaz.
+:::

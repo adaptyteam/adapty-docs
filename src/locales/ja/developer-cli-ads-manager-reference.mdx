@@ -1,0 +1,695 @@
+---
+title: "Adapty Developer CLI の Ads Manager コマンド"
+description: "adapty asa コマンドのリファレンス — キャンペーン、広告グループ、キーワード、広告、オートメーション、指標について。"
+metadataTitle: "Ads Manager CLI コマンド | Adapty ドキュメント"
+---
+
+この記事では、Adapty CLI における [Ads Manager](adapty-ads-manager) のすべてのコマンドを、引数・フラグ・使用可能な値とともに説明します。Ads Manager コマンドは `adapty asa` トピック配下にあります。
+
+:::link
+前提条件、安全な書き込み操作、タスクベースの使用例については、[CLI から Ads Manager を管理する](developer-cli-ads-manager) を参照してください。
+:::
+
+これらのコマンドを使用するには、Apple Ads アカウントの連携と有効な Ads Manager サブスクリプションが必要です。両方の確認は [`adapty asa whoami`](#adapty-asa-whoami) を実行してください。その他の CLI コマンドについては、[コマンドリファレンス](developer-cli-reference)を参照してください。
+
+## グローバルフラグ \{#global-flags\}
+
+これらのフラグはすべての Ads Manager コマンドで使用できます。
+
+| フラグ | 説明 |
+|---|---|
+| `--json` | フォーマットされたテキストの代わりに JSON で出力する |
+| `--help` | コマンドのヘルプを表示する |
+
+すべての `list` コマンドはページネーションフラグも受け付けます：
+
+| フラグ | デフォルト | 説明 |
+|---|---|---|
+| `--page` | `1` | ページ番号 |
+| `--page-size` | `100` | 1ページあたりのアイテム数（最大: 1000） |
+
+Ads Manager のページサイズは CLI の他のコマンドよりも大きくなっています。小さいページを繰り返すより、1回で大きなページを取得することをおすすめします。
+
+アカウントを変更するすべてのコマンドは、以下のフラグを受け付けます：
+
+| フラグ | 説明 |
+|---|---|
+| `--yes`, `-y` | 確認なしで適用します。出力がパイプされている場合や `--json` を使用する場合に必須です |
+| `--idempotency-key` | この書き込み操作に使用する固定キーです。同じキーと本文で24時間以内に再実行すると、変更を再適用する代わりに保存済みの結果を返します |
+
+Ads Manager コマンドに `--app` フラグはありません。スコープはトークンが属するカンパニーです。`--app` は一部の `list` コマンドにフィルターとしてのみ存在します。
+
+## リストフィルター \{#list-filters\}
+
+フィルターはクエリ自体を絞り込むもので、表示ページを絞るものではありません。フィルターなしの `keywords list` はアカウント内のすべてのキーワードをページングするため、必要なレベルに合わせてスコープを設定してください。
+
+| フィルター | 受け付けるコマンド |
+|---|---|
+| `--campaign-group` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`, `creatives`, `product-pages` |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `creatives`, `product-pages` |
+| `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--status` | `campaigns`, `ad-groups`, `ads`（`ENABLED` または `PAUSED`）、`keywords`（`ACTIVE` または `PAUSED`） |
+| `--search` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`。名前に対する大文字小文字を区別しない部分一致 |
+
+`adapty asa apps list`、`orgs list`、`automations list`、`automations runs` はフィルターを取りません。ページネーションフラグのみ受け付けます。
+
+`--campaign-group`、`--app`、`--campaign`、`--ad-group` は対応する `list` コマンドで表示される UUID を受け取り、それぞれ繰り返し指定できます。
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --ad-group <other-ad-group-id>
+```
+
+別の会社に属する ID を指定した場合、エラーにはならず、空のページが返されます。
+
+## アカウント \{#account\}
+
+### adapty asa whoami
+
+所属会社、Ads Manager へのアクセス付与方法、および Apple Ads が接続されているかどうかを表示します。
+
+```bash
+adapty asa whoami
+```
+
+他のすべてのコマンドを実行する前に、まずこのコマンドを実行してください。2 つの前提条件が満たされているかどうかを確認できます。
+
+### adapty asa connect
+
+Apple Ads アカウントを Adapty に連携します。
+
+```bash
+adapty asa connect
+```
+
+このコマンドは Apple 認証リンクを表示し、Apple がアカウントの接続を報告するまで待機します。
+
+| フラグ | デフォルト | 説明 |
+|---|---|---|
+| `--wait` / `--no-wait` | `--wait` | Apple Ads が接続済みと報告するまで待機します。`--no-wait` はすぐに返します |
+| `--timeout` | `300` | ブラウザのステップを待機する秒数 |
+
+### adapty asa orgs list
+
+会社で利用可能なキャンペーングループ（Apple Ads組織）を一覧表示します。
+
+```bash
+adapty asa orgs list
+```
+
+各行には2つの識別子が含まれており、これらは互換性がありません：
+
+| フィールド | 用途 |
+|---|---|
+| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) の `--org` フラグ、および[リストフィルター](#list-filters) の `--campaign-group` フラグが受け取るUUID |
+| `org_id` | AppleのOrganization IDの数値。どちらのフラグも受け付けません |
+
+`--org` は `campaigns create` にのみ存在します。どのlistコマンドもこれを受け付けません。
+
+[ページネーションフラグ](#global-flags)を使用できます。
+
+### adapty asa apps list
+
+Apple Ads でプロモートされているアプリの一覧を表示します。
+
+```bash
+adapty asa apps list
+```
+
+各行には2つの識別子があり、これらは互換性がありません：
+
+| フィールド | 使用用途 |
+|---|---|
+| `internal_id` | [`--app`](#list-filters) の[リストフィルター](#list-filters)として使用するUUID |
+| `adam_id` | [`campaigns create`](#adapty-asa-campaigns-create) および [`product-pages sync`](#adapty-asa-product-pages-sync) の `--adam-id` で使用するAppleの数値App Store ID |
+
+[ページネーションフラグ](#global-flags)を受け付けます。
+
+## キャンペーン \{#campaigns\}
+
+### adapty asa campaigns list
+
+[キャンペーン](ads-manager-create-campaign)を一覧表示します。メタデータのみを返します。パフォーマンスの数値は [`asa metrics`](#adapty-asa-metrics) で取得してください。
+
+```bash
+adapty asa campaigns list --app <app-id> --status PAUSED
+```
+
+[ページネーションフラグ](#global-flags)、および `--campaign-group`、`--app`、`--search`、`--status` の[リストフィルター](#list-filters)を使用できます。
+
+### adapty asa campaigns get
+
+特定のキャンペーンの詳細を取得します。
+
+```bash
+adapty asa campaigns get <campaign-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `campaign-id` | キャンペーン ID（UUID） |
+
+### adapty asa campaigns create
+
+キャンペーンを作成します。
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--org` | はい | キャンペーングループID（UUID）。[`orgs list`](#adapty-asa-orgs-list) を参照 |
+| `--name` | はい | キャンペーン名 |
+| `--adam-id` | はい | App StoreアプリID（`adam_id`） |
+| `--country` | はい | 国またはリージョンコード。複数指定する場合は繰り返し: `--country US --country CA` |
+| `--daily-budget` | はい | 1日の予算（金額のみ）。例: `50` または `12.50` |
+| `--budget` | いいえ | 通算予算 |
+| `--target-cpa` | いいえ | 目標獲得単価（CPA） |
+| `--currency` | いいえ | このコールで使用する金額の通貨コード。デフォルト: `USD` |
+| `--bidding-strategy` | いいえ | `MANUAL_CPT` または `MAX_CONVERSIONS`。Appleのデフォルトは `MANUAL_CPT` |
+| `--ad-channel-type` | いいえ | `SEARCH` または `DISPLAY`。デフォルト: `SEARCH` |
+| `--billing-event` | いいえ | `TAPS` または `IMPRESSIONS`。デフォルト: `TAPS` |
+| `--supply-source` | いいえ | 供給ソース（繰り返し可）。デフォルト: `APPSTORE_SEARCH_RESULTS` |
+| `--status` | いいえ | 初期ステータス: `ENABLED` または `PAUSED` |
+
+### adapty asa campaigns update
+
+既存のキャンペーンを更新します。
+
+```bash
+adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
+```
+
+| 引数 | 説明 |
+|---|---|
+| `campaign-id` | キャンペーン ID（UUID） |
+
+| フラグ | 説明 |
+|---|---|
+| `--name` | 新しいキャンペーン名 |
+| `--status` | `ENABLED` または `PAUSED` |
+| `--country` | 国リストを置き換えます。複数指定する場合は繰り返し使用してください |
+| `--daily-budget` | 新しい日予算 |
+| `--budget` | 新しい通算予算 |
+| `--target-cpa` | 新しい目標獲得単価 |
+| `--bidding-strategy` | `MANUAL_CPT` または `MAX_CONVERSIONS` |
+| `--currency` | この呼び出しで使用する金額の通貨コード。デフォルト: `USD` |
+
+少なくとも1つのフラグが必要です。
+
+## 広告グループ \{#ad-groups\}
+
+### adapty asa ad-groups list
+
+[広告グループ](ads-manager-create-ad-group)を一覧表示します。メタデータのみを返します。パフォーマンス指標を確認するには [`asa metrics`](#adapty-asa-metrics) を使用してください。
+
+```bash
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+[ページネーションフラグ](#global-flags)、および `--campaign-group`、`--app`、`--campaign`、`--search`、`--status` の[リストフィルター](#list-filters)を使用できます。
+
+### adapty asa ad-groups get
+
+特定の広告グループの詳細を取得します。
+
+```bash
+adapty asa ad-groups get <ad-group-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `ad-group-id` | 広告グループ ID（UUID） |
+
+### adapty asa ad-groups create
+
+キャンペーンにアドグループを作成します。
+
+```bash
+adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--campaign` | はい | キャンペーン ID（UUID） |
+| `--name` | はい | 広告グループ名 |
+| `--default-bid` | はい | デフォルト入札額（例：`1.20`） |
+| `--cpa-goal` | いいえ | 獲得単価目標 |
+| `--pricing-model` | いいえ | `CPC` または `CPM`。Apple はすべての広告グループに設定が必要。デフォルト：`CPC` |
+| `--start-time` | いいえ | スケジュール開始日（`YYYY-MM-DD`）。デフォルトは今日 |
+| `--end-time` | いいえ | スケジュール終了日（`YYYY-MM-DD`） |
+| `--automated-keywords` / `--no-automated-keywords` | いいえ | Apple によるキーワードの自動追加を許可する |
+| `--currency` | いいえ | この呼び出しで使用する通貨コード。デフォルト：`USD` |
+| `--status` | いいえ | 初期ステータス：`ENABLED` または `PAUSED` |
+
+### adapty asa ad-groups update
+
+既存の広告グループを更新します。
+
+```bash
+adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
+```
+
+| 引数 | 説明 |
+|---|---|
+| `ad-group-id` | 広告グループID（UUID） |
+
+| フラグ | 説明 |
+|---|---|
+| `--name` | 新しい広告グループ名 |
+| `--status` | `ENABLED` または `PAUSED` |
+| `--default-bid` | 新しいデフォルト入札額 |
+| `--cpa-goal` | 新しい目標獲得単価（CPA） |
+| `--start-time` | スケジュール開始日（`YYYY-MM-DD`） |
+| `--end-time` | スケジュール終了日（`YYYY-MM-DD`） |
+| `--automated-keywords` / `--no-automated-keywords` | Apple によるキーワードの自動追加を許可する |
+| `--currency` | このリクエストで使用する金額の通貨コード。デフォルト: `USD` |
+
+少なくとも1つのフラグが必要です。親キャンペーンはサーバー側で解決されるため、指定する必要はありません。
+
+## キーワード \{#keywords\}
+
+キーワードコマンドは、1回の呼び出しにつき最大100件のバッチとして適用されます。ダッシュボードでの操作については、[キーワードの管理](ads-manager-manage-keywords)を参照してください。
+
+### adapty asa keywords list
+
+ターゲティングキーワードを一覧表示します。パフォーマンス数値は [`asa metrics`](#adapty-asa-metrics) で取得してください。
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
+```
+
+[ページネーションフラグ](#global-flags) および `--campaign-group`、`--app`、`--campaign`、`--ad-group`、`--search`、`--status` の [リストフィルター](#list-filters) を使用できます。`--ad-group` でフィルタリングすることを推奨します。フィルターなしではこのトピックで最も広い範囲の読み取りが行われます。
+
+### adapty asa keywords add
+
+ターゲティングキーワードを広告グループに追加します。
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --text "running shoes" --text "trail shoes" --bid 1.20
+```
+
+ファイルから1行ずつキーワードを読み込む場合:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--ad-group` | はい | 広告グループID（UUID）。キャンペーンはここから解決されます |
+| `--text` | はい（`--from-file` を使用しない場合） | キーワードテキスト。複数指定する場合は繰り返します |
+| `--from-file` | いいえ | 1行につき1キーワードを記載したファイル。`--text` の値と組み合わせ可能 |
+| `--bid` | いいえ | キーワードごとの入札額（金額のみ） |
+| `--match-type` | いいえ | `BROAD` または `EXACT`。デフォルト: `BROAD` |
+| `--currency` | いいえ | このリクエストで使用する通貨コード。デフォルト: `USD` |
+| `--status` | いいえ | `ACTIVE` または `PAUSED`。デフォルト: `ACTIVE` |
+
+1つの無効なIDがあると、Appleが呼び出される前にバッチ全体が失敗します。Appleは個々のキーワードを拒否することがあり、拒否のたびにその理由が報告されます。
+
+### adapty asa keywords update
+
+1つまたは複数のキーワードの入札額、ステータス、テキスト、またはマッチタイプを変更します。
+
+```bash
+adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
+```
+
+| 引数 | 説明 |
+|---|---|
+| `keyword-id` | キーワード ID（UUID）。複数指定する場合は追加の引数として渡します |
+
+| フラグ | 説明 |
+|---|---|
+| `--bid` | 新しい入札額 |
+| `--status` | `ACTIVE` または `PAUSED` |
+| `--match-type` | `BROAD` または `EXACT` |
+| `--text` | 新しいキーワードのテキスト。単一のキーワードに対してのみ有効 |
+| `--currency` | このコールで使用する金額の通貨コード。デフォルト: `USD` |
+
+1つのIDに対して1つの変更が適用されます。
+
+## ネガティブキーワード \{#negative-keywords\}
+
+### adapty asa negative-keywords list
+
+ネガティブキーワードを一覧表示します。`ad_group_id` が空の行はキャンペーンレベルです。
+
+```bash
+adapty asa negative-keywords list --campaign <campaign-id>
+```
+
+| フラグ | 説明 |
+|---|---|
+| `--campaign-level-only` | キャンペーンレベルの行のみを保持します |
+
+[ページネーションフラグ](#global-flags)、および `--campaign-group`、`--app`、`--campaign`、`--ad-group`、`--search` の[リストフィルター](#list-filters)を使用できます。
+
+### adapty asa negative-keywords add
+
+広告グループまたはキャンペーンにネガティブキーワードを追加します。
+
+```bash
+adapty asa negative-keywords add --ad-group <ad-group-id> --text free
+```
+
+キャンペーンのすべての広告グループに適用する場合:
+
+```bash
+adapty asa negative-keywords add --campaign <campaign-id> --all-ad-groups --text free
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--ad-group` | `--ad-group` または `--campaign` のいずれか | 広告グループID（UUID）。キャンペーンはここから解決されます |
+| `--campaign` | `--ad-group` または `--campaign` のいずれか | キャンペーンID（UUID） |
+| `--text` | Yes | キーワードテキスト。複数指定する場合は繰り返します |
+| `--all-ad-groups` | No | キャンペーン自体ではなく、キャンペーンのすべての広告グループに適用します。`--campaign` が必要です |
+| `--match-type` | No | `BROAD` または `EXACT`。デフォルト: `EXACT` |
+| `--status` | No | `ACTIVE` または `PAUSED`。デフォルト: `ACTIVE` |
+
+`--ad-group` と `--campaign` は同時に使用できません。どちらか一方のみを指定してください。
+
+## 検索用語 \{#search-terms\}
+
+### adapty asa search-terms list
+
+広告を表示させた検索キーワードの一覧を表示します。新しいキーワードや除外キーワードを見つけるのに役立ちます。
+
+```bash
+adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| フラグ | デフォルト | 説明 |
+|---|---|---|
+| `--date-from` | 今日 | レポート期間の開始日（`YYYY-MM-DD`） |
+| `--date-to` | 今日 | レポート期間の終了日（`YYYY-MM-DD`） |
+
+[ページネーションフラグ](#global-flags)、および `--campaign-group`、`--app`、`--campaign`、`--ad-group`、`--search` の[リストフィルター](#list-filters)を使用できます。
+
+このコマンドは[`asa metrics`](#metrics)とアナリティクスプールを共有します。[エラー](#errors)を参照してください。
+
+## 広告 \{#ads\}
+
+### adapty asa ads list
+
+[広告](ads-manager-manage-ads)を一覧表示します。`serving_state_reasons` フィールドは、広告が配信されていない理由を説明します。
+
+```bash
+adapty asa ads list --ad-group <ad-group-id>
+```
+
+[ページネーションフラグ](#global-flags)、および `--campaign-group`、`--campaign`、`--ad-group`、`--search`、`--status` の[リストフィルター](#list-filters)を使用できます。広告は広告グループに属するため、このリストには `--app` フィルターはありません。
+
+### adapty asa ads get
+
+特定の広告の詳細を取得します。
+
+```bash
+adapty asa ads get <ad-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `ad-id` | 広告ID（UUID） |
+
+### adapty asa ads create
+
+広告グループに広告を作成します。
+
+```bash
+adapty asa ads create --ad-group <ad-group-id> --creative-id 4321 --name "Summer ad"
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--ad-group` | はい | 広告グループID（UUID）。キャンペーンはここから解決されます |
+| `--creative-id` | はい | Apple クリエイティブID。[`creatives list`](#adapty-asa-creatives-list) を参照 |
+| `--name` | はい | 広告名 |
+| `--status` | いいえ | 初期ステータス：`ENABLED` または `PAUSED` |
+
+### adapty asa ads update
+
+既存の広告を更新します。
+
+```bash
+adapty asa ads update <ad-id> --status PAUSED
+```
+
+| 引数 | 説明 |
+|---|---|
+| `ad-id` | 広告 ID（UUID） |
+
+| フラグ | 説明 |
+|---|---|
+| `--name` | 新しい広告名 |
+| `--status` | `ENABLED` または `PAUSED` |
+
+少なくとも 1 つのフラグが必要です。クリエイティブと親広告グループは作成時に固定されます。
+
+## クリエイティブ \{#creatives\}
+
+### adapty asa creatives list
+
+新しい広告に利用できるクリエイティブを一覧表示します。
+
+```bash
+adapty asa creatives list --app <app-id>
+```
+
+ここで返される `creative_id` は、[`ads create`](#adapty-asa-ads-create) の `--creative-id` の値です。
+
+[ページネーションフラグ](#global-flags)、および `--campaign-group` と `--app` の[リストフィルター](#list-filters)を指定できます。
+
+## プロダクトページ \{#product-pages\}
+
+### adapty asa product-pages list
+
+アプリで利用可能なカスタムプロダクトページの一覧を表示します。
+
+```bash
+adapty asa product-pages list --app <app-id>
+```
+
+[ページネーションフラグ](#global-flags)、`--campaign-group`、`--app` の[リストフィルター](#list-filters)を使用できます。
+
+### adapty asa product-pages sync
+
+App Store Connect からカスタムプロダクトページを更新します。
+
+```bash
+adapty asa product-pages sync --adam-id 123456
+```
+
+| フラグ | 説明 |
+|---|---|
+| `--adam-id` | 更新対象を1つのアプリに限定します。省略するとすべてのアプリが対象になります |
+
+更新はすぐに実行されるのではなくキューに追加され、コマンドは `Sync queued.` で完了を確認します。同じ更新がすでに実行中の場合は、代わりに `Already running; nothing new was queued.` と表示されます。
+
+## オートメーション \{#automations\}
+
+CLIは渡されたルールのJSONを保存するだけで、ルールを構築するわけではありません。各ルールタイプの詳細については[オートメーション](ads-manager-automations)を、ルールファイルの作成方法については[オートメーションルールの実行](developer-cli-ads-manager#run-automation-rules)を参照してください。
+
+### adapty asa automations list
+
+[自動化ルール](ads-manager-automations)を一覧表示します。`status` フィールドは、アクティブの場合は `1`、停止中の場合は `0` になります。
+
+```bash
+adapty asa automations list
+```
+
+[ページネーションフラグ](#global-flags)を使用できます。
+
+### adapty asa automations get
+
+特定のオートメーションルールを条件やアクションを含めて取得します。
+
+```bash
+adapty asa automations get <automation-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `automation-id` | オートメーションルールID（UUID） |
+
+### adapty asa automations create
+
+JSONルールファイルからオートメーションルールを作成します。
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+| フラグ | 説明 |
+|---|---|
+| `--file` | ルール本体を含むJSONファイル、または `-` で標準入力から読み込む |
+| `--run-now` | ルール保存直後に最初の実行をキューに追加する |
+
+`--file` は必須です。
+
+### adapty asa automations update
+
+オートメーションルールを変更します。停止、名前変更、またはルールの一部を置き換えることができます。
+
+```bash
+adapty asa automations update <automation-id> --stop
+```
+
+| 引数 | 説明 |
+|---|---|
+| `automation-id` | オートメーションルールのID（UUID） |
+
+| フラグ | 説明 |
+|---|---|
+| `--start` | ルールを有効化する |
+| `--stop` | ルールを停止し、次回の実行をクリアする |
+| `--name` | 新しいルール名 |
+| `--file` | 変更する箇所を記述したJSONファイル、または標準入力から読み込む場合は `-` |
+
+`--start` と `--stop` は同時に指定できません。ここで渡すファイルには `internal_id` を含めないでください。
+
+### adapty asa automations run
+
+スケジュール外でオートメーションルールを1回実行します。
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+| 引数 | 説明 |
+|---|---|
+| `automation-id` | オートメーションルールID（UUID） |
+
+| フラグ | 説明 |
+|---|---|
+| `--dry-run` | ルールを評価してその結果をログに記録します。Apple Ads への変更は行いません |
+
+実行はキューに追加され、コマンドは実行IDを出力します。結果は [`automations runs`](#adapty-asa-automations-runs) で確認できます。
+
+### adapty asa automations runs
+
+オートメーションルールの過去の実行履歴（ドライランを含む）を一覧表示します。
+
+```bash
+adapty asa automations runs <automation-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `automation-id` | オートメーションルール ID（UUID） |
+
+[ページネーションフラグ](#global-flags)を使用できます。
+
+## 指標 \{#metrics\}
+
+### adapty asa metrics
+
+アカウントの任意のレベルの指標を日付範囲で照会します。
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--entity` | はい | レポート対象: `campaign`、`ad-group`、`keyword`、または `ad` |
+| `--date-from` | はい | 期間の開始日（`YYYY-MM-DD`） |
+| `--date-to` | はい | 期間の終了日（`YYYY-MM-DD`） |
+| `--metric` | いいえ | 指標名。繰り返し指定可能。省略するとすべての指標が対象になります |
+| `--group-by` | いいえ | 行を `country`、`day`、`week`、`month`、`quarter`、または `year` でグループ化します。繰り返し指定可能 |
+| `--by-days` | いいえ | コホート指標の更新ウィンドウ（日数）。繰り返し指定可能。1回の呼び出しにつき最大16件。省略するとダッシュボードのデフォルト値が使用されます |
+| `--order-by` | いいえ | 並び替えに使用する指標またはフィールド |
+| `--order-by-day` | いいえ | 指定した更新ウィンドウのコホート指標でランク付けします。`--by-days` の値のいずれかを指定してください |
+| `--order` | いいえ | `asc` または `desc`。デフォルト: `desc` |
+
+[ページネーションフラグ](#global-flags)を使用できます。このコマンドは[リストフィルター](#list-filters)には対応していません。エンティティレベルと期間で絞り込み、スコープ付きの `list` コマンドから取得した ID と行を照合してください。
+
+各行は1つのエンティティを表し、サーバー側で集計されて `--order-by` の順に並べられます。上位N件を取得するには、結果をページングして集計する必要はなく、`--order-by` と `--page-size N` を指定するだけで1回の呼び出しで完結します：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+`--metric` は Ads Manager が追跡する指標名をダッシュボードの表記で指定します（例：`spend`、`taps`、`gross_roas`）。全一覧と各指標の計算方法は [指標](adapty-ads-manager-metrics) を参照してください。存在しない名前を指定するとエラーになり、有効な名前の一覧がエラーメッセージに表示されます。
+
+レポート期間の長さは、最も粗い `--group-by` の値によって上限が決まります。より長い期間のレポートを取得するには、リクエストを複数回に分けるのではなく、グループ化の粒度を粗くしてください：
+
+| 最も粗い `--group-by` | 最大期間 |
+|---|---|
+| `day`、またはグループ化なし | 90日 |
+| `week` | 180日 |
+| `month` 以上の粒度 | 365日 |
+
+`ltv` 指標はありません。ライフタイムバリューはコホート指標であり、リニューアルウィンドウで読み取られます。day-7 や day-90 の値を取得するには `--by-days` を使用します。
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
+```
+
+`--order-by-day` は、指定したウィンドウのいずれかで行をランク付けします。これにより、1回の呼び出しで day-90 ROAS 上位のキャンペーンを取得できます。
+
+### adapty asa metrics overview
+
+期間の合計をクエリし、時間単位でバケット化します。
+
+```bash
+adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --period-unit week
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--entity` | はい | レポート対象: `campaign`、`ad-group`、`keyword`、または `ad` |
+| `--date-from` | はい | 期間の開始日 (`YYYY-MM-DD`) |
+| `--date-to` | はい | 期間の終了日 (`YYYY-MM-DD`) |
+| `--period-unit` | いいえ | バケットサイズ: `day`、`week`、`month`、`quarter`、または `year`。デフォルト: `day` |
+| `--metric` | いいえ | 指標名。繰り返し指定可能。省略するとすべての指標を取得 |
+| `--by-days` | いいえ | コホート指標の更新ウィンドウ（日数）。繰り返し指定可能。1回の呼び出しで最大16個 |
+
+このコマンドは、エンティティレベル全体の合計値と期間ごとの系列データを返します。つまり、「全体でいくら支出または収益があったか」を1回の呼び出しで確認できます。並び替えフラグやページネーションはありません。
+
+このコマンドでは、`--metric` にはコホートルートのみ（`revenue`、`roas`、`arpu`）を指定できます。`gross_`、`proceeds_`、`net_` のバリアントは指定できません。
+
+レポート期間の長さは `--period-unit` によって制限されます：
+
+| `--period-unit` | 最大期間 |
+|---|---|
+| `day` | 90日間 |
+| `week` | 180日間 |
+| `month` 以上の粒度 | 365日間 |
+
+## 競合他社 \{#competitors\}
+
+### adapty asa competitors summary
+
+App Store アプリのセットがビッドしている Apple Ads キーワードをまとめます。ダッシュボードの [Market Intelligence](ads-manager-market-intelligence) と同じ競合データを返します。
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app-ids` | はい | Apple App Store ID（`adam_id`）、カンマ区切り。1〜5 件の値 |
+
+レポート期間と国のセットはサーバー側で固定されています（直近の完全な月、全国対象）。このコマンドには期間・国・ページネーションのフラグはありません。
+
+このコマンドは3つのブロックを出力します：分析のトータル、パフォーマンス上位のアプリ、最も競合が激しいキーワード。`--json` を追加すると完全な結果が得られ、各アプリのキーワードを国別に分解した情報も含まれます。
+
+あるアプリセットに対する最初の呼び出しは、データの準備中に数十秒かかることがあります。同じアプリへの以降の呼び出しはより速く返ります。
+
+## エラー \{#errors\}
+
+| ステータス | コード | 意味 |
+|---|---|---|
+| `402` | `ads_manager_subscription_required` | その会社に有効な Ads Manager サブスクリプションがない |
+| `404` | — | エンティティが存在しないか、別の会社に属している |
+| `409` | `cli_idempotency_in_progress` | 同じ冪等キーを使った書き込みがまだ実行中 |
+| `422` | `cli_idempotency_key_reuse` | 同じ冪等キーが別のリクエストボディで使用された |
+| `429` | `cli_analytics_busy` | アナリティクスプールがビジー状態。待機時間は `Retry-After` ヘッダーに含まれる |
+| `429` | `cli_cooldown_active` | 拒否されたリクエストが多すぎるため、トークンがクールダウン状態になっている |
+
+指標と検索語リストは、1社あたりの分析APIバジェットを共有します。1分あたり5回の呼び出し、かつ10秒間に最大2回までです。5分以内に20件のリクエストが拒否されると、5分→30分→3時間と段階的にクールダウンが始まります。一時停止中に再試行してもクールダウンは延長されませんが、失敗したリクエストを繰り返すのではなく、修正することが解決策です。
+
+CLIは短い待機を自動で処理します。クールダウン以外の`429`レスポンスで、`Retry-After`が60秒以下の場合、コマンドはその時間だけ待機してから1回リトライし、標準エラーに待機時間を出力します。

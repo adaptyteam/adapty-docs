@@ -1,19 +1,24 @@
 ---
-title: "Android SDKのオブザーバーモードでPaywall Builderのペイウォールを表示する"
-description: "Adaptyのペイウォールビルダーを使用してオブザーバーモードでペイウォールを表示する方法について説明します。"
-metadataTitle: "オブザーバーモードでのペイウォール表示 | Adapty ドキュメント"
+title: "Android SDKのObserverモードでフローを表示する"
+description: "Android アプリのObserverモードでフローとペイウォールビルダーのペイウォールを表示しながら、独自のコードで購入を処理します。"
+metadataTitle: "ObserverモードでのフローのPresent | Adapty ドキュメント"
 ---
 
-フローまたはペイウォールをフローまたはペイウォールビルダーを使って作成した場合、モバイルアプリのコードでユーザーに表示するためのレンダリング処理を気にする必要はありません。そのようなフローやペイウォールには、表示する内容とその表示方法の両方が含まれています。
+Flow Builder またはペイウォールビルダーを使用してフローまたはペイウォールを作成した場合、それをユーザーに表示するためにモバイルアプリのコードでレンダリングする方法について心配する必要はありません。このようなフローまたはペイウォールには、表示する内容と表示方法の両方が含まれています。
 
 :::warning
-このセクションは[オブザーバーモード](observer-vs-full-mode)専用です。オブザーバーモードで作業していない場合は、[Android - フロー＆ペイウォールの表示](android-present-paywalls)のトピックを参照してください。
+このセクションは[オブザーバーモード](observer-vs-full-mode)のみを対象としています。オブザーバーモードで作業していない場合は、[Android - フロー＆ペイウォールの表示](android-present-paywalls)トピックを参照してください。
+:::
+
+:::tip
+フロー自体は[Flow Builder](adapty-flow-builder)で構築してください。
 :::
 
 <SDKv4>
 
 <details>
-   <summary>フローの表示を始める前に（クリックして展開）</summary>
+   <summary>フローを表示する前に（クリックして展開）</summary>
+
 1. Adapty と [Google Play の初期連携](initial-android)を設定する。
    2. SDK をインストールして設定する。`observerMode` パラメータを `true` に設定してください。[Android 向けのフレームワーク別手順](sdk-installation-android)を参照してください。
    3. Adapty ダッシュボードで[プロダクトを作成](create-product)する。
@@ -31,7 +36,7 @@ metadataTitle: "オブザーバーモードでのペイウォール表示 | Adap
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
-    AdaptyUiObserverModeHandler { product, flow, flowView, onStartPurchase, onFinishPurchase ->
+    AdaptyUiObserverModeHandler { product, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
        yourBillingClient.makePurchase(
            product,
@@ -53,7 +58,7 @@ metadataTitle: "オブザーバーモードでのペイウォール表示 | Adap
 </TabItem>
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
-   AdaptyUiObserverModeHandler observerModeHandler = (product, flow, flowView, onStartPurchase, onFinishPurchase) -> {
+   AdaptyUiObserverModeHandler observerModeHandler = (product, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
            product,
@@ -74,12 +79,19 @@ metadataTitle: "オブザーバーモードでのペイウォール表示 | Adap
    ```
 </TabItem>
 </Tabs>
+
 Observerモードでの購入復元を処理するには、`getRestoreHandler()`をオーバーライドします。デフォルトでは`null`を返し、Adaptyの組み込み`Adapty.restorePurchases()`フローが使われます。独自の復元実装を提供するには:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler = object : AdaptyUiObserverModeHandler {
-       // onPurchaseInitiated implementation (see above)
+       override fun onPurchaseInitiated(
+           product: AdaptyPaywallProduct,
+           onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+           onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+       ) {
+           // the same body as the purchase example above
+       }
 
        override fun getRestoreHandler() =
            AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
@@ -101,7 +113,14 @@ Observerモードでの購入復元を処理するには、`getRestoreHandler()`
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
-       // onPurchaseInitiated implementation (see above)
+       @Override
+       public void onPurchaseInitiated(
+           AdaptyPaywallProduct product,
+           PurchaseStartCallback onStartPurchase,
+           PurchaseFinishCallback onFinishPurchase
+       ) {
+           // the same body as the purchase example above
+       }
 
        @Override
        public RestoreHandler getRestoreHandler() {
@@ -123,6 +142,7 @@ Observerモードでの購入復元を処理するには、`getRestoreHandler()`
    ```
 </TabItem>
 </Tabs>
+
 AdaptyUIに購入またはリストア処理を通知するために、以下のコールバックを呼び出すことを忘れないでください。これは、ローダーの表示など、適切なフローの動作に必要です。
 | コールバック | 説明 |
 | :----------------- |:---------------------------------------------------------------------------------------|
@@ -260,18 +280,23 @@ AdaptyFlowScreen(
    4. Adapty ダッシュボードで[ペイウォールを設定してプロダクトを割り当て](create-paywall)、ペイウォールビルダーを使用してカスタマイズしてください。
    5. Adapty ダッシュボードで[プレースメントを作成してペイウォールを割り当て](create-placement)てください。
    6. モバイルアプリのコード内で[ペイウォールビルダーのペイウォールとその設定を取得](android-get-pb-paywalls)してください。
-</details>
+  </details>
 
 <p> </p>
 
-1. `AdaptyUiObserverModeHandler` を実装します。
+1. `AdaptyUiObserverModeHandler`を実装してください。
 
-`onPurchaseInitiated` イベントは、ユーザーが購入を開始したことを通知します。このコールバックに応答して、独自の購入フローをトリガーできます。
+`onPurchaseInitiated`イベントは、ユーザーが購入を開始したことを通知します。このコールバックに応じてカスタム購入フローをトリガーできます：
+
+:::note
+Adapty Android SDK バージョン3.15.0より前のバージョンでは、このコールバックにペイウォールとペイウォールビューも渡していました。3.15.0以降にアップグレードする際は、これら2つのパラメーターを削除してください。
+:::
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
-    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+    AdaptyUiObserverModeHandler { product, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
        yourBillingClient.makePurchase(
            product,
@@ -293,7 +318,7 @@ AdaptyFlowScreen(
 </TabItem>
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
-   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+   AdaptyUiObserverModeHandler observerModeHandler = (product, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
            product,
@@ -314,12 +339,19 @@ AdaptyFlowScreen(
    ```
 </TabItem>
 </Tabs>
+
 Observerモードでリストアを処理するには、`getRestoreHandler()`をオーバーライドしてください。デフォルトでは`null`が返され、Adaptyの組み込み`Adapty.restorePurchases()`フローが使われます。独自のリストア実装を提供するには:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler = object : AdaptyUiObserverModeHandler {
-       // onPurchaseInitiated implementation (see above)
+       override fun onPurchaseInitiated(
+           product: AdaptyPaywallProduct,
+           onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+           onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+       ) {
+           // the same body as the purchase example above
+       }
 
        override fun getRestoreHandler() =
            AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
@@ -341,7 +373,14 @@ Observerモードでリストアを処理するには、`getRestoreHandler()`を
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
-       // onPurchaseInitiated implementation (see above)
+       @Override
+       public void onPurchaseInitiated(
+           AdaptyPaywallProduct product,
+           PurchaseStartCallback onStartPurchase,
+           PurchaseFinishCallback onFinishPurchase
+       ) {
+           // the same body as the purchase example above
+       }
 
        @Override
        public RestoreHandler getRestoreHandler() {
@@ -363,6 +402,7 @@ Observerモードでリストアを処理するには、`getRestoreHandler()`を
    ```
 </TabItem>
 </Tabs>
+
 AdaptyUIに購入または復元プロセスを通知するために、以下のコールバックを呼び出してください。これはローダーの表示など、ペイウォールの適切な動作に必要です：
 | コールバック           | 説明                                                                            |
    | :----------------- |:---------------------------------------------------------------------------------------|
@@ -470,14 +510,15 @@ AdaptyPaywallScreen(
    リクエストパラメータ：
 | パラメーター | 必須/任意 | 説明 |
 |---------|--------|-----------|
-| **Products** | 任意 | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` の配列を渡します。`null` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。 |
-| **ViewConfiguration** | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyViewConfiguration` オブジェクトを渡します。`Adapty.getViewConfiguration(paywall)` メソッドを使って読み込んでください。詳細は [ペイウォールのビジュアル設定を取得する](#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) をご参照ください。 |
-| **EventListener** | 任意 | ペイウォールのイベントを監視するために `AdaptyUiEventListener` を渡します。使いやすさのために `AdaptyUiDefaultEventListener` を継承することを推奨します。詳細は [ペイウォールイベントの処理](android-handling-events) をご参照ください。 |
-| **PersonalizedOfferResolver** | 任意 | パーソナライズされた価格（[詳細はこちら](https://developer.android.com/google/play/billing/integrate#personalized-price)）を示すには、`AdaptyUiPersonalizedOfferResolver` を実装し、`AdaptyPaywallProduct` の価格がパーソナライズされている場合に `true`、そうでない場合に `false` を返す独自のロジックを渡します。 |
-| **TagResolver** | 任意 | ペイウォールテキスト内のカスタムタグを解決するために `AdaptyUiTagResolver` を使います。このリゾルバーはタグパラメーターを受け取り、対応する文字列に変換します。詳細はペイウォールビルダーのカスタムタグのトピックをご参照ください。 |
-| **ObserverModeHandler** | オブザーバーモードでは必須 | 前のステップで実装した `AdaptyUiObserverModeHandler`。 |
-| **variationId** | 必須 | バリエーションの文字列識別子。[`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) オブジェクトの `variationId` プロパティから取得できます。 |
-| **transaction** | 必須 | <p>iOS・StoreKit 1 の場合: [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) オブジェクト。</p><p>iOS・StoreKit 2 の場合: [Transaction](https://developer.apple.com/documentation/storekit/transaction) オブジェクト。</p><p>Android の場合: 購入の文字列識別子（`purchase.getOrderId()`）。ここで purchase は billing ライブラリの [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</p> |
+| **Products** | 任意 | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` の配列を指定します。`null` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。 |
+| **ViewConfiguration** | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyViewConfiguration` オブジェクトを指定します。読み込みには `Adapty.getViewConfiguration(paywall)` メソッドを使用してください。詳細は [ペイウォールのビジュアル設定を取得する](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) を参照してください。 |
+| **EventListener** | 任意 | ペイウォールイベントを監視するために `AdaptyUiEventListener` を指定します。使いやすさの面から、AdaptyUiDefaultEventListener を継承することを推奨します。詳細は [ペイウォールイベントの処理](android-handling-events) を参照してください。 |
+| **PersonalizedOfferResolver** | 任意 | パーソナライズされた価格（[詳細はこちら](https://developer.android.com/google/play/billing/integrate#personalized-price)）を示すには、`AdaptyUiPersonalizedOfferResolver` を実装し、`AdaptyPaywallProduct` の価格がパーソナライズされている場合に true、そうでない場合に false を返す独自のロジックを渡します。 |
+| **TagResolver** | 任意 | ペイウォールテキスト内のカスタムタグを解決するために `AdaptyUiTagResolver` を使用します。このリゾルバーはタグパラメーターを受け取り、対応する文字列に解決します。詳細はペイウォールビルダーのカスタムタグに関するトピックを参照してください。 |
+| **ObserverModeHandler** | Observerモードでは必須 | 前のステップで実装した `AdaptyUiObserverModeHandler` を指定します。 |
+| **variationId** | 必須 | バリアントの文字列識別子です。`AdaptyPaywall` オブジェクトの `variationId` プロパティから取得できます。 |
+| **transaction** | 必須 | <p>iOS、StoreKit1 の場合: [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) オブジェクト。</p><p>iOS、StoreKit 2 の場合: [Transaction](https://developer.apple.com/documentation/storekit/transaction) オブジェクト。</p><p>Android の場合: 購入の文字列識別子（`purchase.getOrderId()`）。ここで purchase は billing ライブラリの [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</p> |
+
 </TabItem>
 <TabItem value="SDK2" label="Legacy Paywall Builder (SDK 2.x 以前)" default>
 <details>
@@ -609,17 +650,18 @@ AdaptyPaywallScreen(
 ビューが正常に作成されたら、ビュー階層に追加して表示できます。
 
 リクエストパラメーター：
-| パラメーター | 必須/任意 | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| パラメータ | 必須/任意 | 説明                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 |---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Products** | 任意 | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` の配列を指定します。`null` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。                                                                                                                                                                                                                                                                                                                                       |
-| **ViewConfiguration** | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyViewConfiguration` オブジェクトを指定します。`Adapty.getViewConfiguration(paywall)` メソッドを使って読み込んでください。詳細は [ペイウォールのビジュアル設定を取得する](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) を参照してください。                                                                                                                                                                      |
-| **Insets** | 必須 | システムバーが重なる領域の情報を含む `AdaptyPaywallInsets` オブジェクトを定義し、コンテンツの上下マージンを設定します。ステータスバーやナビゲーションバーが `AdaptyPaywallView` に重ならない場合は `AdaptyPaywallInsets.NONE` を渡してください。システムバーが UI の一部に重なるフルスクリーンモードの場合は、表の下に示す方法でインセットを取得してください。                                                                                                                                |
-| **EventListener** | 任意 | ペイウォールのイベントを監視するために `AdaptyUiEventListener` を指定します。使いやすさのため、AdaptyUiDefaultEventListener を拡張することを推奨します。詳細は [ペイウォールイベントの処理](android-handling-events) を参照してください。                                                                                                                                                                                                                                                                |
-| **PersonalizedOfferResolver** | 任意 | パーソナライズされた価格（[詳細はこちら](https://developer.android.com/google/play/billing/integrate#personalized-price)）を示すには、`AdaptyUiPersonalizedOfferResolver` を実装し、`AdaptyPaywallProduct` の価格がパーソナライズされている場合に true、そうでない場合に false を返す独自ロジックを渡してください。                                                                                                                                                                                               |
-| **TagResolver** | 任意 | ペイウォールテキスト内のカスタムタグを解決するために `AdaptyUiTagResolver` を使用します。このリゾルバーはタグパラメーターを受け取り、対応する文字列に解決します。詳細はペイウォールビルダーのカスタムタグに関するトピックを参照してください。                                                                                                                                              |
-| **ObserverModeHandler** | Observer モードで必須 | 前のステップで実装した `AdaptyUiObserverModeHandler`。                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **variationId** | 必須 | バリアントの文字列識別子。[`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) オブジェクトの `variationId` プロパティで取得できます。                                                                                                                                                                                                                                                                                                                                                        |
-| **transaction** | 必須 | <p>iOS、StoreKit1 の場合: [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) オブジェクト。</p><p>iOS、StoreKit 2 の場合: [Transaction](https://developer.apple.com/documentation/storekit/transaction) オブジェクト。</p><p>Android の場合: 購入の文字列識別子（`purchase.getOrderId()`）。ここで purchase は billing ライブラリの [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</p> |
+| **Products** | 任意 | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` の配列を指定します。`null` を渡した場合、AdaptyUI は必要なプロダクトを自動的に取得します。                                                                                                                                                                                                                                                                                                                                       |
+| **ViewConfiguration** | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyViewConfiguration` オブジェクトを指定します。`Adapty.getViewConfiguration(paywall)` メソッドを使用して読み込んでください。詳細は [ペイウォールのビジュアル設定の取得](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) を参照してください。                                                                                                                                                                       |
+| **Insets** | 必須 | システムバーによって重なる領域の情報を含む `AdaptyPaywallInsets` オブジェクトを定義し、コンテンツの垂直方向のマージンを作成します。ステータスバーとナビゲーションバーのどちらも `AdaptyPaywallView` に重ならない場合は、`AdaptyPaywallInsets.NONE` を渡してください。システムバーが UI の一部に重なるフルスクリーンモードの場合は、表の下に示す方法でインセットを取得してください。                                                                                                                                |
+| **EventListener** | 任意 | ペイウォールのイベントを監視するために `AdaptyUiEventListener` を指定します。使いやすさのため、`AdaptyUiDefaultEventListener` を継承することを推奨します。詳細は [ペイウォールイベントの処理](android-handling-events) を参照してください。                                                                                                                                                                                                                                                                |
+| **PersonalizedOfferResolver** | 任意 | パーソナライズされた価格（[詳細はこちら](https://developer.android.com/google/play/billing/integrate#personalized-price)）を示すには、`AdaptyUiPersonalizedOfferResolver` を実装し、`AdaptyPaywallProduct` の価格がパーソナライズされている場合は `true`、そうでない場合は `false` を返す独自のロジックを渡してください。                                                                                                                                                                                               |
+| **TagResolver** | 任意 | ペイウォールテキスト内のカスタムタグを解決するために `AdaptyUiTagResolver` を使用します。このリゾルバーはタグパラメータを受け取り、対応する文字列に解決します。詳細はペイウォールビルダーのカスタムタグのトピックを参照してください。                                                                                                                                                                                                                              |
+| **ObserverModeHandler** | オブザーバーモードで必須 | 前のステップで実装した `AdaptyUiObserverModeHandler`。                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| **variationId** | 必須 | バリアントの文字列識別子。`AdaptyPaywall` オブジェクトの `variationId` プロパティを使用して取得できます。                                                                                                                                                                                                                                                                                                                                                                        |
+| **transaction** | 必須 | <p>iOS、StoreKit 1 の場合: [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) オブジェクト。</p><p>iOS、StoreKit 2 の場合: [Transaction](https://developer.apple.com/documentation/storekit/transaction) オブジェクト。</p><p>Android の場合: 購入の文字列識別子（`purchase.getOrderId()`）。ここでの purchase は、課金ライブラリの [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) クラスのインスタンスです。</p> |
+
 システムバーがUIの一部に重なるフルスクリーンモードでは、以下の方法でインセットを取得します。
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>

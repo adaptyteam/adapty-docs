@@ -1,0 +1,77 @@
+---
+title: "Otorgar un saldo inicial"
+description: "Dale a los nuevos usuarios un saldo inicial de moneda virtual mediante la API del servidor, y rellena el saldo de usuarios existentes cuando lances una nueva moneda."
+metadataTitle: "Otorgar un saldo inicial | Documentación de Adapty"
+---
+
+:::link
+Artículo principal: [Monedas virtuales](virtual-currencies)
+:::
+
+Cada perfil comienza con un saldo de 0 en cada moneda, y los [productos vinculados](create-virtual-currency#link-products) solo otorgan créditos en una compra o renovación. Por lo tanto, un usuario que no ha comprado nada nunca recibe créditos automáticamente.
+
+Aun así, puedes dar a los nuevos usuarios un saldo inicial: un bono de bienvenida, una asignación de prueba gratuita o un conjunto de vidas. Concédelo desde tu backend a través de la [API del servidor](getting-started-with-server-side-api), después de identificar al usuario.
+
+## Conceder saldo a un nuevo usuario \{#grant-the-balance-for-a-new-user\}
+
+1. **Identifica primero al usuario**: Un saldo pertenece a un perfil y nunca se transfiere a otro, así que concede los créditos solo después de que el perfil tenga un customer user ID. Identifica al usuario en tu app mediante el SDK (consulta [Identificar usuarios](ios-quickstart-identify)) o desde tu backend a través de la API server-side.
+
+Otorgar créditos a un perfil anónimo es el error más habitual en este punto. Los perfiles anónimos están vinculados a una instalación concreta de la app, por lo que el usuario pierde los créditos al reinstalarla o abrirla en otro dispositivo. Consulta [Saldos, perfiles y dispositivos](virtual-currency-balance#balances-profiles-and-devices) para una explicación completa.
+
+2. **Otorga los créditos**: Llama a [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) con un `amount` positivo. Este ejemplo otorga 500 tokens:
+
+```bash title="Grant an initial balance"
+    curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+      -H "Authorization: Api-Key {your secret key}" \
+      -H "adapty-customer-user-id: user-42" \
+      -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
+      -H "Content-Type: application/json" \
+      -d '{
+            "items": [{"currency_code": "TOKENS", "amount": 500}],
+            "metadata": {"reason": "initial_balance"}
+          }'
+    ```
+
+    La respuesta devuelve el nuevo saldo:
+
+```json title="Response"
+    {
+      "transaction_id": "3a9f8e21-5d4c-4b7a-9e01-8c6d2f4b1a37",
+      "balances": [
+        { "code": "TOKENS", "name": "Tokens", "balance": 500, "held": 0, "available": 500 }
+      ]
+    }
+    ```
+
+    Los créditos concedidos de esta forma nunca caducan, a diferencia de los créditos por ciclo de una suscripción vinculada.
+
+    El campo `metadata` es opcional. Una etiqueta como `reason: initial_balance` facilita identificar la concesión en el [historial de transacciones](api-adapty/operations/listVirtualCurrencyTransactions) y separarla de los créditos por compra en tus propios informes.
+
+3. **Registra la concesión en tu base de datos**: Guarda que este usuario ya recibió su saldo inicial, para que un nuevo inicio de sesión o un trabajo reintentado no lo conceda dos veces. La siguiente sección explica por qué este registro es necesario.
+
+## Concédelo exactamente una vez \{#grant-it-exactly-once\}
+
+Tu propia base de datos es la fuente de verdad para saber si un usuario ya ha recibido su saldo inicial. Hay dos enfoques que pueden parecer suficientes pero no lo son:
+
+- **`Idempotency-Key` protects one call, not one user**: Al reintentar una solicitud con la misma clave se devuelve el resultado original en lugar de volver a conceder el saldo, por lo que una sola llamada puede reintentarse con seguridad tras un timeout. Adapty recuerda cada clave hasta una hora, por perfil. Pasado ese tiempo, la misma clave concede de nuevo, así que la cabecera no puede indicarte meses después si un usuario ya recibió su saldo inicial. Genera una clave nueva para cada nueva concesión.
+- **Leer el saldo primero no demuestra nada**: Un saldo de 0 significa que el usuario nunca recibió créditos, o que los recibió y los gastó todos. [Listar saldos de moneda virtual](api-adapty/operations/listVirtualCurrencyBalances) no puede distinguir entre ambos casos.
+
+Así que comprueba tu propio registro antes de llamar a la API, y escribe el registro después de una respuesta exitosa.
+
+## Rellenar saldo de usuarios existentes \{#backfill-existing-users\}
+
+Cuando creas una moneda, todos los perfiles existentes parten de 0, y los [vínculos de productos solo se aplican desde ese momento en adelante](create-virtual-currency#link-products). Para dar a tus usuarios actuales un saldo inicial, ejecuta un relleno puntual desde tu backend.
+
+1. En tu propia base de datos, recopila los IDs de usuario de los clientes a los que quieres otorgar moneda.
+2. Para cada uno, llama a [Crear transacción de moneda virtual](api-adapty/operations/createVirtualCurrencyTransaction) como se muestra arriba. No existe un endpoint masivo: una solicitud otorga moneda a un perfil, y una sola solicitud puede cubrir hasta 20 monedas para ese perfil.
+3. Mantén el registro por usuario de la sección anterior a medida que avanzas, para poder detener el proceso y reanudarlo sin otorgar moneda dos veces.
+4. Respeta el límite de 600 solicitudes por minuto por app. Una solicitud que supere el límite falla con `rate_limited`, así que regula el proceso y reintenta los usuarios fallidos.
+
+:::tip
+Haz el backfill solo de los usuarios a los que quieras llegar, como los activos o de pago. Los créditos otorgados a través de la API nunca caducan, así que el saldo que entregues ahora permanecerá en el perfil hasta que el usuario lo gaste.
+:::
+
+## Próximos pasos \{#next-steps\}
+
+- Gasta el saldo y léelo en tiempo de ejecución: [Inicio rápido de moneda virtual](virtual-currency-quickstart).
+- Consulta lo que tiene un usuario y audita cada cambio: [Saldo de moneda virtual](virtual-currency-balance).

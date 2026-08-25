@@ -1,15 +1,15 @@
 ---
-title: "Kotlin Multiplatform SDK'da hataları işleme"
-description: "Kotlin Multiplatform uygulamanızda Adapty ile hataları nasıl işleyeceğinizi öğrenin."
-metadataTitle: "Hataları İşleme | Kotlin Multiplatform SDK | Adapty Dokümanları"
+title: "Kotlin Multiplatform SDK'da hataları yönetme"
+description: "Adapty ile Kotlin Multiplatform uygulamanızda hataları nasıl yöneteceğinizi öğrenin."
+metadataTitle: "Hata Yönetimi | Kotlin Multiplatform SDK | Adapty Dokümanları"
 displayed_sidebar: sdkkmp
 ---
 
-Bu sayfa, Adapty Kotlin Multiplatform SDK'sında hata işlemeyi ele almaktadır.
+Bu sayfa, Adapty Kotlin Multiplatform SDK'sında hata yönetimini ele almaktadır.
 
-## Hata işlemenin temelleri \{#error-handling-basics\}
+## Hata yönetiminin temelleri \{#error-handling-basics\}
 
-Tüm Adapty SDK metotları, başarı veya hata olabilen sonuçlar döndürür. Her iki durumu da her zaman işleyin:
+Tüm Adapty SDK metotları başarılı ya da hatalı olabilen sonuçlar döndürür. Her iki durumu da her zaman ele alın:
 
 <Tabs groupId="current-os" queryString>
 
@@ -50,17 +50,21 @@ Adapty.getProfile(result -> {
 
 ## Yaygın hata kodları \{#common-error-codes\}
 
-| Hata Kodu | Açıklama | Çözüm |
-|------------|-------------|----------|
-| 1000 | Ürün ID'si bulunamadı | Kontrol panelinde ürün yapılandırmasını kontrol edin |
-| 1001 | Ağ hatası | İnternet bağlantısını kontrol edin |
-| 1002 | Geçersiz SDK anahtarı | SDK anahtarınızı doğrulayın |
-| 1003 | Ödeme yapılamıyor | Cihaz ödemeleri desteklemiyor |
-| 1004 | Ürün mevcut değil | Ürün mağazada yapılandırılmamış |
+`AdaptyError.code`, bir sayı değil `AdaptyErrorCode` enum değeridir; bu nedenle sayısal kodla değil, enum sabitiyle karşılaştırın. Aşağıdaki sayılar yalnızca bir log satırında veya destek talebinde genellikle bu şekilde göründükleri için verilmiştir.
 
-## Belirli hataları işleme \{#handle-specific-errors\}
+| Hata kodu | Numara | Açıklama | Çözüm |
+|------------|--------|-------------|----------|
+| `AdaptyErrorCode.NO_PRODUCT_IDS_FOUND` | 1000 | Paywall'daki ürünlerin hiçbiri mağazada mevcut değil. | Bkz. [Code-1000 noProductIDsFound hatası için çözüm](InvalidProductIdentifiers-kmp). |
+| `AdaptyErrorCode.CANT_MAKE_PAYMENTS` | 1003 | Bu cihazda uygulama içi satın almalar izin verilmiyor. | Bkz. [Code-1003 cantMakePayments hatası için çözüm](cantMakePayments-kmp). |
+| `AdaptyErrorCode.PRODUCT_NOT_FOUND` | 22 | Satın alınmak istenen ürün mağazada mevcut değil. | Ürünün hem mağazada hem de Adapty Kontrol Paneli'nde yapılandırıldığını kontrol edin. |
+| `AdaptyErrorCode.NETWORK_FAILED` | 2005 | Ağ isteği başarısız oldu. | Kullanıcıdan bağlantısını kontrol etmesini isteyin ya da çağrıyı yeniden deneyin. |
+| `AdaptyErrorCode.ADAPTY_NOT_INITIALIZED` | 20 | Çağrı yapılmadan önce SDK etkinleştirilmedi. | Diğer SDK çağrılarından önce `Adapty.activate` tamamlanmasını bekleyin. |
 
-### Ağ hataları \{#network-errors\}
+`AdaptyErrorCode` kodlarının tam listesi için [SDK modelleri referansına](https://kmp.adapty.io/adapty/) bakın.
+
+## Belirli hataları ele alma \{#handle-specific-errors\}
+
+### Ağ Hataları \{#network-errors\}
 
 <Tabs groupId="current-os" queryString>
 
@@ -76,7 +80,7 @@ Adapty.getPaywall("main") { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1001 -> {
+                AdaptyErrorCode.NETWORK_FAILED -> {
                     // Network error - show offline message
                     showOfflineMessage()
                 }
@@ -96,16 +100,16 @@ Adapty.getPaywall("main") { result ->
 Adapty.getPaywall("main", result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // Use paywall
+        // Paywallı kullan
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1001:
-                // Network error - show offline message
+            case NETWORK_FAILED:
+                // Ağ hatası - çevrimdışı mesajını göster
                 showOfflineMessage();
                 break;
             default:
-                // Other errors
+                // Diğer hatalar
                 showErrorMessage(error.getMessage());
                 break;
         }
@@ -132,11 +136,11 @@ product.makePurchase { result ->
         is AdaptyResult.Error -> {
             val error = result.error
             when (error.code) {
-                1003 -> {
+                AdaptyErrorCode.CANT_MAKE_PAYMENTS -> {
                     // Can't make payments
                     showPaymentNotAvailableMessage()
                 }
-                1004 -> {
+                AdaptyErrorCode.PRODUCT_NOT_FOUND -> {
                     // Product not available
                     showProductNotAvailableMessage()
                 }
@@ -156,21 +160,21 @@ product.makePurchase { result ->
 product.makePurchase(result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
-        // Purchase successful
+        // Satın alma başarılı
         showSuccessMessage();
     } else if (result instanceof AdaptyResult.Error) {
         AdaptyError error = ((AdaptyResult.Error) result).getError();
         switch (error.getCode()) {
-            case 1003:
-                // Can't make payments
+            case CANT_MAKE_PAYMENTS:
+                // Ödeme yapılamıyor
                 showPaymentNotAvailableMessage();
                 break;
-            case 1004:
-                // Product not available
+            case PRODUCT_NOT_FOUND:
+                // Ürün mevcut değil
                 showProductNotAvailableMessage();
                 break;
             default:
-                // Other purchase errors
+                // Diğer satın alma hataları
                 showPurchaseErrorMessage(error.getMessage());
                 break;
         }
@@ -201,7 +205,7 @@ fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && retryCount < maxRetries) {
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && retryCount < maxRetries) {
                         // Network error - retry
                         retryCount++
                         Handler(Looper.getMainLooper()).postDelayed({
@@ -235,7 +239,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
                     // Use paywall
                 } else if (result instanceof AdaptyResult.Error) {
                     AdaptyError error = ((AdaptyResult.Error) result).getError();
-                    if (error.getCode() == 1001 && retryCount.get() < maxRetries) {
+                    if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && retryCount.get() < maxRetries) {
                         // Network error - retry
                         retryCount.incrementAndGet();
                         new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
@@ -254,7 +258,7 @@ public void getPaywallWithRetry(String placementId, int maxRetries) {
 </TabItem>
 </Tabs>
 
-### Önbelleğe alınmış veriye geri dönme \{#fallback-to-cached-data\}
+### Önbelleğe alınan verilere geri dönüş \{#fallback-to-cached-data\}
 
 <Tabs groupId="current-os" queryString>
 
@@ -274,12 +278,12 @@ class PaywallManager {
                 }
                 is AdaptyResult.Error -> {
                     val error = result.error
-                    if (error.code == 1001 && cachedPaywall != null) {
-                        // Network error - use cached paywall
+                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
+                        // Ağ hatası - önbelleğe alınmış paywallı kullan
                         showPaywall(cachedPaywall!!)
                         showOfflineIndicator()
                     } else {
-                        // No cache available or other error
+                        // Önbellek yok veya başka bir hata
                         showErrorMessage(error.message)
                     }
                 }
@@ -303,12 +307,12 @@ public class PaywallManager {
                 showPaywall(paywall);
             } else if (result instanceof AdaptyResult.Error) {
                 AdaptyError error = ((AdaptyResult.Error) result).getError();
-                if (error.getCode() == 1001 && cachedPaywall != null) {
-                    // Network error - use cached paywall
+                if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
+                    // Ağ hatası - önbelleğe alınmış paywall'ı kullan
                     showPaywall(cachedPaywall);
                     showOfflineIndicator();
                 } else {
-                    // No cache available or other error
+                    // Önbellek yok veya başka bir hata
                     showErrorMessage(error.getMessage());
                 }
             }
@@ -319,8 +323,8 @@ public class PaywallManager {
 </TabItem>
 </Tabs>
 
-## Sonraki adımlar \{#next-steps\}
+## Sonraki adımlar
 
-- [Code-1000 noProductIDsFound hatası için düzeltme](InvalidProductIdentifiers-kmp)
-- [Code-1003 cantMakePayments hatası için düzeltme](cantMakePayments-kmp)
-- [Eksiksiz API referansı](https://android.adapty.io) - Tam SDK dokümantasyonu
+- [Code-1000 noProductIDsFound hatasının çözümü](InvalidProductIdentifiers-kmp)
+- [Code-1003 cantMakePayments hatasının çözümü](cantMakePayments-kmp)
+- [Tam API referansı](https://kmp.adapty.io/adapty/) - Eksiksiz SDK belgeleri

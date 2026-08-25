@@ -1,0 +1,62 @@
+---
+title: "Unity SDKでフロースクリーンの表示をトラッキングする"
+description: "Unityアプリでユーザーがフロースクリーンを開くたびにイベントを受け取り、プロダクトアナリティクスに転送します。"
+metadataTitle: "フロースクリーンの表示をトラッキングする | Unity SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)内のスクリーンを開くたびに、SDKはアプリへ `flow_screen_showed` イベントを送信します。Amplitude、Mixpanel、または使用しているプロダクトアナリティクスにこのイベントを転送することで、フロースクリーンの動作をアプリの他のイベントと合わせて分析できます。
+
+:::tip
+フローのどこまでユーザーが進んだかを確認するのにコードは不要です — [フロー指標](flow-metrics)で、Adapty ダッシュボード上でビュー数、完了数、画面ごとの離脱率をすでに確認できます。このガイドは、同じデータを独自のアナリティクスで活用したい場合や、Adapty が把握していないイベントと組み合わせたい場合にご利用ください。
+:::
+
+## 始める前に \{#before-you-start\}
+
+以下が必要です：
+
+- **Adapty Unity SDK v4以降**：フローの分析コールバックは、それより前のバージョンには存在しません。
+- **この機能がリリースされた後に公開されたフローバージョン**：Adaptは、フローを公開する際にスクリーンイベントを生成します。そのため、それ以前に最後に公開したフローは何も報告しません。イベントがアプリに届かない場合は、フローの新しいバージョンを公開して再度試してください。
+
+## 受信データ \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+スクリーンビューは、他のすべてのフローイベントと同じ分析コールバックに届きます。登録方法については、[フロー・ペイウォールイベントの処理](unity-handling-events)を参照してください。
+
+## すべての画面表示をアナリティクスに転送する \{#forward-every-screen-view-to-your-analytics\}
+
+コールバックはフローの他のイベントも同じ経路で受け取るため、他の値を読む前にイベント名でマッチングしてください。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+
+    var screenId = @params["instanceId"];
+    var screenOrder = @params["screen_order"];
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## フローの最後に到達したときにコードを実行する \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` は、フローがそれ以上進めない画面で `true` になります。これを使って、コンテンツのアンロック、オンボーディングの完了マーク、または独自の完了イベントの送信を、ビルダーでボタンアクションを追加することなく実行できます。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+    if (!(@params["is_last_screen"] is bool isLast) || !isLast) return;
+
+    // The user reached the end of the flow.
+}
+```
+
+フローの最後の画面に到達することは、フローを閉じることとは異なります。ユーザーは最終画面を表示したまま何もアクションを取らずにフローを閉じることがあり、また分岐のあるフローでは複数の異なる画面で終了することがあります。フロー自体が消えたことを知るには、代わりに `FlowViewDidDisappear` を使用してください。

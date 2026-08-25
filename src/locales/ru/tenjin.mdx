@@ -107,23 +107,18 @@ Tenjin принимает только события покупок и **Trial 
 
 ### Подключите приложение к Tenjin \{#connect-your-app-to-tenjin\}
 
-Используйте метод SDK `Adapty.updateAttribution()`, чтобы получить данные атрибуции от Tenjin и передать их в Adapty.
+Используйте метод SDK `Adapty.updateExternalAttribution()` (до версии SDK 4.1 назывался `updateAttribution()`), чтобы получить данные атрибуции из Tenjin и передать их в Adapty.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
+
 ```swift showLineNumbers
 
 func updateTenjinId() {
     guard let tenjinId = TenjinSDK.getAnalyticsInstallationId() else { return }
 
     do {
-        // Adapty SDK 4.x
         try await Adapty.setIntegrationIdentifier(.tenjinAnalyticsInstallationId(tenjinId))
-        // Adapty SDK 3.x
-        try await Adapty.setIntegrationIdentifier(
-            key: "tenjin_analytics_installation_id",
-            value: tenjinId
-        )
     } catch {
         // handle the error
     }
@@ -137,10 +132,7 @@ func updateTenjinAttribution() {
 
         Task {
             do {
-                // Adapty SDK 4.x
-                try await Adapty.updateAttribution(info, source: .tenjin)
-                // Adapty SDK 3.x
-                try await Adapty.updateAttribution(info, source: "tenjin")
+                try await Adapty.updateExternalAttribution(info, provider: .tenjin)
             } catch {
                 // handle the error
             }
@@ -150,10 +142,32 @@ func updateTenjinAttribution() {
 ```
 
 </TabItem>
+<TabItem value="kotlin" label="Android (Kotlin)" default>
+
+```kotlin showLineNumbers
+Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.tenjinAnalyticsInstallationId(tenjinSdk.analyticsInstallationId)) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+
+tenjinSdk.getAttributionInfo { attribution ->
+    if (attribution == null) return@getAttributionInfo
+
+    Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.TENJIN) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+</TabItem>
 
 <TabItem value="java" label="Android (Java)" default>
+
 ```java showLineNumbers
-Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.getAnalyticsInstallationId(), error -> {
+Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.tenjinAnalyticsInstallationId(tenjinSdk.getAnalyticsInstallationId()), error -> {
     if (error != null) {
         // handle the error
     }
@@ -162,7 +176,7 @@ Adapty.setIntegrationIdentifier("tenjin_analytics_installation_id", tenjinSdk.ge
 tenjinSdk.getAttributionInfo(attribution -> {
     if (attribution == null) return;
 
-    Adapty.updateAttribution(attribution, "tenjin", error -> {
+    Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.TENJIN, error -> {
         // handle the error
     });
 });
@@ -171,6 +185,7 @@ tenjinSdk.getAttributionInfo(attribution -> {
 </TabItem>
 
 <TabItem value="flutter" label="Flutter (Dart)" default>
+
 ```javascript showLineNumbers
 try {
     final tenjinId = await TenjinSDK.instance.getAnalyticsInstallationId();
@@ -270,21 +285,27 @@ Adapty отправляет выбранные события в Tenjin в со�
 Where
 | **Параметр**                  | **Тип**          | **Описание**                                                 |
 | ----------------------------- | ---------------- | ------------------------------------------------------------ |
-| **price**                     | Float            | Цена единицы товара в стандартных единицах валюты (например, USD указывается в долларах). |
+| **price**                     | Float            | Цена за единицу товара в стандартной единице валюты (например, для USD указывается в долларах). |
 | **locale**                    | String           | Локаль устройства. Для Android: `Locale.getDefault().toString()`. Для iOS: `[[NSLocale currentLocale] localeIdentifier]`. |
-| **country**                   | String           | Код страны по стандарту ISO (например, US для США). |
-| **postcut**                   | String (Boolean) | Указывает, была ли покупка отправлена после вычета комиссии платформы. 1 — true, 0 — false. |
-| **currency**                  | String           | Код валюты по стандарту ISO (например, USD для доллара США). |
+| **country**                   | String           | Код страны в стандарте ISO locale (например, US для США). |
+| **postcut**                   | String (Boolean) | Указывает, была ли покупка отправлена после удержания комиссии платформы. 1 — true, 0 — false. |
+| **currency**                  | String           | Код валюты в стандарте ISO (например, USD для долларов США). |
 | **platform**                  | String           | Платформа устройства (например, ios, android, windows, amazon). |
-| **quantity**                  | Integer          | Количество приобретённых единиц товара.                      |
-| **bundle_id**                 | String           | Идентификатор пакета приложения (например, `com.example.app`). |
-| **ip_address**                | String (IPv4)    | IP-адрес пользователя. Используется для определения страны.  |
+| **quantity**                  | Integer          | Количество приобретённых единиц.                             |
+| **bundle_id**                 | String           | Идентификатор бандла приложения (например, `com.example.app`). |
+| **ip_address**                | String (IPv4)    | IP-адрес пользователя. Используется для определения страны. |
 | **os_version**                | String           | Версия ОС устройства. Для Android: `String.valueOf(Build.VERSION.SDK_INT)`. Для iOS: `[[UIDevice currentDevice] systemVersion]`. |
 | **product_id**                | String           | Уникальный идентификатор приобретённого продукта.            |
 | **app_version**               | Float, Decimal   | Версия приложения. Для Android: `context.getPackageManager().getPackageInfo()`. Для iOS: `[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"]`. |
 | **sdk_version**               | String           | Используемая версия SDK, всегда равна `server`.              |
 | **device_model**              | String           | Модель устройства. Для Android: `Build.MODEL`. Для iOS: `sysctl("hw.machine")`. |
 | **advertising_id**            | UUID             | Рекламный идентификатор устройства. Обязателен для Android. Для iOS может быть пустым или состоять из нулей. |
-| **os_version_release**        | String           | Релизная версия ОС. Для Android: `String.valueOf(Build.VERSION.RELEASE)`. Для iOS: `[[UIDevice currentDevice] systemVersion]`. |
+| **os_version_release**        | String           | Версия релиза ОС. Для Android: `String.valueOf(Build.VERSION.RELEASE)`. Для iOS: `[[UIDevice currentDevice] systemVersion]`. |
 | **developer_device_id**       | UUID             | Идентификатор вендора (только для iOS).                      |
-| **analytics_installation_id** | UUID             | Идентификатор установки для аналитики. Подробнее см. в документации по адресу `https://docs.tenjin.com`. |
+| **analytics_installation_id** | UUID             | Идентификатор установки для аналитики. Подробнее см. документацию по адресу `https://docs.tenjin.com`. |
+
+## Устранение неполадок \{#troubleshooting\}
+
+### Некоторые события отображаются как неудачные в Event Feed \{#some-events-show-as-failed-in-the-event-feed\}
+
+Tenjin принимает только события, перечисленные в разделе [Настройка событий и тегов](#configure-events-and-tags). Все остальные события всё равно попадают в Event Feed, но отмечаются как неудачная доставка с подсказкой «The event type is not supported for integration». Это касается и `access_level_updated` — его нет в разделе **Events names**, потому что оно доступно исключительно для [интеграции через вебхук](webhook).

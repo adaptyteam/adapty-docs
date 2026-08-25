@@ -25,6 +25,39 @@ const SKILL_SLUGS: Record<string, string> = {
 const sidebars = import.meta.glob('../data/sidebars/*.json', { eager: true });
 const currentSlug = Astro.url.pathname.split('/').filter(Boolean).pop() ?? '';
 
+// Ads Manager pages promote the Apple Ads plugin instead of the SDK
+// integration skill. They are exactly the members of the two "Ads Manager"
+// sidebar categories, anchored by their landing-page ids: the dashboard
+// product category in tutorial.json and the CLI category in api.json.
+const APPLE_ADS_CATEGORY_ANCHORS = ['adapty-ads-manager', 'developer-cli-ads-manager'];
+
+function findCategory(items: any[], anchor: string): any | null {
+    for (const item of items) {
+        const id = item.id ?? item.link?.id;
+        if (item.type === 'category' && id === anchor) return item;
+        if (item.items) {
+            const found = findCategory(item.items, anchor);
+            if (found) return found;
+        }
+    }
+    return null;
+}
+
+function collectIds(item: any, out: Set<string>) {
+    const id = item.id ?? item.link?.id;
+    if (id) out.add(id);
+    for (const child of item.items ?? []) collectIds(child, out);
+}
+
+const appleAdsIds = new Set<string>();
+for (const mod of Object.values(sidebars)) {
+    for (const anchor of APPLE_ADS_CATEGORY_ANCHORS) {
+        const category = findCategory((mod as any).default, anchor);
+        if (category) collectIds(category, appleAdsIds);
+    }
+}
+const isAppleAdsPage = appleAdsIds.has(currentSlug);
+
 function containsSlug(items: any[], target: string): boolean {
     for (const item of items) {
         const id = item.id ?? item.link?.id;
@@ -44,9 +77,11 @@ for (const [filepath, mod] of Object.entries(sidebars)) {
     }
 }
 
-const learnMoreHref = SKILL_SLUGS[detected ?? 'ios'] ?? SKILL_SLUGS.ios;
+const learnMoreHref = isAppleAdsPage ? 'developer-cli-ads-manager-skill' : (SKILL_SLUGS[detected ?? 'ios'] ?? SKILL_SLUGS.ios);
+const description = isAppleAdsPage ? t.descriptionAppleAds : t.description;
+const toolset = isAppleAdsPage ? agentTools.appleAds : agentTools;
 // Resolve optional per-tool notes ("note" holds a key into the installTools string group)
-const tools = agentTools.tools.map((tool) => ({
+const tools = toolset.tools.map((tool) => ({
     ...tool,
     noteText: 'note' in tool ? (t as Record<string, string>)[tool.note] : undefined,
 }));
@@ -64,7 +99,7 @@ const tools = agentTools.tools.map((tool) => ({
             </button>
         </div>
         <p class="itm-desc">
-            {t.description}
+            {description}
             <a href={learnMoreHref} class="itm-learn-more">{t.learnMore}</a>
         </p>
         <div class="itm-tabs" role="tablist">
@@ -97,7 +132,7 @@ const tools = agentTools.tools.map((tool) => ({
         }
         <p class="itm-usage">{t.usageNote}</p>
         <div class="itm-code">
-            <div class="itm-cmd">{agentTools.usageCommand}</div>
+            <div class="itm-cmd">{toolset.usageCommand}</div>
             <button type="button" class="itm-copy" title={t.copy} aria-label={t.copy}>
                 <svg class="itm-copy-icon-default" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                     <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -127,7 +162,7 @@ const tools = agentTools.tools.map((tool) => ({
         display: none;
     }
 
-    :root.dark .itm-overlay {
+    :global(.dark) .itm-overlay {
         background: rgba(0, 0, 0, 0.65);
     }
 
@@ -271,7 +306,7 @@ const tools = agentTools.tools.map((tool) => ({
         background: #f0fdf4;
     }
 
-    :root.dark .itm-copy.copied {
+    :global(.dark) .itm-copy.copied {
         color: #4ade80;
         border-color: #166534;
         background: #052e16;
@@ -304,6 +339,12 @@ const tools = agentTools.tools.map((tool) => ({
         const openBtn = document.getElementById('install-tools-btn');
         if (!modal || !openBtn) return;
 
+        // Guard against double-binding: this runs both at module eval and on
+        // the initial astro:page-load. After a ClientRouter swap the modal is
+        // a fresh element, so the flag is gone and listeners bind again.
+        if (modal.dataset.init === '1') return;
+        modal.dataset.init = '1';
+
         const closeBtn = modal.querySelector<HTMLButtonElement>('.itm-close');
         let lastFocus: HTMLElement | null = null;
 
@@ -312,6 +353,7 @@ const tools = agentTools.tools.map((tool) => ({
             modal!.hidden = false;
             document.body.style.overflow = 'hidden';
             closeBtn?.focus();
+            (window as any).docsTrack?.('docs_install_tools_opened');
         }
 
         function close() {
@@ -361,6 +403,11 @@ const tools = agentTools.tools.map((tool) => ({
                 if (!code) return;
                 try {
                     await navigator.clipboard.writeText(code.textContent ?? '');
+                    // Panel copy buttons report their tool id; the bottom
+                    // usage-command block sits outside any panel.
+                    (window as any).docsTrack?.('docs_install_tool_copied', {
+                        tool: btn.closest<HTMLElement>('.itm-panel')?.dataset.tool ?? 'usage-command',
+                    });
                     btn.classList.add('copied');
                     setTimeout(() => btn.classList.remove('copied'), 2000);
                 } catch (err) {

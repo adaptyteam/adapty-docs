@@ -1,0 +1,62 @@
+---
+title: "FlutterのSDKでフロー画面の表示をトラッキングする"
+description: "Flutterアプリでユーザーがフロー画面を開くたびにイベントを受け取り、プロダクトアナリティクスに転送します。"
+metadataTitle: "フロー画面表示のトラッキング | Flutter SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)内のいずれかの画面を開くたびに、SDKはアプリへ `flow_screen_showed` イベントを通知します。これをAmplitude、Mixpanel、または使用しているプロダクトアナリティクスに転送することで、フロー画面のデータをアプリの他のイベントと合わせて分析できます。
+
+:::tip
+フローのどこまでユーザーが進んだかを確認するのにコードは不要です — [フロー指標](flow-metrics)はAdapty ダッシュボードでビュー数、完了数、画面ごとの離脱率をすでに表示しています。このガイドは、同じデータを自分のアナリティクスで使いたいとき、またはAdaptyが把握していないイベントと組み合わせたいときに活用してください。
+:::
+
+## 始める前に \{#before-you-start\}
+
+以下が必要です：
+
+- **Adapty Flutter SDK v4以降**：フローのアナリティクスコールバックは、それ以前のバージョンには存在しません。
+- **この機能のリリース後に公開されたフローのバージョン**：Adaptyはフローを公開する際にスクリーンイベントを生成するため、それ以前に最後に公開されたフローはイベントを報告しません。イベントがアプリに届かない場合は、フローの新しいバージョンを公開して再試行してください。
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+画面ビューは、他のすべてのフローイベントと同じ分析コールバックに届きます。登録方法については、[フロー＆ペイウォールイベントの処理](flutter-handling-events)を参照してください。
+
+## 全スクリーン表示をアナリティクスに転送する \{#forward-every-screen-view-to-your-analytics\}
+
+同じコールバックでフローが他のイベントも報告するため、他の内容を読む前にまずイベント名でマッチングしてください。
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+
+  final screenId = params['instanceId'];
+  final screenOrder = params['screen_order'];
+
+  // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## ユーザーが最後の画面に到達したときにコードを実行する \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` は、フローがそれ以上進めない画面で `true` になります。これを使って、コンテンツのアンロック、オンボーディングの完了マーク、または独自の完了イベントの送信を、ビルダーにボタンアクションを追加せずに行えます。
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_screen_showed') return;
+  if (params['is_last_screen'] != true) return;
+
+  // The user reached the end of the flow.
+}
+```
+
+フローの最終スクリーンに到達することは、フローを閉じることとは異なります。ユーザーは最終スクリーンを表示した後、何も操作せずにフローを閉じる場合があります。また、分岐のあるフローでは複数の異なるスクリーンで終了することもあります。フロー自体が閉じられたことを確認するには、代わりに `flowViewDidDisappear` を使用してください。

@@ -1,0 +1,62 @@
+---
+title: "Android SDKでフロースクリーンのビューを追跡する"
+description: "Androidアプリでユーザーがフロースクリーンを開くたびにイベントを受信し、プロダクトアナリティクスに転送します。"
+metadataTitle: "フロースクリーンビューの追跡 | Android SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)内のスクリーンを開くたびに、SDKは`flow_screen_showed`イベントをアプリに報告します。このイベントをAmplitude、Mixpanel、またはご利用中のプロダクトアナリティクスに転送することで、フロースクリーンをアプリの他のイベントと合わせて分析できます。
+
+:::tip
+フローのどこまでユーザーが進んだかを確認するのにコードは不要です。[フロー指標](flow-metrics)では、Adapty ダッシュボードでビュー数、完了数、画面ごとのドロップオフをすでに確認できます。同じデータを独自のアナリティクスで活用したい場合や、Adapty が把握していないイベントと組み合わせたい場合に、このガイドをご利用ください。
+:::
+
+## 始める前に \{#before-you-start\}
+
+以下が必要です：
+
+- **Adapty Android SDK v4以降**：フローの分析コールバックは、それ以前のバージョンには存在しません。
+- **この機能がリリースされた後に公開されたフローバージョン**：Adaptypはフローを公開するときにスクリーンイベントを生成するため、それ以前に公開したフローからはイベントが報告されません。イベントがアプリに届かない場合は、フローの新しいバージョンを公開して再度お試しください。
+
+## 受信する内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+スクリーンビューは、他のすべてのフローイベントと同じアナリティクスコールバックに到達します。登録方法については、[フロー＆ペイウォールイベントを処理する](android-handling-events)を参照してください。
+
+## すべての画面表示をアナリティクスに転送する \{#forward-every-screen-view-to-your-analytics\}
+
+コールバックはフローから他のイベントも受け取るため、他の情報を読み取る前にまずイベント名で絞り込んでください。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+
+    val screenId = params["instanceId"]
+    val screenOrder = params["screen_order"]
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## ユーザーがフローの最後に到達したときにコードを実行する \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` は、フローがそれ以上進めない画面で `true` になります。これを使って、コンテンツのアンロック、オンボーディング完了のマーク付け、または独自の完了イベントの送信を、ビルダーでボタンアクションを追加せずに行うことができます。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+    if (params["is_last_screen"] != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+フローの最後の画面に到達することは、フローが閉じられることとは異なります。ユーザーは最終画面を表示したまま、何もアクションを取らずにフローを閉じることができます。また、分岐のあるフローでは複数の異なる画面で終了することがあります。フロー自体が閉じられたことを知るには、代わりに `onFlowClosed` を使用してください。

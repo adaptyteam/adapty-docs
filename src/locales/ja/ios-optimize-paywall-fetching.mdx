@@ -12,13 +12,91 @@ iOSで信頼性の高いペイウォールフェッチを実現するには、3�
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| 推奨事項 | 避けるべき事項 | 理由 |
+| 実施すること | 実施しないこと | 理由 |
 |---|---|---|
-| 表示しようとしているプレースメントをフェッチする。 | 起動時にすべてのプレースメントを並列でプリフェッチする。 | 一括プリフェッチはメインスレッドをブロックし、バースト中に画面が真っ暗になる。 |
-| アトリビューションが解決される時間を確保してから `getPaywall` をフェッチする（例：`activate` から1〜2秒後、または `onProfileUpdate` が発火した後）。 | `App.init()` で `getPaywall` を呼び出す。 | アトリビューションがまだ取得されていない。ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントやASAパーソナライゼーションが静かにバイパスされる。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getPaywall` を無期限に待機する。 | タイムアウトなしでは、接続が悪いユーザーはネットワークが解決するまで空白の画面を見続けるか、アプリを閉じてしまう。 |
+| 表示するプレースメントをフェッチするか、[`preloadFlows`](#preload-placements)（SDK 4.1+）でキャッシュをウォームアップする。 | 起動時に独自の並行 `getFlow` 呼び出しを展開する。 | 自前のプリフェッチバーストはメインスレッドをブロックしてブラックスクリーンを引き起こす。`preloadFlows` はこの用途向けに設計されており、バッチ全体で1つのタイムアウトバジェットを共有する。 |
+| アトリビューションが解決される機会を得た後、たとえば `activate` の1〜2秒後や `onProfileUpdate` の発火後に `getPaywall` をフェッチする。 | `App.init()` で `getPaywall` を呼び出す。 | アトリビューションがまだ到達していない。ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントや ASA パーソナライゼーションが暗黙的にバイパスされる。 |
+| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を構成する。 | `getPaywall` を無期限に待機する。 | タイムアウトがないと、通信状況が悪いユーザーはネットワークが解決されるまで空白の画面を見続けるか、アプリを閉じてしまう。 |
 
-`fetchPolicy` と `loadTimeout` パラメーターのリファレンスについては[ペイウォールとプロダクトのフェッチ](fetch-paywalls-and-products)を、適切なプレースメントの選択については[プレースメント](placements)を参照してください。
+`loadTimeout` がいずれかのフェッチ（通常の `getPaywall` を含む）でタイムアウトした場合、SDKはキャッシュされたバリアントが存在すればそれを返し、存在しなければ残り時間内にデフォルトオーディエンス（**All Users**）のバリアントを取得します。ターゲティングはそのリクエストに対して失われます（遅延するのではなく）：セグメントやアトリビューションベースのオーディエンスは結果に適用されません。
+
+`fetchPolicy` と `loadTimeout` パラメーターのリファレンスは[ペイウォールとプロダクトの取得](fetch-paywalls-and-products)を、適切なプレースメントの選び方は[プレースメント](placements)を参照してください。
+
+## プレースメントの事前読み込み \{#preload-placements\}
+
+:::info
+これらのメソッドは SDK バージョン 4.1 以降で使用できます。
+:::
+
+`preloadFlows` と `preloadOnboardings` は、プレースメントを事前に SDK キャッシュへ読み込みます。その後、同じプレースメントに対して `getFlow` または `getOnboarding` を呼び出すと、ネットワークではなくキャッシュから解決されるため、ペイウォールが待ち時間なしに表示されます。
+
+セッションで必要になるプレースメントがわかっているものの、すぐに表示したくない場合に使用してください。たとえば、`activate` と `identify` が完了した直後に、ユーザーがまだタップしていないボタンの背後にあるペイウォールを事前読み込みする場合などに活用できます。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(
+    placementIds: ["onboarding", "main_paywall"],
+    loadTimeout: 5
+)
+
+try await Adapty.preloadOnboardings(
+    placementIds: ["intro"],
+    locale: "en",
+    loadTimeout: 5
+)
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
+    if let error {
+        // at least one placement failed to preload
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**パラメータ:**
+
+- `placementIds`（必須）: プリロードするプレースメント。空白および重複した ID は無視されます。
+- `locale`（任意、`preloadOnboardings` のみ）: キャッシュするオンボーディングのロケール。
+- `loadTimeout`（任意）: 各プレースメントごとではなく、バッチ全体のタイムアウト（秒単位）。デフォルトは 5 秒で、1 秒未満の値は 1 秒に切り上げられます。
+
+**知っておくべき動作:**
+
+- メソッドがエラーをスローするのは、すべてのプレースメントの処理を試みた後です。エラーにはプレースメントごとの失敗がまとめられており、1つのプレースメントが失敗しても他のプレースメントの処理は続行されます。
+- プレースメントがタイムアウトしたり、ネットワークエラーで失敗した場合、SDKはそのプレースメントのデフォルトオーディエンスのバリアントにフォールバックします。それ以外のエラーはそのまま報告されます。
+- タイムアウトが発生した時点でオーディエンスを指定したフェッチが完了していない場合でも、SDKは残りの時間内でデフォルトオーディエンスのバリアントの取得を試みます。
+- プリロードはキャッシュをウォームアップするだけです。コンテンツを返すわけではないため、表示するには引き続き`getFlow`または`getOnboarding`を呼び出す必要があります。
+
+### どのプレースメントが失敗したかを確認する \{#find-out-which-placement-failed\}
+
+スローされるエラーはバッチ全体を対象とした単一の `AdaptyError` で、コードは `networkFailed`（2002）です。個別の失敗を確認するには、プレースメント ID をキーとするディクショナリである `preloadErrors` プロパティを参照してください。
+
+```swift showLineNumbers
+do {
+    try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"])
+} catch {
+    for (placementId, placementError) in error.preloadErrors ?? [:] {
+        // log or retry the individual placement
+    }
+}
+```
+
+`preloadErrors` は、プリロード呼び出し以外のエラーでは `nil` になります。そのため、`nil` は「プリロード失敗なし」ではなく「プリロード失敗ではない」として扱ってください。
+
+オーディエンスのセグメンテーションを待たずにキャッシュをウォームアップするには、デフォルトオーディエンス用のバリアントを使用します。
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
 
 ## 接続が悪い環境向けの調整 \{#tune-for-poor-connectivity\}
 

@@ -1,10 +1,11 @@
 ---
-title: "将 Adapty React Native SDK 迁移至 v. 4.0"
-description: "通过将付费墙 API 替换为 flow API，迁移至 Adapty React Native SDK v4.0（测试版），兼容 Flow Builder 和 付费墙编辑工具。"
-metadataTitle: "迁移至 Adapty React Native SDK v4.0（测试版）| Adapty 文档"
+title: "将 Adapty React Native SDK 迁移到 v4.0"
+description: "通过将付费墙 API 替换为 flow API，迁移到 Adapty React Native SDK v4.0，同时兼容 Flow Builder 和付费墙编辑工具。"
+metadataTitle: "迁移到 Adapty React Native SDK v4.0 | Adapty 文档"
 ---
 
-Adapty React Native SDK 4.0（测试版）引入了 flow 功能，并相应地重命名了付费墙 API。新 API 同时兼容全新的 Flow Builder 和现有的付费墙编辑工具——无需在 Adapty 看板端进行任何配置变更。
+Adapty React Native SDK 4.0 引入了 flow 功能，并相应地对付费墙 API 进行了重命名。新 API 同时支持新版 Flow Builder 和现有的付费墙编辑工具——无需在 Adapty 看板侧进行任何配置变更。
+
 ## 快速参考 \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -19,7 +20,8 @@ Adapty React Native SDK 4.0（测试版）引入了 flow 功能，并相应地�
 | `onPaywallShown` | `onAppeared` |
 | `onPaywallClosed` | `onDisappeared` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` 保持原有命名——产品仍归属于流程，`getPaywallProducts` 现在接收 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数。视图方法 `present`、`dismiss`、`setEventHandlers`、`showDialog`，以及事件处理器 `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished` 和 `onAndroidSystemBack` 均与 v3 保持相同命名。部分默认行为有所变更——详见[默认行为变更](#default-behavior-changes)。
+`AdaptyPaywallProduct` 保持原名不变——产品仍属于某个流程，`getPaywallProducts` 现在接受 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数——请改为将其传入 `createFlowView`。视图方法 `present`、`dismiss`、`setEventHandlers`、`showDialog`，以及事件处理器 `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished` 和 `onAndroidSystemBack` 与 v3 中的名称保持一致。部分默认行为有所变更——详见[默认行为变更](#default-behavior-changes)。
+
 ## 最低 iOS 版本 \{#minimum-ios-version\}
 
 Adapty React Native SDK 4.0 将最低 iOS 部署目标从 iOS 13.0 提升至 **iOS 15.0**。升级前，请将您的 iOS 部署目标设置为 15.0 或更高版本。
@@ -29,9 +31,9 @@ Adapty React Native SDK 4.0 将最低 iOS 部署目标从 iOS 13.0 提升至 **i
 v4.0 为预发布版本，请固定精确版本号——npm 不会通过 caret/tilde 范围选取预发布版本：
 
 ```bash showLineNumbers
-npm install react-native-adapty@4.0.0
+npm install react-native-adapty@4.0.2
 # or
-yarn add react-native-adapty@4.0.0
+yarn add react-native-adapty@4.0.2
 ```
 ### iOS：原生 SDK 现在通过 Swift Package Manager 分发 \{#ios-native-sdks-now-come-through-swift-package-manager\}
 
@@ -66,34 +68,43 @@ npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
 
+如果 iOS 构建随后出现 `'React/RCTBridge.h' file not found` 错误，请将 `expo-modules-autolinking` 升级至 57.0.10 或更高版本（Expo SDK 57）或 56.0.22 或更高版本（Expo SDK 56）——详情及临时解决方案请参阅[故障排查说明](sdk-installation-react-native-expo#react-header-not-found)。
+
 #### Bare React Native
 
-在你的 iOS target 中添加动态框架，然后重新安装 pods：
+为你的 iOS target 添加动态框架，然后重新安装 pods：
 
 ```ruby showLineNumbers title="ios/Podfile"
 use_frameworks! :linkage => :dynamic
 ```
+
 ```bash showLineNumbers
 cd ios && pod install --repo-update
 ```
 
-如果你之前通过 CocoaPods 子依赖的方式引入了 `Adapty`、`AdaptyUI` 或 `AdaptyPlugin`，请先从 `Podfile` 中删除所有显式的 `pod 'Adapty'`、`pod 'AdaptyUI'` 或 `pod 'AdaptyPlugin'` 行。
+如果您之前通过 CocoaPods 将 `Adapty`、`AdaptyUI` 或 `AdaptyPlugin` 作为子依赖项引入，请先从 `Podfile` 中移除所有显式的 `pod 'Adapty'`、`pod 'AdaptyUI'` 或 `pod 'AdaptyPlugin'` 行。
+
 :::warning
-从默认静态链接切换到动态框架可能与尚不支持模块化头文件的库产生冲突，且与 Flipper 不兼容。如果遇到构建问题，请参阅这篇[关于将 Swift Package Manager 与 React Native 库集成的文章](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries)。
+将默认的静态链接切换为动态框架，可能会与尚不支持模块化头文件的库产生冲突，且与 Flipper 不兼容。如果遇到构建问题，请参阅这篇[将 Swift Package Manager 与 React Native 库集成的说明](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries)。
 :::
 
-完整的安装步骤，请参阅[安装 Adapty SDK](sdk-installation-reactnative)。
+请参阅[安装 Adapty SDK](sdk-installation-reactnative)了解完整的安装设置。
+
 ## 获取流程 \{#fetching-flows\}
 ### getPaywall → getFlow
 
-返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，同时移除了 `locale` 参数——渲染 flow 时，语言环境会自动解析；对于自定义付费墙，所有语言环境均通过 `flow.remoteConfigs` 返回：
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，`locale` 参数从获取调用移至 `createFlowView`；对于自定义付费墙，所有语言环境均通过 `flow.remoteConfigs` 返回：
 
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
++ const view = await createFlowView(flow, { locale: 'en' });
 ```
 
-`getPaywallForDefaultAudience` 也以同样的方式重命名：
+`locale` 在 `createFlowView` 中保持可选：省略时，视图将以 `en` 渲染，或在流程没有 `en` 本地化时使用流程的默认本地化。此功能需要 SDK 4.0.2 或更高版本——请参阅[本地化与语言代码](react-native-localizations-and-locale-codes)。
+
+`getPaywallForDefaultAudience` 的重命名方式相同：
+
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');
@@ -107,6 +118,10 @@ cd ios && pod install --repo-update
 - const products = await adapty.getPaywallProducts(paywall);
 + const products = await adapty.getPaywallProducts(flow);
 ```
+### 备用文件 \{#fallback-files\}
+
+备用文件格式[在 SDK v4 中发生了变更](fallback-flows)。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 下载新文件并将其打包到应用中。
+
 ## 数据模型 \{#data-model\}
 
 `getFlow` 返回的是 `AdaptyFlow` 而非 `AdaptyPaywall`，且对象结构有所变化：

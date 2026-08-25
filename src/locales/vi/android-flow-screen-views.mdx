@@ -1,0 +1,62 @@
+---
+title: "Theo dõi lượt xem màn hình flow trong Android SDK"
+description: "Nhận sự kiện mỗi khi người dùng mở một màn hình flow trong ứng dụng Android của bạn và chuyển tiếp tới công cụ phân tích sản phẩm."
+metadataTitle: "Theo dõi lượt xem màn hình flow | Android SDK | Tài liệu Adapty"
+---
+
+Mỗi khi người dùng mở một màn hình trong [flow](adapty-flow-builder), SDK sẽ báo cáo sự kiện `flow_screen_showed` tới ứng dụng của bạn. Hãy chuyển tiếp sự kiện này tới Amplitude, Mixpanel, hoặc bất kỳ công cụ phân tích sản phẩm nào bạn đang dùng, để bạn có thể phân tích các màn hình flow cùng với các sự kiện khác trong ứng dụng.
+
+:::tip
+Để xem người dùng đi được đến đâu trong một flow, bạn không cần viết code — [chỉ số flow](flow-metrics) đã hiển thị sẵn lượt xem, lượt hoàn thành và tỷ lệ thoát theo từng màn hình ngay trên Adapty Dashboard. Hãy dùng hướng dẫn này khi bạn cần dữ liệu đó trong hệ thống analytics của riêng mình, kết hợp với các sự kiện mà Adapty không theo dõi.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Android SDK v4 trở lên**: Callback analytics của flow không tồn tại trong các phiên bản cũ hơn.
+- **Một phiên bản flow được publish sau khi tính năng này ra mắt**: Adapty tạo các sự kiện màn hình khi publish flow, vì vậy flow mà bạn đã publish trước đó sẽ không báo cáo gì. Nếu không có sự kiện nào đến ứng dụng của bạn, hãy publish phiên bản mới của flow và thử lại.
+
+## Những gì bạn nhận được \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Lượt xem màn hình được gửi đến cùng callback analytics như mọi sự kiện flow khác. Xem [Xử lý sự kiện flow & paywall](android-handling-events) để biết nơi đăng ký callback đó.
+
+## Chuyển tiếp mọi lượt xem màn hình đến hệ thống analytics của bạn \{#forward-every-screen-view-to-your-analytics\}
+
+Kiểm tra tên sự kiện trước tiên, vì một flow có thể báo cáo nhiều loại sự kiện khác nhau qua cùng một callback.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+
+    val screenId = params["instanceId"]
+    val screenOrder = params["screen_order"]
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Chạy code khi người dùng đến màn hình cuối \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` là `true` trên màn hình mà flow không thể tiến thêm. Dùng nó để mở khóa nội dung, đánh dấu onboarding đã hoàn thành, hoặc gửi sự kiện hoàn thành của riêng bạn — mà không cần thêm hành động button trong builder.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+    if (params["is_last_screen"] != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+Việc đến màn hình cuối không đồng nghĩa với việc đóng flow. Người dùng có thể xem màn hình cuối rồi thoát flow mà không thực hiện bất kỳ hành động nào, và một flow phân nhánh có thể kết thúc ở nhiều màn hình khác nhau. Để biết khi nào flow thực sự biến mất, hãy dùng `onFlowClosed` thay thế.
