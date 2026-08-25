@@ -110,7 +110,7 @@ or developer can see and click.
 | filter-flows | — | marketer, dev | 5 | tutorial |
 | flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 3 | tutorial |
+| flow-common-issues | reference | marketer, dev | 12 | tutorial |
 | flow-metrics | — | marketer, dev | 24 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
 | onboarding-actions | — | marketer, dev | 21 | tutorial |
@@ -119,7 +119,7 @@ or developer can see and click.
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 8 | tutorial |
 | paywall-builder-templates | — | marketer, dev | 6 | tutorial |
-| paywall-device-compatibility-preview | — | marketer, dev | 3 | tutorial |
+| paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 3 | tutorial |
 | paywall-product-block | — | marketer, dev | 7 | tutorial |
