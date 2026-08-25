@@ -34,7 +34,7 @@ integration.
 | importing-historical-data-to-adapty | — | dev | 5 | tutorial |
 | migrate-integrations-to-adapty | migration | dev | 8 | tutorial |
 | migrate-to-adapty-from-another-solutions | entry | dev | 3 | tutorial |
-| migration-from-revenuecat | migration | dev | 21 | tutorial |
+| migration-from-revenuecat | migration | dev | 22 | tutorial |
 | migration-from-superwall | migration | dev | 17 | tutorial |
 | observer-vs-full-mode | — | dev | 3 | tutorial |
 <!-- /mill:auto -->

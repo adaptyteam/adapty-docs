@@ -159,7 +159,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| InvalidProductIdentifiers | — | dev | 6 | ios |
+| InvalidProductIdentifiers | — | dev | 7 | ios |
 | InvalidProductIdentifiers-flutter | — | dev | 6 | flutter |
 | InvalidProductIdentifiers-kmp | — | dev | 6 | kmp |
 | InvalidProductIdentifiers-react-native | — | dev | 6 | react-native |

@@ -31,7 +31,7 @@ cost.
 | access-level | entry | dev, marketer | 0 | tutorial |
 | assigning-access-level-to-a-product | — | dev, marketer | 0 | tutorial |
 | create-access-level | — | dev, marketer | 0 | tutorial |
-| give-access-level-to-specific-customer | — | dev, marketer | 2 | tutorial |
+| give-access-level-to-specific-customer | — | dev, marketer | 3 | tutorial |
 | local-access-levels | — | dev, marketer | 0 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

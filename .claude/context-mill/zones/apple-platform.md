@@ -168,7 +168,7 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
 | initial_ios | entry | dev | 1 | tutorial |
 | refund-saver | — | dev | 11 | tutorial |
 | set-up-app-store-connect | — | dev | 8 | tutorial |
-| troubleshoot-app-store-integration | — | dev | 5 | tutorial |
+| troubleshoot-app-store-integration | — | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
