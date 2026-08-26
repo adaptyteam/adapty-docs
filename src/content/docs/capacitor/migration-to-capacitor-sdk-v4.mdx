@@ -9,7 +9,7 @@ Adapty Capacitor SDK 4.1 is the first stable release of the 4.x line — 4.0 was
 The 4.x line introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side. On top of that, 4.1 makes Adapty Attribution opt-in, renames the external attribution method, changes the fallback file format, and adds App Store promoted in-app purchases.
 
 :::note
-Coming from the 4.0 beta? Replace the pinned beta version with the [latest release](#installation), then only four sections apply: [Adapty Attribution is disabled by default](#adapty-attribution-is-disabled-by-default), [the renamed external attribution method](#renamed-external-attribution-method), [fallback files](#fallback-files), and [App Store promoted in-app purchases](#app-store-promoted-in-app-purchases).
+Coming from the 4.0 beta? Replace the pinned beta version with the [latest release](#installation), then only four sections apply: [Adapty Attribution is disabled by default](#adapty-attribution-is-disabled-by-default), [the renamed external attribution APIs](#renamed-external-attribution-apis), [fallback files](#fallback-files), and [App Store promoted in-app purchases](#app-store-promoted-in-app-purchases).
 :::
 
 ## Quick reference
@@ -28,10 +28,12 @@ Coming from the 4.0 beta? Replace the pinned beta version with the [latest relea
 | `CreatePaywallViewParamsInput` | `CreateFlowViewParamsInput` |
 | `onRenderingFailed` | `onError` |
 | `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
 | Fallback file downloaded for 3.x | new fallback file format — download the file again |
 | Promoted in-app purchases not supported | the `'onPromotedPurchaseReceived'` event and `adapty.makePromotedPurchase({ product })` |
 
-`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` keeps its name too, now taking an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter — pass it to `createFlowView` instead. The purchase and profile APIs (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) and `setFallback` keep the same signatures, but the fallback file itself must be re-downloaded — see [Fallback files](#fallback-files). `AdaptyProfile.appliedAttributionSources` keeps its name too — unlike the native iOS and Android SDKs, Capacitor doesn't rename it in 4.1. The view methods `present`, `dismiss`, `setEventHandlers`, and `showDialog`, and the event handlers `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, and `onAndroidSystemBack` keep the same names as in v3. The onboarding methods still work but are deprecated — see [Onboarding API deprecation](#onboarding-api-deprecation). Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
+`AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` keeps its name too, now taking an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter — pass it to `createFlowView` instead. The purchase and profile APIs (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) and `setFallback` keep the same signatures, but the fallback file itself must be re-downloaded — see [Fallback files](#fallback-files). The view methods `present`, `dismiss`, `setEventHandlers`, and `showDialog`, and the event handlers `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, and `onAndroidSystemBack` keep the same names as in v3. The onboarding methods still work but are deprecated — see [Onboarding API deprecation](#onboarding-api-deprecation). Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
 
 ## Minimum versions
 
@@ -235,18 +237,46 @@ v4 also adds a few capabilities you can opt into:
 - `adapty.openWebUrl({ url, openIn })` and `adapty.requestAppReview()` methods — these back the default `onUrlPress` and `onRequestAppReview` handlers, so URLs and app-review prompts are handled natively out of the box. Call them directly only if you override those handlers.
 - Observer-mode purchase handling inside flows via the new `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` handlers. See [Present flows in Observer mode](capacitor-present-flows-in-observer-mode).
 
-## Renamed external attribution method
+## Renamed external attribution APIs
 
-Starting from SDK version 4.1, the method that passes attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) is renamed to match the native SDKs, and its `source` option becomes `provider`. There is no deprecated alias, so existing call sites stop working until you rename them:
+Starting from SDK version 4.1, the APIs for passing attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) are renamed to match the native SDKs. There are no deprecated aliases, so existing call sites stop working until you rename them:
+
+| Before 4.1 | 4.1 |
+|---|---|
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+### updateAttribution → updateExternalAttribution
+
+The method is renamed and its `source` option becomes `provider`. Attribution data is still a plain object:
 
 ```diff showLineNumbers
 - await adapty.updateAttribution({ attribution, source: 'adjust' });
 + await adapty.updateExternalAttribution({ attribution, provider: 'adjust' });
 ```
 
-Only the names change. The provider is the same string as before (`'adjust'`, `'appsflyer'`, `'branch'`, `'tenjin'`, `'apple_search_ads'`, `'custom'`), and attribution data is still a plain object.
+### AttributionSource → AdaptyExternalAttributionProvider
 
-`AdaptyProfile.appliedAttributionSources` is unchanged — it keeps its name and its `AttributionSource[]` type. Code that reads it, such as the [Apple Ads targeting flow](capacitor-show-aa-targeted-paywall), needs no edit.
+The provider type is renamed. It stays an open union — the predefined values are `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'`, and `'tenjin'`, and any other string is accepted, so a provider Adapty adds later works without an SDK update:
+
+```diff showLineNumbers
+- import type { AttributionSource } from '@adapty/capacitor';
++ import type { AdaptyExternalAttributionProvider } from '@adapty/capacitor';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+The profile property that lists the attribution providers applied to the profile is renamed, and its element type changes accordingly:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Code that reads it needs updating — see [Show an Apple Ads targeted paywall](capacitor-show-aa-targeted-paywall).
 
 ## App Store promoted in-app purchases
 
