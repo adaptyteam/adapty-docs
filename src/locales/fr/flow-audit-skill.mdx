@@ -1,0 +1,92 @@
+---
+title: "Compétence agent pour auditer les flows"
+description: "Installez la compétence flow-audit pour que votre outil de codage IA vérifie si un flow est prêt pour la production avant de le publier."
+metadataTitle: "Compétence Agent Flow Audit | Flow Builder | Documentation Adapty"
+---
+
+La compétence flow-audit répond à une seule question sur un flow : est-il prêt pour la production ? Pointez votre outil de codage IA vers un flow, il lit la configuration via l'[Adapty CLI](developer-cli-quickstart), la vérifie par rapport à votre catalogue de produits, et rend un verdict — pas une liste à interpréter vous-même.
+
+Un flow peut passer toutes les vérifications de publication existantes et rester dangereux à montrer aux utilisateurs. Les contrôles de publication du Flow Builder et `flows config validate` posent tous les deux la même question : « ce document est-il bien formé ? » — aucun des deux ne demande « un vrai utilisateur pourrait-il se retrouver bloqué, ou voir quelque chose de faux ? » Un flow en statut `publication_failed` peut passer ces deux vérifications ; c'est flow-audit qui détecte le reste.
+
+:::note
+flow-audit n'écrit jamais dans un flow. Il lit la configuration et votre catalogue de produits, exécute ses vérifications, et vous transmet tout ce qu'il trouve — ou le transmet au [skill flow-generator](flow-generator-skill) — pour correction.
+:::
+
+## Installer le skill \{#install-the-skill\}
+
+flow-audit est inclus dans le plugin `adapty-skills` ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) aux côtés de flow-generator — une seule installation vous donne accès à tous les skills du plugin, cinq au total dont flow-audit.
+
+Pour Claude Code :
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Lancez ensuite `/reload-plugins` pour activer les skills. Pour les autres outils de développement IA, suivez [les étapes d'installation de flow-generator](flow-generator-skill#install-the-skill) — même dépôt, mêmes commandes.
+
+Then ask for it — `/flow-audit` in tools that map slash commands to skills, or "Use the flow-audit skill" in the ones that don't. Name the flow, or let it list your flows and ask which one.
+
+## Comment ça fonctionne \{#how-it-works\}
+
+Cinq phases, toutes en lecture seule :
+
+1. **Résolution et authentification.** Vérifie que la CLI est suffisamment récente et que votre connexion Adapty est valide.
+2. **Sélection du flow.** Liste vos flows (`adapty flows list`) et vous demande lequel vérifier.
+3. **Récupération.** Télécharge la configuration du flow et votre catalogue de produits — l'instantané sur lequel chaque vérification s'appuie.
+4. **Exécution des vérifications.** Chaque vérification s'effectue uniquement sur cet instantané.
+5. **Rapport.** Un verdict, pas une liste.
+
+## Ce qu'il vérifie \{#what-it-checks\}
+
+- **Déclencheurs** : Un élément dont le libellé promet une action mais qui ne comporte aucune interaction dans toute sa chaîne d'ancêtres. Il s'affiche exactement comme un contrôle fonctionnel et ne fait rien.
+- **Conformité au store** : Une action de restauration accessible quelque part dans le flow, un lien vers vos conditions d'utilisation, un lien vers votre politique de confidentialité, et un moyen pour l'utilisateur de quitter un paywall sans acheter.
+- **Produits** : Un produit lié absent de votre catalogue, un produit sans liaison au store, une carte qui affiche une période de facturation que le produit n'a pas, ou un prix en dur là où une variable de prix devrait être utilisée.
+- **Variables** : Une variable que le flow définit mais ne lit jamais, de sorte qu'un écran collecte une réponse dont rien ne tient compte.
+- **Localisation** : Traductions vides, valeurs non traduites et couverture par locale.
+- **Placeholders** : Du contenu qui n'a jamais été finalisé — `Lorem ipsum`, `TODO`, `Your headline here` — et un flow encore appelé `Untitled`.
+
+## Sévérité \{#severity\}
+
+Chaque constat se voit attribuer l'un des trois niveaux suivants :
+
+| Niveau | Ce que cela signifie |
+|---|---|
+| **Bloquant** | Le flow ne fonctionnera pas pour un utilisateur réel, ou il lui affichera quelque chose de faux — un prix fabriqué peut s'afficher parfaitement et mentir quand même. |
+| **Risque** | Ça fonctionne, mais ce n'est probablement pas ce que quelqu'un avait prévu : texte de remplacement, valeur identique à la locale par défaut, variable que personne ne lit. |
+| **Question** | Impossible à trancher avec les données disponibles. Le rapport indique ce qu'il a observé, ce à quoi il n'a pas pu accéder, et le seul point à vérifier — plutôt que de supposer. |
+
+## Exemple de rapport \{#example-report\}
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+Le statut de ce flow est `publication_failed`, et les vérifications de publication du Flow Builder ainsi que `flows config validate` l'ont déjà validé — aucun des deux ne lit le contenu textuel d'un écran ni ne parcourt ses interactions. Le rapport commence par le verdict, puis une liste numérotée des blocages avec l'élément exact et l'écran à ouvrir.
+
+La ligne de verdict d'un flow propre est `READY FOR PRODUCTION`, sans rien ajouté après. Si flow-audit n'a trouvé ni blocage ni risque mais a encore des questions en suspens, le verdict est `READY, PENDING n CHECKS I CANNOT MAKE` plutôt que de certifier quelque chose qu'il n'a pas pu voir.
+
+## Ce qu'il ne peut pas vérifier \{#what-it-cant-check\}
+
+flow-audit ne peut pas déterminer si le flow est associé à un placement. `adapty flows get` retourne uniquement l'`id`, le `name`, le `status` et l'`updated_at` d'un flow — les flows et les paywalls appartiennent à des espaces de noms d'identifiants distincts, donc rien de ce que retourne le CLI ne relie un flow au placement sur lequel il se trouve. Il s'agit d'un rappel fixe dans chaque rapport, jamais d'une vérification : confirmez le placement vous-même sur la page [Placements](placements), ou consultez [Créer un placement](create-placement).
+
+## Qui corrige quoi \{#who-fixes-what\}
+
+Chaque rapport se termine par sa propre section `WHAT TO DO NEXT`, répartie selon les responsabilités : ce qu'un agent peut modifier dans le flow lui-même, ce que seul vous pouvez modifier dans l'Adapty Dashboard, et ce que vous devez vérifier avant de publier.
+
+flow-audit n'effectue aucune de ces modifications — il est en lecture seule par conception, donc un flow qui échoue reste exactement tel que vous l'avez laissé. Transmettez le rapport au [skill flow-generator](flow-generator-skill), qui gère la sauvegarde, votre approbation et l'écriture effective.

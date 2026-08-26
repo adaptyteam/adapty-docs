@@ -1,0 +1,92 @@
+---
+title: "Flow'lar için denetim agent skill'i"
+description: "Flow-audit skill'ini yükleyin; böylece AI kodlama aracınız bir flow'u yayımlamadan önce production'a hazır olup olmadığını kontrol eder."
+metadataTitle: "Flow Denetim Agent Skill | Flow Builder | Adapty Dokümanları"
+---
+
+Flow-audit skill'i bir flow hakkında tek bir soruyu yanıtlar: production'a hazır mı? AI kodlama aracınızı bir flow'a yönlendirin; araç [Adapty CLI](developer-cli-quickstart) üzerinden yapılandırmayı okur, ürün kataloğunuzla karşılaştırır ve kendinizin yorumlaması gereken bir liste değil, doğrudan bir karar sunar.
+
+Bir flow, mevcut tüm yayınlama kontrollerini geçse de kullanıcılara gösterilmesi güvenli olmayabilir. Flow Builder'ın kendi yayınlama kontrolleri ve `flows config validate` her ikisi de "bu belge doğru biçimlendirilmiş mi?" sorusunu sorar — hiçbiri "gerçek bir kullanıcı sıkışır mı ya da yanlış bir şey görür mü?" sorusunu sormaz. `publication_failed` durumundaki bir flow her iki kontrolü de geçebilir; gerisini flow-audit yakalar.
+
+:::note
+flow-audit, bir flow'a hiçbir zaman yazma yapmaz. Config'i ve ürün kataloğunuzu okur, kontrollerini çalıştırır ve bulduklarını size — ya da [flow-generator skill'ine](flow-generator-skill) — düzeltmeniz için iletir.
+:::
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+flow-audit, `adapty-skills` eklentisiyle birlikte gelir ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) — flow-generator ile aynı pakette yer alır; tek bir kurulumla eklentideki tüm skill'lere erişirsiniz, şu an itibarıyla flow-audit dahil beş skill mevcuttur.
+
+Claude Code için:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Ardından skill'leri etkinleştirmek için `/reload-plugins` komutunu çalıştırın. Diğer AI kod araçları için [flow-generator'ın kurulum adımlarını](flow-generator-skill#install-the-skill) takip edin — aynı repo, aynı komutlar.
+
+O zaman isteyin — bunu destekleyen araçlarda `/flow-audit` komutunu kullanın ya da desteklemeyenlerde "flow-audit becerisini kullan" deyin. Flow adını belirtin ya da mevcut flow'larınızı listeletip hangisini istediğinizi sorun.
+
+## Nasıl çalışır \{#how-it-works\}
+
+Beş aşama, tamamı salt okunur:
+
+1. **Çözümle ve doğrula.** CLI'ın yeterince güncel olduğunu ve Adapty oturumunuzun geçerli olduğunu doğrular.
+2. **Flow'u seç.** Flow'larınızı listeler (`adapty flows list`) ve hangisini kontrol etmek istediğinizi sorar.
+3. **Getir.** Flow'un yapılandırmasını ve ürün kataloğunuzu çeker — her kontrolün çalıştırıldığı anlık görüntüdür.
+4. **Kontrolleri çalıştır.** Her kontrol yalnızca o anlık görüntüye karşı çalışır.
+5. **Raporla.** Bir liste değil, bir karar.
+
+## Ne kontrol eder \{#what-it-checks\}
+
+- **Tetikleyiciler**: Kopyası bir işlem vaat eden ancak üst öğe zincirinde hiçbir yerde etkileşim içermeyen bir öğe. Çalışan bir kontrol gibi görünür ama hiçbir şey yapmaz.
+- **Mağaza uyumluluğu**: Flow'un bir yerinde erişilebilen geri yükleme eylemi, şartlarınıza bir bağlantı, gizlilik politikanıza bir bağlantı ve kullanıcının satın almadan paywall'dan çıkabilmesinin bir yolu.
+- **Ürünler**: Kataloğunuzda bulunmayan bağlı bir ürün, mağaza bağlantısı olmayan bir ürün, ürünün sahip olmadığı bir faturalama dönemini iddia eden bir kart ya da bir fiyat değişkeni gerekirken sabit kodlanmış fiyat.
+- **Değişkenler**: Flow'un ayarladığı ancak hiç okumadığı bir değişken; yani bir ekran, hiçbir şeyin işlem yapmadığı bir yanıt toplar.
+- **Yerelleştirme**: Boş çeviriler, çevrilmemiş değerler ve her yerel ayar için kapsam.
+- **Yer tutucular**: Hiç tamamlanmamış kopya — `Lorem ipsum`, `TODO`, `Your headline here` — ve hâlâ `Untitled` olarak adlandırılan bir flow.
+
+## Önem Derecesi \{#severity\}
+
+Her bulgu üç kademeden birine girer:
+
+| Kademe | Ne anlama gelir |
+|---|---|
+| **Blocker** | Flow gerçek bir kullanıcı için çalışmaz ya da kullanıcıya yanlış bir şey gösterir — uydurulmuş bir fiyat ekranda düzgün görünse de yine de yalan söyler. |
+| **Risk** | Çalışır, ama büyük ihtimalle amaçlanan bu değildir: placeholder metin, varsayılan locale ile aynı bırakılmış bir değer, kimsenin okumadığı bir değişken. |
+| **Question** | Mevcut verilerden karar verilemiyor. Rapor ne gördüğünü, neye ulaşamadığını ve tahmin yürütmek yerine kontrol edilmesi gereken tek şeyi belirtir. |
+
+## Örnek rapor \{#example-report\}
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+Bu flow'un durumu `publication_failed` ve hem Flow Builder'ın yayın kontrolleri hem de `flows config validate` zaten geçti — ikisi de ekranın metnini okumaz veya etkileşimlerini incelemez. Raporun kendisi önce kararı verir, ardından açılacak tam öğe ve ekranı gösteren numaralı bir engelleyiciler listesi gelir.
+
+Temiz bir flow'un karar satırı, arkasına hiçbir şey eklenmeden `READY FOR PRODUCTION` okur. Eğer flow-audit herhangi bir engelleyici veya risk bulamadıysa ancak hâlâ açık sorular varsa, karar satırı bir şeyi onaylayamayacağı durumlarda `READY FOR PRODUCTION` yerine `READY, PENDING n CHECKS I CANNOT MAKE` şeklinde okur.
+
+## Neleri kontrol edemez \{#what-it-cant-check\}
+
+flow-audit, flow'un bir placement'a eklenip eklenmediğini söyleyemez. `adapty flows get` yalnızca bir flow'un `id`, `name`, `status` ve `updated_at` bilgilerini döndürür; flow'lar ve paywall'lar ayrı ID namespace'lerinde bulunduğundan, CLI'ın döndürdüğü hiçbir şey bir flow'u bağlı olduğu placement'a bağlamaz. Bu, her raporda sabit bir hatırlatmadır, bir kontrol değildir: placement'ı [Placements](placements) sayfasında kendiniz doğrulayın ya da [Create placement](create-placement) bölümüne bakın.
+
+## Kimin neyi düzelttiği \{#who-fixes-what\}
+
+Her rapor, kimin ne yapacağına göre ayrılmış kendi `WHAT TO DO NEXT` bölümüyle biter: bir agent'ın flow'un kendisinde neleri değiştirebileceği, yalnızca sizin Adapty kontrol panelinde neleri değiştirebileceğiniz ve göndermeden önce kendiniz neyi doğrulamanız gerektiği.
+
+flow-audit bu değişikliklerin hiçbirini kendi yapmaz — tasarım gereği salt okunurdur; bu nedenle başarısız olan bir flow tam olarak bıraktığınız gibi kalır. Raporu, yedeklemeye, onayınıza ve asıl yazmaya sahip olan [flow-generator skill](flow-generator-skill)'e iletin.
