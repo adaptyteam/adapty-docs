@@ -180,7 +180,7 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | sdk-installation-react-native-expo | — | dev | 12 | react-native |
 | sdk-installation-react-native-pure | — | dev | 12 | react-native |
 | sdk-installation-reactnative | entry | dev | 0 | react-native |
-| sdk-installation-unity | — | dev | 12 | unity |
+| sdk-installation-unity | — | dev | 13 | unity |
 | unity-check-subscription-status | — | dev | 5 | unity |
 | unity-quickstart-identify | — | dev | 7 | unity |
 | unity-quickstart-paywalls | — | dev | 6 | unity |

@@ -45,9 +45,9 @@ Canon = docs commits `bc447f975` (iOS 4.1, PR #430) + `660cb5325` (opt-in highli
 | android | — | not started | — | — | — | — |
 | react-native | — | not started | — | — | — | — |
 | flutter | feat/sdk-4.1-update | in progress | — | — | — | — |
-| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | in review | drafted on docs/unity-4.1 (uncommitted 2026-08-17) | migration-to-unity-sdk-v4 (repurposed 3.x→4.1), sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases, unity.json | — | — |
+| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | in review | shipped | migration-to-unity-sdk-v4, sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases | 3cf5ff5f2 | #509 |
 | kmp | — | not started | — | — | — | — |
-| capacitor | release/4.1.0 (merged to `dev`) | shipped | drafted on docs/capacitor-4.1 (uncommitted 2026-08-26) | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition, capacitor-show-aa-targeted-paywall | — | #559 |
+| capacitor | release/4.1.0 + [PR #106](https://github.com/adaptyteam/AdaptySDK-Capacitor/pull/106) (open) | in review | in review | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition, capacitor-show-aa-targeted-paywall | — | #559 |
 
 ### Unity specifics (from PR #30 diff, `feature/newtonsoft-migration...feature/sdk-4.1-update`)
 
