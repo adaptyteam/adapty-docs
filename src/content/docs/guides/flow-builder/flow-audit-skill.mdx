@@ -1,0 +1,107 @@
+---
+title: "Agent skill for auditing flows"
+description: "Install the flow-audit skill so your AI coding tool checks whether a flow is ready for production before you publish it."
+metadataTitle: "Flow Audit Agent Skill | Flow Builder | Adapty Docs"
+---
+
+The flow-audit skill answers one question about a flow: is it ready for production? Point your AI coding tool at a flow and it reads the config through the [Adapty CLI](developer-cli-quickstart), runs 23 checks across six families, and ends in a verdict — not a list you have to interpret yourself.
+
+A flow can pass every existing publish gate and still be unsafe to show users. The Flow Builder's own publish checks and `flows config validate` both ask "is this document well-formed?" — neither one asks "would a real user get stuck, or see something false?" A flow sitting in `publication_failed` status can pass both of those gates; flow-audit is what catches the rest.
+
+:::note
+flow-audit never writes to a flow. It reads the config and your product catalog, runs its checks, and hands anything it finds to you — or to the [flow-generator skill](flow-generator-skill) — to fix.
+:::
+
+## Before you start
+
+- **The Adapty CLI**: v0.8.1 or later, authenticated. flow-audit reads the flow and your product catalog through the CLI, so it needs a version new enough to have the commands it depends on, logged in to the app the flow belongs to.
+
+## What it checks
+
+flow-audit runs 23 checks grouped into six families, all against one fetched snapshot — the flow's config and your product catalog:
+
+- **Triggers**: An element whose copy promises an action but carries no interaction anywhere up its ancestor chain. It renders exactly like a working control and does nothing.
+- **Store compliance**: A restore action reachable somewhere in the flow, a link to your terms, a link to your privacy policy, and a way for a user to leave a paywall without buying.
+- **Products**: A bound product missing from your catalog, a product with no store binding, a card claiming a billing period the product doesn't have, or a hardcoded price where a price variable belongs.
+- **Variables**
+- **Localization**: Empty translations, untranslated values, and per-locale coverage.
+- **Placeholders**
+
+## Severity
+
+Every finding gets one of three tiers:
+
+| Tier | What it means |
+|---|---|
+| **Blocker** | The flow won't work for a real user, or it'll show them something false — a fabricated price can render perfectly and still lie. |
+| **Risk** | It works, and is probably not what anyone intended: placeholder copy, a value left identical to the default locale, a variable nobody reads. |
+| **Question** | Not decidable from the data available. The report states what it saw, what it couldn't reach, and the one thing to check — instead of guessing. |
+
+## How it works
+
+Five phases, all read-only:
+
+1. **Resolve and authenticate.** Confirms the CLI is new enough and your Adapty login is valid.
+2. **Pick the flow.** Lists your flows (`adapty flows list`) and asks which one to check.
+3. **Fetch.** Pulls the flow's config and your product catalog — the snapshot every check runs against.
+4. **Run the checks.** All 23 checks, across six families, against that snapshot alone.
+5. **Report.** A verdict, not a list.
+
+For a 7-screen flow, the checks themselves take about two seconds of CLI and checker time. A full run — including your AI tool reading the flow and writing up the report — usually finishes in under a minute.
+
+## Example report
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+This flow's status is `publication_failed`, and both the Flow Builder's publish checks and `flows config validate` already passed it — neither one reads a screen's copy or walks its interactions. The report itself leads with the verdict, then a numbered list of blockers with the exact element and screen to open.
+
+A clean flow's verdict line reads `READY FOR PRODUCTION`, with nothing padded on after it. If flow-audit found no blockers or risks but still has open questions, the verdict reads `READY, PENDING n CHECKS I CANNOT MAKE` instead of certifying something it couldn't see.
+
+## What it can't check
+
+flow-audit can't tell you whether the flow is attached to a placement. `adapty flows get` returns only a flow's `id`, `name`, `status`, and `updated_at` — flows and paywalls sit in separate ID namespaces, so nothing the CLI returns links a flow back to the placement it's on. This is a fixed reminder in every report, never a check: confirm the placement yourself on the [Placements](placements) page, or see [Create placement](create-placement).
+
+## Who fixes what
+
+Every report ends with its own `WHAT TO DO NEXT` section, split by who does the work: what an agent can change in the flow itself, what only you can change in the Adapty dashboard, and what to confirm yourself before you ship.
+
+flow-audit doesn't make any of those changes itself — it's read-only by design, so a flow that fails stays exactly as you left it. Hand the report to the [flow-generator skill](flow-generator-skill), which owns the backup, your approval, and the actual write.
+
+## Install the skill
+
+flow-audit ships in the `adapty-skills` plugin ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) alongside flow-generator — one install gives you every skill in the plugin, five now including flow-audit.
+
+For Claude Code:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Then run `/reload-plugins` to activate the skills. For other AI coding tools, follow [flow-generator's install steps](flow-generator-skill#install-the-skill) — same repo, same commands.
+
+Then ask for it — `/flow-audit` in tools that map slash commands to skills, or "Use the flow-audit skill" in the ones that don't. Name the flow, or let it list your flows and ask which one.
+
+## What's next
+
+- [flow-generator skill](flow-generator-skill) — the skill that makes the fix once flow-audit tells you what's wrong.
+- [Save & publish flows](builder-save-publish) — where a flow's status comes from, and what publishing does.
+- [Common issues](flow-common-issues) — the separate list of what stops a flow from previewing or publishing at all.
+- [Preview flows](paywall-device-compatibility-preview) — check what flow-audit can't see, like a placement attachment or a branch that only fires on tap.
