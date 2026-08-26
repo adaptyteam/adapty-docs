@@ -1,14 +1,20 @@
 ---
-title: "Миграция Adapty Unity SDK на v4.0"
-description: "Мигрируйте на Adapty Unity SDK v4.0 (beta): замените paywall API на flow API, совместимые с Flow Builder и Paywall Builder."
-metadataTitle: "Миграция на Adapty Unity SDK v4.0 (beta) | Документация Adapty"
+title: "Миграция Adapty Unity SDK на v4.1"
+description: "Миграция на Adapty Unity SDK v4.1: замена paywall API на flow API, переименованные attribution API, явное включение Adapty Attribution и повторная загрузка резервного файла."
+metadataTitle: "Миграция на Adapty Unity SDK v4.1 | Документация Adapty"
 ---
 
-Adapty Unity SDK 4.0 (beta) вводит флоу и переименовывает paywall API соответствующим образом. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется.
+Adapty Unity SDK 4.1 — первый стабильный релиз ветки 4.x: версия 4.0 вышла только как бета, поэтому если вы на 3.x, мигрируйте сразу на 4.1. В этом гайде описана вся миграция: флоу, появившиеся в 4.0, и изменения версии 4.1 поверх них.
+
+Линейка 4.x добавляет флоу и переименовывает API пейволов. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется. Помимо этого, версия 4.1 переименовывает API внешней атрибуции, делает Adapty Attribution опциональным, добавляет обязательный метод слушателя и меняет формат резервного файла.
+
+:::note
+Переходите с бета-версии 4.0? Замените закреплённый бета-тег на [установку версии 4.1.0](#installation), и вас касаются только четыре раздела: [новый метод listener](#new-required-method-onreceivepromotedpurchase), [переименованные API внешней атрибуции](#renamed-external-attribution-apis), [Adapty Attribution отключена по умолчанию](#adapty-attribution-is-disabled-by-default) и [резервные файлы](#fallback-files).
+:::
 
 ## Краткий справочник \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
 | `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
 | `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
@@ -21,32 +27,36 @@ Adapty Unity SDK 4.0 (beta) вводит флоу и переименовыва�
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener`, с новым обязательным методом `OnReceivePromotedPurchase` |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` и другие колбэки `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear` и другие колбэки `FlowView...` |
+| Колбэки `PaywallViewDidPerformAction`, `PaywallViewDidAppear` и другие `PaywallView...` | Колбэки `FlowViewDidPerformAction`, `FlowViewDidAppear` и другие `FlowView...` |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
+| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| Атрибуция Adapty включена автоматически | по умолчанию отключена — активируйте через `Builder.SetAdaptyAttributionEnabled(true)` |
+| Файл резервного пейвола скачан для версии 3.x | новый формат файла — скачайте файл повторно |
 | `Adapty.SetFallbackPaywalls(...)` (устарело в v3) | удалено — используйте `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (устарело в v3) | удалено — используйте `Builder.SetAppleIDFACollectionDisabled(...)` |
 | `paywall.Products` (список `AdaptyProductReference`) | удалено — используйте `ProductIdentifiers` или `VendorProductIds`, либо вызовите `GetPaywallProducts(flow)` для получения полных продуктов |
 | `AdaptyProductReference` | удалено как публичный тип — см. [Модель данных](#data-model) |
 | `paywall.RemoteConfigString` | удалено — используйте `flow.RemoteConfig?.Data` |
 
-`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, и `GetPaywallProducts` тоже сохраняет название, теперь принимая `AdaptyFlow`. Методы `GetFlow` и `GetFlowForDefaultAudience` больше не принимают параметр `locale`. API покупок и профиля (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`), а также резервные пейволы через `SetFallback` остаются без изменений. Методы онбординга по-прежнему работают, но считаются устаревшими — см. [Устаревание Onboarding API](#onboarding-api-deprecation). Некоторые поведения по умолчанию изменились — см. [Изменения поведения по умолчанию](#default-behavior-changes).
+`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему относятся к флоу, и `GetPaywallProducts` тоже сохраняет название, теперь принимая `AdaptyFlow`. Методы `GetFlow` и `GetFlowForDefaultAudience` больше не принимают параметр `locale`. API покупок и профиля (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) не изменились. `SetFallback` сохраняет свою сигнатуру, но файл, который он читает, необходимо скачать заново — см. [Резервные файлы](#fallback-files). Методы онбординга по-прежнему работают, но устарели — см. [Устаревание API онбординга](#onboarding-api-deprecation). Некоторые поведения по умолчанию изменились — см. [Изменения поведения по умолчанию](#default-behavior-changes).
 
 ## Установка \{#installation\}
 
-v4.0 — это пре-релиз, поэтому указывайте точный бета-тег. Чтобы установить через Unity Package Manager, добавьте тег к Git URL:
+Чтобы установить SDK 4.1 через Unity Package Manager, добавьте тег версии к Git URL:
 
 ```
-https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.0.0-beta.1
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Если вы устанавливаете через Unity-пакет, скачайте `adapty-unity-plugin-4.0.0-beta.1.unitypackage` из [релиза 4.0.0-beta.1](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.0.0-beta.1). Полная инструкция по настройке — в разделе [Установка Adapty SDK](sdk-installation-unity#install-adapty-sdk).
+Если вы устанавливаете через Unity-пакет, скачайте `adapty-unity-plugin-4.1.0.unitypackage` из [релиза 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Подробную инструкцию по настройке см. в разделе [Установка Adapty SDK](sdk-installation-unity#install-adapty-sdk).
 
-В v4 появились два изменения в настройке сборки:
+С версией 4.x появились два изменения в настройке сборки:
 
-- **iOS-зависимости переходят на Swift Package Manager.** Нативный Adapty iOS SDK 4.0 объявляется как удалённый Swift-пакет вместо CocoaPods pod. Обновите [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) до версии **1.2.188 или выше** — более ранние версии не поддерживают зависимости Swift Package Manager. Шаги с CocoaPods (`iOS Resolver -> Install Cocoapods`, открытие `Unity-iPhone.xcworkspace`) больше не применяются.
-- **Минимальная версия iOS deployment target должна быть 15.0 или выше.** Новый валидатор сборки в Unity Editor прерывает iOS-сборку, если указана более низкая версия.
+- **iOS зависимости переходят на Swift Package Manager.** Нативный Adapty iOS SDK теперь подключается как удалённый Swift-пакет, а не через CocoaPods. Обновите [External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) до версии **1.2.188 или выше** — более ранние версии не поддерживают зависимости Swift Package Manager. Шаги для CocoaPods (`iOS Resolver -> Install Cocoapods`, открытие `Unity-iPhone.xcworkspace`) больше не нужны.
+- **Минимальная версия iOS для деплоя — 15.0.** Новый валидатор сборки в Unity Editor блокирует iOS-сборку, если целевая версия ниже.
 
 Базовые нативные SDK Adapty обновлены до версии 4.x на обеих платформах и подтягиваются автоматически — никаких дополнительных изменений в сборке не требуется.
 
@@ -210,6 +220,20 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 
 Полный список коллбэков см. в разделе [Обработка событий флоу и пейвола](unity-handling-events).
 
+### Новый обязательный метод: OnReceivePromotedPurchase \{#new-required-method-onreceivepromotedpurchase\}
+
+Начиная с версии SDK 4.1, интерфейс `IAdaptyEventListener` включает ещё один метод, поэтому все классы, реализующие его, перестанут компилироваться, пока вы не добавите:
+
+```csharp showLineNumbers
+public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
+    // The user tapped one of your in-app purchases on your App Store product page.
+    // Complete the purchase through Adapty:
+    Adapty.MakePromotedPurchase(product, (result, error) => { /* ... */ });
+}
+```
+
+Этот метод предназначен для продвигаемых встроенных покупок App Store и никогда не вызывается на Android. SDK пока не передаёт продвигаемые покупки в ваш код — вместо этого завершает их автоматически, — поэтому пустое тело метода тоже является корректной реализацией. См. [Встроенные покупки из App Store](unity-making-purchases#in-app-purchases-from-the-app-store).
+
 ### Новые API \{#new-apis\}
 
 - `Adapty.SetObserverModeResolver(...)` с `IAdaptyUIObserverModeResolver` — управляет покупками и восстановлениями, инициированными из флоу, пока SDK работает в [режиме Observer](implement-observer-mode-unity). Ранее это было доступно только в нативных iOS и Android SDK. См. [Отображение флоу в режиме Observer](unity-present-flows-in-observer-mode).
@@ -217,6 +241,47 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 - `AdaptyUICreateFlowViewParameters.Locale` (задаётся через `SetLocale`) — отображает флоу или пейвол с конкретной [локализацией Builder](add-paywall-locale-in-adapty-paywall-builder) вместо используемой по умолчанию. Флоу локализуется при создании его представления, поэтому это единственное место для выбора локализации; созданное представление сообщает о применённой локализации в `view.Locale`. См. [Использование локализаций и кодов локалей](unity-localizations-and-locale-codes).
 - Новый коллбэк `FlowViewDidReceiveAnalyticEvent` в `IAdaptyFlowsEventsListener` сообщает об аналитических событиях из флоу, начиная с события просмотра экрана для каждого экрана, который открывает пользователь. См. [Отслеживание просмотров экранов флоу](unity-flow-screen-views).
 - `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов на оценку приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение URL; `RequestAppReview` обеспечивает стандартный запрос оценки приложения, который флоу пока не инициируют.
+
+## Переименованные API внешней атрибуции \{#renamed-external-attribution-apis\}
+
+Начиная с SDK версии 4.1, API для передачи данных атрибуции от внешнего провайдера (Adjust, AppsFlyer, Branch, Tenjin или кастомного) переименованы в соответствии с нативными SDK. Устаревших псевдонимов нет, поэтому существующие вызовы перестают компилироваться до тех пор, пока вы их не переименуете:
+
+| До 4.1 | 4.1 |
+|---|---|
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
+| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+
+Изменились только названия. Провайдер — та же строка, что и раньше (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), данные атрибуции по-прежнему принимаются в виде словаря или JSON-строки, а свойство профиля по-прежнему является `IReadOnlyList<string>`:
+
+```diff showLineNumbers
+- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+```
+
+## Атрибуция Adapty отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Если вы используете [атрибуцию Adapty](user-acquisition) и обновляетесь до SDK 4.1, не включив эту функцию явно, всё сломается без каких-либо предупреждений — установки перестанут регистрироваться.
+:::
+
+В более ранних версиях SDK регистрировал установки для [атрибуции Adapty](user-acquisition) автоматически. Начиная с SDK версии 4.1, эта функция отключена по умолчанию: SDK не регистрирует установки, коллбэки `OnInstallationDetailsSuccess` и `OnInstallationDetailsFail` никогда не срабатывают, а `GetCurrentInstallationStatus` возвращает статус `NotAvailable`.
+
+Если вы используете Adapty Attribution, включите его при активации SDK:
+
+```csharp showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyAttributionEnabled(true);
+```
+
+Если вы не используете Adapty Attribution, никаких изменений не требуется.
+
+## Резервные файлы \{#fallback-files\}
+
+Формат [резервного файла](unity-use-fallback-paywalls) изменился в SDK 4.1. Заново скачайте резервные файлы для iOS и Android в разделе **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и замените те, что находятся в `Assets/StreamingAssets`, даже если вы уже скачивали их для более ранней версии.
+
+:::warning
+Этот шаг не вызывает ошибок компиляции. Если его пропустить, `SetFallback` вернёт `DecodingFailed` (`adapty_code: 2006`), и все плейсменты потеряют резервный пейвол.
+:::
 
 ## Изменения поведения по умолчанию \{#default-behavior-changes\}
 
@@ -229,6 +294,6 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 
 ## Устаревший API онбординга \{#onboarding-api-deprecation\}
 
-Устаревший API онбординга объявлен устаревшим в v4.0 в пользу [Flow Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из следующих релизов, поэтому запланируйте перенос ваших онбордингов во Flow Builder.
+Устаревший API онбординга признан устаревшим в v4 в пользу [Flow Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из будущих релизов, поэтому планируйте миграцию ваших онбордингов на Flow Builder.
 
 Устаревшие символы: `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView` и `Adapty.SetOnboardingsEventsListener`.

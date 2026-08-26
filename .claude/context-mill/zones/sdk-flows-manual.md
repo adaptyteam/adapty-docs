@@ -224,7 +224,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | report-transactions-observer-mode-unity | — | dev | 0 | unity |
 | restore-purchase | — | dev | 0 | ios |
 | unity-implement-paywalls-manually | entry | dev | 2 | unity |
-| unity-making-purchases | — | dev | 4 | unity |
+| unity-making-purchases | — | dev | 5 | unity |
 | unity-quickstart-manual | — | dev | 8 | unity |
 | unity-restore-purchase | — | dev | 0 | unity |
 | unity-troubleshoot-purchases | — | dev | 6 | unity |

@@ -45,9 +45,9 @@ Canon = docs commits `bc447f975` (iOS 4.1, PR #430) + `660cb5325` (opt-in highli
 | android | — | shipped | shipped | migration-to-android-sdk-41, android-get-pb-paywalls, sdk-installation-android, android-sdk-migration-guides | on main | — |
 | react-native | — | not started | — | — | — | — |
 | flutter | feat/sdk-4.1-update | in progress | — | — | — | — |
-| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | in review | drafted on docs/unity-4.1 (uncommitted 2026-08-17) | migration-to-unity-sdk-v4 (repurposed 3.x→4.1), sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases, unity.json | — | — |
+| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | in review | shipped | migration-to-unity-sdk-v4, sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases | 3cf5ff5f2 | #509 |
 | kmp | release/4.1 | in review | drafted on docs/kmp-4.1 (uncommitted 2026-08-26) | migration-to-kmp-sdk-v4, sdk-installation-kotlin-multiplatform, kmp-making-purchases, kmp-get-pb-paywalls, kmp-sdk-call-order, kmp-sdk-migration-guides, user-acquisition | — | — |
-| capacitor | release/4.1.0 (merged to `dev`) | shipped | shipped on docs/capacitor-4.1 | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition | 03cc7d8e9 | #559 |
+| capacitor | release/4.1.0 + [PR #106](https://github.com/adaptyteam/AdaptySDK-Capacitor/pull/106) (open) | in review | in review | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition | 03cc7d8e9 | #559 |
 
 ### Unity specifics (from PR #30 diff, `feature/newtonsoft-migration...feature/sdk-4.1-update`)
 
@@ -101,7 +101,7 @@ Discrepancies vs the iOS canon (all verified against the public-surface fixture 
 12. `fetch-paywalls-and-products-unity` deliberately does NOT get the canon's offerType
     enum→struct note (see 4).
 
-### Capacitor specifics (from PR #104 diff + `dev` tip `852ef3d`, `@adapty/core@4.1.0-dev.51f7b5e6`)
+### Capacitor specifics (from PR #104 + PR #106, `@adapty/core@4.1.0-dev.1396a8d7`)
 
 Capacitor 4.1 is, like Unity, the **first stable v4 release** — 4.0 shipped as betas only
 (`4.0.2-beta.1` is the last one on npm), so `migration-to-capacitor-sdk-v4.mdx` is repurposed to cover
@@ -110,12 +110,20 @@ Capacitor 4.1 is, like Unity, the **first stable v4 release** — 4.0 shipped as
 Discrepancies vs the iOS canon (all verified against the published core types and the `dev` tip, not
 inferred from the iOS or Unity guides):
 
-1. **`appliedAttributionSources` is NOT renamed.** It keeps its name and its `AttributionSource[]`
-   type (`'apple_search_ads' | (string & {})`) in `@adapty/core@4.1.0-dev`. iOS renamed it to
-   `appliedExternalAttributionProviders` and Unity to `AppliedExternalAttributionProviders`; Capacitor
-   did neither. `capacitor-show-aa-targeted-paywall.mdx` therefore needs **no** edit — the guide says so
-   explicitly so the next reader doesn't "fix" it.
-2. **Provider stays an open `string`**, as on Unity — no enum. `updateAttribution({ attribution, source })`
+1. ⚠️ **`appliedAttributionSources` IS renamed after all — corrected 2026-08-26.** The first pass read
+   only PR #104 and recorded the opposite, because at `@adapty/core@4.1.0-dev.51f7b5e6` the property
+   genuinely still had the old name. **PR #106 ("feat!: expose AdaptyExternalAttributionProvider from
+   core", core `4.1.0-dev.1396a8d7`) landed afterwards** and renamed it to
+   `appliedExternalAttributionProviders`, replaced the `AttributionSource` export with
+   `AdaptyExternalAttributionProvider`, and typed `updateExternalAttribution`'s `provider` option with
+   it. The new type is an open union: `'apple_search_ads' | 'adjust' | 'appsflyer' | 'branch' |
+   'tenjin' | (string & {})` — no `'custom'` member, unlike Android's `CUSTOM`, but any string is
+   accepted. The wire key stays `applied_attribution_sources`.
+   **Lesson: one merged PR is not the whole release.** Check for follow-up PRs on the release branch
+   before recording "X is not renamed on this platform" — an absence claim is exactly the kind a later
+   commit invalidates. `capacitor-show-aa-targeted-paywall.mdx` DID need editing (6 sites).
+2. **Provider is no longer a bare `string`** — see point 1; it is `AdaptyExternalAttributionProvider`.
+   (Unity's provider does stay a plain C# `string`.) `updateAttribution({ attribution, source })`
    → `updateExternalAttribution({ attribution, provider })`, no deprecated alias. There is no
    JSON-string overload on Capacitor at all, so the iOS "deserialize first" step has no counterpart.
 3. **No preload APIs, no `customLayoutId`, no offer-type change** — same as Unity.
@@ -178,7 +186,10 @@ Discrepancies vs the Android canon (verified against `adapty/api/adapty.klib.api
    `updateExternalAttribution(Map<String, Any>, String)` — the provider is a plain string, as on
    Unity and Capacitor. Android's "AdaptyAttributionSource → AdaptyExternalAttributionProvider"
    section has no KMP counterpart.
-2. **`appliedAttributionSources` is NOT renamed.** It stays `List<String>` on `AdaptyProfile`
+2. **`appliedAttributionSources` is NOT renamed on KMP.** Verified against the whole
+   `adapty/api/adapty.klib.api` at the `release/4.1` branch tip, not a single PR — which is the
+   check Capacitor's point 1 failed. Re-check before merge anyway: a follow-up like Capacitor's
+   PR #106 could land on `release/4.1` at any time. It stays `List<String>` on `AdaptyProfile`
    (klib line 1060). Android and iOS renamed it to `appliedExternalAttributionProviders`; KMP did
    not. The migration guide says so explicitly so nobody "fixes" it later.
 3. **No JSON-string overload.** Android keeps both `Map` and `String` overloads; KMP has only the
