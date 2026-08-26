@@ -1,6 +1,6 @@
 ---
 zone: flow-logic
-sources: [dashboard-interface, ios-sdk, jscore]
+sources: [dashboard-interface, ios-sdk, jscore, unified-builder-transformer]
 reviewed_shape: fd915eb8bdcf
 reviewed_at: 2026-08-10
 ---
@@ -39,6 +39,14 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   other. No flow-logic article uses or shows a **Does not equal** operator; take that operator's exact
   wording from `dashboard-interface` directly rather than from any article in this zone, since it isn't
   independently confirmed here.
+- **`unified-builder-transformer` is the authority for what an action does at runtime** — execution
+  order, whether anything blocks, what a navigation or alert dispatches. It compiles the builder JSON
+  into the synchronous JS the SDK runs, so those semantics are fixed before any platform SDK sees the
+  flow; check it before an SDK repo for a behavior claim. Confirmed 2026-08-26 against `develop`
+  (`compile-actions.ts`, `template.ts`, `docs/script-generation.md` §1/§5): actions emit one statement
+  each in authored order, nothing stops the ones after it, `_.nav` dispatches and returns, the alert's
+  OK button binds no handler. That replaced the "navigation must be last" callout in
+  `onboarding-actions` with an **Action order** section. Labels still come from `dashboard-interface`.
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
@@ -113,7 +121,7 @@ or developer can see and click.
 | flow-common-issues | reference | marketer, dev | 12 | tutorial |
 | flow-metrics | — | marketer, dev | 24 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
-| onboarding-actions | — | marketer, dev | 21 | tutorial |
+| onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |

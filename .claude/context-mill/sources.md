@@ -8,6 +8,11 @@ free prose for a human or agent to read, not for the parser.
 `kind` ∈ `local-clone` | `in-repo-spec` | `remote`. `remote:` is mandatory on every `local-clone` — it
 is the only way the source resolves in an environment with no local clones (unattended/Phase 3 runs).
 
+`path:` records one layout — the clones under `~/Documents` on the machine this file was authored on. If
+yours live elsewhere, don't edit `path:` here: list your locations in `sources.local.md` beside this file
+(gitignored; same `## <id>` heading and `path:` line, nothing else is read). `mill:status` and
+`mill:refs` apply it on top of this file. A `missing-path` warning on every source is the sign you need it.
+
 Established 2026-08-06 by inspecting the actual clones under `~/Documents`, not by assumption: every
 `default_ref` below is the real `git symbolic-ref refs/remotes/origin/HEAD` (or, where that failed, the
 branch a released tag is actually reachable from) for that clone, and every `ref_pattern` is checked
@@ -169,6 +174,26 @@ exact builder labels and control naming (conditional actions, boolean operators,
 **not** carry integration-form display metadata — see `dashboard-backend`'s `share.py` rule above; this
 repo only has the field key, not its title/required/hint. Branches are Jira-ticket-numbered here too
 (`ADP-<n>-develop`); `ref_pattern` omitted for the same reason as `dashboard-backend`.
+
+## unified-builder-transformer — Unified Builder Transformer
+path: ~/Documents/unified-builder-transformer
+remote: https://gitlab.adapty.io/adapty/unified-builder-transformer.git
+default_ref: origin/develop
+kind: local-clone
+
+Backend service that compiles Flow Builder JSON (`packages/unified-builder` format) into the JS + JSON
+the UIBuilder mobile SDK executes. **Ground truth for what an action does at runtime** — order,
+blocking, side effects — because those semantics are fixed at compile time, before any SDK sees the
+flow. Read `docs/script-generation.md` first (§1: the script is synchronous JS, no event loop, no
+`async`; §5: one statement per action, in authored order), then
+`src/domain/transform/v5/script/compile-actions.ts` (per-action compiler) and `template.ts` (runtime
+helpers `_.nav`, `_.setVar`, …). `src/fixtures/v5/*/expected.json` hold generated handlers to quote
+from. Confirmed 2026-08-26 on `develop`: no action stops the ones after it; `_.nav` dispatches
+`SDK.openScreen` and returns; the alert's OK button has no handler bound (`actionId: "ok"` appears only
+where it is emitted). `script-generation.md` §5.4 still marks `alert` as "TBD" — the doc is stale there;
+the compiler implements it. `default_ref` is `origin/develop` (`symbolic-ref` confirmed); a `main`
+branch exists but its role wasn't checked. Branches are Jira-numbered / `feat|fix/*`, so `ref_pattern`
+is omitted, as for `dashboard-interface`.
 
 ## server-side-api-spec — Server-side API v2 (maintained)
 path: src/api-reference/specs/adapty-api.yaml
