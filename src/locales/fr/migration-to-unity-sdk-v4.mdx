@@ -1,14 +1,20 @@
 ---
-title: "Migrer le SDK Adapty Unity vers la v4.0"
-description: "Migrez vers le SDK Adapty Unity v4.0 (beta) en remplaçant les API paywall par des API flow, compatibles avec le Flow Builder et le Paywall Builder."
-metadataTitle: "Migration vers le SDK Adapty Unity v4.0 (beta) | Documentation Adapty"
+title: "Migrer le SDK Adapty Unity vers la v4.1"
+description: "Migration vers le SDK Adapty Unity v4.1 : remplacez les API de paywall par des API de flow, adoptez les API d'attribution renommées, activez Adapty Attribution explicitement et re-téléchargez votre fichier de secours."
+metadataTitle: "Migration vers le SDK Adapty Unity v4.1 | Documentation Adapty"
 ---
 
-Le SDK Adapty Unity 4.0 (beta) introduit les flows et renomme les API paywall en conséquence. Les nouvelles API fonctionnent à la fois avec le nouveau Flow Builder et le Paywall Builder existant — aucune modification de configuration n'est requise côté Adapty Dashboard.
+Le SDK Adapty Unity 4.1 est la première version stable de la ligne 4.x — la 4.0 n'a été publiée qu'en bêta, donc si vous êtes sur la 3.x, migrez directement vers la 4.1. Ce guide couvre l'intégralité de la migration : les flows introduits en 4.0 et les changements apportés par la 4.1.
+
+La ligne 4.x introduit les flows et renomme les API paywall en conséquence. Les nouvelles API fonctionnent aussi bien avec le nouveau Flow Builder qu'avec le Paywall Builder existant — aucun changement de configuration n'est nécessaire côté Adapty Dashboard. Par ailleurs, la version 4.1 renomme les API d'attribution externe, rend l'attribution Adapty opt-in, ajoute une méthode de listener obligatoire et modifie le format du fichier de secours.
+
+:::note
+Vous venez de la bêta 4.0 ? Remplacez le tag bêta épinglé par [l'installation 4.1.0](#installation), puis seules quatre sections s'appliquent : [la nouvelle méthode listener](#new-required-method-onreceivepromotedpurchase), [les APIs d'attribution externe renommées](#renamed-external-attribution-apis), [l'attribution Adapty désactivée par défaut](#adapty-attribution-is-disabled-by-default), et [les fichiers de secours](#fallback-files).
+:::
 
 ## Référence rapide \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
 | `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
 | `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
@@ -21,32 +27,36 @@ Le SDK Adapty Unity 4.0 (beta) introduit les flows et renomme les API paywall en
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener`, avec une nouvelle méthode obligatoire `OnReceivePromotedPurchase` |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| `PaywallViewDidPerformAction`, `PaywallViewDidAppear`, et autres callbacks `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear`, et autres callbacks `FlowView...` |
+| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` et autres callbacks `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear` et autres callbacks `FlowView...` |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
+| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| Attribution Adapty activée automatiquement | désactivée par défaut — à activer avec `Builder.SetAdaptyAttributionEnabled(true)` |
+| Fichier de secours téléchargé pour la v3.x | nouveau format de fichier de secours — téléchargez à nouveau le fichier |
 | `Adapty.SetFallbackPaywalls(...)` (déprécié en v3) | supprimé — utilisez `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (déprécié en v3) | supprimé — utilisez `Builder.SetAppleIDFACollectionDisabled(...)` |
 | `paywall.Products` (une liste de `AdaptyProductReference`) | supprimé — utilisez `ProductIdentifiers` ou `VendorProductIds`, ou appelez `GetPaywallProducts(flow)` pour les produits complets |
 | `AdaptyProductReference` | supprimé en tant que type public — voir [Modèle de données](#data-model) |
 | `paywall.RemoteConfigString` | supprimé — utilisez `flow.RemoteConfig?.Data` |
 
-`AdaptyPaywallProduct` garde son nom — les produits appartiennent toujours à un flow, et `GetPaywallProducts` garde également son nom, prenant désormais un `AdaptyFlow`. Les méthodes `GetFlow` et `GetFlowForDefaultAudience` ne prennent plus de paramètre `locale`. Les API d'achat et de profil (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) et les fallbacks via `SetFallback` sont inchangés. Les méthodes onboarding fonctionnent toujours mais sont dépréciées — voir [Dépréciation de l'API Onboarding](#onboarding-api-deprecation). Certains comportements par défaut ont changé — voir [Changements de comportement par défaut](#default-behavior-changes).
+`AdaptyPaywallProduct` conserve son nom — les produits appartiennent toujours à un flow, et `GetPaywallProducts` conserve également son nom, en prenant désormais un `AdaptyFlow`. Les méthodes `GetFlow` et `GetFlowForDefaultAudience` ne prennent plus de paramètre `locale`. Les API d'achat et de profil (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) sont inchangées. `SetFallback` conserve sa signature, mais le fichier qu'il lit doit être téléchargé à nouveau — voir [Fichiers de secours](#fallback-files). Les méthodes d'onboarding fonctionnent toujours mais sont dépréciées — voir [Dépréciation de l'API onboarding](#onboarding-api-deprecation). Certains comportements par défaut ont changé — voir [Changements de comportement par défaut](#default-behavior-changes).
 
 ## Installation \{#installation\}
 
-La v4.0 est une pré-version, donc épinglez le tag bêta exact. Pour l'installer via le Unity Package Manager, ajoutez le tag à l'URL Git :
+Pour installer le SDK 4.1 via le Unity Package Manager, ajoutez le tag de version à l'URL Git :
 
 ```
-https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.0.0-beta.1
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Si vous installez via le package Unity, téléchargez `adapty-unity-plugin-4.0.0-beta.1.unitypackage` depuis la [version 4.0.0-beta.1](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.0.0-beta.1). Consultez [Installer le SDK Adapty](sdk-installation-unity#install-adapty-sdk) pour la configuration complète.
+Si vous installez via le package Unity, téléchargez `adapty-unity-plugin-4.1.0.unitypackage` depuis la [version 4.1.0](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0). Consultez [Installer Adapty SDK](sdk-installation-unity#install-adapty-sdk) pour la configuration complète.
 
-Deux changements de configuration de build sont introduits avec la v4 :
+Deux changements de configuration de build accompagnent la version 4.x :
 
-- **Les dépendances iOS passent à Swift Package Manager.** Le SDK iOS natif Adapty 4.0 est déclaré comme package Swift distant au lieu d'un pod CocoaPods. Mettez à jour l'[External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) vers la version **1.2.188 ou ultérieure** — les versions antérieures ne prennent pas en charge les dépendances Swift Package Manager. Les étapes CocoaPods (`iOS Resolver -> Install Cocoapods`, ouverture de `Unity-iPhone.xcworkspace`) ne s'appliquent plus.
-- **La cible de déploiement iOS doit être 15.0 ou supérieure.** Un nouveau validateur de build dans l'éditeur Unity bloque le build iOS si la cible est inférieure.
+- **Les dépendances iOS basculent vers Swift Package Manager.** Le SDK iOS natif d'Adapty est désormais déclaré en tant que package Swift distant plutôt que pod CocoaPods. Mettez à jour l'[External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) vers la version **1.2.188 ou ultérieure** — les versions antérieures ne prennent pas en charge les dépendances Swift Package Manager. Les étapes CocoaPods (`iOS Resolver -> Install Cocoapods`, ouverture de `Unity-iPhone.xcworkspace`) ne s'appliquent plus.
+- **La cible de déploiement iOS doit être 15.0 ou supérieure.** Un nouveau validateur de build dans l'Unity Editor bloque le build iOS si la cible est inférieure à cette version.
 
 Les SDK natifs Adapty sous-jacents passent à la version 4.x sur les deux plateformes et sont résolus automatiquement — aucune autre modification de build n'est nécessaire.
 
@@ -210,6 +220,20 @@ Un callback est renommé : `PaywallViewDidFailRendering` devient `FlowViewDidRec
 
 Consultez [Gérer les événements de flow et de paywall](unity-handling-events) pour la liste complète des callbacks.
 
+### Nouvelle méthode requise : OnReceivePromotedPurchase \{#new-required-method-onreceivepromotedpurchase\}
+
+À partir de la version 4.1 du SDK, `IAdaptyEventListener` comporte une méthode supplémentaire. Toute classe l'implémentant ne compilera plus tant que vous n'aurez pas ajouté :
+
+```csharp showLineNumbers
+public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
+    // The user tapped one of your in-app purchases on your App Store product page.
+    // Complete the purchase through Adapty:
+    Adapty.MakePromotedPurchase(product, (result, error) => { /* ... */ });
+}
+```
+
+Cette méthode concerne les achats intégrés mis en avant sur l'App Store et n'est jamais appelée sur Android. Le SDK ne transmet pas encore les achats mis en avant à votre code — il les complète automatiquement à la place — donc un corps vide est également une implémentation valide. Voir [Achats intégrés depuis l'App Store](unity-making-purchases#in-app-purchases-from-the-app-store).
+
 ### Nouvelles API \{#new-apis\}
 
 - `Adapty.SetObserverModeResolver(...)` avec un `IAdaptyUIObserverModeResolver` — gérer les achats et restaurations initiés depuis les flows lorsque le SDK fonctionne en [mode Observer](implement-observer-mode-unity). Auparavant, cette fonctionnalité n'était disponible que dans les SDKs natifs iOS et Android. Voir [Présenter les flows en mode Observer](unity-present-flows-in-observer-mode).
@@ -217,6 +241,47 @@ Consultez [Gérer les événements de flow et de paywall](unity-handling-events)
 - `AdaptyUICreateFlowViewParameters.Locale` (à définir avec `SetLocale`) — afficher un flow ou un paywall avec une [localisation Builder](add-paywall-locale-in-adapty-paywall-builder) spécifique plutôt que celle par défaut du flow. Un flow est localisé au moment de la création de sa vue, c'est donc le seul endroit pour choisir sa localisation, et la vue créée indique la localisation avec laquelle elle a été construite dans `view.Locale`. Voir [Utiliser les localisations et les codes de langue](unity-localizations-and-locale-codes).
 - Le nouveau callback `FlowViewDidReceiveAnalyticEvent` sur `IAdaptyFlowsEventsListener` remonte les événements analytiques d'un flow, en commençant par une vue d'écran pour chaque écran qu'un utilisateur ouvre. Voir [Suivre les vues d'écran des flows](unity-flow-screen-views).
 - `AdaptyUI.OpenUrl(url, openIn, ...)` et `AdaptyUI.RequestAppReview(...)` — le traitement natif derrière les actions `open_url` et les demandes d'avis sur l'app. Appelez `OpenUrl` depuis `FlowViewDidPerformAction` pour conserver le comportement URL par défaut ; `RequestAppReview` sert d'appui à l'invite d'avis sur l'app par défaut, que les flows ne déclenchent pas encore.
+
+## API d'attribution externe renommées \{#renamed-external-attribution-apis\}
+
+À partir de la version 4.1 du SDK, les API permettant de transmettre des données d'attribution depuis un fournisseur externe (Adjust, AppsFlyer, Branch, Tenjin ou un fournisseur personnalisé) sont renommées pour s'aligner sur les SDK natifs. Il n'existe pas d'alias dépréciés, donc les appels existants cessent de compiler tant que vous ne les renommez pas :
+
+| Avant 4.1 | 4.1 |
+|---|---|
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
+| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+
+Seuls les noms changent. Le fournisseur est toujours la même chaîne qu'avant (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), les données d'attribution sont toujours acceptées sous forme de dictionnaire ou de chaîne JSON, et la propriété de profil est toujours un `IReadOnlyList<string>` :
+
+```diff showLineNumbers
+- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+```
+
+## L'attribution Adapty est désactivée par défaut \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Si vous utilisez [l'attribution Adapty](user-acquisition) et mettez à jour vers le SDK 4.1 sans l'activer explicitement, cela échoue silencieusement — les installations cessent d'être enregistrées, sans aucun avertissement.
+:::
+
+Dans les versions précédentes, le SDK enregistrait automatiquement les installations pour [l'attribution Adapty](user-acquisition). À partir de la version 4.1 du SDK, cette fonctionnalité est désactivée par défaut : le SDK n'enregistre plus les installations, les callbacks `OnInstallationDetailsSuccess` et `OnInstallationDetailsFail` ne se déclenchent jamais, et `GetCurrentInstallationStatus` renvoie le statut `NotAvailable`.
+
+Si vous utilisez Adapty Attribution, activez-la lors de l'initialisation du SDK :
+
+```csharp showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyAttributionEnabled(true);
+```
+
+Si vous n'utilisez pas Adapty Attribution, aucune modification n'est nécessaire.
+
+## Fichiers de secours \{#fallback-files\}
+
+Le format du [fichier de secours](unity-use-fallback-paywalls) a changé dans le SDK 4.1. Téléchargez à nouveau les fichiers de secours iOS et Android depuis **[Placements](https://app.adapty.io/placements)** > **Fallbacks** et remplacez ceux qui se trouvent dans `Assets/StreamingAssets`, même si vous les aviez déjà téléchargés pour une version antérieure.
+
+:::warning
+Cette étape ne génère aucune erreur de compilation. Si vous la passez, `SetFallback` renvoie `DecodingFailed` (`adapty_code: 2006`), et chaque placement perd son paywall de secours.
+:::
 
 ## Changements de comportement par défaut \{#default-behavior-changes\}
 
@@ -229,6 +294,6 @@ Ces changements ne provoquent pas d'erreurs de compilation, testez-les donc à l
 
 ## Dépréciation de l'API onboarding \{#onboarding-api-deprecation\}
 
-L'ancienne API onboarding est dépréciée dans la v4.0 au profit du [Flow Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une prochaine version. Prévoyez donc la migration de vos onboardings vers le Flow Builder.
+L'API onboarding historique est dépréciée dans la v4 au profit du [Flow Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une prochaine version — prévoyez donc la migration de vos onboardings vers le Flow Builder.
 
 Symboles dépréciés : `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView` et `Adapty.SetOnboardingsEventsListener`.
