@@ -174,7 +174,7 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-reference | — | dev | 31 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 8 | tutorial |
+| manage-adapty-with-ai | entry | dev | 9 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
