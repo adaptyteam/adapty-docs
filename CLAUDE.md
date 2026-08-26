@@ -110,6 +110,11 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 
 `src/components/reusable/` contains MDX snippets that can be imported into multiple articles to avoid content duplication.
 
+**Snippets must be `.mdx`, never `.md`.** Astro compiles imported `.md` files with the plain-markdown pipeline, which can't render JSX. The remark-aside plugin turns `:::` callouts into `<Callout>` JSX nodes, so a `.md` snippet silently loses its callout boxes — the inner text renders, the box doesn't (this regression shipped with the Docusaurus-to-Astro migration and was fixed 2026-08-26). Two more rules for snippet files:
+
+- A snippet that uses `:::` callouts must itself contain `import Callout from '../Callout.astro';` — imported snippets don't inherit the page-level component registration from `src/pages/[...slug].astro`. The same applies to any other component the snippet renders (e.g., `Zoom`).
+- Add `no_index: true` frontmatter, following the existing snippets.
+
 ## Remark/Rehype plugins (`src/plugins/`)
 
 - `remark-aside` — converts `:::note`/`:::tip`/etc. fenced directives into `<Callout>` components
@@ -176,7 +181,7 @@ These apply to every doc edit, however small. They are the rules no linter can c
 These are the styled visual blocks that articles use — their CSS lives entirely in `global.css`:
 
 - **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, dark mode color inversion, diff styling, line highlighting (`.highlight-line`)
-- **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link)
+- **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link). Exception to this section's rule: callout styles are scoped inside `src/components/Callout.astro`, not in `global.css`
 - **Details/Accordion** (`details`/`summary`) — collapsible sections with chevron animation
 - **Ordered lists** (`.docs-prose ol`) — circular step-number bullets (Mintlify-inspired)
 - **Zoom images** (`.zoom-wrapper`, `.zoom-image`) — bordered, shadowed, hover-scale images
