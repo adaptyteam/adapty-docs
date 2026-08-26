@@ -133,7 +133,7 @@ becoming a second copy of the deep article.
 | quickstart-test | — | dev, marketer | 7 | tutorial |
 | sample-apps | — | dev, marketer | 2 | tutorial |
 | what-is-adapty | entry | dev, marketer | 0 | tutorial |
-| whats-new | — | dev, marketer | 8 | tutorial |
+| whats-new | — | dev, marketer | 9 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
