@@ -1,0 +1,489 @@
+---
+title: "Use Adapty flows with your own payment system"
+description: "Run Adapty flows on top of the purchase code you already have, without migrating your payment infrastructure."
+metadataTitle: "Adapty flows with your own payment system | Adapty Docs"
+noindex: true
+---
+
+You don't have to move your purchases to Adapty to use its flows. In [Observer mode](observer-vs-full-mode), your code keeps making every purchase, while Adapty renders the paywall or onboarding, decides who sees it, A/B tests it, and reports on the result.
+
+This guide covers what changes, what doesn't, and what the setup takes.
+
+:::tip
+New to flows? [The Flow Builder](adapty-flow-builder) covers what you can build before you wire any of this up.
+:::
+
+## What stays yours, what Adapty takes over
+
+Your code keeps:
+
+- The purchase call
+- Finishing and acknowledging transactions
+- Granting and revoking access
+- Renewals and billing retries
+
+Adapty takes over:
+
+- Rendering the flow
+- [Placements](placements) and [audience](audience) targeting
+- [A/B tests](ab-tests)
+- [Analytics](analytics) and [integrations](configuration)
+
+Nothing about your billing changes. Adapty renders the flow and hands the purchase tap to your code, which makes the charge.
+
+## Create your products in Adapty
+
+Skip this section if nothing in your flow shows a price or takes a purchase — a flow of onboarding screens alone needs no products in Adapty.
+
+As soon as a screen presents products, create a product in Adapty for each subscription or one-time purchase it offers. A flow reads the price on the card from the product, so the card shows the current store price, you can A/B test that price, and Adapty groups revenue by product in analytics.
+
+A product in Adapty points at the store product you already sell, so creating one doesn't move billing: your code still makes every charge. Each product names an access level, and in Observer mode Adapty doesn't grant it — your code keeps owning access — but a product needs one.
+
+The [Adapty CLI](developer-cli) creates products without opening the dashboard. Install it (Node.js 18 or later) and sign in:
+
+```bash
+npm install -g adapty
+```
+
+```bash
+adapty auth login
+```
+
+Get your app ID, then the access level to attach — every new app starts with a `premium` one:
+
+```bash
+adapty apps list
+```
+
+```bash
+adapty access-levels list --app <app-id>
+```
+
+Then create one Adapty product for each store product you sell, using the product IDs from App Store Connect and Google Play Console:
+
+```bash
+adapty products create --app <app-id> --title "Monthly" --access-level-id <access-level-id> --period monthly --ios-product-id com.example.monthly --android-product-id com.example.monthly --android-base-plan-id monthly
+```
+
+Pass `--period lifetime` for a one-time purchase, and `--stripe-product-id` with `--stripe-price-id` (or the Paddle pair) for something you sell on the web. [`products create`](developer-cli-reference#adapty-products-create) lists every flag. Store product IDs can't be changed after creation, so pointing a product at a different store product means creating a new product.
+
+:::warning
+A product element with nothing assigned blocks saving and publishing, so you find out in the builder. A **Purchase** action with no product set saves fine and fails on the device — the button does nothing. Set a product on every Purchase action.
+:::
+
+<Details summary="Or skip products and write prices as static text">
+
+A flow with no product element saves and publishes, so you can type prices into the text and have your own code decide what a tap buys. What it costs you:
+
+- You keep every price in two places — the store and the flow's text — and they drift as soon as you change one.
+- No price A/B tests, which is most of what a flow is for.
+- Charts and integrations group revenue less cleanly, since Adapty only learns the product from the transaction you report.
+- Your code maps each tapped element to a product, instead of receiving one from the flow.
+
+</Details>
+
+## Set it up
+
+1. **Activate the SDK in Observer mode.** Turn on `observerMode` when you configure the SDK: [iOS](implement-observer-mode), [Android](implement-observer-mode-android), [React Native](implement-observer-mode-react-native), [Flutter](implement-observer-mode-flutter), [Unity](implement-observer-mode-unity), [Kotlin Multiplatform](implement-observer-mode-kmp), [Capacitor](implement-observer-mode-capacitor).
+2. **Create your products in Adapty**, unless nothing in the flow shows a price. One CLI command per product — see [Create your products in Adapty](#create-your-products-in-adapty).
+3. **Build the flow.** See [the Flow Builder](adapty-flow-builder) for the screens, [set up purchases](paywall-product-block) for products on a paywall screen, and [create a placement](create-placement) to decide where the flow appears in your app.
+4. **Present the flow and make the purchase in your own code.** Adapty hands the purchase tap to a handler you register.
+5. **Report the transaction** with the flow's `variationId`, so the purchase reaches analytics attributed to the variation that produced it.
+
+Steps 4 and 5 differ per platform. In every snippet, `flow` is the `AdaptyFlow` you fetched for the placement, and `myPurchaseApi` or `yourBillingClient` stands in for the purchase code you already have.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS">
+
+Pass an `AdaptyObserverModeResolver` to `getFlowConfiguration(forFlow:observerModeResolver:)`. Adapty calls the resolver on a purchase tap instead of making the purchase itself.
+
+```swift showLineNumbers title="Swift"
+final class MyObserverModeResolver: AdaptyObserverModeResolver {
+    private let flow: AdaptyFlow
+
+    init(flow: AdaptyFlow) {
+        self.flow = flow
+    }
+
+    func observerMode(
+        didInitiatePurchase product: AdaptyPaywallProduct,
+        onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+        onFinishPurchase: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartPurchase() // the flow shows its loading indicator
+            do {
+                // your own purchase code, returning a StoreKit transaction
+                let transaction = try await myPurchaseApi.purchase(product.vendorProductId)
+                try await Adapty.reportTransaction(transaction, withVariationId: flow.variationId)
+            } catch {
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    func observerModeDidInitiateRestorePurchases(
+        onStartRestore: @MainActor @Sendable @escaping () -> Void,
+        onFinishRestore: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartRestore()
+            try? await myPurchaseApi.restore()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Then present the flow with the resolver attached:
+
+```swift showLineNumbers title="Swift"
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        observerModeResolver: MyObserverModeResolver(flow: flow)
+    )
+
+    let visualFlow = try AdaptyUI.flowController(
+        with: flowConfiguration,
+        delegate: self // an AdaptyFlowControllerDelegate
+    )
+
+    present(visualFlow, animated: true)
+} catch {
+    // handle the error
+}
+```
+
+See [Present flows in Observer mode](ios-present-paywall-builder-paywalls-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode).
+
+</TabItem>
+<TabItem value="android" label="Android">
+
+Pass an `AdaptyUiObserverModeHandler` when you create the flow view — the handler is a parameter of `AdaptyUI.getFlowView`, `AdaptyFlowScreen`, and `AdaptyFlowView`. Its `onPurchaseInitiated` receives the purchase tap. `getRestoreHandler` is optional — skip it and restore stays with the SDK.
+
+:::warning
+Always pass the handler. Without it, the SDK completes the purchase itself — the user is charged through Adapty, and only a log warning says so. On iOS the same omission fails the purchase instead.
+:::
+
+```kotlin showLineNumbers
+val observerModeHandler = object : AdaptyUiObserverModeHandler {
+    override fun onPurchaseInitiated(
+        product: AdaptyPaywallProduct,
+        onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+        onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        yourBillingClient.makePurchase(
+            product,
+            onSuccess = { purchase ->
+                Adapty.reportTransaction(
+                    TransactionInfo.fromPurchase(purchase),
+                    flow.variationId,
+                ) {
+                    onFinishPurchase() // the flow hides the loading indicator
+                }
+            },
+            onError = { onFinishPurchase() },
+            onCancel = { onFinishPurchase() },
+        )
+    }
+
+    override fun getRestoreHandler() =
+        AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+            onStartRestore()
+            yourBillingClient.restorePurchases(
+                onSuccess = { onFinishRestore() },
+                onError = { onFinishRestore() },
+            )
+        }
+}
+```
+
+Then pass the handler to the flow view:
+
+```kotlin showLineNumbers
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    observerModeHandler = observerModeHandler,
+)
+```
+
+See [Present flows in Observer mode](android-present-paywall-builder-paywalls-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode-android).
+
+</TabItem>
+<TabItem value="react-native" label="React Native">
+
+Pass `onObserverPurchaseInitiated` and `onObserverRestoreInitiated` as props on `AdaptyFlowView`, or register them with `view.setEventHandlers`.
+
+```typescript showLineNumbers title="React Native (TSX)"
+import React, { useCallback } from 'react';
+import { AdaptyFlowView, adapty } from 'react-native-adapty';
+import type { FlowEventHandlers } from 'react-native-adapty';
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, flow.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, [flow]);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+In the embedded component, the value a handler returns does not close the flow — unmount the component yourself after a successful purchase or restore.
+
+See [Present flows in Observer mode](react-native-present-flows-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode-react-native).
+
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+
+Register the resolver with `AdaptyUI().setObserverModeResolver` — on `AdaptyUI()`, not on `Adapty`. Implement both `observerModeDidInitiatePurchase` and `observerModeDidInitiateRestore`; both are required, and each receives the flow view as its first argument.
+
+```dart showLineNumbers title="Flutter"
+class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+  MyObserverModeResolver(this.flow);
+
+  final AdaptyFlow flow;
+
+  @override
+  void observerModeDidInitiatePurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    void Function() onStartPurchase,
+    void Function() onFinishPurchase,
+  ) async {
+    onStartPurchase(); // the flow shows its loading indicator
+    try {
+      final transactionId = await myPurchaseApi(product.vendorProductId);
+      await Adapty().reportTransaction(
+        transactionId: transactionId,
+        variationId: flow.variationId,
+      );
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } finally {
+      onFinishPurchase(); // the flow hides the loading indicator
+    }
+  }
+
+  @override
+  void observerModeDidInitiateRestore(
+    AdaptyUIFlowView view,
+    void Function() onStartRestore,
+    void Function() onFinishRestore,
+  ) async {
+    onStartRestore();
+    try {
+      await myRestoreApi();
+    } finally {
+      onFinishRestore();
+    }
+  }
+}
+```
+
+Register the resolver once, before you present any flow:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setObserverModeResolver(MyObserverModeResolver(flow));
+```
+
+See [Present flows in Observer mode](flutter-present-flows-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode-flutter).
+
+</TabItem>
+<TabItem value="unity" label="Unity">
+
+Register the resolver with `Adapty.SetObserverModeResolver` — on `Adapty`, not on `AdaptyUI`. Implement `IAdaptyUIObserverModeResolver` with `FlowViewDidInitiatePurchase` and `FlowViewDidInitiateRestore`; Unity's callback names differ from the other platforms.
+
+```csharp showLineNumbers
+using System;
+using AdaptySDK;
+
+public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+{
+    private readonly AdaptyFlow _flow;
+
+    public MyObserverModeResolver(AdaptyFlow flow)
+    {
+        _flow = flow;
+    }
+
+    public void FlowViewDidInitiatePurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        Action onStartPurchase,
+        Action onFinishPurchase
+    )
+    {
+        onStartPurchase(); // the flow shows its loading indicator
+        MyPurchaseApi.Purchase(product.VendorProductId, (transactionId, purchaseError) =>
+        {
+            if (purchaseError != null)
+            {
+                onFinishPurchase();
+                return;
+            }
+
+            Adapty.ReportTransaction(transactionId, _flow.VariationId, (reportError) =>
+            {
+                onFinishPurchase(); // the flow hides the loading indicator
+            });
+        });
+    }
+
+    public void FlowViewDidInitiateRestore(
+        AdaptyUIFlowView view,
+        Action onStartRestore,
+        Action onFinishRestore
+    )
+    {
+        onStartRestore();
+        MyPurchaseApi.Restore((restoreError) => onFinishRestore());
+    }
+}
+```
+
+Register the resolver once, before you present any flow:
+
+```csharp showLineNumbers
+Adapty.SetObserverModeResolver(new MyObserverModeResolver(flow));
+```
+
+See [Present flows in Observer mode](unity-present-flows-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode-unity).
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+Register the resolver with `AdaptyUI.setObserverModeResolver`. Implement both `observerModeDidInitiatePurchase` and `observerModeDidInitiateRestore`; both are required, and each receives the flow view as its first argument.
+
+```kotlin showLineNumbers
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.AdaptyUIObserverModeResolver
+import com.adapty.kmp.models.AdaptyFlow
+import com.adapty.kmp.models.AdaptyPaywallProduct
+import com.adapty.kmp.models.AdaptyUIFlowView
+import com.adapty.kmp.models.onError
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
+
+class MyObserverModeResolver(
+    private val flow: AdaptyFlow,
+    private val scope: CoroutineScope,
+) : AdaptyUIObserverModeResolver {
+
+    override fun observerModeDidInitiatePurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        onStartPurchase: () -> Unit,
+        onFinishPurchase: () -> Unit,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        scope.launch {
+            val transactionId = myPurchaseApi(product.vendorProductId)
+            Adapty.reportTransaction(
+                transactionId = transactionId,
+                variationId = flow.variationId,
+            ).onError { error ->
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    override fun observerModeDidInitiateRestore(
+        view: AdaptyUIFlowView,
+        onStartRestore: () -> Unit,
+        onFinishRestore: () -> Unit,
+    ) {
+        onStartRestore()
+        scope.launch {
+            myRestoreApi()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Register the resolver once, before you present any flow:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.AdaptyUI
+
+AdaptyUI.setObserverModeResolver(MyObserverModeResolver(flow, scope))
+```
+
+See [Present flows in Observer mode](kmp-present-flows-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode-kmp).
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor">
+
+Set `onObserverPurchaseInitiated` and `onObserverRestoreInitiated` with `view.setEventHandlers` on every flow view you create — Capacitor has no separate resolver object, and the two handlers are part of the regular event handlers.
+
+```typescript showLineNumbers title="Capacitor"
+import { adapty, createFlowView } from '@adapty/capacitor';
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) =>
+        adapty.reportTransaction({ transactionId, variationId: flow.variationId }),
+      )
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+See [Present flows in Observer mode](capacitor-present-flows-in-observer-mode) and [Report transactions in Observer mode](report-transactions-observer-mode-capacitor).
+
+</TabItem>
+</Tabs>
+
+## If you're already using another vendor
+
+Observer mode only requires that your code makes the purchase — not whose SDK that code calls. Flows work the same on top of RevenueCat, Superwall, or Qonversion as on top of your own StoreKit or Billing Library code.
+
+Three decisions to make before you ship:
+
+- **One system finishes each transaction**: Two SDKs both finishing the same purchase is the most common failure here.
+- **One system owns access**: Adapty grants nothing in Observer mode, so keep access levels where they are.
+- **Report each purchase once**: Reporting the same transaction from two places distorts your analytics.
+
+To move off the other vendor entirely instead, see [Migrate from RevenueCat](migration-from-revenuecat) or [Migrate from Superwall](migration-from-superwall).
+
+## Observer mode limits
+
+- **Adapty doesn't grant access**: It doesn't respond to purchase events by giving or restricting paid access, and it doesn't handle renewals or billing retries. Your own code owns access levels.
+- **Your code finishes its own transactions**: Adapty doesn't finish or acknowledge the purchases your code makes, so closing each one stays your job.
+- **Reporting isn't optional**: The `variationId` you pass with a report is the only link between a purchase and the flow that produced it. Report every transaction, or your flow metrics and A/B test results are wrong.

@@ -72,7 +72,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | analytics-integration | entry | dev, analyst | 4 | tutorial |
 | apple-search-ads | — | dev, analyst | 7 | tutorial |
 | appmetrica | — | dev, analyst | 10 | tutorial |
-| appsflyer | entry | dev, analyst | 10 | tutorial |
+| appsflyer | entry | dev, analyst | 11 | tutorial |
 | asapty | — | dev, analyst | 8 | tutorial |
 | attribution-integration | entry | dev, analyst | 5 | tutorial |
 | branch | — | dev, analyst | 7 | tutorial |

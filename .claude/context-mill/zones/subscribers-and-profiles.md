@@ -31,7 +31,7 @@ support and analyst roles far more than by developers writing code.
 | event-feed | — | support, analyst | 0 | tutorial |
 | how-profiles-work | — | support, analyst | 6 | tutorial |
 | profiles-crm | entry | support, analyst | 8 | tutorial |
-| segments | — | support, analyst | 7 | tutorial |
+| segments | — | support, analyst | 8 | tutorial |
 | sharing-paid-access-between-user-accounts | — | support, analyst | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

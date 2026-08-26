@@ -72,7 +72,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | onboarding-text | entry | marketer | 10 | tutorial |
 | paywall-buttons | — | marketer | 6 | tutorial |
 | paywall-dark-mode | — | marketer | 4 | tutorial |
-| paywall-head-picture | — | marketer | 4 | tutorial |
+| paywall-head-picture | — | marketer | 5 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
 | using-custom-fonts-in-flow-builder | — | marketer | 5 | tutorial |
@@ -125,6 +125,16 @@ article for platform X" as a gap — coverage review isn't in scope for this too
   "Typography properties," `using-custom-fonts-in-flow-builder.mdx` step 0 of "Add a custom font"). If
   that limitation ever changes, all three copies need editing together; editing one won't surface the
   others.
+- **Fill is a layer stack, split across two articles.** A fill is an ordered list of layers composited
+  bottom → top; the panel lists them top-most first, and a semi-transparent layer over a media layer is
+  how a background tint is authored (schema `IFill` = `IFillLayer[]`, flow schema v10, migration 010
+  wraps every legacy single fill into a one-element array — `dashboard-interface`, read 2026-08-21). The
+  panel mechanics (add, swatch, drag to reorder, remove) live in `builder-styling`'s Fill section; the
+  screen-background tint recipe lives in `paywall-head-picture`. Either one changing means checking the
+  other: the recipe assumes the mechanics, and the mechanics link to the recipe rather than repeating it.
+  Note the opacity slider is a **gradient-row-only** control — solid-color rows carry opacity in their
+  color input, and image and video rows have none — so "set the layer's opacity" is not a general
+  sentence about layers.
 - **Reused screenshot assets.** Confirmed pairs sharing the same image file: `builder-gradient-demo.webp`
   (`builder-styling` Fill section + `paywall-head-picture` Gradient section), `flow-builder/alignment-distribution-demo.webp`
   (`manage-paywall-ui-elements` + `builder-containers`), `builder-dark-mode-demo.webp` (`builder-styling`
@@ -199,6 +209,7 @@ articles in this zone are plausible and one is right.
 | "safe area", "hide the status bar", "content won't scroll", "mirror the layout for Arabic/Hebrew", "no progress bar on the welcome screen" | Screen-level, not element-level — readers hunt for these in the selected element's panel. **Safe area**, **Status bar**, **Vertical scroll**, **Mirror for RTL** and **Include screen in progress indicator** are all in `paywall-layout-and-products#screen-settings`. The progress-indicator element itself is `flow-logic`'s `builder-loaders-and-progress-bars`; this is only the per-screen opt-out. |
 | "button must stay visible while the page scrolls", "sticky bottom bar", "the slide-up plan picker opens by itself" | `builder-containers`. Footer vs a **Fixed** element is the actual decision: a Footer reserves its own height and covers the bottom safe area (one per screen, can't be duplicated), a Fixed element floats over scrolling content without reserving space and you manage its safe-area offsets yourself (`manage-paywall-ui-elements`). A Bottom Sheet renders as soon as the screen loads unless you set **Visibility → Hide** and trigger it with a **Show** action — and you have to build its content *before* hiding it, because hidden layers can't be edited. |
 | "image is cut off by the notch", "edge-to-edge background", "content hidden behind the home indicator" | Depends which media it is. A screen **Fill** background always covers the whole viewport, including behind the notch and system bars, even with Safe area enabled (`paywall-head-picture`). An image or video *element* stays inside the safe area until you position it **Fixed**, zero all four offsets and select **Ignore safe area** (`manage-paywall-ui-elements#ignore-safe-area`, restated in `custom-media`). |
+| "darken the background photo", "add an overlay/scrim", "text is unreadable over the image", "how do I add a second fill" | `paywall-head-picture#tint-a-background`. Not an image-editing question and not an element the reader has to add to the canvas: the screen's **Fill** takes a stack of layers, so the answer is a semi-transparent gradient layer above the image layer. The opacity slider sits on the gradient layer's own row and scales every stop at once. Readers arriving from the element side land on `builder-styling`'s Fill section instead, which carries the same stack mechanics and links across. |
 | "video doesn't play", "the animation doesn't move", "the image I upload isn't what users see" | The canvas is not the device. Video renders as a still frame in the editor (`custom-media`, `paywall-head-picture`); animations stay static until **Toggle animations** or **Play Animation** (`builder-styling#preview-the-animation`); and a media element tagged with a **custom media ID** treats the uploaded file as a *fallback* that app code can replace at runtime (`custom-media#custom-media-id` — the SDK half is `sdk-flows-display`'s `get-pb-paywalls`). Wrong prices in preview and on-device test builds are `flow-logic`'s `paywall-device-compatibility-preview`. |
 | "font is right in the builder, wrong on device", "Bold does nothing", "can I delete this font" | `using-custom-fonts-in-flow-builder`. The uploaded file is **editor-preview only** — Adapty doesn't push it to devices, so without the file in the app bundle the SDK falls back to SF Pro / Roboto. **Weight, Bold and Italic don't apply to custom fonts** at all: upload one file per variant (the same warning is duplicated in `builder-styling` and `onboarding-text` — see Ripple rules). Deleting a font silently rewrites every reference to the system font across draft *and* published flows, with no undo. Whether a published flow may use a font at all is an app-version question: `flow-logic`'s `builder-save-publish`. |
 | "dark mode doesn't switch this element", "changed one heading and every screen changed", "roll out new brand colors" | `builder-styling#reusable-styles`: dark mode works **only** through named color styles — an element filled with a raw hex has no dark variant to switch to. The same mechanism is the other complaint: editing a color or text style updates every element referencing it, on every screen. The dedicated dark-mode surface (light/dark pair per style, status-bar theme, preview toggle, **Delete dark theme**) is `paywall-dark-mode`. |
@@ -236,6 +247,11 @@ second callout layer around it.
   app" section names `AdaptyFlow.remoteConfigs`/`AdaptyRemoteConfig` but links to no SDK article. The
   Reader jobs section above bridges this by hand into `sdk-flows-display`'s `get-pb-paywalls`; the
   article itself doesn't make the hop.
+- **Unverified after the fill-stack change (2026-08-21):** `builder-styling`'s Fill screenshot
+  (`flow-builder/fill.webp`) and `paywall-head-picture`'s four per-type shots
+  (`flow-builder-bg-img/vid/solid/gradient.webp`) predate the layer-stack panel. I read the component
+  source, not the rendered panel, so this is a suspicion, not a finding — open the Fill panel in the
+  dashboard before deciding whether they need recapturing. `flow-builder-bg-tint.webp` is current.
 - **Style debt (not a reader-facing gap):** `paywall-buttons.mdx` still uses the legacy
   `<Zoom><img src={require(...)}/></Zoom>` pattern and opens with a stray `:::info This section
   describes the new Flow Builder...` banner that no other article in this zone carries — everything

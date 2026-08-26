@@ -1,0 +1,59 @@
+---
+title: "Suivre les vues des écrans de flow dans le SDK React Native"
+description: "Recevez un événement chaque fois qu'un utilisateur ouvre un écran de flow dans votre application React Native, et transmettez-le à vos outils d'analyse produit."
+metadataTitle: "Suivre les vues des écrans de flow | SDK React Native | Documentation Adapty"
+---
+
+Chaque fois qu'un utilisateur ouvre un écran dans un [flow](adapty-flow-builder), le SDK envoie un événement `flow_screen_showed` à votre application. Transmettez-le à Amplitude, Mixpanel ou tout autre outil d'analyse produit que vous utilisez, afin d'analyser les écrans de flow avec le reste des événements de votre application.
+
+:::tip
+Pour voir jusqu'où les utilisateurs progressent dans un flow, vous n'avez besoin d'aucun code — les [métriques de flow](flow-metrics) affichent déjà les vues, les complétions et les abandons par écran dans l'Adapty Dashboard. Utilisez ce guide quand vous avez besoin de ces mêmes données dans vos propres outils d'analyse, associées à des événements qu'Adapty ne connaît pas.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **SDK React Native Adapty v4 ou version ultérieure** : le callback d'analytique de flow n'existe pas dans les versions antérieures.
+- **Une version de flow publiée après le déploiement de cette fonctionnalité** : Adapty génère les événements d'écran lors de la publication d'un flow, donc un flow publié avant cette date ne remonte rien. Si aucun événement n'arrive dans votre application, publiez une nouvelle version du flow et réessayez.
+
+## Ce que vous recevez \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Les vues d'écran parviennent au même callback analytique que tous les autres événements de flow. Consultez [Gérer les événements de flow et de paywall](react-native-handling-events-1) pour savoir où l'enregistrer.
+
+## Transmettez chaque vue d'écran à votre analytics \{#forward-every-screen-view-to-your-analytics\}
+
+Vérifiez d'abord le nom de l'événement avant de lire quoi que ce soit d'autre, car un flow remonte d'autres événements via le même callback.
+
+```javascript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed') {
+      const screenId = params.instanceId;
+      const screenOrder = params.screen_order;
+
+      // Send screenId and screenOrder to your analytics provider here.
+    }
+    return false; // keep the flow open
+  },
+});
+```
+
+## Exécuter du code quand un utilisateur atteint la fin \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` est `true` sur un écran que le flow ne peut pas dépasser. Utilisez-le pour débloquer du contenu, marquer l'onboarding comme terminé ou envoyer un événement de fin personnalisé, sans avoir à ajouter une action de bouton dans le builder.
+
+```javascript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      // The user reached the end of the flow.
+    }
+    return false; // keep the flow open
+  },
+});
+```
+
+Atteindre le dernier écran n'est pas la même chose que fermer le flow. Un utilisateur peut voir l'écran final et fermer le flow sans agir, et un flow avec des embranchements peut se terminer sur plusieurs écrans différents. Pour savoir que le flow lui-même a disparu, utilisez plutôt `onDisappeared`.

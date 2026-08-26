@@ -1,64 +1,69 @@
 ---
 title: "Google Play ile ilk entegrasyon"
-description: "Android'de Adapty'ye başlayın ve uygulamanızı verimli abonelik yönetimi için hazırlayın."
-metadataTitle: "Android'e Başlarken | Adapty Dokümanları"
+description: "Google Play uygulamanızı Adapty'ye bağlayın: Geliştirici API'lerini etkinleştirin, bir hizmet hesabı oluşturun ve Android satın almalarını doğrulamak için anahtarını yükleyin."
+metadataTitle: "Google Play ile İlk Entegrasyon | Adapty Dokümanları"
 ---
 
-Adapty'ye hoş geldiniz! Amacımız sizi en kısa sürede hazır hale getirmek ve en iyi sonuçları elde etmenize yardımcı olmaktır. Bu kılavuz, uygulamanız Google Play Store'da mevcutsa Adapty'ye nasıl başlayacağınızı anlatmaktadır.
+Google Play hesabınızı Adapty'ye bağlayarak sunucularımızın Play Store ürünlerinizi okuyabilmesini, satın almalarınızı doğrulayabilmesini ve Android abonelik etkinliklerini alabilmesini sağlayın.
 
-Adapty'yi mobil uygulamanıza entegre etmek, uygulamanız ile Adapty arasında hem Google Play hem de SDK düzeyinde bağlantı kurulmasını gerektirir. Süreç uzun görünse de Adapty Kontrol Paneli'ndeki yerleşik onboarding'i veya aşağıdaki talimatları izlemek bunu oldukça kolaylaştırır; genellikle 1 saatten fazla sürmez.
+:::important
+Her mağaza ayrı ayrı bağlanır ve bu bağlantılar birbirinden bağımsızdır. Uygulamanız App Store'da da yayınlanıyorsa, [App Store Connect entegrasyonunu yapılandırın](initial_ios).
+:::
 
-<div style={{
-    maxWidth: '560px',
-    margin: '0 auto 2rem',
-    position: 'relative',
-    aspectRatio: '16/9',
-    width: '100%'
-}}>
-    <iframe
-        style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%'
-        }}
-        src="https://www.youtube.com/embed/7dN50n5bcLc?si=c2znttIb--4VcrRO"
-        title="YouTube video player"
-        frameBorder="0"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-        referrerPolicy="strict-origin-when-cross-origin"
-        allowFullScreen
-    />
-</div>
+Kurulum yaklaşık bir saat sürer. Tek bir pencerede kalmayı tercih ediyorsanız, Adapty Kontrol Paneli'ndeki yerleşik onboarding aynı adımları kapsamaktadır.
+
+<YouTube id="7dN50n5bcLc" />
+
+## Başlamadan önce \{#before-you-start\}
+
+Apple'dan farklı olarak Google, geliştirici ekosistemini iki ayrı ürüne böler — Google Play Console ve Google Cloud Console — ve bu kurulum her ikisini de kapsar.
+
+### Neler Gerektirir \{#whats-involved\}
+
+- **Hizmet hesabı**: İnsanlar yerine makineler için oluşturulan bir Google hesabıdır. Adapty'ye Google Cloud ve Google Play Console'larınıza erişim vermek için yeni bir hizmet hesabı oluşturmanız gerekir.
+- **Google Cloud Console**: Google'ın genel amaçlı altyapı platformudur. Play Store'un kendi API kimlik bilgileri olmadığından bunları burada oluşturursunuz. Developer API'lerini etkinleştirmek, hizmet hesabı oluşturmak ve gerekli izinlerin bir kısmını vermek için Cloud Console'u kullanın. Adapty'nin yenilemeleri, iptalleri ve iadeleri alabilmesi için bu izinlere ihtiyacı vardır. Adapty'nin Google ile kimlik doğrulamasını sağlayan hizmet hesabı anahtar dosyası buradan indirilebilir.
+- **Google Play Console**: Uygulamanızı yayımladığınız ve abonelik sattığınız yerdir. Hizmet hesabına gerekli izinlerin geri kalanını vermek için Play Console'u kullanın. Adapty'nin ürünlerinizi okuyabilmesi ve satın almaları doğrulayabilmesi için bu izinlere ihtiyacı vardır. Bunlara ek olarak, Play Store ile Adapty arasında gerçek zamanlı iletişim kurabilmek için gerçek zamanlı geliştirici bildirimlerini (RTDN) de buradan etkinleştirirsiniz.
+
+### Gerekli erişim ayrıcalıkları \{#required-access-privileges\}
+
+| Konsol | İhtiyacınız olan |
+| --- | --- |
+| Google Cloud Console | Projeniz yoksa oluşturmak için **Project Creator** (`roles/resourcemanager.projectCreator`). Servis hesabı oluşturmak için **Service Account Creator** (`roles/iam.serviceAccountCreator`) ve proje izinleri vermek için **Project IAM Admin** (`roles/resourcemanager.projectIamAdmin`). **Owners** rolü bu üçünü de kapsar. |
+| Google Play Console | Kullanıcı davet etme hakkını da içeren **Admin (all permissions)**; servis hesabını davet edebilmek için bu izne ihtiyacınız var. |
+
+Google, yeni bir organizasyonda varsayılan olarak herkese **Project Creator** yetkisi verir, dolayısıyla büyük ihtimalle bu yetkiye zaten sahipsinizdir. Kurumsal düzeyde kısıtlanmış bir organizasyonda bu yetki kaldırılmış olabilir.
+
+### Gerekli kaynaklar
+
+**Bir Google Cloud projesi.** Henüz yoksa [oluşturun](https://console.cloud.google.com/projectcreate) ya da halihazırda kullandığınız bir projeyi yeniden kullanın. Geliştirici API'lerini etkinleştirmek ve Adapty için servis hesabı oluşturmak amacıyla bu projeyi kullanırsınız.
+
+Proje, Play Console uygulamanızdan bağımsızdır. Tek bir proje, birden fazla uygulamanın iletişimini yönetebilir. Her uygulama, proje içinde kendi topic'ini — bir iletişim kuyruğunu — alır.
+
+Google'ın hizmetlerini Adapty'e bağlarken, baştan sona **aynı projeyi kullanmanız** gerekir. Kişisel bir proje yerine ekibinizin sahip olduğu bir projeyi tercih edin — anahtar ve konu, uygulama var olduğu sürece orada yaşar.
 
 ## İlk entegrasyon için kontrol listesi \{#checklist-for-the-initial-integration\}
 
-- [ ] Adapty'de bir hesap oluşturup mobil uygulama adınızı ve kategorinizi belirttikten sonra, uygulamanızı Adapty platformunda sizin için kuruyoruz.
-- [ ] Google Cloud Console'da [Geliştirici API'lerini etkinleştirin](enabling-of-devepoler-api)
-- [ ] Google Cloud Console'da [bir hizmet hesabı oluşturun](create-service-account)
-- [ ] Google Play Console'da [hizmet hesabına izin verin](grant-permissions-to-service-account)
-- [ ] Google Cloud Console'da [hizmet hesabı anahtar dosyasını oluşturun](create-service-account-key-file)
-- [ ] Adapty Kontrol Paneli'nde [Google Play entegrasyonunu yapılandırın](google-play-store-connection-configuration)
-- [ ] Google Play Console'da [Gerçek zamanlı geliştirici bildirimlerini (RTDN) etkinleştirin](enable-real-time-developer-notifications-rtdn)
-- [ ] AdaptySDK'larını yükleyin ve yapılandırın (ihtiyacınıza göre bir veya birden fazla framework için SDK yükleyebilirsiniz)
-  - [ ] [Android için Adapty SDK'larını yükleyin](sdk-installation-android)
-  - [ ] [React Native için Adapty SDK'larını yükleyin](sdk-installation-reactnative)
-  - [ ] [Flutter için Adapty SDK'larını yükleyin](sdk-installation-flutter)
-  - [ ] [Kotlin Multiplatform için Adapty SDK'larını yükleyin](sdk-installation-kotlin-multiplatform)
-  - [ ] [Unity için Adapty SDK'larını yükleyin](sdk-installation-unity)
-- [ ] Uygulamanızı derleyin ve çalıştırın. Snapshot olarak veya sandbox ortamında çalıştırmanız yeterlidir.
+1. Google Cloud Console'da [Geliştirici API'lerini etkinleştirin](enabling-of-devepoler-api).
+2. Google Cloud Console'da [bir hizmet hesabı oluşturun](create-service-account).
+3. Google Play Console'da [hizmet hesabına gerekli izinleri verin](grant-permissions-to-service-account).
+4. Google Cloud Console'da [hizmet hesabı anahtar dosyasını oluşturun](create-service-account-key-file).
+5. Adapty Kontrol Paneli'nde [anahtar dosyasını ve paket adını Adapty'ye yükleyin](google-play-store-connection-configuration). Yeni bir hizmet hesabının etkinleşmesi en az 24 saat sürer ve bu süre dolmadan Adapty ürünlerinizi okuyamaz — bu beklemeyi atlamak için Google Play Console'da [herhangi bir ürün açıklamasını düzenleyip kaydedin](create-service-account-key-file#activate-the-account-immediately).
+6. Google Play Console'da, Adapty'nin oluşturduğu konu adını kullanarak [Gerçek zamanlı geliştirici bildirimlerini (RTDN) etkinleştirin](enable-real-time-developer-notifications-rtdn).
+7. Uygulamanızın kullandığı her framework için [Adapty SDK'sını yükleyin](installation-of-adapty-sdks):
+   - [Android](sdk-installation-android)
+   - [React Native](sdk-installation-reactnative)
+   - [Flutter](sdk-installation-flutter)
+   - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
+   - [Unity](sdk-installation-unity)
+   - [Capacitor](sdk-installation-capacitor)
+8. Yayınlamadan önce gerçek bir cihazda [uygulama içi satın almalarınızı test edin](testing-on-android).
 
-:::note
-Değişikliklerin etkili olması en az 24 saat sürer, ancak bir [kısa yol](https://stackoverflow.com/a/60691844) var. [Google Play Console](https://play.google.com/apps/publish/)'da herhangi bir uygulamayı açın ve **Monetize** bölümünde **Products** -> **Subscriptions**/**In-app products** yolunu izleyin. Herhangi bir ürünün açıklamasını değiştirip kaydedin. Artık her şey çalışıyor olmalı; uygulama içi değişiklikleri geri alabilirsiniz.
-:::
+## Sonraki adımlar \{#next-steps\}
 
-İlk entegrasyon tamamlandıktan sonra [Adapty'nin özelliklerini kullanmaya başlayabilirsiniz](product).
+Entegrasyon tamamlandıktan sonra [Adapty'nin özelliklerini kullanmaya başlayabilirsiniz](product).
 
-Mobil uygulamanızda paywall'ların ve ürünlerin görüntülenebilmesi ve analizlerin çalışabilmesi için uygulama kodunuzda değişiklik yapmanız gerektiğini unutmayın. Özellikle en azından [paywall'ları görüntülemeniz](android-quickstart-paywalls) ve Paywall Builder ile oluşturulmamış paywall'lar kullanıyorsanız uygulama içinde [satın alma sürecini yönetmeniz](android-making-purchases) gerekir.
+Paywall'ları göstermek için entegrasyonun üzerine uygulama kodu gerekir: en azından [paywall'ları gösterin](android-quickstart-paywalls) ve paywall'ları kendiniz oluşturuyorsanız [satın alma sürecini yönetin](android-making-purchases).
 
-:::danger
-Uygulamanızı yayınlamadan önce yayın kontrol listesini inceleyin
-
-Uygulamanızı yayınlamadan önce [Yayın Kontrol Listesi](release-checklist)'ni dikkatlice gözden geçirin. Bu liste, tüm gerekli adımları tamamladığınızı doğrular ve entegrasyonunuzun başarısını değerlendirme kriterleri sunar.
+:::tip
+Uygulamanızı yayınlamadan önce [Yayın kontrol listesini](release-checklist) gözden geçirin.
 :::

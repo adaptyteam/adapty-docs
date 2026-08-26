@@ -43,26 +43,38 @@ For payment provider details inside the builder (Stripe accounts, test vs live m
 
 ### Use your own hosted paywall
 
-1. On the Create page, select **Enter URL manually**.
+On this path Adapty Mail sends recipients to a page you host and substitutes each recipient's values into the URL. Everything after the click — the offer, the payment, the personalization — happens on your side, with any payment provider.
+
+1. In **Web Paywalls → Create**, select **Enter URL manually**.
 2. Paste your hosted paywall URL with placeholders as query parameters. Adapty Mail substitutes them per recipient so the page can identify the visitor. Example:
 
    ```
    https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
-3. Save.
+3. Give the paywall a **Name** and save it. It's then available to attach to campaigns.
 
-The Create page lists the placeholders you can use, and ticks each one it finds in the URL you paste. These are the ones to reach for:
+The Create page lists the placeholders you can use, and ticks each one it finds in the URL you paste:
 
 | Placeholder | Value |
 | --- | --- |
 | `{email}` | The recipient's email address. |
 | `{adapty.external_profile_id}` | The recipient's profile ID in Adapty. |
+| `{funnelfox.external_profile_id}` | The recipient's profile ID in FunnelFox. |
 | `{custom.external_profile_id}` | The user ID you sent through the [Adapty Mail API](mail-send-data-via-api). |
 | `{scheduled_email_id}` | The ID of the email that carried the link. |
 
-The page also offers a placeholder per profile source, so it may list sources your project doesn't send data from. A placeholder the recipient has no value for resolves to an empty string, so it never reaches your page as literal text.
+The three profile-ID placeholders are one per source a profile can arrive from, and the page lists all of them whether or not your project uses them. Reach for the one that matches how you send data: `{adapty.external_profile_id}` for the [Adapty integration](mail-collect-emails), `{custom.external_profile_id}` for the [API](mail-send-data-via-api). A placeholder the recipient has no value for resolves to an empty string, so it never reaches your page as literal text — and a placeholder Adapty Mail doesn't recognize is passed through as you typed it.
 
-This path works with any payment provider — Adapty Mail only handles the redirect and parameter substitution; payment and personalization happen entirely on your side.
+#### What your page has to do
+
+Adapty Mail's part ends at the redirect. Two jobs are yours:
+
+- **Identify the visitor before checkout starts**: Read the profile ID or email from the query string and attach it to the purchase, so the payment lands on the customer the email was sent to.
+- **Report the purchase back**: Adapty Mail never sees a payment taken on your own provider, and a purchase it doesn't know about counts as neither a conversion nor attributed revenue in [Analytics](mail-analytics) — worse, the rest of the sequence keeps going out to someone who already bought. Send it through whichever path already carries your data: the [Adapty integration](mail-collect-emails), or a [transaction event](mail-send-data-via-api#send-transaction-events) on the Adapty Mail API.
+
+#### Test it before launching
+
+**Send test email** proves the email renders and your page takes payment, but **Sandbox** isn't selectable for a paywall added by URL — the modal reports *"This paywall has no sandbox products, so only production is available."* So a test goes to your live page with live products: use a real card and refund it, or point the URL at your own test environment while you verify the wiring. See [Test your setup](mail-testing#test-the-email-and-checkout-on-their-own).
 
 ## What the checkout looks like
 
@@ -106,4 +118,4 @@ A generated paywall gets these parameters automatically — no configuration in 
 |---|---|
 | Checkout link doesn't open | Verify the paywall is published in the web paywall builder |
 | User not identified at checkout | Confirm `Adapty.identify()` was called with the correct user ID before the email was sent |
-| Purchase not attributed to email | Check that the `cid` parameter is present in the checkout URL — contact support if parameters are missing |
+| Purchase not attributed to email | Attribution follows the click on the email's CTA, so the recipient has to reach checkout through that link, and the purchase has to reach Adapty Mail on the same profile. A purchase already attributed to an earlier email keeps that attribution |

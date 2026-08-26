@@ -105,6 +105,31 @@ core in-app paywall/subscription product.
   `email.` sending prefixes with the `hello.` MAIL FROM prefix *are* our constants
   (`value_objects/domain_name.py`, `constants/ses_identity.py`), so those are safe to state flatly. A
   provider-owned fact must be attributed as the provider's, because it can change without us.
+- **The domain layer was reshaped between 2026-07-23 and 2026-08-17, and the bullet above is now stale
+  in four places** (verified 2026-08-18 against backend `origin/develop` `cab158e8` and frontend
+  `origin/develop` `8b5613a`; the `feature/multidomain`, `feature/custom-subdomain` and
+  `feature/dig-validate` branches in both repos are merged). (1) **A project holds up to five sending
+  domains** — `MAX_DOMAINS_PER_PROJECT = 5` in `constants/ses_identity.py`, `MULTIDOMAIN_RELEASE_DATE =
+  2026-07-23` in `constants/email_settings.py`; `MailingApp._select_email_settings` probes candidates
+  (sticky `(recipient, campaign)` pair first with **no fallback**, then oldest-domain pinning for
+  pre-release profiles, then newest-first) and emits one message-level `THROTTLE` only when every
+  candidate is over quota. (2) **The sending prefix is customer-chosen**, one identity per domain, not
+  the fixed `mail`/`email` pair: `AUTOWARMUP_SES_SUBDOMAIN_PREFIX = 'mail'` is only the default, and
+  `ValidateSubdomainPrefixService` + `anthropic_subdomain_moderator.py` gate it (63 chars, reserved
+  `www/smtp/admin/api/mx/dkim`, profanity + brand-impersonation screening, fail-open on LLM outage).
+  The two-prefix tuple now applies only to domains registered before this change. (3) **The ladder is
+  20 tiers starting at 100/day and ending at 57,000** (`constants/domain_send_tier.py`, commit
+  `10c4ebe2` "stretch warm-up ladder to 20 tiers"), not 14 starting at 200; tier 21 means unthrottled.
+  (4) **DNS is three record owners, not one** — `DnsRecordOwnerType` is `ses_identity |
+  warmup_credentials | custom_hostname`: SES DKIM/MAIL FROM, the Migadu warm-up-mailbox zone under the
+  sending subdomain, and a Cloudflare custom hostname `go.<domain>` (`CUSTOM_HOSTNAME_PREFIX = 'go'`)
+  serving media and tracked links, whose `active` state is a **required** gate in
+  `AutowarmupApp._poll_dns_for_row`. Records now carry per-record `correct | mismatch | missing`
+  validation from `DnsRecordApp.validate_records`, and exports are CSV plus GoDaddy/Cloudflare zone
+  files (`DnsExportRegistrar`). Also corrected: `MAX_POLL_INTERVAL` is **1 hour**, not 32 minutes, and
+  a warm-up domain **can be deleted after verification** — `delete_domain` skips the
+  `DomainHasVerifiedIdentitiesError` guard that `delete_pending_domain` applies, so only pre-warm-up
+  SES-only domains still need support to remove.
 - **The setup-order gate is real but narrower than "a flow must exist."** The dashboard's *Enable Adapty
   integration* button is disabled by `hasFlows = onboardingStatus?.data_sending` in
   `noty-wave-frontend`, `src/pages/settings/ui/SettingsPage.tsx`; the backend computes that field in
@@ -163,7 +188,7 @@ core in-app paywall/subscription product.
 | adapty-mail | entry | marketer | 4 | tutorial |
 | mail-ab-testing | — | marketer | 7 | tutorial |
 | mail-analytics | — | marketer | 9 | tutorial |
-| mail-brand | — | marketer | 8 | tutorial |
+| mail-brand | — | marketer | 10 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
 | mail-collect-emails | — | marketer | 6 | tutorial |
 | mail-create-campaign | — | marketer | 4 | tutorial |
@@ -175,7 +200,7 @@ core in-app paywall/subscription product.
 | mail-profiles | — | marketer | 7 | tutorial |
 | mail-segments | — | marketer | 7 | tutorial |
 | mail-send-data-via-api | — | marketer | 5 | tutorial |
-| mail-sending-domain | — | marketer | 8 | tutorial |
+| mail-sending-domain | — | marketer | 12 | tutorial |
 | mail-suppression | — | marketer | 5 | tutorial |
 | mail-testing | — | marketer | 6 | tutorial |
 <!-- /mill:auto -->
@@ -234,8 +259,8 @@ live in `aliases.md` and are deliberately not repeated here.
 | "wrong sequence went out", "the broad audience swallowed my targeted one", "All Users row rejected on save" | `mail-flows` priority: rows are walked top to bottom, the first matching segment wins, later rows are never evaluated for that user. The backend rejects saves where an **All Users** row isn't last. |
 | "which trigger fires for a cancelled/failed/lapsed/refunded subscription", "add a custom trigger" | `mail-flows`. Five fixed triggers; the list is not extensible. Non-obvious: trial users are **not** in Never purchased — starting a trial counts as an active subscription — and Renewal cancelled / Expired each cover both paid and trial audiences, split via segment filters. |
 | "change the targeting on a running flow", "can't edit the segment filters", "combine two conditions with OR" | `mail-segments`. Filters lock as soon as the segment is Live (name and description stay editable) — to retarget, create a new segment and swap the flow row. Filters are AND-only, one filter per field, and there's no audience-size preview. |
-| "emails going to spam", "why can we only send 200 a day", "delivery is trickling out over a week" | `mail-sending-domain` — warm-up, not a bug or a plan limit. Every new domain starts at Tier 1 (200/day) and climbs 14 tiers automatically; bounce or complaint rates pause and can reverse advancement. Audience size determines how long launch spreads out. |
-| "domain verification stuck", "we want to send from a subdomain", "change or delete our sending domain" | `mail-sending-domain`. Apex domains only; the `mail.`/`email.`/`hello.` prefixes are hardcoded; one domain per project and globally unique across projects; a 7-day verification window (records survive it); manual checks have a 60-second cooldown; **verified domains can't be deleted or swapped from the dashboard — that's a support request**. |
+| "emails going to spam", "why can we only send 100 a day", "delivery is trickling out over a week" | `mail-sending-domain` — warm-up, not a bug or a plan limit. Corrected 2026-08-18: every new domain starts at Tier 1 (**100**/day) and climbs **20** tiers to 57,000, and the claim that bounce or complaint rates pause or reverse advancement **is not in the code** — `DomainSendTierApp.throttle` promotes on used-up allowance alone and never demotes (the tier column is append-only, `is_warmed_up` at tier 21). Warm-up also has a second half the old row missed: a Migadu mailbox on the sending subdomain driven by a third-party warm-up service, which stays paused while its own MX/DKIM/SPF records are unverified. Audience size determines how long launch spreads out. |
+| "domain verification stuck", "we want to send from a subdomain", "change or delete our sending domain" | `mail-sending-domain`. Rewritten 2026-08-18 for the multidomain/custom-subdomain release — this row's old contents were stale on four counts, see the domain-layer bullet in Sources of truth. Apex domains only and globally unique across projects still hold; now **up to five domains per project**, the **sending prefix is chosen at registration** (default "mail", fixed afterward, `hello.` MAIL FROM still ours), a 7-day verification window (records survive it), **10-second** manual-check cooldown, and **deleting a domain is a dashboard action** that destroys the warm-up mailbox and its reputation — only pre-warm-up domains hit *"Cannot delete: some identities are verified"* and need support. |
 | "this specific person stopped getting emails", "take someone off the suppression list", "GDPR erasure request" | `mail-suppression`. Two mechanisms that read alike and aren't: **suppression** excludes the profile from all future sends in the project (unsubscribe, bounce, complaint, reject, throttle), while a **stop condition** only cancels the current sequence because the user converted — they stay eligible for other campaigns. Any bounce suppresses immediately, including a full mailbox; there's no soft/hard split and no retry. **Unsuppressing** still has no UI and is a support request. **Erasure no longer is** — corrected 2026-08-14: `POST /api/v1/profile/delete/` erases PII and cancels scheduled emails, resolving the profile by any of `external_profile_id` / `customer_user_id` / `email`, and it's final (a later save with the same identifiers won't resurrect the profile). If the ticket is about retries or a 404 on a second call, the answer is the identifier used, not a bug — see the `profile/delete/` idempotency bullet in Sources of truth. The one manual dashboard action is per-profile **Unsubscribe** on `mail-profiles`. |
 | "open rate is impossibly high", "bounce numbers don't break down", "range too wide warning" | `mail-analytics`. Opens are pixel loads and Apple Mail Privacy Protection pre-fetches them on iOS 15+ — clicks and revenue are the trustworthy signals. Bounces collapse hard and soft into one count. Counts are eventually consistent, not streaming. |
 | "attributed revenue doesn't match LTV", "which email drove the purchase" | `mail-profiles` for the per-customer view and the definition split (attributed revenue = purchases after engaging with a campaign; LTV = all revenue from all sources), `mail-analytics` for the aggregate view and the attribution rule. |

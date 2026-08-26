@@ -33,7 +33,7 @@ recommend or forecast — they don't answer open-ended questions about it.
 | autopilot-execute-plan | — | marketer | 4 | tutorial |
 | autopilot-growth-plan | — | marketer | 7 | tutorial |
 | autopilot-how-it-works | — | marketer | 4 | tutorial |
-| predicted-ltv-and-revenue | — | marketer | 8 | tutorial |
+| predicted-ltv-and-revenue | — | marketer | 9 | tutorial |
 | predictions-in-ab-tests | — | marketer | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

@@ -35,26 +35,38 @@ Adapty Mail 发送的每封邮件都包含一个专属于该收件人的唯一�
 有关付费墙编辑工具中支付提供商的详细配置（Stripe 账号、测试与正式模式、产品设置），请参阅[网页付费墙配置](web-paywall-configuration)。
 ### 使用自托管付费墙 \{#use-your-own-hosted-paywall\}
 
-1. 在 Create 页面，选择 **Enter URL manually**。
-2. 将包含占位符的付费墙 URL 作为查询参数粘贴进来。Adapty Mail 会为每位收件人替换占位符，以便页面识别访客。示例：
+在此方式下，Adapty Mail 会将收件人引导至你自己托管的页面，并将每位收件人的对应值替换到 URL 中。点击之后的全部流程——优惠展示、支付、个性化——均在你这一侧完成，可搭配任意支付服务商。
 
-   ```
+1. 在 **Web Paywalls → Create** 中，选择 **Enter URL manually**。
+2. 粘贴你的付费墙 URL，并将占位符作为查询参数附在其中。Adapty Mail 会针对每位收件人进行替换，以便页面识别访客身份。示例：
+
+```
    https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
-3. 保存。
+3. 为付费墙填写 **Name** 并保存，之后即可将其绑定到推广活动中。
 
-Create 页面列出了所有可用的占位符，并在你粘贴的 URL 中找到时逐一勾选。以下是推荐使用的占位符：
+创建页面列出了所有可用的占位符，并会自动勾选在您粘贴的 URL 中找到的占位符：
 
 | 占位符 | 值 |
 | --- | --- |
 | `{email}` | 收件人的电子邮件地址。 |
 | `{adapty.external_profile_id}` | 收件人在 Adapty 中的用户画像 ID。 |
+| `{funnelfox.external_profile_id}` | 收件人在 FunnelFox 中的用户画像 ID。 |
 | `{custom.external_profile_id}` | 您通过 [Adapty Mail API](mail-send-data-via-api) 发送的用户 ID。 |
-| `{scheduled_email_id}` | 携带该链接的邮件 ID。 |
+| `{scheduled_email_id}` | 携带该链接的电子邮件 ID。 |
 
-该页面还会为每个用户画像来源提供对应的占位符，因此可能会列出您的项目并未发送数据的来源。若某个占位符对应的收件人没有相关值，则会解析为空字符串，不会以字面文本的形式传递到您的页面。
+这三个用户画像 ID 占位符分别对应用户画像的不同来源，无论你的项目是否用到所有来源，页面都会一并列出。请根据数据发送方式选择对应的占位符：`{adapty.external_profile_id}` 用于 [Adapty 集成](mail-collect-emails)，`{custom.external_profile_id}` 用于 [API](mail-send-data-via-api)。若收件人没有某个占位符对应的值，该占位符会被解析为空字符串，不会以字面文本形式出现在页面上；而 Adapty Mail 无法识别的占位符则会原样保留，按你输入的内容直接传递。
 
-此路径适用于任何支付服务商——Adapty Mail 仅负责重定向和参数替换；支付与个性化处理完全由您自行完成。
+#### 你的页面需要做什么 \{#what-your-page-has-to-do\}
+
+Adapty Mail 的工作到重定向为止。接下来有两件事需要你来完成：
+
+- **在结账开始前识别访客**：从查询字符串中读取用户画像 ID 或邮箱，并将其附加到购买记录上，确保付款归属于该邮件发送对象。
+- **回传购买结果**：Adapty Mail 无法感知在您自有支付渠道发生的付款，而它不知晓的购买既不会计入 [Analytics](mail-analytics) 的转化，也不会计入归因收入——更糟的是，后续邮件序列仍会继续发送给已购买的用户。请通过已有的数据通路回传购买信息：[Adapty 集成](mail-collect-emails) 或 Adapty Mail API 上的[交易事件](mail-send-data-via-api#send-transaction-events)。
+
+#### 上线前先测试 \{#test-it-before-launching\}
+
+**Send test email** 可验证邮件是否正常渲染且付款页面可用，但通过 URL 添加的付费墙无法选择 **Sandbox** 模式——弹窗会提示 *"This paywall has no sandbox products, so only production is available."* 因此，测试流量会直接流向您的正式页面并使用真实产品：您可以用真实银行卡付款后申请退款，或将 URL 指向自己的测试环境以验证整体流程。详见[测试您的设置](mail-testing#test-the-email-and-checkout-on-their-own)。
 
 ## 结账页面的外观 \{#what-the-checkout-looks-like\}
 
@@ -93,6 +105,6 @@ https://example.com/paywall?email=jane@example.com&adapty_profile_id=6f2a...c91
 
 | 问题 | 解决方案 |
 |---|---|
-| 结账链接无法打开 | 确认付费墙已在 Web 付费墙编辑工具中发布 |
-| 结账时未识别用户 | 确认在发送邮件之前已使用正确的用户 ID 调用了 `Adapty.identify()` |
-| 购买未归因到邮件 | 检查结账 URL 中是否包含 `cid` 参数——如果参数缺失，请联系支持团队 |
+| 结账链接无法打开 | 请确认付费墙已在网页付费墙编辑工具中发布 |
+| 结账时用户未被识别 | 请确认在发送邮件之前已使用正确的用户 ID 调用了 `Adapty.identify()` |
+| 购买未归因到邮件 | 归因依赖于用户点击邮件中的 CTA 链接，因此收件人必须通过该链接进入结账页面，且购买记录需在同一用户画像下到达 Adapty Mail。若某次购买已归因到更早的邮件，则保持原归因不变 |

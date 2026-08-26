@@ -1,0 +1,62 @@
+---
+title: "Android SDK'da flow ekranı görüntülemelerini takip etme"
+description: "Android uygulamanızda bir kullanıcı flow ekranı her açtığında bir event alın ve bunu ürün analitiğinize iletin."
+metadataTitle: "Flow ekranı görüntülemelerini takip etme | Android SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içindeki bir ekranı her açtığında, SDK uygulamanıza bir `flow_screen_showed` eventi bildirir. Bunu Amplitude, Mixpanel veya kullandığınız ürün analitiği aracına ileterek flow ekranlarını uygulamanızın diğer eventlarıyla birlikte analiz edebilirsiniz.
+
+:::tip
+Kullanıcıların bir flow'da ne kadar ilerlediğini görmek için herhangi bir koda ihtiyacınız yok — [flow metrikleri](flow-metrics) zaten Adapty Kontrol Paneli'nde görüntülenme, tamamlanma ve ekran başına düşüş verilerini gösteriyor. Bu kılavuzu, aynı verilere kendi analitiğinizde ihtiyaç duyduğunuzda ve bunları Adapty'nin bilmediği olaylarla birleştirmek istediğinizde kullanın.
+:::
+
+## Başlamadan Önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty Android SDK v4 veya üzeri**: Flow analitik callback'i daha önceki sürümlerde mevcut değildir.
+- **Bu özellik yayınlandıktan sonra yayımlanan bir flow sürümü**: Adapty, bir flow'u yayımladığında ekran olaylarını oluşturur; dolayısıyla bu tarihten önce en son yayımladığınız bir flow hiçbir şey raporlamaz. Uygulamanıza hiç olay gelmiyorsa flow'un yeni bir sürümünü yayımlayıp tekrar deneyin.
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Ekran görüntülemeleri, diğer tüm flow olaylarıyla aynı analitik callback'e ulaşır. Bunu nereye kaydedeceğinizi öğrenmek için [Flow ve paywall olaylarını yönetme](android-handling-events) bölümüne bakın.
+
+## Her ekran görüntülemesini analitiğinize iletin \{#forward-every-screen-view-to-your-analytics\}
+
+Başka bir şey okumadan önce event adıyla eşleştirme yapın; çünkü bir flow, aynı callback aracılığıyla başka eventlar da raporlar.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+
+    val screenId = params["instanceId"]
+    val screenOrder = params["screen_order"]
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Kullanıcı sona ulaştığında kod çalıştırın \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen`, flow'un ilerleyemeyeceği bir ekranda `true` değerini alır. İçerik kilidini açmak, onboarding'i tamamlandı olarak işaretlemek veya kendi tamamlanma etkinliğinizi göndermek için builder'da bir buton eylemi eklemeden bu değeri kullanabilirsiniz.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+    if (params["is_last_screen"] != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+Son ekrana ulaşmak, flow'u kapatmakla aynı şey değildir. Kullanıcı son ekranı görebilir ve herhangi bir işlem yapmadan flow'u kapatabilir; ayrıca dallanan bir flow birden fazla farklı ekranda sona erebilir. Flow'un kendisinin kapandığını anlamak için bunun yerine `onFlowClosed` kullanın.

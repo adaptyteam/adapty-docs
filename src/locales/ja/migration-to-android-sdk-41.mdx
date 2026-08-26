@@ -1,0 +1,78 @@
+---
+title: "Adapty Android SDK を v4.1 へ移行する"
+description: "Adapty Android SDK v4.1 への移行: Adapty アトリビューションを明示的に有効化し、名称変更された外部アトリビューション API を採用します。"
+metadataTitle: "Adapty Android SDK v4.1 への移行 | Adapty ドキュメント"
+---
+
+Adapty Android SDK 4.1 では、Adapty アトリビューションの有効化方法が変更され、外部アトリビューション API の名称が変更されました。
+
+:::warning
+名前が変更されたAPIは完全な破壊的変更です。`AdaptyAttributionSource`は完全に削除されており、非推奨ではなく、ブリッジ用のtypealiasも存在しません。4.0.xでコンパイルされていたコードは、以下に示すすべての呼び出し箇所を修正するまで、4.1ではコンパイルエラーになります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty アトリビューションはデフォルトで有効 | Adapty アトリビューションはデフォルトで無効。`.withAdaptyAttributionEnabled(true)` でオプトイン |
+| `Adapty.updateAttribution(attribution, source)` | `Adapty.updateExternalAttribution(attribution, provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`（新しい `CUSTOM` 値を追加） |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+## インストール \{#installation\}
+
+`adapty-bom` のバージョンを `4.1.0`（以降）に設定してプロジェクトを同期してください。BOM が `android-sdk` と `android-ui` の対応バージョンを自動的に解決します。依存関係の宣言については、[Adapty SDK のインストール](sdk-installation-android)を参照してください。
+
+:::note
+4.0.0 または 4.0.1 からアップグレードする場合、4.0.2 の以下の 2 つの変更も適用されます：
+
+- Adapty はデフォルトで Google Play Billing Library 8 を使用するようになりました（以前は 7.0.0）。
+- `restorePurchases` は復元するものがない場合でも正常に完了し、現在のプロファイルを返すようになりました（以前は `NO_PURCHASES_TO_RESTORE` エラーで失敗していました）。[購入を復元する](android-restore-purchase) を参照してください。
+:::
+
+## Adapty Attributionはデフォルトで無効 \{#adapty-attribution-is-disabled-by-default\}
+
+4.0以前では、SDKは[Adapty Attribution](user-acquisition)のインストールを自動的に登録していました。4.1以降、これはデフォルトでオフになっています。SDKはインストールを登録せず、`setOnInstallationDetailsListener`で設定したリスナーは起動せず、`getCurrentInstallationStatus`は`AdaptyInstallationStatus.Determined.NotAvailable`を返します。
+
+Adapty Attributionを使用する場合は、SDK起動時に有効化してください：
+
+```diff showLineNumbers
+  val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+  Adapty.activate(applicationContext, config)
+```
+
+Adapty Attribution を使用しない場合、変更は不要です。
+
+## 外部アトリビューション API のリネーム \{#renamed-external-attribution-apis\}
+
+### updateAttribution → updateExternalAttribution
+
+外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、またはカスタム）からのアトリビューションデータを渡すメソッドの名前が変更され、`source` パラメーターは `provider` に改称されました：
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error -> /* handle the error */ }
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST) { error -> /* handle the error */ }
+```
+
+両方のオーバーロードは引き続き利用可能です：`attribution` には `Map<String, Any>` または JSON `String` を指定できます。
+
+コールバックは、バックエンドが非同期処理のためにデータを受け付けた時点で発火します。成功の結果は、データがすでにプロファイルに適用されていることを意味しません。
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+型名が変更されましたが、定義済みの値の名前はそのまま維持されます：`APPLE_ADS`、`ADJUST`、`APPSFLYER`、`BRANCH`、`TENJIN`。その他のプロバイダーには、文字列からインスタンスを生成してください：`AdaptyExternalAttributionProvider("your_provider")`。
+
+4.1 では、Adapty が直接統合していないプロバイダー向けに定義済みの `CUSTOM` 値も追加されました。4.0 では同じ値を文字列 `"custom"` としてのみ使用できました。
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+プロファイルに適用されたアトリビューションプロバイダーの一覧を返すプロファイルプロパティの名前が変更されました。それに伴い、要素の型も変更されています。
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.APPLE_ADS)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```

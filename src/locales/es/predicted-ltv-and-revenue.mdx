@@ -11,32 +11,59 @@ Las predicciones de Adapty están diseñadas para ayudarte a responder las sigui
 3. ¿Cuánto puedes invertir dado el retorno previsto?
 Con Adapty Predictions, puedes tomar decisiones basadas en datos sobre ingresos y crecimiento.
 
-El modelo de predicción de Adapty estima el potencial de ingresos a largo plazo de las cohortes de usuarios de tu app. Para cada cohorte, proyecta cómo evolucionarán los ingresos, el número de suscriptores de pago y el LTV promedio a lo largo del tiempo. Esto te ayuda a tomar decisiones informadas sobre adquisición de usuarios, estrategias de marketing y desarrollo de producto.
-Adapty ofrece valor de vida útil (LTV) predicho e ingresos predichos para cohortes de suscriptores de pago. Las predicciones se muestran en la página de análisis de cohortes para 3, 6, 9, 12, 18 y 24 meses después de la creación de la cohorte.
+El modelo de predicción de Adapty estima el potencial de ingresos a largo plazo de las cohortes de usuarios de tu app. Para cada cohorte, proyecta cómo evolucionarán los ingresos, el número de usuarios de pago y el LTV promedio a lo largo del tiempo. Esto te ayuda a tomar decisiones informadas sobre adquisición de usuarios, estrategias de marketing y desarrollo de producto.
 
-Para apps con un historial muy limitado, el modelo recurre a promedios entre apps, por lo que las predicciones para apps más nuevas pueden no reflejar del todo el comportamiento específico de sus usuarios.
+Adapty ofrece el valor de vida del cliente (LTV) predicho y los ingresos predichos para cohortes de usuarios de pago. Las predicciones se muestran en la página de análisis de cohortes para 3, 6, 9, 12, 18 y 24 meses después de la creación de la cohorte.
+
+Para aplicaciones con un historial muy limitado, el modelo recurre a promedios entre aplicaciones, por lo que las predicciones para apps más nuevas pueden no reflejar completamente el comportamiento específico de sus usuarios.
+
 ## Cómo funciona el modelo \{#how-the-model-works\}
 
-El modelo de predicción de Adapty utiliza patrones de retención de datos históricos de cohortes para proyectar ingresos futuros y LTV.
+El modelo de predicción de Adapty utiliza patrones de crecimiento de datos históricos de cohortes para proyectar los ingresos futuros y el LTV.
 
-Para cada combinación de app y tipo de suscripción, el modelo mide cómo cambian los suscriptores de pago y los ingresos totales de un período de renovación al siguiente. Calcula dos tasas de retención —una para suscriptores y otra para ingresos— basándose en las cohortes pasadas de la app. Estas tasas se aplican luego a nuevas cohortes para proyectar su evolución a los 3, 6, 9, 12, 18 y 24 meses tras la creación de la cohorte. Los datos utilizados están completamente anonimizados.
-El modelo genera dos valores para cada cohorte:
+Para cada combinación de app y tipo de producto, el modelo mide cómo crecen los ingresos acumulados y el número acumulado de usuarios de pago de una cohorte entre puntos fijos de su vida, contados en días desde que comenzó la cohorte. Los intervalos entre esos puntos son cortos cuando la cohorte es joven y se van alargando a medida que envejece: primero días, luego meses, luego trimestres. Adapty mide un par de coeficientes de crecimiento para cada intervalo: uno para los ingresos y otro para los usuarios de pago. Ambas métricas son netas de reembolsos: un reembolso resta su importe de los ingresos de la cohorte y elimina a ese usuario del recuento de usuarios de pago.
 
-- **Predicted revenue**: Los ingresos totales que se prevé que genere una cohorte dentro del horizonte seleccionado.
-- **Predicted LTV**: Los ingresos previstos divididos entre el número previsto de suscriptores de pago en la cohorte.
-### Pesos específicos de la app y entre apps \{#app-specific-and-cross-app-weights\}
+Para proyectar una cohorte, Adapty toma el último de esos puntos que la cohorte ha alcanzado y encadena los coeficientes hacia adelante desde ahí hasta el día que corresponde al horizonte seleccionado: el día 90 para la predicción de 3 meses, el día 365 para la de 12 meses y hasta el día 730 para la de 24 meses. Los datos utilizados están completamente anonimizados.
 
-Por defecto, las predicciones para una cohorte usan pesos de retención aprendidos de las cohortes históricas de esa misma app, lo que refleja el comportamiento específico de sus usuarios.
-Cuando una app no tiene suficiente historial para un horizonte de predicción concreto, Adapty recurre a pesos de retención promediados entre todas las apps del mismo tipo de suscripción. Por ejemplo, una proyección a 12 meses para una app que solo lleva seis meses activa utiliza el respaldo entre apps. Este respaldo se aplica de forma independiente por horizonte, de modo que la misma cohorte puede usar los pesos propios de la app para la predicción a 3 meses y los pesos entre apps para la predicción a 12 meses.
+Los coeficientes se miden por separado según el tipo de producto: suscripciones semanales, mensuales, de 2 meses, de 3 meses, de 6 meses y anuales, además de compras de por vida y compras únicas. La predicción de una cohorte es la suma de las proyecciones de cada tipo de producto que compraron sus usuarios.
+
+El modelo produce dos valores para cada cohorte:
+
+- **Predicted revenue**: Los ingresos totales, menos los reembolsos, que se proyecta que generará una cohorte dentro del horizonte seleccionado.
+- **Predicted LTV**: Los ingresos previstos divididos por el número previsto de usuarios de pago en la cohorte.
+
+### Coeficientes específicos de la app y entre apps \{#app-specific-and-cross-app-coefficients\}
+
+Por defecto, la predicción de una cohorte utiliza coeficientes calculados a partir de las propias cohortes anteriores de esa app para el mismo tipo de producto, lo que refleja el comportamiento específico de sus usuarios. Una app obtiene sus propios coeficientes para un tipo de producto en cuanto tiene al menos dos cohortes lo suficientemente grandes como para poder medirse.
+
+Los dos orígenes se combinan dentro de una única predicción: donde el historial propio de la app no cubre un intervalo, Adapty rellena ese paso con coeficientes promediados entre todas las apps que venden ese tipo de producto. Así, una app reciente puede proyectar sus primeras semanas a partir de sus propios datos y el resto del año a partir de promedios entre apps.
+
+### Calibración y límites mínimos \{#calibration-and-floors\}
+
+Los coeficientes encadenados presentan una desviación que se acentúa en las cohortes con menos historial del que partir. Adapty mide esa desviación durante el entrenamiento: la curva de cada app vuelve a predecir sus propias cohortes completadas a partir de puntos anteriores de su evolución, y la diferencia entre la proyección y lo que esas cohortes generaron realmente se convierte en un factor de corrección para ese tipo de producto, ese horizonte y esa cantidad de historial observado. Cada predicción se multiplica por el factor correspondiente al tiempo que lleva observada la cohorte, de modo que la corrección es mayor en las cohortes más recientes, donde la proyección se extiende más lejos.
+
+La corrección se inclina deliberadamente hacia abajo para los tipos de producto que el modelo tiende a sobreestimar. Las suscripciones semanales, mensuales, de 2 meses, de 3 meses y de 6 meses reciben un factor de ingresos que tira la proyección hacia abajo en lugar de centrarla, y para las suscripciones semanales ese sesgo es más fuerte durante las primeras dos semanas de una cohorte. Las suscripciones anuales, los accesos de por vida y las compras únicas no reciben ningún sesgo. El factor de usuarios de pago nunca se corrige, de modo que la precaución se refleja en los ingresos previstos y, a través de ellos, en el LTV predicho.
+
+Tras la corrección se aplican dos límites mínimos:
+
+- Una predicción nunca es inferior a lo que la cohorte ya ha generado hasta ese horizonte. Si una cohorte ya ha generado más de lo que indicaba su proyección a 3 meses, se muestra el ingreso realizado como la predicción a 3 meses.
+- Un horizonte más largo nunca muestra menos que uno más corto. Los ingresos predichos y los usuarios de pago predichos son acumulativos, por lo que la predicción a 12 meses es al menos igual a la de 9 meses.
+
 ### Disponibilidad y actualizaciones \{#availability-and-updates\}
 
-Las predicciones están disponibles después de que una cohorte completa su primer período de renovación —normalmente una semana después de la creación para suscripciones semanales y aproximadamente cuatro semanas para suscripciones mensuales. A partir de entonces, las predicciones se actualizan diariamente con los datos transaccionales más recientes, de modo que reflejan el comportamiento actual de la cohorte.
+Las predicciones se generan únicamente para cohortes semanales y mensuales. Si el control **Cohort length** está configurado en día, trimestre o año, las columnas de predicción aparecen vacías.
+
+Para las cohortes semanales y mensuales, la disponibilidad depende del tiempo que lleva existiendo la cohorte, no de los productos que hayan comprado sus usuarios. Una cohorte recibe su primera predicción una vez que ha transcurrido por completo su período de instalación y el período de prueba más largo que alguien pudo haber iniciado durante ese período ha tenido tiempo de convertir.
+
+El período de instalación dura una semana después del inicio de la cohorte para cohortes semanales, y un mes para las mensuales. Hasta que finaliza, la cohorte sigue captando instalaciones. Un usuario que instala el último día aún puede comenzar tu prueba más larga, y los ingresos de una cohorte solo se contabilizan cuando las pruebas se convierten, por lo que la espera es el período de instalación más la duración de tu prueba más larga. Cuanto más largas sean tus pruebas, más tarde aparecen las predicciones.
+
+A partir de entonces, las predicciones se recalculan diariamente con los datos de transacciones más recientes, para que se mantengan actualizadas con el comportamiento de la cohorte.
 
 ### Limitaciones \{#limitations\}
 
-- **Calidad de los datos**: El comportamiento inusual de una cohorte o las cohortes con muy pocos suscriptores de pago reducen la precisión. Las cohortes con menos de 100 suscriptores de pago quedan excluidas de los datos de entrenamiento del modelo.
-- **Apps nuevas**: Las apps sin suficiente historial utilizan pesos de fallback entre apps, que puede que no reflejen el comportamiento específico de la app.
-- **Antigüedad de la cohorte**: Las predicciones para un horizonte determinado se ocultan cuando la cohorte supera ese horizonte. Por ejemplo, las predicciones a 3 meses dejan de mostrarse después de tres meses, y no se muestran predicciones para cohortes con más de 24 meses de antigüedad.
+- **Calidad de los datos**: Un comportamiento de cohorte inusual o un número reducido de usuarios de pago reduce la precisión. Las cohortes con menos de 30 usuarios de pago no reciben ninguna predicción y se excluyen de los datos de entrenamiento del modelo.
+- **Aplicaciones nuevas**: Las aplicaciones sin historial suficiente utilizan coeficientes de otras aplicaciones, que pueden no reflejar el comportamiento específico de los usuarios de esa aplicación.
+- **Antigüedad de la cohorte**: Las predicciones para un horizonte determinado se ocultan una vez que la cohorte supera ese horizonte. Por ejemplo, las predicciones a 3 meses dejan de mostrarse pasados tres meses, y no se muestran predicciones para cohortes con más de 24 meses de antigüedad.
 
 ## En el Dashboard \{#in-the-dashboard\}
 
@@ -53,9 +80,10 @@ Para ver las predicciones, ve a la página de análisis de cohortes en tu Adapty
   }}
 />
 </Zoom>
-La columna **Predicted revenue** muestra los ingresos totales estimados que se espera que genere una cohorte de suscriptores durante el período de tiempo seleccionado tras su creación. Este valor se calcula mediante el modelo de predicción de Adapty, basado en los patrones históricos de retención de cohortes de la app.
+La columna **Predicted revenue** muestra los ingresos totales estimados, menos los reembolsos, que se espera que genere una cohorte de usuarios de pago durante el período de tiempo seleccionado tras la creación de la cohorte. Este valor se calcula utilizando el modelo de predicción de Adapty, basado en los patrones históricos de crecimiento de cohortes de la app.
 
 La columna **Predicted LTV** muestra el valor de vida estimado de cada usuario en la cohorte seleccionada. Este valor se calcula dividiendo los ingresos predichos entre el número predicho de usuarios de pago en la cohorte.
+
 ### Seleccionar el horizonte \{#select-the-horizon\}
 
 Para cambiar el horizonte de predicción, selecciona un valor en el desplegable **Predictions**. Las opciones disponibles son 3, 6, 9, 12, 18 y 24 meses desde la creación de la cohorte.
@@ -79,10 +107,13 @@ Puedes filtrar los ingresos proyectados y el LTV por producto. Por defecto, las 
 ## Cuándo no hay predicciones disponibles \{#when-predictions-are-unavailable\}
 
 Cuando no se puede generar una predicción para una cohorte, las columnas Predicted Revenue y Predicted LTV muestran guiones largos (—) en lugar de valores. Esto puede ocurrir por varias razones:
-- **Tiempo insuficiente desde la creación de la cohorte**: Las predicciones solo están disponibles una vez que la cohorte completa su primer período de renovación: aproximadamente una semana para las suscripciones semanales y unas cuatro semanas para las mensuales.
-- **Tamaño de cohorte pequeño**: Hay muy pocos suscriptores de pago para generar una proyección fiable.
-- **Comportamiento inusual de la cohorte**: La cohorte se desvía significativamente de los patrones que espera el modelo. Esperar algunas semanas puede resolver esto a medida que se acumulan más datos.
-- **Horizonte superado**: La cohorte es más antigua que el horizonte de predicción seleccionado. Por ejemplo, la predicción a 3 meses se oculta tras tres meses, la predicción a 12 meses tras doce meses, y no se muestran predicciones para cohortes con más de 24 meses de antigüedad.
+- **Longitud de cohorte no compatible**: El control **Cohort length** está configurado en día, trimestre o año. Las predicciones solo se generan para cohortes semanales y mensuales.
+- **Filtro o comparación no compatible**: La tabla está filtrada por placement, audiencia, paywall o prueba A/B, o hay un período de comparación activado. Los filtros por producto, duración del producto, país, store y datos de atribución mantienen las predicciones.
+- **Tiempo insuficiente desde la creación de la cohorte**: El período de instalación de la cohorte no ha transcurrido completamente, o el trial más largo que alguien pudo haber iniciado durante ese período todavía no ha tenido tiempo de convertirse. Consulta [Disponibilidad y actualizaciones](#availability-and-updates).
+- **Cohorte demasiado pequeña**: Menos de 30 usuarios de pago — muy pocos para generar una proyección fiable.
+- **Comportamiento inusual de la cohorte**: La cohorte se desvía significativamente de los patrones que espera el modelo. Esperar unas semanas puede resolverlo a medida que se acumulen más datos.
+- **Horizonte superado**: La cohorte es más antigua que el horizonte de predicción seleccionado. Por ejemplo, la predicción a 3 meses se oculta tras tres meses, la predicción a 12 meses tras doce meses, y no se muestran predicciones para cohortes de más de 24 meses.
+
 :::warning
 Al activar las predicciones, ten en cuenta que puede haber un retraso máximo de 24 horas antes de que los datos de predicción de Revenue y LTV estén disponibles en tu Adapty Dashboard.
 :::

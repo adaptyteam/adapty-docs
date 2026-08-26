@@ -203,7 +203,9 @@ const MARKUP_WORDS = new Set([
   // Plural concepts that read like ids but name no article.
   'flows', 'audiences', 'beta',
   // External package and skill-repo names, not articles in this corpus.
-  'adapty-cli', 'adapty-sdk-integration', 'expo-secure-store',
+  // 'adapty-sdk-integration' is the pre-rename name, still named in archived
+  // release notes; keep both so neither reads as an article id.
+  'adapty-cli', 'adapty-integration', 'adapty-sdk-integration', 'expo-secure-store',
 ]);
 
 export function referencedArticleIds(text) {

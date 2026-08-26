@@ -168,7 +168,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | android-making-purchases | — | dev | 3 | android |
 | android-present-paywall-builder-paywalls-in-observer-mode | — | dev | 0 | android |
 | android-quickstart-manual | — | dev | 7 | android |
-| android-restore-purchase | — | dev | 0 | android |
+| android-restore-purchase | — | dev | 1 | android |
 | android-troubleshoot-purchases | — | dev | 6 | android |
 | capacitor-implement-paywalls-manually | entry | dev | 2 | capacitor |
 | capacitor-making-purchases | — | dev | 4 | capacitor |
@@ -224,7 +224,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | report-transactions-observer-mode-unity | — | dev | 0 | unity |
 | restore-purchase | — | dev | 0 | ios |
 | unity-implement-paywalls-manually | entry | dev | 2 | unity |
-| unity-making-purchases | — | dev | 4 | unity |
+| unity-making-purchases | — | dev | 5 | unity |
 | unity-quickstart-manual | — | dev | 8 | unity |
 | unity-restore-purchase | — | dev | 0 | unity |
 | unity-troubleshoot-purchases | — | dev | 6 | unity |
@@ -267,3 +267,51 @@ config ↔ custom JSON, access level ↔ entitlement) live in `aliases.md` and a
 
 ## Gaps and misses
 
+### Observer mode, corrected and extended — 2026-08-20
+
+Verified by reading `AdaptySDK-iOS` `origin/master` and `AdaptySDK-Android` `origin/master`
+during the `flows-with-your-own-payments` guide work. Each item names the command evidence.
+
+- **This brief's own wording on `TransactionManager.swift:117` is misleading.** It says the guard
+  means "the SDK stops syncing unfinished transactions". The guard sits inside
+  **`sendUnfinishedTransactions`** (declared line 116) — finishing and auto-sending. **History sync
+  is a different, ungated call.** The distinction matters because it decides the next item.
+- **`restorePurchases` is unaffected by observer mode, on both iOS and Android.** iOS:
+  `Sources/StoreKit/Adapty+MakePurchase.swift:91` never touches `purchaser`; it calls
+  `syncTransactionHistory` and returns the profile. Android: `Adapty.kt:428` →
+  `PurchasesInteractor:190`, ungated. This is the one call that behaves as in full mode and the
+  brief did not record it.
+- **Android inverts iOS's central limit — do not carry the iOS claim across.** `makePurchase` is
+  **not** refused on Android: `Adapty.kt:398` guards only `!isActivated` at `:405`, and
+  `AdaptyErrorCode.kt:5-35` has no `CANT_MAKE_PAYMENTS`. There is also **no unfinished-transaction
+  mechanism** for observer mode to switch off — `git grep -i "unfinished" origin/master -- adapty/src
+  crossplatform/src adapty-ui/src` returns 0 hits. The Ticket language row notes only the missing
+  enum value, which undersells this considerably.
+- **Android charges the user if the observer-mode handler is omitted.** In
+  `adapty-ui/src/main/java/com/adapty/ui/internal/store/FlowReducer.kt`, the
+  `isObserverMode && observerModeHandler == null` branch emits `Effect.ObserverModeWarning.MissingHandler`
+  **and** `Effect.AwaitPurchaseParams(product)` — the same effect as the full-mode `else` branch —
+  which reaches `Effect.StartPurchaseFlow` via `Message.PurchaseParamsReceived`. Only a log warning
+  marks it. Symmetrically, a handler set in full mode is ignored with
+  `Effect.ObserverModeWarning.HandlerInFullMode`. **The five wrapper platforms are shielded**:
+  `crossplatform/.../ui/FlowUiManager.kt`'s `observerModeHandlerOrNull` synthesises a handler
+  whenever `isObserverMode` is true, and its `getRestoreHandler()` always returns non-null.
+- **A previously recorded absence was wrong.** A prior pass concluded nothing consumes the
+  `OBSERVER_MODE` DI binding (`Dependencies.kt:280`). That grep was scoped to
+  `adapty/src/main/java` and missed the `adapty-ui` module. The consumer is
+  `adapty-ui/src/main/java/com/adapty/ui/internal/ui/FlowViewModel.kt:254`
+  (`Dependencies.injectInternal<Boolean>(OBSERVER_MODE)`). Both hold at once: the binding is
+  consumed, and `makePurchase` is still ungated — the flag drives the flow view's hand-off, not the
+  purchase API.
+
+### Unverified, flagged rather than acted on — 2026-08-20
+
+- **`report-transactions-observer-mode` may overstate its central claim.** It says an unreported
+  transaction "won't be recognized… won't appear in analytics". On iOS, `syncTransactionHistory` is
+  ungated, runs on `ProfileManager` init (`Sources/Profile/ProfileManager.swift:55`) and on every
+  plain `fetchProfile()` (`:131`), and seeds itself from **StoreKit rather than Adapty's own
+  records** — `getLastTransactionOriginalIdentifier` (`TransactionManager.swift:36`) falls back to
+  `fetchLastVerifiedTransaction()?.originalID`. So a purchase can reach Adapty without
+  `reportTransaction`, on the next profile fetch. What that path cannot carry is the `variationId`.
+  **The backend half was not read**, and the timing may be why the article states it absolutely.
+  Left unedited for the owner to judge.

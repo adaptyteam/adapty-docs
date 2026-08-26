@@ -112,6 +112,14 @@ function stripContent(content, reusableComponents) {
     // Remove wrapping Zoom: <Zoom>...</Zoom> (keep content)
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
 
+    // Drop YouTube embeds — a bare iframe URL teaches a plain-text reader
+    // nothing. Three forms are matched: the <YouTube /> component, and the
+    // div-wrapped and bare iframes that predate it, which src/locales still
+    // carries until each file is retranslated from its English source.
+    processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
+    processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
+
     // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
     processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
     processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
@@ -149,7 +157,7 @@ ${content}
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(
         /<SkillPromo\b[^>]*\/>/g,
-        'For a fully automated integration, use the [adapty-sdk-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill): it runs the whole integration from your AI coding tool in one command.'
+        'For a fully automated integration, use the [adapty-integration skill](https://github.com/adaptyteam/adapty-skills): it runs the whole integration from your AI coding tool in one command.'
     );
 
     // Convert <ProductMap /> into a proper markdown table. The component is

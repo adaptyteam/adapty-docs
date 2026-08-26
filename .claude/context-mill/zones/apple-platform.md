@@ -166,9 +166,9 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
 | enable-app-store-server-notifications | — | dev | 1 | tutorial |
 | generate-in-app-purchase-key | — | dev | 0 | tutorial |
 | initial_ios | entry | dev | 1 | tutorial |
-| refund-saver | — | dev | 10 | tutorial |
+| refund-saver | — | dev | 11 | tutorial |
 | set-up-app-store-connect | — | dev | 8 | tutorial |
-| troubleshoot-app-store-integration | — | dev | 5 | tutorial |
+| troubleshoot-app-store-integration | — | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
@@ -222,4 +222,27 @@ step. `troubleshoot-app-store-integration` is symptom-first and routes back into
 | "how long does iOS setup take", "onboarding checklist for a new account" | `initial_ios`. `apple-platform-resources` is only an index of the Apple-side pages — never the answer to a task, just a landing spot. |
 
 ## Gaps and misses
+
+- **The dashboard deep-links into this zone's article anchors, and nothing checks those links.** Added
+  2026-08-14. `git grep -n "refundSaver" origin/master -- apps/web/src/domain.tsx` in
+  `dashboard-interface` returns `refundSaverPreference:
+  'https://adapty.io/docs/refund-saver#set-a-default-refund-preference'` (line 612) and a sibling
+  `refundSaverConsent`. That anchor did not exist — the heading read *Set a default refund **behavior***
+  — so the in-product **Learn more** link landed on the page top. Fixed 2026-08-14 by renaming the
+  heading to match the link. `npm run check-links` cannot catch this class: the inbound link lives in
+  another repo. Before renaming any heading in a Refund Saver, App Store Connect or notification
+  article, grep `domain.tsx` for a link to its anchor.
+- **Refund Saver preference values, verified against `dashboard-backend` `origin/develop` on
+  2026-08-14.** App-level default is `AppRefundPreference` in `src/common/enums/purchase.py`
+  (`no_preference`, `always_decline`, `always_refund`, `decline_first_grant_next`, `always_prorated`);
+  the per-profile override is a different enum with different spellings — `CustomPreference` in
+  `src/common/domains/dto/sdk_event.py` (`grant`, `no_preference`, `decline`, `grant_prorated`). The two
+  are mapped in `app_store_refund.py`; never carry a value from one into the other. Adapty now answers
+  consumption requests with **v2** (`domains/value_objects/app_store/consumption_information_v2.py`),
+  which is what makes `GRANT_PRORATED` and the `consumptionPercentage` field available at all.
+- **The prorated preference has no SDK surface, as of 2026-08-14.** Grepped `AdaptyRefundPreference` /
+  `RefundPreference` on the default ref of all seven SDK repos plus `jscore`: every one still exposes
+  exactly `no_preference`, `grant`, `decline`. So a Refund Saver preference added on the backend reaches
+  users through the Dashboard and the server-side API spec only — the SDK snippets in `refund-saver` and
+  the enum list in `unity-sdk-models` stay untouched until an SDK ships the case.
 

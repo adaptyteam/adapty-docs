@@ -1,0 +1,67 @@
+---
+title: "Suivre les vues d'écran de flow dans le SDK Kotlin Multiplatform"
+description: "Recevez un événement chaque fois qu'un utilisateur ouvre un écran de flow dans votre application Kotlin Multiplatform, et transmettez-le à vos outils d'analyse produit."
+metadataTitle: "Suivre les vues d'écran de flow | SDK Kotlin Multiplatform | Documentation Adapty"
+---
+
+Chaque fois qu'un utilisateur ouvre un écran dans un [flow](adapty-flow-builder), le SDK envoie un événement `flow_screen_showed` à votre application. Transmettez-le à Amplitude, Mixpanel ou tout autre outil d'analyse produit que vous utilisez, afin d'analyser les écrans de flow avec le reste des événements de votre application.
+
+:::tip
+Pour voir jusqu'où les utilisateurs progressent dans un flow, aucun code n'est nécessaire — les [métriques de flow](flow-metrics) affichent déjà les vues, les complétions et le taux d'abandon par écran dans l'Adapty Dashboard. Utilisez ce guide lorsque vous avez besoin de ces mêmes données dans vos propres outils d'analyse, combinées avec des événements qu'Adapty ne connaît pas.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **Adapty Kotlin Multiplatform SDK v4 ou version ultérieure** : le callback d'analyse des flows n'existe pas dans les versions antérieures.
+- **Une version de flow publiée après la mise en production de cette fonctionnalité** : Adapty génère les événements d'écran au moment de la publication d'un flow, donc un flow publié avant cette date ne remontera aucune donnée. Si aucun événement n'arrive dans votre application, publiez une nouvelle version du flow et réessayez.
+
+## Ce que vous recevez \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Kotlin Multiplatform fournit ces paramètres sous forme de chaîne JSON brute, donc décodez `paramsJsonString` avant de les lire.
+
+Les vues d'écran arrivent dans le même callback d'analytics que tous les autres événements de flow. Consultez [Gérer les événements de flow et de paywall](kmp-handling-events) pour savoir où l'enregistrer.
+
+## Transmettre chaque vue d'écran à vos analytics \{#forward-every-screen-view-to-your-analytics\}
+
+Vérifiez d'abord le nom de l'événement avant de lire quoi que ce soit d'autre, car un flow remonte d'autres événements via le même callback.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+    val screenOrder = params["screen_order"]?.jsonPrimitive?.intOrNull
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Exécuter du code lorsqu'un utilisateur atteint la fin \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` est `true` sur un écran au-delà duquel le flow ne peut pas avancer. Utilisez-le pour déverrouiller du contenu, marquer l'onboarding comme terminé ou envoyer un événement de complétion, sans avoir à ajouter une action de bouton dans le builder.
+
+```kotlin showLineNumbers title="Kotlin"
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    if (name != "flow_screen_showed") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+Atteindre le dernier écran n'est pas la même chose que fermer le flow. Un utilisateur peut voir l'écran final et fermer le flow sans agir dessus, et un flow avec des embranchements peut se terminer sur plusieurs écrans différents. Pour savoir que le flow lui-même a disparu, utilisez plutôt `flowViewDidDisappear`.

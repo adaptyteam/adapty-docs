@@ -172,21 +172,39 @@ most, deliberately — so the exception needs stating rather than assuming.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | android-products | — | dev | 4 | tutorial |
-| create-service-account | — | dev | 0 | tutorial |
-| create-service-account-key-file | — | dev | 0 | tutorial |
-| enable-real-time-developer-notifications-rtdn | — | dev | 6 | tutorial |
-| enabling-of-devepoler-api | — | dev | 0 | tutorial |
+| create-service-account | — | dev | 3 | tutorial |
+| create-service-account-key-file | — | dev | 4 | tutorial |
+| enable-real-time-developer-notifications-rtdn | — | dev | 8 | tutorial |
+| enabling-of-devepoler-api | — | dev | 3 | tutorial |
 | google-platform-resources | entry | dev | 3 | tutorial |
 | google-play-data-safety | — | dev | 7 | tutorial |
 | google-play-quota-increase | — | dev | 3 | tutorial |
-| google-play-store-connection-configuration | — | dev | 2 | tutorial |
+| google-play-store-connection-configuration | — | dev | 3 | tutorial |
 | google-reduced-service-fee | — | dev | 7 | tutorial |
-| grant-permissions-to-service-account | — | dev | 0 | tutorial |
-| initial-android | entry | dev | 1 | tutorial |
+| grant-permissions-to-service-account | — | dev | 3 | tutorial |
+| initial-android | entry | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
 ## Ripple rules
+
+- **A Billing Library version claim made in an installation article ripples into this zone, and the
+  scope statement has to be duplicated across the zone line.** The version sentence lives in seven
+  installation articles — `sdk-installation-android`, `sdk-installation-capacitor`,
+  `sdk-installation-react-native-pure`, `sdk-installation-react-native-expo`,
+  `sdk-installation-kotlin-multiplatform`, `sdk-installation-flutter`, `sdk-installation-unity` —
+  correctly, by the `sdk-quickstart` boundary below. But the action a reader takes after misreading it
+  happens in Play Console, inside `android-products`: a client read "works with Google Play Billing
+  Library 8" as "Adapty supports everything Google shipped in 8" and was about to make a one-way
+  product change in Play Console (2026-08-20). So when a Billing Library version moves, or Google ships
+  a new billing capability, expect **two** edits and don't let either stand alone — the version in the
+  installation articles, what Adapty does and doesn't do with it in `android-products`. Verified
+  2026-08-21 against the Android SDK repo's `origin/master` (tag 4.1.0): `adapty/build.gradle:34` pins
+  `billing:8.0.0` while `ProductMapper.kt:135` reads only the deprecated singular
+  `oneTimePurchaseOfferDetails`, and a grep for
+  `oneTimePurchaseOfferDetailsList|purchaseOption|rentalDetails|preorderDetails` returns nothing — so
+  "built against 8" and "adopted what 8 added" are separate claims, and only the first is ours to state
+  from a repo.
 
 ## Boundaries
 
@@ -232,6 +250,7 @@ order that `initial-android` and the `What's next` chains agree on: enable the t
 | "old app versions buy the wrong base plan", "only one base plan is visible to the SDK" | `android-products`. Adapty products map to Google **base plans**; SDKs 2.5 and below see only the single backwards-compatible base plan, so any other plan needs a fallback product declared. |
 | "Data Safety form", "what does Adapty collect", "Play Store privacy declaration" | `google-play-data-safety` — the answer set is Financial Info (purchase history), Device or other IDs, and User IDs. |
 | "first-time Android setup", "how long will this take", "which step comes first" | `initial-android` for the ordered checklist; `google-platform-resources` is the link hub. Prefer the checklist for ordering — the hub lists the key file before the Play Console permissions, which contradicts every other page in the chain. |
+| "do you support Google's new one-time product model", "normalized one-time products", "can we convert our in-app products in Play Console" | `android-products` — the warning above the first heading, deliberately not a per-feature answer. A named list of unsupported features would read as exhaustive and recreate the same false assurance inverted, so support owns the per-feature answer. What the reader needs first is that the Play Console change is one-way. |
 
 ## Gaps and misses
 

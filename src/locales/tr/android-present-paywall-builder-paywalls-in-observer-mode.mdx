@@ -1,19 +1,24 @@
 ---
-title: "Android SDK'da Observer mode'da Paywall Builder paywalllarını sunma"
-description: "Adapty'nin Paywall Builder'ını kullanarak observer mode'da paywallları nasıl sunacağınızı öğrenin."
-metadataTitle: "Observer Mode'da Paywallları Sunma | Adapty Dokümanları"
+title: "Android SDK'da Observer modunda flow'ları sunma"
+description: "Android uygulamanızda Observer modunda flow'ları ve Paywall Builder paywall'larını sunun, satın alma işlemlerini kendi kodunuzla yönetin."
+metadataTitle: "Observer Modunda Flow'ları Sunma | Adapty Dokümanları"
 ---
 
-Flow Builder veya Paywall Builder kullanarak bir flow veya paywall oluşturduysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda render etmeniz konusunda endişelenmenize gerek yoktur. Böyle bir flow veya paywall, içinde ne gösterileceğini ve nasıl gösterileceğini zaten içerir.
+Bir flow veya paywall'ı Flow Builder ya da Paywall Builder ile oluşturduysanız, bunu kullanıcıya göstermek için mobil uygulama kodunuzda render etme konusunda endişelenmenize gerek yok. Bu tür bir flow veya paywall, içinde neyin gösterileceğini ve nasıl gösterileceğini zaten içerir.
 
 :::warning
-Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. Observer mode'da çalışmıyorsanız bunun yerine [Android - Flow ve paywall'ları gösterme](android-present-paywalls) konusuna bakın.
+Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. Observer mode'da çalışmıyorsanız, bunun yerine [Android - Flow ve paywall'ları görüntüleme](android-present-paywalls) konusuna bakın.
+:::
+
+:::tip
+Flow'un kendisini [Flow Builder'da](adapty-flow-builder) oluşturun.
 :::
 
 <SDKv4>
 
 <details>
-   <summary>Flow'ları göstermeye başlamadan önce (Genişletmek için tıklayın)</summary>
+   <summary>Flow sunmaya başlamadan önce (Genişletmek için tıklayın)</summary>
+
 1. Adapty'nin [Google Play ile](initial-android) başlangıç entegrasyonunu yapın.
    2. Adapty SDK'yı yükleyip yapılandırın. `observerMode` parametresini `true` olarak ayarladığınızdan emin olun. Framework'e özgü talimatlarımıza [Android için](sdk-installation-android) bakın.
    3. Adapty Kontrol Paneli'nde [ürünler oluşturun](create-product).
@@ -31,7 +36,7 @@ Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. O
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
-    AdaptyUiObserverModeHandler { product, flow, flowView, onStartPurchase, onFinishPurchase ->
+    AdaptyUiObserverModeHandler { product, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
        yourBillingClient.makePurchase(
            product,
@@ -53,7 +58,7 @@ Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. O
 </TabItem>
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
-   AdaptyUiObserverModeHandler observerModeHandler = (product, flow, flowView, onStartPurchase, onFinishPurchase) -> {
+   AdaptyUiObserverModeHandler observerModeHandler = (product, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
            product,
@@ -74,12 +79,19 @@ Bu bölüm yalnızca [Observer mode](observer-vs-full-mode) için geçerlidir. O
    ```
 </TabItem>
 </Tabs>
+
 Observer mode'da geri yüklemeleri yönetmek için `getRestoreHandler()` metodunu geçersiz kılın. Varsayılan olarak `null` döndürür; bu durumda Adapty'nin yerleşik `Adapty.restorePurchases()` flow'u kullanılır. Kendi geri yükleme implementasyonunuzu sağlamak için:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler = object : AdaptyUiObserverModeHandler {
-       // onPurchaseInitiated implementation (see above)
+       override fun onPurchaseInitiated(
+           product: AdaptyPaywallProduct,
+           onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+           onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+       ) {
+           // the same body as the purchase example above
+       }
 
        override fun getRestoreHandler() =
            AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
@@ -101,7 +113,14 @@ Observer mode'da geri yüklemeleri yönetmek için `getRestoreHandler()` metodun
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
-       // onPurchaseInitiated implementation (see above)
+       @Override
+       public void onPurchaseInitiated(
+           AdaptyPaywallProduct product,
+           PurchaseStartCallback onStartPurchase,
+           PurchaseFinishCallback onFinishPurchase
+       ) {
+           // the same body as the purchase example above
+       }
 
        @Override
        public RestoreHandler getRestoreHandler() {
@@ -123,6 +142,7 @@ Observer mode'da geri yüklemeleri yönetmek için `getRestoreHandler()` metodun
    ```
 </TabItem>
 </Tabs>
+
 AdaptyUI'yı satın alma veya geri yükleme işlemi hakkında bilgilendirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi doğru flow davranışı için gereklidir:
 | Callback           | Açıklama                                                                                         |
    | :----------------- |:--------------------------------------------------------------------------------------------------|
@@ -264,14 +284,19 @@ Satın alma işlemlerini [paywall'larla ilişkilendirmeyi](report-transactions-o
 
 <p> </p>
 
-1. `AdaptyUiObserverModeHandler`'ı uygulayın.
+1. `AdaptyUiObserverModeHandler` uygulayın.
 
-`onPurchaseInitiated` olayı, kullanıcının bir satın alma işlemi başlattığını size bildirir. Bu callback'e yanıt olarak özel satın alma flow'unuzu tetikleyebilirsiniz:
+`onPurchaseInitiated` olayı, kullanıcının bir satın alma başlattığını size bildirir. Bu callback'e yanıt olarak kendi özel satın alma flow'unuzu tetikleyebilirsiniz:
+
+:::note
+3.15.0 önceki Adapty Android SDK sürümleri, bu callback'e paywall ve paywall görünümünü de iletiyordu. 3.15.0 veya sonraki bir sürüme yükselttiğinizde bu iki parametreyi kaldırın.
+:::
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler =
-    AdaptyUiObserverModeHandler { product, paywall, paywallView, onStartPurchase, onFinishPurchase ->
+    AdaptyUiObserverModeHandler { product, onStartPurchase, onFinishPurchase ->
        onStartPurchase()
        yourBillingClient.makePurchase(
            product,
@@ -293,7 +318,7 @@ Satın alma işlemlerini [paywall'larla ilişkilendirmeyi](report-transactions-o
 </TabItem>
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
-   AdaptyUiObserverModeHandler observerModeHandler = (product, paywall, paywallView, onStartPurchase, onFinishPurchase) -> {
+   AdaptyUiObserverModeHandler observerModeHandler = (product, onStartPurchase, onFinishPurchase) -> {
        onStartPurchase.invoke();
        yourBillingClient.makePurchase(
            product,
@@ -314,12 +339,19 @@ Satın alma işlemlerini [paywall'larla ilişkilendirmeyi](report-transactions-o
    ```
 </TabItem>
 </Tabs>
+
 Observer mode'da restore işlemlerini yönetmek için `getRestoreHandler()` metodunu override edin. Varsayılan olarak `null` döndürür; bu durumda Adapty'nin yerleşik `Adapty.restorePurchases()` flow'u kullanılır. Kendi restore implementasyonunuzu sağlamak için:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
    val observerModeHandler = object : AdaptyUiObserverModeHandler {
-       // onPurchaseInitiated implementation (see above)
+       override fun onPurchaseInitiated(
+           product: AdaptyPaywallProduct,
+           onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+           onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+       ) {
+           // the same body as the purchase example above
+       }
 
        override fun getRestoreHandler() =
            AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
@@ -341,7 +373,14 @@ Observer mode'da restore işlemlerini yönetmek için `getRestoreHandler()` meto
 <TabItem value="java" label="Java" default>
    ```java showLineNumbers
    AdaptyUiObserverModeHandler observerModeHandler = new AdaptyUiObserverModeHandler() {
-       // onPurchaseInitiated implementation (see above)
+       @Override
+       public void onPurchaseInitiated(
+           AdaptyPaywallProduct product,
+           PurchaseStartCallback onStartPurchase,
+           PurchaseFinishCallback onFinishPurchase
+       ) {
+           // the same body as the purchase example above
+       }
 
        @Override
        public RestoreHandler getRestoreHandler() {
@@ -363,6 +402,7 @@ Observer mode'da restore işlemlerini yönetmek için `getRestoreHandler()` meto
    ```
 </TabItem>
 </Tabs>
+
 Ödeme veya geri yükleme sürecini AdaptyUI'ya bildirmek için aşağıdaki callback'leri çağırmayı unutmayın. Bu, yükleyiciyi göstermek gibi paywall'un düzgün çalışması için gereklidir:
 | Callback           | Açıklama                                                                                               |
    | :----------------- |:-------------------------------------------------------------------------------------------------------|
@@ -470,14 +510,14 @@ AdaptyPaywallScreen(
    İstek parametreleri:
 | Parametre | Zorunluluk | Açıklama |
 |---------|--------|-----------|
-| **Products** | isteğe bağlı | Ekrandaki ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProduct` dizisi sağlayın. `null` geçilirse AdaptyUI gerekli ürünleri otomatik olarak çeker. |
-| **ViewConfiguration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyViewConfiguration` nesnesi sağlayın. Yüklemek için `Adapty.getViewConfiguration(paywall)` metodunu kullanın. Daha fazla ayrıntı için [Paywall'ın görsel yapılandırmasını çekme](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) konusuna bakın. |
-| **EventListener** | isteğe bağlı | Paywall olaylarını izlemek için bir `AdaptyUiEventListener` sağlayın. Kullanım kolaylığı açısından AdaptyUiDefaultEventListener'ı genişletmeniz önerilir. Daha fazla ayrıntı için [Paywall olaylarını yönetme](android-handling-events) konusuna bakın. |
-| **PersonalizedOfferResolver** | isteğe bağlı | Kişiselleştirilmiş fiyatlandırmayı ([daha fazla bilgi](https://developer.android.com/google/play/billing/integrate#personalized-price)) belirtmek için `AdaptyUiPersonalizedOfferResolver`'ı uygulayın ve `AdaptyPaywallProduct`'ı, ürünün fiyatı kişiselleştirilmişse true, değilse false olarak eşleştiren kendi mantığınızı geçirin. |
-| **TagResolver** | isteğe bağlı | Paywall metnindeki özel etiketleri çözümlemek için `AdaptyUiTagResolver` kullanın. Bu çözümleyici bir etiket parametresi alır ve bunu karşılık gelen bir dizeye dönüştürür. Daha fazla ayrıntı için Paywall Builder'daki Özel Etiketler konusuna bakın. |
-| **ObserverModeHandler** | Observer mode için zorunlu | Önceki adımda uyguladığınız `AdaptyUiObserverModeHandler`. |
-| **variationId** | zorunlu | Varyasyonun dize tanımlayıcısı. Bunu [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) nesnesinin `variationId` özelliğini kullanarak alabilirsiniz. |
-| **transaction** | zorunlu | <p>iOS, StoreKit1 için: bir [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) nesnesi.</p><p>iOS, StoreKit 2 için: [Transaction](https://developer.apple.com/documentation/storekit/transaction) nesnesi.</p><p>Android için: Satın almanın, billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) sınıfının bir örneği olduğu satın almanın String tanımlayıcısı (`purchase.getOrderId()`).</p> |
+| **Products** | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProduct` dizisi sağlayın. `null` geçilirse AdaptyUI gerekli ürünleri otomatik olarak getirir. |
+| **ViewConfiguration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyViewConfiguration` nesnesi sağlayın. Yüklemek için `Adapty.getViewConfiguration(paywall)` metodunu kullanın. Daha fazla bilgi için [Paywallın görsel yapılandırmasını getirme](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) konusuna bakın. |
+| **EventListener** | isteğe bağlı | Paywall olaylarını izlemek için bir `AdaptyUiEventListener` sağlayın. Kullanım kolaylığı açısından AdaptyUiDefaultEventListener'ı genişletmeniz önerilir. Daha fazla bilgi için [Paywall olaylarını yönetme](android-handling-events) konusuna bakın. |
+| **PersonalizedOfferResolver** | isteğe bağlı | Kişiselleştirilmiş fiyatlandırmayı ([daha fazla bilgi](https://developer.android.com/google/play/billing/integrate#personalized-price)) belirtmek için `AdaptyUiPersonalizedOfferResolver`'ı uygulayın ve `AdaptyPaywallProduct`'ı ürünün fiyatı kişiselleştirilmişse `true`, değilse `false` ile eşleştiren kendi mantığınızı geçirin. |
+| **TagResolver** | isteğe bağlı | Paywall metnindeki özel etiketleri çözümlemek için `AdaptyUiTagResolver` kullanın. Bu çözümleyici bir etiket parametresi alır ve bunu karşılık gelen bir dizeye çözümler. Daha fazla bilgi için Paywall Builder'da Özel Etiketler konusuna bakın. |
+| **ObserverModeHandler** | Observer modu için zorunlu | Bir önceki adımda uyguladığınız `AdaptyUiObserverModeHandler`. |
+| **variationId** | zorunlu | Varyasyonun string tanımlayıcısı. `AdaptyPaywall` nesnesinin `variationId` özelliğini kullanarak alabilirsiniz. |
+| **transaction** | zorunlu | <p>iOS, StoreKit 1 için: bir [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) nesnesi.</p><p>iOS, StoreKit 2 için: [Transaction](https://developer.apple.com/documentation/storekit/transaction) nesnesi.</p><p>Android için: Satın alma işleminin billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) sınıfının bir örneği olduğu satın almanın String tanımlayıcısı (`purchase.getOrderId()`).</p> |
 
 </TabItem>
 <TabItem value="SDK2" label="Legacy Paywall Builder (SDK 2.x'e kadar)" default>
@@ -612,15 +652,16 @@ Görünüm başarıyla oluşturulduktan sonra, onu görünüm hiyerarşisine ekl
    İstek parametreleri:
 | Parametre | Zorunluluk | Açıklama                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 |---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Products** | opsiyonel | Ekrandaki ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProduct` dizisi sağlayın. `null` geçilirse AdaptyUI gerekli ürünleri otomatik olarak getirir.                                                                                                                                                                                                                                                                                                                       |
-| **ViewConfiguration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyViewConfiguration` nesnesi sağlayın. Yüklemek için `Adapty.getViewConfiguration(paywall)` metodunu kullanın. Daha fazla bilgi için [Paywall'ın görsel yapılandırmasını getirme](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) konusuna bakın.                                                                                                                                                                      |
-| **Insets** | zorunlu | İçerik için dikey kenar boşlukları oluşturmak amacıyla sistem çubuklarının kapladığı alan hakkında bilgi içeren bir `AdaptyPaywallInsets` nesnesi tanımlayın. Ne durum çubuğu ne de gezinme çubuğu `AdaptyPaywallView`'ı kapatmıyorsa `AdaptyPaywallInsets.NONE` geçin. Sistem çubuklarının UI'ınızın bir kısmını kapladığı tam ekran modunda, insets'leri tablonun altında gösterildiği şekilde alın.                                                                                                                                |
-| **EventListener** | opsiyonel | Paywall olaylarını izlemek için bir `AdaptyUiEventListener` sağlayın. Kullanım kolaylığı açısından AdaptyUiDefaultEventListener'ı genişletmeniz önerilir. Daha fazla bilgi için [Paywall olaylarını yönetme](android-handling-events) konusuna bakın.                                                                                                                                                                                                                                                                                |
-| **PersonalizedOfferResolver** | opsiyonel | Kişiselleştirilmiş fiyatlandırmayı ([daha fazla bilgi](https://developer.android.com/google/play/billing/integrate#personalized-price)) belirtmek için `AdaptyUiPersonalizedOfferResolver`'ı uygulayın ve `AdaptyPaywallProduct`'ı ürünün fiyatı kişiselleştirilmişse true, değilse false olarak eşleyen kendi mantığınızı geçirin.                                                                                                                                                                                               |
-| **TagResolver** | opsiyonel | Paywall metni içindeki özel etiketleri çözümlemek için `AdaptyUiTagResolver` kullanın. Bu çözümleyici bir etiket parametresi alır ve onu karşılık gelen bir dizeye dönüştürür. Daha fazla bilgi için Paywall Builder'da Özel Etiketler konusuna bakın.                                                                                                                                                                                                                              |
+| **Products** | isteğe bağlı | Ekrandaki ürünlerin görüntülenme zamanlamasını optimize etmek için bir `AdaptyPaywallProduct` dizisi sağlayın. `null` geçilirse AdaptyUI gerekli ürünleri otomatik olarak çeker.                                                                                                                                                                                                                                                                                                                       |
+| **ViewConfiguration** | zorunlu | Paywallın görsel ayrıntılarını içeren bir `AdaptyViewConfiguration` nesnesi sağlayın. Yüklemek için `Adapty.getViewConfiguration(paywall)` metodunu kullanın. Daha fazla bilgi için [Paywallın görsel yapılandırmasını alma](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) konusuna bakın.                                                                                                                                                                      |
+| **Insets** | zorunlu | Sistem çubuklarının kapladığı alan hakkında bilgi içeren ve içerik için dikey kenar boşlukları oluşturan bir `AdaptyPaywallInsets` nesnesi tanımlayın. `AdaptyPaywallView` üzerinde ne durum çubuğu ne de gezinme çubuğu çakışmıyorsa `AdaptyPaywallInsets.NONE` geçin. Sistem çubuklarının kullanıcı arayüzünüzün bir bölümünü kapladığı tam ekran modunda, inset'leri tablonun altında gösterildiği şekilde alın.                                                                                                                                |
+| **EventListener** | isteğe bağlı | Paywall olaylarını izlemek için bir `AdaptyUiEventListener` sağlayın. Kullanım kolaylığı açısından AdaptyUiDefaultEventListener'ı genişletmeniz önerilir. Daha fazla bilgi için [Paywall olaylarını yönetme](android-handling-events) konusuna bakın.                                                                                                                                                                                                                                                                |
+| **PersonalizedOfferResolver** | isteğe bağlı | Kişiselleştirilmiş fiyatlandırmayı ([daha fazla oku](https://developer.android.com/google/play/billing/integrate#personalized-price)) belirtmek için `AdaptyUiPersonalizedOfferResolver`'ı uygulayın ve `AdaptyPaywallProduct`'ı ürünün fiyatı kişiselleştirilmişse `true`, aksi halde `false` ile eşleştiren kendi mantığınızı geçirin.                                                                                                                                                                                               |
+| **TagResolver** | isteğe bağlı | Paywall metni içindeki özel etiketleri çözümlemek için `AdaptyUiTagResolver` kullanın. Bu çözümleyici bir etiket parametresi alır ve bunu karşılık gelen bir dizeye dönüştürür. Daha fazla bilgi için Paywall Builder'da Özel Etiketler konusuna bakın.                                                                                                                                                                                                                              |
 | **ObserverModeHandler** | Observer modu için zorunlu | Önceki adımda uyguladığınız `AdaptyUiObserverModeHandler`.                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **variationId** | zorunlu | Varyasyonun dize tanımlayıcısı. [`AdaptyPaywall`](https://android.adapty.io/adapty/com.adapty.models/-adapty-paywall/) nesnesinin `variationId` özelliğini kullanarak elde edebilirsiniz.                                                                                                                                                                                                                                                                                                                                                        |
-| **transaction** | zorunlu | <p>iOS, StoreKit1 için: bir [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) nesnesi.</p><p>iOS, StoreKit 2 için: [Transaction](https://developer.apple.com/documentation/storekit/transaction) nesnesi.</p><p>Android için: Satın almanın billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) sınıfının bir örneği olduğu satın almanın dize tanımlayıcısı (`purchase.getOrderId()`).</p> |
+| **variationId** | zorunlu | Varyasyonun string tanımlayıcısı. `AdaptyPaywall` nesnesinin `variationId` özelliği kullanılarak elde edilebilir.                                                                                                                                                                                                                                                                                                                                        |
+| **transaction** | zorunlu | <p>iOS, StoreKit 1 için: bir [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) nesnesi.</p><p>iOS, StoreKit 2 için: [Transaction](https://developer.apple.com/documentation/storekit/transaction) nesnesi.</p><p>Android için: satın almanın billing kütüphanesi [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) sınıfının bir örneği olduğu satın almanın string tanımlayıcısı (`purchase.getOrderId()`).</p> |
+
 Tam ekran modunda sistem çubuklarının kullanıcı arayüzünüzün bir bölümünü kapladığı durumlarda, inset'leri şu şekilde elde edin:
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
