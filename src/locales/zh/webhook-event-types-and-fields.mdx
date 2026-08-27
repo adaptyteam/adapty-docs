@@ -1,5 +1,5 @@
 ---
-title: "Webhook 事件类型与字段"
+title: "Webhook 事件类型和字段"
 description: ""
 metadataTitle: ""
 toc_max_heading_level: 4
@@ -7,9 +7,8 @@ keywords: ['events']
 ---
 
 import WebhookEvents from '@site/src/locales/zh/reusable/WebhookEvents.md';
-import UsdConversion from '@site/src/locales/zh/reusable/UsdConversion.md';
 
-Adapty 会在订阅事件发生时发送 webhook。本节介绍这些事件类型及每个 webhook 包含的数据字段。
+Adapty 会在订阅事件发生时发送 Webhook。本节定义了这些事件类型及每个 Webhook 所包含的数据。
 
 ## Webhook 事件类型 \{#webhook-event-types\}
 
@@ -19,6 +18,10 @@ Adapty 会在订阅事件发生时发送 webhook。本节介绍这些事件类�
 :::note
 `subscription_renewal_reactivated` 携带的是**之前**的产品 ID——即用户取消订阅时处于活跃状态的产品 ID——即使用户后来通过购买其他产品重新激活了订阅也是如此。Apple 在整个取消 → 重新激活链路中保持相同的 `original_transaction_id`，因此该事件反映的是原始产品。新产品将在下一个 `subscription_renewed` 事件中体现，届时新产品的计费正式开始。
 :::
+:::note
+在 Google Play 上，Adapty 可能会发送 `subscription_started` 事件，且所有金额字段均为零——例如，当 Google 用一个订阅替换另一个订阅，或订阅以免费阶段开始时。请勿将此类事件计入收入。当 Google 替换订阅时，会生成新的购买令牌，因此 Adapty 会以不同的 `store_transaction_id` 上报付费交易。
+:::
+
 ## Webhook 事件结构 \{#webhook-event-structure\}
 
 Adapty 只会发送你在 [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) 页面 **Events names** 部分所选择的事件。
@@ -198,45 +201,45 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 
 | 字段 | 类型 | 描述 |
 |:------------------------------|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **ab_test_name** | String | 交易来源的 [Adapty A/B 测试](ab-tests)名称。 |
+| **ab_test_name** | String | 交易来源的 [Adapty A/B 测试](ab-tests) 名称。 |
 | **ab_test_revision** | Integer | 交易来源的 A/B 测试版本号。 |
 | **base_plan_id** | String | Google Play Store 中的[基础方案 ID](https://support.google.com/googleplay/android-developer/answer/12154973)，或 Stripe 中的[价格 ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
 | **cancellation_reason** | String | <p>可能的取消原因：`voluntarily_cancelled`、`billing_error`、`price_increase`、`product_was_not_available`、`refund`、`cancelled_by_developer`、`new_subscription_replace`、`upgraded`、`unknown`、`adapty_revoked`。</p><p>出现在以下事件类型中：</p>`subscription_cancelled`、`subscription_refunded` 和 `trial_cancelled`。 |
-| **cohort_name** | String | 决定用户看到哪个付费墙的[目标受众](audience)名称。 |
-| **consecutive_payments** | Integer | 用户连续订阅的周期数（无中断），包含当前周期。 |
+| **cohort_name** | String | 决定向用户展示哪个付费墙的[目标受众](audience)名称。 |
+| **consecutive_payments** | Integer | 用户连续订阅的周期数（不中断），包含当前周期。 |
 | **currency** | String | 本地货币。 |
 | **developer_id** | String | 交易来源的[版位](placements) ID。 |
-| **discount_amount_local** | Float | 交易中应用的折扣金额：标准价格减去实际收取金额（Apple/Google 抽成前），以本地货币计。全价购买时为 `0`。免费试用时等于完整标准价格（`original_price_local`），因为实际未收取任何费用。若已应用优惠但标准价格未知，则为 `null`（详见 `original_price_local`）。App Store 预付费优惠始终为 `null`：因为单次预付金额涵盖多个计费周期，无法与每周期标准价格进行比较。 |
-| **discount_amount_usd** | Float | `discount_amount_local` 对应的 USD 金额。 |
+| **discount_amount_local** | Float | 本次交易的折扣金额：标准价格减去实际收取金额（扣除 Apple/Google 分成前），以本地货币计。全价购买时为 `0`。免费试用时等于完整标准价格（`original_price_local`），因为未收取任何费用。当优惠已应用但标准价格未知时为 `null`（参见 `original_price_local`）。App Store 预付费优惠始终为 `null`：因为单次预付费涵盖多个计费周期，无法与每周期标准价格进行比较。 |
+| **discount_amount_usd** | Float | `discount_amount_local` 的美元换算值。 |
 | **environment** | String | 可能的值为 `Sandbox` 或 `Production`。 |
-| **event_datetime** | ISO 8601 date | 事件发生的日期和时间，与事件根层级的值相同。 |
-| **original_price_local** | Float | 产品在 Apple/Google 抽成前的标准非折扣价格，以本地货币计。对于订阅，这是续订价格。全价购买时等于 `price_local`；一次性购买时始终等于 `price_local`，因为应用商店不会单独报告一次性购买的标准价格。当应用商店无法提供可靠标准价格（例如自动续订已关闭、续订仍带有优惠，或正在进行产品变更）时，折扣购买的值为 `null`。 |
-| **original_price_usd** | Float | 与 `original_price_local` 相同，以 USD 计。 |
-| **original_purchase_date** | ISO 8601 date | 对于定期订阅，原始购买是链中的第一笔交易，其 ID 称为原始交易 ID，用于关联一系列续订；后续交易均为其延续。原始购买日期即第一笔交易的日期和时间。 |
-| **original_transaction_id** | String | <p>对于定期订阅，这是关联一系列续订的原始交易 ID。原始交易是链中的第一笔；后续交易均为其延续。</p><p>若无延续交易，则 `original_transaction_id` 与 store_transaction_id 相同。</p> |
+| **event_datetime** | ISO 8601 date | 事件的日期和时间，与事件根层级的值相同。 |
+| **original_price_local** | Float | 产品的标准未折扣价格（扣除 Apple/Google 分成前），以本地货币计。对于订阅，这是续订价格。全价购买时等于 `price_local`，一次性购买时也始终等于 `price_local`，因为商店不会为其单独报告标准价格。当商店无法提供可靠标准价格时（例如自动续订已关闭、续订仍带有优惠，或存在待处理的产品变更），折扣购买时为 `null`。 |
+| **original_price_usd** | Float | `original_price_local` 的美元换算值。 |
+| **original_purchase_date** | ISO 8601 date | 对于周期性订阅，原始购买是该链中的第一笔交易，其 ID 称为原始交易 ID，用于关联续订链；后续交易均为其延伸。原始购买日期即该第一笔交易的日期和时间。 |
+| **original_transaction_id** | String | <p>对于周期性订阅，这是关联续订链的原始交易 ID。原始交易是链中的第一笔；后续交易均为其延伸。</p><p>如果没有延伸交易，`original_transaction_id` 与 store_transaction_id 相同。</p> |
 | **paywall_name** | String | 交易来源的付费墙名称。 |
 | **paywall_revision** | String | 交易来源的付费墙版本号，默认值为 1。 |
-| **price_local** | Float | 交易中实际收取的金额（Apple/Google 抽成前），以本地货币计。免费试用时为 `null`，因为未收取任何费用。 |
-| **price_usd** | Float | 交易中实际收取的金额（Apple/Google 抽成前），以 USD 计。免费试用时为 `null`，因为未收取任何费用。 |
-| **profile_country** | String | 由 Adapty 根据用户画像 IP 地址确定。 |
-| **profile_event_id** | UUID | 可用于去重的唯一事件 ID。 |
+| **price_local** | Float | 本次交易实际收取的金额（扣除 Apple/Google 分成前），以本地货币计。免费试用时为 `null`，因为未收取任何费用。 |
+| **price_usd** | Float | 本次交易实际收取的金额（扣除 Apple/Google 分成前），以美元计。免费试用时为 `null`，因为未收取任何费用。 |
+| **profile_country** | String | 由 Adapty 根据用户画像 IP 确定。 |
+| **profile_event_id** | UUID | 唯一事件 ID，可用于去重。 |
 | **profile_has_access_level** | Boolean | 布尔值，表示该用户画像是否拥有有效的访问等级。 |
 | **profile_id** | UUID | Adapty 生成的用户画像 ID，与事件根层级的值相同。 |
-| **profile_ip_address** | String | 用户画像 IP（可以是 IPv4 或 IPv6，优先使用 IPv4）。若在[应用设置](https://app.adapty.io/settings/general)中禁用了 **Collect users' IP addresses**，则为 `null`。 |
-| **profile_total_revenue_usd** | Float | 该用户画像的总收入（已扣除退款金额），以 USD 计。 |
+| **profile_ip_address** | String | 用户画像 IP（可为 IPv4 或 IPv6，优先使用 IPv4）。若在[应用设置](https://app.adapty.io/settings/general)中禁用了 **Collect users' IP addresses**，则为 `null`。 |
+| **profile_total_revenue_usd** | Float | 该用户画像的总收入（已扣除退款）。 |
 | **promotional_offer_id** | String | 所使用的[促销活动](offers)的 Adapty ID，在看板中创建优惠时由您设置。 |
 | **purchase_date** | ISO 8601 date | 产品购买的日期和时间。 |
-| **rate_after_first_year** | Boolean | 布尔值，表示该订阅是否在连续续订满一年后符合降低佣金率（通常为 15%）的条件。佣金率因计划资格和国家/地区而异。详情请参阅[商店佣金与税费](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)。 |
-| **store** | String | 购买产品的应用商店。标准值：**app_store**、**play_store**、**stripe**、**paddle**。<br/>若通过服务端 API 设置了[自定义商店交易](api-adapty/operations/setTransaction)，则使用 **store** 参数中的值。 |
-| **store_country** | String | 应用商店发送给我们的国家/地区信息。 |
+| **rate_after_first_year** | Boolean | 布尔值，表示该订阅在持续续订满一年后是否符合降低佣金比例（通常为 15%）的条件。佣金比例因计划资格和国家/地区而异。详情请参阅[商店佣金与税费](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)。 |
+| **store** | String | 购买产品的商店。标准值：**app_store**、**play_store**、**stripe**、**paddle**。<br/>若通过服务端 API 设置了[自定义商店交易](api-adapty/operations/setTransaction)，则使用 **store** 参数中的值。 |
+| **store_country** | String | 应用商店向我们报告的国家/地区。 |
 | **store_offer_category** | String | 已应用的优惠类别。可能的值为 `introductory`、`promotional`、`winback`。 |
 | **store_offer_discount_type** | String | 已应用的优惠类型。可能的值为 `free_trial`、`pay_as_you_go` 和 `pay_up_front`。 |
-| **store_offer_number_of_periods** | Integer | 优惠所涵盖的基础计费周期数（1 个或更多）。仅在应用优惠时出现。App Store 预付费优惠以及应用商店未报告优惠时长时为 `null`。 |
-| **subscription_expires_at** | ISO 8601 date | 订阅的到期日期，通常为未来某一时间。 |
+| **store_offer_number_of_periods** | Integer | 优惠折扣覆盖的基础计费周期数（1 个或更多）。仅在优惠适用时存在。App Store 预付费优惠以及商店未报告优惠时长时为 `null`。 |
+| **subscription_expires_at** | ISO 8601 date | <p>订阅的到期日期。</p><p>在退款、账单问题、宽限期和访问等级事件中，该值为取消日期或宽限期结束日期（如适用）。在购买和续订事件中，该值为订阅的常规到期日期。</p> |
 | **transaction_id** | String | 交易的唯一标识符。 |
 | **trial_duration** | String | 试用期时长（天数），格式为"{} days"，例如"7 days"。仅出现在与试用相关的事件类型中：`trial_started`、`trial_converted`、`trial_cancelled`。 |
-| **variation_id** | UUID | 发生购买行为的付费墙的唯一 ID。 |
-| **vendor_product_id** | String | <p>Apple App Store、Google Play Store 或 Stripe 中的产品 ID。</p><p>若访问权限是在无真实商店交易的情况下授予的，则 `vendor_product_id` 将为以下之一：</p><ul><li>`adapty_server_side_product` — 通过[服务端 API](api-adapty/operations/grantAccessLevel) 授予。</li><li>`adapty_dashboard_product` — 在 Adapty 看板中[手动授予](give-access-level-to-specific-customer)。</li><li>`adapty_promotion` — 旧版。</li></ul> |
+| **variation_id** | UUID | 发生购买的付费墙的唯一 ID。 |
+| **vendor_product_id** | String | <p>Apple App Store、Google Play Store 或 Stripe 中的产品 ID。</p><p>若访问权限是在没有真实商店交易的情况下授予的，`vendor_product_id` 将为以下之一：</p><ul><li>`adapty_server_side_product` — 通过[服务端 API](api-adapty/operations/grantAccessLevel) 授予。</li><li>`adapty_dashboard_product` — 在 Adapty 看板中[手动授予](give-access-level-to-specific-customer)。</li><li>`adapty_promotion` — 旧版。</li></ul> |
 
 #### 额外的税费与收入事件属性 \{#additional-tax-and-revenue-event-properties\}
 
@@ -314,48 +317,49 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 :::tip
 使用此事件来更新数据库中用户的访问等级、在后端授予或撤销高级功能，并保持跨设备或跨平台的访问同步。
 :::
-| 属性                                 | 类型          | 描述                                                         |
+| 属性                               | 类型          | 描述                                                         |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
-| **ab_test_name**                   | String        | 交易来源的 A/B 测试名称。                                     |
-| **access_level_id**                | String        | 访问等级的 ID。                                               |
-| **activated_at**                   | ISO 8601 date | 访问权限最近一次激活的日期和时间。                             |
-| **active_introductory_offer_type** | String        | 已应用的新用户优惠类型。可选值为 `free_trial`、`pay_as_you_go` 和 `pay_up_front`。 |
-| **active_promotional_offer_id**    | String        | 促销活动的 ID，如 Adapty 看板产品部分所示。                    |
-| **active_promotional_offer_type**  | String        | 已应用的促销活动类型。可选值为 `free_trial`、`pay_as_you_go` 和 `pay_up_front`。 |
-| **base_plan_id**                   | String        | Google Play 商店中的[基础方案 ID](https://support.google.com/googleplay/android-developer/answer/12154973)，或 Stripe 中的[价格 ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
-| **billing_issue_detected_at**      | ISO 8601 date | 发生计费问题的日期和时间。                                     |
-| **cancellation_reason**            | String        | 取消原因，可选值：`voluntarily_cancelled`、`billing_error`、`price_increase`、`product_was_not_available`、`refund`、`cancelled_by_developer`、`new_subscription_replace`、`upgraded`、`unknown`、`adapty_revoked`。 |
-| **cohort_name**                    | String        | 用户画像所属目标受众的名称。                                   |
-| **currency**                       | String        | 本地货币（默认为 USD）。                                       |
-| **developer_id**                   | String        | 交易来源版位的 ID。                                           |
-| **environment**                    | String        | 可选值为 `Sandbox` 或 `Production`。                          |
-| **event_datetime**                 | ISO 8601 date | 事件的日期和时间。                                             |
-| **expires_at**                     | ISO 8601 date | 访问权限到期的日期和时间。                                     |
-| **is_active**                      | Boolean       | 布尔值，表示访问等级是否处于激活状态。                         |
-| **is_in_grace_period**             | Boolean       | 布尔值，表示用户画像是否处于宽限期内。                         |
-| **is_lifetime**                    | Boolean       | 布尔值，表示访问等级是否为永久授权。                           |
-| **is_refund**                      | Boolean       | 布尔值，表示该交易是否为退款。                                 |
-| **original_purchase_date**         | ISO 8601 date | 对于自动续订订阅，原始购买是该链中的第一笔交易，其 ID 称为原始交易 ID，用于关联续订链；后续交易均为其延续。原始购买日期即为第一笔交易的日期和时间。 |
-| **original_transaction_id**        | String        | <p>对于自动续订订阅，这是关联续订链的原始交易 ID。原始交易是链中的第一笔；后续交易均为其延续。</p><p>如果没有延续交易，`original_transaction_id` 与 store_transaction_id 相同。</p>原始购买的交易标识符。 |
-| **paywall_name**                   | String        | 交易来源付费墙的名称。                                         |
-| **paywall_revision**               | String        | 交易来源付费墙的版本号。默认值为 1。                           |
-| **profile_country**                | String        | 由 Adapty 根据用户画像 IP 判断。                               |
-| **profile_event_id**               | UUID          | 唯一事件 ID，可用于去重。                                      |
-| **profile_has_access_level**       | Boolean       | 布尔值，表示用户画像是否拥有有效的访问等级。                   |
-| **profile_id**                     | UUID          | Adapty 内部用户画像 ID。                                       |
-| **profile_ip_address**             | String        | 用户画像的 IP 地址（可为 IPv4 或 IPv6，优先使用 IPv4）。若在[应用设置](https://app.adapty.io/settings/general)中禁用了 **Collect users' IP addresses**，则为 `null`。 |
-| **profile_total_revenue_usd**      | Float         | 用户画像的总收入，含退款。                                     |
-| **purchase_date**                  | ISO 8601 date | 购买产品的日期和时间。                                         |
-| **renewed_at**                     | ISO 8601 date | 访问权限将续订的日期和时间。                                   |
-| **starts_at**                      | ISO 8601 date | 访问等级开始生效的日期和时间。                                 |
-| **store**                          | String        | 购买产品的商店。标准值：**app_store**、**play_store**、**stripe**、**paddle**。<br/>如果你通过服务端 API 设置了[自定义商店交易](api-adapty/operations/setTransaction)，则使用 **store** 参数中的值。 |
-| **store_country**                  | String        | 应用商店发送给 Adapty 的国家信息。                             |
-| **subscription_expires_at**        | ISO 8601 date | 订阅的到期日期。                                               |
-| **transaction_id**                 | String        | 交易的唯一标识符。                                             |
-| **trial_duration**                 | String        | 试用期时长，以天为单位（例如："7 days"）。                     |
-| **variation_id**                   | UUID          | 实验变体的标识符，用于将购买归因到对应付费墙。                 |
+| **ab_test_name**                   | String        | 交易来源的 A/B 测试名称。                                    |
+| **access_level_id**                | String        | 访问等级的 ID。                                              |
+| **activated_at**                   | ISO 8601 date | 最近一次激活访问的日期和时间。                               |
+| **active_introductory_offer_type** | String        | 已应用的新用户优惠类型。可能的值为 `free_trial`、`pay_as_you_go` 和 `pay_up_front`。 |
+| **active_promotional_offer_id**    | String        | 促销活动的 ID，如 Adapty 看板产品部分所示。                  |
+| **active_promotional_offer_type**  | String        | 已应用的促销活动类型。可能的值为 `free_trial`、`pay_as_you_go` 和 `pay_up_front`。 |
+| **base_plan_id**                   | String        | Google Play 商店中的[基础方案 ID](https://support.google.com/googleplay/android-developer/answer/12154973) 或 Stripe 中的[价格 ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices)。 |
+| **billing_issue_detected_at**      | ISO 8601 date | 发生账单问题的日期和时间。                                   |
+| **cancellation_reason**            | String        | 取消的可能原因：`voluntarily_cancelled`、`billing_error`、`price_increase`、`product_was_not_available`、`refund`、`cancelled_by_developer`、`new_subscription_replace`、`upgraded`、`unknown`、`adapty_revoked`。 |
+| **cohort_name**                    | String        | 该用户画像所属目标受众的名称。                               |
+| **currency**                       | String        | 本地货币（默认为 USD）。                                     |
+| **developer_id**                   | String        | 交易来源版位的 ID。                                          |
+| **environment**                    | String        | 可能的值为 `Sandbox` 或 `Production`。                       |
+| **event_datetime**                 | ISO 8601 date | 事件发生的日期和时间。                                       |
+| **expires_at**                     | ISO 8601 date | <p>访问过期的日期和时间。Adapty 根据此字段计算 `is_active`。</p><p>在宽限期内，此字段保存宽限期的结束时间；退款或取消后，此字段保存取消日期。没有单独的宽限期结束字段。</p> |
+| **is_active**                      | Boolean       | 表示访问等级是否有效的布尔值。在事件生成时，根据 `expires_at`（结合 `starts_at` 和 `is_lifetime`）计算得出。 |
+| **is_in_grace_period**             | Boolean       | 表示用户画像是否处于宽限期的布尔值。为 `true` 时，`expires_at` 保存宽限期的结束时间。 |
+| **is_lifetime**                    | Boolean       | 表示访问等级是否为永久授权的布尔值。                         |
+| **is_refund**                      | Boolean       | 表示交易是否为退款的布尔值。                                 |
+| **original_purchase_date**         | ISO 8601 date | 对于自动续订订阅，原始购买是该续订链中的第一笔交易，其 ID 称为原始交易 ID，用于关联续订链；后续交易均为其延续。原始购买日期即该第一笔交易的日期和时间。 |
+| **original_transaction_id**        | String        | <p>对于自动续订订阅，这是关联续订链的原始交易 ID。原始交易是链中的第一笔；后续交易均为其延续。</p><p>如果没有续订，`original_transaction_id` 与 store_transaction_id 相同。</p>原始购买的交易标识符。 |
+| **paywall_name**                   | String        | 交易来源付费墙的名称。                                       |
+| **paywall_revision**               | String        | 交易来源付费墙的版本号。默认值为 1。                         |
+| **profile_country**                | String        | 由 Adapty 根据用户画像 IP 判断。                             |
+| **profile_event_id**               | UUID          | 可用于去重的唯一事件 ID。                                    |
+| **profile_has_access_level**       | Boolean       | 表示用户画像是否拥有有效访问等级的布尔值。                   |
+| **profile_id**                     | UUID          | Adapty 内部用户画像 ID。                                     |
+| **profile_ip_address**             | String        | 用户画像 IP（可以是 IPv4 或 IPv6，优先使用 IPv4）。如果在[应用设置](https://app.adapty.io/settings/general)中禁用了 **Collect users' IP addresses**，则为 `null`。 |
+| **profile_total_revenue_usd**      | Float         | 该用户画像的总收入（含退款）。                               |
+| **purchase_date**                  | ISO 8601 date | 产品购买的日期和时间。                                       |
+| **renewed_at**                     | ISO 8601 date | 访问将续订的日期和时间。                                     |
+| **starts_at**                      | ISO 8601 date | 访问等级开始的日期和时间。                                   |
+| **store**                          | String        | 购买产品的商店。标准值：**app_store**、**play_store**、**stripe**、**paddle**。<br/>如果使用服务端 API 设置了[自定义商店交易](api-adapty/operations/setTransaction)，则使用 **store** 参数中的值。 |
+| **store_country**                  | String        | 应用商店发送给 Adapty 的国家/地区。                          |
+| **subscription_expires_at**        | ISO 8601 date | 订阅的到期日期。                                             |
+| **transaction_id**                 | String        | 交易的唯一标识符。                                           |
+| **trial_duration**                 | String        | 试用期时长（以天为单位，例如"7 days"）。                     |
+| **variation_id**                   | UUID          | 实验变体的标识符，用于将购买归因到对应付费墙。               |
 | **vendor_product_id**              | String        | <p>商店（Apple/Google/Stripe）中的产品 ID。</p><p>如果访问权限是在没有真实商店交易的情况下授予的，`vendor_product_id` 将为以下之一：</p><ul><li>`adapty_server_side_product` — 通过[服务端 API](api-adapty/operations/grantAccessLevel) 授予。</li><li>`adapty_dashboard_product` — 在 Adapty 看板中[手动授予](give-access-level-to-specific-customer)。</li><li>`adapty_promotion` — 旧版。</li></ul> |
-| **will_renew**                     | Boolean       | 表示付费访问等级是否将自动续订。                               |
+| **will_renew**                     | Boolean       | 表示付费访问等级是否将续订。                                 |
+
 :::warning
 请注意，此结构可能会随着时间推移而扩展——我们或我们合作的第三方可能会引入新的数据字段。请确保处理该结构的代码足够健壮，依赖特定字段而非整个结构。
 :::

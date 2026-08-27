@@ -1,0 +1,92 @@
+---
+title: "Навык агента для аудита флоу"
+description: "Установите навык аудита флоу, чтобы ваш AI-инструмент проверял готовность флоу к публикации перед выпуском."
+metadataTitle: "Навык агента для аудита флоу | Flow Builder | Документация Adapty"
+---
+
+Навык аудита флоу отвечает на один вопрос: готов ли флоу к продакшену? Укажите своему AI-инструменту на флоу — он прочитает конфиг через [Adapty CLI](developer-cli-quickstart), сверит его с вашим каталогом продуктов и выдаст однозначный вердикт, а не список пунктов, которые нужно расшифровывать самостоятельно.
+
+Флоу может пройти все стандартные проверки перед публикацией и при этом оставаться небезопасным для показа пользователям. Встроенные проверки Paywall Builder и команда `flows config validate` отвечают на вопрос «корректен ли документ структурно?» — ни та, ни другая не спрашивают «застрянет ли реальный пользователь или увидит ли он ложную информацию?». Флоу со статусом `publication_failed` может пройти обе эти проверки — именно flow-audit находит всё остальное.
+
+:::note
+flow-audit никогда не вносит изменений во флоу. Он читает конфигурацию и ваш каталог продуктов, выполняет проверки и передаёт всё найденное вам — или скиллу [flow-generator](flow-generator-skill) — для исправления.
+:::
+
+## Установка скилла \{#install-the-skill\}
+
+flow-audit поставляется в плагине `adapty-skills` ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) вместе с flow-generator — одна установка даёт вам все скиллы плагина, сейчас их пять, включая flow-audit.
+
+Для Claude Code:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Затем выполните `/reload-plugins`, чтобы активировать скиллы. Для других AI-инструментов разработки следуйте [инструкции по установке flow-generator](flow-generator-skill#install-the-skill) — тот же репозиторий, те же команды.
+
+Then ask for it — `/flow-audit` in tools that map slash commands to skills, or "Use the flow-audit skill" in the ones that don't. Name the flow, or let it list your flows and ask which one.
+
+## Как это работает \{#how-it-works\}
+
+Пять фаз, все только на чтение:
+
+1. **Проверка и авторизация.** Убеждается, что CLI достаточно новой версии и вы авторизованы в Adapty.
+2. **Выбор флоу.** Выводит список ваших флоу (`adapty flows list`) и спрашивает, какой из них проверить.
+3. **Загрузка.** Получает конфигурацию флоу и каталог продуктов — снапшот, против которого выполняются все проверки.
+4. **Запуск проверок.** Каждая проверка выполняется только против этого снапшота.
+5. **Отчёт.** Итоговый вердикт, а не список.
+
+## Что проверяется \{#what-it-checks\}
+
+- **Triggers**: элемент, текст которого обещает действие, но нигде в цепочке предков нет взаимодействия. Выглядит как рабочий элемент управления, но ничего не делает.
+- **Store compliance**: действие восстановления покупок, доступное где-либо во флоу, ссылка на условия использования, ссылка на политику конфиденциальности и возможность покинуть пейвол без покупки.
+- **Products**: связанный продукт, отсутствующий в каталоге; продукт без привязки к стору; карточка, заявляющая период оплаты, которого нет у продукта; или захардкоженная цена там, где должна стоять переменная.
+- **Variables**: переменная, которую флоу задаёт, но нигде не читает — экран собирает ответ, который нигде не используется.
+- **Localization**: пустые переводы, непереведённые значения и охват по локалям.
+- **Placeholders**: незаконченные тексты — `Lorem ipsum`, `TODO`, `Your headline here` — и флоу, по-прежнему называющийся `Untitled`.
+
+## Серьёзность
+
+Каждая находка получает один из трёх уровней:
+
+| Уровень | Что означает |
+|---|---|
+| **Блокер** | Флоу не будет работать для реального пользователя, или покажет ему ложные сведения — фиктивная цена может отображаться корректно и при этом вводить в заблуждение. |
+| **Риск** | Работает, но, вероятно, не так, как задумывалось: текст-заглушка, значение, оставшееся идентичным локали по умолчанию, переменная, которую никто не читает. |
+| **Вопрос** | Невозможно решить на основе имеющихся данных. В отчёте указано, что было обнаружено, что осталось недоступным, и одно конкретное, что нужно проверить — вместо предположений. |
+
+## Пример отчёта \{#example-report\}
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+This flow's status is `publication_failed`, and both the Flow Builder's publish checks and `flows config validate` already passed it — neither one reads a screen's copy or walks its interactions. The report itself leads with the verdict, then a numbered list of blockers with the exact element and screen to open.
+
+A clean flow's verdict line reads `READY FOR PRODUCTION`, with nothing padded on after it. If flow-audit found no blockers or risks but still has open questions, the verdict reads `READY, PENDING n CHECKS I CANNOT MAKE` instead of certifying something it couldn't see.
+
+## Что он не проверяет \{#what-it-cant-check\}
+
+flow-audit не может определить, привязан ли флоу к плейсменту. `adapty flows get` возвращает только `id`, `name`, `status` и `updated_at` флоу — флоу и пейволы находятся в разных пространствах ID, поэтому ни одно из возвращаемых CLI значений не связывает флоу с плейсментом, к которому он привязан. Это постоянное напоминание в каждом отчёте, а не проверка: подтвердите плейсмент самостоятельно на странице [Placements](placements) или см. [Создание плейсмента](create-placement).
+
+## Кто что исправляет \{#who-fixes-what\}
+
+Каждый отчёт завершается разделом `WHAT TO DO NEXT`, разбитым по исполнителям: что агент может изменить во флоу самостоятельно, что можно поменять только в дашборде Adapty, и что нужно проверить вручную перед запуском.
+
+flow-audit не вносит никаких изменений — он работает только на чтение, так что флоу, которое не прошло проверку, остаётся ровно таким, каким вы его оставили. Передайте отчёт навыку [flow-generator](flow-generator-skill), который отвечает за резервное копирование, получение вашего подтверждения и запись изменений.

@@ -97,7 +97,7 @@ The components below are **auto-registered** in `src/pages/[...slug].astro` — 
 |-----------|-------|
 | `ZoomImage` | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
 | `Tabs`/`TabItem` | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
-| `Details` | `<Details summary="Title">content</Details>` |
+| `Details` | `<Details summary="Title">content</Details>`, or `<Details><summary>Title</summary>…`. A plain `<details>` element renders through the same component, so all three shapes look identical — there is one collapsible design, in `Details.astro`. Add `defaultOpen` to start it expanded. |
 | `InlineTooltip` | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
 | `CustomDocCardList` | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
 | `Button` | `<Button id="page-id">Text</Button>` or `<Button href="url">Text</Button>` |
@@ -108,14 +108,22 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 
 ## Reusable content snippets
 
-`src/components/reusable/` contains MDX snippets that can be imported into multiple articles to avoid content duplication.
+`src/components/reusable/` contains MDX snippets that several articles render, to avoid duplicating content.
+
+**Rendering a snippet: never import it, just use it.** Both doc routes glob `reusable/*.{md,mdx}` and expose each snippet as a component named after its file, so `<SampleApp />` resolves on its own; the locale route overlays `src/locales/<locale>/reusable/` so localized pages get the translated copy automatically. An explicit `import` shadows that registration and pins the article to one exact path — Vite does no `.md`/`.mdx` substitution — which is what turned a snippet rename into an 800-file edit before these imports were removed. `translate.mjs` carries no snippet import into a locale file that the English source doesn't have, so leaving them out keeps locales clean too.
+
+Three rules for snippet files:
+
+- **A snippet that renders a callout must be `.mdx`, and must use the `<Callout>` tag directly** — `import Callout from '../Callout.astro';` in the snippet, then `<Callout type="note">…</Callout>`. See `BuilderDeprecation.mdx` for the model. A `.md` snippet loses its callout box entirely: Astro compiles `.md` through the plain-markdown pipeline, which can't render the JSX node `remark-aside` emits from `:::`, so only the inner text survives.
+- **Inside a snippet, the reverse holds: it must import every component it renders.** A snippet is rendered as a child of the article, and imported MDX does not inherit the route's `<Content components>` prop — so `Callout`, `Zoom`, `Details`, and `MDXImage` each need their own import in the snippet file. Watch for the three a remark plugin introduces without you typing the name: `:::` becomes `Callout`, `<details>` becomes `Details`, and `<img>` becomes `MDXImage`. `scripts/lint-mdx.mjs` enforces all of this and repairs it with `--fix`.
+- Add `no_index: true` frontmatter, following the existing snippets.
 
 ## Remark/Rehype plugins (`src/plugins/`)
 
 - `remark-aside` — converts `:::note`/`:::tip`/etc. fenced directives into `<Callout>` components
 - `remark-transform-links` — strips `.md`/`.mdx` extensions from internal links
 - `remark-transform-require` — handles legacy `require()` image imports
-- `remark-transform-details` — processes `<Details>` components
+- `remark-normalize-details` — renames a plain `<details>` element to `<Details>` so every collapsible renders through one component
 - `remark-heading-id` — auto-generates heading anchors
 - `remark-strip-imports` — removes imports during markdown export
 - `remark-strip-highlight-comments` — cleans highlight syntax
@@ -173,11 +181,11 @@ These apply to every doc edit, however small. They are the rules no linter can c
 
 ### Design blocks in `global.css`
 
-These are the styled visual blocks that articles use — their CSS lives entirely in `global.css`:
+These are the styled visual blocks that articles use. Most of their CSS lives in `global.css`; the two component-scoped exceptions are noted below.
 
 - **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, dark mode color inversion, diff styling, line highlighting (`.highlight-line`)
-- **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link)
-- **Details/Accordion** (`details`/`summary`) — collapsible sections with chevron animation
+- **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link). Styles are scoped inside `src/components/Callout.astro`, not `global.css`
+- **Details/Accordion** — collapsible sections with a tinted summary bar and chevron. Styles are scoped in `src/components/Details.astro`, not `global.css` (see the `Details` row in the components table)
 - **Ordered lists** (`.docs-prose ol`) — circular step-number bullets (Mintlify-inspired)
 - **Zoom images** (`.zoom-wrapper`, `.zoom-image`) — bordered, shadowed, hover-scale images
 - **Tables** — word-break handling, code wrapping within cells

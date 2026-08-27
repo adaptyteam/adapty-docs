@@ -3,7 +3,7 @@ import { promisify } from 'node:util';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { matchesPattern } from './sources.mjs';
+import { matchesPattern, clonePath } from './sources.mjs';
 
 const run = promisify(execFile);
 
@@ -36,8 +36,12 @@ async function git(repo, args) {
 // `candidates` — gathered by calls that succeeded — still make it into the
 // report.
 export async function inspectSource(source) {
-  const state = { id: source.id, path: source.path, remote: source.remote, present: false };
-  if (!source.path || !existsOnDisk(source.path)) return state;
+  // `repo` is the clone's location on this machine (sources.local.md may
+  // override the shared `path`); the report shows that, since it is what
+  // the reader will `cd` into.
+  const repo = clonePath(source);
+  const state = { id: source.id, path: repo, remote: source.remote, present: false };
+  if (!repo || !existsOnDisk(repo)) return state;
   state.present = true;
 
   // Tracked only to decide whether the source ends up genuinely
@@ -45,7 +49,7 @@ export async function inspectSource(source) {
   let firstError;
 
   try {
-    await git(source.path, ['fetch', '--all', '--prune']);
+    await git(repo, ['fetch', '--all', '--prune']);
   } catch (err) {
     // Offline, no permissions, whatever — the local branch and the refs
     // already present are still worth reporting, just possibly stale.
@@ -53,14 +57,14 @@ export async function inspectSource(source) {
   }
 
   try {
-    state.localBranch = await git(source.path, ['rev-parse', '--abbrev-ref', 'HEAD']);
+    state.localBranch = await git(repo, ['rev-parse', '--abbrev-ref', 'HEAD']);
   } catch (err) {
     firstError ??= err;
   }
 
   try {
     const upstream = source.default_ref ?? 'origin/HEAD';
-    const behind = await git(source.path, ['rev-list', '--count', `HEAD..${upstream}`]);
+    const behind = await git(repo, ['rev-list', '--count', `HEAD..${upstream}`]);
     // Leave `behind` undefined unless git returned a real count. `Number('')` is
     // 0, which formatRefsReport would print as "up to date" — a false all-clear
     // that could send an agent to a stale branch.
@@ -73,7 +77,7 @@ export async function inspectSource(source) {
   }
 
   try {
-    const refs = await git(source.path, [
+    const refs = await git(repo, [
       'for-each-ref', '--sort=-committerdate', '--count=40',
       '--format=%(refname:short)\t%(committerdate:relative)', 'refs/remotes/origin',
     ]);
