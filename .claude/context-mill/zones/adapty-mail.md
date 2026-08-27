@@ -22,6 +22,65 @@ core in-app paywall/subscription product.
   2026-08-14 — this bullet claimed neither was). On both, `origin/HEAD` resolves to `origin/develop`,
   not `master`, and the local clones sit on unrelated branches — read `origin/develop` explicitly,
   never the working tree. Refs read: backend `1a147338`, frontend `8b5613a` (both 2026-08-13).
+- **Neither noty-wave repo was readable on 2026-08-27, and the fallback is the production bundle.** The
+  registered clones (`~/Documents/noty-wave-{backend,frontend}`) are gone from disk, and the GitLab
+  account `GeneTiterman` (248) cannot reach them: `git ls-remote git@gitlab-ssh.adapty.io:noty-wave/*`
+  is denied, `GET /api/v4/namespaces/noty-wave` returns `404 Namespace Not Found`, and the only visible
+  groups are `adapty` (20) and `adapty-guest` (137) with three per-project grants inside `adapty`
+  (28, 29, 141). Access was requested 2026-08-27 and had not landed. **What still works:** the dashboard's
+  production bundle at `https://mail.adapty.io/assets/index-*.js` (read at `index-BNg5VSlt.js`,
+  2026-08-26) — minified but complete, carrying gating logic, tooltip strings, error codes, field lists
+  and nav labels verbatim. It settles anything frontend and nothing backend, which is where every open
+  question below sits. Also: GitLab SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
+- **Campaign generation is gated on two things; paywall generation on a third** (bundle, 2026-08-26).
+  **Generate emails** is `disabled: U || !brand_saved || !company_address_filled`, both from the
+  onboarding-status query, tooltips *"Set up your brand to enable generation"* / *"Add your company
+  address in Settings to enable generation"*. **Company address** is a section on Settings → **Company**:
+  five required fields (`legal_name`, `address_line_1`, `city`, `postal_code`, `country`), two optional
+  (`address_line_2`, `state`), banner *"Campaign generation is blocked until the address is filled in"*,
+  and it reaches every campaign email through a `{{ company_address }}` merge tag rendered as
+  `legal_name / address_line_1 / address_line_2 / "City, State Postal" / country`. AI **paywall**
+  generation blocks separately on `brand_required_error` ("Brand is not ready"),
+  `stripe_account_required_error` and `stripe_products_required_error`, each replacing the plan picker
+  with a panel plus action button; a **Refresh** control on the prerequisites checklist re-syncs status.
+  None of these gate *sending*, manual **Add email** (`disabled: U` only), or the manual-URL paywall path
+  — so "blocked without a brand" must always be scoped to generation. `mail-brand`'s "New campaigns …
+  are blocked" is too broad for the same reason.
+- **Setup order is the in-product checklist, and `mail-get-started` now mirrors it** (bundle,
+  2026-08-26): `brand_saved` → `domain_verified` → `company_address_filled` → `checkout_created` →
+  `campaign_created` → `data_sending`, then either `adapty_connected` ("Enable sending" →
+  `/settings?tab=project`) or `start_sending` ("Start sending" → our `mail-send-data-via-api`). It hides
+  itself once complete. **The dashboard deep-links `mail-get-started` with no anchor**, so renumbering
+  its headings is safe — verified by grepping every `DOCS_URL` use in the bundle.
+- **The first sending domain has no "Add domain" button to click first.** Email domains renders
+  `<AddDomain autoOpen={domains.length === 0} />`, so a project with no domains gets the form already
+  open and the only **Add domain** on screen is its submit; the dashed button appears only once a domain
+  exists (bundle, 2026-08-26). Both `mail-get-started` and `mail-sending-domain` told the reader to click
+  it as step 1 *and* as the final step — the exact thing that blocked the FunnelFox tech writer. Fixed in
+  both on 2026-08-27.
+- **A brand can only be started from a store listing, in the UI.** The setup form offers **App Store** and
+  **Google Play** only, guarded by `e === "app_store" || e === "play_store"`; empty state reads *"Drop in
+  your App Store or Google Play link and we'll build a brand profile from it."*, submit is **Build my
+  brand** (bundle, 2026-08-26). **The restriction is the setup screen's, not the backend's** (settled
+  2026-08-27 against the live spec at `https://api-mail.adapty.io/openapi.json`, which is public and
+  readable without repo access): `SourceType` is `app_store | play_store | landing_page |
+  terms_and_privacy | social_media | screenshots`, and `POST /api/v1/brand/{project_id}/source/` takes
+  `BrandSourceDTO` with `source_type` as its only required field and **no ordering constraint** — nothing
+  requires a store source first. The dashboard's own addable list agrees (`cX`, five types, `landing_page`
+  placeholder `https://yourapp.com`). Two limits on that finding: the endpoint authenticates with
+  `HTTPBearer`, a dashboard account session, so it is **internal and undocumentable** by the
+  auth-dependency rule above; and acceptance of a source is not proof that a landing page *alone* yields a
+  brand — the `VFe` empty state ("Sources are processed but no brand was produced") exists for exactly
+  that outcome. Docs consequence: `mail-get-started` scopes the claim to the setup screen and routes
+  web-to-app readers to support. **Product ask raised 2026-08-27: the setup screen should offer
+  `landing_page`, since the backend already accepts it.**
+- **Adapty Mail's vocabulary shadows Adapty's in three places, and all three reach the reader**
+  (2026-08-27): **flows** (email routing here, in-app screens there — `tutorial.json` now carries a
+  top-level *Flows (Beta)* **and** an *Adapty Mail > Flows* category), **segments** (Mail's own filter
+  sets over Mail profiles, 11 fields, vs Adapty's placement/A-B-test audiences), and **profiles**.
+  Mitigation adopted in the docs: scope the noun on first use ("Adapty Mail includes its own **flows**"),
+  define each term where the reader first meets it, and never call the brand object a "profile". This is
+  a product naming collision, not a wording problem — raised for the Mail team 2026-08-27.
 - **Flow, trigger and send-eligibility behaviour** lives in `noty-wave-backend`, `src/app/campaign_context/`.
   The vocabulary mapping is load-bearing, because no backend symbol is called "flow": a **flow** is a
   `Container` (one row per project per trigger), a **flow row** is a `ContainerSegment` (a `segment_id`
@@ -196,7 +255,7 @@ core in-app paywall/subscription product.
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
 | mail-entry-points | entry | marketer | 0 | tutorial |
 | mail-flows | entry | marketer | 5 | tutorial |
-| mail-get-started | — | marketer | 11 | tutorial |
+| mail-get-started | — | marketer | 13 | tutorial |
 | mail-profiles | — | marketer | 7 | tutorial |
 | mail-segments | — | marketer | 7 | tutorial |
 | mail-send-data-via-api | — | marketer | 5 | tutorial |
@@ -268,6 +327,36 @@ live in `aliases.md` and are deliberately not repeated here.
 | "we have no Adapty SDK", "import our existing subscriber base", "which `event_type` maps to which flow" | `mail-send-data-via-api` — the guide, plus the `event_type` → flow mapping table. Two constraints: profiles sent **before** setup is finished never receive anything, and a profile alone only reaches the Never purchased flow — every other flow needs transaction events. The endpoint/field reference is not here: the `api-mail.adapty.io` spec is owned by `other-apis`, and its public surface is only the two Profile endpoints. |
 | "copy is off-brand", "tone is wrong", "replace the App Store URL the AI used" | `mail-brand` is where all generated copy, tone, and visuals come from — one brand per project, one source per type, and **no per-source removal**, so replacing a source means deleting the brand and re-onboarding. Edits are blocked while a source is processing. Tone is locked to a campaign at generation time, so retoning means a new campaign (`mail-create-campaign`). |
 | "test two subject lines", "compare two versions of the sequence" | Two different features. Subject lines need nothing: each generated email already ships three variants and the best performer continues automatically (`mail-create-campaign`). Comparing whole sequences is `mail-ab-testing` — each variation is a full campaign, routing is weighted-random per event (not sticky per user), and launch and finish both happen from the flow row, never from the A/B Tests page. |
+| "Generate button is greyed out", "can't generate emails", "nothing happens when I click Generate" | `mail-get-started` steps 2 and 4. Two independent gates, and the tooltip names which: `brand_saved` and `company_address_filled`. The company address (Settings → **Company**) was undocumented anywhere until 2026-08-27 and is the one people never guess. Paywall generation is a *different* gate — brand, Stripe account, Stripe products — so "generation is blocked" always needs a which. |
+| "we don't use Stripe", "can we generate a paywall with Paddle", "no payable Stripe products" | `mail-get-started` step 5 / `mail-checkout`. **Generate with AI is Stripe-only** and blocks with a named panel: no account, or no products carrying prices. Any other provider means **Use your own hosted paywall**, where payment happens entirely on the customer's side. Do not soften this into "Stripe, Paddle, or PayPal" — that error has shipped twice. |
 
 ## Gaps and misses
+
+Five questions the 2026-08-27 pass could not settle. All turn on backend behaviour, and both noty-wave
+repos were unreachable (see the access bullet in Sources of truth). Each names the mechanism already
+checked, so the next agent does not redo the frontend half. A sixth — whether a landing page can start a
+brand — **was settled** on 2026-08-27 via the live spec; the answer moved to Sources of truth, and the
+lesson generalises: `https://api-mail.adapty.io/openapi.json` is public, complete, and answers schema and
+enum questions the bundle cannot. Try it before recording a backend question as unanswerable.
+
+- **Can a profile's email be updated?** This brief says write-once (2026-08-14), but
+  `adapty-mail-api.yaml`'s `saveProfile` says "Sending the same `external_profile_id` again **updates**
+  the existing profile" with no carve-out for `email`, and `mail-collect-emails` tells apps to call
+  `updateProfile` with the `email` attribute. Checked in the bundle: the only mutation on a recipient
+  profile is `suppressProfile` — no email edit or clear exists in the dashboard, which corroborates
+  write-once without proving it. If write-once holds, `mail-collect-emails` needs a warning that a
+  corrected address is silently ignored. The claim was deliberately kept out of `mail-get-started`
+  pending an answer.
+- **Can an email CTA deep-link into the app instead of a web page?** Checked: the manual URL field has no
+  client-side validation (not even `type="url"`), no URL- or scheme-related error codes exist in the
+  bundle, and "deeplink", "universal link" and "app link" appear zero times in it. The deciding logic is
+  `BuildCtaUrlService` plus the send-time rewrite through the `go.<domain>` tracking host, both backend.
+- **Do imported historical transaction events classify a profile's purchase state**, or do triggers only
+  fire on events arriving live? Decides whether a one-time subscriber import can reach any flow beyond
+  Never purchased.
+- **Do erased profiles stay in campaign analytics?** The tombstone surviving `is_deleted` hints yes, but
+  that is inference from the delete-idempotency bullet, not a finding.
+- **Does re-adding a domain after the 7-day window reissue DKIM tokens?** Both `mail-get-started` and
+  `mail-sending-domain` now tell the reader their registrar records still apply. If tokens are reissued,
+  that reassurance is actively harmful — the reader waits on records that can never verify.
 
