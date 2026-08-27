@@ -149,7 +149,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | migration-to-ios-sdk-v4 | migration | dev | 24 | ios |
 | migration-to-ios330 | migration | dev | 18 | ios |
 | migration-to-kmp-315 | migration | dev | 3 | kmp |
-| migration-to-kmp-sdk-v4 | migration | dev | 17 | kmp |
+| migration-to-kmp-sdk-v4 | migration | dev | 22 | kmp |
 | migration-to-react-native-sdk-34 | migration | dev | 2 | react-native |
 | migration-to-react-native-sdk-v3 | migration | dev | 1 | react-native |
 | migration-to-react-native-sdk-v4 | migration | dev | 26 | react-native |
