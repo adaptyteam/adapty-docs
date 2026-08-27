@@ -126,8 +126,15 @@ inferred from the iOS or Unity guides):
    (Unity's provider does stay a plain C# `string`.) `updateAttribution({ attribution, source })`
    → `updateExternalAttribution({ attribution, provider })`, no deprecated alias. There is no
    JSON-string overload on Capacitor at all, so the iOS "deserialize first" step has no counterpart.
-3. **No preload APIs, no `customLayoutId`, no offer-type change** — same as Unity.
-   `capacitor-optimize-paywall-fetching` and `capacitor-get-pb-paywalls` stay as they are.
+3. **No preload APIs and no offer-type change** — same as Unity. `capacitor-optimize-paywall-fetching`
+   stays as it is.
+   ⚠️ **`customLayoutId` DOES come to Capacitor — corrected 2026-08-27 from reviewer feedback.** The
+   first pass recorded it as absent because it is not in the AdaptySDK-Capacitor PR diff at all: it
+   lives in `@adapty/core` on `CreateFlowViewParamsInput` alongside the new `locale`. Both
+   `capacitor-get-pb-paywalls` (parameter table) and the migration guide needed it.
+   **Same root cause as point 1, and now the second occurrence: for React Native and Capacitor the
+   public API is defined in `@adapty/core`, so reading only the platform repo's PR diff under-reports
+   the release. Diff the core `index.d.mts` between the old and new pinned versions as well.**
 4. **No compile break for promoted purchases.** Capacitor listeners are additive (`adapty.addListener`),
    not a required interface, so unlike Unity's `IAdaptyEventListener` there is nothing an app must
    implement. Nothing goes stale in the existing listener samples.
