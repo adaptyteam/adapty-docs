@@ -1,0 +1,92 @@
+---
+title: "用于审核流程的 Agent 技能"
+description: "安装 flow-audit 技能，让您的 AI 编码工具在发布流程前检查其是否已准备好投入生产。"
+metadataTitle: "流程审核 Agent 技能 | Flow Builder | Adapty 文档"
+---
+
+flow-audit 技能只回答一个问题：这个流程是否已准备好投入生产？将您的 AI 编码工具指向某个流程，它会通过 [Adapty CLI](developer-cli-quickstart) 读取配置，与您的产品目录进行比对，并直接给出结论——而不是留给您一堆需要自行解读的清单。
+
+一个流程可以通过所有现有的发布检查，但仍然对用户来说是不安全的。付费墙编辑工具自身的发布检查和 `flows config validate` 都只是在问"这个文档格式是否正确？"——它们都不会问"真实用户会不会卡住，或者看到错误的信息？"一个处于 `publication_failed` 状态的流程可以通过上述两个检查；而 flow-audit 正是用来捕获其余问题的。
+
+:::note
+flow-audit 不会对流程进行任何写入操作。它读取配置和你的产品目录，运行检查，然后将发现的任何问题交给你——或者交给 [flow-generator skill](flow-generator-skill)——来修复。
+:::
+
+## 安装技能 \{#install-the-skill\}
+
+flow-audit 包含在 `adapty-skills` 插件（[`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)）中，与 flow-generator 一同提供——安装一次即可获得该插件中的所有技能，目前共五个，其中包括 flow-audit。
+
+适用于 Claude Code：
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+然后运行 `/reload-plugins` 以激活技能。如果使用其他 AI 编程工具，请参照 [flow-generator 的安装步骤](flow-generator-skill#install-the-skill)——同一个代码仓库，相同的命令。
+
+Then ask for it — `/flow-audit` in tools that map slash commands to skills, or "Use the flow-audit skill" in the ones that don't. Name the flow, or let it list your flows and ask which one.
+
+## 工作原理 \{#how-it-works\}
+
+全程只读，共五个阶段：
+
+1. **解析与认证。** 确认 CLI 版本是否符合要求，以及 Adapty 登录状态是否有效。
+2. **选择流程。** 列出所有流程（`adapty flows list`），并询问要检查哪一个。
+3. **获取数据。** 拉取该流程的配置和产品目录——每次检查都基于这份快照进行。
+4. **执行检查。** 所有检查仅针对该快照运行。
+5. **生成报告。** 输出一个最终结论，而非逐条列表。
+
+## 检查内容 \{#what-it-checks\}
+
+- **触发器**：某个元素的文案承诺了一个操作，但在其整个祖先链上都没有任何交互绑定。它的外观和正常控件完全一样，但点击后什么也不发生。
+- **商店合规性**：流程中某处可访问的恢复购买操作、指向服务条款的链接、指向隐私政策的链接，以及允许用户不购买就离开付费墙的方式。
+- **产品**：已绑定但在您目录中缺失的产品、没有商店绑定的产品、卡片声明的计费周期与产品实际不符，或在应使用价格变量的地方写死了价格。
+- **变量**：流程中已设置但从未读取的变量，导致某个页面收集了答案，却没有任何地方使用它。
+- **本地化**：空白翻译、未翻译的值以及各语言区域的覆盖情况。
+- **占位符**：从未完成填写的文案——`Lorem ipsum`、`TODO`、`Your headline here`——以及仍命名为 `Untitled` 的流程。
+
+## 严重程度 \{#severity\}
+
+每个发现都会被归入以下三个等级之一：
+
+| 等级 | 含义 |
+|---|---|
+| **阻断** | 该流程对真实用户无法正常运行，或会向用户展示虚假信息——一个凭空捏造的价格即便显示正常，也仍然是谎言。 |
+| **风险** | 可以运行，但很可能并非预期效果：占位文本、与默认语言区域相同的值、无人读取的变量。 |
+| **待确认** | 根据现有数据无法判断。报告会说明所见内容、无法获取的信息，以及唯一需要核查的事项——而不是凭空猜测。 |
+
+## 示例报告 \{#example-report\}
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+此流程的状态为 `publication_failed`，且付费墙编辑工具的发布检查和 `flows config validate` 均已通过——两者都不会读取屏幕文案或遍历其交互逻辑。报告本身以结论开头，随后列出带编号的阻塞项，并注明需要打开的具体元素和屏幕。
+
+无问题流程的结论行显示 `READY FOR PRODUCTION`，其后不附加任何内容。如果 flow-audit 未发现阻塞项或风险，但仍存在无法核实的问题，则结论行显示 `READY, PENDING n CHECKS I CANNOT MAKE`，而非对无法确认的内容作出认定。
+
+## 它无法检查的内容 \{#what-it-cant-check\}
+
+flow-audit 无法判断流程是否已关联到某个版位。`adapty flows get` 仅返回流程的 `id`、`name`、`status` 和 `updated_at`——流程与付费墙处于各自独立的 ID 命名空间，因此 CLI 返回的任何信息都无法将流程与其所在版位关联起来。这是每份报告中固定显示的提醒，而非检查项：请在[版位](placements)页面自行确认版位绑定情况，或参阅[创建版位](create-placement)。
+
+## 谁来修复什么 \{#who-fixes-what\}
+
+每份报告最后都有一个 `WHAT TO DO NEXT` 章节，按责任方拆分：哪些内容由智能体在流程中自行修改、哪些只能由你在 Adapty 看板中修改、哪些需要在上线前自行确认。
+
+flow-audit 本身不做任何修改——它被设计为只读模式，因此未通过审核的流程会保持原样。请将报告交给 [flow-generator skill](flow-generator-skill)，由它负责备份、获取你的确认并执行实际写入操作。

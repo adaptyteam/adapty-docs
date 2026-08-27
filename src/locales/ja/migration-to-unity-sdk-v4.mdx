@@ -1,14 +1,20 @@
 ---
-title: "Adapty Unity SDK を v4.0 に移行する"
-description: "ペイウォール API をフロー API に置き換えて Adapty Unity SDK v4.0 (beta) に移行します。フロービルダーとペイウォールビルダーの両方に対応しています。"
-metadataTitle: "Adapty Unity SDK v4.0 (beta) への移行 | Adapty ドキュメント"
+title: "Adapty Unity SDK を v4.1 に移行する"
+description: "Adapty Unity SDK v4.1 への移行: ペイウォール API をフロー API に置き換え、名称変更されたアトリビューション API を採用し、Adapty Attribution を明示的に有効化し、フォールバックファイルを再ダウンロードします。"
+metadataTitle: "Adapty Unity SDK v4.1 への移行 | Adapty ドキュメント"
 ---
 
-Adapty Unity SDK 4.0 (beta) ではフローが導入され、それに合わせてペイウォール API の名称が変更されました。新しい API は、新しいフロービルダーと既存のペイウォールビルダーの両方で動作します。Adapty ダッシュボード側での設定変更は不要です。
+Adapty Unity SDK 4.1 は 4.x ラインの最初の安定版リリースです。4.0 はベータ版としてのみリリースされたため、3.x をお使いの場合は 4.1 に直接移行してください。このガイドでは、4.0 で導入されたフローと、その上に加わった 4.1 の変更点を含む移行全体を説明します。
+
+4.x ラインではフローが導入され、それに合わせてペイウォール API の名称が変更されています。新しい API は、新しいフロービルダーと既存のペイウォールビルダーの両方で動作します。Adapty ダッシュボード側での設定変更は不要です。さらに、4.1 では外部アトリビューション API の名称が変更され、Adapty アトリビューションがオプトイン方式になり、必須のリスナーメソッドが追加され、フォールバックファイルの形式が変更されています。
+
+:::note
+4.0ベータから移行する場合は、ベータタグを[4.1.0インストール](#installation)に置き換えてください。その後、適用されるセクションは[新しいリスナーメソッド](#new-required-method-onreceivepromotedpurchase)、[外部アトリビューションAPIのリネーム](#renamed-external-attribution-apis)、[Adaptyアトリビューションのデフォルト無効化](#adapty-attribution-is-disabled-by-default)、[フォールバックファイル](#fallback-files)の4つのみです。
+:::
 
 ## クイックリファレンス \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
 | `Adapty.GetPaywall(placementId, locale, ...)` | `Adapty.GetFlow(placementId, ...)` |
 | `Adapty.GetPaywallForDefaultAudience(placementId, locale, ...)` | `Adapty.GetFlowForDefaultAudience(placementId, ...)` |
@@ -21,32 +27,36 @@ Adapty Unity SDK 4.0 (beta) ではフローが導入され、それに合わせ�
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener` |
+| `AdaptyEventListener` | `IAdaptyEventListener`（新しい必須メソッド `OnReceivePromotedPurchase` を追加） |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| `PaywallViewDidPerformAction`、`PaywallViewDidAppear` およびその他の `PaywallView...` コールバック | `FlowViewDidPerformAction`、`FlowViewDidAppear` およびその他の `FlowView...` コールバック |
+| `PaywallViewDidPerformAction`、`PaywallViewDidAppear`、その他の `PaywallView...` コールバック | `FlowViewDidPerformAction`、`FlowViewDidAppear`、その他の `FlowView...` コールバック |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.SetFallbackPaywalls(...)` (v3 で非推奨) | 削除済み — `Adapty.SetFallback(fileName, ...)` を使用してください |
-| `Builder.SetIDFACollectionDisabled(...)` (v3 で非推奨) | 削除済み — `Builder.SetAppleIDFACollectionDisabled(...)` を使用してください |
-| `paywall.Products` (`AdaptyProductReference` のリスト) | 削除済み — `ProductIdentifiers` または `VendorProductIds` を使用するか、完全なプロダクト情報が必要な場合は `GetPaywallProducts(flow)` を呼び出してください |
-| `AdaptyProductReference` | パブリック型として削除済み — [データモデル](#data-model)を参照してください |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
+| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| Adapty アトリビューションは自動的に有効化 | デフォルトでは無効 — `Builder.SetAdaptyAttributionEnabled(true)` でオプトイン |
+| フォールバックファイルは 3.x 用にダウンロード済み | 新しいフォールバックファイル形式 — 再度ファイルをダウンロードしてください |
+| `Adapty.SetFallbackPaywalls(...)` （v3 で非推奨） | 削除済み — `Adapty.SetFallback(fileName, ...)` を使用してください |
+| `Builder.SetIDFACollectionDisabled(...)` （v3 で非推奨） | 削除済み — `Builder.SetAppleIDFACollectionDisabled(...)` を使用してください |
+| `paywall.Products`（`AdaptyProductReference` のリスト） | 削除済み — `ProductIdentifiers` または `VendorProductIds` を使用するか、`GetPaywallProducts(flow)` を呼び出して完全なプロダクトを取得してください |
+| `AdaptyProductReference` | パブリック型として削除済み — [データモデル](#data-model) を参照してください |
 | `paywall.RemoteConfigString` | 削除済み — `flow.RemoteConfig?.Data` を使用してください |
 
-`AdaptyPaywallProduct` はその名称を保持しており、プロダクトは引き続きフローに属しています。また、`GetPaywallProducts` もその名称を保持しており、現在は `AdaptyFlow` を受け取るようになっています。`GetFlow` および `GetFlowForDefaultAudience` メソッドでは、`locale` パラメーターが不要になりました。購入およびプロファイル関連のAPI（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）と、`SetFallback` によるフォールバックは変更ありません。オンボーディングのメソッドは引き続き動作しますが、非推奨となっています。詳細は[オンボーディングAPIの非推奨化](#onboarding-api-deprecation)を参照してください。一部のデフォルト動作が変更されています。詳細は[デフォルト動作の変更](#default-behavior-changes)を参照してください。
+`AdaptyPaywallProduct` はその名前を保持します。プロダクトは引き続きフローに属し、`GetPaywallProducts` もその名前を保持しますが、現在は `AdaptyFlow` を受け取ります。`GetFlow` および `GetFlowForDefaultAudience` メソッドは `locale` パラメーターを受け取らなくなりました。購入およびプロファイル API（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）は変更されていません。`SetFallback` はそのシグネチャを保持しますが、読み込むファイルは再ダウンロードが必要です。詳細は[フォールバックファイル](#fallback-files)を参照してください。オンボーディングメソッドは引き続き動作しますが、非推奨となっています。詳細は[オンボーディング API の非推奨](#onboarding-api-deprecation)を参照してください。一部のデフォルト動作が変更されました。詳細は[デフォルト動作の変更](#default-behavior-changes)を参照してください。
 
 ## インストール \{#installation\}
 
-v4.0 はプレリリースのため、正確なベータタグを指定してください。Unity Package Manager 経由でインストールするには、Git URL にタグを追加します：
+Unity Package Manager から SDK 4.1 をインストールするには、Git URL にバージョンタグを付加してください：
 
 ```
-https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.0.0-beta.1
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.1.0
 ```
 
-Unity パッケージ経由でインストールする場合は、[4.0.0-beta.1 リリース](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.0.0-beta.1)から `adapty-unity-plugin-4.0.0-beta.1.unitypackage` をダウンロードしてください。完全なセットアップ手順については [Adapty SDK のインストール](sdk-installation-unity#install-adapty-sdk)を参照してください。
+Unity パッケージからインストールする場合は、[4.1.0 リリース](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.1.0)から `adapty-unity-plugin-4.1.0.unitypackage` をダウンロードしてください。完全なセットアップ手順は [Adapty SDK のインストール](sdk-installation-unity#install-adapty-sdk) を参照してください。
 
-v4 では、ビルド設定に関して 2 つの変更があります：
+4.x にはビルドセットアップに関する変更が 2 点あります：
 
-- **iOS の依存関係が Swift Package Manager に移行しました。** ネイティブ Adapty iOS SDK 4.0 は、CocoaPods の pod ではなく、リモートの Swift パッケージとして宣言されています。[External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) を **1.2.188 以降**にアップデートしてください。それ以前のバージョンは Swift Package Manager の依存関係をサポートしていません。CocoaPods の手順（`iOS Resolver -> Install Cocoapods` や `Unity-iPhone.xcworkspace` を開く操作）は不要になりました。
-- **iOS のデプロイメントターゲットは 15.0 以降が必須です。** Unity Editor の新しいビルドバリデーターにより、ターゲットがこれより低い場合は iOS ビルドが停止されます。
+- **iOS の依存関係が Swift Package Manager に切り替わりました。** ネイティブの Adapty iOS SDK は、CocoaPods の pod ではなくリモートの Swift パッケージとして宣言されるようになりました。[External Dependency Manager](https://github.com/googlesamples/unity-jar-resolver#getting-started) を **1.2.188 以降**にアップデートしてください — それより古いバージョンは Swift Package Manager の依存関係をサポートしていません。CocoaPods の手順（`iOS Resolver -> Install Cocoapods`、`Unity-iPhone.xcworkspace` を開く操作）は不要になりました。
+- **iOS のデプロイメントターゲットは 15.0 以降にする必要があります。** Unity Editor に新しいビルドバリデーターが追加され、ターゲットがそれより低い場合は iOS ビルドが停止されます。
 
 The underlying native Adapty SDKs are bumped to 4.x on both platforms and are resolved automatically — no other build changes are needed.
 
@@ -210,6 +220,20 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 
 コールバックの完全なリストについては、[フロー＆ペイウォールイベントの処理](unity-handling-events)を参照してください。
 
+### 新しい必須メソッド: OnReceivePromotedPurchase \{#new-required-method-onreceivepromotedpurchase\}
+
+SDK バージョン 4.1 以降、`IAdaptyEventListener` にメソッドが 1 つ追加されました。このインターフェースを実装しているすべてのクラスは、以下のメソッドを追加するまでコンパイルエラーになります:
+
+```csharp showLineNumbers
+public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
+    // The user tapped one of your in-app purchases on your App Store product page.
+    // Complete the purchase through Adapty:
+    Adapty.MakePromotedPurchase(product, (result, error) => { /* ... */ });
+}
+```
+
+このメソッドはApp Storeのプロモートされたアプリ内課金向けのもので、Android上では呼び出されることはありません。SDKはプロモートされた購入をコードに届けるのではなく、自動的に完了させるため、空のボディも有効な実装です。[App Storeからのアプリ内課金](unity-making-purchases#in-app-purchases-from-the-app-store)を参照してください。
+
 ### 新しい API \{#new-apis\}
 
 - `Adapty.SetObserverModeResolver(...)` と `IAdaptyUIObserverModeResolver` — SDKが[Observerモード](implement-observer-mode-unity)で動作している間、フローから開始された購入と復元を処理します。以前はネイティブのiOSおよびAndroid SDKでのみ利用可能でした。[Observerモードでのフローの表示](unity-present-flows-in-observer-mode)を参照してください。
@@ -217,6 +241,47 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 - `AdaptyUICreateFlowViewParameters.Locale`（`SetLocale`で設定）— フローのデフォルトではなく、特定の[ビルダーのローカライズ](add-paywall-locale-in-adapty-paywall-builder)でフローまたはペイウォールをレンダリングします。フローはビューが作成されるときにローカライズされるため、ここがローカライズを選択できる唯一の場所であり、作成されたビューは`view.Locale`でビルド時のローカライズを報告します。[ローカライズとロケールコードの使用](unity-localizations-and-locale-codes)を参照してください。
 - `IAdaptyFlowsEventsListener`の新しい`FlowViewDidReceiveAnalyticEvent`コールバックは、フローからのアナリティクスイベントを報告します。ユーザーが開いたすべての画面のスクリーンビューから始まります。[フロースクリーンビューのトラッキング](unity-flow-screen-views)を参照してください。
 - `AdaptyUI.OpenUrl(url, openIn, ...)` と `AdaptyUI.RequestAppReview(...)` — `open_url`アクションとアプリレビューリクエストの背後にあるネイティブ処理。デフォルトのURL動作を維持するには`FlowViewDidPerformAction`から`OpenUrl`を呼び出してください。`RequestAppReview`はデフォルトのアプリレビュープロンプトをバックアップしますが、フローはまだこれをトリガーしません。
+
+## 外部アトリビューション API のリネーム \{#renamed-external-attribution-apis\}
+
+SDK バージョン 4.1 以降、外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、またはカスタム）からアトリビューションデータを渡すための API が、ネイティブ SDK に合わせてリネームされました。非推奨のエイリアスは用意されていないため、リネームするまで既存の呼び出し箇所はコンパイルエラーになります。
+
+| 4.1 以前 | 4.1 |
+|---|---|
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
+| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+
+名前だけが変わります。プロバイダーは以前と同じ文字列（`"adjust"`、`"appsflyer"`、`"branch"`、`"tenjin"`、`"apple_search_ads"`、`"custom"`）、アトリビューションデータは引き続きディクショナリまたはJSON文字列として受け付け、プロファイルプロパティは引き続き `IReadOnlyList<string>` です。
+
+```diff showLineNumbers
+- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+```
+
+## Adapty アトリビューションはデフォルトで無効 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+[Adapty アトリビューション](user-acquisition)を使用していて、オプトインせずに SDK 4.1 へアップデートすると、エラーが表示されないまま動作が止まります — インストールの記録が停止し、警告も出ません。
+:::
+
+以前のバージョンでは、SDK は [Adapty アトリビューション](user-acquisition)のインストールを自動的に登録していました。SDK バージョン 4.1 以降、これはデフォルトでオフになっています。SDK はインストールを登録せず、`OnInstallationDetailsSuccess` および `OnInstallationDetailsFail` リスナーコールバックは一切呼び出されず、`GetCurrentInstallationStatus` は `NotAvailable` ステータスを返します。
+
+Adapty アトリビューションを使用する場合は、SDK をアクティベートする際に有効化してください：
+
+```csharp showLineNumbers
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetAdaptyAttributionEnabled(true);
+```
+
+Adapty アトリビューションを使用しない場合は、変更不要です。
+
+## フォールバックファイル \{#fallback-files\}
+
+[フォールバックファイル](unity-use-fallback-paywalls)のフォーマットはSDK 4.1で変更されました。iOSおよびAndroidのフォールバックファイルを **[Placements](https://app.adapty.io/placements)** > **Fallbacks** から再度ダウンロードし、`Assets/StreamingAssets` 内の既存ファイルと置き換えてください（以前のバージョン向けにダウンロード済みの場合も同様です）。
+
+:::warning
+この手順を省略してもコンパイルエラーは発生しません。ただし省略した場合、`SetFallback` が `DecodingFailed`（`adapty_code: 2006`）を返し、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
 
 ## デフォルト動作の変更 \{#default-behavior-changes\}
 
@@ -227,8 +292,8 @@ var parameters = new AdaptyUICreateFlowViewParameters()
 - **ビューは使い捨て**: `Dismiss` を呼び出すとビューは破棄されます。フローを再度表示するには `CreateFlowView` を再度呼び出してください。
 - **オブザーバーモードのトランザクション**: `ReportTransaction` は成功時にデコードエラーを返さなくなりました。v3 では成功レスポンスのパースに誤りがあり、成功した報告が常にエラーで完了していました。
 
-## オンボーディング API の廃止 \{#onboarding-api-deprecation\}
+## オンボーディング API の非推奨化 \{#onboarding-api-deprecation\}
 
-レガシーオンボーディング API は v4.0 で非推奨となり、[フロービルダー](adapty-flow-builder)に置き換えられました。引き続き動作しますが、将来のリリースで削除される予定です。オンボーディングをフロービルダーに移行する計画を立ててください。
+レガシーオンボーディング API は v4 において [フローBuilder](adapty-flow-builder) に移行するため非推奨となっています。引き続き動作しますが、将来のリリースで削除される予定のため、オンボーディングをフローBuilderへ移行する計画を立ててください。
 
-非推奨のシンボル: `GetOnboarding`、`GetOnboardingForDefaultAudience`、`AdaptyUI.CreateOnboardingView`、`AdaptyUI.PresentOnboardingView`、`AdaptyUI.DismissOnboardingView`、`Adapty.SetOnboardingsEventsListener`
+非推奨のシンボル: `GetOnboarding`、`GetOnboardingForDefaultAudience`、`AdaptyUI.CreateOnboardingView`、`AdaptyUI.PresentOnboardingView`、`AdaptyUI.DismissOnboardingView`、`Adapty.SetOnboardingsEventsListener`。

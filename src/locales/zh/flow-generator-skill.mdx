@@ -1,0 +1,260 @@
+---
+title: "用于处理流程的 Agent 技能"
+description: "安装 flow-generator 技能，让你自己的 AI 编码工具能够通过 Adapty CLI 创作、翻译和重构 Adapty 流程。"
+metadataTitle: "Flow Generator Agent 技能 | 流程编辑工具 | Adapty 文档"
+---
+
+[流程生成器技能](https://github.com/adaptyteam/adapty-skills)让 AI 编程工具能够通过终端创建和编辑您的流程。只需用自然语言描述您想要构建或修改的内容，该工具就会通过 [Adapty CLI](developer-cli-quickstart) 读取流程的编辑器配置，对其进行重写，渲染预览，并在您确认后保存草稿。
+
+技能是 AI 工具按需加载的一组指令。本技能涵盖流程配置中容易出错的部分：哪些编辑会阻止发布、删除页面时哪些引用会断开，以及渲染预览能证明什么、不能证明什么。
+
+:::important
+流程生成器技能目前处于实验阶段，它会直接将更改保存到看板中的流程。请先在草稿或副本上运行，并在付费墙编辑工具中仔细审查每项更改后再发布。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+- **支持该技能的 AI 编程工具**：Claude Code、GitHub Copilot CLI、OpenAI Codex 和 Gemini CLI 均可使用。
+- **Adapty 目录中的产品**：在设计销售界面之前，该技能会列出你的产品并询问哪些应放在其中。如果没有合适的产品，它可以根据你提供的应用商店产品 ID 创建新产品，且会事先征询你的意见。
+
+## 您可以用它做什么 \{#what-you-can-do-with-it\}
+
+### 从零开始创建流程 \{#author-a-flow-from-scratch\}
+
+- **从描述生成**："我的健身 App 付费墙，两个套餐，默认选中年付。"该技能自动选择排版结构，从经过渲染验证的模式库（标签页、套餐卡片、切换开关、倒计时、进度条、底部弹窗）中构建出来，并使用你从产品目录中选定的产品。
+- **从截图或设计稿生成**：提供参考图，它会匹配布局、颜色、字体和图标风格，并逐一列出所有无法完全还原的差异。参考图可以是竞品的付费墙、你自己的截图，或设计工具中的某一帧。如果你的 AI 工具通过 MCP 连接到该设计工具，它可以直接读取帧内容——无需导出截图，也不用手动描述设计细节。
+- **对照转化数据评分**：如果你没有提供设计稿，该技能会在构建完成后自动运行 Adapty 的 `paywall-teardown` 库，对生成的页面进行评估，并优先修复评分最低的问题——在你看到结果之前就已完成。你得到的是一个按你所在品类高转化模式打造的页面，而不是千篇一律的通用布局。
+
+### 修改已有的流程 \{#change-a-flow-you-already-have\}
+
+- **本地化进入新市场**：添加语言区域并填写所有可本地化字段——标题、按钮标签、套餐说明、图片插槽和输入占位符。这是将一个已有付费墙快速扩展到十种语言的最高效方式。
+- **一次性重写所有语言区域的文案**：在不改动结构的前提下修改措辞，并在价格变量周围而非通过价格变量进行编辑，确保价格正常解析。
+- **重构流程结构**：添加、删除和重新排列屏幕，自动修复因此产生的导航错误，并报告任何无法访问的屏幕。
+- **添加测验和分支逻辑**：构建可选组、选项 ID 以及将每个答案路由到对应屏幕的条件动作——这一个性化步骤能将用户引导转变为精准的付费墙访问。
+- **为测试创建实验变体**：基于一个已有效的流程创建新流程，然后应用你想测试的更改。主题、字体、语言区域和产品均会继承，实验变体仅在你预期的地方有所不同。
+- **为季节或活动重新换肤**：从参考图片中提取颜色，并将新主题应用到整个流程，而无需逐屏手动调整样式。
+
+## 生成结果 \{#what-it-produces\}
+
+### 带有计划时间轴的付费墙 \{#a-paywall-with-a-plan-timeline\}
+
+<ZoomImage id="flow-generator-timeline-paywall.webp" width="320px" alt="A generated finance paywall: a three-step numbered timeline connected by a green rail, then a selected Annual plan card showing a per-month equivalent beside its yearly price, an unselected Monthly card, and a Continue button" />
+
+两个计划卡片上方的编号时间轴。在设备上渲染，商店已解析了价格——包括 Adapty 为年度计划计算的每月均价。
+
+### 一句话生成付费墙 \{#a-paywall-from-one-sentence\}
+
+<ZoomImage id="flow-generator-paywall.webp" width="320px" alt="A generated dark-themed fitness paywall: headline, three benefit rows with icons, a selected Yearly card badged Best value, an unselected Monthly card, and a Start training button" />
+
+提示词只有"添加一个付费墙页面"——没有参考资料，也没有原有流程。`$0.00` 是预览时的占位数据，**Best value** 标签的出现是因为没有提供折扣信息。
+
+### 三屏流程 \{#a-three-screen-flow\}
+
+<ZoomImage id="flow-generator-flow-strip.webp" width="700px" alt="并排显示的三个生成屏幕：一个选中了第二个选项的训练目标测验、一个分为三个阶段的八周计划，以及一个倒计时上方带有年度卡片的报价屏幕" />
+
+测验、计划、报价，各屏之间的导航已连接完成。倒计时动画可以渲染，但只有在真机上才能验证它是否正常触发。
+
+## 安装技能 \{#install-the-skill\}
+
+该技能与 `adapty-integration`、`ads-manager` 和 `paywall-teardown` 一起打包在 `adapty-skills` 仓库中。以下每条命令都会安装全部四个组件。
+
+<Tabs>
+  <TabItem value="claude-code" label="Claude Code">
+    ```bash
+    claude plugin marketplace add adaptyteam/adapty-skills
+    claude plugin install adapty-skills@adapty
+    ```
+
+然后在 Claude Code 中运行 `/reload-plugins` 以激活技能。
+  </TabItem>
+  <TabItem value="copilot-cli" label="Copilot CLI">
+    ```bash
+    git clone https://github.com/adaptyteam/adapty-skills.git
+    cp -r adapty-skills/skills/* ~/.copilot/skills/
+    ```
+  </TabItem>
+  <TabItem value="gemini-cli" label="Gemini CLI">
+    ```bash
+    gemini skills install https://github.com/adaptyteam/adapty-skills
+    ```
+  </TabItem>
+  <TabItem value="codex" label="Codex">
+    ```bash
+    git clone https://github.com/adaptyteam/adapty-skills.git
+    cp -r adapty-skills/skills/* ~/.agents/skills/
+    ```
+  </TabItem>
+  <TabItem value="any-tool" label="Any tool">
+    ```bash
+    npx skills add adaptyteam/adapty-skills --all
+    ```
+
+`--all` 会将每个技能安装到 [skills CLI](https://skills.sh) 检测到的所有代理中。若只安装此技能，请使用 `--skill flow-generator`。通过此方式安装的技能不会自动更新——运行 `npx skills update` 即可获取最新版本。
+  </TabItem>
+</Tabs>
+
+然后调用它——在支持斜杠命令映射到技能的工具中使用 `/flow-generator`，或在不支持的工具中输入"Use the flow-generator skill"。
+
+从那里开始，你用自然语言操作即可。大多数请求属于以下几类：
+
+- **描述流程**：说明应用的功能、界面要销售的内容，以及默认选中哪个套餐。
+- **指定设计参考**：提供截图、你自己的界面，或设计工具中的某个框架。
+- **提出具体修改请求**：说明流程名称和要修改的内容——新语言版本、不同的文案、额外的界面，或基于问卷答案的分支逻辑。
+- **回答它的问题**：它会询问哪些产品需要显示在界面上，对于任何真实数字，它不会自行编造。
+
+## 工作原理 \{#how-it-works\}
+
+该技能构建的所有内容都汇集到一个本地文件中。在最后一步之前，任何内容都不会同步到你的看板。
+
+1. **设置并验证身份**。该技能会在需要时安装或更新 [Adapty CLI](developer-cli-quickstart)，然后验证你的 Adapty 登录状态并读取你的应用 ID。如果你尚未登录，它会打开浏览器登录页面并等待你完成登录。
+
+2. **选择或创建流程**。编辑时，它会获取该流程的配置，并报告找到的内容——屏幕、语言区域、产品以及导航图——以便在做出任何更改之前发现错误的流程。它会先对获取到的配置进行备份。对于新建工作，它会创建一个全新的流程，而不是在已有内容的流程上直接生成。
+
+3. **验证配置**。该工具会对本地文件执行两次验证，并对 Adapty 执行一次验证。本地验证确认内部引用仍然一致，且各属性格式正确。`adapty flows config validate` 随后会调用与发布时相同的服务进行校验，结果为绿色即表示配置可以发布。这三次验证均不保存任何内容。
+
+4. **预览与迭代**。该技能会将每个更改过的屏幕渲染为截图并进行检查。如果你提供了参考图片，它会逐项对比渲染结果与文件——颜色、字体、图标样式、比例——并尽力缩小差距。如果发现问题，技能会返回第 3 步，这会消耗一次截图配额，而非一次保存配额。
+
+5. **批准并保存**。覆盖已有配置前需要你明确确认。该功能会为每个被修改的页面展示渲染前后的对比效果，列出无可视化内容的变更，在浏览器中打开一个实时预览页面，并显示备份文件名。确认无误后才会执行写入。
+
+## 运行完成后 \{#after-the-run\}
+
+技能会为你保存一个草稿。要让用户看到它：
+
+1. **在 Flow Builder 中打开流程。** 如果浏览器标签页中已经打开了该流程，请刷新页面——Flow Builder 不会自动检测到通过 CLI 所做的写入。
+2. **查看变更内容。** 对于在保存之前已处于 **Published** 状态的流程，Adapty 会将其标记为 **Dirty**，团队所有成员都能看到这一状态。用户仍然会看到最后发布的版本。
+3. **在真实设备上预览。** [预览流程](paywall-device-compatibility-preview)介绍了如何通过 Adapty 移动应用使用二维码进行预览。测试技能报告为未验证的所有内容——分支逻辑、开关，以及除已渲染语言之外的其他语言环境。
+4. **发布。** 在 Flow Builder 右上角点击 **Publish to Live**。未添加到[版位](create-placement)的流程不会触达任何用户，且草稿状态的流程无法添加到版位——因此请先发布。详见[保存与发布流程](builder-save-publish)。
+
+如果结果有误，可从备份中恢复：该技能在首次编辑前会复制配置，并在审批消息中注明文件名。你可以要求它将该文件写回，或直接在 Flow Builder 中手动修复流程。无论哪种方式，已保存的草稿都不会影响你的用户。
+
+## 示例提示词 \{#example-prompts\}
+
+该技能已内置命令、配置格式及验证步骤，无需在提示词中逐一说明。只需指定哪个流程，以及完成后应达到什么效果即可。
+
+#### 为付费墙添加翻译 \{#translate-a-paywall\}
+
+```
+Add Brazilian Portuguese to my "Summer 2026" paywall. Translate every
+localizable field, not just the headline, and tell me what you couldn't.
+```
+
+#### 根据设计稿构建 \{#build-from-a-design\}
+
+```
+Build a new paywall flow from the "Winter promo" frame in our Figma file.
+Show me my products first and let me pick which ones go on it.
+```
+
+#### 添加分支测验 \{#add-a-quiz-that-branches\}
+
+```
+Add a quiz screen before my paywall: "What's your main goal?" with three
+options, each routing to its own benefit screen, then on to the paywall.
+```
+
+#### 重写文案 \{#rewrite-copy\}
+
+```
+Rewrite the headline and CTA on my onboarding to be shorter and more direct.
+Keep the price variables working, and apply it to every locale.
+```
+
+#### 生成测试变体 \{#spin-up-a-test-variant\}
+
+```
+Copy my "Main paywall" into a new flow and make the monthly plan the
+preselected one. Leave the original alone.
+```
+
+#### 为活动重新设计风格 \{#re-skin-for-a-campaign\}
+
+```
+Re-theme my paywall flow to match the colors in ./design/spring.png.
+Copy and layout stay as they are.
+```
+
+#### 添加页面 \{#add-a-screen\}
+
+```
+Add a social proof screen between the quiz and the paywall in my activation
+flow — star rating and two testimonials. Ask me for the real numbers.
+```
+
+## 提供图片资源 \{#give-it-your-images\}
+
+该技能会从你的计算机上传图片，并将返回的 URL 绑定到流程中，省去在付费墙编辑工具中手动添加媒体的步骤。它需要的是**文件路径**，而不是图片本身：当你在对话中粘贴或附上图片时，AI 工具只能获取像素数据，没有文件，因此无法上传。
+
+将素材放到计算机上的某个文件夹中，然后告诉工具路径：
+
+```
+The hero images are in ./design/paywall/. Use hero-calm.png on the first
+screen and the three icons in ./design/paywall/icons/ for the benefit rows.
+```
+
+格式和大小限制与在付费墙编辑工具中手动上传相同——请参阅[图片、视频和图标](custom-media)。SVG 是唯一的例外：它无法上传，因此该功能会以内联方式绘制单色字形。
+
+每次上传都会在媒体库中添加一个独立的资源，且没有 CLI 命令可以删除它，因此重新构建会留下重复副本。
+
+如果你指定了工具找不到的文件名，它会询问你，而不是用看起来相近的文件替代。文件错误会导致画面渲染正常但显示的是错误图片，而整个工作流中没有任何机制能捕获这一问题。
+
+## 使用你自己的智能体 \{#bring-your-own-agent\}
+
+Adapty 在 Flow Builder 中也内置了一个 [AI 编辑器](flow-ai-editor)。两者的区别不在于功能多少，而在于工作发生在谁的环境里。
+
+AI 编辑器是 Adapty 的智能体，作用于你当前打开的界面。而技能则恰好相反：你的智能体、你的模型、你的工具，Adapty 只是它能操作的众多工具之一。你的 AI 工具已经能访问的一切都随之而来——你的代码仓库、设计文件、MCP 服务器，以及你自己的提示词和上下文。
+
+| | AI 编辑器 | flow-generator 技能 |
+|---|---|---|
+| 代理归属 | Adapty 的，在浏览器中运行 | 您的，在终端中运行 |
+| 可访问内容 | 您当前打开的页面 | AI 工具可访问的所有内容 |
+| 单次提示范围 | 单个页面 | 整个流程——页面、导航、语言包 |
+| 本地化 | 不涵盖 | 添加语言包并填写所有可本地化字段 |
+| 撤销方式 | 每次提示单击一次 | 备份文件，加上每次保存前的确认 |
+| 前置配置 | 无需配置 | 需要 Adapty CLI 及该技能 |
+
+当您已进入编辑工具并想对当前屏幕进行重新样式调整时，请使用 AI Editor。如果您不想离开自己的环境来完成流程相关工作，请使用 skill。
+
+## 技能不会做什么 \{#what-the-skill-wont-do\}
+
+该技能将您的流程视为实时内容，因为已发布的流程正在为真实用户提供服务。
+
+- **发布操作由您来完成**：Adapty CLI 没有发布命令，因此技能只能保存到草稿状态。
+- **覆盖操作需要您的确认**：保存会替换整个配置，不支持部分写入，也无法撤销。确认信息会注明流程名称、ID、状态，以及技能在编辑前保存的备份文件。
+- **并发编辑会导致写入失败**：第一次之后的每次写入都会将配置的 `updated_at` 时间戳回传给 Adapty。如果在此期间有团队成员保存了该流程，Adapty 会拒绝写入，而不是覆盖他们的工作。
+- **删除流程仍需在看板中操作**：CLI 没有删除命令，因此技能为您创建的流程需要您在看板中手动删除。
+- **实际数据和素材由您提供**：评分、评价数量、折扣百分比和商店价格绝不会凭空生成。当某个模式需要您未提供的数据时，技能会向您询问，或直接省略该元素，并告知您采用了哪种处理方式。
+
+:::note
+读取、验证和预览均不计费，也不会产生任何更改。保存配置是唯一会影响看板的操作，且需要您的确认。
+:::
+
+## 局限性 \{#limitations\}
+
+#### 运行需要时间 \{#runs-take-time\}
+
+每次修改后，技能都会进行验证并重新渲染，这正是保证看板配置不出错的原因——但也使得每次运行比普通对话回复慢。小改动几分钟即可完成。编写一个带分支的多屏幕流程则需要 **10 到 40 分钟**。启动后去做别的事，不用盯着等。
+
+#### 视频和自定义字体需手动处理 \{#videos-and-custom-fonts-stay-manual\}
+
+技能可以上传图片，但不支持上传[视频](custom-media)，也不支持上传[自定义字体](using-custom-fonts-in-flow-builder)文件。对于这两类内容，技能会构建好对应的插槽，并将上传工作交由你完成：
+
+- **视频**：该技能会在视频所属位置放置一个媒体元素，这样当你在付费墙编辑工具中替换文件时，布局已经就位。
+- **字体**：该技能会创建你的设计所需的文本样式，并将其指向一个占位字体。请在付费墙编辑工具中上传字体，并将其分配给这些样式。
+
+#### 预览只渲染单个屏幕的单一状态 \{#the-preview-renders-one-screen-in-one-state\}
+
+该技能的预览页面只绘制单个屏幕，不会演示整个流程。以下内容均无法在预览中体现，需在真实设备上进行测试——[预览流程](paywall-device-compatibility-preview)介绍了具体方法：
+
+- **导航与分支逻辑**：带有导航操作的按钮在预览中保持原位，因此条件路由无法触发。每个屏幕都是独立渲染的。
+- **开关与多选项选择**：开关行和多选行始终以默认的关闭状态显示，无论其默认值如何。单选行和产品卡片可以正常渲染选中状态。
+- **非当前语言环境**：预览会忽略流程的默认语言环境以及语言列表的顺序，因此无法通过预览直观验证翻译效果。请在付费墙编辑工具中切换语言环境，检查是否有文本溢出容器。
+- **运行时动态解析的内容**：实际价格、商店货币及用户输入均无法预览。价格变量会以其字面占位符显示，该占位符通常比实际价格更长，可能导致文本被固定按钮遮挡——但这种重叠在价格解析后会自动消失。
+- **预览页面无法模拟的屏幕尺寸**：依赖视口高度的布局，需要在较小的手机上实际验证。
+
+## 下一步 \{#whats-next\}
+
+- [flow-audit 技能](flow-audit-skill) — 只读检查，在发布前确认此技能生成的草稿是否已准备好投入生产。
+- [保存并发布流程](builder-save-publish) — 完成此技能生成的草稿。
+- [常见问题](flow-common-issues) — 哪些原因会导致流程无法发布。
+- [在 Adapty 流程编辑器中添加语言区域](add-paywall-locale-in-adapty-paywall-builder) — 手动完成相同的本地化工作。
+- [通过 AI 智能体和编程工具管理 Adapty](manage-adapty-with-ai) — 其他 Adapty 技能和 AI 工具。
