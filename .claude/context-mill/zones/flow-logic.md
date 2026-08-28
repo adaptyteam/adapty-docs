@@ -236,6 +236,20 @@ or developer can see and click.
   `placement-metrics.mdx`, `results-and-metrics.mdx`, and `webhook-event-types-and-fields.mdx` in one
   pass — mostly outside flow-logic, but a new revenue/proceeds/webhook field belongs in `flow-metrics`
   too whenever it lands in that cluster.
+- **The builder-deprecation fact is stated in four places, and a correction has to visit all of them.**
+  `grep -rn "October 1, 2026" src/content/docs src/components` returns exactly four hosts:
+  `paywall-onboarding-builder-deprecation` (the canon), the `BuilderDeprecation` reusable, the opening
+  `:::warning` of `migrate-to-flows`, and one bullet in `release-notes/whats-new`. The reusable then
+  multiplies its copy across five legacy articles — `grep -rln BuilderDeprecation src/content/docs` gives
+  `adapty-paywall-builder`, `create-onboarding`, `design-onboarding`, `onboardings` and
+  `quickstart-paywalls`, all in `paywalls-legacy`/`onboardings-legacy` — so one wording change lands on
+  seven reader-facing pages across three zones. **The absence of this rule already cost a ten-day
+  contradiction.** PR #511 (`0f53a8e8c`, 2026-08-18, "legacy builders keep editing after deprecation,
+  only creation and support end") changed the canon to say editing survives, and `git show --stat
+  0f53a8e8c` confirms it touched that one file — so the reusable and `migrate-to-flows` went on telling
+  readers the builders become "read-only: you can't create or edit" until they were corrected 2026-08-28.
+  `whats-new` was the one secondary copy that happened to already be right. Grep the **date**, never a
+  phrase: the four copies share no sentence, so a wording-based search finds at most one of them.
 
 ## Boundaries
 
