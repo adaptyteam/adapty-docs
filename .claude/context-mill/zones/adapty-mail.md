@@ -255,6 +255,7 @@ core in-app paywall/subscription product.
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
 | mail-entry-points | entry | marketer | 0 | tutorial |
 | mail-flows | entry | marketer | 5 | tutorial |
+| mail-funnelfox | how-to | marketer | 4 | tutorial |
 | mail-get-started | — | marketer | 13 | tutorial |
 | mail-profiles | — | marketer | 7 | tutorial |
 | mail-segments | — | marketer | 7 | tutorial |
