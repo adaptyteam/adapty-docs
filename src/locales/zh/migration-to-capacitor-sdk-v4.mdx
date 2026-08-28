@@ -1,41 +1,51 @@
 ---
-title: "将 Adapty Capacitor SDK 迁移至 v4.0"
-description: "通过将付费墙 API 替换为流程 API，迁移至 Adapty Capacitor SDK v4.0（测试版），兼容流程编辑工具和付费墙编辑工具。"
-metadataTitle: "迁移至 Adapty Capacitor SDK v4.0（测试版）| Adapty 文档"
+title: "将 Adapty Capacitor SDK 迁移到 v4.1"
+description: "迁移至 Adapty Capacitor SDK v4.1：用流程 API 替换付费墙 API、采用重命名后的归因 API、显式启用 Adapty Attribution，并重新下载备用付费墙文件。"
+metadataTitle: "迁移到 Adapty Capacitor SDK v4.1 | Adapty 文档"
 ---
 
-Adapty Capacitor SDK 4.0（测试版）引入了流程功能，并相应地对付费墙 API 进行了重命名。新 API 同时兼容新版流程编辑工具和现有的付费墙编辑工具——无需在 Adapty 看板侧进行任何配置变更。
+Adapty Capacitor SDK 4.1 是 4.x 系列的首个稳定版本——4.0 仅作为测试版发布，因此如果你目前使用的是 3.x，请直接迁移到 4.1。本指南涵盖完整的迁移内容：4.0 中引入的流程功能，以及 4.1 的额外变更。
+
+4.x 版本引入了流程（flows）并相应地重命名了付费墙相关 API。新 API 同时兼容全新的 Flow Builder 和现有的付费墙编辑工具，Adapty 看板侧无需进行任何配置变更。此外，4.1 版本将 Adapty Attribution 改为按需启用，重命名了外部归因方法，更改了备用文件格式，并新增了 App Store 应用内购买推广功能。
+
+:::note
+从 4.0 beta 迁移过来？将已固定的 beta 版本替换为[最新版本](#installation)，然后只需关注以下四个部分：[Adapty 归因默认禁用](#adapty-attribution-is-disabled-by-default)、[重命名的外部归因 API](#renamed-external-attribution-apis)、[备用文件](#fallback-files)，以及 [App Store 内购推广](#app-store-promoted-in-app-purchases)。
+:::
 
 ## 快速参考 \{#quick-reference\}
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
+| 默认启用 Adapty Attribution | 默认禁用 — 通过 `adaptyAttributionEnabled: true` 开启 |
 | `adapty.getPaywall({ placementId, locale?, params? })` | `adapty.getFlow({ placementId, params? })` |
 | `adapty.getPaywallForDefaultAudience({ placementId, locale?, params? })` | `adapty.getFlowForDefaultAudience({ placementId, params? })` |
 | `adapty.getPaywallProducts({ paywall })` | `adapty.getPaywallProducts({ flow })` |
 | `adapty.logShowPaywall({ paywall })` | `adapty.logShowFlow({ flow })` |
-| `AdaptyPaywall` (类型) | `AdaptyFlow` + `AdaptyFlowPaywall` |
+| `AdaptyPaywall`（类型） | `AdaptyFlow` + `AdaptyFlowPaywall` |
 | `createPaywallView(paywall, params?)` | `createFlowView(flow, params?)` |
 | `PaywallViewController` | `FlowViewController` |
-| `EventHandlers` (类型) | `FlowEventHandlers` |
+| `EventHandlers`（类型） | `FlowEventHandlers` |
 | `CreatePaywallViewParamsInput` | `CreateFlowViewParamsInput` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` 保持原名不变——产品仍属于流程，`getPaywallProducts` 也保持原名，现在接受 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数——请将其传递给 `createFlowView`。购买和用户画像相关 API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）以及 `setFallback` 保持相同的签名，但备用付费墙文件本身需要重新下载——请参阅[备用文件](#fallback-files)。视图方法 `present`、`dismiss`、`setEventHandlers`、`showDialog`，以及事件处理器 `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished` 和 `onAndroidSystemBack` 的名称与 v3 中保持一致。用户引导方法仍可使用，但已被废弃——请参阅[用户引导 API 废弃说明](#onboarding-api-deprecation)。部分默认行为已发生变化——请参阅[默认行为变更](#default-behavior-changes)。
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| 已下载适用于 3.x 的备用文件 | 新备用文件格式 — 请重新下载文件 |
+| 不支持应用内推广购买 | `'onPromotedPurchaseReceived'` 事件及 `adapty.makePromotedPurchase({ product })` |
+
+`AdaptyPaywallProduct` 保持原名——产品仍属于某个流程，`getPaywallProducts` 也保持原名，现在接受一个 `AdaptyFlow` 参数。`getFlow` 和 `getFlowForDefaultAudience` 方法不再接受 `locale` 参数——改为传给 `createFlowView`。购买和用户画像相关的 API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）及 `setFallback` 保持相同的签名，但备用付费墙文件本身需要重新下载——请参阅[备用文件](#fallback-files)。视图方法 `present`、`dismiss`、`setEventHandlers`、`clearEventHandlers`、`showDialog`，以及事件处理器 `onCloseButtonPress`、`onUrlPress`、`onCustomAction`、`onProductSelected`、`onPurchaseStarted`、`onPurchaseCompleted`、`onPurchaseFailed`、`onRestoreStarted`、`onRestoreCompleted`、`onRestoreFailed`、`onLoadingProductsFailed`、`onWebPaymentNavigationFinished` 和 `onAndroidSystemBack` 均与 v3 中保持相同名称。用户引导方法仍可使用，但已被弃用——请参阅[用户引导 API 弃用说明](#onboarding-api-deprecation)。部分默认行为有所变更——请参阅[默认行为变更](#default-behavior-changes)。
 
 ## 最低版本要求 \{#minimum-versions\}
 
-运行环境要求与 v3.16+ 保持不变：**iOS 15.0**、**Android minSdk 24** 以及 **Capacitor 8**，无需修改部署目标配置。
+运行时要求与 v3.16+ 保持不变：**iOS 15.0**、**Android minSdk 24** 和 **Capacitor 8**。无需更改部署目标。
 
-新增一项构建要求：**Xcode 26 或更高版本** —— 本次发布内置的原生 Adapty iOS SDK 4.0.2 使用了 Swift tools 6.2。
+新增一项构建要求：**Xcode 26 或更高版本** —— 本次发布内置的原生 Adapty iOS SDK 使用 Swift tools 6.2。
 
-v4 内置原生 Adapty SDK：iOS 4.0.2 和 Android BOM 4.0.1。
 
 ## 安装 \{#installation\}
-### 更新包 \{#update-the-package\}
-
-v4.0 是预发布版本，请固定精确版本号——npm 不会通过脱字符/波浪号范围选择预发布版本：
+### 更新软件包 \{#update-the-package\}
 
 ```bash showLineNumbers
-npm install @adapty/capacitor@4.0.1-beta.1
+npm install @adapty/capacitor@latest
 ```
 
 然后同步原生项目：
@@ -43,6 +53,7 @@ npm install @adapty/capacitor@4.0.1-beta.1
 ```bash showLineNumbers
 npx cap sync
 ```
+
 ### iOS：仅支持 Swift Package Manager \{#ios-swift-package-manager-only\}
 
 [CocoaPods 的 spec 仓库将于 2026 年 12 月进入只读模式](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)，因此从 v4 起 `AdaptyCapacitor.podspec` 已被移除，SDK 在 iOS 上**仅通过 Swift Package Manager（SPM）安装**。你的应用 iOS 工程必须使用 Capacitor 的 SPM 集成方式：
@@ -55,6 +66,27 @@ npx cap add ios --packagemanager SPM
 - 现有 CocoaPods 项目：按照 [Capacitor 关于在现有项目中使用 SPM 的指南](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project)迁移 iOS 项目。
 
 参阅 [安装 Adapty SDK](sdk-installation-capacitor) 了解完整配置步骤。
+## ⚠️ Adapty 归因功能默认关闭 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+如果你使用 [Adapty 归因](user-acquisition) 功能并升级到 SDK 4.1，但未主动开启该功能，将会出现静默故障——安装事件停止记录，且没有任何警告提示。
+:::
+
+在早期版本中，SDK 会自动为 [Adapty Attribution](user-acquisition) 注册安装记录。从 SDK 4.1 版本开始，该功能默认关闭：SDK 不再注册安装记录，`'onInstallationDetailsSuccess'` 和 `'onInstallationDetailsFail'` 事件不会触发，`getCurrentInstallationStatus` 返回 `not_available` 状态。
+
+如果你使用 Adapty Attribution，请在激活 SDK 时启用该功能：
+
+```diff showLineNumbers
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
++     adaptyAttributionEnabled: true,
+    },
+  });
+```
+
+如果您不使用 Adapty 归因功能，则无需进行任何更改。
+
 ## 获取流程 \{#fetching-flows\}
 ### getPaywall → getFlow
 
@@ -66,7 +98,7 @@ npx cap add ios --packagemanager SPM
 + const view = await createFlowView(flow, { locale: 'en' });
 ```
 
-`locale` 在 `createFlowView` 中仍为可选参数：省略时视图以 `en` 渲染，若流程没有 `en` 本地化则使用流程的默认本地化。请参阅[本地化与语言代码](capacitor-localizations-and-locale-codes)。
+`locale` 在 `createFlowView` 中仍为可选参数：省略它则视图以 `en` 渲染，若流程没有 `en` 则使用该流程的默认本地化。由于这个回退机制，视图实际渲染的本地化可能与你所请求的不同——新增的 `FlowViewController.locale` 属性会报告实际使用的本地化。详见[本地化与语言区域代码](capacitor-localizations-and-locale-codes)。
 
 `getPaywallForDefaultAudience` 的重命名方式相同：
 
@@ -85,7 +117,11 @@ npx cap add ios --packagemanager SPM
 ```
 ### 备用文件 \{#fallback-files\}
 
-备用文件格式[在 SDK v4 中已发生变更](fallback-flows)。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 下载新文件并将其打包到应用中。
+[备用文件](fallback-flows)的格式在 4.x 版本中发生了变化，在 4.1 中又再次更新。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 重新下载该文件并将其打包到应用中，即使你已经为 4.0 测试版下载过也需要重新下载。
+
+:::warning
+跳过此步骤不会产生构建报错。但如果跳过，`setFallback` 会拒绝旧版文件，导致每个版位都无法使用备用付费墙。
+:::
 
 ## 数据模型 \{#data-model\}
 
@@ -93,21 +129,26 @@ npx cap add ios --packagemanager SPM
 | v3 `AdaptyPaywall` 字段 | v4 `AdaptyFlow` 字段 | 操作 |
 |---|---|---|
 | `remoteConfig?`（单个） | `remoteConfigs?: AdaptyRemoteConfig[]`（数组） | 一个流程为每种已配置的语言携带一个远程配置。读取与用户匹配的那个：`flow.remoteConfigs?.find((c) => c.lang === 'en')`。 |
-| `products` | `flow.paywalls[i].productIdentifiers` | 产品标识符现在位于每个流程变体上，而不是在流程本身。 |
+| `productIdentifiers` | `flow.paywalls[i].productIdentifiers` | 产品标识符现在位于每个流程变体上，而不是流程本身。 |
+| `products`（v3 中已弃用） | 已移除 | 使用 `flow.paywalls[i].productIdentifiers`，或调用 `getPaywallProducts(flow)` 获取完整产品。`ProductReference` 已作为公共类型移除。 |
 | `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | 从流程移至每个付费墙变体。 |
-| `version?: number` | `flowVersionId?: string` | 已重命名，类型从 `number` 更改为 `string`。 |
-| `hasViewConfiguration` | 已移除 | 从代码中删除所有 `hasViewConfiguration` 检查——`createFlowView` 现在会直接抛出异常（参见[展示流程](#displaying-flows)）。 |
-| `requestLocale` | 已移除 | 语言区域不再是模型的一部分。 |
-| _(新增)_ | `paywalls: AdaptyFlowPaywall[]` | 每个条目是流程中的一个付费墙变体。 |
-| _(新增)_ | `responseCreatedAt: number` | 服务器响应时间戳，单位为毫秒。 |
-`hasViewConfiguration` 和 `requestLocale` 保留在 `AdaptyOnboarding` 上——只有流程模型移除了它们。
+| `version?: number` | `flowVersionId?: string` | 已重命名，类型从 `number` 变更为 `string`。 |
+| `hasViewConfiguration` | 已移除 | 从代码中移除所有 `hasViewConfiguration` 检查——`createFlowView` 现在会直接抛出异常（参见[显示流程](#displaying-flows)）。 |
+| `requestLocale` | 已移除 | 语言区域设置不再是模型的一部分。 |
+| _（新增）_ | `paywalls: AdaptyFlowPaywall[]` | 每个条目是流程中的一个付费墙变体。 |
+| _（新增）_ | `responseCreatedAt: number` | 服务器响应时间戳，单位为毫秒。 |
 
-产品标识符从流程移至每个实验变体：
+`hasViewConfiguration` 和 `requestLocale` 保留在 `AdaptyOnboarding` 上——只有 flow 模型移除了它们。
+
+产品标识符从 flow 移至每个实验变体：
 
 ```diff showLineNumbers
-- const ids = paywall.products;
+- const ids = paywall.productIdentifiers;
 + const ids = flow.paywalls[0].productIdentifiers;
 ```
+
+如果你的代码仍在读取 `paywall.products`——该属性在 v3 中已弃用，现已彻底移除——请切换到 `productIdentifiers`，或在需要完整产品信息而非仅标识符时，调用 `getPaywallProducts(flow)`。
+
 ## Web 付费墙方法 \{#web-paywall-methods\}
 
 `openWebPaywall` 和 `createWebPaywallUrl` 保持原名不变，但 `paywallOrProduct` 选项现在接收 `AdaptyFlowPaywall`（流程变体）而非 `AdaptyPaywall`。你仍然可以传入 `AdaptyPaywallProduct`。在读取第一个条目之前，请先确认 `flow.paywalls` 非空：
@@ -131,7 +172,8 @@ npx cap add ios --packagemanager SPM
 ## 显示流程 \{#displaying-flows\}
 ### createPaywallView → createFlowView
 
-重命名工厂函数并传入 `AdaptyFlow`。返回的控制器从 `PaywallViewController` 更名为 `FlowViewController`，但其方法（`present`、`dismiss`、`setEventHandlers`、`showDialog`）保持不变。参数类型从 `CreatePaywallViewParamsInput` 更名为 `CreateFlowViewParamsInput`：
+将工厂函数重命名，并传入 `AdaptyFlow`。返回的控制器从 `PaywallViewController` 重命名为 `FlowViewController`，但其方法（`present`、`dismiss`、`setEventHandlers`、`clearEventHandlers` 和 `showDialog`）保持不变。参数类型从 `CreatePaywallViewParamsInput` 重命名为 `CreateFlowViewParamsInput`：
+
 ```diff showLineNumbers
 - import { createPaywallView } from '@adapty/capacitor';
 + import { createFlowView } from '@adapty/capacitor';
@@ -158,15 +200,24 @@ npx cap add ios --packagemanager SPM
 :::note
 Flow 视图是一次性的：调用 `dismiss()` 后，视图会被销毁，其事件处理器也会被清除。如需再次展示该 flow，请重新调用 `createFlowView`。
 :::
-### Android 安全区域内边距 \{#android-safe-area-paddings\}
+### 新参数 \{#new-parameters\}
 
-`CreateFlowViewParamsInput` 新增了一个参数：`enableSafeArea`，用于在运行时控制 Android 安全区域内边距。该参数嵌套在 `android` 键下，默认值为 `true`：
+`CreateFlowViewParamsInput` 保留了 v3 的所有参数（`prefetchProducts`、`loadTimeoutMs`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`），并新增了三个：
+
+| 参数 | 描述 |
+|---|---|
+| `locale` | 渲染流程时使用的本地化语言。该参数从 `getPaywall` 移至此处——详见 [getPaywall → getFlow](#getpaywall--getflow)。 |
+| `customLayoutId` | 在 Flow Builder 中定义的布局自定义 ID。传入此参数可渲染指定布局，而非由 SDK 根据设备类型和屏幕尺寸自动选择的布局。若没有布局与该 ID 匹配，流程将在无视图配置的情况下加载。 |
+| `android.enableSafeArea` | 控制 Android 运行时安全区域内边距。嵌套在 `android` 键下，默认值为 `true`。 |
 
 ```typescript showLineNumbers
 const view = await createFlowView(flow, {
+  locale: 'en',
+  customLayoutId: 'tablet_landscape',
   android: { enableSafeArea: true },
 });
 ```
+
 ## 处理事件 \{#handling-events\}
 
 事件处理器接口从 `EventHandlers` 重命名为 `FlowEventHandlers`，同时有一个回调也进行了重命名。现有的处理器逻辑无需修改代码，只需重命名即可：
@@ -175,11 +226,64 @@ const view = await createFlowView(flow, {
 - onRenderingFailed: (error) => { /* … */ },
 + onError: (error) => { /* … */ },
 ```
-所有其他事件处理函数保持原有名称不变。其中两个新增了第二个参数：`onPurchaseCompleted` 现在是 `(purchaseResult, product)`，`onPurchaseFailed` 现在是 `(error, product)`，其中 `product` 是涉及的 `AdaptyPaywallProduct`。完整列表请参阅[处理 flow 与付费墙事件](capacitor-handling-events)。
+其他所有事件处理器保持原有名称不变。有一个处理器的签名发生了变化：`onAppeared` 现在变为 `(view)` 而非 `()`，其中 `view` 是一个 `FlowEventView`，描述了出现的视图——包括构建该视图所使用的本地化信息。现有处理器仍可正常工作，因为它们会忽略新增的参数。完整列表请参阅[处理流程与付费墙事件](capacitor-handling-events)。
 
 v4 还新增了一些可选功能：
-- `adapty.openWebUrl({ url, openIn })` 和 `adapty.requestAppReview()` 方法——这两个方法支持默认的 `onUrlPress` 和 `onRequestAppReview` 处理器，因此 URL 和应用评价提示默认即可原生处理。仅在覆盖这些处理器时才需直接调用它们。
-- 通过新的 `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` 处理器，在流程中支持观察者模式下的购买处理。详见[在观察者模式下展示流程](capacitor-present-flows-in-observer-mode)。
+
+- `adapty.openWebUrl({ url, openIn })` 和 `adapty.requestAppReview()` 方法 — 这些方法支持默认的 `onUrlPress` 和 `onRequestAppReview` 处理程序，因此 URL 和应用评价请求可以原生开箱即用。只有在覆盖这些处理程序时才需要直接调用它们。
+- 通过新的 `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` 处理程序，在流程中支持 Observer 模式的购买处理。详见[在 Observer 模式下展示流程](capacitor-present-flows-in-observer-mode)。
+- `onAnalytics: (name, params)` — 流程触发的分析事件，从用户打开每个页面时的页面浏览事件开始。详见[追踪流程页面浏览](capacitor-flow-screen-views)。
+- `onRequestPermission: (permission, customArgs)` — 为流程中的系统权限请求（如推送通知或相机访问）预留的接口。目前流程尚不会触发权限请求，因此无需实现此处理程序。
+
+另外，4.1 版本新增了一个 SDK 级别的事件，而非流程处理器：`'onPromotedPurchaseReceived'`，通过 `adapty.addListener` 传递。若未注册监听器，SDK 将自行完成促销购买；注册后，则由应用负责处理完成逻辑。详见 [App Store 应用内促销购买](#app-store-promoted-in-app-purchases)。
+
+## 重命名的外部归因 API \{#renamed-external-attribution-apis\}
+
+从 SDK 4.1 版本开始，用于传递外部归因提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义提供商）数据的 API 已更名，以与原生 SDK 保持一致。由于没有废弃别名，现有调用处在重命名之前将无法正常工作：
+
+| Before 4.1 | 4.1 |
+|---|---|
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+### updateAttribution → updateExternalAttribution
+
+该方法已重命名，其 `source` 选项更改为 `provider`。归因数据仍为普通对象：
+
+```diff showLineNumbers
+- await adapty.updateAttribution({ attribution, source: 'adjust' });
++ await adapty.updateExternalAttribution({ attribution, provider: 'adjust' });
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+提供者类型已重命名。它仍然是一个开放联合类型——预定义值为 `'apple_search_ads'`、`'adjust'`、`'appsflyer'`、`'branch'` 和 `'tenjin'`，同时也接受任意其他字符串，因此 Adapty 后续新增的提供者无需更新 SDK 即可使用：
+
+```diff showLineNumbers
+- import type { AttributionSource } from '@adapty/capacitor';
++ import type { AdaptyExternalAttributionProvider } from '@adapty/capacitor';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+用户画像中列出已应用归因提供商的属性已重命名，其元素类型也随之更改：
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+读取该属性的代码需要更新——详见[展示 Apple Ads 定向付费墙](capacitor-show-aa-targeted-paywall)。
+
+## App Store 促销应用内购买 \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1 新增对 [App Store 产品页面促销应用内购买](capacitor-making-purchases#in-app-purchases-from-the-app-store) 的支持。这是一项新功能，不涉及迁移步骤：SDK 会自动完成促销购买流程，无需编写任何代码即可获得该行为。
+
+仅编写代码以自行接管完成操作——例如先显示一个页面。为新的 `'onPromotedPurchaseReceived'` 事件注册一个监听器，并通过 `adapty.makePromotedPurchase` 完成购买。注册该监听器后，SDK 将停止自动为你完成促销购买。
+
 ## 默认行为变更 \{#default-behavior-changes\}
 
 这些变更不会导致编译错误，请在运行时进行测试：
@@ -210,6 +314,6 @@ v4 还新增了一些可选功能：
 已废弃的 `MakePurchaseParamsInput` 扁平 Android 格式已被移除，现在只保留嵌套形式。请将所有 Android 购买参数迁移到 `params: { android: { ... } }` 中。完整示例请参阅[发起购买](capacitor-making-purchases)。
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
 
-旧版用户引导 API 已在 v4.0 中弃用，请改用 [Flow Builder](adapty-flow-builder)。该 API 目前仍可正常使用，但将在未来版本中移除，请提前将您的用户引导迁移至 Flow Builder。
+旧版用户引导 API 在 v4 中已弃用，建议改用 [Flow Builder](adapty-flow-builder)。目前仍可正常使用，但将在未来版本中移除，请尽早将您的用户引导迁移至 Flow Builder。
 
 已弃用的符号：`getOnboarding`、`getOnboardingForDefaultAudience`、`createOnboardingView` 和 `OnboardingViewController`。

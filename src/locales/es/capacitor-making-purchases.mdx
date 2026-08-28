@@ -153,3 +153,31 @@ Según nuestras observaciones, la hoja de canje de códigos de oferta en algunas
 Para hacer esto, debes abrir la URL con el siguiente formato:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Compras in-app desde el App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Las compras in-app promocionadas son compatibles a partir de la versión 4.1 del SDK y requieren **iOS 16.4** o posterior. En dispositivos con una versión inferior a iOS 16.4, no llegan a tu app. El evento nunca se activa en Android.
+:::
+
+Cuando un usuario inicia una compra desde la página de tu producto en el App Store y la transacción se transfiere a tu app, el SDK la completa automáticamente: la pantalla del sistema de compras de Apple aparece de inmediato y Adapty procesa la transacción como cualquier otra compra. Esto no requiere ningún código por tu parte.
+
+Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente en el momento de la compra. La oferta se lee desde el intent de compra de App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+
+Para gestionar tú mismo la finalización de la compra —por ejemplo, para mostrar primero tu propia pantalla— escucha el evento `'onPromotedPurchaseReceived'` y pasa el producto a `makePromotedPurchase`:
+
+```typescript showLineNumbers
+
+const listener = await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+  // process the purchase result
+});
+```
+
+:::warning
+Mientras tu listener esté registrado, el SDK deja de completar las compras promocionadas automáticamente. Si tu manejador nunca llama a `makePromotedPurchase`, la compra no se realiza: el App Store entrega el producto a tu app y espera. Llama a `listener.remove()` para restaurar el comportamiento automático.
+:::
+
+`makePromotedPurchase` no acepta parámetros de compra — el producto promocionado proviene del App Store, no de un paywall, por lo que no lleva contexto de paywall. Devuelve el mismo [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) que `makePurchase`.
+
+Llamar a `adapty.removeAllListeners()` elimina también el listener de compras promocionadas junto con el resto, y la finalización automática del SDK retoma el control. Vuelve a registrar el listener si tu app sigue siendo la responsable de completar la compra.

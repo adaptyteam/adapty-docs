@@ -1,9 +1,11 @@
 ---
-title: "Показ пейвола с таргетингом по Apple Ads при первом запуске в Capacitor SDK"
-description: "Показывайте пейвол сразу и обновляйте его для пользователей Apple Ads после применения атрибуции в Capacitor, используя AdaptyProfile.appliedAttributionSources."
-metadataTitle: "Показ пейвола с таргетингом по Apple Ads при первом запуске | Capacitor SDK | Документация Adapty"
+title: "Показ пейвола для Apple Ads при первом запуске в Capacitor SDK"
+description: "Показывайте пейвол сразу и обновляйте его для пользователей Apple Ads после применения атрибуции в Capacitor с помощью AdaptyProfile.appliedExternalAttributionProviders."
+metadataTitle: "Показ пейвола для Apple Ads при первом запуске | Capacitor SDK | Документация Adapty"
 ---
-Атрибуция Apple Ads (AA) поступает асинхронно после вызова `adapty.activate()`. При первом запуске она, как правило, ещё не получена, поэтому `getFlow` разрешается для аудитории по умолчанию, и пользователи Apple Ads не попадают на пейвол, настроенный для сегмента AA. Вместо того чтобы откладывать показ пейвола до получения атрибуции, покажите его сразу, а затем обновите, когда атрибуция AA будет применена — так пользователи Apple Ads увидят целевой вариант, а все остальные не будут ждать. `AdaptyProfile.appliedAttributionSources` сообщает о том, что атрибуция AA применена.
+
+Атрибуция Apple Ads (AA) поступает асинхронно после вызова `adapty.activate()`. При первом запуске она обычно ещё не получена, поэтому `getFlow` разрешается по аудитории по умолчанию, и пользователи Apple Ads не видят пейвол, настроенный под AA-сегмент. Вместо того чтобы откладывать показ пейвола до получения атрибуции, покажите его сразу, а затем обновите после применения атрибуции AA — тогда пользователи Apple Ads получат целевой вариант, а остальные не будут ждать. `AdaptyProfile.appliedExternalAttributionProviders` сообщает, когда атрибуция AA применена.
+
 ## Перед началом работы \{#before-you-start\}
 
 Вам понадобится:
@@ -11,21 +13,24 @@ metadataTitle: "Показ пейвола с таргетингом по Apple A
 - Настроенная интеграция Apple Ads для приложения в Adapty. См. [Apple Ads](apple-search-ads).
 ## Как это работает \{#how-it-works\}
 
-После `adapty.activate()` SDK в фоновом режиме запрашивает данные атрибуции Apple Ads у Apple и передаёт результат в бэкенд Adapty. Когда AA становится активным источником атрибуции для профиля, SDK доставляет обновлённый `AdaptyProfile` в ваш слушатель `onLatestProfileLoad`, в массиве `appliedAttributionSources` которого появляется `'apple_search_ads'`.
+После вызова `adapty.activate()` SDK в фоновом режиме запрашивает атрибуцию Apple Ads у Apple и передаёт результат на бэкенд Adapty. Когда AA становится активным источником атрибуции для профиля, SDK доставляет обновлённый `AdaptyProfile` в ваш слушатель `onLatestProfileLoad`, где в массиве `appliedExternalAttributionProviders` появится `'apple_search_ads'`.
 
 Это позволяет загружать пейвол в два шага:
-1. Вызовите `getFlow` сразу. Поскольку атрибуция ещё не применена, Adapty разрешает запрос по аудитории по умолчанию, и пользователь видит пейвол немедленно.
-2. Когда появляется `'apple_search_ads'`, вызовите `getFlow` снова. Adapty теперь разрешает запрос по аудитории Apple Ads и возвращает целевой пейвол, который заменяет первый.
 
-`appliedAttributionSources` может быть пустым или отсутствовать. Это означает одно из двух:
+1. Вызовите `getFlow` сразу. Так как атрибуция ещё не применена, Adapty обрабатывает запрос по аудитории по умолчанию, и пользователь сразу видит пейвол.
+2. Когда появится `'apple_search_ads'`, вызовите `getFlow` снова. Теперь Adapty обрабатывает запрос по аудитории Apple Ads и возвращает целевой пейвол, который заменяет первый.
 
-- атрибуция Apple Ads ещё не обработана для этого профиля, или
+`appliedExternalAttributionProviders` может быть пустым или отсутствовать. Это означает одно из двух:
+
+- атрибуция Apple Ads для этого профиля ещё не обработана, или
 - атрибуция не поступала вовсе.
-В любом случае шаг 1 безопасен — Adapty разрешает запрос по той аудитории, которая соответствует текущему состоянию профиля, как правило это дефолтная аудитория. Шаг 2 выполняется только после появления `'apple_search_ads'`.
+
+В любом случае, шаг 1 безопасен — Adapty разрешает запрос на основе аудитории, соответствующей текущему состоянию профиля, как правило, это аудитория по умолчанию. Шаг 2 выполняется только после того, как `'apple_search_ads'` появится в профиле.
 
 :::important
-При каждом последующем запуске кэшированный профиль уже содержит `'apple_search_ads'` в `appliedAttributionSources`, поэтому первый же `getFlow` возвращает пейвол, сегментированный по Apple Ads, — никакого второго запроса или видимых изменений не происходит. Двухшаговое флоу актуально только при первом запуске, пока атрибуция ещё не завершена.
+При каждом последующем запуске кешированный профиль уже содержит `'apple_search_ads'` в `appliedExternalAttributionProviders`, поэтому первый же вызов `getFlow` возвращает пейвол с сегментацией по Apple Ads — никакого второго запроса или заметных изменений не происходит. Двухшаговый флоу актуален только при первом запуске, пока атрибуция ещё не завершилась.
 :::
+
 ## Реализация \{#implementation\}
 
 Покажите пейвол сразу, а затем слушайте событие `'apple_search_ads'` и обновляйте пейвол при его получении.
@@ -34,7 +39,7 @@ metadataTitle: "Показ пейвола с таргетингом по Apple A
 3. **Подпишитесь на обновления профиля** через `adapty.addListener('onLatestProfileLoad', …)` и отслеживайте появление `'apple_search_ads'`. Когда оно появится, снова запросите пейвол и покажите обновлённый. Если вы ещё не настроили слушатель, см. [Отслеживание обновлений подписки](capacitor-check-subscription-status#listen-to-subscription-updates):
 ```typescript
 const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
   const targeted = await adapty.getFlow({ placementId });
   // present the targeted flow in place of the first one
 });
@@ -48,11 +53,11 @@ const listener = await adapty.addListener('onLatestProfileLoad', async ({ profil
 `onAppleAdsAttribution` резолвится, когда атрибуция Apple Ads применена, или отклоняется по истечении `timeoutMs`. В примере ниже пейвол загружается сразу, а затем перезагружается, когда приходит атрибуция — пользователи Apple Ads видят целевой пейвол, а если атрибуция так и не пришла, остаётся первый пейвол:
 ```typescript
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**
