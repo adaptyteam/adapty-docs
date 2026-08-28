@@ -66,6 +66,16 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   registered in `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx`
   for terms it shares, as the working definition until a metrics source is added.
 
+- **Figma import's ground truth is split across three places, and only one of them is a declared source.** The
+  `/figma-import` landing page — its state machine, failure copy, and the mint call — lives in
+  `dashboard-interface` but under `apps/web/src/pages/figma-import/**`, *not* `packages/unified-builder`,
+  with a canonical design spec beside it at `docs/specs/figma/figma-import-landing.md`. The plugin is its
+  own artifact, distributed as a zip. **The converter that actually maps a Figma tree to an IFlow lives in
+  `adapty-agents`, which is absent from `sources.md`** (`rg 'adapty-agents' .claude/context-mill/sources.md`
+  → no hits, 2026-08-27) and was not checked out locally, so no claim about mapper behaviour in
+  `import-from-figma` was verified against code. Add the entry before anyone edits that article's fidelity
+  claims.
+
 ## What we document, what we don't
 
 **Document:** building a flow's behavior in the no-code editor — screens' navigation wiring, triggers
@@ -120,13 +130,14 @@ or developer can see and click.
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 12 | tutorial |
 | flow-metrics | — | marketer, dev | 24 | tutorial |
+| import-from-figma | how-to | marketer, dev | 13 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 8 | tutorial |
-| paywall-builder-templates | — | marketer, dev | 6 | tutorial |
+| paywall-builder-templates | — | marketer, dev | 7 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 4 | tutorial |
@@ -300,6 +311,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
+| "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products" | `import-from-figma`. Two traps. The plugin is sideloaded from a zip and only runs in the Figma **desktop** app, so "it doesn't appear in Figma" is usually the browser or a view-only file, not a bug. And an import reproduces appearance only — products, navigation, actions, countdowns and backgrounds all arrive inert, so "the buy button does nothing after import" is expected, not a defect: route it to that article's `Import limitations`, not to `paywall-product-block`. |
 
 ## Gaps and misses
 
@@ -328,6 +340,17 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 - **Tooling note:** `mill:assign` rejects `--role=troubleshooting`; the valid set is `entry`, `how-to`,
   `reference`, `conceptual`, `migration`, `legacy-orphan` (`scripts/context-mill/zones.mjs:8`), so this
   article is filed as `reference`.
+
+- **`import-from-figma`'s fidelity claims are Jira-sourced, not code-verified** (written 2026-08-27). The
+  statements that prototype interactions are dropped, that pricing cards import as plain frames, and that
+  gradients/shadows degrade come from ADP-7159/7162/7163 plus screenshots of one real import — not from
+  reading `services/figma_to_iflow.py`, which is in the unchecked-out `adapty-agents`. ADP-7158's own
+  description warns that "neither child statuses nor assignees carry signal here" and that work has shipped
+  under tickets still reading To Do, so re-measure against that repo before treating any of it as settled.
+  One claim was already wrong and cut before publication: an earlier draft said designs on Google Fonts
+  "import most cleanly", inferred from ADP-7158 saying non-Google faces fail — which does not follow, and
+  `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
+  in the corpus.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
