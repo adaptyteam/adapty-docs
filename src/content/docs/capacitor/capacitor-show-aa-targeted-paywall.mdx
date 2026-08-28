@@ -1,10 +1,10 @@
 ---
 title: "Show an AA-targeted paywall on first launch in Capacitor SDK"
-description: "Show a paywall immediately and upgrade it for Apple Ads users once attribution is applied in Capacitor, using AdaptyProfile.appliedAttributionSources."
+description: "Show a paywall immediately and upgrade it for Apple Ads users once attribution is applied in Capacitor, using AdaptyProfile.appliedExternalAttributionProviders."
 metadataTitle: "Show AA-targeted paywall on first launch | Capacitor SDK | Adapty Docs"
 ---
 
-Apple Ads (AA) attribution arrives asynchronously after `adapty.activate()`. On first launch it usually hasn't landed yet, so `getFlow` resolves against the default audience and Apple Ads users miss your AA-segmented paywall. Rather than delay the paywall until attribution lands, show one immediately and refresh it once AA attribution is applied — so Apple Ads users get the targeted variant and everyone else sees a paywall with no wait. `AdaptyProfile.appliedAttributionSources` tells you when AA attribution has been applied.
+Apple Ads (AA) attribution arrives asynchronously after `adapty.activate()`. On first launch it usually hasn't landed yet, so `getFlow` resolves against the default audience and Apple Ads users miss your AA-segmented paywall. Rather than delay the paywall until attribution lands, show one immediately and refresh it once AA attribution is applied — so Apple Ads users get the targeted variant and everyone else sees a paywall with no wait. `AdaptyProfile.appliedExternalAttributionProviders` tells you when AA attribution has been applied.
 
 ## Before you start
 
@@ -14,14 +14,14 @@ You need:
 
 ## How it works
 
-After `adapty.activate()`, the SDK requests Apple Ads attribution from Apple in the background and forwards the result to Adapty's backend. When AA becomes the active attribution source for the profile, the SDK delivers an updated `AdaptyProfile` to your `onLatestProfileLoad` listener, with `'apple_search_ads'` in its `appliedAttributionSources` array.
+After `adapty.activate()`, the SDK requests Apple Ads attribution from Apple in the background and forwards the result to Adapty's backend. When AA becomes the active attribution source for the profile, the SDK delivers an updated `AdaptyProfile` to your `onLatestProfileLoad` listener, with `'apple_search_ads'` in its `appliedExternalAttributionProviders` array.
 
 This lets you load the paywall in two steps:
 
 1. Call `getFlow` right away. With no attribution applied yet, Adapty resolves the request against the default audience, so the user sees a paywall immediately.
 2. When `'apple_search_ads'` appears, call `getFlow` again. Adapty now resolves the request against the Apple Ads audience and returns the targeted paywall, which replaces the first one.
 
-`appliedAttributionSources` can be empty or absent. That means either:
+`appliedExternalAttributionProviders` can be empty or absent. That means either:
 
 - Apple Ads attribution hasn't been processed yet for this profile, or
 - no attribution has arrived at all.
@@ -29,7 +29,7 @@ This lets you load the paywall in two steps:
 Either way, step 1 is safe — Adapty resolves the request against whichever audience matches the current profile state, typically the default audience. Step 2 runs only once `'apple_search_ads'` appears.
 
 :::important
-On every subsequent launch, the cached profile already carries `'apple_search_ads'` in `appliedAttributionSources`, so the first `getFlow` already returns the Apple-Ads-segmented paywall — there's no second fetch or visible change. The two-step flow only matters on the first launch, while attribution is still in flight.
+On every subsequent launch, the cached profile already carries `'apple_search_ads'` in `appliedExternalAttributionProviders`, so the first `getFlow` already returns the Apple-Ads-segmented paywall — there's no second fetch or visible change. The two-step flow only matters on the first launch, while attribution is still in flight.
 :::
 
 ## Implementation
@@ -42,7 +42,7 @@ Show a paywall right away, then listen for `'apple_search_ads'` and refresh the 
 
 ```typescript
 const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
   const targeted = await adapty.getFlow({ placementId });
   // present the targeted flow in place of the first one
 });
@@ -60,11 +60,11 @@ const listener = await adapty.addListener('onLatestProfileLoad', async ({ profil
 import { adapty } from '@adapty/capacitor';
 import type { AdaptyProfile } from '@adapty/capacitor';
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**
