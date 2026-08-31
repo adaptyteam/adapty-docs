@@ -1,45 +1,57 @@
 ---
 title: "Résoudre les problèmes d'intégration App Store"
-description: "Résolvez les problèmes courants de configuration Apple App Store — accords en attente, délais de notifications serveur et incohérences de prix."
+description: "Résolvez les problèmes courants de configuration App Store — accords en attente, délais de notifications serveur et incohérences de prix."
 metadataTitle: "Résoudre les problèmes d'intégration App Store | Documentation Adapty"
 ---
 
-Cet article couvre les problèmes courants d'intégration App Store. Chaque section liste les symptômes, la cause racine et la résolution.
+Cet article couvre les problèmes courants d'intégration App Store. Chaque section ci-dessous liste les symptômes, la cause racine et la résolution.
+
+## "The provided field values are incorrect" lors de l'enregistrement des identifiants \{#the-provided-field-values-are-incorrect-when-saving-credentials\}
+
+Lorsque vous enregistrez les identifiants d'achat intégré, Adapty crée un jeton d'authentification à partir de l'**In-app purchase Issuer ID**, de l'**In-app purchase Key ID** et du **fichier .p8**, puis le valide auprès d'Apple. Cette erreur signifie qu'Apple a rejeté le jeton. Vérifiez les valeurs dans cet ordre :
+
+1. **Type de clé.** La clé doit être une clé **In-App Purchase** accessible via **Users and Access** → **Integrations** → **In-App Purchase** dans App Store Connect. Une clé provenant de l'onglet **Team keys** (la clé API App Store Connect) possède son propre **Issuer ID** et **Key ID**, mais Apple la rejette ici — cette clé appartient à l'[Étape 6 de la configuration](app-store-connection-configuration#step-6-add-app-store-connect-api-key).
+2. **Même compte et équipe.** L'Issuer ID, le Key ID et le fichier .p8 doivent provenir de la même équipe App Store Connect que l'application. Une clé générée dans le compte d'une autre équipe — par exemple, un compte agence — échoue à la validation.
+3. **Le fichier .p8 lui-même.** Téléchargez le fichier exactement tel qu'il a été téléchargé depuis App Store Connect. Un fichier recréé à partir d'un contenu de clé collé échoue souvent. App Store Connect ne vous permet de télécharger la clé qu'une seule fois ; si le fichier d'origine est perdu, générez une nouvelle clé.
+4. **Bundle ID.** Le Bundle ID doit correspondre exactement à celui de votre application dans App Store Connect — format DNS inversé sans espaces, par exemple `com.company.app`.
+5. **Caractères cachés.** Recopiez chaque identifiant directement depuis App Store Connect. Des espaces superflus ou des caractères similaires — par exemple, un `l` minuscule à la place du chiffre `1` — font échouer la validation.
+
+Cette validation utilise uniquement les trois champs de la clé d'achat intégré et le Bundle ID. L'App-Specific Shared Secret et la [clé API App Store Connect](app-store-connection-configuration#step-6-add-app-store-connect-api-key) n'y participent pas, donc les ressaisir ne changera pas le résultat.
 
 ## Les produits n'apparaissent pas \{#products-dont-appear\}
 
-Deux symptômes différents pointent vers la même cause racine :
+Deux symptômes distincts pointent vers la même cause racine :
 
 - La clé API App Store Connect est correctement configurée, mais Adapty ne parvient pas à récupérer les produits.
-- Les produits existent dans App Store Connect mais n'apparaissent pas dans Adapty, ou moins de produits que prévu s'affichent. Le SDK signale « Product Id not found » lors d'une tentative d'achat.
+- Des produits existent dans App Store Connect mais n'apparaissent pas dans Adapty, ou moins de produits que prévu s'affichent. Le SDK signale « Product Id not found » lors d'une tentative d'achat.
 
-La cause racine la plus fréquente est **des accords Apple non signés** — l'accord payant, les formulaires fiscaux ou bancaires en attente ou non signés. Lorsque des accords sont en attente, l'API App Store Connect renvoie silencieusement une erreur 403 sur les endpoints liés aux produits. Aucune erreur claire ne remonte à Adapty ; les produits sont silencieusement filtrés.
+La cause la plus fréquente est **des accords Apple non signés** — l'accord payant, les formulaires fiscaux ou bancaires en attente ou non signés. Lorsque des accords sont en attente, l'API App Store Connect renvoie silencieusement une erreur 403 sur les endpoints liés aux produits. Aucune erreur claire ne remonte dans Adapty ; les produits sont filtrés silencieusement.
 
-Rendez-vous dans **App Store Connect → Agreements, Tax, and Banking** et signez tous les accords en attente. Ensuite, effectuez une nouvelle synchronisation dans **App settings → iOS SDK** d'Adapty.
+Rendez-vous dans **App Store Connect → Agreements, Tax, and Banking** et signez tous les accords en attente. Ensuite, relancez la synchronisation dans **App settings → iOS SDK** d'Adapty.
 
-## Les notifications serveur App Store affichent « Delayed » \{#app-store-server-notifications-show-delayed\}
+## Les notifications du serveur App Store s'affichent comme « Delayed » \{#app-store-server-notifications-show-delayed\}
 
-Dans App Store Connect, le statut des App Store Server Notifications peut afficher **Delayed**. Cela signifie qu'Apple prend du retard dans l'envoi des notifications d'événements d'abonnement — les renouvellements, annulations et problèmes de facturation sont mis en file d'attente et arrivent en retard.
+Dans App Store Connect, le statut des notifications du serveur App Store peut s'afficher comme **Delayed**. Cela signifie qu'Apple accuse du retard dans l'envoi des notifications d'événements d'abonnement — les renouvellements, annulations et problèmes de facturation sont mis en file d'attente et arrivent en retard.
 
-Les statistiques d'installation ne sont pas affectées. Adapty comptabilise les installations à partir du premier lancement de l'application, pas à partir des notifications côté serveur.
+Les statistiques d'installation ne sont pas affectées. Adapty comptabilise les installations à partir du premier lancement de l'application, et non à partir des notifications côté serveur.
 
-Si les données de renouvellement ou d'annulation accusent un retard, le statut Delayed en est très probablement la cause. Ce statut se résorbe généralement automatiquement lorsqu'Apple traite la file d'attente.
+Si les données de renouvellement ou d'annulation sont en retard, le statut Delayed en est très probablement la cause. Ce statut se résorbe généralement automatiquement au fur et à mesure qu'Apple traite la file d'attente.
 
 ## Les prix dans Adapty ne correspondent pas à l'App Store \{#prices-in-adapty-dont-match-app-store\}
 
-Le champ **price** sur la page d'édition du produit dans Adapty se comporte différemment selon la façon dont le produit a été ajouté.
+Le champ **price** sur la page de modification d'un produit dans Adapty se comporte différemment selon la façon dont le produit a été ajouté.
 
-Si vous créez un produit dans Adapty et que vous le publiez sur le store depuis le tableau de bord, ce prix est utilisé comme prix initial sur le store.
+Si vous créez un produit dans Adapty et que vous le poussez vers le store depuis le tableau de bord, ce prix est utilisé comme prix initial dans le store.
 
-Si vous ajoutez un produit qui existe déjà sur le store, ce prix est un espace réservé. Les analyses, intégrations et SDK d'Adapty utilisent les prix réels récupérés depuis l'App Store, quoi qu'il en soit. Les modifications de prix sur l'App Store ne se synchronisent pas pour mettre à jour cet espace réservé, et il n'est pas possible de le modifier depuis le tableau de bord pour l'instant.
+Si vous ajoutez un produit qui existe déjà dans le store, ce prix est un espace réservé. Les analyses, les intégrations et le SDK d'Adapty utilisent les vrais prix récupérés depuis l'App Store, quelles que soient les valeurs saisies ici. Les modifications de prix effectuées dans l'App Store ne se synchronisent pas pour mettre à jour cet espace réservé, et il n'est actuellement pas possible de le modifier depuis le tableau de bord.
 
 ## L'export CSV des prix est vide \{#csv-price-export-is-empty\}
 
 Si votre export CSV des prix ne contient que les en-têtes de colonnes, c'est que votre clé API App Store Connect n'est pas entièrement configurée. Consultez [Étape 6 — Ajouter la clé API App Store Connect](app-store-connection-configuration#step-6-add-app-store-connect-api-key).
 
-## Impossible de publier de nouveaux produits sur l'App Store \{#cant-push-new-products-to-app-store\}
+## Impossible d'envoyer de nouveaux produits vers l'App Store \{#cant-push-new-products-to-app-store\}
 
-Adapty peut publier de nouveaux produits sur App Store Connect lorsque vous les créez dans le tableau de bord. L'option de publication est bloquée si votre intégration App Store n'est pas entièrement configurée. Deux paramètres sont requis :
+Adapty peut envoyer de nouveaux produits vers App Store Connect lorsque vous les créez dans le tableau de bord. L'option d'envoi est bloquée si votre intégration App Store n'est pas entièrement configurée. Deux paramètres sont requis :
 
-- **Apple app ID** : configurez-le à l'[Étape 1 — Renseigner le Bundle ID et l'Apple app ID](app-store-connection-configuration#step-1-provide-bundle-id-and-apple-app-id).
-- **App Store Connect API key** : configurez-la à l'[Étape 6 — Ajouter la clé API App Store Connect](app-store-connection-configuration#step-6-add-app-store-connect-api-key).
+- **Apple app ID** : configurez-le à l'étape [Étape 1 — Fournir le Bundle ID et l'Apple app ID](app-store-connection-configuration#step-1-provide-bundle-id-and-apple-app-id).
+- **App Store Connect API key** : configurez-la à l'étape [Étape 6 — Ajouter la clé API App Store Connect](app-store-connection-configuration#step-6-add-app-store-connect-api-key).
