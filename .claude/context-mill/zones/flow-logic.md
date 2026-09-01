@@ -1,6 +1,6 @@
 ---
 zone: flow-logic
-sources: [dashboard-interface, ios-sdk, jscore, unified-builder-transformer]
+sources: [dashboard-interface, ios-sdk, jscore]
 reviewed_shape: fd915eb8bdcf
 reviewed_at: 2026-08-10
 ---
@@ -39,14 +39,6 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   other. No flow-logic article uses or shows a **Does not equal** operator; take that operator's exact
   wording from `dashboard-interface` directly rather than from any article in this zone, since it isn't
   independently confirmed here.
-- **`unified-builder-transformer` is the authority for what an action does at runtime** — execution
-  order, whether anything blocks, what a navigation or alert dispatches. It compiles the builder JSON
-  into the synchronous JS the SDK runs, so those semantics are fixed before any platform SDK sees the
-  flow; check it before an SDK repo for a behavior claim. Confirmed 2026-08-26 against `develop`
-  (`compile-actions.ts`, `template.ts`, `docs/script-generation.md` §1/§5): actions emit one statement
-  each in authored order, nothing stops the ones after it, `_.nav` dispatches and returns, the alert's
-  OK button binds no handler. That replaced the "navigation must be last" callout in
-  `onboarding-actions` with an **Action order** section. Labels still come from `dashboard-interface`.
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
@@ -236,20 +228,6 @@ or developer can see and click.
   `placement-metrics.mdx`, `results-and-metrics.mdx`, and `webhook-event-types-and-fields.mdx` in one
   pass — mostly outside flow-logic, but a new revenue/proceeds/webhook field belongs in `flow-metrics`
   too whenever it lands in that cluster.
-- **The builder-deprecation fact is stated in four places, and a correction has to visit all of them.**
-  `grep -rn "October 1, 2026" src/content/docs src/components` returns exactly four hosts:
-  `paywall-onboarding-builder-deprecation` (the canon), the `BuilderDeprecation` reusable, the opening
-  `:::warning` of `migrate-to-flows`, and one bullet in `release-notes/whats-new`. The reusable then
-  multiplies its copy across five legacy articles — `grep -rln BuilderDeprecation src/content/docs` gives
-  `adapty-paywall-builder`, `create-onboarding`, `design-onboarding`, `onboardings` and
-  `quickstart-paywalls`, all in `paywalls-legacy`/`onboardings-legacy` — so one wording change lands on
-  seven reader-facing pages across three zones. **The absence of this rule already cost a ten-day
-  contradiction.** PR #511 (`0f53a8e8c`, 2026-08-18, "legacy builders keep editing after deprecation,
-  only creation and support end") changed the canon to say editing survives, and `git show --stat
-  0f53a8e8c` confirms it touched that one file — so the reusable and `migrate-to-flows` went on telling
-  readers the builders become "read-only: you can't create or edit" until they were corrected 2026-08-28.
-  `whats-new` was the one secondary copy that happened to already be right. Grep the **date**, never a
-  phrase: the four copies share no sentence, so a wording-based search finds at most one of them.
 
 ## Boundaries
 
