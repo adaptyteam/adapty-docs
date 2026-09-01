@@ -1,9 +1,11 @@
 ---
-title: "Capacitor SDKでの初回起動時にApple Ads対象ペイウォールを表示する"
-description: "Capacitorで初回起動時すぐにペイウォールを表示し、AdaptyProfile.appliedAttributionSourcesを使用してApple Adsユーザーにアトリビューションが適用された後にペイウォールをアップグレードする方法を説明します。"
-metadataTitle: "初回起動時にApple Ads対象ペイウォールを表示する | Capacitor SDK | Adapty ドキュメント"
+title: "Capacitor SDKで初回起動時にAA対象ペイウォールを表示する"
+description: "Capacitorで、AdaptyProfile.appliedExternalAttributionProvidersを使用して、アトリビューション適用後にApple Ads ユーザー向けのペイウォールをすぐに表示し、アップグレードする方法を説明します。"
+metadataTitle: "初回起動時にAA対象ペイウォールを表示する | Capacitor SDK | Adapty ドキュメント"
 ---
-Apple Ads（AA）のアトリビューションは `adapty.activate()` の後に非同期で届きます。初回起動時はまだ届いていないことが多いため、`getFlow` はデフォルトのオーディエンスで解決され、Apple Ads ユーザーは AA セグメント向けのペイウォールを見逃してしまいます。アトリビューションが届くまでペイウォールの表示を遅らせるのではなく、まず即座に表示し、AA アトリビューションが適用されたタイミングでリフレッシュしましょう。こうすることで、Apple Ads ユーザーにはターゲット設定済みのバリアントが表示され、それ以外のユーザーは待ち時間なしでペイウォールを見ることができます。`AdaptyProfile.appliedAttributionSources` を使うと、AA アトリビューションが適用されたタイミングを確認できます。
+
+Apple Ads (AA) のアトリビューションは `adapty.activate()` の後に非同期で届きます。初回起動時にはまだ届いていないことが多いため、`getFlow` はデフォルトのオーディエンスに対して解決され、Apple Ads ユーザーが AA セグメント向けのペイウォールを見逃してしまいます。アトリビューションが届くまでペイウォールの表示を遅らせるのではなく、すぐにペイウォールを表示し、AA アトリビューションが適用されたタイミングでリフレッシュしましょう。そうすることで、Apple Ads ユーザーはターゲット向けのバリアントを受け取り、それ以外のユーザーは待たずにペイウォールを見られます。AA アトリビューションが適用されたかどうかは `AdaptyProfile.appliedExternalAttributionProviders` で確認できます。
+
 ## 始める前に \{#before-you-start\}
 
 必要なもの：
@@ -12,21 +14,24 @@ Apple Ads（AA）のアトリビューションは `adapty.activate()` の後に
 
 ## 仕組み \{#how-it-works\}
 
-`adapty.activate()` を呼び出すと、SDKはバックグラウンドでApple Ads アトリビューションをAppleにリクエストし、その結果をAdaptyのバックエンドに転送します。AA がプロファイルのアクティブなアトリビューションソースになると、SDKは `onLatestProfileLoad` リスナーに更新された `AdaptyProfile` を届けます。このとき、`appliedAttributionSources` 配列には `'apple_search_ads'` が含まれています。
+`adapty.activate()` を呼び出すと、SDKはバックグラウンドでApple AdsのアトリビューションをAppleに要求し、結果をAdaptyのバックエンドに転送します。AAがプロファイルの有効なアトリビューションソースになると、SDKは更新された `AdaptyProfile` を `onLatestProfileLoad` リスナーに届けます。このとき、`appliedExternalAttributionProviders` 配列に `'apple_search_ads'` が含まれます。
 
-これにより、ペイウォールを2つのステップで読み込むことができます。
-1. すぐに `getFlow` を呼び出します。アトリビューションがまだ適用されていない状態では、Adapty はデフォルトのオーディエンスに対してリクエストを解決するため、ユーザーにはすぐにペイウォールが表示されます。
-2. `'apple_search_ads'` が現れたら、再度 `getFlow` を呼び出します。Adapty は Apple Ads オーディエンスに対してリクエストを解決し、ターゲットに合わせたペイウォールを返します。これにより、最初のペイウォールが置き換えられます。
+これにより、ペイウォールを2つのステップで読み込むことができます：
 
-`appliedAttributionSources` は空または存在しない場合があります。これは次のいずれかを意味します：
+1. すぐに `getFlow` を呼び出します。アトリビューションがまだ適用されていない状態では、Adapty はデフォルトオーディエンスに基づいてリクエストを解決し、ユーザーにすぐペイウォールが表示されます。
+2. `'apple_search_ads'` が現れたら、再度 `getFlow` を呼び出します。Adapty は今度は Apple Ads オーディエンスに基づいてリクエストを解決し、ターゲティングされたペイウォールを返します。これが最初のペイウォールと置き換わります。
+
+`appliedExternalAttributionProviders` は空または存在しない場合があります。これは次のいずれかを意味します：
 
 - このプロファイルに対して Apple Ads アトリビューションがまだ処理されていない、または
 - アトリビューションがまったく届いていない。
-どちらの場合でも、ステップ1は安全です — Adaptyは現在のプロファイル状態に一致するオーディエンス（通常はデフォルトオーディエンス）に対してリクエストを解決します。ステップ2は`'apple_search_ads'`が現れたときにのみ実行されます。
+
+いずれの場合でも、ステップ1は安全です。Adaptyは現在のプロファイルの状態に一致するオーディエンス（通常はデフォルトオーディエンス）に対してリクエストを解決します。ステップ2は`'apple_search_ads'`が現れた時点でのみ実行されます。
 
 :::important
-その後のすべての起動では、キャッシュされたプロファイルの`appliedAttributionSources`にすでに`'apple_search_ads'`が含まれているため、最初の`getFlow`の時点でApple広告でセグメントされたペイウォールが返されます — 2回目のフェッチや表示上の変化は発生しません。この2ステップのフローが重要なのは、アトリビューションがまだ取得中の初回起動時のみです。
+その後の起動では、キャッシュ済みのプロファイルにすでに`'apple_search_ads'`が`appliedExternalAttributionProviders`に含まれているため、最初の`getFlow`の時点でApple広告によるセグメント済みのペイウォールが返されます。2度目のフェッチや画面の切り替わりは発生しません。この2ステップのフローは、アトリビューションがまだ処理中の初回起動時にのみ関係します。
 :::
+
 ## 実装 \{#implementation\}
 
 ペイウォールをすぐに表示し、`'apple_search_ads'` を受信したらペイウォールを更新します。
@@ -35,7 +40,7 @@ Apple Ads（AA）のアトリビューションは `adapty.activate()` の後に
 3. **`adapty.addListener('onLatestProfileLoad', …)`でプロファイルの更新を購読し**、`'apple_search_ads'`が現れるのを監視します。これが表示されたら、ペイウォールを再取得して更新済みのものを表示してください。まだリスナーを設定していない場合は、[サブスクリプション更新のリッスン](capacitor-check-subscription-status#listen-to-subscription-updates)をご覧ください。
 ```typescript
 const listener = await adapty.addListener('onLatestProfileLoad', async ({ profile }) => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
   const targeted = await adapty.getFlow({ placementId });
   // present the targeted flow in place of the first one
 });
@@ -49,11 +54,11 @@ const listener = await adapty.addListener('onLatestProfileLoad', async ({ profil
 `onAppleAdsAttribution` は、Apple Ads のアトリビューションが適用されると解決し、`timeoutMs` 経過後に拒否されます。以下の使用例では、まずペイウォールをすぐに読み込んでおき、アトリビューションが届いた時点で再取得します。Apple Ads のユーザーにはターゲットペイウォールが表示され、アトリビューションが届かない場合は最初のペイウォールがそのまま表示されます。
 ```typescript
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**

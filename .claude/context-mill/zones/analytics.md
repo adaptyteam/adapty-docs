@@ -202,7 +202,7 @@ here unchanged and are not restated.
 | charts | entry | analyst | 3 | tutorial |
 | churned-expired-subscriptions | — | analyst | 3 | tutorial |
 | controls-filters-grouping-compare-proceeds | — | analyst | 9 | tutorial |
-| discrepancies-and-troubleshooting | — | analyst | 20 | tutorial |
+| discrepancies-and-troubleshooting | — | analyst | 21 | tutorial |
 | expired-churned-trials | — | analyst | 3 | tutorial |
 | grace-period | — | analyst | 3 | tutorial |
 | grace-period-converted | — | analyst | 4 | tutorial |

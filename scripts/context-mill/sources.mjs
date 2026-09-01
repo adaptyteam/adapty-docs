@@ -25,6 +25,31 @@ export function parseSources(md) {
   return sources;
 }
 
+// Per-machine clone locations. `sources.md` is shared and records one person's
+// layout (`~/Documents/...`); a writer whose clones live elsewhere lists them in
+// `sources.local.md` (gitignored) — same `## <id>` + `path:` format, and only
+// `path:` is honoured. The override lands in `localPath`, never `path`: `path`
+// stays canonical so `sourceAliases` (and therefore which sources a brief is
+// seen to cite) reads the same on every machine. Returns the ids the local file
+// names that the registry doesn't, so the caller can warn — a typo there would
+// otherwise silently leave the canonical path in force, which is the exact
+// failure the file exists to prevent.
+export function applyLocalPaths(sources, localMd) {
+  const byId = new Map(sources.map(s => [s.id, s]));
+  const unknown = [];
+  for (const local of parseSources(localMd)) {
+    const target = byId.get(local.id);
+    if (!target) { unknown.push(local.id); continue; }
+    if (local.path) target.localPath = local.path;
+  }
+  return unknown;
+}
+
+// Where the clone actually is on this machine.
+export function clonePath(source) {
+  return source.localPath ?? source.path;
+}
+
 // `existsOnDisk` is injected so validation stays pure and testable; the caller
 // supplies real filesystem access.
 export function sourceErrors(sources, { referencedIds, existsOnDisk }) {
@@ -38,7 +63,8 @@ export function sourceErrors(sources, { referencedIds, existsOnDisk }) {
     seen.add(s.id);
     if (s.kind === 'local-clone') {
       if (!s.remote) errors.push({ kind: 'missing-remote', id: s.id });
-      if (s.path && !existsOnDisk(s.path)) errors.push({ kind: 'missing-path', id: s.id, path: s.path });
+      const p = clonePath(s);
+      if (p && !existsOnDisk(p)) errors.push({ kind: 'missing-path', id: s.id, path: p });
     }
     if (!referencedIds.has(s.id)) errors.push({ kind: 'unreferenced', id: s.id });
   }

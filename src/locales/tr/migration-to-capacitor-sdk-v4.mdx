@@ -1,14 +1,21 @@
 ---
-title: "Adapty Capacitor SDK'yı v4.0'a Geçirme"
-description: "Adapty Capacitor SDK v4.0 (beta) sürümüne geçiş yapın: paywall API'lerini flow API'leriyle değiştirin; hem Flow Builder hem de Paywall Builder ile uyumludur."
-metadataTitle: "Adapty Capacitor SDK v4.0 (beta) Sürümüne Geçiş | Adapty Dokümanları"
+title: "Adapty Capacitor SDK'yı v4.1'e Taşıyın"
+description: "Adapty Capacitor SDK v4.1'e geçiş: paywall API'lerini flow API'leriyle değiştirin, yeniden adlandırılan attribution API'lerini benimseyin, Adapty Attribution'ı açıkça etkinleştirin ve yedek dosyanızı yeniden indirin."
+metadataTitle: "Adapty Capacitor SDK v4.1'e Geçiş | Adapty Dokümanları"
 ---
 
-Adapty Capacitor SDK 4.0 (beta), flow'ları tanıtıyor ve paywall API'lerini buna göre yeniden adlandırıyor. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışıyor; Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+Adapty Capacitor SDK 4.1, 4.x serisinin ilk kararlı sürümüdür — 4.0 yalnızca beta olarak yayımlandığından, 3.x sürümündeyseniz doğrudan 4.1'e geçiş yapın. Bu kılavuz, 4.0'da sunulan flow'ları ve bunların üzerine gelen 4.1 değişikliklerini kapsayan tüm geçiş sürecini ele alır.
+
+4.x serisi flow'ları tanıtıyor ve paywall API'larını buna göre yeniden adlandırıyor. Yeni API'lar hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez. Bunun yanı sıra 4.1, Adapty Attribution'ı opt-in hale getiriyor, harici attribution metodunu yeniden adlandırıyor, yedek dosya formatını değiştiriyor ve App Store'da tanıtılan uygulama içi satın almaları ekliyor.
+
+:::note
+4.0 beta'dan mı geliyorsunuz? Sabitlenmiş beta sürümünü [en son sürümle](#installation) değiştirin; ardından yalnızca dört bölüm geçerlidir: [Adapty Attribution varsayılan olarak devre dışıdır](#adapty-attribution-is-disabled-by-default), [yeniden adlandırılmış harici attribution API'leri](#renamed-external-attribution-apis), [yedek dosyalar](#fallback-files) ve [App Store'da tanıtılan uygulama içi satın almalar](#app-store-promoted-in-app-purchases).
+:::
 
 ## Hızlı Başvuru \{#quick-reference\}
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
+| Adapty Attribution varsayılan olarak etkin | varsayılan olarak devre dışı — `adaptyAttributionEnabled: true` ile etkinleştirin |
 | `adapty.getPaywall({ placementId, locale?, params? })` | `adapty.getFlow({ placementId, params? })` |
 | `adapty.getPaywallForDefaultAudience({ placementId, locale?, params? })` | `adapty.getFlowForDefaultAudience({ placementId, params? })` |
 | `adapty.getPaywallProducts({ paywall })` | `adapty.getPaywallProducts({ flow })` |
@@ -19,23 +26,26 @@ Adapty Capacitor SDK 4.0 (beta), flow'ları tanıtıyor ve paywall API'lerini bu
 | `EventHandlers` (tür) | `FlowEventHandlers` |
 | `CreatePaywallViewParamsInput` | `CreateFlowViewParamsInput` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` da adını korur, artık bir `AdaptyFlow` alır. `getFlow` ve `getFlowForDefaultAudience` metodları artık `locale` parametresi almaz — bunun yerine `createFlowView`'a aktarın. Satın alma ve profil API'leri (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) ve `setFallback` aynı imzaları korur, ancak yedek dosyasının kendisi yeniden indirilmelidir — bkz. [Yedek dosyalar](#fallback-files). `present`, `dismiss`, `setEventHandlers` ve `showDialog` view metodları ile `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` ve `onAndroidSystemBack` olay işleyicileri v3'tekiyle aynı adları korur. Onboarding metodları çalışmaya devam eder ancak artık kullanımdan kaldırılmıştır — bkz. [Onboarding API kullanımdan kaldırma](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| 3.x için indirilen yedek dosya | yeni yedek dosya formatı — dosyayı yeniden indirin |
+| Promosyonlu uygulama içi satın almalar desteklenmiyor | `'onPromotedPurchaseReceived'` etkinliği ve `adapty.makePromotedPurchase({ product })` |
+
+`AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` de adını korur, artık bir `AdaptyFlow` alır. `getFlow` ve `getFlowForDefaultAudience` metodları artık `locale` parametresi almaz — bunun yerine `createFlowView`'a geçirin. Satın alma ve profil API'leri (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) ve `setFallback` aynı imzaları korur, ancak yedek dosyanın kendisinin yeniden indirilmesi gerekir — bkz. [Yedek dosyalar](#fallback-files). `present`, `dismiss`, `setEventHandlers`, `clearEventHandlers` ve `showDialog` view metodları ile `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` ve `onAndroidSystemBack` olay işleyicileri v3'teki ile aynı adları korur. Onboarding metodları hâlâ çalışır ancak kullanımdan kaldırılmıştır — bkz. [Onboarding API'sinin kullanımdan kaldırılması](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
 
 ## Minimum sürümler \{#minimum-versions\}
 
-Çalışma zamanı gereksinimleri v3.16+ sürümünden itibaren değişmedi: **iOS 15.0**, **Android minSdk 24** ve **Capacitor 8**. Dağıtım hedefinde herhangi bir değişiklik yapmanıza gerek yok.
+Çalışma zamanı gereksinimleri v3.16+ sürümünden itibaren değişmedi: **iOS 15.0**, **Android minSdk 24** ve **Capacitor 8**. Deployment target değişikliğine gerek yok.
 
-Yeni bir derleme gereksinimi bulunuyor: **Xcode 26 veya üzeri** — bu sürümle birlikte gelen yerel Adapty iOS SDK 4.0.2, Swift tools 6.2 kullanıyor.
+Yeni bir derleme gereksinimi var: **Xcode 26 veya üzeri** — bu sürümle birlikte gelen yerel Adapty iOS SDK'sı Swift tools 6.2 kullanıyor.
 
-v4, yerel Adapty SDK'larından iOS 4.0.2 ve Android BOM 4.0.1'i içeriyor.
 
 ## Kurulum \{#installation\}
 ### Paketi güncelleyin \{#update-the-package\}
 
-v4.0 bir ön sürüm olduğundan, tam sürümü sabitleyin — npm, şapka/tilde aralıklarıyla ön sürüm sürümlerini seçmez:
-
 ```bash showLineNumbers
-npm install @adapty/capacitor@4.0.1-beta.1
+npm install @adapty/capacitor@latest
 ```
 
 Ardından yerel projeleri senkronize edin:
@@ -43,6 +53,7 @@ Ardından yerel projeleri senkronize edin:
 ```bash showLineNumbers
 npx cap sync
 ```
+
 ### iOS: Yalnızca Swift Package Manager
 
 [CocoaPods'ın spec repo'su Aralık 2026'da salt okunur hale geliyor](https://blog.cocoapods.org/CocoaPods-Specs-Repo/); bu nedenle v4 itibarıyla `AdaptyCapacitor.podspec` kaldırılmıştır ve SDK, iOS'ta **yalnızca Swift Package Manager (SPM)** üzerinden kurulmaktadır. Uygulamanızın iOS projesinin Capacitor'ın SPM entegrasyonunu kullanması gerekir:
@@ -55,6 +66,27 @@ npx cap add ios --packagemanager SPM
 - Mevcut CocoaPods tabanlı uygulamalar: [Capacitor'ın mevcut bir projede SPM kullanma kılavuzu](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project)nu izleyerek iOS projesini taşıyın.
 
 Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-capacitor) sayfasına bakın.
+## ⚠️ Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+[Adapty Attribution](user-acquisition) kullanıyorsanız ve opt-in yapmadan SDK 4.1'e güncelleme yaparsanız, sistem sessizce bozulur — kurulumlar kayıt edilmeyi durdurur ve hiçbir uyarı gösterilmez.
+:::
+
+Önceki sürümlerde SDK, [Adapty Attribution](user-acquisition) için kurulumları otomatik olarak kaydediyordu. SDK 4.1 sürümünden itibaren bu özellik varsayılan olarak kapalıdır: SDK kurulumları kaydetmez, `'onInstallationDetailsSuccess'` ve `'onInstallationDetailsFail'` olayları hiçbir zaman tetiklenmez ve `getCurrentInstallationStatus` fonksiyonu `not_available` durumunu döndürür.
+
+Adapty Attribution kullanıyorsanız, SDK'yı etkinleştirirken bu özelliği açın:
+
+```diff showLineNumbers
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
++     adaptyAttributionEnabled: true,
+    },
+  });
+```
+
+Adapty Attribution kullanmıyorsanız herhangi bir değişiklik yapmanıza gerek yoktur.
+
 ## Flow'ları Getirme \{#fetching-flows\}
 ### getPaywall → getFlow
 
@@ -66,9 +98,9 @@ Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişiyor ve `locale` se
 + const view = await createFlowView(flow, { locale: 'en' });
 ```
 
-`locale` parametresi `createFlowView` üzerinde isteğe bağlı olmaya devam eder: atlandığında görünüm `en` dilinde ya da flow'un `en` yerelleştirmesi yoksa flow'un varsayılan yerelleştirmesiyle görüntülenir. Bkz. [Yerelleştirmeler ve yerel ayar kodları](capacitor-localizations-and-locale-codes).
+`locale`, `createFlowView` üzerinde isteğe bağlı olmaya devam eder: belirtmezseniz görünüm `en` dilinde veya flow'un varsayılan yerelleştirmesinde (flow'un `en` dili yoksa) render edilir. Bu geri dönüş mekanizması nedeniyle görünüm, talep ettiğinizden farklı bir yerelleştirmede render edilebilir — yeni `FlowViewController.locale` özelliği hangisinin kullanıldığını bildirir. Bkz. [Yerelleştirmeler ve locale kodları](capacitor-localizations-and-locale-codes).
 
-`getPaywallForDefaultAudience` da aynı şekilde yeniden adlandırılır:
+`getPaywallForDefaultAudience` aynı şekilde yeniden adlandırılmıştır:
 
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywallForDefaultAudience({ placementId: 'YOUR_PLACEMENT_ID', locale: 'en' });
@@ -83,31 +115,40 @@ Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişiyor ve `locale` se
 - const products = await adapty.getPaywallProducts({ paywall });
 + const products = await adapty.getPaywallProducts({ flow });
 ```
-### Yedek dosyalar \{#fallback-files\}
+### Yedek dosyalar
 
-Yedek dosya formatı [SDK v4 ile değişti](fallback-flows). Yeni dosyayı **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden indirin ve uygulamanıza ekleyin.
+[Yedek dosya](fallback-flows) formatı 4.x serisinde değişti ve 4.1'de tekrar değişti. Daha önce 4.0 beta için indirmiş olsanız bile, dosyayı **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden tekrar indirip uygulamanıza ekleyin.
+
+:::warning
+Bu adım herhangi bir derleme hatası vermez. Atlarsanız, `setFallback` eski dosyayı reddeder ve her placement yedek paywall'ını kaybeder.
+:::
 
 ## Veri modeli \{#data-model\}
 
 `getFlow`, `AdaptyPaywall` yerine bir `AdaptyFlow` döndürür ve nesne yapısı değişti:
 | v3 `AdaptyPaywall` alanı | v4 `AdaptyFlow` alanı | İşlem |
 |---|---|---|
-| `remoteConfig?` (tekil) | `remoteConfigs?: AdaptyRemoteConfig[]` (dizi) | Bir flow, yapılandırılmış her dil için bir remote config taşır. Kullanıcıyla eşleşeni okuyun: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
-| `products` | `flow.paywalls[i].productIdentifiers` | Ürün tanımlayıcıları artık flow üzerinde değil, her flow varyasyonunda yer alır. |
+| `remoteConfig?` (tek) | `remoteConfigs?: AdaptyRemoteConfig[]` (dizi) | Bir flow, yapılandırılmış her dil için bir remote config taşır. Kullanıcıya uyan olanı okuyun: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `productIdentifiers` | `flow.paywalls[i].productIdentifiers` | Ürün tanımlayıcıları artık flow'da değil, her flow varyasyonunda bulunur. |
+| `products` (v3'te kullanımdan kaldırıldı) | kaldırıldı | `flow.paywalls[i].productIdentifiers` kullanın ya da tam ürünler için `getPaywallProducts(flow)` çağırın. `ProductReference` artık public bir tür olarak mevcut değil. |
 | `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Flow'dan her paywall varyasyonuna taşındı. |
 | `version?: number` | `flowVersionId?: string` | Yeniden adlandırıldı ve tür `number`'dan `string`'e değişti. |
-| `hasViewConfiguration` | kaldırıldı | `hasViewConfiguration` kontrolünü kodunuzdan kaldırın — `createFlowView` artık bunun yerine hata fırlatır (bkz. [Flow'ları görüntüleme](#displaying-flows)). |
-| `requestLocale` | kaldırıldı | Locale artık modelin bir parçası değildir. |
-| _(yeni)_ | `paywalls: AdaptyFlowPaywall[]` | Her giriş, flow'daki bir paywall varyasyonudur. |
+| `hasViewConfiguration` | kaldırıldı | Kodunuzdaki tüm `hasViewConfiguration` kontrollerini kaldırın — artık `createFlowView` hata fırlatır (bkz. [Flow'ları görüntüleme](#displaying-flows)). |
+| `requestLocale` | kaldırıldı | Yerel ayar artık modelin bir parçası değil. |
+| _(yeni)_ | `paywalls: AdaptyFlowPaywall[]` | Her giriş, flow içindeki bir paywall varyasyonudur. |
 | _(yeni)_ | `responseCreatedAt: number` | Sunucu yanıt zaman damgası, milisaniye cinsinden. |
+
 `hasViewConfiguration` ve `requestLocale`, `AdaptyOnboarding` üzerinde kalmaya devam eder — yalnızca flow modeli bunları kaldırır.
 
 Ürün tanımlayıcıları flow'dan her varyasyona taşındı:
 
 ```diff showLineNumbers
-- const ids = paywall.products;
+- const ids = paywall.productIdentifiers;
 + const ids = flow.paywalls[0].productIdentifiers;
 ```
+
+Kodunuz hâlâ `paywall.products` okuyorsa — v3'te kullanımdan kaldırılmış ve artık tamamen kaldırılmıştır — `productIdentifiers` kullanımına geçin ya da yalnızca tanımlayıcılar yerine tam ürünlere ihtiyaç duyduğunuzda `getPaywallProducts(flow)` çağırın.
+
 ## Web paywall yöntemleri \{#web-paywall-methods\}
 
 `openWebPaywall` ve `createWebPaywallUrl` adlarını korur, ancak `paywallOrProduct` seçeneği artık `AdaptyPaywall` yerine `AdaptyFlowPaywall` (bir flow varyasyonu) alır. Yine de `AdaptyPaywallProduct` geçirebilirsiniz. İlk girişi okumadan önce `flow.paywalls` öğesinin boş olmadığını kontrol edin:
@@ -131,7 +172,8 @@ v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](a
 ## Flow'ları Görüntüleme \{#displaying-flows\}
 ### createPaywallView → createFlowView
 
-Factory fonksiyonunu yeniden adlandırın ve `AdaptyFlow`'u geçirin. Döndürülen controller, `PaywallViewController`'dan `FlowViewController`'a yeniden adlandırıldı; ancak metodları (`present`, `dismiss`, `setEventHandlers`, `showDialog`) değişmedi. Params tipi `CreatePaywallViewParamsInput`'tan `CreateFlowViewParamsInput`'a yeniden adlandırıldı:
+Factory fonksiyonunu yeniden adlandırın ve `AdaptyFlow`'u geçirin. Döndürülen controller `PaywallViewController`'dan `FlowViewController`'a yeniden adlandırılmıştır, ancak metotları (`present`, `dismiss`, `setEventHandlers`, `clearEventHandlers` ve `showDialog`) değişmeden kalmıştır. Params türü `CreatePaywallViewParamsInput`'tan `CreateFlowViewParamsInput`'a yeniden adlandırılmıştır:
+
 ```diff showLineNumbers
 - import { createPaywallView } from '@adapty/capacitor';
 + import { createFlowView } from '@adapty/capacitor';
@@ -158,15 +200,28 @@ Factory fonksiyonunu yeniden adlandırın ve `AdaptyFlow`'u geçirin. Döndürü
 :::note
 Bir flow view tek kullanımlıktır: `dismiss()` çağırdıktan sonra view yok edilir ve olay işleyicileri temizlenir; flow'u tekrar göstermek için `createFlowView`'ı yeniden çağırmanız gerekir.
 :::
-### Android güvenli alan dolguları \{#android-safe-area-paddings\}
+### Yeni parametreler \{#new-parameters\}
 
-`CreateFlowViewParamsInput`, çalışma zamanında Android güvenli alan dolgularını kontrol eden yeni bir `enableSafeArea` parametresi ekler. Bu parametre, `android` anahtarı altında yer alır ve varsayılan değeri `true`'dur:
+`CreateFlowViewParamsInput`, v3'teki tüm parametreleri (`prefetchProducts`, `loadTimeoutMs`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) korur ve üç yeni parametre ekler:
+
+:::note
+`customTimers` hâlâ geçerlidir, ancak yalnızca eski Paywall Builder paywalllarını etkiler. Bir flow'un [geri sayım sayacı](flow-timer), Flow Builder'da ayarlanan davranışa göre çalışır; dolayısıyla flow, buraya ilettiğiniz değerleri yok sayar.
+:::
+
+| Parametre | Açıklama |
+|---|---|
+| `locale` | Flow'un hangi yerelleştirmeyle gösterileceğini belirtir. `getPaywall`'dan buraya taşındı — bkz. [getPaywall → getFlow](#getpaywall--getflow). |
+| `customLayoutId` | Flow Builder'da tanımlanmış bir layout'un özel ID'si. SDK'nın cihaz türü ve ekran boyutuna göre otomatik seçmesi yerine belirli bir layout'u göstermek için kullanın. ID ile eşleşen layout bulunamazsa flow, görünüm yapılandırması olmadan yüklenir. |
+| `android.enableSafeArea` | Android'de güvenli alan (safe-area) dolgularını çalışma zamanında kontrol eder. `android` anahtarının altında yer alır ve varsayılan değeri `true`'dur. |
 
 ```typescript showLineNumbers
 const view = await createFlowView(flow, {
+  locale: 'en',
+  customLayoutId: 'tablet_landscape',
   android: { enableSafeArea: true },
 });
 ```
+
 ## Olayları yönetme \{#handling-events\}
 
 Olay işleyici arayüzü `EventHandlers` yerine `FlowEventHandlers` olarak yeniden adlandırıldı ve bir callback yeniden adlandırıldı. Mevcut işleyici gövdelerinde kod değişikliği gerekmez — sadece yeniden adlandırın:
@@ -175,11 +230,64 @@ Olay işleyici arayüzü `EventHandlers` yerine `FlowEventHandlers` olarak yenid
 - onRenderingFailed: (error) => { /* … */ },
 + onError: (error) => { /* … */ },
 ```
-Diğer tüm event handler'lar isimlerini korur. İki tanesi ayrıca ikinci bir argüman kazanır: `onPurchaseCompleted` artık `(purchaseResult, product)` ve `onPurchaseFailed` artık `(error, product)` şeklindedir; burada `product`, işleme dahil olan `AdaptyPaywallProduct`'tır. Tam liste için [Flow ve paywall event'lerini yönetme](capacitor-handling-events) sayfasına bakın.
+Diğer tüm event handler'lar isimlerini korur. Biri imzasını değiştirir: `onAppeared` artık `()` yerine `(view)` şeklindedir; burada `view`, ortaya çıkan görünümü açıklayan — oluşturulduğu lokalizasyon dahil — bir `FlowEventView` nesnesidir. Mevcut handler'lar yeni argümanı görmezden geldiği için çalışmaya devam eder. Tam liste için [Flow & paywall event'lerini yönetme](capacitor-handling-events) bölümüne bakın.
 
-v4 ayrıca isteğe bağlı olarak etkinleştirebileceğiniz birkaç yeni özellik ekler:
-- `adapty.openWebUrl({ url, openIn })` ve `adapty.requestAppReview()` metodları — bunlar varsayılan `onUrlPress` ve `onRequestAppReview` işleyicilerini destekler; bu sayede URL'ler ve uygulama değerlendirme istemleri kutudan çıkar çıkmaz yerel olarak yönetilir. Bu işleyicileri geçersiz kıldığınızda doğrudan çağırın.
-- Flow'lar içinde Observer modu satın alma yönetimi, yeni `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` işleyicileri aracılığıyla yapılır. Bkz. [Flow'ları Observer modunda sunma](capacitor-present-flows-in-observer-mode).
+v4 ayrıca isteğe bağlı olarak kullanabileceğiniz birkaç yetenek ekler:
+
+- `adapty.openWebUrl({ url, openIn })` ve `adapty.requestAppReview()` metodları — bunlar varsayılan `onUrlPress` ve `onRequestAppReview` handler'larını destekler; dolayısıyla URL'ler ve uygulama değerlendirme istemleri kutudan çıktığı gibi yerel olarak işlenir. Yalnızca bu handler'ları geçersiz kılıyorsanız doğrudan çağırın.
+- Flow'lar içinde Observer mode satın alma işlemi, yeni `onObserverPurchaseInitiated` / `onObserverRestoreInitiated` handler'ları aracılığıyla gerçekleştirilir. Bkz. [Flow'ları Observer mode'da sunma](capacitor-present-flows-in-observer-mode).
+- `onAnalytics: (name, params)` — bir flow'un yaydığı analytics olayları; kullanıcının açtığı her ekran için bir ekran görüntüleme olayıyla başlar. Bkz. [Flow ekran görüntülemelerini izleme](capacitor-flow-screen-views).
+- `onRequestPermission: (permission, customArgs)` — bir flow'dan gelen sistem izni istekleri (push bildirimleri veya kamera erişimi gibi) için ayrılmıştır. Flow'lar henüz izin isteği tetiklemiyor, bu yüzden bunu uygulamanız gerekmiyor.
+
+Ayrıca, 4.1 bir flow handler yerine SDK düzeyinde bir event ekler: `'onPromotedPurchaseReceived'`; `adapty.addListener` aracılığıyla iletilir. Herhangi bir listener kayıtlı değilse SDK promosyonlu satın almayı kendisi tamamlar; bir listener kaydedildiğinde ise tamamlama sorumluluğu uygulamanıza geçer. Bkz. [App Store'da tanıtılan uygulama içi satın almalar](#app-store-promoted-in-app-purchases).
+
+## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
+
+SDK sürüm 4.1'den itibaren, harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi aktarmak için kullanılan API'ler, native SDK'larla eşleşecek şekilde yeniden adlandırıldı. Eski adlar için herhangi bir deprecated alias tanımlanmadığından, mevcut çağrı noktaları yeniden adlandırılana kadar çalışmayı durduracaktır:
+
+| 4.1 Öncesi | 4.1 |
+|---|---|
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+### updateAttribution → updateExternalAttribution
+
+Metot yeniden adlandırıldı ve `source` seçeneği `provider` olarak değiştirildi. Attribution verisi hâlâ düz bir nesnedir:
+
+```diff showLineNumbers
+- await adapty.updateAttribution({ attribution, source: 'adjust' });
++ await adapty.updateExternalAttribution({ attribution, provider: 'adjust' });
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+Sağlayıcı türü yeniden adlandırıldı. Açık bir union olarak kalır — önceden tanımlanmış değerler `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'` ve `'tenjin'`dir; başka herhangi bir string de kabul edilir, bu sayede Adapty'nin ileride ekleyeceği bir sağlayıcı SDK güncellemesi gerektirmez:
+
+```diff showLineNumbers
+- import type { AttributionSource } from '@adapty/capacitor';
++ import type { AdaptyExternalAttributionProvider } from '@adapty/capacitor';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Profile'a uygulanan attribution sağlayıcılarını listeleyen profil özelliği yeniden adlandırıldı ve eleman türü de buna göre değişti:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Bu özelliği kullanan kodların güncellenmesi gerekiyor — bakınız [Apple Ads hedefli paywall gösterme](capacitor-show-aa-targeted-paywall).
+
+## App Store'da tanıtılan uygulama içi satın almalar \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1, [App Store ürün sayfanızda tanıtılan uygulama içi satın almaları](capacitor-making-purchases#in-app-purchases-from-the-app-store) destekler. Bu yeni bir özelliktir, bir geçiş adımı değildir: SDK, tanıtılan satın alma işlemlerini kendi başına tamamlar; bu nedenle herhangi bir kod yazmadan bu davranışı elde edersiniz.
+
+Tamamlamayı kendiniz üstlenmek için — örneğin önce bir ekran göstermek amacıyla — yalnızca kod yazın. Yeni `'onPromotedPurchaseReceived'` etkinliği için bir dinleyici kaydedin ve satın almayı `adapty.makePromotedPurchase` ile tamamlayın. Bu dinleyici kayıtlıyken, SDK promosyon satın almalarını sizin yerinize tamamlamayı durdurur.
+
 ## Varsayılan davranış değişiklikleri \{#default-behavior-changes\}
 
 Bu değişiklikler derleme hatası oluşturmaz, bu nedenle çalışma zamanında test edin:
@@ -208,8 +316,8 @@ Bu semboller artık `@adapty/capacitor`'dan export edilmiyor. İlgili importlar�
 ### makePurchase: Android parametreleri \{#makepurchase-android-parameters\}
 
 `MakePurchaseParamsInput`'ın kullanımdan kaldırılmış düz Android yapısı kaldırıldı — yalnızca iç içe geçmiş form geçerlidir. Android satın alma parametrelerini `params: { android: { ... } }` içine taşıyın. Tam örnek için [Satın alma yapma](capacitor-making-purchases) sayfasına bakın.
-## Onboarding API kullanımdan kaldırılması \{#onboarding-api-deprecation\}
+## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
 
-Eski onboarding API'si v4.0'da [Flow Builder](adapty-flow-builder) lehine kullanımdan kaldırıldı. Hâlâ çalışmaya devam etmektedir, ancak gelecekteki bir sürümde kaldırılacaktır; bu nedenle onboarding'lerinizi Flow Builder'a taşımayı planlayın.
+Eski onboarding API'si, [Flow Builder](adapty-flow-builder) lehine v4'te kullanımdan kaldırılmıştır. Hâlâ çalışmaya devam eder, ancak gelecekteki bir sürümde kaldırılacak; bu nedenle onboardings'lerinizi Flow Builder'a taşımayı planlayın.
 
 Kullanımdan kaldırılan semboller: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` ve `OnboardingViewController`.

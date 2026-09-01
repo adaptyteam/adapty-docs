@@ -1,20 +1,22 @@
 ---
 title: "Capacitor SDK ile mobil uygulamada satın alma yapma"
-description: "Adapty kullanarak uygulama içi satın almaları ve abonelikleri yönetme rehberi."
-metadataTitle: "Adapty'de Uygulama İçi Satın Almaları Yönetme | Adapty Dokümanları"
+description: "Adapty kullanarak uygulama içi satın alımları ve abonelikleri yönetme rehberi."
+metadataTitle: "Adapty ile Uygulama İçi Satın Alımları Yönetme | Adapty Dokümanları"
 keywords: ['makePurchase', 'offer code']
 rank: 100
 displayed_sidebar: sdkcapacitor
 ---
-import SampleApp from '@site/src/locales/tr/reusable/SampleApp.md';
+
 import OfferCodesInfo from '@site/src/locales/tr/reusable/OfferCodesInfo.mdx';
 
-Mobil uygulamanızda paywall'ları görüntülemek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız, yalnızca bu paywall'ları göstermek satın almaları desteklemek için yeterlidir.
-Paywall Builder kullanmıyorsanız, satın alma işlemini tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metodu kullanmanız gerekir. Bu metot, kullanıcıların paywalllarla etkileşime girerek istedikleri işlemleri gerçekleştirmesi için bir geçit görevi görür.
+Mobil uygulamanızda paywall'ları göstermek, kullanıcılara premium içerik veya hizmetlere erişim sunmanın temel adımlarından biridir. Ancak paywall'larınızı özelleştirmek için [Paywall Builder](adapty-paywall-builder) kullanıyorsanız, satın alma işlemlerini desteklemek için bu paywall'ları göstermek yeterlidir.
 
-Bir kullanıcının satın almak istediği ürün için paywallınızda aktif bir promosyon teklifi varsa, Adapty bunu satın alma sırasında otomatik olarak uygular.
+Paywall Builder kullanmıyorsanız, satın alma işlemini tamamlamak ve istenen içeriğin kilidini açmak için `.makePurchase()` adlı ayrı bir metot kullanmanız gerekir. Bu metot, kullanıcıların paywall'larla etkileşime geçmesini ve istedikleri işlemleri gerçekleştirmesini sağlayan ana giriş noktasıdır.
 
-[Başlangıç yapılandırmasını](quickstart) tek bir adımı bile atlamamış şekilde tamamladığınızdan emin olun. Bu adım olmadan satın almaları doğrulayamayız.
+Kullanıcının satın almaya çalıştığı ürün için paywall'ınızda aktif bir promosyon teklifi varsa, Adapty bunu satın alma sırasında otomatik olarak uygular.
+
+Tek bir adımı bile atlamadan [başlangıç yapılandırmasını](quickstart) tamamladığınızdan emin olun. Bu olmadan satın alımları doğrulayamayız.
+
 ## Satın alma işlemi gerçekleştirme \{#make-purchase\}
 
 :::note
@@ -148,6 +150,34 @@ try {
 
 :::danger
 Gözlemlerimize göre, bazı uygulamalarda Teklif Kodu Kullanma ekranı güvenilir şekilde çalışmayabilir. Kullanıcıyı doğrudan App Store'a yönlendirmenizi öneririz.
-Bunu yapmak için aşağıdaki formatta bir URL açmanız gerekir:
+Bunu yapmak için aşağıdaki formattaki URL'yi açmanız gerekir:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## App Store'dan uygulama içi satın almalar \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Tanıtılan uygulama içi satın almalar, SDK 4.1 sürümünden itibaren desteklenmektedir ve **iOS 16.4** veya üzerini gerektirir. iOS 16.4 altındaki cihazlarda uygulamanıza ulaşmazlar. Olay Android'de hiçbir zaman tetiklenmez.
+:::
+
+Bir kullanıcı App Store ürün sayfanızdan satın alma başlatığında ve işlem uygulamanıza aktarıldığında, SDK bunu otomatik olarak tamamlar — Apple satın alma sistemi ekranı hemen görünür ve Adapty işlemi diğer satın almalar gibi işler. Bunun için tarafınızda herhangi bir kod yazmanıza gerek yoktur.
+
+Tanıtılan ürün bir abonelik teklifi içeriyorsa, SDK satın alma sırasında bunu otomatik olarak uygular. Teklif, App Store satın alma niyetinden okunur; bu bilgi iOS 18.0 ve sonrasında kullanılabilir. iOS 16.4–17.x sürümlerinde satın alma işlemi temel fiyat üzerinden gerçekleşir.
+
+Tamamlama işlemini kendiniz yönetmek istiyorsanız — örneğin önce kendi ekranınızı göstermek için — `'onPromotedPurchaseReceived'` olayını dinleyin ve ürünü `makePromotedPurchase` fonksiyonuna geçirin:
+
+```typescript showLineNumbers
+
+const listener = await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+  // satın alma sonucunu işle
+});
+```
+
+:::warning
+Listener'ınız kayıtlıyken SDK, promosyonlu satın almaları sizin yerinize tamamlamayı durdurur. Handler'ınız hiçbir zaman `makePromotedPurchase` çağırmazsa satın alma gerçekleşmez: App Store ürünü uygulamanıza teslim eder ve bekler. Otomatik davranışı geri yüklemek için `listener.remove()` çağrısını kullanın.
+:::
+
+`makePromotedPurchase` hiçbir satın alma parametresi almaz — tanıtılan ürün bir paywall'dan değil, App Store'dan gelir, dolayısıyla herhangi bir paywall bağlamı taşımaz. `makePurchase` ile aynı [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) değerini döndürür.
+
+`adapty.removeAllListeners()` çağrısı, tanıtılan satın alma dinleyicinizi diğer dinleyicilerle birlikte kaldırır ve SDK'nın otomatik tamamlaması onun yerine devreye girer. Uygulamanız tamamlamayı hâlâ kendi yönetiyorsa dinleyiciyi yeniden kaydedin.

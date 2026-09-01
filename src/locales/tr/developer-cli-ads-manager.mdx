@@ -65,6 +65,69 @@ Anahtar kelimeler, çağrı başına en fazla 100'lük gruplar hâlinde uygulan�
 
 Tam bir dosya göndermeden önce birkaç anahtar kelimeyle başlayıp sonucu kontrol edin.
 
+## Maksimum Dönüşüm kampanyası oluşturma \{#max-conversions\}
+
+`MAX_CONVERSIONS` ile teklif veren bir kampanya, yalnızca otomatik bir reklam grubuna sahip olduğunda yayınlanır; bu nedenle ikisini birlikte oluşturun:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Max Conv" --adam-id 123456 --country US --daily-budget 50 --bidding-strategy MAX_CONVERSIONS
+adapty asa ad-groups create --campaign <campaign-id> --name "Automated Max Conv" --automated
+```
+
+O reklam grubu oluşturulana kadar kampanya `serving_status: NOT_RUNNING` bildirir; `serving_state_reasons` alanında `AUTOMATED_KEYWORDS_REQUIRED_AD_GROUP_MISSING` yer alır ve `campaigns create` hem nedeni hem de bunu çözen komutu yazdırır.
+
+`--automated` seçeneği bu gereksinimi karşılayan şeydir — `--automated-keywords` ile oluşturulan normal bir reklam grubu bunu karşılamaz. Apple, otomatik reklam grubunu kendisi zamanlar ve yönetir; bu nedenle `--start-time` almaz, `--default-bid` isteğe bağlıdır ve reklam grubu etkin kalır: harcamayı durdurmak için kampanyayı duraklatın.
+
+Kampanyada `--target-cpa` değerini `--daily-budget` değerinden düşük tutun.
+
+## Kredi limiti için Faturalama Seçeneklerini Ayarlama \{#invoicing-options\}
+
+Apple, kredi limitiyle faturalandırılan bir kuruluştaki her kampanya için Faturalama Seçeneklerini zorunlu kılar. `adapty asa orgs list` komutu, her kuruluşun `payment_model` değerini raporlar — `LOC` değeri, beş `--invoice-*` bayrağının geçerli olduğu anlamına gelir:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "LOC push" --adam-id 123456 --country US --daily-budget 50 --invoice-advertiser "Acme Inc" --invoice-order-number PO-42 --invoice-contact-name "Jane Doe" --invoice-contact-email jane@acme.com --invoice-billing-email billing@acme.com
+```
+
+Pass all five in one call — a partial set is rejected before the request reaches Apple. Without them, the campaign is created but reports `serving_status: NOT_RUNNING` with `MISSING_BO_OR_INVOICING_FIELDS`.
+
+Beş bayrağın tamamını tek bir çağrıda geçin; eksik set Apple'a ulaşmadan reddedilir. Bunlar olmadan kampanya oluşturulur ancak `serving_status: NOT_RUNNING` ile birlikte `MISSING_BO_OR_INVOICING_FIELDS` hatası döner.
+
+The same five flags on `adapty asa campaigns update` set the Invoicing Options on a campaign that already exists. They replace the stored set as a whole, so pass all five even to change one of them.
+
+`adapty asa campaigns update` komutundaki aynı beş bayrak, mevcut bir kampanyada Faturalama Seçeneklerini ayarlar. Depolanan kümenin tamamının yerini aldıklarından, yalnızca birini değiştirmek istediğinizde bile beşini birden geçin.
+
+## Tek işlemde kampanya yapısı oluşturma \{#create-a-campaign-structure-in-one-operation\}
+
+`campaigns bulk-create`, `campaigns create` ve `ad-groups create` üzerinde döngü kuran bir betiğin yerini alır. Kampanyaları, reklam gruplarını, anahtar kelimeleri, negatif anahtar kelimeleri ve reklamları tek bir işlem olarak gönderir:
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Girdi, yapının JSON açıklamasıdır — alanlar için [yapı formatına](developer-cli-ads-manager-reference#adapty-asa-campaigns-bulk-create) bakın. JSON, bir AI ajanı için en doğal yoldur: yapıyı oluşturur ve doğrudan aktarır:
+
+```bash
+cat structure.json | adapty asa campaigns bulk-create --file -
+```
+
+Yerel bir [Apple Ads toplu şablonu](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) da giriş olarak kullanılabilir — sunucu, `Campaign_And_Adgroup_Template.xlsx` dosyasını veya bir [anahtar kelime `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) dosyasını yapıya dönüştürür. `--org-id`, `adapty asa orgs list` komutundan alınan sayısal `org_id` değerini alır. Oluşturma işleminden önce dönüşümü incelemek için `--preview` ekleyin:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567 --preview
+```
+
+Dönüşüm sorunları, ait oldukları sayfa, satır ve sütunla birlikte raporlanır. Çıktı yapısı doğru göründüğünde, göndermek için `--preview` parametresini kaldırın.
+
+`--preview` çıktısı aynı zamanda başlangıç yapı dosyası oluşturmanın en hızlı yoludur: çıktıyı kaydedin, düzenleyin ve `--file` ile gönderin — tıpkı [`automations get`](#run-automation-rules) komutunun bir kural şablonu sağlaması gibi.
+
+Yapının tamamı herhangi bir şey oluşturulmadan önce doğrulanır; reddedilmesi durumunda geçersiz her düğüm listelenir. Kabul edildikten sonra nesneler sunucuda oluşturulurken komut ilerlemeyi raporlar. Nihai rapor `success`, `partial` veya `failed` şeklindedir — `partial` sonucu, oluşturulmayan her nesneyi Apple'ın hatasıyla birlikte listeler.
+
+Büyük bir yapı için, işlem kimliğini hemen geri almak ve ilerlemeyi daha sonra okumak amacıyla `--no-wait` seçeneğini kullanın:
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
 ## Temsilcilerden ve komut dosyalarından metrik sorgulama \{#query-metrics-from-agents-and-scripts\}
 
 `asa metrics`, bir tarih aralığında hesabın herhangi bir düzeyinde raporlama yapar. Bir yapay zeka temsilcisi veya komut dosyasının sonucu doğrudan tüketebilmesi için `--json` ekleyin:

@@ -171,7 +171,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | android-restore-purchase | — | dev | 1 | android |
 | android-troubleshoot-purchases | — | dev | 6 | android |
 | capacitor-implement-paywalls-manually | entry | dev | 2 | capacitor |
-| capacitor-making-purchases | — | dev | 4 | capacitor |
+| capacitor-making-purchases | — | dev | 5 | capacitor |
 | capacitor-quickstart-manual | — | dev | 8 | capacitor |
 | capacitor-restore-purchase | — | dev | 0 | capacitor |
 | fetch-paywalls-and-products | — | dev | 7 | ios |
@@ -224,7 +224,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | report-transactions-observer-mode-unity | — | dev | 0 | unity |
 | restore-purchase | — | dev | 0 | ios |
 | unity-implement-paywalls-manually | entry | dev | 2 | unity |
-| unity-making-purchases | — | dev | 4 | unity |
+| unity-making-purchases | — | dev | 5 | unity |
 | unity-quickstart-manual | — | dev | 8 | unity |
 | unity-restore-purchase | — | dev | 0 | unity |
 | unity-troubleshoot-purchases | — | dev | 6 | unity |

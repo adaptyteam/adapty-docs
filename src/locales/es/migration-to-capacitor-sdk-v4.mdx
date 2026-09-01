@@ -1,14 +1,21 @@
 ---
-title: "Migrar el SDK de Adapty para Capacitor a v4.0"
-description: "Migra al SDK de Adapty para Capacitor v4.0 (beta) reemplazando las APIs de paywall por APIs de flow, compatibles tanto con Flow Builder como con Paywall Builder."
-metadataTitle: "Migración al SDK de Adapty para Capacitor v4.0 (beta) | Documentación de Adapty"
+title: "Migrar el SDK de Adapty Capacitor a v4.1"
+description: "Migra al SDK de Adapty Capacitor v4.1: reemplaza las APIs de paywall por APIs de flow, adopta las APIs de atribución renombradas, activa Adapty Attribution explícitamente y vuelve a descargar tu archivo de respaldo."
+metadataTitle: "Migración al SDK de Adapty Capacitor v4.1 | Documentación de Adapty"
 ---
 
-El SDK de Adapty para Capacitor 4.0 (beta) introduce flows y renombra las APIs de paywall en consecuencia. Las nuevas APIs funcionan tanto con el nuevo Flow Builder como con el Paywall Builder existente — no se requieren cambios de configuración en el Adapty Dashboard.
+Adapty Capacitor SDK 4.1 es la primera versión estable de la línea 4.x — la 4.0 solo se publicó como beta, así que si estás en 3.x, migra directamente a la 4.1. Esta guía cubre la migración completa: los flows introducidos en la 4.0 y los cambios de la 4.1 sobre ellos.
+
+La línea 4.x introduce los flows y cambia el nombre de las APIs de paywall en consecuencia. Las nuevas APIs funcionan tanto con el nuevo Flow Builder como con el Paywall Builder existente; no se requieren cambios de configuración en el Adapty Dashboard. Además, la versión 4.1 hace que Adapty Attribution sea opt-in, cambia el nombre del método de atribución externa, modifica el formato del archivo de respaldo y añade compras in-app promocionadas en la App Store.
+
+:::note
+¿Vienes de la beta 4.0? Sustituye la versión beta fijada por la [última versión](#installation) y solo aplican cuatro secciones: [la atribución de Adapty está desactivada por defecto](#adapty-attribution-is-disabled-by-default), [las APIs de atribución externa renombradas](#renamed-external-attribution-apis), [los archivos de respaldo](#fallback-files) y [las compras in-app promocionadas en App Store](#app-store-promoted-in-app-purchases).
+:::
 
 ## Referencia rápida \{#quick-reference\}
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
+| Adapty Attribution habilitado automáticamente | deshabilitado por defecto — actívalo con `adaptyAttributionEnabled: true` |
 | `adapty.getPaywall({ placementId, locale?, params? })` | `adapty.getFlow({ placementId, params? })` |
 | `adapty.getPaywallForDefaultAudience({ placementId, locale?, params? })` | `adapty.getFlowForDefaultAudience({ placementId, params? })` |
 | `adapty.getPaywallProducts({ paywall })` | `adapty.getPaywallProducts({ flow })` |
@@ -19,23 +26,26 @@ El SDK de Adapty para Capacitor 4.0 (beta) introduce flows y renombra las APIs d
 | `EventHandlers` (tipo) | `FlowEventHandlers` |
 | `CreatePaywallViewParamsInput` | `CreateFlowViewParamsInput` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` mantiene su nombre — los productos siguen perteneciendo a un flow, y `getPaywallProducts` también mantiene su nombre, ahora tomando un `AdaptyFlow`. Los métodos `getFlow` y `getFlowForDefaultAudience` ya no aceptan un parámetro `locale` — pásalo a `createFlowView` en su lugar. Las APIs de compra y perfil (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) y `setFallback` mantienen las mismas firmas, pero el archivo de respaldo debe volver a descargarse — consulta [Archivos de respaldo](#fallback-files). Los métodos de vista `present`, `dismiss`, `setEventHandlers` y `showDialog`, y los manejadores de eventos `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` y `onAndroidSystemBack` mantienen los mismos nombres que en v3. Los métodos de onboarding siguen funcionando pero están deprecados — consulta [Deprecación de la API de onboarding](#onboarding-api-deprecation). Algunos comportamientos predeterminados han cambiado — consulta [Cambios en el comportamiento predeterminado](#default-behavior-changes).
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| Archivo de respaldo descargado para 3.x | nuevo formato de archivo de respaldo — descarga el archivo de nuevo |
+| Compras in-app promocionadas no compatibles | el evento `'onPromotedPurchaseReceived'` y `adapty.makePromotedPurchase({ product })` |
+
+`AdaptyPaywallProduct` conserva su nombre — los productos siguen perteneciendo a un flow, y `getPaywallProducts` también conserva su nombre, ahora tomando un `AdaptyFlow`. Los métodos `getFlow` y `getFlowForDefaultAudience` ya no aceptan el parámetro `locale` — pásalo a `createFlowView` en su lugar. Las APIs de compra y perfil (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) y `setFallback` mantienen las mismas firmas, pero el archivo de respaldo debe descargarse de nuevo — consulta [Archivos de respaldo](#fallback-files). Los métodos de vista `present`, `dismiss`, `setEventHandlers`, `clearEventHandlers` y `showDialog`, y los manejadores de eventos `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` y `onAndroidSystemBack` conservan los mismos nombres que en v3. Los métodos de onboarding siguen funcionando pero están obsoletos — consulta [Obsolescencia de la API de onboarding](#onboarding-api-deprecation). Algunos comportamientos predeterminados han cambiado — consulta [Cambios en el comportamiento predeterminado](#default-behavior-changes).
 
 ## Versiones mínimas \{#minimum-versions\}
 
-Los requisitos de ejecución no han cambiado desde v3.16+: **iOS 15.0**, **Android minSdk 24** y **Capacitor 8**. No es necesario modificar los deployment targets.
+Los requisitos en tiempo de ejecución no han cambiado desde v3.16+: **iOS 15.0**, **Android minSdk 24** y **Capacitor 8**. No es necesario modificar el deployment target.
 
-Hay un nuevo requisito de compilación: **Xcode 26 o posterior** — el SDK nativo de Adapty para iOS 4.0.2 incluido en esta versión utiliza Swift tools 6.2.
+Hay un nuevo requisito de compilación: **Xcode 26 o posterior** — el SDK nativo de Adapty para iOS incluido en esta versión utiliza Swift tools 6.2.
 
-v4 incluye los SDKs nativos de Adapty iOS 4.0.2 y Android BOM 4.0.1.
 
 ## Instalación \{#installation\}
-### Actualizar el paquete \{#update-the-package\}
-
-La v4.0 es una versión preliminar, así que fija la versión exacta; npm no selecciona versiones preliminares mediante rangos con acento circunflejo o tilde:
+### Actualiza el paquete
 
 ```bash showLineNumbers
-npm install @adapty/capacitor@4.0.1-beta.1
+npm install @adapty/capacitor@latest
 ```
 
 Luego sincroniza los proyectos nativos:
@@ -43,6 +53,7 @@ Luego sincroniza los proyectos nativos:
 ```bash showLineNumbers
 npx cap sync
 ```
+
 ### iOS: solo Swift Package Manager
 
 [El repositorio de specs de CocoaPods pasará a ser de solo lectura en diciembre de 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), por lo que a partir de la v4 se elimina el `AdaptyCapacitor.podspec` y el SDK se instala en iOS **únicamente a través de Swift Package Manager (SPM)**. El proyecto iOS de tu app debe utilizar la integración SPM de Capacitor:
@@ -55,6 +66,27 @@ npx cap add ios --packagemanager SPM
 - Aplicaciones existentes basadas en CocoaPods: migra el proyecto iOS siguiendo la [guía de Capacitor para usar SPM en un proyecto existente](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
 
 Consulta [Instalar el SDK de Adapty](sdk-installation-capacitor) para ver la configuración completa.
+## ⚠️ La atribución de Adapty está deshabilitada por defecto \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Si usas [Atribución de Adapty](user-acquisition) y actualizas al SDK 4.1 sin activarla explícitamente, fallará de forma silenciosa: las instalaciones dejan de registrarse y no recibirás ningún aviso.
+:::
+
+En versiones anteriores, el SDK registraba las instalaciones para [Atribución de Adapty](user-acquisition) automáticamente. A partir de la versión 4.1 del SDK, esto está desactivado por defecto: el SDK no registra instalaciones, los eventos `'onInstallationDetailsSuccess'` y `'onInstallationDetailsFail'` nunca se disparan, y `getCurrentInstallationStatus` devuelve el estado `not_available`.
+
+Si utilizas Atribución de Adapty, actívalo al inicializar el SDK:
+
+```diff showLineNumbers
+  await adapty.activate({
+    apiKey: 'YOUR_PUBLIC_SDK_KEY',
+    params: {
++     adaptyAttributionEnabled: true,
+    },
+  });
+```
+
+Si no usas Adapty Attribution, no es necesario hacer ningún cambio.
+
 ## Obtener flows \{#fetching-flows\}
 ### getPaywall → getFlow
 
@@ -66,7 +98,7 @@ El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y la opción `locale`
 + const view = await createFlowView(flow, { locale: 'en' });
 ```
 
-`locale` es opcional en `createFlowView`: omítelo y la vista se renderizará en `en`, o en la localización por defecto del flow si este no tiene `en`. Consulta [Localizaciones y códigos de idioma](capacitor-localizations-and-locale-codes).
+`locale` es opcional en `createFlowView`: omítelo y la vista se renderizará en `en`, o en la localización predeterminada del flow cuando el flow no tenga `en`. Debido a ese fallback, la vista puede renderizarse en una localización distinta a la que solicitaste — la nueva propiedad `FlowViewController.locale` informa cuál se usó. Consulta [Localizaciones y códigos de idioma](capacitor-localizations-and-locale-codes).
 
 `getPaywallForDefaultAudience` se renombra de la misma manera:
 
@@ -83,31 +115,40 @@ El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y la opción `locale`
 - const products = await adapty.getPaywallProducts({ paywall });
 + const products = await adapty.getPaywallProducts({ flow });
 ```
-### Archivos de respaldo \{#fallback-files\}
+### Archivos de respaldo
 
-El formato del archivo de respaldo [cambió en el SDK v4](fallback-flows). Descarga el nuevo archivo desde **[Placements](https://app.adapty.io/placements)** > **Fallbacks** y agrégalo a tu app.
+El formato del [archivo de respaldo](fallback-flows) cambió en la línea 4.x, y de nuevo en 4.1. Descarga el archivo de nuevo desde **[Placements](https://app.adapty.io/placements)** > **Fallbacks** y añádelo a tu app, aunque ya hayas descargado uno para una beta de la versión 4.0.
+
+:::warning
+Este paso no genera ningún error de compilación. Si lo omites, `setFallback` rechazará el archivo desactualizado y todos los placements perderán su paywall de respaldo.
+:::
 
 ## Modelo de datos \{#data-model\}
 
 `getFlow` devuelve un `AdaptyFlow` en lugar de un `AdaptyPaywall`, y la forma del objeto ha cambiado:
-| Campo v3 `AdaptyPaywall` | Campo v4 `AdaptyFlow` | Acción |
+| Campo de v3 `AdaptyPaywall` | Campo de v4 `AdaptyFlow` | Acción |
 |---|---|---|
 | `remoteConfig?` (único) | `remoteConfigs?: AdaptyRemoteConfig[]` (array) | Un flow lleva un Remote Config por idioma configurado. Lee el que coincida con el usuario: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
-| `products` | `flow.paywalls[i].productIdentifiers` | Los identificadores de producto ahora están en cada variación del flow, no en el flow. |
-| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Movido del flow a cada variación de paywall. |
+| `productIdentifiers` | `flow.paywalls[i].productIdentifiers` | Los identificadores de producto ahora están en cada variante del flow, no en el flow en sí. |
+| `products` (obsoleto en v3) | eliminado | Usa `flow.paywalls[i].productIdentifiers` o llama a `getPaywallProducts(flow)` para obtener los productos completos. `ProductReference` ya no es un tipo público. |
+| `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Movido del flow a cada variante de paywall. |
 | `version?: number` | `flowVersionId?: string` | Renombrado, y el tipo cambió de `number` a `string`. |
-| `hasViewConfiguration` | eliminado | Elimina cualquier comprobación de `hasViewConfiguration` en tu código — `createFlowView` ahora lanza un error en su lugar (ver [Mostrar flows](#displaying-flows)). |
-| `requestLocale` | eliminado | El locale ya no forma parte del modelo. |
-| _(nuevo)_ | `paywalls: AdaptyFlowPaywall[]` | Cada entrada es una variación de paywall en el flow. |
+| `hasViewConfiguration` | eliminado | Elimina cualquier comprobación de `hasViewConfiguration` de tu código — `createFlowView` ahora lanza un error en su lugar (consulta [Mostrar flows](#displaying-flows)). |
+| `requestLocale` | eliminado | La configuración regional ya no forma parte del modelo. |
+| _(nuevo)_ | `paywalls: AdaptyFlowPaywall[]` | Cada entrada es una variante de paywall en el flow. |
 | _(nuevo)_ | `responseCreatedAt: number` | Marca de tiempo de la respuesta del servidor, en milisegundos. |
+
 `hasViewConfiguration` y `requestLocale` permanecen en `AdaptyOnboarding` — solo el modelo de flow los elimina.
 
-Los identificadores de producto se han movido del flow a cada variación:
+Los identificadores de producto se trasladaron del flow a cada variación:
 
 ```diff showLineNumbers
-- const ids = paywall.products;
+- const ids = paywall.productIdentifiers;
 + const ids = flow.paywalls[0].productIdentifiers;
 ```
+
+Si tu código todavía lee `paywall.products` — obsoleto en v3 y ahora eliminado — cámbialo por `productIdentifiers`, o llama a `getPaywallProducts(flow)` cuando necesites los productos completos en lugar de los identificadores.
+
 ## Métodos de paywall web \{#web-paywall-methods\}
 
 `openWebPaywall` y `createWebPaywallUrl` mantienen sus nombres, pero la opción `paywallOrProduct` ahora acepta un `AdaptyFlowPaywall` (una variante de flow) en lugar de un `AdaptyPaywall`. Todavía puedes pasar un `AdaptyPaywallProduct`. Asegúrate de que `flow.paywalls` no esté vacío antes de leer la primera entrada:
@@ -129,9 +170,10 @@ Los identificadores de producto se han movido del flow a cada variación:
 
 Al igual que en v3, no es necesario llamar a este método al mostrar flows o paywalls renderizados por el [Flow Builder](adapty-flow-builder) o el [Paywall Builder](adapty-paywall-builder) — Adapty registra esas vistas automáticamente.
 ## Mostrar flows \{#displaying-flows\}
-### createPaywallView → createFlowView \{#createpaywallview--createflowview\}
+### createPaywallView → createFlowView
 
-Renombra la función factory y pasa el `AdaptyFlow`. El controlador devuelto pasa de llamarse `PaywallViewController` a `FlowViewController`, pero sus métodos (`present`, `dismiss`, `setEventHandlers`, `showDialog`) no cambian. El tipo de parámetros se renombra de `CreatePaywallViewParamsInput` a `CreateFlowViewParamsInput`:
+Cambia el nombre de la función de fábrica y pasa el `AdaptyFlow`. El controlador retornado pasa de llamarse `PaywallViewController` a `FlowViewController`, pero sus métodos (`present`, `dismiss`, `setEventHandlers`, `clearEventHandlers` y `showDialog`) no cambian. El tipo de parámetros se renombra de `CreatePaywallViewParamsInput` a `CreateFlowViewParamsInput`:
+
 ```diff showLineNumbers
 - import { createPaywallView } from '@adapty/capacitor';
 + import { createFlowView } from '@adapty/capacitor';
@@ -158,15 +200,28 @@ Renombra la función factory y pasa el `AdaptyFlow`. El controlador devuelto pas
 :::note
 Una vista de flow es de un solo uso: después de llamar a `dismiss()`, la vista se destruye y sus manejadores de eventos se eliminan, así que llama a `createFlowView` de nuevo para mostrar el flow otra vez.
 :::
-### Rellenos de área segura en Android \{#android-safe-area-paddings\}
+### Nuevos parámetros \{#new-parameters\}
 
-`CreateFlowViewParamsInput` añade un nuevo parámetro: `enableSafeArea`, que controla los rellenos de área segura en Android en tiempo de ejecución. Se anida bajo la clave `android` y tiene el valor predeterminado `true`:
+`CreateFlowViewParamsInput` mantiene todos los parámetros de v3 (`prefetchProducts`, `loadTimeoutMs`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) y añade tres:
+
+:::note
+`customTimers` sigue existiendo, pero solo afecta a los paywalls creados con el Paywall Builder heredado. El [temporizador de cuenta atrás](flow-timer) de un flow se ejecuta según el comportamiento definido en el Flow Builder, por lo que un flow ignora lo que pases aquí.
+:::
+
+| Parámetro | Descripción |
+|---|---|
+| `locale` | La localización con la que se renderiza el flow. Se trasladó aquí desde `getPaywall` — consulta [getPaywall → getFlow](#getpaywall--getflow). |
+| `customLayoutId` | El ID personalizado de un layout definido en el Flow Builder. Pásalo para renderizar ese layout específico en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, el flow se carga sin configuración de vista. |
+| `android.enableSafeArea` | Controla los márgenes de área segura de Android en tiempo de ejecución. Se anida bajo la clave `android` y su valor predeterminado es `true`. |
 
 ```typescript showLineNumbers
 const view = await createFlowView(flow, {
+  locale: 'en',
+  customLayoutId: 'tablet_landscape',
   android: { enableSafeArea: true },
 });
 ```
+
 ## Manejo de eventos \{#handling-events\}
 
 La interfaz del manejador de eventos pasa de llamarse `EventHandlers` a `FlowEventHandlers`, y un callback también cambia de nombre. El cuerpo de los manejadores existentes no necesita modificaciones — solo renombra:
@@ -175,11 +230,64 @@ La interfaz del manejador de eventos pasa de llamarse `EventHandlers` a `FlowEve
 - onRenderingFailed: (error) => { /* … */ },
 + onError: (error) => { /* … */ },
 ```
-Todos los demás manejadores de eventos conservan sus nombres. Dos de ellos también reciben un segundo argumento: `onPurchaseCompleted` pasa a ser `(purchaseResult, product)` y `onPurchaseFailed` pasa a ser `(error, product)`, donde `product` es el `AdaptyPaywallProduct` involucrado. Consulta [Gestión de eventos de flow y paywall](capacitor-handling-events) para ver la lista completa.
+Todos los demás manejadores de eventos conservan sus nombres. Uno cambia su firma: `onAppeared` ahora es `(view)` en lugar de `()`, donde `view` es un `FlowEventView` que describe la vista que apareció, incluyendo la localización con la que fue construida. Los manejadores existentes seguirán funcionando, ya que ignoran el nuevo argumento. Consulta [Gestionar eventos de flow y paywall](capacitor-handling-events) para ver la lista completa.
 
-La v4 también añade algunas funcionalidades opcionales que puedes activar:
-- Los métodos `adapty.openWebUrl({ url, openIn })` y `adapty.requestAppReview()` respaldan los manejadores predeterminados `onUrlPress` y `onRequestAppReview`, de modo que las URLs y las solicitudes de reseña de la app se gestionan de forma nativa sin configuración adicional. Llámalos directamente solo si sustituyes esos manejadores.
-- Gestión de compras en modo Observer dentro de flows mediante los nuevos manejadores `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Consulta [Presentar flows en modo Observer](capacitor-present-flows-in-observer-mode).
+v4 también añade algunas funcionalidades que puedes activar de forma opcional:
+
+- `adapty.openWebUrl({ url, openIn })` y `adapty.requestAppReview()` — estos métodos respaldan los handlers predeterminados `onUrlPress` y `onRequestAppReview`, de modo que las URLs y las solicitudes de valoración de la app se gestionan de forma nativa sin configuración adicional. Llámalos directamente solo si reemplazas esos handlers.
+- Gestión de compras en Observer mode dentro de flows mediante los nuevos handlers `onObserverPurchaseInitiated` / `onObserverRestoreInitiated`. Consulta [Presentar flows en Observer mode](capacitor-present-flows-in-observer-mode).
+- `onAnalytics: (name, params)` — eventos de analíticas que emite un flow, comenzando con una vista de pantalla por cada pantalla que abre el usuario. Consulta [Rastrear vistas de pantalla de flows](capacitor-flow-screen-views).
+- `onRequestPermission: (permission, customArgs)` — reservado para solicitudes de permisos del sistema (como notificaciones push o acceso a la cámara) desde un flow. Los flows aún no disparan solicitudes de permisos, por lo que no es necesario implementarlo.
+
+Por separado, la versión 4.1 añade un evento a nivel de SDK en lugar de un manejador de flow: `'onPromotedPurchaseReceived'`, entregado a través de `adapty.addListener`. Si no hay ningún listener registrado, el SDK completa la compra promocionada por sí mismo; si se registra uno, la finalización pasa a tu app. Consulta [Compras in-app promocionadas en App Store](#app-store-promoted-in-app-purchases).
+
+## API de atribución externa renombradas \{#renamed-external-attribution-apis\}
+
+A partir de la versión 4.1 del SDK, las API para enviar datos de atribución desde un proveedor externo (Adjust, AppsFlyer, Branch, Tenjin o uno personalizado) se han renombrado para alinearse con los SDK nativos. No existen alias obsoletos, por lo que los puntos de llamada existentes dejarán de funcionar hasta que los renombres:
+
+| Antes de 4.1 | 4.1 |
+|---|---|
+| `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+### updateAttribution → updateExternalAttribution
+
+El método ha sido renombrado y su opción `source` pasa a llamarse `provider`. Los datos de atribución siguen siendo un objeto plano:
+
+```diff showLineNumbers
+- await adapty.updateAttribution({ attribution, source: 'adjust' });
++ await adapty.updateExternalAttribution({ attribution, provider: 'adjust' });
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+El tipo de proveedor cambia de nombre. Sigue siendo una unión abierta — los valores predefinidos son `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'` y `'tenjin'`, y cualquier otra cadena es válida, de modo que un proveedor que Adapty añada más adelante funciona sin actualizar el SDK:
+
+```diff showLineNumbers
+- import type { AttributionSource } from '@adapty/capacitor';
++ import type { AdaptyExternalAttributionProvider } from '@adapty/capacitor';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+La propiedad del perfil que lista los proveedores de atribución aplicados al perfil ha sido renombrada, y el tipo de sus elementos cambia en consecuencia:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+El código que la lee necesita actualizarse — consulta [Mostrar un paywall segmentado con Apple Ads](capacitor-show-aa-targeted-paywall).
+
+## Compras in-app promocionadas en el App Store \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1 añade compatibilidad con [compras in-app promocionadas en la página de tu producto en el App Store](capacitor-making-purchases#in-app-purchases-from-the-app-store). Esta es una nueva funcionalidad, no un paso de migración: el SDK completa las compras promocionadas por sí solo, por lo que obtienes este comportamiento sin necesidad de escribir ningún código.
+
+Escribe código solo para encargarte tú mismo de la finalización — por ejemplo, para mostrar primero una pantalla. Registra un listener para el nuevo evento `'onPromotedPurchaseReceived'` y completa la compra con `adapty.makePromotedPurchase`. Mientras ese listener esté registrado, el SDK deja de completar las compras promocionadas por ti.
+
 ## Cambios en el comportamiento predeterminado \{#default-behavior-changes\}
 
 Estos cambios no generan errores de compilación, así que pruébalos en tiempo de ejecución:
@@ -208,8 +316,8 @@ Estos símbolos ya no se exportan desde `@adapty/capacitor`. Elimina sus importa
 ### makePurchase: parámetros de Android \{#makepurchase-android-parameters\}
 
 La forma plana obsoleta de `MakePurchaseParamsInput` para Android ha sido eliminada; solo queda la forma anidada. Mueve los parámetros de compra de Android a `params: { android: { ... } }`. Consulta [Realizar compras](capacitor-making-purchases) para ver el ejemplo completo.
-## Deprecación de la API de onboarding \{#onboarding-api-deprecation\}
+## Desactivación de la API de onboarding \{#onboarding-api-deprecation\}
 
-La API de onboarding heredada está deprecada en la v4.0 a favor del [Flow Builder](adapty-flow-builder). Sigue funcionando, pero se eliminará en una versión futura, así que planifica la migración de tus onboardings al Flow Builder.
+La API de onboarding heredada ha quedado obsoleta en v4 en favor del [Flow Builder](adapty-flow-builder). Sigue funcionando, pero se eliminará en una versión futura, así que planifica la migración de tus onboardings al Flow Builder.
 
-Símbolos deprecados: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` y `OnboardingViewController`.
+Símbolos obsoletos: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` y `OnboardingViewController`.

@@ -228,3 +228,26 @@ platforms). Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+### `1004` / `NO_PURCHASES_TO_RESTORE` is no longer an outcome to handle — 2026-09-01
+
+Found while documenting Android SDK 3.17.3. The *Ticket language* row that pairs `2` /
+`paymentCancelled` with `1004` / `noPurchasesToRestore` and says "neither is a defect to fix — they are
+normal outcomes the store reported. Handle them in business logic (offer a discount, show an
+empty-restore message)" is now wrong for the second half of that pair on Android.
+
+- **The code is deprecated and no longer returned.** `git diff 3.17.2 3.17.3 --
+  adapty/src/main/java/com/adapty/errors/AdaptyErrorCode.kt` in `android-sdk` adds
+  `@Deprecated("No longer returned by restorePurchases(): when there is nothing to restore, the method
+  completes successfully with the current profile.")` to `NO_PURCHASES_TO_RESTORE(1004)`, and the same
+  diff on `Adapty.kt` adds the matching KDoc. The 4.x line got this in 4.0.2, so both maintained
+  Android lines now behave this way. `android-sdk-error-handling`, `android-restore-purchase` and
+  `sdk-installation-android` were updated to read "3.17.3 and 4.0.2" on 2026-09-01.
+- **The advice inverts rather than softens.** An empty-restore message can no longer hang off the
+  error — it has to come from the access level on the `AdaptyProfile` the call returns. App code that
+  only branches on `AdaptyResult.Error` shows the user nothing at all.
+- **`2` / `paymentCancelled` still holds.** Splitting the row is the fix, not deleting it.
+- **The wrappers are on the same path, but this is their docs' claim, not verified ground truth.**
+  `react-native-restore-purchase` names React Native SDK 4.0.3 and `flutter-restore-purchase` names
+  Flutter SDK 4.0.4, each with a matching "Deprecated in …" row in its code table. I did not read
+  `jscore` or `flutter-sdk` to confirm which Android version those pin, and no wrapper 3.x line has
+  been checked at all.
