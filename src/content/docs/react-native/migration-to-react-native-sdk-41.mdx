@@ -1,0 +1,136 @@
+---
+title: "Migrate Adapty React Native SDK to v4.1"
+description: "Migrate to Adapty React Native SDK v4.1: enable Adapty Attribution explicitly, adopt the renamed external attribution APIs, and re-download your fallback file."
+metadataTitle: "Migrating to Adapty React Native SDK v4.1 | Adapty Docs"
+---
+
+Adapty React Native SDK 4.1 changes how Adapty Attribution is enabled, renames the external attribution APIs, and changes the fallback file format. It also adds support for App Store promoted in-app purchases, brings back the `hasViewConfiguration` flag on `AdaptyFlow`, and adds a `customLayoutId` parameter for flow views.
+
+:::warning
+The renamed APIs are a hard break. The old names are removed outright — there are no deprecated aliases to bridge them. Code that type-checks against 4.0.x fails on 4.1 until you rename every call site listed below.
+:::
+
+If you're still on 3.x, start with [Migrate to v4.0](migration-to-react-native-sdk-v4) and then follow this guide.
+
+## Quick reference
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution enabled automatically | Adapty Attribution disabled by default; opt in with `adaptyAttributionEnabled: true` |
+| `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Fallback file downloaded for 4.0 | New fallback file format; download the file again |
+| Promoted in-app purchases not supported | The `'onPromotedPurchaseReceived'` event and `adapty.makePromotedPurchase(product)` |
+| `hasViewConfiguration` absent from `AdaptyFlow` | `hasViewConfiguration` back on `AdaptyFlow` |
+| _(new)_ | `customLayoutId` parameter on `createFlowView` |
+
+## Installation
+
+Update the `react-native-adapty` package:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+The runtime requirements are unchanged from 4.0: **iOS 15.0**, **React Native 0.75**, and Swift Package Manager for the native iOS SDKs. See [Install Adapty SDK](sdk-installation-reactnative) for the full setup.
+
+## ⚠️ Adapty Attribution is disabled by default \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+If you update to SDK 4.1 and don't opt in, [Adapty Attribution](user-acquisition) breaks silently — installs stop registering, and nothing warns you.
+:::
+
+In 4.0 and earlier, the SDK registered installs for [Adapty Attribution](user-acquisition) automatically. Starting from 4.1, this is off by default: the SDK doesn't register installs, the `'onInstallationDetailsSuccess'` and `'onInstallationDetailsFail'` events never fire, and `getCurrentInstallationStatus` returns the `not_available` status.
+
+If you use Adapty Attribution, enable it when activating the SDK:
+
+```diff showLineNumbers
+  adapty.activate('YOUR_PUBLIC_SDK_KEY', {
++   adaptyAttributionEnabled: true,
+  });
+```
+
+If you don't use Adapty Attribution, no changes are needed.
+
+## Renamed external attribution APIs
+
+The APIs that pass attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) are renamed to match the native SDKs.
+
+### updateAttribution → updateExternalAttribution
+
+The method is renamed and its second parameter is renamed from `source` to `provider`. Attribution data is still a plain object:
+
+```diff showLineNumbers
+- await adapty.updateAttribution(attribution, 'adjust');
++ await adapty.updateExternalAttribution(attribution, 'adjust');
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+The provider type is renamed. It stays an open union — the predefined values are `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'`, and `'tenjin'`, and any other string is accepted, so a provider Adapty adds later works without an SDK update:
+
+```diff showLineNumbers
+- import type { AttributionSource } from 'react-native-adapty';
++ import type { AdaptyExternalAttributionProvider } from 'react-native-adapty';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+The profile property that lists the attribution providers applied to the profile is renamed, and its element type changes accordingly:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Code that reads it needs updating — see [Show an Apple Ads targeted paywall](react-native-show-aa-targeted-paywall).
+
+## Fallback files
+
+The [fallback file](fallback-flows) format changed in SDK 4.1. Download the file again from **[Placements](https://app.adapty.io/placements)** > **Fallbacks** and bundle it in your app, even if you already downloaded one for 4.0.
+
+:::warning
+This step produces no build error. If you skip it, `setFallback` rejects the outdated file and every placement loses its fallback.
+:::
+
+## hasViewConfiguration returns to AdaptyFlow
+
+4.0 dropped `hasViewConfiguration` when `AdaptyPaywall` became `AdaptyFlow`. 4.1 restores it on `AdaptyFlow`, so a v3-era `hasViewConfiguration` branch works again once you rename the function and the object it reads:
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
++ if (flow.hasViewConfiguration) {
++   const view = await createFlowView(flow);
+    await view.present();
+  }
+```
+
+On 4.0, where the flag is absent, `createFlowView` throws an `AdaptyError` for a flow with no view configuration. That's still true on 4.1 — the flag is an alternative to catching, not a replacement. See [Fetch the view configuration](react-native-get-pb-paywalls#fetch-the-view-configuration).
+
+## App Store promoted in-app purchases
+
+SDK 4.1 adds support for [in-app purchases promoted on your App Store product page](react-native-making-purchases#in-app-purchases-from-the-app-store). This is a new feature, not a migration step: the SDK completes promoted purchases on its own, so you get the behavior without writing any code.
+
+Write code only to take over completion yourself — for example to show a screen first. Register a listener for the new `'onPromotedPurchaseReceived'` event, and complete the purchase with `adapty.makePromotedPurchase`. While that listener is registered, the SDK stops completing promoted purchases for you.
+
+:::warning
+The mechanism is built on StoreKit 2 and requires **iOS 16.4** or later. On devices below iOS 16.4, promoted purchases don't reach your app. The event never fires on Android.
+:::
+
+## New flow view parameter
+
+`createFlowView` accepts one new parameter, `customLayoutId`: the custom ID of a layout defined in the Flow Builder. Pass it to render that specific layout instead of the one the SDK picks automatically from the device type and screen size. If no layout matches the ID, the flow loads without a view configuration.
+
+```typescript showLineNumbers
+const view = await createFlowView(flow, {
+  customLayoutId: 'tablet_landscape',
+});
+```
+
+See [Fetch flow/paywall](react-native-get-pb-paywalls#fetch-the-view-configuration) for the full parameter list.
