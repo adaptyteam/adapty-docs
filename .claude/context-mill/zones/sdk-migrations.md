@@ -118,7 +118,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | 3.15 | migration-to-ios-315 |  |  |  |  | migration-to-kmp-315 |  |
 | 3.16 |  |  |  |  |  |  | migration-to-capacitor-316 |
 | 4.0 | migration-to-ios-sdk-v4 | migration-to-android-sdk-v4 | migration-to-react-native-sdk-v4 | migration-to-flutter-sdk-v4 | migration-to-unity-sdk-v4 | migration-to-kmp-sdk-v4 | migration-to-capacitor-sdk-v4 |
-| 4.1 | migration-to-ios-sdk-41 |  |  |  |  |  |  |
+| 4.1 | migration-to-ios-sdk-41 |  | migration-to-react-native-sdk-41 |  |  |  |  |
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
@@ -151,6 +151,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | migration-to-kmp-315 | migration | dev | 3 | kmp |
 | migration-to-kmp-sdk-v4 | migration | dev | 17 | kmp |
 | migration-to-react-native-sdk-34 | migration | dev | 2 | react-native |
+| migration-to-react-native-sdk-41 | migration | — | 11 | react-native |
 | migration-to-react-native-sdk-v3 | migration | dev | 1 | react-native |
 | migration-to-react-native-sdk-v4 | migration | dev | 26 | react-native |
 | migration-to-react-native330 | migration | dev | 26 | react-native |

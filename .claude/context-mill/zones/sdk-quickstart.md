@@ -177,8 +177,8 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | sdk-installation-flutter | — | dev | 11 | flutter |
 | sdk-installation-ios | — | dev | 11 | ios |
 | sdk-installation-kotlin-multiplatform | — | dev | 12 | kmp |
-| sdk-installation-react-native-expo | — | dev | 12 | react-native |
-| sdk-installation-react-native-pure | — | dev | 12 | react-native |
+| sdk-installation-react-native-expo | — | dev | 13 | react-native |
+| sdk-installation-react-native-pure | — | dev | 13 | react-native |
 | sdk-installation-reactnative | entry | dev | 0 | react-native |
 | sdk-installation-unity | — | dev | 13 | unity |
 | unity-check-subscription-status | — | dev | 5 | unity |
