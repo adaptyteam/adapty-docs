@@ -56,7 +56,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 |---|---|---|---|---|
 | add-flow-remote-config-locale | — | marketer | 4 | tutorial |
 | add-paywall-locale-in-adapty-paywall-builder | — | marketer | 9 | tutorial |
-| builder-containers | — | marketer | 13 | tutorial |
+| builder-containers | — | marketer | 15 | tutorial |
 | builder-element-states | — | marketer | 7 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
@@ -72,7 +72,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | onboarding-text | entry | marketer | 10 | tutorial |
 | paywall-buttons | — | marketer | 6 | tutorial |
 | paywall-dark-mode | — | marketer | 4 | tutorial |
-| paywall-head-picture | — | marketer | 5 | tutorial |
+| paywall-head-picture | — | marketer | 6 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
 | using-custom-fonts-in-flow-builder | — | marketer | 5 | tutorial |
