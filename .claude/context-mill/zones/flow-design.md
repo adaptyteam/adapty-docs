@@ -60,10 +60,10 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | builder-element-states | — | marketer | 7 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
-| builder-reviews-and-testimonials | — | marketer | 4 | tutorial |
+| builder-reviews-and-testimonials | — | marketer | 5 | tutorial |
 | builder-styling | — | marketer | 23 | tutorial |
 | builder-tabs | — | marketer | 5 | tutorial |
-| builder-toggles | — | marketer | 0 | tutorial |
+| builder-toggles | — | marketer | 4 | tutorial |
 | custom-media | — | marketer | 7 | tutorial |
 | flow-selectable-elements | entry | marketer | 6 | tutorial |
 | flow-timer | — | marketer | 5 | tutorial |

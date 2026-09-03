@@ -125,7 +125,7 @@ or developer can see and click.
 | paywall-product-block | — | marketer, dev | 7 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
-| show-plans-bottom-sheet | — | marketer, dev | 11 | tutorial |
+| show-plans-bottom-sheet | — | marketer, dev | 11 | — |
 | strikethrough-price | — | marketer, dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
