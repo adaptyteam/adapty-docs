@@ -1,28 +1,12 @@
 ---
-title: "Product and price discrepancies"
-description: "Why a product, price, or offer differs between Adapty and the App Store or Google Play."
-metadataTitle: "Product and price discrepancies | Adapty Docs"
+title: "How Adapty syncs data with the stores"
+description: "Which product, price, and offer data moves between Adapty and the App Store or Google Play, in which direction, and when."
+metadataTitle: "How Adapty syncs data with the stores | Adapty Docs"
 ---
 
-Products, prices, and offers can show one value in Adapty and another in the store console. In most cases your customers are charged correctly and your revenue reports are accurate, because the two systems deliberately track different things. Start with your symptom.
+Adapty exchanges product data with the App Store and Google Play, but the exchange is neither constant nor complete. Most values move only when you act — when you push a product to the stores, or upload new prices. Some never move at all, so [Adapty and the store can show different prices for the same product](#product-and-price-discrepancies).
 
-## Common discrepancies
-
-| What you see | Likely causes | What to do |
-|---|---|---|
-| The price in Adapty differs from the store | The **Products** screen shows the price you entered when you created the product. If you pushed the product to the stores, Adapty used it to set the starting price there. You can't change it afterwards, so once the stores own the price the two drift apart. The prices customers pay now are [country-specific prices](edit-product#set-country-specific-prices). | Nothing. Your customers are charged the store's price, and revenue reports use the amount actually paid. To change what they pay, edit the price in each store's console, or [upload a price CSV](edit-product#set-country-specific-prices) to change both stores at once. |
-| Your product is missing from the product dropdown | Three possible reasons:  Store credentials that stopped working return an empty list. A product created in the last 10 minutes may not have reached Adapty's cached copy of the App Store list. The selected **Subscription duration** filters the list: **Lifetime**, **Non-Subscriptions**, and **Consumables** show one-time products, and every other value shows subscriptions.| Set **Subscription duration** to match the product's type in the store. If you created the product in the last few minutes, retry shortly. Otherwise verify your [store credentials](#if-updates-stop-arriving). |
-| An introductory offer doesn't appear in Adapty | Adapty creates an introductory offer only when you push a new product to the store, and lists only the offers it created. An offer you set up in the store console yourself never appears in the **Edit product** window. | Nothing. Introductory offers apply automatically when a customer is eligible, so they don't need to be added to Adapty. |
-| A discount didn't apply at purchase | The customer may not have qualified — the decision is made by the store, not Adapty. Alternatively, an App Store promotional offer was not applied because Adapty couldn't sign it with your [In-App Purchase Key](offers). | Confirm the key is uploaded and valid, then review the offer's conditions in the store. |
-| Stripe transactions stopped appearing after a price change | Changing a price in Stripe creates a new `price_id`, and Adapty matches events on the exact `product_id` + `price_id` pair. Events for the new price match nothing, while Stripe still reports the webhook as delivered. | Add the new `price_id` to the product in Adapty — revenue goes unrecorded until you do. See [Stripe](stripe). |
-| A customer bought a product but got no access level | The store product ID they bought isn't linked to a product in Adapty. Adapty records the purchase against a product row it creates automatically, and that row carries no access level. | Create the product in Adapty with the exact store product ID, and assign it an [access level](access-level). |
-| Updates no longer arrive | One of your store credentials has stopped working. Each one powers a different part of the exchange. | Find the part that stopped and replace only its credential — see [If products or prices stop updating](#if-updates-stop-arriving). |
-
-## What moves between Adapty and the stores
-
-Every product, price, and offer value moves in one direction. Change what Adapty reads in the store console, and change what Adapty writes in Adapty. What never leaves Adapty can't be changed from the store at all.
-
-### What Adapty reads from the stores
+## What Adapty reads from the stores
 
 Adapty reads product lists, base plans, prices, and transactions from the store. To change a product or a price, change it in the store console. To see the country-specific prices it holds, download the price CSV from [Edit product](edit-product#set-country-specific-prices).
 
@@ -34,7 +18,7 @@ Adapty reads product lists, base plans, prices, and transactions from the store.
 | Transactions, renewals, and refunds | Through [App Store server notifications](enable-app-store-server-notifications) | Through [real-time developer notifications](enable-real-time-developer-notifications-rtdn) |
 | The price the customer paid | With each transaction | With each transaction |
 
-### What Adapty writes to the stores
+## What Adapty writes to the stores
 
 Products, prices, and introductory trials start in Adapty and reach the store when you take an action, never on a schedule.
 
@@ -46,22 +30,39 @@ Products, prices, and introductory trials start in Adapty and reach the store wh
 
 Adapty compares your CSV against the current store prices and updates only the prices that differ, so you can upload the whole file safely. Existing subscribers keep the price they signed up at unless you select **Apply to existing subscribers**.
 
-### What you set in Adapty only
+## What you set in Adapty only
 
 The store never changes any of these settings.
 
 | Item | Why it stays in Adapty |
 |---|---|
-| The product price on the **Products** screen | The price you enter when you create the product. If you push the product to the stores, Adapty converts it into each store's regional prices. You can't change it afterwards, and the stores own the price from then on. |
+| The price of a store product you connected | A placeholder, fixed at creation. It helps you tell products apart, but it never reaches the store. Analytics, integrations, and the SDK all use the store's real prices. |
 | [Access levels](access-level) | Adapty grants access to your paid content. The stores have no equivalent. |
 | Promotional and win-back offer IDs | Adapty needs the ID to sign the purchase. You create the offer itself in the store console. |
-| Store credentials and the server notification URL | Available in the dashboard only, not through the CLI. |
 
 ## What happens on the device
 
 The price a customer sees on a paywall comes from StoreKit or Google Play Billing when the paywall opens, not from Adapty. A price you change in the store console reaches your customers as soon as the store publishes it. You don't need an app release, and you don't need to change anything in Adapty.
 
-In the other direction, the Adapty SDK sends the price, currency, and country of each purchase together with the transaction. Adapty uses those values to record revenue in the customer's own currency.
+In the other direction, the Adapty SDK sends each purchase to Adapty with the price, currency, and country attached. Adapty uses those values to record revenue in the customer's own currency.
+
+## Stripe, Paddle, and custom stores
+
+The Stripe and Paddle integrations carry transactions, not your product catalog. Purchases reach Adapty through the provider's webhook, or, for [custom stores](custom-store), from your own backend. You add each product and price ID by hand. An ID missing in Adapty matches nothing, so those transactions and their revenue never appear. For Stripe and Paddle, the same happens when the product exists but has no **Subscription duration**. Nothing flags either case, so add an ID and a duration for every product you sell.
+
+## Product and price discrepancies
+
+Some differences between Adapty and the store console are by design and change nothing about what your customers pay. Others mean revenue goes unrecorded.
+
+| What you see | Likely causes | What to do |
+|---|---|---|
+| The price in Adapty differs from the store | The **Products** screen shows the price you entered when you created the product. If you pushed the product to the stores, Adapty used it to set the starting price there. You can't change it afterwards, so once the stores own the price the two drift apart. The prices customers pay now are [country-specific prices](edit-product#set-country-specific-prices). | Nothing. Your customers are charged the store's price, and revenue reports use the amount actually paid. To change what they pay, edit the price in each store's console, or [upload a price CSV](edit-product#set-country-specific-prices) to change both stores at once. |
+| Your product is missing from the product dropdown | Three possible reasons:  Store credentials that stopped working return an empty list. A product created in the last 10 minutes may not have reached Adapty's cached copy of the App Store list. The selected **Subscription duration** filters the list: **Lifetime**, **Non-Subscriptions**, and **Consumables** show one-time products, and every other value shows subscriptions.| Set **Subscription duration** to match the product's type in the store. If you created the product in the last few minutes, retry shortly. Otherwise verify your [store credentials](#if-updates-stop-arriving). |
+| An introductory offer doesn't appear in Adapty | Adapty creates an introductory offer only when you push a new product to the store, and lists only the offers it created. An offer you set up in the store console yourself never appears in the **Edit product** window. | Nothing. Introductory offers apply automatically when a customer is eligible, so they don't need to be added to Adapty. |
+| A discount didn't apply at purchase | The customer may not have qualified — the decision is made by the store, not Adapty. Alternatively, an App Store promotional offer was not applied because Adapty couldn't sign it with your [In-App Purchase Key](offers). | Confirm the key is uploaded and valid, then review the offer's conditions in the store. |
+| Stripe transactions stopped appearing after a price change | Changing a price in Stripe creates a new `price_id`, and Adapty matches events on the exact `product_id` + `price_id` pair. Events for the new price match nothing, while Stripe still reports the webhook as delivered. | Add the new `price_id` to the product in Adapty — revenue goes unrecorded until you do. See [Stripe](stripe). |
+| A customer bought a product but got no access level | The store product ID they bought isn't linked to a product in Adapty. Adapty records the purchase against a product row it creates automatically, and that row carries no access level. | Create the product in Adapty with the exact store product ID, and assign it an [access level](access-level). |
+| Updates no longer arrive | One of your store credentials has stopped working. Each one powers a different part of the exchange. | Find the part that stopped and replace only its credential — see [If updates stop arriving](#if-updates-stop-arriving). |
 
 ## If updates stop arriving
 
@@ -75,7 +76,3 @@ Adapty doesn't flag credentials that stopped working. Each credential is respons
 | Purchase validation for every customer | App Store: the [shared secret](app-store-connection-configuration). Google Play: the [service account key file](google-play-store-connection-configuration). |
 
 Replacing a credential in the store console doesn't update it in Adapty. Upload the new one in **App settings**.
-
-## Stripe, Paddle, and custom stores
-
-Adapty reads nothing from these providers. You add each product and price ID by hand, and transactions arrive through the webhook or, for [custom stores](custom-store), from your own backend. An ID missing in Adapty matches nothing, so those transactions and their revenue never appear. Nothing flags it, so add an ID for every product you sell.
