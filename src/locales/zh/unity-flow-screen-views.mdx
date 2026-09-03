@@ -1,0 +1,62 @@
+---
+title: "在 Unity SDK 中追踪流程页面浏览"
+description: "每当用户打开 Unity 应用中的流程页面时接收事件，并将其转发至您的产品分析工具。"
+metadataTitle: "追踪流程页面浏览 | Unity SDK | Adapty 文档"
+---
+
+每当用户打开[流程](adapty-flow-builder)中的某个页面时，SDK 会向您的应用报告一个 `flow_screen_showed` 事件。将其转发至 Amplitude、Mixpanel 或您正在使用的任何产品分析工具，以便将流程页面的数据与应用的其他事件一起进行分析。
+
+:::tip
+如需了解用户在流程中的进度，无需编写任何代码——[流程数据图表](flow-metrics)已在 Adapty 看板中展示浏览量、完成率及各屏幕的流失情况。若需将这些数据导入自有分析系统，并与 Adapty 未知的事件进行关联，请参考本指南。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty Unity SDK v4 或更高版本**：早期版本不支持流程分析回调。
+- **在此功能上线之后发布的流程版本**：Adapty 在发布流程时生成屏幕事件，因此在此之前最后一次发布的流程不会上报任何数据。如果应用未收到任何事件，请重新发布一个新版本的流程后再试。
+
+## 您收到的内容 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+屏幕浏览事件与其他所有流程事件通过同一个分析回调上报。注册方式请参阅[处理流程与付费墙事件](unity-handling-events)。
+
+## 将每次屏幕浏览事件转发至你的分析平台 \{#forward-every-screen-view-to-your-analytics\}
+
+在读取其他内容之前，先匹配事件名称，因为一个流程会通过同一个回调上报多种事件。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+
+    var screenId = @params["instanceId"];
+    var screenOrder = @params["screen_order"];
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## 当用户到达末尾时运行代码 \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` 在流程无法继续前进的屏幕上为 `true`。可用它来解锁内容、标记用户引导已完成，或发送自定义完成事件，无需在编辑工具中为其添加按钮操作。
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+    if (!(@params["is_last_screen"] is bool isLast) || !isLast) return;
+
+    // The user reached the end of the flow.
+}
+```
+
+到达最后一个屏幕与关闭流程并不相同。用户可能看到最终屏幕后直接关闭流程而不进行任何操作，而分支流程也可能在多个不同屏幕上结束。如需确认流程本身已关闭，请改用 `FlowViewDidDisappear`。

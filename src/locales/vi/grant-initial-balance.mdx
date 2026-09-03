@@ -1,0 +1,77 @@
+---
+title: "Cấp số dư ban đầu"
+description: "Cấp số dư tiền tệ ảo ban đầu cho người dùng mới thông qua API phía máy chủ, và bổ sung dữ liệu cho người dùng hiện tại khi bạn ra mắt loại tiền tệ mới."
+metadataTitle: "Cấp số dư ban đầu | Tài liệu Adapty"
+---
+
+:::link
+Bài viết chính: [Tiền tệ ảo](virtual-currencies)
+:::
+
+Mỗi hồ sơ người dùng bắt đầu với số dư bằng 0 ở mọi loại tiền tệ, và [các sản phẩm được liên kết](create-virtual-currency#link-products) chỉ cấp tín dụng khi có giao dịch mua hoặc gia hạn. Vì vậy, người dùng chưa mua gì sẽ không bao giờ nhận được tín dụng một cách tự động.
+
+Bạn vẫn có thể cấp số dư ban đầu cho người dùng mới: thưởng chào mừng, hạn ngạch dùng thử miễn phí, hoặc một số lượt chơi nhất định. Hãy cấp từ backend của bạn thông qua [API phía máy chủ](getting-started-with-server-side-api), sau khi bạn xác định được người dùng.
+
+## Cấp số dư cho người dùng mới \{#grant-the-balance-for-a-new-user\}
+
+1. **Xác định người dùng trước**: Số dư thuộc về một hồ sơ người dùng và không thể chuyển sang hồ sơ khác, vì vậy hãy cấp credits chỉ sau khi hồ sơ đã có customer user ID. Xác định người dùng trong ứng dụng của bạn thông qua SDK (xem [Xác định người dùng](ios-quickstart-identify)) hoặc từ backend của bạn thông qua server-side API.
+
+Cấp phát cho một hồ sơ người dùng ẩn danh là lỗi phổ biến nhất ở đây. Hồ sơ người dùng ẩn danh được gắn với một lần cài đặt ứng dụng, vì vậy người dùng sẽ mất credits khi cài đặt lại ứng dụng hoặc mở trên thiết bị khác. Xem [Số dư, hồ sơ người dùng và thiết bị](virtual-currency-balance#balances-profiles-and-devices) để hiểu toàn cảnh.
+
+2. **Cấp credits**: Gọi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) với `amount` dương. Ví dụ này cấp 500 token:
+
+```bash title="Grant an initial balance"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "items": [{"currency_code": "TOKENS", "amount": 500}],
+           "metadata": {"reason": "initial_balance"}
+         }'
+   ```
+
+Phản hồi trả về số dư mới:
+
+```json title="Response"
+    {
+      "transaction_id": "3a9f8e21-5d4c-4b7a-9e01-8c6d2f4b1a37",
+      "balances": [
+        { "code": "TOKENS", "name": "Tokens", "balance": 500, "held": 0, "available": 500 }
+      ]
+    }
+    ```
+
+    Credits được cấp theo cách này không bao giờ hết hạn, khác với credits theo chu kỳ của một gói đăng ký được liên kết.
+
+    Trường `metadata` là tùy chọn. Một tag như `reason: initial_balance` giúp dễ nhận ra khoản cấp này trong [lịch sử giao dịch](api-adapty/operations/listVirtualCurrencyTransactions), và phân biệt với credits từ purchase trong báo cáo của bạn.
+
+3. **Ghi lại việc cấp thưởng vào cơ sở dữ liệu của bạn**: Lưu lại thông tin rằng người dùng này đã nhận được số dư ban đầu, để nếu họ đăng nhập lại hoặc job được thử lại, số dư sẽ không bị cấp hai lần. Phần tiếp theo sẽ giải thích tại sao bản ghi này là cần thiết.
+
+## Chỉ cấp một lần duy nhất \{#grant-it-exactly-once\}
+
+Cơ sở dữ liệu của bạn mới là nguồn thông tin chính xác để xác định liệu người dùng đã nhận số dư ban đầu chưa. Có hai cách trông có vẻ đủ nhưng thực ra không phải:
+
+- **`Idempotency-Key` chỉ bảo vệ một lần gọi, không phải một người dùng**: Thử lại một request với cùng key sẽ trả về kết quả ban đầu thay vì cấp lại, vì vậy một lần gọi có thể retry an toàn sau khi timeout. Adapty ghi nhớ mỗi key tối đa một giờ, theo từng hồ sơ người dùng. Sau đó, cùng key đó sẽ cấp lại, vì vậy header không thể cho bạn biết nhiều tháng sau liệu người dùng đã nhận số dư ban đầu hay chưa. Hãy tạo key mới cho mỗi lần cấp mới.
+- **Đọc số dư trước không chứng minh được điều gì**: Số dư bằng 0 có nghĩa là người dùng chưa từng được cấp credit, hoặc đã được cấp và đã tiêu hết. [Xem số dư tiền tệ ảo](api-adapty/operations/listVirtualCurrencyBalances) không thể phân biệt được hai trường hợp này.
+
+Vì vậy, hãy kiểm tra bản ghi của bạn trước khi gọi API, và ghi lại bản ghi sau khi nhận được phản hồi thành công.
+
+## Bổ sung số dư cho người dùng hiện tại \{#backfill-existing-users\}
+
+Khi bạn tạo một loại tiền tệ, tất cả hồ sơ người dùng hiện có đều bắt đầu với số dư 0, và [liên kết sản phẩm chỉ áp dụng từ thời điểm đó trở đi](create-virtual-currency#link-products). Để cấp số dư ban đầu cho người dùng hiện tại, hãy chạy một lần bổ sung thủ công từ backend của bạn.
+
+1. Trong database của bạn, thu thập các customer user ID cần cấp phát.
+2. Với mỗi ID, gọi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) như hướng dẫn ở trên. Không có endpoint xử lý hàng loạt: mỗi request chỉ cấp phát cho một hồ sơ người dùng, và một request có thể bao gồm tối đa 20 loại tiền tệ cho hồ sơ đó.
+3. Lưu lại bản ghi theo từng người dùng như đã đề cập ở phần trước khi thực hiện, để bạn có thể dừng và tiếp tục công việc mà không cấp phát trùng lặp.
+4. Giữ tốc độ dưới giới hạn 600 request mỗi phút cho mỗi ứng dụng. Request vượt giới hạn sẽ thất bại với lỗi `rate_limited`, vì vậy hãy điều tiết tốc độ và thử lại với các người dùng bị lỗi.
+
+:::tip
+Chỉ backfill những người dùng bạn muốn tiếp cận, chẳng hạn như những người đang hoạt động hoặc đang trả phí. Credits được cấp qua API không bao giờ hết hạn, vì vậy số dư bạn phát ra sẽ nằm trên hồ sơ người dùng cho đến khi người dùng chi tiêu hết.
+:::
+
+## Bước tiếp theo \{#next-steps\}
+
+- Tiêu số dư và đọc nó lúc runtime: [Hướng dẫn nhanh về tiền tệ ảo](virtual-currency-quickstart).
+- Kiểm tra những gì người dùng đang có và theo dõi mọi thay đổi: [Số dư tiền tệ ảo](virtual-currency-balance).

@@ -1,0 +1,800 @@
+---
+title: "Lệnh Ads Manager trong Adapty Developer CLI"
+description: "Tài liệu tham khảo cho mọi lệnh adapty asa — chiến dịch, nhóm quảng cáo, từ khóa, quảng cáo, tự động hóa và chỉ số."
+metadataTitle: "Lệnh Ads Manager CLI | Tài liệu Adapty"
+---
+
+Bài viết này liệt kê mọi lệnh [Ads Manager](adapty-ads-manager) trong Adapty CLI, cùng các đối số, cờ và giá trị được chấp nhận. Các lệnh Ads Manager nằm trong chủ đề `adapty asa`.
+
+:::link
+Để biết điều kiện tiên quyết, các biện pháp ghi an toàn và ví dụ theo tác vụ, hãy xem [Quản lý Ads Manager từ CLI](developer-cli-ads-manager).
+:::
+
+Các lệnh này yêu cầu tài khoản Apple Ads đã được kết nối và gói đăng ký Ads Manager đang hoạt động. Chạy [`adapty asa whoami`](#adapty-asa-whoami) để kiểm tra cả hai. Để xem toàn bộ CLI, hãy xem [tài liệu tham khảo lệnh](developer-cli-reference).
+
+## Cờ toàn cục \{#global-flags\}
+
+Các cờ này khả dụng trên tất cả các lệnh Ads Manager.
+
+| Cờ | Mô tả |
+|---|---|
+| `--json` | Xuất dưới dạng JSON thay vì văn bản định dạng |
+| `--help` | Hiển thị trợ giúp lệnh |
+
+Tất cả các lệnh `list` cũng chấp nhận cờ phân trang:
+
+| Cờ | Mặc định | Mô tả |
+|---|---|---|
+| `--page` | `1` | Số trang |
+| `--page-size` | `100` | Số mục mỗi trang (tối đa: 1000) |
+
+Các trang Ads Manager có kích thước lớn hơn so với phần còn lại của CLI. Nên dùng một trang lớn thay vì lặp qua nhiều trang nhỏ.
+
+Tất cả các lệnh thay đổi tài khoản của bạn đều chấp nhận các cờ sau:
+
+| Cờ | Mô tả |
+|---|---|
+| `--yes`, `-y` | Áp dụng mà không cần xác nhận. Bắt buộc khi đầu ra được pipe hoặc dùng `--json` |
+| `--idempotency-key` | Khóa cố định cho lần ghi này. Nếu lặp lại với cùng khóa và body trong vòng 24 giờ, sẽ trả về kết quả đã lưu thay vì áp dụng thay đổi lần nữa |
+
+Các lệnh Ads Manager không nhận cờ `--app`. Phạm vi là công ty mà token của bạn thuộc về. `--app` chỉ tồn tại trên một số lệnh `list` với vai trò lọc dữ liệu.
+
+## Bộ lọc danh sách \{#list-filters\}
+
+Bộ lọc thu hẹp phạm vi truy vấn, không phải trang hiển thị. Nếu không áp dụng bộ lọc, `keywords list` sẽ phân trang qua toàn bộ từ khóa trong tài khoản, vì vậy hãy giới hạn mỗi lần đọc ở cấp độ bạn cần.
+
+| Filter | Accepted by |
+|---|---|
+| `--campaign-group` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`, `creatives`, `product-pages` |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `creatives`, `product-pages` |
+| `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--status` | `campaigns`, `ad-groups`, `ads` (`ENABLED` hoặc `PAUSED`), `keywords` (`ACTIVE` hoặc `PAUSED`) |
+| `--search` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`. Tìm kiếm chuỗi con theo tên, không phân biệt chữ hoa/thường |
+
+`adapty asa apps list`, `orgs list`, `automations list`, và `automations runs` không nhận bộ lọc nào. Chúng chỉ chấp nhận các cờ phân trang.
+
+`--campaign-group`, `--app`, `--campaign`, và `--ad-group` nhận các UUID được in ra bởi lệnh `list` tương ứng, và mỗi cờ có thể lặp lại nhiều lần:
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --ad-group <other-ad-group-id>
+```
+
+Một ID thuộc về công ty khác sẽ không khớp với bất kỳ kết quả nào, vì vậy trang trả về rỗng thay vì báo lỗi.
+
+## Tài khoản \{#account\}
+
+### adapty asa whoami
+
+Hiển thị công ty, cách cấp quyền truy cập Ads Manager và trạng thái kết nối với Apple Ads.
+
+```bash
+adapty asa whoami
+```
+
+Chạy lệnh này trước tiên. Lệnh sẽ báo cáo xem hai điều kiện tiên quyết cho mọi lệnh khác có được đáp ứng hay không.
+
+### adapty asa connect
+
+Liên kết tài khoản Apple Ads với Adapty.
+
+```bash
+adapty asa connect
+```
+
+Lệnh này in ra một đường dẫn ủy quyền Apple và chờ cho đến khi Apple báo cáo tài khoản đã được kết nối.
+
+| Flag | Mặc định | Mô tả |
+|---|---|---|
+| `--wait` / `--no-wait` | `--wait` | Chờ cho đến khi Apple Ads báo cáo đã kết nối. `--no-wait` trả về ngay lập tức |
+| `--timeout` | `300` | Số giây chờ cho bước trình duyệt |
+
+### adapty asa orgs list
+
+Liệt kê các nhóm chiến dịch (tổ chức Apple Ads) có sẵn cho công ty của bạn.
+
+```bash
+adapty asa orgs list
+```
+
+Mỗi hàng chứa hai định danh, và chúng không thể dùng thay thế cho nhau:
+
+| Trường | Dùng làm |
+|---|---|
+| `internal_id` | UUID mà `--org` nhận vào ở lệnh [`campaigns create`](#adapty-asa-campaigns-create), và mà `--campaign-group` nhận làm [bộ lọc danh sách](#list-filters) |
+| `org_id` | ID tổ chức dạng số của Apple, được `--org-id` nhận vào ở lệnh [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create). `--org` và `--campaign-group` không chấp nhận giá trị này |
+
+`--org` chỉ có trong lệnh `campaigns create`. Không có lệnh liệt kê nào chấp nhận tham số này.
+
+Mỗi hàng cũng có trường `payment_model`. Khi giá trị là `LOC`, tổ chức thanh toán theo hạn mức tín dụng, và mọi campaign trong đó đều cần các [cờ `--invoice-*`](#adapty-asa-campaigns-create).
+
+Chấp nhận [cờ phân trang](#global-flags).
+
+### adapty asa apps list
+
+Liệt kê các ứng dụng được quảng bá trên Apple Ads.
+
+```bash
+adapty asa apps list
+```
+
+Mỗi hàng chứa hai định danh, và chúng không thể thay thế cho nhau:
+
+| Trường | Dùng làm |
+|---|---|
+| `internal_id` | UUID mà `--app` nhận làm [bộ lọc danh sách](#list-filters) |
+| `adam_id` | ID App Store dạng số của Apple, được `--adam-id` nhận vào lệnh [`campaigns create`](#adapty-asa-campaigns-create) và [`product-pages sync`](#adapty-asa-product-pages-sync) |
+
+Chấp nhận [cờ phân trang](#global-flags).
+
+## Chiến dịch \{#campaigns\}
+
+### adapty asa campaigns list
+
+Liệt kê các [chiến dịch](ads-manager-create-campaign). Chỉ trả về metadata — đọc số liệu hiệu suất bằng [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa campaigns list --app <app-id> --status PAUSED
+```
+
+Chấp nhận [cờ phân trang](#global-flags) và các [bộ lọc danh sách](#list-filters) `--campaign-group`, `--app`, `--search`, và `--status`.
+
+### adapty asa campaigns get
+
+Lấy thông tin chi tiết cho một chiến dịch cụ thể.
+
+```bash
+adapty asa campaigns get <campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `campaign-id` | Campaign ID (UUID) |
+
+### adapty asa campaigns create
+
+Tạo một chiến dịch.
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--org` | Có | ID nhóm chiến dịch (UUID). Xem [`orgs list`](#adapty-asa-orgs-list) |
+| `--name` | Có | Tên chiến dịch |
+| `--adam-id` | Có | ID ứng dụng trên App Store (`adam_id`) |
+| `--country` | Có | Mã quốc gia hoặc khu vực. Lặp lại để chọn nhiều: `--country US --country CA` |
+| `--daily-budget` | Có | Ngân sách hàng ngày theo số tiền thực tế, ví dụ `50` hoặc `12.50` |
+| `--budget` | Không | Ngân sách trọn đời |
+| `--target-cpa` | Không | Chi phí mục tiêu mỗi lượt chuyển đổi. Phải thấp hơn `--daily-budget` |
+| `--currency` | Không | Mã tiền tệ cho các số tiền trong lần gọi này. Mặc định: `USD` |
+| `--bidding-strategy` | Không | `MANUAL_CPT` hoặc `MAX_CONVERSIONS`. Apple mặc định là `MANUAL_CPT` |
+| `--ad-channel-type` | Không | `SEARCH` hoặc `DISPLAY`. Mặc định: `SEARCH` |
+| `--billing-event` | Không | `TAPS` hoặc `IMPRESSIONS`. Mặc định: `TAPS` |
+| `--supply-source` | Không | Nguồn cung cấp, có thể lặp lại. Mặc định: `APPSTORE_SEARCH_RESULTS` |
+| `--status` | Không | Trạng thái ban đầu: `ENABLED` hoặc `PAUSED` |
+| `--invoice-advertiser` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: tên nhà quảng cáo |
+| `--invoice-order-number` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: số đơn hàng |
+| `--invoice-contact-name` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: tên người liên hệ của người mua |
+| `--invoice-contact-email` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: email người liên hệ của người mua |
+| `--invoice-billing-email` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: email liên hệ thanh toán |
+
+Một tổ chức có `payment_model` là `LOC` thanh toán theo hạn mức tín dụng, và Apple yêu cầu Tùy chọn Thanh toán cho từng chiến dịch. Truyền đủ cả năm flag `--invoice-*` trong một lần gọi — nếu thiếu bất kỳ flag nào, yêu cầu sẽ bị từ chối trước khi được gửi đi. Xem [Đặt Tùy chọn Thanh toán cho hạn mức tín dụng](developer-cli-ads-manager#invoicing-options).
+
+Phản hồi trả về `serving_status` và `serving_state_reasons`. Một campaign có thể được tạo nhưng vẫn chưa phục vụ quảng cáo: campaign theo `MAX_CONVERSIONS` sẽ chờ [nhóm quảng cáo được tạo tự động](#adapty-asa-ad-groups-create), còn campaign theo hình thức line-of-credit sẽ chờ Invoicing Options được thiết lập. Trong cả hai trường hợp, lệnh sẽ in ra lý do và lệnh cần thực hiện để giải quyết.
+
+### adapty asa campaigns update
+
+Cập nhật một chiến dịch hiện có.
+
+```bash
+adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `campaign-id` | ID chiến dịch (UUID) |
+
+| Flag | Mô tả |
+|---|---|
+| `--name` | Tên chiến dịch mới |
+| `--status` | `ENABLED` hoặc `PAUSED` |
+| `--country` | Thay thế danh sách quốc gia. Lặp lại để thêm nhiều quốc gia |
+| `--daily-budget` | Ngân sách hàng ngày mới |
+| `--budget` | Ngân sách trọn đời mới |
+| `--target-cpa` | Chi phí mục tiêu trên mỗi lần mua lại mới |
+| `--bidding-strategy` | `MANUAL_CPT` hoặc `MAX_CONVERSIONS` |
+| `--currency` | Mã tiền tệ cho các số tiền trong lệnh gọi này. Mặc định: `USD` |
+| `--invoice-advertiser` | Tùy chọn hóa đơn: tên nhà quảng cáo |
+| `--invoice-order-number` | Tùy chọn hóa đơn: số đơn hàng |
+| `--invoice-contact-name` | Tùy chọn hóa đơn: tên liên hệ người mua |
+| `--invoice-contact-email` | Tùy chọn hóa đơn: email liên hệ người mua |
+| `--invoice-billing-email` | Tùy chọn hóa đơn: email liên hệ thanh toán |
+
+Ít nhất một flag là bắt buộc.
+
+Năm flag `--invoice-*` đi cùng nhau và thay thế toàn bộ Invoicing Options đã lưu, vì vậy hãy truyền cả năm flag ngay cả khi chỉ muốn thay đổi một trong số chúng. Một tập hợp không đầy đủ sẽ bị từ chối trước khi yêu cầu được gửi đi.
+
+### adapty asa campaigns bulk-create
+
+Tạo toàn bộ cấu trúc chiến dịch — các chiến dịch với nhóm quảng cáo, từ khóa, từ khóa phủ định và quảng cáo lồng nhau — trong một thao tác duy nhất.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Chuyển đổi từ template bulk của Apple Ads thay vì tự viết JSON:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Cờ | Mặc định | Mô tả |
+|---|---|---|
+| `--file` | — | File JSON chứa cấu trúc chiến dịch, hoặc `-` để đọc từ đầu vào tiêu chuẩn |
+| `--from-file` | — | Template bulk Apple Ads để chuyển đổi trên server: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) hoặc một file [keywords `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | ID tổ chức dạng số của Apple (`org_id`). Xem [`orgs list`](#adapty-asa-orgs-list). Bắt buộc khi dùng `--from-file` |
+| `--preview` | — | Dùng với `--from-file`: in cấu trúc đã chuyển đổi và dừng lại. Không có gì được tạo ra |
+| `--wait` / `--no-wait` | `--wait` | Theo dõi thao tác cho đến khi hoàn thành. `--no-wait` in ID thao tác và trả về |
+| `--poll-interval` | `5` | Số giây giữa các lần kiểm tra tiến độ |
+| `--timeout` | `900` | Số giây tối đa để chờ thao tác hoàn thành |
+
+Chính xác một trong hai tùy chọn `--file` và `--from-file` là bắt buộc.
+
+Cấu trúc đặt tên nhóm chiến dịch ở cấp cao nhất và lồng tất cả các phần còn lại vào bên trong:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` nhận ID tổ chức dạng số của Apple; dùng `campaign_group_internal_id` để truyền UUID thay thế. Một node có `payload` sẽ được tạo mới. Một node chỉ định thực thể đã tồn tại bằng `id` của nó là một anchor — dùng anchor để thêm ad group vào một campaign đã có, và thêm `update_payload` để thay đổi thực thể đó trong cùng một thao tác. Mỗi campaign lồng `ad_groups`, và mỗi ad group lồng `keywords`, `negative_keywords`, và `ads`. Một campaign cũng nhận `negative_keywords` trực tiếp cho các từ khóa loại trừ ở cấp campaign.
+
+Toàn bộ cấu trúc được xác thực trước khi tạo bất kỳ thứ gì, và danh sách từ chối sẽ liệt kê mọi node không hợp lệ. Với `--from-file`, các vấn đề chuyển đổi sẽ được báo cáo kèm sheet, row và column tương ứng; cảnh báo chuyển đổi không dừng việc gửi, nhưng lỗi chuyển đổi sẽ hủy bỏ nó. Trước khi gửi, lệnh sẽ báo cáo số lượng campaign, ad group, keyword, negative keyword và ad trong cấu trúc, đồng thời yêu cầu xác nhận.
+
+Lệnh sau đó sẽ poll operation và in tiến trình cho đến khi đạt một trong ba trạng thái kết thúc:
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `success` | Mọi đối tượng đã được tạo thành công |
+| `partial` | Một số đối tượng chưa được tạo. Mỗi lỗi được in kèm thông báo lỗi từ Apple |
+| `failed` | Thao tác thất bại và lệnh thoát với mã khác 0 |
+
+Nếu thao tác chưa hoàn thành sau `--timeout` giây, lệnh sẽ trả về và in ra lệnh [`bulk-status`](#adapty-asa-campaigns-bulk-status) để chạy sau.
+
+### adapty asa campaigns bulk-status
+
+Hiển thị tiến trình của một thao tác bulk: trạng thái, số lượng đối tượng, và nhật ký theo từng đối tượng.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `operation-id` | ID thao tác (UUID) được in ra bởi [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) |
+
+Trường `status` có giá trị là `pending`, `running`, `success`, `partial`, hoặc `failed`. Khối `counts` báo cáo số lượng đối tượng đã áp dụng, thất bại và đang chờ xử lý trên tổng số.
+
+Chấp nhận [cờ phân trang](#global-flags).
+
+## Nhóm quảng cáo \{#ad-groups\}
+
+### adapty asa ad-groups list
+
+Liệt kê [nhóm quảng cáo](ads-manager-create-ad-group). Chỉ trả về metadata — đọc số liệu hiệu suất bằng [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Hỗ trợ [cờ phân trang](#global-flags) và các [bộ lọc danh sách](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--search`, và `--status`.
+
+### adapty asa ad-groups get
+
+Lấy thông tin chi tiết cho một nhóm quảng cáo cụ thể.
+
+```bash
+adapty asa ad-groups get <ad-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ad-group-id` | ID nhóm quảng cáo (UUID) |
+
+### adapty asa ad-groups create
+
+Tạo một nhóm quảng cáo trong một chiến dịch.
+
+```bash
+adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--campaign` | Có | Campaign ID (UUID) |
+| `--name` | Có | Tên nhóm quảng cáo |
+| `--default-bid` | Trừ khi dùng `--automated` | Giá thầu mặc định dưới dạng số tiền, ví dụ `1.20` |
+| `--cpa-goal` | Không | Mục tiêu chi phí mỗi lần chuyển đổi |
+| `--pricing-model` | Không | `CPC` hoặc `CPM`. Apple yêu cầu chọn một trong mỗi nhóm quảng cáo. Mặc định: `CPC` |
+| `--start-time` | Không | Thời điểm bắt đầu lịch chạy (`YYYY-MM-DD`). Mặc định là hôm nay |
+| `--end-time` | Không | Thời điểm kết thúc lịch chạy (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | Không | Cho phép Apple tự động thêm từ khóa |
+| `--automated` | Không | Tạo nhóm quảng cáo tự động mà campaign `MAX_CONVERSIONS` cần |
+| `--currency` | Không | Mã tiền tệ cho các số tiền trong lệnh này. Mặc định: `USD` |
+| `--status` | Không | Trạng thái ban đầu: `ENABLED` hoặc `PAUSED` |
+
+`--automated` chọn nhóm quảng cáo tham gia từ khóa tự động, do đó không thể kết hợp với `--automated-keywords`. Apple tự lên lịch cho nhóm quảng cáo tự động và giữ nó ở trạng thái bật, vì vậy `--start-time` và `--status PAUSED` sẽ bị từ chối — hãy tạm dừng chiến dịch thay thế. Xem [Tạo chiến dịch Max Conversions](developer-cli-ads-manager#max-conversions).
+
+### adapty asa ad-groups update
+
+Cập nhật một nhóm quảng cáo hiện có.
+
+```bash
+adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
+```
+
+| Argument | Description |
+|---|---|
+| `ad-group-id` | ID nhóm quảng cáo (UUID) |
+
+| Flag | Mô tả |
+|---|---|
+| `--name` | Tên nhóm quảng cáo mới |
+| `--status` | `ENABLED` hoặc `PAUSED` |
+| `--default-bid` | Giá thầu mặc định mới |
+| `--cpa-goal` | Mục tiêu chi phí mỗi lần chuyển đổi mới |
+| `--start-time` | Thời gian bắt đầu lịch trình (`YYYY-MM-DD`) |
+| `--end-time` | Thời gian kết thúc lịch trình (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | Cho phép Apple tự động thêm từ khóa |
+| `--currency` | Mã tiền tệ cho các số tiền trong lần gọi này. Mặc định: `USD` |
+
+Cần có ít nhất một flag. Campaign cha được xác định trên server và không bao giờ được truyền vào.
+
+## Từ khóa \{#keywords\}
+
+Các lệnh từ khóa được áp dụng theo lô tối đa 100 mục mỗi lần gọi. Xem [Quản lý từ khóa](ads-manager-manage-keywords) để biết thao tác tương đương trên dashboard.
+
+### adapty asa keywords list
+
+Liệt kê các từ khóa targeting. Chỉ trả về metadata — đọc số liệu hiệu suất bằng [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
+```
+
+Chấp nhận [cờ phân trang](#global-flags) và các [bộ lọc danh sách](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search`, và `--status`. Lọc theo `--ad-group` — nếu không có bộ lọc, đây là truy vấn rộng nhất trong chủ đề này.
+
+### adapty asa keywords add
+
+Thêm từ khóa nhắm mục tiêu vào một nhóm quảng cáo.
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --text "running shoes" --text "trail shoes" --bid 1.20
+```
+
+Đọc từ khóa từ một file, mỗi dòng một từ khóa:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--ad-group` | Có | ID nhóm quảng cáo (UUID). Chiến dịch được xác định từ đây |
+| `--text` | Có, trừ khi dùng `--from-file` | Văn bản từ khóa. Lặp lại để thêm nhiều từ khóa |
+| `--from-file` | Không | File chứa một từ khóa mỗi dòng. Kết hợp với các giá trị `--text` nếu có |
+| `--bid` | Không | Giá thầu cho mỗi từ khóa dưới dạng số tiền thuần |
+| `--match-type` | Không | `BROAD` hoặc `EXACT`. Mặc định: `BROAD` |
+| `--currency` | Không | Mã tiền tệ cho các số tiền trong lần gọi này. Mặc định: `USD` |
+| `--status` | Không | `ACTIVE` hoặc `PAUSED`. Mặc định: `ACTIVE` |
+
+Một ID không hợp lệ sẽ khiến toàn bộ batch thất bại trước khi Apple được gọi. Apple vẫn có thể từ chối từng keyword riêng lẻ, và mỗi lần từ chối sẽ được báo cáo kèm lý do.
+
+### adapty asa keywords update
+
+Thay đổi giá thầu, trạng thái, văn bản hoặc loại khớp của một hoặc nhiều từ khóa.
+
+```bash
+adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `keyword-id` | ID từ khóa (UUID). Truyền nhiều ID bằng cách thêm làm đối số bổ sung |
+
+| Flag | Mô tả |
+|---|---|
+| `--bid` | Giá thầu mới |
+| `--status` | `ACTIVE` hoặc `PAUSED` |
+| `--match-type` | `BROAD` hoặc `EXACT` |
+| `--text` | Văn bản từ khóa mới. Chỉ có ý nghĩa khi áp dụng cho một từ khóa duy nhất |
+| `--currency` | Mã tiền tệ cho các giá trị trong lệnh gọi này. Mặc định: `USD` |
+
+Một thay đổi được áp dụng cho mỗi ID được truyền vào.
+
+## Từ khóa loại trừ \{#negative-keywords\}
+
+### adapty asa negative-keywords list
+
+Liệt kê các từ khóa phủ định. Các hàng có `ad_group_id` trống là cấp chiến dịch.
+
+```bash
+adapty asa negative-keywords list --campaign <campaign-id>
+```
+
+| Flag | Mô tả |
+|---|---|
+| `--campaign-level-only` | Chỉ giữ các hàng cấp chiến dịch |
+
+Chấp nhận [pagination flags](#global-flags) và các [list filters](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, và `--search`.
+
+### adapty asa negative-keywords add
+
+Thêm từ khóa phủ định vào một nhóm quảng cáo hoặc một chiến dịch.
+
+```bash
+adapty asa negative-keywords add --ad-group <ad-group-id> --text free
+```
+
+Áp dụng cho tất cả nhóm quảng cáo của một chiến dịch:
+
+```bash
+adapty asa negative-keywords add --campaign <campaign-id> --all-ad-groups --text free
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--ad-group` | Một trong `--ad-group` hoặc `--campaign` | ID nhóm quảng cáo (UUID). Campaign sẽ được xác định từ đây |
+| `--campaign` | Một trong `--ad-group` hoặc `--campaign` | ID campaign (UUID) |
+| `--text` | Có | Văn bản từ khóa. Lặp lại để thêm nhiều từ khóa |
+| `--all-ad-groups` | Không | Áp dụng cho mọi nhóm quảng cáo của campaign thay vì chính campaign. Yêu cầu `--campaign` |
+| `--match-type` | Không | `BROAD` hoặc `EXACT`. Mặc định: `EXACT` |
+| `--status` | Không | `ACTIVE` hoặc `PAUSED`. Mặc định: `ACTIVE` |
+
+`--ad-group` và `--campaign` là hai tùy chọn loại trừ lẫn nhau. Chỉ truyền đúng một trong hai.
+
+## Thuật ngữ tìm kiếm \{#search-terms\}
+
+### adapty asa search-terms list
+
+Liệt kê các cụm từ tìm kiếm đã kích hoạt quảng cáo của bạn. Dùng để tìm từ khóa mới và từ khóa phủ định mới.
+
+```bash
+adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Flag | Mặc định | Mô tả |
+|---|---|---|
+| `--date-from` | Hôm nay | Ngày bắt đầu kỳ báo cáo (`YYYY-MM-DD`) |
+| `--date-to` | Hôm nay | Ngày kết thúc kỳ báo cáo (`YYYY-MM-DD`) |
+
+Chấp nhận [flag phân trang](#global-flags) và các [bộ lọc danh sách](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, và `--search`.
+
+Lệnh này dùng chung pool phân tích với [`asa metrics`](#metrics). Xem [Lỗi](#errors).
+
+## Quảng cáo \{#ads\}
+
+### adapty asa ads list
+
+Liệt kê [ads](ads-manager-manage-ads). Trường `serving_state_reasons` giải thích lý do tại sao một ad không chạy.
+
+```bash
+adapty asa ads list --ad-group <ad-group-id>
+```
+
+Chấp nhận [pagination flags](#global-flags) và các [list filters](#list-filters) `--campaign-group`, `--campaign`, `--ad-group`, `--search`, và `--status`. Danh sách này không có bộ lọc `--app` vì ads thuộc về ad groups.
+
+### adapty asa ads get
+
+Lấy thông tin chi tiết của một quảng cáo cụ thể.
+
+```bash
+adapty asa ads get <ad-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ad-id` | Ad ID (UUID) |
+
+### adapty asa ads create
+
+Tạo một quảng cáo trong một nhóm quảng cáo.
+
+```bash
+adapty asa ads create --ad-group <ad-group-id> --creative-id 4321 --name "Summer ad"
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--ad-group` | Yes | Ad group ID (UUID). The campaign is resolved from it |
+| `--creative-id` | Yes | Apple creative ID. See [`creatives list`](#adapty-asa-creatives-list) |
+| `--name` | Yes | Ad name |
+| `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+### adapty asa ads update
+
+Cập nhật một quảng cáo hiện có.
+
+```bash
+adapty asa ads update <ad-id> --status PAUSED
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `ad-id` | ID quảng cáo (UUID) |
+
+| Flag | Mô tả |
+|---|---|
+| `--name` | Tên quảng cáo mới |
+| `--status` | `ENABLED` hoặc `PAUSED` |
+
+Cần có ít nhất một flag. Creative và nhóm quảng cáo cha được cố định khi tạo.
+
+## Creatives \{#creatives\}
+
+### adapty asa creatives list
+
+Liệt kê các creative có sẵn để tạo quảng cáo mới.
+
+```bash
+adapty asa creatives list --app <app-id>
+```
+
+`creative_id` trả về ở đây chính là giá trị `--creative-id` dùng cho [`ads create`](#adapty-asa-ads-create).
+
+Chấp nhận [cờ phân trang](#global-flags) và các bộ lọc danh sách `--campaign-group` và `--app` trong [list filters](#list-filters).
+
+## Trang sản phẩm \{#product-pages\}
+
+### adapty asa product-pages list
+
+Liệt kê các trang sản phẩm tùy chỉnh có sẵn cho ứng dụng của bạn.
+
+```bash
+adapty asa product-pages list --app <app-id>
+```
+
+Chấp nhận [cờ phân trang](#global-flags) và bộ lọc danh sách `--campaign-group` và `--app` trong phần [list filters](#list-filters).
+
+### adapty asa product-pages sync
+
+Làm mới các trang sản phẩm tùy chỉnh từ App Store Connect.
+
+```bash
+adapty asa product-pages sync --adam-id 123456
+```
+
+| Flag | Mô tả |
+|---|---|
+| `--adam-id` | Giới hạn việc làm mới cho một ứng dụng cụ thể. Bỏ qua để áp dụng cho tất cả ứng dụng |
+
+Việc làm mới được đưa vào hàng đợi thay vì thực hiện ngay lập tức, và lệnh xác nhận bằng `Sync queued.` Nếu cùng một yêu cầu làm mới đang được xử lý, thay vào đó sẽ báo `Already running; nothing new was queued.`
+
+## Tự động hóa \{#automations\}
+
+CLI lưu trữ JSON quy tắc bạn cung cấp — nó không tự tạo quy tắc. Xem [Tự động hóa](ads-manager-automations) để biết từng loại quy tắc làm gì, và [Chạy quy tắc tự động hóa](developer-cli-ads-manager#run-automation-rules) để biết cách tạo file quy tắc.
+
+### danh sách adapty asa automations \{#adapty-asa-automations-list\}
+
+Liệt kê các [quy tắc tự động hóa](ads-manager-automations). Trường `status` có giá trị `1` là đang hoạt động và `0` là đã dừng.
+
+```bash
+adapty asa automations list
+```
+
+Chấp nhận [cờ phân trang](#global-flags).
+
+### adapty asa automations get
+
+Lấy thông tin một quy tắc tự động hóa cụ thể, bao gồm các điều kiện và hành động của nó.
+
+```bash
+adapty asa automations get <automation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Automation rule ID (UUID) |
+
+### adapty asa automations create
+
+Tạo một quy tắc tự động từ file JSON.
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+| Flag | Mô tả |
+|---|---|
+| `--file` | File JSON chứa nội dung quy tắc, hoặc `-` để đọc từ standard input |
+| `--run-now` | Xếp lần chạy đầu tiên vào hàng đợi ngay sau khi quy tắc được lưu |
+
+`--file` là bắt buộc.
+
+### adapty asa automations update
+
+Thay đổi một quy tắc tự động: dừng, đổi tên, hoặc thay thế các phần của quy tắc.
+
+```bash
+adapty asa automations update <automation-id> --stop
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `automation-id` | ID quy tắc tự động (UUID) |
+
+| Flag | Mô tả |
+|---|---|
+| `--start` | Kích hoạt quy tắc |
+| `--stop` | Dừng quy tắc và xóa lần chạy tiếp theo |
+| `--name` | Tên quy tắc mới |
+| `--file` | File JSON chứa các phần cần thay đổi, hoặc `-` để đọc từ standard input |
+
+`--start` và `--stop` không thể dùng đồng thời. File truyền vào đây không được chứa `internal_id`.
+
+### adapty asa automations run
+
+Chạy một quy tắc tự động một lần, ngoài lịch trình của nó.
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `automation-id` | ID quy tắc tự động (UUID) |
+
+| Cờ | Mô tả |
+|---|---|
+| `--dry-run` | Đánh giá quy tắc và ghi lại kết quả mà không thay đổi bất kỳ điều gì trong Apple Ads |
+
+Lần chạy được đưa vào hàng đợi, và lệnh in ra một run ID. Xem kết quả với [`automations runs`](#adapty-asa-automations-runs).
+
+### adapty asa automations runs
+
+Liệt kê các lần chạy trước đây của một quy tắc tự động hóa, bao gồm cả dry run.
+
+```bash
+adapty asa automations runs <automation-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `automation-id` | ID quy tắc tự động hóa (UUID) |
+
+Chấp nhận [cờ phân trang](#global-flags).
+
+## Chỉ số \{#metrics\}
+
+### adapty asa metrics
+
+Truy vấn các chỉ số cho bất kỳ cấp độ nào của tài khoản trong một khoảng thời gian.
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--entity` | Có | Đối tượng cần báo cáo: `campaign`, `ad-group`, `keyword`, hoặc `ad` |
+| `--date-from` | Có | Ngày bắt đầu kỳ báo cáo (`YYYY-MM-DD`) |
+| `--date-to` | Có | Ngày kết thúc kỳ báo cáo (`YYYY-MM-DD`) |
+| `--metric` | Không | Tên chỉ số, có thể lặp lại. Bỏ qua để lấy tất cả chỉ số |
+| `--group-by` | Không | Phân nhóm các hàng theo `country`, `day`, `week`, `month`, `quarter`, hoặc `year`. Có thể lặp lại |
+| `--by-days` | Không | Khoảng thời gian gia hạn tính bằng ngày cho các chỉ số cohort, có thể lặp lại. Tối đa 16 lần gọi. Bỏ qua để dùng giá trị mặc định của dashboard |
+| `--order-by` | Không | Chỉ số hoặc trường dùng để sắp xếp |
+| `--order-by-day` | Không | Xếp hạng theo chỉ số cohort tại khoảng thời gian gia hạn này. Phải là một trong các giá trị `--by-days` |
+| `--order` | Không | `asc` hoặc `desc`. Mặc định: `desc` |
+
+Chấp nhận [cờ phân trang](#global-flags). Lệnh này không nhận [bộ lọc danh sách](#list-filters) — hãy thu hẹp báo cáo theo cấp độ thực thể và khoảng thời gian, sau đó đối chiếu các hàng với ID từ lệnh `list` có phạm vi tương ứng.
+
+Mỗi hàng là một thực thể, được tổng hợp trên máy chủ và sắp xếp theo `--order-by`. Vì vậy, câu hỏi top-N chỉ cần một lần gọi — đặt `--order-by` và `--page-size N` thay vì phân trang qua kết quả rồi cộng dồn:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+`--metric` nhận tên các chỉ số mà Ads Manager theo dõi, theo tên trong dashboard — ví dụ `spend`, `taps`, hay `gross_roas`. Xem [Chỉ số](adapty-ads-manager-metrics) để biết danh sách đầy đủ và cách tính từng chỉ số. Tên không tồn tại sẽ báo lỗi kèm danh sách các tên hợp lệ.
+
+Độ dài của kỳ báo cáo bị giới hạn bởi giá trị `--group-by` thô nhất. Để báo cáo cho kỳ dài hơn, hãy dùng nhóm thô hơn thay vì chia yêu cầu thành nhiều lần gọi:
+
+| `--group-by` thô nhất | Khoảng thời gian tối đa |
+|---|---|
+| `day`, hoặc không có nhóm theo khoảng thời gian | 90 ngày |
+| `week` | 180 ngày |
+| `month` và thô hơn | 365 ngày |
+
+Không có chỉ số `ltv`. Giá trị trọn đời là một chỉ số cohort được đọc tại một cửa sổ gia hạn, vì vậy `--by-days` là cách bạn yêu cầu giá trị ngày-7 hoặc ngày-90:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
+```
+
+`--order-by-day` xếp hạng các hàng theo một trong những cửa sổ đó, trả về các chiến dịch hàng đầu theo ROAS ngày-90 chỉ trong một lần gọi.
+
+### adapty asa metrics overview
+
+Query totals for a period, bucketed by a unit of time.
+
+```bash
+adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --period-unit week
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--entity` | Có | Đối tượng báo cáo: `campaign`, `ad-group`, `keyword`, hoặc `ad` |
+| `--date-from` | Có | Ngày bắt đầu kỳ (`YYYY-MM-DD`) |
+| `--date-to` | Có | Ngày kết thúc kỳ (`YYYY-MM-DD`) |
+| `--period-unit` | Không | Kích thước nhóm: `day`, `week`, `month`, `quarter`, hoặc `year`. Mặc định: `day` |
+| `--metric` | Không | Tên chỉ số, có thể lặp lại. Bỏ qua để lấy tất cả chỉ số |
+| `--by-days` | Không | Cửa sổ gia hạn tính bằng ngày cho các chỉ số cohort, có thể lặp lại. Tối đa 16 mỗi lần gọi |
+
+Lệnh này trả về tổng hợp cho toàn bộ cấp độ entity cùng với một chuỗi theo từng kỳ, giúp trả lời câu hỏi "tôi đã chi tiêu hoặc thu được bao nhiêu tổng cộng" chỉ trong một lần gọi. Lệnh này không có cờ sắp xếp và không có phân trang.
+
+Đối với lệnh này, `--metric` chỉ chấp nhận các cohort gốc — `revenue`, `roas`, và `arpu` — không chấp nhận các biến thể `gross_`, `proceeds_`, hoặc `net_` của chúng.
+
+Độ dài của kỳ báo cáo bị giới hạn bởi `--period-unit`:
+
+| `--period-unit` | Kỳ tối đa |
+|---|---|
+| `day` | 90 ngày |
+| `week` | 180 ngày |
+| `month` và thô hơn | 365 ngày |
+
+## Đối thủ cạnh tranh \{#competitors\}
+
+### adapty asa competitors summary
+
+Tóm tắt các từ khóa Apple Ads mà một tập hợp ứng dụng App Store đang đặt giá thầu. Trả về dữ liệu đối thủ cạnh tranh giống như [Market Intelligence](ads-manager-market-intelligence) trên dashboard.
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app-ids` | Có | ID Apple App Store (`adam_id`), phân cách bằng dấu phẩy. Từ 1 đến 5 giá trị |
+
+Khoảng thời gian báo cáo và tập hợp quốc gia được cố định trên máy chủ — tháng đầy đủ gần nhất, trên tất cả các quốc gia. Lệnh này không có cờ về khoảng thời gian, quốc gia hay phân trang.
+
+Lệnh in ra ba khối: tổng số liệu phân tích, các ứng dụng hàng đầu theo hiệu suất, và các từ khóa cạnh tranh nhất. Thêm `--json` để lấy kết quả đầy đủ, trong đó cũng phân tích từ khóa của từng ứng dụng theo quốc gia.
+
+Lần gọi đầu tiên cho một tập hợp ứng dụng có thể mất vài chục giây trong khi dữ liệu đang được chuẩn bị. Các lần gọi sau cho cùng những ứng dụng đó sẽ nhanh hơn.
+
+## Lỗi \{#errors\}
+
+| Trạng thái | Mã | Ý nghĩa |
+|---|---|---|
+| `402` | `ads_manager_subscription_required` | Công ty không có gói đăng ký Ads Manager đang hoạt động |
+| `404` | — | Thực thể không tồn tại, hoặc thuộc về một công ty khác |
+| `409` | `cli_idempotency_in_progress` | Một yêu cầu ghi với cùng idempotency key đang được xử lý |
+| `422` | `cli_idempotency_key_reuse` | Cùng một idempotency key đã được dùng với một request body khác |
+| `429` | `cli_analytics_busy` | Pool analytics đang bận. Thời gian chờ nằm trong header `Retry-After` |
+| `429` | `cli_cooldown_active` | Quá nhiều yêu cầu bị từ chối khiến token rơi vào trạng thái cool-down |
+
+Chỉ số và danh sách từ khóa tìm kiếm dùng chung một ngân sách API theo từng công ty: 5 lần gọi mỗi phút, và tối đa 2 lần trong bất kỳ khoảng 10 giây nào. Nếu có 20 request bị từ chối trong vòng 5 phút, hệ thống sẽ kích hoạt cool-down theo cấp độ tăng dần: 5 phút, rồi 30 phút, rồi 3 tiếng. Retry trong thời gian chờ không kéo dài thêm thời gian đó, nhưng cách xử lý đúng là sửa request lỗi thay vì lặp lại nó.
+
+CLI sẽ tự xử lý các lần chờ ngắn cho bạn. Khi nhận được `429` mà không phải cool-down, nếu `Retry-After` từ 60 giây trở xuống, lệnh sẽ chờ đúng thời gian đó rồi thử lại một lần, đồng thời thông báo thời gian chờ ra standard error.

@@ -72,21 +72,21 @@
       style.id = 'custom-ask-ai-styles';
       style.textContent = `
         .custom-ask-ai-button {
-          background: #6720ff;
+          background: #6E56CF;
           border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(103, 32, 255, 0.3);
+          box-shadow: 0 4px 12px rgba(110, 86, 207, 0.3);
           transition: all 0.3s ease;
         }
         
         .custom-ask-ai-button:hover {
           background: #7e41ff;
           transform: translateY(-2px);
-          box-shadow: 0 6px 16px rgba(103, 32, 255, 0.4);
+          box-shadow: 0 6px 16px rgba(110, 86, 207, 0.4);
         }
         
         .custom-ask-ai-button:active {
           transform: translateY(0);
-          box-shadow: 0 2px 8px rgba(103, 32, 255, 0.3);
+          box-shadow: 0 2px 8px rgba(110, 86, 207, 0.3);
         }
         
         .ask-ai-text {

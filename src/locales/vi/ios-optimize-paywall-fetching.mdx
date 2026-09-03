@@ -12,13 +12,91 @@ Các quy tắc này giả định `Adapty.activate()` và `Adapty.identify()` đ
 
 ## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
 
-| Nên làm | Không nên làm | Lý do |
+| Làm điều này | Không làm điều này | Lý do |
 |---|---|---|
-| Tải placement mà bạn sắp hiển thị.                                                                                  | Prefetch tất cả các placement đồng thời khi khởi chạy.        | Bulk prefetch chặn main thread và gây màn hình đen trong thời gian burst.                                  |
-| Gọi `getPaywall` sau khi attribution có cơ hội hoàn tất — ví dụ, 1–2 giây sau `activate` hoặc sau khi `onProfileUpdate` được kích hoạt. | Gọi `getPaywall` tại `App.init()`.                     | Attribution chưa được xử lý xong. Paywall sẽ được phân giải theo đối tượng mặc định và bỏ qua các phân khúc cũng như cá nhân hóa ASA mà không có cảnh báo. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng có kết nối kém sẽ thấy màn hình trống cho đến khi mạng phục hồi — hoặc họ sẽ đóng ứng dụng.     |
+| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.1+). | Tự mình tạo các lệnh gọi `getFlow` đồng thời khi khởi chạy. | Một batch prefetch tự làm sẽ chặn main thread và gây ra màn hình đen. `preloadFlows` được xây dựng cho mục đích này và chia sẻ một ngân sách timeout chung cho toàn bộ batch. |
+| Fetch `getPaywall` sau khi attribution đã có cơ hội resolve — ví dụ: 1–2 giây sau `activate` hoặc sau khi `onProfileUpdate` được kích hoạt. | Gọi `getPaywall` tại `App.init()`. | Attribution chưa được xử lý xong. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `getPaywall` vô thời hạn. | Không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc tắt ứng dụng. |
 
-Xem [Tải paywalls và sản phẩm](fetch-paywalls-and-products) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+Khi `loadTimeout` kích hoạt trong bất kỳ lần fetch nào — kể cả `getPaywall` thông thường — SDK sẽ trả về biến thể đã được cache nếu có, và nếu không có thì sẽ fetch biến thể của đối tượng mặc định (**All Users**) trong thời gian còn lại. Targeting sẽ bị mất cho request đó, không phải bị trì hoãn: các phân khúc và đối tượng dựa trên attribution không được áp dụng cho kết quả.
+
+Xem [Fetch paywall và sản phẩm](fetch-paywalls-and-products) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
+
+## Tải trước placements \{#preload-placements\}
+
+:::info
+Các phương thức này khả dụng từ SDK phiên bản 4.1.
+:::
+
+`preloadFlows` và `preloadOnboardings` tải các placement vào bộ nhớ cache của SDK trước. Khi gọi `getFlow` hoặc `getOnboarding` cho cùng một placement sau đó, kết quả sẽ được lấy từ cache thay vì từ mạng, giúp paywall hiển thị ngay mà không cần chờ đợi.
+
+Sử dụng khi bạn biết trước session sẽ cần những placement nào nhưng chưa muốn hiển thị chúng ngay — ví dụ, ngay sau khi `activate` và `identify` hoàn tất, cho paywall ở sau nút mà người dùng chưa nhấn.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(
+    placementIds: ["onboarding", "main_paywall"],
+    loadTimeout: 5
+)
+
+try await Adapty.preloadOnboardings(
+    placementIds: ["intro"],
+    locale: "en",
+    loadTimeout: 5
+)
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
+    if let error {
+        // at least one placement failed to preload
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**Các tham số:**
+
+- `placementIds` (bắt buộc): các placement cần tải trước. ID trống hoặc trùng lặp sẽ bị bỏ qua.
+- `locale` (tùy chọn, chỉ dùng cho `preloadOnboardings`): locale của onboarding cần lưu vào bộ nhớ đệm.
+- `loadTimeout` (tùy chọn): thời gian chờ tính bằng giây cho toàn bộ batch, không phải cho từng placement. Mặc định là 5 giây; các giá trị dưới 1 giây sẽ được nâng lên 1 giây.
+
+**Những điều cần lưu ý về hành vi:**
+
+- Các phương thức chỉ throw sau khi đã thử tất cả các placement, và lỗi tổng hợp các thất bại theo từng placement. Lỗi ở một placement không dừng các placement khác.
+- Nếu một placement hết thời gian chờ hoặc thất bại do lỗi mạng, SDK sẽ dùng biến thể đối tượng mặc định cho placement đó. Các lỗi khác được báo cáo nguyên vẹn.
+- Nếu timeout kích hoạt trước khi hoàn tất việc lấy dữ liệu theo đối tượng, SDK vẫn thử biến thể đối tượng mặc định trong thời gian còn lại.
+- Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn cần gọi `getFlow` hoặc `getOnboarding` để hiển thị.
+
+### Tìm hiểu placement nào gặp lỗi \{#find-out-which-placement-failed\}
+
+Lỗi được ném ra là một `AdaptyError` duy nhất bao gồm toàn bộ batch, với mã `networkFailed` (2002). Để xem các lỗi riêng lẻ, hãy đọc thuộc tính `preloadErrors` — một dictionary có khóa là placement ID:
+
+```swift showLineNumbers
+do {
+    try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"])
+} catch {
+    for (placementId, placementError) in error.preloadErrors ?? [:] {
+        // log or retry the individual placement
+    }
+}
+```
+
+`preloadErrors` là `nil` đối với bất kỳ lỗi nào không đến từ lệnh gọi preload, vì vậy hãy xem giá trị `nil` là "không phải lỗi preload" thay vì "không có lỗi".
+
+Để làm ấm cache mà không cần chờ phân loại đối tượng, hãy sử dụng các biến thể đối tượng mặc định:
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
 
 ## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
 

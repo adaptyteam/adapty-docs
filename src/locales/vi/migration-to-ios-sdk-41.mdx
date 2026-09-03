@@ -1,0 +1,127 @@
+---
+title: "Migrate Adapty iOS SDK lên v4.1"
+description: "Migrate lên Adapty iOS SDK v4.1: bật Adapty Attribution một cách tường minh, sử dụng các API attribution bên ngoài đã được đổi tên, và tải lại file dự phòng."
+metadataTitle: "Migrate lên Adapty iOS SDK v4.1 | Tài liệu Adapty"
+---
+
+Adapty iOS SDK 4.1 thay đổi cách bật Adapty Attribution, đổi tên các API attribution bên ngoài, và thay đổi định dạng file dự phòng. SDK này cũng khôi phục lại hỗ trợ cho in-app purchase được quảng bá trên App Store, tính năng đã bị loại bỏ trong phiên bản 4.0.
+
+:::warning
+Các API được đổi tên là một thay đổi phá vỡ hoàn toàn. Tên cũ bị xóa hoàn toàn — chúng không bị deprecated, và không có typealias hay annotation `@available(renamed:)` nào để làm cầu nối. Code biên dịch được với 4.0.x sẽ không thể biên dịch trên 4.1 cho đến khi bạn đổi tên tất cả các call site được liệt kê bên dưới.
+:::
+
+## Tài liệu tham khảo nhanh \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution được bật tự động | Adapty Attribution bị tắt theo mặc định; bật bằng `.with(adaptyAttributionEnabled: true)` |
+| `Adapty.updateAttribution(_:source:)` | `Adapty.updateExternalAttribution(_:provider:)` |
+| `Adapty.updateAttribution(_ attributionJson: String, source:)` | Đã xóa khỏi public API; hãy truyền dictionary thay thế |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, với giá trị mới `.custom` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Enum `AdaptySubscriptionOfferType` | Struct `AdaptySubscriptionOfferType`; `.code` đã bị xóa |
+| File dự phòng được tải xuống cho 4.0 | Định dạng file dự phòng mới; hãy tải lại file |
+| Không hỗ trợ promoted in-app purchase | Phương thức delegate `didReceivePromotedPurchase(_:)` và `AdaptyPromotedProduct` |
+
+## ⚠️ Adapty Attribution mặc định bị tắt \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Nếu bạn cập nhật lên SDK 4.1 mà không bật tính năng này, [Adapty Attribution](user-acquisition) sẽ ngừng hoạt động mà không có cảnh báo — các lượt cài đặt sẽ không được ghi nhận.
+:::
+
+Trong phiên bản 4.0 và trước đó, SDK tự động đăng ký lượt cài đặt cho [Adapty Attribution](user-acquisition). Kể từ phiên bản 4.1, tính năng này bị tắt theo mặc định: SDK không đăng ký lượt cài đặt, và các callback delegate `onInstallationDetailsSuccess` và `onInstallationDetailsFail` sẽ không bao giờ được kích hoạt. `getCurrentInstallationStatus()` trả về `.notAvailable`.
+
+Nếu bạn sử dụng Adapty Attribution, hãy bật tính năng này khi khởi tạo SDK:
+
+```diff showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
++   .with(adaptyAttributionEnabled: true)
+```
+
+Nếu bạn không sử dụng Adapty Attribution, không cần thực hiện thay đổi nào.
+
+## Đổi tên các API attribution bên ngoài \{#renamed-external-attribution-apis\}
+
+### updateAttribution(_:source:) → updateExternalAttribution(_:provider:)
+
+Phương thức truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin, hoặc tùy chỉnh) được đổi tên, và tham số `source` được đổi thành `provider`:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attribution, source: .adjust)
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### Overload chuỗi JSON đã bị loại bỏ \{#the-json-string-overload-is-removed\}
+
+4.0 chấp nhận dữ liệu attribution dưới dạng dictionary `[AnyHashable: Any]` hoặc chuỗi JSON `String`. Trong 4.1, chỉ overload dictionary mới là public — overload chuỗi JSON được dành riêng cho các SDK đa nền tảng của Adapty. Hãy deserialize JSON trước khi truyền vào:
+
+```diff showLineNumbers
+- try await Adapty.updateAttribution(attributionJson, source: .adjust)
++ guard let attribution = try JSONSerialization.jsonObject(
++     with: Data(attributionJson.utf8)
++ ) as? [AnyHashable: Any] else { return }
++ try await Adapty.updateExternalAttribution(attribution, provider: .adjust)
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Kiểu này được đổi tên. Các provider được định sẵn vẫn giữ nguyên tên: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Kiểu này vẫn tuân theo `ExpressibleByStringLiteral`, nên các đối số dạng string literal vẫn biên dịch bình thường. Nếu bạn lưu provider trong biến `String`, hãy bọc lại như sau: `AdaptyExternalAttributionProvider(rawValue: yourProvider)`.
+
+4.1 cũng thêm giá trị `.custom` được định sẵn cho các provider mà Adapty không tích hợp trực tiếp. Trong 4.0, giá trị tương tự chỉ có thể dùng dưới dạng string literal `"custom"`.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Thuộc tính hồ sơ liệt kê các nhà cung cấp attribution đã áp dụng cho hồ sơ được đổi tên. Kiểu phần tử của nó cũng thay đổi theo:
+
+```diff showLineNumbers
+- if profile.appliedAttributionSources.contains(.appleAds) {
++ if profile.appliedExternalAttributionProviders.contains(.appleAds) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptySubscriptionOfferType hiện là một struct \{#adaptysubscriptionoffertype-is-now-a-struct\}
+
+`AdaptySubscriptionOfferType` — kiểu của `AdaptySubscriptionOffer.offerType` — thay đổi từ enum sang struct `RawRepresentable`, để backend có thể giới thiệu các loại offer mới mà không cần cập nhật SDK:
+
+```diff showLineNumbers
+- public enum AdaptySubscriptionOfferType: String, Sendable { ... }
++ public struct AdaptySubscriptionOfferType: Sendable, RawRepresentable, Equatable, Hashable { ... }
+```
+
+Điều này ảnh hưởng đến code của bạn theo ba cách:
+
+- **Câu lệnh `switch` kiểu exhaustive không còn biên dịch được nữa.** Struct không có tập hợp case cố định, nên compiler không thể xác minh switch có đầy đủ các trường hợp hay không. Hãy thêm nhánh `default`:
+
+  ```diff showLineNumbers
+  switch offer.offerType {
+  case .introductory: // ...
+  case .promotional: // ...
+  case .winBack: // ...
+  + default: // handle offer types added later
+  }
+  ```
+
+- **`.code` đã bị xóa.** Offer codes không còn được báo cáo thông qua `AdaptySubscriptionOffer.offerType` nữa. Hãy xóa mọi nhánh `case .code`. Xem [Redeem offer codes in iOS](making-purchases#redeem-offer-codes-in-ios) để biết cách xử lý offer codes.
+- **`Codable` conformance đã bị loại bỏ.** Nếu bạn đang encode hoặc decode `AdaptySubscriptionOfferType` trực tiếp, hãy lưu `offerType.rawValue` (kiểu `String`) thay thế và khôi phục giá trị bằng `AdaptySubscriptionOfferType(rawValue:)`.
+
+So sánh với các giá trị được định sẵn vẫn không thay đổi: `.introductory`, `.promotional` và `.winBack` vẫn hoạt động trong các kiểm tra `==` và như các `case` pattern.
+
+## Tệp dự phòng \{#fallback-files\}
+
+Định dạng [tệp dự phòng](fallback-flows) đã thay đổi trong SDK 4.1. Hãy tải lại tệp từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và đóng gói vào ứng dụng, kể cả khi bạn đã tải tệp cho phiên bản 4.0.
+
+:::warning
+Bước này không gây ra lỗi biên dịch. Nếu bỏ qua, SDK sẽ từ chối tệp cũ và mọi placement sẽ mất paywall dự phòng.
+:::
+
+## Khôi phục tính năng App Store promoted in-app purchases \{#app-store-promoted-in-app-purchases-return\}
+
+SDK 4.1 khôi phục hỗ trợ cho App Store promoted in-app purchases, tính năng đã bị [4.0 loại bỏ](migration-to-ios-sdk-v4#app-store-promoted-in-app-purchases-temporarily-removed). Đây là tính năng mới, không phải bước migration: nó không thay đổi bất kỳ hành vi nào của phiên bản 4.0.
+
+Nếu bạn đang migrate từ 3.x và đã dùng `shouldAddStorePayment(for:)` với `AdaptyDeferredProduct`, hãy chuyển sang delegate method mới `didReceivePromotedPurchase(_:)` với `AdaptyPromotedProduct`. Khác với `shouldAddStorePayment`, method mới không trả về giá trị: nếu bạn không implement nó, SDK sẽ bắt đầu mua ngay lập tức; để trì hoãn việc mua, hãy implement method đó, lưu trữ sản phẩm, rồi sau đó truyền sản phẩm vào `makePurchase`. Xem [In-app purchases từ App Store](making-purchases#in-app-purchases-from-the-app-store).
+
+:::warning
+Cơ chế mới được xây dựng trên StoreKit 2 và yêu cầu **iOS 16.4** trở lên. Phương thức `shouldAddStorePayment` của phiên bản 3.x hoạt động được trên các phiên bản iOS cũ hơn. Trên các thiết bị chạy iOS thấp hơn 16.4, `didReceivePromotedPurchase` sẽ không bao giờ kích hoạt và các giao dịch mua được quảng bá sẽ không tiếp cận được ứng dụng của bạn.
+:::

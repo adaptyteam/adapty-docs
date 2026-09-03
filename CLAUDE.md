@@ -35,9 +35,22 @@ customSlug: "override-url"  # Optional URL override
 
 **Do not add `keywords` to frontmatter unless the user explicitly asks.** Keywords feed doc search; adding speculative keywords pollutes search results. When writing or editing an article, leave `keywords` out entirely (or untouched if already present). Only populate it on explicit request, and keep it to a few terms.
 
-### Navigation and Article Discovery
+### Article Discovery
 
-The `src/data/sidebars/` folder stores JSON representations of the docs' structure and article hierarchy. The sidebar files reference articles by their filename-based `id`:
+**Do not `grep`, `find`, or `glob` the docs to find the right article — and do not read sidebar JSON to find it either.** Use the **context mill**: invoke the `context-mill` skill (lookup mode). The corpus is partitioned into 34 zones, each with a brief in `.claude/context-mill/zones/<zone>.md` that carries what no search can:
+
+- which article **owns** a topic, and where the boundary against a neighbouring zone falls;
+- **how tickets phrase things** versus how the docs phrase them, with the cause attached (`Ticket language`);
+- **what else moves** when this moves (`Ripple rules`), including the seven-platform families;
+- where **ground truth** for a claim lives (`Sources of truth`) — often an SDK repo or backend, not a doc.
+
+Run `npm run mill` then `npm run mill:status` first: the map is regenerated from disk and the drift report tells you which zones changed since anyone last reviewed them. `.claude/context-mill/docs-map.jsonl` is the searchable index (title, headings, code symbols, links, sidebars) for candidates a brief can't settle.
+
+The four published OpenAPI specs are part of the zoned corpus. **For the server-side and web APIs the spec is the maintained reference**, so an endpoint or field change means editing `src/api-reference/specs/*.yaml`, not a hand-written object article.
+
+### Navigation and Placement
+
+Sidebars answer a different question than discovery: **where an article sits**, and what its neighbours are. The `src/data/sidebars/` folder stores JSON representations of the docs' structure, referencing articles by their filename-based `id`:
 
 ```json
 {
@@ -47,8 +60,6 @@ The `src/data/sidebars/` folder stores JSON representations of the docs' structu
 }
 ```
 
-Do not `grep`, `find`, or `glob` the docs to find the right article. **Always use sidebar JSON files as the source of truth** for article discovery. They determine the content of the navigation sidebar when the reader is viewing a specific section of the docs.
-
 1. The `tutorial.json` sidebar is visible when the user views the Dashboard docs. It includes non-framework-specific articles that cover general subjects and the use of the Adapty Dashboard.
 2. Framework-specific sidebar files are visible when viewing SDK documentation for that specific framework. They named after the framework (`ios.json`, `android.json`, `react-native.json`, `flutter.json`, `unity.json`, `kmp.json`, `capacitor.json`).
 3. The `api.json` file contains the API documentation sidebar. The OpenAPI specs it references live in `src/api-reference/specs/`.
@@ -57,7 +68,8 @@ Do not `grep`, `find`, or `glob` the docs to find the right article. **Always us
 
 - To add an article to navigation, add its id to the appropriate sidebar JSON.
 - Do not rely on the file's name to determine its content. For SEO purposes, some filenames remain unchanged, even as their content changes over time.
-- Some legacy articles are explicitly excluded from the sidebar. Such articles are available via direct link but can't be discovered spontaneously.
+- **A folder is not a platform.** Subdirectories organise nothing but themselves — some `version-3.0/*` files are iOS-only. Cross-check the sidebars before reverting or deleting any file under `src/content/docs`.
+- Some legacy articles are explicitly excluded from the sidebar. Such articles are available via direct link but can't be discovered spontaneously — which is exactly why a link that resolves can still be a dead end, and why `npm run check-links` cannot catch it.
 
 ### Images
 
@@ -85,7 +97,7 @@ The components below are **auto-registered** in `src/pages/[...slug].astro` — 
 |-----------|-------|
 | `ZoomImage` | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
 | `Tabs`/`TabItem` | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
-| `Details` | `<Details summary="Title">content</Details>` |
+| `Details` | `<Details summary="Title">content</Details>`, or `<Details><summary>Title</summary>…`. A plain `<details>` element renders through the same component, so all three shapes look identical — there is one collapsible design, in `Details.astro`. Add `defaultOpen` to start it expanded. |
 | `InlineTooltip` | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
 | `CustomDocCardList` | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
 | `Button` | `<Button id="page-id">Text</Button>` or `<Button href="url">Text</Button>` |
@@ -96,14 +108,22 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 
 ## Reusable content snippets
 
-`src/components/reusable/` contains MDX snippets that can be imported into multiple articles to avoid content duplication.
+`src/components/reusable/` contains MDX snippets that several articles render, to avoid duplicating content.
+
+**Rendering a snippet: never import it, just use it.** Both doc routes glob `reusable/*.{md,mdx}` and expose each snippet as a component named after its file, so `<SampleApp />` resolves on its own; the locale route overlays `src/locales/<locale>/reusable/` so localized pages get the translated copy automatically. An explicit `import` shadows that registration and pins the article to one exact path — Vite does no `.md`/`.mdx` substitution — which is what turned a snippet rename into an 800-file edit before these imports were removed. `translate.mjs` carries no snippet import into a locale file that the English source doesn't have, so leaving them out keeps locales clean too.
+
+Three rules for snippet files:
+
+- **A snippet that renders a callout must be `.mdx`, and must use the `<Callout>` tag directly** — `import Callout from '../Callout.astro';` in the snippet, then `<Callout type="note">…</Callout>`. See `BuilderDeprecation.mdx` for the model. A `.md` snippet loses its callout box entirely: Astro compiles `.md` through the plain-markdown pipeline, which can't render the JSX node `remark-aside` emits from `:::`, so only the inner text survives.
+- **Inside a snippet, the reverse holds: it must import every component it renders.** A snippet is rendered as a child of the article, and imported MDX does not inherit the route's `<Content components>` prop — so `Callout`, `Zoom`, `Details`, and `MDXImage` each need their own import in the snippet file. Watch for the three a remark plugin introduces without you typing the name: `:::` becomes `Callout`, `<details>` becomes `Details`, and `<img>` becomes `MDXImage`. `scripts/lint-mdx.mjs` enforces all of this and repairs it with `--fix`.
+- Add `no_index: true` frontmatter, following the existing snippets.
 
 ## Remark/Rehype plugins (`src/plugins/`)
 
 - `remark-aside` — converts `:::note`/`:::tip`/etc. fenced directives into `<Callout>` components
 - `remark-transform-links` — strips `.md`/`.mdx` extensions from internal links
 - `remark-transform-require` — handles legacy `require()` image imports
-- `remark-transform-details` — processes `<Details>` components
+- `remark-normalize-details` — renames a plain `<details>` element to `<Details>` so every collapsible renders through one component
 - `remark-heading-id` — auto-generates heading anchors
 - `remark-strip-imports` — removes imports during markdown export
 - `remark-strip-highlight-comments` — cleans highlight syntax
@@ -111,6 +131,17 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 ## Markdown conventions
 
 - Use `-` for unordered lists, not `*`.
+
+## Writing rules (always apply)
+
+These apply to every doc edit, however small. They are the rules no linter can check — the mechanical ones (banned words, overclaim candidates, vague verbs, spatial metaphors, roadmap leaks) run automatically via `scripts/lint-prose.mjs` on each MDX edit. Its hits are candidates for judgment, not errors. For a full review or a new article, invoke the `editor` skill, which carries the complete rule set and a pass order.
+
+- **Every referent must resolve.** For each `this`, `that`, `it`, `the X` on first mention, count, and temporal word (`already`, `later`, `still`) — can the reader name what it points at? This is the most common defect by a wide margin.
+- **After any edit, re-read the whole bullet or paragraph** from the start, not just the clause you changed. Fixing a clause in isolation is how the next defect gets introduced.
+- **Instructions run Goal → Location → Action**, one location per sentence. ✅ "To create a paywall, in the **Paywalls** section, click **Create paywall**."
+- **Steps state their purpose, not the penalty for skipping them.** ✅ "To show the copy to users, add it to a placement." Warnings are the exception — those state the consequence.
+- **Names come from the source, not from memory.** Grep the frontend for a UI label before bolding it, and quote typos as-is. Use the vendor's own noun. Never a competitor's word — `entitlements` is RevenueCat's; Adapty says **access levels**.
+- **Don't document what the UI already says, and don't document a bug.** Skip "click **Save** to save"; keep only the scope or limit the control doesn't advertise. If behavior is broken, write the prescription ("Don't archive a live flow — remove it from every placement first"), not the defect.
 
 ## Code blocks
 
@@ -150,11 +181,11 @@ Import path pattern: `import Component from '@site/src/components/Component.astr
 
 ### Design blocks in `global.css`
 
-These are the styled visual blocks that articles use — their CSS lives entirely in `global.css`:
+These are the styled visual blocks that articles use. Most of their CSS lives in `global.css`; the two component-scoped exceptions are noted below.
 
 - **Code blocks** (`.code-block-wrapper`) — title bar, copy button, Shiki syntax highlighting, dark mode color inversion, diff styling, line highlighting (`.highlight-line`)
-- **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link)
-- **Details/Accordion** (`details`/`summary`) — collapsible sections with chevron animation
+- **Callouts** — rendered by remark-aside plugin into `<Callout>` (note/tip/info/warning/danger/important/link). Styles are scoped inside `src/components/Callout.astro`, not `global.css`
+- **Details/Accordion** — collapsible sections with a tinted summary bar and chevron. Styles are scoped in `src/components/Details.astro`, not `global.css` (see the `Details` row in the components table)
 - **Ordered lists** (`.docs-prose ol`) — circular step-number bullets (Mintlify-inspired)
 - **Zoom images** (`.zoom-wrapper`, `.zoom-image`) — bordered, shadowed, hover-scale images
 - **Tables** — word-break handling, code wrapping within cells

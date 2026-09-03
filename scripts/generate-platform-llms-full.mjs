@@ -1,6 +1,8 @@
+import { stripComments } from './generate-md.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
@@ -92,11 +94,23 @@ async function getLocaleReusableComponents(baseComponents, locale) {
 function stripContent(content, reusableComponents) {
     let processed = content;
 
+    // 0. Remove MDX/HTML comments before anything else, so hidden unreleased
+    // features and TODOs never reach the LLM bundles.
+    processed = stripComments(processed);
+
     // 1. Remove imports
     processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
 
     // 2. Remove Zoom and ZoomImage tags
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
+
+    // Drop YouTube embeds — a bare iframe URL teaches a plain-text reader
+    // nothing. Three forms are matched: the <YouTube /> component, and the
+    // div-wrapped and bare iframes that predate it, which src/locales still
+    // carries until each file is retranslated from its English source.
+    processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
+    processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
     processed = processed.replace(/<Zoom>(.*?)<\/Zoom>/gs, '$1');
 
     // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
@@ -106,7 +120,7 @@ function stripContent(content, reusableComponents) {
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(
         /<SkillPromo\b[^>]*\/>/g,
-        'For a fully automated integration, use the [adapty-sdk-integration skill](https://github.com/adaptyteam/adapty-sdk-integration-skill): it runs the whole integration from your AI coding tool in one command.'
+        'For a fully automated integration, use the [adapty-integration skill](https://github.com/adaptyteam/adapty-skills): it runs the whole integration from your AI coding tool in one command.'
     );
 
     // 3. Inline Reusable Components
@@ -115,8 +129,7 @@ function stripContent(content, reusableComponents) {
         processed = processed.replace(regex, componentContent);
     }
 
-    // 4. Remove HTML comments
-    processed = processed.replace(/<!--[\s\S]*?-->/g, '');
+    // 4. HTML comments are already gone — stripComments() handled them in step 0.
 
     // 5. Clean extra empty lines
     processed = processed.replace(/\n{3,}/g, '\n\n');
@@ -305,8 +318,13 @@ async function buildPlatformFullFiles(outputDir, sidebarFiles, reusableComponent
 
             const fullContent = await generatePlatformFullContent(platformName, sidebarData, reusableComponents, locale);
 
+            // Standalone per-platform file carries the note; the copy embedded
+            // in the combined llms-full.txt does not (its header already has it).
+            const noteAnchor = '\nThis file contains the complete content of all documentation pages for this platform.\n';
+            const standaloneContent = fullContent.replace(noteAnchor, `${noteAnchor}\n${LLM_SKILL_NOTE}\n`);
+
             const outputPath = path.join(outputDir, `${platformName}-llms-full.txt`);
-            await fs.writeFile(outputPath, fullContent);
+            await fs.writeFile(outputPath, standaloneContent);
             console.log(`✓ Generated ${path.relative(OUTPUT_DIR, outputPath)}`);
 
             allPlatformContents.push([platformName, fullContent]);
@@ -317,6 +335,7 @@ async function buildPlatformFullFiles(outputDir, sidebarFiles, reusableComponent
 
     let combinedFull = '# Adapty Documentation (Full Content)\n\n';
     combinedFull += '> Complete documentation content across all platforms.\n\n';
+    combinedFull += `${LLM_SKILL_NOTE}\n\n`;
     if (locale) combinedFull += `Locale: ${locale}\n\n`;
     combinedFull += `Generated on: ${new Date().toISOString()}\n\n---\n`;
     for (const [, content] of allPlatformContents) combinedFull += content;

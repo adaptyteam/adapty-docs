@@ -1,0 +1,800 @@
+---
+title: "Comandos de Ads Manager para la CLI de desarrolladores de Adapty"
+description: "Referencia de todos los comandos adapty asa — campañas, grupos de anuncios, palabras clave, anuncios, automatizaciones y métricas."
+metadataTitle: "Comandos CLI de Ads Manager | Documentación de Adapty"
+---
+
+Este artículo lista todos los comandos de [Ads Manager](adapty-ads-manager) en la CLI de Adapty, con sus argumentos, flags y valores aceptados. Los comandos de Ads Manager se encuentran bajo el topic `adapty asa`.
+
+:::link
+Para requisitos previos, prácticas seguras de escritura y ejemplos por tarea, consulta [Gestionar Ads Manager desde la CLI](developer-cli-ads-manager).
+:::
+
+Estos comandos requieren una cuenta de Apple Ads conectada y una suscripción activa a Ads Manager. Ejecuta [`adapty asa whoami`](#adapty-asa-whoami) para verificar ambas. Para el resto de la CLI, consulta la [referencia de comandos](developer-cli-reference).
+
+## Flags globales \{#global-flags\}
+
+Estos flags están disponibles en todos los comandos de Ads Manager.
+
+| Flag | Descripción |
+|---|---|
+| `--json` | Salida en formato JSON en lugar de texto formateado |
+| `--help` | Muestra la ayuda del comando |
+
+Todos los comandos `list` también aceptan flags de paginación:
+
+| Flag | Por defecto | Descripción |
+|---|---|---|
+| `--page` | `1` | Número de página |
+| `--page-size` | `100` | Elementos por página (máx.: 1000) |
+
+Las páginas de Ads Manager son más grandes que en el resto de la CLI. Es preferible usar una página grande en lugar de un bucle de páginas pequeñas.
+
+Todos los comandos que modifican tu cuenta aceptan estos flags:
+
+| Indicador | Descripción |
+|---|---|
+| `--yes`, `-y` | Aplica sin pedir confirmación. Obligatorio cuando la salida se redirige por pipe o se usa `--json` |
+| `--idempotency-key` | Clave fija para esta escritura. Si se repite con la misma clave y cuerpo en un plazo de 24 horas, devuelve el resultado almacenado en lugar de aplicar el cambio de nuevo |
+
+Los comandos de Ads Manager no admiten el indicador `--app`. El ámbito es la empresa a la que pertenece tu token. `--app` existe en algunos comandos `list` únicamente como filtro.
+
+## Filtros de lista \{#list-filters\}
+
+Los filtros acotan la consulta en sí, no la página mostrada. Una `keywords list` sin filtros recorre todas las palabras clave de la cuenta, así que limita cada lectura al nivel que necesites.
+
+| Filtro | Aceptado por |
+|---|---|
+| `--campaign-group` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`, `creatives`, `product-pages` |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `creatives`, `product-pages` |
+| `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--status` | `campaigns`, `ad-groups`, `ads` (`ENABLED` o `PAUSED`), `keywords` (`ACTIVE` o `PAUSED`) |
+| `--search` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`. Coincidencia de subcadena sin distinción entre mayúsculas y minúsculas en el nombre |
+
+`adapty asa apps list`, `orgs list`, `automations list` y `automations runs` no admiten filtros. Solo aceptan flags de paginación.
+
+`--campaign-group`, `--app`, `--campaign` y `--ad-group` reciben los UUIDs que imprime el comando `list` correspondiente, y cada uno es repetible:
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --ad-group <other-ad-group-id>
+```
+
+Un ID que pertenece a otra empresa no devuelve ningún resultado, por lo que la página aparece vacía en lugar de mostrar un error.
+
+## Cuenta \{#account\}
+
+### adapty asa whoami
+
+Muestra la empresa, cómo se concedió el acceso a Ads Manager y si Apple Ads está conectado.
+
+```bash
+adapty asa whoami
+```
+
+Ejecuta este comando primero. Informa de si se cumplen los dos requisitos previos para todos los demás comandos.
+
+### adapty asa connect
+
+Vincula una cuenta de Apple Ads a Adapty.
+
+```bash
+adapty asa connect
+```
+
+El comando imprime un enlace de autorización de Apple y espera hasta que Apple notifique que la cuenta está conectada.
+
+| Flag | Por defecto | Descripción |
+|---|---|---|
+| `--wait` / `--no-wait` | `--wait` | Espera hasta que Apple Ads notifique que está conectado. `--no-wait` devuelve el control inmediatamente |
+| `--timeout` | `300` | Segundos de espera para el paso del navegador |
+
+### adapty asa orgs list
+
+Lista los grupos de campañas (organizaciones de Apple Ads) disponibles para tu empresa.
+
+```bash
+adapty asa orgs list
+```
+
+Cada fila contiene dos identificadores que no son intercambiables:
+
+| Campo | Se usa como |
+|---|---|
+| `internal_id` | El UUID que `--org` acepta en [`campaigns create`](#adapty-asa-campaigns-create), y que `--campaign-group` acepta como [filtro de lista](#list-filters) |
+| `org_id` | El ID numérico de organización de Apple, que acepta `--org-id` en [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create). `--org` y `--campaign-group` lo rechazan |
+
+`--org` solo existe en `campaigns create`. Ningún comando de lista lo acepta.
+
+Cada fila también incluye un `payment_model`. Cuando es `LOC`, la organización factura por línea de crédito, y cada campaña en ella necesita los [indicadores `--invoice-*`](#adapty-asa-campaigns-create).
+
+Acepta [indicadores de paginación](#global-flags).
+
+### adapty asa apps list
+
+Lista las apps promocionadas en Apple Ads.
+
+```bash
+adapty asa apps list
+```
+
+Cada fila contiene dos identificadores que no son intercambiables:
+
+| Campo | Se usa como |
+|---|---|
+| `internal_id` | El UUID que `--app` acepta como [filtro de lista](#list-filters) |
+| `adam_id` | El ID numérico de App Store de Apple, que usa `--adam-id` en [`campaigns create`](#adapty-asa-campaigns-create) y [`product-pages sync`](#adapty-asa-product-pages-sync) |
+
+Acepta [flags de paginación](#global-flags).
+
+## Campañas \{#campaigns\}
+
+### adapty asa campaigns list
+
+Lista [campañas](ads-manager-create-campaign). Devuelve solo metadatos — consulta los datos de rendimiento con [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa campaigns list --app <app-id> --status PAUSED
+```
+
+Acepta [indicadores de paginación](#global-flags) y los [filtros de lista](#list-filters) `--campaign-group`, `--app`, `--search` y `--status`.
+
+### adapty asa campaigns get
+
+Obtén detalles de una campaña específica.
+
+```bash
+adapty asa campaigns get <campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `campaign-id` | Campaign ID (UUID) |
+
+### adapty asa campaigns create
+
+Crea una campaña.
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
+```
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--org` | Sí | ID del grupo de campañas (UUID). Ver [`orgs list`](#adapty-asa-orgs-list) |
+| `--name` | Sí | Nombre de la campaña |
+| `--adam-id` | Sí | ID de la app en el App Store (`adam_id`) |
+| `--country` | Sí | Código de país o región. Repite para varios: `--country US --country CA` |
+| `--daily-budget` | Sí | Presupuesto diario como cantidad simple, por ejemplo `50` o `12.50` |
+| `--budget` | No | Presupuesto total |
+| `--target-cpa` | No | Coste objetivo por adquisición. Debe ser inferior a `--daily-budget` |
+| `--currency` | No | Código de moneda para los importes de esta llamada. Valor predeterminado: `USD` |
+| `--bidding-strategy` | No | `MANUAL_CPT` o `MAX_CONVERSIONS`. Apple usa `MANUAL_CPT` por defecto |
+| `--ad-channel-type` | No | `SEARCH` o `DISPLAY`. Valor predeterminado: `SEARCH` |
+| `--billing-event` | No | `TAPS` o `IMPRESSIONS`. Valor predeterminado: `TAPS` |
+| `--supply-source` | No | Fuente de suministro, repetible. Valor predeterminado: `APPSTORE_SEARCH_RESULTS` |
+| `--status` | No | Estado inicial: `ENABLED` o `PAUSED` |
+| `--invoice-advertiser` | Línea de crédito | Opciones de facturación: nombre del anunciante |
+| `--invoice-order-number` | Línea de crédito | Opciones de facturación: número de pedido |
+| `--invoice-contact-name` | Línea de crédito | Opciones de facturación: nombre del contacto de compra |
+| `--invoice-contact-email` | Línea de crédito | Opciones de facturación: email del contacto de compra |
+| `--invoice-billing-email` | Línea de crédito | Opciones de facturación: email del contacto de facturación |
+
+Una organización cuyo `payment_model` es `LOC` factura mediante línea de crédito, y Apple requiere opciones de facturación en cada una de sus campañas. Pasa los cinco flags `--invoice-*` en una sola llamada — un conjunto parcial se rechaza antes de enviar la solicitud. Consulta [Configurar opciones de facturación para una línea de crédito](developer-cli-ads-manager#invoicing-options).
+
+La respuesta incluye `serving_status` y `serving_state_reasons`. Es posible crear una campaña y que aún así no sirva anuncios: una campaña de tipo `MAX_CONVERSIONS` espera a que se cree un [grupo de anuncios automatizado](#adapty-asa-ad-groups-create), y una campaña con línea de crédito espera a que se configuren sus Opciones de Facturación. En ambos casos, el comando muestra el motivo y el comando que lo resuelve.
+
+### adapty asa campaigns update
+
+Actualiza una campaña existente.
+
+```bash
+adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
+```
+
+| Argumento | Descripción |
+|---|---|
+| `campaign-id` | ID de campaña (UUID) |
+
+| Flag | Descripción |
+|---|---|
+| `--name` | Nuevo nombre de campaña |
+| `--status` | `ENABLED` o `PAUSED` |
+| `--country` | Reemplaza la lista de países. Repite para varios |
+| `--daily-budget` | Nuevo presupuesto diario |
+| `--budget` | Nuevo presupuesto total |
+| `--target-cpa` | Nuevo coste objetivo por adquisición |
+| `--bidding-strategy` | `MANUAL_CPT` o `MAX_CONVERSIONS` |
+| `--currency` | Código de moneda para los importes de esta llamada. Por defecto: `USD` |
+| `--invoice-advertiser` | Opciones de facturación: nombre del anunciante |
+| `--invoice-order-number` | Opciones de facturación: número de pedido |
+| `--invoice-contact-name` | Opciones de facturación: nombre del contacto del comprador |
+| `--invoice-contact-email` | Opciones de facturación: email del contacto del comprador |
+| `--invoice-billing-email` | Opciones de facturación: email del contacto de facturación |
+
+Al menos un flag es obligatorio.
+
+Los cinco flags `--invoice-*` van juntos y reemplazan las Opciones de Facturación almacenadas como un conjunto, así que pasa los cinco aunque solo quieras cambiar uno. Un conjunto parcial se rechaza antes de enviar la solicitud.
+
+### adapty asa campaigns bulk-create
+
+Crea toda una estructura de campaña — campañas con grupos de anuncios anidados, palabras clave, palabras clave negativas y anuncios — en una sola operación.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Convierte una plantilla bulk nativa de Apple Ads en lugar de escribir el JSON:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Flag | Predeterminado | Descripción |
+|---|---|---|
+| `--file` | — | Archivo JSON con la estructura de la campaña, o `-` para leer desde la entrada estándar |
+| `--from-file` | — | Plantilla en bloque de Apple Ads para convertir en el servidor: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) o un [`.csv` de palabras clave](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | ID numérico de organización de Apple (`org_id`). Ver [`orgs list`](#adapty-asa-orgs-list). Obligatorio con `--from-file` |
+| `--preview` | — | Con `--from-file`: muestra la estructura convertida y se detiene. No se crea nada |
+| `--wait` / `--no-wait` | `--wait` | Consulta el estado de la operación hasta que finaliza. `--no-wait` imprime el ID de la operación y termina |
+| `--poll-interval` | `5` | Segundos entre consultas de progreso |
+| `--timeout` | `900` | Segundos máximos para esperar a que finalice la operación |
+
+Exactamente uno de `--file` y `--from-file` es obligatorio.
+
+La estructura nombra el grupo de campaña en el nivel superior y anida todo lo demás:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` acepta el ID numérico de la organización de Apple; usa `campaign_group_internal_id` para pasar el UUID en su lugar. Un nodo con `payload` crea una entidad nueva. Un nodo que referencia una entidad existente por su `id` es un ancla — úsalo para añadir grupos de anuncios a una campaña existente, y añade `update_payload` para modificar la entidad en la misma operación. Cada campaña anida `ad_groups`, y cada grupo de anuncios anida `keywords`, `negative_keywords` y `ads`. Una campaña también acepta `negative_keywords` directamente para las palabras clave a nivel de campaña.
+
+Toda la estructura se valida antes de crear nada, y si hay un rechazo se listan todos los nodos inválidos. Con `--from-file`, los problemas de conversión se notifican con su hoja, fila y columna; los avisos de conversión no detienen el envío, pero los errores de conversión lo abortan. Antes de enviar, el comando informa de cuántas campañas, grupos de anuncios, palabras clave, palabras clave negativas y anuncios contiene la estructura, y pide confirmación.
+
+A continuación, el comando sondea la operación e imprime el progreso hasta que se alcanza uno de los tres estados finales:
+
+| Estado | Significado |
+|---|---|
+| `success` | Todos los objetos fueron creados |
+| `partial` | Algunos objetos no se crearon. Cada error se muestra con el error de Apple |
+| `failed` | La operación falló y el comando termina con código distinto de cero |
+
+Si la operación no ha finalizado tras `--timeout` segundos, el comando devuelve e imprime la llamada [`bulk-status`](#adapty-asa-campaigns-bulk-status) para ejecutar más tarde.
+
+### adapty asa campaigns bulk-status
+
+Muestra el progreso de una operación masiva: el estado, el recuento de objetos y el registro por objeto.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `operation-id` | ID de operación (UUID) que imprime [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) |
+
+El campo `status` puede ser `pending`, `running`, `success`, `partial` o `failed`. El bloque `counts` indica cuántos objetos se han aplicado, fallado y están pendientes del total.
+
+Acepta [flags de paginación](#global-flags).
+
+## Grupos de anuncios \{#ad-groups\}
+
+### adapty asa ad-groups list
+
+Lista los [grupos de anuncios](ads-manager-create-ad-group). Devuelve solo metadatos — consulta el rendimiento con [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+Acepta [flags de paginación](#global-flags) y los [filtros de lista](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--search` y `--status`.
+
+### adapty asa ad-groups get
+
+Obtén los detalles de un grupo de anuncios específico.
+
+```bash
+adapty asa ad-groups get <ad-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ad-group-id` | ID del grupo de anuncios (UUID) |
+
+### adapty asa ad-groups create
+
+Crea un grupo de anuncios en una campaña.
+
+```bash
+adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--campaign` | Sí | ID de campaña (UUID) |
+| `--name` | Sí | Nombre del grupo de anuncios |
+| `--default-bid` | Salvo `--automated` | Puja predeterminada como importe simple, por ejemplo `1.20` |
+| `--cpa-goal` | No | Objetivo de coste por adquisición |
+| `--pricing-model` | No | `CPC` o `CPM`. Apple exige uno en cada grupo de anuncios. Valor predeterminado: `CPC` |
+| `--start-time` | No | Inicio de programación (`YYYY-MM-DD`). Por defecto, hoy |
+| `--end-time` | No | Fin de programación (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | No | Permite que Apple añada palabras clave automáticamente |
+| `--automated` | No | Crea el grupo de anuncios automatizado que necesita una campaña `MAX_CONVERSIONS` |
+| `--currency` | No | Código de divisa para los importes de esta llamada. Valor predeterminado: `USD` |
+| `--status` | No | Estado inicial: `ENABLED` o `PAUSED` |
+
+`--automated` inscribe al grupo de anuncios en palabras clave automatizadas, por lo que no puede combinarse con `--automated-keywords`. Apple programa el grupo de anuncios automatizado por su cuenta y lo mantiene activo, por lo que `--start-time` y `--status PAUSED` no están permitidos — pausa la campaña en su lugar. Consulta [Crear una campaña de Conversiones Máximas](developer-cli-ads-manager#max-conversions).
+
+### adapty asa ad-groups update
+
+Actualiza un grupo de anuncios existente.
+
+```bash
+adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
+```
+
+| Argumento | Descripción |
+|---|---|
+| `ad-group-id` | ID del grupo de anuncios (UUID) |
+
+| Flag | Descripción |
+|---|---|
+| `--name` | Nuevo nombre del grupo de anuncios |
+| `--status` | `ENABLED` o `PAUSED` |
+| `--default-bid` | Nueva puja predeterminada |
+| `--cpa-goal` | Nuevo objetivo de coste por adquisición |
+| `--start-time` | Inicio de la programación (`YYYY-MM-DD`) |
+| `--end-time` | Fin de la programación (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | Permitir que Apple añada palabras clave automáticamente |
+| `--currency` | Código de divisa para los importes de esta llamada. Por defecto: `USD` |
+
+Se requiere al menos un flag. La campaña padre se resuelve en el servidor y nunca se pasa directamente.
+
+## Palabras clave \{#keywords\}
+
+Los comandos de palabras clave se aplican en lotes de un máximo de 100 elementos por llamada. Consulta [Gestionar palabras clave](ads-manager-manage-keywords) para conocer el equivalente en el dashboard.
+
+### adapty asa keywords list
+
+Lista las palabras clave de targeting. Devuelve solo metadatos — consulta las métricas de rendimiento con [`asa metrics`](#adapty-asa-metrics).
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
+```
+
+Acepta [flags de paginación](#global-flags) y los [filtros de lista](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search` y `--status`. Filtra por `--ad-group` — sin filtro, esta es la lectura más amplia del tema.
+
+### adapty asa keywords add
+
+Añade palabras clave de segmentación a un grupo de anuncios.
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --text "running shoes" --text "trail shoes" --bid 1.20
+```
+
+Lee las palabras clave desde un archivo, una por línea:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
+```
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--ad-group` | Sí | ID del grupo de anuncios (UUID). La campaña se resuelve a partir de él |
+| `--text` | Sí, a menos que se use `--from-file` | Texto de la palabra clave. Repite para varias |
+| `--from-file` | No | Archivo con una palabra clave por línea. Se combina con los valores `--text` indicados |
+| `--bid` | No | Puja por palabra clave como importe simple |
+| `--match-type` | No | `BROAD` o `EXACT`. Valor predeterminado: `BROAD` |
+| `--currency` | No | Código de moneda para los importes de esta llamada. Valor predeterminado: `USD` |
+| `--status` | No | `ACTIVE` o `PAUSED`. Valor predeterminado: `ACTIVE` |
+
+Un ID no válido hace fallar todo el lote antes de llamar a Apple. Apple puede rechazar palabras clave individuales, y cada rechazo se notifica con su motivo.
+
+### adapty asa keywords update
+
+Cambia la puja, el estado, el texto o el tipo de coincidencia de una o varias palabras clave.
+
+```bash
+adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
+```
+
+| Argumento | Descripción |
+|---|---|
+| `keyword-id` | ID de la palabra clave (UUID). Pasa varios como argumentos adicionales |
+
+| Flag | Descripción |
+|---|---|
+| `--bid` | Nueva puja |
+| `--status` | `ACTIVE` o `PAUSED` |
+| `--match-type` | `BROAD` o `EXACT` |
+| `--text` | Nuevo texto de la palabra clave. Solo tiene sentido para una única palabra clave |
+| `--currency` | Código de moneda para los importes de esta llamada. Por defecto: `USD` |
+
+Un único cambio se aplica a cada ID pasado.
+
+## Palabras clave negativas \{#negative-keywords\}
+
+### adapty asa negative-keywords list
+
+Lista las palabras clave negativas. Las filas con `ad_group_id` vacío corresponden al nivel de campaña.
+
+```bash
+adapty asa negative-keywords list --campaign <campaign-id>
+```
+
+| Flag | Descripción |
+|---|---|
+| `--campaign-level-only` | Conserva solo las filas a nivel de campaña |
+
+Acepta [flags de paginación](#global-flags) y los [filtros de lista](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group` y `--search`.
+
+### adapty asa negative-keywords add
+
+Añade palabras clave negativas a un grupo de anuncios o a una campaña.
+
+```bash
+adapty asa negative-keywords add --ad-group <ad-group-id> --text free
+```
+
+Aplícalas a todos los grupos de anuncios de una campaña en su lugar:
+
+```bash
+adapty asa negative-keywords add --campaign <campaign-id> --all-ad-groups --text free
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--ad-group` | Uno de `--ad-group` o `--campaign` | ID del grupo de anuncios (UUID). La campaña se resuelve a partir de él |
+| `--campaign` | Uno de `--ad-group` o `--campaign` | ID de la campaña (UUID) |
+| `--text` | Sí | Texto de la palabra clave. Repite para varias |
+| `--all-ad-groups` | No | Aplica a todos los grupos de anuncios de la campaña en lugar de a la campaña en sí. Requiere `--campaign` |
+| `--match-type` | No | `BROAD` o `EXACT`. Por defecto: `EXACT` |
+| `--status` | No | `ACTIVE` o `PAUSED`. Por defecto: `ACTIVE` |
+
+`--ad-group` y `--campaign` son mutuamente excluyentes. Pasa exactamente uno de ellos.
+
+## Términos de búsqueda \{#search-terms\}
+
+### adapty asa search-terms list
+
+Lista los términos de búsqueda que activaron tus anuncios. Úsala para encontrar nuevas palabras clave y nuevas palabras clave negativas.
+
+```bash
+adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Flag | Por defecto | Descripción |
+|---|---|---|
+| `--date-from` | Hoy | Inicio del período de informe (`YYYY-MM-DD`) |
+| `--date-to` | Hoy | Fin del período de informe (`YYYY-MM-DD`) |
+
+Acepta [flags de paginación](#global-flags) y los [filtros de lista](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group` y `--search`.
+
+Este comando comparte un grupo de análisis con [`asa metrics`](#metrics). Consulta [Errores](#errors).
+
+## Anuncios \{#ads\}
+
+### Lista de anuncios de Adapty ASA \{#adapty-asa-ads-list\}
+
+Lista [anuncios](ads-manager-manage-ads). El campo `serving_state_reasons` explica por qué un anuncio no está en ejecución.
+
+```bash
+adapty asa ads list --ad-group <ad-group-id>
+```
+
+Acepta [flags de paginación](#global-flags) y los [filtros de lista](#list-filters) `--campaign-group`, `--campaign`, `--ad-group`, `--search` y `--status`. Esta lista no tiene el filtro `--app`, ya que los anuncios pertenecen a grupos de anuncios.
+
+### adapty asa ads get
+
+Obtén los detalles de un anuncio específico.
+
+```bash
+adapty asa ads get <ad-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ad-id` | Ad ID (UUID) |
+
+### adapty asa ads create
+
+Crea un anuncio en un grupo de anuncios.
+
+```bash
+adapty asa ads create --ad-group <ad-group-id> --creative-id 4321 --name "Summer ad"
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--ad-group` | Sí | ID del grupo de anuncios (UUID). La campaña se obtiene a partir de él |
+| `--creative-id` | Sí | ID de creatividad de Apple. Véase [`creatives list`](#adapty-asa-creatives-list) |
+| `--name` | Sí | Nombre del anuncio |
+| `--status` | No | Estado inicial: `ENABLED` o `PAUSED` |
+
+### adapty asa ads update
+
+Actualiza un anuncio existente.
+
+```bash
+adapty asa ads update <ad-id> --status PAUSED
+```
+
+| Argumento | Descripción |
+|---|---|
+| `ad-id` | ID del anuncio (UUID) |
+
+| Flag | Descripción |
+|---|---|
+| `--name` | Nuevo nombre del anuncio |
+| `--status` | `ENABLED` o `PAUSED` |
+
+Se requiere al menos un flag. El creativo y el grupo de anuncios padre son fijos desde la creación.
+
+## Creatives \{#creatives\}
+
+### adapty asa creatives list
+
+Lista los creativos disponibles para nuevos anuncios.
+
+```bash
+adapty asa creatives list --app <app-id>
+```
+
+El `creative_id` devuelto aquí es el valor `--creative-id` para [`ads create`](#adapty-asa-ads-create).
+
+Acepta [indicadores de paginación](#global-flags) y los filtros de lista `--campaign-group` y `--app` [list filters](#list-filters).
+
+## Páginas de producto \{#product-pages\}
+
+### adapty asa product-pages list
+
+Lista las páginas de producto personalizadas disponibles para tus apps.
+
+```bash
+adapty asa product-pages list --app <app-id>
+```
+
+Acepta [flags de paginación](#global-flags) y los filtros de lista `--campaign-group` y `--app` [list filters](#list-filters).
+
+### adapty asa product-pages sync
+
+Actualiza las páginas de producto personalizadas desde App Store Connect.
+
+```bash
+adapty asa product-pages sync --adam-id 123456
+```
+
+| Flag | Description |
+|---|---|
+| `--adam-id` | Limita la actualización a una sola app. Omítelo para cubrir todas las apps |
+
+La actualización se pone en cola en lugar de ejecutarse de inmediato, y el comando confirma con `Sync queued.` Si la misma actualización ya está en curso, muestra `Already running; nothing new was queued.` en su lugar.
+
+## Automatizaciones \{#automations\}
+
+La CLI almacena el JSON de reglas que le proporcionas — no construye reglas. Consulta [Automatizaciones](ads-manager-automations) para saber qué hace cada tipo de regla, y [Ejecutar reglas de automatización](developer-cli-ads-manager#run-automation-rules) para saber cómo generar un archivo de reglas.
+
+### lista de automatizaciones de adapty asa \{#adapty-asa-automations-list\}
+
+Lista las [reglas de automatización](ads-manager-automations). El campo `status` vale `1` para activa y `0` para detenida.
+
+```bash
+adapty asa automations list
+```
+
+Acepta [flags de paginación](#global-flags).
+
+### adapty asa automations get
+
+Obtén una regla de automatización específica, incluyendo sus condiciones y acciones.
+
+```bash
+adapty asa automations get <automation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Automation rule ID (UUID) |
+
+### adapty asa automations create
+
+Crea una regla de automatización a partir de un archivo JSON de reglas.
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+| Flag | Description |
+|---|---|
+| `--file` | Archivo JSON con el cuerpo de la regla, o `-` para leer desde la entrada estándar |
+| `--run-now` | Pone en cola la primera ejecución justo después de almacenar la regla |
+
+`--file` es obligatorio.
+
+### adapty asa automations update
+
+Modifica una regla de automatización: detenla, cámbiale el nombre o reemplaza partes de la regla.
+
+```bash
+adapty asa automations update <automation-id> --stop
+```
+
+| Argumento | Descripción |
+|---|---|
+| `automation-id` | ID de la regla de automatización (UUID) |
+
+| Flag | Descripción |
+|---|---|
+| `--start` | Activa la regla |
+| `--stop` | Detiene la regla y borra su próxima ejecución |
+| `--name` | Nuevo nombre de la regla |
+| `--file` | Archivo JSON con las partes a modificar, o `-` para leer desde la entrada estándar |
+
+`--start` y `--stop` son mutuamente excluyentes. El archivo pasado aquí no debe contener `internal_id`.
+
+### adapty asa automations run
+
+Ejecuta una regla de automatización una vez, fuera de su programación.
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+| Argumento | Descripción |
+|---|---|
+| `automation-id` | ID de la regla de automatización (UUID) |
+
+| Flag | Descripción |
+|---|---|
+| `--dry-run` | Evalúa la regla y registra el resultado sin realizar ningún cambio en Apple Ads |
+
+La ejecución se pone en cola y el comando muestra un ID de ejecución. Consulta el resultado con [`automations runs`](#adapty-asa-automations-runs).
+
+### adapty asa automations runs
+
+Lista las ejecuciones pasadas de una regla de automatización, incluidas las ejecuciones de prueba.
+
+```bash
+adapty asa automations runs <automation-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `automation-id` | ID de la regla de automatización (UUID) |
+
+Acepta [indicadores de paginación](#global-flags).
+
+## Métricas \{#metrics\}
+
+### adapty asa metrics
+
+Consulta métricas para cualquier nivel de la cuenta en un rango de fechas.
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--entity` | Sí | Sobre qué informar: `campaign`, `ad-group`, `keyword` o `ad` |
+| `--date-from` | Sí | Inicio del período (`YYYY-MM-DD`) |
+| `--date-to` | Sí | Fin del período (`YYYY-MM-DD`) |
+| `--metric` | No | Nombre de la métrica, repetible. Omitir para todas las métricas |
+| `--group-by` | No | Desglosar las filas por `country`, `day`, `week`, `month`, `quarter` o `year`. Repetible |
+| `--by-days` | No | Ventana de renovación en días para métricas de cohorte, repetible. Máximo 16 por llamada. Omitir para los valores predeterminados del dashboard |
+| `--order-by` | No | Métrica o campo por el que ordenar |
+| `--order-by-day` | No | Clasificar por una métrica de cohorte en esta ventana de renovación. Debe ser uno de los valores de `--by-days` |
+| `--order` | No | `asc` o `desc`. Valor predeterminado: `desc` |
+
+Acepta [flags de paginación](#global-flags). Este comando no admite [filtros de lista](#list-filters) — acota el informe por nivel de entidad y período, y luego compara las filas con los IDs obtenidos de un comando `list` con alcance definido.
+
+Cada fila es una entidad, agregada en el servidor y ordenada por `--order-by`. Una consulta de top-N es, por tanto, una sola llamada — define `--order-by` y `--page-size N` en lugar de paginar los resultados y sumarlos manualmente:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+`--metric` acepta los nombres de métricas que Ads Manager rastrea, según la nomenclatura del dashboard — por ejemplo `spend`, `taps` o `gross_roas`. Consulta [Metrics](adapty-ads-manager-metrics) para la lista completa y cómo se calcula cada una. Un nombre que no exista generará un error con los nombres válidos listados en el mensaje.
+
+La duración del período de reporte está limitada por el valor más grueso de `--group-by`. Para reportar sobre un período más largo, usa una agrupación más gruesa en lugar de dividir la solicitud en varias llamadas:
+
+| `--group-by` más amplio | Período máximo |
+|---|---|
+| `day`, o sin agrupación por período | 90 días |
+| `week` | 180 días |
+| `month` y más amplio | 365 días |
+
+No existe la métrica `ltv`. El valor de vida del cliente es una métrica de cohorte que se lee en una ventana de renovación, por lo que `--by-days` es la forma de pedir el valor del día 7 o del día 90:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
+```
+
+`--order-by-day` ordena las filas por una de esas ventanas, lo que devuelve las campañas con mayor ROAS en el día 90 en una sola llamada.
+
+### adapty asa metrics overview
+
+Consulta totales de un período, agrupados por una unidad de tiempo.
+
+```bash
+adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --period-unit week
+```
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--entity` | Sí | Sobre qué reportar: `campaign`, `ad-group`, `keyword` o `ad` |
+| `--date-from` | Sí | Inicio del período (`YYYY-MM-DD`) |
+| `--date-to` | Sí | Fin del período (`YYYY-MM-DD`) |
+| `--period-unit` | No | Tamaño del intervalo: `day`, `week`, `month`, `quarter` o `year`. Por defecto: `day` |
+| `--metric` | No | Nombre de la métrica, repetible. Omitir para todas las métricas |
+| `--by-days` | No | Ventana de renovación en días para métricas de cohorte, repetible. Máximo 16 por llamada |
+
+Este comando devuelve los totales para todo el nivel de entidad junto con una serie por período, respondiendo así a "cuánto gasté o gané en total" en una sola llamada. No tiene indicadores de ordenación ni paginación.
+
+En este comando, `--metric` acepta solo raíces de cohorte: `revenue`, `roas` y `arpu`; no sus variantes `gross_`, `proceeds_` o `net_`.
+
+La duración del período de reporte está limitada por `--period-unit`:
+
+| `--period-unit` | Período máximo |
+|---|---|
+| `day` | 90 días |
+| `week` | 180 días |
+| `month` y más grueso | 365 días |
+
+## Competidores \{#competitors\}
+
+### adapty asa competitors summary
+
+Resume las palabras clave de Apple Ads en las que pujan un conjunto de aplicaciones de App Store. Devuelve los mismos datos de competidores que [Market Intelligence](ads-manager-market-intelligence) en el dashboard.
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app-ids` | Sí | IDs de Apple App Store (`adam_id`), separados por comas. Entre 1 y 5 valores |
+
+El período de análisis y el conjunto de países están fijados en el servidor: el último mes completo, para todos los países. Este comando no tiene parámetros de período, país ni paginación.
+
+El comando imprime tres bloques: los totales del análisis, las apps con mejor rendimiento y los términos más disputados. Añade `--json` para obtener el resultado completo, que también desglosa los términos de cada app por país.
+
+La primera llamada para un conjunto de apps puede tardar decenas de segundos mientras se preparan los datos. Las llamadas posteriores para las mismas apps son más rápidas.
+
+## Errores \{#errors\}
+
+| Estado | Código | Significado |
+|---|---|---|
+| `402` | `ads_manager_subscription_required` | La empresa no tiene una suscripción activa de Ads Manager |
+| `404` | — | La entidad no existe o pertenece a otra empresa |
+| `409` | `cli_idempotency_in_progress` | Hay una escritura con la misma clave de idempotencia en curso |
+| `422` | `cli_idempotency_key_reuse` | La misma clave de idempotencia se usó con un cuerpo de solicitud diferente |
+| `429` | `cli_analytics_busy` | El pool de análisis está ocupado. El tiempo de espera está en la cabecera `Retry-After` |
+| `429` | `cli_cooldown_active` | Demasiadas solicitudes rechazadas han puesto el token en período de enfriamiento |
+
+Métricas y la lista de términos de búsqueda comparten un único presupuesto de análisis por empresa: 5 llamadas por minuto, y como máximo 2 en cualquier período de 10 segundos. Una ráfaga de 20 solicitudes rechazadas en 5 minutos activa un período de enfriamiento escalonado de 5 minutos, luego 30 minutos y después 3 horas. Reintentar durante la pausa no la prolonga, pero la solución es corregir la solicitud que falla en lugar de repetirla.
+
+El CLI gestiona las esperas cortas por ti. Ante un `429` que no sea un período de enfriamiento, si `Retry-After` es de 60 segundos o menos, el comando espera ese tiempo y reintenta una vez, informando de la espera en la salida de error estándar.

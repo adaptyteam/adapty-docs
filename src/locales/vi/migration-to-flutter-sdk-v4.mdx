@@ -1,10 +1,11 @@
 ---
-title: "Migrate Adapty Flutter SDK sang phiên bản 4.0"
-description: "Migrate lên Adapty Flutter SDK v4.0 bằng cách thay thế các API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
-metadataTitle: "Migration lên Adapty Flutter SDK v4.0 | Tài liệu Adapty"
+title: "Migrate Adapty Flutter SDK sang v4.0"
+description: "Migrate sang Adapty Flutter SDK v4.0 bằng cách thay thế paywall API bằng flow API, tương thích với cả Flow Builder và Paywall Builder."
+metadataTitle: "Migration sang Adapty Flutter SDK v4.0 | Tài liệu Adapty"
 ---
 
-Adapty Flutter SDK 4.0 giới thiệu flow và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+Adapty Flutter SDK 4.0 giới thiệu flows và đổi tên các paywall API tương ứng. Các API mới hoạt động với cả Flow Builder mới lẫn Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+
 ## Tham khảo nhanh \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -39,14 +40,14 @@ Với hầu hết các ứng dụng, hãy cập nhật `adapty_flutter` lên v4.
 
 ```yaml showLineNumbers title="pubspec.yaml"
 dependencies:
-  adapty_flutter: 4.0.0
+  adapty_flutter: 4.0.3
 ```
 
 Nếu ứng dụng sử dụng Kids Mode, hãy chỉ định `adapty_flutter_kids` thay thế:
 
 ```yaml showLineNumbers title="pubspec.yaml"
 dependencies:
-  adapty_flutter_kids: 4.0.0
+  adapty_flutter_kids: 4.0.3
 ```
 Gói **độc lập** này loại bỏ mã IDFA và theo dõi quảng cáo để tuân thủ các yêu cầu của App Store. Cập nhật đường dẫn import Dart thành `package:adapty_flutter_kids/adapty_flutter.dart`. Ngoài ra, quá trình migration hoàn toàn giống với gói thông thường.
 
@@ -129,13 +130,18 @@ Giống như ở v3, bạn không cần gọi phương thức này khi hiển th
 ## Hiển thị flows \{#displaying-flows\}
 ### createPaywallView → createFlowView
 
-Đổi tên phương thức và truyền `AdaptyFlow` qua tham số `flow`. Các tham số khác (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) không thay đổi, cũng như các phương thức của view là `present`, `dismiss`, và `showDialog`:
+Đổi tên phương thức và truyền `AdaptyFlow` qua tham số `flow`. Các tham số khác (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) không thay đổi, các phương thức view `present`, `dismiss`, và `showDialog` cũng vậy:
+
+:::note
+`customTimers` vẫn tồn tại, nhưng chỉ có tác dụng với paywall thuộc Paywall Builder cũ. [Bộ đếm ngược](flow-timer) của một flow chạy theo hành vi được thiết lập trong Flow Builder, nên flow sẽ bỏ qua bất kỳ giá trị nào bạn truyền vào đây.
+:::
 
 ```diff showLineNumbers
 - final view = await AdaptyUI().createPaywallView(paywall: paywall);
 + final view = await AdaptyUI().createFlowView(flow: flow);
   await view.present();
 ```
+
 ### AdaptyUIPaywallView → AdaptyUIFlowView
 
 Kiểu view được đổi tên. Thuộc tính `paywallVariationId` đã bị xóa — hãy dùng `variationId` thay thế:
@@ -182,10 +188,11 @@ Ba callback sau đây là **bắt buộc** — observer của bạn sẽ không 
 - **`flowViewDidReceiveError`**: Thay thế `paywallViewDidFailRendering` và giờ cũng nhận các lỗi view khác.
 
 Hai thay đổi nhỏ hơn:
-- `setFlowsEventsObserver` (và `setOnboardingsEventsObserver`) giờ chấp nhận `null` để gỡ bỏ observer đã đặt trước đó, giúp SDK không còn giữ tham chiếu đến nó nữa.
-- Callback tùy chọn mới `flowViewDidReceiveAnalyticEvent` được dành riêng cho các sự kiện analytic tùy chỉnh từ một flow. Hiện tại các flow chưa phát ra sự kiện này đến code của bạn, nên bạn không cần implement nó.
+- `setFlowsEventsObserver` (và `setOnboardingsEventsObserver`) hiện chấp nhận `null` để hủy đăng ký observer đã thiết lập trước đó, giúp SDK không còn giữ tham chiếu đến nó nữa.
+- Callback tùy chọn mới `flowViewDidReceiveAnalyticEvent` báo cáo các sự kiện analytics từ một flow, bắt đầu bằng sự kiện xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](flutter-flow-screen-views).
 
-v4 cũng bổ sung các tính năng bạn có thể chọn dùng:
+v4 cũng bổ sung các tính năng bạn có thể kích hoạt theo nhu cầu:
+
 - `AdaptyUI().setObserverModeResolver(...)` với một `AdaptyUIObserverModeResolver` — xử lý các giao dịch mua và khôi phục được khởi tạo từ flow khi SDK chạy ở [chế độ Observer](implement-observer-mode-flutter). Trước đây tính năng này chỉ có trong SDK iOS và Android gốc. Xem [Hiển thị flow trong chế độ Observer](flutter-present-flows-in-observer-mode).
 - `AdaptyUI().setSystemRequestsHandler(...)` với một `AdaptyUISystemRequestsHandler` — dành riêng cho các yêu cầu hệ thống từ flow (lời nhắc cấp quyền của hệ điều hành và yêu cầu đánh giá App Store). Hiện tại flow chưa kích hoạt các yêu cầu này, nên bạn không cần đăng ký handler.
 ## Các API đã bị xóa \{#removed-apis\}

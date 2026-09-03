@@ -1,0 +1,800 @@
+---
+title: "Adapty 开发者 CLI 的 Ads Manager 命令"
+description: "每个 adapty asa 命令的参考文档——涵盖广告系列、广告组、关键词、广告、自动化规则及数据图表。"
+metadataTitle: "Ads Manager CLI 命令 | Adapty 文档"
+---
+
+本文列出了 Adapty CLI 中所有 [Ads Manager](adapty-ads-manager) 命令，包括其参数、标志及可接受的值。Ads Manager 命令位于 `adapty asa` 主题下。
+
+:::link
+有关前提条件、安全写入实践及基于任务的示例，请参阅[通过 CLI 管理 Ads Manager](developer-cli-ads-manager)。
+:::
+
+这些命令需要已连接的 Apple Ads 账户以及有效的 Ads Manager 订阅。运行 [`adapty asa whoami`](#adapty-asa-whoami) 可同时查看两者的状态。其余 CLI 命令请参阅[命令参考](developer-cli-reference)。
+
+## 全局标志 \{#global-flags\}
+
+这些标志适用于所有 Ads Manager 命令。
+
+| 标志 | 描述 |
+|---|---|
+| `--json` | 以 JSON 格式输出，而非格式化文本 |
+| `--help` | 显示命令帮助 |
+
+所有 `list` 命令还支持分页标志：
+
+| 标志 | 默认值 | 描述 |
+|---|---|---|
+| `--page` | `1` | 页码 |
+| `--page-size` | `100` | 每页条目数（最大：1000） |
+
+Ads Manager 的每页数据量大于 CLI 其他部分。建议使用单次大页请求，而非多次小页循环。
+
+所有会修改账户的命令均支持以下标志：
+
+| 标志 | 描述 |
+|---|---|
+| `--yes`, `-y` | 不询问确认直接应用。当输出被管道传输或使用 `--json` 时必须指定 |
+| `--idempotency-key` | 为本次写入操作指定固定键。在 24 小时内使用相同键和请求体重复调用时，将返回已存储的结果，而不会再次应用变更 |
+
+Ads Manager 命令不接受 `--app` 标志。操作范围为您的令牌所属的公司。`--app` 仅在部分 `list` 命令中作为过滤参数存在。
+
+## 列表筛选 \{#list-filters\}
+
+筛选器作用于查询本身，而非当前显示的页面。未设置筛选条件的 `keywords list` 会遍历账户中的所有关键词，因此请将每次读取的范围限定在所需层级。
+
+| 过滤器 | 接受方 |
+|---|---|
+| `--campaign-group` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`, `creatives`, `product-pages` |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `creatives`, `product-pages` |
+| `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--status` | `campaigns`, `ad-groups`, `ads`（`ENABLED` 或 `PAUSED`），`keywords`（`ACTIVE` 或 `PAUSED`） |
+| `--search` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`。对名称进行不区分大小写的子字符串匹配 |
+
+`adapty asa apps list`、`orgs list`、`automations list` 和 `automations runs` 不支持任何过滤条件，仅接受分页标志。
+
+`--campaign-group`、`--app`、`--campaign` 和 `--ad-group` 接受对应 `list` 命令输出的 UUID，且每个选项均可重复使用：
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --ad-group <other-ad-group-id>
+```
+
+如果传入的 ID 属于其他公司，则不会匹配任何结果，接口会返回空页，而非报错。
+
+## 账户 \{#account\}
+
+### adapty asa whoami
+
+显示公司信息、Ads Manager 访问权限的授予方式，以及 Apple Ads 是否已连接。
+
+```bash
+adapty asa whoami
+```
+
+首先运行此命令。它会报告其他所有命令的两个前提条件是否已满足。
+
+### adapty asa connect
+
+将 Apple Ads 账户关联到 Adapty。
+
+```bash
+adapty asa connect
+```
+
+该命令会打印一个 Apple 授权链接，并等待 Apple 报告账户已成功连接。
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `--wait` / `--no-wait` | `--wait` | 等待 Apple Ads 报告连接成功。`--no-wait` 表示立即返回 |
+| `--timeout` | `300` | 等待浏览器操作步骤的超时秒数 |
+
+### adapty asa orgs list
+
+列出您公司可用的广告系列组（Apple Ads 组织）。
+
+```bash
+adapty asa orgs list
+```
+
+每一行包含两个标识符，它们不可互换：
+
+| 字段 | 用途 |
+|---|---|
+| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) 中 `--org` 参数接受的 UUID，以及作为[列表过滤器](#list-filters)时 `--campaign-group` 所接受的值 |
+| `org_id` | Apple 的数字组织 ID，由 [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) 中的 `--org-id` 使用。`--org` 和 `--campaign-group` 不接受此值 |
+
+`--org` 仅在 `campaigns create` 中可用，`list` 命令不接受该参数。
+
+每行还包含一个 `payment_model` 字段。当其值为 `LOC` 时，表示该组织按信用额度计费，其中的每个推广活动都需要使用 [`--invoice-*` 标志](#adapty-asa-campaigns-create)。
+
+支持[分页标志](#global-flags)。
+
+### adapty asa apps list
+
+列出在 Apple Ads 中推广的应用。
+
+```bash
+adapty asa apps list
+```
+
+每行包含两个标识符，它们不可互换：
+
+| 字段 | 用途 |
+|---|---|
+| `internal_id` | 作为[列表过滤器](#list-filters)中 `--app` 参数接受的 UUID |
+| `adam_id` | Apple 的数字 App Store ID，由 [`campaigns create`](#adapty-asa-campaigns-create) 和 [`product-pages sync`](#adapty-asa-product-pages-sync) 上的 `--adam-id` 参数使用 |
+
+接受[分页标志](#global-flags)。
+
+## 营销活动 \{#campaigns\}
+
+### adapty asa campaigns list
+
+列出[广告系列](ads-manager-create-campaign)。仅返回元数据——如需查看效果数据，请使用 [`asa metrics`](#adapty-asa-metrics)。
+
+```bash
+adapty asa campaigns list --app <app-id> --status PAUSED
+```
+
+支持[分页标志](#global-flags)以及 `--campaign-group`、`--app`、`--search` 和 `--status` [列表过滤器](#list-filters)。
+
+### adapty asa campaigns get
+
+获取特定广告系列的详细信息。
+
+```bash
+adapty asa campaigns get <campaign-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `campaign-id` | 广告系列 ID（UUID） |
+
+### adapty asa campaigns create
+
+创建一个广告活动。
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--org` | 是 | 广告系列组 ID（UUID）。参见 [`orgs list`](#adapty-asa-orgs-list) |
+| `--name` | 是 | 广告系列名称 |
+| `--adam-id` | 是 | App Store 应用 ID（`adam_id`） |
+| `--country` | 是 | 国家或地区代码。如需指定多个，重复使用：`--country US --country CA` |
+| `--daily-budget` | 是 | 每日预算，填写纯数字金额，例如 `50` 或 `12.50` |
+| `--budget` | 否 | 总生命周期预算 |
+| `--target-cpa` | 否 | 目标每次转化费用，必须低于 `--daily-budget` |
+| `--currency` | 否 | 本次调用所用金额的货币代码，默认为 `USD` |
+| `--bidding-strategy` | 否 | `MANUAL_CPT` 或 `MAX_CONVERSIONS`，Apple 默认为 `MANUAL_CPT` |
+| `--ad-channel-type` | 否 | `SEARCH` 或 `DISPLAY`，默认为 `SEARCH` |
+| `--billing-event` | 否 | `TAPS` 或 `IMPRESSIONS`，默认为 `TAPS` |
+| `--supply-source` | 否 | 广告供应来源，可重复使用，默认为 `APPSTORE_SEARCH_RESULTS` |
+| `--status` | 否 | 初始状态：`ENABLED` 或 `PAUSED` |
+| `--invoice-advertiser` | 信用额度 | 发票选项：广告主名称 |
+| `--invoice-order-number` | 信用额度 | 发票选项：订单编号 |
+| `--invoice-contact-name` | 信用额度 | 发票选项：采购方联系人姓名 |
+| `--invoice-contact-email` | 信用额度 | 发票选项：采购方联系人邮箱 |
+| `--invoice-billing-email` | 信用额度 | 发票选项：账单联系人邮箱 |
+
+一个 `payment_model` 为 `LOC` 的组织按信用额度计费，Apple 要求为其每个广告系列设置开票选项。请在一次调用中传入全部五个 `--invoice-*` 标志——部分传入会在请求发送前被拒绝。详见[为信用额度设置开票选项](developer-cli-ads-manager#invoicing-options)。
+
+响应中包含 `serving_status` 和 `serving_state_reasons`。创建成功的广告系列不一定会立即投放：`MAX_CONVERSIONS` 广告系列需要等待[自动广告组](#adapty-asa-ad-groups-create)，而信用额度广告系列则需要等待其发票选项配置完成。两种情况下，命令均会打印出原因说明及解决该问题所需执行的命令。
+
+### adapty asa campaigns update
+
+更新已有的广告活动。
+
+```bash
+adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
+```
+
+| 参数 | 描述 |
+|---|---|
+| `campaign-id` | 广告活动 ID（UUID） |
+
+| 参数 | 说明 |
+|---|---|
+| `--name` | 新的推广活动名称 |
+| `--status` | `ENABLED` 或 `PAUSED` |
+| `--country` | 替换国家/地区列表。可重复使用以指定多个国家/地区 |
+| `--daily-budget` | 新的每日预算 |
+| `--budget` | 新的总生命周期预算 |
+| `--target-cpa` | 新的目标每次获取费用 |
+| `--bidding-strategy` | `MANUAL_CPT` 或 `MAX_CONVERSIONS` |
+| `--currency` | 本次调用中金额所用的货币代码。默认值：`USD` |
+| `--invoice-advertiser` | 发票选项：广告主名称 |
+| `--invoice-order-number` | 发票选项：订单编号 |
+| `--invoice-contact-name` | 发票选项：采购方联系人姓名 |
+| `--invoice-contact-email` | 发票选项：采购方联系人邮箱 |
+| `--invoice-billing-email` | 发票选项：账单联系人邮箱 |
+
+至少需要一个标志。
+
+`--invoice-*` 这五个标志作为一组使用，会整体替换已存储的 Invoicing Options，因此即使只修改其中一项，也需要同时传入全部五个标志。如果传入的标志不完整，请求在发送前就会被拒绝。
+
+### adapty asa campaigns bulk-create
+
+通过单次操作创建完整的广告活动结构——包含广告活动及其嵌套的广告组、关键词、否定关键词和广告。
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+也可以直接转换原生 Apple Ads 批量模板，无需手动编写 JSON：
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| 标志 | 默认值 | 描述 |
+|---|---|---|
+| `--file` | — | 包含广告系列结构的 JSON 文件，或使用 `-` 从标准输入读取 |
+| `--from-file` | — | 要在服务器上转换的 Apple Ads 批量模板：[`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) 或[关键词 `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Apple 的数字组织 ID（`org_id`）。参见 [`orgs list`](#adapty-asa-orgs-list)。与 `--from-file` 一起使用时必填 |
+| `--preview` | — | 与 `--from-file` 配合使用：打印转换后的结构并停止，不会创建任何内容 |
+| `--wait` / `--no-wait` | `--wait` | 轮询操作直至完成。`--no-wait` 会打印操作 ID 并返回 |
+| `--poll-interval` | `5` | 轮询进度的间隔秒数 |
+| `--timeout` | `900` | 等待操作完成的最长秒数 |
+
+恰好需要 `--file` 和 `--from-file` 其中之一。
+
+该结构在顶层命名活动组，并在其中嵌套所有其他内容：
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` 接受 Apple 的数字组织 ID；如需传入 UUID，请改用 `campaign_group_internal_id`。包含 `payload` 的节点会被创建。仅通过 `id` 引用现有实体的节点为锚点——可用锚点向已有广告系列添加广告组，同时添加 `update_payload` 可在同一操作中修改该实体。每个广告系列嵌套 `ad_groups`，每个广告组嵌套 `keywords`、`negative_keywords` 和 `ads`。广告系列还可直接接受 `negative_keywords`，用于设置广告系列级别的否定关键词。
+
+整个结构在创建任何内容之前都会经过验证，拒绝时会列出每个无效节点。使用 `--from-file` 时，转换问题会附带所在的工作表、行和列信息；转换警告不会中止提交，但转换错误会终止操作。发送前，命令会汇报结构中包含多少个广告系列、广告组、关键词、否定关键词和广告，并要求确认。
+
+命令随后会轮询操作进度并持续打印，直到出现以下三种最终状态之一：
+
+| 状态 | 含义 |
+|---|---|
+| `success` | 所有对象均已创建 |
+| `partial` | 部分对象未能创建，每条失败信息均附有 Apple 的错误提示 |
+| `failed` | 操作失败，命令以非零状态退出 |
+
+如果操作在 `--timeout` 秒内未完成，命令将返回并打印稍后运行的 [`bulk-status`](#adapty-asa-campaigns-bulk-status) 调用。
+
+### adapty asa campaigns bulk-status
+
+显示单个批量操作的进度：状态、对象计数以及每个对象的日志。
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `operation-id` | 由 [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) 输出的操作 ID（UUID） |
+
+`status` 字段的值为 `pending`、`running`、`success`、`partial` 或 `failed`。`counts` 块报告在总数中已应用、失败和待处理的对象数量。
+
+支持[分页标志](#global-flags)。
+
+## 广告组 \{#ad-groups\}
+
+### adapty asa ad-groups list
+
+列出[广告组](ads-manager-create-ad-group)。仅返回元数据——如需查看效果数据，请使用 [`asa metrics`](#adapty-asa-metrics)。
+
+```bash
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+支持[分页标志](#global-flags)以及 `--campaign-group`、`--app`、`--campaign`、`--search` 和 `--status` [列表筛选器](#list-filters)。
+
+### adapty asa ad-groups get
+
+获取特定广告组的详细信息。
+
+```bash
+adapty asa ad-groups get <ad-group-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `ad-group-id` | 广告组 ID（UUID） |
+
+### adapty asa ad-groups create
+
+在广告系列中创建广告组。
+
+```bash
+adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--campaign` | 是 | 广告系列 ID（UUID） |
+| `--name` | 是 | 广告组名称 |
+| `--default-bid` | 未设置 `--automated` 时必填 | 默认出价，填写纯数字金额，例如 `1.20` |
+| `--cpa-goal` | 否 | 每次转化费用目标 |
+| `--pricing-model` | 否 | `CPC` 或 `CPM`。Apple 要求每个广告组必须指定一种。默认值：`CPC` |
+| `--start-time` | 否 | 排期开始时间（`YYYY-MM-DD`），默认为今天 |
+| `--end-time` | 否 | 排期结束时间（`YYYY-MM-DD`） |
+| `--automated-keywords` / `--no-automated-keywords` | 否 | 允许 Apple 自动添加关键词 |
+| `--automated` | 否 | 创建 `MAX_CONVERSIONS` 广告系列所需的自动化广告组 |
+| `--currency` | 否 | 本次调用中金额所用的货币代码。默认值：`USD` |
+| `--status` | 否 | 初始状态：`ENABLED` 或 `PAUSED` |
+
+`--automated` 选项会将广告组纳入自动关键词管理，因此不能与 `--automated-keywords` 同时使用。Apple 会自动安排该广告组并保持启用状态，所以 `--start-time` 和 `--status PAUSED` 均不被支持——如需暂停，请暂停广告系列本身。请参阅[创建 Max Conversions 广告系列](developer-cli-ads-manager#max-conversions)。
+
+### adapty asa ad-groups update
+
+更新现有广告组。
+
+```bash
+adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
+```
+
+| 参数 | 描述 |
+|---|---|
+| `ad-group-id` | 广告组 ID（UUID） |
+
+| 参数 | 描述 |
+|---|---|
+| `--name` | 新广告组名称 |
+| `--status` | `ENABLED` 或 `PAUSED` |
+| `--default-bid` | 新默认出价 |
+| `--cpa-goal` | 新的每次转化费用目标 |
+| `--start-time` | 排期开始时间（`YYYY-MM-DD`） |
+| `--end-time` | 排期结束时间（`YYYY-MM-DD`） |
+| `--automated-keywords` / `--no-automated-keywords` | 允许 Apple 自动添加关键词 |
+| `--currency` | 本次调用金额所用货币代码，默认值：`USD` |
+
+至少需要传入一个参数。父级推广活动由服务器解析，无需手动传入。
+
+## 关键词 \{#keywords\}
+
+关键词命令每次调用最多批量处理 100 条。看板端的等效操作请参阅[管理关键词](ads-manager-manage-keywords)。
+
+### adapty asa keywords list
+
+列出定向关键词。仅返回元数据——如需读取效果数据，请使用 [`asa metrics`](#adapty-asa-metrics)。
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
+```
+
+支持[分页标志](#global-flags)以及 `--campaign-group`、`--app`、`--campaign`、`--ad-group`、`--search` 和 `--status` [列表筛选条件](#list-filters)。建议通过 `--ad-group` 进行筛选——不添加筛选条件时，此操作的读取范围最广。
+
+### adapty asa keywords add
+
+向广告组添加定向关键词。
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --text "running shoes" --text "trail shoes" --bid 1.20
+```
+
+从文件中读取关键词，每行一个：
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--ad-group` | 是 | 广告组 ID（UUID），系统会据此解析对应的广告系列 |
+| `--text` | 是，除非使用 `--from-file` | 关键词文本，可重复多次以添加多个关键词 |
+| `--from-file` | 否 | 包含关键词的文件，每行一个，与 `--text` 参数合并使用 |
+| `--bid` | 否 | 每个关键词的出价金额 |
+| `--match-type` | 否 | `BROAD` 或 `EXACT`，默认值：`BROAD` |
+| `--currency` | 否 | 本次调用中金额所使用的货币代码，默认值：`USD` |
+| `--status` | 否 | `ACTIVE` 或 `PAUSED`，默认值：`ACTIVE` |
+
+一个无效 ID 会导致整批请求在调用 Apple 之前全部失败。Apple 仍可能拒绝单个关键词，每次拒绝都会附带相应原因。
+
+### adapty asa keywords update
+
+更改一个或多个关键词的出价、状态、文本或匹配类型。
+
+```bash
+adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
+```
+
+| 参数 | 说明 |
+|---|---|
+| `keyword-id` | 关键词 ID（UUID）。可传入多个作为额外参数 |
+
+| 标志 | 说明 |
+|---|---|
+| `--bid` | 新出价 |
+| `--status` | `ACTIVE` 或 `PAUSED` |
+| `--match-type` | `BROAD` 或 `EXACT` |
+| `--text` | 新关键词文本，仅对单个关键词有意义 |
+| `--currency` | 本次调用金额所用的货币代码，默认值：`USD` |
+
+一次更改适用于所传入的每个 ID。
+
+## 否定关键词 \{#negative-keywords\}
+
+### adapty asa negative-keywords list
+
+列出否定关键词。`ad_group_id` 为空的行属于广告系列级别。
+
+```bash
+adapty asa negative-keywords list --campaign <campaign-id>
+```
+
+| Flag | Description |
+|---|---|
+| `--campaign-level-only` | 仅保留广告系列级别的行 |
+
+接受[分页标志](#global-flags)以及 `--campaign-group`、`--app`、`--campaign`、`--ad-group` 和 `--search` [列表过滤器](#list-filters)。
+
+### adapty asa negative-keywords add
+
+向广告组或广告系列添加否定关键词。
+
+```bash
+adapty asa negative-keywords add --ad-group <ad-group-id> --text free
+```
+
+或者将其应用于广告系列中的每个广告组：
+
+```bash
+adapty asa negative-keywords add --campaign <campaign-id> --all-ad-groups --text free
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--ad-group` | `--ad-group` 或 `--campaign` 二选一 | 广告组 ID（UUID），系统会从中解析出对应的广告系列 |
+| `--campaign` | `--ad-group` 或 `--campaign` 二选一 | 广告系列 ID（UUID） |
+| `--text` | 是 | 关键词文本，可重复使用以指定多个关键词 |
+| `--all-ad-groups` | 否 | 应用于该广告系列的所有广告组，而非广告系列本身。需配合 `--campaign` 使用 |
+| `--match-type` | 否 | `BROAD`（广泛匹配）或 `EXACT`（精确匹配），默认值：`EXACT` |
+| `--status` | 否 | `ACTIVE`（启用）或 `PAUSED`（暂停），默认值：`ACTIVE` |
+
+`--ad-group` 和 `--campaign` 互斥，二者只能传其一。
+
+## 搜索词 \{#search-terms\}
+
+### adapty asa search-terms list
+
+列出触发广告的搜索词，用于发现新的关键词和新的否定关键词。
+
+```bash
+adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| 参数 | 默认值 | 说明 |
+|---|---|---|
+| `--date-from` | 今天 | 报告周期开始日期（`YYYY-MM-DD`） |
+| `--date-to` | 今天 | 报告周期结束日期（`YYYY-MM-DD`） |
+
+支持[分页参数](#global-flags)以及 `--campaign-group`、`--app`、`--campaign`、`--ad-group` 和 `--search` [列表过滤器](#list-filters)。
+
+该命令与 [`asa metrics`](#metrics) 共享分析资源池。请参阅[错误](#errors)。
+
+## 广告 \{#ads\}
+
+### adapty asa ads list
+
+列出[广告](ads-manager-manage-ads)。`serving_state_reasons` 字段说明广告未投放的原因。
+
+```bash
+adapty asa ads list --ad-group <ad-group-id>
+```
+
+支持[分页标志](#global-flags)以及 `--campaign-group`、`--campaign`、`--ad-group`、`--search` 和 `--status` [列表过滤器](#list-filters)。此列表没有 `--app` 过滤器，因为广告隶属于广告组。
+
+### adapty asa ads get
+
+获取特定广告的详细信息。
+
+```bash
+adapty asa ads get <ad-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `ad-id` | 广告 ID（UUID） |
+
+### adapty asa ads create
+
+在广告组中创建广告。
+
+```bash
+adapty asa ads create --ad-group <ad-group-id> --creative-id 4321 --name "Summer ad"
+```
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--ad-group` | 是 | 广告组 ID（UUID）。广告系列将从中解析 |
+| `--creative-id` | 是 | Apple 素材 ID。参见 [`creatives list`](#adapty-asa-creatives-list) |
+| `--name` | 是 | 广告名称 |
+| `--status` | 否 | 初始状态：`ENABLED` 或 `PAUSED` |
+
+### adapty asa ads update
+
+更新现有广告。
+
+```bash
+adapty asa ads update <ad-id> --status PAUSED
+```
+
+| 参数 | 描述 |
+|---|---|
+| `ad-id` | 广告 ID（UUID） |
+
+| 标志 | 描述 |
+|---|---|
+| `--name` | 新广告名称 |
+| `--status` | `ENABLED` 或 `PAUSED` |
+
+至少需要一个标志。创意素材和所属广告组在创建时已固定，不可更改。
+
+## 创意素材 \{#creatives\}
+
+### adapty asa creatives list
+
+列出可用于新广告的创意素材。
+
+```bash
+adapty asa creatives list --app <app-id>
+```
+
+此处返回的 `creative_id` 即为 [`ads create`](#adapty-asa-ads-create) 的 `--creative-id` 参数值。
+
+支持[分页标志](#global-flags)以及 `--campaign-group` 和 `--app` [列表过滤器](#list-filters)。
+
+## 产品页面 \{#product-pages\}
+
+### adapty asa product-pages list
+
+列出应用可用的自定义产品页面。
+
+```bash
+adapty asa product-pages list --app <app-id>
+```
+
+支持[分页标志](#global-flags)以及 `--campaign-group` 和 `--app` [列表筛选器](#list-filters)。
+
+### adapty asa product-pages sync
+
+从 App Store Connect 刷新自定义产品页面。
+
+```bash
+adapty asa product-pages sync --adam-id 123456
+```
+
+| 标志 | 描述 |
+|---|---|
+| `--adam-id` | 限制仅刷新一个应用。省略则覆盖所有应用 |
+
+刷新操作会进入队列而非立即执行，命令成功后返回 `Sync queued.`。如果相同的刷新已在进行中，则返回 `Already running; nothing new was queued.`。
+
+## 自动化 \{#automations\}
+
+CLI 会存储你提供的规则 JSON，而不会自行构建规则。请参阅[自动化](ads-manager-automations)了解各规则类型的作用，以及[运行自动化规则](developer-cli-ads-manager#run-automation-rules)了解如何生成规则文件。
+
+### adapty asa automations list
+
+列出[自动化规则](ads-manager-automations)。`status` 字段中，`1` 表示启用，`0` 表示已停止。
+
+```bash
+adapty asa automations list
+```
+
+接受[分页标志](#global-flags)。
+
+### adapty asa automations get
+
+获取特定自动化规则，包括其条件和操作。
+
+```bash
+adapty asa automations get <automation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | 自动化规则 ID（UUID） |
+
+### adapty asa automations create
+
+从 JSON 规则文件创建自动化规则。
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+| 参数 | 描述 |
+|---|---|
+| `--file` | 包含规则内容的 JSON 文件，或使用 `-` 从标准输入读取 |
+| `--run-now` | 规则存储完成后立即将首次运行加入队列 |
+
+`--file` 为必填项。
+
+### adapty asa automations update
+
+修改自动化规则：停止、重命名或替换规则的部分内容。
+
+```bash
+adapty asa automations update <automation-id> --stop
+```
+
+| 参数 | 描述 |
+|---|---|
+| `automation-id` | 自动化规则 ID（UUID） |
+
+| 标志 | 描述 |
+|---|---|
+| `--start` | 激活规则 |
+| `--stop` | 停止规则并清除其下次运行时间 |
+| `--name` | 新规则名称 |
+| `--file` | 包含待修改部分的 JSON 文件，或使用 `-` 从标准输入读取 |
+
+`--start` 和 `--stop` 互斥，不可同时使用。通过此方式传入的文件不得包含 `internal_id`。
+
+### adapty asa automations run
+
+在计划之外，立即执行一次自动化规则。
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+| 参数 | 说明 |
+|---|---|
+| `automation-id` | 自动化规则 ID（UUID） |
+
+| 标志 | 说明 |
+|---|---|
+| `--dry-run` | 评估规则并记录结果，但不在 Apple Ads 中做任何变更 |
+
+执行任务会进入队列，命令将输出一个运行 ID。可通过 [`automations runs`](#adapty-asa-automations-runs) 查看执行结果。
+
+### adapty asa automations runs
+
+列出某条自动化规则的历史运行记录，包括试运行记录。
+
+```bash
+adapty asa automations runs <automation-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `automation-id` | 自动化规则 ID（UUID） |
+
+支持[分页标志](#global-flags)。
+
+## 数据图表 \{#metrics\}
+
+### adapty asa metrics
+
+查询指定日期范围内任意账户层级的数据图表。
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--entity` | 是 | 报告对象：`campaign`、`ad-group`、`keyword` 或 `ad` |
+| `--date-from` | 是 | 时间段起始日期（`YYYY-MM-DD`） |
+| `--date-to` | 是 | 时间段结束日期（`YYYY-MM-DD`） |
+| `--metric` | 否 | 数据图表名称，可重复使用。省略则返回所有数据图表 |
+| `--group-by` | 否 | 按 `country`、`day`、`week`、`month`、`quarter` 或 `year` 对行进行分组，可重复使用 |
+| `--by-days` | 否 | 同期群数据图表的续订周期（天数），可重复使用，每次调用最多 16 个。省略则使用看板默认值 |
+| `--order-by` | 否 | 用于排序的数据图表或字段 |
+| `--order-by-day` | 否 | 按指定续订周期的同期群数据图表排名，必须是 `--by-days` 中的某个值 |
+| `--order` | 否 | `asc` 或 `desc`，默认值：`desc` |
+
+接受[分页标志](#global-flags)。此命令不支持[列表过滤器](#list-filters)——请通过实体级别和时间段来缩小报告范围，然后将结果行与有范围限制的 `list` 命令返回的 ID 进行匹配。
+
+每一行代表一个实体，由服务器汇总后按 `--order-by` 排序。因此，查询前 N 名只需一次调用——设置 `--order-by` 和 `--page-size N`，而无需逐页翻阅结果再手动累加：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+`--metric` 接受 Ads Manager 所追踪的数据图表名称，使用看板命名规范——例如 `spend`、`taps` 或 `gross_roas`。完整列表及每项数据图表的计算方式，请参见[数据图表](adapty-ads-manager-metrics)。若传入不存在的名称，请求将失败，错误信息中会列出所有有效名称。
+
+报告周期的长度受最粗粒度的 `--group-by` 值限制。如需覆盖更长的时间范围，应将分组粒度调粗，而不是将请求拆分为多次调用：
+
+| 最粗粒度的 `--group-by` | 最大时间范围 |
+|---|---|
+| `day` 或不分组 | 90 天 |
+| `week` | 180 天 |
+| `month` 及更粗粒度 | 365 天 |
+
+没有 `ltv` 数据图表。生命周期价值是一个同期群指标，通过续订窗口读取，因此需要用 `--by-days` 来获取第 7 天或第 90 天的值：
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
+```
+
+`--order-by-day` 按其中某个窗口对行进行排序，只需一次调用即可返回按第 90 天 ROAS 排名的最佳广告活动。
+
+### adapty asa metrics overview
+
+Query totals for a period, bucketed by a unit of time.
+
+```bash
+adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --period-unit week
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--entity` | 是 | 报告维度：`campaign`、`ad-group`、`keyword` 或 `ad` |
+| `--date-from` | 是 | 时间段起始日期（`YYYY-MM-DD`） |
+| `--date-to` | 是 | 时间段结束日期（`YYYY-MM-DD`） |
+| `--period-unit` | 否 | 统计粒度：`day`、`week`、`month`、`quarter` 或 `year`。默认值：`day` |
+| `--metric` | 否 | 数据图表名称，可重复使用。省略则返回所有数据图表 |
+| `--by-days` | 否 | 同期群数据图表的续订窗口天数，可重复使用。每次调用最多 16 个 |
+
+此命令返回整个实体级别的汇总数据以及按时间段的序列数据，因此只需一次调用即可回答"总体花费或收入了多少"。它没有排序标志，也不支持分页。
+
+在此命令中，`--metric` 仅接受同期群根指标——`revenue`、`roas` 和 `arpu`——不接受其 `gross_`、`proceeds_` 或 `net_` 变体。
+
+报告周期的长度受 `--period-unit` 限制：
+
+| `--period-unit` | 最大周期 |
+|---|---|
+| `day` | 90 天 |
+| `week` | 180 天 |
+| `month` 及更粗粒度 | 365 天 |
+
+## 竞品对比 \{#competitors\}
+
+### adapty asa competitors summary
+
+汇总一组 App Store 应用所竞价的 Apple Ads 关键词。返回的竞争对手数据与看板中的 [Market Intelligence](ads-manager-market-intelligence) 相同。
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027
+```
+
+| 标志 | 必填 | 描述 |
+|---|---|---|
+| `--app-ids` | 是 | Apple App Store ID（`adam_id`），以逗号分隔，支持 1 到 5 个值 |
+
+报告周期和国家集合在服务端固定——取最近一个完整月份，覆盖所有国家。该命令不支持周期、国家或分页参数。
+
+该命令会输出三个部分：分析汇总数据、按表现排名的顶部应用，以及竞争最激烈的词条。添加 `--json` 可获取完整结果，其中还会按国家细分每个应用的词条数据。
+
+对于一组应用的首次调用，数据准备期间可能需要数十秒。后续对相同应用的调用将更快返回。
+
+## 错误 \{#errors\}
+
+| 状态码 | 错误码 | 含义 |
+|---|---|---|
+| `402` | `ads_manager_subscription_required` | 该公司没有有效的 Ads Manager 订阅 |
+| `404` | — | 实体不存在，或属于其他公司 |
+| `409` | `cli_idempotency_in_progress` | 使用相同幂等键的写入操作仍在进行中 |
+| `422` | `cli_idempotency_key_reuse` | 相同的幂等键被用于不同的请求体 |
+| `429` | `cli_analytics_busy` | 分析池繁忙，等待时间见 `Retry-After` 响应头 |
+| `429` | `cli_cooldown_active` | 过多被拒请求导致令牌进入冷却期 |
+
+数据图表与搜索词列表共用同一个分析预算，每家公司每分钟最多调用 5 次，任意 10 秒内最多调用 2 次。若在 5 分钟内累计出现 20 次被拒绝的请求，将触发逐级递增的冷却机制：依次为 5 分钟、30 分钟和 3 小时。在冷却期间重试不会延长等待时间，但解决问题的正确方式是修正失败的请求，而非反复重试。
+
+CLI 会自动处理短暂等待。若收到非冷却触发的 `429` 响应，且 `Retry-After` 不超过 60 秒，命令会等待相应时长后重试一次，并将等待信息输出至标准错误流。

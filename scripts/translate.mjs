@@ -2967,6 +2967,21 @@ async function translateApiSpecBatchSections(
   }
 
   const merged = mergeYamlSections(sourceDoc, localeDoc, newSectionContents);
+
+  // A garbled section translation (model commentary instead of YAML) makes
+  // mergeYamlSections silently drop that subtree — a spec missing `info`
+  // once shipped this way. Refuse to write (and to record the hash, which
+  // would make the damage permanent) unless the merged document still has
+  // every required top-level key and parses as YAML.
+  const mergedDoc = yaml.load(merged);
+  for (const requiredKey of ["openapi", "info", "paths"]) {
+    if (!mergedDoc?.[requiredKey]) {
+      throw new Error(
+        `merged ${lang} spec lost top-level '${requiredKey}' — a section translation is not valid YAML; refusing to write`,
+      );
+    }
+  }
+
   await fs.writeFile(localePath, merged, "utf-8");
 
   const fHash = await fileHash(spec.full);
@@ -3808,7 +3823,7 @@ async function getStoredHash(basename, hashesDir) {
  *    and also strips any trailing characters Claude may have appended after the closing brace.
  * 2. Rewrite absolute https://adapty.io/docs/<id> links to include the locale prefix.
  */
-function postProcessTranslation(content, lang) {
+export function postProcessTranslation(content, lang) {
   // Normalize heading anchors: match optional leading backslash, strip trailing chars
   content = content.replace(
     /^(#{1,6} .*?)\\?\{#([\w-]+)\}[^\n]*$/gm,
@@ -3852,7 +3867,19 @@ function postProcessTranslation(content, lang) {
       // Keep component imports inside reusable snippets (e.g. Callout), already
       // rewritten in step above to '../../../components/*.astro'. The reusable
       // file renders these itself; stripping them crashes the locale build.
-      if (/from ['"]\.\.\/\.\.\/\.\.\/components\//.test(line)) return line;
+      // Only .astro paths come from that rewrite — anything else at this depth
+      // is an import copied verbatim from a top-level English article, where
+      // '../../../' resolves from src/content/docs/version-3.0/ but overshoots
+      // from src/locales/<lang>/ (one level shallower).
+      if (/from ['"]\.\.\/\.\.\/\.\.\/components\/[^'"]+\.astro['"]/.test(line))
+        return line;
+      // Homepage is injected by the locale route as a locale-aware wrapper;
+      // an explicit import would bypass it.
+      if (/from ['"][^'"]*\/components\/Homepage['"]/.test(line)) return "";
+      // Hydrated React components (client:* directives) need a real import —
+      // the `components` prop can't hydrate them — so fix the depth instead.
+      if (/from ['"]\.\.\/\.\.\/\.\.\/components\//.test(line))
+        return line.replace("../../../components/", "../../components/");
       return "";
     });
     // Clean up leading blank lines left by stripped imports

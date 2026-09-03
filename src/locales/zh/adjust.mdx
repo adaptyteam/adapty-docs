@@ -1,11 +1,14 @@
 ---
 title: "Adjust"
-description: "将 Adjust 与 Adapty 连接，以更好地追踪订阅数据和分析。"
+description: "将 Adjust 与 Adapty 集成，实现更好的订阅跟踪与分析。"
 metadataTitle: "Adjust 订阅分析集成 | Adapty 文档"
 
 ---
 
-[Adjust](https://www.adjust.com/) 是领先的移动归因平台（MMP）之一，用于收集和呈现营销活动数据，帮助企业追踪广告投放效果。
+import AccessLevelUpdatedEventFeed from '@site/src/locales/zh/reusable/AccessLevelUpdatedEventFeed.mdx';
+
+[Adjust](https://www.adjust.com/) 是领先的移动归因平台（MMP）之一，用于收集和呈现营销活动数据，帮助公司追踪其广告投放效果。
+
 Adapty 提供了一套完整的数据，让您可以在一个地方追踪来自各应用商店的[订阅事件](events)。借助 Adapty，您可以轻松了解订阅用户的行为规律、掌握他们的偏好，并据此进行精准有效的沟通。因此，本集成支持您在 Adjust 中追踪订阅事件，精确分析每个推广活动带来的收益。
 
 Adapty 与 Adjust 的集成主要通过以下两种方式实现。
@@ -110,36 +113,31 @@ Adapty 将通过服务器到服务器的集成方式向 Adjust 发送订阅事�
 - Adjust 不支持 IPv6。如果你在 **App settings** 或 SDK 激活时禁用了 IP 收集，后端可能只会发送 IPv6，导致追踪失败——请保持 SDK 的 IP 收集功能开启，以确保使用 IPv4。
 
 :::
-### 将您的应用与 Adjust 连接 \{#connect-your-app-to-adjust\}
+### 将您的应用连接到 Adjust \{#connect-your-app-to-adjust\}
 
-完成上述步骤后，在您的应用中添加以下两个方法，以建立应用与 Adjust 之间的通信：
+完成上述步骤后，将以下两个方法添加到您的应用中。它们将建立您的应用与 Adjust 之间的通信：
 
-1. **向 Adjust 发送订阅数据**：将 Adjust 设备 ID 传入 `setIntegrationIdentifier()` SDK 方法
-2. **从 Adjust 接收归因数据**：通过 `updateAttribution()` SDK 方法更新归因数据
+1. **向 Adjust 发送订阅数据**：将 Adjust 设备 ID 传递给 `setIntegrationIdentifier()` SDK 方法
+2. **从 Adjust 接收归因数据**：使用 `updateExternalAttribution()` SDK 方法更新归因数据（在 SDK 4.1 版本之前该方法名为 `updateAttribution()`）
 
-如使用 Adjust 5.0 或更高版本，请参考以下示例：
+如果使用 Adjust 5.0 或更高版本，请参考以下示例：
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="iOS (Swift)" default>
+
 ```swift showLineNumbers
 class AdjustModuleImplementation {
     func updateAdjustAdid() {
         Adjust.adid { adid in
             guard let adid else { return }
-            // Adapty SDK 4.x
             Adapty.setIntegrationIdentifier(.adjustDeviceId(adid))
-            // Adapty SDK 3.x
-            Adapty.setIntegrationIdentifier(key: "adjust_device_id", value: adid)
         }
     }
 
     func updateAdjustAttribution() {
         Adjust.attribution { attribution in
             guard let attribution = attribution?.dictionary() else { return }
-            // Adapty SDK 4.x
-            Adapty.updateAttribution(attribution, source: .adjust)
-            // Adapty SDK 3.x
-            Adapty.updateAttribution(attribution, source: "adjust")
+            Adapty.updateExternalAttribution(attribution, provider: .adjust)
         }
     }
 }
@@ -152,7 +150,7 @@ class AdjustModuleImplementation {
 Adjust.getAdid { adid ->
     if (adid == null) return@getAdid
 
-    Adapty.setIntegrationIdentifier("adjust_device_id", adid) { error ->
+    Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.adjustDeviceId(adid)) { error ->
         if (error != null) {
             // handle the error
         }
@@ -160,9 +158,9 @@ Adjust.getAdid { adid ->
 }
 
 Adjust.getAttribution { attribution ->
-    if (attribution == null) return@getAttribution
+    val attributionJson = attribution?.jsonResponse ?: return@getAttribution
 
-    Adapty.updateAttribution(attribution, "adjust") { error ->
+    Adapty.updateExternalAttribution(attributionJson, AdaptyExternalAttributionProvider.ADJUST) { error ->
         // handle the error
     }
 }
@@ -170,11 +168,12 @@ Adjust.getAttribution { attribution ->
 
 </TabItem>
 <TabItem value="java" label="Android (Java)" default>
+
 ```java showLineNumbers
 Adjust.getAdid(adid -> {
     if (adid == null) return;
 
-    Adapty.setIntegrationIdentifier("adjust_device_id", adid, error -> {
+    Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.adjustDeviceId(adid), error -> {
         if (error != null) {
             // handle the error
         }
@@ -182,9 +181,9 @@ Adjust.getAdid(adid -> {
 });
 
 Adjust.getAttribution(attribution -> {
-    if (attribution == null) return;
+    if (attribution == null || attribution.jsonResponse == null) return;
 
-    Adapty.updateAttribution(attribution, "adjust", error -> {
+    Adapty.updateExternalAttribution(attribution.jsonResponse, AdaptyExternalAttributionProvider.ADJUST, error -> {
         // handle the error
     });
 });
@@ -192,6 +191,7 @@ Adjust.getAttribution(attribution -> {
 
 </TabItem>
 <TabItem value="rn" label="React Native (TS)" default>
+
 ```typescript showLineNumbers
 
 var adjustConfig = new AdjustConfig(appToken, environment);
@@ -294,7 +294,7 @@ public void AttributionChangedCallback(AdjustAttribution attributionData) {
     // you will probably need to install Newtonsoft.Json package, if not yet
     var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
 
-    Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => {
+    Adapty.UpdateExternalAttribution(attributionJsonString, "adjust", (error) => {
         if (error != null) {
             // handle the error
         }
@@ -354,3 +354,6 @@ Adapty 会将所选事件发送到 Adjust，具体配置在 [**Adjust 集成页�
 ### 收入数据不一致 \{#revenue-discrepancy\}
 
 如果 Adapty 与 Adjust 之间存在收入数据差异，可能是因为并非所有用户都在使用包含 Adapty SDK 的应用版本。为确保数据一致性，您可以强制用户将应用更新至集成了 Adapty SDK 的版本。
+### `access_level_updated` 在事件流中显示为失败 \{#access_level_updated-shows-as-failed-in-the-event-feed\}
+
+<AccessLevelUpdatedEventFeed />

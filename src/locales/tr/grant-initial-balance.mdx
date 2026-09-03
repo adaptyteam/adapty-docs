@@ -1,0 +1,77 @@
+---
+title: "Başlangıç bakiyesi ver"
+description: "Sunucu taraflı API aracılığıyla yeni kullanıcılara başlangıç sanal para birimi bakiyesi verin ve yeni bir para birimi başlatırken mevcut kullanıcıların bakiyelerini geriye dönük olarak doldurun."
+metadataTitle: "Başlangıç bakiyesi ver | Adapty Dokümanları"
+---
+
+:::link
+Ana makale: [Sanal para birimleri](virtual-currencies)
+:::
+
+Her profil, her para biriminde 0 bakiyeyle başlar ve [bağlı ürünler](create-virtual-currency#link-products) yalnızca bir satın alma veya yenileme gerçekleştiğinde kredi verir. Bu nedenle hiçbir şey satın almamış bir kullanıcı otomatik olarak kredi almaz.
+
+Yeni kullanıcılara yine de başlangıç bakiyesi verebilirsiniz: hoş geldin bonusu, ücretsiz deneme hakkı veya bir set can. Bunu kullanıcıyı tanımladıktan sonra [sunucu tarafı API](getting-started-with-server-side-api) aracılığıyla backend'inizden verin.
+
+## Yeni bir kullanıcı için bakiye tanımlama \{#grant-the-balance-for-a-new-user\}
+
+1. **Önce kullanıcıyı tanımlayın**: Bir bakiye tek bir profile aittir ve başka bir profile aktarılamaz; dolayısıyla kredileri yalnızca profilin bir müşteri kullanıcı kimliğine sahip olmasının ardından tanımlayın. Kullanıcıyı uygulamanızda SDK aracılığıyla (bkz. [Kullanıcıları tanımlama](ios-quickstart-identify)) veya arka ucunuzdan sunucu tarafı API'si aracılığıyla tanımlayın.
+
+Burada yapılan en yaygın hata anonim bir profile grant işlemi uygulamaktır. Anonim profiller tek bir uygulama kurulumuna bağlıdır; bu nedenle kullanıcı uygulamayı yeniden yüklediğinde veya başka bir cihazda açtığında kredilerini kaybeder. Tam resmi görmek için [Bakiyeler, profiller ve cihazlar](virtual-currency-balance#balances-profiles-and-devices) bölümüne bakın.
+
+2. **Kredileri verin**: Pozitif bir `amount` değeriyle [Sanal para birimi işlemi oluştur](api-adapty/operations/createVirtualCurrencyTransaction) çağrısını yapın. Bu örnek 500 token verir:
+
+```bash title="Grant an initial balance"
+   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+     -H "Authorization: Api-Key {your secret key}" \
+     -H "adapty-customer-user-id: user-42" \
+     -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
+     -H "Content-Type: application/json" \
+     -d '{
+           "items": [{"currency_code": "TOKENS", "amount": 500}],
+           "metadata": {"reason": "initial_balance"}
+         }'
+   ```
+
+   Yanıt, yeni bakiyeyi döndürür:
+
+```json title="Response"
+    {
+      "transaction_id": "3a9f8e21-5d4c-4b7a-9e01-8c6d2f4b1a37",
+      "balances": [
+        { "code": "TOKENS", "name": "Tokens", "balance": 500, "held": 0, "available": 500 }
+      ]
+    }
+    ```
+
+    Bu şekilde verilen krediler, bağlı bir aboneliğin döngü başına kredilerinin aksine hiçbir zaman sona ermez.
+
+    `metadata` alanı isteğe bağlıdır. `reason: initial_balance` gibi bir etiket, verilen krediyi [işlem geçmişinde](api-adapty/operations/listVirtualCurrencyTransactions) kolayca tanımlamayı ve kendi raporlarınızda satın alma kredilerinden ayırt etmeyi sağlar.
+
+3. **Veritabanınızda kaydı saklayın**: Bu kullanıcının başlangıç bakiyesini aldığını kaydedin; böylece tekrarlanan bir giriş veya yeniden denenen bir iş, bakiyenin iki kez verilmesini önler. Sonraki bölüm, bu kaydın neden gerekli olduğunu açıklamaktadır.
+
+## Tam olarak bir kez ver \{#grant-it-exactly-once\}
+
+Kullanıcının başlangıç bakiyesini alıp almadığına dair doğru kayıt kendi veritabanınızdır. Yeterli gibi görünen iki yaklaşım aslında yeterli değildir:
+
+- **`Idempotency-Key` tek bir çağrıyı korur, tek bir kullanıcıyı değil**: Aynı anahtarla bir isteği yeniden denemek, tekrar vermek yerine orijinal sonucu döndürür; bu nedenle zaman aşımından sonra tek bir çağrıyı güvenle yeniden deneyebilirsiniz. Adapty, her anahtarı profil başına en fazla bir saat boyunca hatırlar. Bu sürenin ardından aynı anahtar yeniden verir; dolayısıyla header, bir kullanıcının ilk bakiyesini daha önce alıp almadığını aylarca sonra söyleyemez. Her yeni verme işlemi için taze bir anahtar oluşturun.
+- **Bakiyeyi önce okumak hiçbir şeyi kanıtlamaz**: 0 bakiye, kullanıcıya hiç kredi verilmediği anlamına da gelebilir, ya da verilip hepsinin harcanmış olduğu anlamına da. [Sanal para birimi bakiyelerini listele](api-adapty/operations/listVirtualCurrencyBalances) bu ikisini birbirinden ayırt edemez.
+
+Kendi kaydınızı API'yi çağırmadan önce kontrol edin ve başarılı bir yanıttan sonra kaydı yazın.
+
+## Mevcut kullanıcıları doldurma \{#backfill-existing-users\}
+
+Bir para birimi oluşturduğunuzda, mevcut tüm profiller 0'dan başlar ve [ürün bağlantıları yalnızca ilerleyen işlemler için geçerlidir](create-virtual-currency#link-products). Mevcut kullanıcılarınıza başlangıç bakiyesi vermek için backend'inizden tek seferlik bir dolgu işlemi çalıştırın.
+
+1. Kendi veritabanınızda, hak vermek istediğiniz müşteri kullanıcı ID'lerini toplayın.
+2. Her biri için, yukarıda gösterildiği gibi [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) çağrısı yapın. Toplu endpoint yoktur: tek bir istek yalnızca bir profile hak verir ve tek bir istek o profil için en fazla 20 para birimi kapsayabilir.
+3. İşlemi durdurup iki kez hak vermeden devam edebilmek için, işlem süresince önceki bölümdeki kullanıcı başına kaydı saklayın.
+4. Uygulama başına dakikada 600 istek olan hız sınırının altında kalın. Sınırı aşan bir istek `rate_limited` hatasıyla başarısız olur; bu nedenle işi yavaşlatın ve başarısız olan kullanıcıları yeniden deneyin.
+
+:::tip
+Yalnızca aktif veya ödeme yapan kullanıcılar gibi ulaşmak istediğiniz kullanıcıları geri doldurun. API aracılığıyla verilen krediler hiçbir zaman sona ermez, dolayısıyla şu an dağıttığınız bakiye kullanıcı harcayana kadar profilde kalır.
+:::
+
+## Sonraki adımlar \{#next-steps\}
+
+- Bakiyeyi harcayın ve çalışma zamanında okuyun: [Sanal para birimi hızlı başlangıç](virtual-currency-quickstart).
+- Kullanıcının elinde ne olduğunu kontrol edin ve her değişikliği denetleyin: [Sanal para birimi bakiyesi](virtual-currency-balance).

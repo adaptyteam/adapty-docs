@@ -6,8 +6,8 @@
 
 import type { APIRoute } from 'astro';
 import apiConfig from '../../../../api-reference/config.json';
-import { loadSpec, loadRawSpec } from '../../../../api-reference/lib/load-spec';
-import { buildApiSpec } from '../../../../api-reference/lib/model';
+import { loadRawSpec } from '../../../../api-reference/lib/load-spec';
+import { buildLocalizedApiSpec } from '../../../../api-reference/lib/localized-spec';
 import { buildOperationMarkdown } from '../../../../api-reference/lib/build-operation-md';
 import { getBuildLocales } from '../../../../data/locales';
 
@@ -18,8 +18,8 @@ export async function getStaticPaths() {
   for (const locale of getBuildLocales()) {
     const localeBase = `${baseUrl}/${locale}`;
     for (const api of apiConfig) {
-      const deref = await loadSpec(api.specFile, locale);
-      const spec = buildApiSpec(deref, api, localeBase);
+      // English operation list is canonical — see buildLocalizedApiSpec.
+      const spec = await buildLocalizedApiSpec(api, locale, localeBase);
       for (const op of spec.operations) {
         paths.push({
           params: { locale, slug: api.slug, op: op.operationId },
@@ -35,7 +35,12 @@ export async function getStaticPaths() {
 export const GET: APIRoute = async ({ props }) => {
   const { specFile, opId, locale } = props as { specFile: string; opId: string; locale: string };
   const raw = await loadRawSpec(specFile, locale);
-  const md = buildOperationMarkdown(raw, specFile, opId);
+  let md = buildOperationMarkdown(raw, specFile, opId);
+  if (!md) {
+    // Operation missing from a stale localized spec — serve the English slice.
+    const rawEn = await loadRawSpec(specFile);
+    md = buildOperationMarkdown(rawEn, specFile, opId);
+  }
   if (!md) {
     return new Response(`Operation '${opId}' not found in ${specFile}`, { status: 404 });
   }

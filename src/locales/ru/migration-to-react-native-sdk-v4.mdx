@@ -1,10 +1,11 @@
 ---
-title: "Миграция Adapty React Native SDK на v. 4.0"
-description: "Перейдите на Adapty React Native SDK v4.0 (beta): замените paywall API на flow API, совместимые как с Flow Builder, так и с Paywall Builder."
-metadataTitle: "Миграция на Adapty React Native SDK v4.0 (beta) | Документация Adapty"
+title: "Миграция Adapty React Native SDK на v4.0"
+description: "Мигрируйте на Adapty React Native SDK v4.0, заменив paywall API на flow API, совместимые как с Flow Builder, так и с Paywall Builder."
+metadataTitle: "Миграция на Adapty React Native SDK v4.0 | Документация Adapty"
 ---
 
-Adapty React Native SDK 4.0 (beta) вводит флоу и переименовывает paywall API соответствующим образом. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется.
+Adapty React Native SDK 4.0 вводит флоу и переименовывает paywall API соответствующим образом. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках на стороне дашборда Adapty не требуется.
+
 ## Краткий справочник \{#quick-reference\}
 | v3 | v4 |
 |---|---|
@@ -19,7 +20,8 @@ Adapty React Native SDK 4.0 (beta) вводит флоу и переименов
 | `onPaywallShown` | `onAppeared` |
 | `onPaywallClosed` | `onDisappeared` |
 | `onRenderingFailed` | `onError` |
-`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, а `getPaywallProducts` теперь принимает `AdaptyFlow`. Методы `getFlow` и `getFlowForDefaultAudience` больше не принимают параметр `locale`. Методы представления `present`, `dismiss`, `setEventHandlers` и `showDialog`, а также обработчики событий `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` и `onAndroidSystemBack` сохраняют те же названия, что и в v3. Некоторые стандартные поведения изменились — см. [Изменения стандартного поведения](#default-behavior-changes).
+`AdaptyPaywallProduct` сохраняет своё название — продукты по-прежнему принадлежат флоу, а `getPaywallProducts` теперь принимает `AdaptyFlow`. Методы `getFlow` и `getFlowForDefaultAudience` больше не принимают параметр `locale` — передавайте его в `createFlowView`. Методы представления `present`, `dismiss`, `setEventHandlers` и `showDialog`, а также обработчики событий `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished` и `onAndroidSystemBack` сохраняют те же названия, что и в v3. Некоторые поведения по умолчанию изменились — см. [Изменения поведения по умолчанию](#default-behavior-changes).
+
 ## Минимальная версия iOS \{#minimum-ios-version\}
 
 Adapty React Native SDK 4.0 повышает минимальную версию iOS с 13.0 до **iOS 15.0**. Перед обновлением установите значение deployment target не ниже 15.0.
@@ -29,9 +31,9 @@ Adapty React Native SDK 4.0 повышает минимальную версию
 v4.0 — это предварительный релиз, поэтому укажите точную версию — npm не выбирает предварительные версии через диапазоны с `^` или `~`:
 
 ```bash showLineNumbers
-npm install react-native-adapty@4.0.0
+npm install react-native-adapty@4.0.2
 # or
-yarn add react-native-adapty@4.0.0
+yarn add react-native-adapty@4.0.2
 ```
 ### iOS: нативные SDK теперь подключаются через Swift Package Manager \{#ios-native-sdks-now-come-through-swift-package-manager\}
 
@@ -66,6 +68,8 @@ npx expo install expo-build-properties
 npx expo prebuild --clean
 ```
 
+Если после этого сборка iOS завершается с ошибкой `'React/RCTBridge.h' file not found`, обновите `expo-modules-autolinking` до версии 57.0.10 или выше (Expo SDK 57) или 56.0.22 или выше (Expo SDK 56) — подробности и способ обхода см. в [разделе по устранению неполадок](sdk-installation-react-native-expo#react-header-not-found).
+
 #### Bare React Native
 
 Добавьте динамические фреймворки в iOS-таргет, затем переустановите поды:
@@ -73,27 +77,34 @@ npx expo prebuild --clean
 ```ruby showLineNumbers title="ios/Podfile"
 use_frameworks! :linkage => :dynamic
 ```
+
 ```bash showLineNumbers
 cd ios && pod install --repo-update
 ```
 
-Если ранее вы подключали `Adapty`, `AdaptyUI` или `AdaptyPlugin` как зависимости CocoaPods, сначала удалите все явные строки `pod 'Adapty'`, `pod 'AdaptyUI'` или `pod 'AdaptyPlugin'` из вашего `Podfile`.
+Если вы ранее подключали `Adapty`, `AdaptyUI` или `AdaptyPlugin` как CocoaPods-зависимости, сначала удалите все явные строки `pod 'Adapty'`, `pod 'AdaptyUI'` или `pod 'AdaptyPlugin'` из вашего `Podfile`.
+
 :::warning
-Переход со статической компоновки по умолчанию на динамические фреймворки может конфликтовать с библиотеками, которые ещё не поддерживают модульные заголовки, и несовместим с Flipper. Если возникнут ошибки сборки, ознакомьтесь с этим [материалом об интеграции Swift Package Manager с библиотеками React Native](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries).
+Переход от статической линковки по умолчанию к динамическим фреймворкам может конфликтовать с библиотеками, которые ещё не поддерживают модульные заголовки, а также несовместим с Flipper. Если возникнут проблемы со сборкой, обратитесь к этой [статье об интеграции Swift Package Manager с библиотеками React Native](https://www.callstack.com/blog/integrating-swift-package-manager-with-react-native-libraries).
 :::
 
-Полная инструкция по установке — в разделе [Установка Adapty SDK](sdk-installation-reactnative).
+См. [Установка Adapty SDK](sdk-installation-reactnative) для полного руководства по настройке.
+
 ## Получение флоу \{#fetching-flows\}
 ### getPaywall → getFlow
 
-Тип возвращаемого значения изменился с `AdaptyPaywall` на `AdaptyFlow`, а параметр `locale` убран — при рендеринге флоу локаль определяется автоматически; для кастомных пейволов все локали возвращаются в `flow.remoteConfigs`:
+Возвращаемый тип меняется с `AdaptyPaywall` на `AdaptyFlow`, параметр `locale` переносится из вызова fetch в `createFlowView`; для кастомных пейволов все локали возвращаются в `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywall('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlow('YOUR_PLACEMENT_ID');
++ const view = await createFlowView(flow, { locale: 'en' });
 ```
 
+`locale` остаётся необязательным в `createFlowView`: если не передать его, вью отобразится на `en` либо в языке локализации флоу по умолчанию, если в нём нет `en`. Требуется SDK версии 4.0.2 или выше — см. [Локализации и коды языков](react-native-localizations-and-locale-codes).
+
 `getPaywallForDefaultAudience` переименован аналогично:
+
 ```diff showLineNumbers
 - const paywall = await adapty.getPaywallForDefaultAudience('YOUR_PLACEMENT_ID', 'en');
 + const flow = await adapty.getFlowForDefaultAudience('YOUR_PLACEMENT_ID');

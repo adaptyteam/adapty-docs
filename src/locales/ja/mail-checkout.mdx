@@ -41,17 +41,40 @@ Adapty Mail で **Web Paywalls → Create** に移動します。2 つの方法�
 
 ビルダー内の決済プロバイダーの詳細（Stripe アカウント、テストモードとライブモード、プロダクト設定）については、[ウェブペイウォールの設定](web-paywall-configuration)を参照してください。
 
-### Use your own hosted paywall \{#use-your-own-hosted-paywall\}
+### 自分でホストしたペイウォールを使用する \{#use-your-own-hosted-paywall\}
 
-1. 作成ページで **Enter URL manually** を選択します。
-2. ホスティングしているペイウォールの URL を貼り付けます。クエリパラメーターとして `{email}` と `{external_profile_id}` プレースホルダーを含める必要があります — Adapty Mail が受信者ごとにこれらを埋め込むことで、ページが訪問者を識別できます。例：
+このパスでは、Adapty Mail が受信者を自分でホストしたページに誘導し、各受信者の値をURLに埋め込みます。クリック後のオファー、決済、パーソナライズはすべて自分のサイドで行われ、任意の決済プロバイダーを使用できます。
 
+1. **Web Paywalls → Create** で、**Enter URL manually** を選択します。
+2. プレースホルダーをクエリパラメーターとして含む、ホスト済みペイウォールのURLを貼り付けます。Adapty Mail が受信者ごとにそれらを置き換えるため、ページは訪問者を識別できます。例：
+
+```
+   https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
-   https://example.com/paywall?email={email}&profile={external_profile_id}
-   ```
-3. 保存します。
+3. ペイウォールに**名前**を付けて保存します。保存後、キャンペーンに紐付けられるようになります。
 
-この方法は任意の決済プロバイダーで動作します — Adapty Mail はリダイレクトとパラメーター置換のみを担当し、決済とパーソナライズはすべてユーザー側で処理されます。
+作成ページには使用可能なプレースホルダーが一覧表示されており、入力したURLに含まれているものにはチェックが付きます。
+
+| プレースホルダー | 値 |
+| --- | --- |
+| `{email}` | 受信者のメールアドレス。 |
+| `{adapty.external_profile_id}` | Adapty における受信者のプロファイル ID。 |
+| `{funnelfox.external_profile_id}` | FunnelFox における受信者のプロファイル ID。 |
+| `{custom.external_profile_id}` | [Adapty Mail API](mail-send-data-via-api) を通じて送信したユーザー ID。 |
+| `{scheduled_email_id}` | リンクが含まれていたメールの ID。 |
+
+3つのプロファイルIDプレースホルダーは、プロファイルが届く可能性のあるソースごとに1つずつ用意されており、あなたのプロジェクトがそれらを使用するかどうかに関わらず、このページにすべて記載されています。データの送り方に合ったものを選んでください：[Adapty連携](mail-collect-emails)には`{adapty.external_profile_id}`、[API](mail-send-data-via-api)には`{custom.external_profile_id}`です。受信者に値がないプレースホルダーは空文字列に解決されるため、リテラルテキストとしてページに届くことはありません。また、Adapty Mailが認識しないプレースホルダーは、入力したままの形で渡されます。
+
+#### ページで必要な処理 \{#what-your-page-has-to-do\}
+
+Adaptyメールの役割はリダイレクトまでです。その後の2つの作業はあなたが担当します：
+
+- **チェックアウト開始前に訪問者を特定する**: クエリ文字列からプロファイルIDまたはメールアドレスを読み取り、購入に紐付けることで、メールの送信先ユーザーに対して決済を正しく反映させます。
+- **購入をレポートする**: Adapty Mail は、あなた自身のプロバイダーで処理された支払いを把握できません。把握されていない購入は、[Analytics](mail-analytics) でコンバージョンにも帰属収益にもカウントされず、さらに悪いことに、すでに購入済みのユーザーにシーケンスの続きが送信され続けます。既存のデータ連携パス（[Adapty インテグレーション](mail-collect-emails)または Adapty Mail API の[トランザクションイベント](mail-send-data-via-api#send-transaction-events)）を通じて購入情報を送信してください。
+
+#### 公開前にテストする \{#test-it-before-launching\}
+
+**Send test email** を使えば、メールが正しくレンダリングされるか、またページで支払いが受け付けられるかを確認できます。ただし、URLで追加されたペイウォールでは **Sandbox** を選択できません。モーダルには *「This paywall has no sandbox products, so only production is available.」* と表示されます。つまり、テストはライブページの本番プロダクトに対して行われます。実際のカードを使って後で返金するか、接続を確認している間はURLを自分のテスト環境に向けてください。詳しくは[セットアップのテスト](mail-testing#test-the-email-and-checkout-on-their-own)を参照してください。
 
 ## チェックアウトの外観 \{#what-the-checkout-looks-like\}
 
@@ -79,20 +102,20 @@ Adapty Mail で **Web Paywalls → Create** に移動します。2 つの方法�
 **Payment failed**
 ユーザーに再試行を促すフレンドリーなメッセージ。チェックアウトの状態は保持されます。
 
-## パーソナライズの仕組み \{#how-personalization-works\}
+## パーソナライゼーションの仕組み \{#how-personalization-works\}
 
-すべてのメールには、受信者の `customer_user_id` とメールアドレスがパラメーターとして埋め込まれた固有のチェックアウト URL が含まれています：
+メールのCTAリンクは、受信者ごとに生成されたチェックアウトURLに紐づいています。送信前に、Adapty Mail はペイウォールURLの各プレースホルダーを受信者の値に置き換えます。
 
 ```
-https://your-funnel.com/?cid={{customer_user_id}}&email={{email}}
+https://example.com/paywall?email=jane@example.com&adapty_profile_id=6f2a...c91
 ```
 
-Adapty は各メール送信時にこれらの URL を自動的に生成します — ウェブペイウォールビルダーでの設定は不要です。ユーザーがクリックすると、ビルダーがパラメーターを読み取って識別します。購入が完了すると、Adapty はその収益をコンバージョンを促したメールに紐付けます。このデータは[キャンペーン分析](mail-analytics)に表示されます。
+生成されたペイウォールには、これらのパラメータが自動的に付与されるため、ウェブ版ペイウォールビルダーでの設定は不要です。URLを指定して追加したペイウォールの場合は、含めるプレースホルダーを自分で選択します。ユーザーがリンクをクリックすると、チェックアウトページがパラメータを読み取ってユーザーを識別します。購入が完了すると、Adaptyはその収益をコンバージョンに貢献した特定のメールアドレスと紐付けます。このデータは[キャンペーン分析](mail-analytics)に表示されます。
 
 ## トラブルシューティング \{#troubleshooting\}
 
 | 問題 | 解決策 |
 |---|---|
-| チェックアウトリンクが開かない | ペイウォールがウェブペイウォールビルダーで公開されていることを確認する |
-| チェックアウト時にユーザーが識別されない | メール送信前に正しいユーザー ID で `Adapty.identify()` が呼び出されていることを確認する |
-| 購入がメールに紐付かない | チェックアウト URL に `cid` パラメーターが含まれているか確認する — パラメーターが欠落している場合はサポートに連絡する |
+| チェックアウトリンクが開かない | ペイウォールがウェブペイウォールビルダーで公開されていることを確認してください |
+| チェックアウト時にユーザーが識別されない | メール送信前に正しいユーザー ID で `Adapty.identify()` が呼び出されていることを確認してください |
+| 購入がメールに紐付けられない | アトリビューションはメールの CTA クリックに基づくため、受信者はそのリンクからチェックアウトに進む必要があり、購入は同じプロファイルで Adapty Mail に届く必要があります。すでに以前のメールに紐付けられた購入はそのアトリビューションが維持されます |

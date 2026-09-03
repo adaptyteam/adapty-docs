@@ -1,0 +1,71 @@
+---
+title: "将 Paddle 与 Adapty 归因集成"
+description: "将您的 Paddle 账户连接到 Adapty 归因，以将网络漏斗的购买、续订、退款和退单归因于带来这些转化的广告。"
+metadataTitle: "Paddle 集成 | Adapty 归因 | Adapty 文档"
+---
+
+将您的 Paddle 账户连接到 Adapty Attribution，即可将在网页漏斗中完成的购买归因到带来用户的广告。连接后，Paddle 中的购买、续订、退款和退单将显示在 Adapty Attribution 的归因分析中，同时转化事件可以回传至广告平台，用于广告活动优化。
+
+## 工作原理 \{#how-it-works\}
+
+1. [Adapty 网页像素](ua-web-pixel) 为每位漏斗访客分配一个点击 ID，并从落地页 URL 中获取广告数据。
+2. 结账时，您的漏斗将点击 ID 附加到 Paddle 交易中。
+3. Adapty 通过在您的 Paddle 账户中创建的 Webhook 接收交易，并将其与广告点击进行匹配。
+
+:::note
+网页购买没有应用安装事件，因此 Adapty 使用订阅的首次扣款日期作为同期群日期。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+在您的漏斗中[设置 Adapty 网页像素](ua-web-pixel)。没有像素，就没有可关联的点击 ID，交易也无法归因到广告。
+
+## 步骤 1：在结账时附加点击 ID \{#step-1-attach-the-click-id-at-checkout\}
+
+打开结账页面或创建交易时，读取点击 ID 并将其以 `adpt_click_id` 为键添加到 Paddle 的 `customData` 中：
+
+```js
+const adptClickId = window.adaptyPixel.getClickId();
+
+customData: { adpt_click_id: adptClickId }
+```
+
+仅在初始交易时附加点击 ID。Paddle 会将订阅的自定义数据复制到续订交易中，因此 Adapty 会自动对续订、退款和拒付进行归因。
+
+`click_id` 是一个短随机标识符，不是密钥，也不是个人数据。它会显示在你的 Paddle 看板中，这是正常现象。
+
+## 步骤 2：连接您的 Paddle 账户 \{#step-2-connect-your-paddle-account\}
+
+首先，在 Paddle 中创建密钥。在您的 Paddle 看板中，前往 **Developer Tools → Authentication**，创建一个具有以下权限的 API 密钥：
+
+| 资源 | 访问权限 |
+|---|---|
+| Transactions | Read |
+| Adjustments | Read |
+| Notification settings | Write |
+
+通知设置的写入权限允许 Adapty 自动创建用于接收支付事件的 Webhook 目标地址，无需在 Paddle 中手动配置任何内容。其余所有权限均为只读：Adapty 绝不会修改您的支付数据。若 API 密钥缺少所需权限，连接时将直接报错，并提示具体缺少哪项权限。
+
+:::warning
+请使用正式环境密钥。Paddle 的密钥与环境绑定，沙盒密钥虽然可以成功连接并显示为 **Valid**，但 Adapty 会在接收到沙盒事件时直接丢弃，因此不会有任何数据出现。如需验证集成，请连接正式环境密钥并完成一笔真实购买。
+:::
+
+然后，在 Adapty 中添加密钥：
+
+1. 在 Adapty Attribution 中，前往 [**Integrations > Paddle**](https://app.adapty.io/ua/integrations/paddle)。
+2. 将密钥粘贴到 **API key** 字段中。可选填 **Name** 以便区分不同账号——默认情况下，Adapty 会使用密钥的最后 4 位字符。
+3. 点击 **Connect**。
+
+<ZoomImage id="ua-paddle-connect.webp" width="500px" alt="Connect a Paddle account form with API key and Name fields on the Paddle integration page in Adapty Attribution" />
+
+已连接的账户会显示在表格中，包含其环境、密钥状态和 Webhook 状态。该连接仅适用于您当前配置的应用。如需在另一个应用中接收同一 Paddle 账户的付款，请在该应用中添加相同的密钥。
+
+Adapty 从您连接账户的时刻起开始导入交易记录。如需导入更早的交易记录，请通过 [support@adapty.io](mailto:support@adapty.io) 联系我们。
+
+## 验证集成 \{#verify-the-integration\}
+
+通过你的购买流程发起一笔真实购买——Adapty 会丢弃沙盒购买。该购买应在几小时内出现在 [Adapty 归因分析](ua-analytics)中。如果你的访问来自带有[标记 URL](ua-web-pixel) 的广告，该购买将归因于相应的广告系列、广告组和广告；否则将计为自然流量。
+
+## 将转化事件发送至广告网络 \{#send-conversion-events-to-the-ad-network\}
+
+归因网页购买遵循与其余广告系列相同的事件映射规则：您在广告系列配置的 **Events names** 部分启用的事件，将被发送回与该广告系列关联的像素。请参阅 [Meta Ads](ua-facebook) 和 [TikTok for Business](ua-tiktok) 的映射设置。

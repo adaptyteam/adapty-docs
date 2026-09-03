@@ -5,13 +5,14 @@ metadataTitle: "Adapty Mail API ile Veri Gönderme | Adapty Dokümanları"
 ---
 
 Adapty Mail API, kullanıcı profillerini ve işlemleri Adapty SDK üzerinden yönlendirmeye gerek kalmadan doğrudan sunucunuzdan Adapty Mail'e göndermenizi sağlar. Şu durumlarda kullanabilirsiniz:
-- Adapty Mail'de henüz bir abone tabanınız yokken abone ekleyin.
+- Adapty Mail'de henüz bir tabanınız yokken abone ekleyin.
 - Diğer uygulamalarınızdaki abone tabanını yeniden kullanın.
-- Adapty Mail'i sunucudan sunucuya besleyin; backend'iniz gerçeğin kaynağı olsun.
+- Adapty Mail'i sunucudan sunucuya besleyin; arka ucunuz gerçeğin kaynağı olsun.
 
 :::note
-**API mi yoksa SDK mı?** Çoğu uygulama, e-postaları ve satın almaları otomatik olarak toplayan Adapty SDK'sı aracılığıyla Adapty Mail'e veri gönderir. Uygulamanızda Adapty SDK'sı yoksa, veriler zaten sunucunuzda bulunuyorsa veya başka bir kaynaktan abone içe aktarıyorsanız API'yi tercih edin.
+**API mi SDK mi?** Çoğu uygulama, e-postaları ve satın almaları otomatik olarak toplayan Adapty SDK aracılığıyla Adapty Mail'e veri gönderir — bkz. [Adapty'yi Adapty Mail'e Bağlama](mail-collect-emails). API'yi şu durumlarda tercih edin: uygulamanızda Adapty SDK yoksa, veriler zaten sunucunuzda bulunuyorsa veya başka bir kaynaktan aboneleri içe aktarıyorsanız. API'yi başka bir giriş noktasıyla birlikte de kullanabilirsiniz: Adapty Mail, gelen verileri `customer_user_id` ve e-posta adresine göre eşleştirir ve kişi başına tek bir profil tutar.
 :::
+
 ## Başlamadan önce \{#before-you-start\}
 
 :::warning
@@ -38,6 +39,8 @@ Profil, kullanıcının e-posta adresini ve özelliklerini içerir. Profil oluş
 :::important
 Her zaman sabit bir `external_profile_id` gönderin; anonim veya kuruluma özel bir değer kullanmayın. Adapty Mail, e-postaları, tıklamaları ve satın almaları tek bir profile bağlamak için bu alanı kullanır.
 :::
+Aynı kişi Adapty SDK üzerinden de Adapty Mail'e ulaşıyorsa, `customer_user_id` ekleyin — `Adapty.identify()` fonksiyonuna ilettiğiniz kendi kullanıcı kimliğiniz. Adapty Mail bunu eşleştirerek her iki kaynağı tek bir profil altında tutar; böylece kişiye iki kez e-posta gönderen bir kopya profil oluşturulmaz.
+
 ```bash
 curl --request POST \
   --url 'https://api-mail.adapty.io/api/v1/profile/save/' \
@@ -83,7 +86,28 @@ curl --request POST \
   }'
 ```
 
-[Save transaction event](api-mail/operations/saveTransactionEvent) referansında mevcut tüm alanları görebilirsiniz.
+[Save transaction event](api-mail/operations/saveTransactionEvent) referansına her mevcut alan için bakın.
+
+Bir profil oluşturulmadan önce transaction gönderebilirsiniz. Adapty Mail, etkinliği bağlanmamış olarak saklar ve ardından aynı `external_profile_id`'yi içeren bir sonraki kaydetme işleminde onu profile bağlar.
+
+## Bir profili silme \{#delete-a-profile\}
+
+Silinme hakkı talebini yerine getirmek için profilin tanımlayıcılarını `/api/v1/profile/delete/` adresine gönderin. Adapty Mail, profilin kişisel verilerini siler ve zamanlanmış e-postalarını iptal eder.
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/delete/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345"
+  }'
+```
+
+Profili `external_profile_id`, `customer_user_id` veya `email` ile tanımlayın — en az birini gönderin. Silme işlemi kalıcıdır: aynı tanımlayıcıları taşıyan sonraki bir kayıt, profili yeniden oluşturmaz.
+
+Yeniden denemeyi güvenli kılmak için profili `external_profile_id` veya `customer_user_id` ile tanımlayın. Yalnızca `email` ile yapılan bir silme işlemini tekrarlamak `404` döndürür; çünkü silme, kayıtlı adresi temizler. Ayrıntılar için [Profil sil](api-mail/operations/deleteProfile) referansına bakın.
+
 ### Olaylarınızı flow'larla eşleştirin \{#map-your-events-to-flows\}
 
 Yaşanan olayı temsil eden `event_type` değerini gönderin. Adapty Mail, profilin durumunu olay geçmişinden çıkarır ve onu uygun flow'a yönlendirir.

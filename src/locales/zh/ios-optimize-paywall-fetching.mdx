@@ -10,12 +10,92 @@ metadataTitle: "优化付费墙加载 | iOS SDK | Adapty 文档"
 以下规则假设 `Adapty.activate()` 和 `Adapty.identify()` 已经执行完毕。请参阅 [iOS SDK 中的调用顺序](ios-sdk-call-order)。
 :::
 ## 规则与注意事项 \{#rules-and-pitfalls\}
-| 推荐做法 | 避免做法 | 原因 |
+| 做这些 | 不要这样做 | 原因 |
 |---|---|---|
-| 在即将展示版位时再拉取它。 | 启动时并发预拉取所有版位。 | 批量预拉取会阻塞主线程，并在请求峰值期间出现黑屏。 |
-| 在归因有机会完成之后再调用 `getPaywall`——例如在 `activate` 之后等待 1–2 秒，或等 `onProfileUpdate` 触发后再调用。 | 在 `App.init()` 时调用 `getPaywall`。 | 此时归因数据尚未到达，付费墙会按默认目标受众解析，悄然跳过市场细分和 ASA 个性化逻辑。 |
-| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getPaywall` 返回。 | 没有超时限制时，网络状况差的用户会一直看到空白屏幕，直到网络恢复——或者直接关掉应用。 |
-请参阅[获取付费墙和产品](fetch-paywalls-and-products)了解 `fetchPolicy` 和 `loadTimeout` 参数说明，以及[版位](placements)了解如何选择合适的版位。
+| 获取即将展示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.1+）预热缓存。 | 在启动时自行发起多个并发的 `getFlow` 调用。 | 手动并发预取会阻塞主线程并导致黑屏。`preloadFlows` 专为此设计，整批共享同一个超时预算。 |
+| 在归因数据有机会解析之后再调用 `getPaywall`，例如 `activate` 之后等待 1–2 秒，或等 `onProfileUpdate` 触发后再调用。 | 在 `App.init()` 时调用 `getPaywall`。 | 此时归因数据尚未落地。付费墙会按默认目标受众解析，悄无声息地跳过市场细分和 ASA 个性化。 |
+| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getPaywall` 返回。 | 没有超时限制时，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接退出应用。 |
+
+当任何请求触发 `loadTimeout`（包括普通的 `getPaywall` 调用），SDK 会优先返回已缓存的实验变体；如果没有缓存，则在剩余时间内获取默认目标受众（**All Users**）的实验变体。此时该请求的定向功能将直接失效，而非延迟执行：基于市场细分和归因的目标受众不适用于返回结果。
+
+有关 `fetchPolicy` 和 `loadTimeout` 参数的详细说明，请参阅[获取付费墙与产品](fetch-paywalls-and-products)；有关如何选择合适的版位，请参阅[版位](placements)。
+
+## 预加载版位 \{#preload-placements\}
+
+:::info
+这些方法从 SDK 4.1 版本开始支持。
+:::
+
+`preloadFlows` 和 `preloadOnboardings` 会提前将版位数据拉取到 SDK 缓存中。后续对同一版位调用 `getFlow` 或 `getOnboarding` 时，将直接从缓存返回结果，而无需发起网络请求，因此付费墙可以即时渲染，无需等待。
+
+当你知道本次会话需要用到哪些版位，但暂时还不想展示时，可以使用这些方法——例如，在 `activate` 和 `identify` 完成后立即调用，为用户尚未点击的按钮背后的付费墙提前做好准备。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="Swift" default>
+
+```swift showLineNumbers
+try await Adapty.preloadFlows(
+    placementIds: ["onboarding", "main_paywall"],
+    loadTimeout: 5
+)
+
+try await Adapty.preloadOnboardings(
+    placementIds: ["intro"],
+    locale: "en",
+    loadTimeout: 5
+)
+```
+
+</TabItem>
+<TabItem value="callback" label="Swift-Callback">
+
+```swift showLineNumbers
+Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
+    if let error {
+        // at least one placement failed to preload
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+**参数：**
+
+- `placementIds`（必填）：需要预加载的版位。空白和重复的 ID 会被忽略。
+- `locale`（可选，仅限 `preloadOnboardings`）：要缓存的用户引导语言。
+- `loadTimeout`（可选）：整批次的超时时间（秒），而非每个版位单独计时。默认为 5 秒，低于 1 秒的值会被自动提升至 1 秒。
+
+**注意事项：**
+
+- 这些方法会在尝试所有版位后才抛出异常，错误信息会汇总每个版位的失败详情。某个版位的失败不会影响其他版位的处理。
+- 如果某个版位请求超时或发生网络错误，SDK 会回退到该版位的默认目标受众变体。其他类型的失败则按原样上报。
+- 如果超时在面向目标受众的请求完成前触发，SDK 仍会在剩余时间内尝试获取默认目标受众变体。
+- 预加载仅用于预热缓存，不会返回内容——你仍需调用 `getFlow` 或 `getOnboarding` 来展示内容。
+
+### 找出哪个版位失败了 \{#find-out-which-placement-failed\}
+
+抛出的错误是一个 `AdaptyError`，涵盖整批请求，错误码为 `networkFailed`（2002）。要查看各版位的具体失败信息，请读取其 `preloadErrors` 属性——这是一个以版位 ID 为键的字典：
+
+```swift showLineNumbers
+do {
+    try await Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"])
+} catch {
+    for (placementId, placementError) in error.preloadErrors ?? [:] {
+        // log or retry the individual placement
+    }
+}
+```
+
+`preloadErrors` 对于所有非预加载调用产生的错误均为 `nil`，因此应将 `nil` 值理解为"非预加载失败"，而非"无失败"。
+
+如需在不等待目标受众分组的情况下预热缓存，可使用默认受众变体：
+
+```swift showLineNumbers
+try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
+try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
+```
+
 ## 针对网络状况较差的情况进行调优 \{#tune-for-poor-connectivity\}
 
 针对网络连接持续不稳定的市场（如农村地区、交通途中、受路由影响的地区）：

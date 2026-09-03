@@ -1,20 +1,22 @@
 ---
 title: "Unity SDK 中的儿童模式"
-description: "轻松启用儿童模式以符合 Apple 和 Google 的政策。Unity SDK 中不收集 IDFA、GAID 或广告数据。"
+description: "轻松启用儿童模式，以符合 Apple 和 Google 的政策。Unity SDK 中不会收集 IDFA、GAID 或广告数据。"
 metadataTitle: "Unity SDK 中的儿童模式 | Adapty 文档"
 ---
 
-如果您的 Unity 应用面向儿童，则必须遵守 [Apple](https://developer.apple.com/kids/) 和 [Google](https://support.google.com/googleplay/android-developer/answer/9893335) 的政策。如果您使用的是 Adapty SDK，只需几个简单的步骤即可将其配置为符合这些政策，并通过应用商店审核。
+<SDKv4>
 
-## 需要做什么？ \{#whats-required\}
+如果您的 Unity 应用面向儿童，则必须遵守 [Apple](https://developer.apple.com/kids/) 和 [Google](https://support.google.com/googleplay/android-developer/answer/9893335) 的相关政策。如果您正在使用 Adapty SDK，只需几个简单的步骤即可完成配置，使其符合这些政策并顺利通过应用商店审核。
 
-您需要配置 Adapty SDK 以禁止收集以下信息：
+## 需要做什么？\{#whats-required\}
 
-- [IDFA（广告标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
+你需要配置 Adapty SDK，禁止收集以下信息：
+
+- [IDFA（广告主标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
 - [Android 广告 ID（AAID/GAID）](https://support.google.com/googleplay/android-developer/answer/6048248)（Android）
 - [IP 地址](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
 
-此外，我们建议谨慎使用客户用户 ID。`<FirstName.LastName>` 格式的用户 ID 肯定会被视为收集个人数据，使用电子邮件亦然。对于儿童模式，最佳实践是使用随机化或匿名化的标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
+此外，我们建议谨慎使用 customer user ID。`<FirstName.LastName>` 格式的用户 ID 与使用邮箱一样，肯定会被视为收集个人数据。对于儿童模式，最佳实践是使用随机化或匿名化的标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
 
 ## 启用儿童模式 \{#enabling-kids-mode\}
 
@@ -22,10 +24,97 @@ metadataTitle: "Unity SDK 中的儿童模式 | Adapty 文档"
 
 在 Adapty 看板中，您需要禁用 IP 地址收集。为此，请前往 [App settings](https://app.adapty.io/settings/general)，然后在 **Collect users' IP address** 下点击 **Disable IP address collection**。
 
-### 在您的移动应用代码中进行更新 \{#updates-in-your-mobile-app-code\}
+### 在应用代码中进行更新 \{#updates-in-your-app-code\}
 
-Unity 中对儿童模式的支持即将推出！
+在激活 SDK 时，禁用 Android Advertising ID 和 IP 地址的收集：
 
-目前，您可以参阅原生平台指南：
-- [iOS SDK 中的儿童模式](kids-mode)，用于 iOS 配置
-- [Android SDK 中的儿童模式](kids-mode-android)，用于 Android 配置
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+在 iOS 上，无需调用 `SetAppleIDFACollectionDisabled` — 为 iOS 构建启用儿童模式（见下文）会自动在 SDK 配置中为你禁用 IDFA 收集。
+
+### 为 iOS 构建启用儿童模式 \{#enable-kids-mode-for-the-ios-build\}
+
+:::important
+在 iOS 上，儿童模式是一个名为 `KidsMode` 的 Swift 包特性（trait）。启用后，SDK 二进制文件中将不包含 IDFA、AdSupport 和 AppTrackingTransparency。此功能需要 SDK 4.0 或更高版本（通过 Swift Package Manager 安装原生 iOS SDK），以及 **Xcode 26** 或更高版本——早期版本的 Xcode 不支持 Swift 包特性。
+:::
+
+1. 在 Unity 编辑器中，前往 **Player Settings** > **Other Settings**，并在 iOS 平台的 **Scripting Define Symbols** 中添加 `ADAPTY_KIDS_MODE`。
+2. 按常规方式为 iOS 构建项目。Adapty 会在生成的 Xcode 项目中为 AdaptySDK-iOS 包引用启用 `KidsMode` 特性，并在运行时配置中强制启用 `apple_idfa_collection_disabled`。
+
+:::warning
+请在 **Player Settings** 中添加 define，而不是在构建配置文件（build profile）中添加。构建配置文件中的脚本 define 只有在 Unity 重新编译后才能传递到 Editor 程序集，因此在同一会话中启动的构建可能生成一个二进制文件——该文件在运行时报告 Kids Mode，但仍链接了 IDFA。Adapty 检测到该状态时会导致 iOS 构建失败。`BuildPlayerOptions.extraScriptingDefines` 完全不受支持，因为它永远无法传递到 Editor 程序集。
+:::
+
+### 更新 Android 清单文件 \{#updates-in-your-android-manifest\}
+
+如果你的应用**仅面向儿童**，且编译目标为 Android 13（API 33）或更高版本，Google Play 要求你不得请求 `AD_ID` 权限。在 SDK 配置中禁用收集功能可以阻止 Adapty 收集该 ID，但无法移除其他插件通过清单合并声明的权限。
+
+要移除该权限，请在 **Player Settings** > **Publishing Settings** 中启用 **Custom Main Manifest**，然后在 `Assets/Plugins/Android/AndroidManifest.xml` 的 `<manifest>` 元素中添加以下内容。`<manifest>` 元素必须声明 `xmlns:tools="http://schemas.android.com/tools"`。
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission
+    android:name="com.google.android.gms.permission.AD_ID"
+    tools:node="remove" />
+```
+
+</SDKv4>
+
+<SDKv3>
+
+如果您的 Unity 应用面向儿童用户，则必须遵守 [Apple](https://developer.apple.com/kids/) 和 [Google](https://support.google.com/googleplay/android-developer/answer/9893335) 的相关政策。如果您正在使用 Adapty SDK，只需几个简单的步骤即可完成配置，以符合这些政策并顺利通过应用商店审核。
+
+## 需要做什么？\{#whats-required\}
+
+你需要配置 Adapty SDK，禁止收集以下信息：
+
+- [IDFA（广告标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
+- [Android 广告 ID（AAID/GAID）](https://support.google.com/googleplay/android-developer/answer/6048248)（Android）
+- [IP 地址](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
+此外，我们建议谨慎使用 customer user ID。格式为 `<FirstName.LastName>` 的用户 ID 与使用邮箱一样，肯定会被视为收集个人数据。对于儿童模式，最佳实践是使用随机或匿名标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
+
+## 启用儿童模式 \{#enabling-kids-mode\}
+
+### 在 Adapty 看板中更新设置 \{#updates-in-the-adapty-dashboard\}
+
+在 Adapty 看板中，你需要禁用 IP 地址收集功能。请前往 [App settings](https://app.adapty.io/settings/general)，在 **Collect users' IP address** 下点击 **Disable IP address collection**。
+
+### 在你的应用代码中进行更新 \{#updates-in-your-app-code\}
+
+在激活 SDK 时，禁用 Android 广告 ID 和 IP 地址的收集：
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+// highlight-start
+    .SetGoogleAdvertisingIdCollectionDisabled(true) // set to `true`
+    .SetIPAddressCollectionDisabled(true); // set to `true`
+// highlight-end
+
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+});
+```
+
+### 为 iOS 构建启用儿童模式 \{#enable-kids-mode-for-the-ios-build\}
+
+将 IDFA 和 AdSupport 从 iOS 二进制文件中完全移除，需要 Adapty Unity SDK 4.0 或更高版本。请参照[迁移指南](migration-to-unity-sdk-v4)进行升级，然后按照本页 SDK 4.0 的说明操作。
+
+在 SDK 3.x 上，你仍然可以通过 `SetAppleIDFACollectionDisabled(true)` 在 SDK 配置中禁用 IDFA 收集，但 IDFA 和 AdSupport 的代码仍会保留在二进制文件中。如需了解原生配置选项，请参阅 [iOS SDK 中的儿童模式](kids-mode)和 [Android SDK 中的儿童模式](kids-mode-android)。
+
+</SDKv3>

@@ -1,0 +1,78 @@
+---
+title: "Adapty Android SDK'yı v4.1'e Taşıyın"
+description: "Adapty Android SDK v4.1'e geçiş yapın: Adapty Attribution'ı açıkça etkinleştirin ve yeniden adlandırılan harici attribution API'lerini benimseyin."
+metadataTitle: "Adapty Android SDK v4.1'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty Android SDK 4.1, Adapty Attribution'ın nasıl etkinleştirileceğini değiştiriyor ve harici attribution API'lerini yeniden adlandırıyor.
+
+:::warning
+Yeniden adlandırılan API'ler tam bir kırılma değişikliğidir. `AdaptyAttributionSource` tamamen kaldırıldı — kullanımdan kaldırılmış değil, ve bunu köprüleyecek hiçbir typealias yok. 4.0.x'e karşı derlenen kod, aşağıda listelenen her çağrı noktasını yeniden adlandırana kadar 4.1'de derlenemeyecektir.
+:::
+
+## Hızlı Başvuru \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution varsayılan olarak etkin | Adapty Attribution varsayılan olarak devre dışı; `.withAdaptyAttributionEnabled(true)` ile etkinleştirin |
+| `Adapty.updateAttribution(attribution, source)` | `Adapty.updateExternalAttribution(attribution, provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, yeni `CUSTOM` değeriyle |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+
+## Kurulum \{#installation\}
+
+`adapty-bom` sürümünü `4.1.0` (veya sonrası) olarak ayarlayın ve projeyi senkronize edin. BOM, sizin için uygun `android-sdk` ve `android-ui` sürümlerini otomatik olarak belirler. Bağımlılık bildirimleri için [Adapty SDK'yı Yükle](sdk-installation-android) sayfasına bakın.
+
+:::note
+4.0.0 veya 4.0.1 sürümünden yükseltme yapıyorsanız, 4.0.2'deki iki değişiklik de geçerlidir:
+
+- Adapty, varsayılan olarak Google Play Billing Library 7.0.0 yerine 8 ile çalışır.
+- `restorePurchases`, geri yüklenecek bir şey olmasa bile başarıyla tamamlanır ve `NO_PURCHASES_TO_RESTORE` hatasıyla başarısız olmak yerine mevcut profili döndürür. Bkz. [Satın almaları geri yükleme](android-restore-purchase).
+:::
+
+## Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
+
+4.0 ve önceki sürümlerde SDK, [Adapty Attribution](user-acquisition) için kurulumları otomatik olarak kaydediyordu. 4.1'den itibaren bu özellik varsayılan olarak kapalıdır: SDK kurulumları kaydetmez, `setOnInstallationDetailsListener` ile ayarlanan dinleyici hiçbir zaman tetiklenmez ve `getCurrentInstallationStatus` değeri `AdaptyInstallationStatus.Determined.NotAvailable` döndürür.
+
+Adapty Attribution kullanıyorsanız, SDK'yı etkinleştirirken bunu açmanız gerekir:
+
+```diff showLineNumbers
+  val config = AdaptyConfig.Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+  Adapty.activate(applicationContext, config)
+```
+
+Adapty Attribution kullanmıyorsanız herhangi bir değişiklik yapmanıza gerek yoktur.
+
+## Yeniden adlandırılmış harici attribution API'leri \{#renamed-external-attribution-apis\}
+
+### updateAttribution → updateExternalAttribution
+
+Harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi ileten metot yeniden adlandırıldı; `source` parametresi de `provider` olarak değiştirildi:
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, AdaptyAttributionSource.ADJUST) { error -> /* handle the error */ }
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST) { error -> /* handle the error */ }
+```
+
+Her iki aşırı yükleme de korunmaktadır: `attribution` parametresi `Map<String, Any>` veya JSON `String` olabilir.
+
+Callback, backend veriyi asenkron işleme kabul ettiğinde tetiklenir. Başarılı bir sonuç, verinin profile zaten uygulandığı anlamına gelmez.
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Tür yeniden adlandırıldı; önceden tanımlı değerler aynı isimlerini korur: `APPLE_ADS`, `ADJUST`, `APPSFLYER`, `BRANCH` ve `TENJIN`. Diğer sağlayıcılar için bir string'den oluşturun: `AdaptyExternalAttributionProvider("your_provider")`.
+
+4.1 ayrıca Adapty'nin doğrudan entegre olmadığı sağlayıcılar için önceden tanımlı bir `CUSTOM` değeri ekler. 4.0'da aynı değer yalnızca `"custom"` string'i olarak kullanılabiliyordu.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Profile'a uygulanan attribution sağlayıcılarını listeleyen profil özelliği yeniden adlandırıldı. Eleman türü de buna göre değişti:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.APPLE_ADS)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```

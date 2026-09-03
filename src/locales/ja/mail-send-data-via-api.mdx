@@ -6,12 +6,12 @@ metadataTitle: "Adapty Mail APIでデータを送信する | Adapty ドキュメ
 
 Adapty Mail APIを使うと、Adapty SDKを経由せずに、サーバーから直接Adapty Mailにユーザープロファイルとトランザクションを送信できます。以下のような場合に活用してください：
 
-- Adapty Mailにまだベースがない状態でサブスクライバーを追加したい場合
-- 他のアプリのサブスクライバーベースを再利用したい場合
-- バックエンドをソースオブトラスとして、サーバー間でAdapty Mailにデータを送りたい場合
+- Adapty Mail にまだベースがない場合に購読者を追加する。
+- 他のアプリの購読者ベースを再利用する。
+- バックエンドを信頼できる情報源として、Adapty Mail をサーバー間通信で連携する。
 
 :::note
-**APIとSDK、どちらを使う？** ほとんどのアプリは、メールや購入情報を自動収集するAdapty SDKを通じてAdapty Mailにデータを送信します。アプリにAdapty SDKがない場合、データがすでにサーバー上にある場合、または別のソースからサブスクライバーをインポートする場合にAPIを選択してください。
+**API か SDK か？** ほとんどのアプリは Adapty SDK を通じて Adapty Mail にデータを送信します。SDK はメールアドレスと購入情報を自動的に収集します — 詳しくは[Adapty を Adapty Mail に接続する](mail-collect-emails)をご覧ください。アプリに Adapty SDK が組み込まれていない場合、データがすでにサーバー側に存在する場合、または別のソースからサブスクライバーをインポートする場合は API を選択してください。他のエントリーポイントと API を併用することも可能です。Adapty Mail は `customer_user_id` とメールアドレスで受信データを照合し、1人につき1つのプロファイルを管理します。
 :::
 
 ## 始める前に \{#before-you-start\}
@@ -42,6 +42,8 @@ APIキーとベースURLも必要です：
 :::important
 `external_profile_id` には必ず安定した値を使用し、匿名値やインストールごとの値は使わないでください。Adapty Mailはこれを使用して、メール、クリック、購入を1つのプロファイルに紐付けます。
 :::
+
+同じユーザーが Adapty SDK 経由でも Adapty Mail に到達する場合は、`customer_user_id`（`Adapty.identify()` に渡す独自のユーザー ID）を追加してください。Adapty Mail はこの ID で照合し、重複プロファイルを作成してそのユーザーに二重でメールを送る代わりに、両方のソースを1つのプロファイルにまとめます。
 
 ```bash
 curl --request POST \
@@ -91,7 +93,27 @@ curl --request POST \
   }'
 ```
 
-利用可能なすべてのフィールドについては、[トランザクションイベントを保存する](api-mail/operations/saveTransactionEvent)のリファレンスを参照してください。
+[Save transaction event](api-mail/operations/saveTransactionEvent) リファレンスで利用可能なすべてのフィールドを確認できます。
+
+プロファイルが存在する前にトランザクションを送信することもできます。Adapty Mail はそのイベントを未紐付けの状態で保持し、同じ `external_profile_id` を含む次の保存時にプロファイルへ紐付けます。
+
+## プロファイルの削除 \{#delete-a-profile\}
+
+削除権（忘れられる権利）のリクエストに対応するには、プロファイルの識別子を `/api/v1/profile/delete/` に送信してください。Adapty Mail はプロファイルの個人データを消去し、スケジュールされたメールをキャンセルします。
+
+```bash
+curl --request POST \
+  --url 'https://api-mail.adapty.io/api/v1/profile/delete/' \
+  --header 'Authorization: Bearer {your_secret_api_key}' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "external_profile_id": "user_12345"
+  }'
+```
+
+`external_profile_id`、`customer_user_id`、または `email` でプロファイルを識別します — 少なくとも1つを送信してください。削除は元に戻せません。同じ識別子を持つ後続の保存リクエストでは、プロファイルは再作成されません。
+
+リトライを安全に行うには、`external_profile_id` または `customer_user_id` でプロファイルを識別してください。`email` のみで実行した削除を繰り返すと `404` が返されます。削除によってメールアドレスが消去されるためです。詳細は[プロファイルの削除](api-mail/operations/deleteProfile)リファレンスをご参照ください。
 
 ### イベントをフローにマッピングする \{#map-your-events-to-flows\}
 

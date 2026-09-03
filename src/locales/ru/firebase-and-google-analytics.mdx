@@ -1,11 +1,14 @@
 ---
 title: "Firebase и Google Analytics"
-description: "Отправляйте события подписок из Adapty в Firebase и Google Analytics — управляйте аудиториями, Remote Config, атрибуцией Google Ads и другими инструментами Firebase."
+description: "Отправляйте события подписок Adapty в Firebase и Google Analytics — для управления аудиториями, Remote Config, атрибуцией через Google Ads и другими инструментами Firebase."
 metadataTitle: "Firebase и Google Analytics | Документация Adapty"
 keywords: ['firebase', 'google analytics', 'ga4']
 ---
 
-Adapty может передавать события подписок — покупки, продления, возвраты, запуски пробных периодов — в Firebase и Google Analytics, так что одна интеграция доставляет данные сразу в оба сервиса.
+import AccessLevelUpdatedEventFeed from '@site/src/locales/ru/reusable/AccessLevelUpdatedEventFeed.mdx';
+
+Adapty может передавать события подписок — покупки, продления, возвраты, начало пробных периодов — в Firebase и Google Analytics: одна интеграция обеспечивает доставку данных в обе системы.
+
 :::warning
 Вам понадобятся и проект Firebase, и связанный ресурс Google Analytics — даже если вы используете только один из них. Firebase и Google Analytics — это одни и те же данные в двух разных консолях.
 :::
@@ -39,11 +42,12 @@ Firebase App Instance ID привязан к конкретному устрой
 Для покупок через App Store и Play Store это происходит автоматически. Они совершаются внутри мобильного приложения вместе с вызовом [`setIntegrationIdentifier`](#configure-your-app-code). Firebase ID уже присутствует в момент покупки.
 Покупки Stripe инициируются за пределами приложения — на вашем сервере. Мобильное приложение должно вызывать `setIntegrationIdentifier` при запуске — до того, как произойдёт любая покупка через Stripe. Иначе у Adapty не будет идентификатора для привязки, и покупка через Stripe никогда не попадёт в Firebase.
 ### Ограничения \{#limitations\}
-- **Это не инструмент атрибуции Google Ads.** Интеграция отправляет события Adapty в Firebase и Google Analytics для аналитики. Она не атрибутирует установки приложения к кампаниям Google Ads (UAC / Universal App Campaigns) и не разделяет платный и органический трафик. Для атрибуции установок используйте встроенную [атрибуцию Adapty](adapty-user-acquisition).
-- **Нет ретроактивной загрузки данных.** Adapty передаёт события с момента включения интеграции — прошлые покупки, продления и возвраты в Firebase не попадают. (Исторические данные хранятся в экспортах Adapty [S3](s3-exports) / [GCS](google-cloud-storage), но их импорт в Firebase этой интеграцией не предусмотрен.)
-- **Покупатели только через веб не попадают в Firebase.** Adapty передаёт покупки в Firebase через Firebase App Instance ID, который устанавливает ваше мобильное приложение. У покупателей, которые никогда не устанавливали приложение, нет этого ID — их покупки в Firebase не поступают. Подробнее — в разделе [Покупки через Stripe](#stripe-purchases) выше. Рассмотрите [интеграцию FunnelFox с Firebase](https://funnelfox.com/docs/integrations/subscription-management/adapty) или веб-поток данных Google Analytics для отслеживания веб-покупок.
-- **Покупки через Paddle не поддерживаются.** Интеграция пока не работает с Paddle. Покупки через Paddle остаются в Adapty Analytics и через этот путь в Firebase не передаются.
-- **Покупки через Stripe наследуют ограничения Stripe.** См. [ограничения интеграции со Stripe](stripe#current-limitations).
+- **Это не инструмент атрибуции Google Ads.** Интеграция отправляет события Adapty в Firebase и Google Analytics для аналитики. Она не атрибутирует установки приложения рекламным кампаниям Google Ads (UAC / Universal App Campaigns) и не разделяет платный и органический трафик. Для атрибуции установок используйте встроенный инструмент Adapty [Атрибуция Adapty](adapty-user-acquisition).
+- **Исторические события попадают в Firebase при первом запуске приложения пользователем.** Adapty не пересылает события, обработанные до включения интеграции. Но когда существующий подписчик впервые запускает сборку с Adapty SDK, Adapty получает всю его историю из стора и пересылает её как обычные события — при этом Firebase сопоставляет первоначальные покупки, продления, конверсии из триала и разовые покупки с событием GA4 `purchase`, поэтому Adapty отправляет каждое заполненное ретроспективно продление с прикреплённой выручкой. (Исторические данные также доступны в экспортах Adapty на [S3](s3-exports) / [GCS](google-cloud-storage), но их импорт в Firebase не входит в эту интеграцию.)
+- **Покупки только через веб не попадают в Firebase.** Adapty пересылает покупки в Firebase через Firebase App Instance ID, заданный вашим мобильным приложением. У покупателей, которые никогда не устанавливали приложение, нет этого ID — их покупки не поступают в Firebase. Подробнее см. раздел [Покупки через Stripe](#stripe-purchases) выше; рассмотрите [интеграцию FunnelFox с Firebase](https://funnelfox.com/docs/integrations/subscription-management/adapty) или веб-поток данных Google Analytics для отслеживания в вебе.
+- **Покупки Paddle не поддерживаются.** Эта интеграция пока не поддерживает Paddle. Покупки Paddle остаются в Adapty Analytics и не попадают в Firebase через этот путь.
+- **На покупки Stripe распространяются ограничения, специфичные для Stripe.** См. [ограничения интеграции Stripe](stripe#current-limitations).
+
 ## Инструкция по настройке \{#setup-instructions\}
 ### Настройка Firebase \{#configure-firebase\}
 
@@ -69,9 +73,10 @@ Firebase App Instance ID привязан к конкретному устрой
    <ZoomImage id="ga4-firebase-secret.webp" width="700px" alt="Экран создания секрета Measurement Protocol API в Google Analytics" />
 4. Настройте, как Adapty передаёт данные о доходах и пользователях. Четыре параметра расположены в одной строке на дашборде:
 - Выпадающий список **Revenue definition**: Gross revenue, Proceeds after store commission или [Proceeds after store commission and taxes](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue).
-   - Переключатель **Send user properties**: когда включён, события содержат `subscription_state` и `subscription_product_id`. Чтобы использовать их в отчётах или аудиториях, см. [Использование данных о подписке в отчётах](#use-subscription-data-in-reports-and-audiences).
-   - Переключатель **Report user's currency**: когда включён, Adapty конвертирует локальную валюту каждой транзакции в валюту отчётности вашего аккаунта перед отправкой в Google Analytics.
-   - Переключатель **Send trial price**: старты триала ценны — большинство платящих пользователей начинают именно с триала. Но оптимизация ставок в Google Ads учитывает только события с выручкой. Включите этот переключатель, чтобы присвоить каждому триалу условную цену — тогда Google будет воспринимать их как конверсии и оптимизировать расходы на рекламу в пользу привлечения пользователей, запускающих триал. При включении появляется поле **Trial price percentage**. Укажите долю от полной цены подписки, которую Google должен засчитывать за каждый триал — например, `50%` означает, что в период триала будет передаваться половина стоимости подписки.
+   - Переключатель **Send user properties**: когда включён, события содержат `subscription_state` и `subscription_product_id`. Чтобы использовать их в отчётах или аудиториях, см. [Использование данных о подписках в отчётах](#use-subscription-data-in-reports-and-audiences).
+   - Переключатель **Report user's currency**: когда включён, Adapty сообщает о каждой продаже в той валюте, которой платил покупатель. Когда выключен — сообщает в USD.
+   - Переключатель **Send trial price**: пробные периоды имеют большую ценность — большинство платящих пользователей начинают именно с триала. Но оптимизация ставок Google Ads учитывает только события с доходом. Включите этот переключатель, чтобы присвоить каждому триалу условную цену — тогда Google будет считать их конверсиями и оптимизировать расходы на рекламу в сторону привлечения пользователей, начинающих с триала. Когда переключатель включён, появляется поле **Trial price percentage**. Укажите долю от полной цены подписки, которую Google должен считать стоимостью триала — например, `50%` означает, что во время триала будет учитываться половина цены подписки.
+
 <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
 
 5. Сопоставьте события Adapty с названиями событий Firebase/Google Analytics. Adapty предоставляет отдельные таблицы соответствия событий для **iOS** и **Android**, поэтому вы можете использовать разные названия для каждой платформы. **Покупки через Stripe используют таблицу событий iOS** — отдельной таблицы для Stripe нет.
@@ -139,7 +144,7 @@ if let appInstanceId = Analytics.appInstanceID() {
 // after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appInstanceId ->
-    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId) { error ->
+    Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.firebaseAppInstanceId(appInstanceId)) { error ->
         if (error != null) {
             // handle the error
         }
@@ -153,7 +158,7 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
 // after Adapty.activate()
 
 FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(appInstanceId -> {
-    Adapty.setIntegrationIdentifier("firebase_app_instance_id", appInstanceId, error -> {
+    Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier.firebaseAppInstanceId(appInstanceId), error -> {
         if (error != null) {
             // handle the error
         }
@@ -252,9 +257,10 @@ try {
 - Убедитесь, что Firebase App Instance ID задан **до** первой покупки. События без Firebase ID не попадают в Firebase и возвращают ошибку.
 - Убедитесь, что свойство Google Analytics, привязанное в Firebase Console, соответствует потоку данных.
 - Убедитесь, что набор учётных данных (ID + секрет) в Adapty соответствует платформе.
-### `access_level_updated` отображается как сбой в Event Feed
+### `access_level_updated` отображается как неудачное в ленте событий \{#access_level_updated-shows-as-failed-in-the-event-feed\}
 
-`access_level_updated` — это **событие только для вебхуков**. Adapty никогда не пытается отправить его в Firebase — но Event Feed всё равно отображает его как неудачную доставку. Игнорируйте эту строку. Ваша интеграция работает корректно. Чтобы использовать это событие, настройте [интеграцию с вебхуком](webhook).
+<AccessLevelUpdatedEventFeed />
+
 ### События из песочницы загрязняют продакшен-данные \{#sandbox-events-pollute-production-data\}
 
 Adapty пересылает транзакции из песочницы и продакшена в один и тот же проект Firebase. См. раздел [Настройка Firebase](#configure-firebase) — использование отдельного проекта Firebase для сборок разработки полностью решает эту проблему.
@@ -265,10 +271,12 @@ Firebase автоматически логирует событие `in_app_purc
 Последствия: приложения, активно использующие SK2 и не имеющие отдельного пайплайна для учёта доходов, занижают показатели вдвое и более — в Firebase, в Google Analytics и во всех последующих кампаниях Google Ads. Оптимизация ставок работает с неверными данными. Отчёты о доходах показывают лишь половину картины.
 Исправление: передайте `firebase_app_instance_id` в Adapty (см. [Настройте код приложения](#configure-your-app-code)). Adapty передаёт каждую покупку через Measurement Protocol — с информацией о доходе, валюте и продукте.
 ### Расхождение данных между Adapty Analytics и Firebase \{#adapty-analytics-and-firebase-numbers-diverge\}
-- **StoreKit 2**: Самая частая причина. См. [Firebase занижает доходы для приложений на StoreKit 2](#firebase-undercounts-revenue-for-storekit-2-apps).
-- **Охват SDK**: Firebase считает только события от пользователей, чьё приложение передаёт Firebase App Instance ID. Старые версии приложения этого не делают. Adapty учитывает таких пользователей, Firebase — нет.
-- **События песочницы**: Adapty также пересылает транзакции песочницы в Firebase. Чтобы не смешивать данные, используйте отдельный проект Firebase для dev-сборок.
-- **Семплирование**: Google Analytics Explorations применяет семплирование к большим наборам данных. Для точных цифр без семплирования проверяйте данные в режиме реального времени или в стандартных отчётах.
+- **StoreKit 2**: Наиболее частая причина. См. [Firebase занижает выручку для приложений на StoreKit 2](#firebase-undercounts-revenue-for-storekit-2-apps).
+- **Охват SDK**: Firebase считает только события от пользователей, чьё приложение отправляет Firebase App Instance ID. Старые версии приложения этого не делают. Adapty продолжает учитывать таких пользователей, Firebase — нет.
+- **События песочницы**: Adapty также пересылает транзакции из песочницы в Firebase. Для разработческих сборок используйте отдельный проект Firebase, чтобы не смешивать данные.
+- **Импорт истории при первом запуске**: Когда существующий подписчик впервые запускает сборку с Adapty SDK, Adapty пересылает всю его историю стора в Firebase, отправляя каждое прошлое продление как GA4-событие `purchase` с выручкой. В результате Firebase может показать значительно больше выручки, чем Adapty, за затронутый период. См. [Ограничения](#limitations).
+- **Семплирование**: Google Analytics Explorations семплирует большие наборы данных. Для несемплированных данных используйте представление Realtime или стандартные отчёты.
+
 ### Пользовательские названия событий отклоняются Google Analytics \{#custom-event-names-are-rejected-by-google-analytics\}
 
 Google Analytics ограничивает названия событий 40 символами: допустимы только буквы, цифры и символы подчёркивания, причём название должно начинаться с буквы. Переименуйте пользовательские события Adapty в дашборде, которые не соответствуют этим требованиям.

@@ -1,0 +1,62 @@
+---
+title: "Rastrear vistas de pantalla de flow en Unity SDK"
+description: "Recibe un evento cada vez que un usuario abre una pantalla de flow en tu app de Unity, y reenvíalo a tu analítica de producto."
+metadataTitle: "Rastrear vistas de pantalla de flow | Unity SDK | Documentación de Adapty"
+---
+
+Cada vez que un usuario abre una pantalla en un [flow](adapty-flow-builder), el SDK notifica un evento `flow_screen_showed` a tu app. Reenvíalo a Amplitude, Mixpanel o cualquier analítica de producto que uses, para poder analizar las pantallas del flow junto con el resto de los eventos de tu app.
+
+:::tip
+Para ver hasta dónde llegan los usuarios en un flow, no necesitas ningún código: los [métricas de flow](flow-metrics) ya muestran vistas, finalizaciones y abandono por pantalla en el Adapty Dashboard. Usa esta guía cuando necesites los mismos datos en tu propio sistema de análisis, combinados con eventos que Adapty no conoce.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty Unity SDK v4 o posterior**: El callback de análisis de flow no existe en versiones anteriores.
+- **Una versión de flow publicada después de que se lanzara esta función**: Adapty genera los eventos de pantalla al publicar un flow, por lo que un flow publicado antes de esa fecha no reportará nada. Si no llegan eventos a tu app, publica una nueva versión del flow e inténtalo de nuevo.
+
+## Qué recibes \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Las vistas de pantalla llegan al mismo callback de análisis que cualquier otro evento de flow. Consulta [Gestionar eventos de flow y paywall](unity-handling-events) para saber dónde registrarlo.
+
+## Reenvía cada vista de pantalla a tu analítica \{#forward-every-screen-view-to-your-analytics\}
+
+Comprueba el nombre del evento antes de leer nada más, porque un flow reporta otros eventos a través del mismo callback.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+
+    var screenId = @params["instanceId"];
+    var screenOrder = @params["screen_order"];
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## Ejecutar código cuando el usuario llega al final \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` es `true` en una pantalla a partir de la cual el flow no puede avanzar. Úsalo para desbloquear contenido, marcar el onboarding como completado o enviar tu propio evento de finalización, sin necesidad de añadir una acción de botón en el builder.
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IDictionary<string, object> @params
+) {
+    if (name != "flow_screen_showed") return;
+    if (!(@params["is_last_screen"] is bool isLast) || !isLast) return;
+
+    // The user reached the end of the flow.
+}
+```
+
+Llegar a la última pantalla no es lo mismo que cerrar el flow. Un usuario puede ver la pantalla final y descartar el flow sin realizar ninguna acción, y un flow con ramificaciones puede terminar en varias pantallas distintas. Para saber que el flow en sí ha desaparecido, usa `FlowViewDidDisappear` en su lugar.

@@ -1,0 +1,59 @@
+---
+title: "Rastrear vistas de pantallas de flow en el SDK de Capacitor"
+description: "Recibe un evento cada vez que un usuario abre una pantalla de flow en tu app de Capacitor, y reenvíalo a tus analíticas de producto."
+metadataTitle: "Rastrear vistas de pantallas de flow | SDK de Capacitor | Documentación de Adapty"
+---
+
+Cada vez que un usuario abre una pantalla en un [flow](adapty-flow-builder), el SDK envía un evento `flow_screen_showed` a tu app. Reenvíalo a Amplitude, Mixpanel o la herramienta de analíticas de producto que uses, para analizar las pantallas del flow junto con el resto de los eventos de tu app.
+
+:::tip
+Para ver hasta qué punto llegan los usuarios en un flow, no necesitas ningún código: las [métricas de flow](flow-metrics) ya muestran vistas, finalizaciones y abandono por pantalla en el Adapty Dashboard. Usa esta guía cuando necesites los mismos datos en tu propio sistema de analítica, combinados con eventos que Adapty no conoce.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty Capacitor SDK v4 o posterior**: El callback de analíticas de flow no existe en versiones anteriores.
+- **Una versión de flow publicada después de que se lanzara esta función**: Adapty genera los eventos de pantalla al publicar un flow, por lo que un flow publicado antes de eso no reportará nada. Si no llegan eventos a tu app, publica una nueva versión del flow e inténtalo de nuevo.
+
+## Lo que recibes \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+Las vistas de pantalla llegan al mismo callback de analíticas que el resto de eventos del flow. Consulta [Gestionar eventos de flow y paywall](capacitor-handling-events) para saber dónde registrarlo.
+
+## Reenvía cada vista de pantalla a tu sistema de analíticas \{#forward-every-screen-view-to-your-analytics\}
+
+Comprueba primero el nombre del evento antes de leer cualquier otro dato, ya que un flow notifica otros eventos a través del mismo callback.
+
+```typescript showLineNumbers title="Capacitor"
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed') {
+      const screenId = params.instanceId;
+      const screenOrder = params.screen_order;
+
+      // Send screenId and screenOrder to your analytics provider here.
+    }
+    return false; // keep the flow open
+  },
+});
+```
+
+## Ejecuta código cuando un usuario llega al final \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` es `true` en una pantalla más allá de la cual el flow no puede avanzar. Úsalo para desbloquear contenido, marcar el onboarding como completado o enviar tu propio evento de finalización, sin necesidad de añadir una acción de botón en el builder.
+
+```typescript showLineNumbers title="Capacitor"
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      // The user reached the end of the flow.
+    }
+    return false; // keep the flow open
+  },
+});
+```
+
+Llegar a la última pantalla no es lo mismo que cerrar el flow. Un usuario puede ver la pantalla final y cerrar el flow sin realizar ninguna acción, y un flow con ramificaciones puede terminar en varias pantallas distintas. Para saber que el flow en sí ha desaparecido, usa `onDisappeared` en su lugar.

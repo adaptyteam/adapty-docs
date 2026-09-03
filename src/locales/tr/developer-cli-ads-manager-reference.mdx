@@ -1,0 +1,800 @@
+---
+title: "Adapty Geliştirici CLI için Ads Manager komutları"
+description: "Her adapty asa komutu için referans — kampanyalar, reklam grupları, anahtar kelimeler, reklamlar, otomasyonlar ve metrikler."
+metadataTitle: "Ads Manager CLI Komutları | Adapty Dokümanları"
+---
+
+Bu makale, Adapty CLI'daki her [Ads Manager](adapty-ads-manager) komutunu argümanları, bayrakları ve kabul edilen değerleriyle birlikte listeler. Ads Manager komutları `adapty asa` konusu altında yer alır.
+
+:::link
+Ön koşullar, güvenli yazma uygulamaları ve göreve dayalı örnekler için bkz. [CLI'dan Ads Manager'ı yönetme](developer-cli-ads-manager).
+:::
+
+Bu komutlar, bağlı bir Apple Ads hesabı ve aktif bir Ads Manager aboneliği gerektirir. İkisini de kontrol etmek için [`adapty asa whoami`](#adapty-asa-whoami) komutunu çalıştırın. CLI'ın geri kalanı için [komut referansına](developer-cli-reference) bakın.
+
+## Global flag'ler \{#global-flags\}
+
+Bu flag'ler tüm Ads Manager komutlarında kullanılabilir.
+
+| Flag | Açıklama |
+|---|---|
+| `--json` | Biçimlendirilmiş metin yerine JSON olarak çıktı ver |
+| `--help` | Komut yardımını göster |
+
+Tüm `list` komutları sayfalama flag'lerini de kabul eder:
+
+| Flag | Varsayılan | Açıklama |
+|---|---|---|
+| `--page` | `1` | Sayfa numarası |
+| `--page-size` | `100` | Sayfa başına öğe sayısı (maks: 1000) |
+
+Ads Manager sayfaları CLI'ın geri kalanına kıyasla daha büyüktür. Küçük sayfalar üzerinde döngü kurmak yerine tek bir büyük sayfa tercih edin.
+
+Hesabınızda değişiklik yapan tüm komutlar şu flag'leri kabul eder:
+
+| Bayrak | Açıklama |
+|---|---|
+| `--yes`, `-y` | Onay istemeden uygular. Çıktı yönlendirildiğinde veya `--json` kullanıldığında zorunludur |
+| `--idempotency-key` | Bu yazma işlemi için sabit anahtar. Aynı anahtar ve gövdeyle 24 saat içinde tekrarlanan bir istek, değişikliği yeniden uygulamak yerine saklanan sonucu döndürür |
+
+Ads Manager komutları `--app` bayrağı almaz. Kapsam, token'ınızın ait olduğu şirkettir. `--app` yalnızca bazı `list` komutlarında filtre olarak bulunur.
+
+## Liste filtreleri \{#list-filters\}
+
+Filtreler, görüntülenen sayfayı değil sorgunun kendisini daraltır. Filtresiz bir `keywords list` komutu hesaptaki tüm anahtar kelimeleri sayfalandırarak getirir; bu nedenle her okumayı ihtiyaç duyduğunuz düzeyde kapsamlandırın.
+
+| Filtre | Kabul eden |
+|---|---|
+| `--campaign-group` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`, `creatives`, `product-pages` |
+| `--app` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `creatives`, `product-pages` |
+| `--campaign` | `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--ad-group` | `keywords`, `negative-keywords`, `search-terms`, `ads` |
+| `--status` | `campaigns`, `ad-groups`, `ads` (`ENABLED` veya `PAUSED`), `keywords` (`ACTIVE` veya `PAUSED`) |
+| `--search` | `campaigns`, `ad-groups`, `keywords`, `negative-keywords`, `search-terms`, `ads`. Ada göre büyük/küçük harf duyarsız alt dize eşleşmesi |
+
+`adapty asa apps list`, `orgs list`, `automations list` ve `automations runs` herhangi bir filtre almaz. Yalnızca sayfalama bayraklarını kabul eder.
+
+`--campaign-group`, `--app`, `--campaign` ve `--ad-group` seçenekleri, ilgili `list` komutunun yazdırdığı UUID'leri alır ve her biri tekrarlanabilir:
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --ad-group <other-ad-group-id>
+```
+
+Başka bir şirkete ait bir ID hiçbir şeyle eşleşmez; bu durumda hata döndürmek yerine sayfa boş gelir.
+
+## Hesap \{#account\}
+
+### adapty asa whoami
+
+Şirketi, Ads Manager erişiminin nasıl sağlandığını ve Apple Ads'in bağlı olup olmadığını gösterir.
+
+```bash
+adapty asa whoami
+```
+
+Bu komutu önce çalıştırın. Diğer tüm komutların ön koşullarının karşılanıp karşılanmadığını raporlar.
+
+### adapty asa connect
+
+Bir Apple Ads hesabını Adapty'ye bağlayın.
+
+```bash
+adapty asa connect
+```
+
+Bu komut bir Apple yetkilendirme bağlantısı yazdırır ve Apple hesabın bağlandığını bildirene kadar bekler.
+
+| Bayrak | Varsayılan | Açıklama |
+|---|---|---|
+| `--wait` / `--no-wait` | `--wait` | Apple Ads'in bağlandığını bildirmesini bekler. `--no-wait` hemen geri döner |
+| `--timeout` | `300` | Tarayıcı adımı için beklenecek saniye sayısı |
+
+### adapty asa orgs list
+
+Şirketinizde kullanılabilir kampanya gruplarını (Apple Ads organizasyonları) listeleyin.
+
+```bash
+adapty asa orgs list
+```
+
+Her satır iki tanımlayıcı içerir ve bunlar birbirinin yerine kullanılamaz:
+
+| Alan | Kullanıldığı yer |
+|---|---|
+| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) üzerinde `--org` tarafından ve [liste filtresi](#list-filters) olarak `--campaign-group` tarafından alınan UUID |
+| `org_id` | [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) üzerinde `--org-id` tarafından alınan Apple'ın sayısal organizasyon ID'si. `--org` ve `--campaign-group` bunu kabul etmez |
+
+`--org` yalnızca `campaigns create` komutunda mevcuttur. Hiçbir listeleme komutu bunu kabul etmez.
+
+Her satır aynı zamanda bir `payment_model` içerir. Bu değer `LOC` olduğunda, organizasyon kredi satırı bazında faturalandırılır ve bu organizasyondaki her kampanyanın [`--invoice-*` flag'lerine](#adapty-asa-campaigns-create) ihtiyacı vardır.
+
+[Sayfalandırma flag'lerini](#global-flags) kabul eder.
+
+### adapty asa apps list
+
+Apple Ads'de tanıtılan uygulamaları listeler.
+
+```bash
+adapty asa apps list
+```
+
+Her satır iki tanımlayıcı içerir ve bunlar birbirinin yerine kullanılamaz:
+
+| Alan | Kullanım amacı |
+|---|---|
+| `internal_id` | `--app`'in [liste filtresi](#list-filters) olarak aldığı UUID |
+| `adam_id` | Apple'ın sayısal App Store ID'si; [`campaigns create`](#adapty-asa-campaigns-create) ve [`product-pages sync`](#adapty-asa-product-pages-sync) komutlarında `--adam-id` tarafından alınır |
+
+[Sayfalandırma flag'lerini](#global-flags) kabul eder.
+
+## Kampanyalar \{#campaigns\}
+
+### adapty asa campaigns list
+
+[Kampanyaları](ads-manager-create-campaign) listeler. Yalnızca meta veri döndürür — performans rakamlarını [`asa metrics`](#adapty-asa-metrics) ile okuyun.
+
+```bash
+adapty asa campaigns list --app <app-id> --status PAUSED
+```
+
+[Sayfalama bayraklarını](#global-flags) ve `--campaign-group`, `--app`, `--search` ile `--status` [liste filtrelerini](#list-filters) kabul eder.
+
+### adapty asa campaigns get
+
+Belirli bir kampanyanın ayrıntılarını alır.
+
+```bash
+adapty asa campaigns get <campaign-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `campaign-id` | Kampanya kimliği (UUID) |
+
+### adapty asa campaigns create
+
+Bir kampanya oluşturun.
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
+```
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--org` | Evet | Kampanya grubu ID'si (UUID). Bkz. [`orgs list`](#adapty-asa-orgs-list) |
+| `--name` | Evet | Kampanya adı |
+| `--adam-id` | Evet | App Store uygulama ID'si (`adam_id`) |
+| `--country` | Evet | Ülke veya bölge kodu. Birden fazla için tekrarlayın: `--country US --country CA` |
+| `--daily-budget` | Evet | Günlük bütçe, düz tutar olarak; örneğin `50` veya `12.50` |
+| `--budget` | Hayır | Toplam ömür boyu bütçe |
+| `--target-cpa` | Hayır | Hedef edinim başına maliyet. `--daily-budget` değerinden düşük olmalıdır |
+| `--currency` | Hayır | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+| `--bidding-strategy` | Hayır | `MANUAL_CPT` veya `MAX_CONVERSIONS`. Apple varsayılanı: `MANUAL_CPT` |
+| `--ad-channel-type` | Hayır | `SEARCH` veya `DISPLAY`. Varsayılan: `SEARCH` |
+| `--billing-event` | Hayır | `TAPS` veya `IMPRESSIONS`. Varsayılan: `TAPS` |
+| `--supply-source` | Hayır | Tedarik kaynağı, tekrarlanabilir. Varsayılan: `APPSTORE_SEARCH_RESULTS` |
+| `--status` | Hayır | Başlangıç durumu: `ENABLED` veya `PAUSED` |
+| `--invoice-advertiser` | Kredi hattı | Faturalama Seçenekleri: reklamveren adı |
+| `--invoice-order-number` | Kredi hattı | Faturalama Seçenekleri: sipariş numarası |
+| `--invoice-contact-name` | Kredi hattı | Faturalama Seçenekleri: alıcı iletişim adı |
+| `--invoice-contact-email` | Kredi hattı | Faturalama Seçenekleri: alıcı iletişim e-postası |
+| `--invoice-billing-email` | Kredi hattı | Faturalama Seçenekleri: fatura iletişim e-postası |
+
+`payment_model` değeri `LOC` olan bir organizasyon, kredi limitiyle faturalandırılır ve Apple, bu organizasyonun her kampanyasında Faturalama Seçenekleri gerektirir. Tüm beş `--invoice-*` bayrağını tek bir çağrıda geçirin — eksik set, istek gönderilmeden önce reddedilir. Bkz. [Kredi limiti için Faturalama Seçeneklerini Ayarlama](developer-cli-ads-manager#invoicing-options).
+
+Yanıt, `serving_status` ve `serving_state_reasons` içerir. Bir kampanya oluşturulmuş olsa bile yayınlanmayabilir: `MAX_CONVERSIONS` kampanyası bir [otomatik reklam grubu](#adapty-asa-ad-groups-create) bekler; kredi limitli kampanya ise Faturalama Seçeneklerini bekler. Her iki durumda da komut, nedeni ve çözüm sağlayan komutu yazdırır.
+
+### adapty asa campaigns update
+
+Mevcut bir kampanyayı günceller.
+
+```bash
+adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `campaign-id` | Kampanya ID'si (UUID) |
+
+| Bayrak | Açıklama |
+|---|---|
+| `--name` | Yeni kampanya adı |
+| `--status` | `ENABLED` veya `PAUSED` |
+| `--country` | Ülke listesini değiştirir. Birden fazla için tekrarlayın |
+| `--daily-budget` | Yeni günlük bütçe |
+| `--budget` | Yeni toplam yaşam boyu bütçe |
+| `--target-cpa` | Yeni hedef edinim başı maliyet |
+| `--bidding-strategy` | `MANUAL_CPT` veya `MAX_CONVERSIONS` |
+| `--currency` | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+| `--invoice-advertiser` | Faturalama Seçenekleri: reklamveren adı |
+| `--invoice-order-number` | Faturalama Seçenekleri: sipariş numarası |
+| `--invoice-contact-name` | Faturalama Seçenekleri: alıcı iletişim adı |
+| `--invoice-contact-email` | Faturalama Seçenekleri: alıcı iletişim e-postası |
+| `--invoice-billing-email` | Faturalama Seçenekleri: fatura iletişim e-postası |
+
+En az bir bayrak gereklidir.
+
+Beş `--invoice-*` bayrağı birlikte kullanılır ve depolanan Faturalama Seçeneklerini bir küme olarak değiştirir; bu nedenle yalnızca birini değiştirmek istediğinizde bile beşini de geçirmeniz gerekir. Eksik küme, istek gönderilmeden önce reddedilir.
+
+### adapty asa campaigns bulk-create
+
+Kampanyalar, reklam grupları, anahtar kelimeler, negatif anahtar kelimeler ve reklamlardan oluşan tüm kampanya yapısını tek bir işlemde oluşturun.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+JSON yazmak yerine native bir Apple Ads toplu şablonunu dönüştürün:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Bayrak | Varsayılan | Açıklama |
+|---|---|---|
+| `--file` | — | Kampanya yapısını içeren JSON dosyası veya standart girdiden okumak için `-` |
+| `--from-file` | — | Sunucuda dönüştürülecek Apple Ads toplu şablonu: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) veya bir [keywords `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Apple'ın sayısal organizasyon kimliği (`org_id`). Bkz. [`orgs list`](#adapty-asa-orgs-list). `--from-file` ile birlikte zorunludur |
+| `--preview` | — | `--from-file` ile birlikte: dönüştürülen yapıyı yazdırır ve durur. Hiçbir şey oluşturulmaz |
+| `--wait` / `--no-wait` | `--wait` | İşlem tamamlanana kadar yoklama yapar. `--no-wait` işlem kimliğini yazdırır ve geri döner |
+| `--poll-interval` | `5` | İlerleme yoklamaları arasındaki saniye cinsinden süre |
+| `--timeout` | `900` | İşlemin tamamlanması için beklenecek maksimum saniye |
+
+Tam olarak `--file` ve `--from-file` seçeneklerinden biri gereklidir.
+
+Yapı, en üst düzeyde kampanya grubunu adlandırır ve diğer her şeyi içine yerleştirir:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id`, Apple'ın sayısal organizasyon kimliğini alır; bunun yerine UUID geçirmek için `campaign_group_internal_id` kullanın. `payload` içeren bir düğüm oluşturulur. Mevcut bir varlığı `id`'siyle adlandıran düğüm bir anchor'dır — mevcut bir kampanyaya reklam grubu eklemek için bunu kullanın; aynı işlemde varlığı değiştirmek için `update_payload` ekleyin. Her kampanya `ad_groups` içine, her reklam grubu ise `keywords`, `negative_keywords` ve `ads` içine yerleştirilir. Bir kampanya, kampanya düzeyindekiler için doğrudan `negative_keywords` de alır.
+
+Yapının tamamı herhangi bir şey oluşturulmadan önce doğrulanır ve bir ret, her geçersiz düğümü listeler. `--from-file` ile dönüştürme sorunları sayfa, satır ve sütunla birlikte raporlanır; dönüştürme uyarıları gönderimi durdurmaz, ancak dönüştürme hataları iptal eder. Göndermeden önce komut, yapının kaç kampanya, reklam grubu, anahtar kelime, negatif anahtar kelime ve reklam içerdiğini bildirir ve onay ister.
+
+Komut ardından işlemi yoklar ve üç son durumdan biri gerçekleşene kadar ilerlemeyi yazdırır:
+
+| Durum | Anlam |
+|---|---|
+| `success` | Tüm nesneler oluşturuldu |
+| `partial` | Bazı nesneler oluşturulamadı. Her hata Apple'ın hata mesajıyla birlikte yazdırılır |
+| `failed` | İşlem başarısız oldu ve komut sıfır dışı bir değerle çıkış yaptı |
+
+İşlem `--timeout` saniye sonra tamamlanmamışsa, komut geri döner ve daha sonra çalıştırmak için [`bulk-status`](#adapty-asa-campaigns-bulk-status) çağrısını yazdırır.
+
+### adapty asa campaigns bulk-status
+
+Bir toplu işlemin ilerleme durumunu gösterir: durum, nesne sayıları ve nesne başına log.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `operation-id` | [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) tarafından yazdırılan işlem kimliği (UUID) |
+
+`status` alanı `pending`, `running`, `success`, `partial` veya `failed` değerini alır. `counts` bloğu toplam içinden kaç nesnenin uygulandığını, başarısız olduğunu ve beklemede olduğunu raporlar.
+
+[Sayfalandırma bayraklarını](#global-flags) kabul eder.
+
+## Reklam grupları \{#ad-groups\}
+
+### adapty asa ad-groups list
+
+[Reklam gruplarını](ads-manager-create-ad-group) listeler. Yalnızca meta veri döndürür — performans rakamlarını okumak için [`asa metrics`](#adapty-asa-metrics) kullanın.
+
+```bash
+adapty asa ad-groups list --campaign <campaign-id>
+```
+
+[Sayfalama flaglerini](#global-flags) ve `--campaign-group`, `--app`, `--campaign`, `--search` ve `--status` [liste filtrelerini](#list-filters) kabul eder.
+
+### adapty asa ad-groups get
+
+Belirli bir reklam grubu için ayrıntıları alır.
+
+```bash
+adapty asa ad-groups get <ad-group-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `ad-group-id` | Reklam grubu kimliği (UUID) |
+
+### adapty asa ad-groups create
+
+Bir kampanyada reklam grubu oluşturur.
+
+```bash
+adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--campaign` | Evet | Kampanya ID'si (UUID) |
+| `--name` | Evet | Reklam grubu adı |
+| `--default-bid` | `--automated` belirtilmezse zorunlu | Varsayılan teklif, düz tutar olarak, örneğin `1.20` |
+| `--cpa-goal` | Hayır | Edinim başına maliyet hedefi |
+| `--pricing-model` | Hayır | `CPC` veya `CPM`. Apple her reklam grubunda birini gerektirir. Varsayılan: `CPC` |
+| `--start-time` | Hayır | Zamanlama başlangıcı (`YYYY-MM-DD`). Varsayılan: bugün |
+| `--end-time` | Hayır | Zamanlama bitişi (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | Hayır | Apple'ın anahtar kelimeleri otomatik eklemesine izin ver |
+| `--automated` | Hayır | `MAX_CONVERSIONS` kampanyasının gerektirdiği otomatik reklam grubunu oluştur |
+| `--currency` | Hayır | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+| `--status` | Hayır | Başlangıç durumu: `ENABLED` veya `PAUSED` |
+
+`--automated`, reklam grubunu otomatik anahtar kelimelere dahil eder; bu nedenle `--automated-keywords` ile birlikte kullanılamaz. Apple, otomatik reklam grubunu kendisi zamanlar ve etkin tutar; bu yüzden `--start-time` ve `--status PAUSED` reddedilir — bunun yerine kampanyayı duraklatın. Bkz. [Max Conversions kampanyası oluşturma](developer-cli-ads-manager#max-conversions).
+
+### adapty asa ad-groups update
+
+Mevcut bir reklam grubunu günceller.
+
+```bash
+adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `ad-group-id` | Reklam grubu ID'si (UUID) |
+
+| Bayrak | Açıklama |
+|---|---|
+| `--name` | Yeni reklam grubu adı |
+| `--status` | `ENABLED` veya `PAUSED` |
+| `--default-bid` | Yeni varsayılan teklif |
+| `--cpa-goal` | Yeni edinim başı maliyet hedefi |
+| `--start-time` | Zamanlama başlangıcı (`YYYY-MM-DD`) |
+| `--end-time` | Zamanlama bitişi (`YYYY-MM-DD`) |
+| `--automated-keywords` / `--no-automated-keywords` | Apple'ın anahtar kelime eklemesine izin ver |
+| `--currency` | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+
+En az bir bayrak zorunludur. Üst kampanya sunucu tarafında çözümlenir ve hiçbir zaman iletilmez.
+
+## Anahtar Kelimeler \{#keywords\}
+
+Anahtar kelime komutları, çağrı başına en fazla 100 öğelik gruplar halinde uygulanır. Kontrol paneli eşdeğeri için [Anahtar kelimeleri yönet](ads-manager-manage-keywords) bölümüne bakın.
+
+### adapty asa keywords list
+
+Hedefleme anahtar kelimelerini listeler. Performans verilerini okumak için [`asa metrics`](#adapty-asa-metrics) komutunu kullanın.
+
+```bash
+adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
+```
+
+[Sayfalama bayraklarını](#global-flags) ve `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search` ile `--status` [liste filtrelerini](#list-filters) kabul eder. `--ad-group` ile filtreleyin — filtre olmadan bu, konudaki en geniş kapsamlı okumadır.
+
+### adapty asa keywords add
+
+Bir reklam grubuna hedefleme anahtar kelimeleri ekleyin.
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --text "running shoes" --text "trail shoes" --bid 1.20
+```
+
+Bunun yerine anahtar kelimeleri bir dosyadan okuyun, her satırda bir tane:
+
+```bash
+adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--ad-group` | Evet | Reklam grubu ID'si (UUID). Kampanya buradan çözümlenir |
+| `--text` | Evet, `--from-file` kullanılmıyorsa | Anahtar kelime metni. Birden fazlası için tekrarlayın |
+| `--from-file` | Hayır | Her satırda bir anahtar kelime içeren dosya. `--text` değerleriyle birleştirilebilir |
+| `--bid` | Hayır | Anahtar kelime başına teklif miktarı |
+| `--match-type` | Hayır | `BROAD` veya `EXACT`. Varsayılan: `BROAD` |
+| `--currency` | Hayır | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+| `--status` | Hayır | `ACTIVE` veya `PAUSED`. Varsayılan: `ACTIVE` |
+
+Geçersiz bir ID, Apple çağrılmadan önce tüm toplu işlemi başarısız kılar. Apple yine de tek tek anahtar kelimeleri reddedebilir ve her red, nedeniyle birlikte raporlanır.
+
+### adapty asa keywords update
+
+Bir veya daha fazla anahtar kelimenin teklifi, durumu, metni veya eşleşme türünü değiştirin.
+
+```bash
+adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `keyword-id` | Anahtar kelime ID'si (UUID). Birden fazlasını ekstra argüman olarak geçirin |
+
+| Flag | Açıklama |
+|---|---|
+| `--bid` | Yeni teklif |
+| `--status` | `ACTIVE` veya `PAUSED` |
+| `--match-type` | `BROAD` veya `EXACT` |
+| `--text` | Yeni anahtar kelime metni. Yalnızca tek bir anahtar kelime için geçerlidir |
+| `--currency` | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+
+Geçirilen her ID için tek bir değişiklik uygulanır.
+
+## Negatif anahtar kelimeler \{#negative-keywords\}
+
+### adapty asa negative-keywords list
+
+Negatif anahtar kelimeleri listele. `ad_group_id` alanı boş olan satırlar kampanya düzeyindedir.
+
+```bash
+adapty asa negative-keywords list --campaign <campaign-id>
+```
+
+| Flag | Açıklama |
+|---|---|
+| `--campaign-level-only` | Yalnızca kampanya düzeyindeki satırları göster |
+
+[Sayfalama flag'lerini](#global-flags) ve `--campaign-group`, `--app`, `--campaign`, `--ad-group` ve `--search` [liste filtrelerini](#list-filters) kabul eder.
+
+### adapty asa negative-keywords add
+
+Bir reklam grubuna veya kampanyaya negatif anahtar kelimeler ekleyin.
+
+```bash
+adapty asa negative-keywords add --ad-group <ad-group-id> --text free
+```
+
+Bunları bir kampanyanın tüm reklam gruplarına uygulayın:
+
+```bash
+adapty asa negative-keywords add --campaign <campaign-id> --all-ad-groups --text free
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--ad-group` | `--ad-group` veya `--campaign`'den biri | Reklam grubu ID'si (UUID). Kampanya buradan çözümlenir |
+| `--campaign` | `--ad-group` veya `--campaign`'den biri | Kampanya ID'si (UUID) |
+| `--text` | Evet | Anahtar kelime metni. Birden fazla için tekrarlayın |
+| `--all-ad-groups` | Hayır | Kampanyanın kendisi yerine tüm reklam gruplarına uygular. `--campaign` gerektirir |
+| `--match-type` | Hayır | `BROAD` veya `EXACT`. Varsayılan: `EXACT` |
+| `--status` | Hayır | `ACTIVE` veya `PAUSED`. Varsayılan: `ACTIVE` |
+
+`--ad-group` ve `--campaign` birbirini dışlar. Yalnızca birini belirtin.
+
+## Arama terimleri \{#search-terms\}
+
+### adapty asa search-terms list
+
+Reklamlarınızı tetikleyen arama terimlerini listeler. Yeni anahtar kelimeler ve negatif anahtar kelimeler bulmak için kullanın.
+
+```bash
+adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Flag | Varsayılan | Açıklama |
+|---|---|---|
+| `--date-from` | Bugün | Raporlama döneminin başlangıcı (`YYYY-MM-DD`) |
+| `--date-to` | Bugün | Raporlama döneminin sonu (`YYYY-MM-DD`) |
+
+[Sayfalama flag'lerini](#global-flags) ve `--campaign-group`, `--app`, `--campaign`, `--ad-group` ile `--search` [liste filtrelerini](#list-filters) kabul eder.
+
+Bu komut, [`asa metrics`](#metrics) ile analitik havuzunu paylaşır. Bkz. [Hatalar](#errors).
+
+## Reklamlar \{#ads\}
+
+### adapty asa ads list
+
+[Reklamları](ads-manager-manage-ads) listeler. `serving_state_reasons` alanı, bir reklamın neden yayınlanmadığını açıklar.
+
+```bash
+adapty asa ads list --ad-group <ad-group-id>
+```
+
+[Sayfalama bayraklarını](#global-flags) ve `--campaign-group`, `--campaign`, `--ad-group`, `--search` ve `--status` [liste filtrelerini](#list-filters) kabul eder. Bu listede `--app` filtresi yoktur, çünkü reklamlar reklam gruplarına aittir.
+
+### adapty asa ads get
+
+Belirli bir reklamın ayrıntılarını alır.
+
+```bash
+adapty asa ads get <ad-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `ad-id` | Reklam ID (UUID) |
+
+### adapty asa ads create
+
+Bir reklam grubunda reklam oluşturur.
+
+```bash
+adapty asa ads create --ad-group <ad-group-id> --creative-id 4321 --name "Summer ad"
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--ad-group` | Evet | Reklam grubu ID'si (UUID). Kampanya buradan çözümlenir |
+| `--creative-id` | Evet | Apple kreatif ID'si. Bkz. [`creatives list`](#adapty-asa-creatives-list) |
+| `--name` | Evet | Reklam adı |
+| `--status` | Hayır | Başlangıç durumu: `ENABLED` veya `PAUSED` |
+
+### adapty asa ads update
+
+Mevcut bir reklamı günceller.
+
+```bash
+adapty asa ads update <ad-id> --status PAUSED
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `ad-id` | Reklam ID'si (UUID) |
+
+| Flag | Açıklama |
+|---|---|
+| `--name` | Yeni reklam adı |
+| `--status` | `ENABLED` veya `PAUSED` |
+
+En az bir flag gereklidir. Kreatif ve üst reklam grubu oluşturma sırasında sabitlenir.
+
+## Görseller \{#creatives\}
+
+### adapty asa creatives list
+
+Yeni reklamlar için mevcut creative'leri listeler.
+
+```bash
+adapty asa creatives list --app <app-id>
+```
+
+Burada döndürülen `creative_id`, [`ads create`](#adapty-asa-ads-create) için `--creative-id` değeridir.
+
+[Sayfalama bayraklarını](#global-flags) ve `--campaign-group` ile `--app` [liste filtrelerini](#list-filters) kabul eder.
+
+## Ürün sayfaları \{#product-pages\}
+
+### adapty asa product-pages list
+
+Uygulamalarınızda mevcut olan özel ürün sayfalarını listeleyin.
+
+```bash
+adapty asa product-pages list --app <app-id>
+```
+
+[Sayfalama bayraklarını](#global-flags) ve `--campaign-group` ile `--app` [liste filtrelerini](#list-filters) kabul eder.
+
+### adapty asa product-pages sync
+
+App Store Connect'teki özel ürün sayfalarını yeniler.
+
+```bash
+adapty asa product-pages sync --adam-id 123456
+```
+
+| Flag | Açıklama |
+|---|---|
+| `--adam-id` | Yenilemeyi tek bir uygulamayla sınırlar. Her uygulamayı kapsamak için atlayın |
+
+Yenileme hemen gerçekleştirilmez, sıraya alınır ve komut `Sync queued.` mesajıyla bunu onaylar. Aynı yenileme zaten devam ediyorsa bunun yerine `Already running; nothing new was queued.` mesajı görüntülenir.
+
+## Otomasyonlar \{#automations\}
+
+CLI, verdiğiniz kural JSON'ını saklar — kuralları oluşturmaz. Her kural türünün ne yaptığı için [Otomasyonlar](ads-manager-automations) sayfasına, kural dosyası oluşturma hakkında ise [Otomasyon kurallarını çalıştır](developer-cli-ads-manager#run-automation-rules) sayfasına bakın.
+
+### adapty asa automations list
+
+[Otomasyon kurallarını](ads-manager-automations) listeler. `status` alanı aktif için `1`, durdurulmuş için `0` değerini alır.
+
+```bash
+adapty asa automations list
+```
+
+[Sayfalandırma bayraklarını](#global-flags) kabul eder.
+
+### adapty asa automations get
+
+Belirli bir otomasyon kuralını, koşulları ve eylemlerini dahil ederek getirir.
+
+```bash
+adapty asa automations get <automation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `automation-id` | Otomasyon kuralı ID'si (UUID) |
+
+### adapty asa automations create
+
+JSON kural dosyasından bir otomasyon kuralı oluşturur.
+
+```bash
+adapty asa automations create --file rule.json
+```
+
+| Flag | Açıklama |
+|---|---|
+| `--file` | Kural gövdesini içeren JSON dosyası veya standart girdiden okumak için `-` |
+| `--run-now` | Kural kaydedildikten hemen sonra ilk çalıştırmayı kuyruğa alır |
+
+`--file` zorunludur.
+
+### adapty asa automations update
+
+Bir otomasyon kuralını değiştirin: durdurun, yeniden adlandırın veya kuralın bölümlerini değiştirin.
+
+```bash
+adapty asa automations update <automation-id> --stop
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `automation-id` | Otomasyon kuralı kimliği (UUID) |
+
+| Bayrak | Açıklama |
+|---|---|
+| `--start` | Kuralı etkinleştir |
+| `--stop` | Kuralı durdur ve bir sonraki çalışma zamanını temizle |
+| `--name` | Yeni kural adı |
+| `--file` | Değiştirilecek bölümleri içeren JSON dosyası ya da standart girdiden okumak için `-` |
+
+`--start` ve `--stop` birlikte kullanılamaz. Buraya iletilen dosya `internal_id` içermemelidir.
+
+### adapty asa automations run
+
+Bir otomasyon kuralını program dışında tek seferlik çalıştırır.
+
+```bash
+adapty asa automations run <automation-id> --dry-run
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `automation-id` | Otomasyon kuralı ID'si (UUID) |
+
+| Bayrak | Açıklama |
+|---|---|
+| `--dry-run` | Kuralı değerlendirir ve Apple Ads'te herhangi bir değişiklik yapmadan sonucu kaydeder |
+
+Çalıştırma kuyruğa alınır ve komut bir çalıştırma ID'si yazdırır. Sonucu [`automations runs`](#adapty-asa-automations-runs) ile okuyun.
+
+### adapty asa automations runs
+
+Bir otomasyon kuralının geçmiş çalışmalarını, deneme çalışmaları (dry run) dahil olmak üzere listeler.
+
+```bash
+adapty asa automations runs <automation-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `automation-id` | Otomasyon kuralı kimliği (UUID) |
+
+[Sayfalandırma bayraklarını](#global-flags) kabul eder.
+
+## Metrikler \{#metrics\}
+
+### adapty asa metrics
+
+Bir tarih aralığında hesabın herhangi bir düzeyi için metrikleri sorgulayın.
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--entity` | Evet | Raporlanacak şey: `campaign`, `ad-group`, `keyword` veya `ad` |
+| `--date-from` | Evet | Dönem başlangıcı (`YYYY-MM-DD`) |
+| `--date-to` | Evet | Dönem sonu (`YYYY-MM-DD`) |
+| `--metric` | Hayır | Metrik adı, tekrarlanabilir. Tüm metrikler için belirtmeyin |
+| `--group-by` | Hayır | Satırları `country`, `day`, `week`, `month`, `quarter` veya `year` değerlerine göre gruplandırır. Tekrarlanabilir |
+| `--by-days` | Hayır | Kohort metrikleri için gün cinsinden yenileme penceresi, tekrarlanabilir. Çağrı başına maksimum 16. Kontrol paneli varsayılanları için belirtmeyin |
+| `--order-by` | Hayır | Sıralama için kullanılacak metrik veya alan |
+| `--order-by-day` | Hayır | Bu yenileme penceresindeki kohort metriğine göre sırala. `--by-days` değerlerinden biri olmalıdır |
+| `--order` | Hayır | `asc` veya `desc`. Varsayılan: `desc` |
+
+[Sayfalama bayraklarını](#global-flags) kabul eder. Bu komut [liste filtreleri](#list-filters) almaz — raporu varlık düzeyi ve döneme göre daraltın, ardından satırları kapsamlı bir `list` komutundan gelen ID'lerle eşleştirin.
+
+Her satır, sunucuda toplanmış ve `--order-by` ile sıralanmış tek bir varlıktır. Dolayısıyla en yüksek N sorusu tek bir çağrıdır — sonuçlar arasında sayfalama yapıp toplama yapmak yerine `--order-by` ve `--page-size N` ayarlarını kullanın:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
+```
+
+`--metric` parametresi, Ads Manager'ın takip ettiği metrik adlarını alır; kontrol paneli terminolojisiyle — örneğin `spend`, `taps` veya `gross_roas`. Tam liste ve her birinin nasıl hesaplandığı için [Metrikler](adapty-ads-manager-metrics) bölümüne bakın. Var olmayan bir ad, hata mesajında geçerli adlar listelenerek başarısız olur.
+
+Raporlama döneminin uzunluğu, en kaba `--group-by` değeriyle sınırlandırılır. Daha uzun bir dönem için rapor almak istiyorsanız, isteği birden fazla çağrıya bölmek yerine gruplama düzeyini kabalaştırın:
+
+| En kaba `--group-by` | Maksimum dönem |
+|---|---|
+| `day` veya dönem gruplandırması yok | 90 gün |
+| `week` | 180 gün |
+| `month` ve daha kaba | 365 gün |
+
+`ltv` metriği yoktur. Lifetime value, bir yenileme penceresinde okunan bir kohort metriğidir; bu nedenle 7. gün veya 90. gün değerini almak için `--by-days` kullanılır:
+
+```bash
+adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
+```
+
+`--order-by-day`, satırları bu pencerelerden birine göre sıralar; böylece tek bir çağrıda 90. güne göre en iyi kampanyaları ROAS sırasıyla döndürür.
+
+### adapty asa metrics overview
+
+Belirli bir dönem için sorgulama toplamlarını zaman birimine göre gruplandırır.
+
+```bash
+adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --period-unit week
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--entity` | Evet | Raporlanacak öğe: `campaign`, `ad-group`, `keyword` veya `ad` |
+| `--date-from` | Evet | Dönemin başlangıcı (`YYYY-MM-DD`) |
+| `--date-to` | Evet | Dönemin sonu (`YYYY-MM-DD`) |
+| `--period-unit` | Hayır | Gruplama birimi: `day`, `week`, `month`, `quarter` veya `year`. Varsayılan: `day` |
+| `--metric` | Hayır | Metrik adı, tekrarlanabilir. Tüm metrikler için belirtmeyin |
+| `--by-days` | Hayır | Kohort metrikleri için yenileme penceresi (gün cinsinden), tekrarlanabilir. Çağrı başına en fazla 16 |
+
+Bu komut, tüm varlık düzeyi için toplamları ve dönem bazlı bir seriyi birlikte döndürür; böylece "toplamda ne kadar harcadım veya kazandım" sorusunu tek bir çağrıyla yanıtlar. Sıralama bayrağı ve sayfalama içermez.
+
+Bu komutta `--metric`, yalnızca kohort köklerini kabul eder — `revenue`, `roas` ve `arpu` — `gross_`, `proceeds_` veya `net_` varyantlarını kabul etmez.
+
+Raporlama döneminin uzunluğu `--period-unit` tarafından sınırlandırılır:
+
+| `--period-unit` | Maksimum dönem |
+|---|---|
+| `day` | 90 gün |
+| `week` | 180 gün |
+| `month` ve daha kaba | 365 gün |
+
+## Rakipler \{#competitors\}
+
+### adapty asa competitors summary
+
+Bir dizi App Store uygulamasının teklif verdiği Apple Ads anahtar kelimelerini özetler. Bu komut, kontrol panelindeki [Market Intelligence](ads-manager-market-intelligence) ile aynı rakip verilerini döndürür.
+
+```bash
+adapty asa competitors summary --app-ids 1668337467,6503873027
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app-ids` | Evet | Apple App Store ID'leri (`adam_id`), virgülle ayrılmış. 1 ile 5 arasında değer |
+
+Raporlama dönemi ve ülke kümesi sunucuda sabittir — son tam ay, tüm ülkeler. Bu komutun dönem, ülke veya sayfalama bayrakları yoktur.
+
+Komut üç blok yazdırır: analize ilişkin toplamlar, performansa göre öne çıkan uygulamalar ve en çok rekabet edilen terimler. Tam sonuç için `--json` ekleyin; bu aynı zamanda her uygulamanın terimlerini ülkeye göre de ayrıştırır.
+
+Bir uygulama kümesi için ilk çağrı, veriler hazırlanırken onlarca saniye sürebilir. Aynı uygulamalar için sonraki çağrılar daha hızlı döner.
+
+## Hatalar \{#errors\}
+
+| Durum | Kod | Anlam |
+|---|---|---|
+| `402` | `ads_manager_subscription_required` | Şirketin aktif bir Ads Manager aboneliği yok |
+| `404` | — | Varlık mevcut değil veya başka bir şirkete ait |
+| `409` | `cli_idempotency_in_progress` | Aynı idempotency anahtarıyla yapılan bir yazma işlemi hâlâ devam ediyor |
+| `422` | `cli_idempotency_key_reuse` | Aynı idempotency anahtarı farklı bir istek gövdesiyle kullanıldı |
+| `429` | `cli_analytics_busy` | Analytics havuzu meşgul. Bekleme süresi `Retry-After` başlığında belirtiliyor |
+| `429` | `cli_cooldown_active` | Çok fazla reddedilen istek, token'ı bekleme moduna aldı |
+
+Metrikler ve arama terimleri listesi, şirket başına tek bir analitik bütçesini paylaşır: dakikada 5 çağrı ve her 10 saniyede en fazla 2 çağrı. 5 dakika içinde 20 reddedilen istek birikimi, kademeli bir bekleme süresi başlatır: önce 5 dakika, ardından 30 dakika, sonra 3 saat. Bekleme süresi boyunca yeniden deneme yapmak bu süreyi uzatmaz; ancak asıl çözüm, başarısız isteği düzeltmektir, tekrarlamak değil.
+
+CLI, kısa bekleme sürelerini sizin yerinize yönetir. Bekleme süresi olmayan bir `429` hatasında, `Retry-After` değeri 60 saniye veya daha azsa komut bu kadar bekler ve bir kez daha dener; bekleme süresi standart hata çıktısında raporlanır.

@@ -1,0 +1,82 @@
+---
+title: "Configurar el píxel web de Adapty"
+description: "Instala el píxel web de Adapty en tu funnel web o página de destino para que las compras realizadas a través de Stripe o Paddle se atribuyan a los anuncios que las generaron."
+metadataTitle: "Píxel web | Atribución de Adapty | Documentación de Adapty"
+---
+
+Si captas usuarios a través de un funnel web o una página de destino, el píxel web de Adapty conecta cada visita con el anuncio que la originó. El píxel asigna a cada visitante un click ID. Cuando el visitante realiza un pago, pasas ese click ID junto con la transacción, y Adapty Attribution relaciona la compra con la campaña, el conjunto de anuncios y el anuncio exactos.
+
+El píxel está disponible para campañas de Meta Ads y TikTok for Business.
+
+:::tip
+El píxel solo registra las visitas procedentes de anuncios. Para incorporar las compras en la Atribución de Adapty, conecta [Stripe](ua-stripe) o [Paddle](ua-paddle).
+:::
+
+## Cómo funciona \{#how-it-works\}
+
+Al cargar la página, el píxel:
+
+- Asigna al visitante un `click_id` y lo almacena en el navegador durante 7 días.
+- Captura las señales publicitarias de la URL de la página: los IDs de clic de Meta (`fbclid`) y TikTok (`ttclid`), los identificadores y nombres de campaña, conjunto de anuncios y anuncio, y los parámetros `utm_*`.
+- Envía el `click_id` y las señales capturadas a Adapty en segundo plano.
+
+En el momento del pago, solo tienes que adjuntar el `click_id` a la transacción. Adapty lo relaciona con las señales que ya envió el píxel y determina el canal publicitario de forma automática.
+
+## Antes de empezar \{#before-you-start\}
+
+Conecta [Meta Ads](ua-facebook) o [TikTok for Business](ua-tiktok) a Adapty Attribution y añade una configuración de campaña. Adapty genera el fragmento de píxel por cada configuración de campaña, así que necesitas una para copiar el fragmento.
+
+## Instalar el píxel \{#install-the-pixel\}
+
+1. En Adapty Attribution, abre la configuración de tu campaña de Meta Ads o TikTok.
+2. En la pestaña **General**, despliega la sección **Web funnel** y copia el valor del campo **Pixel snippet**.
+
+<ZoomImage id="ua-web-pixel-snippet.webp" width="700px" alt="Pixel snippet field in the Web funnel section of a campaign configuration in Adapty Attribution" />
+
+3. Pega el snippet en el `<head>` de cada página de tu funnel:
+
+```html
+<script async src="https://api-ua.adapty.io/pixel/loader.js" data-code="YOUR_CODE"></script>
+```
+
+El valor `data-code` identifica tu app y la campaña. Es un identificador público, no un secreto.
+
+## Etiqueta las URLs de tus anuncios \{#tag-your-ad-urls\}
+
+El píxel lee los datos de los anuncios desde la URL de tu página de destino. Las redes publicitarias añaden automáticamente su propio ID de clic (`fbclid` o `ttclid`), que identifica la red, pero no la campaña, el conjunto de anuncios ni el anuncio. Para atribuir las compras hasta el anuncio exacto, añade los parámetros de seguimiento a tus anuncios:
+
+1. En la sección **Web funnel** de la configuración de la campaña, copia el valor del campo **Ad URL parameters**.
+
+<ZoomImage id="ua-web-pixel-url-params.webp" width="700px" alt="Campo Ad URL parameters en la sección Web funnel de una configuración de campaña en Adapty Attribution" />
+
+2. En la red publicitaria, pega el valor a nivel de **ad**:
+   - **Meta**: En el campo **URL parameters** del anuncio.
+   - **TikTok**: Bajo la URL de destino del anuncio, en **Build URL parameters**.
+
+El valor contiene macros de la red. La red las sustituye por los valores reales de campaña, grupo de anuncios y anuncio en el momento del clic.
+
+Los parámetros no incluyen valores `utm_*`, así que puedes mantener tu propio esquema UTM para tus propias analíticas — Adapty no lo requiere.
+
+## Gestionar el consentimiento \{#manage-consent\}
+
+El píxel escribe una cookie de origen y una entrada en localStorage, y lee los IDs de clic de anuncios al cargar la página. Tú eres el responsable del tratamiento de datos de tu funnel y tienes la base legal para ello.
+
+Por defecto, el píxel se ejecuta al cargar la página. Para condicionarlo al consentimiento, añade `data-consent="denied"` al snippet — el píxel no almacena ni envía nada hasta que concedas el consentimiento desde tu banner de cookies:
+
+```js
+window.adaptyPixel.grantConsent();  // start capture
+window.adaptyPixel.revokeConsent(); // clear stored state and stop
+window.adaptyPixel.getConsent();    // 'granted' | 'denied'
+```
+
+:::warning
+Condiciona el píxel al consentimiento para el tráfico de la UE/EEE. La normativa ePrivacy exige consentimiento previo para el almacenamiento en el navegador, y un píxel de atribución de origen propio no está exento.
+:::
+
+El fragmento se carga de forma asíncrona, por lo que `window.adaptyPixel` no existe en la línea inmediatamente posterior a la etiqueta `<script>`. Llama a la API de consentimiento desde el callback de tu banner de consentimiento, o protege una llamada temprana con `if (window.adaptyPixel) { ... }`.
+
+## Notas de uso \{#usage-notes\}
+
+- **Funnels de una sola página**: La navegación del lado del cliente mantiene el mismo `click_id`, por lo que un funnel creado como una single-page app funciona sin configuración adicional.
+- **Estabilidad del Click ID**: Leer el `click_id` al cargar la página o en el momento del pago devuelve el mismo valor. Si el visitante vuelve a entrar al funnel desde un nuevo anuncio, el clic más reciente tiene prioridad.
+- **Renovaciones**: Asocia el `click_id` únicamente a la transacción inicial. Adapty atribuye las conversiones de prueba y las renovaciones de suscripción a través de la propia suscripción.

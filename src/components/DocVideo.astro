@@ -1,0 +1,151 @@
+---
+/**
+ * Inline demo video — the motion equivalent of <ZoomImage>.
+ *
+ * Use it instead of an animated GIF: same silent autoplaying loop, a fraction
+ * of the bytes, and no player chrome — the loop can't be paused, exactly like
+ * a GIF. Playback is driven by an IntersectionObserver rather than a native
+ * `autoplay` attribute: `autoplay` forces the browser to download every video
+ * in full at page load, so a page with several demos saturates slow
+ * connections before the first one can start. With `preload="metadata"` a
+ * video costs a few KB until it approaches the viewport. The observer re-arms
+ * on `astro:page-load`, which keeps playback working across Astro ClientRouter
+ * DOM swaps.
+ *
+ * Videos live in src/assets/shared/video/. Resolution is by filename, so the id
+ * needs no path: <DocVideo id="ai-editor-restyle.mp4" alt="..." />
+ *
+ * A poster with the same base name (.webp) next to the video is picked up
+ * automatically and shows before playback starts; the `poster` prop overrides
+ * the convention. Ship one for every video — without it the frame is empty
+ * until the video loads.
+ */
+interface Props {
+  id: string;
+  width?: string;
+  /** Describes the demo for screen readers. Required in practice — a silent loop says nothing on its own. */
+  alt?: string;
+  /** Poster filename in src/assets/shared/video/. Defaults to the video's base name with .webp. */
+  poster?: string;
+  /** Shows native controls and suppresses autoplay. For anything longer than a short loop. */
+  controls?: boolean;
+  className?: string;
+}
+
+const { id, width = '700px', alt, poster, controls = false, className } = Astro.props;
+
+// `?url` emits the file into _astro/ with a content hash, so updating a demo
+// busts its own cache. Files served from public/ would keep the same URL and
+// need a rename instead.
+const allVideos = import.meta.glob<string>('/src/assets/**/*.{mp4,webm}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+// Scoped to the video folder on purpose: a second eager glob over every image in
+// src/assets would repeat the ~2000-entry scan ZoomImage already does.
+const allPosters = import.meta.glob<string>('/src/assets/shared/video/**/*.{webp,png,jpg,jpeg}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const filenameOf = (value: string) => value.split('/').pop() || value;
+
+const resolve = (map: Record<string, string>, wanted: string) => {
+  const target = filenameOf(wanted);
+  for (const [path, url] of Object.entries(map)) {
+    if (filenameOf(path) === target) return url;
+  }
+  return undefined;
+};
+
+const videoSrc = resolve(allVideos, id);
+const conventionPoster = filenameOf(id).replace(/\.(mp4|webm)$/, '.webp');
+const posterSrc = resolve(allPosters, poster ?? conventionPoster);
+
+const numericWidth = parseInt(width.replace('px', ''), 10) || 700;
+---
+
+{videoSrc ? (
+  <video
+    class:list={['doc-video', 'rounded-lg', 'shadow-sm', 'block', 'mx-auto', className]}
+    src={videoSrc}
+    poster={posterSrc}
+    width={numericWidth}
+    style={{ width: width, maxWidth: '100%', height: 'auto' }}
+    aria-label={alt || id}
+    muted
+    loop
+    playsinline
+    preload="metadata"
+    controls={controls || undefined}
+    data-autoplay={controls ? undefined : 'true'}
+  >
+    <p>{alt || id}</p>
+  </video>
+) : (
+  <div class="p-4 border border-red-200 bg-red-50 text-red-600 rounded-md text-sm">
+    Video not found: <code>{id}</code>
+  </div>
+)}
+
+<style>
+  .doc-video {
+    background: var(--bg-secondary, #f8fafc);
+  }
+</style>
+
+<script>
+  // Playback is viewport-driven: each loop starts when it scrolls near the
+  // viewport and pauses when it leaves (resuming on re-entry), so a page full
+  // of demos downloads one video's bytes at a time instead of all of them at
+  // page load. There is deliberately no user-facing pause — the loop behaves
+  // like a GIF. This module runs once per visit; `astro:page-load` re-arms it
+  // after every ClientRouter DOM swap, and the observer is rebuilt each time
+  // so it never watches elements from a previous page.
+  let observer: IntersectionObserver | undefined;
+
+  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const onIntersect = (entries: IntersectionObserverEntry[]) => {
+    entries.forEach(entry => {
+      const video = entry.target as HTMLVideoElement;
+      if (entry.isIntersecting) {
+        void video.play().catch(() => undefined);
+      } else {
+        video.pause();
+      }
+    });
+  };
+
+  // Reduced-motion users get a static poster with native controls instead of a
+  // moving loop; no HTML attribute covers this preference.
+  const applyReducedMotion = () => {
+    if (!reducedMotion()) return;
+
+    document.querySelectorAll<HTMLVideoElement>('video.doc-video[data-autoplay]').forEach(video => {
+      video.controls = true;
+      video.pause();
+    });
+  };
+
+  const observeLoops = () => {
+    observer?.disconnect();
+    if (reducedMotion()) return;
+
+    observer = new IntersectionObserver(onIntersect, { rootMargin: '200px 0px' });
+    document.querySelectorAll<HTMLVideoElement>('video.doc-video[data-autoplay]').forEach(video => {
+      observer!.observe(video);
+    });
+  };
+
+  const init = () => {
+    applyReducedMotion();
+    observeLoops();
+  };
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>

@@ -10,7 +10,6 @@ import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem'; 
-import SampleApp from '@site/src/components/reusable/SampleApp.md';
 import OfferCodesInfo from '@site/src/components/reusable/OfferCodesInfo.mdx';
 
 Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](adapty-paywall-builder) to customize your paywalls.
@@ -102,12 +101,47 @@ Response parameters:
 
 ## In-app purchases from the App Store
 
-When a user initiates a purchase in the App Store and the transaction carries over to your app, you have two options:
+When a user initiates a purchase in the App Store and the transaction carries over to your app, the SDK calls the `didReceivePromotedPurchase` delegate method with an `AdaptyPromotedProduct` object. You have two options:
+
+- **Process the transaction immediately:** Don't implement `didReceivePromotedPurchase`. The default implementation starts the purchase right away, and the Apple purchase system screen shows automatically.
+- **Store the product object for later processing:** Implement `didReceivePromotedPurchase`, store the product, then call `makePurchase` with the stored product later. This may be useful if you need to show something custom to your user before triggering a purchase.
+
+If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, `subscriptionOffer` is always `nil` and the purchase goes through at the base price.
+
+Here's the complete snippet:
+
+```swift showLineNumbers title="Swift"
+final class YourAdaptyDelegateImplementation: AdaptyDelegate {
+    // 1. Store the product object to defer the transaction.
+    // To process the transaction immediately instead, don't implement this method —
+    // the default implementation starts the purchase right away.
+    nonisolated func didReceivePromotedPurchase(_ product: AdaptyPromotedProduct) {
+        // store the product object
+    }
+
+    // 2. Continue the deferred purchase later on by passing the product to `makePurchase` when the timing is appropriate
+    func continueDeferredPurchase() async {
+        let storedProduct: AdaptyPromotedProduct = // get the product object from 1.
+        do {
+            let purchaseResult = try await Adapty.makePurchase(product: storedProduct)
+            // process the purchase result
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+:::warning
+The `didReceivePromotedPurchase` API is available starting from SDK version 4.1 and requires **iOS 16.4** or later. SDK version 4.0 doesn't support promoted in-app purchases at all, and on devices below iOS 16.4 the method never fires. If you need promoted purchases on earlier iOS versions, stay on SDK 3.x and use `shouldAddStorePayment` as shown below.
+:::
+
+<Details summary="Using Adapty SDK 3.x?">
+
+In SDK 3.x, the SDK calls the `shouldAddStorePayment` delegate method instead:
 
 - **Process the transaction immediately:** Return `true` in `shouldAddStorePayment`. This will trigger the Apple purchase system screen right away.
-- **Store the product object for later processing:** Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later. This may be useful if you need to show something custom to your user before triggering a purchase.
-
-Here’s the complete snippet:
+- **Store the product object for later processing:** Return `false` in `shouldAddStorePayment`, then call `makePurchase` with the stored product later.
 
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {
@@ -131,6 +165,8 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
     }
 }
 ```
+
+</Details>
 
 ## Redeem offer codes in iOS
 

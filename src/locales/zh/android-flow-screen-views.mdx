@@ -1,0 +1,62 @@
+---
+title: "在 Android SDK 中追踪流程页面浏览"
+description: "每当用户打开 Android 应用中的流程页面时接收事件，并将其转发到您的产品分析工具。"
+metadataTitle: "追踪流程页面浏览 | Android SDK | Adapty 文档"
+---
+
+每当用户打开[流程](adapty-flow-builder)中的页面时，SDK 都会向您的应用上报一个 `flow_screen_showed` 事件。将其转发至 Amplitude、Mixpanel 或您使用的任意产品分析工具，即可将流程页面数据与应用其他事件一起进行分析。
+
+:::tip
+要查看用户在流程中推进了多远，无需编写任何代码——[流程数据图表](flow-metrics)已在 Adapty 看板中显示浏览量、完成量以及每屏的流失情况。如果你需要将这些数据导入自己的分析系统，并与 Adapty 未知的事件进行关联，请参考本指南。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+
+- **Adapty Android SDK v4 或更高版本**：早期版本不支持流程分析回调。
+- **在此功能发布后发布的流程版本**：Adapty 在发布流程时生成页面事件，因此在此之前发布的流程不会上报任何数据。如果应用未收到任何事件，请发布新版本的流程后重试。
+
+## 您收到的数据 \{#what-you-receive\}
+
+<FlowScreenShowedParams />
+
+屏幕浏览事件与其他所有流程事件一样，都会触发同一个分析回调。请参阅[处理流程和付费墙事件](android-handling-events)，了解在哪里注册该回调。
+
+## 将每个页面浏览事件转发给你的分析工具 \{#forward-every-screen-view-to-your-analytics\}
+
+在读取其他内容之前，先匹配事件名称，因为流程会通过同一个回调上报其他事件。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+
+    val screenId = params["instanceId"]
+    val screenOrder = params["screen_order"]
+
+    // Send screenId and screenOrder to your analytics provider here.
+}
+```
+
+## 当用户到达末尾时执行代码 \{#run-code-when-a-user-reaches-the-end\}
+
+`is_last_screen` 在流程无法继续前进的页面上为 `true`。使用它来解锁内容、标记用户引导完成，或发送自定义的完成事件，而无需在编辑工具中为此添加按钮操作。
+
+```kotlin showLineNumbers title="Kotlin"
+override fun onAnalyticEvent(
+    name: String,
+    params: Map<String, Any?>,
+    context: Context,
+) {
+    if (name != "flow_screen_showed") return
+    if (params["is_last_screen"] != true) return
+
+    // The user reached the end of the flow.
+}
+```
+
+到达最后一个屏幕并不等同于关闭流程。用户可能看到最终屏幕后直接关闭流程而不进行任何操作，并且有分支的流程可能在多个不同的屏幕上结束。如需确认流程本身已关闭，请改用 `onFlowClosed`。

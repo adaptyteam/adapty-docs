@@ -18,6 +18,8 @@ import CustomDocCardList from './CustomDocCardList.astro';
 import Details from './Details.astro';
 import InlineTooltip from './InlineTooltip.astro';
 import ZoomImage from './ZoomImage.astro';
+import DocVideo from './DocVideo.astro';
+import YouTube from './YouTube.astro';
 import Button from './Button.astro';
 import Inline from './Inline.astro';
 import MDXImage from './MDXImage.astro';
@@ -25,6 +27,7 @@ import SDKv4 from './SDKv4.astro';
 import SDKv3 from './SDKv3.astro';
 import MethodPromo from './MethodPromo.astro';
 import SkillPromo from './SkillPromo.astro';
+import AIPromo from './AIPromo.astro';
 import ProductMap from './ProductMap.astro';
 
 export const mdxComponents = {
@@ -36,6 +39,8 @@ export const mdxComponents = {
   Details,
   InlineTooltip,
   ZoomImage,
+  DocVideo,
+  YouTube,
   MDXImage,
   Button,
   Inline,
@@ -43,6 +48,10 @@ export const mdxComponents = {
   SDKv3,
   MethodPromo,
   SkillPromo,
+  AIPromo,
   ProductMap,
   img: MDXImage,
+  // Plain <details> in articles renders through the same component as <Details>,
+  // so there is one collapsible implementation rather than two designs.
+  details: Details,
 };

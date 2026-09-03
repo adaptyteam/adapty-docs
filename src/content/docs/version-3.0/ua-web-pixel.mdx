@@ -1,0 +1,82 @@
+---
+title: "Set up the Adapty web pixel"
+description: "Install the Adapty web pixel on your web funnel or landing page so purchases made through Stripe or Paddle are attributed to the ads that drove them."
+metadataTitle: "Web pixel | Adapty Attribution | Adapty Docs"
+---
+
+If you acquire users through a web funnel or landing page, the Adapty web pixel connects each visit to the ad that brought it. The pixel assigns every visitor a click ID. When the visitor pays, you pass that click ID with the transaction, and Adapty Attribution matches the purchase to the exact campaign, ad set, and ad.
+
+The pixel is available for Meta Ads and TikTok for Business campaigns.
+
+:::tip
+The pixel only matches visits to ads. To bring the purchases themselves into Adapty Attribution, connect [Stripe](ua-stripe) or [Paddle](ua-paddle).
+:::
+
+## How it works
+
+On page load, the pixel:
+
+- Assigns the visitor a `click_id` and stores it in the browser for 7 days.
+- Captures the ad signals from the page URL: the Meta (`fbclid`) and TikTok (`ttclid`) click IDs, the campaign, ad set, and ad identifiers and names, and `utm_*` parameters.
+- Sends the `click_id` and the captured signals to Adapty in the background.
+
+At checkout, you attach only the `click_id` to the transaction. Adapty matches it to the signals the pixel already sent and determines the advertising channel automatically.
+
+## Before you start
+
+Connect [Meta Ads](ua-facebook) or [TikTok for Business](ua-tiktok) to Adapty Attribution and add a campaign configuration. Adapty generates the pixel snippet per campaign configuration, so you need one to copy the snippet from.
+
+## Install the pixel
+
+1. In Adapty Attribution, open your Meta Ads or TikTok campaign configuration.
+2. In the **General** tab, expand the **Web funnel** section and copy the **Pixel snippet** field value.
+
+<ZoomImage id="ua-web-pixel-snippet.webp" width="700px" alt="Pixel snippet field in the Web funnel section of a campaign configuration in Adapty Attribution" />
+
+3. Paste the snippet into the `<head>` of every page of your funnel:
+
+```html
+<script async src="https://api-ua.adapty.io/pixel/loader.js" data-code="YOUR_CODE"></script>
+```
+
+The `data-code` value identifies your app and campaign. It is a public identifier, not a secret.
+
+## Tag your ad URLs
+
+The pixel reads ad data from your landing page URL. The ad networks append their own click ID (`fbclid` or `ttclid`) automatically, which identifies the network but not the campaign, ad set, or ad. To attribute purchases down to the exact ad, add the tracking parameters to your ads:
+
+1. In the **Web funnel** section of the campaign configuration, copy the **Ad URL parameters** field value.
+
+<ZoomImage id="ua-web-pixel-url-params.webp" width="700px" alt="Ad URL parameters field in the Web funnel section of a campaign configuration in Adapty Attribution" />
+
+2. In the ad network, paste the value at the **ad** level:
+   - **Meta**: Into the ad's **URL parameters** field.
+   - **TikTok**: Under the ad's destination URL, into **Build URL parameters**.
+
+The value contains network macros. The network replaces them with the real campaign, ad set, and ad values at click time.
+
+The parameters don't include `utm_*` values, so you can keep your own UTM scheme for your own analytics — Adapty doesn't require it.
+
+## Manage consent
+
+The pixel writes a first-party cookie and a localStorage entry, and reads ad click IDs on page load. You are the data controller for your funnel and own the legal basis for this.
+
+By default, the pixel runs on page load. To gate it on consent, add `data-consent="denied"` to the snippet — the pixel stores and sends nothing until you grant consent from your cookie banner:
+
+```js
+window.adaptyPixel.grantConsent();  // start capture
+window.adaptyPixel.revokeConsent(); // clear stored state and stop
+window.adaptyPixel.getConsent();    // 'granted' | 'denied'
+```
+
+:::warning
+Gate the pixel on consent for EU/EEA traffic. ePrivacy rules require prior consent for browser storage, and a first-party attribution pixel is not exempt.
+:::
+
+The snippet loads asynchronously, so `window.adaptyPixel` doesn't exist on the line right after the `<script>` tag. Call the consent API from your consent-banner callback, or guard an early call with `if (window.adaptyPixel) { ... }`.
+
+## Usage notes
+
+- **Single-page funnels**: Client-side navigation keeps the same `click_id`, so a funnel built as a single-page app works without extra setup.
+- **Click ID stability**: Reading the `click_id` at page load or at checkout returns the same value. If the visitor re-enters the funnel from a new ad, the newest ad click wins.
+- **Renewals**: Attach the `click_id` only to the initial transaction. Adapty attributes trial conversions and subscription renewals through the subscription itself.

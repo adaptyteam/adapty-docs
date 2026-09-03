@@ -7,7 +7,6 @@ keywords: ['events']
 ---
 
 import WebhookEvents from '@site/src/components/reusable/WebhookEvents.md';
-import UsdConversion from '@site/src/components/reusable/UsdConversion.md';
 
 Adapty sends webhooks in response to subscription events. This section defines these event types and the data contained in each webhook.
 
@@ -19,6 +18,10 @@ You can send all event types to your webhook or choose only some of them. You ca
 
 :::note
 `subscription_renewal_reactivated` carries the **prior** product ID — the one that was active when the user cancelled — even if the user later reactivated by purchasing a different product. Apple keeps the same `original_transaction_id` across the cancel → reactivate chain, so this event reflects the original product. The new product surfaces in the next `subscription_renewed` event when billing for the new product begins.
+:::
+
+:::note
+On Google Play, Adapty can send a `subscription_started` event with all monetary fields set to zero — for example, when Google replaces one subscription with another or when the subscription starts with a no-charge phase. Don't count such events as revenue. When Google replaces a subscription, it issues a new purchase token, so Adapty reports the paid transaction under a different `store_transaction_id`.
 :::
 
 ## Webhook event structure
@@ -246,7 +249,7 @@ The event properties for most event types are consistent (except for **Access Le
 | **store_offer_category**      | String        | Applied offer category. Possible values are `introductory`, `promotional`, `winback`.                                                                                                                                                                                                                                                                            |
 | **store_offer_discount_type** | String        | Applied offer type. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`.                                                                                                                                                                                                                                                                       |
 | **store_offer_number_of_periods** | Integer   | Number of base billing periods an offer discounts (1 or more). Present only when an offer applies. `null` for App Store pay-up-front offers and when the store doesn't report the offer duration. |
-| **subscription_expires_at**   | ISO 8601 date | The Expiration date of subscription. Usually in the future.                                                                                                                                                                                                                                                                                                      |
+| **subscription_expires_at**   | ISO 8601 date | <p>The expiration date of the subscription.</p><p>In refund, billing issue, grace period, and access level events, it holds the cancellation date or the grace period end when one applies. In purchase and renewal events, it holds the regular subscription expiration date.</p>                                |
 | **transaction_id**            | String        | Unique identifier for a transaction.                                                                                                                                                                                                                                                                                                                             |
 | **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                                                   |
 | **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made.                                                                                                                                                                                                                                                                                                            |
@@ -349,9 +352,9 @@ Use this event to update the user’s access level in your database, grant or re
 | **developer_id**                   | String        | The ID of the placement where the transaction originated.    |
 | **environment**                    | String        | Possible values are `Sandbox` or `Production`.               |
 | **event_datetime**                 | ISO 8601 date | The date and time of the event.                              |
-| **expires_at**                     | ISO 8601 date | Date and time when the access will expire.                   |
-| **is_active**                      | Boolean       | Boolean indicating whether the access level is active.       |
-| **is_in_grace_period**             | Boolean       | Boolean indicating whether the profile is in the grace period. |
+| **expires_at**                     | ISO 8601 date | <p>Date and time when the access expires. Adapty computes `is_active` from this field.</p><p>During a grace period, it holds the end of the grace period; after a refund or cancellation, it holds the cancellation date. There is no separate field for the grace period end.</p> |
+| **is_active**                      | Boolean       | Boolean indicating whether the access level is active. Computed from `expires_at` (together with `starts_at` and `is_lifetime`) when the event is generated. |
+| **is_in_grace_period**             | Boolean       | Boolean indicating whether the profile is in the grace period. While `true`, `expires_at` holds the end of the grace period. |
 | **is_lifetime**                    | Boolean       | Boolean indicating whether the access level is lifetime.     |
 | **is_refund**                      | Boolean       | Boolean indicating whether the transaction is a refund.      |
 | **original_purchase_date**         | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction. |
@@ -365,11 +368,11 @@ Use this event to update the user’s access level in your database, grant or re
 | **profile_ip_address**             | String        | Profile IP (can be IPv4 or IPv6, with IPv4 preferred when available). `null` if **Collect users' IP addresses** is disabled in the [app settings](https://app.adapty.io/settings/general). |
 | **profile_total_revenue_usd**      | Float         | Total revenue for the profile, refunds included.             |
 | **purchase_date**                  | ISO 8601 date | The date and time of product purchase.                       |
-| **renewed_at**                     | ISO 8601 date | Date and time when the access will be renewed.               |
+| **renewed_at**                     | ISO 8601 date | Date and time when the current period of paid access most recently started. Until the first renewal, it matches `activated_at`. |
 | **starts_at**                      | ISO 8601 date | Date and time when the access level starts.                  |
 | **store**                          | String        | Store where the product was bought. Standard values: **app_store**, **play_store**, **stripe**, **paddle**. <br/>If you set [custom store transactions](api-adapty/operations/setTransaction) using the server-side API, the value from the **store** parameter is used. |
 | **store_country**                  | String        | Country sent to Adapty by the app store.                     |
-| **subscription_expires_at**        | ISO 8601 date | Expiration date of the subscription.                         |
+| **subscription_expires_at**        | ISO 8601 date | The expiration date of the subscription. In this event it holds the same value as `expires_at`: during a grace period, the end of the grace period; after a refund or cancellation, the cancellation date. |
 | **transaction_id**                 | String        | Unique identifier for a transaction.                         |
 | **trial_duration**                 | String        | Duration of a trial period in days (e.g., "7 days").         |
 | **variation_id**                   | UUID          | An identifier of a variation, used to attribute purchases to this paywall. |

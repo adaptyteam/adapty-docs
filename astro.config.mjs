@@ -12,13 +12,18 @@ import rehypeSlug from 'rehype-slug';
 import { highlightLinesTransformer } from './src/plugins/shiki-highlight-transformer.mjs';
 import { remarkAside } from './src/plugins/remark-aside.mjs';
 import { remarkTransformRequire } from './src/plugins/remark-transform-require.mjs';
-import { remarkTransformDetails } from './src/plugins/remark-transform-details.mjs';
+import { remarkNormalizeDetails } from './src/plugins/remark-normalize-details.mjs';
 import { remarkHeadingId } from './src/plugins/remark-heading-id.mjs';
 import { remarkTransformLinks } from './src/plugins/remark-transform-links.mjs';
 import { remarkStripImports } from './src/plugins/remark-strip-imports.mjs';
 import { remarkStripHighlightComments } from './src/plugins/remark-strip-highlight-comments.mjs';
 
 import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
+
+// Slugs of pages carrying `noindex: true` in their frontmatter. The sitemap
+// filter below only receives a URL, so noindex slugs are listed here by hand —
+// add any new one to both the frontmatter and this list.
+const NOINDEX_SLUGS = ['flows-with-your-own-payments'];
 
 // https://astro.build/config
 export default defineConfig({
@@ -57,7 +62,7 @@ export default defineConfig({
   },
 
   markdown: {
-    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+    remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkNormalizeDetails, remarkTransformLinks],
     rehypePlugins: [rehypeSlug],
     shikiConfig: {
       theme: 'github-light',
@@ -89,7 +94,8 @@ export default defineConfig({
     react(),
     sitemap({
       // Exclude localized pages — they are covered by locale-specific sitemaps (e.g. sitemap-zh-index.xml)
-      filter: (page) => !page.includes('/docs/zh/') && !page.includes('/docs/tr/') && !page.includes('/docs/ru/') && !page.includes('/docs/es/') && !page.includes('/docs/ja/') && !page.includes('/docs/vi/') && !page.includes('/docs/fr/'),
+      // Also exclude `noindex` pages (see NOINDEX_SLUGS above).
+      filter: (page) => !NOINDEX_SLUGS.some((slug) => page.includes(`/docs/${slug}`)) && !page.includes('/docs/zh/') && !page.includes('/docs/tr/') && !page.includes('/docs/ru/') && !page.includes('/docs/es/') && !page.includes('/docs/ja/') && !page.includes('/docs/vi/') && !page.includes('/docs/fr/'),
       // Strip trailing slashes so sitemap URLs match the canonical tags emitted by DocsLayout.
       // The canonical strips trailing slashes for content pages, so the sitemap must too.
       // Mismatch causes the Algolia crawler (ignoreCanonicalTo: false) to skip sitemap entries.
@@ -104,7 +110,7 @@ export default defineConfig({
       },
     }),
     mdx({
-      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkTransformDetails, remarkTransformLinks],
+      remarkPlugins: [remarkHeadingId, remarkDirective, remarkAside, remarkFloatClear, remarkStripImports, remarkStripHighlightComments, remarkTransformRequire, remarkNormalizeDetails, remarkTransformLinks],
       rehypePlugins: [rehypeSlug],
       shikiConfig: {
         theme: 'github-light',

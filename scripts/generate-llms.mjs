@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import yaml from 'js-yaml';
+import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
@@ -62,6 +63,14 @@ function isDraft(content) {
     return /^draft:\s*true\s*$/m.test(match[1]);
 }
 
+// Check if a document is marked noindex — those pages are deliberately
+// undiscoverable, so they stay out of the llms.txt index too.
+function isNoindex(content) {
+    const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
+    if (!match) return false;
+    return /^noindex:\s*true\s*$/m.test(match[1]);
+}
+
 // Extract description from MDX frontmatter
 function extractDescription(content) {
     const match = content.match(/^---\s*\n([\s\S]*?)\n---/);
@@ -88,6 +97,9 @@ function collectDocIds(items, ids) {
 // Build a map of docId → description from all sidebar doc IDs
 async function buildDescriptionMap(sidebarFiles) {
     const descriptions = new Map();
+    // Doc ids to omit from the index entirely, as opposed to the draft skip
+    // below, which only withholds a description and still lists the link.
+    const noindexDocIds = new Set();
 
     const allDocIds = new Set();
     for (const file of sidebarFiles) {
@@ -103,6 +115,11 @@ async function buildDescriptionMap(sidebarFiles) {
         if (filePath) {
             try {
                 const content = await fs.readFile(filePath, 'utf-8');
+                // Drop noindex documents from the index altogether
+                if (isNoindex(content)) {
+                    noindexDocIds.add(docId);
+                    continue;
+                }
                 // Skip draft documents
                 if (isDraft(content)) continue;
                 const desc = extractDescription(content);
@@ -111,7 +128,7 @@ async function buildDescriptionMap(sidebarFiles) {
         }
     }
 
-    return { descriptions, allDocIds };
+    return { descriptions, allDocIds, noindexDocIds };
 }
 
 // Build a locale-specific description map. Reads each docId's translated
@@ -269,15 +286,18 @@ function translateLabel(item, labels) {
 }
 
 // Recursive function to parse sidebar items.
-// `ctx` carries: { descriptions, apiCatalog, urlPrefix, labels }
+// `ctx` carries: { descriptions, noindexDocIds, apiCatalog, urlPrefix, labels }
 //   - urlPrefix: '' for English, '/<locale>' for localized indexes
 //   - labels: doc-id → { value } map from _sidebar-labels.json (empty for English)
+//   - noindexDocIds: doc ids whose English source is `noindex: true`; omitted
+//     from every language's index, since the translation inherits the flag.
 // API spec links use the same urlPrefix because `[locale]/[slug].md.ts`
 // emits the locale-prefixed exports too.
 function parseItems(items, ctx, depth = 0) {
     let output = '';
     const indent = '  '.repeat(depth);
     const { descriptions, apiCatalog, urlPrefix, labels } = ctx;
+    const noindexDocIds = ctx.noindexDocIds ?? new Set();
 
     for (const item of items) {
         if (item.type === 'category') {
@@ -294,7 +314,7 @@ function parseItems(items, ctx, depth = 0) {
             // If the category itself is an article (docusaurus link {type:'doc'}
             // or our sidebar shorthand - a bare `id`), add it as a doc item too.
             const categoryDocId = item.link && item.link.type === 'doc' ? item.link.id : item.id;
-            if (categoryDocId) {
+            if (categoryDocId && !noindexDocIds.has(categoryDocId)) {
                 const desc = descriptions.get(categoryDocId);
                 const suffix = desc ? `: ${desc}` : '';
                 output += `${indent}  - [Overview](${BASE_URL}${urlPrefix}/${categoryDocId}.md)${suffix}\n`;
@@ -306,6 +326,7 @@ function parseItems(items, ctx, depth = 0) {
             }
 
         } else if (item.type === 'doc') {
+            if (noindexDocIds.has(item.id)) continue;
             const desc = descriptions.get(item.id);
             const suffix = desc ? `: ${desc}` : '';
             const lbl = translateLabel(item, labels);
@@ -330,7 +351,7 @@ function parseItems(items, ctx, depth = 0) {
 // localized output. `labels` is the parsed _sidebar-labels.json (empty for
 // English).
 async function buildSidebarFiles(outputDir, sidebarFiles, ctx) {
-    let allContent = '# Adapty Documentation\n\n> Adapty is an in-app purchase platform for mobile apps. It handles subscriptions, one-time purchases, and consumables — from purchase processing and receipt validation to analytics, A/B testing, and integrations.\n\n';
+    let allContent = `# Adapty Documentation\n\n> Adapty is an in-app purchase platform for mobile apps. It handles subscriptions, one-time purchases, and consumables — from purchase processing and receipt validation to analytics, A/B testing, and integrations.\n\n${LLM_SKILL_NOTE}\n\n`;
 
     for (const file of sidebarFiles) {
         if (!file.endsWith('.json')) continue;
@@ -344,7 +365,13 @@ async function buildSidebarFiles(outputDir, sidebarFiles, ctx) {
         let items = Array.isArray(sidebarData) ? sidebarData : [];
         sidebarContent += parseItems(items, ctx);
 
-        await fs.writeFile(path.join(outputDir, `${platformName}-llms.txt`), sidebarContent);
+        // Standalone per-platform file carries the note; the section appended
+        // to the combined llms.txt does not (the combined header already has it).
+        const standaloneContent = sidebarContent.replace(
+            `# ${platformName} Documentation\n\n`,
+            `# ${platformName} Documentation\n\n${LLM_SKILL_NOTE}\n\n`,
+        );
+        await fs.writeFile(path.join(outputDir, `${platformName}-llms.txt`), standaloneContent);
         console.log(`Generated: ${path.relative(OUTPUT_DIR, path.join(outputDir, `${platformName}-llms.txt`))}`);
 
         allContent += sidebarContent + '\n---\n\n';
@@ -359,7 +386,7 @@ async function generateLLMFiles() {
     const files = await fs.readdir(SIDEBARS_DIR);
 
     // Build descriptions map upfront from English source.
-    const { descriptions: englishDescriptions, allDocIds } = await buildDescriptionMap(files);
+    const { descriptions: englishDescriptions, allDocIds, noindexDocIds } = await buildDescriptionMap(files);
     console.log(`Loaded ${englishDescriptions.size} descriptions from doc files`);
 
     // Load OpenAPI specs so `type: link` entries pointing at API slugs can
@@ -371,6 +398,7 @@ async function generateLLMFiles() {
     // English (always emitted at OUTPUT_DIR root)
     await buildSidebarFiles(OUTPUT_DIR, files, {
         descriptions: englishDescriptions,
+        noindexDocIds,
         apiCatalog,
         urlPrefix: '',
         labels: {},
@@ -395,6 +423,7 @@ async function generateLLMFiles() {
             const localeApiCatalog = await loadApiCatalog(locale);
             await buildSidebarFiles(localeOutputDir, files, {
                 descriptions: localeDescriptions,
+                noindexDocIds,
                 apiCatalog: localeApiCatalog,
                 urlPrefix: `/${locale}`,
                 labels,

@@ -6,6 +6,18 @@ metadataTitle: "Xử lý sự cố tích hợp App Store | Tài liệu Adapty"
 
 Bài viết này đề cập đến các sự cố tích hợp App Store phổ biến. Mỗi phần dưới đây liệt kê triệu chứng, nguyên nhân gốc rễ và cách giải quyết.
 
+## Lỗi "The provided field values are incorrect" khi lưu thông tin xác thực \{#the-provided-field-values-are-incorrect-when-saving-credentials\}
+
+Khi bạn lưu thông tin xác thực In-App Purchase, Adapty sẽ tạo một authentication token từ **In-app purchase Issuer ID**, **In-app purchase Key ID**, và file **.p8**, sau đó xác thực với Apple. Lỗi này có nghĩa là Apple đã từ chối token đó. Hãy kiểm tra lại các giá trị theo thứ tự sau:
+
+1. **Loại key.** Key phải là **In-App Purchase** key từ **Users and Access** → **Integrations** → **In-App Purchase** trong App Store Connect. Key từ tab **Team keys** (App Store Connect API key) có **Issuer ID** và **Key ID** riêng, nhưng Apple sẽ từ chối nó ở đây — key đó thuộc về [Bước 6 trong cấu hình](app-store-connection-configuration#step-6-add-app-store-connect-api-key).
+2. **Cùng tài khoản và team.** Issuer ID, Key ID và file .p8 phải đến từ cùng một team App Store Connect với app. Key được tạo trong tài khoản của team khác — ví dụ, tài khoản của agency — sẽ không vượt qua được bước xác thực.
+3. **Bản thân file .p8.** Tải lên file đúng như khi đã tải xuống từ App Store Connect. File được tạo lại từ nội dung key dán vào thường sẽ thất bại. App Store Connect chỉ cho phép tải key xuống một lần, vì vậy nếu mất file gốc, hãy tạo key mới.
+4. **Bundle ID.** Bundle ID phải khớp chính xác với bundle ID của app trong App Store Connect — định dạng reverse-DNS, không có khoảng trắng, ví dụ: `com.company.app`.
+5. **Ký tự ẩn.** Sao chép lại từng ID trực tiếp từ App Store Connect. Khoảng trắng thừa hoặc các ký tự trông giống nhau — ví dụ, chữ thường `l` thay cho chữ số `1` — sẽ khiến quá trình xác thực thất bại.
+
+Quá trình xác thực này chỉ sử dụng ba trường In-App Purchase key và Bundle ID. App-Specific Shared Secret và [App Store Connect API key](app-store-connection-configuration#step-6-add-app-store-connect-api-key) không tham gia vào quá trình này, vì vậy việc nhập lại một trong hai sẽ không thay đổi kết quả.
+
 ## Sản phẩm không hiển thị \{#products-dont-appear\}
 
 Hai triệu chứng bề mặt chỉ đến cùng một nguyên nhân gốc rễ:
@@ -24,6 +36,17 @@ Trong App Store Connect, trạng thái App Store Server Notifications có thể 
 Thống kê lượt cài đặt không bị ảnh hưởng. Adapty đếm lượt cài đặt từ lần khởi chạy ứng dụng đầu tiên, không phải từ thông báo phía máy chủ.
 
 Nếu dữ liệu gia hạn hoặc hủy bị trễ, trạng thái Delayed là nguyên nhân có khả năng cao nhất. Trạng thái này thường tự động được xóa khi Apple xử lý hết hàng đợi.
+
+## Giao dịch thanh toán thành công nhưng khách hàng mất quyền truy cập \{#a-purchase-succeeds-but-the-customer-loses-access\}
+
+Khách hàng thanh toán và có quyền truy cập trong thời gian ngắn, nhưng lại mất quyền truy cập vào lần tiếp theo ứng dụng của bạn làm mới hồ sơ người dùng từ Adapty. Apple đã thu tiền, nhưng giao dịch chưa được ghi nhận vào Adapty — cho đến khi được ghi nhận, hồ sơ người dùng không có mức độ truy cập nào và giao dịch bán hàng sẽ bị thiếu trong báo cáo của bạn.
+
+Nguyên nhân thường là một trong các trường hợp sau:
+
+- **Thông tin xác thực ngừng hoạt động**: Adapty không thể xác thực giao dịch với Apple. Hãy kiểm tra lại thông tin xác thực trong phần [Nếu các bản cập nhật ngừng đến](store-sync#if-updates-stop-arriving) và thay thế thông tin liên quan đến xác thực giao dịch mua.
+- **Sản phẩm chưa được liên kết trong Adapty**: ID sản phẩm trên cửa hàng mà khách hàng đã mua chưa được liên kết với sản phẩm nào trong Adapty, nên không có mức độ truy cập nào để cấp. Hãy xác nhận rằng sản phẩm tồn tại với đúng **App Store Product ID** và đã được gán [mức độ truy cập](access-level).
+
+SDK Adapty sẽ tiếp tục thử lại giao dịch, nên quyền truy cập sẽ được khôi phục ngay khi Adapty có thể ghi lại giao dịch đó.
 
 ## Giá trong Adapty không khớp với App Store \{#prices-in-adapty-dont-match-app-store\}
 

@@ -41,17 +41,40 @@ Paywall phải được đăng trước khi có thể phục vụ lưu lượng 
 
 Để biết chi tiết về nhà cung cấp thanh toán trong builder (tài khoản Stripe, chế độ test vs live, thiết lập sản phẩm), xem [Cấu hình web paywall](web-paywall-configuration).
 
-### Use your own hosted paywall \{#use-your-own-hosted-paywall\}
+### Sử dụng paywall tự host \{#use-your-own-hosted-paywall\}
 
-1. Trên trang Create, chọn **Enter URL manually**.
-2. Dán URL paywall bạn đã host. URL phải bao gồm các placeholder `{email}` và `{external_profile_id}` dưới dạng query parameter — Adapty Mail sẽ điền các giá trị này cho từng người nhận để trang biết ai đang truy cập. Ví dụ:
+Theo hướng này, Adapty Mail sẽ chuyển người nhận đến một trang do bạn tự host và thay thế các giá trị của từng người nhận vào URL. Mọi thứ sau khi nhấp — ưu đãi, thanh toán, cá nhân hóa — đều diễn ra ở phía bạn, với bất kỳ nhà cung cấp thanh toán nào.
 
+1. Trong **Web Paywalls → Create**, chọn **Enter URL manually**.
+2. Dán URL paywall tự host của bạn kèm các placeholder dưới dạng query parameter. Adapty Mail sẽ thay thế chúng theo từng người nhận để trang có thể xác định được khách truy cập. Ví dụ:
+
+```
+   https://example.com/paywall?email={email}&adapty_profile_id={adapty.external_profile_id}
    ```
-   https://example.com/paywall?email={email}&profile={external_profile_id}
-   ```
-3. Lưu.
+3. Đặt **Name** cho paywall và lưu lại. Sau đó bạn có thể gắn nó vào các chiến dịch.
 
-Lựa chọn này hoạt động với bất kỳ nhà cung cấp thanh toán nào — Adapty Mail chỉ xử lý việc chuyển hướng và thay thế tham số; việc thanh toán và cá nhân hóa xảy ra hoàn toàn ở phía bạn.
+Trang Create liệt kê các placeholder bạn có thể dùng và đánh dấu từng placeholder tìm thấy trong URL bạn dán vào:
+
+| Placeholder | Value |
+| --- | --- |
+| `{email}` | Địa chỉ email của người nhận. |
+| `{adapty.external_profile_id}` | ID hồ sơ người dùng của người nhận trong Adapty. |
+| `{funnelfox.external_profile_id}` | ID hồ sơ người dùng của người nhận trong FunnelFox. |
+| `{custom.external_profile_id}` | ID người dùng bạn đã gửi qua [Adapty Mail API](mail-send-data-via-api). |
+| `{scheduled_email_id}` | ID của email chứa liên kết. |
+
+Ba placeholder ID hồ sơ tương ứng với ba nguồn mà một hồ sơ có thể đến, và trang này liệt kê tất cả chúng dù dự án của bạn có sử dụng hay không. Hãy chọn cái phù hợp với cách bạn gửi dữ liệu: `{adapty.external_profile_id}` cho [tích hợp Adapty](mail-collect-emails), `{custom.external_profile_id}` cho [API](mail-send-data-via-api). Một placeholder mà người nhận không có giá trị sẽ được phân giải thành chuỗi rỗng, vì vậy nó không bao giờ xuất hiện dưới dạng văn bản thô trên trang của bạn — còn một placeholder mà Adapty Mail không nhận ra sẽ được truyền qua đúng như bạn đã nhập.
+
+#### Trang của bạn cần làm gì \{#what-your-page-has-to-do\}
+
+Phần của Adapty Mail kết thúc tại redirect. Hai nhiệm vụ còn lại là của bạn:
+
+- **Xác định người dùng trước khi thanh toán bắt đầu**: Đọc profile ID hoặc email từ query string và gắn vào giao dịch mua, để khoản thanh toán được ghi nhận đúng khách hàng mà email đã gửi tới.
+- **Báo cáo lại giao dịch mua**: Adapty Mail không thấy các khoản thanh toán được thực hiện trên provider của bạn, và một giao dịch mua mà nó không biết sẽ không được tính là chuyển đổi cũng như doanh thu được ghi nhận attribution trong [Analytics](mail-analytics) — tệ hơn nữa, phần còn lại của chuỗi email vẫn tiếp tục gửi tới người dùng đã mua rồi. Hãy gửi thông tin qua bất kỳ đường nào hiện đã mang dữ liệu của bạn: [Adapty integration](mail-collect-emails), hoặc một [transaction event](mail-send-data-via-api#send-transaction-events) trên Adapty Mail API.
+
+#### Kiểm tra trước khi ra mắt \{#test-it-before-launching\}
+
+**Send test email** giúp xác minh email hiển thị đúng và trang của bạn nhận được thanh toán, nhưng **Sandbox** không thể chọn được đối với paywall được thêm bằng URL — modal sẽ thông báo *"This paywall has no sandbox products, so only production is available."* Vì vậy, lần test sẽ đi đến trang thực tế với sản phẩm thật: dùng thẻ thật rồi hoàn tiền, hoặc trỏ URL đến môi trường test của bạn trong khi kiểm tra kết nối. Xem [Kiểm tra thiết lập của bạn](mail-testing#test-the-email-and-checkout-on-their-own).
 
 ## Giao diện checkout trông như thế nào \{#what-the-checkout-looks-like\}
 
@@ -81,18 +104,18 @@ Thông báo thân thiện nhắc người dùng thử lại. Trạng thái check
 
 ## Cách cá nhân hóa hoạt động \{#how-personalization-works\}
 
-Mỗi email chứa một URL checkout duy nhất với `customer_user_id` và địa chỉ email của người nhận được nhúng dưới dạng tham số:
+Mỗi liên kết CTA trong email đều trỏ đến một URL thanh toán được tạo riêng cho người nhận đó. Trước khi gửi, Adapty Mail thay thế từng placeholder trong URL paywall của bạn bằng giá trị tương ứng của người nhận:
 
 ```
-https://your-funnel.com/?cid={{customer_user_id}}&email={{email}}
+https://example.com/paywall?email=jane@example.com&adapty_profile_id=6f2a...c91
 ```
 
-Adapty tự động tạo các URL này khi gửi từng email — không cần cấu hình gì trong web paywall builder. Khi người dùng nhấp, builder đọc các tham số để nhận dạng họ. Khi hoàn tất mua hàng, Adapty kết nối doanh thu với email cụ thể đã dẫn đến chuyển đổi. Dữ liệu này xuất hiện trong [Phân tích chiến dịch](mail-analytics).
+Một paywall được tạo tự động sẽ nhận các tham số này mà không cần cấu hình gì trong trình tạo paywall trên web. Với paywall bạn thêm bằng URL, bạn chọn những placeholder muốn đưa vào. Khi người dùng nhấp vào, trang thanh toán đọc các tham số để nhận diện họ. Khi mua hàng hoàn tất, Adapty khớp doanh thu với địa chỉ email cụ thể đã tạo ra chuyển đổi đó. Dữ liệu này xuất hiện trong [Phân tích chiến dịch](mail-analytics).
 
 ## Xử lý sự cố \{#troubleshooting\}
 
 | Vấn đề | Giải pháp |
 |---|---|
-| Link checkout không mở được | Xác minh paywall đã được đăng trong web paywall builder |
-| Người dùng không được nhận dạng tại checkout | Xác nhận `Adapty.identify()` đã được gọi với đúng user ID trước khi email được gửi |
-| Mua hàng không được gắn với email | Kiểm tra xem tham số `cid` có trong URL checkout không — liên hệ hỗ trợ nếu thiếu tham số |
+| Link thanh toán không mở được | Kiểm tra xem paywall đã được xuất bản trong trình tạo paywall web chưa |
+| Người dùng không được xác định khi thanh toán | Đảm bảo `Adapty.identify()` đã được gọi với đúng user ID trước khi email được gửi |
+| Lượt mua không được gán cho email | Attribution được tính theo lượt click vào CTA trong email, vì vậy người nhận phải truy cập vào trang thanh toán qua đúng link đó, và lượt mua phải được Adapty Mail nhận trên cùng một hồ sơ người dùng. Lượt mua đã được gán cho email trước đó sẽ giữ nguyên attribution đó |

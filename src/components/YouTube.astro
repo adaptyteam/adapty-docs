@@ -1,0 +1,102 @@
+---
+/**
+ * YouTube embed — responsive 16:9, centred, capped at `width`.
+ *
+ * Use it instead of YouTube's own copy-paste snippet, which hard-codes
+ * 560×315 and so overflows the column on narrow screens. The wrapper is an
+ * aspect-ratio box and the iframe fills it absolutely: `aspect-ratio` alone
+ * does not constrain a replaced element that carries its own width and height,
+ * which is why the box-plus-absolute-fill pattern is needed rather than a
+ * single styled iframe.
+ *
+ * `id` takes the bare 11-character video ID or any YouTube link you can paste:
+ *
+ *   <YouTube id="uicKwOak-Zo" />
+ *   <YouTube id="https://www.youtube.com/watch?v=uicKwOak-Zo" />   address bar
+ *   <YouTube id="https://youtu.be/uicKwOak-Zo?si=9c_a5eHpr" />     share dialog
+ *   <YouTube id="https://www.youtube.com/embed/uicKwOak-Zo" />     embed dialog
+ *
+ * Query parameters are dropped, `?si=` included — that token is share-link
+ * attribution and has no effect on playback.
+ */
+interface Props {
+  /** Video ID, or any YouTube URL. */
+  id: string;
+  /** iframe title, announced by screen readers. Name the video where you can. */
+  title?: string;
+  /** Max width of the player. The 16:9 box shrinks below this on narrow screens. */
+  width?: string;
+}
+
+const { id, title = 'YouTube video player', width = '560px' } = Astro.props;
+
+/** YouTube IDs are exactly 11 characters of [A-Za-z0-9_-]. */
+const ID_PATTERN = /^[\w-]{11}$/;
+
+function extractVideoId(value: string): string | undefined {
+  const raw = (value ?? '').trim();
+  if (!raw) return undefined;
+  if (ID_PATTERN.test(raw)) return raw;
+
+  let url: URL;
+  try {
+    // Tolerate a pasted link with no scheme (`youtu.be/ID`).
+    url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+  } catch {
+    return undefined;
+  }
+
+  const host = url.hostname.replace(/^www\./, '');
+  let candidate: string | null = null;
+
+  if (host === 'youtu.be') {
+    candidate = url.pathname.slice(1);
+  } else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'youtube-nocookie.com') {
+    if (url.pathname === '/watch') {
+      candidate = url.searchParams.get('v');
+    } else {
+      // /embed/ID, /shorts/ID, /live/ID, /v/ID
+      candidate = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([^/?#]+)/)?.[1] ?? null;
+    }
+  }
+
+  return candidate && ID_PATTERN.test(candidate) ? candidate : undefined;
+}
+
+const videoId = extractVideoId(id);
+---
+
+{videoId ? (
+  <div class="youtube-embed" style={{ maxWidth: width }}>
+    <iframe
+      src={`https://www.youtube.com/embed/${videoId}`}
+      title={title}
+      frameborder="0"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      referrerpolicy="strict-origin-when-cross-origin"
+      loading="lazy"
+      allowfullscreen
+    ></iframe>
+  </div>
+) : (
+  <div class="p-4 border border-red-200 bg-red-50 text-red-600 rounded-md text-sm">
+    Not a YouTube video: <code>{id}</code>
+  </div>
+)}
+
+<style>
+  .youtube-embed {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    margin: 0 auto 2rem;
+  }
+
+  .youtube-embed iframe {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+  }
+</style>

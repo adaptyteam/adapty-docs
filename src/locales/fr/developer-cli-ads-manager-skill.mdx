@@ -1,0 +1,156 @@
+---
+title: "Gérer Apple Ads avec un outil de codage IA"
+description: "Installez le plugin Apple Ads pour que Claude Code, Copilot CLI, Codex ou Gemini CLI puisse gérer vos campagnes Apple Ads via le CLI Adapty."
+metadataTitle: "Plugin IA Apple Ads | Documentation Adapty"
+---
+
+import AdsManagerSkill from '@site/src/locales/fr/reusable/AdsManagerSkill.mdx';
+
+Le [plugin Apple Ads](https://github.com/adaptyteam/apple-ads-cli) permet à un outil de codage IA d'opérer votre compte Apple Ads via l'[Adapty CLI](developer-cli-ads-manager). Posez une question en langage naturel, et il détermine quelles commandes y répondent, lit d'abord le compte, puis propose les modifications avant qu'elles n'atteignent Apple.
+
+Une skill est un ensemble d'instructions que votre outil IA charge à la demande. Le plugin en fournit trois — un opérateur qui gère votre compte, un auditeur en lecture seule, et un planificateur stratégique — ainsi que des playbooks pour les tâches récurrentes comme les bilans hebdomadaires, les analyses ROAS par cohorte et la réallocation budgétaire, des guides par secteur avec des taxonomies de mots-clés spécifiques à chaque catégorie et des bases économiques de départ, et des [slash commands](#slash-commands) qui transforment les tâches les plus courantes en une seule ligne. Ensemble, ils couvrent les aspects de l'interface Ads Manager qui prêtent le plus facilement à l'erreur : quel identifiant chaque indicateur accepte, quel filtre chaque liste prend en charge, combien de mots-clés tiennent dans un lot, et quels appels sont payants.
+
+## Ce que ça gère \{#what-it-handles\}
+
+- **Performances de lecture** : sélectionne l'appel unique qui répond à une question au lieu de parcourir les résultats page par page. Il sait qu'une question de type top-N correspond à un appel ordonné, et que compter des entités ne nécessite aucun appel de métriques.
+- **Modifications structurelles** : crée et met à jour des campagnes, groupes d'annonces, annonces et mots-clés dans le bon ordre, en lisant l'entité parente avant d'écrire l'entité enfant.
+- **Travail sur les mots-clés** : ajoute et réévalue les enchères de mots-clés par lots, et extrait les termes de recherche en mots-clés et mots-clés négatifs.
+- **Automatisations** : configure des automatisations basées sur des règles et les teste à blanc avant qu'elles ne touchent aux enchères en production.
+- **Recherche de concurrents** : récupère les mots-clés sur lesquels les applications concurrentes enchérissent.
+- **Audits de compte** : la compétence `apple-ads-audit` vérifie l'état du compte, le statut de diffusion, la structure et les mots-clés en double sans rien modifier.
+- **Planification from scratch** : la compétence `apple-ads-strategy` conçoit une structure de compte, une taxonomie de mots-clés et des budgets de départ à partir d'une description de votre application — aucun compte Apple Ads ni CLI requis.
+
+## Ce qu'il ne fera pas \{#what-it-will-not-do\}
+
+Le plugin traite chaque écriture comme irréversible, parce qu'elle l'est — la CLI ne dispose pas de suppression, et les modifications parviennent à Apple en quelques secondes.
+
+- Il lit avant d'écrire, plutôt que de deviner un ID ou un budget.
+- Il demande confirmation avant toute commande qui implique une dépense, et laisse en place la confirmation native de la CLI lorsque c'est vous qui exécutez la commande.
+- Il associe une clé d'idempotence à chaque écriture dans une chaîne, de sorte qu'une nouvelle exécution après un résultat incertain ne crée pas une deuxième campagne.
+- Il privilégie les petits lots, afin qu'un rejet partiel de la part d'Apple reste facile à lire.
+
+:::note
+Les skills recommandent et préparent des commandes. La lecture des métriques et les exécutions à blanc ne coûtent rien, mais vous restez responsable d'approuver tout ce qui modifie un compte publicitaire en production.
+:::
+
+## Installer le plugin \{#install-the-plugin\}
+
+<AdsManagerSkill />
+
+## Plugin de benchmarks \{#benchmarks-plugin\}
+
+Le même marketplace propose un complément optionnel, [`apple-ads-benchmarks`](https://github.com/adaptyteam/apple-ads-benchmarks) — les données de référence Apple Ads publiées par Adapty pour les apps d'abonnement, conditionnées en données locales interrogeables par votre outil IA : taux de clic, taux de conversion, CPT et CPA dans 90 pays, 22 genres App Store et 59 niches, ainsi que des indicateurs économiques abonnés comme la LTV sur un an. Il fonctionne entièrement hors ligne, sans compte Apple Ads, sans CLI et sans abonnement Adapty.
+
+Utilisez-le pour évaluer si un chiffre pose problème avant de creuser dans le compte : « Un CPT de 4 $ est-il élevé pour une application fitness en Allemagne ? » est d'abord une question de benchmarks.
+
+**Claude Code**
+
+```bash
+claude plugin marketplace add adaptyteam/apple-ads-cli
+claude plugin install apple-ads-benchmarks@adapty
+```
+
+**N'importe quel autre outil**
+
+```bash
+npx skills add adaptyteam/apple-ads-benchmarks --all
+```
+
+:::note
+Le CPA de référence correspond au coût par téléchargement, et non au coût par installation ; le CR correspond au taux de tap jusqu'au téléchargement, et non au taux d'essai vers l'achat payant. Comparez chacun avec votre métrique en vous assurant d'utiliser la même définition.
+:::
+
+## Commandes slash \{#slash-commands\}
+
+Dans Claude Code, le plugin ajoute également neuf commandes `/asa-*`. Chacune est un prompt prêt à l'emploi qui sélectionne la compétence et le guide appropriés pour une tâche courante, vous tapez simplement la commande au lieu de rédiger le prompt vous-même :
+
+| Commande | Ce qu'elle fait |
+|---|---|
+| `/asa-review` | Point hebdomadaire — direction, comparaison d'installations, anomalies et une action |
+| `/asa-audit` | Audit de santé du compte en lecture seule ou audit de structure en direct |
+| `/asa-bids` | Réviser et ajuster les enchères par ROAS de cohorte |
+| `/asa-budget` | Réallouer le budget entre les campagnes |
+| `/asa-harvest` | Extraire les termes de recherche en mots-clés exacts et mots-clés négatifs |
+| `/asa-negatives` | Analyser les termes de recherche pour trouver les mots-clés négatifs les plus précis |
+| `/asa-opportunities` | Trouver des opportunités de mots-clés concurrents via Market Intelligence |
+| `/asa-cpp` | Associer une intention de mot-clé à une Custom Product Page et une annonce existantes |
+| `/asa-launch` | Planifier et lancer une nouvelle campagne Apple Search Ads |
+
+Slash commands install with the Claude Code plugin. In other tools, ask for the same jobs in plain language — the skills carry the same playbooks.
+
+## Exemples de prompts \{#example-prompts\}
+
+Les skills contiennent déjà les commandes, leur ordre d'exécution et celles qui dépensent de l'argent — un prompt n'a donc pas besoin de tout détailler. Rédigez un prompt pour ce qu'un skill ne peut pas déduire seul : la métrique et la fenêtre temporelle sur lesquelles vous évaluez vos campagnes, le benchmark auquel vous les comparez, et la forme de réponse souhaitée.
+
+### Auditer un compte que vous gérez déjà \{#audit-an-account-you-already-run\}
+
+Utilisez cette option lorsque vos campagnes sont actives et que vous souhaitez savoir où va l'argent. Chaque commande requise est une lecture, donc rien dans votre compte ne change.
+
+```
+Audit my Apple Search Ads account and tell me what needs my attention. This is
+read-only — don't change anything.
+
+Judge campaigns on cohort net ROAS over the last 30 days against a 3:1
+benchmark, since Adapty attributes real subscription revenue back to the
+campaign that drove it. Cover campaigns, keywords, the search terms I'm
+matching on, and what my active automations do.
+
+Serving status and the reasons a campaign isn't serving come back on the
+metrics rows, not from campaigns list.
+
+Then report back in plain language:
+- what's blocked and how to unblock it
+- net ROAS per campaign against the benchmark
+- the top 3 places I'm wasting money
+- the top 3 growth opportunities
+- the changes you'd make, each as the exact command with its current and new
+  value, for me to approve one at a time
+
+I'm not an Apple Ads expert. Assume I'm smart but busy.
+```
+
+### Lancer vos premières campagnes \{#launch-your-first-campaigns\}
+
+Utilisez cette option lorsque le compte Apple Ads est vide. La compétence de l'opérateur crée des campagnes mises en pause par défaut, et cette invite maintient cet état jusqu'à ce que vous ayez lu le plan.
+
+```
+I want to launch Apple Search Ads for my app from scratch. I'm not an Apple
+Ads expert — guide me and build it for me. Create everything paused.
+
+Interview me first, briefly: what my app does and who it's for, which
+countries to start in, my monthly test budget, and my target cost per
+subscriber. If I don't know that last one, work it back from my price and
+expected trial conversion.
+
+Then propose a starter structure as a table before you create anything: a
+brand campaign, a generic campaign, a competitor campaign if I name
+competitors, and a small discovery campaign to mine search terms. For each
+one give me a one-line reason it exists, its share of the budget, its ad
+groups, a starter keyword list with match types and bids, and the negative
+keywords to share across all of them.
+
+Build it once I approve, then show me what was created.
+
+Finish with a launch checklist: what I still have to fix in the Apple Search
+Ads console before anything can serve, such as a payment method or a pending
+tax verification; how to switch the campaigns on when I'm ready; and one
+automation rule worth adding after a week of data. Then tell me to come back
+in 7 days for a performance review.
+```
+
+## En quoi il diffère de l'agent IA \{#how-it-differs-from-the-ai-agent\}
+
+Adapty Ads Manager dispose également d'un [agent IA](ads-manager-ai-agent) intégré dans le tableau de bord. Les deux répondent à des besoins différents :
+
+| | Agent IA | Plugin Apple Ads |
+|---|---|---|
+| Où il s'exécute | L'Adapty Dashboard | Votre terminal, dans votre outil de codage IA |
+| Ce qu'il fait | Analyse et recommande | Analyse, recommande et exécute les commandes |
+| Configuration | Aucune | Adapty CLI plus le plugin |
+
+Utilisez l'agent IA pour savoir ce qui se passe dans votre compte. Utilisez le plugin lorsque vous souhaitez également que la modification soit effectuée.
+
+## Et ensuite \{#whats-next\}
+
+- [Gérer Ads Manager depuis la CLI](developer-cli-ads-manager) — les mêmes tâches manuellement, sans outil IA.
+- [Commandes Ads Manager](developer-cli-ads-manager-reference) — chaque commande avec ses arguments, ses options et les valeurs acceptées.
