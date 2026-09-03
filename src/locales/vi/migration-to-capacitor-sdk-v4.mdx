@@ -1,19 +1,19 @@
 ---
-title: "Migrate Adapty Capacitor SDK sang v4.1"
-description: "Migrate lên Adapty Capacitor SDK v4.1: thay thế paywall API bằng flow API, áp dụng attribution API đã đổi tên, bật Adapty Attribution tường minh, và tải lại file dự phòng của bạn."
-metadataTitle: "Migration lên Adapty Capacitor SDK v4.1 | Tài liệu Adapty"
+title: "Migrate Adapty Capacitor SDK sang v4.1.1"
+description: "Migrate lên Adapty Capacitor SDK v4.1.1: thay thế paywall API bằng flow API, cập nhật API attribution đã đổi tên, bật Adapty Attribution một cách tường minh, và tải lại file dự phòng."
+metadataTitle: "Migration lên Adapty Capacitor SDK v4.1.1 | Tài liệu Adapty"
 ---
 
-Adapty Capacitor SDK 4.1 là bản phát hành ổn định đầu tiên của dòng 4.x — phiên bản 4.0 chỉ được phát hành dưới dạng beta, vì vậy nếu bạn đang dùng 3.x, hãy migrate thẳng lên 4.1. Hướng dẫn này bao gồm toàn bộ quá trình migration: các flow được giới thiệu trong 4.0 và các thay đổi trong 4.1 bổ sung thêm vào đó.
+Adapty Capacitor SDK 4.1.1 là bản phát hành ổn định hiện tại của dòng 4.x — phiên bản 4.0 chỉ được phát hành dưới dạng beta, vì vậy nếu bạn đang dùng 3.x, hãy migrate thẳng lên 4.1.1. Hướng dẫn này bao gồm toàn bộ quá trình migration: các flow được giới thiệu trong 4.0 và các thay đổi của 4.1.1 bổ sung thêm.
 
-Phiên bản 4.x giới thiệu flows và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cài đặt nào trên Adapty Dashboard. Ngoài ra, phiên bản 4.1 chuyển Adapty Attribution sang dạng opt-in, đổi tên phương thức attribution bên ngoài, thay đổi định dạng file paywall dự phòng, và bổ sung tính năng mua in-app purchase được quảng bá trên App Store.
+Phiên bản 4.x giới thiệu flow và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới lẫn Paywall Builder hiện có — không cần thay đổi cài đặt nào trên Adapty Dashboard. Ngoài ra, phiên bản 4.1.1 cho phép Adapty Attribution hoạt động theo cơ chế opt-in, đổi tên phương thức external attribution, thay đổi định dạng file dự phòng và bổ sung tính năng App Store promoted in-app purchase.
 
 :::note
 Bạn đang chuyển từ bản beta 4.0? Hãy thay phiên bản beta đã ghim bằng [phiên bản mới nhất](#installation), sau đó chỉ cần xem bốn phần sau: [Adapty Attribution bị tắt theo mặc định](#adapty-attribution-is-disabled-by-default), [các API attribution ngoài đã được đổi tên](#renamed-external-attribution-apis), [tệp dự phòng](#fallback-files), và [sản phẩm được quảng bá trên App Store](#app-store-promoted-in-app-purchases).
 :::
 
 ## Tham khảo nhanh \{#quick-reference\}
-| v3 | v4.1 |
+| v3 | v4.1.1 |
 |---|---|
 | Adapty Attribution được bật tự động | tắt theo mặc định — bật bằng `adaptyAttributionEnabled: true` |
 | `adapty.getPaywall({ placementId, locale?, params? })` | `adapty.getFlow({ placementId, params? })` |
@@ -29,8 +29,8 @@ Bạn đang chuyển từ bản beta 4.0? Hãy thay phiên bản beta đã ghim 
 | `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
 | `AttributionSource` | `AdaptyExternalAttributionProvider` |
-| File dự phòng được tải xuống cho 3.x | định dạng file dự phòng mới — tải lại file |
-| In-app purchase được quảng bá chưa được hỗ trợ | sự kiện `'onPromotedPurchaseReceived'` và `adapty.makePromotedPurchase({ product })` |
+| File dự phòng được tải xuống cho phiên bản 3.x | định dạng file dự phòng mới — tải lại file |
+| Không hỗ trợ in-app purchase được quảng bá | sự kiện `'onPromotedPurchaseReceived'` và `adapty.makePromotedPurchase({ product })` |
 
 `AdaptyPaywallProduct` giữ nguyên tên — các sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` cũng giữ nguyên tên, nhưng giờ nhận vào một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa — thay vào đó hãy truyền nó vào `createFlowView`. Các API mua hàng và hồ sơ người dùng (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) và `setFallback` giữ nguyên signature, nhưng file fallback cần được tải lại — xem [Fallback files](#fallback-files). Các phương thức của view gồm `present`, `dismiss`, `setEventHandlers`, `clearEventHandlers`, `showDialog`, và các event handler `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, và `onAndroidSystemBack` vẫn giữ nguyên tên như trong v3. Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Onboarding API deprecation](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Default behavior changes](#default-behavior-changes).
 
@@ -66,13 +66,13 @@ npx cap add ios --packagemanager SPM
 - Ứng dụng đang dùng CocoaPods: migrate dự án iOS theo [hướng dẫn của Capacitor về việc dùng SPM trong dự án hiện có](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
 
 Xem [Cài đặt Adapty SDK](sdk-installation-capacitor) để biết toàn bộ các bước thiết lập.
-## ⚠️ Adapty Attribution mặc định bị tắt \{#adapty-attribution-is-disabled-by-default\}
+## ⚠️ Adapty Attribution bị tắt theo mặc định \{#adapty-attribution-is-disabled-by-default\}
 
 :::warning
-Nếu bạn đang dùng [Adapty Attribution](user-acquisition) và cập nhật lên SDK 4.1 mà không bật tùy chọn này, mọi thứ sẽ âm thầm bị lỗi — các lượt cài đặt sẽ không được ghi nhận, và không có bất kỳ cảnh báo nào.
+Nếu bạn đang dùng [Adapty Attribution](user-acquisition) và cập nhật lên SDK 4.1.1 mà không bật tính năng này, mọi thứ sẽ âm thầm bị lỗi — lượt cài đặt ngừng được ghi nhận mà không có bất kỳ cảnh báo nào.
 :::
 
-Trong các phiên bản trước, SDK tự động đăng ký lượt cài đặt cho [Adapty Attribution](user-acquisition). Bắt đầu từ SDK phiên bản 4.1, tính năng này bị tắt theo mặc định: SDK không đăng ký lượt cài đặt, các sự kiện `'onInstallationDetailsSuccess'` và `'onInstallationDetailsFail'` sẽ không bao giờ kích hoạt, và `getCurrentInstallationStatus` trả về trạng thái `not_available`.
+Trong các phiên bản trước, SDK tự động đăng ký lượt cài đặt cho [Adapty Attribution](user-acquisition). Bắt đầu từ SDK phiên bản 4.1.1, tính năng này bị tắt theo mặc định: SDK không đăng ký lượt cài đặt, các sự kiện `'onInstallationDetailsSuccess'` và `'onInstallationDetailsFail'` sẽ không bao giờ được kích hoạt, và `getCurrentInstallationStatus` trả về trạng thái `not_available`.
 
 Nếu bạn sử dụng Adapty Attribution, hãy bật tính năng này khi kích hoạt SDK:
 
@@ -115,12 +115,12 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tùy c
 - const products = await adapty.getPaywallProducts({ paywall });
 + const products = await adapty.getPaywallProducts({ flow });
 ```
-### Tệp dự phòng \{#fallback-files\}
+### Tệp dự phòng
 
-Định dạng [tệp dự phòng](fallback-flows) đã thay đổi trong dòng 4.x, và lại thay đổi thêm ở 4.1. Hãy tải tệp mới từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và đóng gói vào ứng dụng, dù bạn đã tải tệp này cho bản beta 4.0 trước đó.
+Định dạng [tệp dự phòng](fallback-flows) đã thay đổi trong dòng 4.x, và thay đổi lại trong 4.1.1. Hãy tải lại tệp từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và đưa vào ứng dụng của bạn, kể cả khi bạn đã tải tệp cho bản 4.0 beta trước đó.
 
 :::warning
-Bước này không gây lỗi build. Nếu bỏ qua, `setFallback` sẽ từ chối tệp cũ và mọi placement sẽ mất paywall dự phòng.
+Bước này không tạo ra lỗi build. Nếu bạn bỏ qua, `setFallback` sẽ từ chối tệp cũ và mọi placement sẽ mất fallback của nó.
 :::
 
 ## Mô hình dữ liệu \{#data-model\}
@@ -128,26 +128,25 @@ Bước này không gây lỗi build. Nếu bỏ qua, `setFallback` sẽ từ ch
 `getFlow` trả về một `AdaptyFlow` thay vì `AdaptyPaywall`, và cấu trúc đối tượng đã thay đổi:
 | Trường `AdaptyPaywall` v3 | Trường `AdaptyFlow` v4 | Hành động |
 |---|---|---|
-| `remoteConfig?` (đơn) | `remoteConfigs?: AdaptyRemoteConfig[]` (mảng) | Một flow có một remote config cho mỗi ngôn ngữ được cấu hình. Đọc cái phù hợp với người dùng: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
-| `productIdentifiers` | `flow.paywalls[i].productIdentifiers` | Định danh sản phẩm giờ nằm trên từng biến thể flow, không còn trên flow nữa. |
-| `products` (deprecated trong v3) | đã xóa | Dùng `flow.paywalls[i].productIdentifiers`, hoặc gọi `getPaywallProducts(flow)` để lấy sản phẩm đầy đủ. `ProductReference` đã bị xóa khỏi public type. |
+| `remoteConfig?` (đơn) | `remoteConfigs?: AdaptyRemoteConfig[]` (mảng) | Một flow chứa một remote config cho mỗi ngôn ngữ được cấu hình. Đọc cái phù hợp với người dùng: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
+| `productIdentifiers` | `flow.paywalls[i].productIdentifiers` | Các identifier sản phẩm giờ nằm trên từng biến thể của flow, không phải trên flow. |
+| `products` (deprecated trong v3) | đã xóa | Dùng `flow.paywalls[i].productIdentifiers`, hoặc gọi `getPaywallProducts(flow)` để lấy đầy đủ sản phẩm. `ProductReference` đã bị xóa khỏi kiểu public. |
 | `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Chuyển từ flow sang từng biến thể paywall. |
 | `version?: number` | `flowVersionId?: string` | Đổi tên, và kiểu dữ liệu thay đổi từ `number` sang `string`. |
-| `hasViewConfiguration` | đã xóa | Xóa mọi kiểm tra `hasViewConfiguration` khỏi code của bạn — `createFlowView` giờ sẽ throw thay thế (xem [Hiển thị flows](#displaying-flows)). |
 | `requestLocale` | đã xóa | Locale không còn là một phần của model nữa. |
 | _(mới)_ | `paywalls: AdaptyFlowPaywall[]` | Mỗi mục là một biến thể paywall trong flow. |
 | _(mới)_ | `responseCreatedAt: number` | Timestamp phản hồi từ server, tính bằng mili giây. |
 
-`hasViewConfiguration` và `requestLocale` vẫn nằm trên `AdaptyOnboarding` — chỉ có flow model là bỏ chúng.
+`requestLocale` vẫn còn trên `AdaptyOnboarding` — chỉ có flow model là bỏ nó.
 
-Product identifier đã được chuyển từ flow sang từng variation:
+Identifier sản phẩm đã được chuyển từ flow sang từng variation:
 
 ```diff showLineNumbers
 - const ids = paywall.productIdentifiers;
 + const ids = flow.paywalls[0].productIdentifiers;
 ```
 
-Nếu code của bạn vẫn đọc `paywall.products` — đã deprecated từ v3 và hiện đã bị xóa — hãy chuyển sang dùng `productIdentifiers`, hoặc gọi `getPaywallProducts(flow)` khi bạn cần đầy đủ thông tin sản phẩm thay vì chỉ identifier.
+Nếu code của bạn vẫn đang đọc `paywall.products` — đã deprecated từ v3 và hiện đã bị xóa — hãy chuyển sang `productIdentifiers`, hoặc gọi `getPaywallProducts(flow)` khi bạn cần đầy đủ sản phẩm thay vì chỉ identifier.
 
 ## Phương thức Web Paywall \{#web-paywall-methods\}
 
@@ -181,20 +180,6 @@ Cũng giống như trong v3, bạn không cần gọi phương thức này khi h
 - const view = await createPaywallView(paywall);
 + const view = await createFlowView(flow);
   await view.present();
-```
-
-`createFlowView` sẽ throw một `AdaptyError` nếu flow chưa được cấu hình view — thay thế cho việc kiểm tra `hasViewConfiguration` ở v3:
-```diff showLineNumbers
-- if (paywall.hasViewConfiguration) {
--   const view = await createPaywallView(paywall);
--   await view.present();
-- }
-+ try {
-+   const view = await createFlowView(flow);
-+   await view.present();
-+ } catch (error) {
-+   // the flow has no view configured, or view creation failed
-+ }
 ```
 
 :::note
@@ -239,13 +224,13 @@ v4 cũng bổ sung một số tính năng bạn có thể tự chọn kích ho�
 - `onAnalytics: (name, params)` — các sự kiện analytics mà flow phát ra, bắt đầu với sự kiện xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](capacitor-flow-screen-views).
 - `onRequestPermission: (permission, customArgs)` — dành riêng cho các yêu cầu cấp quyền hệ thống (như thông báo đẩy hoặc truy cập camera) từ một flow. Flow hiện chưa kích hoạt yêu cầu cấp quyền, nên bạn chưa cần triển khai phần này.
 
-Riêng ở phiên bản 4.1, SDK bổ sung một sự kiện cấp SDK thay vì một flow handler: `'onPromotedPurchaseReceived'`, được gửi qua `adapty.addListener`. Nếu không có listener nào được đăng ký, SDK tự hoàn tất giao dịch mua được quảng bá; nếu có listener, quyền hoàn tất sẽ được chuyển cho ứng dụng của bạn. Xem [App Store promoted in-app purchases](#app-store-promoted-in-app-purchases).
+Riêng ở phiên bản 4.1.1, SDK bổ sung thêm một event cấp SDK (không phải flow handler): `'onPromotedPurchaseReceived'`, được gửi qua `adapty.addListener`. Nếu không có listener nào được đăng ký, SDK sẽ tự hoàn tất giao dịch mua được quảng bá; nếu có listener, quyền hoàn tất sẽ được chuyển về ứng dụng của bạn. Xem [App Store promoted in-app purchases](#app-store-promoted-in-app-purchases).
 
-## Đổi tên các API attribution từ bên ngoài \{#renamed-external-attribution-apis\}
+## Đổi tên các API attribution bên ngoài \{#renamed-external-attribution-apis\}
 
-Kể từ SDK phiên bản 4.1, các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc nhà cung cấp tùy chỉnh) đã được đổi tên để thống nhất với các SDK gốc. Không có alias deprecated nào, vì vậy các vị trí gọi hàm hiện tại sẽ ngừng hoạt động cho đến khi bạn đổi tên chúng:
+Từ phiên bản SDK 4.1.1, các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc nhà cung cấp tùy chỉnh) được đổi tên để phù hợp với các SDK gốc. Không có alias deprecated nào, vì vậy các lệnh gọi hiện tại sẽ ngừng hoạt động cho đến khi bạn đổi tên chúng:
 
-| Trước 4.1 | 4.1 |
+| Trước 4.1.1 | 4.1.1 |
 |---|---|
 | `adapty.updateAttribution({ attribution, source })` | `adapty.updateExternalAttribution({ attribution, provider })` |
 | `AttributionSource` | `AdaptyExternalAttributionProvider` |
@@ -282,9 +267,9 @@ Thuộc tính profile liệt kê các nhà cung cấp attribution đã áp dụn
 
 Code đọc giá trị này cần được cập nhật — xem [Hiển thị paywall được nhắm mục tiêu bởi Apple Ads](capacitor-show-aa-targeted-paywall).
 
-## Mua in-app purchase được quảng bá trên App Store \{#app-store-promoted-in-app-purchases\}
+## In-app purchase được quảng bá trên App Store \{#app-store-promoted-in-app-purchases\}
 
-SDK 4.1 bổ sung hỗ trợ cho [in-app purchase được quảng bá trên trang sản phẩm App Store của bạn](capacitor-making-purchases#in-app-purchases-from-the-app-store). Đây là tính năng mới, không phải bước migration: SDK tự động hoàn tất các giao dịch mua được quảng bá, vì vậy bạn có được hành vi này mà không cần viết thêm bất kỳ đoạn code nào.
+SDK 4.1.1 bổ sung hỗ trợ cho [in-app purchase được quảng bá trên trang sản phẩm App Store của bạn](capacitor-making-purchases#in-app-purchases-from-the-app-store). Đây là tính năng mới, không phải bước migration: SDK tự động hoàn tất các giao dịch mua được quảng bá, nên bạn có được tính năng này mà không cần viết thêm code.
 
 Viết code để tự xử lý luồng mua hàng — ví dụ như hiển thị một màn hình trước. Đăng ký listener cho sự kiện `'onPromotedPurchaseReceived'` mới, và hoàn tất giao dịch bằng `adapty.makePromotedPurchase`. Khi listener đó được đăng ký, SDK sẽ không tự động hoàn tất promoted purchase nữa.
 
