@@ -14,7 +14,7 @@ The Adapty CLI lets you set up your app configuration entirely from the command 
 Connecting Adapty to App Store Connect and Google Play still requires a one-time setup in the dashboard — covered in step 3.
 :::
 
-By the end, your app, access level, product, paywall, and placement are all visible in the [Adapty dashboard](https://app.adapty.io).
+By the end, your app, access level, product, flow or paywall, and placement are all visible in the [Adapty dashboard](https://app.adapty.io).
 
 If you run the CLI in Claude Cowork, set it up in Claude first — see [Set up the Adapty CLI in Claude Cowork](developer-cli-cowork).
 
@@ -126,9 +126,40 @@ The command returns a `<product-id>`.
 
 If you also sell this product on the web through Stripe or Paddle, add those IDs to the same command. See [products create](developer-cli-reference#adapty-products-create) in the command reference.
 
-## 6. Create a paywall
+## 6. Create a flow or paywall
 
-A [paywall](paywalls) is the container that holds your products. In Adapty, paywalls are the only way to deliver products to users. Every product must be in a paywall before it can appear in your app.
+Every product must be inside a flow or a paywall before it can appear in your app. Pick one:
+
+- A **flow** is a screen, or a sequence of screens, that you design in the no-code [Flow & Paywall Builder](adapty-flow-builder) and the Adapty SDK renders natively: a paywall screen, an onboarding, a quiz. Choose a flow when you want Adapty to render the purchase screen. Flows require Adapty SDK 4.0 or later.
+- A **paywall** is a set of products with no design attached. Choose a paywall when you render the purchase screen in your own app code and only need Adapty to deliver the products, optionally with a [remote config](customize-paywall-with-remote-config).
+
+A placement serves one content type, so decide before step 7.
+
+### 6a. Create a flow
+
+The CLI creates the flow record. Its screens live in a builder config, a JSON document the CLI doesn't generate. To author the config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives the CLI for you.
+
+Create the flow:
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+The command returns a `<flow-id>`.
+
+Build its screens with the [flow-generator skill](flow-generator-skill) or in the [Flow & Paywall Builder](adapty-flow-builder). Either way, the result is a saved draft that your users don't see yet.
+
+Publish the flow:
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+The command asks for confirmation. Publication runs in the background, so check the status with `adapty flows get --app <app-id> <flow-id>` until it reads `published`. A placement accepts only a published flow.
+
+### 6b. Create a paywall
+
+A [paywall](paywalls) is the container that holds your products.
 
 :::important
 Once a paywall is linked to a placement, its products cannot be changed. To use different products, create a new paywall and update the placement to point to it.
@@ -151,20 +182,30 @@ The command returns a `<paywall-id>`.
 
 ## 7. Create a placement
 
-A [placement](placements) is the point in your app where you show a paywall. The only thing you hardcode in your app code is the placement ID. Everything else — which paywall to show and to which users — is managed in the dashboard without releasing a new app version.
+A [placement](placements) is the point in your app where you show a flow or paywall. The only thing you hardcode in your app code is the placement ID. Everything else — which flow or paywall to show and to which users — is managed in the dashboard without releasing a new app version.
 
-`--developer-id` is the string you'll reference later in your app code when you ask Adapty which paywall to display at this point. Pick something that describes the location, like `"main"`, `"onboarding"`, or `"settings"`.
+`--developer-id` is the string you'll reference later in your app code when you ask Adapty what to display at this point. Pick something that describes the location, like `"main"`, `"onboarding"`, or `"settings"`.
 
-```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
-```
+<Tabs>
+  <TabItem value="flow" label="Flow">
+    ```bash
+    adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+    ```
+  </TabItem>
+  <TabItem value="paywall" label="Paywall">
+    ```bash
+    adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+    ```
+  </TabItem>
+</Tabs>
 
-The `--audiences` flag controls which paywall is shown to which users. The example above sets a single default audience — every user at this placement sees the same paywall.
+The `--audiences` flag controls which flow or paywall is shown to which users. The examples above set a single default audience: every user at this placement sees the same content. A placement serves one content type, so every audience entry must carry the same `content_type`. For targeting by segment, see [Audiences shape](developer-cli-reference#audiences-shape) in the command reference.
 
 ## What's next
 
 All entities are now visible in the [Adapty dashboard](https://app.adapty.io). Next:
 
-- [Design your paywall](adapty-paywall-builder) — use the no-code Paywall Builder to add visuals, layout, and copy to the paywall you just created.
+- Change a flow later — describe the change to the [flow-generator skill](flow-generator-skill), or open the flow in the [Flow & Paywall Builder](adapty-flow-builder).
+- Render a paywall in your app — [fetch the paywall and its products](fetch-paywalls-and-products) with the SDK and build the screen in your own code.
 - [Integrate the Adapty SDK](quickstart-sdk) — add the SDK to your app to fetch and display the placement.
-- Route different user [segments](segments) to different paywalls — see [`placements update`](developer-cli-reference#adapty-placements-update) and [`segments list`](developer-cli-reference#adapty-segments-list) in the command reference.
+- Route different user [segments](segments) to different flows or paywalls — see [`placements update`](developer-cli-reference#adapty-placements-update) and [`segments list`](developer-cli-reference#adapty-segments-list) in the command reference.

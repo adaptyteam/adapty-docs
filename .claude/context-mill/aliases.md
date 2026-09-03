@@ -5,8 +5,8 @@ context-mill skill's lookup mode to expand search terms. Hand-curated —
 add a row whenever a lookup misses articles because of naming drift.
 
 **Which file does a new row belong in?** This one holds equivalences that hold
-**across the whole corpus** — a rename that touched every zone (Flow ↔ Paywall
-Builder), or a word the whole product uses two ways (access level ↔ entitlement).
+**across the whole corpus** — a rename that touched every zone (Flow & Paywall
+Builder ↔ Flow Builder ↔ Paywall Builder), or a word the whole product uses two ways (access level ↔ entitlement).
 A zone brief's *Ticket language* section holds how tickets phrase requests
 **inside one area**, mapped to the article that answers them. Rule of thumb: if
 the row would be true in a dozen briefs, it goes here; if it names a destination,
@@ -15,7 +15,7 @@ will disagree with itself later.
 
 | Task/product language | Doc language / symbols |
 |---|---|
-| Flow, Flow Builder | Paywall Builder, onboarding builder, `AdaptyUI`, builder |
+| Flow & Paywall Builder, Flow Builder, Paywall Builder, onboarding builder, builder | **Flow & Paywall Builder** is the current product name (owner instruction, 2026-09-03). "Flow Builder" and "Paywall Builder" are the older names the corpus still carries — match them when searching, never write them in new text. Symbols: `AdaptyUI`, `AdaptyFlow` |
 | paywall (v4 SDKs) | flow, `AdaptyFlow`, placement |
 | onboarding | `AdaptyOnboarding`, onboarding builder |
 | access level | premium access, entitlement, `accessLevels` |
