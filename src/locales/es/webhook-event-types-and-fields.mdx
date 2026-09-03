@@ -15,9 +15,11 @@ Adapty envía webhooks en respuesta a eventos de suscripción. Esta sección def
 Puedes enviar todos los tipos de eventos a tu webhook o elegir solo algunos. Consulta nuestros [Flujos de eventos](event-flows) para saber qué tipo de datos entrantes esperar y cómo construir tu lógica de negocio en torno a ellos. Puedes desactivar los tipos de eventos que no necesites cuando [configures tu integración de Webhook](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard). También puedes reemplazar los IDs de eventos predeterminados de Adapty por los tuyos propios si es necesario.
 
 <WebhookEvents />
+
 :::note
 `subscription_renewal_reactivated` lleva el ID del producto **anterior** — el que estaba activo cuando el usuario canceló — incluso si el usuario reactivó la suscripción comprando un producto diferente. Apple mantiene el mismo `original_transaction_id` a lo largo de la cadena cancelación → reactivación, por lo que este evento refleja el producto original. El nuevo producto aparece en el siguiente evento `subscription_renewed`, cuando comienza la facturación del nuevo producto.
 :::
+
 :::note
 En Google Play, Adapty puede enviar un evento `subscription_started` con todos los campos monetarios establecidos en cero — por ejemplo, cuando Google reemplaza una suscripción por otra o cuando la suscripción comienza con una fase sin cargo. No contabilices estos eventos como ingresos. Cuando Google reemplaza una suscripción, emite un nuevo token de compra, por lo que Adapty reporta la transacción pagada bajo un `store_transaction_id` diferente.
 :::
@@ -25,7 +27,9 @@ En Google Play, Adapty puede enviar un evento `subscription_started` con todos l
 ## Estructura de los eventos de webhook \{#webhook-event-structure\}
 
 Adapty solo te enviará los eventos que hayas seleccionado en la sección **Events names** de la página [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook).
+
 Los eventos del webhook se serializan en JSON. El cuerpo de la solicitud `POST` enviada a tu servidor contendrá el evento serializado dentro de la estructura que se muestra a continuación. Todos los eventos siguen la misma estructura, aunque sus campos varían según el tipo de evento, el store y tu configuración específica. Los atributos de usuario son los [atributos de usuario personalizados](setting-user-attributes#custom-user-attributes) que hayas configurado, por lo que contienen lo que tú hayas definido. Los campos de datos de atribución también son iguales para todos los tipos de eventos; sin embargo, la lista de atribuciones dependerá de las fuentes de atribución que uses en tu app. A continuación puedes ver un ejemplo de evento:
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -108,6 +112,7 @@ Los eventos del webhook se serializan en JSON. El cuerpo de la solicitud `POST` 
 ### Campos del evento \{#event-fields\}
 
 Los parámetros de evento son los mismos para todos los tipos de evento.
+
 | **Campo** | **Tipo** | **Descripción** |
 |---|---|---|
 | **advertising_id** | UUID | ID de publicidad (solo Android). |
@@ -127,12 +132,15 @@ Los parámetros de evento son los mismos para todos los tipos de evento.
 | **profiles_sharing_access_level** | JSON | Lista de usuarios que [comparten el nivel de acceso](general#6-sharing-paid-access-between-user-accounts) excluyendo el perfil de usuario actual. Si el uso compartido de niveles de acceso está habilitado en tu app, esta lista incluye otros perfiles que se han usado con el mismo ID de Apple/Google.<br/>Formato: <ul><li>**profile_id**: (UUID) ID de Adapty</li><li>**customer_user_id**: (String) Customer User ID si se ha proporcionado</li></ul> |
 | **user_agent** | String | User-agent del navegador del dispositivo. |
 | **user_attributes** | JSON | Datos personalizados que puedes definir para enriquecer los perfiles de usuario con información específica de la app. Se usan habitualmente para registrar preferencias del usuario (p. ej., tema, idioma) o indicadores de comportamiento (onboarding completado, uso de funcionalidades). <br/>Con formato de pares clave-valor donde las claves son cadenas y los valores pueden ser cadenas o números (p. ej., `{"Favourite_color": "Violet", "Pet_name": "Fluffy"}`). <br/>Puedes definir atributos personalizados manualmente en el Adapty Dashboard para perfiles individuales, de forma programática mediante el método `updateProfile` del SDK de Adapty, o a través de la API del servidor al crear/actualizar perfiles. <br/>Se incluye si **Send User Attributes** está habilitado en los [ajustes del Webhook](https://app.adapty.io/integrations/customwebhook). <p>Aunque los valores de atributos personalizados en el código de la app para móvil pueden definirse como floats o strings, los atributos recibidos a través de la API del servidor o importación histórica pueden llegar en distintos formatos. En ese caso, los valores booleanos y enteros se convertirán a floats.</p> |
+
 :::note
 `event_datetime` refleja cuándo ocurrió un evento en el ciclo de vida de la suscripción, no cuándo Adapty lo procesó o entregó. Por este motivo, varios eventos pueden compartir el mismo `event_datetime` o llegar fuera de orden cronológico. Por ejemplo, un evento `subscription_expired` puede tener un `event_datetime` anterior al de un evento `subscription_renewal_cancelled` que Adapty entrega antes que él. No uses `event_datetime` para ordenar eventos. En su lugar, ordénalos por tu propio tiempo de recepción y elimina duplicados usando `profile_event_id` o los IDs de transacción.
 :::
+
 ### Atribuciones \{#attributions\}
 
 Para enviar los datos de atribución, activa la opción **Send Attribution** en la página [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook). Si has activado el envío de datos de atribución y tienes configuradas las [integraciones de atribución](attribution-integration), los datos a continuación se enviarán con el evento para cada fuente. Los mismos datos de atribución se envían a todos los tipos de eventos.
+
 ```json title="Json" showLineNumbers
 {
   "attributions": {
@@ -161,6 +169,7 @@ Para enviar los datos de atribución, activa la opción **Send Attribution** en 
 | **creative**        | String        | Palabra clave creativa de atribución.              |
 | **created_at**      | Fecha ISO 8601 | Fecha y hora de creación del registro de atribución. |
 | **network_user_id** | String        | ID asignado al usuario por la fuente de atribución. |
+
 ### IDs de integración \{#integration-ids\}
 
 Los siguientes IDs de integración se utilizan actualmente en los eventos:
@@ -181,20 +190,25 @@ Los siguientes IDs de integración se utilizan actualmente en los eventos:
 - `one_signal_subscription_id`
 - `tenjin_analytics_installation_id`
 - `posthog_distinct_user_id`
+
 ### Token de compra de Play Store \{#play-store-purchase-token\}
 
 Este campo incluye todos los datos necesarios para revalidar una compra si es preciso. Solo se envía si la opción **Send Play Store purchase token** está habilitada en la [configuración de la integración de Webhook](https://app.adapty.io/integrations/customwebhook).
+
 | Campo               | Tipo    | Descripción                                                  |
 | :------------------ | :------ | :----------------------------------------------------------- |
 | **product_id**      | String  | El identificador único del producto (SKU) comprado en Play Store. |
 | **purchase_token**  | String  | Token generado por Google Play para identificar de forma única esta transacción de compra. |
 | **is_subscription** | Boolean | Indica si el producto comprado es una suscripción (`true`) o una compra única (`false`). |
+
 ### Propiedades de eventos \{#event-properties\}
 
 Las propiedades de los eventos pueden variar según el tipo de evento e incluso entre eventos del mismo tipo. Por ejemplo, un evento originado en el App Store no incluirá propiedades específicas de Android como `base_plan_id`.
+
 El evento [Nivel de acceso actualizado](webhook-event-types-and-fields#for-access-level-updated-event) tiene propiedades específicas, por lo que le hemos dedicado una sección aparte. Del mismo modo, hemos separado las [Propiedades adicionales de eventos fiscales y de ingresos](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties), ya que son exclusivas de ciertos tipos de eventos.
 
 #### Para la mayoría de los tipos de eventos \{#for-most-event-types\}
+
 Las propiedades de los eventos son consistentes para la mayoría de los tipos de eventos (excepto para el evento **Access Level Updated**, que se describe en su propia sección). A continuación se muestra una tabla completa con las propiedades e indicaciones sobre si pertenecen a eventos específicos.
 
 <UsdConversion />
@@ -251,6 +265,7 @@ Tipos de evento que tienen las propiedades de impuestos e ingresos:
 - `subscription_initial_purchase` (también conocido como `subscription_started` — es el mismo evento)
 - `subscription_refunded`
 - `non_subscription_purchase`
+
 | Campo                 | Tipo  | Descripción                                                  |
 | :-------------------- | :---- | :----------------------------------------------------------- |
 | **net_revenue_local** | Float | Ingresos netos (ingresos tras la comisión de Apple/Google e impuestos) en moneda local. |
@@ -259,12 +274,14 @@ Tipos de evento que tienen las propiedades de impuestos e ingresos:
 | **proceeds_usd**      | Float | Precio del producto tras la comisión de Apple/Google.        |
 | **tax_amount_local**  | Float | Importe de impuestos deducido en moneda local.               |
 | **tax_amount_usd**    | Float | Importe de impuestos deducido en USD.                        |
+
 #### Ejemplo de payload de `non_subscription_purchase` \{#non_subscription_purchase-example-payload\}
 
 `non_subscription_purchase` sigue la misma estructura que los eventos de suscripción, pero refleja una compra única o consumible. Los campos exclusivos de suscripción no aplican: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime` y `trial_duration` están ausentes. `subscription_expires_at` está presente pero con valor `null`. Los campos de impuestos e ingresos (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) sí se incluyen.
 
 <details>
 <summary>Ejemplo de payload (haz clic para expandir)</summary>
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -314,9 +331,11 @@ Tipos de evento que tienen las propiedades de impuestos e ingresos:
 El evento **Access Level Updated** es un evento de webhook específico que se genera únicamente cuando la integración de Webhook está activa y este tipo de evento está habilitado. Si está habilitado, se envía al Webhook configurado y aparece en el **Event Feed**. Si no está habilitado, el evento no se creará.
 
 Si has habilitado el [uso compartido de niveles de acceso](general#6-sharing-paid-access-between-user-accounts), el evento **access level updated** se enviará para todos los perfiles que compartan el nivel de acceso.
+
 :::tip
 Usa este evento para actualizar el nivel de acceso del usuario en tu base de datos, conceder o revocar funciones premium en tu backend y mantener el acceso sincronizado entre dispositivos o plataformas.
 :::
+
 | Propiedad                          | Tipo          | Descripción                                                  |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
 | **ab_test_name**                   | String        | Nombre de la prueba A/B donde se originó la transacción.     |
