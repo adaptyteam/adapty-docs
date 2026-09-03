@@ -18,6 +18,33 @@ action
 action
 ```
 
+## Reaching the starting state
+
+Most shot lists assume something already exists — a flow with the right screens, a placement pointing
+at it, products in the catalog. Getting there is part of the work, and for flows it can be automated.
+
+**Adapty's flow-generator skill** (`adaptyteam/adapty-skills`, documented in
+`guides/flow-builder/flow-generator-skill.mdx`) builds and edits flows from a plain-language
+description through the Adapty CLI: screens, branching, quizzes, themes, locales, and variants seeded
+from a flow that already works.
+
+**Always ask before using it. Never fire it automatically.** It writes straight to flows in the
+dashboard and is marked experimental, so the call is the user's every time — even when it looks
+obviously useful.
+
+Ask when the video needs a flow that doesn't exist yet, a variant of one that does, or a state that is
+tedious to reach by hand: a localized version, a themed re-skin, a quiz with particular option IDs.
+
+Don't raise it at all when:
+
+- **the video records dashboard surfaces only** — placements, products, virtual currency, profiles
+- **the flow already exists.** The series reuses Recipedia; most videos need no new flow
+- **the video is about building the thing.** You cannot pre-build what the viewer is going to watch
+  get built. Pre-build only the *starting* state — the screen as it stands before the first edit
+
+If the answer is yes, work against a **draft or a copy**, never a live flow, and report back what was
+created so the shot list can name it exactly.
+
 ## Rules
 
 **Pre-roll first.** Anything that must be true before recording starts, before Part 1: which profile,

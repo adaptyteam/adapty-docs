@@ -53,7 +53,7 @@ roughly — check line 1.
 | **Draft** | New video, no recording | `scenarios.md`, then `tone.md` — then `structure.md`, `pacing.md`, `terminology.md`, `speakability.md` |
 | **Transcribe** | A `.mov` exists; replace the draft | `transcribe.md`, then `structure.md` |
 | **Edit** | Change an existing file | `regression-checklist.md`, plus the file's own guide |
-| **Recording steps** | Shot list for a script | `recording-steps.md` |
+| **Recording steps** | Shot list for a script | `recording-steps.md` — includes when to *offer* the flow-generator skill |
 | **Description** | YouTube copy for a recorded video | `description.md` |
 
 Load on the **task**, not on what you notice partway through. You cannot know a rule applies until you
@@ -73,6 +73,8 @@ Run `references/regression-checklist.md` over the **whole file**, not the passag
 - Never bold a UI label from memory. Verify it in the builder source.
 - Never rewrite the narration of an as-recorded script.
 - Never overwrite a script without copying the old one to `/tmp/` first.
+- Never invoke the flow-generator skill without asking. It writes to live dashboard flows — offer,
+  explain, wait.
 
 Formatting is not on this list. Heading style, timestamps, and whether a transcript keeps its
 `[VISUAL]` cues are preferences, not regressions — see `references/regression-checklist.md`.

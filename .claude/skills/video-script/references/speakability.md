@@ -20,9 +20,43 @@ The three postures that matter in English:
 
 | Posture | Sounds | Feels like |
 |---|---|---|
-| **Rounded** — lips pushed forward | `oo`, `ow`, `or`, `w`, `sh`, `ch`, `j`, `r` | a pout |
+| **Rounded** — lips pushed forward | `oo`, `ow`, `w`, `sh`, `ch`, `j`, and `o` in *product*, *off* | a pout |
 | **Spread** — lips pulled wide | `ee`, `i`, `e`, and `s` alongside them | a grin |
 | **Interdental** — tongue between the teeth | `th` in *think*, *both*, *path* | tongue out |
+
+## The accent this is written for
+
+The narration is delivered in **southern British English — Home Counties, slightly north of London,
+with international influences**. Several of the patterns below behave differently from the General
+American assumptions most voiceover advice is built on, so the differences are worth stating.
+
+**Non-rhotic.** `r` after a vowel is not pronounced: *user*, *your*, *four*, *offer* end in a vowel or
+schwa, with no tongue curl and no lip rounding from the `r` itself. Any advice treating `-er`, `-or`,
+`-ur` as rounding events is imported from a rhotic accent and does not apply.
+
+**Linking and intrusive `r`.** Between a vowel-final word and a vowel-initial one, an `r` surfaces
+anyway — *"the user of"*, and even where no `r` is spelt, *"the idea-r-of"*. Usually invisible, but it
+can produce a sound you didn't write, so it's worth hearing a vowel-to-vowel boundary before
+recording.
+
+**T-glottalling.** Word-final `t` before a consonant is often a glottal stop rather than a full `t` —
+*"tha' thing"*, *"i' takes"*. This quietly removes a class of `t` collisions that would trip a rhotic,
+fully-articulated delivery. Another reason not to trust letter-level flags.
+
+**TRAP–BATH.** *path*, *bath*, *ask* take a long back vowel. And in this accent *paths* is commonly
+`/pɑːðz/` — voiced, not the `/θs/` of *"paths"* in General American — so it is easier here than the
+cluster rule suggests. *Months* and *sixths* stay hard.
+
+**Rounding on LOT/CLOTH words.** *product*, *off*, *offers*, *dashboard* carry more lip rounding than
+in General American, so a run of them counts toward held rounding where an American-tuned ear would
+hear none.
+
+**Yod-retention.** *new* is `/njuː/`, not `/nuː/`. A palatal glide into a rounded vowel — mild, but it
+is an extra step the American form doesn't have.
+
+**The corpus already reflects all of this.** The measurements in this file — sibilant rates, the ~85
+stop-into-*th* boundaries, the sentence lengths — come from scripts delivered in this accent. The
+numbers are accent-correct even where the phonetic reasoning around them was borrowed from elsewhere.
 
 ## Density is not the enemy
 
