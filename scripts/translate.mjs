@@ -1351,15 +1351,22 @@ async function translateFileWithSections(
           translation = retried;
         }
       }
-      // Deterministic structure repair: models trim blank lines that MDX
-      // treats as block separators. Restore them from the English source
-      // before the translation is cached or assembled.
-      translation = normalizeSectionBoundaries(
-        restoreBlankLinesBeforeBlocks(translation, section.content),
-        section.content,
-      );
       apiCallCount++;
     }
+
+    // Deterministic structure repair: models trim blank lines that MDX treats
+    // as block separators. Restore them from the English source before the
+    // translation is cached or assembled.
+    //
+    // Applied to every branch, not just fresh translations. Sections cached
+    // before this guard existed still lack the trailing blank line their
+    // English source has, and a cache hit never re-derived it — so those
+    // sections stayed glued to the next block on every subsequent run. Running
+    // the guard here heals the cache as well as the assembled file.
+    translation = normalizeSectionBoundaries(
+      restoreBlankLinesBeforeBlocks(translation, section.content),
+      section.content,
+    );
 
     newSections[section.id] = { contentHash, proseHash, translation };
     translatedParts.push(translation);
@@ -1772,13 +1779,15 @@ async function translateBatchSections(
           allOk = false;
           break;
         }
-        // Deterministic structure repair: restore blank lines the model
-        // trimmed, using the English section as the source of truth.
-        translation = normalizeSectionBoundaries(
-          restoreBlankLinesBeforeBlocks(translation, decision.section.content),
-          decision.section.content,
-        );
       }
+      // Deterministic structure repair: restore blank lines the model trimmed,
+      // using the English section as the source of truth. Runs on cache hits
+      // too — sections cached before this guard existed still lack the trailing
+      // blank line their English source has.
+      translation = normalizeSectionBoundaries(
+        restoreBlankLinesBeforeBlocks(translation, decision.section.content),
+        decision.section.content,
+      );
       newSections[decision.section.id] = {
         contentHash: decision.contentHash,
         proseHash: decision.proseHash,
@@ -3158,7 +3167,7 @@ const PARAGRAPH_FALLBACK_CHARS = 600;
  * (covers articles with no headings, or long preambles before the first heading).
  * Returns Array<{id: string, content: string}> where content pieces join('\n') === original.
  */
-function splitIntoSections(content, { paragraphFallback = true } = {}) {
+export function splitIntoSections(content, { paragraphFallback = true } = {}) {
   const lines = content.split("\n");
   const sections = [];
   let sectionStart = 0;
@@ -3510,7 +3519,7 @@ export function isLegacyPositionalId(id) {
 }
 
 /** Append -2, -3 suffixes for duplicate section ids. */
-function deduplicateSectionIds(sections) {
+export function deduplicateSectionIds(sections) {
   const counts = new Map();
   return sections.map((s) => {
     const prev = counts.get(s.id) ?? 0;

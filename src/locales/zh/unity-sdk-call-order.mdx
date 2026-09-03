@@ -5,8 +5,11 @@ metadataTitle: "Unity SDK 调用顺序 | Adapty 文档"
 ---
 
 `Adapty.Activate()` 必须在调用任何其他 Adapty SDK 方法之前完成。在其完成回调触发之前，SDK 没有任何状态。在 `Activate()` 之前或与其并行发起的任何调用都会失败，并返回 [`#2002 notActivated`](unity-handle-errors#custom-network-codes) 错误。
+
 如果你的应用需要对用户进行身份验证，并且在启动后才能获取到 customer user ID，请在获取到该 ID 时调用 `Adapty.Identify()`。在 `Identify` 回调触发之前，不要调用任何用户操作相关的方法。与该调用产生竞争的请求，要么会以 [`#3006 profileWasChanged`](unity-handle-errors#custom-network-codes) 错误失败，要么会落到激活时创建的匿名用户画像上。一旦发生这种情况，归因数据、`appsflyer_id` 等 MMP ID 以及安装归属并不总能转移到已识别的用户画像上。如果你的应用不需要用户身份验证，则跳过 `Identify`，继续使用匿名用户画像即可。
+
 MMP 和分析类 SDK（AppsFlyer、Adjust、Branch、PostHog）遵循同样的规则。请先初始化它们，等待其 UID 回调后再调用 `Adapty.Activate`。否则 MMP ID 会绑定到一个短暂的匿名用户画像上，不一定能迁移到已识别的用户画像。关于 AppsFlyer 的具体说明，请参阅 [AppsFlyer](appsflyer)。
+
 ## 正确的操作顺序 \{#the-correct-order\}
 
 你的操作路径取决于两件事：何时获取到 customer user ID，以及是否使用了 MMP 或数据分析 SDK。
@@ -14,7 +17,9 @@ MMP 和分析类 SDK（AppsFlyer、Adjust、Branch、PostHog）遵循同样的�
 - **步骤 2 和 5**：所有应用必须完成。初始化 SDK，然后调用 SDK 方法。
 - **步骤 1 和 3**：仅在集成 MMP 或数据分析 SDK（AppsFlyer、Adjust、Branch、PostHog）时需要。
 - **步骤 4**：仅在应用需要用户登录、且在启动后才能获取 customer user ID 时需要。
+
 如果在应用启动时已知客户用户 ID，可直接在 `Activate()` 中传入（步骤 2a）。这条路径不会创建匿名用户画像，因此步骤 4 无需执行。
+
 | 步骤 | 调用                                                                                                          | 时机                                                                                   | 说明                                                                                          |
 |------|---------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------|
 | 1    | 初始化你的 MMP 或分析 SDK（AppsFlyer、Adjust、PostHog、Branch）                                                | 应用启动，最先执行                                                                      | 等待 MMP 的 UID 回调，例如 `getAppsFlyerId`。                                                 |
@@ -27,6 +32,7 @@ MMP 和分析类 SDK（AppsFlyer、Adjust、Branch、PostHog）遵循同样的�
 :::important
 跳过这些步骤会导致回访用户失去高级访问权限、用户画像缺少 `appsflyer_id`，以及付费墙按错误的目标受众返回。
 :::
+
 ## Web2app 与网页漏斗安装 \{#web2app-and-web-funnel-installs\}
 
 如果用户在网页端（Stripe、Paddle）完成购买后再安装原生应用，设备首次调用 `Activate()` 时会创建一个新的匿名用户画像，该画像不会与网页端的用户画像关联。如果能在应用启动前（通过登录流程或安装来源追踪）拿到客户用户 ID，请直接传入 `Activate()`；否则，网页端的购买记录在设备上将不可见，直到你调用 `Identify("YOUR_USER_ID")` 再调用 `RestorePurchases` 才能同步。

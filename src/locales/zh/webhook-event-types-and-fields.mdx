@@ -15,9 +15,11 @@ Adapty 会在订阅事件发生时发送 Webhook。本节定义了这些事件�
 您可以将所有事件类型发送到 Webhook，也可以只选择其中部分类型。您可以参考我们的[事件流程](event-flows)，了解预期接收的数据格式以及如何围绕它构建业务逻辑。在[设置 Webhook 集成](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard)时，您可以禁用不需要的事件类型，也可以在那里用自定义 ID 替换 Adapty 默认的事件 ID。
 
 <WebhookEvents />
+
 :::note
 `subscription_renewal_reactivated` 携带的是**之前**的产品 ID——即用户取消订阅时处于活跃状态的产品 ID——即使用户后来通过购买其他产品重新激活了订阅也是如此。Apple 在整个取消 → 重新激活链路中保持相同的 `original_transaction_id`，因此该事件反映的是原始产品。新产品将在下一个 `subscription_renewed` 事件中体现，届时新产品的计费正式开始。
 :::
+
 :::note
 在 Google Play 上，Adapty 可能会发送 `subscription_started` 事件，且所有金额字段均为零——例如，当 Google 用一个订阅替换另一个订阅，或订阅以免费阶段开始时。请勿将此类事件计入收入。当 Google 替换订阅时，会生成新的购买令牌，因此 Adapty 会以不同的 `store_transaction_id` 上报付费交易。
 :::
@@ -25,7 +27,9 @@ Adapty 会在订阅事件发生时发送 Webhook。本节定义了这些事件�
 ## Webhook 事件结构 \{#webhook-event-structure\}
 
 Adapty 只会发送你在 [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) 页面 **Events names** 部分所选择的事件。
+
 Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求体将包含序列化事件，并封装在以下结构中。所有事件遵循相同的结构，但其字段会根据事件类型、商店以及您的具体配置有所不同。用户属性是您设置的[自定义用户属性](setting-user-attributes#custom-user-attributes)，因此其内容取决于您的配置。归因数据字段在所有事件类型中保持一致，但归因列表取决于您的移动应用中使用了哪些归因来源。以下是一个事件示例：
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -108,6 +112,7 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 ### 事件字段 \{#event-fields\}
 
 各类事件的事件参数均相同。
+
 | **字段** | **类型** | **描述** |
 |---|---|---|
 | **advertising_id** | UUID | 广告 ID（仅限 Android）。 |
@@ -127,12 +132,15 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 | **profiles_sharing_access_level** | JSON | 与当前用户画像共享访问等级的其他用户列表（不含当前用户）。若您的应用启用了访问等级共享，此列表将包含使用同一 Apple/Google ID 的其他用户画像。<br/>格式：<ul><li>**profile_id**：（UUID）Adapty ID</li><li>**customer_user_id**：（String）Customer User ID（如有）</li></ul> |
 | **user_agent** | String | 设备浏览器的 User-Agent。 |
 | **user_attributes** | JSON | 可设置的自定义数据，用于为用户画像补充应用专属信息。通常用于记录用户偏好（如主题、语言）或行为标记（是否完成用户引导、功能使用情况等）。<br/>格式为键值对，键为字符串，值可为字符串或数字（例如 `{"Favourite_color": "Violet", "Pet_name": "Fluffy"}`）。<br/>您可以在 Adapty 看板中针对单个用户画像手动设置自定义属性，也可通过 Adapty SDK 中的 `updateProfile` 方法以编程方式设置，或在通过服务端 API 创建/更新用户画像时设置。<br/>在 [Webhook 设置](https://app.adapty.io/integrations/customwebhook)中启用 **Send User Attributes** 后包含此字段。<p>虽然移动应用代码中的自定义属性值可设为浮点数或字符串，但通过服务端 API 或历史数据导入的属性可能以不同格式传入，此时布尔值和整数值将转换为浮点数。</p> |
+
 :::note
 `event_datetime` 反映的是订阅生命周期中事件发生的时间，而非 Adapty 处理或推送该事件的时间。因此，多个事件可能共享相同的 `event_datetime`，或以非时间顺序到达。例如，`subscription_expired` 事件的 `event_datetime` 可能早于 Adapty 先行推送的 `subscription_renewal_cancelled` 事件。请勿依赖 `event_datetime` 对事件排序。应改用自行记录的接收时间排序，并通过 `profile_event_id` 或交易 ID 进行去重。
 :::
+
 ### 归因 \{#attributions\}
 
 若要发送归因数据，请在 [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) 页面中启用 **Send Attribution** 选项。启用后，若你已配置[归因集成](attribution-integration)，以下数据将随每个来源的事件一并发送。所有事件类型均会收到相同的归因数据。
+
 ```json title="Json" showLineNumbers
 {
   "attributions": {
@@ -161,6 +169,7 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 | **creative**        | String        | 归因创意关键词。                      |
 | **created_at**      | ISO 8601 date | 归因记录的创建日期和时间。      |
 | **network_user_id** | String        | 归因来源为用户分配的 ID。 |
+
 ### 集成 ID \{#integration-ids\}
 
 以下集成 ID 目前在事件中使用：
@@ -181,20 +190,25 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 - `one_signal_subscription_id`
 - `tenjin_analytics_installation_id`
 - `posthog_distinct_user_id`
+
 ### Play Store 购买令牌 \{#play-store-purchase-token\}
 
 此字段包含重新验证购买所需的全部数据（如有需要）。只有在 [Webhook 集成设置](https://app.adapty.io/integrations/customwebhook)中启用了 **Send Play Store purchase token** 选项后，才会发送该字段。
+
 | 字段                | 类型    | 描述                                                  |
 | :------------------ | :------ | :----------------------------------------------------------- |
 | **product_id**      | String  | 在 Play Store 中购买的产品唯一标识符（SKU）。 |
 | **purchase_token**  | String  | Google Play 生成的令牌，用于唯一标识本次购买交易。 |
 | **is_subscription** | Boolean | 表示所购产品是否为订阅（`true`）或一次性购买（`false`）。 |
+
 ### 事件属性 \{#event-properties\}
 
 事件属性因事件类型而异，即使是同类事件也可能有所不同。例如，来自 App Store 的事件不会包含 `base_plan_id` 等 Android 专属属性。
+
 [访问等级更新](webhook-event-types-and-fields#for-access-level-updated-event)事件具有独特的属性，因此我们为其单独开辟了一个章节。同样，[附加税务和收入事件属性](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties)也被单独列出，因为它们仅适用于特定的事件类型。
 
 #### 适用于大多数事件类型 \{#for-most-event-types\}
+
 大多数事件类型的事件属性是一致的（**Access Level Updated** 事件除外，该事件在其专属章节中单独说明）。下表列出了所有属性，并标注了各属性所属的具体事件。
 
 <UsdConversion />
@@ -251,6 +265,7 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 - `subscription_initial_purchase`（也称为 `subscription_started`，属于同一事件）
 - `subscription_refunded`
 - `non_subscription_purchase`
+
 | 字段 | 类型 | 描述 |
 | :-------------------- | :---- | :----------------------------------------------------------- |
 | **net_revenue_local** | Float | 净收入（扣除 Apple/Google 手续费和税费后的收入），以本地货币计。 |
@@ -259,12 +274,14 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 | **proceeds_usd**      | Float | 扣除 Apple/Google 手续费后的产品价格，以 USD 计。 |
 | **tax_amount_local**  | Float | 扣除的税费金额，以本地货币计。 |
 | **tax_amount_usd**    | Float | 扣除的税费金额，以 USD 计。 |
+
 #### `non_subscription_purchase` 示例载荷
 
 `non_subscription_purchase` 与订阅事件结构相同，但反映的是一次性购买或消耗型商品的购买。仅适用于订阅的字段不适用：`cancellation_reason`、`will_renew`、`is_in_grace_period`、`is_refund`、`is_lifetime` 和 `trial_duration` 均不存在。`subscription_expires_at` 字段存在但值为 `null`。税费和收入字段（`net_revenue_*`、`proceeds_*`、`tax_amount_*`）包含在内。
 
 <details>
 <summary>示例载荷（点击展开）</summary>
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -314,9 +331,11 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 **Access Level Updated** 事件是一种特殊的 Webhook 事件，仅在 Webhook 集成处于活跃状态且该事件类型已启用时才会生成。启用后，该事件将发送至配置的 Webhook，并显示在 **Event Feed** 中。若未启用，则不会创建该事件。
 
 如果您已启用[共享访问等级](general#6-sharing-paid-access-between-user-accounts)，则 **access level updated** 事件将发送至所有共享该访问等级的用户画像。
+
 :::tip
 使用此事件来更新数据库中用户的访问等级、在后端授予或撤销高级功能，并保持跨设备或跨平台的访问同步。
 :::
+
 | 属性                                 | 类型            | 描述                                                         |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
 | **ab_test_name**                   | String        | 交易来源的 A/B 测试名称。                                    |
