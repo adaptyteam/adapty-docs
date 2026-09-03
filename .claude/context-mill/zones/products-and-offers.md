@@ -151,7 +151,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
 | offers | entry | marketer | 1 | tutorial |
 | offers-in-stores | entry | marketer | 0 | tutorial |
 | product | entry | marketer | 0 | tutorial |
-| store-sync | entry | marketer | 5 | tutorial |
+| store-sync | entry | marketer | 7 | tutorial |
 | virtual-currencies | entry | marketer | 3 | tutorial |
 | virtual-currency-balance | — | marketer | 3 | tutorial |
 | virtual-currency-quickstart | — | marketer | 0 | tutorial |
