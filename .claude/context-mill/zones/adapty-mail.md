@@ -88,12 +88,28 @@ core in-app paywall/subscription product.
   per email. The five fixed triggers are the `TriggerPurchaseState` enum, and
   `services/trigger_purchase_state_resolver.py` is the only place a purchase state becomes a trigger —
   that is where "which trigger fires for a grace-period / auto-renew-off user" is settled.
+  **Since 2026-08-30 those five are the *marketing* triggers only** (verified 2026-09-03 against backend
+  `origin/develop` `bf1bbb21`, all of it in `origin/master`). A second class exists:
+  `CampaignType.TRANSACTIONAL` campaigns run on `TransactionalTrigger` (`domains/constants/transactional_trigger.py`,
+  one member, `PROFILE_CREATED`, mapped from `ProfileEventType.CREATED`), fire **once per profile per flow**
+  (`_process_transactional_assignment` checks `repo.exists(profile_id, container_id)`), carry no
+  unsubscribe link or `List-Unsubscribe` header, and are not gated by consent. Today the only transactional
+  flow is the one double opt-in creates (`applications/crud/double_opt_in.py`, `SystemPurpose.DOUBLE_OPT_IN`);
+  the dashboard shows both classes as **Marketing** / **Transactional** tabs on Flows, Campaigns and A/B Tests.
 - **Whether a specific profile is eligible to send** is decided in one file,
   `campaign_context/applications/profile_campaign_assignment.py`: suppression check, then existing active
   assignment, then stop condition, then throttle cooldown, then trigger resolution, then first matching
   segment by priority. Read it before writing any "configured but nothing sent" content — every one of
   those branches is a distinct reason a reader sees silence, and only some of them surface in the UI.
-- **Suppression** is `src/common/domains/constants/suppression_reason.py` (five reasons) plus
+  **One more branch since 2026-08-20** (verified 2026-09-03): `_is_campaign_applicable` holds a *marketing*
+  campaign back while `DoubleOptInRequirementResolverService` says the profile still owes a confirmation —
+  setting enabled, `profile.created_at >= setting.updated_at`, no `profile_email_confirmation` row. The
+  hold is released by the `EMAIL_CONFIRMED` profile event, which re-runs the marketing assignment. Turning
+  the setting off lifts the gate but emits no event, so held profiles are not started retroactively.
+- **Suppression** is `src/common/domains/constants/suppression_reason.py` (**eight** reasons as of
+  2026-09-03 — this bullet said five; `deleted`, `internal` and `email_validation_invalid` were added, the
+  last by `feature/email-validator`, merged to `master` 2026-09-02, a pre-save Reacher reachability check
+  that suppresses invalid/disposable/full/disabled mailboxes at creation) plus
   `profile_context/applications/ses_event.py` and `applications/profile.py`. It is a single nullable
   field on the profile, first write wins, and nothing in the codebase clears it. Note the ownership
   split inside the five reasons: `bounce`, `complaint` and `reject` are reported by AWS SES, while
@@ -249,14 +265,15 @@ core in-app paywall/subscription product.
 | mail-analytics | — | marketer | 9 | tutorial |
 | mail-brand | — | marketer | 10 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
-| mail-collect-emails | — | marketer | 6 | tutorial |
+| mail-collect-emails | — | marketer | 7 | tutorial |
 | mail-create-campaign | — | marketer | 4 | tutorial |
 | mail-create-flow | — | marketer | 4 | tutorial |
+| mail-double-opt-in | — | marketer | 6 | tutorial |
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
 | mail-entry-points | entry | marketer | 0 | tutorial |
 | mail-flows | entry | marketer | 5 | tutorial |
 | mail-funnelfox | how-to | marketer | 4 | tutorial |
-| mail-get-started | — | marketer | 13 | tutorial |
+| mail-get-started | — | marketer | 14 | tutorial |
 | mail-profiles | — | marketer | 7 | tutorial |
 | mail-segments | — | marketer | 7 | tutorial |
 | mail-send-data-via-api | — | marketer | 5 | tutorial |
@@ -327,6 +344,7 @@ live in `aliases.md` and are deliberately not repeated here.
 | "how do I test this before launch", "send myself a test email", "sandbox is greyed out", "I paid but nothing shows in the app" | `mail-testing`. Two paths that prove different things, and conflating them is the whole failure mode: the **live chain** (fresh address → shortened delay → real card → refund) is the only one that exercises the automation, while **Send test email** is a standalone send that proves the email renders and the checkout takes payment and nothing else. Three constraints that surprise people: the test goes to the **logged-in account's address** unless a profile is picked in the modal, **Sandbox is unavailable for a manual-URL paywall** (it routes through the FF `/preview/` page, which needs a funnel with sandbox products), and the 1-minute `MIN_DELAY` floor applies only to **AI-generated plans** (`EmailPlanItemDTO`) — the manual save path has no delay validator. Journey chip semantics live here too: **Delivered** replaces **Sent** rather than following it. |
 | "we have no Adapty SDK", "import our existing subscriber base", "which `event_type` maps to which flow" | `mail-send-data-via-api` — the guide, plus the `event_type` → flow mapping table. Two constraints: profiles sent **before** setup is finished never receive anything, and a profile alone only reaches the Never purchased flow — every other flow needs transaction events. The endpoint/field reference is not here: the `api-mail.adapty.io` spec is owned by `other-apis`, and its public surface is only the two Profile endpoints. |
 | "copy is off-brand", "tone is wrong", "replace the App Store URL the AI used" | `mail-brand` is where all generated copy, tone, and visuals come from — one brand per project, one source per type, and **no per-source removal**, so replacing a source means deleting the brand and re-onboarding. Edits are blocked while a source is processing. Tone is locked to a campaign at generation time, so retoning means a new campaign (`mail-create-campaign`). |
+| "new users get nothing", "confirmation email", "verify your email", "EU / GDPR consent", "Transactional tab", "Profile created flow" | `mail-double-opt-in`. One per-project switch on Settings → Project; enabling it writes a Transactional campaign named **Double opt-in** with AI (needs a web paywall, else the generic *"Failed to update double opt-in"* toast) and launches a **Profile created** flow. Two fixed emails (1 min, then 72 h), marketing held for profiles **created after** switch-on only, confirmation recorded once and never re-asked. The silent failure is an emptied Profile created flow while the setting is on — new profiles then receive nothing; the dashboard shows a banner for it. Not implemented despite `docs/specs/SPEC_DOUBLE_OPT_IN.md`: per-country opt-in/opt-out, a `marketing_consent` field — don't document them. |
 | "test two subject lines", "compare two versions of the sequence" | Two different features. Subject lines need nothing: each generated email already ships three variants and the best performer continues automatically (`mail-create-campaign`). Comparing whole sequences is `mail-ab-testing` — each variation is a full campaign, routing is weighted-random per event (not sticky per user), and launch and finish both happen from the flow row, never from the A/B Tests page. |
 | "Generate button is greyed out", "can't generate emails", "nothing happens when I click Generate" | `mail-get-started` steps 2 and 4. Two independent gates, and the tooltip names which: `brand_saved` and `company_address_filled`. The company address (Settings → **Company**) was undocumented anywhere until 2026-08-27 and is the one people never guess. Paywall generation is a *different* gate — brand, Stripe account, Stripe products — so "generation is blocked" always needs a which. |
 | "we don't use Stripe", "can we generate a paywall with Paddle", "no payable Stripe products" | `mail-get-started` step 5 / `mail-checkout`. **Generate with AI is Stripe-only** and blocks with a named panel: no account, or no products carrying prices. Any other provider means **Use your own hosted paywall**, where payment happens entirely on the customer's side. Do not soften this into "Stripe, Paddle, or PayPal" — that error has shipped twice. |
@@ -360,4 +378,15 @@ enum questions the bundle cannot. Try it before recording a backend question as 
 - **Does re-adding a domain after the 7-day window reissue DKIM tokens?** Both `mail-get-started` and
   `mail-sending-domain` now tell the reader their registrar records still apply. If tokens are reissued,
   that reassurance is actively harmful — the reader waits on records that can never verify.
+- **Campaign type exists as an analytics dimension in the backend, not in the dashboard** (checked
+  2026-09-03): `MetricDimensionEnum.CAMPAIGN_TYPES` with `CAMPAIGN_TYPE_LABEL` Marketing/Transactional is
+  in `analytics_context`, but in the frontend `campaign_types` appears only in `features/analytics/lib/types.ts`
+  — no Group by / filter option renders it (`git grep -n campaign_types origin/develop -- src` returns the
+  type file alone). So `mail-double-opt-in` tells readers to group by **Campaigns** to separate the
+  confirmation row; revisit when the UI exposes the dimension.
+- **Unverified, deliberately left out of `mail-double-opt-in`**: whether a purchase made on the offer page
+  reached from the confirmation click is attributed to the confirmation email. `CLICK_CONFIRM_EMAIL` is
+  not in `CONTENT_CLICK_SUBTYPES` (so no click-attribution record), but the redirect URL is built by
+  `get_paywall_url_by_scheduled_email_id` and may carry `scheduled_email_id` into the checkout; nobody
+  followed that path to the purchase side.
 

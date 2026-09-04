@@ -1,19 +1,22 @@
 ---
-title: "Capacitor SDK でアプリ内課金を行う"
-description: "Adapty を使ってアプリ内課金とサブスクリプションを処理するガイド。"
-metadataTitle: "Adapty でアプリ内課金を処理する | Adapty ドキュメント"
+title: "Capacitor SDKでモバイルアプリ内課金を行う"
+description: "Adaptyを使ったアプリ内課金とサブスクリプションの処理に関するガイド。"
+metadataTitle: "Adaptyでのアプリ内課金の処理 | Adapty ドキュメント"
 keywords: ['makePurchase', 'offer code']
 rank: 100
 displayed_sidebar: sdkcapacitor
 ---
+
 import OfferCodesInfo from '@site/src/locales/ja/reusable/OfferCodesInfo.mdx';
 
-モバイルアプリ内でペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するうえで欠かせないステップです。ただし、購入をサポートするためにペイウォールを表示するだけで十分なのは、[ペイウォールビルダー](adapty-paywall-builder)を使ってペイウォールをカスタマイズしている場合に限られます。
-ペイウォールビルダーを使用しない場合は、`.makePurchase()` という専用のメソッドを使って購入を完了し、目的のコンテンツをアンロックする必要があります。このメソッドは、ユーザーがペイウォールを通じて購入手続きを進めるための入口となります。
+モバイルアプリ内でペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するうえで欠かせないステップです。ただし、ペイウォールを表示するだけで購入をサポートできるのは、[ペイウォールビルダー](adapty-paywall-builder)を使用してペイウォールをカスタマイズしている場合に限ります。
 
-購入しようとしているプロダクトに有効なプロモーションオファーがある場合、Adapty は購入時に自動的にそれを適用します。
+ペイウォールビルダーを使用しない場合は、購入を完了してコンテンツをアンロックするために、`.makePurchase()` という別のメソッドを呼び出す必要があります。このメソッドは、ユーザーがペイウォールを通じて購入手続きを進めるための入口となります。
 
-[初期設定](quickstart)をすべてのステップを飛ばさずに完了しておいてください。設定が完了していないと、購入を検証できません。
+ペイウォールに、ユーザーが購入しようとしているプロダクトへの有効なプロモーションオファーが設定されている場合、Adapty は購入時に自動的にそれを適用します。
+
+[初期設定](quickstart)をすべてのステップを省略せずに完了していることを確認してください。これが済んでいないと、購入を検証できません。
+
 ## 購入処理 \{#make-purchase\}
 
 :::note
@@ -152,3 +155,31 @@ try {
 これを行うには、次の形式のURLを開く必要があります：
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## App Storeからのアプリ内課金 \{#in-app-purchases-from-the-app-store\}
+
+:::info
+プロモートされたアプリ内課金は SDK バージョン 4.1 以降でサポートされており、**iOS 16.4** 以降が必要です。iOS 16.4 未満のデバイスではアプリに届きません。Android ではこのイベントは発生しません。
+:::
+
+ユーザーが App Store のプロダクトページから購入を開始し、トランザクションがアプリに引き継がれると、SDK が自動的に処理を完了します。Apple の購入システム画面がすぐに表示され、Adapty は通常の購入と同様にトランザクションを処理します。この動作にコードは必要ありません。
+
+プロモーション対象プロダクトにサブスクリプションオファーが含まれている場合、SDK は購入時に自動的にそれを適用します。オファーは App Store の購入インテントから読み取られ、iOS 18.0 以降で公開されます。iOS 16.4〜17.x では、通常価格で購入が進みます。
+
+完了処理を自分でコントロールしたい場合（たとえば、先に独自の画面を表示するなど）は、`'onPromotedPurchaseReceived'` イベントをリッスンし、プロダクトを `makePromotedPurchase` に渡してください：
+
+```typescript showLineNumbers
+
+const listener = await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+  // process the purchase result
+});
+```
+
+:::warning
+リスナーが登録されている間、SDK はプロモーション購入を自動的に完了しなくなります。ハンドラーが `makePromotedPurchase` を呼び出さない場合、購入は完了しません。App Store がプロダクトをアプリに渡して待機している状態になります。自動動作を復元するには `listener.remove()` を呼び出してください。
+:::
+
+`makePromotedPurchase` は購入パラメータを受け取りません。プロモーション対象のプロダクトはペイウォールではなく App Store から提供されるため、ペイウォールのコンテキストを持ちません。戻り値は `makePurchase` と同じ [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) です。
+
+`adapty.removeAllListeners()` を呼び出すと、プロモーション購入のリスナーも他のリスナーと一緒に削除され、SDK の自動完了処理が代わりに再開します。アプリが引き続き完了処理を担う場合は、リスナーを再登録してください。

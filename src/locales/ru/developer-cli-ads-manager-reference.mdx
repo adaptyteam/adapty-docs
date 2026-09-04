@@ -91,7 +91,7 @@ adapty asa connect
 
 ### adapty asa orgs list
 
-Выводит список групп кампаний (организаций Apple Ads), доступных вашей компании.
+Список групп кампаний (организаций Apple Ads), доступных вашей компании.
 
 ```bash
 adapty asa orgs list
@@ -101,10 +101,12 @@ adapty asa orgs list
 
 | Поле | Используется как |
 |---|---|
-| `internal_id` | UUID, который принимает флаг `--org` в команде [`campaigns create`](#adapty-asa-campaigns-create), а также флаг `--campaign-group` в качестве [фильтра списка](#list-filters) |
-| `org_id` | Числовой идентификатор организации Apple. Оба флага его не принимают |
+| `internal_id` | UUID, который принимает `--org` в [`campaigns create`](#adapty-asa-campaigns-create), а также `--campaign-group` в качестве [фильтра списка](#list-filters) |
+| `org_id` | Числовой идентификатор организации Apple, принимаемый `--org-id` в [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create). `--org` и `--campaign-group` его не принимают |
 
-Флаг `--org` существует только в `campaigns create`. Ни одна команда list его не принимает.
+`--org` существует только у `campaigns create`. Ни одна из команд list его не принимает.
+
+Каждая строка также содержит поле `payment_model`. Если его значение равно `LOC`, организация выставляет счёт по кредитной линии, и каждая кампания в ней требует флагов [`--invoice-*`](#adapty-asa-campaigns-create).
 
 Принимает [флаги пагинации](#global-flags).
 
@@ -162,16 +164,25 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--org` | Да | ID группы кампаний (UUID). См. [`orgs list`](#adapty-asa-orgs-list) |
 | `--name` | Да | Название кампании |
 | `--adam-id` | Да | ID приложения в App Store (`adam_id`) |
-| `--country` | Да | Код страны или региона. Повторяйте для нескольких: `--country US --country CA` |
+| `--country` | Да | Код страны или региона. Для нескольких: `--country US --country CA` |
 | `--daily-budget` | Да | Дневной бюджет в виде числа, например `50` или `12.50` |
 | `--budget` | Нет | Общий бюджет |
-| `--target-cpa` | Нет | Целевая стоимость привлечения |
+| `--target-cpa` | Нет | Целевая стоимость привлечения. Должна быть ниже `--daily-budget` |
 | `--currency` | Нет | Код валюты для сумм в этом запросе. По умолчанию: `USD` |
-| `--bidding-strategy` | Нет | `MANUAL_CPT` или `MAX_CONVERSIONS`. Apple по умолчанию использует `MANUAL_CPT` |
+| `--bidding-strategy` | Нет | `MANUAL_CPT` или `MAX_CONVERSIONS`. Apple использует `MANUAL_CPT` по умолчанию |
 | `--ad-channel-type` | Нет | `SEARCH` или `DISPLAY`. По умолчанию: `SEARCH` |
 | `--billing-event` | Нет | `TAPS` или `IMPRESSIONS`. По умолчанию: `TAPS` |
-| `--supply-source` | Нет | Источник инвентаря, повторяемый. По умолчанию: `APPSTORE_SEARCH_RESULTS` |
+| `--supply-source` | Нет | Источник трафика, можно указать несколько. По умолчанию: `APPSTORE_SEARCH_RESULTS` |
 | `--status` | Нет | Начальный статус: `ENABLED` или `PAUSED` |
+| `--invoice-advertiser` | Кредитная линия | Параметры выставления счёта: имя рекламодателя |
+| `--invoice-order-number` | Кредитная линия | Параметры выставления счёта: номер заказа |
+| `--invoice-contact-name` | Кредитная линия | Параметры выставления счёта: имя контактного лица покупателя |
+| `--invoice-contact-email` | Кредитная линия | Параметры выставления счёта: email контактного лица покупателя |
+| `--invoice-billing-email` | Кредитная линия | Параметры выставления счёта: email для выставления счёта |
+
+Организация с `payment_model` равным `LOC` выставляет счета по кредитной линии, и Apple требует указания параметров выставления счёта для каждой из её кампаний. Передавайте все пять флагов `--invoice-*` в одном вызове — неполный набор отклоняется до отправки запроса. См. [Настройка параметров выставления счёта для кредитной линии](developer-cli-ads-manager#invoicing-options).
+
+Ответ содержит `serving_status` и `serving_state_reasons`. Кампания может быть создана, но не запущена: кампания с типом `MAX_CONVERSIONS` ждёт [автоматической группы объявлений](#adapty-asa-ad-groups-create), а кампания с кредитной линией ждёт настройки параметров выставления счетов. В обоих случаях команда выводит причину и команду, которая её устраняет.
 
 ### adapty asa campaigns update
 
@@ -191,12 +202,103 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 | `--status` | `ENABLED` или `PAUSED` |
 | `--country` | Заменяет список стран. Повторите для нескольких |
 | `--daily-budget` | Новый дневной бюджет |
-| `--budget` | Новый бюджет на весь срок |
+| `--budget` | Новый общий бюджет |
 | `--target-cpa` | Новая целевая стоимость привлечения |
 | `--bidding-strategy` | `MANUAL_CPT` или `MAX_CONVERSIONS` |
 | `--currency` | Код валюты для сумм в этом запросе. По умолчанию: `USD` |
+| `--invoice-advertiser` | Параметры выставления счёта: название рекламодателя |
+| `--invoice-order-number` | Параметры выставления счёта: номер заказа |
+| `--invoice-contact-name` | Параметры выставления счёта: контактное имя покупателя |
+| `--invoice-contact-email` | Параметры выставления счёта: контактный email покупателя |
+| `--invoice-billing-email` | Параметры выставления счёта: email для выставления счёта |
 
-Требуется хотя бы один флаг.
+По меньшей мере один флаг обязателен.
+
+Пять флагов `--invoice-*` работают как единое целое и полностью заменяют сохранённые параметры выставления счёта, поэтому передавайте все пять даже при изменении одного из них. Неполный набор отклоняется ещё до отправки запроса.
+
+### adapty asa campaigns bulk-create
+
+Создайте всю структуру кампании — кампании с вложенными группами объявлений, ключевыми словами, минус-словами и объявлениями — за одну операцию.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Конвертируйте нативный шаблон Apple Ads bulk вместо того, чтобы писать JSON вручную:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Флаг | По умолчанию | Описание |
+|---|---|---|
+| `--file` | — | JSON-файл со структурой кампании или `-` для чтения из стандартного ввода |
+| `--from-file` | — | Bulk-шаблон Apple Ads для конвертации на сервере: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) или [ключевые слова `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Числовой идентификатор организации Apple (`org_id`). См. [`orgs list`](#adapty-asa-orgs-list). Обязателен при использовании `--from-file` |
+| `--preview` | — | С `--from-file`: выводит сконвертированную структуру и завершает работу. Ничего не создаётся |
+| `--wait` / `--no-wait` | `--wait` | Отслеживает операцию до её завершения. `--no-wait` выводит ID операции и возвращает управление |
+| `--poll-interval` | `5` | Интервал между проверками прогресса в секундах |
+| `--timeout` | `900` | Максимальное время ожидания завершения операции в секундах |
+
+Exactly one of `--file` and `--from-file` is required.
+
+The structure names the campaign group at the top level and nests everything else:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` принимает числовой идентификатор организации Apple; используйте `campaign_group_internal_id`, чтобы передать UUID. Узел с `payload` создаётся как новый объект. Узел, указывающий на существующий объект по его `id`, является якорем — используйте его, чтобы добавить группы объявлений в существующую кампанию, а поле `update_payload` позволяет изменить сам объект в той же операции. Внутри кампании вложены `ad_groups`, а внутри каждой группы объявлений — `keywords`, `negative_keywords` и `ads`. Кроме того, кампания принимает `negative_keywords` напрямую — для минус-слов на уровне кампании.
+
+Вся структура проверяется перед созданием, а при отклонении выводится список всех некорректных узлов. При использовании `--from-file` ошибки конвертации сообщаются с указанием листа, строки и столбца; предупреждения конвертации не останавливают отправку, а ошибки конвертации прерывают её. Перед отправкой команда показывает количество кампаний, групп объявлений, ключевых слов, минус-слов и объявлений в структуре и запрашивает подтверждение.
+
+Затем команда отслеживает операцию и выводит прогресс вплоть до одного из трёх финальных статусов:
+
+| Статус | Значение |
+|---|---|
+| `success` | Все объекты созданы |
+| `partial` | Некоторые объекты не были созданы. Каждая ошибка выводится с сообщением от Apple |
+| `failed` | Операция завершилась с ошибкой, команда возвращает ненулевой код выхода |
+
+Если операция не завершилась за `--timeout` секунд, команда возвращает управление и выводит вызов [`bulk-status`](#adapty-asa-campaigns-bulk-status) для последующего запуска.
+
+### adapty asa campaigns bulk-status
+
+Показывает ход выполнения одной массовой операции: статус, количество объектов и журнал по каждому объекту.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Аргумент | Описание |
+|---|---|
+| `operation-id` | ID операции (UUID), выведенный командой [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) |
+
+Поле `status` принимает значения `pending`, `running`, `success`, `partial` или `failed`. Блок `counts` показывает, сколько объектов применено, завершилось с ошибкой и ожидает выполнения от общего числа.
+
+Принимает [флаги пагинации](#global-flags).
 
 ## Рекламные группы \{#ad-groups\}
 
@@ -230,18 +332,21 @@ adapty asa ad-groups get <ad-group-id>
 adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
 ```
 
-| Флаг | Обязательный | Описание |
+| Флаг | Обязателен | Описание |
 |---|---|---|
 | `--campaign` | Да | ID кампании (UUID) |
 | `--name` | Да | Название группы объявлений |
-| `--default-bid` | Да | Ставка по умолчанию в виде числа, например `1.20` |
+| `--default-bid` | Если не указан `--automated` | Ставка по умолчанию в виде числа, например `1.20` |
 | `--cpa-goal` | Нет | Целевая стоимость привлечения |
 | `--pricing-model` | Нет | `CPC` или `CPM`. Apple требует указать для каждой группы объявлений. По умолчанию: `CPC` |
-| `--start-time` | Нет | Начало расписания (`YYYY-MM-DD`). По умолчанию — сегодня |
-| `--end-time` | Нет | Конец расписания (`YYYY-MM-DD`) |
+| `--start-time` | Нет | Дата начала (`YYYY-MM-DD`). По умолчанию — сегодня |
+| `--end-time` | Нет | Дата окончания (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | Нет | Разрешить Apple автоматически добавлять ключевые слова |
+| `--automated` | Нет | Создать автоматизированную группу объявлений, необходимую для кампании `MAX_CONVERSIONS` |
 | `--currency` | Нет | Код валюты для сумм в этом запросе. По умолчанию: `USD` |
 | `--status` | Нет | Начальный статус: `ENABLED` или `PAUSED` |
+
+`--automated` включает автоматический подбор ключевых слов для группы объявлений, поэтому его нельзя комбинировать с `--automated-keywords`. Apple самостоятельно управляет расписанием автоматизированной группы объявлений и держит её включённой, поэтому `--start-time` и `--status PAUSED` не поддерживаются — чтобы поставить на паузу, остановите кампанию. См. [Создание кампании Max Conversions](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 

@@ -106,6 +106,8 @@ Each row carries two identifiers, and they are not interchangeable:
 
 `--org` exists only on `campaigns create`. No list command accepts it.
 
+Each row also carries a `payment_model`. When it is `LOC`, the organization bills by line of credit, and every campaign in it needs the [`--invoice-*` flags](#adapty-asa-campaigns-create).
+
 Accepts [pagination flags](#global-flags).
 
 ### adapty asa apps list
@@ -165,13 +167,22 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--country` | Yes | Country or region code. Repeat for several: `--country US --country CA` |
 | `--daily-budget` | Yes | Daily budget as a plain amount, for example `50` or `12.50` |
 | `--budget` | No | Lifetime budget |
-| `--target-cpa` | No | Target cost per acquisition |
+| `--target-cpa` | No | Target cost per acquisition. Must be lower than `--daily-budget` |
 | `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
 | `--bidding-strategy` | No | `MANUAL_CPT` or `MAX_CONVERSIONS`. Apple defaults to `MANUAL_CPT` |
 | `--ad-channel-type` | No | `SEARCH` or `DISPLAY`. Default: `SEARCH` |
 | `--billing-event` | No | `TAPS` or `IMPRESSIONS`. Default: `TAPS` |
 | `--supply-source` | No | Supply source, repeatable. Default: `APPSTORE_SEARCH_RESULTS` |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+| `--invoice-advertiser` | Line of credit | Invoicing Options: advertiser name |
+| `--invoice-order-number` | Line of credit | Invoicing Options: order number |
+| `--invoice-contact-name` | Line of credit | Invoicing Options: buyer contact name |
+| `--invoice-contact-email` | Line of credit | Invoicing Options: buyer contact email |
+| `--invoice-billing-email` | Line of credit | Invoicing Options: billing contact email |
+
+An organization whose `payment_model` is `LOC` bills by line of credit, and Apple requires Invoicing Options on each of its campaigns. Pass all five `--invoice-*` flags in one call — a partial set is rejected before the request is sent. See [Set Invoicing Options for a line of credit](developer-cli-ads-manager#invoicing-options).
+
+The response carries `serving_status` and `serving_state_reasons`. A campaign can be created and still not serve: a `MAX_CONVERSIONS` campaign waits for an [automated ad group](#adapty-asa-ad-groups-create), and a line-of-credit campaign waits for its Invoicing Options. In both cases the command prints the reason and the command that resolves it.
 
 ### adapty asa campaigns update
 
@@ -195,8 +206,15 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 | `--target-cpa` | New target cost per acquisition |
 | `--bidding-strategy` | `MANUAL_CPT` or `MAX_CONVERSIONS` |
 | `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--invoice-advertiser` | Invoicing Options: advertiser name |
+| `--invoice-order-number` | Invoicing Options: order number |
+| `--invoice-contact-name` | Invoicing Options: buyer contact name |
+| `--invoice-contact-email` | Invoicing Options: buyer contact email |
+| `--invoice-billing-email` | Invoicing Options: billing contact email |
 
 At least one flag is required.
+
+The five `--invoice-*` flags go together and replace the stored Invoicing Options as a set, so pass all five even to change one of them. A partial set is rejected before the request is sent.
 
 ### adapty asa campaigns bulk-create
 
@@ -318,14 +336,17 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 |---|---|---|
 | `--campaign` | Yes | Campaign ID (UUID) |
 | `--name` | Yes | Ad group name |
-| `--default-bid` | Yes | Default bid as a plain amount, for example `1.20` |
+| `--default-bid` | Unless `--automated` | Default bid as a plain amount, for example `1.20` |
 | `--cpa-goal` | No | Cost per acquisition goal |
 | `--pricing-model` | No | `CPC` or `CPM`. Apple requires one on every ad group. Default: `CPC` |
 | `--start-time` | No | Schedule start (`YYYY-MM-DD`). Defaults to today |
 | `--end-time` | No | Schedule end (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | No | Let Apple add keywords automatically |
+| `--automated` | No | Create the automated ad group that a `MAX_CONVERSIONS` campaign needs |
 | `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+`--automated` opts the ad group into automated keywords, so it cannot be combined with `--automated-keywords`. Apple schedules an automated ad group itself and keeps it enabled, so `--start-time` and `--status PAUSED` are rejected — pause the campaign instead. See [Create a Max Conversions campaign](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 

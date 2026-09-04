@@ -35,18 +35,20 @@ Adapty 按 `subscription_state`（`subscribed`、`active_trial`、`never_subscri
 :::note
 Firebase App Instance ID 是设备级别的标识符。当同一个 Adapty 用户在其他设备上打开应用时，新的 Firebase ID 会覆盖之前的记录。请使用 [customer user ID](identifying-users) 来跨设备维持用户身份。
 :::
-### Stripe 购买 \{#stripe-purchases\}
+### Web 购买（Stripe 和 Paddle）\{#web-purchases-stripe-and-paddle\}
 
-Stripe 购买仅在买家**首先**启动移动应用后才会到达 Firebase。Firebase App Instance ID 必须在 Stripe 购买触发**之前**完成设置。
+Stripe 或 Paddle 的购买行为只有在买家**先**启动移动应用后，才能传达到 Firebase。Firebase App Instance ID 必须在 Web 购买触发**之前**完成设置。
 
-对于 App Store 和 Play Store 的购买，这一过程会自动完成。它们发生在移动应用内部，与 [`setIntegrationIdentifier`](#configure-your-app-code) 调用同步进行。因此在购买触发时，Firebase ID 已经存在。
-Stripe 购买在应用外部、在你的服务器上发起。你的移动应用必须在启动时调用 `setIntegrationIdentifier`——在任何 Stripe 购买触发之前。否则 Adapty 没有可附加的 ID，Stripe 购买就永远不会到达 Firebase。
+对于 App Store 和 Play Store 的购买，这一过程会自动完成。它们在移动应用内发起，与 [`setIntegrationIdentifier`](#configure-your-app-code) 调用同步进行，因此在购买触发时 Firebase ID 已经就位。
+
+Stripe 和 Paddle 的购买行为发生在应用外部的网页端。你的移动应用必须在启动时调用 `setIntegrationIdentifier`——在任何网页购买触发之前。否则 Adapty 没有可用的 ID 来关联，购买记录将永远无法到达 Firebase。
+
 ### 局限性 \{#limitations\}
-- **不是 Google Ads 归因工具。** 此集成将 Adapty 事件发送到 Firebase 和 Google Analytics 用于数据分析，不会将应用安装归因到 Google Ads 广告系列（UAC / Universal App Campaigns），也无法区分付费流量与自然流量。如需安装归因，请使用 Adapty 内置的 [Adapty 归因](adapty-user-acquisition)功能。
-- **不支持历史数据回填。** Adapty 仅从启用集成之时起转发事件——过去的购买、续订和退款不会同步到 Firebase。（历史数据保存在 Adapty 的 [S3](s3-exports) / [GCS](google-cloud-storage) 导出中，但将其导入 Firebase 不在本集成的支持范围内。）
-- **纯 Web 买家的数据不会进入 Firebase。** Adapty 通过移动应用设置的 Firebase App Instance ID 将购买事件转发至 Firebase。从未安装过应用的买家没有该 ID，其购买记录不会进入 Firebase。详见上文 [Stripe 购买](#stripe-purchases)，也可考虑使用 [FunnelFox 的 Firebase 集成](https://funnelfox.com/docs/integrations/subscription-management/adapty)或 Google Analytics Web 数据流进行 Web 端追踪。
-- **不支持 Paddle 购买。** 本集成目前不支持 Paddle。Paddle 购买记录保留在 Adapty Analytics 中，不会通过此路径同步到 Firebase。
-- **Stripe 购买受 Stripe 特有限制约束。** 详见 [Stripe 集成限制](stripe#current-limitations)。
+- **不是 Google Ads 归因工具。** 此集成将 Adapty 事件发送到 Firebase 和 Google Analytics 用于数据分析，不会将应用安装归因到 Google Ads 广告系列（UAC / 通用应用广告系列），也不会区分付费流量与自然流量。如需安装归因，请使用 Adapty 内置的 [Adapty Attribution](adapty-user-acquisition)。
+- **历史事件在用户首次启动时同步到 Firebase。** Adapty 不会重新发送在你启用集成之前已处理的事件。但当现有订阅用户首次启动包含 Adapty SDK 的版本时，Adapty 会获取其完整的应用商店历史记录并像处理普通事件一样转发——Firebase 会将初始购买、续订、试用转化和一次性购买统一映射到 GA4 的 `purchase` 事件，因此 Adapty 会为每条回填的续订附带收入数据一并发送。（历史数据同样存储在 Adapty 的 [S3](s3-exports) / [GCS](google-cloud-storage) 导出中，但将其导入 Firebase 不在此集成范围内。）
+- **仅通过网页购买的用户不会同步到 Firebase。** Adapty 通过移动应用设置的 Firebase App Instance ID 将购买记录转发到 Firebase。从未安装过应用的买家没有该 ID，其购买记录不会同步到 Firebase。详情请参阅上文的 [网页购买（Stripe 和 Paddle）](#web-purchases-stripe-and-paddle)，也可考虑使用 [FunnelFox 的 Firebase 集成](https://funnelfox.com/docs/integrations/subscription-management/adapty) 或 Google Analytics 网页数据流进行网页端追踪。
+- **网页购买受各平台特定限制约束。** 请参阅 [Stripe 集成限制](stripe#current-limitations) 和 [Paddle 集成限制](paddle#current-limitations)。
+
 ## 配置说明 \{#setup-instructions\}
 ### 配置 Firebase \{#configure-firebase\}
 
@@ -54,16 +56,18 @@ Stripe 购买在应用外部、在你的服务器上发起。你的移动应用�
 2. 将项目关联到 Google Analytics 属性。Firebase 在创建项目时会提示你进行关联，也可以之后通过 **Project settings** > **Integrations** > **Google Analytics** 添加。
 
     <ZoomImage id="firebase-analytics-integration-settings.webp" width="700px" alt="Adapty 看板 Firebase 集成设置页面" />
-3. 在 **Project settings** > **General** > **Your apps** 中，为你发布的每个平台（iOS / Android / Web）添加一条记录。如果使用 Stripe，请添加一条 Web 应用记录——Stripe 没有原生应用类型。每条记录都会生成一个唯一的 **Firebase App ID** 以及 Google Analytics 中对应的数据流。在设置过程中，你需要将该 ID 填入 Adapty 的 Firebase 集成配置中。
+3. 在 **Project settings** > **General** > **Your apps** 中，为你发布的每个平台（iOS / Android / Web）添加一条记录。对于 Stripe 和 Paddle，请添加 Web 应用记录——这两者都没有原生应用类型。每条记录会生成一个唯一的 **Firebase App ID** 以及 Google Analytics 中对应的数据流。在后续设置时，你需要将该 ID 粘贴到 Adapty 的 Firebase 集成设置中。
 
     <ZoomImage id="firebase-app-id.webp" width="700px" alt="Firebase Console showing the App ID for an iOS app entry" />
+
 ### 配置 Adapty \{#configure-adapty\}
 
 1. 在 Adapty 看板中打开 [**Integrations** > **Firebase**](https://app.adapty.io/integrations/firebase)。
 
-2. 开启 **Firebase integration** 开关。
+2. 启用 **Firebase integration** 开关。
 
-3. 为每个发布平台填写凭据。Adapty 需要每个平台的 **Firebase App ID** 和 **Google Analytics secret**——iOS、Android 和 Stripe 各自的值不同。
+3. 为你发布的每个平台填写凭据。Adapty 需要为每个平台分别提供 **Firebase App ID** 和 **Google Analytics secret** — 这两个值在 iOS、Android、Stripe 和 Paddle 上各不相同。若某个平台只填写了其中一个值，则该平台不会发送任何事件。
+
 | Adapty 看板 | Google Analytics | 获取位置 |
    | --- | --- | --- |
    | **Firebase App ID** | **App ID** | Firebase Console > **Project settings** > **General** > **Your apps** |
@@ -78,7 +82,8 @@ Stripe 购买在应用外部、在你的服务器上发起。你的移动应用�
 
 <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
 
-5. 将 Adapty 事件映射到 Firebase/Google Analytics 事件名称。Adapty 分别为 **iOS** 和 **Android** 提供独立的事件映射，因此你可以为不同平台使用不同的名称。**Stripe 购买使用 iOS 事件映射** —— 没有单独的 Stripe 映射。
+5. 将 Adapty 事件映射到 Firebase/Google Analytics 事件名称。Adapty 分别为 **iOS** 和 **Android** 提供独立的事件映射，因此你可以为每个平台使用不同的名称。**Stripe 和 Paddle 购买使用 iOS 事件映射** —— 两者均没有独立的映射配置。
+
 Google Analytics 对 Measurement Protocol 有严格的字符限制——事件名称最多 40 个字符，用户属性名称最多 24 个字符，属性值最多 36 个字符。超出限制的自定义事件会被 Google Analytics 静默丢弃。
 
 :::warning
@@ -271,10 +276,12 @@ Firebase 会为每笔 StoreKit 1 购买自动记录一个 `in_app_purchase` 事�
 由此带来的影响：大量使用 SK2、且没有独立收入数据管道的应用，在 Firebase、Google Analytics 以及所有下游 Google Ads 广告系列中，收入都会被低报一半甚至更多。出价优化基于错误的数字运行，收入报告只呈现了真实情况的一半。
 修复方法：将 `firebase_app_instance_id` 传入 Adapty（详见[配置应用代码](#configure-your-app-code)）。Adapty 会通过 Measurement Protocol 转发每一笔购买记录，包含金额、货币和产品信息。
 ### Adapty Analytics 与 Firebase 数据不一致 \{#adapty-analytics-and-firebase-numbers-diverge\}
-- **StoreKit 2**：目前最主要的原因。请参阅 [Firebase 对 StoreKit 2 应用的收入统计偏低](#firebase-undercounts-revenue-for-storekit-2-apps)。
-- **SDK 覆盖率**：Firebase 只统计通过应用发送了 Firebase App Instance ID 的用户事件。旧版本应用不会发起该调用，而 Adapty 仍会统计这些用户，Firebase 则不会。
-- **沙盒事件**：Adapty 也会将沙盒交易转发给 Firebase。建议为开发构建使用独立的 Firebase 项目，以便与生产数据隔离。
-- **采样**：Google Analytics Explorations 会对大型数据集进行采样。如需未采样的统计数据，请查看实时视图或标准报告。
+- **StoreKit 2**：目前最主要的原因。请参阅 [Firebase 在 StoreKit 2 应用中的收入统计不足](#firebase-undercounts-revenue-for-storekit-2-apps)。
+- **SDK 覆盖率**：Firebase 只统计通过 Firebase App Instance ID 上报事件的用户。旧版本应用不会发起该调用，Adapty 仍会统计这些用户，而 Firebase 不会。
+- **沙盒事件**：Adapty 也会将沙盒交易转发给 Firebase。建议为开发版本使用独立的 Firebase 项目以便区分。
+- **首次启动历史记录导入**：当现有订阅用户首次启动包含 Adapty SDK 的版本时，Adapty 会将其完整的商店历史记录转发给 Firebase，将所有历史续订作为带有收入数据的 GA4 `purchase` 事件发送。这可能导致 Firebase 在相关时段内报告的收入远高于 Adapty。请参阅[限制说明](#limitations)。
+- **数据采样**：Google Analytics Explorations 会对大型数据集进行采样。如需未采样的数据，请查看实时视图或标准报告。
+
 ### 自定义事件名称被 Google Analytics 拒绝 \{#custom-event-names-are-rejected-by-google-analytics\}
 
 Google Analytics 对事件名称有限制：最多 40 个字符，只允许字母、数字和下划线，且必须以字母开头。请在看板中将不符合上述规则的自定义 Adapty 事件重命名。

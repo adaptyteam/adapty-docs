@@ -5,6 +5,18 @@ metadataTitle: "排查 App Store 集成问题 | Adapty 文档"
 ---
 
 本文介绍常见的 App Store 集成问题，每个部分均包含症状描述、根本原因及解决方案。
+## 保存凭据时提示"The provided field values are incorrect" \{#the-provided-field-values-are-incorrect-when-saving-credentials\}
+
+当你保存应用内购买凭据时，Adapty 会根据 **In-app purchase Issuer ID**、**In-app purchase Key ID** 和 **.p8 文件** 构建身份验证令牌，并与 Apple 进行验证。此错误表示 Apple 拒绝了该令牌。请按以下顺序逐一检查：
+
+1. **密钥类型。** 密钥必须是 App Store Connect 中 **Users and Access** → **Integrations** → **In-App Purchase** 下的 **In-App Purchase** 密钥。**Team keys** 标签页中的密钥（即 App Store Connect API 密钥）有其自己的 **Issuer ID** 和 **Key ID**，但 Apple 在此处会拒绝该密钥——那类密钥应用于[配置的第 6 步](app-store-connection-configuration#step-6-add-app-store-connect-api-key)。
+2. **同一账号和团队。** Issuer ID、Key ID 和 .p8 文件必须来自与应用相同的 App Store Connect 团队。在其他团队账号（例如代理商账号）中生成的密钥将无法通过验证。
+3. **.p8 文件本身。** 请按从 App Store Connect 下载的原始文件上传，不要做任何修改。通过粘贴密钥内容重新生成的文件通常会验证失败。App Store Connect 只允许下载一次密钥，若原始文件已丢失，请重新生成新密钥。
+4. **Bundle ID。** Bundle ID 必须与 App Store Connect 中应用的 Bundle ID 完全一致——采用反向 DNS 格式，不含空格，例如 `com.company.app`。
+5. **隐藏字符。** 请直接从 App Store Connect 重新复制每个 ID。多余的空格或形似字符——例如用小写字母 `l` 代替数字 `1`——都会导致验证失败。
+
+此验证仅使用三个内购密钥字段和 Bundle ID。App-Specific Shared Secret 和 [App Store Connect API 密钥](app-store-connection-configuration#step-6-add-app-store-connect-api-key)不参与此验证，因此重新输入其中任何一个都不会改变结果。
+
 ## 产品未显示 \{#products-dont-appear\}
 
 以下两种表现通常指向同一个根本原因：
@@ -21,6 +33,17 @@ metadataTitle: "排查 App Store 集成问题 | Adapty 文档"
 安装统计数据不受影响。Adapty 从应用首次启动开始统计安装量，而非依赖服务器端通知。
 
 如果续订或取消数据出现滞后，**Delayed** 状态是最可能的原因。随着 Apple 处理积压的通知，该状态通常会自动恢复正常。
+## 购买成功但用户失去访问权限 \{#a-purchase-succeeds-but-the-customer-loses-access\}
+
+用户完成付款后短暂获得了访问权限，但下次应用从 Adapty 刷新用户画像时访问权限消失。Apple 已扣款，但交易从未到达 Adapty——在此之前，该用户画像没有任何访问等级，且这笔销售也不会出现在你的报告中。
+
+原因通常是以下几种之一：
+
+- **凭据失效**：Adapty 无法通过 Apple 验证交易。请参考[更新停止推送时的处理方法](store-sync#if-updates-stop-arriving)逐一排查凭据，并替换负责购买验证的凭据。
+- **产品未在 Adapty 中关联**：客户购买的 Store 产品 ID 未关联到任何 Adapty 产品，因此没有可授予的访问等级。请确认该产品以正确的 **App Store Product ID** 存在，并已分配[访问等级](access-level)。
+
+Adapty SDK 会持续重试该交易，因此一旦 Adapty 能够记录，访问等级便会恢复。
+
 ## Adapty 中的价格与 App Store 不匹配 \{#prices-in-adapty-dont-match-app-store\}
 
 Adapty 产品编辑页面上的**价格**字段的行为方式取决于产品的添加方式。

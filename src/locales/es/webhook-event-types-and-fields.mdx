@@ -3,25 +3,33 @@ title: "Tipos de eventos y campos de webhook"
 description: ""
 metadataTitle: ""
 toc_max_heading_level: 4
-keywords: ['events']
+keywords: ['eventos']
 ---
 
 import WebhookEvents from '@site/src/locales/es/reusable/WebhookEvents.md';
 
-Adapty envía webhooks en respuesta a eventos de suscripción. Esta sección define estos tipos de eventos y los datos que contiene cada webhook.
+Adapty envía webhooks en respuesta a eventos de suscripción. Esta sección define los tipos de eventos y los datos que contiene cada webhook.
 
 ## Tipos de eventos de webhook \{#webhook-event-types\}
 
 Puedes enviar todos los tipos de eventos a tu webhook o elegir solo algunos. Consulta nuestros [Flujos de eventos](event-flows) para saber qué tipo de datos entrantes esperar y cómo construir tu lógica de negocio en torno a ellos. Puedes desactivar los tipos de eventos que no necesites cuando [configures tu integración de Webhook](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard). También puedes reemplazar los IDs de eventos predeterminados de Adapty por los tuyos propios si es necesario.
 
 <WebhookEvents />
+
 :::note
 `subscription_renewal_reactivated` lleva el ID del producto **anterior** — el que estaba activo cuando el usuario canceló — incluso si el usuario reactivó la suscripción comprando un producto diferente. Apple mantiene el mismo `original_transaction_id` a lo largo de la cadena cancelación → reactivación, por lo que este evento refleja el producto original. El nuevo producto aparece en el siguiente evento `subscription_renewed`, cuando comienza la facturación del nuevo producto.
 :::
+
+:::note
+En Google Play, Adapty puede enviar un evento `subscription_started` con todos los campos monetarios establecidos en cero — por ejemplo, cuando Google reemplaza una suscripción por otra o cuando la suscripción comienza con una fase sin cargo. No contabilices estos eventos como ingresos. Cuando Google reemplaza una suscripción, emite un nuevo token de compra, por lo que Adapty reporta la transacción pagada bajo un `store_transaction_id` diferente.
+:::
+
 ## Estructura de los eventos de webhook \{#webhook-event-structure\}
 
 Adapty solo te enviará los eventos que hayas seleccionado en la sección **Events names** de la página [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook).
+
 Los eventos del webhook se serializan en JSON. El cuerpo de la solicitud `POST` enviada a tu servidor contendrá el evento serializado dentro de la estructura que se muestra a continuación. Todos los eventos siguen la misma estructura, aunque sus campos varían según el tipo de evento, el store y tu configuración específica. Los atributos de usuario son los [atributos de usuario personalizados](setting-user-attributes#custom-user-attributes) que hayas configurado, por lo que contienen lo que tú hayas definido. Los campos de datos de atribución también son iguales para todos los tipos de eventos; sin embargo, la lista de atribuciones dependerá de las fuentes de atribución que uses en tu app. A continuación puedes ver un ejemplo de evento:
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -104,6 +112,7 @@ Los eventos del webhook se serializan en JSON. El cuerpo de la solicitud `POST` 
 ### Campos del evento \{#event-fields\}
 
 Los parámetros de evento son los mismos para todos los tipos de evento.
+
 | **Campo** | **Tipo** | **Descripción** |
 |---|---|---|
 | **advertising_id** | UUID | ID de publicidad (solo Android). |
@@ -123,12 +132,15 @@ Los parámetros de evento son los mismos para todos los tipos de evento.
 | **profiles_sharing_access_level** | JSON | Lista de usuarios que [comparten el nivel de acceso](general#6-sharing-paid-access-between-user-accounts) excluyendo el perfil de usuario actual. Si el uso compartido de niveles de acceso está habilitado en tu app, esta lista incluye otros perfiles que se han usado con el mismo ID de Apple/Google.<br/>Formato: <ul><li>**profile_id**: (UUID) ID de Adapty</li><li>**customer_user_id**: (String) Customer User ID si se ha proporcionado</li></ul> |
 | **user_agent** | String | User-agent del navegador del dispositivo. |
 | **user_attributes** | JSON | Datos personalizados que puedes definir para enriquecer los perfiles de usuario con información específica de la app. Se usan habitualmente para registrar preferencias del usuario (p. ej., tema, idioma) o indicadores de comportamiento (onboarding completado, uso de funcionalidades). <br/>Con formato de pares clave-valor donde las claves son cadenas y los valores pueden ser cadenas o números (p. ej., `{"Favourite_color": "Violet", "Pet_name": "Fluffy"}`). <br/>Puedes definir atributos personalizados manualmente en el Adapty Dashboard para perfiles individuales, de forma programática mediante el método `updateProfile` del SDK de Adapty, o a través de la API del servidor al crear/actualizar perfiles. <br/>Se incluye si **Send User Attributes** está habilitado en los [ajustes del Webhook](https://app.adapty.io/integrations/customwebhook). <p>Aunque los valores de atributos personalizados en el código de la app para móvil pueden definirse como floats o strings, los atributos recibidos a través de la API del servidor o importación histórica pueden llegar en distintos formatos. En ese caso, los valores booleanos y enteros se convertirán a floats.</p> |
+
 :::note
 `event_datetime` refleja cuándo ocurrió un evento en el ciclo de vida de la suscripción, no cuándo Adapty lo procesó o entregó. Por este motivo, varios eventos pueden compartir el mismo `event_datetime` o llegar fuera de orden cronológico. Por ejemplo, un evento `subscription_expired` puede tener un `event_datetime` anterior al de un evento `subscription_renewal_cancelled` que Adapty entrega antes que él. No uses `event_datetime` para ordenar eventos. En su lugar, ordénalos por tu propio tiempo de recepción y elimina duplicados usando `profile_event_id` o los IDs de transacción.
 :::
+
 ### Atribuciones \{#attributions\}
 
 Para enviar los datos de atribución, activa la opción **Send Attribution** en la página [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook). Si has activado el envío de datos de atribución y tienes configuradas las [integraciones de atribución](attribution-integration), los datos a continuación se enviarán con el evento para cada fuente. Los mismos datos de atribución se envían a todos los tipos de eventos.
+
 ```json title="Json" showLineNumbers
 {
   "attributions": {
@@ -157,6 +169,7 @@ Para enviar los datos de atribución, activa la opción **Send Attribution** en 
 | **creative**        | String        | Palabra clave creativa de atribución.              |
 | **created_at**      | Fecha ISO 8601 | Fecha y hora de creación del registro de atribución. |
 | **network_user_id** | String        | ID asignado al usuario por la fuente de atribución. |
+
 ### IDs de integración \{#integration-ids\}
 
 Los siguientes IDs de integración se utilizan actualmente en los eventos:
@@ -177,65 +190,70 @@ Los siguientes IDs de integración se utilizan actualmente en los eventos:
 - `one_signal_subscription_id`
 - `tenjin_analytics_installation_id`
 - `posthog_distinct_user_id`
+
 ### Token de compra de Play Store \{#play-store-purchase-token\}
 
 Este campo incluye todos los datos necesarios para revalidar una compra si es preciso. Solo se envía si la opción **Send Play Store purchase token** está habilitada en la [configuración de la integración de Webhook](https://app.adapty.io/integrations/customwebhook).
+
 | Campo               | Tipo    | Descripción                                                  |
 | :------------------ | :------ | :----------------------------------------------------------- |
 | **product_id**      | String  | El identificador único del producto (SKU) comprado en Play Store. |
 | **purchase_token**  | String  | Token generado por Google Play para identificar de forma única esta transacción de compra. |
 | **is_subscription** | Boolean | Indica si el producto comprado es una suscripción (`true`) o una compra única (`false`). |
+
 ### Propiedades de eventos \{#event-properties\}
 
 Las propiedades de los eventos pueden variar según el tipo de evento e incluso entre eventos del mismo tipo. Por ejemplo, un evento originado en el App Store no incluirá propiedades específicas de Android como `base_plan_id`.
+
 El evento [Nivel de acceso actualizado](webhook-event-types-and-fields#for-access-level-updated-event) tiene propiedades específicas, por lo que le hemos dedicado una sección aparte. Del mismo modo, hemos separado las [Propiedades adicionales de eventos fiscales y de ingresos](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties), ya que son exclusivas de ciertos tipos de eventos.
 
 #### Para la mayoría de los tipos de eventos \{#for-most-event-types\}
+
 Las propiedades de los eventos son consistentes para la mayoría de los tipos de eventos (excepto para el evento **Access Level Updated**, que se describe en su propia sección). A continuación se muestra una tabla completa con las propiedades e indicaciones sobre si pertenecen a eventos específicos.
 
 <UsdConversion />
 
 | Campo                         | Tipo          | Descripción                                                                                                                                                                                                                                                                                                                                                      |
 |:------------------------------|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **ab_test_name**              | String        | Nombre de la [prueba A/B de Adapty](ab-tests) en la que se originó la transacción.                                                                                                                                                                                                                                                                               |
-| **ab_test_revision**          | Integer       | Revisión de la prueba A/B en la que se originó la transacción.                                                                                                                                                                                                                                                                                                   |
-| **base_plan_id**              | String        | [ID del plan base](https://support.google.com/googleplay/android-developer/answer/12154973) en Google Play Store o [ID de precio](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) en Stripe.                                                                                                                               |
+| **ab_test_name**              | String        | Nombre de la [prueba A/B de Adapty](ab-tests) donde se originó la transacción.                                                                                                                                                                                                                                                                                   |
+| **ab_test_revision**          | Integer       | Revisión de la prueba A/B donde se originó la transacción.                                                                                                                                                                                                                                                                                                       |
+| **base_plan_id**              | String        | [ID del plan base](https://support.google.com/googleplay/android-developer/answer/12154973) en Google Play Store o [ID de precio](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) en Stripe.                                                                                                                        |
 | **cancellation_reason**       | String        | <p>Posibles motivos de cancelación: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Presente en los siguientes tipos de evento:</p>`subscription_cancelled`, `subscription_refunded` y `trial_cancelled`. |
 | **cohort_name**               | String        | El nombre de la [audiencia](audience) que determinó qué paywall se mostró al usuario.                                                                                                                                                                                                                                                                            |
 | **consecutive_payments**      | Integer       | El número de períodos que un usuario lleva suscrito sin interrupciones. Incluye el período actual.                                                                                                                                                                                                                                                               |
 | **currency**                  | String        | Moneda local.                                                                                                                                                                                                                                                                                                                                                    |
-| **developer_id**              | String        | El ID del [placement](placements) en el que se originó la transacción.                                                                                                                                                                                                                                                                                           |
-| **discount_amount_local**     | Float         | El descuento aplicado a la transacción: el precio estándar menos el importe realmente cobrado, antes de la comisión de Apple/Google, en moneda local. `0` para una compra a precio completo. En una prueba gratuita, equivale al precio estándar completo (`original_price_local`), ya que no se cobra nada. `null` cuando se aplicó una oferta pero el precio estándar es desconocido (véase `original_price_local`). Siempre `null` para las ofertas de pago anticipado de App Store: el cargo único cubre varios períodos de facturación, por lo que no puede compararse con el precio estándar por período. |
+| **developer_id**              | String        | El ID del [placement](placements) donde se originó la transacción.                                                                                                                                                                                                                                                                                               |
+| **discount_amount_local**     | Float         | El descuento aplicado a la transacción: el precio estándar menos el importe cobrado realmente, antes de la comisión de Apple/Google, en moneda local. `0` para una compra a precio completo. Para una prueba gratuita, equivale al precio estándar completo (`original_price_local`), ya que no se cobra nada. `null` cuando se aplicó una oferta pero se desconoce el precio estándar (ver `original_price_local`). Siempre `null` para las ofertas de pago anticipado de App Store: el único pago adelantado cubre varios períodos de facturación, por lo que no puede compararse con el precio estándar por período. |
 | **discount_amount_usd**       | Float         | El valor de `discount_amount_local` en USD. |
 | **environment**               | String        | Los valores posibles son `Sandbox` o `Production`.                                                                                                                                                                                                                                                                                                               |
-| **event_datetime**            | ISO 8601 date | La fecha y hora del evento. Igual que en el nivel raíz del evento.                                                                                                                                                                                                                                                                                               |
-| **original_price_local**      | Float         | El precio estándar del producto sin descuento antes de la comisión de Apple/Google, en moneda local. En las suscripciones, este es el precio de renovación. Equivale a `price_local` en una compra a precio completo y siempre equivale a `price_local` en compras únicas, ya que las stores no reportan un precio estándar separado para ellas. `null` para una compra con descuento cuando la store no reporta un precio estándar fiable (por ejemplo, la renovación automática está desactivada, la renovación aún lleva una oferta, o hay un cambio de producto pendiente). |
+| **event_datetime**            | ISO 8601 date | La fecha y hora del evento. Es la misma que en el nivel raíz del evento.                                                                                                                                                                                                                                                                                         |
+| **original_price_local**      | Float         | El precio estándar del producto sin descuento antes de la comisión de Apple/Google, en moneda local. Para las suscripciones, es el precio de renovación. Es igual a `price_local` en una compra a precio completo y siempre es igual a `price_local` en compras únicas, ya que las stores no informan un precio estándar separado para ellas. `null` para una compra con descuento cuando la store no informa un precio estándar fiable (por ejemplo, la renovación automática está desactivada, la renovación sigue teniendo una oferta o hay un cambio de producto pendiente). |
 | **original_price_usd**        | Float         | Igual que `original_price_local`, en USD. |
-| **original_purchase_date**    | ISO 8601 date | En las suscripciones recurrentes, la compra original es la primera transacción de la cadena; su ID, denominado ID de transacción original, vincula la cadena de renovaciones. Las transacciones posteriores son extensiones de esta. La fecha de compra original es la fecha y hora de esa primera transacción.                                                   |
-| **original_transaction_id**   | String        | <p>En las suscripciones recurrentes, este es el ID de transacción original que vincula la cadena de renovaciones. La transacción original es la primera de la cadena; las posteriores son extensiones de ella.</p><p>Si no hay extensiones, `original_transaction_id` coincide con store_transaction_id.</p>                                                      |
-| **paywall_name**              | String        | Nombre del paywall en el que se originó la transacción.                                                                                                                                                                                                                                                                                                          |
-| **paywall_revision**          | String        | Revisión del paywall en el que se originó la transacción. El valor predeterminado es 1.                                                                                                                                                                                                                                                                          |
-| **price_local**               | Float         | El importe cobrado por la transacción antes de la comisión de Apple/Google, en moneda local. `null` para las pruebas gratuitas, ya que no se cobra nada.                                                                                                                                                                                                          |
-| **price_usd**                 | Float         | El importe cobrado por la transacción antes de la comisión de Apple/Google, en USD. `null` para las pruebas gratuitas, ya que no se cobra nada.                                                                                                                                                                                                                   |
-| **profile_country**           | String        | Determinado por Adapty a partir de la IP del perfil.                                                                                                                                                                                                                                                                                                             |
+| **original_purchase_date**    | ISO 8601 date | Para las suscripciones recurrentes, la compra original es la primera transacción de la cadena; su ID, llamado ID de transacción original, vincula la cadena de renovaciones. Las transacciones posteriores son extensiones de ella. La fecha de compra original es la fecha y hora de esta primera transacción.                                                   |
+| **original_transaction_id**   | String        | <p>Para las suscripciones recurrentes, es el ID de transacción original que vincula la cadena de renovaciones. La transacción original es la primera de la cadena; las posteriores son extensiones de ella.</p><p>Si no hay extensiones, `original_transaction_id` coincide con store_transaction_id.</p>                                                        |
+| **paywall_name**              | String        | Nombre del paywall donde se originó la transacción.                                                                                                                                                                                                                                                                                                              |
+| **paywall_revision**          | String        | Revisión del paywall donde se originó la transacción. El valor predeterminado es 1.                                                                                                                                                                                                                                                                              |
+| **price_local**               | Float         | El importe cobrado por la transacción antes de la comisión de Apple/Google, en moneda local. `null` para las pruebas gratuitas, ya que no se cobra nada.                                                                                                                                                                                                         |
+| **price_usd**                 | Float         | El importe cobrado por la transacción antes de la comisión de Apple/Google, en USD. `null` para las pruebas gratuitas, ya que no se cobra nada.                                                                                                                                                                                                                  |
+| **profile_country**           | String        | Determinado por Adapty según la IP del perfil.                                                                                                                                                                                                                                                                                                                   |
 | **profile_event_id**          | UUID          | ID de evento único que puede usarse para deduplicación.                                                                                                                                                                                                                                                                                                          |
-| **profile_has_access_level**  | Boolean       | Booleano que indica si el perfil tiene un nivel de acceso activo.                                                                                                                                                                                                                                                                                                |
-| **profile_id**                | UUID          | ID de perfil generado por Adapty. Igual que en el nivel raíz del evento.                                                                                                                                                                                                                                                                                         |
-| **profile_ip_address**        | String        | IP del perfil (puede ser IPv4 o IPv6; se prefiere IPv4 cuando está disponible). `null` si **Collect users' IP addresses** está desactivado en los [ajustes de la app](https://app.adapty.io/settings/general).                                                                                                                                                    |
+| **profile_has_access_level**  | Boolean       | Valor booleano que indica si el perfil tiene un nivel de acceso activo.                                                                                                                                                                                                                                                                                          |
+| **profile_id**                | UUID          | ID de perfil generado por Adapty. Es el mismo que en el nivel raíz del evento.                                                                                                                                                                                                                                                                                   |
+| **profile_ip_address**        | String        | IP del perfil (puede ser IPv4 o IPv6; se prefiere IPv4 cuando está disponible). `null` si **Collect users' IP addresses** está desactivado en la [configuración de la app](https://app.adapty.io/settings/general).                                                                                                                                               |
 | **profile_total_revenue_usd** | Float         | Ingresos totales del perfil con los reembolsos descontados.                                                                                                                                                                                                                                                                                                      |
 | **promotional_offer_id**      | String        | El ID de Adapty de la [oferta promocional](offers) utilizada. Este ID se establece al crear una oferta en el dashboard.                                                                                                                                                                                                                                           |
 | **purchase_date**             | ISO 8601 date | La fecha y hora de la compra del producto.                                                                                                                                                                                                                                                                                                                       |
-| **rate_after_first_year**     | Boolean       | Booleano que indica que la suscripción cumple los requisitos para una tasa de comisión reducida (habitualmente el 15%) tras un año de renovación continua. Las tasas de comisión varían según la elegibilidad al programa y el país. Consulta [Comisión de la store e impuestos](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) para más detalles. |
-| **store**                     | String        | Store donde se realizó la compra. Valores estándar: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Si configuras [transacciones de store personalizadas](api-adapty/operations/setTransaction) mediante la API del servidor, se utiliza el valor del parámetro **store**.                                                                              |
-| **store_country**             | String        | El país que nos envía la app store.                                                                                                                                                                                                                                                                                                                              |
+| **rate_after_first_year**     | Boolean       | Booleano que indica que la suscripción cumple los requisitos para una tasa de comisión reducida (normalmente el 15%) tras un año de renovación continua. Las tasas de comisión varían según la elegibilidad al programa y el país. Consulta [Comisión de la store e impuestos](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) para más detalles. |
+| **store**                     | String        | Store donde se compró el producto. Valores estándar: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Si estableces [transacciones de store personalizadas](api-adapty/operations/setTransaction) mediante la API del servidor, se usa el valor del parámetro **store**.                                                                                |
+| **store_country**             | String        | El país que nos envía la store de aplicaciones.                                                                                                                                                                                                                                                                                                                  |
 | **store_offer_category**      | String        | Categoría de oferta aplicada. Los valores posibles son `introductory`, `promotional`, `winback`.                                                                                                                                                                                                                                                                 |
 | **store_offer_discount_type** | String        | Tipo de oferta aplicada. Los valores posibles son `free_trial`, `pay_as_you_go` y `pay_up_front`.                                                                                                                                                                                                                                                                |
-| **store_offer_number_of_periods** | Integer   | Número de períodos de facturación base que cubre la oferta (1 o más). Solo está presente cuando se aplica una oferta. `null` para las ofertas de pago anticipado de App Store y cuando la store no informa la duración de la oferta. |
-| **subscription_expires_at**   | ISO 8601 date | Fecha de expiración de la suscripción. Normalmente en el futuro.                                                                                                                                                                                                                                                                                                 |
+| **store_offer_number_of_periods** | Integer   | Número de períodos de facturación base que descuenta una oferta (1 o más). Solo está presente cuando se aplica una oferta. `null` para las ofertas de pago anticipado de App Store y cuando la store no informa la duración de la oferta. |
+| **subscription_expires_at**   | ISO 8601 date | <p>La fecha de vencimiento de la suscripción.</p><p>En eventos de reembolso, problema de facturación, período de gracia y nivel de acceso, contiene la fecha de cancelación o la fecha de fin del período de gracia cuando aplica. En eventos de compra y renovación, contiene la fecha de vencimiento regular de la suscripción.</p>                             |
 | **transaction_id**            | String        | Identificador único de una transacción.                                                                                                                                                                                                                                                                                                                          |
-| **trial_duration**            | String        | Duración del período de prueba en días. Se envía con el formato "{} days", por ejemplo, "7 days". Solo está presente en los tipos de evento relacionados con pruebas: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                      |
-| **variation_id**              | UUID          | ID único del paywall en el que se realizó la compra.                                                                                                                                                                                                                                                                                                             |
-| **vendor_product_id**         | String        | <p>ID del producto en Apple App Store, Google Play Store o Stripe.</p><p>Si se concedió acceso sin una transacción real en la store, `vendor_product_id` será uno de los siguientes:</p><ul><li>`adapty_server_side_product` — concedido mediante la [API del servidor](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [concedido manualmente](give-access-level-to-specific-customer) en el Adapty Dashboard.</li><li>`adapty_promotion` — heredado.</li></ul> |
+| **trial_duration**            | String        | Duración del período de prueba en días. Se envía en el formato "{} days", por ejemplo, "7 days". Solo está presente en los tipos de evento relacionados con pruebas: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                       |
+| **variation_id**              | UUID          | ID único del paywall donde se realizó la compra.                                                                                                                                                                                                                                                                                                                 |
+| **vendor_product_id**         | String        | <p>ID del producto en Apple App Store, Google Play Store o Stripe.</p><p>Si se otorgó acceso sin una transacción real en la store, `vendor_product_id` será uno de los siguientes:</p><ul><li>`adapty_server_side_product` — otorgado mediante la [API del servidor](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [otorgado manualmente](give-access-level-to-specific-customer) en el Adapty Dashboard.</li><li>`adapty_promotion` — heredado.</li></ul> |
 
 #### Propiedades adicionales de impuestos e ingresos en los eventos \{#additional-tax-and-revenue-event-properties\}
 
@@ -247,6 +265,7 @@ Tipos de evento que tienen las propiedades de impuestos e ingresos:
 - `subscription_initial_purchase` (también conocido como `subscription_started` — es el mismo evento)
 - `subscription_refunded`
 - `non_subscription_purchase`
+
 | Campo                 | Tipo  | Descripción                                                  |
 | :-------------------- | :---- | :----------------------------------------------------------- |
 | **net_revenue_local** | Float | Ingresos netos (ingresos tras la comisión de Apple/Google e impuestos) en moneda local. |
@@ -255,12 +274,14 @@ Tipos de evento que tienen las propiedades de impuestos e ingresos:
 | **proceeds_usd**      | Float | Precio del producto tras la comisión de Apple/Google.        |
 | **tax_amount_local**  | Float | Importe de impuestos deducido en moneda local.               |
 | **tax_amount_usd**    | Float | Importe de impuestos deducido en USD.                        |
+
 #### Ejemplo de payload de `non_subscription_purchase` \{#non_subscription_purchase-example-payload\}
 
 `non_subscription_purchase` sigue la misma estructura que los eventos de suscripción, pero refleja una compra única o consumible. Los campos exclusivos de suscripción no aplican: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime` y `trial_duration` están ausentes. `subscription_expires_at` está presente pero con valor `null`. Los campos de impuestos e ingresos (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) sí se incluyen.
 
 <details>
 <summary>Ejemplo de payload (haz clic para expandir)</summary>
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -310,51 +331,54 @@ Tipos de evento que tienen las propiedades de impuestos e ingresos:
 El evento **Access Level Updated** es un evento de webhook específico que se genera únicamente cuando la integración de Webhook está activa y este tipo de evento está habilitado. Si está habilitado, se envía al Webhook configurado y aparece en el **Event Feed**. Si no está habilitado, el evento no se creará.
 
 Si has habilitado el [uso compartido de niveles de acceso](general#6-sharing-paid-access-between-user-accounts), el evento **access level updated** se enviará para todos los perfiles que compartan el nivel de acceso.
+
 :::tip
 Usa este evento para actualizar el nivel de acceso del usuario en tu base de datos, conceder o revocar funciones premium en tu backend y mantener el acceso sincronizado entre dispositivos o plataformas.
 :::
+
 | Propiedad                          | Tipo          | Descripción                                                  |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
-| **ab_test_name**                   | String        | Nombre de la prueba A/B en la que se originó la transacción. |
+| **ab_test_name**                   | String        | Nombre de la prueba A/B donde se originó la transacción.     |
 | **access_level_id**                | String        | El ID del nivel de acceso.                                   |
-| **activated_at**                   | ISO 8601 date | Fecha y hora en que se activó el acceso por última vez.      |
+| **activated_at**                   | ISO 8601 date | Fecha y hora en que el acceso fue activado por última vez.   |
 | **active_introductory_offer_type** | String        | Tipo de oferta introductoria aplicada. Los valores posibles son `free_trial`, `pay_as_you_go` y `pay_up_front`. |
-| **active_promotional_offer_id**    | String        | ID de la oferta promocional según se indica en la sección de productos del Adapty Dashboard. |
+| **active_promotional_offer_id**    | String        | ID de la oferta promocional tal como figura en la sección de productos del Adapty Dashboard. |
 | **active_promotional_offer_type**  | String        | Tipo de oferta promocional aplicada. Los valores posibles son `free_trial`, `pay_as_you_go` y `pay_up_front`. |
 | **base_plan_id**                   | String        | [ID del plan base](https://support.google.com/googleplay/android-developer/answer/12154973) en Google Play Store o [ID de precio](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) en Stripe. |
 | **billing_issue_detected_at**      | ISO 8601 date | Fecha y hora del problema de facturación.                    |
 | **cancellation_reason**            | String        | Posibles motivos de cancelación: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`. |
 | **cohort_name**                    | String        | Nombre de la audiencia a la que pertenece el perfil.         |
-| **currency**                       | String        | Moneda local (por defecto USD).                              |
+| **currency**                       | String        | Moneda local (USD por defecto).                              |
 | **developer_id**                   | String        | El ID del placement donde se originó la transacción.         |
 | **environment**                    | String        | Los valores posibles son `Sandbox` o `Production`.           |
-| **event_datetime**                 | ISO 8601 date | La fecha y hora del evento.                                  |
-| **expires_at**                     | ISO 8601 date | Fecha y hora en que expirará el acceso.                      |
-| **is_active**                      | Boolean       | Booleano que indica si el nivel de acceso está activo.       |
-| **is_in_grace_period**             | Boolean       | Booleano que indica si el perfil está en el período de gracia. |
+| **event_datetime**                 | ISO 8601 date | Fecha y hora del evento.                                     |
+| **expires_at**                     | ISO 8601 date | <p>Fecha y hora en que expira el acceso. Adapty calcula `is_active` a partir de este campo.</p><p>Durante un período de gracia, contiene el final del período de gracia; tras un reembolso o cancelación, contiene la fecha de cancelación. No existe un campo separado para el fin del período de gracia.</p> |
+| **is_active**                      | Boolean       | Booleano que indica si el nivel de acceso está activo. Se calcula a partir de `expires_at` (junto con `starts_at` e `is_lifetime`) cuando se genera el evento. |
+| **is_in_grace_period**             | Boolean       | Booleano que indica si el perfil está en el período de gracia. Mientras es `true`, `expires_at` contiene el final del período de gracia. |
 | **is_lifetime**                    | Boolean       | Booleano que indica si el nivel de acceso es de por vida.    |
 | **is_refund**                      | Boolean       | Booleano que indica si la transacción es un reembolso.       |
-| **original_purchase_date**         | ISO 8601 date | En las suscripciones recurrentes, la compra original es la primera transacción de la cadena; su ID, denominado ID de transacción original, vincula la cadena de renovaciones. Las transacciones posteriores son extensiones de esta. La fecha de compra original es la fecha y hora de esta primera transacción. |
-| **original_transaction_id**        | String        | <p>En las suscripciones recurrentes, es el ID de transacción original que vincula la cadena de renovaciones. La transacción original es la primera de la cadena; las transacciones posteriores son extensiones de esta.</p><p>Si no hay extensiones, `original_transaction_id` coincide con store_transaction_id.</p>El identificador de transacción de la compra original. |
+| **original_purchase_date**         | ISO 8601 date | En las suscripciones recurrentes, la compra original es la primera transacción de la cadena; su ID, llamado ID de transacción original, enlaza la cadena de renovaciones. Las transacciones posteriores son extensiones de esta. La fecha de compra original es la fecha y hora de esa primera transacción. |
+| **original_transaction_id**        | String        | <p>En las suscripciones recurrentes, este es el ID de transacción original que enlaza la cadena de renovaciones. La transacción original es la primera de la cadena; las posteriores son extensiones de esta.</p><p>Si no hay extensiones, `original_transaction_id` coincide con store_transaction_id.</p>El identificador de transacción de la compra original. |
 | **paywall_name**                   | String        | Nombre del paywall donde se originó la transacción.          |
 | **paywall_revision**               | String        | Revisión del paywall donde se originó la transacción. El valor predeterminado es 1. |
 | **profile_country**                | String        | Determinado por Adapty a partir de la IP del perfil.         |
-| **profile_event_id**               | UUID          | ID único del evento que puede usarse para deduplicación.     |
+| **profile_event_id**               | UUID          | ID de evento único que puede usarse para deduplicación.      |
 | **profile_has_access_level**       | Boolean       | Booleano que indica si el perfil tiene un nivel de acceso activo. |
-| **profile_id**                     | UUID          | ID interno del perfil de usuario de Adapty.                  |
-| **profile_ip_address**             | String        | IP del perfil (puede ser IPv4 o IPv6, con preferencia por IPv4 cuando esté disponible). `null` si **Collect users' IP addresses** está desactivado en los [ajustes de la app](https://app.adapty.io/settings/general). |
+| **profile_id**                     | UUID          | ID de perfil de usuario interno de Adapty.                   |
+| **profile_ip_address**             | String        | IP del perfil (puede ser IPv4 o IPv6, con preferencia por IPv4 cuando esté disponible). `null` si **Collect users' IP addresses** está desactivado en la [configuración de la app](https://app.adapty.io/settings/general). |
 | **profile_total_revenue_usd**      | Float         | Ingresos totales del perfil, incluidos los reembolsos.       |
-| **purchase_date**                  | ISO 8601 date | La fecha y hora de compra del producto.                      |
-| **renewed_at**                     | ISO 8601 date | Fecha y hora en que se renovará el acceso.                   |
+| **purchase_date**                  | ISO 8601 date | Fecha y hora de la compra del producto.                      |
+| **renewed_at**                     | ISO 8601 date | Fecha y hora en que comenzó más recientemente el período actual de acceso de pago. Hasta la primera renovación, coincide con `activated_at`. |
 | **starts_at**                      | ISO 8601 date | Fecha y hora en que comienza el nivel de acceso.             |
-| **store**                          | String        | Store donde se adquirió el producto. Valores estándar: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Si configuras [transacciones de store personalizadas](api-adapty/operations/setTransaction) mediante la API del servidor, se usa el valor del parámetro **store**. |
-| **store_country**                  | String        | País enviado a Adapty por el store de aplicaciones.          |
-| **subscription_expires_at**        | ISO 8601 date | Fecha de expiración de la suscripción.                       |
+| **store**                          | String        | Store donde se adquirió el producto. Valores estándar: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Si estableces [transacciones de store personalizadas](api-adapty/operations/setTransaction) mediante la API del servidor, se usa el valor del parámetro **store**. |
+| **store_country**                  | String        | País enviado a Adapty por el app store.                      |
+| **subscription_expires_at**        | ISO 8601 date | La fecha de expiración de la suscripción. En este evento contiene el mismo valor que `expires_at`: durante un período de gracia, el final del período de gracia; tras un reembolso o cancelación, la fecha de cancelación. |
 | **transaction_id**                 | String        | Identificador único de una transacción.                      |
 | **trial_duration**                 | String        | Duración del período de prueba en días (p. ej., "7 days").   |
-| **variation_id**                   | UUID          | Identificador de una variante, utilizado para atribuir compras a este paywall. |
-| **vendor_product_id**              | String        | <p>ID del producto en el store (Apple/Google/Stripe).</p><p>Si el acceso se otorgó sin una transacción real en el store, `vendor_product_id` será uno de los siguientes:</p><ul><li>`adapty_server_side_product` — otorgado a través de la [API del servidor](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [otorgado manualmente](give-access-level-to-specific-customer) en el Adapty Dashboard.</li><li>`adapty_promotion` — heredado.</li></ul> |
+| **variation_id**                   | UUID          | Identificador de una variante, usado para atribuir las compras a este paywall. |
+| **vendor_product_id**              | String        | <p>ID del producto en el store (Apple/Google/Stripe).</p><p>Si se concedió el acceso sin una transacción real en el store, `vendor_product_id` será uno de los siguientes:</p><ul><li>`adapty_server_side_product` — concedido mediante la [API del servidor](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [concedido manualmente](give-access-level-to-specific-customer) en el Adapty Dashboard.</li><li>`adapty_promotion` — heredado.</li></ul> |
 | **will_renew**                     | Boolean       | Indica si el nivel de acceso de pago se renovará.            |
+
 :::warning
 Ten en cuenta que esta estructura puede crecer con el tiempo, ya que nosotros o los terceros con los que trabajamos podemos añadir nuevos datos. Asegúrate de que el código que la procesa sea lo suficientemente robusto y se base en campos específicos en lugar de depender de la estructura completa.
 :::

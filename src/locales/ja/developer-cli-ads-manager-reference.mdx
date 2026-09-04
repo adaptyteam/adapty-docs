@@ -97,14 +97,16 @@ adapty asa connect
 adapty asa orgs list
 ```
 
-各行には2つの識別子が含まれており、これらは互換性がありません：
+各行には2つの識別子が含まれており、互いに互換性はありません。
 
-| フィールド | 用途 |
+| フィールド | 使用箇所 |
 |---|---|
-| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) の `--org` フラグ、および[リストフィルター](#list-filters) の `--campaign-group` フラグが受け取るUUID |
-| `org_id` | AppleのOrganization IDの数値。どちらのフラグも受け付けません |
+| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) の `--org` と、[リストフィルター](#list-filters) の `--campaign-group` が受け取るUUID |
+| `org_id` | [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) の `--org-id` が受け取るAppleの数値組織ID。`--org` と `--campaign-group` はこの値を受け付けない |
 
-`--org` は `campaigns create` にのみ存在します。どのlistコマンドもこれを受け付けません。
+`--org` は `campaigns create` にのみ存在します。list コマンドでは使用できません。
+
+各行には `payment_model` も含まれます。値が `LOC` の場合、組織はラインオブクレジットで請求され、その組織内のすべてのキャンペーンに [`--invoice-*` フラグ](#adapty-asa-campaigns-create)が必要です。
 
 [ページネーションフラグ](#global-flags)を使用できます。
 
@@ -159,19 +161,28 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
-| `--org` | はい | キャンペーングループID（UUID）。[`orgs list`](#adapty-asa-orgs-list) を参照 |
-| `--name` | はい | キャンペーン名 |
-| `--adam-id` | はい | App StoreアプリID（`adam_id`） |
-| `--country` | はい | 国またはリージョンコード。複数指定する場合は繰り返し: `--country US --country CA` |
-| `--daily-budget` | はい | 1日の予算（金額のみ）。例: `50` または `12.50` |
-| `--budget` | いいえ | 通算予算 |
-| `--target-cpa` | いいえ | 目標獲得単価（CPA） |
-| `--currency` | いいえ | このコールで使用する金額の通貨コード。デフォルト: `USD` |
-| `--bidding-strategy` | いいえ | `MANUAL_CPT` または `MAX_CONVERSIONS`。Appleのデフォルトは `MANUAL_CPT` |
-| `--ad-channel-type` | いいえ | `SEARCH` または `DISPLAY`。デフォルト: `SEARCH` |
-| `--billing-event` | いいえ | `TAPS` または `IMPRESSIONS`。デフォルト: `TAPS` |
-| `--supply-source` | いいえ | 供給ソース（繰り返し可）。デフォルト: `APPSTORE_SEARCH_RESULTS` |
-| `--status` | いいえ | 初期ステータス: `ENABLED` または `PAUSED` |
+| `--org` | 必須 | キャンペーングループID（UUID）。[`orgs list`](#adapty-asa-orgs-list) を参照 |
+| `--name` | 必須 | キャンペーン名 |
+| `--adam-id` | 必須 | App Store アプリID（`adam_id`） |
+| `--country` | 必須 | 国または地域コード。複数指定する場合は繰り返す：`--country US --country CA` |
+| `--daily-budget` | 必須 | 1日の予算（金額をそのまま指定）。例：`50` または `12.50` |
+| `--budget` | 任意 | 通算予算 |
+| `--target-cpa` | 任意 | 目標獲得単価。`--daily-budget` より低い値にする必要あり |
+| `--currency` | 任意 | このリクエストで使用する通貨コード。デフォルト：`USD` |
+| `--bidding-strategy` | 任意 | `MANUAL_CPT` または `MAX_CONVERSIONS`。Appleのデフォルト：`MANUAL_CPT` |
+| `--ad-channel-type` | 任意 | `SEARCH` または `DISPLAY`。デフォルト：`SEARCH` |
+| `--billing-event` | 任意 | `TAPS` または `IMPRESSIONS`。デフォルト：`TAPS` |
+| `--supply-source` | 任意 | 配信ソース（複数指定可）。デフォルト：`APPSTORE_SEARCH_RESULTS` |
+| `--status` | 任意 | 初期ステータス：`ENABLED` または `PAUSED` |
+| `--invoice-advertiser` | 与信枠 | 請求オプション：広告主名 |
+| `--invoice-order-number` | 与信枠 | 請求オプション：注文番号 |
+| `--invoice-contact-name` | 与信枠 | 請求オプション：購入者の担当者名 |
+| `--invoice-contact-email` | 与信枠 | 請求オプション：購入者の連絡先メールアドレス |
+| `--invoice-billing-email` | 与信枠 | 請求オプション：請求担当者のメールアドレス |
+
+`payment_model` が `LOC` の組織は与信枠による請求を行い、Apple は各キャンペーンに Invoicing Options を必須とします。5 つの `--invoice-*` フラグすべてを一度に渡してください — 一部だけ指定するとリクエスト送信前に拒否されます。[与信枠の Invoicing Options を設定する](developer-cli-ads-manager#invoicing-options) を参照してください。
+
+レスポンスには `serving_status` と `serving_state_reasons` が含まれます。キャンペーンを作成しても配信が開始されない場合があります。`MAX_CONVERSIONS` キャンペーンは[自動広告グループ](#adapty-asa-ad-groups-create)を待機し、クレジットラインキャンペーンは請求オプションの設定を待機します。いずれの場合も、コマンドはその理由と解決するためのコマンドを表示します。
 
 ### adapty asa campaigns update
 
@@ -189,14 +200,105 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 |---|---|
 | `--name` | 新しいキャンペーン名 |
 | `--status` | `ENABLED` または `PAUSED` |
-| `--country` | 国リストを置き換えます。複数指定する場合は繰り返し使用してください |
-| `--daily-budget` | 新しい日予算 |
+| `--country` | 国リストを置き換えます。複数指定する場合は繰り返し使用 |
+| `--daily-budget` | 新しい1日の予算 |
 | `--budget` | 新しい通算予算 |
-| `--target-cpa` | 新しい目標獲得単価 |
+| `--target-cpa` | 新しいターゲットCPA（獲得単価） |
 | `--bidding-strategy` | `MANUAL_CPT` または `MAX_CONVERSIONS` |
-| `--currency` | この呼び出しで使用する金額の通貨コード。デフォルト: `USD` |
+| `--currency` | このリクエストの金額に使用する通貨コード。デフォルト: `USD` |
+| `--invoice-advertiser` | 請求オプション: 広告主名 |
+| `--invoice-order-number` | 請求オプション: 注文番号 |
+| `--invoice-contact-name` | 請求オプション: 購入者の担当者名 |
+| `--invoice-contact-email` | 請求オプション: 購入者の連絡先メールアドレス |
+| `--invoice-billing-email` | 請求オプション: 請求担当者のメールアドレス |
 
 少なくとも1つのフラグが必要です。
+
+5つの `--invoice-*` フラグはセットとして機能し、保存済みの請求オプションをまとめて置き換えます。そのため、1つだけ変更する場合でも5つすべてを指定してください。一部だけ指定した場合は、リクエストが送信される前に拒否されます。
+
+### adapty asa campaigns bulk-create
+
+キャンペーン構造全体（キャンペーン、広告グループ、キーワード、除外キーワード、広告をネスト）を一括操作で作成します。
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+JSONを手書きする代わりに、Apple Ads のバルクテンプレートを変換することもできます：
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| フラグ | デフォルト | 説明 |
+|---|---|---|
+| `--file` | — | キャンペーン構造を含む JSON ファイル、または標準入力から読み込む場合は `-` |
+| `--from-file` | — | サーバー上で変換する Apple Ads バルクテンプレート: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) または [キーワード `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Apple の数値型組織 ID (`org_id`)。[`orgs list`](#adapty-asa-orgs-list) を参照。`--from-file` と併用する場合に必須 |
+| `--preview` | — | `--from-file` と併用: 変換後の構造を出力して終了。何も作成されない |
+| `--wait` / `--no-wait` | `--wait` | 操作が完了するまでポーリングする。`--no-wait` は操作 ID を出力して返る |
+| `--poll-interval` | `5` | 進捗ポーリングの間隔（秒） |
+| `--timeout` | `900` | 操作の完了を待つ最大秒数 |
+
+`--file` と `--from-file` のどちらか一方のみが必須です。
+
+この構造では、最上位レベルでキャンペーングループが命名され、他のすべてがその下にネストされます。
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id`にはAppleの数値型organization IDを指定します。UUIDを渡す場合は`campaign_group_internal_id`を使用してください。`payload`を持つノードが作成されます。既存のエンティティを`id`で参照するノードはアンカーと呼ばれ、既存のキャンペーンに広告グループを追加する際に使用します。同一オペレーションでエンティティを変更するには`update_payload`を追加します。キャンペーンは`ad_groups`をネストし、各広告グループは`keywords`、`negative_keywords`、および`ads`をネストします。キャンペーンレベルのネガティブキーワードは、キャンペーンに直接`negative_keywords`を指定します。
+
+構造全体は何も作成される前に検証され、無効なノードがある場合はすべてリストアップされます。`--from-file` を使用した場合、変換の問題はシート、行、列とともに報告されます。変換の警告は送信を止めませんが、変換エラーは中断します。送信前に、構造に含まれるキャンペーン、広告グループ、キーワード、除外キーワード、広告の数が報告され、確認が求められます。
+
+コマンドはその後、操作をポーリングし、次の3つの最終ステータスのいずれかになるまで進捗を表示し続けます。
+
+| ステータス | 意味 |
+|---|---|
+| `success` | すべてのオブジェクトが作成されました |
+| `partial` | 一部のオブジェクトが作成されませんでした。各エラーはAppleのエラーとともに表示されます |
+| `failed` | 操作が失敗し、コマンドはゼロ以外の終了コードで終了します |
+
+`--timeout` 秒が経過しても操作が完了しない場合、コマンドは戻り値を返し、後で実行する [`bulk-status`](#adapty-asa-campaigns-bulk-status) の呼び出しを表示します。
+
+### adapty asa campaigns bulk-status
+
+1つのバルク操作の進捗（ステータス、オブジェクト数、オブジェクトごとのログ）を表示します。
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `operation-id` | [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) が出力する操作 ID（UUID） |
+
+`status` フィールドの値は `pending`、`running`、`success`、`partial`、`failed` のいずれかです。`counts` ブロックには、合計数のうち適用済み、失敗、保留中のオブジェクト数が示されます。
+
+[ページネーションフラグ](#global-flags)を使用できます。
 
 ## 広告グループ \{#ad-groups\}
 
@@ -234,14 +336,17 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 |---|---|---|
 | `--campaign` | はい | キャンペーン ID（UUID） |
 | `--name` | はい | 広告グループ名 |
-| `--default-bid` | はい | デフォルト入札額（例：`1.20`） |
-| `--cpa-goal` | いいえ | 獲得単価目標 |
-| `--pricing-model` | いいえ | `CPC` または `CPM`。Apple はすべての広告グループに設定が必要。デフォルト：`CPC` |
-| `--start-time` | いいえ | スケジュール開始日（`YYYY-MM-DD`）。デフォルトは今日 |
+| `--default-bid` | `--automated` を使わない場合は必須 | デフォルト入札額（例: `1.20`） |
+| `--cpa-goal` | いいえ | 目標 CPA（コンバージョン単価） |
+| `--pricing-model` | いいえ | `CPC` または `CPM`。Apple はすべての広告グループに必須。デフォルト: `CPC` |
+| `--start-time` | いいえ | スケジュール開始日（`YYYY-MM-DD`）。デフォルトは当日 |
 | `--end-time` | いいえ | スケジュール終了日（`YYYY-MM-DD`） |
 | `--automated-keywords` / `--no-automated-keywords` | いいえ | Apple によるキーワードの自動追加を許可する |
-| `--currency` | いいえ | この呼び出しで使用する通貨コード。デフォルト：`USD` |
-| `--status` | いいえ | 初期ステータス：`ENABLED` または `PAUSED` |
+| `--automated` | いいえ | `MAX_CONVERSIONS` キャンペーンに必要な自動広告グループを作成する |
+| `--currency` | いいえ | このリクエストで使用する金額の通貨コード。デフォルト: `USD` |
+| `--status` | いいえ | 初期ステータス: `ENABLED` または `PAUSED` |
+
+`--automated` はアドグループを自動化キーワードにオプトインするため、`--automated-keywords` と組み合わせることはできません。Apple が自動化されたアドグループ自体をスケジュールし、有効な状態を維持するため、`--start-time` および `--status PAUSED` は拒否されます。代わりにキャンペーンを一時停止してください。[Max Conversions キャンペーンを作成する](developer-cli-ads-manager#max-conversions)を参照してください。
 
 ### adapty asa ad-groups update
 

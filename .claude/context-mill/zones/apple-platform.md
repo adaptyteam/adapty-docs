@@ -166,7 +166,7 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
 | enable-app-store-server-notifications | — | dev | 1 | tutorial |
 | generate-in-app-purchase-key | — | dev | 0 | tutorial |
 | initial_ios | entry | dev | 1 | tutorial |
-| refund-saver | — | dev | 11 | tutorial |
+| refund-saver | — | dev | 16 | tutorial |
 | set-up-app-store-connect | — | dev | 8 | tutorial |
 | troubleshoot-app-store-integration | — | dev | 6 | tutorial |
 <!-- /mill:auto -->

@@ -1,0 +1,92 @@
+---
+title: "Kỹ năng agent kiểm tra flow"
+description: "Cài đặt kỹ năng flow-audit để công cụ lập trình AI kiểm tra xem một flow đã sẵn sàng cho production chưa trước khi bạn xuất bản."
+metadataTitle: "Kỹ năng Agent Kiểm Tra Flow | Flow Builder | Tài liệu Adapty"
+---
+
+Kỹ năng flow-audit trả lời một câu hỏi duy nhất về một flow: nó đã sẵn sàng cho production chưa? Trỏ công cụ lập trình AI của bạn vào một flow, nó sẽ đọc cấu hình thông qua [Adapty CLI](developer-cli-quickstart), kiểm tra so với danh mục sản phẩm của bạn, và đưa ra kết luận — không phải một danh sách mà bạn phải tự diễn giải.
+
+Một flow có thể vượt qua mọi cổng publish hiện tại và vẫn không an toàn để hiển thị cho người dùng. Các kiểm tra publish của Paywall Builder và `flows config validate` đều chỉ hỏi "tài liệu này có đúng định dạng không?" — không ai hỏi "liệu người dùng thực có bị mắc kẹt, hay thấy thông tin sai không?" Một flow đang ở trạng thái `publication_failed` vẫn có thể vượt qua cả hai cổng đó; flow-audit mới là thứ bắt được phần còn lại.
+
+:::note
+flow-audit không bao giờ ghi vào flow. Nó đọc config và danh mục sản phẩm của bạn, chạy các kiểm tra, rồi chuyển lại những gì nó tìm thấy cho bạn — hoặc cho [flow-generator skill](flow-generator-skill) — để sửa.
+:::
+
+## Cài đặt skill \{#install-the-skill\}
+
+flow-audit được đóng gói trong plugin `adapty-skills` ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) cùng với flow-generator — cài một lần là bạn có tất cả các skill trong plugin, hiện tại gồm năm skill bao gồm flow-audit.
+
+Dành cho Claude Code:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Sau đó chạy `/reload-plugins` để kích hoạt các skill. Đối với các công cụ lập trình AI khác, hãy làm theo [các bước cài đặt của flow-generator](flow-generator-skill#install-the-skill) — cùng repo, cùng lệnh.
+
+Then ask for it — `/flow-audit` in tools that map slash commands to skills, or "Use the flow-audit skill" in the ones that don't. Name the flow, or let it list your flows and ask which one.
+
+## Cách hoạt động \{#how-it-works\}
+
+Năm giai đoạn, tất cả chỉ đọc:
+
+1. **Xác thực và phân giải.** Xác nhận CLI đủ phiên bản mới và đăng nhập Adapty của bạn hợp lệ.
+2. **Chọn flow.** Liệt kê các flow của bạn (`adapty flows list`) và hỏi bạn muốn kiểm tra flow nào.
+3. **Tải dữ liệu.** Lấy cấu hình của flow và danh mục sản phẩm của bạn — ảnh chụp nhanh mà mọi lần kiểm tra đều chạy dựa trên đó.
+4. **Chạy kiểm tra.** Mọi kiểm tra đều chạy dựa trên ảnh chụp nhanh đó.
+5. **Báo cáo.** Một kết luận, không phải danh sách.
+
+## Kiểm tra những gì \{#what-it-checks\}
+
+- **Triggers**: Một phần tử có nội dung hứa hẹn một hành động nhưng không có tương tác nào trong toàn bộ chuỗi tổ tiên của nó. Phần tử này trông giống hệt một điều khiển hoạt động bình thường nhưng không làm gì cả.
+- **Store compliance**: Một hành động khôi phục có thể truy cập ở đâu đó trong flow, một liên kết đến điều khoản sử dụng, một liên kết đến chính sách bảo mật, và một cách để người dùng thoát khỏi paywall mà không cần mua.
+- **Products**: Một sản phẩm được liên kết nhưng không có trong danh mục, một sản phẩm chưa được liên kết với cửa hàng, một thẻ hiển thị chu kỳ thanh toán mà sản phẩm không có, hoặc giá cứng ở chỗ lẽ ra phải dùng biến giá.
+- **Variables**: Một biến mà flow thiết lập nhưng không bao giờ đọc, khiến một màn hình thu thập câu trả lời nhưng không có gì sử dụng.
+- **Localization**: Bản dịch trống, giá trị chưa được dịch, và mức độ bao phủ theo từng ngôn ngữ.
+- **Placeholders**: Nội dung chưa được hoàn thiện — `Lorem ipsum`, `TODO`, `Your headline here` — và một flow vẫn còn tên là `Untitled`.
+
+## Mức độ nghiêm trọng \{#severity\}
+
+Mỗi phát hiện được xếp vào một trong ba cấp độ:
+
+| Cấp độ | Ý nghĩa |
+|---|---|
+| **Blocker** | Flow sẽ không hoạt động được với người dùng thực, hoặc hiển thị thông tin sai — một mức giá bịa đặt vẫn có thể hiển thị hoàn hảo nhưng vẫn là dối trá. |
+| **Risk** | Hoạt động được, nhưng có thể không phải là ý định của ai cả: nội dung placeholder, một giá trị vẫn giống hệt locale mặc định, một biến mà không ai đọc. |
+| **Question** | Không thể xác định từ dữ liệu hiện có. Báo cáo nêu rõ những gì đã thấy, những gì không tiếp cận được, và một điều cần kiểm tra — thay vì đoán mò. |
+
+## Báo cáo mẫu \{#example-report\}
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+This flow's status is `publication_failed`, and both the Flow Builder's publish checks and `flows config validate` already passed it — neither one reads a screen's copy or walks its interactions. The report itself leads with the verdict, then a numbered list of blockers with the exact element and screen to open.
+
+A clean flow's verdict line reads `READY FOR PRODUCTION`, with nothing padded on after it. If flow-audit found no blockers or risks but still has open questions, the verdict reads `READY, PENDING n CHECKS I CANNOT MAKE` instead of certifying something it couldn't see.
+
+## Những gì nó không thể kiểm tra \{#what-it-cant-check\}
+
+flow-audit không thể cho bạn biết flow có được gắn vào một placement hay không. `adapty flows get` chỉ trả về `id`, `name`, `status` và `updated_at` của flow — flows và paywalls nằm trong các không gian ID riêng biệt, vì vậy không có thông tin nào CLI trả về có thể liên kết một flow với placement mà nó đang được đặt trên đó. Đây là lời nhắc cố định trong mọi báo cáo, không bao giờ là một lần kiểm tra: hãy tự xác nhận placement trên trang [Placements](placements), hoặc xem [Tạo placement](create-placement).
+
+## Ai sửa cái gì \{#who-fixes-what\}
+
+Mỗi báo cáo đều kết thúc bằng phần `WHAT TO DO NEXT` của riêng nó, chia theo người thực hiện: những gì agent có thể thay đổi trong flow, những gì chỉ bạn mới có thể thay đổi trên Adapty Dashboard, và những gì cần bạn tự xác nhận trước khi phát hành.
+
+flow-audit không tự thực hiện bất kỳ thay đổi nào trong số đó — nó chỉ đọc theo thiết kế, vì vậy một flow bị lỗi sẽ giữ nguyên như khi bạn để lại. Hãy chuyển báo cáo cho [flow-generator skill](flow-generator-skill), vì đây là skill phụ trách việc sao lưu, phê duyệt của bạn và thực hiện ghi thay đổi thực tế.

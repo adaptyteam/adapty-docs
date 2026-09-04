@@ -97,16 +97,18 @@ Liệt kê các nhóm chiến dịch (tổ chức Apple Ads) có sẵn cho công
 adapty asa orgs list
 ```
 
-Mỗi hàng chứa hai định danh, và chúng không thể thay thế cho nhau:
+Mỗi hàng chứa hai định danh, và chúng không thể dùng thay thế cho nhau:
 
-| Field | Used as |
+| Trường | Dùng làm |
 |---|---|
-| `internal_id` | UUID mà `--org` nhận trên [`campaigns create`](#adapty-asa-campaigns-create), và `--campaign-group` nhận làm [bộ lọc danh sách](#list-filters) |
-| `org_id` | ID tổ chức dạng số của Apple. Cả hai flag đều không chấp nhận giá trị này |
+| `internal_id` | UUID mà `--org` nhận vào ở lệnh [`campaigns create`](#adapty-asa-campaigns-create), và mà `--campaign-group` nhận làm [bộ lọc danh sách](#list-filters) |
+| `org_id` | ID tổ chức dạng số của Apple, được `--org-id` nhận vào ở lệnh [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create). `--org` và `--campaign-group` không chấp nhận giá trị này |
 
-`--org` chỉ tồn tại trên `campaigns create`. Không có lệnh list nào chấp nhận nó.
+`--org` chỉ có trong lệnh `campaigns create`. Không có lệnh liệt kê nào chấp nhận tham số này.
 
-Chấp nhận [pagination flags](#global-flags).
+Mỗi hàng cũng có trường `payment_model`. Khi giá trị là `LOC`, tổ chức thanh toán theo hạn mức tín dụng, và mọi campaign trong đó đều cần các [cờ `--invoice-*`](#adapty-asa-campaigns-create).
+
+Chấp nhận [cờ phân trang](#global-flags).
 
 ### adapty asa apps list
 
@@ -163,15 +165,24 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--name` | Có | Tên chiến dịch |
 | `--adam-id` | Có | ID ứng dụng trên App Store (`adam_id`) |
 | `--country` | Có | Mã quốc gia hoặc khu vực. Lặp lại để chọn nhiều: `--country US --country CA` |
-| `--daily-budget` | Có | Ngân sách hàng ngày dưới dạng số tiền, ví dụ `50` hoặc `12.50` |
+| `--daily-budget` | Có | Ngân sách hàng ngày theo số tiền thực tế, ví dụ `50` hoặc `12.50` |
 | `--budget` | Không | Ngân sách trọn đời |
-| `--target-cpa` | Không | Chi phí mục tiêu trên mỗi lượt thu hút người dùng |
-| `--currency` | Không | Mã tiền tệ cho các khoản tiền trong lần gọi này. Mặc định: `USD` |
+| `--target-cpa` | Không | Chi phí mục tiêu mỗi lượt chuyển đổi. Phải thấp hơn `--daily-budget` |
+| `--currency` | Không | Mã tiền tệ cho các số tiền trong lần gọi này. Mặc định: `USD` |
 | `--bidding-strategy` | Không | `MANUAL_CPT` hoặc `MAX_CONVERSIONS`. Apple mặc định là `MANUAL_CPT` |
 | `--ad-channel-type` | Không | `SEARCH` hoặc `DISPLAY`. Mặc định: `SEARCH` |
 | `--billing-event` | Không | `TAPS` hoặc `IMPRESSIONS`. Mặc định: `TAPS` |
 | `--supply-source` | Không | Nguồn cung cấp, có thể lặp lại. Mặc định: `APPSTORE_SEARCH_RESULTS` |
 | `--status` | Không | Trạng thái ban đầu: `ENABLED` hoặc `PAUSED` |
+| `--invoice-advertiser` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: tên nhà quảng cáo |
+| `--invoice-order-number` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: số đơn hàng |
+| `--invoice-contact-name` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: tên người liên hệ của người mua |
+| `--invoice-contact-email` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: email người liên hệ của người mua |
+| `--invoice-billing-email` | Hạn mức tín dụng | Tùy chọn thanh toán hóa đơn: email liên hệ thanh toán |
+
+Một tổ chức có `payment_model` là `LOC` thanh toán theo hạn mức tín dụng, và Apple yêu cầu Tùy chọn Thanh toán cho từng chiến dịch. Truyền đủ cả năm flag `--invoice-*` trong một lần gọi — nếu thiếu bất kỳ flag nào, yêu cầu sẽ bị từ chối trước khi được gửi đi. Xem [Đặt Tùy chọn Thanh toán cho hạn mức tín dụng](developer-cli-ads-manager#invoicing-options).
+
+Phản hồi trả về `serving_status` và `serving_state_reasons`. Một campaign có thể được tạo nhưng vẫn chưa phục vụ quảng cáo: campaign theo `MAX_CONVERSIONS` sẽ chờ [nhóm quảng cáo được tạo tự động](#adapty-asa-ad-groups-create), còn campaign theo hình thức line-of-credit sẽ chờ Invoicing Options được thiết lập. Trong cả hai trường hợp, lệnh sẽ in ra lý do và lệnh cần thực hiện để giải quyết.
 
 ### adapty asa campaigns update
 
@@ -189,14 +200,105 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 |---|---|
 | `--name` | Tên chiến dịch mới |
 | `--status` | `ENABLED` hoặc `PAUSED` |
-| `--country` | Thay thế danh sách quốc gia. Lặp lại để chọn nhiều quốc gia |
+| `--country` | Thay thế danh sách quốc gia. Lặp lại để thêm nhiều quốc gia |
 | `--daily-budget` | Ngân sách hàng ngày mới |
 | `--budget` | Ngân sách trọn đời mới |
-| `--target-cpa` | Chi phí mục tiêu mới trên mỗi lượt chuyển đổi |
+| `--target-cpa` | Chi phí mục tiêu trên mỗi lần mua lại mới |
 | `--bidding-strategy` | `MANUAL_CPT` hoặc `MAX_CONVERSIONS` |
-| `--currency` | Mã tiền tệ cho các khoản tiền trong lần gọi này. Mặc định: `USD` |
+| `--currency` | Mã tiền tệ cho các số tiền trong lệnh gọi này. Mặc định: `USD` |
+| `--invoice-advertiser` | Tùy chọn hóa đơn: tên nhà quảng cáo |
+| `--invoice-order-number` | Tùy chọn hóa đơn: số đơn hàng |
+| `--invoice-contact-name` | Tùy chọn hóa đơn: tên liên hệ người mua |
+| `--invoice-contact-email` | Tùy chọn hóa đơn: email liên hệ người mua |
+| `--invoice-billing-email` | Tùy chọn hóa đơn: email liên hệ thanh toán |
 
-Cần có ít nhất một flag.
+Ít nhất một flag là bắt buộc.
+
+Năm flag `--invoice-*` đi cùng nhau và thay thế toàn bộ Invoicing Options đã lưu, vì vậy hãy truyền cả năm flag ngay cả khi chỉ muốn thay đổi một trong số chúng. Một tập hợp không đầy đủ sẽ bị từ chối trước khi yêu cầu được gửi đi.
+
+### adapty asa campaigns bulk-create
+
+Tạo toàn bộ cấu trúc chiến dịch — các chiến dịch với nhóm quảng cáo, từ khóa, từ khóa phủ định và quảng cáo lồng nhau — trong một thao tác duy nhất.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Chuyển đổi từ template bulk của Apple Ads thay vì tự viết JSON:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Cờ | Mặc định | Mô tả |
+|---|---|---|
+| `--file` | — | File JSON chứa cấu trúc chiến dịch, hoặc `-` để đọc từ đầu vào tiêu chuẩn |
+| `--from-file` | — | Template bulk Apple Ads để chuyển đổi trên server: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) hoặc một file [keywords `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | ID tổ chức dạng số của Apple (`org_id`). Xem [`orgs list`](#adapty-asa-orgs-list). Bắt buộc khi dùng `--from-file` |
+| `--preview` | — | Dùng với `--from-file`: in cấu trúc đã chuyển đổi và dừng lại. Không có gì được tạo ra |
+| `--wait` / `--no-wait` | `--wait` | Theo dõi thao tác cho đến khi hoàn thành. `--no-wait` in ID thao tác và trả về |
+| `--poll-interval` | `5` | Số giây giữa các lần kiểm tra tiến độ |
+| `--timeout` | `900` | Số giây tối đa để chờ thao tác hoàn thành |
+
+Chính xác một trong hai tùy chọn `--file` và `--from-file` là bắt buộc.
+
+Cấu trúc đặt tên nhóm chiến dịch ở cấp cao nhất và lồng tất cả các phần còn lại vào bên trong:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` nhận ID tổ chức dạng số của Apple; dùng `campaign_group_internal_id` để truyền UUID thay thế. Một node có `payload` sẽ được tạo mới. Một node chỉ định thực thể đã tồn tại bằng `id` của nó là một anchor — dùng anchor để thêm ad group vào một campaign đã có, và thêm `update_payload` để thay đổi thực thể đó trong cùng một thao tác. Mỗi campaign lồng `ad_groups`, và mỗi ad group lồng `keywords`, `negative_keywords`, và `ads`. Một campaign cũng nhận `negative_keywords` trực tiếp cho các từ khóa loại trừ ở cấp campaign.
+
+Toàn bộ cấu trúc được xác thực trước khi tạo bất kỳ thứ gì, và danh sách từ chối sẽ liệt kê mọi node không hợp lệ. Với `--from-file`, các vấn đề chuyển đổi sẽ được báo cáo kèm sheet, row và column tương ứng; cảnh báo chuyển đổi không dừng việc gửi, nhưng lỗi chuyển đổi sẽ hủy bỏ nó. Trước khi gửi, lệnh sẽ báo cáo số lượng campaign, ad group, keyword, negative keyword và ad trong cấu trúc, đồng thời yêu cầu xác nhận.
+
+Lệnh sau đó sẽ poll operation và in tiến trình cho đến khi đạt một trong ba trạng thái kết thúc:
+
+| Trạng thái | Ý nghĩa |
+|---|---|
+| `success` | Mọi đối tượng đã được tạo thành công |
+| `partial` | Một số đối tượng chưa được tạo. Mỗi lỗi được in kèm thông báo lỗi từ Apple |
+| `failed` | Thao tác thất bại và lệnh thoát với mã khác 0 |
+
+Nếu thao tác chưa hoàn thành sau `--timeout` giây, lệnh sẽ trả về và in ra lệnh [`bulk-status`](#adapty-asa-campaigns-bulk-status) để chạy sau.
+
+### adapty asa campaigns bulk-status
+
+Hiển thị tiến trình của một thao tác bulk: trạng thái, số lượng đối tượng, và nhật ký theo từng đối tượng.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `operation-id` | ID thao tác (UUID) được in ra bởi [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) |
+
+Trường `status` có giá trị là `pending`, `running`, `success`, `partial`, hoặc `failed`. Khối `counts` báo cáo số lượng đối tượng đã áp dụng, thất bại và đang chờ xử lý trên tổng số.
+
+Chấp nhận [cờ phân trang](#global-flags).
 
 ## Nhóm quảng cáo \{#ad-groups\}
 
@@ -230,18 +332,21 @@ Tạo một nhóm quảng cáo trong một chiến dịch.
 adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --default-bid 1.20
 ```
 
-| Cờ | Bắt buộc | Mô tả |
+| Flag | Bắt buộc | Mô tả |
 |---|---|---|
-| `--campaign` | Có | ID chiến dịch (UUID) |
+| `--campaign` | Có | Campaign ID (UUID) |
 | `--name` | Có | Tên nhóm quảng cáo |
-| `--default-bid` | Có | Giá thầu mặc định dưới dạng số tiền, ví dụ `1.20` |
+| `--default-bid` | Trừ khi dùng `--automated` | Giá thầu mặc định dưới dạng số tiền, ví dụ `1.20` |
 | `--cpa-goal` | Không | Mục tiêu chi phí mỗi lần chuyển đổi |
-| `--pricing-model` | Không | `CPC` hoặc `CPM`. Apple yêu cầu chỉ định một trong hai cho mỗi nhóm quảng cáo. Mặc định: `CPC` |
-| `--start-time` | Không | Thời gian bắt đầu lịch chạy (`YYYY-MM-DD`). Mặc định là hôm nay |
-| `--end-time` | Không | Thời gian kết thúc lịch chạy (`YYYY-MM-DD`) |
+| `--pricing-model` | Không | `CPC` hoặc `CPM`. Apple yêu cầu chọn một trong mỗi nhóm quảng cáo. Mặc định: `CPC` |
+| `--start-time` | Không | Thời điểm bắt đầu lịch chạy (`YYYY-MM-DD`). Mặc định là hôm nay |
+| `--end-time` | Không | Thời điểm kết thúc lịch chạy (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | Không | Cho phép Apple tự động thêm từ khóa |
-| `--currency` | Không | Mã tiền tệ cho các số tiền trong lần gọi này. Mặc định: `USD` |
+| `--automated` | Không | Tạo nhóm quảng cáo tự động mà campaign `MAX_CONVERSIONS` cần |
+| `--currency` | Không | Mã tiền tệ cho các số tiền trong lệnh này. Mặc định: `USD` |
 | `--status` | Không | Trạng thái ban đầu: `ENABLED` hoặc `PAUSED` |
+
+`--automated` chọn nhóm quảng cáo tham gia từ khóa tự động, do đó không thể kết hợp với `--automated-keywords`. Apple tự lên lịch cho nhóm quảng cáo tự động và giữ nó ở trạng thái bật, vì vậy `--start-time` và `--status PAUSED` sẽ bị từ chối — hãy tạm dừng chiến dịch thay thế. Xem [Tạo chiến dịch Max Conversions](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 

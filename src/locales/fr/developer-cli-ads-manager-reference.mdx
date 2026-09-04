@@ -97,14 +97,16 @@ Listez les groupes de campagnes (organisations Apple Ads) disponibles pour votre
 adapty asa orgs list
 ```
 
-Chaque ligne contient deux identifiants, qui ne sont pas interchangeables :
+Chaque ligne contient deux identifiants qui ne sont pas interchangeables :
 
-| Champ | Utilisé comme |
+| Field | Used as |
 |---|---|
-| `internal_id` | L'UUID qu'accepte `--org` dans [`campaigns create`](#adapty-asa-campaigns-create), et que `--campaign-group` accepte comme [filtre de liste](#list-filters) |
-| `org_id` | L'identifiant numérique d'organisation Apple. Les deux flags le rejettent |
+| `internal_id` | L'UUID que `--org` accepte dans [`campaigns create`](#adapty-asa-campaigns-create), et que `--campaign-group` accepte comme [filtre de liste](#list-filters) |
+| `org_id` | L'identifiant numérique d'organisation Apple, accepté par `--org-id` dans [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create). `--org` et `--campaign-group` le rejettent |
 
-`--org` existe uniquement dans `campaigns create`. Aucune commande de liste ne l'accepte.
+`--org` n'existe que sur `campaigns create`. Aucune commande de liste ne l'accepte.
+
+Chaque ligne contient également un `payment_model`. Lorsqu'il est `LOC`, l'organisation facture par ligne de crédit, et chaque campagne associée nécessite les [flags `--invoice-*`](#adapty-asa-campaigns-create).
 
 Accepte les [flags de pagination](#global-flags).
 
@@ -157,21 +159,30 @@ Créer une campagne.
 adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
 ```
 
-| Paramètre | Requis | Description |
+| Indicateur | Requis | Description |
 |---|---|---|
 | `--org` | Oui | ID du groupe de campagnes (UUID). Voir [`orgs list`](#adapty-asa-orgs-list) |
 | `--name` | Oui | Nom de la campagne |
 | `--adam-id` | Oui | ID de l'application App Store (`adam_id`) |
 | `--country` | Oui | Code pays ou région. Répéter pour plusieurs : `--country US --country CA` |
-| `--daily-budget` | Oui | Budget quotidien en montant brut, par exemple `50` ou `12.50` |
+| `--daily-budget` | Oui | Budget quotidien en montant simple, par exemple `50` ou `12.50` |
 | `--budget` | Non | Budget total |
-| `--target-cpa` | Non | Coût cible par acquisition |
+| `--target-cpa` | Non | Coût par acquisition cible. Doit être inférieur à `--daily-budget` |
 | `--currency` | Non | Code devise pour les montants de cet appel. Par défaut : `USD` |
 | `--bidding-strategy` | Non | `MANUAL_CPT` ou `MAX_CONVERSIONS`. Apple utilise `MANUAL_CPT` par défaut |
 | `--ad-channel-type` | Non | `SEARCH` ou `DISPLAY`. Par défaut : `SEARCH` |
 | `--billing-event` | Non | `TAPS` ou `IMPRESSIONS`. Par défaut : `TAPS` |
-| `--supply-source` | Non | Source d'inventaire, répétable. Par défaut : `APPSTORE_SEARCH_RESULTS` |
+| `--supply-source` | Non | Source d'approvisionnement, répétable. Par défaut : `APPSTORE_SEARCH_RESULTS` |
 | `--status` | Non | Statut initial : `ENABLED` ou `PAUSED` |
+| `--invoice-advertiser` | Ligne de crédit | Options de facturation : nom de l'annonceur |
+| `--invoice-order-number` | Ligne de crédit | Options de facturation : numéro de commande |
+| `--invoice-contact-name` | Ligne de crédit | Options de facturation : nom du contact acheteur |
+| `--invoice-contact-email` | Ligne de crédit | Options de facturation : e-mail du contact acheteur |
+| `--invoice-billing-email` | Ligne de crédit | Options de facturation : e-mail du contact facturation |
+
+Une organisation dont le `payment_model` est `LOC` facture par ligne de crédit, et Apple exige des options de facturation sur chacune de ses campagnes. Passez les cinq indicateurs `--invoice-*` en un seul appel — un ensemble partiel est rejeté avant l'envoi de la requête. Voir [Définir les options de facturation pour une ligne de crédit](developer-cli-ads-manager#invoicing-options).
+
+La réponse contient `serving_status` et `serving_state_reasons`. Un campaign peut être créé sans diffuser pour autant : un campaign `MAX_CONVERSIONS` attend un [groupe d'annonces automatisé](#adapty-asa-ad-groups-create), et un campaign à ligne de crédit attend ses options de facturation. Dans les deux cas, la commande affiche la raison et la commande qui permet de résoudre le problème.
 
 ### adapty asa campaigns update
 
@@ -187,16 +198,107 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 
 | Indicateur | Description |
 |---|---|
-| `--name` | Nouveau nom de campagne |
+| `--name` | Nouveau nom de la campagne |
 | `--status` | `ENABLED` ou `PAUSED` |
-| `--country` | Remplace la liste de pays. Répétez pour plusieurs |
+| `--country` | Remplace la liste de pays. Répéter pour plusieurs |
 | `--daily-budget` | Nouveau budget quotidien |
-| `--budget` | Nouveau budget total |
+| `--budget` | Nouveau budget global |
 | `--target-cpa` | Nouveau coût cible par acquisition |
 | `--bidding-strategy` | `MANUAL_CPT` ou `MAX_CONVERSIONS` |
-| `--currency` | Code devise pour les montants de cet appel. Par défaut : `USD` |
+| `--currency` | Code de devise pour les montants de cet appel. Par défaut : `USD` |
+| `--invoice-advertiser` | Options de facturation : nom de l'annonceur |
+| `--invoice-order-number` | Options de facturation : numéro de commande |
+| `--invoice-contact-name` | Options de facturation : nom du contact acheteur |
+| `--invoice-contact-email` | Options de facturation : e-mail du contact acheteur |
+| `--invoice-billing-email` | Options de facturation : e-mail du contact de facturation |
 
-Au moins un indicateur est requis.
+Au moins un paramètre est requis.
+
+Les cinq paramètres `--invoice-*` forment un ensemble et remplacent les options de facturation enregistrées, donc passez les cinq même pour en modifier un seul. Un ensemble incomplet est rejeté avant l'envoi de la requête.
+
+### adapty asa campaigns bulk-create
+
+Créez toute une structure de campagne — campagnes avec groupes d'annonces imbriqués, mots-clés, mots-clés négatifs et annonces — en une seule opération.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+Convertissez un modèle bulk Apple Ads natif plutôt que d'écrire le JSON :
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Indicateur | Défaut | Description |
+|---|---|---|
+| `--file` | — | Fichier JSON contenant la structure de la campagne, ou `-` pour lire depuis l'entrée standard |
+| `--from-file` | — | Modèle de masse Apple Ads à convertir sur le serveur : [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) ou un [fichier `.csv` de mots-clés](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Identifiant numérique de l'organisation Apple (`org_id`). Voir [`orgs list`](#adapty-asa-orgs-list). Obligatoire avec `--from-file` |
+| `--preview` | — | Avec `--from-file` : affiche la structure convertie et s'arrête. Rien n'est créé |
+| `--wait` / `--no-wait` | `--wait` | Interroge l'opération jusqu'à ce qu'elle se termine. `--no-wait` affiche l'identifiant de l'opération et retourne |
+| `--poll-interval` | `5` | Secondes entre chaque interrogation de progression |
+| `--timeout` | `900` | Durée maximale en secondes pour attendre la fin de l'opération |
+
+Exactement l'un des paramètres `--file` et `--from-file` est requis.
+
+La structure nomme le groupe de campagnes au niveau supérieur et imbrique tout le reste :
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` prend l'identifiant numérique de l'organisation Apple ; utilisez `campaign_group_internal_id` pour transmettre l'UUID à la place. Un nœud avec un `payload` est créé. Un nœud qui désigne une entité existante par son `id` est une ancre — utilisez-en une pour ajouter des groupes d'annonces à une campagne existante, et ajoutez `update_payload` pour modifier l'entité dans la même opération. Chaque campagne imbrique des `ad_groups`, et chaque groupe d'annonces imbrique des `keywords`, `negative_keywords` et `ads`. Une campagne accepte également des `negative_keywords` directement pour les mots-clés négatifs au niveau de la campagne.
+
+L'ensemble de la structure est validé avant toute création, et un refus liste chaque nœud invalide. Avec `--from-file`, les problèmes de conversion sont signalés avec leur feuille, ligne et colonne ; les avertissements de conversion n'interrompent pas la soumission, mais les erreurs de conversion l'annulent. Avant l'envoi, la commande indique le nombre de campagnes, groupes d'annonces, mots-clés, mots-clés à exclure et annonces que contient la structure, et demande confirmation.
+
+La commande interroge ensuite l'opération et affiche la progression jusqu'à l'obtention de l'un des trois statuts finaux :
+
+| Statut | Signification |
+|---|---|
+| `success` | Chaque objet a été créé |
+| `partial` | Certains objets n'ont pas été créés. Chaque échec est affiché avec l'erreur Apple |
+| `failed` | L'opération a échoué et la commande se termine avec un code non nul |
+
+Si l'opération ne s'est pas terminée après `--timeout` secondes, la commande retourne et affiche l'appel [`bulk-status`](#adapty-asa-campaigns-bulk-status) à exécuter ultérieurement.
+
+### adapty asa campaigns bulk-status
+
+Affiche la progression d'une opération en lot : le statut, le nombre d'objets et le journal par objet.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Argument | Description |
+|---|---|
+| `operation-id` | ID d'opération (UUID) affiché par [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) |
+
+Le champ `status` vaut `pending`, `running`, `success`, `partial` ou `failed`. Le bloc `counts` indique combien d'objets sont appliqués, en échec ou en attente sur le total.
+
+Accepte les [options de pagination](#global-flags).
 
 ## Groupes d'annonces \{#ad-groups\}
 
@@ -232,16 +334,19 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 
 | Indicateur | Requis | Description |
 |---|---|---|
-| `--campaign` | Oui | ID de campagne (UUID) |
+| `--campaign` | Oui | ID de la campagne (UUID) |
 | `--name` | Oui | Nom du groupe d'annonces |
-| `--default-bid` | Oui | Enchère par défaut sous forme de montant simple, par exemple `1.20` |
+| `--default-bid` | Sauf si `--automated` | Enchère par défaut en montant brut, par exemple `1.20` |
 | `--cpa-goal` | Non | Objectif de coût par acquisition |
 | `--pricing-model` | Non | `CPC` ou `CPM`. Apple en exige un sur chaque groupe d'annonces. Par défaut : `CPC` |
 | `--start-time` | Non | Début de la planification (`YYYY-MM-DD`). Par défaut : aujourd'hui |
 | `--end-time` | Non | Fin de la planification (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | Non | Laisser Apple ajouter des mots-clés automatiquement |
-| `--currency` | Non | Code devise pour les montants de cet appel. Par défaut : `USD` |
+| `--automated` | Non | Créer le groupe d'annonces automatisé requis par une campagne `MAX_CONVERSIONS` |
+| `--currency` | Non | Code de devise pour les montants de cet appel. Par défaut : `USD` |
 | `--status` | Non | Statut initial : `ENABLED` ou `PAUSED` |
+
+`--automated` inscrit le groupe d'annonces aux mots-clés automatisés, il ne peut donc pas être combiné avec `--automated-keywords`. Apple planifie lui-même un groupe d'annonces automatisé et le maintient actif, donc `--start-time` et `--status PAUSED` sont rejetés — mettez plutôt la campagne en pause. Voir [Créer une campagne Max Conversions](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 
