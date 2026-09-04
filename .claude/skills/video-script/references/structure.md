@@ -48,8 +48,13 @@ background`. All noun phrases, none of them clever.
 
 ## `> [VISUAL]` cues
 
-**Placed before the narration they pair with.** They exist to keep the shot list and the script in
-step; a transcript that drops them has lost a convenience, not a quality.
+**Always before the narration they pair with — this one is a rule, not a preference.** A cue answers
+"what is on screen while this line is read", so a reader hitting the line first has to guess. Whether a
+transcript keeps its cues is a preference; where a cue sits is not.
+
+**Check the pairing, not just the order.** A cue placed before *some* narration can still describe the
+line above it — that is the same defect one step further along. Read each cue against the line
+immediately below it and ask whether they belong together.
 
 Terse action labels of a few words. Quote names; chain sub-steps with commas or `+`:
 

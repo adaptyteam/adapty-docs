@@ -124,7 +124,7 @@ authoritative queue and status board. Videos 1–5, 22, and 23 are outside its s
 Re-derive:
 
 ```bash
-grep -rhoE "^- [^:]+: https://youtu\.be/[A-Za-z0-9_-]+" _videos/*/description.md \
+grep -rhoE "^- [^:]+: https://youtu\.be/[A-Za-z0-9_-]+" $VIDEOS/*/description.md \
   | sed -E 's|^- (.+): https://youtu\.be/(.+)|\2  \1|' | sort -u
 
 grep -rEo '<YouTube id="[A-Za-z0-9_-]+"' src/content/docs \

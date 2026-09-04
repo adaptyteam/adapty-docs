@@ -1,11 +1,11 @@
 ---
 name: "video-script"
-description: Use when writing, editing, transcribing, or describing Adapty tutorial video scripts in _videos — drafting a new script, generating recording steps, writing a YouTube description, or replacing a draft with the as-recorded transcript.
+description: Use when writing, editing, transcribing, or describing Adapty tutorial video scripts — drafting a new script, generating recording steps, writing a YouTube description, or replacing a draft with the as-recorded transcript.
 ---
 
 # Video Script — Write, Record, Transcribe
 
-The Adapty tutorial video series lives in `_videos/N-topic/`. Twenty-three videos, four eras of
+The Adapty tutorial video series lives in `$VIDEOS/N-topic/`. Twenty-three videos, four eras of
 convention, and a set of rules that each cost a round of reviewer feedback to learn.
 
 **The before/after is the product.** These videos work by showing a real state change on a simple,
@@ -69,6 +69,8 @@ Run `references/regression-checklist.md` over the **whole file**, not the passag
 - Never open with a long intro over a static screen. Concepts go inside the Parts.
 - Never let a run of on-screen actions pass with nothing said against it.
 - Never write reference prose — *allows you to*, *is used for*, panel-by-panel enumeration.
+- Never place a `> [VISUAL]` cue after the line it pairs with. It always sits **before**, so the reader
+  knows what is on screen as the line is read. Off-by-one pairing is the same defect.
 - Never assume a prior video. Each is a cold open.
 - Never bold a UI label from memory. Verify it in the builder source.
 - Never rewrite the narration of an as-recorded script.
@@ -77,7 +79,8 @@ Run `references/regression-checklist.md` over the **whole file**, not the passag
   explain, wait.
 
 Formatting is not on this list. Heading style, timestamps, and whether a transcript keeps its
-`[VISUAL]` cues are preferences, not regressions — see `references/regression-checklist.md`.
+`[VISUAL]` cues at all are preferences — but a cue that *is* present must sit before its line. See
+`references/regression-checklist.md`.
 
 ## Commands
 
@@ -112,13 +115,27 @@ Note `zsh` has `noclobber` set here: `> file` on an existing path fails. Use `>|
 | `regression-checklist.md` | After every edit. The four real failures |
 | `archive.md` | What each video teaches and which ones to learn from |
 
-## The archive
+## The archive — resolve its path first
 
-The video corpus lives in `_videos/`, one folder per video (`N-topic/`), each holding
-`script.md`, and where they exist `recording-steps.md` and `description.md`.
+The script catalogue lives **outside this repo**, because the scripts and their review comments are
+internal and are not committed. Its location is per-machine.
 
-`references/archive.md` is the guide to it — which videos are worth learning from, what each teaches,
-and every video's state. Read that before opening the folders.
+**Resolve `$VIDEOS` before reading anything:** take the `path:` under `## video-scripts` in
+`.claude/context-mill/sources.local.md`.
 
-`_videos/transcription-backlog.md` tracks which scripts still hold a pre-recording draft while
-a published video exists, in fetch-priority order.
+```bash
+VIDEOS=$(awk '/^## video-scripts/{f=1;next} f&&/^path:/{print $2;exit}' \
+  .claude/context-mill/sources.local.md)
+VIDEOS="${VIDEOS/#\~/$HOME}"
+```
+
+That file is gitignored and present only on machines that hold the catalogue. **If it is missing or has
+no `video-scripts` entry, stop and ask for the path** — never guess, and never assume the catalogue is
+in the repo.
+
+Inside it: one folder per video (`$VIDEOS/N-topic/`), each with `script.md`, and where they exist
+`recording-steps.md` and `description.md`. Plus `$VIDEOS/transcription-backlog.md`, which tracks which
+scripts still hold a pre-recording draft while a published video exists.
+
+`references/archive.md` is the guide to the catalogue — which videos are worth learning from, what
+each teaches, and every video's state. Read it before opening any folder.

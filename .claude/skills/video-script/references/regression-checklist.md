@@ -61,6 +61,9 @@ aloud; hesitation means the antecedent is gone. See `tone.md`.
 **Part headings** should be noun phrases naming the subject, not questions with answers attached
 (`structure.md`).
 
+**`[VISUAL]` cues sit before their line, always** — and pair with the line immediately below, not the
+one above. Detect trailing cues by finding any cue whose next block is a heading or the end of file.
+
 ## 3. Screen busy, narration silent
 
 Long stretches where a lot happens visually and nothing is said. The viewer watches actions they can't
