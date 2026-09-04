@@ -330,6 +330,13 @@ while all five of its releases have shipped.
 
 Registered 2026-08-11. Read at `1a147338` (2026-08-13).
 
+**Unreachable as of 2026-08-27.** The clone at the `path:` above is gone, and the GitLab account
+`GeneTiterman` (248) has no grant: SSH `git ls-remote` denied, `GET /api/v4/namespaces/noty-wave` →
+`404 Namespace Not Found`. Access requested 2026-08-27. Until it lands, the readable substitute for
+frontend facts is the production bundle `https://mail.adapty.io/assets/index-*.js` — gating logic,
+tooltips, error codes, field lists and nav labels are all in it verbatim. Nothing backend can be
+checked that way. Note SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
+
 ## mail-frontend — Adapty Mail dashboard (noty-wave)
 
 path: ~/Documents/noty-wave-frontend
@@ -362,6 +369,13 @@ the path from the section name.
 adding a `customSlug` — 404s from inside the product, and the link checker can't catch it because the
 caller isn't in this repo. Moving an article between sidebar categories is safe; URLs come from the
 filename alone. Re-grep before any Mail rename.
+
+**Unreachable as of 2026-08-27.** The clone at the `path:` above is gone, and the GitLab account
+`GeneTiterman` (248) has no grant: SSH `git ls-remote` denied, `GET /api/v4/namespaces/noty-wave` →
+`404 Namespace Not Found`. Access requested 2026-08-27. Until it lands, the readable substitute for
+frontend facts is the production bundle `https://mail.adapty.io/assets/index-*.js` — gating logic,
+tooltips, error codes, field lists and nav labels are all in it verbatim. Nothing backend can be
+checked that way. Note SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
 
 Read at `8b5613a` (2026-08-13).
 
