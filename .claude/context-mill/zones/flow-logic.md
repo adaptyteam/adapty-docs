@@ -104,6 +104,7 @@ or developer can see and click.
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
+| convert-paywall-to-flow | migration | marketer, dev | 3 | tutorial |
 | copy-flows | — | marketer, dev | 2 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
@@ -124,6 +125,8 @@ or developer can see and click.
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
 | paywall-product-block | — | marketer, dev | 7 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
+| paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
+| respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
 | show-plans-bottom-sheet | — | marketer, dev | 11 | tutorial |
 | strikethrough-price | — | marketer, dev | 6 | tutorial |

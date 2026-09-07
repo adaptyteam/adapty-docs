@@ -173,6 +173,9 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-quickstart | — | dev | 8 | api |
 | developer-cli-reference | — | dev | 31 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
+| flow-agent-skills | entry | dev | 0 | tutorial |
+| flow-audit-skill | — | dev | 7 | tutorial |
+| flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
 | manage-adapty-with-ai | entry | dev | 9 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
