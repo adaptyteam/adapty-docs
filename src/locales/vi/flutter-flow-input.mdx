@@ -1,0 +1,287 @@
+---
+title: "Xử lý dữ liệu từ flow trong Flutter SDK"
+description: "Lưu và sử dụng dữ liệu người dùng nhập vào trong các flow trong ứng dụng Flutter của bạn với Adapty SDK."
+metadataTitle: "Xử lý dữ liệu từ flow | Flutter SDK | Tài liệu Adapty"
+---
+
+Khi người dùng nhập vào một trường nhập liệu, trả lời câu hỏi trắc nghiệm, hoặc bật/tắt một toggle trong một [flow](adapty-flow-builder), SDK sẽ truyền giá trị đó đến ứng dụng của bạn thông qua callback analytics.
+
+Các ứng dụng thường sử dụng dữ liệu đó để:
+
+- **Đăng ký người dùng trên backend của bạn**: Lấy địa chỉ email và tên mà người dùng đã nhập trong flow onboarding, rồi tạo tài khoản cho họ khi flow đóng lại.
+- **Lưu câu trả lời và tùy chọn**: Theo dõi những gì người dùng đã chọn để ứng dụng của bạn có thể sử dụng sau — ví dụ: [ghi vào hồ sơ người dùng Adapty](flutter-setting-user-attributes) dưới dạng các thuộc tính tùy chỉnh.
+- **Tùy chỉnh các flow trong tương lai**: Lưu câu trả lời từ quiz dưới dạng thuộc tính tùy chỉnh, rồi nhắm mục tiêu vào một placement sau để mỗi phân khúc nhận được một flow khác nhau, hoặc một paywall khác nhau bên trong đó.
+- **Cung cấp dữ liệu cho các nền tảng analytics bên thứ ba**: Chuyển tiếp câu trả lời tới Amplitude, Mixpanel, hoặc bất kỳ công cụ product analytics nào bạn đang sử dụng.
+
+Các input và nhóm có thể chọn sẽ tự động báo cáo giá trị của chúng. Để phân biệt các input trong code, hãy đặt cho mỗi input một **Element ID** và mỗi nhóm có thể chọn một **Group ID** có ý nghĩa trong builder.
+
+## Trước khi bắt đầu
+
+<FlowInputPrerequisites />
+
+## Nhận giá trị đầu vào \{#receive-input-values\}
+
+Giá trị đầu vào được gửi đến cùng callback với mọi analytics event khác từ một flow, với tên event là `flow_user_input`. Hãy triển khai `flowViewDidReceiveAnalyticEvent` trên observer mà bạn đã đăng ký với `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  handleFlowInput(name, params);
+}
+```
+
+Callback `flowViewDidReceiveAnalyticEvent` gửi tất cả các sự kiện phân tích từ một flow, bao gồm cả [lượt xem màn hình](flutter-flow-screen-views).
+- Tham số `name` chứa tên sự kiện. Để lọc các sự kiện nhập liệu của người dùng, hãy so sánh `name` với `flow_user_input`.
+- Tham số `element_type` xác định danh mục phần tử.
+- Giá trị của đầu vào được lưu ở các tham số khác nhau tùy theo loại phần tử:
+     - Trường văn bản, bộ chọn và nút bật/tắt lưu dữ liệu nhập của người dùng trong `value`
+     - Nhóm có thể chọn báo cáo các tùy chọn đang hoạt động trong `item_ids` và `item_titles`
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'] as String;
+
+  // The screen the input sits on. Pair it with elementId to tell apart
+  // two fields that share an Element ID on different screens.
+  final screenId = params['instanceId'] as String?;
+
+  switch (params['element_type'] as String) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input':
+      final text = params['value'] as String;
+      break;
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker':
+      // Unix time in milliseconds. Arrives as int on iOS and double on Android — read it through num.
+      final date = DateTime.fromMillisecondsSinceEpoch((params['value'] as num).toInt());
+      break;
+    case 'single_choice':
+      final optionId = (params['item_ids'] as List).cast<String>().first;
+      break;
+    case 'multi_choice':
+      final optionIds = (params['item_ids'] as List).cast<String>();
+      break;
+    case 'toggle':
+      final isOn = params['value'] as bool;
+      break;
+  }
+}
+```
+
+<FlowInputVerify />
+
+## Khi ứng dụng nhận được đầu vào \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Những gì bạn nhận được \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Ví dụ về sự kiện \{#event-examples\}
+
+Những ví dụ này minh họa các thuộc tính có sẵn trên mỗi sự kiện, với các giá trị minh họa trong phần chú thích.
+
+<Details>
+<summary>Text, email, number, and phone input (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  name;                      // 'flow_user_input'
+  params['name'];            // 'flow_user_input'
+  params['instanceId'];      // 'scr_J260KU5q'
+  params['isCustomerEvent']; // true
+  params['isBackendEvent'];  // false
+  params['element_id'];      // 'email'
+  params['element_type'];    // 'email_input'
+  params['value'];           // 'jane@example.com'   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Bộ chọn ngày, giờ và ngày-giờ (Nhấn để mở rộng)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'birthday'
+  params['element_type'];    // 'date_picker'
+  params['value'];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; int on iOS, double on Android)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'experience'
+  params['element_type'];    // 'single_choice'
+  params['item_ids'];        // ['pro']   (List)
+  params['item_titles'];     // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'interests'
+  params['element_type'];    // 'multi_choice'
+  params['item_ids'];        // ['sports', 'music']   (List)
+  params['item_titles'];     // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'reminders'
+  params['element_type'];    // 'toggle'
+  params['value'];           // true   (bool)
+}
+```
+</Details>
+
+## Giới hạn và lưu ý khi truyền dữ liệu \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Lưu từng giá trị đầu vào khi observer nhận được, rồi gửi toàn bộ khi flow đóng lại. Để bắt thời điểm đó, hãy implement `flowViewDidDisappear` trên cùng observer. Hàm này chạy khi flow view bị đóng, dù người dùng hoàn thành flow hay thoát giữa chừng.
+
+## Các trường hợp sử dụng \{#use-cases\}
+
+### Đăng ký người dùng trên backend của bạn \{#register-users-on-your-backend\}
+
+Tập hợp các giá trị khi chúng xuất hiện và gửi chúng một lần khi flow đóng, để một request mang đầy đủ tất cả các câu trả lời.
+
+View sẽ biến mất dù người dùng hoàn thành flow hay thoát giữa chừng. Hãy kiểm tra các trường bắt buộc trước khi gọi backend của bạn.
+
+Flow không thể hiển thị lỗi từ backend của bạn. Callback không có giá trị trả về, và SDK không có phương thức nào để gửi dữ liệu vào một flow đang chạy. Nếu đăng ký thất bại, chẳng hạn do email đã tồn tại, hãy hiển thị lỗi trên giao diện của bạn sau khi flow đóng.
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> flowAnswers = {};
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  flowAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  if (!flowAnswers.containsKey('email')) return;
+
+  // Send flowAnswers to your backend here to create the account.
+
+  flowAnswers.clear();
+}
+```
+
+### Bổ sung dữ liệu vào hồ sơ người dùng \{#enrich-user-profiles-with-data\}
+
+Để liên kết thông tin người dùng đã nhập với hồ sơ của họ và tránh hỏi lại cùng một thông tin, hãy [cập nhật hồ sơ người dùng](flutter-setting-user-attributes) ngay khi nhận được giá trị.
+
+Ví dụ: nếu flow của bạn có trường nhập văn bản với Element ID là `name` và trường nhập email với Element ID là `email`:
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+
+  final value = params['value'];
+  if (value is! String) return;
+
+  final builder = AdaptyProfileParametersBuilder();
+
+  switch (params['element_id'] as String) {
+    case 'name':
+      builder.setFirstName(value);
+      break;
+    case 'email':
+      builder.setEmail(value);
+      break;
+    default:
+      return;
+  }
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+### Tùy chỉnh flow hiển thị sau \{#customize-flows-shown-later\}
+
+Câu trả lời trong quiz cũng có thể quyết định những gì người dùng thấy ở một [placement](placements) sau — một flow khác, hoặc một paywall khác bên trong đó.
+
+Ví dụ: hỏi người dùng về kinh nghiệm tập thể thao trong flow onboarding, sau đó hiển thị cho mỗi nhóm một flow riêng với các sản phẩm và nội dung khác nhau.
+
+1. Thêm một [quiz](onboarding-quizzes) vào flow của bạn. Đặt Group ID cho [selectable group](flow-selectable-elements) là `experience`, và mỗi lựa chọn một Element ID có ý nghĩa.
+2. Xử lý các câu trả lời và [thiết lập thuộc tính tùy chỉnh](flutter-setting-user-attributes) cho người dùng.
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+  if (params['element_id'] != 'experience') return;
+
+  final optionId = (params['item_ids'] as List).cast<String>().first;
+
+  final builder = AdaptyProfileParametersBuilder();
+  // Set the custom attribute 'experience' to the option the user selected
+  // (beginner, amateur, or pro).
+  builder.setCustomStringAttribute(optionId, 'experience');
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+3. [Tạo phân khúc](segments) cho mỗi giá trị thuộc tính tùy chỉnh.
+4. Tạo một [placement](placements) và thêm [đối tượng](audience) cho mỗi phân khúc.
+5. [Hiển thị flow](flutter-present-paywalls) cho placement đó trong ứng dụng của bạn.

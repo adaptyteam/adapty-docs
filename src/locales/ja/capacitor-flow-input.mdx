@@ -1,0 +1,257 @@
+---
+title: "Capacitor SDKでフローのデータを処理する"
+description: "CapacitorアプリでAdapty SDKを使用して、ユーザーがフローに入力したデータを保存・活用します。"
+metadataTitle: "フローのデータ処理 | Capacitor SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)の入力フィールドに入力したり、クイズに答えたり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+
+アプリがそのデータを活用する主なユースケースは次のとおりです：
+
+- **ユーザーを自社バックエンドに登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を受け取り、フローが閉じたタイミングでアカウントを作成します。
+- **回答や設定を保存する**: ユーザーが選択した内容を記録し、アプリが後でそれを活用できるようにします — たとえば、カスタム属性として[Adapty プロファイルに書き込む](capacitor-setting-user-attributes)ことができます。
+- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後のプレースメントをターゲティングすることで、セグメントごとに異なるフローや、その中の異なるペイウォールを表示できます。
+- **サードパーティの分析プラットフォームに連携する**: 回答を Amplitude、Mixpanel、またはお使いのプロダクト分析ツールに転送します。
+
+インプットとセレクタブルグループは、値を自動的に報告します。コード内でインプットを区別するために、ビルダーで各インプットに意味のある **Element ID** を、各セレクタブルグループに **Group ID** を設定してください。
+
+## 始める前に \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 入力値を受け取る \{#receive-input-values\}
+
+入力値は、フローからの他のすべてのアナリティクスイベントと同じハンドラーに、イベント名 `flow_user_input` として届きます。他のフローイベントハンドラーと一緒に `onAnalytics` を登録してください。
+
+```typescript showLineNumbers title="Capacitor"
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+`onAnalytics` コールバックは、[スクリーンビュー](capacitor-flow-screen-views)を含む、フローからのすべてのアナリティクスイベントを受け取ります。
+- `name` パラメーターにはイベント名が含まれます。ユーザー入力イベントをフィルタリングするには、`name` を `flow_user_input` と比較してください。
+- `element_type` パラメーターは要素のカテゴリを示します。
+- 入力値は、要素タイプに応じて異なるパラメーターに格納されます：
+     - テキストフィールド、ピッカー、トグルはユーザーの入力を `value` に格納します
+     - 選択可能グループはアクティブなオプションを `item_ids` と `item_titles` に報告します
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId as string;
+
+  switch (params.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = params.value as string;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      // Unix time in milliseconds.
+      const date = new Date(params.value as number);
+      break;
+    }
+    case 'single_choice': {
+      const optionId = (params.item_ids as string[])[0];
+      break;
+    }
+    case 'multi_choice': {
+      const optionIds = params.item_ids as string[];
+      break;
+    }
+    case 'toggle': {
+      const isOn = params.value as boolean;
+      break;
+    }
+  }
+}
+```
+
+<FlowInputVerify />
+
+## アプリがインプットを受け取るタイミング \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## イベントの例 \{#event-examples\}
+
+これらの例は、各イベントで利用可能なプロパティを、コメント内の説明用の値とともに示しています。
+
+<Details>
+<summary>テキスト、メール、数値、電話番号の入力（クリックして展開）</summary>
+
+```typescript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>日付・時刻・日時ピッカー（クリックして展開）</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>単一選択（クリックして展開）</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>複数選択（クリックして展開）</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>トグル（クリックして展開）</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## 配信と制限事項 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+ハンドラーが受け取った入力値はそれぞれ保存しておき、フローが閉じたタイミングでまとめて送信してください。そのタイミングを捉えるには、`onAnalytics` と一緒に `onDisappeared` ハンドラーを登録します。ユーザーがフローを最後まで完了した場合も、途中で閉じた場合も、フロービューが閉じられた際に実行されます。
+
+## ユースケース \{#use-cases\}
+
+### バックエンドへのユーザー登録 \{#register-users-on-your-backend\}
+
+フローが閉じた時点で一度のリクエストに完全な回答セットを含められるよう、値が届いたタイミングで収集し、フローが閉じた後にまとめて送信してください。
+
+フローは、ユーザーが完了した場合でも途中で離脱した場合でも表示が消えます。バックエンドを呼び出す前に、必要なフィールドが揃っているか確認してください。
+
+フローはバックエンドのエラーを表示できません。ハンドラーの戻り値はフロービューを閉じるだけであり、SDKには実行中のフローにデータを送り込むメソッドがありません。たとえばメールアドレスがすでに使用されているなどの理由で登録に失敗した場合は、フローが閉じた後に独自のUIでエラーを表示してください。
+
+```typescript showLineNumbers title="Capacitor"
+const flowAnswers: Record<string, string> = {};
+
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### ユーザープロファイルにデータを反映する \{#enrich-user-profiles-with-data\}
+
+ユーザーが入力した内容をプロファイルと紐付け、同じ情報を二度聞かないようにするには、値が入力されるたびに[ユーザープロファイルを更新](capacitor-setting-user-attributes)してください。
+
+たとえば、フローに Element ID が `name` のテキスト入力フィールドと、Element ID が `email` のメール入力フィールドがある場合:
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams: Partial<AdaptyProfileParameters> = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch((error) => {
+    // handle the error
+  });
+}
+```
+
+### 後から表示されるフローのカスタマイズ \{#customize-flows-shown-later\}
+
+クイズの回答によって、ユーザーがその後の[プレースメント](placements)で見るもの（別のフロー、またはその中の別のペイウォール）を決めることもできます。
+
+たとえば、オンボーディングフローでユーザーにスポーツの経験について質問し、グループごとに異なるプロダクトとコピーを持つ独自のフローを表示することができます。
+
+1. フローに[クイズ](onboarding-quizzes)を追加します。[選択可能グループ](flow-selectable-elements)のグループIDを `experience` に設定し、各オプションにわかりやすいエレメントIDを付けます。
+2. 回答を処理し、ユーザーの[カスタム属性を設定](capacitor-setting-user-attributes)します。
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  const optionId = (params.item_ids as string[])[0];
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: optionId },
+    })
+    .catch((error) => {
+      // handle the error
+    });
+}
+```
+
+3. カスタム属性の値ごとに[セグメント](segments)を作成します。
+4. [プレースメント](placements)を作成し、各セグメントの[オーディエンス](audience)を追加します。
+5. アプリでそのプレースメントの[フローを表示](capacitor-present-paywalls)します。

@@ -1,0 +1,287 @@
+---
+title: "Flutter SDK'da flow verilerini işleme"
+description: "Kullanıcılarınızın Flutter uygulamanızdaki flow'larda girdiği verileri Adapty SDK ile kaydedin ve kullanın."
+metadataTitle: "Flow verilerini işleme | Flutter SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içindeki bir giriş alanına bir şeyler yazdığında, bir quiz'e cevap verdiğinde veya bir toggle'ı değiştirdiğinde, SDK bu değeri analitik callback'i aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri genellikle şunlar için kullanır:
+
+- **Kullanıcıları kendi backendlerinde kaydedin**: Kullanıcının onboarding flow'unda girdiği e-posta adresi ve adı alarak, flow kapandığında hesaplarını oluşturun.
+- **Yanıtları ve tercihleri kaydedin**: Kullanıcının seçtiklerini takip edin, böylece uygulamanız daha sonra buna göre davranabilsin — örneğin, özel attribute olarak [Adapty profiline yazın](flutter-setting-user-attributes).
+- **Gelecekteki flow'ları özelleştirin**: Quiz yanıtlarını özel attribute olarak kaydedin, ardından bir sonraki placement'ı hedefleyin; böylece her segment farklı bir flow veya içindeki farklı bir paywall görsün.
+- **Üçüncü taraf analitik platformlarına aktarın**: Yanıtları Amplitude, Mixpanel veya kullandığınız ürün analitiği platformuna iletin.
+
+Girdi ve seçilebilir gruplar, değerlerini otomatik olarak raporlar. Kodunuzda girdileri birbirinden ayırt edebilmek için builder'da her girdiye anlamlı bir **Element ID**, her seçilebilir gruba ise bir **Group ID** verin.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Girdi değerlerini alma \{#receive-input-values\}
+
+Girdi değerleri, bir flow'dan gelen diğer tüm analitik etkinliklerle aynı callback üzerinden `flow_user_input` etkinlik adıyla ulaşır. `AdaptyUI().setFlowsEventsObserver` ile kaydettiğiniz observer'a `flowViewDidReceiveAnalyticEvent` metodunu uygulayın:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  handleFlowInput(name, params);
+}
+```
+
+`flowViewDidReceiveAnalyticEvent` callback'i, [ekran görüntüleme](flutter-flow-screen-views) etkinlikleri de dahil olmak üzere bir flow'daki tüm analitik etkinlikleri iletir.
+- `name` parametresi etkinlik adını içerir. Kullanıcı girişi etkinliklerini filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi öğe kategorisini belirtir.
+- Giriş değeri, öğe türüne göre farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` parametresinde saklar
+     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` parametrelerinde bildirir
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'] as String;
+
+  // The screen the input sits on. Pair it with elementId to tell apart
+  // two fields that share an Element ID on different screens.
+  final screenId = params['instanceId'] as String?;
+
+  switch (params['element_type'] as String) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input':
+      final text = params['value'] as String;
+      break;
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker':
+      // Unix time in milliseconds. Arrives as int on iOS and double on Android — read it through num.
+      final date = DateTime.fromMillisecondsSinceEpoch((params['value'] as num).toInt());
+      break;
+    case 'single_choice':
+      final optionId = (params['item_ids'] as List).cast<String>().first;
+      break;
+    case 'multi_choice':
+      final optionIds = (params['item_ids'] as List).cast<String>();
+      break;
+    case 'toggle':
+      final isOn = params['value'] as bool;
+      break;
+  }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girdiyi aldığında \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Olay örnekleri \{#event-examples\}
+
+Bu örnekler, her olayda mevcut olan özellikleri, yorumlarda açıklayıcı değerlerle birlikte göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  name;                      // 'flow_user_input'
+  params['name'];            // 'flow_user_input'
+  params['instanceId'];      // 'scr_J260KU5q'
+  params['isCustomerEvent']; // true
+  params['isBackendEvent'];  // false
+  params['element_id'];      // 'email'
+  params['element_type'];    // 'email_input'
+  params['value'];           // 'jane@example.com'   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçicileri (Genişletmek için tıklayın)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'birthday'
+  params['element_type'];    // 'date_picker'
+  params['value'];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; int on iOS, double on Android)
+}
+```
+</Details>
+
+<Details>
+<summary>Tek seçim (Genişletmek için tıklayın)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'experience'
+  params['element_type'];    // 'single_choice'
+  params['item_ids'];        // ['pro']   (List)
+  params['item_titles'];     // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'interests'
+  params['element_type'];    // 'multi_choice'
+  params['item_ids'];        // ['sports', 'music']   (List)
+  params['item_titles'];     // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Genişletmek için tıklayın)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'reminders'
+  params['element_type'];    // 'toggle'
+  params['value'];           // true   (bool)
+}
+```
+</Details>
+
+## Teslimat ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her girdi değerini observer'ınız aldığında kaydedin ve flow kapandığında tüm seti gönderin. O anı yakalamak için aynı observer üzerinde `flowViewDidDisappear` metodunu uygulayın. Bu metot, kullanıcı flow'u tamamlayarak ya da yarıda bırakarak kapatması fark etmeksizin, flow görünümü kapatıldığında çalışır.
+
+## Kullanım Senaryoları \{#use-cases\}
+
+### Kullanıcıları backend'inize kaydedin \{#register-users-on-your-backend\}
+
+Değerler geldikçe toplayın ve flow kapandığında tek bir istekle gönderin; böylece bir istek tüm yanıt setini taşır.
+
+Görünüm, kullanıcı flow'u tamamlasa da yarıda bıraksa da kaybolur. Backend'inizi çağırmadan önce ihtiyaç duyduğunuz alanları kontrol edin.
+
+Flow, backend'inizden gelen hataları gösteremez. Callback'in dönüş değeri yoktur ve SDK'nın çalışan bir flow'a veri gönderen bir metodu bulunmaz. Kayıt başarısız olursa, örneğin e-posta adresi zaten kullanımdaysa, flow kapandıktan sonra hatayı kendi arayüzünüzde gösterin.
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> flowAnswers = {};
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  flowAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  if (!flowAnswers.containsKey('email')) return;
+
+  // Send flowAnswers to your backend here to create the account.
+
+  flowAnswers.clear();
+}
+```
+
+### Kullanıcı profillerini verilerle zenginleştirin \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği bilgileri profiliyle ilişkilendirmek ve aynı bilgileri iki kez sormamak için değerler geldikçe [kullanıcı profilini güncelleyin](flutter-setting-user-attributes).
+
+Örneğin, flow'unuzda Element ID'si `name` olan bir metin girişi ve Element ID'si `email` olan bir e-posta girişi varsa:
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+
+  final value = params['value'];
+  if (value is! String) return;
+
+  final builder = AdaptyProfileParametersBuilder();
+
+  switch (params['element_id'] as String) {
+    case 'name':
+      builder.setFirstName(value);
+      break;
+    case 'email':
+      builder.setEmail(value);
+      break;
+    default:
+      return;
+  }
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+### Daha sonra gösterilen flow'ları özelleştirme \{#customize-flows-shown-later\}
+
+Sınav yanıtları, kullanıcının daha sonra bir [placement](placements)'ta göreceği içeriği de belirleyebilir — farklı bir flow ya da içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara spor deneyimlerini sorun, ardından her gruba farklı ürünler ve metinlerle kendi flow'unu gösterin.
+
+1. Flow'unuza bir [sınav](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Group ID'sini ve her seçeneğe anlamlı bir Element ID verin.
+2. Yanıtları işleyin ve kullanıcı için [özel özellikler ayarlayın](flutter-setting-user-attributes).
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+  if (params['element_id'] != 'experience') return;
+
+  final optionId = (params['item_ids'] as List).cast<String>().first;
+
+  final builder = AdaptyProfileParametersBuilder();
+  // Set the custom attribute 'experience' to the option the user selected
+  // (beginner, amateur, or pro).
+  builder.setCustomStringAttribute(optionId, 'experience');
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+3. Her özel nitelik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda o placement için [flow'u görüntüleyin](flutter-present-paywalls).

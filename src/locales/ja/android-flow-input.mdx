@@ -1,0 +1,262 @@
+---
+title: "Android SDKでフローからデータを処理する"
+description: "Adapty SDKを使用して、フローでユーザーが入力したデータをAndroidアプリで保存・活用する方法を説明します。"
+metadataTitle: "フローからデータを処理する | Android SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)の入力フィールドに入力したり、クイズに回答したり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+
+アプリがこのデータを活用する主なケースは次のとおりです：
+
+- **バックエンドでユーザーを登録する**: オンボーディングフローで入力されたメールアドレスと名前を取得し、フローが閉じたときにアカウントを作成します。
+- **回答と設定を保存する**: ユーザーが選択した内容を記録しておくことで、アプリが後から活用できます。たとえば、[Adapty プロファイルにカスタム属性として書き込む](android-setting-user-attributes)といった使い方ができます。
+- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後のプレースメントをターゲティングすることで、各セグメントに異なるフローや、フロー内の異なるペイウォールを表示できます。
+- **サードパーティの分析プラットフォームに連携する**: 回答を Amplitude や Mixpanel など、利用中のプロダクト分析ツールに転送します。
+
+インプットとセレクタブルグループは、自動的に値を報告します。コード内でそれぞれを区別するために、ビルダーでインプットには意味のある **Element ID** を、セレクタブルグループには **Group ID** を設定してください。
+
+## 始める前に \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 入力値を受け取る \{#receive-input-values\}
+
+入力値は、フローからの他のすべてのアナリティクスイベントと同じコールバックに、イベント名 `flow_user_input` で届きます。フローイベントリスナーの `onAnalyticEvent` をオーバーライドしてください：
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        handleFlowInput(name, params)
+    }
+}
+```
+
+`onAnalyticEvent` コールバックは、[画面ビュー](android-flow-screen-views)を含むフローのすべての分析イベントを配信します。
+- `name` パラメータにはイベント名が含まれます。ユーザー入力イベントをフィルタリングするには、`name` を `flow_user_input` と比較してください。
+- `element_type` パラメータは要素のカテゴリを示します。
+- 入力値は要素タイプに応じて異なるパラメータに格納されます：
+     - テキストフィールド、ピッカー、トグルはユーザーの入力を `value` に格納します
+     - 選択可能グループはアクティブなオプションを `item_ids` と `item_titles` で報告します
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"] as? String
+
+    when (params["element_type"]) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"] as? String
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
+            val millis = (params["value"] as? Number)?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
+        }
+        "multi_choice" -> {
+            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
+        }
+        "toggle" -> {
+            val isOn = params["value"] as? Boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## アプリがインプットを受け取るタイミング \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## イベントの例 \{#event-examples\}
+
+これらの例は、各イベントで利用可能なプロパティと、コメントに示した例示値です。
+
+<Details>
+<summary>テキスト、メール、数値、電話番号の入力（クリックして展開）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    name                       // "flow_user_input"
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>日付・時刻・日時ピッカー（クリックして展開）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 6.45408E11   (Double — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]   (List<String>)
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>複数選択（クリックして展開）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]   (List<String>)
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true   (Boolean)
+}
+```
+</Details>
+
+## デリバリーと制限事項 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+リスナーが受け取った各入力値を保存し、フローが閉じられたときに全セットを送信してください。そのタイミングをキャッチするには、`AdaptyFlowEventListener` の `onFlowClosed` をオーバーライドします。このメソッドは、ユーザーがフローを完了した場合でも途中で閉じた場合でも、フローのビューが閉じられたときに実行されます。
+
+## ユースケース \{#use-cases\}
+
+### バックエンドへのユーザー登録 \{#register-users-on-your-backend\}
+
+値が届き次第収集し、フローが閉じた時点で一度のリクエストにまとめて送信することで、すべての回答を1つのリクエストで送ることができます。
+
+フローは、ユーザーが最後まで完了した場合でも、途中で離脱した場合でも閉じられます。バックエンドを呼び出す前に、必要なフィールドが揃っているかを確認してください。
+
+フローはバックエンドからのエラーを表示できません。コールバックには戻り値がなく、SDKには実行中のフローにデータを送り込むメソッドもありません。たとえばメールアドレスがすでに使用中の場合など、登録に失敗した際は、フローが閉じた後に独自のUIでエラーを表示してください。
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### ユーザープロファイルにデータを追加する \{#enrich-user-profiles-with-data\}
+
+ユーザーが入力した内容をプロファイルに紐付け、同じ情報を二度聞かないようにするには、値が入力されるたびに[ユーザープロファイルを更新](android-setting-user-attributes)してください。
+
+たとえば、フローにElement ID `name` のテキスト入力フィールドと、Element ID `email` のメール入力フィールドがある場合：
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+    val value = params["value"] as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (elementId) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+### 後続のフローをカスタマイズする \{#customize-flows-shown-later\}
+
+クイズの回答を使って、後続の[プレースメント](placements)でユーザーに表示するコンテンツ（別のフローや、その中の別のペイウォール）を決定することもできます。
+
+たとえば、オンボーディングフローでスポーツの経験について質問し、各グループに異なるプロダクトとコピーを持つ専用のフローを表示できます。
+
+1. フローに[クイズ](onboarding-quizzes)を追加します。[選択可能グループ](flow-selectable-elements)にグループID `experience` を設定し、各オプションにわかりやすいElement IDを付けます。
+2. 回答を処理し、ユーザーに[カスタム属性を設定](android-setting-user-attributes)します。
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+    if (params["element_id"] != "experience") return
+
+    val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+3. カスタム属性の値ごとに[セグメント](segments)を作成します。
+4. [プレースメント](placements)を作成し、各セグメントに対応する[オーディエンス](audience)を追加します。
+5. アプリでそのプレースメントの[フローを表示](android-present-paywalls)します。

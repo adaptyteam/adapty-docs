@@ -1,0 +1,262 @@
+---
+title: "在 Android SDK 中处理流程数据"
+description: "使用 Adapty SDK 保存并使用用户在流程中输入的数据。"
+metadataTitle: "处理流程数据 | Android SDK | Adapty 文档"
+---
+
+当用户在[流程](adapty-flow-builder)中输入文本、回答问卷或切换开关时，SDK 会通过分析回调将相应值传递给你的应用。
+
+应用最常见的用途包括：
+
+- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程结束时创建其账号。
+- **保存答案与偏好设置**：记录用户的选择，方便应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](android-setting-user-attributes)。
+- **个性化未来的流程**：将测验答案保存为自定义属性，然后针对某个版位进行定向投放，让每个市场细分看到不同的流程，或其中不同的付费墙。
+- **接入第三方分析平台**：将答案转发至 Amplitude、Mixpanel 或你正在使用的任何产品分析工具。
+
+输入框和可选择组会自动上报其值。为了在代码中区分各个输入框，请在编辑工具中为每个输入框设置有意义的 **Element ID**，为每个可选择组设置 **Group ID**。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 接收输入值 \{#receive-input-values\}
+
+输入值与其他所有来自流程的分析事件一样，通过同一个回调传入，事件名称为 `flow_user_input`。在你的流程事件监听器中重写 `onAnalyticEvent`：
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        handleFlowInput(name, params)
+    }
+}
+```
+
+`onAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](android-flow-screen-views)。
+- `name` 参数包含事件名称。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
+- `element_type` 参数标识元素类别。
+- 输入值根据元素类型存储在不同的参数中：
+     - 文本框、选择器和开关将用户输入存储在 `value` 中
+     - 可选择分组在 `item_ids` 和 `item_titles` 中报告当前选中的选项
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"] as? String
+
+    when (params["element_type"]) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"] as? String
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
+            val millis = (params["value"] as? Number)?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
+        }
+        "multi_choice" -> {
+            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
+        }
+        "toggle" -> {
+            val isOn = params["value"] as? Boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## 应用何时接收输入 \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 您将收到的内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## 事件示例 \{#event-examples\}
+
+以下示例展示了每个事件的可用属性，注释中附有示例值。
+
+<Details>
+<summary>文本、邮箱、数字和电话输入（点击展开）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    name                       // "flow_user_input"
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>日期、时间和日期时间选择器（点击展开）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 6.45408E11   (Double — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>单选（点击展开）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]   (List<String>)
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>多选（点击展开）</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]   (List<String>)
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true   (Boolean)
+}
+```
+</Details>
+
+## 传输与限制 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+将每个输入值保存在监听器接收到时，并在流程关闭时一并发送完整数据。要捕获这一时机，请在 `AdaptyFlowEventListener` 上重写 `onFlowClosed`。无论用户是完成了整个流程还是中途关闭，该方法都会在流程视图消失时触发。
+
+## 使用场景 \{#use-cases\}
+
+### 在后端注册用户 \{#register-users-on-your-backend\}
+
+收集用户回答，等流程关闭后再一次性发送，确保一个请求携带完整的答案集。
+
+无论用户完成流程还是中途放弃，流程都会关闭。在调用后端之前，请先检查必要字段是否已填写。
+
+流程无法显示后端返回的错误。回调没有返回值，SDK 也没有向运行中的流程传入数据的方法。如果注册失败（例如邮箱已被占用），请在流程关闭后通过你自己的界面显示错误信息。
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### 使用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+
+为了将用户输入的信息关联到其用户画像，并避免重复询问相同的信息，请在数据录入时[更新用户画像](android-setting-user-attributes)。
+
+例如，如果你的流程中有一个 Element ID 为 `name` 的文本输入框和一个 Element ID 为 `email` 的邮件输入框：
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+    val value = params["value"] as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (elementId) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+### 自定义后续展示的流程 \{#customize-flows-shown-later\}
+
+Quiz 的答案也可以决定用户在后续[版位](placements)中看到什么——另一个流程，或其中的另一个付费墙。
+
+例如，在用户引导流程中询问用户的运动经验，然后向每组用户展示包含不同产品和文案的专属流程。
+
+1. 在流程中添加一个 [quiz](onboarding-quizzes)。为[可选择组](flow-selectable-elements)设置 Group ID `experience`，并为每个选项设置有意义的 Element ID。
+2. 处理答案并为用户[设置自定义属性](android-setting-user-attributes)。
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+    if (params["element_id"] != "experience") return
+
+    val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+3. 为每个自定义属性值[创建市场细分](segments)。
+4. 创建[版位](placements)，并为每个市场细分添加[目标受众](audience)。
+5. 在应用中[展示该版位的流程](android-present-paywalls)。
