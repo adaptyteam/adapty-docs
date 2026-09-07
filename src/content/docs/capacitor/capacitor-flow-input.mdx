@@ -8,20 +8,16 @@ When a user types into an input field, answers a quiz, or flips a toggle in a [f
 
 Apps most often use that data to:
 
-- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account without a second sign-up screen.
-- **Save answers and preferences**: Keep what a user picked so your app can act on it later, or [write it to their Adapty profile](capacitor-setting-user-attributes) as custom attributes.
-- **Customize the flows a user sees later**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
-- **Feed your own analytics**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
+- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
+- **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](capacitor-setting-user-attributes) as custom attributes.
+- **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
 
-You don't set anything up in the builder — inputs and selectable groups report their values automatically.
+Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
 
 ## Before you start
 
-You need:
-
-- **Adapty Capacitor SDK v4 or later**: The flow event handlers don't exist in earlier versions.
-- **A flow built in the [Flow Builder](adapty-flow-builder)**: Only flows report input values through this callback.
-- **A recently published flow version**: A flow reports input values only if you published it after this feature became available. If nothing reaches your handler, publish a new version of the flow and try again.
+<FlowInputPrerequisites />
 
 ## Receive input values
 
@@ -36,71 +32,61 @@ view.setEventHandlers({
 });
 ```
 
-A flow reports other analytics events through this handler as well, such as screen views. Match on `name` before you read anything else, or your handler will run on events that carry no input. See [Handle flow & paywall events](capacitor-handling-events) for the rest of them.
-
-`params.payload` is a JSON **string**, not an object — parse it before you read the answer:
+The `onAnalytics` callback delivers all analytics events from a flow, including [screen views](capacitor-flow-screen-views).
+- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
+- The `element_type` parameter names the element category.
+- The value of the input is stored in different parameters depending on the element type:
+     - Text fields, pickers, and toggles store the user's input in `value`
+     - Selectable groups report the active options in `item_ids` and `item_titles`
 
 ```typescript showLineNumbers title="Capacitor"
 function handleFlowInput(name: string, params: Record<string, unknown>) {
   if (name !== 'flow_user_input') return;
-  if (typeof params.payload !== 'string') return;
-
-  const input = JSON.parse(params.payload);
 
   // The screen the input sits on. Pair it with element_id to tell apart
   // two fields that share an Element ID on different screens.
-  const screenId = params.instanceId;
+  const screenId = params.instanceId as string;
 
-  switch (input.element_type) {
+  switch (params.element_type) {
     case 'text_input':
     case 'email_input':
     case 'number_input':
     case 'phone_input': {
-      const text = input.value;
+      const text = params.value as string;
       break;
     }
     case 'date_picker':
     case 'time_picker':
     case 'date_time_picker': {
-      const date = new Date(input.value);
+      // Unix time in milliseconds.
+      const date = new Date(params.value as number);
       break;
     }
     case 'single_choice': {
-      const option = input.value;
+      const optionId = (params.item_ids as string[])[0];
       break;
     }
     case 'multi_choice': {
-      const options = input.value;
+      const optionIds = params.item_ids as string[];
       break;
     }
     case 'toggle': {
-      const isOn = input.value;
+      const isOn = params.value as boolean;
       break;
     }
   }
 }
 ```
 
-## What arrives in the handler
+<FlowInputVerify />
 
-| Parameter                | Description                                                                                                                                                                |
-|:-------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`                   | The event name. Input values reach you as `flow_user_input`.                                                                                                               |
-| `params.instanceId`      | The ID of the screen the input is on. An Element ID is unique within one screen but can repeat across screens, so use `instanceId` together with `element_id` to tell two fields apart. |
-| `params.payload`         | A JSON string holding the answer. Parse it to read `element_id`, `element_type`, and `value`.                                                                              |
-| `params.isCustomerEvent` | `true` for events meant for your own analytics.                                                                                                                            |
-| `params.isBackendEvent`  | `false` for `flow_user_input`. Adapty doesn't receive or store what users enter — these values reach your app and nowhere else.                                            |
+## When your app receives the input
 
-The parsed `payload` holds:
+<FlowInputTiming />
 
-| Field          | Description                                                                                                     |
-|:---------------|:------------------------------------------------------------------------------------------------------------------|
-| `version`      | The format version of the payload, currently `1`. Compare it against `1` before parsing to guard against later changes. |
-| `element_id`   | The **Element ID** of the input or selectable group the value came from.                                        |
-| `element_type` | The type of element that sent the value. It tells you how to read `value`.                                      |
-| `value`        | What the user entered or selected. Its shape depends on `element_type`.                                         |
+## What you receive
 
-<FlowInputValueTypes />
+<FlowInputParams />
 
 ## Event examples
 
@@ -111,17 +97,14 @@ These examples show the properties available on each event, with illustrative va
 
 ```typescript
 onAnalytics(name, params) {
-  name;                      // 'flow_user_input'
-  params.instanceId;         // 'scr_J260KU5q'
-  params.isCustomerEvent;    // true
-  params.isBackendEvent;     // false
-  params.payload;            // '{"version":1,"element_id":"email","element_type":"email_input","value":"jane@example.com"}'
-
-  // payload, once parsed:
-  input.version;             // 1
-  input.element_id;          // 'email'
-  input.element_type;        // 'email_input'
-  input.value;               // 'jane@example.com'   (string)
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
 }
 ```
 </Details>
@@ -131,10 +114,9 @@ onAnalytics(name, params) {
 
 ```typescript
 onAnalytics(name, params) {
-  // payload, once parsed:
-  input.element_id;    // 'birthday'
-  input.element_type;  // 'date_picker'
-  input.value;         // 645408000000   (Unix milliseconds — 1990-06-15)
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
 }
 ```
 </Details>
@@ -144,10 +126,10 @@ onAnalytics(name, params) {
 
 ```typescript
 onAnalytics(name, params) {
-  // payload, once parsed:
-  input.element_id;    // 'experience'
-  input.element_type;  // 'single_choice'
-  input.value;         // { id: 'pro', title: 'I train professionally' }
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
 }
 ```
 </Details>
@@ -157,11 +139,10 @@ onAnalytics(name, params) {
 
 ```typescript
 onAnalytics(name, params) {
-  // payload, once parsed:
-  input.element_id;    // 'interests'
-  input.element_type;  // 'multi_choice'
-  input.value;         // [{ id: 'sports', title: 'Sports' },
-                       //  { id: 'music',  title: 'Music' }]
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
 }
 ```
 </Details>
@@ -171,10 +152,9 @@ onAnalytics(name, params) {
 
 ```typescript
 onAnalytics(name, params) {
-  // payload, once parsed:
-  input.element_id;    // 'reminders'
-  input.element_type;  // 'toggle'
-  input.value;         // true   (boolean)
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
 }
 ```
 </Details>
@@ -183,7 +163,7 @@ onAnalytics(name, params) {
 
 <FlowInputLimitations />
 
-The SDK tells you the flow closed through `onDisappeared`. Collect answers as they arrive and act on the full set there.
+Store each input value as your handler receives it, and send the complete set when the flow closes. To catch that moment, register an `onDisappeared` handler alongside `onAnalytics`. It runs when the flow view is dismissed, whether the user finished the flow or closed it partway.
 
 ## Use cases
 
@@ -193,14 +173,15 @@ Collect values as they arrive and send them once the flow closes, so that one re
 
 The flow disappears whether a user finished it or abandoned it partway. Guard on the fields you need before you call your backend.
 
+The flow can't display errors from your backend. The handler's return value only closes the flow view, and the SDK has no method that sends data into a running flow. If registration fails, for example because the email is already in use, show the error in your own UI after the flow closes.
+
 ```typescript showLineNumbers title="Capacitor"
-const flowAnswers: Record<string, unknown> = {};
+const flowAnswers: Record<string, string> = {};
 
 view.setEventHandlers({
   onAnalytics(name, params) {
-    if (name === 'flow_user_input' && typeof params.payload === 'string') {
-      const input = JSON.parse(params.payload);
-      flowAnswers[input.element_id] = input.value;
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id as string] = params.value;
     }
     return false;
   },
@@ -222,23 +203,22 @@ For example, if your flow has a text input with the Element ID `name` and an ema
 ```typescript showLineNumbers title="Capacitor"
 function handleFlowInput(name: string, params: Record<string, unknown>) {
   if (name !== 'flow_user_input') return;
-  if (typeof params.payload !== 'string') return;
+  if (typeof params.value !== 'string') return;
 
-  const input = JSON.parse(params.payload);
-  const profileParams: any = {};
+  const profileParams: Partial<AdaptyProfileParameters> = {};
 
-  switch (input.element_id) {
+  switch (params.element_id) {
     case 'name':
-      profileParams.firstName = input.value;
+      profileParams.firstName = params.value;
       break;
     case 'email':
-      profileParams.email = input.value;
+      profileParams.email = params.value;
       break;
     default:
       return;
   }
 
-  adapty.updateProfile({ params: profileParams }).catch((error) => {
+  adapty.updateProfile(profileParams).catch((error) => {
     // handle the error
   });
 }
@@ -250,24 +230,21 @@ Quiz answers can also decide what a user sees at a later [placement](placements)
 
 For example, ask users about their experience with sport in your onboarding flow, then show each group its own flow with different products and copy.
 
-1. Add a [quiz](onboarding-quizzes) to your flow and give each option a meaningful [Element ID](flow-selectable-elements).
+1. Add a [quiz](onboarding-quizzes) to your flow. Give the [selectable group](flow-selectable-elements) the Group ID `experience`, and each option a meaningful Element ID.
 2. Handle the answers and [set custom attributes](capacitor-setting-user-attributes) for the user.
 
 ```typescript showLineNumbers title="Capacitor"
 function handleFlowInput(name: string, params: Record<string, unknown>) {
   if (name !== 'flow_user_input') return;
-  if (typeof params.payload !== 'string') return;
+  if (params.element_id !== 'experience') return;
 
-  const input = JSON.parse(params.payload);
-  if (input.element_id !== 'experience') return;
+  const optionId = (params.item_ids as string[])[0];
 
   adapty
     .updateProfile({
-      params: {
-        // Set the custom attribute 'experience' to the option the user picked
-        // (beginner, amateur, or pro).
-        codableCustomAttributes: { experience: input.value.id },
-      },
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: optionId },
     })
     .catch((error) => {
       // handle the error

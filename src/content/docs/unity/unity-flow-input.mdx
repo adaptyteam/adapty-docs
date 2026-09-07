@@ -8,20 +8,16 @@ When a user types into an input field, answers a quiz, or flips a toggle in a [f
 
 Apps most often use that data to:
 
-- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account without a second sign-up screen.
-- **Save answers and preferences**: Keep what a user picked so your app can act on it later, or [write it to their Adapty profile](unity-setting-user-attributes) as custom attributes.
-- **Customize the flows a user sees later**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
-- **Feed your own analytics**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
+- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
+- **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](unity-setting-user-attributes) as custom attributes.
+- **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
 
-You don't set anything up in the builder — inputs and selectable groups report their values automatically.
+Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
 
 ## Before you start
 
-You need:
-
-- **Adapty Unity SDK v4 or later**: The flow callbacks don't exist in earlier versions.
-- **A flow built in the [Flow Builder](adapty-flow-builder)**: Only flows report input values through this callback.
-- **A recently published flow version**: A flow reports input values only if you published it after this feature became available. If nothing reaches your listener, publish a new version of the flow and try again.
+<FlowInputPrerequisites />
 
 ## Receive input values
 
@@ -31,73 +27,64 @@ Input values reach the same callback as every other analytics event from a flow,
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
-    HandleFlowInput(name, @params);
+    HandleFlowInput(name, parameters);
 }
 ```
 
-A flow reports other analytics events through this callback as well, such as screen views. Match on `name` before you read anything else, or your listener will run on events that carry no input. See [Handle flow & paywall events](unity-handling-events) for the rest of them.
-
-The `payload` entry is a JSON **string**, not a dictionary — parse it before you read the answer:
+The `FlowViewDidReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](unity-flow-screen-views).
+- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
+- The `element_type` parameter names the element category.
+- The value of the input is stored in different parameters depending on the element type:
+     - Text fields, pickers, and toggles store the user's input in `value`
+     - Selectable groups report the active options in `item_ids` and `item_titles`
 
 ```csharp showLineNumbers title="Unity"
-private void HandleFlowInput(string name, IDictionary<string, object> @params) {
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
     if (name != "flow_user_input") return;
-    if (!(@params["payload"] is string payload)) return;
 
-    var input = JSON.Parse(payload);
-    var elementId = input["element_id"].Value;
+    var elementId = parameters["element_id"] as string;
 
     // The screen the input sits on. Pair it with elementId to tell apart
     // two fields that share an Element ID on different screens.
-    var screenId = @params["instanceId"] as string;
+    var screenId = parameters["instanceId"] as string;
 
-    switch (input["element_type"].Value) {
+    switch (parameters["element_type"] as string) {
         case "text_input":
         case "email_input":
         case "number_input":
         case "phone_input":
-            var text = input["value"].Value;
+            var text = parameters["value"] as string;
             break;
         case "date_picker":
         case "time_picker":
         case "date_time_picker":
-            var millis = input["value"].AsLong;
+            // Unix time in milliseconds.
+            var millis = Convert.ToInt64(parameters["value"]);
             break;
         case "single_choice":
-            var option = input["value"];
+            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
             break;
         case "multi_choice":
-            var options = input["value"].AsArray;
+            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
             break;
         case "toggle":
-            var isOn = input["value"].AsBool;
+            var isOn = (bool)parameters["value"];
             break;
     }
 }
 ```
 
-## What arrives in the callback
+<FlowInputVerify />
 
-| Parameter                    | Description                                                                                                                                                            |
-|:-----------------------------|:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`                       | The event name. Input values reach you as `flow_user_input`.                                                                                                           |
-| `@params["instanceId"]`      | The ID of the screen the input is on. An Element ID is unique within one screen but can repeat across screens, so use `instanceId` together with `element_id` to tell two fields apart. |
-| `@params["payload"]`         | A JSON string holding the answer. Parse it to read `element_id`, `element_type`, and `value`.                                                                          |
-| `@params["isCustomerEvent"]` | `true` for events meant for your own analytics.                                                                                                                        |
-| `@params["isBackendEvent"]`  | `false` for `flow_user_input`. Adapty doesn't receive or store what users enter — these values reach your app and nowhere else.                                        |
+## When your app receives the input
 
-The parsed `payload` holds:
+<FlowInputTiming />
 
-| Field          | Description                                                                                                     |
-|:---------------|:------------------------------------------------------------------------------------------------------------------|
-| `version`      | The format version of the payload, currently `1`. Compare it against `1` before parsing to guard against later changes. |
-| `element_id`   | The **Element ID** of the input or selectable group the value came from.                                        |
-| `element_type` | The type of element that sent the value. It tells you how to read `value`.                                      |
-| `value`        | What the user entered or selected. Its shape depends on `element_type`.                                         |
+## What you receive
 
-<FlowInputValueTypes />
+<FlowInputParams />
 
 ## Event examples
 
@@ -110,19 +97,16 @@ These examples show the properties available on each event, with illustrative va
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
-    name;                            // "flow_user_input"
-    @params["instanceId"];           // "scr_J260KU5q"
-    @params["isCustomerEvent"];      // true
-    @params["isBackendEvent"];       // false
-    @params["payload"];              // "{\"version\":1,\"element_id\":\"email\",\"element_type\":\"email_input\",\"value\":\"jane@example.com\"}"
-
-    // payload, once parsed:
-    input["version"];                // 1
-    input["element_id"];             // "email"
-    input["element_type"];           // "email_input"
-    input["value"];                  // "jane@example.com"   (string)
+    var eventName       = name;                          // "flow_user_input"
+    var paramName       = parameters["name"];            // "flow_user_input"
+    var screenId        = parameters["instanceId"];      // "scr_J260KU5q"
+    var isCustomerEvent = parameters["isCustomerEvent"]; // true
+    var isBackendEvent  = parameters["isBackendEvent"];  // false
+    var elementId       = parameters["element_id"];      // "email"
+    var elementType     = parameters["element_type"];    // "email_input"
+    var value           = parameters["value"];           // "jane@example.com"   (string)
 }
 ```
 </Details>
@@ -134,12 +118,11 @@ public void FlowViewDidReceiveAnalyticEvent(
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
-    // payload, once parsed:
-    input["element_id"];    // "birthday"
-    input["element_type"];  // "date_picker"
-    input["value"];         // 645408000000   (Unix milliseconds — 1990-06-15)
+    var elementId   = parameters["element_id"];   // "birthday"
+    var elementType = parameters["element_type"]; // "date_picker"
+    var value       = parameters["value"];        // 645408000000   (long — Unix milliseconds, 1990-06-15, local midnight)
 }
 ```
 </Details>
@@ -151,12 +134,12 @@ public void FlowViewDidReceiveAnalyticEvent(
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
-    // payload, once parsed:
-    input["element_id"];    // "experience"
-    input["element_type"];  // "single_choice"
-    input["value"];         // {"id": "pro", "title": "I train professionally"}
+    var elementId   = parameters["element_id"];   // "experience"
+    var elementType = parameters["element_type"]; // "single_choice"
+    var itemIds     = parameters["item_ids"];     // ["pro"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["I train professionally"]
 }
 ```
 </Details>
@@ -168,13 +151,12 @@ public void FlowViewDidReceiveAnalyticEvent(
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
-    // payload, once parsed:
-    input["element_id"];    // "interests"
-    input["element_type"];  // "multi_choice"
-    input["value"];         // [{"id": "sports", "title": "Sports"},
-                            //  {"id": "music",  "title": "Music"}]
+    var elementId   = parameters["element_id"];   // "interests"
+    var elementType = parameters["element_type"]; // "multi_choice"
+    var itemIds     = parameters["item_ids"];     // ["sports", "music"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["Sports", "Music"]
 }
 ```
 </Details>
@@ -186,12 +168,11 @@ public void FlowViewDidReceiveAnalyticEvent(
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
-    // payload, once parsed:
-    input["element_id"];    // "reminders"
-    input["element_type"];  // "toggle"
-    input["value"];         // true   (bool)
+    var elementId   = parameters["element_id"];   // "reminders"
+    var elementType = parameters["element_type"]; // "toggle"
+    var value       = parameters["value"];        // true   (bool)
 }
 ```
 </Details>
@@ -200,7 +181,7 @@ public void FlowViewDidReceiveAnalyticEvent(
 
 <FlowInputLimitations />
 
-The SDK tells you the flow closed through `FlowViewDidDisappear`. Collect answers as they arrive and act on the full set there.
+Store each input value as your listener receives it, and send the complete set when the flow closes. To catch that moment, implement `FlowViewDidDisappear` on the same listener. It runs when the flow view is dismissed, whether the user finished the flow or closed it partway.
 
 ## Use cases
 
@@ -210,19 +191,21 @@ Collect values as they arrive and send them once the flow closes, so that one re
 
 The view disappears whether a user finished the flow or abandoned it partway. Guard on the fields you need before you call your backend.
 
+The flow can't display errors from your backend. The callback has no return value, and the SDK has no method that sends data into a running flow. If registration fails, for example because the email is already in use, show the error in your own UI after the flow closes.
+
 ```csharp showLineNumbers title="Unity"
 private readonly Dictionary<string, string> flowAnswers = new Dictionary<string, string>();
 
 public void FlowViewDidReceiveAnalyticEvent(
     AdaptyUIFlowView view,
     string name,
-    IDictionary<string, object> @params
+    IReadOnlyDictionary<string, object> parameters
 ) {
     if (name != "flow_user_input") return;
-    if (!(@params["payload"] is string payload)) return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
 
-    var input = JSON.Parse(payload);
-    flowAnswers[input["element_id"].Value] = input["value"].Value;
+    var elementId = parameters["element_id"] as string;
+    flowAnswers[elementId] = value;
 }
 
 public void FlowViewDidDisappear(AdaptyUIFlowView view) {
@@ -241,15 +224,13 @@ To link what a user entered to their profile and avoid asking for the same detai
 For example, if your flow has a text input with the Element ID `name` and an email input with the Element ID `email`:
 
 ```csharp showLineNumbers title="Unity"
-private void HandleFlowInput(string name, IDictionary<string, object> @params) {
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
     if (name != "flow_user_input") return;
-    if (!(@params["payload"] is string payload)) return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
 
-    var input = JSON.Parse(payload);
-    var value = input["value"].Value;
     var builder = new AdaptyProfileParameters.Builder();
 
-    switch (input["element_id"].Value) {
+    switch (parameters["element_id"] as string) {
         case "name":
             builder = builder.SetFirstName(value);
             break;
@@ -274,21 +255,19 @@ Quiz answers can also decide what a user sees at a later [placement](placements)
 
 For example, ask users about their experience with sport in your onboarding flow, then show each group its own flow with different products and copy.
 
-1. Add a [quiz](onboarding-quizzes) to your flow and give each option a meaningful [Element ID](flow-selectable-elements).
+1. Add a [quiz](onboarding-quizzes) to your flow. Give the [selectable group](flow-selectable-elements) the Group ID `experience`, and each option a meaningful Element ID.
 2. Handle the answers and [set custom attributes](unity-setting-user-attributes) for the user.
 
 ```csharp showLineNumbers title="Unity"
-private void HandleFlowInput(string name, IDictionary<string, object> @params) {
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
     if (name != "flow_user_input") return;
-    if (!(@params["payload"] is string payload)) return;
+    if ((parameters["element_id"] as string) != "experience") return;
 
-    var input = JSON.Parse(payload);
-    if (input["element_id"].Value != "experience") return;
-
-    var optionId = input["value"]["id"].Value;
+    var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+    if (optionId == null) return;
 
     var builder = new AdaptyProfileParameters.Builder();
-    // Set the custom attribute 'experience' to the option the user picked
+    // Set the custom attribute 'experience' to the option the user selected
     // (beginner, amateur, or pro).
     builder = builder.SetCustomStringAttribute("experience", optionId);
 

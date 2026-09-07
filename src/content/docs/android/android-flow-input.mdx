@@ -8,20 +8,16 @@ When a user types into an input field, answers a quiz, or flips a toggle in a [f
 
 Apps most often use that data to:
 
-- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account without a second sign-up screen.
-- **Save answers and preferences**: Keep what a user picked so your app can act on it later, or [write it to their Adapty profile](android-setting-user-attributes) as custom attributes.
-- **Customize the flows a user sees later**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
-- **Feed your own analytics**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
+- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
+- **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](android-setting-user-attributes) as custom attributes.
+- **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
 
-You don't set anything up in the builder — inputs and selectable groups report their values automatically.
+Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
 
 ## Before you start
 
-You need:
-
-- **Adapty Android SDK v4 or later**: The flow callbacks don't exist in earlier versions.
-- **A flow built in the [Flow Builder](adapty-flow-builder)**: Only flows report input values through this callback.
-- **A recently published flow version**: A flow reports input values only if you published it after this feature became available. If nothing reaches your callback, publish a new version of the flow and try again.
+<FlowInputPrerequisites />
 
 ## Receive input values
 
@@ -40,62 +36,53 @@ class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
 }
 ```
 
-A flow reports other analytics events through this callback as well, such as screen views. Match on `name` before you read anything else, or your handler will run on events that carry no input. See [Handle flow & paywall events](android-handling-events) for the rest of them.
-
-`params["payload"]` is a JSON **string**, not a map — decode it before you read the answer:
+The `onAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](android-flow-screen-views).
+- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
+- The `element_type` parameter names the element category.
+- The value of the input is stored in different parameters depending on the element type:
+     - Text fields, pickers, and toggles store the user's input in `value`
+     - Selectable groups report the active options in `item_ids` and `item_titles`
 
 ```kotlin showLineNumbers title="Kotlin"
 private fun handleFlowInput(name: String, params: Map<String, Any?>) {
     if (name != "flow_user_input") return
 
-    val payload = params["payload"] as? String ?: return
-    val input = JSONObject(payload)
-    val elementId = input.optString("element_id")
+    val elementId = params["element_id"] as? String ?: return
 
     // The screen the input sits on. Pair it with elementId to tell apart
     // two fields that share an Element ID on different screens.
     val screenId = params["instanceId"] as? String
 
-    when (input.optString("element_type")) {
+    when (params["element_type"]) {
         "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = input.optString("value")
+            val text = params["value"] as? String
         }
         "date_picker", "time_picker", "date_time_picker" -> {
-            val millis = input.optLong("value")
+            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
+            val millis = (params["value"] as? Number)?.toLong()
         }
         "single_choice" -> {
-            val option = input.optJSONObject("value")
+            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
         }
         "multi_choice" -> {
-            val options = input.optJSONArray("value")
+            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
         }
         "toggle" -> {
-            val isOn = input.optBoolean("value")
+            val isOn = params["value"] as? Boolean
         }
     }
 }
 ```
 
-## What arrives in the callback
+<FlowInputVerify />
 
-| Parameter                  | Description                                                                                                                                                              |
-|:---------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`                     | The event name. Input values reach you as `flow_user_input`.                                                                                                             |
-| `params["instanceId"]`     | The ID of the screen the input is on. An Element ID is unique within one screen but can repeat across screens, so use `instanceId` together with `element_id` to tell two fields apart. |
-| `params["payload"]`        | A JSON string holding the answer. Decode it to read `element_id`, `element_type`, and `value`.                                                                           |
-| `params["isCustomerEvent"]` | `true` for events meant for your own analytics.                                                                                                                          |
-| `params["isBackendEvent"]` | `false` for `flow_user_input`. Adapty doesn't receive or store what users enter — these values reach your app and nowhere else.                                          |
+## When your app receives the input
 
-The decoded `payload` holds:
+<FlowInputTiming />
 
-| Field          | Description                                                                                                     |
-|:---------------|:------------------------------------------------------------------------------------------------------------------|
-| `version`      | The format version of the payload, currently `1`. Compare it against `1` before decoding to guard against later changes. |
-| `element_id`   | The **Element ID** of the input or selectable group the value came from.                                        |
-| `element_type` | The type of element that sent the value. It tells you how to read `value`.                                      |
-| `value`        | What the user entered or selected. Its shape depends on `element_type`.                                         |
+## What you receive
 
-<FlowInputValueTypes />
+<FlowInputParams />
 
 ## Event examples
 
@@ -106,17 +93,14 @@ These examples show the properties available on each event, with illustrative va
 
 ```kotlin
 override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
-    name                        // "flow_user_input"
-    params["instanceId"]        // "scr_J260KU5q"
-    params["isCustomerEvent"]   // true
-    params["isBackendEvent"]    // false
-    params["payload"]           // "{\"version\":1,\"element_id\":\"email\",\"element_type\":\"email_input\",\"value\":\"jane@example.com\"}"
-
-    // payload, once decoded:
-    input.optInt("version")             // 1
-    input.optString("element_id")       // "email"
-    input.optString("element_type")     // "email_input"
-    input.optString("value")            // "jane@example.com"
+    name                       // "flow_user_input"
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"   (String)
 }
 ```
 </Details>
@@ -126,10 +110,9 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 
 ```kotlin
 override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
-    // payload, once decoded:
-    input.optString("element_id")    // "birthday"
-    input.optString("element_type")  // "date_picker"
-    input.optLong("value")           // 645408000000   (Unix milliseconds — 1990-06-15)
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 6.45408E11   (Double — Unix milliseconds, 1990-06-15, local midnight)
 }
 ```
 </Details>
@@ -139,10 +122,10 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 
 ```kotlin
 override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
-    // payload, once decoded:
-    input.optString("element_id")     // "experience"
-    input.optString("element_type")   // "single_choice"
-    input.optJSONObject("value")      // {"id": "pro", "title": "I train professionally"}
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]   (List<String>)
+    params["item_titles"]      // ["I train professionally"]
 }
 ```
 </Details>
@@ -152,11 +135,10 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 
 ```kotlin
 override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
-    // payload, once decoded:
-    input.optString("element_id")    // "interests"
-    input.optString("element_type")  // "multi_choice"
-    input.optJSONArray("value")      // [{"id": "sports", "title": "Sports"},
-                                     //  {"id": "music",  "title": "Music"}]
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]   (List<String>)
+    params["item_titles"]      // ["Sports", "Music"]
 }
 ```
 </Details>
@@ -166,10 +148,9 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 
 ```kotlin
 override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
-    // payload, once decoded:
-    input.optString("element_id")    // "reminders"
-    input.optString("element_type")  // "toggle"
-    input.optBoolean("value")        // true
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true   (Boolean)
 }
 ```
 </Details>
@@ -178,7 +159,7 @@ override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: C
 
 <FlowInputLimitations />
 
-The SDK tells you the flow closed through `onFlowClosed`. Collect answers as they arrive and act on the full set there.
+Store each input value as your listener receives it, and send the complete set when the flow closes. To catch that moment, override `onFlowClosed` on your `AdaptyFlowEventListener`. It runs when the flow view is dismissed, whether the user finished the flow or closed it partway.
 
 ## Use cases
 
@@ -187,6 +168,8 @@ The SDK tells you the flow closed through `onFlowClosed`. Collect answers as the
 Collect values as they arrive and send them once the flow closes, so that one request carries a complete set of answers.
 
 The flow closes whether a user finished it or abandoned it partway. Guard on the fields you need before you call your backend.
+
+The flow can't display errors from your backend. The callback has no return value, and the SDK has no method that sends data into a running flow. If registration fails, for example because the email is already in use, show the error in your own UI after the flow closes.
 
 ```kotlin showLineNumbers title="Kotlin"
 class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
@@ -200,10 +183,10 @@ class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
     ) {
         if (name != "flow_user_input") return
 
-        val payload = params["payload"] as? String ?: return
-        val input = JSONObject(payload)
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
 
-        flowAnswers[input.optString("element_id")] = input.optString("value")
+        flowAnswers[elementId] = value
     }
 
     override fun onFlowClosed() {
@@ -226,13 +209,12 @@ For example, if your flow has a text input with the Element ID `name` and an ema
 private fun handleFlowInput(name: String, params: Map<String, Any?>) {
     if (name != "flow_user_input") return
 
-    val payload = params["payload"] as? String ?: return
-    val input = JSONObject(payload)
-    val value = input.optString("value")
+    val elementId = params["element_id"] as? String ?: return
+    val value = params["value"] as? String ?: return
 
     val builder = AdaptyProfileParameters.Builder()
 
-    when (input.optString("element_id")) {
+    when (elementId) {
         "name" -> builder.withFirstName(value)
         "email" -> builder.withEmail(value)
         else -> return
@@ -252,21 +234,18 @@ Quiz answers can also decide what a user sees at a later [placement](placements)
 
 For example, ask users about their experience with sport in your onboarding flow, then show each group its own flow with different products and copy.
 
-1. Add a [quiz](onboarding-quizzes) to your flow and give each option a meaningful [Element ID](flow-selectable-elements).
+1. Add a [quiz](onboarding-quizzes) to your flow. Give the [selectable group](flow-selectable-elements) the Group ID `experience`, and each option a meaningful Element ID.
 2. Handle the answers and [set custom attributes](android-setting-user-attributes) for the user.
 
 ```kotlin showLineNumbers title="Kotlin"
 private fun handleFlowInput(name: String, params: Map<String, Any?>) {
     if (name != "flow_user_input") return
+    if (params["element_id"] != "experience") return
 
-    val payload = params["payload"] as? String ?: return
-    val input = JSONObject(payload)
-    if (input.optString("element_id") != "experience") return
-
-    val optionId = input.optJSONObject("value")?.optString("id") ?: return
+    val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String ?: return
 
     val builder = AdaptyProfileParameters.Builder()
-    // Set the custom attribute 'experience' to the option the user picked
+    // Set the custom attribute 'experience' to the option the user selected
     // (beginner, amateur, or pro).
     builder.withCustomAttribute("experience", optionId)
 

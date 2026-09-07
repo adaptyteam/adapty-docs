@@ -8,20 +8,16 @@ When a user types into an input field, answers a quiz, or flips a toggle in a [f
 
 Apps most often use that data to:
 
-- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account without a second sign-up screen.
-- **Save answers and preferences**: Keep what a user picked so your app can act on it later, or [write it to their Adapty profile](flutter-setting-user-attributes) as custom attributes.
-- **Customize the flows a user sees later**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
-- **Feed your own analytics**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
+- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
+- **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](flutter-setting-user-attributes) as custom attributes.
+- **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
 
-You don't set anything up in the builder — inputs and selectable groups report their values automatically.
+Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
 
 ## Before you start
 
-You need:
-
-- **Adapty Flutter SDK v4 or later**: The flow callbacks don't exist in earlier versions.
-- **A flow built in the [Flow Builder](adapty-flow-builder)**: Only flows report input values through this callback.
-- **A recently published flow version**: A flow reports input values only if you published it after this feature became available. If nothing reaches your callback, publish a new version of the flow and try again.
+<FlowInputPrerequisites />
 
 ## Receive input values
 
@@ -37,69 +33,58 @@ void flowViewDidReceiveAnalyticEvent(
 }
 ```
 
-A flow reports other analytics events through this callback as well, such as screen views. Match on `name` before you read anything else, or your handler will run on events that carry no input. See [Handle flow & paywall events](flutter-handling-events) for the rest of them.
-
-`params['payload']` is a JSON **string**, not a map — decode it before you read the answer:
+The `flowViewDidReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](flutter-flow-screen-views).
+- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
+- The `element_type` parameter names the element category.
+- The value of the input is stored in different parameters depending on the element type:
+     - Text fields, pickers, and toggles store the user's input in `value`
+     - Selectable groups report the active options in `item_ids` and `item_titles`
 
 ```dart showLineNumbers title="Flutter"
 void handleFlowInput(String name, Map<String, dynamic> params) {
   if (name != 'flow_user_input') return;
 
-  final payload = params['payload'];
-  if (payload is! String) return;
-
-  final input = jsonDecode(payload) as Map<String, dynamic>;
-  final elementId = input['element_id'] as String;
+  final elementId = params['element_id'] as String;
 
   // The screen the input sits on. Pair it with elementId to tell apart
   // two fields that share an Element ID on different screens.
   final screenId = params['instanceId'] as String?;
 
-  switch (input['element_type'] as String) {
+  switch (params['element_type'] as String) {
     case 'text_input':
     case 'email_input':
     case 'number_input':
     case 'phone_input':
-      final text = input['value'] as String;
+      final text = params['value'] as String;
       break;
     case 'date_picker':
     case 'time_picker':
     case 'date_time_picker':
-      final date = DateTime.fromMillisecondsSinceEpoch(input['value'] as int);
+      // Unix time in milliseconds. Arrives as int on iOS and double on Android — read it through num.
+      final date = DateTime.fromMillisecondsSinceEpoch((params['value'] as num).toInt());
       break;
     case 'single_choice':
-      final option = input['value'] as Map<String, dynamic>;
+      final optionId = (params['item_ids'] as List).cast<String>().first;
       break;
     case 'multi_choice':
-      final options = input['value'] as List<dynamic>;
+      final optionIds = (params['item_ids'] as List).cast<String>();
       break;
     case 'toggle':
-      final isOn = input['value'] as bool;
+      final isOn = params['value'] as bool;
       break;
   }
 }
 ```
 
-## What arrives in the callback
+<FlowInputVerify />
 
-| Parameter                   | Description                                                                                                                                                             |
-|:----------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `name`                      | The event name. Input values reach you as `flow_user_input`.                                                                                                            |
-| `params['instanceId']`      | The ID of the screen the input is on. An Element ID is unique within one screen but can repeat across screens, so use `instanceId` together with `element_id` to tell two fields apart. |
-| `params['payload']`         | A JSON string holding the answer. Decode it to read `element_id`, `element_type`, and `value`.                                                                          |
-| `params['isCustomerEvent']` | `true` for events meant for your own analytics.                                                                                                                         |
-| `params['isBackendEvent']`  | `false` for `flow_user_input`. Adapty doesn't receive or store what users enter — these values reach your app and nowhere else.                                         |
+## When your app receives the input
 
-The decoded `payload` holds:
+<FlowInputTiming />
 
-| Field          | Description                                                                                                     |
-|:---------------|:------------------------------------------------------------------------------------------------------------------|
-| `version`      | The format version of the payload, currently `1`. Compare it against `1` before decoding to guard against later changes. |
-| `element_id`   | The **Element ID** of the input or selectable group the value came from.                                        |
-| `element_type` | The type of element that sent the value. It tells you how to read `value`.                                      |
-| `value`        | What the user entered or selected. Its shape depends on `element_type`.                                         |
+## What you receive
 
-<FlowInputValueTypes />
+<FlowInputParams />
 
 ## Event examples
 
@@ -114,17 +99,14 @@ void flowViewDidReceiveAnalyticEvent(
   String name,
   Map<String, dynamic> params,
 ) {
-  name;                          // 'flow_user_input'
-  params['instanceId'];          // 'scr_J260KU5q'
-  params['isCustomerEvent'];     // true
-  params['isBackendEvent'];      // false
-  params['payload'];             // '{"version":1,"element_id":"email","element_type":"email_input","value":"jane@example.com"}'
-
-  // payload, once decoded:
-  input['version'];              // 1
-  input['element_id'];           // 'email'
-  input['element_type'];         // 'email_input'
-  input['value'];                // 'jane@example.com'   (String)
+  name;                      // 'flow_user_input'
+  params['name'];            // 'flow_user_input'
+  params['instanceId'];      // 'scr_J260KU5q'
+  params['isCustomerEvent']; // true
+  params['isBackendEvent'];  // false
+  params['element_id'];      // 'email'
+  params['element_type'];    // 'email_input'
+  params['value'];           // 'jane@example.com'   (String)
 }
 ```
 </Details>
@@ -138,10 +120,9 @@ void flowViewDidReceiveAnalyticEvent(
   String name,
   Map<String, dynamic> params,
 ) {
-  // payload, once decoded:
-  input['element_id'];    // 'birthday'
-  input['element_type'];  // 'date_picker'
-  input['value'];         // 645408000000   (Unix milliseconds — 1990-06-15)
+  params['element_id'];      // 'birthday'
+  params['element_type'];    // 'date_picker'
+  params['value'];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; int on iOS, double on Android)
 }
 ```
 </Details>
@@ -155,10 +136,10 @@ void flowViewDidReceiveAnalyticEvent(
   String name,
   Map<String, dynamic> params,
 ) {
-  // payload, once decoded:
-  input['element_id'];    // 'experience'
-  input['element_type'];  // 'single_choice'
-  input['value'];         // {'id': 'pro', 'title': 'I train professionally'}
+  params['element_id'];      // 'experience'
+  params['element_type'];    // 'single_choice'
+  params['item_ids'];        // ['pro']   (List)
+  params['item_titles'];     // ['I train professionally']
 }
 ```
 </Details>
@@ -172,11 +153,10 @@ void flowViewDidReceiveAnalyticEvent(
   String name,
   Map<String, dynamic> params,
 ) {
-  // payload, once decoded:
-  input['element_id'];    // 'interests'
-  input['element_type'];  // 'multi_choice'
-  input['value'];         // [{'id': 'sports', 'title': 'Sports'},
-                          //  {'id': 'music',  'title': 'Music'}]
+  params['element_id'];      // 'interests'
+  params['element_type'];    // 'multi_choice'
+  params['item_ids'];        // ['sports', 'music']   (List)
+  params['item_titles'];     // ['Sports', 'Music']
 }
 ```
 </Details>
@@ -190,10 +170,9 @@ void flowViewDidReceiveAnalyticEvent(
   String name,
   Map<String, dynamic> params,
 ) {
-  // payload, once decoded:
-  input['element_id'];    // 'reminders'
-  input['element_type'];  // 'toggle'
-  input['value'];         // true   (bool)
+  params['element_id'];      // 'reminders'
+  params['element_type'];    // 'toggle'
+  params['value'];           // true   (bool)
 }
 ```
 </Details>
@@ -202,7 +181,7 @@ void flowViewDidReceiveAnalyticEvent(
 
 <FlowInputLimitations />
 
-The SDK tells you the flow closed through `flowViewDidDisappear`. Collect answers as they arrive and act on the full set there.
+Store each input value as your observer receives it, and send the complete set when the flow closes. To catch that moment, implement `flowViewDidDisappear` on the same observer. It runs when the flow view is dismissed, whether the user finished the flow or closed it partway.
 
 ## Use cases
 
@@ -211,6 +190,8 @@ The SDK tells you the flow closed through `flowViewDidDisappear`. Collect answer
 Collect values as they arrive and send them once the flow closes, so that one request carries a complete set of answers.
 
 The view disappears whether a user finished the flow or abandoned it partway. Guard on the fields you need before you call your backend.
+
+The flow can't display errors from your backend. The callback has no return value, and the SDK has no method that sends data into a running flow. If registration fails, for example because the email is already in use, show the error in your own UI after the flow closes.
 
 ```dart showLineNumbers title="Flutter"
 final Map<String, String> flowAnswers = {};
@@ -222,14 +203,11 @@ void flowViewDidReceiveAnalyticEvent(
 ) {
   if (name != 'flow_user_input') return;
 
-  final payload = params['payload'];
-  if (payload is! String) return;
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
 
-  final input = jsonDecode(payload) as Map<String, dynamic>;
-  final value = input['value'];
-  if (value is! String) return;
-
-  flowAnswers[input['element_id'] as String] = value;
+  flowAnswers[elementId] = value;
 }
 
 void flowViewDidDisappear(AdaptyUIFlowView view) {
@@ -251,16 +229,12 @@ For example, if your flow has a text input with the Element ID `name` and an ema
 void handleFlowInput(String name, Map<String, dynamic> params) async {
   if (name != 'flow_user_input') return;
 
-  final payload = params['payload'];
-  if (payload is! String) return;
-
-  final input = jsonDecode(payload) as Map<String, dynamic>;
-  final value = input['value'];
+  final value = params['value'];
   if (value is! String) return;
 
   final builder = AdaptyProfileParametersBuilder();
 
-  switch (input['element_id'] as String) {
+  switch (params['element_id'] as String) {
     case 'name':
       builder.setFirstName(value);
       break;
@@ -285,24 +259,18 @@ Quiz answers can also decide what a user sees at a later [placement](placements)
 
 For example, ask users about their experience with sport in your onboarding flow, then show each group its own flow with different products and copy.
 
-1. Add a [quiz](onboarding-quizzes) to your flow and give each option a meaningful [Element ID](flow-selectable-elements).
+1. Add a [quiz](onboarding-quizzes) to your flow. Give the [selectable group](flow-selectable-elements) the Group ID `experience`, and each option a meaningful Element ID.
 2. Handle the answers and [set custom attributes](flutter-setting-user-attributes) for the user.
 
 ```dart showLineNumbers title="Flutter"
 void handleFlowInput(String name, Map<String, dynamic> params) async {
   if (name != 'flow_user_input') return;
+  if (params['element_id'] != 'experience') return;
 
-  final payload = params['payload'];
-  if (payload is! String) return;
-
-  final input = jsonDecode(payload) as Map<String, dynamic>;
-  if (input['element_id'] != 'experience') return;
-
-  final option = input['value'] as Map<String, dynamic>;
-  final optionId = option['id'] as String;
+  final optionId = (params['item_ids'] as List).cast<String>().first;
 
   final builder = AdaptyProfileParametersBuilder();
-  // Set the custom attribute 'experience' to the option the user picked
+  // Set the custom attribute 'experience' to the option the user selected
   // (beginner, amateur, or pro).
   builder.setCustomStringAttribute(optionId, 'experience');
 
