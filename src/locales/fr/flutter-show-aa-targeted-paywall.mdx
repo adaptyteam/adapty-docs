@@ -1,10 +1,14 @@
 ---
-title: "Afficher un paywall ciblé AA au premier lancement dans Flutter SDK"
-description: "Attendez brièvement l'attribution Apple Ads avant d'afficher le paywall au premier lancement dans Flutter, avec repli sur l'audience par défaut en cas de délai dépassé. Utilise AdaptyProfile.appliedAttributionSources."
-metadataTitle: "Afficher un paywall ciblé AA au premier lancement | Flutter SDK | Documentation Adapty"
+title: "Afficher un paywall ciblé par Apple Ads dès le premier lancement dans Flutter SDK"
+description: "Attendez brièvement l'attribution Apple Ads avant d'afficher le paywall au premier lancement dans Flutter, avec repli sur l'audience par défaut en cas de délai. Utilise AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Afficher un paywall ciblé par Apple Ads au premier lancement | Flutter SDK | Documentation Adapty"
 ---
 
-L'attribution Apple Ads (AA) arrive de manière asynchrone après `Adapty().activate()`. Au premier lancement, elle n'est généralement pas encore disponible, donc si vous appelez `getPaywall` immédiatement, Adapty résout la requête par rapport à l'audience par défaut et les utilisateurs Apple Ads ratent votre paywall segmenté AA. Plutôt que d'afficher un paywall puis de le remplacer, attendez brièvement l'attribution AA avant d'afficher quoi que ce soit : affichez le paywall ciblé si l'attribution arrive dans un court délai, ou le paywall de l'audience par défaut si ce n'est pas le cas. `AdaptyProfile.appliedAttributionSources` vous indique quand l'attribution AA a été appliquée.
+L'attribution Apple Ads (AA) arrive de manière asynchrone après `Adapty().activate()`. Au premier lancement, elle n'est généralement pas encore disponible : si vous appelez `getPaywall` immédiatement, Adapty résout la requête avec l'audience par défaut et les utilisateurs Apple Ads ratent votre paywall segmenté AA. Plutôt que d'afficher un paywall puis de le remplacer, attendez brièvement l'attribution AA avant d'afficher quoi que ce soit : montrez le paywall ciblé si l'attribution arrive dans un délai court, ou le paywall de l'audience par défaut si ce n'est pas le cas. `AdaptyProfile.appliedAttributionSources` vous indique quand l'attribution AA a été appliquée.
+
+:::important
+`appliedAttributionSources` ne rapporte que les données Apple Ads. L'attribution des autres fournisseurs est visible sur les profils utilisateurs et disponible dans les filtres de segments, mais pas encore ici.
+:::
 
 ## Avant de commencer \{#before-you-start\}
 
@@ -12,21 +16,26 @@ Vous avez besoin de :
 - Adapty Flutter SDK **3.17.0** ou version ultérieure.
 - Apple Ads configuré pour l'application dans Adapty. Voir [Apple Ads](apple-search-ads).
 
-## Fonctionnement \{#how-it-works\}
+:::note
+Les exemples utilisent les noms d'API 3.x. Avec le SDK 4.0 et les versions ultérieures, les paywalls sont récupérés avec `getFlow`/`getFlowForDefaultAudience` et le type retourné est `AdaptyFlow`. Voir [Migrate Adapty Flutter SDK to v4.0](migration-to-flutter-sdk-v4). La propriété de profil conserve le nom `appliedAttributionSources` sur toutes les versions Flutter.
+:::
 
-Après `Adapty().activate()`, le SDK demande l'attribution Apple Ads à Apple en arrière-plan et transmet le résultat au backend d'Adapty. Quand AA devient la source d'attribution active pour le profil, le SDK envoie un `AdaptyProfile` mis à jour à votre listener `didUpdateProfileStream`, avec `AdaptyAttributionSource.appleAds` dans sa liste `appliedAttributionSources`.
+## Comment ça fonctionne \{#how-it-works\}
+
+Après `Adapty().activate()`, le SDK demande l'attribution Apple Ads à Apple en arrière-plan et transmet le résultat au backend d'Adapty. Lorsque AA devient la source d'attribution active pour le profil, le SDK envoie un `AdaptyProfile` mis à jour à votre listener `didUpdateProfileStream`, avec `AdaptyAttributionSource.appleAds` dans sa liste `appliedAttributionSources`.
 
 Au premier lancement, deux cas sont à gérer :
 
-1. **L'attribution arrive dans le délai imparti.** Appelez `getPaywall` — Adapty résout la requête par rapport à l'audience Apple Ads et retourne le paywall ciblé.
-2. **Le délai expire en premier.** Affichez plutôt le paywall de l'audience par défaut, afin que les utilisateurs sans attribution Apple Ads n'attendent pas indéfiniment. `getPaywallForDefaultAudience` le retourne sans attendre la segmentation.
+1. **L'attribution arrive avant la fin du délai.** Appelez `getPaywall` — Adapty résout la requête en fonction de l'audience Apple Ads et retourne le paywall ciblé.
+2. **Le délai expire en premier.** Affichez plutôt le paywall de l'audience par défaut, afin que les utilisateurs sans attribution Apple Ads n'aient pas à attendre. `getPaywallForDefaultAudience` le retourne sans attendre la segmentation.
 
-`appliedAttributionSources` peut être vide. Cela signifie soit :
+`appliedAttributionSources` peut être vide. Cela signifie l'une des choses suivantes :
 
-- L'attribution Apple Ads n'a pas encore été traitée pour ce profil, ou
-- aucune attribution n'est arrivée du tout.
+- L'attribution Apple Ads n'a pas encore été traitée pour ce profil.
+- Aucune attribution n'est arrivée.
+- L'attribution provient d'un autre fournisseur, que ce tableau ne signale pas.
 
-Dans tous les cas, `getPaywallForDefaultAudience` peut être appelé en toute sécurité — il retourne le paywall de l'audience par défaut quel que soit l'état du profil.
+Dans les trois cas, `getPaywallForDefaultAudience` peut être appelé sans risque — il renvoie le paywall de l'audience par défaut quel que soit l'état du profil.
 
 :::important
 L'attente ne s'applique qu'au premier lancement. Une fois l'attribution Apple Ads enregistrée, elle est stockée définitivement sur le profil. À chaque lancement suivant, le profil en cache contient déjà `AdaptyAttributionSource.appleAds` dans `appliedAttributionSources`, donc le chemin d'attribution se résout immédiatement et `getPaywall` retourne le paywall segmenté Apple Ads sans aucun délai.
@@ -34,11 +43,11 @@ L'attente ne s'applique qu'au premier lancement. Une fois l'attribution Apple Ad
 
 ## Implémentation \{#implementation\}
 
-Au premier lancement, attendez `AdaptyAttributionSource.appleAds` et appliquez un délai strict — si l'attribution Apple Ads n'arrive jamais, ces utilisateurs doivent quand même voir un paywall.
+Au premier lancement, attendez `AdaptyAttributionSource.appleAds` et appliquez un délai d'expiration strict — si l'attribution Apple Ads n'arrive jamais, ces utilisateurs doivent tout de même voir un paywall.
 
-1. **Activez le SDK.** Voir [Installer et configurer le Flutter SDK](sdk-installation-flutter).
-2. **Abonnez-vous aux mises à jour du profil** avec `Adapty().didUpdateProfileStream.listen(…)`. Si vous n'avez pas encore configuré le listener, voir [Écouter les mises à jour d'abonnement](flutter-check-subscription-status#listen-to-subscription-updates).
-3. **Surveillez `AdaptyAttributionSource.appleAds` dans `appliedAttributionSources`.** Quand il apparaît, chargez le paywall avec `getPaywall` — Adapty retourne la variante segmentée AA :
+1. **Activez le SDK.** Voir [Installer et configurer le SDK Flutter](sdk-installation-flutter).
+2. **Abonnez-vous aux mises à jour de profil** avec `Adapty().didUpdateProfileStream.listen(…)`. Si vous n'avez pas encore configuré l'écouteur, voir [Écouter les mises à jour d'abonnement](flutter-check-subscription-status#listen-to-subscription-updates).
+3. **Surveillez `AdaptyAttributionSource.appleAds` dans `appliedAttributionSources`.** Lorsqu'il apparaît, chargez le paywall avec `getPaywall` — Adapty renvoie la variante segmentée AA :
 
 ```dart
 final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
@@ -48,16 +57,16 @@ final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
 });
 ```
 
-   `didUpdateProfileStream` est un broadcast stream et ne rejoue pas les événements passés, donc vérifiez aussi le profil actuel une fois avec `getProfile()`. Lors des relances, l'attribution stockée est déjà appliquée et ne sera pas renvoyée.
+   `didUpdateProfileStream` est un broadcast stream et ne rejoue pas les événements, pensez donc aussi à vérifier le profil actuel une fois avec `getProfile()`. Lors des relances, l'attribution stockée est déjà appliquée et ne sera pas rémise.
 
-4. **Démarrez un timer de 3 à 5 secondes en parallèle de l'abonnement.** Si le timer se déclenche avant que `AdaptyAttributionSource.appleAds` n'apparaisse, chargez plutôt le paywall de l'audience par défaut avec `getPaywallForDefaultAudience`. Affichez le premier paywall résolu et annulez l'autre chemin, afin que le paywall ne soit pas récupéré deux fois. Configurez un [paywall de secours](flutter-use-fallback-paywalls) pour le placement afin que l'utilisateur ne soit jamais bloqué en cas d'échec réseau.
+4. **Démarrez un minuteur de 3 à 5 secondes en parallèle de l'abonnement.** Si le minuteur se déclenche avant l'apparition de `AdaptyAttributionSource.appleAds`, chargez le paywall de l'audience par défaut avec `getPaywallForDefaultAudience`. Affichez le premier paywall résolu et annulez l'autre chemin, afin que le paywall ne soit pas récupéré deux fois. Configurez un [paywall de secours](flutter-use-fallback-paywalls) pour le placement afin que l'utilisateur ne reste jamais bloqué en cas d'échec de la requête réseau.
 
 ## Exemple complet \{#complete-example\}
 
-L'implémentation ci-dessous met en compétition l'attribution et un délai, précharge le paywall de l'audience par défaut en parallèle, et retourne le paywall approprié. L'appelant attend une seule fonction — aucun listener ni indicateur d'état à gérer côté appelant :
+L'implémentation ci-dessous met en compétition l'attribution contre un délai d'expiration, prérécupère le paywall de l'audience par défaut en parallèle, et renvoie le paywall approprié. L'appelant attend une seule fonction — aucun listener ni indicateur d'état à gérer côté appelant :
 
-- Si l'attribution arrive dans le `timeout`, elle retourne le paywall segmenté via `getPaywall`.
-- Si le `timeout` expire en premier, elle retourne le paywall de l'audience par défaut préchargé via `getPaywallForDefaultAudience`.
+- Si l'attribution arrive avant le `timeout`, elle renvoie le paywall segmenté via `getPaywall`.
+- Si le `timeout` expire en premier, elle renvoie le paywall prérécupéré de l'audience par défaut via `getPaywallForDefaultAudience`.
 
 ```dart title="apple_ads_paywall.dart"
 
@@ -105,7 +114,7 @@ Future<AdaptyPaywall> getPaywallOrDefault({
 }
 ```
 
-Appelez depuis votre écran de démarrage, puis affichez le paywall une fois qu'il est résolu :
+Appelez cette fonction depuis votre écran de démarrage, puis affichez le paywall une fois la promesse résolue :
 
 ```dart
 try {
@@ -121,6 +130,6 @@ try {
 }
 ```
 
-Ajustez `timeout` selon le temps que vous êtes prêt à faire attendre les utilisateurs avant qu'un paywall n'apparaisse. La plupart des utilisateurs n'ont pas d'attribution Apple Ads, donc ils attendent le délai complet — 3 à 5 secondes est un équilibre raisonnable. L'attribution qui arrive le fait généralement dans les quelques secondes suivant le lancement.
+Ajustez le `timeout` en fonction du délai maximal que vous êtes prêt à imposer aux utilisateurs avant qu'un paywall n'apparaisse. La plupart des utilisateurs n'ont pas d'attribution Apple Ads, ils attendent donc la totalité du délai — 3 à 5 secondes est un bon compromis. Lorsqu'une attribution est en route, elle arrive généralement dans les quelques secondes qui suivent le lancement.
 
-Si votre application écoute déjà `didUpdateProfileStream` à d'autres fins (par exemple, [vérifier l'état de l'abonnement](flutter-check-subscription-status#listen-to-subscription-updates)), vous n'avez pas besoin de le modifier. `didUpdateProfileStream` est un broadcast stream, donc il prend en charge plusieurs listeners indépendants sans affecter les autres.
+Si votre application écoute déjà `didUpdateProfileStream` à d'autres fins (par exemple, [vérifier le statut d'un abonnement](flutter-check-subscription-status#listen-to-subscription-updates)), vous n'avez pas besoin de le modifier. `didUpdateProfileStream` est un broadcast stream, ce qui lui permet de prendre en charge plusieurs écouteurs indépendants sans les affecter mutuellement.

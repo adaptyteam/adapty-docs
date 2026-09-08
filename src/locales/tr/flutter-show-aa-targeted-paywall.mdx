@@ -3,35 +3,52 @@ title: "Flutter SDK'da ilk açılışta AA hedefli paywall gösterme"
 description: "Flutter'da ilk açılışta paywall göstermeden önce Apple Ads attribution verisini kısa süre bekleyin; zaman aşımında varsayılan kitleye geri dönün. AdaptyProfile.appliedAttributionSources kullanır."
 metadataTitle: "İlk açılışta AA hedefli paywall gösterme | Flutter SDK | Adapty Dokümanları"
 ---
+
 Apple Ads (AA) attribution, `Adapty().activate()` çağrısından sonra asenkron olarak gelir. İlk açılışta genellikle henüz gelmemiş olduğundan, hemen `getPaywall` çağırırsanız Adapty isteği varsayılan kitleye göre çözümler ve Apple Ads kullanıcıları AA segmentine özel paywallunuzu göremez. Bir paywallı gösterip sonra değiştirmek yerine, herhangi bir şey göstermeden önce AA attribution'ının gelmesini kısaca bekleyin: attribution kısa bir zaman aşımı içinde gelirse hedeflenmiş paywallı, gelmezse varsayılan kitle paywallını gösterin. `AdaptyProfile.appliedAttributionSources`, AA attribution'ının uygulanıp uygulanmadığını size bildirir.
-## Başlamadan önce \{#before-you-start\}
+
+:::important
+`appliedAttributionSources` yalnızca Apple Ads'i raporlar. Diğer sağlayıcılardan gelen attribution, kullanıcı profillerinde görünür ve segment filtrelerinde kullanılabilir, ancak henüz burada değil.
+:::
+
+## Başlamadan Önce \{#before-you-start\}
 
 İhtiyacınız olanlar:
 - Adapty Flutter SDK **3.17.0** veya üzeri.
 - Adapty'de uygulama için yapılandırılmış Apple Ads. Bkz. [Apple Ads](apple-search-ads).
+
+:::note
+Örnekler 3.x API adlarını kullanmaktadır. SDK 4.0 ve sonrasında paywall'lar `getFlow`/`getFlowForDefaultAudience` ile çekilir ve döndürülen tür `AdaptyFlow`'dur. Bkz. [Adapty Flutter SDK'yı v4.0'a taşıma](migration-to-flutter-sdk-v4). Profil özelliği her Flutter sürümünde `appliedAttributionSources` adını korur.
+:::
+
 ## Nasıl çalışır \{#how-it-works\}
 
 `Adapty().activate()` çağrısının ardından SDK, arka planda Apple'dan Apple Ads attribution verilerini ister ve sonucu Adapty'nin backend'ine iletir. AA, profil için aktif attribution kaynağı haline geldiğinde SDK, `didUpdateProfileStream` dinleyicinize güncellenmiş bir `AdaptyProfile` iletir; bu profil, `appliedAttributionSources` listesinde `AdaptyAttributionSource.appleAds` değerini içerir.
 
 İlk başlatmada ele almanız gereken iki olası sonuç vardır:
-1. **Attribution zaman aşımı süreniz içinde gelir.** `getPaywall` çağrısı yapın — Adapty isteği Apple Ads kitlesine göre çözümler ve hedeflenmiş paywall'ı döndürür.
-2. **Önce zaman aşımı süresi dolar.** Bunun yerine varsayılan kitle paywall'ını gösterin; böylece Apple Ads attribution'ı olmayan kullanıcılar beklemek zorunda kalmaz. `getPaywallForDefaultAudience`, segmentasyon için beklemeden bunu döndürür.
 
-`appliedAttributionSources` boş olabilir. Bu şu anlama gelir:
+1. **Attribution zaman aşımı süreniz içinde gelir.** `getPaywall` çağırın — Adapty, isteği Apple Ads kitlesine göre değerlendirir ve hedeflenen paywall'ı döndürür.
+2. **Önce zaman aşımı gerçekleşir.** Bunun yerine varsayılan kitle paywall'ını gösterin; böylece Apple Ads attribution'ı olmayan kullanıcılar beklemek zorunda kalmaz. `getPaywallForDefaultAudience`, segmentasyon için beklemeden bunu döndürür.
 
-- Bu profil için Apple Ads attribution'ı henüz işlenmemiştir veya
-- hiç attribution gelmemiştir.
-Her iki durumda da `getPaywallForDefaultAudience` güvenle çağrılabilir — profil durumundan bağımsız olarak varsayılan kitleye ait paywall'ı döndürür.
+`appliedAttributionSources` boş olabilir. Bu, aşağıdakilerden biri anlamına gelir:
+
+- Bu profil için Apple Ads attribution henüz işlenmedi.
+- Hiç attribution gelmedi.
+- Attribution başka bir sağlayıcıdan geldi; bu dizi onu raporlamıyor.
+
+Her üç durumda da `getPaywallForDefaultAudience` güvenle çağrılabilir — profil durumundan bağımsız olarak varsayılan kitle paywall'ını döndürür.
 
 :::important
-Bekleme yalnızca ilk başlatma için geçerlidir. Apple Ads attribution'ı bir kez kaydedildikten sonra, profilde kalıcı olarak saklanır. Sonraki her başlatmada, önbelleğe alınmış profil zaten `appliedAttributionSources` içinde `AdaptyAttributionSource.appleAds` bilgisini taşır; bu sayede attribution yolu hemen çözümlenir ve `getPaywall` herhangi bir gecikme olmadan Apple Ads segmentine göre paywall'ı döndürür.
+Bu bekleme yalnızca ilk başlatma için geçerlidir. Apple Ads attribution kaydedildikten sonra, profilde kalıcı olarak saklanır. Sonraki her başlatmada, önbelleğe alınmış profil zaten `appliedAttributionSources` içinde `AdaptyAttributionSource.appleAds` bilgisini taşıdığından, attribution yolu hemen çözümlenir ve `getPaywall` herhangi bir gecikme olmadan Apple Ads segmentine göre paywall'ı döndürür.
 :::
+
 ## Uygulama \{#implementation\}
 
 İlk başlatmada `AdaptyAttributionSource.appleAds` için bekleyin ve katı bir zaman aşımı uygulayın — Apple Ads attribution hiç gelmese de, bu kullanıcıların yine de bir paywall görmesi gerekir.
+
 1. **SDK'yı etkinleştirin.** Bkz. [Flutter SDK'yı yükle ve yapılandır](sdk-installation-flutter).
 2. **`Adapty().didUpdateProfileStream.listen(…)` ile profil güncellemelerini dinleyin.** Henüz dinleyiciyi kurmadıysanız bkz. [Abonelik güncellemelerini dinle](flutter-check-subscription-status#listen-to-subscription-updates).
 3. **`appliedAttributionSources` içinde `AdaptyAttributionSource.appleAds` değerini bekleyin.** Bu değer göründüğünde `getPaywall` ile paywallı yükleyin — Adapty, AA segmentine uygun varyantı döndürür:
+
 ```dart
 final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
   if (!profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) return;
@@ -41,13 +58,16 @@ final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
 ```
 
    `didUpdateProfileStream` bir broadcast stream'dir ve yeniden oynatma yapmaz; bu nedenle `getProfile()` ile mevcut profili bir kez de doğrudan kontrol edin. Uygulama yeniden başlatıldığında, kaydedilmiş attribution zaten uygulanmış olur ve yeniden emit edilmez.
+
 4. **Abonelikle paralel olarak 3–5 saniyelik bir zamanlayıcı başlatın.** Zamanlayıcı, `AdaptyAttributionSource.appleAds` gelmeden önce tetiklenirse, bunun yerine `getPaywallForDefaultAudience` ile varsayılan kitle paywallını yükleyin. Önce çözümlenen paywallı gösterin ve diğer yolu iptal edin; böylece paywall iki kez çekilmez. Ağ isteği başarısız olursa kullanıcının askıda kalmaması için placement'a bir [yedek paywall](flutter-use-fallback-paywalls) yapılandırın.
+
 ## Tam örnek \{#complete-example\}
 
 Aşağıdaki uygulama, attribution'ı bir zaman aşımıyla yarıştırır, varsayılan kitle paywall'ını paralelde önceden yükler ve uygun olan paywall'ı döndürür. Çağıran taraf yalnızca tek bir fonksiyonu bekler — çağrı noktasında yönetilecek dinleyici veya durum bayrağı yoktur:
 
 - Attribution `timeout` süresi içinde gelirse, `getPaywall` aracılığıyla segmentlere ayrılmış paywall'ı döndürür.
 - Önce `timeout` süresi dolarsa, `getPaywallForDefaultAudience` aracılığıyla önceden yüklenmiş varsayılan kitle paywall'ını döndürür.
+
 ```dart title="apple_ads_paywall.dart"
 
 /// Returns the Apple Ads-segmented paywall if attribution is applied within
@@ -109,5 +129,7 @@ try {
   // handle the error
 }
 ```
+
 `timeout` değerini, kullanıcılarınızı herhangi bir paywall görünmeden önce ne kadar bekletmek istediğinize göre ayarlayın. Kullanıcıların büyük çoğunluğunun Apple Ads attribution verisi olmadığını düşünürsek, hepsi tam timeout süresini bekler; bu yüzden 3 ila 5 saniye makul bir denge noktasıdır. Gelmesi beklenen attribution verisi genellikle uygulama açılışından birkaç saniye içinde ulaşır.
+
 Uygulamanız başka amaçlarla (örneğin, [abonelik durumunu kontrol etmek](flutter-check-subscription-status#listen-to-subscription-updates) için) zaten `didUpdateProfileStream`'i dinliyorsa, herhangi bir değişiklik yapmanıza gerek yok. `didUpdateProfileStream` bir broadcast stream olduğundan, birbirinden bağımsız birden fazla dinleyiciyi destekler ve bunları birbirini etkilemeden kullanabilirsiniz.

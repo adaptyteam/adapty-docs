@@ -3,35 +3,52 @@ title: "在 Flutter SDK 中首次启动时显示 AA 定向付费墙"
 description: "在 Flutter 中首次启动时短暂等待 Apple Ads 归因数据后再显示付费墙，超时则回退到默认目标受众。使用 AdaptyProfile.appliedAttributionSources。"
 metadataTitle: "首次启动时显示 AA 定向付费墙 | Flutter SDK | Adapty 文档"
 ---
+
 Apple Ads (AA) 归因数据在 `Adapty().activate()` 调用后会异步到达。首次启动时，归因数据通常尚未就位，因此如果你立即调用 `getPaywall`，Adapty 会基于默认目标受众处理该请求，导致 Apple Ads 用户无法看到针对 AA 细分设置的付费墙。与其先展示付费墙再替换，不如在显示任何内容前短暂等待 AA 归因数据：若归因在短暂超时内到达，则展示定向付费墙；否则展示默认目标受众的付费墙。`AdaptyProfile.appliedAttributionSources` 可告知你 AA 归因是否已生效。
+
+:::important
+`appliedAttributionSources` 仅报告 Apple Ads 的数据。来自其他提供商的归因信息可在用户画像中查看，也可用于市场细分筛选，但暂不在此处显示。
+:::
+
 ## 开始之前 \{#before-you-start\}
 
 您需要：
 - Adapty Flutter SDK **3.17.0** 或更高版本。
-- 在 Adapty 中为应用配置 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+- 已在 Adapty 中为应用配置 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+
+:::note
+以下示例使用 3.x API 名称。在 SDK 4.0 及更高版本中，付费墙通过 `getFlow`/`getFlowForDefaultAudience` 获取，返回类型为 `AdaptyFlow`。请参阅 [将 Adapty Flutter SDK 迁移至 v4.0](migration-to-flutter-sdk-v4)。`appliedAttributionSources` 属性名称在所有 Flutter 版本中保持不变。
+:::
+
 ## 工作原理 \{#how-it-works\}
 
 调用 `Adapty().activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发至 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会向你的 `didUpdateProfileStream` 监听器推送更新后的 `AdaptyProfile`，其 `appliedAttributionSources` 列表中将包含 `AdaptyAttributionSource.appleAds`。
 
 首次启动时，你需要处理以下两种情况：
-1. **归因在超时时间内完成。** 调用 `getPaywall` — Adapty 根据 Apple Ads 目标受众解析请求，并返回对应的付费墙。
-2. **超时时间先到。** 改为显示默认目标受众的付费墙，避免没有 Apple Ads 归因的用户白白等待。`getPaywallForDefaultAudience` 无需等待分群即可直接返回结果。
 
-`appliedAttributionSources` 可以为空，这意味着：
+1. **归因在超时前完成。** 调用 `getPaywall` —— Adapty 会根据 Apple Ads 目标受众解析请求，并返回对应的付费墙。
+2. **超时先到达。** 改为展示默认目标受众的付费墙，避免没有 Apple Ads 归因的用户一直等待。`getPaywallForDefaultAudience` 无需等待细分，直接返回结果。
 
-- 该用户画像的 Apple Ads 归因尚未处理完成，或
-- 根本没有收到任何归因数据。
-无论如何，`getPaywallForDefaultAudience` 都可以安全调用——它会直接返回默认受众的付费墙，不受用户画像状态影响。
+`appliedAttributionSources` 可以为空，这意味着以下情况之一：
+
+- 该用户画像的 Apple Ads 归因尚未处理完毕。
+- 完全没有归因数据。
+- 归因来自其他提供商，该数组不会上报此类数据。
+
+以上三种情况下，调用 `getPaywallForDefaultAudience` 都是安全的——无论用户画像处于何种状态，它都会返回默认目标受众的付费墙。
 
 :::important
-等待仅发生在首次启动时。一旦 Apple Ads 归因数据记录完成，它就会永久保存在用户画像中。在此后的每次启动时，缓存的用户画像已经在 `appliedAttributionSources` 中包含了 `AdaptyAttributionSource.appleAds`，因此归因路径会立即解析，`getPaywall` 无需任何等待即可返回针对 Apple Ads 市场细分的付费墙。
+等待仅适用于首次启动。一旦 Apple Ads 归因数据被记录，它将永久存储在用户画像中。在后续每次启动时，缓存的用户画像已包含 `AdaptyAttributionSource.appleAds`（位于 `appliedAttributionSources` 中），因此归因路径会立即解析，`getPaywall` 将直接返回针对 Apple Ads 市场细分的付费墙，无需任何等待。
 :::
+
 ## 实现 \{#implementation\}
 
 首次启动时，等待 `AdaptyAttributionSource.appleAds` 回调并设置硬超时——如果 Apple Ads 归因数据始终未到达，这些用户仍然需要看到付费墙。
+
 1. **激活 SDK。** 请参阅[安装并配置 Flutter SDK](sdk-installation-flutter)。
 2. **订阅用户画像更新**，使用 `Adapty().didUpdateProfileStream.listen(…)`。如果尚未设置监听器，请参阅[监听订阅更新](flutter-check-subscription-status#listen-to-subscription-updates)。
 3. **在 `appliedAttributionSources` 中监听 `AdaptyAttributionSource.appleAds`。** 当它出现时，使用 `getPaywall` 加载付费墙 —— Adapty 将返回 AA 细分的实验变体：
+
 ```dart
 final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
   if (!profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) return;
@@ -41,13 +58,16 @@ final subscription = Adapty().didUpdateProfileStream.listen((profile) async {
 ```
 
    `didUpdateProfileStream` 是广播流，不会重播历史事件，因此还需通过 `getProfile()` 单独检查当前用户画像。应用重启后，已存储的归因数据不会再次触发事件。
+
 4. **与订阅同步启动一个 3–5 秒的计时器。** 如果计时器先于 `AdaptyAttributionSource.appleAds` 触发，则改用 `getPaywallForDefaultAudience` 加载默认受众付费墙。优先展示先完成的那个付费墙，并取消另一路请求，避免重复获取。为该版位配置[备用付费墙](flutter-use-fallback-paywalls)，确保网络请求失败时用户也不会卡住。
+
 ## 完整示例 \{#complete-example\}
 
 下面的实现方案会让归因与超时同时竞争，并行预取默认受众付费墙，然后返回合适的付费墙。调用方只需等待单个函数，无需在调用处管理监听器或状态标志：
 
 - 如果归因在 `timeout` 内完成，则通过 `getPaywall` 返回分段付费墙。
 - 如果 `timeout` 先到期，则通过 `getPaywallForDefaultAudience` 返回预取的默认受众付费墙。
+
 ```dart title="apple_ads_paywall.dart"
 
 /// Returns the Apple Ads-segmented paywall if attribution is applied within
@@ -109,5 +129,7 @@ try {
   // handle the error
 }
 ```
+
 调整 `timeout` 参数，设置用户在付费墙出现前最多等待的时间。大多数用户没有 Apple Ads 归因数据，因此他们会等待完整的超时时长——3 到 5 秒是一个合理的平衡点。如果有归因数据，通常会在应用启动后几秒内到达。
+
 如果你的应用已经在监听 `didUpdateProfileStream`（例如用于[检查订阅状态](flutter-check-subscription-status#listen-to-subscription-updates)），则无需做任何修改。`didUpdateProfileStream` 是一个广播流，支持多个独立监听器互不干扰。
