@@ -58,6 +58,20 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   registered in `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx`
   for terms it shares, as the working definition until a metrics source is added.
 
+- **Figma import's ground truth is split across three places, and only one of them is a declared source.** The
+  `/figma-import` landing page — its state machine, failure copy, and the mint call — lives in
+  `dashboard-interface` but under `apps/web/src/pages/figma-import/**`, *not* `packages/unified-builder`,
+  with a canonical design spec beside it at `docs/specs/figma/figma-import-landing.md`. The plugin is its
+  own artifact, published to the Figma Community on 2026-08-31 as **Import to Adapty**
+  (`figma.com/community/plugin/1674065404672377144`); the zip sideload was the early-access channel only.
+  **The converter that actually maps a Figma tree to an IFlow lives in `adapty-agents`, which is absent
+  from `sources.md`** (`rg 'adapty-agents' .claude/context-mill/sources.md` → no hits, 2026-08-27) and is
+  not reachable through GitHub `adaptyteam` or the GitLab `adapty` group either (checked 2026-09-08; the
+  only Figma repo on GitHub, `adaptyteam/figma-flow`, is an evidence dashboard, not the mapper). What *is*
+  reachable is the mapper's output: `adapty flows config get --app <app> <flow-id> --json` returns the
+  minted IFlow, and reading two imports that way on 2026-09-08 is what the fidelity section of
+  `import-from-figma` now rests on. Prefer that over Jira for any behaviour claim.
+
 ## What we document, what we don't
 
 **Document:** building a flow's behavior in the no-code editor — screens' navigation wiring, triggers
@@ -113,13 +127,14 @@ or developer can see and click.
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 12 | tutorial |
 | flow-metrics | — | marketer, dev | 24 | tutorial |
+| import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 8 | tutorial |
-| paywall-builder-templates | — | marketer, dev | 6 | tutorial |
+| paywall-builder-templates | — | marketer, dev | 7 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
@@ -281,6 +296,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
+| "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
 
 ## Gaps and misses
 
@@ -309,6 +325,23 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 - **Tooling note:** `mill:assign` rejects `--role=troubleshooting`; the valid set is `entry`, `how-to`,
   `reference`, `conceptual`, `migration`, `legacy-orphan` (`scripts/context-mill/zones.mjs:8`), so this
   article is filed as `reference`.
+
+- **`import-from-figma`'s fidelity claims were Jira-sourced and two of them were wrong** (written
+  2026-08-27, re-measured 2026-09-08). "Prototype interactions are dropped" and "pricing cards import as
+  plain frames" both failed against real imports: the converter wires Navigate to screen actions (linear, layer
+  order, prototype links ignored) and builds product groups with Purchase actions and `_meta.screens.*.products`
+  placeholder slots. Fonts split: SF Pro → `{type:"system"}`; anything else → `{type:"user", id:<name>}`
+  plus a `_meta.fonts` entry pointing at a jsDelivr Fontsource `latin-400-normal.ttf`, which the app's
+  font list doesn't know, so the dropdown shows **Select font** while the preview renders it — the article
+  deliberately documents only the symptom. Still unverified: whether the mapper would bind products whose
+  titles match the design (the test app had none), and why auto-layout chart bars drop out of a flattened
+  raster. The mapper itself (`services/figma_to_iflow.py` in `adapty-agents`) remains unreadable from here;
+  ADP-7158's own description warns that "neither child statuses nor assignees carry signal here", so keep
+  measuring against minted configs rather than tickets.
+  One claim was already wrong and cut before publication: an earlier draft said designs on Google Fonts
+  "import most cleanly", inferred from ADP-7158 saying non-Google faces fail — which does not follow, and
+  `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
+  in the corpus.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
