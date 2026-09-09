@@ -25,9 +25,9 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `src/commands/auth/login.ts`: OAuth device grant, `POST /auth/device` then poll `POST /auth/token`
   with `client_id: adapty-cli`, handling `authorization_pending` / `slow_down` / `expired_token`.
   Config is `src/lib/config.ts` — `~/.config/adapty/config.json`, written with mode `0o600`, holding
-  `access_token` plus `user`. The npm package is named **`adapty`**, and `origin/main` is `v0.8.2` (checked 2026-08-31 via
-  `gh api "repos/adaptyteam/adapty-cli/contents/package.json?ref=main"` and `npm view adapty version`,
-  which agree; it was v0.4.0 on 2026-08-17).
+  `access_token` plus `user`. The npm package is named **`adapty`**, and `origin/main` is `v0.8.3` (checked 2026-09-09 via
+  `package.json` in a shallow clone of `main` and `npm view adapty version`, which agree; it was v0.8.2
+  on 2026-08-31 and v0.4.0 on 2026-08-17).
 - **The CLI's API is the one API in the corpus with no spec we publish.** `src/lib/api-client.ts` sets
   `DEFAULT_API_URL = 'https://api-admin.adapty.io/api/v1/developer'`, and `developer-api-spec`
   (`developer-api.yaml`) is the empty stub its own `sources.md` entry warns about — 14 lines,
@@ -165,8 +165,8 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
-| developer-cli-ads-manager | entry | dev | 13 | api |
-| developer-cli-ads-manager-reference | — | dev | 51 | api |
+| developer-cli-ads-manager | entry | dev | 14 | api |
+| developer-cli-ads-manager-reference | — | dev | 52 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
