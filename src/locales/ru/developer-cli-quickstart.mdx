@@ -5,14 +5,15 @@ metadataTitle: "Быстрый старт с Developer CLI | Документа�
 keywords: ['cli', 'developer cli', 'mcp']
 ---
 
-Adapty CLI позволяет настроить конфигурацию приложения полностью из командной строки. Используйте его как альтернативу [быстрому старту через дашборд](integrate-payments), если предпочитаете работу в терминале или [MCP-клиенты](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli).
+Adapty CLI позволяет настроить конфигурацию приложения полностью из командной строки. Используйте его как альтернативу [быстрому старту через дашборд](integrate-payments), если вы предпочитаете работу в терминале или [MCP-клиенты](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli).
 
 :::note
-Подключение Adapty к App Store Connect и Google Play всё равно требует однократной настройки в дашборде — она описана в шаге 3.
+Подключение Adapty к App Store Connect и Google Play по-прежнему требует однократной настройки в дашборде — она описана в шаге 3.
 :::
 
-По завершении ваше приложение, уровень доступа, продукт, пейвол и плейсмент будут видны в [дашборде Adapty](https://app.adapty.io).
-Если вы запускаете CLI в Claude Cowork, разрешите домены Adapty перед началом работы — см. [Запуск CLI в Cowork](#run-the-cli-in-cowork).
+По завершении ваше приложение, уровень доступа, продукт, флоу или пейвол и плейсмент будут отображаться в [дашборде Adapty](https://app.adapty.io).
+
+Если вы запускаете CLI в Claude Cowork, сначала настройте его в Claude — см. [Настройка Adapty CLI в Claude Cowork](developer-cli-cowork).
 
 ## 1. Установите CLI \{#1-install-the-cli\}
 
@@ -43,6 +44,7 @@ CLI откроет вкладку в браузере. Сверьте код, о
 ## 3. Создайте приложение \{#3-create-your-app\}
 
 Приложение в Adapty — это ваше мобильное приложение. Одно приложение в Adapty подключается к App Store и Google Play одновременно — достаточно создать одно, сколько бы сторов вы ни использовали.
+
 <Tabs>
   <TabItem value="ios-android" label="iOS + Android">
     ```bash
@@ -69,25 +71,30 @@ CLI откроет вкладку в браузере. Сверьте код, о
 - [Подключить App Store Connect](app-store-connection-configuration)
 - [Подключить Google Play](google-play-store-connection-configuration)
 :::
+
 ## 4. Создайте уровень доступа (необязательно) \{#4-create-an-access-level-optional\}
 
 [Уровни доступа](access-level) определяют, к чему пользователь получает доступ после покупки. Вместо того чтобы проверять, купил ли пользователь конкретный продукт, приложение проверяет наличие нужного уровня доступа. Это отвязывает логику приложения от конкретных ID продуктов.
 
 Уровень доступа `premium` создаётся автоматически при добавлении каждого нового приложения. **Для большинства приложений этот шаг можно пропустить.** Используйте `premium` в качестве ID уровня доступа на шаге 5.
+
 Выполняйте эту команду только в том случае, если разные продукты открывают разные функции для разных групп пользователей — например, если подписчик «Basic» и подписчик «Pro» получают доступ к разным частям приложения.
 
 ```bash
 adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
 ```
+
 - `--sdk-id` — это идентификатор, который вы будете использовать в коде приложения, чтобы проверить, должна ли функция быть доступна пользователю (например, `if user.hasAccessLevel("pro")`). Если пропустить этот шаг и использовать уровень доступа по умолчанию, его `--sdk-id` равен `premium`.
 - `--title` — отображаемое название для вашего удобства в дашборде Adapty.
 
 Команда возвращает `<access-level-id>`.
+
 ## 5. Создайте продукт \{#5-create-a-product\}
 
 В Adapty [продукт](product) — это всё, что ваше приложение продаёт: подписка или разовая покупка. Позиции из App Store Connect и Google Play можно объединить в один продукт Adapty и управлять ими из одного места.
 
 Вам понадобятся идентификаторы продукта из каждого стора: Apple product ID из App Store Connect, а также Android product ID и base plan ID из Google Play Console. Подробнее о том, где их найти, читайте в разделе [Продукты](quickstart-products).
+
 Если вы пропустили шаг 4, используйте `default_access_level.id`, возвращённый командой `apps create` на шаге 3, в качестве `<access-level-id>`.
 
 :::important
@@ -116,13 +123,45 @@ adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
 
 Если вы также продаёте этот продукт в вебе через Stripe или Paddle, добавьте эти ID в ту же команду. Подробнее см. [products create](developer-cli-reference#adapty-products-create) в справочнике команд.
 
-## 6. Создайте пейвол \{#6-create-a-paywall\}
+## 6. Создайте флоу или пейвол \{#create-a-flow-or-paywall\}
 
-[Пейвол](paywalls) — это контейнер, в котором хранятся ваши продукты. В Adapty пейволы — единственный способ доставить продукты пользователям. Каждый продукт должен быть добавлен в пейвол, прежде чем он сможет отображаться в приложении.
+Every product must be inside a flow or a paywall before it can appear in your app. Pick one:
+
+- **Флоу** — это экран или последовательность экранов, которые вы проектируете в no-code [Flow & Paywall Builder](adapty-flow-builder), а SDK Adapty отрисовывает нативно: экран пейвола, онбординг, квиз. Выбирайте флоу, когда хотите, чтобы Adapty сам отрисовывал экран покупки. Флоу требуют Adapty SDK 4.0 или новее.
+- **Пейвол** — это набор продуктов без прикреплённого дизайна. Выбирайте пейвол, когда вы отрисовываете экран покупки в собственном коде приложения и вам нужно только, чтобы Adapty предоставлял продукты, опционально с [Remote Config](customize-paywall-with-remote-config).
+
+Плейсмент обслуживает один тип контента, поэтому определитесь с этим до шага 7.
+
+### 6a. Создайте флоу \{#6a-create-a-flow\}
+
+CLI создаёт запись флоу. Его экраны хранятся в конфиге билдера — JSON-документе, который CLI не генерирует. Чтобы создать конфиг из терминала, используйте [навык flow-generator](flow-generator-skill), который управляет CLI за вас.
+
+Создайте флоу:
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+Команда возвращает `<flow-id>`.
+
+Постройте экраны с помощью [навыка flow-generator](flow-generator-skill) или в [Flow & Paywall Builder](adapty-flow-builder). В любом случае результат — сохранённый черновик, который пользователи пока не видят.
+
+Опубликуйте флоу:
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+Команда запросит подтверждение. Публикация выполняется в фоновом режиме, поэтому проверяйте статус с помощью `adapty flows get --app <app-id> <flow-id>`, пока не увидите `published`. При `publication_failed` команда [`flows config get`](developer-cli-reference#adapty-flows-config-get) покажет причину ошибки. Плейсмент принимает только опубликованный флоу.
+
+### 6б. Создайте пейвол \{#6b-create-a-paywall\}
+
+[Пейвол](paywalls) — это контейнер, в котором хранятся ваши продукты.
 
 :::important
-После того как пейвол привязан к плейсменту, изменить его продукты невозможно. Чтобы использовать другие продукты, создайте новый пейвол и обновите плейсмент, чтобы он указывал на него.
+После того как пейвол привязан к плейсменту, изменить его продукты невозможно. Чтобы использовать другие продукты, создайте новый пейвол и обновите плейсмент, указав на него.
 :::
+
 <Tabs>
   <TabItem value="single" label="Один продукт">
     ```bash
@@ -140,46 +179,30 @@ adapty access-levels create --app <app-id> --sdk-id "pro" --title "Pro"
 
 ## 7. Создайте плейсмент \{#create-a-placement\}
 
-[Плейсмент](placements) — это точка в приложении, где показывается пейвол. Единственное, что вы жёстко прописываете в коде, — это ID плейсмента. Всё остальное — какой пейвол показывать и каким пользователям — управляется в дашборде без выпуска новой версии приложения.
+[Плейсмент](placements) — это точка в приложении, где отображается флоу или пейвол. Единственное, что вы задаёте в коде приложения, — это ID плейсмента. Всё остальное — какой флоу или пейвол показывать и каким пользователям — управляется в дашборде без выпуска новой версии приложения.
 
-`--developer-id` — строка, на которую вы будете ссылаться в коде приложения, когда запрашиваете у Adapty, какой пейвол показать в этой точке. Выбирайте что-то, отражающее местоположение, например `"main"`, `"onboarding"` или `"settings"`.
-```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
-```
+`--developer-id` — это строка, которую вы будете использовать позже в коде приложения, когда запрашиваете у Adapty, что показать в данной точке. Выберите что-то описывающее место, например `"main"`, `"onboarding"` или `"settings"`.
 
-Флаг `--audiences` определяет, какой пейвол показывается каким пользователям. В примере выше задана одна дефолтная аудитория — все пользователи на этом плейсменте видят один и тот же пейвол.
-## Запуск CLI в Cowork \{#run-the-cli-in-cowork\}
+<Tabs>
+  <TabItem value="flow" label="Flow">
+    ```bash
+    adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+    ```
+  </TabItem>
+  <TabItem value="paywall" label="Paywall">
+    ```bash
+    adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+    ```
+  </TabItem>
+</Tabs>
 
-Claude Cowork выполняет команды в песочнице, которая обращается только к разрешённым доменам. Пока вы не добавите Adapty в список разрешённых, CLI не сможет войти в аккаунт или обращаться к вашим данным. Пропустите этот раздел, если запускаете CLI из собственного терминала.
-
-Добавьте в список разрешённых оба домена: `adapty.io` и `*.adapty.io`. В большинстве реализаций вайлдкард не распространяется на корневой домен. Сам CLI обращается к `api.adapty.io`, а агент, который читает документацию Adapty в процессе работы, — к корневому домену.
-
-Cowork applies these settings when a task starts. If you change the access mode or add a domain during a conversation, that conversation keeps the settings it started with — start a new task.
-
-A task also starts on a clean machine: no CLI, no token, and no config carries over from a previous session, so the install and login steps repeat at the start of each one.
-
-### Персональные аккаунты \{#personal-accounts\}
-
-Список разрешённых доменов вы настраиваете самостоятельно:
-
-1. В Claude откройте **Settings** → **Capabilities**.
-2. Включите **Code execution and file creation**. Блок **Allow network egress** будет скрыт, пока вы этого не сделаете.
-3. Включите **Allow network egress**.
-4. В **Domain allowlist** выберите **Package managers only**.
-5. В разделе **Additional allowed domains** добавьте `adapty.io`, затем `*.adapty.io`.
-
-<ZoomImage id="cowork-network-egress.png" width="700px" alt="Настройки Allow network egress в Claude с доменом Adapty в списке дополнительно разрешённых доменов" />
-
-Другой режим доступа, **All domains**, разрешает песочнице обращаться к любым сайтам. При его выборе домены Adapty добавлять не нужно.
-
-### Корпоративные рабочие пространства \{#corporate-workspaces\}
-
-Доступом управляет администратор. Попросите его добавить оба домена для рабочего пространства.
+Флаг `--audiences` управляет тем, какой флоу или пейвол показывается каким пользователям. В примерах выше задана единственная аудитория по умолчанию: все пользователи этого плейсмента видят одно и то же содержимое. Плейсмент работает с одним типом контента, поэтому каждая запись аудитории должна содержать одинаковое значение `content_type`. Чтобы настроить таргетинг по сегменту, см. [Форму audiences](developer-cli-reference#audiences-shape) в справочнике команд.
 
 ## Что дальше \{#whats-next\}
 
-Все сущности теперь видны в [дашборде Adapty](https://app.adapty.io). Следующие шаги:
+Все сущности теперь отображаются в [дашборде Adapty](https://app.adapty.io). Далее:
 
-- [Оформите пейвол](adapty-paywall-builder) — используйте Paywall Builder без написания кода, чтобы добавить визуальное оформление, разметку и тексты к только что созданному пейволу.
-- [Интегрируйте SDK](quickstart-sdk) — подключите SDK к приложению, чтобы получать и отображать плейсмент.
-- Направляйте разные [сегменты](segments) пользователей на разные пейволы — см. [`placements update`](developer-cli-reference#adapty-placements-update) и [`segments list`](developer-cli-reference#adapty-segments-list) в справочнике команд.
+- Изменить флоу позже — опишите изменение [скиллу flow-generator](flow-generator-skill) или откройте флоу в [Flow & Paywall Builder](adapty-flow-builder).
+- Отрендерить пейвол в приложении — [получите пейвол и его продукты](fetch-paywalls-and-products) через SDK и соберите экран в своём коде.
+- [Интегрировать Adapty SDK](quickstart-sdk) — добавьте SDK в приложение, чтобы получать и отображать плейсмент.
+- Направить разные [сегменты](segments) пользователей к разным флоу или пейволам — см. [`placements update`](developer-cli-reference#adapty-placements-update) и [`segments list`](developer-cli-reference#adapty-segments-list) в справочнике команд.
