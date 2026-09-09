@@ -1,0 +1,63 @@
+---
+title: "Nommez les IDs vus par vos outils d'analyse"
+description: "Donnez à vos écrans, champs de saisie et options de quiz des IDs lisibles, afin que les événements envoyés à Amplitude ou Mixpanel apparaissent sous forme de noms plutôt que de codes."
+metadataTitle: "Nommer les IDs de flow pour l'analyse | Flow Builder | Documentation Adapty"
+---
+
+Le SDK Adapty signale chaque affichage d'écran et chaque réponse à votre application. Chaque événement inclut l'ID de l'écran ou de l'élément dont il provient, et ce sont ces IDs que votre propre outil d'analyse affiche. Par défaut, l'ID d'un écran ressemble à `scr_oAPBHPa7`, ce qui fait qu'un funnel dans Amplitude ou Mixpanel s'affiche comme une colonne de codes, et quelqu'un doit maintenir manuellement une correspondance code-nom.
+
+Vous pouvez nommer ces IDs vous-même. Les inputs et les groupes sélectionnables sont nommés dans le Flow Builder. Les IDs d'écrans sont définis via le [skill flow-generator](flow-generator-skill), qui renomme un écran partout où le flow y fait référence.
+
+:::important
+Le renommage des écrans fait partie du skill flow-generator, il n'y a donc rien de supplémentaire à installer — suivez les [étapes d'installation du flow-generator](flow-generator-skill#install-the-skill) et c'est prêt. Il enregistre les modifications des flows dans votre tableau de bord, donc exécutez-le d'abord sur un brouillon et vérifiez le résultat dans le Flow Builder avant de publier.
+:::
+
+## À quoi ça sert \{#what-its-for\}
+
+- **Un funnel lisible par toute l'équipe** : La séquence `welcome → signup → paywall` parle d'elle-même. Trois codes générés automatiquement, non.
+- **Un vocabulaire commun à tous les outils** : Le nom que vous donnez à un écran est le même dans les métriques de flow d'Adapty et dans vos propres analytics — pas besoin de table de correspondance.
+- **Des données interrogeables** : Une option de quiz nommée `beginner` est une valeur sur laquelle un analyste peut filtrer directement. Un identifiant généré, lui, doit d'abord être décodé.
+
+## Quels identifiants votre analytics reçoit \{#which-ids-your-analytics-sees\}
+
+Deux événements portent des identifiants. [`flow_screen_showed`](ios-flow-screen-views) se déclenche quand un utilisateur ouvre un écran, et [`flow_user_input`](ios-flow-input) se déclenche quand un utilisateur remplit un champ, choisit une réponse à un quiz ou active un interrupteur. Chaque guide documente tous les paramètres de son événement. Ce tableau couvre uniquement les paramètres qui identifient un écran ou un élément.
+
+| Paramètre d'événement | Ce qu'il contient | Où vous le définissez |
+| :--- | :--- | :--- |
+| `instanceId` | L'identifiant de l'écran | La compétence de génération de flow |
+| `element_id` | L'**Element ID** d'un champ de saisie, ou le **Group ID** d'un groupe sélectionnable | Flow Builder |
+| `item_ids` | Les **Element IDs** des options sélectionnées | Flow Builder |
+
+## Nommer les champs et les options de quiz \{#name-inputs-and-quiz-options\}
+
+Les champs et les groupes sélectionnables possèdent des identifiants dans le builder. L'**Element ID** d'un champ se trouve dans **Input settings** ; c'est le même identifiant que vous utilisez pour référencer la valeur ailleurs dans le flow — voir [Champs et formulaires](builder-inputs-and-forms). Le **Group ID** d'un groupe se trouve dans **Screen settings > Selectable groups**, et chaque option à l'intérieur possède son propre **Element ID**.
+
+Donnez à chacun un nom qui parle de lui-même, car c'est la chaîne qui s'affiche dans vos analytics. `birthday` et `beginner` n'ont pas besoin d'explication. `el_024F`, lui, en a besoin.
+
+Définissez l'ID au moment où vous ajoutez l'élément, pas après. Les conditions et les variables texte pointent vers un **ID d'élément** : le modifier ne met pas à jour les références — elles cessent de fonctionner, sans aucune erreur. Pour renommer un ID dans un flow déjà opérationnel, mettez à jour toutes les conditions et variables qui l'utilisent. Voir [Les conditions et variables se cassent après un changement d'ID d'élément](flow-common-issues#conditions-and-variables-break-after-an-element-id-change).
+
+La compétence flow-generator nomme ces éléments automatiquement pour tout flow qu'elle génère. La [compétence flow-audit](flow-audit-skill) signale ceux qui sont manquants.
+
+## Renommer les écrans \{#rename-screens\}
+
+Le Flow Builder ne dispose d'aucun champ pour l'identifiant d'un écran, alors demandez à la compétence :
+
+```
+Give the screens in my onboarding flow readable IDs.
+```
+
+La compétence propose un nom pour chaque écran, puis le renomme partout où le flow y fait référence — l'écran lui-même, chaque action de navigation qui y mène, et les produits qui y sont attachés. Elle les renomme tous ensemble, car un écran renommé à un endroit mais pas à un autre est un flow qui ne pourra pas être publié.
+
+Cela vous indique quels noms ont été modifiés et combien de références ont été déplacées. La commande n'exécutera pas un renommage qui entrerait en collision avec un écran déjà existant. L'identifiant d'un écran peut être renommé en toute sécurité dans un flow déjà fonctionnel, contrairement à un identifiant d'élément : la compétence déplace toutes les références en même temps.
+
+## Quoi vérifier \{#what-to-check\}
+
+- **Renommez avant que le flow ne soit mis en ligne** : les événements déjà collectés conservent l'ancien ID, dans les métriques du flow Adapty et dans vos propres outils d'analyse. Un entonnoir qui chevauche le changement affiche deux écrans à moitié remplis, et renommer en arrière ne les fusionne pas.
+- **Chaque option d'un groupe doit avoir son propre Element ID** : si une option n'en a pas, si deux options partagent le même, ou si le **Group ID** est réutilisé sur un autre écran, tout le groupe ne remonte rien — pas seulement cette option. Rien dans le builder ne le signale, alors vérifiez le groupe après y avoir ajouté une option.
+- **Les ID arrivent dans vos outils d'analyse exactement tels que vous les avez saisis** : choisissez un style, par exemple `plan_selection` ou `planSelection`, et utilisez-le dans tout le flow. Les styles mixtes sont plus difficiles à interroger que les codes générés.
+
+## Limitations \{#limitations\}
+
+- **Les identifiants d'écran ne se renomment que via la compétence** : il n'existe pas de champ dédié dans le Flow Builder.
+- **Renommer ne migre pas l'historique** : les anciens événements conservent l'ancien identifiant.
+- **Certains éléments n'envoient aucun événement de saisie** : les champs de mot de passe, les sélections de produits et les changements d'onglet ne remontent rien. Nommer l'un d'eux affecte le flow, pas vos analyses.
