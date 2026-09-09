@@ -1,0 +1,65 @@
+---
+title: "Mostrar un paywall segmentado por Apple Ads en el primer lanzamiento con Unity SDK"
+description: "Espera la atribución de Apple Ads antes de solicitar el paywall en Unity usando AdaptyProfile.AppliedExternalAttributionProviders."
+metadataTitle: "Mostrar un paywall segmentado por Apple Ads en el primer lanzamiento | Unity SDK | Documentación de Adapty"
+---
+
+Este artículo se aplica a la versión iOS de tu app. La atribución de Apple Ads solo existe en iOS.
+
+Apple Ads (AA) la atribución llega de forma asíncrona después de `Adapty.Activate()`. Si llamas a `GetFlow` demasiado pronto, la atribución a menudo aún no ha llegado y Adapty resuelve el placement contra la audiencia predeterminada, saltándose tus paywalls segmentados por AA. `AdaptyProfile.AppliedExternalAttributionProviders` permite a la app detectar cuándo se ha aplicado la atribución de AA al perfil, para que la solicitud de paywall pueda esperar hasta que la segmentación de AA se resuelva correctamente.
+
+:::important
+`AppliedExternalAttributionProviders` solo reporta Apple Ads. La atribución de otros proveedores es visible en los perfiles de usuario y está disponible en los filtros de segmento, pero aún no aquí.
+:::
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+- Adapty Unity SDK **4.1** o posterior.
+- Apple Ads configurado para la aplicación en Adapty. Consulta [Apple Ads](apple-search-ads).
+
+:::note
+Los ejemplos utilizan los nombres de la API del SDK 4.1. En el SDK 4.0, la propiedad del perfil se llama `AppliedAttributionSources`. En el SDK 3.x, esa propiedad tiene el mismo nombre anterior, y los paywalls se obtienen con `GetPaywall`/`GetPaywallForDefaultAudience`, que devuelven un `AdaptyPaywall`. Consulta [Migrate Adapty Unity SDK to v4](migration-to-unity-sdk-v4).
+:::
+
+## Cómo funciona \{#how-it-works\}
+
+Tras ejecutar `Adapty.Activate()`, el SDK solicita en segundo plano la atribución de Apple Ads a Apple y reenvía el resultado al backend de Adapty. Cuando AA se convierte en la fuente de atribución activa del perfil, el SDK entrega un `AdaptyProfile` actualizado a tu manejador `OnLoadLatestProfile`, con `AdaptyExternalAttributionProvider.AppleAds` en su lista `AppliedExternalAttributionProviders`.
+
+Una lista vacía puede significar cualquiera de estas cosas:
+
+- La atribución de Apple Ads aún no se ha procesado para este perfil.
+- No ha llegado ninguna atribución.
+- La atribución llegó de otro proveedor que esta lista no reporta.
+
+Aunque la lista esté vacía, `GetFlow` es seguro de llamar: Adapty resuelve la solicitud según la audiencia que coincida con el estado actual del perfil, normalmente la audiencia predeterminada.
+
+:::important
+La espera solo aplica al **primer lanzamiento**. Una vez que se ha registrado la atribución de Apple Ads, queda almacenada permanentemente en el perfil. En cada lanzamiento posterior, el perfil en caché ya incluye `AppleAds` en `AppliedExternalAttributionProviders`, `OnLoadLatestProfile` se dispara inmediatamente con ese valor, y `GetFlow` devuelve el paywall segmentado por Apple Ads sin ningún retraso.
+:::
+
+## Implementación \{#implementation\}
+
+En el primer lanzamiento, comprueba si recibes `AdaptyExternalAttributionProvider.AppleAds` en el perfil y aplica un tiempo de espera máximo — si la atribución de Apple Ads nunca llega, esos usuarios igualmente necesitan ver un paywall.
+
+1. **Activa el SDK.** Consulta [Instalar y configurar el SDK de Unity](sdk-installation-unity).
+2. **Suscríbete a las actualizaciones del perfil** implementando `IAdaptyEventListener` y registrándolo con `Adapty.SetEventListener`. Si aún no has configurado el listener, consulta [Escuchar actualizaciones de suscripción](unity-check-subscription-status#listen-to-subscription-updates).
+3. **Comprueba si aparece `AppleAds` en `AppliedExternalAttributionProviders`.** Cuando aparezca, solicita el paywall; Adapty devolverá la variante segmentada por AA:
+
+```csharp
+using System.Linq;
+
+public void OnLoadLatestProfile(AdaptyProfile profile)
+{
+    if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds))
+    {
+        // load the paywall via Adapty.GetFlow(placementId, ...)
+    }
+}
+```
+
+4. **Inicia un temporizador de 3 a 5 segundos en paralelo con la suscripción.** Si el temporizador se dispara antes de que aparezca `AppleAds`, solicita el paywall de audiencia predeterminada con `GetFlowForDefaultAudience`. Este devuelve el paywall sin esperar la segmentación.
+
+Whichever path fires first should load the paywall; the other path should be skipped. Use a single state flag (for example, `hasLoadedPaywall`) to deduplicate so the paywall isn't fetched twice. Configure a [paywall de respaldo](unity-use-fallback-paywalls) for the placement so the user is never stuck if the network request fails.
+
+`SetEventListener` acepta un único listener. Si tu app ya usa un `IAdaptyEventListener` para otros fines (por ejemplo, [escuchar actualizaciones de suscripción](unity-check-subscription-status#listen-to-subscription-updates)), añade la comprobación en su `OnLoadLatestProfile` existente en lugar de registrar un segundo listener.
