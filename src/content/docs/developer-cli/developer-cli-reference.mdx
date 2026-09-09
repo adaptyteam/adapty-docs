@@ -425,7 +425,7 @@ adapty flows publish --app <app-id> <flow-id>
 
 Because publishing changes what your users see, the command prints the flow name and asks for confirmation. Any answer other than `y` cancels the command with exit code 1. Under `--json` or in a pipe, the command refuses with exit code 2 instead of waiting for an answer, so pass `--yes` in scripts and agent sessions.
 
-Publication is asynchronous. The response reports `status: publishing`. To learn when the flow is live, poll [`flows get`](#adapty-flows-get) until the status becomes `published` or `publication_failed`.
+Publication is asynchronous: the response reports `status: publishing`, and the flow isn't live yet. Poll [`flows get`](#adapty-flows-get) until the status becomes `published` or `publication_failed`. On `publication_failed`, [`flows config get`](#adapty-flows-config-get) reports why.
 
 Publishing fails with HTTP 400 when the flow has no config, when the config isn't publishable, or when the current version is already live. To check a config before publishing, use [`flows config validate`](#adapty-flows-config-validate).
 
@@ -446,6 +446,14 @@ adapty flows config get --app <app-id> <flow-id>
 | `--app` | Yes | App ID (UUID) |
 
 The response contains `config`, `remote_configs`, `status`, and `updated_at`. `updated_at` is a millisecond timestamp of the last config change. Pass it to [`flows config update`](#adapty-flows-config-update) as `--expected-updated-at` to avoid overwriting a concurrent edit. A flow whose config has never been written returns 404.
+
+After a publication attempt, the response also carries three fields describing how it went. Read them when [`flows get`](#adapty-flows-get) reports `publication_failed`:
+
+| Field | Description |
+|---|---|
+| `publication_status` | How far publication of this flow version got: `transforming`, `transformed`, `uploading`, `uploaded`, `published`, or `failed` |
+| `transform_error` | The raw transform failure — either a JSON payload listing the issues or a summary string |
+| `publication_error` | A readable message for a failed publication |
 
 ### adapty flows config update
 
@@ -627,7 +635,7 @@ A placement must have exactly one default audience.
 
 The CLI checks every entry before sending the request. An entry with a missing or unknown `content_type`, or without the ID its `content_type` requires, exits with code 2 and nothing is sent.
 
-A flow can be attached only after it has been published: a `draft` flow, or a flow whose first publication is still in progress, is rejected with HTTP 400 `Flow must be published before placing in a placement.` To publish a flow, use [`flows publish`](#adapty-flows-publish) or the [Flow & Paywall Builder](builder-save-publish).
+A flow can be attached only after it has been published. A `draft` flow, or one whose first publication is still in progress, is rejected by the server; the CLI recognizes that rejection and exits with code 2, printing the `flows publish` command for that flow. To publish a flow, use [`flows publish`](#adapty-flows-publish) or the [Flow & Paywall Builder](builder-save-publish), then wait for its status to reach `published`.
 
 Example with one targeted audience and one default:
 
