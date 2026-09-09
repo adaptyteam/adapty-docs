@@ -58,9 +58,28 @@ and a rich CHANGELOG entry — both good ground truth.
 
 Discrepancies vs the iOS canon (all verified against the public-surface fixture diff):
 
-1. **Provider stays an open `string`** — no `AdaptyExternalAttributionProvider` enum in C#; no
-   type-rename section applies. Values: `"appsflyer"`, `"adjust"`, `"branch"`, `"tenjin"`,
-   `"apple_search_ads"`, `"custom"`.
+1. ⚠️ **Provider is NOT a plain `string` in released Unity 4.1.0 — corrected 2026-09-09.** The
+   original entry read PR #30 (merged 2026-08-20) and was right about that diff. Commit `b0142e13`
+   ("fix: land the pre-tag review while the 4.1.0 API can still move", 2026-08-21) then added
+   `Packages/com.adapty.unity-sdk/Runtime/Models/AdaptyExternalAttributionProvider.cs` **before the
+   4.1.0 tag was cut**, so the shipped SDK has the entity. Verified present at tags `4.1.0` and
+   `4.1.1`. It is a sealed class with `RawValue` (trimmed), a public `(string)` constructor, `==`/`!=`
+   operators, and six shared instances: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`,
+   `Branch`, `Tenjin`, `Custom`. **There is no implicit `string` → provider conversion** (grepped for
+   `implicit`/`operator` at 4.1.0 — only equality operators).
+   **Consequence, unfixed: the Unity tabs in `adjust`, `appsflyer`, `branch` and `tenjin` do not
+   compile against Unity 4.1.0.** All four pass a bare string as the `provider` argument
+   (`UpdateExternalAttribution(attributionString, "branch", …)`), and the parameter is now typed. They
+   need `AdaptyExternalAttributionProvider.Branch` and so on. Left alone here because this branch is
+   KMP-scoped; spun off as a separate task 2026-09-09.
+   Also worth reporting upstream: at `main` the `UpdateExternalAttribution` doc-comment calls the
+   jsonString form an overload and says "the dictionary overload is the default path", but the
+   dictionary overload does not exist — `UpdateExternalAttribution(string jsonString,
+   AdaptyExternalAttributionProvider provider, Action<AdaptyError>)` is the only signature at 4.1.0,
+   4.1.1 and `main` (143 `.cs` files scanned, no extensions file). Unity callers must serialize first.
+   **Third instance of the same failure mode on this rollout** (Capacitor's point 1, KMP's points 1-2,
+   now Unity's): a platform's API kept moving after the docs pass read it. In all three the later
+   commit landed within days and the entry recorded an absence.
 2. **The JSON-string overload stays public** in Unity (`UpdateExternalAttribution(jsonString, …)`),
    unlike iOS 4.1 which removed it. No "deserialize first" migration step.
 3. **No preload APIs** — `preloadFlows`/`preloadOnboardings` did not come to Unity 4.1;
@@ -260,6 +279,27 @@ Discrepancies vs the Android canon (verified against `adapty/api/adapty.klib.api
     the file imports `Tabs` but has no tab group — so the KMP examples follow that convention.
     The four MMP articles were deliberately left untouched. **Do not "fix" this by writing vendor
     bridging code for KMP or Capacitor** — re-check whether a vendor has shipped a KMP SDK first.
+13. **`attribution-integration.mdx` § Manual attribution now covers all seven platforms** (user
+    request, 2026-09-09, explicitly overriding the platform-branch scope rule for this one article).
+    It was Swift-only before. Both steps — the attribution map and the `updateExternalAttribution`
+    call — are now `<Tabs groupId="current-os" queryString>` groups with iOS (Swift), Android (Kotlin),
+    React Native (TS), Flutter (Dart), Unity (C#), Kotlin Multiplatform and Capacitor.
+    Per-platform truth as of this date, each verified rather than pattern-matched:
+    - **Android / KMP**: `AdaptyExternalAttributionProvider.CUSTOM`.
+    - **Unity**: `AdaptyExternalAttributionProvider.Custom`, and the attribution goes in as a
+      **serialized JSON string** (only overload — see point 1), so the tab shows
+      `JsonConvert.SerializeObject` with Newtonsoft, which Unity already requires.
+    - **Capacitor**: `adapty.updateExternalAttribution({ attribution, provider: 'custom' })` — taken
+      from the merged Capacitor canon in `migration-to-capacitor-sdk-v4.mdx`, not inferred.
+    - **Flutter / React Native**: still the **old** `updateAttribution` with a plain string, because
+      4.1 has not shipped for either (this table's own rows say flutter `in progress`, react-native
+      `not started`). A `:::note` under the second tab group says so, following the version-scoped
+      wording `appsflyer.mdx` already uses. **Delete that note and move both tabs to
+      `updateExternalAttribution` when those platforms ship 4.1.**
+    Indented `<Tabs>` inside an ordered-list item was verified to render, not merely parse: the page
+    was served from a dev server and checked for leaked `&lt;Tabs`, `role="tablist"` groups, and
+    intact step numbering. The pattern was already in production in `quickstart-products.mdx` (at
+    8-space indent), `sdk-installation-react-native-expo.mdx` and `branch.mdx`.
 12. `kmp-check-subscription-status.mdx` uses the v3 API (`getPaywall`, `createPaywallView`,
     `paywall.hasViewConfiguration`) with no `<SDKv3>`/`<SDKv4>` wrapper, unlike `kmp-get-pb-paywalls`
     which is properly dual-versioned. Pre-existing inconsistency, not 4.1 fallout — left alone.
