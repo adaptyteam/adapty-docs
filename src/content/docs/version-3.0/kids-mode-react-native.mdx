@@ -7,7 +7,7 @@ metadataTitle: "Kids Mode in React Native SDK | Adapty Docs"
 If your React Native application is intended for kids, you must follow the policies of [Apple](https://developer.apple.com/kids/) and [Google](https://support.google.com/googleplay/android-developer/answer/9893335). If you're using the Adapty SDK, a few simple steps will help you configure it to meet these policies and pass app store reviews.
 
 :::important
-On iOS, Kids Mode is enabled through the `KidsMode` Swift package trait, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. It requires the v4 SDK (which installs the native iOS SDK through Swift Package Manager) and **Xcode 26** or later. See [Updates in your iOS Podfile](#updates-in-your-ios-podfile) below.
+On iOS, Kids Mode is enabled through the `KidsMode` Swift package trait, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. It requires the v4 SDK and **Xcode 26** or later. How you apply the trait depends on the package manager your iOS project uses — see [Updates in your iOS project](#updates-in-your-ios-project).
 :::
 
 ## What's required?
@@ -49,11 +49,17 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
 });
 ```
 
-### Updates in your iOS Podfile
+### Updates in your iOS project
 
-For the App Store Kids Category (or COPPA compliance), the native iOS SDK must be built with the `KidsMode` Swift package trait, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. React Native installs the native SDK through Swift Package Manager, which can't forward package traits, so the SDK provides a Podfile helper that applies the trait for you. This step requires **Xcode 26** or later.
+For the App Store Kids Category (or COPPA compliance), the native iOS SDK must be built with the `KidsMode` Swift package trait, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. This step requires **Xcode 26** or later.
 
-In `ios/Podfile`, require the helper and call it **after** `react_native_post_install`:
+Swift Package Manager can't forward package traits through either integration path, so Adapty React Native SDK provides a tool that applies the trait for you. Pick the one that matches how your iOS project is set up, as described in [Install Adapty SDK](sdk-installation-react-native-pure#install-adapty-sdk).
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="cocoapods" label="CocoaPods" default>
+
+The SDK ships a Podfile helper. In `ios/Podfile`, require the helper and call it **after** `react_native_post_install`:
 
 ```ruby showLineNumbers title="ios/Podfile"
 require Pod::Executable.execute_command('node', ['-p',
@@ -81,7 +87,46 @@ Then run `pod install`:
 cd ios && pod install
 ```
 
-To confirm Kids Mode is active, check that the `adapty.activate(...)` log line reports `kids_mode_enabled: true`. Keep the helper call in `post_install` permanently — React Native recreates the Swift package references on every `pod install`, and the helper re-applies the trait each time.
+Keep the helper call in `post_install` permanently — React Native recreates the Swift package references on every `pod install`, and the helper re-applies the trait each time.
+
+</TabItem>
+
+<TabItem value="spm" label="Swift Package Manager (experimental)">
+
+The SDK ships the `adapty-spm-kids-mode` command. Run it as a postinstall hook in your app's `package.json`:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-spm-kids-mode enable"
+  }
+}
+```
+
+Then reinstall your dependencies to run the hook for the first time:
+
+```sh showLineNumbers title="Shell"
+npm install
+
+# or using yarn
+yarn install
+```
+
+The hook belongs in `package.json` permanently. React Native's Swift Package Manager autolinking has no notion of package traits and regenerates the aggregator package on every sync, so the command enables the trait in the SDK's own manifest inside `node_modules` — which every install replaces.
+
+After you enable or disable Kids Mode, clean the build folder before the next iOS build (**Product → Clean Build Folder** in Xcode).
+
+:::note
+`adapty-spm-kids-mode enable` prints a warning, without failing the install, when it can't confirm a Swift Package Manager integration or detects a CocoaPods app — where React Native reads no `Package.swift`, so the trait has no effect. When your iOS project is outside the directory you install from, pass `--app-root=path/to/app`.
+:::
+
+To turn Kids Mode back off, change the hook to `adapty-spm-kids-mode disable`.
+
+</TabItem>
+
+</Tabs>
+
+To confirm Kids Mode is active, verify that the `adapty.activate(...)` log line reports `kids_mode_enabled: true`.
 
 ### Updates in your Android manifest
 
