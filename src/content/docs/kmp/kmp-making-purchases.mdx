@@ -173,17 +173,16 @@ Adapty.activate(
     // handle the error
 }
 ```
+
 ## In-app purchases from the App Store
 
 :::info
-Promoted in-app purchases are supported starting from SDK version 4.1 and require **iOS 16.4** or later. On devices below iOS 16.4, they don't reach your app. The listener never fires on Android.
+Promoted in-app purchases are supported starting from SDK version 4.1 and require **iOS 16.4** or later. On devices below iOS 16.4, they don't reach your app. This is an iOS-only feature: on Android the listener never fires, and `makePromotedPurchase` returns an `AdaptyErrorCode.DEVELOPER_ERROR`.
 :::
 
-When a user starts a purchase from your App Store product page and the transaction carries over to your app, the SDK completes it automatically — the Apple purchase system screen shows right away, and Adapty processes the transaction like any other purchase. This needs no code on your side.
+When a user starts a purchase from your App Store product page and the transaction carries over to your app, the SDK hands you the product through an `OnPromotedPurchaseListener`. Completing the purchase is up to your app: pass the product to `makePromotedPurchase`. Because you control when that happens, you can show your own screen before the purchase starts.
 
-If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, the purchase goes through at the base price.
-
-To take over completion yourself — for example to show your own screen first — set an `OnPromotedPurchaseListener` and pass the product to `makePromotedPurchase`:
+To support promoted purchases, register the listener and complete the purchase from it:
 
 ```kotlin showLineNumbers
 import com.adapty.kmp.Adapty
@@ -199,8 +198,12 @@ Adapty.setOnPromotedPurchaseListener(OnPromotedPurchaseListener { product ->
 ```
 
 :::warning
-While your listener is set, the SDK stops completing promoted purchases for you. If your listener never calls `makePromotedPurchase`, the purchase never happens: the App Store hands the product to your app and waits. Pass `null` to `setOnPromotedPurchaseListener` to restore the automatic behavior.
+Without a registered listener, a promoted purchase never completes: the App Store hands the product to your app and waits. Passing `null` to `setOnPromotedPurchaseListener` also stops promoted purchases from working.
 :::
+
+Register the listener at app startup, right after `Adapty.activate`. A promoted purchase usually cold-launches the app, so it often reaches the SDK before your registration runs. The SDK holds one such purchase and delivers it as soon as you register, keeping only the most recent one, and writes a console warning each time it holds a purchase.
+
+If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, the purchase goes through at the base price.
 
 `makePromotedPurchase` takes no purchase parameters — a promoted product comes from the App Store rather than a paywall, so it carries no paywall context. It returns the same `AdaptyPurchaseResult` as `makePurchase`.
 
