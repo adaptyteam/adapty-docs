@@ -1,0 +1,257 @@
+---
+title: "Procesar datos de flows en el SDK de Capacitor"
+description: "Guarda y utiliza los datos que tus usuarios introducen en los flows de tu app Capacitor con el SDK de Adapty."
+metadataTitle: "Procesar datos de flows | SDK de Capacitor | Documentación de Adapty"
+---
+
+Cuando un usuario escribe en un campo de texto, responde un cuestionario o activa un interruptor en un [flow](adapty-flow-builder), el SDK pasa el valor a tu app a través de su callback de análisis.
+
+Las apps suelen usar esos datos para:
+
+- **Registrar usuarios en su propio backend**: Toma el correo electrónico y el nombre que el usuario introdujo en tu flow de onboarding, y crea su cuenta cuando el flow se cierre.
+- **Guardar respuestas y preferencias**: Registra lo que el usuario seleccionó para que tu app pueda actuar en consecuencia más adelante — por ejemplo, [escríbelo en su perfil de Adapty](capacitor-setting-user-attributes) como atributos personalizados.
+- **Personalizar flows futuros**: Guarda las respuestas del cuestionario como atributos personalizados y luego apunta a un placement posterior para que cada segmento vea un flow diferente, o un paywall distinto dentro de él.
+- **Alimentar plataformas de analítica de terceros**: Reenvía las respuestas a Amplitude, Mixpanel o cualquier otra herramienta de analítica de producto que utilices.
+
+Los inputs y los grupos seleccionables reportan sus valores automáticamente. Para distinguirlos en tu código, asigna un **Element ID** significativo a cada input y un **Group ID** a cada grupo seleccionable en el builder.
+
+## Antes de comenzar \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Recibir valores de entrada \{#receive-input-values\}
+
+Los valores de entrada llegan al mismo handler que cualquier otro evento de analítica de un flow, con el nombre de evento `flow_user_input`. Registra `onAnalytics` junto con el resto de tus handlers de eventos del flow:
+
+```typescript showLineNumbers title="Capacitor"
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+El callback `onAnalytics` entrega todos los eventos de analíticas de un flow, incluidas las [vistas de pantalla](capacitor-flow-screen-views).
+- El parámetro `name` contiene el nombre del evento. Para filtrar los eventos de entrada del usuario, compara `name` con `flow_user_input`.
+- El parámetro `element_type` indica la categoría del elemento.
+- El valor de la entrada se almacena en distintos parámetros según el tipo de elemento:
+     - Los campos de texto, selectores y alternadores guardan la entrada del usuario en `value`
+     - Los grupos seleccionables informan las opciones activas en `item_ids` e `item_titles`
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId as string;
+
+  switch (params.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = params.value as string;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      // Unix time in milliseconds.
+      const date = new Date(params.value as number);
+      break;
+    }
+    case 'single_choice': {
+      const optionId = (params.item_ids as string[])[0];
+      break;
+    }
+    case 'multi_choice': {
+      const optionIds = params.item_ids as string[];
+      break;
+    }
+    case 'toggle': {
+      const isOn = params.value as boolean;
+      break;
+    }
+  }
+}
+```
+
+<FlowInputVerify />
+
+## Cuando tu app recibe el input \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Qué recibes \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Ejemplos de eventos \{#event-examples\}
+
+Estos ejemplos muestran las propiedades disponibles en cada evento, con valores ilustrativos en los comentarios.
+
+<Details>
+<summary>Entrada de texto, email, número y teléfono (Haz clic para expandir)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>Selectores de fecha, hora y fecha-hora (Click to expand)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Haz clic para expandir)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Haz clic para expandir)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## Entrega y limitaciones \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Guarda cada valor de entrada tal como lo recibe tu handler y envía el conjunto completo cuando el flow se cierre. Para detectar ese momento, registra un handler `onDisappeared` junto a `onAnalytics`. Se ejecuta cuando la vista del flow se cierra, ya sea porque el usuario completó el flow o lo cerró a medias.
+
+## Casos de uso \{#use-cases\}
+
+### Registrar usuarios en tu backend \{#register-users-on-your-backend\}
+
+Recoge los valores a medida que llegan y envíalos en cuanto el flow se cierre, para que una sola petición contenga el conjunto completo de respuestas.
+
+El flow desaparece tanto si el usuario lo completó como si lo abandonó a mitad. Comprueba que tienes los campos que necesitas antes de llamar a tu backend.
+
+El flow no puede mostrar errores procedentes de tu backend. El valor de retorno del handler solo cierra la vista del flow, y el SDK no dispone de ningún método para enviar datos a un flow en ejecución. Si el registro falla —por ejemplo, porque el email ya está en uso—, muestra el error en tu propia UI después de que el flow se cierre.
+
+```typescript showLineNumbers title="Capacitor"
+const flowAnswers: Record<string, string> = {};
+
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### Enriquece los perfiles de usuario con datos \{#enrich-user-profiles-with-data\}
+
+Para vincular lo que un usuario introduce con su perfil y evitar pedirle los mismos datos dos veces, [actualiza el perfil de usuario](capacitor-setting-user-attributes) a medida que lleguen los valores.
+
+Por ejemplo, si tu flow tiene un campo de texto con el ID de elemento `name` y un campo de correo electrónico con el ID de elemento `email`:
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams: Partial<AdaptyProfileParameters> = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch((error) => {
+    // handle the error
+  });
+}
+```
+
+### Personalizar flows mostrados más adelante \{#customize-flows-shown-later\}
+
+Las respuestas del quiz también pueden decidir qué ve un usuario en un [placement](placements) posterior: un flow diferente o un paywall distinto dentro de él.
+
+Por ejemplo, pregunta a los usuarios sobre su experiencia con el deporte en tu flow de onboarding y luego muestra a cada grupo su propio flow con productos y textos diferentes.
+
+1. Añade un [quiz](onboarding-quizzes) a tu flow. Asigna al [grupo seleccionable](flow-selectable-elements) el Group ID `experience` y a cada opción un Element ID significativo.
+2. Gestiona las respuestas y [establece atributos personalizados](capacitor-setting-user-attributes) para el usuario.
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  const optionId = (params.item_ids as string[])[0];
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: optionId },
+    })
+    .catch((error) => {
+      // handle the error
+    });
+}
+```
+
+3. [Crea un segmento](segments) para cada valor de atributo personalizado.
+4. Crea un [placement](placements) y añade una [audiencia](audience) para cada segmento.
+5. [Muestra el flow](capacitor-present-paywalls) de ese placement en tu app.

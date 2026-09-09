@@ -1,0 +1,61 @@
+---
+title: "Hiển thị paywall được nhắm mục tiêu bởi AA trong lần khởi chạy đầu tiên với Kotlin Multiplatform SDK"
+description: "Chờ attribution từ Apple Ads trước khi yêu cầu paywall trong Kotlin Multiplatform bằng AdaptyProfile.appliedAttributionSources."
+metadataTitle: "Hiển thị paywall nhắm mục tiêu AA trong lần khởi chạy đầu tiên | Kotlin Multiplatform SDK | Tài liệu Adapty"
+---
+
+Bài viết này áp dụng cho bản build iOS của ứng dụng. Attribution từ Apple Ads chỉ tồn tại trên iOS.
+
+Apple Ads (AA) attribution được nhận không đồng bộ sau khi gọi `Adapty.activate()`. Nếu bạn gọi `getFlow` quá sớm, attribution thường chưa kịp cập nhật và Adapty sẽ xử lý placement theo đối tượng mặc định — bỏ qua các paywall được phân khúc theo AA. `AdaptyProfile.appliedAttributionSources` cho phép ứng dụng phát hiện khi AA attribution đã được áp dụng vào hồ sơ người dùng, để yêu cầu paywall có thể chờ cho đến khi phân khúc AA được xử lý đúng.
+
+:::important
+Thuộc tính này chỉ báo cáo Apple Ads. Attribution từ các nhà cung cấp khác vẫn hiển thị trên hồ sơ người dùng và có thể dùng trong bộ lọc phân khúc, nhưng chưa hiển thị ở đây.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+- Adapty Kotlin Multiplatform SDK **4.0** trở lên.
+- Apple Ads đã được cấu hình cho ứng dụng trong Adapty. Xem [Apple Ads](apple-search-ads).
+
+:::note
+Các ví dụ sử dụng tên API từ SDK 4.0. Trên SDK 3.x, paywall được lấy bằng `getPaywall`/`getPaywallForDefaultAudience`, trả về `AdaptyPaywall`. Xem [Migrate Adapty Kotlin Multiplatform SDK to v4](migration-to-kmp-sdk-v4).
+:::
+
+## Cách hoạt động \{#how-it-works\}
+
+Sau khi gọi `Adapty.activate()`, SDK sẽ yêu cầu dữ liệu attribution từ Apple Ads trong nền và chuyển tiếp kết quả đó lên backend của Adapty. Khi AA trở thành nguồn attribution đang hoạt động cho hồ sơ người dùng, SDK sẽ gửi một `AdaptyProfile` đã được cập nhật đến `OnProfileUpdatedListener` của bạn, với `"apple_search_ads"` trong danh sách `appliedAttributionSources`.
+
+Danh sách rỗng có thể có nghĩa là một trong các trường hợp sau:
+
+- Attribution từ Apple Ads chưa được xử lý cho hồ sơ người dùng này.
+- Chưa có dữ liệu attribution nào đến.
+- Attribution đã đến từ một nhà cung cấp khác, và danh sách này không ghi nhận trường hợp đó.
+
+Ngay cả khi danh sách trống, `getFlow` vẫn có thể gọi an toàn — Adapty sẽ xử lý yêu cầu dựa theo đối tượng khớp với trạng thái hồ sơ người dùng hiện tại, thường là đối tượng mặc định.
+
+:::important
+Thời gian chờ chỉ áp dụng cho **lần khởi chạy đầu tiên**. Sau khi attribution Apple Ads đã được ghi lại, nó sẽ được lưu trên hồ sơ người dùng vĩnh viễn. Ở mọi lần khởi chạy tiếp theo, hồ sơ đã được cache sẽ sẵn có `"apple_search_ads"` trong `appliedAttributionSources`, listener sẽ kích hoạt ngay lập tức với giá trị đó, và `getFlow` trả về paywall theo phân khúc Apple Ads mà không cần chờ đợi.
+:::
+
+## Triển khai \{#implementation\}
+
+Khi khởi chạy lần đầu, hãy theo dõi `"apple_search_ads"` trong hồ sơ người dùng và áp dụng thời gian chờ tối đa — nếu attribution từ Apple Ads không bao giờ đến, những người dùng đó vẫn cần được hiển thị paywall.
+
+1. **Kích hoạt SDK.** Xem [Cài đặt & cấu hình Kotlin Multiplatform SDK](sdk-installation-kotlin-multiplatform).
+2. **Đăng ký nhận cập nhật hồ sơ người dùng** với `Adapty.setOnProfileUpdatedListener`. Nếu bạn chưa thiết lập listener, xem [Lắng nghe cập nhật gói đăng ký](kmp-check-subscription-status#listen-to-subscription-updates).
+3. **Theo dõi `"apple_search_ads"` trong `appliedAttributionSources`.** Khi nó xuất hiện, hãy yêu cầu paywall — Adapty sẽ trả về biến thể được phân khúc theo AA:
+
+```kotlin
+Adapty.setOnProfileUpdatedListener { profile ->
+    if ("apple_search_ads" in profile.appliedAttributionSources) {
+        // load the paywall via Adapty.getFlow(placementId)
+    }
+}
+```
+
+4. **Khởi động bộ đếm thời gian 3–5 giây song song với gói đăng ký.** Nếu bộ đếm kết thúc trước khi `"apple_search_ads"` xuất hiện, hãy yêu cầu paywall đối tượng mặc định bằng `getFlowForDefaultAudience`. Hàm này trả về paywall mà không cần chờ phân khúc.
+
+Đường dẫn nào kích hoạt trước thì tải paywall đó; đường dẫn còn lại nên bỏ qua. Dùng một biến trạng thái duy nhất (ví dụ: `hasLoadedPaywall`) để tránh tải trùng lặp, tránh trường hợp paywall bị fetch hai lần. Hãy cấu hình [paywall dự phòng](kmp-use-fallback-paywalls) cho placement đó để người dùng không bị mắc kẹt nếu yêu cầu mạng thất bại.
+
+`setOnProfileUpdatedListener` chỉ nhận một listener. Nếu ứng dụng của bạn đã sử dụng nó cho mục đích khác (ví dụ: [lắng nghe cập nhật gói đăng ký](kmp-check-subscription-status#listen-to-subscription-updates)), hãy thêm logic kiểm tra vào listener hiện có thay vì đăng ký một listener thứ hai.

@@ -1,0 +1,46 @@
+---
+no_index: true
+---
+
+El callback entrega dos eventos. Filtra por `name` para mostrar únicamente los eventos `flow_user_input`. El payload JSON de respuesta tiene este aspecto:
+
+```json
+{
+  "name": "flow_user_input",
+  "instanceId": "scr_registration",
+  "isBackendEvent": false,
+  "isCustomerEvent": true,
+  "element_id": "email",
+  "element_type": "email_input",
+  "value": "jane@example.com"
+}
+```
+
+| Parámetro         | Descripción |
+|:------------------|:------------|
+| `name`            | `flow_user_input` para eventos de entrada, `flow_screen_showed` para vistas de pantalla. |
+| `instanceId`      | El ID de la pantalla del input. Los IDs de elemento son únicos dentro de una pantalla, no en todo el flow. Si tu flow tiene inputs en más de una pantalla, combina `instanceId` con `element_id` al filtrar eventos. |
+| `element_id`      | El **Element ID** del [input](builder-inputs-and-forms), o el **Group ID** del [grupo seleccionable](flow-selectable-elements). |
+| `element_type`    | El tipo de elemento que envió el evento. Determina cuál de los parámetros siguientes contiene el valor del input. |
+| `value`           | **Solo campos de texto, selectores y toggles.** El valor del input: una cadena para campos de texto, un entero para selectores, un booleano para toggles. |
+| `item_ids`        | **Solo grupos seleccionables de elección única y múltiple.** Los **Element IDs** de las opciones seleccionadas, en el orden en que aparecen en el builder. Una entrada para un grupo de elección única; cualquier número para un grupo de elección múltiple. |
+| `item_titles`     | **Solo grupos seleccionables de elección única y múltiple.** Los títulos de las opciones listadas en `item_ids`, en el mismo orden. Nunca está vacío: una opción sin título informa su ID en su lugar. |
+| `isCustomerEvent` | Indicador de utilidad, siempre `true` para este evento. Marca los eventos que el SDK entrega a tu callback. Resulta útil si un mismo handler reenvía todos los eventos del flow a tu sistema de análisis y filtras por este indicador en lugar de por `name`. |
+| `isBackendEvent`  | Indicador de utilidad, siempre `false` para este evento. Marca los eventos que Adapty también registra para su propio análisis. `false` confirma que lo que los usuarios introducen llega a tu app y solo a ella — Adapty no lo recibe ni lo almacena. |
+
+Lo que reporta cada elemento:
+
+| En el builder | `element_type` | Parámetro que almacena el valor | Qué contiene |
+|:--------------|:---------------|:--------------------------------|:-------------|
+| Input de **Texto**, **Número**, **Número de teléfono** | `text_input`, `number_input`, `phone_input` | `value` | La cadena literal que escribió el usuario. Los números llegan como cadenas, no como tipos numéricos. |
+| Input de **E-mail** | `email_input` | `value` | La cadena literal que escribió el usuario, aunque no haya superado la validación de formato del builder. Valídala en tu lado antes de usarla. |
+| Input de **Contraseña** | ninguno | ninguno | No envía ningún evento. |
+| Input de **Fecha** | `date_picker` | `value` | Tiempo Unix en milisegundos, como entero, a medianoche local de la fecha seleccionada. |
+| Input de **Hora** | `time_picker` | `value` | Tiempo Unix en milisegundos, como entero, redondeado hacia abajo al minuto. |
+| Input de **Fecha y hora** | `date_picker` y `time_picker` | `value` | Dos elementos, un selector de fecha y un selector de hora. Cada uno envía su propio evento. |
+| Input cambiado a **Fecha y hora** en el desplegable **Type** | `date_time_picker` | `value` | Tiempo Unix en milisegundos, como entero, redondeado hacia abajo al minuto. |
+| Grupo de **elección única** | `single_choice` | `item_ids`, `item_titles` | Dos arrays. `item_ids`: un array con el Element ID de la opción seleccionada. `item_titles`: un array con el título de esa opción. |
+| Grupo de **elección múltiple** | `multi_choice` | `item_ids`, `item_titles` | Dos arrays. `item_ids`: los Element IDs de todas las opciones seleccionadas, en el orden en que aparecen en el builder. `item_titles`: sus títulos, en el mismo orden. Ambos arrays están vacíos cuando no hay nada seleccionado. |
+| Grupo de **Toggle** | `toggle` | `value` | Un booleano. |
+
+Para bifurcar según una respuesta, compara `item_ids`, no `item_titles`. El título es derivado: el **Element Title** de la opción si lo definiste, si no su texto en tu idioma predeterminado, y si no su Element ID. Un usuario que vio el flow en otro idioma vio un texto diferente.

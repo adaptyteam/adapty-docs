@@ -75,6 +75,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | paywall-head-picture | — | marketer | 5 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
+| reuse-flow-elements | — | marketer | 8 | tutorial |
 | using-custom-fonts-in-flow-builder | — | marketer | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

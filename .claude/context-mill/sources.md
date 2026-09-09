@@ -112,11 +112,14 @@ ref_pattern: release/*
 kind: local-clone
 
 **Do not treat this repo as the source of the public API — see `jscore` below**, same rule as
-`rn-sdk`: this package wraps `@adapty/core`. `origin/master` has **no v4 tag at all yet** (full tag
-list checked; latest reachable tag is `v3.17.1`) — Capacitor v4 is unreleased, in progress on
-`origin/release/4.0.0` and a newer `origin/release/4.0.1-beta.1`. The local clone's checked-out branch
-is `release/4.0.0`, pinning `@adapty/core@4.0.0-beta.1` — check `jscore`'s current state before writing
-docs against that pin, it may already be stale. Native iOS side is SPM-only: `Package.swift` present,
+`rn-sdk`: this package wraps `@adapty/core`. **Capacitor v4 is GA** (corrected 2026-09-07; an
+earlier version of this entry said v4 was unreleased). `v4.1.0` (2026-08-28) was announced in
+#product-tech-releases as "the first stable release of v4.x", `v4.1.1` followed on 2026-09-01, and
+npm's `latest` dist-tag is `4.1.1` (`beta` points at `4.0.1-beta.1`). The beta line ran
+`v4.0.0-beta.1` (2026-07-10) through `v4.0.2-beta.1` (2026-08-14). Every release has a matching
+`release/<version>` branch, `release/4.1.1` being the newest, so `ref_pattern` still holds. Each tag
+pins the same-numbered core (`v4.1.0` → `@adapty/core@4.1.0`, `v4.1.1` → `4.1.1`): read the tag's
+`package.json` pin, then that `jscore` ref — never a `jscore` branch tip. Native iOS side is SPM-only: `Package.swift` present,
 no `Podfile`/`.podspec` anywhere in the repo. No Kids Mode mechanism exists here or in `jscore`
 (grepped both `src/` trees for `kidsMode`/`KidsMode`/`kids_mode`, zero hits) — do not document a
 Capacitor Kids Mode toggle.
@@ -330,6 +333,13 @@ while all five of its releases have shipped.
 
 Registered 2026-08-11. Read at `1a147338` (2026-08-13).
 
+**Unreachable as of 2026-08-27.** The clone at the `path:` above is gone, and the GitLab account
+`GeneTiterman` (248) has no grant: SSH `git ls-remote` denied, `GET /api/v4/namespaces/noty-wave` →
+`404 Namespace Not Found`. Access requested 2026-08-27. Until it lands, the readable substitute for
+frontend facts is the production bundle `https://mail.adapty.io/assets/index-*.js` — gating logic,
+tooltips, error codes, field lists and nav labels are all in it verbatim. Nothing backend can be
+checked that way. Note SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
+
 ## mail-frontend — Adapty Mail dashboard (noty-wave)
 
 path: ~/Documents/noty-wave-frontend
@@ -362,6 +372,13 @@ the path from the section name.
 adding a `customSlug` — 404s from inside the product, and the link checker can't catch it because the
 caller isn't in this repo. Moving an article between sidebar categories is safe; URLs come from the
 filename alone. Re-grep before any Mail rename.
+
+**Unreachable as of 2026-08-27.** The clone at the `path:` above is gone, and the GitLab account
+`GeneTiterman` (248) has no grant: SSH `git ls-remote` denied, `GET /api/v4/namespaces/noty-wave` →
+`404 Namespace Not Found`. Access requested 2026-08-27. Until it lands, the readable substitute for
+frontend facts is the production bundle `https://mail.adapty.io/assets/index-*.js` — gating logic,
+tooltips, error codes, field lists and nav labels are all in it verbatim. Nothing backend can be
+checked that way. Note SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
 
 Read at `8b5613a` (2026-08-13).
 

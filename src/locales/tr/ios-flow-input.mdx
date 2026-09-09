@@ -1,0 +1,289 @@
+---
+title: "iOS SDK'da flow'lardan gelen verileri işleme"
+description: "Kullanıcılarınızın flow'larda girdiği verileri iOS uygulamanızda Adapty SDK ile kaydedin ve kullanın."
+metadataTitle: "Flow'lardan gelen verileri işleme | iOS SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder)'daki bir giriş alanına bir şey yazdığında, bir quiz'i yanıtladığında veya bir düğmeyi çevirdiğinde, SDK bu değeri analytics callback'i aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri genellikle şu amaçlarla kullanır:
+
+- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unuzda girdiği e-posta adresi ve adı alın, flow kapandığında hesabını oluşturun.
+- **Yanıtları ve tercihleri kaydedin**: Kullanıcının ne seçtiğini takip edin, böylece uygulamanız bunu daha sonra kullanabilsin — örneğin, [bunu Adapty profiline yazın](setting-user-attributes) ve özel attribute olarak saklayın.
+- **Gelecekteki flow'ları özelleştirin**: Quiz yanıtlarını özel attribute olarak kaydedin, ardından sonraki bir placement'ı hedefleyin; böylece her segment farklı bir flow veya içinde farklı bir paywall görsün.
+- **Üçüncü taraf analitik platformlara iletin**: Yanıtları Amplitude, Mixpanel veya kullandığınız başka bir ürün analitiğine iletin.
+
+Girdiler ve seçilebilir gruplar, değerlerini otomatik olarak raporlar. Kodunuzda girdileri birbirinden ayırt etmek için, builder'da her girdiye anlamlı bir **Element ID** ve her seçilebilir gruba bir **Group ID** verin.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Giriş değerlerini alma \{#receive-input-values\}
+
+Giriş değerleri, bir flow'dan gelen diğer tüm analitik olaylarla aynı callback'e, `flow_user_input` olay adı altında iletilir. Callback'i diğer flow olay işleyicilerinizle birlikte kaydedin.
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+`.flow` modifier'ına bir `didReceiveAnalyticEvent` closure'ı iletin:
+
+```swift showLineNumbers title="Swift"
+Text("Hello, AdaptyUI!")
+    .flow(
+        isPresented: $flowPresented,
+        flowConfiguration: flowConfiguration,
+        didFinishPurchase: { product, purchaseResult in /* handle the event */ },
+        didFailPurchase: { product, error in /* handle the error */ },
+        didFinishRestore: { profile in /* handle the event */ },
+        didFailRestore: { error in /* handle the error */ },
+        didReceiveError: { error in flowPresented = false },
+        didReceiveAnalyticEvent: { name, params in
+            handleFlowInput(name: name, params: params)
+        }
+    )
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+`AdaptyFlowControllerDelegate` üzerinde metodu uygulayın:
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    handleFlowInput(name: name, params: params)
+}
+```
+
+</TabItem>
+</Tabs>
+
+Closure ve delegate metodu aynı iki argümanı alır; bu nedenle değeri okuyan kod her iki durumda da aynıdır.
+
+`didReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](ios-flow-screen-views) dahil bir flow'daki tüm analitik olayları iletir.
+- `name` parametresi olay adını içerir. Kullanıcı girişi olaylarını filtrelemek için `name`'i `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi öğe kategorisini belirtir.
+- Girişin değeri, öğe türüne bağlı olarak farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
+     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` ile bildirir
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let elementType = params["element_type"] as? String
+    else { return }
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    let screenId = params["instanceId"] as? String
+
+    switch elementType {
+    case "text_input", "email_input", "number_input", "phone_input":
+        let text = params["value"] as? String
+    case "date_picker", "time_picker", "date_time_picker":
+        // Integer Unix time in milliseconds, not the seconds Date expects.
+        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
+    case "single_choice":
+        let optionId = (params["item_ids"] as? [String])?.first
+    case "multi_choice":
+        let optionIds = params["item_ids"] as? [String]
+    case "toggle":
+        let isOn = params["value"] as? Bool
+    default:
+        break
+    }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girdiyi ne zaman alır \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Etkinlik örnekleri \{#event-examples\}
+
+Bu örnekler, her etkinlikte mevcut olan özellikleri, açıklayıcı değerlerle birlikte yorumlarda göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    name;                      // "flow_user_input"
+    params["name"];            // "flow_user_input"
+    params["instanceId"];      // "scr_J260KU5q"
+    params["isCustomerEvent"]; // true
+    params["isBackendEvent"];  // false
+    params["element_id"];      // "email"
+    params["element_type"];    // "email_input"
+    params["value"];           // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçiciler (Genişletmek için tıklayın)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "birthday"
+    params["element_type"];    // "date_picker"
+    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Tek seçim (Genişletmek için tıklayın)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "experience"
+    params["element_type"];    // "single_choice"
+    params["item_ids"];        // ["pro"]
+    params["item_titles"];     // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "interests"
+    params["element_type"];    // "multi_choice"
+    params["item_ids"];        // ["sports", "music"]
+    params["item_titles"];     // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "reminders"
+    params["element_type"];    // "toggle"
+    params["value"];           // true   (Bool)
+}
+```
+</Details>
+
+## Teslimat ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her girdi değerini handler'ınız aldığında saklayın ve flow kapandığında tam seti gönderin. Bu anı yakalamak için UIKit'te `AdaptyFlowControllerDelegate` üzerinde `flowControllerDidDisappear` metodunu uygulayın ya da SwiftUI'de `.flow` modifier'ına bir `didDisappear` closure'ı geçirin. Her ikisi de flow'un görünümü ekrandan ayrıldıktan sonra çalışır; kullanıcı flow'u tamamlamış ya da kapatmış olsun fark etmez.
+
+## Kullanım Senaryoları \{#use-cases\}
+
+### Kullanıcıları arka uç sisteminize kaydedin \{#register-users-on-your-backend\}
+
+Değerler geldikçe toplayın ve flow kapandığında tek bir istekle gönderin; böylece bir istek eksiksiz bir yanıt kümesi taşır.
+
+Kullanıcı flow'u tamamlamış olsun ya da yarıda bırakmış olsun, görünüm kaybolur. Arka uç sisteminizi çağırmadan önce ihtiyaç duyduğunuz alanları kontrol edin.
+
+Flow, arka ucunuzdan gelen hataları gösteremez. Callback'in dönüş değeri yoktur ve SDK'nın çalışan bir flow'a veri gönderen bir metodu bulunmamaktadır. Kayıt başarısız olursa, örneğin e-posta adresi zaten kullanılıyorsa, hatayı flow kapandıktan sonra kendi arayüzünüzde gösterin.
+
+```swift showLineNumbers title="Swift"
+private var flowAnswers: [String: String] = [:]
+
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    flowAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    guard flowAnswers["email"] != nil else { return }
+
+    // Send flowAnswers to your backend here to create the account.
+
+    flowAnswers.removeAll()
+}
+```
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği bilgileri profiline bağlamak ve aynı bilgileri tekrar sormaktan kaçınmak için değerler geldikçe [kullanıcı profilini güncelleyin](setting-user-attributes).
+
+Örneğin, flow'unuzda `name` Element ID'li bir metin girişi ve `email` Element ID'li bir e-posta girişi varsa:
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    let builder = AdaptyProfileParameters.Builder()
+
+    switch elementId {
+    case "name":
+        builder.with(firstName: value)
+    case "email":
+        builder.with(email: value)
+    default:
+        return
+    }
+
+    // Delegate methods are synchronous; kick off the async update in a Task.
+    Task {
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+### Daha sonra gösterilen flow'ları özelleştirme \{#customize-flows-shown-later\}
+
+Quiz yanıtları, kullanıcının daha sonra bir [placement](placements)'da göreceği şeyi de belirleyebilir — farklı bir flow veya içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara sporla deneyimlerini sorun, ardından her gruba farklı ürünler ve içerik içeren kendi flow'unu gösterin.
+
+1. Flow'unuza bir [quiz](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Group ID'sini ve her seçeneğe anlamlı bir Element ID verin.
+2. Yanıtları işleyin ve kullanıcı için [özel nitelikler ayarlayın](setting-user-attributes).
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    let builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    try? builder.with(customAttribute: optionId, forKey: "experience")
+
+    Task {
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+3. Her özel nitelik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda o placement için [flow'u görüntüleyin](ios-present-paywalls).

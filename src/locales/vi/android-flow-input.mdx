@@ -1,0 +1,262 @@
+---
+title: "Xử lý dữ liệu từ flow trong Android SDK"
+description: "Lưu và sử dụng dữ liệu người dùng nhập vào trong flow của ứng dụng Android với Adapty SDK."
+metadataTitle: "Xử lý dữ liệu từ flow | Android SDK | Tài liệu Adapty"
+---
+
+Khi người dùng nhập vào một trường đầu vào, trả lời câu hỏi, hoặc bật/tắt một nút trong [flow](adapty-flow-builder), SDK sẽ truyền giá trị đó đến ứng dụng của bạn thông qua callback analytics.
+
+Các ứng dụng thường sử dụng dữ liệu đó để:
+
+- **Đăng ký người dùng trên backend của bạn**: Lấy địa chỉ email và tên người dùng đã nhập trong flow onboarding, rồi tạo tài khoản cho họ khi flow đóng lại.
+- **Lưu câu trả lời và tùy chọn**: Theo dõi những gì người dùng đã chọn để ứng dụng có thể sử dụng sau này — ví dụ: [ghi vào hồ sơ người dùng Adapty của họ](android-setting-user-attributes) dưới dạng thuộc tính tùy chỉnh.
+- **Tùy chỉnh các flow trong tương lai**: Lưu câu trả lời quiz dưới dạng thuộc tính tùy chỉnh, sau đó nhắm mục tiêu một placement sau để mỗi phân khúc nhận được một flow khác nhau, hoặc một paywall khác bên trong đó.
+- **Gửi dữ liệu đến các nền tảng analytics bên thứ ba**: Chuyển tiếp câu trả lời đến Amplitude, Mixpanel, hoặc bất kỳ công cụ phân tích sản phẩm nào bạn đang sử dụng.
+
+Các input và selectable group tự động báo cáo giá trị của chúng. Để phân biệt các input trong code, hãy đặt cho mỗi input một **Element ID** có ý nghĩa và mỗi selectable group một **Group ID** trong builder.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Nhận giá trị đầu vào \{#receive-input-values\}
+
+Giá trị đầu vào được chuyển đến cùng callback với mọi sự kiện analytics khác từ một flow, dưới tên sự kiện `flow_user_input`. Ghi đè `onAnalyticEvent` trên listener sự kiện flow của bạn:
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        handleFlowInput(name, params)
+    }
+}
+```
+
+Callback `onAnalyticEvent` truyền tất cả các sự kiện analytics từ một flow, bao gồm cả [lượt xem màn hình](android-flow-screen-views).
+- Tham số `name` chứa tên sự kiện. Để lọc các sự kiện nhập liệu của người dùng, hãy so sánh `name` với `flow_user_input`.
+- Tham số `element_type` cho biết danh mục của phần tử.
+- Giá trị đầu vào được lưu ở các tham số khác nhau tùy theo loại phần tử:
+     - Các trường văn bản, picker và toggle lưu dữ liệu nhập của người dùng trong `value`
+     - Nhóm có thể chọn báo cáo các tùy chọn đang được chọn trong `item_ids` và `item_titles`
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"] as? String
+
+    when (params["element_type"]) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"] as? String
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
+            val millis = (params["value"] as? Number)?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
+        }
+        "multi_choice" -> {
+            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
+        }
+        "toggle" -> {
+            val isOn = params["value"] as? Boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## Khi ứng dụng nhận đầu vào \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Những gì bạn nhận được \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Ví dụ về sự kiện \{#event-examples\}
+
+Những ví dụ này minh họa các thuộc tính có trên mỗi sự kiện, với các giá trị minh họa trong phần chú thích.
+
+<Details>
+<summary>Text, email, number, and phone input (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    name                       // "flow_user_input"
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Bộ chọn ngày, giờ và ngày-giờ (Nhấn để mở rộng)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 6.45408E11   (Double — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]   (List<String>)
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]   (List<String>)
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true   (Boolean)
+}
+```
+</Details>
+
+## Phân phối và giới hạn \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Lưu từng giá trị input khi listener nhận được, và gửi toàn bộ khi flow đóng lại. Để bắt được thời điểm đó, hãy override `onFlowClosed` trong `AdaptyFlowEventListener` của bạn. Hàm này chạy khi flow view bị đóng, dù người dùng đã hoàn thành flow hay đóng giữa chừng.
+
+## Các trường hợp sử dụng \{#use-cases\}
+
+### Đăng ký người dùng trên backend của bạn \{#register-users-on-your-backend\}
+
+Thu thập các giá trị khi chúng đến và gửi chúng một lần khi flow đóng lại, để một request mang đầy đủ tất cả câu trả lời.
+
+Flow đóng lại dù người dùng đã hoàn thành hay bỏ dở giữa chừng. Hãy kiểm tra các trường bạn cần trước khi gọi backend.
+
+Flow không thể hiển thị lỗi từ backend của bạn. Callback không có giá trị trả về, và SDK không có phương thức nào gửi dữ liệu vào flow đang chạy. Nếu đăng ký thất bại, chẳng hạn do email đã được sử dụng, hãy hiển thị lỗi trong giao diện của bạn sau khi flow đóng lại.
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### Làm phong phú hồ sơ người dùng với dữ liệu \{#enrich-user-profiles-with-data\}
+
+Để liên kết dữ liệu người dùng nhập với hồ sơ của họ và tránh hỏi lại thông tin đã có, hãy [cập nhật hồ sơ người dùng](android-setting-user-attributes) ngay khi nhận được giá trị.
+
+Ví dụ, nếu flow của bạn có ô nhập văn bản với Element ID là `name` và ô nhập email với Element ID là `email`:
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+    val value = params["value"] as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (elementId) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+### Tùy chỉnh các flow hiển thị sau \{#customize-flows-shown-later\}
+
+Câu trả lời quiz cũng có thể quyết định những gì người dùng thấy tại một [placement](placements) sau đó — một flow khác, hoặc một paywall khác bên trong đó.
+
+Ví dụ: hỏi người dùng về kinh nghiệm thể thao của họ trong onboarding flow, sau đó hiển thị cho mỗi nhóm flow riêng với các sản phẩm và nội dung khác nhau.
+
+1. Thêm một [quiz](onboarding-quizzes) vào flow của bạn. Đặt cho [selectable group](flow-selectable-elements) Group ID là `experience`, và mỗi tùy chọn một Element ID có ý nghĩa.
+2. Xử lý các câu trả lời và [thiết lập custom attributes](android-setting-user-attributes) cho người dùng.
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+    if (params["element_id"] != "experience") return
+
+    val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+3. [Tạo một phân khúc](segments) cho mỗi giá trị thuộc tính tùy chỉnh.
+4. Tạo một [placement](placements) và thêm một [đối tượng](audience) cho mỗi phân khúc.
+5. [Hiển thị flow](android-present-paywalls) cho placement đó trong ứng dụng của bạn.

@@ -1,0 +1,287 @@
+---
+title: "在 Flutter SDK 中处理流程数据"
+description: "在 Flutter 应用中保存并使用用户在流程中输入的数据，借助 Adapty SDK 实现。"
+metadataTitle: "处理流程数据 | Flutter SDK | Adapty 文档"
+---
+
+当用户在[流程](adapty-flow-builder)中的输入框中输入内容、回答问题或拨动开关时，SDK 会通过其分析回调将数据传递给你的应用。
+
+应用通常使用这些数据来：
+
+- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程结束时创建其账户。
+- **保存答案和偏好设置**：记录用户的选择，供应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](flutter-setting-user-attributes)。
+- **自定义后续流程**：将问卷答案保存为自定义属性，然后针对后续版位进行定向，让每个市场细分看到不同的流程，或其中不同的付费墙。
+- **接入第三方分析平台**：将答案转发至 Amplitude、Mixpanel 或你所使用的其他产品分析工具。
+
+输入框和可选组会自动上报其值。为了在代码中区分各个输入框，请在编辑工具中为每个输入框指定有意义的 **Element ID**，并为每个可选组指定 **Group ID**。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 接收输入值 \{#receive-input-values\}
+
+输入值会随其他所有来自流程的分析事件一起，通过事件名称 `flow_user_input` 到达同一个回调。在通过 `AdaptyUI().setFlowsEventsObserver` 注册的观察者上实现 `flowViewDidReceiveAnalyticEvent`：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  handleFlowInput(name, params);
+}
+```
+
+`flowViewDidReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](flutter-flow-screen-views)。
+- `name` 参数包含事件名称。如需筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
+- `element_type` 参数标识元素类别。
+- 输入值根据元素类型存储在不同的参数中：
+     - 文本字段、选择器和开关将用户输入存储在 `value` 中
+     - 可选组在 `item_ids` 和 `item_titles` 中报告已选中的选项
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'] as String;
+
+  // The screen the input sits on. Pair it with elementId to tell apart
+  // two fields that share an Element ID on different screens.
+  final screenId = params['instanceId'] as String?;
+
+  switch (params['element_type'] as String) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input':
+      final text = params['value'] as String;
+      break;
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker':
+      // Unix time in milliseconds. Arrives as int on iOS and double on Android — read it through num.
+      final date = DateTime.fromMillisecondsSinceEpoch((params['value'] as num).toInt());
+      break;
+    case 'single_choice':
+      final optionId = (params['item_ids'] as List).cast<String>().first;
+      break;
+    case 'multi_choice':
+      final optionIds = (params['item_ids'] as List).cast<String>();
+      break;
+    case 'toggle':
+      final isOn = params['value'] as bool;
+      break;
+  }
+}
+```
+
+<FlowInputVerify />
+
+## 应用接收输入的时机 \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 您收到的内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## 事件示例 \{#event-examples\}
+
+以下示例展示了每种事件的可用属性及注释中的示例值。
+
+<Details>
+<summary>文本、邮箱、数字和电话输入（点击展开）</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  name;                      // 'flow_user_input'
+  params['name'];            // 'flow_user_input'
+  params['instanceId'];      // 'scr_J260KU5q'
+  params['isCustomerEvent']; // true
+  params['isBackendEvent'];  // false
+  params['element_id'];      // 'email'
+  params['element_type'];    // 'email_input'
+  params['value'];           // 'jane@example.com'   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>日期、时间和日期时间选择器（点击展开）</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'birthday'
+  params['element_type'];    // 'date_picker'
+  params['value'];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; int on iOS, double on Android)
+}
+```
+</Details>
+
+<Details>
+<summary>单选（点击展开）</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'experience'
+  params['element_type'];    // 'single_choice'
+  params['item_ids'];        // ['pro']   (List)
+  params['item_titles'];     // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'interests'
+  params['element_type'];    // 'multi_choice'
+  params['item_ids'];        // ['sports', 'music']   (List)
+  params['item_titles'];     // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'reminders'
+  params['element_type'];    // 'toggle'
+  params['value'];           // true   (bool)
+}
+```
+</Details>
+
+## 传输与限制 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+将每个输入值存储在观察者接收时，并在流程关闭时发送完整的数据集。要捕捉该时机，请在同一个观察者上实现 `flowViewDidDisappear`。无论用户完成了流程还是中途关闭，该方法都会在流程视图消失时执行。
+
+## 使用场景 \{#use-cases\}
+
+### 在您的后端注册用户 \{#register-users-on-your-backend\}
+
+在数据陆续收到时先将其暂存，等流程关闭后再一次性发送，这样单次请求就能携带完整的答案集。
+
+无论用户是完整完成了流程还是中途退出，视图都会消失。在调用后端接口之前，请先检查您所需的字段是否已齐备。
+
+流程无法展示来自后端的错误。回调没有返回值，SDK 也没有任何方法可以向运行中的流程传入数据。如果注册失败（例如邮箱已被占用），请在流程关闭后通过您自己的 UI 展示该错误。
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> flowAnswers = {};
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  flowAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  if (!flowAnswers.containsKey('email')) return;
+
+  // Send flowAnswers to your backend here to create the account.
+
+  flowAnswers.clear();
+}
+```
+
+### 用户画像数据填充 \{#enrich-user-profiles-with-data\}
+
+为了将用户输入的内容与其用户画像关联，并避免重复询问相同信息，请在数据输入时[更新用户画像](flutter-setting-user-attributes)。
+
+例如，如果您的流程中有一个 Element ID 为 `name` 的文本输入框和一个 Element ID 为 `email` 的邮件输入框：
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+
+  final value = params['value'];
+  if (value is! String) return;
+
+  final builder = AdaptyProfileParametersBuilder();
+
+  switch (params['element_id'] as String) {
+    case 'name':
+      builder.setFirstName(value);
+      break;
+    case 'email':
+      builder.setEmail(value);
+      break;
+    default:
+      return;
+  }
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+### 自定义后续显示的流程 \{#customize-flows-shown-later\}
+
+测验答案也可以决定用户在后续[版位](placements)中看到什么——不同的流程，或其中不同的付费墙。
+
+例如，在用户引导流程中询问用户的运动经历，然后根据分组为每类用户展示包含不同产品和文案的专属流程。
+
+1. 在流程中添加[测验](onboarding-quizzes)。将[可选组](flow-selectable-elements)的 Group ID 设为 `experience`，并为每个选项设置有意义的 Element ID。
+2. 处理答案并为用户[设置自定义属性](flutter-setting-user-attributes)。
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+  if (params['element_id'] != 'experience') return;
+
+  final optionId = (params['item_ids'] as List).cast<String>().first;
+
+  final builder = AdaptyProfileParametersBuilder();
+  // Set the custom attribute 'experience' to the option the user selected
+  // (beginner, amateur, or pro).
+  builder.setCustomStringAttribute(optionId, 'experience');
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+3. 为每个自定义属性值[创建一个市场细分](segments)。
+4. 创建一个[版位](placements)，并为每个市场细分添加一个[目标受众](audience)。
+5. 在你的应用中[展示该版位的流程](flutter-present-paywalls)。

@@ -66,7 +66,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| adjust | — | dev, analyst | 8 | tutorial |
+| adjust | — | dev, analyst | 9 | tutorial |
 | airbridge | — | dev, analyst | 7 | tutorial |
 | amplitude | — | dev, analyst | 6 | tutorial |
 | analytics-integration | entry | dev, analyst | 4 | tutorial |
