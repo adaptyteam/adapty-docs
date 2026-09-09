@@ -122,11 +122,11 @@ or developer can see and click.
 | copy-flows | — | marketer, dev | 2 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
-| filter-flows | — | marketer, dev | 5 | tutorial |
+| filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 12 | tutorial |
-| flow-metrics | — | marketer, dev | 24 | tutorial |
+| flow-metrics | — | marketer, dev | 25 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |

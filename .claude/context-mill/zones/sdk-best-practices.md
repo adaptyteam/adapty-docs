@@ -142,7 +142,7 @@ recommendations become articles and which stay where the mechanism is documented
 | best-practices | ios-best-practices | android-best-practices | react-native-best-practices | flutter-best-practices | unity-best-practices | kmp-best-practices | capacitor-best-practices |
 | optimize-paywall-fetching | ios-optimize-paywall-fetching | android-optimize-paywall-fetching | react-native-optimize-paywall-fetching | flutter-optimize-paywall-fetching | unity-optimize-paywall-fetching | kmp-optimize-paywall-fetching | capacitor-optimize-paywall-fetching |
 | sdk-call-order | ios-sdk-call-order | android-sdk-call-order | react-native-sdk-call-order | flutter-sdk-call-order | unity-sdk-call-order | kmp-sdk-call-order | capacitor-sdk-call-order |
-| show-aa-targeted-paywall | ios-show-aa-targeted-paywall |  | react-native-show-aa-targeted-paywall | flutter-show-aa-targeted-paywall |  |  | capacitor-show-aa-targeted-paywall |
+| show-aa-targeted-paywall | ios-show-aa-targeted-paywall |  | react-native-show-aa-targeted-paywall | flutter-show-aa-targeted-paywall | unity-show-aa-targeted-paywall | kmp-show-aa-targeted-paywall | capacitor-show-aa-targeted-paywall |
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
@@ -164,6 +164,7 @@ recommendations become articles and which stay where the mechanism is documented
 | kmp-best-practices | entry | dev | 0 | kmp |
 | kmp-optimize-paywall-fetching | — | dev | 2 | kmp |
 | kmp-sdk-call-order | — | dev | 2 | kmp |
+| kmp-show-aa-targeted-paywall | — | dev | 3 | kmp |
 | react-native-best-practices | entry | dev | 0 | react-native |
 | react-native-optimize-paywall-fetching | — | dev | 2 | react-native |
 | react-native-sdk-call-order | — | dev | 2 | react-native |
@@ -171,6 +172,7 @@ recommendations become articles and which stay where the mechanism is documented
 | unity-best-practices | entry | dev | 0 | unity |
 | unity-optimize-paywall-fetching | — | dev | 2 | unity |
 | unity-sdk-call-order | — | dev | 2 | unity |
+| unity-show-aa-targeted-paywall | — | dev | 3 | unity |
 <!-- /mill:auto -->
 ## Reader jobs
 
@@ -198,7 +200,7 @@ deliberately not repeated here.
 | "wrong audience paywall returned", "audience segments silently bypassed", "ASA personalization not applied" | `optimize-paywall-fetching` when the cause is timing: `getPaywall` called at launch (`App.init()`, `Application.onCreate()`, `main()`, `Awake()`) resolves before attribution lands, against the default audience, with no error. Rule out two other causes first — an explicit default-audience fetch (`sdk-flows-manual`) and fetching before `identify` resolves (`sdk-call-order`). |
 | "black screen on app launch", "app freezes for a second at startup" | `optimize-paywall-fetching`. The documented cause is bulk-prefetching every placement concurrently, which blocks the main thread (JS thread on React Native) during the burst. Fetch only the placement you're about to show. |
 | "paywall fetch is slow", "reduce time to first paywall", "blank screen while the paywall loads", "users on rural / transit connections" | `optimize-paywall-fetching`. Cache-first fetch policy after the first fetch, a 3–5 s `loadTimeout` (`loadTimeoutMs` on React Native and Capacitor), a dashboard fallback paywall per placement, and never gating display on `getProfile`. The default-audience fetch is the other speed lever, and it costs targeting: see the corresponding row in `sdk-flows-manual`. |
-| "Apple Search Ads paywall shows the wrong offer on first open", "`appliedAttributionSources`", "wait for attribution before showing the paywall" | `show-aa-targeted-paywall`. Scope first: this only ever affects the **first** launch — Apple Ads attribution is stored on the profile permanently, so later launches return the segmented paywall with no wait. Requires SDK 3.17.1+ (Flutter 3.17.0+), and only iOS, React Native, Flutter and Capacitor have this article. |
+| "Apple Search Ads paywall shows the wrong offer on first open", "`appliedAttributionSources`", "wait for attribution before showing the paywall" | `show-aa-targeted-paywall`. Scope first: this only ever affects the **first** launch — Apple Ads attribution is stored on the profile permanently, so later launches return the segmented paywall with no wait. Requires SDK 3.17.1+ (Flutter 3.17.0+), and every platform except Android has this article. |
 | "should we delay the paywall, or swap it once attribution lands?" | `show-aa-targeted-paywall` — the recommended pattern deliberately diverges by platform, so don't mirror one platform's article into another's. iOS and Flutter wait for attribution against a timeout and fall back to `getPaywallForDefaultAudience`; React Native and Capacitor show a paywall immediately and refetch when `apple_search_ads` appears. |
 | "give us a production-readiness checklist", "recommended integration patterns", "common integration mistakes" | The `best-practices` family, but expect the ticket to need more: those pages are card lists with no prose of their own. The actual content is the three families above, and a checklist-shaped request usually also reaches into `sdk-quickstart` and the platform's error-handling article. |
 
