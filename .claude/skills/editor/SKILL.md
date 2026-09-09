@@ -529,6 +529,23 @@ Verify any hide/exclude/transform mechanism against the build output before reco
 - **Never link to a `draft: true` page.** The file exists, so the link checker passes — but the route 404s for readers.
 - To remove content, delete it. Git keeps the history.
 
+### Release Notes Are a Historical Record
+
+`src/content/docs/release-notes/whats-new.mdx` is an archive of dated entries. Each entry records what shipped that month, in the words that were true then.
+
+**Do not revise its content.** Not for renamed products, not for terminology sweeps, not for restructured wording, and not for facts learned later. A rename pass, a style pass, and a corpus-wide consistency check all stop at this file.
+
+Edit it in exactly two cases:
+
+- **A deliberate what's new update** that adds a new entry — invoke the `update-whats-new` skill.
+- **A technical break** in an existing entry: a dead link, a missing image, malformed MDX. Repair the mechanism and leave the prose alone.
+
+Expect these, and leave them:
+
+- Superseded product names survive. "Flow Builder" stands in entries written before the Flow & Paywall Builder rename.
+- A dated entry may state something later entries supersede. That is what an archive does — do not reconcile them.
+- Corpus-wide terminology greps will report hits here. Exclude the file rather than "fixing" it.
+
 ### Localization
 Files in `src/locales/` are automatically translated and updated by a GitHub Actions workflow on push to `main`. Do not edit them as part of normal doc work — edit only the source English file in `src/content/docs/`. The exception is targeted manual corrections explicitly requested (e.g., a native speaker flagging a translation error).
 
