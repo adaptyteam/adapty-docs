@@ -29,12 +29,12 @@ Vous venez de la bêta 4.0 ? Remplacez le tag bêta épinglé par [l'installatio
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
 | `AdaptyEventListener` | `IAdaptyEventListener`, avec une nouvelle méthode obligatoire `OnReceivePromotedPurchase` |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` et autres callbacks `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear` et autres callbacks `FlowView...` |
+| `PaywallViewDidPerformAction`, `PaywallViewDidAppear`, et autres callbacks `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear`, et autres callbacks `FlowView...` |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` avec une source de type `string` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` avec un `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` en tant que `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` en tant que `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 | Attribution Adapty activée automatiquement | désactivée par défaut — à activer avec `Builder.SetAdaptyAttributionEnabled(true)` |
-| Fichier de secours téléchargé pour la v3.x | nouveau format de fichier de secours — téléchargez à nouveau le fichier |
+| Fichier de secours téléchargé pour la version 3.x | nouveau format de fichier de secours — téléchargez à nouveau le fichier |
 | `Adapty.SetFallbackPaywalls(...)` (déprécié en v3) | supprimé — utilisez `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (déprécié en v3) | supprimé — utilisez `Builder.SetAppleIDFACollectionDisabled(...)` |
 | `paywall.Products` (une liste de `AdaptyProductReference`) | supprimé — utilisez `ProductIdentifiers` ou `VendorProductIds`, ou appelez `GetPaywallProducts(flow)` pour les produits complets |
@@ -248,18 +248,36 @@ Cette méthode concerne les achats intégrés mis en avant sur l'App Store et n'
 
 ## API d'attribution externe renommées \{#renamed-external-attribution-apis\}
 
-À partir de la version 4.1 du SDK, les API permettant de transmettre des données d'attribution depuis un fournisseur externe (Adjust, AppsFlyer, Branch, Tenjin ou un fournisseur personnalisé) sont renommées pour s'aligner sur les SDK natifs. Il n'existe pas d'alias dépréciés, donc les appels existants cessent de compiler tant que vous ne les renommez pas :
+À partir de la version 4.1 du SDK, les API permettant de transmettre des données d'attribution depuis un fournisseur externe (Adjust, AppsFlyer, Branch, Tenjin ou un fournisseur personnalisé) sont renommées pour s'aligner sur les SDK natifs, et le fournisseur passe d'une chaîne de caractères à un type. Il n'existe pas d'alias dépréciés, donc les appels existants ne compileront plus tant que vous ne les aurez pas mis à jour :
 
 | Avant 4.1 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` en tant que `string` | `provider` en tant qu'`AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` en tant qu'`IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` en tant qu'`IReadOnlyList<AdaptyExternalAttributionProvider>` |
 
-Seuls les noms changent. Le fournisseur est toujours la même chaîne qu'avant (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), les données d'attribution sont toujours acceptées sous forme de dictionnaire ou de chaîne JSON, et la propriété de profil est toujours un `IReadOnlyList<string>` :
+Renommer la méthode seule ne suffit pas — remplacez également l'argument provider dans la même modification :
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` transporte l'identifiant que le backend associe au fournisseur, avec six instances partagées : `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin` et `Custom`. Pour un fournisseur qu'Adapty ajoute après cette version du SDK, construisez-en un à partir de son identifiant — `new AdaptyExternalAttributionProvider("your_provider")` — et il parvient au backend tel quel. Les espaces environnants sont supprimés.
+
+Les données d'attribution sont transmises sous forme de **chaîne JSON sérialisée**. Si vous les avez sous forme de dictionnaire, sérialisez-les d'abord :
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+Du côté du profil, lisez les fournisseurs appliqués via le nouveau type :
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## L'attribution Adapty est désactivée par défaut \{#adapty-attribution-is-disabled-by-default\}
