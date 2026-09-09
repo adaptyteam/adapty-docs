@@ -45,7 +45,7 @@ Canon = docs commits `bc447f975` (iOS 4.1, PR #430) + `660cb5325` (opt-in highli
 | android | — | shipped | shipped | migration-to-android-sdk-41, android-get-pb-paywalls, sdk-installation-android, android-sdk-migration-guides | on main | — |
 | react-native | — | not started | — | — | — | — |
 | flutter | feat/sdk-4.1-update | in progress | — | — | — | — |
-| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | in review | shipped | migration-to-unity-sdk-v4, sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases | 3cf5ff5f2 | #509 |
+| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | shipped (`4.1.0`, `4.1.1` tagged) | shipped | migration-to-unity-sdk-v4, sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases | 3cf5ff5f2 | #509, #601 |
 | kmp | release/4.1 | in review | in review | migration-to-kmp-sdk-v4, sdk-installation-kotlin-multiplatform, kmp-making-purchases, kmp-get-pb-paywalls, kmp-sdk-call-order, kmp-sdk-migration-guides, user-acquisition, attribution-integration, kmp-check-subscription-status, kmp-handle-errors, kmp-handling-onboarding-events, kmp-troubleshoot-paywall-builder, kmp-get-onboardings, adapty-cursor-kmp | d0869e200 | #560 |
 | capacitor | release/4.1.0 + [PR #106](https://github.com/adaptyteam/AdaptySDK-Capacitor/pull/106) (open) | in review | in review | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition | 03cc7d8e9 | #559 |
 
@@ -67,21 +67,43 @@ Discrepancies vs the iOS canon (all verified against the public-surface fixture 
    operators, and six shared instances: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`,
    `Branch`, `Tenjin`, `Custom`. **There is no implicit `string` → provider conversion** (grepped for
    `implicit`/`operator` at 4.1.0 — only equality operators).
-   **Consequence, unfixed: the Unity tabs in `adjust`, `appsflyer`, `branch` and `tenjin` do not
-   compile against Unity 4.1.0.** All four pass a bare string as the `provider` argument
-   (`UpdateExternalAttribution(attributionString, "branch", …)`), and the parameter is now typed. They
-   need `AdaptyExternalAttributionProvider.Branch` and so on. Left alone here because this branch is
-   KMP-scoped; spun off as a separate task 2026-09-09.
-   Also worth reporting upstream: at `main` the `UpdateExternalAttribution` doc-comment calls the
-   jsonString form an overload and says "the dictionary overload is the default path", but the
-   dictionary overload does not exist — `UpdateExternalAttribution(string jsonString,
+   Also verified at 4.1.1: `AdaptyProfile.AppliedExternalAttributionProviders` is
+   `IReadOnlyList<AdaptyExternalAttributionProvider>`, not of `string`. The wire key stays
+   `applied_attribution_sources`, and null/blank entries are skipped when the list is built.
+   **Consequence — FIXED in PR #601 (2026-09-09).** The Unity tabs in `adjust`, `appsflyer`, `branch`
+   and `tenjin` all passed a bare string as the `provider` argument
+   (`UpdateExternalAttribution(attributionString, "branch", …)`) and did not compile against 4.1.0.
+   They now pass the typed instance. Fixed on its own branch rather than here, because this branch is
+   KMP-scoped. Two defects found while fixing them, neither known when the task was written:
+   - **`tenjin.mdx` had a second, independent compile error**: it built a `Dictionary<string, dynamic>`
+     via `.ToDictionary()` and passed it as the first argument, where the only overload takes a
+     `string`. That sample would not have compiled even with the provider corrected. It now serializes
+     with Newtonsoft, matching what `adjust.mdx` already did, and drops the `using System.Linq` that
+     existed only for the `.ToDictionary()` call. **This is our own doc repeating the upstream
+     doc-comment's phantom dictionary overload** (below) — the clearest evidence of what that
+     comment costs.
+   - **`migration-to-unity-sdk-v4.mdx` was wrong on three counts in one sentence**: it said the
+     provider is "the same string as before", that attribution data is "still accepted as a dictionary
+     or a JSON string", and that the profile property is "still an `IReadOnlyList<string>`". None hold
+     at 4.1.1, and its `diff` block instructed a rename to `"adjust"` that does not compile. This was
+     the more serious half — it is the page people follow while upgrading. Both quick-reference tables
+     now carry the types, and the section covers the type change, the six instances, the string
+     constructor, the serialization requirement, and the profile-property change.
+   `migration-to-unity330.mdx` also carries bare-string providers and was deliberately left alone —
+   historical guide, never edited for new versions (same rule as `migration-to-unity-sdk-314.mdx`).
+   **Still open, for the SDK team, not the docs:** at `main` the `UpdateExternalAttribution`
+   doc-comment calls the jsonString form an overload and says "the dictionary overload is the default
+   path", but no dictionary overload exists — `UpdateExternalAttribution(string jsonString,
    AdaptyExternalAttributionProvider provider, Action<AdaptyError>)` is the only signature at 4.1.0,
    4.1.1 and `main` (143 `.cs` files scanned, no extensions file). Unity callers must serialize first.
    **Third instance of the same failure mode on this rollout** (Capacitor's point 1, KMP's points 1-2,
    now Unity's): a platform's API kept moving after the docs pass read it. In all three the later
-   commit landed within days and the entry recorded an absence.
-2. **The JSON-string overload stays public** in Unity (`UpdateExternalAttribution(jsonString, …)`),
-   unlike iOS 4.1 which removed it. No "deserialize first" migration step.
+   commit landed within days and the entry recorded an absence. Re-verifying at the latest tag before
+   editing is what caught the two extra defects above, so it is worth the two minutes.
+2. ⚠️ **The JSON string is the ONLY form in Unity — corrected 2026-09-09.** The original entry called
+   it an overload that "stays public", which reads as though a dictionary form also exists; it does
+   not (see point 1). So the inverse of iOS's "deserialize first" applies: a Unity caller holding a
+   dictionary must **serialize first**, and the migration guide and the `tenjin` sample now say so.
 3. **No preload APIs** — `preloadFlows`/`preloadOnboardings` did not come to Unity 4.1;
    unity-optimize-paywall-fetching must NOT get the iOS "Preload placements" section.
 4. **No `AdaptySubscriptionOfferType` change** — that canon section has no Unity counterpart.
