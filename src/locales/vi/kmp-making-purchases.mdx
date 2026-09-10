@@ -159,3 +159,36 @@ Adapty.activate(
     // handle the error
 }
 ```
+
+## In-app purchase từ App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Promoted in-app purchase được hỗ trợ từ SDK phiên bản 4.1 trở lên và yêu cầu **iOS 16.4** trở lên. Trên các thiết bị chạy iOS thấp hơn 16.4, chúng sẽ không đến được ứng dụng của bạn. Đây là tính năng chỉ dành cho iOS: trên Android, listener không bao giờ được kích hoạt và `makePromotedPurchase` trả về `AdaptyErrorCode.DEVELOPER_ERROR`.
+:::
+
+Khi người dùng bắt đầu mua hàng từ trang sản phẩm App Store và giao dịch được chuyển sang ứng dụng của bạn, SDK sẽ truyền sản phẩm đó cho bạn thông qua `OnPromotedPurchaseListener`. Việc hoàn tất giao dịch mua là do ứng dụng của bạn quyết định: truyền sản phẩm vào `makePromotedPurchase`. Vì bạn kiểm soát thời điểm thực hiện, bạn có thể hiển thị màn hình riêng của mình trước khi bắt đầu mua hàng.
+
+Để hỗ trợ promoted purchases, hãy đăng ký listener và hoàn tất giao dịch mua từ đó:
+
+```kotlin showLineNumbers
+
+Adapty.setOnPromotedPurchaseListener(OnPromotedPurchaseListener { product ->
+    scope.launch {
+        Adapty.makePromotedPurchase(product)
+            .onSuccess { result -> /* process the purchase result */ }
+            .onError { error -> /* handle the error */ }
+    }
+})
+```
+
+:::warning
+Nếu không đăng ký listener, giao dịch mua được quảng bá sẽ không bao giờ hoàn tất: App Store chuyển sản phẩm cho app của bạn rồi chờ. Truyền `null` vào `setOnPromotedPurchaseListener` cũng khiến các giao dịch mua được quảng bá ngừng hoạt động.
+:::
+
+Đăng ký listener khi app khởi động, ngay sau `Adapty.activate`. Giao dịch mua được quảng bá thường khởi động lạnh app, nên nó thường đến SDK trước khi lệnh đăng ký của bạn chạy. SDK giữ lại một giao dịch như vậy và chuyển nó ngay khi bạn đăng ký, chỉ giữ giao dịch gần nhất, đồng thời ghi cảnh báo ra console mỗi khi nó đang giữ một giao dịch.
+
+Nếu sản phẩm được quảng bá kèm theo ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua. Ưu đãi được đọc từ purchase intent của App Store, tính năng này chỉ hoạt động trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ được thực hiện theo giá gốc.
+
+`makePromotedPurchase` không nhận tham số mua — sản phẩm được quảng bá đến từ App Store chứ không phải từ paywall, nên nó không mang theo ngữ cảnh paywall. Hàm này trả về `AdaptyPurchaseResult` giống như `makePurchase`.
+
+`AdaptyPromotedProduct` mang theo `vendorProductId`, `localizedTitle`, `localizedDescription`, `price`, `regionCode`, `isFamilyShareable`, và `subscription` kiểu `AdaptyProductSubscription`.

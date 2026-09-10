@@ -1,15 +1,22 @@
 ---
-title: "Adapty Kotlin Multiplatform SDKをv4.0に移行する"
-description: "ペイウォールAPIをフローAPIに置き換えることでAdapty Kotlin Multiplatform SDK v4.0（ベータ）に移行します。Flow BuilderとPaywall Builderの両方に対応しています。"
-metadataTitle: "Adapty Kotlin Multiplatform SDK v4.0（ベータ）への移行 | Adapty ドキュメント"
+title: "Adapty Kotlin Multiplatform SDK を v4.1 に移行する"
+description: "Adapty Kotlin Multiplatform SDK v4.1 への移行: ペイウォール API をフロー API に置き換え、リネームされたアトリビューションメソッドを採用し、Adapty Attribution を明示的に有効化します。"
+metadataTitle: "Adapty Kotlin Multiplatform SDK v4.1 への移行 | Adapty ドキュメント"
 ---
 
-Adapty Kotlin Multiplatform SDK 4.0（ベータ）ではフローが導入され、ペイウォールAPIの名称が変更されました。新しいAPIは新しいFlow BuilderおよびExisting Paywall Builderの両方で動作し、Adapty ダッシュボード側の設定変更は不要です。
+Adapty Kotlin Multiplatform SDK 4.1 は 4.x ラインの最初の安定版リリースです。4.0 はベータとしてのみリリースされたため、3.x をお使いの場合は直接 4.1 に移行してください。このガイドでは、4.0 で導入されたフローと、その上に加えられた 4.1 の変更点を含む移行全体を説明します。
+
+4.x ラインではフローが導入され、それに伴いペイウォール API の名称も変更されました。新しい API は、新しいフロービルダーと既存のペイウォールビルダーの両方に対応しており、Adapty ダッシュボード側での設定変更は不要です。また、4.1 ではアトリビューションがオプトイン式になり、外部アトリビューション API とプロダクトのサブスクリプションタイプの名称が変更されたほか、App Store のプロモートされたアプリ内課金のサポートが追加されました。
+
+:::note
+4.0 ベータからアップデートする場合は、バージョンを更新した後、以下の5つのセクションのみが該当します: [Adapty アトリビューションはデフォルトで無効](#adapty-attribution-is-disabled-by-default)、[外部アトリビューション API のリネーム](#renamed-external-attribution-apis)、[AdaptyPaywallProductSubscription → AdaptyProductSubscription](#adaptypaywallproductsubscription--adaptyproductsubscription)、[App Store プロモーションアプリ内課金](#app-store-promoted-in-app-purchases)、[特定のレイアウトの選択](#choosing-a-specific-layout)。`hasViewConfiguration` も[フローモデルに戻りました](#data-model)。
+:::
 
 ## クイックリファレンス \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
+| Adapty アトリビューションはデフォルトで有効 | デフォルトで無効 — `.withAdaptyAttributionEnabled(true)` でオプトイン |
 | `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
 | `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
 | `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
@@ -25,25 +32,51 @@ Adapty Kotlin Multiplatform SDK 4.0（ベータ）ではフローが導入され
 | `AdaptyUIPaywallPlatformView(paywall, ...)` | `AdaptyUIFlowPlatformView(flow, ...)` |
 | `paywallViewDidPerformAction`、`paywallViewDidAppear`、その他の `paywallView...` コールバック | `flowViewDidPerformAction`、`flowViewDidAppear`、その他の `flowView...` コールバック |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+| `String` 型の `source` を使用する `Adapty.updateAttribution(attribution, source)` | `AdaptyExternalAttributionProvider` を使用する `Adapty.updateExternalAttribution(attribution, provider)` |
+| 文字列としてプロバイダーを渡す（例：`"adjust"`） | `AdaptyExternalAttributionProvider`（例：`AdaptyExternalAttributionProvider.ADJUST`） |
+| `AdaptyProfile.appliedAttributionSources: List<String>` | `AdaptyProfile.appliedExternalAttributionProviders: List<AdaptyExternalAttributionProvider>` |
+| `AdaptyPaywallProductSubscription` | `AdaptyProductSubscription` |
+| プロモートされたアプリ内課金はサポート外 | `OnPromotedPurchaseListener` と `Adapty.makePromotedPurchase(product)` |
 
 `AdaptyPaywallProduct` は名前を維持します — プロダクトは引き続きフローに属し、`getPaywallProducts` も名前を維持したまま `AdaptyFlow` を受け取るようになります。`getFlow` と `getFlowForDefaultAudience` メソッドは `locale` パラメーターを受け取らなくなりました — 代わりに `createFlowView` に渡してください。購入およびプロファイルの API（`makePurchase`、`restorePurchases`、`getProfile`、`identify`、`updateProfile`）と `setFallback` はシグネチャを維持しますが、フォールバックファイル自体は再ダウンロードが必要です — [フォールバックファイル](#fallback-files) を参照してください。オンボーディングのメソッドは引き続き動作しますが非推奨となっています — [オンボーディング API の非推奨](#onboarding-api-deprecation) を参照してください。一部のデフォルト動作が変更されました — [デフォルト動作の変更](#default-behavior-changes) を参照してください。
 
 ## インストール \{#installation\}
 
-v4.0 はプレリリース版のため、正確なバージョンを固定してください。Gradle は動的レンジではプレリリースバージョンを選択しません：
+バージョンを更新してプロジェクトを同期してください：
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.1-beta.1"
+adapty-kmp = "<the latest SDK version>"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
 adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp" }
 ```
 
-`adapty-kmp-ui` モジュールが必要なのは、Compose Multiplatform レイヤー（`view.present()`）でフローやペイウォールをレンダリングする場合のみです。完全なセットアップ手順については、[Adapty SDK のインストール](sdk-installation-kotlin-multiplatform)をご覧ください。
+`adapty-kmp-ui` モジュールは、Compose Multiplatform レイヤー（`view.present()`）でフローやペイウォールをレンダリングする場合にのみ必要です。完全なセットアップについては、[Adapty SDK のインストール](sdk-installation-kotlin-multiplatform)を参照してください。
 
-両プラットフォームのネイティブ Adapty SDK は 4.x リリースにバンプされており、自動的に解決されるため、ビルドの変更は不要です。iOS のデプロイメントターゲットは **15.0** のままで、このリリースによる変更はありません。
+基盤となるネイティブの Adapty SDK は、両プラットフォームで 4.x リリースにバンプされており、自動的に解決されます — ビルドの変更は不要です。iOS のデプロイメントターゲットは **15.0** のままで、このリリースでは変更ありません。
+
+## ⚠️ Adapty アトリビューションはデフォルトで無効になっています \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+[Adapty アトリビューション](user-acquisition)を使用していて、オプトインせずに SDK 4.1 にアップデートすると、エラーが表示されないまま機能が停止します。インストールの記録が止まり、何も警告されません。
+:::
+
+以前のバージョンでは、SDKは[Adapty Attribution](user-acquisition)のインストールを自動的に登録していました。SDK バージョン 4.1 以降、この機能はデフォルトで無効になっています。SDKはインストールを登録せず、`setOnInstallationDetailsListener` で設定したリスナーは呼び出されず、`getCurrentInstallationStatus` は `AdaptyInstallationStatus.Determined.NotAvailable` を返します。
+
+Adapty Attribution を使用する場合は、SDK のアクティベーション時に有効化してください：
+
+```diff showLineNumbers
+  val config = AdaptyConfig
+      .Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+
+  Adapty.activate(configuration = config)
+```
+
+Adapty Attribution を使用しない場合は、変更は不要です。
 
 ## フローの取得 \{#fetching-flows\}
 
@@ -93,14 +126,14 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 `getFlow` は `AdaptyPaywall` の代わりに `AdaptyFlow` を返し、オブジェクトの構造が変わりました。
 
-| v3 `AdaptyPaywall` プロパティ | v4 `AdaptyFlow` プロパティ | 対応内容 |
+| v3 `AdaptyPaywall` プロパティ | v4 `AdaptyFlow` プロパティ | アクション |
 |---|---|---|
-| `remoteConfig: AdaptyRemoteConfig?` (単一) | `remoteConfigs: List<AdaptyRemoteConfig>` | フローは設定された言語ごとに1つのリモートコンフィグを持ちます。ユーザーに合ったものを取得するには: `flow.remoteConfigs.firstOrNull { it.locale == "en" }` |
-| _(新規)_ | `paywalls: List<AdaptyFlowPaywall>` | 各エントリはフロー内の1つのペイウォールバリエーションで、`name`、`variationId`、`productIdentifiers` を持ちます。WebペイウォールのメソッドはAdaptyFlowPaywallを引数に受け取ります — [Webペイウォールメソッド](#web-paywall-methods)を参照してください。 |
-| `productIdentifiers` | 移動 | プロダクト識別子は各バリエーションに移動しました: `flow.paywalls[i].productIdentifiers`。プロダクトの取得には引き続き `getPaywallProducts(flow)` を使用してください。 |
-| `hasViewConfiguration` | 削除 | コードから`hasViewConfiguration`のチェックをすべて削除してください — 代わりに`createFlowView`がエラーを返します（[フローの表示](#displaying-flows)を参照）。 |
+| `remoteConfig: AdaptyRemoteConfig?` (単一) | `remoteConfigs: List<AdaptyRemoteConfig>` | フローは設定された言語ごとに1つのリモートコンフィグを持ちます。ユーザーに合ったものを取得するには: `flow.remoteConfigs.firstOrNull { it.locale == "en" }`。 |
+| _(新規)_ | `paywalls: List<AdaptyFlowPaywall>` | 各エントリはフロー内の1つのペイウォールバリエーションで、固有の `name`、`variationId`、`productIdentifiers` を持ちます。Webペイウォールメソッドは `AdaptyFlowPaywall` を受け取ります — [Webペイウォールメソッド](#web-paywall-methods)を参照してください。 |
+| `productIdentifiers` | 移動 | プロダクト識別子は各バリエーションに移動しました: `flow.paywalls[i].productIdentifiers`。プロダクトを取得するには、引き続き `getPaywallProducts(flow)` を呼び出してください。 |
+| `hasViewConfiguration` | 維持 | フローにAdaptyUIがレンダリングできるレイアウトが含まれているかどうかを示します。4.0ベータでは存在しませんでしたが、4.1で復活しました。ベータ向けにチェックを削除していた場合、再度使用できます。`false` はフローにレイアウトが含まれていないことを意味するため、リモートコンフィグ専用として扱ってください。`createFlowView` を呼び出してエラーを処理する方法もあります（[フローの表示](#displaying-flows)を参照）。 |
 
-`hasViewConfiguration` は `AdaptyOnboarding` に残ります — フローモデルのみが削除されます。
+`hasViewConfiguration` は `AdaptyOnboarding` にもあり、変更はありません。
 
 ## Webペイウォールメソッド \{#web-paywall-methods\}
 
@@ -154,7 +187,7 @@ Compose Multiplatform を使用していない場合、ネイティブのファ�
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` は、フローにビューが設定されていない場合に `AdaptyResult.Error` を返します — これは v3 の `hasViewConfiguration` チェックに替わるものです：
+`createFlowView` は、フローにビューが設定されていない場合に `AdaptyResult.Error` を返します。そのため、v3 の `hasViewConfiguration` チェックを削除し、代わりにエラーをハンドルしてください。
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -169,7 +202,7 @@ Compose Multiplatform を使用していない場合、ネイティブのファ�
 ```
 
 :::note
-フロービューはシングルユース（一回限り）です。`dismiss()` を呼び出すとビューは破棄されるため、再度フローを表示するには `createFlowView` を再度呼び出してください。
+フロービューは使い捨てです。`dismiss()` を呼び出すとビューが破棄されるため、再度フローを表示するには `createFlowView` を再度呼び出してください。
 :::
 
 ## イベントの処理 \{#handling-events\}
@@ -217,12 +250,77 @@ v3と同様に、ここで渡すコールバック（および`registerFlowEvent
 
 ### 新しいAPI \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` に `AdaptyUIObserverModeResolver` を設定すると、SDKが[Observerモード](implement-observer-mode-kmp)で動作中にフローから開始された購入や復元を処理できます。以前はネイティブの iOS および Android SDK でのみ利用可能でした。[Observerモードでフローを表示する](kmp-present-flows-in-observer-mode)を参照してください。
-- `AdaptyUI.setSystemRequestsHandler(...)` に `AdaptyUISystemRequestsHandler` を設定すると、フローからのシステムリクエスト（OS権限プロンプトやアプリレビューリクエスト）を処理できます。現在フローはこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
-- 新しいオプションの `flowViewDidReceiveAnalyticEvent` コールバックは、フローからの分析イベントを報告します。ユーザーが開いた各画面のスクリーンビューから始まります。[フロースクリーンビューを追跡する](kmp-flow-screen-views)を参照してください。
-- `AdaptyUI.openWebUrl(url, openIn)` と `AdaptyUI.requestAppReview()` — デフォルトの `OpenUrlAction` 処理とデフォルトの `handleAppReviewRequest` を支援するため、URLとアプリレビュープロンプトはそのままネイティブで処理されます。これらのデフォルト動作をオーバーライドする場合にのみ直接呼び出してください。
-- `AdaptyUIFlowView.locale` — ビューが構築されたローカライズを報告するため、ユーザーが実際に見ているものを確認できます。SDK 4.0.1-beta.1 以降が必要です。
-- `AdaptyConfig.ServerCluster.CN` — `DEFAULT` および `EU` と並ぶ新しいサーバークラスターオプションで、アプリを[AdaptyのChinaサーバー](china-cluster)に接続します。
+- `AdaptyUI.setObserverModeResolver(...)` と `AdaptyUIObserverModeResolver` — SDKが[Observer mode](implement-observer-mode-kmp)で動作中に、フローから開始された購入と復元を処理します。以前はネイティブのiOSおよびAndroid SDKでのみ利用可能でした。[フローをObserver modeで表示する](kmp-present-flows-in-observer-mode)を参照してください。
+- `AdaptyUI.setSystemRequestsHandler(...)` と `AdaptyUISystemRequestsHandler` — フローからのシステムリクエスト（OSの権限プロンプトやアプリレビューリクエスト）向けに予約されています。フローはまだこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
+- 新しいオプションのコールバック `flowViewDidReceiveAnalyticEvent` は、フローからの分析イベントを報告します。ユーザーが開いた各画面のスクリーンビューから始まります。[フローの画面ビューを追跡する](kmp-flow-screen-views)を参照してください。
+- `AdaptyUI.openWebUrl(url, openIn)` と `AdaptyUI.requestAppReview()` — デフォルトの `OpenUrlAction` 処理とデフォルトの `handleAppReviewRequest` を支援するものです。これにより、URLとアプリレビュープロンプトがすぐにネイティブで処理されます。これらのデフォルト動作をオーバーライドする場合にのみ、直接呼び出してください。
+- `AdaptyUIFlowView.locale` — ビューが構築された際のローカライゼーションを報告します。これにより、ユーザーが実際に見ているローカライゼーションを確認できます。
+- `AdaptyConfig.ServerCluster.CN` — `DEFAULT` と `EU` に加えた新しいサーバークラスターオプションです。アプリを[AdaptyのChinaサーバー](china-cluster)に接続するために使用します。
+
+## 外部アトリビューション API の名称変更 \{#renamed-external-attribution-apis\}
+
+SDK バージョン 4.1 以降、外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、Apple Ads、またはカスタム）からアトリビューションデータを渡す API の名称がネイティブ SDK に合わせて変更され、プロバイダーの指定が文字列から型に変わりました。非推奨のエイリアスは用意されていないため、既存の呼び出し箇所は更新するまでコンパイルエラーになります。
+
+### updateAttribution → updateExternalAttribution
+
+メソッド名が変更され、`source` パラメーターは `provider` に改名され、`String` の代わりに `AdaptyExternalAttributionProvider` を受け取るようになりました。
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, "adjust")
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST)
+```
+
+アトリビューションデータは引き続き `Map<String, Any>` です。
+
+このメソッドは、バックエンドが非同期処理のためにデータを受け付けた時点で処理を返します。成功した結果は、データがすでにプロファイルに適用されたことを意味するわけではありません。
+
+### AdaptyExternalAttributionProvider
+
+プロバイダーは現在、`APPLE_ADS`、`ADJUST`、`APPSFLYER`、`BRANCH`、`TENJIN`、`CUSTOM` という定義済みの値を持つ型になっています。それ以外のプロバイダーには、識別子から直接構築してください：
+
+```kotlin showLineNumbers
+AdaptyExternalAttributionProvider("your_provider")
+```
+
+直接構築することで、このSDKリリース以降に Adapty が追加したプロバイダーにも対応できます。識別子は不明な値に変換されることなく、そのままバックエンドに送信されます。なお、前後の空白は自動的にトリミングされます。
+
+事前定義された各値は、以前 `updateAttribution` に渡していたのと同じ識別子をラップしています。`AdaptyExternalAttributionProvider.APPLE_ADS.value` は `apple_search_ads` であり、残りはそれぞれの小文字の名前になっています。
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+プロファイルに適用されたアトリビューションプロバイダーの一覧を返すプロファイルプロパティが名称変更され、要素の型も変わります：
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains("apple_search_ads")) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptyPaywallProductSubscription → AdaptyProductSubscription
+
+サブスクリプション詳細の型名が変更されました。プロモーションプロダクトが同じ型を持つようになったためです。名前のみの変更で、すべてのプロパティはそのまま引き継がれます。
+
+```diff showLineNumbers
+- val subscription: AdaptyPaywallProductSubscription? = product.subscription
++ val subscription: AdaptyProductSubscription? = product.subscription
+```
+
+## App Storeのプロモートされたアプリ内課金 \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1では、iOS上の[App StoreプロダクトページでプロモートされたIn-Appアプリ内課金](kmp-making-purchases#in-app-purchases-from-the-app-store)がサポートされました。以前のKotlin Multiplatformバージョンではこの機能はまったくサポートされていなかったため、既存の実装に影響はありません。ただし、この機能を利用するにはコードの追加が必要です。
+
+プロモーション購入をサポートするには、`OnPromotedPurchaseListener` を登録し、プロダクトを `Adapty.makePromotedPurchase` に渡して購入を完了します。リスナーが登録されていない場合、購入は完了せず保留状態になります。ユーザーがApp Storeページで **Buy** をタップしても、アプリ内では何も起こりません。できるだけ早くリスナーを登録してください。タイミングと完全なサンプルコードについては、[App Storeからのアプリ内課金](kmp-making-purchases#in-app-purchases-from-the-app-store)を参照してください。
+
+## 特定のレイアウトを選択する \{#choosing-a-specific-layout\}
+
+`createFlowView`、`createNativeFlowView`、`AdaptyUIFlowPlatformView` には、新しいオプション引数 `customLayoutId` が追加されました。これを渡すことで、デバイスの種類や画面サイズに基づいて SDK が自動的に選択するレイアウトではなく、Flow Builder で定義した特定のレイアウトをレンダリングできます。
+
+```kotlin showLineNumbers
+AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
+```
+
+指定した ID に一致するレイアウトが存在しない場合、フローはビュー設定なしで読み込まれます。このパラメータはオプションであり、デフォルト値は `null` のため、既存の呼び出しには影響しません。
 
 ## デフォルト動作の変更 \{#default-behavior-changes\}
 
@@ -233,8 +331,8 @@ v3と同様に、ここで渡すコールバック（および`registerFlowEvent
 - **ビューのエラー**: v3 では、デフォルトの `paywallViewDidFailRendering` は何もしませんでした。v4 では、デフォルトの `flowViewDidReceiveError` が**ビューを閉じます** — ビューを開いたままにしたい場合やエラーを独自に処理したい場合はオーバーライドしてください。
 - **ビューは使い捨て**: `dismiss()` を呼び出すとビューは破棄されます。フローを再度表示するには、`createFlowView` をもう一度呼び出してください。
 
-## オンボーディング API の廃止 \{#onboarding-api-deprecation\}
+## オンボーディング API の非推奨化 \{#onboarding-api-deprecation\}
 
-レガシーのオンボーディング API は、[フロービルダー](adapty-flow-builder)への移行に伴い v4.0 で非推奨となりました。現時点では引き続き動作しますが、将来のリリースで削除される予定です。オンボーディングをフロービルダーへ移行する計画を立ててください。
+レガシーオンボーディング API は v4 で非推奨となり、[フロービルダー](adapty-flow-builder) に移行されました。引き続き動作しますが、将来のリリースで削除される予定のため、オンボーディングのフロービルダーへの移行を計画してください。
 
-非推奨のシンボル: `getOnboarding`、`getOnboardingForDefaultAudience`、`AdaptyUI.createOnboardingView`、`AdaptyUI.createNativeOnboardingView`、`AdaptyUIOnboardingsEventsObserver`。
+非推奨のシンボル: `getOnboarding`、`getOnboardingForDefaultAudience`、`AdaptyUI.createOnboardingView`、`AdaptyUI.createNativeOnboardingView`、および `AdaptyUIOnboardingsEventsObserver`。

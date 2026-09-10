@@ -159,3 +159,36 @@ Adapty.activate(
     // handle the error
 }
 ```
+
+## Achats intégrés depuis l'App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Les achats intégrés promus sont pris en charge à partir de la version 4.1 du SDK et nécessitent **iOS 16.4** ou une version ultérieure. Sur les appareils en dessous d'iOS 16.4, ils n'atteignent pas votre application. Il s'agit d'une fonctionnalité réservée à iOS : sur Android, le listener ne se déclenche jamais, et `makePromotedPurchase` renvoie un `AdaptyErrorCode.DEVELOPER_ERROR`.
+:::
+
+Lorsqu'un utilisateur lance un achat depuis la page produit App Store et que la transaction est transmise à votre application, le SDK vous transmet le produit via un `OnPromotedPurchaseListener`. C'est votre application qui finalise l'achat : passez le produit à `makePromotedPurchase`. Comme vous contrôlez le moment où cela se produit, vous pouvez afficher votre propre écran avant que l'achat ne commence.
+
+Pour prendre en charge les achats promus, enregistrez le listener et finalisez l'achat depuis celui-ci :
+
+```kotlin showLineNumbers
+
+Adapty.setOnPromotedPurchaseListener(OnPromotedPurchaseListener { product ->
+    scope.launch {
+        Adapty.makePromotedPurchase(product)
+            .onSuccess { result -> /* process the purchase result */ }
+            .onError { error -> /* handle the error */ }
+    }
+})
+```
+
+:::warning
+Sans écouteur enregistré, un achat promu ne se finalise jamais : l'App Store remet le produit à votre application et attend. Passer `null` à `setOnPromotedPurchaseListener` empêche également les achats promus de fonctionner.
+:::
+
+Enregistrez l'écouteur au démarrage de l'application, juste après `Adapty.activate`. Un achat promu lance généralement l'application à froid, ce qui fait qu'il atteint souvent le SDK avant que votre enregistrement ne s'exécute. Le SDK conserve un tel achat en attente et le délivre dès que vous enregistrez l'écouteur, en ne gardant que le plus récent, et écrit un avertissement dans la console chaque fois qu'il met un achat en attente.
+
+Si le produit mis en avant inclut une offre d'abonnement, le SDK l'applique automatiquement lors de l'achat. L'offre est lue depuis l'intention d'achat App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat se fait au prix de base.
+
+`makePromotedPurchase` ne prend aucun paramètre d'achat — un produit mis en avant provient de l'App Store plutôt que d'un paywall, il ne porte donc aucun contexte de paywall. Elle retourne le même `AdaptyPurchaseResult` que `makePurchase`.
+
+`AdaptyPromotedProduct` contient `vendorProductId`, `localizedTitle`, `localizedDescription`, `price`, `regionCode`, `isFamilyShareable`, ainsi qu'un champ `subscription` de type `AdaptyProductSubscription`.
