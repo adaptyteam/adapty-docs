@@ -198,7 +198,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | ios-transaction-management | — | dev | 3 | ios |
 | ios-troubleshoot-purchases | — | dev | 3 | ios |
 | kmp-implement-paywalls-manually | entry | dev | 2 | kmp |
-| kmp-making-purchases | — | dev | 4 | kmp |
+| kmp-making-purchases | — | dev | 5 | kmp |
 | kmp-quickstart-manual | — | dev | 8 | kmp |
 | kmp-restore-purchase | — | dev | 0 | kmp |
 | kmp-troubleshoot-purchases | — | dev | 5 | kmp |

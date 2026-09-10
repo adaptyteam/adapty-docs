@@ -170,8 +170,8 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
-| developer-cli-quickstart | — | dev | 8 | api |
-| developer-cli-reference | — | dev | 31 | api |
+| developer-cli-quickstart | — | dev | 10 | api |
+| developer-cli-reference | — | dev | 42 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |

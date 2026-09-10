@@ -65,6 +65,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | builder-tabs | — | marketer | 5 | tutorial |
 | builder-toggles | — | marketer | 0 | tutorial |
 | custom-media | — | marketer | 7 | tutorial |
+| flow-analytics-ids | — | — | 6 | tutorial |
 | flow-selectable-elements | entry | marketer | 6 | tutorial |
 | flow-timer | — | marketer | 5 | tutorial |
 | manage-paywall-ui-elements | — | marketer | 14 | tutorial |
