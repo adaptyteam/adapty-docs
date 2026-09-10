@@ -1,12 +1,13 @@
 ---
 title: "Adapty iOS SDK'yı v4.0'a Geçirin"
-description: "Adapty iOS SDK v4.0'a geçiş yapın: paywall API'lerini flow API'leriyle değiştirin; hem Flow Builder hem de Paywall Builder ile uyumludur."
+description: "Paywall API'larını flow API'larıyla değiştirerek Adapty iOS SDK v4.0'a geçin; yeni API'lar eski builder paywalllarına ek olarak flow'ları da render eder."
 metadataTitle: "Adapty iOS SDK v4.0'a Geçiş | Adapty Dokümanları"
 ---
 
-Adapty iOS SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre yeniden adlandırır. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+Adapty iOS SDK 4.0, flow'ları tanıtır ve paywall API'larını buna göre yeniden adlandırır. Yeni API'lar flow'larla çalışır ve eski builder'dan gelen paywalllarla da çalışmaya devam eder — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
 
 ## Hızlı referans \{#quick-reference\}
+
 | v3 | v4 |
 |---|---|
 | `Adapty.getPaywall(placementId:locale:)` | `Adapty.getFlow(placementId:)` |
@@ -23,14 +24,17 @@ Adapty iOS SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre yenide
 | `Adapty_KidsMode` / `AdaptyUI_KidsMode` paket ürünleri | `KidsMode` paket trait'i |
 | `Adapty.updateAttribution(_:source:)` (`source: String`) | `Adapty.updateAttribution(_:source:)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` (`AdaptyIntegrationIdentifier`) |
+
 ## Minimum iOS sürümü \{#minimum-ios-version\}
 
 Adapty iOS SDK 4.0, minimum deployment target'ı iOS 13.0'dan **iOS 15.0**'a yükseltiyor. Yükseltmeden önce projenizin iOS Deployment Target'ını 15.0 veya üzerine ayarlayın.
+
 ## Kurulum: CocoaPods artık desteklenmiyor \{#installation-cocoapods-no-longer-supported\}
 
 Adapty iOS SDK 4.0, CocoaPods desteğini kaldırdı. SDK'yı [Swift Package Manager](sdk-installation-ios#install-adapty-sdk) ile yükleyin.
 
 Projeniz hâlâ CocoaPods kullanıyorsa `Podfile` dosyanızdan `Adapty` ve `AdaptyUI` pod'larını kaldırın, `pod install` çalıştırarak temizleyin, ardından Xcode'da **File → Add Package Dependency** seçeneğiyle `https://github.com/adaptyteam/AdaptySDK-iOS.git` adresini kullanarak paketi ekleyin.
+
 ## Kids Mode: ayrı ürünler bir paket özelliğiyle değiştirildi \{#kids-mode-separate-products-replaced-by-a-package-trait\}
 
 v3'te, [Kids Mode](kids-mode)'u etkinleştirmek için ayrı **Adapty_KidsMode** ve **AdaptyUI_KidsMode** paket ürünlerini seçiyor ve importlarınızı yeniden adlandırıyordunuz. v4.0'da bu ürünler kaldırıldı. Kids Mode artık normal Adapty paketinde `KidsMode` adlı bir Swift paket özelliği — etkinleştirildiğinde IDFA ve AdSupport'u tüm SDK genelinde derlemenin dışında bırakır.
@@ -66,6 +70,7 @@ Geçiş yapmak için:
 
 - **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — kaldırıldı. Artık tüm ürünler teklif bilgisini içerdiğinden, ayrı bir uygunluk kontrolü adımına gerek kalmadı.
 - **`AdaptyPaywallProductWithoutDeterminingOffer`** — kaldırıldı. Daha önce bu türü (örneğin `didSelectProduct` gibi) callback'lere geçiren yapılar artık `AdaptyPaywallProduct` kullanıyor.
+
 ## App Store'da tanıtılan uygulama içi satın almalar geçici olarak kaldırıldı \{#app-store-promoted-in-app-purchases-temporarily-removed\}
 
 StoreKit 2 geçişinin bir parçası olarak, Adapty iOS SDK 4.0, App Store'da tanıtılan uygulama içi satın alma desteğini kaldırmaktadır. `shouldAddStorePayment(for:)` delegate metodu ve bu metodun aldığı `AdaptyDeferredProduct` tipi 4.0'da kullanılamamaktadır.
@@ -75,15 +80,18 @@ Bu kaldırma işlemi yalnızca 4.0 için geçerlidir — tanıtılan uygulama i�
 :::
 
 ## Paywall'ları Getirme \{#fetching-paywalls\}
+
 ### getPaywall + getPaywallConfiguration → getFlow + getFlowConfiguration
 
-Döndürülen türler `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` yerine `AdaptyFlow` / `AdaptyUI.FlowConfiguration` olarak değişiyor. `locale` parametresi fetch çağrısından çıkarılıp `getFlowConfiguration` üzerine taşınıyor:
+Döndürülen türler `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` yerine `AdaptyFlow` / `AdaptyUI.FlowConfiguration` olarak değişir. `locale` parametresi fetch çağrısından çıkıp `getFlowConfiguration`'a taşınır: `AdaptyFlow`, aynı zamanda `paywalls`'u da ortaya koyar — flow'un paywall varyasyonları, `AdaptyFlowPaywall` değerleri olarak. Web paywall metotları bunlardan birini alır.
+
 ```diff showLineNumbers
 - let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
 - let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
 + let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
 + let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "en")
 ```
+
 ### getPaywallProducts(paywall:) → getPaywallProducts(flow:)
 
 `getPaywallProducts` artık `Adapty.getFlow` tarafından döndürülen bir `AdaptyFlow` alıyor:
@@ -92,20 +100,24 @@ Döndürülen türler `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` yerine `
 - let products = try await Adapty.getPaywallProducts(paywall: paywall)
 + let products = try await Adapty.getPaywallProducts(flow: flow)
 ```
+
 ### Yedek dosyalar \{#fallback-files\}
 
 Yedek dosya formatı [SDK v4'te değişti](fallback-flows). Yeni dosyayı **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden indirip uygulamanıza ekleyin.
 
 ## Paywall görüntülemelerini takip etme \{#tracking-paywall-views\}
+
 ### logShowPaywall(_:) → logShowFlow(_:)
 
-`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık `AdaptyPaywall` yerine `AdaptyFlow` alıyor. Olay hâlâ aynı varyasyona karşı kaydedildiği için mevcut dönüşüm hunisi ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapılmadan çalışmaya devam eder.
+`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık `AdaptyPaywall` yerine `AdaptyFlow` alıyor. Etkinlik aynı varyanta karşı kaydedilmeye devam ediyor; dolayısıyla mevcut huni ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapmadan çalışmaya devam eder.
 
 ```diff showLineNumbers
 - try await Adapty.logShowPaywall(paywall)
 + try await Adapty.logShowFlow(flow)
 ```
-v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow veya paywall'ları görüntülerken bu metodu çağırmanız gerekmez — Adapty bu görüntülemeleri otomatik olarak takip eder.
+
+v3'te olduğu gibi, Adapty tarafından render edilen flow'ları veya paywallları görüntülerken bu metodu çağırmanıza gerek yoktur — Adapty söz konusu görüntülemeleri otomatik olarak takip eder.
+
 ## didFinishPurchase artık zorunlu \{#didfinishpurchase-is-now-required\}
 
 v3'te `didFinishPurchase` isteğe bağlıydı: uygulamamanız durumunda, başarılı bir satın alma işleminin ardından paywall kendiliğinden kapanıyordu. v4.0'da bu varsayılan otomatik kapanma davranışı kaldırıldı; böylece başarılı bir satın alma işleminin ardından flow devam edebilir — örneğin flow'unuzun geri kalan ekranlarını göstermek için. Satın alma işleminin ardından ne olacağına artık siz karar veriyorsunuz: ekranı kapatın ya da flow'un devam etmesine izin vermek için hiçbir şey yapmayın.
@@ -114,6 +126,7 @@ v3'te `didFinishPurchase` isteğe bağlıydı: uygulamamanız durumunda, başar�
 - **SwiftUI**: `.flow(...)` ve `AdaptyFlowView(...)` içindeki `didFinishPurchase` closure'ı artık zorunludur (non-optional); bu durum `didFailPurchase` ve `didFinishRestore` ile tutarlı hale getirilmiştir.
 
 v3 davranışını korumak için ekranı kendiniz kapatın:
+
 ```swift showLineNumbers title="Swift"
 func flowController(
     _ controller: AdaptyFlowController,
@@ -127,6 +140,7 @@ func flowController(
 ```
 
 ## UIKit \{#uikit\}
+
 ### AdaptyPaywallController → AdaptyFlowController
 
 Kontrolcü türünü ve fabrika metodunu yeniden adlandırın:
@@ -141,9 +155,11 @@ Kontrolcü türünü ve fabrika metodunu yeniden adlandırın:
 +     delegate: self
 + )
 ```
+
 ### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate
 
 Protokolü yeniden adlandırın ve her metot imzasını güncelleyin. `didSelectProduct` artık kaldırılan `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` alıyor; `didFinishPurchase` ise [artık zorunlu olarak uygulanmalıdır](#didfinishpurchase-is-now-required) — varsayılan bir implementasyonu kalmadı.
+
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
 + class YourClass: AdaptyFlowControllerDelegate {
@@ -219,10 +235,13 @@ Protokolü yeniden adlandırın ve her metot imzasını güncelleyin. `didSelect
 +                         error: AdaptyError?) { }
  }
 ```
+
 ## SwiftUI \{#swiftui\}
+
 ### .paywall() modifier → .flow() \{#paywall-modifier--flow\}
 
 Modifier adını değiştirin, yapılandırma parametre adını güncelleyin ve [artık zorunlu olan](#didfinishpurchase-is-now-required) `didFinishPurchase` closure'ını ekleyin:
+
 ```diff showLineNumbers
  @State var flowPresented = false // rename freely — the variable name is your choice
 
@@ -242,10 +261,13 @@ Modifier adını değiştirin, yapılandırma parametre adını güncelleyin ve 
          )
  }
 ```
+
 Yeniden adlandırılan callback, `didFailRendering`'in tetiklendiği tüm render hatalarında olduğu gibi, flow script'inden gelen yeni çalışma zamanı hatalarında da (`AdaptyUIError` kodu `4105` — `.jsException` olan JavaScript istisnaları) tetiklenir. Mevcut handler gövdelerinde kod değişikliği gerekmez — yalnızca parametreyi yeniden adlandırın.
+
 ### AdaptyPaywallView → AdaptyFlowView
 
 Görünümü yeniden adlandırın, yapılandırma parametresini güncelleyin, [artık zorunlu olan](#didfinishpurchase-is-now-required) `didFinishPurchase` closure'ını ekleyin ve varsa `didSelectProduct` closure'ını güncelleyin — artık kaldırılan `AdaptyPaywallProductWithoutDeterminingOffer` yerine `AdaptyPaywallProduct` alıyor:
+
 ```diff showLineNumbers
 - AdaptyPaywallView(
 -     paywallConfiguration: paywallConfiguration,
@@ -261,13 +283,16 @@ Görünümü yeniden adlandırın, yapılandırma parametresini güncelleyin, [a
 +    didReceiveError: { error in /* handle the error */ }
  )
 ```
+
 ## AdaptyUI özel varlıklar \{#adaptyui-custom-assets\}
+
 ### AdaptyUICustomVideoAsset
 
 Mevcut her çağrı noktasını etkileyen iki değişiklik:
 
 - `.player` artık `AVQueuePlayer` yerine `AVPlayer` alıyor.
 - Her case'e sonda `resolution: CGSize?` parametresi eklendi. Mevcut davranışı korumak için `nil` geçin ya da video yüklenmeden önce yerleşim alanını ayırt etmesi (en-boy oranı = `width / height`) için gerçek piksel boyutunu belirtin.
+
 ```diff showLineNumbers
 - case file(url: URL, preview: AdaptyUICustomImageAsset?)
 - case remote(url: URL, preview: AdaptyUICustomImageAsset?)
@@ -276,16 +301,20 @@ Mevcut her çağrı noktasını etkileyen iki değişiklik:
 + case remote(url: URL, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
 + case player(item: AVPlayerItem, player: AVPlayer, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
 ```
+
 ## Attribution ve entegrasyon tanımlayıcıları \{#attribution-and-integration-identifiers\}
+
 ### updateAttribution(_:source:)
 
 `source` parametresi `String` yerine yeni `AdaptyAttributionSource` türünü kullanıyor; daha önce iç içe olan `AdaptyProfile.AttributionSource` ise üst düzey `AdaptyAttributionSource` olarak yeniden adlandırıldı. Önceden tanımlanmış kaynaklardan birini kullanabilir ya da başka bir kaynak için string literal geçirebilirsiniz — `AdaptyAttributionSource`, `ExpressibleByStringLiteral` protokolüne uyduğundan mevcut string literal çağrıları derlemeye devam eder.
+
 ```diff showLineNumbers
 - try await Adapty.updateAttribution(attribution, source: "adjust")
 + try await Adapty.updateAttribution(attribution, source: .adjust)
 ```
 
 Önceden tanımlanmış kaynaklar: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Kaynağı bir `String` değişkeninde tutuyorsanız şu şekilde sarmalayın: `AdaptyAttributionSource(rawValue: yourSource)`.
+
 :::note
 SDK 4.1, bu metodu `updateExternalAttribution(_:provider:)` ve türü `AdaptyExternalAttributionProvider` olarak yeniden adlandırıyor. Eski adlar, 4.1'de deprecation olmaksızın kaldırılmıştır. Doğrudan 4.1'e geçiş yapıyorsanız bkz. [v4.1'e Geçiş](migration-to-ios-sdk-41).
 :::
@@ -307,7 +336,9 @@ try await Adapty.setIntegrationIdentifier(
     .adjustDeviceId(adid)
 )
 ```
+
 Her eski anahtar dizesini fabrika metoduyla değiştirin:
+
 | v3 anahtarı | v4 factory |
 |---|---|
 | `"adjust_device_id"` | `.adjustDeviceId(_:)` |

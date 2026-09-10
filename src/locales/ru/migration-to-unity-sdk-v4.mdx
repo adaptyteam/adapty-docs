@@ -6,7 +6,7 @@ metadataTitle: "Миграция на Adapty Unity SDK v4.1 | Документа
 
 Adapty Unity SDK 4.1 — первый стабильный релиз ветки 4.x: версия 4.0 вышла только как бета, поэтому если вы на 3.x, мигрируйте сразу на 4.1. В этом гайде описана вся миграция: флоу, появившиеся в 4.0, и изменения версии 4.1 поверх них.
 
-Линейка 4.x добавляет флоу и переименовывает API пейволов. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется. Помимо этого, версия 4.1 переименовывает API внешней атрибуции, делает Adapty Attribution опциональным, добавляет обязательный метод слушателя и меняет формат резервного файла.
+Версия 4.x вводит флоу и переименовывает API пейволов соответствующим образом. Новые API работают с флоу и по-прежнему совместимы с пейволами из старого билдера — никаких изменений на стороне дашборда Adapty не требуется. Помимо этого, версия 4.1 переименовывает API внешней атрибуции, делает Adapty Attribution опциональным, добавляет обязательный метод слушателя и изменяет формат файла резервного пейвола.
 
 :::note
 Переходите с бета-версии 4.0? Замените закреплённый бета-тег на [установку версии 4.1.0](#installation), и вас касаются только четыре раздела: [новый метод listener](#new-required-method-onreceivepromotedpurchase), [переименованные API внешней атрибуции](#renamed-external-attribution-apis), [Adapty Attribution отключена по умолчанию](#adapty-attribution-is-disabled-by-default) и [резервные файлы](#fallback-files).
@@ -29,15 +29,15 @@ Adapty Unity SDK 4.1 — первый стабильный релиз ветки
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
 | `AdaptyEventListener` | `IAdaptyEventListener`, с новым обязательным методом `OnReceivePromotedPurchase` |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| Колбэки `PaywallViewDidPerformAction`, `PaywallViewDidAppear` и другие `PaywallView...` | Колбэки `FlowViewDidPerformAction`, `FlowViewDidAppear` и другие `FlowView...` |
+| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` и другие колбэки `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear` и другие колбэки `FlowView...` |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
-| Атрибуция Adapty включена автоматически | по умолчанию отключена — активируйте через `Builder.SetAdaptyAttributionEnabled(true)` |
-| Файл резервного пейвола скачан для версии 3.x | новый формат файла — скачайте файл повторно |
+| `Adapty.UpdateAttribution(data, source, ...)` со строковым `source` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` с `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` как `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` как `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+| Атрибуция Adapty включена автоматически | отключена по умолчанию — активируйте через `Builder.SetAdaptyAttributionEnabled(true)` |
+| Резервный файл загружен для версии 3.x | новый формат резервного файла — скачайте файл заново |
 | `Adapty.SetFallbackPaywalls(...)` (устарело в v3) | удалено — используйте `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (устарело в v3) | удалено — используйте `Builder.SetAppleIDFACollectionDisabled(...)` |
-| `paywall.Products` (список `AdaptyProductReference`) | удалено — используйте `ProductIdentifiers` или `VendorProductIds`, либо вызовите `GetPaywallProducts(flow)` для получения полных продуктов |
+| `paywall.Products` (список `AdaptyProductReference`) | удалено — используйте `ProductIdentifiers` или `VendorProductIds`, либо вызовите `GetPaywallProducts(flow)` для полного списка продуктов |
 | `AdaptyProductReference` | удалено как публичный тип — см. [Модель данных](#data-model) |
 | `paywall.RemoteConfigString` | удалено — используйте `flow.RemoteConfig?.Data` |
 
@@ -132,14 +132,14 @@ https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unit
 
 ### LogShowPaywall → LogShowFlow
 
-`LogShowPaywall` переименован в `LogShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему фиксируется для того же варианта, поэтому существующие метрики воронки и A/B-тестов продолжают работать без изменений в дашборде.
+`LogShowPaywall` переименован в `LogShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему логируется для той же вариации, поэтому существующие метрики воронки и A/B-тестов продолжат работать без изменений на дашборде.
 
 ```diff showLineNumbers
 - Adapty.LogShowPaywall(paywall, (error) => { /* ... */ });
 + Adapty.LogShowFlow(flow, (error) => { /* ... */ });
 ```
 
-Как и в v3, вам не нужно вызывать этот метод при отображении флоу или пейволов, отрисованных с помощью [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder) — Adapty отслеживает эти просмотры автоматически.
+Как и в v3, вызывать этот метод при отображении флоу или пейволов, отрисовываемых Adapty, не нужно — Adapty отслеживает такие просмотры автоматически.
 
 ## Отображение флоу \{#displaying-flows\}
 
@@ -148,7 +148,7 @@ https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unit
 Переименуйте фабричный метод и передайте `AdaptyFlow`. Тип возвращаемого представления переименован с `AdaptyUIPaywallView` на `AdaptyUIFlowView`, однако его методы (`Present`, `Dismiss`) остались прежними, а объект необязательных параметров сохраняет те же поля (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) под новым именем `AdaptyUICreateFlowViewParameters`, плюс два новых — `Locale` и `EnableSafeAreaPaddings`:
 
 :::note
-`CustomTimers` по-прежнему существует, но влияет только на пейволы, созданные в Legacy Paywall Builder. [Таймер обратного отсчёта](flow-timer) флоу работает по настройкам, заданным во Flow Builder, поэтому флоу игнорирует всё, что вы передаёте здесь.
+`CustomTimers` по-прежнему существует, но влияет только на пейволы, созданные в Legacy Paywall Builder. Таймер обратного отсчёта во [флоу](flow-timer) работает по настройкам, заданным в Flow & Paywall Builder, поэтому флоу игнорирует всё, что вы передаёте здесь.
 :::
 
 ```diff showLineNumbers
@@ -246,20 +246,38 @@ public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
 - Новый коллбэк `FlowViewDidReceiveAnalyticEvent` в `IAdaptyFlowsEventsListener` сообщает об аналитических событиях из флоу, начиная с события просмотра экрана для каждого экрана, который открывает пользователь. См. [Отслеживание просмотров экранов флоу](unity-flow-screen-views).
 - `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов на оценку приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение URL; `RequestAppReview` обеспечивает стандартный запрос оценки приложения, который флоу пока не инициируют.
 
-## Переименованные API внешней атрибуции \{#renamed-external-attribution-apis\}
+## Переименованные внешние API атрибуции \{#renamed-external-attribution-apis\}
 
-Начиная с SDK версии 4.1, API для передачи данных атрибуции от внешнего провайдера (Adjust, AppsFlyer, Branch, Tenjin или кастомного) переименованы в соответствии с нативными SDK. Устаревших псевдонимов нет, поэтому существующие вызовы перестают компилироваться до тех пор, пока вы их не переименуете:
+Начиная с версии SDK 4.1, API для передачи данных атрибуции от внешнего провайдера (Adjust, AppsFlyer, Branch, Tenjin или другого) переименованы в соответствии с нативными SDK, а тип провайдера изменён со строки на тип. Устаревших псевдонимов нет, поэтому существующие вызовы перестанут компилироваться до тех пор, пока вы их не обновите:
 
 | До 4.1 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` как `string` | `provider` как `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` как `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` как `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 
-Изменились только названия. Провайдер — та же строка, что и раньше (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), данные атрибуции по-прежнему принимаются в виде словаря или JSON-строки, а свойство профиля по-прежнему является `IReadOnlyList<string>`:
+Переименования метода недостаточно — замените аргумент provider в том же изменении:
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` содержит идентификатор, по которому бэкенд распознаёт провайдера. Доступны шесть готовых экземпляров: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin` и `Custom`. Если Adapty добавит нового провайдера после выхода этой версии SDK, создайте экземпляр вручную, передав его идентификатор: `new AdaptyExternalAttributionProvider("your_provider")` — он будет передан на бэкенд без изменений. Пробельные символы по краям обрезаются автоматически.
+
+Данные атрибуции передаются в виде **сериализованной JSON-строки**. Если у вас есть словарь, сначала сериализуйте его:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+На стороне профиля читайте применённые провайдеры через новый тип:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Атрибуция Adapty отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}
@@ -296,8 +314,8 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 - **Вью одноразовые**: После `Dismiss` вью уничтожается. Чтобы снова показать флоу, вызовите `CreateFlowView` заново.
 - **Транзакции в режиме Observer**: `ReportTransaction` больше не возвращает ошибку декодирования при успехе — в v3 ответ об успехе парсился некорректно, поэтому успешный репорт всегда завершался с ошибкой.
 
-## Устаревший API онбординга \{#onboarding-api-deprecation\}
+## Устаревший API для онбордингов \{#onboarding-api-deprecation\}
 
-Устаревший API онбординга признан устаревшим в v4 в пользу [Flow Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из будущих релизов, поэтому планируйте миграцию ваших онбордингов на Flow Builder.
+Устаревший API онбордингов объявлен устаревшим в v4 в пользу [Flow & Paywall Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из следующих релизов, поэтому планируйте перенос своих онбордингов во Flow & Paywall Builder.
 
 Устаревшие символы: `GetOnboarding`, `GetOnboardingForDefaultAudience`, `AdaptyUI.CreateOnboardingView`, `AdaptyUI.PresentOnboardingView`, `AdaptyUI.DismissOnboardingView` и `Adapty.SetOnboardingsEventsListener`.

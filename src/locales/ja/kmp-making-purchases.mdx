@@ -9,26 +9,26 @@ displayed_sidebar: sdkkmp
 
 import OfferCodesInfo from '@site/src/locales/ja/reusable/OfferCodesInfo.mdx';
 
-モバイルアプリ内でペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するための重要なステップです。ただし、[ペイウォールビルダー](adapty-paywall-builder)を使用してペイウォールをカスタマイズしている場合に限り、ペイウォールを表示するだけで購入をサポートできます。
+モバイルアプリ内でペイウォールを表示することは、ユーザーにプレミアムコンテンツやサービスへのアクセスを提供するための重要なステップです。ただし、ペイウォールを表示するだけで購入が成立するのは、Adapty が画面をレンダリングする場合のみです。具体的には、[フロー](adapty-flow-builder)、または[旧ペイウォールビルダー](adapty-paywall-builder)で作成したペイウォールが該当します。
 
-ペイウォールビルダーを使用していない場合は、購入を完了してコンテンツをアンロックするために、`.makePurchase()` という別のメソッドを呼び出す必要があります。このメソッドは、ユーザーがペイウォールを通じて購入手続きを進めるための入り口となります。
+自分のコードで画面をレンダリングする場合は、購入を完了してコンテンツをアンロックするために、`.makePurchase()` という別のメソッドを使用する必要があります。このメソッドは、ユーザーがペイウォールを通じて目的のトランザクションを行うための入口となります。
 
-ペイウォールに、ユーザーが購入しようとしているプロダクトに対して有効なプロモーションオファーが設定されている場合、Adapty は購入時に自動的にそれを適用します。
+ペイウォールにプロモーションオファーが設定されている場合、ユーザーが購入しようとしたときに Adapty が自動的にそのオファーを適用します。
 
 :::warning
-初回オファーが自動的に適用されるのは、ペイウォールビルダーを使用して設定されたペイウォールを使用している場合のみです。
+初回オファーが自動的に適用されるのは、Adapty が画面をレンダリングする場合のみです。
 
 それ以外の場合は、[iOS での初回オファーの適用資格を確認する](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)必要があります。この手順を省略すると、リリース時にアプリが審査で却下される可能性があります。また、初回オファーの対象ユーザーに通常価格が請求されるリスクもあります。
 :::
 
 [初期設定](quickstart)をすべての手順を飛ばさずに完了していることを確認してください。これが完了していないと、購入を検証できません。
 
-## 購入を行う \{#make-purchase\}
+## 購入を実行する \{#make-purchase\}
 
 :::note
-**[ペイウォールビルダー](adapty-paywall-builder)を使用していますか？** 購入は自動的に処理されるため、この手順はスキップできます。
+**Adaptyが画面をレンダリングしていますか？** [フロー](adapty-flow-builder)または[ペイウォールビルダー](adapty-paywall-builder)のペイウォールの場合、購入は自動的に処理されます。このステップはスキップできます。
 
-**ステップごとのガイダンスをお探しですか？** エンドツーエンドの実装手順については、[クイックスタートガイド](kmp-implement-paywalls-manually)をご覧ください。
+**ステップバイステップのガイドをお探しですか？** 全体的なコンテキストを含むエンドツーエンドの実装手順については、[クイックスタートガイド](kmp-implement-paywalls-manually)をご確認ください。
 :::
 
 ```kotlin showLineNumbers
@@ -159,3 +159,36 @@ Adapty.activate(
     // handle the error
 }
 ```
+
+## App Storeからのアプリ内課金 \{#in-app-purchases-from-the-app-store\}
+
+:::info
+プロモーションされたアプリ内課金は SDK バージョン 4.1 以降でサポートされており、**iOS 16.4** 以降が必要です。iOS 16.4 未満のデバイスではアプリに届きません。これは iOS 専用の機能です。Android ではリスナーが発火せず、`makePromotedPurchase` は `AdaptyErrorCode.DEVELOPER_ERROR` を返します。
+:::
+
+ユーザーがApp Storeのプロダクトページから購入を開始し、そのトランザクションがアプリに引き継がれると、SDKは`OnPromotedPurchaseListener`を通じてプロダクトをアプリに渡します。購入を完了するのはアプリ側の責任です。プロダクトを`makePromotedPurchase`に渡してください。このタイミングをアプリが制御できるため、購入開始前に独自の画面を表示することも可能です。
+
+プロモーション購入をサポートするには、リスナーを登録し、そこから購入を完了させます：
+
+```kotlin showLineNumbers
+
+Adapty.setOnPromotedPurchaseListener(OnPromotedPurchaseListener { product ->
+    scope.launch {
+        Adapty.makePromotedPurchase(product)
+            .onSuccess { result -> /* process the purchase result */ }
+            .onError { error -> /* handle the error */ }
+    }
+})
+```
+
+:::warning
+リスナーを登録しないと、プロモーション購入は完了しません。App Store がプロダクトをアプリに渡して待機し続けます。`setOnPromotedPurchaseListener` に `null` を渡した場合も、プロモーション購入が機能しなくなります。
+:::
+
+リスナーは、`Adapty.activate` の直後、アプリ起動時に登録してください。プロモーション購入は多くの場合アプリをコールドスタートさせるため、登録処理が実行される前に SDK へ到達することがよくあります。SDK はそのような購入を1件保持し、登録が完了した時点で即座に配信します。保持されるのは最新の1件のみで、購入を保持するたびにコンソール警告が出力されます。
+
+プロモーション対象のプロダクトにサブスクリプションオファーが設定されている場合、SDK は購入時に自動的にそのオファーを適用します。オファーは App Store の購入インテントから読み取られ、iOS 18.0 以降で利用可能です。iOS 16.4〜17.x では、通常価格での購入となります。
+
+`makePromotedPurchase` は購入パラメータを受け取りません。プロモーション対象のプロダクトはペイウォールではなく App Store から提供されるため、ペイウォールのコンテキストを持たないためです。戻り値は `makePurchase` と同じ `AdaptyPurchaseResult` です。
+
+`AdaptyPromotedProduct` は `vendorProductId`、`localizedTitle`、`localizedDescription`、`price`、`regionCode`、`isFamilyShareable`、および `AdaptyProductSubscription` 型の `subscription` を持ちます。

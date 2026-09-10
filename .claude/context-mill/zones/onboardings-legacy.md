@@ -12,7 +12,7 @@ reviewed_at:
 
 ## What this is
 
-The no-code onboarding builder that predates Flow Builder: creating an onboarding as a series of screens with interactive questions and variables, designing those screens, and placing the onboarding via a placement. Adapty has stopped adding features to this builder — new onboarding work is expected to go through Flow Builder instead, and the entry article (`onboardings`) says so explicitly. Only 3 articles remain in this zone, and readers are marketers maintaining an onboarding built before Flow Builder existed.
+The no-code onboarding builder that predates Flow & Paywall Builder: creating an onboarding as a series of screens with interactive questions and variables, designing those screens, and placing the onboarding via a placement. Adapty has stopped adding features to this builder — new onboarding work is expected to go through Flow & Paywall Builder instead, and the entry article (`onboardings`) says so explicitly. Only 3 articles remain in this zone, and readers are marketers maintaining an onboarding built before Flow & Paywall Builder existed.
 
 ## Surfaces
 
@@ -34,13 +34,13 @@ The no-code onboarding builder that predates Flow Builder: creating an onboardin
 
 ## Boundaries
 
-- **flow-design / flow-logic** — is the article about the legacy no-code onboarding builder, or about a Flow Builder onboarding (visual canvas, elements, navigation/logic)? As with paywalls-legacy, legacy onboarding files were sometimes reused for Flow Builder to preserve old links — judge by content and title, and check whether the file also appears under the "Flows (Beta)" category in `src/data/sidebars/tutorial.json`; if so, it's probably not legacy.
+- **flow-design / flow-logic** — is the article about the legacy no-code onboarding builder, or about a Flow & Paywall Builder onboarding (visual canvas, elements, navigation/logic)? As with paywalls-legacy, legacy onboarding files were sometimes reused for Flow & Paywall Builder to preserve old links — judge by content and title, and check whether the file also appears under the "Flows (Beta)" category in `src/data/sidebars/tutorial.json`; if so, it's probably not legacy.
 - **sdk-onboardings** — is the ticket about designing/configuring the onboarding on the dashboard (onboardings-legacy), or about fetching/presenting it in app code via the SDK (sdk-onboardings)?
 - **ab-tests** — is it about the onboarding object itself (onboardings-legacy), or about A/B testing onboarding variants (ab-tests)?
 
 ## Ticket language
 
-Corpus-wide synonyms (onboarding ↔ `AdaptyOnboarding`, Flow ↔ Paywall Builder) live in `aliases.md` and
+Corpus-wide synonyms (onboarding ↔ `AdaptyOnboarding`, Flow Builder ↔ Flow & Paywall Builder) live in `aliases.md` and
 are deliberately not repeated here. Three articles is the whole zone, so the table's real job is the
 first row: deciding whether an onboarding ticket belongs to this generation at all. Where it doesn't,
 the live answer is in `flow-design` / `flow-logic` — but two of these articles are still the *only*

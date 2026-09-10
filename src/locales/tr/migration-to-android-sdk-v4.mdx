@@ -1,12 +1,13 @@
 ---
-title: "Adapty Android SDK'yı v4.0'a Taşıma"
-description: "Adapty Android SDK v4.0'a geçiş yapın: paywall API'lerini flow API'leriyle değiştirin; hem Flow Builder hem de Paywall Builder ile uyumludur."
+title: "Adapty Android SDK'yı v4.0'a Taşıyın"
+description: "Adapty Android SDK v4.0'a geçiş yapın: paywall API'larını flow API'larıyla değiştirin; yeni API'lar hem flow'ları hem de eski builder paywalllarını destekler."
 metadataTitle: "Adapty Android SDK v4.0'a Geçiş | Adapty Dokümanları"
 ---
 
-Adapty Android SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre yeniden adlandırır. Yeni API'ler hem yeni Flow Builder hem de mevcut Paywall Builder ile çalışır — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
+Adapty Android SDK 4.0, flow'ları tanıtır ve paywall API'larını buna göre yeniden adlandırır. Yeni API'lar flow'larla çalışır; eski builder'dan gelen paywalllarla da sorunsuz çalışmaya devam eder — Adapty Kontrol Paneli tarafında herhangi bir kurulum değişikliği gerekmez.
 
 ## Hızlı referans \{#quick-reference\}
+
 | v3 | v4 |
 |---|---|
 | `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
@@ -27,7 +28,9 @@ Adapty Android SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre ye
 | `onRenderingError` | `onError` |
 | `Adapty.updateAttribution(attribution, source)` (`source: String`) | `Adapty.updateAttribution(attribution, source)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key, value)` | `Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier)` |
+
 `AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `getPaywallProducts` artık bir `AdaptyFlow` alır. Diğer `AdaptyFlowEventListener` metotları (`onProductSelected`, `onPurchaseStarted`, `onPurchaseFinished`, `onPurchaseFailure`, `onRestoreSuccess`, `onRestoreFailure`, `onActionPerformed`, `onAwaitingPurchaseParams`, `onLoadingProductsFailure` ve diğerleri) adlarını ve imzalarını korur.
+
 ## Kurulum \{#installation\}
 
 `adapty-bom` sürümünü `4.0.1` (veya üzeri) olarak ayarlayın ve projeyi senkronize edin. BOM, sizin için uygun `android-sdk` ve `android-ui` sürümlerini otomatik olarak belirler. Bağımlılık tanımlamaları için [Adapty SDK'yı Yükle](sdk-installation-android) sayfasına bakın.
@@ -35,6 +38,7 @@ Adapty Android SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre ye
 ## Kaldırılan ve kullanımdan kaldırılan API'ler \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — kaldırıldı. Bu aşırı yükleme v3'te kullanımdan kaldırılmıştı. Aynı seçenekleri bunun yerine `AdaptyPurchaseParameters` üzerinden iletin:
+
 ```diff showLineNumbers
 - Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result -> /* ... */ }
 + val params = AdaptyPurchaseParameters.Builder()
@@ -44,11 +48,14 @@ Adapty Android SDK 4.0, flow'ları tanıtır ve paywall API'lerini buna göre ye
 + Adapty.makePurchase(activity, product, params) { result -> /* ... */ }
 ```
 
-- **Onboardinglar artık kullanım dışı.** `AdaptyUI.getOnboardingView` ve `AdaptyUI.getOnboardingConfiguration`, 4.0'da `@Deprecated` olarak işaretlendi — onboardinglarınızı [Flow Builder](adapty-flow-builder)'da oluşturulan flow'lara taşıyın.
+- **Onboardinglar kullanımdan kaldırıldı.** `AdaptyUI.getOnboardingView` ve `AdaptyUI.getOnboardingConfiguration`, 4.0 sürümünde `@Deprecated` olarak işaretlendi — onboardingları [Flow & Paywall Builder](adapty-flow-builder) ile oluşturulan flow'lara taşıyın.
+
 ## Flow'ları getirme \{#fetching-flows\}
+
 ### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration
 
-Getirme işleminin dönüş türü `AdaptyPaywall`'dan `AdaptyFlow`'a değişiyor; yapılandırma yükleyicisi ise `AdaptyUI.getViewConfiguration`'dan `AdaptyUI.getFlowConfiguration`'a yeniden adlandırılıyor (`AdaptyUI.LocalizedViewConfiguration` yerine `AdaptyUI.FlowConfiguration` döndürüyor). `locale` parametresi, getirme çağrısından `getFlowConfiguration`'a taşınıyor:
+Fetch dönüş türü `AdaptyPaywall`'dan `AdaptyFlow`'a değişiyor ve yapılandırma yükleyici `AdaptyUI.getViewConfiguration`'dan `AdaptyUI.getFlowConfiguration`'a yeniden adlandırılıyor (`AdaptyUI.LocalizedViewConfiguration` yerine `AdaptyUI.FlowConfiguration` döndürüyor). `locale` parametresi fetch çağrısından çıkarılarak `getFlowConfiguration`'a taşınıyor: `AdaptyFlow` aynı zamanda `paywalls`'ı da sunuyor — flow'un paywall varyasyonları, `AdaptyFlowPaywall` değerleri olarak. Web paywall metotları bunlardan birini alıyor.
+
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
 + Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -77,22 +84,26 @@ Getirme işleminin dönüş türü `AdaptyPaywall`'dan `AdaptyFlow`'a değişiyo
 - Adapty.getPaywallProducts(paywall) { result -> /* products */ }
 + Adapty.getPaywallProducts(flow) { result -> /* products */ }
 ```
+
 ### Yedek dosyalar \{#fallback-files\}
 
 Yedek dosya formatı [SDK v4 ile değişti](fallback-flows). Yeni dosyayı **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden indirip uygulamanıza ekleyin.
 
 ## Flow görüntülemelerini takip etme \{#tracking-flow-views\}
+
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık `AdaptyPaywall` yerine `AdaptyFlow` alıyor. Etkinlik hâlâ aynı varyasyona karşı kaydedildiğinden, mevcut huni ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapılmadan çalışmaya devam eder.
+`logShowPaywall`, `logShowFlow` olarak yeniden adlandırıldı ve artık `AdaptyPaywall` yerine `AdaptyFlow` alıyor. Olay hâlâ aynı varyasyon üzerinden kaydedildiğinden, mevcut huni ve A/B testi metrikleri kontrol panelinde herhangi bir değişiklik yapılmadan çalışmaya devam eder.
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](adapty-paywall-builder) tarafından oluşturulan flow'ları ya da paywall'ları görüntülerken bu metodu çağırmanıza gerek yoktur — Adapty bu görüntülemeleri otomatik olarak takip eder.
+v3'te olduğu gibi, Adapty tarafından render edilen flow'ları veya paywall'ları görüntülerken bu metodu çağırmanıza gerek yoktur — Adapty bu görüntülemeleri otomatik olarak takip eder.
+
 ## Flow'ları görüntüleme \{#displaying-flows\}
+
 ### getPaywallView / AdaptyPaywallView → getFlowView / AdaptyFlowView
 
 Factory metodunu ve view türünü yeniden adlandırın, ardından `AdaptyUI.FlowConfiguration`'ı geçirin:
@@ -113,6 +124,7 @@ Factory metodunu ve view türünü yeniden adlandırın, ardından `AdaptyUI.Flo
 ```
 
 View'ı doğrudan oluşturuyorsanız, show metodu da yeniden adlandırılmıştır:
+
 ```diff showLineNumbers
 - val paywallView = AdaptyPaywallView(activity)
 - paywallView.showPaywall(viewConfiguration, products, eventListener)
@@ -126,7 +138,9 @@ XML layout'larında view tag'ini güncelleyin:
 - <com.adapty.ui.AdaptyPaywallView ... />
 + <com.adapty.ui.AdaptyFlowView ... />
 ```
+
 İsteğe bağlı `personalizedOfferResolver` parametresi `getFlowView` / `showFlow` / `AdaptyFlowScreen`'den kaldırıldı. Kişiselleştirilmiş fiyatlandırmayı belirtmek için `onAwaitingPurchaseParams` aracılığıyla her ürün için ayrı ayrı ayarlayın (`AdaptyPurchaseParameters.Builder().withOfferPersonalized(true)`). Yeni isteğe bağlı `customAssets` parametresi, görselleri ve videoları çalışma zamanında geçersiz kılmanıza olanak tanır — bkz. [Özel asset'ler](android-get-pb-paywalls#customize-assets).
+
 ### AdaptyPaywallScreen → AdaptyFlowScreen
 
 Jetpack Compose'da composable'ı yeniden adlandırın ve konfigürasyon parametresini güncelleyin:
@@ -140,9 +154,11 @@ Jetpack Compose'da composable'ı yeniden adlandırın ve konfigürasyon parametr
       eventListener,
   )
 ```
+
 ## Olayları Yönetme \{#handling-events\}
 
 Olay dinleyicisi `AdaptyUiEventListener`'dan `AdaptyFlowEventListener`'a (ve `AdaptyUiDefaultEventListener`'dan `AdaptyFlowDefaultEventListener`'a) yeniden adlandırıldı. Metot adlarının çoğu değişmedi; yaşam döngüsü ve render callback'leri yeniden adlandırıldı:
+
 ```diff showLineNumbers
 - class YourListener : AdaptyUiDefaultEventListener() {
 + class YourListener : AdaptyFlowDefaultEventListener() {
@@ -158,9 +174,13 @@ Olay dinleyicisi `AdaptyUiEventListener`'dan `AdaptyFlowEventListener`'a (ve `Ad
 ```
 
 Mevcut handler gövdelerinde kod değişikliği gerekmez — sadece türü ve override'ları yeniden adlandırın. `onError`, `onRenderingError`'ın tetiklendiği rendering hatalarının yanı sıra diğer satın alma dışı runtime hatalarında da tetiklenir. Callback'lerin tam listesi için bkz. [Flow & paywall olaylarını yönetme](android-handling-events).
+
 v4 ayrıca bir `onBackPressed(context): Boolean` callback'i ekler ve varsayılan davranışı sistem geri tuşunun nasıl çalıştığını değiştirir. Önceden geri tuşuna basmak (veya geri gesturı) aktivitenize ya da fragment'ınıza geçer ve genellikle paywall'ı kapatırdı. v4'te varsayılan uygulama bu basışı tüketir; dolayısıyla **sistem geri tuşu artık bir flow'u kendi başına kapatmaz** — flow'un sistem gesturıyla kapatılamadığı iOS davranışıyla aynı hizaya gelir. Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya bir `on_device_back` aksiyonu) ya da eski davranışı geri kazanmak için `onBackPressed`'i `false` döndürecek şekilde geçersiz kılın. Ayrıntılar için [Sistem geri tuşu](android-handling-events#system-back-button) bölümüne bakın.
+
 Varsayılan satın alma işleyicisi artık ekranı kapatmayı da durduruyor. v3'te, varsayılan `onPurchaseFinished`, kullanıcının iptal etmediği her tamamlanmış satın almanın (başarılı veya beklemedeki satın alma) ardından paywallı kapatıyordu. v4'te bu işlem hiçbir şey yapmıyor, dolayısıyla **siz kapatana kadar bir flow, satın alma sonrasında açık kalıyor** — bu da iOS davranışıyla örtüşüyor. Bu otomatik kapanmaya güveniyorsanız, satın alma tamamlandığında ekranı kendiniz kapatın. Örnek için [Başarılı, iptal edilmiş veya beklemedeki satın alma](android-handling-events#successful-canceled-or-pending-purchase) konusuna bakın.
+
 ## Attribution ve entegrasyon tanımlayıcıları \{#attribution-and-integration-identifiers\}
+
 ### updateAttribution
 
 `source` parametresi `String` türünden yeni `AdaptyAttributionSource` türüne değişti ve `attribution` artık `Map<String, Any>` türünde (JSON `String` aşırı yüklemesi de mevcuttur). Önceden tanımlanmış kaynaklardan birini kullanın:
@@ -169,6 +189,7 @@ Varsayılan satın alma işleyicisi artık ekranı kapatmayı da durduruyor. v3'
 - Adapty.updateAttribution(attribution, "appsflyer") { error -> /* handle the error */ }
 + Adapty.updateAttribution(attribution, AdaptyAttributionSource.APPSFLYER) { error -> /* handle the error */ }
 ```
+
 Önceden tanımlı kaynaklar: `AdaptyAttributionSource.APPLE_ADS`, `.ADJUST`, `.APPSFLYER`, `.BRANCH`, `.TENJIN`. Başka bir kaynak için bir string'den oluşturun: `AdaptyAttributionSource("your_source")`.
 
 :::note
@@ -185,6 +206,7 @@ SDK 4.1, bu metodu `updateExternalAttribution` olarak ve türü `AdaptyExternalA
 ```
 
 Tek bir çağrıda birden fazla tanımlayıcı ayarlayabilirsiniz:
+
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
@@ -195,6 +217,7 @@ Adapty.setIntegrationIdentifier(
 ```
 
 Eski her anahtar dizesini ilgili kolaylık metoduyla değiştirin:
+
 | v3 anahtarı | v4 `AdaptyIntegrationIdentifier` metodu |
 |---|---|
 | `"adjust_device_id"` | `adjustDeviceId(value)` |
@@ -213,4 +236,5 @@ Eski her anahtar dizesini ilgili kolaylık metoduyla değiştirin:
 | `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
 | `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
 | `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+
 `AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)` şeklinde özel bir `Key` kullanarak bu listede olmayan bir anahtar için identifier'ı doğrudan oluşturabilirsiniz.

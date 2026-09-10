@@ -116,7 +116,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
   how the product card looks and what the button does.** `create-offer`'s "Add offer to flow" is
   deliberately only the two clicks that bind an offer to the selected product card — element layout
   belongs to `paywall-layout-and-products` and purchase wiring to `paywall-product-block`. Don't grow
-  it into a Flow Builder walkthrough. `add-product-to-paywall` is the legacy-paywall equivalent and
+  it into a Flow & Paywall Builder walkthrough. `add-product-to-paywall` is the legacy-paywall equivalent and
   stays frozen at that scope.
 - **Three articles are pure routers. Don't fill them.** `offers-in-stores` is two links by design;
   `product` is a definition plus a display checklist; `offers` exists only because it names the
@@ -151,6 +151,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
 | offers | entry | marketer | 1 | tutorial |
 | offers-in-stores | entry | marketer | 0 | tutorial |
 | product | entry | marketer | 0 | tutorial |
+| store-sync | entry | marketer | 7 | tutorial |
 | virtual-currencies | entry | marketer | 3 | tutorial |
 | virtual-currency-balance | — | marketer | 3 | tutorial |
 | virtual-currency-quickstart | — | marketer | 0 | tutorial |
@@ -199,7 +200,7 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
 | "dashboard price is wrong", "changed the price in the store console and Adapty didn't update" | `edit-product`. Store-side changes never sync back; the dashboard price is reference-only and revenue analytics come straight from the stores, so usually nothing is actually broken. |
 | "regional pricing", "bulk price change", "who changed this price" | `edit-product`. The CSV upload pushes prices *to* both consoles (only differing rows change; applying to existing subscribers is an opt-in checkbox). The audit log answers who/when. |
 | "change the subscription period", "wrong access level on a product" | `edit-product`. Duration is immutable after creation — create a new product. An access-level change applies to new subscriptions and reaches existing subscribers only at their next renewal. |
-| "can't delete this product", "swap a product on a published paywall", "which product appears first", "product display order in the app" | Product-to-paywall coupling: `delete-product` refuses deletion while any paywall uses the product, and `add-product-to-paywall` both sets the display order (preserved SDK-side, not sorted in app code) and warns that post-publish product edits skew that paywall's metrics. For placement on the Flow Builder canvas, see `flow-logic`. |
+| "can't delete this product", "swap a product on a published paywall", "which product appears first", "product display order in the app" | Product-to-paywall coupling: `delete-product` refuses deletion while any paywall uses the product, and `add-product-to-paywall` both sets the display order (preserved SDK-side, not sorted in app code) and warns that post-publish product edits skew that paywall's metrics. For placement on the Flow & Paywall Builder canvas, see `flow-logic`. |
 | "tokens", "credits", "coins", "gems", "hearts", "charge per generation", "usage allowance", "pay per use" | All virtual currency, whatever the app calls it: `virtual-currencies` for the model and its hard limits — max 20 currencies per app, and **no SDK method** to read or spend a balance, so this feature requires a backend calling the server-side API. |
 | "credits vanished", "balance reset", "lost credits after reinstall", "existing subscribers got nothing" | Three distinct causes. Expiry toggle on `create-virtual-currency` zeroes unused credits at each renewal; product links apply going forward only, so a current subscriber waits for their next renewal; and per `virtual-currency-balance` a balance belongs to exactly one profile, so an anonymous user loses it on reinstall or a second device. |
 | "`insufficient_balance`", "double-charged tokens on a retry", "convert gems to gold" | `virtual-currency-quickstart`. Balances can't go negative, a transaction is atomic and can debit one currency while crediting another, and `Idempotency-Key` is what makes a retry safe. |

@@ -1,0 +1,150 @@
+---
+title: "Habilidad de agente para migrar placements a flows"
+description: "Instala la habilidad migrate-placements para que tu herramienta de codificación con IA migre una app de placements de paywall a placements de flow, uno nuevo por cada antiguo."
+metadataTitle: "Habilidad de agente para migrar placements | Flow & Paywall Builder | Documentación de Adapty"
+---
+
+La habilidad migrate-placements traslada una app que utiliza paywalls a flows. Apunta tu herramienta de codificación con IA a tu cuenta, lee cada placement a través de la [CLI de Adapty](developer-cli-quickstart), calcula cuántos flows necesita la migración y crea un nuevo placement de flow por cada placement de paywall que estés migrando. Lo que obtienes es una tabla de ID de placement antiguo a ID de placement nuevo, y la única llamada que tu app debe cambiar.
+
+**Crea placements nuevos en lugar de convertir los existentes.** El tipo de contenido de un placement se fija en el momento de su creación, por lo que un placement de paywall nunca puede convertirse en un placement de flow — consulta [Crear un nuevo placement para tu flow](migrate-to-flows#create-a-new-placement-for-your-flow). Cada nuevo placement de flow funciona en paralelo al placement de paywall que reemplaza, y el antiguo sigue activo hasta que tu app implemente el cambio.
+
+La skill no diseña el contenido de los flows — eso lo hace la [skill flow-generator](flow-generator-skill) — y tampoco escribe el código de tu app, que es lo que hace la [skill de integración del SDK](manage-adapty-with-ai#skill-based-integration) para tu plataforma. Lee tus placements de paywall y nunca edita ninguno.
+
+## Antes de empezar \{#before-you-start\}
+
+- **Una herramienta de codificación con IA que admita skills**: Claude Code, GitHub Copilot CLI, OpenAI Codex y Gemini CLI funcionan.
+- **Un flow para cada paywall que vayas a migrar, o un plan para obtenerlo**: La skill pregunta por cada paywall de dónde viene el flow, y una de las opciones es un clic que haces en el dashboard. Consulta [De dónde viene el contenido del flow](#where-the-flow-content-comes-from).
+- **Adapty SDK v4 en tu hoja de ruta**: Los flows solo se renderizan en SDK v4 o superior, por lo que la migración termina con una publicación de la app. Hasta que esa versión salga, nada de lo que crea la skill llegará a tus usuarios.
+
+## Instalar la skill
+
+migrate-placements se incluye en el plugin `adapty-skills` ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) junto con flow-generator y flow-audit — con una sola instalación tienes todas las skills del plugin.
+
+:::tip
+**¿Ya instalaste el plugin para otra skill de Adapty? Ya la tienes.** El plugin se actualiza solo, así que migrate-placements estará disponible en tu próxima sesión sin que tengas que hacer nada.
+:::
+
+Para instalarlo por primera vez en Claude Code:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Luego ejecuta `/reload-plugins` para activar las skills. Para otras herramientas de codificación con IA, sigue los [pasos de instalación de flow-generator](flow-generator-skill#install-the-skill) — el mismo repositorio, los mismos comandos. Esas rutas copian las skills en su lugar en vez de instalar un plugin, así que vuelve a ejecutarlos para incorporar alguna skill añadida desde tu última instalación.
+
+Luego pídelo — `/migrate-placements` en las herramientas que mapean comandos de barra a skills, o "Use the migrate-placements skill" en las que no lo hacen.
+
+## Ejemplos de prompts \{#example-prompts\}
+
+#### Migrar los placements que sirven a usuarios \{#move-the-placements-that-serve-users\}
+
+```
+Migrate the active paywall placements in my app to flows. Skip the inactive
+ones for now and tell me how many you left out.
+```
+
+#### Reutilizar los flows que ya convertiste \{#reuse-the-flows-you-already-converted\}
+
+```
+Migrate my paywall placements to flows. I've already converted three of the
+paywalls with Move to new builder — reuse those flows instead of building new ones.
+```
+
+#### Ensayar con los placements tranquilos primero \{#rehearse-on-the-quiet-placements-first\}
+
+```
+Start with my inactive paywall placements so I can watch the whole thing run
+without exposing users, then do the live ones.
+```
+
+#### Migrar un área de la app \{#migrate-one-app-area\}
+
+```
+Migrate only the four onboarding placements in my app, not the in-app upsells.
+Show me the placement IDs you'd create before you create anything.
+```
+
+## Cómo funciona \{#how-it-works\}
+
+Ocho fases, y solo la séptima escribe algo en tu cuenta.
+
+1. **Resolver y verificar.** Instala o actualiza la [CLI de Adapty](developer-cli-quickstart), confirma tu sesión en Adapty y lee el ID de tu app.
+2. **Inventario.** Lee todos los placements de la app, paginando hasta el final de la lista en lugar de confiar solo en la primera página.
+3. **Clasificar y agrupar.** Ordena cada audiencia en: migrables, ya asociadas a un flow, o sin nada que mover; luego agrupa las migrables según el paywall al que sirven. Ese agrupamiento es el plan de flows: **un flow por paywall distinto**, compartido por todos los placements que lo usan, de modo que refinás un solo flow en lugar de cinco copias.
+4. **Hacer dos preguntas.** Cuánto de la cuenta mover y de dónde viene el contenido de cada flow. Consulta [De dónde viene el contenido del flow](#where-the-flow-content-comes-from).
+5. **Publicar los flows.** Para un paywall sin flow asignado, el skill crea uno, guarda una configuración, lo publica y espera a que el estado sea `published`. Un flow que ya está publicado se registra tal cual. La publicación es importante porque un flow en borrador no se puede asociar a un placement.
+6. **Mostrar la puerta.** La lista completa de IDs de placement que propone crear, y lo que aún no ha ocurrido.
+7. **Crear los placements.** Un `placements create` por placement de paywall en scope, tras tu confirmación.
+8. **Informe y traspaso.** El mapeo de antiguo a nuevo, y el cambio de llamada al SDK para tus desarrolladores.
+
+Proposed IDs follow your existing ones — `main` becomes `main-flow` — and each is verified against every placement ID already in the app.
+
+## De dónde viene el contenido del flow \{#where-the-flow-content-comes-from\}
+
+Un nuevo placement necesita un flow publicado para funcionar, y la habilidad pregunta para cada paywall qué ruta seguir. Nunca elige por ti, porque las cuatro rutas difieren en lo que verán tus usuarios.
+
+| Ruta | Qué ocurre | Cuándo encaja |
+|---|---|---|
+| **Reuse** | La skill adjunta un flow que ya tienes. Si sigue en borrador, lo publica primero. | Ya has creado o convertido el flow. Se ofrece en primer lugar cuando existe un candidato. |
+| **Convert** | Haces clic en **Move to new builder** en la propia página del paywall; la skill espera, vuelve a leer tu cuenta y lee el flow que ha producido. | El paywall se creó en el Paywall Builder heredado. Consulta [Convertir un paywall en un flow](convert-paywall-to-flow). |
+| **Build** | La skill pasa el paywall a [flow-generator](flow-generator-skill), que diseña el flow. | La conversión no puede reproducir el paywall, o quieres que la pantalla se rediseñe en lugar de copiarse. |
+| **Stub** | La skill publica un flow mínimo de una sola pantalla para que el placement tenga algo que mostrar. | Último recurso. Un stub muestra un marcador de posición a tus usuarios, por lo que requiere tu confirmación explícita. |
+
+La skill busca flows existentes antes de construir nada, y los asocia a tus paywalls **solo por nombre** — Adapty no registra de qué paywall proviene un flow. Por eso, cada candidato que encuentra es una propuesta que debes confirmar, y un flow al que hayas cambiado el nombre no se encontrará. Compruébalo contra tu [lista de flows](https://app.adapty.io/flows) — la CLI no tiene ningún comando para eliminar un flow, así que si se crea uno por error, tendrás que borrarlo desde el dashboard.
+
+Si **Move to new builder** está disponible en un paywall concreto es algo que la skill no puede leer — el botón aparece únicamente en paywalls del Paywall Builder heredado, y la CLI no indica con qué builder se creó cada paywall. La skill describe el botón y dónde buscarlo; tú nos cuentas lo que encontraste.
+
+## Qué es lo que apruebas \{#what-you-approve\}
+
+Antes de crear nada, la skill imprime un bloque para que lo leas y respondas. En él aparece el nombre de tu app, el número de placements que va a crear y la tabla completa de antiguo-a-nuevo, no un recuento abreviado.
+
+El mismo bloque indica qué es lo que un "sí" no hace:
+
+- **Tus placements de paywall no se ven afectados**: Siguen funcionando con normalidad, lo que también actúa como mecanismo de rollback: nada cambia para los usuarios hasta que tu app implemente la nueva llamada, así que no enviar nada revierte la migración.
+- **Esto aún no llega a los usuarios**: Tu app tiene que llamar a `getFlow` en el nuevo placement ID donde actualmente llama al antiguo.
+- **Un "no" detiene los placements, no los flows**: Cualquier flow que la ejecución ya haya creado permanece en tu cuenta, y ningún comando de CLI elimina un flow. El asistente indica el recuento y dónde eliminarlos.
+
+## Qué obtienes \{#what-you-get\}
+
+La ejecución termina con los recuentos —creados, omitidos y fallidos con sus motivos— y luego el mapeo con el que trabajan tus desarrolladores:
+
+| Placement del paywall antiguo | Placement del nuevo flow |
+|---|---|
+| `onboarding_main` | `onboarding_main-flow` |
+| `paywall_settings` | `paywall_settings-flow` |
+
+En SDK v4, `getFlow` lee tanto placements de flow como placements de paywall, por lo que tu app llama a un único método en ambos casos — lo que cambia es el ID del placement, no el método. Delega la implementación a la guía de integración del SDK para tu plataforma, que gestiona los puntos de llamada específicos de cada plataforma: [iOS](adapty-sdk-integration-skill) · [Android](adapty-sdk-integration-skill-android) · [React Native](adapty-sdk-integration-skill-react-native) · [Flutter](adapty-sdk-integration-skill-flutter) · [Unity](adapty-sdk-integration-skill-unity) · [Kotlin Multiplatform](adapty-sdk-integration-skill-kmp) · [Capacitor](adapty-sdk-integration-skill-capacitor).
+
+Mantén ambos placements activos hasta que la adopción de v4 sea suficientemente alta. Los usuarios con versiones ya publicadas tienen el ID del placement anterior compilado en su app y no pueden acceder al flow hasta que actualicen, por lo que cada placement se mide con sus propias métricas mientras ambos están activos: compáralos como cohortes separadas. [Migrar a flows](migrate-to-flows) cubre toda la transición.
+
+## Lo que no hará \{#what-it-wont-do\}
+
+- **Convertir un placement en otro tipo directamente**: Esa operación no existe. Adapty rechaza los cambios de tipo, por lo que toda migración implica crear un placement nuevo.
+- **Reutilizar el ID del placement antiguo**: Los IDs de placement son únicos en toda tu app, independientemente del tipo, así que el nuevo placement de flow necesita un ID que ningún otro placement esté usando, incluido el placement de paywall al que reemplaza.
+- **Modificar nada de lo que ya existe**: No se edita ni elimina ningún placement, paywall o flow existente. El skill solo los lee y crea nuevos junto a ellos.
+- **Crear un placement sin tu confirmación**: Todo ID propuesto pasa primero por la [revisión de aprobación](#what-you-approve).
+- **Crear un segundo flow para un paywall que ya tiene uno**: No sin que tú rechaces reutilizar el que ya existe, porque el duplicado sería un flow que tendrías que eliminar manualmente.
+- **Escribir el código de tu app**: La ejecución termina en la entrega.
+
+## Limitaciones \{#limitations\}
+
+#### Una audiencia con varios segmentos debe resolverse primero \{#an-audience-with-several-segments-has-to-be-resolved-first\}
+
+Una audiencia que apunta a más de un [segmento](segments) puede leerse pero no escribirse de nuevo, por lo que el skill no puede recrearla en un nuevo placement. Informa esos placements como bloqueados e indica el motivo, y no ofrecerá dividir ni eliminar un segmento — eso cambiaría quién ve qué, y esa decisión es tuya. Resuélvelos en el dashboard, y el resto de la migración continúa sin ellos.
+
+#### Las audiencias de las pruebas A/B no son visibles para el skill \{#ab-test-audiences-arent-visible-to-the-skill\}
+
+Leer un placement solo devuelve sus audiencias de paywall y flow, y omite en silencio cualquier otro tipo. Una audiencia de [prueba A/B](ab-tests) es uno de esos casos, y la respuesta no indica que se haya omitido ninguna entrada, por lo que no hay forma de detectarlo. Los recuentos describen lo que devolvió la API. Para cualquier placement que sepas que ejecuta una prueba A/B, revisa la lista de audiencias en el dashboard — el nuevo placement de flow no llevará consigo una audiencia que el skill nunca vio.
+
+#### Nada se verifica de extremo a extremo hasta que lo publicas \{#nothing-is-verified-end-to-end-until-you-ship\}
+
+Las comprobaciones propias de esta skill se detienen en "el flow está publicado y el placement existe". Si el flow funciona para un usuario real es una pregunta aparte: ejecuta [flow-audit](flow-audit-skill) en cada flow antes de publicarlo, y haz una compra en sandbox en el nuevo placement una vez que la app lo llame.
+
+## ¿Qué sigue? \{#whats-next\}
+
+- [Migrar a flows](migrate-to-flows) — la migración completa, incluyendo la actualización del SDK a la que esta skill da paso.
+- [Convertir un paywall en un flow](convert-paywall-to-flow) — el clic en **Move to new builder** del que depende la ruta de conversión.
+- [Skill flow-generator](flow-generator-skill) — construye y edita el contenido del flow que esta skill adjunta.
+- [Skill flow-audit](flow-audit-skill) — comprueba que un flow está listo para producción antes de asignarlo a un placement.
+- [Referencia de la CLI de Adapty](developer-cli-reference#placements) — los comandos de placement que ejecuta esta skill.

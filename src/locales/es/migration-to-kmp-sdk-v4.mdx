@@ -1,15 +1,22 @@
 ---
-title: "Migrar el SDK de Adapty Kotlin Multiplatform a v4.0"
-description: "Migra al SDK de Adapty Kotlin Multiplatform v4.0 (beta) reemplazando las APIs de paywall por las de flow, compatibles tanto con Flow Builder como con Paywall Builder."
-metadataTitle: "Migración al SDK de Adapty Kotlin Multiplatform v4.0 (beta) | Documentación de Adapty"
+title: "Migrar el SDK de Kotlin Multiplatform de Adapty a v4.1"
+description: "Migra al SDK de Kotlin Multiplatform de Adapty v4.1: sustituye las APIs de paywall por APIs de flow, adopta el método de atribución renombrado y habilita explícitamente Adapty Attribution."
+metadataTitle: "Migración al SDK de Kotlin Multiplatform de Adapty v4.1 | Documentación de Adapty"
 ---
 
-El SDK de Adapty Kotlin Multiplatform 4.0 (beta) introduce los flows y renombra las APIs de paywall en consecuencia. Las nuevas APIs funcionan tanto con el nuevo Flow Builder como con el Paywall Builder existente; no se requieren cambios de configuración en el Adapty Dashboard.
+El SDK de Kotlin Multiplatform de Adapty 4.1 es la primera versión estable de la línea 4.x — la 4.0 se publicó solo como beta, así que si estás en la 3.x, migra directamente a la 4.1. Esta guía cubre la migración completa: los flows introducidos en la 4.0 y los cambios de la 4.1 sobre ellos.
+
+La línea 4.x introduce flows y renombra las APIs de paywall en consecuencia. Las nuevas APIs funcionan tanto con el Flow & Paywall Builder como con el antiguo Paywall Builder — no se requieren cambios de configuración en el Adapty Dashboard. Además, la versión 4.1 hace que Adapty Attribution sea opcional (opt-in), renombra las APIs de atribución externa y el tipo de suscripción del producto, y añade las compras in-app promocionadas de App Store.
+
+:::note
+¿Vienes de la beta 4.0? Actualiza la versión y solo aplican cinco secciones: [La atribución de Adapty está desactivada por defecto](#adapty-attribution-is-disabled-by-default), [las APIs de atribución externa renombradas](#renamed-external-attribution-apis), [AdaptyPaywallProductSubscription → AdaptyProductSubscription](#adaptypaywallproductsubscription--adaptyproductsubscription), [compras in-app promocionadas en App Store](#app-store-promoted-in-app-purchases) y [elegir un layout específico](#choosing-a-specific-layout). `hasViewConfiguration` también [vuelve al modelo de flow](#data-model).
+:::
 
 ## Referencia rápida \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
+| Adapty Attribution habilitado automáticamente | deshabilitado por defecto — actívalo con `.withAdaptyAttributionEnabled(true)` |
 | `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
 | `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
 | `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
@@ -25,25 +32,51 @@ El SDK de Adapty Kotlin Multiplatform 4.0 (beta) introduce los flows y renombra 
 | `AdaptyUIPaywallPlatformView(paywall, ...)` | `AdaptyUIFlowPlatformView(flow, ...)` |
 | `paywallViewDidPerformAction`, `paywallViewDidAppear` y otros callbacks `paywallView...` | `flowViewDidPerformAction`, `flowViewDidAppear` y otros callbacks `flowView...` |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+| `Adapty.updateAttribution(attribution, source)` con un `String` como source | `Adapty.updateExternalAttribution(attribution, provider)` con un `AdaptyExternalAttributionProvider` |
+| el proveedor se pasa como cadena de texto, por ejemplo `"adjust"` | `AdaptyExternalAttributionProvider`, por ejemplo `AdaptyExternalAttributionProvider.ADJUST` |
+| `AdaptyProfile.appliedAttributionSources: List<String>` | `AdaptyProfile.appliedExternalAttributionProviders: List<AdaptyExternalAttributionProvider>` |
+| `AdaptyPaywallProductSubscription` | `AdaptyProductSubscription` |
+| Compras in-app promocionadas no compatibles | `OnPromotedPurchaseListener` y `Adapty.makePromotedPurchase(product)` |
 
 `AdaptyPaywallProduct` mantiene su nombre — los productos siguen perteneciendo a un flow, y `getPaywallProducts` también mantiene su nombre, ahora aceptando un `AdaptyFlow`. Los métodos `getFlow` y `getFlowForDefaultAudience` ya no aceptan un parámetro `locale` — pásalo a `createFlowView` en su lugar. Las APIs de compra y perfil (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) y `setFallback` mantienen las mismas firmas, pero el propio archivo de respaldo debe volver a descargarse — consulta [Archivos de respaldo](#fallback-files). Los métodos de onboarding siguen funcionando pero están obsoletos — consulta [Obsolescencia de la API de onboarding](#onboarding-api-deprecation). Algunos comportamientos predeterminados han cambiado — consulta [Cambios en el comportamiento predeterminado](#default-behavior-changes).
 
 ## Instalación \{#installation\}
 
-v4.0 es una versión previa al lanzamiento, así que fija la versión exacta — Gradle no selecciona versiones preliminares mediante rangos dinámicos:
+Actualiza la versión y sincroniza el proyecto:
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.1-beta.1"
+adapty-kmp = "<the latest SDK version>"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
 adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp" }
 ```
 
-El módulo `adapty-kmp-ui` solo es necesario si renderizas flows y paywalls con la capa Compose Multiplatform (`view.present()`). Consulta [Instalar Adapty SDK](sdk-installation-kotlin-multiplatform) para la configuración completa.
+El módulo `adapty-kmp-ui` solo es necesario si renderizas flows y paywalls con la capa de Compose Multiplatform (`view.present()`). Consulta [Instalar el SDK de Adapty](sdk-installation-kotlin-multiplatform) para la configuración completa.
 
-Los SDKs nativos subyacentes de Adapty se han actualizado a sus versiones 4.x en ambas plataformas y se resuelven automáticamente — no es necesario ningún cambio en la compilación. El deployment target de iOS se mantiene en **15.0**, sin cambios en esta versión.
+Los SDKs nativos de Adapty subyacentes se han actualizado a sus versiones 4.x en ambas plataformas y se resuelven automáticamente — no se necesitan cambios en la compilación. El target de despliegue de iOS sigue siendo **15.0**, sin cambios en esta versión.
+
+## ⚠️ La atribución de Adapty está desactivada por defecto \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Si usas [Atribución de Adapty](user-acquisition) y actualizas al SDK 4.1 sin activarla explícitamente, fallará en silencio: las instalaciones dejarán de registrarse y no recibirás ningún aviso.
+:::
+
+En versiones anteriores, el SDK registraba instalaciones para [Atribución de Adapty](user-acquisition) automáticamente. A partir de la versión 4.1 del SDK, esto está desactivado por defecto: el SDK no registra instalaciones, el listener configurado con `setOnInstallationDetailsListener` nunca se activa, y `getCurrentInstallationStatus` devuelve `AdaptyInstallationStatus.Determined.NotAvailable`.
+
+Si usas la Atribución de Adapty, actívala al inicializar el SDK:
+
+```diff showLineNumbers
+  val config = AdaptyConfig
+      .Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+
+  Adapty.activate(configuration = config)
+```
+
+Si no usas Adapty Attribution, no es necesario hacer ningún cambio.
 
 ## Obtener flows \{#fetching-flows\}
 
@@ -96,11 +129,11 @@ El formato del archivo de respaldo [cambió en la versión 4 del SDK](fallback-f
 | Propiedad v3 `AdaptyPaywall` | Propiedad v4 `AdaptyFlow` | Acción |
 |---|---|---|
 | `remoteConfig: AdaptyRemoteConfig?` (única) | `remoteConfigs: List<AdaptyRemoteConfig>` | Un flow lleva un Remote Config por idioma configurado. Lee el que corresponda al usuario: `flow.remoteConfigs.firstOrNull { it.locale == "en" }`. |
-| _(nueva)_ | `paywalls: List<AdaptyFlowPaywall>` | Cada entrada es una variación de paywall en el flow, con su propio `name`, `variationId` y `productIdentifiers`. Los métodos de paywall web reciben un `AdaptyFlowPaywall` — consulta [Métodos de paywall web](#web-paywall-methods). |
-| `productIdentifiers` | movida | Los identificadores de producto ahora están en cada variación: `flow.paywalls[i].productIdentifiers`. Para obtener productos, sigue llamando a `getPaywallProducts(flow)`. |
-| `hasViewConfiguration` | eliminada | Elimina cualquier comprobación de `hasViewConfiguration` de tu código — `createFlowView` devuelve un error en su lugar (consulta [Mostrar flows](#displaying-flows)). |
+| _(nuevo)_ | `paywalls: List<AdaptyFlowPaywall>` | Cada entrada es una variación de paywall en el flow, con su propio `name`, `variationId` e `productIdentifiers`. Los métodos de paywall web reciben un `AdaptyFlowPaywall` — consulta [Métodos de paywall web](#web-paywall-methods). |
+| `productIdentifiers` | movido | Los identificadores de producto ahora están en cada variación: `flow.paywalls[i].productIdentifiers`. Para obtener productos, sigue llamando a `getPaywallProducts(flow)`. |
+| `hasViewConfiguration` | mantenido | Indica si el flow incluye un layout que AdaptyUI puede renderizar. Estaba ausente en la beta 4.0 y ha vuelto en 4.1: si eliminaste tus comprobaciones para la beta, puedes volver a usarlo. `false` significa que el flow no lleva layout, así que trátalo como solo Remote Config. También puedes llamar a `createFlowView` y gestionar el error (consulta [Mostrar flows](#displaying-flows)). |
 
-`hasViewConfiguration` permanece en `AdaptyOnboarding` — solo el modelo de flow lo elimina.
+`hasViewConfiguration` también está disponible en `AdaptyOnboarding`, sin cambios.
 
 ## Métodos de Web paywall \{#web-paywall-methods\}
 
@@ -117,14 +150,14 @@ El formato del archivo de respaldo [cambió en la versión 4 del SDK](fallback-f
 
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` ha pasado a llamarse `logShowFlow` y ahora recibe un `AdaptyFlow`. El evento se sigue registrando contra la misma variación, por lo que las métricas de embudo y las pruebas A/B siguen funcionando sin cambios en el dashboard.
+`logShowPaywall` ha pasado a llamarse `logShowFlow` y ahora recibe un `AdaptyFlow`. El evento sigue registrándose contra la misma variación, por lo que las métricas de embudo y las pruebas A/B existentes siguen funcionando sin cambios en el dashboard.
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-Al igual que en v3, no es necesario llamar a este método al mostrar flows o paywalls renderizados por el [Flow Builder](adapty-flow-builder) o el [Paywall Builder](adapty-paywall-builder) — Adapty registra esas vistas automáticamente.
+Al igual que en v3, no es necesario llamar a este método cuando se muestran flows o paywalls renderizados por Adapty — Adapty registra esas vistas automáticamente.
 
 ## Mostrando flows \{#displaying-flows\}
 
@@ -133,7 +166,7 @@ Al igual que en v3, no es necesario llamar a este método al mostrar flows o pay
 Renombra el método de fábrica y pasa el `AdaptyFlow`. El tipo de vista devuelto cambia de `AdaptyUIPaywallView` a `AdaptyUIFlowView`, pero sus métodos (`present`, `dismiss`) y los parámetros opcionales (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) no cambian. Hay un nuevo parámetro opcional: `locale`, que reemplaza el `locale` que antes pasabas a `getPaywall` — consulta [Obtención de flows](#fetching-flows).
 
 :::note
-`customTimers` sigue existiendo, pero solo afecta a los paywalls del Paywall Builder heredado. El [temporizador de cuenta atrás](flow-timer) de un flow funciona según la configuración establecida en el Flow Builder, por lo que un flow ignora lo que pases aquí.
+`customTimers` sigue existiendo, pero solo afecta a los paywalls del Paywall Builder heredado. El [temporizador de cuenta atrás](flow-timer) de un flow se ejecuta según el comportamiento configurado en el Flow & Paywall Builder, por lo que un flow ignora lo que pases aquí.
 :::
 
 ```diff showLineNumbers
@@ -154,7 +187,7 @@ Si no usas Compose Multiplatform, el método de fábrica nativo se renombra de l
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` devuelve un `AdaptyResult.Error` si el flow no tiene ninguna vista configurada — esto reemplaza la comprobación `hasViewConfiguration` de la v3:
+`createFlowView` devuelve un `AdaptyResult.Error` si el flow no tiene ninguna vista configurada, así que puedes eliminar la comprobación `hasViewConfiguration` de v3 y gestionar el error en su lugar:
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -169,7 +202,7 @@ Si no usas Compose Multiplatform, el método de fábrica nativo se renombra de l
 ```
 
 :::note
-Una vista de flow es de un solo uso: una vez que llamas a `dismiss()`, la vista se destruye, así que vuelve a llamar a `createFlowView` para presentar el flow de nuevo.
+Una vista de flow es de un solo uso: después de llamar a `dismiss()`, la vista se destruye, por lo que debes llamar a `createFlowView` de nuevo para mostrar el flow otra vez.
 :::
 
 ## Gestión de eventos \{#handling-events\}
@@ -217,12 +250,77 @@ Al igual que en la v3, los callbacks que pasas aquí (y cualquier observador reg
 
 ### Nuevas APIs \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` con un `AdaptyUIObserverModeResolver` — gestiona compras y restauraciones iniciadas desde flows mientras el SDK funciona en [modo Observer](implement-observer-mode-kmp). Antes solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo Observer](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` con un `AdaptyUISystemRequestsHandler` — reservado para solicitudes del sistema desde un flow (permisos del SO y solicitudes de valoración de la app). Los flows aún no activan estas solicitudes, así que no necesitas registrar un handler.
-- El nuevo callback opcional `flowViewDidReceiveAnalyticEvent` informa de eventos de analítica de un flow, empezando por una vista de pantalla cada vez que el usuario abre una pantalla. Consulta [Rastrear vistas de pantalla en flows](kmp-flow-screen-views).
-- `AdaptyUI.openWebUrl(url, openIn)` y `AdaptyUI.requestAppReview()` — respaldan la gestión predeterminada de `OpenUrlAction` y el `handleAppReviewRequest` por defecto, de modo que las URLs y las solicitudes de valoración se manejan de forma nativa sin configuración adicional. Llámalos directamente solo si sobreescribes esos valores predeterminados.
-- `AdaptyUIFlowView.locale` — indica la localización con la que se construyó la vista, para que puedas saber cuál ve realmente el usuario. Requiere SDK 4.0.1-beta.1 o posterior.
+- `AdaptyUI.setObserverModeResolver(...)` con un `AdaptyUIObserverModeResolver` — gestiona compras y restauraciones iniciadas desde flows mientras el SDK funciona en [modo Observer](implement-observer-mode-kmp). Antes esto solo estaba disponible en los SDKs nativos de iOS y Android. Consulta [Presentar flows en modo Observer](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` con un `AdaptyUISystemRequestsHandler` — reservado para solicitudes del sistema desde un flow (solicitudes de permisos del SO y peticiones de valoración de la app). Los flows aún no activan estas solicitudes, por lo que no es necesario registrar un handler.
+- El nuevo callback opcional `flowViewDidReceiveAnalyticEvent` reporta eventos de analítica desde un flow, comenzando con una vista de pantalla por cada pantalla que abre el usuario. Consulta [Rastrear vistas de pantalla de flows](kmp-flow-screen-views).
+- `AdaptyUI.openWebUrl(url, openIn)` y `AdaptyUI.requestAppReview()` — son la base del manejo predeterminado de `OpenUrlAction` y del `handleAppReviewRequest` predeterminado, por lo que las URLs y las solicitudes de valoración de la app se gestionan de forma nativa sin configuración adicional. Llámalos directamente solo si sobreescribes esos comportamientos predeterminados.
+- `AdaptyUIFlowView.locale` — informa la localización con la que se construyó la vista, para que puedas saber cuál ve realmente el usuario.
 - `AdaptyConfig.ServerCluster.CN` — una nueva opción de clúster de servidor junto a `DEFAULT` y `EU`, para conectar tu app a los [servidores de Adapty en China](china-cluster).
+
+## API de atribución externa renombradas \{#renamed-external-attribution-apis\}
+
+A partir de la versión 4.1 del SDK, las API que envían datos de atribución desde un proveedor externo (Adjust, AppsFlyer, Branch, Tenjin, Apple Ads o uno personalizado) se han renombrado para coincidir con los SDK nativos, y el proveedor pasa de ser una cadena de texto a un tipo. No existen alias deprecados, por lo que los sitios de llamada existentes dejarán de compilar hasta que los actualices.
+
+### updateAttribution → updateExternalAttribution
+
+El método ha sido renombrado, su parámetro `source` pasa a llamarse `provider`, y ahora acepta un `AdaptyExternalAttributionProvider` en lugar de un `String`:
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, "adjust")
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST)
+```
+
+Los datos de atribución siguen siendo un `Map<String, Any>`.
+
+La llamada retorna en cuanto el backend acepta los datos para procesarlos de forma asíncrona. Un resultado exitoso no significa que los datos ya se hayan aplicado al perfil.
+
+### AdaptyExternalAttributionProvider
+
+El proveedor es ahora un tipo con valores predefinidos: `APPLE_ADS`, `ADJUST`, `APPSFLYER`, `BRANCH`, `TENJIN` y `CUSTOM`. Para cualquier otro proveedor, constrúyelo a partir de su identificador:
+
+```kotlin showLineNumbers
+AdaptyExternalAttributionProvider("your_provider")
+```
+
+Construirlo directamente también cubre los proveedores que Adapty añada después de esta versión del SDK — el identificador llega al backend sin modificaciones en lugar de colapsar en un valor desconocido. Los espacios en blanco circundantes se eliminan automáticamente.
+
+Cada valor predefinido encapsula el mismo identificador que pasaste a `updateAttribution` anteriormente: `AdaptyExternalAttributionProvider.APPLE_ADS.value` es `apple_search_ads`, y el resto son sus propios nombres en minúsculas.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+La propiedad del perfil que lista los proveedores de atribución aplicados al perfil se renombra, y el tipo de sus elementos cambia en consecuencia:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains("apple_search_ads")) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptyPaywallProductSubscription → AdaptyProductSubscription \{#adaptypaywall-product-subscription--adaptyproductsubscription\}
+
+El tipo de detalles de suscripción se renombra porque los productos promocionados ahora comparten el mismo tipo. Solo cambia el nombre — cada propiedad mantiene su nombre y tipo:
+
+```diff showLineNumbers
+- val subscription: AdaptyPaywallProductSubscription? = product.subscription
++ val subscription: AdaptyProductSubscription? = product.subscription
+```
+
+## Compras in-app promocionadas en el App Store \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1 añade soporte para [compras in-app promocionadas en la página de tu producto en el App Store](kmp-making-purchases#in-app-purchases-from-the-app-store) en iOS. Las versiones anteriores de Kotlin Multiplatform no las admitían en absoluto, por lo que nada de lo que tienes hoy dejará de funcionar, pero la función necesita código antes de estar operativa.
+
+Para admitir compras promocionadas, registra un `OnPromotedPurchaseListener` y completa la compra pasando el producto a `Adapty.makePromotedPurchase`. Sin un listener registrado, la compra queda pendiente en lugar de completarse: el usuario pulsa **Buy** en tu página de App Store y no ocurre nada en tu app. Registra el listener lo antes posible — consulta [Compras in-app desde el App Store](kmp-making-purchases#in-app-purchases-from-the-app-store) para ver el momento adecuado y el ejemplo completo.
+
+## Elegir un layout específico \{#choosing-a-specific-layout\}
+
+`createFlowView`, `createNativeFlowView` y `AdaptyUIFlowPlatformView` aceptan un nuevo parámetro opcional `customLayoutId`. Úsalo para renderizar un layout concreto de la configuración de layouts del flow en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. El Flow & Paywall Builder aún no asigna IDs de layout personalizados, así que deja este parámetro sin definir:
+
+```kotlin showLineNumbers
+AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
+```
+
+Si ningún layout coincide con el ID, el flow se carga sin una configuración de vista. El parámetro es opcional y su valor predeterminado es `null`, por lo que las llamadas existentes no se ven afectadas.
 
 ## Cambios en el comportamiento predeterminado \{#default-behavior-changes\}
 
@@ -233,8 +331,8 @@ Estos cambios no provocan errores de compilación, así que pruébalos en tiempo
 - **Errores de vista**: En v3, el `paywallViewDidFailRendering` predeterminado no hacía nada. En v4, el `flowViewDidReceiveError` predeterminado **cierra la vista** — sobreescríbelo si quieres mantenerla abierta o gestionar el error de otra manera.
 - **Las vistas son de un solo uso**: Tras llamar a `dismiss()`, la vista se destruye. Llama a `createFlowView` de nuevo para mostrar el flow otra vez.
 
-## Deprecación de la API de onboarding \{#onboarding-api-deprecation\}
+## Desaprobación de la API de onboarding \{#onboarding-api-deprecation\}
 
-La API de onboarding anterior está obsoleta en la versión 4.0 en favor del [Flow Builder](adapty-flow-builder). Sigue funcionando, pero se eliminará en una versión futura, así que planifica la migración de tus onboardings al Flow Builder.
+La API de onboarding heredada está desaprobada en v4 en favor del [Flow & Paywall Builder](adapty-flow-builder). Sigue funcionando, pero se eliminará en una versión futura, así que planifica la migración de tus onboardings al Flow & Paywall Builder.
 
-Símbolos obsoletos: `getOnboarding`, `getOnboardingForDefaultAudience`, `AdaptyUI.createOnboardingView`, `AdaptyUI.createNativeOnboardingView` y `AdaptyUIOnboardingsEventsObserver`.
+Símbolos desaprobados: `getOnboarding`, `getOnboardingForDefaultAudience`, `AdaptyUI.createOnboardingView`, `AdaptyUI.createNativeOnboardingView`, y `AdaptyUIOnboardingsEventsObserver`.

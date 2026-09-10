@@ -1,12 +1,13 @@
 ---
 title: "Миграция Adapty iOS SDK на v4.0"
-description: "Миграция на Adapty iOS SDK v4.0: замена paywall API на flow API, совместимые как с Flow Builder, так и с Paywall Builder."
+description: "Мигрируйте на Adapty iOS SDK v4.0, заменив paywall API на flow API, которые отображают флоу наряду со старыми пейволами из билдера."
 metadataTitle: "Миграция на Adapty iOS SDK v4.0 | Документация Adapty"
 ---
 
-Adapty iOS SDK 4.0 вводит флоу и переименовывает API пейволов. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется.
+Adapty iOS SDK 4.0 вводит флоу и соответствующим образом переименовывает paywall API. Новые API работают с флоу и по-прежнему совместимы с пейволами из старого билдера — никаких изменений на стороне дашборда Adapty не требуется.
 
 ## Краткий справочник \{#quick-reference\}
+
 | v3 | v4 |
 |---|---|
 | `Adapty.getPaywall(placementId:locale:)` | `Adapty.getFlow(placementId:)` |
@@ -23,14 +24,17 @@ Adapty iOS SDK 4.0 вводит флоу и переименовывает API �
 | Продукты пакета `Adapty_KidsMode` / `AdaptyUI_KidsMode` | Трейт пакета `KidsMode` |
 | `Adapty.updateAttribution(_:source:)` (`source: String`) | `Adapty.updateAttribution(_:source:)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key:value:)` | `Adapty.setIntegrationIdentifier(_:)` (`AdaptyIntegrationIdentifier`) |
+
 ## Минимальная версия iOS \{#minimum-ios-version\}
 
 Adapty iOS SDK 4.0 повышает минимальный deployment target с iOS 13.0 до **iOS 15.0**. Перед обновлением установите iOS Deployment Target вашего проекта на версию 15.0 или выше.
+
 ## Установка: CocoaPods больше не поддерживается \{#installation-cocoapods-no-longer-supported\}
 
 Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. Устанавливайте SDK через [Swift Package Manager](sdk-installation-ios#install-adapty-sdk).
 
 Если ваш проект всё ещё использует CocoaPods, удалите поды `Adapty` и `AdaptyUI` из `Podfile`, выполните `pod install`, чтобы убрать их, а затем добавьте пакет в Xcode через **File → Add Package Dependency**, указав `https://github.com/adaptyteam/AdaptySDK-iOS.git`.
+
 ## Kids Mode: отдельные продукты заменены на трейт пакета \{#kids-mode-separate-products-replaced-by-a-package-trait\}
 
 В v3 [Kids Mode](kids-mode) включался выбором отдельных продуктов **Adapty_KidsMode** и **AdaptyUI_KidsMode** с переименованием импортов. В v4.0 эти продукты удалены. Теперь Kids Mode — это трейт Swift-пакета с именем `KidsMode` для обычного пакета Adapty: при его включении IDFA и AdSupport исключаются из компиляции во всём SDK.
@@ -66,6 +70,7 @@ Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. �
 
 - **`Adapty.getPaywallProductsWithoutDeterminingOffer(paywall:)`** — удалён. Все продукты теперь включают информацию об офере, поэтому отдельный проход для определения доступности больше не нужен.
 - **`AdaptyPaywallProductWithoutDeterminingOffer`** — удалён. Коллбэки, которые раньше передавали этот тип (например, `didSelectProduct`), теперь передают `AdaptyPaywallProduct`.
+
 ## Временное удаление поддержки продвигаемых встроенных покупок App Store \{#app-store-promoted-in-app-purchases-temporarily-removed\}
 
 В рамках миграции на StoreKit 2 Adapty iOS SDK 4.0 убирает поддержку продвигаемых встроенных покупок App Store. Метод делегата `shouldAddStorePayment(for:)` и тип `AdaptyDeferredProduct`, который он принимает, недоступны в версии 4.0.
@@ -75,15 +80,18 @@ Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. �
 :::
 
 ## Получение пейволов \{#fetching-paywalls\}
+
 ### getPaywall + getPaywallConfiguration → getFlow + getFlowConfiguration
 
-Возвращаемые типы меняются с `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` на `AdaptyFlow` / `AdaptyUI.FlowConfiguration`. Параметр `locale` переносится из вызова получения данных в `getFlowConfiguration`:
+Возвращаемые типы меняются с `AdaptyPaywall` / `AdaptyUI.PaywallConfiguration` на `AdaptyFlow` / `AdaptyUI.FlowConfiguration`. Параметр `locale` переходит из вызова получения данных в `getFlowConfiguration`: `AdaptyFlow` также раскрывает `paywalls` — варианты пейвола флоу, как значения `AdaptyFlowPaywall`. Веб-методы пейвола принимают одно из этих значений.
+
 ```diff showLineNumbers
 - let paywall = try await Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en")
 - let paywallConfiguration = try await AdaptyUI.getPaywallConfiguration(forPaywall: paywall)
 + let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
 + let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow, locale: "en")
 ```
+
 ### getPaywallProducts(paywall:) → getPaywallProducts(flow:)
 
 `getPaywallProducts` теперь принимает `AdaptyFlow`, возвращаемый `Adapty.getFlow`:
@@ -92,20 +100,24 @@ Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. �
 - let products = try await Adapty.getPaywallProducts(paywall: paywall)
 + let products = try await Adapty.getPaywallProducts(flow: flow)
 ```
+
 ### Резервные файлы \{#fallback-files\}
 
 Формат резервного файла [изменился в SDK v4](fallback-flows). Скачайте новый файл в разделе **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и добавьте его в ваше приложение.
 
 ## Отслеживание просмотров пейвола \{#tracking-paywall-views\}
+
 ### logShowPaywall(_:) → logShowFlow(_:)
 
-`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow` вместо `AdaptyPaywall`. Событие по-прежнему записывается к тому же варианту, поэтому существующие метрики воронки и A/B-тестов продолжают работать без изменений в дашборде.
+`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow` вместо `AdaptyPaywall`. Событие по-прежнему логируется для той же вариации, поэтому существующие метрики воронки и A/B-тестов продолжают работать без изменений в дашборде.
 
 ```diff showLineNumbers
 - try await Adapty.logShowPaywall(paywall)
 + try await Adapty.logShowFlow(flow)
 ```
-Как и в v3, вам не нужно вызывать этот метод при отображении флоу или пейволов, отрисованных с помощью [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder) — Adapty отслеживает эти просмотры автоматически.
+
+Как и в v3, вам не нужно вызывать этот метод при отображении флоу или пейволов, рендеримых Adapty — Adapty отслеживает эти просмотры автоматически.
+
 ## didFinishPurchase теперь обязателен \{#didfinishpurchase-is-now-required\}
 
 В v3 `didFinishPurchase` был необязательным: если вы его не реализовывали, пейвол закрывался автоматически после успешной покупки. В v4.0 эта автоматическая логика закрытия убрана, чтобы флоу мог продолжаться после успешной покупки — например, чтобы показать оставшиеся экраны флоу. Теперь вы сами решаете, что происходит после покупки: закрыть экран или ничего не делать и дать флоу продолжить выполнение.
@@ -114,6 +126,7 @@ Adapty iOS SDK 4.0 отказывается от поддержки CocoaPods. �
 - **SwiftUI**: замыкание `didFinishPurchase` в `.flow(...)` и `AdaptyFlowView(...)` теперь обязательно, как и `didFailPurchase` и `didFinishRestore`.
 
 Чтобы сохранить поведение v3, закрывайте экран самостоятельно:
+
 ```swift showLineNumbers title="Swift"
 func flowController(
     _ controller: AdaptyFlowController,
@@ -127,6 +140,7 @@ func flowController(
 ```
 
 ## UIKit \{#uikit\}
+
 ### AdaptyPaywallController → AdaptyFlowController
 
 Переименуйте тип контроллера и фабричный метод:
@@ -141,9 +155,11 @@ func flowController(
 +     delegate: self
 + )
 ```
+
 ### AdaptyPaywallControllerDelegate → AdaptyFlowControllerDelegate \{#adaptypaywall-controller-delegate--adaptyflo-controller-delegate\}
 
 Переименуйте протокол и обновите каждую сигнатуру метода. Обратите внимание, что `didSelectProduct` теперь принимает `AdaptyPaywallProduct` вместо удалённого `AdaptyPaywallProductWithoutDeterminingOffer`, а `didFinishPurchase` [теперь обязателен к реализации](#didfinishpurchase-is-now-required) — у него больше нет реализации по умолчанию.
+
 ```diff showLineNumbers
 - class YourClass: AdaptyPaywallControllerDelegate {
 + class YourClass: AdaptyFlowControllerDelegate {
@@ -219,10 +235,13 @@ func flowController(
 +                         error: AdaptyError?) { }
  }
 ```
+
 ## SwiftUI \{#swiftui\}
+
 ### Модификатор .paywall() → .flow() \{#paywall-modifier--flow\}
 
 Переименуйте модификатор, обновите имя параметра конфигурации и добавьте [обязательное теперь](#didfinishpurchase-is-now-required) замыкание `didFinishPurchase`:
+
 ```diff showLineNumbers
  @State var flowPresented = false // rename freely — the variable name is your choice
 
@@ -242,10 +261,13 @@ func flowController(
          )
  }
 ```
+
 Переименованный колбэк срабатывает при тех же ошибках рендеринга, что и `didFailRendering`, плюс при новых ошибках выполнения из скрипта флоу (JavaScript-исключения с кодом `AdaptyUIError` `4105` — `.jsException`). Менять код в теле обработчика не нужно — достаточно переименовать параметр.
+
 ### AdaptyPaywallView → AdaptyFlowView
 
 Переименуйте вью, обновите параметр конфигурации, добавьте [обязательное теперь](#didfinishpurchase-is-now-required) замыкание `didFinishPurchase` и обновите замыкание `didSelectProduct` — теперь оно принимает `AdaptyPaywallProduct` вместо удалённого `AdaptyPaywallProductWithoutDeterminingOffer`:
+
 ```diff showLineNumbers
 - AdaptyPaywallView(
 -     paywallConfiguration: paywallConfiguration,
@@ -261,13 +283,16 @@ func flowController(
 +    didReceiveError: { error in /* handle the error */ }
  )
 ```
+
 ## Пользовательские ресурсы AdaptyUI \{#adaptyui-custom-assets\}
+
 ### AdaptyUICustomVideoAsset
 
 Два изменения затрагивают все существующие места вызова:
 
 - `.player` теперь принимает `AVPlayer` вместо `AVQueuePlayer`.
 - В каждый case добавлен завершающий параметр `resolution: CGSize?`. Передайте `nil`, чтобы сохранить текущее поведение, или передайте фактический размер в пикселях, чтобы плеер мог зарезервировать место в лэйауте (соотношение сторон = `width / height`) до загрузки видео.
+
 ```diff showLineNumbers
 - case file(url: URL, preview: AdaptyUICustomImageAsset?)
 - case remote(url: URL, preview: AdaptyUICustomImageAsset?)
@@ -276,16 +301,20 @@ func flowController(
 + case remote(url: URL, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
 + case player(item: AVPlayerItem, player: AVPlayer, preview: AdaptyUICustomImageAsset?, resolution: CGSize?)
 ```
+
 ## Идентификаторы атрибуции и интеграций \{#attribution-and-integration-identifiers\}
+
 ### updateAttribution(_:source:)
 
 Параметр `source` изменился с типа `String` на новый тип `AdaptyAttributionSource`, а вложенный ранее `AdaptyProfile.AttributionSource` переименован в `AdaptyAttributionSource` на верхнем уровне. Используйте один из предопределённых источников или передайте строковый литерал для любого другого источника — `AdaptyAttributionSource` поддерживает `ExpressibleByStringLiteral`, поэтому существующие вызовы со строковыми литералами продолжат компилироваться.
+
 ```diff showLineNumbers
 - try await Adapty.updateAttribution(attribution, source: "adjust")
 + try await Adapty.updateAttribution(attribution, source: .adjust)
 ```
 
 Предопределённые источники: `.appleAds`, `.adjust`, `.appsflyer`, `.branch`, `.tenjin`. Если источник хранится в переменной типа `String`, оберните его: `AdaptyAttributionSource(rawValue: yourSource)`.
+
 :::note
 В SDK 4.1 этот метод переименован в `updateExternalAttribution(_:provider:)`, а тип — в `AdaptyExternalAttributionProvider`. Старые названия удалены в версии 4.1 без предварительного устаревания. Если вы переходите сразу на версию 4.1, см. [Миграция на v4.1](migration-to-ios-sdk-41).
 :::
@@ -307,7 +336,9 @@ try await Adapty.setIntegrationIdentifier(
     .adjustDeviceId(adid)
 )
 ```
+
 Замените каждую старую строку ключа соответствующим фабричным методом:
+
 | ключ v3 | фабрика v4 |
 |---|---|
 | `"adjust_device_id"` | `.adjustDeviceId(_:)` |

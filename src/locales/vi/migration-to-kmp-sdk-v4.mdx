@@ -1,15 +1,22 @@
 ---
-title: "Migrate Adapty Kotlin Multiplatform SDK sang v4.0"
-description: "Migrate sang Adapty Kotlin Multiplatform SDK v4.0 (beta) bằng cách thay thế API paywall bằng API flow, tương thích với cả Flow Builder và Paywall Builder."
-metadataTitle: "Hướng dẫn migration sang Adapty Kotlin Multiplatform SDK v4.0 (beta) | Tài liệu Adapty"
+title: "Migrate Adapty Kotlin Multiplatform SDK sang v4.1"
+description: "Migrate sang Adapty Kotlin Multiplatform SDK v4.1: thay thế paywall API bằng flow API, áp dụng phương thức attribution đã được đổi tên, và bật Adapty Attribution một cách rõ ràng."
+metadataTitle: "Migrating sang Adapty Kotlin Multiplatform SDK v4.1 | Tài liệu Adapty"
 ---
 
-Adapty Kotlin Multiplatform SDK 4.0 (beta) giới thiệu flow và đổi tên các API paywall tương ứng. Các API mới hoạt động với cả Flow Builder mới lẫn Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+Adapty Kotlin Multiplatform SDK 4.1 là bản phát hành ổn định đầu tiên của dòng 4.x — 4.0 chỉ được phát hành dưới dạng beta, vì vậy nếu bạn đang dùng 3.x, hãy migrate thẳng lên 4.1. Hướng dẫn này bao gồm toàn bộ quá trình migration: các flow được giới thiệu trong 4.0 và các thay đổi của 4.1.
+
+Phiên bản 4.x giới thiệu flow và đổi tên các API paywall cho phù hợp. Các API mới hoạt động với cả Flow & Paywall Builder lẫn Paywall Builder cũ — không cần thay đổi cấu hình trên Adapty Dashboard. Ngoài ra, phiên bản 4.1 chuyển Adapty Attribution sang dạng opt-in, đổi tên các API attribution bên ngoài và loại gói đăng ký sản phẩm, đồng thời bổ sung tính năng in-app purchase được quảng bá trên App Store.
+
+:::note
+Bạn đang chuyển từ bản beta 4.0? Hãy cập nhật phiên bản, sau đó chỉ có năm mục cần lưu ý: [Adapty Attribution mặc định bị tắt](#adapty-attribution-is-disabled-by-default), [các API external attribution đã được đổi tên](#renamed-external-attribution-apis), [AdaptyPaywallProductSubscription → AdaptyProductSubscription](#adaptypaywallproductsubscription--adaptyproductsubscription), [In-app purchase được quảng bá trên App Store](#app-store-promoted-in-app-purchases), và [chọn một layout cụ thể](#choosing-a-specific-layout). `hasViewConfiguration` cũng đã [trở lại trên flow model](#data-model).
+:::
 
 ## Tài liệu tham khảo nhanh \{#quick-reference\}
 
-| v3 | v4 |
+| v3 | v4.1 |
 |---|---|
+| Adapty Attribution được bật tự động | mặc định bị tắt — bật bằng `.withAdaptyAttributionEnabled(true)` |
 | `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
 | `Adapty.getPaywallForDefaultAudience(placementId, locale)` | `Adapty.getFlowForDefaultAudience(placementId)` |
 | `Adapty.getPaywallProducts(paywall)` | `Adapty.getPaywallProducts(flow)` |
@@ -23,27 +30,53 @@ Adapty Kotlin Multiplatform SDK 4.0 (beta) giới thiệu flow và đổi tên c
 | `AdaptyUI.registerPaywallEventsListener` / `unregisterPaywallEventsListener` | `AdaptyUI.registerFlowEventsListener` / `unregisterFlowEventsListener` |
 | `AdaptyUIPaywallsEventsObserver` | `AdaptyUIFlowsEventsObserver` |
 | `AdaptyUIPaywallPlatformView(paywall, ...)` | `AdaptyUIFlowPlatformView(flow, ...)` |
-| `paywallViewDidPerformAction`, `paywallViewDidAppear`, và các callback `paywallView...` khác | `flowViewDidPerformAction`, `flowViewDidAppear`, và các callback `flowView...` khác |
+| Callback `paywallViewDidPerformAction`, `paywallViewDidAppear` và các callback `paywallView...` khác | Callback `flowViewDidPerformAction`, `flowViewDidAppear` và các callback `flowView...` khác |
 | `paywallViewDidFailRendering` | `flowViewDidReceiveError` |
+| `Adapty.updateAttribution(attribution, source)` với nguồn kiểu `String` | `Adapty.updateExternalAttribution(attribution, provider)` với `AdaptyExternalAttributionProvider` |
+| provider truyền dưới dạng chuỗi, ví dụ `"adjust"` | `AdaptyExternalAttributionProvider`, ví dụ `AdaptyExternalAttributionProvider.ADJUST` |
+| `AdaptyProfile.appliedAttributionSources: List<String>` | `AdaptyProfile.appliedExternalAttributionProviders: List<AdaptyExternalAttributionProvider>` |
+| `AdaptyPaywallProductSubscription` | `AdaptyProductSubscription` |
+| Không hỗ trợ in-app purchase được quảng bá | `OnPromotedPurchaseListener` và `Adapty.makePromotedPurchase(product)` |
 
 `AdaptyPaywallProduct` giữ nguyên tên — sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` cũng giữ nguyên tên, giờ nhận vào một `AdaptyFlow`. Các phương thức `getFlow` và `getFlowForDefaultAudience` không còn nhận tham số `locale` nữa — thay vào đó hãy truyền nó vào `createFlowView`. Các API mua hàng và hồ sơ người dùng (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) và `setFallback` giữ nguyên signature, nhưng file fallback phải được tải lại — xem [Fallback files](#fallback-files). Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Onboarding API deprecation](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Default behavior changes](#default-behavior-changes).
 
 ## Cài đặt \{#installation\}
 
-v4.0 là bản pre-release, vì vậy hãy ghim đúng phiên bản — Gradle không tự chọn các phiên bản pre-release thông qua dynamic ranges:
+Cập nhật phiên bản và đồng bộ dự án:
 
 ```toml showLineNumbers title="libs.versions.toml"
 [versions]
-adapty-kmp = "4.0.1-beta.1"
+adapty-kmp = "<the latest SDK version>"
 
 [libraries]
 adapty-kmp = { module = "io.adapty:adapty-kmp", version.ref = "adapty-kmp" }
 adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp" }
 ```
 
-Module `adapty-kmp-ui` chỉ cần thiết nếu bạn render flow và paywall bằng layer Compose Multiplatform (`view.present()`). Xem [Cài đặt Adapty SDK](sdk-installation-kotlin-multiplatform) để biết hướng dẫn thiết lập đầy đủ.
+Module `adapty-kmp-ui` chỉ cần thiết nếu bạn hiển thị flow và paywall bằng lớp Compose Multiplatform (`view.present()`). Xem [Cài đặt Adapty SDK](sdk-installation-kotlin-multiplatform) để biết hướng dẫn thiết lập đầy đủ.
 
-Các native Adapty SDK bên dưới đã được nâng lên phiên bản 4.x trên cả hai nền tảng và được resolve tự động — không cần thay đổi cấu hình build. iOS deployment target vẫn là **15.0**, không thay đổi trong bản phát hành này.
+Các SDK Adapty native bên dưới đã được nâng lên phiên bản 4.x trên cả hai nền tảng và được giải quyết tự động — không cần thay đổi cấu hình build. Deployment target iOS vẫn giữ nguyên là **15.0**, không thay đổi trong bản phát hành này.
+
+## ⚠️ Adapty Attribution mặc định bị tắt \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Nếu bạn sử dụng [Adapty Attribution](user-acquisition) và cập nhật lên SDK 4.1 mà không bật tính năng này, mọi thứ sẽ lặng lẽ ngừng hoạt động — các lượt cài đặt không được ghi nhận, và không có bất kỳ cảnh báo nào.
+:::
+
+Trong các phiên bản trước, SDK tự động đăng ký lượt cài đặt cho [Adapty Attribution](user-acquisition). Kể từ SDK phiên bản 4.1, tính năng này bị tắt theo mặc định: SDK không đăng ký lượt cài đặt, listener được đặt bằng `setOnInstallationDetailsListener` sẽ không bao giờ kích hoạt, và `getCurrentInstallationStatus` trả về `AdaptyInstallationStatus.Determined.NotAvailable`.
+
+Nếu bạn sử dụng Adapty Attribution, hãy bật tính năng này khi khởi động SDK:
+
+```diff showLineNumbers
+  val config = AdaptyConfig
+      .Builder("PUBLIC_SDK_KEY")
++     .withAdaptyAttributionEnabled(true)
+      .build()
+
+  Adapty.activate(configuration = config)
+```
+
+Nếu bạn không sử dụng Adapty Attribution, không cần thay đổi gì.
 
 ## Tải flows \{#fetching-flows\}
 
@@ -93,14 +126,14 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham s
 
 `getFlow` trả về một `AdaptyFlow` thay vì `AdaptyPaywall`, và cấu trúc object đã thay đổi:
 
-| Thuộc tính `AdaptyPaywall` v3 | Thuộc tính `AdaptyFlow` v4 | Hành động |
+| Thuộc tính v3 `AdaptyPaywall` | Thuộc tính v4 `AdaptyFlow` | Hành động |
 |---|---|---|
-| `remoteConfig: AdaptyRemoteConfig?` (đơn lẻ) | `remoteConfigs: List<AdaptyRemoteConfig>` | Một flow mang một Remote Config cho mỗi ngôn ngữ được cấu hình. Đọc cái phù hợp với người dùng: `flow.remoteConfigs.firstOrNull { it.locale == "en" }`. |
-| _(mới)_ | `paywalls: List<AdaptyFlowPaywall>` | Mỗi mục là một biến thể paywall trong flow, với `name`, `variationId`, và `productIdentifiers` riêng. Các phương thức web paywall nhận một `AdaptyFlowPaywall` — xem [Phương thức web paywall](#web-paywall-methods). |
-| `productIdentifiers` | đã chuyển | Định danh sản phẩm giờ nằm trên mỗi biến thể: `flow.paywalls[i].productIdentifiers`. Để lấy sản phẩm, tiếp tục gọi `getPaywallProducts(flow)`. |
-| `hasViewConfiguration` | đã xóa | Xóa mọi kiểm tra `hasViewConfiguration` khỏi code của bạn — `createFlowView` sẽ trả về lỗi thay thế (xem [Hiển thị flow](#displaying-flows)). |
+| `remoteConfig: AdaptyRemoteConfig?` (đơn) | `remoteConfigs: List<AdaptyRemoteConfig>` | Một flow mang một remote config cho mỗi ngôn ngữ đã cấu hình. Đọc cái khớp với người dùng: `flow.remoteConfigs.firstOrNull { it.locale == "en" }`. |
+| _(mới)_ | `paywalls: List<AdaptyFlowPaywall>` | Mỗi mục là một biến thể paywall trong flow, với `name`, `variationId` và `productIdentifiers` riêng. Các phương thức web paywall nhận một `AdaptyFlowPaywall` — xem [Phương thức web paywall](#web-paywall-methods). |
+| `productIdentifiers` | đã chuyển | Định danh sản phẩm giờ nằm trên mỗi biến thể: `flow.paywalls[i].productIdentifiers`. Để tải sản phẩm, tiếp tục gọi `getPaywallProducts(flow)`. |
+| `hasViewConfiguration` | giữ nguyên | Cho biết flow có mang layout mà AdaptyUI có thể render hay không. Thuộc tính này vắng mặt trong bản 4.0 beta và đã trở lại ở 4.1 — nếu bạn đã xóa các kiểm tra cho bản beta, bạn có thể dùng lại. `false` nghĩa là flow không mang layout, vì vậy hãy xử lý nó như remote-config only. Bạn cũng có thể gọi `createFlowView` và xử lý lỗi (xem [Hiển thị flow](#displaying-flows)). |
 
-`hasViewConfiguration` vẫn còn trên `AdaptyOnboarding` — chỉ có flow model là bỏ nó đi.
+`hasViewConfiguration` cũng có trên `AdaptyOnboarding`, không thay đổi.
 
 ## Phương thức Web paywall \{#web-paywall-methods\}
 
@@ -117,14 +150,14 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham s
 
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` được đổi tên thành `logShowFlow` và nhận vào một `AdaptyFlow`. Sự kiện vẫn được ghi nhận theo cùng một biến thể, vì vậy các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi gì trên dashboard.
+`logShowPaywall` được đổi tên thành `logShowFlow` và hiện nhận vào một `AdaptyFlow`. Sự kiện vẫn được ghi lại theo cùng một biến thể, vì vậy các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-Giống như trong v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được dựng bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty tự động theo dõi các lượt xem đó.
+Tương tự như v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được render bởi Adapty — Adapty sẽ tự động theo dõi những lượt xem đó.
 
 ## Hiển thị flows \{#displaying-flows\}
 
@@ -133,7 +166,7 @@ Giống như trong v3, bạn không cần gọi phương thức này khi hiển 
 Đổi tên phương thức factory và truyền vào `AdaptyFlow`. Kiểu view trả về được đổi tên từ `AdaptyUIPaywallView` thành `AdaptyUIFlowView`, nhưng các phương thức (`present`, `dismiss`) và các tham số tùy chọn (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) vẫn giữ nguyên. Có một tham số tùy chọn mới: `locale`, thay thế cho `locale` bạn từng truyền vào `getPaywall` — xem [Fetching flows](#fetching-flows).
 
 :::note
-`customTimers` vẫn còn tồn tại, nhưng nó chỉ ảnh hưởng đến các paywall dùng Paywall Builder cũ. [Đồng hồ đếm ngược](flow-timer) của một flow chạy theo hành vi được thiết lập trong Flow Builder, vì vậy flow sẽ bỏ qua bất kỳ giá trị nào bạn truyền vào đây.
+`customTimers` vẫn tồn tại, nhưng nó chỉ ảnh hưởng đến các paywall được tạo bằng Paywall Builder cũ. [Đồng hồ đếm ngược](flow-timer) của một flow chạy theo hành vi được thiết lập trong Flow & Paywall Builder, vì vậy flow sẽ bỏ qua bất kỳ giá trị nào bạn truyền vào đây.
 :::
 
 ```diff showLineNumbers
@@ -147,14 +180,14 @@ Giống như trong v3, bạn không cần gọi phương thức này khi hiển 
       }
 ```
 
-Nếu bạn không dùng Compose Multiplatform, phương thức factory gốc cũng được đổi tên theo cách tương tự:
+Nếu bạn không sử dụng Compose Multiplatform, phương thức factory gốc cũng được đổi tên tương tự:
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
 + AdaptyUI.createNativeFlowView(flow)
 ```
 
-`createFlowView` trả về `AdaptyResult.Error` nếu flow không có view được cấu hình — thay thế cho việc kiểm tra `hasViewConfiguration` ở v3:
+`createFlowView` trả về `AdaptyResult.Error` nếu flow không có view được cấu hình, vì vậy bạn có thể bỏ kiểm tra `hasViewConfiguration` của v3 và thay bằng xử lý lỗi:
 
 ```diff showLineNumbers
 - if (paywall.hasViewConfiguration) {
@@ -169,7 +202,7 @@ Nếu bạn không dùng Compose Multiplatform, phương thức factory gốc c�
 ```
 
 :::note
-Một flow view chỉ dùng được một lần: sau khi bạn gọi `dismiss()`, view sẽ bị hủy, vì vậy hãy gọi lại `createFlowView` để hiển thị flow thêm một lần nữa.
+Flow view chỉ dùng được một lần: sau khi bạn gọi `dismiss()`, view sẽ bị hủy, vì vậy hãy gọi `createFlowView` lại để hiển thị flow thêm một lần nữa.
 :::
 
 ## Xử lý sự kiện \{#handling-events\}
@@ -217,12 +250,77 @@ Giống như trong v3, các callback bạn truyền vào đây (và bất kỳ o
 
 ### API Mới \{#new-apis\}
 
-- `AdaptyUI.setObserverModeResolver(...)` với `AdaptyUIObserverModeResolver` — điều khiển các lượt mua và khôi phục được khởi tạo từ flow khi SDK chạy ở chế độ [Observer mode](implement-observer-mode-kmp). Trước đây tính năng này chỉ có trên SDK iOS và Android native. Xem [Hiển thị flow trong Observer mode](kmp-present-flows-in-observer-mode).
-- `AdaptyUI.setSystemRequestsHandler(...)` với `AdaptyUISystemRequestsHandler` — dành cho các yêu cầu hệ thống từ flow (lời nhắc cấp quyền của OS và yêu cầu đánh giá ứng dụng). Flow hiện chưa kích hoạt các yêu cầu này, nên bạn không cần đăng ký handler.
-- Callback tùy chọn mới `flowViewDidReceiveAnalyticEvent` báo cáo các sự kiện analytics từ flow, bắt đầu với lượt xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](kmp-flow-screen-views).
-- `AdaptyUI.openWebUrl(url, openIn)` và `AdaptyUI.requestAppReview()` — hỗ trợ xử lý mặc định `OpenUrlAction` và `handleAppReviewRequest` mặc định, giúp URL và lời nhắc đánh giá ứng dụng được xử lý natively ngay từ đầu. Chỉ gọi trực tiếp khi bạn ghi đè những mặc định đó.
-- `AdaptyUIFlowView.locale` — báo cáo bản địa hóa mà view được xây dựng, giúp bạn biết người dùng thực sự đang thấy phiên bản nào. Yêu cầu SDK 4.0.1-beta.1 trở lên.
-- `AdaptyConfig.ServerCluster.CN` — tùy chọn cụm máy chủ mới bên cạnh `DEFAULT` và `EU`, dùng để kết nối ứng dụng với [máy chủ Trung Quốc của Adapty](china-cluster).
+- `AdaptyUI.setObserverModeResolver(...)` với `AdaptyUIObserverModeResolver` — xử lý các giao dịch mua và khôi phục được khởi tạo từ các flow khi SDK chạy ở [chế độ Observer](implement-observer-mode-kmp). Trước đây tính năng này chỉ có trong SDK iOS và Android gốc. Xem [Hiển thị flow trong chế độ Observer](kmp-present-flows-in-observer-mode).
+- `AdaptyUI.setSystemRequestsHandler(...)` với `AdaptyUISystemRequestsHandler` — dành riêng cho các yêu cầu hệ thống từ một flow (lời nhắc cấp quyền của hệ điều hành và yêu cầu đánh giá ứng dụng). Hiện tại các flow chưa kích hoạt những yêu cầu này, vì vậy bạn không cần đăng ký handler.
+- Callback tùy chọn mới `flowViewDidReceiveAnalyticEvent` báo cáo các sự kiện analytics từ một flow, bắt đầu bằng sự kiện xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](kmp-flow-screen-views).
+- `AdaptyUI.openWebUrl(url, openIn)` và `AdaptyUI.requestAppReview()` — hỗ trợ xử lý `OpenUrlAction` mặc định và `handleAppReviewRequest` mặc định, vì vậy các URL và lời nhắc đánh giá ứng dụng được xử lý ngay lập tức theo cách gốc. Chỉ gọi trực tiếp khi bạn ghi đè các giá trị mặc định đó.
+- `AdaptyUIFlowView.locale` — báo cáo bản địa hóa mà view được xây dựng với, giúp bạn biết người dùng thực sự đang thấy bản nào.
+- `AdaptyConfig.ServerCluster.CN` — tùy chọn cụm máy chủ mới bên cạnh `DEFAULT` và `EU`, để kết nối ứng dụng của bạn với [máy chủ China của Adapty](china-cluster).
+
+## Đổi tên API attribution bên ngoài \{#renamed-external-attribution-apis\}
+
+Từ SDK phiên bản 4.1, các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin, Apple Ads hoặc nhà cung cấp tùy chỉnh) được đổi tên để khớp với các native SDK, và nhà cung cấp thay đổi từ kiểu chuỗi sang kiểu dữ liệu. Không có alias deprecated nào, vì vậy các call site hiện có sẽ ngừng biên dịch cho đến khi bạn cập nhật chúng.
+
+### updateAttribution → updateExternalAttribution
+
+Phương thức được đổi tên, tham số `source` của nó được đổi thành `provider`, và tham số đó hiện nhận `AdaptyExternalAttributionProvider` thay vì `String`:
+
+```diff showLineNumbers
+- Adapty.updateAttribution(attribution, "adjust")
++ Adapty.updateExternalAttribution(attribution, AdaptyExternalAttributionProvider.ADJUST)
+```
+
+Dữ liệu attribution vẫn là `Map<String, Any>`.
+
+Lời gọi trả về khi backend chấp nhận dữ liệu để xử lý bất đồng bộ. Kết quả thành công không có nghĩa là dữ liệu đã được áp dụng vào hồ sơ người dùng.
+
+### AdaptyExternalAttributionProvider
+
+Provider hiện là một kiểu dữ liệu với các giá trị định sẵn: `APPLE_ADS`, `ADJUST`, `APPSFLYER`, `BRANCH`, `TENJIN`, và `CUSTOM`. Đối với bất kỳ provider nào khác, hãy khởi tạo từ định danh của nó:
+
+```kotlin showLineNumbers
+AdaptyExternalAttributionProvider("your_provider")
+```
+
+Khởi tạo trực tiếp cũng hỗ trợ các provider mà Adapty thêm vào sau bản phát hành SDK này — định danh sẽ được gửi nguyên vẹn đến backend thay vì bị chuyển thành một giá trị không xác định. Khoảng trắng xung quanh sẽ được tự động loại bỏ.
+
+Mỗi giá trị được định nghĩa sẵn đều bao gồm cùng một định danh mà bạn đã truyền vào `updateAttribution` trước đó: `AdaptyExternalAttributionProvider.APPLE_ADS.value` là `apple_search_ads`, và các giá trị còn lại dùng tên viết thường của chính chúng.
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Thuộc tính profile liệt kê các nhà cung cấp attribution đã được áp dụng cho hồ sơ người dùng được đổi tên, và kiểu phần tử của nó cũng thay đổi tương ứng:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains("apple_search_ads")) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.APPLE_ADS)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+## AdaptyPaywallProductSubscription → AdaptyProductSubscription
+
+Kiểu dữ liệu chi tiết gói đăng ký được đổi tên, vì các sản phẩm được quảng bá giờ dùng chung kiểu này. Chỉ có tên thay đổi — mọi thuộc tính vẫn giữ nguyên tên và kiểu dữ liệu:
+
+```diff showLineNumbers
+- val subscription: AdaptyPaywallProductSubscription? = product.subscription
++ val subscription: AdaptyProductSubscription? = product.subscription
+```
+
+## In-app purchase được quảng bá trên App Store \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1 bổ sung hỗ trợ cho [in-app purchase được quảng bá trên trang sản phẩm App Store của bạn](kmp-making-purchases#in-app-purchases-from-the-app-store) trên iOS. Các phiên bản Kotlin Multiplatform trước đây không hỗ trợ tính năng này, vì vậy những gì bạn đang có hiện tại sẽ không bị ảnh hưởng — nhưng tính năng này cần có code trước khi hoạt động được.
+
+Để hỗ trợ promoted purchases, hãy đăng ký `OnPromotedPurchaseListener` và hoàn tất giao dịch mua bằng cách truyền sản phẩm vào `Adapty.makePromotedPurchase`. Nếu không có listener được đăng ký, giao dịch mua sẽ bị treo thay vì hoàn tất: người dùng nhấn **Buy** trên trang App Store của bạn nhưng không có gì xảy ra trong ứng dụng. Hãy đăng ký listener càng sớm càng tốt — xem [In-app purchases từ App Store](kmp-making-purchases#in-app-purchases-from-the-app-store) để biết thời điểm và ví dụ đầy đủ.
+
+## Chọn layout cụ thể \{#choosing-a-specific-layout\}
+
+`createFlowView`, `createNativeFlowView`, và `AdaptyUIFlowPlatformView` nhận thêm một tham số tùy chọn mới là `customLayoutId`. Truyền tham số này để render một layout cụ thể trong cấu hình layout của flow thay vì layout mà SDK tự động chọn dựa trên loại thiết bị và kích thước màn hình. Flow & Paywall Builder chưa hỗ trợ gán ID layout tùy chỉnh, vì vậy hãy để trống tham số này:
+
+```kotlin showLineNumbers
+AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
+```
+
+Nếu không có layout nào khớp với ID, flow sẽ tải mà không có cấu hình view. Tham số này là tùy chọn và mặc định là `null`, vì vậy các lệnh gọi hiện có sẽ không bị ảnh hưởng.
 
 ## Thay đổi hành vi mặc định \{#default-behavior-changes\}
 
@@ -233,8 +331,8 @@ Những thay đổi này không gây ra lỗi biên dịch, vì vậy hãy kiể
 - **Lỗi view**: Trong v3, `paywallViewDidFailRendering` mặc định không làm gì. Trong v4, `flowViewDidReceiveError` mặc định sẽ **đóng view** — hãy override nó nếu bạn muốn giữ view mở hoặc xử lý lỗi theo cách khác.
 - **View chỉ dùng một lần**: Sau khi gọi `dismiss()`, view sẽ bị hủy. Gọi lại `createFlowView` để hiển thị flow thêm một lần nữa.
 
-## Ngừng hỗ trợ Onboarding API \{#onboarding-api-deprecation\}
+## API onboarding đã bị ngừng hỗ trợ \{#onboarding-api-deprecation\}
 
-Onboarding API cũ đã bị ngừng hỗ trợ trong v4.0, thay thế bằng [Flow Builder](adapty-flow-builder). API này vẫn hoạt động, nhưng sẽ bị xóa trong phiên bản tương lai, vì vậy hãy lên kế hoạch migration các onboarding của bạn sang Flow Builder.
+API onboarding cũ đã bị ngừng hỗ trợ trong v4, thay thế bằng [Flow & Paywall Builder](adapty-flow-builder). Tính năng này vẫn hoạt động, nhưng sẽ bị xóa trong một bản phát hành tương lai, vì vậy hãy lên kế hoạch migration các onboarding của bạn sang Flow & Paywall Builder.
 
-Các ký hiệu đã ngừng hỗ trợ: `getOnboarding`, `getOnboardingForDefaultAudience`, `AdaptyUI.createOnboardingView`, `AdaptyUI.createNativeOnboardingView`, và `AdaptyUIOnboardingsEventsObserver`.
+Các ký hiệu đã bị ngừng hỗ trợ: `getOnboarding`, `getOnboardingForDefaultAudience`, `AdaptyUI.createOnboardingView`, `AdaptyUI.createNativeOnboardingView`, và `AdaptyUIOnboardingsEventsObserver`.

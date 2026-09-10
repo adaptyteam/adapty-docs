@@ -30,7 +30,7 @@ integration.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| flows-with-your-own-payments | how-to | dev, marketer | 5 | — |
+| flows-with-your-own-payments | how-to | dev, marketer | 6 | — |
 | importing-historical-data-to-adapty | — | dev | 5 | tutorial |
 | migrate-integrations-to-adapty | migration | dev | 8 | tutorial |
 | migrate-to-adapty-from-another-solutions | entry | dev | 3 | tutorial |
@@ -61,7 +61,7 @@ integration.
 ## Ticket language
 
 Rows name article ids from the roster above. Corpus-wide synonyms (entitlement ↔ access level,
-Flow ↔ Paywall Builder) live in `aliases.md` and are not repeated here.
+Flow Builder ↔ Flow & Paywall Builder) live in `aliases.md` and are not repeated here.
 
 | How a ticket says it | Where it actually lives |
 |---|---|

@@ -7,19 +7,19 @@ reviewed_at: 2026-08-10
 
 ## What this is
 
-The visual half of Adapty's Flow Builder documentation: how a flow's screens, layer hierarchy,
+The visual half of Adapty's Flow & Paywall Builder documentation: how a flow's screens, layer hierarchy,
 layout, styling, dark mode, every element type, custom fonts, and per-locale flow content get
 designed in the dashboard. Split from `flow-logic` on 2026-08-06 by design-versus-behaviour, not by
 sidebar shape — some of these 20 articles sit loose under **Flows (Beta)** rather than inside a
 visual-looking subcategory.
 
 The audience is a marketer or designer working the builder UI, not a developer. Every article assumes
-the reader is looking at the Flow Builder canvas and right panel, never at source code — code only
+the reader is looking at the Flow & Paywall Builder canvas and right panel, never at source code — code only
 shows up as the occasional "and here's how the SDK reads that" pointer out of the zone.
 
 ## Surfaces
 
-The Adapty Dashboard's Flow Builder editing surface — the canvas, left panel (Screens/Layers,
+The Adapty Dashboard's Flow & Paywall Builder editing surface — the canvas, left panel (Screens/Layers,
 Styles), and right panel (Design/Interactions/Screen settings) reached via **Flows (Beta)** in the
 dashboard nav. Not the SDK, not any API, not the Paywall Builder (the pre-flow legacy product, whose
 surviving articles live in `paywalls-legacy`).
@@ -65,6 +65,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | builder-tabs | — | marketer | 5 | tutorial |
 | builder-toggles | — | marketer | 0 | tutorial |
 | custom-media | — | marketer | 7 | tutorial |
+| flow-analytics-ids | — | — | 6 | tutorial |
 | flow-selectable-elements | entry | marketer | 6 | tutorial |
 | flow-timer | — | marketer | 5 | tutorial |
 | manage-paywall-ui-elements | — | marketer | 14 | tutorial |
@@ -75,6 +76,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | paywall-head-picture | — | marketer | 5 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
+| reuse-flow-elements | — | marketer | 8 | tutorial |
 | using-custom-fonts-in-flow-builder | — | marketer | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -188,7 +190,7 @@ job (or, for font/asset bundling specifically, an external Apple/Android doc thi
 directly, bypassing our own SDK docs).
 
 TODO(owner): `add-paywall-locale-in-adapty-paywall-builder` sits in the sidebar's Flows > Localization
-category, labeled "Add locale in Adapty Flow Builder," directly beside this zone's
+category, labeled "Add locale in Flow & Paywall Builder," directly beside this zone's
 `add-flow-remote-config-locale` — but `zones.json` assigns it to `paywalls-legacy`, and three of this
 zone's own articles (`custom-media`, twice in `onboarding-text`) link to it as the canonical "add a
 locale" reference. Is that zoning intentional (the article is genuinely legacy Paywall-Builder-only
@@ -197,7 +199,7 @@ the interview report for the evidence trail.
 
 ## Ticket language
 
-Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔ flow in v4) live in `aliases.md` and are
+Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow in v4) live in `aliases.md` and are
 deliberately not repeated here. Two ids in this zone actively mislead: `paywall-layout-and-products` is
 "Screens and layers" and `manage-paywall-ui-elements` is "Layout and positioning" — never route by
 filename. Rows below are the cases where the visual symptom has a structural cause, or where several
@@ -254,7 +256,7 @@ second callout layer around it.
   dashboard before deciding whether they need recapturing. `flow-builder-bg-tint.webp` is current.
 - **Style debt (not a reader-facing gap):** `paywall-buttons.mdx` still uses the legacy
   `<Zoom><img src={require(...)}/></Zoom>` pattern and opens with a stray `:::info This section
-  describes the new Flow Builder...` banner that no other article in this zone carries — everything
+  describes the new Flow & Paywall Builder...` banner that no other article in this zone carries — everything
   else already migrated to `<ZoomImage>`. Noted for a cleanup pass, not actioned here.
 
 ### Questions for the owner

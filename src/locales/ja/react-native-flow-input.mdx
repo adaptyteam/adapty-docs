@@ -1,0 +1,257 @@
+---
+title: "React Native SDKでフローのデータを処理する"
+description: "Adapty SDKを使って、React Nativeアプリでユーザーがフローに入力したデータを保存・活用する方法を解説します。"
+metadataTitle: "フローのデータを処理する | React Native SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)内の入力フィールドに入力したり、クイズに回答したり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+
+アプリでこのデータを活用する主な用途は次のとおりです。
+
+- **バックエンドでユーザーを登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を取得し、フローが閉じたときにアカウントを作成します。
+- **回答や設定を保存する**: ユーザーが選択した内容を記録しておき、アプリが後で活用できるようにします。たとえば、カスタム属性として[Adapty プロファイルに書き込む](react-native-setting-user-attributes)ことができます。
+- **将来のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後のプレースメントでターゲティングすることで、各セグメントに異なるフローや、その中の異なるペイウォールを表示できます。
+- **サードパーティの分析プラットフォームに連携する**: 回答を Amplitude、Mixpanel、または利用中のプロダクトアナリティクスに転送します。
+
+インプットと選択可能なグループは、自動的に値を報告します。コード内でインプットを識別するには、ビルダーで各インプットに意味のある **Element ID** を、各選択可能なグループに **Group ID** を設定してください。
+
+<FlowIdNaming />
+
+## 始める前に \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 入力値を受け取る \{#receive-input-values\}
+
+入力値は、フローからの他のすべてのアナリティクスイベントと同じハンドラーに、イベント名 `flow_user_input` として届きます。他のフローイベントハンドラーと並べて `onAnalytics` を登録してください。
+
+```javascript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+`onAnalytics` コールバックは、[画面表示](react-native-flow-screen-views)を含む、フローからのすべての分析イベントを配信します。
+- `name` パラメーターにはイベント名が格納されています。ユーザー入力イベントをフィルタリングするには、`name` を `flow_user_input` と比較してください。
+- `element_type` パラメーターは要素のカテゴリーを示します。
+- 入力値は要素タイプによって異なるパラメーターに格納されます：
+     - テキストフィールド、ピッカー、トグルはユーザーの入力を `value` に格納します
+     - 選択グループはアクティブなオプションを `item_ids` と `item_titles` で報告します
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId;
+
+  switch (params.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = params.value;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      // Unix time in milliseconds.
+      const date = new Date(params.value);
+      break;
+    }
+    case 'single_choice': {
+      const optionId = params.item_ids[0];
+      break;
+    }
+    case 'multi_choice': {
+      const optionIds = params.item_ids;
+      break;
+    }
+    case 'toggle': {
+      const isOn = params.value;
+      break;
+    }
+  }
+}
+```
+
+<FlowInputVerify />
+
+## アプリがインプットを受け取るタイミング \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## イベントの例 \{#event-examples\}
+
+これらの例は、各イベントで利用可能なプロパティを、コメント内の参考値とともに示しています。
+
+<Details>
+<summary>テキスト、メール、数値、電話番号の入力（クリックして展開）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>日付・時刻・日時ピッカー（クリックして展開）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>単一選択（クリックして展開）</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>複数選択 (クリックして展開)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>トグル (クリックして展開)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## 配信と制限事項 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+ハンドラーが受け取った入力値をそれぞれ保存しておき、フローが閉じられたときにまとめて送信してください。そのタイミングを捉えるには、`onAnalytics` と合わせて `onDisappeared` ハンドラーを登録します。このハンドラーは、ユーザーがフローを最後まで完了した場合でも途中で閉じた場合でも、フロービューが閉じられると実行されます。
+
+## ユースケース \{#use-cases\}
+
+### バックエンドにユーザーを登録する \{#register-users-on-your-backend\}
+
+値が届いたら収集しておき、フローが閉じたタイミングでまとめてリクエストを送信してください。これにより、1回のリクエストで完全な回答セットを送れます。
+
+フローは、ユーザーが最後まで完了した場合でも、途中で離脱した場合でも消えます。バックエンドを呼び出す前に、必要なフィールドが揃っているか確認してください。
+
+フローはバックエンドからのエラーを表示できません。ハンドラーの戻り値はフロービューを閉じるだけであり、SDKには実行中のフローにデータを送り込むメソッドがありません。たとえばメールアドレスがすでに使用中である場合など、登録に失敗したときは、フローが閉じた後に独自のUIでエラーを表示してください。
+
+```javascript showLineNumbers title="React Native"
+const flowAnswers = {};
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### ユーザープロファイルにデータを追加する \{#enrich-user-profiles-with-data\}
+
+ユーザーが入力した情報をプロファイルに紐づけ、同じ内容を二度尋ねないようにするには、値が入力されるたびに[ユーザープロファイルを更新](react-native-setting-user-attributes)してください。
+
+たとえば、フローにElement ID `name`のテキスト入力とElement ID `email`のメール入力がある場合：
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch(error => {
+    // handle the error
+  });
+}
+```
+
+### 後で表示されるフローをカスタマイズする \{#customize-flows-shown-later\}
+
+クイズの回答によって、ユーザーが後で別の[プレースメント](placements)で目にするコンテンツ（別のフロー、またはその中の別のペイウォール）を決定することもできます。
+
+たとえば、オンボーディングフローでスポーツ経験についてユーザーに質問し、グループごとに異なるプロダクトとコピーを持つ独自のフローを表示することができます。
+
+1. フローに[クイズ](onboarding-quizzes)を追加します。[選択可能グループ](flow-selectable-elements)にグループID `experience` を設定し、各オプションに意味のある要素IDを付けます。
+2. 回答を処理し、ユーザーに[カスタム属性を設定](react-native-setting-user-attributes)します。
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: params.item_ids[0] },
+    })
+    .catch(error => {
+      // handle the error
+    });
+}
+```
+
+3. 各カスタム属性値に対して[セグメントを作成](segments)します。
+4. [プレースメントを作成](placements)し、各セグメントに対して[オーディエンスを追加](audience)します。
+5. アプリ内でそのプレースメントの[フローを表示](react-native-present-paywalls)します。

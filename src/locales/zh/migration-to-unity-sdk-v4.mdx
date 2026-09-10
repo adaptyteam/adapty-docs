@@ -6,7 +6,7 @@ metadataTitle: "迁移到 Adapty Unity SDK v4.1 | Adapty 文档"
 
 Adapty Unity SDK 4.1 是 4.x 系列的首个稳定版本——4.0 仅以 Beta 形式发布，因此如果你目前使用的是 3.x，请直接迁移至 4.1。本指南涵盖完整的迁移流程：4.0 中引入的流程功能，以及 4.1 新增的变更内容。
 
-4.x 版本引入了流程功能，并相应地重命名了付费墙相关 API。新 API 同时兼容新版 Flow Builder 和现有的付费墙编辑工具，Adapty 看板端无需做任何配置变更。此外，4.1 版本还对外部归因 API 进行了重命名，将 Adapty Attribution 改为按需启用，新增了一个必需的监听器方法，并更改了备用文件格式。
+4.x 系列引入了流程（flows）并相应重命名了付费墙 API。新 API 支持流程，同时也兼容旧版编辑工具构建的付费墙——Adapty 看板无需进行任何配置变更。此外，4.1 还重命名了外部归因 API，将 Adapty Attribution 改为按需启用，新增了一个必须实现的监听器方法，并更改了备用文件格式。
 
 :::note
 来自 4.0 beta？将固定的 beta 标签替换为 [4.1.0 安装](#installation)，之后只有四个部分适用：[新监听器方法](#new-required-method-onreceivepromotedpurchase)、[重命名的外部归因 API](#renamed-external-attribution-apis)、[Adapty 归因默认禁用](#adapty-attribution-is-disabled-by-default)，以及[备用文件](#fallback-files)。
@@ -31,14 +31,14 @@ Adapty Unity SDK 4.1 是 4.x 系列的首个稳定版本——4.0 仅以 Beta �
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`、`PaywallViewDidAppear` 及其他 `PaywallView...` 回调 | `FlowViewDidPerformAction`、`FlowViewDidAppear` 及其他 `FlowView...` 回调 |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
-| Adapty 归因自动启用 | 默认禁用——通过 `Builder.SetAdaptyAttributionEnabled(true)` 启用 |
-| 备用文件适用于 3.x 版本 | 新备用文件格式——请重新下载文件 |
-| `Adapty.SetFallbackPaywalls(...)`（v3 中已弃用） | 已移除——请使用 `Adapty.SetFallback(fileName, ...)` |
-| `Builder.SetIDFACollectionDisabled(...)`（v3 中已弃用） | 已移除——请使用 `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `Adapty.UpdateAttribution(data, source, ...)` 中 source 为 `string` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` 中 provider 为 `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` 类型为 `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` 类型为 `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+| Adapty 归因默认自动启用 | 默认禁用——通过 `Builder.SetAdaptyAttributionEnabled(true)` 选择开启 |
+| 适用于 3.x 的备用付费墙文件 | 新的备用文件格式——请重新下载文件 |
+| `Adapty.SetFallbackPaywalls(...)`（v3 中已废弃） | 已移除——请使用 `Adapty.SetFallback(fileName, ...)` |
+| `Builder.SetIDFACollectionDisabled(...)`（v3 中已废弃） | 已移除——请使用 `Builder.SetAppleIDFACollectionDisabled(...)` |
 | `paywall.Products`（`AdaptyProductReference` 列表） | 已移除——请使用 `ProductIdentifiers` 或 `VendorProductIds`，或调用 `GetPaywallProducts(flow)` 获取完整产品信息 |
-| `AdaptyProductReference` | 已作为公共类型移除——请参阅[数据模型](#data-model) |
+| `AdaptyProductReference` | 已作为公开类型移除——参见[数据模型](#data-model) |
 | `paywall.RemoteConfigString` | 已移除——请使用 `flow.RemoteConfig?.Data` |
 
 `AdaptyPaywallProduct` 保持其名称不变——产品仍归属于某个流程，`GetPaywallProducts` 也保持其名称不变，现在接受一个 `AdaptyFlow` 参数。`GetFlow` 和 `GetFlowForDefaultAudience` 方法不再接受 `locale` 参数。购买与用户画像相关的 API（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）保持不变。`SetFallback` 的签名不变，但它读取的文件需要重新下载——详见[备用文件](#fallback-files)。用户引导方法仍可使用，但已被废弃——详见[用户引导 API 废弃说明](#onboarding-api-deprecation)。部分默认行为已发生变化——详见[默认行为变更](#default-behavior-changes)。
@@ -132,14 +132,14 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### LogShowPaywall → LogShowFlow
 
-`LogShowPaywall` 已重命名为 `LogShowFlow`，现在接受一个 `AdaptyFlow` 参数。事件仍记录在同一变体下，因此现有漏斗和 A/B 测试的数据图表无需在看板中进行任何更改即可继续使用。
+`LogShowPaywall` 已重命名为 `LogShowFlow`，现在接受 `AdaptyFlow` 参数。事件仍记录在同一个实验变体下，因此现有的漏斗和 A/B 测试数据图表无需修改看板即可继续正常使用。
 
 ```diff showLineNumbers
 - Adapty.LogShowPaywall(paywall, (error) => { /* ... */ });
 + Adapty.LogShowFlow(flow, (error) => { /* ... */ });
 ```
 
-与 v3 相同，使用 [Flow Builder](adapty-flow-builder) 或 [付费墙编辑工具](adapty-paywall-builder) 渲染的流程或付费墙无需调用此方法——Adapty 会自动跟踪这些视图。
+与 v3 相同，当展示由 Adapty 渲染的流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些浏览行为。
 
 ## 显示流程 \{#displaying-flows\}
 
@@ -148,7 +148,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 将工厂方法重命名，并传入 `AdaptyFlow`。返回的视图类型从 `AdaptyUIPaywallView` 更名为 `AdaptyUIFlowView`，但其方法（`Present`、`Dismiss`）保持不变，可选参数对象在新名称 `AdaptyUICreateFlowViewParameters` 下保留相同字段（`LoadTimeout`、`PreloadProducts`、`CustomTags`、`CustomTimers`、`CustomAssets`、`ProductPurchaseParameters`），并新增两个字段——`Locale` 和 `EnableSafeAreaPaddings`：
 
 :::note
-`CustomTimers` 仍然存在，但它只影响旧版付费墙编辑工具的付费墙。流程的[倒计时器](flow-timer)按照流程编辑工具中设置的行为运行，因此流程会忽略你在此传入的任何内容。
+`CustomTimers` 仍然存在，但它只影响旧版付费墙编辑工具的付费墙。流程的[倒计时器](flow-timer)按照 Flow & Paywall Builder 中设置的行为运行，因此流程会忽略此处传入的任何值。
 :::
 
 ```diff showLineNumbers
@@ -246,20 +246,38 @@ public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
 - `IAdaptyFlowsEventsListener` 上新增的 `FlowViewDidReceiveAnalyticEvent` 回调，用于上报来自流程的分析事件，从用户打开的每个屏幕的页面浏览事件开始。详见[追踪流程屏幕浏览](unity-flow-screen-views)。
 - `AdaptyUI.OpenUrl(url, openIn, ...)` 和 `AdaptyUI.RequestAppReview(...)` — `open_url` 操作和应用评价请求背后的原生处理逻辑。在 `FlowViewDidPerformAction` 中调用 `OpenUrl` 可保留默认的 URL 处理行为；`RequestAppReview` 支持默认的应用评价提示，但流程目前尚不会触发该功能。
 
-## 重命名的外部归因 API \{#renamed-external-attribution-apis\}
+## 重命名外部归因 API \{#renamed-external-attribution-apis\}
 
-从 SDK 4.1 版本开始，用于传入外部归因数据提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义提供商）归因数据的 API 已重命名，以与原生 SDK 保持一致。此次重命名没有提供弃用别名，因此所有现有调用处在重命名前将无法通过编译：
+从 SDK 4.1 版本开始，用于传入外部归因数据提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义提供商）数据的 API 已重命名，以与原生 SDK 保持一致，且提供商参数从字符串改为类型。由于没有废弃别名，现有调用处在更新之前将无法编译通过：
 
 | 4.1 之前 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` 为 `string` 类型 | `provider` 为 `AdaptyExternalAttributionProvider` 类型 |
+| `AdaptyProfile.AppliedAttributionSources` 为 `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` 为 `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 
-只有名称发生了变化。provider 仍然是和之前相同的字符串（`"adjust"`、`"appsflyer"`、`"branch"`、`"tenjin"`、`"apple_search_ads"`、`"custom"`），归因数据仍然以字典或 JSON 字符串的形式传入，profile 属性仍然是 `IReadOnlyList<string>`：
+仅重命名方法还不够——需要在同一次修改中替换 provider 参数：
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` 携带后端识别提供商所用的标识符，内置六个共享实例：`AppleAds`（`apple_search_ads`）、`Adjust`、`Appsflyer`、`Branch`、`Tenjin` 和 `Custom`。对于本次 SDK 发布后 Adapty 新增的提供商，可通过其标识符构建实例——`new AdaptyExternalAttributionProvider("your_provider")`——数据将原样发送至后端。首尾空白字符会被自动去除。
+
+归因数据以**序列化 JSON 字符串**的形式传入。如果你持有的是字典，请先将其序列化：
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+在用户画像端，通过新类型读取已应用的提供商：
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Adapty Attribution 默认禁用 \{#adapty-attribution-is-disabled-by-default\}
@@ -298,6 +316,6 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
 
-旧版用户引导 API 在 v4 中已弃用，请改用 [Flow Builder](adapty-flow-builder)。该 API 目前仍可使用，但将在未来版本中移除，请提前将你的用户引导迁移至 Flow Builder。
+旧版用户引导 API 在 v4 中已被弃用，取而代之的是 [Flow & 付费墙编辑工具](adapty-flow-builder)。该 API 目前仍可正常使用，但将在未来版本中移除，请及时将您的用户引导迁移至 Flow & 付费墙编辑工具。
 
-已弃用的符号：`GetOnboarding`、`GetOnboardingForDefaultAudience`、`AdaptyUI.CreateOnboardingView`、`AdaptyUI.PresentOnboardingView`、`AdaptyUI.DismissOnboardingView` 和 `Adapty.SetOnboardingsEventsListener`。
+已弃用的符号：`GetOnboarding`、`GetOnboardingForDefaultAudience`、`AdaptyUI.CreateOnboardingView`、`AdaptyUI.PresentOnboardingView`、`AdaptyUI.DismissOnboardingView` 以及 `Adapty.SetOnboardingsEventsListener`。

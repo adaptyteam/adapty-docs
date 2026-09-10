@@ -5,58 +5,48 @@ metadataTitle: "Handle Errors | Kotlin Multiplatform SDK | Adapty Docs"
 displayed_sidebar: sdkkmp
 ---
 
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-
 This page covers error handling in the Adapty Kotlin Multiplatform SDK.
 
 ## Error handling basics
 
-All Adapty SDK methods return results that can be either success or error. Always handle both cases:
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+Adapty SDK methods are suspend functions that return an `AdaptyResult`, which is either a success or an error. Handle both cases with `onSuccess` and `onError`:
 
 ```kotlin showLineNumbers
-Adapty.getProfile { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val profile = result.value
-            // Handle success
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            // Handle error
-            Log.e("Adapty", "Error: ${error.message}")
-        }
+import com.adapty.kmp.Adapty
+
+Adapty.getProfile()
+    .onSuccess { profile ->
+        // Handle success
+    }
+    .onError { error ->
+        // Handle error
+        println("Adapty error: ${error.message}")
+    }
+```
+
+`AdaptyResult` is a sealed class, so you can also branch on it directly when you need the result as a value:
+
+```kotlin showLineNumbers
+import com.adapty.kmp.models.AdaptyResult
+
+when (val result = Adapty.getProfile()) {
+    is AdaptyResult.Success -> {
+        val profile = result.value
+        // Handle success
+    }
+    is AdaptyResult.Error -> {
+        val error = result.error
+        // Handle error
     }
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getProfile(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyProfile profile = ((AdaptyResult.Success<AdaptyProfile>) result).getValue();
-        // Handle success
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        // Handle error
-        Log.e("Adapty", "Error: " + error.getMessage());
-    }
-});
-```
-</TabItem>
-</Tabs>
 
 ## Common error codes
 
 `AdaptyError.code` is an `AdaptyErrorCode` enum value, not a number — compare it against the enum constant, not against the numeric code. The numbers below are shown only because they are what a log line or a support ticket usually carries.
 
 | Error code | Number | Description | Solution |
-|------------|--------|-------------|----------|
+|---|---|---|---|
 | `AdaptyErrorCode.NO_PRODUCT_IDS_FOUND` | 1000 | None of the products in the paywall are available in the store. | See [Fix for Code-1000 noProductIDsFound error](InvalidProductIdentifiers-kmp). |
 | `AdaptyErrorCode.CANT_MAKE_PAYMENTS` | 1003 | In-app purchases are not allowed on this device. | See [Fix for Code-1003 cantMakePayments error](cantMakePayments-kmp). |
 | `AdaptyErrorCode.PRODUCT_NOT_FOUND` | 22 | The product requested for purchase is not available in the store. | Check that the product is configured in the store and in the Adapty Dashboard. |
@@ -69,262 +59,109 @@ For the full list of codes, see `AdaptyErrorCode` in the [SDK models reference](
 
 ### Network errors
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
-
 ```kotlin showLineNumbers
-Adapty.getPaywall("main") { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val paywall = result.value
-            // Use paywall
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            when (error.code) {
-                AdaptyErrorCode.NETWORK_FAILED -> {
-                    // Network error - show offline message
-                    showOfflineMessage()
-                }
-                else -> {
-                    // Other errors
-                    showErrorMessage(error.message)
-                }
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyErrorCode
+
+Adapty.getFlow("YOUR_PLACEMENT_ID")
+    .onSuccess { flow ->
+        // Use the flow
+    }
+    .onError { error ->
+        when (error.code) {
+            AdaptyErrorCode.NETWORK_FAILED -> {
+                // Network error - show offline message
+                showOfflineMessage()
+            }
+            else -> {
+                showErrorMessage(error.message)
             }
         }
     }
-}
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-Adapty.getPaywall("main", result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-        // Use paywall
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        switch (error.getCode()) {
-            case NETWORK_FAILED:
-                // Network error - show offline message
-                showOfflineMessage();
-                break;
-            default:
-                // Other errors
-                showErrorMessage(error.getMessage());
-                break;
-        }
-    }
-});
-```
-</TabItem>
-</Tabs>
 
 ### Purchase errors
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+`makePurchase` reports failures and outcomes separately. An `AdaptyResult.Error` means the call failed; a successful result returns an `AdaptyPurchaseResult` that tells you whether the user completed the purchase, canceled it, or left it pending:
 
 ```kotlin showLineNumbers
-product.makePurchase { result ->
-    when (result) {
-        is AdaptyResult.Success -> {
-            val purchase = result.value
-            // Purchase successful
-            showSuccessMessage()
-        }
-        is AdaptyResult.Error -> {
-            val error = result.error
-            when (error.code) {
-                AdaptyErrorCode.CANT_MAKE_PAYMENTS -> {
-                    // Can't make payments
-                    showPaymentNotAvailableMessage()
-                }
-                AdaptyErrorCode.PRODUCT_NOT_FOUND -> {
-                    // Product not available
-                    showProductNotAvailableMessage()
-                }
-                else -> {
-                    // Other purchase errors
-                    showPurchaseErrorMessage(error.message)
-                }
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyErrorCode
+import com.adapty.kmp.models.AdaptyPurchaseResult
+
+Adapty.makePurchase(product)
+    .onSuccess { purchaseResult ->
+        when (purchaseResult) {
+            is AdaptyPurchaseResult.Success -> showSuccessMessage()
+            AdaptyPurchaseResult.UserCanceled -> {
+                // The user dismissed the store sheet — not an error
+            }
+            AdaptyPurchaseResult.Pending -> {
+                // Awaiting an out-of-band payment, such as a prepaid plan
+                showPendingMessage()
             }
         }
     }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
-
-```java showLineNumbers
-product.makePurchase(result -> {
-    if (result instanceof AdaptyResult.Success) {
-        AdaptyPurchase purchase = ((AdaptyResult.Success<AdaptyPurchase>) result).getValue();
-        // Purchase successful
-        showSuccessMessage();
-    } else if (result instanceof AdaptyResult.Error) {
-        AdaptyError error = ((AdaptyResult.Error) result).getError();
-        switch (error.getCode()) {
-            case CANT_MAKE_PAYMENTS:
-                // Can't make payments
-                showPaymentNotAvailableMessage();
-                break;
-            case PRODUCT_NOT_FOUND:
-                // Product not available
-                showProductNotAvailableMessage();
-                break;
-            default:
-                // Other purchase errors
-                showPurchaseErrorMessage(error.getMessage());
-                break;
+    .onError { error ->
+        when (error.code) {
+            AdaptyErrorCode.CANT_MAKE_PAYMENTS -> showPaymentNotAvailableMessage()
+            AdaptyErrorCode.PRODUCT_NOT_FOUND -> showProductNotAvailableMessage()
+            else -> showPurchaseErrorMessage(error.message)
         }
     }
-});
 ```
-</TabItem>
-</Tabs>
 
 ## Error recovery strategies
 
 ### Retry on network errors
 
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+Because SDK methods are suspend functions, a retry loop is a plain loop with `delay` between attempts:
 
 ```kotlin showLineNumbers
-fun getPaywallWithRetry(placementId: String, maxRetries: Int = 3) {
-    var retryCount = 0
-    
-    fun attemptGetPaywall() {
-        Adapty.getPaywall(placementId) { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val paywall = result.value
-                    // Use paywall
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyErrorCode
+import com.adapty.kmp.models.AdaptyFlow
+import com.adapty.kmp.models.AdaptyResult
+import kotlinx.coroutines.delay
+
+suspend fun getFlowWithRetry(placementId: String, maxRetries: Int = 3): AdaptyFlow? {
+    repeat(maxRetries) { attempt ->
+        when (val result = Adapty.getFlow(placementId)) {
+            is AdaptyResult.Success -> return result.value
+            is AdaptyResult.Error -> {
+                if (result.error.code != AdaptyErrorCode.NETWORK_FAILED) {
+                    showErrorMessage(result.error.message)
+                    return null
                 }
-                is AdaptyResult.Error -> {
-                    val error = result.error
-                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && retryCount < maxRetries) {
-                        // Network error - retry
-                        retryCount++
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            attemptGetPaywall()
-                        }, 1000 * retryCount) // Exponential backoff
-                    } else {
-                        // Max retries reached or other error
-                        showErrorMessage(error.message)
-                    }
-                }
+                delay(1000L * (attempt + 1))
             }
         }
     }
-    
-    attemptGetPaywall()
+    return null
 }
 ```
-</TabItem>
-<TabItem value="java" label="Java" default>
 
-```java showLineNumbers
-public void getPaywallWithRetry(String placementId, int maxRetries) {
-    AtomicInteger retryCount = new AtomicInteger(0);
-    
-    Runnable attemptGetPaywall = new Runnable() {
-        @Override
-        public void run() {
-            Adapty.getPaywall(placementId, result -> {
-                if (result instanceof AdaptyResult.Success) {
-                    AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-                    // Use paywall
-                } else if (result instanceof AdaptyResult.Error) {
-                    AdaptyError error = ((AdaptyResult.Error) result).getError();
-                    if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && retryCount.get() < maxRetries) {
-                        // Network error - retry
-                        retryCount.incrementAndGet();
-                        new Handler(Looper.getMainLooper()).postDelayed(this, 1000 * retryCount.get());
-                    } else {
-                        // Max retries reached or other error
-                        showErrorMessage(error.getMessage());
-                    }
-                }
-            });
-        }
-    };
-    
-    attemptGetPaywall.run();
-}
-```
-</TabItem>
-</Tabs>
+### Fall back to cached data
 
-### Fallback to cached data
-
-<Tabs groupId="current-os" queryString>
-
-<TabItem value="kotlin" label="Kotlin" default>
+You don't need to cache flows yourself. Adapty SDK caches them on the device and returns the cached copy when the network fails, so pass a fetch policy instead of writing your own cache:
 
 ```kotlin showLineNumbers
-class PaywallManager {
-    private var cachedPaywall: AdaptyPaywall? = null
-    
-    fun getPaywall(placementId: String) {
-        Adapty.getPaywall(placementId) { result ->
-            when (result) {
-                is AdaptyResult.Success -> {
-                    val paywall = result.value
-                    cachedPaywall = paywall
-                    showPaywall(paywall)
-                }
-                is AdaptyResult.Error -> {
-                    val error = result.error
-                    if (error.code == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
-                        // Network error - use cached paywall
-                        showPaywall(cachedPaywall!!)
-                        showOfflineIndicator()
-                    } else {
-                        // No cache available or other error
-                        showErrorMessage(error.message)
-                    }
-                }
-            }
-        }
-    }
-}
-```
-</TabItem>
-<TabItem value="java" label="Java" default>
+import com.adapty.kmp.Adapty
+import com.adapty.kmp.models.AdaptyPaywallFetchPolicy
 
-```java showLineNumbers
-public class PaywallManager {
-    private AdaptyPaywall cachedPaywall;
-    
-    public void getPaywall(String placementId) {
-        Adapty.getPaywall(placementId, result -> {
-            if (result instanceof AdaptyResult.Success) {
-                AdaptyPaywall paywall = ((AdaptyResult.Success<AdaptyPaywall>) result).getValue();
-                cachedPaywall = paywall;
-                showPaywall(paywall);
-            } else if (result instanceof AdaptyResult.Error) {
-                AdaptyError error = ((AdaptyResult.Error) result).getError();
-                if (error.getCode() == AdaptyErrorCode.NETWORK_FAILED && cachedPaywall != null) {
-                    // Network error - use cached paywall
-                    showPaywall(cachedPaywall);
-                    showOfflineIndicator();
-                } else {
-                    // No cache available or other error
-                    showErrorMessage(error.getMessage());
-                }
-            }
-        });
+Adapty.getFlow(
+    placementId = "YOUR_PLACEMENT_ID",
+    fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad
+)
+    .onSuccess { flow ->
+        // Use the flow
     }
-}
+    .onError { error ->
+        showErrorMessage(error.message)
+    }
 ```
-</TabItem>
-</Tabs>
+
+With `ReturnCacheDataElseLoad`, users on a patchy connection get a flow faster, at the cost of possibly not seeing the latest version. If neither the network nor the cache produces a flow, the SDK falls back to the [fallback file](kmp-use-fallback-paywalls) you bundle with the app.
 
 ## Next steps
 

@@ -1,37 +1,34 @@
 ---
-title: "在 Android SDK Observer 模式下展示流程"
-description: "在 Android 应用中以 Observer 模式展示流程和付费墙编辑工具付费墙，同时使用自己的代码处理购买。"
+title: "在 Android SDK 中以 Observer 模式展示流程"
+description: "在 Android 应用中以 Observer 模式展示流程，同时使用自己的代码处理购买逻辑。"
 metadataTitle: "在 Observer 模式下展示流程 | Adapty 文档"
 ---
 
-如果您已使用流程编辑器或付费墙编辑工具创建了流程或付费墙，则无需在移动应用代码中手动渲染，即可向用户展示。此类流程或付费墙已包含展示内容及展示方式的完整配置。
+如果你使用 [Observer 模式](observer-vs-full-mode)，则需要自行处理购买逻辑。但你可以将付费墙 UI 的展示工作交给 [Flow & Paywall Builder](adapty-flow-builder) 来完成。
 
-:::warning
-本节仅适用于[观察者模式](observer-vs-full-mode)。如果您未使用观察者模式，请参阅 [Android - 展示流程与付费墙](android-present-paywalls) 主题。
-:::
+在编辑工具中设计好界面后，Adapty SDK 会原生渲染该界面。你可以随时更新文案、布局和定价，无需发布新版本。当用户点击购买按钮时，SDK 会调用你的代码完成购买。
 
-:::tip
-请在[流程编辑器](adapty-flow-builder)中构建流程本身。
-:::
+本指南介绍如何展示该界面并处理购买回调。如果由 Adapty 代为完成购买，请参阅[展示流程与付费墙](android-present-paywalls)。
 
 <SDKv4>
 
-<details>
-   <summary>开始呈现流程之前（点击展开）</summary>
+## 开始之前 \{#before-you-start\}
 
-1. 完成 Adapty [与 Google Play 的初始集成](initial-android)。
-   2. 安装并配置 Adapty SDK，确保将 `observerMode` 参数设置为 `true`。请参阅我们针对特定框架的说明 [Android 版](sdk-installation-android)。
-   3. 在 Adapty 看板中[创建产品](create-product)。
-   4. [在编辑工具中配置流程或付费墙](create-paywall)，并为其分配产品。
-   5. 在 Adapty 看板中[创建版位并为其分配流程或付费墙](create-placement)。
-   6. 在移动应用代码中[获取流程及其配置](android-get-pb-paywalls)。
-</details>
+你需要：
 
-<p> </p>
+- **Adapty Android SDK v4 或更高版本**：早期版本无法渲染流程。如需将现有应用从 v3 迁移，请参阅[迁移指南](migration-to-android-sdk-v4)。
+- **将 `observerMode` 设置为 `true`**：请参阅 [Android SDK 安装指南](sdk-installation-android)。
+- **初始商店集成**：配置 Adapty [与 Google Play 的集成](initial-android)。
+- **已发布且包含产品的流程**：在[流程与付费墙编辑工具](adapty-flow-builder)中构建，并为其分配[产品](create-product)。
+- **流程版位**：[创建版位](create-placement)并将您的流程分配到该版位。
+- **在应用中获取流程**：在展示流程之前，[获取流程及其配置](android-get-pb-paywalls)。
+
+## 实现 \{#implementation\}
 
 1. 实现 `AdaptyUiObserverModeHandler`。
 
-当用户发起购买时，`onPurchaseInitiated` 事件会通知你。你可以在此回调中触发自定义的购买流程：
+当用户发起购买时，`onPurchaseInitiated` 事件会通知你。你可以在此回调中触发自定义购买流程：
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -80,7 +77,8 @@ metadataTitle: "在 Observer 模式下展示流程 | Adapty 文档"
 </TabItem>
 </Tabs>
 
-要在观察者模式下处理恢复操作，请重写 `getRestoreHandler()`。默认情况下它返回 `null`，此时会使用 Adapty 内置的 `Adapty.restorePurchases()` 流程。如需自定义恢复逻辑：
+要在 Observer 模式下处理恢复操作，请重写 `getRestoreHandler()`。默认情况下，它返回 `null`，即使用 Adapty 内置的 `Adapty.restorePurchases()` 流程。如需提供自定义的恢复实现：
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -143,23 +141,25 @@ metadataTitle: "在 Observer 模式下展示流程 | Adapty 文档"
 </TabItem>
 </Tabs>
 
-记得调用以下回调函数，以便将购买或恢复流程的状态通知 AdaptyUI。这对于正确的流程行为（例如显示加载器）是必要的：
-   | 回调                 | 描述                                                                                   |
+请记得调用以下回调，以便将购买或恢复操作的状态通知给 AdaptyUI。这对于正确的流程行为（例如显示加载动画）是必要的：
+
+| 回调 | 描述 |
    | :----------------- |:---------------------------------------------------------------------------------------|
    | onStartPurchase()  | 应调用此回调以通知 AdaptyUI 购买已开始。        |
    | onFinishPurchase() | 应调用此回调以通知 AdaptyUI 购买已完成。       |
-   | onStartRestore()   | 可选。可调用此回调以通知 AdaptyUI 恢复已开始。  |
-   | onFinishRestore()  | 可选。可调用此回调以通知 AdaptyUI 恢复已完成。 |
+   | onStartRestore()   | 可选。可调用此回调以通知 AdaptyUI 恢复购买已开始。  |
+   | onFinishRestore()  | 可选。可调用此回调以通知 AdaptyUI 恢复购买已完成。 |
 
-2. 要在设备屏幕上显示可视化流程，必须先对其进行配置。
+2. 要在设备屏幕上显示可视化流程，您必须先对其进行配置。
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
-为此，请调用 `AdaptyUI.getFlowView()` 方法，或直接创建 `AdaptyFlowView`：
+为此，请调用方法 `AdaptyUI.getFlowView()` 或直接创建 `AdaptyFlowView`：
 
 <Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin (option 1)" default>
+
 ```kotlin showLineNumbers
    val flowView = AdaptyUI.getFlowView(
        activity,
@@ -176,6 +176,7 @@ metadataTitle: "在 Observer 模式下展示流程 | Adapty 文档"
 
 </TabItem>
 <TabItem value="kotlin2" label="Kotlin (option 2)" default>
+
 ```kotlin showLineNumbers
    val flowView =
         AdaptyFlowView(activity) // or retrieve it from xml
@@ -196,6 +197,7 @@ metadataTitle: "在 Observer 模式下展示流程 | Adapty 文档"
 
 </TabItem>
 <TabItem value="java" label="Java (option 1)" default>
+
 ```java showLineNumbers
 AdaptyFlowView flowView = AdaptyUI.getFlowView(
         activity,
@@ -212,6 +214,7 @@ AdaptyFlowView flowView = AdaptyUI.getFlowView(
 
 </TabItem>
 <TabItem value="java2" label="Java (option 2)" default>
+
 ```java showLineNumbers
 AdaptyFlowView flowView =
   new AdaptyFlowView(activity); //add to the view hierarchy if needed, or you receive it from xml
@@ -230,7 +233,8 @@ flowView.showFlow(flowConfiguration, products, eventListener, insets, customAsse
 
 </TabItem>
 </Tabs>
-视图成功创建后，即可将其添加到视图层级并显示。
+
+成功创建视图后，即可将其添加到视图层次结构并显示。
 
 </TabItem>
 <TabItem value="compose" label="Jetpack Compose" default>
@@ -254,15 +258,17 @@ AdaptyFlowScreen(
 </Tabs>
 
    请求参数：
+
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **flowConfiguration** | 必填 | 提供一个包含流程视觉详情的 `AdaptyUI.FlowConfiguration` 对象。使用 `AdaptyUI.getFlowConfiguration(flow)` 方法加载该对象。详情请参阅[获取视图配置](android-get-pb-paywalls#fetch-the-view-configuration)。 |
-| **products** | 选填 | 提供一个 `AdaptyPaywallProduct` 数组，以优化产品在页面上的显示时机。若传入 `null`，AdaptyUI 将自动获取所需产品。 |
-| **eventListener** | 选填 | 提供一个 `AdaptyFlowEventListener` 以监听流程事件。建议继承 `AdaptyFlowDefaultEventListener` 以简化使用。详情请参阅[处理流程与付费墙事件](android-handling-events)。 |
-| **insets** | 选填 | Insets 是流程四周的空白区域，用于防止可点击元素被系统栏遮挡。默认值为 `Unspecified`，即由 Adapty 自动调整 insets。请参阅[更改流程 insets](android-present-paywalls#change-flow-insets)。 |
-| **customAssets** | 选填 | 传入一个 `AdaptyCustomAssets` 对象，以在运行时替换流程或付费墙中的图片和视频。详情请参阅[自定义资源](android-get-pb-paywalls#customize-assets)。 |
-| **tagResolver** | 选填 | 使用 `AdaptyUiTagResolver` 解析流程文本中的自定义标签。该解析器接收标签参数并将其解析为对应的字符串。详情请参阅付费墙编辑工具中的自定义标签相关内容。 |
-| **observerModeHandler** | Observer 模式下必填 | 您在上一步中实现的 `AdaptyUiObserverModeHandler`。 |
+| **flowConfiguration** | 必填 | 提供一个包含流程视觉详情的 `AdaptyUI.FlowConfiguration` 对象。使用 `AdaptyUI.getFlowConfiguration(flow)` 方法加载。详情请参阅 [获取视图配置](android-get-pb-paywalls#fetch-the-view-configuration)。 |
+| **products** | 选填 | 提供一个 `AdaptyPaywallProduct` 数组，以优化产品在屏幕上的展示时机。若传入 `null`，AdaptyUI 将自动获取所需产品。 |
+| **eventListener** | 选填 | 提供一个 `AdaptyFlowEventListener` 以监听流程事件。建议继承 `AdaptyFlowDefaultEventListener` 以简化使用。详情请参阅 [处理流程与付费墙事件](android-handling-events)。 |
+| **insets** | 选填 | Insets 是流程周围的间距，用于防止可点击元素被系统栏遮挡。默认值：`Unspecified`，表示由 Adapty 自动调整 insets。参见 [修改流程 insets](android-present-paywalls#change-flow-insets)。 |
+| **customAssets** | 选填 | 传入一个 `AdaptyCustomAssets` 对象，以在运行时替换流程中的图片和视频。详情请参阅 [自定义资源](android-get-pb-paywalls#customize-assets)。 |
+| **tagResolver** | 选填 | 使用 `AdaptyUiTagResolver` 解析流程文本中的自定义标签。该解析器接收标签参数并将其解析为对应的字符串。 |
+| **observerModeHandler** | Observer 模式必填 | 您在上一步骤中实现的 `AdaptyUiObserverModeHandler`。 |
+
 :::warning
 不要忘记[将付费墙与购买交易关联](report-transactions-observer-mode-android)。否则，Adapty 将无法确定购买的来源流程。
 :::
@@ -272,15 +278,16 @@ AdaptyFlowScreen(
 <SDKv3>
 
 <Tabs groupId="current-os" queryString> 
-<TabItem value="SDK3" label="New Paywall Builder (SDK 3.0+)" default> 
+<TabItem value="SDK3" label="Paywall Builder (SDK 3.x)" default> 
 <details>
    <summary>开始展示付费墙之前（点击展开）</summary>
-      1. 设置 Adapty 与 [Google Play](initial-android) 和 [App Store](initial_ios) 的初始集成。 
-   2. 安装并配置 Adapty SDK。确保将 `observerMode` 参数设置为 `true`。请参阅我们针对 [Android](sdk-installation-android) 的框架专属说明。
+
+1. 在 Adapty 看板中完成初始集成，包括[与 Google Play 的集成](initial-android)和[与 App Store 的集成](initial_ios)。
+   2. 安装并配置 Adapty SDK，确保将 `observerMode` 参数设置为 `true`。请参阅针对 Android 的[框架专项说明](sdk-installation-android)。
    3. 在 Adapty 看板中[创建产品](create-product)。
-   4. 在 Adapty 看板中[配置付费墙、为其分配产品](create-paywall)，并使用付费墙编辑工具对其进行自定义。
-   5. 在 Adapty 看板中[创建版位并为其分配付费墙](create-placement)。
-   6. 在移动应用代码中[获取付费墙编辑工具创建的付费墙及其配置](android-get-pb-paywalls)。
+   4. 在 Adapty 看板中[配置付费墙并为其分配产品](create-paywall)，然后使用付费墙编辑工具对其进行自定义。
+   5. 在 Adapty 看板中[创建版位并将付费墙分配给相应版位](create-placement)。
+   6. 在移动应用代码中[获取付费墙编辑工具的付费墙及其配置](android-get-pb-paywalls)。
 
 </details>
 
@@ -291,7 +298,7 @@ AdaptyFlowScreen(
 `onPurchaseInitiated` 事件会通知你用户已发起购买。你可以在此回调中触发自定义购买流程：
 
 :::note
-Adapty Android SDK 3.15.0 之前的版本还会将付费墙和付费墙视图传递给此回调。升级到 3.15.0 或更高版本时，请移除这两个参数。
+Adapty Android SDK 3.15.0 之前的版本还会将付费墙和付费墙视图传入此回调。升级到 3.15.0 或更高版本时，请删除这两个参数。
 :::
 
 <Tabs groupId="current-os" queryString>
@@ -342,7 +349,8 @@ Adapty Android SDK 3.15.0 之前的版本还会将付费墙和付费墙视图传
 </TabItem>
 </Tabs>
 
-要在观察者模式下处理恢复操作，请重写 `getRestoreHandler()`。默认情况下它返回 `null`，此时会使用 Adapty 内置的 `Adapty.restorePurchases()` 流程。如需自定义恢复逻辑，请按以下方式实现：
+要在观察者模式下处理恢复操作，请重写 `getRestoreHandler()`。默认情况下它返回 `null`，即使用 Adapty 内置的 `Adapty.restorePurchases()` 流程。如需提供自定义恢复实现：
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -405,20 +413,21 @@ Adapty Android SDK 3.15.0 之前的版本还会将付费墙和付费墙视图传
 </TabItem>
 </Tabs>
 
-   请记得调用以下回调以通知 AdaptyUI 购买或恢复流程。这对于正确的付费墙行为（例如显示加载动画）是必要的：
+请记得调用以下回调，以便将购买或恢复流程通知给 AdaptyUI。这对于正确的付费墙行为（例如显示加载动画）是必要的：
 
-| 回调函数 | 说明 |
-| :----------------- |:---------------------------------------------------------------------------------------|
-| onStartPurchase() | 调用此回调函数以通知 AdaptyUI 购买已开始。 |
-| onFinishPurchase() | 调用此回调函数以通知 AdaptyUI 购买已完成。 |
-| onStartRestore() | 可选。调用此回调函数以通知 AdaptyUI 恢复购买已开始。 |
-| onFinishRestore() | 可选。调用此回调函数以通知 AdaptyUI 恢复购买已完成。 |
-2. 要在设备屏幕上显示可视化付费墙，您必须先对其进行配置。
+| 回调 | 描述 |
+   | :----------------- |:---------------------------------------------------------------------------------------|
+   | onStartPurchase()  | 应调用此回调以通知 AdaptyUI 购买已开始。        |
+   | onFinishPurchase() | 应调用此回调以通知 AdaptyUI 购买已完成。       |
+   | onStartRestore()   | 可选。可调用此回调以通知 AdaptyUI 恢复操作已开始。  |
+   | onFinishRestore()  | 可选。可调用此回调以通知 AdaptyUI 恢复操作已完成。 |
+
+2. 要在设备屏幕上显示可视化付费墙，必须先对其进行配置。
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="views" label="Views" default>
 
-为此，请调用 `AdaptyUI.getPaywallView()` 方法或直接创建 `AdaptyPaywallView`：
+为此，调用 `AdaptyUI.getPaywallView()` 方法，或直接创建 `AdaptyPaywallView`：
 
 <Tabs groupId="current-os" queryString>
   <TabItem value="kotlin" label="Kotlin (option 1)" default>
@@ -438,6 +447,7 @@ Adapty Android SDK 3.15.0 之前的版本还会将付费墙和付费墙视图传
 
 </TabItem>
 <TabItem value="kotlin2" label="Kotlin (option 2)" default>
+
 ```kotlin showLineNumbers
    val paywallView =
         AdaptyPaywallView(activity) // or retrieve it from xml
@@ -457,6 +467,7 @@ Adapty Android SDK 3.15.0 之前的版本还会将付费墙和付费墙视图传
 
 </TabItem>
 <TabItem value="java" label="Java (option 1)" default>
+
 ```java showLineNumbers
 AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
         activity,
@@ -472,6 +483,7 @@ AdaptyPaywallView paywallView = AdaptyUI.getPaywallView(
 
 </TabItem>
 <TabItem value="java2" label="Java (option 2)" default>
+
 ```java showLineNumbers
 AdaptyPaywallView paywallView =
   new AdaptyPaywallView(activity); //add to the view hierarchy if needed, or you receive it from xml
@@ -490,7 +502,8 @@ paywallView.showPaywall(viewConfiguration, products, eventListener, personalized
 
 </TabItem>
 </Tabs>
-视图成功创建后，您可以将其添加到视图层级中并显示。
+
+视图成功创建后，你可以将其添加到视图层级并显示。
 
 </TabItem>
 <TabItem value="compose" label="Jetpack Compose" default>
@@ -512,31 +525,32 @@ AdaptyPaywallScreen(
 </Tabs>
 
    请求参数：
+
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **Products** | 可选 | 提供一个 `AdaptyPaywallProduct` 数组，以优化产品在界面上的显示时机。如果传入 `null`，AdaptyUI 将自动获取所需产品。 |
-| **ViewConfiguration** | 必填 | 提供一个包含付费墙视觉详情的 `AdaptyViewConfiguration` 对象。使用 `Adapty.getViewConfiguration(paywall)` 方法来加载它。详情请参考[获取付费墙的视觉配置](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)主题。 |
-| **EventListener** | 可选 | 提供一个 `AdaptyUiEventListener` 来监听付费墙事件。推荐继承 AdaptyUiDefaultEventListener 以简化使用。详情请参考[处理付费墙事件](android-handling-events)主题。 |
-| **PersonalizedOfferResolver** | 可选 | 若需标注个性化定价（[了解更多](https://developer.android.com/google/play/billing/integrate#personalized-price)），请实现 `AdaptyUiPersonalizedOfferResolver`，并传入你自己的逻辑，将 `AdaptyPaywallProduct` 映射为 true（如果该产品价格为个性化定价）或 false。 |
-| **TagResolver** | 可选 | 使用 `AdaptyUiTagResolver` 来解析付费墙文本中的自定义标签。该解析器接收一个标签参数，并将其解析为对应的字符串。详情请参考付费墙编辑工具中的自定义标签主题。 |
-| **ObserverModeHandler** | Observer 模式必填 | 你在上一步实现的 `AdaptyUiObserverModeHandler`。 |
+| **Products** | 可选 | 提供一个 `AdaptyPaywallProduct` 数组，以优化产品在屏幕上的显示时机。如果传入 `null`，AdaptyUI 将自动获取所需产品。 |
+| **ViewConfiguration** | 必填 | 提供一个包含付费墙视觉详情的 `AdaptyViewConfiguration` 对象。使用 `Adapty.getViewConfiguration(paywall)` 方法加载。详情请参阅[获取付费墙的视觉配置](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)。 |
+| **EventListener** | 可选 | 提供一个 `AdaptyUiEventListener` 以监听付费墙事件。建议继承 `AdaptyUiDefaultEventListener` 以简化使用。详情请参阅[处理付费墙事件](android-handling-events)。 |
+| **PersonalizedOfferResolver** | 可选 | 如需标注个性化定价（[了解更多](https://developer.android.com/google/play/billing/integrate#personalized-price)），请实现 `AdaptyUiPersonalizedOfferResolver`，并传入自定义逻辑，将 `AdaptyPaywallProduct` 映射为 `true`（价格已个性化）或 `false`。 |
+| **TagResolver** | 可选 | 使用 `AdaptyUiTagResolver` 解析付费墙文本中的自定义标签。该解析器接收标签参数并将其解析为对应字符串。详情请参阅付费墙编辑工具中的自定义标签相关内容。 |
+| **ObserverModeHandler** | Observer 模式下必填 | 您在上一步中实现的 `AdaptyUiObserverModeHandler`。 |
 | **variationId** | 必填 | 实验变体的字符串标识符。可通过 `AdaptyPaywall` 对象的 `variationId` 属性获取。 |
-| **transaction** | 必填 | <p>iOS，StoreKit 1：一个 [`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) 对象。</p><p>iOS，StoreKit 2：[Transaction](https://developer.apple.com/documentation/storekit/transaction) 对象。</p><p>Android：购买的字符串标识符（`purchase.getOrderId()`），其中 purchase 是 billing 库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</p> |
+| **transaction** | 必填 | <p>iOS，StoreKit 1：[`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) 对象。</p><p>iOS，StoreKit 2：[Transaction](https://developer.apple.com/documentation/storekit/transaction) 对象。</p><p>Android：购买记录的字符串标识符（`purchase.getOrderId()`），其中 purchase 是计费库 [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</p> |
 
-</TabItem> 
-<TabItem value="SDK2" label="Legacy Paywall Builder (SDK up to 2.x)" default> 
+</TabItem>
+<TabItem value="SDK2" label="Paywall Builder (SDK 2.x and earlier)" default>
 <details>
-   <summary>开始呈现付费墙之前（点击展开）</summary>
+   <summary>开始展示付费墙前（点击展开）</summary>
 
-   1. 设置 Adapty 与 [Google Play](initial-android) 和 [App Store](initial_ios) 的初始集成。 
-2. 安装并配置 Adapty SDK。确保将 `observerMode` 参数设置为 `true`。请参阅我们针对 [Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) 和 [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk) 的框架专属说明。
+1. 在 Adapty 看板中完成与 [Google Play](initial-android) 和 [App Store](initial_ios) 的初始集成。
+2. 安装并配置 Adapty SDK，确保将 `observerMode` 参数设置为 `true`。请参阅各框架的具体说明：[Android](sdk-installation-android)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) 和 [Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk)。
 3. 在 Adapty 看板中[创建产品](create-product)。
-4. 在 Adapty 看板中[配置付费墙、为其分配产品](create-paywall)，并使用付费墙编辑工具对其进行自定义。
+4. 在 Adapty 看板中[配置付费墙并为其分配产品](create-paywall)，并使用付费墙编辑工具进行自定义。
 5. 在 Adapty 看板中[创建版位并为其分配付费墙](create-placement)。
-6. 在移动应用代码中[获取付费墙编辑工具创建的付费墙及其配置](android-get-pb-paywalls)。
+6. 在移动应用代码中[获取付费墙编辑工具的付费墙及其配置](android-get-pb-paywalls)。
 </details>
 
-1. 实现 `AdaptyUiObserverModeHandler`。`AdaptyUiObserverModeHandler` 的回调（`onPurchaseInitiated`）将在用户发起购买时通知您。您可以在此回调中触发自定义的购买流程：
+1. 实现 `AdaptyUiObserverModeHandler`。`AdaptyUiObserverModeHandler` 的回调函数（`onPurchaseInitiated`）会在用户发起购买时通知你。你可以在此回调中触发自定义购买流程，示例如下：
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
@@ -586,14 +600,15 @@ AdaptyPaywallScreen(
 </TabItem>
 </Tabs>
 
-   同时，请记得向 AdaptyUI 调用这些回调。这对于正确的付费墙行为（例如显示加载动画等）是必要的：
+此外，请记得调用这些 AdaptyUI 回调。这对于付费墙的正常运行至关重要，例如显示加载动画等：
 
-   | Kotlin 中的回调      | Java 中的回调                | 描述                                                                                                                       |
+| Kotlin 中的回调 | Java 中的回调 | 描述 |
    | :----------------- | :------------------------ | :-------------------------------------------------------------------------------------------------------------------------------- |
    | onStartPurchase()  | onStartPurchase.invoke()  | 应调用此回调以通知 AdaptyUI 购买已开始。                                                   |
-   | onFinishPurchase() | onFinishPurchase.invoke() | 应调用此回调以通知 AdaptyUI 购买已成功完成、失败或已取消。 |
+   | onFinishPurchase() | onFinishPurchase.invoke() | 应调用此回调以通知 AdaptyUI 购买已成功完成、未完成或已取消。 |
 
-2. 要显示可视化付费墙，必须先对其进行初始化。为此，请调用 `AdaptyUI.getPaywallView()` 方法，或直接创建 `AdaptyPaywallView`：
+2. 要显示可视化付费墙，您必须先对其进行初始化。为此，请调用 `AdaptyUI.getPaywallView()` 方法，或直接创建 `AdaptyPaywallView`：
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -657,23 +672,25 @@ AdaptyPaywallScreen(
    ```
 </TabItem>
 </Tabs>
-   视图成功创建后，您可以将其添加到视图层级并显示。
 
-   请求参数：
+视图成功创建后，您可以将其添加到视图层级并显示出来。
 
-| 参数 | 是否必填 | 描述                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+请求参数：
+
+| 参数 | 是否必填 | 描述                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 |---------|--------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Products** | 可选 | 提供一个 `AdaptyPaywallProduct` 数组，以优化产品在屏幕上的显示时机。如果传入 `null`，AdaptyUI 将自动获取所需产品。                                                                                                                                                                                                                                                                                                                                       |
-| **ViewConfiguration** | 必填 | 提供一个包含付费墙视觉详情的 `AdaptyViewConfiguration` 对象。使用 `Adapty.getViewConfiguration(paywall)` 方法加载它。详情请参阅[获取付费墙视觉配置](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)主题。                                                                                                                                                                      |
-| **Insets** | 必填 | 定义一个 `AdaptyPaywallInsets` 对象，其中包含被系统栏遮挡区域的信息，为内容创建垂直边距。如果状态栏和导航栏均未遮挡 `AdaptyPaywallView`，请传入 `AdaptyPaywallInsets.NONE`。对于系统栏遮挡部分 UI 的全屏模式，请按表格下方的说明获取 insets。                                                                                                                                |
-| **EventListener** | 可选 | 提供一个 `AdaptyUiEventListener` 以监听付费墙事件。推荐继承 AdaptyUiDefaultEventListener 以简化使用。详情请参阅[处理付费墙事件](android-handling-events)主题。                                                                                                                                                                                                                                                                                |
-| **PersonalizedOfferResolver** | 可选 | 如需标注个性化定价（[了解更多](https://developer.android.com/google/play/billing/integrate#personalized-price)），请实现 `AdaptyUiPersonalizedOfferResolver`，并传入自定义逻辑：当产品价格为个性化定价时返回 true，否则返回 false，以此将 `AdaptyPaywallProduct` 映射到对应结果。                                                                                                                                                                                               |
-| **TagResolver** | 可选 | 使用 `AdaptyUiTagResolver` 解析付费墙文本中的自定义标签。该解析器接受一个标签参数，并将其解析为对应的字符串。详情请参阅付费墙编辑工具中的自定义标签主题。                                                                                                                                                                              |
-| **ObserverModeHandler** | 观察者模式必填 | 您在上一步中实现的 `AdaptyUiObserverModeHandler`。                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| **variationId** | 必填 | 实验变体的字符串标识符。可通过 `AdaptyPaywall` 对象的 `variationId` 属性获取。                                                                                                                                                                                                                                                                                                                                                                        |
+| **Products** | 可选 | 提供一个 `AdaptyPaywallProduct` 数组，以优化产品在屏幕上的显示时机。如果传入 `null`，AdaptyUI 将自动获取所需产品。                                                                                                                                                                                                                                                                                                                                                                                        |
+| **ViewConfiguration** | 必填 | 提供一个包含付费墙视觉细节的 `AdaptyViewConfiguration` 对象。使用 `Adapty.getViewConfiguration(paywall)` 方法加载。详情请参阅[获取付费墙的视觉配置](android-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder)主题。                                                                                                                                                                                                                                              |
+| **Insets** | 必填 | 定义一个 `AdaptyPaywallInsets` 对象，包含系统栏遮挡区域的信息，为内容创建垂直边距。如果状态栏和导航栏均未遮挡 `AdaptyPaywallView`，请传入 `AdaptyPaywallInsets.NONE`。在系统栏遮挡部分 UI 的全屏模式下，请按表格下方的说明获取 insets。                                                                                                                                                                                                                                                                  |
+| **EventListener** | 可选 | 提供一个 `AdaptyUiEventListener` 以监听付费墙事件。推荐继承 AdaptyUiDefaultEventListener 以简化使用。详情请参阅[处理付费墙事件](android-handling-events)主题。                                                                                                                                                                                                                                                                                                                                          |
+| **PersonalizedOfferResolver** | 可选 | 如需标注个性化定价（[了解更多](https://developer.android.com/google/play/billing/integrate#personalized-price)），请实现 `AdaptyUiPersonalizedOfferResolver` 并传入您自己的逻辑，将 `AdaptyPaywallProduct` 映射为 true（若该产品价格为个性化定价），否则映射为 false。                                                                                                                                                                                                                                   |
+| **TagResolver** | 可选 | 使用 `AdaptyUiTagResolver` 解析付费墙文本中的自定义标签。该解析器接收一个标签参数并将其解析为对应的字符串。详情请参阅付费墙编辑工具中的自定义标签主题。                                                                                                                                                                                                                                                                                                                                               |
+| **ObserverModeHandler** | Observer 模式必填 | 您在上一步中实现的 `AdaptyUiObserverModeHandler`。                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
+| **variationId** | 必填 | 实验变体的字符串标识符。可通过 `AdaptyPaywall` 对象的 `variationId` 属性获取。                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | **transaction** | 必填 | <p>iOS，StoreKit 1：[`SKPaymentTransaction`](https://developer.apple.com/documentation/storekit/skpaymenttransaction) 对象。</p><p>iOS，StoreKit 2：[Transaction](https://developer.apple.com/documentation/storekit/transaction) 对象。</p><p>Android：购买记录的字符串标识符（`purchase.getOrderId()`），其中 purchase 是 billing library [Purchase](https://developer.android.com/reference/com/android/billingclient/api/Purchase) 类的实例。</p> |
 
-对于全屏模式下系统状态栏遮挡部分界面的情况，请通过以下方式获取插入值：
+对于系统栏覆盖部分 UI 的全屏模式，请按以下方式获取 insets：
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="kotlin" label="Kotlin" default>
    ```kotlin showLineNumbers
@@ -722,14 +739,15 @@ AdaptyPaywallScreen(
    ```
 </TabItem>
 </Tabs>
+
 返回值：
 
-   | 对象                | 说明                                        |
+   | 对象                | 描述                                        |
    | :------------------ | :------------------------------------------------- |
-   | `AdaptyPaywallView` | 代表所请求付费墙界面的对象。 |
+   | `AdaptyPaywallView` | 表示所请求的付费墙界面的对象。 |
 
 :::warning
-不要忘记[将付费墙关联到购买交易](report-transactions-observer-mode-android)。否则，Adapty 将无法确定购买来源的付费墙。
+不要忘记[将付费墙关联到购买交易](report-transactions-observer-mode-android)。否则，Adapty 将无法确定该购买来源于哪个付费墙。
 :::
 
 </TabItem> 

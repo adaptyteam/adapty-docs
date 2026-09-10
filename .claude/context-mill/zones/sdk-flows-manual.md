@@ -7,7 +7,7 @@ reviewed_at:
 
 ## What this is
 
-The "Implement paywalls manually" category of each platform SDK: fetching paywalls and products without the builder's presentation UI, implementing observer mode, and — notably — making purchases and restoring purchases. The actual store-transaction calls live here rather than in a zone of their own, regardless of whether the paywall shown alongside them came from Flow Builder or legacy remote config. It also covers reporting transactions in observer mode and troubleshooting purchase failures. Readers are developers who need custom UI control over the paywall, or who need the purchase/restore mechanics no matter how the paywall itself is displayed.
+The "Implement paywalls manually" category of each platform SDK: fetching paywalls and products without the builder's presentation UI, implementing observer mode, and — notably — making purchases and restoring purchases. The actual store-transaction calls live here rather than in a zone of their own, regardless of whether the paywall shown alongside them came from Flow & Paywall Builder or legacy remote config. It also covers reporting transactions in observer mode and troubleshooting purchase failures. Readers are developers who need custom UI control over the paywall, or who need the purchase/restore mechanics no matter how the paywall itself is displayed.
 
 ## Surfaces
 
@@ -166,7 +166,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 |---|---|---|---|---|
 | android-implement-paywalls-manually | entry | dev | 2 | android |
 | android-making-purchases | — | dev | 3 | android |
-| android-present-paywall-builder-paywalls-in-observer-mode | — | dev | 0 | android |
+| android-present-paywall-builder-paywalls-in-observer-mode | — | dev | 2 | android |
 | android-quickstart-manual | — | dev | 7 | android |
 | android-restore-purchase | — | dev | 1 | android |
 | android-troubleshoot-purchases | — | dev | 6 | android |
@@ -198,7 +198,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | ios-transaction-management | — | dev | 3 | ios |
 | ios-troubleshoot-purchases | — | dev | 3 | ios |
 | kmp-implement-paywalls-manually | entry | dev | 2 | kmp |
-| kmp-making-purchases | — | dev | 4 | kmp |
+| kmp-making-purchases | — | dev | 5 | kmp |
 | kmp-quickstart-manual | — | dev | 8 | kmp |
 | kmp-restore-purchase | — | dev | 0 | kmp |
 | kmp-troubleshoot-purchases | — | dev | 5 | kmp |
@@ -235,7 +235,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 
 ## Boundaries
 
-- **sdk-flows-display** — is the ticket about presenting a Flow-Builder flow with the SDK's own UI (sdk-flows-display), or about fetching data for custom UI, or making/restoring a purchase (sdk-flows-manual)? Purchase and restore questions always route here even when the surrounding paywall is a Flow Builder flow.
+- **sdk-flows-display** — is the ticket about presenting a Flow-Builder flow with the SDK's own UI (sdk-flows-display), or about fetching data for custom UI, or making/restoring a purchase (sdk-flows-manual)? Purchase and restore questions always route here even when the surrounding paywall is a Flow & Paywall Builder flow.
 - **flow-design / flow-logic** — is this about the dashboard builder that designed the paywall, or about the app-side manual-implementation/purchase code? The builder is flow-design/flow-logic; manual fetch/purchase code is sdk-flows-manual.
 - **paywalls-legacy** — is the ticket about configuring a legacy remote-config paywall on the dashboard (paywalls-legacy), or about the app code that fetches and renders it (sdk-flows-manual)?
 - **server-side-api** — is access being granted or checked from the developer's own backend via the Server-Side API (server-side-api), or from inside the app via the SDK's purchase/restore/observer-mode calls (sdk-flows-manual)?

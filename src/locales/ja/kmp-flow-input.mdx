@@ -1,0 +1,298 @@
+---
+title: "Kotlin Multiplatform SDKでフローのデータを処理する"
+description: "Adapty SDKを使用して、Kotlin MultiplatformアプリでユーザーがフローLに入力したデータを保存・活用しましょう。"
+metadataTitle: "フローのデータを処理する | Kotlin Multiplatform SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)の入力フィールドに入力したり、クイズに回答したり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+
+アプリでこのデータを活用する主な用途は次のとおりです：
+
+- **ユーザーを自社バックエンドに登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を取得し、フローが閉じられたタイミングでアカウントを作成します。
+- **回答と設定を保存する**: ユーザーが選択した内容を追跡して、後でアプリから活用できるようにします。たとえば、カスタム属性として[Adapty プロファイルに書き込む](kmp-setting-user-attributes)といった使い方ができます。
+- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後続のプレースメントでターゲティングすることで、各セグメントに異なるフローや、その中の異なるペイウォールを表示できます。
+- **サードパーティの分析プラットフォームに連携する**: Amplitude や Mixpanel など、利用中のプロダクト分析ツールに回答を転送します。
+
+インプットとセレクタブルグループは、自動的に値を報告します。コード内でインプットを区別するために、ビルダーで各インプットに意味のある **Element ID** を、各セレクタブルグループに **Group ID** を設定してください。
+
+<FlowIdNaming />
+
+## 始める前に \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 入力値の受け取り \{#receive-input-values\}
+
+入力値は、フローからの他のすべてのアナリティクスイベントと同じコールバックに、イベント名 `flow_user_input` として届きます。`AdaptyUI.setFlowsEventsObserver` で登録したオブザーバーの `flowViewDidReceiveAnalyticEvent` をオーバーライドしてください：
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        handleFlowInput(name, paramsJsonString)
+    }
+})
+```
+
+`flowViewDidReceiveAnalyticEvent`コールバックは、[画面ビュー](kmp-flow-screen-views)を含むフローのすべての分析イベントを配信します。イベントパラメータは`paramsJsonString`に1つのJSON文字列として届きます。一度デコードしてフィールドを読み取ってください。
+- `name`パラメータにはイベント名が含まれます。ユーザー入力イベントをフィルタリングするには、`name`を`flow_user_input`と比較してください。
+- `element_type`パラメータは要素のカテゴリを示します。
+- 入力の値は要素タイプによって異なるパラメータに格納されます：
+     - テキストフィールド、ピッカー、トグルはユーザーの入力を`value`に格納します
+     - セレクタブルグループはアクティブなオプションを`item_ids`と`item_titles`で報告します
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+
+    when (params["element_type"]?.jsonPrimitive?.content) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"]?.jsonPrimitive?.content
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
+            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
+        }
+        "multi_choice" -> {
+            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
+        }
+        "toggle" -> {
+            val isOn = params["value"]?.jsonPrimitive?.boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## アプリがインプットを受け取るタイミング \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 受け取れる情報 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## イベントの例 \{#event-examples\}
+
+各イベントで利用可能なプロパティと、コメントに記載した参考値を示します。
+
+<Details>
+<summary>テキスト、メール、数値、電話番号の入力（クリックで展開）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    name                       // "flow_user_input"
+    paramsJsonString           // "{\"name\":\"flow_user_input\",\"instanceId\":\"scr_J260KU5q\",\"isBackendEvent\":false,\"isCustomerEvent\":true,\"element_id\":\"email\",\"element_type\":\"email_input\",\"value\":\"jane@example.com\"}"
+
+    // paramsJsonString, once decoded:
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"
+}
+```
+</Details>
+
+<Details>
+<summary>日付、時刻、日時ピッカー（クリックして展開）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>単一選択（クリックして展開）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>複数選択（クリックして展開）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true
+}
+```
+</Details>
+
+## 配信と制限事項 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+各入力値はオブザーバーが受け取った時点で保存し、フローが閉じられたときに完全なセットを送信します。そのタイミングを捉えるには、同じオブザーバーで `flowViewDidDisappear` をオーバーライドします。これはユーザーがフローを完了した場合でも途中で閉じた場合でも、フロービューが非表示になると実行されます。
+
+## ユースケース \{#use-cases\}
+
+### バックエンドにユーザーを登録する \{#register-users-on-your-backend\}
+
+値が届いたタイミングで収集し、フローが閉じたあとに一度まとめてリクエストを送信することで、一回のリクエストに完全な回答セットを含められます。
+
+ユーザーがフローを完了したか途中で離脱したかにかかわらず、画面は非表示になります。バックエンドを呼び出す前に、必要なフィールドを確認してください。
+
+フローはバックエンドからのエラーを表示できません。コールバックに戻り値はなく、実行中のフローにデータを送信するSDKのメソッドも存在しません。たとえばメールアドレスがすでに使用中のために登録が失敗した場合は、フローが閉じた後に独自のUIでエラーを表示してください。
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### ユーザープロファイルへのデータ連携 \{#enrich-user-profiles-with-data\}
+
+ユーザーが入力した内容をプロファイルに紐付け、同じ情報を二度尋ねなくて済むように、値が入力されるたびに[ユーザープロファイルを更新](kmp-setting-user-attributes)してください。
+
+たとえば、フローにElement ID `name` のテキスト入力フィールドとElement ID `email` のメール入力フィールドがある場合：
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (params["element_id"]?.jsonPrimitive?.content) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+### 後から表示されるフローのカスタマイズ \{#customize-flows-shown-later\}
+
+クイズの回答は、後で表示される[プレースメント](placements)——別のフロー、またはその中の別のペイウォール——にも影響を与えられます。
+
+たとえば、オンボーディングフローでスポーツ経験についてユーザーに質問し、それぞれのグループに異なるプロダクトやコピーを持つ専用のフローを表示することができます。
+
+1. フローに[クイズ](onboarding-quizzes)を追加します。[選択可能グループ](flow-selectable-elements)のグループIDを `experience` に設定し、各オプションにわかりやすい要素IDを付けます。
+2. 回答を処理し、ユーザーに[カスタム属性を設定](kmp-setting-user-attributes)します。
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["element_id"]?.jsonPrimitive?.content != "experience") return
+
+    val optionId = params["item_ids"]?.jsonArray?.firstOrNull()
+        ?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+3. カスタム属性の値ごとに[セグメントを作成](segments)します。
+4. [プレースメント](placements)を作成し、各セグメントの[オーディエンス](audience)を追加します。
+5. アプリ内でそのプレースメントの[フローを表示](kmp-present-paywalls)します。

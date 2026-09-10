@@ -5,15 +5,15 @@ metadataTitle: "Démarrage rapide CLI développeur | Documentation Adapty"
 keywords: ['cli', 'developer cli', 'mcp']
 ---
 
-L'Adapty CLI vous permet de configurer entièrement votre application depuis la ligne de commande. Utilisez-le comme alternative au [démarrage rapide via le tableau de bord](integrate-payments) si vous préférez les outils en terminal ou les [clients MCP](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli).
+L'Adapty CLI vous permet de configurer votre app entièrement depuis la ligne de commande. Utilisez-le comme alternative au [démarrage rapide depuis le tableau de bord](integrate-payments) si vous préférez les outils en terminal ou les [clients MCP](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli).
 
 :::note
 La connexion d'Adapty à App Store Connect et Google Play nécessite une configuration unique dans le tableau de bord — couverte à l'étape 3.
 :::
 
-À la fin, votre application, votre niveau d'accès, votre produit, votre paywall et votre placement sont tous visibles dans l'[Adapty Dashboard](https://app.adapty.io).
+À la fin, votre app, votre niveau d'accès, votre produit, votre flow ou paywall, et votre placement sont tous visibles dans l'[Adapty Dashboard](https://app.adapty.io).
 
-Si vous exécutez le CLI dans Claude Cowork, autorisez les domaines Adapty avant de commencer — voir [Exécuter le CLI dans Cowork](#run-the-cli-in-cowork).
+Si vous exécutez la CLI dans Claude Cowork, configurez-la d'abord dans Claude — voir [Configurer la CLI Adapty dans Claude Cowork](developer-cli-cowork).
 
 ## 1. Installer la CLI \{#1-install-the-cli\}
 
@@ -123,12 +123,43 @@ La commande retourne un `<product-id>`.
 
 Si vous vendez également ce produit sur le web via Stripe ou Paddle, ajoutez ces IDs à la même commande. Voir [products create](developer-cli-reference#adapty-products-create) dans la référence des commandes.
 
-## 6. Créer un paywall \{#create-a-paywall\}
+## 6. Créer un flow ou un paywall \{#6-create-a-flow-or-paywall\}
 
-Un [paywall](paywalls) est le conteneur qui regroupe vos produits. Dans Adapty, les paywalls sont le seul moyen de proposer des produits aux utilisateurs. Chaque produit doit être dans un paywall avant de pouvoir apparaître dans votre application.
+Chaque produit doit être inclus dans un flow ou un paywall avant de pouvoir apparaître dans votre application. Choisissez l'une des options suivantes :
+
+- Un **flow** est un écran, ou une séquence d'écrans, que vous concevez dans le [Flow & Paywall Builder](adapty-flow-builder) sans code, et que le SDK Adapty affiche nativement : un écran de paywall, un onboarding, un quiz. Choisissez un flow quand vous souhaitez qu'Adapty gère l'affichage de l'écran d'achat. Les flows nécessitent le SDK Adapty 4.0 ou version ultérieure.
+- Un **paywall** est un ensemble de produits sans design associé. Choisissez un paywall quand vous affichez l'écran d'achat dans votre propre code applicatif et que vous avez uniquement besoin qu'Adapty fournisse les produits, éventuellement accompagnés d'un [Remote Config](customize-paywall-with-remote-config).
+
+Un placement ne sert qu'un seul type de contenu, alors décidez avant l'étape 7.
+
+### 6a. Créer un flow \{#6a-create-a-flow\}
+
+La CLI crée l'enregistrement du flow. Ses écrans sont définis dans une configuration de builder, un document JSON que la CLI ne génère pas. Pour créer cette configuration depuis le terminal, utilisez la [compétence flow-generator](flow-generator-skill), qui pilote la CLI à votre place.
+
+Créez le flow :
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+La commande retourne un `<flow-id>`.
+
+Construisez ses écrans avec la [compétence flow-generator](flow-generator-skill) ou dans le [Flow & Paywall Builder](adapty-flow-builder). Dans les deux cas, le résultat est un brouillon enregistré que vos utilisateurs ne verront pas encore.
+
+Publiez le flow :
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+La commande demande une confirmation. La publication s'exécute en arrière-plan ; vérifiez le statut avec `adapty flows get --app <app-id> <flow-id>` jusqu'à ce qu'il affiche `published`. En cas de `publication_failed`, [`flows config get`](developer-cli-reference#adapty-flows-config-get) indique la cause de l'erreur. Un placement n'accepte qu'un flow publié.
+
+### 6b. Créer un paywall \{#6b-create-a-paywall\}
+
+Un [paywall](paywalls) est le conteneur qui regroupe vos produits.
 
 :::important
-Une fois qu'un paywall est associé à un placement, ses produits ne peuvent plus être modifiés. Pour utiliser des produits différents, créez un nouveau paywall et mettez à jour le placement pour qu'il pointe vers celui-ci.
+Une fois qu'un paywall est associé à un placement, ses produits ne peuvent plus être modifiés. Pour utiliser des produits différents, créez un nouveau paywall et mettez à jour le placement pour qu'il pointe vers ce nouveau paywall.
 :::
 
 <Tabs>
@@ -146,50 +177,32 @@ Une fois qu'un paywall est associé à un placement, ses produits ne peuvent plu
 
 La commande retourne un `<paywall-id>`.
 
-## 7. Créer un placement \{#create-a-placement\}
+## 7. Créer un placement \{#7-create-a-placement\}
 
-Un [placement](placements) est l'endroit dans votre application où vous affichez un paywall. La seule chose que vous codez en dur dans votre code est l'identifiant du placement. Tout le reste — quel paywall afficher et à quels utilisateurs — est géré depuis le tableau de bord sans avoir à publier une nouvelle version de l'application.
+Un [placement](placements) est l'endroit dans votre application où vous affichez un flow ou un paywall. La seule chose que vous codez en dur dans votre application est l'identifiant du placement. Tout le reste — quel flow ou paywall afficher et à quels utilisateurs — est géré depuis le tableau de bord sans avoir à publier une nouvelle version de l'application.
 
-`--developer-id` est la chaîne que vous référencerez plus tard dans votre code quand vous demanderez à Adapty quel paywall afficher à cet endroit. Choisissez quelque chose qui décrit l'emplacement, comme `"main"`, `"onboarding"`, ou `"settings"`.
+`--developer-id` est la chaîne que vous référencerez plus tard dans le code de votre application lorsque vous demandez à Adapty ce qu'il doit afficher à cet endroit. Choisissez quelque chose qui décrit l'emplacement, comme `"main"`, `"onboarding"` ou `"settings"`.
 
-```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
-```
+<Tabs>
+  <TabItem value="flow" label="Flow">
+    ```bash
+    adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+    ```
+  </TabItem>
+  <TabItem value="paywall" label="Paywall">
+    ```bash
+    adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+    ```
+  </TabItem>
+</Tabs>
 
-Le flag `--audiences` contrôle quel paywall est affiché à quels utilisateurs. L'exemple ci-dessus définit une audience par défaut unique — tous les utilisateurs à ce placement voient le même paywall.
+Le flag `--audiences` détermine quel flow ou paywall est affiché à quels utilisateurs. Les exemples ci-dessus définissent une seule audience par défaut : tous les utilisateurs de ce placement voient le même contenu. Un placement ne sert qu'un seul type de contenu, donc chaque entrée d'audience doit avoir le même `content_type`. Pour un ciblage par segment, consultez [La structure des audiences](developer-cli-reference#audiences-shape) dans la référence des commandes.
 
-## Exécuter le CLI dans Cowork
-
-Claude Cowork exécute les commandes dans un sandbox qui n'atteint que les domaines autorisés. Tant qu'Adapty n'est pas autorisé, le CLI ne peut pas se connecter ni lire votre compte. Ignorez cette section si vous exécutez le CLI depuis votre propre terminal.
-
-Autorisez `adapty.io` et `*.adapty.io`. Un wildcard ne couvre pas le domaine apex dans la plupart des implémentations de liste d'autorisation. Le CLI lui-même atteint `api.adapty.io`, et un agent qui consulte la documentation Adapty pendant son travail atteint l'apex.
-
-Cowork applique ces paramètres au démarrage d'une tâche. Si vous modifiez le mode d'accès ou ajoutez un domaine en cours de conversation, cette conversation conserve les paramètres avec lesquels elle a démarré — commencez une nouvelle tâche.
-
-Une tâche démarre également sur une machine vierge : aucun CLI, aucun token et aucune configuration ne sont conservés d'une session précédente, donc les étapes d'installation et de connexion se répètent à chaque début de session.
-
-### Comptes personnels \{#personal-accounts\}
-
-Vous configurez vous-même la liste d'autorisation :
-
-1. Dans Claude, ouvrez **Settings** → **Capabilities**.
-2. Activez **Code execution and file creation**. Le bloc **Allow network egress** reste masqué jusqu'à cette étape.
-3. Activez **Allow network egress**.
-4. Dans **Domain allowlist**, sélectionnez **Package managers only**.
-5. Sous **Additional allowed domains**, ajoutez `adapty.io`, puis ajoutez `*.adapty.io`.
-
-<ZoomImage id="cowork-network-egress.png" width="700px" alt="Paramètres Allow network egress dans Claude, avec le domaine Adapty dans la liste des domaines autorisés supplémentaires" />
-
-L'autre mode d'accès, **All domains**, permet au sandbox d'accéder à n'importe quel site. Avec cette option, vous n'avez pas besoin d'ajouter les domaines Adapty.
-
-### Espaces de travail d'entreprise \{#corporate-workspaces\}
-
-Un administrateur contrôle la liste d'autorisation. Demandez-lui d'ajouter les deux domaines pour l'espace de travail.
-
-## Et maintenant ?
+## Et ensuite ? \{#whats-next\}
 
 Toutes les entités sont désormais visibles dans l'[Adapty Dashboard](https://app.adapty.io). Prochaines étapes :
 
-- [Concevoir votre paywall](adapty-paywall-builder) — utilisez le Paywall Builder sans code pour ajouter des visuels, une mise en page et du contenu au paywall que vous venez de créer.
+- Modifier un flow ultérieurement — décrivez la modification au [skill flow-generator](flow-generator-skill), ou ouvrez le flow dans le [Flow & Paywall Builder](adapty-flow-builder).
+- Afficher un paywall dans votre application — [récupérez le paywall et ses produits](fetch-paywalls-and-products) avec le SDK et construisez l'écran dans votre propre code.
 - [Intégrer le SDK Adapty](quickstart-sdk) — ajoutez le SDK à votre application pour récupérer et afficher le placement.
-- Diriger différents [segments](segments) d'utilisateurs vers différents paywalls — consultez [`placements update`](developer-cli-reference#adapty-placements-update) et [`segments list`](developer-cli-reference#adapty-segments-list) dans la référence des commandes.
+- Router différents [segments](segments) d'utilisateurs vers différents flows ou paywalls — consultez [`placements update`](developer-cli-reference#adapty-placements-update) et [`segments list`](developer-cli-reference#adapty-segments-list) dans la référence des commandes.

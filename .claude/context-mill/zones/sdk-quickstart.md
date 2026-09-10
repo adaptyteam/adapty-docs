@@ -90,7 +90,7 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 - **Exact dashboard labels** (the `GetKey` path, "Show on device") → `dashboard-interface` per
   `sources.md`. Verified while writing this brief: "Show on device" exists only under `packages/builder`
   (the legacy Paywall Builder) and `packages/paywall-builder-migration`, with **zero** hits in
-  `packages/unified-builder` (the Flow Builder). Do not describe it as a Flow Builder control without
+  `packages/unified-builder` (the Flow & Paywall Builder). Do not describe it as a Flow & Paywall Builder control without
   re-checking.
 - **The Adapty CLI commands inside the `GetKey` snippet are `agent-tooling`'s**, not this zone's — change
   them there, not by editing seven install articles.
@@ -176,9 +176,9 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | sdk-installation-capacitor | — | dev | 12 | capacitor |
 | sdk-installation-flutter | — | dev | 11 | flutter |
 | sdk-installation-ios | — | dev | 11 | ios |
-| sdk-installation-kotlin-multiplatform | — | dev | 12 | kmp |
+| sdk-installation-kotlin-multiplatform | — | dev | 13 | kmp |
 | sdk-installation-react-native-expo | — | dev | 13 | react-native |
-| sdk-installation-react-native-pure | — | dev | 13 | react-native |
+| sdk-installation-react-native-pure | — | dev | 12 | react-native |
 | sdk-installation-reactnative | entry | dev | 0 | react-native |
 | sdk-installation-unity | — | dev | 13 | unity |
 | unity-check-subscription-status | — | dev | 5 | unity |
@@ -331,7 +331,7 @@ Four of this zone's open questions were put to the docs owner and answered. Thes
 don't re-litigate them; the remaining content work is tracked as a separate task.
 
 1. **The installation family gets flow wording. Yes.** All eight install articles currently say "Paywall
-   Builder" and link `adapty-paywall-builder`, while all seven quickstarts already say "Flow Builder" and
+   Builder" and link `adapty-paywall-builder`, while all seven quickstarts already say "Flow & Paywall Builder" and
    `getFlow`. That split is not deliberate — it's a sweep that stopped short. Bring the install family
    over.
 2. **"Show on device" is not required for flows. No.** So the note is **stale in the four quickstarts that

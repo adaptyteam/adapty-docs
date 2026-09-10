@@ -1,0 +1,257 @@
+---
+title: "React Native SDK'da flow verilerini işleme"
+description: "Adapty SDK ile React Native uygulamanızda kullanıcılarınızın flow'lara girdiği verileri kaydedin ve kullanın."
+metadataTitle: "Flow verilerini işleme | React Native SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içindeki bir giriş alanına bir şeyler yazarken, bir soru yanıtlarken veya bir düğmeyi değiştirirken SDK, değeri analitik callback'i aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri genellikle şu amaçlarla kullanır:
+
+- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unda girdiği e-posta adresini ve adı alın, flow kapandığında hesaplarını oluşturun.
+- **Yanıtları ve tercihleri kaydedin**: Kullanıcının seçtiklerini takip edin, böylece uygulamanız daha sonra bu bilgilere göre hareket edebilsin — örneğin, [bunları kullanıcının Adapty profiline](react-native-setting-user-attributes) özel nitelikler olarak yazın.
+- **Gelecekteki flow'ları özelleştirin**: Quiz yanıtlarını özel nitelikler olarak kaydedin, ardından bir sonraki placement'ı hedefleyerek her segment farklı bir flow ya da içindeki farklı bir paywall görsün.
+- **Üçüncü taraf analitik platformlarına veri aktarın**: Yanıtları Amplitude, Mixpanel veya kullandığınız herhangi bir ürün analitiği platformuna iletin.
+
+Girişler ve seçilebilir gruplar, değerlerini otomatik olarak raporlar. Kodunuzda girişleri birbirinden ayırt edebilmek için her girişe anlamlı bir **Element ID** ve her seçilebilir gruba builder'da bir **Group ID** verin.
+
+<FlowIdNaming />
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Girdi değerlerini alma \{#receive-input-values\}
+
+Girdi değerleri, bir flow'dan gelen diğer tüm analitik olaylarla aynı işleyiciye `flow_user_input` olay adıyla ulaşır. `onAnalytics`'i diğer flow olay işleyicilerinizle birlikte kaydedin:
+
+```javascript showLineNumbers title="React Native"
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+`onAnalytics` callback'i, [ekran görüntüleme](react-native-flow-screen-views) olayları dahil bir flow'dan gelen tüm analitik olayları iletir.
+- `name` parametresi olay adını içerir. Kullanıcı giriş olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi öğe kategorisini belirtir.
+- Girişin değeri, öğe türüne bağlı olarak farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcı girişini `value` içinde saklar
+     - Seçilebilir gruplar, etkin seçenekleri `item_ids` ve `item_titles` içinde raporlar
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId;
+
+  switch (params.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = params.value;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      // Unix time in milliseconds.
+      const date = new Date(params.value);
+      break;
+    }
+    case 'single_choice': {
+      const optionId = params.item_ids[0];
+      break;
+    }
+    case 'multi_choice': {
+      const optionIds = params.item_ids;
+      break;
+    }
+    case 'toggle': {
+      const isOn = params.value;
+      break;
+    }
+  }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girişi aldığında \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Etkinlik örnekleri \{#event-examples\}
+
+Bu örnekler, her etkinlikte mevcut olan özellikleri, açıklayıcı değerlerle yorumlar halinde göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçiciler (Genişletmek için tıklayın)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Tekli seçim (Genişletmek için tıklayın)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Çoklu seçim (Genişletmek için tıklayın)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Geçiş düğmesi (Genişletmek için tıklayın)</summary>
+
+```javascript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## Teslim ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her giriş değerini handler'ınız aldığında saklayın ve flow kapandığında tüm seti gönderin. Bu anı yakalamak için `onAnalytics` ile birlikte bir `onDisappeared` handler'ı kaydedin. Bu handler, kullanıcı flow'u tamamlasın ya da yarıda kapatsın, flow görünümü kapatıldığında çalışır.
+
+## Kullanım Senaryoları \{#use-cases\}
+
+### Kullanıcıları backend'inize kaydedin \{#register-users-on-your-backend\}
+
+Değerler geldikçe toplayın ve flow kapandığında tek bir istekle gönderin; böylece bir istek eksiksiz bir cevap kümesi taşır.
+
+Flow, kullanıcı tamamlasın ya da yarıda bıraksın, her iki durumda da kapanır. Backend'inizi çağırmadan önce ihtiyacınız olan alanları kontrol edin.
+
+Flow, backend'inizden gelen hataları gösteremez. Handler'ın dönüş değeri yalnızca flow görünümünü kapatır; SDK'nın çalışan bir flow'a veri gönderen bir metodu yoktur. Kayıt başarısız olursa, örneğin e-posta zaten kullanımda ise, hatayı flow kapandıktan sonra kendi arayüzünüzde gösterin.
+
+```javascript showLineNumbers title="React Native"
+const flowAnswers = {};
+
+const unsubscribe = view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği bilgileri profiline bağlamak ve aynı bilgileri tekrar sormaktan kaçınmak için değerler geldikçe [kullanıcı profilini güncelleyin](react-native-setting-user-attributes).
+
+Örneğin, flow'unuzda Element ID'si `name` olan bir metin girişi ve Element ID'si `email` olan bir e-posta girişi varsa:
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch(error => {
+    // handle the error
+  });
+}
+```
+
+### Daha sonra gösterilen flow'ları özelleştirme \{#customize-flows-shown-later\}
+
+Quiz yanıtları, kullanıcının daha sonraki bir [placement](placements)'da ne göreceğini de belirleyebilir — farklı bir flow veya içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara sporla deneyimlerini sorun, ardından her gruba farklı ürünler ve metinler içeren kendi flow'unu gösterin.
+
+1. Flow'unuza bir [quiz](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Grup ID'si verin ve her seçeneğe anlamlı bir Element ID atayın.
+2. Yanıtları işleyin ve kullanıcı için [özel nitelikler ayarlayın](react-native-setting-user-attributes).
+
+```javascript showLineNumbers title="React Native"
+function handleFlowInput(name, params) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: params.item_ids[0] },
+    })
+    .catch(error => {
+      // handle the error
+    });
+}
+```
+
+3. Her özel özellik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda o placement için [flow'u gösterin](react-native-present-paywalls).

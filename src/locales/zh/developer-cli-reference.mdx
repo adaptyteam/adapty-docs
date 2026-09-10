@@ -1,15 +1,16 @@
 ---
 title: "Adapty 开发者 CLI 命令参考"
-description: "Adapty 开发者 CLI 命令参考，涵盖应用、产品、付费墙和版位的配置。"
+description: "Adapty 开发者 CLI 命令参考，涵盖应用、产品、付费墙、流程和版位的配置。"
 metadataTitle: "开发者 CLI 命令参考 | Adapty 文档"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-本文列出了用于配置您账户的 Adapty CLI 命令，包括应用、访问等级、产品、付费墙、版位和市场细分，以及各命令的参数、标志和可接受的值。关于 Apple Ads 广告系列，请参阅[广告管理器命令](developer-cli-ads-manager-reference)。
+本文列出了用于配置账户的 Adapty CLI 命令，涵盖应用、访问等级、产品、付费墙、流程、版位和市场细分，并介绍了各命令的参数、标志及可接受值。关于 Apple Ads 广告系列，请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference)。
 
 :::link
-有关身份验证设置和令牌管理，请参阅[身份验证](developer-cli-authentication)。
+关于身份验证设置和令牌管理，请参阅[身份验证](developer-cli-authentication)。
 :::
+
 ## 全局标志 \{#global-flags\}
 
 这些标志适用于所有命令。
@@ -239,6 +240,7 @@ adapty products update --app <app-id> <product-id> --title "Monthly" --access-le
 | `--app` | 是 | 应用 ID（UUID） |
 | `--title` | 否 | 产品标题 |
 | `--access-level-id` | 否 | 该产品解锁的[访问等级](access-level) ID（UUID） |
+
 ## 付费墙 \{#paywalls\}
 
 ### adapty paywalls list \{#adapty-paywalls-list\}
@@ -302,11 +304,13 @@ adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --p
 | 参数 | 说明 |
 |---|---|
 | `paywall-id` | 付费墙 ID（UUID） |
+
 | 标志 | 是否必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 | `--title` | 是 | 付费墙标题 |
 | `--product-id` | 是 | [产品](product) ID（UUID）。多个产品时重复使用：`--product-id <id1> --product-id <id2>` |
+
 ### adapty paywalls placements
 
 列出当前使用指定[付费墙](paywalls)的所有[版位](placements)。
@@ -315,30 +319,241 @@ adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --p
 adapty paywalls placements --app <app-id> <paywall-id>
 ```
 
-| 参数 | 说明 |
+| 参数 | 描述 |
 |---|---|
 | `paywall-id` | 付费墙 ID（UUID） |
 
-| 标志 | 是否必填 | 说明 |
+| 标志 | 必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 
-在替换付费墙之前，可以使用此命令查看哪些版位会受到影响。
-## 版位 \{#placements\}
+在替换付费墙之前使用此命令，可以查看哪些版位会受到影响。
 
-### adapty placements list \{#adapty-placements-list\}
+此列表中的条目不包含 `is_active` 字段。如需读取版位的激活状态，请使用 [`placements list`](#adapty-placements-list) 或 [`placements get`](#adapty-placements-get)。
 
-列出应用的所有[版位](placements)。
+## 流程 \{#flows\}
+
+[Flows](adapty-flow-builder) 是您在 Flow & Paywall Builder 中构建的付费墙和用户引导。CLI 负责管理流程记录、其编辑工具配置以及发布操作。编辑工具配置是一个大型 JSON 文档，通常由 Flow & Paywall Builder 生成，CLI 本身不会生成该配置。如需从终端创建或编辑配置，请使用 [flow-generator skill](flow-generator-skill)，它会为您驱动这些命令。在发布之前，[flow-audit skill](flow-audit-skill) 会检查流程是否已准备好投入生产。以下命令仅作为参考列出。
+
+### adapty flows list
+
+列出应用的所有流程。
 
 ```bash
-adapty placements list --app <app-id>
+adapty flows list --app <app-id>
 ```
 
 | 标志 | 是否必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 
-接受[分页标志](#global-flags)。
+支持[分页标志](#global-flags)。
+
+### adapty flows get
+
+获取特定流程的详细信息。
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+响应包含 `id`、`name`、`status` 和 `updated_at`。状态值为以下之一：
+
+| 状态 | 含义 |
+|---|---|
+| `draft` | 该流程从未发布过 |
+| `published` | 当前版本已上线 |
+| `dirty` | 该流程曾经发布过，但当前版本有未发布的更改。用户仍会看到最后发布的版本 |
+| `publishing` | 发布正在进行中 |
+| `publication_failed` | 上次发布失败。请修复配置后重新发布 |
+| `archived` | 该流程已归档 |
+
+### adapty flows create
+
+创建一个流程。新流程只有名称，不包含配置。如需添加配置，请使用 [`flows config update`](#adapty-flows-config-update)。
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| 标志 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--name` | 是 | 流程名称 |
+
+### adapty flows update
+
+重命名一个流程。
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--name` | 是 | 新流程名称 |
+
+### adapty flows publish
+
+将流程的当前版本发布给用户。
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--yes`、`-y` | 否 | 发布时跳过确认提示。当输出被管道传输或使用 `--json` 时必填 |
+
+由于发布操作会影响用户所见的内容，该命令会打印流程名称并要求确认。输入 `y` 以外的任何内容都会取消命令并以退出码 1 结束。在 `--json` 模式下或通过管道调用时，命令会拒绝执行并以退出码 2 结束，而不是等待用户输入，因此在脚本和自动化会话中请传入 `--yes`。
+
+发布操作是异步的：响应会返回 `status: publishing`，此时流程尚未上线。请轮询 [`flows get`](#adapty-flows-get)，直到状态变为 `published` 或 `publication_failed`。若状态为 `publication_failed`，可通过 [`flows config get`](#adapty-flows-config-get) 查看失败原因。
+
+当流程没有配置、配置不可发布或当前版本已上线时，发布操作会返回 HTTP 400 错误。如需在发布前验证配置，请使用 [`flows config validate`](#adapty-flows-config-validate)。
+
+### adapty flows config get
+
+读取流程的编辑器配置。
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+响应包含 `config`、`remote_configs`、`status` 和 `updated_at`。`updated_at` 是最后一次配置变更的毫秒级时间戳。将其作为 `--expected-updated-at` 传入 [`flows config update`](#adapty-flows-config-update)，以避免覆盖并发编辑。若某个流程的配置从未写入，则返回 404。
+
+发布尝试后，响应还会携带三个字段，描述发布结果。当 [`flows get`](#adapty-flows-get) 报告 `publication_failed` 时，请读取这些字段：
+
+| 字段 | 描述 |
+|---|---|
+| `publication_status` | 该流程版本的发布进度：`transforming`、`transformed`、`uploading`、`uploaded`、`published` 或 `failed` |
+| `transform_error` | 原始转换失败信息——可能是列出问题的 JSON 数据，也可能是摘要字符串 |
+| `publication_error` | 发布失败时的可读错误信息 |
+
+### adapty flows config update
+
+写入流程的编辑器配置。
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--config` | 二选一 | 以 JSON 字符串形式提供的编辑工具配置 |
+| `--config-file` | 二选一 | 包含编辑工具配置的 JSON 文件路径，或 `-` 表示从 stdin 读取 |
+| `--remote-configs` | 否 | `{locale, data}` 条目组成的 JSON 数组，其中 `data` 为字符串形式的远程配置 |
+| `--expected-updated-at` | 否 | 来自此前 `flows config get` 的 `updated_at` 值。若在该次读取之后配置已发生变更，命令将报错而非直接覆盖。省略此标志则无条件覆盖 |
+
+写入配置会保存草稿，不会直接发布。对于已发布的流程，写入操作会创建新版本：流程状态变为 `dirty`，用户将继续看到已发布的版本，直到你运行 [`flows publish`](#adapty-flows-publish)。
+
+### adapty flows config validate
+
+检查构建器配置是否可发布，而不保存它。
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--config` | 二选一 | 构建器配置，以 JSON 字符串形式提供 |
+| `--config-file` | 二选一 | 包含构建器配置的 JSON 文件路径，或使用 `-` 从标准输入读取 |
+
+响应包含 `valid` 字段和一个 `issues` 列表。当配置不可发布时，命令会以退出码 1 退出，因此脚本可以以此作为判断条件。
+
+### adapty flows config preview \{#adapty-flows-config-preview\}
+
+在浏览器中渲染本地配置文件。此命令不调用 API，也不接受 `--app` 标志。
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| 参数 | 描述 |
+|---|---|
+| `config-file` | 本地构建器配置 JSON 文件的路径 |
+
+| 标志 | 默认值 | 描述 |
+|---|---|---|
+| `--screen` | 流程的第一个屏幕 | 要渲染的屏幕 ID |
+| `--device` | `iphone-14` | 渲染所用的设备框架 |
+| `--orientation` | `portrait` | `portrait` 或 `landscape` |
+
+在终端中，该命令会直接在浏览器中打开预览。若通过管道传输或使用 `--json` 参数，则会打印 URL。该 URL 包含完整配置，通常较长：建议将其通过管道传入截图工具，而不是直接打印输出。配置超过约 32 KB 时，渲染速度会变慢。
+
+### adapty flows media upload
+
+上传图片以在流程配置中使用。
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| 参数 | 描述 |
+|---|---|
+| `file` | 图片文件路径 |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+支持的格式：GIF、HEIC、JPEG、PNG、SVG 和 WebP。响应包含图片的 `id`、`name` 以及用于在配置中引用的 CDN `url`。
+
+## 版位 \{#placements\}
+
+[版位](placements)是您的流程、付费墙和用户引导触达用户的入口。版位的内容类型在创建时即已固定，因此若要将应用从付费墙迁移至流程，需要创建新版位而非更新现有版位——[migrate-placements 技能](migrate-placements-skill)通过这些命令来批量完成该操作。
+
+### adapty placements list
+
+列出某个应用的所有[版位](placements)。
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+支持[分页参数](#global-flags)。
+
+每条记录包含 `id`、`developer_id`、`title` 和 `is_active`。`is_active` 为 `true` 表示该版位已上线，为 `false` 表示未激活。
 
 ### adapty placements get
 
@@ -355,32 +570,37 @@ adapty placements get --app <app-id> <placement-id>
 | 标志 | 是否必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
-响应包含一个 `audiences` 数组。每条记录的格式为 `{segment_ids, paywall_id, priority}`。默认目标受众的 `segment_ids: []`，优先级值最高（最后评估）。格式化的人类可读输出还会在顶层显示一个 `Paywall ID`，该值来自默认目标受众，仅供参考。`--json` 返回原始 API 数据，不做任何更改。
+
+响应包含 `id`、`developer_id`、`title`、`is_active` 以及一个 `audiences` 数组。`is_active` 为 `true` 表示版位处于上线状态，`false` 表示未激活。每个受众条目包含 `content_type`（`paywall` 或 `flow`）、`segment_ids`、`priority`，以及 `paywall_id` 或 `flow_id` 之一。默认目标受众的 `segment_ids: []`，且具有最高的优先级值（最后被评估）。详见 [受众结构](#audiences-shape)。
+
 ### adapty placements create
 
 创建新的[版位](placements)。
 
 ```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
 ```
-| 标志 | 是否必填 | 描述 |
+
+| 参数 | 是否必填 | 说明 |
 |---|---|---|
 | `--app` | 是 | App ID（UUID） |
 | `--title` | 是 | 版位标题 |
-| `--developer-id` | 是 | 用于在应用代码中请求该[版位](placements)的字符串标识符 |
-| `--audiences` | 二选一 | 由 `{segment_ids, paywall_id, priority}` 条目组成的 JSON 数组。参见[目标受众格式](#audiences-shape) |
-| `--paywall-id` | 二选一 | **已废弃。** [付费墙](paywalls) ID（UUID）。在客户端被包装为单个默认目标受众 |
+| `--developer-id` | 是 | 在应用代码中用于请求该[版位](placements)的字符串标识符 |
+| `--audiences` | 二选一 | 目标受众条目的 JSON 数组，每条需包含显式 `content_type`。详见[目标受众格式](#audiences-shape) |
+| `--paywall-id` | 二选一 | **已弃用。**[付费墙](paywalls) ID（UUID）。客户端侧会将其包装为单个默认目标受众 |
 
-`--audiences` 和 `--paywall-id` 只能传其中一个。两个都传或都不传会报错。
+`--audiences` 和 `--paywall-id` 必须二选一传入。两者同时传入或都不传入均会报错。
+
 :::warning
 `--paywall-id` 已弃用，将在未来版本中移除。传入该参数时，CLI 会在 stderr 打印警告，并将该值转换为默认目标受众。新的自动化流程请使用 `--audiences`。
 :::
+
 ### adapty placements update
 
 替换现有[版位](placements)的所有字段。
 
 ```bash
-adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
 ```
 
 此命令会替换版位的所有字段，包括完整的目标受众列表。
@@ -388,13 +608,15 @@ adapty placements update --app <app-id> <placement-id> --title "Main" --develope
 | 参数 | 说明 |
 |---|---|
 | `placement-id` | 版位 ID（UUID） |
-| 参数 | 是否必填 | 说明 |
+
+| 参数 | 是否必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 | `--title` | 是 | 版位标题 |
-| `--developer-id` | 是 | 在应用代码中用于请求该[版位](placements)的字符串标识符 |
-| `--audiences` | 二选一 | 由 `{segment_ids, paywall_id, priority}` 条目组成的 JSON 数组。详见[目标受众格式](#audiences-shape) |
-| `--paywall-id` | 二选一 | **已废弃。** [付费墙](paywalls) ID（UUID）。将所有目标受众替换为单个默认受众 |
+| `--developer-id` | 是 | 在应用代码中用于请求此[版位](placements)的字符串标识符 |
+| `--audiences` | 二选一 | 目标受众条目的 JSON 数组，每个条目均带有显式的 `content_type`。详见[目标受众结构](#audiences-shape) |
+| `--paywall-id` | 二选一 | **已废弃。**[付费墙](paywalls) ID（UUID）。将所有目标受众替换为单个默认目标受众 |
+
 :::warning
 传入 `--paywall-id` 会覆盖版位上的所有目标受众，特定市场细分的目标受众将被删除。若要保留它们，请使用 `--audiences` 并将所有需要保留的条目一并传入。
 :::
@@ -402,29 +624,46 @@ adapty placements update --app <app-id> <placement-id> --title "Main" --develope
 #### 目标受众结构 \{#audiences-shape\}
 
 `--audiences` 标志接受一个 JSON 数组，每个条目包含：
+
 | 字段 | 类型 | 描述 |
 |---|---|---|
-| `segment_ids` | `string[]` | 此目标受众所针对的[市场细分](segments) ID，长度为 0 或 1。空数组表示**默认目标受众**——作为不匹配任何其他市场细分的用户的兜底选项 |
-| `paywall_id` | `string` | 向此目标受众中的用户展示的[付费墙](paywalls) ID（UUID） |
-| `priority` | `number` | 从 0 开始，在版位内唯一。目标受众按从低到高的顺序依次评估；默认目标受众的优先级值必须最高 |
+| `content_type` | `string` | `"paywall"` 或 `"flow"`。每条条目必填。同一版位中所有条目的值必须相同 |
+| `segment_ids` | `string[]` | 此目标受众所针对的[市场细分](segments) ID。长度为 0 或 1。空数组表示**默认目标受众**——用于未匹配任何其他市场细分的用户的兜底选项 |
+| `paywall_id` | `string` | 展示给此目标受众用户的[付费墙](paywalls) ID（UUID）。当 `content_type` 为 `"paywall"` 时必填 |
+| `flow_id` | `string` | 展示给此目标受众用户的[流程](adapty-flow-builder) ID（UUID）。当 `content_type` 为 `"flow"` 时必填 |
+| `priority` | `number` | 从 0 开始，在版位内唯一。目标受众按从低到高的顺序依次评估；默认目标受众必须具有最高值 |
 
 每个版位必须有且仅有一个默认目标受众。
 
-示例包含一个定向目标受众和一个默认目标受众：
+版位的内容类型在创建时即已固定，因此 `placements update` 无法将付费墙版位切换为流程，反之亦然。请为流程单独创建一个版位——详见[为流程创建新版位](migrate-to-flows#create-a-new-placement-for-your-flow)。
+
+CLI 在发送请求前会逐条校验每个条目。若某条目的 `content_type` 缺失或未知，或者缺少 `content_type` 所需的 ID，CLI 将以退出码 2 终止，且不会发送任何请求。
+
+流程只有在发布后才能被关联。处于 `draft` 状态的流程，或首次发布仍在进行中的流程，会被服务器拒绝；CLI 识别到该拒绝后将以代码 2 退出，并打印该流程对应的 `flows publish` 命令。要发布流程，请使用 [`flows publish`](#adapty-flows-publish) 或 [流程与付费墙编辑工具](builder-save-publish)，然后等待其状态变为 `published`。
+
+以下是包含一个目标受众和一个默认受众的示例：
+
 ```bash
 adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
-  --audiences '[{"segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
 ```
 
-要在多个版位中替换付费墙而不丢失针对特定市场细分的路由规则：
+向所有用户提供已发布流程的版位示例：
 
-1. 找出受影响的版位：
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+```
+
+要在多个版位之间替换付费墙而不丢失特定市场细分的路由配置：
+
+1. 找到受影响的版位：
 
    ```bash
    adapty paywalls placements --app <app-id> <old-paywall-id>
    ```
 
-2. 逐一读取完整的 `audiences` 数组：
+2. 对每个版位，读取完整的 `audiences` 数组：
 
    ```bash
    adapty placements get --app <app-id> <placement-id> --json
@@ -441,6 +680,7 @@ adapty placements update <placement-id> --app <app-id> --title "Main" --develope
 ## 市场细分 \{#segments\}
 
 [市场细分](segments)通过 CLI 只读访问。请在 [Adapty 看板](https://app.adapty.io)中创建和编辑它们。使用以下命令在配置版位目标受众时查找市场细分 ID。
+
 ### adapty 市场细分列表 \{#adapty-segments-list\}
 
 列出某个应用的所有[市场细分](segments)。
@@ -454,6 +694,7 @@ adapty segments list --app <app-id>
 | `--app` | 是 | 应用 ID（UUID） |
 
 支持[分页标志](#global-flags)。
+
 ### adapty segments get
 
 获取指定[市场细分](segments)的详细信息。
@@ -471,6 +712,7 @@ adapty segments get --app <app-id> <segment-id>
 | `--app` | 是 | 应用 ID（UUID） |
 
 响应包含 `id`、`title` 和 `description`。过滤规则不通过此 API 暴露。
+
 ## 身份验证 \{#auth\}
 
 | 命令 | 描述 |

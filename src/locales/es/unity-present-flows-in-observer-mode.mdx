@@ -1,37 +1,30 @@
 ---
 title: "Presentar flows en modo Observer - Unity"
-description: "Presenta flows y paywalls de Paywall Builder en modo Observer en tu app de Unity mientras gestionas las compras con tu propio código."
+description: "Presenta flows en modo Observer en tu app de Unity mientras gestionas las compras con tu propio código."
 metadataTitle: "Presentar flows en modo Observer - Unity | Documentación de Adapty"
 keywords: ['observer mode', 'IAdaptyUIObserverModeResolver', 'SetObserverModeResolver', 'flow']
 ---
 
-Si has personalizado un flow o paywall con el builder, no necesitas preocuparte por renderizarlo en el código de tu app móvil para mostrárselo al usuario. Ese flow o paywall ya contiene tanto lo que debe mostrarse como la forma en que debe mostrarse.
+Si utilizas el [modo Observer](observer-vs-full-mode), eres responsable de tu propia lógica de compras. Pero puedes delegar la interfaz del paywall al [Flow & Paywall Builder](adapty-flow-builder).
 
-:::warning
-Esta sección hace referencia al [modo Observer](observer-vs-full-mode) únicamente. Si no trabajas en el modo Observer, consulta el tema [Mostrar flows y paywalls](unity-present-paywalls).
-:::
+Diseña la pantalla en el builder, y el SDK de Adapty la renderiza de forma nativa. Actualiza el texto, el diseño y los precios cuando quieras, sin necesidad de publicar una nueva versión de la app.
 
-:::info
-Esta funcionalidad requiere el SDK de Adapty para Unity 4.1 o posterior — anteriormente solo estaba disponible en los SDKs nativos de iOS y Android. Consulta la [guía de migración](migration-to-unity-sdk-v4) para actualizar.
-:::
+Esta guía muestra cómo presentar un flow y gestionar los callbacks de compra. Si Adapty gestiona las compras por ti, consulta [Mostrar flows y paywalls](unity-present-paywalls) en su lugar.
 
-:::tip
-Crea el flow en [el Flow Builder](adapty-flow-builder).
-:::
+## Antes de empezar \{#before-you-start\}
 
-<details>
-   <summary>Antes de empezar a mostrar flows (Haz clic para expandir)</summary>
+Necesitas:
 
-1. Configura la integración inicial de Adapty [con el App Store](initial_ios) y [con Google Play](initial-android).
-   2. Instala y configura el SDK de Adapty. Asegúrate de llamar a `SetObserverMode(true)` en el configuration builder. Consulta la [guía de instalación del SDK de Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
-   3. [Crea productos](create-product) en el Adapty Dashboard.
-   4. [Configura flows o paywalls en los builders](create-paywall) y asígnales productos.
-   5. [Crea placements y asígnales tus flows o paywalls](create-placement).
-   6. [Obtén los flows y su configuración](unity-get-pb-paywalls) en el código de tu app.
+- **Adapty Unity SDK 4.1 o posterior**: Las versiones anteriores no pueden renderizar flows. Para migrar una app existente, consulta la [guía de migración](migration-to-unity-sdk-v4).
+- **`SetObserverMode(true)` llamado en el constructor de configuración**: Consulta la [guía de instalación del SDK de Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk).
+- **Integración inicial con el store**: Configura Adapty [con el App Store](initial_ios) y [con Google Play](initial-android).
+- **Un flow publicado con productos**: Créalo en el [Flow & Paywall Builder](adapty-flow-builder) y asígnale [productos](create-product).
+- **Un placement para el flow**: [Crea un placement](create-placement) y asigna tu flow a él.
+- **El flow obtenido en tu app**: [Obtén el flow y su configuración](unity-get-pb-paywalls) antes de mostrarlo.
 
-</details>
+## Implementación \{#implementation\}
 
-En el modo Observer, el SDK no realiza compras por ti. Cuando un usuario pulsa el botón de compra o restauración en un flow o paywall renderizado por Adapty, el SDK llama a tu `IAdaptyUIObserverModeResolver` en su lugar — realiza la compra o restauración con tu propio código allí.
+En el modo Observer, el SDK no realiza compras por ti. Cuando un usuario pulsa el botón de compra o restauración en un flow renderizado por Adapty, el SDK llama a tu `IAdaptyUIObserverModeResolver` en su lugar — realiza la compra o restauración con tu propio código allí.
 
 1. Implementa la interfaz `IAdaptyUIObserverModeResolver`:
 
@@ -67,18 +60,18 @@ En el modo Observer, el SDK no realiza compras por ti. Cuando un usuario pulsa e
    }
    ```
 
-El método `FlowViewDidInitiatePurchase` te informa de que el usuario ha iniciado una compra, y `FlowViewDidInitiateRestore`, de que ha iniciado una restauración. Activa tu flow de compra o restauración personalizado en respuesta.
+El método `FlowViewDidInitiatePurchase` te informa de que el usuario ha iniciado una compra, y `FlowViewDidInitiateRestore` — de que el usuario ha iniciado una restauración. Activa tu flujo personalizado de compra o restauración en respuesta.
 
-   Además, recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra o restauración. Esto es necesario para el correcto funcionamiento del flow, como mostrar el indicador de carga, entre otras cosas:
+   Además, recuerda invocar los siguientes callbacks para notificar a AdaptyUI sobre el proceso de compra o restauración. Esto es necesario para el correcto comportamiento del flow, como mostrar el loader, entre otras cosas:
 
-| Callback           | Description                                                                      |
-   | :----------------- | :------------------------------------------------------------------------------- |
+| Callback           | Descripción                                                                                              |
+   | :----------------- | :------------------------------------------------------------------------------------------------------- |
    | onStartPurchase()  | Este callback debe invocarse para notificar a AdaptyUI que la compra ha comenzado.  |
    | onFinishPurchase() | Este callback debe invocarse para notificar a AdaptyUI que la compra ha finalizado. |
    | onStartRestore()   | Este callback debe invocarse para notificar a AdaptyUI que la restauración ha comenzado.   |
    | onFinishRestore()  | Este callback debe invocarse para notificar a AdaptyUI que la restauración ha finalizado.  |
 
-El flow permanece abierto mientras se ejecuta tu código — ciérralo tú mismo tras una compra o restauración correcta.
+El flow permanece abierto mientras se ejecuta tu código — ciérralo tú mismo tras una compra o restauración exitosa.
 
 2. Registra el resolver antes de mostrar cualquier pantalla:
 
@@ -88,7 +81,7 @@ El flow permanece abierto mientras se ejecuta tu código — ciérralo tú mismo
 
    Sin un resolver registrado, la vista del flow no tiene forma de transferir la compra a tu código, y no ocurre nada cuando el usuario pulsa el botón de compra.
 
-3. Crea y presenta la vista del flow como de costumbre: [obtén el flow y crea su vista](unity-get-pb-paywalls), luego [preséntalo](unity-present-paywalls). No se necesitan parámetros adicionales: una vez registrado el resolver, todos los flows y paywalls renderizados por Adapty enrutarán las compras y restauraciones a través de él.
+3. Crea y presenta la vista del flow de la forma habitual: [obtén el flow y crea su vista](unity-get-pb-paywalls) y luego [preséntala](unity-present-paywalls). No se necesitan parámetros adicionales — una vez que el resolver está registrado, cada flow renderizado por Adapty enruta las compras y restauraciones a través de él.
 
 :::warning
 No olvides [reportar la transacción y asociarla con el paywall](report-transactions-observer-mode-unity). De lo contrario, Adapty no reconocerá la transacción y no podrá determinar el paywall de origen de la compra.

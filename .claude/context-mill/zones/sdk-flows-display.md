@@ -1,13 +1,13 @@
 ---
 zone: sdk-flows-display
-sources: [android-sdk, dashboard-backend, dashboard-interface, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk]
+sources: [android-sdk, capacitor-sdk, dashboard-backend, dashboard-interface, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unified-builder-transformer, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---
 
 ## What this is
 
-The "Flows & paywalls" category of each platform SDK — the app code that presents a Flow-Builder-made flow (a paywall, or an onboarding-with-paywall) to the user: fetching a Flow Builder paywall, presenting it, handling the actions and events it fires, localizing it, using fallback paywalls when the network is unavailable, presenting a web paywall from the SDK, and troubleshooting why a builder paywall won't render. It's the mobile-app side of Flow Builder — the dashboard-built flow is data the SDK downloads and renders natively on device.
+The "Flows & paywalls" category of each platform SDK — the app code that presents a Flow-Builder-made flow (a paywall, or an onboarding-with-paywall) to the user: fetching a Flow & Paywall Builder paywall, presenting it, handling the actions and events it fires, localizing it, using fallback paywalls when the network is unavailable, presenting a web paywall from the SDK, and troubleshooting why a builder paywall won't render. It's the mobile-app side of Flow & Paywall Builder — the dashboard-built flow is data the SDK downloads and renders natively on device.
 
 ## Surfaces
 
@@ -75,6 +75,31 @@ KMP: the ABI dump above, which also names the registration calls (`setFlowsEvent
 `setObserverModeResolver`, `setSystemRequestsHandler`). Cross-platform: the `FlowViewEvent.*`
 definitions in `jscore`'s `cross_platform.yaml`.
 
+**2a. What an analytics event carries.** Added 2026-09-07 while writing the `flow-input` family. The
+SDK owns only the *delivery* of the analytics callback; the event names and their parameters are
+compiled into the flow by `unified-builder-transformer` — `git grep flow_user_input` over every tag of
+`AdaptySDK-iOS` finds nothing, while `origin/main` `84e92c9` of the transformer (= production v5.0.16,
+rolled out 2026-09-07) defines it at `src/domain/transform/v5/script/template.ts:503-545` and decides
+when it fires in `generate-handlers.ts:719-800`. Two customer-facing events exist, `flow_user_input`
+and `flow_screen_showed`, and the params map is **flat**: `name`, `instanceId`, `isBackendEvent`,
+`isCustomerEvent`, `element_id`, `element_type`, then `value` *or* `item_ids` + `item_titles`. There
+is no `payload` string and no `version` field — an earlier draft documented both; they never shipped.
+Each SDK gates on `isCustomerEvent` and forwards the map untouched: iOS
+`Sources.UIBuilder/UIState/AdaptyUIActionHandler.swift:62-77`, Android
+`adapty-ui/src/main/java/com/adapty/ui/internal/store/FlowReducer.kt:356`; both identical between the
+platform's first v4 tag and HEAD, so the SDK floor for this feature is "first v4" on all seven
+(4.0.0 for iOS, Android, Flutter, React Native; 4.0.0-beta.1 for Capacitor, Unity, KMP; all tagged
+2026-07-10 … 07-31). Three per-wrapper shape facts that a sibling article cannot tell you: Android
+delivers JSON numbers to the listener as `Double` (the `Double`→`Long` normalisation in
+`AnalyticsEffectHandler.kt:44-58` runs only on the copy sent to Adapty's own analytics; a fix is
+planned for 4.2); Unity decodes into `Dictionary<string, object>` with Newtonsoft and no loose
+converter (`Runtime/Adapty.Events.cs:424`, `Runtime/Serialization/AdaptyJson.cs:96-115`), so arrays
+arrive as `JArray`, integers as `long`, and the listener signature is
+`IReadOnlyDictionary<string, object>`; KMP hands the whole map over as one JSON string
+(`paramsJsonString`). No SDK exposes a way to write into a running flow, and the callback has no
+return channel except React Native/Capacitor's `EventHandlerResult` boolean, which only closes the view
+(`jscore` `src/ui-builder/types.ts:27`).
+
 **3. Everything the SDK does not own** — which in this zone is most of the interesting behaviour,
 because the flow is dashboard-authored data that the SDK only renders. `dashboard-backend`
 (`origin/develop`) owns:
@@ -91,7 +116,7 @@ because the flow is dashboard-authored data that the SDK only renders. `dashboar
 device" is a legacy-Paywall-Builder control.** The label exists at
 `packages/builder/src/widgets/BuilderMenuTree/BuilderMenuTree.tsx:33` and in
 `apps/web/src/pages/ab-section/ui/PaywallBuilder/ui/PaywallBuilderMenu/ui/CreateLegacyBuilderBlock/CreateLegacyBuilderBlock.tsx:59`;
-grepping `packages/unified-builder` (the Flow Builder) for `Show on device` and `showOnDevice` returns
+grepping `packages/unified-builder` (the Flow & Paywall Builder) for `Show on device` and `showOnDevice` returns
 nothing. All seven `troubleshoot-paywall-builder` articles answer a failed configuration fetch with
 that toggle — right for a Paywall Builder paywall, unverified for a flow, where the publication
 pipeline above is what to check.
@@ -143,7 +168,12 @@ corpus right now:
 
 Read `platforms.md` before writing any v4 sentence here. Unity is this zone's v3-only surface: none of
 its nine articles carries an `<SDKv4>` block, and `unity-paywalls` still heads its card list "Adapty
-Paywall Builder" where the other six entry pages say "Adapty Flow Builder & Paywall Builder."
+Paywall Builder" where the other six entry pages say "Adapty Flow & Paywall Builder."
+**Corrected 2026-09-07 — stale.** `rg -c '<SDKv4>'` over the nine Unity articles on `main` finds a
+block in five (`unity-present-paywalls`, `unity-get-pb-paywalls`, `unity-handling-events`,
+`unity-handle-paywall-actions`, `unity-localizations-and-locale-codes`); `unity-paywalls` line 12
+already reads "Adapty Flow & Paywall Builder"; and `AdaptySDK-Unity` carries the flow API from
+tag `4.0.0-beta.1` (2026-07-31) through `4.1.1`. Unity is v4-beta here, not v3-only.
 
 ## What we document, what we don't
 
@@ -167,7 +197,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   the developer writes is a **handler** — this zone documents the callback the rendered view invokes,
   what the view does before and after it, and how to register it. When the developer renders, they
   write the **call** (`getPaywallProducts`, `makePurchase`, `restorePurchases`), and that is
-  `sdk-flows-manual`, even when the paywall came out of Flow Builder. The corpus holds this line
+  `sdk-flows-manual`, even when the paywall came out of Flow & Paywall Builder. The corpus holds this line
   precisely today: grep all 69 articles for `makePurchase|restorePurchases` and every one of the 20
   hits is a row in a callback table ("Invoked when `Adapty.makePurchase()` completes successfully").
   Not one article shows a purchase call as a step, and a new one must not.
@@ -208,6 +238,8 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 <!-- mill:auto:roster -->
 | family | ios | android | react-native | flutter | unity | kmp | capacitor |
 |---|---|---|---|---|---|---|---|
+| flow-input | ios-flow-input | android-flow-input | react-native-flow-input | flutter-flow-input | unity-flow-input | kmp-flow-input | capacitor-flow-input |
+| flow-screen-views | ios-flow-screen-views | android-flow-screen-views | react-native-flow-screen-views | flutter-flow-screen-views | unity-flow-screen-views | kmp-flow-screen-views | capacitor-flow-screen-views |
 | get-pb-paywalls | get-pb-paywalls | android-get-pb-paywalls | react-native-get-pb-paywalls | flutter-get-pb-paywalls | unity-get-pb-paywalls | kmp-get-pb-paywalls | capacitor-get-pb-paywalls |
 | handle-paywall-actions | handle-paywall-actions | android-handle-paywall-actions | react-native-handle-paywall-actions | flutter-handle-paywall-actions | unity-handle-paywall-actions | kmp-handle-paywall-actions | capacitor-handle-paywall-actions |
 | handling-events | ios-handling-events | android-handling-events |  | flutter-handling-events | unity-handling-events | kmp-handling-events | capacitor-handling-events |
@@ -226,7 +258,9 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| android-get-pb-paywalls | — | dev | 8 | android |
+| android-flow-input | — | dev | 10 | android |
+| android-flow-screen-views | — | dev | 4 | android |
+| android-get-pb-paywalls | — | dev | 9 | android |
 | android-handle-paywall-actions | — | dev | 7 | android |
 | android-handling-events | — | dev | 7 | android |
 | android-localizations-and-locale-codes | — | dev | 11 | android |
@@ -235,63 +269,75 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | android-troubleshoot-paywall-builder | — | dev | 3 | android |
 | android-use-fallback-paywalls | — | dev | 1 | android |
 | android-web-paywall | — | dev | 2 | android |
-| capacitor-get-pb-paywalls | — | dev | 8 | capacitor |
+| capacitor-flow-input | — | dev | 10 | capacitor |
+| capacitor-flow-screen-views | — | dev | 4 | capacitor |
+| capacitor-get-pb-paywalls | — | dev | 9 | capacitor |
 | capacitor-handle-paywall-actions | — | dev | 7 | capacitor |
 | capacitor-handling-events | — | dev | 4 | capacitor |
 | capacitor-localizations-and-locale-codes | — | dev | 11 | capacitor |
 | capacitor-paywalls | entry | dev | 4 | capacitor |
-| capacitor-present-flows-in-observer-mode | — | dev | 0 | capacitor |
+| capacitor-present-flows-in-observer-mode | — | dev | 2 | capacitor |
 | capacitor-present-paywalls | — | dev | 7 | capacitor |
 | capacitor-use-fallback-paywalls | — | dev | 4 | capacitor |
 | capacitor-web-paywall | — | dev | 3 | capacitor |
-| flutter-get-pb-paywalls | — | dev | 10 | flutter |
+| flutter-flow-input | — | dev | 10 | flutter |
+| flutter-flow-screen-views | — | dev | 4 | flutter |
+| flutter-get-pb-paywalls | — | dev | 11 | flutter |
 | flutter-handle-paywall-actions | — | dev | 8 | flutter |
 | flutter-handling-events | — | dev | 7 | flutter |
 | flutter-localizations-and-locale-codes | — | dev | 11 | flutter |
 | flutter-paywalls | entry | dev | 4 | flutter |
-| flutter-present-flows-in-observer-mode | — | dev | 0 | flutter |
+| flutter-present-flows-in-observer-mode | — | dev | 2 | flutter |
 | flutter-present-paywalls | — | dev | 10 | flutter |
 | flutter-troubleshoot-paywall-builder | — | dev | 3 | flutter |
 | flutter-use-fallback-paywalls | — | dev | 1 | flutter |
 | flutter-web-paywall | — | dev | 1 | flutter |
-| get-pb-paywalls | — | dev | 10 | ios |
+| get-pb-paywalls | — | dev | 11 | ios |
 | handle-paywall-actions | — | dev | 7 | ios |
+| ios-flow-input | — | dev | 10 | ios |
+| ios-flow-screen-views | — | dev | 4 | ios |
 | ios-handling-events | — | dev | 14 | ios |
 | ios-paywalls | entry | dev | 4 | ios |
-| ios-present-paywall-builder-paywalls-in-observer-mode | — | dev | 0 | ios |
+| ios-present-paywall-builder-paywalls-in-observer-mode | — | dev | 2 | ios |
 | ios-present-paywalls | — | dev | 8 | ios |
 | ios-troubleshoot-paywall-builder | — | dev | 3 | ios |
 | ios-use-fallback-paywalls | — | dev | 1 | ios |
 | ios-web-paywall | — | dev | 4 | ios |
-| kmp-get-pb-paywalls | — | dev | 8 | kmp |
+| kmp-flow-input | — | dev | 10 | kmp |
+| kmp-flow-screen-views | — | dev | 4 | kmp |
+| kmp-get-pb-paywalls | — | dev | 9 | kmp |
 | kmp-handle-paywall-actions | — | dev | 11 | kmp |
 | kmp-handling-events | — | dev | 16 | kmp |
 | kmp-localizations-and-locale-codes | — | dev | 11 | kmp |
 | kmp-paywalls | entry | dev | 4 | kmp |
-| kmp-present-flows-in-observer-mode | — | dev | 0 | kmp |
+| kmp-present-flows-in-observer-mode | — | dev | 2 | kmp |
 | kmp-present-paywalls | — | dev | 14 | kmp |
 | kmp-troubleshoot-paywall-builder | — | dev | 2 | kmp |
 | kmp-use-fallback-paywalls | — | dev | 1 | kmp |
 | kmp-web-paywalls | — | dev | 2 | kmp |
 | localizations-and-locale-codes | — | dev | 11 | ios |
-| react-native-get-pb-paywalls | — | dev | 8 | react-native |
+| react-native-flow-input | — | dev | 10 | react-native |
+| react-native-flow-screen-views | — | dev | 4 | react-native |
+| react-native-get-pb-paywalls | — | dev | 9 | react-native |
 | react-native-handle-paywall-actions | — | dev | 7 | react-native |
 | react-native-handling-events-1 | — | dev | 4 | react-native |
 | react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
-| react-native-present-flows-in-observer-mode | — | dev | 2 | react-native |
+| react-native-present-flows-in-observer-mode | — | dev | 3 | react-native |
 | react-native-present-paywalls | — | dev | 14 | react-native |
 | react-native-troubleshoot-paywall-builder | — | dev | 3 | react-native |
 | react-native-use-fallback-paywalls | entry | dev | 0 | react-native |
 | react-native-use-fallback-paywalls-expo | — | dev | 2 | react-native |
 | react-native-use-fallback-paywalls-pure | — | dev | 4 | react-native |
 | react-native-web-paywall | — | dev | 2 | react-native |
-| unity-get-pb-paywalls | — | dev | 10 | unity |
+| unity-flow-input | — | dev | 10 | unity |
+| unity-flow-screen-views | — | dev | 4 | unity |
+| unity-get-pb-paywalls | — | dev | 11 | unity |
 | unity-handle-paywall-actions | — | dev | 10 | unity |
 | unity-handling-events | — | dev | 8 | unity |
 | unity-localizations-and-locale-codes | — | dev | 12 | unity |
 | unity-paywalls | entry | dev | 4 | unity |
-| unity-present-flows-in-observer-mode | — | dev | 0 | unity |
+| unity-present-flows-in-observer-mode | — | dev | 2 | unity |
 | unity-present-paywalls | — | dev | 4 | unity |
 | unity-troubleshoot-paywall-builder | — | dev | 3 | unity |
 | unity-use-fallback-paywalls | — | dev | 1 | unity |
@@ -301,17 +347,33 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 
 ## Ripple rules
 
+- **The `flow-input` family is five reusables plus per-platform code** (added 2026-09-07).
+  `FlowInputPrerequisites`, `FlowInputVerify`, `FlowInputTiming`, `FlowInputParams`,
+  `FlowInputLimitations` in `src/components/reusable/` carry every platform-independent sentence,
+  including the parameter table and the element-type table — edit them once and all seven articles
+  follow. What stays per file: the callback registration, the decode code, the close-hook paragraph
+  under `## Delivery and limitations` (the hook names differ: `flowControllerDidDisappear` /
+  `didDisappear`, `onFlowClosed`, `flowViewDidDisappear`, `onDisappeared`, `FlowViewDidDisappear`),
+  and the React Native / Capacitor variant of the backend-errors sentence, because their handler
+  returns a boolean. A shared table cannot carry a platform-only caveat; the Android `Double` note
+  lives in code comments for that reason.
+- **Five dashboard-side articles link `ios-flow-input` inline** (added 2026-09-07):
+  `builder-inputs-and-forms`, `flow-selectable-elements`, `onboarding-quizzes`, `builder-toggles`,
+  `adapty-flow-builder` — all in the flow-design / flow-logic zones. They point at the iOS article
+  only, by decision; the reader reaches the other six through the platform switcher. Renaming
+  `ios-flow-input` breaks five links outside this zone.
+
 ## Boundaries
 
 - **flow-design / flow-logic** — this is the most common routing mistake in this corpus. flow-design/flow-logic is the dashboard builder: designing the flow's screens, elements, and logic in the visual editor. sdk-flows-display is the app code that displays the result of that design. "The button doesn't look right" or "the logic branch didn't fire" is flow-design/flow-logic; "the SDK crashed while presenting the flow" or "the paywall doesn't localize on device" is sdk-flows-display. State this boundary explicitly in both directions when routing — it's easy to file an SDK-presentation ticket that's really a builder-configuration issue, or vice versa.
-- **sdk-flows-manual** — is the flow a Flow-Builder-made flow being displayed with the SDK's built-in presentation methods (sdk-flows-display), or is the developer fetching raw paywall/product data to render their own UI, or handling the purchase/restore call directly (sdk-flows-manual)? Purchases and restore always live in sdk-flows-manual, never here, even when the paywall being purchased came from Flow Builder.
-- **sdk-onboardings** — is the flow being presented a paywall (sdk-flows-display) or an onboarding (sdk-onboardings)? Both can be built in Flow Builder, but the SDK-side onboarding-presentation code has its own zone.
+- **sdk-flows-manual** — is the flow a Flow-Builder-made flow being displayed with the SDK's built-in presentation methods (sdk-flows-display), or is the developer fetching raw paywall/product data to render their own UI, or handling the purchase/restore call directly (sdk-flows-manual)? Purchases and restore always live in sdk-flows-manual, never here, even when the paywall being purchased came from Flow & Paywall Builder.
+- **sdk-onboardings** — is the flow being presented a paywall (sdk-flows-display) or an onboarding (sdk-onboardings)? Both can be built in Flow & Paywall Builder, but the SDK-side onboarding-presentation code has its own zone.
 - **paywalls-legacy** — is the paywall a Flow-Builder flow (sdk-flows-display) or a legacy remote-config paywall being fetched/rendered manually (paywalls-legacy for the dashboard side, sdk-flows-manual for the app-code side)?
 
 ## Ticket language
 
 Rows name a **family**, not a platform article — the roster above expands each one across the seven
-platforms. Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔ flow in v4) live in `aliases.md`
+platforms. Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow in v4) live in `aliases.md`
 and are deliberately not repeated here.
 
 | How a ticket says it | Where it actually lives |
@@ -333,6 +395,9 @@ and are deliberately not repeated here.
 | "view already presented", "error when reusing the paywall view" | `present-paywalls` — a view instance is single-use. |
 | "native alert hidden behind the paywall", "paywall overlaps the status bar", "edge-to-edge insets" | `present-paywalls`, Android-specific presentation issues. |
 | "where do I start with paywalls" | The `paywalls` family — the per-platform entry pages, whose job is routing to builder vs manual. |
+| "get the email the user typed in the flow", "read quiz answers in the app", "save onboarding answers as custom attributes" | `flow-input`. Values ride the analytics callback as `flow_user_input`; text fields report on focus loss, selectables per tap, pickers on close. A default or pre-selected value never fires an event — the shared `FlowInputTiming` snippet is where that lives. |
+| "the input event never arrives", "no flow_user_input on my device" | `flow-input`, the `## Before you start` snippet: the flow must have been published after 2026-09-07; the SDK floor is only "first v4". The Adapty preview app never shows these events — its `AdaptyUIFlowView` call registers no analytics callback (adapty-swift-app repo, `FlowPreviewView.swift:35-43`) — so the test has to run in the developer's own build. |
+| "date picker value is 6.45E11", "picker gives a Double on Android" | `flow-input`, the Android / Flutter / KMP code comments. Not a doc bug: the Android listener receives JSON numbers as `Double` until the planned 4.2 fix. |
 
 ## Gaps and misses
 
@@ -360,3 +425,8 @@ Verified during the `flows-with-your-own-payments` guide work; refs named per it
   `android-present-paywall-builder-paywalls-in-observer-mode` keep their filenames for SEO, but as
   of 2026-08-20 both carry `Present flows in Observer mode…` titles and flows-and-paywalls prose.
   The filename no longer indicates the content — do not infer scope from it.
+- **`IDictionary<string, object>` is a compile error in four Unity articles** (verified 2026-09-07 with
+  `rg -n "IDictionary<" src/content/docs/unity/*.mdx` on `main`): `unity-quickstart-paywalls.mdx:261`,
+  `unity-handling-events.mdx:445`, `unity-flow-screen-views.mdx:34` and `:53`. The listener signature is
+  `IReadOnlyDictionary<string, object>` (`Packages/com.adapty.unity-sdk/Runtime/IAdaptyFlowsEventsListener.cs:135`,
+  tag `4.1.1`). `unity-flow-input` was fixed in PR #522; the other four are open.
