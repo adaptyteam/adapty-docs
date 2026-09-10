@@ -7,11 +7,11 @@ reviewed_at: 2026-08-10
 
 ## What this is
 
-The behavioural and lifecycle half of Flow Builder documentation: what a flow *does* (navigation,
+The behavioural and lifecycle half of Flow & Paywall Builder documentation: what a flow *does* (navigation,
 conditional branching, actions, purchases, variables, remote config, fallbacks) and how a flow moves
 through its *lifecycle* (create, tour the UI, preview, save/publish, measure, migrate, recipe). Its
 sibling zone, `flow-design`, covers what a flow *looks like* (screens/layers, layout, elements, styles,
-dark mode, fonts, localized copy). Both zones sit inside the Adapty Dashboard's Flow Builder — this
+dark mode, fonts, localized copy). Both zones sit inside the Adapty Dashboard's Flow & Paywall Builder — this
 zone owns the no-code authoring workflow for behavior and its lifecycle wrapper, not the SDK code that
 renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/rendering,
 `sdk-flows-manual` for remote-config consumption, `sdk-migrations` for the v4 upgrade path).
@@ -20,7 +20,7 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 
 - **Adapty Dashboard → Flows page**: flow list, status column, **Create flow**, **Fallbacks** download,
   the Flow metrics view.
-- **Flow Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
+- **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
 - **Adapty mobile app** (iOS/Android): receiving end of **Test on device** — not documented here beyond
@@ -187,13 +187,13 @@ or developer can see and click.
   articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
   word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
   SDK platforms support flows), and embed the same YouTube video (`8Cby6lVGI0o`). Cochange confirms
-  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow Builder
+  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow & Paywall Builder
   must update both copies of this sentence, not one.
 - **`adapty-flow-builder` ↔ `builder-ui` ↔ `paywall-builder-templates` ↔ `flow-builder-recipes` ↔
   `onboarding-flow-tutorial`: the hub cluster.** Cochange shows every pair in this set at 1–3× (e.g.
   `adapty-flow-builder`+`builder-ui` 3×, `builder-ui`+`paywall-builder-templates` 2×). Directly confirmed
   in git history: commit `660fd74dd` ("New videos + YouTube playlist callout") touched all five in one
-  pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow Builder
+  pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow & Paywall Builder
   narrative, its embedded videos, or its "what you can build" list ripples across this whole cluster.
 - **`flow-common-issues#a-flow-wont-preview-or-publish` is the single canonical list of "blocks
   previewing and publishing" conditions.** Adding a new publish-blocking condition anywhere in the
@@ -273,7 +273,7 @@ with the SDK side — see "Reader jobs" for exactly which `sdk-flows-display`/`s
 
 ## Ticket language
 
-Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔ flow in v4, remote config ↔ custom JSON) live in
+Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow in v4, remote config ↔ custom JSON) live in
 `aliases.md` and are deliberately not repeated here. Several filenames in this zone are frozen from the
 pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rarely matches the id.
 

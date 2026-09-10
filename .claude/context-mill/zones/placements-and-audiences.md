@@ -164,7 +164,7 @@ Delta from `scope.md` only.
 | edit-placement | — | marketer | 0 | tutorial |
 | export-placements | — | marketer | 0 | tutorial |
 | placement-metrics | — | marketer | 3 | tutorial |
-| placements | entry | marketer | 1 | tutorial |
+| placements | entry | marketer | 2 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
@@ -187,7 +187,7 @@ Delta from `scope.md` only.
 
 ## Ticket language
 
-Flat zone — rows name specific articles. Corpus-wide synonyms (flow ↔ Paywall Builder, paywall ↔ flow
+Flat zone — rows name specific articles. Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow
 in v4, segment vocabulary) live in `aliases.md` and are not repeated here.
 
 | How a ticket says it | Where it actually lives |

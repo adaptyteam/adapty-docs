@@ -61,7 +61,7 @@ integration.
 ## Ticket language
 
 Rows name article ids from the roster above. Corpus-wide synonyms (entitlement ↔ access level,
-Flow ↔ Paywall Builder) live in `aliases.md` and are not repeated here.
+Flow Builder ↔ Flow & Paywall Builder) live in `aliases.md` and are not repeated here.
 
 | How a ticket says it | Where it actually lives |
 |---|---|
