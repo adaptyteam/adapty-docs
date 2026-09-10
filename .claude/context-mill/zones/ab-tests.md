@@ -31,6 +31,7 @@ being varied or the placement wiring that attaches the test.
 | ab-test-no-paywall-variants | — | marketer | 5 | tutorial |
 | ab-test-types | — | marketer | 6 | tutorial |
 | ab-tests | — | marketer | 3 | tutorial |
+| crossplacement-ab-tests | — | marketer | 8 | tutorial |
 | maths-behind-it | — | marketer | 2 | tutorial |
 | results-and-metrics | — | marketer | 30 | tutorial |
 | run_stop_ab_tests | — | marketer | 5 | tutorial |
