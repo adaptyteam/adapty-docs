@@ -1,14 +1,14 @@
 ---
-title: "Référence des commandes du CLI Développeur Adapty"
-description: "Référence des commandes du CLI Développeur Adapty pour configurer les apps, produits, paywalls et placements."
-metadataTitle: "Référence des commandes CLI Développeur | Documentation Adapty"
-keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
+title: "Référence des commandes du CLI développeur Adapty"
+description: "Référence des commandes du CLI développeur Adapty pour configurer les applications, produits, paywalls, flows et placements."
+metadataTitle: "Référence des commandes du CLI développeur | Documentation Adapty"
+keywords: ['cli', 'developer', 'référence', 'commandes', 'mcp']
 ---
 
-Cet article liste les commandes du CLI Adapty permettant de configurer votre compte — applications, niveaux d'accès, produits, paywalls, placements et segments — avec leurs arguments, options et valeurs acceptées. Pour les campagnes Apple Ads, consultez [les commandes Ads Manager](developer-cli-ads-manager-reference).
+Cet article répertorie les commandes CLI Adapty qui configurent votre compte — apps, niveaux d'accès, produits, paywalls, flows, placements et segments — avec leurs arguments, options et valeurs acceptées. Pour les campagnes Apple Ads, voir [Commandes Ads Manager](developer-cli-ads-manager-reference).
 
 :::link
-Pour la configuration de l'authentification et la gestion des tokens, consultez [Authentification](developer-cli-authentication).
+Pour la configuration de l'authentification et la gestion des tokens, voir [Authentication](developer-cli-authentication).
 :::
 
 ## Indicateurs globaux \{#global-flags\}
@@ -329,14 +329,18 @@ adapty paywalls placements --app <app-id> <paywall-id>
 
 Utilisez cette commande avant de remplacer un paywall pour voir quels placements seraient affectés.
 
-## Placements \{#placements\}
+Les éléments de cette liste ne contiennent pas de champ `is_active`. Pour lire l'état d'activation d'un placement, utilisez [`placements list`](#adapty-placements-list) ou [`placements get`](#adapty-placements-get).
 
-### Liste des placements Adapty \{#adapty-placements-list\}
+## Flows \{#flows\}
 
-Listez tous les [placements](placements) d'une application.
+Les [flows](adapty-flow-builder) sont les paywalls et onboardings que vous créez dans le Flow & Paywall Builder. La CLI gère l'enregistrement du flow, sa configuration de builder et sa publication. Une configuration de builder est un document JSON volumineux que le Flow & Paywall Builder produit normalement — la CLI n'en génère pas. Pour créer ou modifier une configuration depuis le terminal, utilisez le [skill flow-generator](flow-generator-skill), qui pilote ces commandes à votre place. Avant la publication, le [skill flow-audit](flow-audit-skill) vérifie si le flow est prêt pour la production. Les commandes sont listées ici à titre de référence.
+
+### Liste des flows \{#adapty-flows-list\}
+
+Liste tous les flows d'une application.
 
 ```bash
-adapty placements list --app <app-id>
+adapty flows list --app <app-id>
 ```
 
 | Flag | Requis | Description |
@@ -344,6 +348,212 @@ adapty placements list --app <app-id>
 | `--app` | Oui | ID de l'application (UUID) |
 
 Accepte les [flags de pagination](#global-flags).
+
+### adapty flows get
+
+Obtenez les détails d'un flow spécifique.
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+La réponse contient `id`, `name`, `status`, et `updated_at`. Le statut est l'un des suivants :
+
+| Statut | Signification |
+|---|---|
+| `draft` | Le flow n'a jamais été publié |
+| `published` | La version actuelle est en ligne |
+| `dirty` | Le flow a déjà été publié, et la version actuelle contient des modifications non publiées. Les utilisateurs continuent de voir la dernière version publiée |
+| `publishing` | La publication est en cours |
+| `publication_failed` | La dernière publication a échoué. Corrigez la configuration et publiez à nouveau |
+| `archived` | Le flow est archivé |
+
+### adapty flows create
+
+Crée un flow. Le nouveau flow a un nom et aucune configuration. Pour ajouter une configuration, utilisez [`flows config update`](#adapty-flows-config-update).
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--name` | Oui | Nom du flow |
+
+### adapty flows update
+
+Renommer un flow.
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--name` | Oui | Nouveau nom du flow |
+
+### adapty flows publish
+
+Publiez la version actuelle d'un flow à vos utilisateurs.
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--yes`, `-y` | Non | Publie sans demander de confirmation. Requis lorsque la sortie est redirigée ou que `--json` est utilisé |
+
+Parce que la publication modifie ce que voient vos utilisateurs, la commande affiche le nom du flow et demande une confirmation. Toute réponse autre que `y` annule la commande avec le code de sortie 1. Avec `--json` ou dans un pipe, la commande refuse avec le code de sortie 2 au lieu d'attendre une réponse — passez donc `--yes` dans les scripts et les sessions agent.
+
+La publication est asynchrone : la réponse indique `status: publishing`, et le flow n'est pas encore en ligne. Interrogez [`flows get`](#adapty-flows-get) jusqu'à ce que le statut devienne `published` ou `publication_failed`. En cas de `publication_failed`, [`flows config get`](#adapty-flows-config-get) indique la raison de l'échec.
+
+La publication échoue avec une erreur HTTP 400 si le flow n'a pas de config, si la config n'est pas publiable, ou si la version actuelle est déjà en ligne. Pour vérifier une config avant de la publier, utilisez [`flows config validate`](#adapty-flows-config-validate).
+
+### adapty flows config get
+
+Lit la configuration du builder d'un flow.
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+La réponse contient `config`, `remote_configs`, `status` et `updated_at`. `updated_at` est un horodatage en millisecondes de la dernière modification de la config. Passez-le à [`flows config update`](#adapty-flows-config-update) via `--expected-updated-at` pour éviter d'écraser une modification concurrente. Un flow dont la config n'a jamais été enregistrée renvoie 404.
+
+Après une tentative de publication, la réponse contient également trois champs décrivant son déroulement. Lisez-les lorsque [`flows get`](#adapty-flows-get) signale `publication_failed` :
+
+| Champ | Description |
+|---|---|
+| `publication_status` | Avancement de la publication de cette version de flow : `transforming`, `transformed`, `uploading`, `uploaded`, `published`, ou `failed` |
+| `transform_error` | L'erreur de transformation brute — soit un payload JSON listant les problèmes, soit une chaîne récapitulative |
+| `publication_error` | Un message lisible pour une publication échouée |
+
+### adapty flows config update
+
+Écrit la configuration du builder d'un flow.
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID d'application (UUID) |
+| `--config` | L'un des deux | Configuration du builder sous forme de chaîne JSON |
+| `--config-file` | L'un des deux | Chemin vers un fichier JSON contenant la configuration du builder, ou `-` pour lire depuis stdin |
+| `--remote-configs` | Non | Tableau JSON d'entrées `{locale, data}`, où `data` est le Remote Config sous forme de chaîne |
+| `--expected-updated-at` | Non | La valeur `updated_at` issue d'un précédent `flows config get`. Si la configuration a été modifiée après cette lecture, la commande échoue plutôt que d'écraser la modification. Omettez ce paramètre pour écraser sans condition |
+
+La sauvegarde de la configuration crée un brouillon sans le publier. Sur un flow publié, l'écriture crée une nouvelle version : le statut du flow devient `dirty`, et les utilisateurs continuent de voir la version publiée jusqu'à ce que vous exécutiez [`flows publish`](#adapty-flows-publish).
+
+### adapty flows config validate
+
+Vérifiez si une configuration du builder est publiable, sans la sauvegarder.
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--config` | L'un des deux | Configuration du builder en chaîne JSON |
+| `--config-file` | L'un des deux | Chemin vers un fichier JSON contenant la configuration du builder, ou `-` pour lire depuis stdin |
+
+La réponse contient `valid` et une liste d'`issues`. Lorsque la configuration n'est pas publiable, la commande se termine avec le code 1, ce qui permet aux scripts de s'y bloquer.
+
+### adapty flows config preview \{#adapty-flows-config-preview\}
+
+Affiche un fichier de configuration local dans le navigateur. Cette commande n'effectue aucun appel API et n'accepte pas le flag `--app`.
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| Argument | Description |
+|---|---|
+| `config-file` | Chemin vers un fichier JSON de configuration du builder local |
+
+| Flag | Défaut | Description |
+|---|---|---|
+| `--screen` | Premier écran du flow | ID de l'écran à afficher |
+| `--device` | `iphone-14` | Cadre d'appareil dans lequel afficher |
+| `--orientation` | `portrait` | `portrait` ou `landscape` |
+
+Dans un terminal, la commande ouvre l'aperçu dans votre navigateur. Avec `--json` ou dans un pipe, elle affiche l'URL à la place. L'URL contient toute la configuration et peut être longue : redirigez-la vers un outil de capture d'écran plutôt que de l'afficher. Les configurations dépassant environ 32 Ko s'affichent lentement.
+
+### adapty flows media upload
+
+Téléversez une image à utiliser dans une configuration de flow.
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Chemin vers le fichier image |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+Formats acceptés : GIF, HEIC, JPEG, PNG, SVG et WebP. La réponse contient l'`id`, le `name` et l'`url` CDN de l'image, à référencer depuis la config.
+
+## Placements \{#placements\}
+
+Les [placements](placements) sont les endroits où vos flows, paywalls et onboardings atteignent les utilisateurs. Le type de contenu d'un placement est fixé à sa création, donc faire passer une application de paywalls à des flows implique de créer de nouveaux placements plutôt que de mettre à jour les existants — la [compétence migrate-placements](migrate-placements-skill) pilote ces commandes pour le faire en masse.
+
+### adapty placements list
+
+Listez tous les [placements](placements) d'une application.
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepte les [options de pagination](#global-flags).
+
+Chaque élément contient `id`, `developer_id`, `title` et `is_active`. `is_active` vaut `true` pour un placement actif et `false` pour un placement inactif.
 
 ### adapty placements get
 
@@ -361,25 +571,25 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Oui | ID de l'application (UUID) |
 
-Le tableau `audiences` contient un tableau de résultats. Chaque entrée est composée de `{segment_ids, paywall_id, priority}`. L'audience par défaut a `segment_ids: []` et la valeur de priorité la plus élevée (évaluée en dernier). La sortie formatée pour l'humain affiche également un `Paywall ID` de niveau supérieur, dérivé de l'audience par défaut pour plus de commodité. `--json` renvoie la structure brute de l'API sans modification.
+La réponse contient `id`, `developer_id`, `title`, `is_active`, et un tableau `audiences`. `is_active` est `true` pour un placement actif et `false` pour un placement inactif. Chaque entrée d'audience comporte `content_type` (`paywall` ou `flow`), `segment_ids`, `priority`, ainsi que `paywall_id` ou `flow_id`. L'audience par défaut a `segment_ids: []` et la valeur de priorité la plus élevée (évaluée en dernier). Voir [Forme des audiences](#audiences-shape).
 
 ### adapty placements create
 
 Créez un nouveau [placement](placements).
 
 ```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
 ```
 
 | Indicateur | Requis | Description |
 |---|---|---|
-| `--app` | Oui | ID de l'application (UUID) |
+| `--app` | Oui | ID de l'app (UUID) |
 | `--title` | Oui | Titre du placement |
-| `--developer-id` | Oui | Identifiant de chaîne utilisé dans le code de l'application pour demander ce [placement](placements) |
-| `--audiences` | L'un des deux | Tableau JSON d'entrées `{segment_ids, paywall_id, priority}`. Voir [Structure des audiences](#audiences-shape) |
+| `--developer-id` | Oui | Identifiant string utilisé dans le code de l'app pour demander ce [placement](placements) |
+| `--audiences` | L'un des deux | Tableau JSON d'entrées d'audience, chacune avec un `content_type` explicite. Voir [Format des audiences](#audiences-shape) |
 | `--paywall-id` | L'un des deux | **Déprécié.** ID de [paywall](paywalls) (UUID). Encapsulé côté client dans une audience par défaut unique |
 
-Passez exactement l'un de `--audiences` ou `--paywall-id`. Passer les deux ou aucun provoque une erreur.
+Passez exactement l'un de `--audiences` ou `--paywall-id`. Passer les deux ou aucun génère une erreur.
 
 :::warning
 `--paywall-id` est obsolète et sera supprimé. Lorsqu'il est passé, le CLI affiche un avertissement sur stderr et convertit la valeur en audience par défaut. Utilisez `--audiences` pour les nouvelles automatisations.
@@ -390,7 +600,7 @@ Passez exactement l'un de `--audiences` ou `--paywall-id`. Passer les deux ou au
 Remplace tous les champs d'un [placement](placements) existant.
 
 ```bash
-adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
 ```
 
 Cette commande remplace tous les champs du placement, y compris la liste complète des audiences.
@@ -399,13 +609,13 @@ Cette commande remplace tous les champs du placement, y compris la liste complè
 |---|---|
 | `placement-id` | ID du placement (UUID) |
 
-| Indicateur | Requis | Description |
+| Flag | Requis | Description |
 |---|---|---|
 | `--app` | Oui | ID de l'app (UUID) |
 | `--title` | Oui | Titre du placement |
-| `--developer-id` | Oui | Identifiant string utilisé dans le code de l'app pour requêter ce [placement](placements) |
-| `--audiences` | L'un des deux | Tableau JSON d'entrées `{segment_ids, paywall_id, priority}`. Voir [Format des audiences](#audiences-shape) |
-| `--paywall-id` | L'un des deux | **Déprécié.** ID du [paywall](paywalls) (UUID). Remplace toutes les audiences par une seule audience par défaut |
+| `--developer-id` | Oui | Identifiant utilisé dans le code de l'app pour appeler ce [placement](placements) |
+| `--audiences` | L'un des deux | Tableau JSON d'entrées d'audience, chacune avec un `content_type` explicite. Voir [Format des audiences](#audiences-shape) |
+| `--paywall-id` | L'un des deux | **Déprécié.** ID du [paywall](paywalls) (UUID). Remplace toutes les audiences par une audience par défaut unique |
 
 :::warning
 Passer `--paywall-id` réécrit toutes les audiences du placement. Les audiences spécifiques à un segment sont supprimées. Pour les conserver, utilisez `--audiences` et incluez toutes les entrées que vous souhaitez garder.
@@ -417,17 +627,32 @@ Le paramètre `--audiences` prend un tableau JSON. Chaque entrée contient :
 
 | Champ | Type | Description |
 |---|---|---|
-| `segment_ids` | `string[]` | IDs de [segment](segments) ciblés par cette audience. Longueur 0 ou 1. Un tableau vide marque l'**audience par défaut** — le repli pour les utilisateurs qui ne correspondent à aucun autre segment |
-| `paywall_id` | `string` | ID de [paywall](paywalls) (UUID) affiché aux utilisateurs de cette audience |
-| `priority` | `number` | Base 0, unique au sein du placement. Les audiences sont évaluées de la plus basse à la plus haute ; l'audience par défaut doit avoir la valeur la plus élevée |
+| `content_type` | `string` | `"paywall"` ou `"flow"`. Obligatoire pour chaque entrée. Toutes les entrées d'un même placement doivent avoir la même valeur |
+| `segment_ids` | `string[]` | IDs de [segment](segments) ciblés par cette audience. Longueur 0 ou 1. Un tableau vide désigne l'**audience par défaut** — le repli pour les utilisateurs qui ne correspondent à aucun autre segment |
+| `paywall_id` | `string` | ID (UUID) du [paywall](paywalls) affiché aux utilisateurs de cette audience. Obligatoire lorsque `content_type` vaut `"paywall"` |
+| `flow_id` | `string` | ID (UUID) du [flow](adapty-flow-builder) affiché aux utilisateurs de cette audience. Obligatoire lorsque `content_type` vaut `"flow"` |
+| `priority` | `number` | Basé sur 0, unique au sein du placement. Les audiences sont évaluées de la valeur la plus basse à la plus haute ; l'audience par défaut doit avoir la valeur la plus élevée |
 
 Un placement doit avoir exactement une audience par défaut.
+
+Le type de contenu d'un placement est fixé à sa création, donc `placements update` ne peut pas convertir un placement paywall en flow ni l'inverse. Servez le flow depuis un placement dédié — voir [Créer un nouveau placement pour votre flow](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+La CLI vérifie chaque entrée avant d'envoyer la requête. Une entrée avec un `content_type` manquant ou inconnu, ou sans l'ID requis par son `content_type`, provoque une sortie avec le code 2 et rien n'est envoyé.
+
+Un flow ne peut être associé qu'après avoir été publié. Un flow à l'état `draft`, ou dont la première publication est encore en cours, est rejeté par le serveur ; le CLI reconnaît ce rejet et se termine avec le code 2, en affichant la commande `flows publish` correspondant à ce flow. Pour publier un flow, utilisez [`flows publish`](#adapty-flows-publish) ou le [Flow & Paywall Builder](builder-save-publish), puis attendez que son statut passe à `published`.
 
 Exemple avec une audience ciblée et une audience par défaut :
 
 ```bash
 adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
-  --audiences '[{"segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+Exemple d'un placement qui affiche un flow publié à tous les utilisateurs :
+
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
 ```
 
 Pour remplacer un paywall dans plusieurs placements sans perdre le routage par segment :
@@ -446,7 +671,7 @@ Pour remplacer un paywall dans plusieurs placements sans perdre le routage par s
 
 3. Remplacez les valeurs `paywall_id` correspondantes côté client.
 
-4. Réécrivez le payload modifié :
+4. Renvoyez le payload modifié :
 
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'

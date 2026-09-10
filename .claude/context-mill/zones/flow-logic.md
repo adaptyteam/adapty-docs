@@ -118,7 +118,7 @@ or developer can see and click.
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
-| convert-paywall-to-flow | migration | marketer, dev | 3 | tutorial |
+| convert-paywall-to-flow | migration | marketer, dev | 4 | tutorial |
 | copy-flows | — | marketer, dev | 2 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |

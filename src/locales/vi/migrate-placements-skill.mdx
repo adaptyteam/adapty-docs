@@ -1,0 +1,150 @@
+---
+title: "Kỹ năng Agent để migrate placement sang flow"
+description: "Cài đặt kỹ năng migrate-placements để công cụ AI của bạn chuyển ứng dụng từ paywall placement sang flow placement, mỗi placement cũ tương ứng một placement mới."
+metadataTitle: "Kỹ năng Agent Migrate Placement | Flow & Paywall Builder | Tài liệu Adapty"
+---
+
+Migrate placements skill ​ chuyển một ứng dụng đang chạy trên paywalls sang flows. Trỏ công cụ AI coding của bạn vào tài khoản và nó sẽ đọc từng placement thông qua [Adapty CLI](developer-cli-quickstart), tính toán xem migration cần bao nhiêu flow, rồi tạo một flow placement mới cho mỗi paywall placement bạn muốn chuyển. Kết quả trả về là một bảng ánh xạ từ placement ID cũ sang placement ID mới, và một lần gọi duy nhất mà ứng dụng của bạn cần thay đổi.
+
+**Nó tạo placement mới thay vì chuyển đổi.** Loại nội dung của một placement được cố định ngay khi bạn tạo, vì vậy một paywall placement không thể trở thành flow placement — xem [Tạo placement mới cho flow của bạn](migrate-to-flows#create-a-new-placement-for-your-flow). Mỗi flow placement mới sẽ chạy song song với paywall placement mà nó thay thế, và placement cũ vẫn tiếp tục hoạt động cho đến khi ứng dụng của bạn được cập nhật.
+
+Kỹ năng này không thiết kế nội dung flow — đó là nhiệm vụ của [kỹ năng flow-generator](flow-generator-skill) — và cũng không viết code ứng dụng của bạn, phần đó do [kỹ năng tích hợp SDK](manage-adapty-with-ai#skill-based-integration) cho nền tảng của bạn đảm nhận. Kỹ năng này chỉ đọc các placement paywall của bạn và không bao giờ chỉnh sửa chúng.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- **Một công cụ AI hỗ trợ skill**: Claude Code, GitHub Copilot CLI, OpenAI Codex và Gemini CLI đều hoạt động được.
+- **Một flow cho mỗi paywall bạn đang chuyển đổi, hoặc kế hoạch để có được flow đó**: Skill sẽ hỏi từng paywall lấy flow từ đâu, và một trong các lựa chọn là một thao tác bạn thực hiện trên dashboard. Xem [Nội dung flow đến từ đâu](#where-the-flow-content-comes-from).
+- **Adapty SDK v4 trong lộ trình của bạn**: Flow chỉ chạy được trên SDK v4 trở lên, vì vậy quá trình migration sẽ hoàn tất khi bạn phát hành app. Cho đến khi bản phát hành đó ra mắt, những gì skill tạo ra sẽ chưa đến được tay người dùng.
+
+## Cài đặt skill \{#install-the-skill\}
+
+migrate-placements được đóng gói trong plugin `adapty-skills` ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) cùng với flow-generator và flow-audit — chỉ cần cài đặt một lần là bạn có tất cả các skill trong plugin.
+
+:::tip
+**Đã cài đặt plugin cho một Adapty skill khác rồi? Bạn đã có skill này.** Plugin tự cập nhật, vì vậy migrate-placements sẽ có mặt trong phiên làm việc tiếp theo của bạn mà không cần làm gì thêm.
+:::
+
+Để cài đặt lần đầu trong Claude Code:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Sau đó chạy `/reload-plugins` để kích hoạt các skill. Với các công cụ AI coding khác, làm theo [hướng dẫn cài đặt của flow-generator](flow-generator-skill#install-the-skill) — cùng repo, cùng lệnh. Các cách đó sao chép skill vào đúng vị trí thay vì cài plugin, vì vậy hãy chạy lại nếu có skill mới được thêm kể từ lần cài đặt trước.
+
+Sau đó yêu cầu dùng nó — `/migrate-placements` trong các công cụ ánh xạ lệnh slash tới skill, hoặc "Use the migrate-placements skill" trong những công cụ không hỗ trợ.
+
+## Ví dụ về prompt \{#example-prompts\}
+
+#### Di chuyển các placement đang phục vụ người dùng \{#move-the-placements-that-serve-users\}
+
+```
+Migrate the active paywall placements in my app to flows. Skip the inactive
+ones for now and tell me how many you left out.
+```
+
+#### Tái sử dụng các flow bạn đã chuyển đổi \{#reuse-the-flows-you-already-converted\}
+
+```
+Migrate my paywall placements to flows. I've already converted three of the
+paywalls with Move to new builder — reuse those flows instead of building new ones.
+```
+
+#### Thử nghiệm trên các placement ít hoạt động trước \{#rehearse-on-the-quiet-placements-first\}
+
+```
+Start with my inactive paywall placements so I can watch the whole thing run
+without exposing users, then do the live ones.
+```
+
+#### Migrate một khu vực ứng dụng
+
+```
+Migrate only the four onboarding placements in my app, not the in-app upsells.
+Show me the placement IDs you'd create before you create anything.
+```
+
+## Cách hoạt động \{#how-it-works\}
+
+Tám giai đoạn, và chỉ giai đoạn thứ bảy mới ghi dữ liệu vào tài khoản của bạn.
+
+1. **Kiểm tra và chuẩn bị.** Cài đặt hoặc cập nhật [Adapty CLI](developer-cli-quickstart), xác nhận đăng nhập Adapty và đọc app ID của bạn.
+2. **Kiểm kê.** Đọc toàn bộ placement trong ứng dụng, phân trang đến cuối danh sách thay vì chỉ tin vào trang đầu tiên.
+3. **Phân loại và nhóm.** Sắp xếp từng đối tượng thành: có thể migrate, đã dùng flow, hoặc không cần chuyển — rồi nhóm các đối tượng có thể migrate theo paywall mà chúng đang phục vụ. Đó chính là kế hoạch flow: **một flow cho mỗi paywall riêng biệt**, dùng chung cho mọi placement đang sử dụng paywall đó, giúp bạn chỉ cần chỉnh một flow thay vì năm bản sao.
+4. **Đặt hai câu hỏi.** Migrate bao nhiêu trong tài khoản, và nội dung mỗi flow lấy từ đâu. Xem [Nội dung flow đến từ đâu](#where-the-flow-content-comes-from).
+5. **Xuất bản các flow.** Với paywall chưa có flow, skill sẽ tạo mới, lưu config vào đó, xuất bản và chờ trạng thái chuyển thành `published`. Flow đã xuất bản thì được ghi nhận nguyên trạng. Bước xuất bản quan trọng vì flow ở trạng thái draft không thể gắn vào placement.
+6. **Hiển thị cổng xác nhận.** Danh sách đầy đủ các placement ID dự kiến sẽ tạo, và những gì chưa hoàn thành.
+7. **Tạo các placement.** Chạy lệnh `placements create` cho từng paywall placement trong phạm vi, sau khi bạn xác nhận.
+8. **Báo cáo và bàn giao.** Bảng ánh xạ cũ-sang-mới, và thay đổi cần thực hiện trong SDK cho đội phát triển.
+
+Proposed IDs follow your existing ones — `main` becomes `main-flow` — and each is verified against every placement ID already in the app.
+
+## Nội dung flow đến từ đâu \{#where-the-flow-content-comes-from\}
+
+Một placement mới cần có một flow đã được xuất bản để hoạt động, và kỹ năng này hỏi bạn từng paywall sẽ đi theo hướng nào. Nó không bao giờ tự chọn thay bạn, vì bốn hướng khác nhau về những gì người dùng của bạn sẽ thấy.
+
+| Route | Kết quả | Khi nào phù hợp |
+|---|---|---|
+| **Reuse** | Skill gắn một flow bạn đã có. Nếu flow đó vẫn là bản nháp, skill sẽ xuất bản nó trước. | Bạn đã xây dựng hoặc chuyển đổi flow. Được ưu tiên đề xuất nếu có flow phù hợp. |
+| **Convert** | Bạn nhấn **Move to new builder** trên trang paywall; skill chờ, đọc lại tài khoản của bạn và đọc flow vừa được tạo ra. | Paywall được xây dựng bằng Paywall Builder cũ. Xem [Chuyển đổi paywall thành flow](convert-paywall-to-flow). |
+| **Build** | Skill chuyển paywall cho [flow-generator](flow-generator-skill) để thiết kế flow. | Không thể tái tạo paywall qua chuyển đổi, hoặc bạn muốn thiết kế lại màn hình thay vì sao chép. |
+| **Stub** | Skill xuất bản một flow tối giản một màn hình để placement có thứ gì đó để hiển thị. | Phương án cuối cùng. Stub hiển thị màn hình giữ chỗ cho người dùng, vì vậy cần có sự xác nhận rõ ràng từ bạn. |
+
+Kỹ năng này tìm kiếm các flow hiện có trước khi tạo bất kỳ thứ gì, và khớp chúng với paywall của bạn **chỉ dựa trên tên** — Adapty không lưu lại paywall nào đã tạo ra flow đó. Vì vậy, mỗi ứng viên được tìm thấy đều là một đề xuất để bạn xác nhận, và một flow bạn đã đổi tên sẽ không được tìm thấy. Hãy xác nhận dựa trên [danh sách flow](https://app.adapty.io/flows) của bạn — CLI không có lệnh xóa flow, nên một flow được tạo nhầm là flow bạn phải xóa trong dashboard.
+
+Whether **Move to new builder** is available on a given paywall isn't something the skill can read — the button appears only on legacy Paywall Builder paywalls, and the CLI doesn't report which builder made a paywall. The skill describes the button and where to look for it; you report back what you found.
+
+## Những gì bạn phê duyệt \{#what-you-approve\}
+
+Trước khi tạo bất kỳ thứ gì, skill sẽ in ra một khối thông tin để bạn đọc và trả lời. Khối này nêu tên ứng dụng của bạn, số lượng placement sắp được tạo, và toàn bộ bảng ánh xạ cũ-sang-mới thay vì chỉ hiển thị số lượng tóm tắt.
+
+Khối tương tự cũng nêu rõ những gì câu trả lời "có" **không** thực hiện:
+
+- **Các placement paywall của bạn không bị ảnh hưởng**: Chúng vẫn hoạt động bình thường, đây cũng chính là cách rollback — không có gì thay đổi với người dùng cho đến khi app của bạn ship đoạn code mới, vì vậy không ship gì cả sẽ rollback lại migration.
+- **Người dùng chưa thấy thay đổi nào**: App của bạn phải gọi `getFlow` với placement ID mới ở chỗ hiện đang gọi cái cũ.
+- **Trả lời "Không" chỉ dừng các placement, không xóa flow**: Bất kỳ flow nào đã được tạo trong quá trình chạy vẫn còn trên tài khoản của bạn, và không có lệnh CLI nào xóa flow. Hướng dẫn sẽ cho biết số lượng và nơi cần xóa chúng.
+
+## Những gì bạn nhận được \{#what-you-get\}
+
+Quá trình chạy kết thúc với các số liệu thống kê — đã tạo, đã bỏ qua, và thất bại kèm lý do — rồi đến bảng mapping mà các developer của bạn sẽ làm việc dựa trên:
+
+| Placement paywall cũ | Placement flow mới |
+|---|---|
+| `onboarding_main` | `onboarding_main-flow` |
+| `paywall_settings` | `paywall_settings-flow` |
+
+Trong SDK v4, `getFlow` đọc cả flow placement lẫn paywall placement, nên app của bạn chỉ cần gọi một phương thức duy nhất — điểm khác biệt là placement ID, không phải phương thức. Hãy giao phần triển khai cho skill tích hợp SDK tương ứng với nền tảng của bạn: [iOS](adapty-sdk-integration-skill) · [Android](adapty-sdk-integration-skill-android) · [React Native](adapty-sdk-integration-skill-react-native) · [Flutter](adapty-sdk-integration-skill-flutter) · [Unity](adapty-sdk-integration-skill-unity) · [Kotlin Multiplatform](adapty-sdk-integration-skill-kmp) · [Capacitor](adapty-sdk-integration-skill-capacitor).
+
+Hãy giữ cả hai placement hoạt động cho đến khi tỷ lệ người dùng nâng cấp lên v4 đủ cao. Những người dùng đang dùng các phiên bản cũ đã có placement ID cũ được biên dịch sẵn trong ứng dụng và không thể truy cập flow cho đến khi họ cập nhật, vì vậy mỗi placement được đo bằng chỉ số riêng trong khi cả hai cùng chạy — hãy so sánh chúng như các cohort riêng biệt. [Migrate sang flow](migrate-to-flows) trình bày toàn bộ quá trình chuyển đổi.
+
+## Những gì nó sẽ không làm \{#what-it-wont-do\}
+
+- **Chuyển đổi một placement tại chỗ**: Không có thao tác như vậy. Adapty từ chối thay đổi loại, vì vậy mọi migration đều là một placement mới.
+- **Dùng lại ID placement cũ**: ID placement là duy nhất trong toàn bộ ứng dụng, bất kể loại nào, vì vậy placement flow mới cần một ID mà không có placement nào khác đang dùng — kể cả placement paywall mà nó thay thế.
+- **Chạm vào bất kỳ thứ gì đã tồn tại**: Không có placement, paywall hay flow nào hiện có bị chỉnh sửa hoặc xóa. Kỹ năng chỉ đọc chúng và tạo bên cạnh.
+- **Tạo một placement mà không có sự đồng ý của bạn**: Mọi ID được đề xuất đều phải qua [cổng phê duyệt](#what-you-approve) trước.
+- **Xây dựng flow thứ hai cho một paywall đã có flow**: Không phải nếu không có bạn từ chối dùng lại flow đang có, vì bản trùng lặp là một flow bạn phải tự tay xóa.
+- **Viết code ứng dụng của bạn**: Quá trình kết thúc tại bước bàn giao.
+
+## Hạn chế \{#limitations\}
+
+#### Một đối tượng có nhiều phân khúc cần được xử lý trước \{#an-audience-with-several-segments-has-to-be-resolved-first\}
+
+Một đối tượng nhắm mục tiêu đến nhiều hơn một [phân khúc](segments) có thể đọc được nhưng không thể ghi lại, vì vậy skill không thể tái tạo nó trong một placement mới. Skill sẽ báo cáo những placement đó là bị chặn và giải thích lý do, đồng thời sẽ không đề xuất tách hoặc bỏ một phân khúc — vì điều đó sẽ thay đổi ai nhìn thấy gì, đây là quyết định của bạn. Hãy xử lý chúng trên dashboard, và phần còn lại của quá trình migration sẽ tiếp tục mà không có chúng.
+
+#### Đối tượng trong A/B test không hiển thị với skill \{#ab-test-audiences-arent-visible-to-the-skill\}
+
+Khi đọc một placement, API chỉ trả về các đối tượng paywall và flow, và sẽ bỏ qua các loại khác một cách lặng lẽ. Đối tượng trong [A/B test](ab-tests) là một trong số đó, và trong response cũng không có gì cho biết một mục đã bị bỏ qua, nên không có cách nào phát hiện được. Số lượng hiển thị chỉ mô tả những gì API trả về. Với bất kỳ placement nào bạn biết đang chạy A/B test, hãy xem lại danh sách đối tượng trên dashboard — placement flow mới sẽ không mang theo đối tượng mà hệ thống chưa từng thấy.
+
+#### Chưa có gì được xác minh đầu cuối cho đến khi bạn triển khai \{#nothing-is-verified-end-to-end-until-you-ship\}
+
+Kỹ năng này chỉ kiểm tra đến mức "flow đã được publish và placement đã tồn tại." Việc flow có hoạt động đúng với người dùng thực hay không là câu hỏi riêng — hãy chạy [flow-audit](flow-audit-skill) trên từng flow trước khi publish, và thực hiện mua thử trong sandbox trên placement mới sau khi ứng dụng gọi đến nó.
+
+## Tiếp theo \{#whats-next\}
+
+- [Migrate sang flow](migrate-to-flows) — toàn bộ quá trình migration, bao gồm cả việc nâng cấp SDK.
+- [Chuyển đổi paywall thành flow](convert-paywall-to-flow) — thao tác nhấn **Move to new builder** mà route Convert phụ thuộc vào.
+- [Skill flow-generator](flow-generator-skill) — xây dựng và chỉnh sửa nội dung flow mà skill này gắn vào.
+- [Skill flow-audit](flow-audit-skill) — kiểm tra xem flow đã sẵn sàng cho môi trường production chưa trước khi đưa vào placement.
+- [Tài liệu tham khảo Adapty CLI](developer-cli-reference#placements) — các lệnh placement mà skill thực thi.

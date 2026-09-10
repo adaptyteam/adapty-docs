@@ -5,8 +5,8 @@ context-mill skill's lookup mode to expand search terms. Hand-curated —
 add a row whenever a lookup misses articles because of naming drift.
 
 **Which file does a new row belong in?** This one holds equivalences that hold
-**across the whole corpus** — a rename that touched every zone (Flow ↔ Paywall
-Builder), or a word the whole product uses two ways (access level ↔ entitlement).
+**across the whole corpus** — a rename that touched every zone (Flow & Paywall
+Builder ↔ Flow Builder ↔ Paywall Builder), or a word the whole product uses two ways (access level ↔ entitlement).
 A zone brief's *Ticket language* section holds how tickets phrase requests
 **inside one area**, mapped to the article that answers them. Rule of thumb: if
 the row would be true in a dozen briefs, it goes here; if it names a destination,
@@ -26,11 +26,10 @@ will disagree with itself later.
 articles say **"old Paywall Builder"** in ~124 places against 13 "legacy" — the rename PR
 deliberately left that alone rather than re-sweep 70 files. So write "legacy" in new prose,
 but expect "old builder" in what you grep, and never treat a hit on either as a defect.
-`entitlements` is still RevenueCat's word; Adapty says **access levels**.
 
 | Task/product language | Doc language / symbols |
 |---|---|
-| Flow, Flow Builder, flow builder | Adapty Flow & Paywall Builder, `AdaptyUI`, builder, `packages/unified-builder` |
+| Flow & Paywall Builder, Flow Builder, Paywall Builder, onboarding builder, builder | **Flow & Paywall Builder** is the current product name (owner instruction, 2026-09-03). "Flow Builder" and "Paywall Builder" are the older names the corpus still carries — match them when searching, never write them in new text. Symbols: `AdaptyUI`, `AdaptyFlow` |
 | legacy Paywall Builder | old Paywall Builder, old builder, Paywall Builder, onboarding builder, `@adapty/builder` |
 | manual paywall | custom paywall, remote config paywall, classic paywall, paywall you implement yourself |
 | paywall (v4 SDKs) | flow, `AdaptyFlow`, placement |

@@ -29,15 +29,15 @@ Adapty Unity SDK 4.1 — первый стабильный релиз ветки
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
 | `AdaptyEventListener` | `IAdaptyEventListener`, с новым обязательным методом `OnReceivePromotedPurchase` |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| Колбэки `PaywallViewDidPerformAction`, `PaywallViewDidAppear` и другие `PaywallView...` | Колбэки `FlowViewDidPerformAction`, `FlowViewDidAppear` и другие `FlowView...` |
+| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` и другие колбэки `PaywallView...` | `FlowViewDidPerformAction`, `FlowViewDidAppear` и другие колбэки `FlowView...` |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
-| Атрибуция Adapty включена автоматически | по умолчанию отключена — активируйте через `Builder.SetAdaptyAttributionEnabled(true)` |
-| Файл резервного пейвола скачан для версии 3.x | новый формат файла — скачайте файл повторно |
+| `Adapty.UpdateAttribution(data, source, ...)` со строковым `source` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` с `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` как `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` как `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+| Атрибуция Adapty включена автоматически | отключена по умолчанию — активируйте через `Builder.SetAdaptyAttributionEnabled(true)` |
+| Резервный файл загружен для версии 3.x | новый формат резервного файла — скачайте файл заново |
 | `Adapty.SetFallbackPaywalls(...)` (устарело в v3) | удалено — используйте `Adapty.SetFallback(fileName, ...)` |
 | `Builder.SetIDFACollectionDisabled(...)` (устарело в v3) | удалено — используйте `Builder.SetAppleIDFACollectionDisabled(...)` |
-| `paywall.Products` (список `AdaptyProductReference`) | удалено — используйте `ProductIdentifiers` или `VendorProductIds`, либо вызовите `GetPaywallProducts(flow)` для получения полных продуктов |
+| `paywall.Products` (список `AdaptyProductReference`) | удалено — используйте `ProductIdentifiers` или `VendorProductIds`, либо вызовите `GetPaywallProducts(flow)` для полного списка продуктов |
 | `AdaptyProductReference` | удалено как публичный тип — см. [Модель данных](#data-model) |
 | `paywall.RemoteConfigString` | удалено — используйте `flow.RemoteConfig?.Data` |
 
@@ -246,20 +246,38 @@ public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
 - Новый коллбэк `FlowViewDidReceiveAnalyticEvent` в `IAdaptyFlowsEventsListener` сообщает об аналитических событиях из флоу, начиная с события просмотра экрана для каждого экрана, который открывает пользователь. См. [Отслеживание просмотров экранов флоу](unity-flow-screen-views).
 - `AdaptyUI.OpenUrl(url, openIn, ...)` и `AdaptyUI.RequestAppReview(...)` — нативная обработка действий `open_url` и запросов на оценку приложения. Вызывайте `OpenUrl` из `FlowViewDidPerformAction`, чтобы сохранить стандартное поведение URL; `RequestAppReview` обеспечивает стандартный запрос оценки приложения, который флоу пока не инициируют.
 
-## Переименованные API внешней атрибуции \{#renamed-external-attribution-apis\}
+## Переименованные внешние API атрибуции \{#renamed-external-attribution-apis\}
 
-Начиная с SDK версии 4.1, API для передачи данных атрибуции от внешнего провайдера (Adjust, AppsFlyer, Branch, Tenjin или кастомного) переименованы в соответствии с нативными SDK. Устаревших псевдонимов нет, поэтому существующие вызовы перестают компилироваться до тех пор, пока вы их не переименуете:
+Начиная с версии SDK 4.1, API для передачи данных атрибуции от внешнего провайдера (Adjust, AppsFlyer, Branch, Tenjin или другого) переименованы в соответствии с нативными SDK, а тип провайдера изменён со строки на тип. Устаревших псевдонимов нет, поэтому существующие вызовы перестанут компилироваться до тех пор, пока вы их не обновите:
 
 | До 4.1 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` как `string` | `provider` как `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` как `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` как `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 
-Изменились только названия. Провайдер — та же строка, что и раньше (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), данные атрибуции по-прежнему принимаются в виде словаря или JSON-строки, а свойство профиля по-прежнему является `IReadOnlyList<string>`:
+Переименования метода недостаточно — замените аргумент provider в том же изменении:
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` содержит идентификатор, по которому бэкенд распознаёт провайдера. Доступны шесть готовых экземпляров: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin` и `Custom`. Если Adapty добавит нового провайдера после выхода этой версии SDK, создайте экземпляр вручную, передав его идентификатор: `new AdaptyExternalAttributionProvider("your_provider")` — он будет передан на бэкенд без изменений. Пробельные символы по краям обрезаются автоматически.
+
+Данные атрибуции передаются в виде **сериализованной JSON-строки**. Если у вас есть словарь, сначала сериализуйте его:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+На стороне профиля читайте применённые провайдеры через новый тип:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Атрибуция Adapty отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}

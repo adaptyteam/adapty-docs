@@ -1,0 +1,150 @@
+---
+title: "Placement'ları flow'lara taşıma için agent skill'i"
+description: "Migrate-placements skill'ini yükleyin; böylece AI kodlama aracınız uygulamanızı paywall placement'larından flow placement'larına taşır, eski her placement için bir yeni placement oluşturur."
+metadataTitle: "Placement'ları Taşıma Agent Skill'i | Flow & Paywall Builder | Adapty Dokümanları"
+---
+
+Migrate placements skill, bir paywall üzerinde çalışan uygulamayı flow'lara taşır. AI kodlama aracınızı hesabınıza yönlendirdiğinizde, [Adapty CLI](developer-cli-quickstart) aracılığıyla her placement'ı okur, migration için kaç flow gerektiğini hesaplar ve taşıdığınız her paywall placement'ı için yeni bir flow placement oluşturur. Geriye bir tablo döner: eski placement ID'sinden yeni placement ID'sine eşleme ve uygulamanızın değiştirmesi gereken tek çağrı.
+
+**Placement'ler dönüştürülmez, yeniden oluşturulur.** Bir placement'ın içerik türü oluşturulurken sabitlenir; bu nedenle bir paywall placement'ı hiçbir zaman flow placement'ına dönüştürülemez — bkz. [Flow'unuz için yeni bir placement oluşturun](migrate-to-flows#create-a-new-placement-for-your-flow). Her yeni flow placement'ı, yerini aldığı paywall placement'ıyla eş zamanlı çalışır; eski placement ise uygulamanız güncellemeyi yayınlayana kadar hizmet vermeye devam eder.
+
+Bu skill, flow içeriğini tasarlamaz — bunu [flow-generator skill](flow-generator-skill) yapar — ve uygulama kodunuzu yazmaz; bunu, platformunuz için [SDK entegrasyon skill'i](manage-adapty-with-ai#skill-based-integration) üstlenir. Paywall placement'larınızı okur ama hiçbirini düzenlemez.
+
+## Başlamadan Önce \{#before-you-start\}
+
+- **Skill'leri destekleyen bir AI kodlama aracı**: Claude Code, GitHub Copilot CLI, OpenAI Codex ve Gemini CLI'nın tümü çalışır.
+- **Taşıdığınız her paywall için bir flow veya oluşturmak için bir plan**: Skill, her paywall için flow'un nereden geleceğini sorar; cevaplardan biri kontrol panelinde yapacağınız bir tıklamadır. Bkz. [Flow içeriği nereden gelir](#where-the-flow-content-comes-from).
+- **Yol haritanızda Adapty SDK v4**: Flow'lar yalnızca SDK v4 ve sonrasında çalışır, bu nedenle migration bir uygulama sürümüyle tamamlanır. Bu sürüm yayınlanana kadar skill'in oluşturduğu hiçbir şey kullanıcılarınıza ulaşmaz.
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+migrate-placements, flow-generator ve flow-audit ile birlikte `adapty-skills` eklentisinde ([`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)) gelir — tek bir yüklemeyle eklentideki tüm skill'lere sahip olursunuz.
+
+:::tip
+**Başka bir Adapty skill'i için eklentiyi zaten yüklediniz mi? Bu skill de hazır.** Eklenti kendini günceller, dolayısıyla migrate-placements bir sonraki oturumunuzda herhangi bir şey yapmanıza gerek kalmadan kullanılabilir.
+:::
+
+Claude Code'a ilk kez yüklemek için:
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+Ardından skill'leri etkinleştirmek için `/reload-plugins` çalıştırın. Diğer AI kodlama araçları için [flow-generator'ın kurulum adımlarını](flow-generator-skill#install-the-skill) takip edin — aynı repo, aynı komutlar. Bu yöntemler, bir plugin kurmak yerine skill'leri doğrudan kopyalar; bu nedenle son kurulumunuzdan bu yana eklenen bir skill'i almak için komutları yeniden çalıştırın.
+
+Ardından isteyin — slash komutlarını skill'lere eşleyen araçlarda `/migrate-placements`, eşlemeyenlerde ise "Use the migrate-placements skill" yazın.
+
+## Örnek istemler \{#example-prompts\}
+
+#### Kullanıcılara hizmet veren placement'ları taşıyın \{#move-the-placements-that-serve-users\}
+
+```
+Uygulamamda aktif olan paywall placement'larını flow'lara geçir. Aktif
+olmayanları şimdilik atla ve kaç tanesini dışarıda bıraktığını söyle.
+```
+
+#### Zaten dönüştürdüğünüz flow'ları yeniden kullanın \{#reuse-the-flows-you-already-converted\}
+
+```
+Paywall placement'larımı flow'lara taşı. Üç paywallı zaten Move to new builder
+ile dönüştürdüm — yenilerini oluşturmak yerine o flow'ları yeniden kullan.
+```
+
+#### Önce sessiz placement'larda prova yapın \{#rehearse-on-the-quiet-placements-first\}
+
+```
+Önce aktif olmayan paywall placement'larımla başla, böylece kullanıcıları
+etkilemeden tüm süreci izleyebilirim; sonra aktif olanları yap.
+```
+
+#### Bir uygulama alanını taşı \{#migrate-one-app-area\}
+
+```
+Migrate only the four onboarding placements in my app, not the in-app upsells.
+Show me the placement IDs you'd create before you create anything.
+```
+
+## Nasıl çalışır \{#how-it-works\}
+
+Sekiz aşama vardır ve yalnızca yedinci aşama hesabınıza bir şey yazar.
+
+1. **Çözümle ve yokla.** [Adapty CLI](developer-cli-quickstart)'yı yükler veya günceller, Adapty girişinizi doğrular ve uygulama ID'nizi okur.
+2. **Envanter çıkar.** Uygulamadaki her placement'ı okur; yalnızca ilk sayfaya güvenmek yerine listenin sonuna kadar sayfalandırır.
+3. **Sınıflandır ve grupla.** Her kitleyi geçirilebilir, zaten bir flow üzerinde olan veya taşınacak bir şey olmayan şeklinde sıralar; ardından geçirilebilir olanları her birinin sunduğu paywall'a göre gruplar. Bu gruplama, flow planıdır: **her farklı paywall için bir flow**, onu kullanan her placement tarafından paylaşılır; böylece beş kopya yerine tek bir flow'u iyileştirirsiniz.
+4. **İki soru sorar.** Hesabın ne kadarının taşınacağı ve her flow'un nereden geleceği. Bkz. [Flow içeriği nereden gelir](#where-the-flow-content-comes-from).
+5. **Flow'ları yayımlar.** Henüz flow'u olmayan bir paywall için skill, bir flow oluşturur, ona bir config kaydeder, yayımlar ve durum `published` olarak görünene kadar bekler. Zaten yayımlanmış bir flow olduğu gibi kaydedilir. Yayımlama burada önemlidir çünkü taslak hâldeki bir flow, bir placement'a eklenemez.
+6. **Kapıyı gösterir.** Oluşturmayı önerdiği placement ID'lerinin tam listesini ve henüz gerçekleşmemiş olanları gösterir.
+7. **Placement'ları oluşturur.** Onayınızın ardından, kapsamdaki her paywall placement'ı için birer `placements create` çalıştırır.
+8. **Raporlar ve devreder.** Eskiden yeniye eşlemeyi ve geliştiricileriniz için SDK çağrısı değişikliğini sunar.
+
+Proposed IDs follow your existing ones — `main` becomes `main-flow` — and each is verified against every placement ID already in the app.
+
+## Flow içeriği nereden gelir? \{#where-the-flow-content-comes-from\}
+
+Yeni bir placement'ın sunabilmesi için yayımlanmış bir flow'a ihtiyacı vardır; bu beceri ise her paywall için hangi yolu izleyeceğini sorar. Dört yol kullanıcılarınızın göreceği içerik açısından birbirinden farklı olduğundan, seçimi hiçbir zaman sizin yerinize yapmaz.
+
+| Route | Ne olur | Ne zaman uygundur |
+|---|---|---|
+| **Reuse** | Skill, zaten sahip olduğunuz bir flow'u ekler. Eğer hâlâ taslak durumdaysa önce yayımlar. | Flow'u zaten oluşturmuş ya da dönüştürmüşsünüzdür. Aday bir flow varsa önce bu seçenek sunulur. |
+| **Convert** | Paywall'ın kendi sayfasındaki **Move to new builder** düğmesine tıklarsınız; skill bekler, hesabınızı yeniden okur ve oluşturulan flow'u alır. | Paywall, eski Paywall Builder ile oluşturulmuştur. Bkz. [Paywall'ı flow'a dönüştürme](convert-paywall-to-flow). |
+| **Build** | Skill, paywall'ı [flow-generator](flow-generator-skill)'a iletir; bu skill flow'u tasarlar. | Dönüşüm paywall'ı yeniden üretemiyorsa ya da ekranın kopyalanmak yerine yeniden tasarlanmasını istiyorsanız. |
+| **Stub** | Skill, placement'ın sunabileceği bir şeye sahip olması için tek ekranlı minimal bir flow yayımlar. | Son çare. Stub, kullanıcılarınıza bir yer tutucu gösterir; bu nedenle açık onayınızı gerektirir. |
+
+Araç, herhangi bir şey oluşturmadan önce mevcut flow'ları arar ve bunları paywall'larınızla **yalnızca isme göre** eşleştirir — Adapty'de bir flow'un hangi paywall'dan geldiğine dair herhangi bir kayıt tutulmaz. Bu nedenle bulunan her aday, onaylamanız gereken bir öneريdir; adını değiştirdiğiniz bir flow ise hiç bulunamaz. [Flow listenizle](https://app.adapty.io/flows) karşılaştırarak onaylayın — CLI'ın flow silen bir komutu yoktur, dolayısıyla yanlışlıkla oluşturulan bir flow'u kontrol panelinden siz kaldırmanız gerekir.
+
+**Yeni builder'a taşı** seçeneğinin belirli bir paywall'da mevcut olup olmadığını skill okuyamaz — bu düğme yalnızca eski Paywall Builder ile oluşturulmuş paywall'larda görünür ve CLI hangi builder'ın paywall'ı oluşturduğunu raporlamaz. Skill düğmeyi ve nerede aranacağını açıklar; siz de ne bulduğunuzu bildirirsiniz.
+
+## Ne onaylıyorsunuz \{#what-you-approve\}
+
+Herhangi bir şey oluşturulmadan önce, skill size okuyup yanıtlayabileceğiniz bir blok yazdırır. Bu blok uygulamanızın adını, oluşturulacak placement sayısını ve kısaltılmış bir sayı yerine tam eski-yeni tablosunu içerir.
+
+Aynı blok, bir "evet"in ne yapmadığını da belirtir:
+
+- **Paywall placement'larınız etkilenmez**: Rollback da bu demek — siz yeni çağrıyı içeren uygulamayı göndermediğiniz sürece kullanıcılar için hiçbir şey değişmez; hiçbir şey göndermemek migration'ı geri alır.
+- **Bu henüz kullanıcılara ulaşmaz**: Uygulamanızın, şu an eski placement ID'yi çağırdığı yerde yeni placement ID için `getFlow` çağırması gerekir.
+- **Hayır yanıtı placement'ları durdurur, flow'ları değil**: Çalışmanın zaten oluşturduğu tüm flow'lar hesabınızda kalır ve hiçbir CLI komutu flow silmez. Komut, silmeniz gereken sayıyı ve konumu belirtir.
+
+## Ne elde edersiniz \{#what-you-get\}
+
+Çalışma, sayılarla sona erer — oluşturulan, atlanan ve başarısız olanlar ile nedenleri — ardından geliştiricilerinizin çalışacağı eşleme gelir:
+
+| Eski paywall placement | Yeni flow placement |
+|---|---|
+| `onboarding_main` | `onboarding_main-flow` |
+| `paywall_settings` | `paywall_settings-flow` |
+
+SDK v4'te `getFlow`, flow placement'larını ve paywall placement'larını aynı şekilde okur; dolayısıyla uygulamanız her iki durumda da tek bir metot çağırır — değişen şey placement ID'si, metot değil. Uygulamayı, platform bazındaki çağrı noktalarına sahip olan ilgili platform SDK entegrasyon skill'ine bırakın: [iOS](adapty-sdk-integration-skill) · [Android](adapty-sdk-integration-skill-android) · [React Native](adapty-sdk-integration-skill-react-native) · [Flutter](adapty-sdk-integration-skill-flutter) · [Unity](adapty-sdk-integration-skill-unity) · [Kotlin Multiplatform](adapty-sdk-integration-skill-kmp) · [Capacitor](adapty-sdk-integration-skill-capacitor).
+
+Her iki placement'ı da v4 benimseme oranınız yeterince yükselene kadar canlı tutun. Halihazırda yayınlanmış sürümlerdeki kullanıcıların uygulamalarına eski placement ID'si derlenmiş durumdadır ve güncelleme yapana kadar flow'a erişemezler; bu nedenle her placement kendi metrikleriyle ölçülür ve her ikisi de çalışırken ayrı kohortlar olarak karşılaştırılır. [Flow'lara geçiş](migrate-to-flows) tüm geçiş sürecini kapsar.
+
+## Bunları yapmaz \{#what-it-wont-do\}
+
+- **Bir placement'ı yerinde dönüştürme**: Böyle bir işlem yoktur. Adapty tür değişikliğini reddeder, bu nedenle her migration yeni bir placement gerektirir.
+- **Eski placement ID'sini yeniden kullanma**: Placement ID'leri uygulamanızın tamamında benzersizdir; tür fark etmeksizin yeni flow placement'ı, yerini aldığı paywall placement'ı da dahil olmak üzere başka hiçbir placement'ın kullanmadığı bir ID'ye ihtiyaç duyar.
+- **Mevcut olanları değiştirme**: Mevcut hiçbir placement, paywall veya flow düzenlenmez ya da silinmez. Skill yalnızca bunları okur ve yanlarına yenisini oluşturur.
+- **Onayınız olmadan placement oluşturma**: Önerilen her ID, önce [onay aşamasından](#what-you-approve) geçer.
+- **Zaten bir flow'u olan bir paywall için ikinci bir flow oluşturma**: Mevcut flow'u yeniden kullanmayı siz reddetmediğiniz sürece bu yapılmaz; zira yinelenen flow'u elinizle kaldırmanız gerekirdi.
+- **Uygulama kodunuzu yazma**: Çalışma, devir teslimle sona erer.
+
+## Sınırlamalar \{#limitations\}
+
+#### Birden fazla segment içeren bir kitle önce çözümlenmelidir \{#an-audience-with-several-segments-has-to-be-resolved-first\}
+
+Birden fazla [segment](segments) hedefleyen bir kitle okunabilir ancak geri yazılamaz; bu nedenle araç, o kitleyi yeni bir placement'ta yeniden oluşturamaz. Bu placement'ları engellenmiş olarak raporlar ve nedenini açıklar; segment bölme veya düşürme seçeneği sunmaz — bu, kimin neyi göreceğini değiştirir ve bu karar size aittir. Bunları kontrol panelinde çözümleyin; geri kalanı migrasyon sürecinde sorunsuz devam eder.
+
+#### A/B testi kitleleri araç tarafından görülemez \{#ab-test-audiences-arent-visible-to-the-skill\}
+
+Bir placement okunduğunda yalnızca paywall ve flow kitlelerini döndürür; diğer türleri sessizce atlar. [A/B testi](ab-tests) kitlesi de bu kapsamdadır ve yanıtta herhangi bir girişin atlandığına dair bilgi bulunmaz; dolayısıyla skill bunu tespit edemez. Sayılar, API'nin döndürdüklerini yansıtır. A/B testi çalıştırdığını bildiğiniz herhangi bir placement için kontrol panelindeki kitle listesini gözden geçirin; yeni flow placement'ı, skill'in hiç görmediği bir kitleyi taşımayacaktır.
+
+#### Uçtan uca hiçbir şey siz yayına almadan önce doğrulanmaz \{#nothing-is-verified-end-to-end-until-you-ship\}
+
+Skill'in kendi kontrolleri "flow yayınlandı ve placement mevcut" noktasında durur. Flow'un gerçek bir kullanıcı için çalışıp çalışmadığı ayrı bir sorudur — yayınlamadan önce her flow için [flow-audit](flow-audit-skill) çalıştırın ve uygulama yeni placement'ı çağırdığında sandbox üzerinden bir satın alma yapın.
+
+## Sırada ne var \{#whats-next\}
+
+- [Flow'lara geçiş](migrate-to-flows) — SDK yükseltmesi dahil tüm geçiş süreci.
+- [Bir paywall'ı flow'a dönüştürme](convert-paywall-to-flow) — Convert rotasının bağlı olduğu **Move to new builder** tıklaması.
+- [flow-generator skill](flow-generator-skill) — bu skill'in eklediği flow içeriğini oluşturur ve düzenler.
+- [flow-audit skill](flow-audit-skill) — bir flow'un placement'a eklenmeden önce production'a hazır olup olmadığını kontrol eder.
+- [Adapty CLI referansı](developer-cli-reference#placements) — skill'in çalıştırdığı placement komutları.

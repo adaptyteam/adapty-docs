@@ -68,6 +68,7 @@ Yanıt parametreleri:
 :::warning
 **Not:** Hâlâ Apple'ın StoreKit v2.0'ın altındaki bir sürümünü ve Adapty SDK v2.9.0'ın altındaki bir sürümünü kullanıyorsanız, bunun yerine [Apple App Store paylaşılan sırrını](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem Apple tarafından kullanımdan kaldırılmıştır.
 :::
+
 ## Satın alma sırasında abonelik değiştirme \{#change-subscription-when-making-a-purchase\}
 
 Kullanıcı mevcut aboneliğini yenilemek yerine yeni bir abonelik seçtiğinde, bu sürecin işleyişi uygulama mağazasına göre değişir. Google Play'de abonelik otomatik olarak güncellenmez. Aşağıda açıklandığı gibi geçişi mobil uygulama kodunuzda yönetmeniz gerekir.
@@ -158,3 +159,36 @@ Adapty.activate(
     // handle the error
 }
 ```
+
+## App Store'dan uygulama içi satın almalar \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Tanıtılan uygulama içi satın almalar, SDK 4.1 sürümünden itibaren desteklenmekte olup **iOS 16.4** veya sonrasını gerektirir. iOS 16.4 altındaki cihazlarda uygulamanıza ulaşmazlar. Bu yalnızca iOS'a özgü bir özelliktir: Android'de listener hiçbir zaman tetiklenmez ve `makePromotedPurchase`, `AdaptyErrorCode.DEVELOPER_ERROR` döndürür.
+:::
+
+Bir kullanıcı App Store ürün sayfanızdan bir satın alma başlattığında ve işlem uygulamanıza aktarıldığında, SDK ürünü bir `OnPromotedPurchaseListener` aracılığıyla size iletir. Satın almayı tamamlamak uygulamanıza bağlıdır: ürünü `makePromotedPurchase` metoduna geçirin. Bu süreci siz kontrol ettiğiniz için, satın alma başlamadan önce kendi ekranınızı gösterebilirsiniz.
+
+Tanıtılan satın almaları desteklemek için listener'ı kaydedin ve satın almayı içinden tamamlayın:
+
+```kotlin showLineNumbers
+
+Adapty.setOnPromotedPurchaseListener(OnPromotedPurchaseListener { product ->
+    scope.launch {
+        Adapty.makePromotedPurchase(product)
+            .onSuccess { result -> /* process the purchase result */ }
+            .onError { error -> /* handle the error */ }
+    }
+})
+```
+
+:::warning
+Kayıtlı bir listener olmadan, tanıtım amaçlı satın alma hiçbir zaman tamamlanmaz: App Store ürünü uygulamanıza teslim eder ve bekler. `setOnPromotedPurchaseListener`'a `null` geçmek de tanıtım amaçlı satın almaların çalışmasını durdurur.
+:::
+
+Listener'ı uygulama başlangıcında, `Adapty.activate`'den hemen sonra kaydedin. Tanıtım amaçlı satın alma genellikle uygulamayı sıfırdan başlattığından, kaydınız çalışmadan önce SDK'ya ulaşabilir. SDK böyle bir satın almayı tutar ve siz kaydolur kaydolmaz iletir; yalnızca en son olanı saklar ve her satın alma tuttuğunda konsola bir uyarı yazar.
+
+Tanıtılan ürün bir abonelik teklifi içeriyorsa, SDK bunu satın alma sırasında otomatik olarak uygular. Teklif, iOS 18.0 ve sonrasında açığa çıkan App Store satın alma amacından okunur. iOS 16.4–17.x'te satın alma temel fiyat üzerinden gerçekleşir.
+
+`makePromotedPurchase` hiçbir satın alma parametresi almaz — tanıtılan bir ürün paywall'dan değil App Store'dan geldiğinden, paywall bağlamı taşımaz. `makePurchase` ile aynı `AdaptyPurchaseResult` değerini döndürür.
+
+`AdaptyPromotedProduct`, `vendorProductId`, `localizedTitle`, `localizedDescription`, `price`, `regionCode`, `isFamilyShareable` ve `AdaptyProductSubscription` türünde bir `subscription` içerir.
