@@ -211,7 +211,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | present-remote-config-paywalls-react-native | — | dev | 4 | react-native |
 | present-remote-config-paywalls-unity | — | dev | 4 | unity |
 | react-native-implement-paywalls-manually | entry | dev | 2 | react-native |
-| react-native-making-purchases | — | dev | 4 | react-native |
+| react-native-making-purchases | — | dev | 5 | react-native |
 | react-native-quickstart-manual | — | dev | 7 | react-native |
 | react-native-restore-purchase | — | dev | 0 | react-native |
 | react-native-troubleshoot-purchases | — | dev | 6 | react-native |
