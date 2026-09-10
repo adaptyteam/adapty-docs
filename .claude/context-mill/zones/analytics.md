@@ -108,7 +108,7 @@ invisible until someone's number looks wrong. So the question for a task here is
   **or** the flow topic, never both, and picks the flow topic as soon as the variation carries a
   `flow_id` — which a screen's child variation always does. So flow screen views lived only in
   `adapty_analytics_flow_events`, and every paywall-view metric (charts page + conversion v2's
-  View → Trial / View → Paid) silently understated its denominator for any app on Flow Builder. Funnels
+  View → Trial / View → Paid) silently understated its denominator for any app on flows. Funnels
   had compensated with their own union; nothing else had. ADP-7600 unions the two sources back together
   in `render_paywall_view_rows_query` in the same file. Verified by reading `origin/ADP-7600` against
   `origin/develop` in `dashboard-backend` — on `develop` the macro still reads

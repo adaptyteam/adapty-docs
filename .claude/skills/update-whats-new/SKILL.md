@@ -18,7 +18,7 @@ The page advertises **user-visible updates** — new features, new SDK releases,
 
 ## When NOT to use
 
-- The user wants to revise an existing entry's wording → don't. Published entries are a historical record; see "Release Notes Are a Historical Record" in the `editor` skill. Repair only technical breaks (dead links, missing images, malformed MDX).
+- The user wants to edit an existing entry → use the `editor` skill instead.
 - The user wants a per-PR or per-commit changelog → not this skill.
 
 ## Workflow

@@ -13,9 +13,26 @@ the row would be true in a dozen briefs, it goes here; if it names a destination
 it goes in that zone. Never write it in both — a duplicated row is a row that
 will disagree with itself later.
 
+## Canonical wording (use these when writing)
+
+| Write this | Not this |
+|---|---|
+| **Flows & paywalls** — the dashboard section, and the docs area | Flows, Flow Builder |
+| **Adapty Flow & Paywall Builder** — the current builder | Flow Builder, the new builder |
+| **legacy Paywall Builder** — the deprecating one | old Paywall Builder, new Paywall Builder, Paywall Builder v2/v3 |
+| **manual paywall** — a screen you implement yourself | custom paywall, remote config paywall, classic paywall |
+
+**The corpus does not match this yet.** As of the Flow & Paywall Builder rename, the
+articles say **"old Paywall Builder"** in ~124 places against 13 "legacy" — the rename PR
+deliberately left that alone rather than re-sweep 70 files. So write "legacy" in new prose,
+but expect "old builder" in what you grep, and never treat a hit on either as a defect.
+`entitlements` is still RevenueCat's word; Adapty says **access levels**.
+
 | Task/product language | Doc language / symbols |
 |---|---|
-| Flow, Flow Builder | Paywall Builder, onboarding builder, `AdaptyUI`, builder |
+| Flow, Flow Builder, flow builder | Adapty Flow & Paywall Builder, `AdaptyUI`, builder, `packages/unified-builder` |
+| legacy Paywall Builder | old Paywall Builder, old builder, Paywall Builder, onboarding builder, `@adapty/builder` |
+| manual paywall | custom paywall, remote config paywall, classic paywall, paywall you implement yourself |
 | paywall (v4 SDKs) | flow, `AdaptyFlow`, placement |
 | onboarding | `AdaptyOnboarding`, onboarding builder |
 | access level | premium access, entitlement, `accessLevels` |
