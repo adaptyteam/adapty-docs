@@ -6,7 +6,7 @@ metadataTitle: "Миграция на Adapty Kotlin Multiplatform SDK v4.1 | Д�
 
 Adapty Kotlin Multiplatform SDK 4.1 — это первый стабильный релиз ветки 4.x: версия 4.0 вышла только в бета, поэтому если вы используете 3.x, переходите сразу на 4.1. Это руководство охватывает всю миграцию: флоу, введённые в 4.0, и изменения версии 4.1.
 
-The 4.x line introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side. On top of that, 4.1 makes Adapty Attribution opt-in, renames the external attribution APIs and the product subscription type, and adds App Store promoted in-app purchases.
+Версия 4.x вводит флоу и соответствующим образом переименовывает API пейволов. Новые API работают как с Flow & Paywall Builder, так и со старым Paywall Builder — никаких изменений в настройках на стороне дашборда Adapty не требуется. Помимо этого, версия 4.1 переводит Adapty Attribution в режим opt-in, переименовывает API внешней атрибуции и тип подписки на продукт, а также добавляет поддержку продвигаемых встроенных покупок App Store.
 
 :::note
 Переходите с бета-версии 4.0? Обновите версию, и вам нужно ознакомиться только с пятью разделами: [Атрибуция Adapty отключена по умолчанию](#adapty-attribution-is-disabled-by-default), [переименованные API внешней атрибуции](#renamed-external-attribution-apis), [AdaptyPaywallProductSubscription → AdaptyProductSubscription](#adaptypaywallproductsubscription--adaptyproductsubscription), [встроенные покупки, продвигаемые в App Store](#app-store-promoted-in-app-purchases), и [выбор конкретного лейаута](#choosing-a-specific-layout). `hasViewConfiguration` также [возвращён в модель флоу](#data-model).
@@ -150,14 +150,14 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему логируется для того же варианта, поэтому существующие метрики воронок и A/B-тестов продолжают работать без изменений на дашборде.
+`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему регистрируется для того же варианта, поэтому существующие метрики воронки и A/B-тестов продолжают работать без изменений в дашборде.
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-Как и в v3, вызывать этот метод при отображении флоу или пейволов, отрисованных [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder), не нужно — Adapty отслеживает такие просмотры автоматически.
+Как и в v3, вызывать этот метод при отображении флоу или пейволов, отрисованных самим Adapty, не нужно — Adapty отслеживает такие просмотры автоматически.
 
 ## Отображение флоу \{#displaying-flows\}
 
@@ -166,7 +166,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 Переименуйте фабричный метод и передайте `AdaptyFlow`. Тип возвращаемого значения переименован с `AdaptyUIPaywallView` на `AdaptyUIFlowView`, но его методы (`present`, `dismiss`) и необязательные параметры (`loadTimeout`, `preloadProducts`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) остались прежними. Добавлен один новый необязательный параметр: `locale` — он заменяет `locale`, который раньше передавался в `getPaywall`. Подробнее см. в разделе [Получение флоу](#fetching-flows).
 
 :::note
-`customTimers` по-прежнему существует, но влияет только на пейволы Legacy Paywall Builder. [Таймер обратного отсчёта](flow-timer) флоу работает по настройкам, заданным в Flow Builder, поэтому флоу игнорирует всё, что вы передаёте здесь.
+`customTimers` по-прежнему существует, но влияет только на пейволы, созданные с помощью устаревшего Paywall Builder. Таймер обратного отсчёта [countdown timer](flow-timer) во флоу работает по настройкам, заданным во Flow & Paywall Builder, поэтому флоу игнорирует всё, что вы передаёте здесь.
 :::
 
 ```diff showLineNumbers
@@ -314,13 +314,13 @@ SDK 4.1 добавляет поддержку [встроенных покупо
 
 ## Выбор конкретного макета \{#choosing-a-specific-layout\}
 
-`createFlowView`, `createNativeFlowView` и `AdaptyUIFlowPlatformView` принимают новый необязательный параметр `customLayoutId`. Передайте его, чтобы отрендерить конкретный макет, заданный во Flow Builder, вместо того, который SDK выбирает автоматически исходя из типа устройства и размера экрана:
+`createFlowView`, `createNativeFlowView` и `AdaptyUIFlowPlatformView` принимают новый необязательный параметр `customLayoutId`. Передайте его, чтобы отобразить конкретный макет из конфигурации макетов флоу вместо того, который SDK выбирает автоматически в зависимости от типа устройства и размера экрана. Flow & Paywall Builder пока не поддерживает назначение пользовательских идентификаторов макетов, поэтому оставьте этот параметр неустановленным:
 
 ```kotlin showLineNumbers
 AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
 ```
 
-Если ни один макет не совпадает с указанным ID, флоу загружается без конфигурации вида. Параметр необязателен и по умолчанию равен `null`, поэтому существующие вызовы не затрагиваются.
+Если ни один макет не соответствует ID, флоу загружается без конфигурации отображения. Параметр необязателен и по умолчанию равен `null`, поэтому существующие вызовы не затрагиваются.
 
 ## Изменения поведения по умолчанию \{#default-behavior-changes\}
 
@@ -333,6 +333,6 @@ AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
 
 ## Устаревший API онбординга \{#onboarding-api-deprecation\}
 
-Устаревший API онбординга объявлен устаревшим в v4 в пользу [Flow Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из будущих релизов, поэтому запланируйте миграцию ваших онбордингов во Flow Builder.
+Устаревший API онбординга в v4 заменён [Flow & Paywall Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из будущих релизов, поэтому планируйте миграцию своих онбордингов на Flow & Paywall Builder.
 
 Устаревшие символы: `getOnboarding`, `getOnboardingForDefaultAudience`, `AdaptyUI.createOnboardingView`, `AdaptyUI.createNativeOnboardingView` и `AdaptyUIOnboardingsEventsObserver`.

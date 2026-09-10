@@ -16,24 +16,25 @@ Los códigos de configuración regional son complejos y pueden variar de una pla
 ## Estándar de códigos de idioma en Adapty \{#locale-code-standard-at-adapty\}
 
 Para los códigos de idioma, Adapty utiliza una versión ligeramente modificada del [estándar BCP 47](https://en.wikipedia.org/wiki/IETF_language_tag): cada código está formado por subetiquetas en minúsculas separadas por guiones. Algunos ejemplos: `en` (inglés), `pt-br` (portugués de Brasil), `zh` (chino simplificado), `zh-hant` (chino tradicional).
+
 ## Coincidencia de códigos de configuración regional \{#locale-code-matching\}
 
 En SDK v4, los flows y los onboardings hacen coincidir los códigos de configuración regional de forma diferente: los flows se localizan mediante el SDK en el dispositivo, mientras que los onboardings los localiza el servidor de Adapty.
 
-### Flows y paywalls del Paywall Builder
+### Flows y paywalls
 
-Un paywall creado en el Paywall Builder se entrega como flow en el SDK v4, por lo que la regla siguiente aplica a ambos.
+Un paywall que Adapty renderiza se entrega como un flow en el SDK v4, por lo que la regla siguiente aplica a ambos.
 
-La comparación es exacta. El SDK compara el código que pasas con los códigos de localización del flow carácter a carácter: no cambia las mayúsculas ni minúsculas, no reemplaza guiones bajos (`_`) por guiones (`-`) y no recurre al subtag de idioma. Para un flow con una localización `pt-br`, solo `pt-br` coincide: `pt-BR`, `pt_BR` y `pt-PT` no coinciden.
+La coincidencia es exacta. El SDK compara el código que pasas con los códigos de localización del flow carácter a carácter: no cambia las mayúsculas/minúsculas, no reemplaza guiones bajos (`_`) por guiones (`-`) y no recurre a la subetiqueta de idioma. Para un flow con una localización `pt-br`, solo `pt-br` coincide: `pt-BR`, `pt_BR` y `pt-PT` no funcionan.
 
-Cuando el código no coincide con ninguna localización, el flow se renderiza silenciosamente en su [idioma predeterminado](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — el SDK no devuelve un error ni registra ninguna advertencia.
+Cuando el código no coincide con ninguna localización, el flow se renderiza en silencio en su [configuración regional predeterminada](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) — el SDK no devuelve un error ni registra ninguna advertencia.
 
-Cuando el código coincide, Adapty combina la localización con la predeterminada: las cadenas y los recursos que no estén definidos en la localización coincidente se toman de la localización predeterminada.
+Cuando el código coincide, Adapty fusiona la localización con la predeterminada: las cadenas y recursos que no estén definidos en la localización encontrada se toman de la localización predeterminada.
 
-Omitir el código de idioma no es lo mismo que solicitar la localización predeterminada del flow: el SDK sustituye un `en` fijo. Un flow cuyo idioma predeterminado es `de` seguirá renderizándose en `en` si tiene una localización en `en`, y solo recurrirá a `de` cuando no la tenga.
+Omitir el código de idioma no equivale a solicitar la localización predeterminada del flow: el SDK sustituye un `en` fijo. Un flow cuyo idioma predeterminado es `de` se renderiza en `en` si tiene una localización `en`, y solo recurre a `de` cuando no la tiene.
 
 :::warning
-Pasa el código de idioma exactamente como está configurado en el dashboard: subtags en minúsculas separados por guiones. No pases un identificador de idioma de plataforma tal cual: en Android, `Locale.getDefault().toLanguageTag()` devuelve `pt-BR`; en iOS, `NSLocale.currentLocale.localeIdentifier` devuelve `pt_BR`. Ambos recurren a la localización predeterminada. Convierte el valor en tu app antes de pasarlo.
+Pasa el código de idioma exactamente como está configurado en el dashboard: subtags en minúsculas separados por guiones. No pases un identificador de configuración regional de plataforma tal cual: en Android, `Locale.getDefault().toLanguageTag()` devuelve `pt-BR`; en iOS, `NSLocale.currentLocale.localeIdentifier` devuelve `pt_BR`. Ambos recurren a la localización predeterminada. Convierte el valor en tu app antes de pasarlo.
 :::
 
 ### Onboardings
@@ -49,9 +50,9 @@ Esta forma, `pt_BR`, `pt-BR`, y `pt-br` se resuelven todas a la misma localizaci
 
 ## Implementación de localizaciones \{#implementing-localizations\}
 
-En SDK v4, no se pasa un código de configuración regional al obtener un flow — `getFlow` devuelve el flow con todas sus localizaciones, y Adapty aplica una cuando se construye la vista del flow.
+En SDK v4, no se pasa un código de idioma al obtener un flow — `getFlow` devuelve el flow con todas sus localizaciones, y Adapty aplica una cuando se construye la vista del flow.
 
-- **Flows creados en el builder**: el SDK no lee la configuración regional del dispositivo, así que resuélvela en tu app y pásala como parámetro `locale` de `createFlowView`. Es opcional — omítela y el flow se renderiza en `en`, o en su [configuración regional predeterminada](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) cuando el flow no tiene localización en `en`.
+- **Flows y paywalls renderizados por Adapty**: el SDK no lee el idioma del dispositivo, así que resuélvelo en tu app y pásalo como parámetro `locale` de `createFlowView`. Es opcional — si lo omites, el flow se renderiza en `en`, o en su [idioma predeterminado](add-paywall-locale-in-adapty-paywall-builder#set-the-default-locale) cuando el flow no tiene localización en `en`.
 
   ```kotlin showLineNumbers
   import com.adapty.kmp.AdaptyUI
@@ -107,9 +108,11 @@ Cuando Adapty recibe una llamada del SDK con el código de idioma y comienza a b
 4. Si tampoco se encuentra ninguna coincidencia, devolvemos el contenido para el idioma predeterminado del paywall
 
 De este modo, un dispositivo iOS que envió `'pt_BR'`, un dispositivo Android que envió `pt-BR`, y otro dispositivo que envió `pt-br` obtendrán el mismo resultado.
+
 ## Implementación de localizaciones: forma recomendada \{#implementing-localizations-recommended-way\}
 
 Si te estás preguntando sobre las localizaciones, lo más probable es que ya estés gestionando recursos de cadenas localizadas en tu proyecto. Si ese es el caso, te recomendamos incluir un par clave-valor con el código de locale de Adapty correspondiente en cada uno de tus archivos de recursos para las localizaciones que uses. Luego, extrae el valor de esa clave al llamar a nuestro SDK, así:
+
 ```kotlin showLineNumbers
 // 1. Add the Adapty locale code to your Compose Multiplatform resources
 
@@ -142,12 +145,15 @@ suspend fun fetchPaywall() {
     }
 }
 ```
+
 De este modo, tienes control total sobre qué localización se recuperará para cada usuario de tu app.
 
 Si no usas recursos de Compose Multiplatform, la misma idea aplica a cualquier biblioteca de localización que uses (por ejemplo, [moko-resources](https://github.com/icerockdev/moko-resources)): guarda el código de idioma de Adapty como una cadena en el bundle de recursos de cada idioma y léelo antes de llamar al SDK.
+
 ## Otra forma de implementar las localizaciones \{#implementing-localizations-the-other-way\}
 
 Puedes obtener resultados similares (aunque no idénticos) sin definir explícitamente códigos de idioma para cada localización. Esto implica extraer el código de idioma directamente del dispositivo, lo que requiere declaraciones `expect`/`actual`, ya que no existe una API de idioma compartida en `commonMain`:
+
 ```kotlin showLineNumbers
 // commonMain
 expect fun currentLocaleTag(): String
@@ -171,9 +177,12 @@ suspend fun fetchPaywall() {
     }
 }
 ```
+
 Ten en cuenta que no recomendamos este enfoque por varias razones:
+
 1. En iOS, el idioma preferido del usuario y el locale regional del dispositivo no son idénticos. `NSLocale.currentLocale.localeIdentifier` devuelve el locale regional, que puede diferir del idioma en que los usuarios leen tu app. Las apps iOS que usan archivos de cadenas localizadas dependen de la lógica de resolución de Apple para combinar ambos, lo que funciona de forma automática con el enfoque recomendado anteriormente.
 2. Es difícil predecir exactamente qué devolverá el dispositivo y si coincide con una localización de Adapty. El locale del dispositivo puede incluir extensiones o códigos regionales que no hayas configurado en Adapty; en ese caso, el SDK recurre a la coincidencia del primer subtag o, en último término, a `en`.
+
 Should you decide to use this approach anyway — make sure you've covered all the relevant use cases.
 
 </SDKv3>

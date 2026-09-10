@@ -6,13 +6,14 @@ metadataTitle: "Миграция на Adapty Capacitor SDK v4.1.1 | Докуме
 
 Adapty Capacitor SDK 4.1.1 — это текущий стабильный релиз ветки 4.x. Версия 4.0 вышла только в бета, поэтому если вы используете 3.x, переходите сразу на 4.1.1. Этот гайд охватывает полную миграцию: флоу, появившиеся в 4.0, и изменения, добавленные в 4.1.1.
 
-Версия 4.x вводит флоу и переименовывает API пейволов. Новые API работают как с новым Flow Builder, так и с существующим Paywall Builder — никаких изменений в настройках дашборда Adapty не требуется. Помимо этого, версия 4.1.1 делает Adapty Attribution опциональным, переименовывает метод внешней атрибуции, изменяет формат файла резервного пейвола и добавляет поддержку продвигаемых встроенных покупок в App Store.
+Версия 4.x вводит флоу и соответствующим образом переименовывает API пейволов. Новые API работают с флоу и по-прежнему работают с пейволами из старого билдера — никаких изменений в настройках дашборда Adapty не требуется. Помимо этого, версия 4.1.1 переводит Adapty Attribution в режим opt-in, переименовывает метод внешней атрибуции, изменяет формат резервного файла и добавляет поддержку продвигаемых встроенных покупок в App Store.
 
 :::note
 Пришли с бета-версии 4.0? Замените закреплённую бета-версию на [последний релиз](#installation), и вам нужно изучить только четыре раздела: [Атрибуция Adapty отключена по умолчанию](#adapty-attribution-is-disabled-by-default), [переименованные API внешней атрибуции](#renamed-external-attribution-apis), [резервные файлы](#fallback-files) и [продвигаемые встроенные покупки App Store](#app-store-promoted-in-app-purchases).
 :::
 
 ## Краткий справочник \{#quick-reference\}
+
 | v3 | v4.1.1 |
 |---|---|
 | Атрибуция Adapty включена автоматически | отключена по умолчанию — включите через `adaptyAttributionEnabled: true` |
@@ -42,6 +43,7 @@ Adapty Capacitor SDK 4.1.1 — это текущий стабильный рел
 
 
 ## Установка \{#installation\}
+
 ### Обновите пакет
 
 ```bash showLineNumbers
@@ -63,9 +65,11 @@ npx cap sync
 ```bash showLineNumbers
 npx cap add ios --packagemanager SPM
 ```
+
 - Для существующих приложений на базе CocoaPods: перенесите iOS-проект, следуя [руководству Capacitor по использованию SPM в существующем проекте](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
 
 Подробнее об установке см. в [Установке Adapty SDK](sdk-installation-capacitor).
+
 ## ⚠️ Атрибуция Adapty отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}
 
 :::warning
@@ -88,6 +92,7 @@ npx cap add ios --packagemanager SPM
 Если вы не используете атрибуцию Adapty, никаких изменений не требуется.
 
 ## Получение флоу \{#fetching-flows\}
+
 ### getPaywall → getFlow
 
 Возвращаемый тип меняется с `AdaptyPaywall` на `AdaptyFlow`, а опция `locale` переносится из вызова fetch в `createFlowView`; для пользовательских пейволов все локали возвращаются в `flow.remoteConfigs`:
@@ -115,17 +120,19 @@ npx cap add ios --packagemanager SPM
 - const products = await adapty.getPaywallProducts({ paywall });
 + const products = await adapty.getPaywallProducts({ flow });
 ```
-### Резервные файлы
 
-Формат [резервного файла](fallback-flows) изменился в ветке 4.x и снова в версии 4.1.1. Скачайте файл заново в **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и добавьте его в приложение, даже если вы уже скачивали его для бета-версии 4.0.
+### Резервные файлы \{#fallback-files\}
+
+Формат [резервного файла](fallback-flows) изменился в версии 4.0, а затем снова в 4.1.1. Скачайте файл заново в **[Placements](https://app.adapty.io/placements)** > **Fallbacks** и добавьте его в приложение, даже если вы уже скачивали его для бета-версии 4.0.
 
 :::warning
-Этот шаг не вызывает ошибок сборки. Если его пропустить, `setFallback` отклонит устаревший файл и все плейсменты лишатся резервного пейвола.
+Этот шаг не вызывает ошибки сборки. Если пропустить его, `setFallback` отклонит устаревший файл и все плейсменты лишатся резервного пейвола.
 :::
 
 ## Модель данных \{#data-model\}
 
 `getFlow` возвращает `AdaptyFlow` вместо `AdaptyPaywall`, и структура объекта изменилась:
+
 | Поле `AdaptyPaywall` v3 | Поле `AdaptyFlow` v4 | Действие |
 |---|---|---|
 | `remoteConfig?` (одно значение) | `remoteConfigs?: AdaptyRemoteConfig[]` (массив) | Флоу содержит один Remote Config на каждый настроенный язык. Получите нужный по пользователю: `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
@@ -157,18 +164,22 @@ npx cap add ios --packagemanager SPM
 - await adapty.openWebPaywall({ paywallOrProduct: paywall });
 + await adapty.openWebPaywall({ paywallOrProduct: flow.paywalls[0] });
 ```
+
 ## Отслеживание просмотров флоу \{#tracking-flow-views\}
+
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему фиксируется для той же вариации, поэтому метрики воронки и A/B-тестов продолжат работать без изменений в дашборде.
+`logShowPaywall` переименован в `logShowFlow` и теперь принимает `AdaptyFlow`. Событие по-прежнему логируется для той же вариации, поэтому существующие метрики воронки и A/B-тестов продолжают работать без изменений в дашборде.
 
 ```diff showLineNumbers
 - await adapty.logShowPaywall({ paywall });
 + await adapty.logShowFlow({ flow });
 ```
 
-Как и в v3, вызывать этот метод при отображении флоу или пейволов, созданных с помощью [Flow Builder](adapty-flow-builder) или [Paywall Builder](adapty-paywall-builder), не нужно — Adapty отслеживает эти просмотры автоматически.
+Как и в v3, вызывать этот метод при отображении флоу или пейволов, отрисованных Adapty, не нужно — Adapty отслеживает такие просмотры автоматически.
+
 ## Отображение флоу \{#displaying-flows\}
+
 ### createPaywallView → createFlowView
 
 Переименуйте фабричную функцию и передайте `AdaptyFlow`. Возвращаемый контроллер переименован с `PaywallViewController` на `FlowViewController`, но его методы (`present`, `dismiss`, `setEventHandlers`, `clearEventHandlers` и `showDialog`) остались прежними. Тип параметров переименован с `CreatePaywallViewParamsInput` на `CreateFlowViewParamsInput`:
@@ -185,19 +196,20 @@ npx cap add ios --packagemanager SPM
 :::note
 Представление флоу одноразовое: после вызова `dismiss()` оно уничтожается и обработчики событий очищаются — чтобы снова показать флоу, вызовите `createFlowView` заново.
 :::
+
 ### Новые параметры \{#new-parameters\}
 
 `CreateFlowViewParamsInput` сохраняет все параметры v3 (`prefetchProducts`, `loadTimeoutMs`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) и добавляет три новых:
 
 :::note
-`customTimers` по-прежнему существует, но влияет только на пейволы, созданные в Legacy Paywall Builder. Таймер обратного отсчёта флоу работает по настройкам, заданным в Flow Builder, поэтому флоу игнорирует значения, переданные в этом параметре.
+`customTimers` по-прежнему существует, но влияет только на пейволы, созданные в Legacy Paywall Builder. Таймер обратного отсчёта во флоу работает по настройкам, заданным во Flow & Paywall Builder, поэтому флоу игнорирует всё, что вы передаёте в этот параметр.
 :::
 
 | Параметр | Описание |
 |---|---|
-| `locale` | Локализация для отображения флоу. Перенесён сюда из `getPaywall` — см. [getPaywall → getFlow](#getpaywall--getflow). |
-| `customLayoutId` | Пользовательский ID макета, заданного во Flow Builder. Передайте его, чтобы отобразить конкретный макет вместо того, который SDK выбирает автоматически по типу устройства и размеру экрана. Если макет с таким ID не найден, флоу загружается без конфигурации представления. |
-| `android.enableSafeArea` | Управляет отступами безопасной зоны Android во время выполнения. Вложен под ключ `android`, по умолчанию равен `true`. |
+| `locale` | Локализация, с которой будет отображаться флоу. Параметр перенесён сюда из `getPaywall` — см. [getPaywall → getFlow](#getpaywall--getflow). |
+| `customLayoutId` | Пользовательский ID лейаута в конфигурации лейаутов флоу. Передайте его, чтобы отобразить конкретный лейаут вместо того, который SDK выбирает автоматически на основе типа устройства и размера экрана. Если лейаут с указанным ID не найден, вызов завершится ошибкой отсутствия конфигурации представления. Flow & Paywall Builder пока не назначает пользовательские ID лейаутов, поэтому оставьте этот параметр пустым. |
+| `android.enableSafeArea` | Управляет отступами безопасной зоны на Android в режиме выполнения. Находится внутри ключа `android`, по умолчанию равно `true`. |
 
 ```typescript showLineNumbers
 const view = await createFlowView(flow, {
@@ -215,6 +227,7 @@ const view = await createFlowView(flow, {
 - onRenderingFailed: (error) => { /* … */ },
 + onError: (error) => { /* … */ },
 ```
+
 Все остальные обработчики событий сохраняют свои имена. У одного изменилась сигнатура: `onAppeared` теперь принимает `(view)` вместо `()`, где `view` — это `FlowEventView`, описывающий появившееся представление, включая локализацию, с которой оно было построено. Существующие обработчики продолжат работать, так как игнорируют новый аргумент. Полный список см. в разделе [Обработка событий флоу и пейвола](capacitor-handling-events).
 
 В v4 также добавлены несколько возможностей, которые можно включить при необходимости:
@@ -276,12 +289,15 @@ SDK 4.1.1 добавляет поддержку [встроенных покуп
 ## Изменения в поведении по умолчанию \{#default-behavior-changes\}
 
 Эти изменения не вызывают ошибок компиляции, поэтому проверяйте их во время выполнения:
+
 - **`onAndroidSystemBack`**: По умолчанию поведение изменилось: вместо закрытия вью теперь она остаётся открытой. Чтобы вернуть прежнее поведение, верните `true` из обработчика.
 - **`onPurchaseCompleted`**: По умолчанию поведение изменилось: вместо закрытия вью (если пользователь не отменил покупку) теперь она всегда остаётся открытой. Чтобы вернуть прежнее поведение, верните `purchaseResult.type !== 'user_cancelled'` из обработчика.
 - **`onRestoreCompleted`**: По умолчанию поведение изменилось: вместо закрытия вью после успешного восстановления она теперь остаётся открытой. Чтобы вернуть прежнее поведение, верните `true` из обработчика.
 - **`onUrlPress`**: Теперь по умолчанию URL открывается через нативный слой с учётом настройки встроенного или внешнего браузера из дашборда. Переопределите обработчик, чтобы открывать URL самостоятельно.
 - **Вью одноразовые**: после вызова `dismiss()` вью уничтожается. Чтобы снова показать флоу, вызовите `createFlowView` заново.
+
 ## Удалённые API \{#removed-apis\}
+
 ### Удалённые экспорты
 
 Эти символы больше не экспортируются из `@adapty/capacitor`. Удалите их из импортов:
@@ -290,6 +306,7 @@ SDK 4.1.1 добавляет поддержку [встроенных покуп
 - **`ProductReference`**: Используйте `AdaptyProductIdentifier`, доступный в `flow.paywalls[i].productIdentifiers`.
 - **`AdaptyPaywallBuilder`**: Удалён. Флоу и пейволы рендерятся нативно.
 - **`AdaptyAndroidSubscriptionUpdateParameters`**: Используйте вложенную структуру параметров покупки `android` (см. ниже).
+
 ### activate: lockMethodsUntilReady
 
 `lockMethodsUntilReady` (уже устаревший no-op в v3) удалён. Уберите его из вызова `activate` — с ним код больше не компилируется:
@@ -298,11 +315,13 @@ SDK 4.1.1 добавляет поддержку [встроенных покуп
 - await adapty.activate({ apiKey: 'PUBLIC_SDK_KEY', params: { lockMethodsUntilReady: true } });
 + await adapty.activate({ apiKey: 'PUBLIC_SDK_KEY' });
 ```
+
 ### makePurchase: параметры Android \{#makepurchase-android-parameters\}
 
 Устаревший плоский Android-формат `MakePurchaseParamsInput` удалён — теперь используется только вложенная форма. Перенесите все параметры Android-покупки в `params: { android: { ... } }`. Полный пример см. в разделе [Совершение покупок](capacitor-making-purchases).
+
 ## Устаревший API онбординга \{#onboarding-api-deprecation\}
 
-Устаревший API онбордингов в v4 заменён [Flow Builder](adapty-flow-builder) и больше не рекомендуется к использованию. Он по-прежнему работает, но будет удалён в одном из следующих релизов — планируйте перенос ваших онбордингов в Flow Builder.
+Устаревший API онбординга объявлен устаревшим в v4 в пользу [Flow & Paywall Builder](adapty-flow-builder). Он по-прежнему работает, но будет удалён в одном из следующих релизов, поэтому запланируйте миграцию ваших онбордингов во Flow & Paywall Builder.
 
 Устаревшие символы: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` и `OnboardingViewController`.

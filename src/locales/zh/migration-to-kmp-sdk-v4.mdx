@@ -6,7 +6,7 @@ metadataTitle: "迁移至 Adapty Kotlin Multiplatform SDK v4.1 | Adapty 文档"
 
 Adapty Kotlin Multiplatform SDK 4.1 是 4.x 系列的第一个稳定版本——4.0 仅作为 Beta 版发布，因此如果你当前使用的是 3.x 版本，请直接迁移至 4.1。本指南涵盖完整迁移内容：4.0 中引入的流程变更，以及 4.1 在此基础上的进一步更新。
 
-4.x 版本引入了流程功能，并对付费墙 API 进行了相应重命名。新 API 同时兼容新版 Flow Builder 和现有的付费墙编辑工具，无需在 Adapty 看板侧进行任何配置变更。此外，4.1 版本将 Adapty Attribution 改为按需启用，重命名了外部归因 API 和产品订阅类型，并新增了 App Store 促销应用内购买支持。
+4.x 版本引入了流程功能，并相应地重命名了付费墙相关 API。新 API 同时兼容流程与付费墙编辑工具以及旧版付费墙编辑工具——Adapty 看板端无需任何配置变更。此外，4.1 版本将 Adapty Attribution 改为按需启用，重命名了外部归因 API 和产品订阅类型，并新增了 App Store 应用内购买推广功能。
 
 :::note
 从 4.0 beta 升级过来？更新版本号后，只需关注以下五个章节：[Adapty 归因默认禁用](#adapty-attribution-is-disabled-by-default)、[已重命名的外部归因 API](#renamed-external-attribution-apis)、[AdaptyPaywallProductSubscription → AdaptyProductSubscription](#adaptypaywallproductsubscription--adaptyproductsubscription)、[App Store 应用内购买推广](#app-store-promoted-in-app-purchases)，以及[选择特定布局](#choosing-a-specific-layout)。`hasViewConfiguration` 也已[回归到流程模型](#data-model)。
@@ -150,14 +150,14 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` 已重命名为 `logShowFlow`，现在接受一个 `AdaptyFlow` 参数。事件仍针对相同的实验变体进行记录，因此现有的漏斗和 A/B 测试数据图表无需更改看板配置即可继续使用。
+`logShowPaywall` 已重命名为 `logShowFlow`，现在接受一个 `AdaptyFlow`。事件仍记录到相同的实验变体，因此现有的漏斗和 A/B 测试数据图表无需更改看板即可继续使用。
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-与 v3 相同，当通过 [Flow Builder](adapty-flow-builder) 或[付费墙编辑工具](adapty-paywall-builder)渲染流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些浏览行为。
+与 v3 中一样，当展示由 Adapty 渲染的流程或付费墙时，无需手动调用此方法——Adapty 会自动追踪这些展示事件。
 
 ## 显示流程 \{#displaying-flows\}
 
@@ -166,7 +166,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
 重命名工厂方法，并传入 `AdaptyFlow`。返回的视图类型从 `AdaptyUIPaywallView` 改名为 `AdaptyUIFlowView`，但其方法（`present`、`dismiss`）和可选参数（`loadTimeout`、`preloadProducts`、`customTags`、`customTimers`、`customAssets`、`productPurchaseParams`）保持不变。新增了一个可选参数：`locale`，用于替代之前传给 `getPaywall` 的 `locale` 参数——详见[获取流程](#fetching-flows)。
 
 :::note
-`customTimers` 仍然存在，但它只影响旧版付费墙编辑工具的付费墙。流程的[倒计时器](flow-timer)按照 Flow Builder 中设置的行为运行，因此流程会忽略你在此处传入的任何内容。
+`customTimers` 仍然存在，但它只影响旧版付费墙编辑工具的付费墙。flow 的[倒计时器](flow-timer)按照 Flow & Paywall Builder 中设置的行为运行，因此 flow 会忽略你在此传入的任何内容。
 :::
 
 ```diff showLineNumbers
@@ -180,7 +180,7 @@ adapty-kmp-ui = { module = "io.adapty:adapty-kmp-ui", version.ref = "adapty-kmp"
       }
 ```
 
-如果你未使用 Compose Multiplatform，原生工厂方法的重命名方式相同：
+如果你不使用 Compose Multiplatform，原生工厂方法的重命名方式相同：
 
 ```diff showLineNumbers
 - AdaptyUI.createNativePaywallView(paywall)
@@ -314,13 +314,13 @@ SDK 4.1 新增对 iOS 上 [App Store 产品页面推广应用内购买](kmp-maki
 
 ## 选择特定布局 \{#choosing-a-specific-layout\}
 
-`createFlowView`、`createNativeFlowView` 和 `AdaptyUIFlowPlatformView` 新增了一个可选参数 `customLayoutId`。传入该参数可渲染在 Flow Builder 中定义的特定布局，而不是 SDK 根据设备类型和屏幕尺寸自动选择的布局：
+`createFlowView`、`createNativeFlowView` 和 `AdaptyUIFlowPlatformView` 新增了一个可选参数 `customLayoutId`。传入该参数可在流程的布局配置中渲染指定布局，而不使用 SDK 根据设备类型和屏幕尺寸自动选择的布局。目前 Flow & Paywall Builder 尚未支持分配自定义布局 ID，因此请保持该参数为空：
 
 ```kotlin showLineNumbers
 AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
 ```
 
-如果没有布局与该 ID 匹配，流程将在没有视图配置的情况下加载。该参数为可选项，默认值为 `null`，因此现有调用不受影响。
+如果没有任何布局与该 ID 匹配，流程将在没有视图配置的情况下加载。该参数是可选的，默认值为 `null`，因此现有调用不受影响。
 
 ## 默认行为变更 \{#default-behavior-changes\}
 
@@ -333,6 +333,6 @@ AdaptyUI.createFlowView(flow, customLayoutId = "tablet_landscape")
 
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
 
-旧版用户引导 API 在 v4 中已被弃用，取而代之的是 [Flow Builder](adapty-flow-builder)。该 API 目前仍可使用，但将在未来版本中移除，请尽快将您的用户引导迁移到 Flow Builder。
+旧版用户引导 API 在 v4 中已被弃用，请改用 [Flow & 付费墙编辑工具](adapty-flow-builder)。该 API 目前仍可使用，但将在未来版本中移除，请提前将您的用户引导迁移至 Flow & 付费墙编辑工具。
 
-已弃用的符号：`getOnboarding`、`getOnboardingForDefaultAudience`、`AdaptyUI.createOnboardingView`、`AdaptyUI.createNativeOnboardingView` 和 `AdaptyUIOnboardingsEventsObserver`。
+已弃用的符号：`getOnboarding`、`getOnboardingForDefaultAudience`、`AdaptyUI.createOnboardingView`、`AdaptyUI.createNativeOnboardingView` 以及 `AdaptyUIOnboardingsEventsObserver`。
