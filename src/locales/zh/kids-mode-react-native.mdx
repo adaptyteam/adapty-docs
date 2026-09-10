@@ -5,9 +5,11 @@ metadataTitle: "React Native SDK 中的儿童模式 | Adapty 文档"
 ---
 
 如果你的 React Native 应用面向儿童，则必须遵守 [Apple](https://developer.apple.com/kids/) 和 [Google](https://support.google.com/googleplay/android-developer/answer/9893335) 的相关政策。如果你正在使用 Adapty SDK，只需几个简单的步骤即可将其配置为符合这些政策，并顺利通过应用商店审核。
+
 :::important
-在 iOS 上，Kids Mode 通过 `KidsMode` Swift package trait 启用，该 trait 会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。此功能需要 v4 SDK（通过 Swift Package Manager 安装原生 iOS SDK）以及 **Xcode 26** 或更高版本。详见下方的[更新 iOS Podfile](#updates-in-your-ios-podfile)。
+在 iOS 上，儿童模式通过 `KidsMode` Swift package trait 启用，该 trait 会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。此功能需要 v4 SDK 以及 **Xcode 26** 或更高版本。应用该 trait 的方式取决于你的 iOS 项目所使用的包管理器——请参阅[在 iOS 项目中进行更新](#updates-in-your-ios-project)。
 :::
+
 ## 需要做什么？\{#whats-required\}
 
 你需要配置 Adapty SDK，禁用以下数据的收集：
@@ -15,7 +17,9 @@ metadataTitle: "React Native SDK 中的儿童模式 | Adapty 文档"
 - [IDFA（广告标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
 - [Android 广告 ID（AAID/GAID）](https://support.google.com/googleplay/android-developer/answer/6048248)（Android）
 - [IP 地址](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
 此外，我们建议谨慎使用 customer user ID。格式为 `<FirstName.LastName>` 的用户 ID 与使用邮箱一样，肯定会被视为收集个人数据。在儿童模式下，最佳实践是使用随机或匿名标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
+
 ## 启用儿童模式 \{#enabling-kids-mode\}
 
 ### 在 Adapty 看板中进行更新 \{#updates-in-the-adapty-dashboard\}
@@ -43,11 +47,19 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
-### 更新你的 iOS Podfile \{#updates-in-your-ios-podfile\}
 
-为了满足 App Store 儿童分类（或 COPPA 合规）的要求，原生 iOS SDK 必须使用 `KidsMode` Swift 包特性进行构建，该特性会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。React Native 通过 Swift Package Manager 安装原生 SDK，但 Swift Package Manager 无法传递包特性，因此 SDK 提供了一个 Podfile 辅助工具来帮你应用该特性。此步骤需要 **Xcode 26** 或更高版本。
+### 更新你的 iOS 项目 \{#updates-in-your-ios-project\}
 
-在 `ios/Podfile` 中，引入辅助工具并在 `react_native_post_install` **之后**调用它：
+对于 App Store 儿童分类（或 COPPA 合规），原生 iOS SDK 必须使用 `KidsMode` Swift package trait 进行构建，该选项会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。此步骤需要 **Xcode 26** 或更高版本。
+
+Swift Package Manager 无法通过任何集成方式传递 package traits，因此 Adapty React Native SDK 提供了一个工具来自动为你应用该 trait。请根据你的 iOS 项目配置方式进行选择，具体参见[安装 Adapty SDK](sdk-installation-react-native-pure#install-adapty-sdk)。
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="cocoapods" label="CocoaPods" default>
+
+SDK 附带了一个 Podfile 辅助工具。在 `ios/Podfile` 中，引入该辅助工具并在 `react_native_post_install` **之后**调用它：
+
 ```ruby showLineNumbers title="ios/Podfile"
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -73,12 +85,54 @@ end
 ```sh showLineNumbers title="Shell"
 cd ios && pod install
 ```
-要确认 Kids Mode 已激活，请检查 `adapty.activate(...)` 日志行是否显示 `kids_mode_enabled: true`。请将辅助调用永久保留在 `post_install` 中——React Native 每次执行 `pod install` 时都会重新创建 Swift Package 引用，辅助函数会在每次执行时重新应用该特性。
+
+在 `post_install` 中永久保留该辅助调用——React Native 每次执行 `pod install` 时都会重新创建 Swift package 引用，而辅助程序会在每次重新应用该特性。
+
+</TabItem>
+
+<TabItem value="spm" label="Swift Package Manager (experimental)">
+
+SDK 附带了 `adapty-spm-kids-mode` 命令。在你的应用 `package.json` 中将其配置为 postinstall 钩子：
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-spm-kids-mode enable"
+  }
+}
+```
+
+然后重新安装依赖项，以首次触发该钩子：
+
+```sh showLineNumbers title="Shell"
+npm install
+
+# or using yarn
+yarn install
+```
+
+该钩子需要永久保留在 `package.json` 中。React Native 的 Swift Package Manager 自动链接不识别 package traits，每次同步时都会重新生成聚合包，因此该命令会在 `node_modules` 中的 SDK 自身 manifest 里启用相应 trait——而每次安装都会替换 `node_modules`。
+
+启用或禁用 Kids Mode 后，在下次构建 iOS 之前，请先清除构建文件夹（在 Xcode 中执行 **Product → Clean Build Folder**）。
+
+:::note
+`adapty-spm-kids-mode enable` 在无法确认 Swift Package Manager 集成或检测到 CocoaPods 应用时（React Native 不会读取 `Package.swift`，因此该特性不会生效），会打印警告而不会导致安装失败。如果你的 iOS 项目不在执行安装命令的目录下，请通过 `--app-root=path/to/app` 指定路径。
+:::
+
+要关闭 Kids Mode，将钩子改为 `adapty-spm-kids-mode disable`。
+
+</TabItem>
+
+</Tabs>
+
+要确认 Kids Mode 是否已激活，请检查 `adapty.activate(...)` 的日志行是否显示 `kids_mode_enabled: true`。
+
 ### 更新 Android 清单 \{#updates-in-your-android-manifest\}
 
 :::note
 如果你的应用**仅面向儿童**，且编译目标为 Android 13（API 33）或更高版本，Google Play 要求你不得请求 `AD_ID` 权限。应用中的其他 SDK（如分析、归因或广告类 SDK）可能通过清单合并自动添加此权限。设置 `adIdCollectionDisabled` 可以阻止 Adapty 收集该 ID，但不会移除其他 SDK 已声明的权限。
 :::
+
 要移除该权限，请在 `android/app/src/main/AndroidManifest.xml` 的 `<manifest>` 元素内添加以下内容。`<manifest>` 元素必须声明 `xmlns:tools="http://schemas.android.com/tools"`。
 
 ```xml showLineNumbers title="AndroidManifest.xml"

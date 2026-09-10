@@ -1,12 +1,12 @@
 ---
 title: "Hiển thị paywall nhắm mục tiêu AA ngay lần khởi chạy đầu tiên trong React Native SDK"
-description: "Hiển thị paywall ngay lập tức và nâng cấp cho người dùng Apple Ads khi attribution được áp dụng trong React Native, sử dụng AdaptyProfile.appliedAttributionSources."
+description: "Hiển thị paywall ngay lập tức và nâng cấp cho người dùng Apple Ads sau khi attribution được áp dụng trong React Native, sử dụng AdaptyProfile.appliedExternalAttributionProviders."
 metadataTitle: "Hiển thị paywall nhắm mục tiêu AA ngay lần khởi chạy đầu tiên | React Native SDK | Tài liệu Adapty"
 ---
 
 Bài viết này áp dụng cho bản build iOS của ứng dụng. Attribution Apple Ads chỉ tồn tại trên iOS.
 
-Attribution của Apple Ads (AA) được nhận không đồng bộ sau khi `adapty.activate()` được gọi. Ở lần khởi chạy đầu tiên, attribution thường chưa có, nên `getPaywall` sẽ giải quyết theo đối tượng mặc định và người dùng Apple Ads sẽ bỏ lỡ paywall được phân khúc theo AA của bạn. Thay vì chờ attribution đến mới hiển thị paywall, hãy hiển thị paywall ngay lập tức và làm mới khi attribution AA được áp dụng — để người dùng Apple Ads nhận được biến thể nhắm mục tiêu còn những người khác thấy paywall ngay không cần chờ. `AdaptyProfile.appliedAttributionSources` cho bạn biết khi nào attribution AA đã được áp dụng.
+Attribution từ Apple Ads (AA) được nhận không đồng bộ sau khi gọi `adapty.activate()`. Ở lần khởi chạy đầu tiên, thường thì dữ liệu này chưa về kịp, nên `getFlow` sẽ phân giải theo đối tượng mặc định và người dùng Apple Ads sẽ bỏ lỡ paywall được nhắm mục tiêu theo AA. Thay vì chờ attribution về rồi mới hiển thị paywall, hãy hiển thị ngay một paywall và làm mới nó khi attribution AA được áp dụng — để người dùng Apple Ads nhận được biến thể đúng mục tiêu còn những người khác không phải chờ. `AdaptyProfile.appliedExternalAttributionProviders` cho bạn biết khi nào attribution AA đã được áp dụng.
 
 :::important
 Thuộc tính này chỉ báo cáo Apple Ads. Attribution từ các nhà cung cấp khác vẫn hiển thị trên hồ sơ người dùng và có thể dùng trong bộ lọc phân khúc, nhưng chưa hiển thị ở đây.
@@ -15,19 +15,19 @@ Thuộc tính này chỉ báo cáo Apple Ads. Attribution từ các nhà cung c�
 ## Trước khi bắt đầu \{#before-you-start\}
 
 Bạn cần:
-- Adapty React Native SDK phiên bản **3.17.1** trở lên.
+- Adapty React Native SDK **4.1** trở lên. Với phiên bản 3.17.1–4.0.x, thuộc tính profile có tên là `appliedAttributionSources` và flow được lấy bằng `getPaywall`.
 - Apple Ads đã được cấu hình cho ứng dụng trong Adapty. Xem [Apple Ads](apple-search-ads).
 
 ## Cách hoạt động \{#how-it-works\}
 
-Sau khi `adapty.activate()` được gọi, SDK sẽ yêu cầu attribution Apple Ads từ Apple ở chế độ nền và chuyển kết quả đến backend của Adapty. Khi AA trở thành nguồn attribution đang hoạt động cho hồ sơ người dùng, SDK sẽ gửi một `AdaptyProfile` được cập nhật đến listener `onLatestProfileLoad` của bạn, với `'apple_search_ads'` trong mảng `appliedAttributionSources`.
+Sau khi gọi `adapty.activate()`, SDK sẽ yêu cầu dữ liệu Apple Ads attribution từ Apple ở nền và chuyển kết quả về backend của Adapty. Khi AA trở thành nguồn attribution đang hoạt động cho hồ sơ người dùng, SDK sẽ gửi một `AdaptyProfile` đã cập nhật tới listener `onLatestProfileLoad` của bạn, với `'apple_search_ads'` trong mảng `appliedExternalAttributionProviders`.
 
 Điều này cho phép bạn tải paywall theo hai bước:
 
-1. Gọi `getPaywall` ngay lập tức. Vì chưa có attribution nào được áp dụng, Adapty sẽ xử lý yêu cầu theo đối tượng mặc định, nên người dùng thấy paywall ngay.
-2. Khi `'apple_search_ads'` xuất hiện, gọi lại `getPaywall`. Lúc này Adapty xử lý yêu cầu theo đối tượng Apple Ads và trả về paywall được nhắm mục tiêu, thay thế paywall trước đó.
+1. Gọi `getFlow` ngay lập tức. Vì chưa có attribution nào được áp dụng, Adapty sẽ xử lý yêu cầu dựa trên đối tượng mặc định, và người dùng sẽ thấy paywall ngay.
+2. Khi `'apple_search_ads'` xuất hiện, gọi lại `getFlow`. Lúc này Adapty xử lý yêu cầu dựa trên đối tượng Apple Ads và trả về paywall được nhắm mục tiêu, thay thế paywall đầu tiên.
 
-`appliedAttributionSources` có thể rỗng hoặc không có. Điều đó có nghĩa là một trong các trường hợp sau:
+`appliedExternalAttributionProviders` có thể rỗng hoặc vắng mặt. Điều đó có nghĩa là một trong các trường hợp sau:
 
 - Attribution từ Apple Ads chưa được xử lý cho hồ sơ người dùng này.
 - Chưa có attribution nào đến.
@@ -36,7 +36,7 @@ Sau khi `adapty.activate()` được gọi, SDK sẽ yêu cầu attribution Appl
 Trong cả ba trường hợp, bước 1 vẫn an toàn — Adapty xử lý yêu cầu dựa trên đối tượng phù hợp với trạng thái hồ sơ người dùng hiện tại, thường là đối tượng mặc định. Bước 2 chỉ chạy khi `'apple_search_ads'` xuất hiện.
 
 :::important
-Ở mỗi lần khởi chạy tiếp theo, hồ sơ người dùng đã được cache sẵn `'apple_search_ads'` trong `appliedAttributionSources`, nên lần gọi `getPaywall` đầu tiên đã trả về đúng paywall theo phân khúc Apple Ads — không có lần fetch thứ hai hay bất kỳ thay đổi nào hiển thị ra ngoài. Flow hai bước này chỉ xảy ra ở lần khởi chạy đầu tiên, khi attribution vẫn đang xử lý.
+Ở mỗi lần khởi động tiếp theo, hồ sơ người dùng đã được lưu cache sẽ mang sẵn `'apple_search_ads'` trong `appliedExternalAttributionProviders`, vì vậy lần gọi `getFlow` đầu tiên đã trả về paywall được phân khúc theo Apple Ads — không có lần tải thứ hai hay thay đổi nào hiển thị. Luồng hai bước chỉ quan trọng ở lần khởi động đầu tiên, khi attribution vẫn đang được xử lý.
 :::
 
 ## Triển khai \{#implementation\}
@@ -44,13 +44,13 @@ Trong cả ba trường hợp, bước 1 vẫn an toàn — Adapty xử lý yêu
 Hiển thị paywall ngay lập tức, sau đó lắng nghe `'apple_search_ads'` và làm mới paywall khi nó xuất hiện.
 
 1. **Kích hoạt SDK.** Xem [Cài đặt & cấu hình React Native SDK](sdk-installation-reactnative).
-2. **Tải và hiển thị paywall** bằng `getPaywall` như bình thường — không chặn chờ attribution.
-3. **Đăng ký nhận cập nhật hồ sơ người dùng** bằng `adapty.addEventListener('onLatestProfileLoad', …)` và theo dõi `'apple_search_ads'`. Khi nó xuất hiện, tải lại paywall và hiển thị paywall mới. Nếu bạn chưa thiết lập listener, xem [Lắng nghe cập nhật gói đăng ký](react-native-check-subscription-status#listen-to-subscription-updates):
+2. **Tải và hiển thị paywall** với `getFlow` như thông thường — không chờ đợi attribution.
+3. **Đăng ký nhận cập nhật hồ sơ người dùng** với `adapty.addEventListener('onLatestProfileLoad', …)` và theo dõi `'apple_search_ads'`. Khi nó xuất hiện, tải lại paywall và hiển thị paywall đã được cập nhật. Nếu bạn chưa thiết lập listener, xem [Lắng nghe cập nhật gói đăng ký](react-native-check-subscription-status#listen-to-subscription-updates):
 
 ```typescript
 const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
-  const targeted = await adapty.getPaywall(placementId);
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getFlow(placementId);
   // present the targeted paywall in place of the first one
 });
 
@@ -65,11 +65,11 @@ const subscription = adapty.addEventListener('onLatestProfileLoad', async profil
 
 ```typescript
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**
@@ -100,12 +100,12 @@ export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
   });
 }
 
-let paywall = await adapty.getPaywall(placementId);
+let flow = await adapty.getFlow(placementId);
 
 onAppleAdsAttribution(30_000)
-  .then(() => adapty.getPaywall(placementId))
+  .then(() => adapty.getFlow(placementId))
   .then(updated => {
-    paywall = updated;
+    flow = updated;
   })
   .catch(() => {
     console.log('Apple Ads attribution or loading failed');

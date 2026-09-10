@@ -56,7 +56,7 @@ Tham số:
 
 | Tham số | Mô tả |
 | :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Flow | Một đối tượng `AdaptyFlow` chứa các mã định danh của flow (`id`, `variationId`), tên, placement, các biến thể paywall (`paywalls`) và bất kỳ Remote Config nào (`remoteConfigs`). |
+| Flow   | Một đối tượng `AdaptyFlow` chứa các định danh của flow (`id`, `variationId`), tên, placement, các biến thể paywall (`paywalls`), Remote Config (`remoteConfigs`) và — từ SDK 4.1 trở lên — cờ `hasViewConfiguration`. |
 
 ## Lấy cấu hình view \{#fetch-the-view-configuration\}
 
@@ -64,9 +64,22 @@ Tham số:
 Hãy đảm bảo [xuất bản flow](builder-save-publish). Một flow có chỉnh sửa chưa được xuất bản sẽ có trạng thái **Dirty**, và placement của nó vẫn tiếp tục phục vụ phiên bản đã xuất bản gần nhất.
 :::
 
-Nếu placement được thiết kế trong **Flow & Paywall Builder** hoặc **old Paywall Builder**, Adapty sẽ tự động render giao diện cho bạn. Tạo view bằng `createFlowView`, sau đó [hiển thị flow hoặc paywall](react-native-present-paywalls). Nếu placement là custom paywall không có Builder UI, hãy [xử lý như Remote Config paywall](present-remote-config-paywalls-react-native).
+Nếu placement được thiết kế trong **Flow & Paywall Builder** hoặc **old Paywall Builder**, Adapty sẽ tự render giao diện cho bạn. Tạo view bằng `createFlowView`, sau đó [hiển thị flow hoặc paywall](react-native-present-paywalls). Nếu placement là paywall tùy chỉnh không có Builder UI, hãy [xử lý nó như một Remote Config paywall](present-remote-config-paywalls-react-native).
 
-Trong React Native SDK, gọi trực tiếp `createFlowView` — bạn không cần fetch cấu hình view trước.
+Từ SDK 4.1 trở đi, flag `hasViewConfiguration` trên flow giúp phân biệt hai loại trước khi bạn tạo view:
+
+```typescript showLineNumbers
+if (flow.hasViewConfiguration) {
+  const view = await createFlowView(flow);
+  await view.present();
+} else {
+  // Render your own screen from flow.remoteConfigs and flow.paywalls
+}
+```
+
+Trên phiên bản 4.0, flag này không còn nữa, và `createFlowView` sẽ ném ra `AdaptyError` nếu flow không có cấu hình view.
+
+Trong React Native SDK, hãy gọi `createFlowView` trực tiếp — bạn không cần fetch cấu hình view trước.
 
 :::warning
 Kết quả của phương thức `createFlowView` chỉ có thể được sử dụng một lần. Nếu bạn cần sử dụng lại, hãy gọi lại phương thức `createFlowView`. Gọi hai lần mà không tạo lại có thể dẫn đến lỗi `AdaptyUIError.viewAlreadyPresented`.
@@ -86,10 +99,11 @@ Tham số:
 | Tham số            | Bắt buộc | Mô tả                                                  |
 | :------------------- | :------- | :----------------------------------------------------------- |
 | **flow**             | bắt buộc | Đối tượng `AdaptyFlow` để lấy controller cho flow/paywall mong muốn. |
-| **locale**           | tùy chọn | Mã định danh của [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) để render view — ví dụ: `en` hoặc `pt-br`. Nếu bỏ qua, view sẽ render bằng `en`, hoặc theo ngôn ngữ mặc định của flow nếu flow không có `en`. Yêu cầu SDK 4.0.2 trở lên. Xem [Bản địa hóa và mã ngôn ngữ](react-native-localizations-and-locale-codes). |
-| **customTags**       | tùy chọn | Một dictionary các custom tag và giá trị tương ứng, dùng làm placeholder trong nội dung. Custom tag chỉ áp dụng cho [paywall dùng builder cũ](custom-tags-in-paywall-builder) — các flow dùng [variables](onboarding-variables) thay thế. |
-| **prefetchProducts** | tùy chọn | Bật để tối ưu hóa thời điểm hiển thị sản phẩm trên màn hình. Khi là `true`, AdaptyUI sẽ tự động tải các sản phẩm cần thiết. Mặc định: `false`. |
-| **android.enableSafeArea** | tùy chọn | Chỉ dành cho Android (bị bỏ qua trên iOS). Truyền dưới dạng object lồng nhau: `android: { enableSafeArea: true }`. Khi là `true`, flow view sẽ áp dụng padding safe-area. Mặc định là `true` cho kiểu trình bày modal (`createFlowView` + `present()`) và `false` cho component `AdaptyFlowView` nhúng vào. Giá trị mặc định phù hợp với hầu hết các trường hợp. |
+| **locale**           | tùy chọn | Mã định danh của [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) dùng để hiển thị giao diện — ví dụ: `en` hoặc `pt-br`. Nếu bỏ qua, giao diện sẽ hiển thị bằng `en`, hoặc theo bản địa hóa mặc định của flow nếu flow không có `en`. Yêu cầu SDK 4.0.2 trở lên. Xem [Bản địa hóa và mã locale](react-native-localizations-and-locale-codes). |
+| **customLayoutId**   | <p>tùy chọn</p><p>mặc định: `undefined`</p><p>SDK 4.1+</p> | Dành riêng cho tính năng của Flow & Paywall Builder chưa được phát hành. Cho đến khi builder có thể định nghĩa layout ID, mọi giá trị bạn truyền vào đều không khớp với layout nào và `createFlowView` sẽ ném ra lỗi `AdaptyError`. Hãy để trống. |
+| **customTags**       | tùy chọn | Từ điển các custom tag và giá trị tương ứng, dùng làm placeholder trong nội dung. Custom tag chỉ áp dụng cho [paywall dùng builder cũ](custom-tags-in-paywall-builder) — flow dùng [biến](onboarding-variables) thay thế. |
+| **prefetchProducts** | tùy chọn | Bật để tối ưu thời điểm hiển thị sản phẩm trên màn hình. Khi là `true`, AdaptyUI sẽ tự động tải các sản phẩm cần thiết. Mặc định: `false`. |
+| **android.enableSafeArea** | tùy chọn | Chỉ dành cho Android (bị bỏ qua trên iOS). Truyền dưới dạng object lồng nhau: `android: { enableSafeArea: true }`. Khi là `true`, flow view sẽ áp dụng padding safe-area. Mặc định là `true` cho kiểu hiển thị modal (`createFlowView` + `present()`) và `false` cho component `AdaptyFlowView` nhúng trực tiếp. Giá trị mặc định phù hợp với hầu hết các trường hợp. |
 
 :::note
 Nếu bạn đang sử dụng nhiều ngôn ngữ, hãy tìm hiểu cách thêm [bản địa hóa flow](add-paywall-locale-in-adapty-paywall-builder) và cách sử dụng mã ngôn ngữ đúng cách [tại đây](react-native-localizations-and-locale-codes).

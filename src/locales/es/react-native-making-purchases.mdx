@@ -145,6 +145,34 @@ Para hacerlo, debes abrir la URL con el siguiente formato:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
+## Compras in-app desde el App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Las compras in-app promocionadas son compatibles a partir de la versión 4.1 del SDK y requieren **iOS 16.4** o posterior. En dispositivos con una versión inferior a iOS 16.4, no llegan a tu app. El evento nunca se activa en Android.
+:::
+
+Cuando un usuario inicia una compra desde la página de tu producto en el App Store y la transacción se transfiere a tu app, el SDK la completa automáticamente: la pantalla del sistema de compras de Apple aparece de inmediato y Adapty procesa la transacción como cualquier otra compra. No necesitas escribir ningún código para esto.
+
+Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente al realizar la compra. La oferta se lee desde el intent de compra de App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+
+Para gestionar la finalización tú mismo —por ejemplo, para mostrar primero tu propia pantalla— escucha el evento `'onPromotedPurchaseReceived'` y pasa el producto a `makePromotedPurchase`:
+
+```typescript showLineNumbers
+
+const subscription = adapty.addEventListener('onPromotedPurchaseReceived', async product => {
+  const result = await adapty.makePromotedPurchase(product);
+  // process the purchase result
+});
+```
+
+:::warning
+Mientras tu listener esté registrado, el SDK deja de completar las compras promocionadas automáticamente. Si tu manejador nunca llama a `makePromotedPurchase`, la compra no se realiza: el App Store entrega el producto a tu app y espera. Llama a `subscription.remove()` para restaurar el comportamiento automático.
+:::
+
+`makePromotedPurchase` no recibe parámetros de compra — el producto promocionado proviene del App Store y no de un paywall, por lo que no lleva contexto de paywall. Devuelve el mismo `AdaptyPurchaseResult` que `makePurchase`.
+
+Los listeners son acumulativos: si registras varios, cada uno recibe el producto y ninguno completa la compra por los demás. Llamar a `adapty.removeAllListeners()` los elimina todos y la finalización automática del SDK retoma su lugar — vuelve a registrar el listener si tu app sigue gestionando la finalización.
+
 ## Gestionar planes prepagos (Android) \{#manage-prepaid-plans-android\}
 
 Si los usuarios de tu app pueden comprar [planes prepagos](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (por ejemplo, adquirir una suscripción no renovable por varios meses), puedes habilitar las [transacciones pendientes](https://developer.android.com/google/play/billing/subscriptions#pending) para planes prepagos.

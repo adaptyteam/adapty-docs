@@ -1,12 +1,12 @@
 ---
 title: "在 React Native SDK 中首次启动时显示 AA 定向付费墙"
-description: "在 React Native 中使用 AdaptyProfile.appliedAttributionSources，立即显示付费墙，并在应用 Apple Ads 归因后为 Apple Ads 用户升级付费墙。"
+description: "在 React Native 中立即展示付费墙，并在归因数据应用后为 Apple Ads 用户升级展示，使用 AdaptyProfile.appliedExternalAttributionProviders。"
 metadataTitle: "首次启动时显示 AA 定向付费墙 | React Native SDK | Adapty 文档"
 ---
 
 本文适用于您应用的 iOS 构建版本。Apple Ads 归因仅在 iOS 上可用。
 
-Apple Ads (AA) 归因数据在 `adapty.activate()` 之后异步到达。首次启动时，归因数据通常尚未到位，因此 `getPaywall` 会按默认目标受众解析，Apple Ads 用户将错过为 AA 市场细分设置的付费墙。与其等待归因数据到位后再展示付费墙，不如先立即展示一个，等 AA 归因应用后再刷新——这样 Apple Ads 用户能看到精准定向的实验变体，其他用户也无需等待。`AdaptyProfile.appliedAttributionSources` 可告知你 AA 归因何时已被应用。
+Apple Ads (AA) 归因数据会在 `adapty.activate()` 之后异步到达。在首次启动时，归因数据通常尚未落地，因此 `getFlow` 会根据默认目标受众进行解析，Apple Ads 用户将错过你为 AA 细分设置的付费墙。与其等待归因数据到达后再展示付费墙，不如立即展示一个，等 AA 归因应用后再刷新——这样 Apple Ads 用户能看到定向的实验变体，其他用户也无需等待。`AdaptyProfile.appliedExternalAttributionProviders` 可以告知你 AA 归因何时已被应用。
 
 :::important
 此属性仅报告 Apple Ads 数据。来自其他提供商的归因数据可在用户画像中查看，也可用于市场细分筛选，但目前尚不在此处显示。
@@ -15,19 +15,19 @@ Apple Ads (AA) 归因数据在 `adapty.activate()` 之后异步到达。首次�
 ## 开始之前 \{#before-you-start\}
 
 你需要：
-- Adapty React Native SDK **3.17.1** 或更高版本。
-- 在 Adapty 中为应用配置好 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+- Adapty React Native SDK **4.1** 或更高版本。在 3.17.1–4.0.x 版本中，用户画像属性名为 `appliedAttributionSources`，流程通过 `getPaywall` 获取。
+- 在 Adapty 中为应用配置 Apple Ads。详见 [Apple Ads](apple-search-ads)。
 
 ## 工作原理 \{#how-it-works\}
 
-调用 `adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发至 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会向你的 `onLatestProfileLoad` 监听器推送更新后的 `AdaptyProfile`，其 `appliedAttributionSources` 数组中会包含 `'apple_search_ads'`。
+调用 `adapty.activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发给 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会向你的 `onLatestProfileLoad` 监听器推送更新后的 `AdaptyProfile`，其 `appliedExternalAttributionProviders` 数组中将包含 `'apple_search_ads'`。
 
 这样你就可以分两步加载付费墙：
 
-1. 立即调用 `getPaywall`。由于尚未应用任何归因，Adapty 会根据默认目标受众解析请求，用户将立即看到付费墙。
-2. 当 `'apple_search_ads'` 出现时，再次调用 `getPaywall`。此时 Adapty 会根据 Apple Ads 目标受众解析请求，并返回定向付费墙，替换之前的那个。
+1. 立即调用 `getFlow`。由于尚未应用任何归因，Adapty 会根据默认目标受众解析请求，因此用户可以立即看到付费墙。
+2. 当 `'apple_search_ads'` 出现时，再次调用 `getFlow`。Adapty 此时会根据 Apple Ads 目标受众解析请求，并返回目标付费墙，替换第一个付费墙。
 
-`appliedAttributionSources` 可以为空或不存在。这意味着以下情况之一：
+`appliedExternalAttributionProviders` 可以为空或不存在，这意味着以下情况之一：
 
 - Apple Ads 归因尚未处理到该用户画像。
 - 完全没有收到归因数据。
@@ -36,21 +36,21 @@ Apple Ads (AA) 归因数据在 `adapty.activate()` 之后异步到达。首次�
 以上三种情况下，第 1 步都是安全的——Adapty 会根据当前用户画像状态匹配对应的目标受众，通常为默认受众。第 2 步仅在 `'apple_search_ads'` 出现后才会执行。
 
 :::important
-在每次后续启动时，缓存的用户画像中已经包含 `'apple_search_ads'`（在 `appliedAttributionSources` 中），因此第一次调用 `getPaywall` 就会直接返回基于 Apple Ads 细分的付费墙——不会有第二次请求，也不会出现可见的变化。两步流程只在首次启动时有意义，此时归因数据仍在传输中。
+在每次后续启动时，缓存的用户画像已在 `appliedExternalAttributionProviders` 中包含 `'apple_search_ads'`，因此第一次 `getFlow` 就会直接返回按 Apple Ads 细分的付费墙——不会有第二次请求或任何可见变化。这个两步流程只在首次启动时有意义，因为此时归因数据仍在传输中。
 :::
 
 ## 实现 \{#implementation\}
 
 立即展示付费墙，然后监听 `'apple_search_ads'` 事件，待其到达后刷新付费墙。
 
-1. **激活 SDK。** 请参阅[安装与配置 React Native SDK](sdk-installation-reactnative)。
-2. **使用 `getPaywall` 正常加载并展示付费墙** — 不要等待归因数据才展示。
-3. **通过 `adapty.addEventListener('onLatestProfileLoad', …)` 订阅用户画像更新**，并监听 `'apple_search_ads'`。当该字段出现时，重新获取付费墙并展示更新后的版本。如果你还没有设置监听器，请参阅[监听订阅更新](react-native-check-subscription-status#listen-to-subscription-updates)：
+1. **激活 SDK。** 请参阅[安装并配置 React Native SDK](sdk-installation-reactnative)。
+2. **使用 `getFlow` 正常加载并展示付费墙** — 不要等待归因数据。
+3. **通过 `adapty.addEventListener('onLatestProfileLoad', …)` 订阅用户画像更新**，并监听 `'apple_search_ads'`。当该字段出现时，重新获取付费墙并展示更新后的版本。如果你尚未设置监听器，请参阅[监听订阅更新](react-native-check-subscription-status#listen-to-subscription-updates)：
 
 ```typescript
 const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
-  const targeted = await adapty.getPaywall(placementId);
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getFlow(placementId);
   // present the targeted paywall in place of the first one
 });
 
@@ -65,11 +65,11 @@ const subscription = adapty.addEventListener('onLatestProfileLoad', async profil
 
 ```typescript
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**
@@ -100,12 +100,12 @@ export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
   });
 }
 
-let paywall = await adapty.getPaywall(placementId);
+let flow = await adapty.getFlow(placementId);
 
 onAppleAdsAttribution(30_000)
-  .then(() => adapty.getPaywall(placementId))
+  .then(() => adapty.getFlow(placementId))
   .then(updated => {
-    paywall = updated;
+    flow = updated;
   })
   .catch(() => {
     console.log('Apple Ads attribution or loading failed');

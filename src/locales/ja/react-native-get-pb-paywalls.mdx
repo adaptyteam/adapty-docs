@@ -54,9 +54,9 @@ try {
 
 ## レスポンスパラメータ \{#response-parameters\}
 
-| パラメータ | 説明                                                                                                                                                                            |
+| パラメーター | 説明                                                                                                                                                                            |
 | :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Flow   | フローの識別子（`id`、`variationId`）、名前、プレースメント、ペイウォールのバリアント（`paywalls`）、リモートコンフィグ（`remoteConfigs`）を含む `AdaptyFlow` オブジェクト。 |
+| Flow   | フローの識別子（`id`、`variationId`）、名前、プレースメント、ペイウォールのバリアント（`paywalls`）、リモートコンフィグ（`remoteConfigs`）、および SDK 4.1 以降では `hasViewConfiguration` フラグを含む `AdaptyFlow` オブジェクト。 |
 
 ## ビュー設定を取得する \{#fetch-the-view-configuration\}
 
@@ -64,9 +64,22 @@ try {
 必ず[フローを公開](builder-save-publish)してください。未公開の編集があるフローは **Dirty** ステータスとなり、そのプレースメントは最後に公開されたバージョンを配信し続けます。
 :::
 
-プレースメントが **Flow & Paywall Builder** または **旧ペイウォールビルダー** で作成されている場合、Adapty が UI をレンダリングします。`createFlowView` でビューを作成し、[フローまたはペイウォールを表示](react-native-present-paywalls)してください。プレースメントがビルダー UI を持たないカスタムペイウォールの場合は、代わりに[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls-react-native)してください。
+プレースメントが **Flow & Paywall Builder** または **旧ペイウォールビルダー** でデザインされている場合、Adapty が UI をレンダリングします。`createFlowView` でビューを作成し、[フローまたはペイウォールを表示](react-native-present-paywalls)します。プレースメントがビルダー UI を持たないカスタムペイウォールの場合は、代わりに[リモートコンフィグペイウォールとして処理](present-remote-config-paywalls-react-native)してください。
 
-React Native SDK では、ビュー設定を事前に取得する必要はなく、`createFlowView` を直接呼び出せます。
+SDK 4.1 以降では、フローの `hasViewConfiguration` フラグを使用してビューを作成する前に両者を区別できます。
+
+```typescript showLineNumbers
+if (flow.hasViewConfiguration) {
+  const view = await createFlowView(flow);
+  await view.present();
+} else {
+  // Render your own screen from flow.remoteConfigs and flow.paywalls
+}
+```
+
+4.0 では、このフラグは存在せず、ビュー設定のないフローに対して `createFlowView` は `AdaptyError` をスローします。
+
+React Native SDK では、`createFlowView` を直接呼び出してください。事前にビュー設定を取得する必要はありません。
 
 :::warning
 `createFlowView` メソッドの戻り値は一度しか使用できません。再度使用する場合は、`createFlowView` メソッドを新たに呼び出してください。再作成せずに二度呼び出すと、`AdaptyUIError.viewAlreadyPresented` エラーが発生する場合があります。
@@ -83,13 +96,14 @@ try {
 
 パラメータ：
 
-| パラメーター            | 必須/任意 | 説明                                                  |
+| パラメータ            | 必須/任意 | 説明                                                  |
 | :------------------- | :------- | :----------------------------------------------------------- |
 | **flow**             | 必須 | 目的のフロー/ペイウォールのコントローラーを取得するための `AdaptyFlow` オブジェクト。 |
-| **locale**           | 任意 | ビューのレンダリングに使用する[フローのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子（例：`en` や `pt-br`）。省略した場合、ビューは `en` でレンダリングされます。フローに `en` がない場合は、フローのデフォルトのローカライゼーションが使用されます。SDK 4.0.2 以降が必要です。詳細は[ローカライゼーションとロケールコード](react-native-localizations-and-locale-codes)をご参照ください。 |
-| **customTags**       | 任意 | コンテンツ内のプレースホルダーとして使用するカスタムタグとその解決済み値のディクショナリ。カスタムタグは[旧ビルダーのペイウォール](custom-tags-in-paywall-builder)にのみ適用されます。フローでは代わりに[変数](onboarding-variables)を使用します。 |
-| **prefetchProducts** | 任意 | 画面上のプロダクトの表示タイミングを最適化するために有効にします。`true` にすると、AdaptyUI が必要なプロダクトを自動的に取得します。デフォルト：`false`。 |
-| **android.enableSafeArea** | 任意 | Android のみ（iOS では無視されます）。ネストされたオブジェクトとして渡します：`android: { enableSafeArea: true }`。`true` にすると、フロービューにセーフエリアのパディングが適用されます。モーダル表示（`createFlowView` + `present()`）ではデフォルトが `true`、埋め込みの `AdaptyFlowView` コンポーネントではデフォルトが `false` です。ほとんどのケースでデフォルト値が適しています。 |
+| **locale**           | 任意 | ビューのレンダリングに使用する[フローのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子（例：`en`、`pt-br`）。省略するとビューは `en` でレンダリングされます。ただし、フローに `en` がない場合はフローのデフォルトローカライゼーションが使用されます。SDK 4.0.2 以降が必要です。詳細は[ローカライゼーションとロケールコード](react-native-localizations-and-locale-codes)を参照してください。 |
+| **customLayoutId**   | <p>任意</p><p>デフォルト：`undefined`</p><p>SDK 4.1+</p> | まだリリースされていない Flow & ペイウォールビルダー機能のために予約されています。ビルダーがレイアウト ID を定義できるようになるまで、渡した値はどのレイアウトにも一致せず、`createFlowView` は `AdaptyError` をスローします。未設定のままにしてください。 |
+| **customTags**       | 任意 | コンテンツ内のプレースホルダーとして使用するカスタムタグとその解決済みの値のディクショナリ。カスタムタグは[旧ビルダーのペイウォール](custom-tags-in-paywall-builder)にのみ適用されます。フローでは代わりに[変数](onboarding-variables)を使用します。 |
+| **prefetchProducts** | 任意 | 画面上のプロダクト表示タイミングを最適化するために有効にします。`true` の場合、AdaptyUI は必要なプロダクトを自動的に取得します。デフォルト：`false`。 |
+| **android.enableSafeArea** | 任意 | Android のみ（iOS では無視されます）。ネストされたオブジェクトとして渡します：`android: { enableSafeArea: true }`。`true` の場合、フロービューにセーフエリアのパディングが適用されます。モーダル表示（`createFlowView` + `present()`）ではデフォルトが `true`、埋め込みの `AdaptyFlowView` コンポーネントではデフォルトが `false` になります。ほとんどの場合、デフォルト値が適しています。 |
 
 :::note
 複数の言語を使用している場合は、[フローのローカライズを追加する方法](add-paywall-locale-in-adapty-paywall-builder)と、ロケールコードを正しく使用する方法を[こちら](react-native-localizations-and-locale-codes)でご確認ください。

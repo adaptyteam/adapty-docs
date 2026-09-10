@@ -1,0 +1,126 @@
+---
+title: "Adapty React Native SDK を v4.1 に移行する"
+description: "Adapty React Native SDK v4.1 への移行: Adapty Attribution を明示的に有効化し、名称変更された外部アトリビューション API を採用して、フォールバックファイルを再ダウンロードしてください。"
+metadataTitle: "Adapty React Native SDK v4.1 への移行 | Adapty ドキュメント"
+---
+
+Adapty React Native SDK 4.1 では、Adapty Attribution の有効化方法が変更され、外部アトリビューション API の名称が変わり、フォールバックファイルのフォーマットが変更されました。また、App Store のプロモートされたアプリ内課金のサポートが追加され、`AdaptyFlow` の `hasViewConfiguration` フラグが復活しました。
+
+:::warning
+名称が変更されたAPIは完全な破壊的変更です。古い名前は完全に削除されており、移行を補助するための非推奨エイリアスは存在しません。4.0.xに対して型チェックが通っていたコードは、以下に列挙するすべての呼び出し箇所を修正するまで4.1でビルドエラーになります。
+:::
+
+まだ3.xをお使いの場合は、先に[v4.0への移行](migration-to-react-native-sdk-v4)を行ってから、このガイドに従ってください。
+
+## クイックリファレンス \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty アトリビューションは自動的に有効 | Adapty アトリビューションはデフォルトで無効；`adaptyAttributionEnabled: true` でオプトイン |
+| `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| 4.0 用フォールバックファイルをダウンロード済み | 新しいフォールバックファイル形式；ファイルを再ダウンロードしてください |
+| プロモートされたアプリ内課金は未サポート | `'onPromotedPurchaseReceived'` イベントと `adapty.makePromotedPurchase(product)` |
+| `hasViewConfiguration` は `AdaptyFlow` に存在しない | `hasViewConfiguration` が `AdaptyFlow` に復活 |
+| iOS プロジェクトが CocoaPods で統合済み | CocoaPods、または React Native の実験的な Swift Package Manager 統合 |
+
+## インストール \{#installation\}
+
+`react-native-adapty` パッケージを更新してください:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+実行環境の要件は 4.0 から変更ありません: **iOS 15.0**、**React Native 0.75**、およびネイティブ iOS SDK 用の Swift Package Manager が必要です。詳細なセットアップ手順については、[Adapty SDK のインストール](sdk-installation-reactnative) を参照してください。
+
+React Native の実験的な Swift Package Manager 統合もサポートしています。これは iOS プロジェクトの CocoaPods を置き換えるもので、**React Native 0.87** 以降が必要です。CocoaPods が引き続きデフォルトであり、Swift Package Manager への移行は任意です — 詳しくは [SDK のインストール](sdk-installation-react-native-pure#install-adapty-sdk) を参照してください。アプリで [Kids Mode](kids-mode-react-native) を使用している場合、パッケージマネージャーによって適用方法が異なります。
+
+## ⚠️ Adapty アトリビューションはデフォルトで無効 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+SDK 4.1 にアップデートしてオプトインしない場合、[Adapty アトリビューション](user-acquisition)は無音で停止します — インストールの記録が止まっても何も警告されません。
+:::
+
+バージョン4.0以前では、SDKは[Adapty Attribution](user-acquisition)のインストール登録を自動的に行っていました。4.1以降、この機能はデフォルトで無効になっています。SDKはインストールを登録せず、`'onInstallationDetailsSuccess'`および`'onInstallationDetailsFail'`イベントは発火せず、`getCurrentInstallationStatus`は`not_available`ステータスを返します。
+
+Adapty Attributionを使用している場合は、SDKのアクティベーション時に有効にしてください：
+
+```diff showLineNumbers
+  adapty.activate('YOUR_PUBLIC_SDK_KEY', {
++   adaptyAttributionEnabled: true,
+  });
+```
+
+Adapty Attributionを使用していない場合は、変更は不要です。
+
+## 外部アトリビューション APIの名称変更 \{#renamed-external-attribution-apis\}
+
+外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、またはカスタム）からアトリビューションデータを渡す API が、ネイティブ SDK に合わせた名称に変更されました。
+
+### updateAttribution → updateExternalAttribution
+
+メソッド名が変更され、第2パラメータの名前が `source` から `provider` に変更されました。アトリビューションデータは引き続きプレーンオブジェクトです：
+
+```diff showLineNumbers
+- await adapty.updateAttribution(attribution, 'adjust');
++ await adapty.updateExternalAttribution(attribution, 'adjust');
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+プロバイダーの型名が変更されました。オープンユニオン型のままで、定義済みの値は `'apple_search_ads'`、`'adjust'`、`'appsflyer'`、`'branch'`、`'tenjin'` です。それ以外の文字列も受け付けるため、Adapty が後から新しいプロバイダーを追加しても SDK のアップデートなしに対応できます。
+
+```diff showLineNumbers
+- import type { AttributionSource } from 'react-native-adapty';
++ import type { AdaptyExternalAttributionProvider } from 'react-native-adapty';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+プロファイルに適用されたアトリビューションプロバイダーの一覧を返すプロファイルプロパティの名前が変更され、要素の型も合わせて変更されます。
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+このプロパティを参照しているコードは更新が必要です — [Apple Ads ターゲットペイウォールを表示する](react-native-show-aa-targeted-paywall)を参照してください。
+
+## フォールバックファイル \{#fallback-files\}
+
+[フォールバックファイル](fallback-flows)のフォーマットはSDK 4.1で変更されました。すでに4.0向けにダウンロード済みの場合でも、**[Placements](https://app.adapty.io/placements)** > **Fallbacks** から再度ファイルをダウンロードし、アプリにバンドルしてください。
+
+:::warning
+この手順を省略してもビルドエラーは発生しません。ただし、スキップすると`setFallback`が古いファイルを拒否し、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
+
+## `hasViewConfiguration` が AdaptyFlow に復活 \{#hasviewconfiguration-returns-to-adaptyflow\}
+
+4.0 では `AdaptyPaywall` が `AdaptyFlow` になった際に `hasViewConfiguration` が削除されましたが、4.1 で `AdaptyFlow` に復活しました。これにより、関数名とその対象オブジェクト名を変更するだけで、v3 時代の `hasViewConfiguration` の分岐がそのまま動作します：
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
++ if (flow.hasViewConfiguration) {
++   const view = await createFlowView(flow);
+    await view.present();
+  }
+```
+
+4.0では、フラグが存在しない場合、ビュー設定のないフローに対して`createFlowView`が`AdaptyError`をスローします。4.1でも同様です — フラグはエラーのキャッチに代わるものではなく、その代替手段です。[ビュー設定の取得](react-native-get-pb-paywalls#fetch-the-view-configuration)を参照してください。
+
+## App Store プロモートアプリ内課金 \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1 では、[App Store プロダクトページでプロモートされたアプリ内課金](react-native-making-purchases#in-app-purchases-from-the-app-store)のサポートが追加されました。これは移行手順ではなく新機能です。SDK がプロモートされた購入を自動的に完了するため、コードを書かなくても動作します。
+
+購入を自分でコントロールするコードのみを記述してください。たとえば、最初に画面を表示する場合などです。新しい `'onPromotedPurchaseReceived'` イベントのリスナーを登録し、`adapty.makePromotedPurchase` で購入を完了させてください。このリスナーが登録されている間、SDK は代わりにプロモーション購入を完了させなくなります。
+
+:::warning
+このメカニズムは StoreKit 2 上に構築されており、**iOS 16.4** 以降が必要です。iOS 16.4 未満のデバイスでは、プロモーション購入はアプリに到達しません。このイベントは Android では発生しません。
+:::

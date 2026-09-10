@@ -1,0 +1,126 @@
+---
+title: "Adapty React Native SDK'yı v4.1'e Geçirin"
+description: "Adapty React Native SDK v4.1'e geçiş: Adapty Attribution'ı açıkça etkinleştirin, yeniden adlandırılmış harici attribution API'lerini benimseyin ve yedek dosyanızı yeniden indirin."
+metadataTitle: "Adapty React Native SDK v4.1'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty React Native SDK 4.1; Adapty Attribution'ın etkinleştirilme biçimini değiştirir, harici attribution API'lerini yeniden adlandırır ve yedek dosya formatını değiştirir. Ayrıca App Store'da tanıtılan uygulama içi satın alımlar için destek ekler ve `AdaptyFlow` üzerindeki `hasViewConfiguration` bayrağını geri getirir.
+
+:::warning
+Yeniden adlandırılan API'ler kesin bir kırılmadır. Eski adlar tamamen kaldırılmıştır — aralarında köprü kuracak hiçbir deprecated takma ad yoktur. 4.0.x'e karşı tip kontrolü geçen kod, aşağıda listelenen her çağrı noktasını yeniden adlandırana kadar 4.1'de derlenmeyecektir.
+:::
+
+Hâlâ 3.x sürümündeyseniz önce [v4.0'a geçiş](migration-to-react-native-sdk-v4) kılavuzunu takip edin, ardından bu kılavuza devam edin.
+
+## Hızlı başvuru \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution otomatik olarak etkin | Adapty Attribution varsayılan olarak devre dışı; `adaptyAttributionEnabled: true` ile etkinleştirin |
+| `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| 4.0 için yedek dosya indirildi | Yeni yedek dosya formatı; dosyayı yeniden indirin |
+| Tanıtımlı uygulama içi satın almalar desteklenmiyor | `'onPromotedPurchaseReceived'` eventi ve `adapty.makePromotedPurchase(product)` |
+| `hasViewConfiguration`, `AdaptyFlow` üzerinde yok | `hasViewConfiguration`, `AdaptyFlow` üzerinde geri döndü |
+| iOS projesi CocoaPods ile entegre | CocoaPods veya React Native'in deneysel Swift Package Manager entegrasyonu |
+
+## Kurulum \{#installation\}
+
+`react-native-adapty` paketini güncelleyin:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Çalışma zamanı gereksinimleri 4.0'dan bu yana değişmedi: **iOS 15.0**, **React Native 0.75** ve yerel iOS SDK'ları için Swift Package Manager. Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-reactnative) sayfasına bakın.
+
+4.1, CocoaPods'un iOS projenizin yerini alan React Native'in deneysel Swift Package Manager entegrasyonunu da destekler; bunun için **React Native 0.87** veya üstü gerekir. CocoaPods varsayılan olmaya devam eder ve Swift Package Manager'a geçmek isteğe bağlıdır — bkz. [Adapty SDK'yı Yükle](sdk-installation-react-native-pure#install-adapty-sdk). Uygulamanız [Çocuk Modu](kids-mode-react-native) kullanıyorsa, her paket yöneticisi bunu farklı şekilde uygular.
+
+## ⚠️ Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+SDK 4.1'e günceller ve etkinleştirmezseniz, [Adapty Attribution](user-acquisition) sessizce bozulur — kurulumlar kayıt altına alınmayı bırakır ve hiçbir uyarı görmezsiniz.
+:::
+
+4.0 ve önceki sürümlerde SDK, [Adapty Attribution](user-acquisition) için kurulumları otomatik olarak kaydediyordu. 4.1'den itibaren bu özellik varsayılan olarak kapalıdır: SDK kurulumları kaydetmez, `'onInstallationDetailsSuccess'` ve `'onInstallationDetailsFail'` olayları hiçbir zaman tetiklenmez ve `getCurrentInstallationStatus` `not_available` durumunu döndürür.
+
+Adapty Attribution kullanıyorsanız, SDK'yı etkinleştirirken bunu açın:
+
+```diff showLineNumbers
+  adapty.activate('YOUR_PUBLIC_SDK_KEY', {
++   adaptyAttributionEnabled: true,
+  });
+```
+
+Adapty Attribution kullanmıyorsanız herhangi bir değişiklik yapmanıza gerek yoktur.
+
+## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
+
+Harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi ileten API'ler, native SDK'larla uyumlu olması için yeniden adlandırıldı.
+
+### updateAttribution → updateExternalAttribution
+
+Metot yeniden adlandırıldı ve ikinci parametresi `source`'dan `provider`'a yeniden adlandırıldı. Attribution verisi hâlâ düz bir nesnedir:
+
+```diff showLineNumbers
+- await adapty.updateAttribution(attribution, 'adjust');
++ await adapty.updateExternalAttribution(attribution, 'adjust');
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+Sağlayıcı türü yeniden adlandırıldı. Açık bir birleşim olma özelliğini korur — önceden tanımlanmış değerler `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'` ve `'tenjin'` şeklindedir; başka herhangi bir string de kabul edildiğinden, Adapty'nin sonradan eklediği bir sağlayıcı SDK güncellemesi gerektirmez:
+
+```diff showLineNumbers
+- import type { AttributionSource } from 'react-native-adapty';
++ import type { AdaptyExternalAttributionProvider } from 'react-native-adapty';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Profile'a uygulanan attribution sağlayıcılarını listeleyen profil özelliği yeniden adlandırıldı ve eleman türü de buna göre değişti:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Bu özelliği okuyan kodun güncellenmesi gerekiyor — bkz. [Apple Ads hedefli paywall gösterme](react-native-show-aa-targeted-paywall).
+
+## Yedek dosyalar \{#fallback-files\}
+
+[Yedek dosya](fallback-flows) formatı SDK 4.1 ile değişti. Dosyayı **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden tekrar indirip uygulamanıza ekleyin; 4.0 için daha önce indirmiş olsanız bile.
+
+:::warning
+Bu adım herhangi bir derleme hatası vermez. Atlarsanız `setFallback` eski dosyayı reddeder ve tüm placement'larınız yedekten yoksun kalır.
+:::
+
+## hasViewConfiguration, AdaptyFlow'a geri döndü \{#hasviewconfiguration-returns-to-adaptyflow\}
+
+4.0 sürümünde `AdaptyPaywall`, `AdaptyFlow` olarak yeniden adlandırıldığında `hasViewConfiguration` kaldırılmıştı. 4.1 sürümü bunu `AdaptyFlow` üzerinde geri getirir; böylece v3 dönemindeki bir `hasViewConfiguration` dalı, işlevi ve okuduğu nesneyi yeniden adlandırdıktan sonra tekrar çalışmaya başlar:
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
++ if (flow.hasViewConfiguration) {
++   const view = await createFlowView(flow);
+    await view.present();
+  }
+```
+
+4.0'da flag yokken, görünüm yapılandırması olmayan bir flow için `createFlowView` bir `AdaptyError` fırlatır. Bu durum 4.1'de de geçerlidir — flag, hatayı yakalamaya alternatif bir yaklaşımdır, yerine geçmez. Bkz. [Görünüm yapılandırmasını al](react-native-get-pb-paywalls#fetch-the-view-configuration).
+
+## App Store'da öne çıkan uygulama içi satın almalar \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1, [App Store ürün sayfanızda öne çıkan uygulama içi satın almaları](react-native-making-purchases#in-app-purchases-from-the-app-store) desteklemektedir. Bu bir taşıma adımı değil, yeni bir özelliktir: SDK, öne çıkan satın alma işlemlerini kendi başına tamamladığından, herhangi bir kod yazmadan bu davranışı elde edersiniz.
+
+Tamamlamayı kendiniz üstlenmek için — örneğin önce bir ekran göstermek amacıyla — yalnızca kod yazın. Yeni `'onPromotedPurchaseReceived'` olayı için bir listener kaydedin ve satın alma işlemini `adapty.makePromotedPurchase` ile tamamlayın. Bu listener kayıtlıyken SDK, promosyonlu satın almaları sizin yerinize tamamlamayı durdurur.
+
+:::warning
+Bu mekanizma StoreKit 2 üzerine kuruludur ve **iOS 16.4** veya sonrasını gerektirir. iOS 16.4'ten düşük sürümlü cihazlarda promosyonlu satın almalar uygulamanıza ulaşmaz. Olay Android'de hiçbir zaman tetiklenmez.
+:::

@@ -1,0 +1,126 @@
+---
+title: "Migrate Adapty React Native SDK to v4.1"
+description: "Migrate sang Adapty React Native SDK v4.1: bật Adapty Attribution tường minh, sử dụng các API attribution bên ngoài đã đổi tên, và tải lại file dự phòng."
+metadataTitle: "Migrate sang Adapty React Native SDK v4.1 | Tài liệu Adapty"
+---
+
+Adapty React Native SDK 4.1 thay đổi cách bật Adapty Attribution, đổi tên các API attribution bên ngoài, và thay đổi định dạng file dự phòng. Phiên bản này cũng bổ sung hỗ trợ cho promoted in-app purchase trên App Store và khôi phục lại cờ `hasViewConfiguration` trên `AdaptyFlow`.
+
+:::warning
+Các API được đổi tên là một thay đổi hoàn toàn không tương thích. Tên cũ đã bị xóa hoàn toàn — không có bất kỳ alias nào được giữ lại để hỗ trợ chuyển tiếp. Code kiểm tra kiểu với 4.0.x sẽ lỗi trên 4.1 cho đến khi bạn đổi tên tất cả các call site được liệt kê bên dưới.
+:::
+
+Nếu bạn vẫn đang dùng 3.x, hãy bắt đầu với [Migrate sang v4.0](migration-to-react-native-sdk-v4) rồi làm theo hướng dẫn này.
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution được bật tự động | Adapty Attribution tắt theo mặc định; bật bằng `adaptyAttributionEnabled: true` |
+| `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| File dự phòng đã tải xuống cho 4.0 | Định dạng file dự phòng mới; tải lại file | 
+| Không hỗ trợ promoted in-app purchase | Sự kiện `'onPromotedPurchaseReceived'` và `adapty.makePromotedPurchase(product)` |
+| `hasViewConfiguration` không có trên `AdaptyFlow` | `hasViewConfiguration` trở lại trên `AdaptyFlow` |
+| Dự án iOS tích hợp với CocoaPods | CocoaPods, hoặc tích hợp Swift Package Manager thử nghiệm của React Native |
+
+## Cài đặt \{#installation\}
+
+Cập nhật gói `react-native-adapty`:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Yêu cầu runtime không thay đổi so với 4.0: **iOS 15.0**, **React Native 0.75**, và Swift Package Manager cho các SDK iOS gốc. Xem [Cài đặt Adapty SDK](sdk-installation-reactnative) để biết hướng dẫn đầy đủ.
+
+4.1 cũng hỗ trợ tích hợp Swift Package Manager thử nghiệm của React Native, thay thế CocoaPods cho dự án iOS của bạn và yêu cầu **React Native 0.87** trở lên. CocoaPods vẫn là mặc định, và việc chuyển sang Swift Package Manager là tùy chọn — xem [Cài đặt Adapty SDK](sdk-installation-react-native-pure#install-adapty-sdk). Nếu ứng dụng của bạn sử dụng [Kids Mode](kids-mode-react-native), mỗi trình quản lý gói sẽ áp dụng theo cách khác nhau.
+
+## ⚠️ Adapty Attribution mặc định bị tắt \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Nếu bạn cập nhật lên SDK 4.1 mà không bật tính năng này, [Adapty Attribution](user-acquisition) sẽ ngừng hoạt động mà không có cảnh báo — các lượt cài đặt sẽ không được ghi nhận.
+:::
+
+Trong phiên bản 4.0 trở về trước, SDK tự động đăng ký lượt cài đặt cho [Adapty Attribution](user-acquisition). Bắt đầu từ 4.1, tính năng này bị tắt theo mặc định: SDK không đăng ký lượt cài đặt, các sự kiện `'onInstallationDetailsSuccess'` và `'onInstallationDetailsFail'` sẽ không bao giờ được kích hoạt, và `getCurrentInstallationStatus` trả về trạng thái `not_available`.
+
+Nếu bạn sử dụng Adapty Attribution, hãy bật tính năng này khi kích hoạt SDK:
+
+```diff showLineNumbers
+  adapty.activate('YOUR_PUBLIC_SDK_KEY', {
++   adaptyAttributionEnabled: true,
+  });
+```
+
+Nếu bạn không sử dụng Adapty Attribution, không cần thay đổi gì.
+
+## Đổi tên các API attribution từ bên ngoài \{#renamed-external-attribution-apis\}
+
+Các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc tùy chỉnh) đã được đổi tên để phù hợp với các SDK gốc.
+
+### updateAttribution → updateExternalAttribution
+
+Phương thức được đổi tên và tham số thứ hai được đổi từ `source` thành `provider`. Dữ liệu attribution vẫn là một plain object:
+
+```diff showLineNumbers
+- await adapty.updateAttribution(attribution, 'adjust');
++ await adapty.updateExternalAttribution(attribution, 'adjust');
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+Kiểu provider được đổi tên. Nó vẫn là một union mở — các giá trị được định nghĩa sẵn là `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'`, và `'tenjin'`, và bất kỳ chuỗi nào khác đều được chấp nhận, vì vậy một provider mà Adapty thêm sau này sẽ hoạt động mà không cần cập nhật SDK:
+
+```diff showLineNumbers
+- import type { AttributionSource } from 'react-native-adapty';
++ import type { AdaptyExternalAttributionProvider } from 'react-native-adapty';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Thuộc tính của hồ sơ người dùng liệt kê các nhà cung cấp attribution đã được áp dụng cho hồ sơ được đổi tên, và kiểu phần tử của nó cũng thay đổi tương ứng:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Code đọc thuộc tính này cần được cập nhật — xem [Hiển thị paywall nhắm mục tiêu Apple Ads](react-native-show-aa-targeted-paywall).
+
+## Tệp dự phòng \{#fallback-files\}
+
+Định dạng [tệp dự phòng](fallback-flows) đã thay đổi trong SDK 4.1. Hãy tải lại tệp từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và đóng gói vào ứng dụng, kể cả khi bạn đã tải tệp cho phiên bản 4.0 trước đó.
+
+:::warning
+Bước này không tạo ra lỗi build. Nếu bỏ qua, `setFallback` sẽ từ chối tệp lỗi thời và mọi placement sẽ mất fallback dự phòng của chúng.
+:::
+
+## hasViewConfiguration được khôi phục trong AdaptyFlow \{#hasviewconfiguration-returns-to-adaptyflow\}
+
+Phiên bản 4.0 đã loại bỏ `hasViewConfiguration` khi `AdaptyPaywall` được đổi tên thành `AdaptyFlow`. Phiên bản 4.1 khôi phục lại thuộc tính này trên `AdaptyFlow`, vì vậy một nhánh `hasViewConfiguration` từ thời v3 sẽ hoạt động trở lại sau khi bạn đổi tên hàm và đối tượng mà nó đọc:
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
++ if (flow.hasViewConfiguration) {
++   const view = await createFlowView(flow);
+    await view.present();
+  }
+```
+
+Trên phiên bản 4.0, khi flag này không có, `createFlowView` sẽ ném ra `AdaptyError` cho một flow không có cấu hình view. Điều này vẫn đúng trên 4.1 — flag này là một lựa chọn thay thế cho việc bắt lỗi, không phải thay thế hoàn toàn. Xem [Lấy cấu hình view](react-native-get-pb-paywalls#fetch-the-view-configuration).
+
+## In-app purchase được quảng bá trên App Store \{#app-store-promoted-in-app-purchases\}
+
+SDK 4.1 bổ sung hỗ trợ cho [in-app purchase được quảng bá trên trang sản phẩm App Store của bạn](react-native-making-purchases#in-app-purchases-from-the-app-store). Đây là tính năng mới, không phải bước migration: SDK tự động hoàn tất các giao dịch mua được quảng bá, vì vậy bạn sẽ có được hành vi này mà không cần viết thêm bất kỳ dòng code nào.
+
+Chỉ tự viết code để xử lý hoàn tất giao dịch — ví dụ như hiển thị một màn hình trước. Đăng ký một listener cho sự kiện `'onPromotedPurchaseReceived'` mới, và hoàn tất giao dịch bằng `adapty.makePromotedPurchase`. Khi listener đó được đăng ký, SDK sẽ ngừng tự động hoàn tất các promoted purchase cho bạn.
+
+:::warning
+Cơ chế này được xây dựng trên StoreKit 2 và yêu cầu **iOS 16.4** trở lên. Trên các thiết bị thấp hơn iOS 16.4, promoted purchase sẽ không đến được ứng dụng của bạn. Sự kiện này không bao giờ được kích hoạt trên Android.
+:::

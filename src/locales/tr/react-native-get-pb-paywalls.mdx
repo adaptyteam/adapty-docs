@@ -56,7 +56,7 @@ Yanıt parametreleri:
 
 | Parametre | Açıklama                                                                                                                                                                            |
 | :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Flow   | Flow'un tanımlayıcılarını (`id`, `variationId`), adını, placement'ını, paywall varyasyonlarını (`paywalls`) ve varsa remote config'lerini (`remoteConfigs`) içeren bir `AdaptyFlow` nesnesi. |
+| Flow   | Flow'un tanımlayıcılarını (`id`, `variationId`), adını, placement'ını, paywall varyasyonlarını (`paywalls`), tüm remote config'leri (`remoteConfigs`) ve — SDK 4.1 ve sonrasında — bir `hasViewConfiguration` bayrağını içeren `AdaptyFlow` nesnesi. |
 
 ## Görünüm yapılandırmasını getirin \{#fetch-the-view-configuration\}
 
@@ -64,9 +64,22 @@ Yanıt parametreleri:
 [Flow'u yayınladığınızdan](builder-save-publish) emin olun. Yayınlanmamış düzenlemeleri olan bir flow **Dirty** durumunda olur ve onun placement'ı en son yayınlanan sürümü sunmaya devam eder.
 :::
 
-Placement **Flow & Paywall Builder** veya **eski Paywall Builder** ile tasarlandıysa, Adapty arayüzü sizin için oluşturur. `createFlowView` ile view'ı oluşturun, ardından [flow veya paywall'ı gösterin](react-native-present-paywalls). Placement, Builder arayüzü olmayan özel bir paywall ise bunun yerine [remote config paywall olarak işleyin](present-remote-config-paywalls-react-native).
+Eğer placement **Flow & Paywall Builder** ya da **eski Paywall Builder** ile tasarlandıysa, Adapty kullanıcı arayüzünü sizin için oluşturur. `createFlowView` ile view'ı oluşturun, ardından [flow veya paywall'ı gösterin](react-native-present-paywalls). Placement, Builder arayüzü olmayan özel bir paywall ise [remote config paywall olarak ele alın](present-remote-config-paywalls-react-native).
 
-React Native SDK'da, önce view yapılandırmasını almanıza gerek kalmadan doğrudan `createFlowView`'ı çağırın.
+SDK 4.1 ve sonrasında, flow üzerindeki `hasViewConfiguration` bayrağı, view'ı oluşturmadan önce ikisini birbirinden ayırt etmenizi sağlar:
+
+```typescript showLineNumbers
+if (flow.hasViewConfiguration) {
+  const view = await createFlowView(flow);
+  await view.present();
+} else {
+  // Render your own screen from flow.remoteConfigs and flow.paywalls
+}
+```
+
+4.0'da bu bayrak mevcut değildir ve `createFlowView`, görünüm yapılandırması olmayan bir flow için `AdaptyError` fırlatır.
+
+React Native SDK'da doğrudan `createFlowView` çağırın — önce görünüm yapılandırmasını almanıza gerek yoktur.
 
 :::warning
 `createFlowView` metodunun sonucu yalnızca bir kez kullanılabilir. Tekrar kullanmanız gerekiyorsa `createFlowView` metodunu yeniden çağırın. Yeniden oluşturmadan iki kez çağırmak `AdaptyUIError.viewAlreadyPresented` hatasına yol açabilir.
@@ -85,11 +98,12 @@ Parametreler:
 
 | Parametre            | Zorunluluk | Açıklama                                                  |
 | :------------------- | :------- | :----------------------------------------------------------- |
-| **flow**             | zorunlu | İstenen flow/paywall için bir controller elde etmek amacıyla kullanılan `AdaptyFlow` nesnesi. |
-| **locale**           | isteğe bağlı | Görünümün hangi [flow yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) render edileceğini belirten tanımlayıcı; örneğin `en` veya `pt-br`. Belirtilmezse görünüm `en` dilinde render edilir; flow'un `en` yerelleştirmesi yoksa varsayılan yerelleştirme kullanılır. SDK 4.0.2 veya üzerini gerektirir. Bkz. [Yerelleştirmeler ve yerel ayar kodları](react-native-localizations-and-locale-codes). |
-| **customTags**       | isteğe bağlı | İçerikte yer tutucu olarak kullanılan özel tag'ler ve bunların çözümlenmiş değerlerinden oluşan bir sözlük. Özel tag'ler yalnızca [eski builder paywallları](custom-tags-in-paywall-builder) için geçerlidir — flow'lar bunun yerine [değişkenler](onboarding-variables) kullanır. |
-| **prefetchProducts** | isteğe bağlı | Ekranda ürünlerin görüntülenme zamanlamasını optimize etmek için etkinleştirin. `true` olarak ayarlandığında AdaptyUI gerekli ürünleri otomatik olarak getirir. Varsayılan: `false`. |
-| **android.enableSafeArea** | isteğe bağlı | Yalnızca Android (iOS'ta yoksayılır). İç içe nesne olarak geçirin: `android: { enableSafeArea: true }`. `true` olduğunda flow görünümü safe-area dolguları uygular. Modal sunum (`createFlowView` + `present()`) için varsayılan `true`, gömülü `AdaptyFlowView` bileşeni için varsayılan `false`'dur. Varsayılan değer çoğu durum için uygundur. |
+| **flow**             | zorunlu | İstenen flow/paywall için bir kontrolör elde etmek amacıyla kullanılan `AdaptyFlow` nesnesi. |
+| **locale**           | opsiyonel | Görünümün hangi [flow yerelleştirmesiyle](add-paywall-locale-in-adapty-paywall-builder) render edileceğini belirleyen tanımlayıcı — örneğin `en` veya `pt-br`. Belirtilmezse görünüm `en` dilinde, flow'da `en` yoksa flow'un varsayılan yerelleştirmesiyle render edilir. SDK 4.0.2 veya üstü gerektirir. Bkz. [Yerelleştirmeler ve locale kodları](react-native-localizations-and-locale-codes). |
+| **customLayoutId**   | <p>opsiyonel</p><p>varsayılan: `undefined`</p><p>SDK 4.1+</p> | Henüz yayınlanmamış bir Flow & Paywall Builder özelliği için ayrılmıştır. Builder layout ID'lerini tanımlayabilene kadar, geçirdiğiniz herhangi bir değer hiçbir layout ile eşleşmez ve `createFlowView` bir `AdaptyError` fırlatır. Ayarlamadan bırakın. |
+| **customTags**       | opsiyonel | İçerikte yer tutucu olarak kullanılan özel etiketler ve çözümlenmiş değerlerinden oluşan sözlük. Özel etiketler yalnızca [eski builder paywallları](custom-tags-in-paywall-builder) için geçerlidir — flow'lar bunun yerine [değişkenler](onboarding-variables) kullanır. |
+| **prefetchProducts** | opsiyonel | Ekrandaki ürünlerin görüntülenme zamanlamasını optimize etmek için etkinleştirin. `true` olduğunda AdaptyUI gerekli ürünleri otomatik olarak getirir. Varsayılan: `false`. |
+| **android.enableSafeArea** | opsiyonel | Yalnızca Android (iOS'ta göz ardı edilir). İç içe nesne olarak geçirin: `android: { enableSafeArea: true }`. `true` olduğunda, flow görünümü güvenli alan (safe-area) dolguları uygular. Modal sunum için varsayılan `true` (`createFlowView` + `present()`), gömülü `AdaptyFlowView` bileşeni için ise `false`'tur. Varsayılan değer çoğu durum için uygundur. |
 
 :::note
 Birden fazla dil kullanıyorsanız, bir [flow yerelleştirmesi](add-paywall-locale-in-adapty-paywall-builder) eklemeyi ve locale kodlarını doğru şekilde kullanmayı [buradan](react-native-localizations-and-locale-codes) öğrenin.

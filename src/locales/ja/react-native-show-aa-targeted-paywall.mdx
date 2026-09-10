@@ -1,12 +1,12 @@
 ---
 title: "React Native SDKで初回起動時にAA対象ペイウォールを表示する"
-description: "AdaptyProfile.appliedAttributionSourcesを使用して、React NativeでApple Ads向けアトリビューションが適用され次第、即座にペイウォールを表示してアップグレードする方法を解説します。"
+description: "React NativeでAdaptyProfile.appliedExternalAttributionProvidersを使用して、アトリビューション適用後にApple Adsユーザー向けにペイウォールをすぐに表示し、アップグレードする方法を説明します。"
 metadataTitle: "初回起動時にAA対象ペイウォールを表示する | React Native SDK | Adapty ドキュメント"
 ---
 
-この記事はアプリのiOSビルドに適用されます。Apple Adsのアトリビューションは iOS のみで利用可能です。
+この記事はアプリのiOSビルドに適用されます。Apple AdsのアトリビューションはiOSのみで利用できます。
 
-Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後に非同期で届きます。初回起動時はまだ届いていないことが多いため、`getPaywall` はデフォルトのオーディエンスに対して解決され、Apple Ads ユーザーが AA セグメント対象のペイウォールを見逃してしまいます。アトリビューションが届くまでペイウォールの表示を遅らせるのではなく、まずすぐにペイウォールを表示し、AA アトリビューションが適用されたらリフレッシュするようにしましょう。これにより、Apple Ads ユーザーはターゲット向けのバリアントを受け取り、それ以外のユーザーは待たずにペイウォールを見ることができます。`AdaptyProfile.appliedAttributionSources` で AA アトリビューションが適用されたタイミングを確認できます。
+Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後に非同期で届きます。初回起動時はまだアトリビューションが届いていないことが多いため、`getFlow` はデフォルトのオーディエンスに対して解決され、Apple Ads ユーザーは AA セグメント向けのペイウォールを受け取れません。アトリビューションが届くまでペイウォールの表示を遅らせるのではなく、まず即座にペイウォールを表示し、AA アトリビューションが適用されたタイミングで更新することで、Apple Ads ユーザーはターゲット向けのバリアントを受け取りつつ、その他のユーザーは待ち時間なくペイウォールを見ることができます。`AdaptyProfile.appliedExternalAttributionProviders` を使うと、AA アトリビューションがいつ適用されたかを確認できます。
 
 :::important
 このプロパティはApple Adsのみを報告します。他のプロバイダーからのアトリビューションはユーザープロファイルで確認でき、セグメントフィルターでも利用可能ですが、ここにはまだ表示されません。
@@ -15,19 +15,19 @@ Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後�
 ## 始める前に \{#before-you-start\}
 
 以下が必要です：
-- Adapty React Native SDK **3.17.1** 以降。
-- Adapty でアプリの Apple Ads が設定済みであること。[Apple Ads](apple-search-ads) を参照してください。
+- Adapty React Native SDK **4.1** 以降。3.17.1〜4.0.x では、プロファイルプロパティの名前が `appliedAttributionSources` となっており、フローは `getPaywall` で取得します。
+- Adapty でアプリの Apple Ads が設定済みであること。詳しくは [Apple Ads](apple-search-ads) をご覧ください。
 
 ## 仕組み \{#how-it-works\}
 
-`adapty.activate()` の後、SDK はバックグラウンドで Apple から Apple Ads のアトリビューションをリクエストし、その結果を Adapty のバックエンドに転送します。AA がプロファイルのアクティブなアトリビューションソースになると、SDK は `onLatestProfileLoad` リスナーに更新された `AdaptyProfile` を届けます。この時点で `appliedAttributionSources` 配列に `'apple_search_ads'` が含まれています。
+`adapty.activate()` の呼び出し後、SDK はバックグラウンドで Apple Ads のアトリビューション情報を Apple に問い合わせ、その結果を Adapty のバックエンドに転送します。AA がプロファイルのアクティブなアトリビューションソースになると、SDK は更新された `AdaptyProfile` を `onLatestProfileLoad` リスナーに配信します。このとき、`appliedExternalAttributionProviders` 配列には `'apple_search_ads'` が含まれています。
 
-これにより、ペイウォールの読み込みを2段階で行うことができます：
+これにより、ペイウォールを2ステップで読み込むことができます：
 
-1. すぐに `getPaywall` を呼び出します。まだアトリビューションが適用されていないため、Adapty はデフォルトのオーディエンスに対してリクエストを解決し、ユーザーにはすぐにペイウォールが表示されます。
-2. `'apple_search_ads'` が現れたら、再度 `getPaywall` を呼び出します。Adapty は Apple Ads オーディエンスに対してリクエストを解決し、ターゲットされたペイウォールを返します。これが最初のペイウォールと置き換わります。
+1. すぐに `getFlow` を呼び出します。アトリビューションがまだ適用されていない状態では、Adapty はデフォルトのオーディエンスに対してリクエストを解決するため、ユーザーはすぐにペイウォールを見ることができます。
+2. `'apple_search_ads'` が現れたら、再度 `getFlow` を呼び出します。Adapty は Apple Ads のオーディエンスに対してリクエストを解決し、ターゲット設定されたペイウォールを返します。これが最初のペイウォールと置き換わります。
 
-`appliedAttributionSources` は空または存在しない場合があります。その場合、次のいずれかを意味します:
+`appliedExternalAttributionProviders` は空または存在しない場合があります。これは次のいずれかを意味します：
 
 - このプロファイルに対して Apple Ads のアトリビューションがまだ処理されていない。
 - アトリビューションがまったく届いていない。
@@ -36,7 +36,7 @@ Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後�
 いずれの場合も、ステップ 1 は安全です。Adapty は現在のプロファイル状態に一致するオーディエンス（通常はデフォルトオーディエンス）に基づいてリクエストを解決します。ステップ 2 は `'apple_search_ads'` が現れた時点で一度だけ実行されます。
 
 :::important
-その後のすべての起動では、キャッシュされたプロファイルに既に `appliedAttributionSources` 内の `'apple_search_ads'` が含まれているため、最初の `getPaywall` の時点でApple Ads対象のペイウォールが返されます。2回目のフェッチや表示上の変化は発生しません。この2ステップのフローが重要になるのは、アトリビューションがまだ処理中である初回起動時のみです。
+その後のすべての起動では、キャッシュされたプロファイルにすでに `appliedExternalAttributionProviders` 内の `'apple_search_ads'` が含まれているため、最初の `getFlow` でApple Ads向けセグメントのペイウォールが返されます。2回目のフェッチや表示上の変化は発生しません。この2ステップのフローが重要になるのは、アトリビューションがまだ処理中の初回起動時のみです。
 :::
 
 ## 実装 \{#implementation\}
@@ -44,13 +44,13 @@ Apple Ads（AA）のアトリビューションは、`adapty.activate()` の後�
 すぐにペイウォールを表示し、`'apple_search_ads'` を監視して届いたらペイウォールをリフレッシュします。
 
 1. **SDKを有効化します。** [React Native SDKのインストールと設定](sdk-installation-reactnative)を参照してください。
-2. **通常どおり `getPaywall` でペイウォールを読み込んで表示します。** アトリビューションを待たずに進めてください。
-3. **`adapty.addEventListener('onLatestProfileLoad', …)` でプロファイルの更新を購読し**、`'apple_search_ads'` を監視します。現れたらペイウォールを再度フェッチし、更新されたものを表示します。リスナーをまだ設定していない場合は、[サブスクリプション更新のリッスン](react-native-check-subscription-status#listen-to-subscription-updates)を参照してください：
+2. **ペイウォールを読み込んで表示します。** `getFlow`を使って通常どおり表示し、アトリビューションを待たずに進みます。
+3. **プロファイルの更新を購読します。** `adapty.addEventListener('onLatestProfileLoad', …)`を使い、`'apple_search_ads'`の出現を監視します。出現したらペイウォールを再取得し、更新されたものを表示します。リスナーをまだ設定していない場合は、[サブスクリプション更新のリッスン](react-native-check-subscription-status#listen-to-subscription-updates)を参照してください。
 
 ```typescript
 const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
-  const targeted = await adapty.getPaywall(placementId);
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getFlow(placementId);
   // present the targeted paywall in place of the first one
 });
 
@@ -65,11 +65,11 @@ const subscription = adapty.addEventListener('onLatestProfileLoad', async profil
 
 ```typescript
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**
@@ -100,12 +100,12 @@ export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
   });
 }
 
-let paywall = await adapty.getPaywall(placementId);
+let flow = await adapty.getFlow(placementId);
 
 onAppleAdsAttribution(30_000)
-  .then(() => adapty.getPaywall(placementId))
+  .then(() => adapty.getFlow(placementId))
   .then(updated => {
-    paywall = updated;
+    flow = updated;
   })
   .catch(() => {
     console.log('Apple Ads attribution or loading failed');

@@ -56,7 +56,7 @@ try {
 
 | 参数 | 描述                                                                                                                                                                            |
 | :-------- |:---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Flow   | 一个 `AdaptyFlow` 对象，包含流程的标识符（`id`、`variationId`）、名称、版位、付费墙实验变体（`paywalls`）以及任何远程配置（`remoteConfigs`）。 |
+| Flow   | 一个 `AdaptyFlow` 对象，包含流程的标识符（`id`、`variationId`）、名称、版位、付费墙变体（`paywalls`）、远程配置（`remoteConfigs`），以及（SDK 4.1 及更高版本中）`hasViewConfiguration` 标志。 |
 
 ## 获取视图配置 \{#fetch-the-view-configuration\}
 
@@ -64,9 +64,22 @@ try {
 请确保[发布流程](builder-save-publish)。有未发布编辑内容的流程状态为 **Dirty**，其版位将继续使用上一个已发布的版本。
 :::
 
-如果版位是在 **Flow & Paywall Builder** 或 **旧版付费墙编辑工具** 中设计的，Adapty 会自动为你渲染 UI。使用 `createFlowView` 创建视图，然后[展示流程或付费墙](react-native-present-paywalls)。如果版位是没有编辑工具 UI 的自定义付费墙，请改为[将其作为远程配置付费墙处理](present-remote-config-paywalls-react-native)。
+如果版位是在 **Flow & Paywall Builder** 或**旧版付费墙编辑工具**中设计的，Adapty 会为您渲染 UI。使用 `createFlowView` 创建视图，然后[展示流程或付费墙](react-native-present-paywalls)。如果该版位是没有编辑工具 UI 的自定义付费墙，请改为[将其作为远程配置付费墙处理](present-remote-config-paywalls-react-native)。
 
-在 React Native SDK 中，直接调用 `createFlowView` 即可——无需提前获取视图配置。
+在 SDK 4.1 及更高版本中，流程上的 `hasViewConfiguration` 标志可在创建视图之前区分两者：
+
+```typescript showLineNumbers
+if (flow.hasViewConfiguration) {
+  const view = await createFlowView(flow);
+  await view.present();
+} else {
+  // Render your own screen from flow.remoteConfigs and flow.paywalls
+}
+```
+
+在 4.0 版本中，该标志已被移除，对于没有视图配置的流程，`createFlowView` 会抛出 `AdaptyError`。
+
+在 React Native SDK 中，直接调用 `createFlowView` 即可，无需提前获取视图配置。
 
 :::warning
 `createFlowView` 方法的返回结果只能使用一次。如需再次使用，请重新调用 `createFlowView` 方法。若不重新创建而直接调用两次，可能会导致 `AdaptyUIError.viewAlreadyPresented` 错误。
@@ -83,13 +96,14 @@ try {
 
 参数：
 
-| 参数                         | 是否必填 | 描述                                                         |
+| 参数 | 是否必填 | 描述 |
 | :------------------- | :------- | :----------------------------------------------------------- |
-| **flow**             | 必填 | 一个 `AdaptyFlow` 对象，用于获取目标流程/付费墙的控制器。 |
-| **locale**           | 可选 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。省略时，视图将以 `en` 渲染；若流程没有 `en` 本地化，则使用流程的默认本地化。需要 SDK 4.0.2 或更高版本。详见[本地化与语言代码](react-native-localizations-and-locale-codes)。 |
-| **customTags**       | 可选 | 自定义标签及其对应解析值的字典，用作内容中的占位符。自定义标签仅适用于[旧版编辑器付费墙](custom-tags-in-paywall-builder)——流程请使用[变量](onboarding-variables)代替。 |
-| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的展示时机。设为 `true` 时，AdaptyUI 将自动预获取所需产品。默认值：`false`。 |
-| **android.enableSafeArea** | 可选 | 仅适用于 Android（iOS 上忽略）。以嵌套对象形式传入：`android: { enableSafeArea: true }`。设为 `true` 时，流程视图会应用安全区域内边距。模态呈现（`createFlowView` + `present()`）默认为 `true`，嵌入式 `AdaptyFlowView` 组件默认为 `false`。默认值适用于大多数场景。 |
+| **flow** | 必填 | 用于获取所需流程/付费墙控制器的 `AdaptyFlow` 对象。 |
+| **locale** | 可选 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。若省略，视图将以 `en` 渲染；若流程中没有 `en`，则使用流程的默认本地化。需要 SDK 4.0.2 或更高版本。请参阅[本地化与语言代码](react-native-localizations-and-locale-codes)。 |
+| **customLayoutId** | <p>可选</p><p>默认值：`undefined`</p><p>SDK 4.1+</p> | 为尚未发布的 Flow & 付费墙编辑工具功能预留。在编辑工具支持定义布局 ID 之前，传入的任何值都无法匹配任何布局，`createFlowView` 将抛出 `AdaptyError`。请勿设置此参数。 |
+| **customTags** | 可选 | 自定义标签及其解析值的字典，用作内容中的占位符。自定义标签仅适用于[旧版编辑工具付费墙](custom-tags-in-paywall-builder)——流程使用[变量](onboarding-variables)代替。 |
+| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动预加载所需产品。默认值：`false`。 |
+| **android.enableSafeArea** | 可选 | 仅适用于 Android（iOS 上将被忽略）。以嵌套对象形式传递：`android: { enableSafeArea: true }`。设为 `true` 时，流程视图将应用安全区域内边距。对于模态展示（`createFlowView` + `present()`），默认为 `true`；对于嵌入式 `AdaptyFlowView` 组件，默认为 `false`。大多数情况下使用默认值即可。 |
 
 :::note
 如果您使用多种语言，请了解如何添加[流程本地化](add-paywall-locale-in-adapty-paywall-builder)，以及如何正确使用语言区域代码（[查看详情](react-native-localizations-and-locale-codes)）。

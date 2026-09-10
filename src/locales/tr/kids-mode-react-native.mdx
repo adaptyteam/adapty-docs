@@ -7,7 +7,7 @@ metadataTitle: "React Native SDK'da Kids Mode | Adapty Dokümanları"
 React Native uygulamanız çocuklara yönelikse, [Apple](https://developer.apple.com/kids/) ve [Google](https://support.google.com/googleplay/android-developer/answer/9893335) politikalarına uymanız gerekir. Adapty SDK kullanıyorsanız, birkaç basit adım onu bu politikalara uyacak ve uygulama mağazası incelemelerini geçecek şekilde yapılandırmanıza yardımcı olur.
 
 :::important
-iOS'ta Kids Mode, tüm IDFA, AdSupport ve AppTrackingTransparency kodunu derleme dışında bırakan `KidsMode` Swift package trait'i aracılığıyla etkinleştirilir. v4 SDK'yı (yerel iOS SDK'yı Swift Package Manager aracılığıyla yükler) ve **Xcode 26** veya sonrasını gerektirir. Aşağıdaki [iOS Podfile'ınızdaki güncellemeler](#updates-in-your-ios-podfile) bölümüne bakın.
+iOS'ta Kids Mode (Çocuk Modu), tüm IDFA, AdSupport ve AppTrackingTransparency kodlarını derleme dışında bırakan `KidsMode` Swift package trait'i aracılığıyla etkinleştirilir. v4 SDK ve **Xcode 26** veya daha yeni bir sürüm gerektirir. Trait'i nasıl uygulayacağınız, iOS projenizin kullandığı paket yöneticisine bağlıdır — bkz. [iOS projenizde yapılacak güncellemeler](#updates-in-your-ios-project).
 :::
 
 ## Ne gereklidir? \{#whats-required\}
@@ -47,11 +47,18 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
-### iOS Podfile'ınızdaki güncellemeler \{#updates-in-your-ios-podfile\}
 
-App Store Kids Category (veya COPPA uyumluluğu) için, yerel iOS SDK'sı tüm IDFA, AdSupport ve AppTrackingTransparency kodunu derleme dışında bırakan `KidsMode` Swift package trait'i ile derlenmelidir. React Native, yerel SDK'yı package trait'lerini iletemeyen Swift Package Manager aracılığıyla yükler, bu yüzden SDK, trait'i sizin için uygulayan bir Podfile yardımcısı sağlar. Bu adım **Xcode 26** veya sonrasını gerektirir.
+### iOS Projenizde Yapılacak Güncellemeler \{#updates-in-your-ios-project\}
 
-`ios/Podfile` içinde, yardımcıyı require edin ve onu `react_native_post_install`'dan **sonra** çağırın:
+App Store Çocuklar Kategorisi (veya COPPA uyumluluğu) için, yerel iOS SDK'sının `KidsMode` Swift package trait'i ile derlenmesi gerekir; bu seçenek IDFA, AdSupport ve AppTrackingTransparency kodlarını derleme dışında bırakır. Bu adım **Xcode 26** veya daha yeni bir sürüm gerektirir.
+
+Swift Package Manager, paket trait'lerini hiçbir entegrasyon yöntemiyle iletemiyor; bu nedenle Adapty React Native SDK, trait'i sizin yerinize uygulayan bir araç sunar. iOS projenizin nasıl kurulduğuna göre uygun olanı seçin; ayrıntılar için [Adapty SDK'yı Yükleyin](sdk-installation-react-native-pure#install-adapty-sdk) bölümüne bakın.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="cocoapods" label="CocoaPods" default>
+
+SDK, bir Podfile yardımcısıyla birlikte gelir. `ios/Podfile` dosyasında yardımcıyı dahil edin ve `react_native_post_install`'dan **sonra** çağırın:
 
 ```ruby showLineNumbers title="ios/Podfile"
 require Pod::Executable.execute_command('node', ['-p',
@@ -79,13 +86,53 @@ Ardından `pod install` komutunu çalıştırın:
 cd ios && pod install
 ```
 
-Kids Mode'un etkin olduğunu doğrulamak için `adapty.activate(...)` log satırının `kids_mode_enabled: true` bildirdiğini kontrol edin. Yardımcı çağrısını `post_install` içinde kalıcı olarak tutun — React Native, her `pod install`'da Swift package referanslarını yeniden oluşturur ve yardımcı, trait'i her seferinde yeniden uygular.
+`post_install` içindeki yardımcı çağrısını kalıcı olarak bırakın — React Native, her `pod install` çalıştırıldığında Swift paket referanslarını yeniden oluşturur ve yardımcı, özelliği her seferinde yeniden uygular.
+
+</TabItem>
+
+<TabItem value="spm" label="Swift Package Manager (experimental)">
+
+SDK, `adapty-spm-kids-mode` komutunu içerir. Bunu uygulamanızın `package.json` dosyasında bir postinstall hook olarak çalıştırın:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-spm-kids-mode enable"
+  }
+}
+```
+
+Ardından hook'u ilk kez çalıştırmak için bağımlılıklarınızı yeniden yükleyin:
+
+```sh showLineNumbers title="Shell"
+npm install
+
+# or using yarn
+yarn install
+```
+
+Bu hook kalıcı olarak `package.json` dosyasına ait. React Native'in Swift Package Manager otomatik bağlantısı, paket özelliklerini tanımaz ve her senkronizasyonda toplayıcı paketi yeniden oluşturur; bu yüzden komut, özelliği `node_modules` içindeki SDK'nın kendi manifest'inde etkinleştirir — ve her kurulum bunu değiştirir.
+
+Kids Mode'u etkinleştirdikten veya devre dışı bıraktıktan sonra, bir sonraki iOS derlemesinden önce derleme klasörünü temizleyin (Xcode'da **Product → Clean Build Folder**).
+
+:::note
+`adapty-spm-kids-mode enable` komutu, Swift Package Manager entegrasyonunu doğrulayamazsa veya CocoaPods kullanan bir uygulama tespit ederse — React Native'in `Package.swift` okumadığı ve dolayısıyla bu özelliğin etkisiz kaldığı durumlarda — kurulumu başarısız saymadan bir uyarı yazdırır. iOS projeniz kurulumu yaptığınız dizinin dışındaysa `--app-root=path/to/app` seçeneğini kullanın.
+:::
+
+Kids Mode'u kapatmak için hook'u `adapty-spm-kids-mode disable` olarak değiştirin.
+
+</TabItem>
+
+</Tabs>
+
+Kids Mode'un etkin olduğunu doğrulamak için `adapty.activate(...)` log satırında `kids_mode_enabled: true` ifadesinin görüntülendiğini kontrol edin.
 
 ### Android manifest'inizdeki güncellemeler \{#updates-in-your-android-manifest\}
 
 :::note
 Uygulamanız **yalnızca** çocuklara yönelikse ve Android 13 (API 33) veya üzeri sürümleri hedefliyorsa, Google Play `AD_ID` iznini talep etmemenizi gerektirir. Uygulamanızdaki başka bir SDK (analitik, attribution veya reklam), manifest birleştirme yoluyla bu izni ekleyebilir. `adIdCollectionDisabled` ayarı, Adapty'nin kimliği toplamasını durdurur; ancak başka bir SDK'nın tanımladığı bir izni kaldırmaz.
 :::
+
 İzni kaldırmak için `android/app/src/main/AndroidManifest.xml` dosyasındaki `<manifest>` öğesinin içine aşağıdakini ekleyin. `<manifest>` öğesi `xmlns:tools="http://schemas.android.com/tools"` bildirimini içermelidir.
 
 ```xml showLineNumbers title="AndroidManifest.xml"

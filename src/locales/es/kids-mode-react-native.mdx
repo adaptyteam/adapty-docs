@@ -5,9 +5,11 @@ metadataTitle: "Modo Kids en React Native SDK | Documentación de Adapty"
 ---
 
 Si tu aplicación React Native está destinada a niños, debes seguir las políticas de [Apple](https://developer.apple.com/kids/) y [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si usas el SDK de Adapty, unos pocos pasos sencillos te ayudarán a configurarlo para cumplir con estas políticas y superar las revisiones de las tiendas.
+
 :::important
-En iOS, el modo Kids se activa mediante el trait de Swift Package `KidsMode`, que elimina en compilación todo el código relacionado con IDFA, AdSupport y AppTrackingTransparency. Requiere el SDK v4 (que instala el SDK nativo de iOS a través de Swift Package Manager) y **Xcode 26** o posterior. Consulta [Actualizaciones en tu iOS Podfile](#updates-in-your-ios-podfile) a continuación.
+En iOS, el modo infantil se activa mediante el trait `KidsMode` del paquete Swift, que elimina en compilación todo el código de IDFA, AdSupport y AppTrackingTransparency. Requiere el SDK v4 y **Xcode 26** o posterior. La forma de aplicar el trait depende del gestor de paquetes que uses en tu proyecto iOS — consulta [Actualizaciones en tu proyecto iOS](#updates-in-your-ios-project).
 :::
+
 ## ¿Qué se necesita? \{#whats-required\}
 
 Tienes que configurar el SDK para desactivar la recopilación de:
@@ -15,11 +17,15 @@ Tienes que configurar el SDK para desactivar la recopilación de:
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
 - [Dirección IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
 Además, te recomendamos usar el customer user ID con cuidado. Un ID de usuario con formato `<FirstName.LastName>` se considera sin duda como recopilación de datos personales, al igual que el uso del correo electrónico. Para el modo Kids, la mejor práctica es usar identificadores aleatorios o anonimizados (por ejemplo, IDs con hash o UUIDs generados por el dispositivo) para garantizar el cumplimiento normativo.
+
 ## Activación del modo infantil \{#enabling-kids-mode\}
+
 ### Actualizaciones en el Adapty Dashboard
 
 En el Adapty Dashboard, debes desactivar la recopilación de direcciones IP. Para ello, ve a [App settings](https://app.adapty.io/settings/general) y haz clic en **Disable IP address collection** bajo **Collect users' IP address**.
+
 ### Actualizaciones en el código de tu aplicación móvil \{#updates-in-your-mobile-app-code\}
 
 Para cumplir con las políticas, desactiva la recopilación del IDFA del usuario (iOS), GAID/AAID (Android) y la dirección IP al activar el SDK de Adapty:
@@ -41,11 +47,19 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   },
 });
 ```
-### Actualizaciones en tu Podfile de iOS \{#updates-in-your-ios-podfile\}
 
-Para la categoría Niños del App Store (o cumplimiento con COPPA), el SDK nativo de iOS debe compilarse con el trait de paquete Swift `KidsMode`, que elimina del código todo lo relacionado con IDFA, AdSupport y AppTrackingTransparency. React Native instala el SDK nativo a través de Swift Package Manager, que no puede reenviar traits de paquete, por lo que el SDK incluye un helper para Podfile que aplica el trait por ti. Este paso requiere **Xcode 26** o posterior.
+### Actualizaciones en tu proyecto iOS
 
-En `ios/Podfile`, añade el helper y llámalo **después** de `react_native_post_install`:
+Para la categoría Kids de la App Store (o cumplimiento de COPPA), el SDK nativo de iOS debe compilarse con el trait de paquete Swift `KidsMode`, que excluye todo el código de IDFA, AdSupport y AppTrackingTransparency. Este paso requiere **Xcode 26** o posterior.
+
+Swift Package Manager no puede transferir traits de paquetes a través de ninguna de las dos rutas de integración, por lo que el SDK de Adapty React Native incluye una herramienta que aplica el trait por ti. Elige la que corresponda a cómo está configurado tu proyecto iOS, tal como se describe en [Instalar el SDK de Adapty](sdk-installation-react-native-pure#install-adapty-sdk).
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="cocoapods" label="CocoaPods" default>
+
+El SDK incluye un helper de Podfile. En `ios/Podfile`, require el helper y llámalo **después** de `react_native_post_install`:
+
 ```ruby showLineNumbers title="ios/Podfile"
 require Pod::Executable.execute_command('node', ['-p',
   'require.resolve(
@@ -71,12 +85,54 @@ Luego ejecuta `pod install`:
 ```sh showLineNumbers title="Shell"
 cd ios && pod install
 ```
-Para confirmar que Kids Mode está activo, comprueba que la línea de log `adapty.activate(...)` muestra `kids_mode_enabled: true`. Mantén la llamada al helper en `post_install` de forma permanente: React Native regenera las referencias del paquete Swift en cada `pod install`, y el helper vuelve a aplicar el trait cada vez.
+
+Mantén la llamada al helper en `post_install` de forma permanente — React Native recrea las referencias del paquete Swift en cada `pod install`, y el helper vuelve a aplicar el trait cada vez.
+
+</TabItem>
+
+<TabItem value="spm" label="Swift Package Manager (experimental)">
+
+El SDK incluye el comando `adapty-spm-kids-mode`. Ejecútalo como hook de postinstalación en el `package.json` de tu app:
+
+```json showLineNumbers title="package.json"
+{
+  "scripts": {
+    "postinstall": "adapty-spm-kids-mode enable"
+  }
+}
+```
+
+Luego reinstala tus dependencias para ejecutar el hook por primera vez:
+
+```sh showLineNumbers title="Shell"
+npm install
+
+# or using yarn
+yarn install
+```
+
+El hook pertenece permanentemente en `package.json`. El autolinking de Swift Package Manager de React Native no tiene noción de traits de paquetes y regenera el paquete agregador en cada sincronización, por lo que el comando activa el trait en el propio manifiesto del SDK dentro de `node_modules` — que cada instalación reemplaza.
+
+Después de activar o desactivar el Modo Niños, limpia la carpeta de compilación antes de la próxima build de iOS (**Product → Clean Build Folder** en Xcode).
+
+:::note
+`adapty-spm-kids-mode enable` muestra una advertencia, sin interrumpir la instalación, cuando no puede confirmar una integración con Swift Package Manager o detecta una aplicación con CocoaPods — donde React Native no lee ningún `Package.swift`, por lo que el parámetro no tiene efecto. Si tu proyecto iOS está fuera del directorio desde el que instalas, usa `--app-root=ruta/a/la/app`.
+:::
+
+Para desactivar el modo Kids Mode, cambia el hook a `adapty-spm-kids-mode disable`.
+
+</TabItem>
+
+</Tabs>
+
+Para confirmar que el modo Kids Mode está activo, verifica que la línea de log `adapty.activate(...)` muestre `kids_mode_enabled: true`.
+
 ### Actualizaciones en tu manifiesto de Android \{#updates-in-your-android-manifest\}
 
 :::note
 Si tu app está dirigida **exclusivamente** a niños y compila contra Android 13 (API 33) o superior, Google Play exige que no solicites el permiso `AD_ID`. Otro SDK de tu app (de analítica, atribución o publicidad) puede añadir este permiso mediante la fusión de manifiestos. Establecer `adIdCollectionDisabled` impide que Adapty recopile el ID, pero no elimina un permiso que haya declarado otro SDK.
 :::
+
 Para eliminar el permiso, añade lo siguiente dentro del elemento `<manifest>` de `android/app/src/main/AndroidManifest.xml`. El elemento `<manifest>` debe declarar `xmlns:tools="http://schemas.android.com/tools"`.
 
 ```xml showLineNumbers title="AndroidManifest.xml"
