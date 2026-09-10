@@ -6,6 +6,18 @@ metadataTitle: "App Store インテグレーションのトラブルシューテ
 
 この記事では、App Store インテグレーションに関する一般的な問題を説明します。各セクションでは、症状・根本原因・解決方法を紹介します。
 
+## 認証情報を保存する際の「The provided field values are incorrect」エラー \{#the-provided-field-values-are-incorrect-when-saving-credentials\}
+
+アプリ内課金の認証情報を保存すると、Adaptyは **In-app purchase Issuer ID**、**In-app purchase Key ID**、および **.p8 ファイル**から認証トークンを生成し、Appleに対して検証を行います。このエラーは、Appleがそのトークンを拒否したことを意味します。以下の順序で各値を確認してください：
+
+1. **キーの種類。** キーは、App Store Connect の **Users and Access** → **Integrations** → **In-App Purchase** で取得した **In-App Purchase** キーである必要があります。**Team keys** タブのキー（App Store Connect API キー）には固有の **Issuer ID** と **Key ID** がありますが、Apple はここではそのキーを拒否します。そのキーは[設定のステップ 6](app-store-connection-configuration#step-6-add-app-store-connect-api-key)で使用します。
+2. **同じアカウントとチーム。** Issuer ID、Key ID、.p8 ファイルは、アプリと同じ App Store Connect チームのものを使用してください。代理店アカウントなど別のチームで生成されたキーは検証に失敗します。
+3. **.p8 ファイル本体。** App Store Connect からダウンロードしたファイルをそのままアップロードしてください。キーの内容をペーストして再作成したファイルは失敗することがよくあります。App Store Connect ではキーのダウンロードは 1 回のみ可能なので、元のファイルを紛失した場合は新しいキーを生成してください。
+4. **Bundle ID。** Bundle ID は App Store Connect に登録されているアプリの Bundle ID と完全に一致する必要があります。スペースなしのリバース DNS 形式（例：`com.company.app`）で指定してください。
+5. **隠れた文字。** 各 ID は App Store Connect から直接コピーしてください。余分な空白や似た文字（例：数字の `1` の代わりに小文字の `l`）があると検証が失敗します。
+
+この検証では、アプリ内課金キーの3つのフィールドとバンドルIDのみを使用します。App-Specific Shared SecretおよびApp Store Connect APIキー（[App Store Connect API key](app-store-connection-configuration#step-6-add-app-store-connect-api-key)）はこの検証に関与しないため、どちらを再入力しても結果は変わりません。
+
 ## プロダクトが表示されない \{#products-dont-appear\}
 
 以下の 2 つの症状は、同じ根本原因を示しています。
@@ -24,6 +36,17 @@ App Store Connect で、App Store Server Notifications のステータスが **D
 インストール統計には影響しません。Adapty はインストールをサーバー側の通知からではなく、アプリの初回起動時にカウントします。
 
 更新やキャンセルのデータが遅れている場合、Delayed ステータスが最も可能性の高い原因です。Apple がバックログを処理するにつれて、通常は自動的に解消されます。
+
+## 購入は成功したのにユーザーがアクセスを失う \{#a-purchase-succeeds-but-the-customer-loses-access\}
+
+ユーザーが支払いを完了し、一時的にアクセスできる状態になりますが、アプリが Adapty からプロファイルを再取得した次のタイミングでアクセスを失ってしまいます。Apple は決済を受け取っていますが、トランザクションが Adapty に届いていないため、プロファイルにはアクセスレベルが付与されておらず、売上もレポートに反映されません。
+
+原因はたいてい次のどれかです：
+
+- **認証情報が機能しなくなった場合**: AdaptyがAppleとのトランザクション検証に失敗しました。[アップデートが届かなくなった場合](store-sync#if-updates-stop-arriving)の手順に従って認証情報を確認し、購入検証に使用しているものを差し替えてください。
+- **プロダクトがAdaptyに紐付けられていない場合**: 購入されたストアのプロダクトIDがAdaptyのプロダクトに紐付けられていないため、付与すべきアクセスレベルが存在しません。正確な**App Store Product ID**でプロダクトが登録されており、[アクセスレベル](access-level)が割り当てられていることを確認してください。
+
+Adapty SDK はトランザクションの再試行を続けるため、記録できた時点でアクセスが回復します。
 
 ## Adapty の価格が App Store と一致しない \{#prices-in-adapty-dont-match-app-store\}
 

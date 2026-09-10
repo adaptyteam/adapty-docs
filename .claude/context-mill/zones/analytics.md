@@ -1,6 +1,6 @@
 ---
 zone: analytics
-sources: [analytics-export-api-spec, dashboard-backend]
+sources: [analytics-export-api-spec, dashboard-backend, dashboard-interface]
 reviewed_shape:
 reviewed_at:
 ---
@@ -101,6 +101,37 @@ invisible until someone's number looks wrong. So the question for a task here is
   `controls-filters-grouping-compare-proceeds` says so explicitly. Paywall and flow **view** counts are a
   third source entirely — `chart_metrics_repository/query_macros/select_paywall_views.sql` only reads
   what the SDK logged, so ground truth for whether a view exists is an SDK repo (see Boundaries).
+
+  **"The SDK logged it" is necessary but not sufficient — correction of 2026-08-26.** Which *table* a
+  logged show lands in is decided dashboard-side, and until ADP-7600 a flow screen show never reached
+  `adapty_analytics_paywall_visit` at all: `FlowShowedRouterApp` routes the event to the paywall topic
+  **or** the flow topic, never both, and picks the flow topic as soon as the variation carries a
+  `flow_id` — which a screen's child variation always does. So flow screen views lived only in
+  `adapty_analytics_flow_events`, and every paywall-view metric (charts page + conversion v2's
+  View → Trial / View → Paid) silently understated its denominator for any app on Flow Builder. Funnels
+  had compensated with their own union; nothing else had. ADP-7600 unions the two sources back together
+  in `render_paywall_view_rows_query` in the same file. Verified by reading `origin/ADP-7600` against
+  `origin/develop` in `dashboard-backend` — on `develop` the macro still reads
+  `adapty_analytics_paywall_visit` alone (line 63), so **this is branch state, not merged behaviour**;
+  re-check before treating the union as live. The general lesson outlives the branch: for a view-count
+  ticket, "the SDK logged it" and "the metric counts it" are two questions, and the routing between
+  them is a dashboard-backend fact.
+
+- **Where a filter/group attribute's label and per-chart availability actually live — backend, with the
+  frontend able to subtract.** Added 2026-08-26 while adding the Flow / Flow screen dimensions. The
+  display label of every filter and grouping attribute is backend-owned, the same way integration form
+  fields are (see `sources.md`'s `share.py` rule): `SEGMENTATION_TITLES` in
+  `domain/enums/metrics/chart_metrics_segmentation.py` for groupings and `METRICS_FILTER_TITLES_MAP` in
+  `domain/enums/metrics/metrics_filter_field.py` for filters. **Never take an attribute name from the
+  interface repo** — grepping `adapty-dashboard-interface` for `flow_screen_id` returns the id and no
+  label at all. Which attributes a given chart offers is `domain/chart_metrics_segmentations_config.py`:
+  a `COMMON_SEGMENTATIONS` tuple plus per-chart-type extras, and that file is what to read when
+  verifying a metric article's "Available filters and grouping" list. The catch is that the backend
+  returns **one** attribute list for the whole analytics page, so the chart drops what it cannot resolve:
+  `installException` in `apps/web/src/pages/dashboard/advanced/lib.tsx` (interface repo) is why Installs
+  and ARPU offer no Paywall, Placement, Product, Flow or Flow screen even though the backend config
+  grants ARPU all of them. Both files verified on `origin/develop` / `origin/master` respectively, so
+  this ownership split is current, not branch state.
 - TODO(owner): `sources.md` has no entry naming the analytics computation layer, so tasks in this zone
   should cite `dashboard-backend` and name the module they read, as `integrations` does for `share.py`.
   A related open item: the raw ClickHouse tables the command above reads from
@@ -170,8 +201,8 @@ here unchanged and are not restated.
 | cancelled-subscriptions | — | analyst | 3 | tutorial |
 | charts | entry | analyst | 3 | tutorial |
 | churned-expired-subscriptions | — | analyst | 3 | tutorial |
-| controls-filters-grouping-compare-proceeds | — | analyst | 8 | tutorial |
-| discrepancies-and-troubleshooting | — | analyst | 19 | tutorial |
+| controls-filters-grouping-compare-proceeds | — | analyst | 9 | tutorial |
+| discrepancies-and-troubleshooting | — | analyst | 21 | tutorial |
 | expired-churned-trials | — | analyst | 3 | tutorial |
 | grace-period | — | analyst | 3 | tutorial |
 | grace-period-converted | — | analyst | 4 | tutorial |

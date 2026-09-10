@@ -18,6 +18,7 @@ with shared judgment (who reads it, what's internal, what ripples) — rather th
 | `platforms.md` | human | Per-platform facts: ground-truth source id, current SDK version state, local quirks, the release-branch scope rule. |
 | `scope.md` | human | **Corpus-wide scope rules** — what earns a doc, what doesn't, depth and duplication policy, which claims need evidence first. A zone brief's `What we document, what we don't` carries only its delta from this file. Read it before deciding how much of a change to write up. |
 | `sources.md` | human | Catalog of ground-truth code/spec sources (repo path, remote, default ref, branch pattern). |
+| `sources.local.md` | each writer, gitignored | Per-machine `path:` overrides for `sources.md` entries — same `## <id>` heading and `path:` line. Absent when your clones match the shared layout; `missing-path` on every source means you need one. |
 | `rollouts/<slug>.md` | agent, reviewed by human | State of one feature rolling across platforms: canon decided on the first platform, a per-platform table, open questions. |
 | `.zone-state.json` | script | Snapshot of member hashes at the last `mill:reviewed <zone>`, used to compute drift. Never hand-edit. |
 

@@ -91,22 +91,24 @@ Bu komut bir Apple yetkilendirme bağlantısı yazdırır ve Apple hesabın bağ
 
 ### adapty asa orgs list
 
-Şirketinize ait kampanya gruplarını (Apple Ads kuruluşları) listeler.
+Şirketinizde kullanılabilir kampanya gruplarını (Apple Ads organizasyonları) listeleyin.
 
 ```bash
 adapty asa orgs list
 ```
 
-Her satır birbiriyle karıştırılmaması gereken iki tanımlayıcı içerir:
+Her satır iki tanımlayıcı içerir ve bunlar birbirinin yerine kullanılamaz:
 
-| Alan | Kullanım yeri |
+| Alan | Kullanıldığı yer |
 |---|---|
-| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) komutundaki `--org` bayrağının ve [liste filtresi](#list-filters) olarak `--campaign-group` bayrağının aldığı UUID |
-| `org_id` | Apple'ın sayısal kuruluş kimliği. Her iki bayrak da bu değeri reddeder |
+| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) üzerinde `--org` tarafından ve [liste filtresi](#list-filters) olarak `--campaign-group` tarafından alınan UUID |
+| `org_id` | [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) üzerinde `--org-id` tarafından alınan Apple'ın sayısal organizasyon ID'si. `--org` ve `--campaign-group` bunu kabul etmez |
 
-`--org` yalnızca `campaigns create` komutunda bulunur. Hiçbir listeleme komutu bu bayrağı kabul etmez.
+`--org` yalnızca `campaigns create` komutunda mevcuttur. Hiçbir listeleme komutu bunu kabul etmez.
 
-[Sayfalama bayraklarını](#global-flags) destekler.
+Her satır aynı zamanda bir `payment_model` içerir. Bu değer `LOC` olduğunda, organizasyon kredi satırı bazında faturalandırılır ve bu organizasyondaki her kampanyanın [`--invoice-*` flag'lerine](#adapty-asa-campaigns-create) ihtiyacı vardır.
+
+[Sayfalandırma flag'lerini](#global-flags) kabul eder.
 
 ### adapty asa apps list
 
@@ -157,7 +159,7 @@ Bir kampanya oluşturun.
 adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
 ```
 
-| Bayrak | Zorunlu | Açıklama |
+| Bayrak | Gerekli | Açıklama |
 |---|---|---|
 | `--org` | Evet | Kampanya grubu ID'si (UUID). Bkz. [`orgs list`](#adapty-asa-orgs-list) |
 | `--name` | Evet | Kampanya adı |
@@ -165,13 +167,22 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--country` | Evet | Ülke veya bölge kodu. Birden fazla için tekrarlayın: `--country US --country CA` |
 | `--daily-budget` | Evet | Günlük bütçe, düz tutar olarak; örneğin `50` veya `12.50` |
 | `--budget` | Hayır | Toplam ömür boyu bütçe |
-| `--target-cpa` | Hayır | Hedef edinim başına maliyet |
+| `--target-cpa` | Hayır | Hedef edinim başına maliyet. `--daily-budget` değerinden düşük olmalıdır |
 | `--currency` | Hayır | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
 | `--bidding-strategy` | Hayır | `MANUAL_CPT` veya `MAX_CONVERSIONS`. Apple varsayılanı: `MANUAL_CPT` |
 | `--ad-channel-type` | Hayır | `SEARCH` veya `DISPLAY`. Varsayılan: `SEARCH` |
 | `--billing-event` | Hayır | `TAPS` veya `IMPRESSIONS`. Varsayılan: `TAPS` |
 | `--supply-source` | Hayır | Tedarik kaynağı, tekrarlanabilir. Varsayılan: `APPSTORE_SEARCH_RESULTS` |
 | `--status` | Hayır | Başlangıç durumu: `ENABLED` veya `PAUSED` |
+| `--invoice-advertiser` | Kredi hattı | Faturalama Seçenekleri: reklamveren adı |
+| `--invoice-order-number` | Kredi hattı | Faturalama Seçenekleri: sipariş numarası |
+| `--invoice-contact-name` | Kredi hattı | Faturalama Seçenekleri: alıcı iletişim adı |
+| `--invoice-contact-email` | Kredi hattı | Faturalama Seçenekleri: alıcı iletişim e-postası |
+| `--invoice-billing-email` | Kredi hattı | Faturalama Seçenekleri: fatura iletişim e-postası |
+
+`payment_model` değeri `LOC` olan bir organizasyon, kredi limitiyle faturalandırılır ve Apple, bu organizasyonun her kampanyasında Faturalama Seçenekleri gerektirir. Tüm beş `--invoice-*` bayrağını tek bir çağrıda geçirin — eksik set, istek gönderilmeden önce reddedilir. Bkz. [Kredi limiti için Faturalama Seçeneklerini Ayarlama](developer-cli-ads-manager#invoicing-options).
+
+Yanıt, `serving_status` ve `serving_state_reasons` içerir. Bir kampanya oluşturulmuş olsa bile yayınlanmayabilir: `MAX_CONVERSIONS` kampanyası bir [otomatik reklam grubu](#adapty-asa-ad-groups-create) bekler; kredi limitli kampanya ise Faturalama Seçeneklerini bekler. Her iki durumda da komut, nedeni ve çözüm sağlayan komutu yazdırır.
 
 ### adapty asa campaigns update
 
@@ -185,18 +196,109 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 |---|---|
 | `campaign-id` | Kampanya ID'si (UUID) |
 
-| Flag | Açıklama |
+| Bayrak | Açıklama |
 |---|---|
 | `--name` | Yeni kampanya adı |
 | `--status` | `ENABLED` veya `PAUSED` |
-| `--country` | Ülke listesini değiştirir. Birden fazla ülke için tekrarlayın |
+| `--country` | Ülke listesini değiştirir. Birden fazla için tekrarlayın |
 | `--daily-budget` | Yeni günlük bütçe |
-| `--budget` | Yeni toplam ömür boyu bütçe |
-| `--target-cpa` | Yeni hedef edinim başına maliyet |
+| `--budget` | Yeni toplam yaşam boyu bütçe |
+| `--target-cpa` | Yeni hedef edinim başı maliyet |
 | `--bidding-strategy` | `MANUAL_CPT` veya `MAX_CONVERSIONS` |
 | `--currency` | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
+| `--invoice-advertiser` | Faturalama Seçenekleri: reklamveren adı |
+| `--invoice-order-number` | Faturalama Seçenekleri: sipariş numarası |
+| `--invoice-contact-name` | Faturalama Seçenekleri: alıcı iletişim adı |
+| `--invoice-contact-email` | Faturalama Seçenekleri: alıcı iletişim e-postası |
+| `--invoice-billing-email` | Faturalama Seçenekleri: fatura iletişim e-postası |
 
-En az bir flag zorunludur.
+En az bir bayrak gereklidir.
+
+Beş `--invoice-*` bayrağı birlikte kullanılır ve depolanan Faturalama Seçeneklerini bir küme olarak değiştirir; bu nedenle yalnızca birini değiştirmek istediğinizde bile beşini de geçirmeniz gerekir. Eksik küme, istek gönderilmeden önce reddedilir.
+
+### adapty asa campaigns bulk-create
+
+Kampanyalar, reklam grupları, anahtar kelimeler, negatif anahtar kelimeler ve reklamlardan oluşan tüm kampanya yapısını tek bir işlemde oluşturun.
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+JSON yazmak yerine native bir Apple Ads toplu şablonunu dönüştürün:
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| Bayrak | Varsayılan | Açıklama |
+|---|---|---|
+| `--file` | — | Kampanya yapısını içeren JSON dosyası veya standart girdiden okumak için `-` |
+| `--from-file` | — | Sunucuda dönüştürülecek Apple Ads toplu şablonu: [`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) veya bir [keywords `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Apple'ın sayısal organizasyon kimliği (`org_id`). Bkz. [`orgs list`](#adapty-asa-orgs-list). `--from-file` ile birlikte zorunludur |
+| `--preview` | — | `--from-file` ile birlikte: dönüştürülen yapıyı yazdırır ve durur. Hiçbir şey oluşturulmaz |
+| `--wait` / `--no-wait` | `--wait` | İşlem tamamlanana kadar yoklama yapar. `--no-wait` işlem kimliğini yazdırır ve geri döner |
+| `--poll-interval` | `5` | İlerleme yoklamaları arasındaki saniye cinsinden süre |
+| `--timeout` | `900` | İşlemin tamamlanması için beklenecek maksimum saniye |
+
+Tam olarak `--file` ve `--from-file` seçeneklerinden biri gereklidir.
+
+Yapı, en üst düzeyde kampanya grubunu adlandırır ve diğer her şeyi içine yerleştirir:
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id`, Apple'ın sayısal organizasyon kimliğini alır; bunun yerine UUID geçirmek için `campaign_group_internal_id` kullanın. `payload` içeren bir düğüm oluşturulur. Mevcut bir varlığı `id`'siyle adlandıran düğüm bir anchor'dır — mevcut bir kampanyaya reklam grubu eklemek için bunu kullanın; aynı işlemde varlığı değiştirmek için `update_payload` ekleyin. Her kampanya `ad_groups` içine, her reklam grubu ise `keywords`, `negative_keywords` ve `ads` içine yerleştirilir. Bir kampanya, kampanya düzeyindekiler için doğrudan `negative_keywords` de alır.
+
+Yapının tamamı herhangi bir şey oluşturulmadan önce doğrulanır ve bir ret, her geçersiz düğümü listeler. `--from-file` ile dönüştürme sorunları sayfa, satır ve sütunla birlikte raporlanır; dönüştürme uyarıları gönderimi durdurmaz, ancak dönüştürme hataları iptal eder. Göndermeden önce komut, yapının kaç kampanya, reklam grubu, anahtar kelime, negatif anahtar kelime ve reklam içerdiğini bildirir ve onay ister.
+
+Komut ardından işlemi yoklar ve üç son durumdan biri gerçekleşene kadar ilerlemeyi yazdırır:
+
+| Durum | Anlam |
+|---|---|
+| `success` | Tüm nesneler oluşturuldu |
+| `partial` | Bazı nesneler oluşturulamadı. Her hata Apple'ın hata mesajıyla birlikte yazdırılır |
+| `failed` | İşlem başarısız oldu ve komut sıfır dışı bir değerle çıkış yaptı |
+
+İşlem `--timeout` saniye sonra tamamlanmamışsa, komut geri döner ve daha sonra çalıştırmak için [`bulk-status`](#adapty-asa-campaigns-bulk-status) çağrısını yazdırır.
+
+### adapty asa campaigns bulk-status
+
+Bir toplu işlemin ilerleme durumunu gösterir: durum, nesne sayıları ve nesne başına log.
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `operation-id` | [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) tarafından yazdırılan işlem kimliği (UUID) |
+
+`status` alanı `pending`, `running`, `success`, `partial` veya `failed` değerini alır. `counts` bloğu toplam içinden kaç nesnenin uygulandığını, başarısız olduğunu ve beklemede olduğunu raporlar.
+
+[Sayfalandırma bayraklarını](#global-flags) kabul eder.
 
 ## Reklam grupları \{#ad-groups\}
 
@@ -234,14 +336,17 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 |---|---|---|
 | `--campaign` | Evet | Kampanya ID'si (UUID) |
 | `--name` | Evet | Reklam grubu adı |
-| `--default-bid` | Evet | Varsayılan teklif, düz tutar olarak, örneğin `1.20` |
+| `--default-bid` | `--automated` belirtilmezse zorunlu | Varsayılan teklif, düz tutar olarak, örneğin `1.20` |
 | `--cpa-goal` | Hayır | Edinim başına maliyet hedefi |
-| `--pricing-model` | Hayır | `CPC` veya `CPM`. Apple her reklam grubunda birini zorunlu kılar. Varsayılan: `CPC` |
+| `--pricing-model` | Hayır | `CPC` veya `CPM`. Apple her reklam grubunda birini gerektirir. Varsayılan: `CPC` |
 | `--start-time` | Hayır | Zamanlama başlangıcı (`YYYY-MM-DD`). Varsayılan: bugün |
 | `--end-time` | Hayır | Zamanlama bitişi (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | Hayır | Apple'ın anahtar kelimeleri otomatik eklemesine izin ver |
+| `--automated` | Hayır | `MAX_CONVERSIONS` kampanyasının gerektirdiği otomatik reklam grubunu oluştur |
 | `--currency` | Hayır | Bu çağrıdaki tutarlar için para birimi kodu. Varsayılan: `USD` |
 | `--status` | Hayır | Başlangıç durumu: `ENABLED` veya `PAUSED` |
+
+`--automated`, reklam grubunu otomatik anahtar kelimelere dahil eder; bu nedenle `--automated-keywords` ile birlikte kullanılamaz. Apple, otomatik reklam grubunu kendisi zamanlar ve etkin tutar; bu yüzden `--start-time` ve `--status PAUSED` reddedilir — bunun yerine kampanyayı duraklatın. Bkz. [Max Conversions kampanyası oluşturma](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 

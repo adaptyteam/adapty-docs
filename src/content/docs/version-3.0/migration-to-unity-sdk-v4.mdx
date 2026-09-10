@@ -31,8 +31,8 @@ Coming from the 4.0 beta? Replace the pinned beta tag with the [4.1.0 install](#
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`, `PaywallViewDidAppear`, and other `PaywallView...` callbacks | `FlowViewDidPerformAction`, `FlowViewDidAppear`, and other `FlowView...` callbacks |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` with a `string` source | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` with an `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` as `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` as `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 | Adapty Attribution enabled automatically | disabled by default — opt in with `Builder.SetAdaptyAttributionEnabled(true)` |
 | Fallback file downloaded for 3.x | new fallback file format — download the file again |
 | `Adapty.SetFallbackPaywalls(...)` (deprecated in v3) | removed — use `Adapty.SetFallback(fileName, ...)` |
@@ -147,6 +147,10 @@ As in v3, you do not need to call this method when displaying flows or paywalls 
 
 Rename the factory method and pass the `AdaptyFlow`. The returned view type is renamed from `AdaptyUIPaywallView` to `AdaptyUIFlowView`, but its methods (`Present`, `Dismiss`) are unchanged, and the optional parameters object keeps the same fields (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) under the new `AdaptyUICreateFlowViewParameters` name, plus two new ones — `Locale` and `EnableSafeAreaPaddings`:
 
+:::note
+`CustomTimers` still exists, but it only affects legacy Paywall Builder paywalls. A flow's [countdown timer](flow-timer) runs on the behavior set in the Flow Builder, so a flow ignores whatever you pass here.
+:::
+
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
 + AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
@@ -244,18 +248,36 @@ The method is for App Store promoted in-app purchases and is never called on And
 
 ## Renamed external attribution APIs
 
-Starting from SDK version 4.1, the APIs for passing attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) are renamed to match the native SDKs. There are no deprecated aliases, so existing call sites stop compiling until you rename them:
+Starting from SDK version 4.1, the APIs for passing attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) are renamed to match the native SDKs, and the provider changes from a string to a type. There are no deprecated aliases, so existing call sites stop compiling until you update them:
 
 | Before 4.1 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` as a `string` | `provider` as an `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` as `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` as `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 
-Only the names change. The provider is the same string as before (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), attribution data is still accepted as a dictionary or a JSON string, and the profile property is still an `IReadOnlyList<string>`:
+Renaming the method alone isn't enough — swap the provider argument in the same edit:
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` carries the identifier the backend knows the provider by, with six shared instances: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin`, and `Custom`. For a provider Adapty adds after this SDK release, construct one from its identifier — `new AdaptyExternalAttributionProvider("your_provider")` — and it reaches the backend unchanged. Surrounding whitespace is trimmed.
+
+Attribution data goes in as a **serialized JSON string**. If you hold it as a dictionary, serialize it first:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+On the profile side, read the applied providers through the new type:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Adapty Attribution is disabled by default

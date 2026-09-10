@@ -27,18 +27,18 @@ Adapty Unity SDK 4.1 は 4.x ラインの最初の安定版リリースです。
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener`（新しい必須メソッド `OnReceivePromotedPurchase` を追加） |
+| `AdaptyEventListener` | `IAdaptyEventListener`、新しい必須メソッド `OnReceivePromotedPurchase` が追加 |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`、`PaywallViewDidAppear`、その他の `PaywallView...` コールバック | `FlowViewDidPerformAction`、`FlowViewDidAppear`、その他の `FlowView...` コールバック |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
-| Adapty アトリビューションは自動的に有効化 | デフォルトでは無効 — `Builder.SetAdaptyAttributionEnabled(true)` でオプトイン |
-| フォールバックファイルは 3.x 用にダウンロード済み | 新しいフォールバックファイル形式 — 再度ファイルをダウンロードしてください |
-| `Adapty.SetFallbackPaywalls(...)` （v3 で非推奨） | 削除済み — `Adapty.SetFallback(fileName, ...)` を使用してください |
-| `Builder.SetIDFACollectionDisabled(...)` （v3 で非推奨） | 削除済み — `Builder.SetAppleIDFACollectionDisabled(...)` を使用してください |
-| `paywall.Products`（`AdaptyProductReference` のリスト） | 削除済み — `ProductIdentifiers` または `VendorProductIds` を使用するか、`GetPaywallProducts(flow)` を呼び出して完全なプロダクトを取得してください |
-| `AdaptyProductReference` | パブリック型として削除済み — [データモデル](#data-model) を参照してください |
+| `Adapty.UpdateAttribution(data, source, ...)` (`string` 型の source) | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` (`AdaptyExternalAttributionProvider` 型) |
+| `AdaptyProfile.AppliedAttributionSources`（`IReadOnlyList<string>` 型） | `AdaptyProfile.AppliedExternalAttributionProviders`（`IReadOnlyList<AdaptyExternalAttributionProvider>` 型） |
+| Adapty アトリビューションはデフォルトで有効 | デフォルトで無効 — `Builder.SetAdaptyAttributionEnabled(true)` でオプトイン |
+| 3.x 向けフォールバックファイルをダウンロード済み | 新しいフォールバックファイル形式 — ファイルを再ダウンロードしてください |
+| `Adapty.SetFallbackPaywalls(...)` (v3 で非推奨) | 削除済み — `Adapty.SetFallback(fileName, ...)` を使用してください |
+| `Builder.SetIDFACollectionDisabled(...)` (v3 で非推奨) | 削除済み — `Builder.SetAppleIDFACollectionDisabled(...)` を使用してください |
+| `paywall.Products`（`AdaptyProductReference` のリスト） | 削除済み — `ProductIdentifiers` または `VendorProductIds` を使用するか、`GetPaywallProducts(flow)` を呼び出してフル情報を取得してください |
+| `AdaptyProductReference` | パブリック型として削除 — [データモデル](#data-model) を参照 |
 | `paywall.RemoteConfigString` | 削除済み — `flow.RemoteConfig?.Data` を使用してください |
 
 `AdaptyPaywallProduct` はその名前を保持します。プロダクトは引き続きフローに属し、`GetPaywallProducts` もその名前を保持しますが、現在は `AdaptyFlow` を受け取ります。`GetFlow` および `GetFlowForDefaultAudience` メソッドは `locale` パラメーターを受け取らなくなりました。購入およびプロファイル API（`MakePurchase`、`RestorePurchases`、`GetProfile`、`Identify`、`UpdateProfile`）は変更されていません。`SetFallback` はそのシグネチャを保持しますが、読み込むファイルは再ダウンロードが必要です。詳細は[フォールバックファイル](#fallback-files)を参照してください。オンボーディングメソッドは引き続き動作しますが、非推奨となっています。詳細は[オンボーディング API の非推奨](#onboarding-api-deprecation)を参照してください。一部のデフォルト動作が変更されました。詳細は[デフォルト動作の変更](#default-behavior-changes)を参照してください。
@@ -147,6 +147,10 @@ v3 と同様に、[Flow Builder](adapty-flow-builder) または [Paywall Builder
 
 ファクトリーメソッドの名前を変更し、`AdaptyFlow` を渡します。返されるビューの型は `AdaptyUIPaywallView` から `AdaptyUIFlowView` に変更されていますが、そのメソッド（`Present`、`Dismiss`）は変更されておらず、省略可能なパラメーターオブジェクトは `AdaptyUICreateFlowViewParameters` という新しい名前になり、同じフィールド（`LoadTimeout`、`PreloadProducts`、`CustomTags`、`CustomTimers`、`CustomAssets`、`ProductPurchaseParameters`）に加え、`Locale` と `EnableSafeAreaPaddings` の2つの新しいフィールドが追加されています：
 
+:::note
+`CustomTimers` は引き続き存在しますが、レガシーペイウォールビルダーのペイウォールにのみ影響します。フローの[カウントダウンタイマー](flow-timer)はフローービルダーで設定した動作に従って動作するため、ここで渡した値はフローには無視されます。
+:::
+
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
 + AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
@@ -158,7 +162,7 @@ v3 と同様に、[Flow Builder](adapty-flow-builder) または [Paywall Builder
   });
 ```
 
-`CreateFlowView` は、フローにビュー設定がない場合にエラーを返します。これは v3 の `HasViewConfiguration` チェックを置き換えるものです:
+`CreateFlowView` はビューが設定されていないフローに対してエラーを返します — これにより v3 の `HasViewConfiguration` チェックが不要になります：
 
 ```diff showLineNumbers
 - if (paywall.HasViewConfiguration) {
@@ -174,7 +178,7 @@ v3 と同様に、[Flow Builder](adapty-flow-builder) または [Paywall Builder
 ```
 
 :::note
-フローのビューは使い捨てです。`Dismiss` を呼び出すとビューが破棄されるため、再度フローを表示するには `CreateFlowView` をもう一度呼び出してください。
+フロービューはシングルユース（使い捨て）です。`Dismiss` を呼び出すとビューが破棄されるため、再度フローを表示するには `CreateFlowView` を再度呼び出してください。
 :::
 
 ### Android セーフエリアパディング \{#android-safe-area-paddings\}
@@ -242,20 +246,38 @@ public void OnReceivePromotedPurchase(AdaptyPromotedProduct product) {
 - `IAdaptyFlowsEventsListener`の新しい`FlowViewDidReceiveAnalyticEvent`コールバックは、フローからのアナリティクスイベントを報告します。ユーザーが開いたすべての画面のスクリーンビューから始まります。[フロースクリーンビューのトラッキング](unity-flow-screen-views)を参照してください。
 - `AdaptyUI.OpenUrl(url, openIn, ...)` と `AdaptyUI.RequestAppReview(...)` — `open_url`アクションとアプリレビューリクエストの背後にあるネイティブ処理。デフォルトのURL動作を維持するには`FlowViewDidPerformAction`から`OpenUrl`を呼び出してください。`RequestAppReview`はデフォルトのアプリレビュープロンプトをバックアップしますが、フローはまだこれをトリガーしません。
 
-## 外部アトリビューション API のリネーム \{#renamed-external-attribution-apis\}
+## 外部アトリビューション API の名称変更 \{#renamed-external-attribution-apis\}
 
-SDK バージョン 4.1 以降、外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、またはカスタム）からアトリビューションデータを渡すための API が、ネイティブ SDK に合わせてリネームされました。非推奨のエイリアスは用意されていないため、リネームするまで既存の呼び出し箇所はコンパイルエラーになります。
+SDK バージョン 4.1 以降、外部プロバイダー（Adjust、AppsFlyer、Branch、Tenjin、またはカスタム）からアトリビューションデータを渡す API がネイティブ SDK に合わせて名称変更され、プロバイダーの指定方法が文字列から型へ変更されました。後方互換エイリアスは存在しないため、更新するまで既存の呼び出し箇所のコンパイルが失敗します：
 
-| 4.1 以前 | 4.1 |
+| 4.1以前 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source`（`string`型） | `provider`（`AdaptyExternalAttributionProvider`型） |
+| `AdaptyProfile.AppliedAttributionSources`（`IReadOnlyList<string>`型） | `AdaptyProfile.AppliedExternalAttributionProviders`（`IReadOnlyList<AdaptyExternalAttributionProvider>`型） |
 
-名前だけが変わります。プロバイダーは以前と同じ文字列（`"adjust"`、`"appsflyer"`、`"branch"`、`"tenjin"`、`"apple_search_ads"`、`"custom"`）、アトリビューションデータは引き続きディクショナリまたはJSON文字列として受け付け、プロファイルプロパティは引き続き `IReadOnlyList<string>` です。
+メソッド名を変更するだけでは不十分です。同じ編集でプロバイダー引数も入れ替えてください：
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider`は、バックエンドがプロバイダーを識別するための識別子を持っており、6つの共有インスタンスがあります：`AppleAds`（`apple_search_ads`）、`Adjust`、`Appsflyer`、`Branch`、`Tenjin`、`Custom`。このSDKリリース後にAdaptyが追加したプロバイダーの場合は、識別子から直接インスタンスを生成してください — `new AdaptyExternalAttributionProvider("your_provider")` — そのままバックエンドに送信されます。前後の空白は自動的に削除されます。
+
+アトリビューションデータは**シリアライズされたJSON文字列**として渡します。ディクショナリとして保持している場合は、先にシリアライズしてください：
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+プロファイル側では、新しい型を通じて適用済みプロバイダーを読み取ります：
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Adapty アトリビューションはデフォルトで無効 \{#adapty-attribution-is-disabled-by-default\}

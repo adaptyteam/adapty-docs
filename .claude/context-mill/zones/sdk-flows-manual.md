@@ -171,7 +171,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | android-restore-purchase | — | dev | 1 | android |
 | android-troubleshoot-purchases | — | dev | 6 | android |
 | capacitor-implement-paywalls-manually | entry | dev | 2 | capacitor |
-| capacitor-making-purchases | — | dev | 4 | capacitor |
+| capacitor-making-purchases | — | dev | 5 | capacitor |
 | capacitor-quickstart-manual | — | dev | 8 | capacitor |
 | capacitor-restore-purchase | — | dev | 0 | capacitor |
 | fetch-paywalls-and-products | — | dev | 7 | ios |

@@ -1,0 +1,46 @@
+---
+no_index: true
+---
+
+コールバックは2つのイベントを配信します。`name` でフィルタリングして `flow_user_input` イベントのみを表示してください。レスポンスのJSONペイロードは次のようになります。
+
+```json
+{
+  "name": "flow_user_input",
+  "instanceId": "scr_registration",
+  "isBackendEvent": false,
+  "isCustomerEvent": true,
+  "element_id": "email",
+  "element_type": "email_input",
+  "value": "jane@example.com"
+}
+```
+
+| パラメーター      | 説明 |
+|:------------------|:------------|
+| `name`            | 入力イベントの場合は `flow_user_input`、画面表示の場合は `flow_screen_showed`。 |
+| `instanceId`      | 入力要素が属する画面のID。要素IDはフロー全体ではなく、画面内で一意です。フロー内の複数の画面に入力がある場合は、イベントのフィルタリングに `instanceId` と `element_id` を組み合わせて使用してください。 |
+| `element_id`      | [入力](builder-inputs-and-forms)の **Element ID**、または[選択可能なグループ](flow-selectable-elements)の **Group ID**。 |
+| `element_type`    | イベントを送信した要素の種類。以下のパラメーターのうちどれが入力値を保持するかを決定します。 |
+| `value`           | **テキストフィールド、ピッカー、トグルのみ。** 入力値：テキストフィールドの場合は文字列、ピッカーの場合は整数、トグルの場合はブール値。 |
+| `item_ids`        | **単一選択・複数選択の選択可能グループのみ。** 選択されたオプションの **Element ID**（ビルダーでの表示順）。単一選択グループでは1件、複数選択グループでは任意の件数。 |
+| `item_titles`     | **単一選択・複数選択の選択可能グループのみ。** `item_ids` に記載されたオプションのタイトル（同じ順序）。空になることはありません。タイトルのないオプションはIDが代わりに報告されます。 |
+| `isCustomerEvent` | ユーティリティフラグ。このイベントでは常に `true`。SDKがコールバックに配信するイベントを示します。1つのハンドラーがすべてのフローイベントをアナリティクスに転送し、`name` ではなくこのフラグで分岐する場合に便利です。 |
+| `isBackendEvent`  | ユーティリティフラグ。このイベントでは常に `false`。AdaptyがAdapty自身のアナリティクス用に記録するイベントを示します。`false` は、ユーザーが入力した内容がアプリにのみ届き、他には渡らないことを確認します。Adaptyはその内容を受信・保存しません。 |
+
+各要素が報告する内容：
+
+| ビルダー上の要素 | `element_type` | 値を格納するパラメーター | 保持する内容 |
+|:---------------|:---------------|:----------------------------|:--------------|
+| **Text**、**Number**、**Phone number** 入力 | `text_input`、`number_input`、`phone_input` | `value` | ユーザーが入力した生の文字列。数値も文字列として届きます（数値型ではありません）。 |
+| **E-mail** 入力 | `email_input` | `value` | ユーザーが入力した生の文字列。ビルダーの書式バリデーションに失敗した場合も含みます。使用前にアプリ側でバリデーションしてください。 |
+| **Password** 入力 | なし | なし | イベントを送信しません。 |
+| **Date** 入力 | `date_picker` | `value` | 選択された日付のローカル時刻の深夜0時をUnix時間（ミリ秒、整数）で表した値。 |
+| **Time** 入力 | `time_picker` | `value` | Unix時間（ミリ秒、整数）で、分未満を切り捨てた値。 |
+| **Date & Time** 入力 | `date_picker` と `time_picker` | `value` | 日付ピッカーと時刻ピッカーの2要素。それぞれが個別のイベントを送信します。 |
+| **Type** ドロップダウンで **Date & Time** に切り替えた入力 | `date_time_picker` | `value` | Unix時間（ミリ秒、整数）で、分未満を切り捨てた値。 |
+| **Single choice** グループ | `single_choice` | `item_ids`、`item_titles` | 2つの配列。`item_ids`：選択されたオプションのElement IDを含む配列。`item_titles`：そのオプションのタイトルを含む配列。 |
+| **Multi-choice** グループ | `multi_choice` | `item_ids`、`item_titles` | 2つの配列。`item_ids`：選択されたすべてのオプションのElement ID（ビルダーでの表示順）。`item_titles`：同じ順序でのタイトル。何も選択されていない場合、両方の配列は空になります。 |
+| **Toggle** グループ | `toggle` | `value` | ブール値。 |
+
+回答で分岐する場合は、`item_titles` ではなく `item_ids` で比較してください。タイトルは派生値です。設定されていればオプションの **Element Title**、なければデフォルトロケールのテキスト、それもなければElement IDが使用されます。別の言語でフローを閲覧したユーザーには異なるテキストが表示されます。

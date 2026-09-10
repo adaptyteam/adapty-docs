@@ -27,18 +27,18 @@ Adapty Unity SDK 4.1, 4.x serisinin ilk kararlı sürümüdür — 4.0 yalnızca
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener`, yeni zorunlu `OnReceivePromotedPurchase` yöntemiyle |
+| `AdaptyEventListener` | `IAdaptyEventListener`, yeni zorunlu `OnReceivePromotedPurchase` metoduyla birlikte |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
-| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` ve diğer `PaywallView...` callback'leri | `FlowViewDidPerformAction`, `FlowViewDidAppear` ve diğer `FlowView...` callback'leri |
+| `PaywallViewDidPerformAction`, `PaywallViewDidAppear` ve diğer `PaywallView...` geri çağırmaları | `FlowViewDidPerformAction`, `FlowViewDidAppear` ve diğer `FlowView...` geri çağırmaları |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `string` kaynaklı `Adapty.UpdateAttribution(data, source, ...)` | `AdaptyExternalAttributionProvider` kullanan `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `IReadOnlyList<string>` olarak `AdaptyProfile.AppliedAttributionSources` | `IReadOnlyList<AdaptyExternalAttributionProvider>` olarak `AdaptyProfile.AppliedExternalAttributionProviders` |
 | Adapty Attribution otomatik olarak etkin | varsayılan olarak devre dışı — `Builder.SetAdaptyAttributionEnabled(true)` ile etkinleştirin |
-| 3.x için indirilen yedek dosya | yeni yedek paywall dosya formatı — dosyayı yeniden indirin |
+| 3.x için indirilen yedek dosya | yeni yedek dosya formatı — dosyayı yeniden indirin |
 | `Adapty.SetFallbackPaywalls(...)` (v3'te kullanımdan kaldırıldı) | kaldırıldı — `Adapty.SetFallback(fileName, ...)` kullanın |
 | `Builder.SetIDFACollectionDisabled(...)` (v3'te kullanımdan kaldırıldı) | kaldırıldı — `Builder.SetAppleIDFACollectionDisabled(...)` kullanın |
-| `paywall.Products` (`AdaptyProductReference` listesi) | kaldırıldı — `ProductIdentifiers` ya da `VendorProductIds` kullanın ya da tam ürünler için `GetPaywallProducts(flow)` çağırın |
-| `AdaptyProductReference` | genel tür olarak kaldırıldı — bkz. [Veri modeli](#data-model) |
+| `paywall.Products` (`AdaptyProductReference` listesi) | kaldırıldı — `ProductIdentifiers` veya `VendorProductIds` kullanın ya da tam ürünler için `GetPaywallProducts(flow)` çağrısı yapın |
+| `AdaptyProductReference` | herkese açık tür olarak kaldırıldı — bkz. [Veri modeli](#data-model) |
 | `paywall.RemoteConfigString` | kaldırıldı — `flow.RemoteConfig?.Data` kullanın |
 
 `AdaptyPaywallProduct` adını korur — ürünler hâlâ bir flow'a aittir ve `GetPaywallProducts` da adını korur, artık bir `AdaptyFlow` alır. `GetFlow` ve `GetFlowForDefaultAudience` metodları artık `locale` parametresi almaz. Satın alma ve profil API'leri (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) değişmemiştir. `SetFallback` imzasını korur, ancak okuduğu dosyanın yeniden indirilmesi gerekir — bkz. [Yedek dosyalar](#fallback-files). Onboarding metodları hâlâ çalışır ancak kullanımdan kaldırılmıştır — bkz. [Onboarding API kullanımdan kaldırma](#onboarding-api-deprecation). Bazı varsayılan davranışlar değişti — bkz. [Varsayılan davranış değişiklikleri](#default-behavior-changes).
@@ -147,6 +147,10 @@ v3'te olduğu gibi, [Flow Builder](adapty-flow-builder) veya [Paywall Builder](a
 
 Factory metodunu yeniden adlandırın ve `AdaptyFlow`'u iletin. Döndürülen view türü `AdaptyUIPaywallView`'dan `AdaptyUIFlowView`'a yeniden adlandırıldı, ancak metodları (`Present`, `Dismiss`) değişmedi ve isteğe bağlı parametreler nesnesi aynı alanları (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) yeni `AdaptyUICreateFlowViewParameters` adıyla korur, ayrıca iki yeni alan eklenmiştir — `Locale` ve `EnableSafeAreaPaddings`:
 
+:::note
+`CustomTimers` hâlâ mevcut, ancak yalnızca eski Paywall Builder paywalllarını etkiler. Bir flow'un [geri sayım zamanlayıcısı](flow-timer), Flow Builder'da belirlenen davranışa göre çalışır; dolayısıyla bir flow, buraya ilettiğiniz değerleri yok sayar.
+:::
+
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
 + AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
@@ -158,7 +162,7 @@ Factory metodunu yeniden adlandırın ve `AdaptyFlow`'u iletin. Döndürülen vi
   });
 ```
 
-`CreateFlowView`, flow'da yapılandırılmış bir görünüm yoksa hata döndürür — bu, v3'teki `HasViewConfiguration` kontrolünün yerini alır:
+`CreateFlowView`, flow için görünüm yapılandırılmamışsa hata döndürür — bu, v3'teki `HasViewConfiguration` kontrolünün yerini alır:
 
 ```diff showLineNumbers
 - if (paywall.HasViewConfiguration) {
@@ -174,7 +178,7 @@ Factory metodunu yeniden adlandırın ve `AdaptyFlow`'u iletin. Döndürülen vi
 ```
 
 :::note
-Flow view tek kullanımlıktır: `Dismiss` çağrıldıktan sonra view yok edilir; flow'u tekrar göstermek için `CreateFlowView` fonksiyonunu tekrar çağırmanız gerekir.
+Bir flow view tek kullanımlıktır: `Dismiss` çağrısının ardından view yok edilir; flow'u tekrar göstermek için `CreateFlowView`'ı yeniden çağırmanız gerekir.
 :::
 
 ### Android güvenli alan dolguları \{#android-safe-area-paddings\}
@@ -244,18 +248,36 @@ Bu yöntem, App Store'da tanıtılan uygulama içi satın almalar içindir ve An
 
 ## Yeniden adlandırılan harici attribution API'leri \{#renamed-external-attribution-apis\}
 
-SDK sürüm 4.1'den itibaren, harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi aktarmaya yarayan API'ler, native SDK'larla uyumlu olacak şekilde yeniden adlandırıldı. Eski adlar için herhangi bir deprecated alias bulunmadığından, mevcut çağrı noktaları yeniden adlandırılana kadar derleme hatası verir:
+SDK 4.1 sürümünden itibaren, harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi aktarmak için kullanılan API'ler, yerel SDK'larla uyumlu olacak şekilde yeniden adlandırıldı; sağlayıcı artık bir string yerine bir tür olarak tanımlanıyor. Eski çağrı noktaları için herhangi bir deprecated takma ad bulunmuyor, bu nedenle güncelleme yapılmadığı takdirde mevcut çağrılar derlenmez:
 
 | 4.1 Öncesi | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `string` olarak `source` | `AdaptyExternalAttributionProvider` olarak `provider` |
+| `IReadOnlyList<string>` olarak `AdaptyProfile.AppliedAttributionSources` | `IReadOnlyList<AdaptyExternalAttributionProvider>` olarak `AdaptyProfile.AppliedExternalAttributionProviders` |
 
-Yalnızca isimler değişti. Sağlayıcı daha önce olduğu gibi aynı string'dir (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), attribution verisi hâlâ bir sözlük veya JSON string olarak kabul edilir ve profil özelliği yine `IReadOnlyList<string>` türündedir:
+Yalnızca metodu yeniden adlandırmak yeterli değildir — aynı düzenlemede provider argümanını da değiştirin:
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider`, backend'in sağlayıcıyı tanımak için kullandığı tanımlayıcıyı taşır; altı paylaşımlı örneği vardır: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin` ve `Custom`. Bu SDK sürümünden sonra Adapty'nin eklediği bir sağlayıcı için, tanımlayıcısından birini oluşturun — `new AdaptyExternalAttributionProvider("your_provider")` — ve backend'e değiştirilmeden ulaşır. Çevredeki boşluklar kırpılır.
+
+Attribution verisi **serileştirilmiş bir JSON dizesi** olarak girilir. Veriyi bir sözlük olarak tutuyorsanız, önce serileştirin:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+Profil tarafında, uygulanan sağlayıcıları yeni tür aracılığıyla okuyun:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}

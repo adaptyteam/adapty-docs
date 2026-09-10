@@ -27,19 +27,19 @@ Phiên bản 4.x giới thiệu flow và đổi tên các API paywall cho phù h
 | `AdaptyUI.PresentPaywallView(view, ...)` / `DismissPaywallView(view, ...)` | `AdaptyUI.PresentFlowView(view, ...)` / `DismissFlowView(view, ...)` |
 | `Adapty.SetPaywallsEventsListener(listener)` | `Adapty.SetFlowsEventsListener(listener)` |
 | `AdaptyPaywallsEventsListener` | `IAdaptyFlowsEventsListener` |
-| `AdaptyEventListener` | `IAdaptyEventListener`, với phương thức bắt buộc mới `OnReceivePromotedPurchase` |
+| `AdaptyEventListener` | `IAdaptyEventListener`, với phương thức `OnReceivePromotedPurchase` bắt buộc mới |
 | `AdaptyOnboardingsEventsListener` | `IAdaptyOnboardingsEventsListener` |
 | `PaywallViewDidPerformAction`, `PaywallViewDidAppear`, và các callback `PaywallView...` khác | `FlowViewDidPerformAction`, `FlowViewDidAppear`, và các callback `FlowView...` khác |
 | `PaywallViewDidFailRendering` | `FlowViewDidReceiveError` |
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
-| Attribution của Adapty được bật tự động | mặc định bị tắt — bật bằng `Builder.SetAdaptyAttributionEnabled(true)` |
-| File dự phòng được tải xuống cho phiên bản 3.x | định dạng file dự phòng mới — tải lại file |
-| `Adapty.SetFallbackPaywalls(...)` (không còn dùng trong v3) | đã xóa — dùng `Adapty.SetFallback(fileName, ...)` |
-| `Builder.SetIDFACollectionDisabled(...)` (không còn dùng trong v3) | đã xóa — dùng `Builder.SetAppleIDFACollectionDisabled(...)` |
-| `paywall.Products` (danh sách `AdaptyProductReference`) | đã xóa — dùng `ProductIdentifiers` hoặc `VendorProductIds`, hoặc gọi `GetPaywallProducts(flow)` để lấy đầy đủ sản phẩm |
-| `AdaptyProductReference` | đã xóa khỏi kiểu công khai — xem [Mô hình dữ liệu](#data-model) |
-| `paywall.RemoteConfigString` | đã xóa — dùng `flow.RemoteConfig?.Data` |
+| `Adapty.UpdateAttribution(data, source, ...)` với nguồn kiểu `string` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` với `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` kiểu `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` kiểu `IReadOnlyList<AdaptyExternalAttributionProvider>` |
+| Attribution của Adapty được bật tự động | tắt theo mặc định — bật bằng `Builder.SetAdaptyAttributionEnabled(true)` |
+| File dự phòng đã tải xuống cho phiên bản 3.x | định dạng file dự phòng mới — tải xuống lại file |
+| `Adapty.SetFallbackPaywalls(...)` (đã lỗi thời ở v3) | đã bị xóa — dùng `Adapty.SetFallback(fileName, ...)` |
+| `Builder.SetIDFACollectionDisabled(...)` (đã lỗi thời ở v3) | đã bị xóa — dùng `Builder.SetAppleIDFACollectionDisabled(...)` |
+| `paywall.Products` (danh sách `AdaptyProductReference`) | đã bị xóa — dùng `ProductIdentifiers` hoặc `VendorProductIds`, hoặc gọi `GetPaywallProducts(flow)` để lấy đầy đủ sản phẩm |
+| `AdaptyProductReference` | đã bị xóa khỏi kiểu public — xem [Mô hình dữ liệu](#data-model) |
+| `paywall.RemoteConfigString` | đã bị xóa — dùng `flow.RemoteConfig?.Data` |
 
 `AdaptyPaywallProduct` giữ nguyên tên — các sản phẩm vẫn thuộc về một flow, và `GetPaywallProducts` cũng giữ nguyên tên, nay nhận một `AdaptyFlow`. Các phương thức `GetFlow` và `GetFlowForDefaultAudience` không còn nhận tham số `locale` nữa. Các API mua hàng và hồ sơ người dùng (`MakePurchase`, `RestorePurchases`, `GetProfile`, `Identify`, `UpdateProfile`) không thay đổi. `SetFallback` giữ nguyên chữ ký, nhưng file mà nó đọc phải được tải xuống lại — xem [Fallback files](#fallback-files). Các phương thức onboarding vẫn hoạt động nhưng đã bị deprecated — xem [Onboarding API deprecation](#onboarding-api-deprecation). Một số hành vi mặc định đã thay đổi — xem [Default behavior changes](#default-behavior-changes).
 
@@ -147,6 +147,10 @@ Tương tự như v3, bạn không cần gọi phương thức này khi hiển t
 
 Đổi tên factory method và truyền vào `AdaptyFlow`. Kiểu view trả về được đổi tên từ `AdaptyUIPaywallView` thành `AdaptyUIFlowView`, nhưng các phương thức của nó (`Present`, `Dismiss`) không thay đổi, và đối tượng tham số tùy chọn vẫn giữ nguyên các trường (`LoadTimeout`, `PreloadProducts`, `CustomTags`, `CustomTimers`, `CustomAssets`, `ProductPurchaseParameters`) dưới tên mới `AdaptyUICreateFlowViewParameters`, cùng với hai trường mới — `Locale` và `EnableSafeAreaPaddings`:
 
+:::note
+`CustomTimers` vẫn tồn tại, nhưng nó chỉ ảnh hưởng đến các paywall được tạo bằng Paywall Builder cũ. [Bộ đếm ngược](flow-timer) của một flow chạy theo hành vi được thiết lập trong Flow Builder, vì vậy flow sẽ bỏ qua bất kỳ giá trị nào bạn truyền vào đây.
+:::
+
 ```diff showLineNumbers
 - AdaptyUI.CreatePaywallView(paywall, parameters, (view, error) => {
 + AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
@@ -158,7 +162,7 @@ Tương tự như v3, bạn không cần gọi phương thức này khi hiển t
   });
 ```
 
-`CreateFlowView` trả về lỗi nếu flow không có view được cấu hình — điều này thay thế kiểm tra `HasViewConfiguration` của v3:
+`CreateFlowView` trả về lỗi nếu flow không có view được cấu hình — điều này thay thế kiểm tra `HasViewConfiguration` trong v3:
 
 ```diff showLineNumbers
 - if (paywall.HasViewConfiguration) {
@@ -174,7 +178,7 @@ Tương tự như v3, bạn không cần gọi phương thức này khi hiển t
 ```
 
 :::note
-Flow view chỉ dùng một lần: sau khi gọi `Dismiss`, view sẽ bị hủy, vì vậy hãy gọi lại `CreateFlowView` nếu muốn hiển thị flow thêm một lần nữa.
+Một flow view chỉ dùng một lần: sau khi bạn gọi `Dismiss`, view đó sẽ bị hủy, vì vậy hãy gọi lại `CreateFlowView` để hiển thị flow thêm một lần nữa.
 :::
 
 ### Padding vùng an toàn trên Android \{#android-safe-area-paddings\}
@@ -242,20 +246,38 @@ Phương thức này dành cho in-app purchase được quảng bá trên App St
 - Callback `FlowViewDidReceiveAnalyticEvent` mới trên `IAdaptyFlowsEventsListener` báo cáo các sự kiện analytics từ flow, bắt đầu bằng sự kiện xem màn hình cho mỗi màn hình người dùng mở. Xem [Theo dõi lượt xem màn hình flow](unity-flow-screen-views).
 - `AdaptyUI.OpenUrl(url, openIn, ...)` và `AdaptyUI.RequestAppReview(...)` — xử lý gốc cho các hành động `open_url` và yêu cầu đánh giá ứng dụng. Gọi `OpenUrl` từ `FlowViewDidPerformAction` để giữ nguyên hành vi URL mặc định; `RequestAppReview` hỗ trợ lời nhắc đánh giá ứng dụng mặc định, mà hiện tại flow chưa kích hoạt.
 
-## Đổi tên các API attribution bên ngoài \{#renamed-external-attribution-apis\}
+## Đổi tên API attribution từ nguồn ngoài \{#renamed-external-attribution-apis\}
 
-Bắt đầu từ SDK phiên bản 4.1, các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc nhà cung cấp tùy chỉnh) được đổi tên để khớp với các SDK gốc. Không có alias deprecated nào, vì vậy các call site hiện tại sẽ ngừng biên dịch cho đến khi bạn đổi tên chúng:
+Bắt đầu từ SDK phiên bản 4.1, các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc nguồn tùy chỉnh) được đổi tên để khớp với các native SDK, và tham số nhà cung cấp chuyển từ kiểu string sang kiểu type. Không có alias deprecated nào, vì vậy các đoạn code hiện tại sẽ không biên dịch được cho đến khi bạn cập nhật chúng:
 
 | Trước 4.1 | 4.1 |
 |---|---|
-| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(data, provider, ...)` |
-| `AdaptyProfile.AppliedAttributionSources` | `AdaptyProfile.AppliedExternalAttributionProviders` |
+| `Adapty.UpdateAttribution(data, source, ...)` | `Adapty.UpdateExternalAttribution(jsonString, provider, ...)` |
+| `source` là `string` | `provider` là `AdaptyExternalAttributionProvider` |
+| `AdaptyProfile.AppliedAttributionSources` là `IReadOnlyList<string>` | `AdaptyProfile.AppliedExternalAttributionProviders` là `IReadOnlyList<AdaptyExternalAttributionProvider>` |
 
-Chỉ có tên thay đổi. Provider vẫn là cùng một chuỗi như trước (`"adjust"`, `"appsflyer"`, `"branch"`, `"tenjin"`, `"apple_search_ads"`, `"custom"`), dữ liệu attribution vẫn được chấp nhận dưới dạng dictionary hoặc chuỗi JSON, và thuộc tính profile vẫn là `IReadOnlyList<string>`:
+Chỉ đổi tên phương thức thôi chưa đủ — hãy đổi luôn đối số provider trong cùng một lần chỉnh sửa:
 
 ```diff showLineNumbers
-- Adapty.UpdateAttribution(attribution, "adjust", (error) => { /* ... */ });
-+ Adapty.UpdateExternalAttribution(attribution, "adjust", (error) => { /* ... */ });
+- Adapty.UpdateAttribution(attributionJsonString, "adjust", (error) => { /* ... */ });
++ Adapty.UpdateExternalAttribution(attributionJsonString, AdaptyExternalAttributionProvider.Adjust, (error) => { /* ... */ });
+```
+
+`AdaptyExternalAttributionProvider` chứa định danh mà backend dùng để nhận biết nhà cung cấp, với sáu instance dùng chung: `AppleAds` (`apple_search_ads`), `Adjust`, `Appsflyer`, `Branch`, `Tenjin`, và `Custom`. Đối với nhà cung cấp mà Adapty bổ sung sau lần phát hành SDK này, hãy khởi tạo từ định danh của nó — `new AdaptyExternalAttributionProvider("your_provider")` — và dữ liệu sẽ được gửi đến backend nguyên vẹn. Khoảng trắng ở đầu và cuối sẽ được tự động loại bỏ.
+
+Dữ liệu attribution được truyền vào dưới dạng **chuỗi JSON đã được serialize**. Nếu bạn đang giữ dữ liệu dưới dạng dictionary, hãy serialize trước:
+
+```csharp showLineNumbers
+var attributionJsonString = Newtonsoft.Json.JsonConvert.SerializeObject(attribution);
+```
+
+Về phía hồ sơ người dùng, đọc các provider đã được áp dụng thông qua kiểu mới:
+
+```diff showLineNumbers
+- if (profile.AppliedAttributionSources.Contains("apple_search_ads")) {
++ if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds)) {
+      // Apple Ads attribution has been applied
+  }
 ```
 
 ## Adapty Attribution bị tắt theo mặc định \{#adapty-attribution-is-disabled-by-default\}

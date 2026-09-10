@@ -106,6 +106,8 @@ Each row carries two identifiers, and they are not interchangeable:
 
 `--org` exists only on `campaigns create`. No list command accepts it.
 
+Each row also carries a `payment_model`. When it is `LOC`, the organization bills by line of credit, and every campaign in it needs the [`--invoice-*` flags](#adapty-asa-campaigns-create).
+
 Accepts [pagination flags](#global-flags).
 
 ### adapty asa apps list
@@ -165,13 +167,22 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--country` | Yes | Country or region code. Repeat for several: `--country US --country CA` |
 | `--daily-budget` | Yes | Daily budget as a plain amount, for example `50` or `12.50` |
 | `--budget` | No | Lifetime budget |
-| `--target-cpa` | No | Target cost per acquisition |
+| `--target-cpa` | No | Target cost per acquisition. Must be lower than `--daily-budget` |
 | `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
 | `--bidding-strategy` | No | `MANUAL_CPT` or `MAX_CONVERSIONS`. Apple defaults to `MANUAL_CPT` |
 | `--ad-channel-type` | No | `SEARCH` or `DISPLAY`. Default: `SEARCH` |
 | `--billing-event` | No | `TAPS` or `IMPRESSIONS`. Default: `TAPS` |
 | `--supply-source` | No | Supply source, repeatable. Default: `APPSTORE_SEARCH_RESULTS` |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+| `--invoice-advertiser` | Line of credit | Invoicing Options: advertiser name |
+| `--invoice-order-number` | Line of credit | Invoicing Options: order number |
+| `--invoice-contact-name` | Line of credit | Invoicing Options: buyer contact name |
+| `--invoice-contact-email` | Line of credit | Invoicing Options: buyer contact email |
+| `--invoice-billing-email` | Line of credit | Invoicing Options: billing contact email |
+
+An organization whose `payment_model` is `LOC` bills by line of credit, and Apple requires Invoicing Options on each of its campaigns. Pass all five `--invoice-*` flags in one call — a partial set is rejected before the request is sent. See [Set Invoicing Options for a line of credit](developer-cli-ads-manager#invoicing-options).
+
+The response carries `serving_status` and `serving_state_reasons`. A campaign can be created and still not serve: a `MAX_CONVERSIONS` campaign waits for an [automated ad group](#adapty-asa-ad-groups-create), and a line-of-credit campaign waits for its Invoicing Options. In both cases the command prints the reason and the command that resolves it.
 
 ### adapty asa campaigns update
 
@@ -195,8 +206,15 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 | `--target-cpa` | New target cost per acquisition |
 | `--bidding-strategy` | `MANUAL_CPT` or `MAX_CONVERSIONS` |
 | `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--invoice-advertiser` | Invoicing Options: advertiser name |
+| `--invoice-order-number` | Invoicing Options: order number |
+| `--invoice-contact-name` | Invoicing Options: buyer contact name |
+| `--invoice-contact-email` | Invoicing Options: buyer contact email |
+| `--invoice-billing-email` | Invoicing Options: billing contact email |
 
 At least one flag is required.
+
+The five `--invoice-*` flags go together and replace the stored Invoicing Options as a set, so pass all five even to change one of them. A partial set is rejected before the request is sent.
 
 ### adapty asa campaigns bulk-create
 
@@ -318,14 +336,17 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 |---|---|---|
 | `--campaign` | Yes | Campaign ID (UUID) |
 | `--name` | Yes | Ad group name |
-| `--default-bid` | Yes | Default bid as a plain amount, for example `1.20` |
+| `--default-bid` | Unless `--automated` | Default bid as a plain amount, for example `1.20` |
 | `--cpa-goal` | No | Cost per acquisition goal |
 | `--pricing-model` | No | `CPC` or `CPM`. Apple requires one on every ad group. Default: `CPC` |
 | `--start-time` | No | Schedule start (`YYYY-MM-DD`). Defaults to today |
 | `--end-time` | No | Schedule end (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | No | Let Apple add keywords automatically |
+| `--automated` | No | Create the automated ad group that a `MAX_CONVERSIONS` campaign needs |
 | `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
+
+`--automated` opts the ad group into automated keywords, so it cannot be combined with `--automated-keywords`. Apple schedules an automated ad group itself and keeps it enabled, so `--start-time` and `--status PAUSED` are rejected — pause the campaign instead. See [Create a Max Conversions campaign](developer-cli-ads-manager#max-conversions).
 
 ### adapty asa ad-groups update
 
@@ -574,7 +595,29 @@ The refresh is queued rather than performed immediately, and the command confirm
 
 ## Automations \{#automations\}
 
-The CLI stores the rule JSON you give it — it does not build rules. See [Automations](ads-manager-automations) for what each rule type does, and [Run automation rules](developer-cli-ads-manager#run-automation-rules) for how to produce a rule file.
+The CLI stores the rule JSON you give it, with one exception: the settings of an **Add as keyword** action come from flags. See [Automations](ads-manager-automations) for what each rule type does, and [Run automation rules](developer-cli-ads-manager#run-automation-rules) for how to produce a rule file.
+
+### Add-as-keyword action flags \{#add-keyword-flags\}
+
+`automations create` and `automations update` share a set of flags that set `actions[0].params` for an `add-as-keyword-to` action — **Add as keyword** in a [search terms rule](ads-manager-automations-search-terms), **Add as keyword to…** in a [keyword rule](ads-manager-automations-keyword-rules). Passing any of them replaces the whole `params` object, so this action needs no hand-written JSON.
+
+| Flag | JSON field | Description |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | Ad group that receives the keyword (UUID), repeatable. A rule with no target ad group does nothing |
+| `--match-type` | `match_type` | `BROAD` or `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | Where the bid of the new keyword comes from: `ad_group_default_bid`, `set_to`, `search_term_current_cpt`, or `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | With `set_to`, the bid itself. With `search_term_current_cpt` or `keyword_current_bid`, a percentage markup on the bid being copied. Not accepted with `ad_group_default_bid` |
+| `--negate` | `negate` | Also add the search term as a negative keyword, in its own `ad-group` or its own `campaign`. `--no-negate` leaves none behind. Search terms rules only |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | Skip a keyword that already exists in the target ad group instead of enabling it. Search terms rules only |
+| `--pause-original` | `pause_in_original_ad_group` | Pause the source keyword in its own ad group. Keyword rules only |
+
+`--cpt-bid-type` and `--match-type` have no default, so both are required when the rule file contains no `params` of its own.
+
+Four of these flags depend on the rule's `operate_with` field: `--negate`, `--no-negate`, and `--skip-enable-duplicates` belong to a `search-term` rule, `--pause-original` to a `targeting-keyword` one. A flag from the other set fails with exit code `2` and a list of the flags that do apply.
+
+:::warning
+Take this action's `params` from the flags, never from a rule that carries a different action. The API resolves `params` by shape rather than by a named variant, so a key belonging to another action makes it choose that action and drop the rest — answering `200` and storing a rule that adds keywords to no ad group at all.
+:::
 
 ### adapty asa automations list
 
@@ -611,7 +654,13 @@ adapty asa automations create --file rule.json
 | `--file` | JSON file with the rule body, or `-` to read from standard input |
 | `--run-now` | Queue the first run right after the rule is stored |
 
-`--file` is required.
+`--file` is required, and the file must contain exactly one action: the API keeps one action and one condition per rule.
+
+Also accepts the [add-as-keyword action flags](#add-keyword-flags), which fill in or override `actions[0].params`:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
@@ -633,6 +682,10 @@ adapty asa automations update <automation-id> --stop
 | `--file` | JSON file with the parts to change, or `-` to read from standard input |
 
 `--start` and `--stop` are mutually exclusive. A file passed here must not contain `internal_id`.
+
+Also accepts the [add-as-keyword action flags](#add-keyword-flags). Passing one makes the call a read-modify-write: the CLI reads the rule, rebuilds `actions[0].params`, and sends the whole `actions` list back, because the API replaces `actions` instead of merging into it. An edit made in the dashboard between the read and the write is overwritten.
+
+An update with an action flag also repairs a rule whose stored `params` carry the shape of another action. The params are rebuilt from scratch, so only the stored keys that fit `add-as-keyword-to` are kept and everything else has to come from a flag.
 
 ### adapty asa automations run
 
@@ -681,14 +734,17 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 | `--entity` | Yes | What to report on: `campaign`, `ad-group`, `keyword`, or `ad` |
 | `--date-from` | Yes | Start of the period (`YYYY-MM-DD`) |
 | `--date-to` | Yes | End of the period (`YYYY-MM-DD`) |
-| `--metric` | No | Metric name, repeatable. Omit for every metric |
+| `--metric` | Yes | Metric name, repeatable |
+| `--app` | No | Report only on these apps. Repeatable |
+| `--campaign` | No | Report only on these campaigns. Repeatable |
+| `--ad-group` | No | Report only on these ad groups. Repeatable |
 | `--group-by` | No | Break the rows down by `country`, `day`, `week`, `month`, `quarter`, or `year`. Repeatable |
 | `--by-days` | No | Renewal window in days for cohort metrics, repeatable. Maximum 16 per call. Omit for the dashboard defaults |
 | `--order-by` | No | Metric or field to sort by |
 | `--order-by-day` | No | Rank by a cohort metric at this renewal window. Must be one of the `--by-days` values |
 | `--order` | No | `asc` or `desc`. Default: `desc` |
 
-Accepts [pagination flags](#global-flags). This command takes no [list filters](#list-filters) — narrow the report by entity level and period, then match the rows against the IDs from a scoped `list` command.
+Accepts [pagination flags](#global-flags). Of the [list filters](#list-filters) it takes only `--app`, `--campaign`, and `--ad-group`; there is no `--search` and no `--status`. Narrow the report on anything else by matching the rows against the IDs from a scoped `list` command.
 
 Each row is one entity, aggregated on the server and sorted by `--order-by`. A top-N question is therefore a single call — set `--order-by` and `--page-size N` rather than paging through the results and adding them up:
 
@@ -698,13 +754,26 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 `--metric` takes the metric names that Ads Manager tracks, in dashboard nomenclature — for example `spend`, `taps`, or `gross_roas`. See [Metrics](adapty-ads-manager-metrics) for the full list and how each one is calculated. A name that does not exist fails with the valid names listed in the error.
 
-The length of the reporting period is capped by the coarsest `--group-by` value. To report on a longer period, coarsen the grouping rather than splitting the request into several calls:
+Every metric you name is computed across the whole entity level before the page is cut, so ask for the columns you read rather than the whole catalog. `subscribers` and `paid_subscribers` count unique profiles per entity, which costs around seventeen times a plain spend-and-installs call, and so do `arppu` and `arpas`, which are derived from them. At any `--entity`, those four names need `--campaign` or `--ad-group` to narrow the call:
 
-| Coarsest `--group-by` | Maximum period |
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+Without one of those two filters the call fails with `422 cli_metric_scope_too_wide`. Scoping is the cheapest way to speed up any metrics call, because cost follows the number of entities aggregated rather than the size of the page.
+
+The length of the reporting period is capped by the finest `--group-by` value. To report on a longer period, coarsen the grouping rather than splitting the request into several calls:
+
+| Finest `--group-by` | Maximum period |
 |---|---|
-| `day`, or no period grouping | 90 days |
+| `day` | 28 days |
+| No period grouping | 90 days |
 | `week` | 180 days |
 | `month` and coarser | 365 days |
+
+Day grain therefore covers four weeks at most. For a longer period ask at `week` grain, which fits half a year into one call.
+
+Each page is capped at 5000 breakdown rows as well, a row being one entity × country × period. A page over the cap fails with `422 cli_response_too_large`. Coarsen the grouping, narrow the date window, or lower `--page-size`; when the call groups by `day`, the error names the page size that fits, so retry with that number rather than one you work out yourself. `metrics overview` returns no per-entity breakdown, so this cap never applies to it.
 
 There is no `ltv` metric. Lifetime value is a cohort metric read at a renewal window, so `--by-days` is how you ask for the day-7 or day-90 value:
 
@@ -771,6 +840,8 @@ The first call for a set of apps can take tens of seconds while the data is prep
 | `404` | — | The entity does not exist, or it belongs to another company |
 | `409` | `cli_idempotency_in_progress` | A write with the same idempotency key is still running |
 | `422` | `cli_idempotency_key_reuse` | The same idempotency key was used with a different request body |
+| `422` | `cli_metric_scope_too_wide` | A profile-counting metric was requested without `--campaign` or `--ad-group` |
+| `422` | `cli_response_too_large` | A `metrics` page would exceed 5000 breakdown rows |
 | `429` | `cli_analytics_busy` | The analytics pool is busy. The wait is in the `Retry-After` header |
 | `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
 

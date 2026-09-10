@@ -1,0 +1,78 @@
+---
+title: "Adapty 如何与应用商店同步数据"
+description: "Adapty 与 App Store 或 Google Play 之间同步哪些产品、价格和优惠数据，同步方向及同步时机。"
+metadataTitle: "Adapty 如何与应用商店同步数据 | Adapty 文档"
+---
+
+Adapty 会与 App Store 和 Google Play 交换产品数据，但这种交换既不是持续进行的，也并不完整。大多数数据只有在你主动操作时才会同步——例如将产品推送到应用商店，或上传新价格。有些数据则根本不会同步，因此 [Adapty 与应用商店可能对同一产品显示不同的价格](#product-and-price-discrepancies)。
+
+## Adapty 从应用商店读取哪些数据 \{#what-adapty-reads-from-the-stores\}
+
+Adapty 从应用商店读取产品列表、基础方案、价格和交易记录。如需修改产品或价格，请直接在应用商店后台进行更改。如需查看各国家/地区的具体价格，请从[编辑产品](edit-product#set-country-specific-prices)页面下载价格 CSV 文件。
+
+| Adapty 读取的内容 | 获取方式（App Store） | 获取方式（Google Play） |
+|---|---|---|
+| 产品列表与审核状态 | 通过 [App Store Connect API 密钥](app-store-connection-configuration#step-6-add-app-store-connect-api-key) | 通过[服务账号](google-play-store-connection-configuration) |
+| 基础方案 | 不适用 | 订阅产品的组成部分 |
+| 国家/地区特定价格 | 关联或编辑商店产品时 | 关联或编辑商店产品时 |
+| 交易、续订与退款 | 通过 [App Store 服务器通知](enable-app-store-server-notifications) | 通过[实时开发者通知](enable-real-time-developer-notifications-rtdn) |
+| 客户实际支付的价格 | 随每笔交易一起获取 | 随每笔交易一起获取 |
+
+## Adapty 向商店写入的内容 \{#what-adapty-writes-to-the-stores\}
+
+产品、价格和新用户优惠从 Adapty 发起，并在你执行操作时同步到商店，不会按计划自动执行。
+
+| Adapty 写入的内容 | 何时同步到 App Store | 何时同步到 Google Play |
+|---|---|---|
+| 新产品 | 当你[将产品推送到商店](create-product#create-product-and-push-to-store)时 | 当你将产品推送到商店时 |
+| 特定国家/地区价格 | 当你[上传价格 CSV 文件](edit-product#set-country-specific-prices)时 | 当你上传价格 CSV 文件时 |
+| 新用户优惠免费试用 | 当你推送新产品时 | 不支持——请在 [Google Play Console](google-play-offers) 中创建 |
+
+Adapty 会将您的 CSV 文件与当前商店价格进行比对，仅更新有差异的价格，因此可以放心上传整个文件。现有订阅者将保留其注册时的价格，除非您勾选 **Apply to existing subscribers**。
+
+## 仅在 Adapty 中设置的内容 \{#what-you-set-in-adapty-only\}
+
+应用商店不会更改以下任何设置。
+
+| 项目 | 为何保留在 Adapty 中 |
+|---|---|
+| 已关联的商店产品价格 | 这是一个在创建时固定的占位符，仅用于区分不同产品，不会传送至商店。分析、集成和 SDK 均使用商店的实际价格。 |
+| [访问等级](access-level) | Adapty 负责授予对付费内容的访问权限，各应用商店没有对应的概念。 |
+| 促销活动和赢回优惠 ID | Adapty 需要该 ID 来签署购买请求。优惠本身需在商店控制台中创建。 |
+
+## 设备端的工作原理 \{#what-happens-on-the-device\}
+
+客户在付费墙上看到的价格，来自付费墙打开时 StoreKit 或 Google Play Billing 的实时数据，而非 Adapty。你在应用商店后台修改价格后，商店一旦发布，客户立即就能看到新价格。无需发布新版本，也无需在 Adapty 中做任何改动。
+
+另一方面，Adapty SDK 会将每笔购买连同价格、货币和国家信息一并发送给 Adapty，Adapty 会以客户本地货币记录对应的收入。
+
+## Stripe、Paddle 和自定义商店 \{#stripe-paddle-and-custom-stores\}
+
+Stripe 和 Paddle 集成传递的是交易数据，而非你的产品目录。购买行为通过服务商的 Webhook 发送到 Adapty，或者对于[自定义商店](custom-store)，则通过你自己的后端发送。你需要手动添加每个产品和价格 ID。如果某个 ID 在 Adapty 中不存在，则无法匹配任何内容，相关交易及其收入将不会显示。对于 Stripe 和 Paddle，即使产品已存在，但未设置 **Subscription duration**，也会出现同样的问题。这两种情况都不会有任何提示，因此请为你销售的每个产品都添加 ID 和时长。
+
+## 产品与价格差异 \{#product-and-price-discrepancies\}
+
+Adapty 与应用商店后台之间的某些差异属于正常设计行为，不会影响用户实际支付的金额。但也有一些差异会导致收入无法被记录。
+
+| 您看到的现象 | 可能原因 | 解决方法 |
+|---|---|---|
+| Adapty 中的价格与商店不一致 | **Products** 页面显示的是您创建产品时填写的价格。如果您将产品推送到商店，Adapty 会以此作为初始定价。之后无法修改，因此一旦价格归商店管理，两侧就会出现差异。客户实际支付的价格是[特定国家/地区价格](edit-product#set-country-specific-prices)。 | 无需操作。客户按商店价格付款，收入报告使用实际付款金额。如需修改价格，请在各商店后台编辑，或[上传价格 CSV](edit-product#set-country-specific-prices) 同时更新两个商店。 |
+| 产品下拉列表中找不到您的产品 | 可能有三种原因：商店凭证失效会返回空列表；过去 10 分钟内创建的产品可能尚未同步到 Adapty 缓存的 App Store 列表；所选的 **Subscription duration** 会过滤列表：**Lifetime**、**Non-Subscriptions** 和 **Consumables** 显示一次性产品，其他选项显示订阅产品。 | 将 **Subscription duration** 设置为与商店中该产品类型匹配的值。如果产品是刚创建的，稍后重试。否则请检查您的[商店凭证](#if-updates-stop-arriving)。 |
+| 新用户优惠未在 Adapty 中显示 | Adapty 仅在将新产品推送到商店时创建新用户优惠，且只列出它自己创建的优惠。在商店后台手动设置的优惠不会出现在 **Edit product** 窗口中。 | 无需操作。新用户优惠会在客户符合条件时自动生效，无需在 Adapty 中添加。 |
+| 购买时未应用折扣 | 客户可能不符合条件——资格由商店判断，与 Adapty 无关。另外，App Store 促销活动未生效可能是因为 Adapty 无法使用您的 [In-App Purchase Key](offers) 完成签名。 | 确认密钥已上传且有效，然后在商店中检查优惠条件。 |
+| 更改价格后 Stripe 交易不再显示 | 在 Stripe 中更改价格会生成新的 `price_id`，而 Adapty 按 `product_id` + `price_id` 精确匹配事件。新价格的事件无法匹配任何记录，而 Stripe 仍会报告 webhook 已发送。 | 在 Adapty 的产品中添加新的 `price_id`，否则相关收入将无法记录。请参阅 [Stripe](stripe)。 |
+| 客户已购买产品但未获得访问等级 | 客户购买的商店产品 ID 未与 Adapty 中的产品关联。Adapty 会将购买记录到自动创建的产品行，但该行不包含访问等级。 | 在 Adapty 中使用完全相同的商店产品 ID 创建产品，并为其分配[访问等级](access-level)。 |
+| 不再收到更新 | 您的某个商店凭证已失效，每个凭证负责不同的数据交换环节。 | 找出失效的环节，仅替换对应的凭证——请参阅[更新停止接收时的处理方法](#if-updates-stop-arriving)。 |
+
+## 如果更新停止到达 \{#if-updates-stop-arriving\}
+
+Adapty 不会主动标记已失效的凭证。每个凭证负责数据交换的某一环节，因此可以根据具体症状判断需要替换哪个凭证。
+
+| 停止工作的功能 | 需要替换的凭证 |
+|---|---|
+| 产品列表、审核状态，或将产品和价格推送到商店 | App Store：[App Store Connect API 密钥](app-store-connection-configuration#step-6-add-app-store-connect-api-key)。Google Play：[服务账号密钥文件](create-service-account-key-file)。 |
+| 新交易、续订和退款 | App Store：[服务器通知](enable-app-store-server-notifications)。Google Play：[实时开发者通知](enable-real-time-developer-notifications-rtdn)。 |
+| 购买时的促销活动 | App Store：[内购密钥](offers)。 |
+| 每位用户的购买验证 | App Store：[共享密钥](app-store-connection-configuration)。Google Play：[服务账号密钥文件](google-play-store-connection-configuration)。 |
+
+在应用商店控制台中替换凭据不会自动更新 Adapty 中的配置。请在 **App settings** 中上传新的凭据。

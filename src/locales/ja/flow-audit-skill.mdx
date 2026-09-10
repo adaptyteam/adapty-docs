@@ -1,0 +1,92 @@
+---
+title: "フローの監査エージェントスキル"
+description: "flow-audit スキルをインストールして、AIコーディングツールがフローを公開する前に本番環境への準備が整っているかどうかをチェックできるようにします。"
+metadataTitle: "フロー監査エージェントスキル | フロー＆ペイウォールビルダー | Adapty ドキュメント"
+---
+
+flow-audit スキルはフローについて一つの問いに答えます：本番環境への準備はできているか？AIコーディングツールをフローに向けると、[Adapty CLI](developer-cli-quickstart) を通じて設定を読み取り、プロダクトカタログと照合し、自分で解釈しなければならないリストではなく、判定結果を返します。
+
+フローは既存のパブリッシュゲートをすべて通過しても、ユーザーに表示するには安全でない場合があります。Flow & Paywall Builder 独自のパブリッシュチェックと `flows config validate` はどちらも「このドキュメントは正しい形式か？」を確認するものであり、「実際のユーザーが行き詰まったり、誤った情報を目にしたりしないか？」は確認しません。`publication_failed` ステータスのフローはこれらのゲートをどちらも通過することがあります。その残りを検出するのが flow-audit の役割です。
+
+:::note
+flow-audit はフローに書き込みを行いません。コンフィグとプロダクトカタログを読み込み、チェックを実行し、発見した問題をあなた、または [flow-generator スキル](flow-generator-skill) に渡して修正を促します。
+:::
+
+## スキルをインストールする \{#install-the-skill\}
+
+flow-audit は `adapty-skills` プラグイン（[`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)）に含まれており、flow-generator と一緒に提供されています。一度インストールすれば、flow-audit を含む現在7つのスキルすべてが使えるようになります。
+
+Claude Code の場合：
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+その後、`/reload-plugins` を実行してスキルを有効化してください。他の AI コーディングツールの場合は、[flow-generator のインストール手順](flow-generator-skill#install-the-skill)を参照してください。同じリポジトリ、同じコマンドです。
+
+Then ask for it — `/flow-audit` in tools that map slash commands to skills, or "Use the flow-audit skill" in the ones that don't. Name the flow, or let it list your flows and ask which one.
+
+## 仕組み \{#how-it-works\}
+
+5つのフェーズで構成されており、すべて読み取り専用です：
+
+1. **解決と認証。** CLIが最新バージョンであること、およびAdaptyへのログインが有効であることを確認します。
+2. **フローの選択。** フローの一覧（`adapty flows list`）を表示し、確認するフローを選択します。
+3. **フェッチ。** フローの設定とプロダクトカタログを取得します。これがすべてのチェックの基準となるスナップショットです。
+4. **チェックの実行。** すべてのチェックはそのスナップショットのみを対象に実行されます。
+5. **レポート。** リストではなく、判定結果が表示されます。
+
+## 何を確認するか \{#what-it-checks\}
+
+- **トリガー**: コピーにアクションを示す文言があるにもかかわらず、その要素およびすべての祖先要素にインタラクションが設定されていない要素。見た目は機能するコントロールと同じですが、何も動作しません。
+- **ストアコンプライアンス**: フロー内のどこかからアクセスできる購入履歴の復元アクション、利用規約へのリンク、プライバシーポリシーへのリンク、および購入せずにペイウォールを離れる手段。
+- **プロダクト**: カタログに存在しないバインド済みプロダクト、ストアバインディングのないプロダクト、プロダクトが持たない請求期間を表示しているカード、または価格変数を使うべき箇所にハードコードされた価格。
+- **変数**: フローが設定しても一度も読み取られない変数（あるスクリーンで回答を収集しても、その値がどこにも使われない状態）。
+- **ローカライズ**: 空の翻訳、未翻訳の値、ロケールごとのカバレッジ。
+- **プレースホルダー**: 最後まで書かれていないコピー（`Lorem ipsum`、`TODO`、`Your headline here` など）や、`Untitled` のままになっているフロー。
+
+## 重大度 \{#severity\}
+
+各検出事項には、次の3段階のいずれかが割り当てられます。
+
+| 段階 | 意味 |
+|---|---|
+| **ブロッカー** | 実際のユーザーに対してフローが機能しないか、誤った情報が表示される — 架空の価格は正しく表示されていても、嘘をついている可能性がある。 |
+| **リスク** | 動作はするが、おそらく意図した通りではない — プレースホルダーのテキスト、デフォルトロケールと同じ値のまま残っている項目、誰も参照しない変数など。 |
+| **質問** | 利用可能なデータだけでは判断できない。レポートには確認した内容・到達できなかった内容・確認すべき1つの事項が記載される — 推測はしない。 |
+
+## レポート例 \{#example-report\}
+
+```
+Flow: Nimbus onboarding  ·  publication_failed
+7 screens · 3 locales · 2 products
+
+NOT READY FOR PRODUCTION — 2 blockers: no restore action, no way off the paywall
+
+BLOCKERS
+
+1. This row is dead text.
+   scr_paywall / el_089T reads "Restore purchase · Terms · Privacy" and carries no
+   interaction at all. It renders exactly like a working row, and none of the following work:
+     · no restorePurchases action anywhere in the flow    → App Store 3.1.1
+     · no link to terms/EULA                              → App Store 3.1.2
+     · no link to a privacy policy                        → App Store 3.1.2
+
+2. a user who does not buy cannot leave this screen: no closeFlow or navigateBack is
+   reachable from it.
+```
+
+このフローのステータスは `publication_failed` です。フロー＆ペイウォールビルダーの公開前チェックと `flows config validate` はどちらも通過していますが、これらはスクリーンのコピーや操作フローを検証しません。レポートは判定から始まり、次に問題箇所の正確な要素とスクリーンを示したブロッカーの番号付きリストが続きます。
+
+問題のないフローの判定行は `READY FOR PRODUCTION` とだけ表示され、余分な文字は付きません。フロー監査でブロッカーやリスクは見つからなかったものの、確認できない未回答の疑問がある場合は、判定が `READY FOR PRODUCTION` ではなく `READY, PENDING n CHECKS I CANNOT MAKE` と表示されます。
+
+## チェックできないこと \{#what-it-cant-check\}
+
+flow-audit は、フローがプレースメントに紐付けられているかどうかを確認できません。`adapty flows get` が返すのはフローの `id`、`name`、`status`、`updated_at` のみで、CLI にはフローが紐付けられているプレースメントを一覧表示するコマンドがありません。これはすべてのレポートに表示される固定の注意事項であり、チェック項目ではありません。プレースメントへの紐付けは[プレースメント](placements)ページで自分で確認するか、[プレースメントの作成](create-placement)を参照してください。
+
+## 担当別の修正内容 \{#who-fixes-what\}
+
+各レポートの末尾には、担当者別に分かれた `WHAT TO DO NEXT` セクションがあります。エージェントがフロー内で変更できること、Adapty ダッシュボードでのみ変更できること、リリース前に自分で確認すべきことの3つに整理されています。
+
+flow-audit 自体はいかなる変更も行いません。設計上、読み取り専用です。そのため、審査に失敗したフローはそのままの状態が保たれます。レポートを [flow-generator スキル](flow-generator-skill) に渡してください。バックアップ、承認の取得、実際の書き込みはそちらが担当します。

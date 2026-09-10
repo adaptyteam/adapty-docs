@@ -51,4 +51,7 @@ export const mdxComponents = {
   AIPromo,
   ProductMap,
   img: MDXImage,
+  // Plain <details> in articles renders through the same component as <Details>,
+  // so there is one collapsible implementation rather than two designs.
+  details: Details,
 };

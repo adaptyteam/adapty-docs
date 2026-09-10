@@ -1,0 +1,65 @@
+---
+title: "Показ пейвола с таргетингом Apple Ads при первом запуске в Unity SDK"
+description: "Подождите атрибуцию Apple Ads перед запросом пейвола в Unity с помощью AdaptyProfile.AppliedExternalAttributionProviders."
+metadataTitle: "Показ пейвола с таргетингом Apple Ads при первом запуске | Unity SDK | Документация Adapty"
+---
+
+Эта статья относится к iOS-сборке вашего приложения. Атрибуция Apple Ads доступна только на iOS.
+
+Apple Ads (AA) атрибуция поступает асинхронно после `Adapty.Activate()`. Если вызвать `GetFlow` слишком рано, атрибуция зачастую ещё не успевает прийти, и Adapty разрешает плейсмент по аудитории по умолчанию — минуя ваши пейволы с сегментацией по AA. `AdaptyProfile.AppliedExternalAttributionProviders` позволяет приложению определить момент, когда AA атрибуция применена к профилю, чтобы запрос пейвола ждал корректного разрешения сегментации по AA.
+
+:::important
+`AppliedExternalAttributionProviders` отображает только данные Apple Ads. Атрибуция от других провайдеров видна в профилях пользователей и доступна в фильтрах сегментов, но здесь пока не отображается.
+:::
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+- Adapty Unity SDK **4.1** или выше.
+- Apple Ads, настроенный для приложения в Adapty. См. [Apple Ads](apple-search-ads).
+
+:::note
+В примерах используются имена API из SDK 4.1. В SDK 4.0 свойство профиля называется `AppliedAttributionSources`. В SDK 3.x это свойство имеет то же устаревшее название, а пейволы получаются с помощью `GetPaywall`/`GetPaywallForDefaultAudience`, которые возвращают `AdaptyPaywall`. См. [Миграция Adapty Unity SDK на v4](migration-to-unity-sdk-v4).
+:::
+
+## Как это работает \{#how-it-works\}
+
+После вызова `Adapty.Activate()` SDK в фоновом режиме запрашивает данные атрибуции Apple Ads у Apple и передаёт результат на бэкенд Adapty. Когда AA становится активным источником атрибуции для профиля, SDK передаёт обновлённый `AdaptyProfile` в обработчик `OnLoadLatestProfile`, при этом `AdaptyExternalAttributionProvider.AppleAds` добавляется в список `AppliedExternalAttributionProviders`.
+
+Пустой список может означать одно из следующего:
+
+- Атрибуция Apple Ads ещё не обработана для этого профиля.
+- Атрибуция не поступала вовсе.
+- Атрибуция поступила от другого провайдера, который не отображается в этом списке.
+
+Даже при пустом списке вызов `GetFlow` безопасен — Adapty обрабатывает запрос, используя аудиторию, которая соответствует текущему состоянию профиля, как правило это аудитория по умолчанию.
+
+:::important
+Ожидание применяется только к **первому запуску**. После того как атрибуция Apple Ads записана, она постоянно хранится в профиле. При каждом последующем запуске кешированный профиль уже содержит `AppleAds` в `AppliedExternalAttributionProviders`, `OnLoadLatestProfile` немедленно срабатывает с этим значением, а `GetFlow` возвращает пейвол с сегментацией по Apple Ads без какой-либо задержки.
+:::
+
+## Реализация \{#implementation\}
+
+При первом запуске отслеживайте `AdaptyExternalAttributionProvider.AppleAds` в профиле и устанавливайте жёсткий таймаут — если атрибуция Apple Ads так и не поступит, эти пользователи всё равно должны видеть пейвол.
+
+1. **Активируйте SDK.** См. [Установка и настройка Unity SDK](sdk-installation-unity).
+2. **Подпишитесь на обновления профиля**, реализовав `IAdaptyEventListener` и зарегистрировав его через `Adapty.SetEventListener`. Если вы ещё не настроили слушатель, см. [Отслеживание обновлений подписки](unity-check-subscription-status#listen-to-subscription-updates).
+3. **Отслеживайте появление `AppleAds` в `AppliedExternalAttributionProviders`.** Когда оно появится, запросите пейвол — Adapty вернёт вариант, сегментированный по AA:
+
+```csharp
+using System.Linq;
+
+public void OnLoadLatestProfile(AdaptyProfile profile)
+{
+    if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds))
+    {
+        // load the paywall via Adapty.GetFlow(placementId, ...)
+    }
+}
+```
+
+4. **Запустите таймер на 3–5 секунд параллельно с подпиской.** Если таймер сработает раньше, чем появится `AppleAds`, запросите пейвол для аудитории по умолчанию с помощью `GetFlowForDefaultAudience`. Он возвращает пейвол без ожидания сегментации.
+
+Какой бы путь ни сработал первым — он должен загрузить пейвол; второй путь должен быть пропущен. Используйте единый флаг состояния (например, `hasLoadedPaywall`) для дедупликации, чтобы пейвол не запрашивался дважды. Настройте [резервный пейвол](unity-use-fallback-paywalls) для плейсмента, чтобы пользователь никогда не оказался в тупике при сбое сетевого запроса.
+
+`SetEventListener` принимает один слушатель. Если ваше приложение уже использует `IAdaptyEventListener` для других целей (например, [для отслеживания обновлений подписки](unity-check-subscription-status#listen-to-subscription-updates)), добавьте проверку в существующий метод `OnLoadLatestProfile`, а не регистрируйте второй слушатель.

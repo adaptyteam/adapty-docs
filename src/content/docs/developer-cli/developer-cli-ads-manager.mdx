@@ -65,6 +65,33 @@ Two kinds of failure are possible, and they behave differently. An invalid ID fa
 
 Start with a handful of keywords and check the result before sending a full file.
 
+## Create a Max Conversions campaign \{#max-conversions\}
+
+A campaign that bids with `MAX_CONVERSIONS` serves only once it owns an automated ad group, so create the two together:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Max Conv" --adam-id 123456 --country US --daily-budget 50 --bidding-strategy MAX_CONVERSIONS
+adapty asa ad-groups create --campaign <campaign-id> --name "Automated Max Conv" --automated
+```
+
+Until that ad group exists, the campaign reports `serving_status: NOT_RUNNING` with `AUTOMATED_KEYWORDS_REQUIRED_AD_GROUP_MISSING` among its `serving_state_reasons`, and `campaigns create` prints both the reason and the command that resolves it.
+
+`--automated` is what satisfies the requirement — a regular ad group with `--automated-keywords` does not. Apple schedules and runs the automated ad group itself, so it takes no `--start-time`, `--default-bid` is optional, and it stays enabled: to stop the spend, pause the campaign.
+
+On the campaign, keep `--target-cpa` lower than `--daily-budget`.
+
+## Set Invoicing Options for a line of credit \{#invoicing-options\}
+
+Apple requires Invoicing Options on every campaign in an organization that bills by line of credit. `adapty asa orgs list` reports each organization's `payment_model` — `LOC` means the five `--invoice-*` flags apply:
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "LOC push" --adam-id 123456 --country US --daily-budget 50 --invoice-advertiser "Acme Inc" --invoice-order-number PO-42 --invoice-contact-name "Jane Doe" --invoice-contact-email jane@acme.com --invoice-billing-email billing@acme.com
+```
+
+Pass all five in one call — a partial set is rejected before the request reaches Apple. Without them, the campaign is created but reports `serving_status: NOT_RUNNING` with `MISSING_BO_OR_INVOICING_FIELDS`.
+
+The same five flags on `adapty asa campaigns update` set the Invoicing Options on a campaign that already exists. They replace the stored set as a whole, so pass all five even to change one of them.
+
 ## Create a campaign structure in one operation
 
 `campaigns bulk-create` replaces a script that loops over `campaigns create` and `ad-groups create`. It submits a whole campaign structure — campaigns with their ad groups, keywords, negative keywords, and ads — as one operation:
@@ -105,7 +132,13 @@ adapty asa campaigns bulk-status <operation-id>
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` takes the names that Ads Manager tracks. See [Metrics](adapty-ads-manager-metrics) for the full list.
+`--metric` is required and repeatable, and takes the names that Ads Manager tracks. See [Metrics](adapty-ads-manager-metrics) for the full list. Every metric you name is computed across the whole entity level before the page is cut, so ask for the columns you read rather than the whole catalog.
+
+`--app`, `--campaign`, and `--ad-group` scope the report, and scoping it is the cheapest way to make a call faster, because cost follows the number of entities aggregated rather than the size of the page. Four metrics count unique profiles per entity — `subscribers`, `paid_subscribers`, `arppu`, and `arpas` — and those require a campaign or ad group filter at any entity level:
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 Cohort metrics work differently from the rest. There is no `ltv` metric, because lifetime value is read at a renewal window rather than on a date. Ask for the window instead:
 
@@ -121,7 +154,9 @@ Each row is one entity, already aggregated and sorted on the server. A "top five
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. Ask a narrow question once rather than polling. The reporting period is also capped by how finely you group it — 90 days by day, 180 by week, 365 by month — so widen a report by coarsening `--group-by`, not by splitting it into more calls.
+Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. Ask a narrow question once rather than polling.
+
+Two caps apply to a report. The reporting period is capped by how finely you group it — 28 days at `--group-by day`, 90 days with no period grouping, 180 by week, 365 by month — and each page is capped at 5000 breakdown rows, counting one row per entity × country × period. So widen a report by coarsening `--group-by`, not by splitting it into more calls.
 
 ## Check competitor keywords
 
@@ -137,7 +172,7 @@ Use this to pull competitor keyword data into a report on a schedule. To filter 
 
 ## Run automation rules \{#run-automation-rules\}
 
-The CLI does not build [automation rules](ads-manager-automations) — it stores the JSON you give it. The fastest way to get a valid rule file is to build one rule in the dashboard, then read it back:
+The CLI stores the JSON you give it, so the fastest way to get a valid [automation rule](ads-manager-automations) file is to build one rule in the dashboard, then read it back:
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
@@ -149,7 +184,27 @@ Edit that file and use it as the template for new rules:
 adapty asa automations create --file rule.json
 ```
 
-When you pass a file to `automations update`, remove the `internal_id` field first — the update is rejected if it is present.
+A rule file contains exactly one condition and exactly one action, which is what the API keeps per rule. When you pass a file to `automations update`, remove the `internal_id` field first — the update is rejected if it is present.
+
+### Build an Add as keyword action from flags
+
+One action is the exception to hand-written JSON. **Add as keyword**, which promotes a search term or copies a keyword into another ad group, takes its target ad groups, bid, and match type from flags:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+Take this action's `params` from the flags, never from a rule that carries a different action. The API resolves `params` by shape rather than by a named variant, so a key belonging to another action makes it choose that action and drop the rest — answering `200` and storing a rule that adds keywords to no ad group at all.
+:::
+
+The same flags on `automations update` repair a rule already stored with the wrong shape. The CLI reads the rule, rebuilds the action from scratch, and writes it back, keeping only the stored settings that fit an **Add as keyword** action:
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+Whatever the broken rule was missing has to come from a flag. See [Ads Manager commands](developer-cli-ads-manager-reference#add-keyword-flags) for the whole set.
 
 Test a rule before letting it change bids:
 

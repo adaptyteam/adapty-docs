@@ -15,7 +15,7 @@ import {
 import { loadZones, partitionErrors, zoneHash, zoneDrift, snapshotZone, normalizeZones, stateOrphans } from './zones.mjs';
 import { buildRows, renderRoster, undeclaredMatrixKeys } from './roster.mjs';
 import { missingSections, replaceAutoBlock, isStub, briefState, parseBrief, referencedArticleIds, sectionBody, briefTemplate } from './briefs.mjs';
-import { parseSources, sourceErrors, formatRefsReport, citedSources } from './sources.mjs';
+import { parseSources, applyLocalPaths, sourceErrors, formatRefsReport, citedSources } from './sources.mjs';
 import { inspectSource, existsOnDisk, readDocsLog } from './git.mjs';
 import { coChanges, parseLog } from './cochange.mjs';
 import { parseRollout, rolloutErrors, rolloutTemplate } from './rollouts.mjs';
@@ -43,7 +43,23 @@ const ZONE_MAP_FILE = path.join(MILL_DIR, 'zone-map.json');
 const ZONES_DIR = path.join(MILL_DIR, 'zones');
 const ZONE_STATE_FILE = path.join(MILL_DIR, '.zone-state.json');
 const SOURCES_FILE = path.join(MILL_DIR, 'sources.md');
+const SOURCES_LOCAL_FILE = path.join(MILL_DIR, 'sources.local.md');
 const ROLLOUTS_DIR = path.join(MILL_DIR, 'rollouts');
+
+// sources.md is shared and records one layout; sources.local.md (gitignored)
+// carries this machine's clone paths on top of it. Absent is the normal state
+// for anyone whose clones match the shared layout, so only sources.md's own
+// absence propagates to the caller.
+async function loadSources() {
+  const sources = parseSources(await fs.readFile(SOURCES_FILE, 'utf-8'));
+  let localMd;
+  try { localMd = await fs.readFile(SOURCES_LOCAL_FILE, 'utf-8'); }
+  catch { return sources; }
+  for (const id of applyLocalPaths(sources, localMd)) {
+    console.error(`⚠ sources.local.md names a source sources.md doesn't have: ${id}`);
+  }
+  return sources;
+}
 
 // Same shape as collectDocIds in generate-llms.mjs, but records WHICH sidebar.
 function collectDocIds(items, ids) {
@@ -270,7 +286,7 @@ async function status() {
   let sourceIds = null;
   let sourceList = [];
   try {
-    sourceList = parseSources(await fs.readFile(SOURCES_FILE, 'utf-8'));
+    sourceList = await loadSources();
     sourceIds = new Set(sourceList.map(s => s.id));
   } catch { /* not authored yet */ }
 
@@ -475,8 +491,8 @@ async function unreviewed(zoneId) {
 }
 
 async function refs() {
-  let md;
-  try { md = await fs.readFile(SOURCES_FILE, 'utf-8'); }
+  let sources;
+  try { sources = await loadSources(); }
   catch {
     // An absent sources.md is a state, not an error: the source-catalog layer
     // simply hasn't been authored yet, exactly like zones.json during
@@ -487,7 +503,6 @@ async function refs() {
     console.error(`No ${path.relative(ROOT, SOURCES_FILE)} yet — nothing to inspect.`);
     return;
   }
-  const sources = parseSources(md);
   const errors = sourceErrors(sources, {
     referencedIds: await referencedSourceIds(await loadZoneLayer()),
     existsOnDisk,

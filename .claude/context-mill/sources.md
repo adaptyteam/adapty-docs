@@ -8,6 +8,11 @@ free prose for a human or agent to read, not for the parser.
 `kind` ∈ `local-clone` | `in-repo-spec` | `remote`. `remote:` is mandatory on every `local-clone` — it
 is the only way the source resolves in an environment with no local clones (unattended/Phase 3 runs).
 
+`path:` records one layout — the clones under `~/Documents` on the machine this file was authored on. If
+yours live elsewhere, don't edit `path:` here: list your locations in `sources.local.md` beside this file
+(gitignored; same `## <id>` heading and `path:` line, nothing else is read). `mill:status` and
+`mill:refs` apply it on top of this file. A `missing-path` warning on every source is the sign you need it.
+
 Established 2026-08-06 by inspecting the actual clones under `~/Documents`, not by assumption: every
 `default_ref` below is the real `git symbolic-ref refs/remotes/origin/HEAD` (or, where that failed, the
 branch a released tag is actually reachable from) for that clone, and every `ref_pattern` is checked
@@ -107,11 +112,14 @@ ref_pattern: release/*
 kind: local-clone
 
 **Do not treat this repo as the source of the public API — see `jscore` below**, same rule as
-`rn-sdk`: this package wraps `@adapty/core`. `origin/master` has **no v4 tag at all yet** (full tag
-list checked; latest reachable tag is `v3.17.1`) — Capacitor v4 is unreleased, in progress on
-`origin/release/4.0.0` and a newer `origin/release/4.0.1-beta.1`. The local clone's checked-out branch
-is `release/4.0.0`, pinning `@adapty/core@4.0.0-beta.1` — check `jscore`'s current state before writing
-docs against that pin, it may already be stale. Native iOS side is SPM-only: `Package.swift` present,
+`rn-sdk`: this package wraps `@adapty/core`. **Capacitor v4 is GA** (corrected 2026-09-07; an
+earlier version of this entry said v4 was unreleased). `v4.1.0` (2026-08-28) was announced in
+#product-tech-releases as "the first stable release of v4.x", `v4.1.1` followed on 2026-09-01, and
+npm's `latest` dist-tag is `4.1.1` (`beta` points at `4.0.1-beta.1`). The beta line ran
+`v4.0.0-beta.1` (2026-07-10) through `v4.0.2-beta.1` (2026-08-14). Every release has a matching
+`release/<version>` branch, `release/4.1.1` being the newest, so `ref_pattern` still holds. Each tag
+pins the same-numbered core (`v4.1.0` → `@adapty/core@4.1.0`, `v4.1.1` → `4.1.1`): read the tag's
+`package.json` pin, then that `jscore` ref — never a `jscore` branch tip. Native iOS side is SPM-only: `Package.swift` present,
 no `Podfile`/`.podspec` anywhere in the repo. No Kids Mode mechanism exists here or in `jscore`
 (grepped both `src/` trees for `kidsMode`/`KidsMode`/`kids_mode`, zero hits) — do not document a
 Capacitor Kids Mode toggle.
@@ -169,6 +177,26 @@ exact builder labels and control naming (conditional actions, boolean operators,
 **not** carry integration-form display metadata — see `dashboard-backend`'s `share.py` rule above; this
 repo only has the field key, not its title/required/hint. Branches are Jira-ticket-numbered here too
 (`ADP-<n>-develop`); `ref_pattern` omitted for the same reason as `dashboard-backend`.
+
+## unified-builder-transformer — Unified Builder Transformer
+path: ~/Documents/unified-builder-transformer
+remote: https://gitlab.adapty.io/adapty/unified-builder-transformer.git
+default_ref: origin/develop
+kind: local-clone
+
+Backend service that compiles Flow Builder JSON (`packages/unified-builder` format) into the JS + JSON
+the UIBuilder mobile SDK executes. **Ground truth for what an action does at runtime** — order,
+blocking, side effects — because those semantics are fixed at compile time, before any SDK sees the
+flow. Read `docs/script-generation.md` first (§1: the script is synchronous JS, no event loop, no
+`async`; §5: one statement per action, in authored order), then
+`src/domain/transform/v5/script/compile-actions.ts` (per-action compiler) and `template.ts` (runtime
+helpers `_.nav`, `_.setVar`, …). `src/fixtures/v5/*/expected.json` hold generated handlers to quote
+from. Confirmed 2026-08-26 on `develop`: no action stops the ones after it; `_.nav` dispatches
+`SDK.openScreen` and returns; the alert's OK button has no handler bound (`actionId: "ok"` appears only
+where it is emitted). `script-generation.md` §5.4 still marks `alert` as "TBD" — the doc is stale there;
+the compiler implements it. `default_ref` is `origin/develop` (`symbolic-ref` confirmed); a `main`
+branch exists but its role wasn't checked. Branches are Jira-numbered / `feat|fix/*`, so `ref_pattern`
+is omitted, as for `dashboard-interface`.
 
 ## server-side-api-spec — Server-side API v2 (maintained)
 path: src/api-reference/specs/adapty-api.yaml
@@ -305,6 +333,13 @@ while all five of its releases have shipped.
 
 Registered 2026-08-11. Read at `1a147338` (2026-08-13).
 
+**Unreachable as of 2026-08-27.** The clone at the `path:` above is gone, and the GitLab account
+`GeneTiterman` (248) has no grant: SSH `git ls-remote` denied, `GET /api/v4/namespaces/noty-wave` →
+`404 Namespace Not Found`. Access requested 2026-08-27. Until it lands, the readable substitute for
+frontend facts is the production bundle `https://mail.adapty.io/assets/index-*.js` — gating logic,
+tooltips, error codes, field lists and nav labels are all in it verbatim. Nothing backend can be
+checked that way. Note SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
+
 ## mail-frontend — Adapty Mail dashboard (noty-wave)
 
 path: ~/Documents/noty-wave-frontend
@@ -337,6 +372,13 @@ the path from the section name.
 adding a `customSlug` — 404s from inside the product, and the link checker can't catch it because the
 caller isn't in this repo. Moving an article between sidebar categories is safe; URLs come from the
 filename alone. Re-grep before any Mail rename.
+
+**Unreachable as of 2026-08-27.** The clone at the `path:` above is gone, and the GitLab account
+`GeneTiterman` (248) has no grant: SSH `git ls-remote` denied, `GET /api/v4/namespaces/noty-wave` →
+`404 Namespace Not Found`. Access requested 2026-08-27. Until it lands, the readable substitute for
+frontend facts is the production bundle `https://mail.adapty.io/assets/index-*.js` — gating logic,
+tooltips, error codes, field lists and nav labels are all in it verbatim. Nothing backend can be
+checked that way. Note SSH is `gitlab-ssh.adapty.io`; `gitlab.adapty.io` port 22 times out.
 
 Read at `8b5613a` (2026-08-13).
 

@@ -1,20 +1,22 @@
 ---
-title: "Thực hiện mua hàng trong ứng dụng với Capacitor SDK"
+title: "Thực hiện mua hàng trong ứng dụng di động với Capacitor SDK"
 description: "Hướng dẫn xử lý in-app purchase và gói đăng ký bằng Adapty."
 metadataTitle: "Xử lý In-App Purchase trong Adapty | Tài liệu Adapty"
 keywords: ['makePurchase', 'offer code']
 rank: 100
 displayed_sidebar: sdkcapacitor
 ---
-import SampleApp from '@site/src/locales/vi/reusable/SampleApp.md';
+
 import OfferCodesInfo from '@site/src/locales/vi/reusable/OfferCodesInfo.mdx';
 
-Hiển thị paywall trong ứng dụng di động là bước thiết yếu để cung cấp cho người dùng quyền truy cập vào nội dung hoặc dịch vụ cao cấp. Tuy nhiên, chỉ hiển thị paywall thôi là đủ để hỗ trợ thanh toán nếu bạn sử dụng [Paywall Builder](adapty-paywall-builder) để tùy chỉnh paywall của mình.
-Nếu bạn không dùng Paywall Builder, bạn cần sử dụng một phương thức riêng là `.makePurchase()` để hoàn tất giao dịch và mở khóa nội dung cho người dùng. Phương thức này đóng vai trò cầu nối giúp người dùng tương tác với các paywall và thực hiện các giao dịch mong muốn.
+Hiển thị paywall trong ứng dụng di động là bước thiết yếu để cung cấp cho người dùng quyền truy cập vào nội dung hoặc dịch vụ cao cấp. Tuy nhiên, chỉ hiển thị paywall là đủ để hỗ trợ mua hàng nếu bạn sử dụng [Paywall Builder](adapty-paywall-builder) để tùy chỉnh paywall.
+
+Nếu bạn không sử dụng Paywall Builder, bạn phải dùng một phương thức riêng biệt là `.makePurchase()` để hoàn tất giao dịch mua và mở khóa nội dung mong muốn. Phương thức này đóng vai trò là cửa ngõ để người dùng tương tác với paywall và thực hiện các giao dịch họ muốn.
 
 Nếu paywall của bạn có ưu đãi đang hoạt động cho sản phẩm mà người dùng muốn mua, Adapty sẽ tự động áp dụng ưu đãi đó tại thời điểm thanh toán.
 
-Hãy đảm bảo bạn đã [thực hiện cấu hình ban đầu](quickstart) mà không bỏ qua bất kỳ bước nào. Nếu không có bước đó, chúng tôi không thể xác thực các giao dịch mua.
+Hãy đảm bảo bạn đã [hoàn thành cấu hình ban đầu](quickstart) mà không bỏ qua bất kỳ bước nào. Nếu không, chúng tôi sẽ không thể xác thực các giao dịch mua.
+
 ## Thực hiện mua hàng \{#make-purchase\}
 
 :::note
@@ -148,6 +150,34 @@ try {
 
 :::danger
 Theo quan sát của chúng tôi, giao diện nhập mã ưu đãi trong một số ứng dụng có thể hoạt động không ổn định. Chúng tôi khuyến nghị bạn chuyển hướng người dùng trực tiếp đến App Store.
-Để làm điều này, bạn cần mở URL theo định dạng sau:
+Để thực hiện điều này, bạn cần mở URL theo định dạng sau:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Gói mua trong ứng dụng từ App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Tính năng mua hàng được quảng bá hỗ trợ từ SDK phiên bản 4.1 trở lên và yêu cầu **iOS 16.4** trở lên. Trên các thiết bị chạy iOS dưới 16.4, giao dịch sẽ không đến được ứng dụng của bạn. Sự kiện này không bao giờ được kích hoạt trên Android.
+:::
+
+Khi người dùng bắt đầu mua hàng từ trang sản phẩm App Store của bạn và giao dịch được chuyển sang ứng dụng, SDK sẽ tự động hoàn tất giao dịch đó — màn hình thanh toán của Apple hiển thị ngay lập tức, và Adapty xử lý giao dịch như bất kỳ sản phẩm mua nào khác. Bạn không cần viết thêm bất kỳ đoạn code nào.
+
+Nếu sản phẩm được quảng bá kèm theo ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua hàng. Ưu đãi được đọc từ App Store purchase intent, chỉ hiển thị trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ diễn ra ở mức giá cơ bản.
+
+Để tự xử lý việc hoàn tất giao dịch — chẳng hạn để hiển thị màn hình của bạn trước — hãy lắng nghe sự kiện `'onPromotedPurchaseReceived'` và truyền sản phẩm vào `makePromotedPurchase`:
+
+```typescript showLineNumbers
+
+const listener = await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+  // process the purchase result
+});
+```
+
+:::warning
+Khi listener của bạn đang được đăng ký, SDK sẽ dừng việc tự động hoàn tất các promoted purchase. Nếu handler của bạn không bao giờ gọi `makePromotedPurchase`, giao dịch mua sẽ không xảy ra: App Store chuyển sản phẩm cho app của bạn và chờ. Gọi `listener.remove()` để khôi phục hành vi tự động.
+:::
+
+`makePromotedPurchase` không nhận tham số mua — sản phẩm được quảng bá đến từ App Store chứ không phải từ paywall, nên nó không mang theo context paywall nào. Hàm này trả về cùng [`AdaptyPurchaseResult`](https://capacitor.adapty.io/types/adaptypurchaseresult) như `makePurchase`.
+
+Gọi `adapty.removeAllListeners()` sẽ xóa listener promoted-purchase của bạn cùng với tất cả các listener khác, và tính năng tự động hoàn tất của SDK sẽ tiếp quản. Hãy đăng ký lại listener nếu app của bạn vẫn cần kiểm soát việc hoàn tất.

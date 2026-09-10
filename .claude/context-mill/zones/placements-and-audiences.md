@@ -84,6 +84,21 @@ A/B test) and the one ID the app hardcodes.
   path sends no segment hash, so it cannot be audience-targeted. The bundle is the one
   `delete-placement`'s danger note is about; the file format is `flow-logic`'s. Establish which one a
   ticket means before answering.
+- **A placement ID is unique per app, not per type, and the type itself is frozen at creation.** Verified
+  2026-08-26 on **dashboard-backend** `origin/develop` @ `79b61067e8`:
+  `portal/in_app_context/infrastructure/models/placement.py` declares
+  `UniqueConstraint(fields=('app','developer_id'), name='in_apps_app_developer_id_unique',
+  condition=Q(is_deleted=False))` — no `type` in the constraint — and
+  `portal/in_app_context/applications/placement/placement_app.py:98` gates creation on
+  `repo.exists(app_id, developer_id)`, which filters on `app_id` + `developer_id` + `is_deleted=False`
+  only (`placement_repository.py:196`), raising `PlacementWithDeveloperIdAlreadyExist`. So a new flow
+  placement cannot take the ID of a live paywall or onboarding placement, and
+  `PlacementTypeCanNotBeChanged` / `PlacementDeveloperIdCanNotBeChanged` in
+  `domains/exceptions/placement.py` close the two workarounds a reader reaches for next. Two nuances the
+  articles deliberately don't state: the constraint is partial on `is_deleted=False`, so deleting a
+  placement does release its ID (never advise this — `delete-placement`'s danger note applies), and the
+  uniqueness is on `developer_id`, **not** on `title`, which carries no unique constraint at all. Tickets
+  that say "can't reuse the placement *name*" mean the ID.
 - **Claim classes that must never be inferred from a neighbouring article in this zone:** which audience
   a user gets and why (read the SQL); what a segment filter can express (`subscribers-and-profiles`);
   how long a dashboard change takes to reach a device (two cache layers, both cited above); what the

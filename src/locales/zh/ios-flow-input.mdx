@@ -1,0 +1,291 @@
+---
+title: "在 iOS SDK 中处理来自流程的数据"
+description: "使用 Adapty SDK 在 iOS 应用中保存并使用用户在流程中输入的数据。"
+metadataTitle: "处理来自流程的数据 | iOS SDK | Adapty 文档"
+---
+
+当用户在[流程](adapty-flow-builder)中的输入框中输入内容、回答问卷或切换开关时，SDK 会通过其分析回调将该值传递给你的应用。
+
+应用通常会将这些数据用于：
+
+- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程结束时创建其账号。
+- **保存答案和偏好设置**：记录用户的选择，以便应用后续使用——例如，[将其作为自定义属性写入 Adapty 用户画像](setting-user-attributes)。
+- **自定义后续流程**：将问卷答案保存为自定义属性，再针对特定版位进行定向，使每个市场细分看到不同的流程，或其中不同的付费墙。
+- **接入第三方分析平台**：将答案转发至 Amplitude、Mixpanel 或你正在使用的其他产品分析工具。
+
+输入框和可选组会自动上报其值。为了在代码中区分各个输入框，请在编辑工具中为每个输入框设置有意义的 **Element ID**，并为每个可选组设置 **Group ID**。
+
+<FlowIdNaming />
+
+## 开始之前 \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 接收输入值 \{#receive-input-values\}
+
+输入值与流程中的其他所有分析事件一样，通过同一个回调接收，事件名称为 `flow_user_input`。请在注册其他流程事件处理器的同时注册该回调。
+
+<Tabs>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+将 `didReceiveAnalyticEvent` 闭包传入 `.flow` 修饰符：
+
+```swift showLineNumbers title="Swift"
+Text("Hello, AdaptyUI!")
+    .flow(
+        isPresented: $flowPresented,
+        flowConfiguration: flowConfiguration,
+        didFinishPurchase: { product, purchaseResult in /* handle the event */ },
+        didFailPurchase: { product, error in /* handle the error */ },
+        didFinishRestore: { profile in /* handle the event */ },
+        didFailRestore: { error in /* handle the error */ },
+        didReceiveError: { error in flowPresented = false },
+        didReceiveAnalyticEvent: { name, params in
+            handleFlowInput(name: name, params: params)
+        }
+    )
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+在您的 `AdaptyFlowControllerDelegate` 上实现该方法：
+
+```swift showLineNumbers title="Swift"
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    handleFlowInput(name: name, params: params)
+}
+```
+
+</TabItem>
+</Tabs>
+
+闭包和委托方法接收相同的两个参数，因此读取值的代码在两种方式下完全一致。
+
+`didReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](ios-flow-screen-views)。
+- `name` 参数包含事件名称。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
+- `element_type` 参数表示元素类别。
+- 输入值根据元素类型存储在不同的参数中：
+     - 文本框、选择器和开关将用户输入存储在 `value` 中
+     - 可选组在 `item_ids` 和 `item_titles` 中报告当前选中的选项
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let elementType = params["element_type"] as? String
+    else { return }
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    let screenId = params["instanceId"] as? String
+
+    switch elementType {
+    case "text_input", "email_input", "number_input", "phone_input":
+        let text = params["value"] as? String
+    case "date_picker", "time_picker", "date_time_picker":
+        // Integer Unix time in milliseconds, not the seconds Date expects.
+        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
+    case "single_choice":
+        let optionId = (params["item_ids"] as? [String])?.first
+    case "multi_choice":
+        let optionIds = params["item_ids"] as? [String]
+    case "toggle":
+        let isOn = params["value"] as? Bool
+    default:
+        break
+    }
+}
+```
+
+<FlowInputVerify />
+
+## 当您的应用接收到输入时 \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 您将接收到的内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## 事件示例 \{#event-examples\}
+
+以下示例展示了每个事件的可用属性，注释中附有说明性的示例值。
+
+<Details>
+<summary>文本、邮箱、数字和电话输入（点击展开）</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    name;                      // "flow_user_input"
+    params["name"];            // "flow_user_input"
+    params["instanceId"];      // "scr_J260KU5q"
+    params["isCustomerEvent"]; // true
+    params["isBackendEvent"];  // false
+    params["element_id"];      // "email"
+    params["element_type"];    // "email_input"
+    params["value"];           // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>日期、时间和日期时间选择器（点击展开）</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "birthday"
+    params["element_type"];    // "date_picker"
+    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>单选（点击展开）</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "experience"
+    params["element_type"];    // "single_choice"
+    params["item_ids"];        // ["pro"]
+    params["item_titles"];     // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>多选（点击展开）</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "interests"
+    params["element_type"];    // "multi_choice"
+    params["item_ids"];        // ["sports", "music"]
+    params["item_titles"];     // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```swift
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    params["element_id"];      // "reminders"
+    params["element_type"];    // "toggle"
+    params["value"];           // true   (Bool)
+}
+```
+</Details>
+
+## 交付与限制 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+每次处理程序接收到输入值时，请将其保存下来，并在流程关闭时一次性发送完整的数据集。要捕获这一时机，可以在 UIKit 中为 `AdaptyFlowControllerDelegate` 实现 `flowControllerDidDisappear`，或者在 SwiftUI 中向 `.flow` 修饰符传入 `didDisappear` 闭包。无论用户是完成流程还是主动关闭，这两种方式都会在流程视图离开屏幕后触发。
+
+## 使用场景 \{#use-cases\}
+
+### 在后端注册用户 \{#register-users-on-your-backend\}
+
+待数据陆续到来后先收集，等流程关闭时再一并发送，这样一次请求就能携带完整的答案集合。
+
+无论用户是正常完成流程还是中途退出，视图都会消失。在调用后端之前，请先检查所需字段是否已填写。
+
+流程无法展示来自后端的错误信息。回调没有返回值，SDK 也没有向运行中的流程发送数据的方法。如果注册失败（例如邮箱已被使用），请在流程关闭后通过您自己的 UI 显示错误提示。
+
+```swift showLineNumbers title="Swift"
+private var flowAnswers: [String: String] = [:]
+
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    flowAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    guard flowAnswers["email"] != nil else { return }
+
+    // Send flowAnswers to your backend here to create the account.
+
+    flowAnswers.removeAll()
+}
+```
+
+### 使用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+
+为了将用户输入的内容关联到其用户画像，并避免重复询问相同信息，请在数据输入时[更新用户画像](setting-user-attributes)。
+
+例如，如果你的流程中有一个 Element ID 为 `name` 的文本输入框和一个 Element ID 为 `email` 的邮箱输入框：
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    let builder = AdaptyProfileParameters.Builder()
+
+    switch elementId {
+    case "name":
+        builder.with(firstName: value)
+    case "email":
+        builder.with(email: value)
+    default:
+        return
+    }
+
+    // Delegate methods are synchronous; kick off the async update in a Task.
+    Task {
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+### 自定义后续显示的流程 \{#customize-flows-shown-later\}
+
+测验答案也可以决定用户在后续[版位](placements)中看到什么——可以是不同的流程，或其中不同的付费墙。
+
+例如，在用户引导流程中询问用户的运动经历，然后为每个群体展示各自的流程，配以不同的产品和文案。
+
+1. 在流程中添加[测验](onboarding-quizzes)。将[可选组](flow-selectable-elements)的 Group ID 设为 `experience`，并为每个选项设置有意义的 Element ID。
+2. 处理答案并为用户[设置自定义属性](setting-user-attributes)。
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    let builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    try? builder.with(customAttribute: optionId, forKey: "experience")
+
+    Task {
+        do {
+            try await Adapty.updateProfile(params: builder.build())
+        } catch {
+            // handle the error
+        }
+    }
+}
+```
+
+3. 为每个自定义属性值[创建市场细分](segments)。
+4. 创建[版位](placements)，并为每个市场细分添加[目标受众](audience)。
+5. 在您的应用中[展示该版位的流程](ios-present-paywalls)。

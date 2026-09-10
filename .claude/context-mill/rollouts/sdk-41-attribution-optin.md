@@ -45,9 +45,9 @@ Canon = docs commits `bc447f975` (iOS 4.1, PR #430) + `660cb5325` (opt-in highli
 | android | — | shipped | shipped | migration-to-android-sdk-41, android-get-pb-paywalls, sdk-installation-android, android-sdk-migration-guides | on main | — |
 | react-native | — | not started | — | — | — | — |
 | flutter | feat/sdk-4.1-update | in progress | — | — | — | — |
-| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | shipped (`4.1.0`, `4.1.1` tagged) | shipped | migration-to-unity-sdk-v4, sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases | 3cf5ff5f2 | #509, #601 |
+| unity | feature/sdk-4.1-update ([PR #30](https://github.com/adaptyteam/AdaptySDK-Unity/pull/30), `4.1.0-dev.1`) | shipped (`4.1.0`, `4.1.1` tagged) | shipped | migration-to-unity-sdk-v4, sdk-installation-unity, unity-check-subscription-status, unity-listen-subscription-changes, implement-observer-mode-unity, unity-sdk-call-order, adjust, appsflyer, branch, tenjin, unity-sdk-migration-guides, unity-present-flows-in-observer-mode, unity-handling-onboarding-events, unity-onboarding-input, unity-making-purchases | 3cf5ff5f2 + f41200174 | #509, #601 |
 | kmp | release/4.1 | in review | in review | migration-to-kmp-sdk-v4, sdk-installation-kotlin-multiplatform, kmp-making-purchases, kmp-get-pb-paywalls, kmp-sdk-call-order, kmp-sdk-migration-guides, user-acquisition, attribution-integration, kmp-check-subscription-status, kmp-handle-errors, kmp-handling-onboarding-events, kmp-troubleshoot-paywall-builder, kmp-get-onboardings, adapty-cursor-kmp | d0869e200 | #560 |
-| capacitor | release/4.1.0 + [PR #106](https://github.com/adaptyteam/AdaptySDK-Capacitor/pull/106) (open) | in review | in review | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition | 03cc7d8e9 | #559 |
+| capacitor | release/4.1.0 + [PR #106](https://github.com/adaptyteam/AdaptySDK-Capacitor/pull/106) (open) | in review | shipped | migration-to-capacitor-sdk-v4, sdk-installation-capacitor, capacitor-making-purchases, capacitor-sdk-call-order, capacitor-sdk-migration-guides, adapty-cursor-capacitor, capacitor-localizations-and-locale-codes, user-acquisition, capacitor-show-aa-targeted-paywall | 548c8ec57 | #559 |
 
 ### Unity specifics (from PR #30 diff, `feature/newtonsoft-migration...feature/sdk-4.1-update`)
 
@@ -167,8 +167,15 @@ inferred from the iOS or Unity guides):
    (Unity's provider does stay a plain C# `string`.) `updateAttribution({ attribution, source })`
    → `updateExternalAttribution({ attribution, provider })`, no deprecated alias. There is no
    JSON-string overload on Capacitor at all, so the iOS "deserialize first" step has no counterpart.
-3. **No preload APIs, no `customLayoutId`, no offer-type change** — same as Unity.
-   `capacitor-optimize-paywall-fetching` and `capacitor-get-pb-paywalls` stay as they are.
+3. **No preload APIs and no offer-type change** — same as Unity. `capacitor-optimize-paywall-fetching`
+   stays as it is.
+   ⚠️ **`customLayoutId` DOES come to Capacitor — corrected 2026-08-27 from reviewer feedback.** The
+   first pass recorded it as absent because it is not in the AdaptySDK-Capacitor PR diff at all: it
+   lives in `@adapty/core` on `CreateFlowViewParamsInput` alongside the new `locale`. Both
+   `capacitor-get-pb-paywalls` (parameter table) and the migration guide needed it.
+   **Same root cause as point 1, and now the second occurrence: for React Native and Capacitor the
+   public API is defined in `@adapty/core`, so reading only the platform repo's PR diff under-reports
+   the release. Diff the core `index.d.mts` between the old and new pinned versions as well.**
 4. **No compile break for promoted purchases.** Capacitor listeners are additive (`adapty.addListener`),
    not a required interface, so unlike Unity's `IAdaptyEventListener` there is nothing an app must
    implement. Nothing goes stale in the existing listener samples.

@@ -1,0 +1,298 @@
+---
+title: "在 Kotlin Multiplatform SDK 中处理流程数据"
+description: "在你的 Kotlin Multiplatform 应用中保存并使用用户在流程中输入的数据，借助 Adapty SDK 实现。"
+metadataTitle: "处理流程数据 | Kotlin Multiplatform SDK | Adapty 文档"
+---
+
+当用户在[流程](adapty-flow-builder)中的输入框输入内容、回答问卷或切换开关时，SDK 会通过分析回调将该值传递给你的应用。
+
+应用最常将这些数据用于：
+
+- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱地址和姓名，在流程关闭时为其创建账号。
+- **保存答案和偏好设置**：记录用户的选择，以便应用后续使用——例如，[将其写入用户的 Adapty 用户画像](kmp-setting-user-attributes)作为自定义属性。
+- **个性化未来流程**：将问卷答案保存为自定义属性，然后针对后续版位进行定向，让每个市场细分看到不同的流程，或流程中不同的付费墙。
+- **向第三方分析平台传送数据**：将答案转发给 Amplitude、Mixpanel 或您使用的任何产品分析工具。
+
+输入框和可选择组会自动上报其值。要在代码中区分各个输入框，请在编辑工具中为每个输入框设置一个有意义的 **Element ID**，并为每个可选择组设置一个 **Group ID**。
+
+<FlowIdNaming />
+
+## 开始之前 \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 接收输入值 \{#receive-input-values\}
+
+输入值通过与其他所有流程分析事件相同的回调传递，事件名称为 `flow_user_input`。在通过 `AdaptyUI.setFlowsEventsObserver` 注册的观察者上重写 `flowViewDidReceiveAnalyticEvent`：
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        handleFlowInput(name, paramsJsonString)
+    }
+})
+```
+
+`flowViewDidReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[屏幕浏览事件](kmp-flow-screen-views)。事件参数以单个 JSON 字符串的形式通过 `paramsJsonString` 传入，解码一次后即可读取各字段。
+- `name` 参数包含事件名称。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
+- `element_type` 参数标识元素类别。
+- 输入值根据元素类型存储在不同的参数中：
+     - 文本字段、选择器和开关将用户输入存储在 `value` 中
+     - 可选组在 `item_ids` 和 `item_titles` 中报告当前选中的选项
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+
+    when (params["element_type"]?.jsonPrimitive?.content) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"]?.jsonPrimitive?.content
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
+            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
+        }
+        "multi_choice" -> {
+            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
+        }
+        "toggle" -> {
+            val isOn = params["value"]?.jsonPrimitive?.boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## 应用接收输入的时机 \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 您将收到的内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## 事件示例 \{#event-examples\}
+
+这些示例展示了每个事件可用的属性，注释中包含示意性的值。
+
+<Details>
+<summary>文本、邮箱、数字和电话号码输入（点击展开）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    name                       // "flow_user_input"
+    paramsJsonString           // "{\"name\":\"flow_user_input\",\"instanceId\":\"scr_J260KU5q\",\"isBackendEvent\":false,\"isCustomerEvent\":true,\"element_id\":\"email\",\"element_type\":\"email_input\",\"value\":\"jane@example.com\"}"
+
+    // paramsJsonString, once decoded:
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"
+}
+```
+</Details>
+
+<Details>
+<summary>日期、时间和日期时间选择器（点击展开）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>单选（点击展开）</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true
+}
+```
+</Details>
+
+## 传输与限制 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+将每个输入值存储到观察者接收时，并在流程关闭时发送完整的数据集。要捕捉该时机，请在同一观察者上重写 `flowViewDidDisappear`。无论用户是完成流程还是中途关闭，该方法都会在流程视图消失时执行。
+
+## 使用场景 \{#use-cases\}
+
+### 在后端注册用户 \{#register-users-on-your-backend\}
+
+收集答案时请逐步积累，等流程关闭后再一次性发送请求，确保单次请求包含完整的答案集。
+
+无论用户完成流程还是中途退出，界面都会消失。在调用后端接口之前，请先校验所需字段是否已填写。
+
+流程无法显示来自后端的错误信息。回调没有返回值，SDK 也没有向运行中的流程传入数据的方法。如果注册失败（例如邮箱已被占用），请在流程关闭后通过自己的 UI 展示错误提示。
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### 使用数据丰富用户画像 \{#enrich-user-profiles-with-data\}
+
+为了将用户输入的内容与其用户画像关联，并避免重复询问相同信息，请在收到数据时[更新用户画像](kmp-setting-user-attributes)。
+
+例如，如果你的流程中有一个 Element ID 为 `name` 的文本输入框和一个 Element ID 为 `email` 的邮箱输入框：
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (params["element_id"]?.jsonPrimitive?.content) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+### 自定义后续显示的流程 \{#customize-flows-shown-later\}
+
+测验答案也可以决定用户在后续[版位](placements)中看到的内容——不同的流程，或其中不同的付费墙。
+
+例如，在用户引导流程中询问用户的运动经验，然后为每组用户展示包含不同产品和文案的专属流程。
+
+1. 在流程中添加一个[测验](onboarding-quizzes)。将[可选组](flow-selectable-elements)的 Group ID 设置为 `experience`，并为每个选项指定有意义的 Element ID。
+2. 处理答案并为用户[设置自定义属性](kmp-setting-user-attributes)。
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["element_id"]?.jsonPrimitive?.content != "experience") return
+
+    val optionId = params["item_ids"]?.jsonArray?.firstOrNull()
+        ?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+3. 为每个自定义属性值[创建一个市场细分](segments)。
+4. 创建一个[版位](placements)，并为每个市场细分添加一个[目标受众](audience)。
+5. 在你的应用中[展示该版位的流程](kmp-present-paywalls)。

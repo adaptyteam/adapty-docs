@@ -97,16 +97,18 @@ adapty asa connect
 adapty asa orgs list
 ```
 
-每行包含两个标识符，二者不可互换：
+每一行包含两个标识符，它们不可互换：
 
 | 字段 | 用途 |
 |---|---|
-| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) 的 `--org` 参数所接受的 UUID，也是[列表筛选器](#list-filters)中 `--campaign-group` 所接受的值 |
-| `org_id` | Apple 的数字组织 ID，两个参数均不接受此值 |
+| `internal_id` | [`campaigns create`](#adapty-asa-campaigns-create) 中 `--org` 参数接受的 UUID，以及作为[列表过滤器](#list-filters)时 `--campaign-group` 所接受的值 |
+| `org_id` | Apple 的数字组织 ID，由 [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) 中的 `--org-id` 使用。`--org` 和 `--campaign-group` 不接受此值 |
 
-`--org` 仅在 `campaigns create` 中存在，任何列表命令均不接受该参数。
+`--org` 仅在 `campaigns create` 中可用，`list` 命令不接受该参数。
 
-支持[分页参数](#global-flags)。
+每行还包含一个 `payment_model` 字段。当其值为 `LOC` 时，表示该组织按信用额度计费，其中的每个推广活动都需要使用 [`--invoice-*` 标志](#adapty-asa-campaigns-create)。
+
+支持[分页标志](#global-flags)。
 
 ### adapty asa apps list
 
@@ -157,21 +159,30 @@ adapty asa campaigns get <campaign-id>
 adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --adam-id 123456 --country US --daily-budget 50
 ```
 
-| 标志 | 必填 | 描述 |
+| 参数 | 是否必填 | 描述 |
 |---|---|---|
-| `--org` | 是 | 推广活动组 ID（UUID）。参见 [`orgs list`](#adapty-asa-orgs-list) |
-| `--name` | 是 | 推广活动名称 |
+| `--org` | 是 | 广告系列组 ID（UUID）。参见 [`orgs list`](#adapty-asa-orgs-list) |
+| `--name` | 是 | 广告系列名称 |
 | `--adam-id` | 是 | App Store 应用 ID（`adam_id`） |
-| `--country` | 是 | 国家或地区代码。重复使用可指定多个：`--country US --country CA` |
+| `--country` | 是 | 国家或地区代码。如需指定多个，重复使用：`--country US --country CA` |
 | `--daily-budget` | 是 | 每日预算，填写纯数字金额，例如 `50` 或 `12.50` |
-| `--budget` | 否 | 总预算 |
-| `--target-cpa` | 否 | 目标每次获客成本 |
-| `--currency` | 否 | 本次调用金额所用的货币代码。默认值：`USD` |
-| `--bidding-strategy` | 否 | `MANUAL_CPT` 或 `MAX_CONVERSIONS`。Apple 默认为 `MANUAL_CPT` |
-| `--ad-channel-type` | 否 | `SEARCH` 或 `DISPLAY`。默认值：`SEARCH` |
-| `--billing-event` | 否 | `TAPS` 或 `IMPRESSIONS`。默认值：`TAPS` |
-| `--supply-source` | 否 | 供应来源，可重复使用。默认值：`APPSTORE_SEARCH_RESULTS` |
+| `--budget` | 否 | 总生命周期预算 |
+| `--target-cpa` | 否 | 目标每次转化费用，必须低于 `--daily-budget` |
+| `--currency` | 否 | 本次调用所用金额的货币代码，默认为 `USD` |
+| `--bidding-strategy` | 否 | `MANUAL_CPT` 或 `MAX_CONVERSIONS`，Apple 默认为 `MANUAL_CPT` |
+| `--ad-channel-type` | 否 | `SEARCH` 或 `DISPLAY`，默认为 `SEARCH` |
+| `--billing-event` | 否 | `TAPS` 或 `IMPRESSIONS`，默认为 `TAPS` |
+| `--supply-source` | 否 | 广告供应来源，可重复使用，默认为 `APPSTORE_SEARCH_RESULTS` |
 | `--status` | 否 | 初始状态：`ENABLED` 或 `PAUSED` |
+| `--invoice-advertiser` | 信用额度 | 发票选项：广告主名称 |
+| `--invoice-order-number` | 信用额度 | 发票选项：订单编号 |
+| `--invoice-contact-name` | 信用额度 | 发票选项：采购方联系人姓名 |
+| `--invoice-contact-email` | 信用额度 | 发票选项：采购方联系人邮箱 |
+| `--invoice-billing-email` | 信用额度 | 发票选项：账单联系人邮箱 |
+
+一个 `payment_model` 为 `LOC` 的组织按信用额度计费，Apple 要求为其每个广告系列设置开票选项。请在一次调用中传入全部五个 `--invoice-*` 标志——部分传入会在请求发送前被拒绝。详见[为信用额度设置开票选项](developer-cli-ads-manager#invoicing-options)。
+
+响应中包含 `serving_status` 和 `serving_state_reasons`。创建成功的广告系列不一定会立即投放：`MAX_CONVERSIONS` 广告系列需要等待[自动广告组](#adapty-asa-ad-groups-create)，而信用额度广告系列则需要等待其发票选项配置完成。两种情况下，命令均会打印出原因说明及解决该问题所需执行的命令。
 
 ### adapty asa campaigns update
 
@@ -185,18 +196,109 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 |---|---|
 | `campaign-id` | 广告活动 ID（UUID） |
 
-| 标志 | 描述 |
+| 参数 | 说明 |
 |---|---|
-| `--name` | 新广告活动名称 |
+| `--name` | 新的推广活动名称 |
 | `--status` | `ENABLED` 或 `PAUSED` |
 | `--country` | 替换国家/地区列表。可重复使用以指定多个国家/地区 |
 | `--daily-budget` | 新的每日预算 |
 | `--budget` | 新的总生命周期预算 |
-| `--target-cpa` | 新的目标每次转化费用 |
+| `--target-cpa` | 新的目标每次获取费用 |
 | `--bidding-strategy` | `MANUAL_CPT` 或 `MAX_CONVERSIONS` |
-| `--currency` | 本次调用中金额所使用的货币代码。默认值：`USD` |
+| `--currency` | 本次调用中金额所用的货币代码。默认值：`USD` |
+| `--invoice-advertiser` | 发票选项：广告主名称 |
+| `--invoice-order-number` | 发票选项：订单编号 |
+| `--invoice-contact-name` | 发票选项：采购方联系人姓名 |
+| `--invoice-contact-email` | 发票选项：采购方联系人邮箱 |
+| `--invoice-billing-email` | 发票选项：账单联系人邮箱 |
 
-至少需要提供一个标志。
+至少需要一个标志。
+
+`--invoice-*` 这五个标志作为一组使用，会整体替换已存储的 Invoicing Options，因此即使只修改其中一项，也需要同时传入全部五个标志。如果传入的标志不完整，请求在发送前就会被拒绝。
+
+### adapty asa campaigns bulk-create
+
+通过单次操作创建完整的广告活动结构——包含广告活动及其嵌套的广告组、关键词、否定关键词和广告。
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+也可以直接转换原生 Apple Ads 批量模板，无需手动编写 JSON：
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567
+```
+
+| 标志 | 默认值 | 描述 |
+|---|---|---|
+| `--file` | — | 包含广告系列结构的 JSON 文件，或使用 `-` 从标准输入读取 |
+| `--from-file` | — | 要在服务器上转换的 Apple Ads 批量模板：[`Campaign_And_Adgroup_Template.xlsx`](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) 或[关键词 `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) |
+| `--org-id` | — | Apple 的数字组织 ID（`org_id`）。参见 [`orgs list`](#adapty-asa-orgs-list)。与 `--from-file` 一起使用时必填 |
+| `--preview` | — | 与 `--from-file` 配合使用：打印转换后的结构并停止，不会创建任何内容 |
+| `--wait` / `--no-wait` | `--wait` | 轮询操作直至完成。`--no-wait` 会打印操作 ID 并返回 |
+| `--poll-interval` | `5` | 轮询进度的间隔秒数 |
+| `--timeout` | `900` | 等待操作完成的最长秒数 |
+
+恰好需要 `--file` 和 `--from-file` 其中之一。
+
+该结构在顶层命名活动组，并在其中嵌套所有其他内容：
+
+```json title="structure.json"
+{
+  "campaign_group_id": 555777,
+  "campaigns": [
+    {
+      "payload": {
+        "name": "US Search",
+        "adam_id": 123456,
+        "countries_or_regions": ["US"],
+        "daily_budget_amount": { "amount": "100", "currency": "USD" },
+        "status": "ENABLED",
+        "ad_channel_type": "SEARCH",
+        "billing_event": "TAPS",
+        "supply_sources": ["APPSTORE_SEARCH_RESULTS"]
+      },
+      "ad_groups": [
+        {
+          "payload": { "name": "Brand", "start_time": "2026-08-01T00:00:00Z", "status": "ENABLED" },
+          "keywords": [{ "text": "meditation app", "match_type": "BROAD" }]
+        }
+      ]
+    }
+  ]
+}
+```
+
+`campaign_group_id` 接受 Apple 的数字组织 ID；如需传入 UUID，请改用 `campaign_group_internal_id`。包含 `payload` 的节点会被创建。仅通过 `id` 引用现有实体的节点为锚点——可用锚点向已有广告系列添加广告组，同时添加 `update_payload` 可在同一操作中修改该实体。每个广告系列嵌套 `ad_groups`，每个广告组嵌套 `keywords`、`negative_keywords` 和 `ads`。广告系列还可直接接受 `negative_keywords`，用于设置广告系列级别的否定关键词。
+
+整个结构在创建任何内容之前都会经过验证，拒绝时会列出每个无效节点。使用 `--from-file` 时，转换问题会附带所在的工作表、行和列信息；转换警告不会中止提交，但转换错误会终止操作。发送前，命令会汇报结构中包含多少个广告系列、广告组、关键词、否定关键词和广告，并要求确认。
+
+命令随后会轮询操作进度并持续打印，直到出现以下三种最终状态之一：
+
+| 状态 | 含义 |
+|---|---|
+| `success` | 所有对象均已创建 |
+| `partial` | 部分对象未能创建，每条失败信息均附有 Apple 的错误提示 |
+| `failed` | 操作失败，命令以非零状态退出 |
+
+如果操作在 `--timeout` 秒内未完成，命令将返回并打印稍后运行的 [`bulk-status`](#adapty-asa-campaigns-bulk-status) 调用。
+
+### adapty asa campaigns bulk-status
+
+显示单个批量操作的进度：状态、对象计数以及每个对象的日志。
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `operation-id` | 由 [`campaigns bulk-create`](#adapty-asa-campaigns-bulk-create) 输出的操作 ID（UUID） |
+
+`status` 字段的值为 `pending`、`running`、`success`、`partial` 或 `failed`。`counts` 块报告在总数中已应用、失败和待处理的对象数量。
+
+支持[分页标志](#global-flags)。
 
 ## 广告组 \{#ad-groups\}
 
@@ -234,14 +336,17 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 |---|---|---|
 | `--campaign` | 是 | 广告系列 ID（UUID） |
 | `--name` | 是 | 广告组名称 |
-| `--default-bid` | 是 | 默认出价金额，例如 `1.20` |
-| `--cpa-goal` | 否 | 目标单次转化成本 |
-| `--pricing-model` | 否 | `CPC` 或 `CPM`。Apple 要求每个广告组必须指定其中一种。默认值：`CPC` |
+| `--default-bid` | 未设置 `--automated` 时必填 | 默认出价，填写纯数字金额，例如 `1.20` |
+| `--cpa-goal` | 否 | 每次转化费用目标 |
+| `--pricing-model` | 否 | `CPC` 或 `CPM`。Apple 要求每个广告组必须指定一种。默认值：`CPC` |
 | `--start-time` | 否 | 排期开始时间（`YYYY-MM-DD`），默认为今天 |
 | `--end-time` | 否 | 排期结束时间（`YYYY-MM-DD`） |
 | `--automated-keywords` / `--no-automated-keywords` | 否 | 允许 Apple 自动添加关键词 |
-| `--currency` | 否 | 本次调用所用的货币代码。默认值：`USD` |
+| `--automated` | 否 | 创建 `MAX_CONVERSIONS` 广告系列所需的自动化广告组 |
+| `--currency` | 否 | 本次调用中金额所用的货币代码。默认值：`USD` |
 | `--status` | 否 | 初始状态：`ENABLED` 或 `PAUSED` |
+
+`--automated` 选项会将广告组纳入自动关键词管理，因此不能与 `--automated-keywords` 同时使用。Apple 会自动安排该广告组并保持启用状态，所以 `--start-time` 和 `--status PAUSED` 均不被支持——如需暂停，请暂停广告系列本身。请参阅[创建 Max Conversions 广告系列](developer-cli-ads-manager#max-conversions)。
 
 ### adapty asa ad-groups update
 

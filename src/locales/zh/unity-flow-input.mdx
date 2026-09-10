@@ -1,0 +1,286 @@
+---
+title: "在 Unity SDK 中处理流程数据"
+description: "使用 Adapty SDK 保存并使用用户在流程中输入的数据，适用于 Unity 应用。"
+metadataTitle: "处理流程数据 | Unity SDK | Adapty 文档"
+---
+
+当用户在[流程](adapty-flow-builder)中的输入框中输入内容、回答问题或切换开关时，SDK 会通过分析回调将该值传递给你的应用。
+
+应用通常使用这些数据来：
+
+- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程关闭时为其创建账号。
+- **保存答案和偏好设置**：记录用户的选择，以便应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](unity-setting-user-attributes)。
+- **定制后续流程**：将测验答案保存为自定义属性，再针对后续版位进行定向，让不同市场细分的用户看到不同的流程，或其中不同的付费墙。
+- **接入第三方分析平台**：将答案转发至 Amplitude、Mixpanel 或你正在使用的其他产品分析工具。
+
+输入框和可选组会自动上报其值。为了在代码中区分不同的输入框，请在编辑工具中为每个输入框设置有意义的 **Element ID**，为每个可选组设置 **Group ID**。
+
+<FlowIdNaming />
+
+## 开始之前 \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 接收输入值 \{#receive-input-values\}
+
+输入值会随其他所有流程分析事件一起，以事件名 `flow_user_input` 的形式传递到同一个回调中。在通过 `Adapty.SetFlowsEventsListener` 注册的监听器上实现 `FlowViewDidReceiveAnalyticEvent`：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    HandleFlowInput(name, parameters);
+}
+```
+
+`FlowViewDidReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](unity-flow-screen-views)。
+- `name` 参数包含事件名称。若要筛选用户输入事件，可将 `name` 与 `flow_user_input` 进行比较。
+- `element_type` 参数表示元素类别。
+- 输入的值根据元素类型存储在不同参数中：
+     - 文本框、选择器和开关将用户输入存储在 `value` 中
+     - 可选分组在 `item_ids` 和 `item_titles` 中报告已激活的选项
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+
+    var elementId = parameters["element_id"] as string;
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    var screenId = parameters["instanceId"] as string;
+
+    switch (parameters["element_type"] as string) {
+        case "text_input":
+        case "email_input":
+        case "number_input":
+        case "phone_input":
+            var text = parameters["value"] as string;
+            break;
+        case "date_picker":
+        case "time_picker":
+        case "date_time_picker":
+            // Unix time in milliseconds.
+            var millis = Convert.ToInt64(parameters["value"]);
+            break;
+        case "single_choice":
+            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+            break;
+        case "multi_choice":
+            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
+            break;
+        case "toggle":
+            var isOn = (bool)parameters["value"];
+            break;
+    }
+}
+```
+
+<FlowInputVerify />
+
+## 应用接收输入的时机 \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 您收到的内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## 事件示例 \{#event-examples\}
+
+以下示例展示了每个事件可用的属性及其示意值（见注释）。
+
+<Details>
+<summary>文本、邮箱、数字和手机号输入（点击展开）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var eventName       = name;                          // "flow_user_input"
+    var paramName       = parameters["name"];            // "flow_user_input"
+    var screenId        = parameters["instanceId"];      // "scr_J260KU5q"
+    var isCustomerEvent = parameters["isCustomerEvent"]; // true
+    var isBackendEvent  = parameters["isBackendEvent"];  // false
+    var elementId       = parameters["element_id"];      // "email"
+    var elementType     = parameters["element_type"];    // "email_input"
+    var value           = parameters["value"];           // "jane@example.com"   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>日期、时间和日期时间选择器（点击展开）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "birthday"
+    var elementType = parameters["element_type"]; // "date_picker"
+    var value       = parameters["value"];        // 645408000000   (long — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>单选（点击展开）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "experience"
+    var elementType = parameters["element_type"]; // "single_choice"
+    var itemIds     = parameters["item_ids"];     // ["pro"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>多选（点击展开）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "interests"
+    var elementType = parameters["element_type"]; // "multi_choice"
+    var itemIds     = parameters["item_ids"];     // ["sports", "music"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "reminders"
+    var elementType = parameters["element_type"]; // "toggle"
+    var value       = parameters["value"];        // true   (bool)
+}
+```
+</Details>
+
+## 传递方式与限制 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+每次监听器收到输入值时请及时保存，并在流程关闭时一并发送完整数据。要捕获该时机，请在同一监听器上实现 `FlowViewDidDisappear`。无论用户是完成了整个流程还是中途关闭，该方法都会在流程视图消失时触发。
+
+## 使用场景 \{#use-cases\}
+
+### 在您的后端注册用户 \{#register-users-on-your-backend\}
+
+在答案陆续收到时暂存数据，等流程关闭后再统一发送，这样一次请求就能携带完整的答案集合。
+
+无论用户是完成了流程还是中途退出，视图都会消失。在调用后端之前，请检查所需字段是否已填写。
+
+流程无法展示来自后端的错误。回调没有返回值，SDK 也没有办法向正在运行的流程传递数据。如果注册失败（例如邮箱已被占用），请在流程关闭后通过您自己的 UI 展示错误信息。
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> flowAnswers = new Dictionary<string, string>();
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    flowAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    if (!flowAnswers.ContainsKey("email")) return;
+
+    // Send flowAnswers to your backend here to create the account.
+
+    flowAnswers.Clear();
+}
+```
+
+### 用户画像数据填充 \{#enrich-user-profiles-with-data\}
+
+要将用户输入的内容关联到其用户画像，并避免重复询问相同信息，请在数据输入时[更新用户画像](unity-setting-user-attributes)。
+
+例如，如果你的流程中有一个 Element ID 为 `name` 的文本输入框和一个 Element ID 为 `email` 的邮箱输入框：
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var builder = new AdaptyProfileParameters.Builder();
+
+    switch (parameters["element_id"] as string) {
+        case "name":
+            builder = builder.SetFirstName(value);
+            break;
+        case "email":
+            builder = builder.SetEmail(value);
+            break;
+        default:
+            return;
+    }
+
+    Adapty.UpdateProfile(builder.Build(), (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+### 自定义后续显示的流程 \{#customize-flows-shown-later\}
+
+测验答案也可以决定用户在后续[版位](placements)中看到的内容——不同的流程，或其中不同的付费墙。
+
+例如，在用户引导流程中询问用户的运动经验，然后为每个分组展示带有不同产品和文案的专属流程。
+
+1. 在流程中添加[测验](onboarding-quizzes)。为[可选择组](flow-selectable-elements)设置 Group ID `experience`，并为每个选项设置有意义的 Element ID。
+2. 处理答案并为用户[设置自定义属性](unity-setting-user-attributes)。
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+    if ((parameters["element_id"] as string) != "experience") return;
+
+    var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+    if (optionId == null) return;
+
+    var builder = new AdaptyProfileParameters.Builder();
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder = builder.SetCustomStringAttribute("experience", optionId);
+
+    Adapty.UpdateProfile(builder.Build(), (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+3. 为每个自定义属性值[创建市场细分](segments)。
+4. 创建[版位](placements)，并为每个市场细分添加[目标受众](audience)。
+5. 在你的应用中[展示该版位的流程](unity-present-paywalls)。

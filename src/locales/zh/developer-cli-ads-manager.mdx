@@ -65,6 +65,65 @@ adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt --bid 
 
 先发送少量关键词并确认结果，再发送完整文件。
 
+## 创建最大转化量广告系列 \{#max-conversions\}
+
+使用 `MAX_CONVERSIONS` 出价策略的广告系列只有在拥有自动广告组后才会投放，因此需要同时创建两者：
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "Max Conv" --adam-id 123456 --country US --daily-budget 50 --bidding-strategy MAX_CONVERSIONS
+adapty asa ad-groups create --campaign <campaign-id> --name "Automated Max Conv" --automated
+```
+
+在该广告组存在之前，广告系列的 `serving_status` 会报告为 `NOT_RUNNING`，且 `serving_state_reasons` 中包含 `AUTOMATED_KEYWORDS_REQUIRED_AD_GROUP_MISSING`；`campaigns create` 会同时打印出原因以及解决该问题的命令。
+
+`--automated` 才能满足该要求——带有 `--automated-keywords` 的普通广告组不行。Apple 会自动调度并运行该自动广告组，因此无需设置 `--start-time`，`--default-bid` 为可选项，且该广告组始终保持启用状态：如需停止消耗，请暂停广告系列。
+
+对于广告系列，请将 `--target-cpa` 设置为低于 `--daily-budget`。
+
+## 为信用额度设置开票选项 \{#invoicing-options\}
+
+Apple 要求组织中每个按信用额度计费的广告系列都必须填写开票选项。`adapty asa orgs list` 会显示每个组织的 `payment_model`——若值为 `LOC`，则以下五个 `--invoice-*` 标志适用：
+
+```bash
+adapty asa campaigns create --org <campaign-group-id> --name "LOC push" --adam-id 123456 --country US --daily-budget 50 --invoice-advertiser "Acme Inc" --invoice-order-number PO-42 --invoice-contact-name "Jane Doe" --invoice-contact-email jane@acme.com --invoice-billing-email billing@acme.com
+```
+
+一次调用中必须同时传入全部五个参数——缺少任何一个，请求在到达 Apple 之前就会被拒绝。若缺失这些参数，广告系列虽会创建成功，但会报告 `serving_status: NOT_RUNNING`，并附带 `MISSING_BO_OR_INVOICING_FIELDS`。
+
+在 `adapty asa campaigns update` 中使用同样的五个参数，可为已存在的广告系列设置发票选项。这五个参数会整体替换已存储的配置，因此即使只需修改其中一个，也必须同时传入全部五个。
+
+## 一次性创建完整广告系列结构 \{#create-a-campaign-structure-in-one-operation\}
+
+`campaigns bulk-create` 可替代循环调用 `campaigns create` 和 `ad-groups create` 的脚本。它将完整的广告系列结构——包括广告系列、广告组、关键词、否定关键词和广告——作为一个操作一次性提交：
+
+```bash
+adapty asa campaigns bulk-create --file structure.json
+```
+
+输入内容是描述该结构的 JSON——字段说明请参阅[结构格式](developer-cli-ads-manager-reference#adapty-asa-campaigns-bulk-create)。JSON 是 AI 智能体的天然选择：它生成结构后直接通过管道传入：
+
+```bash
+cat structure.json | adapty asa campaigns bulk-create --file -
+```
+
+原生的 [Apple Ads 批量模板](https://ads.apple.com/app-store/help/campaigns/0089-make-edits-in-bulk) 也可以作为输入——服务器会将 `Campaign_And_Adgroup_Template.xlsx` 或[关键词 `.csv`](https://ads.apple.com/app-store/help/keywords/0014-add-and-manage-keywords) 转换为结构体。`--org-id` 接受 `adapty asa orgs list` 返回的数字型 `org_id`。如需在创建前预览转换结果，请添加 `--preview`：
+
+```bash
+adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx --org-id 1234567 --preview
+```
+
+转换问题会附带所在的工作表、行和列信息一并报告。当打印出的结构看起来正确时，去掉 `--preview` 即可提交。
+
+`--preview` 的输出也是获取起始结构文件的最快方式：保存后编辑，再通过 `--file` 提交——与 [`automations get`](#run-automation-rules) 提供规则模板的方式相同。
+
+整个结构在创建前会经过完整验证，验证失败时会列出所有无效节点。验证通过后，对象将在服务器上依次创建，命令会实时报告进度。最终结果为 `success`、`partial` 或 `failed`——`partial` 结果会列出每个未成功创建的对象及 Apple 返回的错误信息。
+
+对于规模较大的结构，可传入 `--no-wait` 立即获取操作 ID，稍后再查询进度：
+
+```bash
+adapty asa campaigns bulk-status <operation-id>
+```
+
 ## 从代理程序和脚本中查询数据图表 \{#query-metrics-from-agents-and-scripts\}
 
 `asa metrics` 可对账户任意层级的数据按日期范围进行报告。添加 `--json` 参数后，AI 代理程序或脚本可直接使用输出结果：

@@ -1,0 +1,298 @@
+---
+title: "Kotlin Multiplatform SDK'da flow'lardan gelen verileri işleme"
+description: "Kotlin Multiplatform uygulamanızda Adapty SDK ile kullanıcılarınızın flow'lara girdiği verileri kaydedin ve kullanın."
+metadataTitle: "Flow'lardan gelen verileri işleme | Kotlin Multiplatform SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder)'daki bir giriş alanına yazı yazdığında, bir ankete yanıt verdiğinde veya bir geçiş düğmesini çevirdiğinde, SDK bu değeri analytics callback'i aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri en sık şu amaçlarla kullanır:
+
+- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unda girdiği e-posta adresini ve adı alıp, flow kapandığında hesaplarını oluşturun.
+- **Cevapları ve tercihleri kaydedin**: Kullanıcının neyi seçtiğini takip edin; böylece uygulamanız bunu daha sonra kullanabilir — örneğin, özel nitelikler olarak [Adapty profiline yazın](kmp-setting-user-attributes).
+- **Gelecekteki flow'ları özelleştirin**: Quiz cevaplarını özel nitelik olarak kaydedin, ardından sonraki bir placement'ı hedefleyin; böylece her segment farklı bir flow ya da içinde farklı bir paywall görsün.
+- **Üçüncü taraf analitik platformlarına veri gönderin**: Cevapları Amplitude, Mixpanel veya kullandığınız ürün analitik platformuna iletin.
+
+Girdiler ve seçilebilir gruplar, değerlerini otomatik olarak raporlar. Kodunuzda girdileri birbirinden ayırt edebilmek için builder'da her girdiye anlamlı bir **Element ID**, her seçilebilir gruba ise bir **Group ID** verin.
+
+<FlowIdNaming />
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Giriş değerlerini alma \{#receive-input-values\}
+
+Giriş değerleri, bir flow'daki diğer tüm analitik olaylarla aynı callback'e ulaşır; olay adı `flow_user_input` olarak gelir. `AdaptyUI.setFlowsEventsObserver` ile kaydettiğiniz observer üzerinde `flowViewDidReceiveAnalyticEvent` metodunu override edin:
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        handleFlowInput(name, paramsJsonString)
+    }
+})
+```
+
+`flowViewDidReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](kmp-flow-screen-views) dahil bir flow'dan gelen tüm analitik olayları iletir. Olay parametreleri `paramsJsonString` içinde tek bir JSON dizesi olarak gelir; bir kez çözümleyin ve alanları okuyun.
+- `name` parametresi olay adını içerir. Kullanıcı girişi olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi element kategorisini belirtir.
+- Girişin değeri, element türüne göre farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
+     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` olarak raporlar
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+
+    when (params["element_type"]?.jsonPrimitive?.content) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"]?.jsonPrimitive?.content
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
+            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
+        }
+        "multi_choice" -> {
+            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
+        }
+        "toggle" -> {
+            val isOn = params["value"]?.jsonPrimitive?.boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girdiyi aldığında \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Etkinlik örnekleri \{#event-examples\}
+
+Bu örnekler, her etkinlikte mevcut olan özellikleri ve açıklayıcı yorum değerlerini göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    name                       // "flow_user_input"
+    paramsJsonString           // "{\"name\":\"flow_user_input\",\"instanceId\":\"scr_J260KU5q\",\"isBackendEvent\":false,\"isCustomerEvent\":true,\"element_id\":\"email\",\"element_type\":\"email_input\",\"value\":\"jane@example.com\"}"
+
+    // paramsJsonString, çözümlendiğinde:
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçiciler (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Tek seçim (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Çoklu seçim (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, bir kez çözüldüğünde:
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true
+}
+```
+</Details>
+
+## Teslimat ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her girdi değerini observer'ınız aldığında saklayın ve flow kapandığında tam seti gönderin. Bu anı yakalamak için aynı observer üzerinde `flowViewDidDisappear` metodunu override edin. Bu metod, kullanıcı flow'u tamamlasa da yarıda bıraksa da, flow görünümü kapatıldığında çalışır.
+
+## Kullanım senaryoları \{#use-cases\}
+
+### Kullanıcıları backend'inize kaydedin \{#register-users-on-your-backend\}
+
+Değerler geldikçe toplayın ve flow kapandığında tek bir istekle gönderin; böylece bir istek eksiksiz bir yanıt seti taşımış olur.
+
+Kullanıcı flow'u tamamlasa da yarıda bıraksa da görünüm kaybolur. Backend'inizi çağırmadan önce ihtiyaç duyduğunuz alanları kontrol edin.
+
+Flow, backend'inizden gelen hataları gösteremez. Callback'in dönüş değeri yoktur ve SDK'nın çalışan bir flow'a veri gönderen bir yöntemi de bulunmaz. Kayıt başarısız olursa, örneğin e-posta adresi zaten kullanımdaysa, flow kapandıktan sonra hatayı kendi arayüzünüzde gösterin.
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### Kullanıcı profillerini veriyle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği bilgileri profiline bağlamak ve aynı bilgileri iki kez sormamak için değerler geldikçe [kullanıcı profilini güncelleyin](kmp-setting-user-attributes).
+
+Örneğin, flow'unuzda `name` Element ID'sine sahip bir metin girişi ve `email` Element ID'sine sahip bir e-posta girişi varsa:
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (params["element_id"]?.jsonPrimitive?.content) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+### Sonraki flow'larda gösterilecek içeriği özelleştirin \{#customize-flows-shown-later\}
+
+Quiz yanıtları, kullanıcının ilerleyen bir [placement](placements)'ta göreceği içeriği de belirleyebilir — farklı bir flow veya içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara sporla ilgili deneyimlerini sorun, ardından her gruba farklı ürünler ve metinler içeren kendi flow'unu gösterin.
+
+1. Flow'unuza bir [quiz](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Group ID'sini ve her seçeneğe anlamlı bir Element ID verin.
+2. Yanıtları işleyin ve kullanıcı için [özel attribute'lar ayarlayın](kmp-setting-user-attributes).
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["element_id"]?.jsonPrimitive?.content != "experience") return
+
+    val optionId = params["item_ids"]?.jsonArray?.firstOrNull()
+        ?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+3. Her özel özellik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda o placement için [flow'u görüntüleyin](kmp-present-paywalls).
