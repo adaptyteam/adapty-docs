@@ -1,0 +1,67 @@
+---
+title: "Connecter FunnelFox à Adapty"
+description: "Connectez les funnels web FunnelFox à Adapty pour que les achats effectués sur le web accordent des niveaux d'accès dans votre application mobile."
+metadataTitle: "Intégration FunnelFox | Documentation Adapty"
+---
+
+[FunnelFox](https://funnelfox.com) crée des funnels web : pages de destination et quiz qui vendent vos abonnements en dehors de l'App Store et de Google Play. Connectez FunnelFox à Adapty pour donner aux acheteurs web l'accès aux fonctionnalités payantes de votre application mobile, et pour voir leurs achats dans le même tableau de bord que vos achats en store.
+
+La connexion nécessite une clé et un identifiant de niveau d'accès. Votre application doit ensuite identifier l'acheteur pour atteindre ce niveau d'accès. Voir [Accorder l'accès dans votre application](#provide-access-in-your-app).
+
+## Fonctionnement de l'intégration \{#how-the-integration-works\}
+
+FunnelFox collecte le paiement sur le web. FunnelFox appelle ensuite l'[API server-side Adapty](getting-started-with-server-side-api) pour créer le [profil](profiles-crm), enregistrer la transaction et accorder le [niveau d'accès](access-level) dont vous saisissez l'identifiant dans les paramètres d'intégration FunnelFox. Les renouvellements, annulations et paiements échoués mettent à jour le même profil. Les achats web apparaissent dans [les analytics Adapty](analytics) aux côtés de vos revenus App Store et Google Play.
+
+Adapty associe un achat web à un utilisateur de l'application via l'identifiant utilisateur client. Par défaut, FunnelFox utilise l'adresse e-mail saisie lors du paiement comme cet identifiant.
+
+Pour reproduire le même flow avec votre propre page de paiement web plutôt qu'un funnel FunnelFox, consultez [Synchroniser les achats entre le web et le mobile](sync-subscribers-from-web).
+
+## Connecter FunnelFox \{#connect-funnelfox\}
+
+Vous configurez la connexion côté FunnelFox, en suivant le [guide d'intégration Adapty de FunnelFox](https://funnelfox.com/docs/integrations/subscription-management/adapty#setup). Il vous demande deux valeurs provenant d'Adapty :
+
+- **Secret API key** : Ouvrez [**App Settings**](https://app.adapty.io/settings/general) dans Adapty et copiez la clé secrète.
+- **Access level ID** : Le [niveau d'accès](access-level) à accorder. Vous pouvez également en définir un par élément de paiement, comme décrit dans [Définir le niveau d'accès sur chaque élément de paiement](#set-the-access-level-on-each-checkout-element).
+
+## Définir le niveau d'accès sur chaque élément de paiement \{#set-the-access-level-on-each-checkout-element\}
+
+Dans FunnelFox, le champ **Custom entitlement** d'un élément de paiement détermine quel [niveau d'accès](access-level) Adapty est accordé lors d'un achat via cet élément. Chaque application Adapty commence avec un niveau d'accès `premium` ; pour en accorder un autre, [créez-le](create-access-level) au préalable.
+
+Renseignez ce champ sur chaque élément de paiement du funnel. Un funnel peut en contenir plusieurs, comme un bouton Wallet et un paiement en accordéon, et chacun possède son propre champ **Custom entitlement**.
+
+:::important
+Republiez le flow après avoir modifié les paramètres d'intégration ou toute valeur de **Custom entitlement**. Un flow publié continue de servir sa configuration précédente jusqu'à ce que vous le republiiez.
+:::
+
+## Accorder l'accès dans votre application \{#provide-access-in-your-app\}
+
+Pour débloquer les fonctionnalités payantes pour un acheteur web, appelez `Adapty.activate()` ou `Adapty.identify()` avec le même customer user ID que celui utilisé par FunnelFox. Par défaut, cet identifiant correspond à l'adresse e-mail saisie par l'acheteur lors du paiement. Consultez <InlineTooltip tooltip="Identification des utilisateurs">[iOS](identifying-users), [Android](android-identifying-users), [React Native](react-native-identifying-users), [Flutter](flutter-identifying-users), [Unity](unity-identifying-users), [Kotlin Multiplatform](kmp-identifying-users), et [Capacitor](capacitor-identifying-users)</InlineTooltip> pour effectuer cet appel.
+
+L'installation de l'application depuis un lien dans le funnel n'identifie pas l'acheteur. Tant que votre application n'appelle pas `Adapty.identify()` avec l'ID correspondant, le profil qui détient le niveau d'accès et le profil créé par l'application restent séparés, et l'application n'affiche aucun accès payant. Se connecter avec l'e-mail utilisé lors du paiement permet de relier les deux.
+
+Pour débloquer l'accès sans étape de connexion, transmettez le customer user ID du funnel à l'application via un lien profond différé, puis appelez `Adapty.identify()` avec cet ID au premier lancement.
+
+Ensuite, lisez le niveau d'accès depuis le profil pour débloquer les fonctionnalités. Voir <InlineTooltip tooltip="Vérification du statut d'abonnement">[iOS](ios-check-subscription-status), [Android](android-check-subscription-status), [React Native](react-native-check-subscription-status), [Flutter](flutter-check-subscription-status), [Unity](unity-check-subscription-status), [Kotlin Multiplatform](kmp-check-subscription-status), et [Capacitor](capacitor-check-subscription-status)</InlineTooltip>.
+
+## Tester l'intégration \{#test-the-integration\}
+
+1. Effectuez un achat dans votre funnel.
+2. Dans Adapty, ouvrez [**Profiles**](https://app.adapty.io/profiles/users) et trouvez le profil grâce à l'identifiant utilisateur client utilisé par FunnelFox.
+3. Confirmez que le niveau d'accès dont vous avez saisi l'ID dans les paramètres d'intégration FunnelFox est actif sur ce profil.
+4. Ouvrez votre application, identifiez le même utilisateur et confirmez que les fonctionnalités payantes sont bien déverrouillées.
+
+## Résolution des problèmes \{#troubleshooting\}
+
+### Un acheteur web ouvre l'application sans accès payant \{#a-web-buyer-opens-the-app-without-paid-access\}
+
+Votre application n'a pas identifié l'acheteur. FunnelFox a accordé le niveau d'accès à un profil associé à l'ID qu'il a utilisé (l'e-mail de paiement par défaut), mais votre application lit un profil différent. Appelez `Adapty.identify()` avec cet ID, comme décrit dans [Fournir l'accès dans votre application](#provide-access-in-your-app).
+
+## Autres intégrations FunnelFox \{#other-funnelfox-integrations\}
+
+FunnelFox se connecte à trois produits Adapty, chacun configuré séparément.
+
+| Produit | Ce que FunnelFox envoie à Adapty | Guide de configuration |
+|---|---|---|
+| Core | Profils, transactions et niveaux d'accès, afin que les achats web déverrouillent l'application | Cet article |
+| Adapty Attribution | Événements de transaction avec données de campagne, d'entonnoir et d'expérience | [Intégrer FunnelFox avec Adapty Attribution](ua-funnelfox) |
+| Adapty Mail | Adresses e-mail, historique des achats et événements d'abonnement | [Connecter FunnelFox à Adapty Mail](mail-funnelfox) |

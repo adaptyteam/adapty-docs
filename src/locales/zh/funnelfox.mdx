@@ -1,0 +1,67 @@
+---
+title: "将 FunnelFox 连接到 Adapty"
+description: "将 FunnelFox 网页漏斗与 Adapty 连接，使通过网页完成的购买能够在移动应用中授予相应的访问等级。"
+metadataTitle: "FunnelFox 集成 | Adapty 文档"
+---
+
+[FunnelFox](https://funnelfox.com) 可以构建网页漏斗：即用于在 App Store 和 Google Play 之外销售订阅的落地页和测验页面。将 FunnelFox 与 Adapty 连接后，网页购买者即可在移动应用中使用付费功能，同时你还可以在同一个看板中查看网页购买与应用内购买的数据。
+
+连接只需要一个密钥和一个访问等级 ID。之后，您的应用必须识别购买者，才能授予该访问等级。请参阅[在应用中提供访问权限](#provide-access-in-your-app)。
+
+## 集成工作原理 \{#how-the-integration-works\}
+
+FunnelFox 在网页端完成支付后，会调用 [Adapty 服务端 API](getting-started-with-server-side-api) 来创建[用户画像](profiles-crm)、记录交易，并授予你在 FunnelFox 集成设置中填写的[访问等级](access-level)。续订、取消订阅和支付失败均会更新同一个用户画像。网页端购买记录会与 App Store 和 Google Play 的收入一同显示在 [Adapty 数据分析](analytics)中。
+
+Adapty 通过客户用户 ID 将网络购买与应用用户关联。FunnelFox 默认使用结账时填写的电子邮件地址作为该 ID。
+
+如需针对自己的网络结账（而非 FunnelFox 漏斗）构建相同的流程，请参阅[在网络与移动端之间同步购买记录](sync-subscribers-from-web)。
+
+## 连接 FunnelFox \{#connect-funnelfox\}
+
+你需要在 FunnelFox 端完成配置，参照 [FunnelFox 的 Adapty 集成指南](https://funnelfox.com/docs/integrations/subscription-management/adapty#setup)。该指南需要你提供两个来自 Adapty 的值：
+
+- **Secret API key**：在 Adapty 中打开 [**App Settings**](https://app.adapty.io/settings/general)，复制 secret key。
+- **Access level ID**：要授予的[访问等级](access-level)。你也可以为每个结账元素单独设置，详见[为每个结账元素设置访问等级](#set-the-access-level-on-each-checkout-element)。
+
+## 为每个结账元素设置访问等级 \{#set-the-access-level-on-each-checkout-element\}
+
+在 FunnelFox 中，结账元素上的 **Custom entitlement** 字段用于设置通过该元素完成购买后所授予的 Adapty [访问等级](access-level)。每个 Adapty 应用默认包含一个 `premium` 访问等级；如需授予其他访问等级，请先[创建它](create-access-level)。
+
+请为漏斗中的每个结账元素设置该字段。一个漏斗可以包含多个结账元素，例如 Wallet 按钮和手风琴式结账组件，每个元素都有各自的 **Custom entitlement** 字段。
+
+:::important
+更改集成设置或任何 **Custom entitlement** 值后，请重新发布漏斗。已发布的漏斗会继续使用之前的配置，直到重新发布为止。
+:::
+
+## 在应用中授予访问权限 \{#provide-access-in-your-app\}
+
+要为网页购买者解锁付费功能，请使用 FunnelFox 所用的相同 customer user ID 调用 `Adapty.activate()` 或 `Adapty.identify()`。默认情况下，该 ID 为购买者在结账时输入的电子邮件地址。调用方式请参阅 <InlineTooltip tooltip="识别用户">[iOS](identifying-users)、[Android](android-identifying-users)、[React Native](react-native-identifying-users)、[Flutter](flutter-identifying-users)、[Unity](unity-identifying-users)、[Kotlin Multiplatform](kmp-identifying-users) 和 [Capacitor](capacitor-identifying-users)</InlineTooltip>。
+
+通过漏斗链接安装应用并不会自动识别买家身份。在应用调用 `Adapty.identify()` 并传入匹配 ID 之前，持有访问等级的用户画像与应用创建的用户画像是相互独立的，应用将无法显示付费权限。使用结账时填写的邮箱登录，即可将两者关联起来。
+
+若要在无需登录步骤的情况下解锁权限，可通过延迟深度链接将漏斗中的 customer user ID 传递给应用，并在首次启动时调用 `Adapty.identify()` 传入该 ID。
+
+然后从用户画像中读取访问等级以解锁相应功能。请参阅 <InlineTooltip tooltip="检查订阅状态">[iOS](ios-check-subscription-status)、[Android](android-check-subscription-status)、[React Native](react-native-check-subscription-status)、[Flutter](flutter-check-subscription-status)、[Unity](unity-check-subscription-status)、[Kotlin Multiplatform](kmp-check-subscription-status) 和 [Capacitor](capacitor-check-subscription-status)</InlineTooltip>。
+
+## 测试集成 \{#test-the-integration\}
+
+1. 在您的漏斗中完成一次购买。
+2. 在 Adapty 中，打开 [**Profiles**](https://app.adapty.io/profiles/users)，通过 FunnelFox 使用的 customer user ID 找到对应的用户画像。
+3. 确认您在 FunnelFox 集成设置中填写的访问等级 ID 在该用户画像上处于激活状态。
+4. 打开您的应用，识别同一用户，确认付费功能已解锁。
+
+## 故障排查 \{#troubleshooting\}
+
+### 网页端购买者打开应用但没有付费访问权限 \{#a-web-buyer-opens-the-app-without-paid-access\}
+
+您的应用尚未识别该购买者。FunnelFox 已将访问等级授予以其使用的 ID 为键值的用户画像（默认为结账时填写的电子邮件地址），而您的应用读取的是另一个用户画像。请按照[在应用中提供访问权限](#provide-access-in-your-app)中的说明，使用该 ID 调用 `Adapty.identify()`。
+
+## 其他 FunnelFox 集成 \{#other-funnelfox-integrations\}
+
+FunnelFox 与三个 Adapty 产品相连接，每个产品需单独配置。
+
+| 产品 | FunnelFox 向 Adapty 发送的内容 | 配置指南 |
+|---|---|---|
+| Core | 用户画像、交易记录和访问等级，使网页购买能解锁应用内容 | 本文 |
+| Adapty Attribution | 包含营销活动、漏斗和实验数据的交易事件 | [将 FunnelFox 与 Adapty Attribution 集成](ua-funnelfox) |
+| Adapty Mail | 电子邮件地址、购买历史记录和订阅事件 | [将 FunnelFox 连接到 Adapty Mail](mail-funnelfox) |
