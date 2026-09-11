@@ -24,13 +24,14 @@ Vous voulez voir un exemple concret d'intégration du SDK Adapty dans une applic
 
 ## Prérequis \{#requirements\}
 
-Le SDK React Native d'Adapty requiert iOS 15.0+.
-
-La compilation pour iOS nécessite **Swift 6.0** ou une version ultérieure. Le [mode Enfants](kids-mode-react-native) requiert **Swift 6.1** ou une version ultérieure.
+| Prérequis | Version |
+|---|---|
+| React Native | 0.75 ou ultérieur. L'[intégration SPM de React Native](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios) nécessite 0.87 ou ultérieur. |
+| iOS | 15.0 ou ultérieur |
+| Swift | 6.2 ou ultérieur, inclus avec Xcode 26 |
+| Google Play Billing Library | v8 à partir du SDK Adapty React Native 4.0.3 |
 
 :::info
-Le SDK React Native d'Adapty 4.0.3 et versions ultérieures fonctionne avec Google Play Billing Library v8.
-
 La compatibilité avec une version de la Billing Library ne signifie pas qu'Adapty prend en charge toutes les fonctionnalités que Google y a introduites. Avant d'adopter une nouvelle fonctionnalité de facturation Google Play, consultez [Produit dans le Play Store](android-products).
 :::
 
@@ -40,26 +41,28 @@ La compatibilité avec une version de la Billing Library ne signifie pas qu'Adap
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
 
-Le SDK Adapty React Native v4 — qui ajoute la prise en charge des [flows](adapty-flow-builder) — nécessite **React Native 0.75 ou version ultérieure**.
+Ajoutez le package à votre projet :
 
-Pour iOS, vous pouvez installer le SDK avec CocoaPods ou Swift Package Manager. CocoaPods est l'option par défaut. React Native 0.87 a ajouté Swift Package Manager en tant qu'intégration expérimentale, et le SDK Adapty React Native le prend en charge à partir de la v4.1.
+```sh showLineNumbers title="Shell"
+# using npm
+npm install react-native-adapty
 
-1. Installez le SDK Adapty :
-   ```sh showLineNumbers title="Shell"
-   # using npm
-   npm install react-native-adapty
+# or using yarn
+yarn add react-native-adapty
+```
 
-   # or using yarn
-   yarn add react-native-adapty
-   ```
+### Configurez votre projet iOS \{#set-up-your-ios-project\}
 
-Ensuite, configurez votre projet iOS :
+Adapty publie ses SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) uniquement sous forme de packages Swift — la v4 a abandonné la distribution CocoaPods ([le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Les deux options installent ces packages Swift ; elles diffèrent par ce qui pilote l'installation.
+
+- **CocoaPods (par défaut, SDK 4.0 et versions ultérieures)** : Votre projet iOS conserve son `Podfile`, et le helper `spm_dependency` de React Native ajoute les packages Swift d'Adapty au projet Pods. Les packages Swift se lient dynamiquement, donc le Podfile doit passer aux frameworks dynamiques.
+- **Intégration SPM de React Native (SDK 4.1 et versions ultérieures)** : Votre projet iOS abandonne CocoaPods, et React Native résout lui-même les packages Swift à partir du manifeste `Package.swift` fourni par Adapty. [React Native a ajouté cette intégration dans la version 0.87](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios) en préversion et ne la recommande pas encore pour la production.
 
 <Tabs groupId="ios-package-manager" queryString>
 
 <TabItem value="cocoapods" label="CocoaPods" default>
 
-v4 récupère les SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) via Swift Package Manager plutôt que via les sous-dépendances CocoaPods ([le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). SPM nécessite des frameworks dynamiques — ajoutez la ligne suivante à la cible de votre `ios/Podfile` :
+Déclarez les frameworks dynamiques dans votre cible `ios/Podfile` :
 
 ```ruby showLineNumbers title="ios/Podfile"
 use_frameworks! :linkage => :dynamic
@@ -74,29 +77,27 @@ cd ios && pod install --repo-update
 ```
 
 :::warning
-Passer de la liaison statique par défaut aux frameworks dynamiques peut créer des conflits avec des bibliothèques qui ne prennent pas encore en charge les en-têtes modulaires, et est incompatible avec Flipper. Consultez [Migrer le SDK Adapty React Native vers la v4](migration-to-react-native-sdk-v4) pour plus de détails.
+Passer de la liaison statique par défaut aux frameworks dynamiques peut entrer en conflit avec des bibliothèques qui ne prennent pas encore en charge les en-têtes modulaires, et est incompatible avec Flipper. Consultez [Migrer le SDK Adapty React Native vers la v4](migration-to-react-native-sdk-v4) pour plus de détails.
 :::
 
 </TabItem>
 
-<TabItem value="spm" label="Swift Package Manager (experimental)">
+<TabItem value="spm" label="React Native's SPM integration">
 
-Swift Package Manager nécessite **React Native 0.87 ou version ultérieure** et **Adapty React Native SDK 4.1 ou version ultérieure**. React Native propose son intégration Swift Package Manager en préversion et ne la recommande pas encore pour la production.
-
-Pour intégrer Adapty via Swift Package Manager, à la racine de votre projet, exécutez :
+À la racine de votre projet, exécutez :
 
 ```sh showLineNumbers title="Shell"
 cd ios && npx react-native spm
 ```
 
-Le SDK React Native d'Adapty inclut un manifeste `Package.swift`, ce qui permet à React Native de résoudre automatiquement les SDK iOS natifs. Rien n'est à ajouter à votre projet Xcode.
+React Native lit le manifeste `Package.swift` d'Adapty et résout lui-même les SDK iOS natifs. Vous n'avez rien à ajouter à votre projet Xcode.
 
-Conservez `ios/Podfile` tel quel, même si ce chemin n'installe aucun pod. Le CLI React Native localise votre projet iOS en recherchant le Podfile — sans lui, l'autolinking ignore complètement iOS.
+Conservez `ios/Podfile` en place, même si ce fichier n'installe aucun pod. Le CLI React Native localise votre projet iOS en cherchant le Podfile, donc sans lui, l'autolinking ignore entièrement iOS.
 
-Si votre application utilise des pods autres que React Native, gardez-les dans le Podfile, exécutez `pod install` et ouvrez le `.xcworkspace` plutôt que le `.xcodeproj`. Le workspace couvre les deux gestionnaires de paquets.
+Si votre application utilise des pods autres que React Native, conservez-les dans le Podfile, exécutez `pod install`, et ouvrez le `.xcworkspace` plutôt que le `.xcodeproj`. Le workspace couvre les deux gestionnaires de paquets.
 
 :::note
-Sur un nouveau clone ou un checkout CI, exécutez `npx react-native spm` une fois avant de lancer le build. Le projet Xcode re-synchronise les dépendances lors d'un build, après qu'Xcode a déjà résolu le graphe de paquets, donc un build lancé juste après une installation peut réussir sans Adapty.
+Sur un clone fraîchement créé ou lors d'un checkout CI, exécutez `npx react-native spm` une fois avant de lancer le build. Le projet Xcode re-synchronise les dépendances pendant le build, après qu'Xcode ait déjà résolu le graphe de paquets, donc un build démarré juste après une installation peut réussir avec Adapty manquant.
 :::
 
 Pour revenir à CocoaPods, exécutez `npx react-native spm deinit`, puis `pod install`.
@@ -402,11 +403,15 @@ buildscript {
 
 #### Erreurs de build Swift 6 causées par le remplacement de `SWIFT_VERSION` dans le Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
 
-Lors de la compilation de votre application React Native pour iOS, vous pouvez rencontrer des erreurs de compilation Swift 6 sur les cibles de pod Adapty. Les symptômes typiques incluent des incompatibilités `@Sendable` dans `AdaptyUIBuilderLogic`, une conformité `Sendable` manquante sur les types Adapty, ou des erreurs d'isolation d'acteur.
+:::note
+Ceci s'applique au **SDK 3.x**, où les SDK iOS natifs s'installent via CocoaPods. À partir du SDK 4.0, ils s'installent en tant que packages Swift, donc un override `SWIFT_VERSION` dans `post_install` ne les atteint plus.
+:::
 
-Les pods Adapty déclarent `s.swift_version = '6.0'` et nécessitent Swift 6 pour la compilation. Votre propre code d'application peut rester en Swift 5 — seules les cibles de pod Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) doivent être compilées avec Swift 6.
+Lors de la compilation de votre application React Native pour iOS, vous pouvez rencontrer des erreurs de compilation Swift 6 sur les cibles de pods Adapty. Les symptômes typiques incluent des incompatibilités `@Sendable` dans `AdaptyUIBuilderLogic`, une conformité `Sendable` manquante sur les types Adapty, ou des erreurs d'isolation d'acteur.
 
-La cause la plus fréquente est un hook `post_install` dans `ios/Podfile` qui réécrit `SWIFT_VERSION` pour chaque cible pod :
+Les pods Adapty déclarent `s.swift_version = '6.0'` et nécessitent Swift 6 pour être compilés. Votre propre code applicatif peut rester en Swift 5 — seuls les targets de pods Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) doivent être compilés avec Swift 6.
+
+La cause la plus fréquente est un hook `post_install` dans `ios/Podfile` qui écrase `SWIFT_VERSION` pour tous les targets de pods :
 
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|
@@ -418,7 +423,7 @@ post_install do |installer|
 end
 ```
 
-**Correction** : Excluez les cibles pod Adapty de la surcharge :
+**Correctif** : Excluez les cibles de pod Adapty de la surcharge :
 
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|

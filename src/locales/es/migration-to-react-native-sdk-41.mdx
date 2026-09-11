@@ -1,10 +1,10 @@
 ---
-title: "Migrar el SDK de Adapty React Native a la versión 4.1"
-description: "Migra al SDK de Adapty React Native v4.1: habilita Adapty Attribution de forma explícita, adopta las APIs de atribución externa renombradas y vuelve a descargar el archivo de respaldo."
-metadataTitle: "Migración al SDK de Adapty React Native v4.1 | Documentación de Adapty"
+title: "Migrar el SDK de React Native de Adapty a v4.1"
+description: "Migra al SDK de React Native de Adapty v4.1: activa Adapty Attribution explícitamente, adopta las APIs de atribución externa renombradas y vuelve a descargar tu archivo de respaldo."
+metadataTitle: "Migración al SDK de React Native de Adapty v4.1 | Documentación de Adapty"
 ---
 
-El SDK de Adapty React Native 4.1 cambia la forma en que se habilita Adapty Attribution, renombra las APIs de atribución externa y modifica el formato del archivo de respaldo. Además, añade compatibilidad con las compras in-app promocionadas en el App Store y recupera el flag `hasViewConfiguration` en `AdaptyFlow`.
+El SDK de React Native de Adapty 4.1 cambia la forma en que se activa Adapty Attribution, renombra las APIs de atribución externa y cambia el formato del archivo de respaldo. También permite que tu app tome el control de las compras in-app promocionadas en el App Store y recupera el indicador `hasViewConfiguration` en `AdaptyFlow`.
 
 :::warning
 Las APIs renombradas suponen un cambio radical. Los nombres anteriores han sido eliminados por completo — no existen alias obsoletos que sirvan de puente. El código que verifica tipos contra la versión 4.0.x fallará en la 4.1 hasta que renombres todos los puntos de llamada indicados a continuación.
@@ -16,14 +16,14 @@ Si todavía estás en la versión 3.x, empieza por [Migrar a v4.0](migration-to-
 
 | v4.0 | v4.1 |
 |---|---|
-| Adapty Attribution habilitada automáticamente | Adapty Attribution deshabilitada por defecto; actívala con `adaptyAttributionEnabled: true` |
+| Atribución de Adapty habilitada automáticamente | Atribución de Adapty deshabilitada por defecto; actívala con `adaptyAttributionEnabled: true` |
 | `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
-| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider`, con un nuevo valor `'custom'` |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
 | Archivo de respaldo descargado para 4.0 | Nuevo formato de archivo de respaldo; descarga el archivo de nuevo |
-| Compras in-app promocionadas no compatibles | El evento `'onPromotedPurchaseReceived'` y `adapty.makePromotedPurchase(product)` |
+| Las compras in-app promocionadas se completaban automáticamente, sin posibilidad de interceptarlas | El evento `'onPromotedPurchaseReceived'` y `adapty.makePromotedPurchase(product)` delegan la finalización a tu app |
 | `hasViewConfiguration` ausente en `AdaptyFlow` | `hasViewConfiguration` de vuelta en `AdaptyFlow` |
-| Proyecto iOS integrado con CocoaPods | CocoaPods, o la integración experimental de Swift Package Manager de React Native |
+| Proyecto iOS integrado con CocoaPods | CocoaPods, o la integración SPM de React Native en un proyecto React Native puro |
 
 ## Instalación \{#installation\}
 
@@ -35,9 +35,9 @@ npm install react-native-adapty@latest
 yarn add react-native-adapty@latest
 ```
 
-Los requisitos de ejecución no han cambiado respecto a la versión 4.0: **iOS 15.0**, **React Native 0.75** y Swift Package Manager para los SDK nativos de iOS. Consulta [Instalar el SDK de Adapty](sdk-installation-reactnative) para ver la configuración completa.
+Los requisitos de tiempo de ejecución no han cambiado respecto a la versión 4.0: **iOS 15.0** y **React Native 0.75**. Consulta [Instalar el SDK de Adapty](sdk-installation-reactnative) para ver la configuración completa.
 
-4.1 también es compatible con la integración experimental de Swift Package Manager de React Native, que reemplaza CocoaPods en tu proyecto iOS y requiere **React Native 0.87** o posterior. CocoaPods sigue siendo la opción predeterminada, y migrar a Swift Package Manager es opcional — consulta [Instalar el SDK de Adapty](sdk-installation-react-native-pure#install-adapty-sdk). Si tu app utiliza el [Modo infantil](kids-mode-react-native), cada gestor de paquetes lo aplica de forma diferente.
+4.1 también admite la integración SPM de React Native, que reemplaza CocoaPods en tu proyecto iOS y requiere **React Native 0.87** o superior. Aplica únicamente a proyectos React Native puros, CocoaPods sigue siendo la opción predeterminada y la migración es opcional — consulta [Configura tu proyecto iOS](sdk-installation-react-native-pure#set-up-your-ios-project). Si tu app usa el [Modo Niños](kids-mode-react-native), cada gestor de paquetes lo aplica de forma diferente.
 
 ## ⚠️ La atribución de Adapty está desactivada por defecto \{#adapty-attribution-is-disabled-by-default\}
 
@@ -72,7 +72,7 @@ El método ha sido renombrado y su segundo parámetro ha pasado de llamarse `sou
 
 ### AttributionSource → AdaptyExternalAttributionProvider
 
-El tipo del proveedor cambia de nombre. Sigue siendo una unión abierta: los valores predefinidos son `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'` y `'tenjin'`, y se acepta cualquier otra cadena, por lo que un proveedor que Adapty añada más adelante funcionará sin necesidad de actualizar el SDK:
+El tipo de proveedor cambia de nombre. Sigue siendo una unión abierta — los valores predefinidos son `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'`, `'tenjin'`, y un nuevo `'custom'` para proveedores con los que Adapty no se integra directamente. También se acepta cualquier otra cadena, de modo que si Adapty añade un proveedor más adelante, funciona sin actualizar el SDK:
 
 ```diff showLineNumbers
 - import type { AttributionSource } from 'react-native-adapty';
@@ -115,12 +115,12 @@ La versión 4.0 eliminó `hasViewConfiguration` cuando `AdaptyPaywall` pasó a l
 
 En 4.0, cuando el flag no está presente, `createFlowView` lanza un `AdaptyError` para un flow sin configuración de vista. Esto sigue siendo válido en 4.1 — el flag es una alternativa a capturar el error, no un reemplazo. Consulta [Obtener la configuración de vista](react-native-get-pb-paywalls#fetch-the-view-configuration).
 
-## Compras in-app promocionadas en App Store \{#app-store-promoted-in-app-purchases\}
+## Compras in-app promocionadas en la App Store \{#app-store-promoted-in-app-purchases\}
 
-SDK 4.1 añade compatibilidad con [compras in-app promocionadas en la página de tu producto en App Store](react-native-making-purchases#in-app-purchases-from-the-app-store). Esta es una nueva funcionalidad, no un paso de migración: el SDK completa las compras promocionadas por sí solo, así que obtienes este comportamiento sin escribir ningún código.
+En la versión 4.0, una [compra in-app promocionada en tu página de producto de la App Store](react-native-making-purchases#in-app-purchases-from-the-app-store) se completaba por sí sola y Adapty registraba la transacción como cualquier otra, pero tu app no tenía forma de interceptarla. La versión 4.1 añade ese hook, por lo que se trata de una nueva funcionalidad y no de un paso de migración: sin código propio, el SDK sigue completando las compras promocionadas por ti.
 
-Escribe código solo para gestionar la finalización tú mismo, por ejemplo, para mostrar primero una pantalla. Registra un listener para el nuevo evento `'onPromotedPurchaseReceived'` y completa la compra con `adapty.makePromotedPurchase`. Mientras ese listener esté registrado, el SDK deja de completar las compras promocionadas por ti.
+Escribe código solo para hacerte cargo de la finalización tú mismo, por ejemplo, para mostrar primero una pantalla. Registra un listener para el nuevo evento `'onPromotedPurchaseReceived'` y completa la compra con `adapty.makePromotedPurchase`. Mientras ese listener esté registrado, el SDK deja de completar las compras promocionadas por ti.
 
 :::warning
-Este mecanismo se basa en StoreKit 2 y requiere **iOS 16.4** o posterior. En dispositivos con una versión inferior a iOS 16.4, las compras promocionadas no llegan a tu app. El evento nunca se activa en Android.
+El hook está construido sobre StoreKit 2 y requiere **iOS 16.4** o posterior. Por debajo de iOS 16.4, el evento nunca se dispara y las compras promocionadas se completan como lo hacían en la versión 4.0. El evento tampoco se dispara en Android.
 :::

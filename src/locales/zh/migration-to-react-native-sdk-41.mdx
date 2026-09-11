@@ -4,7 +4,7 @@ description: "迁移至 Adapty React Native SDK v4.1：显式启用 Adapty Attri
 metadataTitle: "迁移至 Adapty React Native SDK v4.1 | Adapty 文档"
 ---
 
-Adapty React Native SDK 4.1 更改了 Adapty Attribution 的启用方式，重命名了外部归因 API，并更改了备用文件格式。此外，它还新增了对 App Store 应用内推广购买的支持，并恢复了 `AdaptyFlow` 上的 `hasViewConfiguration` 标志。
+Adapty React Native SDK 4.1 更改了 Adapty Attribution 的启用方式，重命名了外部归因 API，并更改了备用文件格式。此外，它还支持应用接管 App Store 推广应用内购买，并恢复了 `AdaptyFlow` 上的 `hasViewConfiguration` 标志。
 
 :::warning
 重命名的 API 是硬性中断。旧名称已被彻底移除——没有任何废弃别名可以过渡。针对 4.0.x 进行类型检查的代码，在未将下列所有调用点重命名之前，将无法通过 4.1 的编译。
@@ -16,14 +16,14 @@ Adapty React Native SDK 4.1 更改了 Adapty Attribution 的启用方式，重�
 
 | v4.0 | v4.1 |
 |---|---|
-| 默认启用 Adapty 归因 | 默认禁用 Adapty 归因；通过 `adaptyAttributionEnabled: true` 选择启用 |
+| 默认启用 Adapty 归因 | 默认禁用 Adapty 归因；通过 `adaptyAttributionEnabled: true` 启用 |
 | `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
-| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider`，新增 `'custom'` 值 |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
-| 已为 4.0 下载备用付费墙文件 | 新的备用付费墙文件格式；请重新下载该文件 |
-| 不支持推广应用内购买 | 支持 `'onPromotedPurchaseReceived'` 事件及 `adapty.makePromotedPurchase(product)` |
-| `AdaptyFlow` 中不含 `hasViewConfiguration` | `hasViewConfiguration` 重新出现在 `AdaptyFlow` 中 |
-| iOS 项目通过 CocoaPods 集成 | 支持 CocoaPods，或 React Native 实验性 Swift Package Manager 集成 |
+| 已下载 4.0 版备用文件 | 新备用文件格式；请重新下载文件 |
+| 推广型应用内购买自动完成，无法拦截 | `'onPromotedPurchaseReceived'` 事件和 `adapty.makePromotedPurchase(product)` 将完成控制权交给您的应用 |
+| `AdaptyFlow` 中不包含 `hasViewConfiguration` | `hasViewConfiguration` 重新加入 `AdaptyFlow` |
+| iOS 项目通过 CocoaPods 集成 | CocoaPods，或在纯 React Native 项目中使用 React Native 的 SPM 集成 |
 
 ## 安装 \{#installation\}
 
@@ -35,9 +35,9 @@ npm install react-native-adapty@latest
 yarn add react-native-adapty@latest
 ```
 
-运行时要求与 4.0 版本相同：**iOS 15.0**、**React Native 0.75**，以及用于原生 iOS SDK 的 Swift Package Manager。完整配置说明请参阅[安装 Adapty SDK](sdk-installation-reactnative)。
+运行时要求与 4.0 版本相同：**iOS 15.0** 和 **React Native 0.75**。完整配置步骤请参阅[安装 Adapty SDK](sdk-installation-reactnative)。
 
-4.1 同样支持 React Native 实验性的 Swift Package Manager 集成，可以替代 iOS 项目中的 CocoaPods，但需要 **React Native 0.87** 或更高版本。CocoaPods 仍是默认选项，迁移到 Swift Package Manager 是可选的——详见[安装 Adapty SDK](sdk-installation-react-native-pure#install-adapty-sdk)。如果你的应用使用了 [Kids Mode](kids-mode-react-native)，两种包管理器的配置方式有所不同。
+4.1 版本还支持 React Native 的 SPM 集成，可替代 iOS 项目中的 CocoaPods，需要 **React Native 0.87** 或更高版本。该集成仅适用于纯 React Native 项目，CocoaPods 仍为默认选项，迁移为可选操作——详见[设置 iOS 项目](sdk-installation-react-native-pure#set-up-your-ios-project)。如果您的应用使用了[儿童模式](kids-mode-react-native)，不同的包管理器在处理方式上有所差异。
 
 ## ⚠️ Adapty 归因默认已禁用 \{#adapty-attribution-is-disabled-by-default\}
 
@@ -72,7 +72,7 @@ yarn add react-native-adapty@latest
 
 ### AttributionSource → AdaptyExternalAttributionProvider
 
-提供方类型已重命名。它仍然是一个开放的联合类型——预定义值为 `'apple_search_ads'`、`'adjust'`、`'appsflyer'`、`'branch'` 和 `'tenjin'`，同时也接受任意其他字符串，因此 Adapty 后续新增的提供方无需更新 SDK 即可使用：
+提供者类型已重命名。它仍然是一个开放联合类型——预定义值为 `'apple_search_ads'`、`'adjust'`、`'appsflyer'`、`'branch'`、`'tenjin'`，以及新增的 `'custom'`（用于 Adapty 未直接集成的提供者）。同时也接受任意其他字符串，因此 Adapty 后续新增的提供者无需更新 SDK 即可使用：
 
 ```diff showLineNumbers
 - import type { AttributionSource } from 'react-native-adapty';
@@ -117,10 +117,10 @@ yarn add react-native-adapty@latest
 
 ## App Store 推广应用内购买 \{#app-store-promoted-in-app-purchases\}
 
-SDK 4.1 新增了对 [App Store 产品页面推广应用内购买](react-native-making-purchases#in-app-purchases-from-the-app-store) 的支持。这是一项新功能，无需迁移操作：SDK 会自动完成推广购买流程，无需编写任何代码即可获得此行为。
+在 4.0 版本中，[在 App Store 产品页面推广的应用内购买](react-native-making-purchases#in-app-purchases-from-the-app-store)会自动完成，Adapty 会像处理普通交易一样记录该交易，但你的应用无法拦截它。4.1 版本新增了这个钩子，因此这是一项新能力，而非迁移步骤：即使不添加任何代码，SDK 仍会自动为你完成推广购买。
 
-编写代码，自行接管购买完成流程——例如先展示某个页面。注册 `'onPromotedPurchaseReceived'` 事件的监听器，并通过 `adapty.makePromotedPurchase` 完成购买。注册该监听器后，SDK 将不再自动为你完成推广购买。
+仅编写代码以自行接管完成流程——例如先显示一个页面。为新的 `'onPromotedPurchaseReceived'` 事件注册监听器，并使用 `adapty.makePromotedPurchase` 完成购买。注册该监听器后，SDK 将不再自动为你完成促销购买。
 
 :::warning
-该机制基于 StoreKit 2，需要 **iOS 16.4** 或更高版本。在低于 iOS 16.4 的设备上，推广购买无法到达你的应用，该事件也不会在 Android 上触发。
+此钩子基于 StoreKit 2 构建，需要 **iOS 16.4** 或更高版本。低于 iOS 16.4 时，该事件不会触发，促销购买将按 4.0 的方式完成。该事件在 Android 上也不会触发。
 :::

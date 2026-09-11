@@ -1,10 +1,10 @@
 ---
-title: "Миграция React Native SDK Adapty на v4.1"
-description: "Миграция на Adapty React Native SDK v4.1: явное включение Adapty Attribution, переименованные API внешней атрибуции и повторная загрузка резервного файла."
+title: "Миграция Adapty React Native SDK на v4.1"
+description: "Миграция на Adapty React Native SDK v4.1: явное включение Adapty Attribution, переименованные API внешней атрибуции и обновлённый формат резервного файла."
 metadataTitle: "Миграция на Adapty React Native SDK v4.1 | Документация Adapty"
 ---
 
-В Adapty React Native SDK 4.1 изменился способ включения Adapty Attribution, переименованы API внешней атрибуции и изменён формат резервного файла. Также добавлена поддержка promoted встроенных покупок App Store и возвращён флаг `hasViewConfiguration` в `AdaptyFlow`.
+Adapty React Native SDK 4.1 изменяет способ включения Adapty Attribution, переименовывает API внешней атрибуции и меняет формат резервного файла. Также теперь ваше приложение может перехватывать продвигаемые встроенные покупки App Store, а флаг `hasViewConfiguration` возвращается в `AdaptyFlow`.
 
 :::warning
 Переименованные API — это жёсткий разрыв. Старые имена удалены полностью — никаких устаревших алиасов для совместимости не предусмотрено. Код, который проходил проверку типов на 4.0.x, не скомпилируется на 4.1 до тех пор, пока вы не переименуете каждый из перечисленных ниже вызовов.
@@ -16,14 +16,14 @@ metadataTitle: "Миграция на Adapty React Native SDK v4.1 | Докум�
 
 | v4.0 | v4.1 |
 |---|---|
-| Adapty Attribution включена автоматически | Adapty Attribution отключена по умолчанию; включите с помощью `adaptyAttributionEnabled: true` |
+| Атрибуция Adapty включена автоматически | Атрибуция Adapty отключена по умолчанию; включите с помощью `adaptyAttributionEnabled: true` |
 | `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
-| `AttributionSource` | `AdaptyExternalAttributionProvider` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider`, с новым значением `'custom'` |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
-| Файл резервного пейвола загружен для 4.0 | Новый формат файла резервного пейвола; скачайте файл заново |
-| Promoted in-app purchases не поддерживаются | Событие `'onPromotedPurchaseReceived'` и `adapty.makePromotedPurchase(product)` |
+| Резервный файл загружен для версии 4.0 | Новый формат резервного файла; загрузите файл повторно |
+| Встроенные покупки по промоакциям завершаются автоматически, без возможности их перехватить | Событие `'onPromotedPurchaseReceived'` и `adapty.makePromotedPurchase(product)` передают управление завершением покупки в ваше приложение |
 | `hasViewConfiguration` отсутствует в `AdaptyFlow` | `hasViewConfiguration` возвращён в `AdaptyFlow` |
-| iOS-проект интегрирован через CocoaPods | CocoaPods или экспериментальная интеграция React Native через Swift Package Manager |
+| iOS-проект интегрирован через CocoaPods | CocoaPods или SPM-интеграция React Native в чистом React Native проекте |
 
 ## Установка \{#installation\}
 
@@ -35,9 +35,9 @@ npm install react-native-adapty@latest
 yarn add react-native-adapty@latest
 ```
 
-Системные требования не изменились по сравнению с версией 4.0: **iOS 15.0**, **React Native 0.75** и Swift Package Manager для нативных iOS SDK. Подробная инструкция по настройке — в разделе [Установка Adapty SDK](sdk-installation-reactnative).
+Системные требования не изменились с версии 4.0: **iOS 15.0** и **React Native 0.75**. Подробнее об установке — в разделе [Установка Adapty SDK](sdk-installation-reactnative).
 
-4.1 также поддерживает экспериментальную интеграцию React Native со Swift Package Manager, которая заменяет CocoaPods для iOS-проекта и требует **React Native 0.87** или новее. CocoaPods остаётся вариантом по умолчанию, а переход на Swift Package Manager необязателен — см. [Установка Adapty SDK](sdk-installation-react-native-pure#install-adapty-sdk). Если ваше приложение использует [режим Kids Mode](kids-mode-react-native), каждый менеджер пакетов применяет его по-разному.
+4.1 также поддерживает интеграцию React Native через SPM, которая заменяет CocoaPods для вашего iOS-проекта и требует **React Native 0.87** или новее. Это касается только чистых React Native-проектов, CocoaPods по-прежнему остаётся вариантом по умолчанию, а переход необязателен — подробнее в разделе [Настройка iOS-проекта](sdk-installation-react-native-pure#set-up-your-ios-project). Если ваше приложение использует [Kids Mode](kids-mode-react-native), каждый менеджер пакетов применяет его по-разному.
 
 ## ⚠️ Атрибуция Adapty отключена по умолчанию \{#adapty-attribution-is-disabled-by-default\}
 
@@ -72,7 +72,7 @@ API, которые передают данные атрибуции от вне
 
 ### AttributionSource → AdaptyExternalAttributionProvider
 
-Тип провайдера переименован. Он по-прежнему является открытым объединением — предопределённые значения: `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'` и `'tenjin'`, и любая другая строка также принимается, так что провайдер, добавленный Adapty позже, будет работать без обновления SDK:
+Тип провайдера переименован. Это по-прежнему открытый union — предопределённые значения: `'apple_search_ads'`, `'adjust'`, `'appsflyer'`, `'branch'`, `'tenjin'` и новое `'custom'` для провайдеров, с которыми Adapty не интегрируется напрямую. Любая другая строка тоже принимается, так что провайдеры, добавленные Adapty позже, будут работать без обновления SDK:
 
 ```diff showLineNumbers
 - import type { AttributionSource } from 'react-native-adapty';
@@ -115,12 +115,12 @@ API, которые передают данные атрибуции от вне
 
 В версии 4.0, где флаг отсутствует, `createFlowView` выбрасывает `AdaptyError` для флоу без конфигурации представления. Это актуально и в версии 4.1 — флаг является альтернативой обработке исключений, а не заменой. См. [Получение конфигурации представления](react-native-get-pb-paywalls#fetch-the-view-configuration).
 
-## Встроенные покупки, продвигаемые в App Store \{#app-store-promoted-in-app-purchases\}
+## Продвигаемые встроенные покупки в App Store \{#app-store-promoted-in-app-purchases\}
 
-SDK 4.1 добавляет поддержку [встроенных покупок, продвигаемых на странице вашего продукта в App Store](react-native-making-purchases#in-app-purchases-from-the-app-store). Это новая функция, а не шаг миграции: SDK самостоятельно завершает продвигаемые покупки, так что нужное поведение работает без написания какого-либо кода.
+В версии 4.0 [встроенная покупка, продвигаемая на странице продукта в App Store](react-native-making-purchases#in-app-purchases-from-the-app-store), завершалась самостоятельно, Adapty фиксировал транзакцию как обычно, но у приложения не было возможности её перехватить. В версии 4.1 появился соответствующий хук — это новая возможность, а не шаг миграции: если вы не добавляете свой код, SDK по-прежнему самостоятельно завершает продвигаемые покупки.
 
-Пишите код только для того, чтобы взять завершение покупки на себя — например, чтобы сначала показать экран. Зарегистрируйте слушатель для нового события `'onPromotedPurchaseReceived'`, а завершите покупку с помощью `adapty.makePromotedPurchase`. Пока этот слушатель зарегистрирован, SDK перестаёт завершать продвигаемые покупки самостоятельно.
+Напишите собственный код для перехвата завершения покупки — например, чтобы сначала показать экран. Зарегистрируйте слушатель для нового события `'onPromotedPurchaseReceived'` и завершите покупку с помощью `adapty.makePromotedPurchase`. Пока этот слушатель зарегистрирован, SDK перестаёт самостоятельно завершать promoted purchases.
 
 :::warning
-Механизм построен на StoreKit 2 и требует **iOS 16.4** или новее. На устройствах с iOS ниже 16.4 продвигаемые покупки не доходят до приложения. Событие никогда не срабатывает на Android.
+Хук основан на StoreKit 2 и требует **iOS 16.4** или новее. На версиях ниже iOS 16.4 событие никогда не срабатывает, и promoted purchases завершаются так же, как в версии 4.0. Событие также никогда не срабатывает на Android.
 :::
