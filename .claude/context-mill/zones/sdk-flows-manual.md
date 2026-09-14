@@ -182,7 +182,7 @@ The zone's delta from `scope.md`, not a restatement of it.
 | fetch-paywalls-and-products-react-native | — | dev | 6 | react-native |
 | fetch-paywalls-and-products-unity | — | dev | 6 | unity |
 | flutter-implement-paywalls-manually | entry | dev | 2 | flutter |
-| flutter-making-purchases | — | dev | 4 | flutter |
+| flutter-making-purchases | — | dev | 5 | flutter |
 | flutter-quickstart-manual | — | dev | 8 | flutter |
 | flutter-restore-purchase | — | dev | 0 | flutter |
 | flutter-troubleshoot-purchases | — | dev | 6 | flutter |
