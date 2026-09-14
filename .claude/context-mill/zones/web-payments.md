@@ -29,7 +29,7 @@ up a non-store purchase channel.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | custom-store | — | dev | 1 | tutorial |
-| funnelfox | — | dev | 6 | tutorial |
+| funnelfox | — | dev | 8 | tutorial |
 | paddle | — | dev | 12 | tutorial |
 | payment-integrations | entry | dev | 0 | tutorial |
 | stripe | — | dev | 19 | tutorial |
