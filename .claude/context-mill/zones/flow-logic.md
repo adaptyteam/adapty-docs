@@ -53,6 +53,20 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   `builder/src/blocks/shared/variables/variables.common.ts`) can only resolve what the mapper sent, and
   a field's *absence* there is why a variable renders as a token. Verified 2026-08-24 against
   `origin/master` `db365e184`.
+- **The per-screen product registry (ADP-7541, flow schema v12) has two specs in `dashboard-interface`:**
+  `packages/unified-builder/builder/src/blocks/products/products.spec.md` (panel behaviour, menu items,
+  toasts, dialog labels) and `packages/unified-builder/builder/src/core/entities/screen-products/issues.spec.md`
+  (the publish-blocking issue codes with their exact titles). `paywall-product-block` and
+  `flow-common-issues` quote those titles verbatim — verify against the specs, not against a screenshot.
+  Two label traps verified 2026-09-13 on `origin/ADP-7541`. First, the group label for already-used
+  products depends on the picker: the card's **Product** dropdown and the plain product pickers say
+  **Added** and mean this screen's list (`blocks/shared/products/ProductSelect.tsx`); a text element's
+  `{ }` picker also says **Added** but spans every screen's list (`BindingCatalog.flowBindings()` in
+  `core/entities/product-bindings/catalog.ts`); the variables picker opened for a product-typed
+  comparison or assignment says **Current** (`blocks/shared/variables/ProductsTab.tsx`,
+  `scope === 'screen'`), and inside a card **Current** is the enclosing card's own product. Second, the
+  panel's **Missing** badge (product deleted from the catalog) is a different state from **This product
+  is off this screen** (product exists, not on the screen's list).
 - No dedicated source exists for the Flow metrics definitions (revenue, proceeds, ARPPU, conversion
   rates) beyond the article's own prose — these are dashboard-backend calculations with no spec file
   registered in `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx`
@@ -281,7 +295,8 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 |---|---|
 | "flow logic", "flow behavior", "the branch didn't fire", "what does this panel do", "where is the publish button" | This zone, not `flow-design` — apply the Boundaries test (trigger/action/condition/variable/lifecycle = here; layout, look, style, copy = `flow-design`). A pure "tour the interface" question is `builder-ui`, which is also the fastest way to answer "where is X in the editor". |
 | "create a flow", "start from a template", "template gallery", "duplicate flow name warning" | `paywall-builder-templates` — the create-a-flow entry point despite the pre-flow filename. `adapty-flow-builder` only orients; it doesn't walk the creation steps. |
-| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. |
+| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. Since ADP-7541 the "won't publish" half has names: **No product selected**, **This product no longer exists**, **This product is off this screen**, **Offer required** — all listed with fixes in `flow-common-issues`, and fixed in bulk from the **Products** panel (`paywall-product-block#product-actions`). |
+| "product shows as Missing", "off this screen", "Can't publish yet", "the same product appears twice in the panel", "how do I swap a product on every screen" | `paywall-product-block#product-actions`. **Missing** = deleted from the Dashboard catalog; **off this screen** = exists but not on that screen's list (after a panel **Remove**). Two entries for one product = two product-and-offer pairs. **Replace in N places** rewrites every use on one screen and offers the same change on the other screens that use the pair. |
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
 | "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. |
