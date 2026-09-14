@@ -172,7 +172,7 @@ readers and links it already has, so we correct it and we do not grow it.**
 | paywall-metrics | — | marketer | 3 | tutorial |
 | paywalls | entry | marketer | 1 | tutorial |
 | restore-paywall | — | marketer | 0 | tutorial |
-| web-paywall | entry | marketer | 6 | tutorial |
+| web-paywall | entry | marketer | 9 | tutorial |
 | web-paywall-configuration | — | marketer | 3 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

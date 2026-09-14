@@ -129,7 +129,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-custom-s3 | — | marketer, analyst | 3 | tutorial |
 | ua-deferred-data | — | marketer, analyst | 0 | tutorial |
 | ua-facebook | — | marketer, analyst | 10 | tutorial |
-| ua-funnelfox | — | marketer, analyst | 4 | tutorial |
+| ua-funnelfox | — | marketer, analyst | 6 | tutorial |
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 2 | tutorial |
@@ -137,8 +137,8 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
 | ua-stripe | — | marketer, analyst | 6 | tutorial |
 | ua-tiktok | — | marketer, analyst | 9 | tutorial |
-| ua-tracking-links | — | marketer, analyst | 3 | tutorial |
-| ua-web-pixel | — | marketer, analyst | 6 | tutorial |
+| ua-tracking-links | — | marketer, analyst | 2 | tutorial |
+| ua-web-pixel | — | marketer, analyst | 5 | tutorial |
 | user-acquisition | — | marketer, analyst | 7 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
