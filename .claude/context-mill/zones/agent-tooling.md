@@ -92,9 +92,6 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `AdaptySdkIntegrationSkill.mdx` restates them by hand and has already diverged, sending Codex to
   `npx skills add` where the JSON clones the repo into `~/.agents/skills/`. Treat this class of claim as
   reader-reported: correct it when someone reports it, and never assert its freshness in a review.
-  TODO(owner): register `adapty-cli` and `adapty-sdk-integration-skill` in `sources.md` (both are
-  `local-clone`, `default_ref: origin/main`, confirmed by `symbolic-ref`) — this zone currently has
-  `sources: []` and cannot cite an id for either.
 
 ## What we document, what we don't
 
@@ -178,6 +175,7 @@ on one side, a non-deterministic agent on the other.
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
 | manage-adapty-with-ai | entry | dev | 9 | tutorial |
+| migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -196,6 +194,20 @@ on one side, a non-deterministic agent on the other.
   class as the install-command claims in Sources of truth: reader-reported, corrected when someone
   reports them, freshness never asserted in a review. The Adapty-owned parts (marketplace repo URL,
   domain list, device-code flow, code TTL) verify against the adapty-cli-setup skill file instead.
+
+- **This zone's articles describe the shipped skills, so a change here often has a counterpart
+  in `sdk-integration-skill` — and the reverse.** Classify with
+  `.claude/context-mill/surfaces/skills.md` first; what follows is only this zone's delta.
+  - A CLI command, flag or metric documented in `developer-cli-ads-manager-reference` →
+    `ads-manager/references/asa-management.md` (writes) or
+    `ads-manager/references/asa-metrics.md` (reads). The skill links into those by **exact
+    heading string**, so a renamed heading breaks its entry point silently.
+  - A flows or placements command in `developer-cli-reference` / `developer-cli-quickstart` →
+    `flow-generator/references/placements.md` and `migrate-placements/references/api-surface.md`.
+  - An `adapty-sdk-integration-skill*` page claiming what the skill does → the claim is settled
+    by `adapty-integration/SKILL.md`, never the other way round.
+  - **A version pin named in an `adapty-cursor*` guide has no automation behind it at all.**
+    `lint-symbols.mjs` checks symbols, never versions; see `sources.md` under `sdk-integration-skill`.
 
 ## Boundaries
 
