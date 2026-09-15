@@ -17,6 +17,7 @@ with shared judgment (who reads it, what's internal, what ripples) — rather th
 | `zones.json` | human via agent | Machine layer: `article id → zone/role/audience`, plus the zone list (id, title, kind). Edited only via `mill:assign` / `mill:new-zone`, never by hand. |
 | `platforms.md` | human | Per-platform facts: ground-truth source id, current SDK version state, local quirks, the release-branch scope rule. |
 | `scope.md` | human | **Corpus-wide scope rules** — what earns a doc, what doesn't, depth and duplication policy, which claims need evidence first. A zone brief's `What we document, what we don't` carries only its delta from this file. Read it before deciding how much of a change to write up. |
+| `surfaces/<surface>.md` | human + agent | **Surface brief** — whether a docs change also changes something downstream that is not an article. Today: `surfaces/skills.md`, the seven shipped Adapty skills. Corpus-wide, like `scope.md`; a zone brief carries only its delta. |
 | `sources.md` | human | Catalog of ground-truth code/spec sources (repo path, remote, default ref, branch pattern). |
 | `sources.local.md` | each writer, gitignored | Per-machine `path:` overrides for `sources.md` entries — same `## <id>` heading and `path:` line. Absent when your clones match the shared layout; `missing-path` on every source means you need one. |
 | `rollouts/<slug>.md` | agent, reviewed by human | State of one feature rolling across platforms: canon decided on the first platform, a per-platform table, open questions. |
