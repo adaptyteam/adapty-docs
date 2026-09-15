@@ -136,6 +136,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-paddle | — | marketer, analyst | 6 | tutorial |
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
 | ua-stripe | — | marketer, analyst | 6 | tutorial |
+| ua-tag-ad-urls | — | marketer, analyst | 2 | tutorial |
 | ua-tiktok | — | marketer, analyst | 9 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 2 | tutorial |
 | ua-web-pixel | — | marketer, analyst | 5 | tutorial |
