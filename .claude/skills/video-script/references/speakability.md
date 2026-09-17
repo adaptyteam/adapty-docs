@@ -1,20 +1,29 @@
 # Speakability
 
-You are writing for a mouth, not an eye. A line that reads well can still make the jaw and lips do
-gymnastics, and you find out mid-take.
+A line that reads well can still be hard to say, and that shows up mid-take.
 
 **The only real test: read it aloud at delivery pace.** Stumble twice on the same line and it needs
-rephrasing — not because the words are wrong, but because they will cost takes. Everything below
-predicts the stumble before you reach the microphone.
+rephrasing — the words are not wrong, they cost takes. The rules below predict the stumble before the
+microphone does.
 
+## In one screen
+
+- Think in postures, not sounds.
+- Written for a non-rhotic accent with international influences — not General American.
+- Five things that actually cost takes: the same consonant across a word boundary; stressed *th* in
+  content words close together; `/θs/` and `/sθ/` clusters; held rounding or spread; plosive runs at
+  phrase starts.
+- Costs cross sentence boundaries. Check the seam between two sentences, not just within one.
+- Density is not the enemy. Ear ambiguity and breath are separate checks.
+- Rephrase, don't delete.
 ## Think in postures, not sounds
 
 Speech is the mouth moving between **articulatory postures** — where the lips, jaw and tongue sit.
 Difficulty comes from two things, and neither is how many of a sound you use:
 
-- **Travel** — consecutive sounds demanding postures far apart, so the mouth sprints between them
-- **Hold** — one posture sustained past the point it stays comfortable, which is what makes a face
-  muscle ache mid-take
+- **Travel** — consecutive sounds demanding postures far apart, so the mouth moves a long way between them
+- **Hold** — one posture sustained past the point it stays comfortable, which makes a face muscle
+  ache mid-take
 
 The three postures that matter in English:
 
@@ -66,12 +75,12 @@ sentence in the series was delivered without trouble:
 > You can restore the user's existing purchases, change the user's selected product, and initiate a
 > new purchase.  *(20-interaction-basics — highest sibilant load in the corpus)*
 
-Don't count sounds. Don't sand lines smooth for their own sake.
+Don't count sounds, and don't smooth lines that are already deliverable.
 
 ## What actually costs takes
 
 **1. Same consonant across a word boundary.** The mouth must double the sound or insert a pause; at
-pace it does neither and the words smear.
+pace it does neither and the words run together.
 
 > metric**s s**o · user**s s**ee · previou**s s**creen · thi**s sh**ape
 
@@ -94,8 +103,8 @@ The case that prompted this rule had all three:
 > A paywall entity is the products behind a UI you built yoursel**f — and that** needs a paywall
 > placement.
 
-Pause, breath, `d`→`th`, and it arrives 20 words into the sentence. Splitting it fixed everything at
-once. **Read aloud is the only instrument that catches this class.**
+Pause, breath, `d`→`th`, and it arrives 20 words into the sentence. Splitting the sentence fixed all
+three. **Only reading aloud catches this class.**
 
 **This crosses sentence boundaries.** A full stop is a short pause, not a reset — the last word of one
 sentence runs into the first of the next, and it is worse there because a breath lands at the same
@@ -109,7 +118,7 @@ The same applies between two narration paragraphs, and across a `> [VISUAL]` cue
 change, not a pause in the voiceover.
 
 **2. Stressed *th* in content words, close together.** This is the interdental posture: the tongue
-leaves the teeth and comes back. Twice is nothing; twice in six words is a workout.
+leaves the teeth and comes back. Two instances are fine; two within six words are not.
 
 > **Both paths** end the same way · **Three** different **things** · the **monthly** subscription
 > grants a **thousand** tokens · a width and a height, each with **three** modes
@@ -150,17 +159,17 @@ wants anyway.
 
 ## Rephrase, don't delete
 
-Speakability is a reason to say something differently, never a reason to say less. If a line resists
-every rephrasing, it is usually carrying two ideas; split it and both halves get easier.
+Speakability justifies rephrasing, never cutting content. A line that resists every rephrasing is
+usually carrying two ideas; split it and both halves get easier.
 
 ## Detector
 
 Finds candidates for identical-consonant collisions, seams, stressed *th*, `/θs/` clusters and
 over-long sentences.
 
-**It is a coarse net, and it is deliberately quiet.** It does not flag stop-into-*th*, held postures,
-or lip travel, because at useful precision those produce more false alarms than findings. Treat every
-hit as a prompt to read that line aloud — and read the lines it doesn't flag too.
+**It is coarse and deliberately quiet.** It does not flag stop-into-*th*, held postures, or lip
+travel: at useful precision those produce more false alarms than findings. Treat every hit as a prompt
+to read that line aloud, and read the unflagged lines too.
 
 ```python
 import re

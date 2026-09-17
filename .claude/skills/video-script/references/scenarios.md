@@ -1,11 +1,20 @@
 # Choosing What to Demonstrate
 
-**The before/after is the product.** These videos earn their length by showing a state change the
-viewer can see happen — not by explaining a feature. Everything else in this skill serves that.
+A video earns its length by showing a state change the viewer can see, not by explaining a feature.
 
-Pick the scenario before writing a word of narration. A weak scenario cannot be rescued by good
-writing; a strong one mostly writes itself.
+Pick the scenario before writing narration. A weak scenario cannot be rescued by good writing.
 
+## In one screen
+
+- Pick the scenario before writing narration. A weak one can't be rescued by good writing.
+- Four tests: real, simple, replicable, relatable.
+- The camera must see the before state, and the shot list must hold on it.
+- Concept videos: move the demo surface, exhibit the ambiguity, show an absence, end with a decision procedure.
+- Rotate the opener — side-by-side is one shape, not the default.
+- Pick the most ordinary instance, not the most illustrative one.
+- Legacy paths get named and dated; deprecated surfaces get cut entirely.
+- The contrast belongs inside the Parts, over live action.
+- Scale to one mechanism. Reuse Recipedia.
 ## The four tests
 
 A scenario is worth recording when it passes all four.
@@ -54,14 +63,18 @@ word attached to visibly different things, one shot each:
 > *This is also a paywall.* (a hand-coded screen)
 > *And so is this.* (the dashboard entity — products, no canvas)
 
-The viewer sees the problem in nine seconds and needs no persuading it exists. Compare the two premises
-this replaced: "four words that are easy to mix up" (a difficulty nobody has) and "pick wrong and it
-costs an app release" (a difficulty only the careless have). Both argued for a problem; this one
-displays it.
+The viewer sees the problem in nine seconds. The two premises it replaced both asserted a problem
+instead of showing one: "four words that are easy to mix up" (a difficulty nobody has) and "pick wrong
+and it costs an app release" (a difficulty only the careless have).
 
 The pattern generalizes: **find the word or control that means different things in different places,
 and put those places next to each other.** Then the rest of the video is just the discriminating
 questions, in order.
+
+**Rotate the opener. Side-by-side is one shape, not the default.** Three consecutive drafts opened on
+the same exhibition, and by the third it read as a tic. Check what the previous video opened with
+before reaching for it again. Alternatives that have worked: the outcome first, before anything is
+named; the question the viewer already arrived with; a state with a visible gap in it.
 
 **Pick the most ordinary instance, not the most illustrative one.** The instance that demonstrates a
 distinction most crisply is often one few viewers have. A draft used a bespoke hand-coded paywall
@@ -76,8 +89,8 @@ products."* — separates two meanings of one word faster than any definition, a
 **Give a decision procedure, not definitions.** The viewer should leave able to sort the next case
 themselves. Two or three questions that discriminate beat four paragraphs that describe.
 
-**Don't invent jeopardy to manufacture stakes.** A concept video has no natural conflict, which is
-exactly when a fabricated premise gets written. See the premise test in `voice.md`.
+**Don't invent stakes.** A concept video has no natural conflict, which is when fabricated premises
+get written. See the premise test in `voice.md`.
 
 ## Don't spend the viewer's time on legacy paths
 
@@ -96,6 +109,14 @@ what it means, what retires and when, what happens to published ones, what to bu
 
 The people who do have the legacy thing need a migration guide, not thirty seconds of a tutorial.
 
+**A deprecated surface gets cut, not covered briefly.** The rule above trims a legacy path down; this
+one removes it. A feature on its way out leaves no sentence, no hedge, no line in a prerequisite list
+or a tab enumeration. Onboardings are deprecated, so video 24 names them nowhere. The standing
+instruction is blunt: "onboardings are dead to us."
+
+If the deprecated surface is visible on screen during a shot, hiding it beats letting the video
+advertise it. Video 24 suppressed the **Onboarding A/B tests** tab for the recording.
+
 ## Where the contrast belongs
 
 **Inside the Parts, over live action.** Not in the intro.
@@ -113,6 +134,5 @@ at 3:21. It works because each step visibly moves one number. Add a fourth surfa
 
 ## Reuse Recipedia
 
-The series uses one app across every video (`terminology.md`), which means the viewer never spends
-attention on the scenario itself. Extend it rather than inventing a new app — 22 added an AI recipe
-generator with a token allowance, and cost the viewer nothing to follow.
+Extend the series app rather than inventing one per video, so the viewer never spends attention on the
+scenario itself. Screens and extensions are listed in `terminology.md`.
