@@ -158,9 +158,52 @@ Các chỉ số khác cũng có thể khác nhau về định nghĩa:
         - App Store Connect coi người dùng là được giữ lại nếu họ mở ứng dụng vào ngày được chỉ định. Người dùng không có gói đăng ký vẫn được tính, nhưng người dùng có gói đăng ký mà không mở ứng dụng vào ngày đó sẽ không được tính.
         - Chỉ số "Retained Installers" của Google Play Console đo tỷ lệ giữ chân dựa trên số ngày ứng dụng vẫn còn được cài đặt trên thiết bị của người dùng. Người dùng không mở ứng dụng vẫn được tính vào chỉ số này.
 
-## Chỉ số gói đăng ký mới so với sự kiện `subscription_started` \{#new-subscriptions-metric-vs-the-subscription_started-event\}
+## Sự không khớp giữa chỉ số và sự kiện \{#metric-and-event-mismatches\}
 
-Chỉ số [Gói đăng ký mới](reactivated-subscriptions) và sự kiện tích hợp `subscription_started` trong [integration event](events) đếm các trường hợp khác nhau, vì vậy tổng số của chúng sẽ không khớp. Chỉ số này đếm cả lần mua đầu tiên không có dùng thử lẫn các lần chuyển đổi từ dùng thử sang trả phí. Sự kiện `subscription_started` chỉ kích hoạt cho lần mua đầu tiên không có dùng thử — khi một gói dùng thử chuyển sang trả phí, Adapty sẽ gửi `trial_converted` thay thế. Do đó, số lượng Gói đăng ký mới sẽ cao hơn số lượng sự kiện `subscription_started` bất cứ khi nào ứng dụng của bạn có các lần chuyển đổi từ dùng thử.
+Sự không khớp giữa tổng số trên biểu đồ và số sự kiện mà integration của bạn nhận được là điều bình thường, không phải lỗi gửi dữ liệu. Tên gọi có vẻ giống nhau, nhưng định nghĩa lại khác nhau.
+
+### Chỉ số New subscriptions so với sự kiện `subscription_started` \{#new-subscriptions-metric-vs-the-subscription_started-event\}
+
+Chỉ số [New subscriptions](reactivated-subscriptions) và sự kiện tích hợp `subscription_started` trong [integration event](events) đếm các trường hợp khác nhau. Chỉ số "new subscriptions" thường sẽ lớn hơn số lượng sự kiện `subscription_started`.
+
+| Điểm khác biệt | Chỉ số New subscriptions | Sự kiện `subscription_started` |
+|---|---|---|
+| Báo cáo gì | Số lượng gói đăng ký bắt đầu trong một khoảng thời gian | Một gói đăng ký có trả phí vừa bắt đầu, tại thời điểm xảy ra |
+| Dùng để làm gì | Theo dõi số người dùng mới bắt đầu trả tiền | Ghi lại giao dịch mua trong analytics, MMP, hoặc backend của bạn |
+| Thời điểm | Đếm giao dịch theo ngày mua trong múi giờ báo cáo của bạn | Gửi đi khi giao dịch mua xảy ra |
+| Chuyển đổi từ dùng thử | Được tính | Không gửi — Adapty gửi `trial_converted` thay thế |
+| Giao dịch bị thu hồi | Bị loại trừ sau khi Adapty thu hồi | Đã được gửi và không thể thu hồi |
+| Hồ sơ người dùng mà SDK chưa xác định | Giao dịch mua của họ vẫn được tính | Không có trong Event Feed |
+
+### Chỉ số Active subscriptions và sự kiện `subscription_active` \{#active-subscriptions-metric-vs-the-subscription_active-event\}
+
+Chỉ số [Active subscriptions](active-subscriptions) và sự kiện `subscription_active` trong [integration event](events) khác nhau không chỉ ở cách đếm, mà còn ở mục đích sử dụng.
+
+| Điểm khác biệt | Chỉ số lượt đăng ký đang hoạt động | Sự kiện `subscription_active` |
+|---|---|---|
+| Báo cáo điều gì | Số lượt đăng ký còn hiệu lực vào cuối mỗi kỳ | Gói đăng ký đã tồn tại qua những ngày đầu tiên |
+| Dùng để làm gì | Theo dõi quy mô và mức tăng trưởng của cơ sở người dùng đăng ký | Chuyển tiếp đến MMP để đặt giá thầu cho người dùng ở lại |
+| Thời điểm | Được tính lại vào cuối mỗi kỳ | Được gửi sau một số ngày nhất định kể từ khi gói đăng ký bắt đầu, từ 1 đến 90 ngày |
+| Lặp lại | Có, mỗi kỳ | Không — Adapty chỉ kiểm tra một lần và không kiểm tra lại |
+| Chuyển đổi từ dùng thử | Được tính khi bản dùng thử chuyển sang trả phí | Không bao giờ được gửi — bộ đếm thời gian chỉ bắt đầu tại `subscription_started`, và việc chuyển đổi sẽ gửi `trial_converted` |
+| Đã hủy gia hạn | Bị loại trừ | Vẫn được gửi, miễn là người dùng còn quyền truy cập |
+| Hoàn tiền | Bị xóa, kể cả hồi tố đối với các ngày trong quá khứ | Không được gửi nếu hoàn tiền xảy ra trước; không bao giờ thu hồi nếu xảy ra sau |
+| Tính khả dụng | Luôn được tính toán | Chỉ được gửi bởi các integration mà bạn đã bật |
+
+### Chỉ số Active trials so với sự kiện `trial_active` \{#active-trials-metric-vs-the-trial_active-event\}
+
+Chỉ số [Active trials](active-trials) và sự kiện tích hợp `trial_active` trong [integration event](events) khác nhau về mục đích sử dụng, không chỉ về cách đếm.
+
+| Điểm khác biệt | Chỉ số Active trials | Sự kiện `trial_active` |
+|---|---|---|
+| Báo cáo gì | Số lượng bản dùng thử miễn phí chưa hết hạn | Bản dùng thử vẫn còn hoạt động sau vài ngày đầu |
+| Dùng để làm gì | Xem có bao nhiêu bản dùng thử đang chạy | Tối ưu hóa đặt giá thầu MMP cho người dùng dùng thử còn ở lại |
+| Thời điểm | Được tính lại vào cuối mỗi kỳ | Gửi sau một số ngày cấu hình kể từ khi bắt đầu dùng thử, từ 1 đến 90 ngày |
+| Lặp lại | Có, mỗi kỳ | Không — Adapty chỉ kiểm tra một lần và không kiểm tra lại |
+| Chuyển đổi bản dùng thử | Được tính cho đến khi bản dùng thử chuyển đổi, sau đó bị loại khỏi kỳ tiếp theo | Không bao giờ gửi cho bản dùng thử đã chuyển đổi |
+| Tính khả dụng | Luôn được tính toán | Chỉ gửi bởi các tích hợp mà bạn đã bật |
+
+Cả hai đều thống nhất về việc hủy: người dùng tắt tự động gia hạn vẫn được tính trong chỉ số, và sự kiện vẫn được gửi, cho đến khi dùng thử hết hạn.
 
 ## Tổng số có bộ lọc vượt quá tổng số không có bộ lọc \{#a-filtered-total-exceeds-the-unfiltered-total\}
 
