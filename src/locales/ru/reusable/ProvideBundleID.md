@@ -6,6 +6,8 @@ no_index: true
 
 2. Скопируйте **Bundle ID** в подразделе **General Information**.
 
+   Копируйте только идентификатор — в формате reverse-DNS, без пробелов, например `com.company.app`. App Store Connect отображает рядом с ним название приложения в других разделах, например в списке приложений; если вставить его вместо идентификатора, проверка подключения завершится с ошибкой.
+
    
 
 <Zoom>
@@ -37,5 +39,5 @@ no_index: true
 />
 </Zoom>
 
-4. Вернитесь на страницу **App information** в App Store Connect и скопируйте **Apple ID**.
-5. На странице [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) в дашборде Adapty вставьте этот ID в поле **Apple app ID**.
+4. Вернитесь на страницу **App information** в App Store Connect и скопируйте оттуда **Apple ID**.
+5. На странице [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) в дашборде Adapty вставьте ID в поле **Apple app ID**.

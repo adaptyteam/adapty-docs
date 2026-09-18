@@ -61,6 +61,7 @@ Adapty'de, Apple veya Stripe sandbox ortamından ya da Google test hesabından g
 :::tip
 Adapty, her ortam (production ve sandbox) için tek bir webhook URL'sini destekler. Olayları birden fazla servise iletmek istiyorsanız, webhook'u kendi backend'inize yönlendirin ve oradan dağıtım yapın.
 :::
+
 Üretim olayları için, geri çağrıların gönderileceği URL'yi belirten **Production endpoint URL** alanını kullanın. Ayrıca **Authorization header value for production endpoint** alanını da yapılandırın; bu başlık, sunucunuzun Adapty olaylarını doğrulaması için kullanılır. **Authorization header value for production endpoint** alanında belirtilen değerin, herhangi bir değişiklik veya ekleme yapılmadan `Authorization` başlığı olarak aynen kullanılacağını unutmayın.
 
 Test olayları için **Sandbox endpoint URL** ve **Authorization header value for sandbox endpoint** alanlarını kullanın.
@@ -98,6 +99,7 @@ Webhook entegrasyonunu kurmak için:
 4. (İsteğe bağlı) Almak istediğiniz event'leri seçin ve isimlerini eşleştirin. Farklı durumlarda hangi event'lerin tetiklendiğini görmek için [Event akışları](event-flows) sayfasına bakın.
 
    Event ID'leriniz Adapty'de kullanılanlardan farklıysa, kendi sisteminizdeki ID'leri olduğu gibi bırakın ve [Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) sayfasının **Events names** bölümündeki varsayılan Adapty event ID'lerini sizinkilerle değiştirin.
+
 Etkinlik ID'si herhangi bir string olabilir; yalnızca webhook işleme sunucunuzdaki etkinlik ID'sinin Adapty Kontrol Paneli'ne girdiğinizle eşleştiğinden emin olun. Etkinleştirilmiş etkinlikler için etkinlik ID'sini boş bırakamazsınız.
 
 <Zoom>
@@ -112,6 +114,7 @@ Etkinlik ID'si herhangi bir string olabilir; yalnızca webhook işleme sunucunuz
 </Zoom>
 
 5. Ek alanlar ve seçenekler zorunlu değildir; ihtiyacınıza göre kullanın:
+
     | Ayar | Açıklama |
     | :--------------------------------- | :----------------------------------------------------------- |
     | **Send Trial Price** | Etkinleştirildiğinde, Adapty **Trial Started** olayı için `price_local` ve `price_usd` alanlarına abonelik fiyatını ekler. |
@@ -143,5 +146,12 @@ Olay adı herhangi bir dize olabilir. Etkinleştirilmiş olaylar için alanları
 
 ## Webhook olaylarını işleme \{#handle-webhook-events\}
 
-Webhook'lar genellikle olay gerçekleştikten sonra 5 ila 60 saniye içinde iletilir. Ancak iptal olayları, kullanıcı aboneliğini iptal ettikten sonra teslim edilmesi 2 saate kadar sürebilir.
-Sunucunuzun yanıt durum kodu 200-404 aralığının dışındaysa Adapty, üstel geri çekilme (exponential backoff) yöntemiyle yeniden deneme yapar. İlk yeniden deneme, ilk başarısızlıktan yaklaşık **1 dakika** sonra gerçekleşir ve her sonraki denemede bu süre iki katına çıkar; toplamda 24 saat boyunca 9 yeniden denemeye kadar uzanır. Webhook'unuzu, yanıt vermeden önce Adapty'den gelen olay gövdesini yalnızca temel düzeyde doğrulayacak şekilde ayarlamanızı öneririz. Sunucunuz olayı işleyemiyorsa ve Adapty'nin yeniden denemesini istemiyorsanız 200-404 aralığında bir durum kodu kullanın. Ayrıca zaman alan görevleri asenkron olarak ele alın ve Adapty'ye hızlıca yanıt verin. Adapty 10 saniye içinde yanıt almazsa denemeyi başarısız sayar ve yeniden dener.
+Webhook'lar genellikle olay gerçekleştikten sonra 5 ila 60 saniye içinde iletilir. Ancak iptal olayları, kullanıcı aboneliğini iptal ettikten sonra iletilmesi 2 saate kadar sürebilir.
+
+Adapty'nin webhook teslimatı en az bir kez gerçekleşir: her olay en az bir teslimat denemesi alır ve Adapty, başarısız olması durumunda olayı silmek yerine yeniden dener. Sunucunuzun yanıt durum kodu 200-404 aralığının dışındaysa, Adapty üstel geri çekilme (exponential backoff) ile teslimatı yeniden dener. İlk yeniden deneme, ilk başarısızlıktan yaklaşık **1 dakika** sonra gerçekleşir ve her sonraki denemede süre iki katına çıkar — 24 saat boyunca yayılan 9 yeniden denemeye kadar. Yanıt vermeden önce Adapty'den gelen olay gövdesinin yalnızca temel doğrulamasını yapacak şekilde webhook'unuzu kurmanızı öneririz. Sunucunuz olayı işleyemiyorsa ve Adapty'nin yeniden denemesini istemiyorsanız, 200-404 aralığında bir durum kodu kullanın. Ayrıca, zaman alan görevleri eş zamansız (asenkron) olarak yönetin ve Adapty'ye hızlıca yanıt verin. Adapty 10 saniye içinde bir yanıt almazsa, denemeyi başarısız sayar ve yeniden dener.
+
+Olayların sıralı geleceği garanti değildir — bunları kendiniz sıralamak ve tekilleştirmek için [Etkinlik alanları](webhook-event-types-and-fields#event-fields) bölümüne bakın.
+
+:::note
+Yukarıdaki programa ek olarak yeniden denemeler için iki sınır geçerlidir. Bir endpoint'te 24 saat boyunca başarılı teslimat gerçekleşmemişse, Adapty bir teslimat başarılı olana kadar o endpoint için başarısız event'leri yeniden denemeyi durdurur. Ayrıca, oluşturulmasından itibaren 24 saat içinde teslim edilemeyen bir event artık yeniden denenmez. Uzun bir kesinti sırasında başarısız olan event'ler otomatik olarak yeniden gönderilmez; bunların yeniden gönderilmesi için [Adapty destek](mailto:support@adapty.io) ekibiyle iletişime geçin.
+:::

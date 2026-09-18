@@ -288,6 +288,14 @@ C'est tout !
 Vos utilisateurs peuvent désormais effectuer des achats sur le web et accéder aux fonctionnalités payantes dans votre application. Vous pouvez également consulter toutes vos analyses d'abonnements en un seul endroit.
 :::
 
+## Dépannage \{#troubleshooting\}
+
+### Stripe indique 100% de livraison, mais aucun événement n'arrive dans Adapty \{#stripe-shows-100-delivery-but-no-events-reach-adapty\}
+
+Adapty ne capture le secret de signature d'un webhook que lorsqu'il crée lui-même le point de terminaison. Si un point de terminaison de webhook existe déjà à l'URL d'Adapty dans votre compte Stripe — par exemple, suite à une tentative de connexion antérieure ou à la configuration manuelle obsolète décrite ci-dessus — la reconnexion ne crée pas de nouveau point de terminaison, et Adapty ne reçoit jamais (ou ne reçoit pas à nouveau) le secret de signature. Chaque événement continue d'atteindre le point de terminaison existant et obtient un `200`, mais échoue à la vérification de signature côté Adapty et est rejeté.
+
+Pour résoudre ce problème, dans [Developers → Webhooks](https://dashboard.stripe.com/webhooks) supprimez le point de terminaison qui pointe vers votre URL de webhook Adapty, puis reconnectez l'intégration Stripe depuis [App Settings → Stripe](https://app.adapty.io/settings/stripe) afin qu'Adapty puisse en créer un nouveau et récupérer son secret.
+
 ## Comportement lors de la création du profil \{#profile-creation-behavior\}
 
 Adapty doit associer un achat à un [profil client](profiles-crm) pour qu'il soit disponible sur mobile — par défaut, il crée des profils à la réception des webhooks de Stripe. Vous pouvez choisir ce qui sera utilisé comme identifiant utilisateur client dans Adapty :
@@ -328,6 +336,10 @@ Lorsqu'un client rencontre un problème de paiement, Adapty génère un événem
 ### Remboursements \{#refunds\}
 
 Adapty ne suit que les remboursements intégraux. Les remboursements au prorata ou partiels ne sont actuellement pas pris en charge.
+
+### Revenus nets et taxes \{#net-revenue-and-tax\}
+
+Pour calculer `net_revenue_usd` et `net_revenue_local` pour une transaction Stripe, Adapty applique une déduction forfaitaire de 4,5 %. Il s'agit d'une estimation de modélisation, et non de la taxe réellement collectée par Stripe — Adapty ne lit pas les montants de taxe depuis Stripe, y compris via Stripe Tax, donc `tax_amount_usd` et `tax_amount_local` sont toujours `0` pour les transactions Stripe.
 
 ### Unicité des identifiants de transaction \{#transaction-id-uniqueness\}
 
@@ -378,7 +390,7 @@ Une fois l'intégration avec Stripe effectuée, Adapty est prêt à fournir des 
 :::tip
 Pour des analyses enrichies, vous pouvez inclure un `variation_id` dans vos métadonnées Stripe afin d'attribuer les achats à des instances de paywall spécifiques. Cela s'avère particulièrement utile lors de la mise en place de paywalls web maison, lorsque vous souhaitez suivre quel affichage de paywall précis a conduit à la conversion.
 
-Notez que `variation_id` n'est lu qu'à partir des métadonnées des objets Stripe Subscription (`sub_...`) et Checkout Session (`ses_...`) :
+Notez que `variation_id` n'est lu depuis les métadonnées que dans les objets Stripe Subscription (`sub_...`) et Checkout Session (`ses_...`) :
 
 ```json showLineNumbers title="Stripe Metadata with variation_id"
 {
@@ -388,12 +400,16 @@ Notez que `variation_id` n'est lu qu'à partir des métadonnées des objets Stri
 ```
 :::
 
-Intégrations que vous pouvez utiliser pour transférer et analyser vos événements Stripe :
+Les intégrations que vous pouvez utiliser pour transférer et analyser vos événements Stripe :
+- [Adjust](adjust)
 - [Amplitude](amplitude/)
+- [AppsFlyer](appsflyer)
 - [Webhook](webhook)
 - [Firebase](firebase-and-google-analytics)
 - [Mixpanel](mixpanel)
 - [Posthog](posthog)
+
+Adjust ne dispose pas de champs Stripe : Adapty envoie un achat Stripe à Adjust avec le token de l'application de la plateforme sur laquelle l'acheteur a installé votre app. Voir [Achats web (Stripe et Paddle)](adjust#web-purchases-stripe-and-paddle).
 
 ### Événements Stripe pris en charge \{#supported-stripe-events\}
 

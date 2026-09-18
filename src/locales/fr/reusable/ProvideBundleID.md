@@ -6,6 +6,8 @@ no_index: true
 
 2. Copiez le **Bundle ID** dans la sous-section **General Information**.
 
+   Copiez uniquement l'identifiant — au format DNS inversé sans espaces, par exemple `com.company.app`. App Store Connect affiche le nom de l'application à côté dans d'autres vues, comme la liste des applications ; coller ce nom au lieu de l'identifiant entraînera l'échec de la validation de la connexion.
+
    
 
 <Zoom>
@@ -38,4 +40,4 @@ no_index: true
 </Zoom>
 
 4. Revenez à la page **App information** dans App Store Connect et copiez l'**Apple ID** qui s'y trouve.
-5. Sur la page [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) dans l'Adapty Dashboard, collez l'identifiant dans le champ **Apple app ID**.
+5. Sur la page [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) dans l'Adapty Dashboard, collez l'ID dans le champ **Apple app ID**.
