@@ -152,7 +152,7 @@ or developer can see and click.
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 7 | tutorial |
+| paywall-product-block | — | marketer, dev | 16 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
 | respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |

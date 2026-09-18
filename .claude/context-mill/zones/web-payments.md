@@ -32,7 +32,7 @@ up a non-store purchase channel.
 | funnelfox | — | dev | 8 | tutorial |
 | paddle | — | dev | 12 | tutorial |
 | payment-integrations | entry | dev | 0 | tutorial |
-| stripe | — | dev | 19 | tutorial |
+| stripe | — | dev | 22 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

@@ -172,7 +172,7 @@ most, deliberately — so the exception needs stating rather than assuming.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | android-products | — | dev | 4 | tutorial |
-| create-service-account | — | dev | 3 | tutorial |
+| create-service-account | — | dev | 4 | tutorial |
 | create-service-account-key-file | — | dev | 4 | tutorial |
 | enable-real-time-developer-notifications-rtdn | — | dev | 8 | tutorial |
 | enabling-of-devepoler-api | — | dev | 3 | tutorial |

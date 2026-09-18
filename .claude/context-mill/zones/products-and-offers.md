@@ -143,7 +143,7 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
 | app-store-offers | — | marketer | 4 | tutorial |
 | create-offer | — | marketer | 6 | tutorial |
 | create-product | — | marketer | 3 | tutorial |
-| create-virtual-currency | — | marketer | 3 | tutorial |
+| create-virtual-currency | — | marketer | 4 | tutorial |
 | delete-product | — | marketer | 0 | tutorial |
 | edit-product | — | marketer | 4 | tutorial |
 | google-play-offers | — | marketer | 1 | tutorial |
