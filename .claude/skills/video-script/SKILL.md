@@ -5,18 +5,16 @@ description: Use when writing, editing, transcribing, or describing Adapty tutor
 
 # Video Script — Write, Record, Transcribe
 
-The Adapty tutorial video series lives in `$VIDEOS/N-topic/`. Twenty-three videos, four eras of
-convention, and a set of rules that each cost a round of reviewer feedback to learn.
+The Adapty tutorial video series lives in `$VIDEOS/N-topic/`. 24 videos.
 
-**The before/after is the product.** These videos work by showing a real state change on a simple,
-replicable, relatable problem. Scenario selection comes before writing — `references/scenarios.md`.
+Each video shows a state change: a before the camera can see, then an after. Pick the scenario before
+writing narration — `references/scenarios.md`.
 
-**The voice is specific and hard to fake.** It is derived in `references/tone.md` from the delivered
-narration of the recorded videos. A draft written to it survives the microphone; reference prose does not.
+The narration voice is derived in `references/tone.md` from the four as-recorded scripts.
 
-**Non-regression means four things**, none of them cosmetic: a scenario that shows its value, a voice
-that is neither documentarian nor chatty, narration that keeps pace with the screen, and an intro that
-doesn't strand the viewer. `references/regression-checklist.md` is the whole list.
+`references/regression-checklist.md` lists the four regressions: a scenario that doesn't show its
+value, tone drift in either direction, on-screen action the viewer can't interpret, and a long intro
+over a static screen.
 
 ## Files and ownership
 
@@ -25,7 +23,7 @@ doesn't strand the viewer. `references/regression-checklist.md` is the whole lis
 | `script.md` | writer, then the recording | Narration plus `> [VISUAL]` cues. Line 1 declares its state — see State markers. |
 | `recording-steps.md` | writer | Shot list for the person at the keyboard. Real values, no placeholders. Video 13 onward. |
 | `description.md` | writer | YouTube description. Fixed section order, verbatim community block. |
-| the `.mov` | Google Drive | The authority once it exists. A recorded script describes it; it never corrects it. |
+| the `.mov` | Google Drive | Authoritative once it exists. The script is updated to match the video, never the reverse. |
 
 ## State markers — read line 1 before touching anything
 
@@ -38,26 +36,24 @@ Line 1 of `script.md` decides what you may change. Read it first, every time.
 | `Final runtime: XmYYs (as recorded, …)` | Same, older phrasing | Same |
 | no runtime line | Legacy, pre-convention | Ask before restructuring |
 
-**A recorded script is a record, not a draft.** Improving its wording desynchronizes it from a
-published video that nobody is going to re-cut. If the narration is wrong, the *video* is wrong — say
-so and let the user decide. This is the one rule that cannot be recovered from once broken, because the
-original wording is gone.
+**A recorded script is a record.** Rewriting it desynchronizes it from a video that will not be
+re-cut, and the original wording is then gone. If the narration is wrong, report it and let the user
+decide.
 
 ## Modes
 
-Detect from the request; if ambiguous, ask. Never infer "draft" from the fact that a script reads
-roughly — check line 1.
+Detect the mode from the request; if ambiguous, ask. Do not infer "draft" from rough-reading
+narration — check line 1.
 
 | Mode | Trigger | Load before starting |
 |---|---|---|
 | **Draft** | New video, no recording | `scenarios.md`, then `tone.md` — then `structure.md`, `pacing.md`, `terminology.md`, `speakability.md` |
 | **Transcribe** | A `.mov` exists; replace the draft | `transcribe.md`, then `structure.md` |
 | **Edit** | Change an existing file | `regression-checklist.md`, plus the file's own guide |
-| **Recording steps** | Shot list for a script | `recording-steps.md` — includes when to *offer* the flow-generator skill |
+| **Recording steps** | Shot list for a script | `recording-steps.md` — organized by shot, not by Part; includes when to *offer* the flow-generator skill. Add `mock-data.md` when the shoot needs faked data |
 | **Description** | YouTube copy for a recorded video | `description.md` |
 
-Load on the **task**, not on what you notice partway through. You cannot know a rule applies until you
-have read the file that names it, so "load if relevant" resolves to "never load".
+Load the listed references before starting, not partway through.
 
 ## After any edit
 
@@ -69,18 +65,21 @@ Run `references/regression-checklist.md` over the **whole file**, not the passag
 - Never open with a long intro over a static screen. Concepts go inside the Parts.
 - Never let a run of on-screen actions pass with nothing said against it.
 - Never write reference prose — *allows you to*, *is used for*, panel-by-panel enumeration.
-- Never place a `> [VISUAL]` cue after the line it pairs with. It always sits **before**, so the reader
-  knows what is on screen as the line is read. Off-by-one pairing is the same defect.
+- Never place a `> [VISUAL]` cue after the line it pairs with. It sits before the line, and pairs with
+  the line immediately below.
 - Never assume a prior video. Each is a cold open.
 - Never bold a UI label from memory. Verify it in the builder source.
+- Never describe the customer's app in words they wouldn't use for it themselves.
+- Never mention a deprecated surface in a new script. Cut it.
+- Never assert what an app does without reading its source.
+- Never hand-type fabricated metrics. Derive them, then check the arithmetic on a paused frame.
 - Never rewrite the narration of an as-recorded script.
 - Never overwrite a script without copying the old one to `/tmp/` first.
-- Never invoke the flow-generator skill without asking. It writes to live dashboard flows — offer,
-  explain, wait.
+- Never invoke the flow-generator skill without asking. It writes to live dashboard flows: offer it,
+  explain what it does, wait for an answer.
 
-Formatting is not on this list. Heading style, timestamps, and whether a transcript keeps its
-`[VISUAL]` cues at all are preferences — but a cue that *is* present must sit before its line. See
-`references/regression-checklist.md`.
+Formatting is not on this list: heading style, timestamps, and whether a transcript keeps its
+`[VISUAL]` cues are preferences. A cue that is present must sit before its line.
 
 ## Commands
 
@@ -110,32 +109,30 @@ Note `zsh` has `noclobber` set here: `> file` on an existing path fails. Use `>|
 | `pacing.md` | Budgeting length; writing an intro or outro |
 | `terminology.md` | Any product name, UI label, or brand term |
 | `transcribe.md` | Turning a recording into a script |
-| `recording-steps.md` | Writing or editing a shot list |
+| `recording-steps.md` | Writing or editing a shot list. Shot-shaped structure, cut markers, what not to write |
+| `mock-data.md` | Faking data for a shoot — when it's allowed, and how the numbers have to hold up |
 | `description.md` | Writing a YouTube description or picking chapters |
 | `regression-checklist.md` | After every edit. The four real failures |
 | `archive.md` | What each video teaches and which ones to learn from |
 
 ## The archive — resolve its path first
 
-The script catalogue lives **outside this repo**, because the scripts and their review comments are
-internal and are not committed. Its location is per-machine.
-
-**Resolve `$VIDEOS` before reading anything:** take the `path:` under `## video-scripts` in
-`.claude/context-mill/sources.local.md`.
+The script catalogue lives outside this repo (scripts and review comments are internal and not
+committed), so its location is per-machine. Resolve `$VIDEOS` before reading anything: it is the
+`path:` under `## video-scripts` in `.claude/context-mill/sources.local.md`.
 
 ```bash
-VIDEOS=$(awk '/^## video-scripts/{f=1;next} f&&/^path:/{print $2;exit}' \
-  .claude/context-mill/sources.local.md)
+VIDEOS=$(awk '/^## video-scripts/{f=1} f&&/^path:/{print $2;exit}' .claude/context-mill/sources.local.md)
 VIDEOS="${VIDEOS/#\~/$HOME}"
 ```
 
-That file is gitignored and present only on machines that hold the catalogue. **If it is missing or has
-no `video-scripts` entry, stop and ask for the path** — never guess, and never assume the catalogue is
-in the repo.
+That file is gitignored and exists only on machines holding the catalogue. **If it is missing or has no
+`video-scripts` entry, stop and ask for the path** — never guess, and never assume the catalogue is in
+the repo.
 
-Inside it: one folder per video (`$VIDEOS/N-topic/`), each with `script.md`, and where they exist
-`recording-steps.md` and `description.md`. Plus `$VIDEOS/transcription-backlog.md`, which tracks which
-scripts still hold a pre-recording draft while a published video exists.
+Inside: one folder per video (`$VIDEOS/N-topic/`) with `script.md`, plus `recording-steps.md` and
+`description.md` where they exist. `$VIDEOS/transcription-backlog.md` tracks published videos whose
+script is still a pre-recording draft. `$VIDEOS/recording-harness/` holds the data-mocking setup that
+`mock-data.md` governs.
 
-`references/archive.md` is the guide to the catalogue — which videos are worth learning from, what
-each teaches, and every video's state. Read it before opening any folder.
+Read `references/archive.md` before opening any folder.

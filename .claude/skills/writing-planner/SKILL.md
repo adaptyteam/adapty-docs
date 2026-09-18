@@ -115,6 +115,25 @@ If the zone brief and roster still leave candidates open, search the map:
 3. **User workflow**: From the existing article's step sequence, determine where this feature fits in the user's workflow. Does the user encounter this during initial setup, daily use, or occasional configuration?
 4. **Feature importance**: Is this a core part of the workflow that every reader needs, or an optional setting that most users skip? This determines prominence in the structure.
 
+**Then classify the change for shipped-skill ripple.** The same feature often changes one of the
+seven skills shipped from `sdk-integration-skill`, and the plan is the moment to find out — asked
+later, the second half surfaces after the docs plan was already approved.
+
+Read `.claude/context-mill/surfaces/skills.md` and classify. It is corpus-wide; the zone brief's
+`Ripple rules` adds only that zone's delta, which file in which skill.
+
+**Most changes do not ripple, and saying so is the point.** Citation is not the test: the skills
+cite several hundred articles between them, so well over half of docs commits touch one — a skill
+fetches its URLs at runtime and absorbs content changes by design, and structural breakage is
+already caught by that repo's lints and a daily cron. Do not route a wording fix, a corrected
+claim, an example, a screenshot, an SEO pass or a locale into a skill. Do check whether the skill
+*restates* the changed fact in its own prose, which is the one case that looks like churn and is
+not.
+
+When a class does fire, name the file, not the skill: resolve it from the skills repo's own
+`CLAUDE.md` inventory and `SKILL.md` descriptions, plus `.claude/context-mill/skill-citations.json`
+(regenerate with `npm run mill:skills`). Never keep a list of skills here.
+
 **Report what you found** to the user before proceeding:
 - **Articles affected** (if discovered, not specified by user):
   - Primary: [article] — needs [type of update]
@@ -126,6 +145,7 @@ If the zone brief and roster still leave candidates open, search the map:
 - Any existing content that overlaps with or relates to the planned change
 - The article's heading style (verb phrases, noun phrases, or mixed)
 - Your product analysis: who reads this, what they're trying to do, and how the new feature fits their workflow
+- **Shipped-skill ripple**: the class that fired and which file in which skill, or one line saying none
 
 ### Step 3: Assess Documentation Scope
 
@@ -203,6 +223,10 @@ Use AskUserQuestion for structured choices where options are clear. Use direct q
 ### Step 5: Produce the Plan
 
 Generate a plan scaled to the documentation scope. Read `references/plan-templates.md` for the 4 plan format templates (small update, medium update, large update, multi-article update).
+
+If the shipped-skill classification in Step 2 fired, the plan gains an `## Affected skills`
+section — see `references/plan-templates.md`. If it did not fire, say so in one line rather than
+omitting it: a reader cannot tell a considered *no* from a forgotten question.
 
 ## Structure Review
 
@@ -315,7 +339,7 @@ When planning updates to existing articles, the plan must match the article's cu
 When a user pastes a long Jira task with extensive acceptance criteria, technical specs, and engineering details — assess what the documentation actually needs. A 500-word task description about backend changes to a country selector may translate to a single paragraph in the docs: "Select the target countries from the **Country** dropdown." Say this clearly: "This is a big feature change but a small documentation update."
 
 ### Always check for ripple effects
-Even when the user specifies a single article, search for other articles that mention the same feature or concept. A change to "autopilot competitor analysis" might also need a one-line update in the autopilot overview article, or a mention in a "what's new" section. Report all affected articles — the user can decide which ones to update now and which to defer, but they should know the full picture.
+Even when the user specifies a single article, search for other articles that mention the same feature or concept. A change to "autopilot competitor analysis" might also need a one-line update in the autopilot overview article, or a mention in a "what's new" section. Report all affected articles — the user can decide which ones to update now and which to defer, but they should know the full picture. Ripple is not only articles: classify the change for shipped-skill ripple too, per Step 2.
 
 ### Propose, don't just ask
 After researching the existing article, come with a concrete proposal. "I'd add a 2-sentence paragraph to the 'Configure competitors' section, right after the frequency dropdown, describing the country selector and its default behavior. Does that match what you had in mind?" This gives the user something to react to instead of building the plan from scratch.

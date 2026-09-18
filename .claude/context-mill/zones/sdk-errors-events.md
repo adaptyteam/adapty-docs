@@ -165,7 +165,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
 | InvalidProductIdentifiers-react-native | — | dev | 6 | react-native |
 | InvalidProductIdentifiers-unity | — | dev | 6 | unity |
 | android-reference | entry | dev | 0 | android |
-| android-sdk-error-handling | — | dev | 2 | android |
+| android-sdk-error-handling | — | dev | 3 | android |
 | cantMakePayments | — | dev | 0 | ios |
 | cantMakePayments-flutter | — | dev | 0 | flutter |
 | cantMakePayments-kmp | — | dev | 0 | kmp |
@@ -176,7 +176,7 @@ table in the roster as a *transcription* of an enum, never as the enum.
 | error-handling-on-flutter-react-native-unity | entry | dev | 6 | flutter |
 | flutter-reference | entry | dev | 0 | flutter |
 | ios-reference | entry | dev | 0 | ios |
-| ios-sdk-error-handling | entry | dev | 4 | ios |
+| ios-sdk-error-handling | entry | dev | 5 | ios |
 | kmp-handle-errors | entry | dev | 9 | kmp |
 | kmp-reference | entry | dev | 0 | kmp |
 | react-native-handle-errors | entry | dev | 5 | react-native |

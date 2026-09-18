@@ -288,6 +288,14 @@ Adaptyは新しいStripe接続のウェブフックエンドポイントを作�
 ユーザーはウェブで購入を完了し、アプリで有料機能にアクセスできるようになります。また、すべてのサブスクリプションアナリティクスを1か所で確認できます。
 :::
 
+## トラブルシューティング \{#troubleshooting\}
+
+### Stripeは100%の配信を示しているが、Adaptyにイベントが届かない \{#stripe-shows-100-delivery-but-no-events-reach-adapty\}
+
+AdaptyはエンドポイントをAdaptyが自ら作成した際にのみ、Webhookの署名シークレットを取得します。Adaptyのお客様のStripeアカウントにAdaptyのURLのWebhookエンドポイントがすでに存在している場合（例：以前の接続試行時や、上記の非推奨の手動セットアップに従った場合など）、再接続しても新しいエンドポイントは作成されず、Adaptyは署名シークレットを受信（または再受信）しません。すべてのイベントは既存のエンドポイントに到達して`200`が返されますが、Adapty側で署名の検証に失敗し、破棄されます。
+
+これを解決するには、[Developers → Webhooks](https://dashboard.stripe.com/webhooks) でAdaptyのウェブフックURLを指すエンドポイントを削除し、[App Settings → Stripe](https://app.adapty.io/settings/stripe) からStripeインテグレーションを再接続して、Adaptyが新しいエンドポイントを作成してシークレットを取得できるようにしてください。
+
 ## プロファイル作成の挙動 \{#profile-creation-behavior\}
 
 Adaptyは購入をモバイルで利用可能にするために、[顧客プロファイル](profiles-crm)に紐付ける必要があります。そのため、デフォルトではStripeからWebhookを受信した際にプロファイルを作成します。Adaptyで顧客ユーザーIDとして使用するものを選択できます：
@@ -328,6 +336,10 @@ Adaptyはどちらのオプションにも対応していますが、即時キ�
 ### 返金 \{#refunds\}
 
 Adaptyが追跡するのは全額返金のみです。日割り計算による返金や部分返金は現在サポートしていません。
+
+### 正味収益と税金 \{#net-revenue-and-tax\}
+
+Stripeトランザクションの`net_revenue_usd`と`net_revenue_local`を計算するにあたり、AdaptyはフラットRate4.5%の控除を適用します。これはモデリングによる推定値であり、Stripeが実際に徴収した税額ではありません。AdaptyはStripe Tax を含むStripeからの税額情報を読み取らないため、Stripeトランザクションの`tax_amount_usd`と`tax_amount_local`は常に`0`となります。
 
 ### トランザクションIDの一意性 \{#transaction-id-uniqueness\}
 
@@ -378,7 +390,7 @@ Stripeと連携すると、Adaptyはすぐにインサイトを提供できる�
 :::tip
 アナリティクスをさらに強化するために、Stripeのmetadataに`variation_id`を含めると、購入を特定のペイウォールインスタンスに紐付けることができます。これは、特定のペイウォールの表示がコンバージョンにつながったかどうかを追跡したい場合など、自社製ウェブペイウォールの実装時に特に有用です。
 
-`variation_id`は、Stripe Subscription（`sub_...`）とCheckout Session（`ses_...`）オブジェクトのmetadataからのみ読み取られます：
+`variation_id` は、Stripe Subscription（`sub_...`）および Checkout Session（`ses_...`）オブジェクトのメタデータからのみ読み取られます：
 
 ```json showLineNumbers title="Stripe Metadata with variation_id"
 {
@@ -388,12 +400,16 @@ Stripeと連携すると、Adaptyはすぐにインサイトを提供できる�
 ```
 :::
 
-Stripeイベントの転送・分析に使用できる連携：
+Stripe イベントの転送と分析に使用できるインテグレーション：
+- [Adjust](adjust)
 - [Amplitude](amplitude/)
+- [AppsFlyer](appsflyer)
 - [Webhook](webhook)
 - [Firebase](firebase-and-google-analytics)
 - [Mixpanel](mixpanel)
 - [Posthog](posthog)
+
+Adjustには Stripeのフィールドがありません。AdaptyはStripeの購入を、ユーザーがアプリをインストールしたプラットフォームのアプリトークンを使用してAdjustに送信します。詳細は[Webでの購入（StripeおよびPaddle）](adjust#web-purchases-stripe-and-paddle)をご覧ください。
 
 ### サポートされている Stripe イベント \{#supported-stripe-events\}
 

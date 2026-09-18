@@ -2,6 +2,18 @@
 
 How the narration sounds. Every rule below came from a reviewer rejecting the opposite.
 
+## In one screen
+
+- Speak to the viewer, not to the docs.
+- Real problems only. The test: would this happen to someone competent, doing their job properly?
+- Name the artifact that proves the difficulty exists — and don't build the hook on it.
+- Never penalty-first. State the purpose, not the punishment.
+- Never describe the customer's app in words they wouldn't use for it themselves.
+- No meta-transitions, and never call back to your own structure.
+- No clichés.
+- Every video is a cold open.
+- Concepts go inside the Parts, and only with an artifact on screen.
+
 ## Speak to the viewer
 
 "Here, you'll see a QR code" — not "outputs a QR code". Mechanical phrasing reads like documentation
@@ -33,9 +45,9 @@ A worked example. A draft of the terminology video opened:
 > onboarding. Pick wrong, and fixing it costs an app release.
 
 The underlying fact is true and documented: placement type is fixed at creation, IDs are unique and
-uneditable, so switching type means a new ID, and the app hardcodes the ID. But the framing invents a
-moment that never occurs — nobody is interrogated by a page after building a screen — and the stakes
-only bite a viewer who chose carelessly. It opens by presuming the audience blundered.
+uneditable, so switching type means a new ID, and the app hardcodes the ID. The framing invents a
+moment that never occurs — nobody is interrogated by a page after building a screen — and the
+consequence only reaches a viewer who chose carelessly. It presumes the audience blundered.
 
 The honest version of the same fact is a **migration**: you shipped a paywall placement a year ago,
 flows exist now, and moving over needs a new placement ID. Same consequence, and it catches careful
@@ -57,7 +69,7 @@ exists *because* of the difficulty:
 - a UI warning, a migration note, a FAQ entry
 
 If nothing like that exists, the difficulty may be invented. A guessed problem produces a video that
-answers a question nobody asked, however well it is written.
+answers a question nobody asked.
 
 **Don't build the hook on a docs page.** Evidence that a problem exists is not the same as a reason
 the viewer cares. A draft opened with "Adapty's own docs have a section called *What paywall means*" —
@@ -68,10 +80,34 @@ largely dropped.
 Use the artifact to *verify* the problem is real. Then open on the problem itself, in the product,
 where the viewer meets it.
 
-**Penalty-first framing is the tell.** If the opening line is what goes wrong rather than what the
-viewer gets, the premise is probably invented. State the purpose, not the punishment.
+**Penalty-first framing signals an invented premise.** If the opening line is what goes wrong rather
+than what the viewer gets, check the premise. State the purpose, not the punishment.
 
-State the benefit once, briefly. The demo is the argument; the narration doesn't need to make it twice.
+State the benefit once, briefly — then the mechanism. The demo is the argument, and the narration
+shouldn't make it twice. `tone.md` has the sequencing and what goes wrong without it.
+
+## Never describe the customer's app unflatteringly
+
+The audience is the developer whose app is on screen, and their colleagues. A line that makes their
+product sound cheap or crude is what they hear instead of the feature.
+
+A draft of video 24 described multiple placements as apps that **"ask for money in more than one
+place"**. Accurate in a narrow sense, and unusable: no customer wants their app characterized that way
+in a vendor's official video.
+
+**Use the product's own noun for the thing.** That sentence was reaching for *placements* the whole
+time:
+
+> ❌ plenty of apps sell in several places
+> ❌ plenty of apps ask for money in more than one place
+> ✅ plenty of apps have several placements — onboarding, an upgrade button, a paywall on trial conclusion
+
+**The test: would you say this sentence to the customer whose app is in the shot?** If it needs
+softening before you would, it needs rewriting before it is narrated.
+
+Watch the examples too — see the example-list checks in `terminology.md`. All three of that draft's
+examples were paywalls, which quietly redefined a placement as somewhere you charge. Leading with
+*onboarding* fixes the definition as well as the tone.
 
 ## No meta-transitions
 
@@ -92,11 +128,11 @@ Re-establish by naming the things instead:
 > Now the second question. Whichever one you built, your app doesn't name it.
 > → In code, you don't name the flow or the paywall entity. You name a placement.
 
-Structure is a tool for writing the script. It is not something the audience carries.
+Structure is a writing tool. The audience does not carry it.
 
 ## No clichés
 
-"Last but not least" and relatives. They make the video feel off.
+"Last but not least" and relatives. Cut them.
 
 ## Every video is a cold open
 
@@ -110,5 +146,10 @@ Cross-references for depth are fine: "see our element states video".
 
 ## Where concepts go
 
-Explain concepts inside the numbered Parts, where narration plays over on-screen action — never in the
-intro, where nothing is moving. See `pacing.md`.
+Inside the numbered Parts, over on-screen action — never in the intro, where nothing is moving.
+`pacing.md` has the intro budget; `scenarios.md` has where the before/after belongs.
+
+**A concept with no artifact on screen gets cut at the microphone.** Video 24 was drafted with a Part
+on crossplacement tests — 70 words, no demo. It was dropped during recording as theoretical, and
+returned only when it had something to sit on: a second placement column added to the form on camera.
+Write a concept with the artifact that shows it, or leave it out of the draft.

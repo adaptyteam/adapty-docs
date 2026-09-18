@@ -148,7 +148,7 @@ recommendations become articles and which stay where the mechanism is documented
 |---|---|---|---|---|
 | android-best-practices | entry | dev | 0 | android |
 | android-optimize-paywall-fetching | — | dev | 2 | android |
-| android-sdk-call-order | — | dev | 2 | android |
+| android-sdk-call-order | — | dev | 3 | android |
 | capacitor-best-practices | entry | dev | 0 | capacitor |
 | capacitor-optimize-paywall-fetching | — | dev | 2 | capacitor |
 | capacitor-sdk-call-order | — | dev | 2 | capacitor |
@@ -159,7 +159,7 @@ recommendations become articles and which stay where the mechanism is documented
 | flutter-show-aa-targeted-paywall | — | dev | 4 | flutter |
 | ios-best-practices | entry | dev | 0 | ios |
 | ios-optimize-paywall-fetching | — | dev | 4 | ios |
-| ios-sdk-call-order | — | dev | 3 | ios |
+| ios-sdk-call-order | — | dev | 4 | ios |
 | ios-show-aa-targeted-paywall | — | dev | 4 | ios |
 | kmp-best-practices | entry | dev | 0 | kmp |
 | kmp-optimize-paywall-fetching | — | dev | 2 | kmp |

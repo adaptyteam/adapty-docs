@@ -120,7 +120,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| adapty-user-acquisition | entry | marketer, analyst | 2 | tutorial |
+| adapty-user-acquisition | entry | marketer, analyst | 3 | tutorial |
 | meta-create-campaign | — | marketer, analyst | 7 | tutorial |
 | tiktok-create-campaign | — | marketer, analyst | 8 | tutorial |
 | ua-amazon-s3 | — | marketer, analyst | 5 | tutorial |
@@ -136,6 +136,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-paddle | — | marketer, analyst | 6 | tutorial |
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
 | ua-stripe | — | marketer, analyst | 6 | tutorial |
+| ua-tag-ad-urls | — | marketer, analyst | 2 | tutorial |
 | ua-tiktok | — | marketer, analyst | 9 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 2 | tutorial |
 | ua-web-pixel | — | marketer, analyst | 5 | tutorial |

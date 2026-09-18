@@ -39,12 +39,12 @@ One idea per Part.
 
 **A heading is a noun phrase, not a question with the answer attached.** A draft of video 23 used
 `## Part 1: Who draws the UI — Adapty` and `## Part 2: Who draws the UI — you`. The pair encodes the
-video's organizing question, which is useful thinking and unreadable as a label. Name the subject
+video's organizing question, which is useful while planning and unreadable as a label. Name the subject
 instead — `## Part 1: The flow`, `## Part 2: Your own code, and the paywall entity` — and let the
 narration carry the question.
 
-Recorded scripts bear this out: `The chain`, `Product variables`, `Custom actions`, `Screen
-background`. All noun phrases, none of them clever.
+Recorded scripts: `The chain`, `Product variables`, `Custom actions`, `Screen background`. All noun
+phrases.
 
 ## `> [VISUAL]` cues
 
@@ -81,10 +81,8 @@ Write this form in drafts:
 
 > Read the docs in the description to learn more. Drop a comment if you have any questions. Thanks for watching!
 
-**Delivered takes vary**, and the variants are correct as recorded — "Thank you for watching",
-"Read our documentation", "Leave a comment if you've got any questions". `tone.md` shows two real
-deliveries. When transcribing, keep what was said; never normalize a transcript back to the draft
-wording.
+**Delivered takes vary, and the variants are correct as recorded.** Keep what was said; never
+normalize a transcript back to the draft wording. `tone.md` quotes two real deliveries.
 
 ## Formatting
 
