@@ -174,7 +174,7 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | react-native-sdk-overview | entry | dev | 3 | react-native |
 | sdk-installation-android | — | dev | 14 | android |
 | sdk-installation-capacitor | — | dev | 13 | capacitor |
-| sdk-installation-flutter | — | dev | 12 | flutter |
+| sdk-installation-flutter | — | dev | 13 | flutter |
 | sdk-installation-ios | — | dev | 11 | ios |
 | sdk-installation-kotlin-multiplatform | — | dev | 14 | kmp |
 | sdk-installation-react-native-expo | — | dev | 14 | react-native |
