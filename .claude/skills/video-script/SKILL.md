@@ -72,6 +72,7 @@ Run `references/regression-checklist.md` over the **whole file**, not the passag
 - Never describe the customer's app in words they wouldn't use for it themselves.
 - Never mention a deprecated surface in a new script. Cut it.
 - Never assert what an app does without reading its source.
+- Never write up a code change as a task for the operator when you can make it yourself.
 - Never hand-type fabricated metrics. Derive them, then check the arithmetic on a paused frame.
 - Never rewrite the narration of an as-recorded script.
 - Never overwrite a script without copying the old one to `/tmp/` first.

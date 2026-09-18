@@ -12,6 +12,8 @@ on video 24 and supersedes the older part-shaped one.
 - A shot breaks only where something must happen off camera. Number shots in recording order.
 - Reach the state: verb-first instructions, and cover the case where the state isn't there. What
   blocked you belongs back in the script.
+- Write against the window you record in. Check framing against the rendered page, not the field list.
+- Tag every step with the script line it serves.
 - On screen: start where recording begins, one action per numbered item, real values already decided.
 - Mark holds, cut points, irreversible steps, and optional shots.
 - URLs as clickable links. Name files and lines exactly — never gesture at them.
@@ -53,6 +55,11 @@ take, the dressed results after a server restart, one phone recording, one edito
 Ask of every proposed break: *what does the operator have to do between these that the camera cannot
 see?* If the answer is nothing, it is one shot.
 
+**A state change is not automatically a break.** A dev-server restart is, but a fixture that changes
+in response to something the operator does on camera is not — see *Change the data mid-take instead of
+restarting* in `mock-data.md`. Before writing a break around a before/after, ask whether the mock can
+do it live.
+
 **Shots are numbered in recording order**, which is rarely script order. If a note ever says "record
 Shot 4 before Shot 1", the numbering is wrong — renumber.
 
@@ -65,6 +72,14 @@ Shot 4 before Shot 1", the numbering is wrong — renumber.
 
 **Cover the failure case** where the state might not be there: what to do if the draft is missing, if
 the flag is off, if a test is already running on the placement.
+
+**Make the change yourself; don't write it up as a task.** A shot list describes a state that exists,
+not work for the operator to do at the keyboard. The first draft of the profiles shot list told them
+which four symbols to edit in the demo app to stage a sign-in — reachable repository, twenty lines,
+and it should simply have been done. Where you can make the change, make it, then say what the state
+now *is*, where the originals are backed up, and how to revert it afterwards. Leave instructions only
+for what you cannot do: anything needing their credentials, their devices, or a judgement that is
+theirs.
 
 **Send the failure cases back to the script.** What blocks the operator usually blocks the viewer, and
 it is the kind of line no draft predicts. Two of video 24's delivered lines exist only because setup
@@ -95,6 +110,25 @@ POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/
   Content-Type: application/json
   Body: {"items": [{"currency_code": "TOKENS", "amount": -100}]}
 ```
+
+**Write against the window you will record in.** The clean recording window has no address bar, so a
+step that says "open `localhost:3000/profiles/users/pf_d47f02`" cannot be followed. Name the row and the
+columns that identify it — and put a lookup table in the file if the identifier the fixture uses is not
+a column.
+
+**Check framing against the rendered page, not the field list.** Four framing instructions in the
+profiles shot list were wrong because they were written from the response type: two fields named next to
+each other in the data sat sixteen rows apart on screen, a column a step pointed at did not exist in
+that table, and an identifier a step said to keep out of frame sat between the two rows the beat needed.
+Open the page, or read a screenshot, before writing "hold on X and Y".
+
+**Tag every step with the script line it serves.** It costs a few words, and it is how you find out that
+a cue has no footage, that two steps serve the same line, or that a step exists for no reason. It also
+tells the operator what the frame is for, which is what stops them framing it wrongly.
+
+**Check the direction of what you are demonstrating.** A claim that something does *not* carry over
+needs its footage in that order — present, then absent. A pair of screens showing absent then present
+demonstrates the opposite.
 
 **Write URLs as clickable links**, not code spans:
 `[localhost:3000/flows](http://localhost:3000/flows)`. The operator reads this in an editor mid-shoot

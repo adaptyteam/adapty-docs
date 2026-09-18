@@ -28,6 +28,10 @@ grep -v "^>" script.md | grep -v "^#" | grep -v "^Total\|^Final" | wc -w
 
 It counts markdown punctuation, so it drifts a few words high. Close enough for a rough check.
 
+**Count with the command, not by eye.** `> [VISUAL]` cues are not narration. Counting them inflated a
+1,026-word script to 1,352, which turned a nine-minute video into an argument for splitting it in
+three.
+
 ## Intros run short — 15 to 18 seconds
 
 An intro is voiceover over a static frame. Nothing is happening, so anything longer drags. Land the

@@ -56,6 +56,12 @@ transcript keeps its cues is a preference; where a cue sits is not.
 line above it — that is the same defect one step further along. Read each cue against the line
 immediately below it and ask whether they belong together.
 
+**When a shot list exists, a cue names its shot and step.** `Shot 1, steps 10–13 — the August profile
+anonymous, then the list carrying its new customer user ID`. The step number is the link between the two
+files; the description still has to stand on its own, because the script gets read without the shot list
+open. Never put the shot list's row numbers or internal labels in a cue — they mean nothing without that
+file.
+
 Terse action labels of a few words. Quote names; chain sub-steps with commas or `+`:
 
 - ✅ `Turn "X" selectable`

@@ -41,6 +41,45 @@ The cut between the two takes is where the elapsed time passes. Mixing them in o
 contradictions on screen — a test created a minute ago showing three weeks of revenue, a list that was
 empty ten seconds before.
 
+**This applies when the fiction is elapsed time.** Weeks of traffic cannot accumulate during a take, so
+the cut is doing real work. When the fiction is a single state change — a field gaining a value, access
+appearing — the next section is the better tool, and a split there is a cut you didn't need.
+
+## Change the data mid-take instead of restarting
+
+A video that shows a before and an after does not need two fixture states and a restart between them.
+A restart is a shot break, and every break is a cut the edit has to hide. Make the fixture change in
+response to something the operator does on camera, and the whole sequence is one take.
+
+Video 24 split its A/B video in two for exactly this reason. The profiles video did not: opening the
+anonymous profile arms the identification, and the next trip back to the list is when it lands. On
+screen that is a person signing in while you happen to be looking at their profile, and the list
+catching up — which is what the product does.
+
+Four rules make it survive a shoot:
+
+**Trigger on something the video already contains.** A hidden hotkey works and looks like nothing; a
+page the narration was going to visit anyway looks like cause and effect. Prefer the second.
+
+**Arm on the narrowest possible action.** The profiles fixture arms only on opening *that one profile*,
+so the operator can visit the list as often as they like beforehand and nothing moves. A trigger as
+broad as "any profile view" would have fired two Parts early.
+
+**Delay the landing.** A background refetch arriving while the operator is still holding the before
+frame will change it under them. A couple of seconds between arming and landing is enough.
+
+**Keep the state in module scope, and say so.** A server restart and a page reload both reset it, so
+every take starts from the same place — and an accidental reload mid-take is recoverable rather than
+confusing. Write the one action that arms it into the shot list: it is the only way to spoil the take,
+and the operator cannot see it coming.
+
+Keep an environment variable that pins each state anyway. Rehearsing the second half without playing
+through the first is worth the three lines.
+
+**When the states are mutually exclusive, this does not apply.** Three settings where only one can be
+active — sharing paid access, say — cannot become a sequence. That is N takes of one frame with a flag
+between them, and it is the exception rather than the shape to reach for.
+
 ## Guidelines for the numbers
 
 **Derive every field from a few inputs, in code.** For an A/B result that was unique users, a completion
@@ -100,6 +139,18 @@ and each one tells the viewer the app in the video has no users.
 
 Deprecated surfaces count here too. If a tab or a menu item is on its way out, hide it rather than let
 the video advertise it (`scenarios.md`).
+
+## Fabricated history has to be possible, not just consistent
+
+Every number in the profiles fixture agreed with every other number, and the cast was still impossible:
+one person held two overlapping paid subscriptions, took a second introductory offer the stores would
+not have granted, and carried an email on a profile with no customer user ID. Walk the cast as a story,
+oldest event to newest, and ask whether one person could have lived it.
+
+**Nothing may exist because of an event the video has not shown yet.** That same fixture had a profile
+created by a logout — which requires an identified session, which the video was about to demonstrate
+three Parts later. Anything on screen at minute two that descends from minute six is a profile from the
+future. Check each artifact against the first moment it appears.
 
 ## Check the frame, not the fixture
 
