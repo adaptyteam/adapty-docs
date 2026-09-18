@@ -136,9 +136,40 @@ try {
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-### プリペイドプランの管理（Android） \{#manage-prepaid-plans-android\}
+## App Storeのプロモートアプリ内課金 \{#promoted-in-app-purchases-from-the-app-store\}
 
-アプリのユーザーが[プリペイドプラン](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例：数ヶ月分の非更新型サブスクリプションを一括購入）を利用できる場合、プリペイドプランの[保留中のトランザクション](https://developer.android.com/google/play/billing/subscriptions#pending)を有効にすることができます。
+:::warning
+プロモートアプリ内課金は SDK バージョン 4.1 以降でアプリに届き、アプリ側で完了処理を行います。SDK 4.0 では SDK が自動的に完了していました。4.1 以降では、リスナーが存在しないプロモート購入は破棄されるため、アップデート時に以下のリスナーを追加してください。詳しくは [v4.1 への移行](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app) を参照してください。
+:::
+
+ユーザーが App Store のプロダクトページから購入を開始し、トランザクションがアプリに引き継がれると、SDK はプロダクトを `didReceivePromotedPurchaseStream` に配信します。ストリームをサブスクライブし、プロダクトを `makePromotedPurchase` に渡してください。
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+});
+```
+
+`activate`の直後、アプリ起動時にサブスクライブしておきましょう。これにより、プロモーション購入が届く前にリスナーが確実に存在している状態になります。`didReceivePromotedPurchaseStream`はブロードキャストストリームであり、リプレイはありません。リスニングしていない間に届いたプロダクトは破棄されます。
+
+`makePromotedPurchase`は購入パラメータを受け取りません。プロモーション対象のプロダクトはペイウォールではなくApp Storeから届くものであり、ペイウォールのコンテキストを持たないためです。戻り値は`makePurchase`と同じ`AdaptyPurchaseResult`です。
+
+プロモートされたプロダクトにサブスクリプションオファーが含まれている場合、SDKは購入時に自動的にそのオファーを適用します。オファーはApp Storeの購入インテントから読み取られ、iOS 18.0以降で公開されます。iOS 16.4〜17.xでは、購入は通常価格で処理されます。
+
+:::info
+このストリームはStoreKit 2上に構築されており、**iOS 16.4**以降が必要です。iOS 16.4未満およびAndroidでは、イベントは送信されません。
+:::
+
+## プリペイドプランの管理 (Android) \{#manage-prepaid-plans-android\}
+
+アプリユーザーが[プリペイドプラン](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例：数ヶ月間の非更新型サブスクリプションを購入するなど）を購入できる場合、プリペイドプランの[保留中トランザクション](https://developer.android.com/google/play/billing/subscriptions#pending)を有効にできます。
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(

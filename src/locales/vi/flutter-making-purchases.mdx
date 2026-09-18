@@ -136,9 +136,40 @@ Theo quan sát của chúng tôi, màn hình đổi mã ưu đãi trong một s�
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-### Quản lý gói trả trước (Android) \{#manage-prepaid-plans-android\}
+## Sản phẩm mua trong ứng dụng được quảng bá từ App Store \{#promoted-in-app-purchases-from-the-app-store\}
 
-Nếu người dùng ứng dụng của bạn có thể mua [gói trả trước](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (ví dụ: mua gói đăng ký không tự gia hạn trong vài tháng), bạn có thể bật [giao dịch chờ xử lý](https://developer.android.com/google/play/billing/subscriptions#pending) cho các gói trả trước.
+:::warning
+Sản phẩm mua trong ứng dụng được quảng bá sẽ đến ứng dụng của bạn từ SDK phiên bản 4.1 trở lên, và ứng dụng của bạn sẽ hoàn tất chúng. Với SDK 4.0, SDK tự hoàn tất chúng. Từ phiên bản 4.1, một lần mua được quảng bá mà không có listener nào lắng nghe sẽ bị bỏ qua, vì vậy hãy thêm listener bên dưới khi bạn cập nhật. Xem [Migrate lên v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app).
+:::
+
+Khi người dùng bắt đầu mua hàng từ trang sản phẩm App Store của bạn và giao dịch được chuyển vào ứng dụng, SDK sẽ gửi sản phẩm đến `didReceivePromotedPurchaseStream`. Hãy đăng ký stream và truyền sản phẩm vào `makePromotedPurchase`:
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+});
+```
+
+Đăng ký ngay sau `activate` khi khởi động ứng dụng, để listener tồn tại trước khi có promoted purchase đến. `didReceivePromotedPurchaseStream` là broadcast stream không replay: nếu có sản phẩm được gửi đến trong khi không có listener nào đang lắng nghe, sản phẩm đó sẽ bị mất.
+
+`makePromotedPurchase` không nhận tham số mua hàng, vì sản phẩm được promoted đến từ App Store chứ không phải từ paywall và không mang theo context của paywall. Hàm này trả về cùng kiểu `AdaptyPurchaseResult` như `makePurchase`.
+
+Nếu sản phẩm được quảng bá có kèm ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua. Ưu đãi được đọc từ purchase intent của App Store, vốn chỉ khả dụng trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ được thực hiện với giá gốc.
+
+:::info
+Stream được xây dựng trên StoreKit 2 và yêu cầu **iOS 16.4** trở lên. Dưới iOS 16.4 và trên Android, stream sẽ không bao giờ phát.
+:::
+
+## Quản lý prepaid plans (Android) \{#manage-prepaid-plans-android\}
+
+Nếu người dùng ứng dụng của bạn có thể mua [prepaid plans](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (ví dụ: mua gói đăng ký không tự gia hạn trong vài tháng), bạn có thể bật [pending transactions](https://developer.android.com/google/play/billing/subscriptions#pending) cho prepaid plans.
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(

@@ -136,9 +136,40 @@ Pour ce faire, vous devez ouvrir l'URL au format suivant :
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-### Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
+## Achats intégrés mis en avant depuis l'App Store \{#promoted-in-app-purchases-from-the-app-store\}
 
-Si vos utilisateurs peuvent acheter des [plans prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, acheter un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour les plans prépayés.
+:::warning
+Les achats intégrés mis en avant parviennent à votre application à partir de la version 4.1 du SDK, et c'est votre application qui les finalise. Avec le SDK 4.0, le SDK les finalisait lui-même. À partir de la version 4.1, un achat mis en avant pour lequel aucun écouteur n'est enregistré est ignoré — ajoutez donc l'écouteur ci-dessous lors de votre mise à jour. Voir [Migrer vers la v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app).
+:::
+
+Lorsqu'un utilisateur lance un achat depuis la page produit de votre App Store et que la transaction est transmise à votre application, le SDK délivre le produit à `didReceivePromotedPurchaseStream`. Abonnez-vous au stream et passez le produit à `makePromotedPurchase` :
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+});
+```
+
+Abonnez-vous juste après `activate` au démarrage de l'application, afin que l'écouteur soit en place avant qu'un achat promu puisse arriver. `didReceivePromotedPurchaseStream` est un broadcast stream qui ne rejoue pas : un produit livré sans qu'aucun écouteur ne soit actif est perdu.
+
+`makePromotedPurchase` ne prend aucun paramètre d'achat, car un produit promu provient de l'App Store et ne porte aucun contexte de paywall. Il retourne le même `AdaptyPurchaseResult` que `makePurchase`.
+
+Si le produit mis en avant inclut une offre d'abonnement, le SDK l'applique automatiquement à l'achat. L'offre est lue depuis l'intention d'achat App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat se fait au tarif de base.
+
+:::info
+Le flux est basé sur StoreKit 2 et nécessite **iOS 16.4** ou une version ultérieure. En dessous d'iOS 16.4, et sur Android, il n'émet jamais.
+:::
+
+## Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
+
+Si les utilisateurs de votre application peuvent acheter des [plans prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, acheter un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour les plans prépayés.
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(

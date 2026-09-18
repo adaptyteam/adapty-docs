@@ -1,0 +1,156 @@
+---
+title: "Migrar el SDK de Flutter de Adapty a v4.1"
+description: "Migra al SDK de Flutter de Adapty v4.1: activa Adapty Attribution de forma explícita, adopta las APIs de atribución externa renombradas, vuelve a descargar tu archivo de respaldo y gestiona las compras in-app promovidas en App Store."
+metadataTitle: "Migración al SDK de Flutter de Adapty v4.1 | Documentación de Adapty"
+---
+
+El SDK de Flutter de Adapty 4.1 cambia la forma en que se activa Adapty Attribution, renombra las APIs de atribución externa y cambia el formato del archivo de respaldo. Además, delega a tu app las compras in-app promovidas en App Store y añade una forma de mantener una vista de flow activa tras cerrarla.
+
+:::warning
+Las APIs renombradas son un cambio definitivo. Los nombres anteriores se han eliminado por completo — no existen alias deprecados que los sustituyan. El código que compilaba con 4.0.x fallará en 4.1 hasta que renombres cada llamada indicada a continuación.
+:::
+
+Si todavía usas la versión 3.x, empieza por [Migrar a v4.0](migration-to-flutter-sdk-v4) y luego sigue esta guía.
+
+## Referencia rápida \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Atribución de Adapty habilitada automáticamente | Atribución de Adapty deshabilitada por defecto; actívala con `withAdaptyAttributionEnabled(true)` |
+| `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, con un nuevo valor `custom` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Archivo de respaldo descargado para 4.0 | Nuevo formato de archivo de respaldo; descarga el archivo de nuevo |
+| Las compras in-app promocionadas se completaban solas | Tu app las completa desde `didReceivePromotedPurchaseStream` |
+| `dismissFlowView(view)` siempre libera la vista | `destroy: false` mantiene la vista activa para presentarla de nuevo |
+
+Las API de compra, perfil y presentación de flows no han cambiado.
+
+## Instalación \{#installation\}
+
+Actualiza `adapty_flutter` a la versión 4.1 en tu `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.1.0
+```
+
+Si tu app usa el [Modo Kids](kids-mode-flutter), especifica `adapty_flutter_kids` en su lugar:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.1.0
+```
+
+Los requisitos no cambian respecto a la versión 4.0: **Flutter 3.32.0** (Dart 3.8.0) e **iOS 15.0**. Consulta [Instalar el SDK de Adapty](sdk-installation-flutter) para la configuración completa.
+
+4.1 fija el SDK nativo de iOS en 4.1.3 y el SDK nativo de Android en 4.1.1. La versión de iOS también corrige los parámetros numéricos de los eventos analíticos de flows: antes de esta versión, todos los `0` y `1` llegaban a `flowViewDidReceiveAnalyticEvent` como `false` y `true`.
+
+## ⚠️ La atribución de Adapty está desactivada por defecto \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Si actualizas al SDK 4.1 y no te das de alta, la [atribución de Adapty](user-acquisition) deja de funcionar silenciosamente: las instalaciones dejan de registrarse y no recibes ningún aviso.
+:::
+
+A partir de la versión 4.0 y anteriores, el SDK registraba las instalaciones para [Adapty Attribution](user-acquisition) de forma automática. Desde la versión 4.1, esto está desactivado por defecto: el SDK no registra instalaciones, `onUpdateInstallationDetailsSuccessStream` y `onUpdateInstallationDetailsFailStream` no emiten nunca, y `getCurrentInstallationStatus` devuelve `AdaptyInstallationStatusNotAvailable`.
+
+Si usas Adapty Attribution, actívalo al configurar el SDK:
+
+```diff showLineNumbers
+  await Adapty().activate(
+-   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
++   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
++     ..withAdaptyAttributionEnabled(true),
+  );
+```
+
+Si no usas Adapty Attribution, no necesitas hacer ningún cambio.
+
+## APIs de atribución externa renombradas \{#renamed-external-attribution-apis\}
+
+Las APIs que envían datos de atribución desde un proveedor externo (Adjust, AppsFlyer, Branch, Tenjin o uno personalizado) se han renombrado para coincidir con los SDKs nativos.
+
+### updateAttribution → updateExternalAttribution
+
+El método ha sido renombrado y su parámetro `source` pasa a llamarse `provider`. El parámetro ahora acepta un `AdaptyExternalAttributionProvider` en lugar de una cadena de texto, y los datos de atribución siguen siendo un mapa:
+
+```diff showLineNumbers
+- await Adapty().updateAttribution(attribution, source: 'adjust');
++ await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+El tipo de proveedor ha sido renombrado. Sigue siendo un contenedor abierto sobre una cadena — los valores predefinidos son `appleAds`, `adjust`, `appsflyer`, `branch`, `tenjin`, y un nuevo `custom` para proveedores con los que Adapty no se integra directamente. Puedes construir uno a partir de cualquier otra cadena, por lo que un proveedor que Adapty añada más adelante funcionará sin necesidad de actualizar el SDK:
+
+```dart showLineNumbers
+final provider = AdaptyExternalAttributionProvider('my_provider');
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+La propiedad del perfil que lista los proveedores de atribución aplicados al perfil se renombra, y el tipo de sus elementos cambia en consecuencia:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.appleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+El campo de perfil serializado mantiene el nombre `applied_attribution_sources`, por lo que un backend que lea el perfil en bruto no necesita cambios. El código que lee la propiedad sí necesita actualizarse — consulta [Mostrar un paywall con segmentación de Apple Ads](flutter-show-aa-targeted-paywall).
+
+## Archivos de respaldo \{#fallback-files\}
+
+El formato del [archivo de respaldo](fallback-flows) cambió en el SDK 4.1. Descarga el archivo nuevamente desde **[Placements](https://app.adapty.io/placements)** > **Fallbacks** y añádelo a tu app, aunque ya hayas descargado uno para la versión 4.0.
+
+:::warning
+Este paso no genera ningún error de compilación. Si lo omites, el SDK rechazará el archivo obsoleto y todos los placements perderán su respaldo.
+:::
+
+## ⚠️ Las compras in-app promocionadas ahora esperan a tu app \{#promoted-in-app-purchases-now-wait-for-your-app\}
+
+:::warning
+Este es un cambio de comportamiento, no una nueva función para adoptar cuando sea conveniente. En la versión 4.0, una [compra in-app promocionada en la página de tu producto en el App Store](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) se completaba sola. En la versión 4.1, solo se completa si tu app la escucha. Publica la versión 4.1 sin el código que aparece a continuación y esas compras dejarán de ocurrir: el App Store le entrega el producto a tu app y no sucede nada más.
+:::
+
+En la versión 4.0, Adapty registraba una compra promocionada como cualquier otra transacción, y tu app no tenía forma de interceptarla. La versión 4.1 le da a tu app ese control, y con él la responsabilidad de completar la compra.
+
+Suscríbete a `didReceivePromotedPurchaseStream` y pasa el producto a `makePromotedPurchase`:
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (e) {
+    // handle the error
+  }
+});
+```
+
+Suscríbete antes de que pueda llegar una compra promocionada — durante el inicio de la app, justo después de `activate`. El stream es un broadcast stream que no reproduce eventos pasados: un producto entregado mientras no hay nadie escuchando se descarta y la compra se pierde.
+
+`makePromotedPurchase` no recibe parámetros de compra, ya que un producto promocionado proviene del App Store y no de un paywall, y no lleva contexto de paywall. Devuelve el mismo `AdaptyPurchaseResult` que `makePurchase`.
+
+:::warning
+El stream está construido sobre StoreKit 2 y requiere **iOS 16.4** o posterior. En versiones anteriores a iOS 16.4 y en Android, nunca emite eventos.
+:::
+
+Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente al realizar la compra. La oferta se obtiene del intent de compra de App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+
+## Mantener activa una vista de flow después de cerrarla \{#keep-a-flow-view-alive-after-dismissing-it\}
+
+`AdaptyUI().dismissFlowView` y `AdaptyUIFlowView.dismiss` aceptan un flag `destroy`:
+
+```dart showLineNumbers
+await AdaptyUI().dismissFlowView(view, destroy: false);
+```
+
+Por defecto es `true`, lo que libera la vista como antes. Con `destroy: false` la vista permanece activa, de modo que puedes volver a mostrarla y el usuario regresa a la pantalla donde lo dejó, con el estado que el flow había acumulado.
+
+Una vista conservada de esta forma se mantiene hasta que la cierras con `destroy: true`. Presentar una vista liberada falla, así que llama de nuevo a `createFlowView` para mostrar ese flow otra vez.
+
+## hasViewConfiguration
+
+`AdaptyFlow.hasViewConfiguration` ahora también requiere que el flow lleve un esquema de interfaz, por lo que devuelve `true` únicamente para un flow que AdaptyUI puede renderizar. Un flow que llegó a tu aplicación sin su esquema ahora devuelve `false` donde la versión 4.0 devolvía `true`. Consulta [Obtener la configuración de vista](flutter-get-pb-paywalls#fetch-the-view-configuration).

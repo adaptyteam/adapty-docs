@@ -136,9 +136,40 @@ try {
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-### 管理预付费方案（Android） \{#manage-prepaid-plans-android\}
+## 来自 App Store 的推广内购 \{#promoted-in-app-purchases-from-the-app-store\}
 
-如果您的应用用户可以购买[预付费方案](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例如，购买数月的非续订订阅），您可以为预付费方案启用[待处理交易](https://developer.android.com/google/play/billing/subscriptions#pending)。
+:::warning
+推广内购从 SDK 4.1 版本起会传递到你的 App，由你的 App 完成购买。在 SDK 4.0 中，SDK 会自动完成购买。从 4.1 起，若没有任何监听器处理推广购买，该购买将被丢弃，因此请在升级时添加下方的监听器。详见 [迁移至 v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app)。
+:::
+
+当用户从你的 App Store 产品页面发起购买，且该交易流转到你的应用时，SDK 会将产品传递给 `didReceivePromotedPurchaseStream`。订阅该流并将产品传递给 `makePromotedPurchase`：
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+});
+```
+
+在应用启动时、`activate` 调用之后立即订阅，确保在促销购买到达之前监听器已就绪。`didReceivePromotedPurchaseStream` 是一个广播流，不会重播历史事件：若在无监听器时推送了产品，该事件将被丢弃。
+
+`makePromotedPurchase` 不接受任何购买参数，因为促销产品来自 App Store 而非付费墙，不包含付费墙上下文。它返回与 `makePurchase` 相同的 `AdaptyPurchaseResult`。
+
+如果推广产品包含订阅优惠，SDK 会在购买时自动应用该优惠。优惠信息从 App Store 购买意图中读取，该功能在 iOS 18.0 及更高版本上可用。在 iOS 16.4–17.x 上，购买将以原价进行。
+
+:::info
+该数据流基于 StoreKit 2 构建，需要 **iOS 16.4** 或更高版本。在低于 iOS 16.4 的系统以及 Android 上，该数据流不会发出任何事件。
+:::
+
+## 管理预付费方案（Android） \{#manage-prepaid-plans-android\}
+
+如果你的应用用户可以购买[预付费方案](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans)（例如，购买数月有效期的非续订订阅），你可以为预付费方案启用[待处理交易](https://developer.android.com/google/play/billing/subscriptions#pending)。
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(

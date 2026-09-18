@@ -136,9 +136,40 @@ Para hacer esto, necesitas abrir la URL con el siguiente formato:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-### Gestionar planes de prepago (Android) \{#manage-prepaid-plans-android\}
+## Compras in-app promocionadas desde la App Store
 
-Si los usuarios de tu app pueden adquirir [planes de prepago](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (por ejemplo, comprar una suscripción no renovable por varios meses), puedes habilitar las [transacciones pendientes](https://developer.android.com/google/play/billing/subscriptions#pending) para dichos planes.
+:::warning
+Las compras in-app promocionadas llegan a tu aplicación a partir de la versión 4.1 del SDK, y es tu aplicación quien las completa. En el SDK 4.0, el SDK las completaba por sí solo. A partir de la 4.1, una compra promocionada sin ningún listener que la escuche se descarta, así que añade el listener que se muestra a continuación al actualizar. Consulta [Migrar a v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app).
+:::
+
+Cuando un usuario inicia una compra desde la página de tu producto en el App Store y la transacción llega a tu app, el SDK entrega el producto a `didReceivePromotedPurchaseStream`. Suscríbete al stream y pasa el producto a `makePromotedPurchase`:
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+});
+```
+
+Suscríbete justo después de `activate`, durante el arranque de la app, para que el listener exista antes de que pueda llegar una compra promocionada. `didReceivePromotedPurchaseStream` es un stream de difusión que no reproduce eventos anteriores: si se entrega un producto mientras nada está escuchando, se pierde.
+
+`makePromotedPurchase` no recibe parámetros de compra, porque un producto promocionado proviene del App Store y no de un paywall, por lo que no lleva contexto de paywall. Devuelve el mismo `AdaptyPurchaseResult` que `makePurchase`.
+
+Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente en el momento de la compra. La oferta se obtiene del purchase intent de la App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+
+:::info
+El stream se basa en StoreKit 2 y requiere **iOS 16.4** o posterior. Por debajo de iOS 16.4, y en Android, nunca emite.
+:::
+
+## Gestiona planes prepago (Android) \{#manage-prepaid-plans-android\}
+
+Si los usuarios de tu app pueden adquirir [planes prepago](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (por ejemplo, comprar una suscripción no renovable por varios meses), puedes habilitar las [transacciones pendientes](https://developer.android.com/google/play/billing/subscriptions#pending) para planes prepago.
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(
