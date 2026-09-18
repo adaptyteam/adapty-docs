@@ -55,7 +55,7 @@ whether they are right. Don't hunt for provenance there, and don't file its abse
 - **Some of this zone's truth is our own other docs, because these pages summarise what deeper zones
   own.** `quickstart-test`'s two store-specific facts are one-line restatements of the Stripe and Paddle
   articles in `web-payments` (Stripe test mode → Sandbox; Paddle Test environment → Test).
-  `quickstart-paywalls`' Flow Builder platform caveat is the same sentence as the deep Flow Builder and
+  `quickstart-paywalls`' Flow & Paywall Builder platform caveat is the same sentence as the deep Flow & Paywall Builder and
   migrate-to-flows articles — four copies corpus-wide, agreeing today. `adapty-ecosystem` and
   `is-adapty-right-for-me` are almost entirely this kind of summary. **The implication is the load-bearing
   part: a change in the deep zone silently invalidates the summary here, and nothing detects it.** Link
@@ -157,7 +157,7 @@ becoming a second copy of the deep article.
 
 This is a flat zone, so rows name specific articles. Most articles here are entry or routing pages
 whose obvious phrasings just restate their titles; those are left out deliberately. What is kept is
-the routing a newcomer gets wrong. Corpus-wide synonyms (flow ↔ Paywall Builder, paywall ↔ flow in
+the routing a newcomer gets wrong. Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow in
 v4, access level ↔ entitlement) live in `aliases.md` and are not repeated here. Per-platform SDK
 setup is `sdk-quickstart`'s table, not this one.
 
@@ -169,7 +169,7 @@ setup is `sdk-quickstart`'s table, not this one.
 | "where do I start", "onboarding checklist", "add a step to getting started" | `quickstart` — a five-link index with no headings of its own. Content edits nearly always belong in the step article (`integrate-payments`, `quickstart-products`, `quickstart-paywalls`, `quickstart-sdk`, `quickstart-test`); only the ordering and the framing live here. |
 | "the SDK quickstart is wrong", "fix the SDK integration guide" | Ambiguous by design. `quickstart-sdk` is only a router to the seven per-platform SDK overview pages and holds nothing platform-specific. Any actual code, key, or activation detail is `sdk-quickstart`. |
 | "the paywall quickstart", "quickstart-paywalls" | **Two different articles carry that name.** `quickstart-paywalls` in this zone is the dashboard step: build a flow or paywall, then attach it to a placement. `sdk-quickstart` has a per-platform family of the same name (`ios-quickstart-paywalls` and siblings) that is app code. Confirm which before editing. |
-| "which paywall option should we use", "is the Paywall Builder still supported", "can we use flows on Unity" | `quickstart-paywalls` — three tabs: Flow Builder (recommended), manual paywall, legacy Paywall Builder (still functional, but frozen: no new features). The platform caveat does the routing work — Flow Builder covers iOS, Android, React Native, Flutter, and Capacitor on SDK v4+ only, so a Unity or KMP ticket cannot take the recommended path. The *code-path* version of the same question (builder vs manual vs observer mode) is `sdk-quickstart`'s row, not this one. |
+| "which paywall option should we use", "is the Paywall Builder still supported", "can we use flows on Unity" | `quickstart-paywalls` — three tabs: Flow & Paywall Builder (recommended), manual paywall, legacy Paywall Builder (still functional, but frozen: no new features). The platform caveat does the routing work — Flow & Paywall Builder covers iOS, Android, React Native, Flutter, and Capacitor on SDK v4+ only, so a Unity or KMP ticket cannot take the recommended path. The *code-path* version of the same question (builder vs manual vs observer mode) is `sdk-quickstart`'s row, not this one. |
 | "change the paywall without an app release", "what actually has to be hardcoded in the app" | `quickstart-paywalls` — the placement ID, and nothing else. This is the sentence people quote when arguing about release cadence, and it appears once per tab, so rewording it is three edits in one file. |
 | "product doesn't reach the device", "trial missing on Google Play", "first product stuck in review", "consumable didn't grant access" | `quickstart-products` carries the creation-time traps: pushing products to the stores needs the App Store Connect API key; the *first* App Store product must be submitted for review by hand; Google Play intro offers never sync automatically, because Google models them as base-plan offers; consumables do not affect access levels. Anything past the first product — offers, price edits, the Google Play offers article — is `products-and-offers`. |
 | "connect a store", "add Stripe or Paddle", "we sell through our own store" | `integrate-payments` is a link-only index; the actual steps are in `apple-platform`, `google-platform`, and `web-payments`. Custom stores are the trap, and the warning is buried in `quickstart-products` instead: Adapty tracks transactions automatically only for App Store, Google Play, and Stripe, so a custom store has to post them through `server-side-api`. |

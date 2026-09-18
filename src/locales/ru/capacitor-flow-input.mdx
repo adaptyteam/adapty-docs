@@ -1,0 +1,259 @@
+---
+title: "Обработка данных из флоу в Capacitor SDK"
+description: "Сохраняйте и используйте данные, которые пользователи вводят во флоу вашего приложения на Capacitor, с помощью Adapty SDK."
+metadataTitle: "Обработка данных из флоу | Capacitor SDK | Документация Adapty"
+---
+
+Когда пользователь вводит текст в поле ввода, отвечает на вопрос викторины или переключает тумблер во [флоу](adapty-flow-builder), SDK передаёт значение в ваше приложение через колбэк аналитики.
+
+Чаще всего приложения используют эти данные для:
+
+- **Регистрация пользователей на своём бэкенде**: Возьмите email и имя, которые пользователь ввёл в онбординге, и создайте аккаунт, когда флоу закроется.
+- **Сохранение ответов и предпочтений**: Отслеживайте выбор пользователя, чтобы приложение могло использовать его позже — например, [запишите данные в профиль Adapty](capacitor-setting-user-attributes) как пользовательские атрибуты.
+- **Настройка будущих флоу**: Сохраняйте ответы на вопросы викторины как пользовательские атрибуты, затем настройте таргетинг на последующий плейсмент, чтобы каждый сегмент видел свой флоу или свой пейвол внутри него.
+- **Передача данных в сторонние аналитические платформы**: Отправляйте ответы в Amplitude, Mixpanel или любую другую платформу продуктовой аналитики, которую вы используете.
+
+Поля ввода и группы выбора передают свои значения автоматически. Чтобы различать их в коде, присвойте каждому полю ввода понятный **Element ID**, а каждой группе выбора — **Group ID** в билдере.
+
+<FlowIdNaming />
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Получение входных значений \{#receive-input-values\}
+
+Входные значения поступают в тот же обработчик, что и все остальные аналитические события флоу, под именем события `flow_user_input`. Зарегистрируйте `onAnalytics` вместе с остальными обработчиками событий флоу:
+
+```typescript showLineNumbers title="Capacitor"
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+Коллбэк `onAnalytics` передаёт все аналитические события из флоу, включая [просмотры экранов](capacitor-flow-screen-views).
+- Параметр `name` содержит название события. Чтобы отфильтровать события пользовательского ввода, сравните `name` со значением `flow_user_input`.
+- Параметр `element_type` указывает категорию элемента.
+- Значение ввода хранится в разных параметрах в зависимости от типа элемента:
+     - Текстовые поля, выпадающие списки и переключатели сохраняют пользовательский ввод в `value`
+     - Группы выбора передают активные варианты в `item_ids` и `item_titles`
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId as string;
+
+  switch (params.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = params.value as string;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      // Unix time in milliseconds.
+      const date = new Date(params.value as number);
+      break;
+    }
+    case 'single_choice': {
+      const optionId = (params.item_ids as string[])[0];
+      break;
+    }
+    case 'multi_choice': {
+      const optionIds = params.item_ids as string[];
+      break;
+    }
+    case 'toggle': {
+      const isOn = params.value as boolean;
+      break;
+    }
+  }
+}
+```
+
+<FlowInputVerify />
+
+## Когда приложение получает входные данные \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Что вы получаете \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Примеры событий \{#event-examples\}
+
+Эти примеры показывают свойства, доступные для каждого события, с иллюстративными значениями в комментариях.
+
+<Details>
+<summary>Ввод текста, email, числа и телефона (нажмите для раскрытия)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>Выбор даты, времени и даты-времени (Нажмите, чтобы развернуть)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Нажмите, чтобы развернуть)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Нажмите, чтобы развернуть)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## Доставка и ограничения \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Сохраняйте каждое входное значение по мере того, как его получает обработчик, и отправляйте полный набор при закрытии флоу. Чтобы отследить этот момент, зарегистрируйте обработчик `onDisappeared` вместе с `onAnalytics`. Он срабатывает, когда представление флоу скрывается — независимо от того, завершил ли пользователь флоу или закрыл его на полпути.
+
+## Варианты использования \{#use-cases\}
+
+### Регистрация пользователей на вашем бэкенде \{#register-users-on-your-backend\}
+
+Собирайте значения по мере их поступления и отправляйте их одним запросом после закрытия флоу, чтобы передать полный набор ответов.
+
+Флоу закрывается независимо от того, завершил пользователь его или вышел на полпути. Проверяйте наличие нужных полей перед обращением к бэкенду.
+
+Флоу не может отображать ошибки, полученные от бэкенда. Возвращаемое значение обработчика только закрывает флоу, и в SDK нет метода для передачи данных в уже запущенный флоу. Если регистрация не удалась — например, потому что email уже используется — покажите ошибку в своём интерфейсе после закрытия флоу.
+
+```typescript showLineNumbers title="Capacitor"
+const flowAnswers: Record<string, string> = {};
+
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### Обогащение профилей пользователей данными \{#enrich-user-profiles-with-data\}
+
+Чтобы связать введённые пользователем данные с его профилем и не запрашивать одни и те же сведения повторно, [обновляйте профиль пользователя](capacitor-setting-user-attributes) по мере их поступления.
+
+Например, если в вашем флоу есть текстовое поле с ID элемента `name` и поле email с ID элемента `email`:
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams: Partial<AdaptyProfileParameters> = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch((error) => {
+    // handle the error
+  });
+}
+```
+
+### Настройка флоу, показываемых позже \{#customize-flows-shown-later\}
+
+Ответы на вопросы квиза также могут определять, что пользователь увидит в другом [плейсменте](placements) — другой флоу или другой пейвол внутри него.
+
+Например, спросите пользователей об их опыте занятий спортом в онбординг-флоу, а затем покажите каждой группе свой флоу с разными продуктами и текстом.
+
+1. Добавьте [квиз](onboarding-quizzes) в ваш флоу. Назначьте [выбираемой группе](flow-selectable-elements) Group ID `experience`, а каждому варианту — понятный Element ID.
+2. Обработайте ответы и [задайте пользовательские атрибуты](capacitor-setting-user-attributes) для пользователя.
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  const optionId = (params.item_ids as string[])[0];
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: optionId },
+    })
+    .catch((error) => {
+      // handle the error
+    });
+}
+```
+
+3. [Создайте сегмент](segments) для каждого значения пользовательского атрибута.
+4. Создайте [плейсмент](placements) и добавьте [аудиторию](audience) для каждого сегмента.
+5. [Отобразите флоу](capacitor-present-paywalls) для этого плейсмента в приложении.

@@ -1,0 +1,286 @@
+---
+title: "Unity SDKでフローからデータを処理する"
+description: "AdaptySDKを使用して、ユーザーがUnityアプリのフローで入力したデータを保存・活用します。"
+metadataTitle: "フローからのデータ処理 | Unity SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)の入力フィールドに入力したり、クイズに回答したり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+
+アプリでこのデータが使われる主なケースは次のとおりです：
+
+- **ユーザーを自社バックエンドに登録する**: ユーザーがオンボーディングフローで入力したメールアドレスと名前を取得し、フローが閉じたタイミングでアカウントを作成します。
+- **回答と設定を保存する**: ユーザーが選択した内容を記録し、後でアプリが活用できるようにします — たとえば、[Adapty プロファイルにカスタム属性として書き込む](unity-setting-user-attributes)など。
+- **将来のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後のプレースメントでセグメントごとに異なるフローや異なるペイウォールを表示するようにターゲティングします。
+- **サードパーティの分析プラットフォームに連携する**: 回答を Amplitude、Mixpanel、またはご利用中のプロダクト分析ツールに転送します。
+
+インプットとセレクタブルグループは、その値を自動的に報告します。コード内でインプットを区別するために、ビルダーで各インプットに意味のある **Element ID** を、各セレクタブルグループに **Group ID** を設定してください。
+
+<FlowIdNaming />
+
+## 始める前に
+
+<FlowInputPrerequisites />
+
+## 入力値を受け取る \{#receive-input-values\}
+
+入力値は、フローからの他のすべてのアナリティクスイベントと同じコールバックに、イベント名 `flow_user_input` として届きます。`Adapty.SetFlowsEventsListener` で登録したリスナーに `FlowViewDidReceiveAnalyticEvent` を実装してください：
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    HandleFlowInput(name, parameters);
+}
+```
+
+`FlowViewDidReceiveAnalyticEvent` コールバックは、[画面表示](unity-flow-screen-views)を含むフローのすべての分析イベントを配信します。
+- `name` パラメーターにはイベント名が含まれます。ユーザー入力イベントをフィルタリングするには、`name` を `flow_user_input` と比較してください。
+- `element_type` パラメーターには要素のカテゴリ名が含まれます。
+- 入力の値は、要素タイプに応じて異なるパラメーターに格納されます：
+     - テキストフィールド、ピッカー、トグルはユーザーの入力を `value` に格納します
+     - 選択グループはアクティブなオプションを `item_ids` と `item_titles` で報告します
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+
+    var elementId = parameters["element_id"] as string;
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    var screenId = parameters["instanceId"] as string;
+
+    switch (parameters["element_type"] as string) {
+        case "text_input":
+        case "email_input":
+        case "number_input":
+        case "phone_input":
+            var text = parameters["value"] as string;
+            break;
+        case "date_picker":
+        case "time_picker":
+        case "date_time_picker":
+            // Unix time in milliseconds.
+            var millis = Convert.ToInt64(parameters["value"]);
+            break;
+        case "single_choice":
+            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+            break;
+        case "multi_choice":
+            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
+            break;
+        case "toggle":
+            var isOn = (bool)parameters["value"];
+            break;
+    }
+}
+```
+
+<FlowInputVerify />
+
+## アプリがインプットを受け取るタイミング \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## イベントの例 \{#event-examples\}
+
+これらの例は、各イベントで使用できるプロパティを示しており、コメントに例示的な値が含まれています。
+
+<Details>
+<summary>テキスト、メール、数値、電話入力（クリックして展開）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var eventName       = name;                          // "flow_user_input"
+    var paramName       = parameters["name"];            // "flow_user_input"
+    var screenId        = parameters["instanceId"];      // "scr_J260KU5q"
+    var isCustomerEvent = parameters["isCustomerEvent"]; // true
+    var isBackendEvent  = parameters["isBackendEvent"];  // false
+    var elementId       = parameters["element_id"];      // "email"
+    var elementType     = parameters["element_type"];    // "email_input"
+    var value           = parameters["value"];           // "jane@example.com"   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>日付、時刻、日時ピッカー（クリックして展開）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "birthday"
+    var elementType = parameters["element_type"]; // "date_picker"
+    var value       = parameters["value"];        // 645408000000   (long — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>単一選択（クリックして展開）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "experience"
+    var elementType = parameters["element_type"]; // "single_choice"
+    var itemIds     = parameters["item_ids"];     // ["pro"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>複数選択（クリックで展開）</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "interests"
+    var elementType = parameters["element_type"]; // "multi_choice"
+    var itemIds     = parameters["item_ids"];     // ["sports", "music"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "reminders"
+    var elementType = parameters["element_type"]; // "toggle"
+    var value       = parameters["value"];        // true   (bool)
+}
+```
+</Details>
+
+## 配信と制限事項 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+リスナーが受け取った入力値はそれぞれ保存しておき、フローが閉じるときに完全なセットを送信してください。そのタイミングを捉えるには、同じリスナーに `FlowViewDidDisappear` を実装します。このメソッドは、ユーザーがフローを最後まで完了した場合でも途中で閉じた場合でも、フロービューが非表示になった時点で実行されます。
+
+## ユースケース \{#use-cases\}
+
+### バックエンドへのユーザー登録 \{#register-users-on-your-backend\}
+
+フローが閉じたときに一度のリクエストで完全な回答セットを送信できるよう、値が届き次第収集しておきましょう。
+
+ユーザーがフローを完了した場合でも、途中で離脱した場合でも、ビューは消えます。バックエンドを呼び出す前に、必要なフィールドが揃っているか確認してください。
+
+フローはバックエンドからのエラーを表示できません。コールバックに戻り値はなく、実行中のフローにデータを送り込むSDKのメソッドも存在しません。たとえばメールアドレスがすでに使用中でregistration に失敗した場合は、フローが閉じた後に独自のUIでエラーを表示してください。
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> flowAnswers = new Dictionary<string, string>();
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    flowAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    if (!flowAnswers.ContainsKey("email")) return;
+
+    // Send flowAnswers to your backend here to create the account.
+
+    flowAnswers.Clear();
+}
+```
+
+### ユーザープロファイルにデータを紐付ける \{#enrich-user-profiles-with-data\}
+
+ユーザーが入力した内容をプロファイルに紐付け、同じ情報を二度聞かないようにするには、値が入力されるたびに[ユーザープロファイルを更新](unity-setting-user-attributes)してください。
+
+たとえば、フローにElement ID `name` のテキスト入力とElement ID `email` のメール入力がある場合：
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var builder = new AdaptyProfileParameters.Builder();
+
+    switch (parameters["element_id"] as string) {
+        case "name":
+            builder = builder.SetFirstName(value);
+            break;
+        case "email":
+            builder = builder.SetEmail(value);
+            break;
+        default:
+            return;
+    }
+
+    Adapty.UpdateProfile(builder.Build(), (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+### 後から表示するフローをカスタマイズする \{#customize-flows-shown-later\}
+
+クイズの回答によって、後のタイミングで表示される[プレースメント](placements)のコンテンツも変えられます — 別のフローや、同じプレースメント内の別のペイウォールを表示できます。
+
+例えば、オンボーディングフローでスポーツの経験について質問し、各グループにそれぞれ異なるプロダクトとコピーを持つフローを表示するといった使い方ができます。
+
+1. フローに[クイズ](onboarding-quizzes)を追加します。[セレクタブルグループ](flow-selectable-elements)のグループIDに `experience` を設定し、各オプションにわかりやすいエレメントIDを付けます。
+2. 回答を処理し、ユーザーに[カスタム属性を設定](unity-setting-user-attributes)します。
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+    if ((parameters["element_id"] as string) != "experience") return;
+
+    var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+    if (optionId == null) return;
+
+    var builder = new AdaptyProfileParameters.Builder();
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder = builder.SetCustomStringAttribute("experience", optionId);
+
+    Adapty.UpdateProfile(builder.Build(), (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+3. 各カスタム属性値に対して[セグメントを作成](segments)します。
+4. [プレースメントを作成](placements)し、各セグメントに対して[オーディエンス](audience)を追加します。
+5. アプリ内でそのプレースメントの[フローを表示](unity-present-paywalls)します。

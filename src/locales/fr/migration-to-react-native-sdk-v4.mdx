@@ -1,10 +1,14 @@
 ---
-title: "Migrer le SDK React Native Adapty vers v4.0"
-description: "Migrez vers le SDK React Native Adapty v4.0 en remplaçant les API paywall par des API flow, compatibles avec le Flow Builder et le Paywall Builder."
-metadataTitle: "Migration vers le SDK React Native Adapty v4.0 | Documentation Adapty"
+title: "Migrer le SDK Adapty React Native vers la v4.0"
+description: "Migrez vers le SDK Adapty React Native v4.0 en remplaçant les API paywall par des API flow, qui affichent les flows en plus des anciens paywalls du builder."
+metadataTitle: "Migration vers le SDK Adapty React Native v4.0 | Documentation Adapty"
 ---
 
-Le SDK React Native Adapty 4.0 introduit les flows et renomme les API paywall en conséquence. Les nouvelles API fonctionnent aussi bien avec le nouveau Flow Builder qu'avec le Paywall Builder existant — aucune modification de configuration n'est nécessaire côté Adapty Dashboard.
+Le SDK Adapty React Native 4.0 introduit les flows et renomme les API paywall en conséquence. Les nouvelles API fonctionnent avec les flows et restent compatibles avec les paywalls de l'ancien builder — aucune modification de configuration n'est nécessaire côté Adapty Dashboard.
+
+:::note
+Ce guide couvre la migration 3.x → 4.0. Le SDK 4.1 modifie quelques API supplémentaires — l'Attribution Adapty devient opt-in, les méthodes d'attribution externe sont renommées, et le format du fichier de secours change à nouveau. Une fois cette étape terminée, consultez [Migrer vers la v4.1](migration-to-react-native-sdk-41).
+:::
 
 ## Référence rapide \{#quick-reference\}
 
@@ -42,14 +46,15 @@ yarn add react-native-adapty@4.0.2
 
 ### iOS : les SDK natifs passent désormais par Swift Package Manager
 
-[Le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), aussi à partir de la v4, les SDK natifs `Adapty`, `AdaptyUI` et `AdaptyPlugin` **ne sont plus inclus en tant que sous-dépendances CocoaPods** — le podspec les récupère via **Swift Package Manager** (grâce au helper `spm_dependency`). Deux points à respecter :
+[Le dépôt de specs CocoaPods devient en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/), donc à partir de la v4, les SDK natifs `Adapty`, `AdaptyUI` et `AdaptyPlugin` **ne sont plus récupérés en tant que sous-dépendances CocoaPods** — le podspec les récupère via **Swift Package Manager** (grâce au helper `spm_dependency`). Trois points à prendre en compte :
 
-- **React Native 0.75 ou version ultérieure** — nécessaire pour le helper de podspec `spm_dependency`. Sur une version plus ancienne, `pod install` échoue avec une erreur explicite ; mettez d'abord à jour React Native, ou restez sur `react-native-adapty` 3.x.
-- **Frameworks dynamiques** — les dépendances SPM nécessitent un linkage dynamique. La façon de l'activer diffère entre Expo et bare React Native.
+- **Xcode 26 ou version ultérieure** — le manifeste du package du SDK iOS natif déclare Swift tools 6.2, que les versions antérieures d'Xcode ne peuvent pas lire.
+- **React Native 0.75 ou version ultérieure** — nécessaire pour le helper podspec `spm_dependency`. Sur une version plus ancienne, `pod install` échoue avec une erreur explicite ; mettez d'abord à jour React Native, ou restez sur `react-native-adapty` 3.x.
+- **Frameworks dynamiques** — les dépendances SPM requièrent une liaison dynamique. La façon d'activer cela diffère selon que vous utilisez Expo ou React Native nu.
 
 #### Expo
 
-Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) et définissez les frameworks iOS en dynamique dans `app.json` (ou `app.config.js`) :
+Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/) et configurez les frameworks iOS en mode dynamique dans `app.json` (ou `app.config.js`) :
 
 ```json showLineNumbers title="app.json"
 {
@@ -68,7 +73,7 @@ Ajoutez le plugin de configuration [`expo-build-properties`](https://docs.expo.d
 }
 ```
 
-Installez ensuite le plugin et regénérez le projet natif :
+Installez ensuite le plugin et régénérez le projet natif :
 
 ```bash showLineNumbers
 npx expo install expo-build-properties
@@ -138,12 +143,12 @@ Le format des fichiers de secours [a changé avec le SDK v4](fallback-flows). T�
 | Champ v3 `AdaptyPaywall` | Champ v4 `AdaptyFlow` | Action |
 |---|---|---|
 | `remoteConfig?` (unique) | `remoteConfigs?: AdaptyRemoteConfig[]` (tableau) | Un flow contient un Remote Config par langue configurée. Lisez celui qui correspond à l'utilisateur : `flow.remoteConfigs?.find((c) => c.lang === 'en')`. |
-| `products` | `flow.paywalls[i].productIdentifiers` | Les identifiants de produits se trouvent désormais sur chaque variante du flow, pas sur le flow lui-même. |
+| `products` | `flow.paywalls[i].productIdentifiers` | Les identifiants de produits se trouvent désormais sur chaque variante du flow, et non sur le flow lui-même. |
 | `webPurchaseUrl?` | `flow.paywalls[i].webPurchaseUrl` | Déplacé du flow vers chaque variante de paywall. |
-| `version?: number` | `flowVersionId?: string` | Renommé, et le type a changé de `number` à `string`. |
-| `hasViewConfiguration` | supprimé | Supprimez tout contrôle `hasViewConfiguration` de votre code. |
+| `version?: number` | `flowVersionId?: string` | Renommé, et le type est passé de `number` à `string`. |
+| `hasViewConfiguration` | supprimé en 4.0, rétabli en 4.1 | Retirez tout contrôle `hasViewConfiguration` de votre code lorsque vous êtes sur la 4.0. L'indicateur revient sur `AdaptyFlow` en 4.1 — voir [Migrer vers la v4.1](migration-to-react-native-sdk-41#hasviewconfiguration-returns-to-adaptyflow). |
 | `requestLocale` | supprimé | La locale ne fait plus partie du modèle. |
-| _(nouveau)_ | `paywalls: AdaptyFlowPaywall[]` | Chaque entrée correspond à une variante de paywall dans le flow. |
+| _(nouveau)_ | `paywalls: AdaptyFlowPaywall[]` | Chaque entrée est une variante de paywall dans le flow. |
 | _(nouveau)_ | `responseCreatedAt: number` | Horodatage de la réponse serveur, en millisecondes. |
 
 Product identifiers moved from the flow to each variation:
@@ -167,14 +172,14 @@ Product identifiers moved from the flow to each variation:
 
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` est renommé en `logShowFlow` et prend désormais un `AdaptyFlow`. L'événement est toujours enregistré pour la même variation, donc les métriques de funnel et de test A/B existantes continuent de fonctionner sans modification du tableau de bord.
+`logShowPaywall` est renommé en `logShowFlow` et prend désormais un `AdaptyFlow`. L'événement est toujours enregistré pour la même variation, de sorte que les métriques de funnel et de test A/B existantes continuent de fonctionner sans modification du tableau de bord.
 
 ```diff showLineNumbers
 - await adapty.logShowPaywall(paywall);
 + await adapty.logShowFlow(flow);
 ```
 
-Comme dans la v3, vous n'avez pas besoin d'appeler cette méthode lors de l'affichage de flows ou de paywalls rendus par le [Flow Builder](adapty-flow-builder) ou le [Paywall Builder](adapty-paywall-builder) — Adapty suit automatiquement ces vues.
+Comme dans la v3, vous n'avez pas besoin d'appeler cette méthode lors de l'affichage de flows ou de paywalls rendus par Adapty — Adapty enregistre automatiquement ces vues.
 
 ## Afficher des flows \{#displaying-flows\}
 
@@ -293,6 +298,6 @@ Ces changements ne causent pas d'erreurs de compilation ; testez-les à l'exécu
 
 ## Dépréciation de l'API onboarding \{#onboarding-api-deprecation\}
 
-L'ancienne API onboarding est dépréciée dans la v4.0 au profit du [Flow Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une version future — prévoyez donc la migration de vos onboardings vers le Flow Builder.
+L'ancienne API onboarding est dépréciée à partir de la v4.0 au profit du [Flow & Paywall Builder](adapty-flow-builder). Elle fonctionne toujours, mais sera supprimée dans une prochaine version — planifiez donc la migration de vos onboardings vers le Flow & Paywall Builder.
 
 Symboles dépréciés : `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView` et `AdaptyOnboardingView`.

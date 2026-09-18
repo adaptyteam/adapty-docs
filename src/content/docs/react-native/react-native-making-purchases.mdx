@@ -13,14 +13,14 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 import OfferCodesInfo from '@site/src/components/reusable/OfferCodesInfo.mdx';
 
-Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, simply presenting these paywalls is enough to support purchases only if you use [Paywall Builder](adapty-paywall-builder) to customize your paywalls.
+Displaying paywalls within your mobile app is an essential step in offering users access to premium content or services. However, presenting a paywall supports purchases on its own only when Adapty renders the screen — that is, a [flow](adapty-flow-builder), or a paywall from the [old Paywall Builder](adapty-paywall-builder).
 
-If you don't use the Paywall Builder, you must use a separate method called `.makePurchase()` to complete a purchase and unlock the desired content. This method serves as the gateway for users to engage with the paywalls and proceed with their desired transactions.
+If you render the screen in your own code, you must use a separate method called `.makePurchase()` to complete a purchase and unlock the desired content. This method serves as the gateway for users to engage with the paywalls and proceed with their desired transactions.
 
 If your paywall has an active promotional offer for the product a user is trying to buy, Adapty will automatically apply it at the time of purchase.
 
 :::warning
-Keep in mind that the introductory offer will be applied automatically only if you use the paywalls set up using the Paywall Builder.
+Keep in mind that the introductory offer will be applied automatically only if Adapty renders the screen.
 
 In other cases, you'll need to [verify the user's eligibility for an introductory offer on iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios).  Skipping this step may result in your app being rejected during release. Moreover, it could lead to charging the full price to users who are eligible for an introductory offer.
 :::
@@ -30,7 +30,7 @@ Make sure you've [done the initial configuration](quickstart) without skipping a
 ## Make purchase
 
 :::note
-**Using [Paywall Builder](adapty-paywall-builder)?** Purchases are processed automatically—you can skip this step.
+**Does Adapty render your screen?** For a [flow](adapty-flow-builder) or a [Paywall Builder](adapty-paywall-builder) paywall, purchases are processed automatically—you can skip this step.
 
 **Looking for step-by-step guidance?** Check out the [quickstart guide](react-native-implement-paywalls-manually) for end-to-end implementation instructions with full context.
 :::
@@ -151,6 +151,35 @@ Based on our observations, the Offer Code Redemption sheet in some apps may not 
 In order to do this, you need to open the url of the following format:
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Promoted in-app purchases from the App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Your app can take over promoted in-app purchases from SDK version 4.1, on **iOS 16.4** or later. Below iOS 16.4, and on Android, the `'onPromotedPurchaseReceived'` event never fires.
+:::
+
+When a user starts a purchase from your App Store product page and the transaction carries over to your app, the SDK completes it automatically — the Apple purchase system screen shows right away, and Adapty processes the transaction like any other purchase. This needs no code on your side.
+
+If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, the purchase goes through at the base price.
+
+To take over completion yourself — for example to show your own screen first — listen for the `'onPromotedPurchaseReceived'` event and pass the product to `makePromotedPurchase`:
+
+```typescript showLineNumbers
+import { adapty } from 'react-native-adapty';
+
+adapty.addEventListener('onPromotedPurchaseReceived', async product => {
+  const result = await adapty.makePromotedPurchase(product);
+  // process the purchase result
+});
+```
+
+:::warning
+While your listener is registered, the SDK stops completing promoted purchases for you. If your handler never calls `makePromotedPurchase`, the purchase never happens: the App Store hands the product to your app and waits.
+:::
+
+`makePromotedPurchase` takes no purchase parameters — a promoted product comes from the App Store rather than a paywall, so it carries no paywall context. It returns the same `AdaptyPurchaseResult` as `makePurchase`.
+
+Listeners are additive: if you register several, each one receives the product, and none of them completes the purchase for the others.
 
 ## Manage prepaid plans (Android)
 

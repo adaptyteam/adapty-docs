@@ -151,3 +151,29 @@ When a single feature change requires updates across multiple articles, produce 
 - [Terminology to use consistently across all articles]
 - [Feature name as it should appear everywhere]
 ```
+
+## Affected skills (append to any of the four plan formats)
+
+Include this section whenever the Step 2 classification ran — with content when a class fired,
+and as a single line when none did.
+
+```markdown
+## Affected skills
+
+Class: [class from surfaces/skills.md, and what in this change matches it]
+
+[skill]/[path/to/file.md]
+  • [what changes, one bullet each]
+  ⚠ [any part with no automation behind it — a version pin above all]
+
+Not affected: [the rest] — the class is not their surface.
+```
+
+When nothing fired:
+
+```markdown
+## Affected skills
+
+None — [class], which a skill absorbs at runtime. Structural breakage is covered by that repo's
+lints and daily cron.
+```

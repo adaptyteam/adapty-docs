@@ -1,41 +1,35 @@
 ---
-title: "サードパーティ連携に送信するイベント"
-description: "Adaptyのアナリティクスツールを使って、主要なサブスクリプションイベントを追跡しましょう。"
+title: "サードパーティ統合に送信するイベント"
+description: "Adaptyのアナリティクスツールを使用して、主要なサブスクリプションイベントを追跡します。"
 metadataTitle: "サブスクリプションイベントの追跡 | Adapty ドキュメント"
-keywords: ['events', 'subscription_started', 'subscription_renewed', 'subscription_renewal_cancelled', 'subscription_renewal_reactivated', 'subscription_expired', 'subscription_paused', 'non_subscription_purchase', 'trial_started', 'trial_converted', 'trial_renewal_cancelled', 'trial_renewal_reactivated', 'trial_expired', 'entered_grace_period', 'billing_issue_detected', 'subscription_refunded', 'non_subscription_purchase_refunded', 'access_level_updated']
+keywords: ['events', 'subscription_started', 'subscription_active', 'subscription_renewed', 'subscription_renewal_cancelled', 'subscription_renewal_reactivated', 'subscription_expired', 'subscription_paused', 'subscription_deferred', 'non_subscription_purchase', 'trial_started', 'trial_active', 'trial_converted', 'trial_renewal_cancelled', 'trial_renewal_reactivated', 'trial_expired', 'entered_grace_period', 'billing_issue_detected', 'subscription_refunded', 'non_subscription_purchase_refunded', 'access_level_updated']
 ---
 
 import WebhookEvents from '@site/src/locales/ja/reusable/WebhookEvents.md';
 
-Apple と Google は、[App Store Server Notifications](enable-app-store-server-notifications) と [Real-time Developer Notifications (RTDN)](enable-real-time-developer-notifications-rtdn) を通じてサブスクリプションイベントをサーバーに直接送信します。そのため、モバイルアプリがリアルタイムにアナリティクスシステムへイベントを送信することは難しい場合があります。たとえば、ユーザーがサブスクリプションを開始してもアプリを再度開かなかった場合、サーバーがなければ開発者はサブスクリプションのステータス更新を受け取れません。
+AppleとGoogleは、[App Store サーバー通知](enable-app-store-server-notifications)と[リアルタイムデベロッパー通知](enable-real-time-developer-notifications-rtdn)を通じて、サブスクリプションイベントをAdaptyサーバーに直接報告します。これにより、ユーザーがコンバート、更新、または解約したことを把握できます。
 
-Adapty はこのギャップを埋めるため、サブスクリプションデータを収集して人間が読みやすいイベントに変換します。これらの連携イベントは JSON 形式で送信されます。すべてのイベントは同じ構造を持ちますが、イベントの種類・ストア・設定内容によってフィールドが異なります。各イベントに含まれる正確なフィールドは、それぞれの連携ページで確認できます。
+これらのイベントを転送するには、Adapty でデスティネーションを設定します。サードパーティプラットフォーム（MMP、アナリティクス、メッセージングツール）はそれぞれ専用のインテグレーションページがあります。自社のバックエンドへは[ウェブフック](webhook)でイベントを受け取れます。
 
-イベントが正常に処理されたかどうか、あるいは問題が発生したかどうかを判断する方法については、[イベントステータス](event-statuses)ページをご覧ください。
+すべてのイベントは共通の構造を持ちますが、フィールドはイベントタイプ、ストア、設定によって異なります。[ウェブフックイベントタイプとフィールド](webhook-event-types-and-fields)ではウェブフックのペイロードを説明しており、各インテグレーション記事ではそのデスティネーションが受け取るフォーマットを説明しています。[イベントステータス](event-statuses)では配信ステータスの見方を説明しています。
 
-## イベントの種類 \{#event-types\}
+## 例 \{#examples\}
 
-ほとんどのイベントは、有効化されているすべての連携に作成・送信されます。ただし、**Access level updated** イベントは、[webhook 連携](webhook)が設定されていてこのイベントが有効になっている場合にのみ発火します。このイベントは [Event Feed](https://app.adapty.io/event-feed) に表示され、webhook にも送信されますが、他の連携には共有されません。
+ほとんどのイベントは、最初の課金から有効期限切れまでのユーザーの購入に沿って発生します。
 
-webhook 連携が設定されていない場合、またはこのイベントタイプが有効になっていない場合、**Access level updated** イベントは作成されず、[Event Feed](https://app.adapty.io/event-feed) にも表示されません。
+### ユーザーがトライアル中にキャンセルする場合 \{#the-user-cancels-during-the-trial\}
 
-<WebhookEvents />
-
-上記のイベントは、購入に関するユーザーの状態を完全にカバーしています。いくつかの例を見てみましょう。
-
-### 例 1 \{#example-1\}
-
-_ユーザーが4月1日に7日間のトライアル付き月次サブスクリプションを開始し、4日目に解約した。_
+_ユーザーが4月1日に7日間のトライアル付き月額サブスクリプションを有効化し、4日目にサブスクリプションを解除した場合。_
 
 この場合、以下のイベントが送信されます：
 
-1. `trial_started`：4月1日
-2. `trial_renewal_cancelled`：4月4日
-3. `trial_expired`：4月7日
+1. 4月1日に `trial_started`
+2. 4月4日に `trial_renewal_cancelled`
+3. 4月7日に `trial_expired`
 
-### 例 2 \{#example-2\}
+### ユーザーがコンバージョン後にキャンセルした場合 \{#the-user-cancels-after-converting\}
 
-_ユーザーが4月1日に7日間のトライアル付き月次サブスクリプションを開始し、10日目に解約した。_
+_ユーザーは4月1日に7日間のトライアル付き月次サブスクリプションを有効化し、10日目に解約しました。_
 
 この場合、以下のイベントが送信されます：
 
@@ -44,4 +38,61 @@ _ユーザーが4月1日に7日間のトライアル付き月次サブスクリ�
 3. `subscription_renewal_cancelled`：4月10日
 4. `subscription_expired`：5月1日
 
-各シナリオでどのイベントが発火するかの詳細については、[イベントフロー](event-flows)をご確認ください。
+各シナリオでどのイベントが発生するかの詳細については、[イベントフロー](event-flows)をご覧ください。
+
+## イベントリスト \{#event-list\}
+
+各インテグレーションが受け取るイベントを制御できます。ほとんどのイベントはすべてのインテグレーションで利用できますが、以下の3つは例外です。
+
+- **Access level updated** は、[webhook インテグレーション](webhook)が設定されており、かつイベントが有効になっている場合にのみトリガーされます。[Event Feed](https://app.adapty.io/event-feed) に表示され、webhook に送信されますが、他のインテグレーションには届きません。webhook インテグレーションが設定されていない場合、またはイベントタイプが有効になっていない場合、Adapty はイベントを作成せず、Event Feed にも表示されません。
+- **Trial still active** と **Subscription still active** は[合成イベント](#synthetic-events)であり、一部のインテグレーションのみが受信します。
+
+以下の表は、Adapty がサードパーティのインテグレーションに送信できるすべてのイベントを一覧にしたものです：
+
+<WebhookEvents />
+
+## 合成イベント \{#synthetic-events\}
+
+ほとんどのイベントは、購入・更新・キャンセルなどの変化をトリガーとして発生します。**Trial still active** と **Subscription still active** イベントはその逆です。タイマーをセットし、タイマーが切れると Adapty がトライアルまたはサブスクリプションのステータスを確認します。トライアルやサブスクリプションが**終了していない**場合、Adapty が対応するイベントを発火します。
+
+これらの合成イベントは、AppsFlyer、Adjust、Singular、Branch、および Webhook でのみ利用可能です。手動で有効にする必要があります。
+
+:::note
+Adapty Attributionには、MetaおよびTikTokキャンペーン向けに同様の機能があります：[Qualified trials](ua-facebook#qualified-trial)は、トライアルイベントを1〜24時間保留し、ユーザーが自動更新をオフにしていない場合のみ送信します。`trial_active`は1〜90日間待機し、自動更新をオフにしていても送信します。これらは異なる場所で設定するものであり、互いに影響しません。
+:::
+
+### トライアルが進行中の場合 \{#the-trial-is-still-running\}
+
+- **インテグレーション**: AppsFlyer
+- **イベント**: トライアルがアクティブ
+- **遅延**: 3日
+- **トライアル開始**: 4月1日
+- **トライアル終了**: 4月7日
+
+AppsFlyer が受信するイベント:
+
+1. 4月1日に `trial_started`
+2. 4月4日に `trial_active`
+3. 4月7日に `trial_converted`
+
+次の点に注意してください:
+- トライアルがコンバートされているため、`subscription_active` イベントは受信されません。
+- 遅延を7日に設定した場合、`trial_active` はまったく届きません。その時点では、ユーザーはすでにコンバートしているためです。
+
+### サブスクリプションが継続中の場合 \{#the-subscription-is-still-running\}
+
+- **インテグレーション**: Webhook
+- **イベント**: サブスクリプションがアクティブ
+- **遅延**: 7日間
+- **サブスクリプション開始日**: 4月1日（トライアルなし）
+- **更新日**: 5月1日
+
+Webhookが受け取るイベント:
+
+1. 4月1日に `subscription_started`
+2. 4月8日に `subscription_active`
+3. 5月1日に `subscription_renewed`
+
+- サブスクリプションはトライアルなしで開始する必要があります。トライアルが変換された場合は `trial_converted` が送信され、タイマーは開始しません。
+- ユーザーが4月3日に自動更新をオフにした場合でも、4月8日に `subscription_active` を受け取ります。サブスクリプションはまだ終了していません。
+- 5月の更新で2番目のタイマーは開始しません。`subscription_active` はサブスクリプションごとに1回だけ受け取ります。

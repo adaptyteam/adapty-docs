@@ -8,29 +8,31 @@ rank: 100
 
 import OfferCodesInfo from '@site/src/locales/zh/reusable/OfferCodesInfo.mdx';
 
-在移动应用中展示付费墙是向用户提供高级内容或服务访问权限的关键步骤。但是，仅仅展示付费墙只有在你使用[付费墙编辑工具](adapty-paywall-builder)自定义付费墙时，才足以支持购买流程。
+在移动应用中展示付费墙，是向用户提供高级内容或服务访问权限的重要步骤。然而，只有当 Adapty 负责渲染屏幕时——即使用[流程](adapty-flow-builder)或[旧版付费墙编辑工具](adapty-paywall-builder)构建的付费墙——展示付费墙本身才能直接支持购买。
 
-如果你没有使用付费墙编辑工具，则必须使用一个名为 `.makePurchase()` 的独立方法来完成购买并解锁所需内容。该方法是用户与付费墙交互并完成所需交易的入口。
+如果你在自己的代码中渲染屏幕，则必须单独调用 `.makePurchase()` 方法来完成购买并解锁相应内容。该方法是用户与付费墙交互、完成交易的入口。
 
-如果您的付费墙为用户尝试购买的产品设置了有效的促销活动，Adapty 会在购买时自动应用该促销活动。
+如果您的付费墙针对用户尝试购买的产品设置了有效的促销活动，Adapty 将在购买时自动应用该促销活动。
 
 :::warning
-请注意，只有在使用付费墙编辑工具创建的付费墙时，新用户优惠才会被自动应用。
+请注意，只有在由 Adapty 渲染页面时，新用户优惠才会自动应用。
 
 在其他情况下，您需要[在 iOS 上验证用户是否符合新用户优惠资格](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios)。跳过此步骤可能导致您的应用在发布审核时被拒。此外，还可能对本应享受新用户优惠的用户收取全额费用。
 :::
 
 请确保已完成[初始配置](quickstart)且没有跳过任何步骤。没有初始配置，我们将无法验证购买。
+
 ## 发起购买 \{#make-purchase\}
 
 :::note
-**正在使用[付费墙编辑工具](adapty-paywall-builder)？** 购买流程会自动处理，可跳过此步骤。
+**Adapty 是否渲染您的页面？** 对于[流程](adapty-flow-builder)或[付费墙编辑工具](adapty-paywall-builder)付费墙，购买会自动处理——您可以跳过此步骤。
 
-**需要分步骤的操作指引？** 请查阅[快速入门指南](ios-implement-paywalls-manually)，其中包含完整的端到端实现说明。
+**需要分步指引？** 请查看[快速入门指南](ios-implement-paywalls-manually)，其中包含完整的端到端实现说明。
 :::
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
+
 ```swift showLineNumbers
 do {
     let purchaseResult = try await Adapty.makePurchase(product: product)
@@ -52,6 +54,7 @@ do {
 
 </TabItem>
 <TabItem value="swift-callback" label="Swift-Callback" default>
+
 ```swift showLineNumbers
 Adapty.makePurchase(product: product) { result in
     switch result {
@@ -83,20 +86,23 @@ Adapty.makePurchase(product: product) { result in
 | **Product** | 必填 | 从付费墙获取的 [`AdaptyPaywallProduct`](https://swift.adapty.io/documentation/adapty/adaptypaywallproduct) 对象。 |
 
 响应参数：
+
 | 参数 | 描述                                                                                                                                                                                                                                                                                                                                                                            |
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Profile** | <p>请求成功时，响应中会包含此对象。[AdaptyProfile](https://swift.adapty.io/documentation/adapty/adaptyprofile) 对象提供了用户在应用内的访问等级、订阅及一次性购买的完整信息。</p><p>请检查访问等级状态，以确认用户是否具备访问应用所需的权限。</p> |
+
 :::warning
 **注意：** 如果你使用的 Apple StoreKit 版本低于 v2.0，且 Adapty SDK 版本低于 v2.9.0，则需要提供 [Apple App Store 共享密钥](app-store-connection-configuration#step-5-enter-app-store-shared-secret)。此方法目前已被 Apple 废弃。
 :::
-## 来自 App Store 的应用内购买 \{#in-app-purchases-from-the-app-store\}
 
-当用户在 App Store 发起购买，且交易转入你的应用时，SDK 会调用 `didReceivePromotedPurchase` 代理方法，并传入一个 `AdaptyPromotedProduct` 对象。你有两种处理方式：
+## 来自 App Store 的应用内促销购买 \{#in-app-purchases-from-the-app-store\}
 
-- **立即处理交易：** 无需实现 `didReceivePromotedPurchase`。默认实现会立即开始购买，Apple 购买系统界面会自动显示。
-- **保存产品对象以供后续处理：** 实现 `didReceivePromotedPurchase`，保存产品，然后在适当时机调用 `makePurchase` 传入已保存的产品。如果需要在触发购买前向用户展示自定义内容，此方式会很有用。
+当用户在 App Store 发起购买，且该交易转移到你的应用时，SDK 会调用 `didReceivePromotedPurchase` 代理方法，并传入一个 `AdaptyPromotedProduct` 对象。你有两种处理方式：
 
-如果被推广的产品附带订阅优惠，SDK 会在购买时自动应用该优惠。该优惠从 App Store 购买意图中读取，仅在 iOS 18.0 及更高版本上可用。在 iOS 16.4–17.x 上，`subscriptionOffer` 始终为 `nil`，购买将以原价进行。
+- **立即处理交易：** 无需实现 `didReceivePromotedPurchase`。默认实现会立即发起购买，Apple 购买系统界面将自动显示。
+- **存储产品对象以供后续处理：** 实现 `didReceivePromotedPurchase`，存储产品对象，然后在需要时使用存储的产品调用 `makePurchase`。如果您需要在触发购买前向用户展示自定义内容，这种方式会很有用。
+
+如果推广产品附带订阅优惠，SDK 会在购买时自动应用该优惠。该优惠从 App Store 购买意图中读取，该功能在 iOS 18.0 及更高版本上可用。在 iOS 16.4–17.x 上，`subscriptionOffer` 始终为 `nil`，购买将按基础价格进行。
 
 以下是完整代码片段：
 
@@ -123,15 +129,15 @@ final class YourAdaptyDelegateImplementation: AdaptyDelegate {
 ```
 
 :::warning
-`didReceivePromotedPurchase` API 从 SDK 4.1 版本开始支持，且需要 **iOS 16.4** 或更高版本。SDK 4.0 完全不支持推广内购，且在低于 iOS 16.4 的设备上该方法永远不会触发。如果你需要在更早的 iOS 版本上支持推广购买，请继续使用 SDK 3.x 并按以下方式使用 `shouldAddStorePayment`。
+`didReceivePromotedPurchase` API 从 SDK 4.1 版本开始支持，且需要 **iOS 16.4** 或更高版本。SDK 4.0 完全不支持应用内促销购买，在低于 iOS 16.4 的设备上该方法也不会触发。如果您需要在更早的 iOS 版本上支持促销购买，请继续使用 SDK 3.x 并按照以下方式使用 `shouldAddStorePayment`。
 :::
 
-<Details summary="正在使用 Adapty SDK 3.x？">
+<Details summary="使用 Adapty SDK 3.x？">
 
 在 SDK 3.x 中，SDK 会调用 `shouldAddStorePayment` 代理方法：
 
-- **立即处理交易：** 在 `shouldAddStorePayment` 中返回 `true`，这将立即触发 Apple 购买系统界面。
-- **暂存产品对象，稍后处理：** 在 `shouldAddStorePayment` 中返回 `false`，之后再调用 `makePurchase` 并传入已暂存的产品对象。
+- **立即处理该交易：** 在 `shouldAddStorePayment` 中返回 `true`，Apple 购买系统界面将立即弹出。
+- **保存产品对象以便后续处理：** 在 `shouldAddStorePayment` 中返回 `false`，之后再以保存的产品对象调用 `makePurchase`。
 
 ```swift showLineNumbers title="Swift"
 final class YourAdaptyDelegateImplementation: AdaptyDelegate {

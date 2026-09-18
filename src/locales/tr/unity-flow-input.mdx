@@ -1,0 +1,286 @@
+---
+title: "Unity SDK'da flow verilerini işleme"
+description: "Kullanıcılarınızın flow'larda girdiği verileri Unity uygulamanızda Adapty SDK ile kaydedin ve kullanın."
+metadataTitle: "Flow verilerini işleme | Unity SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder)'da bir giriş alanına bir şey yazarsa, quiz'e cevap verirse veya bir düğmeyi çevirirse, SDK bu değeri analitik geri çağırması aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri çoğunlukla şu amaçlarla kullanır:
+
+- **Kullanıcıları kendi backend'lerine kaydedin**: Onboarding flow'unda kullanıcının girdiği e-posta adresini ve adı alın, flow kapandığında hesaplarını oluşturun.
+- **Cevapları ve tercihleri kaydedin**: Kullanıcının seçtiklerini takip edin, böylece uygulamanız daha sonra bunlara göre hareket edebilir — örneğin, [bunları Adapty profiline](unity-setting-user-attributes) özel nitelikler olarak yazabilirsiniz.
+- **Gelecekteki flow'ları özelleştirin**: Quiz cevaplarını özel nitelikler olarak kaydedin, ardından bir placement'ı hedefleyerek her segment farklı bir flow görsün ya da içinde farklı bir paywall yer alsın.
+- **Üçüncü taraf analitik platformlarına veri aktarın**: Cevapları Amplitude, Mixpanel veya kullandığınız herhangi bir ürün analitiği platformuna iletin.
+
+Giriş alanları ve seçilebilir gruplar değerlerini otomatik olarak raporlar. Kodunuzda bunları birbirinden ayırt edebilmek için, builder'da her girişe anlamlı bir **Element ID** ve her seçilebilir gruba anlamlı bir **Group ID** verin.
+
+<FlowIdNaming />
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Giriş değerlerini alma \{#receive-input-values\}
+
+Giriş değerleri, bir flow'dan gelen diğer tüm analitik olaylarla aynı callback'e, `flow_user_input` olay adı altında ulaşır. `Adapty.SetFlowsEventsListener` ile kaydettiğiniz dinleyicide `FlowViewDidReceiveAnalyticEvent`'i uygulayın:
+
+```csharp showLineNumbers title="Unity"
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    HandleFlowInput(name, parameters);
+}
+```
+
+`FlowViewDidReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](unity-flow-screen-views) dahil olmüzere bir flow'daki tüm analitik olayları iletir.
+- `name` parametresi olay adını içerir. Kullanıcı giriş olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi öğe kategorisini belirtir.
+- Girişin değeri, öğe türüne bağlı olarak farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
+     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` içinde raporlar
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+
+    var elementId = parameters["element_id"] as string;
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    var screenId = parameters["instanceId"] as string;
+
+    switch (parameters["element_type"] as string) {
+        case "text_input":
+        case "email_input":
+        case "number_input":
+        case "phone_input":
+            var text = parameters["value"] as string;
+            break;
+        case "date_picker":
+        case "time_picker":
+        case "date_time_picker":
+            // Unix time in milliseconds.
+            var millis = Convert.ToInt64(parameters["value"]);
+            break;
+        case "single_choice":
+            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+            break;
+        case "multi_choice":
+            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
+            break;
+        case "toggle":
+            var isOn = (bool)parameters["value"];
+            break;
+    }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girdi aldığında \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Etkinlik örnekleri \{#event-examples\}
+
+Bu örnekler, her etkinlikte mevcut olan özellikleri, yorumlarda açıklayıcı değerlerle birlikte göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var eventName       = name;                          // "flow_user_input"
+    var paramName       = parameters["name"];            // "flow_user_input"
+    var screenId        = parameters["instanceId"];      // "scr_J260KU5q"
+    var isCustomerEvent = parameters["isCustomerEvent"]; // true
+    var isBackendEvent  = parameters["isBackendEvent"];  // false
+    var elementId       = parameters["element_id"];      // "email"
+    var elementType     = parameters["element_type"];    // "email_input"
+    var value           = parameters["value"];           // "jane@example.com"   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçiciler (Genişletmek için tıklayın)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "birthday"
+    var elementType = parameters["element_type"]; // "date_picker"
+    var value       = parameters["value"];        // 645408000000   (long — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Tek seçim (Genişletmek için tıklayın)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "experience"
+    var elementType = parameters["element_type"]; // "single_choice"
+    var itemIds     = parameters["item_ids"];     // ["pro"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Çoklu seçim (Genişletmek için tıklayın)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "interests"
+    var elementType = parameters["element_type"]; // "multi_choice"
+    var itemIds     = parameters["item_ids"];     // ["sports", "music"]   (JArray)
+    var itemTitles  = parameters["item_titles"];  // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```csharp
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    var elementId   = parameters["element_id"];   // "reminders"
+    var elementType = parameters["element_type"]; // "toggle"
+    var value       = parameters["value"];        // true   (bool)
+}
+```
+</Details>
+
+## Teslimat ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her input değerini listener'ınız aldığında saklayın ve flow kapandığında tam seti gönderin. Bu anı yakalamak için aynı listener'a `FlowViewDidDisappear` uygulayın. Bu metot, kullanıcı flow'u tamamlasın ya da yarıda kapatsın, flow görünümü kapatıldığında çalışır.
+
+## Kullanım Durumları \{#use-cases\}
+
+### Kullanıcıları arka uçta kaydet \{#register-users-on-your-backend\}
+
+Değerler geldikçe toplayın ve flow kapandıktan sonra tek bir istekte gönderin; böylece bir istek tüm yanıtları bir arada taşır.
+
+Kullanıcı flow'u tamamlasa da yarıda bıraksa da görünüm kapanır. Arka ucunuzu çağırmadan önce ihtiyaç duyduğunuz alanları kontrol edin.
+
+Flow, arka ucunuzdan gelen hataları gösteremez. Callback'in dönüş değeri yoktur ve SDK'nın çalışan bir flow'a veri gönderen bir metodu bulunmaz. Kayıt başarısız olursa, örneğin e-posta adresi zaten kullanımdaysa, flow kapandıktan sonra hatayı kendi arayüzünüzde gösterin.
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> flowAnswers = new Dictionary<string, string>();
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    flowAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    if (!flowAnswers.ContainsKey("email")) return;
+
+    // Send flowAnswers to your backend here to create the account.
+
+    flowAnswers.Clear();
+}
+```
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği bilgileri profiliyle ilişkilendirmek ve aynı bilgileri iki kez sormaktan kaçınmak için değerler geldikçe [kullanıcı profilini güncelleyin](unity-setting-user-attributes).
+
+Örneğin, flow'unuzda `name` Element ID'sine sahip bir metin girişi ve `email` Element ID'sine sahip bir e-posta girişi varsa:
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var builder = new AdaptyProfileParameters.Builder();
+
+    switch (parameters["element_id"] as string) {
+        case "name":
+            builder = builder.SetFirstName(value);
+            break;
+        case "email":
+            builder = builder.SetEmail(value);
+            break;
+        default:
+            return;
+    }
+
+    Adapty.UpdateProfile(builder.Build(), (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+### Sonraki flow'larda görüneni özelleştirme \{#customize-flows-shown-later\}
+
+Quiz cevapları, kullanıcının sonraki bir [placement](placements)'ta göreceği içeriği de belirleyebilir — farklı bir flow ya da içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara sporla ilgili deneyimlerini sorun; ardından her gruba farklı ürünler ve metinlerle kendi flow'unu gösterin.
+
+1. Flow'unuza bir [quiz](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Group ID'sini, her seçeneğe ise anlamlı bir Element ID verin.
+2. Cevapları işleyin ve kullanıcı için [özel nitelikler belirleyin](unity-setting-user-attributes).
+
+```csharp showLineNumbers title="Unity"
+private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
+    if (name != "flow_user_input") return;
+    if ((parameters["element_id"] as string) != "experience") return;
+
+    var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
+    if (optionId == null) return;
+
+    var builder = new AdaptyProfileParameters.Builder();
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder = builder.SetCustomStringAttribute("experience", optionId);
+
+    Adapty.UpdateProfile(builder.Build(), (error) => {
+        if (error != null) {
+            // handle the error
+        }
+    });
+}
+```
+
+3. Her özel özellik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda o placement için [flow'u görüntüleyin](unity-present-paywalls).

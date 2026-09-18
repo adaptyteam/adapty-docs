@@ -1,0 +1,65 @@
+---
+title: "在 Unity SDK 中首次启动时显示 AA 定向付费墙"
+description: "在 Unity 中使用 AdaptyProfile.AppliedExternalAttributionProviders 等待 Apple Ads 归因后再请求付费墙。"
+metadataTitle: "首次启动时显示 AA 定向付费墙 | Unity SDK | Adapty 文档"
+---
+
+本文适用于您应用的 iOS 构建版本。Apple Ads 归因仅在 iOS 上可用。
+
+Apple Ads (AA) 归因在 `Adapty.Activate()` 之后异步到达。如果过早调用 `GetFlow`，归因数据通常尚未就绪，Adapty 会根据默认目标受众解析版位——从而绕过你基于 AA 市场细分的付费墙。`AdaptyProfile.AppliedExternalAttributionProviders` 允许应用检测 AA 归因何时已应用到用户画像，从而让付费墙请求等到 AA 市场细分正确解析后再执行。
+
+:::important
+`AppliedExternalAttributionProviders` 仅报告 Apple Ads。来自其他提供商的归因数据可在用户画像中查看，也可用于市场细分筛选，但暂不在此处显示。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+- Adapty Unity SDK **4.1** 或更高版本。
+- 已在 Adapty 中为应用配置 Apple Ads。请参阅 [Apple Ads](apple-search-ads)。
+
+:::note
+以下示例使用 SDK 4.1 中的 API 名称。在 SDK 4.0 中，用户画像属性名为 `AppliedAttributionSources`。在 SDK 3.x 中，该属性仍使用旧名称，且付费墙通过 `GetPaywall`/`GetPaywallForDefaultAudience` 获取，返回类型为 `AdaptyPaywall`。请参阅 [迁移 Adapty Unity SDK 至 v4](migration-to-unity-sdk-v4)。
+:::
+
+## 工作原理 \{#how-it-works\}
+
+调用 `Adapty.Activate()` 后，SDK 会在后台向 Apple 请求 Apple Ads 归因数据，并将结果转发至 Adapty 后端。当 AA 成为该用户画像的有效归因来源时，SDK 会向你的 `OnLoadLatestProfile` 处理器推送更新后的 `AdaptyProfile`，其 `AppliedExternalAttributionProviders` 列表中将包含 `AdaptyExternalAttributionProvider.AppleAds`。
+
+列表为空可能意味着以下任意情况：
+
+- 此用户画像的 Apple Ads 归因尚未处理完毕。
+- 完全没有归因数据。
+- 归因来自其他渠道，不在此列表的统计范围内。
+
+即使列表为空，调用 `GetFlow` 仍然是安全的——Adapty 会根据与当前用户画像状态匹配的目标受众来处理请求，通常会匹配到默认目标受众。
+
+:::important
+此等待仅适用于**首次启动**。一旦 Apple Ads 归因数据被记录，它将永久存储在用户画像中。在之后的每次启动时，缓存的用户画像已包含 `AppliedExternalAttributionProviders` 中的 `AppleAds`，`OnLoadLatestProfile` 会立即触发并携带该值，`GetFlow` 也会直接返回基于 Apple Ads 市场细分的付费墙，无需任何等待。
+:::
+
+## 实现 \{#implementation\}
+
+首次启动时，请监听用户画像中的 `AdaptyExternalAttributionProvider.AppleAds`，并设置一个硬性超时——如果 Apple Ads 归因数据始终未到达，这些用户仍然需要看到付费墙。
+
+1. **激活 SDK。** 请参阅 [安装并配置 Unity SDK](sdk-installation-unity)。
+2. **订阅用户画像更新**，实现 `IAdaptyEventListener` 并通过 `Adapty.SetEventListener` 进行注册。如果你还未设置监听器，请参阅 [监听订阅更新](unity-check-subscription-status#listen-to-subscription-updates)。
+3. **监听 `AppliedExternalAttributionProviders` 中的 `AppleAds`。** 当其出现时，请求付费墙 —— Adapty 将返回 AA 细分后的实验变体：
+
+```csharp
+using System.Linq;
+
+public void OnLoadLatestProfile(AdaptyProfile profile)
+{
+    if (profile.AppliedExternalAttributionProviders.Contains(AdaptyExternalAttributionProvider.AppleAds))
+    {
+        // load the paywall via Adapty.GetFlow(placementId, ...)
+    }
+}
+```
+
+4. **同时启动一个 3–5 秒的计时器。** 如果计时器在 `AppleAds` 出现之前触发，则改用 `GetFlowForDefaultAudience` 请求默认目标受众的付费墙。该方法无需等待分群即可直接返回付费墙。
+
+无论哪条路径先触发，都应加载付费墙；另一条路径则应跳过。使用单个状态标志（例如 `hasLoadedPaywall`）进行去重，避免付费墙被重复获取。为版位配置[备用付费墙](unity-use-fallback-paywalls)，确保网络请求失败时用户不会陷入无响应状态。
+
+`SetEventListener` 接受一个监听器。如果你的应用已经将 `IAdaptyEventListener` 用于其他用途（例如[监听订阅更新](unity-check-subscription-status#listen-to-subscription-updates)），请将相关检查添加到现有的 `OnLoadLatestProfile` 中，而不是注册第二个监听器。

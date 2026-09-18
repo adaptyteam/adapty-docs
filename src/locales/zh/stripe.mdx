@@ -288,6 +288,14 @@ Adapty 在为新的 Stripe 连接创建 webhook 端点时会自动启用此事�
 您的用户现在可以在网页端完成购买，并在应用中访问付费功能。同时，您也可以在同一个地方查看所有订阅分析数据。
 :::
 
+## 故障排查 \{#troubleshooting\}
+
+### Stripe 显示 100% 投递成功，但 Adapty 未收到任何事件 \{#stripe-shows-100-delivery-but-no-events-reach-adapty\}
+
+Adapty 只会在自己创建 Webhook 端点时捕获签名密钥。如果你的 Stripe 账户中已经存在指向 Adapty URL 的 Webhook 端点——例如来自之前的连接尝试，或者按照上文已弃用的手动配置步骤操作过——重新连接时将跳过创建新端点的步骤，Adapty 也就无法获取（或重新获取）签名密钥。所有事件仍会发送到已有端点并返回 `200`，但在 Adapty 一侧签名验证会失败，事件随即被丢弃。
+
+要修复此问题，请在 [Developers → Webhooks](https://dashboard.stripe.com/webhooks) 中删除指向您的 Adapty webhook URL 的端点，然后从 [App Settings → Stripe](https://app.adapty.io/settings/stripe) 重新连接 Stripe 集成，以便 Adapty 创建新的端点并获取其密钥。
+
 ## 用户画像创建行为 \{#profile-creation-behavior\}
 
 Adapty 需要将购买记录与[客户用户画像](profiles-crm)绑定，才能在移动端使用——因此默认情况下，它会在收到 Stripe 的 webhook 时创建用户画像。您可以选择将以下内容用作 Adapty 中的客户用户 ID：
@@ -328,6 +336,10 @@ Adapty 支持这两种方式，但立即取消的收入计算将忽略按比例�
 ### 退款 \{#refunds\}
 
 Adapty 仅追踪全额退款，目前不支持按比例退款或部分退款。
+
+### 净收入与税费 \{#net-revenue-and-tax\}
+
+要计算 Stripe 交易的 `net_revenue_usd` 和 `net_revenue_local`，Adapty 会扣除固定的 4.5%。这是一个建模估算值，并非 Stripe 实际收取的税费——Adapty 不会从 Stripe 读取税额（包括 Stripe Tax），因此 Stripe 交易的 `tax_amount_usd` 和 `tax_amount_local` 始终为 `0`。
 
 ### 交易 ID 唯一性 \{#transaction-id-uniqueness\}
 
@@ -378,7 +390,7 @@ Adapty 从会话的第一个订单项中获取产品，因此同时销售多个�
 :::tip
 为获得更丰富的分析数据，您可以在 Stripe metadata 中添加 `variation_id`，以将购买归因到特定的付费墙实例。这在实现自建网页付费墙时尤为有用，可以追踪是哪个具体的付费墙展示带来了转化。
 
-请注意，`variation_id` 仅从 Stripe Subscription（`sub_...`）和 Checkout Session（`ses_...`）对象的 metadata 中读取：
+请注意，`variation_id` 仅从 Stripe 订阅（`sub_...`）和结账会话（`ses_...`）对象的元数据中读取：
 
 ```json showLineNumbers title="Stripe Metadata with variation_id"
 {
@@ -388,12 +400,16 @@ Adapty 从会话的第一个订单项中获取产品，因此同时销售多个�
 ```
 :::
 
-可用于转发和分析 Stripe 事件的集成：
+您可以使用以下集成来转发和分析 Stripe 事件：
+- [Adjust](adjust)
 - [Amplitude](amplitude/)
+- [AppsFlyer](appsflyer)
 - [Webhook](webhook)
 - [Firebase](firebase-and-google-analytics)
 - [Mixpanel](mixpanel)
 - [Posthog](posthog)
+
+Adjust 没有 Stripe 字段：Adapty 会使用买家安装您应用时所在平台的 app token，将 Stripe 购买事件发送给 Adjust。请参阅[网页端购买（Stripe 和 Paddle）](adjust#web-purchases-stripe-and-paddle)。
 
 ### 支持的 Stripe 事件 \{#supported-stripe-events\}
 

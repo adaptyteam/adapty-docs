@@ -1,6 +1,12 @@
-1. [App Store Connect](https://appstoreconnect.apple.com/apps)'i açın. Uygulamanızı seçin ve **General** → **App Information** bölümüne gidin.
+---
+no_index: true 
+---
+
+1. [App Store Connect](https://appstoreconnect.apple.com/apps) sayfasını açın. Uygulamanızı seçin ve **General** → **App Information** bölümüne gidin.
 
 2. **General Information** alt bölümündeki **Bundle ID**'yi kopyalayın.
+
+   Yalnızca tanımlayıcıyı kopyalayın — boşluk içermeyen, ters-DNS formatında, örneğin `com.company.app`. App Store Connect, uygulama listesi gibi diğer görünümlerde uygulama adını yanında gösterir; tanımlayıcı yerine bunu yapıştırmak bağlantı doğrulamasının başarısız olmasına neden olur.
 
    
 

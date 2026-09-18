@@ -5,15 +5,15 @@ metadataTitle: "Developer CLI クイックスタート | Adapty ドキュメン�
 keywords: ['cli', 'developer cli', 'mcp']
 ---
 
-Adapty CLI を使えば、アプリの設定をすべてコマンドラインから行えます。ターミナルツールや [MCP クライアント](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli)を好む場合は、[ダッシュボードのクイックスタート](integrate-payments)の代わりに使用してください。
+Adapty CLI を使うと、アプリの設定をすべてコマンドラインから行えます。ターミナルツールや [MCP クライアント](https://github.com/adaptyteam/adapty-cli/tree/main/skills/adapty-cli)を好む方は、[ダッシュボードのクイックスタート](integrate-payments)の代わりにお使いください。
 
 :::note
-Adapty を App Store Connect および Google Play に接続するには、ダッシュボードでの初回セットアップが一度だけ必要です。詳細はステップ 3 で説明します。
+Adapty と App Store Connect・Google Play を連携するには、ダッシュボードでの初回セットアップが必要です — 手順 3 で説明します。
 :::
 
-完了すると、アプリ、アクセスレベル、プロダクト、ペイウォール、プレースメントがすべて [Adapty ダッシュボード](https://app.adapty.io)に表示されます。
+完了すると、アプリ、アクセスレベル、プロダクト、フローまたはペイウォール、プレースメントがすべて [Adapty ダッシュボード](https://app.adapty.io)に表示されます。
 
-Claude Cowork で CLI を実行する場合は、開始前に Adapty のドメインを許可してください。詳しくは[Cowork で CLI を実行する](#run-the-cli-in-cowork)をご覧ください。
+Claude Cowork で CLI を実行する場合は、まず Claude でセットアップしてください — [Claude Cowork で Adapty CLI をセットアップする](developer-cli-cowork)を参照してください。
 
 ## 1. CLI をインストールする \{#1-install-the-cli\}
 
@@ -123,73 +123,86 @@ Adapty における[プロダクト](product)は、アプリが販売するも�
 
 このプロダクトをStripeまたはPaddleを通じてウェブでも販売する場合は、同じコマンドにそれらのIDを追加してください。コマンドリファレンスの [products create](developer-cli-reference#adapty-products-create) を参照してください。
 
-## 6. ペイウォールを作成する \{#6-create-a-paywall\}
+## 6. フローまたはペイウォールを作成する \{#6-create-a-flow-or-paywall\}
 
-[ペイウォール](paywalls)はプロダクトを格納するコンテナです。Adapty では、ペイウォールがユーザーにプロダクトを届ける唯一の方法です。すべてのプロダクトは、アプリに表示される前にペイウォールに含まれている必要があります。
+すべてのプロダクトは、アプリに表示される前にフローまたはペイウォールに含まれている必要があります。どちらか一方を選んでください。
+
+- **フロー**とは、ノーコードの[フロー＆ペイウォールビルダー](adapty-flow-builder)でデザインし、Adapty SDKがネイティブにレンダリングする1つまたは複数の画面のことです。ペイウォール画面、オンボーディング、クイズなどが含まれます。購入画面のレンダリングをAdaptyに任せたい場合はフローを選択してください。フローにはAdapty SDK 4.0以降が必要です。
+- **ペイウォール**とは、デザインが紐付いていないプロダクトの集合です。購入画面を自分のアプリコードでレンダリングし、Adaptyにはプロダクトの配信のみ（オプションで[リモートコンフィグ](customize-paywall-with-remote-config)も）を担当させたい場合はペイウォールを選択してください。
+
+プレースメントは1つのコンテンツタイプを提供するため、ステップ7の前に決定してください。
+
+### 6a. フローを作成する \{#6a-create-a-flow\}
+
+CLIはフローレコードを作成します。フローのスクリーンはビルダーコンフィグ（CLIが生成しないJSONドキュメント）に格納されます。ターミナルからコンフィグを作成するには、CLIを代わりに操作してくれる[flow-generatorスキル](flow-generator-skill)を使用してください。
+
+フローを作成します：
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+コマンドは `<flow-id>` を返します。
+
+スクリーンは[flow-generatorスキル](flow-generator-skill)または[Flow & Paywall Builder](adapty-flow-builder)でビルドします。どちらの方法でも、ユーザーにはまだ表示されない保存済みドラフトが作成されます。
+
+フローを公開します:
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+コマンドを実行すると確認を求められます。公開はバックグラウンドで行われるため、`adapty flows get --app <app-id> <flow-id>` でステータスが `published` になるまで確認してください。`publication_failed` の場合は、[`flows config get`](developer-cli-reference#adapty-flows-config-get) で原因を確認できます。プレースメントには公開済みのフローのみ設定できます。
+
+### 6b. ペイウォールを作成する \{#6b-create-a-paywall\}
+
+[ペイウォール](paywalls)は、プロダクトを保持するコンテナです。
 
 :::important
-ペイウォールがプレースメントにリンクされると、そのプロダクトは変更できません。別のプロダクトを使用するには、新しいペイウォールを作成してプレースメントがそちらを参照するように更新してください。
+ペイウォールがプレースメントに紐付けられると、そのプロダクトは変更できません。別のプロダクトを使用するには、新しいペイウォールを作成し、そのプレースメントが新しいペイウォールを指すように更新してください。
 :::
 
 <Tabs>
-  <TabItem value="single" label="プロダクト 1 つ">
+  <TabItem value="single" label="プロダクト1つ">
     ```bash
     adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id>
     ```
   </TabItem>
-  <TabItem value="multiple" label="プロダクト複数">
+  <TabItem value="multiple" label="複数のプロダクト">
     ```bash
     adapty paywalls create --app <app-id> --title "My Paywall" --product-id <product-id-1> --product-id <product-id-2>
     ```
   </TabItem>
 </Tabs>
 
-このコマンドは `<paywall-id>` を返します。
+コマンドは `<paywall-id>` を返します。
 
-## 7. プレースメントを作成する \{#7-create-a-placement\}
+## 7. プレースメントを作成する \{#create-a-placement\}
 
-[プレースメント](placements)は、アプリ内でペイウォールを表示する場所を指します。アプリコードにハードコードするのはプレースメント ID だけです。どのペイウォールをどのユーザーに表示するかといった設定はすべて、新しいアプリバージョンをリリースすることなくダッシュボードから管理できます。
+[プレースメント](placements)とは、アプリ内でフローやペイウォールを表示するポイントのことです。アプリのコードにハードコードするのはプレースメント ID だけです。どのフローやペイウォールをどのユーザーに表示するかは、新しいアプリバージョンをリリースすることなくダッシュボードで管理できます。
 
-`--developer-id` は、後でアプリコードからこの場所に表示するペイウォールを Adapty に問い合わせる際に参照する文字列です。場所を表すわかりやすい名前（例：`"main"`、`"onboarding"`、`"settings"`）を指定してください。
+`--developer-id` は、Adapty にこのポイントで何を表示するかを問い合わせる際にアプリのコードで参照する文字列です。`"main"`、`"onboarding"`、`"settings"` のように、場所を説明する名前を付けましょう。
 
-```bash
-adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
-```
+<Tabs>
+  <TabItem value="flow" label="フロー">
+    ```bash
+    adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+    ```
+  </TabItem>
+  <TabItem value="paywall" label="ペイウォール">
+    ```bash
+    adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+    ```
+  </TabItem>
+</Tabs>
 
-`--audiences` フラグは、どのユーザーにどのペイウォールを表示するかを制御します。上の例では単一のデフォルトオーディエンスを設定しており、このプレースメントのすべてのユーザーに同じペイウォールが表示されます。
-
-## Cowork で CLI を実行する \{#run-the-cli-in-cowork\}
-
-Claude Cowork はコマンドを、許可リストに登録されたドメインにのみアクセスできるサンドボックス内で実行します。Adapty を許可しない限り、CLI はサインインもアカウントの読み取りもできません。自分のターミナルから CLI を実行する場合は、このセクションをスキップしてください。
-
-`adapty.io` と `*.adapty.io` の両方を許可してください。ほとんどの許可リスト実装では、ワイルドカードは頂点ドメイン（apex domain）をカバーしません。CLI 自体は `api.adapty.io` にアクセスし、作業中に Adapty のドキュメントを読むエージェントは頂点ドメインにアクセスします。
-
-Cowork applies these settings when a task starts. If you change the access mode or add a domain during a conversation, that conversation keeps the settings it started with — start a new task.
-
-A task also starts on a clean machine: no CLI, no token, and no config carries over from a previous session, so the install and login steps repeat at the start of each one.
-
-### 個人アカウント \{#personal-accounts\}
-
-許可リストはご自身で設定します：
-
-1. Claude で **Settings** → **Capabilities** を開きます。
-2. **Code execution and file creation** をオンにします。これをオンにするまで、**Allow network egress** ブロックは表示されません。
-3. **Allow network egress** をオンにします。
-4. **Domain allowlist** で **Package managers only** を選択します。
-5. **Additional allowed domains** に `adapty.io` を追加し、次に `*.adapty.io` を追加します。
-
-<ZoomImage id="cowork-network-egress.png" width="700px" alt="Allow network egress settings in Claude, with the Adapty domain in the additional allowed domains list" />
-
-もう一方のアクセスモード、**All domains** を選択すると、サンドボックスはあらゆるサイトにアクセスできるようになります。この場合、Adapty のドメインを追加する必要はありません。
-
-### 企業向けワークスペース \{#corporate-workspaces\}
-
-ワークスペースの管理者が許可リストを管理しています。両ドメインをワークスペースに追加するよう管理者に依頼してください。
+`--audiences` フラグは、どのフローまたはペイウォールをどのユーザーに表示するかを制御します。上記の例では、単一のデフォルトオーディエンスを設定しています。つまり、このプレースメントにアクセスするすべてのユーザーが同じコンテンツを見ます。プレースメントが提供できるコンテンツタイプは1種類のみであるため、すべてのオーディエンスエントリに同じ `content_type` を指定する必要があります。セグメントによるターゲティングについては、コマンドリファレンスの[オーディエンスの形状](developer-cli-reference#audiences-shape)を参照してください。
 
 ## 次のステップ \{#whats-next\}
 
 すべてのエンティティが [Adapty ダッシュボード](https://app.adapty.io) に表示されるようになりました。次のステップ：
 
-- [ペイウォールをデザインする](adapty-paywall-builder) — ノーコードのペイウォールビルダーを使って、作成したペイウォールにビジュアル、レイアウト、コピーを追加します。
-- [Adapty SDK を統合する](quickstart-sdk) — アプリに SDK を追加して、プレースメントを取得・表示します。
-- 異なるユーザー [セグメント](segments) を異なるペイウォールにルーティングする — コマンドリファレンスの [`placements update`](developer-cli-reference#adapty-placements-update) と [`segments list`](developer-cli-reference#adapty-segments-list) を参照してください。
+- フローを後から変更する — [フロージェネレータースキル](flow-generator-skill)に変更内容を伝えるか、[フロー＆ペイウォールビルダー](adapty-flow-builder)でフローを開いてください。
+- アプリでペイウォールを表示する — SDK で[ペイウォールとプロダクトを取得](fetch-paywalls-and-products)し、独自のコードで画面を構築してください。
+- [Adapty SDK を統合する](quickstart-sdk) — SDK をアプリに追加して、プレースメントを取得・表示できるようにします。
+- 異なる[セグメント](segments)のユーザーを異なるフローやペイウォールにルーティングする — コマンドリファレンスの [`placements update`](developer-cli-reference#adapty-placements-update) と [`segments list`](developer-cli-reference#adapty-segments-list) を参照してください。

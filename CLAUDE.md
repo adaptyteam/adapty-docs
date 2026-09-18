@@ -167,8 +167,8 @@ These apply to every doc edit, however small. They are the rules no linter can c
 |------|------|
 | `src/styles/global.css` | **Primary stylesheet.** Tailwind import, theme variables (`@theme`), light/dark CSS custom properties, all design block styles (code blocks, details, callouts, tables, zoom images, heading anchors, task lists, highlight lines) |
 | `src/css/custom.css` | Legacy Docusaurus-era variables (`--purplePrimary`, `--ifm-*`). Still loaded via `src/css/custom.scss` but superseded by `global.css` for new work |
-| `src/css/api-reference.css` | Styles for the Stoplight API reference pages |
-| `src/css/fonts/fonts.css` | `@font-face` declarations for Inter, Roboto, Fira Code |
+| `src/components/api-reference/TryItPanel.css` | Styles for the Try-it panel of the API reference; the other API reference components carry scoped `<style>` blocks |
+| `src/css/fonts/fonts.css` | `@font-face` declarations for Inter, Roboto, Fira Code. Fira Code is self-hosted, so every visitor gets its programming ligatures unless a rule turns them off (see the `font-variant-ligatures: none` rule in `global.css`) |
 
 ### Theme system
 
@@ -219,7 +219,7 @@ These are layout/interactive components in `src/components/`, not imported by ar
 - `Footer.astro` — page footer
 - `ZoomLightbox.astro` — fullscreen image lightbox overlay
 - `Calculator.tsx` — interactive React calculator widget
-- `ApiReferencePage.astro` — Stoplight Elements API docs wrapper
+- `api-reference/` — the API reference renderer: `SpecLandingPage.astro`, `OperationPage.astro`, `OperationParameters.astro`, `SchemaTree.astro`, `ResponseTabs.astro`, `CodeSamplesBlock.astro`, `TryItPanel.tsx`; specs and the model builder live in `src/api-reference/`
 
 For CSS/layout bugs, inspect the DOM structure and existing styles before proposing a fix. Do not guess at specificity or inheritance.
 

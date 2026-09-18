@@ -66,7 +66,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| adjust | — | dev, analyst | 8 | tutorial |
+| adjust | — | dev, analyst | 9 | tutorial |
 | airbridge | — | dev, analyst | 7 | tutorial |
 | amplitude | — | dev, analyst | 6 | tutorial |
 | analytics-integration | entry | dev, analyst | 4 | tutorial |
@@ -77,15 +77,15 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | attribution-integration | entry | dev, analyst | 5 | tutorial |
 | branch | — | dev, analyst | 7 | tutorial |
 | braze | — | dev, analyst | 5 | tutorial |
-| configuration | — | dev, analyst | 2 | tutorial |
-| event-flows | — | dev, analyst | 17 | tutorial |
+| configuration | — | dev, analyst | 3 | tutorial |
+| event-flows | — | dev, analyst | 18 | tutorial |
 | event-statuses | — | dev, analyst | 0 | tutorial |
-| events | — | dev, analyst | 3 | tutorial |
-| facebook-ads | — | dev, analyst | 7 | tutorial |
+| events | — | dev, analyst | 7 | tutorial |
+| facebook-ads | — | dev, analyst | 8 | tutorial |
 | firebase-and-google-analytics | — | dev, analyst | 17 | tutorial |
 | firebase-apps | — | dev, analyst | 1 | tutorial |
 | google-cloud-storage | — | dev, analyst | 9 | tutorial |
-| handle-integration-errors | — | dev, analyst | 7 | tutorial |
+| handle-integration-errors | — | dev, analyst | 8 | tutorial |
 | messaging | entry | dev, analyst | 1 | tutorial |
 | mixpanel | — | dev, analyst | 9 | tutorial |
 | onesignal | — | dev, analyst | 8 | tutorial |

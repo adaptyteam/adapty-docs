@@ -1,0 +1,289 @@
+---
+title: "Flutter SDKでフローのデータを処理する"
+description: "AdaptySDKを使って、ユーザーがFlutterアプリのフローで入力したデータを保存・利用する方法を説明します。"
+metadataTitle: "フローのデータを処理する | Flutter SDK | Adapty ドキュメント"
+---
+
+ユーザーが[フロー](adapty-flow-builder)の入力フィールドに文字を入力したり、クイズに答えたり、トグルを切り替えたりすると、SDKはその値をアナリティクスコールバックを通じてアプリに渡します。
+
+アプリでそのデータを活用する主な用途は次のとおりです：
+
+- **独自バックエンドにユーザーを登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を使って、フローが閉じたときにアカウントを作成します。
+- **回答と設定を保存する**: ユーザーが選択した内容を記録しておき、後でアプリが活用できるようにします。たとえば、カスタム属性として[Adapty プロファイルに書き込む](flutter-setting-user-attributes)ことができます。
+- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後のプレースメントでターゲティングすることで、各セグメントに異なるフローや、その中の異なるペイウォールを表示できます。
+- **サードパーティの分析プラットフォームに送信する**: 回答を Amplitude や Mixpanel など、使用しているプロダクト分析ツールに転送します。
+
+インプットとセレクタブルグループは、自動的に値を報告します。コード内でインプットを区別するために、ビルダーで各インプットに意味のある **Element ID** を、各セレクタブルグループに **Group ID** を設定してください。
+
+<FlowIdNaming />
+
+## 始める前に \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## 入力値を受け取る \{#receive-input-values\}
+
+入力値は、フローから送られる他のすべてのアナリティクスイベントと同じコールバックを通じて、`flow_user_input` というイベント名で届きます。`AdaptyUI().setFlowsEventsObserver` で登録したオブザーバーに `flowViewDidReceiveAnalyticEvent` を実装してください。
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  handleFlowInput(name, params);
+}
+```
+
+`flowViewDidReceiveAnalyticEvent` コールバックは、[スクリーンビュー](flutter-flow-screen-views)を含む、フローからのすべての分析イベントを配信します。
+- `name` パラメーターにはイベント名が含まれます。ユーザー入力イベントを絞り込むには、`name` を `flow_user_input` と比較してください。
+- `element_type` パラメーターは要素のカテゴリを示します。
+- 入力値は要素タイプによって異なるパラメーターに格納されます：
+     - テキストフィールド、ピッカー、トグルはユーザーの入力を `value` に格納します
+     - セレクタブルグループは選択中のオプションを `item_ids` と `item_titles` で報告します
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'] as String;
+
+  // The screen the input sits on. Pair it with elementId to tell apart
+  // two fields that share an Element ID on different screens.
+  final screenId = params['instanceId'] as String?;
+
+  switch (params['element_type'] as String) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input':
+      final text = params['value'] as String;
+      break;
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker':
+      // Unix time in milliseconds. Arrives as int on iOS and double on Android — read it through num.
+      final date = DateTime.fromMillisecondsSinceEpoch((params['value'] as num).toInt());
+      break;
+    case 'single_choice':
+      final optionId = (params['item_ids'] as List).cast<String>().first;
+      break;
+    case 'multi_choice':
+      final optionIds = (params['item_ids'] as List).cast<String>();
+      break;
+    case 'toggle':
+      final isOn = params['value'] as bool;
+      break;
+  }
+}
+```
+
+<FlowInputVerify />
+
+## アプリがインプットを受け取るタイミング \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## 受け取る内容 \{#what-you-receive\}
+
+<FlowInputParams />
+
+## イベントの例 \{#event-examples\}
+
+これらの例は、各イベントで利用可能なプロパティと、コメント内の説明用の値を示しています。
+
+<Details>
+<summary>テキスト、メール、数値、電話番号の入力 (クリックして展開)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  name;                      // 'flow_user_input'
+  params['name'];            // 'flow_user_input'
+  params['instanceId'];      // 'scr_J260KU5q'
+  params['isCustomerEvent']; // true
+  params['isBackendEvent'];  // false
+  params['element_id'];      // 'email'
+  params['element_type'];    // 'email_input'
+  params['value'];           // 'jane@example.com'   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>日付、時刻、日時ピッカー（クリックして展開）</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'birthday'
+  params['element_type'];    // 'date_picker'
+  params['value'];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; int on iOS, double on Android)
+}
+```
+</Details>
+
+<Details>
+<summary>単一選択（クリックして展開）</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'experience'
+  params['element_type'];    // 'single_choice'
+  params['item_ids'];        // ['pro']   (List)
+  params['item_titles'];     // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'interests'
+  params['element_type'];    // 'multi_choice'
+  params['item_ids'];        // ['sports', 'music']   (List)
+  params['item_titles'];     // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>トグル（クリックして展開）</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'reminders'
+  params['element_type'];    // 'toggle'
+  params['value'];           // true   (bool)
+}
+```
+</Details>
+
+## デリバリーと制限事項 \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+オブザーバーが受け取った時点で各入力値を保存しておき、フローが閉じられたタイミングで完全なセットを送信してください。そのタイミングを検知するには、同じオブザーバーに `flowViewDidDisappear` を実装します。このメソッドは、ユーザーがフローを完了した場合でも途中で閉じた場合でも、フロービューが閉じられると実行されます。
+
+## ユースケース \{#use-cases\}
+
+### バックエンドでユーザーを登録する \{#register-users-on-your-backend\}
+
+値が届き次第収集し、フローが閉じたタイミングで一度にリクエストを送ることで、1回のリクエストに完全な回答セットをまとめられます。
+
+ユーザーがフローを完了した場合でも、途中で離脱した場合でも、ビューは閉じられます。バックエンドを呼び出す前に、必要なフィールドが揃っているかを確認してください。
+
+フローはバックエンドからのエラーを表示できません。コールバックには戻り値がなく、SDKには実行中のフローにデータを送り込むメソッドもありません。たとえばメールアドレスがすでに使用中であるなど、登録に失敗した場合は、フローが閉じた後に独自のUIでエラーを表示してください。
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> flowAnswers = {};
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  flowAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  if (!flowAnswers.containsKey('email')) return;
+
+  // Send flowAnswers to your backend here to create the account.
+
+  flowAnswers.clear();
+}
+```
+
+### ユーザープロファイルにデータを反映する \{#enrich-user-profiles-with-data\}
+
+ユーザーが入力した内容をプロファイルに紐付け、同じ情報を二度入力させないようにするには、値が入力されるたびに[ユーザープロファイルを更新](flutter-setting-user-attributes)してください。
+
+たとえば、フローにElement ID `name` のテキスト入力とElement ID `email` のメール入力がある場合：
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+
+  final value = params['value'];
+  if (value is! String) return;
+
+  final builder = AdaptyProfileParametersBuilder();
+
+  switch (params['element_id'] as String) {
+    case 'name':
+      builder.setFirstName(value);
+      break;
+    case 'email':
+      builder.setEmail(value);
+      break;
+    default:
+      return;
+  }
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+### 後のフローをカスタマイズする \{#customize-flows-shown-later\}
+
+クイズの回答を使って、後の[プレースメント](placements)でユーザーに表示するコンテンツ（別のフロー、またはその中の別のペイウォール）を決定することもできます。
+
+たとえば、オンボーディングフローでスポーツの経験について質問し、各グループに異なるプロダクトとコピーを持つ独自のフローを表示できます。
+
+1. フローに[クイズ](onboarding-quizzes)を追加します。[選択可能グループ](flow-selectable-elements)にグループ ID `experience` を設定し、各オプションにわかりやすい要素 ID を設定します。
+2. 回答を処理し、ユーザーに[カスタム属性を設定](flutter-setting-user-attributes)します。
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+  if (params['element_id'] != 'experience') return;
+
+  final optionId = (params['item_ids'] as List).cast<String>().first;
+
+  final builder = AdaptyProfileParametersBuilder();
+  // Set the custom attribute 'experience' to the option the user selected
+  // (beginner, amateur, or pro).
+  builder.setCustomStringAttribute(optionId, 'experience');
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+3. [セグメントを作成](segments)します（カスタム属性の値ごとに）。
+4. [プレースメントを作成](placements)し、各セグメントに対して[オーディエンス](audience)を追加します。
+5. アプリ内でそのプレースメントの[フローを表示](flutter-present-paywalls)します。

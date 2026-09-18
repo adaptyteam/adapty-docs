@@ -7,11 +7,11 @@ reviewed_at: 2026-08-10
 
 ## What this is
 
-The behavioural and lifecycle half of Flow Builder documentation: what a flow *does* (navigation,
+The behavioural and lifecycle half of Flow & Paywall Builder documentation: what a flow *does* (navigation,
 conditional branching, actions, purchases, variables, remote config, fallbacks) and how a flow moves
 through its *lifecycle* (create, tour the UI, preview, save/publish, measure, migrate, recipe). Its
 sibling zone, `flow-design`, covers what a flow *looks like* (screens/layers, layout, elements, styles,
-dark mode, fonts, localized copy). Both zones sit inside the Adapty Dashboard's Flow Builder — this
+dark mode, fonts, localized copy). Both zones sit inside the Adapty Dashboard's Flow & Paywall Builder — this
 zone owns the no-code authoring workflow for behavior and its lifecycle wrapper, not the SDK code that
 renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/rendering,
 `sdk-flows-manual` for remote-config consumption, `sdk-migrations` for the v4 upgrade path).
@@ -20,7 +20,7 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 
 - **Adapty Dashboard → Flows page**: flow list, status column, **Create flow**, **Fallbacks** download,
   the Flow metrics view.
-- **Flow Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
+- **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
 - **Adapty mobile app** (iOS/Android): receiving end of **Test on device** — not documented here beyond
@@ -53,10 +53,38 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   `builder/src/blocks/shared/variables/variables.common.ts`) can only resolve what the mapper sent, and
   a field's *absence* there is why a variable renders as a token. Verified 2026-08-24 against
   `origin/master` `db365e184`.
+- **The per-screen product registry (ADP-7541, flow schema v12) has two specs in `dashboard-interface`:**
+  `packages/unified-builder/builder/src/blocks/products/products.spec.md` (panel behaviour, menu items,
+  toasts, dialog labels) and `packages/unified-builder/builder/src/core/entities/screen-products/issues.spec.md`
+  (the publish-blocking issue codes with their exact titles). `paywall-product-block` and
+  `flow-common-issues` quote those titles verbatim — verify against the specs, not against a screenshot.
+  Two label traps verified 2026-09-13 on `origin/ADP-7541`. First, the group label for already-used
+  products depends on the picker: the card's **Product** dropdown and the plain product pickers say
+  **Added** and mean this screen's list (`blocks/shared/products/ProductSelect.tsx`); a text element's
+  `{ }` picker also says **Added** but spans every screen's list (`BindingCatalog.flowBindings()` in
+  `core/entities/product-bindings/catalog.ts`); the variables picker opened for a product-typed
+  comparison or assignment says **Current** (`blocks/shared/variables/ProductsTab.tsx`,
+  `scope === 'screen'`), and inside a card **Current** is the enclosing card's own product. Second, the
+  panel's **Missing** badge (product deleted from the catalog) is a different state from **This product
+  is off this screen** (product exists, not on the screen's list).
 - No dedicated source exists for the Flow metrics definitions (revenue, proceeds, ARPPU, conversion
   rates) beyond the article's own prose — these are dashboard-backend calculations with no spec file
   registered in `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx`
   for terms it shares, as the working definition until a metrics source is added.
+
+- **Figma import's ground truth is split across three places, and only one of them is a declared source.** The
+  `/figma-import` landing page — its state machine, failure copy, and the mint call — lives in
+  `dashboard-interface` but under `apps/web/src/pages/figma-import/**`, *not* `packages/unified-builder`,
+  with a canonical design spec beside it at `docs/specs/figma/figma-import-landing.md`. The plugin is its
+  own artifact, published to the Figma Community on 2026-08-31 as **Import to Adapty**
+  (`figma.com/community/plugin/1674065404672377144`); the zip sideload was the early-access channel only.
+  **The converter that actually maps a Figma tree to an IFlow lives in `adapty-agents`, which is absent
+  from `sources.md`** (`rg 'adapty-agents' .claude/context-mill/sources.md` → no hits, 2026-08-27) and is
+  not reachable through GitHub `adaptyteam` or the GitLab `adapty` group either (checked 2026-09-08; the
+  only Figma repo on GitHub, `adaptyteam/figma-flow`, is an evidence dashboard, not the mapper). What *is*
+  reachable is the mapper's output: `adapty flows config get --app <app> <flow-id> --json` returns the
+  minted IFlow, and reading two imports that way on 2026-09-08 is what the fidelity section of
+  `import-from-figma` now rests on. Prefer that over Jira for any behaviour claim.
 
 ## What we document, what we don't
 
@@ -104,28 +132,32 @@ or developer can see and click.
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
+| convert-paywall-to-flow | migration | marketer, dev | 4 | tutorial |
 | copy-flows | — | marketer, dev | 2 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
-| filter-flows | — | marketer, dev | 5 | tutorial |
+| filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 12 | tutorial |
-| flow-metrics | — | marketer, dev | 24 | tutorial |
+| flow-metrics | — | marketer, dev | 25 | tutorial |
+| import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 8 | tutorial |
-| paywall-builder-templates | — | marketer, dev | 6 | tutorial |
+| paywall-builder-templates | — | marketer, dev | 7 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 7 | tutorial |
+| paywall-product-block | — | marketer, dev | 16 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
+| paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
+| respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
-| show-plans-bottom-sheet | — | marketer, dev | 11 | — |
+| show-plans-bottom-sheet | — | marketer, dev | 11 | tutorial |
 | strikethrough-price | — | marketer, dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -169,13 +201,13 @@ or developer can see and click.
   articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
   word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
   SDK platforms support flows), and embed the same YouTube video (`8Cby6lVGI0o`). Cochange confirms
-  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow Builder
+  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow & Paywall Builder
   must update both copies of this sentence, not one.
 - **`adapty-flow-builder` ↔ `builder-ui` ↔ `paywall-builder-templates` ↔ `flow-builder-recipes` ↔
   `onboarding-flow-tutorial`: the hub cluster.** Cochange shows every pair in this set at 1–3× (e.g.
   `adapty-flow-builder`+`builder-ui` 3×, `builder-ui`+`paywall-builder-templates` 2×). Directly confirmed
   in git history: commit `660fd74dd` ("New videos + YouTube playlist callout") touched all five in one
-  pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow Builder
+  pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow & Paywall Builder
   narrative, its embedded videos, or its "what you can build" list ripples across this whole cluster.
 - **`flow-common-issues#a-flow-wont-preview-or-publish` is the single canonical list of "blocks
   previewing and publishing" conditions.** Adding a new publish-blocking condition anywhere in the
@@ -255,7 +287,7 @@ with the SDK side — see "Reader jobs" for exactly which `sdk-flows-display`/`s
 
 ## Ticket language
 
-Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔ flow in v4, remote config ↔ custom JSON) live in
+Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow in v4, remote config ↔ custom JSON) live in
 `aliases.md` and are deliberately not repeated here. Several filenames in this zone are frozen from the
 pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rarely matches the id.
 
@@ -263,7 +295,8 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 |---|---|
 | "flow logic", "flow behavior", "the branch didn't fire", "what does this panel do", "where is the publish button" | This zone, not `flow-design` — apply the Boundaries test (trigger/action/condition/variable/lifecycle = here; layout, look, style, copy = `flow-design`). A pure "tour the interface" question is `builder-ui`, which is also the fastest way to answer "where is X in the editor". |
 | "create a flow", "start from a template", "template gallery", "duplicate flow name warning" | `paywall-builder-templates` — the create-a-flow entry point despite the pre-flow filename. `adapty-flow-builder` only orients; it doesn't walk the creation steps. |
-| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. |
+| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. Since ADP-7541 the "won't publish" half has names: **No product selected**, **This product no longer exists**, **This product is off this screen**, **Offer required** — all listed with fixes in `flow-common-issues`, and fixed in bulk from the **Products** panel (`paywall-product-block#product-actions`). |
+| "product shows as Missing", "off this screen", "Can't publish yet", "the same product appears twice in the panel", "how do I swap a product on every screen" | `paywall-product-block#product-actions`. **Missing** = deleted from the Dashboard catalog; **off this screen** = exists but not on that screen's list (after a panel **Remove**). Two entries for one product = two product-and-offer pairs. **Replace in N places** rewrites every use on one screen and offers the same change on the other screens that use the pair. |
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
 | "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. |
@@ -278,6 +311,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
+| "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
 
 ## Gaps and misses
 
@@ -306,6 +340,23 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 - **Tooling note:** `mill:assign` rejects `--role=troubleshooting`; the valid set is `entry`, `how-to`,
   `reference`, `conceptual`, `migration`, `legacy-orphan` (`scripts/context-mill/zones.mjs:8`), so this
   article is filed as `reference`.
+
+- **`import-from-figma`'s fidelity claims were Jira-sourced and two of them were wrong** (written
+  2026-08-27, re-measured 2026-09-08). "Prototype interactions are dropped" and "pricing cards import as
+  plain frames" both failed against real imports: the converter wires Navigate to screen actions (linear, layer
+  order, prototype links ignored) and builds product groups with Purchase actions and `_meta.screens.*.products`
+  placeholder slots. Fonts split: SF Pro → `{type:"system"}`; anything else → `{type:"user", id:<name>}`
+  plus a `_meta.fonts` entry pointing at a jsDelivr Fontsource `latin-400-normal.ttf`, which the app's
+  font list doesn't know, so the dropdown shows **Select font** while the preview renders it — the article
+  deliberately documents only the symptom. Still unverified: whether the mapper would bind products whose
+  titles match the design (the test app had none), and why auto-layout chart bars drop out of a flattened
+  raster. The mapper itself (`services/figma_to_iflow.py` in `adapty-agents`) remains unreadable from here;
+  ADP-7158's own description warns that "neither child statuses nor assignees carry signal here", so keep
+  measuring against minted configs rather than tickets.
+  One claim was already wrong and cut before publication: an earlier draft said designs on Google Fonts
+  "import most cleanly", inferred from ADP-7158 saying non-Google faces fail — which does not follow, and
+  `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
+  in the corpus.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or

@@ -35,18 +35,19 @@ Adapty agrupa a los usuarios por `subscription_state` (`subscribed`, `active_tri
 :::note
 Un Firebase App Instance ID es específico del dispositivo. Cuando el mismo usuario de Adapty abre la app en otro dispositivo, el nuevo Firebase ID sobreescribe el anterior. Usa un [customer user ID](identifying-users) para mantener la identidad del usuario en todos los dispositivos.
 :::
-### Compras de Stripe \{#stripe-purchases\}
+### Compras web (Stripe y Paddle) \{#web-purchases-stripe-and-paddle\}
 
-Una compra de Stripe llega a Firebase solo si el comprador abrió tu aplicación móvil **primero**. El Firebase App Instance ID debe establecerse **antes** de que se procese la compra de Stripe.
+Una compra de Stripe o Paddle llega a Firebase solo si el comprador abrió primero tu aplicación móvil. El Firebase App Instance ID debe configurarse **antes** de que se realice la compra web.
 
-En las compras de App Store y Play Store esto ocurre de forma automática. Se originan dentro de tu aplicación móvil, junto con la llamada a [`setIntegrationIdentifier`](#configure-your-app-code). El ID de Firebase ya está presente cuando se efectúa la compra.
-Las compras de Stripe se originan fuera de la app, en tu servidor. Tu app móvil debe llamar a `setIntegrationIdentifier` al arrancar — antes de que se produzca cualquier compra de Stripe. De lo contrario, Adapty no tiene ningún ID al que asociarla, y la compra de Stripe nunca llega a Firebase.
+En las compras de App Store y Play Store, esto ocurre automáticamente. Se originan dentro de tu aplicación móvil, junto con la llamada a [`setIntegrationIdentifier`](#configure-your-app-code). El ID de Firebase ya está presente cuando se realiza la compra.
+
+Stripe y Paddle procesan las compras fuera de la app, en la web. Tu app móvil debe llamar a `setIntegrationIdentifier` al iniciar —antes de que se realice cualquier compra web—. De lo contrario, Adapty no tiene ningún ID al que asociarla y la compra nunca llega a Firebase.
+
 ### Limitaciones \{#limitations\}
-- **No es una herramienta de atribución de Google Ads.** Esta integración envía eventos de Adapty a Firebase y Google Analytics para análisis. No atribuye instalaciones de la app a campañas de Google Ads (UAC / Universal App Campaigns) ni separa el tráfico de pago del orgánico. Para la atribución de instalaciones, utiliza la función integrada [Atribución de Adapty](adapty-user-acquisition).
-- **Los eventos históricos llegan a Firebase en el primer lanzamiento del usuario.** Adapty no reenvía los eventos procesados antes de activar la integración. Sin embargo, cuando un suscriptor existente lanza por primera vez una versión con el SDK de Adapty, Adapty ingiere su historial completo en el store y lo reenvía como cualquier otro evento — y Firebase mapea las compras iniciales, renovaciones, conversiones de prueba y compras únicas todas sobre el evento `purchase` de GA4, por lo que Adapty envía cada renovación retroactiva con los ingresos asociados. (Los datos históricos también están disponibles en las exportaciones de Adapty a [S3](s3-exports) / [GCS](google-cloud-storage), pero importarlos a Firebase no forma parte de esta integración.)
-- **Los compradores solo en web no llegan a Firebase.** Adapty reenvía las compras a Firebase mediante el Firebase App Instance ID establecido por tu app móvil. Los compradores que nunca instalaron la app no tienen ID — sus compras no llegan a Firebase. Consulta [Compras de Stripe](#stripe-purchases) más arriba para más detalles, y considera la [integración de Firebase de FunnelFox](https://funnelfox.com/docs/integrations/subscription-management/adapty) o un flujo de datos web de Google Analytics para el seguimiento en web.
-- **Las compras de Paddle no están incluidas.** Esta integración no admite Paddle actualmente. Las compras de Paddle permanecen en Adapty Analytics y no llegan a Firebase por esta vía.
-- **Las compras de Stripe heredan las limitaciones propias de Stripe.** Consulta las [limitaciones de la integración con Stripe](stripe#current-limitations).
+- **No es una herramienta de atribución de Google Ads.** Esta integración envía eventos de Adapty a Firebase y Google Analytics con fines analíticos. No atribuye instalaciones de la app a campañas de Google Ads (UAC / Universal App Campaigns) ni separa el tráfico de pago del orgánico. Para la atribución de instalaciones, usa la [Atribución de Adapty](adapty-user-acquisition) integrada.
+- **Los eventos históricos llegan a Firebase en el primer lanzamiento del usuario.** Adapty no reenvía los eventos procesados antes de activar la integración. Sin embargo, cuando un suscriptor existente lanza por primera vez una versión con el SDK de Adapty, Adapty importa su historial completo del store y lo reenvía como cualquier otro evento — y Firebase mapea las compras iniciales, renovaciones, conversiones de prueba y compras únicas al evento `purchase` de GA4, por lo que Adapty envía cada renovación retroalimentada con los ingresos asociados. (Los datos anteriores también están disponibles en las exportaciones de [S3](s3-exports) / [GCS](google-cloud-storage) de Adapty, pero importarlos a Firebase no forma parte de esta integración.)
+- **Los compradores solo en web no llegan a Firebase.** Adapty reenvía las compras a Firebase mediante el Firebase App Instance ID que establece tu app móvil. Los compradores que nunca han instalado la app no tienen ID: sus compras no llegan a Firebase. Consulta [Compras web (Stripe y Paddle)](#web-purchases-stripe-and-paddle) más arriba para más detalles, y considera la [integración de FunnelFox con Firebase](https://funnelfox.com/docs/integrations/subscription-management/adapty) o un flujo de datos web de Google Analytics para el seguimiento web.
+- **Las compras web heredan las limitaciones específicas del store.** Consulta las [limitaciones de la integración con Stripe](stripe#current-limitations) y las [limitaciones de la integración con Paddle](paddle#current-limitations).
 
 ## Instrucciones de configuración \{#setup-instructions\}
 ### Configurar Firebase \{#configure-firebase\}
@@ -55,16 +56,18 @@ Las compras de Stripe se originan fuera de la app, en tu servidor. Tu app móvil
 2. Vincula el proyecto a una propiedad de Google Analytics. Firebase te lo solicita durante la creación del proyecto, o puedes añadirlo más tarde en **Project settings** > **Integrations** > **Google Analytics**.
 
     <ZoomImage id="firebase-analytics-integration-settings.webp" width="700px" alt="Página de configuración de integración de Firebase en el Adapty Dashboard" />
-3. En **Project settings** > **General** > **Your apps**, añade una entrada para cada plataforma en la que publiques (iOS / Android / Web). Para Stripe, añade una entrada de app Web — no existe un tipo de app nativa para Stripe. Cada entrada genera un **Firebase App ID** único y un flujo de datos correspondiente en Google Analytics. Pegarás el ID en la configuración de la integración de Firebase de Adapty durante la configuración.
+3. En **Project settings** > **General** > **Your apps**, añade una entrada por cada plataforma en la que publiques (iOS / Android / Web). Para Stripe y Paddle, añade una entrada de aplicación Web, ya que ninguno de los dos tiene un tipo de app nativa. Cada entrada genera un **Firebase App ID** único y el correspondiente flujo de datos en Google Analytics. Pegarás ese ID en la configuración de la integración con Firebase de Adapty durante la configuración.
 
-    <ZoomImage id="firebase-app-id.webp" width="700px" alt="Firebase Console mostrando el App ID para una entrada de app iOS" />
+    <ZoomImage id="firebase-app-id.webp" width="700px" alt="Firebase Console showing the App ID for an iOS app entry" />
+
 ### Configurar Adapty \{#configure-adapty\}
 
 1. Abre [**Integrations** > **Firebase**](https://app.adapty.io/integrations/firebase) en el Adapty Dashboard.
 
-2. Activa el toggle **Firebase integration**.
+2. Activa el botón **Firebase integration**.
 
-3. Introduce las credenciales de cada plataforma en la que publiques tu app. Adapty necesita tanto un **Firebase App ID** como un **Google Analytics secret** para cada plataforma — los valores difieren entre iOS, Android y Stripe.
+3. Introduce las credenciales para cada plataforma en la que publiques. Adapty necesita tanto un **Firebase App ID** como un **Google Analytics secret** para cada plataforma — cada valor es distinto en iOS, Android, Stripe y Paddle. Una plataforma que tenga solo uno de los dos valores no enviará eventos.
+
 | Adapty Dashboard | Google Analytics | Dónde encontrarlo |
    | --- | --- | --- |
    | **Firebase App ID** | **App ID** | Firebase Console > **Project settings** > **General** > **Your apps** |
@@ -79,7 +82,8 @@ Las compras de Stripe se originan fuera de la app, en tu servidor. Tu app móvil
 
   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Fila de datos de ingresos de la integración con Firebase con los cuatro controles" />
 
-5. Asigna los eventos de Adapty a los nombres de eventos de Firebase/Google Analytics. Adapty ofrece mapas de eventos independientes para **iOS** y **Android**, de modo que puedes usar nombres distintos por plataforma. **Las compras de Stripe usan el mapa de eventos de iOS** — no existe un mapa separado para Stripe.
+5. Asigna los eventos de Adapty a los nombres de eventos de Firebase/Google Analytics. Adapty ofrece mapas de eventos independientes para **iOS** y **Android**, por lo que puedes usar nombres distintos por plataforma. **Las compras de Stripe y Paddle utilizan el mapa de eventos de iOS**: no existe un mapa independiente para ninguno de ellos.
+
 Google Analytics aplica límites estrictos del Measurement Protocol: nombres de eventos de 40 caracteres, nombres de propiedades de usuario de 24 caracteres y valores de 36 caracteres. Google Analytics descarta silenciosamente los eventos personalizados que superan estos límites.
 
     :::warning

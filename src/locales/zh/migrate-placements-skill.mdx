@@ -1,0 +1,150 @@
+---
+title: "将版位迁移到流程的 Agent 技能"
+description: "安装 migrate-placements 技能，让你的 AI 编程工具将应用从付费墙版位迁移到流程版位，每个旧版位对应一个新版位。"
+metadataTitle: "迁移版位 Agent 技能 | 流程与付费墙编辑工具 | Adapty 文档"
+---
+
+迁移付费墙版位功能可将基于付费墙的应用迁移至流程。将 AI 编程工具指向您的账户后，它会通过 [Adapty CLI](developer-cli-quickstart) 读取所有版位，计算本次迁移所需的流程数量，并为每个要迁移的付费墙版位创建一个新的流程版位。最终您将获得一张旧版位 ID 与新版位 ID 的对应表，以及应用中唯一需要修改的那个调用。
+
+**它会创建新版位，而不是转换现有版位。** 版位的内容类型在创建时就已固定，因此付费墙版位无法转换为流程版位——详见[为你的流程创建新版位](migrate-to-flows#create-a-new-placement-for-your-flow)。每个新的流程版位会与其替代的付费墙版位并行运行，旧版位将持续提供服务，直到你的应用发布相应变更。
+
+该技能不负责设计流程内容——那是 [flow-generator skill](flow-generator-skill) 的职责——也不编写你的应用代码，那由对应平台的 [SDK integration skill](manage-adapty-with-ai#skill-based-integration) 负责。它只读取你的付费墙版位信息，从不对其进行编辑。
+
+## 开始之前 \{#before-you-start\}
+
+- **支持技能的 AI 编程工具**：Claude Code、GitHub Copilot CLI、OpenAI Codex 和 Gemini CLI 均可使用。
+- **每个要迁移的付费墙都需要对应的流程，或制定获取流程的计划**：该技能会逐一询问每个付费墙的流程来源，其中一个选项是在看板中点击操作。详见[流程内容的来源](#where-the-flow-content-comes-from)。
+- **在路线图中纳入 Adapty SDK v4**：流程仅在 SDK v4 及更高版本上运行，因此迁移工作需随应用发版完成。在该版本正式发布之前，技能所创建的内容不会触达用户。
+
+## 安装技能 \{#install-the-skill\}
+
+migrate-placements 包含在 `adapty-skills` 插件（[`adaptyteam/adapty-skills`](https://github.com/adaptyteam/adapty-skills)）中，与 flow-generator 和 flow-audit 一并提供——安装一次即可获得插件中的所有技能。
+
+:::tip
+**已为其他 Adapty 技能安装过该插件？那你已经拥有这个技能了。** 插件会自动更新，因此下次启动会话时 migrate-placements 就已就位，无需额外操作。
+:::
+
+在 Claude Code 中首次安装：
+
+```bash
+claude plugin marketplace add adaptyteam/adapty-skills
+claude plugin install adapty-skills@adapty
+```
+
+然后运行 `/reload-plugins` 激活技能。对于其他 AI 编程工具，请按照 [flow-generator 的安装步骤](flow-generator-skill#install-the-skill) 操作——同一个仓库，相同的命令。这些方式会将技能直接复制到指定位置，而非安装插件，因此如果上次安装后有新增技能，需要重新执行安装命令。
+
+然后发出指令——在支持斜杠命令映射技能的工具中使用 `/migrate-placements`，在不支持的工具中则输入"Use the migrate-placements skill"。
+
+## 示例提示词 \{#example-prompts\}
+
+#### 迁移面向用户的版位 \{#move-the-placements-that-serve-users\}
+
+```
+Migrate the active paywall placements in my app to flows. Skip the inactive
+ones for now and tell me how many you left out.
+```
+
+#### 复用已转换的流程 \{#reuse-the-flows-you-already-converted\}
+
+```
+Migrate my paywall placements to flows. I've already converted three of the
+paywalls with Move to new builder — reuse those flows instead of building new ones.
+```
+
+#### 先在静默版位上演练 \{#rehearse-on-the-quiet-placements-first\}
+
+```
+Start with my inactive paywall placements so I can watch the whole thing run
+without exposing users, then do the live ones.
+```
+
+#### 仅迁移应用的某一区域 \{#migrate-one-app-area\}
+
+```
+Migrate only the four onboarding placements in my app, not the in-app upsells.
+Show me the placement IDs you'd create before you create anything.
+```
+
+## 工作原理 \{#how-it-works\}
+
+整个流程分为八个阶段，只有第七阶段才会向你的账户写入任何内容。
+
+1. **解析与探测。** 安装或更新 [Adapty CLI](developer-cli-quickstart)，确认您的 Adapty 登录状态，并读取您的应用 ID。
+2. **清点资源。** 读取应用中的每个版位，翻页直至列表末尾，而非仅信任第一页的结果。
+3. **分类与分组。** 将每个目标受众归类为：可迁移、已在某个流程上，或无需操作；然后按各目标受众所服务的付费墙进行分组。该分组即为流程规划方案：**每个不同的付费墙对应一个流程**，所有使用该付费墙的版位共享同一流程，这样您只需优化一个流程，而非五个副本。
+4. **提出两个问题。** 迁移账户的范围，以及每个流程内容的来源。请参阅[流程内容的来源](#where-the-flow-content-comes-from)。
+5. **发布流程。** 对于尚无流程的付费墙，该技能会创建一个流程，将配置保存至其中，发布该流程，并等待状态变为 `published`。已发布的流程则直接记录为现有状态。此处发布操作至关重要，因为草稿状态的流程无法附加到版位。
+6. **展示关卡。** 列出所有拟创建的版位 ID，以及尚未完成的操作。
+7. **创建版位。** 在您确认后，对范围内的每个付费墙版位执行一次 `placements create`。
+8. **报告与交接。** 提供旧版到新版的映射关系，以及供开发者参考的 SDK 调用变更说明。
+
+Proposed IDs follow your existing ones — `main` becomes `main-flow` — and each is verified against every placement ID already in the app.
+
+## 流程内容的来源 \{#where-the-flow-content-comes-from\}
+
+新建版位需要一个已发布的流程才能正常运行，而该功能会针对每个付费墙询问你选择哪种路由方式。它不会替你做决定，因为这四种路由方式呈现给用户的内容各不相同。
+
+| 路由 | 说明 | 适用场景 |
+|---|---|---|
+| **Reuse** | 该技能将已有的流程附加到版位。若流程仍为草稿，会先发布。 | 您已构建或转换好该流程。只要存在候选流程，此路由优先提供。 |
+| **Convert** | 您在付费墙页面点击 **Move to new builder**，该技能等待操作完成，重新读取账户信息，并读取生成的流程。 | 付费墙是用旧版付费墙编辑工具构建的。请参阅[将付费墙转换为流程](convert-paywall-to-flow)。 |
+| **Build** | 该技能将付费墙交给 [flow-generator](flow-generator-skill) 来设计流程。 | 转换无法还原付费墙，或您希望重新设计界面而非直接复制。 |
+| **Stub** | 该技能发布一个只有单屏的最小化流程，确保版位有内容可供展示。 | 最后手段。Stub 会向用户展示占位内容，因此需要您明确确认。 |
+
+该技能在构建任何内容之前，会先查找现有的流程，并**仅通过名称**将其与你的付费墙匹配——Adapty 不会记录某个流程来自哪个付费墙。因此，它找到的每个候选项都需要你确认，而你重命名过的流程将完全无法被找到。请对照你的[流程列表](https://app.adapty.io/flows)进行核实——CLI 没有删除流程的命令，所以误创建的流程需要你在看板中手动删除。
+
+**将付费墙迁移至新版编辑工具**的功能是否可用，技能本身无法直接判断——该按钮仅出现在使用旧版付费墙编辑工具创建的付费墙上，而 CLI 不会报告某个付费墙是由哪个编辑工具创建的。技能会描述该按钮的位置和外观，由你来反馈实际找到的结果。
+
+## 您需要确认的内容 \{#what-you-approve\}
+
+在创建任何内容之前，该功能会先输出一个供您查阅和回答的确认块。其中列明您的应用名称、即将创建的版位数量，以及完整的新旧对照表（而非缩略计数）。
+
+同一确认块还会说明，您的"是"不会触发哪些操作：
+
+- **您的付费墙版位不受影响**：它们在整个过程中持续提供服务，这也是回滚的方式——在您的应用发布新调用之前，用户端不会发生任何变化，因此不发布任何内容即可回滚迁移。
+- **此操作尚未触达用户**：您的应用需要在当前调用旧版位 ID 的地方改为调用 `getFlow`，并传入新的版位 ID。
+- **选择"否"会停止版位，而非流程**：运行过程中已创建的流程仍保留在您的账户中，且没有任何 CLI 命令会删除流程。该技能会列出数量及删除位置。
+
+## 您将获得什么 \{#what-you-get\}
+
+运行结束后，您将看到统计数据——创建成功、已跳过以及失败（含原因）的数量，以及供开发者使用的映射关系：
+
+| 旧付费墙版位 | 新流程版位 |
+|---|---|
+| `onboarding_main` | `onboarding_main-flow` |
+| `paywall_settings` | `paywall_settings-flow` |
+
+在 SDK v4 中，`getFlow` 可同时读取流程版位和付费墙版位，因此无论哪种情况，你的应用都调用同一个方法——变化的是版位 ID，而不是方法本身。将具体实现交给对应平台的 SDK 集成技能处理，各平台的调用点由其负责维护：[iOS](adapty-sdk-integration-skill) · [Android](adapty-sdk-integration-skill-android) · [React Native](adapty-sdk-integration-skill-react-native) · [Flutter](adapty-sdk-integration-skill-flutter) · [Unity](adapty-sdk-integration-skill-unity) · [Kotlin Multiplatform](adapty-sdk-integration-skill-kmp) · [Capacitor](adapty-sdk-integration-skill-capacitor)。
+
+在 v4 采用率足够高之前，请同时保留两个版位。使用旧版本的用户已将旧版位 ID 编译进应用，在更新前无法进入该流程，因此两个版位各自独立计算数据——将它们作为独立的同期群对比即可。[迁移到流程](migrate-to-flows)涵盖完整的迁移流程。
+
+## 它不会做什么 \{#what-it-wont-do\}
+
+- **就地转换版位**：不支持此操作。Adapty 拒绝更改类型，因此每次迁移都必须新建一个版位。
+- **复用旧版位 ID**：版位 ID 在整个应用中唯一，无论类型如何，新的流程版位需要一个其他版位未使用过的 ID——包括它所替换的付费墙版位。
+- **修改已有内容**：不会编辑或删除任何已有版位、付费墙或流程，该功能只会读取它们并在旁边新建。
+- **未经确认就创建版位**：每个提议的 ID 都必须先通过[审批环节](#what-you-approve)。
+- **为已有流程的付费墙再建一个流程**：除非你拒绝复用现有流程，否则不会重复创建——因为重复的流程需要你手动删除。
+- **编写应用代码**：运行到交接环节即结束。
+
+## 限制 \{#limitations\}
+
+#### 包含多个市场细分的目标受众需要先处理 \{#an-audience-with-several-segments-has-to-be-resolved-first\}
+
+针对多个[市场细分](segments)的目标受众可以读取，但无法写回，因此该技能无法在新版位上重新创建它。它会将这些版位标记为已阻塞并说明原因，也不会主动拆分或删除某个市场细分——那样会改变用户的可见内容，这属于你的决策范围。请在看板中处理这些情况，其余迁移工作会正常继续推进。
+
+#### A/B 测试的目标受众对该技能不可见 \{#ab-test-audiences-arent-visible-to-the-skill\}
+
+读取版位时，只会返回其付费墙和流程的目标受众，其他类型会被静默忽略。[A/B 测试](ab-tests)的目标受众就属于这类情况，且响应中不会有任何提示说明某条记录被跳过，因此无法通过技能检测到。其计数仅反映 API 返回的内容。对于任何已知运行 A/B 测试的版位，请在看板中查看目标受众列表——新的流程版位不会携带技能从未获取到的目标受众。
+
+#### 端到端验证须在发布后方可完成 \{#nothing-is-verified-end-to-end-until-you-ship\}
+
+该技能本身的检查止步于"流程已发布且版位已存在"。流程对真实用户是否有效是另一个问题——在发布前请对每个流程运行 [flow-audit](flow-audit-skill)，并在应用调用新版位后进行一次沙盒购买测试。
+
+## 接下来做什么 \{#whats-next\}
+
+- [迁移到流程](migrate-to-flows) — 完整的迁移流程，包括该技能涉及的 SDK 升级。
+- [将付费墙转换为流程](convert-paywall-to-flow) — Convert 路由所依赖的 **Move to new builder** 点击操作。
+- [flow-generator 技能](flow-generator-skill) — 构建和编辑该技能所附加的流程内容。
+- [flow-audit 技能](flow-audit-skill) — 在流程上线到版位之前检查其是否符合生产要求。
+- [Adapty CLI 参考](developer-cli-reference#placements) — 该技能运行的版位命令。

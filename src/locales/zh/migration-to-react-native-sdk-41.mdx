@@ -1,0 +1,126 @@
+---
+title: "将 Adapty React Native SDK 迁移至 v4.1"
+description: "迁移至 Adapty React Native SDK v4.1：显式启用 Adapty Attribution，采用重命名后的外部归因 API，并重新下载备用文件。"
+metadataTitle: "迁移至 Adapty React Native SDK v4.1 | Adapty 文档"
+---
+
+Adapty React Native SDK 4.1 更改了 Adapty Attribution 的启用方式，重命名了外部归因 API，并更改了备用文件格式。此外，它还支持应用接管 App Store 推广应用内购买，并恢复了 `AdaptyFlow` 上的 `hasViewConfiguration` 标志。
+
+:::warning
+重命名的 API 是硬性中断。旧名称已被彻底移除——没有任何废弃别名可以过渡。针对 4.0.x 进行类型检查的代码，在未将下列所有调用点重命名之前，将无法通过 4.1 的编译。
+:::
+
+如果你仍在使用 3.x，请先参阅[迁移至 v4.0](migration-to-react-native-sdk-v4)，再按本指南操作。
+
+## 快速参考 \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| 默认启用 Adapty 归因 | 默认禁用 Adapty 归因；通过 `adaptyAttributionEnabled: true` 启用 |
+| `adapty.updateAttribution(attribution, source)` | `adapty.updateExternalAttribution(attribution, provider)` |
+| `AttributionSource` | `AdaptyExternalAttributionProvider`，新增 `'custom'` 值 |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| 已下载 4.0 版备用文件 | 新备用文件格式；请重新下载文件 |
+| 推广型应用内购买自动完成，无法拦截 | `'onPromotedPurchaseReceived'` 事件和 `adapty.makePromotedPurchase(product)` 将完成控制权交给您的应用 |
+| `AdaptyFlow` 中不包含 `hasViewConfiguration` | `hasViewConfiguration` 重新加入 `AdaptyFlow` |
+| iOS 项目通过 CocoaPods 集成 | CocoaPods，或在纯 React Native 项目中使用 React Native 的 SPM 集成 |
+
+## 安装 \{#installation\}
+
+更新 `react-native-adapty` 包：
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+运行时要求与 4.0 版本相同：**iOS 15.0** 和 **React Native 0.75**。完整配置步骤请参阅[安装 Adapty SDK](sdk-installation-reactnative)。
+
+4.1 版本还支持 React Native 的 SPM 集成，可替代 iOS 项目中的 CocoaPods，需要 **React Native 0.87** 或更高版本。该集成仅适用于纯 React Native 项目，CocoaPods 仍为默认选项，迁移为可选操作——详见[设置 iOS 项目](sdk-installation-react-native-pure#set-up-your-ios-project)。如果您的应用使用了[儿童模式](kids-mode-react-native)，不同的包管理器在处理方式上有所差异。
+
+## ⚠️ Adapty 归因默认已禁用 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+如果你升级到 SDK 4.1 却未主动启用，[Adapty 归因](user-acquisition)将静默失效——安装事件停止记录，且不会有任何提示。
+:::
+
+在 4.0 及更早版本中，SDK 会自动为 [Adapty Attribution](user-acquisition) 注册安装记录。从 4.1 开始，此功能默认关闭：SDK 不再注册安装，`'onInstallationDetailsSuccess'` 和 `'onInstallationDetailsFail'` 事件不会触发，`getCurrentInstallationStatus` 返回 `not_available` 状态。
+
+如果你使用 Adapty Attribution，请在激活 SDK 时启用该功能：
+
+```diff showLineNumbers
+  adapty.activate('YOUR_PUBLIC_SDK_KEY', {
++   adaptyAttributionEnabled: true,
+  });
+```
+
+如果你未使用 Adapty Attribution，则无需做任何更改。
+
+## 重命名的外部归因 API \{#renamed-external-attribution-apis\}
+
+用于从外部提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义来源）传入归因数据的 API 已重命名，以与原生 SDK 保持一致。
+
+### updateAttribution → updateExternalAttribution
+
+该方法已重命名，第二个参数也从 `source` 改为 `provider`。归因数据仍为普通对象：
+
+```diff showLineNumbers
+- await adapty.updateAttribution(attribution, 'adjust');
++ await adapty.updateExternalAttribution(attribution, 'adjust');
+```
+
+### AttributionSource → AdaptyExternalAttributionProvider
+
+提供者类型已重命名。它仍然是一个开放联合类型——预定义值为 `'apple_search_ads'`、`'adjust'`、`'appsflyer'`、`'branch'`、`'tenjin'`，以及新增的 `'custom'`（用于 Adapty 未直接集成的提供者）。同时也接受任意其他字符串，因此 Adapty 后续新增的提供者无需更新 SDK 即可使用：
+
+```diff showLineNumbers
+- import type { AttributionSource } from 'react-native-adapty';
++ import type { AdaptyExternalAttributionProvider } from 'react-native-adapty';
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+该用户画像属性用于列出已应用到用户画像的归因提供商，现已重命名，其元素类型也相应更改：
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources?.includes('apple_search_ads')) {
++ if (profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+读取该属性的代码需要更新——请参阅[展示 Apple Ads 定向付费墙](react-native-show-aa-targeted-paywall)。
+
+## 备用文件 \{#fallback-files\}
+
+[备用文件](fallback-flows)的格式在 SDK 4.1 中有所变更。即使你已为 4.0 下载过备用文件，也请重新从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 下载并打包进你的应用。
+
+:::warning
+跳过此步骤不会产生构建错误。但如果跳过，`setFallback` 会拒绝过时的文件，所有版位将失去备用付费墙。
+:::
+
+## `hasViewConfiguration` 恢复至 AdaptyFlow \{#hasviewconfiguration-returns-to-adaptyflow\}
+
+4.0 在 `AdaptyPaywall` 更名为 `AdaptyFlow` 时移除了 `hasViewConfiguration`。4.1 将其恢复至 `AdaptyFlow`，因此只要将函数名和读取的对象重命名，v3 时代的 `hasViewConfiguration` 分支即可重新正常工作：
+
+```diff showLineNumbers
+- if (paywall.hasViewConfiguration) {
+-   const view = await createPaywallView(paywall);
++ if (flow.hasViewConfiguration) {
++   const view = await createFlowView(flow);
+    await view.present();
+  }
+```
+
+在 4.0 版本中，当标志不存在时，`createFlowView` 会对没有视图配置的流程抛出 `AdaptyError`。4.1 版本中这一行为依然保持——该标志是捕获异常的替代方案，而非替代品。请参阅[获取视图配置](react-native-get-pb-paywalls#fetch-the-view-configuration)。
+
+## App Store 推广应用内购买 \{#app-store-promoted-in-app-purchases\}
+
+在 4.0 版本中，[在 App Store 产品页面推广的应用内购买](react-native-making-purchases#in-app-purchases-from-the-app-store)会自动完成，Adapty 会像处理普通交易一样记录该交易，但你的应用无法拦截它。4.1 版本新增了这个钩子，因此这是一项新能力，而非迁移步骤：即使不添加任何代码，SDK 仍会自动为你完成推广购买。
+
+仅编写代码以自行接管完成流程——例如先显示一个页面。为新的 `'onPromotedPurchaseReceived'` 事件注册监听器，并使用 `adapty.makePromotedPurchase` 完成购买。注册该监听器后，SDK 将不再自动为你完成促销购买。
+
+:::warning
+此钩子基于 StoreKit 2 构建，需要 **iOS 16.4** 或更高版本。低于 iOS 16.4 时，该事件不会触发，促销购买将按 4.0 的方式完成。该事件在 Android 上也不会触发。
+:::

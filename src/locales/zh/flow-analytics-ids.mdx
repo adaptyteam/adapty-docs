@@ -1,0 +1,63 @@
+---
+title: "为分析工具命名 ID"
+description: "为流程中的屏幕、输入项和测验选项设置易读的 ID，让发送到 Amplitude 或 Mixpanel 的事件显示为名称而非代码。"
+metadataTitle: "为分析工具命名流程 ID | 流程编辑工具 | Adapty 文档"
+---
+
+Adapty SDK 会将每次屏幕浏览和每个回答上报给您的应用。每个事件都包含其所属屏幕或元素的 ID，而这些 ID 正是您自己的分析工具所展示的内容。默认情况下，屏幕 ID 的格式类似 `scr_oAPBHPa7`，因此在 Amplitude 或 Mixpanel 中查看漏斗时，看到的全是一列代码，还需要有人手动维护一份代码与名称的对照表。
+
+您可以自定义这些 ID。输入控件和可选组的命名在付费墙编辑工具中设置，屏幕 ID 则通过 [flow-generator skill](flow-generator-skill) 来设置——修改后，该 ID 在整个流程中所有引用该屏幕的地方都会同步更新。
+
+:::important
+重命名屏幕是流程生成器技能的一部分，无需额外安装——按照[流程生成器的安装步骤](flow-generator-skill#install-the-skill)操作即可。该功能会将更改保存到看板中的流程，请先在草稿上运行，并在付费墙编辑工具中确认结果后再发布。
+:::
+
+## 它的用途 \{#what-its-for\}
+
+- **团队一眼能看懂的漏斗**：`welcome → signup → paywall` 这样的序列，一看就知道发生了什么。三个自动生成的代码则完全看不出含义。
+- **工具间统一的命名体系**：你给某个页面起的名字，在 Adapty 的流程数据指标和自定义埋点中都会用同一个名字，两边数据天然对齐，无需额外的对照表。
+- **可直接查询的答案**：名为 `beginner` 的测验选项，分析师可以直接过滤筛选；而自动生成的 ID 则需要先解码才能使用。
+
+## 您的分析工具能看到哪些 ID \{#which-ids-your-analytics-sees\}
+
+两个事件会携带 ID。[`flow_screen_showed`](ios-flow-screen-views) 在用户打开某个屏幕时触发，[`flow_user_input`](ios-flow-input) 在用户填写输入框、选择测验答案或拨动开关时触发。每份指南都记录了对应事件的所有参数，本表仅涵盖用于标识屏幕或元素的参数。
+
+| 事件参数 | 包含内容 | 设置位置 |
+| :--- | :--- | :--- |
+| `instanceId` | 当前屏幕的 ID | 流程生成技能 |
+| `element_id` | 输入框的 **Element ID**，或可选组的 **Group ID** | Flow Builder |
+| `item_ids` | 所选选项的 **Element IDs** | Flow Builder |
+
+## 命名输入框和测验选项 \{#name-inputs-and-quiz-options\}
+
+输入框和可选组在编辑工具中都有 ID 字段。输入框的 **Element ID** 位于 **Input settings** 中，这也是你在流程其他地方引用该值时使用的 ID — 详见[输入框与表单](builder-inputs-and-forms)。可选组的 **Group ID** 位于 **Screen settings > Selectable groups** 中，其中每个选项也有各自的 **Element ID**。
+
+给每个 ID 起一个一看就懂的名字，因为这个字符串就是你的分析工具里显示的内容。`birthday` 和 `beginner` 无需解释，而 `el_024F` 就需要额外维护一份映射表了。
+
+添加元素时就设置好 ID，不要事后再改。条件和文本变量指向的是**元素 ID**，修改 ID 不会自动更新它们——它们会直接失效，且不报任何错误。如果要重命名一个已正常运行的流程中的 ID，需要逐一更新所有引用了该 ID 的条件和变量。详见[元素 ID 修改后条件与变量失效](flow-common-issues#conditions-and-variables-break-after-an-element-id-change)。
+
+flow-generator 技能会在构建流程时自动为元素命名。[flow-audit 技能](flow-audit-skill)会报告所有缺失 ID 的元素。
+
+## 重命名屏幕 \{#rename-screens\}
+
+流程编辑工具没有提供屏幕 ID 的输入字段，可以向技能发出请求：
+
+```
+Give the screens in my onboarding flow readable IDs.
+```
+
+技能会为每个屏幕提出一个名称，然后在流程中所有引用该屏幕的地方统一完成重命名——包括屏幕本身、每个指向该屏幕的导航动作，以及关联的产品。之所以要一起修改，是因为只在一处改名而其他地方没有同步，流程将无法发布。
+
+它会告诉你修改了哪些名称以及移动了多少个引用，并且不会执行与已有页面冲突的重命名操作。在已正常运行的流程中，页面 ID 可以安全重命名，但 Element ID 则不同：重命名后，系统会将所有相关引用一并迁移。
+
+## 检查内容 \{#what-to-check\}
+
+- **在流程上线前完成重命名**：已采集的事件保留旧 ID，无论是 Adapty 的流程数据图表还是你自己的分析系统都是如此。跨越更名时间点的漏斗会显示两个只填了一半的屏幕，重命名回来也无法将它们合并。
+- **组内每个选项都需要独立的 Element ID**：若某个选项缺少 Element ID、两个选项共用同一个，或 **Group ID** 在另一个屏幕上被复用，整个组将不上报任何数据——不只是那个选项。编辑工具不会发出任何提示，因此每次添加选项后都要检查整个组。
+- **ID 会原样传入你的分析系统**：请选定一种命名风格，例如 `plan_selection` 或 `planSelection`，并在整个流程中保持一致。风格混用比自动生成的代码更难查询。
+
+## 限制 \{#limitations\}
+
+- **屏幕 ID 只能通过技能重命名**：流程编辑工具中没有对应的输入字段。
+- **重命名不会迁移历史数据**：旧事件仍保留旧 ID。
+- **部分元素不会发送输入事件**：密码字段、产品选择和标签页切换均不上报。为其命名会影响流程，但不会影响分析数据。

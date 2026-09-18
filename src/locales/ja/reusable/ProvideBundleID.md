@@ -4,7 +4,9 @@ no_index: true
 
 1. [App Store Connect](https://appstoreconnect.apple.com/apps) を開きます。アプリを選択し、**General** → **App Information** セクションに進みます。
 
-2. **General Information** サブセクションで **Bundle ID** をコピーします。
+2. **General Information** サブセクションにある **Bundle ID** をコピーします。
+
+   識別子のみをコピーしてください。スペースなしのリバース DNS 形式（例：`com.company.app`）です。App Store Connect はアプリ一覧など他の画面でアプリ名を隣に表示しますが、識別子の代わりにそちらをペーストすると接続の検証が失敗します。
 
    
 
