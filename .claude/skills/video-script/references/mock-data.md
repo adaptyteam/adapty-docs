@@ -56,6 +56,14 @@ alone, and the margin between them read 12.4% when their own revenue and counts 
 column whose tooltip describes a completion rate, and it had been filled with a subscriber rate — 6.7%,
 sitting beside two columns whose ratio was 83%. The product's own tooltip text is the specification.
 
+**Copy what the product does, not what the test suite does.** A fixture has to behave like production,
+not just return the shape the screen needs. The profiles fixture first searched with a case-insensitive
+substring match, lifted from the repo's own test handlers; production looks up exactly one profile by
+exact value, and a shot list had already been written around a filtered list that only the fixture
+could produce. Test doubles describe what the frontend needs in order to render — they are not a
+specification. Before building a beat on an interaction — search, filter, sort, pagination, one result
+versus many — read the backend.
+
 **Assume someone divides two columns on a paused frame.** For every visible pair, check that the third
 column is what its header claims. That is how the video 24 fixture was caught, after the recording.
 
