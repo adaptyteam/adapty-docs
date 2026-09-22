@@ -1,0 +1,79 @@
+---
+title: "Email destinations in Adapty Mail"
+description: "The three kinds of page an Adapty Mail email can send a recipient to, and which campaign each one belongs to."
+metadataTitle: "Email Destinations | Adapty Mail | Adapty Docs"
+---
+
+Every Adapty Mail email has a button, and every button leads to a **destination** — a page you own, addressed by a URL that Adapty Mail personalizes for each recipient. Destinations live under **Email Destinations**, and each one is a saved name, URL, and kind.
+
+There are three kinds:
+
+| Kind | The page it points at | How you get the URL |
+| --- | --- | --- |
+| **Web Paywall** | A web checkout where the recipient buys. | Paste your own, or generate one with AI. See [Set up checkout](mail-checkout). |
+| **Deep Link** | A universal link that installs the app if needed, then opens it. | From your linking provider — OneLink, Branch, or Firebase. |
+| **Cancellation Page** | Your own page where a subscription is reviewed, changed, or cancelled. | From your app or billing portal. |
+
+Only the web paywall can be generated. A deep link and a cancellation page are pages you already run, so you paste their addresses.
+
+## Which kind a campaign needs
+
+A destination's kind is chosen when you create it and never changes, because the emails written for a paywall were not written for a deep link. Each campaign accepts one kind, decided by what the campaign is for:
+
+| Campaign | Purpose | Destination kind |
+| --- | --- | --- |
+| Marketing | Any of the five lifecycle moments | Web Paywall |
+| Transactional | Double opt-in | Web Paywall |
+| Transactional | App activation | Deep Link |
+| Transactional | Cancellation page | Cancellation Page |
+
+The campaign form offers only destinations of the kind its purpose calls for, and Adapty Mail refuses a campaign pointed at any other kind. So pick the purpose first: the **Email Destination** dropdown on the campaign fills itself from that choice, and its **Create** link opens the matching form.
+
+## Create a destination
+
+1. Go to **Email Destinations** and select **Web Paywall**, **Deep Link**, or **Cancellation Page**.
+2. Click **Create**.
+3. Give the destination a **Name**. This is what the campaign dropdown shows.
+4. Fill in the **URL**, with placeholders for the values that differ per recipient.
+5. Click **Save**.
+
+A destination is editable while its state is **Draft** — that is, while no campaign points at it. Once one does, the name, the URL, and the hook URL all lock, because the emails written for that destination went out with that address.
+
+## Placeholders
+
+A destination URL carries placeholders that Adapty Mail substitutes per recipient, so the page knows who arrived. The create page lists them and ticks each one it finds in the URL you type.
+
+| Placeholder | Value |
+| --- | --- |
+| `{email}` | The recipient's email address. |
+| `{adapty.external_profile_id}` | The recipient's profile ID in Adapty. |
+| `{funnelfox.external_profile_id}` | The recipient's profile ID in FunnelFox. |
+| `{custom.external_profile_id}` | The user ID you sent through the [Adapty Mail API](mail-send-data-via-api). |
+| `{scheduled_email_id}` | The ID of the email that carried the link. |
+| `{response.<key>}` | A value your own endpoint returns. See [Values only your backend knows](#values-only-your-backend-knows). |
+
+The three profile-ID placeholders are one per source a profile can arrive from, and the page lists all of them whether or not your project uses them. Reach for the one that matches how you send data: `{adapty.external_profile_id}` for the [Adapty integration](mail-collect-emails), `{custom.external_profile_id}` for the [API](mail-send-data-via-api).
+
+A placeholder the recipient has no value for resolves to an empty string, so it never reaches the page as literal text. A placeholder Adapty Mail doesn't recognize blocks the save, and the error names both the placeholder it rejected and the ones it accepts — so a typo such as `{emial}` is caught here rather than in a recipient's browser.
+
+## Values only your backend knows
+
+Some links need a value Adapty Mail has no way to hold — a one-time sign-in token, a session ID, a per-user portal address. Write `{response.<key>}` in the URL, naming the key yourself, and Adapty Mail asks your own endpoint for it.
+
+That endpoint is the **Hook URL**, under **Advanced** on the destination form. The field unfolds on its own once the URL asks for a `{response.<key>}` value, and a URL that asks for one can't be saved without it.
+
+How the call works:
+
+- Adapty Mail sends a **GET** to the hook the moment the recipient clicks, not when the email is sent. A short-lived value therefore arrives fresh.
+- The hook URL takes the same placeholders as the destination, minus `{response.<key>}` itself — that's how your endpoint learns whose link was clicked.
+- Answer with a flat JSON object. Each key you return fills the `{response.<key>}` of the same name, percent-encoded so a value containing `&` can't cut the URL in half. Nested values are dropped, since a URL has nowhere to put them.
+- A key you don't answer keeps its placeholder in the link rather than emptying it, which leaves the page to decide what a missing value means.
+- Every call carries `X-Adapty-Mail-Signature` and `X-Adapty-Mail-Timestamp`. The signature is an HMAC-SHA256 of `<timestamp>.<url>`, keyed with the **Secret key** from **Settings** > **Project** — the same key the [Adapty Mail API](mail-send-data-via-api) uses. Verify it before answering, and reject a stale timestamp: the hook hands out values for whoever the URL names, so an unsigned endpoint would hand them to anyone who asks.
+
+:::warning
+The hook is called while the recipient waits on the redirect, so it gets one attempt and a five-second budget with no retry. An endpoint that is slow or down leaves the click without a working link.
+:::
+
+## What happens after the click
+
+Adapty Mail's part ends at the redirect. It substitutes the values, calls the hook if there is one, and sends the recipient on. Identifying the visitor, taking a payment, and reporting a purchase back are all yours — see [Set up checkout](mail-checkout#what-your-page-has-to-do) for what a paywall page owes, and [Campaign analytics](mail-analytics) for how a reported purchase is attributed to the email that drove it.
