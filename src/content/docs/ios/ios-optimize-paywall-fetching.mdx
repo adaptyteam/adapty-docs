@@ -28,7 +28,9 @@ See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPol
 These methods are available starting from SDK version 4.1.
 :::
 
-`preloadFlows` and `preloadOnboardings` fetch placements into the SDK cache ahead of time. A later `getFlow` or `getOnboarding` call for the same placement then resolves from cache instead of the network, so the paywall renders without a visible wait.
+`preloadFlows` and `preloadOnboardings` write placement JSON into the SDK cache ahead of time — one request per placement, and nothing else. Despite the names, neither method fetches the flow's UI layout or its media.
+
+A later `getFlow` or `getOnboarding` reads that cache only when you pass `fetchPolicy: .returnCacheDataElseLoad` or `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. The default policy, `.reloadRevalidatingCacheData`, goes to the network on every call, so a preload paired with a default-policy fetch costs one extra request and saves nothing — the warmed copy only serves as an offline fallback.
 
 Use them when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the paywall behind a button the user hasn't tapped.
 
@@ -46,6 +48,12 @@ try await Adapty.preloadOnboardings(
     locale: "en",
     loadTimeout: 5
 )
+
+// Later, when the user reaches the paywall:
+let flow = try await Adapty.getFlow(
+    placementId: "main_paywall",
+    fetchPolicy: .returnCacheDataElseLoad
+)
 ```
 
 </TabItem>
@@ -56,6 +64,11 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
     if let error {
         // at least one placement failed to preload
     }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoad) { result in
+    // ...
 }
 ```
 
@@ -74,11 +87,23 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
 - If a placement times out or fails with a network error, the SDK falls back to the default-audience variation for that placement. Other failures are reported as-is.
 - If the timeout fires before the audience-targeted fetch completes, the SDK still attempts the default-audience variation within the remaining budget.
 - Preloading only warms the cache. It doesn't return content — you still call `getFlow` or `getOnboarding` to display it.
-- `preloadFlows` and `preloadOnboardings` never touch media. Requesting the flow's UI configuration (`getFlowConfiguration`) starts caching its images and video in the background, but that caching runs independently of the call — there's no callback, delegate method, or error that reports when it finishes.
+
+### What a preload covers
+
+A flow reaches the screen in layers, and a preload covers only the first:
+
+| Layer | Fetched by | Warmed by a preload |
+|---|---|---|
+| Placement JSON — the chosen variation, its product IDs, and the remote config | `getFlow` | Yes |
+| UI layout — the screen's structure, styling, and text | `getFlowConfiguration` | No |
+| Images, including the still frame that stands in for a video element | `getFlowConfiguration`, in the background | No |
+| Video files | The system player, as the screen renders | Not cached by the SDK |
+
+`getFlowConfiguration` awaits the layout, so on a cold cache that call still costs a round trip after a preload. Once the SDK has the layout, it starts caching the images independently of the call: it doesn't hold up the screen, and there's no callback, delegate method, or error that reports when it finishes.
 
 ### Find out which placement failed
 
-The thrown error is a single `AdaptyError` covering the whole batch, with the code `networkFailed` (2002). To see the individual failures, read its `preloadErrors` property — a dictionary keyed by placement ID:
+The thrown error is a single `AdaptyError` covering the whole batch, with the code `networkFailed` (2005). To see the individual failures, read its `preloadErrors` property — a dictionary keyed by placement ID:
 
 ```swift showLineNumbers
 do {
@@ -91,6 +116,8 @@ do {
 ```
 
 `preloadErrors` is `nil` for any error that didn't come from a preload call, so treat a `nil` value as "not a preload failure" rather than "no failures".
+
+### Skip audience segmentation
 
 To warm the cache without waiting for audience segmentation at all, use the default-audience variants:
 
