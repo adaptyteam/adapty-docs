@@ -136,13 +136,17 @@ Pour ce faire, vous devez ouvrir l'URL au format suivant :
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-## Achats intégrés mis en avant depuis l'App Store \{#promoted-in-app-purchases-from-the-app-store\}
+## Achats intégrés promus depuis l'App Store \{#promoted-in-app-purchases-from-the-app-store\}
 
-:::warning
-Les achats intégrés mis en avant parviennent à votre application à partir de la version 4.1 du SDK, et c'est votre application qui les finalise. Avec le SDK 4.0, le SDK les finalisait lui-même. À partir de la version 4.1, un achat mis en avant pour lequel aucun écouteur n'est enregistré est ignoré — ajoutez donc l'écouteur ci-dessous lors de votre mise à jour. Voir [Migrer vers la v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app).
+:::info
+Les achats intégrés promus sont pris en charge à partir de la version 4.1 du SDK, sur **iOS 16.4** ou ultérieur. En dessous d'iOS 16.4, sur Android et en mode observateur, `didReceivePromotedPurchaseStream` n'émet jamais.
 :::
 
-Lorsqu'un utilisateur lance un achat depuis la page produit de votre App Store et que la transaction est transmise à votre application, le SDK délivre le produit à `didReceivePromotedPurchaseStream`. Abonnez-vous au stream et passez le produit à `makePromotedPurchase` :
+Lorsqu'un utilisateur démarre un achat depuis la page produit de votre App Store et que la transaction est transférée vers votre application, le SDK la finalise automatiquement — l'écran d'achat Apple s'affiche immédiatement, et Adapty traite la transaction comme n'importe quel autre achat. Aucun code de votre côté n'est nécessaire.
+
+Si le produit mis en avant comporte une offre d'abonnement, le SDK l'applique automatiquement lors de l'achat. L'offre est lue depuis l'intention d'achat App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat est effectué au prix de base.
+
+Pour gérer vous-même les achats mis en avant — par exemple pour afficher votre propre écran en premier — abonnez-vous à `didReceivePromotedPurchaseStream` et passez le produit à `makePromotedPurchase` :
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -157,15 +161,13 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 });
 ```
 
-Abonnez-vous juste après `activate` au démarrage de l'application, afin que l'écouteur soit en place avant qu'un achat promu puisse arriver. `didReceivePromotedPurchaseStream` est un broadcast stream qui ne rejoue pas : un produit livré sans qu'aucun écouteur ne soit actif est perdu.
-
-`makePromotedPurchase` ne prend aucun paramètre d'achat, car un produit promu provient de l'App Store et ne porte aucun contexte de paywall. Il retourne le même `AdaptyPurchaseResult` que `makePurchase`.
-
-Si le produit mis en avant inclut une offre d'abonnement, le SDK l'applique automatiquement à l'achat. L'offre est lue depuis l'intention d'achat App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat se fait au tarif de base.
-
-:::info
-Le flux est basé sur StoreKit 2 et nécessite **iOS 16.4** ou une version ultérieure. En dessous d'iOS 16.4, et sur Android, il n'émet jamais.
+:::warning
+Tant qu'un handler est abonné au stream, le SDK cesse de finaliser les achats promus à votre place. Si votre handler n'appelle jamais `makePromotedPurchase`, l'achat n'a pas lieu : l'App Store remet le produit à votre application et attend. Le SDK n'intervient pas non plus si votre handler lève une exception.
 :::
+
+`makePromotedPurchase` ne prend aucun paramètre d'achat, car un produit promu provient de l'App Store plutôt que d'un paywall et ne porte aucun contexte de paywall. Elle retourne le même `AdaptyPurchaseResult` que `makePurchase`.
+
+Qui complète l'achat est déterminé pour chaque événement, donc un stream que vous écoutez uniquement lorsqu'un écran est monté restitue les achats promus au SDK dès que cet écran disparaît. Vous pouvez vous abonner avant `activate`, ce qui vous permet de capturer un achat que le store délivre au lancement.
 
 ## Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
 

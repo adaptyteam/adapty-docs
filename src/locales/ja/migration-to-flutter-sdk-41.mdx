@@ -1,10 +1,10 @@
 ---
-title: "Adapty Flutter SDK を v4.1 に移行する"
-description: "Adapty Flutter SDK v4.1 への移行: Adapty Attribution を明示的に有効化し、名称変更された外部アトリビューション API を採用し、フォールバックファイルを再ダウンロードして、App Store のプロモートされたアプリ内課金を処理します。"
+title: "Adapty Flutter SDK を v4.1 へ移行する"
+description: "Adapty Flutter SDK v4.1 への移行: Adapty Attribution の明示的な有効化、外部アトリビューション API のリネーム対応、フォールバックファイルの再ダウンロード。"
 metadataTitle: "Adapty Flutter SDK v4.1 への移行 | Adapty ドキュメント"
 ---
 
-Adapty Flutter SDK 4.1 では、Adapty Attribution の有効化方法が変更され、外部アトリビューション API の名称が変更され、フォールバックファイルのフォーマットが変更されました。また、App Store のプロモートされたアプリ内課金をアプリに引き渡す機能が追加され、フローのビューを閉じた後も維持する方法が追加されました。
+Adapty Flutter SDK 4.1 では、Adapty Attribution の有効化方法が変更され、外部アトリビューション API がリネームされ、フォールバックファイルの形式が変更されました。また、App Store のプロモーションアプリ内課金のサポートと、フローのビューを閉じた後も維持し続ける方法が追加されています。
 
 :::warning
 名前変更されたAPIは完全な変更です。古い名前は完全に削除されており、移行用の非推奨エイリアスはありません。4.0.xに対してコンパイルできていたコードも、以下に記載されたすべての呼び出し箇所を変更しない限り4.1ではビルドに失敗します。
@@ -18,11 +18,11 @@ Adapty Flutter SDK 4.1 では、Adapty Attribution の有効化方法が変更�
 |---|---|
 | Adapty アトリビューションはデフォルトで有効 | Adapty アトリビューションはデフォルトで無効。`withAdaptyAttributionEnabled(true)` でオプトイン |
 | `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
-| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`（新しい `custom` 値を追加） |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`（新しい `custom` 値が追加） |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
-| 4.0 用のフォールバックファイル | 新しいフォールバックファイル形式。ファイルを再ダウンロードしてください |
-| プロモートされたアプリ内課金は自動で完了 | `didReceivePromotedPurchaseStream` からアプリが完了処理を行う |
-| `dismissFlowView(view)` は常にビューを解放 | `destroy: false` を指定するとビューを保持して再表示できる |
+| 4.0 用のフォールバックファイルをダウンロード済み | 新しいフォールバックファイル形式。ファイルを再ダウンロードしてください |
+| プロモートされたアプリ内課金は非対応 | 対応済み。SDK が処理するか、`didReceivePromotedPurchaseStream` からアプリ側で処理できます |
+| `dismissFlowView(view)` は常にビューを解放 | `destroy: false` を指定するとビューを保持し、再表示できます |
 
 購入、プロファイル、フロー表示の各 API に変更はありません。
 
@@ -108,36 +108,11 @@ final provider = AdaptyExternalAttributionProvider('my_provider');
 この手順を省略してもビルドエラーは発生しません。ただし省略した場合、SDK が古いファイルを拒否し、すべてのプレースメントでフォールバックが機能しなくなります。
 :::
 
-## ⚠️ プロモーションされたアプリ内課金がアプリの応答を待つようになりました \{#promoted-in-app-purchases-now-wait-for-your-app\}
+## App Store プロモーションアプリ内課金 \{#promoted-in-app-purchases\}
 
-:::warning
-これは利便性に合わせて採用する新機能ではなく、動作の変更です。4.0では、[App Storeのプロダクトページでプロモーションされたアプリ内課金](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store)は単独で完了していました。4.1では、アプリがそれをリッスンしている場合にのみ完了します。以下のコードなしに4.1をリリースすると、それらの購入が発生しなくなります — App Storeはプロダクトをアプリに渡しますが、それ以降何も起こりません。
-:::
+Flutter SDK 4.0 は、[App Store プロダクトページでプロモートされたアプリ内課金](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store)をサポートしていませんでした。これは、ベースとなるネイティブ iOS SDK にその API がなかったためです。4.1 ではこの機能が追加されましたが、新たな機能追加であり、移行手順ではありません。新しいコードを追加しなければ、アップデートしてもアプリの動作に変化はありません。
 
-4.0では、AdaptyはプロモートされたAndroid向けの購入を他のトランザクションと同様に記録しており、アプリ側でインターセプトする手段はありませんでした。4.1では、アプリがその制御を持てるようになり、購入を完了させる責任も生じます。
-
-`didReceivePromotedPurchaseStream` を購読し、プロダクトを `makePromotedPurchase` に渡してください：
-
-```dart showLineNumbers
-Adapty().didReceivePromotedPurchaseStream.listen((product) async {
-  try {
-    final result = await Adapty().makePromotedPurchase(product: product);
-    // process the purchase result
-  } on AdaptyError catch (e) {
-    // handle the error
-  }
-});
-```
-
-`activate` の直後、アプリ起動時にプロモーション購入が届く前にストリームを購読してください。このストリームはブロードキャストストリームであり、再生機能はありません。リスナーがいない間に配信されたプロダクトはドロップされ、購入は失われます。
-
-`makePromotedPurchase` は購入パラメーターを受け取りません。プロモーション対象プロダクトはペイウォールではなく App Store から届くため、ペイウォールのコンテキストを持たないためです。戻り値は `makePurchase` と同じ `AdaptyPurchaseResult` です。
-
-:::warning
-このストリームは StoreKit 2 上に構築されており、**iOS 16.4** 以降が必要です。iOS 16.4 未満および Android では、このストリームはイベントを発火しません。
-:::
-
-プロモーション対象のプロダクトにサブスクリプションオファーが含まれている場合、SDKは購入時に自動的にそのオファーを適用します。オファーはApp Storeの購入インテントから読み取られますが、これはiOS 18.0以降でのみ利用可能です。iOS 16.4〜17.xでは、購入は通常価格で処理されます。
+デフォルトでは、SDKがプロモーション購入を自動的に完了します。たとえば先に画面を表示したい場合など、自分で完了させるには、`didReceivePromotedPurchaseStream` をサブスクライブして、プロダクトを `makePromotedPurchase` に渡してください。このストリームにサブスクライバーが存在する間、SDKはプロモーション購入を自動的に完了しなくなります。
 
 ## フローのビューを非表示後も維持する \{#keep-a-flow-view-alive-after-dismissing-it\}
 
@@ -150,7 +125,3 @@ await AdaptyUI().dismissFlowView(view, destroy: false);
 デフォルト値は `true` で、これまでどおりビューを解放します。`destroy: false` を指定するとビューがメモリ上に残るため、再度表示したときにユーザーが離脱した画面へ戻り、フローが積み上げてきた状態も保持されます。
 
 この方法で保持したビューは、`destroy: true` で非表示にするまで保持され続けます。解放済みのビューを再表示しようとすると失敗するため、そのフローをもう一度表示したい場合は `createFlowView` を再度呼び出してください。
-
-## hasViewConfiguration
-
-`AdaptyFlow.hasViewConfiguration` は、フローがUIスキーマを持つことも必要になりました。これにより、AdaptyUI がレンダリングできるフローに対してのみ `true` を返します。スキーマなしでアプリに届いたフローは、4.0 では `true` を返していましたが、現在は `false` を返します。詳しくは[ビュー設定の取得](flutter-get-pb-paywalls#fetch-the-view-configuration)を参照してください。

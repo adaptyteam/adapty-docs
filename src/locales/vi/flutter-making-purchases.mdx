@@ -136,13 +136,17 @@ Theo quan sát của chúng tôi, màn hình đổi mã ưu đãi trong một s�
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-## Sản phẩm mua trong ứng dụng được quảng bá từ App Store \{#promoted-in-app-purchases-from-the-app-store\}
+## Các in-app purchase được quảng bá từ App Store \{#promoted-in-app-purchases-from-the-app-store\}
 
-:::warning
-Sản phẩm mua trong ứng dụng được quảng bá sẽ đến ứng dụng của bạn từ SDK phiên bản 4.1 trở lên, và ứng dụng của bạn sẽ hoàn tất chúng. Với SDK 4.0, SDK tự hoàn tất chúng. Từ phiên bản 4.1, một lần mua được quảng bá mà không có listener nào lắng nghe sẽ bị bỏ qua, vì vậy hãy thêm listener bên dưới khi bạn cập nhật. Xem [Migrate lên v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app).
+:::info
+Các in-app purchase được quảng bá được hỗ trợ từ SDK phiên bản 4.1, trên **iOS 16.4** trở lên. Với iOS dưới 16.4, trên Android, và trong observer mode, `didReceivePromotedPurchaseStream` sẽ không bao giờ phát sự kiện.
 :::
 
-Khi người dùng bắt đầu mua hàng từ trang sản phẩm App Store của bạn và giao dịch được chuyển vào ứng dụng, SDK sẽ gửi sản phẩm đến `didReceivePromotedPurchaseStream`. Hãy đăng ký stream và truyền sản phẩm vào `makePromotedPurchase`:
+Khi người dùng bắt đầu mua hàng từ trang sản phẩm App Store của bạn và giao dịch được chuyển tiếp vào ứng dụng, SDK sẽ tự động hoàn tất giao dịch đó — màn hình mua hàng của Apple hiển thị ngay lập tức, và Adapty xử lý giao dịch như bất kỳ lần mua hàng nào khác. Bạn không cần viết thêm bất kỳ đoạn code nào.
+
+Nếu sản phẩm được quảng bá có kèm ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua. Ưu đãi được đọc từ purchase intent của App Store, tính năng này chỉ khả dụng trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ được thực hiện theo giá gốc.
+
+Để tự xử lý các giao dịch mua được quảng bá — ví dụ để hiển thị màn hình của riêng bạn trước — hãy đăng ký `didReceivePromotedPurchaseStream` và truyền sản phẩm vào `makePromotedPurchase`:
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -157,15 +161,13 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 });
 ```
 
-Đăng ký ngay sau `activate` khi khởi động ứng dụng, để listener tồn tại trước khi có promoted purchase đến. `didReceivePromotedPurchaseStream` là broadcast stream không replay: nếu có sản phẩm được gửi đến trong khi không có listener nào đang lắng nghe, sản phẩm đó sẽ bị mất.
-
-`makePromotedPurchase` không nhận tham số mua hàng, vì sản phẩm được promoted đến từ App Store chứ không phải từ paywall và không mang theo context của paywall. Hàm này trả về cùng kiểu `AdaptyPurchaseResult` như `makePurchase`.
-
-Nếu sản phẩm được quảng bá có kèm ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua. Ưu đãi được đọc từ purchase intent của App Store, vốn chỉ khả dụng trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ được thực hiện với giá gốc.
-
-:::info
-Stream được xây dựng trên StoreKit 2 và yêu cầu **iOS 16.4** trở lên. Dưới iOS 16.4 và trên Android, stream sẽ không bao giờ phát.
+:::warning
+Trong khi có bất kỳ subscriber nào đang lắng nghe stream, SDK sẽ ngừng tự động hoàn tất các promoted purchase cho bạn. Nếu handler của bạn không bao giờ gọi `makePromotedPurchase`, giao dịch mua sẽ không bao giờ xảy ra: App Store chuyển sản phẩm cho app của bạn và chờ. SDK cũng không can thiệp khi handler của bạn throw exception.
 :::
+
+`makePromotedPurchase` không nhận tham số mua hàng nào, vì sản phẩm được promoted đến từ App Store chứ không phải từ paywall và không mang theo bất kỳ context paywall nào. Hàm này trả về `AdaptyPurchaseResult` giống như `makePurchase`.
+
+Ai hoàn tất giao dịch mua được quyết định cho từng sự kiện, vì vậy một stream bạn chỉ lắng nghe khi màn hình đang hiển thị sẽ trả lại các giao dịch mua được thăng cấp cho SDK ngay khi màn hình đó biến mất. Bạn có thể đăng ký trước `activate`, đây là cách để bắt các giao dịch mua mà cửa hàng giao vào lúc khởi chạy.
 
 ## Quản lý prepaid plans (Android) \{#manage-prepaid-plans-android\}
 

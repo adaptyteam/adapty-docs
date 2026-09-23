@@ -1,10 +1,10 @@
 ---
-title: "Migrar el SDK de Flutter de Adapty a v4.1"
-description: "Migra al SDK de Flutter de Adapty v4.1: activa Adapty Attribution de forma explícita, adopta las APIs de atribución externa renombradas, vuelve a descargar tu archivo de respaldo y gestiona las compras in-app promovidas en App Store."
-metadataTitle: "Migración al SDK de Flutter de Adapty v4.1 | Documentación de Adapty"
+title: "Migrar el SDK de Adapty Flutter a v4.1"
+description: "Migra al SDK de Adapty Flutter v4.1: habilita Adapty Attribution de forma explícita, adopta las APIs de atribución externa renombradas y vuelve a descargar tu archivo de respaldo."
+metadataTitle: "Migración al SDK de Adapty Flutter v4.1 | Documentación de Adapty"
 ---
 
-El SDK de Flutter de Adapty 4.1 cambia la forma en que se activa Adapty Attribution, renombra las APIs de atribución externa y cambia el formato del archivo de respaldo. Además, delega a tu app las compras in-app promovidas en App Store y añade una forma de mantener una vista de flow activa tras cerrarla.
+El SDK de Adapty Flutter 4.1 cambia la forma en que se habilita Adapty Attribution, renombra las APIs de atribución externa y modifica el formato del archivo de respaldo. También añade compatibilidad con las compras in-app promocionadas en App Store y una forma de mantener activa una vista de flow después de cerrarla.
 
 :::warning
 Las APIs renombradas son un cambio definitivo. Los nombres anteriores se han eliminado por completo — no existen alias deprecados que los sustituyan. El código que compilaba con 4.0.x fallará en 4.1 hasta que renombres cada llamada indicada a continuación.
@@ -16,12 +16,12 @@ Si todavía usas la versión 3.x, empieza por [Migrar a v4.0](migration-to-flutt
 
 | v4.0 | v4.1 |
 |---|---|
-| Atribución de Adapty habilitada automáticamente | Atribución de Adapty deshabilitada por defecto; actívala con `withAdaptyAttributionEnabled(true)` |
+| Adapty Attribution habilitado automáticamente | Adapty Attribution deshabilitado por defecto; actívalo con `withAdaptyAttributionEnabled(true)` |
 | `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
 | `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, con un nuevo valor `custom` |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
 | Archivo de respaldo descargado para 4.0 | Nuevo formato de archivo de respaldo; descarga el archivo de nuevo |
-| Las compras in-app promocionadas se completaban solas | Tu app las completa desde `didReceivePromotedPurchaseStream` |
+| Compras in-app promocionadas no admitidas | Admitidas; el SDK las completa, o tu app lo hace desde `didReceivePromotedPurchaseStream` |
 | `dismissFlowView(view)` siempre libera la vista | `destroy: false` mantiene la vista activa para presentarla de nuevo |
 
 Las API de compra, perfil y presentación de flows no han cambiado.
@@ -108,36 +108,11 @@ El formato del [archivo de respaldo](fallback-flows) cambió en el SDK 4.1. Desc
 Este paso no genera ningún error de compilación. Si lo omites, el SDK rechazará el archivo obsoleto y todos los placements perderán su respaldo.
 :::
 
-## ⚠️ Las compras in-app promocionadas ahora esperan a tu app \{#promoted-in-app-purchases-now-wait-for-your-app\}
+## Compras in-app promocionadas en App Store \{#promoted-in-app-purchases\}
 
-:::warning
-Este es un cambio de comportamiento, no una nueva función para adoptar cuando sea conveniente. En la versión 4.0, una [compra in-app promocionada en la página de tu producto en el App Store](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) se completaba sola. En la versión 4.1, solo se completa si tu app la escucha. Publica la versión 4.1 sin el código que aparece a continuación y esas compras dejarán de ocurrir: el App Store le entrega el producto a tu app y no sucede nada más.
-:::
+Flutter SDK 4.0 no admitía las [compras in-app promocionadas en la página de producto de App Store](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store): el SDK nativo de iOS sobre el que se construyó no tenía API para ello. La versión 4.1 añade esa compatibilidad, por lo que se trata de una nueva funcionalidad y no de un paso de migración: actualizar sin añadir código nuevo no cambia nada en el comportamiento de tu app.
 
-En la versión 4.0, Adapty registraba una compra promocionada como cualquier otra transacción, y tu app no tenía forma de interceptarla. La versión 4.1 le da a tu app ese control, y con él la responsabilidad de completar la compra.
-
-Suscríbete a `didReceivePromotedPurchaseStream` y pasa el producto a `makePromotedPurchase`:
-
-```dart showLineNumbers
-Adapty().didReceivePromotedPurchaseStream.listen((product) async {
-  try {
-    final result = await Adapty().makePromotedPurchase(product: product);
-    // process the purchase result
-  } on AdaptyError catch (e) {
-    // handle the error
-  }
-});
-```
-
-Suscríbete antes de que pueda llegar una compra promocionada — durante el inicio de la app, justo después de `activate`. El stream es un broadcast stream que no reproduce eventos pasados: un producto entregado mientras no hay nadie escuchando se descarta y la compra se pierde.
-
-`makePromotedPurchase` no recibe parámetros de compra, ya que un producto promocionado proviene del App Store y no de un paywall, y no lleva contexto de paywall. Devuelve el mismo `AdaptyPurchaseResult` que `makePurchase`.
-
-:::warning
-El stream está construido sobre StoreKit 2 y requiere **iOS 16.4** o posterior. En versiones anteriores a iOS 16.4 y en Android, nunca emite eventos.
-:::
-
-Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente al realizar la compra. La oferta se obtiene del intent de compra de App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+Por defecto, el SDK completa una compra promocionada por sí solo. Escribe código solo si quieres completarla tú mismo, por ejemplo para mostrar una pantalla antes: suscríbete a `didReceivePromotedPurchaseStream` y pasa el producto a `makePromotedPurchase`. Mientras haya alguna suscripción activa a ese stream, el SDK deja de completar las compras promocionadas automáticamente.
 
 ## Mantener activa una vista de flow después de cerrarla \{#keep-a-flow-view-alive-after-dismissing-it\}
 
@@ -150,7 +125,3 @@ await AdaptyUI().dismissFlowView(view, destroy: false);
 Por defecto es `true`, lo que libera la vista como antes. Con `destroy: false` la vista permanece activa, de modo que puedes volver a mostrarla y el usuario regresa a la pantalla donde lo dejó, con el estado que el flow había acumulado.
 
 Una vista conservada de esta forma se mantiene hasta que la cierras con `destroy: true`. Presentar una vista liberada falla, así que llama de nuevo a `createFlowView` para mostrar ese flow otra vez.
-
-## hasViewConfiguration
-
-`AdaptyFlow.hasViewConfiguration` ahora también requiere que el flow lleve un esquema de interfaz, por lo que devuelve `true` únicamente para un flow que AdaptyUI puede renderizar. Un flow que llegó a tu aplicación sin su esquema ahora devuelve `false` donde la versión 4.0 devolvía `true`. Consulta [Obtener la configuración de vista](flutter-get-pb-paywalls#fetch-the-view-configuration).

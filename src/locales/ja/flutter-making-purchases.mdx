@@ -136,13 +136,17 @@ try {
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-## App Storeのプロモートアプリ内課金 \{#promoted-in-app-purchases-from-the-app-store\}
+## App Storeからのプロモーションアプリ内課金 \{#promoted-in-app-purchases-from-the-app-store\}
 
-:::warning
-プロモートアプリ内課金は SDK バージョン 4.1 以降でアプリに届き、アプリ側で完了処理を行います。SDK 4.0 では SDK が自動的に完了していました。4.1 以降では、リスナーが存在しないプロモート購入は破棄されるため、アップデート時に以下のリスナーを追加してください。詳しくは [v4.1 への移行](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app) を参照してください。
+:::info
+プロモーションアプリ内課金は、**iOS 16.4** 以降でSDKバージョン4.1からサポートされています。iOS 16.4未満、Android、およびオブザーバーモードでは、`didReceivePromotedPurchaseStream`はイベントを送出しません。
 :::
 
-ユーザーが App Store のプロダクトページから購入を開始し、トランザクションがアプリに引き継がれると、SDK はプロダクトを `didReceivePromotedPurchaseStream` に配信します。ストリームをサブスクライブし、プロダクトを `makePromotedPurchase` に渡してください。
+ユーザーがApp Storeのプロダクトページから購入を開始し、そのトランザクションがアプリに引き継がれると、SDKが自動的に処理を完了します。Appleの購入システム画面がすぐに表示され、Adaptyは他の購入と同様にトランザクションを処理します。この動作にはコードの追加は不要です。
+
+プロモートされたプロダクトにサブスクリプションオファーが含まれている場合、SDK は購入時に自動的にそのオファーを適用します。オファーは App Store の購入インテントから読み取られ、iOS 18.0 以降で利用可能です。iOS 16.4〜17.x では、通常価格で購入が処理されます。
+
+プロモート購入を自分で処理する場合（例えば独自の画面を先に表示したい場合）は、`didReceivePromotedPurchaseStream` をサブスクライブし、プロダクトを `makePromotedPurchase` に渡してください：
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -157,15 +161,13 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 });
 ```
 
-`activate`の直後、アプリ起動時にサブスクライブしておきましょう。これにより、プロモーション購入が届く前にリスナーが確実に存在している状態になります。`didReceivePromotedPurchaseStream`はブロードキャストストリームであり、リプレイはありません。リスニングしていない間に届いたプロダクトは破棄されます。
-
-`makePromotedPurchase`は購入パラメータを受け取りません。プロモーション対象のプロダクトはペイウォールではなくApp Storeから届くものであり、ペイウォールのコンテキストを持たないためです。戻り値は`makePurchase`と同じ`AdaptyPurchaseResult`です。
-
-プロモートされたプロダクトにサブスクリプションオファーが含まれている場合、SDKは購入時に自動的にそのオファーを適用します。オファーはApp Storeの購入インテントから読み取られ、iOS 18.0以降で公開されます。iOS 16.4〜17.xでは、購入は通常価格で処理されます。
-
-:::info
-このストリームはStoreKit 2上に構築されており、**iOS 16.4**以降が必要です。iOS 16.4未満およびAndroidでは、イベントは送信されません。
+:::warning
+ストリームにサブスクライバーがいる間、SDKはプロモーション購入の完了処理を自動的に行いません。ハンドラーが`makePromotedPurchase`を呼び出さない限り、購入は完了しません。App Storeはプロダクトをアプリに渡して待機し続けます。また、ハンドラーが例外をスローした場合もSDKは介入しません。
 :::
+
+`makePromotedPurchase`は購入パラメーターを受け取りません。プロモーションプロダクトはペイウォールではなくApp Storeから提供されるため、ペイウォールのコンテキストが存在しないからです。戻り値は`makePurchase`と同じ`AdaptyPurchaseResult`です。
+
+購入を誰が処理するかはイベントごとに決まるため、特定の画面が表示されている間だけ購読するストリームは、その画面が消えた時点でプロモートされた購入を SDK に返します。`activate` の前に購読することもでき、これにより起動時にストアが配信する購入をキャッチできます。
 
 ## プリペイドプランの管理 (Android) \{#manage-prepaid-plans-android\}
 

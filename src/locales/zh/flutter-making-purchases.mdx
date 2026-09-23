@@ -136,13 +136,17 @@ try {
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-## 来自 App Store 的推广内购 \{#promoted-in-app-purchases-from-the-app-store\}
+## App Store 促销应用内购买 \{#promoted-in-app-purchases-from-the-app-store\}
 
-:::warning
-推广内购从 SDK 4.1 版本起会传递到你的 App，由你的 App 完成购买。在 SDK 4.0 中，SDK 会自动完成购买。从 4.1 起，若没有任何监听器处理推广购买，该购买将被丢弃，因此请在升级时添加下方的监听器。详见 [迁移至 v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app)。
+:::info
+促销应用内购买从 SDK 4.1 版本开始支持，需要 **iOS 16.4** 或更高版本。在 iOS 16.4 以下、Android 设备以及观察者模式下，`didReceivePromotedPurchaseStream` 不会触发任何事件。
 :::
 
-当用户从你的 App Store 产品页面发起购买，且该交易流转到你的应用时，SDK 会将产品传递给 `didReceivePromotedPurchaseStream`。订阅该流并将产品传递给 `makePromotedPurchase`：
+当用户从 App Store 产品页面发起购买，且该交易被传递到您的应用时，SDK 会自动完成购买——Apple 购买系统界面会立即显示，Adapty 会像处理其他任何购买一样处理该交易。这无需您编写任何代码。
+
+如果推广产品附带订阅优惠，SDK 会在购买时自动应用该优惠。该优惠从 App Store 购买意图中读取，iOS 18.0 及更高版本支持此功能。在 iOS 16.4–17.x 上，购买将按原价进行。
+
+如需自行处理推广购买——例如先展示自定义页面——请订阅 `didReceivePromotedPurchaseStream` 并将产品传入 `makePromotedPurchase`：
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -157,15 +161,13 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 });
 ```
 
-在应用启动时、`activate` 调用之后立即订阅，确保在促销购买到达之前监听器已就绪。`didReceivePromotedPurchaseStream` 是一个广播流，不会重播历史事件：若在无监听器时推送了产品，该事件将被丢弃。
-
-`makePromotedPurchase` 不接受任何购买参数，因为促销产品来自 App Store 而非付费墙，不包含付费墙上下文。它返回与 `makePurchase` 相同的 `AdaptyPurchaseResult`。
-
-如果推广产品包含订阅优惠，SDK 会在购买时自动应用该优惠。优惠信息从 App Store 购买意图中读取，该功能在 iOS 18.0 及更高版本上可用。在 iOS 16.4–17.x 上，购买将以原价进行。
-
-:::info
-该数据流基于 StoreKit 2 构建，需要 **iOS 16.4** 或更高版本。在低于 iOS 16.4 的系统以及 Android 上，该数据流不会发出任何事件。
+:::warning
+在流有订阅者期间，SDK 会停止自动为你完成推广购买。如果你的处理程序始终不调用 `makePromotedPurchase`，购买将永远不会发生：App Store 会将产品交给你的应用并等待。如果你的处理程序抛出异常，SDK 也不会介入。
 :::
+
+`makePromotedPurchase` 不接受任何购买参数，因为推广产品来自 App Store 而非付费墙，也不携带任何付费墙上下文。它返回与 `makePurchase` 相同的 `AdaptyPurchaseResult`。
+
+每个事件的购买处理方都是独立决定的，因此当某个页面卸载后，只在该页面挂载期间监听的流会将已促成的购买归还给 SDK。你可以在 `activate` 之前订阅，这样就能捕获应用启动时商店下发的购买。
 
 ## 管理预付费方案（Android） \{#manage-prepaid-plans-android\}
 

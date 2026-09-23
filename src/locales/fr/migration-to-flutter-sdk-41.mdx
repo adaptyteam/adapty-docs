@@ -1,10 +1,10 @@
 ---
-title: "Migrer vers le SDK Flutter Adapty v4.1"
-description: "Migration vers le SDK Flutter Adapty v4.1 : activez Adapty Attribution explicitement, adoptez les API d'attribution externe renommées, re-téléchargez votre fichier de secours et gérez les achats promus sur l'App Store."
-metadataTitle: "Migration vers le SDK Flutter Adapty v4.1 | Documentation Adapty"
+title: "Migrer vers le SDK Adapty Flutter v4.1"
+description: "Migrez vers le SDK Adapty Flutter v4.1 : activez Adapty Attribution explicitement, adoptez les API d'attribution externe renommées, et re-téléchargez votre fichier de secours."
+metadataTitle: "Migration vers le SDK Adapty Flutter v4.1 | Documentation Adapty"
 ---
 
-Le SDK Flutter Adapty 4.1 modifie la façon dont Adapty Attribution est activé, renomme les API d'attribution externe et change le format du fichier de secours. Il transmet également les achats intégrés promus sur l'App Store à votre application, et ajoute un moyen de maintenir une vue de flow active après l'avoir fermée.
+Le SDK Adapty Flutter 4.1 modifie la façon dont Adapty Attribution est activé, renomme les API d'attribution externe et change le format du fichier de secours. Il ajoute également la prise en charge des achats intégrés promus sur l'App Store, ainsi qu'un moyen de maintenir une vue de flow active après l'avoir fermée.
 
 :::warning
 Les API renommées constituent une rupture franche. Les anciens noms sont supprimés définitivement — il n'existe aucun alias déprécié pour faire la transition. Tout code compilé contre 4.0.x échouera sur 4.1 tant que vous n'aurez pas renommé chaque appel répertorié ci-dessous.
@@ -20,9 +20,9 @@ Si vous êtes encore sur la version 3.x, commencez par [Migrer vers v4.0](migrat
 | `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
 | `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, avec une nouvelle valeur `custom` |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
-| Fichier de secours téléchargé pour la v4.0 | Nouveau format de fichier de secours ; retéléchargez le fichier |
-| Les achats intégrés promus se complétaient d'eux-mêmes | Votre application les complète depuis `didReceivePromotedPurchaseStream` |
-| `dismissFlowView(view)` libère toujours la vue | `destroy: false` maintient la vue en vie pour la réafficher |
+| Fichier de secours téléchargé pour la v4.0 | Nouveau format de fichier de secours ; téléchargez à nouveau le fichier |
+| Achats intégrés promus non pris en charge | Pris en charge ; le SDK les finalise, ou votre application le fait depuis `didReceivePromotedPurchaseStream` |
+| `dismissFlowView(view)` libère toujours la vue | `destroy: false` garde la vue active pour la présenter à nouveau |
 
 Les API d'achat, de profil et de présentation de flow sont par ailleurs inchangées.
 
@@ -108,36 +108,11 @@ Le format du [fichier de secours](fallback-flows) a changé dans le SDK 4.1. Té
 Cette étape ne génère aucune erreur de build. Si vous la sautez, le SDK rejette le fichier obsolète et chaque placement perd son paywall de secours.
 :::
 
-## ⚠️ Les achats intégrés promus attendent désormais votre app \{#promoted-in-app-purchases-now-wait-for-your-app\}
+## Achats intégrés mis en avant sur l'App Store \{#promoted-in-app-purchases\}
 
-:::warning
-Il s'agit d'un changement de comportement, pas d'une nouvelle fonctionnalité à adopter quand bon vous semble. Avec la version 4.0, un [achat intégré promu sur la page produit de l'App Store](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) se finalisait automatiquement. Avec la version 4.1, il ne se finalise que si votre app l'écoute. Livrez la version 4.1 sans le code ci-dessous et ces achats cesseront de fonctionner — l'App Store transmet le produit à votre app, et rien ne se passe ensuite.
-:::
+Le SDK Flutter 4.0 ne prenait pas en charge les [achats intégrés mis en avant sur la page produit de votre App Store](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) : le SDK iOS natif sur lequel il reposait n'offrait pas d'API pour cela. La version 4.1 ajoute cette prise en charge — il s'agit donc d'une nouvelle fonctionnalité et non d'une étape de migration : mettre à jour sans modifier le code ne change rien au comportement de votre application.
 
-Avec la version 4.0, Adapty enregistrait un achat promu comme n'importe quelle autre transaction, sans que votre application puisse l'intercepter. La version 4.1 vous donne ce contrôle, et avec lui la responsabilité de finaliser l'achat.
-
-Abonnez-vous à `didReceivePromotedPurchaseStream` et transmettez le produit à `makePromotedPurchase` :
-
-```dart showLineNumbers
-Adapty().didReceivePromotedPurchaseStream.listen((product) async {
-  try {
-    final result = await Adapty().makePromotedPurchase(product: product);
-    // process the purchase result
-  } on AdaptyError catch (e) {
-    // handle the error
-  }
-});
-```
-
-Abonnez-vous avant qu'un achat promu puisse arriver — au démarrage de l'application, juste après `activate`. Le stream est un broadcast stream qui ne rejoue pas : un produit livré alors que rien n'écoute est ignoré, et l'achat est perdu.
-
-`makePromotedPurchase` ne prend aucun paramètre d'achat, car un produit promu provient de l'App Store plutôt que d'un paywall et ne porte aucun contexte de paywall. Il retourne le même `AdaptyPurchaseResult` que `makePurchase`.
-
-:::warning
-Le stream est basé sur StoreKit 2 et nécessite **iOS 16.4** ou une version ultérieure. En dessous d'iOS 16.4, et sur Android, il n'émet jamais.
-:::
-
-Si le produit promu comporte une offre d'abonnement, le SDK l'applique automatiquement lors de l'achat. L'offre est lue depuis l'intention d'achat de l'App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat se fait au prix de base.
+Par défaut, le SDK finalise lui-même un achat promu. Écrivez du code uniquement pour le finaliser vous-même, par exemple pour afficher d'abord un écran : abonnez-vous à `didReceivePromotedPurchaseStream` et passez le produit à `makePromotedPurchase`. Tant qu'un abonné est actif sur ce stream, le SDK cesse de finaliser les achats promus à votre place.
 
 ## Conserver une vue de flow active après l'avoir fermée \{#keep-a-flow-view-alive-after-dismissing-it\}
 
@@ -150,7 +125,3 @@ await AdaptyUI().dismissFlowView(view, destroy: false);
 Par défaut, sa valeur est `true`, ce qui libère la vue comme avant. Avec `destroy: false`, la vue reste active : vous pouvez la réafficher et l'utilisateur retrouve l'écran où il s'était arrêté, avec l'état que le flow avait construit.
 
 Une vue conservée de cette façon est maintenue en mémoire jusqu'à ce que vous la fermiez avec `destroy: true`. Présenter une vue libérée échoue, donc appelez à nouveau `createFlowView` pour afficher ce flow une nouvelle fois.
-
-## hasViewConfiguration
-
-`AdaptyFlow.hasViewConfiguration` exige désormais aussi que le flow contienne un schéma UI, il ne renvoie donc `true` que pour un flow qu'AdaptyUI est capable d'afficher. Un flow qui arrive dans votre application sans son schéma renvoie maintenant `false`, là où la version 4.0 renvoyait `true`. Voir [Récupérer la configuration de vue](flutter-get-pb-paywalls#fetch-the-view-configuration).

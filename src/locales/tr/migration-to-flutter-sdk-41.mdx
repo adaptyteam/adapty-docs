@@ -1,10 +1,10 @@
 ---
 title: "Adapty Flutter SDK'yı v4.1'e Taşıma"
-description: "Adapty Flutter SDK v4.1'e geçiş: Adapty Attribution'ı açıkça etkinleştirin, yeniden adlandırılmış harici attribution API'larını benimseyin, yedek dosyanızı yeniden indirin ve App Store'da tanıtılan satın almaları yönetin."
+description: "Adapty Flutter SDK v4.1'e geçiş: Adapty Attribution'ı açıkça etkinleştirin, yeniden adlandırılmış harici attribution API'lerini benimseyin ve yedek dosyanızı yeniden indirin."
 metadataTitle: "Adapty Flutter SDK v4.1'e Geçiş | Adapty Dokümanları"
 ---
 
-Adapty Flutter SDK 4.1, Adapty Attribution'ın nasıl etkinleştirileceğini değiştirir, harici attribution API'larını yeniden adlandırır ve yedek dosya formatını değiştirir. Ayrıca App Store'da tanıtılan uygulama içi satın almaları uygulamanıza devreder ve bir flow görünümünü kapattıktan sonra canlı tutmanın bir yolunu ekler.
+Adapty Flutter SDK 4.1; Adapty Attribution'ın etkinleştirilme şeklini değiştiriyor, harici attribution API'lerini yeniden adlandırıyor ve yedek paywall dosya biçimini güncelliyor. Bunlara ek olarak App Store'da tanıtılan uygulama içi satın almaları destekliyor ve bir flow görünümünü kapattıktan sonra canlı tutmanın yolunu ekliyor.
 
 :::warning
 Yeniden adlandırılan API'lar tam bir kırılma noktasıdır. Eski adlar tamamen kaldırıldı — bunları köprüleyecek deprecated takma adlar bulunmuyor. 4.0.x'e karşı derlenen kod, aşağıda listelenen her çağrı noktasını yeniden adlandırmadığınız sürece 4.1'de hata verir.
@@ -20,9 +20,9 @@ Hâlâ 3.x'teyseniz önce [v4.0'a geçiş](migration-to-flutter-sdk-v4) rehberiy
 | `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
 | `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, yeni `custom` değeriyle |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
-| 4.0 için indirilen yedek dosya | Yeni yedek dosya formatı; dosyayı yeniden indirin |
-| Tanıtılan uygulama içi satın almalar otomatik tamamlanıyordu | Uygulamanız bunları `didReceivePromotedPurchaseStream` üzerinden tamamlar |
-| `dismissFlowView(view)` her zaman view'ı serbest bırakır | `destroy: false` view'ı tekrar göstermek için canlı tutar |
+| 4.0 için indirilen yedek dosya | Yeni yedek dosya formatı; dosyayı tekrar indirin |
+| Tanıtılan uygulama içi satın almalar desteklenmiyor | Destekleniyor; SDK tamamlar ya da uygulamanız `didReceivePromotedPurchaseStream` üzerinden tamamlar |
+| `dismissFlowView(view)` her zaman görünümü serbest bırakır | `destroy: false` görünümü tekrar göstermek için canlı tutar |
 
 Satın alma, profil ve flow sunum API'leri bunun dışında değişmemiştir.
 
@@ -108,36 +108,11 @@ Serileştirilmiş profil alanı `applied_attribution_sources` adını koruduğun
 Bu adımı atlarsanız build hatası almazsınız. Ancak SDK eski dosyayı reddeder ve tüm placement'ların yedekleri çalışmaz.
 :::
 
-## ⚠️ Öne çıkan uygulama içi satın almalar artık uygulamanızı bekliyor \{#promoted-in-app-purchases-now-wait-for-your-app\}
+## App Store'da öne çıkan uygulama içi satın almalar \{#promoted-in-app-purchases\}
 
-:::warning
-Bu, uygun olduğunuzda benimseyeceğiniz yeni bir özellik değil, bir davranış değişikliğidir. 4.0'da, [App Store ürün sayfanızda öne çıkarılan bir uygulama içi satın alma](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) kendi kendine tamamlanıyordu. 4.1'de ise yalnızca uygulamanız bunu dinliyorsa tamamlanır. Aşağıdaki kod olmadan 4.1'i yayına alırsanız bu satın almalar gerçekleşmez — App Store ürünü uygulamanıza teslim eder ve başka hiçbir şey olmaz.
-:::
+Flutter SDK 4.0, [App Store ürün sayfanızda öne çıkan uygulama içi satın almaları](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) desteklemiyordu: üzerine inşa edildiği yerel iOS SDK'sında bunlar için herhangi bir API bulunmuyordu. 4.1 bu desteği ekliyor; dolayısıyla bu yeni bir özellik olup, yeni kod değişikliği yapmadan güncelleme yapmanız uygulamanızın davranışını hiçbir şekilde değiştirmez.
 
-4.0'da Adapty, tanıtım satın alımını diğer işlemler gibi kaydediyordu ve uygulamanızın bunu kesip müdahale etme imkânı yoktu. 4.1, uygulamanıza bu kontrolü veriyor; bununla birlikte satın alımı tamamlama sorumluluğu da size geçiyor.
-
-`didReceivePromotedPurchaseStream`'e abone olun ve ürünü `makePromotedPurchase`'a geçirin:
-
-```dart showLineNumbers
-Adapty().didReceivePromotedPurchaseStream.listen((product) async {
-  try {
-    final result = await Adapty().makePromotedPurchase(product: product);
-    // process the purchase result
-  } on AdaptyError catch (e) {
-    // handle the error
-  }
-});
-```
-
-`activate` çağrısından hemen sonra, uygulama başlangıcında promosyonlu bir satın alma gelmeden önce abone olun. Bu bir broadcast stream'dir ve geçmişi tekrarlamaz: hiçbir şey dinlemiyorken gelen bir ürün düşer ve satın alma kaybolur.
-
-`makePromotedPurchase` herhangi bir satın alma parametresi almaz; çünkü promosyonlu bir ürün, bir paywall'dan değil App Store'dan gelir ve paywall bağlamı taşımaz. `makePurchase` ile aynı `AdaptyPurchaseResult` değerini döndürür.
-
-:::warning
-Bu stream, StoreKit 2 üzerine kuruludur ve **iOS 16.4** veya daha yenisini gerektirir. iOS 16.4 altında ve Android'de hiçbir zaman tetiklenmez.
-:::
-
-Tanıtılan ürün bir abonelik teklifi içeriyorsa, SDK satın alma sırasında bunu otomatik olarak uygular. Teklif, App Store satın alma niyetinden okunur; bu bilgi iOS 18.0 ve sonrasında açık hale gelir. iOS 16.4–17.x sürümlerinde ise satın alma temel fiyat üzerinden gerçekleşir.
+By default the SDK completes a promoted purchase itself. Write code only to complete it yourself, for example to show a screen first: subscribe to `didReceivePromotedPurchaseStream` and pass the product to `makePromotedPurchase`. While anything is subscribed to that stream, the SDK stops completing promoted purchases for you.
 
 ## Flow görünümünü kapattıktan sonra canlı tutma \{#keep-a-flow-view-alive-after-dismissing-it\}
 
@@ -150,7 +125,3 @@ await AdaptyUI().dismissFlowView(view, destroy: false);
 Varsayılan değeri `true`'dur; bu, görünümü eskisi gibi serbest bırakır. `destroy: false` ile görünüm canlı kalır; böylece tekrar gösterebilir ve kullanıcı, flow'un biriktirdiği durumla birlikte kaldığı ekrana geri döner.
 
 Bu şekilde canlı tutulan bir görünüm, `destroy: true` ile kapatılana kadar bellekte tutulur. Serbest bırakılmış bir görünümü sunmaya çalışmak başarısız olur; bu nedenle söz konusu flow'u tekrar göstermek için `createFlowView`'ı yeniden çağırın.
-
-## hasViewConfiguration
-
-`AdaptyFlow.hasViewConfiguration` artık flow'un bir UI şeması taşımasını da gerektiriyor; dolayısıyla yalnızca AdaptyUI'ın render edebileceği bir flow için `true` döndürüyor. Şeması olmadan uygulamanıza ulaşan bir flow, 4.0'ın `true` döndürdüğü durumda artık `false` döndürüyor. Bkz. [View configuration'ı getirme](flutter-get-pb-paywalls#fetch-the-view-configuration).
