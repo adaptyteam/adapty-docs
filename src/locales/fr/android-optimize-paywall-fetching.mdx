@@ -1,10 +1,10 @@
 ---
-title: "Optimiser la récupération des paywalls dans le SDK Android"
-description: "Récupérez les paywalls Adapty de manière fiable : timing, mise en cache et patterns de secours pour Android."
-metadataTitle: "Optimiser la récupération des paywalls | SDK Android | Documentation Adapty"
+title: "Optimiser la récupération des flows et paywalls dans le SDK Android"
+description: "Récupérez les flows et paywalls Adapty de manière fiable : timing, mise en cache et patterns de secours pour Android."
+metadataTitle: "Optimiser la récupération des flows et paywalls | SDK Android | Documentation Adapty"
 ---
 
-Une récupération de paywall fiable sur Android remplit trois conditions : un affichage rapide, le renvoi du paywall ciblé par audience, et un repli gracieux lorsque le réseau est lent. Les règles ci-dessous couvrent le timing, la mise en cache et les patterns de secours pour y parvenir.
+Une récupération fiable d'un flow ou d'un paywall sur Android repose sur trois points : un affichage rapide, le retour de la variante ciblée par audience, et un repli élégant en cas de réseau lent. Les règles ci-dessous couvrent le timing, la mise en cache et les patterns de secours pour y parvenir.
 
 :::tip
 Ces règles supposent que `Adapty.activate()` et `Adapty.identify()` ont déjà été résolus. Voir [Ordre des appels dans le SDK Android](android-sdk-call-order).
@@ -12,11 +12,11 @@ Ces règles supposent que `Adapty.activate()` et `Adapty.identify()` ont déjà 
 
 ## Règles et pièges \{#rules-and-pitfalls\}
 
-| Faire ceci | Ne pas faire ceci | Pourquoi |
+| Faites ceci | Ne faites pas cela | Pourquoi |
 |---|---|---|
-| Récupérez le placement que vous êtes sur le point d'afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.1+). | Lancez vos propres appels `getFlow` concurrents au démarrage. | Un burst de préchargement maison bloque le thread principal et provoque un écran noir. `preloadFlows` est conçu pour ça et exécute le lot en parallèle pour vous. |
-| Appelez `getPaywall` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `setOnProfileUpdatedListener`. | Appelez `getPaywall` dans `Application.onCreate()`. | L'attribution n'est pas encore arrivée. Le paywall se résout par rapport à l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendez `getPaywall` indéfiniment. | Sans délai d'expiration, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application. |
+| Récupérez le placement que vous êtes sur le point d'afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.1+). | Déclenchez vos propres appels `getFlow` concurrents au démarrage. | Un prefetch manuel bloque le thread principal et produit un écran noir. `preloadFlows` est conçu pour ça et exécute le lot en parallèle pour vous. |
+| Appelez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `setOnProfileUpdatedListener`. | Appelez `getFlow` dans `Application.onCreate()`. | L'attribution n'est pas encore arrivée. Le flow est résolu selon l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendez `getFlow` indéfiniment. | Sans timeout, les utilisateurs en mauvaise connectivité voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application. |
 
 Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products-android) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
 
@@ -30,7 +30,7 @@ Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products
 
 Un `getFlow` ultérieur ne lit ce cache que si vous passez `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` ou `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. La politique par défaut, `ReloadRevalidatingCacheData`, contacte le réseau à chaque appel — un préchargement associé à un appel avec la politique par défaut génère donc une requête supplémentaire sans aucun gain : la copie mise en cache ne sert que de solution de repli hors ligne.
 
-Utilisez-le quand vous savez quels placements la session aura besoin, mais sans vouloir les afficher tout de suite — par exemple, juste après la résolution de `activate` et `identify`, pour le paywall derrière un bouton que l'utilisateur n'a pas encore tapé.
+Utilisez cette méthode quand vous savez quels placements la session va utiliser, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la résolution de `activate` et `identify`, pour le flow derrière un bouton que l'utilisateur n'a pas encore appuyé.
 
 <Tabs groupId="current-os" queryString>
 
@@ -123,11 +123,11 @@ Pour préchauffer le cache sans attendre la segmentation d'audience, utilisez la
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
 ```
 
-## Optimiser pour une mauvaise connectivité \{#tune-for-poor-connectivity\}
+## Optimiser pour les connexions instables \{#tune-for-poor-connectivity\}
 
-Pour les marchés où la connectivité est régulièrement mauvaise (zones rurales, transports en commun, régions affectées par le routage) :
+Pour les marchés où la connectivité est durablement mauvaise (zones rurales, transports, régions affectées par le routage) :
 
-- Définissez `fetchPolicy` sur `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` pour chaque récupération, sauf la toute première.
+- Définissez `fetchPolicy` sur `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` pour chaque récupération sauf la toute première.
 - Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
-- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours lorsque le délai expire.
-- Ne bloquez pas l'affichage du paywall sur `getProfile`. Appelez `getPaywall` indépendamment pour qu'un profil lent ne bloque pas l'interface.
+- Réglez `loadTimeout` sur 3 à 5 secondes et acceptez le paywall de secours lorsque le délai expire.
+- Ne conditionnez pas l'affichage du flow à `getProfile`. Appelez `getFlow` indépendamment pour qu'un profil lent ne bloque pas l'interface.

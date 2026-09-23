@@ -1,26 +1,26 @@
 ---
-title: "在 iOS SDK 中优化付费墙加载"
-description: "可靠地获取 Adapty 付费墙：iOS 的时机、缓存与备用方案。"
-metadataTitle: "优化付费墙加载 | iOS SDK | Adapty 文档"
+title: "优化 iOS SDK 中的流程与付费墙获取"
+description: "可靠地获取 Adapty 流程和付费墙：iOS 的时机、缓存与备用方案。"
+metadataTitle: "优化流程与付费墙获取 | iOS SDK | Adapty 文档"
 ---
 
-在 iOS 上可靠地获取付费墙需要做到三点：快速渲染、返回面向目标受众的付费墙，以及在网络较慢时优雅地回退到备用方案。以下规则涵盖了实现这些目标所需的时机、缓存与备用方案。
+在 iOS 上可靠地获取流程或付费墙需要做到三点：渲染速度快、返回面向目标受众的实验变体，以及在网络较慢时能优雅地降级。以下规则涵盖了实现这些目标所需的时机、缓存与备用方案。
 
 :::tip
-以下规则假设 `Adapty.activate()` 和 `Adapty.identify()` 已经执行完毕。请参阅 [iOS SDK 中的调用顺序](ios-sdk-call-order)。
+以下规则假设 `Adapty.activate()` 和 `Adapty.identify()` 已完成调用。详见 [iOS SDK 调用顺序](ios-sdk-call-order)。
 :::
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 做这些 | 不要这样做 | 原因 |
+| 该做什么 | 不该做什么 | 原因 |
 |---|---|---|
-| 获取即将展示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.1+）预热缓存。 | 在启动时自行发起多个并发的 `getFlow` 调用。 | 手动并发预取会阻塞主线程并导致黑屏。`preloadFlows` 专为此设计，整批共享同一个超时预算。 |
-| 在归因数据有机会解析之后再调用 `getPaywall`，例如 `activate` 之后等待 1–2 秒，或等 `onProfileUpdate` 触发后再调用。 | 在 `App.init()` 时调用 `getPaywall`。 | 此时归因数据尚未落地。付费墙会按默认目标受众解析，悄无声息地跳过市场细分和 ASA 个性化。 |
-| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getPaywall` 返回。 | 没有超时限制时，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接退出应用。 |
+| 获取即将展示的版位，或通过 [`preloadFlows`](#preload-placements)（SDK 4.1+）预热缓存。 | 在启动时自行发起并发的 `getFlow` 请求。 | 手动实现的预取批量请求会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，整个批次共享同一个超时预算。 |
+| 在归因有机会完成解析后再调用 `getFlow`——例如，在 `activate` 之后等待 1–2 秒，或等 `didLoadLatestProfile` 触发之后。 | 在 `App.init()` 时调用 `getFlow`。 | 此时归因数据尚未到达，流程会按默认目标受众进行解析，悄无声息地绕过市场细分和 ASA 个性化配置。 |
+| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getFlow`。 | 没有超时限制时，网络状况较差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
 
-当任何请求触发 `loadTimeout`（包括普通的 `getPaywall` 调用），SDK 会优先返回已缓存的实验变体；如果没有缓存，则在剩余时间内获取默认目标受众（**All Users**）的实验变体。此时该请求的定向功能将直接失效，而非延迟执行：基于市场细分和归因的目标受众不适用于返回结果。
+当任何请求触发 `loadTimeout` 时（包括普通的 `getFlow` 请求），SDK 会优先返回已缓存的实验变体；若缓存不存在，则在剩余时间内获取默认目标受众（**All Users**）对应的实验变体。此时该请求的定向能力将直接丢失，而非延迟生效：市场细分和基于归因的目标受众均不会应用于返回结果。
 
-有关 `fetchPolicy` 和 `loadTimeout` 参数的详细说明，请参阅[获取付费墙与产品](fetch-paywalls-and-products)；有关如何选择合适的版位，请参阅[版位](placements)。
+请参阅[获取付费墙和产品](fetch-paywalls-and-products)了解 `fetchPolicy` 和 `loadTimeout` 参数说明，以及[版位](placements)了解如何选择合适的版位。
 
 ## 预加载版位 \{#preload-placements\}
 
@@ -30,9 +30,9 @@ metadataTitle: "优化付费墙加载 | iOS SDK | Adapty 文档"
 
 `preloadFlows` 会提前将版位 JSON 写入 SDK 缓存——每个版位发起一次请求，仅此而已。尽管名称如此，它并不会获取流程的 UI 布局或其媒体资源。
 
-之后的 `getFlow` 调用只有在传入 `fetchPolicy: .returnCacheDataElseLoad` 或 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 时，才会读取该缓存。默认策略 `.reloadRevalidatingCacheData` 每次调用都会请求网络，因此预加载配合默认策略会多出一次请求，毫无收益——预热的缓存仅作为离线备用。
+后续的 `getFlow` 仅在传入 `fetchPolicy: .returnCacheDataElseLoad` 或 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 时才会读取该缓存。默认策略 `.reloadRevalidatingCacheData` 每次调用都会请求网络，因此预加载配合默认策略会多消耗一次请求，毫无收益——预热的缓存副本仅作为离线备用。
 
-当你已知本次会话需要哪些版位，但暂时不想展示时，可以使用此方法——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的付费墙提前加载。
+适合在以下场景使用：当你已知当前会话需要哪些版位，但暂时不想展示它们时——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的流程提前预热。
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -118,11 +118,11 @@ do {
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
 ```
 
-## 针对网络状况较差的情况进行调优 \{#tune-for-poor-connectivity\}
+## 针对弱网环境进行调优 \{#tune-for-poor-connectivity\}
 
-针对网络连接持续不稳定的市场（如农村地区、交通途中、受路由影响的地区）：
+针对网络持续不稳定的市场（农村地区、交通途中、受路由问题影响的地区）：
 
-- 除首次请求外，所有获取操作均设置 `fetchPolicy: .returnCacheDataElseLoad`。
+- 除首次请求外，所有请求均设置 `fetchPolicy: .returnCacheDataElseLoad`。
 - 在 Adapty 看板中为每个版位配置[备用付费墙](fallback-paywalls)。
-- 将 `loadTimeout` 设置为 3–5 秒，超时后直接使用备用付费墙。
-- 不要将付费墙的显示依赖于 `getProfile()` 的结果。独立调用 `getPaywall`，避免因 profile 响应慢而阻塞 UI。
+- 将 `loadTimeout` 设置为 3–5 秒，并在超时触发时接受备用付费墙。
+- 不要将流程的显示逻辑与 `getProfile()` 绑定。独立调用 `getFlow`，避免因用户画像加载缓慢而阻塞 UI。

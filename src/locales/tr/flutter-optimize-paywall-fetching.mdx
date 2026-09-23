@@ -1,27 +1,30 @@
 ---
-title: "Flutter SDK'da paywall çekme işlemini optimize edin"
-description: "Adapty paywalllarını güvenilir şekilde çekin: Flutter için zamanlama, önbellekleme ve yedek kalıplar."
-metadataTitle: "Paywall Çekme İşlemini Optimize Edin | Flutter SDK | Adapty Dokümanları"
+title: "Flutter SDK'da flow ve paywall çekme işlemini optimize etme"
+description: "Adapty flow'larını ve paywall'ları güvenilir şekilde çekin: Flutter için zamanlama, önbellekleme ve yedek desenler."
+metadataTitle: "Flow ve Paywall Çekme İşlemini Optimize Etme | Flutter SDK | Adapty Dokümanları"
 ---
 
-Flutter'da güvenilir bir paywall çekme işlemi üç şey yapar: hızlı render eder, kitleye özel paywall'ı döndürür ve ağ yavaş olduğunda sorunsuz bir şekilde yedek davranışa geçer. Aşağıdaki kurallar bunu başarmanın zamanlama, önbellekleme ve yedek kalıplarını kapsar.
+Flutter'da güvenilir bir flow veya paywall çekme işlemi üç şeyi başarır: hızlı render eder, kitleye özel varyantı döndürür ve ağ yavaş olduğunda sorunsuz bir şekilde yedekleme yapar. Aşağıdaki kurallar, bunu sağlamak için zamanlama, önbellekleme ve yedek desenleri kapsar.
+
 :::tip
-Aşağıdaki kurallar, `Adapty().activate()` ve `Adapty().identify()` işlevlerinin zaten tamamlandığını varsayar. Daha fazla bilgi için bkz. [Flutter SDK'da çağrı sırası](flutter-sdk-call-order).
+Bu kurallar, `Adapty().activate()` ve `Adapty().identify()` fonksiyonlarının zaten tamamlandığını varsayar. Bkz. [Flutter SDK'da çağrı sırası](flutter-sdk-call-order).
 :::
 
-Aşağıdaki tavsiyeler v3 metot adlarını kullanmaktadır. SDK v4'te `getPaywall`, `getFlow` olarak; fetch policy türü ise `AdaptyFlowFetchPolicy` olarak yeniden adlandırılmıştır — tüm kurallar değişmeden geçerlidir.
 ## Kurallar ve dikkat edilmesi gereken noktalar \{#rules-and-pitfalls\}
+
 | Bunu yapın | Bunu yapmayın | Neden |
 |---|---|---|
-| Göstermek üzere olduğunuz placement'ı getirin. | Başlatma sırasında tüm placement'ları eş zamanlı olarak önceden getirin. | Toplu önceden getirme işlemi ana iş parçacığını engeller ve yoğunluk sırasında siyah ekrana yol açar. |
-| `getPaywall`'ı attribution'ın çözülmesine fırsat verdikten sonra çağırın — örneğin `activate`'den 1–2 saniye sonra veya `didUpdateProfileStream` tetiklendikten sonra. | `getPaywall`'ı `runApp`'ten önce `main()` içinde çağırın. | Attribution henüz gelmemiştir. Paywall varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
-| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall`'ı süresiz olarak bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş ekran görür ya da uygulamayı kapatır. |
+| Göstermek üzere olduğunuz placement'ı getirin.                                                                                  | Başlatmada tüm placement'ları aynı anda önceden getirin.        | Toplu önceden getirme, ana thread'i bloke eder ve bu sürede siyah bir ekran görünür.                                  |
+| `getFlow`'u, attribution'ın çözümlenme şansı bulduktan sonra getirin — örneğin, `activate`'den 1-2 saniye sonra veya `didUpdateProfileStream` tetiklendikten sonra. | `getFlow`'u `runApp`'ten önce `main()` içinde çağırın.         | Attribution henüz gelmemiştir. Flow, varsayılan kitleye göre çözümlenir ve sessizce segmentleri ile ASA kişiselleştirmesini atlar. |
+| Bir `loadTimeout` belirleyin ve her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.                             | `getFlow`'u süresiz olarak bekleyin.                     | Zaman aşımı olmadan, zayıf bağlantıdaki kullanıcılar ağ çözümlenene kadar — ya da uygulamayı kapatana kadar — boş bir ekran görür.     |
+
 [Paywall ve ürünleri getirme](fetch-paywalls-and-products-flutter) sayfasında `fetchPolicy` ve `loadTimeout` parametre referanslarına, [Placement'lar](placements) sayfasında ise doğru placement'ı seçmeye ilişkin bilgilere ulaşabilirsiniz.
-## Kötü bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 
-Sürekli kötü bağlantı yaşanan pazarlar için (kırsal alanlar, ulaşım güzergahları, yönlendirme sorunlarından etkilenen bölgeler):
+## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 
-- İlk fetch dışında her fetch işleminde `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` kullanın.
+Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, transit bölgeler, yönlendirme sorunları yaşanan bölgeler):
+
+- İlk fetch hariç her fetch işleminde `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad` kullanın.
 - Adapty Kontrol Paneli'nde her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
-- `loadTimeout` değerini 3–5 saniyeye ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalle geçin.
-- Paywall görüntülemeyi `getProfile()` yanıtına bağlamayın. Yavaş bir profilin arayüzü bloke etmemesi için `getPaywall` işlemini bağımsız olarak çağırın.
+- `loadTimeout` değerini 3–5 saniye olarak ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalla geçin.
+- Flow gösterimini `getProfile()` sonucuna bağlamayın. Yavaş bir profilin arayüzü bloke etmemesi için `getFlow` işlevini bağımsız olarak çağırın.

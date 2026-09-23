@@ -1,26 +1,26 @@
 ---
-title: "Tối ưu hóa việc tải paywall trong iOS SDK"
-description: "Tải paywall Adapty đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho iOS."
-metadataTitle: "Tối ưu hóa tải Paywall | iOS SDK | Tài liệu Adapty"
+title: "Tối ưu hóa việc tải flow & paywall trong iOS SDK"
+description: "Tải flow và paywall của Adapty một cách đáng tin cậy: thời điểm, caching và các mẫu fallback cho iOS."
+metadataTitle: "Tối ưu hóa việc tải Flow & Paywall | iOS SDK | Tài liệu Adapty"
 ---
 
-Một lần tải paywall đáng tin cậy trên iOS cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng, và xử lý dự phòng tốt khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
+Một lần tải flow hoặc paywall đáng tin cậy trên iOS cần đảm bảo ba điều: hiển thị nhanh, trả về đúng biến thể dành cho đối tượng mục tiêu, và xử lý dự phòng linh hoạt khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm tải, caching và các mẫu fallback để đạt được điều đó.
 
 :::tip
-Các quy tắc này giả định `Adapty.activate()` và `Adapty.identify()` đã hoàn thành. Xem [Thứ tự gọi trong iOS SDK](ios-sdk-call-order).
+Các quy tắc này giả định rằng `Adapty.activate()` và `Adapty.identify()` đã được thực thi xong. Xem [Thứ tự gọi trong iOS SDK](ios-sdk-call-order).
 :::
 
 ## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
 
-| Làm điều này | Không làm điều này | Lý do |
+| Làm thế này | Đừng làm thế này | Tại sao |
 |---|---|---|
-| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.1+). | Tự mình tạo các lệnh gọi `getFlow` đồng thời khi khởi chạy. | Một batch prefetch tự làm sẽ chặn main thread và gây ra màn hình đen. `preloadFlows` được xây dựng cho mục đích này và chia sẻ một ngân sách timeout chung cho toàn bộ batch. |
-| Fetch `getPaywall` sau khi attribution đã có cơ hội resolve — ví dụ: 1–2 giây sau `activate` hoặc sau khi `onProfileUpdate` được kích hoạt. | Gọi `getPaywall` tại `App.init()`. | Attribution chưa được xử lý xong. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `getPaywall` vô thời hạn. | Không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc tắt ứng dụng. |
+| Fetch placement mà bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.1+). | Tự tạo các lệnh gọi `getFlow` đồng thời khi khởi động. | Việc tự prefetch hàng loạt sẽ chặn luồng chính và gây màn hình đen. `preloadFlows` được tối ưu cho việc này và chia sẻ một ngân sách timeout chung cho cả batch. |
+| Gọi `getFlow` sau khi attribution đã có cơ hội resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi `didLoadLatestProfile` được kích hoạt. | Gọi `getFlow` tại `App.init()`. | Attribution chưa được ghi nhận. Flow sẽ resolve theo đối tượng mặc định và bỏ qua các phân khúc cũng như cá nhân hóa ASA một cách lặng lẽ. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement. | Chờ `getFlow` vô thời hạn. | Không có timeout, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc họ sẽ đóng app. |
 
-Khi `loadTimeout` kích hoạt trong bất kỳ lần fetch nào — kể cả `getPaywall` thông thường — SDK sẽ trả về biến thể đã được cache nếu có, và nếu không có thì sẽ fetch biến thể của đối tượng mặc định (**All Users**) trong thời gian còn lại. Targeting sẽ bị mất cho request đó, không phải bị trì hoãn: các phân khúc và đối tượng dựa trên attribution không được áp dụng cho kết quả.
+Khi `loadTimeout` kích hoạt trong bất kỳ lần tải nào — kể cả `getFlow` đơn giản — SDK sẽ trả về biến thể đã lưu trong bộ nhớ cache nếu có, nếu không sẽ tải biến thể của đối tượng mặc định (**All Users**) trong thời gian còn lại. Việc nhắm mục tiêu bị mất cho yêu cầu đó, không phải bị trì hoãn: các phân khúc và đối tượng dựa trên attribution sẽ không áp dụng cho kết quả.
 
-Xem [Fetch paywall và sản phẩm](fetch-paywalls-and-products) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
+Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
 ## Tải trước placement \{#preload-placements\}
 
@@ -30,9 +30,9 @@ Xem [Fetch paywall và sản phẩm](fetch-paywalls-and-products) để tham kh�
 
 `preloadFlows` ghi JSON của placement vào bộ nhớ đệm SDK trước — mỗi placement một request, không hơn không kém. Dù tên gọi là vậy, hàm này không tải layout UI của flow hay các tệp media của nó.
 
-Lệnh `getFlow` sau đó chỉ đọc cache khi bạn truyền `fetchPolicy: .returnCacheDataElseLoad` hoặc `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. Policy mặc định là `.reloadRevalidatingCacheData`, luôn gọi lên mạng mỗi lần, vì vậy nếu bạn preload nhưng lại dùng policy mặc định để fetch, bạn sẽ tốn thêm một request mà không được lợi gì — bản cache đã làm nóng chỉ đóng vai trò fallback khi offline.
+Lệnh `getFlow` tiếp theo chỉ đọc cache khi bạn truyền `fetchPolicy: .returnCacheDataElseLoad` hoặc `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. Policy mặc định là `.reloadRevalidatingCacheData` — luôn gọi mạng mỗi lần, nên nếu dùng preload kết hợp với policy mặc định sẽ tốn thêm một request và không tiết kiệm gì — bản đã cache chỉ đóng vai trò dự phòng khi offline.
 
-Hãy dùng cách này khi bạn biết trước session sẽ cần những placement nào nhưng chưa muốn hiển thị chúng ngay — chẳng hạn, ngay sau khi `activate` và `identify` hoàn tất, để chuẩn bị sẵn paywall cho nút mà người dùng chưa bấm vào.
+Dùng preload khi bạn biết trước session sẽ cần những placement nào nhưng chưa muốn hiển thị ngay — chẳng hạn, ngay sau khi `activate` và `identify` hoàn tất, cho flow đứng sau một nút mà người dùng chưa nhấn.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -118,11 +118,11 @@ do {
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
 ```
 
-## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
 
-Đối với các thị trường có kết nối kém liên tục (khu vực nông thôn, phương tiện công cộng, các vùng bị ảnh hưởng bởi định tuyến mạng):
+Đối với các thị trường có kết nối kém liên tục (vùng nông thôn, phương tiện công cộng, khu vực bị ảnh hưởng bởi định tuyến):
 
-- Đặt `fetchPolicy: .returnCacheDataElseLoad` cho mọi lần tải ngoại trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement trong Adapty dashboard.
-- Đặt `loadTimeout` từ 3–5 giây và chấp nhận phương án dự phòng khi timeout xảy ra.
-- Không chặn việc hiển thị paywall vào `getProfile()`. Gọi `getPaywall` độc lập để một profile chậm không làm chặn giao diện.
+- Đặt `fetchPolicy: .returnCacheDataElseLoad` cho mọi lần fetch ngoại trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Đặt `loadTimeout` từ 3–5 giây và chấp nhận fallback khi timeout kích hoạt.
+- Đừng chặn việc hiển thị flow vào `getProfile()`. Gọi `getFlow` độc lập để hồ sơ người dùng chậm không chặn giao diện.

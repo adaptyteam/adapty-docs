@@ -1,26 +1,26 @@
 ---
-title: "iOS SDK'da paywall getirme işlemini optimize etme"
-description: "Adapty paywall'larını güvenilir şekilde getirin: iOS için zamanlama, önbellekleme ve yedek desenleri."
-metadataTitle: "Paywall Getirme İşlemini Optimize Etme | iOS SDK | Adapty Dokümanları"
+title: "iOS SDK'da flow ve paywall yüklemeyi optimize etme"
+description: "Adapty flow'ları ve paywall'larını güvenilir şekilde yükleyin: iOS için zamanlama, önbellekleme ve yedek desenler."
+metadataTitle: "Flow ve Paywall Yüklemeyi Optimize Etme | iOS SDK | Adapty Dokümanları"
 ---
 
-iOS'ta güvenilir bir paywall getirme işlemi üç şeyi başarır: hızlı render eder, kitleyeye hedeflenmiş paywall'ı döndürür ve ağ yavaş olduğunda sorunsuz yedek sunar. Aşağıdaki kurallar bunu sağlamak için zamanlama, önbellekleme ve yedek desenlerini kapsar.
+iOS'ta güvenilir bir flow veya paywall yüklemesi üç şeyi yapar: hızlı görüntülenir, kitleye özel varyantı döndürür ve ağ yavaş olduğunda sorunsuz yedek görüntüler. Aşağıdaki kurallar bu hedefe ulaşmak için zamanlama, önbellekleme ve yedek desenlerini kapsar.
 
 :::tip
-Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` işlemlerinin tamamlandığını varsayar. Bkz. [iOS SDK'da çağrı sırası](ios-sdk-call-order).
+Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` fonksiyonlarının zaten tamamlanmış olduğunu varsayar. Bkz. [iOS SDK'da çağrı sırası](ios-sdk-call-order).
 :::
 
 ## Kurallar ve tuzaklar \{#rules-and-pitfalls\}
 
 | Bunu yapın | Bunu yapmayın | Neden |
 |---|---|---|
-| Göstermek üzere olduğunuz placement'ı getirin ya da önbelleği [`preloadFlows`](#preload-placements) ile ısıtın (SDK 4.1+). | Başlatmada kendi eş zamanlı `getFlow` çağrılarınızı yayın. | Elle hazırlanmış bir prefetch patlaması ana iş parçacığını bloke eder ve siyah ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve toplu işlem boyunca tek bir zaman aşımı bütçesini paylaşır. |
-| `getPaywall`'ı, attribution'ın çözüme kavuşmasına fırsat tanındıktan sonra çağırın — örneğin `activate`'ten 1–2 saniye sonra ya da `onProfileUpdate` tetiklendikten sonra. | `getPaywall`'ı `App.init()`'te çağırın. | Attribution henüz gelmemiştir. Paywall, varsayılan kitleye göre çözümlenir ve sessizce segment ile ASA kişiselleştirmesini atlar. |
-| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall`'ı süresiz olarak bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş bir ekran görür — ya da uygulamayı kapatır. |
+| Göstermek üzere olduğunuz placement'ı çekin ya da [`preloadFlows`](#preload-placements) ile önbelleği ısıtın (SDK 4.1+). | Başlangıçta kendi eşzamanlı `getFlow` çağrılarınızı zincirlemeyin. | Elle yazılmış bir önceden yükleme patlaması ana thread'i bloke eder ve siyah ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve zaman aşımı bütçesini toplu olarak paylaşır. |
+| Attribution'ın çözülmesine fırsat tanıdıktan sonra `getFlow`'u çekin — örneğin `activate`'ten 1–2 saniye sonra ya da `didLoadLatestProfile` tetiklendikten sonra. | `getFlow`'u `App.init()` içinde çağırmayın. | Attribution henüz tamamlanmamıştır. Flow, varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
+| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'u süresiz olarak beklemeyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş ekran görür — ya da uygulamayı kapatır. |
 
-Herhangi bir fetch işleminde — sıradan bir `getPaywall` dahil — `loadTimeout` tetiklendiğinde, SDK önbellekte bir varyant varsa onu döndürür; yoksa kalan süre içinde varsayılan kitle (**All Users**) varyantını çeker. Hedefleme o istek için kaybolur, ertelenmez: segmentler ve attribution tabanlı kitleler sonuç için geçerli olmaz.
+Herhangi bir fetch işleminde `loadTimeout` tetiklendiğinde — basit bir `getFlow` dahil — SDK, önbelleğe alınmış bir varyant varsa onu döner; yoksa kalan süre içinde varsayılan kitle (**All Users**) varyantını getirir. Hedefleme o istek için kaybolur, ertelenmez: segmentler ve attribution tabanlı kitleler sonuca uygulanmaz.
 
-`fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri çekme](fetch-paywalls-and-products) sayfasına, doğru placement'ı seçmek için [Placement'lar](placements) sayfasına bakın.
+`fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products) sayfasına, doğru placement seçimi için ise [Placement'lar](placements) sayfasına bakın.
 
 ## Placement'ları önceden yükle \{#preload-placements\}
 
@@ -30,9 +30,9 @@ Herhangi bir fetch işleminde — sıradan bir `getPaywall` dahil — `loadTimeo
 
 `preloadFlows`, placement JSON'ını SDK önbelleğine önceden yazar — her placement için bir istek ve başka hiçbir şey. İsmine rağmen, flow'un UI düzenini veya medyasını getirmez.
 
-Sonraki bir `getFlow` çağrısı bu önbelleği yalnızca `fetchPolicy: .returnCacheDataElseLoad` veya `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` geçtiğinizde okur. Varsayılan politika olan `.reloadRevalidatingCacheData` her çağrıda ağa gider; bu yüzden ön yüklemeyi varsayılan politikayla yapılan bir çağrıyla eşleştirmek fazladan bir istek maliyeti doğurur ve hiçbir şey kazandırmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak hizmet eder.
+Sonraki bir `getFlow` çağrısı, bu önbelleği yalnızca `fetchPolicy: .returnCacheDataElseLoad` veya `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` ile çağırdığınızda okur. Varsayılan politika olan `.reloadRevalidatingCacheData`, her çağrıda ağa gider; dolayısıyla ön yükleme ile varsayılan politikalı bir fetch birlikte kullanıldığında fazladan bir istek oluşur ve hiçbir kazanım sağlanmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak işe yarar.
 
-Oturumun hangi placement'lara ihtiyaç duyacağını bildiğiniz ancak henüz göstermek istemediğiniz durumlarda kullanın — örneğin `activate` ve `identify` çözümlendikten hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki paywall için.
+Oturumun hangi placement'lara ihtiyaç duyacağını bildiğiniz ama henüz göstermek istemediğiniz durumlarda kullanın — örneğin, `activate` ve `identify` çözümlendikten hemen sonra, kullanıcının henüz dokunmadığı bir düğmenin arkasındaki flow için.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -118,11 +118,11 @@ Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan ki
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
 ```
 
-## Bağlantı sorunları için ayarlar \{#tune-for-poor-connectivity\}
+## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 
-Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunlarından etkilenen bölgeler):
+Sürekli zayıf bağlantının yaşandığı pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunları yaşanan bölgeler):
 
-- İlk fetch dışında her fetch işleminde `fetchPolicy: .returnCacheDataElseLoad` kullanın.
-- Adapty Kontrol Paneli'ndeki her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
-- `loadTimeout` değerini 3–5 saniye olarak ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalla geçin.
-- Paywall gösterimini `getProfile()` sonucuna bağlamayın. `getPaywall` işlemini bağımsız olarak çağırın; böylece yavaş bir profil yüklemesi arayüzü bloke etmez.
+- İlk fetch dışındaki her fetch için `fetchPolicy: .returnCacheDataElseLoad` ayarlayın.
+- Adapty kontrol panelindeki her placement için bir [yedek paywall](fallback-paywalls) yapılandırın.
+- `loadTimeout` değerini 3–5 saniye olarak ayarlayın ve zaman aşımı gerçekleştiğinde yedek paywalle geçin.
+- Flow görüntülemeyi `getProfile()` sonucuna bağlamayın. Yavaş bir profilin arayüzü bloke etmemesi için `getFlow`'u bağımsız olarak çağırın.

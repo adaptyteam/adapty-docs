@@ -1,10 +1,10 @@
 ---
-title: "Android SDKでペイウォールの取得を最適化する"
-description: "Android向けにAdaptyペイウォールを確実に取得する：タイミング、キャッシュ、フォールバックのパターン。"
-metadataTitle: "ペイウォール取得の最適化 | Android SDK | Adapty ドキュメント"
+title: "Android SDKでのフローとペイウォールの取得を最適化する"
+description: "Adaptyのフローとペイウォールを確実に取得する：Android向けのタイミング、キャッシュ、フォールバックパターン。"
+metadataTitle: "フローとペイウォールの取得を最適化する | Android SDK | Adapty ドキュメント"
 ---
 
-Android上での信頼性の高いペイウォール取得は、3つのことを実現します：高速なレンダリング、オーディエンスターゲティングされたペイウォールの返却、そしてネットワークが遅い場合のグレースフルなフォールバック。以下のルールは、これを実現するためのタイミング、キャッシュ、フォールバックのパターンをカバーしています。
+Android でフローやペイウォールを確実に取得するには、3つのことを実現する必要があります：高速なレンダリング、オーディエンスターゲットのバリアントの返却、そしてネットワークが遅い場合のグレースフルなフォールバック。以下のルールでは、それを実現するためのタイミング、キャッシュ、フォールバックパターンを説明します。
 
 :::tip
 これらのルールは、`Adapty.activate()` と `Adapty.identify()` がすでに完了していることを前提としています。[Android SDKの呼び出し順序](android-sdk-call-order)を参照してください。
@@ -12,11 +12,11 @@ Android上での信頼性の高いペイウォール取得は、3つのことを
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| これをする | これはしない | 理由 |
+| これをやる | これはやらない | 理由 |
 |---|---|---|
-| 表示しようとしているプレースメントを取得するか、[`preloadFlows`](#preload-placements)（SDK 4.1+）でキャッシュをウォームアップする。 | 起動時に独自の並行`getFlow`呼び出しを展開する。 | 自前のプリフェッチバーストはメインスレッドをブロックし、黒い画面を引き起こす。`preloadFlows`はこのために設計されており、バッチを並行して実行してくれる。 |
-| アトリビューションが解決される機会を得てから`getPaywall`を取得する — たとえば`activate`の1〜2秒後、または`setOnProfileUpdatedListener`が発火した後。 | `Application.onCreate()`で`getPaywall`を呼び出す。 | アトリビューションがまだ到達していない。ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが静かにバイパスされる。 |
-| `loadTimeout`を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getPaywall`を無期限に待機する。 | タイムアウトがないと、接続の悪い環境のユーザーはネットワークが解決されるまで空白の画面を見続けるか、アプリを閉じてしまう。 |
+| 表示しようとしているプレースメントを取得するか、[`preloadFlows`](#preload-placements)（SDK 4.1+）でキャッシュをウォームアップする。 | 起動時に独自の並行 `getFlow` 呼び出しをばらまく。 | 手製のプリフェッチバーストはメインスレッドをブロックし、黒い画面を引き起こす。`preloadFlows` はこのために設計されており、バッチを並行で実行する。 |
+| アトリビューションが解決される機会を得た後（例：`activate` の 1〜2 秒後、または `setOnProfileUpdatedListener` が発火した後）に `getFlow` を取得する。 | `Application.onCreate()` で `getFlow` を呼び出す。 | アトリビューションがまだ反映されていない。フローはデフォルトのオーディエンスに対して解決され、セグメントや ASA のパーソナライゼーションが暗黙的にスキップされる。 |
+| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getFlow` を無制限に待ち続ける。 | タイムアウトがないと、接続状況が悪いユーザーはネットワークが解決するまで白紙画面を見続けるか、アプリを閉じてしまう。 |
 
 `fetchPolicy` と `loadTimeout` パラメーターのリファレンスは[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-android)を、適切なプレースメントの選び方は[プレースメント](placements)を参照してください。
 
@@ -30,7 +30,7 @@ Android上での信頼性の高いペイウォール取得は、3つのことを
 
 後続の `getFlow` がそのキャッシュを読み取るのは、`AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` または `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` を渡した場合のみです。デフォルトポリシーの `ReloadRevalidatingCacheData` は毎回ネットワークにアクセスするため、プリロードとデフォルトポリシーのフェッチを組み合わせても余分なリクエストが1回増えるだけで、節約にはなりません。ウォームアップされたコピーはオフライン時のフォールバックとしてのみ機能します。
 
-ボタンをタップする前のペイウォールなど、セッションで必要なプレースメントがわかっているが、まだ表示したくない場合（たとえば `activate` と `identify` が完了した直後）に使用します。
+ボタンをまだタップしていない状態で、セッションで使用するプレースメントは分かっているが、まだ表示したくない場合に使用します — たとえば、`activate` と `identify` が解決した直後、まだタップされていないボタンの裏にあるフローなどです。
 
 <Tabs groupId="current-os" queryString>
 
@@ -123,11 +123,11 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
 ```
 
-## 接続が不安定な環境向けのチューニング \{#tune-for-poor-connectivity\}
+## 通信状態が悪い環境への対応 \{#tune-for-poor-connectivity\}
 
-接続が常に不安定な市場（農村部、交通機関、ルーティングの問題が多い地域）向けには：
+通信状態が常に悪い市場（農村部、交通機関内、ルーティングの問題が多い地域など）向けには以下を推奨します：
 
-- 最初の取得を除くすべての取得で、`fetchPolicy` を `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` に設定する。
-- Adapty ダッシュボードのすべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。
-- `loadTimeout` を3〜5秒に設定し、タイムアウト発生時はフォールバックを受け入れる。
-- `getProfile` にペイウォールの表示を依存させない。`getPaywall` は独立して呼び出し、プロファイルの取得が遅くてもUIをブロックしないようにする。
+- 初回以外のすべてのフェッチで `fetchPolicy` を `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` に設定する。
+- Adapty ダッシュボードで全プレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。
+- `loadTimeout` を 3〜5 秒に設定し、タイムアウト発生時はフォールバックを受け入れる。
+- `getProfile` の完了をフロー表示の条件にしない。`getFlow` は独立して呼び出し、プロファイルの取得が遅くても UI をブロックしないようにする。
