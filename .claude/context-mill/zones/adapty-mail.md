@@ -271,14 +271,14 @@ core in-app paywall/subscription product.
 | mail-double-opt-in | — | marketer | 6 | tutorial |
 | mail-email-campaigns | entry | marketer | 0 | tutorial |
 | mail-entry-points | entry | marketer | 0 | tutorial |
-| mail-flows | entry | marketer | 5 | tutorial |
+| mail-flows | entry | marketer | 8 | tutorial |
 | mail-funnelfox | how-to | marketer | 4 | tutorial |
-| mail-get-started | — | marketer | 14 | tutorial |
-| mail-profiles | — | marketer | 7 | tutorial |
+| mail-get-started | — | marketer | 15 | tutorial |
+| mail-profiles | — | marketer | 14 | tutorial |
 | mail-segments | — | marketer | 7 | tutorial |
 | mail-send-data-via-api | — | marketer | 5 | tutorial |
-| mail-sending-domain | — | marketer | 12 | tutorial |
-| mail-suppression | — | marketer | 5 | tutorial |
+| mail-sending-domain | — | marketer | 13 | tutorial |
+| mail-suppression | — | marketer | 10 | tutorial |
 | mail-testing | — | marketer | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
