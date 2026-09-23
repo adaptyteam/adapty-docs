@@ -14,11 +14,116 @@ Các quy tắc này giả định rằng `Adapty.activate()` và `Adapty.identif
 
 | Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Tải placement mà bạn sắp hiển thị.                                                                                  | Tải trước tất cả các placement cùng lúc khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng chính và gây màn hình đen trong suốt thời gian đó.                                  |
-| Gọi `getPaywall` sau khi attribution đã có cơ hội xử lý xong — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getPaywall` trong `Application.onCreate()`.         | Attribution chưa được xử lý xong. Paywall sẽ được phân giải theo đối tượng mặc định và bỏ qua phân khúc cũng như ASA personalization mà không có cảnh báo. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng ở kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc thoát ứng dụng.     |
+| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.1+). | Tự gọi đồng thời nhiều `getFlow` khi khởi động. | Một đợt prefetch tự chế sẽ chặn main thread và gây màn hình đen. `preloadFlows` được thiết kế cho việc này và chạy batch đồng thời cho bạn. |
+| Gọi `getPaywall` sau khi attribution đã có cơ hội resolve — ví dụ: 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getPaywall` trong `Application.onCreate()`. | Attribution chưa kịp cập nhật. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement. | Chờ `getPaywall` vô thời hạn. | Nếu không có timeout, người dùng kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc đóng app. |
 
 Xem [Tải paywalls và sản phẩm](fetch-paywalls-and-products-android) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
+
+## Tải trước placements \{#preload-placements\}
+
+:::info
+Các phương thức này có sẵn từ phiên bản SDK 4.1 trở lên.
+:::
+
+`preloadFlows` và `preloadOnboardings` ghi JSON của placement vào bộ nhớ cache của SDK trước — mỗi placement một request, không làm gì thêm. Dù tên gọi như vậy, cả hai phương thức đều không tải xuống UI layout hay media của flow.
+
+Lệnh `getFlow` hoặc `getOnboarding` được gọi sau đó chỉ đọc cache khi bạn truyền `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` hoặc `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. Policy mặc định là `ReloadRevalidatingCacheData`, luôn gọi đến mạng trong mỗi lần gọi, vì vậy nếu preload kết hợp với fetch theo policy mặc định sẽ tốn thêm một request và không tiết kiệm được gì — bản cache đã được warm chỉ đóng vai trò dự phòng khi offline.
+
+Sử dụng khi bạn biết trước những placement nào sẽ cần trong phiên nhưng chưa muốn hiển thị ngay — ví dụ, ngay sau khi `activate` và `identify` hoàn thành, cho paywall nằm sau một nút mà người dùng chưa nhấn.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+});
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**Tham số:**
+
+- `placementIds` (bắt buộc): các placement cần preload. ID trống hoặc trùng lặp sẽ bị bỏ qua.
+- `locale` (tùy chọn, chỉ dành cho `preloadOnboardings`): locale của onboarding cần cache.
+- `loadTimeout` (tùy chọn): timeout áp dụng cho từng placement trong batch, không phải cho toàn bộ batch. Mặc định là 5 giây; các giá trị dưới 1 giây sẽ được nâng lên 1 giây.
+
+**Một số điểm cần lưu ý về hành vi:**
+
+- Callback chỉ được gọi sau khi tất cả các placement đã được thử, và nó báo cáo các lỗi theo từng placement cùng nhau. Lỗi ở một placement không làm dừng các placement khác.
+- Nếu một placement bị timeout, gặp lỗi server, hoặc lỗi mạng, SDK sẽ tự động dùng các biến thể dự phòng cho placement đó. Các lỗi khác được báo cáo nguyên trạng.
+- Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn phải gọi `getFlow` hoặc `getOnboarding` để hiển thị.
+
+### Những gì preload bao gồm \{#what-a-preload-covers\}
+
+Một flow hiển thị theo từng lớp, và preload chỉ bao gồm lớp đầu tiên:
+
+| Lớp | Được tải bởi | Được làm ấm bởi preload |
+|---|---|---|
+| Placement JSON — biến thể được chọn, ID sản phẩm và Remote Config | `getFlow` | Có |
+| UI layout — cấu trúc, kiểu dáng và văn bản của màn hình | `getFlowConfiguration` | Không |
+| Hình ảnh, bao gồm khung tĩnh thay thế cho phần tử video | `getFlowConfiguration`, chạy nền | Không |
+| Video | Trình phát hệ thống, khi màn hình hiển thị | SDK không cache |
+
+`getFlowConfiguration` chờ để nhận layout, vì vậy khi cache trống, lệnh gọi này vẫn tốn một lần round trip sau khi preload. Sau khi SDK có layout, nó bắt đầu cache hình ảnh độc lập với lệnh gọi đó: SDK không chặn màn hình, và cũng không có callback hay lỗi nào báo cáo khi quá trình này hoàn tất.
+
+### Tìm hiểu placement nào gặp lỗi \{#find-out-which-placement-failed\}
+
+Callback nhận về một `AdaptyPreloadPlacementsError` bao quát toàn bộ batch, với mã lỗi `REQUEST_FAILED` (2005). Để xem chi tiết từng lỗi riêng lẻ, hãy đọc thuộc tính `preloadErrors` — một map được đánh key theo placement ID:
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` exists only on `AdaptyPreloadPlacementsError`, so confirm the type first — any other `AdaptyError` came from something other than a per-placement failure.
+
+### Bỏ qua phân khúc đối tượng \{#skip-audience-segmentation\}
+
+Để làm ấm cache mà không cần chờ phân khúc đối tượng, hãy dùng các biến thể dành cho đối tượng mặc định. Cả hai đều không nhận `loadTimeout`:
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
+```
 
 ## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
 

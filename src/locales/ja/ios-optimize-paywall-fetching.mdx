@@ -25,12 +25,14 @@ iOSで信頼性の高いペイウォールフェッチを実現するには、3�
 ## プレースメントの事前読み込み \{#preload-placements\}
 
 :::info
-これらのメソッドは SDK バージョン 4.1 以降で使用できます。
+これらのメソッドは SDK バージョン 4.1 以降で利用できます。
 :::
 
-`preloadFlows` と `preloadOnboardings` は、プレースメントを事前に SDK キャッシュへ読み込みます。その後、同じプレースメントに対して `getFlow` または `getOnboarding` を呼び出すと、ネットワークではなくキャッシュから解決されるため、ペイウォールが待ち時間なしに表示されます。
+`preloadFlows` と `preloadOnboardings` は、プレースメントの JSON を事前に SDK キャッシュに書き込みます — プレースメントごとに 1 回のリクエストを行うだけで、それ以外は何もしません。名前に反して、どちらのメソッドもフローの UI レイアウトやメディアは取得しません。
 
-セッションで必要になるプレースメントがわかっているものの、すぐに表示したくない場合に使用してください。たとえば、`activate` と `identify` が完了した直後に、ユーザーがまだタップしていないボタンの背後にあるペイウォールを事前読み込みする場合などに活用できます。
+後続の `getFlow` や `getOnboarding` がそのキャッシュを読み取るのは、`fetchPolicy: .returnCacheDataElseLoad` または `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` を指定した場合のみです。デフォルトポリシーの `.reloadRevalidatingCacheData` は毎回ネットワークにアクセスするため、プリロードとデフォルトポリシーのフェッチを組み合わせると余分なリクエストが1回発生するだけで、何もメリットがありません。ウォームアップされたキャッシュはオフライン時のフォールバックとしてのみ機能します。
+
+ユーザーがまだタップしていないボタンの後ろにあるペイウォールなど、セッションで必要なプレースメントがわかっているが、まだ表示したくない場合に使用します — たとえば、`activate` と `identify` が解決した直後などです。
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -46,6 +48,12 @@ try await Adapty.preloadOnboardings(
     locale: "en",
     loadTimeout: 5
 )
+
+// Later, when the user reaches the paywall:
+let flow = try await Adapty.getFlow(
+    placementId: "main_paywall",
+    fetchPolicy: .returnCacheDataElseLoad
+)
 ```
 
 </TabItem>
@@ -57,6 +65,11 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
         // at least one placement failed to preload
     }
 }
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoad) { result in
+    // ...
+}
 ```
 
 </TabItem>
@@ -64,21 +77,33 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
 
 **パラメータ:**
 
-- `placementIds`（必須）: プリロードするプレースメント。空白および重複した ID は無視されます。
-- `locale`（任意、`preloadOnboardings` のみ）: キャッシュするオンボーディングのロケール。
-- `loadTimeout`（任意）: 各プレースメントごとではなく、バッチ全体のタイムアウト（秒単位）。デフォルトは 5 秒で、1 秒未満の値は 1 秒に切り上げられます。
+- `placementIds`（必須）：プリロードするプレースメント。空白や重複したIDは無視されます。
+- `locale`（任意、`preloadOnboardings`のみ）：キャッシュするオンボーディングのロケール。
+- `loadTimeout`（任意）：バッチ全体のタイムアウト（秒）。プレースメントごとではありません。デフォルトは5秒で、1秒未満の値は1秒に切り上げられます。
 
-**知っておくべき動作:**
+**知っておくべき動作：**
 
-- メソッドがスローするのは、すべてのプレースメントを試みた後のみです。エラーはプレースメントごとの失敗を集約します。あるプレースメントの失敗が他のプレースメントの処理を止めることはありません。
-- プレースメントがタイムアウトしたり、ネットワークエラーで失敗した場合、SDK はそのプレースメントのデフォルトオーディエンスのバリアントにフォールバックします。その他の失敗はそのまま報告されます。
-- オーディエンスターゲットのフェッチが完了する前にタイムアウトが発生した場合でも、SDK は残りのバジェット内でデフォルトオーディエンスのバリアントの取得を試みます。
+- メソッドはすべてのプレースメントを試みた後にのみエラーをスローし、エラーには各プレースメントの失敗が集約されます。1つのプレースメントが失敗しても、他のプレースメントの処理は止まりません。
+- プレースメントがタイムアウトまたはネットワークエラーで失敗した場合、SDKはそのプレースメントのデフォルトオーディエンスのバリアントにフォールバックします。それ以外の失敗はそのまま報告されます。
+- タイムアウトが発生してオーディエンス対象のフェッチが完了していない場合でも、SDKは残りの時間内でデフォルトオーディエンスのバリアントの取得を試みます。
 - プリロードはキャッシュをウォームアップするだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` または `getOnboarding` を呼び出す必要があります。
-- `preloadFlows` と `preloadOnboardings` はメディアには一切触れません。フローの UI 設定（`getFlowConfiguration`）をリクエストすると、バックグラウンドで画像や動画のキャッシュが開始されますが、そのキャッシュ処理は呼び出しとは独立して実行されます。完了を通知するコールバック、デリゲートメソッド、エラーはありません。
 
-### どのプレースメントが失敗したかを確認する \{#find-out-which-placement-failed\}
+### プリロードがカバーする範囲 \{#what-a-preload-covers\}
 
-スローされるエラーはバッチ全体を対象とした単一の `AdaptyError` で、コードは `networkFailed`（2002）です。個別の失敗を確認するには、プレースメント ID をキーとするディクショナリである `preloadErrors` プロパティを参照してください。
+フローは複数のレイヤーに分かれて画面に表示され、プリロードが対象とするのはその最初のレイヤーのみです。
+
+| レイヤー | 取得元 | プリロードでウォームアップされるか |
+|---|---|---|
+| プレースメント JSON — 選択されたバリアント、そのプロダクト ID、リモートコンフィグ | `getFlow` | Yes |
+| UI レイアウト — 画面の構造、スタイル、テキスト | `getFlowConfiguration` | No |
+| 画像（動画要素の代替となる静止フレームを含む） | `getFlowConfiguration`（バックグラウンドで実行） | No |
+| 動画ファイル | システムプレイヤー（画面レンダリング時） | SDK ではキャッシュされない |
+
+`getFlowConfiguration` はレイアウトが取得されるまで待機するため、キャッシュが空の状態では、プリロード後でもこの呼び出しに1回のラウンドトリップが必要になります。SDKはレイアウトを取得すると、その呼び出しとは独立して画像のキャッシュを開始します。この処理は画面表示をブロックせず、完了を通知するコールバック、デリゲートメソッド、エラーも存在しません。
+
+### どのプレースメントが失敗したかを調べる \{#find-out-which-placement-failed\}
+
+スローされるエラーはバッチ全体をカバーする単一の `AdaptyError` で、コードは `networkFailed` (2005) です。個々の失敗を確認するには、`preloadErrors` プロパティを参照してください。このプロパティはプレースメント ID をキーとするディクショナリです。
 
 ```swift showLineNumbers
 do {
@@ -90,9 +115,11 @@ do {
 }
 ```
 
-`preloadErrors` は、プリロード呼び出し以外のエラーでは `nil` になります。そのため、`nil` は「プリロード失敗なし」ではなく「プリロード失敗ではない」として扱ってください。
+`preloadErrors` は、プリロードの呼び出し以外で発生したエラーの場合は `nil` になります。そのため、`nil` は「エラーなし」ではなく「プリロードの失敗ではない」として扱ってください。
 
-オーディエンスのセグメンテーションを待たずにキャッシュをウォームアップするには、デフォルトオーディエンス用のバリアントを使用します。
+### オーディエンスのセグメンテーションをスキップする \{#skip-audience-segmentation\}
+
+オーディエンスのセグメンテーションを待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。
 
 ```swift showLineNumbers
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])

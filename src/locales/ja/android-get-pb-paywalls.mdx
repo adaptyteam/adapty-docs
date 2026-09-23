@@ -28,9 +28,13 @@ rank: 95
 
 ビルダーでフローまたはペイウォールをデザインした場合、ユーザーに表示するためにモバイルアプリのコードでレンダリングを心配する必要はありません。そのようなフローまたはペイウォールには、表示内容と表示方法の両方が含まれています。それでも、プレースメントを通じてIDを取得し、ビュー設定を取得してから、モバイルアプリで表示する必要があります。
 
-最適なパフォーマンスを確保するために、フローまたはペイウォールとその[ビュー設定](android-get-pb-paywalls#fetch-the-view-configuration)をできるだけ早く取得し、ユーザーに表示する前に画像のダウンロードに十分な時間を確保することが重要です。
+最適なパフォーマンスを確保するために、フローまたはペイウォールと[ビュー設定](android-get-pb-paywalls#fetch-the-view-configuration)をできるだけ早く取得し、ユーザーに表示する前に画像をダウンロードする十分な時間を確保することが重要です。
 
-フローまたはペイウォールを取得するには、`getFlow` メソッドを使用します：
+:::tip
+複数のプレースメントを一度にウォームアップするには、[`preloadFlows`](android-optimize-paywall-fetching#preload-placements)（Android SDK 4.1+）を呼び出してください。プレースメントのJSONのみをキャッシュするため、レイアウトと画像を取得するにはビュー設定を別途フェッチする必要があります。
+:::
+
+フローまたはペイウォールを取得するには、`getFlow` メソッドを使用してください。
 
 <Tabs groupId="current-os" queryString>
 
@@ -60,7 +64,7 @@ Adapty.getFlow("YOUR_PLACEMENT_ID", loadTimeout = 10.seconds) { result ->
 
 ...
 
-Adapty.getFlow("YOUR_PLACEMENT_ID", TimeInterval.seconds(10), result -> {
+Adapty.getFlow("YOUR_PLACEMENT_ID", AdaptyPlacementFetchPolicy.Default, TimeInterval.seconds(10), result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) result).getValue();
         // the requested flow/paywall
@@ -76,7 +80,7 @@ Adapty.getFlow("YOUR_PLACEMENT_ID", TimeInterval.seconds(10), result -> {
 
 </Tabs>
 
-パラメーター:
+The input is empty — there is no content to translate.
 
 | パラメーター | 必須/任意 | 説明 |
 |---------|--------|-----------|
@@ -144,7 +148,7 @@ if (!flow.hasViewConfiguration()) {
     return;
 }
 
-AdaptyUI.getFlowConfiguration(flow, TimeInterval.seconds(10), result -> {
+AdaptyUI.getFlowConfiguration(flow, null, TimeInterval.seconds(10), result -> {
     if (result instanceof AdaptyResult.Success) {
         AdaptyUI.FlowConfiguration flowConfiguration =
           ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) result).getValue();
@@ -155,12 +159,12 @@ AdaptyUI.getFlowConfiguration(flow, TimeInterval.seconds(10), result -> {
     }
 });
 ```
-| パラメータ       | 必須/任意       | 説明                                                  |
+| パラメーター       | 必須/任意       | 説明                                                  |
 | :-------------- | :------------- | :----------------------------------------------------------- |
 | **flow**        | 必須       | `Adapty.getFlow` で取得した `AdaptyFlow` オブジェクト。 |
-| **locale**      | 任意 | レンダリングに使用する[フローのローカライゼーション](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた1つまたは2つのサブタグを持つ言語コード（例：`en`、`pt-br`）で指定します。省略した場合は `en` でレンダリングされます。フローに `en` がない場合はフローのデフォルトのローカライゼーションが使用されます。詳しくは[ローカライゼーションとロケールコード](android-localizations-and-locale-codes)を参照してください。 |
-| **customLayoutId** | <p>任意</p><p>デフォルト: `null`</p><p>SDK 4.1+</p> | フローのレイアウト設定におけるレイアウトのカスタムID。SDKがデバイスの種類と画面サイズに基づいて自動選択するレイアウトではなく、特定のレイアウトをレンダリングする場合に指定します。IDに一致するレイアウトが存在しない場合、呼び出しはno-view-configurationエラーで失敗します。フロー & ペイウォールビルダーではカスタムレイアウトIDはまだ割り当てられないため、このパラメータは未設定のままにしてください。 |
-| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。内部で複数のリクエストが発生する場合があるため、まれに `loadTimeout` で指定した時間よりわずかに遅れてタイムアウトすることがあります。 |
+| **locale**      | 任意 | ビューのレンダリングに使用する[フローのローカライズ](add-paywall-locale-in-adapty-paywall-builder)の識別子。`-` で区切られた1つまたは2つのサブタグを含む言語コードで指定します（例：`en`、`pt-br`）。省略した場合は `en` でレンダリングされます。フローに `en` がない場合はフローのデフォルトのローカライズが使用されます。詳細は[ローカライズとロケールコード](android-localizations-and-locale-codes)をご参照ください。 |
+| **customLayoutId** | <p>任意</p><p>デフォルト: `null`</p><p>SDK 4.1+</p> | フローのレイアウト設定における特定レイアウトのカスタムID。このIDを指定すると、デバイスの種類や画面サイズから自動的に選択されるレイアウトの代わりに、そのレイアウトをレンダリングします。IDに一致するレイアウトがない場合、ビュー設定なしのエラーで呼び出しが失敗します。Flow & ペイウォールビルダーではまだカスタムレイアウトIDを割り当てられないため、この項目は未設定のままにしてください。 |
+| **loadTimeout** | デフォルト: 5秒 | このメソッドのタイムアウト上限を設定します。タイムアウトに達した場合、キャッシュされたデータまたはローカルのフォールバックが返されます。処理が複数のリクエストで構成される場合があるため、稀に `loadTimeout` で指定した時間よりわずかに遅れてタイムアウトすることがあります。 |
 
 </TabItem>
 

@@ -12,13 +12,118 @@ Android上での信頼性の高いペイウォール取得は、3つのことを
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| こうする | こうしない | 理由 |
+| これをする | これはしない | 理由 |
 |---|---|---|
-| これから表示するプレースメントを取得する。                                                                                  | 起動時にすべてのプレースメントを並列でプリフェッチする。        | 一括プリフェッチはメインスレッドをブロックし、バースト中にブラックスクリーンが表示される。                                  |
-| アトリビューションが解決される機会を持った後に `getPaywall` を取得する — たとえば、`activate` の1〜2秒後、または `setOnProfileUpdatedListener` が発火した後。 | `Application.onCreate()` で `getPaywall` を呼び出す。         | アトリビューションがまだ反映されていない。ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが暗黙的にスキップされる。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                             | `getPaywall` を無期限に待つ。                     | タイムアウトがないと、接続が不安定なユーザーはネットワークが解決するまで、またはアプリを閉じるまで空白の画面を見続けることになる。     |
+| 表示しようとしているプレースメントを取得するか、[`preloadFlows`](#preload-placements)（SDK 4.1+）でキャッシュをウォームアップする。 | 起動時に独自の並行`getFlow`呼び出しを展開する。 | 自前のプリフェッチバーストはメインスレッドをブロックし、黒い画面を引き起こす。`preloadFlows`はこのために設計されており、バッチを並行して実行してくれる。 |
+| アトリビューションが解決される機会を得てから`getPaywall`を取得する — たとえば`activate`の1〜2秒後、または`setOnProfileUpdatedListener`が発火した後。 | `Application.onCreate()`で`getPaywall`を呼び出す。 | アトリビューションがまだ到達していない。ペイウォールはデフォルトのオーディエンスに対して解決され、セグメントやASAのパーソナライゼーションが静かにバイパスされる。 |
+| `loadTimeout`を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getPaywall`を無期限に待機する。 | タイムアウトがないと、接続の悪い環境のユーザーはネットワークが解決されるまで空白の画面を見続けるか、アプリを閉じてしまう。 |
 
 `fetchPolicy` と `loadTimeout` パラメーターのリファレンスは[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-android)を、適切なプレースメントの選び方は[プレースメント](placements)を参照してください。
+
+## プレースメントの事前読み込み \{#preload-placements\}
+
+:::info
+これらのメソッドは SDK バージョン 4.1 以降で利用できます。
+:::
+
+`preloadFlows` と `preloadOnboardings` は、プレースメントの JSON を事前に SDK キャッシュへ書き込みます。プレースメントごとに 1 回のリクエストが発生し、それ以外は何も行いません。名前に反して、どちらのメソッドもフローの UI レイアウトやメディアを取得するわけではありません。
+
+後続の `getFlow` または `getOnboarding` がそのキャッシュを読み取るのは、`AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` または `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` を渡した場合のみです。デフォルトのポリシーである `ReloadRevalidatingCacheData` は毎回ネットワークにアクセスするため、プリロードとデフォルトポリシーのフェッチを組み合わせると余分なリクエストが1回発生するだけで何も節約できません — ウォームアップされたコピーはオフラインのフォールバックとしてのみ機能します。
+
+セッションで使用するプレースメントが分かっているが、まだ表示したくない場合に使用します。たとえば、`activate` と `identify` が完了した直後に、ユーザーがまだタップしていないボタンの裏にあるペイウォールを先読みする場合などです。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+});
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**パラメーター:**
+
+- `placementIds`（必須）: プリロードするプレースメント。空白や重複するIDは無視されます。
+- `locale`（オプション、`preloadOnboardings` のみ）: キャッシュするオンボーディングのロケール。
+- `loadTimeout`（オプション）: バッチ全体ではなく、バッチ内の各プレースメントに適用されるタイムアウト。デフォルトは5秒で、1秒未満の値は1秒に切り上げられます。
+
+**知っておくべき動作:**
+
+- コールバックはすべてのプレースメントへのアクセスが試行された後にのみ発火し、プレースメントごとの失敗をまとめて報告します。1つのプレースメントが失敗しても、他のプレースメントの処理は止まりません。
+- プレースメントがタイムアウト、サーバーエラー、またはネットワークエラーで失敗した場合、SDKはそのプレースメントのフォールバックバリアントにフォールバックします。その他の失敗はそのまま報告されます。
+- プリロードはキャッシュを温めるだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` または `getOnboarding` を呼び出す必要があります。
+
+### プリロードがカバーする範囲 \{#what-a-preload-covers\}
+
+フローは複数のレイヤーに分かれて画面に表示されます。プリロードがカバーするのは、そのうち最初のレイヤーのみです。
+
+| レイヤー | 取得元 | プリロードで事前準備 |
+|---|---|---|
+| プレースメント JSON — 選択されたバリアント、プロダクト ID、リモートコンフィグ | `getFlow` | あり |
+| UI レイアウト — 画面の構造、スタイリング、テキスト | `getFlowConfiguration` | なし |
+| 画像（動画要素のスチルフレームを含む） | `getFlowConfiguration`（バックグラウンド） | なし |
+| 動画ファイル | 画面レンダリング時のシステムプレーヤー | SDK によるキャッシュなし |
+
+`getFlowConfiguration` はレイアウトを待機するため、キャッシュが空の状態では、プリロード後でもその呼び出しにラウンドトリップが1回発生します。SDK がレイアウトを取得すると、その呼び出しとは独立して画像のキャッシュを開始します。画面の表示をブロックすることはなく、完了を通知するコールバックやエラーもありません。
+
+### どのプレースメントが失敗したかを確認する \{#find-out-which-placement-failed\}
+
+コールバックは、コード `REQUEST_FAILED` (2005) を持つ `AdaptyPreloadPlacementsError` をバッチ全体に対して受け取ります。個別の失敗を確認するには、プレースメント ID をキーとするマップである `preloadErrors` プロパティを参照してください。
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` は `AdaptyPreloadPlacementsError` にのみ存在するため、まず型を確認してください — それ以外の `AdaptyError` は、プレースメントごとの失敗とは別の原因によるものです。
+
+### オーディエンスセグメンテーションをスキップする \{#skip-audience-segmentation\}
+
+オーディエンスセグメンテーションを一切待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。いずれも `loadTimeout` は不要です：
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
+```
 
 ## 接続が不安定な環境向けのチューニング \{#tune-for-poor-connectivity\}
 

@@ -22,15 +22,17 @@ Quand `loadTimeout` expire lors d'une récupération — y compris un simple `ge
 
 Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
 
-## Préchargement des placements \{#preload-placements\}
+## Précharger les placements \{#preload-placements\}
 
 :::info
 Ces méthodes sont disponibles à partir de la version 4.1 du SDK.
 :::
 
-`preloadFlows` et `preloadOnboardings` récupèrent les placements dans le cache du SDK à l'avance. Un appel ultérieur à `getFlow` ou `getOnboarding` pour le même placement est alors résolu depuis le cache plutôt que depuis le réseau, ce qui permet au paywall de s'afficher sans délai visible.
+`preloadFlows` et `preloadOnboardings` écrivent le JSON du placement dans le cache du SDK en avance — une requête par placement, rien de plus. Malgré leurs noms, aucune de ces méthodes ne récupère la mise en page de l'interface du flow ni ses médias.
 
-Utilisez-les quand vous savez quels placements seront nécessaires au cours de la session, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la résolution de `activate` et `identify`, pour le paywall derrière un bouton que l'utilisateur n'a pas encore touché.
+Un appel ultérieur à `getFlow` ou `getOnboarding` ne lit ce cache que si vous passez `fetchPolicy: .returnCacheDataElseLoad` ou `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. La politique par défaut, `.reloadRevalidatingCacheData`, contacte le réseau à chaque appel : un préchargement combiné à une récupération avec la politique par défaut génère donc une requête supplémentaire sans gain — la copie mise en cache ne sert que de solution de secours hors ligne.
+
+Utilisez cette méthode lorsque vous connaissez les placements dont la session aura besoin, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la résolution d'`activate` et d'`identify`, pour le paywall derrière un bouton que l'utilisateur n'a pas encore touché.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -46,6 +48,12 @@ try await Adapty.preloadOnboardings(
     locale: "en",
     loadTimeout: 5
 )
+
+// Plus tard, quand l'utilisateur atteint le paywall :
+let flow = try await Adapty.getFlow(
+    placementId: "main_paywall",
+    fetchPolicy: .returnCacheDataElseLoad
+)
 ```
 
 </TabItem>
@@ -57,6 +65,11 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
         // at least one placement failed to preload
     }
 }
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoad) { result in
+    // ...
+}
 ```
 
 </TabItem>
@@ -64,21 +77,33 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
 
 **Paramètres :**
 
-- `placementIds` (obligatoire) : les placements à précharger. Les IDs vides et en double sont ignorés.
-- `locale` (optionnel, `preloadOnboardings` uniquement) : la locale de l'onboarding à mettre en cache.
-- `loadTimeout` (optionnel) : délai d'expiration en secondes pour l'ensemble du lot, et non par placement. Par défaut à 5 secondes ; les valeurs inférieures à 1 seconde sont ramenées à 1 seconde.
+- `placementIds` (requis) : les placements à précharger. Les identifiants vides et en double sont ignorés.
+- `locale` (optionnel, `preloadOnboardings` uniquement) : la langue de l'onboarding à mettre en cache.
+- `loadTimeout` (optionnel) : délai d'expiration en secondes pour l'ensemble du lot, et non par placement. Par défaut, 5 secondes ; les valeurs inférieures à 1 seconde sont ramenées à 1 seconde.
 
 **Comportement à connaître :**
 
-- Les méthodes ne lèvent une exception qu'après avoir tenté chaque placement, et l'erreur regroupe les échecs par placement. Un échec sur un placement n'interrompt pas les autres.
-- Si un placement expire ou échoue avec une erreur réseau, le SDK bascule sur la variante d'audience par défaut pour ce placement. Les autres types d'échecs sont remontés tels quels.
-- Si le délai d'attente expire avant que la récupération ciblée par audience soit terminée, le SDK tente tout de même la variante d'audience par défaut dans le temps restant.
-- Le préchargement ne fait que réchauffer le cache. Il ne retourne aucun contenu — vous appelez quand même `getFlow` ou `getOnboarding` pour afficher le contenu.
-- `preloadFlows` et `preloadOnboardings` ne touchent jamais aux médias. La demande de configuration UI du flow (`getFlowConfiguration`) démarre la mise en cache des images et vidéos en arrière-plan, mais cette mise en cache s'exécute indépendamment de l'appel — aucun callback, méthode déléguée ou erreur ne signale quand elle est terminée.
+- Les méthodes ne lèvent une erreur qu'après avoir tenté tous les placements, et l'erreur regroupe les échecs par placement. Un échec sur un placement n'interrompt pas les autres.
+- Si un placement expire ou échoue à cause d'une erreur réseau, le SDK utilise la variante de l'audience par défaut pour ce placement. Les autres échecs sont rapportés tels quels.
+- Si le délai expire avant que la récupération ciblée par audience ne soit terminée, le SDK tente tout de même la variante de l'audience par défaut dans le budget restant.
+- Le préchargement se contente de réchauffer le cache. Il ne retourne pas de contenu — vous appelez tout de même `getFlow` ou `getOnboarding` pour afficher le contenu.
+
+### Ce que couvre un préchargement \{#what-a-preload-covers\}
+
+Un flow s'affiche par couches, et un préchargement ne couvre que la première :
+
+| Couche | Récupérée par | Réchauffée par un préchargement |
+|---|---|---|
+| Placement JSON — la variation choisie, ses identifiants de produits et le Remote Config | `getFlow` | Oui |
+| Mise en page UI — la structure, le style et le texte de l'écran | `getFlowConfiguration` | Non |
+| Images, y compris la vignette statique qui remplace un élément vidéo | `getFlowConfiguration`, en arrière-plan | Non |
+| Fichiers vidéo | Le lecteur système, au rendu de l'écran | Non mis en cache par le SDK |
+
+`getFlowConfiguration` attend la mise en page, donc en cas de cache vide, cet appel coûte toujours un aller-retour réseau après un préchargement. Une fois que le SDK a la mise en page, il met les images en cache indépendamment de l'appel : il ne bloque pas l'affichage, et aucun callback, méthode de délégué ou erreur ne signale la fin du processus.
 
 ### Identifier quel placement a échoué \{#find-out-which-placement-failed\}
 
-L'erreur levée est un `AdaptyError` unique couvrant l'ensemble du lot, avec le code `networkFailed` (2002). Pour voir les échecs individuels, consultez sa propriété `preloadErrors` — un dictionnaire indexé par identifiant de placement :
+L'erreur levée est un `AdaptyError` unique couvrant tout le lot, avec le code `networkFailed` (2005). Pour voir les échecs individuels, consultez sa propriété `preloadErrors` — un dictionnaire indexé par ID de placement :
 
 ```swift showLineNumbers
 do {
@@ -90,7 +115,9 @@ do {
 }
 ```
 
-`preloadErrors` est `nil` pour toute erreur qui ne provient pas d'un appel de préchargement, donc traitez une valeur `nil` comme « pas d'échec de préchargement » plutôt que « aucun échec ».
+`preloadErrors` est `nil` pour toute erreur ne provenant pas d'un appel de préchargement ; traitez donc une valeur `nil` comme « pas un échec de préchargement » plutôt que comme « aucune erreur ».
+
+### Ignorer la segmentation d'audience \{#skip-audience-segmentation\}
 
 Pour préchauffer le cache sans attendre la segmentation d'audience, utilisez les variantes de l'audience par défaut :
 

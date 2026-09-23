@@ -5,16 +5,126 @@ metadataTitle: "Paywall Çekmeyi Optimize Etme | Android SDK | Adapty Dokümanla
 ---
 
 Android'de güvenilir bir paywall çekme işlemi üç şeyi yapar: hızlı render eder, kitleye hedeflenmiş paywall'ı döndürür ve ağ yavaş olduğunda sorunsuz biçimde yedek gösterir. Aşağıdaki kurallar bu hedefe ulaşmak için gereken zamanlama, önbellekleme ve yedek kalıpları kapsar.
+
 :::tip
 Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` işlevlerinin zaten tamamlandığını varsayar. Bkz. [Android SDK'da çağrı sırası](android-sdk-call-order).
 :::
+
 ## Kurallar ve tuzaklar \{#rules-and-pitfalls\}
-| Bunu yapın | Bunu yapmayın | Neden |
+
+| Bunu yap | Bunu yapma | Neden |
 |---|---|---|
-| Göstermek üzere olduğunuz placement'ı getirin. | Başlatma sırasında tüm placement'ları eş zamanlı olarak önceden getirin. | Toplu ön getirme ana thread'i bloke eder ve bu sürede siyah ekran görünür. |
-| `getPaywall`'ı attribution çözümlenme şansı bulduktan sonra çağırın — örneğin `activate`'ten 1-2 saniye sonra veya `setOnProfileUpdatedListener` tetiklendikten sonra. | `getPaywall`'ı `Application.onCreate()` içinde çağırın. | Attribution henüz gelmemiştir. Paywall varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
-| Her placement için bir `loadTimeout` ayarlayın ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall`'ı süresiz olarak bekleyin. | Zaman aşımı olmadan, zayıf bağlantıdaki kullanıcılar ağ çözümlenene kadar boş ekran görür ya da uygulamayı kapatır. |
+| Göstermek üzere olduğunuz placement'ı fetch edin ya da [`preloadFlows`](#preload-placements) (SDK 4.1+) ile cache'i ısıtın. | Başlatmada kendi concurrent `getFlow` çağrılarınızı fanlayın. | El yapımı bir prefetch patlaması ana thread'i bloke eder ve siyah bir ekrana yol açar. `preloadFlows` bunun için tasarlanmıştır ve batch işlemi sizin için concurrent olarak çalıştırır. |
+| Attribution'ın çözümlenme fırsatı bulduktan sonra `getPaywall`'u fetch edin — örneğin, `activate`'ten 1–2 saniye sonra ya da `setOnProfileUpdatedListener` tetiklendikten sonra. | `getPaywall`'u `Application.onCreate()` içinde çağırın. | Attribution henüz gelmemiştir. Paywall, varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
+| Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getPaywall`'u süresiz bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş bir ekran görür — ya da uygulamayı kapatır. |
+
 `fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products-android) sayfasına, doğru placement seçimi için ise [Placement'lar](placements) sayfasına bakın.
+
+## Placement'ları önceden yükle \{#preload-placements\}
+
+:::info
+Bu metodlar SDK 4.1 sürümünden itibaren kullanılabilir.
+:::
+
+`preloadFlows` ve `preloadOnboardings`, placement JSON'ını SDK önbelleğine önceden yazar — her placement için bir istek ve başka hiçbir şey. İsimlerine rağmen bu metodların hiçbiri flow'un UI düzenini veya medya dosyalarını getirmez.
+
+Sonraki bir `getFlow` veya `getOnboarding` çağrısı bu önbelleği yalnızca `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` veya `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` geçtiğinizde okur. Varsayılan politika olan `ReloadRevalidatingCacheData`, her çağrıda ağa gider; dolayısıyla varsayılan politikayla yapılan bir fetch ile eşleştirilmiş bir ön yükleme fazladan bir istek maliyetine yol açar ve hiçbir şey kazandırmaz — ısıtılan kopya yalnızca çevrimdışı yedek görevi görür.
+
+Bunları, hangi placement'ların kullanılacağını bildiğinizde ancak henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki paywall için.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // en az bir placement önceden yüklenemedi
+    }
+}
+
+// Kullanıcı paywalla ulaştığında:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // en az bir placement önceden yüklenemedi
+    }
+});
+
+// Daha sonra, kullanıcı paywalle ulaştığında:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**Parametreler:**
+
+- `placementIds` (zorunlu): önceden yüklenecek placement'lar. Boş ve tekrarlanan ID'ler yoksayılır.
+- `locale` (isteğe bağlı, yalnızca `preloadOnboardings`): önbelleğe alınacak onboarding dili.
+- `loadTimeout` (isteğe bağlı): toplu işlemin tamamına değil, her placement'a ayrı ayrı uygulanan zaman aşımı. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler 1 saniyeye yükseltilir.
+
+**Bilinmesi gereken davranışlar:**
+
+- Geri çağırma, yalnızca her placement denendiğinde tetiklenir ve placement başına hataları bir arada raporlar. Bir placement'taki hata diğerlerini durdurmaz.
+- Bir placement zaman aşımına uğrarsa, sunucu hatası alırsa veya ağ hatası nedeniyle başarısız olursa, SDK o placement için yedek varyasyonlara geri döner. Diğer hatalar olduğu gibi raporlanır.
+- Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez — içeriği görüntülemek için yine de `getFlow` veya `getOnboarding` çağırmanız gerekir.
+
+### Ön yüklemenin kapsadığı alanlar \{#what-a-preload-covers\}
+
+Bir flow ekrana katmanlar halinde ulaşır ve ön yükleme yalnızca ilk katmanı kapsar:
+
+| Katman | Getiren | Ön yükleme ile hazırlanan |
+|---|---|---|
+| Placement JSON — seçilen varyant, ürün ID'leri ve remote config | `getFlow` | Evet |
+| UI düzeni — ekranın yapısı, stili ve metni | `getFlowConfiguration` | Hayır |
+| Görseller (video öğesinin yerine geçen sabit kare dahil) | `getFlowConfiguration`, arka planda | Hayır |
+| Video dosyaları | Ekran render edilirken sistem oynatıcısı | SDK tarafından önbelleğe alınmaz |
+
+`getFlowConfiguration` layout için bekler; bu nedenle soğuk önbellekte bu çağrı, bir preload'dan sonra bile bir round trip maliyetine yol açar. SDK layout'u aldıktan sonra görüntüleri çağrıdan bağımsız olarak önbelleğe almaya başlar: ekranı bekletmez ve tamamlandığında bunu bildiren bir callback veya hata yoktur.
+
+### Hangi placement'ın başarısız olduğunu öğrenin \{#find-out-which-placement-failed\}
+
+Callback, `REQUEST_FAILED` (2005) koduyla tüm toplu işlemi kapsayan bir `AdaptyPreloadPlacementsError` alır. Tek tek hataları görmek için `preloadErrors` özelliğini okuyun — placement ID'sine göre anahtarlanmış bir map:
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` yalnızca `AdaptyPreloadPlacementsError` üzerinde bulunur; bu nedenle önce türü doğrulayın — başka herhangi bir `AdaptyError`, placement bazında bir hata dışındaki bir kaynaktan gelmiştir.
+
+### Kitle segmentasyonunu atlama \{#skip-audience-segmentation\}
+
+Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan kitle varyantlarını kullanın. Her ikisi de `loadTimeout` almaz:
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
+```
+
 ## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 
 Sürekli zayıf bağlantı yaşanan pazarlar için (kırsal alanlar, toplu taşıma, yönlendirme sorunlarından etkilenen bölgeler):

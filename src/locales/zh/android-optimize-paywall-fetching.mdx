@@ -5,16 +5,126 @@ metadataTitle: "优化付费墙获取 | Android SDK | Adapty 文档"
 ---
 
 在 Android 上可靠地获取付费墙需要做到三点：渲染速度快、返回针对目标受众的付费墙，以及在网络较慢时能优雅降级。以下规则涵盖了实现这些目标所需的时机、缓存和备用方案。
+
 :::tip
 以下规则假定 `Adapty.activate()` 和 `Adapty.identify()` 均已完成。详情请参阅 [Android SDK 调用顺序](android-sdk-call-order)。
 :::
+
 ## 注意事项与常见陷阱 \{#rules-and-pitfalls\}
+
 | 应该这样做 | 不要这样做 | 原因 |
 |---|---|---|
-| 仅在即将展示时获取对应的版位。 | 启动时并发预取所有版位。 | 批量预取会阻塞主线程，导致启动期间出现黑屏。 |
-| 在归因数据有机会解析后再调用 `getPaywall`，例如在 `activate` 之后等待 1–2 秒，或等待 `setOnProfileUpdatedListener` 触发后再调用。 | 在 `Application.onCreate()` 中调用 `getPaywall`。 | 此时归因数据尚未就绪，付费墙将按默认目标受众进行解析，静默绕过市场细分和 ASA 个性化配置。 |
-| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getPaywall` 返回。 | 没有超时限制时，网络较差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
+| 获取即将展示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.1+）预热缓存。 | 在启动时自行并发调用多个 `getFlow`。 | 手动实现的预取请求会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，会自动并发处理批量请求。 |
+| 在归因数据有机会解析后再调用 `getPaywall`——例如在 `activate` 之后等待 1–2 秒，或等 `setOnProfileUpdatedListener` 触发后再调用。 | 在 `Application.onCreate()` 中调用 `getPaywall`。 | 此时归因数据尚未到达。付费墙将按默认目标受众解析，悄无声息地绕过市场细分和 ASA 个性化配置。 |
+| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getPaywall` 返回。 | 没有超时限制时，网络状况差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
+
 有关 `fetchPolicy` 和 `loadTimeout` 参数的说明，请参阅[获取付费墙和产品](fetch-paywalls-and-products-android)；有关选择合适版位的说明，请参阅[版位](placements)。
+
+## 预加载版位 \{#preload-placements\}
+
+:::info
+这些方法从 SDK 4.1 版本开始支持。
+:::
+
+`preloadFlows` 和 `preloadOnboardings` 会提前将版位 JSON 写入 SDK 缓存——每个版位发起一次请求，仅此而已。尽管名称如此，这两个方法均不会拉取流程的 UI 布局或媒体资源。
+
+后续调用 `getFlow` 或 `getOnboarding` 时，只有传入 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` 或 `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 策略，才会读取该缓存。默认策略 `ReloadRevalidatingCacheData` 每次都会请求网络，因此若预加载后仍使用默认策略发起请求，会多出一次额外请求，预加载毫无收益——预热的缓存仅在离线时作为兜底使用。
+
+在您知道当前会话需要哪些版位、但暂时不想展示它们时使用此方法——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的付费墙预加载。
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+});
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**参数：**
+
+- `placementIds`（必填）：要预加载的版位。空白和重复的 ID 会被忽略。
+- `locale`（可选，仅限 `preloadOnboardings`）：要缓存的用户引导语言区域。
+- `loadTimeout`（可选）：超时时间作用于批次中的每个版位，而非整个批次。默认值为 5 秒，低于 1 秒的值会被提升至 1 秒。
+
+**注意以下行为：**
+
+- 该回调仅在所有版位均已尝试加载后才会触发，并会将各版位的失败信息汇总上报。某个版位失败不会阻止其他版位的加载。
+- 如果某个版位超时、遇到服务器错误或网络错误，SDK 会自动回退到该版位的备用变体。其他类型的失败则按原样上报。
+- 预加载仅用于预热缓存，不会返回内容——您仍需调用 `getFlow` 或 `getOnboarding` 来展示内容。
+
+### 预加载的覆盖范围 \{#what-a-preload-covers\}
+
+一个流程分层加载，预加载仅覆盖第一层：
+
+| 层级 | 由谁获取 | 预加载是否预热 |
+|---|---|---|
+| 版位 JSON——选定的实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
+| UI 布局——页面结构、样式与文字 | `getFlowConfiguration` | 否 |
+| 图片，包括视频元素的静态占位帧 | `getFlowConfiguration`（后台加载） | 否 |
+| 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
+
+`getFlowConfiguration` 会等待布局数据返回，因此在冷缓存情况下，即使已预加载，该调用仍需一次完整的网络往返。一旦 SDK 获取到布局数据，便会独立开始缓存图片，不会阻塞页面渲染，且该过程没有回调，也不会报告任何完成或错误状态。
+
+### 查找哪个版位失败了 \{#find-out-which-placement-failed\}
+
+回调会接收一个覆盖整批请求的 `AdaptyPreloadPlacementsError`，错误码为 `REQUEST_FAILED`（2005）。要查看各个版位的失败详情，请读取其 `preloadErrors` 属性——这是一个以版位 ID 为键的映射：
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` 仅存在于 `AdaptyPreloadPlacementsError` 上，因此请先确认类型——其他 `AdaptyError` 来自版位级别失败以外的原因。
+
+### 跳过目标受众细分 \{#skip-audience-segmentation\}
+
+如需在完全不等待目标受众细分的情况下预热缓存，可使用 default-audience 变体。这两个方法均不接受 `loadTimeout` 参数：
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
+```
+
 ## 针对弱网环境进行调优 \{#tune-for-poor-connectivity\}
 
 针对网络状况持续较差的市场（农村地区、交通途中、受路由问题影响的地区）：
