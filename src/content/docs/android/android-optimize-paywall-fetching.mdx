@@ -26,9 +26,14 @@ See [Fetch paywalls and products](fetch-paywalls-and-products-android) for the `
 `preloadFlows` and `preloadFlowsForDefaultAudience` are available starting from SDK version 4.1.
 :::
 
-`preloadFlows` writes placement JSON into the SDK cache ahead of time — one request per placement, and nothing else. Despite the name, it doesn't fetch the flow's UI layout or its media.
+`preloadFlows` writes placement JSON into the SDK cache ahead of time — one request per placement. It caches what `getFlow` returns, and like `getFlow` it leaves the flow's UI layout and media alone; those load when you request the flow's configuration.
 
-A later `getFlow` reads that cache only when you pass `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` or `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. The default policy, `ReloadRevalidatingCacheData`, goes to the network on every call, so a preload paired with a default-policy fetch costs one extra request and saves nothing — the warmed copy only serves as an offline fallback.
+`fetchPolicy` decides which layer a later `getFlow` reads first, not whether it can reach the cache at all:
+
+- `ReturnCacheDataElseLoad` reads the preloaded copy first and goes to the network only when nothing is cached. `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` does the same while the copy is younger than `maxAgeMillis`.
+- The default, `ReloadRevalidatingCacheData`, goes to the network first and falls back to the preloaded copy when the request fails or times out.
+
+A preload pays off either way, but differently: a cache-first policy removes the request, while the default keeps it and gains a warm copy to fall back on.
 
 Use it when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the flow behind a button the user hasn't tapped.
 
@@ -90,7 +95,7 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 ### What a preload covers
 
-A flow reaches the screen in layers, and a preload covers only the first:
+A flow reaches the screen in layers. A preload covers the first, exactly as `getFlow` does:
 
 | Layer | Fetched by | Warmed by a preload |
 |---|---|---|
