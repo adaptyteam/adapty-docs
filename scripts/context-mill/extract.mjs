@@ -2,7 +2,8 @@
 // and reports per-zone drift against the zone briefs (human-curated layer).
 //
 // Usage:
-//   node scripts/context-mill/extract.mjs extract   # rebuild docs-map.jsonl
+//   node scripts/context-mill/extract.mjs extract   # rebuild docs-map.jsonl + re-render rosters
+//   node scripts/context-mill/extract.mjs extract --map-only   # rebuild docs-map.jsonl only
 //   node scripts/context-mill/extract.mjs status    # list new/stale/deleted enrichment
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -181,7 +182,7 @@ function briefPath(zoneId) {
   return path.join(ZONES_DIR, `${zoneId}.md`);
 }
 
-async function extract() {
+async function extract({ mapOnly = false } = {}) {
   const membership = await buildSidebarMembership();
   const records = [];
   for await (const filePath of walkMdx(DOCS_BASE)) {
@@ -203,6 +204,10 @@ async function extract() {
   const specCount = records.filter(r => r.kind === 'spec').length;
   const enrichable = records.filter(r => !r.orphan && !r.draft).length;
   console.log(`docs-map.jsonl: ${records.length - specCount} articles + ${specCount} API specs (${enrichable} enrichable, ${records.length - enrichable} orphan/draft)`);
+  // --map-only stops here. docs-map.jsonl is local-only (gitignored), but the
+  // roster blocks below live inside committed briefs, so a caller that only
+  // needs the map to search it must not leave unrelated diffs in zones/*.md.
+  if (mapOnly) return;
 
   const zonesData = await loadZoneLayer();
   if (!zonesData) {
@@ -231,7 +236,7 @@ async function extract() {
 async function status() {
   const map = await readJsonl(MAP_FILE);
   if (map.length === 0) {
-    console.error('docs-map.jsonl is missing or empty — run `npm run mill` first.');
+    console.error('docs-map.jsonl is missing or empty — run `npm run mill:map` first.');
     process.exitCode = 1;
     return;
   }
@@ -415,7 +420,7 @@ async function reviewed(zoneId) {
   // `{}` into .zone-state.json — destroying the review record while
   // reporting success, before anything else runs.
   if (map.length === 0) {
-    console.error('docs-map.jsonl is missing or empty — run `npm run mill` first.');
+    console.error('docs-map.jsonl is missing or empty — run `npm run mill:map` first.');
     process.exitCode = 1;
     return;
   }
@@ -783,7 +788,7 @@ async function newRollout(slug) {
 }
 
 const cmd = process.argv[2] || 'extract';
-if (cmd === 'extract') await extract();
+if (cmd === 'extract') await extract({ mapOnly: process.argv.slice(3).includes('--map-only') });
 else if (cmd === 'status') await status();
 else if (cmd === 'reviewed') await reviewed(process.argv[3]);
 else if (cmd === 'unreviewed') await unreviewed(process.argv[3]);
