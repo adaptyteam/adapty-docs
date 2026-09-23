@@ -1,10 +1,10 @@
 ---
-title: "Optimize paywall fetching in iOS SDK"
-description: "Fetch Adapty paywalls reliably: timing, caching, and fallback patterns for iOS."
-metadataTitle: "Optimize Paywall Fetching | iOS SDK | Adapty Docs"
+title: "Optimize flow & paywall fetching in iOS SDK"
+description: "Fetch Adapty flows and paywalls reliably: timing, caching, and fallback patterns for iOS."
+metadataTitle: "Optimize Flow & Paywall Fetching | iOS SDK | Adapty Docs"
 ---
 
-A reliable paywall fetch on iOS does three things: renders fast, returns the audience-targeted paywall, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
+A reliable flow or paywall fetch on iOS does three things: renders fast, returns the audience-targeted variation, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
 
 :::tip
 The rules assume `Adapty.activate()` and `Adapty.identify()` have already resolved. See [Call order in iOS SDK](ios-sdk-call-order).
@@ -15,10 +15,10 @@ The rules assume `Adapty.activate()` and `Adapty.identify()` have already resolv
 | Do this | Don't do this | Why |
 |---|---|---|
 | Fetch the placement you're about to show, or warm the cache with [`preloadFlows`](#preload-placements) (SDK 4.1+). | Fan out your own concurrent `getFlow` calls on launch. | A hand-rolled prefetch burst blocks the main thread and produces a black screen. `preloadFlows` is built for this and shares one timeout budget across the batch. |
-| Fetch `getPaywall` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `onProfileUpdate` fires. | Call `getPaywall` at `App.init()`.                     | Attribution hasn't landed yet. The paywall resolves against the default audience and silently bypasses segments and ASA personalization. |
-| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getPaywall` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
+| Fetch `getFlow` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `didLoadLatestProfile` fires. | Call `getFlow` at `App.init()`.                     | Attribution hasn't landed yet. The flow resolves against the default audience and silently bypasses segments and ASA personalization. |
+| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getFlow` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
 
-When `loadTimeout` fires on any fetch — a plain `getPaywall` included — the SDK returns the cached variation if one exists, and otherwise fetches the default-audience (**All Users**) variation within the remaining time. Targeting is lost for that request, not delayed: segments and attribution-based audiences don't apply to the result.
+When `loadTimeout` fires on any fetch — a plain `getFlow` included — the SDK returns the cached variation if one exists, and otherwise fetches the default-audience (**All Users**) variation within the remaining time. Targeting is lost for that request, not delayed: segments and attribution-based audiences don't apply to the result.
 
 See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
 
@@ -32,7 +32,7 @@ See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPol
 
 A later `getFlow` reads that cache only when you pass `fetchPolicy: .returnCacheDataElseLoad` or `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. The default policy, `.reloadRevalidatingCacheData`, goes to the network on every call, so a preload paired with a default-policy fetch costs one extra request and saves nothing — the warmed copy only serves as an offline fallback.
 
-Use it when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the paywall behind a button the user hasn't tapped.
+Use it when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the flow behind a button the user hasn't tapped.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -125,4 +125,4 @@ For markets with consistently poor connectivity (rural areas, transit, regions a
 - Set `fetchPolicy: .returnCacheDataElseLoad` on every fetch except the very first.
 - Configure a [fallback paywall](fallback-paywalls) for every placement in the Adapty dashboard.
 - Set `loadTimeout` to 3–5 seconds and accept the fallback when the timeout fires.
-- Don't gate paywall display on `getProfile()`. Call `getPaywall` independently so a slow profile doesn't block the UI.
+- Don't gate flow display on `getProfile()`. Call `getFlow` independently so a slow profile doesn't block the UI.
