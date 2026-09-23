@@ -23,14 +23,14 @@ Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` işlevlerinin zaten tama
 ## Placement'ları önceden yükle \{#preload-placements\}
 
 :::info
-Bu metodlar SDK 4.1 sürümünden itibaren kullanılabilir.
+Bu yöntemler SDK 4.1 sürümünden itibaren kullanılabilir.
 :::
 
-`preloadFlows` ve `preloadOnboardings`, placement JSON'ını SDK önbelleğine önceden yazar — her placement için bir istek ve başka hiçbir şey. İsimlerine rağmen bu metodların hiçbiri flow'un UI düzenini veya medya dosyalarını getirmez.
+`preloadFlows`, placement JSON'ını SDK önbelleğine önceden yazar — placement başına bir istek, başka hiçbir şey yapmaz. İsmine rağmen, flow'un UI düzenini veya medyasını getirmez.
 
-Sonraki bir `getFlow` veya `getOnboarding` çağrısı bu önbelleği yalnızca `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` veya `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` geçtiğinizde okur. Varsayılan politika olan `ReloadRevalidatingCacheData`, her çağrıda ağa gider; dolayısıyla varsayılan politikayla yapılan bir fetch ile eşleştirilmiş bir ön yükleme fazladan bir istek maliyetine yol açar ve hiçbir şey kazandırmaz — ısıtılan kopya yalnızca çevrimdışı yedek görevi görür.
+Sonraki bir `getFlow` çağrısı, yalnızca `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` veya `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` geçirildiğinde bu önbelleği okur. Varsayılan politika olan `ReloadRevalidatingCacheData`, her çağrıda ağa gider; bu nedenle ön yükleme ile varsayılan politikalı bir fetch birlikte kullanıldığında fazladan bir istek oluşur ve hiçbir şey kazanılmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak işlev görür.
 
-Bunları, hangi placement'ların kullanılacağını bildiğinizde ancak henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki paywall için.
+Henüz göstermek istemediğiniz ama oturumun hangi placement'ları kullanacağını önceden bildiğiniz durumlarda — örneğin `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki paywall için — kullanın.
 
 <Tabs groupId="current-os" queryString>
 
@@ -77,15 +77,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 **Parametreler:**
 
-- `placementIds` (zorunlu): önceden yüklenecek placement'lar. Boş ve tekrarlanan ID'ler yoksayılır.
-- `locale` (isteğe bağlı, yalnızca `preloadOnboardings`): önbelleğe alınacak onboarding dili.
-- `loadTimeout` (isteğe bağlı): toplu işlemin tamamına değil, her placement'a ayrı ayrı uygulanan zaman aşımı. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler 1 saniyeye yükseltilir.
+- `placementIds` (zorunlu): önceden yüklenecek placement'lar. Boş ve tekrar eden ID'ler göz ardı edilir.
+- `loadTimeout` (isteğe bağlı): her bir placement'a ayrı ayrı uygulanan zaman aşımı süresi; toplu işlemin tamamına değil. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler otomatik olarak 1 saniyeye yükseltilir.
 
 **Bilinmesi gereken davranışlar:**
 
-- Geri çağırma, yalnızca her placement denendiğinde tetiklenir ve placement başına hataları bir arada raporlar. Bir placement'taki hata diğerlerini durdurmaz.
-- Bir placement zaman aşımına uğrarsa, sunucu hatası alırsa veya ağ hatası nedeniyle başarısız olursa, SDK o placement için yedek varyasyonlara geri döner. Diğer hatalar olduğu gibi raporlanır.
-- Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez — içeriği görüntülemek için yine de `getFlow` veya `getOnboarding` çağırmanız gerekir.
+- Callback, her placement denendikten sonra tetiklenir ve placement başına düşen hataları birlikte raporlar. Bir placement'taki hata diğerlerini durdurmaz.
+- Bir placement zaman aşımına uğrarsa, sunucu hatası alırsa veya ağ hatasıyla karşılaşırsa SDK, o placement için yedek varyantlara geri döner. Diğer hatalar olduğu gibi raporlanır.
+- Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez — içeriği görüntülemek için yine `getFlow` çağırmanız gerekir.
 
 ### Ön yüklemenin kapsadığı alanlar \{#what-a-preload-covers\}
 
@@ -98,7 +97,7 @@ Bir flow ekrana katmanlar halinde ulaşır ve ön yükleme yalnızca ilk katman�
 | Görseller (video öğesinin yerine geçen sabit kare dahil) | `getFlowConfiguration`, arka planda | Hayır |
 | Video dosyaları | Ekran render edilirken sistem oynatıcısı | SDK tarafından önbelleğe alınmaz |
 
-`getFlowConfiguration` layout için bekler; bu nedenle soğuk önbellekte bu çağrı, bir preload'dan sonra bile bir round trip maliyetine yol açar. SDK layout'u aldıktan sonra görüntüleri çağrıdan bağımsız olarak önbelleğe almaya başlar: ekranı bekletmez ve tamamlandığında bunu bildiren bir callback veya hata yoktur.
+`getFlowConfiguration` layout için bekler; bu nedenle belirli bir layout'un ilk isteği, ön yükleme sonrasında bile bir tam gidiş-dönüş süresine mal olur. SDK, bu layout'u kendi disk önbelleğinde tutar; bu önbellek uygulama yeniden başlatmalarından sonra da hayatta kalır ve herhangi bir ağ çağrısından önce okunur. Dolayısıyla bu maliyet her istekte değil, yalnızca ilk istekte ortaya çıkar. SDK layout'u aldıktan sonra, çağrıdan bağımsız olarak görselleri önbelleğe almaya başlar: ekranı bekletmez ve bu işlem tamamlandığında herhangi bir callback veya hata bildirilmez.
 
 ### Hangi placement'ın başarısız olduğunu öğrenin \{#find-out-which-placement-failed\}
 
@@ -116,13 +115,12 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 
 `preloadErrors` yalnızca `AdaptyPreloadPlacementsError` üzerinde bulunur; bu nedenle önce türü doğrulayın — başka herhangi bir `AdaptyError`, placement bazında bir hata dışındaki bir kaynaktan gelmiştir.
 
-### Kitle segmentasyonunu atlama \{#skip-audience-segmentation\}
+### Kitle segmentasyonunu atla \{#skip-audience-segmentation\}
 
-Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan kitle varyantlarını kullanın. Her ikisi de `loadTimeout` almaz:
+Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan kitle varyantını kullanın. `loadTimeout` almaz:
 
 ```kotlin showLineNumbers
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
-Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
 ```
 
 ## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}

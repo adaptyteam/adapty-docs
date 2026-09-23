@@ -20,17 +20,17 @@ Các quy tắc này giả định rằng `Adapty.activate()` và `Adapty.identif
 
 Xem [Tải paywalls và sản phẩm](fetch-paywalls-and-products-android) để tham khảo tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn đúng placement.
 
-## Tải trước placements \{#preload-placements\}
+## Tải trước các placement \{#preload-placements\}
 
 :::info
-Các phương thức này có sẵn từ phiên bản SDK 4.1 trở lên.
+Các phương thức này khả dụng từ phiên bản SDK 4.1 trở lên.
 :::
 
-`preloadFlows` và `preloadOnboardings` ghi JSON của placement vào bộ nhớ cache của SDK trước — mỗi placement một request, không làm gì thêm. Dù tên gọi như vậy, cả hai phương thức đều không tải xuống UI layout hay media của flow.
+`preloadFlows` ghi JSON của placement vào bộ nhớ đệm của SDK trước — mỗi yêu cầu cho một placement, không hơn không kém. Mặc dù tên gọi như vậy, phương thức này không tải layout UI của flow hay các tài nguyên media của nó.
 
-Lệnh `getFlow` hoặc `getOnboarding` được gọi sau đó chỉ đọc cache khi bạn truyền `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` hoặc `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. Policy mặc định là `ReloadRevalidatingCacheData`, luôn gọi đến mạng trong mỗi lần gọi, vì vậy nếu preload kết hợp với fetch theo policy mặc định sẽ tốn thêm một request và không tiết kiệm được gì — bản cache đã được warm chỉ đóng vai trò dự phòng khi offline.
+Lệnh `getFlow` sau đó chỉ đọc cache khi bạn truyền `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` hoặc `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. Policy mặc định `ReloadRevalidatingCacheData` luôn gọi lên mạng mỗi lần, vì vậy nếu preload kết hợp với fetch dùng policy mặc định sẽ tốn thêm một request mà không tiết kiệm được gì — bản đã tải sẵn chỉ đóng vai trò dự phòng khi offline.
 
-Sử dụng khi bạn biết trước những placement nào sẽ cần trong phiên nhưng chưa muốn hiển thị ngay — ví dụ, ngay sau khi `activate` và `identify` hoàn thành, cho paywall nằm sau một nút mà người dùng chưa nhấn.
+Sử dụng khi bạn đã biết những placement nào sẽ cần trong phiên nhưng chưa muốn hiển thị chúng — ví dụ, ngay sau khi `activate` và `identify` hoàn tất, cho paywall ẩn sau một nút mà người dùng chưa nhấn.
 
 <Tabs groupId="current-os" queryString>
 
@@ -77,15 +77,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 **Tham số:**
 
-- `placementIds` (bắt buộc): các placement cần preload. ID trống hoặc trùng lặp sẽ bị bỏ qua.
-- `locale` (tùy chọn, chỉ dành cho `preloadOnboardings`): locale của onboarding cần cache.
-- `loadTimeout` (tùy chọn): timeout áp dụng cho từng placement trong batch, không phải cho toàn bộ batch. Mặc định là 5 giây; các giá trị dưới 1 giây sẽ được nâng lên 1 giây.
+- `placementIds` (bắt buộc): các placement cần tải trước. Các ID trống và trùng lặp sẽ bị bỏ qua.
+- `loadTimeout` (tùy chọn): timeout áp dụng cho từng placement trong batch, không phải cho toàn bộ batch. Mặc định là 5 giây, và các giá trị dưới 1 giây sẽ được nâng lên thành 1 giây.
 
-**Một số điểm cần lưu ý về hành vi:**
+**Những điều cần lưu ý về hành vi:**
 
-- Callback chỉ được gọi sau khi tất cả các placement đã được thử, và nó báo cáo các lỗi theo từng placement cùng nhau. Lỗi ở một placement không làm dừng các placement khác.
-- Nếu một placement bị timeout, gặp lỗi server, hoặc lỗi mạng, SDK sẽ tự động dùng các biến thể dự phòng cho placement đó. Các lỗi khác được báo cáo nguyên trạng.
-- Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn phải gọi `getFlow` hoặc `getOnboarding` để hiển thị.
+- Callback chỉ được kích hoạt sau khi tất cả các placement đã được xử lý, và nó báo cáo các lỗi theo từng placement cùng nhau. Lỗi ở một placement không ảnh hưởng đến các placement khác.
+- Nếu một placement bị timeout, gặp lỗi server, hoặc lỗi mạng, SDK sẽ chuyển sang dùng các biến thể dự phòng cho placement đó. Các lỗi khác được báo cáo nguyên trạng.
+- Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn phải gọi `getFlow` để hiển thị.
 
 ### Những gì preload bao gồm \{#what-a-preload-covers\}
 
@@ -98,7 +97,7 @@ Một flow hiển thị theo từng lớp, và preload chỉ bao gồm lớp đ�
 | Hình ảnh, bao gồm khung tĩnh thay thế cho phần tử video | `getFlowConfiguration`, chạy nền | Không |
 | Video | Trình phát hệ thống, khi màn hình hiển thị | SDK không cache |
 
-`getFlowConfiguration` chờ để nhận layout, vì vậy khi cache trống, lệnh gọi này vẫn tốn một lần round trip sau khi preload. Sau khi SDK có layout, nó bắt đầu cache hình ảnh độc lập với lệnh gọi đó: SDK không chặn màn hình, và cũng không có callback hay lỗi nào báo cáo khi quá trình này hoàn tất.
+`getFlowConfiguration` chờ layout được tải về, nên lần đầu tiên yêu cầu một layout nhất định vẫn tốn một round trip dù đã preload trước. SDK sau đó lưu layout đó vào bộ nhớ đệm trên đĩa, bộ nhớ này tồn tại qua các lần khởi động lại ứng dụng và được đọc trước mọi lần gọi mạng, vì vậy chi phí chỉ xảy ra ở lần yêu cầu đầu tiên chứ không phải mỗi lần. Khi SDK đã có layout, nó bắt đầu cache ảnh độc lập với lần gọi: việc này không làm chặn màn hình, và không có callback hay lỗi nào thông báo khi hoàn tất.
 
 ### Tìm hiểu placement nào gặp lỗi \{#find-out-which-placement-failed\}
 
@@ -118,11 +117,10 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 
 ### Bỏ qua phân khúc đối tượng \{#skip-audience-segmentation\}
 
-Để làm ấm cache mà không cần chờ phân khúc đối tượng, hãy dùng các biến thể dành cho đối tượng mặc định. Cả hai đều không nhận `loadTimeout`:
+Để làm ấm cache mà không cần chờ phân khúc đối tượng, hãy dùng biến thể default-audience. Cách này không cần `loadTimeout`:
 
 ```kotlin showLineNumbers
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
-Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
 ```
 
 ## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}

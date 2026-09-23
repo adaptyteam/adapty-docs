@@ -22,17 +22,17 @@ Herhangi bir fetch işleminde — sıradan bir `getPaywall` dahil — `loadTimeo
 
 `fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri çekme](fetch-paywalls-and-products) sayfasına, doğru placement'ı seçmek için [Placement'lar](placements) sayfasına bakın.
 
-## Placement'ları Önceden Yükle \{#preload-placements\}
+## Placement'ları önceden yükle \{#preload-placements\}
 
 :::info
 Bu metodlar SDK sürüm 4.1'den itibaren kullanılabilir.
 :::
 
-`preloadFlows` ve `preloadOnboardings`, placement JSON'ını önceden SDK önbelleğine yazar — placement başına bir istek, başka hiçbir şey. İsimlerine karşın, bu metodların hiçbiri flow'un kullanıcı arayüzü düzenini veya medyasını getirmez.
+`preloadFlows`, placement JSON'ını önceden SDK önbelleğine yazar — her placement için bir istek, başka bir şey değil. İsmine rağmen, flow'un UI düzenini veya medyasını çekmez.
 
-Sonraki bir `getFlow` veya `getOnboarding` çağrısı bu cache'i yalnızca `fetchPolicy: .returnCacheDataElseLoad` veya `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` geçirdiğinizde okur. Varsayılan politika olan `.reloadRevalidatingCacheData`, her çağrıda ağa gider; dolayısıyla varsayılan politikayla yapılan bir fetch ile eşleştirilmiş preload, bir ekstra istek daha yapar ve hiçbir şey kazandırmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak işe yarar.
+Sonraki bir `getFlow` çağrısı bu önbelleği yalnızca `fetchPolicy: .returnCacheDataElseLoad` veya `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` geçtiğinizde okur. Varsayılan politika olan `.reloadRevalidatingCacheData` her çağrıda ağa gider; bu yüzden ön yüklemeyi varsayılan politikayla yapılan bir çağrıyla eşleştirmek fazladan bir istek maliyeti doğurur ve hiçbir şey kazandırmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak hizmet eder.
 
-Bunları, oturumun hangi placement'lara ihtiyaç duyacağını bildiğinizde ancak henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki paywall için.
+Oturumun hangi placement'lara ihtiyaç duyacağını bildiğiniz ancak henüz göstermek istemediğiniz durumlarda kullanın — örneğin `activate` ve `identify` çözümlendikten hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki paywall için.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -43,13 +43,7 @@ try await Adapty.preloadFlows(
     loadTimeout: 5
 )
 
-try await Adapty.preloadOnboardings(
-    placementIds: ["intro"],
-    locale: "en",
-    loadTimeout: 5
-)
-
-// Kullanıcı paywalla ulaştığında:
+// Later, when the user reaches the paywall:
 let flow = try await Adapty.getFlow(
     placementId: "main_paywall",
     fetchPolicy: .returnCacheDataElseLoad
@@ -77,16 +71,15 @@ Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoa
 
 **Parametreler:**
 
-- `placementIds` (gerekli): önceden yüklenecek placement'lar. Boş ve tekrarlanan ID'ler göz ardı edilir.
-- `locale` (isteğe bağlı, yalnızca `preloadOnboardings`): önbelleğe alınacak onboarding locale'i.
-- `loadTimeout` (isteğe bağlı): toplu işlemin tamamı için zaman aşımı süresi (saniye cinsinden), her placement için ayrı ayrı değil. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler 1 saniyeye yükseltilir.
+- `placementIds` (gerekli): önceden yüklenecek placement'lar. Boş ve yinelenen ID'ler göz ardı edilir.
+- `loadTimeout` (isteğe bağlı): tüm toplu işlem için saniye cinsinden zaman aşımı, placement başına değil. Varsayılan değer 5 saniyedir; 1 saniyenin altındaki değerler 1 saniyeye yükseltilir.
 
-**Bilinmesi gereken davranışlar:**
+**Bilmeniz gereken davranışlar:**
 
-- Metotlar, her placement denendikten sonra hata fırlatır ve hata, placement başına yaşanan başarısızlıkları bir arada içerir. Bir placement'taki başarısızlık diğerlerini durdurmaz.
-- Bir placement zaman aşımına uğrar ya da ağ hatası alırsa, SDK o placement için varsayılan kitle varyasyonuna geri döner. Diğer hatalar olduğu gibi raporlanır.
+- Metot, her placement'i denedikten sonra hata fırlatır ve hata, placement başına başarısızlıkları bir araya getirir. Bir placement'teki başarısızlık diğerlerini durdurmaz.
+- Bir placement zaman aşımına uğrar veya ağ hatasıyla başarısız olursa, SDK o placement için varsayılan kitle varyasyonuna geri döner. Diğer hatalar olduğu gibi raporlanır.
 - Zaman aşımı, kitleye yönelik fetch tamamlanmadan tetiklenirse, SDK kalan süre içinde varsayılan kitle varyasyonunu denemeye devam eder.
-- Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez — içeriği görüntülemek için yine de `getFlow` veya `getOnboarding` çağırmanız gerekir.
+- Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez; içeriği göstermek için yine de `getFlow` çağırmanız gerekir.
 
 ### Bir preload'ın kapsadığı şeyler \{#what-a-preload-covers\}
 
@@ -99,7 +92,7 @@ Bir flow, ekrana katmanlar halinde ulaşır ve bir preload yalnızca ilk katman�
 | Görseller; video öğesi için yer tutan durağan kare dahil | `getFlowConfiguration`, arka planda | Hayır |
 | Video dosyaları | Ekran render edilirken sistem oynatıcısı tarafından | SDK tarafından önbelleğe alınmaz |
 
-`getFlowConfiguration`, layout'u beklediğinden soğuk önbellekte bu çağrı bir preload'dan sonra bile tam bir gidiş-dönüş maliyeti çıkarır. SDK layout'u aldıktan sonra görüntüleri çağrıdan bağımsız olarak önbelleğe almaya başlar: ekranı bekletmez ve tamamlandığında bildirim veren bir callback, delegate metodu veya hata yoktur.
+`getFlowConfiguration` layout'u bekler; bu nedenle önceden yükleme yapılmış olsa bile belirli bir layout için yapılan ilk istek bir tur-gidiş-dönüş maliyeti gerektirir. SDK ardından bu layout'u kendi disk önbelleğinde tutar; bu önbellek uygulama yeniden başlatmalarından sonra da hayatta kalır ve herhangi bir ağ çağrısından önce okunur, dolayısıyla maliyet her istekte değil yalnızca ilk istekte oluşur. SDK layout'u edindikten sonra, çağrıdan bağımsız olarak görselleri önbelleğe almaya başlar: ekranı bekletmez ve bittiğinde bunu bildiren bir callback, delegate metodu veya hata yoktur.
 
 ### Hangi placement'ın başarısız olduğunu öğrenin \{#find-out-which-placement-failed\}
 
@@ -117,13 +110,12 @@ do {
 
 `preloadErrors` değeri, bir preload çağrısından kaynaklanmayan hatalar için `nil` olur; bu nedenle `nil` değerini "hata yok" olarak değil, "preload hatası değil" olarak değerlendirin.
 
-### Kitle segmentasyonunu atla \{#skip-audience-segmentation\}
+### Kitle segmentasyonunu atlayın \{#skip-audience-segmentation\}
 
-Önbelleği, kitle segmentasyonunu hiç beklemeden ısıtmak için varsayılan kitle varyantlarını kullanın:
+Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan kitle varyantını kullanın:
 
 ```swift showLineNumbers
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
-try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
 ```
 
 ## Bağlantı sorunları için ayarlar \{#tune-for-poor-connectivity\}

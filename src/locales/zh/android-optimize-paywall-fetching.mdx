@@ -23,14 +23,14 @@ metadataTitle: "优化付费墙获取 | Android SDK | Adapty 文档"
 ## 预加载版位 \{#preload-placements\}
 
 :::info
-这些方法从 SDK 4.1 版本开始支持。
+这些方法从 SDK 4.1 版本起可用。
 :::
 
-`preloadFlows` 和 `preloadOnboardings` 会提前将版位 JSON 写入 SDK 缓存——每个版位发起一次请求，仅此而已。尽管名称如此，这两个方法均不会拉取流程的 UI 布局或媒体资源。
+`preloadFlows` 会提前将版位 JSON 写入 SDK 缓存——每个版位发送一次请求，仅此而已。尽管名称如此，它并不会获取流程的 UI 布局或媒体资源。
 
-后续调用 `getFlow` 或 `getOnboarding` 时，只有传入 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` 或 `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 策略，才会读取该缓存。默认策略 `ReloadRevalidatingCacheData` 每次都会请求网络，因此若预加载后仍使用默认策略发起请求，会多出一次额外请求，预加载毫无收益——预热的缓存仅在离线时作为兜底使用。
+后续调用 `getFlow` 时，只有传入 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` 或 `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 策略，才会读取该缓存。默认策略 `ReloadRevalidatingCacheData` 每次都会发起网络请求，因此预加载配合默认策略会多出一次额外请求，毫无收益——预热的缓存仅作为离线备用。
 
-在您知道当前会话需要哪些版位、但暂时不想展示它们时使用此方法——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的付费墙预加载。
+在您知道本次会话需要哪些版位，但暂时不想展示它们时使用此方法——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的付费墙预加载数据。
 
 <Tabs groupId="current-os" queryString>
 
@@ -77,15 +77,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 **参数：**
 
-- `placementIds`（必填）：要预加载的版位。空白和重复的 ID 会被忽略。
-- `locale`（可选，仅限 `preloadOnboardings`）：要缓存的用户引导语言区域。
-- `loadTimeout`（可选）：超时时间作用于批次中的每个版位，而非整个批次。默认值为 5 秒，低于 1 秒的值会被提升至 1 秒。
+- `placementIds`（必填）：需要预加载的版位。空白 ID 和重复 ID 将被忽略。
+- `loadTimeout`（可选）：超时时间作用于批次中的每个版位，而非整个批次。默认为 5 秒，低于 1 秒的值将被自动提升至 1 秒。
 
-**注意以下行为：**
+**以下行为需注意：**
 
-- 该回调仅在所有版位均已尝试加载后才会触发，并会将各版位的失败信息汇总上报。某个版位失败不会阻止其他版位的加载。
-- 如果某个版位超时、遇到服务器错误或网络错误，SDK 会自动回退到该版位的备用变体。其他类型的失败则按原样上报。
-- 预加载仅用于预热缓存，不会返回内容——您仍需调用 `getFlow` 或 `getOnboarding` 来展示内容。
+- 该回调仅在所有版位都尝试完毕后才会触发，并统一报告各版位的失败情况。某个版位的失败不会阻止其他版位的处理。
+- 如果某个版位超时、遇到服务器错误或网络错误，SDK 会回退到该版位的备用变体。其他类型的失败则按原样上报。
+- 预加载仅用于预热缓存，不会返回内容——你仍需调用 `getFlow` 来显示内容。
 
 ### 预加载的覆盖范围 \{#what-a-preload-covers\}
 
@@ -98,7 +97,7 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 | 图片，包括视频元素的静态占位帧 | `getFlowConfiguration`（后台加载） | 否 |
 | 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
 
-`getFlowConfiguration` 会等待布局数据返回，因此在冷缓存情况下，即使已预加载，该调用仍需一次完整的网络往返。一旦 SDK 获取到布局数据，便会独立开始缓存图片，不会阻塞页面渲染，且该过程没有回调，也不会报告任何完成或错误状态。
+`getFlowConfiguration` 会等待布局加载完成，因此即使已预加载，首次请求某个布局时仍需要一次完整的网络往返。SDK 随后会将该布局保存到自身的磁盘缓存中，缓存在应用重启后依然有效，并且在发起任何网络请求之前会优先读取缓存，所以这次开销只发生在首次请求时，而非每次请求。一旦 SDK 获取到布局，便会独立启动图片缓存：该过程不会阻塞页面展示，也不提供任何回调或错误来通知缓存完成时机。
 
 ### 查找哪个版位失败了 \{#find-out-which-placement-failed\}
 
@@ -118,11 +117,10 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 
 ### 跳过目标受众细分 \{#skip-audience-segmentation\}
 
-如需在完全不等待目标受众细分的情况下预热缓存，可使用 default-audience 变体。这两个方法均不接受 `loadTimeout` 参数：
+如需在完全不等待目标受众细分的情况下预热缓存，请使用默认受众实验变体。该方法不需要 `loadTimeout`：
 
 ```kotlin showLineNumbers
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
-Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
 ```
 
 ## 针对弱网环境进行调优 \{#tune-for-poor-connectivity\}

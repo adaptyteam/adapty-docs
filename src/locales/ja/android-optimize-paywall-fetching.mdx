@@ -20,17 +20,17 @@ Android上での信頼性の高いペイウォール取得は、3つのことを
 
 `fetchPolicy` と `loadTimeout` パラメーターのリファレンスは[ペイウォールとプロダクトの取得](fetch-paywalls-and-products-android)を、適切なプレースメントの選び方は[プレースメント](placements)を参照してください。
 
-## プレースメントの事前読み込み \{#preload-placements\}
+## プレースメントのプリロード \{#preload-placements\}
 
 :::info
-これらのメソッドは SDK バージョン 4.1 以降で利用できます。
+これらのメソッドはSDKバージョン4.1以降で利用できます。
 :::
 
-`preloadFlows` と `preloadOnboardings` は、プレースメントの JSON を事前に SDK キャッシュへ書き込みます。プレースメントごとに 1 回のリクエストが発生し、それ以外は何も行いません。名前に反して、どちらのメソッドもフローの UI レイアウトやメディアを取得するわけではありません。
+`preloadFlows` はプレースメントのJSONをあらかじめSDKキャッシュに書き込みます。プレースメントごとに1回リクエストを送るだけで、それ以外は何も行いません。名前に反して、フローのUIレイアウトやメディアは取得しません。
 
-後続の `getFlow` または `getOnboarding` がそのキャッシュを読み取るのは、`AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` または `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` を渡した場合のみです。デフォルトのポリシーである `ReloadRevalidatingCacheData` は毎回ネットワークにアクセスするため、プリロードとデフォルトポリシーのフェッチを組み合わせると余分なリクエストが1回発生するだけで何も節約できません — ウォームアップされたコピーはオフラインのフォールバックとしてのみ機能します。
+後続の `getFlow` がそのキャッシュを読み取るのは、`AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` または `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` を渡した場合のみです。デフォルトポリシーの `ReloadRevalidatingCacheData` は毎回ネットワークにアクセスするため、プリロードとデフォルトポリシーのフェッチを組み合わせても余分なリクエストが1回増えるだけで、節約にはなりません。ウォームアップされたコピーはオフライン時のフォールバックとしてのみ機能します。
 
-セッションで使用するプレースメントが分かっているが、まだ表示したくない場合に使用します。たとえば、`activate` と `identify` が完了した直後に、ユーザーがまだタップしていないボタンの裏にあるペイウォールを先読みする場合などです。
+ボタンをタップする前のペイウォールなど、セッションで必要なプレースメントがわかっているが、まだ表示したくない場合（たとえば `activate` と `identify` が完了した直後）に使用します。
 
 <Tabs groupId="current-os" queryString>
 
@@ -77,15 +77,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 **パラメーター:**
 
-- `placementIds`（必須）: プリロードするプレースメント。空白や重複するIDは無視されます。
-- `locale`（オプション、`preloadOnboardings` のみ）: キャッシュするオンボーディングのロケール。
-- `loadTimeout`（オプション）: バッチ全体ではなく、バッチ内の各プレースメントに適用されるタイムアウト。デフォルトは5秒で、1秒未満の値は1秒に切り上げられます。
+- `placementIds` (必須): プリロードするプレースメント。空白や重複した ID は無視されます。
+- `loadTimeout` (オプション): バッチ全体ではなく、バッチ内の各プレースメントに適用されるタイムアウト。デフォルトは 5 秒で、1 秒未満の値は 1 秒に切り上げられます。
 
 **知っておくべき動作:**
 
-- コールバックはすべてのプレースメントへのアクセスが試行された後にのみ発火し、プレースメントごとの失敗をまとめて報告します。1つのプレースメントが失敗しても、他のプレースメントの処理は止まりません。
+- コールバックはすべてのプレースメントの試行が完了した後にのみ発火し、プレースメントごとの失敗をまとめて報告します。あるプレースメントが失敗しても、他のプレースメントの処理は停止しません。
 - プレースメントがタイムアウト、サーバーエラー、またはネットワークエラーで失敗した場合、SDKはそのプレースメントのフォールバックバリアントにフォールバックします。その他の失敗はそのまま報告されます。
-- プリロードはキャッシュを温めるだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` または `getOnboarding` を呼び出す必要があります。
+- プリロードはキャッシュをウォームアップするだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` を呼び出す必要があります。
 
 ### プリロードがカバーする範囲 \{#what-a-preload-covers\}
 
@@ -98,7 +97,7 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 | 画像（動画要素のスチルフレームを含む） | `getFlowConfiguration`（バックグラウンド） | なし |
 | 動画ファイル | 画面レンダリング時のシステムプレーヤー | SDK によるキャッシュなし |
 
-`getFlowConfiguration` はレイアウトを待機するため、キャッシュが空の状態では、プリロード後でもその呼び出しにラウンドトリップが1回発生します。SDK がレイアウトを取得すると、その呼び出しとは独立して画像のキャッシュを開始します。画面の表示をブロックすることはなく、完了を通知するコールバックやエラーもありません。
+`getFlowConfiguration` はレイアウトが返ってくるまで待機するため、プリロード後でも特定のレイアウトへの最初のリクエストにはラウンドトリップのコストがかかります。その後、SDK はそのレイアウトを独自のディスクキャッシュに保持します。このキャッシュはアプリの再起動をまたいで維持され、ネットワーク呼び出しより先に読み込まれるため、コストは毎回ではなく最初のリクエスト時のみに発生します。レイアウトを取得した後、SDK はその呼び出しとは独立して画像のキャッシュを開始します。画面の表示をブロックすることはなく、完了を通知するコールバックやエラーも存在しません。
 
 ### どのプレースメントが失敗したかを確認する \{#find-out-which-placement-failed\}
 
@@ -118,11 +117,10 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 
 ### オーディエンスセグメンテーションをスキップする \{#skip-audience-segmentation\}
 
-オーディエンスセグメンテーションを一切待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。いずれも `loadTimeout` は不要です：
+オーディエンスセグメンテーションを待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。`loadTimeout` は不要です:
 
 ```kotlin showLineNumbers
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
-Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
 ```
 
 ## 接続が不安定な環境向けのチューニング \{#tune-for-poor-connectivity\}

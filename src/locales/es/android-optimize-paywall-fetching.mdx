@@ -20,17 +20,17 @@ Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya se han resuel
 
 Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-android) para la referencia de parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-## Precarga de placements \{#preload-placements\}
+## Precargar placements \{#preload-placements\}
 
 :::info
 Estos métodos están disponibles a partir de la versión 4.1 del SDK.
 :::
 
-`preloadFlows` y `preloadOnboardings` escriben el JSON del placement en la caché del SDK con antelación: una solicitud por placement, nada más. A pesar de los nombres, ninguno de los dos métodos descarga el layout de la UI del flow ni sus recursos multimedia.
+`preloadFlows` escribe el JSON del placement en la caché del SDK de forma anticipada: una solicitud por placement y nada más. A pesar del nombre, no descarga el diseño de la interfaz del flow ni sus archivos multimedia.
 
-Una llamada posterior a `getFlow` o `getOnboarding` solo lee esa caché cuando se pasa `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` o `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. La política predeterminada, `ReloadRevalidatingCacheData`, siempre va a la red en cada llamada, por lo que una precarga combinada con una llamada de política predeterminada supone una petición extra sin ningún beneficio: la copia en caché solo sirve como respaldo sin conexión.
+Una llamada posterior a `getFlow` solo lee esa caché cuando se pasa `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` o `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. La política predeterminada, `ReloadRevalidatingCacheData`, va a la red en cada llamada, por lo que un precalentamiento combinado con una llamada con la política predeterminada genera una solicitud extra y no ahorra nada: la copia en caché solo sirve como respaldo sin conexión.
 
-Úsalos cuando sabes qué placements necesitará la sesión pero no quieres mostrarlos todavía — por ejemplo, justo después de que `activate` e `identify` resuelvan, para el paywall detrás de un botón que el usuario aún no ha pulsado.
+Úsalo cuando sepas qué placements va a necesitar la sesión pero no quieras mostrarlos todavía; por ejemplo, justo después de que `activate` e `identify` resuelvan, para el paywall detrás de un botón que el usuario aún no ha pulsado.
 
 <Tabs groupId="current-os" queryString>
 
@@ -77,15 +77,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 **Parámetros:**
 
-- `placementIds` (obligatorio): los placements que se deben precargar. Los IDs en blanco y duplicados se ignoran.
-- `locale` (opcional, solo para `preloadOnboardings`): el locale del onboarding que se almacenará en caché.
-- `loadTimeout` (opcional): el tiempo de espera se aplica a cada placement individualmente, no al lote completo. El valor predeterminado es 5 segundos; los valores inferiores a 1 segundo se elevan a 1 segundo.
+- `placementIds` (obligatorio): los placements a precargar. Los IDs en blanco o duplicados se ignoran.
+- `loadTimeout` (opcional): tiempo de espera aplicado a cada placement individualmente, no al lote completo. Por defecto es 5 segundos; los valores inferiores a 1 segundo se elevan a 1 segundo.
 
 **Aspectos importantes del comportamiento:**
 
-- El callback solo se activa después de intentar todos los placements, e informa los fallos por placement de forma conjunta. El fallo de un placement no detiene los demás.
-- Si un placement agota el tiempo de espera, recibe un error del servidor o falla por un error de red, el SDK recurre a las variaciones de respaldo de ese placement. El resto de fallos se reportan tal cual.
-- La precarga solo calienta la caché. No devuelve contenido: aún debes llamar a `getFlow` o `getOnboarding` para mostrarlo.
+- La llamada de retorno se activa solo después de que se hayan intentado todos los placements, e informa los fallos por placement juntos. Un fallo en un placement no detiene los demás.
+- Si un placement supera el tiempo de espera, encuentra un error de servidor o falla por un error de red, el SDK recurre a las variaciones de respaldo para ese placement. Los demás fallos se informan tal cual.
+- La precarga solo calienta la caché. No devuelve contenido: igualmente debes llamar a `getFlow` para mostrarlo.
 
 ### Qué cubre una precarga \{#what-a-preload-covers\}
 
@@ -98,7 +97,7 @@ Un flow llega a la pantalla en capas, y una precarga solo cubre la primera:
 | Imágenes, incluido el fotograma estático que reemplaza a un elemento de vídeo | `getFlowConfiguration`, en segundo plano | No |
 | Archivos de vídeo | El reproductor del sistema, al renderizar la pantalla | No se almacenan en caché por el SDK |
 
-`getFlowConfiguration` espera el layout, por lo que con una caché vacía esa llamada sigue costando un viaje de ida y vuelta después de una precarga. Una vez que el SDK tiene el layout, empieza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla y no hay ningún callback ni error que indique cuándo termina.
+`getFlowConfiguration` espera el layout, por lo que la primera solicitud de un layout determinado implica un viaje de ida y vuelta a la red, incluso después de una precarga. El SDK guarda ese layout en su propio caché de disco, que sobrevive a los reinicios de la app y se lee antes de cualquier llamada a la red, de modo que el coste recae en la primera solicitud y no en cada una. Una vez que el SDK tiene el layout, comienza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla, y no hay ningún callback ni error que informe de cuándo termina.
 
 ### Identificar qué placement falló \{#find-out-which-placement-failed\}
 
@@ -118,11 +117,10 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 
 ### Omitir la segmentación de audiencias \{#skip-audience-segmentation\}
 
-Para calentar la caché sin esperar a la segmentación de audiencias, usa las variantes de audiencia predeterminada. Ninguna acepta `loadTimeout`:
+Para calentar la caché sin esperar a la segmentación de audiencias, usa la variante de audiencia predeterminada. No recibe `loadTimeout`:
 
 ```kotlin showLineNumbers
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
-Adapty.preloadOnboardingsForDefaultAudience(listOf("intro")) { error -> }
 ```
 
 ## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
