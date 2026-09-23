@@ -47,7 +47,7 @@ Use AskUserQuestion tool. Do not proceed until task is clear.
 ### Phase 2: Research Existing Patterns
 
 1. Read neighboring articles in the same sidebar section — match tone, depth, structure
-2. Check for existing content on this topic — avoid duplication. Read the zone brief for the area (`context-mill` skill, lookup mode) rather than grepping the docs tree: its `Boundaries` section exists precisely to answer "does this already live somewhere else, and where", and its roster lists every article in the area with its role. A term search can only tell you which files mention a word; the brief tells you which one owns the topic
+2. Check for existing content on this topic — avoid duplication. Run `npm run mill:map` first: the docs map is gitignored, so it is missing on a fresh clone and stale after a pull, and lookup silently finds nothing without it. Then read the zone brief for the area (`context-mill` skill, lookup mode) rather than grepping the docs tree: its `Boundaries` section exists precisely to answer "does this already live somewhere else, and where", and its roster lists every article in the area with its role. A term search can only tell you which files mention a word; the brief tells you which one owns the topic
 3. Identify linking opportunities
 4. Note conventions: frontmatter format, component usage, heading levels
 5. Load references — same trigger rule as Review Workflow step 2. For writing, that is always `simplified-technical-english.md` and `article-structure.md`.

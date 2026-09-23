@@ -27,6 +27,10 @@ If the input is too vague to determine what changed, who it affects, or where it
 
 > **Rule:** Each phase invokes a sub-skill via the Skill tool. Never substitute your own knowledge for an invoked skill — trust the skill's output and build on it.
 
+### Before Phase 1: build the docs map
+
+Run `npm run mill:map`. The map is gitignored, so it is missing on a fresh clone and stale after a pull — and every phase below searches it through `context-mill`, where a missing map finds nothing and reads as "no article covers this". The sub-skills also build it when invoked on their own; building once here keeps every phase on the same map. Use `mill:map`, not `mill`: plain `mill` re-renders the roster blocks in the committed briefs and leaves unrelated diffs in the article PR.
+
 ### Phase 1: Plan — `writing-planner`
 
 **REQUIRED SUB-SKILL:** Use the Skill tool to invoke `writing-planner`.

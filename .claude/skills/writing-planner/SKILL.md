@@ -90,6 +90,8 @@ Remember a folder is not a platform and a filename is not a topic — some `vers
 
 If the zone brief and roster still leave candidates open, search the map:
 
+0. **Build the map first**: run `npm run mill:map`. The map is gitignored, so it is absent on a fresh clone and stale after any pull — and a grep on a missing file returns nothing, which reads as "no article covers this".
+
 1. **Search by feature keywords**: Grep for the feature name, UI element names, and related terms across `.claude/context-mill/docs-map.jsonl` (`title`, `headings`, `symbols`, `links`), falling back to the relevant docs if the map misses
 2. **Search by product area**: If the task mentions "autopilot," search for all articles containing "autopilot." If it mentions "A/B tests," find every article that covers A/B test configuration, results, or related workflows.
 3. **Think about ripple effects**: A feature change may affect more than the obvious article. Ask yourself:
