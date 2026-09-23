@@ -147,6 +147,7 @@ Delta from `scope.md` only.
 | kids-mode | kids-mode | kids-mode-android | kids-mode-react-native | kids-mode-flutter | kids-mode-unity | kids-mode-kmp | kids-mode-capacitor |
 | listen-subscription-changes |  | android-listen-subscription-changes | react-native-listen-subscription-changes | flutter-listen-subscription-changes | unity-listen-subscription-changes | kmp-listen-subscription-changes | capacitor-listen-subscription-changes |
 | setting-user-attributes | setting-user-attributes | android-setting-user-attributes | react-native-setting-user-attributes | flutter-setting-user-attributes | unity-setting-user-attributes | kmp-setting-user-attributes | capacitor-setting-user-attributes |
+| store-messages | ios-store-messages |  |  |  |  |  |  |
 | subscription-status | subscription-status |  |  |  |  |  |  |
 | user | ios-user | android-user | react-native-user | flutter-user | unity-user | kmp-user | capacitor-user |
 
@@ -168,6 +169,7 @@ Delta from `scope.md` only.
 | flutter-user | entry | dev | 0 | flutter |
 | identifying-users | — | dev | 5 | ios |
 | ios-deal-with-att | — | dev | 0 | ios |
+| ios-store-messages | how-to | dev | 6 | ios |
 | ios-user | entry | dev | 0 | ios |
 | kids-mode | — | dev | 8 | ios |
 | kids-mode-android | — | dev | 5 | android |
