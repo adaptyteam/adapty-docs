@@ -1,32 +1,30 @@
 ---
-title: "Tối ưu hóa việc tải paywall trong Kotlin Multiplatform SDK"
-description: "Tải paywall Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Kotlin Multiplatform."
-metadataTitle: "Tối ưu hóa việc tải paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
+title: "Tối ưu hóa việc tải flow & paywall trong Kotlin Multiplatform SDK"
+description: "Tải flow và paywall của Adapty một cách đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho Kotlin Multiplatform."
+metadataTitle: "Tối ưu hóa Tải Flow & Paywall | Kotlin Multiplatform SDK | Tài liệu Adapty"
 ---
 
-Một lần tải paywall đáng tin cậy trên Kotlin Multiplatform cần đảm bảo ba điều: hiển thị nhanh, trả về đúng paywall theo đối tượng mục tiêu, và xử lý dự phòng mượt mà khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
+Một lần tải flow hoặc paywall đáng tin cậy trên Kotlin Multiplatform cần đảm bảo ba điều: hiển thị nhanh, trả về biến thể đúng với đối tượng mục tiêu, và có phương án dự phòng khi mạng chậm. Các nguyên tắc dưới đây sẽ hướng dẫn bạn về thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
 
 :::tip
-Các quy tắc sau đây giả định `Adapty.activate()` và `Adapty.identify()` đã được thực thi xong. Xem [Thứ tự gọi trong Kotlin Multiplatform SDK](kmp-sdk-call-order).
+Các quy tắc này yêu cầu `Adapty.activate()` và `Adapty.identify()` đã được giải quyết xong. Xem [Thứ tự gọi trong SDK Kotlin Multiplatform](kmp-sdk-call-order).
 :::
-
-Các hướng dẫn dưới đây sử dụng tên phương thức của v3. Trong SDK v4, `getPaywall` được đổi tên thành `getFlow` (xem [hướng dẫn migration](migration-to-kmp-sdk-v4)) — mọi quy tắc đều áp dụng không thay đổi.
 
 ## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 
 | Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Fetch placement mà bạn sắp hiển thị.                                                                                                                | Prefetch tất cả các placement đồng thời khi khởi chạy.        | Bulk prefetch chặn main thread và gây ra màn hình đen trong suốt quá trình tải.                                  |
-| Fetch `getPaywall` sau khi attribution có thời gian để resolve — ví dụ: 1–2 giây sau khi `activate` hoặc sau khi `setOnProfileUpdatedListener` được kích hoạt. | Gọi `getPaywall` khi khởi chạy ứng dụng.                       | Attribution chưa được xử lý xong. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                                                           | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ đóng ứng dụng.     |
+| Fetch placement mà bạn sắp hiển thị. | Prefetch tất cả các placement đồng thời khi khởi động. | Prefetch hàng loạt làm chặn main thread và gây màn hình đen trong lúc burst. |
+| Fetch `getFlow` sau khi attribution đã có cơ hội resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi `setOnProfileUpdatedListener` kích hoạt. | Gọi `getFlow` khi khởi động app. | Attribution chưa được ghi nhận. Flow sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeout` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `getFlow` vô thời hạn. | Không có timeout, người dùng có kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc họ sẽ đóng app. |
 
 Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products-kmp) để tham khảo các tham số `fetchPolicy` và `loadTimeout`, và [Placements](placements) để chọn placement phù hợp.
 
-## Tối ưu cho kết nối kém \{#tune-for-poor-connectivity\}
+## Điều chỉnh cho kết nối kém \{#tune-for-poor-connectivity\}
 
-Đối với các thị trường có kết nối thường xuyên kém (vùng nông thôn, trên phương tiện giao thông, các khu vực bị ảnh hưởng bởi định tuyến mạng):
+Đối với các thị trường có kết nối kém liên tục (khu vực nông thôn, phương tiện giao thông công cộng, khu vực bị ảnh hưởng bởi định tuyến):
 
-- Đặt `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần tải ngoại trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty dashboard.
-- Đặt `loadTimeout` từ 3–5 giây và chấp nhận sử dụng paywall dự phòng khi hết thời gian chờ.
-- Đừng để hiển thị paywall phụ thuộc vào `Adapty.getProfile()`. Gọi `getPaywall` độc lập để một profile chậm không chặn giao diện người dùng.
+- Đặt `fetchPolicy = AdaptyPaywallFetchPolicy.ReturnCacheDataElseLoad` cho mọi lần fetch ngoại trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement trong Adapty dashboard.
+- Đặt `loadTimeout` từ 3–5 giây và chấp nhận fallback khi timeout kích hoạt.
+- Đừng chặn việc hiển thị flow khi chờ `Adapty.getProfile()`. Gọi `getFlow` độc lập để một profile chậm không làm chặn UI.

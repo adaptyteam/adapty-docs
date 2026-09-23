@@ -1,12 +1,13 @@
 ---
-title: "Migrar el SDK de Adapty para Android a la versión 4.0"
-description: "Migra al SDK de Adapty para Android v4.0 reemplazando las APIs de paywall por APIs de flow, compatibles tanto con el Flow Builder como con el Paywall Builder."
-metadataTitle: "Migrar al SDK de Adapty para Android v4.0 | Documentación de Adapty"
+title: "Migrar Adapty Android SDK a v4.0"
+description: "Migra al Adapty Android SDK v4.0 reemplazando las APIs de paywall con APIs de flow, que renderizan flows además de los paywalls del antiguo builder."
+metadataTitle: "Migración al Adapty Android SDK v4.0 | Documentación de Adapty"
 ---
 
-El SDK de Adapty para Android 4.0 introduce los flows y cambia el nombre de las APIs de paywall en consecuencia. Las nuevas APIs funcionan tanto con el nuevo Flow Builder como con el Paywall Builder existente — no se requieren cambios de configuración en el Adapty Dashboard.
+Adapty Android SDK 4.0 introduce flows y renombra las APIs de paywall en consecuencia. Las nuevas APIs funcionan con flows y siguen siendo compatibles con los paywalls del antiguo builder — no se requieren cambios de configuración en el Adapty Dashboard.
 
 ## Referencia rápida \{#quick-reference\}
+
 | v3 | v4 |
 |---|---|
 | `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
@@ -27,7 +28,9 @@ El SDK de Adapty para Android 4.0 introduce los flows y cambia el nombre de las 
 | `onRenderingError` | `onError` |
 | `Adapty.updateAttribution(attribution, source)` (`source: String`) | `Adapty.updateAttribution(attribution, source)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key, value)` | `Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier)` |
+
 `AdaptyPaywallProduct` mantiene su nombre — los productos siguen perteneciendo a un flow, y `getPaywallProducts` ahora recibe un `AdaptyFlow`. Los demás métodos de `AdaptyFlowEventListener` (`onProductSelected`, `onPurchaseStarted`, `onPurchaseFinished`, `onPurchaseFailure`, `onRestoreSuccess`, `onRestoreFailure`, `onActionPerformed`, `onAwaitingPurchaseParams`, `onLoadingProductsFailure`, etc.) mantienen sus nombres y firmas.
+
 ## Instalación \{#installation\}
 
 Establece la versión de `adapty-bom` en `4.0.1` (o posterior) y sincroniza el proyecto. El BOM resuelve automáticamente las versiones correspondientes de `android-sdk` y `android-ui`. Consulta [Instalar el SDK de Adapty](sdk-installation-android) para ver las declaraciones de dependencias.
@@ -35,6 +38,7 @@ Establece la versión de `adapty-bom` en `4.0.1` (o posterior) y sincroniza el p
 ## APIs eliminadas y en desuso \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — eliminada. Esta sobrecarga fue marcada como obsoleta en la v3. Pasa las mismas opciones a través de `AdaptyPurchaseParameters` en su lugar:
+
 ```diff showLineNumbers
 - Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result -> /* ... */ }
 + val params = AdaptyPurchaseParameters.Builder()
@@ -44,11 +48,14 @@ Establece la versión de `adapty-bom` en `4.0.1` (o posterior) y sincroniza el p
 + Adapty.makePurchase(activity, product, params) { result -> /* ... */ }
 ```
 
-- **Los onboardings están obsoletos.** `AdaptyUI.getOnboardingView` y `AdaptyUI.getOnboardingConfiguration` están marcados como `@Deprecated` en la versión 4.0 — migra los onboardings a flows creados en el [Flow Builder](adapty-flow-builder).
-## Obtener flows \{#fetching-flows\}
-### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration \{#getpaywall--getviewconfiguration--getflow--getflowconfiguration\}
+- **Los onboardings están obsoletos.** `AdaptyUI.getOnboardingView` y `AdaptyUI.getOnboardingConfiguration` están marcados como `@Deprecated` en la versión 4.0 — migra los onboardings a flows creados en el [Flow & Paywall Builder](adapty-flow-builder).
 
-El tipo de retorno de fetch cambia de `AdaptyPaywall` a `AdaptyFlow`, y el cargador de configuración se renombra de `AdaptyUI.getViewConfiguration` a `AdaptyUI.getFlowConfiguration` (devolviendo `AdaptyUI.FlowConfiguration` en lugar de `AdaptyUI.LocalizedViewConfiguration`). El parámetro `locale` sale de la llamada de fetch y pasa a `getFlowConfiguration`:
+## Obtener flows \{#fetching-flows\}
+
+### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration
+
+El tipo de retorno del fetch cambia de `AdaptyPaywall` a `AdaptyFlow`, y el cargador de configuración pasa de llamarse `AdaptyUI.getViewConfiguration` a `AdaptyUI.getFlowConfiguration` (devolviendo `AdaptyUI.FlowConfiguration` en lugar de `AdaptyUI.LocalizedViewConfiguration`). El parámetro `locale` sale de la llamada al fetch y pasa a `getFlowConfiguration`: `AdaptyFlow` también expone `paywalls` — las variaciones de paywall del flow, como valores `AdaptyFlowPaywall`. Los métodos de paywall web reciben uno de estos valores.
+
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
 + Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -77,22 +84,26 @@ El tipo de retorno de fetch cambia de `AdaptyPaywall` a `AdaptyFlow`, y el carga
 - Adapty.getPaywallProducts(paywall) { result -> /* products */ }
 + Adapty.getPaywallProducts(flow) { result -> /* products */ }
 ```
+
 ### Archivos de respaldo \{#fallback-files\}
 
 El formato del archivo de respaldo [cambió en el SDK v4](fallback-flows). Descarga el nuevo archivo desde **[Placements](https://app.adapty.io/placements)** > **Fallbacks** y agrégalo a tu app.
 
 ## Seguimiento de vistas de flows \{#tracking-flow-views\}
+
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` ha sido renombrado a `logShowFlow` y ahora recibe un `AdaptyFlow` en lugar de un `AdaptyPaywall`. El evento sigue registrándose en la misma variación, por lo que las métricas de embudo y de prueba A/B existentes siguen funcionando sin cambios en el dashboard.
+`logShowPaywall` pasa a llamarse `logShowFlow` y ahora recibe un `AdaptyFlow` en lugar de un `AdaptyPaywall`. El evento se sigue registrando en la misma variación, por lo que las métricas de funnel y pruebas A/B existentes seguirán funcionando sin cambios en el dashboard.
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-Al igual que en v3, no es necesario llamar a este método cuando se muestran flows o paywalls renderizados por el [Flow Builder](adapty-flow-builder) o el [Paywall Builder](adapty-paywall-builder) — Adapty registra esas vistas automáticamente.
+Al igual que en v3, no es necesario llamar a este método cuando se muestran flows o paywalls renderizados por Adapty — Adapty registra esas vistas automáticamente.
+
 ## Mostrar flows \{#displaying-flows\}
+
 ### getPaywallView / AdaptyPaywallView → getFlowView / AdaptyFlowView
 
 Renombra el método de fábrica y el tipo de vista, y pasa la `AdaptyUI.FlowConfiguration`:
@@ -113,6 +124,7 @@ Renombra el método de fábrica y el tipo de vista, y pasa la `AdaptyUI.FlowConf
 ```
 
 Si creas la vista directamente, el método show también cambia de nombre:
+
 ```diff showLineNumbers
 - val paywallView = AdaptyPaywallView(activity)
 - paywallView.showPaywall(viewConfiguration, products, eventListener)
@@ -126,7 +138,9 @@ En los layouts XML, actualiza el tag de la vista:
 - <com.adapty.ui.AdaptyPaywallView ... />
 + <com.adapty.ui.AdaptyFlowView ... />
 ```
+
 El parámetro opcional `personalizedOfferResolver` se ha eliminado de `getFlowView` / `showFlow` / `AdaptyFlowScreen`. Para indicar precios personalizados, configúralo por producto a través de `onAwaitingPurchaseParams` (`AdaptyPurchaseParameters.Builder().withOfferPersonalized(true)`). Un nuevo parámetro opcional `customAssets` te permite sobreescribir imágenes y vídeos en tiempo de ejecución — consulta [Personalizar assets](android-get-pb-paywalls#customize-assets).
+
 ### AdaptyPaywallScreen → AdaptyFlowScreen
 
 En Jetpack Compose, renombra el composable y actualiza el parámetro de configuración:
@@ -140,9 +154,11 @@ En Jetpack Compose, renombra el composable y actualiza el parámetro de configur
       eventListener,
   )
 ```
+
 ## Manejo de eventos \{#handling-events\}
 
 El listener de eventos se renombra de `AdaptyUiEventListener` a `AdaptyFlowEventListener` (y `AdaptyUiDefaultEventListener` a `AdaptyFlowDefaultEventListener`). La mayoría de los nombres de métodos no cambian; los callbacks de ciclo de vida y renderizado se renombran:
+
 ```diff showLineNumbers
 - class YourListener : AdaptyUiDefaultEventListener() {
 + class YourListener : AdaptyFlowDefaultEventListener() {
@@ -158,9 +174,13 @@ El listener de eventos se renombra de `AdaptyUiEventListener` a `AdaptyFlowEvent
 ```
 
 Los cuerpos de los handlers existentes no necesitan cambios en el código — solo renombra el tipo y los overrides. `onError` se activa para los mismos errores de renderizado que `onRenderingError`, más otros errores de ejecución no relacionados con compras. Consulta [Gestionar eventos de flow y paywall](android-handling-events) para ver la lista completa de callbacks.
+
 v4 también añade un callback `onBackPressed(context): Boolean`, y su comportamiento predeterminado cambia cómo funciona el botón atrás del sistema. Anteriormente, el botón atrás (o el gesto de retroceso) se propagaba a tu actividad o fragmento, lo que normalmente cerraba el paywall. En v4, la implementación predeterminada consume la pulsación, por lo que **el botón atrás del sistema ya no cierra un flow por sí solo** — igual que en iOS, donde un flow no se puede cerrar con un gesto del sistema. Ofrece a los usuarios una salida explícita (un botón **Close** o una acción `on_device_back`), o sobrescribe `onBackPressed` para que devuelva `false` y restaurar el comportamiento anterior. Consulta [Botón atrás del sistema](android-handling-events#system-back-button) para más detalles.
+
 El manejador de compras predeterminado también deja de cerrar la pantalla. En v3, el `onPurchaseFinished` predeterminado cerraba el paywall tras cualquier compra finalizada que no fuera una cancelación del usuario (una compra exitosa o pendiente). En v4 no hace nada, por lo que **un flow permanece abierto después de una compra hasta que lo cierres manualmente**, lo que coincide con el comportamiento en iOS. Si dependías de ese cierre automático, cierra la pantalla tú mismo una vez que la compra finalice. Consulta [Compra exitosa, cancelada o pendiente](android-handling-events#successful-canceled-or-pending-purchase) para ver un ejemplo.
+
 ## Identificadores de atribución e integración \{#attribution-and-integration-identifiers\}
+
 ### updateAttribution
 
 El parámetro `source` cambia de `String` al nuevo tipo `AdaptyAttributionSource`, y `attribution` ahora es un `Map<String, Any>` (también hay una sobrecarga con `String` JSON disponible). Usa una de las fuentes predefinidas:
@@ -169,6 +189,7 @@ El parámetro `source` cambia de `String` al nuevo tipo `AdaptyAttributionSource
 - Adapty.updateAttribution(attribution, "appsflyer") { error -> /* handle the error */ }
 + Adapty.updateAttribution(attribution, AdaptyAttributionSource.APPSFLYER) { error -> /* handle the error */ }
 ```
+
 Fuentes predefinidas: `AdaptyAttributionSource.APPLE_ADS`, `.ADJUST`, `.APPSFLYER`, `.BRANCH`, `.TENJIN`. Para cualquier otra fuente, constrúyela a partir de una cadena: `AdaptyAttributionSource("your_source")`.
 
 :::note
@@ -185,6 +206,7 @@ SDK 4.1 renombra este método a `updateExternalAttribution` y el tipo a `AdaptyE
 ```
 
 Puedes establecer varios identificadores en una sola llamada:
+
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
@@ -195,6 +217,7 @@ Adapty.setIntegrationIdentifier(
 ```
 
 Reemplaza cada cadena de clave antigua por su método de conveniencia correspondiente:
+
 | Clave v3 | Método `AdaptyIntegrationIdentifier` de v4 |
 |---|---|
 | `"adjust_device_id"` | `adjustDeviceId(value)` |
@@ -213,4 +236,5 @@ Reemplaza cada cadena de clave antigua por su método de conveniencia correspond
 | `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
 | `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
 | `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+
 Para una clave que no esté en esta lista, construye el identificador directamente a partir de una `Key` personalizada: `AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)`.

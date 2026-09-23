@@ -55,7 +55,7 @@ source: `android-sdk`
 line.
 
 **Quirks:**
-- Flow Builder / flows rework for Android is tracked against a separate devtool clone,
+- Flow & Paywall Builder / flows rework for Android is tracked against a separate devtool clone,
   `AdaptySDK-Android-UniversalDevtool`, branch `feature/ui_builder_5_mvp` (per prior session notes,
   not re-verified this pass — that clone is not in `sources.md`, it's an internal test/example app, not
   a source of the public SDK API).

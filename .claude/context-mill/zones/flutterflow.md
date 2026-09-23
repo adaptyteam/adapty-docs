@@ -39,7 +39,7 @@ The Adapty plugin for FlutterFlow, a separate low-code app-building platform —
 ## Boundaries
 
 - **sdk-quickstart / sdk-flows-manual / sdk-onboardings (the seven SDK platform zones)** — is the app built with FlutterFlow's plugin, or with a native SDK (including the native Flutter SDK)? FlutterFlow tickets never belong in an SDK platform zone, even though "Flutter" is in the name — FlutterFlow is a distinct low-code product with its own plugin, documented separately from the Flutter SDK.
-- **flow-design / flow-logic** — is the paywall built in FlutterFlow's own page editor (flutterflow), or in Adapty's Flow Builder (flow-design/flow-logic)? The FlutterFlow plugin cannot render Adapty-builder paywalls, so any Flow-Builder-specific question is out of scope here.
+- **flow-design / flow-logic** — is the paywall built in FlutterFlow's own page editor (flutterflow), or in Adapty's Flow & Paywall Builder (flow-design/flow-logic)? The FlutterFlow plugin cannot render Adapty-builder paywalls, so any Flow-Builder-specific question is out of scope here.
 
 ## Ticket language
 

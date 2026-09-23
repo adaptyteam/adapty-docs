@@ -1016,3 +1016,45 @@ test('status reports a source cited in the brief but missing from its frontmatte
     await rmScratch(dir);
   }
 });
+
+// --- extract --map-only: rebuild the map without touching committed briefs --
+// docs-map.jsonl is gitignored and rebuilt on demand, so the planner runs this
+// before every search. Roster blocks live in committed briefs; a map rebuild
+// that re-rendered them would leave unrelated diffs in every writing PR.
+// `extract` always walks the real corpus (only MILL_DIR is overridable), so the
+// fixture assigns a real article id — that is what makes the roster non-empty.
+
+test('extract --map-only writes the map and leaves a brief with a stale roster byte-identical', async () => {
+  const dir = await mkScratch();
+  try {
+    await writeZones(dir, { zones: [{ id: 'z1', title: 'Z1', kind: 'flat' }], articles: { 'ab-tests': { zone: 'z1', role: 'entry' } } });
+    const brief = makeBrief('z1');
+    await writeBrief(dir, 'z1', brief);
+    const { code, stdout } = await runCli(dir, ['extract', '--map-only']);
+    assert.equal(code, 0);
+    assert.match(stdout, /docs-map\.jsonl: \d+ articles/);
+    const map = await fs.readFile(mapFile(dir), 'utf-8');
+    assert.match(map, /"id":"ab-tests"/);
+    assert.equal(await fs.readFile(briefFile(dir, 'z1'), 'utf-8'), brief);
+  } finally {
+    await rmScratch(dir);
+  }
+});
+
+// The pair that proves the test above can fail: the same fixture without the
+// flag does rewrite the brief, so "byte-identical" is not a property of the fixture.
+test('extract without --map-only re-renders the same stale roster', async () => {
+  const dir = await mkScratch();
+  try {
+    await writeZones(dir, { zones: [{ id: 'z1', title: 'Z1', kind: 'flat' }], articles: { 'ab-tests': { zone: 'z1', role: 'entry' } } });
+    const brief = makeBrief('z1');
+    await writeBrief(dir, 'z1', brief);
+    const { code } = await runCli(dir, ['extract']);
+    assert.equal(code, 0);
+    const after = await fs.readFile(briefFile(dir, 'z1'), 'utf-8');
+    assert.notEqual(after, brief);
+    assert.match(after, /ab-tests/);
+  } finally {
+    await rmScratch(dir);
+  }
+});

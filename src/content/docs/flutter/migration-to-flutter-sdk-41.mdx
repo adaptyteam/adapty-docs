@@ -1,0 +1,127 @@
+---
+title: "Migrate Adapty Flutter SDK to v4.1"
+description: "Migrate to Adapty Flutter SDK v4.1: enable Adapty Attribution explicitly, adopt the renamed external attribution APIs, and re-download your fallback file."
+metadataTitle: "Migrating to Adapty Flutter SDK v4.1 | Adapty Docs"
+---
+
+Adapty Flutter SDK 4.1 changes how Adapty Attribution is enabled, renames the external attribution APIs, and changes the fallback file format. It also adds support for App Store promoted in-app purchases, and a way to keep a flow view alive after dismissing it.
+
+:::warning
+The renamed APIs are a hard break. The old names are removed outright — there are no deprecated aliases to bridge them. Code that compiles against 4.0.x fails on 4.1 until you rename every call site listed below.
+:::
+
+If you're still on 3.x, start with [Migrate to v4.0](migration-to-flutter-sdk-v4) and then follow this guide.
+
+## Quick reference
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution enabled automatically | Adapty Attribution disabled by default; opt in with `withAdaptyAttributionEnabled(true)` |
+| `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, with a new `custom` value |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Fallback file downloaded for 4.0 | New fallback file format; download the file again |
+| Promoted in-app purchases unsupported | Supported; the SDK completes them, or your app does from `didReceivePromotedPurchaseStream` |
+| `dismissFlowView(view)` always releases the view | `destroy: false` keeps the view alive to present it again |
+
+The purchase, profile, and flow-presentation APIs are otherwise unchanged.
+
+## Installation
+
+Update `adapty_flutter` to v4.1 in your `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.1.0
+```
+
+If your app uses [Kids Mode](kids-mode-flutter), specify `adapty_flutter_kids` instead:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.1.0
+```
+
+The requirements are unchanged from 4.0: **Flutter 3.32.0** (Dart 3.8.0) and **iOS 15.0**. See [Install Adapty SDK](sdk-installation-flutter) for the full setup.
+
+4.1 pins the native iOS SDK to 4.1.3 and the native Android SDK to 4.1.1. The iOS release also fixes numeric parameters of flow analytic events: before it, every `0` and `1` reached `flowViewDidReceiveAnalyticEvent` as `false` and `true`.
+
+## ⚠️ Adapty Attribution is disabled by default \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+If you update to SDK 4.1 and don't opt in, [Adapty Attribution](user-acquisition) breaks silently — installs stop registering, and nothing warns you.
+:::
+
+In 4.0 and earlier, the SDK registered installs for [Adapty Attribution](user-acquisition) automatically. Starting from 4.1, this is off by default: the SDK doesn't register installs, `onUpdateInstallationDetailsSuccessStream` and `onUpdateInstallationDetailsFailStream` never emit, and `getCurrentInstallationStatus` returns `AdaptyInstallationStatusNotAvailable`.
+
+If you use Adapty Attribution, enable it when configuring the SDK:
+
+```diff showLineNumbers
+  await Adapty().activate(
+-   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
++   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
++     ..withAdaptyAttributionEnabled(true),
+  );
+```
+
+If you don't use Adapty Attribution, no changes are needed.
+
+## Renamed external attribution APIs
+
+The APIs that pass attribution data from an external provider (Adjust, AppsFlyer, Branch, Tenjin, or a custom one) are renamed to match the native SDKs.
+
+### updateAttribution → updateExternalAttribution
+
+The method is renamed and its `source` parameter is renamed to `provider`. The parameter now takes an `AdaptyExternalAttributionProvider` instead of a string, and attribution data is still a map:
+
+```diff showLineNumbers
+- await Adapty().updateAttribution(attribution, source: 'adjust');
++ await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+The provider type is renamed. It stays an open wrapper over a string — the predefined values are `appleAds`, `adjust`, `appsflyer`, `branch`, `tenjin`, and a new `custom` for providers Adapty doesn't integrate with directly. You can construct one from any other string, so a provider Adapty adds later works without an SDK update:
+
+```dart showLineNumbers
+final provider = AdaptyExternalAttributionProvider('my_provider');
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+The profile property that lists the attribution providers applied to the profile is renamed, and its element type changes accordingly:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.appleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+The serialized profile field keeps the name `applied_attribution_sources`, so a backend that reads the raw profile needs no changes. Code that reads the property does — see [Show an Apple Ads targeted paywall](flutter-show-aa-targeted-paywall).
+
+## Fallback files
+
+The [fallback file](fallback-flows) format changed in SDK 4.1. Download the file again from **[Placements](https://app.adapty.io/placements)** > **Fallbacks** and bundle it in your app, even if you already downloaded one for 4.0.
+
+:::warning
+This step produces no build error. If you skip it, the SDK rejects the outdated file and every placement loses its fallback.
+:::
+
+## App Store promoted in-app purchases \{#promoted-in-app-purchases\}
+
+Flutter SDK 4.0 didn't support [in-app purchases promoted on your App Store product page](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store): the native iOS SDK it was built on had no API for them. 4.1 adds that support, so this is a new capability rather than a migration step — updating without new code changes nothing about how your app behaves.
+
+By default the SDK completes a promoted purchase itself. Write code only to complete it yourself, for example to show a screen first: subscribe to `didReceivePromotedPurchaseStream` and pass the product to `makePromotedPurchase`. While anything is subscribed to that stream, the SDK stops completing promoted purchases for you.
+
+## Keep a flow view alive after dismissing it
+
+`AdaptyUI().dismissFlowView` and `AdaptyUIFlowView.dismiss` accept a `destroy` flag:
+
+```dart showLineNumbers
+await AdaptyUI().dismissFlowView(view, destroy: false);
+```
+
+It defaults to `true`, which releases the view as before. With `destroy: false` the view stays alive, so you can present it again and the user returns to the screen they left, with the state the flow had built up.
+
+A view kept this way is held until you dismiss it with `destroy: true`. Presenting a released view fails, so call `createFlowView` again to show that flow once more.

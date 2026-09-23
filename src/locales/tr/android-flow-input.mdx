@@ -1,0 +1,264 @@
+---
+title: "Android SDK'da flow'lardan gelen verileri işleme"
+description: "Kullanıcılarınızın Android uygulamanızdaki flow'lara girdiği verileri Adapty SDK ile kaydedin ve kullanın."
+metadataTitle: "Flow'lardan gelen verileri işleme | Android SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içindeki bir giriş alanına yazdığında, bir anketi yanıtladığında veya bir düğmeyi değiştirdiğinde, SDK bu değeri analytics callback'i aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri genellikle şu amaçlarla kullanır:
+
+- **Kullanıcıları kendi backend'lerine kaydedin**: Kullanıcının onboarding flow'una girdiği e-posta adresini ve adı alın, flow kapandığında hesaplarını oluşturun.
+- **Yanıtları ve tercihleri kaydedin**: Kullanıcının ne seçtiğini takip edin; böylece uygulamanız bunu daha sonra kullanabilsin — örneğin özel attribute'lar olarak [Adapty profiline yazın](android-setting-user-attributes).
+- **Gelecekteki flow'ları özelleştirin**: Sınav yanıtlarını özel attribute olarak kaydedin, ardından sonraki bir placement'ı hedefleyin; böylece her segment farklı bir flow veya içinde farklı bir paywall görebilsin.
+- **Üçüncü taraf analitik platformlarına veri aktarın**: Yanıtları Amplitude, Mixpanel veya kullandığınız herhangi bir ürün analitiği platformuna iletin.
+
+Girişler ve seçilebilir gruplar değerlerini otomatik olarak raporlar. Kodunuzda girişleri birbirinden ayırt edebilmek için her girişe anlamlı bir **Element ID**, her seçilebilir gruba ise builder'da bir **Group ID** verin.
+
+<FlowIdNaming />
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Giriş değerlerini alma \{#receive-input-values\}
+
+Giriş değerleri, bir flow'daki diğer tüm analitik olaylarla aynı callback'e `flow_user_input` olay adıyla ulaşır. Flow olay dinleyicinizde `onAnalyticEvent` metodunu geçersiz kılın:
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        handleFlowInput(name, params)
+    }
+}
+```
+
+`onAnalyticEvent` callback'i, [ekran görüntülemeleri](android-flow-screen-views) dahil bir flow'daki tüm analitik olayları iletir.
+- `name` parametresi olay adını içerir. Kullanıcı girişi olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi öğe kategorisini belirtir.
+- Girişin değeri, öğe türüne bağlı olarak farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
+     - Seçilebilir gruplar etkin seçenekleri `item_ids` ve `item_titles` içinde bildirir
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"] as? String
+
+    when (params["element_type"]) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"] as? String
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
+            val millis = (params["value"] as? Number)?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
+        }
+        "multi_choice" -> {
+            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
+        }
+        "toggle" -> {
+            val isOn = params["value"] as? Boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girdiyi ne zaman alır \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Olay örnekleri \{#event-examples\}
+
+Bu örnekler, her olayda mevcut olan özellikleri, yorumlarda açıklayıcı değerlerle birlikte göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    name                       // "flow_user_input"
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçiciler (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 6.45408E11   (Double — Unix milliseconds, 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]   (List<String>)
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Çoklu seçim (Genişletmek için tıklayın)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]   (List<String>)
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun onAnalyticEvent(name: String, params: Map<String, Any?>, context: Context) {
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true   (Boolean)
+}
+```
+</Details>
+
+## Teslimat ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her girdi değerini listener'ınız aldığında saklayın ve flow kapandığında tam seti gönderin. Bu anı yakalamak için `AdaptyFlowEventListener` üzerinde `onFlowClosed` metodunu override edin. Bu metot, kullanıcı flow'u tamamlasa da yarıda bıraksa da flow görünümü kapatıldığında çalışır.
+
+## Kullanım Senaryoları \{#use-cases\}
+
+### Kullanıcıları arka uçta kaydetme \{#register-users-on-your-backend\}
+
+Değerler geldikçe toplayın ve flow kapandığında tek bir istekle gönderin; böylece bir istek eksiksiz bir yanıt setini taşır.
+
+Flow, kullanıcı tamamlayarak ya da yarıda bırakarak kapansın, kapanır. Arka ucunuzu çağırmadan önce ihtiyacınız olan alanları kontrol edin.
+
+Flow, arka ucunuzdaki hataları gösteremez. Callback'in dönüş değeri yoktur ve SDK'nın çalışan bir flow'a veri gönderecek bir yöntemi de yoktur. Örneğin e-posta zaten kullanımdaysa kayıt başarısız olursa, hatayı flow kapandıktan sonra kendi arayüzünüzde gösterin.
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### Kullanıcı profillerini verilerle zenginleştirme \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği verileri profiliyle ilişkilendirmek ve aynı bilgileri iki kez sormamak için değerler geldikçe [kullanıcı profilini güncelleyin](android-setting-user-attributes).
+
+Örneğin, flow'unuzda Element ID'si `name` olan bir metin girişi ve Element ID'si `email` olan bir e-posta girişi varsa:
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+
+    val elementId = params["element_id"] as? String ?: return
+    val value = params["value"] as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (elementId) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+### Sonraki flow'larda gösterilenleri özelleştirme \{#customize-flows-shown-later\}
+
+Quiz yanıtları, kullanıcının daha sonra bir [placement](placements)'ta göreceği şeyi de belirleyebilir — farklı bir flow veya içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara spor deneyimlerini sorun, ardından her gruba farklı ürünler ve içeriklerle kendi flow'unu gösterin.
+
+1. Flow'unuza bir [quiz](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Group ID'sini ve her seçeneğe anlamlı bir Element ID'si verin.
+2. Yanıtları işleyin ve kullanıcı için [özel nitelikler ayarlayın](android-setting-user-attributes).
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, params: Map<String, Any?>) {
+    if (name != "flow_user_input") return
+    if (params["element_id"] != "experience") return
+
+    val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    Adapty.updateProfile(builder.build()) { error ->
+        if (error != null) {
+            // handle the error
+        }
+    }
+}
+```
+
+3. Her özel nitelik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda söz konusu placement için [flow'u görüntüleyin](android-present-paywalls).

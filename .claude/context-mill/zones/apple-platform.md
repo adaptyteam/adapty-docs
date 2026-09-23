@@ -1,6 +1,6 @@
 ---
 zone: apple-platform
-sources: [dashboard-backend, dashboard-interface]
+sources: [dashboard-backend, dashboard-interface, jscore]
 reviewed_shape:
 reviewed_at:
 ---
@@ -163,12 +163,12 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
 | apple-app-privacy | — | dev | 5 | tutorial |
 | apple-family-sharing | — | dev | 0 | tutorial |
 | apple-platform-resources | entry | dev | 3 | tutorial |
-| enable-app-store-server-notifications | — | dev | 1 | tutorial |
+| enable-app-store-server-notifications | — | dev | 2 | tutorial |
 | generate-in-app-purchase-key | — | dev | 0 | tutorial |
 | initial_ios | entry | dev | 1 | tutorial |
 | refund-saver | — | dev | 16 | tutorial |
 | set-up-app-store-connect | — | dev | 8 | tutorial |
-| troubleshoot-app-store-integration | — | dev | 6 | tutorial |
+| troubleshoot-app-store-integration | — | dev | 7 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

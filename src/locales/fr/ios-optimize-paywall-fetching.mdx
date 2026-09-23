@@ -1,36 +1,38 @@
 ---
-title: "Optimiser la récupération des paywalls dans le SDK iOS"
-description: "Récupérez les paywalls Adapty de manière fiable : timing, mise en cache et patterns de secours pour iOS."
-metadataTitle: "Optimiser la récupération des paywalls | SDK iOS | Documentation Adapty"
+title: "Optimiser le chargement des flows et paywalls dans le SDK iOS"
+description: "Récupérez les flows et paywalls Adapty de manière fiable : timing, mise en cache et gestion des erreurs pour iOS."
+metadataTitle: "Optimiser le chargement des flows et paywalls | SDK iOS | Documentation Adapty"
 ---
 
-Une récupération fiable de paywall sur iOS repose sur trois éléments : un affichage rapide, le retour du paywall ciblé par audience, et un repli gracieux lorsque le réseau est lent. Les règles ci-dessous couvrent le timing, la mise en cache et les patterns de secours pour y parvenir.
+Un chargement fiable de flow ou de paywall sur iOS repose sur trois éléments : un rendu rapide, le retour de la variante ciblée selon l'audience, et un repli élégant en cas de réseau lent. Les règles ci-dessous couvrent le timing, la mise en cache et les stratégies de repli pour y parvenir.
 
 :::tip
-Ces règles supposent que `Adapty.activate()` et `Adapty.identify()` ont déjà été résolus. Consultez [Ordre d'appel dans le SDK iOS](ios-sdk-call-order).
+Ces règles supposent que `Adapty.activate()` et `Adapty.identify()` ont déjà été résolus. Consultez [Ordre des appels dans le SDK iOS](ios-sdk-call-order).
 :::
 
 ## Règles et pièges \{#rules-and-pitfalls\}
 
-| Faites ceci | Évitez cela | Pourquoi |
+| Faire | Ne pas faire | Pourquoi |
 |---|---|---|
-| Récupérez le placement que vous êtes sur le point d'afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.1+). | Lancez vos propres appels `getFlow` concurrents au démarrage. | Un burst de préchargement fait maison bloque le thread principal et provoque un écran noir. `preloadFlows` est conçu pour ça et partage un seul budget de délai sur toute la liste. |
-| Appelez `getPaywall` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `onProfileUpdate`. | Appelez `getPaywall` dans `App.init()`.                     | L'attribution n'est pas encore arrivée. Le paywall se résout contre l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                             | Attendez `getPaywall` indéfiniment.                     | Sans délai d'expiration, les utilisateurs avec une mauvaise connexion voient un écran blanc jusqu'à ce que le réseau réponde — ou ferment l'application.     |
+| Récupérez le placement que vous êtes sur le point d'afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.1+). | Déclencher vos propres appels concurrents `getFlow` au lancement. | Une rafale de préchargement artisanale bloque le thread principal et produit un écran noir. `preloadFlows` est conçu pour ça et partage un seul budget de timeout sur tout le lot. |
+| Appelez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `didLoadLatestProfile`. | Appeler `getFlow` dans `App.init()`. | L'attribution n'est pas encore arrivée. Le flow se résout sur l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendre `getFlow` indéfiniment. | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application. |
 
-Quand `loadTimeout` expire lors d'une récupération — y compris un simple `getPaywall` — le SDK retourne la variation en cache si elle existe, sinon il récupère la variation de l'audience par défaut (**All Users**) dans le temps restant. Le ciblage est perdu pour cette requête, pas reporté : les segments et les audiences basées sur l'attribution ne s'appliquent pas au résultat.
+Lorsque `loadTimeout` se déclenche sur n'importe quelle requête — y compris un simple `getFlow` — le SDK renvoie la variante mise en cache si elle existe, sinon il récupère la variante de l'audience par défaut (**All Users**) dans le temps restant. Le ciblage est perdu pour cette requête, pas simplement retardé : les segments et les audiences basées sur l'attribution ne s'appliquent pas au résultat.
 
 Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
 
-## Préchargement des placements \{#preload-placements\}
+## Précharger les placements \{#preload-placements\}
 
 :::info
-Ces méthodes sont disponibles à partir de la version 4.1 du SDK.
+`preloadFlows` et `preloadFlowsForDefaultAudience` sont disponibles à partir de la version 4.1 du SDK.
 :::
 
-`preloadFlows` et `preloadOnboardings` récupèrent les placements dans le cache du SDK à l'avance. Un appel ultérieur à `getFlow` ou `getOnboarding` pour le même placement est alors résolu depuis le cache plutôt que depuis le réseau, ce qui permet au paywall de s'afficher sans délai visible.
+`preloadFlows` écrit le JSON du placement dans le cache du SDK en avance — une requête par placement, rien de plus. Malgré son nom, cette méthode ne récupère pas la mise en page de l'interface du flow ni ses médias.
 
-Utilisez-les quand vous savez quels placements seront nécessaires au cours de la session, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la résolution de `activate` et `identify`, pour le paywall derrière un bouton que l'utilisateur n'a pas encore touché.
+Un `getFlow` ultérieur ne lit ce cache que si vous passez `fetchPolicy: .returnCacheDataElseLoad` ou `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. La politique par défaut, `.reloadRevalidatingCacheData`, interroge le réseau à chaque appel ; un préchargement combiné à une politique par défaut coûte donc une requête supplémentaire et ne sert à rien — la copie réchauffée sert uniquement de fallback hors ligne.
+
+Utilisez cette méthode quand vous savez quels placements la session nécessitera, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la résolution de `activate` et `identify`, pour le flow derrière un bouton que l'utilisateur n'a pas encore tapé.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -41,10 +43,10 @@ try await Adapty.preloadFlows(
     loadTimeout: 5
 )
 
-try await Adapty.preloadOnboardings(
-    placementIds: ["intro"],
-    locale: "en",
-    loadTimeout: 5
+// Later, when the user reaches the paywall:
+let flow = try await Adapty.getFlow(
+    placementId: "main_paywall",
+    fetchPolicy: .returnCacheDataElseLoad
 )
 ```
 
@@ -57,6 +59,11 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
         // at least one placement failed to preload
     }
 }
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoad) { result in
+    // ...
+}
 ```
 
 </TabItem>
@@ -65,19 +72,31 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
 **Paramètres :**
 
 - `placementIds` (obligatoire) : les placements à précharger. Les IDs vides et en double sont ignorés.
-- `locale` (optionnel, `preloadOnboardings` uniquement) : la locale de l'onboarding à mettre en cache.
-- `loadTimeout` (optionnel) : délai d'expiration en secondes pour l'ensemble du lot, et non par placement. Par défaut à 5 secondes ; les valeurs inférieures à 1 seconde sont ramenées à 1 seconde.
+- `loadTimeout` (optionnel) : délai d'expiration en secondes pour l'ensemble du lot, non par placement. Par défaut 5 secondes, et les valeurs inférieures à 1 seconde sont relevées à 1 seconde.
 
-**Comportement à connaître :**
+**Ce qu'il faut savoir sur le comportement :**
 
-- Les méthodes ne lèvent une exception qu'après avoir tenté tous les placements, et l'erreur regroupe les échecs par placement. Un échec pour un placement n'interrompt pas les autres.
-- Si un placement expire ou échoue avec une erreur réseau, le SDK bascule sur la variation de l'audience par défaut pour ce placement. Les autres échecs sont remontés tels quels.
-- Si le délai expire avant que la récupération ciblée par audience soit terminée, le SDK tente quand même la variation de l'audience par défaut dans le temps restant.
-- Le préchargement ne fait que réchauffer le cache. Il ne retourne pas de contenu — vous appelez toujours `getFlow` ou `getOnboarding` pour l'afficher.
+- La méthode ne lève une exception qu'après avoir essayé tous les placements, et l'erreur regroupe les échecs par placement. Un échec sur un placement n'interrompt pas les autres.
+- Si un placement expire ou échoue avec une erreur réseau, le SDK bascule sur la variante d'audience par défaut pour ce placement. Les autres échecs sont rapportés tels quels.
+- Si le délai expire avant que la récupération ciblée par audience soit terminée, le SDK tente quand même la variante d'audience par défaut dans le temps restant.
+- Le préchargement sert uniquement à alimenter le cache. Il ne retourne pas de contenu — vous appelez toujours `getFlow` pour l'afficher.
+
+### Ce que couvre un préchargement \{#what-a-preload-covers\}
+
+Un flow s'affiche par couches, et un préchargement ne couvre que la première :
+
+| Couche | Récupérée par | Réchauffée par un préchargement |
+|---|---|---|
+| Placement JSON — la variation choisie, ses identifiants de produits et le Remote Config | `getFlow` | Oui |
+| Mise en page UI — la structure, le style et le texte de l'écran | `getFlowConfiguration` | Non |
+| Images, y compris la vignette statique qui remplace un élément vidéo | `getFlowConfiguration`, en arrière-plan | Non |
+| Fichiers vidéo | Le lecteur système, au rendu de l'écran | Non mis en cache par le SDK |
+
+`getFlowConfiguration` attend le layout, donc la première requête pour un layout donné coûte un aller-retour réseau, même après un préchargement. Le SDK conserve ensuite ce layout dans son propre cache disque, qui survit aux redémarrages de l'application et est lu avant tout appel réseau — le coût ne se répercute donc que sur la première requête, pas sur toutes. Une fois le layout disponible, le SDK commence à mettre les images en cache indépendamment de l'appel : il ne bloque pas l'affichage de l'écran, et aucun callback, méthode déléguée ou erreur ne signale la fin de cette opération.
 
 ### Identifier quel placement a échoué \{#find-out-which-placement-failed\}
 
-L'erreur levée est un `AdaptyError` unique couvrant l'ensemble du lot, avec le code `networkFailed` (2002). Pour voir les échecs individuels, consultez sa propriété `preloadErrors` — un dictionnaire indexé par identifiant de placement :
+L'erreur levée est un `AdaptyError` unique couvrant tout le lot, avec le code `networkFailed` (2005). Pour voir les échecs individuels, consultez sa propriété `preloadErrors` — un dictionnaire indexé par ID de placement :
 
 ```swift showLineNumbers
 do {
@@ -89,20 +108,21 @@ do {
 }
 ```
 
-`preloadErrors` est `nil` pour toute erreur qui ne provient pas d'un appel de préchargement, donc traitez une valeur `nil` comme « pas d'échec de préchargement » plutôt que « aucun échec ».
+`preloadErrors` est `nil` pour toute erreur ne provenant pas d'un appel de préchargement ; traitez donc une valeur `nil` comme « pas un échec de préchargement » plutôt que comme « aucune erreur ».
 
-Pour préchauffer le cache sans attendre la segmentation d'audience, utilisez les variantes de l'audience par défaut :
+### Ignorer la segmentation d'audience \{#skip-audience-segmentation\}
+
+Pour préchauffer le cache sans attendre la segmentation d'audience, utilisez la variante d'audience par défaut :
 
 ```swift showLineNumbers
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
-try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
 ```
 
-## Optimiser pour les connexions instables \{#tune-for-poor-connectivity\}
+## Optimiser pour une mauvaise connectivité \{#tune-for-poor-connectivity\}
 
-Pour les marchés avec une connectivité régulièrement mauvaise (zones rurales, transports, régions touchées par des problèmes de routage) :
+Pour les marchés où la connectivité est régulièrement mauvaise (zones rurales, transports, régions affectées par le routage) :
 
 - Définissez `fetchPolicy: .returnCacheDataElseLoad` sur chaque requête sauf la toute première.
-- Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans le tableau de bord Adapty.
-- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours lorsque le délai expire.
-- Ne conditionnez pas l'affichage du paywall à `getProfile()`. Appelez `getPaywall` indépendamment pour qu'un profil lent ne bloque pas l'interface.
+- Configurez un [paywall de secours](fallback-paywalls) pour chaque placement dans l'Adapty Dashboard.
+- Définissez `loadTimeout` entre 3 et 5 secondes et acceptez le paywall de secours quand le délai expire.
+- N'attendez pas `getProfile()` pour afficher le flow. Appelez `getFlow` indépendamment pour qu'un profil lent ne bloque pas l'interface.

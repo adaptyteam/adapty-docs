@@ -25,9 +25,9 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `src/commands/auth/login.ts`: OAuth device grant, `POST /auth/device` then poll `POST /auth/token`
   with `client_id: adapty-cli`, handling `authorization_pending` / `slow_down` / `expired_token`.
   Config is `src/lib/config.ts` — `~/.config/adapty/config.json`, written with mode `0o600`, holding
-  `access_token` plus `user`. The npm package is named **`adapty`**, and `origin/main` is `v0.8.2` (checked 2026-08-31 via
-  `gh api "repos/adaptyteam/adapty-cli/contents/package.json?ref=main"` and `npm view adapty version`,
-  which agree; it was v0.4.0 on 2026-08-17).
+  `access_token` plus `user`. The npm package is named **`adapty`**, and `origin/main` is `v0.8.3` (checked 2026-09-09 via
+  `package.json` in a shallow clone of `main` and `npm view adapty version`, which agree; it was v0.8.2
+  on 2026-08-31 and v0.4.0 on 2026-08-17).
 - **The CLI's API is the one API in the corpus with no spec we publish.** `src/lib/api-client.ts` sets
   `DEFAULT_API_URL = 'https://api-admin.adapty.io/api/v1/developer'`, and `developer-api-spec`
   (`developer-api.yaml`) is the empty stub its own `sources.md` entry warns about — 14 lines,
@@ -92,9 +92,6 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `AdaptySdkIntegrationSkill.mdx` restates them by hand and has already diverged, sending Codex to
   `npx skills add` where the JSON clones the repo into `~/.agents/skills/`. Treat this class of claim as
   reader-reported: correct it when someone reports it, and never assert its freshness in a review.
-  TODO(owner): register `adapty-cli` and `adapty-sdk-integration-skill` in `sources.md` (both are
-  `local-clone`, `default_ref: origin/main`, confirmed by `symbolic-ref`) — this zone currently has
-  `sources: []` and cannot cite an id for either.
 
 ## What we document, what we don't
 
@@ -165,16 +162,20 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
-| developer-cli-ads-manager | entry | dev | 13 | api |
-| developer-cli-ads-manager-reference | — | dev | 51 | api |
+| developer-cli-ads-manager | entry | dev | 14 | api |
+| developer-cli-ads-manager-reference | — | dev | 52 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
-| developer-cli-quickstart | — | dev | 8 | api |
-| developer-cli-reference | — | dev | 31 | api |
+| developer-cli-quickstart | — | dev | 10 | api |
+| developer-cli-reference | — | dev | 42 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
+| flow-agent-skills | entry | dev | 0 | tutorial |
+| flow-audit-skill | — | dev | 7 | tutorial |
+| flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
 | manage-adapty-with-ai | entry | dev | 9 | tutorial |
+| migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -193,6 +194,20 @@ on one side, a non-deterministic agent on the other.
   class as the install-command claims in Sources of truth: reader-reported, corrected when someone
   reports them, freshness never asserted in a review. The Adapty-owned parts (marketplace repo URL,
   domain list, device-code flow, code TTL) verify against the adapty-cli-setup skill file instead.
+
+- **This zone's articles describe the shipped skills, so a change here often has a counterpart
+  in `sdk-integration-skill` — and the reverse.** Classify with
+  `.claude/context-mill/surfaces/skills.md` first; what follows is only this zone's delta.
+  - A CLI command, flag or metric documented in `developer-cli-ads-manager-reference` →
+    `ads-manager/references/asa-management.md` (writes) or
+    `ads-manager/references/asa-metrics.md` (reads). The skill links into those by **exact
+    heading string**, so a renamed heading breaks its entry point silently.
+  - A flows or placements command in `developer-cli-reference` / `developer-cli-quickstart` →
+    `flow-generator/references/placements.md` and `migrate-placements/references/api-surface.md`.
+  - An `adapty-sdk-integration-skill*` page claiming what the skill does → the claim is settled
+    by `adapty-integration/SKILL.md`, never the other way round.
+  - **A version pin named in an `adapty-cursor*` guide has no automation behind it at all.**
+    `lint-symbols.mjs` checks symbols, never versions; see `sources.md` under `sdk-integration-skill`.
 
 ## Boundaries
 

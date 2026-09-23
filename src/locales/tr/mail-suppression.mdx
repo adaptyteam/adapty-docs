@@ -1,73 +1,114 @@
 ---
-title: "Adapty Mail'de abonelik iptali ve engelleme"
-description: "Adapty Mail'in kullanıcılara mesaj göndermeyi durdurma yöntemleri — abonelik iptali, SES bounce'ları, şikayetler ve durdurma koşulu mekanizması."
-metadataTitle: "Abonelik İptali ve Engelleme | Adapty Mail | Adapty Dokümanları"
-keywords: ['adapty mail', 'engelleme', 'bounce', 'şikayet', 'durdurma koşulu']
+title: "E-postaların durmasının nedenleri: vazgeçme, durdurma koşulları, başarısız teslimat"
+description: "Adapty Mail'in birine gönderim yapmayı bırakmasının tüm nedenleri — başarısız doğrulama, abonelikten çıkma, geri dönmeler ve durdurma koşulları — ve her biri için neler yapabileceğiniz."
+metadataTitle: "Abonelikten Çıkma ve Engelleme | Adapty Mail | Adapty Dokümanları"
+keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
 ---
 
-Adapty Mail, bir kullanıcıya mesaj göndermeyi iki farklı koşulda durdurur:
+Adapty Mail'in bir kullanıcıya gönderim yapmayı bırakmasının üç farklı nedeni vardır:
 
-- **Baskılama (Suppression)**: Kullanıcı bu projedeki tüm gelecek gönderimlerden dışlanır (abonelikten çıkmış, geri dönen, şikayet eden, reddedilen veya kısıtlanan).
-- **Durdurma koşulu (Stop condition)**: Kullanıcının mevcut dizisi, dönüşüm gerçekleştirdiği için iptal edilir. Kullanıcı baskılanmaz ve diğer kampanyalara hâlâ uygun kalır.
+- **Durdurma koşulu**: Kullanıcının mevcut dizisi, dönüşüm gerçekleştirdikleri için sona erer. Kullanıcı bastırılmaz ve diğer kampanyalar için uygun olmaya devam eder.
+- **Bastırma**: Kullanıcı bu projedeki tüm gelecek gönderimlerden çıkarılır.
+- **Kısıtlama**: Yeni bir alan adının günlük bir limiti vardır; gönderdikçe bu limit yükselir ve eninde sonunda ortadan kalkar. Limiti aşan bir e-posta sonraki bir güne ertelenir. İkinci bir kaçırma onu **İptal Edildi** olarak işaretler ve alıcı bir hafta boyunca başka bir pazarlama kampanyası başlatamaz.
 
-Her iki mekanizma da proje bazındadır. Bir Adapty projesindeki baskılama diğerini etkilemez.
+Üçü de projeye özgüdür. Bir Adapty projesindeki bastırma, diğer projeleri etkilemez.
 
-## Abonelikten Çıkma \{#unsubscribe\}
+## Durma koşulları (başarı durumunda kampanyanın sona ermesi) \{#stop-conditions-campaign-conclusion-on-success\}
 
-Alıcının iki çıkış yolu vardır ve her ikisi de bir Adapty URL'si yerine [gönderim alan adınızın](mail-sending-domain#which-records-you-add) `go.` ana bilgisayarı üzerinden çalışır.
+Bir durma koşulu, kampanya başarıya ulaştığında kampanyayı sonlandırır; böylece kalan e-postalar gönderilmez.
 
-**Alt bilgi bağlantısı.** Her e-postada bulunur. Tıklandığında bir onay sayfası açılır; orada onaylandığında profil `suppression_reason = 'unsubscribe'` ile işaretlenir, kalan sıra iptal edilir ve profil projedeki gelecekteki gönderimlerden hariç tutulur. Onay adımı kasıtlıdır: spam tarayıcıları ve gelen kutusu ön getiriciler mesaj gövdesindeki bağlantıları açar; araya giren bir sayfa, hiç tıklamayan kişilerin abonelikten çıkmasını önler.
+Adapty Mail'in aldığı her olay — bir satın alma, bir iade, bir onay — profili günceller. Her güncellemeden sonra Adapty Mail, profilde ilgili durma koşulunun karşılanıp karşılanmadığını kontrol eder:
 
-**Gelen kutusu butonu.** Adapty Mail, `List-Unsubscribe-Post: List-Unsubscribe=One-Click` ile birlikte `List-Unsubscribe: <URL>, <mailto:>` başlığını gönderir. Gmail ve Yahoo, toplu gönderenlerden bunları zorunlu tutar (RFC 8058); bu başlıkları destekleyen istemciler ise gönderen adının yanında bir abonelikten çıkma butonu gösterir. Bu URL'nin bir onay sayfası yoktur: ilk istek, yöntemi ne olursa olsun profili gizler — RFC 8058 POST belirtir, bazı sağlayıcılar ise bunun yerine GET gönderir.
+- **Pazarlama kampanyaları**: profilin abonelik durumu **Subscribed** veya tek seferlik satın alma durumu **Purchased** düzeyine ulaştığında.
+- **Uygulama aktivasyonu** ve **İptal sayfası**: durdurma koşulu yoktur — her zaman sonuna kadar çalışır.
+- **Çift onay (double opt-in)**: alıcı adresini onaylar.
 
-Her iki bağlantı da alıcıyı ve geldiği e-postayı tanımlayan şifreli bir token içerir; bu sayede abonelikten çıkmak için giriş yapmanıza ya da herhangi bir şey aramanıza gerek yoktur.
+Tespit edilen bir durdurma koşulu, söz konusu alıcı için kampanyayı sonlandırır. Alıcı diğer kampanyalar için uygun olmaya devam eder.
 
-:::note
-[Test e-postasından](mail-testing) aboneliği iptal etmek hiçbir şeyi değiştirmez — test gönderileri engelleme listesi dışında tutulur.
-:::
+Durdurma koşullarına kimlerin takıldığını ve nasıl gerçekleştiğini görmek için kampanya analizlerinizi açın.
 
-## Otomatik engelleme \{#automatic-suppression\}
+## Abonelik listesinden çıkarma (mailing listesinden kaldırma) \{#suppression-removal-from-mailing-list\}
 
-Adapty Mail, AWS SES teslimat olaylarını SNS üzerinden dinler ve aşağıdaki durumların herhangi birinde kullanıcıyı anında engeller:
+### Adres doğrulama başarısız \{#address-verification-failed\}
 
-| Olay | Neden kodu | Ne anlama gelir |
-| --------- | ----------- | ------------------------------------------------------------------------------- |
-| Bounce | `bounce` | E-posta adresi geçersiz, posta kutusu dolu veya alan adı mevcut değil. |
-| Complaint | `complaint` | Kullanıcı e-postayı spam olarak işaretledi. |
-| Reject | `reject` | SES, mesajı göndermeden önce reddetti. |
-| Throttle | `throttle` | Gönderim hızı, alan adı güvenlik limitlerini aştı. |
+Adapty Mail aldığı her e-posta adresini kontrol eder.
 
-Her etkinlik için sonuç aynıdır: kullanıcı suppression listesine eklenir, kalan sıra iptal edilir ve gelecekteki proje gönderilerinden hariç tutulurlar.
+Aşağıdaki adresler doğrudan reddedilir. Bu adresler yeni profil oluşturmaz:
+
+- `privaterelay.appleid.com` üzerindeki tüm adresler; bunlar, kullanıcı **Hide My Email** seçeneğini seçtiğinde Apple'ın verdiği adreslerdir. Bu kullanıcılara e-posta göndermek için gerçek bir adresi ayrıca toplamanız gerekir. Apple, yeni yönlendirme adreslerini `private.icloud.com` üzerine taşımaktadır; Adapty Mail bu adresleri eşleştirmediğinden söz konusu adresler sıradan profiller olarak gelir.
+- ASCII dışı karakter veya boşluk içeren adresler; Amazon SES bunları kabul etmez.
+
+Diğer tüm adresler için Adapty Mail, posta kutusunun var olup olmadığını kontrol etmek amacıyla kullanıcının sunucusuyla iletişime geçer. Bu kontrol sırasında herhangi bir e-posta gönderilmez. Adres şu durumlarda engellenir:
+
+- Aktif bir posta kutusuna karşılık gelmiyorsa
+- Tek kullanımlık bir domain'de barındırılıyorsa
+- Posta kutusu doluysa
+- `info@` veya `support@` gibi bir rol hesabıysa
+
+Kontrol tamamlanamazsa — posta sunucusu engellerse ya da yanıt vermezse — Adapty Mail adresi engellemez. Profil oluşturulur ve diğer profiller gibi kampanyaları almaya devam eder.
+
+Bir adrese ne olduğunu görmek için [Profiller](mail-profiles) bölümünde arayın. **Unsubscribed** etiketli bir profil, kendisine hiçbir şey gönderilmemiş olmasına rağmen kontrolden geçememiştir. Hiç profili olmayan bir adres ise reddedilmiştir. [Adapty Mail API](mail-send-data-via-api) bunu size söyleyemez: yanıtı, kontrol çalışmadan önce döner.
+
+Daha sonra çalışmaz hale gelen bir adres, ilk geri sekme onu bastırana kadar profilini korur. Adapty Mail bir adresi hiçbir zaman yeniden kontrol etmez; düzeltilmiş bir adres göndermek de profili onarmaz — bunun yerine ikinci bir profil oluşturur.
 
 :::important
-Adapty Mail, kalıcı ve geçici bounce'lar arasında **ayrım yapmaz**. Dolu bir posta kutusu gibi geçici durumlar da dahil olmak üzere herhangi bir bounce — kullanıcıyı anında bastırır. Yeniden deneme penceresi yoktur.
+Adapty Mail, bir adres geldiğinde onu yalnızca bir kez denetler. Bundan sonra, geçersiz bir adres yalnızca [e-posta teslimi başarısız olduğunda](#delivery-failed-or-the-recipient-marked-it-as-spam) ortaya çıkar. Adresleri Adapty Mail'e göndermeden önce kendi tarafınızda doğrulayın.
 :::
 
-## Durdurma koşulu \{#stop-condition\}
+### Alıcı abonelikten çıktı \{#the-recipient-unsubscribed\}
 
-Bir kullanıcı sıra ortasında dönüşüm gerçekleştirdiğinde, Adapty Mail kalan e-postalarını `stop_condition` nedeniyle iptal eder. Dönüşüm, kullanıcının abonelik durumunun **Subscribed** (Abone) veya tek seferlik satın alma durumunun **Purchased** (Satın Alındı) seviyesine ulaşması anlamına gelir.
+Pazarlama e-postaları, alıcıya abonelikten çıkmak için iki yol sunar. İşlemsel e-postalarda bu seçenek yoktur — hizmet mesajları onaya dayalı gönderilmez, dolayısıyla geri alınacak bir onay da bulunmaz.
 
-Durdurma koşulu, bastırmadan farklıdır:
+- **Alt bölüm linki**: Her pazarlama e-postasında bulunur. Alıcının maskelenmiş adresiyle birlikte bir **Unsubscribe** butonu içeren bir sayfa açar; bu butona tıklandığında profil bastırılır. Onay adımı kasıtlıdır: tarayıcılar ve ön yükleyiciler mesaj gövdesindeki linkleri kendi kendilerine açar ve yanlışlıkla iptal işlemini tetiklememelidir.
+- **Tek tıkla abonelik iptali**: Bu özelliği destekleyen posta istemcileri, gönderen adının yanında bir "unsubscribe" butonu gösterir. Tek bir tıklamayla profil bastırılır, araya herhangi bir onay sayfası girmez. Adapty Mail, her pazarlama e-postasıyla birlikte Gmail ve Yahoo'nun toplu gönderenlere zorunlu kıldığı `List-Unsubscribe` başlıklarını (RFC 8058) gönderir.
 
-- **Bastırma**: Kullanıcıyı projedeki tüm gelecek gönderimlerden dışlar.
-- **Durdurma koşulu**: Yalnızca mevcut sırayı iptal eder. Kullanıcı diğer kampanyalara hâlâ uygun kalır — örneğin, aktif aboneleri hedefleyen bir yenileme veya geri kazanma teklifi flow'u.
+Her iki URL da alıcıyı ve geldiği e-postayı tanımlayan şifreli bir token taşır; bu sayede abonelikten çıkmak için giriş yapmaya ya da arama yapmaya gerek kalmaz. Her ikisi de kendi alan adınıza işaret eder, ancak iptal sayfası Adapty Mail tarafından barındırılır.
 
-Durdurma koşulundan kaynaklanan iptaller, kampanya analitiğinde bastırmalı gönderimlerle birlikte görünür.
+:::note
+[Test e-postasından](mail-testing) aboneliği iptal etmek hiçbir şeyi değiştirmez — test gönderimleri engellemelerin dışında tutulur.
+:::
 
-## Bastırmayı yönetme \{#managing-suppression\}
+### Teslim başarısız oldu veya alıcı spam olarak işaretledi \{#delivery-failed-or-the-recipient-marked-it-as-spam\}
 
-Adapty Mail'in, bastırılmış kullanıcıları görüntülemek veya kaldırmak için bir kontrol paneli arayüzü yoktur. Bir profili bastırma listesinden çıkarmak için — örneğin test e-postasını yanlışlıkla spam olarak işaretleyen biri — Adapty destek ekibiyle iletişime geçin.
+Amazon SES, işlediği her e-posta için geri bildirim sağlar. Bu geri bildirimlerden üçü, profili anında gizler:
 
-## Adapty Mail'in uyumluluk açısından üstlendiği sorumluluklar \{#what-adapty-mail-handles-for-compliance\}
+| Olay | Ne anlama gelir |
+| --- | --- |
+| Bounce | Alıcı mail sunucusu e-postayı reddetti ve geri gönderdi. Adapty Mail, kalıcı bounce (posta kutusu veya alan adı olmayan adresler) ile geçici bounce (dolu posta kutusu) arasında ayrım yapmaz. [İlk doğrulamayı](#address-verification-failed) geçmiş ancak sonradan geçersiz hale gelmiş e-posta adreslerini tespit etmeye yardımcı olur. |
+| Complaint | Alıcı e-postayı spam olarak işaretledi. |
+| Reject | Amazon SES mesajı göndermeden önce reddetti. |
 
-Adapty Mail şunlarla birlikte gelir:
+Profilin [yolculuğu](mail-profiles#the-activity-journey), bir bounce'ı **Bounced**, bir şikayeti ise **Spam report** olarak gösterir.
 
-- **Abonelikten çıkma bağlantısı**: Her e-posta alt bilgisine eklenir, alıcı onayladığı anda işleme alınır.
-- **List-Unsubscribe başlıkları**: Gelen kutusundan tek tıkla abonelikten çıkma (RFC 8058) için her e-postayla birlikte gönderilir; ilk istekte abonelikten çıkma işlemini gerçekleştiren bir URL üzerinden çalışır.
-- **Otomatik engelleme**: SES geri dönme, şikayet, reddetme ve kısıtlama olaylarında tetiklenir.
+### Alıcıyı geri getirme \{#bring-a-recipient-back\}
 
-Sizin sorumlu olduğunuz kısımlar:
+Kontrol panelinde bir suppressionı geri almak mümkün değildir. Örneğin biri test e-postasını spam olarak işaretlediyse Adapty desteğiyle iletişime geçin.
 
-- **Fiziksel posta adresi**: CAN-SPAM, e-posta altbilgisinde bir adres zorunlu kılar. Adapty Mail bunu otomatik eklemez — kampanya tasarımınıza kendiniz ekleyin.
-- **Açık onay (opt-in)**: Bir kullanıcının e-postasını Adapty'ye iletmeden önce onayını alın. Bkz. [Adapty'yi Adapty Mail'e Bağlama](mail-collect-emails).
-- **GDPR silme talepleri**: Profilin tanımlayıcılarını Adapty Mail API'sinin [Profil sil](api-mail/operations/deleteProfile) endpoint'ine gönderin. Adapty Mail, profilin kişisel verilerini siler ve zamanlanmış e-postalarını iptal eder. Silme işlemi geri alınamaz: aynı tanımlayıcıları içeren sonraki bir kayıt profili yeniden oluşturmaz.
+Profil sayfasında bir profilin suppress edilip edilmediği görülebilir: nedeni ne olursa olsun **Unsubscribed** olarak gösterilir. Aynı sayfadaki ⋯ menüsü de bir profili elle suppress edebilir.
+
+## Kısıtlama (geçici gecikmeler ve iptal işlemleri) \{#throttle-temporary-delays-and-cancellations\}
+
+Yeni bir gönderme alan adının günlük 100 e-posta limiti vardır. Bu limit, gönderdikçe artar ve alan adı tam olarak ısındıktan sonra ortadan kalkar — bkz. [Alan adı ısınması](mail-sending-domain#warm-up-and-daily-limits). Adapty Mail, her alan adınızı kendi limiti karşısında kontrol eder ve limiti aşılmamış ilk alan adından gönderim yapar. Bu nedenle ikinci bir doğrulanmış alan adı, projenin günlük gönderim kapasitesini artırır.
+
+Tüm alan adlarınız kota sınırını aştığında, e-posta Amazon SES'e hiç ulaşmaz. Profilin [journey](mail-profiles#the-activity-journey) durumu **Throttled** olarak görünür. Adapty Mail daha sonra tekrar dener — işlemsel bir kampanya için bir gün sonra, pazarlama için bir hafta sonra. O zamana kadar kota genellikle yükselmiş olur. Birinci gün engellenen bir e-posta, kotanın çok daha yüksek olduğu bir hafta sonra yeniden denenir.
+
+Limiti aşmaya devam ediyorsanız, o alıcının kampanyası **Cancelled** olarak işaretlenir. Profil kısıtlanmaz, ancak bir hafta boyunca başka bir pazarlama kampanyasına giremez. İptal durumu hiçbir yerde ayrıca raporlanmaz ve bunu gösteren tek şey o işaret etiketidir. Yeni bir alan adından büyük bir gönderim yapmadan önce ikinci bir doğrulanmış alan adı ekleyin ya da önce limiti yükseltin.
+
+Test gönderimleri limiti tamamen yok sayar; bu nedenle başarılı bir [test e-postası](mail-testing), gerçek bir gönderimin iletilip iletilmeyeceği konusunda hiçbir şey söylemez.
+
+## Uyumluluk \{#compliance\}
+
+CAN-SPAM, GDPR ve faaliyet gösterdiğiniz pazarlardaki eşdeğer düzenlemelere uymak, gönderen olarak sizin sorumluluğunuzdadır. Adapty Mail bir kısmını otomatik olarak karşılar, geri kalanı size bırakır.
+
+### Sizin İçin Halledilir
+
+- **Abonelik iptali bağlantısı**: Her pazarlama e-postasının alt bölümünde yer alır; alıcı onaylar onaylamaz işleme alınır.
+- **List-Unsubscribe başlıkları**: Gelen kutusundan tek tıkla abonelik iptali için her pazarlama e-postasıyla birlikte gönderilir (RFC 8058).
+- **Otomatik engelleme**: Bir geri dönme veya spam şikayeti ile tetiklenir.
+- **Adres yer tutucusu**: Her kampanya e-postasının alt bölümünde ayrılmış olup sizin girdiğiniz adresle doldurulur.
+
+### Sorumluluğunuz
+
+- **Şirket adresiniz**: **Settings** > **Company** bölümüne kaydedin — yer tutucu bu değerle doldurulur. CAN-SPAM, alt bilgide fiziksel bir adres zorunlu kılar; Adapty Mail ise adres olmadan kampanya oluşturmaz.
+- **Açık katılım onayı**: Kullanıcının e-postasını Adapty'ye geçirmeden önce onayını alın. Bkz. [Adapty'yi Adapty Mail'e bağlama](mail-collect-emails). Her yeni alıcının pazarlama e-postası gönderilmeden önce adresini onaylamasını sağlamak için [double opt-in](mail-double-opt-in) özelliğini etkinleştirin.
+- **GDPR silme talepleri**: Profil tanımlayıcılarını Adapty Mail API'sindeki [Delete profile](api-mail/operations/deleteProfile) uç noktasına gönderin. Adapty Mail, profilin kişisel verilerini siler ve zamanlanmış e-postalarını iptal eder. Silme işlemi geri alınamaz: aynı tanımlayıcılar içeren sonraki bir kayıt profili yeniden oluşturmaz.

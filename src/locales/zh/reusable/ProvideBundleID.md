@@ -2,9 +2,11 @@
 no_index: true 
 ---
 
-1. 打开 [App Store Connect](https://appstoreconnect.apple.com/apps)。选择你的应用，进入 **General** → **App Information** 页面。
+1. 打开 [App Store Connect](https://appstoreconnect.apple.com/apps)。选择您的应用，进入 **General** → **App Information** 页面。
 
-2. 在 **General Information** 子区块中复制 **Bundle ID**。
+2. 在 **General Information** 子页面中复制 **Bundle ID**。
+
+   只复制标识符——反向 DNS 格式，不含空格，例如 `com.company.app`。App Store Connect 在某些视图（如应用列表）中会在其旁边显示应用名称；如果误将应用名称粘贴进去而非标识符，连接验证将会失败。
 
    
 
@@ -22,7 +24,7 @@ no_index: true
 
 
 
-3. 在 Adapty 顶部菜单中打开 [**App settings** -> **iOS SDK** 标签页](https://app.adapty.io/settings/ios-sdk)，将复制的值粘贴到 **Bundle ID** 字段中。
+3. 从 Adapty 顶部菜单打开 [**App settings** -> **iOS SDK** 标签页](https://app.adapty.io/settings/ios-sdk)，将复制的值粘贴到 **Bundle ID** 字段中。
 
    
 

@@ -1,73 +1,114 @@
 ---
-title: "Unsubscribe and suppression in Adapty Mail"
-description: "How Adapty Mail stops sending to users — via unsubscribe, SES bounces, complaints, and the stop-condition mechanism."
+title: "Reasons emails stop: opting out, stop conditions, failed delivery"
+description: "Every reason Adapty Mail stops sending to someone — failed verification, unsubscribes, bounces, and stop conditions — and what you can do about each."
 metadataTitle: "Unsubscribe and Suppression | Adapty Mail | Adapty Docs"
 keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
 ---
 
-Adapty Mail stops sending to a user under two distinct conditions:
+Adapty Mail stops sending to a user for three different reasons:
 
-- **Suppression** : l'utilisateur est exclu de tous les envois futurs dans ce projet (désabonné, rejeté, s'est plaint, refusé ou limité).
-- **Condition d'arrêt** : la séquence en cours de l'utilisateur est annulée parce qu'il a converti. Il n'est pas supprimé et reste éligible à d'autres campagnes.
+- **Stop condition** : la séquence actuelle de l'utilisateur s'arrête parce qu'il a converti. Il n'est pas supprimé et reste éligible à d'autres campagnes.
+- **Suppression** : l'utilisateur est exclu de tous les envois futurs dans ce projet.
+- **Throttle** : un nouveau domaine a une limite quotidienne qui augmente au fil des envois, puis disparaît. Un e-mail qui dépasse la limite est reporté au jour suivant. Un deuxième dépassement le marque **Cancelled**, et le destinataire ne peut démarrer aucune autre campagne marketing pendant une semaine.
 
-Ces deux mécanismes sont par projet. La suppression dans un projet Adapty n'affecte pas les autres.
+Ces trois mécanismes sont spécifiques à chaque projet. Une suppression dans un projet Adapty n'affecte pas les autres.
 
-## Se désabonner \{#unsubscribe\}
+## Conditions d'arrêt (conclusion de la campagne en cas de succès) \{#stop-conditions-campaign-conclusion-on-success\}
 
-Un destinataire dispose de deux façons de se désabonner, toutes deux passant par l'hôte `go.` de votre [domaine d'envoi](mail-sending-domain#which-records-you-add) plutôt que par une URL Adapty.
+Une condition d'arrêt met fin à une campagne dès qu'elle a réussi, de sorte que les e-mails restants ne sont pas envoyés.
 
-**Le lien en pied de message.** Chaque e-mail en contient un. Cliquer dessus ouvre une page de confirmation, et en confirmant, le profil est marqué avec `suppression_reason = 'unsubscribe'`, la séquence en cours est annulée et le profil est exclu des envois futurs du projet. L'étape de confirmation est intentionnelle : les antispams et les services de prévisualisation ouvrent les liens du corps du message, et une page intermédiaire empêche la désinscription de personnes qui n'ont jamais cliqué.
+Chaque événement reçu par Adapty Mail — un achat, un remboursement, une confirmation — met à jour le profil. Après chaque mise à jour, Adapty Mail vérifie si la condition d'arrêt appropriée est remplie :
 
-**Le bouton de désinscription.** Adapty Mail envoie l'en-tête `List-Unsubscribe: <URL>, <mailto:>` accompagné de `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Gmail et Yahoo l'exigent des expéditeurs en masse (RFC 8058), et les clients qui les prennent en charge affichent un bouton de désinscription à côté du nom de l'expéditeur. Cette URL n'a pas de page de confirmation : la première requête qui l'atteint supprime le profil, quelle que soit la méthode — la RFC 8058 spécifie POST, et certains fournisseurs envoient GET à la place.
+- **Campagnes marketing** : l'état d'abonnement du profil atteint **Subscribed**, ou l'état d'achat unique atteint **Purchased**.
+- **App activation** et **Cancellation page** : aucune condition d'arrêt — elles s'exécutent toujours jusqu'à la fin.
+- **Double opt-in** : le destinataire confirme son adresse.
 
-Les deux liens contiennent un token chiffré qui identifie le destinataire et l'e-mail source, ce qui permet de se désabonner sans connexion ni recherche manuelle.
+Lorsqu'une condition d'arrêt est détectée, la campagne s'arrête pour ce destinataire. Il reste éligible aux autres campagnes.
 
-:::note
-Se désabonner d'un [e-mail de test](mail-testing) ne change rien — les envois de test sont exclus de la suppression.
-:::
+Consultez les analyses de votre campagne pour un détail des destinataires qui atteignent des conditions d'arrêt et comment.
 
-## Suppression automatique \{#automatic-suppression\}
+## Suppression (suppression de la liste de diffusion) \{#suppression-removal-from-mailing-list\}
 
-Adapty Mail écoute les événements de livraison AWS SES via SNS et supprime immédiatement l'utilisateur dans l'un des cas suivants :
+### La vérification de l'adresse a échoué \{#address-verification-failed\}
 
-| Événement | Code raison | Signification                                                                              |
-| --------- | ----------- | ------------------------------------------------------------------------------------------ |
-| Bounce    | `bounce`    | L'adresse e-mail est invalide, la boîte de réception est pleine ou le domaine n'existe pas. |
-| Complaint | `complaint` | L'utilisateur a signalé l'e-mail comme spam.                                               |
-| Reject    | `reject`    | SES a rejeté le message avant l'envoi.                                                     |
-| Throttle  | `throttle`  | La fréquence d'envoi a dépassé les limites de sécurité du domaine.                         |
+Adapty Mail vérifie chaque adresse e-mail qu'il reçoit.
 
-Pour chaque événement, le résultat est le même : l'utilisateur est ajouté à la liste de suppression, la séquence en cours est annulée et il est exclu des envois futurs dans le projet.
+Les adresses suivantes sont rejetées d'emblée. Elles ne créent pas de nouveaux profils :
+
+- Toute adresse en `privaterelay.appleid.com`, l'adresse qu'Apple émet quand un utilisateur choisit **Hide My Email**. Pour envoyer des e-mails à ces utilisateurs, collectez une vraie adresse séparément. Apple transfère les nouvelles adresses relay vers `private.icloud.com`, qu'Adapty Mail ne reconnaît pas — celles-ci arrivent donc comme des profils ordinaires.
+- Toute adresse contenant des caractères non-ASCII ou des espaces, qu'Amazon SES refuse.
+
+Pour toutes les autres adresses, Adapty Mail contacte le serveur de l'utilisateur pour vérifier si la boîte mail existe. Aucun e-mail n'est envoyé pendant cette vérification. L'adresse est supprimée si :
+
+- elle ne correspond pas à une boîte mail active
+- elle est hébergée sur un domaine jetable
+- sa boîte mail est pleine
+- il s'agit d'un compte générique, comme `info@` ou `support@`
+
+Si la vérification ne se termine pas — le serveur de messagerie la bloque ou ne répond pas — Adapty Mail ne supprime pas l'adresse. Le profil est créé et reçoit les campagnes comme n'importe quel autre.
+
+Pour voir ce qui s'est passé avec une adresse, recherchez-la dans [Profils](mail-profiles). Un profil étiqueté **Unsubscribed** a échoué à la vérification, même si rien n'y a jamais été envoyé. Une adresse sans profil du tout a été rejetée. L'[API Adapty Mail](mail-send-data-via-api) ne peut pas vous le dire : sa réponse arrive avant que la vérification ne s'exécute.
+
+Une adresse qui cesse de fonctionner ultérieurement conserve son profil jusqu'au premier bounce qui la supprime. Adapty Mail ne revérifie jamais une adresse, et l'envoi d'une adresse corrigée ne répare pas le profil — cela en crée un second.
 
 :::important
-Adapty Mail ne fait **pas** la distinction entre les rebonds permanents et temporaires. Tout rebond — y compris les conditions temporaires comme une boîte mail pleine — supprime l'utilisateur immédiatement. Il n'y a pas de fenêtre de nouvelle tentative.
+Adapty Mail sonde une adresse une seule fois, au moment où elle est reçue. Ensuite, une adresse invalide ne réapparaît que lorsqu'un [envoi d'e-mail échoue](#delivery-failed-or-the-recipient-marked-it-as-spam). Validez les adresses de votre côté avant de les transmettre à Adapty Mail.
 :::
 
-## Condition d'arrêt \{#stop-condition\}
+### Le destinataire s'est désabonné
 
-Lorsqu'un utilisateur convertit en cours de séquence, Adapty Mail annule les e-mails restants avec la raison `stop_condition`. La conversion signifie que l'état de l'abonnement de l'utilisateur atteint **Subscribed**, ou que l'état de son achat unique atteint **Purchased**.
+Un email marketing offre au destinataire deux façons de se désabonner. Les emails transactionnels n'en ont aucune — les messages de service ne sont pas envoyés sur la base d'un consentement, il n'y a donc rien à retirer.
 
-La condition d'arrêt est différente de la suppression :
+- **Lien de désabonnement dans le pied de page** : chaque email marketing en contient un. Il ouvre une page affichant l'adresse masquée du destinataire ainsi qu'un bouton **Unsubscribe** ; un clic dessus supprime le profil. L'étape de confirmation est intentionnelle : les scanners et les prefetchers ouvrent les liens du corps du message de leur côté et ne doivent pas déclencher accidentellement des désabonnements.
+- **Désabonnement en un clic** : les clients de messagerie qui prennent en charge cette fonctionnalité affichent un bouton « unsubscribe » à côté du nom de l'expéditeur. Un seul clic supprime le profil, sans page de confirmation intermédiaire. Adapty Mail envoie les en-têtes `List-Unsubscribe` exigés par Gmail et Yahoo pour les expéditeurs en masse (RFC 8058) avec chaque email marketing.
 
-- **Suppression** : exclut l'utilisateur de tous les envois futurs dans le projet.
-- **Condition d'arrêt** : annule uniquement la séquence en cours. L'utilisateur reste éligible aux autres campagnes — par exemple, un flow de renouvellement ou d'offre de reconquête ciblant les abonnés actifs.
+Les deux URLs contiennent un token chiffré qui identifie le destinataire et l'e-mail dont il provient, ce qui permet de se désabonner sans connexion ni recherche manuelle. Elles pointent toutes les deux vers votre propre domaine, mais la page d'annulation est hébergée par Adapty Mail.
 
-Les annulations de condition d'arrêt apparaissent aux côtés des suppressions dans les analyses de campagne.
+:::note
+Se désabonner d'un [e-mail de test](mail-testing) ne change rien — les envois de test sont exclus de la liste de suppression.
+:::
 
-## Gérer les suppressions \{#managing-suppression\}
+### Échec de livraison ou marquage comme spam \{#delivery-failed-or-the-recipient-marked-it-as-spam\}
 
-Adapty Mail ne dispose d'aucune interface dans le tableau de bord pour afficher ou supprimer des utilisateurs de la liste de suppression. Pour désupprimer un profil — par exemple, quelqu'un qui a accidentellement signalé un e-mail de test comme spam — contactez le support Adapty.
+Amazon SES signale chaque e-mail qu'il traite. Trois de ces signalements suppriment immédiatement le profil :
 
-## Ce que Adapty Mail gère pour la conformité \{#what-adapty-mail-handles-for-compliance\}
+| Événement | Ce que cela signifie |
+| --- | --- |
+| Bounce | Le serveur de messagerie destinataire a refusé l'e-mail et l'a retourné. Adapty Mail ne fait pas la distinction entre les hard bounces (adresses sans boîte mail ou domaine invalide) et les soft bounces (boîte mail pleine). Permet de détecter les adresses e-mail qui ont passé [la vérification initiale](#address-verification-failed) mais qui sont devenues invalides par la suite. |
+| Complaint | Le destinataire a signalé l'e-mail comme spam. |
+| Reject | Amazon SES a refusé le message avant de l'envoyer. |
 
-Adapty Mail est fourni avec :
+Le [parcours](mail-profiles#the-activity-journey) du profil affiche un bounce comme **Bounced** et un signalement de spam comme **Spam report**.
 
-- **Lien de désinscription** : Inclus dans le pied de page de chaque e-mail, traité dès que le destinataire confirme.
-- **En-têtes List-Unsubscribe** : Envoyés avec chaque e-mail pour une désinscription en un clic depuis la boîte de réception (RFC 8058), sur une URL qui se désinscrit dès la première requête.
-- **Suppression automatique** : Déclenchée lors d'événements SES de rebond, plainte, rejet et limitation.
+### Réactiver un destinataire \{#bring-a-recipient-back\}
 
-Parties dont vous êtes responsable :
+Rien dans le tableau de bord ne permet d'annuler une suppression. Contactez le support Adapty — par exemple lorsqu'une personne a signalé un e-mail de test comme spam.
 
-- **Adresse postale physique** : la loi CAN-SPAM l'exige dans le pied de page de l'e-mail. Adapty Mail ne l'injecte pas automatiquement — ajoutez-la dans votre design de campagne.
-- **Consentement explicite d'inscription** : recueillez-le avant de transmettre l'adresse e-mail d'un utilisateur à Adapty. Voir [Connecter Adapty à Adapty Mail](mail-collect-emails).
-- **Demandes d'effacement RGPD** : envoyez les identifiants du profil au point de terminaison [Supprimer un profil](api-mail/operations/deleteProfile) de l'API Adapty Mail. Adapty Mail supprime les données personnelles du profil et annule ses e-mails planifiés. L'effacement est définitif : une sauvegarde ultérieure portant les mêmes identifiants ne recrée pas le profil.
+La page de profil indique si un profil est supprimé : il affiche **Unsubscribed** quelle que soit la raison. Le menu ⋯ sur la même page permet aussi de supprimer un profil manuellement.
+
+## Limitation de débit (délais temporaires et annulations) \{#throttle-temporary-delays-and-cancellations\}
+
+Un nouveau domaine d'envoi est limité à 100 e-mails par jour. Ce plafond augmente au fur et à mesure des envois, et disparaît une fois le domaine complètement réchauffé — consultez [Réchauffement du domaine](mail-sending-domain#warm-up-and-daily-limits). Adapty Mail vérifie chacun de vos domaines par rapport à son propre plafond et envoie depuis le premier qui ne l'a pas encore atteint. Un second domaine vérifié augmente donc le volume journalier que le projet peut envoyer.
+
+Quand tous vos domaines ont dépassé leur limite, l'e-mail n'atteint jamais Amazon SES. Le [parcours](mail-profiles#the-activity-journey) du profil est **Throttled**. Adapty Mail réessaie plus tard — un jour après pour une campagne transactionnelle, une semaine après pour une campagne marketing. D'ici là, la limite a généralement augmenté. Un e-mail bloqué le premier jour est retenté une semaine plus tard, quand la limite est bien plus élevée.
+
+Si vous dépassez quand même le plafond, la campagne de ce destinataire passe à l'état **Cancelled**. Le profil n'est pas supprimé, mais il ne peut pas rejoindre une autre campagne marketing pendant une semaine. Rien ne signale une annulation de lui-même, et cette pastille est le seul enregistrement de celle-ci. Avant un grand lancement depuis un nouveau domaine, ajoutez un second domaine vérifié ou laissez d'abord le plafond augmenter.
+
+Les envois de test ignorent entièrement le plafond, donc un [email de test](mail-testing) réussi ne vous dit rien sur la question de savoir si un vrai envoi partirait.
+
+## Conformité \{#compliance\}
+
+La conformité avec le CAN-SPAM, le RGPD et leurs équivalents dans vos marchés est votre responsabilité en tant qu'expéditeur. Adapty Mail en gère une partie automatiquement et laisse le reste à votre charge.
+
+### Géré automatiquement
+
+- **Lien de désinscription** : Dans le pied de page de chaque e-mail marketing, traité dès que le destinataire confirme.
+- **En-têtes List-Unsubscribe** : Envoyés avec chaque e-mail marketing pour une désinscription en un clic depuis la boîte de réception (RFC 8058).
+- **Suppression automatique** : Déclenchée par un rebond ou un signalement comme spam.
+- **Emplacement de l'adresse** : Réservé dans le pied de page de chaque e-mail de campagne et rempli avec l'adresse que vous fournissez.
+
+### Votre responsabilité
+
+- **L'adresse de votre entreprise** : Enregistrez-la dans **Settings** > **Company** — c'est la valeur utilisée pour remplir l'espace réservé. La loi CAN-SPAM exige une adresse physique dans le pied de page, et Adapty Mail ne peut pas générer de campagne sans elle.
+- **Consentement opt-in explicite** : Collectez-le avant de transmettre l'adresse e-mail d'un utilisateur à Adapty. Voir [Connecter Adapty à Adapty Mail](mail-collect-emails). Pour que chaque nouveau destinataire confirme également son adresse avant tout e-mail marketing, activez le [double opt-in](mail-double-opt-in).
+- **Demandes d'effacement RGPD** : Envoyez les identifiants du profil au point de terminaison [Delete profile](api-mail/operations/deleteProfile) de l'API Adapty Mail. Adapty Mail efface les données personnelles du profil et annule ses e-mails planifiés. L'effacement est définitif : une sauvegarde ultérieure portant les mêmes identifiants ne recrée pas le profil.

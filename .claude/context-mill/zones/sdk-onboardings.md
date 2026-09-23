@@ -7,7 +7,7 @@ reviewed_at:
 
 ## What this is
 
-The "Onboardings" category of each platform SDK: fetching an onboarding built in Flow Builder, presenting it, and handling the input it collects and the events it fires. It's the app-code counterpart to designing an onboarding on the dashboard, parallel to how sdk-flows-display relates to paywall flows. Readers are developers integrating a Flow-Builder-made onboarding into their app.
+The "Onboardings" category of each platform SDK: fetching an onboarding built in Flow & Paywall Builder, presenting it, and handling the input it collects and the events it fires. It's the app-code counterpart to designing an onboarding on the dashboard, parallel to how sdk-flows-display relates to paywall flows. Readers are developers integrating a Flow-Builder-made onboarding into their app.
 
 ## Surfaces
 
@@ -198,8 +198,8 @@ Delta from `scope.md` only. The governing fact is that this is a deprecated-but-
 ## Boundaries
 
 - **flow-design / flow-logic** — is the ticket about designing the onboarding's screens/logic in the visual builder (flow-design/flow-logic), or about the SDK code that fetches and presents it in the app (sdk-onboardings)?
-- **onboardings-legacy** — is the onboarding built with the legacy no-code onboarding builder (onboardings-legacy) or with Flow Builder (sdk-onboardings covers the SDK side of the latter)?
-- **sdk-flows-display** — is the flow being presented an onboarding (sdk-onboardings) or a paywall (sdk-flows-display)? Both are Flow Builder output but have separate SDK-side zones.
+- **onboardings-legacy** — is the onboarding built with the legacy no-code onboarding builder (onboardings-legacy) or with Flow & Paywall Builder (sdk-onboardings covers the SDK side of the latter)?
+- **sdk-flows-display** — is the flow being presented an onboarding (sdk-onboardings) or a paywall (sdk-flows-display)? Both are Flow & Paywall Builder output but have separate SDK-side zones.
 
 ## Ticket language
 

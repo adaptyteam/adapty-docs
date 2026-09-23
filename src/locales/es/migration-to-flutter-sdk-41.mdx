@@ -1,0 +1,127 @@
+---
+title: "Migrar el SDK de Adapty Flutter a v4.1"
+description: "Migra al SDK de Adapty Flutter v4.1: habilita Adapty Attribution de forma explícita, adopta las APIs de atribución externa renombradas y vuelve a descargar tu archivo de respaldo."
+metadataTitle: "Migración al SDK de Adapty Flutter v4.1 | Documentación de Adapty"
+---
+
+El SDK de Adapty Flutter 4.1 cambia la forma en que se habilita Adapty Attribution, renombra las APIs de atribución externa y modifica el formato del archivo de respaldo. También añade compatibilidad con las compras in-app promocionadas en App Store y una forma de mantener activa una vista de flow después de cerrarla.
+
+:::warning
+Las APIs renombradas son un cambio definitivo. Los nombres anteriores se han eliminado por completo — no existen alias deprecados que los sustituyan. El código que compilaba con 4.0.x fallará en 4.1 hasta que renombres cada llamada indicada a continuación.
+:::
+
+Si todavía usas la versión 3.x, empieza por [Migrar a v4.0](migration-to-flutter-sdk-v4) y luego sigue esta guía.
+
+## Referencia rápida \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution habilitado automáticamente | Adapty Attribution deshabilitado por defecto; actívalo con `withAdaptyAttributionEnabled(true)` |
+| `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, con un nuevo valor `custom` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| Archivo de respaldo descargado para 4.0 | Nuevo formato de archivo de respaldo; descarga el archivo de nuevo |
+| Compras in-app promocionadas no admitidas | Admitidas; el SDK las completa, o tu app lo hace desde `didReceivePromotedPurchaseStream` |
+| `dismissFlowView(view)` siempre libera la vista | `destroy: false` mantiene la vista activa para presentarla de nuevo |
+
+Las API de compra, perfil y presentación de flows no han cambiado.
+
+## Instalación \{#installation\}
+
+Actualiza `adapty_flutter` a la versión 4.1 en tu `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.1.0
+```
+
+Si tu app usa el [Modo Kids](kids-mode-flutter), especifica `adapty_flutter_kids` en su lugar:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.1.0
+```
+
+Los requisitos no cambian respecto a la versión 4.0: **Flutter 3.32.0** (Dart 3.8.0) e **iOS 15.0**. Consulta [Instalar el SDK de Adapty](sdk-installation-flutter) para la configuración completa.
+
+4.1 fija el SDK nativo de iOS en 4.1.3 y el SDK nativo de Android en 4.1.1. La versión de iOS también corrige los parámetros numéricos de los eventos analíticos de flows: antes de esta versión, todos los `0` y `1` llegaban a `flowViewDidReceiveAnalyticEvent` como `false` y `true`.
+
+## ⚠️ La atribución de Adapty está desactivada por defecto \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Si actualizas al SDK 4.1 y no te das de alta, la [atribución de Adapty](user-acquisition) deja de funcionar silenciosamente: las instalaciones dejan de registrarse y no recibes ningún aviso.
+:::
+
+A partir de la versión 4.0 y anteriores, el SDK registraba las instalaciones para [Adapty Attribution](user-acquisition) de forma automática. Desde la versión 4.1, esto está desactivado por defecto: el SDK no registra instalaciones, `onUpdateInstallationDetailsSuccessStream` y `onUpdateInstallationDetailsFailStream` no emiten nunca, y `getCurrentInstallationStatus` devuelve `AdaptyInstallationStatusNotAvailable`.
+
+Si usas Adapty Attribution, actívalo al configurar el SDK:
+
+```diff showLineNumbers
+  await Adapty().activate(
+-   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
++   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
++     ..withAdaptyAttributionEnabled(true),
+  );
+```
+
+Si no usas Adapty Attribution, no necesitas hacer ningún cambio.
+
+## APIs de atribución externa renombradas \{#renamed-external-attribution-apis\}
+
+Las APIs que envían datos de atribución desde un proveedor externo (Adjust, AppsFlyer, Branch, Tenjin o uno personalizado) se han renombrado para coincidir con los SDKs nativos.
+
+### updateAttribution → updateExternalAttribution
+
+El método ha sido renombrado y su parámetro `source` pasa a llamarse `provider`. El parámetro ahora acepta un `AdaptyExternalAttributionProvider` en lugar de una cadena de texto, y los datos de atribución siguen siendo un mapa:
+
+```diff showLineNumbers
+- await Adapty().updateAttribution(attribution, source: 'adjust');
++ await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+El tipo de proveedor ha sido renombrado. Sigue siendo un contenedor abierto sobre una cadena — los valores predefinidos son `appleAds`, `adjust`, `appsflyer`, `branch`, `tenjin`, y un nuevo `custom` para proveedores con los que Adapty no se integra directamente. Puedes construir uno a partir de cualquier otra cadena, por lo que un proveedor que Adapty añada más adelante funcionará sin necesidad de actualizar el SDK:
+
+```dart showLineNumbers
+final provider = AdaptyExternalAttributionProvider('my_provider');
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+La propiedad del perfil que lista los proveedores de atribución aplicados al perfil se renombra, y el tipo de sus elementos cambia en consecuencia:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.appleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+El campo de perfil serializado mantiene el nombre `applied_attribution_sources`, por lo que un backend que lea el perfil en bruto no necesita cambios. El código que lee la propiedad sí necesita actualizarse — consulta [Mostrar un paywall con segmentación de Apple Ads](flutter-show-aa-targeted-paywall).
+
+## Archivos de respaldo \{#fallback-files\}
+
+El formato del [archivo de respaldo](fallback-flows) cambió en el SDK 4.1. Descarga el archivo nuevamente desde **[Placements](https://app.adapty.io/placements)** > **Fallbacks** y añádelo a tu app, aunque ya hayas descargado uno para la versión 4.0.
+
+:::warning
+Este paso no genera ningún error de compilación. Si lo omites, el SDK rechazará el archivo obsoleto y todos los placements perderán su respaldo.
+:::
+
+## Compras in-app promocionadas en App Store \{#promoted-in-app-purchases\}
+
+Flutter SDK 4.0 no admitía las [compras in-app promocionadas en la página de producto de App Store](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store): el SDK nativo de iOS sobre el que se construyó no tenía API para ello. La versión 4.1 añade esa compatibilidad, por lo que se trata de una nueva funcionalidad y no de un paso de migración: actualizar sin añadir código nuevo no cambia nada en el comportamiento de tu app.
+
+Por defecto, el SDK completa una compra promocionada por sí solo. Escribe código solo si quieres completarla tú mismo, por ejemplo para mostrar una pantalla antes: suscríbete a `didReceivePromotedPurchaseStream` y pasa el producto a `makePromotedPurchase`. Mientras haya alguna suscripción activa a ese stream, el SDK deja de completar las compras promocionadas automáticamente.
+
+## Mantener activa una vista de flow después de cerrarla \{#keep-a-flow-view-alive-after-dismissing-it\}
+
+`AdaptyUI().dismissFlowView` y `AdaptyUIFlowView.dismiss` aceptan un flag `destroy`:
+
+```dart showLineNumbers
+await AdaptyUI().dismissFlowView(view, destroy: false);
+```
+
+Por defecto es `true`, lo que libera la vista como antes. Con `destroy: false` la vista permanece activa, de modo que puedes volver a mostrarla y el usuario regresa a la pantalla donde lo dejó, con el estado que el flow había acumulado.
+
+Una vista conservada de esta forma se mantiene hasta que la cierras con `destroy: true`. Presentar una vista liberada falla, así que llama de nuevo a `createFlowView` para mostrar ese flow otra vez.

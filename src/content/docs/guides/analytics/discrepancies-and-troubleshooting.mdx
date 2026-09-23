@@ -160,9 +160,52 @@ Other metrics may differ in definition, as well:
         - App Store Connect considers a user retained if they open the application on the specified day. A user without a subscription will count, but the subscribed user who didn't open the app on that day won't.
         - Google Play Console's "Retained Installers" metric measures retention based on the number of days the application remains installed on the user's device. Users that don't open the application count towards this metric.
 
-## New subscriptions metric vs the `subscription_started` event
+## Metric and event mismatches
 
-The [New subscriptions](reactivated-subscriptions) metric and the `subscription_started` [integration event](events) count different things, so their totals don't match. The metric counts both first purchases made without a trial and trial-to-paid conversions. The `subscription_started` event fires only for first purchases made without a trial — when a trial converts to paid, Adapty sends `trial_converted` instead. As a result, the New subscriptions count is higher than the number of `subscription_started` events whenever your app has trial conversions.
+A mismatch between a chart total and the number of events your integration received is expected, not a delivery failure. The names line up, but the definitions don't.
+
+### New subscriptions metric vs the `subscription_started` event
+
+The [New subscriptions](reactivated-subscriptions) metric and the `subscription_started` [integration event](events) count different things. Expect the "new subscriptions" metric to exceed the number of `subscription_started` events.
+
+| What differs | New subscriptions metric | `subscription_started` event |
+|---|---|---|
+| What it reports | How many subscriptions started in a period | That a paid subscription began, as it happens |
+| What it's for | Track how many new payers you gained | Record the purchase in your analytics, MMP, or own backend |
+| Timing | Counts transactions by purchase date in your reporting timezone | Sent when the purchase happens |
+| Trial conversions | Counted | Not sent — Adapty sends `trial_converted` instead |
+| Retracted transactions | Excluded once Adapty retracts them | Already sent, and never recalled |
+| Profiles the SDK never identified | Their purchases are counted | Absent from the Event Feed |
+
+### Active subscriptions metric vs the `subscription_active` event
+
+The [Active subscriptions](active-subscriptions) metric and the `subscription_active` [integration event](events) differ in what they're for, not just in what they count.
+
+| What differs | Active subscriptions metric | `subscription_active` event |
+|---|---|---|
+| What it reports | How many subscriptions are alive at the end of each period | That a subscription survived its first days |
+| What it's for | Track the size and growth of your subscriber base | Forward to an MMP to bid for users who stay |
+| Timing | Recalculated at the end of every period | Sent a configured number of days after the subscription starts, from 1 to 90 |
+| Repeats | Yes, every period | No — Adapty checks once and doesn't look again |
+| Trial conversions | Counted once the trial converts to paid | Never sent — the timer starts only at `subscription_started`, and a conversion sends `trial_converted` |
+| Cancelled renewals | Excluded | Still sent, as long as the user has access |
+| Refunds | Removed, including retroactively from past dates | Not sent if the refund comes first; never recalled if it comes later |
+| Availability | Always calculated | Sent only by integrations where you turned it on |
+
+### Active trials metric vs the `trial_active` event
+
+The [Active trials](active-trials) metric and the `trial_active` [integration event](events) differ in what they're for, not just in what they count.
+
+| What differs | Active trials metric | `trial_active` event |
+|---|---|---|
+| What it reports | How many free trials haven't expired | That a trial survived its first days |
+| What it's for | See how many trials are running | Optimize MMP bidding for trial users who stay |
+| Timing | Recalculated at the end of every period | Sent a configured number of days after the trial starts, from 1 to 90 |
+| Repeats | Yes, every period | No — Adapty checks once and doesn't look again |
+| Trial conversions | Counted until the trial converts, then dropped in the next period | Never sent for a trial that already converted |
+| Availability | Always calculated | Sent only by integrations where you turned it on |
+
+The two agree on cancellation: a user who turns off auto-renewal stays in the metric, and the event is still sent, until the trial expires.
 
 ## A filtered total exceeds the unfiltered total
 

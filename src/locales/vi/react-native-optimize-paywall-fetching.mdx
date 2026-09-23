@@ -1,10 +1,10 @@
 ---
-title: "Tối ưu hóa việc lấy paywall trong React Native SDK"
-description: "Lấy paywall Adapty đáng tin cậy: thời điểm, bộ nhớ đệm và các mẫu dự phòng cho React Native."
-metadataTitle: "Tối ưu hóa việc lấy paywall | React Native SDK | Tài liệu Adapty"
+title: "Tối ưu hóa việc tải flow & paywall trong React Native SDK"
+description: "Tải flow và paywall của Adapty một cách đáng tin cậy: thời điểm tải, caching và các mẫu fallback cho React Native."
+metadataTitle: "Tối ưu hóa việc tải Flow & Paywall | React Native SDK | Tài liệu Adapty"
 ---
 
-Một lần lấy paywall đáng tin cậy trên React Native cần đảm bảo ba điều: hiển thị nhanh, trả về paywall đúng với đối tượng được nhắm mục tiêu, và có phương án dự phòng hợp lý khi mạng chậm. Các quy tắc dưới đây đề cập đến thời điểm, bộ nhớ đệm và các mẫu dự phòng để đạt được điều đó.
+Một lần tải flow hoặc paywall đáng tin cậy trên React Native cần đảm bảo ba điều: hiển thị nhanh, trả về đúng biến thể theo đối tượng, và xử lý dự phòng hợp lý khi mạng chậm. Các quy tắc dưới đây bao gồm thời điểm tải, caching và các mẫu fallback để đạt được điều đó.
 
 :::tip
 Các quy tắc này giả định rằng `adapty.activate()` và `adapty.identify()` đã được resolve xong. Xem [Thứ tự gọi trong React Native SDK](react-native-sdk-call-order).
@@ -12,11 +12,11 @@ Các quy tắc này giả định rằng `adapty.activate()` và `adapty.identif
 
 ## Quy tắc và những lỗi thường gặp \{#rules-and-pitfalls\}
 
-| Nên làm | Không nên làm | Lý do |
+| Làm điều này | Không làm điều này | Lý do |
 |---|---|---|
-| Lấy placement mà bạn sắp hiển thị.                                                                                  | Prefetch tất cả các placement cùng lúc khi khởi động.        | Bulk prefetch chặn JS thread và gây ra màn hình đen trong khoảng thời gian đó.                                  |
-| Gọi `getPaywall` sau khi attribution đã có cơ hội resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi `onProfileUpdate` kích hoạt. | Gọi `getPaywall` tại component gốc khi mount. | Attribution chưa hoàn tất. Paywall sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc và cá nhân hóa ASA. |
-| Đặt `loadTimeoutMs` và cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement.                             | Chờ `getPaywall` vô thời hạn.                     | Nếu không có timeout, người dùng ở kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc họ sẽ tắt ứng dụng.     |
+| Lấy placement bạn sắp hiển thị.                                                                                  | Tải trước tất cả các placement đồng thời khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng JS và tạo màn hình đen trong khoảng thời gian đó.                                  |
+| Gọi `getFlow` sau khi attribution đã có thời gian để xử lý — ví dụ, 1–2 giây sau `activate` hoặc sau khi `onLatestProfileLoad` kích hoạt. | Gọi `getFlow` tại thành phần gốc khi mount. | Attribution chưa được xử lý xong. Flow sẽ được giải quyết theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeoutMs` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                             | Chờ `getFlow` vô thời hạn.                     | Nếu không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc tắt ứng dụng.     |
 
 Xem [Lấy paywall và sản phẩm](fetch-paywalls-and-products-react-native) để tham khảo các tham số `fetchPolicy` và `loadTimeoutMs`, và [Placements](placements) để chọn placement phù hợp.
 
@@ -24,7 +24,7 @@ Xem [Lấy paywall và sản phẩm](fetch-paywalls-and-products-react-native) �
 
 Đối với các thị trường có kết nối kém liên tục (khu vực nông thôn, phương tiện giao thông, vùng bị ảnh hưởng bởi định tuyến mạng):
 
-- Đặt `fetchPolicy: .returnCacheDataElseLoad` cho mọi lần lấy dữ liệu, trừ lần đầu tiên.
-- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trên Adapty Dashboard.
-- Đặt `loadTimeoutMs` từ 3–5 giây và chấp nhận phương án dự phòng khi timeout xảy ra.
-- Đừng chặn việc hiển thị paywall bằng `getProfile()`. Gọi `getPaywall` độc lập để tránh trường hợp profile chậm làm chặn giao diện.
+- Đặt `fetchPolicy: 'return_cache_data_else_load'` cho mọi lần fetch ngoại trừ lần đầu tiên.
+- Cấu hình [paywall dự phòng](fallback-paywalls) cho mọi placement trong Adapty Dashboard.
+- Đặt `loadTimeoutMs` từ 3–5 giây và chấp nhận paywall dự phòng khi hết thời gian chờ.
+- Không chặn việc hiển thị flow vào kết quả của `getProfile()`. Gọi `getFlow` độc lập để tránh trường hợp profile chậm làm chặn giao diện.

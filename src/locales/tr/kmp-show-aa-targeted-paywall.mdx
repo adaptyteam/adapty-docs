@@ -1,0 +1,61 @@
+---
+title: "Kotlin Multiplatform SDK'da ilk açılışta AA hedefli paywall gösterme"
+description: "Kotlin Multiplatform'da AdaptyProfile.appliedAttributionSources kullanarak paywall istemeden önce Apple Ads attribution'ı bekleme."
+metadataTitle: "İlk açılışta AA hedefli paywall gösterme | Kotlin Multiplatform SDK | Adapty Dokümanları"
+---
+
+Bu makale, uygulamanızın iOS derlemesi için geçerlidir. Apple Ads attribution yalnızca iOS'ta mevcuttur.
+
+Apple Ads (AA) attribution, `Adapty.activate()` çağrısından sonra asenkron olarak gelir. `getFlow`'u erken çağırırsanız, attribution henüz gelmemiş olabilir ve Adapty placement'ı varsayılan kitleye göre çözümler; bu da AA segmentli paywall'larınızı devre dışı bırakır. `AdaptyProfile.appliedAttributionSources`, uygulamanın AA attribution'ının profile ne zaman uygulandığını algılamasına olanak tanır; böylece paywall isteği, AA segmentasyonunun doğru şekilde çözümlenene kadar bekleyebilir.
+
+:::important
+Bu özellik yalnızca Apple Ads verilerini raporlar. Diğer sağlayıcılardan gelen attribution, kullanıcı profillerinde görünür ve segment filtrelerinde kullanılabilir; ancak henüz burada gösterilmez.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+- Adapty Kotlin Multiplatform SDK **4.0** veya üzeri.
+- Uygulamanız için Adapty'de Apple Ads yapılandırılmış olmalı. Bkz. [Apple Ads](apple-search-ads).
+
+:::note
+Örneklerde SDK 4.0'ın API adları kullanılmaktadır. SDK 3.x'te paywall'lar `getPaywall`/`getPaywallForDefaultAudience` ile çekilir ve bu fonksiyonlar bir `AdaptyPaywall` döndürür. Bkz. [Adapty Kotlin Multiplatform SDK'yı v4'e taşıma](migration-to-kmp-sdk-v4).
+:::
+
+## Nasıl çalışır \{#how-it-works\}
+
+`Adapty.activate()` çağrısının ardından SDK, arka planda Apple'dan Apple Ads attribution verilerini talep eder ve sonucu Adapty'nin backend'ine iletir. AA, profil için aktif attribution kaynağı haline geldiğinde SDK, `appliedAttributionSources` listesinde `"apple_search_ads"` bulunan güncellenmiş bir `AdaptyProfile`'ı `OnProfileUpdatedListener`'ınıza iletir.
+
+Boş bir liste şu anlara gelebilir:
+
+- Bu profil için Apple Ads attribution henüz işlenmemiş olabilir.
+- Hiç attribution gelmemiş olabilir.
+- Attribution başka bir sağlayıcıdan gelmiş olabilir; bu liste onu raporlamaz.
+
+Boş bir liste olsa bile `getFlow` çağrısı güvenlidir — Adapty, isteği mevcut profil durumuna göre eşleşen kitleye göre çözer; bu genellikle varsayılan kitledir.
+
+:::important
+Bekleme yalnızca **ilk başlatma** için geçerlidir. Apple Ads attribution kaydedildikten sonra profilde kalıcı olarak saklanır. Sonraki her başlatmada, önbellekteki profil `appliedAttributionSources` alanında zaten `"apple_search_ads"` değerini taşır; listener bu değerle anında tetiklenir ve `getFlow` herhangi bir gecikme olmaksızın Apple Ads segmentine göre yapılandırılmış paywall'ı döndürür.
+:::
+
+## Uygulama \{#implementation\}
+
+İlk açılışta, profildeki `"apple_search_ads"` anahtarını izleyin ve katı bir zaman aşımı uygulayın — Apple Ads attribution hiç gelmese bile, o kullanıcıların yine de bir paywall görmesi gerekir.
+
+1. **SDK'yı etkinleştirin.** Bkz. [Kotlin Multiplatform SDK'yı yükleyin ve yapılandırın](sdk-installation-kotlin-multiplatform).
+2. **`Adapty.setOnProfileUpdatedListener` ile profil güncellemelerini dinleyin.** Listener'ı henüz kurmadıysanız bkz. [Abonelik güncellemelerini dinleyin](kmp-check-subscription-status#listen-to-subscription-updates).
+3. **`appliedAttributionSources` içinde `"apple_search_ads"` değerini izleyin.** Bu değer göründüğünde paywall'u isteyin — Adapty, AA segmentine göre belirlenmiş varyantı döndürecektir:
+
+```kotlin
+Adapty.setOnProfileUpdatedListener { profile ->
+    if ("apple_search_ads" in profile.appliedAttributionSources) {
+        // load the paywall via Adapty.getFlow(placementId)
+    }
+}
+```
+
+4. **Abonelikle paralel olarak 3–5 saniyelik bir zamanlayıcı başlatın.** Zamanlayıcı, `"apple_search_ads"` görünmeden önce tetiklenirse, bunun yerine `getFlowForDefaultAudience` ile varsayılan kitle paywallını isteyin. Bu yöntem, segmentasyon beklenmeden paywallı döndürür.
+
+Hangi yol önce tetiklenirse paywall'ı o yüklemeli; diğer yol atlanmalıdır. Paywall'ın iki kez getirilmemesi için tek bir durum bayrağı (örneğin `hasLoadedPaywall`) kullanarak tekilleştirme yapın. Ağ isteği başarısız olursa kullanıcının mahsur kalmaması için placement'a bir [yedek paywall](kmp-use-fallback-paywalls) yapılandırın.
+
+`setOnProfileUpdatedListener` yalnızca bir dinleyici kabul eder. Uygulamanız bunu başka amaçlarla zaten kullanıyorsa (örneğin, [abonelik güncellemelerini dinlemek](kmp-check-subscription-status#listen-to-subscription-updates) için), ikinci bir dinleyici kaydetmek yerine mevcut dinleyiciye kontrolü ekleyin.

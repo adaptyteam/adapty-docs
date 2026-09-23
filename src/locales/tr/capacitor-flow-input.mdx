@@ -1,0 +1,259 @@
+---
+title: "Capacitor SDK'da flow verilerini işleme"
+description: "Capacitor uygulamanızda kullanıcıların flow'lara girdiği verileri kaydedin ve kullanın; Adapty SDK ile."
+metadataTitle: "Flow verilerini işleme | Capacitor SDK | Adapty Dokümanları"
+---
+
+Bir kullanıcı [flow](adapty-flow-builder) içindeki bir giriş alanına yazı yazdığında, bir teste yanıt verdiğinde veya bir düğmeyi çevirdiğinde, SDK bu değeri analitik callback'i aracılığıyla uygulamanıza iletir.
+
+Uygulamalar bu verileri çoğunlukla şu amaçlarla kullanır:
+
+- **Kullanıcıları kendi backend'lerinize kaydedin**: Kullanıcının onboarding flow'unuzda girdiği e-posta adresini ve adı alın, flow kapandığında hesaplarını oluşturun.
+- **Yanıtları ve tercihleri kaydedin**: Kullanıcının ne seçtiğini takip edin, böylece uygulamanız bunu daha sonra kullanabilsin — örneğin özel özellikler olarak [Adapty profiline yazın](capacitor-setting-user-attributes).
+- **Gelecekteki flow'ları özelleştirin**: Quiz yanıtlarını özel özellikler olarak kaydedin, ardından ilerideki bir placement'ı hedefleyerek her segmentin farklı bir flow veya içinde farklı bir paywall görmesini sağlayın.
+- **Üçüncü taraf analiz platformlarına veri gönderin**: Yanıtları Amplitude, Mixpanel veya kullandığınız ürün analitiği platformuna iletin.
+
+Girişler ve seçilebilir gruplar değerlerini otomatik olarak raporlar. Bunları kodunuzda birbirinden ayırt edebilmek için, oluşturucuda her girişe anlamlı bir **Element ID**, her seçilebilir gruba ise bir **Group ID** verin.
+
+<FlowIdNaming />
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowInputPrerequisites />
+
+## Girdi değerlerini alma \{#receive-input-values\}
+
+Girdi değerleri, bir flow'dan gelen diğer tüm analitik etkinlikleriyle aynı handler'a ulaşır ve etkinlik adı `flow_user_input` olarak gelir. `onAnalytics`'i diğer flow etkinlik handler'larınızla birlikte kaydedin:
+
+```typescript showLineNumbers title="Capacitor"
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    handleFlowInput(name, params);
+    return false; // keep the flow open
+  },
+});
+```
+
+`onAnalytics` geri çağırımı, [ekran görüntülemeleri](capacitor-flow-screen-views) dahil olmak üzere bir flow'daki tüm analitik olayları iletir.
+- `name` parametresi olay adını içerir. Kullanıcı girişi olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
+- `element_type` parametresi, öğe kategorisini belirtir.
+- Girişin değeri, öğe türüne bağlı olarak farklı parametrelerde saklanır:
+     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
+     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` alanlarında raporlar
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+
+  // The screen the input sits on. Pair it with element_id to tell apart
+  // two fields that share an Element ID on different screens.
+  const screenId = params.instanceId as string;
+
+  switch (params.element_type) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input': {
+      const text = params.value as string;
+      break;
+    }
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker': {
+      // Unix time in milliseconds.
+      const date = new Date(params.value as number);
+      break;
+    }
+    case 'single_choice': {
+      const optionId = (params.item_ids as string[])[0];
+      break;
+    }
+    case 'multi_choice': {
+      const optionIds = params.item_ids as string[];
+      break;
+    }
+    case 'toggle': {
+      const isOn = params.value as boolean;
+      break;
+    }
+  }
+}
+```
+
+<FlowInputVerify />
+
+## Uygulamanız girdiyi aldığında \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ne alırsınız \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Olay örnekleri \{#event-examples\}
+
+Bu örnekler, her olayda mevcut olan özellikleri ve yorumlarda açıklayıcı değerlerle birlikte göstermektedir.
+
+<Details>
+<summary>Metin, e-posta, sayı ve telefon girişi (Genişletmek için tıklayın)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    name;                      // 'flow_user_input'
+    params.name;               // 'flow_user_input'
+    params.instanceId;         // 'scr_J260KU5q'
+    params.isCustomerEvent;    // true
+    params.isBackendEvent;     // false
+    params.element_id;         // 'email'
+    params.element_type;       // 'email_input'
+    params.value;              // 'jane@example.com'   (string)
+}
+```
+</Details>
+
+<Details>
+<summary>Tarih, saat ve tarih-saat seçiciler (Genişletmek için tıklayın)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'birthday'
+    params.element_type;       // 'date_picker'
+    params.value;              // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Tekli seçim (Genişletmek için tıklayın)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'experience'
+    params.element_type;       // 'single_choice'
+    params.item_ids;           // ['pro']
+    params.item_titles;        // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Çoklu seçim (Genişletmek için tıklayın)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'interests'
+    params.element_type;       // 'multi_choice'
+    params.item_ids;           // ['sports', 'music']
+    params.item_titles;        // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Geçiş düğmesi (Genişletmek için tıklayın)</summary>
+
+```typescript
+onAnalytics(name, params) {
+    params.element_id;         // 'reminders'
+    params.element_type;       // 'toggle'
+    params.value;              // true   (boolean)
+}
+```
+</Details>
+
+## Teslimat ve sınırlamalar \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Her giriş değerini handler'ınız aldığı gibi saklayın ve flow kapandığında tüm seti gönderin. Bu anı yakalamak için `onAnalytics` ile birlikte bir `onDisappeared` handler'ı kaydedin. Bu handler, kullanıcı flow'u tamamlasa da yarıda kapansa da, flow görünümü kapatıldığında çalışır.
+
+## Kullanım Senaryoları \{#use-cases\}
+
+### Kullanıcıları arka uçta kaydedin \{#register-users-on-your-backend\}
+
+Değerleri geldikçe toplayın ve flow kapandıktan sonra tek bir istekle gönderin; böylece eksiksiz bir yanıt seti tek seferde iletilmiş olur.
+
+Flow, kullanıcı tamamlasın ya da yarıda bıraksın, her iki durumda da kapanır. Arka ucunuzu çağırmadan önce ihtiyacınız olan alanları kontrol edin.
+
+Flow, arka ucunuzdan gelen hataları gösteremez. Handler'ın dönüş değeri yalnızca flow görünümünü kapatır; SDK'nın çalışan bir flow'a veri gönderen bir yöntemi yoktur. Kayıt başarısız olursa (örneğin e-posta adresi zaten kullanımda olduğu için), hatayı flow kapandıktan sonra kendi arayüzünüzde gösterin.
+
+```typescript showLineNumbers title="Capacitor"
+const flowAnswers: Record<string, string> = {};
+
+view.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      flowAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    if (flowAnswers.email) {
+      // Send flowAnswers to your backend here to create the account.
+    }
+    return false;
+  },
+});
+```
+
+### Kullanıcı profillerini verilerle zenginleştirin \{#enrich-user-profiles-with-data\}
+
+Kullanıcının girdiği bilgileri profiline bağlamak ve aynı bilgileri iki kez sormaktan kaçınmak için değerler geldikçe [kullanıcı profilini güncelleyin](capacitor-setting-user-attributes).
+
+Örneğin, flow'unuzda `name` Element ID'sine sahip bir metin girişi ve `email` Element ID'sine sahip bir e-posta girişi varsa:
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (typeof params.value !== 'string') return;
+
+  const profileParams: Partial<AdaptyProfileParameters> = {};
+
+  switch (params.element_id) {
+    case 'name':
+      profileParams.firstName = params.value;
+      break;
+    case 'email':
+      profileParams.email = params.value;
+      break;
+    default:
+      return;
+  }
+
+  adapty.updateProfile(profileParams).catch((error) => {
+    // handle the error
+  });
+}
+```
+
+### Sonraki akışları özelleştirme \{#customize-flows-shown-later\}
+
+Quiz yanıtları, kullanıcının daha sonra bir [placement](placements)'da göreceği şeyi de belirleyebilir — farklı bir flow veya içindeki farklı bir paywall.
+
+Örneğin, onboarding flow'unuzda kullanıcılara spor deneyimlerini sorun, ardından her gruba farklı ürünler ve metinlerle kendi flow'unu gösterin.
+
+1. Flow'unuza bir [quiz](onboarding-quizzes) ekleyin. [Seçilebilir gruba](flow-selectable-elements) `experience` Grup ID'si verin ve her seçeneğe anlamlı bir Element ID atayın.
+2. Yanıtları işleyin ve kullanıcı için [özel nitelikler belirleyin](capacitor-setting-user-attributes).
+
+```typescript showLineNumbers title="Capacitor"
+function handleFlowInput(name: string, params: Record<string, unknown>) {
+  if (name !== 'flow_user_input') return;
+  if (params.element_id !== 'experience') return;
+
+  const optionId = (params.item_ids as string[])[0];
+
+  adapty
+    .updateProfile({
+      // Set the custom attribute 'experience' to the option the user selected
+      // (beginner, amateur, or pro).
+      codableCustomAttributes: { experience: optionId },
+    })
+    .catch((error) => {
+      // handle the error
+    });
+}
+```
+
+3. Her özel özellik değeri için bir [segment](segments) oluşturun.
+4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
+5. Uygulamanızda o placement için [flow'u görüntüleyin](capacitor-present-paywalls).

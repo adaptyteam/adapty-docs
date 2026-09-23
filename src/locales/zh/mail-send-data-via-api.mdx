@@ -5,12 +5,13 @@ metadataTitle: "通过 Adapty Mail API 发送数据 | Adapty 文档"
 ---
 
 Adapty Mail API 让你无需通过 Adapty SDK 中转，直接从服务器向 Adapty Mail 发送用户画像和交易数据。以下场景适合使用它：
+
 - 在 Adapty Mail 中尚未建立用户群时添加订阅者。
 - 复用其他应用中已有的订阅者群体。
 - 以后端作为数据来源，通过服务端对服务端的方式向 Adapty Mail 推送数据。
 
 :::note
-**API 还是 SDK？** 大多数应用通过 Adapty SDK 向 Adapty Mail 发送数据，SDK 会自动收集邮箱地址和购买记录——详见[将 Adapty 连接到 Adapty Mail](mail-collect-emails)。如果你的应用未集成 Adapty SDK、数据已存储在服务器端，或需要从其他来源导入订阅用户，则选择 API 方式。你也可以将 API 与其他接入方式结合使用：Adapty Mail 会通过 `customer_user_id` 和邮箱地址匹配传入数据，并为每位用户只保留一个用户画像。
+**API 还是 SDK？** 大多数应用通过 Adapty SDK 向 Adapty Mail 发送数据，SDK 会自动收集邮箱和购买记录——详见[将 Adapty 连接到 Adapty Mail](mail-collect-emails)。如果你的应用没有集成 Adapty SDK、数据已存储在服务器端，或需要从其他来源导入订阅者，则选择 API。你也可以将 API 与其他接入方式同时使用。Adapty Mail 以邮箱地址作为用户匹配依据。两个来源上报相同的邮箱地址会合并到同一用户画像；两个不同的邮箱地址则会创建独立的用户画像，即使 `customer_user_id` 相同也不例外。
 :::
 
 ## 开始之前 \{#before-you-start\}
@@ -20,13 +21,15 @@ Adapty Mail API 让你无需通过 Adapty SDK 中转，直接从服务器向 Ada
 :::
 
 你还需要准备好 API 密钥和基础 URL：
-- **Secret API key（密钥）**：在 Adapty Mail 中，进入 **Settings** 并复制你的 Secret API key。该密钥与项目绑定，API 通过它识别数据所属的项目。
+
+- **Secret API key**：在 Adapty Mail 中，进入 **Settings** > **Project**，复制 **Secret key**。该密钥与项目绑定，API 通过它识别数据所属的项目。
 - **Base URL**：所有请求均发送至 `https://api-mail.adapty.io`。
-- **Authentication（身份验证）**：在 **Authorization** 请求头中以 `Bearer {your_secret_api_key}` 的格式传入密钥。
+- **Authentication**：在 **Authorization** 请求头中以 `Bearer {your_secret_api_key}` 的形式传入密钥。
 
 :::important
-在收集用户邮箱并将其发送至 Adapty Mail 之前，请务必获得用户的明确授权。您有责任遵守 GDPR、CAN-SPAM 及所在市场的其他相关法规。
+在收集用户邮箱并发送至 Adapty Mail 之前，请务必获得用户的明确同意。您有责任遵守 GDPR、CAN-SPAM 以及所在市场的相关法规。
 :::
+
 ## 发送用户画像 \{#send-user-profiles\}
 
 用户画像包含用户的邮箱和属性。要创建或更新用户画像，请向 `/api/v1/profile/save/` 发送 POST 请求。
@@ -39,7 +42,8 @@ Adapty Mail API 让你无需通过 Adapty SDK 中转，直接从服务器向 Ada
 :::important
 请始终传入稳定的 `external_profile_id`，不要使用匿名 ID 或每次安装时生成的值。Adapty Mail 依靠它将邮件、点击和购买行为关联到同一个用户画像。
 :::
-如果同一个用户也通过 Adapty SDK 接入了 Adapty Mail，请添加 `customer_user_id`——即你传给 `Adapty.identify()` 的自有用户 ID。Adapty Mail 会以此进行匹配，将两个来源合并到同一个用户画像下，而不是创建重复记录导致同一人收到两封邮件。
+
+如果同一用户还通过另一个[入口点](mail-entry-points)接入 Adapty Mail，请发送 `customer_user_id`——与该来源发送的用户 ID 相同。对于 Adapty SDK，这是你传给 `Adapty.identify()` 的值；FunnelFox 则发送它自己持有的那个。它不决定用户最终落到哪个用户画像上，邮箱地址才是决定因素。它的作用是提供第二种查找用户画像的方式：携带它的交易事件无需邮箱即可完成解析，删除操作也可以用它来代替邮箱地址进行指定。
 
 ```bash
 curl --request POST \
@@ -57,7 +61,23 @@ curl --request POST \
   }'
 ```
 
-请参阅 [保存用户画像](api-mail/operations/saveProfile) 参考文档，了解所有可用字段。
+:::note
+`country` 和 `store_country` 使用两位字母的 [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) 代码——填 `US`，而非 `USA` 或 `United States`。其他任何值都将被拒绝。
+:::
+
+`device_info` 描述用户的设备信息。该对象是可选的，但只要传入此对象，就必须包含 `platform` 字段。
+
+| 字段 | 可选 | 市场细分筛选 | 备注 |
+| --- | --- | --- | --- |
+| `platform` | 否 | 是 | |
+| `device` | 是 | 是 | 设备型号。 |
+| `os` | 是 | 是 | |
+| `locale` | 是 | 是 | |
+| `app_version` | 是 | 是 | 按版本号排序比较，因此 `1.10.0` 高于 `1.9.0`。 |
+| `timezone` | 是 | 否 | 设置用户接收邮件的时间。若不填，Adapty Mail 默认按 UTC 处理，发送时间窗口（08:00–21:00）将以 UTC 为准，而非用户本地时区。 |
+
+所有可用字段请参阅 [Save profile](api-mail/operations/saveProfile) 参考文档。
+
 ## 发送交易事件 \{#send-transaction-events\}
 
 :::note
@@ -65,7 +85,9 @@ curl --request POST \
 :::
 
 除 **never purchased** 之外的所有流程都依赖购买历史。在处理购买、续订和取消订阅时，同步发送用户画像的交易事件，这样 Adapty Mail 才能将其归入正确的流程。交易事件同时也支持收入归因。只有在你仅运行 **never purchased** 营销活动时，才可以跳过这一步。
+
 要记录一笔交易，请向 `/api/v1/profile/transaction-event/save/` 发送 POST 请求。使用与用户画像相同的 `external_profile_id`，这样 Adapty Mail 才能将该交易关联到正确的用户。
+
 ```bash
 curl --request POST \
   --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
@@ -104,13 +126,14 @@ curl --request POST \
   }'
 ```
 
-通过 `external_profile_id`、`customer_user_id` 或 `email` 来识别用户画像——至少提供其中一个。删除操作不可撤销：之后携带相同标识符的保存请求不会重新创建该用户画像。
+通过 `external_profile_id`、`customer_user_id` 或 `email` 识别用户画像——至少发送其中一个。Adapty Mail 会清除已存储的数据，但不会屏蔽该地址：如果数据源再次发送，系统会创建一个没有历史记录的新用户画像。如需永久将某人排除在外，请从源头停止发送其数据。
 
-为确保重试安全，请通过 `external_profile_id` 或 `customer_user_id` 来识别用户画像。如果删除请求仅携带 `email`，重复执行时会返回 `404`，因为删除操作会清除已存储的邮箱地址。详情请参阅[删除用户画像](api-mail/operations/deleteProfile)。
+删除请求超时后，你无法确认请求是否已成功送达，因此可能会重新发送。当你通过 `external_profile_id` 或 `customer_user_id` 识别用户画像时，第二次调用是安全的——它会成功执行但不会产生任何变化。而仅携带 `email` 的第二次调用会返回 `404`，因为第一次删除操作已清除了原本可匹配的邮箱地址。[删除用户画像](api-mail/operations/deleteProfile) 参考文档列出了所有响应状态码。
 
 ### 将事件映射到流程 \{#map-your-events-to-flows\}
 
 发送与实际发生情况对应的 `event_type`。Adapty Mail 会根据用户画像的事件历史推断其当前状态，并将其路由到匹配的流程。
+
 | `event_type` | 发送时机 | 流程 |
 | --- | --- | --- |
 | `subscription_started` | 用户开始新订阅。 | 活跃 — 无再触达流程 |

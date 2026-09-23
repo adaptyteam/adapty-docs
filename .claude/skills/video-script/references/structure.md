@@ -1,0 +1,97 @@
+# script.md Structure
+
+**These are conventions, not rules.** Consistency helps whoever reads the file next, but none of it
+affects the finished video — see `regression-checklist.md` for what actually does.
+
+## Anatomy
+
+```
+Total estimated runtime: ~3m          <- state marker, line 1, always
+
+## Intro
+
+> [VISUAL] terse cue
+
+Narration paragraph.
+
+## Part 1: What the viewer gets
+
+> [VISUAL] terse cue
+
+Narration paragraph.
+
+## Outro
+
+Read the docs in the description to learn more. Drop a comment if you have any
+questions. Thanks for watching!
+```
+
+## Headings
+
+`## Intro`, `## Part N: Title`, `## Outro` is what the corpus uses. Timestamps in headings are fine if
+they're useful to you.
+
+Sub-parts exist where a Part splits naturally — 20-interaction-basics has `## Part 3b: A trigger on a
+text element`. Use sparingly.
+
+Name Parts for what the viewer gets, not for the UI surface they happen to sit in.
+One idea per Part.
+
+**A heading is a noun phrase, not a question with the answer attached.** A draft of video 23 used
+`## Part 1: Who draws the UI — Adapty` and `## Part 2: Who draws the UI — you`. The pair encodes the
+video's organizing question, which is useful while planning and unreadable as a label. Name the subject
+instead — `## Part 1: The flow`, `## Part 2: Your own code, and the paywall entity` — and let the
+narration carry the question.
+
+Recorded scripts: `The chain`, `Product variables`, `Custom actions`, `Screen background`. All noun
+phrases.
+
+## `> [VISUAL]` cues
+
+**Always before the narration they pair with — this one is a rule, not a preference.** A cue answers
+"what is on screen while this line is read", so a reader hitting the line first has to guess. Whether a
+transcript keeps its cues is a preference; where a cue sits is not.
+
+**Check the pairing, not just the order.** A cue placed before *some* narration can still describe the
+line above it — that is the same defect one step further along. Read each cue against the line
+immediately below it and ask whether they belong together.
+
+**When a shot list exists, a cue names its shot and step.** `Shot 1, steps 10–13 — the August profile
+anonymous, then the list carrying its new customer user ID`. The step number is the link between the two
+files; the description still has to stand on its own, because the script gets read without the shot list
+open. Never put the shot list's row numbers or internal labels in a cue — they mean nothing without that
+file.
+
+Terse action labels of a few words. Quote names; chain sub-steps with commas or `+`:
+
+- ✅ `Turn "X" selectable`
+- ✅ `Group: "id", Single choice`
+- ✅ `Style Selected state, duplicate for the rest`
+- ✅ `Bruno: POST a transaction with a positive amount, response showing 1100`
+- ❌ `Open the Interactions panel, then find the dropdown, then select…`
+
+Drop option lists and full menu navigation — the narration carries the detail.
+
+Cue density in recorded scripts runs roughly one per 30 seconds — 21-variables has 18 cues across
+3:29 — but that is a **description, not a target**. Density follows how often the screen changes: a
+build video holds one surface for a while, a concept video moves between dashboard pages constantly and
+will run two or three times denser. There is no upper bound worth enforcing.
+
+The number that *does* matter runs the other way: every substantial on-screen action needs narration
+against it (`regression-checklist.md`, failure 3). If a single cue carries three actions and one short
+sentence, add narration — don't remove the cue.
+
+## Sign-off
+
+Write this form in drafts:
+
+> Read the docs in the description to learn more. Drop a comment if you have any questions. Thanks for watching!
+
+**Delivered takes vary, and the variants are correct as recorded.** Keep what was said; never
+normalize a transcript back to the draft wording. `tone.md` quotes two real deliveries.
+
+## Formatting
+
+- `**Bold**` for UI labels the viewer must find
+- No "Pause for N seconds" directives — removed as unnecessary
+- `-` for list bullets

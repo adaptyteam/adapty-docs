@@ -5,12 +5,13 @@ metadataTitle: "Enviar datos a través de la API de Adapty Mail | Documentación
 ---
 
 La API de Adapty Mail te permite enviar perfiles de usuario y transacciones a Adapty Mail directamente desde tu servidor, sin enrutar los datos a través del SDK de Adapty. Úsala cuando quieras:
+
 - Agrega suscriptores cuando aún no tienes una base en Adapty Mail.
 - Reutiliza la base de suscriptores de tus otras apps.
 - Alimenta Adapty Mail de servidor a servidor, con tu backend como fuente de verdad.
 
 :::note
-**¿API o SDK?** La mayoría de las apps envían datos a Adapty Mail a través del SDK de Adapty, que recopila correos electrónicos y compras automáticamente — consulta [Conectar Adapty con Adapty Mail](mail-collect-emails). Usa la API cuando tu app no tenga el SDK de Adapty, cuando los datos ya estén en tu servidor, o cuando importes suscriptores desde otra fuente. También puedes usar la API junto con otro punto de entrada: Adapty Mail cruza los datos entrantes por `customer_user_id` y dirección de correo electrónico, y mantiene un único perfil por persona.
+**¿API o SDK?** La mayoría de las apps envían datos a Adapty Mail a través del SDK de Adapty, que recopila emails y compras automáticamente — consulta [Conectar Adapty con Adapty Mail](mail-collect-emails). Usa la API cuando tu app no tenga el SDK de Adapty, cuando los datos ya estén en tu servidor, o cuando importes suscriptores desde otra fuente. También puedes usar la API junto con otro punto de entrada. Adapty Mail identifica a las personas por dirección de email. Si dos fuentes reportan la misma dirección, se asocian a un único perfil; si las direcciones son distintas, se crean perfiles separados, aunque el `customer_user_id` sea idéntico.
 :::
 
 ## Antes de empezar \{#before-you-start\}
@@ -20,13 +21,15 @@ Termina de configurar Adapty Mail antes de enviar datos: necesitas una campaña,
 :::
 
 También necesitas tu clave API y la URL base:
-- **Clave API secreta**: En Adapty Mail, ve a **Settings** y copia tu clave API secreta. La clave es específica del proyecto, de modo que la API sabe a qué proyecto pertenecen los datos.
+
+- **Clave de API secreta**: En Adapty Mail, ve a **Settings** > **Project** y copia la **Secret key**. La clave es específica del proyecto, de modo que la API sabe a qué proyecto pertenecen los datos.
 - **URL base**: Todas las solicitudes van a `https://api-mail.adapty.io`.
 - **Autenticación**: Envía la clave en el encabezado **Authorization** como `Bearer {your_secret_api_key}`.
 
 :::important
-Obtén el consentimiento explícito antes de recopilar correos electrónicos y enviarlos a Adapty Mail. Eres responsable del cumplimiento del RGPD, CAN-SPAM y normativas similares en tus mercados.
+Obtén el consentimiento explícito antes de recopilar correos electrónicos y enviarlos a Adapty Mail. Eres responsable del cumplimiento del RGPD, CAN-SPAM y normativas similares aplicables en tus mercados.
 :::
+
 ## Enviar perfiles de usuario \{#send-user-profiles\}
 
 Un perfil contiene el email y los atributos del usuario. Para crear o actualizar uno, envía una solicitud POST a `/api/v1/profile/save/`.
@@ -39,7 +42,8 @@ Se requieren tres campos:
 :::important
 Envía siempre un `external_profile_id` estable, nunca un valor anónimo o por instalación. Adapty Mail lo usa para vincular emails, clics y compras a un único perfil.
 :::
-Si la misma persona también llega a Adapty Mail a través del SDK, añade `customer_user_id` — tu propio ID de usuario, el que pasas a `Adapty.identify()`. Adapty Mail lo usa para hacer la coincidencia y mantiene ambas fuentes en un único perfil, en lugar de crear un duplicado que envíe el correo dos veces a la misma persona.
+
+Si la misma persona también llega a Adapty Mail a través de otro [punto de entrada](mail-entry-points), envía `customer_user_id` — el mismo ID de usuario que utiliza la fuente. En el SDK de Adapty es el valor que pasas a `Adapty.identify()`; FunnelFox envía el que tiene almacenado. Esto no determina en qué perfil aterriza el usuario; eso lo decide la dirección de email. Lo que aporta es una segunda forma de encontrar el perfil: un evento de transacción que lo incluya se resuelve sin necesidad de email, y una eliminación puede identificarlo por este valor en lugar de por la dirección.
 
 ```bash
 curl --request POST \
@@ -57,7 +61,23 @@ curl --request POST \
   }'
 ```
 
+:::note
+`country` y `store_country` usan un código de dos letras según la norma [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) — `US`, no `USA` ni `United States`. Cualquier otro valor se rechaza.
+:::
+
+`device_info` describe el dispositivo del usuario. El objeto es opcional, pero `platform` debe estar presente siempre que lo envíes.
+
+| Campo | Opcional | Filtro de segmento | Notas |
+| --- | --- | --- | --- |
+| `platform` | No | Sí | |
+| `device` | Sí | Sí | El modelo del dispositivo. |
+| `os` | Sí | Sí | |
+| `locale` | Sí | Sí | |
+| `app_version` | Sí | Sí | Se compara por orden de versión, por lo que `1.10.0` está por encima de `1.9.0`. |
+| `timezone` | Sí | No | Define cuándo recibe el usuario los correos. Sin este campo, Adapty Mail lo trata como UTC, por lo que la ventana de envío de 08:00–21:00 sigue UTC en lugar de la hora local del usuario. |
+
 Consulta la referencia de [Save profile](api-mail/operations/saveProfile) para ver todos los campos disponibles.
+
 ## Enviar eventos de transacción \{#send-transaction-events\}
 
 :::note
@@ -65,7 +85,9 @@ Con un perfil que tenga email es suficiente para llegar a los usuarios en el flo
 :::
 
 Todos los flows excepto el de **nunca han comprado** se basan en el historial de compras. Envía los eventos de transacción de un perfil a medida que gestiones compras, renovaciones y cancelaciones, para que Adapty Mail pueda ubicarlo en el flow correcto. Los eventos de transacción también alimentan la atribución de ingresos. Omítelos solo si ejecutas campañas exclusivamente de **nunca han comprado**.
+
 Para registrar una transacción, envía una petición POST a `/api/v1/profile/transaction-event/save/`. Usa el mismo `external_profile_id` que enviaste con el perfil para que Adapty Mail vincule la transacción al usuario correcto.
+
 ```bash
 curl --request POST \
   --url 'https://api-mail.adapty.io/api/v1/profile/transaction-event/save/' \
@@ -104,13 +126,14 @@ curl --request POST \
   }'
 ```
 
-Identifica el perfil mediante `external_profile_id`, `customer_user_id` o `email` — envía al menos uno. El borrado es definitivo: guardar posteriormente los mismos identificadores no vuelve a crear el perfil.
+Identifica el perfil mediante `external_profile_id`, `customer_user_id` o `email` — envía al menos uno. Adapty Mail borra los datos almacenados, pero no bloquea la dirección: si una fuente la vuelve a enviar, aparece un nuevo perfil sin historial. Para excluir a alguien de forma permanente, impide que la fuente envíe sus datos.
 
-Para que un reintento sea seguro, identifica el perfil mediante `external_profile_id` o `customer_user_id`. Repetir un borrado que solo incluía `email` devuelve `404`, porque el borrado elimina la dirección almacenada. Consulta la referencia [Eliminar perfil](api-mail/operations/deleteProfile) para más detalles.
+Una solicitud de eliminación que agota el tiempo de espera te deja sin saber si llegó a procesarse, así que la reenvías. Esa segunda llamada es segura cuando identificas el perfil por `external_profile_id` o `customer_user_id` — tiene éxito y no cambia nada. Una segunda llamada que lleva solo `email` devuelve `404`, porque la primera eliminación borró la dirección con la que habría coincidido. La referencia de [Eliminar perfil](api-mail/operations/deleteProfile) lista los códigos de respuesta.
 
 ### Asigna tus eventos a los flows \{#map-your-events-to-flows\}
 
 Envía el `event_type` que corresponda a lo que ocurrió. Adapty Mail deduce el estado del perfil a partir del historial de eventos y lo enruta al flow correspondiente.
+
 | `event_type` | Envíalo cuando | Flow |
 | --- | --- | --- |
 | `subscription_started` | Un usuario inicia una nueva suscripción. | Activo — sin flow de reenganche |

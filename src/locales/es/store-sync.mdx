@@ -1,0 +1,78 @@
+---
+title: "Cómo Adapty sincroniza datos con los stores"
+description: "Qué datos de productos, precios y ofertas se mueven entre Adapty y el App Store o Google Play, en qué dirección y cuándo."
+metadataTitle: "Cómo Adapty sincroniza datos con los stores | Documentación de Adapty"
+---
+
+Adapty intercambia datos de productos con App Store y Google Play, pero el intercambio no es constante ni completo. La mayoría de los valores solo se actualizan cuando tú actúas: cuando publicas un producto en los stores o subes nuevos precios. Algunos nunca se sincronizan, por lo que [Adapty y el store pueden mostrar precios distintos para el mismo producto](#product-and-price-discrepancies).
+
+## Qué lee Adapty de los stores \{#what-adapty-reads-from-the-stores\}
+
+Adapty lee listas de productos, planes base, precios y transacciones del store. Para cambiar un producto o un precio, hazlo en la consola del store. Para ver los precios por país que tiene almacenados, descarga el CSV de precios desde [Editar producto](edit-product#set-country-specific-prices).
+
+| Lo que Adapty lee | Cómo llega (App Store) | Cómo llega (Google Play) |
+|---|---|---|
+| Lista de productos y estado de revisión | A través de la [clave de API de App Store Connect](app-store-connection-configuration#step-6-add-app-store-connect-api-key) | A través de la [cuenta de servicio](google-play-store-connection-configuration) |
+| Planes base | No aplica | Parte del producto de suscripción |
+| Precios por país | Al vincular o editar un producto de la store | Al vincular o editar un producto de la store |
+| Transacciones, renovaciones y reembolsos | A través de las [notificaciones del servidor de App Store](enable-app-store-server-notifications) | A través de las [notificaciones en tiempo real para desarrolladores](enable-real-time-developer-notifications-rtdn) |
+| El precio que pagó el cliente | Con cada transacción | Con cada transacción |
+
+## Qué escribe Adapty en los stores \{#what-adapty-writes-to-the-stores\}
+
+Los productos, precios y períodos de prueba introductorios se configuran en Adapty y llegan al store cuando realizas una acción, nunca de forma automática.
+
+| Qué escribe Adapty | Cuándo llega al App Store | Cuándo llega a Google Play |
+|---|---|---|
+| Nuevos productos | Cuando [envías un producto a los stores](create-product#create-product-and-push-to-store) | Cuando envías un producto a los stores |
+| Precios por país | Cuando [subes el CSV de precios](edit-product#set-country-specific-prices) | Cuando subes el CSV de precios |
+| Período de prueba gratuito introductorio | Cuando envías un nuevo producto | Nunca — créalo en [Google Play Console](google-play-offers) |
+
+Adapty compara tu CSV con los precios actuales del store y actualiza solo los que sean diferentes, por lo que puedes subir el archivo completo sin problema. Los suscriptores existentes conservan el precio con el que se dieron de alta, a menos que selecciones **Apply to existing subscribers**.
+
+## Lo que configuras solo en Adapty
+
+El store nunca cambia ninguna de estas configuraciones.
+
+| Elemento | Por qué se mantiene en Adapty |
+|---|---|
+| El precio de un producto del store que hayas conectado | Es un marcador de posición, fijo en el momento de creación. Te ayuda a distinguir los productos entre sí, pero nunca llega al store. Los análisis, las integraciones y el SDK siempre usan los precios reales del store. |
+| [Niveles de acceso](access-level) | Adapty concede acceso a tu contenido de pago. Los stores no tienen un concepto equivalente. |
+| IDs de ofertas promocionales y de recuperación | Adapty necesita el ID para firmar la compra. La oferta en sí la creas en la consola del store. |
+
+## Qué ocurre en el dispositivo \{#what-happens-on-the-device\}
+
+El precio que un cliente ve en un paywall proviene de StoreKit o Google Play Billing cuando se abre el paywall, no de Adapty. Un precio que cambias en la consola del store llega a tus clientes en cuanto el store lo publica. No necesitas publicar una nueva versión de la app ni cambiar nada en Adapty.
+
+En el otro sentido, el SDK de Adapty envía cada compra a Adapty con el precio, la divisa y el país asociados. Adapty usa esos valores para registrar los ingresos en la divisa propia del cliente.
+
+## Stripe, Paddle y stores personalizadas \{#stripe-paddle-and-custom-stores\}
+
+Las integraciones de Stripe y Paddle transfieren transacciones, no tu catálogo de productos. Las compras llegan a Adapty a través del webhook del proveedor o, en el caso de las [stores personalizadas](custom-store), desde tu propio backend. Debes añadir manualmente cada ID de producto y de precio. Un ID que no exista en Adapty no coincidirá con nada, por lo que esas transacciones y sus ingresos nunca aparecerán. En Stripe y Paddle, lo mismo ocurre cuando el producto existe pero no tiene **Subscription duration** configurada. Ninguno de estos casos genera ningún aviso, así que añade un ID y una duración para cada producto que vendas.
+
+## Discrepancias entre productos y precios \{#product-and-price-discrepancies\}
+
+Algunas diferencias entre Adapty y la consola del store son intencionadas y no afectan en nada lo que pagan tus clientes. Otras implican que hay ingresos que no se registran.
+
+| Lo que ves | Causas probables | Qué hacer |
+|---|---|---|
+| El precio en Adapty difiere del store | La pantalla **Products** muestra el precio que introdujiste al crear el producto. Si lo enviaste a los stores, Adapty lo usó para establecer el precio inicial allí. No puedes cambiarlo después, así que una vez que los stores tienen el precio, ambos se desincronizarán. Los precios que pagan los clientes ahora son [precios por país](edit-product#set-country-specific-prices). | Nada. A tus clientes se les cobra el precio del store, y los informes de ingresos usan el importe realmente pagado. Para cambiar lo que pagan, edita el precio en la consola de cada store o [sube un CSV de precios](edit-product#set-country-specific-prices) para cambiar ambos stores a la vez. |
+| Tu producto no aparece en el desplegable de productos | Hay tres posibles razones: las credenciales del store que han dejado de funcionar devuelven una lista vacía; un producto creado en los últimos 10 minutos puede que no haya llegado aún a la copia en caché de la lista de App Store de Adapty; la **Subscription duration** seleccionada filtra la lista: **Lifetime**, **Non-Subscriptions** y **Consumables** muestran productos de compra única, y cualquier otro valor muestra suscripciones. | Establece la **Subscription duration** para que coincida con el tipo del producto en el store. Si creaste el producto hace unos minutos, inténtalo de nuevo en breve. De lo contrario, verifica tus [credenciales del store](#if-updates-stop-arriving). |
+| Una oferta introductoria no aparece en Adapty | Adapty crea una oferta introductoria solo cuando envías un nuevo producto al store, y solo muestra las ofertas que creó. Una oferta que hayas configurado tú mismo en la consola del store nunca aparecerá en la ventana **Edit product**. | Nada. Las ofertas introductorias se aplican automáticamente cuando el cliente cumple los requisitos, por lo que no es necesario añadirlas en Adapty. |
+| Un descuento no se aplicó en la compra | Es posible que el cliente no cumpliera los requisitos: la decisión la toma el store, no Adapty. También puede que una oferta promocional de App Store no se haya aplicado porque Adapty no pudo firmarla con tu [In-App Purchase Key](offers). | Confirma que la clave está subida y es válida, y revisa las condiciones de la oferta en el store. |
+| Las transacciones de Stripe dejaron de aparecer tras un cambio de precio | Cambiar un precio en Stripe crea un nuevo `price_id`, y Adapty relaciona los eventos con el par exacto `product_id` + `price_id`. Los eventos del nuevo precio no coinciden con nada, mientras que Stripe sigue notificando el webhook como entregado. | Añade el nuevo `price_id` al producto en Adapty; los ingresos no se registrarán hasta que lo hagas. Consulta [Stripe](stripe). |
+| Un cliente compró un producto pero no obtuvo ningún nivel de acceso | El ID del producto del store que compraron no está vinculado a ningún producto en Adapty. Adapty registra la compra contra una fila de producto que crea automáticamente, y esa fila no tiene ningún nivel de acceso asignado. | Crea el producto en Adapty con el ID exacto del producto del store y asígnale un [nivel de acceso](access-level). |
+| Las actualizaciones ya no llegan | Una de tus credenciales del store ha dejado de funcionar. Cada una impulsa una parte distinta del intercambio. | Identifica la parte que ha fallado y reemplaza solo esa credencial; consulta [Si las actualizaciones dejan de llegar](#if-updates-stop-arriving). |
+
+## Si las actualizaciones dejan de llegar \{#if-updates-stop-arriving\}
+
+Adapty no marca las credenciales que han dejado de funcionar. Cada credencial es responsable de una parte del intercambio, así que el síntoma indica cuál hay que reemplazar.
+
+| Qué dejó de funcionar | Credencial a reemplazar |
+|---|---|
+| La lista de productos, los estados de revisión o la publicación de productos y precios en el store | App Store: la [clave de la App Store Connect API](app-store-connection-configuration#step-6-add-app-store-connect-api-key). Google Play: el [archivo de clave de cuenta de servicio](create-service-account-key-file). |
+| Nuevas transacciones, renovaciones y reembolsos | App Store: [notificaciones del servidor](enable-app-store-server-notifications). Google Play: [notificaciones de desarrollador en tiempo real](enable-real-time-developer-notifications-rtdn). |
+| Ofertas promocionales en el momento de la compra | App Store: la [clave de compra in-app](offers). |
+| Validación de compras para cada cliente | App Store: el [secreto compartido](app-store-connection-configuration). Google Play: el [archivo de clave de cuenta de servicio](google-play-store-connection-configuration). |
+
+Reemplazar una credencial en la consola de la store no la actualiza en Adapty. Sube la nueva en **App settings**.

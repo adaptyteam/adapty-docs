@@ -1,0 +1,127 @@
+---
+title: "将 Adapty Flutter SDK 迁移至 v4.1"
+description: "迁移至 Adapty Flutter SDK v4.1：显式启用 Adapty Attribution、采用重命名后的外部归因 API，并重新下载备用文件。"
+metadataTitle: "迁移至 Adapty Flutter SDK v4.1 | Adapty 文档"
+---
+
+Adapty Flutter SDK 4.1 更改了 Adapty Attribution 的启用方式，重命名了外部归因 API，并更改了备用文件格式。此版本还新增了对 App Store 应用内促销购买的支持，以及在关闭流程视图后保持其存活的方法。
+
+:::warning
+重命名的 API 是硬性中断。旧名称已被彻底移除——没有任何已废弃的别名可以过渡。针对 4.0.x 编译的代码在 4.1 上将无法通过编译，直到你将下方列出的每一个调用处都重命名为止。
+:::
+
+如果你还在使用 3.x，请先参阅[迁移到 v4.0](migration-to-flutter-sdk-v4)，再按照本指南操作。
+
+## 快速参考 \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| 默认启用 Adapty 归因 | 默认禁用 Adapty 归因；使用 `withAdaptyAttributionEnabled(true)` 选择启用 |
+| `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`，新增 `custom` 值 |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| 为 4.0 下载的备用文件 | 新备用文件格式；请重新下载文件 |
+| 不支持应用内推广购买 | 已支持；SDK 自动完成，或由你的应用从 `didReceivePromotedPurchaseStream` 处理 |
+| `dismissFlowView(view)` 始终释放视图 | `destroy: false` 保持视图存活以便再次呈现 |
+
+购买、用户画像及流程展示相关 API 均保持不变。
+
+## 安装 \{#installation\}
+
+在 `pubspec.yaml` 中将 `adapty_flutter` 更新至 v4.1：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.1.0
+```
+
+如果你的应用使用 [Kids Mode](kids-mode-flutter)，请改用 `adapty_flutter_kids`：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.1.0
+```
+
+环境要求与 4.0 相同：**Flutter 3.32.0**（Dart 3.8.0）和 **iOS 15.0**。完整安装步骤请参阅 [安装 Adapty SDK](sdk-installation-flutter)。
+
+4.1 将原生 iOS SDK 固定到 4.1.3 版本，将原生 Android SDK 固定到 4.1.1 版本。iOS 版本还修复了流程分析事件中的数值参数问题：此前，所有 `0` 和 `1` 都会以 `false` 和 `true` 的形式传递给 `flowViewDidReceiveAnalyticEvent`。
+
+## ⚠️ Adapty 归因功能默认已禁用 \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+如果你升级到 SDK 4.1 且未主动启用该功能，[Adapty 归因](user-acquisition)将悄无声息地停止工作——新安装将不再被记录，且不会有任何警告提示。
+:::
+
+在 4.0 及更早版本中，SDK 会自动为 [Adapty 归因](user-acquisition) 注册安装记录。从 4.1 开始，该功能默认关闭：SDK 不再注册安装，`onUpdateInstallationDetailsSuccessStream` 和 `onUpdateInstallationDetailsFailStream` 不会触发任何事件，`getCurrentInstallationStatus` 返回 `AdaptyInstallationStatusNotAvailable`。
+
+如果你使用 Adapty 归因功能，请在配置 SDK 时启用它：
+
+```diff showLineNumbers
+  await Adapty().activate(
+-   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
++   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
++     ..withAdaptyAttributionEnabled(true),
+  );
+```
+
+如果你不使用 Adapty Attribution，则无需任何更改。
+
+## 重命名外部归因 API \{#renamed-external-attribution-apis\}
+
+用于从外部提供商（Adjust、AppsFlyer、Branch、Tenjin 或自定义提供商）传递归因数据的 API 已重命名，以与原生 SDK 保持一致。
+
+### updateAttribution → updateExternalAttribution
+
+该方法已重命名，其 `source` 参数也重命名为 `provider`。该参数现在接受 `AdaptyExternalAttributionProvider` 而非字符串，归因数据仍为 map 格式：
+
+```diff showLineNumbers
+- await Adapty().updateAttribution(attribution, source: 'adjust');
++ await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+该 provider 类型已重命名。它仍然是对字符串的开放式封装——预定义值为 `appleAds`、`adjust`、`appsflyer`、`branch`、`tenjin`，以及新增的 `custom`（用于 Adapty 未直接集成的 provider）。你也可以用任意字符串构造一个，因此即使 Adapty 后续新增 provider，也无需更新 SDK：
+
+```dart showLineNumbers
+final provider = AdaptyExternalAttributionProvider('my_provider');
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+列出已应用到用户画像的归因提供商的属性已重命名，其元素类型也随之更改：
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.appleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+序列化后的用户画像字段仍保留名称 `applied_attribution_sources`，因此读取原始用户画像的后端无需任何更改。读取该属性的代码则需要更新——详见[展示 Apple Ads 定向付费墙](flutter-show-aa-targeted-paywall)。
+
+## 备用文件 \{#fallback-files\}
+
+[备用文件](fallback-flows) 的格式在 SDK 4.1 中发生了变化。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 重新下载该文件并将其打包到应用中，即使你已经为 4.0 下载过。
+
+:::warning
+跳过此步骤不会产生构建错误。但如果跳过，SDK 将拒绝使用过期的文件，导致所有版位失去其备用付费墙。
+:::
+
+## App Store 应用内推广购买 \{#promoted-in-app-purchases\}
+
+Flutter SDK 4.0 不支持[在 App Store 产品页面推广的应用内购买](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store)：其底层原生 iOS SDK 没有提供相应的 API。4.1 版本新增了该支持，因此这是一项全新功能，而非迁移步骤——在不编写新代码的情况下升级，不会对应用现有行为产生任何影响。
+
+默认情况下，SDK 会自动完成促销购买。如需自行处理（例如先展示某个页面），请编写代码：订阅 `didReceivePromotedPurchaseStream`，然后将产品传入 `makePromotedPurchase`。只要该流有订阅者，SDK 就不会自动完成促销购买。
+
+## 关闭流程视图后保持其存活状态 \{#keep-a-flow-view-alive-after-dismissing-it\}
+
+`AdaptyUI().dismissFlowView` 和 `AdaptyUIFlowView.dismiss` 接受一个 `destroy` 参数：
+
+```dart showLineNumbers
+await AdaptyUI().dismissFlowView(view, destroy: false);
+```
+
+该参数默认值为 `true`，与之前一样会释放视图。设置为 `destroy: false` 时，视图将保持存活，你可以再次展示它，用户会回到离开时的页面，且流程积累的状态也会保留。
+
+以这种方式保留的视图会一直存在，直到你使用 `destroy: true` 将其关闭。展示已释放的视图会失败，因此如需再次显示该流程，请重新调用 `createFlowView`。

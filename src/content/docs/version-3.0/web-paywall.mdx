@@ -10,10 +10,10 @@ import ZoomImage from '@site/src/components/ZoomImage.astro';
 :::important
 Before you begin, make sure you have the required Adapty SDK version installed:
 - **Paywall Builder or custom paywalls**: 3.6.1 or later (iOS), 3.15 or later (Android and cross-platform)
-- **Flow Builder**: 4.0 or later (all platforms)
+- **Flow & Paywall Builder**: 4.0 or later (all platforms)
 :::
 
-With Adapty, you can create a paywall or [flow](adapty-paywall-builder) with a button that redirects your app users to their browser for payment. Then, when they return to your app after a successful purchase, the subscription activates.
+With Adapty, you can create a paywall or [flow](adapty-flow-builder) with a button that redirects your app users to their browser for payment. Then, when they return to your app after a successful purchase, the subscription activates.
 This allows you to bypass store fees while tracking user payments.
 
 <ZoomImage id="web_paywall.gif" width="700px" alt="Web paywall demo" />
@@ -34,17 +34,19 @@ Web paywalls work in the following way:
 1. **Configure how the web paywall page will look** and work in the web paywall editor.
 2. **Link the web paywall** in the paywall settings.
 3. In your app paywall, **add a button** redirecting users to the browser.
-4. Once users tap the button, Adapty SDK **generates a unique URL**.
+4. Once users tap the button, Adapty SDK **generates a unique URL** that includes the user's Adapty profile ID.
 5. Users **go to the web paywall page** and **pay** for a subscription using an external payment method.
 6. When they return to the app, Adapty SDK **polls for profile updates** to confirm the subscription activated.
 7. Adapty records the purchase and monitors the subscription for status changes, such as renewals or cancellations.
+
+The profile ID in the URL links the web purchase to the app user. The purchase lands on the profile your app already uses, so you don't have to call `Adapty.identify()` for a web buyer.
 
 ## Step 1. Create a web paywall
 
 1. Get a paywall to work with:
    - To enable external payments for an existing paywall, [duplicate](duplicate-paywalls) it. This lets you show the web paywall to your target segment and the original to everyone else.
    - To start from scratch, [create](create-paywall) a new paywall.
-2. On the Paywall page, switch to the **Web paywall** tab and click **Create web paywall**. You will be redirected to a new page.   
+2. On the Paywall page, switch to the **Web paywall** tab and click **Create web paywall**. You will be redirected to a new page.
 <ZoomImage id="web-paywall-1.png" width="700px" alt="Web paywall tab in paywall settings" />
 3. Set up the web paywall and connect a payment method.
 :::tip
@@ -61,15 +63,15 @@ When launching your paywall to the production environment, make sure you use the
 
 To use your web paywall, you need to trigger it, and the way you do it depends on your setup:
 
-- If you are using the Flow builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
+- If you are using the Flow & Paywall Builder, you only need to [add a new button](#step-2a-add-a-web-purchase-button) that will use the link you've provided to track purchases and send the data back to Adapty.
 - If you are using the SDK, you must set up the [`openWebPaywall`](#step-2b-call-the-sdk-method) method to handle web paywalls.
 
 ### Step 2a. Add a web purchase button
 
-If you are using the **Flow Builder**, you need to add a web paywall button. The button will use the link you've provided to track purchases and send the data back to Adapty.
+If you are using the **Flow & Paywall Builder**, you need to add a web paywall button. The button will use the link you've provided to track purchases and send the data back to Adapty.
 
 1. Open the flow and add a button.
-   
+
    If you are using a template or an existing paywall, add a web paywall button alongside the existing purchase button. You can configure it the same way.
 
 2. In the **Interactions** panel on the right, click **Add trigger**. Then, assign the **Purchase** action to this trigger.
@@ -105,3 +107,37 @@ Since the App Store only allows external payment options in the USA and Japan, c
 <ZoomImage id="web-paywall-6.png" width="700px" alt="Segment attributes for web paywall targeting" />
 2. [Create](create-placement) a placement or [edit](edit-placement) an existing one. [Add a new audience](add-audience-paywall-ab-test) with the web paywall and the segment created.
 <ZoomImage id="web-paywall-7.png" width="700px" alt="Placement with web paywall audience" />
+
+## Add a cancellation funnel
+
+A cancellation funnel is a web page that a subscriber opens to cancel their subscription. Before the cancellation goes through, the funnel can offer a pause, a discounted plan, or a free period. You build it in the same editor as your web paywall, and your app opens it by URL. The funnel cancels the subscription with your payment provider, so your app makes no cancellation API call.
+
+To create a cancellation funnel, in the web paywall editor, open the **Cancellation** tab. Retention actions are available only in cancellation funnels, so you can't add them to the funnel that serves your web paywall. For the funnel itself, see [FunnelFox's guide to cancellation funnels](https://funnelfox.com/docs/dashboard/funnels#cancellation-funnels).
+
+<ZoomImage id="cancellation-funnel.webp" width="700px" alt="Cancellation tab in the web paywall editor" />
+
+### Get the subscriber's FunnelFox profile ID
+
+A cancellation funnel identifies the subscriber by their FunnelFox profile ID. After a web subscription purchase, FunnelFox writes that ID to the Adapty [profile](profiles-crm) as the `fnlfx_profile_id` custom attribute, together with `fnlfx_funnel_id`, `fnlfx_session_id`, `vendor_profile_id`, and `vendor`.
+
+FunnelFox writes these attributes once, on the first web subscription purchase. Later purchases leave them as they are. For a consumable purchase, FunnelFox writes them only when the checkout element has a custom access level.
+
+Your app reads `fnlfx_profile_id` from `customAttributes` on the user's profile. To see the same value in Adapty, open **Profiles** and find the user's profile.
+
+:::note
+Adapty stores up to 30 custom attributes per profile. When a profile is full, Adapty drops the extra attributes without returning an error, and FunnelFox doesn't send them again. If your app sets custom attributes of its own, leave room for the five FunnelFox ones.
+:::
+
+### Open the funnel from your app
+
+Your app builds the cancellation URL itself. It doesn't go in the **Web paywall URL** field — that field belongs to a paywall that sells a product, and Adapty appends `adapty_profile_id` to it, not `fpid`.
+
+Combine your published cancellation funnel URL with the subscriber's `fnlfx_profile_id`:
+
+```
+https://<your-project>.fnlfx.com/cancel?fpid=<fnlfx_profile_id>
+```
+
+Pass the attribute value as stored, with no prefix. Open the URL when the user taps your cancel button.
+
+Users can close the page at any point, including after the funnel cancels the subscription. Don't treat their return to the app as confirmation. Fetch the profile to get the current state. A cancelled subscription keeps its access level until the paid period ends.

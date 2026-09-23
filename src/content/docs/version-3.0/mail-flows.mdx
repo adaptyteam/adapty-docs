@@ -8,11 +8,19 @@ import CustomDocCardList from '@site/src/components/CustomDocCardList';
 
 <CustomDocCardList ids={['mail-create-flow']} />
 
-A **flow** turns a saved campaign into scheduled deliveries. It binds a trigger event (a user's subscription state) to a segment (which users qualify) and the campaign they receive. Adapty Mail evaluates every flow whenever a matching event fires — no polling, no cron, no manual launch.
+A **flow** turns a saved campaign into scheduled deliveries. It decides which campaign a user receives when a **trigger** fires, and a **segment** decides which users qualify. Adapty Mail evaluates every flow whenever a matching event fires — no polling, no cron, no manual launch.
+
+:::note
+Adapty's core product has its own flows. They're a different feature — nothing here applies to them.
+:::
 
 ## Triggers
 
-Adapty Mail ships with five fixed triggers, each with its own flow view under **Flows**:
+A trigger is the event that starts a flow. Triggers are fixed — you can't create your own or extend the list.
+
+### Marketing triggers
+
+Adapty Mail has five marketing triggers, each with its own tab under **Flows** > **Marketing**:
 
 - **Never purchased**: Users who signed up but haven't made a purchase yet. Goal: activation and first conversion. Trial users aren't here — starting a trial counts as an active subscription.
 - **Renewal cancelled**: Users who turned off auto-renewal but still have an active subscription. Covers both paid subscribers and trial users who cancelled before conversion. Strongest window to save them — they still have access. Split paid and trial audiences via segment filters if messaging needs to differ.
@@ -20,41 +28,63 @@ Adapty Mail ships with five fixed triggers, each with its own flow view under **
 - **Expired**: Subscription has lapsed and access is gone. Covers both paid expirations and trials that ran out without converting. Goal: win them back. Segment filters can tailor copy for trial-expired and paid-expired audiences.
 - **Refunded**: Users who requested a refund after purchase. Goal: understand what went wrong and offer a better-fit option. Tone should stay humble and curious, not a hard resell.
 
-Triggers are not configurable — you can't create custom triggers or extend the list.
+A marketing flow runs one at a time per recipient: while one sequence is underway, no second one starts. It ends when they buy.
 
-## The All Users segment
+### Transactional triggers
 
-Adapty Mail ships with a built-in **All Users** segment that has no filters — every user in the project qualifies. It's most useful in flows as a catch-all row, serving anyone not matched by a more specific segment above it. All Users can't be edited or deleted. See [Segments](mail-segments) for the full rundown.
+Transactional flows carry service messages. Two triggers start them, across three tabs under **Flows** > **Transactional**:
 
-## Priority
+- **Double opt-in**: Fires when a new profile arrives from your [entry point](mail-entry-points), while [double opt-in](mail-double-opt-in) is on. It stops as soon as the address is confirmed.
+- **App activation**: Follows a purchase, and gets the buyer into your app.
+- **Cancellation page**: Follows a purchase, and hands the buyer the subscription controls.
 
-Each trigger view holds a list of **segment → campaign** (or segment → A/B test) rows, ordered by priority. When a user hits the trigger, Adapty Mail:
+Both purchase flows fire on the initial purchase of a product, so a buyer configured for both gets both. Each flow runs once per profile, alongside any applicable marketing flows.
 
-1. Walks the rows top to bottom.
-2. Sends the campaign in the first row whose segment matches.
-3. Stops. Later rows are not evaluated for that user.
-
-Order matters. A broad segment placed above a narrower one swallows every user who would otherwise match the narrower row.
-
-To reorder, drag the handle on the left of any row — the backend reassigns priority numbers 1, 2, 3… based on the saved order.
-
-:::important
-The **All Users** row, if present, must be last (lowest priority). The backend rejects saves where All Users isn't in the final slot — it would otherwise swallow every user before more specific segments get a chance to match.
+:::note
+Renewals don't trigger these flows.
 :::
 
-## Content types
+## Audience and content
 
-A row can deliver either a single campaign or an A/B test:
+Under each trigger, you pair a **user segment** with what it receives. A flow can hold several of these pairs, so one trigger can serve several audiences.
 
-- **Campaign**: Sends one campaign to everyone who matches the segment.
-- **A/B Test**: Wraps two or more campaigns with configurable weights, routes incoming users across them randomly, and tracks per-variant metrics. See [A/B testing](mail-ab-testing).
+### Who qualifies
 
-## Lifecycle
+A segment is a set of filters over your user base — see [Segments](mail-segments). Only users that match the segment enter the flow.
 
-Flow rows have no draft state. A row is live the moment you save it — from that point on, users who hit the trigger and match the segment are routed to its campaign.
+**All Users** is a built-in segment with no filters, so everyone qualifies. You can't edit or delete it.
 
-- **Create a row**: Starts delivering immediately on save.
-- **Edit a row**: The change applies to users who hit the trigger from then on. Users already mid-sequence continue with the previous configuration.
-- **Delete a row**: New users stop entering the sequence. Users already mid-sequence may continue receiving their scheduled emails — there's no automatic cancellation.
+### What they receive
 
-A/B test rows follow their own lifecycle (**draft → live → finished**) controlled separately from the row itself. See [A/B testing](mail-ab-testing).
+Each segment gets one of two things:
+
+- **Campaign**: Everyone who matches gets the same campaign.
+- **A/B Test**: Two or more campaigns with configurable weights. Adapty Mail routes users across them at random and tracks metrics per variant — see [A/B testing](mail-ab-testing).
+
+When several segments could match the same person, **priority** decides which campaign they get. When a user hits the trigger, Adapty Mail:
+
+1. Checks the segments top to bottom, in the order they appear.
+2. Sends the campaign paired with the first segment that matches.
+3. Stops. Lower segments are not evaluated for that user.
+
+A broad segment placed above a narrower one swallows every user who would otherwise match the narrower one.
+
+To reorder, drag the handle on the left of any row.
+
+:::important
+**All Users**, if present, must have the lowest priority — be the final entry for the trigger. Otherwise the flow won't save.
+:::
+
+## Flow lifecycle
+
+Flows have no draft state. They go live the moment you save them. A user who hits the trigger and matches the segment joins the campaign immediately, and the first email follows after its **Delay**.
+
+A flow edit applies only to users who hit the trigger afterwards, and removing a segment doesn't cancel emails already scheduled. Campaign edits do reach them: each email's copy and **Delay** are read when its turn comes, not when the recipient joined.
+
+An A/B test has a lifecycle of its own — **draft**, **live**, then **finished** — controlled separately from the segment it's paired with. See [A/B testing](mail-ab-testing).
+
+### Email delivery timing
+
+- Each email has its own **Delay** — how long after the previous one it goes out. You can edit them in the campaign editor.
+- Adapty Mail only sends between 08:00 and 21:00 in the recipient's timezone. A send due outside those hours shifts to the nearest edge of the window.
+- The first email is exempt when it's due within two hours of the trigger. It goes out on time, even at night.

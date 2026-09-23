@@ -1,37 +1,30 @@
 ---
 title: "在 Observer 模式下展示流程 - Unity"
-description: "在 Unity 应用中以 Observer 模式展示流程和付费墙编辑工具构建的付费墙，同时使用自己的代码处理购买逻辑。"
+description: "在 Unity 应用中以 Observer 模式展示流程，同时使用自己的代码处理购买逻辑。"
 metadataTitle: "在 Observer 模式下展示流程 - Unity | Adapty 文档"
 keywords: ['observer mode', 'IAdaptyUIObserverModeResolver', 'SetObserverModeResolver', 'flow']
 ---
 
-如果你已经使用编辑工具自定义了流程或付费墙，则无需在移动应用代码中额外处理渲染逻辑即可将其展示给用户。这类流程或付费墙本身已包含展示内容和展示方式的完整配置。
+如果你使用 [Observer 模式](observer-vs-full-mode)，则需要自行处理购买逻辑。但你可以将付费墙 UI 委托给 [Flow & Paywall Builder](adapty-flow-builder)。
 
-:::warning
-本节仅适用于[旁观者模式](observer-vs-full-mode)。如果您不使用旁观者模式，请参阅[展示流程与付费墙](unity-present-paywalls)主题。
-:::
+在编辑工具中设计屏幕，Adapty SDK 将其原生渲染。随时更新文案、布局和定价，无需发布新版本。
 
-:::info
-此功能需要 Adapty Unity SDK 4.1 或更高版本——此前该功能仅在原生 iOS 和 Android SDK 中可用。请参阅[迁移指南](migration-to-unity-sdk-v4)进行升级。
-:::
+本指南介绍如何展示流程并处理购买回调。如果由 Adapty 代为完成购买流程，请参阅[展示流程与付费墙](unity-present-paywalls)。
 
-:::tip
-请在[流程编辑工具](adapty-flow-builder)中构建流程本身。
-:::
+## 开始之前 \{#before-you-start\}
 
-<details>
-   <summary>开始展示流程之前（点击展开）</summary>
+您需要：
 
-1. 在 Adapty 中完成与 [App Store](initial_ios) 和 [Google Play](initial-android) 的初始集成。
-   2. 安装并配置 Adapty SDK。确保在配置构建器上调用 `SetObserverMode(true)`。请参阅 [Unity SDK 安装指南](sdk-installation-unity#activate-adapty-module-of-adapty-sdk)。
-   3. 在 Adapty 看板中[创建产品](create-product)。
-   4. [在编辑工具中配置流程或付费墙](create-paywall)，并为其分配产品。
-   5. [创建版位并将您的流程或付费墙分配给它们](create-placement)。
-   6. 在移动应用代码中[获取流程及其配置](unity-get-pb-paywalls)。
+- **Adapty Unity SDK 4.1 或更高版本**：旧版本无法渲染流程。如需迁移现有应用，请参阅[迁移指南](migration-to-unity-sdk-v4)。
+- **在配置构建器上调用 `SetObserverMode(true)`**：请参阅 [Unity SDK 安装指南](sdk-installation-unity#activate-adapty-module-of-adapty-sdk)。
+- **初始商店集成**：完成 Adapty 与 [App Store](initial_ios) 及 [Google Play](initial-android) 的集成设置。
+- **已发布且包含产品的流程**：在[流程与付费墙编辑工具](adapty-flow-builder)中构建，并为其分配[产品](create-product)。
+- **流程版位**：[创建一个版位](create-placement)并将您的流程分配到该版位。
+- **在应用中获取流程**：在展示流程前，先[获取流程及其配置](unity-get-pb-paywalls)。
 
-</details>
+## 实现 \{#implementation\}
 
-在 Observer 模式下，SDK 不会代替你发起购买。当用户点击 Adapty 渲染的流程或付费墙中的购买或恢复按钮时，SDK 会调用你的 `IAdaptyUIObserverModeResolver`——请在其中使用你自己的代码执行购买或恢复操作。
+在 Observer 模式下，SDK 不会替你发起购买。当用户在 Adapty 渲染的流程中点击购买或恢复按钮时，SDK 会调用你的 `IAdaptyUIObserverModeResolver`——请在其中使用你自己的代码执行购买或恢复操作。
 
 1. 实现 `IAdaptyUIObserverModeResolver` 接口：
 
@@ -67,28 +60,28 @@ keywords: ['observer mode', 'IAdaptyUIObserverModeResolver', 'SetObserverModeRes
    }
    ```
 
-`FlowViewDidInitiatePurchase` 方法会通知您用户已发起购买，`FlowViewDidInitiateRestore` 则通知您用户已发起恢复购买。请在收到通知后触发您的自定义购买或恢复流程。
+`FlowViewDidInitiatePurchase` 方法会通知您用户已发起购买，`FlowViewDidInitiateRestore` 则通知用户已发起恢复。请在收到通知后触发您的自定义购买或恢复流程。
 
-   另外，请务必调用以下回调，以便将购买或恢复流程的进度通知给 AdaptyUI。这对于流程的正常运行（例如显示加载动画等）是必要的：
+   同时，请记得调用以下回调方法，以便将购买或恢复的处理进度通知 AdaptyUI。这对于流程的正常运行（如显示加载状态等）是必要的：
 
 | 回调 | 描述 |
    | :----------------- | :------------------------------------------------------------------------------- |
-   | onStartPurchase()  | 应调用此回调以通知 AdaptyUI 购买已开始。  |
-   | onFinishPurchase() | 应调用此回调以通知 AdaptyUI 购买已完成。 |
-   | onStartRestore()   | 应调用此回调以通知 AdaptyUI 恢复已开始。   |
-   | onFinishRestore()  | 应调用此回调以通知 AdaptyUI 恢复已完成。  |
+   | onStartPurchase()  | 调用此回调以通知 AdaptyUI 购买已开始。  |
+   | onFinishPurchase() | 调用此回调以通知 AdaptyUI 购买已完成。 |
+   | onStartRestore()   | 调用此回调以通知 AdaptyUI 恢复已开始。   |
+   | onFinishRestore()  | 调用此回调以通知 AdaptyUI 恢复已完成。  |
 
-流程在您的代码运行期间保持打开——请在购买或恢复成功后自行关闭它。
+流程保持开放状态，等待你的代码运行完毕——购买或恢复成功后，请自行关闭它。
 
-2. 在展示任何界面之前注册解析器：
+2. 在展示任何屏幕之前注册解析器：
 
    ```csharp showLineNumbers
    Adapty.SetObserverModeResolver(new MyObserverModeResolver());
    ```
 
-   如果未注册解析器，流程视图将无法将购买事件传递给您的代码，用户点击购买按钮时不会有任何响应。
+   如果未注册解析器，流程视图将无法把购买请求传递给你的代码，用户点击购买按钮后什么都不会发生。
 
-3. 像往常一样创建并展示流程视图：[获取流程并创建其视图](unity-get-pb-paywalls)，然后[展示它](unity-present-paywalls)。无需额外参数——一旦注册了解析器，每个由 Adapty 渲染的流程或付费墙都会通过它来路由购买和恢复操作。
+3. 像往常一样创建并展示流程视图：[获取流程并创建其视图](unity-get-pb-paywalls)，然后[展示它](unity-present-paywalls)。无需额外参数——注册解析器后，每个 Adapty 渲染的流程都会通过它来路由购买和恢复操作。
 
 :::warning
 不要忘记[上报交易并将其与付费墙关联](report-transactions-observer-mode-unity)。否则，Adapty 将无法识别该交易，也无法确定购买来源的付费墙。

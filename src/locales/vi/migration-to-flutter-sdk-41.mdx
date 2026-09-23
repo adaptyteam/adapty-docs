@@ -1,0 +1,127 @@
+---
+title: "Migrate Adapty Flutter SDK lên v4.1"
+description: "Migrate lên Adapty Flutter SDK v4.1: bật Adapty Attribution tường minh, áp dụng các API attribution bên ngoài đã đổi tên, và tải lại file dự phòng."
+metadataTitle: "Migration lên Adapty Flutter SDK v4.1 | Tài liệu Adapty"
+---
+
+Adapty Flutter SDK 4.1 thay đổi cách bật Adapty Attribution, đổi tên các API attribution bên ngoài, và thay đổi định dạng file dự phòng. Ngoài ra, phiên bản này còn bổ sung hỗ trợ cho in-app purchase được quảng bá trên App Store, cũng như cách giữ một flow view còn hoạt động sau khi đóng nó.
+
+:::warning
+Các API đã đổi tên là một thay đổi bất tương thích hoàn toàn. Tên cũ bị xóa hoàn toàn — không có alias deprecated nào để thay thế. Code biên dịch với 4.0.x sẽ lỗi trên 4.1 cho đến khi bạn đổi tên tất cả các call site được liệt kê bên dưới.
+:::
+
+Nếu bạn vẫn đang dùng 3.x, hãy bắt đầu với [Migrate sang v4.0](migration-to-flutter-sdk-v4) rồi làm theo hướng dẫn này.
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution được bật tự động | Adapty Attribution tắt theo mặc định; bật bằng `withAdaptyAttributionEnabled(true)` |
+| `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, với giá trị mới `custom` |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| File dự phòng đã tải xuống cho 4.0 | Định dạng file dự phòng mới; tải lại file |
+| In-app purchase được quảng bá chưa được hỗ trợ | Đã hỗ trợ; SDK hoàn tất chúng, hoặc ứng dụng của bạn thực hiện từ `didReceivePromotedPurchaseStream` |
+| `dismissFlowView(view)` luôn giải phóng view | `destroy: false` giữ view còn sống để hiển thị lại |
+
+Các API mua hàng, hồ sơ người dùng và trình bày flow vẫn không thay đổi.
+
+## Cài đặt \{#installation\}
+
+Cập nhật `adapty_flutter` lên v4.1 trong `pubspec.yaml` của bạn:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.1.0
+```
+
+Nếu ứng dụng của bạn sử dụng [Kids Mode](kids-mode-flutter), hãy dùng `adapty_flutter_kids` thay thế:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.1.0
+```
+
+Yêu cầu không thay đổi so với 4.0: **Flutter 3.32.0** (Dart 3.8.0) và **iOS 15.0**. Xem [Cài đặt Adapty SDK](sdk-installation-flutter) để biết hướng dẫn cài đặt đầy đủ.
+
+4.1 ghim native iOS SDK vào phiên bản 4.1.3 và native Android SDK vào phiên bản 4.1.1. Bản phát hành iOS cũng sửa lỗi các tham số số trong các sự kiện phân tích flow: trước đây, mọi giá trị `0` và `1` đều được truyền đến `flowViewDidReceiveAnalyticEvent` dưới dạng `false` và `true`.
+
+## ⚠️ Adapty Attribution mặc định bị tắt \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+Nếu bạn cập nhật lên SDK 4.1 mà không bật tùy chọn này, [Adapty Attribution](user-acquisition) sẽ ngừng hoạt động mà không có cảnh báo — các lượt cài đặt sẽ không được ghi nhận nữa.
+:::
+
+Trong phiên bản 4.0 và trước đó, SDK tự động đăng ký lượt cài đặt cho [Adapty Attribution](user-acquisition). Từ phiên bản 4.1 trở đi, tính năng này mặc định bị tắt: SDK không đăng ký lượt cài đặt, `onUpdateInstallationDetailsSuccessStream` và `onUpdateInstallationDetailsFailStream` sẽ không bao giờ phát ra sự kiện, và `getCurrentInstallationStatus` trả về `AdaptyInstallationStatusNotAvailable`.
+
+Nếu bạn sử dụng Adapty Attribution, hãy bật tính năng này khi cấu hình SDK:
+
+```diff showLineNumbers
+  await Adapty().activate(
+-   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
++   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
++     ..withAdaptyAttributionEnabled(true),
+  );
+```
+
+Nếu bạn không sử dụng Adapty Attribution, không cần thay đổi gì.
+
+## Đổi tên các API attribution bên ngoài \{#renamed-external-attribution-apis\}
+
+Các API dùng để truyền dữ liệu attribution từ nhà cung cấp bên ngoài (Adjust, AppsFlyer, Branch, Tenjin hoặc tùy chỉnh) đã được đổi tên để phù hợp với các SDK gốc.
+
+### updateAttribution → updateExternalAttribution
+
+Phương thức được đổi tên và tham số `source` của nó được đổi thành `provider`. Tham số này giờ nhận một `AdaptyExternalAttributionProvider` thay vì một chuỗi, và dữ liệu attribution vẫn là một map:
+
+```diff showLineNumbers
+- await Adapty().updateAttribution(attribution, source: 'adjust');
++ await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Kiểu provider được đổi tên. Nó vẫn là một wrapper mở trên một chuỗi — các giá trị được định nghĩa sẵn là `appleAds`, `adjust`, `appsflyer`, `branch`, `tenjin`, và một giá trị mới là `custom` dành cho các provider mà Adapty không tích hợp trực tiếp. Bạn có thể khởi tạo từ bất kỳ chuỗi nào, vì vậy khi Adapty thêm provider mới, bạn không cần cập nhật SDK:
+
+```dart showLineNumbers
+final provider = AdaptyExternalAttributionProvider('my_provider');
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Thuộc tính của hồ sơ người dùng liệt kê các nhà cung cấp attribution được áp dụng cho hồ sơ được đổi tên, và kiểu phần tử của nó cũng thay đổi theo:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.appleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Trường profile được serialize vẫn giữ nguyên tên `applied_attribution_sources`, vì vậy backend đọc profile thô không cần thay đổi gì. Tuy nhiên, code đọc thuộc tính này thì cần cập nhật — xem [Hiển thị paywall được nhắm mục tiêu bằng Apple Ads](flutter-show-aa-targeted-paywall).
+
+## Tệp dự phòng \{#fallback-files\}
+
+Định dạng của [tệp dự phòng](fallback-flows) đã thay đổi trong SDK 4.1. Hãy tải lại tệp từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và đóng gói vào app, dù bạn đã tải tệp cho phiên bản 4.0 trước đó.
+
+:::warning
+Bước này không gây lỗi build. Nếu bỏ qua, SDK sẽ từ chối tệp cũ và mọi placement sẽ mất paywall dự phòng.
+:::
+
+## In-app purchases được quảng bá trên App Store \{#promoted-in-app-purchases\}
+
+Flutter SDK 4.0 không hỗ trợ [in-app purchases được quảng bá trên trang sản phẩm App Store của bạn](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store): iOS SDK gốc mà nó được xây dựng trên đó không có API cho tính năng này. Phiên bản 4.1 bổ sung hỗ trợ đó, vì vậy đây là tính năng mới chứ không phải bước migration — nâng cấp mà không thêm code mới sẽ không thay đổi gì về cách ứng dụng của bạn hoạt động.
+
+Theo mặc định, SDK tự hoàn tất giao dịch mua được đề xuất. Viết code chỉ để tự hoàn tất giao dịch, ví dụ như để hiển thị màn hình trước: đăng ký `didReceivePromotedPurchaseStream` và truyền sản phẩm vào `makePromotedPurchase`. Khi có bất kỳ subscriber nào đang lắng nghe stream đó, SDK sẽ ngừng tự hoàn tất giao dịch mua được đề xuất cho bạn.
+
+## Giữ flow view hoạt động sau khi đóng \{#keep-a-flow-view-alive-after-dismissing-it\}
+
+`AdaptyUI().dismissFlowView` và `AdaptyUIFlowView.dismiss` chấp nhận cờ `destroy`:
+
+```dart showLineNumbers
+await AdaptyUI().dismissFlowView(view, destroy: false);
+```
+
+Mặc định là `true`, tức là giải phóng view như trước. Khi dùng `destroy: false`, view vẫn được giữ nguyên, cho phép bạn hiển thị lại và người dùng sẽ quay về đúng màn hình họ đã rời, với trạng thái mà flow đã tích lũy.
+
+View được giữ theo cách này sẽ tồn tại cho đến khi bạn đóng nó với `destroy: true`. Nếu cố hiển thị một view đã bị giải phóng thì sẽ thất bại, vì vậy hãy gọi `createFlowView` lại để hiển thị flow đó thêm lần nữa.

@@ -158,9 +158,52 @@ D'autres métriques peuvent également différer dans leur définition :
         - App Store Connect considère qu'un utilisateur est fidèle s'il ouvre l'application le jour spécifié. Un utilisateur sans abonnement est comptabilisé, mais un abonné qui n'a pas ouvert l'application ce jour-là ne l'est pas.
         - La métrique « Retained Installers » de Google Play Console mesure la rétention selon le nombre de jours pendant lesquels l'application reste installée sur l'appareil de l'utilisateur. Les utilisateurs qui n'ouvrent pas l'application sont pris en compte dans cette métrique.
 
-## Métrique « Nouveaux abonnements » vs l'événement `subscription_started` \{#new-subscriptions-metric-vs-the-subscription_started-event\}
+## Divergences entre métriques et événements \{#metric-and-event-mismatches\}
 
-La métrique [Nouveaux abonnements](reactivated-subscriptions) et l'événement d'intégration `subscription_started` ([événements d'intégration](events)) ne comptent pas les mêmes choses, donc leurs totaux ne correspondent pas. La métrique comptabilise à la fois les premiers achats effectués sans période d'essai et les conversions d'essai en abonnement payant. L'événement `subscription_started` ne se déclenche que pour les premiers achats effectués sans période d'essai — lorsqu'un essai se convertit en abonnement payant, Adapty envoie `trial_converted` à la place. En conséquence, le nombre de Nouveaux abonnements est supérieur au nombre d'événements `subscription_started` dès lors que votre application comporte des conversions d'essai.
+Un écart entre le total affiché dans un graphique et le nombre d'événements reçus par votre intégration est tout à fait normal — ce n'est pas un problème de livraison. Les noms se ressemblent, mais les définitions diffèrent.
+
+### La métrique Nouveaux abonnements vs l'événement `subscription_started` \{#new-subscriptions-metric-vs-the-subscription_started-event\}
+
+La métrique [Nouveaux abonnements](reactivated-subscriptions) et l'événement d'intégration `subscription_started` ([événements d'intégration](events)) ne comptabilisent pas les mêmes choses. La métrique « nouveaux abonnements » sera donc supérieure au nombre d'événements `subscription_started`.
+
+| Ce qui diffère | Métrique Nouvelles abonnements | Événement `subscription_started` |
+|---|---|---|
+| Ce qu'il mesure | Combien d'abonnements ont démarré sur une période | Qu'un abonnement payant a commencé, au moment où cela se produit |
+| À quoi ça sert | Suivre combien de nouveaux payeurs vous avez gagnés | Enregistrer l'achat dans vos outils d'analytics, votre MMP ou votre propre backend |
+| Timing | Comptabilise les transactions par date d'achat dans votre fuseau horaire de reporting | Envoyé au moment de l'achat |
+| Conversions depuis un essai | Comptabilisées | Non envoyé — Adapty envoie `trial_converted` à la place |
+| Transactions rétractées | Exclues dès qu'Adapty les rétracte | Déjà envoyé, et jamais rappelé |
+| Profils jamais identifiés par le SDK | Leurs achats sont comptabilisés | Absents du journal d'événements |
+
+### Métrique Abonnements actifs vs l'événement `subscription_active` \{#active-subscriptions-metric-vs-the-subscription_active-event\}
+
+La métrique [Abonnements actifs](active-subscriptions) et l'événement d'intégration `subscription_active` [(integration event)](events) ne diffèrent pas seulement par ce qu'ils comptent — leur finalité est différente.
+
+| Différences | Métrique « Abonnements actifs » | Événement `subscription_active` |
+|---|---|---|
+| Ce qu'il rapporte | Le nombre d'abonnements actifs à la fin de chaque période | Qu'un abonnement a survécu à ses premiers jours |
+| À quoi il sert | Suivre la taille et la croissance de votre base d'abonnés | Transmettre à un MMP pour enchérir sur les utilisateurs qui restent |
+| Timing | Recalculé à la fin de chaque période | Envoyé un nombre de jours configuré après le début de l'abonnement, de 1 à 90 |
+| Se répète | Oui, chaque période | Non — Adapty vérifie une seule fois et ne relance pas |
+| Conversions d'essai | Comptées dès la conversion de l'essai en payant | Jamais envoyé — le minuteur démarre uniquement à `subscription_started`, et une conversion envoie `trial_converted` |
+| Renouvellements annulés | Exclus | Toujours envoyé, tant que l'utilisateur a accès |
+| Remboursements | Supprimés, y compris rétroactivement sur les dates passées | Non envoyé si le remboursement arrive en premier ; jamais annulé s'il arrive après |
+| Disponibilité | Toujours calculé | Envoyé uniquement par les intégrations où vous l'avez activé |
+
+### Métrique « Essais actifs » vs l'événement `trial_active` \{#active-trials-metric-vs-the-trial_active-event\}
+
+La métrique [Essais actifs](active-trials) et l'événement d'intégration `trial_active` des [événements d'intégration](events) ne se distinguent pas seulement par ce qu'ils comptabilisent, mais aussi par leur finalité.
+
+| Ce qui diffère | Métrique « Essais actifs » | Événement `trial_active` |
+|---|---|---|
+| Ce qu'il mesure | Combien d'essais gratuits n'ont pas encore expiré | Qu'un essai a survécu à ses premiers jours |
+| À quoi il sert | Voir combien d'essais sont en cours | Optimiser les enchères MMP pour les utilisateurs en essai qui restent |
+| Timing | Recalculé à la fin de chaque période | Envoyé un nombre de jours configuré après le début de l'essai, de 1 à 90 |
+| Se répète | Oui, à chaque période | Non — Adapty vérifie une seule fois et ne revient pas |
+| Conversions d'essai | Comptées jusqu'à la conversion, puis retirées à la période suivante | Jamais envoyé pour un essai déjà converti |
+| Disponibilité | Toujours calculé | Envoyé uniquement par les intégrations où vous l'avez activé |
+
+Les deux se rejoignent sur l'annulation : un utilisateur qui désactive le renouvellement automatique reste dans la métrique, et l'événement est quand même envoyé, jusqu'à l'expiration de la période d'essai.
 
 ## Un total filtré dépasse le total non filtré \{#a-filtered-total-exceeds-the-unfiltered-total\}
 

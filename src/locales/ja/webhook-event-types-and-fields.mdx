@@ -15,9 +15,11 @@ AdaptyはサブスクリプションイベントへのレスポンスとしてWe
 すべてのイベントタイプをWebhookに送信するか、一部のみを選択して送信できます。受信データの内容やビジネスロジックの構築方法については、[イベントフロー](event-flows)を参照してください。不要なイベントタイプは、[Webhook連携の設定](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard)時に無効化できます。また、必要に応じてAdaptyのデフォルトイベントIDを独自のIDに置き換えることも可能です。
 
 <WebhookEvents />
+
 :::note
 `subscription_renewal_reactivated` は、ユーザーがキャンセルした時点でアクティブだったプロダクト ID（**以前の**プロダクト ID）を保持します。これは、ユーザーが別のプロダクトを購入して再アクティブ化した場合でも同様です。Apple はキャンセル → 再アクティブ化の一連の流れを通じて同じ `original_transaction_id` を維持するため、このイベントは元のプロダクトを反映します。新しいプロダクトは、新しいプロダクトの課金が開始される次の `subscription_renewed` イベントで確認できます。
 :::
+
 :::note
 Google Play では、Adapty が `subscription_started` イベントをすべての金額フィールドをゼロに設定した状態で送信することがあります。これは、たとえば Google が一つのサブスクリプションを別のものに切り替えた場合や、無料フェーズでサブスクリプションが開始された場合に発生します。このようなイベントを収益としてカウントしないでください。Google がサブスクリプションを切り替える際、新しい購入トークンが発行されるため、Adapty は異なる `store_transaction_id` で有料トランザクションを報告します。
 :::
@@ -25,7 +27,9 @@ Google Play では、Adapty が `subscription_started` イベントをすべて�
 ## Webhookイベントの構造 \{#webhook-event-structure\}
 
 Adaptyは、[Integrations ->  Webhooks](https://app.adapty.io/integrations/customwebhook)ページの**Events names**セクションで選択したイベントのみを送信します。
+
 Webhookイベントは JSON 形式でシリアライズされます。サーバーへの `POST` リクエストのボディには、以下の構造でラップされたシリアライズ済みイベントが含まれます。すべてのイベントは同じ構造に従いますが、フィールドの内容はイベントタイプ、ストア、および設定内容によって異なります。ユーザー属性は、設定した[カスタムユーザー属性](setting-user-attributes#custom-user-attributes)であるため、設定した内容が反映されます。アトリビューションデータのフィールドはすべてのイベントタイプで共通ですが、アトリビューションのリストはモバイルアプリで使用しているアトリビューションソースによって異なります。イベントの例を以下に示します：
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -108,6 +112,7 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 ### イベントフィールド \{#event-fields\}
 
 イベントパラメーターはすべてのイベントタイプで共通です。
+
 | **フィールド** | **型** | **説明** |
 |---|---|---|
 | **advertising_id** | UUID | 広告ID（Android のみ）。 |
@@ -127,12 +132,15 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 | **profiles_sharing_access_level** | JSON | 現在のユーザープロファイルを除く、[アクセスレベルを共有している](general#6-sharing-paid-access-between-user-accounts)ユーザーの一覧。アプリでアクセスレベルの共有が有効になっている場合、同じ Apple/Google ID で使用されている他のプロファイルが含まれます。<br/>形式: <ul><li>**profile_id**: （UUID）Adapty ID</li><li>**customer_user_id**: （String）設定されている場合のカスタマーユーザー ID</li></ul> |
 | **user_agent** | String | デバイスのブラウザユーザーエージェント。 |
 | **user_attributes** | JSON | アプリ固有の情報でユーザープロファイルを拡充するために設定できるカスタムデータ。ユーザーの設定（テーマ、言語など）や行動フラグ（オンボーディング完了、機能の使用状況）のトラッキングに主に使用します。<br/>キーが文字列、値が文字列または数値のキーバリューペアで表されます（例: `{"Favourite_color": "Violet", "Pet_name": "Fluffy"}`）。<br/>カスタム属性は、Adapty ダッシュボードで個別のプロファイルに対して手動で設定するか、Adapty SDK の `updateProfile` メソッドを使ってプログラムから設定するか、サーバーサイド API でプロファイルを作成・更新する際に設定できます。<br/>[Webhook 設定](https://app.adapty.io/integrations/customwebhook)で **Send User Attributes** が有効な場合に含まれます。 <p>モバイルアプリコードではカスタム属性値を float または文字列として設定できますが、サーバーサイド API や過去データのインポートで受け取った属性は異なる形式で届く場合があります。その場合、boolean と integer の値は float に変換されます。</p> |
+
 :::note
 `event_datetime` はサブスクリプションのライフサイクルでイベントが発生した日時を表しており、Adapty が処理または配信した日時ではありません。そのため、複数のイベントが同じ `event_datetime` を持つ場合や、時系列順とは異なる順序で届く場合があります。たとえば、`subscription_expired` イベントの `event_datetime` が、それより前に配信された `subscription_renewal_cancelled` イベントの `event_datetime` より早い場合があります。イベントの順序付けに `event_datetime` を使用しないでください。代わりに、受信時刻を基準にイベントを並べ替え、`profile_event_id` またはトランザクション ID を使って重複を排除してください。
 :::
+
 ### アトリビューション \{#attributions\}
 
 アトリビューションデータを送信するには、[Integrations -> Webhooks](https://app.adapty.io/integrations/customwebhook) ページで **Send Attribution** オプションを有効にしてください。アトリビューションデータの送信を有効にしており、[アトリビューション連携](attribution-integration)を設定済みの場合、以下のデータがすべてのソースのイベントに付与されて送信されます。同じアトリビューションデータはすべてのイベントタイプに送信されます。
+
 ```json title="Json" showLineNumbers
 {
   "attributions": {
@@ -161,6 +169,7 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 | **creative**        | String        | アトリビューションのクリエイティブキーワード。                      |
 | **created_at**      | ISO 8601 date | アトリビューションレコードの作成日時。      |
 | **network_user_id** | String        | アトリビューションソースがユーザーに割り当てたID。 |
+
 ### インテグレーション ID \{#integration-ids\}
 
 現在、イベントで使用されているインテグレーション ID は以下のとおりです：
@@ -181,20 +190,25 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 - `one_signal_subscription_id`
 - `tenjin_analytics_installation_id`
 - `posthog_distinct_user_id`
+
 ### Play Store の購入トークン \{#play-store-purchase-token\}
 
 このフィールドには、必要に応じて購入を再検証するために必要なすべてのデータが含まれています。[Webhookインテグレーションの設定](https://app.adapty.io/integrations/customwebhook)で **Send Play Store purchase token** オプションが有効になっている場合にのみ送信されます。
+
 | Field               | Type    | Description                                                  |
 | :------------------ | :------ | :----------------------------------------------------------- |
 | **product_id**      | String  | Play Store で購入したプロダクトの一意識別子（SKU）。 |
 | **purchase_token**  | String  | この購入トランザクションを一意に識別するために Google Play が生成するトークン。 |
 | **is_subscription** | Boolean | 購入したプロダクトがサブスクリプション（`true`）か買い切り購入（`false`）かを示します。 |
+
 ### イベントプロパティ \{#event-properties\}
 
 イベントプロパティは、イベントの種類によって、また同じ種類のイベント間でも異なる場合があります。たとえば、App Store から発生したイベントには、`base_plan_id` のような Android 固有のプロパティは含まれません。
+
 [アクセスレベル更新](webhook-event-types-and-fields#for-access-level-updated-event)イベントには固有のプロパティがあるため、専用セクションを設けています。同様に、[追加の税・収益イベントプロパティ](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties)も特定のイベントタイプのみに該当するため、別セクションに分けています。
 
 #### ほとんどのイベントタイプに共通 \{#for-most-event-types\}
+
 ほとんどのイベントタイプのイベントプロパティは共通です（**Access Level Updated** イベントは除き、そちらは別セクションで説明しています）。以下の表は、各プロパティと、それが特定のイベントに属するかどうかをまとめたものです。
 
 <UsdConversion />
@@ -251,6 +265,7 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 - `subscription_initial_purchase`（`subscription_started` とも呼ばれる — 同じイベント）
 - `subscription_refunded`
 - `non_subscription_purchase`
+
 | フィールド            | 型    | 説明                                                         |
 | :-------------------- | :---- | :----------------------------------------------------------- |
 | **net_revenue_local** | Float | ローカル通貨でのネット収益（Apple/Google の手数料および税金控除後の収入）。 |
@@ -259,12 +274,14 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 | **proceeds_usd**      | Float | Apple/Google 手数料控除後のプロダクト価格（USD）。           |
 | **tax_amount_local**  | Float | ローカル通貨での控除税額。                                   |
 | **tax_amount_usd**    | Float | USD での控除税額。                                           |
+
 #### `non_subscription_purchase` のペイロード例 \{#non-subscription-purchase-example-payload\}
 
 `non_subscription_purchase` はサブスクリプションイベントと同じ構造に従いますが、買い切り購入または消耗型アイテムの購入を反映します。サブスクリプション専用フィールドは適用されません。`cancellation_reason`、`will_renew`、`is_in_grace_period`、`is_refund`、`is_lifetime`、`trial_duration` は存在しません。`subscription_expires_at` は含まれますが `null` になります。税金および収益フィールド（`net_revenue_*`、`proceeds_*`、`tax_amount_*`）は含まれます。
 
 <details>
 <summary>ペイロード例（クリックして展開）</summary>
+
 ```json title="Json" showLineNumbers
 {
   "profile_id": "00000000-0000-0000-0000-000000000000",
@@ -314,9 +331,11 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 **Access Level Updated** イベントは、Webhook インテグレーションが有効であり、このイベントタイプが有効になっている場合にのみ生成される特定の Webhook イベントです。有効になっている場合、設定済みの Webhook に送信され、**Event Feed** に表示されます。有効になっていない場合、イベントは作成されません。
 
 [アクセスレベルの共有](general#6-sharing-paid-access-between-user-accounts)を有効にしている場合、**access level updated** イベントはアクセスレベルを共有しているすべてのプロファイルに対して送信されます。
+
 :::tip
 このイベントを使用して、データベース内のユーザーのアクセスレベルを更新し、バックエンドでプレミアム機能を付与または取り消し、デバイスやプラットフォーム間でアクセスを同期させましょう。
 :::
+
 | プロパティ                           | 型            | 説明                                                         |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
 | **ab_test_name**                   | String        | トランザクションが発生した A/B テストの名前。                |

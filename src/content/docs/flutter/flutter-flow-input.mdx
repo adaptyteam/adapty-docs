@@ -1,0 +1,289 @@
+---
+title: "Process data from flows in Flutter SDK"
+description: "Save and use data your users enter in flows in your Flutter app with Adapty SDK."
+metadataTitle: "Process data from flows | Flutter SDK | Adapty Docs"
+---
+
+When a user types into an input field, answers a quiz, or flips a toggle in a [flow](adapty-flow-builder), the SDK passes the value to your app through its analytics callback.
+
+Apps most often use that data to:
+
+- **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
+- **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](flutter-setting-user-attributes) as custom attributes.
+- **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
+
+Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
+
+<FlowIdNaming />
+
+## Before you start
+
+<FlowInputPrerequisites />
+
+## Receive input values
+
+Input values reach the same callback as every other analytics event from a flow, under the event name `flow_user_input`. Implement `flowViewDidReceiveAnalyticEvent` on the observer you register with `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  handleFlowInput(name, params);
+}
+```
+
+The `flowViewDidReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](flutter-flow-screen-views).
+- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
+- The `element_type` parameter names the element category.
+- The value of the input is stored in different parameters depending on the element type:
+     - Text fields, pickers, and toggles store the user's input in `value`
+     - Selectable groups report the active options in `item_ids` and `item_titles`
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'] as String;
+
+  // The screen the input sits on. Pair it with elementId to tell apart
+  // two fields that share an Element ID on different screens.
+  final screenId = params['instanceId'] as String?;
+
+  switch (params['element_type'] as String) {
+    case 'text_input':
+    case 'email_input':
+    case 'number_input':
+    case 'phone_input':
+      final text = params['value'] as String;
+      break;
+    case 'date_picker':
+    case 'time_picker':
+    case 'date_time_picker':
+      // Unix time in milliseconds. Arrives as int on iOS and double on Android — read it through num.
+      final date = DateTime.fromMillisecondsSinceEpoch((params['value'] as num).toInt());
+      break;
+    case 'single_choice':
+      final optionId = (params['item_ids'] as List).cast<String>().first;
+      break;
+    case 'multi_choice':
+      final optionIds = (params['item_ids'] as List).cast<String>();
+      break;
+    case 'toggle':
+      final isOn = params['value'] as bool;
+      break;
+  }
+}
+```
+
+<FlowInputVerify />
+
+## When your app receives the input
+
+<FlowInputTiming />
+
+## What you receive
+
+<FlowInputParams />
+
+## Event examples
+
+These examples show the properties available on each event, with illustrative values in comments.
+
+<Details>
+<summary>Text, email, number, and phone input (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  name;                      // 'flow_user_input'
+  params['name'];            // 'flow_user_input'
+  params['instanceId'];      // 'scr_J260KU5q'
+  params['isCustomerEvent']; // true
+  params['isBackendEvent'];  // false
+  params['element_id'];      // 'email'
+  params['element_type'];    // 'email_input'
+  params['value'];           // 'jane@example.com'   (String)
+}
+```
+</Details>
+
+<Details>
+<summary>Date, time, and date-time pickers (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'birthday'
+  params['element_type'];    // 'date_picker'
+  params['value'];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; int on iOS, double on Android)
+}
+```
+</Details>
+
+<Details>
+<summary>Single choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'experience'
+  params['element_type'];    // 'single_choice'
+  params['item_ids'];        // ['pro']   (List)
+  params['item_titles'];     // ['I train professionally']
+}
+```
+</Details>
+
+<Details>
+<summary>Multi choice (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'interests'
+  params['element_type'];    // 'multi_choice'
+  params['item_ids'];        // ['sports', 'music']   (List)
+  params['item_titles'];     // ['Sports', 'Music']
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```dart
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  params['element_id'];      // 'reminders'
+  params['element_type'];    // 'toggle'
+  params['value'];           // true   (bool)
+}
+```
+</Details>
+
+## Delivery and limitations
+
+<FlowInputLimitations />
+
+Store each input value as your observer receives it, and send the complete set when the flow closes. To catch that moment, implement `flowViewDidDisappear` on the same observer. It runs when the flow view is dismissed, whether the user finished the flow or closed it partway.
+
+## Use cases
+
+### Register users on your backend
+
+Collect values as they arrive and send them once the flow closes, so that one request carries a complete set of answers.
+
+The view disappears whether a user finished the flow or abandoned it partway. Guard on the fields you need before you call your backend.
+
+The flow can't display errors from your backend. The callback has no return value, and the SDK has no method that sends data into a running flow. If registration fails, for example because the email is already in use, show the error in your own UI after the flow closes.
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> flowAnswers = {};
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  flowAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  if (!flowAnswers.containsKey('email')) return;
+
+  // Send flowAnswers to your backend here to create the account.
+
+  flowAnswers.clear();
+}
+```
+
+### Enrich user profiles with data
+
+To link what a user entered to their profile and avoid asking for the same details twice, [update the user profile](flutter-setting-user-attributes) as the values come in.
+
+For example, if your flow has a text input with the Element ID `name` and an email input with the Element ID `email`:
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+
+  final value = params['value'];
+  if (value is! String) return;
+
+  final builder = AdaptyProfileParametersBuilder();
+
+  switch (params['element_id'] as String) {
+    case 'name':
+      builder.setFirstName(value);
+      break;
+    case 'email':
+      builder.setEmail(value);
+      break;
+    default:
+      return;
+  }
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+### Customize flows shown later
+
+Quiz answers can also decide what a user sees at a later [placement](placements) — a different flow, or a different paywall inside it.
+
+For example, ask users about their experience with sport in your onboarding flow, then show each group its own flow with different products and copy.
+
+1. Add a [quiz](onboarding-quizzes) to your flow. Give the [selectable group](flow-selectable-elements) the Group ID `experience`, and each option a meaningful Element ID.
+2. Handle the answers and [set custom attributes](flutter-setting-user-attributes) for the user.
+
+```dart showLineNumbers title="Flutter"
+void handleFlowInput(String name, Map<String, dynamic> params) async {
+  if (name != 'flow_user_input') return;
+  if (params['element_id'] != 'experience') return;
+
+  final optionId = (params['item_ids'] as List).cast<String>().first;
+
+  final builder = AdaptyProfileParametersBuilder();
+  // Set the custom attribute 'experience' to the option the user selected
+  // (beginner, amateur, or pro).
+  builder.setCustomStringAttribute(optionId, 'experience');
+
+  try {
+    await Adapty().updateProfile(builder.build());
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  }
+}
+```
+
+3. [Create a segment](segments) for each custom attribute value.
+4. Create a [placement](placements) and add an [audience](audience) for each segment.
+5. [Display the flow](flutter-present-paywalls) for that placement in your app.

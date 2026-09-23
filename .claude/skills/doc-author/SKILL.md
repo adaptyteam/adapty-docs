@@ -27,6 +27,10 @@ If the input is too vague to determine what changed, who it affects, or where it
 
 > **Rule:** Each phase invokes a sub-skill via the Skill tool. Never substitute your own knowledge for an invoked skill — trust the skill's output and build on it.
 
+### Before Phase 1: build the docs map
+
+Run `npm run mill:map`. The map is gitignored, so it is missing on a fresh clone and stale after a pull — and every phase below searches it through `context-mill`, where a missing map finds nothing and reads as "no article covers this". The sub-skills also build it when invoked on their own; building once here keeps every phase on the same map. Use `mill:map`, not `mill`: plain `mill` re-renders the roster blocks in the committed briefs and leaves unrelated diffs in the article PR.
+
 ### Phase 1: Plan — `writing-planner`
 
 **REQUIRED SUB-SKILL:** Use the Skill tool to invoke `writing-planner`.
@@ -99,7 +103,33 @@ Two rules the sub-skill states and that you must not soften: edit the brief only
 
 Skip only if the whole task ran on the user's prose and no source was opened.
 
+### Phase 4.6: The shipped-skill half
+
+Run this only if the plan's `## Affected skills` section named something. If it said *None*, the
+task is done — do not go looking for work in the other repository.
+
+**Order is fixed, and Phase 4.5 must already be done.** Crossing repositories moves the session's
+project settings, so the target repo's own `CLAUDE.md` loads — which is what makes the edit safe —
+but the mill and the docs `CLAUDE.md` unload with it. Autolog first, cross second. Crossing back is
+another move, not free.
+
+1. Cross into the skills repository. Its location is the `path:` of `sdk-integration-skill` in
+   `.claude/context-mill/sources.md`, with any `sources.local.md` override applied.
+2. **Check the branch on arrival.** That repository is routinely mid-way through unrelated work.
+   Branch from `main`; never write into whatever happens to be checked out.
+3. Make the edit. Follow that repository's `CLAUDE.md` — it is long, it is the authority there, and
+   its conventions (evidence bars, calibration, "do not write guidance for a trap the baseline
+   already closed") are not optional.
+4. **REQUIRED SUB-SKILL:** for anything beyond a one-line factual correction, use the Skill tool to
+   invoke `superpowers:writing-skills`.
+5. Run both gates before handing back: `node scripts/lint-symbols.mjs` and
+   `node scripts/lint-links.mjs`. Exit 0, or report why not.
+6. Report what changed in the skill, in the reply. **Do not write a handoff file** — the work
+   happens in one session, and a file is another artefact to go stale.
+
 ### Phase 5: Skill Evolution (When Needed)
+
+**This is about the docs skills that run this workflow — `writing-planner`, `editor`, `product-manager`, `context-mill` — not the shipped Adapty skills of Phase 4.6.**
 
 If user feedback at any phase contradicts a skill's instructions, evaluate whether the feedback represents:
 

@@ -1,0 +1,109 @@
+---
+title: "Destinos de email en Adapty Mail"
+description: "La página a la que envía cada campaña de Adapty Mail: los tres tipos de destino, los marcadores de posición que personalizan la URL y el hook que completa el resto."
+metadataTitle: "Destinos de email | Adapty Mail | Documentación de Adapty"
+---
+
+Toda campaña necesita un lugar al que enviar a sus destinatarios. Ese lugar es un **destino de email** — un nombre, URL y tipo guardados que configuras una vez y reutilizas en distintas campañas.
+
+Una campaña apunta exactamente a un destino, y cada parte en la que se puede hacer clic en sus correos lleva allí: el botón CTA, el logo y la imagen de cabecera. Se registran por separado en [análisis](mail-analytics), pero comparten una dirección.
+
+## Tipos de destino \{#destination-types\}
+
+El propósito de tu campaña determina el tipo de destino. No puedes cambiar el tipo de destino una vez creado.
+
+| Tipo | Campañas compatibles | Adónde lleva al destinatario | De dónde viene la URL |
+| --- | --- | --- | --- |
+| **Web Paywall** | Cualquier campaña de marketing y [doble opt-in](mail-double-opt-in) | Una página de pago en el navegador, donde las compras son pagos web en lugar de transacciones de App Store o Google Play. | La genera Adapty Mail, o la pegas desde un paywall que alojas tú. [Configurar el checkout](mail-checkout) cubre ambos casos. |
+| **Deep Link** | Activación de la app | Tu app, en la pantalla que elijas. Si la app no está instalada, la página de tu store en su lugar. | Pegada, desde tu proveedor de enlaces — OneLink, Branch o Firebase. |
+| **Cancellation Page** | La campaña de página de cancelación | Tu propia página de cuenta, o el portal de tu proveedor de facturación, donde un suscriptor revisa, cambia o cancela. | Pegada, desde tu propio sitio o tu proveedor de facturación. |
+
+:::note
+Cualquier URL de destino es válida siempre que use HTTPS. Por lo tanto, una **Cancellation Page** puede ser un enlace universal que abra tu aplicación, no solo una página web. Esto es importante porque las suscripciones de App Store y Google Play se cancelan en la store, no en una página que tú alojes.
+:::
+
+### Destinos para campañas transaccionales \{#destinations-for-transactional-campaigns\}
+
+Adapty Mail tiene tres campañas transaccionales:
+
+- **Double opt-in** — se activa cuando un nuevo perfil llega desde tu [punto de entrada](mail-entry-points). Su botón abre la página de confirmación de Adapty Mail. Una vez que el destinatario confirma, accede a tu paywall web — por eso esta campaña necesita uno.
+- **App activation** — se activa tras una compra y lleva al comprador a tu app.
+- **Cancellation page** — se activa tras una compra y proporciona al comprador los controles de la suscripción.
+
+Cuando creas una campaña, si el desplegable **Email Destination** aparece vacío, significa que aún no tienes ningún destino de ese tipo. El enlace **Create** abre el formulario correspondiente.
+
+## Crear un destino \{#create-a-destination\}
+
+1. Ve a **Email Destinations** y selecciona el tipo que necesita tu campaña.
+2. Haz clic en **Create**.
+3. Dale un **Name** al destino — lo seleccionarás por ese nombre cuando lo vincules a una campaña.
+4. Completa la **URL**. Debe usar HTTPS.
+5. Añade [marcadores de posición](#placeholders) para los valores que varían por destinatario.
+6. Si la URL usa el marcador de posición `{response.<key>}`, añade un [**Hook URL**](#hooks) en **Advanced**.
+7. Haz clic en **Save**.
+
+La configuración de un destino pasa a ser de solo lectura en cuanto lo añades a una campaña, aunque sea en borrador. Para enviar una campaña a otro sitio, crea un segundo destino.
+
+## Marcadores de posición \{#placeholders\}
+
+Los marcadores de posición personalizan la URL de destino para cada usuario. Sin ellos, tu página no puede saber quién llegó. Adapty Mail sustituye los marcadores de posición por valores únicos para cada destinatario.
+
+| Placeholder | A qué se resuelve |
+| --- | --- |
+| `{email}` | La dirección de correo del destinatario. |
+| `{adapty.external_profile_id}` | Su ID de perfil, para datos de la [integración de Adapty](mail-collect-emails). |
+| `{funnelfox.external_profile_id}` | Su ID de perfil, para datos de [FunnelFox](mail-funnelfox). |
+| `{custom.external_profile_id}` | El ID de usuario que enviaste, para datos de la [API de Adapty Mail](mail-send-data-via-api). |
+| `{scheduled_email_id}` | El ID del correo que llevaba el enlace. |
+| `{custom_attribute.<key>}` | Cualquier atributo personalizado del perfil del destinatario. Tú defines el nombre de la clave — `{custom_attribute.plan}`. |
+| `{response.<key>}` | Un valor que devuelve tu propio endpoint en el momento del clic. Se explica en [Hooks](#hooks). |
+
+- Un marcador de posición para el que el destinatario no tiene valor se resuelve como cadena vacía, por lo que nunca llega a tu página como texto literal.
+- Los valores de atributos personalizados y hooks están codificados en porcentaje, así que un valor que contenga `&` no puede partir la URL por la mitad.
+- Un marcador de posición que Adapty Mail no reconoce bloquea el guardado, y el error indica tanto lo que rechazó como lo que acepta. Una errata como `{emial}` se detecta aquí y no en el navegador del destinatario.
+
+## Hooks \{#hooks\}
+
+El marcador de posición `{response.<key>}` reserva espacio para un valor que proviene de tu propio endpoint. Los usos más habituales incluyen un token de inicio de sesión de un solo uso o una firma de sesión. Crea una nueva **Hook URL** en **Advanced** para configurar este marcador de posición; de lo contrario, la URL no se podrá guardar.
+
+Cómo funciona:
+
+1. El destinatario hace clic en un enlace del correo.
+2. Adapty Mail envía un GET a tu **Hook URL**, con sus marcadores rellenos para ese destinatario. Espera cinco segundos y realiza un único intento.
+3. Tu endpoint verifica la firma y responde con un objeto JSON plano.
+4. Adapty Mail rellena cada `{response.<key>}` con la clave del mismo nombre. Una clave que no devuelvas conservará su marcador.
+5. El destinatario llega a tu página, independientemente de si el hook respondió o no.
+
+### La solicitud
+
+La URL del hook reenvía el resto de tus marcadores de posición a tu endpoint. Usa estos marcadores de posición para identificar al usuario. Dos cabeceras autentican la llamada:
+
+| Cabecera | Valor |
+| --- | --- |
+| `X-Adapty-Mail-Timestamp` | Hora Unix en segundos, cuando se realizó la solicitud. |
+| `X-Adapty-Mail-Signature` | HMAC-SHA256 en hex de `<timestamp>.<url>`, firmado con la **Secret key** de **Settings** > **Project**. |
+
+Verifica ambas antes de responder. Un endpoint sin firma puede exponer información sensible a usuarios no autorizados. Rechaza cualquier timestamp demasiado antiguo para ser un clic real:
+
+```
+expected = hmac_sha256(
+    key=project_secret_key,
+    message=f"{timestamp}.{full_request_url}",
+).hexdigest()
+```
+
+### La respuesta
+
+Un objeto JSON plano. Cada clave rellena el `{response.<key>}` del mismo nombre:
+
+```json
+{ "checkout_token": "ct_9f2a…", "plan": "annual" }
+```
+
+Las cadenas, números y booleanos se convierten en cadenas. Los objetos anidados y los arrays se descartan, ya que una URL no tiene dónde incluirlos.
+
+## Qué ocurre después del clic \{#what-happens-after-the-click\}
+
+Adapty Mail rellena los valores, llama al hook si existe, registra el clic y envía al destinatario a tu página.
+
+Tu trabajo es identificar al visitante, cobrar el pago y reportar la compra a Adapty. Consulta [Configurar el checkout](mail-checkout#what-your-page-has-to-do) para la configuración del paywall y [Analíticas de campaña](mail-analytics) para la atribución de compras.

@@ -1,10 +1,10 @@
 ---
-title: "Optimizar la obtención de paywalls en el SDK de Android"
-description: "Obtén paywalls de Adapty de forma fiable: sincronización, caché y patrones de respaldo para Android."
-metadataTitle: "Optimizar la obtención de paywalls | SDK de Android | Documentación de Adapty"
+title: "Optimiza la carga de flows y paywalls en el SDK de Android"
+description: "Carga flows y paywalls de Adapty de forma fiable: timing, caché y patrones de respaldo para Android."
+metadataTitle: "Optimiza la carga de flows y paywalls | SDK de Android | Documentación de Adapty"
 ---
 
-Una obtención fiable de paywalls en Android hace tres cosas: renderiza rápido, devuelve el paywall dirigido a la audiencia correcta y tiene un respaldo elegante cuando la red es lenta. Las reglas a continuación cubren los patrones de sincronización, caché y respaldo para conseguirlo.
+Una carga fiable de un flow o paywall en Android hace tres cosas: renderiza rápido, devuelve la variación orientada a la audiencia y recurre al respaldo de forma elegante cuando la red es lenta. Las reglas que se describen a continuación cubren los patrones de timing, caché y respaldo para conseguirlo.
 
 :::tip
 Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Android](android-sdk-call-order).
@@ -14,17 +14,120 @@ Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya se han resuel
 
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Obtén el placement que vas a mostrar.                                                                                  | No precargues todos los placements de forma concurrente al iniciar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante la ráfaga.                                  |
-| Llama a `getPaywall` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras que se dispare `setOnProfileUpdatedListener`. | No llames a `getPaywall` en `Application.onCreate()`.         | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia por defecto y omite silenciosamente los segmentos y la personalización de ASA. |
-| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | No esperes a `getPaywall` indefinidamente.                     | Sin un tiempo de espera, los usuarios con conectividad deficiente ven una pantalla en blanco hasta que la red responde — o cierran la app.     |
+| Obtén el placement que vas a mostrar, o precalienta la caché con [`preloadFlows`](#preload-placements) (SDK 4.1+). | Lanza tus propias llamadas concurrentes a `getFlow` al iniciar. | Un burst de prefetch manual bloquea el hilo principal y produce una pantalla en negro. `preloadFlows` está diseñado para esto y ejecuta el lote de forma concurrente. |
+| Llama a `getFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras el disparo de `setOnProfileUpdatedListener`. | Llama a `getFlow` en `Application.onCreate()`. | La atribución aún no ha llegado. El flow se resuelve contra la audiencia por defecto y omite silenciosamente los segmentos y la personalización de ASA. |
+| Configura un `loadTimeout` y un [paywall de respaldo](fallback-paywalls) para cada placement. | Esperes a `getFlow` indefinidamente. | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o cierran la app. |
 
 Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-android) para la referencia de parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-## Ajustar para conectividad deficiente \{#tune-for-poor-connectivity\}
+## Precarga de placements \{#preload-placements\}
 
-Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte, regiones afectadas por enrutamiento):
+:::info
+`preloadFlows` y `preloadFlowsForDefaultAudience` están disponibles a partir de la versión 4.1 del SDK.
+:::
 
-- Establece `fetchPolicy` en `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` en cada obtención excepto la primera.
+`preloadFlows` escribe el JSON del placement en la caché del SDK con antelación — una solicitud por placement, y nada más. A pesar del nombre, no descarga el diseño de la UI del flow ni sus archivos multimedia.
+
+Una llamada posterior a `getFlow` solo lee esa caché cuando se pasa `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` o `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. La política predeterminada, `ReloadRevalidatingCacheData`, va a la red en cada llamada, por lo que un precalentamiento combinado con una llamada con la política predeterminada genera una solicitud extra y no ahorra nada: la copia en caché solo sirve como respaldo sin conexión.
+
+Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que se resuelvan `activate` e `identify`, para el flow detrás de un botón que el usuario aún no ha pulsado.
+
+<Tabs groupId="current-os" queryString>
+
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers
+
+...
+
+Adapty.preloadFlows(listOf("onboarding", "main_paywall"), loadTimeout = 5.seconds) { error ->
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+}
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(
+    "main_paywall",
+    fetchPolicy = AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+) { result ->
+    // ...
+}
+```
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers
+
+...
+
+Adapty.preloadFlows(Arrays.asList("onboarding", "main_paywall"), TimeInterval.seconds(5), error -> {
+    if (error != null) {
+        // at least one placement failed to preload
+    }
+});
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad, result -> {
+    // ...
+});
+```
+</TabItem>
+</Tabs>
+
+**Parámetros:**
+
+- `placementIds` (obligatorio): los placements a precargar. Los IDs en blanco o duplicados se ignoran.
+- `loadTimeout` (opcional): tiempo de espera aplicado a cada placement individualmente, no al lote completo. Por defecto es 5 segundos; los valores inferiores a 1 segundo se elevan a 1 segundo.
+
+**Aspectos importantes del comportamiento:**
+
+- La llamada de retorno se activa solo después de que se hayan intentado todos los placements, e informa los fallos por placement juntos. Un fallo en un placement no detiene los demás.
+- Si un placement supera el tiempo de espera, encuentra un error de servidor o falla por un error de red, el SDK recurre a las variaciones de respaldo para ese placement. Los demás fallos se informan tal cual.
+- La precarga solo calienta la caché. No devuelve contenido: igualmente debes llamar a `getFlow` para mostrarlo.
+
+### Qué cubre una precarga \{#what-a-preload-covers\}
+
+Un flow llega a la pantalla en capas, y una precarga solo cubre la primera:
+
+| Capa | Obtenida por | Precalentada por una precarga |
+|---|---|---|
+| JSON del placement — la variante elegida, sus IDs de producto y el Remote Config | `getFlow` | Sí |
+| Diseño de UI — estructura, estilos y texto de la pantalla | `getFlowConfiguration` | No |
+| Imágenes, incluido el fotograma estático que reemplaza a un elemento de vídeo | `getFlowConfiguration`, en segundo plano | No |
+| Archivos de vídeo | El reproductor del sistema, al renderizar la pantalla | No se almacenan en caché por el SDK |
+
+`getFlowConfiguration` espera el layout, por lo que la primera solicitud de un layout determinado implica un viaje de ida y vuelta a la red, incluso después de una precarga. El SDK guarda ese layout en su propio caché de disco, que sobrevive a los reinicios de la app y se lee antes de cualquier llamada a la red, de modo que el coste recae en la primera solicitud y no en cada una. Una vez que el SDK tiene el layout, comienza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla, y no hay ningún callback ni error que informe de cuándo termina.
+
+### Identificar qué placement falló \{#find-out-which-placement-failed\}
+
+El callback recibe un `AdaptyPreloadPlacementsError` que cubre todo el lote, con el código `REQUEST_FAILED` (2005). Para ver los fallos individuales, lee su propiedad `preloadErrors` — un mapa con clave por ID de placement:
+
+```kotlin showLineNumbers
+Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
+    if (error is AdaptyPreloadPlacementsError) {
+        error.preloadErrors.forEach { (placementId, placementError) ->
+            // log or retry the individual placement
+        }
+    }
+}
+```
+
+`preloadErrors` existe solo en `AdaptyPreloadPlacementsError`, así que confirma el tipo primero: cualquier otro `AdaptyError` proviene de algo distinto a un fallo por placement.
+
+### Omitir la segmentación de audiencias \{#skip-audience-segmentation\}
+
+Para calentar la caché sin esperar a la segmentación de audiencias, usa la variante de audiencia predeterminada. No recibe `loadTimeout`:
+
+```kotlin showLineNumbers
+Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
+```
+
+## Ajusta para conectividad deficiente \{#tune-for-poor-connectivity\}
+
+Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte público, regiones con problemas de enrutamiento):
+
+- Establece `fetchPolicy` en `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` en cada solicitud excepto la primera.
 - Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
 - Establece `loadTimeout` entre 3 y 5 segundos y acepta el respaldo cuando se agote el tiempo.
-- No condicionales la visualización del paywall a `getProfile`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.
+- No condicionales la visualización del flow a `getProfile`. Llama a `getFlow` de forma independiente para que un perfil lento no bloquee la interfaz.

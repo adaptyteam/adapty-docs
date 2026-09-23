@@ -1,0 +1,91 @@
+---
+title: "Doble confirmación en Adapty Mail"
+description: "Pide a los nuevos destinatarios que confirmen su dirección de correo electrónico antes de que Adapty Mail les envíe cualquier correo de marketing."
+metadataTitle: "Doble confirmación | Adapty Mail | Documentación de Adapty"
+---
+
+Con el doble opt-in activado, cada nuevo perfil recibe primero un correo de confirmación. Hasta que la persona haga clic en él, no le llega ningún mensaje de marketing. Úsalo para dirigirte a mercados que exigen consentimiento explícito, como la UE o Canadá. La [verificación de dirección](mail-suppression#address-verification-failed) ya comprueba que el buzón existe; el doble opt-in comprueba que quien escribió la dirección es quien la lee. Este ajuste no requiere cambios en tu código.
+
+El doble opt-in no reemplaza el consentimiento que recoges cuando solicitas la dirección en primer lugar — [compliance](mail-suppression#compliance) cubre lo que necesitas gestionar.
+
+El ajuste solo se aplica a los perfiles creados después de activarlo, desde cualquier [punto de entrada](mail-entry-points). Los perfiles que ya existían siguen recibiendo campañas como antes. Para cubrir toda tu audiencia, activa el doble opt-in antes de [empezar a enviar](mail-get-started#10-start-sending).
+
+Los perfiles de FunnelFox se incluyen aunque el funnel ya recopilara el consentimiento: Adapty Mail no lee el atributo `email_consent` que envía FunnelFox.
+
+## Cómo funciona \{#how-it-works\}
+
+Adapty Mail crea un perfil en el momento en que recibe una dirección de correo electrónico, desde cualquier [punto de entrada](mail-entry-points). Con el doble opt-in activado, ese momento da inicio a una secuencia de dos correos:
+
+1. El primero se envía un minuto después de crear el perfil y pide a la persona que confirme la dirección. Ignora la [ventana de envío](mail-flows#email-delivery-timing) habitual, así que un registro a las 3am recibe su solicitud a las 3am.
+2. Si no confirma, se envía un recordatorio aproximadamente 72 horas después, ajustado a la ventana de envío si caería fuera de ella. Adapty Mail no vuelve a solicitarlo.
+
+<ZoomImage id="mail-double-opt-in-confirm-page.webp" width="500px" alt="El primer correo de confirmación: una breve explicación de por qué lo recibió la persona y un botón Confirmar mi email" />
+
+El botón de confirmación abre una página con los colores de tu marca que muestra la dirección enmascarada. Cargar esa página no confirma nada: la persona también tiene que hacer clic allí, de modo que los escáneres de buzón que siguen enlaces no puedan confirmar en su nombre. El enlace nunca caduca, así que cualquiera de los dos emails seguirá funcionando meses después.
+
+Si el usuario aún no ha comprado nada, el botón muestra **Confirm and open my offer**, y la página lo redirige a tu paywall web justo después del clic.
+
+Confirmar tiene tres efectos:
+
+- **El recordatorio se cancela**: cualquier correo de confirmación pendiente se cancela.
+- **El bloqueo de marketing se levanta**: Adapty Mail evalúa tus flows de marketing para esa persona de inmediato, y entra en cualquier flow que coincida. Si no coincide con ninguno, no se envía nada hasta que lo haga.
+- **Adapty Mail no vuelve a pedir confirmación**: la confirmación se almacena una sola vez, y desactivar y volver a activar la configuración no genera una nueva solicitud.
+
+En el [journey](mail-profiles#the-activity-journey) del perfil, los correos de confirmación aparecen como eventos de correo, y la confirmación en sí se muestra como **Confirmed**.
+
+## Activar el doble opt-in \{#turn-on-double-opt-in\}
+
+Antes de activarlo, asegúrate de que el proyecto tiene al menos un [web paywall](mail-checkout). Adapty Mail genera la campaña de confirmación con IA y necesita un paywall al que redirigir a los usuarios confirmados. Sin él, el interruptor falla con el mensaje *"Failed to update double opt-in"*.
+
+Para activar el doble opt-in, ve a **Settings** > **Project**. En la sección **Double opt-in**, activa el interruptor. Puede tardar un minuto en responder, ya que Adapty Mail genera los correos de confirmación antes de guardar la configuración.
+
+<ZoomImage id="mail-double-opt-in-setting.webp" width="700px" alt="La sección Double opt-in en la pestaña Settings > Project, con el interruptor en Enabled" />
+
+Al activar el interruptor se crean ambas partes de la secuencia: una campaña transaccional con los correos de confirmación y un flow que los envía a cada nuevo perfil.
+
+- **Campaña**: llamada **Double opt-in**, en **Campaigns** > **Transactional**.
+- **Flow**: en **Flows** > **Transactional** > **Double opt-in**, donde **All Users** está vinculado a esa campaña.
+
+<ZoomImage id="mail-double-opt-in-flow.webp" width="700px" alt="La pestaña Transaccional de la página de Flows, con el activador Double opt-in y All Users vinculados a la campaña Double opt-in" />
+
+El flow se comporta como cualquier otro flow. No lo vacíes mientras la configuración esté activada: si no se le pide confirmación a nadie, ningún perfil nuevo recibirá comunicaciones de marketing.
+
+## Prueba de doble opt-in \{#test-double-opt-in\}
+
+Para ver la secuencia completa antes de que los usuarios reales la recorran, ejecuta un perfil de prueba:
+
+1. En tu app, regístrate con una dirección de correo que no tenga todavía un perfil en el proyecto, o publica un perfil con una nueva dirección a través de la [Adapty Mail API](mail-send-data-via-api).
+2. En Adapty Mail, ve a **Profiles**, abre el nuevo perfil y espera a que aparezca el correo **Double opt-in** en su journey. La entrega tarda unos minutos tras el retraso de un minuto.
+3. En el correo, haz clic en el botón de confirmación y confirma en la página que se abre.
+4. De vuelta en el journey, el correo debería mostrar **Confirmed**. Si algún flow de marketing coincide con el perfil, su primer correo debería programarse justo después.
+
+Para la parte de marketing de la cadena, sigue [Prueba tu flow de Adapty Mail](mail-testing).
+
+## Editar el correo electrónico de confirmación \{#edit-the-confirmation-email\}
+
+Un correo electrónico de confirmación sigue reglas más estrictas que un correo de marketing:
+
+- **El botón de confirmación es el enlace de destino**: El botón debe usar `{{ destination_url }}`. En una campaña de doble opt-in, Adapty Mail lo reemplaza con un enlace de confirmación único por destinatario en lugar de la URL de tu paywall.
+- **Nada de venta**: El texto no puede mencionar precios, descuentos, pruebas ni plazos. El generador rechaza cualquier texto que lo haga.
+- **Ningún otro enlace**: El email no tiene ningún enlace salvo el botón de confirmación, ni enlace de baja en el pie de página. Adapty Mail también omite la cabecera `List-Unsubscribe`, por lo que los clientes de correo no muestran un botón de baja para una solicitud de confirmación.
+
+Para regenerar los correos, abre la campaña desde **Campaigns** > **Transactional** y haz clic en **Generate emails**. El diálogo muestra un menú desplegable **Purpose**, que está configurado en **Double opt-in**, y un campo **Custom prompt**. La longitud de la secuencia, los retrasos y el diseño los determina el propósito, por lo que las opciones de tono, imagen y número de correos de una campaña de marketing no aparecen.
+
+## Desactivar el doble opt-in \{#turn-off-double-opt-in\}
+
+Para desactivar el doble opt-in, ve a **Settings** > **Project**. En la sección **Double opt-in**, desactiva el interruptor.
+
+Adapty Mail finaliza el flow de **Double opt-in**, incluidos los segmentos que hayas añadido tú mismo. La campaña se conserva, por lo que si vuelves a activar la configuración se reutilizarán sus correos en lugar de generarlos de nuevo.
+
+Después de desactivarlo:
+
+- Los nuevos perfiles entran en los flows de marketing sin necesidad de confirmar.
+- Los perfiles que estaban esperando confirmación ya no quedan bloqueados, pero no se reevalúan en ese momento. Entran en un flow de marketing la próxima vez que llegue un evento para ellos.
+- Si vuelves a activar la configuración, los perfiles creados mientras estaba desactivada se consideran existentes y no se les pide confirmación.
+
+## Limitaciones \{#limitations\}
+
+- **Los correos de confirmación cuentan en las analíticas de campaña**: La campaña **Double opt-in** aparece como una campaña propia en la página de [Analytics](mail-analytics), y sus envíos, aperturas y clics se suman a los totales. Para leer solo tus cifras de marketing, agrupa por **Campaigns** y desmarca su casilla de visibilidad.
+- **Sin estado de confirmación en Perfiles**: La [lista de Perfiles](mail-profiles) y la página de perfil no muestran si una dirección está confirmada o pendiente. El journey es el único lugar donde aparece la confirmación.
+- **Sin reglas por país**: La configuración se aplica a todos los perfiles nuevos del proyecto, independientemente de su país. Ni el SDK de Adapty ni la API de Adapty Mail tienen un campo para marcar un perfil como ya confirmado.
+- **Los perfiles existentes están exentos**: Los perfiles creados antes de activar la configuración nunca recibirán la solicitud de confirmación. Para recopilar confirmaciones de ellos, tendrás que hacerlo fuera de Adapty Mail.

@@ -1,10 +1,10 @@
 ---
-title: "Optimize paywall fetching in iOS SDK"
-description: "Fetch Adapty paywalls reliably: timing, caching, and fallback patterns for iOS."
-metadataTitle: "Optimize Paywall Fetching | iOS SDK | Adapty Docs"
+title: "Optimize flow & paywall fetching in iOS SDK"
+description: "Fetch Adapty flows and paywalls reliably: timing, caching, and fallback patterns for iOS."
+metadataTitle: "Optimize Flow & Paywall Fetching | iOS SDK | Adapty Docs"
 ---
 
-A reliable paywall fetch on iOS does three things: renders fast, returns the audience-targeted paywall, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
+A reliable flow or paywall fetch on iOS does three things: renders fast, returns the audience-targeted variation, and falls back gracefully when the network is slow. The rules below cover the timing, caching, and fallback patterns to get there.
 
 :::tip
 The rules assume `Adapty.activate()` and `Adapty.identify()` have already resolved. See [Call order in iOS SDK](ios-sdk-call-order).
@@ -15,22 +15,24 @@ The rules assume `Adapty.activate()` and `Adapty.identify()` have already resolv
 | Do this | Don't do this | Why |
 |---|---|---|
 | Fetch the placement you're about to show, or warm the cache with [`preloadFlows`](#preload-placements) (SDK 4.1+). | Fan out your own concurrent `getFlow` calls on launch. | A hand-rolled prefetch burst blocks the main thread and produces a black screen. `preloadFlows` is built for this and shares one timeout budget across the batch. |
-| Fetch `getPaywall` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `onProfileUpdate` fires. | Call `getPaywall` at `App.init()`.                     | Attribution hasn't landed yet. The paywall resolves against the default audience and silently bypasses segments and ASA personalization. |
-| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getPaywall` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
+| Fetch `getFlow` after attribution has had a chance to resolve — for example, 1–2 seconds after `activate` or after `didLoadLatestProfile` fires. | Call `getFlow` at `App.init()`.                     | Attribution hasn't landed yet. The flow resolves against the default audience and silently bypasses segments and ASA personalization. |
+| Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `getFlow` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
 
-When `loadTimeout` fires on any fetch — a plain `getPaywall` included — the SDK returns the cached variation if one exists, and otherwise fetches the default-audience (**All Users**) variation within the remaining time. Targeting is lost for that request, not delayed: segments and attribution-based audiences don't apply to the result.
+When `loadTimeout` fires on any fetch — a plain `getFlow` included — the SDK returns the cached variation if one exists, and otherwise fetches the default-audience (**All Users**) variation within the remaining time. Targeting is lost for that request, not delayed: segments and attribution-based audiences don't apply to the result.
 
 See [Fetch paywalls and products](fetch-paywalls-and-products) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
 
 ## Preload placements
 
 :::info
-These methods are available starting from SDK version 4.1.
+`preloadFlows` and `preloadFlowsForDefaultAudience` are available starting from SDK version 4.1.
 :::
 
-`preloadFlows` and `preloadOnboardings` fetch placements into the SDK cache ahead of time. A later `getFlow` or `getOnboarding` call for the same placement then resolves from cache instead of the network, so the paywall renders without a visible wait.
+`preloadFlows` writes placement JSON into the SDK cache ahead of time — one request per placement, and nothing else. Despite the name, it doesn't fetch the flow's UI layout or its media.
 
-Use them when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the paywall behind a button the user hasn't tapped.
+A later `getFlow` reads that cache only when you pass `fetchPolicy: .returnCacheDataElseLoad` or `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. The default policy, `.reloadRevalidatingCacheData`, goes to the network on every call, so a preload paired with a default-policy fetch costs one extra request and saves nothing — the warmed copy only serves as an offline fallback.
+
+Use it when you know which placements the session will need but don't want to show them yet — for example, right after `activate` and `identify` resolve, for the flow behind a button the user hasn't tapped.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -41,10 +43,10 @@ try await Adapty.preloadFlows(
     loadTimeout: 5
 )
 
-try await Adapty.preloadOnboardings(
-    placementIds: ["intro"],
-    locale: "en",
-    loadTimeout: 5
+// Later, when the user reaches the paywall:
+let flow = try await Adapty.getFlow(
+    placementId: "main_paywall",
+    fetchPolicy: .returnCacheDataElseLoad
 )
 ```
 
@@ -57,6 +59,11 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
         // at least one placement failed to preload
     }
 }
+
+// Later, when the user reaches the paywall:
+Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoad) { result in
+    // ...
+}
 ```
 
 </TabItem>
@@ -65,19 +72,31 @@ Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5
 **Parameters:**
 
 - `placementIds` (required): the placements to preload. Blank and duplicate IDs are ignored.
-- `locale` (optional, `preloadOnboardings` only): the onboarding locale to cache.
 - `loadTimeout` (optional): timeout in seconds for the whole batch, not per placement. Defaults to 5 seconds, and values below 1 second are raised to 1 second.
 
 **Behavior worth knowing:**
 
-- The methods throw only after attempting every placement, and the error aggregates the per-placement failures. A failure for one placement doesn't stop the others.
+- The method throws only after attempting every placement, and the error aggregates the per-placement failures. A failure for one placement doesn't stop the others.
 - If a placement times out or fails with a network error, the SDK falls back to the default-audience variation for that placement. Other failures are reported as-is.
 - If the timeout fires before the audience-targeted fetch completes, the SDK still attempts the default-audience variation within the remaining budget.
-- Preloading only warms the cache. It doesn't return content — you still call `getFlow` or `getOnboarding` to display it.
+- Preloading only warms the cache. It doesn't return content — you still call `getFlow` to display it.
+
+### What a preload covers
+
+A flow reaches the screen in layers, and a preload covers only the first:
+
+| Layer | Fetched by | Warmed by a preload |
+|---|---|---|
+| Placement JSON — the chosen variation, its product IDs, and the remote config | `getFlow` | Yes |
+| UI layout — the screen's structure, styling, and text | `getFlowConfiguration` | No |
+| Images, including the still frame that stands in for a video element | `getFlowConfiguration`, in the background | No |
+| Video files | The system player, as the screen renders | Not cached by the SDK |
+
+`getFlowConfiguration` awaits the layout, so the first request for a given layout costs a round trip even after a preload. The SDK then holds that layout in its own disk cache, which survives app restarts and is read before any network call, so the cost falls on the first request rather than on every one. Once the SDK has the layout, it starts caching the images independently of the call: it doesn't hold up the screen, and there's no callback, delegate method, or error that reports when it finishes.
 
 ### Find out which placement failed
 
-The thrown error is a single `AdaptyError` covering the whole batch, with the code `networkFailed` (2002). To see the individual failures, read its `preloadErrors` property — a dictionary keyed by placement ID:
+The thrown error is a single `AdaptyError` covering the whole batch, with the code `networkFailed` (2005). To see the individual failures, read its `preloadErrors` property — a dictionary keyed by placement ID:
 
 ```swift showLineNumbers
 do {
@@ -91,11 +110,12 @@ do {
 
 `preloadErrors` is `nil` for any error that didn't come from a preload call, so treat a `nil` value as "not a preload failure" rather than "no failures".
 
-To warm the cache without waiting for audience segmentation at all, use the default-audience variants:
+### Skip audience segmentation
+
+To warm the cache without waiting for audience segmentation at all, use the default-audience variant:
 
 ```swift showLineNumbers
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
-try await Adapty.preloadOnboardingsForDefaultAudience(placementIds: ["intro"])
 ```
 
 ## Tune for poor connectivity
@@ -105,4 +125,4 @@ For markets with consistently poor connectivity (rural areas, transit, regions a
 - Set `fetchPolicy: .returnCacheDataElseLoad` on every fetch except the very first.
 - Configure a [fallback paywall](fallback-paywalls) for every placement in the Adapty dashboard.
 - Set `loadTimeout` to 3–5 seconds and accept the fallback when the timeout fires.
-- Don't gate paywall display on `getProfile()`. Call `getPaywall` independently so a slow profile doesn't block the UI.
+- Don't gate flow display on `getProfile()`. Call `getFlow` independently so a slow profile doesn't block the UI.

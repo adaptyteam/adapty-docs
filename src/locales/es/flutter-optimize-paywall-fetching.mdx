@@ -1,27 +1,30 @@
 ---
-title: "Optimizar la obtención de paywalls en Flutter SDK"
-description: "Obtén paywalls de Adapty de forma fiable: timing, caché y patrones de respaldo para Flutter."
-metadataTitle: "Optimizar la obtención de paywalls | Flutter SDK | Documentación de Adapty"
+title: "Optimizar la obtención de flows y paywalls en el SDK de Flutter"
+description: "Obtén flows y paywalls de Adapty de forma fiable: temporización, caché y patrones de respaldo para Flutter."
+metadataTitle: "Optimizar la obtención de flows y paywalls | SDK de Flutter | Documentación de Adapty"
 ---
 
-Una obtención de paywall fiable en Flutter hace tres cosas: renderiza rápido, devuelve el paywall orientado a la audiencia y recurre al respaldo con elegancia cuando la red es lenta. Las reglas que se describen a continuación cubren el timing, la caché y los patrones de respaldo para conseguirlo.
+Una obtención fiable de un flow o paywall en Flutter hace tres cosas: se renderiza rápido, devuelve la variación dirigida a la audiencia correspondiente y tiene un respaldo elegante cuando la red es lenta. Las reglas que se describen a continuación cubren los patrones de temporización, caché y respaldo necesarios para lograrlo.
+
 :::tip
-Las reglas asumen que `Adapty().activate()` y `Adapty().identify()` ya han sido resueltos. Consulta [Orden de llamadas en el SDK de Flutter](flutter-sdk-call-order).
+Las reglas asumen que `Adapty().activate()` y `Adapty().identify()` ya se han resuelto. Consulta [Orden de llamadas en el SDK de Flutter](flutter-sdk-call-order).
 :::
 
-Los consejos a continuación usan los nombres de métodos de la v3. En el SDK v4, `getPaywall` pasa a llamarse `getFlow` y el tipo de política de obtención a `AdaptyFlowFetchPolicy` — todas las reglas aplican sin cambios.
 ## Reglas y errores comunes \{#rules-and-pitfalls\}
+
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Obtén el placement que vas a mostrar.                                                                                  | Precargues todos los placements de forma concurrente al inicio.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante el pico.                                  |
-| Llama a `getPaywall` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras dispararse `didUpdateProfileStream`. | Llames a `getPaywall` en `main()` antes de `runApp`.         | La atribución aún no ha llegado. El paywall se resuelve contra la audiencia por defecto y omite en silencio los segmentos y la personalización de ASA. |
-| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperes indefinidamente en `getPaywall`.                     | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que se resuelve la red — o cierran la app.     |
+| Obtén el placement que estás a punto de mostrar.                                                                                  | Precarga todos los placements de forma concurrente al iniciar.        | La precarga masiva bloquea el hilo principal y produce una pantalla en negro durante el pico de carga.                                  |
+| Llama a `getFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras que `didUpdateProfileStream` se dispare. | Llama a `getFlow` en `main()` antes de `runApp`.         | La atribución aún no ha llegado. El flow se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeout` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Esperar `getFlow` indefinidamente.                     | Sin un tiempo de espera, los usuarios con mala conectividad ven una pantalla en blanco hasta que se resuelve la red — o cierran la app.     |
+
 Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-flutter) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
-## Ajuste para mala conectividad \{#tune-for-poor-connectivity\}
+
+## Ajusta para conectividad deficiente \{#tune-for-poor-connectivity\}
 
 Para mercados con conectividad consistentemente deficiente (zonas rurales, transporte, regiones afectadas por enrutamiento):
 
-- Establece `fetchPolicy: AdaptyPaywallFetchPolicy.returnCacheDataElseLoad` en cada carga excepto la primera.
+- Establece `fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad` en cada llamada excepto la primera.
 - Configura un [paywall de respaldo](fallback-paywalls) para cada placement en el Adapty Dashboard.
-- Establece `loadTimeout` en 3–5 segundos y acepta el respaldo cuando se agote el tiempo.
-- No condicionales la visualización del paywall a `getProfile()`. Llama a `getPaywall` de forma independiente para que un perfil lento no bloquee la interfaz.
+- Establece `loadTimeout` entre 3 y 5 segundos y acepta el respaldo cuando se agote el tiempo.
+- No bloquees la visualización del flow esperando `getProfile()`. Llama a `getFlow` de forma independiente para que un perfil lento no bloquee la interfaz.

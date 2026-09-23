@@ -1,0 +1,298 @@
+---
+title: "Traiter les données des flows dans le SDK Kotlin Multiplatform"
+description: "Enregistrez et utilisez les données saisies par vos utilisateurs dans les flows de votre application Kotlin Multiplatform avec le SDK Adapty."
+metadataTitle: "Traiter les données des flows | SDK Kotlin Multiplatform | Documentation Adapty"
+---
+
+Lorsqu'un utilisateur saisit du texte dans un champ, répond à un quiz ou active un interrupteur dans un [flow](adapty-flow-builder), le SDK transmet la valeur à votre application via son callback d'analyse.
+
+Les applications utilisent généralement ces données pour :
+
+- **Enregistrer les utilisateurs sur votre propre backend** : Récupérez l'adresse e-mail et le nom saisis dans votre flow d'onboarding, puis créez leur compte à la fermeture du flow.
+- **Sauvegarder les réponses et préférences** : Gardez une trace de ce que l'utilisateur a choisi pour que votre application puisse s'en servir plus tard — par exemple, [écrivez ces données dans son profil Adapty](kmp-setting-user-attributes) sous forme d'attributs personnalisés.
+- **Personnaliser les flows futurs** : Enregistrez les réponses au quiz comme attributs personnalisés, puis ciblez un placement ultérieur pour que chaque segment reçoive un flow différent, ou un paywall différent à l'intérieur de celui-ci.
+- **Alimenter des plateformes d'analyse tierces** : Transmettez les réponses à Amplitude, Mixpanel, ou toute autre plateforme d'analyse produit que vous utilisez.
+
+Les entrées et les groupes sélectionnables transmettent automatiquement leurs valeurs. Pour les distinguer dans votre code, attribuez à chaque entrée un **Element ID** et à chaque groupe sélectionnable un **Group ID** dans le builder.
+
+<FlowIdNaming />
+
+## Avant de commencer
+
+<FlowInputPrerequisites />
+
+## Recevoir les valeurs saisies \{#receive-input-values\}
+
+Les valeurs saisies parviennent au même callback que tous les autres événements analytiques d'un flow, sous le nom d'événement `flow_user_input`. Surchargez `flowViewDidReceiveAnalyticEvent` sur l'observer que vous enregistrez avec `AdaptyUI.setFlowsEventsObserver` :
+
+```kotlin showLineNumbers title="Kotlin"
+AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        handleFlowInput(name, paramsJsonString)
+    }
+})
+```
+
+Le callback `flowViewDidReceiveAnalyticEvent` transmet tous les événements analytiques d'un flow, y compris les [vues d'écran](kmp-flow-screen-views). Les paramètres de l'événement arrivent sous forme d'une seule chaîne JSON dans `paramsJsonString` ; décodez-la une seule fois et lisez les champs.
+- Le paramètre `name` contient le nom de l'événement. Pour filtrer les événements de saisie utilisateur, comparez `name` à `flow_user_input`.
+- Le paramètre `element_type` indique la catégorie de l'élément.
+- La valeur de la saisie est stockée dans des paramètres différents selon le type d'élément :
+     - Les champs texte, les sélecteurs et les bascules stockent la saisie de l'utilisateur dans `value`
+     - Les groupes sélectionnables reportent les options actives dans `item_ids` et `item_titles`
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+
+    // The screen the input sits on. Pair it with elementId to tell apart
+    // two fields that share an Element ID on different screens.
+    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
+
+    when (params["element_type"]?.jsonPrimitive?.content) {
+        "text_input", "email_input", "number_input", "phone_input" -> {
+            val text = params["value"]?.jsonPrimitive?.content
+        }
+        "date_picker", "time_picker", "date_time_picker" -> {
+            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
+            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
+        }
+        "single_choice" -> {
+            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
+        }
+        "multi_choice" -> {
+            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
+        }
+        "toggle" -> {
+            val isOn = params["value"]?.jsonPrimitive?.boolean
+        }
+    }
+}
+```
+
+<FlowInputVerify />
+
+## Quand votre application reçoit les données d'entrée \{#when-your-app-receives-the-input\}
+
+<FlowInputTiming />
+
+## Ce que vous recevez \{#what-you-receive\}
+
+<FlowInputParams />
+
+## Exemples d'événements \{#event-examples\}
+
+Ces exemples montrent les propriétés disponibles sur chaque événement, avec des valeurs illustratives en commentaires.
+
+<Details>
+<summary>Text, email, number, and phone input (Click to expand)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    name                       // "flow_user_input"
+    paramsJsonString           // "{\"name\":\"flow_user_input\",\"instanceId\":\"scr_J260KU5q\",\"isBackendEvent\":false,\"isCustomerEvent\":true,\"element_id\":\"email\",\"element_type\":\"email_input\",\"value\":\"jane@example.com\"}"
+
+    // paramsJsonString, once decoded:
+    params["name"]             // "flow_user_input"
+    params["instanceId"]       // "scr_J260KU5q"
+    params["isCustomerEvent"]  // true
+    params["isBackendEvent"]   // false
+    params["element_id"]       // "email"
+    params["element_type"]     // "email_input"
+    params["value"]            // "jane@example.com"
+}
+```
+</Details>
+
+<Details>
+<summary>Sélecteurs de date, d'heure et de date-heure (Cliquez pour développer)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "birthday"
+    params["element_type"]     // "date_picker"
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+}
+```
+</Details>
+
+<Details>
+<summary>Choix unique (Cliquez pour développer)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "experience"
+    params["element_type"]     // "single_choice"
+    params["item_ids"]         // ["pro"]
+    params["item_titles"]      // ["I train professionally"]
+}
+```
+</Details>
+
+<Details>
+<summary>Choix multiple (cliquer pour développer)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "interests"
+    params["element_type"]     // "multi_choice"
+    params["item_ids"]         // ["sports", "music"]
+    params["item_titles"]      // ["Sports", "Music"]
+}
+```
+</Details>
+
+<Details>
+<summary>Toggle (Click to expand)</summary>
+
+```kotlin
+override fun flowViewDidReceiveAnalyticEvent(
+    view: AdaptyUIFlowView,
+    name: String,
+    paramsJsonString: String,
+) {
+    // paramsJsonString, once decoded:
+    params["element_id"]       // "reminders"
+    params["element_type"]     // "toggle"
+    params["value"]            // true
+}
+```
+</Details>
+
+## Livraison et limitations \{#delivery-and-limitations\}
+
+<FlowInputLimitations />
+
+Stockez chaque valeur d'entrée au fur et à mesure que votre observer la reçoit, et envoyez l'ensemble complet lorsque le flow se ferme. Pour intercepter ce moment, surchargez `flowViewDidDisappear` sur le même observer. Cette méthode s'exécute lorsque la vue du flow est masquée, que l'utilisateur ait terminé le flow ou l'ait fermé en cours de route.
+
+## Cas d'utilisation \{#use-cases\}
+
+### Enregistrer les utilisateurs sur votre backend \{#register-users-on-your-backend\}
+
+Collectez les valeurs au fur et à mesure qu'elles arrivent et envoyez-les en une seule fois à la fermeture du flow, afin qu'une seule requête transmette un ensemble complet de réponses.
+
+La vue disparaît que l'utilisateur ait terminé le flow ou l'ait abandonné en cours de route. Vérifiez que les champs dont vous avez besoin sont bien renseignés avant d'appeler votre backend.
+
+Le flow ne peut pas afficher les erreurs provenant de votre backend. Le callback n'a pas de valeur de retour, et le SDK ne fournit aucune méthode pour envoyer des données dans un flow en cours d'exécution. Si l'inscription échoue, par exemple parce que l'adresse e-mail est déjà utilisée, affichez l'erreur dans votre propre interface une fois le flow fermé.
+
+```kotlin showLineNumbers title="Kotlin"
+class MyFlowsEventsObserver : AdaptyUIFlowsEventsObserver {
+
+    private val flowAnswers = mutableMapOf<String, String>()
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        flowAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        if (!flowAnswers.containsKey("email")) return
+
+        // Send flowAnswers to your backend here to create the account.
+
+        flowAnswers.clear()
+    }
+}
+```
+
+### Enrichir les profils utilisateurs avec des données \{#enrich-user-profiles-with-data\}
+
+Pour associer les informations saisies par un utilisateur à son profil et éviter de lui redemander les mêmes données, [mettez à jour le profil utilisateur](kmp-setting-user-attributes) au fur et à mesure de la saisie.
+
+Par exemple, si votre flow comporte un champ texte avec l'ID d'élément `name` et un champ e-mail avec l'ID d'élément `email` :
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+
+    when (params["element_id"]?.jsonPrimitive?.content) {
+        "name" -> builder.withFirstName(value)
+        "email" -> builder.withEmail(value)
+        else -> return
+    }
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+### Personnaliser les flows affichés ultérieurement \{#customize-flows-shown-later\}
+
+Les réponses au quiz peuvent aussi déterminer ce qu'un utilisateur voit lors d'un [placement](placements) ultérieur — un flow différent, ou un paywall différent à l'intérieur.
+
+Par exemple, demandez aux utilisateurs leur niveau d'expérience sportive dans votre flow d'onboarding, puis montrez à chaque groupe son propre flow avec des produits et des textes adaptés.
+
+1. Ajoutez un [quiz](onboarding-quizzes) à votre flow. Donnez au [groupe sélectionnable](flow-selectable-elements) le Group ID `experience`, et à chaque option un Element ID explicite.
+2. Traitez les réponses et [définissez des attributs personnalisés](kmp-setting-user-attributes) pour l'utilisateur.
+
+```kotlin showLineNumbers title="Kotlin"
+private fun handleFlowInput(name: String, paramsJsonString: String) {
+    if (name != "flow_user_input") return
+
+    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+    if (params["element_id"]?.jsonPrimitive?.content != "experience") return
+
+    val optionId = params["item_ids"]?.jsonArray?.firstOrNull()
+        ?.jsonPrimitive?.contentOrNull ?: return
+
+    val builder = AdaptyProfileParameters.Builder()
+    // Set the custom attribute 'experience' to the option the user selected
+    // (beginner, amateur, or pro).
+    builder.withCustomAttribute("experience", optionId)
+
+    mainUiScope.launch {
+        Adapty.updateProfile(builder.build())
+            .onError { error ->
+                // handle the error
+            }
+    }
+}
+```
+
+3. [Créez un segment](segments) pour chaque valeur d'attribut personnalisé.
+4. Créez un [placement](placements) et ajoutez une [audience](audience) pour chaque segment.
+5. [Affichez le flow](kmp-present-paywalls) pour ce placement dans votre application.
