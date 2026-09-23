@@ -3,7 +3,7 @@ import './Homepage.css';
 
 const T = {
   en: {
-    skillLabel: "Automated integration · Beta",
+    skillLabel: "Automated integration",
     skillDesc: "The Adapty SDK integration skill runs the whole integration from your AI coding tool in one command.",
     skillCta: "Use the skill",
     hero: "Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.",
@@ -35,7 +35,7 @@ const T = {
     capacitor: "Guide for integrating Adapty with Capacitor",
   },
   zh: {
-    skillLabel: "自动化集成 · Beta",
+    skillLabel: "自动化集成",
     skillDesc: "Adapty SDK 集成技能可在你的 AI 编程工具中通过一条命令完成整个集成。",
     skillCta: "使用该技能",
     hero: "Adapty 是一个强大、灵活的应用内购买平台，帮助您扩大订阅用户规模。无论您刚刚起步还是已拥有数百万用户，Adapty 都能轻松帮您设置最优订阅价格、测试不同方案，并找出最适合您应用成功的策略。",
@@ -67,7 +67,7 @@ const T = {
     capacitor: "Capacitor 版 Adapty 集成指南",
   },
   tr: {
-    skillLabel: "Otomatik entegrasyon · Beta",
+    skillLabel: "Otomatik entegrasyon",
     skillDesc: "Adapty SDK entegrasyon skill'i, tüm entegrasyonu AI kodlama aracınızda tek komutla gerçekleştirir.",
     skillCta: "Skill'i kullan",
     hero: "Adapty, abone tabanınızı büyütmenize yardımcı olan güçlü ve esnek bir uygulama içi satın alma platformudur. İster yeni başlıyor olun ister milyonlarca kullanıcınız olsun, Adapty en iyi abonelik fiyatlarını belirlemenizi, farklı yaklaşımları test etmenizi ve uygulamanızın başarısı için en iyi sonucu vereni bulmanızı kolaylaştırır.",
@@ -99,7 +99,7 @@ const T = {
     capacitor: "Adapty'yi Capacitor ile entegre etme rehberi",
   },
   ru: {
-    skillLabel: "Автоматическая интеграция · Beta",
+    skillLabel: "Автоматическая интеграция",
     skillDesc: "Skill для интеграции Adapty SDK выполняет всю интеграцию из вашего AI-инструмента одной командой.",
     skillCta: "Использовать skill",
     hero: "Adapty — мощная и гибкая платформа для встроенных покупок, которая помогает вам развивать базу подписчиков. Независимо от того, только ли вы начинаете или уже имеете миллионы пользователей, Adapty позволяет легко устанавливать лучшие цены на подписки, тестировать различные подходы и находить то, что лучше всего работает для успеха вашего приложения.",
@@ -131,7 +131,7 @@ const T = {
     capacitor: "Интеграция Adapty с Capacitor",
   },
   es: {
-    skillLabel: "Integración automatizada · Beta",
+    skillLabel: "Integración automatizada",
     skillDesc: "La skill de integración del SDK de Adapty realiza toda la integración desde tu herramienta de IA con un solo comando.",
     skillCta: "Usar la skill",
     hero: "Adapty es una plataforma de compras in-app potente y flexible que te ayuda a hacer crecer tu base de suscriptores. Tanto si estás empezando como si ya tienes millones de usuarios, Adapty te permite establecer fácilmente los mejores precios de suscripción, probar distintos enfoques y descubrir qué funciona mejor para el éxito de tu app.",
@@ -163,7 +163,7 @@ const T = {
     capacitor: "Guía para integrar Adapty con Capacitor",
   },
   ja: {
-    skillLabel: "自動連携 · Beta",
+    skillLabel: "自動連携",
     skillDesc: "Adapty SDK 連携スキルは、AI コーディングツールから 1 つのコマンドで連携全体を実行します。",
     skillCta: "スキルを使う",
     hero: "Adapty は、サブスクライバー基盤の拡大を支援する、強力で柔軟なアプリ内課金プラットフォームです。始めたばかりでも、すでに数百万人のユーザーがいても、Adapty を使えば最適なサブスクリプション価格の設定、さまざまなアプローチのテスト、そしてアプリの成功にとって何が最も効果的かの把握が簡単に行えます。",
@@ -195,7 +195,7 @@ const T = {
     capacitor: "Adapty を Capacitor と連携するためのガイド",
   },
   vi: {
-    skillLabel: "Tích hợp tự động · Beta",
+    skillLabel: "Tích hợp tự động",
     skillDesc: "Skill tích hợp Adapty SDK thực hiện toàn bộ quá trình tích hợp từ công cụ lập trình AI của bạn chỉ bằng một lệnh.",
     skillCta: "Dùng skill",
     hero: "Adapty là nền tảng mua hàng trong ứng dụng mạnh mẽ và linh hoạt, giúp bạn mở rộng lượng người đăng ký. Dù bạn mới bắt đầu hay đã có hàng triệu người dùng, Adapty giúp bạn dễ dàng thiết lập mức giá đăng ký tối ưu, thử nghiệm các phương án khác nhau và tìm ra điều phù hợp nhất cho sự thành công của ứng dụng.",
@@ -227,7 +227,7 @@ const T = {
     capacitor: "Hướng dẫn tích hợp Adapty với Capacitor",
   },
   fr: {
-    skillLabel: "Intégration automatisée · Beta",
+    skillLabel: "Intégration automatisée",
     skillDesc: "La skill d'intégration du SDK Adapty réalise toute l'intégration depuis votre outil de développement IA en une seule commande.",
     skillCta: "Utiliser la skill",
     hero: "Adapty est une plateforme d'achats intégrés puissante et flexible qui vous aide à développer votre base d'abonnés. Que vous débutiez ou que vous comptiez déjà des millions d'utilisateurs, Adapty vous permet de définir facilement les meilleurs prix d'abonnement, de tester différentes approches et de découvrir ce qui fonctionne le mieux pour le succès de votre application.",
