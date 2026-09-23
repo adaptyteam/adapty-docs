@@ -20,6 +20,7 @@ on video 24 and supersedes the older part-shaped one.
 - Don't write generic recording advice, or editorial decisions dressed as instructions.
 - Check the operator's environment. Read the app's source before asserting a constraint.
 - Faked data follows `mock-data.md`; setup steps point at the harness and explain nothing.
+
 ## Structure
 
 ```

@@ -1,74 +1,114 @@
 ---
-title: "Unsubscribe and suppression in Adapty Mail"
-description: "How Adapty Mail stops sending to users — via unsubscribe, SES bounces, complaints, and the stop-condition mechanism."
+title: "Reasons emails stop: opting out, stop conditions, failed delivery"
+description: "Every reason Adapty Mail stops sending to someone — failed verification, unsubscribes, bounces, and stop conditions — and what you can do about each."
 metadataTitle: "Unsubscribe and Suppression | Adapty Mail | Adapty Docs"
 keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
 ---
 
-Adapty Mail stops sending to a user under two distinct conditions:
+Adapty Mail stops sending to a user for three different reasons:
 
-- **Suppression**: The user is excluded from all future sends in this project (unsubscribed, bounced, complained, rejected, or throttled).
-- **Stop condition**: The user's current sequence is cancelled because they converted. They're not suppressed and stay eligible for other campaigns.
+- **Stop condition**: The user's current sequence ends because they converted. They're not suppressed and stay eligible for other campaigns.
+- **Suppression**: The user is excluded from all future sends in this project.
+- **Throttle**: A new domain has a daily limit that rises as you send, and eventually goes away. An email over the limit waits for a later day. A second miss marks it **Cancelled**, and the recipient can't start another marketing campaign for a week.
 
-Both mechanisms are per-project. Suppression in one Adapty project doesn't affect another.
+All three are project-specific. Suppression in one Adapty project doesn't affect another.
 
-## Unsubscribe
+## Stop conditions (campaign conclusion on success)
 
-A recipient has two ways out, and both run on the `go.` host of your [sending domain](mail-sending-domain#which-records-you-add) rather than an Adapty URL.
+A stop condition ends a campaign once it has succeeded, so its remaining emails never go out.
 
-**The footer link.** Every email carries one. Clicking it opens a confirmation page, and confirming there marks the profile with `suppression_reason = 'unsubscribe'`, cancels the remaining sequence, and excludes the profile from future sends in the project. The confirmation step is deliberate: spam scanners and inbox prefetchers open links in the message body, and a page in the way keeps them from unsubscribing people who never clicked.
+Every event Adapty Mail receives — a purchase, a refund, a confirmation — updates the profile. After each update, Adapty Mail checks the profile whether the appropriate stop condition is met:
 
-**The inbox button.** Adapty Mail sends the `List-Unsubscribe: <URL>, <mailto:>` header together with `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Gmail and Yahoo require these of bulk senders (RFC 8058), and clients that support them show an unsubscribe button next to the sender name. This URL has no confirmation page: the first request to it suppresses the profile, whatever the method — RFC 8058 specifies POST, and some providers send GET instead.
+- **Marketing campaigns**: the profile's subscription state reaches **Subscribed**, or its one-time purchase state reaches **Purchased**.
+- **App activation** and **Cancellation page**: no stop condition — they always run to the end.
+- **Double opt-in**: the recipient confirms their address.
 
-Both links carry an encrypted token that identifies the recipient and the email it came from, so unsubscribing takes no login and no lookup.
+A detected stop condition ends the campaign for that recipient. They stay eligible for the other campaigns.
+
+Open your campaign analytics for a breakdown of who hits stop conditions and how.
+
+## Suppression (removal from mailing list)
+
+### Address verification failed
+
+Adapty Mail checks every email address it receives.
+
+The following addresses are rejected outright. They don't create new profiles:
+
+- Anything at `privaterelay.appleid.com`, the address Apple issues when someone picks **Hide My Email**. To email those users, collect a real address separately. Apple is moving new relay addresses to `private.icloud.com`, which Adapty Mail doesn't match, so those arrive as ordinary profiles.
+- Any address with non-ASCII or whitespace characters, which Amazon SES won't accept.
+
+For all other addresses, Adapty Mail contacts the user's server to check whether the mailbox exists. No email goes out during this check. The address is suppressed if:
+
+- it does not correspond to an active mailbox
+- it is hosted on a disposable domain
+- its mailbox is full
+- it is a role account, such as `info@` or `support@`
+
+If the check doesn't finish — the mail server blocks it, or does not respond — Adapty Mail doesn't suppress the address. The profile is created and receives campaigns like any other.
+
+To see what happened to an address, look it up in [Profiles](mail-profiles). A profile labeled **Unsubscribed** failed the check, even though nothing was ever sent to it. An address with no profile at all was rejected. The [Adapty Mail API](mail-send-data-via-api) can't tell you: its response comes back before the check runs.
+
+An address that stops working later keeps its profile until the first bounce suppresses it. Adapty Mail never re-checks an address, and sending a corrected one doesn't repair the profile — it creates a second one.
+
+:::important
+Adapty Mail probes an address once, when it arrives. After that, a dead address surfaces only when an [email delivery fails](#delivery-failed-or-the-recipient-marked-it-as-spam). Validate addresses on your side before you pass them to Adapty Mail.
+:::
+
+### The recipient unsubscribed
+
+A marketing email gives the recipient two ways to unsubscribe. Transactional emails have none — service messages aren't sent on consent, so there's nothing to withdraw.
+
+- **Footer link**: Every marketing email carries one. It opens a page with the recipient's masked address and an **Unsubscribe** button; clicking it suppresses the profile. The confirmation step is deliberate: scanners and prefetchers open links in the message body on their own, and should not accidentally trigger cancellations.
+- **One-click unsubscribe**: Mail clients that support this capability show an "unsubscribe" button next to the sender name. A single click suppresses the profile, with no confirmation page in between. Adapty Mail sends the `List-Unsubscribe` headers Gmail and Yahoo require of bulk senders (RFC 8058) with every marketing email.
+
+Both URLs carry an encrypted token that identifies the recipient and the email it came from, so unsubscribing requires no login and no lookup. Both point to your own domain, but the cancellation page is hosted by Adapty Mail.
 
 :::note
 Unsubscribing from a [test email](mail-testing) changes nothing — test sends are excluded from suppression.
 :::
 
-## Automatic suppression
+### Delivery failed, or the recipient marked it as spam
 
-Adapty Mail listens for AWS SES delivery events via SNS and suppresses the user immediately on any of the following:
+Amazon SES reports back on every email it handles. Three of those reports suppress the profile immediately:
 
-| Event     | Reason code | What it means                                                                   |
-| --------- | ----------- | ------------------------------------------------------------------------------- |
-| Bounce    | `bounce`    | The email address is invalid, the mailbox is full, or the domain doesn't exist. |
-| Complaint | `complaint` | The user marked the email as spam.                                              |
-| Reject    | `reject`    | SES rejected the message before sending.                                        |
-| Throttle  | `throttle`  | Sending rate exceeded domain safety limits.                                     |
+| Event | What it means |
+| --- | --- |
+| Bounce | The receiving mail server refused the email and returned it. Adapty Mail does not distinguish between hard bounces (addresses without a mailbox or domain) and soft bounces (full mailbox). Helps catch email addresses that passed [the initial verification](#address-verification-failed) but died later. |
+| Complaint | The recipient marked the email as spam. |
+| Reject | Amazon SES refused the message before sending it. |
 
-For every event, the outcome is the same: the user is added to the suppression list, the remaining sequence is cancelled, and they're excluded from future sends in the project.
+The profile's [journey](mail-profiles#the-activity-journey) shows a bounce as **Bounced** and a complaint as **Spam report**.
 
-:::important
-Adapty Mail does **not** distinguish between hard and soft bounces. Any bounce — including temporary conditions like a full mailbox — suppresses the user immediately. There's no retry window.
-:::
+### Bring a recipient back
 
-## Stop condition
+Nothing in the dashboard reverses a suppression. Contact Adapty support — for example when someone marked a test email as spam.
 
-When a user converts mid-sequence, Adapty Mail cancels their remaining emails with the `stop_condition` reason. Conversion means their subscription state reaches **Subscribed**, or their one-time purchase state reaches **Purchased**.
+The profile page does show whether a profile is suppressed: it reads **Unsubscribed** whatever the reason. The ⋯ menu on the same page can also suppress a profile by hand.
 
-Stop condition is different from suppression:
+## Throttle (temporary delays and cancellations)
 
-- **Suppression**: Excludes the user from all future sends in the project.
-- **Stop condition**: Cancels only the current sequence. The user stays eligible for other campaigns — for example, a renewal or win-back flow targeting active subscribers.
+A new sending domain has the limit of 100 emails per day. The cap rises as you send, and disappears once the domain is fully warmed — see [Domain warm-up](mail-sending-domain#warm-up-and-daily-limits). Adapty Mail checks each of your domains against its own cap and sends from the first one still under it. A second verified domain therefore raises what the project can send in a day.
 
-Stop-condition cancellations appear alongside suppressions in campaign analytics.
+When all your domains are over the cap, the email never reaches Amazon SES. The profile's [journey](mail-profiles#the-activity-journey) is **Throttled**. Adapty Mail tries again later — in a day for a transactional campaign, a week for marketing. By then the cap has usually risen. An email blocked on day one retries a week later, when the cap is far higher.
 
-## Managing suppression
+If you're over the cap even then, that recipient's campaign is **Cancelled**. The profile isn't suppressed, but it can't enter another marketing campaign for a week. Nothing reports a cancellation on its own, and that chip is the only record of it. Before a large launch from a new domain, add a second verified domain or let the cap climb first.
 
-Adapty Mail has no dashboard UI to view or remove suppressed users. To unsuppress a profile — for example, someone who accidentally marked a test email as spam — contact Adapty support.
+Test sends ignore the cap entirely, so a successful [test email](mail-testing) tells you nothing about whether a real send would go out.
 
-## What Adapty Mail handles for compliance
+## Compliance
 
-Adapty Mail ships with:
+Complying with CAN-SPAM, GDPR and the equivalents in your markets is your obligation as the sender. Adapty Mail meets part of it automatically and leaves the rest to you.
 
-- **Unsubscribe link**: Included in every email footer, processed as soon as the recipient confirms.
-- **List-Unsubscribe headers**: Sent with every email for one-click unsubscribe from the inbox (RFC 8058), on a URL that unsubscribes on the first request.
-- **Automatic suppression**: Triggered on SES bounce, complaint, reject, and throttle events.
-- **Physical mailing address**: Added to every campaign email footer from the address you save in **Settings** > **Company**.
+### Handled for you
 
-Parts you're responsible for:
+- **Unsubscribe link**: In the footer of every marketing email, processed as soon as the recipient confirms.
+- **List-Unsubscribe headers**: Sent with every marketing email for one-click unsubscribe from the inbox (RFC 8058).
+- **Automatic suppression**: Triggered by a bounce or a spam report.
+- **Address placeholder**: Reserved in every campaign email footer and filled with the address you provide.
 
-- **Your company address**: Save it in **Settings** > **Company**. CAN-SPAM requires a physical address in the footer, and Adapty Mail blocks campaign generation until you fill it in.
+### Your responsibility
+
+- **Your company address**: Save it in **Settings** > **Company** — that's the value the placeholder is filled with. CAN-SPAM requires a physical address in the footer, and Adapty Mail won't generate a campaign without one.
 - **Explicit opt-in consent**: Collect it before passing a user's email to Adapty. See [Connect Adapty to Adapty Mail](mail-collect-emails). To also have each new recipient confirm their address before any marketing email, turn on [double opt-in](mail-double-opt-in).
 - **GDPR erasure requests**: Send the profile's identifiers to the [Delete profile](api-mail/operations/deleteProfile) endpoint of the Adapty Mail API. Adapty Mail erases the profile's personal data and cancels its scheduled emails. Erasure is final: a later save carrying the same identifiers doesn't recreate the profile.
