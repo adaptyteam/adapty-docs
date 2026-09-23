@@ -20,15 +20,20 @@ Las reglas asumen que `Adapty.activate()` y `Adapty.identify()` ya se han resuel
 
 Consulta [Obtener paywalls y productos](fetch-paywalls-and-products-android) para la referencia de parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-## Precarga de placements \{#preload-placements\}
+## Precargar placements \{#preload-placements\}
 
 :::info
 `preloadFlows` y `preloadFlowsForDefaultAudience` están disponibles a partir de la versión 4.1 del SDK.
 :::
 
-`preloadFlows` escribe el JSON del placement en la caché del SDK con antelación — una solicitud por placement, y nada más. A pesar del nombre, no descarga el diseño de la UI del flow ni sus archivos multimedia.
+`preloadFlows` almacena en caché el JSON del flow con antelación — una solicitud por placement. Luego se usa de forma habitual: `getFlow` para el flow y `getFlowConfiguration` para su configuración de vista.
 
-Una llamada posterior a `getFlow` solo lee esa caché cuando se pasa `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` o `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. La política predeterminada, `ReloadRevalidatingCacheData`, va a la red en cada llamada, por lo que un precalentamiento combinado con una llamada con la política predeterminada genera una solicitud extra y no ahorra nada: la copia en caché solo sirve como respaldo sin conexión.
+`fetchPolicy` decide qué capa lee primero un `getFlow` posterior, no si puede acceder a la caché en absoluto:
+
+- `ReturnCacheDataElseLoad` lee primero la copia precargada y solo va a la red si no hay nada en caché. `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` hace lo mismo mientras la copia sea más reciente que `maxAgeMillis`.
+- El valor predeterminado, `ReloadRevalidatingCacheData`, va primero a la red y usa la copia precargada como respaldo cuando la petición falla o se agota el tiempo de espera.
+
+Una precarga resulta útil en ambos casos, pero de forma distinta: una política de caché primero elimina la petición, mientras que el valor predeterminado la mantiene y obtiene una copia en caliente como respaldo.
 
 Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que se resuelvan `activate` e `identify`, para el flow detrás de un botón que el usuario aún no ha pulsado.
 
@@ -88,14 +93,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 ### Qué cubre una precarga \{#what-a-preload-covers\}
 
-Un flow llega a la pantalla en capas, y una precarga solo cubre la primera:
+Un flow llega a la pantalla en capas. Una precarga cubre la primera, exactamente igual que `getFlow`:
 
-| Capa | Obtenida por | Precalentada por una precarga |
+| Capa | Obtenida por | Preparada por una precarga |
 |---|---|---|
-| JSON del placement — la variante elegida, sus IDs de producto y el Remote Config | `getFlow` | Sí |
-| Diseño de UI — estructura, estilos y texto de la pantalla | `getFlowConfiguration` | No |
+| JSON del flow — la variación elegida, sus IDs de producto y el Remote Config | `getFlow` | Sí |
+| Diseño de interfaz — estructura, estilos y textos de la pantalla | `getFlowConfiguration` | No |
 | Imágenes, incluido el fotograma estático que reemplaza a un elemento de vídeo | `getFlowConfiguration`, en segundo plano | No |
-| Archivos de vídeo | El reproductor del sistema, al renderizar la pantalla | No se almacenan en caché por el SDK |
+| Archivos de vídeo | El reproductor del sistema, al renderizar la pantalla | No almacenado en caché por el SDK |
 
 `getFlowConfiguration` espera el layout, por lo que la primera solicitud de un layout determinado implica un viaje de ida y vuelta a la red, incluso después de una precarga. El SDK guarda ese layout en su propio caché de disco, que sobrevive a los reinicios de la app y se lee antes de cualquier llamada a la red, de modo que el coste recae en la primera solicitud y no en cada una. Una vez que el SDK tiene el layout, comienza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla, y no hay ningún callback ni error que informe de cuándo termina.
 

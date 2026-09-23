@@ -25,14 +25,19 @@ Herhangi bir fetch işleminde `loadTimeout` tetiklendiğinde — basit bir `getF
 ## Placement'ları önceden yükle \{#preload-placements\}
 
 :::info
-`preloadFlows` ve `preloadFlowsForDefaultAudience`, SDK 4.1 sürümünden itibaren kullanılabilir.
+`preloadFlows` ve `preloadFlowsForDefaultAudience`, SDK sürüm 4.1'den itibaren kullanılabilir.
 :::
 
-`preloadFlows`, placement JSON'ını SDK önbelleğine önceden yazar — her placement için bir istek ve başka hiçbir şey. İsmine rağmen, flow'un UI düzenini veya medyasını getirmez.
+`preloadFlows`, flow JSON'ını önceden önbelleğe alır — her placement için bir istek. Ardından her zamanki gibi kullanabilirsiniz: flow için `getFlow`, görünüm yapılandırması için `getFlowConfiguration`.
 
-Sonraki bir `getFlow` çağrısı, bu önbelleği yalnızca `fetchPolicy: .returnCacheDataElseLoad` veya `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` ile çağırdığınızda okur. Varsayılan politika olan `.reloadRevalidatingCacheData`, her çağrıda ağa gider; dolayısıyla ön yükleme ile varsayılan politikalı bir fetch birlikte kullanıldığında fazladan bir istek oluşur ve hiçbir kazanım sağlanmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak işe yarar.
+`fetchPolicy`, sonraki `getFlow`'un önce hangi katmanı okuyacağını belirler; önbelleğe erişip erişemeyeceğini değil:
 
-Oturumun hangi placement'lara ihtiyaç duyacağını bildiğiniz ama henüz göstermek istemediğiniz durumlarda kullanın — örneğin, `activate` ve `identify` çözümlendikten hemen sonra, kullanıcının henüz dokunmadığı bir düğmenin arkasındaki flow için.
+- `.returnCacheDataElseLoad`, önbelleğe alınmış kopyayı önce okur ve yalnızca önbellekte hiçbir şey yoksa ağa gider. `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` ise kopya `maxAge`'den daha yeni olduğu sürece aynı şekilde davranır.
+- Varsayılan olan `.reloadRevalidatingCacheData`, önce ağa gider ve istek başarısız olursa ya da zaman aşımına uğrarsa önceden yüklenmiş kopyaya geri döner.
+
+Ön yükleme her iki durumda da işe yarar, ancak farklı biçimlerde: önbellek öncelikli bir politika isteği tamamen ortadan kaldırırken, varsayılan politika isteği korur ve yedek olarak kullanılabilecek sıcak bir kopya kazanır.
+
+Hangi placement'ların oturumda gerekli olduğunu bildiğinizde ancak henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` tamamlandıktan hemen sonra, kullanıcının henüz dokunmadığı bir butonun arkasındaki flow için.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -56,11 +61,11 @@ let flow = try await Adapty.getFlow(
 ```swift showLineNumbers
 Adapty.preloadFlows(placementIds: ["onboarding", "main_paywall"], loadTimeout: 5) { error in
     if let error {
-        // en az bir placement yüklenemedi
+        // at least one placement failed to preload
     }
 }
 
-// Daha sonra, kullanıcı paywalle ulaştığında:
+// Later, when the user reaches the paywall:
 Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoad) { result in
     // ...
 }
@@ -81,16 +86,16 @@ Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoa
 - Zaman aşımı, kitleye yönelik fetch tamamlanmadan tetiklenirse, SDK kalan süre içinde varsayılan kitle varyasyonunu denemeye devam eder.
 - Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez; içeriği göstermek için yine de `getFlow` çağırmanız gerekir.
 
-### Bir preload'ın kapsadığı şeyler \{#what-a-preload-covers\}
+### Preload'un kapsadıkları \{#what-a-preload-covers\}
 
-Bir flow, ekrana katmanlar halinde ulaşır ve bir preload yalnızca ilk katmanı kapsar:
+Bir flow ekrana katmanlar halinde gelir. Preload, tıpkı `getFlow`'un yaptığı gibi yalnızca ilk katmanı kapsar:
 
 | Katman | Kim tarafından alınır | Preload ile ısıtılır mı |
 |---|---|---|
-| Placement JSON — seçilen varyant, ürün ID'leri ve remote config | `getFlow` | Evet |
-| UI düzeni — ekranın yapısı, stil ve metinler | `getFlowConfiguration` | Hayır |
-| Görseller; video öğesi için yer tutan durağan kare dahil | `getFlowConfiguration`, arka planda | Hayır |
-| Video dosyaları | Ekran render edilirken sistem oynatıcısı tarafından | SDK tarafından önbelleğe alınmaz |
+| Flow JSON — seçilen varyant, ürün ID'leri ve remote config | `getFlow` | Evet |
+| UI düzeni — ekranın yapısı, stili ve metinleri | `getFlowConfiguration` | Hayır |
+| Görseller; video öğesinin yerine geçen sabit kare dahil | `getFlowConfiguration`, arka planda | Hayır |
+| Video dosyaları | Ekran render edilirken sistem oynatıcısı | SDK tarafından önbelleğe alınmaz |
 
 `getFlowConfiguration` layout'u bekler; bu nedenle önceden yükleme yapılmış olsa bile belirli bir layout için yapılan ilk istek bir tur-gidiş-dönüş maliyeti gerektirir. SDK ardından bu layout'u kendi disk önbelleğinde tutar; bu önbellek uygulama yeniden başlatmalarından sonra da hayatta kalır ve herhangi bir ağ çağrısından önce okunur, dolayısıyla maliyet her istekte değil yalnızca ilk istekte oluşur. SDK layout'u edindikten sonra, çağrıdan bağımsız olarak görselleri önbelleğe almaya başlar: ekranı bekletmez ve bittiğinde bunu bildiren bir callback, delegate metodu veya hata yoktur.
 

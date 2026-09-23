@@ -22,17 +22,22 @@ Cuando `loadTimeout` se dispara en cualquier solicitud de carga — incluido un 
 
 Consulta [Obtener paywalls y productos](fetch-paywalls-and-products) para la referencia de los parámetros `fetchPolicy` y `loadTimeout`, y [Placements](placements) para elegir el placement adecuado.
 
-## Precarga de placements \{#preload-placements\}
+## Precargar placements \{#preload-placements\}
 
 :::info
 `preloadFlows` y `preloadFlowsForDefaultAudience` están disponibles a partir de la versión 4.1 del SDK.
 :::
 
-`preloadFlows` escribe el JSON del placement en la caché del SDK de forma anticipada — una solicitud por placement, y nada más. A pesar del nombre, no descarga el diseño de la interfaz del flow ni sus archivos multimedia.
+`preloadFlows` almacena en caché el JSON del flow con antelación — una solicitud por placement. Luego lo usas de la forma habitual: `getFlow` para el flow y `getFlowConfiguration` para su configuración de vista.
 
-Una llamada posterior a `getFlow` solo lee esa caché cuando se pasa `fetchPolicy: .returnCacheDataElseLoad` o `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. La política predeterminada, `.reloadRevalidatingCacheData`, va a la red en cada llamada, por lo que un preload combinado con una solicitud de política predeterminada genera una petición extra y no ahorra nada — la copia precargada solo sirve como respaldo sin conexión.
+`fetchPolicy` determina qué capa lee primero un `getFlow` posterior, no si puede acceder a la caché en absoluto:
 
-Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que se resuelvan `activate` e `identify`, para el flow que hay detrás de un botón que el usuario aún no ha pulsado.
+- `.returnCacheDataElseLoad` lee primero la copia precargada y solo va a la red si no hay nada en caché. `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` hace lo mismo mientras la copia sea más reciente que `maxAge`.
+- El valor predeterminado, `.reloadRevalidatingCacheData`, va primero a la red y cae de vuelta a la copia precargada cuando la solicitud falla o expira.
+
+Una precarga resulta útil en ambos casos, pero de forma distinta: una política de caché primero elimina la solicitud, mientras que la predeterminada la mantiene y obtiene una copia en caliente como respaldo.
+
+Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que resuelvan `activate` e `identify`, para el flow detrás de un botón que el usuario aún no ha pulsado.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -81,16 +86,16 @@ Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoa
 - Si se agota el tiempo límite antes de que complete la obtención de la audiencia segmentada, el SDK aún intenta la variación de audiencia predeterminada dentro del tiempo restante.
 - La precarga solo calienta la caché. No devuelve contenido: para mostrarlo, sigue siendo necesario llamar a `getFlow`.
 
-### Qué cubre una precarga \{#what-a-preload-covers\}
+### Lo que cubre una precarga \{#what-a-preload-covers\}
 
-Un flow llega a la pantalla en capas, y una precarga cubre solo la primera:
+Un flow llega a la pantalla en capas. Una precarga cubre la primera, exactamente igual que `getFlow`:
 
 | Capa | Obtenida por | Calentada por una precarga |
 |---|---|---|
-| Placement JSON — la variación seleccionada, sus IDs de producto y el Remote Config | `getFlow` | Sí |
-| Diseño de interfaz — la estructura, el estilo y el texto de la pantalla | `getFlowConfiguration` | No |
+| Flow JSON — la variante elegida, sus IDs de producto y el Remote Config | `getFlow` | Sí |
+| Diseño de UI — la estructura, el estilo y el texto de la pantalla | `getFlowConfiguration` | No |
 | Imágenes, incluido el fotograma estático que sustituye a un elemento de vídeo | `getFlowConfiguration`, en segundo plano | No |
-| Archivos de vídeo | El reproductor del sistema, mientras se renderiza la pantalla | No almacenados en caché por el SDK |
+| Archivos de vídeo | El reproductor del sistema, mientras se renderiza la pantalla | El SDK no los almacena en caché |
 
 `getFlowConfiguration` espera el layout, por lo que la primera solicitud para un layout determinado tiene el coste de un viaje de ida y vuelta incluso después de una precarga. El SDK guarda ese layout en su propia caché de disco, que sobrevive a los reinicios de la app y se lee antes de cualquier llamada de red, de modo que el coste recae en la primera solicitud y no en todas. Una vez que el SDK tiene el layout, comienza a cachear las imágenes de forma independiente a la llamada: no bloquea la pantalla, y no hay ningún callback, método delegado ni error que informe de cuándo termina.
 

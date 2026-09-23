@@ -28,11 +28,16 @@ Xem [Tải paywall và sản phẩm](fetch-paywalls-and-products) để tham kh�
 `preloadFlows` và `preloadFlowsForDefaultAudience` khả dụng từ SDK phiên bản 4.1 trở lên.
 :::
 
-`preloadFlows` ghi JSON của placement vào bộ nhớ đệm SDK trước — mỗi placement một request, không hơn không kém. Dù tên gọi là vậy, hàm này không tải layout UI của flow hay các tệp media của nó.
+`preloadFlows` lưu flow JSON vào bộ nhớ cache trước — một request cho mỗi placement. Sau đó bạn sử dụng như bình thường: `getFlow` để lấy flow, `getFlowConfiguration` để lấy cấu hình view của nó.
 
-Lệnh `getFlow` tiếp theo chỉ đọc cache khi bạn truyền `fetchPolicy: .returnCacheDataElseLoad` hoặc `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`. Policy mặc định là `.reloadRevalidatingCacheData` — luôn gọi mạng mỗi lần, nên nếu dùng preload kết hợp với policy mặc định sẽ tốn thêm một request và không tiết kiệm gì — bản đã cache chỉ đóng vai trò dự phòng khi offline.
+`fetchPolicy` quyết định layer nào mà `getFlow` đọc trước, chứ không phải là liệu nó có thể tiếp cận cache hay không:
 
-Dùng preload khi bạn biết trước session sẽ cần những placement nào nhưng chưa muốn hiển thị ngay — chẳng hạn, ngay sau khi `activate` và `identify` hoàn tất, cho flow đứng sau một nút mà người dùng chưa nhấn.
+- `.returnCacheDataElseLoad` đọc bản preload trước, chỉ ra mạng khi không có cache. `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` hoạt động tương tự nhưng chỉ khi bản đó còn trẻ hơn `maxAge`.
+- Mặc định là `.reloadRevalidatingCacheData` — ra mạng trước, chỉ dùng bản preload khi request thất bại hoặc timeout.
+
+Dù chọn policy nào, preload đều có ích, nhưng theo cách khác nhau: policy ưu tiên cache sẽ loại bỏ hoàn toàn request, còn policy mặc định vẫn gửi request nhưng có sẵn bản dự phòng khi cần.
+
+Dùng cách này khi bạn biết trước những placement nào sẽ cần trong phiên nhưng chưa muốn hiển thị ngay — ví dụ, ngay sau khi `activate` và `identify` hoàn thành, cho flow đằng sau một nút mà người dùng chưa nhấn.
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -81,16 +86,16 @@ Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoa
 - Nếu timeout xảy ra trước khi hoàn tất lần tải theo đối tượng mục tiêu, SDK vẫn thử biến thể đối tượng mặc định trong khoảng thời gian còn lại.
 - Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn phải gọi `getFlow` để hiển thị.
 
-### Preload bao gồm những gì \{#what-a-preload-covers\}
+### Những gì preload bao gồm \{#what-a-preload-covers\}
 
-Một flow đến màn hình theo từng lớp, và preload chỉ bao phủ lớp đầu tiên:
+Một flow hiển thị trên màn hình theo từng lớp. Preload bao gồm lớp đầu tiên, giống như `getFlow` thực hiện:
 
 | Lớp | Được tải bởi | Được làm ấm bởi preload |
 |---|---|---|
-| Placement JSON — biến thể được chọn, ID sản phẩm và Remote Config | `getFlow` | Có |
-| Bố cục UI — cấu trúc màn hình, kiểu dáng và văn bản | `getFlowConfiguration` | Không |
+| Flow JSON — biến thể được chọn, ID sản phẩm và remote config | `getFlow` | Có |
+| Bố cục giao diện — cấu trúc, kiểu dáng và văn bản của màn hình | `getFlowConfiguration` | Không |
 | Hình ảnh, bao gồm khung tĩnh thay thế cho phần tử video | `getFlowConfiguration`, chạy nền | Không |
-| Tệp video | Trình phát hệ thống, khi màn hình hiển thị | Không được SDK lưu vào cache |
+| Tệp video | Trình phát hệ thống, khi màn hình render | Không được SDK lưu cache |
 
 `getFlowConfiguration` phải chờ layout tải xong, nên lần đầu tiên yêu cầu một layout nhất định sẽ tốn một round trip ngay cả sau khi đã preload. SDK sau đó lưu layout đó vào bộ nhớ đệm trên đĩa, bộ nhớ này tồn tại qua các lần khởi động lại ứng dụng và được đọc trước bất kỳ lần gọi mạng nào, nên chi phí chỉ rơi vào lần yêu cầu đầu tiên chứ không phải mỗi lần. Sau khi SDK đã có layout, nó bắt đầu cache ảnh độc lập với lần gọi đó: không chặn màn hình, và không có callback, delegate method hay lỗi nào báo lại khi hoàn tất.
 

@@ -25,14 +25,19 @@ metadataTitle: "优化流程与付费墙获取 | iOS SDK | Adapty 文档"
 ## 预加载版位 \{#preload-placements\}
 
 :::info
-`preloadFlows` 和 `preloadFlowsForDefaultAudience` 从 SDK 4.1 版本起可用。
+`preloadFlows` 和 `preloadFlowsForDefaultAudience` 从 SDK 版本 4.1 起可用。
 :::
 
-`preloadFlows` 会提前将版位 JSON 写入 SDK 缓存——每个版位发起一次请求，仅此而已。尽管名称如此，它并不会获取流程的 UI 布局或其媒体资源。
+`preloadFlows` 会提前缓存流程 JSON——每个版位发起一次请求。之后按常规方式使用即可：`getFlow` 获取流程，`getFlowConfiguration` 获取其视图配置。
 
-后续的 `getFlow` 仅在传入 `fetchPolicy: .returnCacheDataElseLoad` 或 `.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 时才会读取该缓存。默认策略 `.reloadRevalidatingCacheData` 每次调用都会请求网络，因此预加载配合默认策略会多消耗一次请求，毫无收益——预热的缓存副本仅作为离线备用。
+`fetchPolicy` 决定后续 `getFlow` 优先从哪一层读取数据，而不是决定是否能访问缓存：
 
-适合在以下场景使用：当你已知当前会话需要哪些版位，但暂时不想展示它们时——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的流程提前预热。
+- `.returnCacheDataElseLoad` 优先读取预加载的缓存副本，仅在缓存为空时才发起网络请求。`.returnCacheDataIfNotExpiredElseLoad(maxAge:)` 的逻辑相同，但额外要求缓存副本的存活时间不超过 `maxAge`。
+- 默认策略 `.reloadRevalidatingCacheData` 优先走网络，仅在请求失败或超时时才回退到预加载的缓存副本。
+
+两种策略都能从预加载中受益，但方式不同：缓存优先策略会直接省去网络请求，而默认策略则保留网络请求，同时将缓存作为兜底备份。
+
+当你知道本次会话需要哪些版位、但暂时不想展示时，可以使用此方法——例如，在 `activate` 和 `identify` 完成后，提前预加载用户还未点击的按钮背后的流程。
 
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
@@ -81,16 +86,16 @@ Adapty.getFlow(placementId: "main_paywall", fetchPolicy: .returnCacheDataElseLoa
 - 如果超时在面向特定目标受众的请求完成前触发，SDK 仍会在剩余时间内尝试获取默认目标受众的变体。
 - 预加载仅用于预热缓存，不返回任何内容——你仍需调用 `getFlow` 来展示它。
 
-### 预加载涵盖的内容 \{#what-a-preload-covers\}
+### 预加载的覆盖范围 \{#what-a-preload-covers\}
 
-一个流程到达屏幕需要经过多个层级，预加载仅覆盖第一层：
+一个流程到达屏幕需要经历多个层级。预加载与 `getFlow` 一样，只覆盖第一层：
 
 | 层级 | 由谁获取 | 是否被预加载预热 |
 |---|---|---|
-| 版位 JSON —— 所选实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
-| UI 布局 —— 页面结构、样式和文本 | `getFlowConfiguration` | 否 |
-| 图片，包括替代视频元素的静态帧 | `getFlowConfiguration`（后台加载） | 否 |
-| 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
+| 流程 JSON — 所选实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
+| UI 布局 — 屏幕的结构、样式和文本 | `getFlowConfiguration` | 否 |
+| 图片，包括用于替代视频元素的静态帧 | `getFlowConfiguration`（后台处理）| 否 |
+| 视频文件 | 系统播放器，在屏幕渲染时加载 | SDK 不缓存 |
 
 `getFlowConfiguration` 需要等待布局加载完成，因此即使已预加载，首次请求某个布局时仍需要一次完整的网络往返。SDK 随后会将该布局保存到自身的磁盘缓存中，该缓存在应用重启后依然存在，且读取时优先于网络请求，所以开销仅发生在首次请求时，而非每次请求。一旦 SDK 获得布局，便会独立启动图片缓存，该过程不会阻塞页面显示，也没有任何回调、委托方法或错误通知来告知缓存何时完成。
 

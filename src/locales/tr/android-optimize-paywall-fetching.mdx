@@ -20,15 +20,20 @@ Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` işlevlerinin zaten tama
 
 `fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products-android) sayfasına, doğru placement seçimi için ise [Placement'lar](placements) sayfasına bakın.
 
-## Placement'ları önceden yükle \{#preload-placements\}
+## Placement'leri önceden yükle \{#preload-placements\}
 
 :::info
 `preloadFlows` ve `preloadFlowsForDefaultAudience`, SDK sürüm 4.1'den itibaren kullanılabilir.
 :::
 
-`preloadFlows`, placement JSON'ını SDK önbelleğine önceden yazar — her placement için bir istek gönderilir, başka bir şey yapılmaz. Adına rağmen, flow'un UI düzenini veya medya içeriğini getirmez.
+`preloadFlows`, flow JSON'ını önceden önbelleğe alır — her placement için bir istek gönderilir. Ardından her zamanki gibi kullanabilirsiniz: flow için `getFlow`, görünüm yapılandırması için `getFlowConfiguration`.
 
-Sonraki bir `getFlow` çağrısı, yalnızca `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` veya `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` geçirildiğinde bu önbelleği okur. Varsayılan politika olan `ReloadRevalidatingCacheData`, her çağrıda ağa gider; bu nedenle ön yükleme ile varsayılan politikalı bir fetch birlikte kullanıldığında fazladan bir istek oluşur ve hiçbir şey kazanılmaz — ısıtılmış kopya yalnızca çevrimdışı yedek olarak işlev görür.
+`fetchPolicy`, sonraki `getFlow` çağrısının hangi katmanı önce okuyacağını belirler; önbelleğe erişip erişemeyeceğini değil:
+
+- `ReturnCacheDataElseLoad` önce önceden yüklenmiş kopyayı okur ve yalnızca önbellekte hiçbir şey yoksa ağa gider. `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` ise kopya `maxAgeMillis`'den daha yeni olduğu sürece aynı şeyi yapar.
+- Varsayılan olan `ReloadRevalidatingCacheData` önce ağa gider ve istek başarısız olduğunda ya da zaman aşımına uğradığında önceden yüklenmiş kopyaya düşer.
+
+Önceden yükleme her iki durumda da işe yarar, ancak farklı biçimlerde: önbellek öncelikli bir politika isteği tamamen ortadan kaldırırken, varsayılan politika isteği korur ve geri düşülecek sıcak bir kopya elde eder.
 
 Bunu, session'ın hangi placement'ları ihtiyaç duyacağını bildiğinizde ama henüz göstermek istemediğinizde kullanın — örneğin, `activate` ve `identify` çözümlendikten hemen sonra, kullanıcının henüz dokunmadığı bir düğmenin arkasındaki flow için.
 
@@ -86,15 +91,15 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 - Bir placement zaman aşımına uğrarsa, sunucu hatası alırsa veya ağ hatasıyla karşılaşırsa SDK, o placement için yedek varyantlara geri döner. Diğer hatalar olduğu gibi raporlanır.
 - Ön yükleme yalnızca önbelleği ısıtır. İçerik döndürmez — içeriği görüntülemek için yine `getFlow` çağırmanız gerekir.
 
-### Ön yüklemenin kapsadığı alanlar \{#what-a-preload-covers\}
+### Bir ön yüklemenin kapsadıkları \{#what-a-preload-covers\}
 
-Bir flow ekrana katmanlar halinde ulaşır ve ön yükleme yalnızca ilk katmanı kapsar:
+Bir flow ekrana katman katman ulaşır. Ön yükleme, tıpkı `getFlow` gibi yalnızca ilk katmanı kapsar:
 
-| Katman | Getiren | Ön yükleme ile hazırlanan |
+| Katman | Kimler tarafından getirilir | Ön yüklemeyle hazırlanır mı |
 |---|---|---|
-| Placement JSON — seçilen varyant, ürün ID'leri ve remote config | `getFlow` | Evet |
+| Flow JSON — seçilen varyant, ürün kimlikleri ve remote config | `getFlow` | Evet |
 | UI düzeni — ekranın yapısı, stili ve metni | `getFlowConfiguration` | Hayır |
-| Görseller (video öğesinin yerine geçen sabit kare dahil) | `getFlowConfiguration`, arka planda | Hayır |
+| Görseller (video öğesinin yerine geçen durağan kare dahil) | `getFlowConfiguration`, arka planda | Hayır |
 | Video dosyaları | Ekran render edilirken sistem oynatıcısı | SDK tarafından önbelleğe alınmaz |
 
 `getFlowConfiguration` layout için bekler; bu nedenle belirli bir layout'un ilk isteği, ön yükleme sonrasında bile bir tam gidiş-dönüş süresine mal olur. SDK, bu layout'u kendi disk önbelleğinde tutar; bu önbellek uygulama yeniden başlatmalarından sonra da hayatta kalır ve herhangi bir ağ çağrısından önce okunur. Dolayısıyla bu maliyet her istekte değil, yalnızca ilk istekte ortaya çıkar. SDK layout'u aldıktan sonra, çağrıdan bağımsız olarak görselleri önbelleğe almaya başlar: ekranı bekletmez ve bu işlem tamamlandığında herhangi bir callback veya hata bildirilmez.

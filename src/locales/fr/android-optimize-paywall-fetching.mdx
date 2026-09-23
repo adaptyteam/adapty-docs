@@ -26,9 +26,14 @@ Consultez [Récupérer les paywalls et les produits](fetch-paywalls-and-products
 `preloadFlows` et `preloadFlowsForDefaultAudience` sont disponibles à partir de la version 4.1 du SDK.
 :::
 
-`preloadFlows` écrit le JSON du placement dans le cache du SDK en avance — une requête par placement, et rien d'autre. Malgré son nom, cette fonction ne récupère pas la mise en page UI du flow ni ses médias.
+`preloadFlows` met en cache le JSON du flow à l'avance — une requête par placement. Vous l'utilisez ensuite normalement : `getFlow` pour le flow, `getFlowConfiguration` pour sa configuration d'affichage.
 
-Un `getFlow` ultérieur ne lit ce cache que si vous passez `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` ou `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)`. La politique par défaut, `ReloadRevalidatingCacheData`, contacte le réseau à chaque appel — un préchargement associé à un appel avec la politique par défaut génère donc une requête supplémentaire sans aucun gain : la copie mise en cache ne sert que de solution de repli hors ligne.
+`fetchPolicy` détermine quelle couche un `getFlow` ultérieur lit en premier, et non s'il peut accéder au cache :
+
+- `ReturnCacheDataElseLoad` lit d'abord la copie préchargée et ne contacte le réseau que si rien n'est en cache. `ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` fait de même tant que la copie est plus récente que `maxAgeMillis`.
+- La valeur par défaut, `ReloadRevalidatingCacheData`, contacte d'abord le réseau et bascule sur la copie préchargée si la requête échoue ou expire.
+
+Un préchargement est utile dans les deux cas, mais différemment : une politique cache-first supprime la requête, tandis que la valeur par défaut la conserve et dispose d'une copie de secours prête à l'emploi.
 
 Utilisez cette méthode quand vous savez quels placements la session va utiliser, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la résolution de `activate` et `identify`, pour le flow derrière un bouton que l'utilisateur n'a pas encore appuyé.
 
@@ -88,14 +93,14 @@ Adapty.getFlow("main_paywall", AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoa
 
 ### Ce que couvre un préchargement \{#what-a-preload-covers\}
 
-Un flow s'affiche à l'écran par couches, et un préchargement ne couvre que la première :
+Un flow s'affiche à l'écran en plusieurs couches. Un préchargement couvre la première, exactement comme `getFlow` :
 
-| Couche | Récupérée par | Réchauffée par un préchargement |
+| Couche | Récupérée par | Préchauffée par un préchargement |
 |---|---|---|
-| Placement JSON — la variation choisie, ses identifiants de produits et le Remote Config | `getFlow` | Oui |
-| Mise en page UI — la structure, le style et le texte de l'écran | `getFlowConfiguration` | Non |
-| Images, y compris la vignette qui remplace un élément vidéo | `getFlowConfiguration`, en arrière-plan | Non |
-| Fichiers vidéo | Le lecteur système, au moment du rendu de l'écran | Non mis en cache par le SDK |
+| JSON du flow — la variante choisie, ses IDs de produits et la Remote Config | `getFlow` | Oui |
+| Mise en page de l'interface — structure, style et texte de l'écran | `getFlowConfiguration` | Non |
+| Images, y compris l'image fixe utilisée à la place d'un élément vidéo | `getFlowConfiguration`, en arrière-plan | Non |
+| Fichiers vidéo | Le lecteur système, au rendu de l'écran | Non mis en cache par le SDK |
 
 `getFlowConfiguration` attend le layout, donc la première requête pour un layout donné coûte un aller-retour réseau même après un préchargement. Le SDK conserve ensuite ce layout dans son propre cache disque, qui survit aux redémarrages de l'application et est lu avant tout appel réseau — le coût ne tombe donc que sur la première requête, pas sur toutes les suivantes. Une fois le layout en main, le SDK commence à mettre en cache les images indépendamment de l'appel : cela ne bloque pas l'affichage de l'écran, et aucun callback ni aucune erreur ne signale la fin de cette opération.
 
