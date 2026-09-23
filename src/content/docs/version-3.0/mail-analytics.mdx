@@ -6,7 +6,7 @@ keywords: ['adapty mail']
 ---
 import ZoomImage from '@site/src/components/ZoomImage';
 
-The **Analytics** page shows how your campaigns perform across five dimensions: campaign, segment, A/B variant, message, and trigger. It pairs delivery metrics with the revenue attributed to each email, so you can compare variants, find the best-performing segments, and spot where revenue concentrates.
+The **Analytics** page shows what your emails did: how many were delivered, opened, and clicked, and how much revenue they brought in. Every number can be broken down — by campaign, by segment, by A/B variant, and more.
 
 The page has a chart on top and a breakdown table below. Click any row to drill into a single entity.
 
@@ -20,7 +20,7 @@ The toolbar at the top of the page controls the time window and how it's buckete
 - **Granularity**: **Daily**, **Weekly**, or **Monthly** buckets. Granularity coarsens automatically when the range grows — **Daily** switches to **Weekly** past 92 days, and both switch to **Monthly** past 366 days.
 - **Chart style**: **Line**, **Area**, or **Bar**.
 
-If the page shows a "range too wide" warning, narrow the date range, coarsen the granularity, or apply filters.
+If the page reports that the range is too wide, narrow the date range, coarsen the granularity, group by less, or apply filters.
 
 <ZoomImage id="mail-time-range.gif" width="700px" alt="Toolbar controls for the date range, granularity, and chart style" />
 
@@ -28,13 +28,30 @@ If the page shows a "range too wide" warning, narrow the date range, coarsen the
 
 Three controls below the toolbar shape what the chart and table show:
 
-- **Group by**: The dimension that splits the dataset into rows. Options are **Campaigns**, **Segments**, **A/B variants**, and **Triggers**. With **No grouping**, the page collapses everything into a single aggregate **All** row.
-- **Breakdown**: A second dimension that splits each row into sub-rows. With both **Group by** and **Breakdown** set, every row in the table can be expanded to show its sub-groups. Breakdown can be any dimension — including **Messages** — except the one already used as **Group by**.
-- **Add filter**: Restrict the dataset to specific campaigns, segments, A/B variants, or triggers. Filters apply to both the chart and the table.
+- **Group by**: Splits the table into one row per campaign, per segment, or whatever else you pick. With **No grouping**, everything collapses into a single **All** row.
+- **Breakdown**: Splits each of those rows again, by a second choice. Expand a row to see them. It stays disabled until you set a **Group by**, and you can't pick the same thing twice.
+- **Add filter**: Narrows the chart and the table down to the campaigns, segments, or domains you care about.
 
-:::note
-**Messages** is available as a breakdown but not as a top-level **Group by** or filter. To analyze individual messages, group by **Campaigns** with a **Messages** breakdown, then expand the campaign row or open a message from the drilldown.
-:::
+All three offer the same eleven choices:
+
+| Option | One row per |
+| --- | --- |
+| **Campaigns** | campaign |
+| **Campaign type** | marketing or transactional |
+| **Campaign purpose** | lifecycle moment the campaign is written for |
+| **Segments** | segment the recipient matched |
+| **A/B variants** | variation the recipient was routed to |
+| **Messages** | individual email in a campaign |
+| **Triggers** | trigger that started the flow |
+| **Sender email domain** | sending domain that carried the email |
+| **Mailbox email provider** | recipient's mailbox provider — Google, iCloud, and so on |
+| **Mailbox email domain** | recipient's email domain |
+| **Event outcome** | bounce reason, complaint kind, or link clicked |
+
+Two of those choices behave differently:
+
+- **Messages** appears only in the **Breakdown** dropdown. A subject line means nothing outside its campaign, so group by **Campaigns** first, then split each campaign row into the individual emails it sent.
+- **Event outcome** gives each row a single kind of event, so most of its columns are empty — a bounce reason has no opens. Rows with nothing to show for the metrics you've selected are hidden.
 
 <ZoomImage id="mail-controls.webp" width="300px" alt="Group by, Breakdown, and Add filter controls below the toolbar" />
 
@@ -80,44 +97,45 @@ Each row — on the Analytics page, in the drilldown, and in the inline views de
 - **Delivered**: SES-confirmed inbox deliveries.
 - **Bounced**: SES-reported bounces. Hard and soft bounces aren't distinguished — both count as one **Bounced**.
 - **Opened**: Pixel loads. Apple Mail Privacy Protection pre-fetches images on iOS 15+ and inflates this count — rely on clicks and revenue for stronger signals.
-- **Clicked**: Link clicks in the email body. Every link — the CTA button, the hero image, the logo — points at the `go.` host of the [sending domain](mail-sending-domain#which-records-you-add) that carried the email and redirects onward from there, which is where the click is counted.
+- **Clicked**: Clicks on the CTA button, the hero image, or the logo. Footer links — unsubscribe, privacy, terms — aren't counted, and don't appear anywhere in analytics. A click is recorded at your own [link subdomain](mail-sending-domain#1-add-the-domain), which every link passes through before redirecting onward.
 - **Unsubscribed**: Unsubscribes from the footer link or the `List-Unsubscribe` header.
 - **Converted**: Unique profiles in the group with an attributed purchase in the time range. Conversions are bucketed by the purchase date — a click in March followed by a buy in April counts in April. A profile that purchases more than once still counts once.
 - **Revenue**: Sum of attributed revenue (USD) across subscription starts, renewals, and one-time purchases.
 
 ## Derived rates
 
-Each rate is computed from the raw counts above:
+| Rate | What it divides |
+| --- | --- |
+| Delivery rate | Delivered / Sent |
+| Open rate | People who opened at least one email / everyone Adapty Mail tried to send to |
+| Click rate | People who clicked a CTA, hero image, or logo / everyone Adapty Mail tried to send to |
 
-| Rate          | Formula              |
-| ------------- | -------------------- |
-| Delivery rate | Delivered / Sent     |
-| Open rate     | Opened / Delivered   |
-| Click rate    | Clicked / Delivered  |
+Delivery rate counts emails; the other two count people. Someone who opens the same email five times adds five to **Opened** but one to the open rate. The denominator includes addresses that bounced, so a batch with many bounces drags the open rate down.
 
 The drilldown shows the same three rates next to its summary cards.
 
 ## Revenue attribution
 
-Revenue is attributed via **last-click** on a tracked link — every link in the email is one, since they all run through the redirect on your own sending domain:
+Revenue is attributed on **last click**:
 
-1. When a recipient clicks any link in an email, Adapty Mail stores the `scheduled_email_id` against that profile in a short-term store.
-2. If a purchase event arrives afterward with no existing attribution, Adapty Mail back-fills the stored `scheduled_email_id` onto the transaction — provided the purchase timestamp is after the click.
-3. Purchases without a preceding tracked click stay unattributed.
+1. When a recipient clicks the CTA, the hero image, or the logo, Adapty Mail remembers which email the click came from — for one hour.
+2. A purchase in that hour is credited to that email, provided it has no attribution already and happened after the click.
+3. A purchase more than an hour after the click, or with no click before it, stays unattributed.
+4. A renewal of a product the profile already bought is never credited, however recently they clicked.
 
-The tracked parameter is `scheduled_email_id`. A checkout URL you host yourself can also carry the recipient's identity through the `{email}` and per-source profile-ID placeholders, so the page can personalize what it shows — that's a separate mechanism from attribution. See [Set up checkout](mail-checkout).
+Attribution needs nothing extra from your checkout page: the click is recorded at the redirect, and the purchase is matched by profile once it reaches Adapty Mail. The `{email}` and profile-ID placeholders a self-hosted page can carry personalize what the visitor sees; they play no part in attribution. [Set up checkout](mail-checkout) covers both.
 
 ## Inline analytics in Flows and A/B Tests
 
 The same metrics also appear inline next to the rows being measured:
 
-- **Flows page**: Each segment row in a trigger view shows its delivery, engagement, and revenue counts.
+- **Flows page**: Under each trigger, every segment shows its own delivery, engagement, and revenue counts.
 - **A/B Tests page**: Variations are listed side by side with the same metric set, which is convenient for comparing variants directly.
 
-Use the Analytics page when comparing across campaigns or drilling into a single entity, and the inline views when you're already working in a specific flow row or A/B test. The metric definitions, derived rates, and attribution rules above apply identically across all three views.
+Use the Analytics page when comparing across campaigns or drilling into a single entity, and the inline views when you're already working in a flow or an A/B test. The metric definitions, derived rates, and attribution rules above apply identically across all three views.
 
 ## Limitations
 
 - **No soft vs. hard bounce distinction**: Every bounce — temporary or permanent — collapses into a single **Bounced** count.
 - **Eventual consistency, not real-time**: Counts are aggregated from event tables. Fresh events usually appear within minutes, but there's no streaming guarantee.
-- **Range size is capped**: Very wide date ranges combined with fine granularity may exceed the chart's cell cap. The page shows this as a "range too wide" warning — narrow the range, coarsen the granularity, or apply filters.
+- **Range size is capped**: A wide date range with fine granularity, or a grouping with many rows, can exceed what the chart will render. The page then shows *"Selected range is too wide. Try a coarser granularity or shorter range."*

@@ -4,7 +4,9 @@ description: "View every customer in your project — their attributes, purchase
 metadataTitle: "Profiles | Adapty Mail | Adapty Docs"
 ---
 
-A **profile** is one customer in your project. The **Profiles** page lists everyone Adapty Mail knows about and shows each person's purchase outcome, email engagement, and full activity journey. Profiles arrive automatically: from emails the Adapty SDK collects, or from data you send through the Adapty Mail API.
+A **profile** is one customer in your project. The **Profiles** page lists everyone Adapty Mail knows about and shows each person's purchase outcome, email engagement, and full activity journey.
+
+Profiles arrive automatically, through whichever [entry point](mail-entry-points) you set up. An email address is the entry requirement: Adapty Mail creates no profile for a customer who hasn't given you one.
 
 :::tip
 To group profiles into reusable audiences for flows and A/B tests, see [Segments](mail-segments).
@@ -12,26 +14,31 @@ To group profiles into reusable audiences for flows and A/B tests, see [Segments
 
 ## How profiles get into Adapty Mail
 
-Adapty Mail creates profiles automatically from two sources:
+Adapty Mail creates profiles automatically from three sources:
 
-- **Adapty SDK**: The SDK collects emails and purchases from your app. See [Connect Adapty to Adapty Mail](mail-collect-emails).
+- **Adapty**: The Adapty SDK collects emails and purchases from your app. See [Connect Adapty to Adapty Mail](mail-collect-emails).
 - **Adapty Mail API**: Your backend sends profiles and transactions server-to-server. See [Send data via the API](mail-send-data-via-api).
+- **FunnelFox**: Your web funnels forward emails, purchases, and subscription events. See [Connect FunnelFox to Adapty Mail](mail-funnelfox).
 
-Adapty Mail links every email, click, and purchase to a profile. It recognizes the profile by the sending system's own ID first, then `customer_user_id`, then email address, so the same person arriving from two sources lands on one profile. The Profiles page is read-only. You can view profiles and unsubscribe them, but you can't create, edit, or delete them. The source app or the API owns that data.
+Adapty Mail matches people by email address. Two sources reporting the same address land on one profile; two different addresses create separate profiles, even when `customer_user_id` is identical. Each source keeps its own identifier for the person, and the profile page lists them all under **External Profile IDs**.
+
+If you also use Adapty, a profile here is not your Adapty profile. Adapty Mail keeps its own records and stores the Adapty profile ID as one of those external IDs. Expect fewer profiles here than in Adapty, because an Adapty profile with no email address never arrives.
+
+You can't create or edit profiles here — whichever source sent them owns that data — but you can unsubscribe and delete them.
 
 ## The Profiles list
 
-The list shows one row per profile, newest first. Use the search box to find a profile by email, profile ID, or external profile ID.
+The list shows one profile per row, newest first. Use the search box to find a profile by email, profile ID, or external profile ID.
 
 | Column | Shows |
 | --- | --- |
-| Profile | The customer's email and the campaign that has sent them the most emails. |
+| Profile | The customer's email and the campaign behind their most recent email event. |
 | Status | The profile's purchase state. See [Profile status](#profile-status). |
 | Country | The customer's country. |
-| Open rate | Opened divided by sent across all emails. A dash means no emails were sent yet. |
+| Open rate | Emails opened divided by emails sent. A dash means no emails were sent yet. |
 | LTV | Lifetime value — total revenue from this profile across all sources. |
 | Joined | When the profile first entered Adapty Mail. |
-| Last activity | How recently the profile engaged with an email, such as a send, open, or click. |
+| Last activity | When the profile's most recent email event happened. A send counts, not only an open or a click. |
 
 :::important
 **Joined** is the date the profile first entered Adapty Mail, used as the "customer since" date. It is the ingest time, not the original signup date from your app.
@@ -41,71 +48,106 @@ The list shows one row per profile, newest first. Use the search box to find a p
 
 ### Profile status
 
-The **Status** column shows the profile's purchase state — where the customer stands with subscriptions and one-time purchases.
+The **Status** column shows the profile's purchase state — what the customer bought and whether it's still active. It says nothing about whether they receive your emails.
 
 | Status | Meaning |
 | --- | --- |
-| Never purchased | The profile hasn't bought anything. |
-| Purchased | The profile made a one-time purchase. |
-| Active subscriber | The profile has an active subscription. |
-| Cancelling | Auto-renew is off; access lasts until the current period ends. |
+| Never purchased | The customer hasn't bought anything. |
+| Purchased | The customer made a one-time purchase. |
+| Active subscriber | The customer has a paid subscription set to renew. |
+| Renewal cancelled | Auto-renew is off; access lasts until the current period ends. |
 | Billing issue | A renewal payment failed. |
 | Grace period | Payment failed, but access continues during the store's grace period. |
 | Churned | The subscription expired and access ended. |
 | Refunded | A purchase was refunded. |
 
 :::note
-Purchase status is separate from email subscription status. A profile can be an **Active subscriber** yet **Unsubscribed** from your emails, or **Churned** yet still **Subscribed**. The email status appears on the profile page and controls whether Adapty Mail can send to the profile.
+A profile can be an **Active subscriber** yet **Unsubscribed** from your emails, or **Churned** yet still **Subscribed**. The email status appears on the profile page and controls whether Adapty Mail can send to the profile.
 :::
 
 ## Profile details
 
-Click a profile to open its detail page. The header shows the email, country, platform, and "customer since" date. It also shows three status badges: the purchase status, the open rate, and whether the profile is **Subscribed** or **Unsubscribed**.
+Click a profile to open its detail page. 
 
-Five engagement metrics run across the top:
+### The profile header
+
+The header identifies the customer: email, country, gender, age, platform, and the "customer since" date. It also carries three badges:
+
+- **Purchase status**: The profile's purchase state, using the values listed under [Profile status](#profile-status).
+- **Open rate**: This profile's opens against the emails sent to it. [Analytics](mail-analytics) counts recipients who opened at least once, not emails, so the two figures differ.
+- **Subscribed** or **Unsubscribed**: The profile's email permission, unrelated to the paid subscription in **Status**.
+
+**Subscribed** means nothing blocks a send — not that anything is scheduled. The profile still has to match a segment in a flow, and [double opt-in](mail-double-opt-in) holds marketing back until they confirm their address. **Unsubscribed** covers every reason sending stopped: a bounce or a spam report shows the same badge as an actual unsubscribe, and [Reasons emails stop](mail-suppression) covers them all.
+
+### Engagement metrics
+
+Five metrics run across the top of the page:
 
 - **Sent**: Emails sent to the profile.
 - **Delivered**: Emails the mailbox provider accepted.
-- **Opened**: Emails the profile opened.
-- **Clicked**: Emails where the profile clicked a link.
+- **Opened**: Times the recipient opened an email, counting repeat opens.
+- **Clicked**: Times the recipient clicked a link.
 - **Revenue**: Two figures — attributed revenue and lifetime value.
 
 :::note
-**Attributed revenue** is revenue driven by your emails: purchases the profile made after engaging with a campaign. **Lifetime value (LTV)** is the profile's total revenue across all sources, whether or not email played a part. The header shows attributed revenue first, then LTV.
+**Attributed revenue** is revenue driven by your emails: purchases the customer made after clicking a link in one. **Lifetime value (LTV)** is the profile's total revenue across all sources, whether or not email played a part. The header shows attributed revenue first, then LTV.
 :::
+
+### The Profile card
 
 The **Profile** card lists the customer's attributes:
 
-- **Platform**: The customer's device platform, such as iOS or Android.
+- **Platform**: The platform of the customer's most recent device, such as iOS or Android.
+- **Email provider**: Who runs the mailbox — **Google**, **iCloud**, **Proton**, and so on — identified from the domain's MX records. **Disposable** marks a throwaway-address service, which [fails verification](mail-suppression#address-verification-failed) and arrives already suppressed.
 - **Country**: The customer's country.
 - **Store country**: The country of the customer's App Store or Google Play account.
 - **Gender**: The customer's gender, if known.
-- **Age**: The customer's age, if a birthday was provided.
+- **Age**: The customer's age, followed by the birthday the source sent.
 - **Profile ID**: Adapty Mail's internal identifier for the profile.
-- **External ID**: The `external_profile_id` from your app or backend.
-- **Custom attributes**: Any key-value pairs you sent with the profile.
+
+**External Profile IDs** lists one entry per source — **Adapty**, **FunnelFox**, or **Custom** — each with the identifier that source uses for this person and when it first arrived. **Custom attributes** lists the key-value pairs the source sent.
 
 <ZoomImage id="mail-profile-detail.webp" width="700px" alt="Profile detail page showing engagement metrics, the Profile card, and the Purchase state card" />
 
 ### Purchase state
 
-The **Purchase state** card shows the profile's revenue and purchase history. Lifetime value appears at the top, followed by up to two sections:
+The **Purchase state** card shows the profile's revenue and purchase history. Lifetime value appears at the top, with the recurring revenue beneath it, followed by up to two sections:
 
-- **Subscription**: Price, store, start date, renewal or expiry date, and product ID for the profile's subscription.
+- **Subscription**: Price, store, start date, product ID, and a date labelled **Renews** while access lasts or **Expired** once it ends.
 - **One-time purchase**: Price, store, purchase date, and product ID for the most recent one-time purchase.
 
-If the profile hasn't bought anything, the card shows **No purchase yet**.
+When the customer has both, each section carries its own status badge. If they haven't bought anything, the card shows **No purchase yet**.
 
-The **Segments** card lists every segment the profile currently matches, or **Not in any segment** if none apply. Membership is evaluated live, so it always reflects the latest profile data. See [Segments](mail-segments) for how to build them.
+### Segments
+
+The **Segments** card counts how many segments the profile currently matches and lists them; click one to open it. If none match, the card shows **Not in any segment**. Adapty Mail re-runs the filters on every request, so the list always reflects the latest profile data. [Segments](mail-segments) covers how to build them.
 
 ## The activity journey
 
-The **Journey** section is a timeline of everything that happened to the profile. It starts with **Profile created** and then interleaves two kinds of events:
+The **Journey** section is a timeline of everything that happened to the profile, starting with **Profile created**. Email events and transaction events interleave in one list.
 
-- **Email events**: Each email sent to the profile, with its delivery, open, and click activity. Expand an email to see the links the profile clicked and any purchase the email drove.
-- **Transaction events**: Subscription and one-time purchase milestones, such as starts, renewals, cancellations, billing issues, expirations, and refunds.
+### Email events
 
-Transaction events map to these journey labels:
+Each entry is one email Adapty Mail sent. Expand it to see the links the recipient clicked and any purchase the email drove. A chip shows how far the email got:
+
+| Chip | What it means |
+| --- | --- |
+| **Scheduled** | The email has a send time and Adapty Mail hasn't sent it yet. |
+| **Sent** | Adapty Mail sent the email and has no delivery confirmation for it yet. |
+| **Delivered** | The receiving mail server accepted the email. This chip replaces **Sent**. |
+| **Opened** | The tracking pixel loaded. |
+| **Clicked** | The recipient clicked a link. Expand the email to see which links, and the purchase it drove. |
+| **Confirmed** | The recipient confirmed their address from a [double opt-in](mail-double-opt-in) email. |
+| **Bounced** | The receiving mail server refused the email and returned it. |
+| **Spam report** | The recipient marked the email as spam. |
+| **Unsubscribed** | The recipient unsubscribed. |
+| **Delayed** | The receiving mail server asked Adapty Mail to try again later. |
+| **Throttled** | Every sending domain was over its [daily limit](mail-suppression#throttle-temporary-delays-and-cancellations), so the email waits. |
+| **Cancelled** | The email won't send. A purchase, an unsubscribe, a bounce, a spam report, a deletion, or a second throttle all cancel what's left of a sequence — see [Reasons emails stop](mail-suppression). |
+
+### Transaction events
+
+Each entry is a subscription or one-time purchase milestone. The journey shows a plain-language label in place of the raw `event_type`:
 
 | `event_type` | Journey label |
 | --- | --- |
@@ -120,7 +162,7 @@ Transaction events map to these journey labels:
 | `non_subscription_purchase` | One-time purchase |
 | `non_subscription_purchase_refunded` | Purchase refunded |
 
-These events reach Adapty Mail automatically through the Adapty SDK, or you can send them yourself through the API. See [Send transaction events](mail-send-data-via-api#send-transaction-events) for the event reference.
+These events reach Adapty Mail automatically through the Adapty SDK, or you can send them yourself through [the API](mail-send-data-via-api#send-transaction-events).
 
 <ZoomImage id="mail-profile-journey.webp" width="700px" alt="Profile Journey timeline showing Profile created followed by subscription transaction events" />
 
@@ -128,6 +170,22 @@ These events reach Adapty Mail automatically through the Adapty SDK, or you can 
 
 To stop sending emails to a profile, open its page, click **...**, and select **Unsubscribe**. Adapty Mail marks the profile as unsubscribed and adds it to your suppression list, so campaigns and flows skip it.
 
-The action is idempotent: a profile that is already unsubscribed stays unsubscribed. For the full picture of suppression and how profiles unsubscribe themselves, see [Unsubscribe and suppression](mail-suppression).
+Once a profile is suppressed — for any reason — the menu item reads **Unsubscribed** and stays disabled. [Reasons emails stop](mail-suppression) covers the two ways recipients unsubscribe themselves.
 
 <ZoomImage id="mail-profile-unsubscribe.webp" width="500px" alt="Profile header with the actions menu open and the Unsubscribe option" />
+
+## Delete a profile
+
+Delete a profile to erase what Adapty Mail stores about a person — to answer a data-deletion request, for example.
+
+To delete a profile, open its page, click **...**, select **Delete**, and confirm. Adapty Mail then:
+
+- Erases the email address and every personal attribute: name, gender, birthday, country, store country, device details, and custom attributes.
+- Cancels the emails still scheduled for the profile.
+- Removes the profile from the Profiles page.
+
+You can't undo this. Purchase records survive with nothing left to identify the person, so your revenue totals don't change.
+
+Deletion doesn't block the address. If a source sends it again, Adapty Mail creates a new profile, unconnected to the deleted one. To keep someone out for good, stop the source from sending their data.
+
+Your backend can delete profiles too, through the [Delete profile](api-mail/operations/deleteProfile) endpoint.
