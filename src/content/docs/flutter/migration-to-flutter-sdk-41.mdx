@@ -1,10 +1,10 @@
 ---
 title: "Migrate Adapty Flutter SDK to v4.1"
-description: "Migrate to Adapty Flutter SDK v4.1: enable Adapty Attribution explicitly, adopt the renamed external attribution APIs, re-download your fallback file, and handle App Store promoted purchases."
+description: "Migrate to Adapty Flutter SDK v4.1: enable Adapty Attribution explicitly, adopt the renamed external attribution APIs, and re-download your fallback file."
 metadataTitle: "Migrating to Adapty Flutter SDK v4.1 | Adapty Docs"
 ---
 
-Adapty Flutter SDK 4.1 changes how Adapty Attribution is enabled, renames the external attribution APIs, and changes the fallback file format. It also hands App Store promoted in-app purchases to your app, and adds a way to keep a flow view alive after dismissing it.
+Adapty Flutter SDK 4.1 changes how Adapty Attribution is enabled, renames the external attribution APIs, and changes the fallback file format. It also adds support for App Store promoted in-app purchases, and a way to keep a flow view alive after dismissing it.
 
 :::warning
 The renamed APIs are a hard break. The old names are removed outright — there are no deprecated aliases to bridge them. Code that compiles against 4.0.x fails on 4.1 until you rename every call site listed below.
@@ -21,7 +21,7 @@ If you're still on 3.x, start with [Migrate to v4.0](migration-to-flutter-sdk-v4
 | `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, with a new `custom` value |
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
 | Fallback file downloaded for 4.0 | New fallback file format; download the file again |
-| Promoted in-app purchases completed on their own | Your app completes them from `didReceivePromotedPurchaseStream` |
+| Promoted in-app purchases unsupported | Supported; the SDK completes them, or your app does from `didReceivePromotedPurchaseStream` |
 | `dismissFlowView(view)` always releases the view | `destroy: false` keeps the view alive to present it again |
 
 The purchase, profile, and flow-presentation APIs are otherwise unchanged.
@@ -108,36 +108,11 @@ The [fallback file](fallback-flows) format changed in SDK 4.1. Download the file
 This step produces no build error. If you skip it, the SDK rejects the outdated file and every placement loses its fallback.
 :::
 
-## ⚠️ Promoted in-app purchases now wait for your app \{#promoted-in-app-purchases-now-wait-for-your-app\}
+## App Store promoted in-app purchases \{#promoted-in-app-purchases\}
 
-:::warning
-This is a behavior change, not a new feature to adopt when convenient. On 4.0, an [in-app purchase promoted on your App Store product page](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) completed on its own. On 4.1, it completes only if your app listens for it. Ship 4.1 without the code below and those purchases stop happening — the App Store hands the product to your app, and nothing else occurs.
-:::
+Flutter SDK 4.0 didn't support [in-app purchases promoted on your App Store product page](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store): the native iOS SDK it was built on had no API for them. 4.1 adds that support, so this is a new capability rather than a migration step — updating without new code changes nothing about how your app behaves.
 
-On 4.0, Adapty recorded a promoted purchase like any other transaction, and your app had no way to intercept it. 4.1 gives your app that control, and with it the responsibility to finish the purchase.
-
-Subscribe to `didReceivePromotedPurchaseStream` and pass the product to `makePromotedPurchase`:
-
-```dart showLineNumbers
-Adapty().didReceivePromotedPurchaseStream.listen((product) async {
-  try {
-    final result = await Adapty().makePromotedPurchase(product: product);
-    // process the purchase result
-  } on AdaptyError catch (e) {
-    // handle the error
-  }
-});
-```
-
-Subscribe before a promoted purchase can arrive — during app startup, right after `activate`. The stream is a broadcast stream that doesn't replay: a product delivered while nothing is listening is dropped, and the purchase is lost with it.
-
-`makePromotedPurchase` takes no purchase parameters, because a promoted product comes from the App Store rather than a paywall and carries no paywall context. It returns the same `AdaptyPurchaseResult` as `makePurchase`.
-
-:::warning
-The stream is built on StoreKit 2 and requires **iOS 16.4** or later. Below iOS 16.4, and on Android, it never emits.
-:::
-
-If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, the purchase goes through at the base price.
+By default the SDK completes a promoted purchase itself. Write code only to complete it yourself, for example to show a screen first: subscribe to `didReceivePromotedPurchaseStream` and pass the product to `makePromotedPurchase`. While anything is subscribed to that stream, the SDK stops completing promoted purchases for you.
 
 ## Keep a flow view alive after dismissing it
 
@@ -150,7 +125,3 @@ await AdaptyUI().dismissFlowView(view, destroy: false);
 It defaults to `true`, which releases the view as before. With `destroy: false` the view stays alive, so you can present it again and the user returns to the screen they left, with the state the flow had built up.
 
 A view kept this way is held until you dismiss it with `destroy: true`. Presenting a released view fails, so call `createFlowView` again to show that flow once more.
-
-## hasViewConfiguration
-
-`AdaptyFlow.hasViewConfiguration` now also requires the flow to carry a UI schema, so it reports `true` only for a flow AdaptyUI can render. A flow that reached your app without its schema now reports `false` where 4.0 reported `true`. See [Fetch the view configuration](flutter-get-pb-paywalls#fetch-the-view-configuration).

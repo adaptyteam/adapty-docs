@@ -142,11 +142,15 @@ In order to do this, you need to open the url of the following format:
 
 ## Promoted in-app purchases from the App Store
 
-:::warning
-Promoted in-app purchases reach your app from SDK version 4.1 on, and your app completes them. On SDK 4.0 the SDK completed them on its own. From 4.1, a promoted purchase that nothing listens for is dropped, so add the listener below when you update. See [Migrate to v4.1](migration-to-flutter-sdk-41#promoted-in-app-purchases-now-wait-for-your-app).
+:::info
+Promoted in-app purchases are supported from SDK version 4.1, on **iOS 16.4** or later. Below iOS 16.4, on Android, and in observer mode, `didReceivePromotedPurchaseStream` never emits.
 :::
 
-When a user starts a purchase from your App Store product page and the transaction carries over to your app, the SDK delivers the product to `didReceivePromotedPurchaseStream`. Subscribe to the stream and pass the product to `makePromotedPurchase`:
+When a user starts a purchase from your App Store product page and the transaction carries over to your app, the SDK completes it automatically — the Apple purchase system screen shows right away, and Adapty processes the transaction like any other purchase. This needs no code on your side.
+
+If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, the purchase goes through at the base price.
+
+To complete promoted purchases yourself — for example to show your own screen first — subscribe to `didReceivePromotedPurchaseStream` and pass the product to `makePromotedPurchase`:
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -161,15 +165,13 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 });
 ```
 
-Subscribe during app startup, right after `activate`, so the listener exists before a promoted purchase can arrive. `didReceivePromotedPurchaseStream` is a broadcast stream that doesn't replay: a product delivered while nothing is listening is dropped.
+:::warning
+While anything is subscribed to the stream, the SDK stops completing promoted purchases for you. If your handler never calls `makePromotedPurchase`, the purchase never happens: the App Store hands the product to your app and waits. The SDK doesn't step in when your handler throws either.
+:::
 
 `makePromotedPurchase` takes no purchase parameters, because a promoted product comes from the App Store rather than a paywall and carries no paywall context. It returns the same `AdaptyPurchaseResult` as `makePurchase`.
 
-If the promoted product carries a subscription offer, the SDK applies it at purchase automatically. The offer is read from the App Store purchase intent, which exposes it on iOS 18.0 and later. On iOS 16.4–17.x, the purchase goes through at the base price.
-
-:::info
-The stream is built on StoreKit 2 and requires **iOS 16.4** or later. Below iOS 16.4, and on Android, it never emits.
-:::
+Who completes the purchase is decided for every event, so a stream you listen to only while a screen is mounted hands promoted purchases back to the SDK once that screen is gone. You can subscribe before `activate`, which is how you catch a purchase the store delivers at launch.
 
 ## Manage prepaid plans (Android)
 
