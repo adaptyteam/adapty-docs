@@ -89,7 +89,9 @@ going.
 
 Zone-first, not grep-first.
 
-1. `npm run mill`, then `npm run mill:status`. Read the per-zone drift report.
+1. `npm run mill:map`, then `npm run mill:status`. Read the per-zone drift report. Use `mill:map`, not
+   `mill`: lookup runs inside writing tasks, and `mill` re-renders the roster blocks in the committed
+   briefs, which leaves unrelated diffs in the article PR.
 2. Pick the one or two zones the task lands in. If `mill:status` says `zones.json not present`, stop
    here and follow "Bootstrap state" at the end of this file — the remaining steps need zones.
 3. **Read those zone briefs whole** — a brief is one to two pages, no chunked retrieval.
