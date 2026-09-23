@@ -1,12 +1,12 @@
 ---
 title: "Показ пейвола с таргетингом Apple Ads при первом запуске в React Native SDK"
-description: "Показывайте пейвол сразу и обновляйте его для пользователей Apple Ads после применения атрибуции в React Native, используя AdaptyProfile.appliedAttributionSources."
+description: "Показывайте пейвол немедленно и обновляйте его для пользователей Apple Ads после применения атрибуции в React Native с помощью AdaptyProfile.appliedExternalAttributionProviders."
 metadataTitle: "Показ пейвола с таргетингом Apple Ads при первом запуске | React Native SDK | Документация Adapty"
 ---
 
 Эта статья относится к iOS-сборке вашего приложения. Атрибуция Apple Ads доступна только на iOS.
 
-Атрибуция Apple Ads (AA) приходит асинхронно после вызова `adapty.activate()`. При первом запуске она обычно ещё не поступила, поэтому `getPaywall` разрешается по аудитории по умолчанию, и пользователи Apple Ads не видят пейвол, настроенный под AA-сегмент. Вместо того чтобы откладывать показ пейвола до получения атрибуции, покажите его сразу, а затем обновите, как только атрибуция AA будет применена — тогда пользователи Apple Ads увидят целевой вариант, а все остальные не будут ждать. `AdaptyProfile.appliedAttributionSources` сообщает, когда атрибуция AA применена.
+Атрибуция Apple Ads (AA) поступает асинхронно после вызова `adapty.activate()`. При первом запуске она, как правило, ещё не получена, поэтому `getFlow` разрешается по аудитории по умолчанию, и пользователи Apple Ads не попадают на пейвол, сегментированный по AA. Вместо того чтобы откладывать показ пейвола до получения атрибуции, покажите его сразу, а затем обновите после применения атрибуции AA — так пользователи Apple Ads увидят целевой вариант, а остальные не будут ждать. `AdaptyProfile.appliedExternalAttributionProviders` сообщает о том, что атрибуция AA применена.
 
 :::important
 Это свойство отображает только данные Apple Ads. Атрибуция из других провайдеров видна в профилях пользователей и доступна в фильтрах сегментов, но здесь пока не отображается.
@@ -14,20 +14,20 @@ metadataTitle: "Показ пейвола с таргетингом Apple Ads п
 
 ## Перед началом работы \{#before-you-start\}
 
-Вам понадобится:
-- Adapty React Native SDK **3.17.1** или новее.
-- Apple Ads, настроенные для приложения в Adapty. См. [Apple Ads](apple-search-ads).
+Вам потребуется:
+- SDK для React Native **4.1** или новее. В версиях 3.17.1–4.0.x свойство профиля называется `appliedAttributionSources`, а флоу загружаются через `getPaywall`.
+- Apple Ads, настроенный для приложения в Adapty. См. [Apple Ads](apple-search-ads).
 
 ## Как это работает \{#how-it-works\}
 
-После вызова `adapty.activate()` SDK в фоновом режиме запрашивает атрибуцию Apple Ads у Apple и передаёт результат в бэкенд Adapty. Когда AA становится активным источником атрибуции для профиля, SDK доставляет обновлённый `AdaptyProfile` в ваш обработчик `onLatestProfileLoad`, где в массиве `appliedAttributionSources` появляется `'apple_search_ads'`.
+После вызова `adapty.activate()` SDK в фоновом режиме запрашивает данные атрибуции Apple Ads у Apple и передаёт результат на бэкенд Adapty. Когда AA становится активным источником атрибуции для профиля, SDK доставляет обновлённый `AdaptyProfile` в ваш слушатель `onLatestProfileLoad`, где в массиве `appliedExternalAttributionProviders` появится значение `'apple_search_ads'`.
 
-Это позволяет загружать пейвол в два этапа:
+Это позволяет загружать пейвол в два шага:
 
-1. Вызовите `getPaywall` сразу. Поскольку атрибуция ещё не применена, Adapty разрешает запрос против аудитории по умолчанию, и пользователь сразу видит пейвол.
-2. Когда появляется `'apple_search_ads'`, вызовите `getPaywall` снова. Теперь Adapty разрешает запрос против аудитории Apple Ads и возвращает целевой пейвол, который заменяет первый.
+1. Вызовите `getFlow` сразу. Поскольку атрибуция ещё не применена, Adapty разрешает запрос против аудитории по умолчанию, и пользователь сразу видит пейвол.
+2. Когда появляется `'apple_search_ads'`, вызовите `getFlow` снова. Теперь Adapty разрешает запрос против аудитории Apple Ads и возвращает целевой пейвол, который заменяет первый.
 
-`appliedAttributionSources` может быть пустым или отсутствовать. Это означает одно из следующего:
+`appliedExternalAttributionProviders` может быть пустым или отсутствовать. Это означает одно из следующего:
 
 - Атрибуция Apple Ads для этого профиля ещё не обработана.
 - Атрибуция не поступала вовсе.
@@ -36,7 +36,7 @@ metadataTitle: "Показ пейвола с таргетингом Apple Ads п
 Во всех трёх случаях шаг 1 безопасен — Adapty разрешает запрос относительно той аудитории, которая соответствует текущему состоянию профиля, как правило это аудитория по умолчанию. Шаг 2 выполняется только после появления `'apple_search_ads'`.
 
 :::important
-При каждом последующем запуске кешированный профиль уже содержит `'apple_search_ads'` в `appliedAttributionSources`, поэтому первый же `getPaywall` возвращает пейвол, сегментированный по Apple Ads, — никакого повторного запроса или видимого изменения не происходит. Двухшаговое флоу актуально только при первом запуске, пока атрибуция ещё не получена.
+При каждом последующем запуске кешированный профиль уже содержит `'apple_search_ads'` в `appliedExternalAttributionProviders`, поэтому первый же `getFlow` возвращает пейвол, сегментированный по Apple Ads, — никаких повторных запросов или видимых изменений не происходит. Двухэтапный флоу имеет значение только при первом запуске, пока атрибуция ещё не получена.
 :::
 
 ## Реализация \{#implementation\}
@@ -44,13 +44,13 @@ metadataTitle: "Показ пейвола с таргетингом Apple Ads п
 Покажите пейвол сразу, затем ждите события `'apple_search_ads'` и обновляйте пейвол при его получении.
 
 1. **Активируйте SDK.** См. [Установка и настройка React Native SDK](sdk-installation-reactnative).
-2. **Загрузите и покажите пейвол** с помощью `getPaywall` как обычно — не блокируйте выполнение в ожидании атрибуции.
-3. **Подпишитесь на обновления профиля** через `adapty.addEventListener('onLatestProfileLoad', …)` и отслеживайте появление `'apple_search_ads'`. Когда оно появится, снова запросите пейвол и покажите обновлённый. Если вы ещё не настроили слушатель, см. [Отслеживание обновлений подписки](react-native-check-subscription-status#listen-to-subscription-updates):
+2. **Загрузите и покажите пейвол** с помощью `getFlow` как обычно — не блокируйте выполнение в ожидании атрибуции.
+3. **Подпишитесь на обновления профиля** через `adapty.addEventListener('onLatestProfileLoad', …)` и отслеживайте появление `'apple_search_ads'`. Когда оно появится, снова загрузите пейвол и покажите обновлённый. Если вы ещё не настроили слушатель, см. [Отслеживание обновлений подписки](react-native-check-subscription-status#listen-to-subscription-updates):
 
 ```typescript
 const subscription = adapty.addEventListener('onLatestProfileLoad', async profile => {
-  if (!profile.appliedAttributionSources?.includes('apple_search_ads')) return;
-  const targeted = await adapty.getPaywall(placementId);
+  if (!profile.appliedExternalAttributionProviders?.includes('apple_search_ads')) return;
+  const targeted = await adapty.getFlow(placementId);
   // present the targeted paywall in place of the first one
 });
 
@@ -65,11 +65,11 @@ const subscription = adapty.addEventListener('onLatestProfileLoad', async profil
 
 ```typescript
 
-const APPLE_ADS_SOURCE = 'apple_search_ads';
+const APPLE_ADS_PROVIDER = 'apple_search_ads';
 const placementId = 'YOUR_PLACEMENT_ID';
 
 function hasAppleAdsAttribution(profile: AdaptyProfile): boolean {
-  return profile.appliedAttributionSources?.includes(APPLE_ADS_SOURCE) ?? false;
+  return profile.appliedExternalAttributionProviders?.includes(APPLE_ADS_PROVIDER) ?? false;
 }
 
 /**
@@ -100,12 +100,12 @@ export function onAppleAdsAttribution(timeoutMs: number): Promise<void> {
   });
 }
 
-let paywall = await adapty.getPaywall(placementId);
+let flow = await adapty.getFlow(placementId);
 
 onAppleAdsAttribution(30_000)
-  .then(() => adapty.getPaywall(placementId))
+  .then(() => adapty.getFlow(placementId))
   .then(updated => {
-    paywall = updated;
+    flow = updated;
   })
   .catch(() => {
     console.log('Apple Ads attribution or loading failed');

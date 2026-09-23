@@ -6,7 +6,7 @@ metadataTitle: "Migrating to Adapty Capacitor SDK v4.1.1 | Adapty Docs"
 
 Adapty Capacitor SDK 4.1.1 is the current stable release of the 4.x line — 4.0 was released only as a beta, so if you're on 3.x, migrate straight to 4.1.1. This guide covers the whole migration: the flows introduced in 4.0 and the 4.1.1 changes on top of them.
 
-The 4.x line introduces flows and renames the paywall APIs accordingly. The new APIs work with both the new Flow Builder and the existing Paywall Builder — no setup changes are required on the Adapty Dashboard side. On top of that, 4.1.1 makes Adapty Attribution opt-in, renames the external attribution method, changes the fallback file format, and adds App Store promoted in-app purchases.
+The 4.x line introduces flows and renames the paywall APIs accordingly. The new APIs work with flows, and they still work with paywalls from the old builder — no setup changes are required on the Adapty Dashboard side. On top of that, 4.1.1 makes Adapty Attribution opt-in, renames the external attribution method, changes the fallback file format, and adds App Store promoted in-app purchases.
 
 :::note
 Coming from the 4.0 beta? Replace the pinned beta version with the [latest release](#installation), then only four sections apply: [Adapty Attribution is disabled by default](#adapty-attribution-is-disabled-by-default), [the renamed external attribution APIs](#renamed-external-attribution-apis), [fallback files](#fallback-files), and [App Store promoted in-app purchases](#app-store-promoted-in-app-purchases).
@@ -31,7 +31,7 @@ Coming from the 4.0 beta? Replace the pinned beta version with the [latest relea
 | `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
 | `AttributionSource` | `AdaptyExternalAttributionProvider` |
 | Fallback file downloaded for 3.x | new fallback file format — download the file again |
-| Promoted in-app purchases not supported | the `'onPromotedPurchaseReceived'` event and `adapty.makePromotedPurchase({ product })` |
+| Promoted in-app purchases completed automatically, with no way to intercept them | the `'onPromotedPurchaseReceived'` event and `adapty.makePromotedPurchase({ product })` hand completion to your app |
 
 `AdaptyPaywallProduct` keeps its name — products still belong to a flow, and `getPaywallProducts` keeps its name too, now taking an `AdaptyFlow`. The `getFlow` and `getFlowForDefaultAudience` methods no longer take a `locale` parameter — pass it to `createFlowView` instead. The purchase and profile APIs (`makePurchase`, `restorePurchases`, `getProfile`, `identify`, `updateProfile`) and `setFallback` keep the same signatures, but the fallback file itself must be re-downloaded — see [Fallback files](#fallback-files). The view methods `present`, `dismiss`, `setEventHandlers`, `clearEventHandlers`, and `showDialog`, and the event handlers `onCloseButtonPress`, `onUrlPress`, `onCustomAction`, `onProductSelected`, `onPurchaseStarted`, `onPurchaseCompleted`, `onPurchaseFailed`, `onRestoreStarted`, `onRestoreCompleted`, `onRestoreFailed`, `onLoadingProductsFailed`, `onWebPaymentNavigationFinished`, and `onAndroidSystemBack` keep the same names as in v3. The onboarding methods still work but are deprecated — see [Onboarding API deprecation](#onboarding-api-deprecation). Some default behaviors changed — see [Default behavior changes](#default-behavior-changes).
 
@@ -123,7 +123,7 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 
 ### Fallback files
 
-The [fallback file](fallback-flows) format changed in the 4.x line, and again in 4.1.1. Download the file again from **[Placements](https://app.adapty.io/placements)** > **Fallbacks** and bundle it in your app, even if you already downloaded one for a 4.0 beta.
+The [fallback file](fallback-flows) format changed in 4.0, and again in 4.1.1. Download the file again from **[Placements](https://app.adapty.io/placements)** > **Fallbacks** and bundle it in your app, even if you already downloaded one for a 4.0 beta.
 
 :::warning
 This step produces no build error. If you skip it, `setFallback` rejects the outdated file and every placement loses its fallback.
@@ -176,7 +176,7 @@ If your code still reads `paywall.products` — deprecated in v3 and now removed
 + await adapty.logShowFlow({ flow });
 ```
 
-As in v3, you do not need to call this method when displaying flows or paywalls rendered by the [Flow Builder](adapty-flow-builder) or the [Paywall Builder](adapty-paywall-builder) — Adapty tracks those views automatically.
+As in v3, you do not need to call this method when displaying flows or paywalls rendered by Adapty — Adapty tracks those views automatically.
 
 ## Displaying flows
 
@@ -202,13 +202,13 @@ A flow view is single-use: after you call `dismiss()`, the view is destroyed and
 `CreateFlowViewParamsInput` keeps every v3 parameter (`prefetchProducts`, `loadTimeoutMs`, `customTags`, `customTimers`, `customAssets`, `productPurchaseParams`) and adds three:
 
 :::note
-`customTimers` still exists, but it only affects legacy Paywall Builder paywalls. A flow's [countdown timer](flow-timer) runs on the behavior set in the Flow Builder, so a flow ignores whatever you pass here.
+`customTimers` still exists, but it only affects legacy Paywall Builder paywalls. A flow's [countdown timer](flow-timer) runs on the behavior set in the Flow & Paywall Builder, so a flow ignores whatever you pass here.
 :::
 
 | Parameter | Description |
 |---|---|
 | `locale` | The localization to render the flow with. It moved here from `getPaywall` — see [getPaywall → getFlow](#getpaywall--getflow). |
-| `customLayoutId` | The custom ID of a layout defined in the Flow Builder. Pass it to render that specific layout instead of the one the SDK picks automatically from the device type and screen size. If no layout matches the ID, the flow loads without a view configuration. |
+| `customLayoutId` | The custom ID of a layout in the flow's layout configuration. Pass it to render that specific layout instead of the one the SDK picks automatically from the device type and screen size. If no layout matches the ID, the call fails with a no-view-configuration error. The Flow & Paywall Builder doesn't assign custom layout IDs yet, so leave this unset. |
 | `android.enableSafeArea` | Controls Android safe-area paddings at runtime. Nested under the `android` key, and defaults to `true`. |
 
 ```typescript showLineNumbers
@@ -282,7 +282,7 @@ Code that reads it needs updating — see [Show an Apple Ads targeted paywall](c
 
 ## App Store promoted in-app purchases
 
-SDK 4.1.1 adds support for [in-app purchases promoted on your App Store product page](capacitor-making-purchases#in-app-purchases-from-the-app-store). This is a new feature, not a migration step: the SDK completes promoted purchases on its own, so you get the behavior without writing any code.
+Before 4.1.1, an [in-app purchase promoted on your App Store product page](capacitor-making-purchases#in-app-purchases-from-the-app-store) completed on its own and Adapty recorded the transaction, but your app had no way to intercept it. 4.1.1 adds that hook, so this is a new capability rather than a migration step: without code of your own, the SDK still completes promoted purchases for you.
 
 Write code only to take over completion yourself — for example to show a screen first. Register a listener for the new `'onPromotedPurchaseReceived'` event, and complete the purchase with `adapty.makePromotedPurchase`. While that listener is registered, the SDK stops completing promoted purchases for you.
 
@@ -322,6 +322,6 @@ The deprecated flat Android shape of `MakePurchaseParamsInput` is removed — on
 
 ## Onboarding API deprecation
 
-The legacy onboarding API is deprecated in v4 in favor of the [Flow Builder](adapty-flow-builder). It still works, but will be removed in a future release, so plan migration of your onboardings to the Flow Builder.
+The legacy onboarding API is deprecated in v4 in favor of the [Flow & Paywall Builder](adapty-flow-builder). It still works, but will be removed in a future release, so plan migration of your onboardings to the Flow & Paywall Builder.
 
 Deprecated symbols: `getOnboarding`, `getOnboardingForDefaultAudience`, `createOnboardingView`, and `OnboardingViewController`.

@@ -6,6 +6,8 @@ no_index: true
 
 2. Copy the **Bundle ID** in the **General Information** sub-section.
 
+   Copy only the identifier — reverse-DNS format with no spaces, for example, `com.company.app`. App Store Connect shows the app name next to it in other views, like the apps list; pasting that instead of the identifier makes the connection fail to validate.
+
    
 
 <Zoom>

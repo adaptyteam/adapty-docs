@@ -1,7 +1,7 @@
 # Transcribe a Recording
 
-Replaces a draft script with what was actually narrated. **The recording is the authority.** The draft
-was a plan; the delivered take is the fact.
+Replaces a draft script with what was actually narrated. **The recording is authoritative.** The
+draft was a plan; the delivered take is what shipped.
 
 ## Steps
 
@@ -46,7 +46,7 @@ was a plan; the delivered take is the fact.
 |---|---|
 | "Adaptee" → **Adapty** | A clumsy sentence |
 | A misheard UI label | Word order |
-| Obvious homophones | A repeated word, if he said it |
+| Obvious homophones | A repeated word, if it was said |
 | Missing sentence punctuation | The sign-off's exact wording |
 
 The transcript is a record. Improving the prose makes the file describe a video that doesn't exist.

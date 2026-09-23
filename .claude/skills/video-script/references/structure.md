@@ -39,12 +39,12 @@ One idea per Part.
 
 **A heading is a noun phrase, not a question with the answer attached.** A draft of video 23 used
 `## Part 1: Who draws the UI — Adapty` and `## Part 2: Who draws the UI — you`. The pair encodes the
-video's organizing question, which is useful thinking and unreadable as a label. Name the subject
+video's organizing question, which is useful while planning and unreadable as a label. Name the subject
 instead — `## Part 1: The flow`, `## Part 2: Your own code, and the paywall entity` — and let the
 narration carry the question.
 
-Recorded scripts bear this out: `The chain`, `Product variables`, `Custom actions`, `Screen
-background`. All noun phrases, none of them clever.
+Recorded scripts: `The chain`, `Product variables`, `Custom actions`, `Screen background`. All noun
+phrases.
 
 ## `> [VISUAL]` cues
 
@@ -55,6 +55,12 @@ transcript keeps its cues is a preference; where a cue sits is not.
 **Check the pairing, not just the order.** A cue placed before *some* narration can still describe the
 line above it — that is the same defect one step further along. Read each cue against the line
 immediately below it and ask whether they belong together.
+
+**When a shot list exists, a cue names its shot and step.** `Shot 1, steps 10–13 — the August profile
+anonymous, then the list carrying its new customer user ID`. The step number is the link between the two
+files; the description still has to stand on its own, because the script gets read without the shot list
+open. Never put the shot list's row numbers or internal labels in a cue — they mean nothing without that
+file.
 
 Terse action labels of a few words. Quote names; chain sub-steps with commas or `+`:
 
@@ -81,10 +87,8 @@ Write this form in drafts:
 
 > Read the docs in the description to learn more. Drop a comment if you have any questions. Thanks for watching!
 
-**Delivered takes vary**, and the variants are correct as recorded — "Thank you for watching",
-"Read our documentation", "Leave a comment if you've got any questions". `tone.md` shows two real
-deliveries. When transcribing, keep what was said; never normalize a transcript back to the draft
-wording.
+**Delivered takes vary, and the variants are correct as recorded.** Keep what was said; never
+normalize a transcript back to the draft wording. `tone.md` quotes two real deliveries.
 
 ## Formatting
 

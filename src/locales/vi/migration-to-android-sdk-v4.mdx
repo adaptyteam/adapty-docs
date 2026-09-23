@@ -1,12 +1,13 @@
 ---
-title: "Migrate Adapty Android SDK to v4.0"
-description: "Migrate sang Adapty Android SDK v4.0 bằng cách thay thế paywall API bằng flow API, tương thích với cả Flow Builder và Paywall Builder."
-metadataTitle: "Migrate sang Adapty Android SDK v4.0 | Tài liệu Adapty"
+title: "Migrate Adapty Android SDK sang v4.0"
+description: "Migrate sang Adapty Android SDK v4.0 bằng cách thay thế các API paywall bằng các API flow, vốn render được cả flow lẫn các paywall builder cũ."
+metadataTitle: "Migration sang Adapty Android SDK v4.0 | Tài liệu Adapty"
 ---
 
-Adapty Android SDK 4.0 giới thiệu flow và đổi tên các paywall API tương ứng. Các API mới hoạt động với cả Flow Builder mới và Paywall Builder hiện có — không cần thay đổi cấu hình nào trên Adapty Dashboard.
+Adapty Android SDK 4.0 giới thiệu flow và đổi tên các API paywall cho phù hợp. Các API mới hoạt động với flow, đồng thời vẫn tương thích với các paywall từ builder cũ — không cần thay đổi cấu hình nào trên Adapty Dashboard.
 
 ## Tham chiếu nhanh \{#quick-reference\}
+
 | v3 | v4 |
 |---|---|
 | `Adapty.getPaywall(placementId, locale)` | `Adapty.getFlow(placementId)` |
@@ -27,7 +28,9 @@ Adapty Android SDK 4.0 giới thiệu flow và đổi tên các paywall API tư�
 | `onRenderingError` | `onError` |
 | `Adapty.updateAttribution(attribution, source)` (`source: String`) | `Adapty.updateAttribution(attribution, source)` (`source: AdaptyAttributionSource`) |
 | `Adapty.setIntegrationIdentifier(key, value)` | `Adapty.setIntegrationIdentifier(AdaptyIntegrationIdentifier)` |
+
 `AdaptyPaywallProduct` giữ nguyên tên — các sản phẩm vẫn thuộc về một flow, và `getPaywallProducts` giờ nhận vào một `AdaptyFlow`. Các phương thức khác của `AdaptyFlowEventListener` (`onProductSelected`, `onPurchaseStarted`, `onPurchaseFinished`, `onPurchaseFailure`, `onRestoreSuccess`, `onRestoreFailure`, `onActionPerformed`, `onAwaitingPurchaseParams`, `onLoadingProductsFailure`, v.v.) giữ nguyên tên và chữ ký.
+
 ## Cài đặt \{#installation\}
 
 Đặt phiên bản `adapty-bom` thành `4.0.1` (hoặc mới hơn) và đồng bộ dự án. BOM sẽ tự động xác định các phiên bản `android-sdk` và `android-ui` tương ứng. Xem [Cài đặt Adapty SDK](sdk-installation-android) để biết cách khai báo dependency.
@@ -35,6 +38,7 @@ Adapty Android SDK 4.0 giới thiệu flow và đổi tên các paywall API tư�
 ## Các API đã bị xóa và không còn được hỗ trợ \{#removed-and-deprecated-apis\}
 
 - **`Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized, callback)`** — đã bị xóa. Overload này đã bị deprecated từ v3. Thay vào đó, hãy truyền các tùy chọn tương tự thông qua `AdaptyPurchaseParameters`:
+
 ```diff showLineNumbers
 - Adapty.makePurchase(activity, product, subscriptionUpdateParams, isOfferPersonalized) { result -> /* ... */ }
 + val params = AdaptyPurchaseParameters.Builder()
@@ -44,11 +48,14 @@ Adapty Android SDK 4.0 giới thiệu flow và đổi tên các paywall API tư�
 + Adapty.makePurchase(activity, product, params) { result -> /* ... */ }
 ```
 
-- **Onboardings đã bị deprecated.** `AdaptyUI.getOnboardingView` và `AdaptyUI.getOnboardingConfiguration` được đánh dấu `@Deprecated` trong 4.0 — hãy migrate các onboarding sang flow được xây dựng trong [Flow Builder](adapty-flow-builder).
-## Tải flows \{#fetching-flows\}
-### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration
+- **Onboarding đã bị deprecated.** `AdaptyUI.getOnboardingView` và `AdaptyUI.getOnboardingConfiguration` được đánh dấu `@Deprecated` trong 4.0 — migrate các onboarding sang flow được xây dựng trong [Flow & Paywall Builder](adapty-flow-builder).
 
-Kiểu trả về của lệnh fetch thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và trình tải cấu hình được đổi tên từ `AdaptyUI.getViewConfiguration` thành `AdaptyUI.getFlowConfiguration` (trả về `AdaptyUI.FlowConfiguration` thay vì `AdaptyUI.LocalizedViewConfiguration`). Tham số `locale` được chuyển ra khỏi lệnh fetch và đưa vào `getFlowConfiguration`:
+## Tải flows \{#fetching-flows\}
+
+### getPaywall + getViewConfiguration → getFlow + getFlowConfiguration \{#getpaywall--getviewconfiguration--getflow--getflowconfiguration\}
+
+Kiểu trả về của hàm fetch thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và trình tải cấu hình được đổi tên từ `AdaptyUI.getViewConfiguration` thành `AdaptyUI.getFlowConfiguration` (trả về `AdaptyUI.FlowConfiguration` thay vì `AdaptyUI.LocalizedViewConfiguration`). Tham số `locale` được chuyển ra khỏi lệnh gọi fetch và đưa vào `getFlowConfiguration`: `AdaptyFlow` cũng cung cấp `paywalls` — các biến thể paywall của flow, dưới dạng các giá trị `AdaptyFlowPaywall`. Các phương thức web paywall nhận một trong số các giá trị này.
+
 ```diff showLineNumbers
 - Adapty.getPaywall("YOUR_PLACEMENT_ID", locale = "en") { result ->
 + Adapty.getFlow("YOUR_PLACEMENT_ID") { result ->
@@ -77,22 +84,26 @@ Kiểu trả về của lệnh fetch thay đổi từ `AdaptyPaywall` sang `Adap
 - Adapty.getPaywallProducts(paywall) { result -> /* products */ }
 + Adapty.getPaywallProducts(flow) { result -> /* products */ }
 ```
+
 ### Tệp dự phòng \{#fallback-files\}
 
 Định dạng tệp dự phòng [đã thay đổi trong SDK v4](fallback-flows). Tải tệp mới từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks** và đóng gói vào ứng dụng của bạn.
 
 ## Theo dõi lượt xem flow \{#tracking-flow-views\}
+
 ### logShowPaywall → logShowFlow
 
-`logShowPaywall` được đổi tên thành `logShowFlow` và bây giờ nhận vào một `AdaptyFlow` thay vì `AdaptyPaywall`. Sự kiện vẫn được ghi lại dựa trên cùng một biến thể, vì vậy các chỉ số funnel và A/B test hiện tại vẫn hoạt động bình thường mà không cần thay đổi gì trên dashboard.
+`logShowPaywall` được đổi tên thành `logShowFlow` và hiện nhận `AdaptyFlow` thay vì `AdaptyPaywall`. Sự kiện vẫn được ghi nhận theo cùng một biến thể, vì vậy các chỉ số funnel và A/B test hiện có vẫn hoạt động bình thường mà không cần thay đổi trên dashboard.
 
 ```diff showLineNumbers
 - Adapty.logShowPaywall(paywall)
 + Adapty.logShowFlow(flow)
 ```
 
-Giống như trong v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được dựng bởi [Flow Builder](adapty-flow-builder) hoặc [Paywall Builder](adapty-paywall-builder) — Adapty tự động theo dõi những lượt xem đó.
+Giống như trong v3, bạn không cần gọi phương thức này khi hiển thị các flow hoặc paywall được render bởi Adapty — Adapty sẽ tự động theo dõi các lượt xem đó.
+
 ## Hiển thị flow \{#displaying-flows\}
+
 ### getPaywallView / AdaptyPaywallView → getFlowView / AdaptyFlowView \{#getpaywallview--adaptypayallview--getflowview--adaptyflowview\}
 
 Đổi tên phương thức factory và kiểu view, đồng thời truyền vào `AdaptyUI.FlowConfiguration`:
@@ -113,6 +124,7 @@ Giống như trong v3, bạn không cần gọi phương thức này khi hiển 
 ```
 
 Nếu bạn tạo view trực tiếp, phương thức show cũng được đổi tên:
+
 ```diff showLineNumbers
 - val paywallView = AdaptyPaywallView(activity)
 - paywallView.showPaywall(viewConfiguration, products, eventListener)
@@ -126,7 +138,9 @@ Trong XML layouts, cập nhật thẻ view:
 - <com.adapty.ui.AdaptyPaywallView ... />
 + <com.adapty.ui.AdaptyFlowView ... />
 ```
+
 Tham số tùy chọn `personalizedOfferResolver` đã bị xóa khỏi `getFlowView` / `showFlow` / `AdaptyFlowScreen`. Để chỉ định giá cá nhân hóa, hãy thiết lập theo từng sản phẩm thông qua `onAwaitingPurchaseParams` (`AdaptyPurchaseParameters.Builder().withOfferPersonalized(true)`). Một tham số tùy chọn mới `customAssets` cho phép bạn ghi đè hình ảnh và video tại runtime — xem [Tùy chỉnh assets](android-get-pb-paywalls#customize-assets).
+
 ### AdaptyPaywallScreen → AdaptyFlowScreen
 
 Trong Jetpack Compose, đổi tên composable và cập nhật tham số cấu hình:
@@ -140,9 +154,11 @@ Trong Jetpack Compose, đổi tên composable và cập nhật tham số cấu h
       eventListener,
   )
 ```
+
 ## Xử lý sự kiện \{#handling-events\}
 
 Event listener được đổi tên từ `AdaptyUiEventListener` thành `AdaptyFlowEventListener` (và `AdaptyUiDefaultEventListener` thành `AdaptyFlowDefaultEventListener`). Hầu hết các tên phương thức không thay đổi; các callback vòng đời và rendering được đổi tên:
+
 ```diff showLineNumbers
 - class YourListener : AdaptyUiDefaultEventListener() {
 + class YourListener : AdaptyFlowDefaultEventListener() {
@@ -158,9 +174,13 @@ Event listener được đổi tên từ `AdaptyUiEventListener` thành `AdaptyF
 ```
 
 Phần thân handler hiện có không cần thay đổi code — chỉ cần đổi tên kiểu và các override. `onError` sẽ kích hoạt cho cùng các lỗi render như `onRenderingError` đã làm, cộng thêm các lỗi runtime không liên quan đến mua hàng. Xem [Xử lý sự kiện flow & paywall](android-handling-events) để biết danh sách đầy đủ các callback.
+
 v4 cũng bổ sung callback `onBackPressed(context): Boolean`, và giá trị mặc định của nó thay đổi cách nút back hệ thống hoạt động. Trước đây, nút back (hoặc cử chỉ vuốt back) sẽ được chuyển xuống activity hoặc fragment của bạn, thường là đóng paywall lại. Trong v4, implementation mặc định sẽ tiêu thụ sự kiện đó, vì vậy **nút back hệ thống không còn tự đóng flow nữa** — giống với iOS, nơi flow không thể bị đóng bằng cử chỉ hệ thống. Hãy cung cấp cho người dùng một cách thoát rõ ràng (nút **Close** hoặc action `on_device_back`), hoặc override `onBackPressed` trả về `false` để khôi phục hành vi cũ. Xem [Nút back hệ thống](android-handling-events#system-back-button) để biết thêm chi tiết.
+
 Handler mua hàng mặc định cũng không còn tự động đóng màn hình nữa. Trong v3, `onPurchaseFinished` mặc định sẽ đóng paywall sau bất kỳ giao dịch mua hàng nào đã hoàn thành mà không phải do người dùng hủy (giao dịch thành công hoặc đang chờ xử lý). Trong v4, nó là no-op, vì vậy **flow vẫn mở sau khi mua hàng cho đến khi bạn tự đóng nó** — điều này cũng tương tự như iOS. Nếu bạn đang dựa vào tính năng tự động đóng đó, hãy tự đóng màn hình sau khi giao dịch mua hàng hoàn tất. Xem [Mua hàng thành công, bị hủy hoặc đang chờ xử lý](android-handling-events#successful-canceled-or-pending-purchase) để xem ví dụ.
+
 ## Mã định danh attribution và tích hợp \{#attribution-and-integration-identifiers\}
+
 ### updateAttribution
 
 Tham số `source` thay đổi từ `String` sang kiểu `AdaptyAttributionSource` mới, và `attribution` hiện là `Map<String, Any>` (cũng có thể dùng overload `String` dạng JSON). Sử dụng một trong các nguồn được định nghĩa sẵn:
@@ -169,6 +189,7 @@ Tham số `source` thay đổi từ `String` sang kiểu `AdaptyAttributionSourc
 - Adapty.updateAttribution(attribution, "appsflyer") { error -> /* handle the error */ }
 + Adapty.updateAttribution(attribution, AdaptyAttributionSource.APPSFLYER) { error -> /* handle the error */ }
 ```
+
 Các nguồn được định nghĩa sẵn: `AdaptyAttributionSource.APPLE_ADS`, `.ADJUST`, `.APPSFLYER`, `.BRANCH`, `.TENJIN`. Với bất kỳ nguồn nào khác, hãy tạo từ một chuỗi: `AdaptyAttributionSource("your_source")`.
 
 :::note
@@ -185,6 +206,7 @@ SDK 4.1 đổi tên phương thức này thành `updateExternalAttribution` và 
 ```
 
 Bạn có thể đặt nhiều identifier trong một lần gọi:
+
 ```kotlin showLineNumbers
 Adapty.setIntegrationIdentifier(
     listOf(
@@ -195,6 +217,7 @@ Adapty.setIntegrationIdentifier(
 ```
 
 Thay thế mỗi chuỗi key cũ bằng phương thức tiện lợi tương ứng:
+
 | Khóa v3 | Phương thức `AdaptyIntegrationIdentifier` v4 |
 |---|---|
 | `"adjust_device_id"` | `adjustDeviceId(value)` |
@@ -213,4 +236,5 @@ Thay thế mỗi chuỗi key cũ bằng phương thức tiện lợi tương ứ
 | `"posthog_distinct_user_id"` | `posthogDistinctUserId(value)` |
 | `"pushwoosh_hwid"` | `pushwooshHWID(value)` |
 | `"tenjin_analytics_installation_id"` | `tenjinAnalyticsInstallationId(value)` |
+
 Đối với khóa không có trong danh sách này, hãy tạo mã định danh trực tiếp từ `Key` tùy chỉnh: `AdaptyIntegrationIdentifier(AdaptyIntegrationIdentifier.Key("custom"), customValue)`.

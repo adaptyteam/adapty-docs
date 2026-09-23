@@ -9,14 +9,14 @@ displayed_sidebar: sdkflutter
 
 import OfferCodesInfo from '@site/src/locales/fr/reusable/OfferCodesInfo.mdx';
 
-Afficher des paywalls dans votre application mobile est une étape essentielle pour offrir aux utilisateurs l'accès à des contenus ou services premium. Cependant, afficher ces paywalls suffit à gérer les achats uniquement si vous utilisez le [Paywall Builder](adapty-paywall-builder) pour les personnaliser.
+Afficher des paywalls dans votre application mobile est une étape indispensable pour proposer aux utilisateurs l'accès à des contenus ou services premium. Cependant, l'affichage d'un paywall ne déclenche des achats de lui-même que lorsqu'Adapty affiche l'écran — c'est-à-dire un [flow](adapty-flow-builder), ou un paywall issu de l'[ancien Paywall Builder](adapty-paywall-builder).
 
-Si vous n'utilisez pas le Paywall Builder, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et débloquer le contenu souhaité. Cette méthode constitue le point d'entrée permettant aux utilisateurs d'interagir avec les paywalls et de finaliser leurs transactions.
+Si vous affichez l'écran dans votre propre code, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et déverrouiller le contenu souhaité. Cette méthode constitue le point d'entrée permettant aux utilisateurs d'interagir avec les paywalls et de procéder à leurs transactions.
 
 Si votre paywall comporte une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'appliquera automatiquement au moment de l'achat.
 
 :::warning
-Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si vous utilisez des paywalls configurés avec le Paywall Builder.
+Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si Adapty affiche l'écran.
 
 Dans les autres cas, vous devrez [vérifier l'éligibilité de l'utilisateur à une offre de lancement sur iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Ignorer cette étape peut entraîner le rejet de votre application lors de la publication. De plus, cela pourrait conduire à facturer le plein tarif à des utilisateurs éligibles à une offre de lancement.
 :::
@@ -26,7 +26,7 @@ Assurez-vous d'avoir [effectué la configuration initiale](quickstart) sans saut
 ## Effectuer un achat \{#make-purchase\}
 
 :::note
-**Vous utilisez le [Paywall Builder](adapty-paywall-builder) ?** Les achats sont traités automatiquement — vous pouvez ignorer cette étape.
+**Adapty affiche-t-il votre écran ?** Pour un [flow](adapty-flow-builder) ou un paywall créé avec le [Paywall Builder](adapty-paywall-builder), les achats sont traités automatiquement — vous pouvez ignorer cette étape.
 
 **Vous cherchez un guide pas à pas ?** Consultez le [guide de démarrage rapide](flutter-implement-paywalls-manually) pour des instructions d'implémentation complètes avec tout le contexte nécessaire.
 :::
@@ -136,9 +136,42 @@ Pour ce faire, vous devez ouvrir l'URL au format suivant :
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
 
-### Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
+## Achats intégrés promus depuis l'App Store \{#promoted-in-app-purchases-from-the-app-store\}
 
-Si vos utilisateurs peuvent acheter des [plans prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, acheter un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour les plans prépayés.
+:::info
+Les achats intégrés promus sont pris en charge à partir de la version 4.1 du SDK, sur **iOS 16.4** ou ultérieur. En dessous d'iOS 16.4, sur Android et en mode observateur, `didReceivePromotedPurchaseStream` n'émet jamais.
+:::
+
+Lorsqu'un utilisateur démarre un achat depuis la page produit de votre App Store et que la transaction est transférée vers votre application, le SDK la finalise automatiquement — l'écran d'achat Apple s'affiche immédiatement, et Adapty traite la transaction comme n'importe quel autre achat. Aucun code de votre côté n'est nécessaire.
+
+Si le produit mis en avant comporte une offre d'abonnement, le SDK l'applique automatiquement lors de l'achat. L'offre est lue depuis l'intention d'achat App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat est effectué au prix de base.
+
+Pour gérer vous-même les achats mis en avant — par exemple pour afficher votre propre écran en premier — abonnez-vous à `didReceivePromotedPurchaseStream` et passez le produit à `makePromotedPurchase` :
+
+```dart showLineNumbers
+Adapty().didReceivePromotedPurchaseStream.listen((product) async {
+  try {
+    final result = await Adapty().makePromotedPurchase(product: product);
+    // process the purchase result
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+});
+```
+
+:::warning
+Tant qu'un handler est abonné au stream, le SDK cesse de finaliser les achats promus à votre place. Si votre handler n'appelle jamais `makePromotedPurchase`, l'achat n'a pas lieu : l'App Store remet le produit à votre application et attend. Le SDK n'intervient pas non plus si votre handler lève une exception.
+:::
+
+`makePromotedPurchase` ne prend aucun paramètre d'achat, car un produit promu provient de l'App Store plutôt que d'un paywall et ne porte aucun contexte de paywall. Elle retourne le même `AdaptyPurchaseResult` que `makePurchase`.
+
+Qui complète l'achat est déterminé pour chaque événement, donc un stream que vous écoutez uniquement lorsqu'un écran est monté restitue les achats promus au SDK dès que cet écran disparaît. Vous pouvez vous abonner avant `activate`, ce qui vous permet de capturer un achat que le store délivre au lancement.
+
+## Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
+
+Si les utilisateurs de votre application peuvent acheter des [plans prépayés](https://developer.android.com/google/play/billing/subscriptions#prepaid-plans) (par exemple, acheter un abonnement non renouvelable pour plusieurs mois), vous pouvez activer les [transactions en attente](https://developer.android.com/google/play/billing/subscriptions#pending) pour les plans prépayés.
 
 ```dart showLineNumbers title="main.dart"
 await Adapty().activate(

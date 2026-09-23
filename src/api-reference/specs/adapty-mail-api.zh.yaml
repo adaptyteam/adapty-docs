@@ -91,13 +91,14 @@ paths:
     post:
       summary: 删除用户画像
       description: |
-        清除用户画像的个人数据并取消其计划发送的邮件。可用于履行数据删除权请求。
+        清除用户画像的个人数据并取消其计划中的邮件。用于履行数据删除权请求。
 
-        通过 `external_profile_id`、`customer_user_id` 和 `email` 的任意组合来标识用户画像——Adapty Mail 的解析方式与保存时相同。
+        通过 `external_profile_id`、`customer_user_id` 或 `email` 识别用户画像——至少提供其中一个。Adapty Mail 通过电子邮件地址匹配用户，因此您发送的 `email` 是唯一尝试的标识符；省略它则通过 `external_profile_id` 或 `customer_user_id` 查找用户画像。
 
-        删除操作不可撤销。之后使用相同标识符发起的 [保存用户画像](#operation/saveProfile) 请求不会重新创建该用户画像。
+        删除操作会清除已存储的数据，但不会屏蔽该地址。后续的
+        [保存用户画像](#operation/saveProfile) 请求将创建新的用户画像，不包含已删除用户画像的任何历史记录。若要永久排除某人，请停止发送其数据。
 
-        通过 `external_profile_id` 或 `customer_user_id` 重复删除操作时，请求会再次成功但不会产生任何变化。若仅通过 `email` 重复删除，则会返回 `404`：因为删除操作会清除已存储的邮件地址，导致无法再通过邮件进行匹配。
+        通过 `external_profile_id` 或 `customer_user_id` 重复删除操作会再次成功，但不会做任何更改。仅通过 `email` 重复删除操作则返回 `404`：因为清除操作已删除存储的地址，email 已无任何内容可匹配。
       operationId: deleteProfile
       security:
         - apikeyAuth: []
@@ -109,16 +110,16 @@ paths:
               $ref: '#/components/schemas/ProfileDeleteDTO'
             examples:
               byExternalProfileId:
-                summary: 通过保存用户画像时提供的标识符进行删除
+                summary: 通过保存用户画像时发送的标识符进行删除
                 value:
                   external_profile_id: user_12345
               byEmail:
-                summary: 通过邮件地址进行删除
+                summary: 通过电子邮件地址删除
                 value:
                   email: jane@example.com
       responses:
         '204':
-          description: 用户画像已删除。响应无正文内容。
+          description: 用户画像已删除。响应无正文。
         '400':
           description: 未提供任何标识符。
           content:
@@ -134,7 +135,7 @@ paths:
                         status_code: 400
                         field_name: null
         '403':
-          description: API 密钥缺失或无效。
+          description: Secret API 密钥缺失或无效。
           content:
             application/json:
               schema:
@@ -148,7 +149,7 @@ paths:
                         status_code: 403
                         field_name: null
         '404':
-          description: 未找到与所提供标识符匹配的用户画像。
+          description: 未找到与您发送的标识符匹配的用户画像。
           content:
             application/json:
               schema:
@@ -254,27 +255,24 @@ components:
         external_profile_id:
           type: string
           description: |
-            用户的稳定标识符，由您的应用或后端持有。在所有请求中复用相同的值，
-            以便 Adapty Mail 将电子邮件、点击和购买关联到同一个用户画像。请勿使用匿名标识符或按安装生成的标识符。
+            用户的稳定标识符，由您的应用或后端管理。在所有请求中复用同一个值，以便 Adapty Mail 将邮件、点击和购买行为关联到同一个用户画像。请勿使用匿名标识符或按安装生成的标识符。
         external_created_at:
           type: string
           format: date-time
           description: |
             用户创建时间，采用 ISO 8601 格式（例如 `"2026-06-01T10:30:00Z"`）。
-            您可以在市场细分中使用此日期。
+            您可以在市场细分中使用该日期。
         email:
           type: string
           format: email
           description: |
-            用户的电子邮件地址。Adapty Mail 将营销活动投递至该地址。
+            用户的电子邮件地址。Adapty Mail 将向该地址投递营销活动内容。
 
-            该地址为一次性写入：在用户画像创建时设置，后续保存不会覆盖。
+            该地址为一次性写入：在用户画像创建时设置，后续保存操作不会覆盖它。
         customer_user_id:
           type: string
           description: |
-            用户在您自有系统中的标识符（如果 Adapty 也能识别该标识符）。Adapty Mail
-            使用它来识别同时通过 Adapty SDK 触达的用户，从而使两个来源共享同一个用户画像，
-            而不是产生重复记录并向同一用户发送两封邮件。
+            用户在您自有系统中的标识符（如果有，且 Adapty 也已知晓该标识符）。Adapty Mail 使用它来识别同时通过 Adapty SDK 接入的用户，从而让两个来源共享同一个用户画像，而不会产生重复记录并向同一用户重复发送邮件。
         first_name:
           type: string
           description: 用户的名字。
@@ -290,15 +288,14 @@ components:
           description: 用户的出生日期，采用 ISO 8601 格式（例如 `"1990-05-21"`）。
         country:
           type: string
-          description: 用户所在国家/地区，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
+          description: 用户所在国家，采用两字母 ISO 3166-1 alpha-2 代码（例如 `US`）。
         store_country:
           type: string
-          description: 用户的商店区域，采用两位大写字母的 ISO 3166-1 alpha-2 代码（例如 `US`）。
+          description: 用户的应用商店所在地区，采用两字母 ISO 3166-1 alpha-2 代码（例如 `US`）。
         custom_attributes:
           type: object
           description: |
-            附加到用户画像的任意键值对（字符串或数字类型的值）。可用于构建[市场细分](/docs/mail-segments)——
-            例如 `plan`、`signup_source` 或 `trial_days`。
+            附加到用户画像的任意键值对（字符串或数字类型的值）。可用于构建[市场细分](/docs/mail-segments)——例如 `plan`、`signup_source` 或 `trial_days`。
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
     ProfileDeleteDTO:

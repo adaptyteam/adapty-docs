@@ -129,7 +129,7 @@ to trigger a review. Split every claim by owner before verifying it.
 | test-devices | — | dev | 5 | tutorial |
 | test-purchases-in-sandbox | — | dev | 19 | tutorial |
 | testing-on-android | — | dev | 7 | tutorial |
-| troubleshooting-test-purchases | — | dev | 6 | tutorial |
+| troubleshooting-test-purchases | — | dev | 7 | tutorial |
 | unity-test | — | dev | 2 | unity |
 | validate-test-purchases | — | dev | 2 | tutorial |
 <!-- /mill:auto -->

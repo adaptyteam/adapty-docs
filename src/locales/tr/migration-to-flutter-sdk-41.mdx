@@ -1,0 +1,127 @@
+---
+title: "Adapty Flutter SDK'yı v4.1'e Taşıma"
+description: "Adapty Flutter SDK v4.1'e geçiş: Adapty Attribution'ı açıkça etkinleştirin, yeniden adlandırılmış harici attribution API'lerini benimseyin ve yedek dosyanızı yeniden indirin."
+metadataTitle: "Adapty Flutter SDK v4.1'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty Flutter SDK 4.1; Adapty Attribution'ın etkinleştirilme şeklini değiştiriyor, harici attribution API'lerini yeniden adlandırıyor ve yedek paywall dosya biçimini güncelliyor. Bunlara ek olarak App Store'da tanıtılan uygulama içi satın almaları destekliyor ve bir flow görünümünü kapattıktan sonra canlı tutmanın yolunu ekliyor.
+
+:::warning
+Yeniden adlandırılan API'lar tam bir kırılma noktasıdır. Eski adlar tamamen kaldırıldı — bunları köprüleyecek deprecated takma adlar bulunmuyor. 4.0.x'e karşı derlenen kod, aşağıda listelenen her çağrı noktasını yeniden adlandırmadığınız sürece 4.1'de hata verir.
+:::
+
+Hâlâ 3.x'teyseniz önce [v4.0'a geçiş](migration-to-flutter-sdk-v4) rehberiyle başlayın, ardından bu kılavuzu takip edin.
+
+## Hızlı başvuru kılavuzu \{#quick-reference\}
+
+| v4.0 | v4.1 |
+|---|---|
+| Adapty Attribution varsayılan olarak etkin | Adapty Attribution varsayılan olarak devre dışı; `withAdaptyAttributionEnabled(true)` ile etkinleştirin |
+| `Adapty().updateAttribution(attribution, source: source)` | `Adapty().updateExternalAttribution(attribution, provider: provider)` |
+| `AdaptyAttributionSource` | `AdaptyExternalAttributionProvider`, yeni `custom` değeriyle |
+| `AdaptyProfile.appliedAttributionSources` | `AdaptyProfile.appliedExternalAttributionProviders` |
+| 4.0 için indirilen yedek dosya | Yeni yedek dosya formatı; dosyayı tekrar indirin |
+| Tanıtılan uygulama içi satın almalar desteklenmiyor | Destekleniyor; SDK tamamlar ya da uygulamanız `didReceivePromotedPurchaseStream` üzerinden tamamlar |
+| `dismissFlowView(view)` her zaman görünümü serbest bırakır | `destroy: false` görünümü tekrar göstermek için canlı tutar |
+
+Satın alma, profil ve flow sunum API'leri bunun dışında değişmemiştir.
+
+## Kurulum \{#installation\}
+
+`pubspec.yaml` dosyanızda `adapty_flutter` sürümünü v4.1 olarak güncelleyin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: 4.1.0
+```
+
+Uygulamanız [Kids Mode](kids-mode-flutter) kullanıyorsa bunun yerine `adapty_flutter_kids` belirtin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: 4.1.0
+```
+
+Gereksinimler 4.0'dan bu yana değişmedi: **Flutter 3.32.0** (Dart 3.8.0) ve **iOS 15.0**. Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-flutter) sayfasına bakın.
+
+4.1, yerel iOS SDK'yı 4.1.3 ve yerel Android SDK'yı 4.1.1 sürümüne sabitler. iOS sürümü ayrıca flow analitik olaylarının sayısal parametrelerindeki bir hatayı da düzeltir: bu düzeltmeden önce, her `0` ve `1` değeri `flowViewDidReceiveAnalyticEvent`'e `false` ve `true` olarak ulaşıyordu.
+
+## ⚠️ Adapty Attribution varsayılan olarak devre dışıdır \{#adapty-attribution-is-disabled-by-default\}
+
+:::warning
+SDK 4.1'e güncelleyip opt-in yapmazsanız, [Adapty Attribution](user-acquisition) sessizce çalışmayı durdurur — yüklemeler kayıt edilmez ve sizi uyaran hiçbir şey olmaz.
+:::
+
+4.0 ve önceki sürümlerde SDK, [Adapty Attribution](user-acquisition) için yüklemeleri otomatik olarak kaydediyordu. 4.1'den itibaren bu özellik varsayılan olarak kapalıdır: SDK yüklemeleri kaydetmez, `onUpdateInstallationDetailsSuccessStream` ve `onUpdateInstallationDetailsFailStream` hiçbir zaman tetiklenmez ve `getCurrentInstallationStatus` `AdaptyInstallationStatusNotAvailable` döndürür.
+
+Adapty Attribution kullanıyorsanız, SDK'yı yapılandırırken bu özelliği etkinleştirin:
+
+```diff showLineNumbers
+  await Adapty().activate(
+-   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
++   configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
++     ..withAdaptyAttributionEnabled(true),
+  );
+```
+
+Adapty Attribution kullanmıyorsanız herhangi bir değişiklik yapmanıza gerek yoktur.
+
+## Yeniden Adlandırılan Harici Attribution API'leri \{#renamed-external-attribution-apis\}
+
+Harici bir sağlayıcıdan (Adjust, AppsFlyer, Branch, Tenjin veya özel bir sağlayıcı) attribution verisi ileten API'ler, native SDK'larla uyumlu olacak şekilde yeniden adlandırıldı.
+
+### updateAttribution → updateExternalAttribution
+
+Metod yeniden adlandırıldı ve `source` parametresi `provider` olarak değiştirildi. Parametre artık bir string yerine `AdaptyExternalAttributionProvider` alıyor; attribution verisi hâlâ bir map:
+
+```diff showLineNumbers
+- await Adapty().updateAttribution(attribution, source: 'adjust');
++ await Adapty().updateExternalAttribution(attribution, provider: AdaptyExternalAttributionProvider.adjust);
+```
+
+### AdaptyAttributionSource → AdaptyExternalAttributionProvider
+
+Sağlayıcı türü yeniden adlandırıldı. Bir string üzerindeki açık bir sarmalayıcı olmaya devam eder — önceden tanımlanmış değerler şunlardır: `appleAds`, `adjust`, `appsflyer`, `branch`, `tenjin` ve Adapty'nin doğrudan entegre olmadığı sağlayıcılar için yeni bir `custom`. Herhangi başka bir string'den de oluşturabilirsiniz; bu sayede Adapty'nin ileride ekleyeceği bir sağlayıcı, SDK güncellemesi gerektirmeden çalışır:
+
+```dart showLineNumbers
+final provider = AdaptyExternalAttributionProvider('my_provider');
+```
+
+### AdaptyProfile.appliedAttributionSources → appliedExternalAttributionProviders
+
+Profile'a uygulanan attribution sağlayıcılarını listeleyen profil özelliği yeniden adlandırıldı ve öğe türü de buna göre değişti:
+
+```diff showLineNumbers
+- if (profile.appliedAttributionSources.contains(AdaptyAttributionSource.appleAds)) {
++ if (profile.appliedExternalAttributionProviders.contains(AdaptyExternalAttributionProvider.appleAds)) {
+      // Apple Ads attribution has been applied
+  }
+```
+
+Serileştirilmiş profil alanı `applied_attribution_sources` adını koruduğundan, ham profili okuyan bir backend için herhangi bir değişiklik gerekmez. Ancak bu özelliği okuyan kodun güncellenmesi gerekir — bkz. [Apple Ads hedefli paywall gösterme](flutter-show-aa-targeted-paywall).
+
+## Yedek dosyalar
+
+[Yedek dosya](fallback-flows) biçimi SDK 4.1'de değişti. **[Placements](https://app.adapty.io/placements)** > **Fallbacks** bölümünden dosyayı yeniden indirin ve uygulamanıza ekleyin; 4.0 için daha önce indirmiş olsanız bile bu adımı atlamamanız gerekir.
+
+:::warning
+Bu adımı atlarsanız build hatası almazsınız. Ancak SDK eski dosyayı reddeder ve tüm placement'ların yedekleri çalışmaz.
+:::
+
+## App Store'da öne çıkan uygulama içi satın almalar \{#promoted-in-app-purchases\}
+
+Flutter SDK 4.0, [App Store ürün sayfanızda öne çıkan uygulama içi satın almaları](flutter-making-purchases#promoted-in-app-purchases-from-the-app-store) desteklemiyordu: üzerine inşa edildiği yerel iOS SDK'sında bunlar için herhangi bir API bulunmuyordu. 4.1 bu desteği ekliyor; dolayısıyla bu yeni bir özellik olup, yeni kod değişikliği yapmadan güncelleme yapmanız uygulamanızın davranışını hiçbir şekilde değiştirmez.
+
+By default the SDK completes a promoted purchase itself. Write code only to complete it yourself, for example to show a screen first: subscribe to `didReceivePromotedPurchaseStream` and pass the product to `makePromotedPurchase`. While anything is subscribed to that stream, the SDK stops completing promoted purchases for you.
+
+## Flow görünümünü kapattıktan sonra canlı tutma \{#keep-a-flow-view-alive-after-dismissing-it\}
+
+`AdaptyUI().dismissFlowView` ve `AdaptyUIFlowView.dismiss`, bir `destroy` bayrağı kabul eder:
+
+```dart showLineNumbers
+await AdaptyUI().dismissFlowView(view, destroy: false);
+```
+
+Varsayılan değeri `true`'dur; bu, görünümü eskisi gibi serbest bırakır. `destroy: false` ile görünüm canlı kalır; böylece tekrar gösterebilir ve kullanıcı, flow'un biriktirdiği durumla birlikte kaldığı ekrana geri döner.
+
+Bu şekilde canlı tutulan bir görünüm, `destroy: true` ile kapatılana kadar bellekte tutulur. Serbest bırakılmış bir görünümü sunmaya çalışmak başarısız olur; bu nedenle söz konusu flow'u tekrar göstermek için `createFlowView`'ı yeniden çağırın.

@@ -9,14 +9,14 @@ displayed_sidebar: sdkreactnative
 
 import OfferCodesInfo from '@site/src/locales/fr/reusable/OfferCodesInfo.mdx';
 
-Afficher des paywalls dans votre application mobile est une étape essentielle pour offrir aux utilisateurs l'accès à du contenu ou des services premium. Cependant, afficher ces paywalls suffit à prendre en charge les achats uniquement si vous utilisez le [Paywall Builder](adapty-paywall-builder) pour personnaliser vos paywalls.
+Afficher les paywalls dans votre application mobile est une étape essentielle pour offrir aux utilisateurs un accès à des contenus ou services premium. Cependant, afficher un paywall ne suffit à lui seul à gérer les achats que lorsqu'Adapty affiche l'écran — c'est-à-dire, un [flow](adapty-flow-builder), ou un paywall issu de l'[ancien Paywall Builder](adapty-paywall-builder).
 
-Si vous n'utilisez pas le Paywall Builder, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et débloquer le contenu souhaité. Cette méthode constitue le point d'entrée permettant aux utilisateurs d'interagir avec les paywalls et de procéder aux transactions souhaitées.
+Si vous affichez l'écran dans votre propre code, vous devez utiliser une méthode distincte appelée `.makePurchase()` pour finaliser un achat et déverrouiller le contenu souhaité. Cette méthode constitue le point d'entrée permettant aux utilisateurs d'interagir avec les paywalls et de procéder à leurs transactions.
 
-Si votre paywall comporte une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'applique automatiquement au moment de l'achat.
+Si votre paywall comporte une offre promotionnelle active pour le produit qu'un utilisateur souhaite acheter, Adapty l'appliquera automatiquement au moment de l'achat.
 
 :::warning
-Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si vous utilisez des paywalls configurés avec le Paywall Builder.
+Gardez à l'esprit que l'offre de lancement ne sera appliquée automatiquement que si Adapty affiche l'écran.
 
 Dans les autres cas, vous devrez [vérifier l'éligibilité de l'utilisateur à une offre de lancement sur iOS](fetch-paywalls-and-products#check-intro-offer-eligibility-on-ios). Ignorer cette étape peut entraîner le rejet de votre application lors de la publication. De plus, cela pourrait conduire à facturer le plein tarif à des utilisateurs éligibles à une offre de lancement.
 :::
@@ -26,7 +26,7 @@ Assurez-vous d'avoir [effectué la configuration initiale](quickstart) sans saut
 ## Effectuer un achat \{#make-purchase\}
 
 :::note
-**Vous utilisez le [Paywall Builder](adapty-paywall-builder) ?** Les achats sont traités automatiquement — vous pouvez ignorer cette étape.
+**Adapty affiche-t-il votre écran ?** Pour un [flow](adapty-flow-builder) ou un paywall [Paywall Builder](adapty-paywall-builder), les achats sont traités automatiquement — vous pouvez ignorer cette étape.
 
 **Vous cherchez un guide pas à pas ?** Consultez le [guide de démarrage rapide](react-native-implement-paywalls-manually) pour des instructions d'implémentation complètes avec tout le contexte nécessaire.
 :::
@@ -146,6 +146,34 @@ D'après nos observations, la feuille de saisie de code de réduction peut ne pa
 Pour ce faire, ouvrez l'URL au format suivant :
 `https://apps.apple.com/redeem?ctx=offercodes&id={apple_app_id}&code={code}`
 :::
+
+## Achats intégrés promus depuis l'App Store \{#in-app-purchases-from-the-app-store\}
+
+:::info
+Votre application peut prendre en charge les achats intégrés promus à partir de la version 4.1 du SDK, sur **iOS 16.4** ou version ultérieure. En dessous d'iOS 16.4, et sur Android, l'événement `'onPromotedPurchaseReceived'` ne se déclenche jamais.
+:::
+
+Lorsqu'un utilisateur lance un achat depuis la page produit de votre App Store et que la transaction est transférée vers votre application, le SDK la finalise automatiquement — l'écran d'achat Apple s'affiche immédiatement, et Adapty traite la transaction comme n'importe quel autre achat. Aucun code n'est nécessaire de votre côté.
+
+Si le produit mis en avant inclut une offre d'abonnement, le SDK l'applique automatiquement lors de l'achat. L'offre est lue depuis l'intent d'achat App Store, qui l'expose sur iOS 18.0 et versions ultérieures. Sur iOS 16.4–17.x, l'achat se fait au prix de base.
+
+Pour gérer vous-même la finalisation — par exemple pour afficher d'abord votre propre écran — écoutez l'événement `'onPromotedPurchaseReceived'` et passez le produit à `makePromotedPurchase` :
+
+```typescript showLineNumbers
+
+adapty.addEventListener('onPromotedPurchaseReceived', async product => {
+  const result = await adapty.makePromotedPurchase(product);
+  // process the purchase result
+});
+```
+
+:::warning
+Tant que votre listener est enregistré, le SDK cesse de finaliser les achats promus à votre place. Si votre handler n'appelle jamais `makePromotedPurchase`, l'achat n'a pas lieu : l'App Store transmet le produit à votre application et attend.
+:::
+
+`makePromotedPurchase` ne prend aucun paramètre d'achat — un produit promu provient de l'App Store et non d'un paywall, il ne porte donc aucun contexte de paywall. Il retourne le même `AdaptyPurchaseResult` que `makePurchase`.
+
+Les listeners s'accumulent : si vous en enregistrez plusieurs, chacun reçoit le produit, et aucun ne finalise l'achat pour les autres.
 
 ## Gérer les plans prépayés (Android) \{#manage-prepaid-plans-android\}
 

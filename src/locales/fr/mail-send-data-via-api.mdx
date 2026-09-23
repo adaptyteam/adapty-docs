@@ -11,7 +11,7 @@ L'API Adapty Mail vous permet d'envoyer des profils utilisateurs et des transact
 - Alimentez Adapty Mail en serveur à serveur, avec votre backend comme source de vérité.
 
 :::note
-**API ou SDK ?** La plupart des applications envoient des données à Adapty Mail via le SDK Adapty, qui collecte automatiquement les e-mails et les achats — voir [Connecter Adapty à Adapty Mail](mail-collect-emails). Choisissez l'API lorsque votre application n'intègre pas le SDK Adapty, que les données se trouvent déjà sur votre serveur, ou que vous importez des abonnés depuis une autre source. Vous pouvez également utiliser l'API en parallèle d'un autre point d'entrée : Adapty Mail rapproche les données entrantes sur le `customer_user_id` et l'adresse e-mail, et conserve un seul profil par personne.
+**API ou SDK ?** La plupart des applications envoient des données à Adapty Mail via le SDK Adapty, qui collecte automatiquement les e-mails et les achats — voir [Connecter Adapty à Adapty Mail](mail-collect-emails). Choisissez l'API lorsque votre application n'utilise pas le SDK Adapty, lorsque les données se trouvent déjà sur votre serveur, ou lorsque vous importez des abonnés depuis une autre source. Vous pouvez aussi utiliser l'API en complément d'un autre point d'entrée. Adapty Mail identifie les personnes par adresse e-mail. Deux sources signalant la même adresse aboutissent sur un seul profil ; deux adresses différentes créent des profils distincts, même si le `customer_user_id` est identique.
 :::
 
 ## Avant de commencer \{#before-you-start\}
@@ -43,7 +43,7 @@ Trois champs sont obligatoires :
 Envoyez toujours un `external_profile_id` stable, jamais une valeur anonyme ou propre à une installation. Adapty Mail s'en sert pour associer e-mails, clics et achats à un seul profil.
 :::
 
-Si la même personne accède également à Adapty Mail via le SDK, ajoutez `customer_user_id` — votre propre identifiant utilisateur, celui que vous passez à `Adapty.identify()`. Adapty Mail s'appuie dessus pour rattacher les deux sources à un seul profil, plutôt que de créer un doublon qui enverrait deux fois le même e-mail.
+Si la même personne accède également à Adapty Mail via un autre [point d'entrée](mail-entry-points), envoyez `customer_user_id` — le même identifiant utilisateur que la source transmet. Pour le SDK Adapty, c'est la valeur que vous passez à `Adapty.identify()` ; FunnelFox envoie celui qu'il détient. Ce paramètre ne détermine pas sur quel profil l'utilisateur atterrit ; c'est l'adresse e-mail qui s'en charge. Il ajoute simplement une deuxième façon de retrouver le profil : un événement de transaction qui le contient peut être résolu sans adresse e-mail, et une suppression peut le désigner à la place de l'adresse.
 
 ```bash
 curl --request POST \
@@ -62,8 +62,19 @@ curl --request POST \
 ```
 
 :::note
-`country` et `store_country` utilisent un code [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) à deux lettres — `US`, pas `USA` ni `United States`. Toute autre valeur est rejetée.
+`country` et `store_country` acceptent un code [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) à deux lettres — `US`, et non `USA` ou `United States`. Toute autre valeur est rejetée.
 :::
+
+`device_info` décrit l'appareil de l'utilisateur. L'objet est facultatif, mais `platform` doit être présent dès lors que vous l'envoyez.
+
+| Champ | Facultatif | Filtre de segment | Notes |
+| --- | --- | --- | --- |
+| `platform` | Non | Oui | |
+| `device` | Oui | Oui | Le modèle d'appareil. |
+| `os` | Oui | Oui | |
+| `locale` | Oui | Oui | |
+| `app_version` | Oui | Oui | Comparé dans l'ordre des versions, donc `1.10.0` est supérieur à `1.9.0`. |
+| `timezone` | Oui | Non | Définit quand l'utilisateur reçoit les e-mails. Sans ce champ, Adapty Mail le traite en UTC, donc la fenêtre d'envoi 08h00–21h00 suit l'UTC plutôt que son propre fuseau horaire. |
 
 Consultez la référence [Save profile](api-mail/operations/saveProfile) pour tous les champs disponibles.
 
@@ -115,9 +126,9 @@ curl --request POST \
   }'
 ```
 
-Identifiez le profil par `external_profile_id`, `customer_user_id` ou `email` — envoyez au moins un de ces identifiants. La suppression est définitive : une sauvegarde ultérieure portant les mêmes identifiants ne recrée pas le profil.
+Identifiez le profil par `external_profile_id`, `customer_user_id` ou `email` — envoyez au moins un de ces champs. Adapty Mail efface les données stockées, mais ne bloque pas l'adresse : si une source la renvoie, un nouveau profil apparaît sans historique. Pour exclure définitivement quelqu'un, empêchez la source d'envoyer ses données.
 
-Pour sécuriser une nouvelle tentative, identifiez le profil par `external_profile_id` ou `customer_user_id`. Répéter une suppression effectuée uniquement avec `email` renvoie `404`, car la suppression efface l'adresse stockée. Consultez la référence [Supprimer un profil](api-mail/operations/deleteProfile) pour plus de détails.
+Une requête de suppression qui expire vous laisse dans l'incertitude quant à son résultat, alors vous la renvoyez. Ce deuxième appel est sans risque si vous identifiez le profil par `external_profile_id` ou `customer_user_id` — il réussit sans rien modifier. Un deuxième appel portant uniquement `email` renvoie `404`, car la première suppression a effacé l'adresse qu'il aurait trouvée. La référence [Supprimer un profil](api-mail/operations/deleteProfile) liste les codes de réponse.
 
 ### Associez vos événements aux flows \{#map-your-events-to-flows\}
 

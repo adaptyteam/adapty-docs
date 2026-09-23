@@ -31,7 +31,6 @@ being varied or the placement wiring that attaches the test.
 | ab-test-no-paywall-variants | — | marketer | 5 | tutorial |
 | ab-test-types | — | marketer | 6 | tutorial |
 | ab-tests | — | marketer | 3 | tutorial |
-| crossplacement-ab-tests | — | marketer | 8 | tutorial |
 | maths-behind-it | — | marketer | 2 | tutorial |
 | results-and-metrics | — | marketer | 30 | tutorial |
 | run_stop_ab_tests | — | marketer | 5 | tutorial |
@@ -57,7 +56,7 @@ being varied or the placement wiring that attaches the test.
 
 ## Ticket language
 
-Rows name article ids from the roster above. Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔
+Rows name article ids from the roster above. Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔
 flow in v4, remote config ↔ custom JSON) live in `aliases.md` and are deliberately not repeated here.
 Note that statistics questions arrive phrased as bugs — read them as questions before believing them.
 

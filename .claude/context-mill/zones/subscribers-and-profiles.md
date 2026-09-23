@@ -28,7 +28,7 @@ support and analyst roles far more than by developers writing code.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| event-feed | — | support, analyst | 0 | tutorial |
+| event-feed | — | support, analyst | 1 | tutorial |
 | how-profiles-work | — | support, analyst | 6 | tutorial |
 | profiles-crm | entry | support, analyst | 8 | tutorial |
 | segments | — | support, analyst | 8 | tutorial |

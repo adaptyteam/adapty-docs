@@ -7,11 +7,11 @@ reviewed_at: 2026-08-10
 
 ## What this is
 
-The behavioural and lifecycle half of Flow Builder documentation: what a flow *does* (navigation,
+The behavioural and lifecycle half of Flow & Paywall Builder documentation: what a flow *does* (navigation,
 conditional branching, actions, purchases, variables, remote config, fallbacks) and how a flow moves
 through its *lifecycle* (create, tour the UI, preview, save/publish, measure, migrate, recipe). Its
 sibling zone, `flow-design`, covers what a flow *looks like* (screens/layers, layout, elements, styles,
-dark mode, fonts, localized copy). Both zones sit inside the Adapty Dashboard's Flow Builder — this
+dark mode, fonts, localized copy). Both zones sit inside the Adapty Dashboard's Flow & Paywall Builder — this
 zone owns the no-code authoring workflow for behavior and its lifecycle wrapper, not the SDK code that
 renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/rendering,
 `sdk-flows-manual` for remote-config consumption, `sdk-migrations` for the v4 upgrade path).
@@ -20,7 +20,7 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 
 - **Adapty Dashboard → Flows page**: flow list, status column, **Create flow**, **Fallbacks** download,
   the Flow metrics view.
-- **Flow Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
+- **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
 - **Adapty mobile app** (iOS/Android): receiving end of **Test on device** — not documented here beyond
@@ -53,6 +53,20 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   `builder/src/blocks/shared/variables/variables.common.ts`) can only resolve what the mapper sent, and
   a field's *absence* there is why a variable renders as a token. Verified 2026-08-24 against
   `origin/master` `db365e184`.
+- **The per-screen product registry (ADP-7541, flow schema v12) has two specs in `dashboard-interface`:**
+  `packages/unified-builder/builder/src/blocks/products/products.spec.md` (panel behaviour, menu items,
+  toasts, dialog labels) and `packages/unified-builder/builder/src/core/entities/screen-products/issues.spec.md`
+  (the publish-blocking issue codes with their exact titles). `paywall-product-block` and
+  `flow-common-issues` quote those titles verbatim — verify against the specs, not against a screenshot.
+  Two label traps verified 2026-09-13 on `origin/ADP-7541`. First, the group label for already-used
+  products depends on the picker: the card's **Product** dropdown and the plain product pickers say
+  **Added** and mean this screen's list (`blocks/shared/products/ProductSelect.tsx`); a text element's
+  `{ }` picker also says **Added** but spans every screen's list (`BindingCatalog.flowBindings()` in
+  `core/entities/product-bindings/catalog.ts`); the variables picker opened for a product-typed
+  comparison or assignment says **Current** (`blocks/shared/variables/ProductsTab.tsx`,
+  `scope === 'screen'`), and inside a card **Current** is the enclosing card's own product. Second, the
+  panel's **Missing** badge (product deleted from the catalog) is a different state from **This product
+  is off this screen** (product exists, not on the screen's list).
 - No dedicated source exists for the Flow metrics definitions (revenue, proceeds, ARPPU, conversion
   rates) beyond the article's own prose — these are dashboard-backend calculations with no spec file
   registered in `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx`
@@ -118,7 +132,7 @@ or developer can see and click.
 | builder-navigation-actions | entry | marketer, dev | 0 | tutorial |
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
-| convert-paywall-to-flow | migration | marketer, dev | 3 | tutorial |
+| convert-paywall-to-flow | migration | marketer, dev | 4 | tutorial |
 | copy-flows | — | marketer, dev | 2 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
@@ -138,7 +152,7 @@ or developer can see and click.
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 7 | tutorial |
+| paywall-product-block | — | marketer, dev | 16 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
 | respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |
@@ -187,13 +201,13 @@ or developer can see and click.
   articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
   word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
   SDK platforms support flows), and embed the same YouTube video (`8Cby6lVGI0o`). Cochange confirms
-  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow Builder
+  this pair moves together (3× in `mill:cochange flow-logic`); a version-support change to Flow & Paywall Builder
   must update both copies of this sentence, not one.
 - **`adapty-flow-builder` ↔ `builder-ui` ↔ `paywall-builder-templates` ↔ `flow-builder-recipes` ↔
   `onboarding-flow-tutorial`: the hub cluster.** Cochange shows every pair in this set at 1–3× (e.g.
   `adapty-flow-builder`+`builder-ui` 3×, `builder-ui`+`paywall-builder-templates` 2×). Directly confirmed
   in git history: commit `660fd74dd` ("New videos + YouTube playlist callout") touched all five in one
-  pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow Builder
+  pass (plus `flow-design`'s `manage-paywall-ui-elements`). Any change to the top-level Flow & Paywall Builder
   narrative, its embedded videos, or its "what you can build" list ripples across this whole cluster.
 - **`flow-common-issues#a-flow-wont-preview-or-publish` is the single canonical list of "blocks
   previewing and publishing" conditions.** Adding a new publish-blocking condition anywhere in the
@@ -273,7 +287,7 @@ with the SDK side — see "Reader jobs" for exactly which `sdk-flows-display`/`s
 
 ## Ticket language
 
-Corpus-wide synonyms (Flow ↔ Paywall Builder, paywall ↔ flow in v4, remote config ↔ custom JSON) live in
+Corpus-wide synonyms (Flow Builder ↔ Flow & Paywall Builder, paywall ↔ flow in v4, remote config ↔ custom JSON) live in
 `aliases.md` and are deliberately not repeated here. Several filenames in this zone are frozen from the
 pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rarely matches the id.
 
@@ -281,7 +295,8 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 |---|---|
 | "flow logic", "flow behavior", "the branch didn't fire", "what does this panel do", "where is the publish button" | This zone, not `flow-design` — apply the Boundaries test (trigger/action/condition/variable/lifecycle = here; layout, look, style, copy = `flow-design`). A pure "tour the interface" question is `builder-ui`, which is also the fastest way to answer "where is X in the editor". |
 | "create a flow", "start from a template", "template gallery", "duplicate flow name warning" | `paywall-builder-templates` — the create-a-flow entry point despite the pre-flow filename. `adapty-flow-builder` only orients; it doesn't walk the creation steps. |
-| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. |
+| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. Since ADP-7541 the "won't publish" half has names: **No product selected**, **This product no longer exists**, **This product is off this screen**, **Offer required** — all listed with fixes in `flow-common-issues`, and fixed in bulk from the **Products** panel (`paywall-product-block#product-actions`). |
+| "product shows as Missing", "off this screen", "Can't publish yet", "the same product appears twice in the panel", "how do I swap a product on every screen" | `paywall-product-block#product-actions`. **Missing** = deleted from the Dashboard catalog; **off this screen** = exists but not on that screen's list (after a panel **Remove**). Two entries for one product = two product-and-offer pairs. **Replace in N places** rewrites every use on one screen and offers the same change on the other screens that use the pair. |
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
 | "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. |

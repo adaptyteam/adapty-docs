@@ -277,9 +277,10 @@ other source here: this repo is pinned to our published docs, not to the SDKs.**
 `llms.txt`, and a cron files a `skill-drift` issue when our docs move — so a rename on our side breaks
 the skill, and the skill is never upstream of us.
 
-The gap that lint does *not* close is version pins: it checks symbols, never versions. So skill and docs
-can go stale together on a pre-release pin (its `references/kmp.md` pins `4.0.0-beta.1` while the KMP SDK
-has since tagged `4.0.1-beta.1`).
+The gap that lint does *not* close is version pins: it checks symbols, never versions, so a skill and our
+install articles can agree with each other and both be stale. Agreement between them is therefore not
+evidence of currency. Re-establish a pin from the platform source per `platforms.md`, never from the
+skill or from a neighbouring article.
 
 Registered 2026-08-11, same reason as `adapty-cli`.
 

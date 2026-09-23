@@ -1,25 +1,24 @@
 # Archive — What to Learn From Each Video
 
-A learning tool first. Before drafting anything, find the closest video here and read it, then use the
-patterns below rather than inventing an approach.
+Overview of established patterns from previous videos. Before drafting anything, find the closest video here and read it. Reuse one of the patterns below rather than inventing an approach.
 
 State and published IDs are at the bottom, for the transcription backlog.
 
 ## The four models
 
-These are transcribed from the finished videos, so they show what actually survives the microphone.
-Read at least one before writing.
+These are transcribed from the finished videos, so they show what the narration became after
+delivery. Read at least one before writing.
 
-**21-variables-dynamic-text** — the best intro in the series. Two deictic observations, then the
+**21-variables-dynamic-text** — Two deictic observations, then the
 reveal: *"This line knows what the user picked on the previous screen. This price came from the App
 Store a second ago. Neither is typed in — both are variables."* Nothing is defined before it's shown.
 Copy this shape when a feature is visible on screen.
 
-**20-interaction-basics** — the best structure. Establishes a three-part model (element, trigger,
+**20-interaction-basics** — Establishes a three-part model (element, trigger,
 action), demonstrates it once, names it — *"That's a working button, and this shape never changes"* —
 then varies one part at a time. Copy this when teaching a mechanism with several dimensions.
 
-**19-first-screen** — the best end-to-end build. Long (4:27) and earns it, because something is
+**19-first-screen** — Long (4:27) and earns it, because something is
 always being made. Note the presenter's *I'll* for choices and *we* for the walkthrough, and how
 layout gets explained only when it becomes visible in Part 5.
 
@@ -40,20 +39,9 @@ the video a spine and a reason for Part 2 to exist.
 
 **Rule stated as a negative** (15, 19) — *"you never drop an element onto exact coordinates"*;
 *"you don't drag elements around to position them."* Corrects the expectation the viewer arrived with,
-which is faster than describing the actual system.
+which is faster than describing the actual system outright.
 
-**Triadic setup** (11) — *"manually, on a tap, or automatically from a condition. Let's take all
-three."* Promises three beats and delivers three Parts.
-
-**Two sorting questions** (23) — *"Placement. Paywall. Onboarding. Flow — four words that are easy to
-mix up. Two questions sort them out: where does it appear, and who draws it?"* The strongest opener
-among the drafts, and the model for a conceptual video.
-
-This is not the table-of-contents intro it superficially resembles. **An intro may pose the organizing
-question; it may not answer it.** *"Two questions sort them out"* promises a decision procedure and
-takes four seconds. *"This video covers placements, paywalls, and onboardings"* recites an agenda and
-teaches nothing. The concepts themselves still get explained inside the Parts, over live action, as
-`voice.md` requires.
+**Triadic setup** (11) — *"manually, on a tap, or automatically from a condition. Let's take all three."* Promises three beats and delivers three Parts.
 
 **Outro triad** (19, 20, 21) — gather the video into three items, then close. See `tone.md`.
 
@@ -68,7 +56,7 @@ read-only; you add products from the right panel."* A reference page read aloud.
 rescue, because the whole structure follows the UI rather than a task.
 
 **Identifier density** (12, Part 1) — *"this group is `skillLevel`, so its answer is
-`skillLevel.selectedOptionId`"*. Correct, and unspeakable. Say what it means; let the docs carry the
+`skillLevel.selectedOptionId`"*. Accurate and unspeakable. Say what it means; let the docs carry the
 symbol.
 
 **Definitional opening** (7) — *"Interactive elements in the Flow Builder carry multiple visual
@@ -85,6 +73,7 @@ What each recorded video actually contrasts. Useful when picking a new scenario 
 | 20-interaction-basics | A button that does nothing | A button that navigates; then non-tap triggers |
 | 21-variables-dynamic-text | A product card with no price | Live localized price, and a personalized tagline |
 | 22-virtual-currencies | Balance at zero | 1000 credits granted automatically by a purchase |
+| 24-ab-tests | Two paywalls, no way to know which earns more | A winner, with the probability it is one |
 
 ## Corpus state
 
@@ -114,12 +103,16 @@ the section format.
 | 19 | first-screen | **RECORDED** | yes | yes | `fSmxx4YWurw` |
 | 20 | interaction-basics | **RECORDED** | yes | yes | `uicKwOak-Zo` |
 | 21 | variables-dynamic-text | **RECORDED** | yes | yes | `sbBxrJoNI1M` |
-| 22 | virtual-currencies | **RECORDED** | yes | yes | unpublished |
+| 22 | virtual-currencies | **RECORDED** | yes | yes | `rR0sLAJfVOw` |
 | 23 | terminology | draft | – | – | none found |
+| 24 | ab-tests | **RECORDED** | yes | yes | unpublished |
+
+Video 24 was the first shoot to dress the dashboard with mocked data, and the first to split one video
+across an honest take and a dressed one — see `mock-data.md`.
 
 `?` marks an inferred mapping. Unmarked IDs for videos 6 and 11–19 are confirmed by the series roadmap:
 [Flow & paywall builder videos](https://app.notion.com/p/3a41ca4355c380bea4fdc8779d6f62cf), which is the
-authoritative queue and status board. Videos 1–5, 22, and 23 are outside its scope.
+authoritative queue and status board. Videos 1–5 and 22–24 are outside its scope.
 
 Re-derive:
 
@@ -136,5 +129,6 @@ grep -rEo '<YouTube id="[A-Za-z0-9_-]+"' src/content/docs \
 - **1–12** — no recording steps; 2, 3, and 10 predate the section format entirely
 - **13 onward** — `recording-steps.md` becomes standard
 - **19 onward** — scripts get replaced with as-recorded transcripts
+- **24** — first shoot with mocked data and a two-session recording split
 
-Later is better. For voice, read 19–22; for shot lists, 21 and 22.
+Later is better. For voice, read 19–22; for shot lists, 21, 22 and 24.
