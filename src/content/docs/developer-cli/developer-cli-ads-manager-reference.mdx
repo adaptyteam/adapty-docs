@@ -387,6 +387,41 @@ adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 
 Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search`, and `--status` [list filters](#list-filters). Filter by `--ad-group` — without a filter, this is the widest read in the topic.
 
+### adapty asa keywords recommend
+
+Get a ready-made keyword pool for one of your apps. These are the same pools that Ads Manager uses when you set up a campaign in the dashboard.
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--adam-id` | Yes | Apple App Store ID (`adam_id`) of your app, from [`asa apps list`](#adapty-asa-apps-list) |
+| `--type` | Yes | `brand`, `generic`, or `competitor` |
+| `--country` | No | Two-letter ISO country code. Repeat for several. Default: every country in the pool |
+
+The `--type` flag selects the pool:
+
+| Type | Keywords |
+|---|---|
+| `brand` | Your app's brand terms, their spelling variants, and organic terms that contain the brand. The output also lists the brand terms themselves |
+| `generic` | Non-brand terms that your app and its top organic competitors rank for, with every known brand term removed. `relevance_tier: top_organic` marks the terms where your app already ranks in the organic top 10 |
+| `competitor` | The brand terms of each competitor selected for the app in [AI Growth Advisor](autopilot-analysis#select-competitors), one pool per competitor. Empty until you select competitors |
+
+Each keyword comes with its country, popularity, score, and median organic rank. The keywords have no bids or match types. Choose those yourself, then add the keywords with [`asa keywords add`](#adapty-asa-keywords-add).
+
+Check the pool `status` before you use its keywords:
+
+| Status | Meaning |
+|---|---|
+| `ready` | The pool is built |
+| `building` | The pool is still being built. Retry in about a minute |
+| `empty` | The pool is built and has no keywords |
+| `failed` | The build failed. Retry later |
+
+The first `brand` or `generic` call for an app builds the pool during the request and can take tens of seconds. The command has a budget of 10 calls per minute per company, and only one `brand` or `generic` build runs at a time per company. A second build during that time returns `429 cli_analytics_busy` with `Retry-After: 5`.
+
 ### adapty asa keywords add
 
 Add targeting keywords to an ad group.
@@ -842,7 +877,7 @@ The first call for a set of apps can take tens of seconds while the data is prep
 | `422` | `cli_idempotency_key_reuse` | The same idempotency key was used with a different request body |
 | `422` | `cli_metric_scope_too_wide` | A profile-counting metric was requested without `--campaign` or `--ad-group` |
 | `422` | `cli_response_too_large` | A `metrics` page would exceed 5000 breakdown rows |
-| `429` | `cli_analytics_busy` | The analytics pool is busy. The wait is in the `Retry-After` header |
+| `429` | `cli_analytics_busy` | The analytics pool is busy, or another keyword pool build for the company is still running. The wait is in the `Retry-After` header |
 | `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
 
 Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
