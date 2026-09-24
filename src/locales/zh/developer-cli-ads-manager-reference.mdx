@@ -387,6 +387,41 @@ adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 
 支持[分页标志](#global-flags)以及 `--campaign-group`、`--app`、`--campaign`、`--ad-group`、`--search` 和 `--status` [列表筛选条件](#list-filters)。建议通过 `--ad-group` 进行筛选——不添加筛选条件时，此操作的读取范围最广。
 
+### adapty asa keywords recommend
+
+获取某个应用的现成关键词池。这些关键词池与你在看板中设置广告系列时 Ads Manager 所使用的相同。
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--adam-id` | 是 | 应用的 Apple App Store ID（`adam_id`），可从 [`asa apps list`](#adapty-asa-apps-list) 获取 |
+| `--type` | 是 | `brand`、`generic` 或 `competitor` |
+| `--country` | 否 | 两位 ISO 国家代码，可重复使用以指定多个国家。默认值：关键词池中的所有国家 |
+
+`--type` 标志用于选择资源池：
+
+| 类型 | 关键词 |
+|---|---|
+| `brand` | 您应用的品牌词汇、拼写变体，以及包含品牌的自然流量词。输出结果还会列出品牌词汇本身 |
+| `generic` | 您的应用及其主要自然竞争对手共同排名的非品牌词汇，已去除所有已知品牌词。`relevance_tier: top_organic` 标记您的应用已在自然搜索前 10 名中排名的词汇 |
+| `competitor` | 在 [AI Growth Advisor](autopilot-analysis#select-competitors) 中为该应用选定的各竞争对手的品牌词汇，每个竞争对手对应一个词库。在选择竞争对手之前为空 |
+
+每个关键词都包含其所在国家/地区、热度、评分和自然搜索排名中位数。这些关键词没有预设出价或匹配类型，请自行决定，然后通过 [`asa keywords add`](#adapty-asa-keywords-add) 添加关键词。
+
+在使用关键词池中的关键词之前，请先检查其 `status`：
+
+| 状态 | 含义 |
+|---|---|
+| `ready` | 关键词池已构建完成 |
+| `building` | 关键词池仍在构建中，请约一分钟后重试 |
+| `empty` | 关键词池已构建完成，但没有关键词 |
+| `failed` | 构建失败，请稍后重试 |
+
+第一次为某个应用调用 `brand` 或 `generic` 时，系统会在请求期间构建数据池，这可能需要数十秒。该命令每家公司每分钟限额 10 次调用，且每家公司同一时间只能运行一个 `brand` 或 `generic` 构建任务。如果在此期间发起第二次构建，将返回 `429 cli_analytics_busy`，并附带 `Retry-After: 5`。
+
 ### adapty asa keywords add
 
 向广告组添加定向关键词。
@@ -595,7 +630,29 @@ adapty asa product-pages sync --adam-id 123456
 
 ## 自动化 \{#automations\}
 
-CLI 会存储你提供的规则 JSON，而不会自行构建规则。请参阅[自动化](ads-manager-automations)了解各规则类型的作用，以及[运行自动化规则](developer-cli-ads-manager#run-automation-rules)了解如何生成规则文件。
+CLI 会存储您提供的规则 JSON，但有一个例外：**Add as keyword** 操作的设置来自命令行参数。有关每种规则类型的功能，请参阅[自动化](ads-manager-automations)；有关如何生成规则文件，请参阅[运行自动化规则](developer-cli-ads-manager#run-automation-rules)。
+
+### 添加为关键词操作的命令标志 \{#add-keyword-flags\}
+
+`automations create` 和 `automations update` 共享一组命令标志，用于为 `add-as-keyword-to` 操作设置 `actions[0].params`——对应[搜索词规则](ads-manager-automations-search-terms)中的 **Add as keyword**，以及[关键词规则](ads-manager-automations-keyword-rules)中的 **Add as keyword to…**。传入其中任意标志都会替换整个 `params` 对象，因此该操作无需手动编写 JSON。
+
+| 标志 | JSON 字段 | 描述 |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | 接收关键词的广告组（UUID），可重复。没有目标广告组的规则不会执行任何操作 |
+| `--match-type` | `match_type` | `BROAD` 或 `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | 新关键词出价的来源：`ad_group_default_bid`、`set_to`、`search_term_current_cpt` 或 `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | 使用 `set_to` 时，为出价本身。使用 `search_term_current_cpt` 或 `keyword_current_bid` 时，为所复制出价的百分比加价。不与 `ad_group_default_bid` 一起使用 |
+| `--negate` | `negate` | 同时将搜索词添加为否定关键词，添加到其所属的 `ad-group` 或 `campaign` 中。`--no-negate` 则不保留任何否定关键词。仅适用于搜索词规则 |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | 跳过目标广告组中已存在的关键词，而不是将其启用。仅适用于搜索词规则 |
+| `--pause-original` | `pause_in_original_ad_group` | 在源广告组中暂停该关键词。仅适用于关键词规则 |
+
+`--cpt-bid-type` 和 `--match-type` 没有默认值，因此当规则文件本身不包含 `params` 时，这两个参数均为必填项。
+
+以下四个标志取决于规则的 `operate_with` 字段：`--negate`、`--no-negate` 和 `--skip-enable-duplicates` 属于 `search-term` 规则，`--pause-original` 属于 `targeting-keyword` 规则。若使用了不属于当前规则类型的标志，命令将以退出码 `2` 失败，并列出适用的标志。
+
+:::warning
+此操作的 `params` 应取自对应的标志，切勿从携带其他操作的规则中获取。API 通过参数结构（而非操作名称）来解析 `params`，因此若包含属于其他操作的键，API 会匹配到那个操作并丢弃其余内容——返回 `200` 并存储一条根本不会向任何广告组添加关键词的规则。
+:::
 
 ### adapty asa automations list
 
@@ -627,33 +684,43 @@ adapty asa automations get <automation-id>
 adapty asa automations create --file rule.json
 ```
 
-| 参数 | 描述 |
+| 标志 | 描述 |
 |---|---|
-| `--file` | 包含规则内容的 JSON 文件，或使用 `-` 从标准输入读取 |
-| `--run-now` | 规则存储完成后立即将首次运行加入队列 |
+| `--file` | 包含规则主体的 JSON 文件，或使用 `-` 从标准输入读取 |
+| `--run-now` | 规则存储后立即将首次运行加入队列 |
 
-`--file` 为必填项。
+`--file` 为必填项，且文件中必须恰好包含一个 action：API 每条规则只保留一个 action 和一个 condition。
+
+同时支持 [add-as-keyword action 标志](#add-keyword-flags)，用于填充或覆盖 `actions[0].params`：
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
-修改自动化规则：停止、重命名或替换规则的部分内容。
+更改自动化规则：停止、重命名或替换规则的某些部分。
 
 ```bash
 adapty asa automations update <automation-id> --stop
 ```
 
-| 参数 | 描述 |
+| 参数 | 说明 |
 |---|---|
 | `automation-id` | 自动化规则 ID（UUID） |
 
-| 标志 | 描述 |
+| 标志 | 说明 |
 |---|---|
 | `--start` | 激活规则 |
-| `--stop` | 停止规则并清除其下次运行时间 |
+| `--stop` | 停止规则并清除下次运行时间 |
 | `--name` | 新规则名称 |
-| `--file` | 包含待修改部分的 JSON 文件，或使用 `-` 从标准输入读取 |
+| `--file` | 包含待修改部分的 JSON 文件，或 `-` 表示从标准输入读取 |
 
-`--start` 和 `--stop` 互斥，不可同时使用。通过此方式传入的文件不得包含 `internal_id`。
+`--start` 与 `--stop` 互斥。此处传入的文件不得包含 `internal_id`。
+
+同样接受 [add-as-keyword 操作标志](#add-keyword-flags)。传入其中一个会使调用变为读-改-写操作：CLI 读取规则，重新构建 `actions[0].params`，然后将整个 `actions` 列表发送回去，因为 API 会替换 `actions` 而非合并。如果在读取和写入之间通过看板进行了编辑，这些更改将被覆盖。
+
+带有操作标志的更新也会修复那些存储的 `params` 携带其他操作结构的规则。params 会从头重建，因此只有符合 `add-as-keyword-to` 结构的存储键会被保留，其余所有内容都必须来自标志。
 
 ### adapty asa automations run
 
@@ -697,43 +764,59 @@ adapty asa automations runs <automation-id>
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 ```
 
-| 参数 | 是否必填 | 描述 |
+| 参数 | 是否必填 | 说明 |
 |---|---|---|
 | `--entity` | 是 | 报告对象：`campaign`、`ad-group`、`keyword` 或 `ad` |
 | `--date-from` | 是 | 时间段起始日期（`YYYY-MM-DD`） |
 | `--date-to` | 是 | 时间段结束日期（`YYYY-MM-DD`） |
-| `--metric` | 否 | 数据图表名称，可重复使用。省略则返回所有数据图表 |
-| `--group-by` | 否 | 按 `country`、`day`、`week`、`month`、`quarter` 或 `year` 对行进行分组，可重复使用 |
-| `--by-days` | 否 | 同期群数据图表的续订周期（天数），可重复使用，每次调用最多 16 个。省略则使用看板默认值 |
-| `--order-by` | 否 | 用于排序的数据图表或字段 |
-| `--order-by-day` | 否 | 按指定续订周期的同期群数据图表排名，必须是 `--by-days` 中的某个值 |
+| `--metric` | 是 | 数据图表名称，可重复使用 |
+| `--app` | 否 | 仅报告指定应用，可重复使用 |
+| `--campaign` | 否 | 仅报告指定推广活动，可重复使用 |
+| `--ad-group` | 否 | 仅报告指定广告组，可重复使用 |
+| `--group-by` | 否 | 按 `country`、`day`、`week`、`month`、`quarter` 或 `year` 分组，可重复使用 |
+| `--by-days` | 否 | 同期群数据图表的续订窗口（天数），可重复使用，每次调用最多 16 个。省略则使用看板默认值 |
+| `--order-by` | 否 | 排序依据的数据图表或字段 |
+| `--order-by-day` | 否 | 按指定续订窗口的同期群数据图表排名，必须是 `--by-days` 中的某个值 |
 | `--order` | 否 | `asc` 或 `desc`，默认值：`desc` |
 
-接受[分页标志](#global-flags)。此命令不支持[列表过滤器](#list-filters)——请通过实体级别和时间段来缩小报告范围，然后将结果行与有范围限制的 `list` 命令返回的 ID 进行匹配。
+接受[分页标志](#global-flags)。在[列表过滤器](#list-filters)中，它仅支持 `--app`、`--campaign` 和 `--ad-group`；没有 `--search` 和 `--status`。如需按其他条件缩小报告范围，请将行与限定范围的 `list` 命令返回的 ID 进行匹配。
 
-每一行代表一个实体，由服务器汇总后按 `--order-by` 排序。因此，查询前 N 名只需一次调用——设置 `--order-by` 和 `--page-size N`，而无需逐页翻阅结果再手动累加：
+每一行代表一个实体，由服务器聚合并按 `--order-by` 排序。因此，查询前 N 条记录只需一次调用——设置 `--order-by` 和 `--page-size N`，而无需逐页翻阅结果再手动汇总：
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-`--metric` 接受 Ads Manager 所追踪的数据图表名称，使用看板命名规范——例如 `spend`、`taps` 或 `gross_roas`。完整列表及每项数据图表的计算方式，请参见[数据图表](adapty-ads-manager-metrics)。若传入不存在的名称，请求将失败，错误信息中会列出所有有效名称。
+`--metric` 接受 Ads Manager 跟踪的数据指标名称，使用看板命名规范——例如 `spend`、`taps` 或 `gross_roas`。完整列表及各指标的计算方式，请参阅[数据指标](adapty-ads-manager-metrics)。如果指标名称不存在，命令会报错并列出所有有效名称。
 
-报告周期的长度受最粗粒度的 `--group-by` 值限制。如需覆盖更长的时间范围，应将分组粒度调粗，而不是将请求拆分为多次调用：
+每个数据图表都在分页之前跨整个实体层级进行计算，因此请只请求你实际读取的列，而不是获取全部字段。`subscribers` 和 `paid_subscribers` 统计每个实体的唯一用户画像数量，其开销约为普通花费和安装量调用的 17 倍，`arppu` 和 `arpas` 由它们派生，同样如此。在任意 `--entity` 下，这四个字段名需要配合 `--campaign` 或 `--ad-group` 来缩小调用范围：
 
-| 最粗粒度的 `--group-by` | 最大时间范围 |
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+如果缺少上述两个过滤条件中的任意一个，调用将失败并返回 `422 cli_metric_scope_too_wide`。缩小范围是加速任何数据图表调用的最低成本方式，因为开销取决于聚合的实体数量，而非页面大小。
+
+报告周期的最大长度受最细 `--group-by` 值的限制。如需覆盖更长的时间范围，请将分组粒度调粗，而不是将请求拆分为多次调用：
+
+| 最细 `--group-by` | 最大周期 |
 |---|---|
-| `day` 或不分组 | 90 天 |
+| `day` | 28 天 |
+| 无周期分组 | 90 天 |
 | `week` | 180 天 |
 | `month` 及更粗粒度 | 365 天 |
 
-没有 `ltv` 数据图表。生命周期价值是一个同期群指标，通过续订窗口读取，因此需要用 `--by-days` 来获取第 7 天或第 90 天的值：
+因此，`day` 粒度最多覆盖四周。如需更长的时间段，请使用 `week` 粒度查询，一次调用最多可覆盖半年。
+
+每页的明细行数上限为 5000 行，一行表示一个实体 × 国家 × 时间段的组合。若页面超出上限，将返回 `422 cli_response_too_large` 错误。解决方法包括：粗化分组粒度、缩短日期范围，或降低 `--page-size` 的值。当按 `day` 分组时，错误信息会直接给出适合的页大小，请直接使用该数值重试，而不是自行估算。`metrics overview` 不返回按实体拆分的明细，因此该上限对其不适用。
+
+没有 `ltv` 这个数据图表。生命周期价值是同期群数据图表，在续费窗口读取，因此要获取第 7 天或第 90 天的值，需要使用 `--by-days`：
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
 ```
 
-`--order-by-day` 按其中某个窗口对行进行排序，只需一次调用即可返回按第 90 天 ROAS 排名的最佳广告活动。
+`--order-by-day` 按其中一个窗口对行进行排序，一次调用即可返回按第 90 天 ROAS 排名的热门广告活动。
 
 ### adapty asa metrics overview
 
@@ -789,11 +872,13 @@ adapty asa competitors summary --app-ids 1668337467,6503873027
 | 状态码 | 错误码 | 含义 |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | 该公司没有有效的 Ads Manager 订阅 |
-| `404` | — | 实体不存在，或属于其他公司 |
-| `409` | `cli_idempotency_in_progress` | 使用相同幂等键的写入操作仍在进行中 |
+| `404` | — | 该实体不存在，或属于其他公司 |
+| `409` | `cli_idempotency_in_progress` | 使用相同幂等键的写操作仍在运行中 |
 | `422` | `cli_idempotency_key_reuse` | 相同的幂等键被用于不同的请求体 |
-| `429` | `cli_analytics_busy` | 分析池繁忙，等待时间见 `Retry-After` 响应头 |
-| `429` | `cli_cooldown_active` | 过多被拒请求导致令牌进入冷却期 |
+| `422` | `cli_metric_scope_too_wide` | 请求了用户画像计数指标，但未指定 `--campaign` 或 `--ad-group` |
+| `422` | `cli_response_too_large` | `metrics` 分页结果将超过 5000 行明细数据 |
+| `429` | `cli_analytics_busy` | 分析池繁忙，或该公司的另一个关键词池构建任务仍在运行。等待时间见 `Retry-After` 响应头 |
+| `429` | `cli_cooldown_active` | 过多被拒请求导致该令牌进入冷却状态 |
 
 数据图表与搜索词列表共用同一个分析预算，每家公司每分钟最多调用 5 次，任意 10 秒内最多调用 2 次。若在 5 分钟内累计出现 20 次被拒绝的请求，将触发逐级递增的冷却机制：依次为 5 分钟、30 分钟和 3 小时。在冷却期间重试不会延长等待时间，但解决问题的正确方式是修正失败的请求，而非反复重试。
 

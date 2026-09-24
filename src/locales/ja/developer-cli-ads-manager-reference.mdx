@@ -387,6 +387,41 @@ adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 
 [ページネーションフラグ](#global-flags) および `--campaign-group`、`--app`、`--campaign`、`--ad-group`、`--search`、`--status` の [リストフィルター](#list-filters) を使用できます。`--ad-group` でフィルタリングすることを推奨します。フィルターなしではこのトピックで最も広い範囲の読み取りが行われます。
 
+### adapty asa keywords recommend
+
+アプリの既製キーワードプールを取得します。これらはダッシュボードでキャンペーンを設定する際に Ads Manager が使用するものと同じプールです。
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--adam-id` | はい | [`asa apps list`](#adapty-asa-apps-list) から取得した、アプリの Apple App Store ID（`adam_id`） |
+| `--type` | はい | `brand`、`generic`、または `competitor` |
+| `--country` | いいえ | 2文字のISO国コード。複数指定する場合は繰り返します。デフォルト：プール内のすべての国 |
+
+`--type` フラグでプールを選択します:
+
+| タイプ | キーワード |
+|---|---|
+| `brand` | アプリのブランド用語、その表記バリエーション、およびブランドを含むオーガニック用語。出力にはブランド用語自体も含まれます |
+| `generic` | アプリおよび上位オーガニック競合他社がランク付けしている非ブランド用語（既知のブランド用語はすべて除外）。`relevance_tier: top_organic` は、アプリがすでにオーガニックトップ10にランクインしている用語を示します |
+| `competitor` | [AI Growth Advisor](autopilot-analysis#select-competitors) でアプリ向けに選択した各競合他社のブランド用語（競合他社ごとに1プール）。競合他社を選択するまでは空です |
+
+各キーワードには、国、人気度、スコア、および中央値のオーガニックランクが含まれています。入札額やマッチタイプは含まれていません。それらは自分で選択し、[`asa keywords add`](#adapty-asa-keywords-add) でキーワードを追加してください。
+
+プールのキーワードを使用する前に、プールの `status` を確認してください：
+
+| ステータス | 意味 |
+|---|---|
+| `ready` | プールが構築済みです |
+| `building` | プールはまだ構築中です。約1分後に再試行してください |
+| `empty` | プールは構築済みですが、キーワードがありません |
+| `failed` | 構築に失敗しました。後で再試行してください |
+
+最初の `brand` または `generic` の呼び出しでは、リクエスト中にプールが構築されるため、数十秒かかる場合があります。このコマンドは1社あたり1分間に10回の呼び出し制限があり、`brand` または `generic` のビルドは1社あたり同時に1つしか実行できません。その処理中に2回目のビルドを実行しようとすると、`Retry-After: 5` とともに `429 cli_analytics_busy` が返されます。
+
 ### adapty asa keywords add
 
 ターゲティングキーワードを広告グループに追加します。
@@ -595,7 +630,29 @@ adapty asa product-pages sync --adam-id 123456
 
 ## オートメーション \{#automations\}
 
-CLIは渡されたルールのJSONを保存するだけで、ルールを構築するわけではありません。各ルールタイプの詳細については[オートメーション](ads-manager-automations)を、ルールファイルの作成方法については[オートメーションルールの実行](developer-cli-ads-manager#run-automation-rules)を参照してください。
+CLIは指定したルールのJSONをそのまま保存しますが、1つ例外があります。**Add as keyword** アクションの設定はフラグから取得されます。各ルールタイプの詳細については[オートメーション](ads-manager-automations)を、ルールファイルの作成方法については[オートメーションルールの実行](developer-cli-ads-manager#run-automation-rules)を参照してください。
+
+### キーワードとして追加アクションのフラグ \{#add-keyword-flags\}
+
+`automations create` と `automations update` は、`add-as-keyword-to` アクションの `actions[0].params` を設定するフラグを共有しています。これは[検索語句ルール](ads-manager-automations-search-terms)の **Add as keyword**、[キーワードルール](ads-manager-automations-keyword-rules)の **Add as keyword to…** に対応します。いずれかのフラグを渡すと `params` オブジェクト全体が置き換わるため、このアクションには手書きの JSON は不要です。
+
+| フラグ | JSONフィールド | 説明 |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | キーワードを受け取る広告グループ（UUID）、繰り返し指定可。対象の広告グループが指定されていないルールは何もしない |
+| `--match-type` | `match_type` | `BROAD` または `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | 新しいキーワードの入札額の取得元：`ad_group_default_bid`、`set_to`、`search_term_current_cpt`、または `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | `set_to` の場合は入札額そのもの。`search_term_current_cpt` または `keyword_current_bid` の場合は、コピーする入札額へのパーセンテージ上乗せ分。`ad_group_default_bid` では使用不可 |
+| `--negate` | `negate` | 検索語句をネガティブキーワードとしても追加する。独自の `ad-group` または独自の `campaign` に追加。`--no-negate` を指定した場合は追加しない。検索語句ルールのみ |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | 対象の広告グループにすでに存在するキーワードを有効化するのではなくスキップする。検索語句ルールのみ |
+| `--pause-original` | `pause_in_original_ad_group` | ソースキーワードを元の広告グループで一時停止する。キーワードルールのみ |
+
+`--cpt-bid-type` と `--match-type` はデフォルト値がないため、ルールファイル自体に `params` が含まれていない場合は両方必須です。
+
+これらのフラグのうち4つはルールの `operate_with` フィールドに依存します。`--negate`、`--no-negate`、`--skip-enable-duplicates` は `search-term` ルールに属し、`--pause-original` は `targeting-keyword` ルールに属します。対応しないセットのフラグを指定した場合、終了コード `2` と適用可能なフラグの一覧が表示されます。
+
+:::warning
+このアクションの `params` はフラグから取得してください。異なるアクションを持つルールから取得しないでください。APIは `params` を名前付きバリアントではなく形状で解決するため、別のアクションに属するキーが含まれると、そのアクションが選択されて残りがすべて破棄されます。結果として `200` が返されますが、実際にはどの広告グループにもキーワードを追加しないルールが保存されてしまいます。
+:::
 
 ### adapty asa automations list
 
@@ -632,11 +689,17 @@ adapty asa automations create --file rule.json
 | `--file` | ルール本体を含むJSONファイル、または `-` で標準入力から読み込む |
 | `--run-now` | ルール保存直後に最初の実行をキューに追加する |
 
-`--file` は必須です。
+`--file` は必須で、ファイルにはアクションを1つだけ含める必要があります（APIはルールごとにアクション1つ、条件1つを保持します）。
+
+[add-as-keyword アクションフラグ](#add-keyword-flags)も受け付けており、`actions[0].params` を設定または上書きします。
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
-オートメーションルールを変更します。停止、名前変更、またはルールの一部を置き換えることができます。
+自動化ルールを変更します。停止、名前の変更、またはルールの一部を差し替えることができます。
 
 ```bash
 adapty asa automations update <automation-id> --stop
@@ -644,16 +707,20 @@ adapty asa automations update <automation-id> --stop
 
 | 引数 | 説明 |
 |---|---|
-| `automation-id` | オートメーションルールのID（UUID） |
+| `automation-id` | 自動化ルールのID（UUID） |
 
 | フラグ | 説明 |
 |---|---|
 | `--start` | ルールを有効化する |
 | `--stop` | ルールを停止し、次回の実行をクリアする |
 | `--name` | 新しいルール名 |
-| `--file` | 変更する箇所を記述したJSONファイル、または標準入力から読み込む場合は `-` |
+| `--file` | 変更する内容を記載したJSONファイル。`-` を指定すると標準入力から読み込む |
 
 `--start` と `--stop` は同時に指定できません。ここで渡すファイルには `internal_id` を含めないでください。
+
+[add-as-keyword アクションフラグ](#add-keyword-flags)も使用できます。いずれかを渡すと、この呼び出しは読み取り→変更→書き込みの操作になります。CLI がルールを読み取り、`actions[0].params` を再構築し、`actions` リスト全体を返送します。これは API が `actions` をマージするのではなく置き換えるためです。読み取りと書き込みの間にダッシュボードで行われた編集は上書きされます。
+
+An update with an action flag also repairs a rule whose stored `params` carry the shape of another action. The params are rebuilt from scratch, so only the stored keys that fit `add-as-keyword-to` are kept and everything else has to come from a flag.
 
 ### adapty asa automations run
 
@@ -699,41 +766,57 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
-| `--entity` | はい | レポート対象: `campaign`、`ad-group`、`keyword`、または `ad` |
+| `--entity` | はい | レポート対象：`campaign`、`ad-group`、`keyword`、または `ad` |
 | `--date-from` | はい | 期間の開始日（`YYYY-MM-DD`） |
 | `--date-to` | はい | 期間の終了日（`YYYY-MM-DD`） |
-| `--metric` | いいえ | 指標名。繰り返し指定可能。省略するとすべての指標が対象になります |
-| `--group-by` | いいえ | 行を `country`、`day`、`week`、`month`、`quarter`、または `year` でグループ化します。繰り返し指定可能 |
-| `--by-days` | いいえ | コホート指標の更新ウィンドウ（日数）。繰り返し指定可能。1回の呼び出しにつき最大16件。省略するとダッシュボードのデフォルト値が使用されます |
+| `--metric` | はい | 指標名。繰り返し指定可能 |
+| `--app` | いいえ | 対象アプリを絞り込む。繰り返し指定可能 |
+| `--campaign` | いいえ | 対象キャンペーンを絞り込む。繰り返し指定可能 |
+| `--ad-group` | いいえ | 対象広告グループを絞り込む。繰り返し指定可能 |
+| `--group-by` | いいえ | 行を `country`、`day`、`week`、`month`、`quarter`、または `year` で集計する。繰り返し指定可能 |
+| `--by-days` | いいえ | コホート指標の更新ウィンドウ（日数）。繰り返し指定可能。1回の呼び出しで最大16件。省略するとダッシュボードのデフォルト値が使用される |
 | `--order-by` | いいえ | 並び替えに使用する指標またはフィールド |
-| `--order-by-day` | いいえ | 指定した更新ウィンドウのコホート指標でランク付けします。`--by-days` の値のいずれかを指定してください |
-| `--order` | いいえ | `asc` または `desc`。デフォルト: `desc` |
+| `--order-by-day` | いいえ | 指定した更新ウィンドウでコホート指標をランク付けする。`--by-days` で指定した値のいずれかを指定する必要がある |
+| `--order` | いいえ | `asc` または `desc`。デフォルト：`desc` |
 
-[ページネーションフラグ](#global-flags)を使用できます。このコマンドは[リストフィルター](#list-filters)には対応していません。エンティティレベルと期間で絞り込み、スコープ付きの `list` コマンドから取得した ID と行を照合してください。
+[ページネーションフラグ](#global-flags)に対応しています。[リストフィルター](#list-filters)のうち、`--app`、`--campaign`、`--ad-group`のみ使用できます。`--search`および`--status`は使用できません。それ以外の条件で絞り込む場合は、スコープを絞った`list`コマンドで取得したIDと行を照合してください。
 
-各行は1つのエンティティを表し、サーバー側で集計されて `--order-by` の順に並べられます。上位N件を取得するには、結果をページングして集計する必要はなく、`--order-by` と `--page-size N` を指定するだけで1回の呼び出しで完結します：
+各行は1つのエンティティを表し、サーバー側で集計されて`--order-by`の順に並べられます。上位N件を取得したい場合は1回の呼び出しで完結します。結果をページングして合計するのではなく、`--order-by`と`--page-size N`を設定してください。
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-`--metric` は Ads Manager が追跡する指標名をダッシュボードの表記で指定します（例：`spend`、`taps`、`gross_roas`）。全一覧と各指標の計算方法は [指標](adapty-ads-manager-metrics) を参照してください。存在しない名前を指定するとエラーになり、有効な名前の一覧がエラーメッセージに表示されます。
+`--metric` には、Ads Manager が追跡する指標名をダッシュボードの表記で指定します。例えば `spend`、`taps`、`gross_roas` などです。全リストと各指標の計算方法については [指標](adapty-ads-manager-metrics) を参照してください。存在しない名前を指定した場合、有効な名前一覧がエラーに表示されます。
 
-レポート期間の長さは、最も粗い `--group-by` の値によって上限が決まります。より長い期間のレポートを取得するには、リクエストを複数回に分けるのではなく、グループ化の粒度を粗くしてください：
+すべての指標はページング処理の前にエンティティレベル全体で集計されるため、カタログ全体ではなく読み取る列だけを指定してください。`subscribers` と `paid_subscribers` はエンティティごとにユニークなプロファイルをカウントするため、スペンドとインストールのみの呼び出しと比べて約17倍のコストがかかります。`arppu` と `arpas` はこれらから導出されるため同様です。どの `--entity` でも、これら4つの指標名を使用する場合は `--campaign` または `--ad-group` で呼び出し範囲を絞り込む必要があります。
 
-| 最も粗い `--group-by` | 最大期間 |
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+これら2つのフィルターのどちらかがないと、呼び出しは `422 cli_metric_scope_too_wide` で失敗します。スコープを絞ることは、指標の呼び出しを高速化する最も安価な方法です。コストはページのサイズではなく、集計されるエンティティの数に依存するためです。
+
+レポート期間の長さは、最も細かい `--group-by` の値によって上限が決まります。より長い期間をレポートするには、リクエストを複数に分割するのではなく、グループ化を粗くしてください:
+
+| 最も細かい `--group-by` | 最大期間 |
 |---|---|
-| `day`、またはグループ化なし | 90日 |
+| `day` | 28日 |
+| 期間グループなし | 90日 |
 | `week` | 180日 |
-| `month` 以上の粒度 | 365日 |
+| `month` 以上 | 365日 |
 
-`ltv` 指標はありません。ライフタイムバリューはコホート指標であり、リニューアルウィンドウで読み取られます。day-7 や day-90 の値を取得するには `--by-days` を使用します。
+日単位では最大4週間までカバーできます。より長い期間が必要な場合は `week` 粒度で指定してください。1回のリクエストで半年分のデータを取得できます。
+
+各ページは最大5000件のブレークダウン行に制限されており、1行はエンティティ × 国 × 期間に相当します。制限を超えるページは `422 cli_response_too_large` エラーで失敗します。グルーピングを粗くするか、日付範囲を狭めるか、`--page-size` を下げてください。`day` 単位でグルーピングしている場合、エラーメッセージに適切なページサイズが示されるため、自分で計算した値ではなくその値でリトライしてください。`metrics overview` はエンティティごとのブレークダウンを返さないため、この制限は適用されません。
+
+`ltv` 指標は存在しません。ライフタイムバリューはコホート指標であり、更新ウィンドウで読み取られます。そのため、day-7 や day-90 の値を取得するには `--by-days` を使用します。
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
 ```
 
-`--order-by-day` は、指定したウィンドウのいずれかで行をランク付けします。これにより、1回の呼び出しで day-90 ROAS 上位のキャンペーンを取得できます。
+`--order-by-day` はそれらのウィンドウのいずれかで行をランク付けし、1 回の呼び出しで day-90 ROAS の上位キャンペーンを返します。
 
 ### adapty asa metrics overview
 
@@ -788,11 +871,13 @@ adapty asa competitors summary --app-ids 1668337467,6503873027
 
 | ステータス | コード | 意味 |
 |---|---|---|
-| `402` | `ads_manager_subscription_required` | その会社に有効な Ads Manager サブスクリプションがない |
+| `402` | `ads_manager_subscription_required` | 会社に有効な Ads Manager サブスクリプションがない |
 | `404` | — | エンティティが存在しないか、別の会社に属している |
-| `409` | `cli_idempotency_in_progress` | 同じ冪等キーを使った書き込みがまだ実行中 |
-| `422` | `cli_idempotency_key_reuse` | 同じ冪等キーが別のリクエストボディで使用された |
-| `429` | `cli_analytics_busy` | アナリティクスプールがビジー状態。待機時間は `Retry-After` ヘッダーに含まれる |
+| `409` | `cli_idempotency_in_progress` | 同じ冪等性キーを持つ書き込みが実行中 |
+| `422` | `cli_idempotency_key_reuse` | 同じ冪等性キーが異なるリクエストボディで使用された |
+| `422` | `cli_metric_scope_too_wide` | `--campaign` または `--ad-group` なしでプロファイルカウント指標がリクエストされた |
+| `422` | `cli_response_too_large` | `metrics` ページが 5000 行のブレークダウン行を超える |
+| `429` | `cli_analytics_busy` | アナリティクスプールがビジー状態、またはその会社の別のキーワードプールビルドが実行中。待機時間は `Retry-After` ヘッダーに記載 |
 | `429` | `cli_cooldown_active` | 拒否されたリクエストが多すぎるため、トークンがクールダウン状態になっている |
 
 指標と検索語リストは、1社あたりの分析APIバジェットを共有します。1分あたり5回の呼び出し、かつ10秒間に最大2回までです。5分以内に20件のリクエストが拒否されると、5分→30分→3時間と段階的にクールダウンが始まります。一時停止中に再試行してもクールダウンは延長されませんが、失敗したリクエストを繰り返すのではなく、修正することが解決策です。

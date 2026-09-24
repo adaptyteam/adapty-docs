@@ -51,6 +51,16 @@ Affinez chaque lecture avec un filtre. Les filtres limitent la requête plutôt 
 
 Ces listes ne renvoient que des métadonnées. Les chiffres de performance proviennent de [`asa metrics`](#query-metrics-from-agents-and-scripts).
 
+## Obtenir des recommandations de mots-clés \{#get-keyword-recommendations\}
+
+Pour démarrer une liste de mots-clés sans recherche préalable, obtenez un pool prêt à l'emploi pour votre application. Transmettez l'`adam_id` de l'application issu de `adapty asa apps list` et le type de pool — `brand`, `generic` ou `competitor` :
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+Le pool n'a pas d'enchères ni de types de correspondance. Choisissez-les vous-même, puis ajoutez les mots-clés comme décrit dans [Ajouter des mots-clés en masse](#add-keywords-in-bulk). Si la sortie affiche `status: building`, réessayez dans environ une minute. Consultez les [commandes Ads Manager](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend) pour les types de pool et les limites.
+
 ## Ajouter des mots-clés en lot \{#add-keywords-in-bulk\}
 
 Ajouter des mots-clés un par un est la principale raison de quitter le tableau de bord. Placez un mot-clé par ligne dans un fichier texte :
@@ -126,13 +136,19 @@ adapty asa campaigns bulk-status <operation-id>
 
 ## Interroger les métriques depuis des agents et des scripts \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics` génère des rapports à n'importe quel niveau du compte sur une plage de dates. Ajoutez `--json` pour qu'un agent IA ou un script puisse consommer le résultat directement :
+`asa metrics` génère des rapports sur n'importe quel niveau du compte sur une plage de dates. Ajoutez `--json` pour qu'un agent IA ou un script puisse consommer le résultat directement :
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` accepte les noms suivis par Ads Manager. Consultez [Métriques](adapty-ads-manager-metrics) pour la liste complète.
+`--metric` est obligatoire et peut être répété. Il prend les noms que le gestionnaire de publicités suit. Consultez [Métriques](adapty-ads-manager-metrics) pour la liste complète. Chaque métrique que vous spécifiez est calculée sur l'ensemble du niveau d'entité avant que la page ne soit découpée, donc demandez uniquement les colonnes que vous lisez plutôt que tout le catalogue.
+
+`--app`, `--campaign` et `--ad-group` permettent de délimiter le rapport, et c'est le moyen le plus économique d'accélérer un appel, car le coût dépend du nombre d'entités agrégées plutôt que de la taille de la page. Quatre métriques comptent les profils uniques par entité — `subscribers`, `paid_subscribers`, `arppu` et `arpas` — et celles-ci nécessitent un filtre campaign ou ad group, quel que soit le niveau d'entité :
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 Les métriques de cohorte fonctionnent différemment des autres. Il n'y a pas de métrique `ltv`, car la valeur à vie est lue à une fenêtre de renouvellement plutôt qu'à une date. Demandez la fenêtre à la place :
 
@@ -148,7 +164,9 @@ Chaque ligne correspond à une entité, déjà agrégée et triée côté serveu
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-Les métriques et la liste des termes de recherche partagent un même quota d'analyse par compte : 5 appels par minute, et au maximum 2 sur toute période de 10 secondes. Posez une question précise une seule fois plutôt que de faire du polling. La période de rapport est également limitée selon la granularité choisie — 90 jours par jour, 180 par semaine, 365 par mois — élargissez donc un rapport en assouplissant `--group-by`, plutôt qu'en le découpant en plusieurs appels.
+Metrics et la liste des termes de recherche partagent un même budget d'appels d'analyse par entreprise : 5 appels par minute, et au plus 2 toutes les 10 secondes. Posez une question précise en une seule fois plutôt que de faire du polling.
+
+Deux limites s'appliquent à un rapport. La période de reporting est plafonnée par le niveau de regroupement choisi — 28 jours avec `--group-by day`, 90 jours sans regroupement de période, 180 jours par semaine, 365 par mois — et chaque page est limitée à 5 000 lignes de ventilation, soit une ligne par entité × pays × période. Pour élargir un rapport, affinez `--group-by` plutôt que de multiplier les appels.
 
 ## Vérifier les mots-clés des concurrents \{#check-competitor-keywords\}
 
@@ -162,9 +180,9 @@ La période et les pays sont fixés côté serveur — le dernier mois complet, 
 
 Utilisez ceci pour extraire des données de mots-clés concurrents dans un rapport selon un planning. Pour filtrer les résultats, comparer des pays côte à côte, ou ajouter directement les mots-clés trouvés à une campagne, utilisez [Market Intelligence](ads-manager-market-intelligence) dans le tableau de bord.
 
-## Exécuter les règles d'automatisation \{#run-automation-rules\}
+## Exécuter des règles d'automatisation \{#run-automation-rules\}
 
-Le CLI ne crée pas les [règles d'automatisation](ads-manager-automations) — il stocke le JSON que vous lui fournissez. La façon la plus rapide d'obtenir un fichier de règle valide est de créer une règle dans le tableau de bord, puis de la relire :
+Le CLI enregistre le JSON que vous lui fournissez, donc le moyen le plus rapide d'obtenir un fichier de [règle d'automatisation](ads-manager-automations) valide est de créer une règle dans le tableau de bord, puis de la relire :
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
@@ -176,7 +194,27 @@ Modifiez ce fichier et utilisez-le comme modèle pour de nouvelles règles :
 adapty asa automations create --file rule.json
 ```
 
-Lorsque vous passez un fichier à `automations update`, supprimez d'abord le champ `internal_id` — la mise à jour est rejetée s'il est présent.
+Un fichier de règle contient exactement une condition et une action, ce que l'API conserve par règle. Lorsque vous passez un fichier à `automations update`, supprimez d'abord le champ `internal_id` — la mise à jour est rejetée s'il est présent.
+
+### Créer une action Ajouter comme mot-clé à partir de marqueurs
+
+Une action fait exception à la règle du JSON écrit à la main. **Add as keyword**, qui promeut un terme de recherche ou copie un mot-clé dans un autre groupe d'annonces, récupère ses groupes d'annonces cibles, son enchère et son type de correspondance depuis des marqueurs :
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+Récupère toujours les `params` de cette action depuis les flags, jamais depuis une règle portant une action différente. L'API résout les `params` par leur forme plutôt que par le nom de la variante — une clé appartenant à une autre action lui fait choisir cette dernière et ignorer le reste, renvoyant un `200` et enregistrant une règle qui n'ajoute aucun mot-clé à un quelconque groupe d'annonces.
+:::
+
+Les mêmes flags sur `automations update` permettent de corriger une règle déjà enregistrée avec la mauvaise forme. Le CLI lit la règle, reconstruit l'action de zéro et la réécrit, en conservant uniquement les paramètres enregistrés compatibles avec une action **Add as keyword** :
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+Tout ce qui manquait à la règle défaillante doit provenir d'un flag. Consultez les [commandes Ads Manager](developer-cli-ads-manager-reference#add-keyword-flags) pour la liste complète.
 
 Testez une règle avant de la laisser modifier les enchères :
 
@@ -184,7 +222,7 @@ Testez une règle avant de la laisser modifier les enchères :
 adapty asa automations run <automation-id> --dry-run
 ```
 
-Un dry run évalue les conditions et consigne ce que la règle ferait sans toucher à Apple Ads. Les runs sont mis en file d'attente plutôt qu'exécutés immédiatement, donc la commande affiche un ID de run et le résultat apparaît dans `adapty asa automations runs`.
+Une exécution à blanc évalue les conditions et consigne ce que la règle ferait sans toucher à Apple Ads. Les exécutions sont mises en file d'attente plutôt qu'effectuées immédiatement, donc la commande affiche un identifiant d'exécution et le résultat apparaît dans `adapty asa automations runs`.
 
 ## Ré-exécuter les scripts en toute sécurité \{#re-run-scripts-safely\}
 

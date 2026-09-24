@@ -51,6 +51,16 @@ Hãy giới hạn phạm vi mỗi lần đọc bằng bộ lọc. Bộ lọc thu
 
 Các danh sách này chỉ trả về metadata. Số liệu hiệu suất đến từ [`asa metrics`](#query-metrics-from-agents-and-scripts).
 
+## Nhận gợi ý từ khóa \{#get-keyword-recommendations\}
+
+Để bắt đầu danh sách từ khóa mà không cần nghiên cứu, hãy lấy một tập hợp từ khóa có sẵn cho ứng dụng của bạn. Truyền `adam_id` của ứng dụng từ `adapty asa apps list` và loại tập hợp — `brand`, `generic`, hoặc `competitor`:
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+Pool không có bids hay match types. Hãy tự chọn những thông số đó, rồi thêm keywords theo hướng dẫn tại [Thêm keywords hàng loạt](#add-keywords-in-bulk). Nếu output hiển thị `status: building`, hãy thử lại sau khoảng một phút. Xem [Lệnh Ads Manager](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend) để biết các loại pool và giới hạn.
+
 ## Thêm từ khóa hàng loạt \{#add-keywords-in-bulk\}
 
 Thêm từng từ khóa một là lý do chính để rời khỏi dashboard. Đặt mỗi từ khóa trên một dòng trong tệp văn bản:
@@ -128,13 +138,19 @@ adapty asa campaigns bulk-status <operation-id>
 
 ## Truy vấn chỉ số từ agent và script \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics` báo cáo ở bất kỳ cấp độ nào của tài khoản trong một khoảng thời gian. Thêm `--json` để AI agent hoặc script có thể đọc kết quả trực tiếp:
+`asa metrics` báo cáo ở bất kỳ cấp độ nào trong tài khoản theo khoảng thời gian. Thêm `--json` để AI agent hoặc script có thể sử dụng kết quả trực tiếp:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` nhận các tên mà Ads Manager theo dõi. Xem [Chỉ số](adapty-ads-manager-metrics) để có danh sách đầy đủ.
+`--metric` là tham số bắt buộc và có thể dùng nhiều lần, nhận tên các chỉ số mà Ads Manager theo dõi. Xem [Chỉ số](adapty-ads-manager-metrics) để biết danh sách đầy đủ. Mỗi chỉ số bạn chỉ định đều được tính toán trên toàn bộ cấp thực thể trước khi phân trang, vì vậy hãy chỉ yêu cầu các cột bạn thực sự cần thay vì toàn bộ danh mục.
+
+`--app`, `--campaign`, và `--ad-group` thu hẹp phạm vi báo cáo, và đây là cách rẻ nhất để tăng tốc độ gọi API, vì chi phí phụ thuộc vào số lượng thực thể được tổng hợp chứ không phải kích thước trang. Bốn chỉ số đếm hồ sơ người dùng duy nhất theo từng thực thể — `subscribers`, `paid_subscribers`, `arppu`, và `arpas` — và những chỉ số này yêu cầu bộ lọc campaign hoặc ad group ở bất kỳ cấp thực thể nào:
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 Các chỉ số cohort hoạt động khác với phần còn lại. Không có chỉ số `ltv`, vì giá trị vòng đời được đọc theo cửa sổ gia hạn chứ không phải theo ngày. Hãy truyền cửa sổ thay thế:
 
@@ -150,7 +166,9 @@ Mỗi hàng là một entity, đã được tổng hợp và sắp xếp sẵn t
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-Metrics và danh sách search terms dùng chung một ngân sách analytics theo công ty: 5 lần gọi mỗi phút, tối đa 2 lần trong mỗi 10 giây. Hãy đặt câu hỏi cụ thể một lần thay vì liên tục polling. Khoảng thời gian báo cáo cũng bị giới hạn tùy theo cách bạn nhóm dữ liệu — 90 ngày theo ngày, 180 ngày theo tuần, 365 ngày theo tháng — vì vậy hãy mở rộng báo cáo bằng cách thưa hơn `--group-by`, không phải bằng cách tách thành nhiều lần gọi hơn.
+Metrics và danh sách từ khóa tìm kiếm dùng chung một ngân sách analytics theo công ty: tối đa 5 lần gọi mỗi phút và không quá 2 lần trong bất kỳ 10 giây nào. Hãy đặt câu hỏi cụ thể một lần thay vì polling liên tục.
+
+Hai giới hạn áp dụng cho một báo cáo. Khoảng thời gian báo cáo bị giới hạn bởi mức độ chi tiết của nhóm — 28 ngày với `--group-by day`, 90 ngày khi không có nhóm theo khoảng thời gian, 180 ngày theo tuần, 365 ngày theo tháng — và mỗi trang bị giới hạn ở 5000 hàng phân tích, tính một hàng cho mỗi thực thể × quốc gia × khoảng thời gian. Vì vậy, hãy mở rộng báo cáo bằng cách giảm độ chi tiết của `--group-by`, không phải bằng cách chia thành nhiều lần gọi hơn.
 
 ## Kiểm tra từ khóa của đối thủ cạnh tranh \{#check-competitor-keywords\}
 
@@ -166,27 +184,47 @@ Sử dụng công cụ này để tự động lấy dữ liệu từ khóa củ
 
 ## Chạy automation rules \{#run-automation-rules\}
 
-CLI không tạo [automation rules](ads-manager-automations) — nó chỉ lưu trữ JSON bạn cung cấp. Cách nhanh nhất để có file rule hợp lệ là tạo một rule trong dashboard, rồi đọc lại:
+CLI lưu trữ JSON bạn cung cấp, vì vậy cách nhanh nhất để có được file [automation rule](ads-manager-automations) hợp lệ là tạo một rule trong dashboard, sau đó đọc lại:
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
 ```
 
-Chỉnh sửa file đó và dùng làm mẫu để tạo rule mới:
+Chỉnh sửa file đó và dùng làm template cho các rule mới:
 
 ```bash
 adapty asa automations create --file rule.json
 ```
 
-Khi bạn truyền file vào `automations update`, hãy xóa trường `internal_id` trước — lệnh cập nhật sẽ bị từ chối nếu trường này có mặt.
+A rule file contains exactly one condition and exactly one action, which is what the API keeps per rule. When you pass a file to `automations update`, remove the `internal_id` field first — the update is rejected if it is present.
 
-Kiểm tra một quy tắc trước khi để nó thay đổi giá thầu:
+### Tạo hành động Add as keyword từ các flag \{#build-an-add-as-keyword-action-from-flags\}
+
+Một hành động là ngoại lệ so với JSON viết tay. **Add as keyword**, dùng để đưa một từ khóa tìm kiếm lên hoặc sao chép từ khóa vào một nhóm quảng cáo khác, lấy nhóm quảng cáo đích, giá thầu và kiểu khớp từ các flag:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+Lấy `params` của action này từ các flag, không bao giờ lấy từ một rule chứa action khác. API phân giải `params` theo hình dạng (shape) thay vì theo tên biến thể, vì vậy một key thuộc action khác sẽ khiến nó chọn action đó và bỏ qua phần còn lại — trả về `200` và lưu một rule không thêm keyword vào ad group nào cả.
+:::
+
+Các flag tương tự trên `automations update` sẽ sửa một rule đã được lưu với shape sai. CLI đọc rule đó, xây dựng lại action từ đầu, rồi ghi lại, chỉ giữ những cài đặt đã lưu phù hợp với action **Add as keyword**:
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+Bất kỳ quy tắc nào bị thiếu đều phải được bổ sung thông qua một flag. Xem [Lệnh Ads Manager](developer-cli-ads-manager-reference#add-keyword-flags) để biết toàn bộ danh sách.
+
+Kiểm tra một quy tắc trước khi cho phép nó thay đổi giá thầu:
 
 ```bash
 adapty asa automations run <automation-id> --dry-run
 ```
 
-Dry run sẽ đánh giá các điều kiện và ghi lại những gì quy tắc sẽ thực hiện mà không tác động đến Apple Ads. Các lần chạy được xếp vào hàng đợi thay vì thực hiện ngay lập tức, vì vậy lệnh sẽ in ra một run ID và kết quả sẽ xuất hiện trong `adapty asa automations runs`.
+Một lần chạy thử (dry run) sẽ đánh giá các điều kiện và ghi log những gì rule sẽ thực hiện mà không tác động đến Apple Ads. Các lần chạy được xếp vào hàng đợi thay vì thực hiện ngay lập tức, vì vậy lệnh sẽ in ra một run ID và kết quả sẽ xuất hiện trong `adapty asa automations runs`.
 
 ## Chạy lại script an toàn \{#re-run-scripts-safely\}
 

@@ -387,6 +387,41 @@ adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 
 [Sayfalama bayraklarını](#global-flags) ve `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search` ile `--status` [liste filtrelerini](#list-filters) kabul eder. `--ad-group` ile filtreleyin — filtre olmadan bu, konudaki en geniş kapsamlı okumadır.
 
+### adapty asa keywords recommend
+
+Uygulamalarınızdan biri için hazır bir anahtar kelime havuzu edinin. Bunlar, kontrol panelinde bir kampanya kurduğunuzda Ads Manager'ın kullandığı havuzlarla aynıdır.
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--adam-id` | Evet | [`asa apps list`](#adapty-asa-apps-list) komutundan alınan uygulamanızın Apple App Store ID'si (`adam_id`) |
+| `--type` | Evet | `brand`, `generic` veya `competitor` |
+| `--country` | Hayır | İki harfli ISO ülke kodu. Birden fazla ülke için tekrarlayın. Varsayılan: havuzdaki tüm ülkeler |
+
+`--type` bayrağı havuzu seçer:
+
+| Tür | Anahtar Kelimeler |
+|---|---|
+| `brand` | Uygulamanızın marka terimleri, yazım varyantları ve markayı içeren organik terimler. Çıktı ayrıca marka terimlerinin kendisini de listeler |
+| `generic` | Uygulamanızın ve en iyi organik rakiplerinin sıralandığı, tüm bilinen marka terimleri çıkarılmış, markasız terimler. `relevance_tier: top_organic`, uygulamanızın organik ilk 10'da zaten yer aldığı terimleri işaretler |
+| `competitor` | [AI Growth Advisor](autopilot-analysis#select-competitors) içinde uygulama için seçilen her rakibin marka terimleri; rakip başına bir havuz. Rakip seçilene kadar boş kalır |
+
+Her anahtar kelime; ülke, popülerlik, puan ve medyan organik sıralama bilgileriyle birlikte gelir. Anahtar kelimelerin teklif veya eşleşme türü yoktur. Bunları kendiniz seçin, ardından anahtar kelimeleri [`asa keywords add`](#adapty-asa-keywords-add) ile ekleyin.
+
+Kullanmadan önce havuzun `status` değerini kontrol edin:
+
+| Durum | Anlamı |
+|---|---|
+| `ready` | Havuz oluşturuldu |
+| `building` | Havuz hâlâ oluşturuluyor. Yaklaşık bir dakika sonra tekrar deneyin |
+| `empty` | Havuz oluşturuldu ancak anahtar kelime yok |
+| `failed` | Oluşturma başarısız oldu. Daha sonra tekrar deneyin |
+
+İlk `brand` veya `generic` çağrısı, istek sırasında havuzu oluşturur ve onlarca saniye sürebilir. Bu komut, şirket başına dakikada 10 çağrı kotasına sahiptir ve aynı anda şirket başına yalnızca bir `brand` veya `generic` derleme çalışabilir. Bu süre içindeki ikinci bir derleme isteği, `Retry-After: 5` başlığıyla birlikte `429 cli_analytics_busy` döndürür.
+
 ### adapty asa keywords add
 
 Bir reklam grubuna hedefleme anahtar kelimeleri ekleyin.
@@ -595,7 +630,29 @@ Yenileme hemen gerçekleştirilmez, sıraya alınır ve komut `Sync queued.` mes
 
 ## Otomasyonlar \{#automations\}
 
-CLI, verdiğiniz kural JSON'ını saklar — kuralları oluşturmaz. Her kural türünün ne yaptığı için [Otomasyonlar](ads-manager-automations) sayfasına, kural dosyası oluşturma hakkında ise [Otomasyon kurallarını çalıştır](developer-cli-ads-manager#run-automation-rules) sayfasına bakın.
+CLI, verdiğiniz kural JSON'ını saklar; tek istisna: **Add as keyword** eyleminin ayarları flag'lerden gelir. Her kural türünün ne yaptığını öğrenmek için [Otomasyonlar](ads-manager-automations) bölümüne, bir kural dosyası oluşturma konusunda ise [Otomasyon kurallarını çalıştırma](developer-cli-ads-manager#run-automation-rules) bölümüne bakın.
+
+### Anahtar kelime olarak ekleme eylem bayrakları \{#add-keyword-flags\}
+
+`automations create` ve `automations update`, bir `add-as-keyword-to` eylemi için `actions[0].params` ayarlayan bir dizi bayrağı paylaşır — [arama terimi kuralında](ads-manager-automations-search-terms) **Add as keyword**, [anahtar kelime kuralında](ads-manager-automations-keyword-rules) **Add as keyword to…**. Bunlardan herhangi birini geçirmek, `params` nesnesinin tamamının yerini alır; dolayısıyla bu eylem için elle yazılmış JSON'a gerek yoktur.
+
+| Bayrak | JSON alanı | Açıklama |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | Anahtar kelimeyi alan reklam grubu (UUID), tekrarlanabilir. Hedef reklam grubu olmayan bir kural hiçbir şey yapmaz |
+| `--match-type` | `match_type` | `BROAD` veya `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | Yeni anahtar kelimenin teklifinin nereden geleceği: `ad_group_default_bid`, `set_to`, `search_term_current_cpt` veya `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | `set_to` ile teklifin kendisi. `search_term_current_cpt` veya `keyword_current_bid` ile kopyalanan teklife uygulanacak yüzde farkı. `ad_group_default_bid` ile kabul edilmez |
+| `--negate` | `negate` | Arama terimini aynı zamanda negatif anahtar kelime olarak ekler; kendi `ad-group` veya kendi `campaign` içinde. `--no-negate` hiçbirini bırakmaz. Yalnızca arama terimi kuralları |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | Hedef reklam grubunda zaten mevcut olan bir anahtar kelimeyi etkinleştirmek yerine atlar. Yalnızca arama terimi kuralları |
+| `--pause-original` | `pause_in_original_ad_group` | Kaynak anahtar kelimeyi kendi reklam grubunda duraklatır. Yalnızca anahtar kelime kuralları |
+
+`--cpt-bid-type` ve `--match-type` için varsayılan değer yoktur, dolayısıyla kural dosyasında kendi `params` alanı bulunmuyorsa her ikisi de zorunludur.
+
+Bu dört bayraktan bazıları, kuralın `operate_with` alanına göre farklılık gösterir: `--negate`, `--no-negate` ve `--skip-enable-duplicates` bir `search-term` kuralına, `--pause-original` ise bir `targeting-keyword` kuralına aittir. Yanlış gruba ait bir bayrak kullanılırsa çıkış kodu `2` ile birlikte geçerli bayrakların listesi döndürülür.
+
+:::warning
+Bu action'ın `params` değerlerini her zaman flag'lerden alın; farklı bir action içeren rule'dan almayın. API, `params` değerlerini adlandırılmış bir varyanta göre değil, şekline göre çözümler; bu nedenle başka bir action'a ait bir anahtar, API'nin o action'ı seçmesine ve geri kalanını atmasına yol açar — `200` döndürür ve herhangi bir reklam grubuna anahtar kelime eklemeyen bir rule kaydeder.
+:::
 
 ### adapty asa automations list
 
@@ -621,7 +678,7 @@ adapty asa automations get <automation-id>
 
 ### adapty asa automations create
 
-JSON kural dosyasından bir otomasyon kuralı oluşturur.
+Bir JSON kural dosyasından otomasyon kuralı oluşturur.
 
 ```bash
 adapty asa automations create --file rule.json
@@ -630,13 +687,19 @@ adapty asa automations create --file rule.json
 | Flag | Açıklama |
 |---|---|
 | `--file` | Kural gövdesini içeren JSON dosyası veya standart girdiden okumak için `-` |
-| `--run-now` | Kural kaydedildikten hemen sonra ilk çalıştırmayı kuyruğa alır |
+| `--run-now` | Kural kaydedildikten hemen sonra ilk çalıştırmayı sıraya alır |
 
-`--file` zorunludur.
+`--file` zorunludur ve dosya tam olarak bir aksiyon içermelidir: API, kural başına bir aksiyon ve bir koşul tutar.
+
+Ayrıca `actions[0].params` alanını doldurmak veya geçersiz kılmak için [add-as-keyword action flags](#add-keyword-flags) parametrelerini de kabul eder:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
-Bir otomasyon kuralını değiştirin: durdurun, yeniden adlandırın veya kuralın bölümlerini değiştirin.
+Bir otomasyon kuralını değiştirin: durdurun, yeniden adlandırın veya kuralın bazı bölümlerini değiştirin.
 
 ```bash
 adapty asa automations update <automation-id> --stop
@@ -644,16 +707,20 @@ adapty asa automations update <automation-id> --stop
 
 | Argüman | Açıklama |
 |---|---|
-| `automation-id` | Otomasyon kuralı kimliği (UUID) |
+| `automation-id` | Otomasyon kuralı ID'si (UUID) |
 
 | Bayrak | Açıklama |
 |---|---|
 | `--start` | Kuralı etkinleştir |
-| `--stop` | Kuralı durdur ve bir sonraki çalışma zamanını temizle |
+| `--stop` | Kuralı durdur ve bir sonraki çalışmasını temizle |
 | `--name` | Yeni kural adı |
 | `--file` | Değiştirilecek bölümleri içeren JSON dosyası ya da standart girdiden okumak için `-` |
 
-`--start` ve `--stop` birlikte kullanılamaz. Buraya iletilen dosya `internal_id` içermemelidir.
+`--start` ve `--stop` birbirini dışlar. Buraya iletilen bir dosya `internal_id` içermemelidir.
+
+[add-as-keyword action flags](#add-keyword-flags) parametrelerini de kabul eder. Bunlardan birini geçirmek çağrıyı bir okuma-değiştirme-yazma işlemine dönüştürür: CLI kuralı okur, `actions[0].params`'ı yeniden oluşturur ve tüm `actions` listesini geri gönderir; çünkü API `actions`'ı birleştirmek yerine tamamen değiştirir. Okuma ile yazma arasında kontrol panelinde yapılan bir düzenlemenin üzerine yazılır.
+
+An update with an action flag also repairs a rule whose stored `params` carry the shape of another action. The params are rebuilt from scratch, so only the stored keys that fit `add-as-keyword-to` are kept and everything else has to come from a flag.
 
 ### adapty asa automations run
 
@@ -699,41 +766,57 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 | Bayrak | Zorunlu | Açıklama |
 |---|---|---|
-| `--entity` | Evet | Raporlanacak şey: `campaign`, `ad-group`, `keyword` veya `ad` |
+| `--entity` | Evet | Raporlanacak öğe: `campaign`, `ad-group`, `keyword` veya `ad` |
 | `--date-from` | Evet | Dönem başlangıcı (`YYYY-MM-DD`) |
 | `--date-to` | Evet | Dönem sonu (`YYYY-MM-DD`) |
-| `--metric` | Hayır | Metrik adı, tekrarlanabilir. Tüm metrikler için belirtmeyin |
+| `--metric` | Evet | Metrik adı, tekrarlanabilir |
+| `--app` | Hayır | Yalnızca bu uygulamalar için rapor oluşturur. Tekrarlanabilir |
+| `--campaign` | Hayır | Yalnızca bu kampanyalar için rapor oluşturur. Tekrarlanabilir |
+| `--ad-group` | Hayır | Yalnızca bu reklam grupları için rapor oluşturur. Tekrarlanabilir |
 | `--group-by` | Hayır | Satırları `country`, `day`, `week`, `month`, `quarter` veya `year` değerlerine göre gruplandırır. Tekrarlanabilir |
-| `--by-days` | Hayır | Kohort metrikleri için gün cinsinden yenileme penceresi, tekrarlanabilir. Çağrı başına maksimum 16. Kontrol paneli varsayılanları için belirtmeyin |
-| `--order-by` | Hayır | Sıralama için kullanılacak metrik veya alan |
+| `--by-days` | Hayır | Kohort metrikleri için yenileme penceresi (gün cinsinden), tekrarlanabilir. Çağrı başına en fazla 16 değer. Kontrol paneli varsayılanları için belirtmeyin |
+| `--order-by` | Hayır | Sıralama yapılacak metrik veya alan |
 | `--order-by-day` | Hayır | Bu yenileme penceresindeki kohort metriğine göre sırala. `--by-days` değerlerinden biri olmalıdır |
 | `--order` | Hayır | `asc` veya `desc`. Varsayılan: `desc` |
 
-[Sayfalama bayraklarını](#global-flags) kabul eder. Bu komut [liste filtreleri](#list-filters) almaz — raporu varlık düzeyi ve döneme göre daraltın, ardından satırları kapsamlı bir `list` komutundan gelen ID'lerle eşleştirin.
+[Sayfalama bayraklarını](#global-flags) kabul eder. [Liste filtrelerinden](#list-filters) yalnızca `--app`, `--campaign` ve `--ad-group` seçeneklerini alır; `--search` ve `--status` yoktur. Raporu başka bir şeye göre daraltmak için satırları kapsamlı bir `list` komutundan gelen ID'lerle eşleştirin.
 
-Her satır, sunucuda toplanmış ve `--order-by` ile sıralanmış tek bir varlıktır. Dolayısıyla en yüksek N sorusu tek bir çağrıdır — sonuçlar arasında sayfalama yapıp toplama yapmak yerine `--order-by` ve `--page-size N` ayarlarını kullanın:
+Her satır, sunucuda toplanan ve `--order-by` ile sıralanan tek bir varlıktır. Dolayısıyla ilk-N sorusu tek bir çağrıdır — sonuçlar arasında sayfa sayfa gezinip toplamak yerine `--order-by` ve `--page-size N` ayarlarını kullanın:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-`--metric` parametresi, Ads Manager'ın takip ettiği metrik adlarını alır; kontrol paneli terminolojisiyle — örneğin `spend`, `taps` veya `gross_roas`. Tam liste ve her birinin nasıl hesaplandığı için [Metrikler](adapty-ads-manager-metrics) bölümüne bakın. Var olmayan bir ad, hata mesajında geçerli adlar listelenerek başarısız olur.
+`--metric`, Ads Manager'ın takip ettiği metrik adlarını kontrol paneli adlandırmasıyla alır; örneğin `spend`, `taps` veya `gross_roas`. Tam liste ve her birinin nasıl hesaplandığı için [Metrikler](adapty-ads-manager-metrics) bölümüne bakın. Var olmayan bir ad, hata mesajında geçerli adlar listelenerek başarısız olur.
 
-Raporlama döneminin uzunluğu, en kaba `--group-by` değeriyle sınırlandırılır. Daha uzun bir dönem için rapor almak istiyorsanız, isteği birden fazla çağrıya bölmek yerine gruplama düzeyini kabalaştırın:
+Her metrik, sayfa kesilmeden önce tüm entity seviyesinde hesaplandığından, kataloğun tamamını değil yalnızca ihtiyacınız olan sütunları isteyin. `subscribers` ve `paid_subscribers`, entity başına benzersiz profilleri sayar; bu da sıradan bir spend-and-installs çağrısına kıyasla yaklaşık on yedi kat daha maliyetlidir. `arppu` ve `arpas` ise bunlardan türetildiğinden aynı durum geçerlidir. Herhangi bir `--entity` seviyesinde bu dört isim için çağrıyı daraltmak amacıyla `--campaign` veya `--ad-group` belirtmeniz gerekir:
 
-| En kaba `--group-by` | Maksimum dönem |
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+Bu iki filtreden biri olmadan çağrı `422 cli_metric_scope_too_wide` hatasıyla başarısız olur. Kapsam daraltmak, herhangi bir metrik çağrısını hızlandırmanın en ucuz yoludur; çünkü maliyet, sayfa boyutundan değil toplanan varlık sayısından kaynaklanır.
+
+Raporlama süresinin uzunluğu, en küçük `--group-by` değeriyle sınırlandırılır. Daha uzun bir dönem için rapor almak istiyorsanız, isteği birden fazla çağrıya bölmek yerine gruplama ayrıntısını kaba tutun:
+
+| En küçük `--group-by` | Maksimum süre |
 |---|---|
-| `day` veya dönem gruplandırması yok | 90 gün |
+| `day` | 28 gün |
+| Dönem gruplandırması yok | 90 gün |
 | `week` | 180 gün |
 | `month` ve daha kaba | 365 gün |
 
-`ltv` metriği yoktur. Lifetime value, bir yenileme penceresinde okunan bir kohort metriğidir; bu nedenle 7. gün veya 90. gün değerini almak için `--by-days` kullanılır:
+Gün bazlı veri en fazla dört haftalık dönemi kapsar. Daha uzun bir süre için `week` granülaritesini kullanın; bu seçenek tek bir çağrıyla yarım yıla kadar veri getirir.
+
+Her sayfa, 5000 döküm satırıyla sınırlıdır; bir satır, bir varlık × ülke × dönem kombinasyonuna karşılık gelir. Bu sınırı aşan bir sayfa `422 cli_response_too_large` hatasıyla başarısız olur. Gruplama ayrıntısını azaltın, tarih aralığını daraltın ya da `--page-size` değerini düşürün. Çağrı `day` bazında gruplanıyorsa hata mesajı, uygun sayfa boyutunu doğrudan belirtir; bu durumda kendiniz hesaplamaya çalışmak yerine verilen değeri kullanın. `metrics overview` komutu varlık bazında döküm döndürmediğinden bu sınır ona hiçbir zaman uygulanmaz.
+
+`ltv` metriği diye bir şey yoktur. Lifetime value, bir kohort metriğidir ve belirli bir yenileme penceresinde okunur; bu nedenle gün-7 veya gün-90 değerini almak için `--by-days` kullanmanız gerekir:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
 ```
 
-`--order-by-day`, satırları bu pencerelerden birine göre sıralar; böylece tek bir çağrıda 90. güne göre en iyi kampanyaları ROAS sırasıyla döndürür.
+`--order-by-day`, satırları bu pencerelerden birine göre sıralar ve tek bir çağrıda gün-90 ROAS'a göre en iyi kampanyaları döndürür.
 
 ### adapty asa metrics overview
 
@@ -790,10 +873,12 @@ Bir uygulama kümesi için ilk çağrı, veriler hazırlanırken onlarca saniye 
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | Şirketin aktif bir Ads Manager aboneliği yok |
 | `404` | — | Varlık mevcut değil veya başka bir şirkete ait |
-| `409` | `cli_idempotency_in_progress` | Aynı idempotency anahtarıyla yapılan bir yazma işlemi hâlâ devam ediyor |
+| `409` | `cli_idempotency_in_progress` | Aynı idempotency anahtarıyla bir yazma işlemi hâlâ devam ediyor |
 | `422` | `cli_idempotency_key_reuse` | Aynı idempotency anahtarı farklı bir istek gövdesiyle kullanıldı |
-| `429` | `cli_analytics_busy` | Analytics havuzu meşgul. Bekleme süresi `Retry-After` başlığında belirtiliyor |
-| `429` | `cli_cooldown_active` | Çok fazla reddedilen istek, token'ı bekleme moduna aldı |
+| `422` | `cli_metric_scope_too_wide` | `--campaign` veya `--ad-group` belirtilmeden profil sayımı metriği istendi |
+| `422` | `cli_response_too_large` | Bir `metrics` sayfası 5000 döküm satırını aşıyor |
+| `429` | `cli_analytics_busy` | Analytics havuzu meşgul veya şirket için başka bir anahtar kelime havuzu oluşturma işlemi hâlâ devam ediyor. Bekleme süresi `Retry-After` başlığında yer alıyor |
+| `429` | `cli_cooldown_active` | Çok fazla reddedilen istek, token'ı bekleme süresine soktu |
 
 Metrikler ve arama terimleri listesi, şirket başına tek bir analitik bütçesini paylaşır: dakikada 5 çağrı ve her 10 saniyede en fazla 2 çağrı. 5 dakika içinde 20 reddedilen istek birikimi, kademeli bir bekleme süresi başlatır: önce 5 dakika, ardından 30 dakika, sonra 3 saat. Bekleme süresi boyunca yeniden deneme yapmak bu süreyi uzatmaz; ancak asıl çözüm, başarısız isteği düzeltmektir, tekrarlamak değil.
 

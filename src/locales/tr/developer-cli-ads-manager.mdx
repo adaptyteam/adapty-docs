@@ -51,6 +51,16 @@ Her okumayı bir filtre ile kapsamlandırın. Filtreler, yazdırılan sayfayı d
 
 Bu listeler yalnızca meta veri döndürür. Performans rakamları [`asa metrics`](#query-metrics-from-agents-and-scripts) ile alınır.
 
+## Anahtar kelime önerileri alın \{#get-keyword-recommendations\}
+
+Araştırma yapmadan bir anahtar kelime listesi oluşturmak için uygulamanıza özel hazır bir havuz edinin. `adapty asa apps list` komutundan aldığınız uygulamanın `adam_id`'sini ve havuz türünü — `brand`, `generic` veya `competitor` — girin:
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+Havuzun teklif veya eşleşme türü yoktur. Bunları kendiniz seçin, ardından [Toplu anahtar kelime ekleme](#add-keywords-in-bulk) bölümünde açıklandığı gibi anahtar kelimeleri ekleyin. Çıktıda `status: building` görünüyorsa yaklaşık bir dakika sonra tekrar deneyin. Havuz türleri ve sınırları için [Ads Manager komutlarına](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend) bakın.
+
 ## Toplu anahtar kelime ekleme \{#add-keywords-in-bulk\}
 
 Anahtar kelimeleri tek tek eklemek, kontrol panelini kullanmak zorunda kalmanın başlıca nedenidir. Her satıra bir anahtar kelime gelecek şekilde bir metin dosyası oluşturun:
@@ -128,15 +138,21 @@ Büyük bir yapı için, işlem kimliğini hemen geri almak ve ilerlemeyi daha s
 adapty asa campaigns bulk-status <operation-id>
 ```
 
-## Temsilcilerden ve komut dosyalarından metrik sorgulama \{#query-metrics-from-agents-and-scripts\}
+## Ajanlar ve betiklerden metrikleri sorgulama \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics`, bir tarih aralığında hesabın herhangi bir düzeyinde raporlama yapar. Bir yapay zeka temsilcisi veya komut dosyasının sonucu doğrudan tüketebilmesi için `--json` ekleyin:
+`asa metrics`, belirli bir tarih aralığında hesabın herhangi bir düzeyinde rapor oluşturur. Sonucu bir yapay zeka ajanının veya betiğin doğrudan işleyebilmesi için `--json` ekleyin:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric`, Ads Manager'ın izlediği adları alır. Tam liste için [Metrikler](adapty-ads-manager-metrics) bölümüne bakın.
+`--metric` zorunludur ve tekrarlanabilir; Ads Manager'ın takip ettiği metrik adlarını alır. Tam liste için [Metrikler](adapty-ads-manager-metrics) sayfasına bakın. Adını belirttiğiniz her metrik, sayfa kesilmeden önce tüm varlık düzeyinde hesaplanır; bu nedenle tüm kataloğu istemek yerine yalnızca kullanacağınız sütunları isteyin.
+
+`--app`, `--campaign` ve `--ad-group` seçenekleri raporu daraltır; bunu yapmak, bir çağrıyı hızlandırmanın en ucuz yoludur; çünkü maliyet, sayfa boyutundan değil toplanan varlık sayısından kaynaklanır. Dört metrik — `subscribers`, `paid_subscribers`, `arppu` ve `arpas` — her varlık düzeyinde benzersiz profilleri sayar ve bunlar herhangi bir varlık düzeyinde bir kampanya ya da reklam grubu filtresi gerektirir:
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 Kohort metrikleri diğerlerinden farklı çalışır. `ltv` metriği yoktur; çünkü yaşam boyu değer bir tarihe göre değil, yenileme penceresine göre okunur. Bunun yerine pencereyi belirtin:
 
@@ -152,7 +168,9 @@ Her satır tek bir entity'yi temsil eder; sunucu tarafında zaten toplanmış ve
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-Metrikler ve arama terimleri listesi, şirket başına tek bir analytics bütçesini paylaşır: dakikada 5 çağrı ve herhangi bir 10 saniyede en fazla 2. Polling yapmak yerine tek seferinde dar bir soru sorun. Raporlama dönemi, gruplama inceliğiyle de sınırlandırılmıştır — güne göre 90 gün, haftaya göre 180, aya göre 365 — bu nedenle raporu genişletmek için daha fazla çağrıya bölmek yerine `--group-by` seçeneğini kaba tutun.
+Metrikler ve arama terimleri listesi, şirket başına tek bir analitik bütçesini paylaşır: dakikada 5 çağrı, ve herhangi bir 10 saniyelik aralıkta en fazla 2. Sorguyu tekrar tekrar çağırmak yerine, hedefe yönelik tek bir soru sorun.
+
+Bir rapora iki kap uygulanır. Raporlama dönemi, gruplama inceliğiyle sınırlandırılır — `--group-by day` ile 28 gün, dönem gruplaması olmaksızın 90 gün, haftaya göre 180, aya göre 365 — ve her sayfa, varlık × ülke × dönem başına bir satır hesaplanarak 5000 döküm satırıyla sınırlıdır. Bu nedenle raporu genişletmek için daha fazla çağrıya bölmek yerine `--group-by` seçeneğini kabalaştırın.
 
 ## Rakip anahtar kelimeleri kontrol edin \{#check-competitor-keywords\}
 
@@ -168,27 +186,47 @@ Rakip anahtar kelime verilerini bir rapora düzenli aralıklarla çekmek için b
 
 ## Otomasyon kurallarını çalıştırma \{#run-automation-rules\}
 
-CLI, [otomasyon kuralları](ads-manager-automations) oluşturmaz — yalnızca verdiğiniz JSON'ı depolar. Geçerli bir kural dosyası edinmenin en hızlı yolu, kontrol panelinde bir kural oluşturup geri okumaktır:
+CLI, verdiğiniz JSON'ı sakladığından, geçerli bir [otomasyon kuralı](ads-manager-automations) dosyası almanın en hızlı yolu kontrol panelinde bir kural oluşturup ardından geri okumaktır:
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
 ```
 
-Bu dosyayı düzenleyip yeni kurallar için şablon olarak kullanın:
+Bu dosyayı düzenleyerek yeni kurallar için şablon olarak kullanın:
 
 ```bash
 adapty asa automations create --file rule.json
 ```
 
-Bir dosyayı `automations update` komutuna geçirdiğinizde, önce `internal_id` alanını kaldırın — mevcut olması durumunda güncelleme reddedilir.
+Bir kural dosyası tam olarak bir koşul ve bir eylem içerir; API de kural başına bu kadarını saklar. Bir dosyayı `automations update` komutuna geçirmeden önce `internal_id` alanını kaldırın — bu alan mevcut olursa güncelleme reddedilir.
 
-Bir kuralın teklifleri değiştirmesine izin vermeden önce test edin:
+### Bayraklardan Anahtar Kelime Olarak Ekle eylemi oluşturma \{#build-an-add-as-keyword-action-from-flags\}
+
+Tek istisna olan **Anahtar Kelime Olarak Ekle** eylemi, elle yazılan JSON'un dışında tutulur. Bir arama terimini tanıtan veya bir anahtar kelimeyi başka bir reklam grubuna kopyalayan bu eylem, hedef reklam gruplarını, teklifi ve eşleme türünü bayraklardan alır:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+Bu action'ın `params` değerini her zaman flag'lerden alın; farklı bir action'a ait bir kuraldan almayın. API, `params` değerini isme göre değil şekle göre çözümler; bu nedenle başka bir action'a ait bir anahtar, API'nin o action'ı seçmesine ve geri kalanını yok saymasına yol açar — `200` döner ve hiçbir reklam grubuna anahtar kelime eklemeyen bir kural kaydedilir.
+:::
+
+`automations update` üzerindeki aynı flag'ler, yanlış şekille kaydedilmiş bir kuralı onarır. CLI kuralı okur, action'ı sıfırdan yeniden oluşturur ve yalnızca **Add as keyword** action'ına uyan kayıtlı ayarları koruyarak geri yazar:
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+Eksik olan her şey bir flag'den gelmek zorundadır. Tam set için [Ads Manager komutlarına](developer-cli-ads-manager-reference#add-keyword-flags) bakın.
+
+Teklife izin vermeden önce bir kuralı test edin:
 
 ```bash
 adapty asa automations run <automation-id> --dry-run
 ```
 
-Kuru çalıştırma (dry run), koşulları değerlendirir ve Apple Ads'e dokunmadan kuralın ne yapacağını kaydeder. Çalıştırmalar hemen gerçekleştirilmek yerine kuyruğa alındığından, komut bir çalıştırma kimliği yazdırır ve sonuç `adapty asa automations runs` içinde görünür.
+Kuru çalıştırma, koşulları değerlendirir ve Apple Ads'e dokunmadan kuralın ne yapacağını günlüğe kaydeder. Çalıştırmalar hemen gerçekleştirilmek yerine sıraya alınır; bu nedenle komut bir çalıştırma ID'si yazdırır ve sonuç `adapty asa automations runs` içinde görünür.
 
 ## Script'leri güvenle yeniden çalıştırma \{#re-run-scripts-safely\}
 

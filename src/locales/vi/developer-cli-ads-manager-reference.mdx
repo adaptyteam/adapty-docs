@@ -387,6 +387,41 @@ adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 
 Chấp nhận [cờ phân trang](#global-flags) và các [bộ lọc danh sách](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search`, và `--status`. Lọc theo `--ad-group` — nếu không có bộ lọc, đây là truy vấn rộng nhất trong chủ đề này.
 
+### adapty asa keywords recommend
+
+Lấy danh sách từ khóa có sẵn cho một trong các ứng dụng của bạn. Đây là các pool từ khóa mà Ads Manager sử dụng khi bạn thiết lập chiến dịch trên dashboard.
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--adam-id` | Có | ID App Store của Apple (`adam_id`) cho ứng dụng của bạn, lấy từ [`asa apps list`](#adapty-asa-apps-list) |
+| `--type` | Có | `brand`, `generic`, hoặc `competitor` |
+| `--country` | Không | Mã quốc gia ISO hai chữ cái. Lặp lại để chọn nhiều quốc gia. Mặc định: tất cả các quốc gia trong pool |
+
+Cờ `--type` chọn pool:
+
+| Loại | Từ khóa |
+|---|---|
+| `brand` | Các từ khóa thương hiệu của ứng dụng, các biến thể chính tả và các từ khóa tự nhiên có chứa thương hiệu. Kết quả cũng liệt kê chính các từ khóa thương hiệu đó |
+| `generic` | Các từ khóa không mang thương hiệu mà ứng dụng của bạn và các đối thủ cạnh tranh tự nhiên hàng đầu đang xếp hạng, đã loại bỏ toàn bộ từ khóa thương hiệu. `relevance_tier: top_organic` đánh dấu những từ khóa mà ứng dụng của bạn đã xếp hạng trong top 10 tự nhiên |
+| `competitor` | Các từ khóa thương hiệu của từng đối thủ cạnh tranh được chọn cho ứng dụng trong [AI Growth Advisor](autopilot-analysis#select-competitors), mỗi đối thủ một nhóm riêng. Trống cho đến khi bạn chọn đối thủ cạnh tranh |
+
+Mỗi từ khóa đi kèm với quốc gia, mức độ phổ biến, điểm số và thứ hạng tự nhiên trung vị. Các từ khóa không có giá thầu hay loại đối sánh. Bạn tự chọn những thông số này, sau đó thêm từ khóa bằng [`asa keywords add`](#adapty-asa-keywords-add).
+
+Kiểm tra `status` của pool trước khi sử dụng từ khóa:
+
+| Status | Ý nghĩa |
+|---|---|
+| `ready` | Pool đã được xây dựng xong |
+| `building` | Pool vẫn đang được xây dựng. Thử lại sau khoảng một phút |
+| `empty` | Pool đã được xây dựng xong nhưng không có từ khóa nào |
+| `failed` | Quá trình xây dựng thất bại. Thử lại sau |
+
+Lần gọi `brand` hoặc `generic` đầu tiên cho một ứng dụng sẽ khởi tạo pool trong quá trình xử lý yêu cầu và có thể mất vài chục giây. Lệnh này có giới hạn 10 lần gọi mỗi phút cho mỗi công ty, và chỉ có một lần build `brand` hoặc `generic` chạy tại một thời điểm cho mỗi công ty. Nếu có lần build thứ hai trong khoảng thời gian đó, hệ thống sẽ trả về `429 cli_analytics_busy` với `Retry-After: 5`.
+
 ### adapty asa keywords add
 
 Thêm từ khóa nhắm mục tiêu vào một nhóm quảng cáo.
@@ -595,7 +630,29 @@ Việc làm mới được đưa vào hàng đợi thay vì thực hiện ngay l
 
 ## Tự động hóa \{#automations\}
 
-CLI lưu trữ JSON quy tắc bạn cung cấp — nó không tự tạo quy tắc. Xem [Tự động hóa](ads-manager-automations) để biết từng loại quy tắc làm gì, và [Chạy quy tắc tự động hóa](developer-cli-ads-manager#run-automation-rules) để biết cách tạo file quy tắc.
+CLI lưu trữ JSON quy tắc bạn cung cấp, với một ngoại lệ: cài đặt của hành động **Add as keyword** đến từ các flag. Xem [Tự động hóa](ads-manager-automations) để biết từng loại quy tắc làm gì, và [Chạy quy tắc tự động hóa](developer-cli-ads-manager#run-automation-rules) để biết cách tạo tệp quy tắc.
+
+### Cờ tham số hành động add-as-keyword \{#add-keyword-flags\}
+
+`automations create` và `automations update` dùng chung một tập cờ để thiết lập `actions[0].params` cho hành động `add-as-keyword-to` — **Add as keyword** trong [quy tắc search terms](ads-manager-automations-search-terms), **Add as keyword to…** trong [quy tắc keyword](ads-manager-automations-keyword-rules). Truyền bất kỳ cờ nào trong số này sẽ thay thế toàn bộ object `params`, vì vậy hành động này không cần JSON viết tay.
+
+| Cờ | Trường JSON | Mô tả |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | Ad group nhận keyword (UUID), có thể lặp lại. Một rule không có target ad group sẽ không làm gì |
+| `--match-type` | `match_type` | `BROAD` hoặc `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | Nguồn gốc của bid cho keyword mới: `ad_group_default_bid`, `set_to`, `search_term_current_cpt`, hoặc `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | Với `set_to`, là giá trị bid. Với `search_term_current_cpt` hoặc `keyword_current_bid`, là phần trăm markup trên bid đang được sao chép. Không được chấp nhận với `ad_group_default_bid` |
+| `--negate` | `negate` | Đồng thời thêm search term dưới dạng negative keyword, trong `ad-group` riêng của nó hoặc `campaign` riêng của nó. `--no-negate` không để lại gì. Chỉ áp dụng cho search terms rules |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | Bỏ qua keyword đã tồn tại trong target ad group thay vì kích hoạt nó. Chỉ áp dụng cho search terms rules |
+| `--pause-original` | `pause_in_original_ad_group` | Tạm dừng keyword nguồn trong ad group của chính nó. Chỉ áp dụng cho keyword rules |
+
+`--cpt-bid-type` và `--match-type` không có giá trị mặc định, vì vậy cả hai đều bắt buộc khi file rule không có `params` riêng.
+
+Bốn flag này phụ thuộc vào trường `operate_with` của rule: `--negate`, `--no-negate`, và `--skip-enable-duplicates` thuộc về rule `search-term`, còn `--pause-original` thuộc về rule `targeting-keyword`. Nếu dùng flag thuộc nhóm kia, lệnh sẽ thất bại với exit code `2` kèm danh sách các flag thực sự áp dụng.
+
+:::warning
+`params` của action này phải lấy từ các flag, không bao giờ lấy từ một rule mang action khác. API xác định `params` theo cấu trúc chứ không theo tên biến thể, vì vậy nếu có key thuộc action khác, nó sẽ chọn action đó và bỏ phần còn lại — trả về `200` và lưu một rule không thêm keyword vào ad group nào cả.
+:::
 
 ### danh sách adapty asa automations \{#adapty-asa-automations-list\}
 
@@ -621,7 +678,7 @@ adapty asa automations get <automation-id>
 
 ### adapty asa automations create
 
-Tạo một quy tắc tự động từ file JSON.
+Tạo một quy tắc tự động hóa từ file quy tắc JSON.
 
 ```bash
 adapty asa automations create --file rule.json
@@ -630,13 +687,19 @@ adapty asa automations create --file rule.json
 | Flag | Mô tả |
 |---|---|
 | `--file` | File JSON chứa nội dung quy tắc, hoặc `-` để đọc từ standard input |
-| `--run-now` | Xếp lần chạy đầu tiên vào hàng đợi ngay sau khi quy tắc được lưu |
+| `--run-now` | Xếp hàng lần chạy đầu tiên ngay sau khi quy tắc được lưu |
 
-`--file` là bắt buộc.
+`--file` là bắt buộc, và file phải chứa đúng một action: API chỉ giữ một action và một điều kiện cho mỗi quy tắc.
+
+Cũng chấp nhận [các flag action add-as-keyword](#add-keyword-flags), dùng để điền hoặc ghi đè `actions[0].params`:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
-Thay đổi một quy tắc tự động: dừng, đổi tên, hoặc thay thế các phần của quy tắc.
+Thay đổi một quy tắc tự động: dừng lại, đổi tên, hoặc thay thế các phần của quy tắc.
 
 ```bash
 adapty asa automations update <automation-id> --stop
@@ -649,11 +712,15 @@ adapty asa automations update <automation-id> --stop
 | Flag | Mô tả |
 |---|---|
 | `--start` | Kích hoạt quy tắc |
-| `--stop` | Dừng quy tắc và xóa lần chạy tiếp theo |
+| `--stop` | Dừng quy tắc và xóa lần chạy tiếp theo của nó |
 | `--name` | Tên quy tắc mới |
-| `--file` | File JSON chứa các phần cần thay đổi, hoặc `-` để đọc từ standard input |
+| `--file` | File JSON chứa các phần cần thay đổi, hoặc `-` để đọc từ đầu vào chuẩn |
 
-`--start` và `--stop` không thể dùng đồng thời. File truyền vào đây không được chứa `internal_id`.
+`--start` và `--stop` không thể dùng cùng nhau. File được truyền vào đây không được chứa `internal_id`.
+
+Cũng chấp nhận [các cờ hành động add-as-keyword](#add-keyword-flags). Truyền một cờ sẽ biến lệnh gọi thành thao tác đọc-sửa-ghi: CLI đọc rule, xây dựng lại `actions[0].params`, rồi gửi toàn bộ danh sách `actions` trở lại, vì API thay thế `actions` thay vì merge vào. Mọi chỉnh sửa được thực hiện trên dashboard trong khoảng thời gian giữa lần đọc và lần ghi sẽ bị ghi đè.
+
+An update with an action flag also repairs a rule whose stored `params` carry the shape of another action. The params are rebuilt from scratch, so only the stored keys that fit `add-as-keyword-to` are kept and everything else has to come from a flag.
 
 ### adapty asa automations run
 
@@ -697,43 +764,59 @@ Truy vấn các chỉ số cho bất kỳ cấp độ nào của tài khoản tr
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 ```
 
-| Cờ | Bắt buộc | Mô tả |
+| Flag | Bắt buộc | Mô tả |
 |---|---|---|
 | `--entity` | Có | Đối tượng cần báo cáo: `campaign`, `ad-group`, `keyword`, hoặc `ad` |
 | `--date-from` | Có | Ngày bắt đầu kỳ báo cáo (`YYYY-MM-DD`) |
 | `--date-to` | Có | Ngày kết thúc kỳ báo cáo (`YYYY-MM-DD`) |
-| `--metric` | Không | Tên chỉ số, có thể lặp lại. Bỏ qua để lấy tất cả chỉ số |
-| `--group-by` | Không | Phân nhóm các hàng theo `country`, `day`, `week`, `month`, `quarter`, hoặc `year`. Có thể lặp lại |
-| `--by-days` | Không | Khoảng thời gian gia hạn tính bằng ngày cho các chỉ số cohort, có thể lặp lại. Tối đa 16 lần gọi. Bỏ qua để dùng giá trị mặc định của dashboard |
-| `--order-by` | Không | Chỉ số hoặc trường dùng để sắp xếp |
-| `--order-by-day` | Không | Xếp hạng theo chỉ số cohort tại khoảng thời gian gia hạn này. Phải là một trong các giá trị `--by-days` |
+| `--metric` | Có | Tên chỉ số, có thể lặp lại |
+| `--app` | Không | Chỉ báo cáo cho các app này. Có thể lặp lại |
+| `--campaign` | Không | Chỉ báo cáo cho các campaign này. Có thể lặp lại |
+| `--ad-group` | Không | Chỉ báo cáo cho các ad group này. Có thể lặp lại |
+| `--group-by` | Không | Phân tách các hàng theo `country`, `day`, `week`, `month`, `quarter`, hoặc `year`. Có thể lặp lại |
+| `--by-days` | Không | Cửa sổ gia hạn tính bằng ngày cho các chỉ số cohort, có thể lặp lại. Tối đa 16 lần mỗi lần gọi. Bỏ qua để dùng giá trị mặc định của dashboard |
+| `--order-by` | Không | Chỉ số hoặc trường để sắp xếp |
+| `--order-by-day` | Không | Xếp hạng theo chỉ số cohort tại cửa sổ gia hạn này. Phải là một trong các giá trị `--by-days` |
 | `--order` | Không | `asc` hoặc `desc`. Mặc định: `desc` |
 
-Chấp nhận [cờ phân trang](#global-flags). Lệnh này không nhận [bộ lọc danh sách](#list-filters) — hãy thu hẹp báo cáo theo cấp độ thực thể và khoảng thời gian, sau đó đối chiếu các hàng với ID từ lệnh `list` có phạm vi tương ứng.
+Chấp nhận [các cờ phân trang](#global-flags). Trong số [các bộ lọc danh sách](#list-filters), lệnh này chỉ nhận `--app`, `--campaign` và `--ad-group`; không có `--search` và không có `--status`. Để thu hẹp báo cáo theo tiêu chí khác, hãy lọc các hàng theo ID lấy từ lệnh `list` có phạm vi.
 
-Mỗi hàng là một thực thể, được tổng hợp trên máy chủ và sắp xếp theo `--order-by`. Vì vậy, câu hỏi top-N chỉ cần một lần gọi — đặt `--order-by` và `--page-size N` thay vì phân trang qua kết quả rồi cộng dồn:
+Mỗi hàng là một thực thể, được tổng hợp trên máy chủ và sắp xếp theo `--order-by`. Do đó, câu hỏi top-N chỉ cần một lần gọi duy nhất — đặt `--order-by` và `--page-size N` thay vì phân trang qua kết quả rồi cộng dồn:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-`--metric` nhận tên các chỉ số mà Ads Manager theo dõi, theo tên trong dashboard — ví dụ `spend`, `taps`, hay `gross_roas`. Xem [Chỉ số](adapty-ads-manager-metrics) để biết danh sách đầy đủ và cách tính từng chỉ số. Tên không tồn tại sẽ báo lỗi kèm danh sách các tên hợp lệ.
+`--metric` nhận tên các chỉ số mà Ads Manager theo dõi, theo cách đặt tên trên dashboard — ví dụ `spend`, `taps`, hoặc `gross_roas`. Xem [Metrics](adapty-ads-manager-metrics) để có danh sách đầy đủ và cách tính từng chỉ số. Tên không tồn tại sẽ báo lỗi kèm danh sách các tên hợp lệ.
 
-Độ dài của kỳ báo cáo bị giới hạn bởi giá trị `--group-by` thô nhất. Để báo cáo cho kỳ dài hơn, hãy dùng nhóm thô hơn thay vì chia yêu cầu thành nhiều lần gọi:
+Mỗi chỉ số bạn đặt tên đều được tính trên toàn bộ cấp entity trước khi trang được cắt, vì vậy hãy chỉ yêu cầu các cột bạn thực sự cần thay vì lấy toàn bộ danh mục. `subscribers` và `paid_subscribers` đếm các hồ sơ người dùng duy nhất theo entity, chi phí cao hơn khoảng mười bảy lần so với một lần gọi chỉ lấy spend và installs — `arppu` và `arpas` cũng vậy vì chúng được tính từ các chỉ số đó. Ở bất kỳ `--entity` nào, bốn tên đó cần có `--campaign` hoặc `--ad-group` để thu hẹp phạm vi gọi:
 
-| `--group-by` thô nhất | Khoảng thời gian tối đa |
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+Không có một trong hai bộ lọc đó, lệnh gọi sẽ thất bại với lỗi `422 cli_metric_scope_too_wide`. Việc thu hẹp phạm vi là cách rẻ nhất để tăng tốc bất kỳ lệnh gọi metrics nào, vì chi phí phụ thuộc vào số lượng thực thể được tổng hợp chứ không phải kích thước trang.
+
+Độ dài của khoảng thời gian báo cáo bị giới hạn bởi giá trị `--group-by` chi tiết nhất. Để báo cáo trên khoảng thời gian dài hơn, hãy dùng nhóm thô hơn thay vì chia yêu cầu thành nhiều lệnh gọi:
+
+| Giá trị `--group-by` chi tiết nhất | Khoảng thời gian tối đa |
 |---|---|
-| `day`, hoặc không có nhóm theo khoảng thời gian | 90 ngày |
+| `day` | 28 ngày |
+| Không có nhóm theo khoảng thời gian | 90 ngày |
 | `week` | 180 ngày |
 | `month` và thô hơn | 365 ngày |
 
-Không có chỉ số `ltv`. Giá trị trọn đời là một chỉ số cohort được đọc tại một cửa sổ gia hạn, vì vậy `--by-days` là cách bạn yêu cầu giá trị ngày-7 hoặc ngày-90:
+Grain ngày do đó bao gồm tối đa bốn tuần. Để lấy dữ liệu trong khoảng thời gian dài hơn, hãy dùng grain `week`, vốn có thể gói gọn nửa năm trong một lần gọi.
+
+Mỗi trang cũng bị giới hạn tối đa 5000 dòng breakdown, trong đó mỗi dòng là một thực thể × quốc gia × khoảng thời gian. Nếu trang vượt quá giới hạn này, lệnh gọi sẽ thất bại với lỗi `422 cli_response_too_large`. Hãy thu gọn nhóm, thu hẹp khoảng thời gian, hoặc giảm `--page-size`; khi lệnh gọi nhóm theo `day`, thông báo lỗi sẽ cho biết kích thước trang phù hợp, vì vậy hãy thử lại với con số đó thay vì tự tính. `metrics overview` không trả về breakdown theo từng thực thể, nên giới hạn này không bao giờ áp dụng cho lệnh này.
+
+Không có chỉ số `ltv` nào cả. Lifetime value là chỉ số cohort được đọc tại một cửa sổ gia hạn, vì vậy `--by-days` là cách bạn lấy giá trị ngày thứ 7 hoặc ngày thứ 90:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
 ```
 
-`--order-by-day` xếp hạng các hàng theo một trong những cửa sổ đó, trả về các chiến dịch hàng đầu theo ROAS ngày-90 chỉ trong một lần gọi.
+`--order-by-day` xếp hạng các hàng theo một trong những cửa sổ đó, trả về các campaign có ROAS ngày 90 cao nhất chỉ trong một lần gọi.
 
 ### adapty asa metrics overview
 
@@ -789,11 +872,13 @@ Lần gọi đầu tiên cho một tập hợp ứng dụng có thể mất vài
 | Trạng thái | Mã | Ý nghĩa |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | Công ty không có gói đăng ký Ads Manager đang hoạt động |
-| `404` | — | Thực thể không tồn tại, hoặc thuộc về một công ty khác |
-| `409` | `cli_idempotency_in_progress` | Một yêu cầu ghi với cùng idempotency key đang được xử lý |
-| `422` | `cli_idempotency_key_reuse` | Cùng một idempotency key đã được dùng với một request body khác |
-| `429` | `cli_analytics_busy` | Pool analytics đang bận. Thời gian chờ nằm trong header `Retry-After` |
-| `429` | `cli_cooldown_active` | Quá nhiều yêu cầu bị từ chối khiến token rơi vào trạng thái cool-down |
+| `404` | — | Thực thể không tồn tại, hoặc thuộc về công ty khác |
+| `409` | `cli_idempotency_in_progress` | Một lệnh ghi với cùng idempotency key vẫn đang chạy |
+| `422` | `cli_idempotency_key_reuse` | Cùng idempotency key đã được sử dụng với một request body khác |
+| `422` | `cli_metric_scope_too_wide` | Một chỉ số đếm hồ sơ người dùng được yêu cầu mà không có `--campaign` hoặc `--ad-group` |
+| `422` | `cli_response_too_large` | Một trang `metrics` sẽ vượt quá 5000 hàng breakdown |
+| `429` | `cli_analytics_busy` | Pool analytics đang bận, hoặc một lần build keyword pool khác cho công ty vẫn đang chạy. Thời gian chờ nằm trong header `Retry-After` |
+| `429` | `cli_cooldown_active` | Quá nhiều request bị từ chối khiến token rơi vào trạng thái cool-down |
 
 Chỉ số và danh sách từ khóa tìm kiếm dùng chung một ngân sách API theo từng công ty: 5 lần gọi mỗi phút, và tối đa 2 lần trong bất kỳ khoảng 10 giây nào. Nếu có 20 request bị từ chối trong vòng 5 phút, hệ thống sẽ kích hoạt cool-down theo cấp độ tăng dần: 5 phút, rồi 30 phút, rồi 3 tiếng. Retry trong thời gian chờ không kéo dài thêm thời gian đó, nhưng cách xử lý đúng là sửa request lỗi thay vì lặp lại nó.
 

@@ -387,6 +387,41 @@ adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 
 Accepte les [options de pagination](#global-flags) ainsi que les [filtres de liste](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search` et `--status`. Filtrez par `--ad-group` — sans filtre, il s'agit de la lecture la plus large du sujet.
 
+### adapty asa keywords recommend
+
+Obtenez un pool de mots-clés prêt à l'emploi pour l'une de vos applications. Ce sont les mêmes pools qu'Ads Manager utilise lorsque vous configurez une campagne dans le tableau de bord.
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+| Paramètre | Obligatoire | Description |
+|---|---|---|
+| `--adam-id` | Oui | ID Apple App Store (`adam_id`) de votre application, issu de [`asa apps list`](#adapty-asa-apps-list) |
+| `--type` | Oui | `brand`, `generic` ou `competitor` |
+| `--country` | Non | Code pays ISO à deux lettres. Répétez pour en spécifier plusieurs. Par défaut : tous les pays du pool |
+
+Le flag `--type` sélectionne le pool :
+
+| Type | Mots-clés |
+|---|---|
+| `brand` | Les termes de marque de votre application, leurs variantes orthographiques, et les termes organiques contenant la marque. La sortie liste également les termes de marque eux-mêmes |
+| `generic` | Les termes non-marque pour lesquels votre application et ses principaux concurrents organiques se positionnent, avec tous les termes de marque connus supprimés. `relevance_tier: top_organic` marque les termes pour lesquels votre application se classe déjà dans le top 10 organique |
+| `competitor` | Les termes de marque de chaque concurrent sélectionné pour l'application dans [AI Growth Advisor](autopilot-analysis#select-competitors), un groupe par concurrent. Vide jusqu'à ce que vous sélectionniez des concurrents |
+
+Chaque mot-clé est accompagné de son pays, sa popularité, son score et son rang organique médian. Les mots-clés ne comportent pas d'enchères ni de types de correspondance. Choisissez-les vous-même, puis ajoutez les mots-clés avec [`asa keywords add`](#adapty-asa-keywords-add).
+
+Vérifiez le `status` du pool avant d'utiliser ses mots-clés :
+
+| Statut | Signification |
+|---|---|
+| `ready` | Le pool est prêt |
+| `building` | Le pool est encore en cours de construction. Réessayez dans environ une minute |
+| `empty` | Le pool est prêt mais ne contient aucun mot-clé |
+| `failed` | La construction a échoué. Réessayez plus tard |
+
+Le premier appel `brand` ou `generic` pour une application construit le pool durant la requête et peut prendre plusieurs dizaines de secondes. La commande dispose d'un budget de 10 appels par minute par entreprise, et un seul build `brand` ou `generic` s'exécute à la fois par entreprise. Un second build pendant ce temps renvoie `429 cli_analytics_busy` avec `Retry-After: 5`.
+
 ### adapty asa keywords add
 
 Ajoutez des mots-clés de ciblage à un groupe d'annonces.
@@ -595,7 +630,29 @@ L'actualisation est mise en file d'attente plutôt qu'exécutée immédiatement,
 
 ## Automations \{#automations\}
 
-Le CLI stocke le JSON de règle que vous lui fournissez — il ne construit pas de règles. Consultez [Automations](ads-manager-automations) pour comprendre ce que fait chaque type de règle, et [Exécuter des règles d'automatisation](developer-cli-ads-manager#run-automation-rules) pour savoir comment produire un fichier de règles.
+Le CLI stocke le JSON de règle que vous lui fournissez, à une exception près : les paramètres d'une action **Add as keyword** proviennent des flags. Consultez [Automations](ads-manager-automations) pour savoir ce que chaque type de règle fait, et [Run automation rules](developer-cli-ads-manager#run-automation-rules) pour savoir comment générer un fichier de règle.
+
+### Indicateurs d'action Add-as-keyword \{#add-keyword-flags\}
+
+`automations create` et `automations update` partagent un ensemble d'indicateurs qui définissent `actions[0].params` pour une action `add-as-keyword-to` — **Add as keyword** dans une [règle de termes de recherche](ads-manager-automations-search-terms), **Add as keyword to…** dans une [règle de mots-clés](ads-manager-automations-keyword-rules). En passer un seul remplace l'intégralité de l'objet `params`, donc cette action ne nécessite aucun JSON écrit à la main.
+
+| Indicateur | Champ JSON | Description |
+|---|---|---|
+| `--target-ad-group` | `targets.internal_ids` | Groupe d'annonces qui reçoit le mot-clé (UUID), répétable. Une règle sans groupe d'annonces cible ne fait rien |
+| `--match-type` | `match_type` | `BROAD` ou `EXACT` |
+| `--cpt-bid-type` | `cpt_bid.type` | Origine de l'enchère du nouveau mot-clé : `ad_group_default_bid`, `set_to`, `search_term_current_cpt` ou `keyword_current_bid` |
+| `--cpt-bid` | `cpt_bid.value` | Avec `set_to`, l'enchère elle-même. Avec `search_term_current_cpt` ou `keyword_current_bid`, un pourcentage de majoration sur l'enchère copiée. Non accepté avec `ad_group_default_bid` |
+| `--negate` | `negate` | Ajoute également le terme de recherche comme mot-clé négatif, dans son propre `ad-group` ou sa propre `campaign`. `--no-negate` n'en laisse aucun. Règles de termes de recherche uniquement |
+| `--skip-enable-duplicates` | `skip_enable_duplicate_keywords` | Ignore un mot-clé qui existe déjà dans le groupe d'annonces cible au lieu de l'activer. Règles de termes de recherche uniquement |
+| `--pause-original` | `pause_in_original_ad_group` | Met en pause le mot-clé source dans son propre groupe d'annonces. Règles de mots-clés uniquement |
+
+`--cpt-bid-type` et `--match-type` n'ont pas de valeur par défaut, ils sont donc tous deux obligatoires lorsque le fichier de règles ne contient pas ses propres `params`.
+
+Quatre de ces flags dépendent du champ `operate_with` de la règle : `--negate`, `--no-negate` et `--skip-enable-duplicates` appartiennent à une règle `search-term`, `--pause-original` à une règle `targeting-keyword`. Un flag appartenant à l'autre ensemble échoue avec le code de sortie `2` et affiche la liste des flags applicables.
+
+:::warning
+Récupère les `params` de cette action depuis les flags, jamais depuis une règle qui porte une action différente. L'API résout les `params` par forme plutôt que par variante nommée : une clé appartenant à une autre action lui fait choisir cette action et ignorer le reste — en répondant `200` et en enregistrant une règle qui n'ajoute des mots-clés à aucun groupe d'annonces.
+:::
 
 ### Liste des règles d'automatisation adapty asa \{#adapty-asa-automations-list\}
 
@@ -621,7 +678,7 @@ adapty asa automations get <automation-id>
 
 ### adapty asa automations create
 
-Créez une règle d'automatisation à partir d'un fichier de règles JSON.
+Crée une règle d'automatisation à partir d'un fichier de règle JSON.
 
 ```bash
 adapty asa automations create --file rule.json
@@ -630,9 +687,15 @@ adapty asa automations create --file rule.json
 | Flag | Description |
 |---|---|
 | `--file` | Fichier JSON contenant le corps de la règle, ou `-` pour lire depuis l'entrée standard |
-| `--run-now` | Met en file d'attente la première exécution juste après l'enregistrement de la règle |
+| `--run-now` | Place le premier lancement dans la file d'attente dès que la règle est enregistrée |
 
-`--file` est obligatoire.
+`--file` est obligatoire, et le fichier doit contenir exactement une action : l'API conserve une action et une condition par règle.
+
+Accepte également les [flags d'action add-as-keyword](#add-keyword-flags), qui renseignent ou remplacent `actions[0].params` :
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
 
 ### adapty asa automations update
 
@@ -648,12 +711,16 @@ adapty asa automations update <automation-id> --stop
 
 | Flag | Description |
 |---|---|
-| `--start` | Activer la règle |
-| `--stop` | Arrêter la règle et effacer sa prochaine exécution |
+| `--start` | Active la règle |
+| `--stop` | Arrête la règle et annule sa prochaine exécution |
 | `--name` | Nouveau nom de la règle |
 | `--file` | Fichier JSON contenant les parties à modifier, ou `-` pour lire depuis l'entrée standard |
 
-`--start` et `--stop` sont mutuellement exclusifs. Un fichier passé ici ne doit pas contenir `internal_id`.
+`--start` et `--stop` sont mutuellement exclusifs. Un fichier transmis ici ne doit pas contenir `internal_id`.
+
+Accepte également les [options d'action add-as-keyword](#add-keyword-flags). En passer une transforme l'appel en lecture-modification-écriture : le CLI lit la règle, reconstruit `actions[0].params`, puis renvoie la liste `actions` complète, car l'API remplace `actions` au lieu de la fusionner. Toute modification effectuée dans le tableau de bord entre la lecture et l'écriture sera écrasée.
+
+Une mise à jour avec un indicateur d'action répare également une règle dont les `params` stockés ont la forme d'une autre action. Les paramètres sont reconstruits de zéro, donc seules les clés stockées qui correspondent à `add-as-keyword-to` sont conservées et tout le reste doit provenir d'un indicateur.
 
 ### adapty asa automations run
 
@@ -699,41 +766,57 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 | Indicateur | Requis | Description |
 |---|---|---|
-| `--entity` | Oui | Sur quoi porter le rapport : `campaign`, `ad-group`, `keyword`, ou `ad` |
+| `--entity` | Oui | Sur quoi générer le rapport : `campaign`, `ad-group`, `keyword`, ou `ad` |
 | `--date-from` | Oui | Début de la période (`YYYY-MM-DD`) |
 | `--date-to` | Oui | Fin de la période (`YYYY-MM-DD`) |
-| `--metric` | Non | Nom de la métrique, répétable. Omettez pour toutes les métriques |
+| `--metric` | Oui | Nom de la métrique, répétable |
+| `--app` | Non | Limiter le rapport à ces applications. Répétable |
+| `--campaign` | Non | Limiter le rapport à ces campagnes. Répétable |
+| `--ad-group` | Non | Limiter le rapport à ces groupes d'annonces. Répétable |
 | `--group-by` | Non | Ventiler les lignes par `country`, `day`, `week`, `month`, `quarter`, ou `year`. Répétable |
-| `--by-days` | Non | Fenêtre de renouvellement en jours pour les métriques de cohorte, répétable. Maximum 16 par appel. Omettez pour les valeurs par défaut du tableau de bord |
-| `--order-by` | Non | Métrique ou champ selon lequel trier |
-| `--order-by-day` | Non | Classer par une métrique de cohorte à cette fenêtre de renouvellement. Doit correspondre à l'une des valeurs `--by-days` |
+| `--by-days` | Non | Fenêtre de renouvellement en jours pour les métriques de cohorte, répétable. Maximum 16 par appel. Omettez ce paramètre pour utiliser les valeurs par défaut du tableau de bord |
+| `--order-by` | Non | Métrique ou champ sur lequel trier |
+| `--order-by-day` | Non | Classer par une métrique de cohorte à cette fenêtre de renouvellement. Doit correspondre à l'une des valeurs de `--by-days` |
 | `--order` | Non | `asc` ou `desc`. Par défaut : `desc` |
 
-Accepte les [options de pagination](#global-flags). Cette commande ne prend aucun [filtre de liste](#list-filters) — affinez le rapport par niveau d'entité et par période, puis faites correspondre les lignes aux identifiants issus d'une commande `list` ciblée.
+Accepte les [options de pagination](#global-flags). Parmi les [filtres de liste](#list-filters), seuls `--app`, `--campaign` et `--ad-group` sont disponibles ; `--search` et `--status` ne sont pas pris en charge. Pour affiner le rapport sur d'autres critères, croisez les lignes avec les identifiants issus d'une commande `list` ciblée.
 
-Chaque ligne correspond à une entité, agrégée côté serveur et triée par `--order-by`. Une question de type top-N se résume donc à un seul appel — définissez `--order-by` et `--page-size N` plutôt que de parcourir les résultats page par page pour les additionner :
+Chaque ligne correspond à une entité, agrégée côté serveur et triée par `--order-by`. Une question de type top N se résout donc en un seul appel — définissez `--order-by` et `--page-size N` plutôt que de parcourir les pages et d'additionner les résultats :
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-`--metric` prend les noms de métriques suivis par Ads Manager, dans la nomenclature du tableau de bord — par exemple `spend`, `taps` ou `gross_roas`. Consultez [Métriques](adapty-ads-manager-metrics) pour la liste complète et le mode de calcul de chacune. Un nom inexistant provoque une erreur qui liste les noms valides.
+`--metric` prend les noms de métriques suivis par Ads Manager, dans la nomenclature du tableau de bord — par exemple `spend`, `taps` ou `gross_roas`. Consultez [Métriques](adapty-ads-manager-metrics) pour la liste complète et le mode de calcul de chacune. Un nom inexistant échoue en affichant les noms valides dans le message d'erreur.
 
-La durée de la période de rapport est limitée par la valeur `--group-by` la plus grossière. Pour couvrir une période plus longue, augmentez la granularité du regroupement plutôt que de diviser la requête en plusieurs appels :
+Chaque métrique que vous nommez est calculée sur l'ensemble du niveau d'entité avant que la page ne soit découpée, donc demandez les colonnes dont vous avez besoin plutôt que tout le catalogue. `subscribers` et `paid_subscribers` comptent les profils uniques par entité, ce qui coûte environ dix-sept fois plus qu'un appel dépenses-et-installations classique ; `arppu` et `arpas` aussi, car ils en sont dérivés. Pour tout `--entity`, ces quatre noms nécessitent `--campaign` ou `--ad-group` pour affiner l'appel :
 
-| `--group-by` le plus grossier | Période maximale |
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id>
+```
+
+Sans l'un de ces deux filtres, l'appel échoue avec `422 cli_metric_scope_too_wide`. Le scope est le moyen le plus économique d'accélérer un appel de métriques, car le coût dépend du nombre d'entités agrégées plutôt que de la taille de la page.
+
+La durée de la période de rapport est limitée par la valeur `--group-by` la plus fine. Pour couvrir une période plus longue, choisissez un regroupement plus grossier plutôt que de diviser la requête en plusieurs appels :
+
+| Valeur `--group-by` la plus fine | Période maximale |
 |---|---|
-| `day`, ou sans regroupement par période | 90 jours |
+| `day` | 28 jours |
+| Aucun regroupement par période | 90 jours |
 | `week` | 180 jours |
 | `month` et plus grossier | 365 jours |
 
-Il n'existe pas de métrique `ltv`. La valeur vie client est une métrique de cohorte lue à une fenêtre de renouvellement, donc `--by-days` est la façon de demander la valeur à J-7 ou J-90 :
+Le grain journalier couvre donc au maximum quatre semaines. Pour une période plus longue, utilisez le grain `week`, qui permet de tenir un semestre en un seul appel.
+
+Chaque page est également limitée à 5 000 lignes de ventilation, une ligne correspondant à une entité × pays × période. Une page dépassant ce plafond échoue avec `422 cli_response_too_large`. Affinez le regroupement, réduisez la fenêtre de dates ou diminuez `--page-size` ; lorsque l'appel regroupe par `day`, l'erreur indique la taille de page qui convient — utilisez ce nombre plutôt qu'un que vous calculerez vous-même. `metrics overview` ne renvoie aucune ventilation par entité, donc ce plafond ne s'y applique jamais.
+
+Il n'existe pas de métrique `ltv`. La valeur vie est une métrique de cohorte lue à une fenêtre de renouvellement, c'est pourquoi `--by-days` permet d'obtenir la valeur au jour 7 ou au jour 90 :
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric roas --by-days 7 --by-days 90
 ```
 
-`--order-by-day` classe les lignes selon l'une de ces fenêtres, ce qui renvoie les meilleures campagnes par ROAS à J-90 en un seul appel.
+`--order-by-day` classe les lignes selon l'une de ces fenêtres, ce qui retourne les meilleures campagnes par ROAS au jour 90 en un seul appel.
 
 ### adapty asa metrics overview
 
@@ -789,10 +872,12 @@ Le premier appel pour un ensemble d'applications peut prendre plusieurs dizaines
 | Statut | Code | Signification |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | La société n'a pas d'abonnement Ads Manager actif |
-| `404` | — | L'entité n'existe pas, ou elle appartient à une autre société |
+| `404` | — | L'entité n'existe pas ou appartient à une autre société |
 | `409` | `cli_idempotency_in_progress` | Une écriture avec la même clé d'idempotence est toujours en cours |
 | `422` | `cli_idempotency_key_reuse` | La même clé d'idempotence a été utilisée avec un corps de requête différent |
-| `429` | `cli_analytics_busy` | Le pool d'analytique est occupé. Le délai d'attente est dans l'en-tête `Retry-After` |
+| `422` | `cli_metric_scope_too_wide` | Une métrique de comptage de profils a été demandée sans `--campaign` ni `--ad-group` |
+| `422` | `cli_response_too_large` | Une page `metrics` dépasserait 5000 lignes de ventilation |
+| `429` | `cli_analytics_busy` | Le pool d'analyse est occupé, ou un autre build de pool de mots-clés pour la société est toujours en cours. Le délai d'attente est indiqué dans l'en-tête `Retry-After` |
 | `429` | `cli_cooldown_active` | Trop de requêtes rejetées ont mis le token en période de refroidissement |
 
 Les métriques et la liste des termes de recherche partagent un seul budget d'appels par entreprise : 5 appels par minute, et au maximum 2 sur 10 secondes. Une rafale de 20 requêtes rejetées en 5 minutes déclenche un blocage progressif de 5 minutes, puis 30 minutes, puis 3 heures. Relancer des requêtes pendant la pause ne l'allonge pas, mais la solution est de corriger la requête défaillante plutôt que de la répéter.

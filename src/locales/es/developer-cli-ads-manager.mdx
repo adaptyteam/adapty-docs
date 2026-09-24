@@ -51,6 +51,16 @@ Delimita cada lectura con un filtro. Los filtros acotan la consulta en lugar de 
 
 Estas listas devuelven solo metadatos. Los datos de rendimiento vienen de [`asa metrics`](#query-metrics-from-agents-and-scripts).
 
+## Obtener recomendaciones de palabras clave \{#get-keyword-recommendations\}
+
+Para crear una lista de palabras clave sin investigación previa, obtén un conjunto predefinido para tu app. Pasa el `adam_id` de la app obtenido con `adapty asa apps list` y el tipo de conjunto — `brand`, `generic` o `competitor`:
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+El pool no tiene pujas ni tipos de concordancia. Elige los tuyos y añade las palabras clave como se describe en [Añadir palabras clave en bloque](#add-keywords-in-bulk). Si el resultado muestra `status: building`, vuelve a intentarlo en aproximadamente un minuto. Consulta los [comandos de Ads Manager](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend) para ver los tipos de pool y los límites.
+
 ## Añadir palabras clave en lote \{#add-keywords-in-bulk\}
 
 Añadir palabras clave una a una es el principal motivo para salir del dashboard. Escribe una palabra clave por línea en un archivo de texto:
@@ -126,13 +136,19 @@ adapty asa campaigns bulk-status <operation-id>
 
 ## Consulta métricas desde agentes y scripts \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics` genera informes sobre cualquier nivel de la cuenta en un rango de fechas. Añade `--json` para que un agente de IA o un script pueda consumir el resultado directamente:
+`asa metrics` genera informes sobre cualquier nivel de la cuenta para un rango de fechas. Añade `--json` para que un agente de IA o un script pueda consumir el resultado directamente:
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` acepta los nombres que rastrea Ads Manager. Consulta [Métricas](adapty-ads-manager-metrics) para ver la lista completa.
+`--metric` es obligatorio y repetible, y acepta los nombres que Ads Manager registra. Consulta [Métricas](adapty-ads-manager-metrics) para ver la lista completa. Cada métrica que indiques se calcula en todo el nivel de entidad antes de paginar, así que solicita solo las columnas que vayas a leer en lugar del catálogo completo.
+
+`--app`, `--campaign` y `--ad-group` acotan el informe, y acotarlo es la forma más económica de acelerar una llamada, porque el coste depende del número de entidades agregadas y no del tamaño de la página. Cuatro métricas cuentan perfiles únicos por entidad — `subscribers`, `paid_subscribers`, `arppu` y `arpas` — y estas requieren un filtro de campaña o grupo de anuncios en cualquier nivel de entidad:
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 Las métricas de cohorte funcionan de manera diferente al resto. No existe la métrica `ltv`, porque el valor de vida se lee en una ventana de renovación en lugar de en una fecha. Solicita la ventana en su lugar:
 
@@ -148,7 +164,9 @@ Cada fila es una entidad, ya agregada y ordenada en el servidor. Una pregunta de
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-Las métricas y la lista de términos de búsqueda comparten un presupuesto de analíticas por empresa: 5 llamadas por minuto, y como máximo 2 en cualquier intervalo de 10 segundos. Formula una pregunta concreta en lugar de hacer polling. El período de reporte también está limitado por la granularidad de agrupación — 90 días por día, 180 por semana, 365 por mes —, así que amplía un informe usando un `--group-by` más grueso, no dividiéndolo en más llamadas.
+Las métricas y la lista de términos de búsqueda comparten un único presupuesto de analytics por empresa: 5 llamadas por minuto y un máximo de 2 en cualquier intervalo de 10 segundos. Formula una pregunta concreta en lugar de hacer consultas repetidas.
+
+Dos límites se aplican a un informe. El período de generación de informes está limitado por el nivel de agrupación que elijas: 28 días con `--group-by day`, 90 días sin agrupación por período, 180 por semana, 365 por mes. Además, cada página está limitada a 5000 filas de desglose, contando una fila por entidad × país × período. Por eso, para ampliar un informe conviene usar una agrupación más amplia en `--group-by`, no dividirlo en más llamadas.
 
 ## Consulta palabras clave de la competencia \{#check-competitor-keywords\}
 
@@ -164,7 +182,7 @@ Utiliza esto para extraer datos de palabras clave de la competencia en un inform
 
 ## Ejecutar reglas de automatización \{#run-automation-rules\}
 
-La CLI no construye [reglas de automatización](ads-manager-automations) — almacena el JSON que le proporciones. La forma más rápida de obtener un archivo de regla válido es crear una regla en el dashboard y luego leerla:
+La CLI almacena el JSON que le proporciones, por lo que la forma más rápida de obtener un archivo de [regla de automatización](ads-manager-automations) válido es crear una regla en el dashboard y luego leerla de vuelta:
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
@@ -176,15 +194,35 @@ Edita ese archivo y úsalo como plantilla para nuevas reglas:
 adapty asa automations create --file rule.json
 ```
 
-Cuando pases un archivo a `automations update`, elimina primero el campo `internal_id` — la actualización se rechaza si está presente.
+Un archivo de regla contiene exactamente una condición y exactamente una acción, que es lo que la API almacena por regla. Cuando pases un archivo a `automations update`, elimina primero el campo `internal_id` — la actualización se rechaza si está presente.
 
-Prueba una regla antes de que cambie pujas:
+### Crea una acción de añadir como palabra clave a partir de flags \{#build-an-add-as-keyword-action-from-flags\}
+
+Una acción es la excepción al JSON escrito a mano. **Add as keyword**, que promueve un término de búsqueda o copia una palabra clave en otro grupo de anuncios, toma sus grupos de anuncios de destino, puja y tipo de concordancia de los flags:
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+Obtén los `params` de esta acción a partir de los flags, nunca de una regla que lleve una acción diferente. La API resuelve `params` por forma y no por nombre de variante, por lo que una clave perteneciente a otra acción hace que elija esa acción y descarte el resto, respondiendo con `200` y almacenando una regla que no añade palabras clave a ningún grupo de anuncios.
+:::
+
+Los mismos flags en `automations update` reparan una regla ya almacenada con la forma incorrecta. El CLI lee la regla, reconstruye la acción desde cero y la vuelve a escribir, conservando solo los ajustes almacenados que encajan en una acción **Add as keyword**:
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+Lo que faltaba en la regla incorrecta debe venir de un flag. Consulta [los comandos de Ads Manager](developer-cli-ads-manager-reference#add-keyword-flags) para ver el conjunto completo.
+
+Prueba una regla antes de dejarla modificar pujas:
 
 ```bash
 adapty asa automations run <automation-id> --dry-run
 ```
 
-Un dry run evalúa las condiciones y registra lo que haría la regla sin tocar Apple Ads. Las ejecuciones se ponen en cola en lugar de realizarse de inmediato, por lo que el comando muestra un ID de ejecución y el resultado aparece en `adapty asa automations runs`.
+Una dry run evalúa las condiciones y registra lo que haría la regla sin tocar Apple Ads. Las ejecuciones se ponen en cola en lugar de realizarse de inmediato, por lo que el comando muestra un ID de ejecución y el resultado aparece en `adapty asa automations runs`.
 
 ## Volver a ejecutar scripts de forma segura \{#re-run-scripts-safely\}
 

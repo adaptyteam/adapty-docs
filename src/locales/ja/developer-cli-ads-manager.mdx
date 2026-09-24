@@ -51,6 +51,16 @@ adapty asa ad-groups list --campaign <campaign-id>
 
 これらのリストはメタデータのみを返します。パフォーマンスの数値は [`asa metrics`](#query-metrics-from-agents-and-scripts) から取得できます。
 
+## キーワードの推奨を取得する \{#get-keyword-recommendations\}
+
+リサーチなしでキーワードリストを始めるには、アプリ向けのプールをそのまま取得します。`adapty asa apps list` から取得したアプリの `adam_id` と、プールの種類（`brand`、`generic`、または `competitor`）を指定してください。
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+プールにはビッドやマッチタイプがありません。それらは自分で選択し、[一括でキーワードを追加する](#add-keywords-in-bulk)の説明に従ってキーワードを追加してください。出力に `status: building` と表示された場合は、約1分後に再試行してください。プールのタイプと制限については、[Ads Manager コマンド](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend)を参照してください。
+
 ## キーワードを一括追加する \{#add-keywords-in-bulk\}
 
 キーワードを1件ずつ追加するのは、ダッシュボードを離れる主な理由です。テキストファイルに1行1キーワードで記述してください：
@@ -126,13 +136,19 @@ adapty asa campaigns bulk-status <operation-id>
 
 ## エージェントやスクリプトから指標を取得する \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics` は、アカウントの任意のレベルで日付範囲を指定して指標をレポートします。AIエージェントやスクリプトで結果を直接利用するには、`--json` を追加してください：
+`asa metrics` は、日付範囲を指定してアカウントの任意のレベルのレポートを出力します。AI エージェントやスクリプトがそのまま処理できるよう、`--json` を追加してください：
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` には、Ads Manager が追跡する指標名を指定します。全一覧は[指標](adapty-ads-manager-metrics)を参照してください。
+`--metric` は必須かつ繰り返し指定可能で、Ads Manager が追跡する指標名を指定します。完全な一覧については [指標](adapty-ads-manager-metrics) を参照してください。指定した各指標はページが切り出される前にエンティティレベル全体で計算されるため、カタログ全体ではなく実際に読む列のみを指定してください。
+
+`--app`、`--campaign`、`--ad-group` はレポートのスコープを絞り込みます。スコープを絞ることが呼び出しを高速化する最も手軽な方法です。コストはページサイズではなく、集計するエンティティ数に比例するためです。`subscribers`、`paid_subscribers`、`arppu`、`arpas` の4つの指標はエンティティごとにユニークなプロファイルをカウントするため、どのエンティティレベルでもキャンペーンまたは広告グループのフィルターが必要です。
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 コホート指標は他の指標とは動作が異なります。`ltv` 指標は存在しません。ライフタイムバリューは日付ではなくリニューアルウィンドウで読み取られるためです。代わりにウィンドウを指定してください：
 
@@ -148,7 +164,9 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-指標と検索語リストは、1社あたり1つのアナリティクス予算を共有します：1分間に5回、10秒以内に最大2回のコール制限があります。ポーリングせず、必要な質問を1回で絞り込みましょう。レポート期間もグループ化の粒度によって上限が決まります — 日次で90日、週次で180日、月次で365日 — レポートの期間を広げるには、複数のコールに分割するのではなく、`--group-by` を粗く設定してください。
+Metrics と検索語リストは、1社あたり1つの分析バジェット（1分あたり5回、10秒以内に最大2回）を共有します。ポーリングせず、絞り込んだ質問を1回で行ってください。
+
+レポートには2つの上限が適用されます。レポート期間の上限はグループ化の粒度によって決まります — `--group-by day` の場合は28日、期間グループ化なしの場合は90日、週単位では180日、月単位では365日です。また、各ページは5000件のブレークダウン行が上限で、エンティティ × 国 × 期間の組み合わせで1行とカウントされます。そのため、レポートを複数のリクエストに分割するのではなく、`--group-by` を粗くすることでレポートの期間を広げてください。
 
 ## 競合アプリのキーワードを確認する \{#check-competitor-keywords\}
 
@@ -164,27 +182,47 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 
 ## 自動化ルールを実行する \{#run-automation-rules\}
 
-CLI は[自動化ルール](ads-manager-automations)をビルドしません — 渡した JSON をそのまま保存します。有効なルールファイルを最短で取得するには、ダッシュボードでルールを 1 つ作成してから読み返します:
+CLIは指定したJSONを保存するため、有効な[自動化ルール](ads-manager-automations)ファイルを最速で取得するには、ダッシュボードで1つのルールを作成してから読み出す方法が一番です:
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
 ```
 
-そのファイルを編集して、新しいルールのテンプレートとして使用します:
+そのファイルを編集し、新しいルールのテンプレートとして使用します:
 
 ```bash
 adapty asa automations create --file rule.json
 ```
 
-`automations update` にファイルを渡す場合は、事前に `internal_id` フィールドを削除してください — このフィールドが含まれていると更新が拒否されます。
+ルールファイルには条件とアクションがそれぞれ1つずつ含まれており、これがAPIがルールごとに保持する内容です。ファイルを`automations update`に渡す場合は、最初に`internal_id`フィールドを削除してください。このフィールドが存在すると更新が拒否されます。
 
-ルールを適用する前にテストする:
+### フラグからの「キーワードとして追加」アクションの作成 \{#build-an-add-as-keyword-action-from-flags\}
+
+**Add as keyword** アクションは、手書きの JSON が不要な唯一の例外です。このアクションは検索語句を昇格させるか、キーワードを別の広告グループにコピーするもので、ターゲットの広告グループ・入札額・マッチタイプをフラグから取得します。
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+このアクションの `params` はフラグから取得し、別のアクションのルールから流用しないでください。APIは名前付きバリアントではなく形状で `params` を解決するため、別のアクションのキーが含まれていると、そのアクションが選択されて残りが破棄され、`200` を返しながらどの広告グループにもキーワードを追加しないルールが保存されてしまいます。
+:::
+
+`automations update` に同じフラグを指定すると、誤った形状で保存されたルールを修正できます。CLIはルールを読み込み、アクションをゼロから再構築して書き戻し、**Add as keyword** アクションに適合する保存済み設定のみを残します。
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+不足していたルールの修正は、フラグで指定する必要があります。使用可能なフラグの一覧は [Ads Manager コマンド](developer-cli-ads-manager-reference#add-keyword-flags) を参照してください。
+
+ルールが入札額を変更する前にテストするには:
 
 ```bash
 adapty asa automations run <automation-id> --dry-run
 ```
 
-ドライランは条件を評価し、Apple Ads に触れることなくルールが何をするかをログに記録します。実行はすぐに実行されるのではなくキューに追加されるため、コマンドは実行 ID を表示し、結果は `adapty asa automations runs` に表示されます。
+ドライランは条件を評価し、Apple Ads を実際には変更せずにルールが何を行うかをログに記録します。実行はすぐには行われずキューに入れられるため、コマンドは実行 ID を表示し、結果は `adapty asa automations runs` に表示されます。
 
 ## スクリプトを安全に再実行する \{#re-run-scripts-safely\}
 

@@ -51,6 +51,16 @@ adapty asa ad-groups list --campaign <campaign-id>
 
 这些列表仅返回元数据。性能数据请通过 [`asa metrics`](#query-metrics-from-agents-and-scripts) 获取。
 
+## 获取关键词推荐 \{#get-keyword-recommendations\}
+
+无需调研即可开始构建关键词列表，直接为你的应用获取一套现成的关键词池。传入通过 `adapty asa apps list` 获取的应用 `adam_id` 以及词池类型——`brand`、`generic` 或 `competitor`：
+
+```bash
+adapty asa keywords recommend --adam-id <adam-id> --type generic --country US
+```
+
+该资源池没有出价或匹配类型，请自行选择，然后按照[批量添加关键词](#add-keywords-in-bulk)中的说明添加关键词。如果输出显示 `status: building`，请约一分钟后重试。资源池类型及限制请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference#adapty-asa-keywords-recommend)。
+
 ## 批量添加关键词 \{#add-keywords-in-bulk\}
 
 逐个添加关键词是离开看板的主要原因。将每个关键词单独放在文本文件的一行中：
@@ -124,15 +134,21 @@ adapty asa campaigns bulk-create --from-file Campaign_And_Adgroup_Template.xlsx 
 adapty asa campaigns bulk-status <operation-id>
 ```
 
-## 从代理程序和脚本中查询数据图表 \{#query-metrics-from-agents-and-scripts\}
+## 从代理和脚本查询数据图表 \{#query-metrics-from-agents-and-scripts\}
 
-`asa metrics` 可对账户任意层级的数据按日期范围进行报告。添加 `--json` 参数后，AI 代理程序或脚本可直接使用输出结果：
+`asa metrics` 可对账户任意层级在指定日期范围内生成报告。添加 `--json` 参数，即可让 AI 代理或脚本直接使用结果：
 
 ```bash
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --metric spend --metric roas --json
 ```
 
-`--metric` 接受 Ads Manager 所追踪的指标名称。完整列表请参阅[数据图表](adapty-ads-manager-metrics)。
+`--metric` 参数为必填项，可重复使用，取值为 Ads Manager 所跟踪的数据图表名称。完整列表请参阅[数据图表](adapty-ads-manager-metrics)。每个指定的数据图表都会在分页之前在整个实体层级上完成计算，因此只需请求实际需要读取的列，而非全部数据。
+
+`--app`、`--campaign` 和 `--ad-group` 用于缩小报告范围，这也是加快调用速度最经济的方式，因为开销取决于聚合的实体数量，而非页面大小。有四个数据图表会按实体统计唯一用户画像数——`subscribers`、`paid_subscribers`、`arppu` 和 `arpas`——在任何实体级别使用时，都需要传入 campaign 或 ad group 过滤条件：
+
+```bash
+adapty asa metrics --entity keyword --date-from 2026-07-01 --date-to 2026-07-31 --metric arpas --campaign <campaign-id> --json
+```
 
 同期群数据图表的工作方式与其他数据图表不同。不存在 `ltv` 指标，因为生命周期价值是按续订窗口而非按日期读取的。请改为指定窗口：
 
@@ -148,7 +164,9 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31 --order-by spend --page-size 5
 ```
 
-数据图表和搜索词列表共享同一个分析预算：每分钟 5 次调用，任意 10 秒内最多 2 次。尽量一次性提出精确的问题，而不是反复轮询。报告周期也受分组粒度的限制——按天最多 90 天，按周最多 180 天，按月最多 365 天——如需扩大报告范围，请通过粗化 `--group-by` 来实现，而不是拆分成更多次调用。
+Metrics 和搜索词列表共享每个公司的同一个分析预算：每分钟最多 5 次调用，任意 10 秒内最多 2 次。建议一次性提出精准问题，而非反复轮询。
+
+报告受两个上限约束。报告周期上限取决于分组粒度——`--group-by day` 最多 28 天，不按周期分组最多 90 天，按周分组最多 180 天，按月分组最多 365 天——每页最多 5000 行明细数据，按实体 × 国家 × 周期计算。因此，若需扩大报告范围，应粗化 `--group-by` 粒度，而非拆分为更多请求。
 
 ## 查看竞品关键词 \{#check-competitor-keywords\}
 
@@ -164,27 +182,47 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 
 ## 运行自动化规则 \{#run-automation-rules\}
 
-CLI 不会构建[自动化规则](ads-manager-automations)——它只存储你提供的 JSON。获取有效规则文件最快的方式是在看板中创建一条规则，然后将其读取出来：
+CLI 会存储您提供的 JSON，因此获取有效[自动化规则](ads-manager-automations)文件最快的方式是在看板中创建一条规则，然后将其读取出来：
 
 ```bash
 adapty asa automations get <automation-id> --json > rule.json
 ```
 
-编辑该文件，并将其作为新规则的模板：
+编辑该文件并将其作为新规则的模板使用：
 
 ```bash
 adapty asa automations create --file rule.json
 ```
 
-向 `automations update` 传入文件时，请先删除 `internal_id` 字段——如果该字段存在，更新操作将被拒绝。
+规则文件包含且仅包含一个条件和一个动作，这也是 API 为每条规则保存的内容。当你将文件传入 `automations update` 时，请先移除 `internal_id` 字段——如果该字段存在，更新请求将被拒绝。
 
-在正式让规则修改出价之前，先进行测试：
+### 从标志构建"添加为关键词"操作 \{#build-an-add-as-keyword-action-from-flags\}
+
+有一个操作是手写 JSON 的例外。**Add as keyword** 操作用于将搜索词提升或复制为关键词到另一个广告组，其目标广告组、出价和匹配类型均从标志中获取：
+
+```bash
+adapty asa automations create --file rule.json --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt --negate ad-group
+```
+
+:::warning
+请始终从对应标志中获取此操作的 `params`，切勿从带有其他操作的规则中提取。API 通过形状而非命名变体来解析 `params`，因此若某个键属于其他操作，API 会选择那个操作并忽略其余内容——返回 `200` 并存储一条根本不会向任何广告组添加关键词的规则。
+:::
+
+在 `automations update` 上使用相同的标志，可修复已以错误形状存储的规则。CLI 会读取该规则，从头重建操作，并将其写回，仅保留适用于 **Add as keyword** 操作的已存储设置：
+
+```bash
+adapty asa automations update <automation-id> --target-ad-group <ad-group-id> --match-type EXACT --cpt-bid-type search_term_current_cpt
+```
+
+缺失的规则参数需通过标志来补充。完整标志列表请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference#add-keyword-flags)。
+
+在正式修改出价前，先对规则进行测试：
 
 ```bash
 adapty asa automations run <automation-id> --dry-run
 ```
 
-模拟运行会评估所有条件，并记录规则将执行的操作，但不会对 Apple Ads 做任何实际修改。运行任务会进入队列而非立即执行，因此该命令会输出一个运行 ID，执行结果可在 `adapty asa automations runs` 中查看。
+试运行会评估条件并记录规则将执行的操作，但不会实际修改 Apple Ads。运行不会立即执行，而是进入队列，因此命令会打印一个运行 ID，结果将显示在 `adapty asa automations runs` 中。
 
 ## 安全地重复运行脚本 \{#re-run-scripts-safely\}
 
