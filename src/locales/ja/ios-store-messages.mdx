@@ -1,0 +1,125 @@
+---
+title: "iOS SDKでApp Storeメッセージを制御する"
+description: "価格変更、支払いの問題、ウィンバックオファーに関するApp Storeメッセージをいつ表示するかを選択して、フローやオンボーディングを妨げないようにします。"
+metadataTitle: "App Storeメッセージの制御 | iOS SDK | Adapty ドキュメント"
+---
+
+App Storeがユーザーに対してサブスクリプションに関するメッセージを表示する必要がある場合があります。価格の引き上げへの同意を求めたり、請求に関する問題を通知したり、ウィンバックオファーを提示したりするためです。デフォルトでは、StoreKitはアプリが開いている間に独自のタイミングでこれらのメッセージを表示します。ペイウォール、オンボーディング、またはチェックアウト画面の上にも表示されることがあります。
+
+表示タイミングを自分でコントロールするには、Adapty SDKをメッセージの手動処理モードに切り替えます。SDKは各メッセージを保留リストに追加し、アプリが`showStoreMessages`を呼び出したタイミングでリストを表示します。
+
+:::warning
+手動モードでは、StoreKitはメッセージを自動的に表示しません。アプリが`showStoreMessages`を呼び出さない場合、ユーザーに価格上昇の同意リクエストや請求問題の通知が表示されることはありません。
+:::
+
+## 始める前に \{#before-you-start\}
+
+以下が必要です：
+
+- **Adapty iOS SDK 4.2 以降**：それ以前のバージョンにはストアメッセージ API がありません。
+- **ユーザーのデバイスで iOS 16、Mac Catalyst 16、または visionOS 1 以降**：StoreKit はそれ以前のバージョンのアプリにメッセージを配信しません。ストアメッセージ API は macOS では利用できません。
+
+## 手動処理を有効にする \{#enable-manual-handling\}
+
+App Store のメッセージをキャプチャするには、[SDK をアクティブ化する](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)際に `storeMessagesHandling` を `.manual` に設定します。
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(storeMessagesHandling: .manual) // .auto is the default
+```
+
+SDKはアクティベート時からメッセージのキャプチャを開始し、現在のアプリセッション中はメモリに保持します。デフォルトの `.auto` 値の場合、SDKは何もキャプチャせず、`getPendingStoreMessageTypes` と `showStoreMessages` は何も行いません。
+
+## 保留中のメッセージタイプを取得する \{#get-pending-message-types\}
+
+保留中のメッセージがあるかどうかを確認するには、`getPendingStoreMessageTypes` を呼び出します。このメソッドはメッセージを表示・削除せずに、保留中のメッセージのタイプだけを返します。
+
+```swift showLineNumbers
+let pendingTypes = await Adapty.getPendingStoreMessageTypes()
+
+if pendingTypes.contains(.billingIssue) {
+    // For example, skip the upsell and show the billing message first
+}
+```
+
+各メッセージには、次のいずれかのタイプがあります：
+
+| タイプ | メッセージ |
+|:-----|:--------|
+| `.generic` | App Store の一般的なメッセージ。 |
+| `.priceIncreaseConsent` | サブスクリプション価格引き上げへの同意リクエスト。 |
+| `.billingIssue` | サブスクリプションの請求に関する通知。iOS 16.4 以降で利用可能。 |
+| `.winBackOffer` | 対象となる[ウィンバックオファー](app-store-offers#win-back-offers)。iOS 18 以降で利用可能。 |
+
+SDK が認識できないメッセージタイプには、`storekit_<number>` というローバリューが設定されます。
+
+## 保留中のメッセージを表示する \{#show-pending-messages\}
+
+アプリがシステムシートでユーザーの操作を妨げない状態になったタイミング（たとえば、ユーザーがフローを閉じたりオンボーディングを完了した後）で、`showStoreMessages` を呼び出します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+SwiftUI では、現在のビューの環境から `displayStoreKitMessage` アクションを渡します。
+
+```swift showLineNumbers
+struct HomeView: View {
+    @Environment(\.displayStoreKitMessage) private var displayStoreKitMessage
+
+    var body: some View {
+        Text("Home")
+            .task {
+                do {
+                    try await Adapty.showStoreMessages(using: displayStoreKitMessage)
+                } catch {
+                    // handle the error
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+UIKit では、メッセージを表示するウィンドウシーンを渡します：
+
+```swift showLineNumbers
+do {
+    try await Adapty.showStoreMessages(in: view.window?.windowScene)
+} catch {
+    // handle the error
+}
+```
+
+`nil` を渡すか `in` を省略した場合、SDK はキーウィンドウを持つフォアグラウンドのアクティブなシーンを使用します。
+
+</TabItem>
+</Tabs>
+
+SDK はメッセージを順番に表示します。StoreKit がメッセージを表示すると、SDK はそのメッセージを保留リストから削除します。StoreKit がメッセージの表示に失敗した場合、SDK はエラーを Adapty ログに記録し、そのメッセージを次回の呼び出し用に保持して、残りのメッセージの処理を続行します。
+
+### 特定のメッセージタイプのみを表示する \{#show-only-some-message-types\}
+
+一部の保留中のメッセージのみを表示するには、`for` にタイプを指定してください。指定しなかったメッセージは保留のままになります。
+
+```swift showLineNumbers
+try await Adapty.showStoreMessages(
+    for: [.billingIssue, .priceIncreaseConsent],
+    using: displayStoreKitMessage
+)
+```
+
+`for` を省略した場合、SDK は認識できないタイプを含む、すべての保留中のメッセージを表示します。
+
+### エラー \{#errors\}
+
+`showStoreMessages`は以下のいずれかのコードで[`AdaptyError`](ios-sdk-error-handling)をスローします：
+
+| コード | 名前 | 原因 |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | 別の`showStoreMessages`の呼び出しがまだメッセージを表示中です。その処理が完了するまで待ってから再試行してください。 |
+| 3202 | `resolverFailure` | UIKitのみ：シーンを渡していないため、SDKがフォアグラウンドアクティブなシーンを見つけられませんでした。アプリがフォアグラウンドにある状態で再度メソッドを呼び出すか、シーンを明示的に渡してください。 |
+| 9000 | `operationInterrupted` | メソッドを呼び出したタスクがキャンセルされました。 |
+

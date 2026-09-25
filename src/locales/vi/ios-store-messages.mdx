@@ -1,0 +1,125 @@
+---
+title: "Kiểm soát thông báo App Store trong iOS SDK"
+description: "Chọn thời điểm ứng dụng iOS của bạn hiển thị thông báo App Store về tăng giá, vấn đề thanh toán và ưu đãi thu hút khách hàng cũ, để chúng không bao giờ làm gián đoạn flow hay onboarding."
+metadataTitle: "Kiểm soát thông báo App Store | iOS SDK | Tài liệu Adapty"
+---
+
+App Store đôi khi cần hiển thị thông báo cho người dùng về gói đăng ký của họ: yêu cầu họ đồng ý tăng giá, thông báo về sự cố thanh toán, hoặc trình bày ưu đãi thu hút khách hàng cũ. Theo mặc định, StoreKit tự hiển thị những thông báo này khi ứng dụng đang mở — kể cả khi đang hiển thị paywall, onboarding, hoặc màn hình thanh toán.
+
+Để tự chọn thời điểm hiển thị, hãy chuyển Adapty SDK sang chế độ xử lý thông báo thủ công. Khi đó, SDK sẽ thêm từng thông báo vào danh sách chờ, và ứng dụng của bạn hiển thị danh sách đó khi gọi `showStoreMessages`.
+
+:::warning
+Trong chế độ thủ công, StoreKit sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `showStoreMessages`, người dùng sẽ không bao giờ thấy yêu cầu chấp thuận tăng giá hoặc thông báo về vấn đề thanh toán.
+:::
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty iOS SDK 4.2 trở lên**: Các phiên bản cũ hơn không có API thông báo từ cửa hàng.
+- **iOS 16, Mac Catalyst 16, hoặc visionOS 1 trở lên trên thiết bị của người dùng**: StoreKit không gửi thông báo đến ứng dụng trên các phiên bản cũ hơn. API thông báo từ cửa hàng không khả dụng trên macOS.
+
+## Bật xử lý thủ công \{#enable-manual-handling\}
+
+Để bắt các thông báo từ App Store, hãy đặt `storeMessagesHandling` thành `.manual` khi bạn [kích hoạt SDK](sdk-installation-ios#activate-adapty-module-of-adapty-sdk):
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(storeMessagesHandling: .manual) // .auto is the default
+```
+
+SDK bắt đầu ghi lại các message khi bạn kích hoạt nó, và giữ chúng trong bộ nhớ cho phiên ứng dụng hiện tại. Với giá trị mặc định `.auto`, SDK không ghi lại bất cứ thứ gì, và `getPendingStoreMessageTypes` cùng `showStoreMessages` sẽ không có tác dụng gì.
+
+## Lấy danh sách loại tin nhắn đang chờ \{#get-pending-message-types\}
+
+Để kiểm tra xem có tin nhắn nào đang chờ không, hãy gọi `getPendingStoreMessageTypes`. Hàm này trả về các loại tin nhắn đang chờ mà không hiển thị hay xóa chúng:
+
+```swift showLineNumbers
+let pendingTypes = await Adapty.getPendingStoreMessageTypes()
+
+if pendingTypes.contains(.billingIssue) {
+    // For example, skip the upsell and show the billing message first
+}
+```
+
+Mỗi tin nhắn thuộc một trong các loại sau:
+
+| Loại | Thông báo |
+|:-----|:--------|
+| `.generic` | Thông báo chung từ App Store. |
+| `.priceIncreaseConsent` | Yêu cầu đồng ý tăng giá gói đăng ký. |
+| `.billingIssue` | Thông báo về sự cố thanh toán gói đăng ký. Có sẵn trên iOS 16.4 trở lên. |
+| `.winBackOffer` | Một [ưu đãi thu hút khách hàng cũ](app-store-offers#win-back-offers) đủ điều kiện. Có sẵn trên iOS 18 trở lên. |
+
+Loại thông báo mà SDK không nhận ra sẽ có giá trị thô là `storekit_<number>`.
+
+## Hiển thị tin nhắn đang chờ \{#show-pending-messages\}
+
+Khi ứng dụng của bạn đến một thời điểm mà hộp thoại hệ thống sẽ không làm gián đoạn người dùng — ví dụ như sau khi người dùng đóng một flow hoặc hoàn thành onboarding — hãy gọi `showStoreMessages`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+Trong SwiftUI, truyền action `displayStoreKitMessage` từ environment của view hiện tại:
+
+```swift showLineNumbers
+struct HomeView: View {
+    @Environment(\.displayStoreKitMessage) private var displayStoreKitMessage
+
+    var body: some View {
+        Text("Home")
+            .task {
+                do {
+                    try await Adapty.showStoreMessages(using: displayStoreKitMessage)
+                } catch {
+                    // handle the error
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+Trong UIKit, truyền window scene để hiển thị các thông báo:
+
+```swift showLineNumbers
+do {
+    try await Adapty.showStoreMessages(in: view.window?.windowScene)
+} catch {
+    // handle the error
+}
+```
+
+Nếu bạn truyền `nil` hoặc bỏ qua `in`, SDK sẽ sử dụng scene đang hoạt động ở nền trước với key window.
+
+</TabItem>
+</Tabs>
+
+SDK hiển thị các thông báo lần lượt từng cái một. Sau khi StoreKit hiển thị một thông báo, SDK sẽ xóa nó khỏi danh sách chờ. Nếu StoreKit không hiển thị được thông báo, SDK sẽ ghi lỗi vào log của Adapty, giữ lại thông báo đó cho lần gọi tiếp theo, và tiếp tục xử lý các thông báo còn lại.
+
+### Chỉ hiển thị một số loại thông báo nhất định \{#show-only-some-message-types\}
+
+Để chỉ hiển thị một số thông báo đang chờ, hãy truyền các loại vào `for`. Các thông báo còn lại vẫn ở trạng thái chờ:
+
+```swift showLineNumbers
+try await Adapty.showStoreMessages(
+    for: [.billingIssue, .priceIncreaseConsent],
+    using: displayStoreKitMessage
+)
+```
+
+Nếu không có `for`, SDK sẽ hiển thị tất cả các thông báo đang chờ, kể cả những loại mà nó không nhận ra.
+
+### Lỗi \{#errors\}
+
+`showStoreMessages` ném ra [`AdaptyError`](ios-sdk-error-handling) với một trong các mã lỗi sau:
+
+| Mã | Tên | Nguyên nhân |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Một lệnh gọi `showStoreMessages` khác vẫn đang hiển thị thông báo. Hãy chờ nó hoàn tất rồi thử lại. |
+| 3202 | `resolverFailure` | Chỉ dành cho UIKit: bạn chưa truyền scene, và SDK không tìm thấy scene nào đang hoạt động ở foreground. Gọi lại phương thức khi ứng dụng đang ở foreground, hoặc truyền scene một cách tường minh. |
+| 9000 | `operationInterrupted` | Task đã gọi phương thức này bị huỷ. |
+

@@ -1,0 +1,125 @@
+---
+title: "Controla los mensajes de App Store en el SDK de iOS"
+description: "Elige cuándo tu app de iOS muestra mensajes de App Store sobre aumentos de precio, problemas de facturación y ofertas de recuperación, para que nunca interrumpan un flow ni un onboarding."
+metadataTitle: "Controla los mensajes de App Store | SDK de iOS | Documentación de Adapty"
+---
+
+A veces App Store necesita mostrar a tus usuarios un mensaje sobre su suscripción: pedirles que acepten un aumento de precio, informarles de un problema de facturación o presentarles una oferta de recuperación. Por defecto, StoreKit muestra estos mensajes por su cuenta mientras la app está abierta, incluso encima de un paywall, un onboarding o una pantalla de pago.
+
+Para elegir tú el momento, cambia el SDK a gestión manual de mensajes. El SDK añade entonces cada mensaje a una lista pendiente, y tu app muestra esa lista cuando llama a `showStoreMessages`.
+
+:::warning
+En el modo manual, StoreKit no muestra mensajes por sí solo. Si tu app nunca llama a `showStoreMessages`, los usuarios nunca verán una solicitud de consentimiento de aumento de precio ni un aviso de problema de facturación.
+:::
+
+## Antes de comenzar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty iOS SDK 4.2 o posterior**: Las versiones anteriores no tienen la API de mensajes de store.
+- **iOS 16, Mac Catalyst 16 o visionOS 1 o posterior en el dispositivo del usuario**: StoreKit no entrega mensajes a apps en versiones anteriores. La API de mensajes de store no está disponible en macOS.
+
+## Habilitar la gestión manual \{#enable-manual-handling\}
+
+Para capturar los mensajes de App Store, establece `storeMessagesHandling` en `.manual` cuando [actives el SDK](sdk-installation-ios#activate-adapty-module-of-adapty-sdk):
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(storeMessagesHandling: .manual) // .auto is the default
+```
+
+El SDK comienza a capturar mensajes en cuanto se activa, y los mantiene en memoria durante la sesión actual de la app. Con el valor predeterminado `.auto`, el SDK no captura nada, y `getPendingStoreMessageTypes` y `showStoreMessages` no hacen nada.
+
+## Obtener tipos de mensajes pendientes \{#get-pending-message-types\}
+
+Para saber si hay mensajes en espera, llama a `getPendingStoreMessageTypes`. Devuelve los tipos de mensajes pendientes sin mostrarlos ni eliminarlos:
+
+```swift showLineNumbers
+let pendingTypes = await Adapty.getPendingStoreMessageTypes()
+
+if pendingTypes.contains(.billingIssue) {
+    // For example, skip the upsell and show the billing message first
+}
+```
+
+Cada mensaje tiene uno de estos tipos:
+
+| Tipo | Mensaje |
+|:-----|:--------|
+| `.generic` | Un mensaje general de App Store. |
+| `.priceIncreaseConsent` | Una solicitud de consentimiento para un aumento de precio de suscripción. |
+| `.billingIssue` | Un aviso sobre un problema de facturación de suscripción. Disponible en iOS 16.4 y versiones posteriores. |
+| `.winBackOffer` | Una [oferta de recuperación](app-store-offers#win-back-offers) elegible. Disponible en iOS 18 y versiones posteriores. |
+
+Un tipo de mensaje que el SDK no reconoce tiene el valor sin procesar `storekit_<number>`.
+
+## Mostrar mensajes pendientes \{#show-pending-messages\}
+
+Cuando tu app llega a un punto donde una pantalla del sistema no interrumpirá al usuario — por ejemplo, después de que el usuario cierra un flow o termina un onboarding — llama a `showStoreMessages`:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+En SwiftUI, pasa la acción `displayStoreKitMessage` desde el entorno de la vista actual:
+
+```swift showLineNumbers
+struct HomeView: View {
+    @Environment(\.displayStoreKitMessage) private var displayStoreKitMessage
+
+    var body: some View {
+        Text("Home")
+            .task {
+                do {
+                    try await Adapty.showStoreMessages(using: displayStoreKitMessage)
+                } catch {
+                    // handle the error
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+En UIKit, pasa el window scene para mostrar los mensajes en:
+
+```swift showLineNumbers
+do {
+    try await Adapty.showStoreMessages(in: view.window?.windowScene)
+} catch {
+    // handle the error
+}
+```
+
+Si pasas `nil` u omites `in`, el SDK utiliza la escena activa en primer plano con la ventana clave.
+
+</TabItem>
+</Tabs>
+
+El SDK muestra los mensajes uno tras otro. Cuando StoreKit muestra un mensaje, el SDK lo elimina de la lista de pendientes. Si StoreKit no puede mostrar un mensaje, el SDK escribe el error en el log de Adapty, conserva el mensaje para la próxima llamada y continúa con los demás mensajes.
+
+### Mostrar solo algunos tipos de mensajes \{#show-only-some-message-types\}
+
+Para mostrar solo algunos de los mensajes pendientes, indica los tipos en `for`. Los demás mensajes permanecen pendientes:
+
+```swift showLineNumbers
+try await Adapty.showStoreMessages(
+    for: [.billingIssue, .priceIncreaseConsent],
+    using: displayStoreKitMessage
+)
+```
+
+Sin `for`, el SDK muestra todos los mensajes pendientes, incluidos los tipos que no reconoce.
+
+### Errores \{#errors\}
+
+`showStoreMessages` lanza un [`AdaptyError`](ios-sdk-error-handling) con uno de estos códigos:
+
+| Código | Nombre | Causa |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Otra llamada a `showStoreMessages` sigue mostrando mensajes. Espera a que termine e inténtalo de nuevo. |
+| 3202 | `resolverFailure` | Solo UIKit: no pasaste una escena y el SDK no encontró ninguna escena activa en primer plano. Llama al método de nuevo cuando tu app esté en primer plano, o pasa la escena de forma explícita. |
+| 9000 | `operationInterrupted` | La tarea que llamó al método fue cancelada. |
+

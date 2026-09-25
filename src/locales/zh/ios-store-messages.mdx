@@ -1,0 +1,125 @@
+---
+title: "控制 iOS SDK 中的 App Store 消息"
+description: "选择 iOS 应用显示 App Store 消息（价格上涨、账单问题、赢回优惠等）的时机，确保它们不会打断流程或用户引导。"
+metadataTitle: "控制 App Store 消息 | iOS SDK | Adapty 文档"
+---
+
+App Store 有时需要向用户显示订阅相关消息：请求用户同意价格上涨、告知账单问题，或展示赢回优惠。默认情况下，StoreKit 会在应用打开时自行显示这些消息——即使在付费墙、用户引导或结账页面上方也会弹出。
+
+如需自行决定展示时机，可将 Adapty SDK 切换为手动消息处理模式。SDK 会将每条消息加入待处理列表，应用在调用 `showStoreMessages` 时统一展示。
+
+:::warning
+在手动模式下，StoreKit 不会自动显示消息。如果你的应用从未调用 `showStoreMessages`，用户将永远看不到价格上涨确认请求或账单问题通知。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+
+- **Adapty iOS SDK 4.2 或更高版本**：早期版本不支持 store messages API。
+- **用户设备系统版本为 iOS 16、Mac Catalyst 16 或 visionOS 1 及以上**：StoreKit 不会向运行早期版本的应用传递消息。macOS 不支持 store messages API。
+
+## 启用手动处理 \{#enable-manual-handling\}
+
+要捕获 App Store 消息，请在[激活 SDK](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) 时将 `storeMessagesHandling` 设置为 `.manual`：
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(storeMessagesHandling: .manual) // .auto is the default
+```
+
+SDK 在激活时开始捕获消息，并将其保存在当前应用会话的内存中。使用默认值 `.auto` 时，SDK 不会捕获任何内容，`getPendingStoreMessageTypes` 和 `showStoreMessages` 也不会执行任何操作。
+
+## 获取待处理消息类型 \{#get-pending-message-types\}
+
+如需查询是否有待处理的消息，请调用 `getPendingStoreMessageTypes`。该方法会返回待处理消息的类型，但不会展示或移除它们：
+
+```swift showLineNumbers
+let pendingTypes = await Adapty.getPendingStoreMessageTypes()
+
+if pendingTypes.contains(.billingIssue) {
+    // For example, skip the upsell and show the billing message first
+}
+```
+
+每条消息的类型为以下之一：
+
+| 类型 | 消息 |
+|:-----|:--------|
+| `.generic` | 通用的 App Store 消息。 |
+| `.priceIncreaseConsent` | 订阅价格上涨的同意请求。 |
+| `.billingIssue` | 订阅账单问题通知。适用于 iOS 16.4 及更高版本。 |
+| `.winBackOffer` | 符合条件的[赢回优惠](app-store-offers#win-back-offers)。适用于 iOS 18 及更高版本。 |
+
+SDK 无法识别的消息类型，其原始值为 `storekit_<number>`。
+
+## 显示待处理消息 \{#show-pending-messages\}
+
+当应用到达不会打断用户的时机时——例如用户关闭流程或完成用户引导后——调用 `showStoreMessages`：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+在 SwiftUI 中，从当前视图的环境中传入 `displayStoreKitMessage` action：
+
+```swift showLineNumbers
+struct HomeView: View {
+    @Environment(\.displayStoreKitMessage) private var displayStoreKitMessage
+
+    var body: some View {
+        Text("Home")
+            .task {
+                do {
+                    try await Adapty.showStoreMessages(using: displayStoreKitMessage)
+                } catch {
+                    // handle the error
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+在 UIKit 中，传入 window scene 以显示消息：
+
+```swift showLineNumbers
+do {
+    try await Adapty.showStoreMessages(in: view.window?.windowScene)
+} catch {
+    // handle the error
+}
+```
+
+如果传入 `nil` 或省略 `in`，SDK 将使用带有 key window 的前台活跃场景。
+
+</TabItem>
+</Tabs>
+
+SDK 会逐条显示消息。StoreKit 显示某条消息后，SDK 会将其从待处理列表中移除。如果 StoreKit 未能显示某条消息，SDK 会将错误写入 Adapty 日志，保留该消息以供下次调用，并继续处理其他消息。
+
+### 仅显示特定类型的消息 \{#show-only-some-message-types\}
+
+如需只显示部分待处理消息，请在 `for` 中传入对应类型。其余消息仍保持待处理状态：
+
+```swift showLineNumbers
+try await Adapty.showStoreMessages(
+    for: [.billingIssue, .priceIncreaseConsent],
+    using: displayStoreKitMessage
+)
+```
+
+不传 `for` 时，SDK 会显示所有待处理消息，包括它无法识别的类型。
+
+### 错误 \{#errors\}
+
+`showStoreMessages` 会抛出一个 [`AdaptyError`](ios-sdk-error-handling)，错误码如下：
+
+| 错误码 | 名称 | 原因 |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | 另一个 `showStoreMessages` 调用仍在显示消息，请等待其完成后再试。 |
+| 3202 | `resolverFailure` | 仅限 UIKit：未传入 scene，且 SDK 未找到处于前台活跃状态的 scene。请在应用处于前台时重新调用该方法，或显式传入 scene。 |
+| 9000 | `operationInterrupted` | 调用该方法的任务已被取消。 |
+

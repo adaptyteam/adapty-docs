@@ -1,0 +1,125 @@
+---
+title: "iOS SDK'da App Store mesajlarını kontrol etme"
+description: "iOS uygulamanızın fiyat artışları, faturalama sorunları ve geri kazanma teklifleri hakkındaki App Store mesajlarını ne zaman göstereceğini seçin; böylece hiçbir zaman bir flow veya onboarding'i kesintiye uğratmazlar."
+metadataTitle: "App Store mesajlarını kontrol etme | iOS SDK | Adapty Dokümanları"
+---
+
+App Store, kullanıcılarınıza zaman zaman abonelikleriyle ilgili bir mesaj göstermesi gerekebilir: fiyat artışına onay vermelerini istemek, faturalama sorununu bildirmek ya da geri kazanma teklifi sunmak gibi. Varsayılan olarak StoreKit, uygulamanız açıkken bu mesajları kendi başına gösterir — bir paywall, onboarding veya ödeme ekranının üstüne bile gelebilir.
+
+Bu anı kendiniz belirlemek için Adapty SDK'sını manuel mesaj yönetimine geçirin. SDK, her mesajı bekleyen bir listeye ekler ve uygulamanız `showStoreMessages` çağırdığında bu listeyi gösterir.
+
+:::warning
+Manuel modda StoreKit, mesajları kendi başına göstermez. Uygulamanız hiçbir zaman `showStoreMessages` çağırmazsa, kullanıcılar hiçbir zaman bir fiyat artışı onay isteği veya faturalandırma sorunu bildirimi görmez.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+Bunlara ihtiyacınız var:
+
+- **Adapty iOS SDK 4.2 veya üzeri**: Daha eski sürümler store messages API'sini içermiyor.
+- **Kullanıcı cihazında iOS 16, Mac Catalyst 16 veya visionOS 1 ya da üzeri**: StoreKit, daha eski sürümlerdeki uygulamalara mesaj iletmiyor. Store messages API, macOS'ta kullanılamıyor.
+
+## Manuel işlemeyi etkinleştir \{#enable-manual-handling\}
+
+App Store mesajlarını yakalamak için, [SDK'yı etkinleştirirken](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) `storeMessagesHandling` değerini `.manual` olarak ayarlayın:
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(storeMessagesHandling: .manual) // .auto is the default
+```
+
+SDK, etkinleştirildiğinde mesajları yakalamaya başlar ve bunları mevcut uygulama oturumu için bellekte tutar. Varsayılan `.auto` değeriyle SDK hiçbir şey yakalamaz; `getPendingStoreMessageTypes` ve `showStoreMessages` işlevleri hiçbir şey yapmaz.
+
+## Bekleyen mesaj türlerini alma \{#get-pending-message-types\}
+
+Herhangi bir mesajın bekleyip beklemediğini öğrenmek için `getPendingStoreMessageTypes` metodunu çağırın. Bu metot, mesajları göstermeden veya silmeden bekleyen mesajların türlerini döndürür:
+
+```swift showLineNumbers
+let pendingTypes = await Adapty.getPendingStoreMessageTypes()
+
+if pendingTypes.contains(.billingIssue) {
+    // Örneğin, üst satışı atlayıp önce faturalandırma mesajını gösterin
+}
+```
+
+Her mesaj şu türlerden birine sahiptir:
+
+| Tür | Mesaj |
+|:-----|:--------|
+| `.generic` | Genel bir App Store mesajı. |
+| `.priceIncreaseConsent` | Abonelik fiyat artışını onaylamak için bir istek. |
+| `.billingIssue` | Abonelik faturalama sorunu hakkında bir bildirim. iOS 16.4 ve sonrasında kullanılabilir. |
+| `.winBackOffer` | Uygun bir [geri kazanma teklifi](app-store-offers#win-back-offers). iOS 18 ve sonrasında kullanılabilir. |
+
+SDK'nın tanımadığı bir mesaj türü, ham değer olarak `storekit_<number>` şeklinde gösterilir.
+
+## Bekleyen mesajları göster \{#show-pending-messages\}
+
+Uygulamanız, sistem sayfasının kullanıcıyı rahatsız etmeyeceği bir noktaya ulaştığında — örneğin kullanıcı bir flow'u kapattıktan veya onboarding'i tamamladıktan sonra — `showStoreMessages` işlevini çağırın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+SwiftUI'da, mevcut görünümün ortamından `displayStoreKitMessage` action'ını geçirin:
+
+```swift showLineNumbers
+struct HomeView: View {
+    @Environment(\.displayStoreKitMessage) private var displayStoreKitMessage
+
+    var body: some View {
+        Text("Home")
+            .task {
+                do {
+                    try await Adapty.showStoreMessages(using: displayStoreKitMessage)
+                } catch {
+                    // handle the error
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+UIKit'te, mesajları göstermek için window scene'i iletin:
+
+```swift showLineNumbers
+do {
+    try await Adapty.showStoreMessages(in: view.window?.windowScene)
+} catch {
+    // handle the error
+}
+```
+
+`nil` geçerseniz veya `in` parametresini atlarsanız, SDK ön planda aktif olan sahneyi anahtar pencereyle birlikte kullanır.
+
+</TabItem>
+</Tabs>
+
+SDK mesajları birbiri ardına gösterir. StoreKit bir mesajı gösterdikten sonra, SDK onu bekleyen listeden kaldırır. StoreKit bir mesajı göstermeyi başaramazsa, SDK hatayı Adapty günlüğüne yazar, mesajı bir sonraki çağrı için saklar ve diğer mesajlarla devam eder.
+
+### Yalnızca belirli mesaj türlerini göster \{#show-only-some-message-types\}
+
+Yalnızca belirli bekleyen mesajları göstermek için `for` parametresine türleri geçin. Diğer mesajlar beklemede kalır:
+
+```swift showLineNumbers
+try await Adapty.showStoreMessages(
+    for: [.billingIssue, .priceIncreaseConsent],
+    using: displayStoreKitMessage
+)
+```
+
+`for` kullanılmadığında SDK, tanımadığı türler dahil tüm bekleyen mesajları gösterir.
+
+### Hatalar \{#errors\}
+
+`showStoreMessages`, şu kodlardan biriyle bir [`AdaptyError`](ios-sdk-error-handling) fırlatır:
+
+| Kod | Ad | Neden |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Başka bir `showStoreMessages` çağrısı hâlâ mesajları gösteriyor. Bitmesini bekleyin, sonra tekrar deneyin. |
+| 3202 | `resolverFailure` | Yalnızca UIKit: bir scene iletmediniz ve SDK ön planda aktif bir scene bulamadı. Uygulamanız ön plandayken metodu tekrar çağırın ya da scene'i açıkça iletin. |
+| 9000 | `operationInterrupted` | Metodu çağıran görev iptal edildi. |
+

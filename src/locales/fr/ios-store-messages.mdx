@@ -1,0 +1,125 @@
+---
+title: "Contrôler les messages App Store dans le SDK iOS"
+description: "Choisissez quand votre app iOS affiche les messages App Store concernant les hausses de prix, les problèmes de facturation et les offres de reconquête, afin qu'ils n'interrompent jamais un flow ou un onboarding."
+metadataTitle: "Contrôler les messages App Store | SDK iOS | Documentation Adapty"
+---
+
+L'App Store doit parfois afficher un message à vos utilisateurs concernant leur abonnement : leur demander de consentir à une hausse de prix, les informer d'un problème de facturation, ou leur présenter une offre de reconquête. Par défaut, StoreKit affiche ces messages tout seul lorsque votre application est ouverte — même par-dessus un paywall, un onboarding ou un écran de paiement.
+
+Pour choisir vous-même le bon moment, passez le SDK Adapty en gestion manuelle des messages. Le SDK ajoute alors chaque message à une liste en attente, et votre application affiche cette liste lorsqu'elle appelle `showStoreMessages`.
+
+:::warning
+En mode manuel, StoreKit n'affiche pas les messages automatiquement. Si votre application n'appelle jamais `showStoreMessages`, les utilisateurs ne verront jamais de demande de consentement à une augmentation de prix ni d'avis de problème de facturation.
+:::
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **Adapty iOS SDK 4.2 ou version ultérieure** : les versions antérieures ne disposent pas de l'API des messages du store.
+- **iOS 16, Mac Catalyst 16, ou visionOS 1 ou version ultérieure sur l'appareil de l'utilisateur** : StoreKit ne transmet pas les messages aux applications sur les versions antérieures. L'API des messages du store n'est pas disponible sur macOS.
+
+## Activer la gestion manuelle \{#enable-manual-handling\}
+
+Pour capturer les messages de l'App Store, définissez `storeMessagesHandling` sur `.manual` lors de l'[activation du SDK](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) :
+
+```swift showLineNumbers
+let configurationBuilder = AdaptyConfiguration
+    .builder(withAPIKey: "YOUR_PUBLIC_SDK_KEY")
+    .with(storeMessagesHandling: .manual) // .auto is the default
+```
+
+Le SDK commence à capturer les messages dès son activation et les conserve en mémoire pour la session d'application en cours. Avec la valeur par défaut `.auto`, le SDK ne capture rien, et `getPendingStoreMessageTypes` ainsi que `showStoreMessages` ne font rien.
+
+## Obtenir les types de messages en attente \{#get-pending-message-types\}
+
+Pour savoir si des messages sont en attente, appelez `getPendingStoreMessageTypes`. Cette méthode renvoie les types des messages en attente sans les afficher ni les supprimer :
+
+```swift showLineNumbers
+let pendingTypes = await Adapty.getPendingStoreMessageTypes()
+
+if pendingTypes.contains(.billingIssue) {
+    // Par exemple, ignorer l'upsell et afficher le message de facturation en premier
+}
+```
+
+Chaque message possède l'un des types suivants :
+
+| Type | Message |
+|:-----|:--------|
+| `.generic` | Un message App Store générique. |
+| `.priceIncreaseConsent` | Une demande de consentement à une augmentation de prix d'abonnement. |
+| `.billingIssue` | Un avis concernant un problème de facturation d'abonnement. Disponible sur iOS 16.4 et ultérieur. |
+| `.winBackOffer` | Une [offre de reconquête](app-store-offers#win-back-offers) éligible. Disponible sur iOS 18 et ultérieur. |
+
+Un type de message non reconnu par le SDK a la valeur brute `storekit_<number>`.
+
+## Afficher les messages en attente \{#show-pending-messages\}
+
+Lorsque votre application atteint un point où une fenêtre système n'interrompra pas l'utilisateur — par exemple, après que l'utilisateur a fermé un flow ou terminé un onboarding — appelez `showStoreMessages` :
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swiftui" label="SwiftUI" default>
+
+Avec SwiftUI, transmettez l'action `displayStoreKitMessage` depuis l'environnement de la vue actuelle :
+
+```swift showLineNumbers
+struct HomeView: View {
+    @Environment(\.displayStoreKitMessage) private var displayStoreKitMessage
+
+    var body: some View {
+        Text("Home")
+            .task {
+                do {
+                    try await Adapty.showStoreMessages(using: displayStoreKitMessage)
+                } catch {
+                    // handle the error
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="uikit" label="UIKit">
+
+Dans UIKit, passez la scène de fenêtre pour afficher les messages :
+
+```swift showLineNumbers
+do {
+    try await Adapty.showStoreMessages(in: view.window?.windowScene)
+} catch {
+    // handle the error
+}
+```
+
+Si vous passez `nil` ou omettez `in`, le SDK utilise la scène active au premier plan avec la fenêtre clé.
+
+</TabItem>
+</Tabs>
+
+Le SDK affiche les messages les uns après les autres. Après que StoreKit a affiché un message, le SDK le retire de la liste en attente. Si StoreKit échoue à afficher un message, le SDK enregistre l'erreur dans le journal Adapty, conserve le message pour le prochain appel et continue avec les autres messages.
+
+### Afficher uniquement certains types de messages \{#show-only-some-message-types\}
+
+Pour n'afficher que certains messages en attente, passez les types dans `for`. Les autres messages restent en attente :
+
+```swift showLineNumbers
+try await Adapty.showStoreMessages(
+    for: [.billingIssue, .priceIncreaseConsent],
+    using: displayStoreKitMessage
+)
+```
+
+Sans `for`, le SDK affiche tous les messages en attente, y compris les types qu'il ne reconnaît pas.
+
+### Erreurs \{#errors\}
+
+`showStoreMessages` lève une [`AdaptyError`](ios-sdk-error-handling) avec l'un de ces codes :
+
+| Code | Nom | Cause |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Un autre appel `showStoreMessages` affiche encore des messages. Attendez qu'il se termine, puis réessayez. |
+| 3202 | `resolverFailure` | UIKit uniquement : vous n'avez pas passé de scène, et le SDK n'a trouvé aucune scène active au premier plan. Appelez la méthode à nouveau lorsque votre application est au premier plan, ou passez la scène explicitement. |
+| 9000 | `operationInterrupted` | La tâche qui a appelé la méthode a été annulée. |
+
