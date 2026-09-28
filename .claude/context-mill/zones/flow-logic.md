@@ -139,7 +139,7 @@ or developer can see and click.
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 12 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 12 | tutorial |
+| flow-common-issues | reference | marketer, dev | 13 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |

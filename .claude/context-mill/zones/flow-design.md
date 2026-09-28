@@ -64,11 +64,11 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | builder-styling | — | marketer | 23 | tutorial |
 | builder-tabs | — | marketer | 5 | tutorial |
 | builder-toggles | — | marketer | 4 | tutorial |
-| custom-media | — | marketer | 7 | tutorial |
+| custom-media | — | marketer | 9 | tutorial |
 | flow-analytics-ids | — | — | 6 | tutorial |
 | flow-selectable-elements | entry | marketer | 6 | tutorial |
 | flow-timer | — | marketer | 6 | tutorial |
-| manage-paywall-ui-elements | — | marketer | 14 | tutorial |
+| manage-paywall-ui-elements | — | marketer | 15 | tutorial |
 | onboarding-quizzes | — | marketer | 3 | tutorial |
 | onboarding-text | entry | marketer | 10 | tutorial |
 | paywall-buttons | — | marketer | 6 | tutorial |
