@@ -147,30 +147,30 @@ recommendations become articles and which stay where the mechanism is documented
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | android-best-practices | entry | dev | 0 | android |
-| android-optimize-paywall-fetching | — | dev | 6 | android |
+| android-optimize-paywall-fetching | — | dev | 7 | android |
 | android-sdk-call-order | — | dev | 3 | android |
 | capacitor-best-practices | entry | dev | 0 | capacitor |
-| capacitor-optimize-paywall-fetching | — | dev | 2 | capacitor |
+| capacitor-optimize-paywall-fetching | — | dev | 3 | capacitor |
 | capacitor-sdk-call-order | — | dev | 2 | capacitor |
 | capacitor-show-aa-targeted-paywall | — | dev | 4 | capacitor |
 | flutter-best-practices | entry | dev | 0 | flutter |
-| flutter-optimize-paywall-fetching | — | dev | 2 | flutter |
+| flutter-optimize-paywall-fetching | — | dev | 3 | flutter |
 | flutter-sdk-call-order | — | dev | 2 | flutter |
 | flutter-show-aa-targeted-paywall | — | dev | 4 | flutter |
 | ios-best-practices | entry | dev | 0 | ios |
-| ios-optimize-paywall-fetching | — | dev | 6 | ios |
+| ios-optimize-paywall-fetching | — | dev | 7 | ios |
 | ios-sdk-call-order | — | dev | 4 | ios |
 | ios-show-aa-targeted-paywall | — | dev | 4 | ios |
 | kmp-best-practices | entry | dev | 0 | kmp |
-| kmp-optimize-paywall-fetching | — | dev | 2 | kmp |
+| kmp-optimize-paywall-fetching | — | dev | 3 | kmp |
 | kmp-sdk-call-order | — | dev | 2 | kmp |
 | kmp-show-aa-targeted-paywall | — | dev | 3 | kmp |
 | react-native-best-practices | entry | dev | 0 | react-native |
-| react-native-optimize-paywall-fetching | — | dev | 2 | react-native |
+| react-native-optimize-paywall-fetching | — | dev | 3 | react-native |
 | react-native-sdk-call-order | — | dev | 2 | react-native |
 | react-native-show-aa-targeted-paywall | — | dev | 4 | react-native |
 | unity-best-practices | entry | dev | 0 | unity |
-| unity-optimize-paywall-fetching | — | dev | 2 | unity |
+| unity-optimize-paywall-fetching | — | dev | 3 | unity |
 | unity-sdk-call-order | — | dev | 2 | unity |
 | unity-show-aa-targeted-paywall | — | dev | 3 | unity |
 <!-- /mill:auto -->
@@ -206,3 +206,30 @@ deliberately not repeated here.
 
 ## Gaps and misses
 
+
+**First-screen media, added to `ios-optimize-paywall-fetching` on 2026-09-28 (branch `preload-assets`, iOS
+only; the other six members of the family follow after review).** New section "Show first-screen media from
+the app bundle": set a custom media ID in the builder, bundle the file, pass it through `assetsResolver`; one
+sentence on app-size cost. Scope was cut on review from a Weewoo-specific pattern (fetch the configuration
+early, nil-check, fall back to native onboarding) to custom assets only — the article already covers timing
+and preload, so don't add the nil-check pattern back. Origin: a customer case in Slack, with the approach
+given by the solutions team and mobile devs.
+Verified against `ios-sdk` `origin/master` (`706d185b`, 2026-07-30):
+- Remote images in the view configuration can carry a base64 low-res copy: `preview_value` decoded into
+  `previewRaster` in `Sources.UIBuilder/UISchema/Assets/Schema.ImageData.swift:48`, rendered as
+  `.remote(url:preview:)` in `UIBuilder/Logic/Assets/AdaptyUIAsset+Resolved.swift:64`. A video's still frame
+  is an `ImageData` too, so it gets the same preview. The field is *optional* in the decoder; the claim that the
+  backend always fills it (4–10 KB) comes from the mobile team, not from code — unverified.
+- `[String: AdaptyUICustomAsset]` conforms to `AdaptyUIAssetsResolver` (`AdaptyUIAssetsResolver.swift:68`);
+  `AdaptyUICustomVideoAsset.file(url:preview:resolution:)` and `AdaptyUICustomImageAsset.file/.remote/.uiImage`
+  at `:14-24`.
+- **Rolled out to all seven on 2026-09-28**, same heading, inserted before "Tune for poor connectivity".
+  Android parses the same field (`PREVIEW_VALUE = "preview_value"`,
+  `adapty-ui/.../mapping/viewconfig/ViewConfigurationAssetMapping.kt:26,94`, `android-sdk` 4.1.1); the five
+  wrappers render through the native UI, so the preview claim follows from iOS + Android. Asset APIs checked:
+  Android `AdaptyCustomVideoAsset.file(fileLocation, preview, resolution)` (`AdaptyCustomAssets.kt:131`, preview
+  has no default) and `getFlowView(…, customAssets)`; jscore `AdaptyCustomVideoAsset` `fileLocation` /
+  `relativeAssetPath` (`src/ui-builder/types.ts:485`, v4.1.2); Flutter `AdaptyCustomAsset.localVideoAsset`
+  (4.1.1); Unity `AdaptyCustomAsset.LocalVideoFile` + `SetCustomAssets` (4.1.2); KMP
+  `AdaptyCustomAsset.localVideoResource` (4.1.0). Wrapper articles say "the flow's layout" instead of "the view
+  configuration", since their readers never call `getFlowConfiguration`.
