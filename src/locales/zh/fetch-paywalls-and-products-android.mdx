@@ -73,8 +73,8 @@ Adapty.getFlow("YOUR_PLACEMENT_ID", result -> {
 
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **placementId** | 必填 | [版位](placements)的标识符，即您在 Adapty 看板中创建版位时所指定的值。 || **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`——当缓存存在时直接返回缓存数据。这种情况下用户获取的数据可能不是最新的，但无论网络状况多差，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>请注意，重启应用后缓存依然保留，只有在重新安装应用或手动清理时才会清除。</p><p></p><p>Adapty SDK 通过两个层级存储流程和付费墙：上述定期更新的缓存，以及[备用付费墙](android-use-fallback-paywalls)。我们还使用 CDN 加速流程和付费墙的获取，并在 CDN 不可达时提供独立的备用服务器。</p> |
-| **loadTimeout** | 默认值：5 秒 | <p>此值限制该方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能包含多个请求。</p> |
+| **placementId** | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 || **fetchPolicy** | 默认值：`AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` 决定 SDK 优先读取哪一层数据，而非是否可以使用缓存。默认情况下，SDK 优先请求服务器，若请求失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果你认为用户的网络环境不稳定，可以考虑使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，该策略会反转读取顺序——优先读取缓存，仅在无缓存时才请求服务器。用户获取到的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 介于两者之间：当缓存数据的时间戳早于 `maxAgeMillis` 时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>需要注意的是，缓存在应用重启后仍会保留，只有在卸载重装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将流程和付费墙存储在两个层次中：上述定期更新的缓存，以及[备用付费墙](android-use-fallback-paywalls)。我们还使用 CDN 加快流程和付费墙的加载速度，并配备了独立的备用服务器以应对 CDN 不可用的情况。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若达到超时时间，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能包含多个请求。</p> |
 
 不要硬编码产品 ID！由于流程是远程配置的，可用产品、产品数量以及特殊优惠（如免费试用）都可能随时变化。请确保你的代码能够处理这些情况。
 
@@ -87,11 +87,11 @@ Adapty.getFlow("YOUR_PLACEMENT_ID", result -> {
 | Flow      | 一个 `AdaptyFlow` 对象，包含版位、标识符（`id`、`variationId`）、名称、付费墙变体（`paywalls`）、`remoteConfigs` 数组（每个已配置语言环境对应一条记录）以及 `hasViewConfiguration` 标志。如需获取该流程的产品，请调用 `getPaywallProducts(flow)`。 |
 
 :::note
-在 v4 中，`locale` 参数已从 `getFlow` 移至 `getFlowConfiguration`（仅在使用 AdaptyUI 渲染时使用）。对于自定义付费墙，所有可用的语言区域将一并在 `flow.remoteConfigs` 中返回——请选择与用户设备或应用设置相匹配的语言区域。
+在 v4 中，`locale` 参数已从 `getFlow` 移至 `getFlowConfiguration`（仅在使用 AdaptyUI 渲染时使用）。对于自定义付费墙，所有可用的语言环境会一并在 `flow.remoteConfigs` 中返回——请选择与用户设备或应用设置匹配的语言环境。
 :::
 
 :::tip
-在用户需要流程之前预热缓存，可调用 [`preloadFlows`](android-optimize-paywall-fetching#preload-placements)（Android SDK 4.1+）一次性预加载多个版位。后续的 `getFlow` 仅在使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` 时才会读取预加载的缓存副本。
+若要在用户需要 flow 之前提前填充缓存，可调用 [`preloadFlows`](android-optimize-paywall-fetching#preload-placements)（Android SDK 4.1+）一次性预加载多个版位。传入 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` 即可在网络请求之前读取已预加载的副本。
 :::
 
 ## 获取产品 \{#fetch-products\}
@@ -204,7 +204,7 @@ Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID", result -> {
 
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
-| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 || **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若请求失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`——当缓存存在时直接返回缓存数据。这样一来，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来减少网络请求是安全可靠的。</p><p></p><p>请注意，重启应用不会清除缓存，只有卸载重装或手动清理才会清空缓存。</p> |
+| **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 || **fetchPolicy** | 默认值：`AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` 用于设置 SDK 优先读取哪一层数据，而非控制是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，该策略与默认策略相反——优先读取缓存，仅在没有缓存时才请求服务器。用户可能无法获取最新数据，但无论网络状况多差，都能获得更快的加载速度。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>第三种策略 `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 介于两者之间：当缓存时间早于 `maxAgeMillis` 时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍然保留，仅在重新安装应用或手动清除时才会被清空。</p> |
 
 </SDKv4>
 
@@ -275,9 +275,9 @@ Adapty.getPaywall("YOUR_PLACEMENT_ID", "en", result -> {
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
 | **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐用法，请参阅[本地化与语言区域代码](android-localizations-and-locale-codes)。</p> |
-| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若加载失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络连接不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存数据存在时直接返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两层机制存储付费墙：上述定期更新的缓存，以及[备用付费墙](android-use-fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。这套机制旨在确保您始终能获取最新版本的付费墙，同时在网络条件较差时也能保持可靠性。</p> |
-| **loadTimeout** | 默认值：5 秒 | <p>该值限制了此方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为该操作在底层可能包含多个不同的请求。</p> |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐使用方式的更多信息，请参阅[本地化与语言区域代码](android-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` 用于设置 SDK 优先从哪一层读取数据，而非决定是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络连接不稳定，可以考虑使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，该策略会反转上述顺序——优先读取缓存，仅在缓存为空时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全可靠的。</p><p></p><p>第三种策略 `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 介于两者之间：当缓存时间未超过 `maxAgeMillis` 时优先读取缓存，超过后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将付费墙存储在两个层级中：上述定期更新的缓存以及[备用付费墙](android-use-fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。该系统的设计目标是确保您始终获取最新版本的付费墙，同时在网络条件较差的情况下也能保证可靠性。</p> |
+| **loadTimeout** | 默认值：5 秒 | <p>该值限制此方法的超时时间。达到超时时间后，将返回缓存数据或本地备用内容。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能由多个请求组成。</p> |
 
 不要硬编码产品 ID！由于付费墙是远程配置的，可用产品的数量以及特殊优惠（如免费试用）都可能随时变化。请确保你的代码能够处理这些情况。
 
@@ -404,7 +404,7 @@ Adapty.getPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", result -> {
 | 参数 | 是否必填 | 描述 |
 |---------|--------|-----------|
 | **placementId** | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
-| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐使用方式的更多信息，请参阅[本地化与语言区域代码](android-localizations-and-locale-codes)。</p> |
-| **fetchPolicy** | 默认值：`.reloadRevalidatingCacheData` | <p>默认情况下，SDK 会尝试从服务器加载数据，若失败则返回缓存数据。我们推荐使用此选项，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络环境不稳定，可以考虑使用 `.returnCacheDataElseLoad`，在缓存数据存在时优先返回缓存。这种情况下，用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来避免额外的网络请求是安全可靠的。</p><p></p><p>请注意，缓存在应用重启后依然保留，仅在重新安装应用或手动清除时才会被清空。</p> |
+| **locale** | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。此参数应为由一个或多个子标签组成的语言代码，子标签之间用连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐使用方式的详细信息，请参阅[本地化与语言区域代码](android-localizations-and-locale-codes)。</p> |
+| **fetchPolicy** | 默认值：`AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` 决定 SDK 优先读取哪一层数据，而非是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad`，该策略将优先级反转——优先读取缓存，仅在缓存为空时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAgeMillis)` 介于两者之间：当缓存时间早于 `maxAgeMillis` 时优先读取缓存，否则请求服务器。</p><p></p><p>请注意，重启应用后缓存仍会保留，只有在重新安装应用或手动清理时才会被清除。</p> |
 
 </SDKv3>
