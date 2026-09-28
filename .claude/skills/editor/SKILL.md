@@ -84,7 +84,7 @@ Present final content with a brief writing summary. See `references/output-templ
 
 You read the source to write this article, which is the cheapest moment there will ever be to test what the zone brief claims. Invoke the `context-mill` skill and follow **Mode 4 — Autolog**; it holds the full rule, so don't reimplement it here.
 
-The short version: treat the brief as a hypothesis and the code as the check, then report a **diff** — what you learned that the brief doesn't say, **what the brief says that turned out wrong** (lead with this), and what you couldn't verify. Edit the brief only where you have command output that settles it, and date the edit. Never run `mill:reviewed` — that is the owner's act, not a side effect of writing an article.
+The short version: treat the brief as a hypothesis and the code as the check. Write every finding into the brief, dated and with its evidence named — unconfirmed findings go in as unconfirmed, not as proposals. Then report the same diff: **what the brief said that turned out wrong** (lead with this), what you learned that the brief doesn't say, and what you couldn't verify. When the article gets committed, commit the `.claude/context-mill/` changes right after it, in their own commit. Never run `mill:reviewed` — that is the owner's act, not a side effect of writing an article.
 
 Skip this phase only if you wrote from the user's prose alone and never opened an SDK repo, a backend module or a spec. If you read source, you owe the diff.
 

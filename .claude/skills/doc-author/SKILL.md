@@ -87,7 +87,7 @@ The product-manager will evaluate:
 ### Phase 4: Feedback — Iterate with the User
 
 Present the draft and ask for feedback. The user may:
-- **Approve** → Done. Commit or finalize as appropriate.
+- **Approve** → Done. Commit or finalize as appropriate. Brief changes from Phase 4.5 go into their own commit at the same time — see that phase.
 - **Request changes** → Apply changes and re-present. If changes are substantial (new sections, restructured content), re-run the product-manager review on the changed sections.
 - **Disagree with a skill's recommendation** → See "Skill Evolution" below.
 
@@ -97,9 +97,9 @@ Repeat this phase until the user approves.
 
 Once the draft is approved, close the loop on the context the task started from. **REQUIRED SUB-SKILL:** invoke `context-mill` and follow **Mode 4 — Autolog**.
 
-The point is not to append prose to a brief. It is that whoever wrote this article has just been in the SDK repo, the backend module or the spec, and that is the cheapest moment there will ever be to test what the brief claims. Report a **diff**: what the source says that the brief doesn't, **what the brief says that turned out wrong** — lead with that, it is the highest-value output — and what could not be verified.
+Whoever wrote this article has just been in the SDK repo, the backend module or the spec, and that is the cheapest moment there will ever be to test what the brief claims. Write the findings into the brief, then report the same **diff**: **what the brief said that turned out wrong** — lead with that, it is the highest-value output — what the source says that the brief doesn't, and what could not be verified.
 
-Two rules the sub-skill states and that you must not soften: edit the brief only where command output settles it, dated; and never run `mill:reviewed`, because that is the owner saying "I read this and it is right", not a side effect of shipping an article.
+Three rules the sub-skill states and that you must not soften: every finding goes into the brief dated and with its evidence named, and unconfirmed ones go in as unconfirmed rather than waiting for the owner's call; the `.claude/context-mill/` changes get their own commit, made when the article is committed, never before and never left behind; and never run `mill:reviewed`, because that is the owner saying "I read this and it is right", not a side effect of shipping an article.
 
 Skip only if the whole task ran on the user's prose and no source was opened.
 
