@@ -95,6 +95,16 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   lookback (`sync_google_metrics.py`, changed from 2-hourly on 2026-05-01); country breakdown is exact
   for campaign/ad group, proportional for ad, absent for keyword. The Data Manager OAuth scope was added
   for every company on 2026-09-10 (commit ea892017); tokens granted earlier must reconnect.
+- **Which Google campaign types fit which tab** (2026-09-29, UA service `origin/develop` 3dc6f35c). No code
+  branches on `advertising_channel_type` (stored, never read); support follows from the wiring. App tab =
+  App campaigns **for installs** (marketers still say UAC): `check_install_attribution` asks Google at first
+  open, and `send_transaction_events` only sends events carrying the `adapty_campaign_id` saved then, so
+  **App engagement** campaigns get nothing. Pre-registration is Google-side — unverified, left out of the
+  doc. Other tab = anything taking a tracking template with auto-tagging: Search, PMax (tested end to end
+  per product), Demand Gen, Display, Video, Shopping. Analytics depth: campaign metrics `FROM campaign`
+  (all types), ad metrics `FROM ad_group_ad` (PMax has none → campaign only), keyword metrics
+  `FROM keyword_view` (Search only). Reviewer feedback (Timur, 2026-09-29): readers search "UAC" and
+  "PMax", so those words belong in the article text and keywords.
 - **Some claims are the ad network's and cannot be verified here.** Meta token expiration and the
   `ads_read` permission, system-user token generation, whether Meta approves an ad URL, TikTok's
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
