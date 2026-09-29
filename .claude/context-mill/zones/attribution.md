@@ -79,6 +79,22 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   this path. Stripe/Paddle cohort = the subscription's first charge date
   (`clickhouse_web_assembly_repository.py`), matching FunnelFox's first-paid-date rule. Test-mode/sandbox
   events are dropped on arrival on every path, so a test key connects, shows Valid, and yields nothing.
+- **Google Ads has two campaign types with different wiring** (2026-09-29, UA service `origin/develop`
+  3dc6f35c + dashboard-interface `origin/master` 69e745ae3). `settings.campaign_type` is `app` or `web`
+  (`campaign_context/applications/constants/partners.py`; unset = web). The UI calls them the **App
+  Campaigns** and **Other Campaigns** tabs (`IntegrationHeaderTabsBar.tsx`). App campaigns report through
+  Google's App Conversion API keyed on per-platform App Link IDs, with a hard-coded **Provider ID**
+  `8222663145` shown on the campaign settings page; Google does the install attribution and returns
+  campaign/ad group/ad/keyword (`google_app_conversion_service.py`). Other (web) campaigns go through
+  the Data Manager API keyed on gclid/gbraid/wbraid to one selected client account; saving creates one
+  `UPLOAD_CLICKS` conversion action per target name, named as typed (`campaign_service.py`,
+  `google_conversion_actions.py`). The user pastes a **Tracking template** (the `/track` link with
+  `{lpurl}`) and, for web funnels, the **Final URL suffix**; auto-tagging must be on. Google configs have
+  no General/Settings tabs, no Additional parameter, no Send all events and no Predicted LTV; Revenue
+  override and Qualified trial exist on both types. Metrics sync is `'15 */4 * * *'` with a 3-day
+  lookback (`sync_google_metrics.py`, changed from 2-hourly on 2026-05-01); country breakdown is exact
+  for campaign/ad group, proportional for ad, absent for keyword. The Data Manager OAuth scope was added
+  for every company on 2026-09-10 (commit ea892017); tokens granted earlier must reconnect.
 - **Some claims are the ad network's and cannot be verified here.** Meta token expiration and the
   `ads_read` permission, system-user token generation, whether Meta approves an ad URL, TikTok's
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
@@ -101,11 +117,14 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   billing, account structure. Two things must survive every edit to those guides, because they are the
   only load-bearing steps: where the click link goes, and the rule that splits it across **Website URL**
   and **URL parameters** so the ad gets approved.
-- **A bounded context in the backend is not a documented integration.** The UA service also carries a
-  Google Ads context (metrics queries plus conversion upload) and Adjust and AppsFlyer ingest contexts,
-  while the articles say native spend integrations are Meta and TikTok only. Do not add an integration
-  article, and do not widen "currently — Meta Ads and TikTok for Business", on the strength of that code
-  existing; confirm shipped status with product first. This is the zone's most tempting wrong edit.
+- **A bounded context in the backend is not a documented integration — until the UI ships it.** The UA
+  service also carries Adjust and AppsFlyer ingest contexts; do not add an integration article for those
+  on the strength of the code existing — confirm shipped status with product first. **Google Ads shipped
+  (corrected 2026-09-29):** dashboard-interface commit 4c360ccbe (2026-09-28, "open the Google Ads
+  integration to every company") removed `IS_UA_GOOGLE_ADS_INTEGRATION_ENABLED`, and `ua-google-ads`
+  went back into `tutorial.json` the same week. So native spend integrations are now Meta, TikTok and
+  Google Ads. The feature-flag removal is the kind of evidence that settles "shipped"; the backend
+  context existing was not.
 - **Boundary with `ads-manager`, stated as what gets written.** All Apple Search Ads *campaign
   management* writing — connection flow, bids, automations, keyword work — belongs to `ads-manager`. Here
   ASA appears only as a channel value and as the `asa_*` columns in the export, and this zone never
@@ -130,6 +149,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-deferred-data | — | marketer, analyst | 0 | tutorial |
 | ua-facebook | — | marketer, analyst | 10 | tutorial |
 | ua-funnelfox | — | marketer, analyst | 6 | tutorial |
+| ua-google-ads | — | marketer, analyst | 8 | tutorial |
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 2 | tutorial |
@@ -186,7 +206,7 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
 | "S3 export" with no other context | Decide direction and product first. The three `ua-*` storage articles export *Adapty Attribution's install events*; `s3-exports` / `google-cloud-storage` in **integrations** export the main dashboard's *subscription events*. Same provider, different product, different table — and the wrong one is a plausible-looking wrong answer. |
 | "read which ad drove this install from app code", "personalize onboarding by campaign", "organic vs paid inside the app" | `ua-attribution-data`. Fields arrive in a nested `attribution` object inside the `payload` of `onInstallationDetailsSuccess`, and `payload` is escaped JSON the app parses itself. Every field is optional. Note the article says two things about organic installs — that `channel` can be `organic`, *and* that the `attribution` object is absent when attribution could not be determined — so app code has to handle both shapes. |
 | "deep link the user to a screen after install", "show a welcome screen based on which ad was clicked" | `ua-deferred-data`, not `ua-attribution-data`, even though it is the same callback. The difference is who authored the values: deferred data is parameters *you* appended to the click link yourself (`ios_deferred_data`, `android_deferred_data`, `deferred_data_sub[1-10]`), so the setup step is in the ad's destination URL, not anywhere in the Adapty UI — and they sit at the top level of `payload`, not inside `attribution`. |
-| "no ad spend for this channel", "ROAS/CPI is empty", "why is my Google Ads campaign missing cost" | `user-acquisition`. Only Meta (`ua-facebook`) and TikTok (`ua-tiktok`) have native integrations that pull spend; every other network is tracking-links-only, so every metric with Spend in its formula is structurally unavailable there. This is also what decides link type: native links fill campaign/adset/ad dynamically and can be reused across ads, manual links (`ua-tracking-links`) need every parameter typed at creation. |
+| "no ad spend for this channel", "ROAS/CPI is empty", "why is my Google Ads campaign missing cost" | `user-acquisition`. Only Meta (`ua-facebook`), TikTok (`ua-tiktok`) and — since 2026-09-28 — Google Ads (`ua-google-ads`) have native integrations that pull spend; for Google, missing cost is usually an ad-account token that went INVALID or a manager account (skipped for metrics). Every other network is tracking-links-only, so every metric with Spend in its formula is structurally unavailable there. This is also what decides link type: native links fill campaign/adset/ad dynamically and can be reused across ads, manual links (`ua-tracking-links`) need every parameter typed at creation. |
 | "what do I have to implement", "which SDK version", "we don't use Adapty for purchases", "Attribution doesn't appear in the dashboard", "stop sending events to Attribution" | All `user-acquisition`. No API keys, tokens, or identifiers are passed — just an SDK floor (3.9.1 iOS/Android/Flutter, 3.10.0 RN/Capacitor, 3.12.0 Unity, 3.15.0 KMP) and, if purchases are handled outside Adapty, observer mode. If **Attribution** is missing from the product switcher under the Adapty logo, the documented fix is clearing cookies and site data for adapty.io — check that before debugging anything else. Pausing event delivery is the **Integrations > Adapty** toggle. |
 | "Meta rejected/disapproved the ad because of the URL" | `meta-create-campaign`, repeated in `user-acquisition`. The click link must be split: bare `https://api-ua.adapty.io/api/v1/attribution/click` in **Website URL**, the query string into **URL parameters** under Tracking. Pasting the whole link into Website URL is what gets ads rejected. |
 | "how do I run a Meta/TikTok campaign", "campaign objective", "budget and creative setup" | `meta-create-campaign` / `tiktok-create-campaign` — these are ad-platform-side walkthroughs (objective, ad set, targeting, creative) with almost no Adapty configuration in them. The Adapty-side connection is `ua-facebook` / `ua-tiktok`. Don't answer one from the other. |
@@ -199,4 +219,10 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
 | "show a different paywall to users who came from Apple Search Ads" | Not this zone, despite reading like it. That's **sdk-best-practices** (`ios-show-aa-targeted-paywall` and its platform siblings), where the source value is the string `'apple_search_ads'` and `appliedAttributionSources` is optional. What makes the misfile tempting is that Attribution's own exports do carry `asa_*` columns. |
 
 ## Gaps and misses
+
+- **Revenue override's button is "Add event", not "Add override", on every network** (2026-09-29,
+  dashboard-interface `IntegrationSettingsFormContent.tsx:364,398` — one shared component). `ua-facebook`
+  and `ua-tiktok` still say **Add override**; `ua-google-ads` uses the current label. `ua-tiktok` also
+  still names the section **Events names** where the UI says **Events mapping** — not re-verified for
+  TikTok specifically; checked only the Google form.
 
