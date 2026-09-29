@@ -1,0 +1,188 @@
+---
+title: "Consultar atribución desde la CLI"
+description: "Lee informes de atribución de Adapty desde el terminal: gasto, instalaciones, ingresos, ROAS, cohortes y predicciones por canal, campaña, anuncio, país y fecha."
+metadataTitle: "Atribución en la CLI para desarrolladores | Documentación de Adapty"
+---
+
+La CLI de Adapty lee los datos de [Atribución de Adapty](adapty-user-acquisition) desde el terminal, bajo el tema `adapty attribution`. Devuelve los mismos números que el [dashboard de Atribución](ua-analytics): gasto, instalaciones, ingresos, ROAS, valores de cohorte y predicciones, agrupados por canal, campaña, grupo de anuncios, anuncio, palabra clave, país, store o fecha.
+
+Úsala para dar a un agente de IA acceso en tiempo real a tus datos de adquisición, extraer un informe en un script o responder una pregunta concreta sin necesidad de crear una vista en el dashboard.
+
+:::tip
+Para que una herramienta de codificación con IA responda preguntas como "¿Qué canal tuvo mejor retorno el mes pasado?", instala el [skill de Attribution](developer-cli-attribution-skill). Sabe qué comandos ejecutar y cómo interpretar sus resultados.
+:::
+
+Cada comando `attribution` es de solo lectura. Nada de lo que ejecutes modifica una campaña, un enlace de seguimiento ni una integración.
+
+## Antes de empezar \{#before-you-start\}
+
+El tema `attribution` usa la misma instalación e inicio de sesión que el resto de la CLI. Si todavía no lo has configurado, sigue los pasos 1 y 2 de la [guía de inicio rápido](developer-cli-quickstart). El tema requiere la versión 0.8.8 o posterior de la CLI. Para ver tu versión, ejecuta `adapty --version`.
+
+Se aplican dos condiciones más:
+
+- **Acceso a Attribution**: Sin él, `report` y `values` fallan con `402 attribution_access_required`. Volver a iniciar sesión no cambia nada. `metrics` y `dimensions` funcionan sin acceso, así que una llamada a `metrics` que funcione demuestra que tu sesión es válida, no que tengas acceso.
+- **Una app configurada en Attribution**: `report` y `values` reciben el UUID de la app a través de `adapty apps list`. Una app que no esté configurada en Attribution, o que tu usuario de Adapty no pueda leer, falla con `404 attribution_app_not_found`.
+
+## Crear un informe \{#build-a-report\}
+
+Crea cada informe en el mismo orden: elige nombres de los catálogos, busca los valores de los filtros y ejecuta el informe.
+
+1. **Lista las métricas**. Cada métrica incluye su unidad y, en el caso de los ratios, las métricas por las que se divide:
+
+   ```bash
+   adapty attribution metrics
+   ```
+
+   Algunos nombres son plantillas, como `d{N}_roas`. El día debes completarlo tú mismo: `d7_roas`, `d30_roas`. Un cero a la izquierda, como en `d07_roas`, no se acepta.
+
+2. **Lista las dimensiones** por las que puedes agrupar o filtrar:
+
+   ```bash
+   adapty attribution dimensions
+   ```
+
+`--group-by` acepta `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country` y `store`. Las campañas, los conjuntos de anuncios y los anuncios se filtran por ID, nunca por nombre.
+
+3. **Busca los valores de los filtros**. Omite este paso si no vas a filtrar. Para campañas, devuelve el ID, el nombre y el canal de cada campaña durante el período:
+
+   ```bash
+   adapty attribution values --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 --dimension campaign
+   ```
+
+4. **Ejecuta el informe**:
+
+```bash
+   adapty attribution report --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 \
+     --metrics spend,installs,cpi,roas,d7_roas --group-by campaign --sort roas:desc
+   ```
+
+Un informe devuelve una fila por cada combinación de dimensiones de `--group-by`, más `totals`. Lee los totales desde `totals`, no sumando filas: los ratios y los conteos únicos no se pueden sumar entre filas.
+
+### Ejemplos
+
+Una tendencia semanal para dos países en una campaña:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-31 \
+  --metrics spend,installs,cost_per_trial,d7_roas --group-by date,channel --granularity week \
+  --filter campaign=<campaign-id> --filter country=US,GB
+```
+
+Calidad de pruebas por campaña, sobre ingresos netos de comisión del store:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-15 \
+  --metrics spend,count_trial_started,d14_count_trial_converted,cost_per_trial,d30_roas \
+  --group-by campaign --revenue-basis proceeds
+```
+
+Retorno de inversión previsto por día de instalaciones:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-09-01 --date-to 2026-09-29 \
+  --metrics spend,d7_revenue,d90_predict_roas,d365_predict_roas --group-by date,campaign --granularity day
+```
+
+Para obtener la respuesta en bruto para un script o un agente, añade `--json` a cualquier comando.
+
+## Lee los resultados \{#read-the-results\}
+
+- **Moneda**: El dinero está en USD. Los ingresos siguen `--revenue-basis`: `gross` (el valor por defecto, y el del dashboard), `proceeds` (después de la comisión del store) o `net` (después de comisión e impuestos). El campo `meta.query` de la respuesta indica la base en uso.
+- **Porcentajes**: El ROAS y las tasas se expresan en una escala de 0–100. Un `roas` de 150 equivale al 150%, o 1,5x.
+- **Valores vacíos**: Un valor vacío significa que no se puede calcular, nunca que es cero. Una proporción queda vacía cuando no hay nada por lo que dividir, una predicción queda vacía cuando el modelo no tiene valor para ese día, y toda métrica basada en gasto queda vacía para los canales en los que la Atribución no tiene datos de gasto. En la salida `--json` estos valores son `null`; la vista de tabla muestra `—`.
+- **Métricas de cohorte**: Una métrica de cohorte solo cuenta lo que la cohorte ha hecho hasta el momento. `d30_roas` para instalaciones de la semana pasada cubre solo una semana de ingresos y seguirá aumentando. Compara campañas únicamente en un día que todas las cohortes del período hayan alcanzado.
+- **Fechas**: Las fechas son días en la zona horaria de informes de tu app. No hay ningún indicador de zona horaria. La zona horaria aparece como `meta.query.timezone` en la salida `--json` de `report` y `values`.
+
+### Gasto en Apple Search Ads \{#apple-search-ads-spend\}
+
+La atribución recopila el gasto publicitario de Meta, TikTok y Google Ads. Las filas de Apple Search Ads incluyen instalaciones e ingresos, pero el gasto, el CPI, el ROAS y cualquier otra métrica basada en gasto aparecen vacíos. Conectar Apple Ads no añade ese gasto a la atribución: el gasto en Apple Search Ads y el ROAS están en [Ads Manager](developer-cli-ads-manager), bajo `adapty asa metrics`.
+
+No sumes los números de Ads Manager a las filas ni a los totales de atribución. Ads Manager informa en la divisa del grupo de campañas y atribuye las instalaciones de forma diferente.
+
+## Límites \{#limits\}
+
+El agrupamiento de fechas más fino determina el período más amplio que puede cubrir un informe:
+
+| Agrupamiento | Período máximo |
+|---|---|
+| `--granularity day` | 31 días |
+| `--granularity week` | 180 días |
+| `--granularity month`, `quarter`, o `year` | 366 días |
+| Sin agrupamiento `date` | 92 días |
+
+Para un período más largo, usa un `--granularity` más grueso. Un año de datos equivale a un informe con `--granularity month`.
+
+Un informe también tiene estos límites:
+
+- Como máximo 10.000 filas. Para más, agrupa las fechas con menos granularidad, elimina el agrupamiento por `keyword` o `ad`, o filtra.
+- Como máximo 25 métricas y 100 valores en un solo filtro.
+- Las métricas de predicción (`d{N}_predict_…`) requieren `--group-by date --granularity day` y como máximo 2 agrupamientos adicionales, con hasta 4 horizontes distintos de 365 días como máximo.
+
+`adapty attribution metrics --json` devuelve estos límites en `data.limits`.
+
+Ejecuta los informes uno tras otro, no en paralelo: el servicio procesa solo unas pocas consultas por empresa a la vez.
+
+## Errores \{#errors\}
+
+Las solicitudes que el servicio rechaza salen con el código 4. Las entradas que la CLI rechaza antes de enviar, como una fecha con formato incorrecto o `--granularity` sin `--group-by date`, salen con el código 2. Con `--json`, el error incluye el `error_code` del servicio.
+
+| Código | HTTP | Qué hacer |
+|---|---|---|
+| `auth_required` | 401 | Inicia sesión de nuevo con `adapty auth login`. |
+| `attribution_access_required` | 402 | Tu empresa no tiene acceso a Attribution. Volver a iniciar sesión no ayuda. |
+| `attribution_app_not_found` | 404 | Busca el ID de la app en `adapty apps list`, que solo muestra las apps que puedes leer. |
+| `attribution_unknown_metric` | 422 | Corrige los nombres de las métricas según `adapty attribution metrics`. El mensaje indica cuáles son inválidas y el resto del informe no se ejecuta. |
+| `attribution_validation_error` | 422 | Corrige la dimensión, el filtro, el campo de ordenación o las fechas indicadas en el mensaje. Incluye todos los valores de una misma dimensión en un único `--filter`. |
+| `attribution_query_too_large` | 422 | Reduce el informe como indica el mensaje. Consulta [Límites](#limits). |
+| `attribution_busy` | 429 | Tu empresa tiene demasiadas consultas en ejecución. Espera `retry_after_seconds` y vuelve a ejecutar el informe. |
+| `attribution_upstream_unavailable`, `attribution_query_unavailable` | 503 | Espera `retry_after_seconds` y vuelve a intentarlo. Si `attribution_query_unavailable` se repite, reduce el tamaño del informe. |
+
+El CLI nunca reintenta `report` ni `values` por ti, así que un informe fallido seguirá fallido hasta que lo ejecutes de nuevo.
+
+## Referencia de comandos \{#command-reference\}
+
+### `attribution metrics` \{#attribution-metrics\}
+
+Lista todas las métricas que acepta un informe, con su unidad, descripción y los divisores de cada ratio, además de los límites del informe. No acepta ningún flag salvo `--json`.
+
+### `attribution dimensions` \{#attribution-dimensions\}
+
+Muestra qué acepta `--group-by` y `--filter`, si cada dimensión filtra por ID o por valor, y las granularidades de `date`. No acepta flags adicionales más allá de `--json`.
+
+### `attribution values`
+
+Lista los valores que toma una dimensión para una app durante un período. Son exactamente los valores que acepta `report --filter`.
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | UUID de la app, obtenido con `adapty apps list`. |
+| `--date-from` | Sí | Primer día del período, inclusive, en formato `YYYY-MM-DD` según la zona horaria de la app. |
+| `--date-to` | Sí | Último día del período, inclusive. No puede ser anterior a `--date-from`. |
+| `--dimension` | Sí | Una dimensión filtrable de `adapty attribution dimensions`. |
+| `--revenue-basis` | No | `gross`, `proceeds` o `net`. |
+
+Para `campaign`, `adset` y `ad`, cada valor incluye un ID, un nombre y un canal. Un valor con ID vacío corresponde a tráfico orgánico o de referencia de store, que ningún filtro puede seleccionar.
+
+### `attribution report`
+
+Ejecuta un informe: métricas durante un período, agrupadas por dimensiones.
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | UUID de la app, obtenido con `adapty apps list`. |
+| `--date-from` | Sí | Primer día del período, inclusive, como `YYYY-MM-DD` en la zona horaria de la app. |
+| `--date-to` | Sí | Último día del período, inclusive. |
+| `--metrics` | Sí | Nombres de métricas de `adapty attribution metrics`, separados por comas o repetidos. Máximo 25. |
+| `--group-by` | Sí | `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country` o `store`, separados por comas o repetidos. |
+| `--granularity` | Con `--group-by date` | `day`, `week`, `month`, `quarter` o `year`. Obligatorio al agrupar por `date`, y rechazado en cualquier otro caso. |
+| `--filter` | No | `dimension=value[,value]`. Varios valores coinciden con cualquiera de ellos; los filtros en distintas dimensiones se aplican todos. Un `--filter` por dimensión. Escribe `\,` para incluir una coma dentro de un valor. |
+| `--revenue-basis` | No | `gross` (por defecto), `proceeds` o `net`. |
+| `--sort` | No | `field:asc` o `field:desc`, donde el campo es una métrica solicitada o una dimensión de `--group-by`. Orden ascendente si se omite la dirección. Los valores vacíos se ordenan al final. |
+
+Las filas agrupadas por `campaign`, `adset` o `ad` incluyen el ID, el nombre y el canal de esa entidad. El nombre de una campaña es el último nombre que tuvo dentro del período, así que para comparar campañas entre períodos usa el ID. El valor `date` es el primer día de su bucket.
+
+## ¿Qué sigue? \{#whats-next\}
+
+- [Analiza la atribución con una herramienta de codificación IA](developer-cli-attribution-skill) — el skill que ejecuta estos comandos por ti.
+- [Métricas](ua-metrics) — qué mide cada métrica en el dashboard.
+- [Predicciones](ua-predicted-metrics) — cómo se modela el revenue previsto.
