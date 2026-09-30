@@ -1,11 +1,11 @@
 ---
 title: "Command reference for the Adapty Developer CLI"
-description: "Reference for the Adapty Developer CLI commands that configure apps, products, paywalls, flows, and placements."
+description: "Reference for the Adapty Developer CLI commands that configure apps, products, paywalls, flows, and placements, migrate from RevenueCat, and install the Adapty skills."
 metadataTitle: "Developer CLI Command Reference | Adapty Docs"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-This article lists the Adapty CLI commands that configure your account — apps, access levels, products, paywalls, flows, placements, and segments — with their arguments, flags, and accepted values. For Apple Ads campaigns, see [Ads Manager commands](developer-cli-ads-manager-reference).
+This article lists the Adapty CLI commands that configure your account — apps, access levels, products, paywalls, flows, placements, and segments — plus the commands that migrate a RevenueCat project and install the Adapty skills, with their arguments, flags, and accepted values. For Apple Ads campaigns, see [Ads Manager commands](developer-cli-ads-manager-reference).
 
 :::link
 For authentication setup and token management, see [Authentication](developer-cli-authentication).
@@ -713,14 +713,179 @@ adapty segments get --app <app-id> <segment-id>
 
 The response contains `id`, `title`, and `description`. Filter rules are not exposed via this API.
 
+## Migrations
+
+Move a RevenueCat project into Adapty: its catalog, then optionally its transaction history. Adapty runs each migration as a sequence of steps and tells you which actions you can run next, so read `status` before each action. For the whole procedure, see [Migration from RevenueCat](migration-from-revenuecat).
+
+All commands except `list`, `create`, `use`, `current`, and `unuse` accept the migration flag:
+
+| Flag | Required | Description |
+|---|---|---|
+| `-m`, `--migration` | No | Migration ID. Without it, the CLI uses the `ADAPTY_MIGRATION` environment variable, then the migration saved by `create` or `use`. |
+
+### adapty migrations list
+
+List your migrations and the migration flows you can start, grouped by app.
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+Start a migration and save it as the current one.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name` | One of `--name` or `--flow` | Name of the new Adapty app. Starts the catalog migration. Can't be combined with `--flow` or `--app`. |
+| `--flow` | One of `--name` or `--flow` | Flow to start in an existing app, as `adapty migrations list` shows it. Requires `--app`. |
+| `--app` | With `--flow` | App ID (UUID) |
+| `--no-select` | No | Create the migration without saving it as the current one |
+
+The flows available for an existing app after its catalog migration:
+
+| Flow | Description |
+|---|---|
+| `transactions` | Import the transaction history from a daily RevenueCat Cloud Export |
+| `transactions_support` | Import the transaction history through RevenueCat support and Adapty support, for RevenueCat plans without Cloud Export |
+
+### adapty migrations use
+
+Save a migration as the current one, so the other commands don't need `-m`.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Argument | Description |
+|---|---|
+| `migration-id` | Migration ID from `adapty migrations list` |
+
+The CLI checks that you can access the migration before it saves the ID. The saved migration belongs to the current token and applies in every terminal.
+
+### adapty migrations current
+
+Show the current migration and where it comes from: the `ADAPTY_MIGRATION` environment variable or the saved selection.
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+Clear the saved migration. An `ADAPTY_MIGRATION` value set in your shell stays in effect until you unset it.
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+Show the state of a migration, its issues, and the actions you can run next.
+
+```bash
+adapty migrations status
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--wait` | No | Poll until the migration changes, then return the latest state |
+| `--timeout` | No | Polling time for `--wait`: 1–600 seconds, 120 by default. Accepts `300`, `300s`, or `5m`. Requires `--wait`. |
+
+With `--json`, `next_actions` and `available_actions` list each action's ID, the resources it reads, its `input_schema`, and its `confirm` text.
+
+Exit code `0` means the request succeeded, not that the migration did. Check `migration.state` in the response.
+
+### adapty migrations steps
+
+Show the migration checklist and the status of each step.
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+List the resources you can read now, or read one.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argument | Description |
+|---|---|
+| `resource` | Resource name, for example `apps`, `mapping`, `report`, or `export-config`. Omit it to list the resources available at the current step. |
+
+### adapty migrations run
+
+Run an action from `adapty migrations status`.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Argument | Description |
+|---|---|
+| `action-id` | Action ID from `next_actions` or `available_actions` in `adapty migrations status` |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--input` | No | Action input as a JSON object that matches the action's `input_schema`. Without input, the CLI sends `{}`. |
+| `--input-file` | No | Path to a file with the action input, or `-` to read it from stdin. Can't be combined with `--input`. |
+| `-y`, `--yes` | For actions with a `confirm` text | Confirm the action after you read its `confirm` text. There is no interactive prompt. |
+| `--open` | No | Open the action's link even with a pipe or `--json` |
+| `--no-browser` | No | Print the action's link without opening a browser |
+| `--agent` | No | Coding agent for `migrate_code`: `claude-code` or `codex`. By default, the CLI uses the one it finds on `PATH`. |
+
+Actions come in three kinds:
+
+- **Input actions** send your data to Adapty, for example the RevenueCat apps to migrate or your mapping decisions.
+- **External actions** open a page in the Adapty Dashboard, for example to paste the RevenueCat secret API key. Complete the page, then check `status`.
+- **The agent action** `migrate_code` runs Claude Code or Codex on your app's code. Run it from the root of the app's clean git repository. The agent works on a branch named `adapty-migrate`, commits nothing, and writes the steps left to you into `ADAPTY_SETUP.md`.
+
+### adapty migrations close
+
+Finish or cancel a migration. You can't reopen it afterwards.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` marks the migration as completed; `cancel` abandons it |
+| `-y`, `--yes` | Yes | Confirm the closure |
+
+## Skills
+
+### adapty skills install
+
+Install the Adapty skills into the coding agents on this machine.
+
+```bash
+adapty skills install
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--agent` | No | Agent to install into: `claude-code`, `codex`, or `gemini-cli`. Repeat the flag for several agents. |
+| `-y`, `--yes` | No | Install into every agent found without asking. Required when the CLI finds several agents and can't ask, for example with `--json`. |
+
+The CLI looks for Claude Code, Codex, and Gemini CLI on `PATH`. If it finds none, it runs `npx skills add adaptyteam/adapty-skills --all --global`, which covers other agents. Restart the agent to load the skills.
+
 ## Auth
 
 | Command | Description |
 |---|---|
 | `adapty auth login` | Authenticate via browser using device flow |
-| `adapty auth logout` | Clear stored credentials locally |
+| `adapty auth logout` | Clear stored credentials and the saved migration locally |
 | `adapty auth whoami` | Verify token with the server and show user info |
 | `adapty auth status` | Show local authentication state without a server call |
-| `adapty auth revoke` | Revoke token server-side and clear locally |
+| `adapty auth revoke` | Revoke token server-side, then clear it and its saved migration locally |
 
 See [Authentication](developer-cli-authentication) for full details on each command.

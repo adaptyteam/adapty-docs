@@ -1,6 +1,6 @@
 ---
 title: "Migration from RevenueCat"
-description: "Migrate from RevenueCat to Adapty with our step-by-step guide."
+description: "Migrate from RevenueCat to Adapty: move your catalog and app code with the Adapty CLI, switch store notifications, and import your transaction history."
 metadataTitle: "Migrate from RevenueCat to Adapty | Adapty Docs"
 keywords: ['migration', 'revenuecat']
 ---
@@ -8,14 +8,14 @@ keywords: ['migration', 'revenuecat']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Your migration plan will have 5 logical steps and take an average of 2 hours. 90% of all migrations take less than one working day.
+A migration from RevenueCat has six steps. The [Adapty CLI](developer-cli) does the second and third for you: it rebuilds your RevenueCat catalog in Adapty and can have your coding agent replace the RevenueCat SDK in your app.
 
-1. Learn the core differences; create and prepare an Adapty account _(5 minutes)_;
-2. Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) instead of RevenueCat SDK _(1 hour)_;
-3. Set up [Apple App Store server notifications](enable-app-store-server-notifications) to Adapty and (optionally) [raw events forwarding](enable-app-store-server-notifications#raw-events-forwarding) _(5 minutes)_;
-4. Test and release updates of your app _(30 minutes);_
-5. (Optional) Export your RevenueCat historical data in CSV format using [RevenueCat’s scheduled data exports](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) _(5 minutes);_
-6. (Optional) Import historical data via Adapty support _(30 minutes)_.
+1. [Learn the core differences](#learn-the-core-differences).
+2. [Move your catalog to Adapty](#move-your-catalog-to-adapty) with the CLI.
+3. [Replace the RevenueCat SDK](#replace-the-revenuecat-sdk) with your coding agent.
+4. [Switch App Store server notifications to Adapty](#switch-app-store-server-notifications-to-adapty).
+5. [Test and release a new version of your app](#test-and-release-a-new-version-of-your-app).
+6. (Optional) [Import your transaction history](#optional-import-your-transaction-history).
 
 :::info
 Your subscribers will migrate automatically
@@ -25,7 +25,7 @@ All users who have ever activated a subscription will instantly move to Adapty a
 
 Before you push a new version of your app with Adapty SDK, make sure to check our [release сhecklist](release-checklist).
 
-## Learn the core differences; create and prepare an Adapty account
+## Learn the core differences
 
 Adapty and RevenueCat SDKs are similarly designed. The biggest difference is the network usage and the speed: Adapty SDK is designed to provide you with information on demand as fast as possible when you ask for it. For example, when requesting a paywall, you get the [remote config](customize-paywall-with-remote-config) first to pre-build your onboarding or paywall and then request products in a dedicated request.
 
@@ -54,73 +54,158 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 />
 </Zoom>
 
-## Install Adapty SDK and replace RevenueCat SDK
+## Move your catalog to Adapty
 
-Install Adapty SDK for your platform ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) in your app.
+The CLI reads your RevenueCat project and creates a new Adapty app with the same catalog: access levels from entitlements, products from packages, and a paywall and a placement for each offering.
 
-You need to replace a couple of SDK methods on the app side. Let's look at the most common functions and how to replace them with Adapty SDK.
+:::tip
+A coding agent can run these commands for you. [Install the Adapty CLI and log in](developer-cli-quickstart), then ask the agent to migrate your RevenueCat catalog to Adapty.
+:::
 
-### SDK activation
+### Before you start
 
-Replace `Purchases.configure` with `Adapty.activate`. 
+- Install the Adapty CLI and log in. See the [CLI quickstart](developer-cli-quickstart) and [Authentication](developer-cli-authentication).
+- In RevenueCat, create a **secret API key (v2)** for the project you migrate. The key must give read access to the project configuration and cover only this one project.
+- Check the stores. The CLI migrates App Store and Google Play apps only.
 
-### Getting paywalls (offerings)
+### Run the catalog migration
 
-Replace `Purchases.shared.getOfferings` with [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information). 
+1. To start the migration, create it with the name of the new Adapty app:
 
-In Adapty, you always request the paywall via [placement id](placements). In practice, you only fetch no more than 1-2 paywalls, so we made this on purpose to speed up the SDK and reduce network usage.
+   ```bash
+   adapty migrations create --name "My App"
+   ```
 
-### Getting a user (customer profile)
+   The CLI saves the migration as current, so the next commands don't need a migration ID.
 
-Replace `Purchases.shared.getCustomerInfo` with `Adapty.getProfile`.
+2. To connect RevenueCat, run `enter_rc_key`. It opens a page in the Adapty Dashboard: paste the secret API key there. The key goes to Adapty directly and never passes through the CLI.
 
-### Getting products
+   ```bash
+   adapty migrations run enter_rc_key
+   ```
 
-In RevenueCat, you use the following structure:`Purchases.shared.getOfferings` and then `self.offering?.availablePackages`.
+3. To choose the RevenueCat apps to migrate, list them, then send their IDs. Choose the apps of one product, usually one per platform: together they become a single Adapty app.
 
-In Adapty, you first request a paywall (read above) to get immediate access to Adapty's [remote config](customize-paywall-with-remote-config) and then call for products with [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products).
+   ```bash
+   adapty migrations show apps
+   ```
 
-### Making a purchase
+   ```bash
+   adapty migrations run resolve_app_mapping --input '{"rc_app_ids":["app1a2b3c","app4d5e6f"]}'
+   ```
 
-Replace `Purchases.shared.purchase` with [`Adapty.makePurchase`](making-purchases#make-purchase).
+4. To review the mapping Adapty suggests, show it. Rows with the status `needs_decision` are the ones Adapty couldn't map on its own.
 
-### Checking access level (entitlement)
+   ```bash
+   adapty migrations show mapping
+   ```
 
-Get a customer profile (read above first) and then replace 
+   Send one decision for each of those rows: `create` migrates the row, `none` leaves it out. If no row needs a decision, send an empty list. Run `adapty migrations status --json` to see every field a decision accepts.
 
-`customerInfo?.entitlements["premium"]?.isActive == true`
+   ```bash
+   adapty migrations run resolve_mapping --input '{"decisions":[{"key":"ROW_KEY","action":"none"}]}' --yes
+   ```
 
-with
+   :::warning
+   Decisions are final. When every row has a decision, Adapty creates the catalog, and you can't change the mapping after that.
+   :::
 
-[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server).
+5. To follow the catalog creation, wait for the migration to change state:
 
-### Restore purchase
+   ```bash
+   adapty migrations status --wait --timeout 5m
+   ```
 
-Replace `Purchases.shared.restorePurchases` with [`Adapty.restorePurchases`](restore-purchase).
+   Adapty creates access levels, products, paywalls, and placements, in that order. If some of them fail, the status names each failure and the reason. Fix the cause, then run `adapty migrations run retry_catalog_apply`. Entities that already exist stay as they are.
 
-### Check if the user is logged in
+6. To let the new app validate purchases, connect it to the stores in the Adapty Dashboard: [App Store](initial_ios) and [Google Play](initial-android).
 
-Replace `Purchases.shared.isAnonymous` with `if profile.customerUserId == nil`.
+For the full list of migration commands and flags, see the [CLI reference](developer-cli-reference#migrations).
 
-### Log in user
+### How RevenueCat entities map to Adapty
 
-Replace `Purchases.shared.logIn` with [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration).
+- An entitlement identifier becomes the access level ID, so `customerInfo.entitlements["premium"]` becomes `profile.accessLevels["premium"]`.
+- A product that grants no entitlement grants the `premium` access level.
+- An offering identifier becomes the placement ID.
+- Offering metadata becomes the paywall's [remote config](customize-paywall-with-remote-config), up to 256 KB.
 
-### Log out user
+### What the catalog migration leaves out
 
-Replace `Purchases.shared.logOut` with [`Adapty.logout`](identifying-users#logging-out-and-logging-in).
+- **Offerings with a Paywall Editor paywall**: Adapty can't import a RevenueCat Paywall Editor paywall, so these offerings get no paywall and no placement. Their placement IDs stay free: create a flow or a paywall with the same ID yourself.
+- Offerings without products.
+- Apps in stores other than App Store and Google Play.
+- **Integrations**: Set them up in Adapty as described in [Migrate integrations to Adapty](migrate-integrations-to-adapty).
 
-## Switch App Store server-side notifications to Adapty
+## Replace the RevenueCat SDK
 
-Read how to do this [here](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications).
+A coding agent replaces the RevenueCat SDK with the Adapty SDK in your app code, using the `adapty-integration` skill. The CLI can run the agent for you, or you can run the skill yourself in any coding agent.
+
+### With the CLI
+
+The CLI runs Claude Code or Codex on your app's code with the catalog the migration created, so the code uses the exact access level IDs and placement IDs from Adapty.
+
+Before you start:
+
+- Install Claude Code or Codex.
+- Open a terminal in the root of your app's git repository, and commit or stash your changes. The CLI refuses to run on uncommitted changes, so the migration stays one reviewable diff.
+
+1. To choose how your app shows paywalls, run one of these:
+
+   - To keep your paywall screens in the app code:
+
+     ```bash
+     adapty migrations run choose_paywall_ui --input '{"paywall_ui":"native"}'
+     ```
+
+   - To show paywalls as flows from the Flow & Paywall Builder, rebuilt from your current screens (`rebuild`) or designed from scratch around the same products (`new`):
+
+     ```bash
+     adapty migrations run choose_paywall_ui --input '{"paywall_ui":"flow_builder","flow_design":"rebuild"}'
+     ```
+
+2. To migrate the code, run:
+
+   ```bash
+   adapty migrations run migrate_code
+   ```
+
+   The CLI installs the Adapty skills into your agent, switches to a branch named `adapty-migrate`, and runs the agent there. The agent commits nothing.
+
+3. To finish the code migration, review the changes on the `adapty-migrate` branch, then work through `ADAPTY_SETUP.md` in the root of your project. It lists what the agent left to you, for example flows to publish before their paywalls show, and integrations to set up.
+
+### With the adapty-integration skill
+
+Use the skill directly to work with a coding agent other than Claude Code or Codex, or to answer the agent's questions as it works instead of letting it run on its own.
+
+1. To give your agent the skill, install it for your tool as described in [SDK integration skill](adapty-sdk-integration-skill).
+2. To start the migration, open your app's project in the agent and ask:
+
+   ```text
+   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "My App".
+   ```
+
+   The skill detects your platform and the RevenueCat SDK from the project files, so the prompt needs neither.
+3. To finish the code migration, review the agent's changes, then work through `ADAPTY_SETUP.md` in the root of your project.
+
+### Close the migration
+
+When the code uses Adapty, mark the migration as complete:
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+## Switch App Store server notifications to Adapty
+
+Follow [Changing Apple server notifications](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications).
 
 ## Test and release a new version of your app
 
 If you're reading this, you've already:
 
-- [x] Configured Adapty Dashboard
-- [x] Installed Adapty SDK
-- [x] Replaced SDK logic with Adapty functions
+- [x] Moved your catalog to Adapty
+- [x] Replaced the RevenueCat SDK with Adapty
+- [x] Worked through `ADAPTY_SETUP.md`, if your coding agent migrated the code
 - [x] Switched App Store server-side notifications to Adapty and optionally turn on raw events forwarding to RevenueCat
 - [ ] Made a sandbox purchase
 - [ ] Made a new app release
@@ -133,7 +218,9 @@ Go through [release checklist](release-checklist).
 Make the final check using our list to validate the existing integration or add additional features such as [attribution](attribution-integration) or [analytics](analytics-integration) integrations.
 :::
 
-## (Optional) Export your RevenueCat historical data in CSV format
+## (Optional) Import your transaction history
+
+The import fills [profiles](profiles-crm) and [charts](charts) with the payment history of your users. It doesn't affect anyone's access.
 
 :::warning
 Don't rush the historical data import
@@ -141,25 +228,57 @@ Don't rush the historical data import
 You should wait for at least a week after the release with the SDK before doing historical data import. During that time we will get all the info about purchase prices from the SDK, so the data you import will be more relevant.
 :::
 
-Export your historical data from RevenueCat in CSV format by following the instructions in [RevenueCat’s official documentation](https://www.revenuecat.com/docs/integrations/scheduled-data-exports).
+The CLI offers two ways to import the history, both for the app your catalog migration created. To see them, run `adapty migrations list`.
 
-## (Optional) Ask RevenueCat support for Google Purchase Tokens
+### With a RevenueCat Cloud Export
 
-If you need to import Google Play transactions, contact RevenueCat support for a CSV file containing Google Purchase Tokens via their [support page](https://app.revenuecat.com/settings/support). The Google Purchase Token is a unique identifier provided by Google Play for each transaction, essential for accurately tracking and verifying purchases in Adapty. This information is not included in the standard export file. The file contains the following three columns:
+RevenueCat delivers a daily export into a bucket Adapty prepares for your app, and Adapty imports every file it receives.
 
-- `user_id`
-- `google_purchase_token`
-- `google_product_id`
+1. To start the import, create the migration with the ID of your Adapty app:
 
-## Write us to import your historical data
+   ```bash
+   adapty migrations create --flow transactions --app APP_ID
+   ```
 
-Contact us via the website messenger or email us at [support@adapty.io](mailto:support@adapty.io) with your CSV files.
+2. To connect the export, run `setup_export`. It opens a page in the Adapty Dashboard.
 
-1. Send the CSV file you exported from RevenueCat directly to our support team.
-2. If importing Google Play transactions, include the CSV file with Google Purchase Tokens that you received from RevenueCat support.
-3. Let us know which user ID should be used as the Customer User ID (Adapty’s primary user identifier): `rc_original_app_user_id` or `rc_last_seen_app_user_id_alias`.
+   ```bash
+   adapty migrations run setup_export
+   ```
 
-Our Support Team will import your transactions to Adapty. The following data will imported to Adapty for every transaction:
+   In RevenueCat, open the **Scheduled Data Exports** settings, choose **IAM Role (ARN)** as the credential type, and paste the **External ID** RevenueCat shows into the Adapty page.
+
+3. To finish the export settings in RevenueCat, show the bucket, region, and role ARN Adapty prepared, then enter them in RevenueCat:
+
+   ```bash
+   adapty migrations show export-config
+   ```
+
+   Turn on **Receive new and updated transactions only**. Otherwise, RevenueCat exports the whole history every day, and Adapty imports every file.
+
+RevenueCat can take up to 24 hours to deliver the first file, and Adapty looks for new files in the bucket every hour. The migration finishes on its own a week after the last file RevenueCat delivers. The Customer User ID of each imported profile is `rc_last_seen_app_user_id_alias`.
+
+### Through support
+
+Use this way if your RevenueCat plan has no Cloud Export: RevenueCat support sends you the export, and Adapty support imports it.
+
+1. To start the import, create the migration with the ID of your Adapty app:
+
+   ```bash
+   adapty migrations create --flow transactions_support --app APP_ID
+   ```
+
+2. To get the two messages to send, show the guide:
+
+   ```bash
+   adapty migrations show support-guide
+   ```
+
+3. Send the first message to RevenueCat support. When RevenueCat sends the files, forward them to Adapty support with the second message. Attach the files exactly as RevenueCat sent them: opening, re-saving, or merging them changes the column format the import expects.
+
+### What the import brings over
+
+The following data will imported to Adapty for every transaction:
 
 | Parameter                     | Description                                                  |
 | ----------------------------- | ------------------------------------------------------------ |
@@ -197,7 +316,7 @@ Most users charge their phones overnight, it's when the App Store usually auto-u
 
 ### Do I need to export my historical data from RevenueCat as quickly as possible, or will I lose it?
 
-You don't need to make it super fast; make a release with Adapty SDK first, and then give us your historical data. We will restore the history of your users' payments and fill in [profiles](profiles-crm) and [charts](charts).
+You don't need to make it super fast; make a release with Adapty SDK first, and then import your history. We will restore the history of your users' payments and fill in [profiles](profiles-crm) and [charts](charts).
 
 ### I use MMP (AppsFlyer, Adjust, etc.) and analytics (Mixpanel, Amplitude, etc.). How do I make sure that everything will work?
 
