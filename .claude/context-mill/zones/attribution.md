@@ -159,7 +159,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-deferred-data | — | marketer, analyst | 0 | tutorial |
 | ua-facebook | — | marketer, analyst | 10 | tutorial |
 | ua-funnelfox | — | marketer, analyst | 6 | tutorial |
-| ua-google-ads | — | marketer, analyst | 8 | tutorial |
+| ua-google-ads | — | marketer, analyst | 10 | tutorial |
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 2 | tutorial |

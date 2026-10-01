@@ -105,6 +105,8 @@ near-identical title on the flow side; three confirmed traps:
   flow cannot be edited through the legacy surface at all, which is the hard edge of this zone's
   applicability.
 
+**The dashboard merge (read 2026-09-30, `dashboard-interface` branch `design-review/new-paywalls`, unmerged at the time; switch date `FLOWS_PAYWALLS_LAUNCH_AT = Date.UTC(2026, 9, 1)` in `shared/config/flowsPaywallsLaunch.ts`).** The standalone **Paywalls** menu item goes away; custom paywalls become the second tab of **Flows & Paywalls** (`widgets/FlowsPaywalls/`). Tab labels are **Flow & Paywall builder** (lowercase *b*, as-is) and **Custom Paywalls**, which `getCustomPaywallsTabLabel` renames **Custom Paywalls & Legacy** once `config.paywallCreated` is true. The URL stays `/paywalls`; the create button is **Create custom paywall**; the form breadcrumb is **Custom Paywalls / New paywall**. A *new* custom paywall hides **Builder & Generator** and **Legacy Builder** (`hideBuilderTabs={isCustomPaywallCreate}`, where `isCustomPaywallCreate = isMerged && isCreate && !isCopy`) — so a duplicate of a builder paywall keeps its builder tabs. The docs term for this zone's object is **custom paywall** (user decision 2026-09-30), replacing "remote config paywall" / "manual paywall" in prose; ids stay frozen. Re-check the labels once the branch reaches `origin/master`.
+
 **Two source gaps to state rather than paper over.** The web paywall editor is **not ours**:
 `paywall-form/ui/WebPaywallSection/lib/webPaywallBuilder.ts` SSOs to `app.funnelfox.com/login/adapty`, so
 nothing inside that editor — Stripe key fields, hand-typed plans and prices, Publish vs Preview — has a
@@ -170,7 +172,7 @@ readers and links it already has, so we correct it and we do not grow it.**
 | local-fallback-paywalls | — | marketer | 1 | tutorial |
 | migrate-paywalls | migration | marketer | 1 | tutorial |
 | paywall-metrics | — | marketer | 3 | tutorial |
-| paywalls | entry | marketer | 1 | tutorial |
+| paywalls | entry | marketer | 0 | tutorial |
 | restore-paywall | — | marketer | 0 | tutorial |
 | web-paywall | entry | marketer | 9 | tutorial |
 | web-paywall-configuration | — | marketer | 3 | tutorial |
@@ -198,7 +200,7 @@ zones would be wrong.
 | How a ticket says it | Where it actually lives |
 |---|---|
 | "the visual editor", "drag an element", "edit my paywall screens", "publish the design", "template gallery" | **Not this zone.** Everything about a visual editor is `flow-design` (layout, elements, styles, copy) or `flow-logic` (actions, conditions, save & publish, creating a flow via `paywall-builder-templates`). The legacy builder's step-by-step design docs are no longer in the navigation at all — `adapty-paywall-builder` is a deprecation notice plus per-platform display links, and nothing else here documents a canvas. Also note `add-paywall-locale-in-adapty-paywall-builder`: legacy id, flow-era content, and it lives in `flow-design`. |
-| "which generation am I in", "is this article still current", "should I use paywalls or flows" | Decide by sidebar category (**Paywalls** = here, **Flows (Beta)** = flow zones), never by filename — legacy ids were reused for flow content. The decision itself is `flow-logic`'s `migrate-to-flows`. One precision that gets lost: flows require SDK v4 and exist **only** on iOS, Android, React Native, Flutter and Capacitor, so for **Unity and Kotlin Multiplatform this zone plus the legacy builder is still the live answer**, not a fallback. |
+| "which generation am I in", "is this article still current", "should I use paywalls or flows" | Decide by sidebar category (**Flows & paywalls → Custom paywalls** = here, **Flows & paywalls → Flow & Paywall Builder** = flow zones; regrouped 2026-09-30, `tutorial.json`), never by filename — legacy ids were reused for flow content. The decision itself is `flow-logic`'s `migrate-to-flows`. One precision that gets lost: flows require SDK v4 and exist **only** on iOS, Android, React Native, Flutter and Capacitor, so for **Unity and Kotlin Multiplatform this zone plus the legacy builder is still the live answer**, not a fallback. |
 | "what is a paywall in Adapty", "remote-managed product list" | `paywalls` — a routing page only (remote config + the SDK purchase methods). The equivalent orientation page for the flow generation is `flow-logic`'s `adapty-flow-builder`. |
 | "which products do we sell here", "can't change products on a live paywall", "product order in the SDK", "the trial isn't offered" | `create-paywall`, and **not superseded**: the paywall object is still how products reach the app, and in SDK v4 `getFlow` reads from paywall placements too, so a flow rollout doesn't retire it. Three constraints do the work: products are frozen once the paywall is Live (so metrics stay comparable), list order is preserved in the SDK, and an offer that isn't attached to the product *here* is simply unavailable in the app. |
 | "small edit to a paywall that's already live", "don't break my analytics", "swap the live paywall" | `duplicate-paywalls` — the documented way to change a Live paywall at all, given the frozen-products rule above. **Create and replace original** puts the copies Live immediately across every placement; the alternative leaves them as Drafts. It's also step 1 of the web-paywall setup. |
@@ -213,4 +215,6 @@ zones would be wrong.
 | "paywall conversion looks wrong", "views aren't counted", "ARPPU / refund rate definition", "grouped by placement or by audience" | `paywall-metrics` — the only home for manual paywall metrics, and not a duplicate of the flow one. Missing views are almost always a missing `.logShowPaywall()` (`.logShowFlow()` on iOS SDK v4+) call, not a reporting bug. Same vocabulary, three different pages: flows are `flow-logic`'s `flow-metrics`, placement-level is `placements-and-audiences`' `placement-metrics` — a new revenue field lands in all three. |
 
 ## Gaps and misses
+
+- **Open (2026-09-30):** `add-remote-config-locale` step 3 says "Go to the **Remote config** tab", but `PaywallNavMenu` on `design-review/new-paywalls` has only General / Builder & Generator / Web Paywall / Legacy Builder tabs; `paywall-form/lib.ts` lists "Remote config" as a `PaywallMenu` *section* key. Looked for a tab by that label in `PaywallNavMenu.tsx`; did not check whether the section renders as a sub-tab inside General. Not changed.
 
