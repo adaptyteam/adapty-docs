@@ -12,7 +12,7 @@ Adapty sends webhooks in response to subscription events. This section defines t
 
 ## Webhook event types
 
-You can send all event types to your webhook or choose only some of them. You can consult our [Event flows](event-flows) to learn what kind of incoming data to expect and how to build your business logic around it. You can disable the event types you do not need when you [set up your Webhook integration](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard). There, you can also replace Adapty default event IDs with your own if required.
+You can send all event types to your webhook or choose only some of them. You can consult our [Event timelines](event-flows) to learn what kind of incoming data to expect and how to build your business logic around it. You can disable the event types you do not need when you [set up your Webhook integration](set-up-webhook-integration#configure-webhook-integration-in-the-adapty-dashboard). There, you can also replace Adapty default event IDs with your own if required.
 
 <WebhookEvents />
 
@@ -134,7 +134,7 @@ Event parameters are the same for all event types.
 | **user_attributes** | JSON | Custom data you can set to enrich user profiles with app-specific information. Typically used to track user preferences (e.g., theme, language) or behavior flags (completed onboarding, feature usage). <br/>Formatted as key-value pairs where keys are strings and values can be strings or numbers (e.g., `{"Favourite_color": "Violet", "Pet_name": "Fluffy"}`). <br/>You can set custom attributes manually in the Adapty Dashboard for individual profiles, programmatically using the `updateProfile` method in the Adapty SDK, or via the server-side API when creating/updating profiles. <br/>Included if **Send User Attributes** is enabled in [Webhook settings](https://app.adapty.io/integrations/customwebhook). <p>While custom attribute values in the mobile app code can be set as floats or strings, attributes received via the server-side API or historical import may come in different formats. The boolean and integer values will be converted to floats in this case.</p> |
 
 :::note
-`event_datetime` reflects when an event happened in the subscription lifecycle, not when Adapty processed or delivered it. Because of this, events can share the same `event_datetime` or arrive out of chronological order. For example, a `subscription_expired` event can carry an earlier `event_datetime` than a `subscription_renewal_cancelled` event that Adapty delivers before it. Don't rely on `event_datetime` to order events. Instead, order events by your own receipt time, and deduplicate them using `profile_event_id` or the transaction IDs.
+`event_datetime` reflects when an event happened in the subscription lifecycle, not when Adapty processed or delivered it. As a result, events can share the same `event_datetime` or arrive out of chronological order. For example, a `subscription_expired` event can carry an earlier `event_datetime` than a `subscription_renewal_cancelled` event that Adapty delivers before it. Events from one action can arrive in any order. Because of this, don't rely on `event_datetime` or on the order you receive events in. To find out a user's current access, [request the profile](api-adapty/operations/getProfile) through the Server-side API. Deduplicate events using `profile_event_id` or the transaction IDs.
 :::
 
 ### Attributions
@@ -172,7 +172,7 @@ To send the attribution data, enable the **Send Attribution** option in the [Int
 
 ### Integration IDs
 
-The following integration IDs are used now in events: 
+The following integration IDs are used now in events:
 
 - `adjust_device_id`
 - `airbridge_device_id`
@@ -218,7 +218,7 @@ The event properties for most event types are consistent (except for **Access Le
 | **ab_test_name**              | String        | Name of the [Adapty A/B test](ab-tests) where the transaction originated.                                                                                                                                                                                                                                                                                        |
 | **ab_test_revision**          | Integer       | Revision of the A/B test where the transaction originated.                                                                                                                                                                                                                                                                                                       |
 | **base_plan_id**              | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) in Stripe.                                                                                                                                  |
-| **cancellation_reason**       | String        | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_cancelled`, `subscription_refunded`, and `trial_cancelled`. |
+| **cancellation_reason**       | String        | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_expired`, `trial_expired`, `subscription_refunded`, and `non_subscription_purchase_refunded`. |
 | **cohort_name**               | String        | The name of the [audience](audience) that determined which paywall the user was shown.                                                                                                                                                                                                                                                                           |
 | **consecutive_payments**      | Integer       | The number of periods, that a user is subscribed to without interruptions. Includes the current period.                                                                                                                                                                                                                                                          |
 | **currency**                  | String        | Local currency.                                                                                                                                                                                                                                                                                                                                                  |
@@ -262,9 +262,13 @@ The event properties related to taxes and revenue below are additional fields th
 Event types that have the tax and revenue event properties:
 
 - `subscription_renewed`
-- `subscription_initial_purchase` (also referred to as `subscription_started` — same event)
+- `subscription_initial_purchase` (same event as `subscription_started`)
+- `trial_converted`
 - `subscription_refunded`
 - `non_subscription_purchase`
+- `non_subscription_purchase_refunded`
+
+Unlike the other events in this list, `subscription_refunded` and `non_subscription_purchase_refunded` don't report the amount charged. Their revenue properties, including `price_usd` and `price_local`, hold the refunded amount (negative).
 
 | Field                 | Type  | Description                                                  |
 | :-------------------- | :---- | :----------------------------------------------------------- |
