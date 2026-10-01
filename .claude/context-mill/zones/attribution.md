@@ -75,8 +75,10 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   The pixel snippet is per campaign configuration (`build_web_snippet` in
   `campaign_context/.../campaign_service.py` returns `None` for partners other than Meta/TikTok). Channel
   for these transactions comes from `channel_of` in `src/app/shared/utils/channel_sources.py`:
-  fbclid → facebook, ttclid → tiktok, `utm_source`+`utm_medium=paid` fallback, else organic — no google on
-  this path. Stripe/Paddle cohort = the subscription's first charge date
+  fbclid → facebook, ttclid → tiktok, gclid/gbraid/wbraid → google, `utm_source`+`utm_medium=paid`
+  fallback, else organic. (Corrected 2026-10-01, UA `origin/develop` 4e8a64aa: the brief said "no google
+  on this path"; `channel_of` now returns `'google'` for any Google click id, gbraid/wbraid being the iOS
+  no-consent variants, and FunnelFox transactions carry all three ids — `funnelfox_transaction_dto.py:100-102`.) Stripe/Paddle cohort = the subscription's first charge date
   (`clickhouse_web_assembly_repository.py`), matching FunnelFox's first-paid-date rule. Test-mode/sandbox
   events are dropped on arrival on every path, so a test key connects, shows Valid, and yields nothing.
 - **Google Ads has two campaign types with different wiring** (2026-09-29, UA service `origin/develop`
@@ -100,7 +102,13 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   App campaigns **for installs** (marketers still say UAC): `check_install_attribution` asks Google at first
   open, and `send_transaction_events` only sends events carrying the `adapty_campaign_id` saved then, so
   **App engagement** campaigns get nothing. Pre-registration is Google-side — unverified, left out of the
-  doc. Other tab = anything taking a tracking template with auto-tagging: Search, PMax (tested end to end
+  doc. **App campaigns are documented as Android-only** (2026-10-01, Timur via support thread): the
+  backend still wires iOS end to end (`ios_app_link_id`, IDFA→IDFV, iOS test events in
+  `google_app_conversion_service.py` at UA `origin/develop` 4e8a64aa), but Google sends no attribution
+  for iOS, and only one link ID field is required. Don't document the iOS link ID or the reason; the
+  dashboard may drop the field. iOS apps go through the Other tab. **No SKAN anywhere in the UA service**
+  (2026-10-01, `git grep -i 'skan|skadnetwork'` on `origin/develop`, no hits; "postback" hits are Google's
+  `ad_event` postback), so the article says SKAN setup isn't needed. Other tab = anything taking a tracking template with auto-tagging: Search, PMax (tested end to end
   per product), Demand Gen, Display, Video, Shopping. Analytics depth: campaign metrics `FROM campaign`
   (all types), ad metrics `FROM ad_group_ad` (PMax has none → campaign only), keyword metrics
   `FROM keyword_view` (Search only). Reviewer feedback (Timur, 2026-09-29): readers search "UAC" and
@@ -159,7 +167,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-deferred-data | — | marketer, analyst | 0 | tutorial |
 | ua-facebook | — | marketer, analyst | 10 | tutorial |
 | ua-funnelfox | — | marketer, analyst | 6 | tutorial |
-| ua-google-ads | — | marketer, analyst | 8 | tutorial |
+| ua-google-ads | — | marketer, analyst | 16 | tutorial |
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 2 | tutorial |
