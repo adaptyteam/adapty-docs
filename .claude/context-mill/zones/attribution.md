@@ -113,6 +113,18 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   (all types), ad metrics `FROM ad_group_ad` (PMax has none → campaign only), keyword metrics
   `FROM keyword_view` (Search only). Reviewer feedback (Timur, 2026-09-29): readers search "UAC" and
   "PMax", so those words belong in the article text and keywords.
+- **Click-to-install matching: no IDFA, no Advertising ID, and the docs must not say "fingerprint"**
+  (2026-10-02, UA `origin/develop` 78f7a8d6 `attribution_context/applications/services/install_service.py`
+  `_find_matched_click` + `utils/probabilistic_scorer.py`; dashboard-interface `origin/master` 23529911c
+  `features/ua/integration-campaigns-page/lib/attributionWindowsLib.ts`). Deterministic = the click id in
+  Android's Play Install Referrer (`adpt_click_id`, then Google's `gclid`), default 168 h, range 1–720 h.
+  iOS has **no** deterministic matching. Probabilistic = clicks from the same IP prefix and OS, scored on
+  time since click, language, and country; past 6 h a click also needs the install's device model and OS
+  version in its User-Agent; default 6 h, range 1–24 h; applies to iOS (every user, whatever their ATT
+  answer) and Android. Each kind has an on/off switch per configuration (UA commits e8ce9f54, a841842f,
+  2026-10-01); Probabilistic off = iOS installs from that configuration are not attributed. The code calls
+  the User-Agent check a "UA-fingerprint"; Timur (support thread, 2026-10-02) ruled the word out of the
+  docs — "We don't use a fingerprint to follow apple rules". Describe the signals, never the code's label.
 - **Some claims are the ad network's and cannot be verified here.** Meta token expiration and the
   `ads_read` permission, system-user token generation, whether Meta approves an ad URL, TikTok's
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
@@ -229,7 +241,7 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
 | "Meta rejected/disapproved the ad because of the URL" | `meta-create-campaign`, repeated in `user-acquisition`. The click link must be split: bare `https://api-ua.adapty.io/api/v1/attribution/click` in **Website URL**, the query string into **URL parameters** under Tracking. Pasting the whole link into Website URL is what gets ads rejected. |
 | "how do I run a Meta/TikTok campaign", "campaign objective", "budget and creative setup" | `meta-create-campaign` / `tiktok-create-campaign` — these are ad-platform-side walkthroughs (objective, ad set, targeting, creative) with almost no Adapty configuration in them. The Adapty-side connection is `ua-facebook` / `ua-tiktok`. Don't answer one from the other. |
 | "attribution suddenly stopped", "Meta token expired", "data stopped after I added a custom parameter" | `ua-facebook` (or `ua-tiktok`), two separate causes. A Meta token with an expiration date must be regenerated and reconnected before it lapses or attribution stops — `ads_read` is the only permission needed, and there are two connection paths (OAuth vs. system user token; TikTok documents only OAuth). Separately, adding an **Additional parameter** rewrites the **Click link**, so the link already live in the ad platform is stale and must be re-copied. |
-| "installs attributed to the wrong campaign", "attribution window", "fingerprinting / probabilistic match" | The **Settings** tab of the campaign configuration, documented in `ua-facebook` and `ua-tiktok` (deterministic 168 h, probabilistic 6 h by default). It is per campaign configuration, not a project-wide setting — which is why two campaigns can disagree. |
+| "installs attributed to the wrong campaign", "attribution window", "fingerprinting / probabilistic match" | The **Settings** tab of the campaign configuration, documented in `ua-facebook` and `ua-tiktok` (deterministic 168 h, probabilistic 6 h by default). It is per campaign configuration, not a project-wide setting — which is why two campaigns can disagree. "Does matching use the IDFA / apply to users who denied ATT" → no IDFA; probabilistic applies to all iOS users (see Sources of truth). As of 2026-10-02 both articles still say IDFA and "device fingerprinting" — wrong, see Gaps. |
 | "Meta/TikTok isn't optimizing", "send conversions back to the pixel", "trials report $0 revenue", "the pixel should see organic users too" | One page each — `ua-facebook` / `ua-tiktok` — three different controls: **Events names** mapping, **Revenue override** (a percentage of the subscription price for trial events; the section only appears once **Trial started** is enabled), and **Send all events** (forwards organic and non-attributed events to the pixel). |
 | "web funnel", "charge users outside the App Store", "purchases with no install event", "web2app A/B test" | `ua-funnelfox`. Linked by Project ID; channel is derived automatically from the click ID, not configured. The load-bearing constraint: FunnelFox transactions cohort on **first paid date**, not install date, so those cohorts don't line up with install cohorts elsewhere in the dashboard. |
 | "prediction shows a dash", "forecast ROAS before the cohort matures", "why is pRevenue missing" | `ua-predicted-metrics`. Availability is gated on the cohort reaching its **baseline day** (the first day ~90% of initial revenue has typically landed; renewals don't count toward it), so a long trial pushes predictions later — that alone explains most em-dashes. Only `pRevenue` is modeled; the other four derive from it arithmetically. Predictions on the Cohort analysis page are a different feature (`predicted-ltv-and-revenue`). |
@@ -237,6 +249,16 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
 | "show a different paywall to users who came from Apple Search Ads" | Not this zone, despite reading like it. That's **sdk-best-practices** (`ios-show-aa-targeted-paywall` and its platform siblings), where the source value is the string `'apple_search_ads'` and `appliedAttributionSources` is optional. What makes the misfile tempting is that Attribution's own exports do carry `asa_*` columns. |
 
 ## Gaps and misses
+
+- **`ua-facebook` and `ua-tiktok` Settings sections misdescribe matching** (2026-10-02, found from a
+  support thread on config 1045; grep `idfa|fingerprint|probabilis|determinis` across every article in
+  this zone — only these two hit). Both say deterministic uses "IDFA on iOS or Advertising ID on Android"
+  and probabilistic uses "device fingerprinting"; neither mentions that iOS is probabilistic-only or the
+  on/off switches. Ground truth is in Sources of truth above. `ua-google-ads` has no Settings tab, so it
+  is out of scope. Rewritten on branch `docs/slack-thread-fixes` (2026-10-02), with the shared
+  screenshot `ua-meta-attribution-settings.webp` replaced. UI naming: the section heading is **New user
+  attribution** (`IntegrationAttributionForm.tsx:59`); **Clicks** is only the row label
+  (`AttributionWindows.tsx` `sectionTitle`) — don't call it a section.
 
 - **Revenue override's button is "Add event", not "Add override", on every network** (2026-09-29,
   dashboard-interface `IntegrationSettingsFormContent.tsx:364,398` — one shared component). `ua-facebook`
