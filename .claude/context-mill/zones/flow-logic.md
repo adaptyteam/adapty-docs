@@ -19,7 +19,10 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 ## Surfaces
 
 - **Adapty Dashboard → Flows page**: flow list, status column, **Create flow**, **Fallbacks** download,
-  the Flow metrics view.
+  the Flow metrics view. Since ADP-6763 (2026-10-02, `dashboard-interface` branch `ADP-6763`) a flow's
+  page has two tabs, **Metrics** (`/flows/{id}/metrics/`) and **Funnel** (`/flows/{id}/funnel/`); the
+  Funnel tab is behind the `flowFunnel` feature flag, off by default, so re-check the flag before
+  calling `flow-funnel` live.
 - **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
@@ -67,10 +70,24 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   `scope === 'screen'`), and inside a card **Current** is the enclosing card's own product. Second, the
   panel's **Missing** badge (product deleted from the catalog) is a different state from **This product
   is off this screen** (product exists, not on the screen's list).
-- No dedicated source exists for the Flow metrics definitions (revenue, proceeds, ARPPU, conversion
-  rates) beyond the article's own prose — these are dashboard-backend calculations with no spec file
-  registered in `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx`
-  for terms it shares, as the working definition until a metrics source is added.
+- **Flow metrics and the flow funnel are computed in `dashboard-backend`, and the module is readable —
+  corrected 2026-10-02.** This brief used to say no source existed for the Flow metrics definitions beyond
+  the article's prose. The calculations live under
+  `src/portal/analytics_context/infrastructure/repositories/metrics_repositories/in_app_metrics_repositories/flow_metrics_repositories/`
+  (Jinja + ClickHouse, the same layout the `analytics` brief describes for chart metrics), and the funnel
+  added by ADP-6763 sits beside them: `queries/flow_metrics/select_flow_screen_funnel_metrics.sql` is the
+  query, `domain/value_objects/metrics/in_app_metrics/flow_screen_funnel_metrics/` the value objects, and
+  `infrastructure/ports/http/flow_screen_funnel_metrics_view_set.py` the endpoint
+  (`POST …/analytics/flows/{flow_id}/screen-funnel/metrics/`, `?format=csv` for the export). Read on
+  `origin/ADP-6763` until it merges, then `origin/develop`. What is still true: no `sources.md` entry names
+  this module, so cite `dashboard-backend` and the path, as the `analytics` brief does. Facts settled there
+  for `flow-funnel` (all 2026-10-02): a step is the screen's position in the profile's path, not the builder
+  `screen_order`; one path per profile (first appearance per screen within a session, then the session with
+  the longest path); completion = path ends on a screen with `is_last_screen`; funnel Revenue/Purchases are
+  initial purchases (`renewal_period = 1` on `subscription_started`/`trial_converted`, plus one-time
+  purchases) net of their refunds, gross USD — unlike `flow-metrics` Revenue, which counts every transaction
+  after the show. The Platform and Subscription state filters are a funnel-only filter class
+  (`FlowScreenFunnelMetricsFilters`); other flow endpoints never see them.
 
 - **Figma import's ground truth is split across three places, and only one of them is a declared source.** The
   `/figma-import` landing page — its state machine, failure copy, and the mint call — lives in
@@ -137,9 +154,10 @@ or developer can see and click.
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
 | filter-flows | — | marketer, dev | 6 | tutorial |
-| flow-ai-editor | — | marketer, dev | 12 | tutorial |
+| flow-ai-editor | — | marketer, dev | 15 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
 | flow-common-issues | reference | marketer, dev | 13 | tutorial |
+| flow-funnel | — | marketer, dev | 13 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 7 | tutorial |
@@ -197,6 +215,13 @@ or developer can see and click.
 
 ## Ripple rules
 
+- **`flow-funnel` ↔ `flow-metrics` ↔ the seven `*-flow-screen-views` guides (added 2026-10-02).**
+  `flow-metrics` points at the funnel twice (intro, and the "not a per-screen funnel" paragraph under
+  Metrics controls), and every `<platform>-flow-screen-views` guide in `sdk-flows-display` opens with a tip
+  that now says the dashboard funnel already shows per-screen drop-off. If the funnel's scope changes
+  (branching coverage, an all-versions mode), those eight sentences move with it. The two Revenue
+  definitions differ on purpose (initial purchases vs every transaction after the show); a change to either
+  must keep the contrast sentence in `flow-funnel#revenue` true.
 - **`adapty-flow-builder` ↔ `migrate-to-flows`: verified duplicated content, not just co-change.** Both
   articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
   word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
@@ -305,7 +330,8 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "monthly/yearly toggle", "segmented control", "highlight one plan and hide the rest", "slide-up plan picker", "features per tier", "crossed-out price", "percent-off badge" | The recipes, chosen by mechanic rather than by look: `paywall-with-tabs` (multiple product groups on one screen), `show-plans-bottom-sheet` (Show/Hide action), `paywall-features-per-product` (condition on the selected product), `strikethrough-price` (product-variable binding). `flow-builder-recipes` is the index if the ticket is vague, and every one of them assumes the base screen from `basic-paywall-screen` already exists. |
 | "push the change to users", "does saving make it live", "draft vs published", "flow status", "publish blocked/publish error", "swap a font without breaking older app builds" | `builder-save-publish` — saving is not publishing, and the "Flow status" table decodes the Flows-page column. **The canonical block list moved to `flow-common-issues` on 2026-08-13** (see Ripple rules); `builder-save-publish#troubleshooting` survives as a cross-link, so route a "publish blocked" ticket to `flow-common-issues` directly. Font/asset availability is an app-version compatibility constraint documented here and in `paywall-builder-templates`, not a typography question for `flow-design`: custom fonts do **not** ship with the flow, so changing one on a published flow means duplicating it and targeting the copy at app versions that bundle the file. |
 | "test on device", "QR code", "prices are wrong in the preview", "iPad view", "check it before publishing" | `paywall-device-compatibility-preview`. **The two preview surfaces resolve different things, and conflating them is how this row was wrong until 2026-08-24.** Test-on-device can't reach the stores, so its prices aren't real — expected, not a bug, and `migrate-to-flows` carries a near-duplicate of that caveat. The in-dashboard canvas is not the same: `prod_title`, `prod_price` and `prod_price_per_*` do resolve, from the Adapty catalog in USD, so "the preview shows the wrong price" there usually means "the canvas shows the catalog USD price, not the localized store price". What the canvas genuinely cannot resolve is the three offer values — `offer_price`, `offer_billing_period`, `offer_full_duration` render as `{{token}}`s by design — while `is_free_trial` / `is_pay_up_front` / `is_pay_as_you_go` do resolve from the card's bound offer and can be simulated per element with **Preview as**. All of this lives in `paywall-device-compatibility-preview#preview-products-and-offers`. |
-| "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "where users drop off", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (there is no registered metrics spec; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
+| "where users drop off", "which screen loses users", "screen funnel", "drop-off per screen", "funnel per flow version", "why is the funnel empty", "N routes / N variants" | `flow-funnel` (2026-10-02). Per-screen path funnel on the flow's **Funnel** tab, one published version at a time. Not the account-level `analytics-funnels` chart (installs → paywall → trial → paid), which tickets also call "the funnel". A branched flow shows screens of different branches as one step with an **N routes** / **N variants** badge; branches of unequal length put the same screen on two steps — a known v1 limit, not a bug to file. |
+| "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (the computation is readable in `dashboard-backend`; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
 | "change copy without an app release", "hard-paywall flag", "server-driven values", "per-locale JSON" | `customize-flow-with-remote-config` for authoring the JSON. Reading it at runtime (`remoteConfig` dictionary vs `jsonString`, `remoteConfigs` on the flow) is `sdk-flows-manual` — a different zone from the one that renders the flow. |
 | "flow won't load without internet", "offline flow", "fallback file was generated for another SDK version" | `fallback-flows` for downloading and scoping the file; wiring it into app code is `sdk-flows-display`'s fallback family. The SDK-version stamp on the file is the usual cause of "the fallback loads but looks wrong". |
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
@@ -357,6 +383,16 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   "import most cleanly", inferred from ADP-7158 saying non-Google faces fail — which does not follow, and
   `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
   in the corpus.
+
+- **`flow-funnel` open questions, from the backend write-up on ADP-6763 (2026-10-02, unresolved there
+  too).** (1) No all-versions mode: a flow republished often (one real flow had ~50 versions in a month)
+  shows a few days of data per version; the article documents the per-version scope as a limitation. (2)
+  Purchases are dated by payment date, so trial conversions after the period end are missing from it —
+  documented as a limitation; a cohort mode was floated, not decided. (3) Country/Store/attribution filter
+  values are taken from the flow's purchases, so a flow with no purchases offers none — not documented
+  (reads as a defect; re-check before writing it up). Not verified from code: the "about once an hour"
+  refresh of Subscription state, which is the backend author's statement; and the minimum SDK version that
+  sends flow screen views, which the article avoids by saying only that the SDK reports them.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
