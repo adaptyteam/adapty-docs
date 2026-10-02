@@ -168,13 +168,13 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
-| developer-cli-reference | — | dev | 42 | api |
+| developer-cli-reference | — | dev | 55 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 9 | tutorial |
+| manage-adapty-with-ai | entry | dev | 10 | tutorial |
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
@@ -243,4 +243,6 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 | "the agent installed the wrong SDK version" | `adapty-cursor-capacitor` is the only variant that **warns** about this, not the only one exposed to it — corrected 2026-08-11. Capacitor's documented API is the v4 pre-release while an LLM left to itself installs the latest stable 3.x, and the guide says to pin the exact beta. KMP and Unity are v4-beta-only too (`platforms.md`), yet `adapty-cursor-kmp` and `adapty-cursor-unity` contain zero occurrences of `beta` or `4.0.0` — and KMP is worse, because Gradle cannot resolve a pre-release through a version range at all. Treat the silence in those two as a documentation gap, not as evidence the hazard is absent. |
 
 ## Gaps and misses
+
+- **2026-09-30:** `adapty migrations *` and `adapty skills install` added to `developer-cli-reference` from `adapty-cli` branch `feat/migrate-code` (not yet on `origin/main`; npm `adapty` was 0.8.8, the branch's `package.json` 0.8.6). Re-check flags against `origin/main` once it merges. `migrate_code` runs headless only with `claude-code` / `codex` (`src/cli/agents/headless.ts`); `skills install` also knows `gemini-cli` (`src/cli/agents/catalog.ts`). The server-side step logic behind these commands lives in `revenue-cat-migrator` — see the `migration-from-competitors` brief.
 
