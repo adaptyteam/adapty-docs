@@ -17,6 +17,12 @@
  *   the arrow keys seek 5 seconds.
  * - Starting one video pauses any other narrated video on the page.
  *
+ * PostHog events, sent through docsTrack (production only), each with `video`
+ * set to the filename: docs_video_started (duration, replay),
+ * docs_video_progress (percent: 25/50/75 of the video's seconds seen at least
+ * once), docs_video_completed (watched_percent, speed), docs_video_speed_changed
+ * (speed), docs_video_muted (muted, position), docs_video_fullscreen.
+ *
  * Videos live in src/assets/shared/video/, resolved by filename like DocVideo.
  * A poster with the same base name (.webp) is picked up automatically; the
  * `poster` prop overrides the convention. Always ship one — it is the cover.
@@ -87,6 +93,7 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
     class:list={['narrated-video', className]}
     style={{ maxWidth: width }}
     data-narrated-video
+    data-video={filenameOf(id)}
     data-state="cover"
     data-t-play={t.play}
     data-t-pause={t.pause}
@@ -473,6 +480,18 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
   // `data-bound` flag keeps a player from being wired twice.
   const IDLE_MS = 2200;
   const SEEK_STEP = 5;
+  const PROGRESS_MILESTONES = [25, 50, 75];
+
+  // Analytics go through the site's docsTrack helper (DocsLayout), which adds
+  // page, locale and article_id and sends nothing off production. `video` is
+  // the filename, the same on every locale, so one video aggregates across
+  // translations.
+  const track = (root: HTMLElement, event: string, props: Record<string, unknown> = {}) => {
+    (window as { docsTrack?: (event: string, props: Record<string, unknown>) => void }).docsTrack?.(event, {
+      video: root.dataset.video,
+      ...props,
+    });
+  };
 
   const formatTime = (seconds: number) => {
     if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
@@ -502,6 +521,17 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
     let idleTimer: number | undefined;
     let seeking = false;
+
+    // Tracking state, per player and per pageview. Progress is the share of the
+    // video's seconds actually played at least once, so seeking ahead adds
+    // nothing, and replaying or rewinding doesn't count the same part twice.
+    let started = false;
+    let completed = false;
+    let lastTime = 0;
+    const seenSeconds = new Set<number>();
+    const firedMilestones = new Set<number>();
+    const watchedPct = () =>
+      video.duration ? Math.min(100, Math.round((seenSeconds.size / Math.ceil(video.duration)) * 100)) : 0;
 
     const setState = (state: 'cover' | 'playing' | 'paused' | 'ended') => {
       root.dataset.state = state;
@@ -545,6 +575,7 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
 
     const toggleMute = () => {
       video.muted = !video.muted;
+      track(root, 'docs_video_muted', { muted: video.muted, position: Math.round(video.currentTime) });
     };
 
     const isFullscreen = () => document.fullscreenElement === root;
@@ -553,8 +584,10 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
       if (isFullscreen()) {
         void document.exitFullscreen();
       } else if (root.requestFullscreen) {
+        track(root, 'docs_video_fullscreen');
         void root.requestFullscreen().catch(() => undefined);
       } else {
+        track(root, 'docs_video_fullscreen');
         // iOS Safari only lets the video element itself go full screen.
         (video as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen?.();
       }
@@ -566,6 +599,7 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
     };
 
     const setSpeed = (speed: number) => {
+      if (speed !== video.playbackRate) track(root, 'docs_video_speed_changed', { speed });
       video.playbackRate = speed;
       speedLabel.textContent = `${speed}×`;
       speedMenu.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach(item => {
@@ -649,8 +683,33 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
     video.addEventListener('loadedmetadata', showDuration);
     video.addEventListener('durationchange', showDuration);
     video.addEventListener('timeupdate', showProgress);
-    video.addEventListener('seeked', showProgress);
+    video.addEventListener('timeupdate', () => {
+      const from = lastTime;
+      const delta = video.currentTime - from;
+      lastTime = video.currentTime;
+      // Only small forward steps are playback; a jump is a seek.
+      if (video.paused || seeking || delta <= 0 || delta > 2) return;
+      for (let second = Math.floor(from); second <= Math.floor(video.currentTime); second += 1) {
+        seenSeconds.add(second);
+      }
+      const pct = watchedPct();
+      PROGRESS_MILESTONES.forEach(milestone => {
+        if (pct >= milestone && !firedMilestones.has(milestone)) {
+          firedMilestones.add(milestone);
+          track(root, 'docs_video_progress', { percent: milestone });
+        }
+      });
+    });
+    video.addEventListener('seeked', () => {
+      lastTime = video.currentTime;
+      showProgress();
+    });
     video.addEventListener('play', () => {
+      const replay = root.dataset.state === 'ended';
+      if (!started || replay) {
+        track(root, 'docs_video_started', { duration: Math.round(video.duration || 0), replay });
+        started = true;
+      }
       setState('playing');
       wake();
     });
@@ -659,6 +718,10 @@ const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
     });
     video.addEventListener('ended', () => {
       setState('ended');
+      if (!completed) {
+        completed = true;
+        track(root, 'docs_video_completed', { watched_percent: watchedPct(), speed: video.playbackRate });
+      }
       if (isFullscreen()) void document.exitFullscreen();
     });
     video.addEventListener('volumechange', () => {
