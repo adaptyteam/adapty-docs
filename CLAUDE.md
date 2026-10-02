@@ -98,6 +98,8 @@ The components below are **auto-registered** in `src/pages/[...slug].astro` — 
 | `ZoomImage` | `<ZoomImage id="file.png" width="700px" alt="..." />` — add `float="right"` or `float="left"` to float image beside text |
 | `Tabs`/`TabItem` | `<Tabs groupId="platform"><TabItem value="ios" label="iOS">...</TabItem></Tabs>` |
 | `Details` | `<Details summary="Title">content</Details>`, or `<Details><summary>Title</summary>…`. A plain `<details>` element renders through the same component, so all three shapes look identical — there is one collapsible design, in `Details.astro`. Add `defaultOpen` to start it expanded. |
+| `DocVideo` | `<DocVideo id="demo.mp4" alt="..." />` — silent demo loop that autoplays like a GIF, no controls. Video and a same-name `.webp` poster go in `src/assets/shared/video/` |
+| `NarratedVideo` | `<NarratedVideo id="walkthrough.mp4" label="..." />` — short screencast with a voiceover, played on demand: cover with label and length, sound, speed, seek, full screen. Same folder and poster convention as `DocVideo`; the poster is the cover |
 | `InlineTooltip` | `<InlineTooltip tooltip="hover text">[link](page.md)</InlineTooltip>` |
 | `CustomDocCardList` | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
 | `Button` | `<Button id="page-id">Text</Button>` or `<Button href="url">Text</Button>` |

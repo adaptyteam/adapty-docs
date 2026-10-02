@@ -1,0 +1,710 @@
+---
+/**
+ * Narrated walkthrough video — a short screencast with a voiceover, played on demand.
+ *
+ * Use it for videos of about 30 seconds that carry sound. For a silent demo
+ * loop, use <DocVideo> instead: that one autoplays like a GIF and has no controls.
+ *
+ *   <NarratedVideo id="flow-funnel.mp4" label="See where users drop off" />
+ *
+ * What the reader gets:
+ * - A cover with the label, a play button, and the video length. The cover is
+ *   the poster image, so it shows immediately; the video itself loads only its
+ *   metadata (a few KB) until the reader presses play.
+ * - Sound on by default — the reader started playback, so browsers allow it.
+ * - Play/pause, a seek bar, mute, playback speed, and full screen.
+ * - Keyboard: Space or K plays and pauses, M mutes, F toggles full screen,
+ *   the arrow keys seek 5 seconds.
+ * - Starting one video pauses any other narrated video on the page.
+ *
+ * Videos live in src/assets/shared/video/, resolved by filename like DocVideo.
+ * A poster with the same base name (.webp) is picked up automatically; the
+ * `poster` prop overrides the convention. Always ship one — it is the cover.
+ *
+ * The control labels are UI strings, so they carry their own locale table (T);
+ * `label` is article text and is translated with the MDX. When adding a locale,
+ * add it to T (see the localize skill).
+ */
+import { SUPPORTED_LOCALES } from '../data/locales';
+
+interface Props {
+  id: string;
+  /** Shown on the cover and announced as the player's name. Say what the video shows. */
+  label: string;
+  width?: string;
+  /** Poster filename in src/assets/shared/video/. Defaults to the video's base name with .webp. */
+  poster?: string;
+  className?: string;
+}
+
+const { id, label, width = '700px', poster, className } = Astro.props;
+
+// Same resolution as DocVideo: `?url` emits the file into _astro/ with a content
+// hash, so replacing a video busts its own cache.
+const allVideos = import.meta.glob<string>('/src/assets/**/*.{mp4,webm}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+const allPosters = import.meta.glob<string>('/src/assets/shared/video/**/*.{webp,png,jpg,jpeg}', {
+  eager: true,
+  query: '?url',
+  import: 'default',
+});
+
+const filenameOf = (value: string) => value.split('/').pop() || value;
+const resolve = (map: Record<string, string>, wanted: string) => {
+  const target = filenameOf(wanted);
+  for (const [path, url] of Object.entries(map)) {
+    if (filenameOf(path) === target) return url;
+  }
+  return undefined;
+};
+
+const videoSrc = resolve(allVideos, id);
+const posterSrc = resolve(allPosters, poster ?? filenameOf(id).replace(/\.(mp4|webm)$/, '.webp'));
+
+const T = {
+  en: { play: 'Play', pause: 'Pause', replay: 'Replay', mute: 'Mute', unmute: 'Unmute', speed: 'Playback speed', normal: 'Normal', fullscreen: 'Full screen', exitFullscreen: 'Exit full screen', seek: 'Seek' },
+  zh: { play: '播放', pause: '暂停', replay: '重新播放', mute: '静音', unmute: '取消静音', speed: '播放速度', normal: '正常', fullscreen: '全屏', exitFullscreen: '退出全屏', seek: '进度' },
+  tr: { play: 'Oynat', pause: 'Duraklat', replay: 'Yeniden oynat', mute: 'Sesi kapat', unmute: 'Sesi aç', speed: 'Oynatma hızı', normal: 'Normal', fullscreen: 'Tam ekran', exitFullscreen: 'Tam ekrandan çık', seek: 'İlerleme' },
+  ru: { play: 'Воспроизвести', pause: 'Пауза', replay: 'Смотреть снова', mute: 'Выключить звук', unmute: 'Включить звук', speed: 'Скорость', normal: 'Обычная', fullscreen: 'Во весь экран', exitFullscreen: 'Выйти из полноэкранного режима', seek: 'Перемотка' },
+  fr: { play: 'Lire', pause: 'Pause', replay: 'Revoir', mute: 'Couper le son', unmute: 'Activer le son', speed: 'Vitesse de lecture', normal: 'Normale', fullscreen: 'Plein écran', exitFullscreen: 'Quitter le plein écran', seek: 'Position' },
+  vi: { play: 'Phát', pause: 'Tạm dừng', replay: 'Phát lại', mute: 'Tắt tiếng', unmute: 'Bật tiếng', speed: 'Tốc độ phát', normal: 'Bình thường', fullscreen: 'Toàn màn hình', exitFullscreen: 'Thoát toàn màn hình', seek: 'Tua' },
+  es: { play: 'Reproducir', pause: 'Pausar', replay: 'Volver a ver', mute: 'Silenciar', unmute: 'Activar sonido', speed: 'Velocidad de reproducción', normal: 'Normal', fullscreen: 'Pantalla completa', exitFullscreen: 'Salir de pantalla completa', seek: 'Posición' },
+  ja: { play: '再生', pause: '一時停止', replay: 'もう一度再生', mute: 'ミュート', unmute: 'ミュート解除', speed: '再生速度', normal: '標準', fullscreen: '全画面', exitFullscreen: '全画面を終了', seek: 'シーク' },
+} as const;
+
+const locale =
+  Astro.url.pathname.split('/').filter(Boolean).find(s => (SUPPORTED_LOCALES as readonly string[]).includes(s)) ?? 'en';
+const t = T[locale as keyof typeof T] ?? T.en;
+
+const SPEEDS = [0.75, 1, 1.25, 1.5, 2];
+---
+
+{videoSrc ? (
+  <figure
+    class:list={['narrated-video', className]}
+    style={{ maxWidth: width }}
+    data-narrated-video
+    data-state="cover"
+    data-t-play={t.play}
+    data-t-pause={t.pause}
+    data-t-replay={t.replay}
+    data-t-mute={t.mute}
+    data-t-unmute={t.unmute}
+    data-t-fullscreen={t.fullscreen}
+    data-t-exit-fullscreen={t.exitFullscreen}
+    tabindex="-1"
+    aria-label={label}
+    role="region"
+  >
+    <video src={videoSrc} poster={posterSrc} preload="metadata" playsinline aria-label={label}>
+      <p>{label}</p>
+    </video>
+
+    <button type="button" class="nv-cover" data-cover aria-label={`${t.play}: ${label}`}>
+      <span class="nv-cover-play" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="28" height="28"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>
+      </span>
+      <span class="nv-cover-text">
+        <span class="nv-cover-label">{label}</span>
+        <span class="nv-cover-duration" data-duration hidden></span>
+      </span>
+    </button>
+
+    <div class="nv-controls" data-controls>
+      <button type="button" class="nv-btn" data-play aria-label={t.play}>
+        <svg class="nv-i-play" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M8 5.5v13l11-6.5z" fill="currentColor" /></svg>
+        <svg class="nv-i-pause" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor" /></svg>
+      </button>
+
+      <span class="nv-time" aria-hidden="true"><span data-current>0:00</span> / <span data-total>0:00</span></span>
+
+      <input class="nv-seek" data-seek type="range" min="0" max="1000" step="1" value="0" aria-label={t.seek} />
+
+      <button type="button" class="nv-btn" data-mute aria-label={t.mute}>
+        <svg class="nv-i-sound" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" /><path d="M15.5 9a4 4 0 0 1 0 6M17.8 6.6a7.3 7.3 0 0 1 0 10.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+        <svg class="nv-i-muted" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" /><path d="M15.5 9.5l5 5M20.5 9.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg>
+      </button>
+
+      <div class="nv-speed">
+        <button type="button" class="nv-btn nv-speed-btn" data-speed-toggle aria-haspopup="menu" aria-expanded="false" aria-label={t.speed}>
+          <span data-speed-label>1×</span>
+        </button>
+        <div class="nv-speed-menu" data-speed-menu role="menu" aria-label={t.speed} hidden>
+          {SPEEDS.map(speed => (
+            <button type="button" role="menuitemradio" aria-checked={speed === 1 ? 'true' : 'false'} data-speed={speed}>
+              {speed === 1 ? `${t.normal}` : `${speed}×`}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <button type="button" class="nv-btn" data-fullscreen aria-label={t.fullscreen}>
+        <svg class="nv-i-enter" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+        <svg class="nv-i-exit" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" /></svg>
+      </button>
+    </div>
+  </figure>
+) : (
+  <div class="p-4 border border-red-200 bg-red-50 text-red-600 rounded-md text-sm">
+    Video not found: <code>{id}</code>
+  </div>
+)}
+
+<style>
+  .narrated-video {
+    position: relative;
+    margin: 1.5rem auto;
+    border-radius: 0.5rem;
+    overflow: hidden;
+    background: #0e0e12;
+    box-shadow: var(--shadow-sm, 0 1px 2px rgb(0 0 0 / 0.06));
+    aspect-ratio: 16 / 9;
+    outline: none;
+  }
+
+  .narrated-video:focus-visible {
+    box-shadow: 0 0 0 2px var(--accent-primary);
+  }
+
+  .narrated-video video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: #0e0e12;
+  }
+
+  /* Cover: the poster with the label, a play button and the length. */
+  .nv-cover {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 0.875rem;
+    padding: 1.25rem;
+    border: 0;
+    margin: 0;
+    width: 100%;
+    text-align: left;
+    color: #fff;
+    cursor: pointer;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.72) 0%, rgb(0 0 0 / 0.28) 38%, rgb(0 0 0 / 0) 62%);
+    font: inherit;
+  }
+
+  .nv-cover:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -4px;
+  }
+
+  .nv-cover-play {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 3.25rem;
+    height: 3.25rem;
+    border-radius: 999px;
+    background: var(--color-primary-500, #6e56cf);
+    box-shadow: 0 4px 14px rgb(0 0 0 / 0.3);
+    transition: transform 0.15s ease;
+  }
+
+  .nv-cover:hover .nv-cover-play {
+    transform: scale(1.06);
+  }
+
+  .nv-cover-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+    min-width: 0;
+  }
+
+  .nv-cover-label {
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.35;
+    text-shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  }
+
+  .nv-cover-duration {
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    opacity: 0.85;
+  }
+
+  .narrated-video:not([data-state='cover']):not([data-state='ended']) .nv-cover {
+    display: none;
+  }
+
+  /* Control bar: hidden on the cover, shown while playing on hover/focus, always shown when paused. */
+  .nv-controls {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 1.75rem 0.5rem 0.375rem;
+    color: #fff;
+    background: linear-gradient(to top, rgb(0 0 0 / 0.7), rgb(0 0 0 / 0));
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+  }
+
+  .narrated-video[data-state='paused'] .nv-controls,
+  .narrated-video[data-state='playing'][data-active] .nv-controls,
+  .narrated-video[data-state='playing']:focus-within .nv-controls {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .narrated-video[data-state='playing']:not([data-active]) {
+    cursor: none;
+  }
+
+  .nv-btn {
+    display: grid;
+    place-items: center;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0 0.375rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+  }
+
+  .nv-btn:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+
+  .nv-btn:focus-visible,
+  .nv-speed-menu button:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -2px;
+  }
+
+  .nv-i-pause,
+  .nv-i-muted,
+  .nv-i-exit {
+    display: none;
+  }
+
+  .narrated-video[data-state='playing'] .nv-i-play {
+    display: none;
+  }
+
+  .narrated-video[data-state='playing'] .nv-i-pause {
+    display: block;
+  }
+
+  .narrated-video[data-muted] .nv-i-sound,
+  .narrated-video[data-fullscreen] .nv-i-enter {
+    display: none;
+  }
+
+  .narrated-video[data-muted] .nv-i-muted,
+  .narrated-video[data-fullscreen] .nv-i-exit {
+    display: block;
+  }
+
+  .nv-time {
+    padding: 0 0.375rem;
+    font-size: 0.8125rem;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .nv-seek {
+    flex: 1;
+    min-width: 3rem;
+    height: 1.25rem;
+    margin: 0 0.375rem;
+    background: transparent;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    --nv-progress: 0%;
+  }
+
+  .nv-seek::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: linear-gradient(to right, #fff var(--nv-progress), rgb(255 255 255 / 0.32) var(--nv-progress));
+  }
+
+  .nv-seek::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: rgb(255 255 255 / 0.32);
+  }
+
+  .nv-seek::-moz-range-progress {
+    height: 4px;
+    border-radius: 2px;
+    background: #fff;
+  }
+
+  .nv-seek::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    margin-top: -4px;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+  }
+
+  .nv-seek::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    border: 0;
+    border-radius: 50%;
+    background: #fff;
+  }
+
+  .nv-seek:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  .nv-speed {
+    position: relative;
+  }
+
+  .nv-speed-btn {
+    min-width: 2.75rem;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .nv-speed-menu {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 0.375rem);
+    display: flex;
+    flex-direction: column;
+    min-width: 7rem;
+    padding: 0.25rem;
+    border-radius: 0.5rem;
+    background: rgb(24 24 27 / 0.96);
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  }
+
+  .nv-speed-menu[hidden] {
+    display: none;
+  }
+
+  .nv-speed-menu button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.375rem 0.625rem;
+    border: 0;
+    border-radius: 0.375rem;
+    background: transparent;
+    color: #fff;
+    font: inherit;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .nv-speed-menu button:hover {
+    background: rgb(255 255 255 / 0.12);
+  }
+
+  .nv-speed-menu button[aria-checked='true']::after {
+    content: '';
+    width: 0.375rem;
+    height: 0.375rem;
+    border-radius: 50%;
+    background: var(--color-primary-500, #6e56cf);
+  }
+
+  .narrated-video[data-fullscreen] {
+    max-width: none !important;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  @media (max-width: 480px) {
+    .nv-time {
+      display: none;
+    }
+
+    .nv-cover {
+      padding: 0.875rem;
+      gap: 0.625rem;
+    }
+
+    .nv-cover-play {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
+
+    .nv-cover-label {
+      font-size: 0.9375rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nv-controls,
+    .nv-cover-play {
+      transition: none;
+    }
+  }
+</style>
+
+<script>
+  // One module for every narrated video on the page. It runs once per visit;
+  // `astro:page-load` re-runs `init` after each ClientRouter DOM swap, and the
+  // `data-bound` flag keeps a player from being wired twice.
+  const IDLE_MS = 2200;
+  const SEEK_STEP = 5;
+
+  const formatTime = (seconds: number) => {
+    if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+    const whole = Math.floor(seconds);
+    return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, '0')}`;
+  };
+
+  const players = () => Array.from(document.querySelectorAll<HTMLElement>('[data-narrated-video]'));
+
+  const bind = (root: HTMLElement) => {
+    if (root.dataset.bound) return;
+    root.dataset.bound = 'true';
+
+    const video = root.querySelector('video')!;
+    const cover = root.querySelector<HTMLButtonElement>('[data-cover]')!;
+    const playBtn = root.querySelector<HTMLButtonElement>('[data-play]')!;
+    const muteBtn = root.querySelector<HTMLButtonElement>('[data-mute]')!;
+    const fullBtn = root.querySelector<HTMLButtonElement>('[data-fullscreen]')!;
+    const seek = root.querySelector<HTMLInputElement>('[data-seek]')!;
+    const current = root.querySelector<HTMLElement>('[data-current]')!;
+    const total = root.querySelector<HTMLElement>('[data-total]')!;
+    const duration = root.querySelector<HTMLElement>('[data-duration]')!;
+    const speedToggle = root.querySelector<HTMLButtonElement>('[data-speed-toggle]')!;
+    const speedMenu = root.querySelector<HTMLElement>('[data-speed-menu]')!;
+    const speedLabel = root.querySelector<HTMLElement>('[data-speed-label]')!;
+    const t = root.dataset;
+
+    let idleTimer: number | undefined;
+    let seeking = false;
+
+    const setState = (state: 'cover' | 'playing' | 'paused' | 'ended') => {
+      root.dataset.state = state;
+      const label = state === 'playing' ? t.tPause! : state === 'ended' ? t.tReplay! : t.tPlay!;
+      playBtn.setAttribute('aria-label', label);
+    };
+
+    const wake = () => {
+      root.dataset.active = 'true';
+      window.clearTimeout(idleTimer);
+      idleTimer = window.setTimeout(() => {
+        if (!speedMenu.hidden) return;
+        delete root.dataset.active;
+      }, IDLE_MS);
+    };
+
+    const showDuration = () => {
+      if (!Number.isFinite(video.duration)) return;
+      duration.textContent = formatTime(video.duration);
+      duration.hidden = false;
+      total.textContent = formatTime(video.duration);
+    };
+
+    const showProgress = () => {
+      const ratio = video.duration ? video.currentTime / video.duration : 0;
+      current.textContent = formatTime(video.currentTime);
+      if (!seeking) seek.value = String(Math.round(ratio * 1000));
+      seek.style.setProperty('--nv-progress', `${(Number(seek.value) / 10).toFixed(1)}%`);
+      seek.setAttribute('aria-valuetext', `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`);
+    };
+
+    const play = () => {
+      players().forEach(other => {
+        if (other !== root) other.querySelector('video')?.pause();
+      });
+      if (video.ended) video.currentTime = 0;
+      void video.play().catch(() => undefined);
+    };
+
+    const toggle = () => (video.paused || video.ended ? play() : video.pause());
+
+    const toggleMute = () => {
+      video.muted = !video.muted;
+    };
+
+    const isFullscreen = () => document.fullscreenElement === root;
+
+    const toggleFullscreen = () => {
+      if (isFullscreen()) {
+        void document.exitFullscreen();
+      } else if (root.requestFullscreen) {
+        void root.requestFullscreen().catch(() => undefined);
+      } else {
+        // iOS Safari only lets the video element itself go full screen.
+        (video as HTMLVideoElement & { webkitEnterFullscreen?: () => void }).webkitEnterFullscreen?.();
+      }
+    };
+
+    const closeSpeedMenu = () => {
+      speedMenu.hidden = true;
+      speedToggle.setAttribute('aria-expanded', 'false');
+    };
+
+    const setSpeed = (speed: number) => {
+      video.playbackRate = speed;
+      speedLabel.textContent = `${speed}×`;
+      speedMenu.querySelectorAll<HTMLButtonElement>('[data-speed]').forEach(item => {
+        item.setAttribute('aria-checked', String(Number(item.dataset.speed) === speed));
+      });
+    };
+
+    cover.addEventListener('click', play);
+    playBtn.addEventListener('click', toggle);
+    video.addEventListener('click', toggle);
+    muteBtn.addEventListener('click', toggleMute);
+    fullBtn.addEventListener('click', toggleFullscreen);
+
+    seek.addEventListener('input', () => {
+      seeking = true;
+      if (video.duration) video.currentTime = (Number(seek.value) / 1000) * video.duration;
+      showProgress();
+    });
+    seek.addEventListener('change', () => {
+      seeking = false;
+    });
+
+    speedToggle.addEventListener('click', event => {
+      event.stopPropagation();
+      const opening = speedMenu.hidden;
+      speedMenu.hidden = !opening;
+      speedToggle.setAttribute('aria-expanded', String(opening));
+      if (opening) speedMenu.querySelector<HTMLButtonElement>('[aria-checked="true"]')?.focus();
+    });
+    speedMenu.addEventListener('click', event => {
+      const item = (event.target as HTMLElement).closest<HTMLButtonElement>('[data-speed]');
+      if (!item) return;
+      setSpeed(Number(item.dataset.speed));
+      closeSpeedMenu();
+      speedToggle.focus();
+    });
+    speedMenu.addEventListener('keydown', event => {
+      const items = Array.from(speedMenu.querySelectorAll<HTMLButtonElement>('[data-speed]'));
+      const index = items.indexOf(document.activeElement as HTMLButtonElement);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const next = event.key === 'ArrowDown' ? index + 1 : index - 1;
+        items[(next + items.length) % items.length].focus();
+      } else if (event.key === 'Escape') {
+        event.stopPropagation();
+        closeSpeedMenu();
+        speedToggle.focus();
+      }
+    });
+    root.addEventListener('mousemove', wake);
+    root.addEventListener('touchstart', wake, { passive: true });
+    root.addEventListener('mouseleave', () => {
+      if (speedMenu.hidden) delete root.dataset.active;
+    });
+
+    root.addEventListener('keydown', event => {
+      const target = event.target as HTMLElement;
+      // Buttons and the seek bar handle their own Space, Enter and arrow keys.
+      const onControl = target.matches('button, input');
+      const key = event.key.toLowerCase();
+
+      if (key === 'k' || (key === ' ' && !onControl)) {
+        event.preventDefault();
+        toggle();
+      } else if (key === 'm') {
+        toggleMute();
+      } else if (key === 'f') {
+        toggleFullscreen();
+      } else if ((key === 'arrowleft' || key === 'arrowright') && !target.matches('input') && root.dataset.state !== 'cover') {
+        event.preventDefault();
+        video.currentTime = Math.min(
+          Math.max(video.currentTime + (key === 'arrowright' ? SEEK_STEP : -SEEK_STEP), 0),
+          video.duration || 0,
+        );
+      } else {
+        return;
+      }
+      wake();
+    });
+
+    video.addEventListener('loadedmetadata', showDuration);
+    video.addEventListener('durationchange', showDuration);
+    video.addEventListener('timeupdate', showProgress);
+    video.addEventListener('seeked', showProgress);
+    video.addEventListener('play', () => {
+      setState('playing');
+      wake();
+    });
+    video.addEventListener('pause', () => {
+      if (!video.ended) setState('paused');
+    });
+    video.addEventListener('ended', () => {
+      setState('ended');
+      if (isFullscreen()) void document.exitFullscreen();
+    });
+    video.addEventListener('volumechange', () => {
+      if (video.muted) root.dataset.muted = 'true';
+      else delete root.dataset.muted;
+      muteBtn.setAttribute('aria-label', video.muted ? t.tUnmute! : t.tMute!);
+    });
+    // A user who changed speed and then seeks or replays keeps their speed.
+    video.addEventListener('ratechange', () => {
+      speedLabel.textContent = `${video.playbackRate}×`;
+    });
+
+    if (video.readyState >= 1) showDuration();
+  };
+
+  // Document-level listeners are registered once for the whole visit, not per
+  // player, so they don't pile up across ClientRouter page swaps.
+  document.addEventListener('click', event => {
+    document.querySelectorAll<HTMLElement>('[data-narrated-video] [data-speed-menu]:not([hidden])').forEach(menu => {
+      if (menu.contains(event.target as Node)) return;
+      menu.hidden = true;
+      menu.parentElement?.querySelector('[data-speed-toggle]')?.setAttribute('aria-expanded', 'false');
+    });
+  });
+
+  document.addEventListener('fullscreenchange', () => {
+    players().forEach(root => {
+      const isFull = document.fullscreenElement === root;
+      if (isFull) root.dataset.fullscreen = 'true';
+      else delete root.dataset.fullscreen;
+      root
+        .querySelector('[data-fullscreen]')
+        ?.setAttribute('aria-label', isFull ? root.dataset.tExitFullscreen! : root.dataset.tFullscreen!);
+    });
+  });
+
+  const init = () => {
+    players().forEach(bind);
+  };
+
+  // A video playing on a page the reader left keeps its sound going after a
+  // ClientRouter swap unless it is paused before the swap.
+  document.addEventListener('astro:before-swap', () => {
+    players().forEach(root => root.querySelector('video')?.pause());
+  });
+
+  init();
+  document.addEventListener('astro:page-load', init);
+</script>
