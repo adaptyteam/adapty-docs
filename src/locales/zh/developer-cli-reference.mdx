@@ -1,11 +1,11 @@
 ---
-title: "Adapty 开发者 CLI 命令参考"
-description: "Adapty 开发者 CLI 命令参考，涵盖应用、产品、付费墙、流程和版位的配置。"
-metadataTitle: "开发者 CLI 命令参考 | Adapty 文档"
+title: "Adapty Developer CLI 命令参考"
+description: "Adapty Developer CLI 命令参考，涵盖应用配置、产品、付费墙、流程、版位管理及 RevenueCat 迁移。"
+metadataTitle: "Developer CLI 命令参考 | Adapty 文档"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-本文列出了用于配置账户的 Adapty CLI 命令，涵盖应用、访问等级、产品、付费墙、流程、版位和市场细分，并介绍了各命令的参数、标志及可接受值。关于 Apple Ads 广告系列，请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference)。
+本文列出了用于配置帐户的 Adapty CLI 命令——包括应用、访问等级、产品、付费墙、流程、版位和市场细分——以及迁移 RevenueCat 项目的命令，涵盖其参数、标志和可接受的值。关于 Apple Ads 广告系列，请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference)。
 
 :::link
 关于身份验证设置和令牌管理，请参阅[身份验证](developer-cli-authentication)。
@@ -713,14 +713,162 @@ adapty segments get --app <app-id> <segment-id>
 
 响应包含 `id`、`title` 和 `description`。过滤规则不通过此 API 暴露。
 
-## 身份验证 \{#auth\}
+## 迁移 \{#migrations\}
+
+将 RevenueCat 项目迁移到 Adapty：先迁移产品目录，再按需迁移商店事件和交易历史。Adapty 会将每次迁移作为一系列步骤执行，并告知你下一步可执行的操作，因此在每次操作前请先查看 `status`。完整流程请参阅[从 RevenueCat 迁移](migration-from-revenuecat)。
+
+除 `list`、`create`、`use`、`current` 和 `unuse` 之外，所有命令均支持迁移标志：
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `-m`, `--migration` | 否 | 迁移 ID。若未指定，CLI 将依次使用 `ADAPTY_MIGRATION` 环境变量，然后使用由 `create` 或 `use` 命令保存的迁移。 |
+
+### adapty migrations list
+
+列出您的迁移记录及可启动的迁移流程，按应用分组显示。
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+启动一次迁移并将其保存为当前迁移。
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--name` | `--name` 或 `--flow` 二选一 | 新 Adapty 应用的名称。启动目录迁移。不能与 `--flow` 或 `--app` 同时使用。 |
+| `--flow` | `--name` 或 `--flow` 二选一 | 在已有应用中启动的流程，格式与 `adapty migrations list` 显示的一致。需配合 `--app` 使用。 |
+| `--app` | 与 `--flow` 配合使用 | 应用 ID（UUID） |
+| `--no-select` | 否 | 创建迁移时不将其保存为当前迁移 |
+
+现有应用完成目录迁移后可用的流程：
+
+| 流程 | 描述 |
+|---|---|
+| `transactions` | 从每日 RevenueCat 云端导出中导入交易历史记录 |
+| `transactions_support` | 通过 RevenueCat 支持团队和 Adapty 支持团队导入交易历史记录，适用于不包含云端导出功能的 RevenueCat 方案 |
+| `apple_events` | 在 RevenueCat 继续接收 App Store 通知的同时，将通知同步转发给 Adapty |
+| `google_events` | 将 Adapty 订阅至 RevenueCat 用于 Google Play 通知的 Pub/Sub 主题 |
+
+### adapty migrations use
+
+将某个迁移设置为当前迁移，这样其他命令就不需要再加 `-m` 参数了。
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `migration-id` | 从 `adapty migrations list` 获取的迁移 ID |
+
+CLI 在保存 ID 前会先验证你是否有权限访问该迁移。保存后的迁移绑定当前 token，并在所有终端中生效。
+
+### adapty migrations current
+
+显示当前迁移及其来源：`ADAPTY_MIGRATION` 环境变量或已保存的选择。
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+清除已保存的迁移记录。在 shell 中设置的 `ADAPTY_MIGRATION` 值会一直生效，直到你取消设置为止。
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+显示迁移的状态、存在的问题以及可执行的后续操作。
+
+```bash
+adapty migrations status
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--wait` | 否 | 轮询直到迁移状态发生变化，然后返回最新状态 |
+| `--timeout` | 否 | `--wait` 的轮询时长：1–600 秒，默认 120 秒。接受 `300`、`300s` 或 `5m`。需配合 `--wait` 使用。 |
+
+使用 `--json` 时，`next_actions` 和 `available_actions` 会列出每个操作的 ID、所读取的资源、`input_schema` 以及 `confirm` 文本。
+
+退出码 `0` 表示请求成功，并不代表迁移本身成功。请检查响应中的 `migration.state`。
+
+### adapty migrations steps
+
+显示迁移清单及每个步骤的状态。
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+列出当前可读取的资源，或读取某个特定资源。
+
+```bash
+adapty migrations show [resource]
+```
+
+| 参数 | 描述 |
+|---|---|
+| `resource` | 资源名称，例如 `apps`、`mapping`、`report` 或 `export-config`。省略此参数可列出当前步骤中可用的资源。 |
+
+### adapty migrations run
+
+运行 `adapty migrations status` 中的某个操作。
+
+```bash
+adapty migrations run <action-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `action-id` | 来自 `adapty migrations status` 中 `next_actions` 或 `available_actions` 的操作 ID |
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--input` | 否 | 以 JSON 对象形式传入的操作输入，需符合该操作的 `input_schema`。若不提供输入，CLI 将发送 `{}`。 |
+| `--input-file` | 否 | 操作输入文件的路径，或使用 `-` 从标准输入读取。不能与 `--input` 同时使用。 |
+| `-y`, `--yes` | 操作包含 `confirm` 文本时必填 | 阅读操作的 `confirm` 文本后确认执行。无交互式提示。 |
+| `--open` | 否 | 即使在管道模式或使用 `--json` 时，也打开操作的链接 |
+| `--no-browser` | 否 | 打印操作的链接，但不打开浏览器 |
+
+操作分为两种类型：
+
+- **输入操作**将你的数据发送给 Adapty，例如需要迁移的 RevenueCat 应用或你的映射决策。
+- **外部操作**会在 Adapty 看板中打开一个页面，例如粘贴 RevenueCat Secret API Key。完成页面操作后，勾选 `status`。
+
+### adapty migrations close
+
+完成或取消迁移。操作后无法重新打开。
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` 将迁移标记为已完成；`cancel` 放弃迁移 |
+| `-y`, `--yes` | Yes | 确认关闭操作 |
+
+## 认证 \{#auth\}
 
 | 命令 | 描述 |
 |---|---|
-| `adapty auth login` | 通过浏览器使用设备流进行身份验证 |
-| `adapty auth logout` | 清除本地存储的凭据 |
-| `adapty auth whoami` | 向服务器验证令牌并显示用户信息 |
-| `adapty auth status` | 不发起服务器调用，显示本地身份验证状态 |
-| `adapty auth revoke` | 在服务器端撤销令牌并在本地清除 |
+| `adapty auth login` | 通过浏览器使用设备流程进行身份验证 |
+| `adapty auth logout` | 清除本地存储的凭据及已保存的迁移记录 |
+| `adapty auth whoami` | 通过服务器验证令牌并显示用户信息 |
+| `adapty auth status` | 在不请求服务器的情况下显示本地认证状态 |
+| `adapty auth revoke` | 在服务器端撤销令牌，并清除本地令牌及已保存的迁移记录 |
 
-有关每个命令的完整详情，请参阅[身份验证](developer-cli-authentication)。
+各命令的详细说明请参阅[认证](developer-cli-authentication)。

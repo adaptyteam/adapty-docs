@@ -1,11 +1,11 @@
 ---
-title: "Adapty Geliştirici CLI için komut referansı"
-description: "Uygulamaları, ürünleri, paywallları, flowları ve placementları yapılandıran Adapty Geliştirici CLI komutları için referans."
+title: "Adapty Geliştirici CLI için Komut Referansı"
+description: "Uygulamaları, ürünleri, paywallları, flowları ve placementları yapılandıran ve RevenueCat'ten geçiş yapan Adapty Geliştirici CLI komutları için referans."
 metadataTitle: "Geliştirici CLI Komut Referansı | Adapty Dokümanları"
-keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
+keywords: ['cli', 'geliştirici', 'referans', 'komutlar', 'mcp']
 ---
 
-Bu makale, hesabınızı yapılandıran Adapty CLI komutlarını — uygulamalar, access level'lar, ürünler, paywalllar, flowlar, placementlar ve segmentler — argümanları, bayrakları ve kabul edilen değerleriyle birlikte listeler. Apple Ads kampanyaları için bkz. [Ads Manager komutları](developer-cli-ads-manager-reference).
+Bu makale, Adapty CLI komutlarını listeler — hesabınızı yapılandıran uygulamalar, access level'lar, ürünler, paywalllar, flow'lar, placement'lar ve segmentler — ayrıca bir RevenueCat projesini taşıyan komutları, bunların argümanlarını, flag'lerini ve kabul edilen değerleri içerir. Apple Ads kampanyaları için bkz. [Ads Manager komutları](developer-cli-ads-manager-reference).
 
 :::link
 Kimlik doğrulama kurulumu ve token yönetimi için bkz. [Kimlik Doğrulama](developer-cli-authentication).
@@ -713,14 +713,162 @@ adapty segments get --app <app-id> <segment-id>
 
 Yanıt `id`, `title` ve `description` alanlarını içerir. Filtre kuralları bu API aracılığıyla gösterilmez.
 
-## Kimlik doğrulama \{#auth\}
+## Geçişler \{#migrations\}
+
+Bir RevenueCat projesini Adapty'e taşıyın: önce katalog, ardından isteğe bağlı olarak store olayları ve işlem geçmişi. Adapty her geçişi bir dizi adım olarak çalıştırır ve hangi eylemleri daha sonra gerçekleştirebileceğinizi bildirir; bu nedenle her eylemden önce `status` komutunu okuyun. Tüm prosedür için bkz. [RevenueCat'ten Geçiş](migration-from-revenuecat).
+
+`list`, `create`, `use`, `current` ve `unuse` dışındaki tüm komutlar migration bayrağını kabul eder:
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `-m`, `--migration` | Hayır | Migration ID'si. Belirtilmezse CLI sırasıyla `ADAPTY_MIGRATION` ortam değişkenini, ardından `create` veya `use` tarafından kaydedilen migration'ı kullanır. |
+
+### adapty migrations list
+
+Uygulamaya göre gruplandırılmış migration'larınızı ve başlatabileceğiniz migration flow'larını listeler.
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+Bir migration başlatır ve mevcut migration olarak kaydeder.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--name` | `--name` veya `--flow`'dan biri | Yeni Adapty uygulamasının adı. Katalog migrasyonunu başlatır. `--flow` veya `--app` ile birleştirilemez. |
+| `--flow` | `--name` veya `--flow`'dan biri | `adapty migrations list` komutunun gösterdiği şekilde, mevcut bir uygulamada başlatılacak flow. `--app` gerektirir. |
+| `--app` | `--flow` ile birlikte | Uygulama ID'si (UUID) |
+| `--no-select` | Hayır | Migrasyonu mevcut olarak kaydetmeden oluşturur |
+
+Katalog migrasyonunun ardından mevcut bir uygulama için kullanılabilir flow'lar:
+
+| Flow | Açıklama |
+|---|---|
+| `transactions` | Günlük RevenueCat Cloud Export'tan işlem geçmişini içe aktar |
+| `transactions_support` | Cloud Export'u olmayan RevenueCat planları için RevenueCat desteği ve Adapty desteği aracılığıyla işlem geçmişini içe aktar |
+| `apple_events` | RevenueCat almaya devam ederken App Store bildirimlerini Adapty'ye ilet |
+| `google_events` | Adapty'yi RevenueCat'in Google Play bildirimleri için kullandığı Pub/Sub konusuna abone et |
+
+### adapty migrations use
+
+Bir migration'ı geçerli olarak kaydeder, böylece diğer komutlar için `-m` kullanmanıza gerek kalmaz.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `migration-id` | `adapty migrations list` komutundan alınan Migration ID |
+
+CLI, ID'yi kaydetmeden önce migration'a erişiminizin olup olmadığını kontrol eder. Kaydedilen migration, mevcut token'a ait olup her terminalde geçerlidir.
+
+### adapty migrations current
+
+Mevcut migration'ı ve kaynağını gösterir: `ADAPTY_MIGRATION` ortam değişkeni veya kaydedilmiş seçim.
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+Kaydedilmiş migration'ı temizler. Shell ortamınızda ayarlanan `ADAPTY_MIGRATION` değeri, siz kaldırana kadar geçerli olmaya devam eder.
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+Bir migration'ın durumunu, sorunlarını ve çalıştırabileceğiniz sonraki işlemleri gösterir.
+
+```bash
+adapty migrations status
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--wait` | Hayır | Migration değişene kadar yoklama yapar, ardından en son durumu döndürür |
+| `--timeout` | Hayır | `--wait` için yoklama süresi: 1–600 saniye, varsayılan 120. `300`, `300s` veya `5m` biçimlerini kabul eder. `--wait` gerektirir. |
+
+`--json` ile `next_actions` ve `available_actions`, her işlemin ID'sini, okuduğu kaynakları, `input_schema`'sını ve `confirm` metnini listeler.
+
+Çıkış kodu `0`, isteğin başarılı olduğu anlamına gelir; migrasyon işleminin başarılı olduğu değil. Yanıttaki `migration.state` değerini kontrol edin.
+
+### Adapty geçiş adımları \{#adapty-migrations-steps\}
+
+Geçiş kontrol listesini ve her adımın durumunu gösterir.
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+Şu anda okuyabileceğiniz kaynakları listeleyin veya birini okuyun.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `resource` | Kaynak adı, örneğin `apps`, `mapping`, `report` veya `export-config`. Mevcut adımda kullanılabilir kaynakları listelemek için bu argümanı atlayın. |
+
+### adapty migrations run
+
+`adapty migrations status` komutundan bir eylem çalıştırır.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `action-id` | `adapty migrations status` komutundaki `next_actions` veya `available_actions` listesinden alınan eylem ID'si |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--input` | Hayır | Aksiyonun `input_schema`'sıyla eşleşen bir JSON nesnesi olarak aksiyon girdisi. Girdi olmadan, CLI `{}` gönderir. |
+| `--input-file` | Hayır | Aksiyon girdisini içeren bir dosyanın yolu ya da stdin'den okumak için `-`. `--input` ile birlikte kullanılamaz. |
+| `-y`, `--yes` | `confirm` metni olan aksiyonlar için | `confirm` metnini okuduktan sonra aksiyonu onaylar. Etkileşimli bir istem yoktur. |
+| `--open` | Hayır | Pipe kullanılırken veya `--json` ile bile aksiyonun bağlantısını açar |
+| `--no-browser` | Hayır | Aksiyonun bağlantısını tarayıcı açmadan yazdırır |
+
+İki tür action vardır:
+
+- **Input action'lar** verilerinizi Adapty'ye gönderir; örneğin taşınacak RevenueCat uygulamaları veya eşleme kararlarınız.
+- **External action'lar** Adapty Kontrol Paneli'nde bir sayfa açar; örneğin RevenueCat gizli API anahtarını yapıştırmak için. Sayfayı tamamladıktan sonra `status` alanını kontrol edin.
+
+### adapty migrations close
+
+Bir migrasyonu tamamlayın veya iptal edin. Sonradan yeniden açamazsınız.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--outcome` | Evet | `finish` migrasyonu tamamlandı olarak işaretler; `cancel` ise iptal eder |
+| `-y`, `--yes` | Evet | Kapatmayı onaylayın |
+
+## Auth \{#auth\}
 
 | Komut | Açıklama |
 |---|---|
-| `adapty auth login` | Cihaz akışı ile tarayıcı üzerinden kimlik doğrulama yapar |
-| `adapty auth logout` | Yerel olarak depolanan kimlik bilgilerini temizler |
-| `adapty auth whoami` | Token'ı sunucu ile doğrular ve kullanıcı bilgilerini gösterir |
-| `adapty auth status` | Sunucuya çağrı yapmadan yerel kimlik doğrulama durumunu gösterir |
-| `adapty auth revoke` | Token'ı sunucu tarafında iptal eder ve yerel olarak temizler |
+| `adapty auth login` | Cihaz flow'u kullanarak tarayıcı üzerinden kimlik doğrulama |
+| `adapty auth logout` | Kayıtlı kimlik bilgilerini ve yerel olarak kaydedilen migration'ı temizle |
+| `adapty auth whoami` | Token'ı sunucuyla doğrula ve kullanıcı bilgilerini göster |
+| `adapty auth status` | Sunucuya çağrı yapmadan yerel kimlik doğrulama durumunu göster |
+| `adapty auth revoke` | Token'ı sunucu tarafında iptal et, ardından token'ı ve kayıtlı migration'ı yerel olarak temizle |
 
-Her komut hakkında ayrıntılı bilgi için bkz. [Kimlik doğrulama](developer-cli-authentication).
+Her komut hakkında ayrıntılı bilgi için [Authentication](developer-cli-authentication) sayfasına bakın.
