@@ -19,6 +19,7 @@ import Details from './Details.astro';
 import InlineTooltip from './InlineTooltip.astro';
 import ZoomImage from './ZoomImage.astro';
 import DocVideo from './DocVideo.astro';
+import NarratedVideo from './NarratedVideo.astro';
 import YouTube from './YouTube.astro';
 import Button from './Button.astro';
 import Inline from './Inline.astro';
@@ -40,6 +41,7 @@ export const mdxComponents = {
   InlineTooltip,
   ZoomImage,
   DocVideo,
+  NarratedVideo,
   YouTube,
   MDXImage,
   Button,
