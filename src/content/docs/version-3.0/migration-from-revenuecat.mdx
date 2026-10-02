@@ -8,10 +8,10 @@ keywords: ['migration', 'revenuecat']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-A migration from RevenueCat has six steps. The [Adapty CLI](developer-cli) does the second for you: it rebuilds your RevenueCat catalog in Adapty. For the third, your coding agent replaces the RevenueCat SDK in your app.
+A migration from RevenueCat has six steps. A coding agent does most of the work: it runs the migrations through the [Adapty CLI](developer-cli) and replaces the RevenueCat SDK in your app. You handle what the agent can't reach — the secrets, and the settings in RevenueCat, App Store Connect, and Google Cloud.
 
 1. [Learn the core differences](#learn-the-core-differences).
-2. [Move your catalog to Adapty](#move-your-catalog-to-adapty) with the CLI.
+2. [Move your catalog to Adapty](#move-your-catalog-to-adapty).
 3. [Replace the RevenueCat SDK](#replace-the-revenuecat-sdk) with your coding agent.
 4. [Forward store events to Adapty](#forward-store-events-to-adapty).
 5. [Test and release a new version of your app](#test-and-release-a-new-version-of-your-app).
@@ -56,17 +56,14 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 ## Move your catalog to Adapty
 
-The CLI reads your RevenueCat project and creates a new Adapty app with the same catalog: access levels from entitlements, products from packages, and a paywall and a placement for each offering.
-
-:::tip
-A coding agent can run these commands for you. [Install the Adapty CLI and log in](developer-cli-quickstart), then ask the agent to migrate your RevenueCat catalog to Adapty.
-:::
+The catalog migration creates a new Adapty app from your RevenueCat project: access levels from entitlements, products from packages, and a paywall and a placement for each offering.
 
 ### Before you start
 
-- Install the Adapty CLI and log in. See the [CLI quickstart](developer-cli-quickstart) and [Authentication](developer-cli-authentication).
+- Use a coding agent that runs terminal commands, for example Claude Code, Codex, or Cursor.
+- In the terminal your agent uses, [install the Adapty CLI](developer-cli-quickstart) and [log in](developer-cli-authentication).
 - In RevenueCat, [create a secret API key (v2)](#create-a-revenuecat-secret-api-key) for the project you migrate.
-- Check the stores. The CLI migrates App Store and Google Play apps only.
+- Check the stores. The migration covers App Store and Google Play apps only.
 
 ### Create a RevenueCat secret API key
 
@@ -88,57 +85,27 @@ When the migration asks for the key, paste it into the Adapty Dashboard page tha
 
 ### Run the catalog migration
 
-1. To start the migration, create it with the name of the new Adapty app:
+1. To start the migration, ask your agent:
 
-   ```bash
-   adapty migrations create --name "My App"
+   ```text
+   Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
    ```
 
-   The CLI saves the migration as current, so the next commands don't need a migration ID.
-
-2. To connect RevenueCat, run `enter_rc_key`. It opens a page in the Adapty Dashboard: paste the secret API key there. The key goes to Adapty directly and never passes through the CLI.
-
-   ```bash
-   adapty migrations run enter_rc_key
-   ```
-
-3. To choose the RevenueCat apps to migrate, list them, then send their IDs. Choose the apps of one product, usually one per platform: together they become a single Adapty app.
-
-   ```bash
-   adapty migrations show apps
-   ```
-
-   ```bash
-   adapty migrations run resolve_app_mapping --input '{"rc_app_ids":["app1a2b3c","app4d5e6f"]}'
-   ```
-
-4. To review the mapping Adapty suggests, show it. Rows with the status `needs_decision` are the ones Adapty couldn't map on its own.
-
-   ```bash
-   adapty migrations show mapping
-   ```
-
-   Send one decision for each of those rows: `create` migrates the row, `none` leaves it out. If no row needs a decision, send an empty list. Run `adapty migrations status --json` to see every field a decision accepts.
-
-   ```bash
-   adapty migrations run resolve_mapping --input '{"decisions":[{"key":"ROW_KEY","action":"none"}]}' --yes
-   ```
+2. To connect RevenueCat, paste the secret API key into the Adapty Dashboard page the agent opens. The key goes to Adapty directly and never passes through the agent or the CLI.
+3. To choose what to migrate, tell the agent which RevenueCat apps belong together, usually one per platform of the same product. Together they become a single Adapty app.
+4. To settle the mapping, answer the agent's questions about the entities Adapty couldn't map on its own.
 
    :::warning
-   Decisions are final. When every row has a decision, Adapty creates the catalog, and you can't change the mapping after that.
+   Decisions are final. When every entity has a decision, Adapty creates the catalog, and you can't change the mapping after that.
    :::
 
-5. To follow the catalog creation, wait for the migration to change state:
+   Adapty creates access levels, products, paywalls, and placements, in that order. If some of them fail, the agent tells you why. When every entity is in Adapty, the migration completes.
 
-   ```bash
-   adapty migrations status --wait --timeout 5m
-   ```
+5. To let the new app validate purchases, connect it to the stores in the Adapty Dashboard: [App Store](initial_ios) and [Google Play](initial-android).
 
-   Adapty creates access levels, products, paywalls, and placements, in that order. If some of them fail, the status names each failure and the reason. Fix the cause, then run `adapty migrations run retry_catalog_apply`. Entities that already exist stay as they are. When every entity is in Adapty, the migration completes.
-
-6. To let the new app validate purchases, connect it to the stores in the Adapty Dashboard: [App Store](initial_ios) and [Google Play](initial-android).
-
-For the full list of migration commands and flags, see the [CLI reference](developer-cli-reference#migrations).
+:::note
+To run the migration without an agent, use the [migration commands](developer-cli-reference#migrations). `adapty migrations status` names the next action and the input it takes.
+:::
 
 ### How RevenueCat entities map to Adapty
 
@@ -151,7 +118,7 @@ For the full list of migration commands and flags, see the [CLI reference](devel
 
 - **Offerings with a Paywall Editor paywall**: Adapty can't import a RevenueCat Paywall Editor paywall, so these offerings get no paywall and no placement. Their placement IDs stay free: create a flow or a paywall with the same ID yourself.
 - Offerings without products.
-- Products whose App Store product ID Adapty rejects, for example an ID with a colon or a space. The mapping lists them, and they need no decision.
+- Products whose App Store product ID Adapty rejects, for example an ID with a colon or a space. The agent tells you which ones, and they need no decision.
 - Apps in stores other than App Store and Google Play.
 - **Integrations**: Set them up in Adapty as described in [Migrate integrations to Adapty](migrate-integrations-to-adapty).
 
@@ -163,7 +130,7 @@ A coding agent replaces the RevenueCat SDK with the Adapty SDK in your app code,
 2. To start the migration, open your app's project in the agent and ask:
 
    ```text
-   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "My App".
+   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
    ```
 
    The skill detects your platform and the RevenueCat SDK from the project files, so the prompt needs neither.
@@ -173,7 +140,7 @@ A coding agent replaces the RevenueCat SDK with the Adapty SDK in your app code,
 
 The App Store and Google Play report renewals, cancellations, and refunds to your server through notifications, including the ones that happen outside your app. Two migrations connect Adapty to these notifications while RevenueCat keeps receiving every event, so both stay up to date while your users move to the new app version.
 
-Run them after the [catalog migration](#move-your-catalog-to-adapty), with the ID of the Adapty app it created. Adapty takes the bundle ID and the package name from the RevenueCat apps you selected there.
+Start them after the [catalog migration](#move-your-catalog-to-adapty) completes. Adapty takes the bundle ID and the package name from the RevenueCat apps you selected there.
 
 {/* Kept for links to the section this one replaced, including the Adapty Dashboard. */}
 <span id="switch-app-store-server-side-notifications-to-adapty"></span>
@@ -184,39 +151,16 @@ Adapty receives the App Store notifications and forwards each one to RevenueCat.
 
 Before you start, create an [In-App Purchase key](in-app-purchase-api-storekit-2) in App Store Connect, and note its **Issuer ID** and **Key ID**.
 
-1. To start forwarding, create the migration with the ID of your Adapty app:
+1. To start forwarding, ask your agent:
 
-   ```bash
-   adapty migrations create --flow apple_events --app APP_ID
+   ```text
+   Forward App Store events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
    ```
 
-2. To give Adapty access to App Store events, run `apple_enter_credentials`. It opens a page in the Adapty Dashboard: upload the `.p8` file, and enter the **Issuer ID** and the **Key ID**. The key goes to Adapty directly and never passes through the CLI.
-
-   ```bash
-   adapty migrations run apple_enter_credentials
-   ```
-
-3. To keep RevenueCat receiving App Store events, send Adapty the RevenueCat notification URL. In RevenueCat, open your iOS app, then copy the **Apple Server Notification URL** from **Apple Server to Server notification settings**. It starts with `https://api.revenuecat.com/v1/incoming-webhooks/`.
-
-   ```bash
-   adapty migrations run apple_enter_rc_notification_url --input '{"url":"https://api.revenuecat.com/v1/incoming-webhooks/…"}'
-   ```
-
-4. To point the App Store at Adapty, get the Adapty notification URL from `adapty_notification_url`:
-
-   ```bash
-   adapty migrations show app-store-setup
-   ```
-
-   In App Store Connect, open your app, then go to **App Information** > **App Store Server Notifications**. Set both **Production Server URL** and **Sandbox Server URL** to that URL, with **Version 2** notifications. For details, see [Enable App Store server notifications](enable-app-store-server-notifications). Forwarding to RevenueCat is already on at this point, so no event is lost.
-
-5. To check the connection, confirm the change. Adapty asks the App Store for a test notification and waits for it.
-
-   ```bash
-   adapty migrations run apple_confirm_app_store_connect
-   ```
-
-   If the test notification doesn't arrive, `adapty migrations status` names the reason. Fix it, then run `adapty migrations run apple_retry_verification`.
+2. To give Adapty access to App Store events, in the Adapty Dashboard page the agent opens, upload the `.p8` file, and enter the **Issuer ID** and the **Key ID**. The key goes to Adapty directly and never passes through the agent or the CLI.
+3. To keep RevenueCat receiving App Store events, give the agent the RevenueCat notification URL. In RevenueCat, open your iOS app, then copy the **Apple Server Notification URL** from **Apple Server to Server notification settings**. It starts with `https://api.revenuecat.com/v1/incoming-webhooks/`.
+4. To point the App Store at Adapty, in App Store Connect, open your app, then go to **App Information** > **App Store Server Notifications**. Set both **Production Server URL** and **Sandbox Server URL** to the Adapty URL the agent gives you, with **Version 2** notifications. For details, see [Enable App Store server notifications](enable-app-store-server-notifications). Forwarding to RevenueCat is already on at this point, so no event is lost.
+5. To check the connection, tell the agent the URLs are set. Adapty asks the App Store for a test notification and waits for it. If it doesn't arrive, the agent tells you why.
 
 ### Forward Google Play events
 
@@ -226,29 +170,19 @@ Google Play sends notifications to a Pub/Sub topic. Adapty subscribes to the top
 Don't change the topic in Google Play Console, and don't follow the steps in [Enable RTDN](enable-real-time-developer-notifications-rtdn) for this app. A new topic stops the notifications to RevenueCat.
 :::
 
-1. To start forwarding, create the migration with the ID of your Adapty app:
+1. To start forwarding, ask your agent:
 
-   ```bash
-   adapty migrations create --flow google_events --app APP_ID
+   ```text
+   Forward Google Play events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
    ```
 
 2. To give Adapty access to the topic, create a JSON key for the service account RevenueCat uses. In the Google Cloud console, go to **IAM & Admin** > **Service Accounts**, open the account, usually `revenuecat-service-account`, then go to **Keys** > **Add key** and choose **JSON**. A new key doesn't affect RevenueCat. For details, see Google's guide to [creating a service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
+3. To upload the key, in the Adapty Dashboard page the agent opens, upload the file to **Google Play service account key (JSON)**. The key goes to Adapty directly and never passes through the agent or the CLI.
+4. To subscribe Adapty to the topic, give the agent its ID. In RevenueCat, open your Google Play app settings, then copy the **Topic ID** from **Google developer notifications**. Google Play Console shows the same value in **Monetize** > **Monetization setup** > **Topic name**.
 
-3. To upload the key, run `google_enter_credentials`. It opens a page in the Adapty Dashboard: upload the file to **Google Play service account key (JSON)**. The key goes to Adapty directly and never passes through the CLI.
+   Adapty subscribes to the topic, then publishes a test notification and waits for it. If it doesn't arrive, the agent tells you why.
 
-   ```bash
-   adapty migrations run google_enter_credentials
-   ```
-
-4. To subscribe Adapty to the topic, send its ID. In RevenueCat, open your Google Play app settings, then copy the **Topic ID** from **Google developer notifications**. Google Play Console shows the same value in **Monetize** > **Monetization setup** > **Topic name**.
-
-   ```bash
-   adapty migrations run google_enter_rtdn_topic --input '{"topic":"projects/my-project/topics/Play-Store-Notifications"}'
-   ```
-
-   Adapty subscribes to the topic, then publishes a test notification and waits for it.
-
-5. If the test notification doesn't arrive, `adapty migrations status` names the reason. Fix it, then run `adapty migrations run google_retry_verification`. The most common reason is a missing permission: give the service account the **Pub/Sub Editor** role in the topic's project, or the **Pub/Sub Subscriber** role on the topic and **Pub/Sub Editor** in the project of the key.
+5. If the test fails on a permission, give the service account the **Pub/Sub Editor** role in the topic's project, or the **Pub/Sub Subscriber** role on the topic and **Pub/Sub Editor** in the project of the key. Then ask the agent to check again.
 
 ## Test and release a new version of your app
 
@@ -279,33 +213,20 @@ Don't rush the historical data import
 You should wait for at least a week after the release with the SDK before doing historical data import. During that time we will get all the info about purchase prices from the SDK, so the data you import will be more relevant.
 :::
 
-The CLI offers two ways to import the history, both for the app your catalog migration created. To see them, run `adapty migrations list`.
+Two migrations import the history into the app your catalog migration created. Use a Cloud Export if your RevenueCat plan has one.
 
 ### With a RevenueCat Cloud Export
 
 RevenueCat delivers a daily export into a bucket Adapty prepares for your app, and Adapty imports every file it receives.
 
-1. To start the import, create the migration with the ID of your Adapty app:
+1. To start the import, ask your agent:
 
-   ```bash
-   adapty migrations create --flow transactions --app APP_ID
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" with a Cloud Export.
    ```
 
-2. To connect the export, send Adapty the External ID from RevenueCat. In RevenueCat, open the **Scheduled Data Exports** settings, choose **IAM Role (ARN)** as the credential type, and copy the **External ID** RevenueCat shows. The External ID isn't a secret.
-
-   ```bash
-   adapty migrations run setup_export --input '{"external_id":"EXTERNAL_ID"}'
-   ```
-
-   Adapty then prepares the bucket the export writes into.
-
-3. To finish the export settings in RevenueCat, show the bucket, region, and role ARN Adapty prepared, then enter them in RevenueCat:
-
-   ```bash
-   adapty migrations show export-config
-   ```
-
-   Turn on **Receive new and updated transactions only**. Otherwise, RevenueCat exports the whole history every day, and Adapty imports every file.
+2. To connect the export, give the agent the External ID from RevenueCat. In RevenueCat, open the **Scheduled Data Exports** settings, choose **IAM Role (ARN)** as the credential type, and copy the **External ID** RevenueCat shows. The External ID isn't a secret.
+3. To finish the export settings, in RevenueCat, enter the bucket, region, and role ARN the agent gives you. Turn on **Receive new and updated transactions only**. Otherwise, RevenueCat exports the whole history every day, and Adapty imports every file.
 
 RevenueCat can take up to 24 hours to deliver the first file, and Adapty looks for new files in the bucket every hour. The migration finishes on its own a week after Adapty imports the first file. The Customer User ID of each imported profile is `rc_last_seen_app_user_id_alias`.
 
@@ -313,19 +234,14 @@ RevenueCat can take up to 24 hours to deliver the first file, and Adapty looks f
 
 Use this way if your RevenueCat plan has no Cloud Export: RevenueCat support sends you the export, and Adapty support imports it.
 
-1. To start the import, create the migration with the ID of your Adapty app:
+1. To start the import, ask your agent:
 
-   ```bash
-   adapty migrations create --flow transactions_support --app APP_ID
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" through support.
    ```
 
-2. To get the two messages to send, show the guide:
-
-   ```bash
-   adapty migrations show support-guide
-   ```
-
-3. Send the first message to RevenueCat support. When RevenueCat sends the files, forward them to Adapty support with the second message. Attach the files exactly as RevenueCat sent them: opening, re-saving, or merging them changes the column format the import expects.
+2. To request the export, send RevenueCat support the first of the two messages the agent gives you.
+3. To import the export, forward the files RevenueCat sends to Adapty support with the second message. Attach the files exactly as RevenueCat sent them: opening, re-saving, or merging them changes the column format the import expects.
 
 ### What the import brings over
 
