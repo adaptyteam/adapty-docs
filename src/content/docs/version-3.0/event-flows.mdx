@@ -1,300 +1,359 @@
 ---
-title: "Event flows"
-description: "Discover detailed schemes of subscription event flows in Adapty. Learn how subscription events are generated and sent to integrations, helping you track key moments in your customers' journeys."
-metadataTitle: "Understanding Event Flows in Adapty: Schemes and Scenarios"
+title: "Event timelines"
+description: "See which subscription events Adapty sends, and in what order, when a customer buys, renews, cancels, or changes a subscription."
+metadataTitle: "Subscription event timelines | Adapty Docs"
 keywords: ['refund', 'trial', 'restore', 'events', 'event']
 rank: 70
 ---
 
-import InlineTooltip from '@site/src/components/InlineTooltip';
+A single user action often generates several Adapty events. For example, a new subscription triggers **Subscription started** and **Access level updated**. The diagrams below show which events Adapty sends, and in what order, when a customer buys, renews, cancels, or changes a subscription. To see which events your users trigger, open the [Event Feed](event-feed).
 
-One action often produces several events. For example, a first purchase sends both **Subscription started** and **Access level updated**. The diagrams below show what Adapty sends when a customer subscribes, cancels, or reactivates, and in what order.
+## Rules and limitations
 
-## How to read the diagrams
+- **Timing.** The App Store renews a subscription up to 24 hours before the billing period ends, so **Subscription renewed** and **Trial converted** can arrive early. The diagrams draw the charge and the start of the period together.
+- **Order.** If a single action triggers multiple events, they can arrive in any order. The diagrams draw them in one order, and your [Event Feed](event-feed) may list them in another.
+- **Coverage.** Adapty learns about a purchase, a renewal, or a cancellation from a store notification, the Adapty SDK in your app, or the [Server-side API](getting-started-with-server-side-api). The diagrams show the events that these changes trigger. [Synthetic events](events#synthetic-events) don't appear: Adapty sends them on a timer, and the delay differs per integration, so they have no fixed place in a sequence.
+- **Integration limitations.** Not all integrations receive all events.
+  - To forward an event, [enable it](events#event-list) in integration settings.
+  - The **Access level updated** event only reaches your [webhooks](webhook).
+  - To view all events from the past two weeks, open the [Event Feed](event-feed).
+  - Events that [can't be linked to any user](how-profiles-work#transactions-without-profiles) don't appear in the Event Feed and never reach real-time integrations, such as the webhook. You can include them in [Google Cloud Storage](google-cloud-storage) and [Amazon S3](s3-exports) exports if you turn on **Include events without profile**.
 
-- **Timing.** Apple charges for a subscription several hours before it starts or renews. Showing that gap would add a step to every diagram without changing which events you receive, so the diagrams put the charge and the start together.
-- **Order.** Events from one action arrive at the same moment. A diagram has to draw them in some order, but your [Event Feed](event-feed) may list them in a different one, and neither is more correct.
-- **Coverage.** A store notification triggers every event shown. [Synthetic events](events#synthetic-events) don't appear: Adapty sends them on a timer, and the delay differs per integration, so they have no fixed place in a sequence.
+## Subscription lifecycle
 
-## Subscription Lifecycle
+### Initial purchase
 
-### Initial Purchase Flow
-
-This flow happens when a customer buys a subscription for the first time without a trial. In this situation, the following events are created:
+When a customer starts a new subscription without a trial, Adapty sends:
 
 - **Subscription started**
-- **Access level updated** to grant access to the user
-
-When the subscription renewal date comes, the subscription is renewed. In this case, the following events are created:
-
-- **Subscription renewal** to start a new period of the subscription
-- **Access level updated** to update the subscription expiration date, extending access for another period
-
-Situations when the payment is not successful or when the user cancels the renewal are described in [Billing Issue Outcome Flow](event-flows#billing-issue-outcome-flow) and [Subscription Cancellation Flow](event-flows#subscription-cancellation-flow) ,respectively.
-
-<ZoomImage id="Initial_Purchase_Flow.webp" width="700px" alt="Initial Purchase Flow diagram" />
-
-### Subscription Cancellation Flow
-
-When a user cancels their subscription, the following events are created:
-
-- **Subscription renewal canceled** to indicate that the subscription remains active until the end of the current period, after which the user will lose access
-- The **Access level updated** event is created to disable auto-renewal for the access
-
-Once the subscription ends, the **Subscription expired (churned)** event is triggered to mark the end of the subscription.
-
-<ZoomImage id="Subscription_Cancellation_Flow.webp" width="700px" alt="Subscription Cancellation Flow diagram" />
-
-If a refund is approved, the following event replaces **Subscription expired (churned)**:
-
-- **Subscription refunded** to end the subscription and provide details about the refund
-
-<ZoomImage id="Subscription_Cancellation_Flow_with_a_Refund.webp" width="700px" alt="Subscription Cancellation Flow with a Refund diagram" />
-
-For Stripe, a subscription can be canceled immediately, skipping the remaining period. In this case, all events are created simultaneously:
-
-- **Subscription renewal cancelled**
-- **Subscription expired (churned)**
-- **Access Level updated** to remove the user’s access
-
-If a refund is approved, a **Subscription refunded** event is also triggered when it’s approved.
-
-<ZoomImage id="Subscription_Immediate_Cancellation_Flow.webp" width="700px" alt="Subscription Immediate Cancellation Flow diagram" />
-
-### Subscription Reactivation Flow
-
-If a user cancels a subscription, it expires, and they later repurchase the same subscription, a **Subscription renewed** event will be created. Even if there’s a gap in access, Adapty treats this as a single transaction chain, linked by the `vendor_original_transaction_id`. So, the repurchase is considered a renewal.
-
-The **Access level updated** events will be created twice:
-
-- at the subscription end to revoke the user's access
-- at the subscription repurchase to grant access
-
-<ZoomImage id="Subscription_Rejoin_Flow.webp" width="700px" alt="Subscription Rejoin Flow diagram" />
-
-### Subscription Pause Flow (Android only)
-
-This flow applies when a user pauses and later resumes a subscription on Android.
-
-Pausing a subscription has delayed effects. If a user pauses a subscription before it is set to renew, the subscription remains active, and the user retains paid access for the remainder of the billing period.
-
-1. When the user pauses a subscription, they trigger the **Subscription paused (Android only)** event.
-2. At the end of the subscription period Adapty triggers the **Access level updated** event to revoke the user's access.
-3. When the user resumes the subscription, the following events are triggered:
-
-    - **Subscription renewed**
-    - **Access level updated** to restore the user's access
-
-These subscriptions will belong to the same transaction chain, linked with the same **vendor_original_transaction_id**.
-
-<ZoomImage id="Subscription_Paused_Flow.webp" width="700px" alt="Subscription Paused Flow diagram" />
-
-## Trial Flows
-
-If you use trials in your app, you’ll receive additional trial-related events.
-
-### Trial with Successful Conversion Flow
-
-The most common flow occurs when a user starts a trial, provides a credit card, and successfully converts to a standard subscription at the end of the trial period. In this situation, the following events are created at the moment of teh trial start:
-
-- **Trial started** to mark the trial start
 - **Access level updated** to grant access
 
-The **Trial converted** event is created when the standard subscription starts.
+What counts as a new subscription depends on the store:
 
-<ZoomImage id="Trial_Flow_with_Successful_Conversion.webp" width="700px" alt="Trial Flow with Successful Conversion diagram" />
+- For App Store subscriptions, all of a customer's purchases in one subscription group belong to the same subscription, even after it expires. So Adapty only sends **Subscription started** for the first purchase in the group.
+- For Google Play and web purchases, each new purchase starts a new subscription. So Adapty sends **Subscription started** for each of them, including a repurchase after the old subscription expires.
 
-### Trial without Successful Conversion Flow
+[Repurchase after expiry](#repurchase-after-expiry) lists the events for a repurchase.
 
-If a user cancels the trial before it converts to a subscription, the following events are created at the time of cancellation:
+At each renewal, Adapty sends:
 
-- **Trial renewal cancelled** to disable automatic conversion of the trial to a subscription
-- **Access level updated** to disable access renewal
+- **Subscription renewed** to start a new subscription period
+- **Access level updated** to extend access for another period
 
-The user will have access until the end of the trial when the **Trial expired** event is created to mark the trial's end.
+If a renewal payment fails, the [billing issue sequence](#billing-issues) begins. If the user turns off auto-renewal, the [cancellation sequence](#subscription-cancellation) begins.
 
-<ZoomImage id="Trial_Flow_without_Successful_Conversion.webp" width="700px" alt="Trial Flow without Successful Conversion diagram" />
+<ZoomImage id="Initial_Purchase_Flow.webp" width="700px" alt="Events for an initial purchase and a renewal" />
 
-### Subscription Reactivation after Expired Trial Flow
+### Subscription cancellation
 
-If a trial expires (due to a billing issue or cancellation) and the user later buys a subscription, the following events are created:
+When a user turns off auto-renewal, Adapty sends:
 
-- **Access level updated** to grant access to the user
+- **Subscription renewal canceled** to mark that the subscription won't renew
+- **Access level updated** to mark that access won't renew
+
+The user keeps access until the end of the current period. When it ends, Adapty sends **Subscription expired (churned)**. If a refund is issued before then, Adapty sends the [refund events](#refunds) instead.
+
+{/*
+For a 12-month commitment plan, turning off auto-renewal only cancels the next commitment. The subscriber keeps paying monthly, and keeps access, until the current commitment ends:
+
+- Adapty sends **Subscription renewal canceled** once, when the user turns off auto-renewal.
+- Adapty sends **Subscription renewed** for each remaining monthly payment.
+- Adapty sends **Subscription expired (churned)** when the commitment ends.
+
+The commitment plan article lists all the differences in events.
+*/}
+
+<ZoomImage id="Subscription_Cancellation_Flow.webp" width="700px" alt="Events for a cancellation" />
+
+For web purchases, you can cancel the subscription immediately: the user loses access right away, not at the end of the paid period. In this case, Adapty creates these events at the same time:
+
+- **Subscription renewal canceled**
+- **Subscription expired (churned)**
+- **Access level updated** to remove the user’s access
+
+<ZoomImage id="Subscription_Immediate_Cancellation_Flow.webp" width="700px" alt="Events for an immediate cancellation" />
+
+### Refunds
+
+When a refund is issued, Adapty sends:
+
+- **Subscription refunded**. Its [revenue properties](webhook-event-types-and-fields#event-properties) hold the refunded amount (negative).
+- **Access level updated** to revoke access
+
+Whether Adapty sends **Subscription expired (churned)** depends on when the refund comes:
+
+- Before the subscription expires: Adapty sends **Subscription refunded** instead of **Subscription expired (churned)**.
+- After the subscription expires, for example after an immediate cancellation: Adapty sends **Subscription refunded** in addition to the earlier **Subscription expired (churned)**.
+
+<ZoomImage id="Subscription_Cancellation_Flow_with_a_Refund.webp" width="700px" alt="Events for a cancellation with a refund" />
+
+Some refunds only cover part of a payment:
+
+- When an App Store subscriber upgrades, Apple refunds the unused part of the old subscription. [Immediate product changes](#immediate-product-change) lists the events.
+- If you refund a Google Play payment for a billing period that's already over, Adapty doesn't record the refund. There's no event, and the payment keeps its full amount.
+- If you refund the payment for the ongoing billing period, Google revokes the subscription, and Adapty sends **Subscription expired (churned)** with `cancellation_reason` = `refund`. {/* Inferred from code, no test. Confirm with devs. */}
+- If you partially refund a Stripe payment, Adapty [doesn't record the refund](stripe#refunds). There's no event, and the payment keeps its full amount in Adapty analytics.
+- If you partially refund a Paddle payment, Adapty sends a **Subscription refunded** event for each partial refund. The event's revenue properties hold the refunded amount (negative).
+
+After a partial refund, the user's access depends on the store:
+
+- For App Store subscriptions, you can't refund a payment yourself: customers request refunds from Apple. If you use Adapty's [Refund Saver](refund-saver), it can suggest that Apple refund only the unused part of the billing period. When Apple grants a refund, full or prorated, it revokes the refunded payment, so the user loses access.
+- For Google Play subscriptions, if you refund the payment for the ongoing billing period, Google [revokes the subscription](https://support.google.com/googleplay/android-developer/answer/2741495), and the user loses access right away. If you refund a payment for a billing period that's already over, the refund doesn't affect the current subscription status.
+- For web purchases, a partial refund only returns money. The subscription keeps running, so the user keeps access, and Adapty sends no **Access level updated**. Adapty can't cancel the subscription for you: cancel it manually in the [Stripe](https://docs.stripe.com/billing/subscriptions/cancel) or [Paddle](https://developer.paddle.com/build/subscriptions/cancel-subscriptions) dashboard, or automate the cancellation through their APIs. In the Stripe Dashboard, you can cancel and refund in one step.
+
+If you revoke the access level through the [Server-side API](api-adapty/operations/revokeAccessLevel), billing continues, and the next renewal restores access.
+
+### Repurchase after expiry
+
+If a subscription expires and the user later subscribes again, the event depends on what they buy:
+
+- An App Store product from a subscription group the user subscribed to before: Adapty sends **Subscription renewed**, even if the duration differs. The purchase keeps the old `original_transaction_id`.
+- An App Store product from another group: Adapty sends **Subscription started**, even if the product unlocks the same access level.
+- Any Google Play or web purchase: Adapty sends **Subscription started**.
+
+Adapty also sends **Access level updated** to grant access again.
+
+<ZoomImage id="Subscription_Rejoin_Flow.webp" width="700px" alt="Events for a repurchase after expiry" />
+
+### Subscription pause (Google Play only)
+
+A Google Play subscriber can pause a subscription. The pause starts when the current billing period ends, so the user keeps access until then.
+
+1. When the pause starts, Adapty sends:
+   - **Subscription paused (Android only)**
+   - **Access level updated** to revoke access
+2. When the subscription resumes, Adapty sends:
+   - **Subscription renewed**
+   - **Access level updated** to restore access
+
+The renewal keeps the subscription's `original_transaction_id`.
+
+<ZoomImage id="Subscription_Paused_Flow.webp" width="700px" alt="Events for a subscription pause" />
+
+## Trials
+
+### Trial that leads to conversion
+
+When a user starts a trial, Adapty sends:
+
+- **Trial started**
+- **Access level updated** to grant access for the trial period
+
+When the trial ends and the store charges the user for the first period, Adapty sends:
+
 - **Trial converted**
+- **Access level updated** to extend access for the subscription period
 
-Even with a gap between the trial and subscription, Adapty links the two using `vendor_original_transaction_id`. This conversion is treated as part of a continuous transaction chain, starting with a zero-price trial. That is why the **Trial converted** event is created rather than the **Subscription started**.
+<ZoomImage id="Trial_Flow_with_Successful_Conversion.webp" width="700px" alt="Events for a trial that converts to a subscription" />
 
-<ZoomImage id="Subscription_Reactivation_Flow_after_Expired_Trial.webp" width="700px" alt="Subscription Reactivation Flow after Expired Trial diagram" />
+### Trial that leads to a cancellation
 
-## Product Changes
+When a user turns off auto-renewal before the trial ends, Adapty sends:
 
-This section covers any adjustments made to active subscriptions, such as upgrades, downgrades or purchases of a product from another group.
+- **Trial renewal canceled** to mark that the trial won't convert
+- **Access level updated** to mark that access won't renew
 
-### Immediate Product Change Flow
+The user keeps access until the trial ends. When it ends, Adapty sends **Trial expired**.
 
-After a user changes a product, it can be changed in the system immediately before the subscription ends (mostly in case of an upgrade or replacement of a product). In this case, at the moment of the product change:
+<ZoomImage id="Trial_Flow_without_Successful_Conversion.webp" width="700px" alt="Events for a canceled trial" />
 
-- The access level is changed, and two **Access level updated** events are created:
-  1. to remove the access to the first product.
-  2. to give access to the second product.
-- The old subscription ends, and a refund is paid (the **Subscription refunded** event is created with the `cancellation_reason` = `upgraded`). Please note that no **Subscription expired (churned)** event is created; the **Subscription refunded** event replaces it.
-- The new subscription starts (the **Subscription started** event is created for the new product).
+### Purchase after an expired trial
 
-<ZoomImage id="Immediate_Product_Change_Flow_Upgrade.webp" width="700px" alt="Immediate Product Change Flow Upgrade diagram" />
+If a trial expires and the user later subscribes, the event depends on what they buy:
 
-If a user downgrades the subscription, the first subscription will last till the end of the paid period, and when the subscription ends, it will be replaced with a new, lower-tier subscription. In this situation, only the **Access level updated** event to disable access autorenewal will be created at once. All other events will be created at the moment of the subscription's actual replacement:
+- An App Store product from the trial's subscription group: Adapty sends **Trial converted**, even if the duration differs. The purchase keeps the trial's `original_transaction_id`.
+- An App Store product from another group: Adapty sends **Subscription started**, even if the product unlocks the same access level.
+- Any Google Play or web purchase: Adapty sends **Subscription started**.
 
-- Another **Access level updated** event is created to give access to the second product.
-- The **Subscription expired (churned)** event is created to end the subscription for the first product.
-- The **Subscription started** event is created to start a new subscription for the new product.
+Adapty also sends **Access level updated** to grant access again.
 
-<ZoomImage id="Delayed_Product_Change_Downgrade.webp" width="700px" alt="Delayed Product Change Downgrade diagram" />
+<ZoomImage id="Subscription_Reactivation_Flow_after_Expired_Trial.webp" width="700px" alt="Events for a purchase after an expired trial" />
 
-### Delayed Product Change Flow
+## Product changes
 
-There is also a variant when a user changes the product at the moment of the subscription renewal. This variant is very similar to the previous one: one **Access level updated** event will be created at once to disable access autorenewal for the old product. All other events will be created at the moment when the user changes the subscription and it is  changed in the system:
+A product change switches an active subscription to another product: an upgrade, a downgrade, or a crossgrade within the same subscription group. For App Store subscriptions, a purchase from another group starts a second, separate subscription.
 
-- Another **Access level updated** event is created to give access to the second product.
-- The **Subscription expired (churned)** event is created to end the subscription for the first product.
-- The **Subscription started** event is created to start a new subscription for the new product.
+When a product change takes effect, Adapty sends one or more **Access level updated** events:
 
-<ZoomImage id="Product_Change_on_Renewal_Flow.webp" width="700px" alt="Product Change on Renewal Flow diagram" />
+- If the old and the new product unlock the same access level, Adapty sends one event: the access level now comes from the new product, with a new expiration date.
+- If the products unlock different access levels, Adapty sends two: one that removes the old access level, and one that grants the new one.
 
-## Billing Issue Outcome Flow
+### Immediate product change
 
-If attempts to convert a trial or renew a subscription fail due to a billing issue, what happens next depends on whether a grace period is enabled.
+A product change can take effect immediately, before the current period ends. This is typical for upgrades. In this case, the following events fire at the moment of the change:
 
-With a grace period, if the payment succeeds, the trial converts or the subscription renews. If it fails, the app store will continue to attemp to charge the user for the subscription and if still fails, the app store will end the trial or subscription itself.
+- For App Store subscriptions:
+  - Apple refunds the unused part of the old subscription. The old subscription triggers the **Subscription refunded** event with `cancellation_reason` = `upgraded`. The event's [revenue properties](webhook-event-types-and-fields#event-properties) hold the refunded amount (negative). Adapty sends no **Subscription expired (churned)** event for the old subscription.
+  - The new product **does not** count as a new subscription. The first payment triggers **Subscription renewed** instead, or **Trial converted** if the old product was in a trial.
+- For Stripe subscriptions, the event sequence is the same — but without an actual refund. Instead, with prorations on, Stripe applies the value of the unused time to the customer's future invoices.
+- For Google Play subscriptions:
+  - The old purchase triggers the **Subscription renewal canceled** event.
+  - The old purchase triggers the **Subscription expired (churned)** event with `cancellation_reason` = `upgraded`. Adapty sends no **Subscription refunded** event.
+  - The new product triggers a new subscription, and, with its first payment, a **Subscription started** event. The active [replacement mode](https://developer.android.com/google/play/billing/subscriptions#replacement-modes) determines the event's revenue.
 
-Therefore, at the moment of the billing issue, the following events are created in Adapty:
+<ZoomImage id="Immediate_Product_Change_Flow_Upgrade.webp" width="700px" alt="Events for an immediate product change" />
+
+### Product change at the next renewal
+
+A product change takes effect at the next renewal in these cases:
+
+- For App Store subscriptions: a downgrade, or a crossgrade to a subscription of the same level with a different duration.
+- For Google Play subscriptions: a change with the `DEFERRED` [replacement mode](https://developer.android.com/google/play/billing/subscriptions#replacement-modes).
+
+For App Store subscriptions, scheduling the change triggers no events, not even **Access level updated**: auto-renewal stays on, and only the product of the next renewal changes. The change takes effect at the renewal. Then Adapty sends **Access level updated**, and **Subscription renewed** for the new product's first payment. It sends no **Subscription expired (churned)** for the old one.
+
+For Stripe subscriptions, an upgrade and a downgrade trigger the same events.
+
+<ZoomImage id="Delayed_Product_Change_Downgrade.webp" width="700px" alt="Events for a downgrade at the next renewal" />
+
+<ZoomImage id="Product_Change_on_Renewal_Flow.webp" width="700px" alt="Events for an upgrade or downgrade at the next renewal" />
+
+## Billing issues
+
+When a renewal or trial conversion payment fails, the store keeps retrying the payment. The events Adapty sends depend on whether a grace period applies.
+
+### With a grace period
+
+When the payment fails, Adapty sends:
 
 - **Billing issue detected**
-- **Entered grace period** (if the grace period is enabled)
-- **Access level updated** to provide the access till the end of the grace period
+- **Entered grace period**
+- **Access level updated** to extend access until the grace period ends
 
-If the payment succeeds later, Adapty records a **Trial converted** or **Subscription renewed** event, and the user does not lose access.
+For App Store and Google Play subscriptions, the store can still collect the payment for up to 60 days after it fails. The grace period is the start of this recovery window. After the grace period ends, the user has no access until the payment succeeds.
 
-If the payment ultimately fails and the app store cancels the subscription, Adapty generates these events:
+The billing issue ends in one of three ways:
 
-- **Trial expired** or **Subscription expired (churned)** with `cancellation_reason: billing_error`
-- **Access level updated** to revoke the user's access
+- The payment succeeds before the grace period ends: Adapty sends **Subscription renewed** or **Trial converted**, and **Access level updated** to extend access. The user keeps access without a gap.
+- The payment succeeds after the grace period ends, but before the end of the recovery window: Adapty sends the same events, and the user regains access.
+- The recovery window ends without a payment: Adapty sends **Subscription expired (churned)** or **Trial expired** with `cancellation_reason` = `billing_error`.
 
-<ZoomImage id="Billing_Issue_Outcome_Flow_with_Grace_Period.webp" width="700px" alt="Billing Issue Outcome Flow with Grace Period diagram" />
+<ZoomImage id="Billing_Issue_Outcome_Flow_with_Grace_Period.webp" width="700px" alt="Events for a billing issue with a grace period" />
 
-Without a grace period, the Billing Retry Period (the period when the app store continues to attempt to charge the user) starts immediately.
+### Without a grace period
 
-If the payment never succeeds till the end of the grace period, the flow is the same: the same events are created when the app store ends the subscription automatically:
+When the payment fails, the user loses access right away, and Adapty sends:
 
-- **Trial expired** or **Subscription expired (churned)** event with a `cancellation_reason` of `billing_error`
+- **Billing issue detected**
+- **Access level updated** to revoke access
 
-- **Access level updated** to revoke the user's access
+For App Store and Google Play subscriptions, the store can still collect the payment during a recovery window of up to 60 days after it fails. The billing issue ends in one of two ways:
 
-<ZoomImage id="Billing_Issue_Outcome_Flow_without_Grace_Period.webp" width="700px" alt="Billing Issue Outcome Flow without Grace Period diagram" />
+- The payment succeeds before the end of the recovery window: Adapty sends **Subscription renewed** or **Trial converted**, and **Access level updated** to restore access.
+- The recovery window ends without a payment: Adapty sends **Subscription expired (churned)** or **Trial expired** with `cancellation_reason` = `billing_error`.
 
-## Sharing Purchases Across User Accounts Flows
+<ZoomImage id="Billing_Issue_Outcome_Flow_without_Grace_Period.webp" width="700px" alt="Events for a billing issue without a grace period" />
 
-When a <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> attempts to restore or extend a subscription already tied to a different <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>, Adapty's **Sharing paid access between user accounts** setting controls how access is managed. The flow will vary depending on the selected option.
+## Sharing paid access between profiles
+
+When a second profile claims a purchase that another profile made, the [Sharing paid access between user accounts](sharing-paid-access-between-user-accounts) setting controls which profiles have access. The events Adapty sends depend on that setting.
 
 :::note
-For Apple Family Sharing transactions (`in_app_ownership_type=FAMILY_SHARED`), only the **Access level updated** event fires — the per-product subscription events below do not. See [Apple Family Sharing](apple-family-sharing) for the full event matrix.
+For Apple Family Sharing transactions (`in_app_ownership_type=FAMILY_SHARED`), Adapty only sends **Access level updated** to family members. Subscription events, such as **Subscription started** and **Subscription renewed**, only reach the purchaser. [Apple Family Sharing](apple-family-sharing) lists all the events.
 :::
 
 :::note
-If a user taps **Restore Purchases** but already has access on the same profile, the restore is a no-op and no webhook events fire. The events in this section only fire when access actually transfers between profiles.
+If a user restores purchases on a profile that already has the access level, Adapty sends no events.
 :::
 
-For an at-a-glance view of which events fire when a second profile claims an existing subscription, use this matrix. The sections that follow show the full JSON payload for each flow.
+This table shows which events fire when a second profile claims a purchase. The subsections below show the access properties of each event.
 
 | Event | Enabled (default) | Transfer access to new user | Disabled |
 | --- | --- | --- | --- |
 | New profile: **Access level updated** (`is_active=true`) | Fires | Fires | Does not fire |
 | Old profile: **Access level updated** (`is_active=false`) | Does not fire — both profiles keep access | Fires when the new identified device propagates the transaction | Does not fire — the original profile keeps access |
-| `profiles_sharing_access_level` field on the new event | Lists the other profiles that share the access level | `null` | Not applicable — no event fires |
+| `profiles_sharing_access_level` property on the new event | Lists the other profiles that share the access level | `null` | Not applicable — no event fires |
 
-Renewals, refunds, and expiries on a transferred subscription continue to fire `subscription_renewed`, `subscription_refunded`, and `subscription_expired` events on whichever profile currently holds the access level. The transfer event itself does not emit a `subscription_started` event, because no new transaction is recorded — only the attribution changes.
+In every mode, transactional events, such as **Subscription renewed** and **Subscription refunded**, only appear on the [parent profile](how-profiles-work#parent-and-inheritor-profiles): the first profile that recorded the purchase. Adapty sends **Access level updated** for every profile with an access change. A claim records no new transaction, so it triggers no **Subscription started**.
 
-For per-mode contract details, see [Practical reference](sharing-paid-access-between-user-accounts#practical-reference).
+To compare what each mode guarantees, read the [practical reference](sharing-paid-access-between-user-accounts#practical-reference).
 
-### Transfer Access to New User Flow
+### Shared access between profiles (Enabled)
 
-The recommended option is to transfer the access level to the new user. This preserves the original user’s transaction history for consistent analytics. Only 2 **Access level updated** events will be created:
+With the **Enabled (default)** mode, all profiles that use the same store account share the access level. When a new profile claims the purchase, the old profile keeps access, and Adapty sends one event: **Access level updated**, to grant access to the new profile.
 
-1. to remove the first user's access
-2. to give access to the second user
+<ZoomImage id="Share_Access_Between_Users_Flow.webp" width="700px" alt="Events for shared access" />
 
-<ZoomImage id="Transfer_Access_to_New_User_Flow.webp" width="700px" alt="Transfer Access to New User Flow diagram" />
+The access properties of this event look like this:
 
-Here’s a breakdown of the fields related to access level assignment and transferring in the events generated in this scenario:
-
-- **User A: Access level updated (sent when User A purchases a subscription in the app)**
-
-  ```json showLineNumbers
-  {
-    "profile_id": "00000000-0000-0000-0000-000000000000",
-    "customer_user_id": UserA,
-    "event_properties": {
-      "profile_has_access_level": true,
-    },
-    "profiles_sharing_access_level": null
-  }
-  ```
-
-- **User A: Access level updated (sent when the app is reinstalled and User B logs in, revoking User A's access)**
-
-  ```json showLineNumbers
-  {
-    "profile_id": "00000000-0000-0000-0000-000000000000",
-    "customer_user_id": UserA,
-    "event_properties": {
-      "profile_has_access_level": false,
-    },
-    "profiles_sharing_access_level": null
-  }
-  ```
-
-- **User B: Access level updated (sent when User B logs in and access is granted)**
+- **User B: Access level updated**, sent when User B logs in and receives access:
 
   ```json showLineNumbers
   {
     "profile_id": "00000000-0000-0000-0000-000000000001",
-    "customer_user_id": UserB,
+    "customer_user_id": "UserB",
     "event_properties": {
-      "profile_has_access_level": true,
-    },
-    "profiles_sharing_access_level": null
-  }
-  ```
-
-### Shared Access Between Users Flow
-
-This option allows multiple users to share the same access level if their device is signed in to the same Apple/Google ID. This is useful when a user reinstalls the app and logs in with a different email — they'll still have access to their previous purchase. With this option, multiple identified users can share the same access level. While the access level is shared, all transactions are logged under the original <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip> to maintain complete transaction history and analytics.
-
-Therefore, only 1 event will be created: **Access level updated** to grant access to the second user.
-
-<ZoomImage id="Share_Access_Between_Users_Flow.webp" width="700px" alt="Share Access Between Users Flow diagram" />
-
-Here’s a breakdown of the fields related to access level assignment and sharing in the events generated in this scenario:
-
-**User B: Access level updated (sent when User B logs in and access is granted)**
-
-  ```json showLineNumbers
-  {
-    "profile_id": "00000000-0000-0000-0000-000000000000",
-    "customer_user_id": UserA,
-    "event_properties": {
-      "profile_has_access_level": true,
+      "profile_has_access_level": true
     },
     "profiles_sharing_access_level": [
       {
-        "profile_id": "00000000-0000-0000-0000-000000000001,
-        "customer_user_id": UserB
+        "profile_id": "00000000-0000-0000-0000-000000000000",
+        "customer_user_id": "UserA"
       }
     ]
   }
   ```
 
-### Access Not Shared Between Users Flow
+### Access moves to the new profile (Transfer access to new user)
 
-With this option, only the first user profile to receive the access level retains it permanently. This is ideal if purchases need to be tied to a single <InlineTooltip tooltip="Customer User ID">[iOS](identifying-users#set-customer-user-id-on-configuration), [Android](android-identifying-users#setting-customer-user-id-on-configuration), [React Native](react-native-identifying-users#setting-customer-user-id-on-configuration), [Flutter](flutter-identifying-users#setting-customer-user-id-on-configuration), and [Unity](unity-identifying-users#setting-customer-user-id-on-configuration)</InlineTooltip>.
+With the **Transfer access to new user** mode, only one profile has the access level at a time. When a new profile claims the purchase, Adapty sends two **Access level updated** events:
 
-<ZoomImage id="Share_Access_Between_Users_Disabled_Flow.webp" width="700px" alt="Share Access Between Users Disabled Flow diagram" />
+1. One that revokes the old profile's access
+2. One that grants access to the new profile
+
+<ZoomImage id="Transfer_Access_to_New_User_Flow.webp" width="700px" alt="Events for an access transfer" />
+
+The access properties of these events look like this:
+
+- **User A: Access level updated**, sent when User A buys a subscription:
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": "UserA",
+    "event_properties": {
+      "profile_has_access_level": true
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+- **User A: Access level updated**, sent when User B logs in after the app is reinstalled, and Adapty revokes User A's access:
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000000",
+    "customer_user_id": "UserA",
+    "event_properties": {
+      "profile_has_access_level": false,
+      "cancellation_reason": "adapty_revoked"
+    },
+    "profiles_sharing_access_level": [
+      {
+        "profile_id": "00000000-0000-0000-0000-000000000001",
+        "customer_user_id": "UserB"
+      }
+    ]
+  }
+  ```
+
+- **User B: Access level updated**, sent when User B receives access:
+
+  ```json showLineNumbers
+  {
+    "profile_id": "00000000-0000-0000-0000-000000000001",
+    "customer_user_id": "UserB",
+    "event_properties": {
+      "profile_has_access_level": true
+    },
+    "profiles_sharing_access_level": null
+  }
+  ```
+
+### Access stays with the purchaser (Sharing access disabled)
+
+With the **Disabled** mode, Adapty ties the purchase to the Customer User ID that was active when the user bought it. When any other profile claims the purchase, that profile receives no access, and Adapty sends no events.
+
+Adapty only ties purchases when they are credited to a profile with a Customer User ID. If the purchaser had no Customer User ID, a new profile that claims the purchase receives access, and Adapty sends **Access level updated** for it.
+
+<ZoomImage id="Share_Access_Between_Users_Disabled_Flow.webp" width="700px" alt="Events when access sharing is disabled" />
