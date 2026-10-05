@@ -26,6 +26,8 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --batch --only-files "src/content/docs/foo.mdx"
  *                                                                                              # incremental + Batch API (50% off), CI default
  *   node scripts/translate.mjs --incremental --batch --dry-run --only-files "..."             # show batch plan without submitting (no API key needed)
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --batch --include-stale --only-files "..."
+ *                                                                                              # also retry files left stale by earlier runs (CI default)
  *   node scripts/translate.mjs --lang zh --seed-only                                          # backfill section caches from existing translations for
  *                                                                                              # provably up-to-date files (stored fileHash matches current
  *                                                                                              # English). Zero API calls, no API key needed. Changed files
@@ -108,6 +110,12 @@ const flagAll = args.includes("--all");
 // Backfill tool for fileHash-only caches produced by the whole-file batch path.
 const flagSeedOnly = args.includes("--seed-only");
 const flagIncremental = args.includes("--incremental") || flagSeedOnly;
+// --include-stale (with --only-files): also retry every article, snippet and
+// spec whose stored hash doesn't match its English source — files left behind
+// by a failed or cancelled run, and files written with an English fallback
+// (stored under a retry marker, see retryHash). Files with no stored hash are
+// left alone unless they are in the diff.
+const flagIncludeStale = args.includes("--include-stale");
 const flagSync = args.includes("--sync");
 const flagBatch = args.includes("--batch");
 const flagDryRun = args.includes("--dry-run");
@@ -471,6 +479,7 @@ async function main() {
   // --only-files: fast exit if the diff contains nothing translatable
   if (
     onlyFilePaths &&
+    !flagIncludeStale &&
     onlyDocIds.size === 0 &&
     onlySidebarNames.size === 0 &&
     onlySpecIds.size === 0 &&
@@ -674,10 +683,11 @@ async function translateForLang(
   const allFiles = await collectMdxFiles(DOCS_DIR);
 
   // Apply --only-files filter (git-diff mode): restrict to specific article IDs
-  let files = onlyDocIds
-    ? allFiles.filter((f) => onlyDocIds.has(path.basename(f, ".mdx")))
-    : allFiles;
-  if (onlyDocIds && files.length === 0) {
+  let files =
+    onlyDocIds && !flagIncludeStale
+      ? allFiles.filter((f) => onlyDocIds.has(path.basename(f, ".mdx")))
+      : allFiles;
+  if (onlyDocIds && !flagIncludeStale && files.length === 0) {
     console.log(
       `${tag} No matching articles from --only-files — skipping docs.`,
     );
@@ -753,6 +763,9 @@ async function translateForLang(
         // changed in this commit, so trust that signal and translate it even without
         // a stored hash to compare against.
         const explicitlyChanged = onlyDocIds?.has(basename);
+        // A stale sweep only retries files with a recorded hash; recording a
+        // hash for an unknown translation would freeze it as current.
+        if (flagIncludeStale && onlyDocIds && !explicitlyChanged) continue;
         // Under --seed-only, never apply this heuristic: it assumes the
         // existing translation matches the CURRENT English, which cannot be
         // verified without a stored hash. Seed-only must not freeze
@@ -1409,7 +1422,10 @@ async function translateFileWithSections(
   await fs.mkdir(hashesDir, { recursive: true });
   await fs.writeFile(
     hashFile,
-    JSON.stringify({ fileHash: fHash, sections: newSections }),
+    JSON.stringify({
+      fileHash: guarded.fallbackSectionIds.length ? retryHash(fHash) : fHash,
+      sections: newSections,
+    }),
     "utf-8",
   );
 
@@ -1861,7 +1877,9 @@ async function translateBatchSections(
       await fs.writeFile(
         path.join(hashesDir, `${plan.basename}.json`),
         JSON.stringify({
-          fileHash: plan.fileHashCurrent,
+          fileHash: guarded.fallbackSectionIds.length
+            ? retryHash(plan.fileHashCurrent)
+            : plan.fileHashCurrent,
           sections: newSections,
         }),
         "utf-8",
@@ -2326,7 +2344,7 @@ async function translateReusableForLang(
       basename: e.name.replace(/\.mdx?$/, ""),
     }));
 
-  if (onlyReusableIds) {
+  if (onlyReusableIds && !flagIncludeStale) {
     files = files.filter((f) => onlyReusableIds.has(f.basename));
     if (files.length === 0) {
       console.log(
@@ -2342,6 +2360,8 @@ async function translateReusableForLang(
       const currentHash = await fileHash(file.full);
       const storedHash = await getStoredHash(file.basename, reusableHashesDir);
       if (storedHash === currentHash) continue;
+      if (flagIncludeStale && !storedHash && !onlyReusableIds?.has(file.basename))
+        continue;
       toTranslate.push(file);
     } else if (flagAll) {
       toTranslate.push(file);
@@ -3014,11 +3034,19 @@ async function translateApiSpecBatchSections(
 
   await fs.writeFile(localePath, merged, "utf-8");
 
+  // A section that errored or came back invalid kept its previous version;
+  // record a retry marker so the next incremental run re-plans the spec.
+  const incomplete = decisions.some(
+    (d) => d.kind !== "hit" && !newTranslations[d.section.id],
+  );
   const fHash = await fileHash(spec.full);
   await fs.mkdir(apiHashesDir, { recursive: true });
   await fs.writeFile(
     hashFile,
-    JSON.stringify({ fileHash: fHash, sections: newSectionsCache }),
+    JSON.stringify({
+      fileHash: incomplete ? retryHash(fHash) : fHash,
+      sections: newSectionsCache,
+    }),
     "utf-8",
   );
   console.log(`  ✓ api-spec:${spec.basename}`);
@@ -3056,7 +3084,7 @@ async function translateApiSpecsForLang(
     .filter((s) => !UNTRANSLATED_SPECS.has(s.basename));
 
   // Apply --only-files filter
-  if (onlySpecIds) {
+  if (onlySpecIds && !flagIncludeStale) {
     specFiles = specFiles.filter((s) => onlySpecIds.has(s.basename));
     if (specFiles.length === 0) {
       console.log(
@@ -3077,6 +3105,8 @@ async function translateApiSpecsForLang(
       const currentHash = await fileHash(spec.full);
       const storedHash = await getStoredHash(spec.basename, apiHashesDir);
       if (!flagAll && storedHash === currentHash) continue;
+      if (flagIncludeStale && !storedHash && !onlySpecIds?.has(spec.basename))
+        continue;
       toTranslate.push(spec);
     } else if (fileId) {
       if (spec.basename === fileId) toTranslate.push(spec);
@@ -3890,6 +3920,15 @@ async function getSidebarIds(platformName, tag) {
 async function fileHash(filePath) {
   const content = await fs.readFile(filePath);
   return "sha256:" + crypto.createHash("sha256").update(content).digest("hex");
+}
+
+/**
+ * Hash to record for a file written with some sections not translated
+ * (English or previous-version fallback). It never equals a real file hash,
+ * so incremental runs keep re-planning the file until every section lands.
+ */
+export function retryHash(fileHashCurrent) {
+  return `retry:${fileHashCurrent}`;
 }
 
 async function getStoredHash(basename, hashesDir) {
