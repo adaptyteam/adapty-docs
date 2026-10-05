@@ -7,6 +7,7 @@ import {
   fixFrontmatterBackslashQuotes,
   repairLocaleMdx,
   structureSignature,
+  repairAttributeQuotes,
 } from '../mdx-guard.mjs';
 import { hashPathFor } from '../check-mdx-parse.mjs';
 
@@ -219,6 +220,38 @@ test('repairLocaleMdx reports ok:false when nothing helps', async () => {
   });
   assert.equal(r.ok, false);
   assert.ok(r.error);
+});
+
+test('repairAttributeQuotes converts quotes a translation put inside an attribute value', async () => {
+  const en = '<ZoomImage id="ctx.webp" width="500px" alt="Context menu with the Replace in 2 places submenu open" />\n';
+  const zh = '<ZoomImage id="ctx.webp" width="500px" alt="产品条目的上下文菜单，"替换 2 处"子菜单已打开" />\n';
+  assert.notEqual(await validateLocaleMdx(zh), null, 'fixture must reproduce the break');
+  const fixed = repairAttributeQuotes(zh, en);
+  assert.equal(fixed, '<ZoomImage id="ctx.webp" width="500px" alt="产品条目的上下文菜单，“替换 2 处”子菜单已打开" />\n');
+  assert.equal(await validateLocaleMdx(fixed), null);
+});
+
+test('repairAttributeQuotes handles a quoted value that is not the last attribute', () => {
+  const en = '<ZoomImage id="a.webp" alt="Save button" width="500px" />';
+  const tr = '<ZoomImage id="a.webp" alt="Le bouton "Enregistrer"" width="500px" />';
+  assert.equal(repairAttributeQuotes(tr, en), '<ZoomImage id="a.webp" alt="Le bouton “Enregistrer”" width="500px" />');
+});
+
+test('repairAttributeQuotes leaves correct lines, prose and expression attributes alone', () => {
+  const en = '<ZoomImage id="a.webp" width="500px" alt="Save" />\nClick "Save".\n<Tabs groupId="x" values={[1]}>';
+  const tr = '<ZoomImage id="a.webp" width="500px" alt="Enregistrer" />\nCliquez sur "Enregistrer".\n<Tabs groupId="x" values={[1]}>';
+  assert.equal(repairAttributeQuotes(tr, en), tr);
+});
+
+test('repairLocaleMdx repairs attribute quotes without falling back to English', async () => {
+  const english = ['Intro.\n', '<ZoomImage id="a.webp" width="500px" alt="The Save button" />\n', 'More.\n'];
+  const zh = ['介绍。\n', '<ZoomImage id="a.webp" width="500px" alt=""保存"按钮" />\n', '更多。\n'];
+  const sections = english.map((en, i) => ({ id: `s${i}`, english: en, translation: zh[i] }));
+  const reassemble = (parts) => parts.join('\n');
+  const r = await repairLocaleMdx({ content: reassemble(zh), sections, reassemble, label: 'test' });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.fallbackSectionIds, []);
+  assert.match(r.content, /alt="“保存”按钮"/);
 });
 
 test('structureSignature keeps markup and indentation, ignores translated text', () => {
