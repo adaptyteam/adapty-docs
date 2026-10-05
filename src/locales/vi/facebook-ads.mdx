@@ -69,25 +69,36 @@ Bạn cũng có thể sử dụng tích hợp này với ứng dụng Android. N
 
 ### Cấu hình sự kiện và thẻ \{#configure-events-and-tags\}
 
-Lưu ý rằng tích hợp Facebook Ads được thiết kế đặc biệt cho các công ty sử dụng Meta cho chiến dịch quảng cáo và tối ưu hóa dựa trên hành vi khách hàng. Tích hợp này hỗ trợ các sự kiện chuẩn của Meta cho mục đích tối ưu hóa. Do đó, không thể chỉnh sửa tên sự kiện trong tích hợp Meta Ads. Adapty ánh xạ các sự kiện khách hàng của bạn sang các sự kiện Meta tương ứng để phân tích chính xác.
+Adapty ánh xạ các sự kiện mua hàng của mình sang các sự kiện chuẩn của Meta mà Meta có thể tối ưu hóa chiến dịch: `StartTrial`, `Subscribe`, và `fb_mobile_purchase` — sự kiện mua hàng của Meta. **Subscription started**, **Subscription renewed**, **Trial started**, và **Trial converted** đều gửi một sự kiện Meta cho mỗi tên được chọn trong trường của sự kiện đó, và tất cả các tên đều được chọn theo mặc định. Ví dụ, một lần bắt đầu dùng thử sẽ đến Meta dưới dạng ba sự kiện. Để gửi ít hơn, hãy bỏ chọn các tên trong trường đó.
 
-| Sự kiện Adapty                | Sự kiện Meta Ads            |
-| :---------------------------- | :-------------------------- |
-| Subscription initial purchase | Subscribe                   |
-| Subscription renewed          | Subscribe                   |
-| Subscription cancelled        | CancelSubscription          |
-| Trial started                 | StartTrial                  |
-| Trial converted               | Subscribe                   |
-| Trial cancelled               | CancelTrial                 |
-| Non subscription purchase     | fb_mobile_purchase          |
-| Billing issue detected        | billing_issue_detected      |
-| Entered grace period          | entered_grace_period        |
-| Auto renew off                | auto_renew_off              |
-| Auto renew on                 | auto_renew_on               |
-| Auto renew off subscription   | auto_renew_off_subscription |
-| Auto renew on subscription    | auto_renew_on_subscription  |
+| Sự kiện Adapty             | Sự kiện Meta mặc định                         |
+| :------------------------- | :-------------------------------------------- |
+| Subscription started       | `Subscribe`, `fb_mobile_purchase`             |
+| Subscription renewed       | `Subscribe`, `fb_mobile_purchase`             |
+| Trial started              | `StartTrial`, `Subscribe`, `fb_mobile_purchase` |
+| Trial converted            | `Subscribe`, `fb_mobile_purchase`             |
+| Non-subscription purchase  | `fb_mobile_purchase`                          |
 
-StartTrial, Subscribe, CancelSubscription là các sự kiện chuẩn.
+Meta không có sự kiện chuẩn cho các sự kiện còn lại, vì vậy Adapty gửi chúng dưới dạng sự kiện tùy chỉnh với tên Adapty của chúng. Để khớp với tên của bạn, hãy thay đổi tên trong trường của sự kiện đó.
+
+| Sự kiện Adapty                       | Sự kiện Meta mặc định                |
+| :----------------------------------- | :----------------------------------- |
+| Subscription expired (Churned)       | `subscription_expired`               |
+| Subscription renewal cancelled       | `subscription_renewal_cancelled`     |
+| Subscription renewal reactivated     | `subscription_renewal_reactivated`   |
+| Subscription paused (Chỉ Android)    | `subscription_paused`                |
+| Subscription deferred (Chỉ Android)  | `subscription_deferred`              |
+| Subscription refunded                | `subscription_refunded`              |
+| Trial expired                        | `trial_expired`                      |
+| Trial renewal cancelled              | `trial_renewal_cancelled`            |
+| Trial renewal reactivated            | `trial_renewal_reactivated`          |
+| Entered grace period                 | `entered_grace_period`               |
+| Billing issue detected               | `billing_issue_detected`             |
+| Non-subscription purchase refunded   | `non_subscription_purchase_refunded` |
+| Trial still active                   | `trial_active`                       |
+| Subscription still active            | `subscription_active`                |
+
+**Trial still active** và **Subscription still active** là các [sự kiện tổng hợp](events#synthetic-events): Adapty gửi chúng đến Meta theo bộ hẹn giờ, và chỉ gửi nếu gói dùng thử hoặc gói đăng ký vẫn còn hoạt động khi bộ hẹn giờ kết thúc. Chúng không mang theo doanh thu, vì vậy Meta không tính chúng vào giá trị mua hàng. Cả hai đều tắt theo mặc định. Để gửi chúng, hãy bật lên và [đặt thời gian trễ](configuration#set-the-timer-for-synthetic-events).
 
 <Zoom>
   <img src="/assets/shared/img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.webp"
@@ -99,8 +110,6 @@ StartTrial, Subscribe, CancelSubscription là các sự kiện chuẩn.
   }}
 />
 </Zoom>
-
-Để bật các sự kiện cụ thể, chỉ cần bật những sự kiện bạn cần. Nếu nhiều tên sự kiện được chọn, Adapty sẽ hợp nhất dữ liệu từ tất cả các sự kiện đã chọn thành một tên sự kiện Adapty duy nhất.
 
 ### Kết nối ứng dụng của bạn với Facebook Ads \{#connect-your-app-to-facebook-ads\}
 
@@ -183,18 +192,18 @@ Adapty gửi sự kiện đến Facebook Ads (Meta) qua Graph API. Mỗi sự ki
 
 Trong đó:
 
-| Thông số | Kiểu | Mô tả |
+| Tham số | Kiểu | Mô tả |
 |:---|:---|:---|
 | `event` | String | Luôn là "CUSTOM_APP_EVENTS". |
 | `app_user_id` | String | Customer User ID của người dùng. |
-| `advertiser_id` | String | IDFA (iOS) hoặc Advertising ID (Android). |
-| `advertiser_tracking_enabled` | Integer | `1` nếu bật theo dõi (ATT được cấp phép), `0` nếu không. |
+| `advertiser_id` | String | Trên iOS, là IDFA, hoặc IDFV khi IDFA không khả dụng. Trên Android, là Advertising ID. Khi hồ sơ người dùng không có device ID, giá trị là `00000000-0000-0000-0000-000000000000`. |
+| `advertiser_tracking_enabled` | Integer | `1` nếu tracking được bật (ATT đã được ủy quyền), `0` nếu không. |
 | `application_tracking_enabled` | Integer | Luôn là `1`. |
-| `custom_events` | String | Chuỗi JSON được mã hóa chứa các đối tượng sự kiện (xem bên dưới). |
-| `extinfo` | String | Chuỗi JSON được mã hóa chứa thông tin ứng dụng/thiết bị (ví dụ: phiên bản, hệ điều hành, ngôn ngữ). |
+| `custom_events` | String | Chuỗi JSON-encoded chứa các đối tượng sự kiện (xem bên dưới). |
+| `extinfo` | String | Chuỗi JSON-encoded chứa thông tin ứng dụng/thiết bị (ví dụ: phiên bản, hệ điều hành, ngôn ngữ). |
 | `anon_id` | String | Facebook Anonymous ID (nếu có). |
 
-Thông số `custom_events` là một mảng các đối tượng được mã hóa JSON, chứa:
+Tham số `custom_events` là một mảng JSON-encoded với một đối tượng cho mỗi sự kiện Meta mà sự kiện Adapty ánh xạ tới. Chỉ có `StartTrial`, `Subscribe` và `fb_mobile_purchase` mới chứa `fb_content_id`, `fb_content_type`, `fb_num_items` và `fb_transaction_id`. Mỗi đối tượng bao gồm:
 
 | Thông số | Kiểu | Mô tả |
 |:---|:---|:---|
@@ -207,6 +216,7 @@ Thông số `custom_events` là một mảng các đối tượng được mã h
 | `fb_transaction_id` | String | ID giao dịch gốc. |
 | `fb_content_type` | String | Luôn là "in_app". |
 | `fb_num_items` | Integer | Luôn là 1 cho sự kiện mua hàng. |
+
 ## Xử lý sự cố \{#troubleshooting\}
 
 ### `access_level_updated` hiển thị là thất bại trong Event Feed \{#access-level-updated-shows-as-failed-in-the-event-feed\}

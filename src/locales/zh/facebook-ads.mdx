@@ -69,25 +69,36 @@ Adapty 与 Facebook Ads 的集成工作方式如下：Adapty 会将您在集成�
 
 ### 配置事件和标签 \{#configure-events-and-tags\}
 
-请注意，Facebook Ads 集成专为使用 Meta 投放广告并基于用户行为进行优化的企业而设计。它支持 Meta 的标准事件以实现优化目的。因此，Meta Ads 集成不支持修改事件名称。Adapty 会自动将您的用户事件映射到相应的 Meta 事件，以便进行精准分析。
+Adapty 将其购买事件映射到 Meta 的标准事件，Meta 可基于这些事件优化广告系列：`StartTrial`、`Subscribe` 和 `fb_mobile_purchase`（Meta 的购买事件）。**Subscription started**、**Subscription renewed**、**Trial started** 和 **Trial converted** 会为事件字段中选择的每个名称各发送一个 Meta 事件，且默认情况下所有名称均已选中。例如，一次试用开始会向 Meta 发送三个事件。如需减少发送数量，请从字段中移除相应名称。
 
-| Adapty 事件                   | Meta Ads 事件               |
-| :---------------------------- | :-------------------------- |
-| Subscription initial purchase | Subscribe                   |
-| Subscription renewed          | Subscribe                   |
-| Subscription cancelled        | CancelSubscription          |
-| Trial started                 | StartTrial                  |
-| Trial converted               | Subscribe                   |
-| Trial cancelled               | CancelTrial                 |
-| Non subscription purchase     | fb_mobile_purchase          |
-| Billing issue detected        | billing_issue_detected      |
-| Entered grace period          | entered_grace_period        |
-| Auto renew off                | auto_renew_off              |
-| Auto renew on                 | auto_renew_on               |
-| Auto renew off subscription   | auto_renew_off_subscription |
-| Auto renew on subscription    | auto_renew_on_subscription  |
+| Adapty 事件              | 默认 Meta 事件                                |
+| :------------------------ | :-------------------------------------------- |
+| Subscription started      | `Subscribe`, `fb_mobile_purchase`             |
+| Subscription renewed      | `Subscribe`, `fb_mobile_purchase`             |
+| Trial started             | `StartTrial`, `Subscribe`, `fb_mobile_purchase` |
+| Trial converted           | `Subscribe`, `fb_mobile_purchase`             |
+| Non-subscription purchase | `fb_mobile_purchase`                          |
 
-StartTrial、Subscribe、CancelSubscription 是标准事件。
+Meta 没有针对其余事件的标准事件，因此 Adapty 以自定义事件的形式发送这些事件，并使用其 Adapty 名称。如需匹配您自己的命名，请在事件字段中修改名称。
+
+| Adapty 事件                             | 默认 Meta 事件                               |
+| :-------------------------------------- | :------------------------------------------- |
+| Subscription expired (Churned)          | `subscription_expired`                       |
+| Subscription renewal cancelled          | `subscription_renewal_cancelled`             |
+| Subscription renewal reactivated        | `subscription_renewal_reactivated`           |
+| Subscription paused (Android only)      | `subscription_paused`                        |
+| Subscription deferred (Android only)    | `subscription_deferred`                      |
+| Subscription refunded                   | `subscription_refunded`                      |
+| Trial expired                           | `trial_expired`                              |
+| Trial renewal cancelled                 | `trial_renewal_cancelled`                    |
+| Trial renewal reactivated               | `trial_renewal_reactivated`                  |
+| Entered grace period                    | `entered_grace_period`                       |
+| Billing issue detected                  | `billing_issue_detected`                     |
+| Non-subscription purchase refunded      | `non_subscription_purchase_refunded`         |
+| Trial still active                      | `trial_active`                               |
+| Subscription still active               | `subscription_active`                        |
+
+**Trial still active** 和 **Subscription still active** 是[合成事件](events#synthetic-events)：Adapty 会在计时器触发时向 Meta 发送这些事件，且仅在试用或订阅在计时器到期时仍处于有效状态的情况下才会发送。这些事件不包含收入数据，因此 Meta 不会将其计入购买价值。两者默认均为关闭状态。如需发送，请开启相应选项并[设置延迟时间](configuration#set-the-timer-for-synthetic-events)。
 
 <Zoom>
   <img src="/assets/shared/img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.webp"
@@ -99,8 +110,6 @@ StartTrial、Subscribe、CancelSubscription 是标准事件。
   }}
 />
 </Zoom>
-
-要启用特定事件，只需打开相应的开关即可。如果选择了多个事件名称，Adapty 会将所有选中事件的数据合并到同一个 Adapty 事件名称下。
 
 ### 将您的应用与 Facebook Ads 连接 \{#connect-your-app-to-facebook-ads\}
 
@@ -187,14 +196,14 @@ Where:
 |:---|:---|:---|
 | `event` | String | 固定值为 "CUSTOM_APP_EVENTS"。 |
 | `app_user_id` | String | 用户的 Customer User ID。 |
-| `advertiser_id` | String | IDFA（iOS）或 Advertising ID（Android）。 |
-| `advertiser_tracking_enabled` | Integer | 跟踪已启用（ATT 已授权）时为 `1`，否则为 `0`。 |
+| `advertiser_id` | String | 在 iOS 上为 IDFA，如果 IDFA 不可用则为 IDFV；在 Android 上为 Advertising ID。如果用户画像没有设备 ID，则为 `00000000-0000-0000-0000-000000000000`。 |
+| `advertiser_tracking_enabled` | Integer | 如果启用了跟踪（ATT 已授权）则为 `1`，否则为 `0`。 |
 | `application_tracking_enabled` | Integer | 固定值为 `1`。 |
-| `custom_events` | String | 事件对象的 JSON 编码字符串（详见下文）。 |
-| `extinfo` | String | 包含应用/设备信息（如版本、操作系统、语言区域）的 JSON 编码字符串。 |
-| `anon_id` | String | Facebook 匿名 ID（如有）。 |
+| `custom_events` | String | JSON 编码的事件对象字符串（详见下文）。 |
+| `extinfo` | String | JSON 编码的字符串，包含应用/设备信息（如版本、操作系统、语言环境等）。 |
+| `anon_id` | String | Facebook 匿名 ID（如果可用）。 |
 
-`custom_events` 参数是一个经过 JSON 编码的对象数组，包含以下内容：
+`custom_events` 参数是一个 JSON 编码的数组，每个对象对应 Adapty 事件所映射的一个 Meta 事件。只有 `StartTrial`、`Subscribe` 和 `fb_mobile_purchase` 包含 `fb_content_id`、`fb_content_type`、`fb_num_items` 和 `fb_transaction_id`。每个对象包含：
 
 | 参数 | 类型 | 描述 |
 |:---|:---|:---|
@@ -207,10 +216,6 @@ Where:
 | `fb_transaction_id` | String | 原始交易 ID。 |
 | `fb_content_type` | String | 固定为 "in_app"。 |
 | `fb_num_items` | Integer | 购买事件固定为 1。 |
-
-## 高级匹配（Conversions API）\{#advanced-matching-conversions-api\}
-
-Facebook CAPI 是一个独立于上述 Facebook Ads 集成的单独集成，拥有自己的凭证，需要在 Adapty 看板中单独配置。启用后，Adapty 会将经过哈希处理的用户身份信息转发至 Meta 的 Conversions API，用于高级匹配。Adapty 会从用户的 Adapty 用户画像中提取以下字段，经 SHA-256 哈希处理后发送：电子邮件、电话号码、名字与姓氏、生日、性别及国家。Facebook 点击标识符和浏览器标识符（`fbc`、`fbp`）以及 IP 地址/User Agent 则不经哈希直接传输，与其他 Meta CAPI 集成的处理方式相同。
 
 ## 故障排查 \{#troubleshooting\}
 
