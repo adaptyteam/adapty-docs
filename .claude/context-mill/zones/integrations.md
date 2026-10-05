@@ -253,3 +253,11 @@ repeated here.
 - The payload schema needs a registered ground-truth source, because the rule above makes reading the
   backend mandatory rather than optional for this zone. Until `sources.md` has an entry for it, use
   `dashboard-backend` and say in the task which module you read.
+- **Singular is no longer SDK-free (2026-10-05, ADP-7134; adapty-dashboard-api !13647, merged to
+  `develop` 2026-10-02).** Profiles that carry `singular_sdid` are routed to Singular's v2 Event API
+  (`POST /api/v2/evt`, form-urlencoded, `sdid` replaces IDFA/IDFV/AIFA/ASID/ANDI); without it, the v1
+  `GET` is unchanged. Every request gains `partner=adapty`. Singular accounts created on or after
+  2026-07-15 reject v1, so for them the SDK call is mandatory. No SDK ships a named constant for the key
+  (checked `gh search code singular_sdid --owner adaptyteam`, 0 hits): all seven platforms pass the raw
+  string through the open-ended key type. Side effect: webhook and S3/GCS `integration_ids` gain a
+  `singular_sdid` key. The MR scopes the server-side API out, so `adapty-api.yaml` stays as is.
