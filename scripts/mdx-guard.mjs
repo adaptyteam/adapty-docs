@@ -67,7 +67,8 @@ export async function validateLocaleMdx(content) {
  * content ends in a blank line MUST keep that blank line in translation — it
  * is the block separator between this section and the next. Models routinely
  * trim it, which glues a list to the next section's `<div …>` and breaks the
- * parse. Leading whitespace is mirrored for the same reason.
+ * parse. Leading whitespace is mirrored for the same reason, including the
+ * indentation of the first line.
  */
 export function normalizeSectionBoundaries(translation, english) {
   if (!translation || !english) return translation;
@@ -76,6 +77,15 @@ export function normalizeSectionBoundaries(translation, english) {
   let core = translation;
   core = core.replace(/^[\t ]*\n(?:[\t ]*\n)*/, "");
   core = core.replace(/(?:\n[\t ]*)+$/, "");
+  // Models strip the leading indentation of a chunk's first line. Inside a
+  // nested list or tab that moves the line out of its container — a
+  // `        3. Select …` returned as `3. Select …` closes the surrounding
+  // <TabItem> early. Restore it from the English chunk.
+  const enIndent = english.slice(lead.length).match(/^[\t ]*/)[0];
+  const trIndent = core.match(/^[\t ]*/)[0];
+  if (enIndent.length > trIndent.length) {
+    core = enIndent + core.slice(trIndent.length);
+  }
   return lead + core + trail;
 }
 

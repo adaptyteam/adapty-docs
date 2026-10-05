@@ -67,6 +67,31 @@ test('normalizeSectionBoundaries is a no-op when boundaries already match', () =
 // restoreBlankLinesBeforeBlocks
 // ---------------------------------------------------------------------------
 
+test('normalizeSectionBoundaries restores the indentation a model stripped from the first line', () => {
+  const en = '\n        3. Select **Connect an existing store product**.\n        4. Add product details:\n';
+  const tr = '3. Sélectionnez **Connect an existing store product**.\n        4. Renseignez les détails :';
+  assert.equal(
+    normalizeSectionBoundaries(tr, en),
+    '\n        3. Sélectionnez **Connect an existing store product**.\n        4. Renseignez les détails :\n',
+  );
+});
+
+test('normalizeSectionBoundaries never adds or removes indentation the English first line lacks', () => {
+  assert.equal(normalizeSectionBoundaries('Texte.\n', 'Text.\n'), 'Texte.\n');
+  assert.equal(normalizeSectionBoundaries('      Texte.\n', '    Text.\n'), '      Texte.\n');
+});
+
+test('a chunk whose first line lost its indentation parses once boundaries are normalized', async () => {
+  // quickstart-products (fr, 2026-10-05): the nested list item came back at
+  // column 0 and closed the surrounding <TabItem> early.
+  const head = '<Tabs>\n    <TabItem value="a" label="A">\n\n';
+  const enChunk = '        3. Select **Connect**.\n\n        <Tabs>\n            <TabItem value="b" label="B" default>\n\n                - **ID**: x\n\n            </TabItem>\n        </Tabs>\n';
+  const trChunk = '3. Sélectionnez **Connect**.\n\n        <Tabs>\n            <TabItem value="b" label="B" default>\n\n                - **ID** : x\n\n            </TabItem>\n        </Tabs>';
+  const tail = '\n    </TabItem>\n</Tabs>\n';
+  assert.notEqual(await validateLocaleMdx(head + trChunk + tail), null, 'fixture must reproduce the break');
+  assert.equal(await validateLocaleMdx(head + normalizeSectionBoundaries(trChunk, enChunk) + tail), null);
+});
+
 test('restoreBlankLinesBeforeBlocks re-inserts the dropped blank line before <div', () => {
   // The exact adapty-flow-builder failure shape: blank line between the last
   // list item and the column-0 JSX block was dropped by the translator.
