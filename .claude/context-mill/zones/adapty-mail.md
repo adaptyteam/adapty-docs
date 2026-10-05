@@ -266,7 +266,7 @@ core in-app paywall/subscription product.
 | mail-brand | — | marketer | 10 | tutorial |
 | mail-checkout | — | marketer | 7 | tutorial |
 | mail-collect-emails | — | marketer | 7 | tutorial |
-| mail-create-campaign | — | marketer | 4 | tutorial |
+| mail-create-campaign | — | marketer | 5 | tutorial |
 | mail-create-flow | — | marketer | 4 | tutorial |
 | mail-double-opt-in | — | marketer | 6 | tutorial |
 | mail-email-campaigns | entry | marketer | 0 | tutorial |

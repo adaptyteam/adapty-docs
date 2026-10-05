@@ -227,6 +227,21 @@ here unchanged and are not restated.
 
 ## Ripple rules
 
+- **An App Store commission change touches four articles, not one.** Checked 2026-10-05 (ADP-8050:
+  EU 26%/15% from 2026-10-01, China 25%/12%, Japan and Brazil 26%/15%). The per-storefront table lives
+  only in `how-adapty-analytics-works` (`#app-store-commission-rates`). Three more articles state a rate
+  or the "30% → 15%" pair in prose: `analytics-cohorts` (Revenue vs Proceeds), `app-store-small-business-program`
+  (intro and Losing eligibility), and `set-up-app-store-connect` (the closing link list). The
+  `rate_after_first_year` field rows in `webhook-event-types-and-fields`, `analytics-integration` and
+  `messaging` say "typically 15%", which stays true with China at 12%. Found with
+  `grep -rniE "commission|service fee|tax|VAT|small business"` over `src/content/docs` and
+  `src/components/reusable`. The shipped skills restate no rate (grep of the skills repo
+  `*.md`, same date).
+- **Source the rates from Apple, not from the backend ladder.** The ticket's numbers matched Apple's pages
+  on 2026-10-05: the EU payment-options page (`#commissions`), the China news item `developer.apple.com/news/?id=dadukodv`, and the
+  Japan and Brazil "Business terms" sections. Japan and Brazil quote 21% + a 5% payment processing fee
+  (10% + 5% reduced), so the docs table shows the sum.
+
 ## Boundaries
 
 - **`attribution`** — does the question concern subscription/revenue performance generally (here), or
@@ -278,4 +293,15 @@ synonyms live in `aliases.md` and aren't repeated.
 | "consumable count is higher than the money we made", "one-time purchase chart" | `non-subscriptions`. It counts purchase events and subtracts nothing for refunds, and it's broader than "one-time purchase" — consumables and non-renewing subscriptions can each be bought repeatedly. |
 
 ## Gaps and misses
+
+- **Corrected 2026-10-05: "the stores automatically report" country-specific rates was wrong for the App
+  Store.** `how-adapty-analytics-works#commissions` said App Store renewals after year one and country
+  rates are reported by the stores. ADP-8050 (backend analysis on `adapty-dashboard-api` develop `730bff8`)
+  states that App Store transactions carry `store_proceeds_rate = -1`, so the country branches in
+  `render_proceeds_value` always decide the rate. The article now says Adapty applies the rate.
+- **Open, 2026-10-05: "Adapty does not calculate taxes" is still in `how-adapty-analytics-works#taxes`.**
+  ADP-8050 describes App Store VAT as derived by Adapty from Apple price points
+  (`AppleSubscriptionPricePoint`, `customer_price × fraction / proceeds − 1`) and stored in a synced
+  tax-rate table, which contradicts "Apple and Google … report it back". Not edited: it needs a decision
+  from the docs owner on how much of the estimate to explain. Checked by reading the ticket only, not the code.
 
