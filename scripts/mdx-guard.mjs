@@ -168,7 +168,11 @@ export function fixFrontmatterBackslashQuotes(content) {
  *      single bad section is by far the common case. The caller must NOT
  *      cache the replaced section (report via `fallbackSectionIds`) so the
  *      next run retries it.
- *   4. still broken → give up: `ok: false`, caller must not write the file.
+ *   4. still broken → structural fallback: revert every section whose markup
+ *      skeleton (`structureSignature`) differs from English, plus at most one
+ *      more section, and recompile. Covers two broken sections and tags split
+ *      across para-chunks, which no single swap can fix.
+ *   5. still broken → give up: `ok: false`, caller must not write the file.
  *
  * `reassemble(parts)` maps section parts back to a full file (including
  * postProcessTranslation), so the ladder validates exactly what would be
@@ -220,5 +224,68 @@ export async function repairLocaleMdx({
     }
   }
 
+  if (sections && reassemble) {
+    // Structural fallback: when two sections are broken, or a tag opened in one
+    // para-chunk is closed in another, no single swap compiles. Revert every
+    // section whose markup skeleton differs from its English source at once,
+    // then, if that still fails, try one more single-section swap on top.
+    const reverted = new Set(
+      sections
+        .filter(
+          (s) =>
+            s.translation !== s.english &&
+            structureSignature(s.translation) !== structureSignature(s.english),
+        )
+        .map((s) => s.id),
+    );
+    if (reverted.size > 0) {
+      const partsFor = (extraId) =>
+        sections.map((x) =>
+          reverted.has(x.id) || x.id === extraId ? x.english : x.translation,
+        );
+      const extras = [
+        null,
+        ...sections
+          .filter((x) => !reverted.has(x.id) && x.translation !== x.english)
+          .map((x) => x.id),
+      ];
+      for (const extraId of extras) {
+        const candidate = reassemble(partsFor(extraId));
+        if (!(await validateLocaleMdx(candidate))) {
+          const ids = [...reverted, ...(extraId ? [extraId] : [])];
+          console.warn(
+            `  ⚠ ${label}: ${ids.length} section(s) broke the MDX parse (${err.message}) — falling back to English for ${ids.join(", ")}; they will be retranslated on the next run`,
+          );
+          return {
+            ok: true,
+            content: candidate,
+            fallbackSectionIds: ids,
+            repaired: true,
+          };
+        }
+      }
+    }
+  }
+
   return { ok: false, content, error: err, fallbackSectionIds: [], repaired: false };
+}
+
+/**
+ * The markup skeleton of a section: every line that opens or closes a JSX
+ * tag, a code fence or a `:::` directive, reduced to its indentation and the
+ * marker itself. Attribute values and prose are ignored because they are
+ * translated; markup and its indentation must survive translation unchanged,
+ * so a translation whose skeleton differs from the English one is the
+ * likely cause of a parse failure (a dropped `<Tabs>`, a de-indented
+ * `</TabItem>`, a `</details>` moved past `:::`).
+ */
+export function structureSignature(text) {
+  if (!text) return "";
+  const MARKER = /^([\t ]*)(<\/?[A-Za-z][\w.]*|`{3,}|~{3,}|:{3,})/;
+  const out = [];
+  for (const line of text.split("\n")) {
+    const m = line.match(MARKER);
+    if (m) out.push(`${m[1].length}:${m[2]}`);
+  }
+  return out.join("\n");
 }

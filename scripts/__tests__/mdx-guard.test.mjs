@@ -6,6 +6,7 @@ import {
   restoreBlankLinesBeforeBlocks,
   fixFrontmatterBackslashQuotes,
   repairLocaleMdx,
+  structureSignature,
 } from '../mdx-guard.mjs';
 import { hashPathFor } from '../check-mdx-parse.mjs';
 
@@ -158,11 +159,56 @@ test('repairLocaleMdx falls back to English for a single broken section', async 
   assert.match(r.content, /List:/, 'broken section reverted to English');
 });
 
-test('repairLocaleMdx reports ok:false when nothing helps', async () => {
+test('repairLocaleMdx reverts every structurally broken section when no single swap compiles', async () => {
   // Two independently broken sections — single-section fallback cannot fix it.
   const sections = [
     { id: 'a', english: 'A.\n', translation: '<div style={{\n' },
+    { id: 'ok', english: 'Fine.\n', translation: 'Хорошо.\n' },
     { id: 'b', english: 'B.\n', translation: '<span style={{\n' },
+  ];
+  const reassemble = (parts) => parts.join('\n');
+  const r = await repairLocaleMdx({
+    content: reassemble(sections.map((s) => s.translation)),
+    sections,
+    reassemble,
+    label: 'test',
+  });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.fallbackSectionIds, ['a', 'b']);
+  assert.equal(await validateLocaleMdx(r.content), null);
+  assert.match(r.content, /Хорошо/, 'structurally intact sections keep their translation');
+});
+
+test('repairLocaleMdx recovers a closing tag de-indented in another para-chunk', async () => {
+  // The observer-mode failure shape: <details> opens in one chunk, the list and
+  // an indented </details> follow; the translation re-indents the closer into
+  // the list, so <details> is still open at </TabItem>.
+  const english = [
+    '<Tabs>\n<TabItem value="a" label="A">\n<details>\n   <summary>S</summary>\n',
+    '   1. One.\n   2. Two.\n\n    </details>\n',
+    '</TabItem>\n</Tabs>\n',
+  ];
+  const translated = [
+    '<Tabs>\n<TabItem value="a" label="A">\n<details>\n   <summary>С</summary>\n',
+    '   1. Один.\n   2. Два.\n       </details>\n',
+    '</TabItem>\n</Tabs>\n',
+  ];
+  const sections = english.map((en, i) => ({ id: `s${i}`, english: en, translation: translated[i] }));
+  const reassemble = (parts) => parts.join('\n');
+  const content = reassemble(translated);
+  assert.notEqual(await validateLocaleMdx(content), null, 'fixture must reproduce the break');
+  const r = await repairLocaleMdx({ content, sections, reassemble, label: 'test' });
+  assert.equal(r.ok, true);
+  assert.equal(await validateLocaleMdx(r.content), null);
+  assert.ok(r.fallbackSectionIds.includes('s1'));
+});
+
+test('repairLocaleMdx reports ok:false when nothing helps', async () => {
+  // Two broken sections whose markup skeleton matches English: the structural
+  // fallback has nothing to revert, and no single swap compiles.
+  const sections = [
+    { id: 'a', english: 'A {x}.\n', translation: 'А {x.\n' },
+    { id: 'b', english: 'B {y}.\n', translation: 'Б {y.\n' },
   ];
   const reassemble = (parts) => parts.join('\n');
   const r = await repairLocaleMdx({
@@ -173,6 +219,14 @@ test('repairLocaleMdx reports ok:false when nothing helps', async () => {
   });
   assert.equal(r.ok, false);
   assert.ok(r.error);
+});
+
+test('structureSignature keeps markup and indentation, ignores translated text', () => {
+  const en = '<Tabs groupId="x">\n  <TabItem label="Swift">\nText.\n```swift\nlet a = 1\n```\n:::note\nHi\n:::\n  </TabItem>\n</Tabs>\n';
+  const tr = '<Tabs groupId="x">\n  <TabItem label="Свифт">\nТекст.\n```swift\nlet a = 1\n```\n:::note\nПривет\n:::\n  </TabItem>\n</Tabs>\n';
+  assert.equal(structureSignature(tr), structureSignature(en));
+  assert.notEqual(structureSignature(tr.replace('  </TabItem>', '</TabItem>')), structureSignature(en));
+  assert.notEqual(structureSignature(tr.replace('<Tabs groupId="x">\n', '')), structureSignature(en));
 });
 
 // ---------------------------------------------------------------------------

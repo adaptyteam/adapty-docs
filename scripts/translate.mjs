@@ -2951,10 +2951,21 @@ async function translateApiSpecBatchSections(
           hadErrors = true;
           continue;
         }
-        newTranslations[sectionId] = sanitizeYamlResponse(
+        const text = sanitizeYamlResponse(
           r.result.message.content[0].text,
           `api-spec:${spec.basename} ${sectionId}`,
         );
+        // One malformed section must not sink the whole spec: keep the
+        // previous translation (or English) for it and leave it uncached, so
+        // the next run retries just that section.
+        try {
+          specSectionSubtree(text, sectionId);
+          newTranslations[sectionId] = text;
+        } catch (err) {
+          console.error(
+            `  ✗ api-spec:${spec.basename} ${sectionId}: ${err.message} — keeping the previous version of this section; it will be retried on the next run`,
+          );
+        }
       } else {
         console.error(
           `  ✗ api-spec:${spec.basename} ${sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`,
@@ -3437,8 +3448,48 @@ function splitYamlIntoSections(yamlContent) {
  * For each section: prefer fresh translation, then existing-locale subtree,
  * then source. Returns the merged YAML string.
  */
+/**
+ * Parse one translated API-spec section and return the subtree it carries,
+ * or throw when the text is not valid YAML or lacks that subtree (the model
+ * returned commentary, or mangled indentation). Section ids are `paths::<path>`,
+ * `components.<bucket>::<name>`, `components.<bucket>`, a top-level key, or
+ * `whole`.
+ */
+export function specSectionSubtree(text, sectionId) {
+  const doc = yaml.load(text);
+  let subtree;
+  if (sectionId === "whole") {
+    subtree = doc && typeof doc === "object" ? doc : undefined;
+  } else if (sectionId.startsWith("paths::")) {
+    subtree = doc?.paths?.[sectionId.slice("paths::".length)];
+  } else if (sectionId.startsWith("components.")) {
+    const rest = sectionId.slice("components.".length);
+    const sep = rest.indexOf("::");
+    subtree =
+      sep === -1
+        ? doc?.components?.[rest]
+        : doc?.components?.[rest.slice(0, sep)]?.[rest.slice(sep + 2)];
+  } else {
+    subtree = doc?.[sectionId];
+  }
+  if (subtree === undefined) {
+    throw new Error(`translation has no '${sectionId}' subtree`);
+  }
+  return subtree;
+}
+
 function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
   const merged = {};
+  // A section text that doesn't parse (e.g. a bad entry replayed from an old
+  // cache) falls through to the existing locale subtree, then to the source.
+  const fresh = (sectionId) => {
+    if (!newSectionContents[sectionId]) return undefined;
+    try {
+      return specSectionSubtree(newSectionContents[sectionId], sectionId);
+    } catch {
+      return undefined;
+    }
+  };
 
   for (const topKey of Object.keys(originalDoc)) {
     if (
@@ -3449,9 +3500,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
       merged.paths = {};
       for (const pathKey of Object.keys(originalDoc.paths)) {
         const sectionId = `paths::${pathKey}`;
-        if (newSectionContents[sectionId]) {
-          const parsed = yaml.load(newSectionContents[sectionId]);
-          merged.paths[pathKey] = parsed.paths[pathKey];
+        if (fresh(sectionId) !== undefined) {
+          merged.paths[pathKey] = fresh(sectionId);
         } else if (existingLocaleDoc?.paths?.[pathKey] !== undefined) {
           merged.paths[pathKey] = existingLocaleDoc.paths[pathKey];
         } else {
@@ -3474,9 +3524,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
           merged.components[bucket] = {};
           for (const name of Object.keys(bucketVal)) {
             const sectionId = `components.${bucket}::${name}`;
-            if (newSectionContents[sectionId]) {
-              const parsed = yaml.load(newSectionContents[sectionId]);
-              merged.components[bucket][name] = parsed.components[bucket][name];
+            if (fresh(sectionId) !== undefined) {
+              merged.components[bucket][name] = fresh(sectionId);
             } else if (
               existingLocaleDoc?.components?.[bucket]?.[name] !== undefined
             ) {
@@ -3488,9 +3537,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
           }
         } else {
           const sectionId = `components.${bucket}`;
-          if (newSectionContents[sectionId]) {
-            const parsed = yaml.load(newSectionContents[sectionId]);
-            merged.components[bucket] = parsed.components[bucket];
+          if (fresh(sectionId) !== undefined) {
+            merged.components[bucket] = fresh(sectionId);
           } else if (existingLocaleDoc?.components?.[bucket] !== undefined) {
             merged.components[bucket] = existingLocaleDoc.components[bucket];
           } else {
@@ -3500,9 +3548,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
       }
     } else {
       const sectionId = topKey;
-      if (newSectionContents[sectionId]) {
-        const parsed = yaml.load(newSectionContents[sectionId]);
-        merged[topKey] = parsed[topKey];
+      if (fresh(sectionId) !== undefined) {
+        merged[topKey] = fresh(sectionId);
       } else if (existingLocaleDoc?.[topKey] !== undefined) {
         merged[topKey] = existingLocaleDoc[topKey];
       } else {
