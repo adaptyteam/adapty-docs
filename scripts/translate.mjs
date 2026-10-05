@@ -2979,8 +2979,11 @@ async function translateApiSpecBatchSections(
         // previous translation (or English) for it and leave it uncached, so
         // the next run retries just that section.
         try {
-          specSectionSubtree(text, sectionId);
-          newTranslations[sectionId] = text;
+          newTranslations[sectionId] = parseOrRepairSpecSection(
+            text,
+            sectionId,
+            `api-spec:${spec.basename} ${sectionId}`,
+          );
         } catch (err) {
           console.error(
             `  ✗ api-spec:${spec.basename} ${sectionId}: ${err.message} — keeping the previous version of this section; it will be retried on the next run`,
@@ -3485,6 +3488,54 @@ function splitYamlIntoSections(yamlContent) {
  * `components.<bucket>::<name>`, `components.<bucket>`, a top-level key, or
  * `whole`.
  */
+/**
+ * Quote single-line plain YAML scalars that contain `: ` or ` #`.
+ *
+ * Translations put "for example:" phrases inside unquoted values — the vi
+ * spec had `description: Loại chỉ số (ví dụ: 'multi', 'single')` — and YAML
+ * reads the inner `: ` as a new mapping key ("bad indentation of a mapping
+ * entry"). Only plain scalars on one line are touched; quoted, block (`|`,
+ * `>`), flow (`{`, `[`) and anchored values are left alone.
+ */
+export function quoteYamlPlainScalars(text) {
+  return text
+    .split("\n")
+    .map((line) => {
+      const m = line.match(/^(\s*(?:-\s+)?[\w$.\/-]+:\s+)(.+?)\s*$/);
+      if (!m) return line;
+      const [, prefix, value] = m;
+      if (/^["'|>{[&*!#%@`]/.test(value)) return line;
+      if (!/: |\s#/.test(value)) return line;
+      if (!value.includes("'")) return `${prefix}'${value}'`;
+      if (!value.includes('"') && !value.includes("\\"))
+        return `${prefix}"${value}"`;
+      return `${prefix}'${value.replace(/'/g, "''")}'`;
+    })
+    .join("\n");
+}
+
+/**
+ * Return the section text to use for a translated spec section: the text as
+ * is when it parses, otherwise the `quoteYamlPlainScalars` repair when that
+ * parses. Throws when neither yields the section's subtree.
+ */
+export function parseOrRepairSpecSection(text, sectionId, label = sectionId) {
+  try {
+    specSectionSubtree(text, sectionId);
+    return text;
+  } catch (err) {
+    const repaired = quoteYamlPlainScalars(text);
+    if (repaired === text) throw err;
+    try {
+      specSectionSubtree(repaired, sectionId);
+    } catch {
+      throw err;
+    }
+    console.warn(`  ⚠ ${label}: quoted plain YAML values containing ': '`);
+    return repaired;
+  }
+}
+
 export function specSectionSubtree(text, sectionId) {
   const doc = yaml.load(text);
   let subtree;
