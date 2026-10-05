@@ -4,7 +4,9 @@ no_index: true
 
 1. Mở [App Store Connect](https://appstoreconnect.apple.com/apps). Chọn ứng dụng của bạn và điều hướng đến phần **General** → **App Information**.
 
-2. Sao chép **Bundle ID** trong mục **General Information**.
+2. Sao chép **Bundle ID** trong phần phụ **General Information**.
+
+   Chỉ sao chép mã định danh — theo định dạng reverse-DNS, không có khoảng trắng, ví dụ: `com.company.app`. App Store Connect hiển thị tên ứng dụng bên cạnh mã này trong một số giao diện khác, như danh sách ứng dụng; nếu dán tên đó thay vì mã định danh, kết nối sẽ không thể xác thực.
 
    
 
@@ -37,5 +39,5 @@ no_index: true
 />
 </Zoom>
 
-4. Quay lại trang **App information** trong App Store Connect và sao chép **Apple ID** tại đó.
+4. Quay lại trang **App information** trong App Store Connect và sao chép **Apple ID** từ đó.
 5. Trên trang [**App settings** -> **iOS SDK**](https://app.adapty.io/settings/ios-sdk) trong Adapty dashboard, dán ID vào trường **Apple app ID**.

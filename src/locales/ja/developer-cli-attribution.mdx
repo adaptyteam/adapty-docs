@@ -1,0 +1,188 @@
+---
+title: "CLIからアトリビューションを照会する"
+description: "ターミナルからAdaptyのアトリビューションレポートを読む：チャネル、キャンペーン、広告、国、日付別の支出、インストール数、収益、ROAS、コホート、予測。"
+metadataTitle: "開発者CLIのアトリビューション | Adapty ドキュメント"
+---
+
+Adapty CLIは、`adapty attribution`トピックの下で、ターミナルから[Adapty Attribution](adapty-user-acquisition)アナリティクスを読み取ります。[Attributionダッシュボード](ua-analytics)と同じ数値（支出、インストール数、収益、ROAS、コホート値、予測）を返し、チャネル、キャンペーン、広告セット、広告、キーワード、国、ストア、または日付でグループ化できます。
+
+AIエージェントに獲得数値へのライブアクセスを付与したり、スクリプトにレポートを取り込んだり、ダッシュボードでビューを作成せずに1つの質問に答えたりする際に活用してください。
+
+:::tip
+「先月はどのチャネルが最も費用対効果が高かったか？」といった質問にAIコーディングツールに答えさせたい場合は、[アトリビューション スキル](developer-cli-attribution-skill)をインストールしてください。実行すべきコマンドと、その結果の読み方を把握しています。
+:::
+
+すべての `attribution` コマンドは読み取り専用です。実行しても、キャンペーン、トラッキングリンク、インテグレーションは一切変更されません。
+
+## 始める前に \{#before-you-start\}
+
+`attribution` トピックは、CLI の他の部分と同じインストール方法・ログイン方法を使用します。まだセットアップしていない場合は、[クイックスタートガイド](developer-cli-quickstart) のステップ 1 と 2 を参照してください。このトピックには CLI バージョン 0.8.8 以降が必要です。バージョンを確認するには、`adapty --version` を実行してください。
+
+さらに 2 つの条件があります。
+
+- **アトリビューションアクセス**: これがない場合、`report` および `values` は `402 attribution_access_required` で失敗します。再ログインしても変わりません。`metrics` と `dimensions` はアクセスなしで動作するため、`metrics` の呼び出しが成功してもログインの確認にはなりますが、アクセス権の確認にはなりません。
+- **アトリビューションで設定されたアプリ**: `report` および `values` は `adapty apps list` で取得したアプリの UUID を使用します。アトリビューションで設定されていないアプリ、またはあなたの Adapty ユーザーが読み取れないアプリは `404 attribution_app_not_found` で失敗します。
+
+## レポートを作成する \{#build-a-report\}
+
+レポートは毎回同じ手順で作成します。カタログから名前を選び、フィルター値を調べてから、レポートを実行してください。
+
+1. **指標の一覧を表示する**。各指標にはその単位が付属しており、比率の場合は除算に使う指標も表示されます。
+
+   ```bash
+   adapty attribution metrics
+   ```
+
+   `d{N}_roas` のようにテンプレート形式の名前もあります。日数は自分で入力してください（例：`d7_roas`、`d30_roas`）。`d07_roas` のように先頭にゼロを付けるとエラーになります。
+
+2. **グループ化またはフィルタリングに使えるディメンションの一覧を表示する**：
+
+   ```bash
+   adapty attribution dimensions
+   ```
+
+`--group-by` には `date`、`campaign`、`adset`、`ad`、`keyword`、`channel`、`country`、`store` が指定できます。キャンペーン、広告セット、広告はIDでフィルタリングします（名前では不可）。
+
+3. **フィルター値を検索する**。フィルタリングしない場合はこのステップをスキップしてください。キャンペーンの場合、指定期間における各キャンペーンのID、名前、チャンネルが返されます:
+
+   ```bash
+   adapty attribution values --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 --dimension campaign
+   ```
+
+4. **レポートを実行する**:
+
+```bash
+   adapty attribution report --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 \
+     --metrics spend,installs,cpi,roas,d7_roas --group-by campaign --sort roas:desc
+   ```
+
+`--group-by` ディメンションの組み合わせごとに1行返され、さらに `totals` が付きます。合計は行を足し合わせず `totals` から読み取ってください。比率やユニーク数は行をまたいで合算できません。
+
+### 例
+
+1つのキャンペーンにおける2カ国の週次トレンド:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-31 \
+  --metrics spend,installs,cost_per_trial,d7_roas --group-by date,channel --granularity week \
+  --filter campaign=<campaign-id> --filter country=US,GB
+```
+
+ストアの手数料控除後の収益によるキャンペーン別トライアル品質:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-15 \
+  --metrics spend,count_trial_started,d14_count_trial_converted,cost_per_trial,d30_roas \
+  --group-by campaign --revenue-basis proceeds
+```
+
+インストール日別の予測回収期間：
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-09-01 --date-to 2026-09-29 \
+  --metrics spend,d7_revenue,d90_predict_roas,d365_predict_roas --group-by date,campaign --granularity day
+```
+
+スクリプトやエージェント向けに生のレスポンスを取得するには、任意のコマンドに `--json` を追加してください。
+
+## 結果を読み取る \{#read-the-results\}
+
+- **通貨**: 金額はUSD単位です。収益は`--revenue-basis`に従います：`gross`（デフォルト、ダッシュボードのデフォルト）、`proceeds`（ストアの手数料差し引き後）、または`net`（手数料と税金の差し引き後）。レスポンスの`meta.query`には適用中の基準が記載されます。
+- **パーセンテージ**: ROASとレートは0〜100のスケールです。`roas`が150の場合、150%（1.5倍）を意味します。
+- **空の値**: 空の値は計算できないことを意味し、ゼロではありません。割り算の分母がない場合は比率が空になり、モデルにその日の値がない場合は予測が空になり、アトリビューションに支出データがないチャンネルではすべての支出ベースの指標が空になります。`--json`出力ではこれらの値は`null`となり、テーブル表示では`—`と表示されます。
+- **コホート指標**: コホート指標はそのコホートがこれまでに行ったことのみをカウントします。先週のインストールに対する`d30_roas`は1週間分の収益をカバーしており、今後も上昇し続けます。期間内のすべてのコホートが到達している日数でのみキャンペーンを比較してください。
+- **日付**: 日付はアプリのレポートタイムゾーンにおける日単位です。タイムゾーンフラグはありません。タイムゾーンは`report`および`values`の`--json`出力の`meta.query.timezone`に表示されます。
+
+### Apple Search Ads の広告費用 \{#apple-search-ads-spend\}
+
+アトリビューションは、Meta、TikTok、Google Ads の広告費用を収集します。Apple Search Ads の行にはインストール数と収益が含まれますが、費用、CPI、ROAS、その他の費用ベースの指標は空になります。Apple Ads を接続しても、その費用はアトリビューションに追加されません。Apple Search Ads の費用と ROAS は、[Ads Manager](developer-cli-ads-manager) の `adapty asa metrics` で確認できます。
+
+Ads Manager の数値をアトリビューションの行や合計に加算しないでください。Ads Manager はキャンペーングループの通貨でレポートを出力し、インストールの属性付けも異なります。
+
+## 制限事項 \{#limits\}
+
+日付のグループ化の粒度が細かいほど、レポートがカバーできる期間は短くなります：
+
+| グループ化 | 最長期間 |
+|---|---|
+| `--granularity day` | 31日 |
+| `--granularity week` | 180日 |
+| `--granularity month`、`quarter`、または `year` | 366日 |
+| `date` グループ化なし | 92日 |
+
+より長い期間を対象にする場合は、粒度を粗くしてください。1年分のデータであれば、`--granularity month` で1つのレポートにまとめられます。
+
+レポートにはさらに以下の制限があります：
+
+- 最大10,000行。それ以上の場合は、日付グループのスケールを粗くするか、`keyword`や`ad`グループを削除するか、フィルターを適用してください。
+- 指標は最大25件、1つのフィルターに含めるバリューは最大100件。
+- 予測指標（`d{N}_predict_…`）は`--group-by date --granularity day`が必要で、他のグループは最大2件、期間は最大365日で最大4種類まで。
+
+`adapty attribution metrics --json`を実行すると、`data.limits`でこれらの制限を確認できます。
+
+レポートは並行してではなく、一度に1件ずつ実行してください。サービスはカンパニーごとに同時に数クエリしか処理できません。
+
+## エラー \{#errors\}
+
+サービスが拒否したリクエストは終了コード 4 で終了します。不正な日付や `--group-by date` なしの `--granularity` など、送信前に CLI が拒否した入力は終了コード 2 で終了します。`--json` を指定した場合、エラーにはサービスの `error_code` が含まれます。
+
+| コード | HTTP | 対処方法 |
+|---|---|---|
+| `auth_required` | 401 | `adapty auth login` で再ログインしてください。 |
+| `attribution_access_required` | 402 | お使いの会社にはアトリビューションへのアクセス権がありません。再ログインしても解決しません。 |
+| `attribution_app_not_found` | 404 | `adapty apps list` でアプリIDを確認してください。このコマンドは閲覧権限のあるアプリのみを表示します。 |
+| `attribution_unknown_metric` | 422 | `adapty attribution metrics` を参照して指標名を修正してください。メッセージには無効な指標名が個別に表示されます。修正するまでレポートは実行されません。 |
+| `attribution_validation_error` | 422 | メッセージに示されたディメンション、フィルター、ソートフィールド、または日付を修正してください。1つのディメンションに対するすべての値は1つの `--filter` にまとめてください。 |
+| `attribution_query_too_large` | 422 | メッセージの指示に従ってレポートを絞り込んでください。[制限](#limits)を参照してください。 |
+| `attribution_busy` | 429 | お使いの会社で実行中のクエリが多すぎます。`retry_after_seconds` 待ってから、もう一度レポートを実行してください。 |
+| `attribution_upstream_unavailable`、`attribution_query_unavailable` | 503 | `retry_after_seconds` 待ってから再実行してください。`attribution_query_unavailable` が繰り返し発生する場合は、レポートを小さくしてください。 |
+
+CLI は `report` や `values` を自動的に再試行しないため、失敗したレポートは再度実行するまで失敗したままになります。
+
+## コマンドリファレンス \{#command-reference\}
+
+### `attribution metrics` \{#attribution-metrics\}
+
+レポートが受け付けるすべての指標を、単位・説明・比率の分母とともに一覧表示し、レポートの制限も表示します。`--json` 以外のフラグは使用しません。
+
+### `attribution dimensions` \{#attribution-dimensions\}
+
+`--group-by` と `--filter` で使用できる値、各ディメンションがIDでフィルタリングするかどうか、および `date` の粒度を一覧表示します。`--json` 以外のフラグは不要です。
+
+### `attribution values`
+
+1つのディメンションが、ある期間においてアプリで取り得る値を一覧表示します。これらの値はまさに `report --filter` が受け付ける値です。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリの UUID。`adapty apps list` から取得します。 |
+| `--date-from` | はい | 期間の開始日（この日を含む）。アプリのタイムゾーンで `YYYY-MM-DD` 形式で指定します。 |
+| `--date-to` | はい | 期間の終了日（この日を含む）。`--date-from` より前の日付は指定できません。 |
+| `--dimension` | はい | `adapty attribution dimensions` で取得できるフィルタ可能なディメンション。 |
+| `--revenue-basis` | いいえ | `gross`、`proceeds`、または `net`。 |
+
+`campaign`、`adset`、`ad` には、それぞれ ID、名前、チャネルが含まれます。ID が空の値はオーガニックまたはストアリファラートラフィックを示しており、どのフィルターでも選択できません。
+
+### `attribution report`
+
+指標を期間でまとめ、ディメンション別にグループ化したレポートを実行します。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | `adapty apps list` で確認できるアプリの UUID。 |
+| `--date-from` | はい | 期間の開始日（含む）。アプリのタイムゾーンで `YYYY-MM-DD` 形式で指定。 |
+| `--date-to` | はい | 期間の終了日（含む）。 |
+| `--metrics` | はい | `adapty attribution metrics` から取得した指標名。カンマ区切りまたは繰り返し指定。最大 25 個。 |
+| `--group-by` | はい | `date`、`campaign`、`adset`、`ad`、`keyword`、`channel`、`country`、`store` のいずれか。カンマ区切りまたは繰り返し指定。 |
+| `--granularity` | `--group-by date` 使用時 | `day`、`week`、`month`、`quarter`、`year` のいずれか。`date` でグループ化する場合は必須。それ以外の場合は使用不可。 |
+| `--filter` | いいえ | `dimension=value[,value]` の形式。複数の値を指定した場合はいずれかに一致すれば適用。異なるディメンションのフィルターはすべて適用される。ディメンションごとに `--filter` を 1 つ指定。値の中にカンマを含める場合は `\,` と記述。 |
+| `--revenue-basis` | いいえ | `gross`（デフォルト）、`proceeds`、`net` のいずれか。 |
+| `--sort` | いいえ | `field:asc` または `field:desc` 形式。フィールドには指定した指標または `--group-by` のディメンションを使用。方向を省略した場合は昇順。空の値は最後にソートされる。 |
+
+`campaign`、`adset`、または `ad` でグループ化された行には、そのエンティティのID、名前、チャネルが含まれます。キャンペーン名は対象期間内で最後に使用された名前となるため、期間をまたいでキャンペーンを照合する際はIDを使用してください。`date` の値はそのバケットの最初の日付です。
+
+## 次のステップ \{#whats-next\}
+
+- [AIコーディングツールでアトリビューションを分析する](developer-cli-attribution-skill) — これらのコマンドを代わりに実行するスキル。
+- [指標](ua-metrics) — ダッシュボードで各指標が何を測定するか。
+- [予測](ua-predicted-metrics) — 予測収益のモデル化方法。

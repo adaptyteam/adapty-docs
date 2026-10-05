@@ -11,7 +11,7 @@ Adapty Mail APIを使うと、Adapty SDKを経由せずに、サーバーから�
 - バックエンドを信頼できる情報源として、Adapty Mail をサーバー間通信で連携する。
 
 :::note
-**API か SDK か？** ほとんどのアプリは Adapty SDK を通じて Adapty Mail にデータを送信します。SDK はメールアドレスと購入情報を自動的に収集します — 詳しくは[Adapty を Adapty Mail に接続する](mail-collect-emails)をご覧ください。アプリに Adapty SDK が組み込まれていない場合、データがすでにサーバー側に存在する場合、または別のソースからサブスクライバーをインポートする場合は API を選択してください。他のエントリーポイントと API を併用することも可能です。Adapty Mail は `customer_user_id` とメールアドレスで受信データを照合し、1人につき1つのプロファイルを管理します。
+**API と SDK、どちらを使う？** ほとんどのアプリは Adapty SDK を通じて Adapty Mail にデータを送信します。SDK はメールアドレスと購入情報を自動的に収集します — [Adapty を Adapty Mail に接続する](mail-collect-emails)をご覧ください。アプリに Adapty SDK がない場合、データがすでにサーバー上にある場合、または別のソースからサブスクライバーをインポートする場合は API を使用してください。別のエントリーポイントと併用することも可能です。Adapty Mail はメールアドレスでユーザーを照合します。同じアドレスを報告する 2 つのソースは 1 つのプロファイルにまとめられます。`customer_user_id` が同一であっても、異なるアドレスは別々のプロファイルとして作成されます。
 :::
 
 ## 始める前に \{#before-you-start\}
@@ -43,7 +43,7 @@ APIキーとベースURLも必要です：
 `external_profile_id` には必ず安定した値を使用し、匿名値やインストールごとの値は使わないでください。Adapty Mailはこれを使用して、メール、クリック、購入を1つのプロファイルに紐付けます。
 :::
 
-同じユーザーが Adapty SDK 経由でも Adapty Mail に到達する場合は、`customer_user_id`（`Adapty.identify()` に渡す独自のユーザー ID）を追加してください。Adapty Mail はこの ID で照合し、重複プロファイルを作成してそのユーザーに二重でメールを送る代わりに、両方のソースを1つのプロファイルにまとめます。
+同じユーザーが別の[エントリーポイント](mail-entry-points)から Adapty Mail にアクセスする場合は、`customer_user_id` — そのソースが送信するものと同じユーザー ID — を送信してください。Adapty SDK の場合は `Adapty.identify()` に渡す値です。FunnelFox は自身が保持している値を送信します。これはどのプロファイルに紐付けられるかを決定するものではなく、メールアドレスがそれを担います。`customer_user_id` が追加するのは、プロファイルを見つけるための第二の手段です。それを含むトランザクションイベントはメールアドレスがなくても解決でき、削除時にはアドレスの代わりにこの ID を指定できます。
 
 ```bash
 curl --request POST \
@@ -62,10 +62,21 @@ curl --request POST \
 ```
 
 :::note
-`country` と `store_country` には、[ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) の2文字コード（例：`US`）を使用してください。`USA` や `United States` は無効です。
+`country` と `store_country` には、[ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) の2文字コード（`US` など。`USA` や `United States` は不可）を指定してください。それ以外の値は拒否されます。
 :::
 
-利用可能なすべてのフィールドについては、[プロファイルの保存](api-mail/operations/saveProfile) のリファレンスをご覧ください。
+`device_info` はユーザーのデバイス情報を表します。このオブジェクトはオプションですが、送信する場合は `platform` が必須です。
+
+| フィールド | 省略可能 | セグメントフィルター | 備考 |
+| --- | --- | --- | --- |
+| `platform` | いいえ | はい | |
+| `device` | はい | はい | デバイスのモデル。 |
+| `os` | はい | はい | |
+| `locale` | はい | はい | |
+| `app_version` | はい | はい | バージョン順で比較されるため、`1.10.0` は `1.9.0` より上位にランクされます。 |
+| `timezone` | はい | いいえ | ユーザーがメールを受信する時刻を設定します。未設定の場合、Adapty Mail はそのユーザーを UTC として扱うため、08:00〜21:00 の送信ウィンドウはユーザー自身の現地時刻ではなく UTC に従います。 |
+
+利用可能なすべてのフィールドについては、[プロファイルの保存](api-mail/operations/saveProfile) リファレンスをご覧ください。
 
 ## トランザクションイベントを送信する \{#send-transaction-events\}
 
@@ -115,9 +126,9 @@ curl --request POST \
   }'
 ```
 
-`external_profile_id`、`customer_user_id`、または `email` でプロファイルを識別します — 少なくとも1つを送信してください。削除は元に戻せません。同じ識別子を持つ後続の保存リクエストでは、プロファイルは再作成されません。
+`external_profile_id`、`customer_user_id`、または `email` でプロファイルを特定します。少なくとも1つを送信してください。Adapty Mail は保存されたデータを削除しますが、そのアドレスをブロックするわけではありません。ソースが再度データを送信すると、履歴のない新しいプロファイルが作成されます。永続的に除外するには、ソースがそのユーザーのデータを送信しないようにしてください。
 
-リトライを安全に行うには、`external_profile_id` または `customer_user_id` でプロファイルを識別してください。`email` のみで実行した削除を繰り返すと `404` が返されます。削除によってメールアドレスが消去されるためです。詳細は[プロファイルの削除](api-mail/operations/deleteProfile)リファレンスをご参照ください。
+削除リクエストがタイムアウトした場合、リクエストが届いたかどうか不明なため、再度送信することになります。`external_profile_id` または `customer_user_id` でプロファイルを指定している場合、この2回目の呼び出しは安全です。成功し、何も変更されません。一方、`email` のみを指定した2回目の呼び出しは `404` を返します。最初の削除によってマッチ対象のアドレスが消去されているためです。レスポンスコードの一覧は [プロファイルの削除](api-mail/operations/deleteProfile) のリファレンスを参照してください。
 
 ### イベントをフローにマッピングする \{#map-your-events-to-flows\}
 

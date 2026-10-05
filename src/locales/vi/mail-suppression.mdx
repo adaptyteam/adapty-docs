@@ -1,74 +1,114 @@
 ---
-title: "Hủy đăng ký và danh sách chặn trong Adapty Mail"
-description: "Cách Adapty Mail ngừng gửi email đến người dùng — thông qua hủy đăng ký, bounce từ SES, khiếu nại, và cơ chế điều kiện dừng."
-metadataTitle: "Hủy đăng ký và Danh sách chặn | Adapty Mail | Tài liệu Adapty"
+title: "Lý do email ngừng gửi: hủy đăng ký, điều kiện dừng, lỗi gửi"
+description: "Mọi lý do khiến Adapty Mail ngừng gửi tới ai đó — xác minh thất bại, hủy đăng ký, bounce, và điều kiện dừng — cùng những gì bạn có thể làm với từng trường hợp."
+metadataTitle: "Hủy đăng ký và Chặn gửi | Adapty Mail | Tài liệu Adapty"
 keywords: ['adapty mail', 'suppression', 'bounce', 'complaint', 'stop condition']
 ---
 
-Adapty Mail ngừng gửi email đến người dùng trong hai trường hợp khác nhau:
+Adapty Mail ngừng gửi tới người dùng vì ba lý do khác nhau:
 
-- **Danh sách chặn (Suppression)**: Người dùng bị loại khỏi tất cả các lần gửi trong tương lai của dự án này (đã hủy đăng ký, bị bounce, khiếu nại, bị từ chối, hoặc bị giới hạn tốc độ).
-- **Điều kiện dừng (Stop condition)**: Chuỗi email hiện tại của người dùng bị hủy vì họ đã chuyển đổi. Họ không bị đưa vào danh sách chặn và vẫn đủ điều kiện nhận các chiến dịch khác.
+- **Điều kiện dừng**: Chuỗi hiện tại của người dùng kết thúc vì họ đã chuyển đổi. Họ không bị chặn và vẫn đủ điều kiện tham gia các chiến dịch khác.
+- **Chặn**: Người dùng bị loại khỏi tất cả các lần gửi trong tương lai của dự án này.
+- **Giới hạn tốc độ**: Một domain mới có giới hạn gửi mỗi ngày tăng dần theo thời gian và cuối cùng sẽ được gỡ bỏ. Email vượt quá giới hạn sẽ chờ đến ngày hôm sau. Nếu bỏ lỡ thêm một lần nữa, email đó sẽ bị đánh dấu là **Cancelled**, và người nhận không thể tham gia chiến dịch marketing nào khác trong một tuần.
 
-Cả hai cơ chế đều hoạt động theo từng dự án. Danh sách chặn trong một dự án Adapty không ảnh hưởng đến dự án khác.
+Cả ba đều áp dụng riêng cho từng dự án. Việc chặn trong một dự án Adapty không ảnh hưởng đến dự án khác.
 
-## Hủy đăng ký \{#unsubscribe\}
+## Điều kiện dừng (kết thúc chiến dịch khi thành công) \{#stop-conditions-campaign-conclusion-on-success\}
 
-Người nhận có hai cách để hủy đăng ký, và cả hai đều chạy trên host `go.` của [sending domain](mail-sending-domain#which-records-you-add) của bạn thay vì URL của Adapty.
+Điều kiện dừng sẽ kết thúc một chiến dịch ngay khi đạt được mục tiêu, và các email còn lại trong chiến dịch sẽ không được gửi nữa.
 
-**Liên kết ở chân email.** Mỗi email đều có một cái. Khi nhấn vào, một trang xác nhận sẽ hiện ra, và sau khi xác nhận, hồ sơ người dùng sẽ được đánh dấu `suppression_reason = 'unsubscribe'`, chuỗi email còn lại bị hủy, và hồ sơ đó sẽ không nhận được email nào nữa trong dự án. Bước xác nhận này là có chủ đích: các công cụ quét thư rác và trình tải trước của hộp thư thường tự động mở các liên kết trong nội dung email, và việc có thêm một trang xác nhận ở giữa sẽ ngăn chúng vô tình hủy đăng ký thay cho người dùng.
+Mỗi sự kiện mà Adapty Mail nhận được — một lần mua hàng, hoàn tiền, xác nhận — đều cập nhật hồ sơ người dùng. Sau mỗi lần cập nhật, Adapty Mail kiểm tra hồ sơ người dùng để xem điều kiện dừng có được đáp ứng hay không:
 
-**Nút hộp thư đến.** Adapty Mail gửi header `List-Unsubscribe: <URL>, <mailto:>` kèm theo `List-Unsubscribe-Post: List-Unsubscribe=One-Click`. Gmail và Yahoo yêu cầu điều này đối với người gửi hàng loạt (RFC 8058), và các ứng dụng email hỗ trợ header này sẽ hiển thị nút hủy đăng ký ngay cạnh tên người gửi. URL này không có trang xác nhận: yêu cầu đầu tiên gửi đến nó sẽ ngay lập tức ẩn hồ sơ người dùng, bất kể phương thức nào — RFC 8058 quy định dùng POST, nhưng một số nhà cung cấp lại gửi GET.
+- **Chiến dịch marketing**: trạng thái gói đăng ký của hồ sơ người dùng đạt **Subscribed**, hoặc trạng thái sản phẩm mua một lần đạt **Purchased**.
+- **App activation** và **Cancellation page**: không có điều kiện dừng — chúng luôn chạy đến hết.
+- **Double opt-in**: người nhận xác nhận địa chỉ của họ.
 
-Cả hai liên kết đều chứa token mã hóa để xác định người nhận và email đó đến từ đâu, vì vậy việc hủy đăng ký không cần đăng nhập hay tra cứu.
+Khi phát hiện điều kiện dừng, chiến dịch sẽ kết thúc cho người nhận đó. Họ vẫn đủ điều kiện tham gia các chiến dịch khác.
 
-:::note
-Hủy đăng ký từ [email thử nghiệm](mail-testing) không thay đổi gì — các lần gửi thử nghiệm được loại trừ khỏi danh sách chặn.
-:::
+Mở phân tích chiến dịch của bạn để xem chi tiết ai đã đạt điều kiện dừng và như thế nào.
 
-## Tự động đưa vào danh sách chặn \{#automatic-suppression\}
+## Xóa khỏi danh sách gửi thư \{#suppression-removal-from-mailing-list\}
 
-Adapty Mail lắng nghe các sự kiện giao nhận từ AWS SES qua SNS và đưa người dùng vào danh sách chặn ngay lập tức khi xảy ra bất kỳ trường hợp nào sau đây:
+### Xác minh địa chỉ thất bại \{#address-verification-failed\}
 
-| Sự kiện   | Mã lý do    | Ý nghĩa                                                                                  |
-| --------- | ----------- | ---------------------------------------------------------------------------------------- |
-| Bounce    | `bounce`    | Địa chỉ email không hợp lệ, hộp thư đầy, hoặc tên miền không tồn tại.                   |
-| Complaint | `complaint` | Người dùng đánh dấu email là spam.                                                       |
-| Reject    | `reject`    | SES từ chối tin nhắn trước khi gửi.                                                      |
-| Throttle  | `throttle`  | Tốc độ gửi vượt quá giới hạn an toàn của tên miền.                                      |
+Adapty Mail kiểm tra mọi địa chỉ email nhận được.
 
-Với mỗi sự kiện, kết quả đều như nhau: người dùng được thêm vào danh sách chặn, chuỗi email còn lại bị hủy, và họ bị loại khỏi các lần gửi trong tương lai của dự án.
+Các địa chỉ sau sẽ bị từ chối ngay lập tức và không tạo hồ sơ người dùng mới:
+
+- Bất kỳ địa chỉ nào thuộc `privaterelay.appleid.com` — địa chỉ Apple cấp khi người dùng chọn **Hide My Email**. Để gửi email cho những người dùng này, bạn cần thu thập địa chỉ thật riêng. Apple đang chuyển các địa chỉ relay mới sang `private.icloud.com`, vốn không khớp với điều kiện lọc của Adapty Mail, nên những địa chỉ đó sẽ được xử lý như hồ sơ người dùng thông thường.
+- Bất kỳ địa chỉ nào chứa ký tự non-ASCII hoặc khoảng trắng, vì Amazon SES không chấp nhận các địa chỉ như vậy.
+
+Đối với tất cả các địa chỉ khác, Adapty Mail liên hệ với máy chủ của người dùng để kiểm tra xem hộp thư có tồn tại không. Không có email nào được gửi đi trong quá trình kiểm tra này. Địa chỉ sẽ bị chặn nếu:
+
+- không tương ứng với hộp thư đang hoạt động
+- được lưu trữ trên tên miền dùng một lần
+- hộp thư đã đầy
+- là tài khoản chức năng, chẳng hạn như `info@` hoặc `support@`
+
+Nếu quá trình kiểm tra không hoàn tất — máy chủ thư chặn hoặc không phản hồi — Adapty Mail sẽ không chặn địa chỉ đó. Hồ sơ người dùng vẫn được tạo và nhận các chiến dịch như bình thường.
+
+Để xem điều gì đã xảy ra với một địa chỉ, hãy tra cứu trong [Profiles](mail-profiles). Hồ sơ người dùng được gắn nhãn **Unsubscribed** nghĩa là địa chỉ đó không qua được kiểm tra, dù chưa có email nào được gửi đến. Địa chỉ không có hồ sơ người dùng nào thì đã bị từ chối. [Adapty Mail API](mail-send-data-via-api) không thể cho bạn biết điều này: phản hồi của nó được trả về trước khi quá trình kiểm tra chạy.
+
+Địa chỉ hoạt động bình thường nhưng sau đó ngừng hoạt động sẽ giữ nguyên hồ sơ người dùng cho đến khi lần bounce đầu tiên xóa nó đi. Adapty Mail không bao giờ kiểm tra lại một địa chỉ, và việc gửi một địa chỉ đã sửa không khôi phục hồ sơ người dùng cũ — nó sẽ tạo ra một hồ sơ người dùng thứ hai.
 
 :::important
-Adapty Mail **không** phân biệt giữa hard bounce và soft bounce. Bất kỳ bounce nào — kể cả các trường hợp tạm thời như hộp thư đầy — đều đưa người dùng vào danh sách chặn ngay lập tức. Không có khoảng thời gian thử lại.
+Adapty Mail chỉ kiểm tra một địa chỉ một lần duy nhất khi địa chỉ đó được thêm vào. Sau đó, địa chỉ không hợp lệ chỉ xuất hiện khi [gửi email thất bại](#delivery-failed-or-the-recipient-marked-it-as-spam). Hãy xác thực địa chỉ email ở phía bạn trước khi truyền vào Adapty Mail.
 :::
 
-## Điều kiện dừng \{#stop-condition\}
+### Người nhận hủy đăng ký \{#the-recipient-unsubscribed\}
 
-Khi người dùng chuyển đổi giữa chừng trong chuỗi email, Adapty Mail hủy các email còn lại của họ với lý do `stop_condition`. Chuyển đổi có nghĩa là trạng thái gói đăng ký của họ đạt **Subscribed**, hoặc trạng thái sản phẩm mua một lần đạt **Purchased**.
+Email marketing cung cấp cho người nhận hai cách để hủy đăng ký. Email giao dịch thì không có — các thông báo dịch vụ không được gửi dựa trên sự đồng ý, nên không có gì để rút lại.
 
-Điều kiện dừng khác với danh sách chặn:
+- **Liên kết footer**: Mọi email marketing đều có liên kết này. Khi nhấp vào, người dùng sẽ thấy một trang hiển thị địa chỉ email đã được ẩn bớt cùng nút **Unsubscribe**; nhấn nút đó sẽ chặn hồ sơ người dùng. Bước xác nhận này là cố ý: các trình quét và trình tải trước có thể tự động mở các liên kết trong nội dung email, và không nên vô tình kích hoạt việc hủy đăng ký.
+- **Hủy đăng ký một lần nhấp**: Các ứng dụng email hỗ trợ tính năng này sẽ hiển thị nút "unsubscribe" ngay bên cạnh tên người gửi. Chỉ cần một lần nhấp là hồ sơ người dùng bị chặn, không cần qua trang xác nhận. Adapty Mail gửi header `List-Unsubscribe` mà Gmail và Yahoo yêu cầu đối với người gửi hàng loạt (RFC 8058) trong mọi email marketing.
 
-- **Danh sách chặn (Suppression)**: Loại người dùng khỏi tất cả các lần gửi trong tương lai của dự án.
-- **Điều kiện dừng (Stop condition)**: Chỉ hủy chuỗi email hiện tại. Người dùng vẫn đủ điều kiện nhận các chiến dịch khác — ví dụ, một flow gia hạn hoặc thu hút khách hàng cũ dành cho người đăng ký đang hoạt động.
+Cả hai URL đều chứa một token được mã hóa để xác định người nhận và email đó đến từ đâu, vì vậy việc hủy đăng ký không cần đăng nhập hay tra cứu. Cả hai đều trỏ đến domain của bạn, nhưng trang hủy được host bởi Adapty Mail.
 
-Các lần hủy do điều kiện dừng sẽ hiển thị cùng với danh sách chặn trong phân tích chiến dịch.
+:::note
+Hủy đăng ký từ [email thử nghiệm](mail-testing) không thay đổi gì — các lần gửi thử nghiệm không bị tính vào danh sách chặn.
+:::
 
-## Quản lý danh sách chặn \{#managing-suppression\}
+### Gửi thất bại, hoặc người nhận đánh dấu là spam \{#delivery-failed-or-the-recipient-marked-it-as-spam\}
 
-Adapty Mail không có giao diện dashboard để xem hoặc xóa người dùng khỏi danh sách chặn. Để bỏ chặn một hồ sơ người dùng — chẳng hạn ai đó vô tình đánh dấu email thử nghiệm là spam — hãy liên hệ với bộ phận hỗ trợ của Adapty.
+Amazon SES báo cáo lại về mọi email mà nó xử lý. Ba loại báo cáo sau sẽ chặn hồ sơ người dùng ngay lập tức:
 
-## Adapty Mail xử lý những gì cho việc tuân thủ \{#what-adapty-mail-handles-for-compliance\}
+| Sự kiện | Ý nghĩa |
+| --- | --- |
+| Bounce | Máy chủ mail nhận từ chối email và trả lại. Adapty Mail không phân biệt giữa hard bounce (địa chỉ không có hộp thư hoặc tên miền) và soft bounce (hộp thư đầy). Giúp phát hiện các địa chỉ email đã vượt qua [bước xác minh ban đầu](#address-verification-failed) nhưng sau đó không còn hoạt động. |
+| Complaint | Người nhận đã đánh dấu email là spam. |
+| Reject | Amazon SES từ chối tin nhắn trước khi gửi. |
 
-Adapty Mail được tích hợp sẵn:
+[Hành trình](mail-profiles#the-activity-journey) của hồ sơ người dùng hiển thị bounce là **Bounced** và complaint là **Spam report**.
 
-- **Liên kết hủy đăng ký**: Có trong footer của mọi email, được xử lý ngay khi người nhận xác nhận.
-- **List-Unsubscribe headers**: Được gửi kèm mọi email để hủy đăng ký chỉ với một cú nhấp từ hộp thư đến (RFC 8058), trên một URL hủy đăng ký ngay từ yêu cầu đầu tiên.
-- **Tự động chặn**: Được kích hoạt khi xảy ra các sự kiện bounce, complaint, reject và throttle từ SES.
-- **Địa chỉ gửi thư thực tế**: Được thêm vào footer của mọi email chiến dịch từ địa chỉ bạn lưu trong **Settings** > **Company**.
+### Khôi phục người nhận \{#bring-a-recipient-back\}
 
-Phần bạn chịu trách nhiệm:
+Không có tính năng nào trên dashboard để hủy trạng thái suppression. Hãy liên hệ bộ phận hỗ trợ Adapty — ví dụ khi ai đó đánh dấu email thử nghiệm là spam.
 
-- **Địa chỉ công ty của bạn**: Lưu trong **Settings** > **Company**. CAN-SPAM yêu cầu có địa chỉ vật lý ở phần footer, và Adapty Mail sẽ chặn việc tạo chiến dịch cho đến khi bạn điền thông tin này.
+Trang hồ sơ người dùng có hiển thị trạng thái suppression của hồ sơ: tiêu đề trang cho biết lý do, chẳng hạn **Bounced** hoặc **Reported spam**. Menu ⋯ trên cùng trang đó cũng có thể suppression một hồ sơ theo cách thủ công.
+
+## Điều tiết (trì hoãn và hủy gửi tạm thời) \{#throttle-temporary-delays-and-cancellations\}
+
+Một domain gửi mail mới có giới hạn 100 email mỗi ngày. Giới hạn này sẽ tăng dần theo lượng email bạn gửi và biến mất khi domain đã được khởi động hoàn toàn — xem [Khởi động domain](mail-sending-domain#warm-up-and-daily-limits). Adapty Mail kiểm tra từng domain của bạn theo giới hạn riêng của nó và gửi từ domain đầu tiên còn dưới giới hạn. Do đó, một domain đã xác minh thứ hai sẽ tăng lượng email mà dự án có thể gửi trong ngày.
+
+Khi tất cả các domain của bạn đều vượt quá giới hạn, email sẽ không bao giờ đến được Amazon SES. [Hành trình](mail-profiles#the-activity-journey) của hồ sơ người dùng sẽ ở trạng thái **Throttled**. Adapty Mail sẽ thử lại sau — một ngày với chiến dịch transactional, một tuần với chiến dịch marketing. Đến lúc đó, giới hạn thường đã tăng lên. Một email bị chặn vào ngày đầu tiên sẽ được thử lại sau một tuần, khi giới hạn đã cao hơn nhiều.
+
+Nếu bạn vẫn vượt quá giới hạn sau đó, chiến dịch của người nhận đó sẽ bị **Cancelled**. Hồ sơ người dùng không bị chặn, nhưng không thể tham gia vào một chiến dịch marketing khác trong một tuần. Không có gì tự động báo cáo việc hủy này, và chip đó là bản ghi duy nhất về nó. Trước một lần ra mắt lớn từ một domain mới, hãy thêm một domain đã xác minh thứ hai hoặc để giới hạn tăng lên trước.
+
+Các lần gửi thử nghiệm bỏ qua giới hạn hoàn toàn, vì vậy một [email thử nghiệm](mail-testing) thành công không cho bạn biết liệu một lần gửi thực sự có được gửi đi hay không.
+
+## Tuân thủ quy định \{#compliance\}
+
+Việc tuân thủ CAN-SPAM, GDPR và các quy định tương đương tại thị trường của bạn là trách nhiệm của bạn với tư cách là người gửi. Adapty Mail đáp ứng một phần yêu cầu đó một cách tự động và phần còn lại do bạn tự xử lý.
+
+### Đã được xử lý tự động
+
+- **Liên kết hủy đăng ký**: Có trong footer của mọi email marketing, được xử lý ngay khi người nhận xác nhận.
+- **Header List-Unsubscribe**: Được gửi kèm mọi email marketing để hủy đăng ký bằng một cú nhấp từ hộp thư đến (RFC 8058).
+- **Tự động chặn**: Kích hoạt khi có bounce hoặc báo cáo spam.
+- **Placeholder địa chỉ**: Được giữ chỗ trong footer mọi email chiến dịch và điền bằng địa chỉ bạn cung cấp.
+
+### Trách nhiệm của bạn
+
+- **Địa chỉ công ty của bạn**: Lưu trong **Settings** > **Company** — đây là giá trị được điền vào placeholder. CAN-SPAM yêu cầu địa chỉ thực tế trong footer, và Adapty Mail sẽ không tạo campaign nếu thiếu thông tin này.
 - **Sự đồng ý opt-in rõ ràng**: Thu thập trước khi truyền email của người dùng vào Adapty. Xem [Kết nối Adapty với Adapty Mail](mail-collect-emails). Để yêu cầu mỗi người nhận mới xác nhận địa chỉ của họ trước khi nhận bất kỳ email marketing nào, hãy bật [double opt-in](mail-double-opt-in).
-- **Yêu cầu xóa theo GDPR**: Gửi các định danh của hồ sơ người dùng đến endpoint [Delete profile](api-mail/operations/deleteProfile) của Adapty Mail API. Adapty Mail sẽ xóa dữ liệu cá nhân của hồ sơ và hủy các email đã được lên lịch. Việc xóa là vĩnh viễn: nếu sau đó lưu lại với cùng các định danh đó, hồ sơ sẽ không được tạo lại.
+- **Yêu cầu xóa dữ liệu theo GDPR**: Gửi các định danh của hồ sơ người dùng đến endpoint [Delete profile](api-mail/operations/deleteProfile) của Adapty Mail API. Adapty Mail sẽ xóa dữ liệu cá nhân của hồ sơ và hủy các email đã lên lịch. Việc xóa là vĩnh viễn: lưu lại sau đó với cùng định danh sẽ không tạo lại hồ sơ.
