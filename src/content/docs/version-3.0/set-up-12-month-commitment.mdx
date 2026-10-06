@@ -1,0 +1,94 @@
+---
+title: "Set up a 12-month commitment plan"
+description: "Set up Apple's monthly subscription with a 12-month commitment in App Store Connect and Adapty, add it to a custom paywall, and test it in the sandbox."
+metadataTitle: "Set up a 12-month commitment plan | Adapty Docs"
+---
+
+:::important
+To offer a commitment plan, you need a yearly App Store subscription, a [custom paywall](paywalls), and Adapty SDK v4.3 or later. Flows can't display the plan.
+:::
+
+To have subscribers commit to a full year and pay monthly, add a [12-month commitment plan](app-store-12-month-commitment) to your yearly product in App Store Connect and in Adapty.
+
+## Before you begin
+
+Before you implement commitment plans, make sure that you:
+
+- **Target the right market**: Commitment plans aren't available in the United States. In Germany, Israel, South Africa, and Türkiye, subscribers can cancel with immediate effect through Apple Support.
+- **Target the right OS version**: Subscribers need iOS 26.4 or later, or the same version of iPadOS, macOS, tvOS, or visionOS. Build your app with Xcode 26.5 or later.
+- **Target the right price range**: The sum value of the 12 monthly payments must range between 1x and 1.5x the value of the upfront yearly subscription.
+- **Run Adapty SDK v4.3 or later**: In app versions with an earlier SDK, users can only buy the upfront plan.
+- **Update code that reads product IDs**: Webhooks, integrations, data exports, and the Server-side API report commitment-plan purchases as `<product_id>:monthly`. If your code processes product IDs, update the logic before the first commitment-plan purchase.
+
+## 1. App Store Connect configuration
+
+1. Open a yearly subscription in App Store Connect, or [create a new subscription](app-store-products) with a **1 Year** duration.
+2. In the **Availability** section, add the same countries under **1 Year Upfront** and under **Monthly with 12-Month Commitment**. Apple only offers commitment billing where upfront billing is available. The reverse isn't required: you can offer the upfront plan in countries without the commitment plan.
+3. In the **Subscription Prices** section, set the upfront price for your base territory, if the subscription doesn't have one yet. Apple requires the upfront price even if you only display the commitment plan to users.
+4. Set the monthly price for your base territory. The monthly price must be 1/12 to 1/8 of the upfront price. For example, with a €59.99 upfront price, the monthly price can be €5.00 to €7.49.
+
+App Store Connect calculates the prices for the other countries from your base-territory prices.
+
+For complete instructions, follow Apple's guide to [offering monthly subscriptions with a 12-month commitment](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-availability-for-an-auto-renewable-subscription#offer-monthly-subscriptions-with-12-month-commitment).
+
+## 2. Adapty configuration
+
+To display the commitment plan in custom paywalls, turn it on for the yearly product in Adapty. If you don't use custom paywalls, you can skip this step.
+
+1. Open the yearly product. If it doesn't exist yet, [create it and connect](create-product#create-product-and-connect-existing-store-products) the subscription you set up in App Store Connect. Don't push a new product from Adapty: it would create a separate subscription without the commitment plan.
+2. Open the **App Store** tab, and select **Offer monthly payments with a 12-month commitment**.
+
+   <ZoomImage id="offer-monthly-payments.webp" width="500px" alt="App Store tab of a yearly product with the Offer monthly payments with a 12-month commitment checkbox" />
+
+3. In the pop-up, type in the installment price as it appears in App Store Connect, converted to USD. This price is a reference value: Adapty doesn't send it to App Store Connect.
+
+   <ZoomImage id="commitment-set-price.webp" width="500px" alt="Monthly with 12-month commitment pop-up with the Monthly price, USD field" />
+
+## 3. Set up offers
+
+In App Store Connect, each billing plan has its own introductory offers, promotional offers, win-back offers, and offer codes. An offer for the upfront plan doesn't apply to the commitment plan.
+
+- **Free trials and other introductory offers**: In App Store Connect, set up the offer for the commitment plan. Adapty applies [introductory offers](app-store-offers#introductory-offers) automatically. When an introductory offer ends, the subscriber's 12-month commitment starts.
+- **Promotional and win-back offers**: Set up [promotional](app-store-offers#promotional-offers) or [win-back offers](app-store-offers#win-back-offers) for the commitment plan in App Store Connect, then [add the offers to Adapty](create-offer). If you don't use custom paywalls, you don't need to add the offers to Adapty.
+- **Offer codes**: Set up offer codes for the commitment plan in App Store Connect.
+
+## 4. Add to a custom paywall
+
+:::warning
+Apple requires you to show both the installment price and the yearly total before the purchase.
+:::
+
+1. In the custom paywall, [add the yearly product](add-product-to-paywall), and turn on **`commitmentPlanTBD`** for it.
+2. In your app, display the price from `product.subscriptionPricingTerms`. For users who can buy the commitment plan, the Adapty SDK returns its pricing. For everyone else, the SDK returns the upfront plan's pricing:
+   - To tell which plan the SDK returned, check `product.subscriptionPricingTerms?.billingPlan`. The value is `.monthly` for the commitment plan and `.upFront` for the upfront plan.
+   - To display the installment price, use `subscriptionPricingTerms.localizedBillingPrice` and `subscriptionPricingTerms.billingPeriod`.
+   - To display the yearly total, use `subscriptionPricingTerms.commitmentInfo.localizedPrice` and `subscriptionPricingTerms.commitmentInfo.period`. For the commitment plan, `product.localizedPrice` and `product.subscriptionPeriod` return the same yearly values.
+
+Users can't buy the commitment plan in the following cases:
+
+- **Unsupported OS version or country**: The user's Apple device runs a system version earlier than 26.4, or the plan isn't available in their App Store country. The Adapty SDK returns the upfront plan's pricing instead.
+- **Existing upfront subscription**: StoreKit reports that the user is already subscribed. To switch plans, subscribers use their Apple subscription settings.
+- **[Promoted in-app purchase](making-purchases#in-app-purchases-from-the-app-store)**: The user selects the product in the App Store, then the Adapty SDK starts the purchase in your app. For these purchases, the SDK only supports the upfront plan.
+
+To stop offering the commitment plan, turn off **`commitmentPlanTBD`** in your custom paywalls. Current subscribers still renew into a new commitment each year, unless you click **Remove Monthly Billing** for the yearly subscription in App Store Connect. Subscribers who already committed keep paying until their commitment ends.
+
+## 5. Test the plan in a sandbox
+
+Follow the [sandbox testing guide](test-purchases-in-sandbox) with two sandbox accounts:
+
+- **An account from a country where you offer the commitment plan**: The paywall should display the commitment plan with the monthly price alongside the total price. After the purchase, the sandbox user's profile should have the access level of the yearly product.
+- **A US account**: The paywall should only display the upfront plan.
+
+If your code processes product IDs from webhooks or the Server-side API, verify that it receives commitment-plan purchases as `<product_id>:monthly`.
+
+To test the purchase logic locally, use [StoreKit Testing in Xcode](local-sk-files) 26.5 or later. Purchases in StoreKit Testing don't reach Adapty.
+
+## Troubleshooting
+
+- **The checkbox for monthly payments is missing**: The **Offer monthly payments with a 12-month commitment** checkbox only appears on an **Annual** product with an App Store product ID.
+- **Users don't see a free trial or another offer for the commitment plan**: In App Store Connect, each offer belongs to one billing plan. [Set up the offer](#3-set-up-offers) for the commitment plan.
+- **Every user sees the upfront price**: Verify both of the following:
+  - The app is built with Xcode 26.5 or later. With an earlier Xcode version, the Adapty SDK always returns the upfront plan's pricing.
+  - **`commitmentPlanTBD`** is on for the yearly product in the custom paywall.
+- **Some users see the upfront price**: Those users [can't buy the commitment plan](#4-add-to-a-custom-paywall).
+- **The paywall shows the yearly total instead of the installment price**: For the commitment plan, `product.localizedPrice` returns the yearly total. To display the installment price, use `subscriptionPricingTerms.localizedBillingPrice`.

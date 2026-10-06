@@ -1,0 +1,74 @@
+---
+title: "12-month commitment plans"
+description: "Offer a yearly App Store subscription as 12 monthly payments with Apple's monthly subscription with a 12-month commitment, and see how Adapty shows it in analytics and events."
+metadataTitle: "12-month commitment plans | Adapty Docs"
+---
+
+:::important
+To offer a commitment plan, you need a yearly App Store subscription, a [custom paywall](paywalls), and Adapty SDK v4.3 or later. Flows can't display the plan.
+:::
+
+A commitment plan isn't a separate product — but an optional setting for a yearly product in both App Store Connect and Adapty. Set it up in addition to the standard *upfront plan*. Offer it to users who hesitate at the upfront price.
+
+Instead of paying upfront for a yearly App Store product, users outside the United States can purchase it at a small markup: in monthly installments with a 12-month commitment. This option requires [additional configuration](set-up-12-month-commitment) in both App Store Connect and Adapty. Apple calls this plan a [monthly subscription with a 12-month commitment](https://developer.apple.com/documentation/storekit/supporting-monthly-subscriptions-with-a-12-month-commitment).
+
+## How a commitment plan works
+
+With an upfront plan, Apple charges the yearly price once a year. With a commitment plan, Apple divides the price into 12 installments. You set the installment price, which can include a surcharge. Apple applies the following [lifecycle rules](https://developer.apple.com/documentation/storekit/managing-lifecycle-of-monthly-subscriptions-with-a-12-month-commitment-):
+
+- **Payment plan**: Each monthly payment is a separate transaction.
+- **Access**: The initial purchase *does not* unlock a year of access. Instead, each payment unlocks a month of access.
+- **Renewal**: When the 12th month ends, the subscription renews for a new 12-month commitment, unless canceled.
+- **Cancellation**: Canceling only turns off the renewal after the 12th payment. The subscriber keeps paying the remaining payments and keeps access until the commitment ends.
+- **Failed payments**: Apple retries a failed payment for up to 90 days. Billing grace periods don't apply, so the subscriber has no access while Apple retries. If Apple recovers the payment, the later payment dates and the commitment end date shift to follow the recovery date. If Apple doesn't recover the payment within 90 days, the commitment ends, and access doesn't return.
+- **Upgrades and downgrades**: An upgrade to a higher-tier subscription in the same subscription group takes effect immediately and ends the commitment, whatever the new subscription's duration. The subscriber may receive a prorated refund for the rest of the current month. A downgrade to a lower-tier subscription takes effect when the commitment ends. The timing of a crossgrade depends on the duration and billing plan of both subscriptions.
+- **Refunds**: A refund for a past month doesn't affect the commitment. A refund for the current month ends the commitment.
+- **Price changes**: Price changes follow Apple's [rules for price increases](https://developer.apple.com/documentation/storekit/managing-price-increases-for-auto-renewable-subscriptions) for annual subscriptions, although the subscriber pays monthly. The upfront plan and the commitment plan have separate prices: changing one doesn't change the other.
+
+The first time a subscriber buys a commitment plan, Apple shows the number of monthly payments, once per Apple Account. The subscription settings and the cancellation screen show how many payments remain. Your app doesn't need to show these disclosures.
+
+### Pros and cons
+
+#### Pros
+
+- **Compared with paying upfront**: Each individual payment is a fraction of the upfront price. However, the allowed yearly surcharge of up to 50% still increases revenue per customer.
+- **Compared with a monthly subscription**: The subscriber commits to all 12 payments. Canceling only turns off the renewal after the 12th payment. In [4 countries](https://support.apple.com/en-us/108098), subscribers can also cancel with immediate effect through Apple Support.
+
+#### Cons
+
+- **Delayed revenue**: The revenue comes in 12 payments instead of one.
+- **Limited reach**: The purchase requires iOS 26.4 or later, and isn't available in the United States or on watchOS.
+- **Non-standard behavior on payment failure**: Billing grace periods don't apply, so a subscriber loses access as soon as payment fails.
+- **Full value isn't guaranteed**: The commitment only lasts as long as the subscriber's payment method works. If a payment fails and Apple can't recover it within 90 days, the commitment ends and the subscription expires, so you don't receive the remaining payments.
+
+## Analytics
+
+Adapty analytics treat commitment plans differently:
+
+- **Product ID**: Analytics and data exports show the commitment plan as a separate product with the ID `<product_id>:monthly`.
+- **Revenue**: Despite the yearly duration of the commitment, each monthly payment is tracked on its own.
+- **Duration**: When you filter or group by **Duration**, the commitment plan counts as a yearly subscription. Cohorts, LTV, and predictions treat it as yearly too.
+- **[Subscription renewal cancelled](cancelled-subscriptions)**: The cancellation is attributed to the day the subscriber cancels. The subscriber keeps paying until the commitment ends.
+- **[Retention](analytics-retention)**: Each monthly payment counts as a renewal, so commitment-plan retention stays close to 100% until the commitment ends.
+- **[A/B tests](ab-tests)**: Commitment-plan revenue accumulates over 12 months, so early revenue favors the upfront plan. Compare the two plans by conversion instead.
+
+If you skip the [Adapty configuration](set-up-12-month-commitment#2-adapty-configuration), commitment-plan purchases still appear in analytics. When Adapty receives the first commitment-plan purchase, it adds the commitment plan to your yearly product. The product must already be connected to the App Store subscription.
+
+## Subscription events
+
+The following [subscription events](webhook-event-types-and-fields) work differently for commitment plans:
+
+| What happens | Event |
+|---|---|
+| Each monthly payment after the first | `subscription_renewed`, even though the commitment itself only renews after the 12th payment |
+| The subscriber cancels | `subscription_renewal_cancelled`, then `subscription_renewed` for each remaining payment |
+| The subscriber switches between the upfront plan and the commitment plan | `subscription_refunded` with zero revenue for the old plan, then `subscription_renewed` for the new plan |
+| A monthly payment fails | `billing_issue_detected`, but never `entered_grace_period` |
+
+In webhook and integration events, the commitment plan carries the product ID `<product_id>:monthly`, like in analytics.
+
+## Troubleshooting
+
+- **A subscriber lost access after a failed payment**: Billing grace periods don't apply to commitment plans. Access returns when Apple recovers the payment.
+- **Adapty shows less revenue for the yearly product than App Store Connect**: Adapty reports the commitment plan as a separate product, `<product_id>:monthly`. To compare revenue with App Store Connect, [filter an Adapty chart](discrepancies-and-troubleshooting#12-month-commitment-plans) by both the yearly product and its commitment plan.
+- **Your backend can't tell that a commitment-plan subscriber canceled**: In the profile that the [Server-side API](api-adapty/operations/getProfile) returns, the subscription's `will_renew` stays `true`, because the monthly payments continue. To find out whether a new commitment starts after this one, read `commitment.will_renew`. Its value is `false` after the subscriber cancels.
