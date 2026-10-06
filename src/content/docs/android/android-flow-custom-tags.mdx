@@ -1,0 +1,160 @@
+---
+title: "Pass data to flows in Android SDK"
+description: "Pass a value from your Android app to a flow, and show it in a text element."
+metadataTitle: "Pass data to flows | Android SDK | Adapty Docs"
+---
+
+A [custom tag](flow-custom-tags) is a kind of custom variable. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+
+## Before you start
+
+<FlowCustomTagsPrerequisites />
+
+## Pass custom tag values
+
+Create an `AdaptyUiTagResolver`, and pass it in the `tagResolver` parameter of `AdaptyUI.getFlowView`. The SDK calls the resolver with the full name of each custom tag, such as `user.streak`. The resolver returns one of the following:
+
+- **A string**: Users see it in place of the tag. It must be human-readable, such as "1,250", not "1250.0". Adapty doesn't format or translate it.
+- **`null`**: Users see the tag's Initial value as a fallback.
+- **An empty string**: Users see nothing in place of the tag.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    tagResolver = tagResolver,
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+Map<String, String> customTags = new HashMap<>();
+customTags.put("username", "DragonSlayer42");
+customTags.put("coins", "1,250");
+AdaptyUiTagResolver tagResolver = customTags::get;
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null,
+        eventListener,
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        tagResolver
+);
+```
+
+</TabItem>
+</Tabs>
+
+If you create `AdaptyFlowView` yourself, pass the resolver to its `showFlow` method. In Jetpack Compose, pass it to `AdaptyFlowScreen`. For an example of each call, read [Display flows & paywalls](android-present-paywalls).
+
+<FlowCustomTagsVerify />
+
+If your app already sets custom tag values for old Paywall Builder paywalls, review [how custom tags in flows differ](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## What users see without a value
+
+<FlowCustomTagsFallback />
+
+## Example: show a BMI from onboarding answers
+
+<FlowCustomTagsBmiIntro />
+
+### Set up the flows
+
+<FlowCustomTagsBmiSetup />
+
+### Pass the BMI to the paywall
+
+Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](android-flow-input). When the user closes the onboarding flow, calculate the BMI. Then create the paywall's flow view, and pass the BMI for the `bmi` custom tag.
+
+Pass the following listener to the onboarding flow's view:
+
+```kotlin showLineNumbers title="Kotlin"
+class OnboardingEventListener(
+    private val onBmiCalculated: (bmi: String) -> Unit,
+) : AdaptyFlowDefaultEventListener() {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        // Number inputs send their values as strings.
+        val weight = bodyAnswers["weight"]?.toDoubleOrNull() ?: return
+        val height = bodyAnswers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+        bodyAnswers.clear()
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+
+        onBmiCalculated(String.format(Locale.getDefault(), "%.1f", bmi))
+    }
+}
+```
+
+When the user closes the onboarding flow, the listener calls `onBmiCalculated` with the BMI. Pass a lambda for `onBmiCalculated` that calls the following function. The function fetches the paywall flow, creates its view, and passes the BMI for the `bmi` custom tag:
+
+```kotlin showLineNumbers title="Kotlin"
+fun showBmiPaywall(activity: Activity, bmi: String) {
+    Adapty.getFlow("bmi_paywall") { flowResult ->
+        when (flowResult) {
+            is AdaptyResult.Success -> {
+                AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+                    when (configResult) {
+                        is AdaptyResult.Success -> {
+                            val flowView = AdaptyUI.getFlowView(
+                                activity,
+                                configResult.value,
+                                products = null,
+                                eventListener = AdaptyFlowDefaultEventListener(),
+                                tagResolver = AdaptyUiTagResolver { tag ->
+                                    if (tag == "bmi") bmi else null
+                                },
+                            )
+                            // add flowView to your view hierarchy
+                        }
+                        is AdaptyResult.Error -> {
+                            // handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+`String.format` with `Locale.getDefault()` uses the decimal separator of the user's locale: "22.7" in English, "22,7" in German.
+
+## Limitations
+
+<FlowCustomTagsLimitations />

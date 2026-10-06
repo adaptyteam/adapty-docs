@@ -1,0 +1,124 @@
+---
+title: "Pass data to flows in Unity SDK"
+description: "Pass a value from your Unity app to a flow, and show it in a text element."
+metadataTitle: "Pass data to flows | Unity SDK | Adapty Docs"
+---
+
+A [custom tag](flow-custom-tags) is a kind of custom variable. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+
+## Before you start
+
+<FlowCustomTagsPrerequisites />
+
+## Pass custom tag values
+
+Pass your app's values to the `SetCustomTags` method of an `AdaptyUICreateFlowViewParameters` object, as a `Dictionary<string, string>`, and call `AdaptyUI.CreateFlowView` with that object:
+
+- Each key is the full name of a custom tag, such as `user.streak`.
+- Each value is the string that users see in place of the tag.
+- Each value must be human-readable, such as "1,250", not "1250.0". Adapty doesn't format or translate it.
+
+The SDK reads the values once, when it creates the view, so they don't change while the flow is open.
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+If your app already sets custom tag values for old Paywall Builder paywalls, review [how custom tags in flows differ](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## What users see without a value
+
+<FlowCustomTagsFallback />
+
+## Example: show a BMI from onboarding answers
+
+<FlowCustomTagsBmiIntro />
+
+### Set up the flows
+
+<FlowCustomTagsBmiSetup />
+
+### Pass the BMI to the paywall
+
+Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](unity-flow-input). When the user closes the onboarding flow, calculate the BMI. Then create the paywall's view, and pass the BMI for the `bmi` custom tag.
+
+Implement the following methods on the listener you register with `Adapty.SetFlowsEventsListener`:
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // Number inputs send their values as strings.
+    if (!bodyAnswers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!bodyAnswers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    // The listener receives events from every flow. Clear the answers,
+    // so that the paywall doesn't open again when the user closes it.
+    bodyAnswers.Clear();
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` uses the decimal separator of the current culture: "22.7" in English, "22,7" in German.
+
+## Limitations
+
+<FlowCustomTagsLimitations />
