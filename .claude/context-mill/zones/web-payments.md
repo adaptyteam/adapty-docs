@@ -86,3 +86,15 @@ entitlement) live in `aliases.md` and are not repeated.
 - **Settled 2026-09-16 by the product owner, and now written into `funnelfox` and the rows above**: the separate-processor-connection question (no, plus dedup), the product-prerequisite question (recommended, not required), and the Custom-entitlement precedence question (the element overrides the integration default). The first of these had a misleading support precedent: [Pylon 1178](https://app.usepylon.com/issues?issueNumber=1178) shows a customer who only got access working after adding the Stripe integration, which was a coincidence of a since-fixed FunnelFox bug, not evidence that the connection is required.
 - **Verified, not a miss:** this zone's "web purchase doesn't unlock the app" row reached the same cause independently of the support record — [Pylon 11595](https://app.usepylon.com/issues?issueNumber=11595) (Aug 2026, classified *User Error* in Pylon) is the identity-match failure the row predicts, on a third payment path the row didn't yet name.
 
+- **2026-10-05: iOS web paywall link-outs are documented for the US storefront only, on purpose.**
+  `web-paywall` used to say the App Store allows external payments "only in the USA and Japan" and
+  segmented on US + JP. Apple's EU, Japan and Brazil pages (read 2026-10-05) allow link-outs there
+  only with a regional entitlement and Apple's disclosure sheet (`ExternalPurchaseCustomLink`), plus
+  a 15% commission (10% reduced) on sales within 7 days of the tap; Japan and Brazil also require IAP
+  on the same screen. AdaptySDK-iOS `origin/master` `e9faf355` (2026-09-30) opens the URL with
+  `UIApplication.open` / `SFSafariViewController` in `Sources/WebPaywall/Adapty+WebPaywall.swift` and
+  never calls the disclosure API (`git grep -i ExternalPurchase` over the 15 most recent remote
+  branches: no hits). So the article now targets the US and carries an "Other App Store regions"
+  section instead. If the SDK adds the sheet, that section and the segment step change together.
+  Not checked: the Android sentence "no geographic restriction applies" in the same step, which
+  `prepare-your-app-for-store-review` contradicts for Google Play billing.
