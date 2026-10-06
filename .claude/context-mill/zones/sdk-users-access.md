@@ -1,6 +1,6 @@
 ---
 zone: sdk-users-access
-sources: [android-sdk, capacitor-sdk, dashboard-backend, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, server-side-api-spec, unity-sdk]
+sources: [android-sdk, capacitor-sdk, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, server-side-api-spec, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---
@@ -28,8 +28,8 @@ version boundary.
   - *"What is actually true for this user"* — the server. The maintained description of the object's
     shape is `server-side-api-spec`: its `Profile` schema carries `customer_user_id`,
     `custom_attributes` and `access_levels` → `AccessLevel`, and `getProfile` / `grantAccessLevel` /
-    `revokeAccessLevel` are the operations that read and mutate it. `dashboard-backend` owns the
-    behaviour behind that spec.
+    `revokeAccessLevel` are the operations that read and mutate it. The behaviour behind that spec is
+    Adapty's closed-source backend, not citable here — confirm with backend/product.
   - *"What the app sees, and when"* — the SDK cache, and its refresh schedule lives in each platform's
     **lifecycle manager, not in its profile code**. Confirmed: `ios-sdk`
     `Sources/LifecycleManager.swift` defines `profileUpdateInterval = 60.0`,
@@ -42,14 +42,11 @@ version boundary.
     for the platform in the ticket. Nothing equivalent exists in `Sources/Profile/`; grepping there for
     an interval finds nothing.
   - *Access-level **change events*** — `access_level_updated` and `subscription_started`, which the
-    `CrossDeviceDetection.mdx` reusable makes claims about, are backend event types, not SDK behaviour:
-    `dashboard-backend` `src/sdk/purchase_context/constants/share.py` and
-    `src/portal/analytics_context/domain/enums/event_type.py`. No SDK repo can settle "which event
-    fires for an inheritor".
-- **Attribute limits and allowed keys — the authoritative numbers are backend constants**, in
-  `dashboard-backend` `src/sdk/profile_context/constants.py`: `PROFILE_MAX_AMOUNT_ATTRIBUTES = 30`,
-  `PROFILE_ATTRIBUTE_NAME_MAX_LENGTH = 30`, `PROFILE_ATTRIBUTE_VALUE_MAX_LENGTH = 50`, and the key
-  pattern `[\dA-Za-z_.-]+`. Every SDK re-implements the same three numbers client-side and can
+    `CrossDeviceDetection.mdx` reusable makes claims about, are backend event types, not SDK behaviour
+    (backend code, 2026-08-11). No SDK repo can settle "which event fires for an inheritor".
+- **Attribute limits and allowed keys — the authoritative numbers are backend constants** (backend
+  code, 2026-08-11): at most 30 attributes, key length 30, value length 50, and the key pattern
+  `[\dA-Za-z_.-]+`. Every SDK re-implements the same three numbers client-side and can
   therefore drift from them — `ios-sdk`
   `Sources/Profile/Entities/AdaptyProfile.CustomAttributes.swift` (`validateKey`, `validateCount`,
   `validateLenght`) and `android-sdk`

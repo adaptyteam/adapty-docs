@@ -1,6 +1,6 @@
 ---
 zone: google-platform
-sources: [dashboard-backend]
+sources: []
 reviewed_shape:
 reviewed_at:
 ---
@@ -19,7 +19,7 @@ side, not Android SDK code and not the Adapty Dashboard's own settings.
 ## Sources of truth
 
 This zone is split by owner, and the split is unusually clean: most sentences here are **Google's**
-facts, a minority are **Adapty's**, and only the second half has a registered source.
+facts, a minority are **Adapty's**, and neither half has a registered source.
 
 - **Google's half has no source, and cannot have one.** Cloud IAM role names (Pub/Sub Admin,
   Monitoring Viewer), Play Console **Account permissions** labels, which three APIs must be enabled,
@@ -31,54 +31,39 @@ facts, a minority are **Adapty's**, and only the second half has a registered so
   "I confirmed the label" must mean "I opened the console page", and if nobody did, it is an open
   question. This is also why the corpus-wide rule about establishing *absence* by grep does not help
   here — there is nothing to grep.
-- **Adapty's half is `dashboard-backend`** (`~/Documents/adapty-dashboard-api`, `default_ref:
-  origin/develop` — the local working tree is ~2000 commits behind it, so read the ref, not the
-  checkout). Four modules cover everything this zone claims about our side, all confirmed on
-  `origin/develop`:
-  - **What we do with the key file, at upload time** —
-    `src/portal/app_settings_context/applications/adapters/external/google_service_account.py`
-    (`validate_service_account_key`). This is a *shape* check only: a pydantic model asserting
-    `type == 'service_account'` and the two fixed Google URLs, then a DRF error naming the
-    `google_service_account_key_file` field. It never calls Google. Correspondingly,
-    `src/api/serializers/analytics.py:318` sets `google_service_account_key_file_valid = True` on the
-    mere presence of the field. So "Adapty rejects the key file" can only ever mean malformed JSON —
-    a correctly-shaped key belonging to an under-permissioned account is accepted here and fails
+- **Adapty's half is backend code** — Adapty's closed-source backend, not citable here; confirm with
+  the product team or by testing in the dashboard. Everything this zone claims about our side was
+  verified against it:
+  - **What we do with the key file, at upload time.** This is a *shape* check only: the JSON must be
+    a service-account key with Google's two fixed URLs, otherwise the upload fails with an error on
+    the key-file field. It never calls Google, and the dashboard marks the key valid on the mere
+    presence of the file. So "Adapty rejects the key file" can only ever mean malformed JSON — a
+    correctly-shaped key belonging to an under-permissioned account is accepted here and fails
     later, which is the mechanism behind the "nothing works right after setup" phrasing in
     *Ticket language*.
-  - **What we do with it afterwards, and what a missing grant breaks** —
-    `src/sdk/purchase_context/applications/adapters/external/play_store_api.py`
-    (`PlayStoreAPIAdapterBase`), which builds an `androidpublisher` v3 client from the stored key and
-    is the module that actually validates Play purchases. It raises **two different** errors, and the
-    difference is the zone's most useful diagnostic: credential-level failures (key absent,
-    `MalformedError`, `RefreshError`) become `PlayStoreKeyFileError` with
-    `GOOGLE_SERVICE_ACCOUNT_KEY_IS_NOT_SET_ERROR` / `GOOGLE_SERVICE_ACCOUNT_KEY_IS_NOT_VALID`, while
-    anything Google answers with an HTTP status — which is where a missing Play Console permission
-    lands — becomes `PlayStoreTokenError` carrying Google's own status. Dashboard-side reads of
-    products, base plans, offers and listings go through a second `androidpublisher` client in
-    `src/portal/in_app_context/infrastructure/adapters/external/play_store_products/google_android_publisher_api_adapter.py`
-    (scope `https://www.googleapis.com/auth/androidpublisher`).
-  - **RTDN** (`enable-real-time-developer-notifications-rtdn`) —
-    `src/api/services/google_pubsub.py` for setup and
-    `src/sdk/purchase_context/applications/services/transaction/play_store/play_store_notification_decode.py`
-    for consumption. Load-bearing facts: the topic name is *computed by us*
-    (`get_name_topic` = `projects/{key_file.project_id}/topics/adapty-{env}-{app_pk}`), which is why
-    the field is blank or malformed exactly when the key file is missing or has no `project_id` —
-    `get_name_topic` returns `''` in that case. Adapty then creates the topic in the customer's Cloud
-    project, sets an IAM binding granting `roles/pubsub.publisher` to
-    `google-play-developer-notifications@system.gserviceaccount.com`, and creates a **push**
-    subscription pointing at our own `sdk_google_subscription_status` endpoint keyed by the app's
-    `google_subscription_status_token`.
-  - **The dashboard-side fields the zone names** — all on the `App` model in
-    `src/api/models/analytics.py`: `google_service_account_key_file`, `google_s2s_forward_url` (the
-    **URL for forwarding raw Google events** field), `google_is_created_topic`, and `is_google_smb`
-    (Reduced Service Fee). Use these when a ticket's wording has to be matched to an actual stored
-    setting.
+  - **What we do with it afterwards, and what a missing grant breaks.** Play purchases are validated
+    through an `androidpublisher` v3 client built from the stored key. It fails in **two different**
+    ways, and the difference is the zone's most useful diagnostic: credential-level failures (key
+    absent, malformed, or unable to refresh a token) surface as a key-not-set / key-not-valid error,
+    while anything Google answers with an HTTP status — which is where a missing Play Console
+    permission lands — surfaces carrying Google's own status. Dashboard-side reads of products, base
+    plans, offers and listings go through a second `androidpublisher` client (scope
+    `https://www.googleapis.com/auth/androidpublisher`).
+  - **RTDN** (`enable-real-time-developer-notifications-rtdn`). Load-bearing facts: the topic name is
+    *computed by us* (`projects/<project_id from the key file>/topics/adapty-…`), which is why the
+    field is blank or malformed exactly when the key file is missing or has no `project_id`. Adapty
+    then creates the topic in the customer's Cloud project, sets an IAM binding granting
+    `roles/pubsub.publisher` to `google-play-developer-notifications@system.gserviceaccount.com`, and
+    creates a **push** subscription pointing at Adapty's own per-app notification endpoint.
+  - **The dashboard-side settings the zone names** — the uploaded key file, **URL for forwarding raw
+    Google events**, whether the RTDN topic has been created, and the Reduced Service Fee membership.
+    Use these when a ticket's wording has to be matched to an actual stored setting.
 - **The sharpest trap: two consoles, two grants, and a ticket that names neither.** Establish which
   before doing anything else.
   - Google **Cloud** Console, on the *Cloud project*: enabling the three APIs
     (`enabling-of-devepoler-api`), the service account's **IAM roles** — Pub/Sub Admin, Monitoring
     Viewer (`create-service-account`), and issuing its **JSON key** for download
-    (`create-service-account-key-file`). These are what `google_pubsub.py` consumes: creating a topic
+    (`create-service-account-key-file`). These are what Adapty's RTDN setup consumes: creating a topic
     and subscription inside the customer's own Cloud project needs the Pub/Sub role, not any Play
     Console permission.
   - Google **Play** Console, on the *developer account*: inviting the service account's email and
@@ -99,14 +84,14 @@ facts, a minority are **Adapty's**, and only the second half has a registered so
   - **Settled, by Google's mechanics:** the service account must exist before a key can be issued for
     it, so `create-service-account` → `create-service-account-key-file` is the only possible order.
   - **Settled, by our backend:** the key must be uploaded *after* the Cloud IAM roles exist, because
-    saving it immediately drives `google_create_topic_and_subscription` (called from both `create()`
-    and `update()` in `src/api/serializers/analytics.py`) against the customer's Cloud project. This
+    saving it — on first upload and on every replacement — immediately creates the RTDN topic and
+    subscription in the customer's Cloud project. This
     is also the reason the upload step (`google-play-store-connection-configuration`) sits where it
     does in the chain rather than first.
   - **Open:** whether the Play Console **Account permissions** must precede the key file. The backend
     does not settle it — nothing checks those permissions at upload time, and they are first exercised
     later at `androidpublisher` call time. That is a statement about the mechanism I looked for
-    (an upload-time gate in `dashboard-backend`), **not** a finding that the order is free: Google's
+    (an upload-time gate in the backend), **not** a finding that the order is free: Google's
     own ~24 h service-account activation delay, or Play Console's invitation flow, could make
     permissions-first the right instruction for reasons no code in our repos would show. A fix task is
     already open on the `google-platform-resources` / `initial-android` contradiction; it should not be
@@ -114,16 +99,13 @@ facts, a minority are **Adapty's**, and only the second half has a registered so
 - **`enabling-of-devepoler-api` is the real id, typo included** ("devepoler"). Per the SEO-stability
   rule, the filename stays; write it exactly as the roster has it in every link, sidebar entry and
   task description, and expect it not to match a search for "developer".
-- TODO(owner): nothing in `sources.md` or `dashboard-backend` covers the **quota** story from our side.
+- TODO(owner): nothing in `sources.md` or the backend covers the **quota** story from our side.
   Does Adapty detect or surface Google Play Developer API quota exhaustion at all (a dashboard warning,
   a support alert), or is the customer's email from Google the only signal? `google-play-quota-increase`
   currently reads as if it is the only signal, and that should be confirmed rather than assumed.
-- TODO(owner): `google_service_account_key_file_valid` is written in exactly one place in
-  `dashboard-backend` and only ever to `True` (grep over `origin/develop` for
-  `key_file_valid|keyFileValid|key-file-valid|KEY_FILE_VALID` returns one Python write site,
-  `src/api/serializers/analytics.py:318`, plus reads and ClickHouse DDL). It is read by the SDK
-  purchase path, so something presumably invalidates it. If another service owns that write, it needs a
-  `sources.md` entry before any article documents a "key became invalid" state.
+- TODO(owner): the key file's "valid" flag is only ever set to valid, at upload, in the backend
+  code checked; the SDK purchase path reads it, so something presumably invalidates it.
+  Confirm with the product team before any article documents a "key became invalid" state.
 
 ## What we document, what we don't
 
