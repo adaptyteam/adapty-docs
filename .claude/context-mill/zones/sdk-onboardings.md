@@ -1,6 +1,6 @@
 ---
 zone: sdk-onboardings
-sources: [android-sdk, capacitor-sdk, dashboard-interface, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unity-sdk]
+sources: [android-sdk, capacitor-sdk, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---
@@ -44,12 +44,11 @@ not the local clone's checked-out branch — several of these clones are parked 
   the SDK side owns fetching, presentation, and the message bridge; the dashboard side owns everything
   visible. Docs-side owners for the authored half are `create-onboarding` / `design-onboarding`
   (`onboardings-legacy`) and `onboarding-quizzes` (`flow-design`).
-- TODO(owner): the **code**-side owner of that document is unregistered, and `sources.md`'s
-  `dashboard-interface` rule does not cover it — that rule points at `packages/unified-builder`, which is
-  the *Flow* Builder: grepping it on `origin/master` (`8ca465ba`) returns exactly one onboarding-named
-  file, an icon (`packages/unified-builder/uikit/src/icons/Onboarding.svg`), and `packages/builder`
-  (`@adapty/builder`, the legacy paywall builder) returns zero. `apps/web/src/entities/onboardings/` in
-  that repo is list/create/edit CRUD, not the editor. Which repo serves the onboarding WebView document?
+- TODO(owner): the **code**-side owner of that document is unregistered. It is closed-source and not
+  citable here; neither the Flow & Paywall Builder code nor the legacy Paywall Builder code contains the
+  onboarding editor, and the dashboard's onboarding pages are list/create/edit only (dashboard code,
+  checked when this brief was written). Ask the product team which code serves the onboarding WebView
+  document.
 - **The answers a user submits do not leave the device through the SDK.** Verified on both native
   platforms: the only onboarding message the SDK forwards to Adapty is the screen-presented one. Android
   `adapty-ui/.../onboardings/internal/ui/OnboardingViewModel.kt`'s `handleAnalyticsEvent` calls
