@@ -1,6 +1,6 @@
 ---
 zone: sdk-flows-display
-sources: [android-sdk, capacitor-sdk, dashboard-backend, dashboard-interface, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unified-builder-transformer, unity-sdk]
+sources: [android-sdk, capacitor-sdk, flutter-sdk, ios-sdk, jscore, kmp-sdk, rn-sdk, unity-sdk]
 reviewed_shape:
 reviewed_at:
 ---
@@ -77,10 +77,9 @@ definitions in `jscore`'s `cross_platform.yaml`.
 
 **2a. What an analytics event carries.** Added 2026-09-07 while writing the `flow-input` family. The
 SDK owns only the *delivery* of the analytics callback; the event names and their parameters are
-compiled into the flow by `unified-builder-transformer` — `git grep flow_user_input` over every tag of
-`AdaptySDK-iOS` finds nothing, while `origin/main` `84e92c9` of the transformer (= production v5.0.16,
-rolled out 2026-09-07) defines it at `src/domain/transform/v5/script/template.ts:503-545` and decides
-when it fires in `generate-handlers.ts:719-800`. Two customer-facing events exist, `flow_user_input`
+compiled into the flow by the builder when it is published — `git grep flow_user_input` over every tag of
+`AdaptySDK-iOS` finds nothing; the event definitions and firing rules live in Adapty's closed-source
+builder code (verified against builder code as rolled out to production, 2026-09-07). Two customer-facing events exist, `flow_user_input`
 and `flow_screen_showed`, and the params map is **flat**: `name`, `instanceId`, `isBackendEvent`,
 `isCustomerEvent`, `element_id`, `element_type`, then `value` *or* `item_ids` + `item_titles`. There
 is no `payload` string and no `version` field — an earlier draft documented both; they never shipped.
@@ -101,23 +100,18 @@ return channel except React Native/Capacitor's `EventHandlerResult` boolean, whi
 (`jscore` `src/ui-builder/types.ts:27`).
 
 **3. Everything the SDK does not own** — which in this zone is most of the interesting behaviour,
-because the flow is dashboard-authored data that the SDK only renders. `dashboard-backend`
-(`origin/develop`) owns:
+because the flow is dashboard-authored data that the SDK only renders. Adapty's backend owns
+(closed-source, not citable here — confirm with the product team; checked against backend code):
 
-- the view configuration and the flow's localization set —
-  `src/portal/in_app_context/domains/value_objects/flow_front_config/` (`flow_front_config.py`, and
-  `localization_catalog.py`, whose `default_locale` field defaults to `'en'`);
-- whether a flow can render on device at all — `FlowVersionPublicationStatus`, eight states from
-  `publishing` to `published`
-  (`src/portal/in_app_context/domains/enums/flow_version_publication_status.py`), with
-  `publication_status is None` meaning never published (`domains/entities/flow_version.py:87`).
+- the view configuration and the flow's localization set, whose default locale defaults to `en`;
+- whether a flow can render on device at all — a flow version moves through several publication
+  states before it reaches `published`, and a version that was never published has no publication
+  status at all.
 
-`dashboard-interface` owns builder control labels, with a trap this zone walks into: **"Show on
-device" is a legacy-Paywall-Builder control.** The label exists at
-`packages/builder/src/widgets/BuilderMenuTree/BuilderMenuTree.tsx:33` and in
-`apps/web/src/pages/ab-section/ui/PaywallBuilder/ui/PaywallBuilderMenu/ui/CreateLegacyBuilderBlock/CreateLegacyBuilderBlock.tsx:59`;
-grepping `packages/unified-builder` (the Flow & Paywall Builder) for `Show on device` and `showOnDevice` returns
-nothing. All seven `troubleshoot-paywall-builder` articles answer a failed configuration fetch with
+The dashboard owns builder control labels, with a trap this zone walks into: **"Show on
+device" is a legacy-Paywall-Builder control.** In the dashboard code the label exists only in the
+legacy Paywall Builder; the Flow & Paywall Builder has no such control (dashboard code, checked
+when this brief was written). All seven `troubleshoot-paywall-builder` articles answer a failed configuration fetch with
 that toggle — right for a Paywall Builder paywall, unverified for a flow, where the publication
 pipeline above is what to check.
 
@@ -396,7 +390,7 @@ and are deliberately not repeated here.
 | "native alert hidden behind the paywall", "paywall overlaps the status bar", "edge-to-edge insets" | `present-paywalls`, Android-specific presentation issues. |
 | "where do I start with paywalls" | The `paywalls` family — the per-platform entry pages, whose job is routing to builder vs manual. |
 | "get the email the user typed in the flow", "read quiz answers in the app", "save onboarding answers as custom attributes" | `flow-input`. Values ride the analytics callback as `flow_user_input`; text fields report on focus loss, selectables per tap, pickers on close. A default or pre-selected value never fires an event — the shared `FlowInputTiming` snippet is where that lives. |
-| "the input event never arrives", "no flow_user_input on my device" | `flow-input`, the `## Before you start` snippet: the flow must have been published after 2026-09-07; the SDK floor is only "first v4". The Adapty preview app never shows these events — its `AdaptyUIFlowView` call registers no analytics callback (adapty-swift-app repo, `FlowPreviewView.swift:35-43`) — so the test has to run in the developer's own build. |
+| "the input event never arrives", "no flow_user_input on my device" | `flow-input`, the `## Before you start` snippet: the flow must have been published after 2026-09-07; the SDK floor is only "first v4". The Adapty preview app never shows these events — its `AdaptyUIFlowView` call registers no analytics callback (preview app code, closed-source) — so the test has to run in the developer's own build. |
 | "date picker value is 6.45E11", "picker gives a Double on Android" | `flow-input`, the Android / Flutter / KMP code comments. Not a doc bug: the Android listener receives JSON numbers as `Double` until the planned 4.2 fix. |
 
 ## Gaps and misses

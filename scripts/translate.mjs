@@ -26,6 +26,8 @@
  *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --batch --only-files "src/content/docs/foo.mdx"
  *                                                                                              # incremental + Batch API (50% off), CI default
  *   node scripts/translate.mjs --incremental --batch --dry-run --only-files "..."             # show batch plan without submitting (no API key needed)
+ *   ANTHROPIC_API_KEY=sk-... node scripts/translate.mjs --incremental --batch --include-stale --only-files "..."
+ *                                                                                              # also retry files left stale by earlier runs (CI default)
  *   node scripts/translate.mjs --lang zh --seed-only                                          # backfill section caches from existing translations for
  *                                                                                              # provably up-to-date files (stored fileHash matches current
  *                                                                                              # English). Zero API calls, no API key needed. Changed files
@@ -108,6 +110,12 @@ const flagAll = args.includes("--all");
 // Backfill tool for fileHash-only caches produced by the whole-file batch path.
 const flagSeedOnly = args.includes("--seed-only");
 const flagIncremental = args.includes("--incremental") || flagSeedOnly;
+// --include-stale (with --only-files): also retry every article, snippet and
+// spec whose stored hash doesn't match its English source — files left behind
+// by a failed or cancelled run, and files written with an English fallback
+// (stored under a retry marker, see retryHash). Files with no stored hash are
+// left alone unless they are in the diff.
+const flagIncludeStale = args.includes("--include-stale");
 const flagSync = args.includes("--sync");
 const flagBatch = args.includes("--batch");
 const flagDryRun = args.includes("--dry-run");
@@ -471,6 +479,7 @@ async function main() {
   // --only-files: fast exit if the diff contains nothing translatable
   if (
     onlyFilePaths &&
+    !flagIncludeStale &&
     onlyDocIds.size === 0 &&
     onlySidebarNames.size === 0 &&
     onlySpecIds.size === 0 &&
@@ -674,10 +683,11 @@ async function translateForLang(
   const allFiles = await collectMdxFiles(DOCS_DIR);
 
   // Apply --only-files filter (git-diff mode): restrict to specific article IDs
-  let files = onlyDocIds
-    ? allFiles.filter((f) => onlyDocIds.has(path.basename(f, ".mdx")))
-    : allFiles;
-  if (onlyDocIds && files.length === 0) {
+  let files =
+    onlyDocIds && !flagIncludeStale
+      ? allFiles.filter((f) => onlyDocIds.has(path.basename(f, ".mdx")))
+      : allFiles;
+  if (onlyDocIds && !flagIncludeStale && files.length === 0) {
     console.log(
       `${tag} No matching articles from --only-files — skipping docs.`,
     );
@@ -753,6 +763,9 @@ async function translateForLang(
         // changed in this commit, so trust that signal and translate it even without
         // a stored hash to compare against.
         const explicitlyChanged = onlyDocIds?.has(basename);
+        // A stale sweep only retries files with a recorded hash; recording a
+        // hash for an unknown translation would freeze it as current.
+        if (flagIncludeStale && onlyDocIds && !explicitlyChanged) continue;
         // Under --seed-only, never apply this heuristic: it assumes the
         // existing translation matches the CURRENT English, which cannot be
         // verified without a stored hash. Seed-only must not freeze
@@ -1409,7 +1422,10 @@ async function translateFileWithSections(
   await fs.mkdir(hashesDir, { recursive: true });
   await fs.writeFile(
     hashFile,
-    JSON.stringify({ fileHash: fHash, sections: newSections }),
+    JSON.stringify({
+      fileHash: guarded.fallbackSectionIds.length ? retryHash(fHash) : fHash,
+      sections: newSections,
+    }),
     "utf-8",
   );
 
@@ -1861,7 +1877,9 @@ async function translateBatchSections(
       await fs.writeFile(
         path.join(hashesDir, `${plan.basename}.json`),
         JSON.stringify({
-          fileHash: plan.fileHashCurrent,
+          fileHash: guarded.fallbackSectionIds.length
+            ? retryHash(plan.fileHashCurrent)
+            : plan.fileHashCurrent,
           sections: newSections,
         }),
         "utf-8",
@@ -2326,7 +2344,7 @@ async function translateReusableForLang(
       basename: e.name.replace(/\.mdx?$/, ""),
     }));
 
-  if (onlyReusableIds) {
+  if (onlyReusableIds && !flagIncludeStale) {
     files = files.filter((f) => onlyReusableIds.has(f.basename));
     if (files.length === 0) {
       console.log(
@@ -2342,6 +2360,8 @@ async function translateReusableForLang(
       const currentHash = await fileHash(file.full);
       const storedHash = await getStoredHash(file.basename, reusableHashesDir);
       if (storedHash === currentHash) continue;
+      if (flagIncludeStale && !storedHash && !onlyReusableIds?.has(file.basename))
+        continue;
       toTranslate.push(file);
     } else if (flagAll) {
       toTranslate.push(file);
@@ -2951,10 +2971,24 @@ async function translateApiSpecBatchSections(
           hadErrors = true;
           continue;
         }
-        newTranslations[sectionId] = sanitizeYamlResponse(
+        const text = sanitizeYamlResponse(
           r.result.message.content[0].text,
           `api-spec:${spec.basename} ${sectionId}`,
         );
+        // One malformed section must not sink the whole spec: keep the
+        // previous translation (or English) for it and leave it uncached, so
+        // the next run retries just that section.
+        try {
+          newTranslations[sectionId] = parseOrRepairSpecSection(
+            text,
+            sectionId,
+            `api-spec:${spec.basename} ${sectionId}`,
+          );
+        } catch (err) {
+          console.error(
+            `  ✗ api-spec:${spec.basename} ${sectionId}: ${err.message} — keeping the previous version of this section; it will be retried on the next run`,
+          );
+        }
       } else {
         console.error(
           `  ✗ api-spec:${spec.basename} ${sectionId} (${r.custom_id}): ${JSON.stringify(r.result)}`,
@@ -3003,11 +3037,19 @@ async function translateApiSpecBatchSections(
 
   await fs.writeFile(localePath, merged, "utf-8");
 
+  // A section that errored or came back invalid kept its previous version;
+  // record a retry marker so the next incremental run re-plans the spec.
+  const incomplete = decisions.some(
+    (d) => d.kind !== "hit" && !newTranslations[d.section.id],
+  );
   const fHash = await fileHash(spec.full);
   await fs.mkdir(apiHashesDir, { recursive: true });
   await fs.writeFile(
     hashFile,
-    JSON.stringify({ fileHash: fHash, sections: newSectionsCache }),
+    JSON.stringify({
+      fileHash: incomplete ? retryHash(fHash) : fHash,
+      sections: newSectionsCache,
+    }),
     "utf-8",
   );
   console.log(`  ✓ api-spec:${spec.basename}`);
@@ -3045,7 +3087,7 @@ async function translateApiSpecsForLang(
     .filter((s) => !UNTRANSLATED_SPECS.has(s.basename));
 
   // Apply --only-files filter
-  if (onlySpecIds) {
+  if (onlySpecIds && !flagIncludeStale) {
     specFiles = specFiles.filter((s) => onlySpecIds.has(s.basename));
     if (specFiles.length === 0) {
       console.log(
@@ -3066,6 +3108,8 @@ async function translateApiSpecsForLang(
       const currentHash = await fileHash(spec.full);
       const storedHash = await getStoredHash(spec.basename, apiHashesDir);
       if (!flagAll && storedHash === currentHash) continue;
+      if (flagIncludeStale && !storedHash && !onlySpecIds?.has(spec.basename))
+        continue;
       toTranslate.push(spec);
     } else if (fileId) {
       if (spec.basename === fileId) toTranslate.push(spec);
@@ -3437,8 +3481,96 @@ function splitYamlIntoSections(yamlContent) {
  * For each section: prefer fresh translation, then existing-locale subtree,
  * then source. Returns the merged YAML string.
  */
+/**
+ * Parse one translated API-spec section and return the subtree it carries,
+ * or throw when the text is not valid YAML or lacks that subtree (the model
+ * returned commentary, or mangled indentation). Section ids are `paths::<path>`,
+ * `components.<bucket>::<name>`, `components.<bucket>`, a top-level key, or
+ * `whole`.
+ */
+/**
+ * Quote single-line plain YAML scalars that contain `: ` or ` #`.
+ *
+ * Translations put "for example:" phrases inside unquoted values — the vi
+ * spec had `description: Loại chỉ số (ví dụ: 'multi', 'single')` — and YAML
+ * reads the inner `: ` as a new mapping key ("bad indentation of a mapping
+ * entry"). Only plain scalars on one line are touched; quoted, block (`|`,
+ * `>`), flow (`{`, `[`) and anchored values are left alone.
+ */
+export function quoteYamlPlainScalars(text) {
+  return text
+    .split("\n")
+    .map((line) => {
+      const m = line.match(/^(\s*(?:-\s+)?[\w$.\/-]+:\s+)(.+?)\s*$/);
+      if (!m) return line;
+      const [, prefix, value] = m;
+      if (/^["'|>{[&*!#%@`]/.test(value)) return line;
+      if (!/: |\s#/.test(value)) return line;
+      if (!value.includes("'")) return `${prefix}'${value}'`;
+      if (!value.includes('"') && !value.includes("\\"))
+        return `${prefix}"${value}"`;
+      return `${prefix}'${value.replace(/'/g, "''")}'`;
+    })
+    .join("\n");
+}
+
+/**
+ * Return the section text to use for a translated spec section: the text as
+ * is when it parses, otherwise the `quoteYamlPlainScalars` repair when that
+ * parses. Throws when neither yields the section's subtree.
+ */
+export function parseOrRepairSpecSection(text, sectionId, label = sectionId) {
+  try {
+    specSectionSubtree(text, sectionId);
+    return text;
+  } catch (err) {
+    const repaired = quoteYamlPlainScalars(text);
+    if (repaired === text) throw err;
+    try {
+      specSectionSubtree(repaired, sectionId);
+    } catch {
+      throw err;
+    }
+    console.warn(`  ⚠ ${label}: quoted plain YAML values containing ': '`);
+    return repaired;
+  }
+}
+
+export function specSectionSubtree(text, sectionId) {
+  const doc = yaml.load(text);
+  let subtree;
+  if (sectionId === "whole") {
+    subtree = doc && typeof doc === "object" ? doc : undefined;
+  } else if (sectionId.startsWith("paths::")) {
+    subtree = doc?.paths?.[sectionId.slice("paths::".length)];
+  } else if (sectionId.startsWith("components.")) {
+    const rest = sectionId.slice("components.".length);
+    const sep = rest.indexOf("::");
+    subtree =
+      sep === -1
+        ? doc?.components?.[rest]
+        : doc?.components?.[rest.slice(0, sep)]?.[rest.slice(sep + 2)];
+  } else {
+    subtree = doc?.[sectionId];
+  }
+  if (subtree === undefined) {
+    throw new Error(`translation has no '${sectionId}' subtree`);
+  }
+  return subtree;
+}
+
 function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
   const merged = {};
+  // A section text that doesn't parse (e.g. a bad entry replayed from an old
+  // cache) falls through to the existing locale subtree, then to the source.
+  const fresh = (sectionId) => {
+    if (!newSectionContents[sectionId]) return undefined;
+    try {
+      return specSectionSubtree(newSectionContents[sectionId], sectionId);
+    } catch {
+      return undefined;
+    }
+  };
 
   for (const topKey of Object.keys(originalDoc)) {
     if (
@@ -3449,9 +3581,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
       merged.paths = {};
       for (const pathKey of Object.keys(originalDoc.paths)) {
         const sectionId = `paths::${pathKey}`;
-        if (newSectionContents[sectionId]) {
-          const parsed = yaml.load(newSectionContents[sectionId]);
-          merged.paths[pathKey] = parsed.paths[pathKey];
+        if (fresh(sectionId) !== undefined) {
+          merged.paths[pathKey] = fresh(sectionId);
         } else if (existingLocaleDoc?.paths?.[pathKey] !== undefined) {
           merged.paths[pathKey] = existingLocaleDoc.paths[pathKey];
         } else {
@@ -3474,9 +3605,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
           merged.components[bucket] = {};
           for (const name of Object.keys(bucketVal)) {
             const sectionId = `components.${bucket}::${name}`;
-            if (newSectionContents[sectionId]) {
-              const parsed = yaml.load(newSectionContents[sectionId]);
-              merged.components[bucket][name] = parsed.components[bucket][name];
+            if (fresh(sectionId) !== undefined) {
+              merged.components[bucket][name] = fresh(sectionId);
             } else if (
               existingLocaleDoc?.components?.[bucket]?.[name] !== undefined
             ) {
@@ -3488,9 +3618,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
           }
         } else {
           const sectionId = `components.${bucket}`;
-          if (newSectionContents[sectionId]) {
-            const parsed = yaml.load(newSectionContents[sectionId]);
-            merged.components[bucket] = parsed.components[bucket];
+          if (fresh(sectionId) !== undefined) {
+            merged.components[bucket] = fresh(sectionId);
           } else if (existingLocaleDoc?.components?.[bucket] !== undefined) {
             merged.components[bucket] = existingLocaleDoc.components[bucket];
           } else {
@@ -3500,9 +3629,8 @@ function mergeYamlSections(originalDoc, existingLocaleDoc, newSectionContents) {
       }
     } else {
       const sectionId = topKey;
-      if (newSectionContents[sectionId]) {
-        const parsed = yaml.load(newSectionContents[sectionId]);
-        merged[topKey] = parsed[topKey];
+      if (fresh(sectionId) !== undefined) {
+        merged[topKey] = fresh(sectionId);
       } else if (existingLocaleDoc?.[topKey] !== undefined) {
         merged[topKey] = existingLocaleDoc[topKey];
       } else {
@@ -3843,6 +3971,15 @@ async function getSidebarIds(platformName, tag) {
 async function fileHash(filePath) {
   const content = await fs.readFile(filePath);
   return "sha256:" + crypto.createHash("sha256").update(content).digest("hex");
+}
+
+/**
+ * Hash to record for a file written with some sections not translated
+ * (English or previous-version fallback). It never equals a real file hash,
+ * so incremental runs keep re-planning the file until every section lands.
+ */
+export function retryHash(fileHashCurrent) {
+  return `retry:${fileHashCurrent}`;
 }
 
 async function getStoredHash(basename, hashesDir) {

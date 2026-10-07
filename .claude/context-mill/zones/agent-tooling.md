@@ -1,6 +1,6 @@
 ---
 zone: agent-tooling
-sources: [adapty-cli, analytics-export-api-spec, capacitor-sdk, dashboard-backend, developer-api-spec, jscore, kmp-sdk, sdk-integration-skill, server-side-api-spec]
+sources: [adapty-cli, analytics-export-api-spec, capacitor-sdk, developer-api-spec, jscore, kmp-sdk, sdk-integration-skill, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -78,8 +78,8 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   per minute globally". Quote the spec, and see Gaps and misses.
 - **`handle-webhooks-with-ai` drives no API at all** — no host, no Adapty key; the reader's own endpoint
   receives the `POST` and the shared secret is a string they invent. Its ground truth is the webhook
-  payload schema, which the `integrations` brief records as having no registered source: use
-  `dashboard-backend` and name the module you read. The delivery contract it restates (10-second ack,
+  payload schema, which the `integrations` brief records as having no registered source: it is
+  closed-source backend code, so confirm with the backend team and name what you checked. The delivery contract it restates (10-second ack,
   retries outside 200–404, `profile_event_id` for dedupe) is canonically
   `webhook-event-types-and-fields` and `set-up-webhook-integration`, not this page.
 - **A third skill exists beyond the two above** (verified 2026-08-18, `git show origin/main:docs/agent/skills/adapty-cli-setup/SKILL.md` in `adapty-cli`): `adapty-cli-setup` — install + device-code auth for agent sessions (Cowork/cloud). It lives in the `adapty-cli` repo but **ships in the `adaptyteam/apple-ads-cli` plugin marketplace** alongside the `apple-ads` skill (its own closing line says so). That marketplace repo is the URL `developer-cli-cowork` and `developer-cli-ads-manager-skill` tell readers to add, and it is registered nowhere in `sources.md`. Cowork-behavior claims in `developer-cli-cowork` (settings apply at task start, clean machine per task, apex + wildcard both needed, ~15-min code TTL) trace to this skill file plus the PM's screenshots.
@@ -168,7 +168,7 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
-| developer-cli-reference | — | dev | 55 | api |
+| developer-cli-reference | — | dev | 53 | api |
 | export-analytics-with-ai | — | dev | 6 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
@@ -244,5 +244,5 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
-- **2026-09-30:** `adapty migrations *` and `adapty skills install` added to `developer-cli-reference` from `adapty-cli` branch `feat/migrate-code` (not yet on `origin/main`; npm `adapty` was 0.8.8, the branch's `package.json` 0.8.6). Re-check flags against `origin/main` once it merges. `migrate_code` runs headless only with `claude-code` / `codex` (`src/cli/agents/headless.ts`); `skills install` also knows `gemini-cli` (`src/cli/agents/catalog.ts`). The server-side step logic behind these commands lives in `revenue-cat-migrator` — see the `migration-from-competitors` brief.
+- **2026-09-30:** `adapty migrations *` and `adapty skills install` added to `developer-cli-reference` from `adapty-cli` branch `feat/migrate-code` (not yet on `origin/main`; npm `adapty` was 0.8.8, the branch's `package.json` 0.8.6). Re-check flags against `origin/main` once it merges. `migrate_code` runs headless only with `claude-code` / `codex` (`src/cli/agents/headless.ts`); `skills install` also knows `gemini-cli` (`src/cli/agents/catalog.ts`). The server-side step logic behind these commands is Adapty's closed-source migration service — see the `migration-from-competitors` brief.
 

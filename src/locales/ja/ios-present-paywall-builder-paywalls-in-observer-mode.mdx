@@ -1,49 +1,51 @@
 ---
-title: "iOS SDKのObserverモードでPaywall Builderのペイウォールを表示する"
-description: "オブザーバーモードでPBペイウォールを表示して、より詳細なインサイトを得る方法を学びます。"
-metadataTitle: "ObserverモードでPBペイウォールを表示する | Adapty ドキュメント"
+title: "iOS SDKのオブザーバーモードでフローを表示する"
+description: "オブザーバーモードで、独自のコードで購入を処理しながら、iOSアプリにフローを表示します。"
+metadataTitle: "オブザーバーモードでのフローの表示 | Adapty ドキュメント"
 ---
 
-ペイウォールビルダーを使用してペイウォールをカスタマイズした場合、それをユーザーに表示するためにモバイルアプリのコードでレンダリングする必要はありません。このようなペイウォールには、ペイウォール内に表示する内容とその表示方法の両方が含まれています。
+[オブザーバーモード](observer-vs-full-mode)を使用する場合、購入ロジックはご自身で実装する必要があります。ただし、ペイウォールのUIは[フロー＆ペイウォールビルダー](adapty-flow-builder)に委任できます。
 
-:::warning
-このセクションは[オブザーバーモード](observer-vs-full-mode)専用です。オブザーバーモードで作業していない場合は、[iOS - ペイウォールビルダーのペイウォールを表示する](ios-present-paywalls)を参照してください。
-:::
+ビルダーで画面をデザインすれば、Adapty SDK がそれをネイティブにレンダリングします。コピー、レイアウト、価格はアプリをリリースせずにいつでも更新できます。ユーザーが購入ボタンをタップすると、SDK があなたのコードを呼び出して購入を完了します。
+
+このガイドでは、その画面を表示して購入コールを処理する方法を説明します。Adapty が購入を代わりに完了する場合は、[フローとペイウォールの表示](ios-present-paywalls)を参照してください。
 
 <SDKv4>
 
-<details>
-   <summary>フローの表示を始める前に（クリックして展開）</summary>
-1. Adapty と [App Store の初期連携](initial_ios)を設定します。
-   2. Adapty SDK をインストールして設定します。`observerMode` パラメーターを `true` に設定してください。[iOS SDK インストールガイド](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)を参照してください。
-   3. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
-   4. [ビルダーでフローまたはペイウォールを設定](create-paywall)し、プロダクトを割り当てます。
-   5. [プレースメントを作成し、フローまたはペイウォールを割り当てます](create-placement)。
-   6. モバイルアプリのコードで[フローとその設定を取得](get-pb-paywalls)します。
-</details>
+## 始める前に \{#before-you-start\}
 
-<p> </p>
+以下が必要です：
+
+- **Adapty iOS SDK v4以降**: 旧バージョンではフローをレンダリングできません。既存アプリをv3から移行する場合は、[移行ガイド](migration-to-ios-sdk-v4)を参照してください。
+- **`observerMode` を `true` に設定**: [iOS SDKインストールガイド](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)を参照してください。
+- **ストアの初期設定**: [App Storeとの連携](initial_ios)でAdaptyをセットアップしてください。
+- **プロダクトが設定された公開済みフロー**: [フロー＆ペイウォールビルダー](adapty-flow-builder)で作成し、[プロダクト](create-product)を割り当ててください。
+- **フローのプレースメント**: [プレースメントを作成](create-placement)し、フローを割り当ててください。
+- **アプリ内でフローを取得済み**: 表示する前に[フローとその設定を取得](get-pb-paywalls)してください。
+
+## 実装 \{#implementation\}
 
 <Tabs groupId="current-os" queryString>
 
 <TabItem value="swift" label="Swift" default>
 
-1. `AdaptyObserverModeResolver` オブジェクトを実装します。プロトコルは SDK v3 と同じです — オブザーバーモード自体はフローとペイウォールのレンダリング間で変わりません:
+1. `AdaptyObserverModeResolver` オブジェクトを実装します。
+
    ```swift showLineNumbers title="Swift"
    func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
-                     onStartPurchase: @escaping () -> Void,
-                     onFinishPurchase: @escaping () -> Void) {
+                     onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+                     onFinishPurchase: @MainActor @Sendable @escaping () -> Void) {
           // use the product object to handle the purchase
           // call onStartPurchase / onFinishPurchase to notify AdaptyUI about the purchase progress
    }
 
-   func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
-                                                onFinishRestore: @escaping () -> Void) {
+   func observerModeDidInitiateRestorePurchases(onStartRestore: @MainActor @Sendable @escaping () -> Void,
+                                                onFinishRestore: @MainActor @Sendable @escaping () -> Void) {
           // call onStartRestore / onFinishRestore to notify AdaptyUI about the restore progress
    }
    ```
 
-2. リゾルバーを `observerModeResolver:` パラメーターとして渡し、フロー設定オブジェクトを作成します:
+2. リゾルバーを `observerModeResolver:` パラメーターとして渡し、フロー設定オブジェクトを作成します：
 
    ```swift showLineNumbers title="Swift"
    do {
@@ -56,13 +58,14 @@ metadataTitle: "ObserverモードでPBペイウォールを表示する | Adapty
    }
    ```
 
-   リクエストパラメーター:
+   リクエストパラメーター：
 
-   | パラメーター | 必須/任意 | 説明 |
+| パラメータ                | 必須 | 説明                                                                                                              |
    | :----------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------- |
-   | **forFlow** | required | `Adapty.getFlow(placementId:)` で取得した `AdaptyFlow` オブジェクト。[フローとペイウォールの取得](get-pb-paywalls)を参照してください。 |
-   | **observerModeResolver** | required | 上記で実装した `AdaptyObserverModeResolver`。 |
-3. `AdaptyUI.flowController(with:delegate:)` を使ってフローコントローラーを初期化します:
+   | **forFlow**              | 必須 | `Adapty.getFlow(placementId:)` で取得した `AdaptyFlow` オブジェクト。[フローとペイウォールの取得](get-pb-paywalls)を参照。 |
+   | **observerModeResolver** | 必須 | 上記で実装した `AdaptyObserverModeResolver`。                                                                  |
+
+3. `AdaptyUI.flowController(with:delegate:)` を使用してフローコントローラーを初期化します：
 
    ```swift showLineNumbers title="Swift"
    import AdaptyUI
@@ -73,32 +76,35 @@ metadataTitle: "ObserverモードでPBペイウォールを表示する | Adapty
    )
    ```
 
-   リクエストパラメーター:
+   リクエストパラメーター：
 
-   | パラメータ | 必須/任意 | 説明 |
+| パラメーター | 必須/任意 | 説明 |
    | :------------------------- | :------- | :----------------------------------------------------------------------------------------------------------------------------------------------- |
-   | **flowConfiguration**      | required | フローのビジュアル詳細を含む `AdaptyUI.FlowConfiguration` オブジェクト。[フローとペイウォールの取得](get-pb-paywalls) を参照。 |
-   | **delegate**               | required | フローイベントをリッスンするための `AdaptyFlowControllerDelegate`。[フロー＆ペイウォールイベントの処理](ios-handling-events) を参照。 |
-戻り値:
+   | **flowConfiguration**      | 必須 | フローの視覚的な詳細を含む `AdaptyUI.FlowConfiguration` オブジェクト。[フローとペイウォールの取得](get-pb-paywalls)を参照してください。 |
+   | **delegate**               | 必須 | フローイベントを受け取るための `AdaptyFlowControllerDelegate`。[フロー & ペイウォールイベントの処理](ios-handling-events)を参照してください。 |
 
-   | オブジェクト         | 説明                                                   |
+Returns:
+
+   | Object               | Description                                            |
    | :------------------- | :----------------------------------------------------- |
-   | AdaptyFlowController | リクエストされたフロー画面を表すオブジェクト。         |
+   | AdaptyFlowController | リクエストされたフローの画面を表すオブジェクト。      |
 
-4. コントローラーを表示します:
+4. コントローラーを表示する:
 
    ```swift showLineNumbers title="Swift"
    present(visualFlow, animated: true)
    ```
 
 :::warning
-[購入トランザクションにペイウォールを紐付ける](report-transactions-observer-mode)のを忘れずに。これを行わないと、Adapty は購入元のペイウォールを特定できません。
+[購入トランザクションへのペイウォールの関連付け](report-transactions-observer-mode)を忘れずに行ってください。これを行わないと、Adapty は購入元のペイウォールを特定できません。
 :::
 
 </TabItem>
+
 <TabItem value="swiftui" label="SwiftUI" default>
 
-SwiftUI では、リゾルバを使ってフロー設定を取得し、`.flow` モディファイアに渡します。
+SwiftUI では、リゾルバーを使ってフロー設定を取得し、`.flow` モディファイアに渡します：
+
 ```swift showLineNumbers title="SwiftUI"
 @State var flowPresented = false
 @State var flowConfiguration: AdaptyUI.FlowConfiguration?
@@ -131,10 +137,10 @@ var body: some View {
 }
 ```
 
-`getFlowConfiguration`の`observerModeResolver:`パラメーターは、レンダリングされたフローがカスタム購入ロジックを尊重するようにするものです。このモディファイア自体はフルモードと同じコールバックを使用します。
+`getFlowConfiguration` の `observerModeResolver:` パラメーターは、レンダリングされたフローにカスタム購入ロジックを適用するためのものです。このモディファイアは、フルモードと同じコールバックを使用します。
 
 :::warning
-[購入トランザクションにペイウォールを関連付ける](report-transactions-observer-mode)ことを忘れないでください。そうしないと、Adaptyは購入元のペイウォールを特定できません。
+[購入トランザクションとペイウォールを紐付ける](report-transactions-observer-mode)ことを忘れないでください。紐付けを行わないと、Adapty は購入元のペイウォールを特定できません。
 :::
 
 </TabItem>
@@ -144,16 +150,19 @@ var body: some View {
 </SDKv4>
 
 <SDKv3>
+
 <Tabs groupId="current-os" queryString>
 <TabItem value="sdk3" label="Paywall Builder (SDK 3.x)" default>
 <details>
    <summary>ペイウォールを表示する前に（クリックして展開）</summary>
-1. Adapty の初期連携を設定します。[Google Play との連携](initial-android)および[App Store との連携](initial_ios)をご参照ください。
-   2. SDK をインストールして設定します。`observerMode` パラメータを `true` に設定してください。フレームワーク別の手順は [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) をご参照ください。
+
+1. Adapty を [Google Play](initial-android) および [App Store](initial_ios) と初期統合します。
+   2. Adapty SDK をインストールして設定します。`observerMode` パラメータを `true` に設定してください。フレームワーク別の手順は [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk) を参照してください。
    3. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
-   4. Adapty ダッシュボードで[ペイウォールを設定してプロダクトを割り当て](create-paywall)、ペイウォールビルダーでカスタマイズします。
+   4. Adapty ダッシュボードで[ペイウォールを設定してプロダクトを割り当て](create-paywall)、ペイウォールビルダーを使ってカスタマイズします。
    5. Adapty ダッシュボードで[プレースメントを作成してペイウォールを割り当て](create-placement)ます。
-   6. モバイルアプリのコードで[ペイウォールビルダーのペイウォールとその設定を取得](get-pb-paywalls)します。
+   6. モバイルアプリのコードで [Paywall Builder のペイウォールとその設定を取得](get-pb-paywalls)します。
+
 </details>
 
 <p> </p>
@@ -162,32 +171,35 @@ var body: some View {
 
 <TabItem value="swift" label="Swift" default> 
 
-1. `AdaptyObserverModeResolver` オブジェクトを実装します：
+1. `AdaptyObserverModeResolver` オブジェクトを実装します:
+
    ```swift showLineNumbers title="Swift"
    func observerMode(didInitiatePurchase product: AdaptyPaywallProduct,
-                     onStartPurchase: @escaping () -> Void,
-                     onFinishPurchase: @escaping () -> Void) {
+                     onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+                     onFinishPurchase: @MainActor @Sendable @escaping () -> Void) {
           // use the product object to handle the purchase
           // use the onStartPurchase and onFinishPurchase callbacks to notify AdaptyUI about the process of the purchase
    }
 
-   func observerModeDidInitiateRestorePurchases(onStartRestore: @escaping () -> Void,
-                                                onFinishRestore: @escaping () -> Void) {
+   func observerModeDidInitiateRestorePurchases(onStartRestore: @MainActor @Sendable @escaping () -> Void,
+                                                onFinishRestore: @MainActor @Sendable @escaping () -> Void) {
           // use the onStartRestore and onFinishRestore callbacks to notify AdaptyUI about the process of the restore
    }
    ```
 
-`observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` イベントは、ユーザーが購入を開始したことを通知します。このコールバックに応じて、カスタム購入フローを起動できます。
+`observerMode(didInitiatePurchase:onStartPurchase:onFinishPurchase:)` イベントは、ユーザーが購入を開始したことを通知します。このコールバックに応答して、カスタム購入フローをトリガーできます。
 
-`observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` イベントは、ユーザーが復元を開始したことを通知します。このコールバックに応じて、カスタム復元フローを起動できます。
-また、購入またはリストアのプロセスをAdaptyUIに通知するために、以下のコールバックを必ず呼び出してください。これは、ローダーの表示など、ペイウォールの適切な動作に必要です。
+`observerModeDidInitiateRestorePurchases(onStartRestore:onFinishRestore:)` イベントは、ユーザーが復元を開始したことを通知します。このコールバックに応答して、カスタム復元フローをトリガーできます。
 
-   | コールバック | 説明 |
+また、購入またはリストアのプロセスについて AdaptyUI に通知するために、以下のコールバックを呼び出すことを忘れないでください。これは、ローダーの表示など、ペイウォールの適切な動作に必要です。
+
+| コールバック | 説明 |
    | :----------------- | :------------------------------------------------------------------------------- |
    | onStartPurchase()  | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。  |
    | onFinishPurchase() | 購入が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
-   | onStartRestore()   | 復元が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。   |
-   | onFinishRestore()  | 復元が完了したことを AdaptyUI に通知するために呼び出すコールバックです。  |
+   | onStartRestore()   | リストアが開始されたことを AdaptyUI に通知するために呼び出すコールバックです。   |
+   | onFinishRestore()  | リストアが完了したことを AdaptyUI に通知するために呼び出すコールバックです。  |
+
 2. ペイウォール設定オブジェクトを作成します：
 
    ```swift showLineNumbers title="Swift"
@@ -203,10 +215,11 @@ var body: some View {
 
    リクエストパラメータ：
 
-   | パラメータ | 必須 / 任意 | 説明 |
+| パラメータ | 必須/任意 | 説明 |
    | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-   | **Paywall** | required | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
-   | **ObserverModeResolver** | required | 前のステップで実装した `AdaptyObserverModeResolver` オブジェクト。 |
+   | **Paywall**              | 必須 | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。                                                                                                                                                                                                                                             |
+   | **ObserverModeResolver** | 必須 | 前のステップで実装した `AdaptyObserverModeResolver` オブジェクト。                                                                                                                                                                                                                                                      |
+
 3. `.paywallController(for:products:viewConfiguration:delegate:)` メソッドを使用して、表示したいビジュアルペイウォールを初期化します：
 
    ```swift showLineNumbers title="Swift"
@@ -222,26 +235,29 @@ var body: some View {
 
 | パラメータ                | 必須/任意 | 説明                                                                                                                                                                                                                                                                                                           |
 | :----------------------- | :------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall Configuration**              | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyUI.PaywallConfiguration` オブジェクトです。`AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールとその設定を取得する](get-pb-paywalls) をご参照ください。                                                                                                                                                                                                                                                             |
-| **Delegate**             | 必須 | ペイウォールイベントを受け取るための `AdaptyPaywallControllerDelegate` です。詳細は [ペイウォールイベントの処理](ios-handling-events) をご参照ください。                                                                                                                                                                 |
-戻り値：
+| **Paywall Configuration**              | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyUI.PaywallConfiguration` オブジェクト。`AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールとその設定を取得する](get-pb-paywalls) をご参照ください。                                                                                                                                                                                                                                                             |
+| **Delegate**             | 必須 | ペイウォールイベントを受け取るための `AdaptyPaywallControllerDelegate`。詳細は [ペイウォールイベントの処理](ios-handling-events) をご参照ください。                                                                                                                                                                 |
 
-| オブジェクト            | 説明                               |
-| :---------------------- | :--------------------------------- |
+戻り値:
+
+| オブジェクト            | 説明                                   |
+| :---------------------- | :------------------------------------- |
 | AdaptyPaywallController | リクエストされたペイウォール画面を表すオブジェクト |
 
-オブジェクトが正常に作成されたら、次のように表示できます：
+オブジェクトが正常に作成されたら、次のように表示できます:
 
 ```swift showLineNumbers title="Swift"
 present(visualPaywall, animated: true)
 ```
+
 :::warning
-[購入トランザクションにペイウォールを関連付ける](report-transactions-observer-mode)ことを忘れないでください。関連付けを行わないと、Adapty は購入元のペイウォールを特定できません。
+[ペイウォールを購入トランザクションに関連付ける](report-transactions-observer-mode)ことを忘れないでください。関連付けを行わないと、Adaptyは購入元のペイウォールを特定できません。
 :::
 </TabItem> 
 <TabItem value="swiftui" label="SwiftUI" default> 
 
-デバイス画面にビジュアルペイウォールを表示するには、SwiftUI の `.paywall` モディファイアを使用します：
+デバイス画面にビジュアルペイウォールを表示するには、SwiftUIの`.paywall`モディファイアを使用します：
+
 ```swift showLineNumbers title="SwiftUI"
 @State var paywallPresented = false
 
@@ -270,41 +286,46 @@ var body: some View {
 
 | パラメータ                | 必須/任意 | 説明                                                                                                                                                                                                                                                                                                                   |
 | :----------------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall Configuration**              | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyUI.PaywallConfiguration` オブジェクト。`AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールとその設定を取得する](get-pb-paywalls) をご参照ください。                                                                                                                                                                                                                                             |
-| **Products**             | 任意 | `AdaptyPaywallProduct` オブジェクトの配列を指定すると、画面上のプロダクト表示タイミングを最適化できます。`nil` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。                                                                                                                                                   |
-| **TagResolver**          | 任意 | カスタムタグとその解決済みの値のディクショナリを定義します。カスタムタグはペイウォールコンテンツ内のプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツに合わせて特定の文字列に動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグのトピックをご参照ください。 |
+| **Paywall Configuration**              | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyUI.PaywallConfiguration` オブジェクト。`AdaptyUI.getPaywallConfiguration(forPaywall:locale:)` メソッドを使用してください。詳しくは [Fetch Paywall Builder paywalls and their configuration](get-pb-paywalls) をご参照ください。                                                                                                                                                                                                                                             |
+| **Products**             | 任意 | `AdaptyPaywallProduct` オブジェクトの配列を指定すると、画面上のプロダクトの表示タイミングを最適化できます。`nil` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。                                                                                                                                                   |
+| **TagResolver**          | 任意 | カスタムタグとその解決済みの値の辞書を定義します。カスタムタグはペイウォールコンテンツ内のプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツのために特定の文字列に動的に置き換えられます。詳しくは「ペイウォールビルダーのカスタムタグ」トピックをご参照ください。 |
 | **ObserverModeResolver** | 任意 | 前のステップで実装した `AdaptyObserverModeResolver` オブジェクト                                                                                                                                                                                                                                                        |
-クロージャパラメーター:
 
-| クロージャパラメーター | 説明                                                                              |
-| :--------------------- | :-------------------------------------------------------------------------------- |
-| **didFinishRestore**   | Adapty.restorePurchases() が成功した場合、このコールバックが呼び出されます。       |
-| **didFailRestore**     | Adapty.restorePurchases() が失敗した場合、このコールバックが呼び出されます。       |
-| **didFailRendering**   | インターフェースのレンダリング中にエラーが発生した場合、このコールバックが呼び出されます。 |
-その他のクロージャーパラメーターについては、[iOS - イベントの処理](ios-handling-events) トピックを参照してください。
+クロージャーのパラメーター:
+
+| クロージャーのパラメーター | 説明                                                                              |
+| :------------------------- | :-------------------------------------------------------------------------------- |
+| **didFinishRestore**       | Adapty.restorePurchases() が成功した場合、このコールバックが呼び出されます。      |
+| **didFailRestore**         | Adapty.restorePurchases() が失敗した場合、このコールバックが呼び出されます。      |
+| **didFailRendering**       | インターフェースのレンダリング中にエラーが発生した場合、このコールバックが呼び出されます。 |
+
+他のクロージャパラメーターについては、[iOS - イベントの処理](ios-handling-events) のトピックを参照してください。
 
 :::warning
-[購入トランザクションにペイウォールを関連付ける](report-transactions-observer-mode) ことを忘れないでください。そうしないと、Adapty は購入元のペイウォールを特定できません。
+[購入トランザクションへのペイウォールの関連付け](report-transactions-observer-mode)を忘れないでください。これを行わないと、Adapty は購入元のペイウォールを特定できません。
 :::
 
 </TabItem> 
 </Tabs>
 
 </TabItem>
-<TabItem value="sdk2" label="Legacy Paywall Builder (SDK up to 2.x)" default>
+<TabItem value="sdk2" label="Paywall Builder (SDK 2.x and earlier)" default>
 <details>
    <summary>ペイウォールの表示を始める前に（クリックして展開）</summary>
-1. Adapty と [Google Play の初期連携](initial-android)および [App Store の初期連携](initial_ios)を設定します。
-1. Adapty SDK をインストールして設定します。`observerMode` パラメーターを `true` に設定してください。各フレームワーク向けの手順は [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk)、[Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk) を参照してください。
-2. Adapty ダッシュボードで[プロダクトを作成](create-product)します。
-3. Adapty ダッシュボードで[ペイウォールを設定してプロダクトを割り当て](create-paywall)、ペイウォールビルダーを使ってカスタマイズします。
-4. Adapty ダッシュボードで[プレースメントを作成してペイウォールを割り当て](create-placement)ます。
-5. モバイルアプリのコードで [Paywall Builder のペイウォールとその設定を取得](get-pb-paywalls)します。
+
+1. Adapty を [Google Play](initial-android) および [App Store](initial_ios) と初期統合します。
+1. Adapty SDK をインストールして設定します。`observerMode` パラメータを `true` に設定してください。フレームワーク別の手順は [iOS](sdk-installation-ios#activate-adapty-module-of-adapty-sdk)、[React Native](sdk-installation-reactnative)、[Flutter](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk)、[Unity](sdk-installation-unity#activate-adapty-module-of-adapty-sdk) を参照してください。
+2. Adapty ダッシュボードで [プロダクトを作成](create-product) します。
+3. Adapty ダッシュボードで [ペイウォールを設定してプロダクトを割り当て](create-paywall)、ペイウォールビルダーを使ってカスタマイズします。
+4. Adapty ダッシュボードで [プレースメントを作成してペイウォールを割り当て](create-placement) ます。
+5. モバイルアプリのコードで [ペイウォールビルダーのペイウォールとその設定を取得](get-pb-paywalls) します。
 </details>
+
 <p> </p>
 <Tabs groupId="current-os" queryString>
 <TabItem value="swift" label="Swift" default>
-1. `AdaptyObserverModeDelegate` オブジェクトを実装します:
+1. `AdaptyObserverModeDelegate` オブジェクトを実装します：
+
    ```swift showLineNumbers title="Swift"
    func paywallController(_ controller: AdaptyPaywallController,
                           didInitiatePurchase product: AdaptyPaywallProduct,
@@ -315,16 +336,17 @@ var body: some View {
    }
    ```
 
-`paywallController(_:didInitiatePurchase:onStartPurchase:onFinishPurchase:)` イベントは、ユーザーが購入を開始したことを通知します。このイベントに応答して、独自の購入フローを起動できます。
+`paywallController(_:didInitiatePurchase:onStartPurchase:onFinishPurchase:)` イベントは、ユーザーが購入を開始したことを通知します。このイベントに応じて、カスタム購入フローをトリガーできます。
 
-また、購入プロセスをAdaptyUIに通知するために、以下のコールバックを呼び出すことを忘れないでください。これは、ローダーの表示など、ペイウォールが正しく動作するために必要です：
+また、購入プロセスを AdaptyUI に通知するために、以下のコールバックを必ず呼び出してください。これは、ローダーの表示など、ペイウォールの適切な動作に必要です：
 
-   | コールバック       | 説明                                                              |
-   | :--------------- | :---------------------------------------------------------------- |
-   | onStartPurchase  | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。 |
+| コールバック | 説明 |
+   | :--------------- | :------------------------------------------------------------------------------- |
+   | onStartPurchase  | 購入が開始されたことを AdaptyUI に通知するために呼び出すコールバックです。  |
    | onFinishPurchase | 購入が完了したことを AdaptyUI に通知するために呼び出すコールバックです。 |
 
-2. `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)` メソッドを使用して、表示したいビジュアルペイウォールを初期化します。
+2. `.paywallController(for:products:viewConfiguration:delegate:observerModeDelegate:)` メソッドを使用して、表示したいビジュアルペイウォールを初期化します:
+
 ```swift showLineNumbers title="Swift"
    import AdaptyUI
    
@@ -339,31 +361,34 @@ var body: some View {
 
 リクエストパラメーター:
 
-| パラメーター              | 必須/任意 | 説明                                                         |
+| パラメータ               | 必須/任意 | 説明                                                         |
 | :----------------------- | :------- | :----------------------------------------------------------- |
 | **Paywall**              | 必須 | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。 |
-| **Products**             | 任意 | 画面上のプロダクト表示タイミングを最適化するために、`AdaptyPaywallProduct` オブジェクトの配列を指定します。`nil` を渡した場合、AdaptyUI が自動的に必要なプロダクトを取得します。 |
-| **ViewConfiguration**    | 必須 | ペイウォールのビジュアル詳細を含む `AdaptyUI.LocalizedViewConfiguration` オブジェクト。`AdaptyUI.getViewConfiguration(paywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールと設定の取得](get-pb-paywalls) を参照してください。 |
-| **Delegate**             | 必須 | ペイウォールイベントをリッスンするための `AdaptyPaywallControllerDelegate`。詳細は [ペイウォールイベントの処理](ios-handling-events) を参照してください。 |
+| **Products**             | 任意 | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` オブジェクトの配列を指定します。`nil` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。 |
+| **ViewConfiguration**    | 必須 | ペイウォールのビジュアル詳細を含む `AdaptyUI.LocalizedViewConfiguration` オブジェクト。`AdaptyUI.getViewConfiguration(paywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールとその設定を取得する](get-pb-paywalls) を参照してください。 |
+| **Delegate**             | 必須 | ペイウォールイベントを受け取るための `AdaptyPaywallControllerDelegate`。詳細は [ペイウォールイベントの処理](ios-handling-events) を参照してください。 |
 | **ObserverModeDelegate** | 必須 | 前のステップで実装した `AdaptyObserverModeDelegate` オブジェクト。 |
-| **TagResolver**          | 任意 | カスタムタグとその解決済みの値の辞書を定義します。カスタムタグはペイウォールコンテンツ内のプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツ向けに特定の文字列へ動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグのトピックを参照してください。 |
-戻り値:
+| **TagResolver**          | 任意 | カスタムタグとその解決済みの値のディクショナリを定義します。カスタムタグはペイウォールコンテンツ内のプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツのために特定の文字列に動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグのトピックを参照してください。 |
 
-| オブジェクト            | 説明                                   |
-| :---------------------- | :------------------------------------- |
+戻り値：
+
+| オブジェクト            | 説明                                          |
+| :---------------------- | :-------------------------------------------- |
 | AdaptyPaywallController | リクエストされたペイウォール画面を表すオブジェクト |
 
-オブジェクトが正常に作成されたら、次のように表示できます:
+オブジェクトが正常に作成されたら、次のように表示できます：
 
 ```swift showLineNumbers title="Swift"
 present(visualPaywall, animated: true)
 ```
+
 :::warning
-購入トランザクションに[ペイウォールを関連付ける](report-transactions-observer-mode)ことを忘れないでください。関連付けを行わないと、Adapty は購入元のペイウォールを特定できません。
+[購入トランザクションにペイウォールを関連付ける](report-transactions-observer-mode)ことを忘れずに。そうしないと、Adapty は購入元のペイウォールを特定できません。
 :::
 </TabItem>
 <TabItem value="swiftui" label="SwiftUI" default>
-デバイス画面にビジュアルペイウォールを表示するには、SwiftUI の `.paywall` モディファイアを使用します：
+デバイス画面にビジュアルペイウォールを表示するには、SwiftUI の `.paywall` モディファイアを使用します。
+
 ```swift showLineNumbers title="SwiftUI"
 @State var paywallPresented = false
 
@@ -395,24 +420,26 @@ var body: some View {
 
 (empty input — nothing to translate)
 
-| パラメータ         | 必須/任意 | 説明                                                                                                                                                                                                                                                                                                                   |
+| パラメータ         | 必須/任意 | 説明                                                                                                                                                                                                                                                                                                                    |
 | :---------------- | :------- | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Paywall**       | 必須 | 対象のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクトです。                                                                                                                                                                                                                                              |
-| **Product**       | 任意 | 画面上のプロダクト表示タイミングを最適化するために `AdaptyPaywallProduct` オブジェクトの配列を指定します。`nil` を渡した場合、AdaptyUI が必要なプロダクトを自動的に取得します。                                                                                                                                                    |
-| **Configuration** | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyUI.LocalizedViewConfiguration` オブジェクトです。`AdaptyUI.getViewConfiguration(paywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールとその設定の取得](get-pb-paywalls) を参照してください。                                             |
-| **TagResolver**   | 任意 | カスタムタグとその解決済みの値の辞書を定義します。カスタムタグはペイウォールコンテンツ内のプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツに応じた文字列に動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグに関するトピックを参照してください。 |
+| **Paywall**       | 必須 | 目的のペイウォールのコントローラーを取得するための `AdaptyPaywall` オブジェクト。                                                                                                                                                                                                                                              |
+| **Product**       | 任意 | 画面上のプロダクトの表示タイミングを最適化するために `AdaptyPaywallProduct` オブジェクトの配列を指定します。`nil` を渡した場合、AdaptyUI が自動的に必要なプロダクトを取得します。                                                                                                                                                    |
+| **Configuration** | 必須 | ペイウォールの視覚的な詳細を含む `AdaptyUI.LocalizedViewConfiguration` オブジェクト。`AdaptyUI.getViewConfiguration(paywall:locale:)` メソッドを使用してください。詳細は [ペイウォールビルダーのペイウォールとその設定の取得](get-pb-paywalls) を参照してください。                                             |
+| **TagResolver**   | 任意 | カスタムタグとその解決済みの値の辞書を定義します。カスタムタグはペイウォールコンテンツのプレースホルダーとして機能し、ペイウォール内のパーソナライズされたコンテンツとして特定の文字列に動的に置き換えられます。詳細はペイウォールビルダーのカスタムタグのトピックを参照してください。 |
+
 Closure parameters:
 
-| クロージャのパラメータ | 説明 |
+| クロージャパラメータ                   | 説明                                                                       |
 | :---------------------------------- | :-------------------------------------------------------------------------------- |
-| **didFinishRestore** | Adapty.restorePurchases() が成功した場合、このコールバックが呼び出されます。 |
-| **didFailRestore** | Adapty.restorePurchases() が失敗した場合、このコールバックが呼び出されます。 |
-| **didFailRendering** | インターフェースのレンダリング中にエラーが発生した場合、このコールバックが呼び出されます。 |
-| **observerModeDidInitiatePurchase** | ユーザーが購入を開始したときにこのコールバックが呼び出されます。 |
-他のクロージャパラメータについては、[iOS - イベントの処理](ios-handling-events)トピックをご参照ください。
+| **didFinishRestore**                | Adapty.restorePurchases() が成功した場合、このコールバックが呼び出されます。             |
+| **didFailRestore**                  | Adapty.restorePurchases() が失敗した場合、このコールバックが呼び出されます。                |
+| **didFailRendering**                | インターフェースのレンダリング中にエラーが発生した場合、このコールバックが呼び出されます。 |
+| **observerModeDidInitiatePurchase** | ユーザーが購入を開始したときにこのコールバックが呼び出されます。                        |
+
+その他のクロージャパラメータについては、[iOS - イベントのハンドリング](ios-handling-events) のトピックを参照してください。
 
 :::warning
-必ず[購入トランザクションにペイウォールを関連付ける](report-transactions-observer-mode)ようにしてください。関連付けを行わないと、Adaptyは購入元のペイウォールを特定できません。
+[購入トランザクションにペイウォールを関連付ける](report-transactions-observer-mode) ことを忘れずに行ってください。これを行わないと、Adapty は購入元のペイウォールを特定できません。
 :::
 </TabItem>
 </Tabs>

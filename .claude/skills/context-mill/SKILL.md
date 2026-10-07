@@ -187,6 +187,39 @@ brief said the store never writes prices back to Adapty (there is a second price
 UTC claim in doubt that turned out correct, another asserted three claims about Adapty Mail that a
 five-week-old checkout had made stale.
 
+### The mill is public: keep it anonymous
+
+Everything under `.claude/context-mill/` and this skill ships in a public repository. Write every
+brief, rollout, and registry entry as if a customer will read it, because one can.
+
+Never write:
+
+- **Support ticket numbers or links** — Pylon, Intercom, Zendesk, or any other helpdesk.
+- **Task-tracker keys or links** — Jira keys (`<PROJECT>-<number>`), including inside a branch name
+  (`origin/<PROJECT>-<number>`). Name the branch by its role instead: "the fix branch", "the feature branch before merge".
+- **Customer cases** — a customer's or app's name, a config, app, or profile ID taken from a case, or a
+  retelling of what one customer did or saw. Aggregates are fine ("the most frequent handoff in a
+  one-week sample"); one customer's story is not.
+- **People** — staff names and personal accounts. Write the role: "product decision", "reviewer
+  feedback".
+- **Chat links** — Slack thread or message URLs.
+- **Closed-source code** — anything from Adapty's private repos (the dashboard backend and frontend,
+  the Flow & Paywall Builder and its transformer, the UA service, the Adapty Mail backend and dashboard):
+  repo names, file paths, function and table names, commits, branches, and the commands that read them.
+  Keep the behavior the code shows, and cite it as "backend code, 2026-09-29" or "dashboard code,
+  2026-10-01". Dashboard labels and messages users can see are public; quote those verbatim.
+- **Internal infrastructure** — internal hosts, GitLab project or group IDs, access requests and
+  permissions, non-public API hosts.
+
+Cite paths, commits, and PRs freely in the public repos: the SDKs on GitHub (`adaptyteam/AdaptySDK-*`,
+`AdaptySDK-JS-Core`), `adapty-cli`, `adapty-skills`, `adapty-sdk-integration-skill`, `apple-ads-cli`, and
+this docs repo with its OpenAPI specs. Only these are registered in `sources.md`. When the only source for a claim is a ticket or a chat, write the
+claim, date it, and name the kind of source ("confirmed by product, 2026-09-16"), not the record.
+
+`scripts/__tests__/context-mill-anonymity.test.mjs` fails on tracker keys, helpdesk and chat links,
+internal hosts, and private repo names. It can't catch people's names, case retellings, or a private file
+path cited without its repo name, so check those yourself before you commit.
+
 ### Write the brief, then report what you wrote
 
 Always write the findings into the brief yourself. Don't stop at a proposal and don't wait for the

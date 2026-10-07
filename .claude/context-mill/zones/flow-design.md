@@ -1,6 +1,6 @@
 ---
 zone: flow-design
-sources: [dashboard-interface]
+sources: []
 reviewed_shape: f5a30d497568
 reviewed_at: 2026-08-10
 ---
@@ -26,9 +26,9 @@ surviving articles live in `paywalls-legacy`).
 
 ## Sources of truth
 
-- **Exact in-product labels, control names, and preset names** — verify against `dashboard-interface`
-  (`packages/unified-builder`) per `.claude/context-mill/sources.md`. Do not invent a label that isn't
-  in either an article or that repo; several labels in this zone (e.g. the exact wording of layer
+- **Exact in-product labels, control names, and preset names** — verify against the builder UI, or
+  confirm with the builder team; the builder's code is closed-source and not citable here. Do not invent
+  a label that isn't in either an article or the product; several labels in this zone (e.g. the exact wording of layer
   context-menu actions, States-settings option names) are transcribed from the product and could drift.
 - **Everything else** — the 20 articles are the source of truth for documented behaviour; there is no
   separate design spec for this zone.
@@ -129,8 +129,8 @@ article for platform X" as a gap — coverage review isn't in scope for this too
   others.
 - **Fill is a layer stack, split across two articles.** A fill is an ordered list of layers composited
   bottom → top; the panel lists them top-most first, and a semi-transparent layer over a media layer is
-  how a background tint is authored (schema `IFill` = `IFillLayer[]`, flow schema v10, migration 010
-  wraps every legacy single fill into a one-element array — `dashboard-interface`, read 2026-08-21). The
+  how a background tint is authored (since flow schema v10 every legacy single fill is a one-layer
+  stack — builder code, read 2026-08-21). The
   panel mechanics (add, swatch, drag to reorder, remove) live in `builder-styling`'s Fill section; the
   screen-background tint recipe lives in `paywall-head-picture`. Either one changing means checking the
   other: the recipe assumes the mechanics, and the mechanics link to the recipe rather than repeating it.
@@ -221,9 +221,9 @@ articles in this zone are plausible and one is right.
 | "selected style only applied to one option", "grey out the submit button", "error style appears too late", "empty field counts as valid" | `builder-element-states` for the look, `builder-inputs-and-forms` for the rules. Four constraints do the work: state styling does **not** propagate to siblings (style one element, then duplicate it); **Disabled** never activates on its own — it needs a condition, typically `<elementId>.isValid = false`; **Invalid** activates only when the user submits, so nothing turns red while typing; and an empty input is always valid (Text inputs have no rules at all, so their `isValid` is always true). |
 | "swipeable slides", "let users switch monthly/yearly", "branch on which slide they picked" | A Carousel's active slide is **not** a selectable group — slides can't be referenced in conditions or dynamic text, so it's for visual rotation only (`builder-containers#carousel`). `builder-tabs` is the single-choice-group version, exposing `selectedOptionId` / `selectedOptionTitle`. Switching whole product groups is `flow-logic`'s `paywall-with-tabs` recipe. |
 | "countdown restarts every time the screen opens", "timer should survive an app restart" | `flow-timer` — the **Behavior** dropdown: **Every appear** (default), **First appear** (first view in the current app session), **First appear (persisted)** (keeps counting across launches). Hiding a badge or navigating when it reaches zero is an **On timer end** action (`flow-logic`'s `onboarding-actions`). |
-| "translate the flow", "send strings to a translator", "TSV import failed", "some screens fell back to English" | Two unrelated surfaces; `paywall-localization` exists only to route between them. On-screen text and media: `add-paywall-locale-in-adapty-paywall-builder` — despite the filename it is the flow-era Localizations panel (see the Boundaries TODO on its zoning). Export/import is `.tsv`, **the export strips variables** so they must be re-added by hand, import locale codes must already exist in the flow, and the pinned default locale is the fallback for anything missing. Per-locale remote-config JSON is `add-flow-remote-config-locale`. Icons, screen backgrounds and custom media IDs **can't** be localized at all (`custom-media#limitations`). |
+| "translate the flow", "send strings to a translator", "TSV import failed", "some screens fell back to English" | Two unrelated surfaces; `paywall-localization` exists only to route between them. On-screen text and media: `add-paywall-locale-in-adapty-paywall-builder` — despite the filename it is the flow-era Localizations panel (see the Boundaries TODO on its zoning). Export/import is `.tsv`; the pinned default locale is the fallback for anything missing. Corrected 2026-10-01 against unreleased builder code, pending release: variables export as `{{name}}` and survive the import, locale columns the flow lacks are skipped rather than rejected, and a blank cell clears a non-default translation. Earlier this row said the export strips variables and that import locale codes must already exist. Per-locale remote-config JSON is `add-flow-remote-config-locale`. Icons, screen backgrounds and custom media IDs **can't** be localized at all (`custom-media#limitations`). |
 | "can't upload the image/video", "upload fails", "file rejected", "my logo is an SVG", "the GIF doesn't animate" | `custom-media` carries the hard limits, and they are the answer to most "upload doesn't work" tickets (`custom-media.mdx:20,32`, read 2026-08-13): images `.JPG`/`.PNG`/`.WEBP` up to 20 MB; videos `.MP4`/`.WEBM` up to 50 MB, no longer than 30 s, minimum 640×640 px. **SVG is not an accepted format** (it isn't in the list — export to PNG or WEBP), and animated GIFs and animated WEBPs are explicitly unsupported at any size, with a Video element as the documented way to add motion. Icons are never uploaded: the Icon element draws from the bundled Tabler Icons library. Note the reader-facing troubleshooting entry for this lives outside this zone, at `flow-logic`'s `flow-common-issues` — this zone stays the source of truth for the numbers. |
-| "the Position toggle disappeared", "Fill and Hug are missing from Width", "the Spacing section is gone", "Fixed is greyed out" | The element and its container both use the **Free** direction. That combination leaves one legal configuration — Absolute position with a fixed width and height — so the builder removes every control that could express another. Rule and remedy in `manage-paywall-ui-elements` (section: Position in a Free container); symptom-first entry in `flow-common-issues`. Verified against `layout-restrictions.ts` and `SpacingEditor.tsx`, ADP-7740, 2026-09-18. |
+| "the Position toggle disappeared", "Fill and Hug are missing from Width", "the Spacing section is gone", "Fixed is greyed out" | The element and its container both use the **Free** direction. That combination leaves one legal configuration — Absolute position with a fixed width and height — so the builder removes every control that could express another. Rule and remedy in `manage-paywall-ui-elements` (section: Position in a Free container); symptom-first entry in `flow-common-issues`. Verified against builder code, 2026-09-18. |
 | "pre-checked trial switch", "App Store rejected our paywall" | `builder-toggles` — a trial toggle that defaults to "on" can be flagged as a manipulative dark pattern under the App Store Review Guidelines; the documented advice is to default it to off and let users opt in. What flipping it then swaps is `flow-logic` (`onboarding-actions`, `paywall-product-block`). |
 
 ## Gaps and misses
@@ -260,41 +260,36 @@ second callout layer around it.
   describes the new Flow & Paywall Builder...` banner that no other article in this zone carries — everything
   else already migrated to `<ZoomImage>`. Noted for a cleanup pass, not actioned here.
 
-**Verified 2026-09-18 while writing ADP-7740.** Four layout mechanics that no article carried and this
-brief did not either — all from command output, all pre-existing rather than part of that change:
+**Verified 2026-09-18 while documenting the Free layout direction.** Four layout mechanics that no article carried and this
+brief did not either — all from builder code, all pre-existing rather than part of that change:
 
 - **Changing a container's Direction rewrites its children.** To `free`: every child becomes
   `position: absolute`, width and height convert to fixed, margin is cleared, and the container's own
   padding value is cleared. Away from `free`: every child becomes relative.
-  (`properties.docs.md:248,254-255` in `packages/unified-builder/builder/docs/`.)
-- **Stacking is Z-index first, layer-tree order only as a tie-break** — `sortPositionedLayers`,
-  unified-builder-transformer `src/domain/transform/v5/mappers/position.ts:383`; default zIndex is 0 (`:708`).
-- **Absolute and fixed children never enter the parent stack at all.** They are split into
-  `absoluteLayers` and attached as `overlay` on an anchoring box (`mappers/elements.ts:390-409`,
-  `mappers/position.ts:727`), so a positioned element always paints above its relative siblings whatever
-  the layer order.
-- **Spacing visibility keys on different things for elements and screens.** `SpacingEditor.tsx` hides
-  margin on the element's own absolute/fixed position, and padding on its *parent's* free layout;
-  `ScreenSettings.tsx` hides a screen's padding editor on the *screen's own* free direction. Both hidden
+- **Stacking is Z-index first, layer-tree order only as a tie-break**; default zIndex is 0.
+- **Absolute and fixed children never enter the parent stack at all**, so a positioned element always
+  paints above its relative siblings whatever the layer order.
+- **Spacing visibility keys on different things for elements and screens.** An element's Spacing editor
+  hides margin on the element's own absolute/fixed position, and padding on its *parent's* free layout;
+  **Screen settings** hides a screen's padding editor on the *screen's own* free direction. Both hidden
   and the whole group returns null.
 
 **Two published claims corrected on 2026-09-18 — don't reintroduce them.** `manage-paywall-ui-elements`
 said Fixed was "the only available mode for elements with absolute or fixed positioning" (Hug has always
-been available too, per `size.spec.md`), and said a later relative sibling could render above an earlier
+been available too, per builder code), and said a later relative sibling could render above an earlier
 absolute one (the overlay split above makes that impossible). `custom-media` listed three Content mode
 values including a "Cover" that no longer exists, and described "Fill" as stretching — the enum is exactly
-`['fit','cover']`, default `cover`, UI labels Fit and Fill (`schemas/src/properties/objectFit.ts`).
+`['fit','cover']`, default `cover`, UI labels Fit and Fill (builder schema, 2026-09-18).
 
 **Open, and stated as unverified rather than guessed:**
 
-- **Where Free containers come from.** The schema default is `vertical`
-  (`schemas/src/properties/layout.ts:28`), and nothing in `dashboard-interface`, the transformer, or
-  `dashboard-api` `origin/develop` emits `direction: 'free'` — yet ADP-7740's QA found the combination in
-  20+ published flows. The Figma import conversion and the AI Editor generation backend are in neither
-  repo on this machine; both are candidates, neither confirmed.
-- **Whether an image can use an Auto width.** `image.properties.tsx` passes `hugLabel="Auto"` to both
-  dimensions, but `image.spec.md`'s sizing matrix has no Auto-width row and the file states that the SDK
-  requires a known width to lay an image out.
+- **Where Free containers come from.** The schema default is `vertical`, and nothing in the builder or
+  dashboard code read on 2026-09-18 emits `direction: 'free'` — yet QA found the combination in
+  20+ published flows. The Figma import conversion and the AI Editor generation backend were not
+  readable; both are candidates, neither confirmed.
+- **Whether an image can use an Auto width.** The image settings label Hug as **Auto** on both
+  dimensions, but the builder's internal sizing rules have no Auto-width row and state that the SDK
+  requires a known width to lay an image out (builder code, 2026-09-18).
 
 ### Questions for the owner
 

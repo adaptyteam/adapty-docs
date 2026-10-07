@@ -338,7 +338,7 @@ async function status() {
         ...zonesData.zones.keys(),
         ...[...zonesData.articles.values()].flatMap(e => [e.family, e.version].filter(Boolean)),
         // Source ids are legitimate brief vocabulary, not article references: a
-        // `Sources of truth` section names `jscore` or `dashboard-backend` in
+        // `Sources of truth` section names `jscore` or `ios-sdk` in
         // almost every sentence, and reporting those as dangling articles was
         // the check punishing briefs for doing the thing they exist to do.
         ...(sourceIds ?? []),

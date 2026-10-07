@@ -1,6 +1,6 @@
 ---
 zone: integrations
-sources: [analytics-export-api-spec, dashboard-backend, dashboard-interface, server-side-api-spec, ua-service]
+sources: [analytics-export-api-spec, server-side-api-spec]
 reviewed_shape: 99bfe705d975
 reviewed_at: 2026-08-10
 ---
@@ -34,18 +34,19 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 
 ## Sources of truth
 
-- **dashboard-backend** — integration setup page field labels, `required` flags, and hint text come
-  from `portal/integration_context/constants/share.py` in that repo, not from `dashboard-interface`
-  (which only carries the field key, per its own entry in `sources.md`). Cite this id for any task about
-  why a dashboard integration field says what it says.
+- **Backend and dashboard behavior: Adapty's closed-source code, not citable here — confirm with the
+  product team or by testing in the dashboard.** Integration setup page field labels, `required` flags,
+  and hint text are served by the backend, not defined in the dashboard code (which only carries the
+  field key). For why a dashboard integration field says what it says, the live setup page is the
+  citable source.
 - **server-side-api-spec** — `webhook-event-types-and-fields` links two of its operations directly
   (`setTransaction`, `grantAccessLevel`) for the store-override and manually-granted-access cases it
   documents.
 - TODO(owner): no entry in `sources.md` covers the webhook/event **payload schema** itself (field names,
   types, which fields are event-type-specific). The one clean precedent of a schema change (commit
   `c65300c71`, "New webhook fields", 2026-07-22) shows the docs PR itself introducing the new field
-  definitions, with no backend source cited. Is there a backend repo/service that owns this schema, or
-  is a verified live test payload the only ground truth an agent can check against?
+  definitions, with no backend source cited. The schema is owned by closed-source backend code, so a
+  verified live test payload or the product team is the only ground truth an agent can check against.
 
 ## What we document, what we don't
 
@@ -245,19 +246,19 @@ repeated here.
 - `firebase-apps` uses a pre-v4 Adapty API throughout (`Adapty.activate("KEY")`, `PurchaserInfoModel`,
   `Adapty.delegate`) — see Boundaries. Flag before citing it as a pattern for any current-SDK task.
 - **Answered by the docs owner (2026-08-10): there is no docs-side default. Which integrations carry a
-  field is a fact about the backend, and it is verified by reading the code, not inferred from the last
+  field is a fact about the backend, and it is verified against the backend, not inferred from the last
   ticket.** So a task that adds or changes an event field is not done when the webhook article is
-  updated: read the backend to establish which destinations actually emit it, then update exactly those.
+  updated: confirm with backend/product (or a live test payload per destination) which destinations
+  actually emit it, then update exactly those.
   Commit `c65300c71` scoping `original_price_*` and `discount_amount_*` to the webhook article is what
   the code said at that time, not a rule to reuse. See *Sources of truth* for where to read.
-- The payload schema needs a registered ground-truth source, because the rule above makes reading the
-  backend mandatory rather than optional for this zone. Until `sources.md` has an entry for it, use
-  `dashboard-backend` and say in the task which module you read.
-- **Singular is no longer SDK-free (2026-10-05, ADP-7134; adapty-dashboard-api !13647, merged to
-  `develop` 2026-10-02).** Profiles that carry `singular_sdid` are routed to Singular's v2 Event API
-  (`POST /api/v2/evt`, form-urlencoded, `sdid` replaces IDFA/IDFV/AIFA/ASID/ANDI); without it, the v1
-  `GET` is unchanged. Every request gains `partner=adapty`. Singular accounts created on or after
-  2026-07-15 reject v1, so for them the SDK call is mandatory. No SDK ships a named constant for the key
-  (checked `gh search code singular_sdid --owner adaptyteam`, 0 hits): all seven platforms pass the raw
-  string through the open-ended key type. Side effect: webhook and S3/GCS `integration_ids` gain a
-  `singular_sdid` key. The MR scopes the server-side API out, so `adapty-api.yaml` stays as is.
+- The payload schema has no public ground-truth source, yet the rule above makes confirming backend
+  behavior mandatory rather than optional for this zone. Say in the task how the field list was
+  confirmed (product team, or which live payloads were checked).
+- **Singular is no longer SDK-free (2026-10-05).** Profiles that carry `singular_sdid` are routed to
+  Singular's v2 Event API (`POST /api/v2/evt`, form-urlencoded, `sdid` replaces IDFA/IDFV/AIFA/ASID/ANDI);
+  without it, the v1 `GET` is unchanged. Every request gains `partner=adapty`. Singular accounts created
+  on or after 2026-07-15 reject v1, so for them the SDK call is mandatory. No SDK ships a named constant
+  for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
+  webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
+  for this change, so `adapty-api.yaml` stays as is.

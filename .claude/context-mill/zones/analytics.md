@@ -1,6 +1,6 @@
 ---
 zone: analytics
-sources: [analytics-export-api-spec, dashboard-backend, dashboard-interface]
+sources: [analytics-export-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -21,122 +21,92 @@ product drove the numbers.
 
 Almost every claim in this zone is a *definition*, and a definition that drifts from the backend is
 invisible until someone's number looks wrong. So the question for a task here is rarely "which article"
-— it's "which module computes this".
+— it's "how does the backend compute this".
 
-- **`dashboard-backend` — where a metric's formula actually lives.** Every chart metric is a Jinja +
-  ClickHouse macro under `src/portal/analytics_context/infrastructure/repositories/metrics_repositories/`,
-  and the filenames map nearly one-to-one onto this zone's articles: chart-specific formulas in
-  `chart_metrics_repository/metrics_calculation_macros/` (`select_mrr_metrics.sql`,
-  `select_refund_metrics.sql`, `select_non_subscriptions_metrics.sql`, …), shared ones in
-  `macros/metrics_calculation_macros/` (`select_revenue_metrics.sql`, `select_arppu_metrics.sql`,
-  `select_installs_count.sql`). *Which events* feed a metric is not in the SQL — it is
-  `domain/enums/event_type.py`. Three worked examples read there while writing this brief: New
-  subscriptions is `{subscription_started, trial_converted}` (`subscription_purchase_started_event_types`),
-  which is exactly why the metric outruns the `subscription_started` event; `mrr` divides each
-  transaction by *its own* purchase→expiry span in days ÷ (365/12) rather than by the product's declared
-  duration, which is where the article's "weekly ≈ 0.23 months" comes from and why an offer or a partial
-  period moves the divisor; `arppu` divides gross revenue (refund rows included, negative) by distinct
-  payers counted from purchase events only, which is the asymmetry `refund-events` describes.
-- **Read `origin/develop`, not the clone's working tree.** These constants change under the docs, so the
-  registered `default_ref` matters more here than in most zones. Checked 2026-08-11: the local clone's
-  checked-out `develop` is `0cadcfffa2fa` (2026-05-20) while `origin/develop` is `ddf57f85e0`
-  (2026-08-06), and the diff between them adds an App Store Brazil proceeds rate of 0.74 effective
-  2026-07-06 to `select_revenue_metrics.sql` — a rate that does not exist in the working tree at all.
+- **Backend and dashboard behavior: Adapty's closed-source code, not citable here — confirm with the
+  product team or by testing in the dashboard.** Every chart metric is computed backend-side, one formula
+  per chart, and *which events* feed a metric is defined separately from the formula. Three worked
+  examples verified against backend code while writing this brief: New subscriptions is
+  `{subscription_started, trial_converted}`, which is exactly why the metric outruns the
+  `subscription_started` event; MRR divides each transaction by *its own* purchase→expiry span in days ÷
+  (365/12) rather than by the product's declared duration, which is where the article's "weekly ≈ 0.23
+  months" comes from and why an offer or a partial period moves the divisor; ARPPU divides gross revenue
+  (refund rows included, negative) by distinct payers counted from purchase events only, which is the
+  asymmetry `refund-events` describes.
+- **These definitions change under the docs.** Checked 2026-08-11: a backend change on 2026-08-06 added
+  an App Store Brazil proceeds rate of 0.74 effective 2026-07-06 — confirm the current state, not a stale
+  snapshot, before writing a definition.
 - **Adapty-computed versus passed through from a store, and therefore who can settle a discrepancy.**
   Per transaction the store supplies price, currency, country, refund events, its own commission rate
-  (`store_proceeds_rate`) and its own tax rate (`tax_rate`); `-1` is the sentinel for "the store did not
-  report one". Adapty computes everything else — the USD conversion
-  (`src/sdk/purchase_context/applications/usd_exchange_rate.py`, backed by the currencylayer `historical`
-  adapter in `applications/adapters/external/currency_rate.py`, one stored rate per currency per date),
-  every bucket and aggregation, and the fallbacks in the next bullet. That split is the triage rule for
-  a "your number differs from the store's" ticket: if the disputed figure traces to a store-supplied
-  field, the store's own transaction record is the arbiter and reading Adapty code will not settle it —
-  which is why `discrepancies-and-troubleshooting` opens by telling the reader to compare raw
-  per-transaction exports rather than totals.
-- **Proceeds / net revenue: `macros/metrics_calculation_macros/select_revenue_metrics.sql` is the whole
-  story.** `render_gross_revenue`, `render_proceeds_value`, `render_tax_rate` and `render_net_value` there
-  produce the three columns behind the gross / after-commission / after-commission-and-taxes dropdown,
-  and net is proceeds **÷ (1 + tax rate)** — tax is divided out of a tax-inclusive price, not subtracted
-  from it. The load-bearing correction to the docs' "Adapty does not calculate taxes": that is true only
-  on the reported path. When `tax_rate == -1`, the same macro falls back to a hardcoded App Store Brazil
-  0.225 and then to a ClickHouse dictionary keyed on (country, store, currency), which is fed by Adapty's
-  own tax-rate table (`domain/entities/tax_rate/`, `infrastructure/repositories/tax_rate_repository/`);
-  `render_proceeds_value` has the same shape, with a hardcoded ladder (Stripe 0.955, Paddle 1.0, 0.85 for
-  Small Business / 364-day-plus / Play auto-renew, country overrides, 0.7 default). No article in the zone
+  and its own tax rate; the backend records "the store did not report one" when either is missing.
+  Adapty computes everything else — the USD conversion (one stored currencylayer historical rate per
+  currency per date), every bucket and aggregation, and the fallbacks in the next bullet. That split is
+  the triage rule for a "your number differs from the store's" ticket: if the disputed figure traces to a
+  store-supplied field, the store's own transaction record is the arbiter and reading Adapty code will
+  not settle it — which is why `discrepancies-and-troubleshooting` opens by telling the reader to compare
+  raw per-transaction exports rather than totals.
+- **Proceeds / net revenue (verified against backend code).** One computation produces the three
+  columns behind the gross / after-commission / after-commission-and-taxes dropdown, and net is proceeds
+  **÷ (1 + tax rate)** — tax is divided out of a tax-inclusive price, not subtracted from it. The
+  load-bearing correction to the docs' "Adapty does not calculate taxes": that is true only on the
+  reported path. When the store reports no tax rate, the backend falls back to a hardcoded App Store
+  Brazil 0.225 and then to Adapty's own tax-rate table keyed on (country, store, currency); the
+  commission has the same shape, with a hardcoded ladder (Stripe 0.955, Paddle 1.0, 0.85 for Small
+  Business / 364-day-plus / Play auto-renew, country overrides, 0.7 default). No article in the zone
   mentions any of this — `grep -niE "fallback|estimat|assume"` across all 37 returns only prediction and
   worked-example hits. Two consequences: never source a **published** commission percentage from that
   ladder (it is a fallback estimate; the stores' own terms are the truth, and the percentages currently in
   prose sit in `analytics-cohorts` and `how-adapty-analytics-works#commissions-and-taxes`), and never
   promise a reader that a proceeds figure is store-reported without checking whether their store reports
   the rate at all.
-- **Timezone and install definition re-scope every chart, and their behaviour is defined in one place.**
-  `domain/entities/app_analytics_settings.py` holds both (`timezone`, default UTC; and
-  `profiles_counting_method`, default `profile_id` — the enum's three values live in
-  `src/common/enums/profiles_countung_method.py`, filename misspelling included). They are applied by
-  `MetricsFilters.update_from_app_analytics_settings` in
-  `domain/value_objects/metrics/metrics_filters.py`, and the branch that decides *whether* they apply is
-  in `applications/metrics/chart_metrics/chart_metrics_application.py`: a single-app request inherits the
-  app's settings, anything else is forced back to UTC + `profile_id`, while the Overview endpoint
-  (`infrastructure/ports/http/chart_dashboard_metrics.py`) passes its own `timezone` in. That is the
-  mechanism behind `overview`'s "its own timezone and install-counting settings" note. Every date bucket
-  is `toStartOfDay(<date field>, timezone)`, and `analytics-cohorts` / `ltv` bucket on
-  `profile_install_date` (`cohort_metrics_repository/select_cohort.sql`), so both settings silently move
-  cohort membership too. The settings' own dashboard UI is documented in `general`
-  (`app-and-account-settings` zone), so a behaviour change lands in two zones.
-- **The row a metric sums is assembled before any metric macro runs.**
-  `infrastructure/management/commands/select_transactions.sql` + `insert_transactions.sql` build
-  `adapty_analytics_transactions` from the raw event tables, and that is where the amount a chart later
-  sums is decided: a refund row is written as `0 - abs(amount)` into the same amount column (refunds are
-  negative revenue rather than a separate subtraction — the mechanism behind negative buckets), and an
-  upgrade-driven cancellation (`is_cancelled and is_upgraded`) is written as `0`, not as a negative.
-  Read this file before answering anything about refund, upgrade, or proration amounts; the per-metric
-  macro will not tell you.
+- **Timezone and install definition re-scope every chart (verified against backend code).** Both are
+  per-app analytics settings (timezone, default UTC; install-counting method, default profile ID, three
+  values). A single-app request inherits the app's settings, anything else is forced back to UTC +
+  profile ID, while the Overview page passes its own timezone in. That is the mechanism behind
+  `overview`'s "its own timezone and install-counting settings" note. Every date bucket starts at
+  midnight in the chosen timezone, and `analytics-cohorts` / `ltv` bucket on the profile's install date,
+  so both settings silently move cohort membership too. The settings' own dashboard UI is documented in
+  `general` (`app-and-account-settings` zone), so a behaviour change lands in two zones.
+- **The row a metric sums is assembled before any metric formula runs.** That is where the amount a
+  chart later sums is decided: a refund row is written as a negative amount into the same amount column
+  (refunds are negative revenue rather than a separate subtraction — the mechanism behind negative
+  buckets), and an upgrade-driven cancellation is written as `0`, not as a negative. Confirm refund,
+  upgrade, or proration amounts at that layer with the backend team; the per-metric formula will not
+  tell you.
 - **Do not infer a claim class from a neighbouring metric's article — this is the zone's standing
   hazard.** With 37 near-siblings the tempting move is to copy the adjacent article's wording, but the
-  ~30 macros were written independently and genuinely disagree. Refund handling is the worst case (`mrr`
-  anti-joins refunded transaction ids and so rewrites history; `revenue` sums a negative row on the
-  refund date; `arppu` keeps the refunded payer in the denominator) and its doc-side matrix is
+  ~30 metric formulas were written independently and genuinely disagree. Refund handling is the worst
+  case (`mrr` excludes refunded transactions and so rewrites history; `revenue` sums a negative row on
+  the refund date; `arppu` keeps the refunded payer in the denominator) and its doc-side matrix is
   `refund-events#how-metrics-handle-refunds`. Filter and grouping support is the second case: the
   per-article "Available filters and grouping" lists differ per metric on purpose, and
   `controls-filters-grouping-compare-proceeds` says so explicitly. Paywall and flow **view** counts are a
-  third source entirely — `chart_metrics_repository/query_macros/select_paywall_views.sql` only reads
-  what the SDK logged, so ground truth for whether a view exists is an SDK repo (see Boundaries).
+  third source entirely — they only count what the SDK logged, so ground truth for whether a view exists
+  is an SDK repo (see Boundaries).
 
-  **"The SDK logged it" is necessary but not sufficient — correction of 2026-08-26.** Which *table* a
-  logged show lands in is decided dashboard-side, and until ADP-7600 a flow screen show never reached
-  `adapty_analytics_paywall_visit` at all: `FlowShowedRouterApp` routes the event to the paywall topic
-  **or** the flow topic, never both, and picks the flow topic as soon as the variation carries a
-  `flow_id` — which a screen's child variation always does. So flow screen views lived only in
-  `adapty_analytics_flow_events`, and every paywall-view metric (charts page + conversion v2's
-  View → Trial / View → Paid) silently understated its denominator for any app on flows. Funnels
-  had compensated with their own union; nothing else had. ADP-7600 unions the two sources back together
-  in `render_paywall_view_rows_query` in the same file. Verified by reading `origin/ADP-7600` against
-  `origin/develop` in `dashboard-backend` — on `develop` the macro still reads
-  `adapty_analytics_paywall_visit` alone (line 63), so **this is branch state, not merged behaviour**;
-  re-check before treating the union as live. The general lesson outlives the branch: for a view-count
-  ticket, "the SDK logged it" and "the metric counts it" are two questions, and the routing between
-  them is a dashboard-backend fact.
+  **"The SDK logged it" is necessary but not sufficient — correction of 2026-08-26.** Which store a
+  logged show lands in is decided backend-side, and before a pending fix the backend recorded flow
+  screen views as flow events only, never as paywall views — a screen's child variation always carries
+  a flow. So every paywall-view metric (charts page + conversion v2's View → Trial / View → Paid)
+  silently understated its denominator for any app on flows. Funnels had compensated by combining both
+  sources; nothing else had. The fix combines the two sources for paywall-view metrics too. Verified
+  against unmerged backend code on 2026-08-26, so **this is branch state, not merged behaviour**;
+  re-check before treating it as live. The general lesson outlives the fix: for a view-count ticket,
+  "the SDK logged it" and "the metric counts it" are two questions, and the routing between them is a
+  backend fact.
 
 - **Where a filter/group attribute's label and per-chart availability actually live — backend, with the
-  frontend able to subtract.** Added 2026-08-26 while adding the Flow / Flow screen dimensions. The
+  dashboard able to subtract.** Added 2026-08-26 while adding the Flow / Flow screen dimensions. The
   display label of every filter and grouping attribute is backend-owned, the same way integration form
-  fields are (see `sources.md`'s `share.py` rule): `SEGMENTATION_TITLES` in
-  `domain/enums/metrics/chart_metrics_segmentation.py` for groupings and `METRICS_FILTER_TITLES_MAP` in
-  `domain/enums/metrics/metrics_filter_field.py` for filters. **Never take an attribute name from the
-  interface repo** — grepping `adapty-dashboard-interface` for `flow_screen_id` returns the id and no
-  label at all. Which attributes a given chart offers is `domain/chart_metrics_segmentations_config.py`:
-  a `COMMON_SEGMENTATIONS` tuple plus per-chart-type extras, and that file is what to read when
-  verifying a metric article's "Available filters and grouping" list. The catch is that the backend
-  returns **one** attribute list for the whole analytics page, so the chart drops what it cannot resolve:
-  `installException` in `apps/web/src/pages/dashboard/advanced/lib.tsx` (interface repo) is why Installs
-  and ARPU offer no Paywall, Placement, Product, Flow or Flow screen even though the backend config
-  grants ARPU all of them. Both files verified on `origin/develop` / `origin/master` respectively, so
-  this ownership split is current, not branch state.
-- TODO(owner): `sources.md` has no entry naming the analytics computation layer, so tasks in this zone
-  should cite `dashboard-backend` and name the module they read, as `integrations` does for `share.py`.
-  A related open item: the raw ClickHouse tables the command above reads from
-  (`adapty_analytics_transaction`, `adapty_analytics_profile_event`) are populated outside this repo — is
-  there a registered source for that ingest layer, or is a verified live transaction the only check?
+  fields are, and so is which attributes each chart offers (a common set plus per-chart-type extras).
+  **Never take an attribute name from the dashboard code's internal ids** — the label is not there. The
+  catch is that the backend returns **one** attribute list for the whole analytics page, so the chart
+  drops what it cannot resolve: that is why Installs and ARPU offer no Paywall, Placement, Product, Flow
+  or Flow screen even though the backend grants ARPU all of them. Verified against backend and dashboard
+  code (merged, 2026-08-26), so this ownership split is current, not branch state. Check a metric
+  article's "Available filters and grouping" list against the live dashboard.
+- TODO(owner): there is no registered public source for the analytics computation layer or the event
+  ingest behind it; a verified live transaction or the product team is the only check.
 
 ## What we document, what we don't
 
