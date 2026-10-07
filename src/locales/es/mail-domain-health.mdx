@@ -1,0 +1,111 @@
+---
+title: "Supervisar el estado del dominio en Adapty Mail"
+description: "Rastrea la puntuación de entregabilidad, rebotes, ubicación en la bandeja de entrada y niveles de envío de un dominio de envío en Adapty Mail."
+metadataTitle: "Estado del dominio | Adapty Mail | Documentación de Adapty"
+---
+
+Revisa las métricas de tu dominio para detectar señales tempranas de que los proveedores de correo están clasificando tus campañas como spam. Los rebotes, las quejas y la ubicación en la bandeja de entrada pueden anticipar problemas futuros: monitorízalos para actuar antes de que escalen.
+
+Encuentra tu dominio en la sección **Email domains** de la página **DNS**. Haz clic en **Details** para ver sus métricas de estado:
+
+- **Puntuación de entregabilidad**: Una valoración del 0 al 100.
+- **Rebotes**: Rebotes del dominio durante los últimos 30 días, agrupados por motivo.
+- **Ubicación en bandeja de entrada**: En qué carpeta llegaron los correos del buzón de calentamiento en cada proveedor de correo principal.
+- **Niveles de envío**: Progreso a través de los [niveles de envío](mail-sending-domain#how-tiers-work) y el límite actual.
+
+<ZoomImage id="mail-domain-health.webp" width="700px" alt="The deliverability page of a domain with the Deliverability score, Bounces, Inbox placement, and Send tiers cards" />
+
+## Puntuación de entregabilidad \{#deliverability-score\}
+
+La tarjeta **Deliverability score** muestra uno de los siguientes estados:
+
+| Estado | Puntuación |
+| --- | --- |
+| **Healthy** | 90–100 |
+| **Needs attention** | 50–89 |
+| **At risk** | Por debajo de 50 |
+| **No data yet** | Ninguna: el dominio no envió correos de campaña en los últimos 30 días |
+
+La puntuación no afecta a los niveles de envío. Para mejorar una puntuación baja, sigue los [pasos de resolución de problemas](#troubleshooting).
+
+### Cómo se calcula la puntuación \{#how-the-score-is-calculated\}
+
+La puntuación combina las siguientes señales, cada una valorada de 0 a 100:
+
+| Señal | Peso | Qué mide | Puntuación 100 | Puntuación 80 | Puntuación 0 |
+| --- | --- | --- | --- | --- | --- |
+| Tasa de quejas | 45% | Quejas de spam en correos de campaña, últimos 30 días | 0% | 0,1% | 0,5% o más |
+| Tasa de rebote duro | 35% | Rebotes duros en correos de campaña, últimos 30 días | 0% | 2% | 5% o más |
+| Tasa de bandeja de entrada | 20% | Correos de calentamiento que llegaron a la bandeja de entrada, últimos 7 días | 100% | 80% | 0% |
+
+La puntuación es la media ponderada de las señales, con dos ajustes:
+
+- **La señal más débil limita la puntuación**: Una vez que el dominio ha enviado suficientes correos, la puntuación no puede subir más de 10 puntos por encima de su señal más débil. Una sola señal débil basta para poner el dominio **En riesgo**.
+- **Las señales de pocos correos tienen menos influencia**: En un dominio nuevo, un solo rebote duro en 50 correos ya supone una tasa del 2%. Hasta que el dominio haya enviado unos pocos cientos de correos de campaña en los últimos 30 días, la puntuación se marca como **Datos iniciales**.
+
+Sin datos de calentamiento, la puntuación solo combina las tasas de quejas y rebotes duros. Los correos de prueba no cuentan para ninguna señal.
+
+## Rebotes \{#bounces\}
+
+La tarjeta **Bounces** agrupa los rebotes de los últimos 30 días por motivo. En la columna **Top provider** se identifica el proveedor con más rebotes para cada motivo. Una etiqueta en el motivo indica su tipo de rebote:
+
+- **HARD**: La entrega falló por un motivo permanente, como una dirección que no existe.
+- **SOFT**: La entrega falló por un motivo temporal, como un buzón lleno o contenido rechazado.
+
+La tasa en el título de la tarjeta **Bounces** incluye tanto los rebotes hard como los soft. La puntuación de entregabilidad excluye los rebotes soft, igual que Amazon SES.
+
+Cada rebote, duro o suave, [suprime al destinatario](mail-suppression#delivery-failed-or-the-recipient-marked-it-as-spam): Adapty Mail deja de enviarles mensajes.
+
+Para reducir los rebotes, busca qué tienen en común la mayoría de ellos:
+
+| Lo que ves | Qué hacer |
+| --- | --- |
+| La mayoría de los rebotes tienen la etiqueta **HARD** | Revisa de dónde provienen las direcciones que rebotaron, como un formulario de registro. |
+| La mayoría de los rebotes son **Content rejected** | Revisa los enlaces y el texto de tus correos. |
+| Un proveedor es el **Top provider** de la mayoría de los rebotes | Contacta con soporte. |
+
+## Ubicación en la bandeja de entrada \{#inbox-placement\}
+
+La tarjeta **Inbox placement** muestra en qué carpeta llegaron los emails de calentamiento para cada proveedor principal. El [buzón de calentamiento](mail-sending-domain#warm-up-and-daily-limits) del dominio intercambia estos emails con buzones de prueba en dichos proveedores. La tarjeta excluye los emails de campaña, porque ningún remitente puede ver en qué carpeta llegan.
+
+Además de **Inbox** y **Spam**, una fila de proveedor puede mostrar las siguientes etiquetas:
+
+- **Unknown**: Emails de calentamiento que rebotaron o no se entregaron.
+- **No signal**: El buzón de calentamiento no envió ningún email a ese proveedor.
+
+La tarjeta muestra los datos de un único día: como máximo, el de ayer, ya que Adapty Mail recopila los datos a diario. Para ver el historial de un proveedor, haz clic en su fila.
+
+Hasta que el buzón de calentamiento envíe sus primeros correos, la tarjeta muestra **No warm-up data collected yet**. Si el mensaje persiste, comprueba que los registros de [**Warmup mailbox**](mail-sending-domain#2-add-the-dns-records) estén verificados. Un dominio configurado antes del calentamiento automático no tiene buzón de calentamiento, por lo que la tarjeta seguirá mostrando este mensaje.
+
+## Niveles de envío (límites diarios de correo) \{#send-tiers-daily-email-caps\}
+
+La tarjeta **Send tiers** muestra el nivel actual del dominio y el límite para hoy. Para un dominio nuevo, el límite comienza en 100 correos al día y sube a través de 20 niveles. [Cómo funcionan los niveles](mail-sending-domain#how-tiers-work) lista cada nivel y su límite.
+
+El dominio solo sube de nivel al día siguiente de alcanzar su límite diario. Los correos que Adapty Mail retrasa por el límite igualmente cuentan para él. El gráfico de la tarjeta compara los correos enviados con el límite de cada uno de los últimos 14 días.
+
+La tarjeta muestra uno de los siguientes estados:
+
+- **Not started**: El dominio aún no ha enviado ningún email de campaña.
+- **On plan**: El dominio ha subido un nivel cada día.
+- **Behind plan**: En al menos un día, el dominio no alcanzó su límite. Con una audiencia pequeña, este estado es normal.
+- **Warmed up**: El dominio superó el nivel máximo y no tiene límite diario.
+
+## Limitaciones \{#limitations\}
+
+- **La ubicación en la bandeja de entrada es una estimación basada en los correos de calentamiento**: ningún remitente puede determinar con certeza en qué carpeta acaba su correo.
+- **Las quejas de Gmail están infrarreportadas**: Gmail [no notifica las quejas de spam individuales](https://aws.amazon.com/blogs/messaging-and-targeting/understanding-google-postmaster-tools-spam-complaints-for-amazon-ses-email-senders/) a los remitentes. Por eso, la tasa de quejas subestima cuántas personas marcan tus correos como spam. Para ver tu tasa de spam en Gmail, utiliza [Google Postmaster Tools](https://postmaster.google.com/).
+- **La puntuación abarca todos los subdominios de envío del dominio**: la puntuación y la tarjeta **Bounces** combinan los correos de campaña de todos ellos. La tarjeta **Send tiers** solo cubre el actual.
+- **La puntuación no se reinicia cuando vuelves a añadir un dominio**: si eliminas un dominio y lo añades de nuevo, los correos de campaña de los últimos 30 días siguen contando para la puntuación y la tarjeta **Bounces**.
+
+## Solución de problemas \{#troubleshooting\}
+
+- **La tarjeta de puntuación de entregabilidad muestra Needs attention o At risk**: Localiza la señal con la puntuación más baja.
+  - **Tasa de rebotes permanentes**: Revisa el origen de las direcciones con rebote, como un formulario de registro.
+  - **Tasa de quejas**: Envía únicamente a destinatarios que hayan dado su consentimiento. Para pedir a los nuevos destinatarios que confirmen su dirección antes de recibir cualquier email de marketing, activa el [doble opt-in](mail-double-opt-in).
+  - **Tasa de bandeja de entrada**: Sigue la [solución de problemas del dominio de envío](mail-sending-domain#troubleshooting) para los correos que van a spam.
+
+  Si la puntuación no mejora, contacta con el soporte.
+- **La tarjeta de puntuación de Entregabilidad muestra Sin datos aún** (**Sin datos** en **Settings** > **DNS**): El dominio no envió ningún email de campaña en los últimos 30 días. Los emails de prueba no cuentan para la puntuación.
+- **La tarjeta de puntuación de Entregabilidad muestra Datos iniciales**: El dominio ha enviado menos de unos pocos cientos de emails de campaña en los últimos 30 días.
+- **El dominio no avanza al siguiente nivel**: El dominio permanece en su nivel hasta que alcanza su límite diario, independientemente de los días que pasen.
+- **Las campañas se envían lentamente**: Cuando todos tus dominios alcanzan sus límites, Adapty Mail [retrasa los emails restantes](mail-suppression#throttle-temporary-delays-and-cancellations): los emails de marketing una semana, los transaccionales un día. El primer día de un nivel, Adapty Mail divide el límite diario en límites horarios iguales. Si un email retrasado tampoco puede enviarse en su nueva fecha, Adapty Mail cancela la campaña para ese destinatario. Para aumentar la capacidad diaria antes de un lanzamiento importante desde un dominio nuevo, [añade más dominios](mail-sending-domain#multiple-domains).
