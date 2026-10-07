@@ -4,11 +4,15 @@ description: "Pass a value from your Android app to a flow, and show it in a tex
 metadataTitle: "Pass data to flows | Android SDK | Adapty Docs"
 ---
 
-A [custom tag](flow-custom-tags) is a kind of custom variable. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
 
 ## Before you start
 
 <FlowCustomTagsPrerequisites />
+
+## Add custom tags to the flow
+
+<FlowCustomTagsAddToFlow />
 
 ## Pass custom tag values
 
@@ -80,7 +84,7 @@ If your app already sets custom tag values for old Paywall Builder paywalls, rev
 
 ### Pass the BMI to the paywall
 
-Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](android-flow-input). When the user closes the onboarding flow, calculate the BMI. Then create the paywall's flow view, and pass the BMI for the `bmi` custom tag.
+Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](android-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`, as in [Track flow screen views](android-flow-screen-views). When the user closes the onboarding flow after that screen, calculate the BMI. Then create the paywall's flow view, and pass the BMI for the `bmi` custom tag.
 
 Pass the following listener to the onboarding flow's view:
 
@@ -90,12 +94,17 @@ class OnboardingEventListener(
 ) : AdaptyFlowDefaultEventListener() {
 
     private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
 
     override fun onAnalyticEvent(
         name: String,
         params: Map<String, Any?>,
         context: Context,
     ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
         if (name != "flow_user_input") return
 
         val elementId = params["element_id"] as? String ?: return
@@ -105,10 +114,17 @@ class OnboardingEventListener(
     }
 
     override fun onFlowClosed() {
-        // Number inputs send their values as strings.
-        val weight = bodyAnswers["weight"]?.toDoubleOrNull() ?: return
-        val height = bodyAnswers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+        // Reset `bodyAnswers` and `reachedLastScreen` on every close,
+        // so that the next run starts without old answers.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
         bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
 
         val heightInMeters = height / 100
         val bmi = weight / (heightInMeters * heightInMeters)
@@ -118,7 +134,7 @@ class OnboardingEventListener(
 }
 ```
 
-When the user closes the onboarding flow, the listener calls `onBmiCalculated` with the BMI. Pass a lambda for `onBmiCalculated` that calls the following function. The function fetches the paywall flow, creates its view, and passes the BMI for the `bmi` custom tag:
+When the user closes the onboarding flow after its last screen, the listener calls `onBmiCalculated` with the BMI. Pass a lambda for `onBmiCalculated` that calls the following function. The function fetches the paywall flow, creates its view, and passes the BMI for the `bmi` custom tag:
 
 ```kotlin showLineNumbers title="Kotlin"
 fun showBmiPaywall(activity: Activity, bmi: String) {
@@ -155,6 +171,20 @@ fun showBmiPaywall(activity: Activity, bmi: String) {
 
 `String.format` with `Locale.getDefault()` uses the decimal separator of the user's locale: "22.7" in English, "22,7" in German.
 
-## Limitations
+### Save the BMI to the user's profile
 
-<FlowCustomTagsLimitations />
+To show users different flows based on their BMI, save it as a [custom attribute](android-setting-user-attributes#custom-user-attributes) of their profile. In the Adapty Dashboard, [create a **Number** custom attribute](segments#custom-attributes) with the key `bmi`. Then show each flow to an [audience](audience) built from the attribute.
+
+Call the `updateProfile` method after you calculate the BMI. Save the number, not a formatted string, so that a segment can compare the BMI with a threshold:
+
+```kotlin showLineNumbers title="Kotlin"
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+Adapty.updateProfile(params) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```
