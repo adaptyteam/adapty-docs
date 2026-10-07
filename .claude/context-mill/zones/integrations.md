@@ -255,3 +255,10 @@ repeated here.
 - The payload schema has no public ground-truth source, yet the rule above makes confirming backend
   behavior mandatory rather than optional for this zone. Say in the task how the field list was
   confirmed (product team, or which live payloads were checked).
+- **Singular is no longer SDK-free (2026-10-05).** Profiles that carry `singular_sdid` are routed to
+  Singular's v2 Event API (`POST /api/v2/evt`, form-urlencoded, `sdid` replaces IDFA/IDFV/AIFA/ASID/ANDI);
+  without it, the v1 `GET` is unchanged. Every request gains `partner=adapty`. Singular accounts created
+  on or after 2026-07-15 reject v1, so for them the SDK call is mandatory. No SDK ships a named constant
+  for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
+  webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
+  for this change, so `adapty-api.yaml` stays as is.
