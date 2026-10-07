@@ -46,6 +46,8 @@ customSlug: "override-url"  # Optional URL override
 
 Run `npm run mill` then `npm run mill:status` first: the map is regenerated from disk and the drift report tells you which zones changed since anyone last reviewed them. `.claude/context-mill/docs-map.jsonl` is the searchable index (title, headings, code symbols, links, sidebars) for candidates a brief can't settle.
 
+**The context mill is public, so keep it anonymous.** Never write support ticket numbers or links, Jira keys (branch names included), customer names or case retellings, staff names, Slack links, closed-source code (private repo names, paths, symbols, commits), or internal hosts into `.claude/context-mill/` or the `context-mill` skill. The full rule is in the skill's "The mill is public" section; `scripts/__tests__/context-mill-anonymity.test.mjs` enforces the mechanical half.
+
 The four published OpenAPI specs are part of the zoned corpus. **For the server-side and web APIs the spec is the maintained reference**, so an endpoint or field change means editing `src/api-reference/specs/*.yaml`, not a hand-written object article.
 
 ### Navigation and Placement

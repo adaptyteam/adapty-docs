@@ -210,10 +210,10 @@ deliberately not repeated here.
 **First-screen media, added to `ios-optimize-paywall-fetching` on 2026-09-28 (branch `preload-assets`, iOS
 only; the other six members of the family follow after review).** New section "Show first-screen media from
 the app bundle": set a custom media ID in the builder, bundle the file, pass it through `assetsResolver`; one
-sentence on app-size cost. Scope was cut on review from a Weewoo-specific pattern (fetch the configuration
+sentence on app-size cost. Scope was cut on review from an app-specific pattern (fetch the configuration
 early, nil-check, fall back to native onboarding) to custom assets only — the article already covers timing
-and preload, so don't add the nil-check pattern back. Origin: a customer case in Slack, with the approach
-given by the solutions team and mobile devs.
+and preload, so don't add the nil-check pattern back. The approach came from the solutions team and
+mobile devs.
 Verified against `ios-sdk` `origin/master` (`706d185b`, 2026-07-30):
 - Remote images in the view configuration can carry a base64 low-res copy: `preview_value` decoded into
   `previewRaster` in `Sources.UIBuilder/UISchema/Assets/Schema.ImageData.swift:48`, rendered as

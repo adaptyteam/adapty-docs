@@ -1,6 +1,6 @@
 ---
 zone: ads-manager
-sources: [dashboard-backend, dashboard-interface]
+sources: []
 reviewed_shape:
 reviewed_at:
 ---
@@ -18,15 +18,13 @@ inside Adapty instead of Apple's own console.
 
 ## Sources of truth
 
-- **dashboard-interface** is the primary source here, and the split from `integrations` is worth stating
-  plainly: this zone's metric names, labels, column groups and form option lists live in the **frontend**,
-  not in the backend. Metric labels and the five column groups are in
-  `apps/web/src/shared/asa/lib/Table/commonColumns.tsx` (`performanceChildren`, `advancedChildren`,
-  `insightsChildren`, `conversionChildren`, `cohortChildren`); the ids and the label-to-API-field maps are
-  in `apps/web/src/shared/asa/types/commonList.ts`. There is no `share.py` equivalent for Ads Manager —
-  a grep of the integration-field module on `dashboard-backend`'s `origin/develop` returns only the
-  `asapty` third-party integration, no Ads Manager fields. So the standing corpus rule "a form field's
-  title is not in the front-end code" is an `integrations` rule, not a corpus rule; do not apply it here.
+- **Backend and dashboard behavior: Adapty's closed-source code, not citable here — confirm with the
+  product team or by testing in the dashboard.** The split from `integrations` is worth stating plainly:
+  this zone's metric names, labels, column groups and form option lists are defined in the dashboard,
+  not in the backend (dashboard code, 2026-10-01). Unlike integration setup forms, Ads Manager fields
+  have no backend-owned labels. So the standing corpus rule "a form field's title is not in the
+  front-end code" is an `integrations` rule, not a corpus rule; do not apply it here — the live
+  dashboard's labels are the source.
 - **Which numbers are ours and which are Apple's is exactly the column grouping**, and that decides who
   can answer a "numbers don't match" ticket:
   - **Performance** and **Advanced downloads** are Apple Ads report fields, relabelled — spend/local
@@ -37,36 +35,31 @@ inside Adapty instead of Apple's own console.
     trials converted, subscriptions, non-subscriptions, revenue/ARPU/ARPPU/ARPAS/ROAS/ROI, and every
     `*_cr` and `cost_per_*` derived from them. These are ours to explain and ours to fix.
   - The trap inside that split: **Downloads** (Performance) is Apple's count, **Installs** (Conversions)
-    is Adapty's — the label-to-field map sends "Installs" to `adaptyInstalls` and "Downloads (Total)" to
-    Apple's `totalInstalls`. Two adjacent columns, two different systems of record. Every "installs don't
-    match downloads" ticket is this.
+    is Adapty's — "Installs" is Adapty's install count and "Downloads (Total)" is Apple's `totalInstalls`.
+    Two adjacent columns, two different systems of record. Every "installs don't match downloads" ticket
+    is this.
   - **Insights** — Impression share (all), Impression share (first), Rank (all), Rank (first), and Search
-    popularity (current) (labels: `shared/asa/lib/Table/commonColumns.tsx:130-156`, dashboard
-    `origin/master` @ `dcc60b692`, read 2026-10-01). Search-term rows carry Apple's values. **Keyword rows
-    are Adapty's calculation** from the search terms matched to the keyword (ASA-809 §10: "Based on the
-    search terms matched to it"), because Apple's impression share report has no keyword dimension.
-    Corrected 2026-10-01: this line used to say Insights are "not computed by us".
-    - Unconfirmed, 2026-10-01: ASA-809 §4–5 specify **>90%** for the 91–100% bucket, and Rank as the
-      latest day only, whatever the date range. The released frontend has no `>90` case (it rounds
-      `impression_midpoint_*`) and sends the date range with every request. The backend
-      (`adapty/asa-analytics`, GitLab project 78) returns 404 for Gene's token, so its side is unchecked.
-      The docs follow ASA-809.
-  - The service models the reconciliation itself: the generated schema `MetricComparison` carries
-    `apple_value` and `internal_value` side by side, so an Apple-vs-Adapty gap is an expected state, not
-    necessarily a bug.
+    popularity (current) (labels verified against dashboard code, 2026-10-01). Search-term rows carry
+    Apple's values. **Keyword rows are Adapty's calculation** from the search terms matched to the
+    keyword (the feature spec: "Based on the search terms matched to it"), because Apple's impression
+    share report has no keyword dimension. Corrected 2026-10-01: this line used to say Insights are "not
+    computed by us".
+    - Unconfirmed, 2026-10-01: the feature spec specifies **>90%** for the 91–100% bucket, and Rank as the
+      latest day only, whatever the date range. The released dashboard has no `>90` case (it rounds the
+      bucket midpoint) and sends the date range with every request. The backend side is unchecked.
+      The docs follow the spec.
+  - The service models the reconciliation itself: it carries Apple's value and Adapty's internal value
+    side by side, so an Apple-vs-Adapty gap is an expected state, not necessarily a bug.
   - **Revenue basis is not this zone's to define.** The gross / proceeds-after-commission /
-    proceeds-after-commission-and-taxes control is the dashboard-wide component at
-    `apps/web/src/pages/dashboard/ui/RevenueProceedsSelect/`, reused verbatim by Ads Manager, and its own
-    help link points into the `analytics` zone (article id controls-filters-grouping-compare-proceeds).
-- The **wire contract** is `packages/sdk/src/asa/types/generatedTypes.d.ts` in **dashboard-interface** —
-  auto-generated by openapi-typescript from the ASA service's OpenAPI, and named by that repo's own
-  `docs/testing/msw.md` as what ASA responses must be checked against. Read it for enum values and
-  required/optional flags; read the sibling `packages/sdk/src/asa/*.ts` API classes for endpoint paths.
-- **Automation-rule semantics** live in `packages/sdk/src/asa/types/ruleBasedAutomation.ts` plus the four
-  create-rule modals under `apps/web/src/shared/asa/components/` (`CreateRuleModal` is the keyword one;
-  then `CreateAdGroupRuleModal`, `CreateCampaignRuleModal`, `CreateSearchTermRuleModal`):
-  - **What a rule may act on**: one `operate_with` enum (`campaign`, `ad-group`, `targeting-keyword`,
-    `search-term`) and a closed action union — change bid / enable / pause / add-as-keyword-to /
+    proceeds-after-commission-and-taxes control is the dashboard-wide control, reused verbatim by Ads
+    Manager, and its own help link points into the `analytics` zone (article id
+    controls-filters-grouping-compare-proceeds).
+- **Enum values, required/optional flags and endpoint shapes** come from the ASA service's API contract,
+  which is not public — confirm with the product team.
+- **Automation-rule semantics** (dashboard code, 2026-08-17 — the four create-rule modals: keyword,
+  ad group, campaign, search term):
+  - **What a rule may act on**: one target type (campaign, ad group, targeting keyword, search term) and
+    a closed action set — change bid / enable / pause / add-as-keyword-to /
     add-as-negative-keyword for keywords; change default bid / change CPA goal / pause / enable for ad
     groups; change daily budget / pause / enable for campaigns; add-as-keyword-to and
     add-as-negative-keyword only for search terms.
@@ -74,16 +67,16 @@ inside Adapty instead of Apple's own console.
     12-option list — Once, Every hour, Every 3/6/12 hours, Every day, Every 2/5/7/14/30/90 days — plus an
     hourly start-time picker on every non-Once option. The articles' disagreement is therefore a docs
     defect, not a product difference, and the daily-granularity phrasing understates the product. The
-    generated contract additionally accepts daily/weekly/monthly frequency shapes that no form offers —
+    API contract additionally accepts daily/weekly/monthly frequency shapes that no form offers —
     contract capability, not a documentable feature.
   - **The real per-level difference is the condition list, not the schedule.** Keyword, ad-group and
     campaign rules build conditions from the shared filter columns (all five metric groups), while the
     search-term rule builds from the search-terms filter columns, which are the Performance group only.
     Search-term rules can condition on Apple delivery metrics and nothing else — never on trials,
     subscriptions or revenue.
-  - **Not established: what an enabled rule overrides.** Nothing in **dashboard-interface** says a rule's
-    next run overwrites a manual bid edit; that is server-side behavior. Treat it as unverified until the
-    source below is registered.
+  - **Not established: what an enabled rule overrides.** Nothing in the dashboard says a rule's next run
+    overwrites a manual bid edit; that is server-side behavior. Treat it as unverified until the product
+    team confirms it.
 - **What is Apple's, and therefore not ours to define**: keyword match types (`BROAD`, `EXACT`, `AUTO`),
   placements (`SupplySources`), channel / billing-event / pricing model (`CPC`, `CPM`), and the entire
   not-serving vocabulary (`ServingStateReasons`, ~40 values from `APP_NOT_ELIGIBLE_SEARCHADS` to
@@ -92,22 +85,15 @@ inside Adapty instead of Apple's own console.
   their constraints and their review requirements are Apple's, and Apple's docs are where a reader goes
   for them.
 - **Keyword Suggester and Search Popularity (launched 2026-08-16) sit on a third API surface**, not the
-  ASA admin API: `apps/web/src/shared/asa/insights/api/transport.ts` on `origin/master` calls
-  `/v1/suggestions/{phrases,categories}/query` and `/v1/insights/apps/search-term-popularity/query`.
-  Neither endpoint takes an adamId, so neither page has an app/campaign scope picker, and the Keyword
-  Suggester route mounts without the Apple-Ads-connection wrapper (comment in
-  `KeywordSuggesterPageContent.tsx`). The load-bearing copy — the forbidden-language glossary
-  (popularity ≠ search volume, categories ≠ keywords), the 50-token list cap, the 6-hour cache — lives in
-  `apps/web/src/features/asa/keywordSuggester/config/constants.ts` and
-  `searchPopularity/config/constants.ts`. Verified via `git show origin/master:<path>` 2026-08-17.
-- TODO(owner): **the ASA service that computes all of the above is not a registered source and is not
-  cloned.** The frontend points at `api-asa-admin.adapty.io` (`apps/web/src/libs/asa/sdk.tsx`), and
-  `dashboard-backend` carries none of it — grepping `origin/develop` for `asa-metadata`,
-  `rule_based_automation` and `targeting_keyword` returns zero files; its only Apple Search Ads code is
-  the attribution adapter that belongs to `integrations`. Consequence: server-side rule execution,
-  scheduling behavior, sync cadence, and how any Conversions/Cohort metric is actually computed have **no
-  readable ground truth** for an agent today. Which repo owns this service, and can it be added to
-  `sources.md`?
+  ASA admin API (dashboard code, 2026-08-17). Neither endpoint takes an app ID, so neither page has an
+  app/campaign scope picker, and the Keyword Suggester page works without an Apple Ads connection. The
+  load-bearing copy — the forbidden-language glossary (popularity ≠ search volume, categories ≠
+  keywords), the 50-token list cap, the 6-hour cache — is defined in the dashboard; check the live pages.
+- TODO(owner): **the ASA service that computes all of the above is not a public source.** Server-side
+  rule execution, scheduling behavior, sync cadence, and how any Conversions/Cohort metric is actually
+  computed have **no readable ground truth** for an agent; confirm with the product team. Its only
+  overlap with the main backend is the Apple Search Ads attribution integration, which belongs to
+  `integrations`.
 
 ## What we document, what we don't
 
@@ -129,8 +115,8 @@ inside Adapty instead of Apple's own console.
   the connected Apple Ads account across the Apple-spend-to-Adapty-funnel join. A doc may **not** claim it
   changes a campaign, bid or budget, and may **not** claim it is incapable of doing so: the agent runs
   server-side tools that no source we can read enumerates. Write it around what the reader does with the
-  answers, not around a capability boundary we cannot verify. Two more restraints: don't use the internal
-  name (it is "Copilot" in code, "AI Agent" to the reader), and don't assert availability — the button is
+  answers, not around a capability boundary we cannot verify. Two more restraints: call it "AI Agent", the
+  reader-facing name, and nothing else, and don't assert availability — the button is
   gated by a feature flag that merely defaults on, and the panel's own intro still reads
   "Early access · By invitation". A per-company AI token quota can also block sending; that is a real
   reader-visible limit and the only availability fact currently safe to state.
@@ -177,15 +163,14 @@ inside Adapty instead of Apple's own console.
 
 ## Ripple rules
 
-- **An Insights metric changes** (2026-09-30, ADP-7994): `adapty-ads-manager-metrics` § Insights, and the
+- **An Insights metric changes** (2026-09-30): `adapty-ads-manager-metrics` § Insights, and the
   **Insights** bullet in `adapty-ads-manager-analytics` § Metrics. Outside this repo, the API names live in
   `adapty-cli` (`docs/agent/asa-metrics.md`, `skills/adapty-cli/references/asa-agent-playbook.md`),
   `adapty-skills` (`skills/ads-manager/references/asa-metrics.md`), and the `apple-ads-cli` plugin, which
   syncs from `adapty-cli`. Report those; don't edit them from here.
 - **Impression share is not Share of Voice.** Insights **Impression share** is your app's share per search
   term. Market intelligence reports competitors' **Share of Voice** (UI labels `Share of Voice` and
-  `Avg SOV`: `pages/asa/market-intelligence/by-app/ui/AnalysisResultsStep/ui/ByAppTab.tsx:100`,
-  `ByCountryTab.tsx:211`). Keep the two terms apart in `ads-manager-market-intelligence`.
+  `Avg SOV` on the by-app and by-country results). Keep the two terms apart in `ads-manager-market-intelligence`.
 
 ## Boundaries
 
@@ -225,4 +210,4 @@ near-identical names and a ticket almost never says which one it means.
 | "test two product pages", "which App Store page converts better", "statistical significance" | `ads-manager-cpp-ab-tests`. The mechanism is what tickets trip over: Adapty clones the source ad group once per variant and rotates them, pausing the original until the test ends and then restoring it. The source ad group must be at least 28 days old with traffic, precision and confidence set the required sample, and stopping a test is final. |
 | "competitor keywords", "what are rivals bidding on", "brand protection", "new country research" | `ads-manager-market-intelligence` — 30-day aggregate across 50+ countries, refreshed daily. Selected keywords can be pushed straight into a campaign as keywords, negatives or SKAG from the results table, so a ticket about "acting on competitor keywords" doesn't need `ads-manager-manage-keywords`. |
 | "personalize the paywall by campaign or keyword", "audience from ad source" | `ads-manager-create-segments` — **Actions > Create segment from…** on the Campaigns, Ad groups or Keywords tab. Selecting several rows produces one combined segment, not one per row. |
-| "impression share over 100%", "impression share doesn't match Apple", "first-position impression share" | `adapty-ads-manager-metrics` § Insights. Keyword values above 100%, and search-term values that read low, are a known defect: ASA-827 (in Review on 2026-09-24, deploy unconfirmed). Don't document it. |
+| "impression share over 100%", "impression share doesn't match Apple", "first-position impression share" | `adapty-ads-manager-metrics` § Insights. Keyword values above 100%, and search-term values that read low, are a known defect (fix in review on 2026-09-24, deploy unconfirmed). Don't document it. |

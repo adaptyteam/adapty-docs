@@ -118,15 +118,15 @@ test('formatRefsReport reports a failed inspection in the source block, not as n
 });
 
 // Briefs name repos and spec files, not registry ids: a zone brief says
-// `noty-wave-backend` or `adapty-api.yaml` because that is what a reader greps
-// for. The registry calls those `mail-backend` and `server-side-api-spec`. So a
+// `AdaptySDK-Flutter` or `adapty-api.yaml` because that is what a reader greps
+// for. The registry calls those `flutter-sdk` and `server-side-api-spec`. So a
 // scan for ids alone badly under-counts — it found zero sources in 14 of 34
 // briefs that demonstrably depend on several. Match on the path's basename too,
 // and keep the prose free to use whichever name reads better.
 test('sourceAliases covers the id, a clone directory name, and a spec filename', () => {
   assert.deepEqual(
-    sourceAliases({ id: 'mail-backend', path: '~/Documents/noty-wave-backend', kind: 'local-clone' }),
-    ['mail-backend', 'noty-wave-backend'],
+    sourceAliases({ id: 'flutter-sdk', path: '~/Documents/AdaptySDK-Flutter', kind: 'local-clone' }),
+    ['flutter-sdk', 'AdaptySDK-Flutter'],
   );
   assert.deepEqual(
     sourceAliases({ id: 'server-side-api-spec', path: 'src/api-reference/specs/adapty-api.yaml', kind: 'in-repo-spec' }),
@@ -138,16 +138,16 @@ test('sourceAliases covers the id, a clone directory name, and a spec filename',
 
 test('citedSources finds a source by any alias, and only inside backticks', () => {
   const sources = [
-    { id: 'mail-backend', path: '~/Documents/noty-wave-backend', kind: 'local-clone' },
-    { id: 'ua-service', path: '~/Documents/adapty-user-acquisition', kind: 'local-clone' },
+    { id: 'flutter-sdk', path: '~/Documents/AdaptySDK-Flutter', kind: 'local-clone' },
+    { id: 'jscore', path: '~/Documents/AdaptySDK-JS-Core', kind: 'local-clone' },
     { id: 'ios-sdk', path: '~/Documents/AdaptySDK-iOS', kind: 'local-clone' },
   ];
   const body = [
-    'Flow semantics live in `noty-wave-backend`, `src/app/campaign_context/`.',
-    'The install model is in `adapty-user-acquisition` — not in any SDK.',
+    'The Dart bridge lives in `AdaptySDK-Flutter`, `lib/src/`.',
+    'The shared types are in `AdaptySDK-JS-Core` — not in the RN wrapper.',
     'Mentioning ios-sdk outside backticks must not count.',
   ].join('\n');
-  assert.deepEqual(citedSources(body, sources), ['mail-backend', 'ua-service']);
+  assert.deepEqual(citedSources(body, sources), ['flutter-sdk', 'jscore']);
 });
 
 test('citedSources returns each source once however many times it is cited', () => {
@@ -163,12 +163,12 @@ test('citedSources returns each source once however many times it is cited', () 
 // names, so a UI label in bold cannot collide with it.
 test('citedSources matches a bolded source name as well as a backticked one', () => {
   const sources = [
-    { id: 'dashboard-interface', path: '~/Documents/adapty-dashboard-interface', kind: 'local-clone' },
-    { id: 'dashboard-backend', path: '~/Documents/adapty-dashboard-api', kind: 'local-clone' },
+    { id: 'ios-sdk', path: '~/Documents/AdaptySDK-iOS', kind: 'local-clone' },
+    { id: 'android-sdk', path: '~/Documents/AdaptySDK-Android', kind: 'local-clone' },
   ];
   const body = [
-    '- **dashboard-interface** — the dashboard labels in the quickstart steps.',
-    '- `dashboard-backend` — the set of stores it routes to.',
+    '- **ios-sdk** — the Swift signatures in the quickstart steps.',
+    '- `android-sdk` — the Kotlin signatures.',
   ].join('\n');
-  assert.deepEqual(citedSources(body, sources), ['dashboard-backend', 'dashboard-interface']);
+  assert.deepEqual(citedSources(body, sources), ['android-sdk', 'ios-sdk']);
 });

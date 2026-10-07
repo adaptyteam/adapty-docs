@@ -7,7 +7,7 @@ This file answers one question: **does this docs change also change a shipped sk
 corpus-wide, like `scope.md`. A zone brief's `Ripple rules` carries only its delta from this
 file — which file in which skill, for that zone's classes — never a restatement of it.
 
-Out of scope here: the `adapty-cli` skills, `adapty-agents`, and the `adapty-cursor*` guide
+Out of scope here: the `adapty-cli` skills, Adapty's internal agents, and the `adapty-cursor*` guide
 family. Each could be added as one more surface file; none is today.
 
 ## The rule that does most of the work

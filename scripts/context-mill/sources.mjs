@@ -106,7 +106,7 @@ export function formatRefsReport(states) {
       out.push('  branches matching ref_pattern, newest first:');
       // Align short refs in a column at 34 chars, but never let the gap before
       // `age` drop below 2 spaces — real branch names (e.g.
-      // "feature/adp-6745-manage-adapty-with-coding-agents") can exceed the
+      // "feature/sdk-4.1-update-external-attribution-api") can exceed the
       // column width, and a single space there reads as one run-on word.
       for (const c of s.candidates) {
         const gap = ' '.repeat(Math.max(2, 34 - c.ref.length));
@@ -121,9 +121,9 @@ export function formatRefsReport(states) {
 }
 
 // A brief names a repo or a spec file, not a registry id — it says
-// `noty-wave-backend` because that is the directory a reader would cd into, and
+// `AdaptySDK-Flutter` because that is the directory a reader would cd into, and
 // `adapty-api.yaml` because that is the file they would open. The registry calls
-// those `mail-backend` and `server-side-api-spec`. Scanning for ids alone found
+// those `flutter-sdk` and `server-side-api-spec`. Scanning for ids alone found
 // zero sources in 14 of 34 briefs that plainly depend on several, so the
 // tooling learns the synonyms instead of asking writers to memorise ids.
 //

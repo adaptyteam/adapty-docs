@@ -462,6 +462,8 @@ If readers will hit the defect and need to recognize it, the symptom and workaro
 
 File the bug. The finding is valuable; it belongs in a ticket, not an article.
 
+**Don't mention pricing.** Plan tiers, prices, quotas, and which plan includes a feature are outside the docs' domain. Don't name plans, don't say a feature depends on the plan, and don't link to the pricing page.
+
 **Verification steps state the expectation, not the fact.** The reader is checking, not being told. ❌ "Your sandbox purchase **has** `environment: Sandbox`" → ✅ "The `environment` property of your purchase **should be** `Sandbox`."
 
 ## Output Format (Review Mode)
