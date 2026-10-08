@@ -4,7 +4,7 @@ description: "Pass a value from your React Native app to a flow, and show it in 
 metadataTitle: "Pass data to flows | React Native SDK | Adapty Docs"
 ---
 
-A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes "120" for the tag, users see "Coins: 120".
 
 ## Before you start
 
@@ -16,13 +16,13 @@ A [custom tag](flow-custom-tags) is a custom variable with a value from your app
 
 ## Pass custom tag values
 
-Pass your app's values to the `customTags` parameter of `AdaptyFlowView` or `createFlowView`, as an object:
+Pass your app's values in the `customTags` field of the view parameters, as an object. With the `AdaptyFlowView` component, the parameters are its `params` prop. With `createFlowView`, they are its second argument.
 
 - Each key is the full name of a custom tag, such as `user.streak`.
 - Each value is the string that users see in place of the tag.
 - Each value must be human-readable, such as "1,250", not "1250.0". Adapty doesn't format or translate it.
 
-The SDK reads the values once, when it creates the view, so they don't change while the flow is open.
+`createFlowView` reads the values once, when it creates the view, so they don't change while the flow is open. If `params` of a mounted `AdaptyFlowView` change, the component recreates the flow view, and the flow starts again from its first screen. Keep `params` the same while the flow is open.
 
 <Tabs>
 <TabItem value="component" label="React component" default>
@@ -86,7 +86,7 @@ If your app already sets custom tag values for old Paywall Builder paywalls, rev
 
 Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](react-native-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`, as in [Track flow screen views](react-native-flow-screen-views). When the user closes the onboarding flow after that screen, calculate the BMI. Then create the paywall's view, and pass the BMI for the `bmi` custom tag.
 
-Register the following handlers on `onboardingView`, the view you create for the onboarding flow:
+Register the following handlers on `onboardingView`, the view that `createFlowView` returns for the onboarding flow. The `AdaptyFlowView` component has no `onDisappeared` handler, so this example doesn't work with it.
 
 ```javascript showLineNumbers title="React Native"
 import { adapty, createFlowView } from 'react-native-adapty';
@@ -139,14 +139,12 @@ async function showBmiPaywall(bmi) {
 
 To show users different flows based on their BMI, save it as a [custom attribute](react-native-setting-user-attributes#custom-user-attributes) of their profile. In the Adapty Dashboard, [create a **Number** custom attribute](segments#custom-attributes) with the key `bmi`. Then show each flow to an [audience](audience) built from the attribute.
 
-Call the `updateProfile` method after you calculate the BMI. Save the number, not a formatted string, so that a segment can compare the BMI with a threshold:
+Call the `updateProfile` method in `onDisappeared`, right after the line that calculates `bmi`. Pass that number, not the formatted string, so that a segment can compare the BMI with a threshold. `onDisappeared` can't be `async`, so handle the result with `.catch` instead of `await`:
 
 ```javascript showLineNumbers title="React Native"
-try {
-  await adapty.updateProfile({
-    codableCustomAttributes: { bmi: bmi },
+adapty
+  .updateProfile({ codableCustomAttributes: { bmi } })
+  .catch((error) => {
+    // handle the error
   });
-} catch (error) {
-  // handle the error
-}
 ```
