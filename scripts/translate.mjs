@@ -45,6 +45,7 @@ import {
   normalizeSectionBoundaries,
   restoreBlankLinesBeforeBlocks,
 } from "./mdx-guard.mjs";
+import { resolveLocaleOnly } from "./locale-only.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -219,6 +220,14 @@ const syncMode =
 // ---------------------------------------------------------------------------
 // Locale discovery
 // ---------------------------------------------------------------------------
+
+// Read an English source as `lang` should see it: <LocaleOnly> blocks are
+// unwrapped for listed locales and cut for the rest, so the tag never reaches
+// the model. Without `lang` (no target locale known) the source is returned as-is.
+async function readSource(file, lang) {
+  const content = await fs.readFile(file, "utf-8");
+  return lang ? resolveLocaleOnly(content, lang) : content;
+}
 
 async function discoverLocales() {
   const entries = await fs.readdir(LOCALES_BASE, { withFileTypes: true });
@@ -907,7 +916,7 @@ async function translateSync(
             lang,
           );
         } else {
-          const content = await fs.readFile(file, "utf-8");
+          const content = await readSource(file, lang);
           // Auto-switch to section mode for large files to avoid max_tokens truncation
           if (content.length > 40000) {
             await translateFileWithSections(
@@ -1046,7 +1055,7 @@ function makeSeedEntry(enContent, zhContent) {
  */
 async function seedSectionCache(file, localesDir, hashesDir, lang) {
   const basename = path.basename(file, ".mdx");
-  const content = await fs.readFile(file, "utf-8");
+  const content = await readSource(file, lang);
   const translatedPath = path.join(localesDir, `${basename}.mdx`);
 
   let existingTranslation;
@@ -1151,7 +1160,7 @@ async function translateFileWithSections(
   lang,
 ) {
   const basename = path.basename(file, ".mdx");
-  const content = await fs.readFile(file, "utf-8");
+  const content = await readSource(file, lang);
 
   const rawSections = splitIntoSections(content);
   const sections = deduplicateSectionIds(rawSections);
@@ -1472,7 +1481,7 @@ function customIdFor(basename, sectionId) {
  */
 async function buildSectionPlan(file, lang, localesDir, hashesDir) {
   const basename = path.basename(file, ".mdx");
-  const content = await fs.readFile(file, "utf-8");
+  const content = await readSource(file, lang);
   const sections = deduplicateSectionIds(splitIntoSections(content));
 
   const hashFile = path.join(hashesDir, `${basename}.json`);
@@ -1975,7 +1984,7 @@ async function translateBatch(
     const requests = await Promise.all(
       chunk.map(async (file) => {
         const basename = path.basename(file, ".mdx");
-        const content = await fs.readFile(file, "utf-8");
+        const content = await readSource(file, lang);
         return {
           custom_id: basename,
           params: {
@@ -2285,7 +2294,7 @@ async function writeReusableResult(
 ) {
   // Deterministic structure repair + compile gate, mirroring writeTranslation.
   try {
-    const english = await fs.readFile(file.full, "utf-8");
+    const english = await readSource(file.full, lang);
     text = normalizeSectionBoundaries(
       restoreBlankLinesBeforeBlocks(text, english),
       english,
@@ -2412,7 +2421,7 @@ async function translateReusableForLang(
 
   for (const file of syncFiles) {
     try {
-      const content = await fs.readFile(file.full, "utf-8");
+      const content = await readSource(file.full, lang);
       const response = await client.messages.create({
         model: "claude-sonnet-4-6",
         // 8192 (not 4096): translations of CJK/Vietnamese expand in output
@@ -2458,7 +2467,7 @@ async function translateReusableForLang(
     console.log(`${tag} Reading reusable sources${chunkLabel}...`);
     const requests = await Promise.all(
       chunk.map(async (file) => {
-        const content = await fs.readFile(file.full, "utf-8");
+        const content = await readSource(file.full, lang);
         return {
           custom_id: `reusable_${file.basename}`,
           params: {
@@ -2798,6 +2807,7 @@ async function translateSidebarsForLang(
 // ---------------------------------------------------------------------------
 
 async function migrateHashes(hashesDir) {
+  const lang = path.basename(path.dirname(hashesDir));
   const DOCS_DIR = path.resolve(__dirname, "../src/content/docs");
   let updated = 0;
   let skipped = 0;
@@ -2826,7 +2836,7 @@ async function migrateHashes(hashesDir) {
       continue;
     }
 
-    const content = await fs.readFile(sourceFile, "utf-8");
+    const content = await readSource(sourceFile, lang);
     const rawSections = splitIntoSections(content);
     const sections = deduplicateSectionIds(rawSections);
     const sectionMap = Object.fromEntries(sections.map((s) => [s.id, s]));
@@ -4076,7 +4086,7 @@ async function writeTranslation(
   // Deterministic structure repair against the English source, when available.
   if (sourceFile) {
     try {
-      const english = await fs.readFile(sourceFile, "utf-8");
+      const english = await readSource(sourceFile, lang);
       content = normalizeSectionBoundaries(
         restoreBlankLinesBeforeBlocks(content, english),
         english,
