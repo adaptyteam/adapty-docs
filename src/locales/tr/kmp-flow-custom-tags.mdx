@@ -1,0 +1,195 @@
+---
+title: "Kotlin Multiplatform SDK'da flow'lara veri aktarma"
+description: "Kotlin Multiplatform uygulamanızdan bir flow'a değer aktarın ve bunu bir metin öğesinde gösterin."
+metadataTitle: "Flow'lara veri aktarma | Kotlin Multiplatform SDK | Adapty Dokümanları"
+---
+
+[Özel etiket](flow-custom-tags), uygulamanızdan gelen bir değer içeren özel bir değişkendir. Bir değişkenin ayarlarında **Value comes from outside the app** seçeneğini belirledikten sonra uygulamanız bu değeri Adapty SDK aracılığıyla ayarlayabilir. Örneğin, bir metin öğesi "Coins:" ifadesini ve bir özel etiketi içeriyorsa, uygulamanız bu etiket için 120 değerini aktardığında kullanıcılar "Coins: 120" görür.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Flow'a özel etiketler ekleyin \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Özel etiket değerlerini aktarma \{#pass-custom-tag-values\}
+
+Uygulamanızın değerlerini `AdaptyUI.createFlowView` veya `createNativeFlowView` metodunun `customTags` parametresine `Map<String, String>` olarak aktarın:
+
+- Her anahtar, `user.streak` gibi özel etiketin tam adıdır.
+- Her değer, kullanıcıların etikет yerine göreceği metindir.
+- Her değer, "1250.0" değil "1,250" gibi kullanıcı dostu bir formatta olmalıdır. Adapty değeri biçimlendirmez veya çevirmez.
+
+SDK değerleri yalnızca bir kez, görünümü oluştururken okur; dolayısıyla flow açıkken değerler değişmez.
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "username" to "DragonSlayer42",
+        "coins" to "1,250",
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTags = customTags,
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+Compose layout'una flow'u yerleştirmek için aynı `customTags` parametresini `AdaptyUIFlowPlatformView` composable'ına aktarın. Farklı bir `customTags` map'i geçerseniz, composable yeni bir view oluşturur ve kullanıcılar flow'un ilk ekranına geri döner.
+
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Uygulamanız zaten eski Paywall Builder paywallları için özel tag değerleri ayarlıyorsa, [flow'lardaki özel tag'lerin nasıl farklılaştığını](migrate-to-flows#custom-tags-from-the-old-paywall-builder) incelemenizi öneririz.
+
+## Kullanıcıların değer olmadan gördükleri \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Örnek: onboarding yanıtlarından BMI gösterimi \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Flow'ları ayarlayın \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### BMI'ı paywall'a aktarın \{#pass-the-bmi-to-the-paywall\}
+
+Ağırlık ve boy bilgilerini onboarding flow'unun `flow_user_input` olaylarından toplayın; bunu [Flow'lardan veri işleme](kmp-flow-input) bölümünde anlatıldığı gibi yapabilirsiniz. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olarak ayarlanmış bir `flow_screen_showed` olayını izleyin; bu konuda [Flow ekran görüntülemelerini takip etme](kmp-flow-screen-views) bölümüne bakabilirsiniz. Kullanıcı o ekranın ardından onboarding flow'unu kapattığında BMI'ı hesaplayın. Ardından paywall'ın görünümünü oluşturun ve BMI'ı `bmi` özel etiketine aktarın.
+
+`flowViewDidReceiveAnalyticEvent` metodu, `kotlinx.serialization.json` kütüphanesini kullanarak event parametrelerini ayrıştırır. Projenizde bu kütüphane henüz yoksa, uygulamanızın bağımlılıklarına `org.jetbrains.kotlinx:kotlinx-serialization-json` ekleyin. Ardından `AdaptyUI.setFlowsEventsObserver` ile kaydettiğiniz observer üzerinde aşağıdaki metodları uygulayın:
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+class MyFlowsEventsObserver(
+    private val scope: CoroutineScope,
+) : AdaptyUIFlowsEventsObserver {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input" && name != "flow_screen_showed") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        if (name == "flow_screen_showed") {
+            if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull == true) {
+                reachedLastScreen = true
+            }
+            return
+        }
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        // The observer receives events from every flow. Reset `bodyAnswers` and
+        // `reachedLastScreen` whenever a flow disappears, so that the paywall
+        // doesn't open again when the user closes it.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+        val bmiText = ((bmi * 10).roundToInt() / 10.0).toString()
+
+        scope.launch { showBmiPaywall(bmiText) }
+    }
+}
+
+suspend fun showBmiPaywall(bmi: String) {
+    Adapty.getFlow(placementId = "bmi_paywall").onSuccess { flow ->
+        AdaptyUI.createFlowView(
+            flow = flow,
+            customTags = mapOf("bmi" to bmi),
+        ).onSuccess { view ->
+            view.present()
+        }.onError { error ->
+            // handle the error
+        }
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+`toString` her zaman nokta kullanır ondalık ayırıcı olarak: "22.7". Kullanıcının yerel ayarına uygun ayırıcı kullanmak için BMI değerini her platformda yerel ayar farkında bir biçimlendirici ile formatlayın; örneğin Android'de `java.text.NumberFormat`, iOS'ta ise `NSNumberFormatter`.
+
+### BMI'yi kullanıcı profiline kaydetme \{#save-the-bmi-to-the-users-profile\}
+
+Kullanıcılara BMI'lerine göre farklı flow'lar göstermek için bunu profillerinin [özel özniteliği](kmp-setting-user-attributes#custom-user-attributes) olarak kaydedin. Adapty Kontrol Paneli'nde `bmi` anahtarıyla bir [**Number** özel özniteliği oluşturun](segments#custom-attributes). Ardından her flow'u bu öznitelikten oluşturulan bir [kitleye](audience) gösterin.
+
+BMI'yi hesapladıktan sonra `updateProfile` metodunu çağırın. Bir segmentin BMI'yi bir eşik değerle karşılaştırabilmesi için biçimlendirilmiş bir string değil, sayıyı kaydedin:
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+scope.launch {
+    Adapty.updateProfile(params).onError { error ->
+        // handle the error
+    }
+}
+```

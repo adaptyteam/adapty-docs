@@ -1,0 +1,124 @@
+---
+title: "在 Capacitor SDK 中向流程传递数据"
+description: "将 Capacitor 应用中的值传递给流程，并在文本元素中显示。"
+metadataTitle: "向流程传递数据 | Capacitor SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags)是一种自定义变量，其值来自你的应用。在变量设置中选择 **Value comes from outside the app** 后，你的应用即可通过 Adapty SDK 设置该变量的值。例如，某个文本元素包含"Coins:"和一个自定义标签，如果你的应用为该标签传入 120，用户看到的就是"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 向流程中添加自定义标签 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传入自定义标签值 \{#pass-custom-tag-values\}
+
+将您应用的值以对象形式传入 `createFlowView` 的 `customTags` 参数：
+
+- 每个键是自定义标签的完整名称，例如 `user.streak`。
+- 每个值是用户实际看到的字符串，用于替换标签。
+- 每个值必须是对用户友好的可读格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+
+SDK 在创建视图时读取一次这些值，因此在流程打开期间它们不会发生变化。
+
+```typescript showLineNumbers title="Capacitor"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+<FlowCustomTagsVerify />
+
+如果你的应用已经为旧版付费墙编辑工具的付费墙设置了自定义标签值，请查看[流程中的自定义标签与旧版付费墙编辑工具的区别](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在没有值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递到付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高，具体方法请参见[处理流程中的数据](capacitor-flow-input)。要知道用户是否到达了最后一屏，可监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，具体方法请参见[追踪流程页面浏览](capacitor-flow-screen-views)。当用户关闭该屏后的用户引导流程时，计算 BMI，然后创建付费墙视图，并将 BMI 传入 `bmi` 自定义标签。
+
+在您为用户引导流程创建的 `onboardingView` 上注册以下处理程序：
+
+```typescript showLineNumbers title="Capacitor"
+
+const bodyAnswers: Record<string, string> = {};
+let reachedLastScreen = false;
+
+await onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi: string) {
+  try {
+    const flow = await adapty.getFlow({ placementId: 'bmi_paywall' });
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` 使用用户语言环境的小数分隔符：英语显示为 "22.7"，德语显示为 "22,7"。
+
+### 将 BMI 保存到用户画像
+
+要根据用户的 BMI 展示不同的流程，请将其作为用户画像的[自定义属性](capacitor-setting-user-attributes#custom-user-attributes)保存。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后将每个流程展示给基于该属性构建的[目标受众](audience)。
+
+计算出 BMI 后，调用 `updateProfile` 方法。请保存数值本身，而非格式化字符串，以便市场细分能够将 BMI 与阈值进行比较：
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

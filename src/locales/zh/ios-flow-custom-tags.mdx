@@ -1,0 +1,151 @@
+---
+title: "在 iOS SDK 中向流程传递数据"
+description: "从 iOS 应用向流程传递值，并在文本元素中显示。"
+metadataTitle: "向流程传递数据 | iOS SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags)是一种自定义变量，其值来自你的应用。在变量设置中选择 **Value comes from outside the app** 后，你的应用可以通过 Adapty SDK 为其赋值。例如，某个文本元素包含"Coins:"和一个自定义标签，如果你的应用为该标签传入 120，用户看到的就是"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 向流程添加自定义标签 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传递自定义标签值 \{#pass-custom-tag-values\}
+
+将您应用的值作为 `[String: String]` 字典传入 `getFlowConfiguration` 的 `tagResolver` 参数：
+
+- 每个键是自定义标签的完整名称，例如 `user.streak`。
+- 每个值是用户在标签位置实际看到的字符串。
+- 每个值必须是易读的格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+SwiftUI 的 [`.flow` 修饰符和 `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) 以及 UIKit 的[流程控制器](ios-present-paywalls#present-flows-and-paywalls-in-uikit)均不提供自定义标签值的参数。它们会直接显示你所提供的流程配置中的值。
+
+<FlowCustomTagsVerify />
+
+如果你的应用已经为旧版付费墙编辑工具的付费墙设置了自定义标签值，请查阅[流程中自定义标签与旧版的区别](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在没有值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递给付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高数据，具体方法请参阅[处理流程数据](ios-flow-input)。要判断用户是否到达最后一个屏幕，请监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，具体方法请参阅[追踪流程屏幕浏览](ios-flow-screen-views)。当用户在该屏幕之后关闭用户引导流程时，计算 BMI，然后获取付费墙的流程配置，并将 BMI 值传入 `bmi` 自定义标签。
+
+以下代码适用于 UIKit。它在一个视图控制器上实现了 `AdaptyFlowControllerDelegate` 方法，该视图控制器同时作为用户引导流程控制器和付费墙控制器的代理。
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+`formatted` 使用用户区域设置中的小数分隔符：英语为 "22.7"，德语为 "22,7"。
+
+在 SwiftUI 中，使用用户引导流程的 `.flow` 修饰符的闭包，而不是代理方法：
+
+- `didReceiveAnalyticEvent`：收集体重和身高数据，并监听最后一个屏幕的 `flow_screen_showed` 事件。
+- `didDisappear`：如果用户已到达最后一个屏幕，则计算 BMI。然后获取付费墙的流程配置，并为 `bmi` 自定义标签传入 BMI 值。使用第二个 `.flow` 修饰符展示该配置。
+
+### 将 BMI 保存到用户画像 \{#save-the-bmi-to-the-users-profile\}
+
+要根据用户的 BMI 展示不同的流程，请将其作为[自定义属性](setting-user-attributes#custom-user-attributes)保存到用户画像中。在 Adapty 看板中，[创建一个键名为 `bmi` 的 **Number** 类型自定义属性](segments#custom-attributes)，然后基于该属性构建[目标受众](audience)，向各目标受众展示对应的流程。
+
+计算出 BMI 后，调用 `updateProfile` 方法。请保存数值本身，而非格式化字符串，这样市场细分才能将 BMI 与阈值进行比较：
+
+```swift showLineNumbers title="Swift"
+do {
+    let params = try AdaptyProfileParameters.Builder()
+        .with(customAttribute: bmi, forKey: "bmi")
+        .build()
+    try await Adapty.updateProfile(params: params)
+} catch {
+    // handle the error
+}
+```

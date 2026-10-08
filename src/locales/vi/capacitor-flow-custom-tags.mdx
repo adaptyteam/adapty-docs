@@ -1,0 +1,124 @@
+---
+title: "Truyền dữ liệu vào flow trong Capacitor SDK"
+description: "Truyền một giá trị từ ứng dụng Capacitor của bạn vào một flow và hiển thị nó trong một phần tử văn bản."
+metadataTitle: "Truyền dữ liệu vào flow | Capacitor SDK | Tài liệu Adapty"
+---
+
+[Custom tag](flow-custom-tags) là một biến tùy chỉnh với giá trị đến từ ứng dụng của bạn. Sau khi bạn chọn **Value comes from outside the app** trong cài đặt của biến, ứng dụng có thể thiết lập giá trị đó thông qua Adapty SDK. Ví dụ, một phần tử văn bản chứa "Coins:" và một custom tag. Nếu ứng dụng của bạn truyền vào 120 cho tag đó, người dùng sẽ thấy "Coins: 120".
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Thêm custom tags vào flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Truyền giá trị custom tag \{#pass-custom-tag-values\}
+
+Truyền các giá trị từ app của bạn vào tham số `customTags` của `createFlowView`, dưới dạng một object:
+
+- Mỗi key là tên đầy đủ của một custom tag, ví dụ `user.streak`.
+- Mỗi value là chuỗi mà người dùng sẽ thấy thay cho tag đó.
+- Mỗi value phải ở dạng con người đọc được, ví dụ "1,250" thay vì "1250.0". Adapty không tự định dạng hay dịch giá trị này.
+
+SDK đọc các giá trị một lần duy nhất khi tạo view, vì vậy chúng sẽ không thay đổi trong khi flow đang mở.
+
+```typescript showLineNumbers title="Capacitor"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+<FlowCustomTagsVerify />
+
+Nếu ứng dụng của bạn đã thiết lập giá trị custom tag cho các paywall Paywall Builder cũ, hãy xem [custom tag trong flow khác như thế nào](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Người dùng thấy gì khi không có giá trị \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ví dụ: hiển thị chỉ số BMI từ câu trả lời onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Thiết lập flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Truyền chỉ số BMI vào paywall
+
+Lấy cân nặng và chiều cao từ các sự kiện `flow_user_input` của flow onboarding, như mô tả trong [Xử lý dữ liệu từ flow](capacitor-flow-input). Để biết người dùng đã đến màn hình cuối cùng, theo dõi sự kiện `flow_screen_showed` có `is_last_screen` được đặt thành `true`, như trong [Theo dõi lượt xem màn hình flow](capacitor-flow-screen-views). Khi người dùng đóng flow onboarding sau màn hình đó, hãy tính BMI. Sau đó tạo view cho paywall và truyền giá trị BMI vào custom tag `bmi`.
+
+Đăng ký các handler sau đây trên `onboardingView`, view bạn tạo cho flow onboarding:
+
+```typescript showLineNumbers title="Capacitor"
+
+const bodyAnswers: Record<string, string> = {};
+let reachedLastScreen = false;
+
+await onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi: string) {
+  try {
+    const flow = await adapty.getFlow({ placementId: 'bmi_paywall' });
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` sử dụng dấu phân cách thập phân theo ngôn ngữ của người dùng: "22.7" trong tiếng Anh, "22,7" trong tiếng Đức.
+
+### Lưu chỉ số BMI vào hồ sơ người dùng \{#save-the-bmi-to-the-users-profile\}
+
+Để hiển thị các flow khác nhau cho người dùng dựa trên chỉ số BMI của họ, hãy lưu nó như một [thuộc tính tùy chỉnh](capacitor-setting-user-attributes#custom-user-attributes) trong hồ sơ người dùng. Trên Adapty Dashboard, [tạo thuộc tính tùy chỉnh kiểu **Number**](segments#custom-attributes) với khóa `bmi`. Sau đó hiển thị mỗi flow cho một [đối tượng](audience) được xây dựng từ thuộc tính đó.
+
+Gọi phương thức `updateProfile` sau khi bạn tính toán chỉ số BMI. Lưu giá trị số, không phải chuỗi đã được định dạng, để phân khúc có thể so sánh chỉ số BMI với một ngưỡng nhất định:
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

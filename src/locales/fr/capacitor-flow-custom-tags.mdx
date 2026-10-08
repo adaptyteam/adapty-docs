@@ -1,0 +1,124 @@
+---
+title: "Transmettre des données aux flows dans le SDK Capacitor"
+description: "Transmettez une valeur de votre application Capacitor à un flow et affichez-la dans un élément texte."
+metadataTitle: "Transmettre des données aux flows | SDK Capacitor | Documentation Adapty"
+---
+
+Un [tag personnalisé](flow-custom-tags) est une variable personnalisée dont la valeur provient de votre application. Après avoir sélectionné **Value comes from outside the app** dans les paramètres d'une variable, votre application peut en définir la valeur via le SDK Adapty. Par exemple, un élément texte contient « Coins : » et un tag personnalisé. Si votre application transmet 120 pour ce tag, les utilisateurs voient « Coins : 120 ».
+
+## Avant de commencer \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Ajouter des balises personnalisées au flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Transmettre des valeurs de balises personnalisées \{#pass-custom-tag-values\}
+
+Transmettez les valeurs de votre application au paramètre `customTags` de `createFlowView`, sous forme d'objet :
+
+- Chaque clé correspond au nom complet d'une balise personnalisée, par exemple `user.streak`.
+- Chaque valeur est la chaîne que les utilisateurs voient à la place de la balise.
+- Chaque valeur doit être lisible par un humain, par exemple "1 250" et non "1250.0". Adapty ne la formate ni ne la traduit.
+
+Le SDK lit les valeurs une seule fois, lors de la création de la vue, et elles ne changent donc pas pendant que le flow est ouvert.
+
+```typescript showLineNumbers title="Capacitor"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+<FlowCustomTagsVerify />
+
+Si votre application définit déjà des valeurs de tags personnalisés pour les paywalls de l'ancien Paywall Builder, consultez [les différences entre les tags personnalisés dans les flows](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Ce que les utilisateurs voient sans valeur \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Exemple : afficher un IMC à partir des réponses de l'onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Configurer les flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Transmettre l'IMC au paywall \{#pass-the-bmi-to-the-paywall\}
+
+Collectez le poids et la taille depuis les événements `flow_user_input` du flow d'onboarding, comme décrit dans [Traiter les données des flows](capacitor-flow-input). Pour savoir que l'utilisateur a atteint le dernier écran, surveillez un événement `flow_screen_showed` avec `is_last_screen` défini sur `true`, comme dans [Suivre les vues d'écran du flow](capacitor-flow-screen-views). Lorsque l'utilisateur ferme le flow d'onboarding après cet écran, calculez l'IMC. Créez ensuite la vue du paywall et transmettez l'IMC pour le tag personnalisé `bmi`.
+
+Enregistrez les handlers suivants sur `onboardingView`, la vue que vous créez pour le flow d'onboarding :
+
+```typescript showLineNumbers title="Capacitor"
+
+const bodyAnswers: Record<string, string> = {};
+let reachedLastScreen = false;
+
+await onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi: string) {
+  try {
+    const flow = await adapty.getFlow({ placementId: 'bmi_paywall' });
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` utilise le séparateur décimal selon la locale de l'utilisateur : « 22.7 » en anglais, « 22,7 » en allemand.
+
+### Enregistrer l'IMC dans le profil de l'utilisateur \{#save-the-bmi-to-the-users-profile\}
+
+Pour afficher différents flows aux utilisateurs selon leur IMC, enregistrez-le comme [attribut personnalisé](capacitor-setting-user-attributes#custom-user-attributes) de leur profil. Dans l'Adapty Dashboard, [créez un attribut personnalisé de type **Number**](segments#custom-attributes) avec la clé `bmi`. Affichez ensuite chaque flow à une [audience](audience) construite à partir de cet attribut.
+
+Appelez la méthode `updateProfile` après avoir calculé l'IMC. Enregistrez le nombre, pas une chaîne formatée, afin qu'un segment puisse comparer l'IMC à un seuil :
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

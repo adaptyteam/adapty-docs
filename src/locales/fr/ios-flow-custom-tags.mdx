@@ -1,0 +1,151 @@
+---
+title: "Transmettre des données aux flows dans le SDK iOS"
+description: "Transmettez une valeur depuis votre app iOS vers un flow, et affichez-la dans un élément texte."
+metadataTitle: "Transmettre des données aux flows | SDK iOS | Documentation Adapty"
+---
+
+Un [tag personnalisé](flow-custom-tags) est une variable personnalisée dont la valeur provient de votre app. Après avoir sélectionné **Value comes from outside the app** dans les paramètres d'une variable, votre app peut en définir la valeur via le SDK Adapty. Par exemple, un élément texte contient « Coins: » et un tag personnalisé. Si votre app transmet 120 pour ce tag, les utilisateurs voient « Coins: 120 ».
+
+## Avant de commencer \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Ajouter des balises personnalisées au flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Transmettre des valeurs de tags personnalisés \{#pass-custom-tag-values\}
+
+Transmettez les valeurs de votre application au paramètre `tagResolver` de `getFlowConfiguration`, sous forme de dictionnaire `[String: String]` :
+
+- Chaque clé correspond au nom complet d'un tag personnalisé, par exemple `user.streak`.
+- Chaque valeur est la chaîne affichée à l'utilisateur à la place du tag.
+- Chaque valeur doit être lisible par un humain, par exemple « 1 250 » et non « 1250.0 ». Adapty ne la formate ni ne la traduit.
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+Le modificateur SwiftUI [`.flow` et `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) ainsi que le [contrôleur de flow](ios-present-paywalls#present-flows-and-paywalls-in-uikit) UIKit n'ont pas de paramètre pour les valeurs de tags personnalisés. Ils affichent les valeurs issues de la configuration du flow que vous leur fournissez.
+
+<FlowCustomTagsVerify />
+
+Si votre application définit déjà des valeurs de tags personnalisés pour les anciens paywalls du Paywall Builder, consultez [les différences entre les tags personnalisés dans les flows](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Ce que les utilisateurs voient sans valeur \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Exemple : afficher un IMC à partir des réponses à l'onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Configurer les flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Transmettre l'IMC au paywall \{#pass-the-bmi-to-the-paywall\}
+
+Collectez le poids et la taille à partir des événements `flow_user_input` du flow d'onboarding, comme décrit dans [Traiter les données des flows](ios-flow-input). Pour savoir que l'utilisateur a atteint le dernier écran, surveillez un événement `flow_screen_showed` avec `is_last_screen` défini à `true`, comme décrit dans [Suivre les affichages d'écrans du flow](ios-flow-screen-views). Quand l'utilisateur ferme le flow d'onboarding après cet écran, calculez l'IMC. Récupérez ensuite la configuration du flow du paywall et transmettez l'IMC pour la balise personnalisée `bmi`.
+
+Le code suivant est destiné à UIKit. Il implémente les méthodes `AdaptyFlowControllerDelegate` sur un seul contrôleur de vue, qui est le délégué à la fois du contrôleur du flow d'onboarding et du contrôleur du paywall.
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+`formatted` utilise le séparateur décimal de la locale de l'utilisateur : « 22.7 » en anglais, « 22,7 » en allemand.
+
+Dans SwiftUI, utilisez les closures du modificateur `.flow` du flow d'onboarding plutôt que les méthodes du délégué :
+
+- `didReceiveAnalyticEvent` : collectez le poids et la taille, et guettez l'événement `flow_screen_showed` du dernier écran.
+- `didDisappear` : si l'utilisateur est arrivé au dernier écran, calculez l'IMC. Récupérez ensuite la configuration du flow du paywall et passez l'IMC pour le custom tag `bmi`. Présentez cette configuration avec un second modificateur `.flow`.
+
+### Enregistrer l'IMC dans le profil de l'utilisateur \{#save-the-bmi-to-the-users-profile\}
+
+Pour afficher différents flows aux utilisateurs selon leur IMC, enregistrez-le en tant qu'[attribut personnalisé](setting-user-attributes#custom-user-attributes) de leur profil. Dans l'Adapty Dashboard, [créez un attribut personnalisé de type **Number**](segments#custom-attributes) avec la clé `bmi`. Affichez ensuite chaque flow à une [audience](audience) constituée à partir de cet attribut.
+
+Appelez la méthode `updateProfile` après avoir calculé l'IMC. Enregistrez le nombre, et non une chaîne formatée, pour qu'un segment puisse comparer l'IMC à un seuil :
+
+```swift showLineNumbers title="Swift"
+do {
+    let params = try AdaptyProfileParameters.Builder()
+        .with(customAttribute: bmi, forKey: "bmi")
+        .build()
+    try await Adapty.updateProfile(params: params)
+} catch {
+    // handle the error
+}
+```

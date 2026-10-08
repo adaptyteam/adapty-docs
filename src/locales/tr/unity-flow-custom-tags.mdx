@@ -1,0 +1,155 @@
+---
+title: "Unity SDK'da flow'lara veri aktarma"
+description: "Unity uygulamanızdan bir flow'a değer aktarın ve bunu bir metin öğesinde gösterin."
+metadataTitle: "Flow'lara veri aktarma | Unity SDK | Adapty Dokümanları"
+---
+
+[Özel etiket](flow-custom-tags), uygulamanızdan gelen bir değere sahip özel bir değişkendir. Bir değişkenin ayarlarında **Value comes from outside the app** seçeneğini belirledikten sonra, uygulamanız Adapty SDK aracılığıyla bu değişkenin değerini ayarlayabilir. Örneğin, bir metin öğesi "Coins:" ifadesini ve bir özel etiketi içeriyorsa, uygulamanız etiket için 120 değerini aktardığında kullanıcılar "Coins: 120" görür.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Flow'a özel etiketler ekleyin \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Özel etiket değerlerini aktarma \{#pass-custom-tag-values\}
+
+Uygulamanızın değerlerini bir `AdaptyUICreateFlowViewParameters` nesnesinin `SetCustomTags` metoduna `Dictionary<string, string>` olarak aktarın ve ardından `AdaptyUI.CreateFlowView` metodunu bu nesneyle çağırın:
+
+- Her anahtar, `user.streak` gibi özel bir etiketin tam adıdır.
+- Her değer, kullanıcıların etiket yerine gördüğü metindir.
+- Her değer, "1250.0" değil "1,250" gibi okunabilir bir formatta olmalıdır. Adapty değeri biçimlendirmez veya çevirmez.
+
+SDK değerleri yalnızca bir kez, görünümü oluştururken okur; dolayısıyla flow açıkken değerler değişmez.
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+Uygulamanız eski Paywall Builder paywallları için zaten özel etiket değerleri ayarlıyorsa, [flow'lardaki özel etiketlerin nasıl farklılaştığını](migrate-to-flows#custom-tags-from-the-old-paywall-builder) inceleyin.
+
+## Kullanıcılar değer olmadığında ne görür \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Örnek: onboarding yanıtlarından VKİ gösterme \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Flow'ları ayarlayın \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### BMI'yi paywall'a iletme \{#pass-the-bmi-to-the-paywall\}
+
+Onboarding flow'unun `flow_user_input` event'lerinden kullanıcının ağırlık ve boyunu toplayın; bunun nasıl yapıldığını [Flow'lardan veri işleme](unity-flow-input) bölümünde bulabilirsiniz. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olarak ayarlanmış bir `flow_screen_showed` event'ini izleyin; bununla ilgili ayrıntılar [Flow ekran görüntülemelerini takip etme](unity-flow-screen-views) bölümündedir. Kullanıcı bu ekrandan sonra onboarding flow'unu kapattığında BMI'yi hesaplayın. Ardından paywall'ın view'ını oluşturun ve `bmi` özel etiketi için BMI değerini iletin.
+
+Implement the following methods on the listener you register with `Adapty.SetFlowsEventsListener`:
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+private bool reachedLastScreen;
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name == "flow_screen_showed") {
+        if (parameters.TryGetValue("is_last_screen", out var lastScreen)
+            && lastScreen is bool isLast && isLast) {
+            reachedLastScreen = true;
+        }
+        return;
+    }
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // The listener receives events from every flow. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    var answers = new Dictionary<string, string>(bodyAnswers);
+    var finished = reachedLastScreen;
+    bodyAnswers.Clear();
+    reachedLastScreen = false;
+
+    // Number inputs send their values as strings.
+    if (!finished) return;
+    if (!answers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!answers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` geçerli kültürün ondalık ayracını kullanır: İngilizce'de "22.7", Almanca'da "22,7".
+
+### BMI'yı kullanıcı profiline kaydetme \{#save-the-bmi-to-the-users-profile\}
+
+Kullanıcılara BMI'larına göre farklı flow'lar göstermek için bunu profillerinin bir [özel özelliği](unity-setting-user-attributes#custom-user-attributes) olarak kaydedin. Adapty Kontrol Paneli'nde `bmi` anahtarıyla bir **Number** [özel özelliği oluşturun](segments#custom-attributes). Ardından her flow'u bu özellikten oluşturulan bir [kitle](audience) için gösterin.
+
+BMI'yı hesapladıktan sonra `updateProfile` metodunu çağırın. Bir segment BMI'yı bir eşik değeriyle karşılaştırabilsin diye sayıyı biçimlendirilmiş bir dize olarak değil, sayı olarak kaydedin:
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyProfileParameters.Builder()
+    .SetCustomDoubleAttribute("bmi", bmi)
+    .Build();
+
+Adapty.UpdateProfile(parameters, (error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```

@@ -1,0 +1,155 @@
+---
+title: "Передача данных во флоу в Unity SDK"
+description: "Передайте значение из вашего Unity-приложения во флоу и отобразите его в текстовом элементе."
+metadataTitle: "Передача данных во флоу | Unity SDK | Документация Adapty"
+---
+
+[Кастомный тег](flow-custom-tags) — это пользовательская переменная, значение которой задаётся вашим приложением. Если в настройках переменной выбрать **Value comes from outside the app**, приложение сможет передать её значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и кастомный тег. Если приложение передаёт для тега значение 120, пользователь видит «Coins: 120».
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Добавьте пользовательские теги во флоу \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Передача пользовательских значений тегов \{#pass-custom-tag-values\}
+
+Передайте значения из вашего приложения в метод `SetCustomTags` объекта `AdaptyUICreateFlowViewParameters` в виде `Dictionary<string, string>`, а затем вызовите `AdaptyUI.CreateFlowView` с этим объектом:
+
+- Каждый ключ — это полное имя пользовательского тега, например `user.streak`.
+- Каждое значение — это строка, которую пользователи видят вместо тега.
+- Каждое значение должно быть удобочитаемым, например «1 250», а не «1250.0». Adapty не форматирует и не переводит его.
+
+SDK считывает значения один раз — при создании представления, поэтому они не изменяются, пока флоу открыт.
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+Если ваше приложение уже задаёт значения пользовательских тегов для пейволов на старом Paywall Builder, ознакомьтесь с тем, [чем пользовательские теги во флоу отличаются от старых](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Что видят пользователи при отсутствии значения \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Пример: показ ИМТ на основе ответов в онбординге \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Настройка флоу \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Передайте BMI на пейвол \{#pass-the-bmi-to-the-paywall\}
+
+Соберите вес и рост из событий `flow_user_input` флоу онбординга, как описано в [Обработка данных из флоу](unity-flow-input). Чтобы узнать, что пользователь дошёл до последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen` равным `true`, как описано в [Отслеживание просмотров экранов флоу](unity-flow-screen-views). Когда пользователь закроет флоу онбординга после этого экрана, вычислите BMI. Затем создайте представление пейвола и передайте BMI для кастомного тега `bmi`.
+
+Реализуйте следующие методы на слушателе, который вы регистрируете с помощью `Adapty.SetFlowsEventsListener`:
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+private bool reachedLastScreen;
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name == "flow_screen_showed") {
+        if (parameters.TryGetValue("is_last_screen", out var lastScreen)
+            && lastScreen is bool isLast && isLast) {
+            reachedLastScreen = true;
+        }
+        return;
+    }
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // The listener receives events from every flow. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    var answers = new Dictionary<string, string>(bodyAnswers);
+    var finished = reachedLastScreen;
+    bodyAnswers.Clear();
+    reachedLastScreen = false;
+
+    // Number inputs send their values as strings.
+    if (!finished) return;
+    if (!answers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!answers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` использует разделитель дробной части текущей культуры: "22.7" для английской и "22,7" для немецкой.
+
+### Сохраните ИМТ в профиле пользователя \{#save-the-bmi-to-the-users-profile\}
+
+Чтобы показывать пользователям разные флоу на основе их ИМТ, сохраните его как [пользовательский атрибут](unity-setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу аудитории, сформированной на основе этого атрибута.
+
+Вызовите метод `updateProfile` после того, как вычислите ИМТ. Сохраняйте число, а не отформатированную строку — это нужно для того, чтобы сегмент мог сравнивать ИМТ с пороговым значением:
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyProfileParameters.Builder()
+    .SetCustomDoubleAttribute("bmi", bmi)
+    .Build();
+
+Adapty.UpdateProfile(parameters, (error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```

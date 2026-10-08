@@ -1,0 +1,195 @@
+---
+title: "在 Kotlin Multiplatform SDK 中向 flow 传递数据"
+description: "从 Kotlin Multiplatform 应用向 flow 传递值，并在文本元素中显示。"
+metadataTitle: "向 flow 传递数据 | Kotlin Multiplatform SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags)是一个自定义变量，其值来自你的应用。在变量设置中选择 **Value comes from outside the app** 后，你的应用可以通过 Adapty SDK 为其赋值。例如，一个文本元素包含"Coins:"和一个自定义标签。如果你的应用为该标签传入 120，用户看到的就是"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 向流程添加自定义标签 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传递自定义标签值 \{#pass-custom-tag-values\}
+
+将应用中的值通过 `customTags` 参数传入 `AdaptyUI.createFlowView` 或 `createNativeFlowView`，格式为 `Map<String, String>`：
+
+- 每个键是自定义标签的完整名称，例如 `user.streak`。
+- 每个值是用户在标签位置实际看到的字符串。
+- 每个值必须是人类可读的格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+
+SDK 在创建视图时读取一次这些值，因此在流程打开期间不会发生变化。
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "username" to "DragonSlayer42",
+        "coins" to "1,250",
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTags = customTags,
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+要在 Compose 布局中嵌入流程，请将相同的 `customTags` 参数传递给 `AdaptyUIFlowPlatformView` 可组合项。如果传入不同的 `customTags` 映射，可组合项将创建一个新视图，用户将返回流程的第一屏。
+
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+如果您的应用已经为旧版付费墙编辑工具的付费墙设置了自定义标签值，请查阅[流程中的自定义标签与旧版的区别](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在没有值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递给付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高数据，具体方法参见[处理流程中的数据](kmp-flow-input)。要判断用户是否到达最后一个屏幕，可监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，具体方法参见[追踪流程屏幕浏览](kmp-flow-screen-views)。当用户在该屏幕后关闭用户引导流程时，计算 BMI，然后创建付费墙视图，并将 BMI 传入 `bmi` 自定义标签。
+
+`flowViewDidReceiveAnalyticEvent` 方法使用 `kotlinx.serialization.json` 库解析事件参数。如果你的项目中还没有该库，请将 `org.jetbrains.kotlinx:kotlinx-serialization-json` 添加到应用的依赖项中。然后在通过 `AdaptyUI.setFlowsEventsObserver` 注册的观察者上实现以下方法：
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+class MyFlowsEventsObserver(
+    private val scope: CoroutineScope,
+) : AdaptyUIFlowsEventsObserver {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input" && name != "flow_screen_showed") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        if (name == "flow_screen_showed") {
+            if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull == true) {
+                reachedLastScreen = true
+            }
+            return
+        }
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        // The observer receives events from every flow. Reset `bodyAnswers` and
+        // `reachedLastScreen` whenever a flow disappears, so that the paywall
+        // doesn't open again when the user closes it.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+        val bmiText = ((bmi * 10).roundToInt() / 10.0).toString()
+
+        scope.launch { showBmiPaywall(bmiText) }
+    }
+}
+
+suspend fun showBmiPaywall(bmi: String) {
+    Adapty.getFlow(placementId = "bmi_paywall").onSuccess { flow ->
+        AdaptyUI.createFlowView(
+            flow = flow,
+            customTags = mapOf("bmi" to bmi),
+        ).onSuccess { view ->
+            view.present()
+        }.onError { error ->
+            // handle the error
+        }
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+`toString` 始终使用句点作为小数分隔符，例如 "22.7"。若要使用用户所在语言区域的分隔符，请在各平台上使用支持本地化的格式化工具对 BMI 进行格式化，例如 Android 上的 `java.text.NumberFormat` 和 iOS 上的 `NSNumberFormatter`。
+
+### 将 BMI 保存到用户画像 \{#save-the-bmi-to-the-users-profile\}
+
+要根据用户的 BMI 展示不同的流程，可以将其作为[自定义属性](kmp-setting-user-attributes#custom-user-attributes)保存到用户画像中。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后为每个流程创建基于该属性的[目标受众](audience)。
+
+计算出 BMI 后，调用 `updateProfile` 方法保存结果。请保存数字而非格式化字符串，这样市场细分才能将 BMI 与阈值进行比较：
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+scope.launch {
+    Adapty.updateProfile(params).onError { error ->
+        // handle the error
+    }
+}
+```

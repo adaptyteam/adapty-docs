@@ -1,0 +1,164 @@
+---
+title: "Flutter SDK'da flow'lara veri aktarma"
+description: "Flutter uygulamanızdan bir flow'a değer aktarın ve bunu bir metin öğesinde gösterin."
+metadataTitle: "Flow'lara veri aktarma | Flutter SDK | Adapty Dokümanları"
+---
+
+[Özel etiket](flow-custom-tags), uygulamanızdan gelen bir değere sahip özel bir değişkendir. Bir değişkenin ayarlarında **Value comes from outside the app** seçeneğini belirledikten sonra, uygulamanız Adapty SDK aracılığıyla bu değişkenin değerini ayarlayabilir. Örneğin, bir metin öğesi "Coins:" ifadesini ve bir özel etiketi içeriyorsa ve uygulamanız etiket için 120 değerini aktarırsa, kullanıcılar "Coins: 120" metnini görür.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Flow'a özel etiketler ekleyin \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Özel etiket değerlerini aktarın \{#pass-custom-tag-values\}
+
+Uygulamanızın değerlerini `AdaptyUI().createFlowView` veya `AdaptyUIFlowPlatformView` bileşeninin `customTags` parametresine `Map<String, String>` olarak aktarın:
+
+- Her anahtar, `user.streak` gibi özel bir etiketin tam adıdır.
+- Her değer, kullanıcıların etiket yerine gördüğü metindir.
+- Her değer "1250.0" değil "1,250" gibi insan tarafından okunabilir olmalıdır. Adapty bu değerleri biçimlendirmez veya çevirmez.
+
+SDK değerleri yalnızca bir kez, görünümü oluşturduğunda okur; bu nedenle flow açıkken değişmezler.
+
+<Tabs>
+<TabItem value="standalone" label="Bağımsız ekran" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Widget hiyerarşisine gömülü">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+Bağlanmış bir `AdaptyUIFlowPlatformView`, `customTags` üzerindeki sonraki değişiklikleri yok sayar.
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Uygulamanız eski Paywall Builder paywallları için zaten özel etiket değerleri ayarlıyorsa, [flow'lardaki özel etiketlerin nasıl farklılaştığını](migrate-to-flows#custom-tags-from-the-old-paywall-builder) inceleyin.
+
+## Değer olmadığında kullanıcılar ne görür \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Örnek: onboarding yanıtlarından BMI gösterme \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Flow'ları ayarlayın \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### BMI'yi paywall'a iletme \{#pass-the-bmi-to-the-paywall\}
+
+Onboarding flow'unun `flow_user_input` olaylarından kullanıcının ağırlık ve boy bilgilerini toplayın; bunu nasıl yapacağınızı [Flow'lardan gelen verileri işleme](flutter-flow-input) bölümünde bulabilirsiniz. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olan bir `flow_screen_showed` olayını izleyin; bu konuyu [Flow ekran görüntülemelerini takip etme](flutter-flow-screen-views) bölümünde bulabilirsiniz. Kullanıcı o ekrandan sonra onboarding flow'unu kapattığında BMI'yi hesaplayın. Ardından paywall'ın görünümünü oluşturun ve `bmi` özel etiketi için BMI değerini iletin.
+
+Implement the following methods on the observer you register with `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` her zaman ondalık ayırıcı olarak nokta kullanır. Kullanıcının yerel ayarına ait ayırıcıyı kullanmak için BMI'yi `intl` paketindeki `NumberFormat` ile biçimlendirin.
+
+### BMI'yi kullanıcı profiline kaydetme \{#save-the-bmi-to-the-users-profile\}
+
+Kullanıcılara BMI'lerine göre farklı flow'lar göstermek için bunu profillerinin [özel attribute'u](flutter-setting-user-attributes#custom-user-attributes) olarak kaydedin. Adapty Kontrol Paneli'nde `bmi` anahtarıyla bir **Number** [özel attribute oluşturun](segments#custom-attributes). Ardından her flow'u bu attribute üzerinden oluşturulan bir [kitle](audience)'ye gösterin.
+
+BMI'yi hesapladıktan sonra `updateProfile` metodunu çağırın. Bir segment BMI'yi bir eşik değeriyle karşılaştırabilsin diye biçimlendirilmiş bir string değil, sayıyı kaydedin:
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```

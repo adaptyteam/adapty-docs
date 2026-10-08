@@ -1,0 +1,164 @@
+---
+title: "在 Flutter SDK 中向 flow 传递数据"
+description: "将 Flutter 应用中的值传递给 flow，并在文本元素中展示。"
+metadataTitle: "向 flow 传递数据 | Flutter SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags)是一种自定义变量，其值来自你的应用。在变量设置中选择 **Value comes from outside the app** 后，你的应用即可通过 Adapty SDK 为其赋值。例如，某文本元素包含"Coins:"和一个自定义标签。如果你的应用为该标签传入 120，用户将看到"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 向流程添加自定义标签 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传入自定义标签值 \{#pass-custom-tag-values\}
+
+将应用中的值传入 `AdaptyUI().createFlowView` 或 `AdaptyUIFlowPlatformView` 的 `customTags` 参数，类型为 `Map<String, String>`：
+
+- 每个键是自定义标签的完整名称，例如 `user.streak`。
+- 每个值是用户看到的替换文本。
+- 每个值必须是易读的格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+
+SDK 在创建视图时读取一次这些值，因此在流程打开期间不会更新。
+
+<Tabs>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="嵌入到 widget 层级中">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+已挂载的 `AdaptyUIFlowPlatformView` 会忽略后续对 `customTags` 的更改。
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+如果你的应用已为旧版付费墙编辑工具的付费墙设置了自定义标签值，请参阅[流程中自定义标签的差异](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在没有值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导中的答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递给付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高数据，具体方法请参阅[处理流程数据](flutter-flow-input)。若要判断用户是否到达最后一屏，可监听 `flow_screen_showed` 事件，并检查 `is_last_screen` 是否为 `true`，具体方法请参阅[追踪流程页面浏览](flutter-flow-screen-views)。当用户在该屏后关闭用户引导流程时，计算 BMI，然后创建付费墙视图，并将 BMI 传入 `bmi` 自定义标签。
+
+在你通过 `AdaptyUI().setFlowsEventsObserver` 注册的观察者上实现以下方法：
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` 始终使用句点作为小数分隔符。如需使用用户语言环境的分隔符，请使用 `intl` 包中的 `NumberFormat` 格式化 BMI。
+
+### 将 BMI 保存到用户画像
+
+要根据 BMI 向用户展示不同的流程，请将其作为用户画像的[自定义属性](flutter-setting-user-attributes#custom-user-attributes)保存。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后将每个流程展示给基于该属性构建的[目标受众](audience)。
+
+计算出 BMI 后，调用 `updateProfile` 方法。保存数值而非格式化字符串，这样市场细分才能将 BMI 与阈值进行比较：
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```

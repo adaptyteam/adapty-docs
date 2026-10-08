@@ -1,0 +1,190 @@
+---
+title: "Truyền dữ liệu vào flow trong Android SDK"
+description: "Truyền giá trị từ ứng dụng Android của bạn vào một flow và hiển thị nó trong phần tử văn bản."
+metadataTitle: "Truyền dữ liệu vào flow | Android SDK | Tài liệu Adapty"
+---
+
+[Custom tag](flow-custom-tags) là biến tùy chỉnh với giá trị lấy từ ứng dụng của bạn. Sau khi bạn chọn **Value comes from outside the app** trong phần cài đặt biến, ứng dụng của bạn có thể đặt giá trị cho nó thông qua Adapty SDK. Ví dụ: một phần tử văn bản chứa "Coins:" và một custom tag. Nếu ứng dụng của bạn truyền 120 cho tag đó, người dùng sẽ thấy "Coins: 120".
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Thêm thẻ tùy chỉnh vào flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Truyền giá trị thẻ tùy chỉnh \{#pass-custom-tag-values\}
+
+Tạo một `AdaptyUiTagResolver` và truyền vào tham số `tagResolver` của `AdaptyUI.getFlowView`. SDK sẽ gọi resolver với tên đầy đủ của từng thẻ tùy chỉnh, ví dụ như `user.streak`. Resolver trả về một trong các giá trị sau:
+
+- **Một chuỗi ký tự**: Người dùng sẽ thấy chuỗi này thay cho thẻ. Giá trị phải ở dạng dễ đọc, ví dụ "1,250" thay vì "1250.0". Adapty không tự định dạng hay dịch giá trị này.
+- **`null`**: Người dùng sẽ thấy giá trị Mặc định của thẻ như một fallback.
+- **Chuỗi rỗng**: Người dùng sẽ không thấy gì thay cho thẻ.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    tagResolver = tagResolver,
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+Map<String, String> customTags = new HashMap<>();
+customTags.put("username", "DragonSlayer42");
+customTags.put("coins", "1,250");
+AdaptyUiTagResolver tagResolver = customTags::get;
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null,
+        eventListener,
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        tagResolver
+);
+```
+
+</TabItem>
+</Tabs>
+
+Nếu bạn tự tạo `AdaptyFlowView`, hãy truyền resolver vào phương thức `showFlow` của nó. Trong Jetpack Compose, hãy truyền vào `AdaptyFlowScreen`. Để xem ví dụ cho từng cách gọi, đọc [Hiển thị flow & paywall](android-present-paywalls).
+
+<FlowCustomTagsVerify />
+
+Nếu ứng dụng của bạn đã thiết lập giá trị custom tag cho các paywall của Paywall Builder cũ, hãy xem lại [sự khác biệt của custom tag trong flow](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Người dùng thấy gì khi không có giá trị \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ví dụ: hiển thị chỉ số BMI từ câu trả lời onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Thiết lập các flow \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Truyền chỉ số BMI vào paywall \{#pass-the-bmi-to-the-paywall\}
+
+Thu thập cân nặng và chiều cao từ các sự kiện `flow_user_input` của flow onboarding, như hướng dẫn trong [Xử lý dữ liệu từ flow](android-flow-input). Để biết người dùng đã đến màn hình cuối cùng, hãy theo dõi sự kiện `flow_screen_showed` có `is_last_screen` được đặt thành `true`, như trong [Theo dõi lượt xem màn hình flow](android-flow-screen-views). Khi người dùng đóng flow onboarding sau màn hình đó, hãy tính BMI. Sau đó tạo flow view của paywall và truyền BMI vào custom tag `bmi`.
+
+Truyền listener sau vào view của flow onboarding:
+
+```kotlin showLineNumbers title="Kotlin"
+class OnboardingEventListener(
+    private val onBmiCalculated: (bmi: String) -> Unit,
+) : AdaptyFlowDefaultEventListener() {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        // Reset `bodyAnswers` and `reachedLastScreen` on every close,
+        // so that the next run starts without old answers.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+
+        onBmiCalculated(String.format(Locale.getDefault(), "%.1f", bmi))
+    }
+}
+```
+
+When the user closes the onboarding flow after its last screen, the listener calls `onBmiCalculated` with the BMI. Pass a lambda for `onBmiCalculated` that calls the following function. The function fetches the paywall flow, creates its view, and passes the BMI for the `bmi` custom tag:
+
+```kotlin showLineNumbers title="Kotlin"
+fun showBmiPaywall(activity: Activity, bmi: String) {
+    Adapty.getFlow("bmi_paywall") { flowResult ->
+        when (flowResult) {
+            is AdaptyResult.Success -> {
+                AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+                    when (configResult) {
+                        is AdaptyResult.Success -> {
+                            val flowView = AdaptyUI.getFlowView(
+                                activity,
+                                configResult.value,
+                                products = null,
+                                eventListener = AdaptyFlowDefaultEventListener(),
+                                tagResolver = AdaptyUiTagResolver { tag ->
+                                    if (tag == "bmi") bmi else null
+                                },
+                            )
+                            // add flowView to your view hierarchy
+                        }
+                        is AdaptyResult.Error -> {
+                            // handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+`String.format` với `Locale.getDefault()` sử dụng dấu phân cách thập phân theo ngôn ngữ của người dùng: "22.7" trong tiếng Anh, "22,7" trong tiếng Đức.
+
+### Lưu BMI vào hồ sơ người dùng \{#save-the-bmi-to-the-users-profile\}
+
+Để hiển thị các flow khác nhau cho người dùng dựa trên BMI của họ, hãy lưu BMI dưới dạng [thuộc tính tùy chỉnh](android-setting-user-attributes#custom-user-attributes) trong hồ sơ người dùng. Trên Adapty Dashboard, [tạo thuộc tính tùy chỉnh kiểu **Number**](segments#custom-attributes) với key `bmi`. Sau đó hiển thị mỗi flow cho một [đối tượng](audience) được xây dựng từ thuộc tính đó.
+
+Gọi phương thức `updateProfile` sau khi bạn tính xong BMI. Lưu giá trị số, không phải chuỗi đã định dạng, để phân khúc có thể so sánh BMI với một ngưỡng nhất định:
+
+```kotlin showLineNumbers title="Kotlin"
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+Adapty.updateProfile(params) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```

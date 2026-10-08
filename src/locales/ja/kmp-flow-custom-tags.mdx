@@ -1,0 +1,195 @@
+---
+title: "Kotlin Multiplatform SDKでフローにデータを渡す"
+description: "Kotlin Multiplatformアプリからフローに値を渡し、テキスト要素に表示する方法を説明します。"
+metadataTitle: "フローへのデータの受け渡し | Kotlin Multiplatform SDK | Adapty ドキュメント"
+---
+
+[カスタムタグ](flow-custom-tags)は、アプリ側から値を設定できるカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、Adapty SDK を通じてアプリから値をセットできます。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれている場合、アプリが 120 を渡すと、ユーザーには「Coins: 120」と表示されます。
+
+## 始める前に \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## フローにカスタムタグを追加する \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## カスタムタグの値を渡す \{#pass-custom-tag-values\}
+
+アプリの値を `AdaptyUI.createFlowView` または `createNativeFlowView` の `customTags` パラメータに `Map<String, String>` 形式で渡します。
+
+- 各キーは `user.streak` のように、カスタムタグの完全な名前です。
+- 各値は、タグの代わりにユーザーに表示される文字列です。
+- 各値は「1,250」のように人が読める形式にしてください。「1250.0」は不可です。Adapty はフォーマットや翻訳を行いません。
+
+SDK はビューの作成時に値を一度だけ読み込むため、フローが開いている間は値が変わりません。
+
+<Tabs>
+<TabItem value="standalone" label="With Compose Multiplatform" default>
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+viewModelScope.launch {
+    val customTags = mapOf(
+        "username" to "DragonSlayer42",
+        "coins" to "1,250",
+    )
+
+    AdaptyUI.createFlowView(
+        flow = flow,
+        customTags = customTags,
+    ).onSuccess { view ->
+        view.present()
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+Compose レイアウトにフローを埋め込むには、同じ `customTags` パラメータを `AdaptyUIFlowPlatformView` コンポーザブルに渡します。異なる `customTags` マップを渡すと、コンポーザブルは新しいビューを作成し、ユーザーはフローの最初の画面に戻ります。
+
+</TabItem>
+<TabItem value="native" label="Without Compose Multiplatform">
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (Android)"
+
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    context = context,
+    viewModelStoreOwner = activity,
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+```kotlin showLineNumbers title="Kotlin Multiplatform (iOS)"
+
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+
+val nativeView = AdaptyUI.createNativeFlowView(
+    flow = flow,
+    observer = myFlowObserver,
+    customTags = customTags,
+)
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+アプリがすでに旧ペイウォールビルダーのペイウォール向けにカスタムタグの値を設定している場合は、[フローにおけるカスタムタグの違い](migrate-to-flows#custom-tags-from-the-old-paywall-builder)を確認してください。
+
+## 値がない場合にユーザーに表示されるもの \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 例：オンボーディングの回答からBMIを表示する \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### フローを設定する \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### ペイウォールにBMIを渡す \{#pass-the-bmi-to-the-paywall\}
+
+オンボーディングフローの`flow_user_input`イベントから体重と身長を収集します。詳細は[フローからデータを処理する](kmp-flow-input)を参照してください。ユーザーが最後の画面に到達したことを確認するには、`is_last_screen`が`true`に設定された`flow_screen_showed`イベントを監視します。詳細は[フローの画面表示を追跡する](kmp-flow-screen-views)を参照してください。その画面の後にユーザーがオンボーディングフローを閉じたら、BMIを計算します。次にペイウォールのビューを作成し、`bmi`カスタムタグにBMIを渡します。
+
+`flowViewDidReceiveAnalyticEvent`メソッドは、`kotlinx.serialization.json`ライブラリを使用してイベントパラメータを解析します。プロジェクトにこのライブラリがまだない場合は、アプリの依存関係に`org.jetbrains.kotlinx:kotlinx-serialization-json`を追加してください。次に、`AdaptyUI.setFlowsEventsObserver`で登録するオブザーバーに以下のメソッドを実装してください：
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+class MyFlowsEventsObserver(
+    private val scope: CoroutineScope,
+) : AdaptyUIFlowsEventsObserver {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun flowViewDidReceiveAnalyticEvent(
+        view: AdaptyUIFlowView,
+        name: String,
+        paramsJsonString: String,
+    ) {
+        if (name != "flow_user_input" && name != "flow_screen_showed") return
+
+        val params = Json.parseToJsonElement(paramsJsonString).jsonObject
+        if (name == "flow_screen_showed") {
+            if (params["is_last_screen"]?.jsonPrimitive?.booleanOrNull == true) {
+                reachedLastScreen = true
+            }
+            return
+        }
+        val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
+        val value = params["value"]?.jsonPrimitive?.contentOrNull ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun flowViewDidDisappear(view: AdaptyUIFlowView) {
+        // The observer receives events from every flow. Reset `bodyAnswers` and
+        // `reachedLastScreen` whenever a flow disappears, so that the paywall
+        // doesn't open again when the user closes it.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+        val bmiText = ((bmi * 10).roundToInt() / 10.0).toString()
+
+        scope.launch { showBmiPaywall(bmiText) }
+    }
+}
+
+suspend fun showBmiPaywall(bmi: String) {
+    Adapty.getFlow(placementId = "bmi_paywall").onSuccess { flow ->
+        AdaptyUI.createFlowView(
+            flow = flow,
+            customTags = mapOf("bmi" to bmi),
+        ).onSuccess { view ->
+            view.present()
+        }.onError { error ->
+            // handle the error
+        }
+    }.onError { error ->
+        // handle the error
+    }
+}
+```
+
+`toString` は小数点区切り文字として常にピリオドを使用します（例：「22.7」）。ユーザーのロケールに応じた区切り文字を使用するには、各プラットフォームのロケール対応フォーマッターを使用してください（Androidなら `java.text.NumberFormat`、iOSなら `NSNumberFormatter` など）。
+
+### BMIをユーザーのプロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
+
+ユーザーのBMIに基づいて異なるフローを表示するには、BMIをプロファイルの[カスタム属性](kmp-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー`bmi`を持つ[**Number**型のカスタム属性を作成](segments#custom-attributes)し、その属性から構築した[オーディエンス](audience)に各フローを表示します。
+
+BMIを計算した後、`updateProfile`メソッドを呼び出してください。セグメントがBMIをしきい値と比較できるように、フォーマットされた文字列ではなく数値で保存します。
+
+```kotlin showLineNumbers title="Kotlin Multiplatform"
+
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+scope.launch {
+    Adapty.updateProfile(params).onError { error ->
+        // handle the error
+    }
+}
+```

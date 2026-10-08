@@ -1,0 +1,164 @@
+---
+title: "Передача данных во флоу в Flutter SDK"
+description: "Передайте значение из вашего Flutter-приложения во флоу и отобразите его в текстовом элементе."
+metadataTitle: "Передача данных во флоу | Flutter SDK | Документация Adapty"
+---
+
+[Кастомный тег](flow-custom-tags) — это переменная с произвольным значением, которое задаётся в вашем приложении. Когда в настройках переменной выбран параметр **Value comes from outside the app**, приложение может установить её значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и кастомный тег. Если приложение передаёт для тега значение 120, пользователь увидит «Coins: 120».
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Добавьте пользовательские теги во флоу \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Передача значений пользовательских тегов \{#pass-custom-tag-values\}
+
+Передайте значения из вашего приложения в параметр `customTags` методов `AdaptyUI().createFlowView` или `AdaptyUIFlowPlatformView` в виде `Map<String, String>`:
+
+- Каждый ключ — это полное имя пользовательского тега, например `user.streak`.
+- Каждое значение — это строка, которую видят пользователи вместо тега.
+- Каждое значение должно быть удобочитаемым, например "1,250", а не "1250.0". Adapty не форматирует и не переводит его.
+
+SDK считывает значения один раз — при создании представления, поэтому они не изменяются, пока флоу открыт.
+
+<Tabs>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Встроен в иерархию виджетов">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+Смонтированный `AdaptyUIFlowPlatformView` игнорирует последующие изменения `customTags`.
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Если ваше приложение уже задаёт значения пользовательских тегов для пейволов в старом Paywall Builder, ознакомьтесь с [отличиями пользовательских тегов в флоу](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Что видят пользователи при отсутствии значения \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Пример: показываем ИМТ из ответов онбординга \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Настройка флоу \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Передайте BMI на пейвол \{#pass-the-bmi-to-the-paywall\}
+
+Собирайте вес и рост из событий `flow_user_input` флоу онбординга, как описано в [Обработке данных из флоу](flutter-flow-input). Чтобы понять, что пользователь дошёл до последнего экрана, отслеживайте событие `flow_screen_showed` с параметром `is_last_screen`, равным `true`, как описано в [Отслеживании просмотров экранов флоу](flutter-flow-screen-views). Когда пользователь закроет флоу онбординга после этого экрана, рассчитайте BMI. Затем создайте вью пейвола и передайте BMI для кастомного тега `bmi`.
+
+Реализуйте следующие методы в наблюдателе, который вы регистрируете с помощью `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` всегда использует точку в качестве разделителя дробной части. Чтобы использовать разделитель, соответствующий локали пользователя, отформатируйте ИМТ с помощью `NumberFormat` из пакета `intl`.
+
+### Сохранение ИМТ в профиле пользователя \{#save-the-bmi-to-the-users-profile\}
+
+Чтобы показывать пользователям разные флоу на основе их ИМТ, сохраните его как [пользовательский атрибут](flutter-setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем настройте показ каждого флоу аудитории, [построенной на основе этого атрибута](audience).
+
+Вызовите метод `updateProfile` после вычисления ИМТ. Сохраняйте число, а не форматированную строку — чтобы сегмент мог сравнивать ИМТ с пороговым значением:
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```

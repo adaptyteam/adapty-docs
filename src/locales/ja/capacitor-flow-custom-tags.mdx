@@ -1,0 +1,124 @@
+---
+title: "Capacitor SDKでフローにデータを渡す"
+description: "Capacitorアプリからフローに値を渡し、テキスト要素に表示する方法を説明します。"
+metadataTitle: "フローへのデータの受け渡し | Capacitor SDK | Adapty ドキュメント"
+---
+
+[カスタムタグ](flow-custom-tags)は、アプリからの値を持つカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、Adapty SDK を通じてアプリからその値を設定できます。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれている場合、アプリがタグに120を渡すと、ユーザーには「Coins: 120」と表示されます。
+
+## 始める前に \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## フローにカスタムタグを追加する \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## カスタムタグの値を渡す \{#pass-custom-tag-values\}
+
+アプリの値を `createFlowView` の `customTags` パラメータにオブジェクトとして渡します：
+
+- 各キーは `user.streak` のように、カスタムタグのフル名です。
+- 各値は、タグの代わりにユーザーが目にする文字列です。
+- 各値は "1,250" のように人が読める形式にしてください（"1250.0" のような形式は不可）。Adapty はフォーマットや翻訳を行いません。
+
+SDK はビューの作成時に値を一度だけ読み込むため、フローが開いている間は変更されません。
+
+```typescript showLineNumbers title="Capacitor"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+<FlowCustomTagsVerify />
+
+アプリがすでに旧ペイウォールビルダーのペイウォールにカスタムタグの値を設定している場合は、[フローにおけるカスタムタグの違い](migrate-to-flows#custom-tags-from-the-old-paywall-builder)を確認してください。
+
+## 値がない場合にユーザーに表示されるもの \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 例：オンボーディングの回答からBMIを表示する \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### フローを設定する \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### ペイウォールにBMIを渡す \{#pass-the-bmi-to-the-paywall\}
+
+オンボーディングフローの `flow_user_input` イベントから体重と身長を収集します。詳細は [フローからデータを処理する](capacitor-flow-input) を参照してください。ユーザーが最後の画面に到達したことを確認するには、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視します。詳細は [フロー画面の表示を追跡する](capacitor-flow-screen-views) を参照してください。ユーザーがその画面を閉じてオンボーディングフローを終了したら、BMIを計算します。次に、ペイウォールのビューを作成し、`bmi` カスタムタグにBMIを渡します。
+
+`onboardingView` に以下のハンドラーを登録してください。これはオンボーディングフロー用に作成するビューです：
+
+```typescript showLineNumbers title="Capacitor"
+
+const bodyAnswers: Record<string, string> = {};
+let reachedLastScreen = false;
+
+await onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi: string) {
+  try {
+    const flow = await adapty.getFlow({ placementId: 'bmi_paywall' });
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` はユーザーのロケールの小数点区切り文字を使用します: 英語では "22.7"、ドイツ語では "22,7"。
+
+### BMIをユーザーのプロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
+
+ユーザーのBMIに基づいて異なるフローを表示するには、BMIをプロファイルの[カスタム属性](capacitor-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー`bmi`を持つ**Number**型の[カスタム属性を作成](segments#custom-attributes)してください。その後、その属性を使って作成した[オーディエンス](audience)に各フローを表示します。
+
+BMIを計算した後、`updateProfile`メソッドを呼び出します。セグメントがBMIをしきい値と比較できるよう、フォーマットされた文字列ではなく数値を保存してください：
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

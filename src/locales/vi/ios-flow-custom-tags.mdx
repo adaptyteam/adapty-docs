@@ -1,0 +1,151 @@
+---
+title: "Truyền dữ liệu vào flows trong iOS SDK"
+description: "Truyền một giá trị từ ứng dụng iOS của bạn vào một flow và hiển thị nó trong phần tử văn bản."
+metadataTitle: "Truyền dữ liệu vào flows | iOS SDK | Tài liệu Adapty"
+---
+
+[Custom tag](flow-custom-tags) là một biến tùy chỉnh với giá trị được lấy từ ứng dụng của bạn. Sau khi bạn chọn **Value comes from outside the app** trong phần cài đặt của biến, ứng dụng của bạn có thể đặt giá trị cho nó thông qua Adapty SDK. Ví dụ: một phần tử văn bản chứa "Coins:" và một custom tag. Nếu ứng dụng của bạn truyền 120 cho tag đó, người dùng sẽ thấy "Coins: 120".
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Thêm thẻ tùy chỉnh vào flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Truyền giá trị thẻ tùy chỉnh \{#pass-custom-tag-values\}
+
+Truyền các giá trị từ ứng dụng của bạn vào tham số `tagResolver` của `getFlowConfiguration`, dưới dạng dictionary `[String: String]`:
+
+- Mỗi key là tên đầy đủ của một thẻ tùy chỉnh, ví dụ `user.streak`.
+- Mỗi value là chuỗi mà người dùng sẽ thấy thay thế cho thẻ đó.
+- Mỗi value phải ở dạng con người đọc được, chẳng hạn "1,250" thay vì "1250.0". Adapty không tự định dạng hay dịch giá trị này.
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+SwiftUI [`.flow` modifier và `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) và UIKit [flow controller](ios-present-paywalls#present-flows-and-paywalls-in-uikit) không có tham số riêng cho giá trị custom tag. Chúng hiển thị các giá trị từ cấu hình flow bạn truyền vào.
+
+<FlowCustomTagsVerify />
+
+Nếu ứng dụng của bạn đã thiết lập giá trị custom tag cho các paywall Paywall Builder cũ, hãy xem lại [sự khác biệt của custom tag trong flow](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Người dùng thấy gì khi không có giá trị \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ví dụ: hiển thị chỉ số BMI từ câu trả lời onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Thiết lập các flow \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Truyền BMI vào paywall \{#pass-the-bmi-to-the-paywall\}
+
+Thu thập cân nặng và chiều cao từ các sự kiện `flow_user_input` của onboarding flow, như trong [Xử lý dữ liệu từ flow](ios-flow-input). Để biết người dùng đã đến màn hình cuối, theo dõi sự kiện `flow_screen_showed` với `is_last_screen` được đặt là `true`, như trong [Theo dõi lượt xem màn hình flow](ios-flow-screen-views). Khi người dùng đóng onboarding flow sau màn hình đó, hãy tính BMI. Sau đó lấy cấu hình flow của paywall và truyền BMI cho custom tag `bmi`.
+
+Đoạn code sau đây dành cho UIKit. Nó triển khai các phương thức `AdaptyFlowControllerDelegate` trên một view controller, đóng vai trò là delegate của cả controller onboarding flow và controller paywall.
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+`formatted` sử dụng dấu phân cách thập phân theo locale của người dùng: "22.7" trong tiếng Anh, "22,7" trong tiếng Đức.
+
+Trong SwiftUI, sử dụng các closure của modifier `.flow` của onboarding flow thay vì các phương thức delegate:
+
+- `didReceiveAnalyticEvent`: Thu thập cân nặng và chiều cao, đồng thời theo dõi sự kiện `flow_screen_showed` của màn hình cuối cùng.
+- `didDisappear`: Nếu người dùng đã đến màn hình cuối cùng, tính BMI. Sau đó lấy cấu hình flow của paywall và truyền BMI vào custom tag `bmi`. Hiển thị cấu hình đó bằng một modifier `.flow` thứ hai.
+
+### Lưu chỉ số BMI vào hồ sơ người dùng \{#save-the-bmi-to-the-users-profile\}
+
+Để hiển thị các flow khác nhau cho người dùng dựa trên chỉ số BMI của họ, hãy lưu BMI dưới dạng [thuộc tính tùy chỉnh](setting-user-attributes#custom-user-attributes) trong hồ sơ người dùng. Trong Adapty Dashboard, [tạo thuộc tính tùy chỉnh kiểu **Number**](segments#custom-attributes) với key `bmi`. Sau đó hiển thị từng flow cho [đối tượng](audience) được xây dựng từ thuộc tính đó.
+
+Gọi phương thức `updateProfile` sau khi bạn tính xong chỉ số BMI. Lưu số thực, không phải chuỗi đã định dạng, để phân khúc có thể so sánh BMI với một ngưỡng nhất định:
+
+```swift showLineNumbers title="Swift"
+do {
+    let params = try AdaptyProfileParameters.Builder()
+        .with(customAttribute: bmi, forKey: "bmi")
+        .build()
+    try await Adapty.updateProfile(params: params)
+} catch {
+    // handle the error
+}
+```

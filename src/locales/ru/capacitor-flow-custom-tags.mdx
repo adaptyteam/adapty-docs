@@ -1,0 +1,124 @@
+---
+title: "Передача данных во флоу в Capacitor SDK"
+description: "Передайте значение из вашего Capacitor-приложения во флоу и отобразите его в текстовом элементе."
+metadataTitle: "Передача данных во флоу | Capacitor SDK | Документация Adapty"
+---
+
+[Пользовательский тег](flow-custom-tags) — это переменная, значение которой задаётся в вашем приложении. После того как в настройках переменной выбрано **Value comes from outside the app**, приложение может передать её значение через Adapty SDK. Например, текстовый элемент содержит «Монеты:» и пользовательский тег. Если приложение передаёт для тега значение 120, пользователи видят «Монеты: 120».
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Добавьте пользовательские теги во флоу \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Передача значений пользовательских тегов \{#pass-custom-tag-values\}
+
+Передайте значения из вашего приложения в параметр `customTags` метода `createFlowView` в виде объекта:
+
+- Каждый ключ — это полное имя пользовательского тега, например `user.streak`.
+- Каждое значение — строка, которую увидят пользователи вместо тега.
+- Каждое значение должно быть удобочитаемым, например "1 250", а не "1250.0". Adapty не форматирует и не переводит его.
+
+SDK считывает значения один раз — при создании представления, поэтому они не меняются, пока флоу открыт.
+
+```typescript showLineNumbers title="Capacitor"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+<FlowCustomTagsVerify />
+
+Если ваше приложение уже устанавливает значения custom tags для пейволов старого Paywall Builder, изучите [чем custom tags во флоу отличаются](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Что пользователи видят при отсутствии значения \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Пример: показываем ИМТ по ответам с онбординга \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Настройка флоу \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Передайте BMI на пейвол \{#pass-the-bmi-to-the-paywall\}
+
+Собирайте вес и рост из событий `flow_user_input` онбординг-флоу, как описано в [Обработка данных из флоу](capacitor-flow-input). Чтобы узнать, что пользователь достиг последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen`, равным `true`, как описано в [Отслеживание просмотров экранов флоу](capacitor-flow-screen-views). Когда пользователь закроет флоу онбординга после этого экрана, вычислите BMI. Затем создайте представление пейвола и передайте BMI для кастомного тега `bmi`.
+
+Зарегистрируйте следующие обработчики на `onboardingView` — представлении, которое вы создаёте для флоу онбординга:
+
+```typescript showLineNumbers title="Capacitor"
+
+const bodyAnswers: Record<string, string> = {};
+let reachedLastScreen = false;
+
+await onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi: string) {
+  try {
+    const flow = await adapty.getFlow({ placementId: 'bmi_paywall' });
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` использует десятичный разделитель локали пользователя: «22.7» в английском, «22,7» в немецком.
+
+### Сохранение ИМТ в профиль пользователя \{#save-the-bmi-to-the-users-profile\}
+
+Чтобы показывать пользователям разные флоу в зависимости от их ИМТ, сохраните его как [пользовательский атрибут](capacitor-setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу нужной [аудитории](audience), сформированной на основе этого атрибута.
+
+Вызовите метод `updateProfile` после вычисления ИМТ. Сохраняйте число, а не отформатированную строку — тогда сегмент сможет сравнивать ИМТ с пороговым значением:
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

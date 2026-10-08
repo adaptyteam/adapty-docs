@@ -1,0 +1,147 @@
+---
+title: "React Native SDK'da flow'lara veri aktarma"
+description: "React Native uygulamanızdan bir flow'a değer aktarın ve bunu bir metin öğesinde gösterin."
+metadataTitle: "Flow'lara veri aktarma | React Native SDK | Adapty Dokümanları"
+---
+
+[Özel etiket](flow-custom-tags), uygulamanızdan gelen bir değere sahip özel bir değişkendir. Bir değişkenin ayarlarında **Value comes from outside the app** seçeneğini işaretledikten sonra, uygulamanız bu değeri Adapty SDK aracılığıyla ayarlayabilir. Örneğin, bir metin öğesi "Coins:" ve bir özel etiket içeriyorsa; uygulamanız bu etiket için 120 değerini aktardığında kullanıcılar "Coins: 120" ifadesini görür.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Flow'a özel etiketler ekleme \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Özel etiket değerlerini geçin \{#pass-custom-tag-values\}
+
+Uygulamanızın değerlerini `AdaptyFlowView` veya `createFlowView`'ın `customTags` parametresine bir nesne olarak geçin:
+
+- Her anahtar, `user.streak` gibi özel etiketin tam adıdır.
+- Her değer, kullanıcıların etiket yerine gördüğü metindir.
+- Her değer "1250.0" değil "1.250" gibi insan tarafından okunabilir olmalıdır. Adapty bunu biçimlendirmez veya çevirmez.
+
+SDK değerleri yalnızca bir kez, görünümü oluştururken okur; bu nedenle flow açıkken değişmezler.
+
+<Tabs>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const flowParams = {
+  customTags: {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+};
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return <AdaptyFlowView flow={flow} params={flowParams} style={{ flex: 1 }} />;
+}
+```
+
+</TabItem>
+<TabItem value="modal" label="Modal sunum">
+
+```typescript showLineNumbers title="React Native"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Uygulamanız eski Paywall Builder paywallları için zaten custom tag değerleri belirliyorsa, [flow'lardaki custom tag'lerin nasıl farklılaştığını](migrate-to-flows#custom-tags-from-the-old-paywall-builder) inceleyin.
+
+## Kullanıcıların değer olmadan gördükleri \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Örnek: onboarding yanıtlarından BMI gösterme \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Flow'ları kurun \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### BMI'yi paywall'a aktarma \{#pass-the-bmi-to-the-paywall\}
+
+Onboarding flow'unun `flow_user_input` olaylarından kullanıcının ağırlık ve boyunu toplayın; bunun nasıl yapıldığını [Flow'lardan veri işleme](react-native-flow-input) bölümünde bulabilirsiniz. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olarak ayarlanmış bir `flow_screen_showed` olayını izleyin; ayrıntılar için [Flow ekran görüntülemelerini takip etme](react-native-flow-screen-views) bölümüne bakın. Kullanıcı o ekrandan sonra onboarding flow'unu kapattığında BMI'yi hesaplayın. Ardından paywall'ın görünümünü oluşturun ve `bmi` özel etiketine BMI değerini aktarın.
+
+`onboardingView` üzerinde, onboarding flow'u için oluşturduğunuz view'a aşağıdaki handler'ları kaydedin:
+
+```javascript showLineNumbers title="React Native"
+
+const bodyAnswers = {};
+let reachedLastScreen = false;
+
+const unsubscribe = onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id] = params.value;
+    }
+    return false; // keep the flow open
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi) {
+  try {
+    const flow = await adapty.getFlow('bmi_paywall');
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` kullanıcının yerel ayarına göre ondalık ayıracını kullanır: İngilizce'de "22.7", Almanca'da "22,7".
+
+### BMI'yi kullanıcı profiline kaydedin \{#save-the-bmi-to-the-users-profile\}
+
+Kullanıcılara BMI değerlerine göre farklı flow'lar göstermek için bunu profillerinin [özel bir niteliği](react-native-setting-user-attributes#custom-user-attributes) olarak kaydedin. Adapty Kontrol Paneli'nde `bmi` anahtarıyla bir **Number** özel niteliği [oluşturun](segments#custom-attributes). Ardından her flow'u bu nitelikten oluşturulan bir [kitle](audience) ile gösterin.
+
+BMI'yi hesapladıktan sonra `updateProfile` metodunu çağırın. Bir segmentin BMI'yi bir eşik değeriyle karşılaştırabilmesi için biçimlendirilmiş bir dize değil, sayıyı kaydedin:
+
+```javascript showLineNumbers title="React Native"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

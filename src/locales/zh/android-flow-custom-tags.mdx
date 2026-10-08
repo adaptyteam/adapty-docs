@@ -1,0 +1,190 @@
+---
+title: "在 Android SDK 中向流程传递数据"
+description: "从 Android 应用向流程传递值，并在文本元素中显示。"
+metadataTitle: "向流程传递数据 | Android SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags) 是一个值来自应用的自定义变量。在变量设置中选择 **Value comes from outside the app** 后，应用可以通过 Adapty SDK 为其设置值。例如，某个文本元素包含"Coins:"和一个自定义标签，若应用为该标签传入 120，用户看到的就是"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 将自定义标签添加到流程 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传入自定义标签值 \{#pass-custom-tag-values\}
+
+创建一个 `AdaptyUiTagResolver`，并将其作为 `tagResolver` 参数传入 `AdaptyUI.getFlowView`。SDK 会以每个自定义标签的完整名称（例如 `user.streak`）调用该解析器。解析器返回以下值之一：
+
+- **字符串**：用户将看到该字符串替代标签内容。必须是人类可读的格式，例如"1,250"，而非"1250.0"。Adapty 不会对其进行格式化或翻译。
+- **`null`**：用户将看到该标签的初始值作为备用内容。
+- **空字符串**：用户将看到标签位置显示为空。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    tagResolver = tagResolver,
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+Map<String, String> customTags = new HashMap<>();
+customTags.put("username", "DragonSlayer42");
+customTags.put("coins", "1,250");
+AdaptyUiTagResolver tagResolver = customTags::get;
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null,
+        eventListener,
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        tagResolver
+);
+```
+
+</TabItem>
+</Tabs>
+
+如果你自己创建 `AdaptyFlowView`，请将 resolver 传入其 `showFlow` 方法。在 Jetpack Compose 中，将其传入 `AdaptyFlowScreen`。关于每种调用方式的示例，请参阅[展示流程与付费墙](android-present-paywalls)。
+
+<FlowCustomTagsVerify />
+
+如果你的应用已经为旧版付费墙编辑工具的付费墙设置了自定义标签值，请了解[流程中的自定义标签与旧版的区别](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在没有值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递给付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高数据，方法参见[处理流程数据](android-flow-input)。要判断用户是否已到达最后一屏，可监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，方法参见[追踪流程屏幕浏览](android-flow-screen-views)。当用户关闭该屏幕后的用户引导流程时，计算 BMI，然后创建付费墙的 flow 视图，并将 BMI 传入 `bmi` 自定义标签。
+
+将以下监听器传递给用户引导流程的视图：
+
+```kotlin showLineNumbers title="Kotlin"
+class OnboardingEventListener(
+    private val onBmiCalculated: (bmi: String) -> Unit,
+) : AdaptyFlowDefaultEventListener() {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        // Reset `bodyAnswers` and `reachedLastScreen` on every close,
+        // so that the next run starts without old answers.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+
+        onBmiCalculated(String.format(Locale.getDefault(), "%.1f", bmi))
+    }
+}
+```
+
+When the user closes the onboarding flow after its last screen, the listener calls `onBmiCalculated` with the BMI. Pass a lambda for `onBmiCalculated` that calls the following function. The function fetches the paywall flow, creates its view, and passes the BMI for the `bmi` custom tag:
+
+```kotlin showLineNumbers title="Kotlin"
+fun showBmiPaywall(activity: Activity, bmi: String) {
+    Adapty.getFlow("bmi_paywall") { flowResult ->
+        when (flowResult) {
+            is AdaptyResult.Success -> {
+                AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+                    when (configResult) {
+                        is AdaptyResult.Success -> {
+                            val flowView = AdaptyUI.getFlowView(
+                                activity,
+                                configResult.value,
+                                products = null,
+                                eventListener = AdaptyFlowDefaultEventListener(),
+                                tagResolver = AdaptyUiTagResolver { tag ->
+                                    if (tag == "bmi") bmi else null
+                                },
+                            )
+                            // add flowView to your view hierarchy
+                        }
+                        is AdaptyResult.Error -> {
+                            // handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+`String.format` with `Locale.getDefault()` uses the decimal separator of the user's locale: "22.7" in English, "22,7" in German.
+
+### 将 BMI 保存到用户画像 \{#save-the-bmi-to-the-users-profile\}
+
+要根据用户的 BMI 展示不同的流程，请将其作为[自定义属性](android-setting-user-attributes#custom-user-attributes)保存到用户画像中。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后将各流程展示给基于该属性构建的[目标受众](audience)。
+
+计算出 BMI 后，调用 `updateProfile` 方法。保存数值本身，而非格式化后的字符串，这样市场细分才能将 BMI 与阈值进行比较：
+
+```kotlin showLineNumbers title="Kotlin"
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+Adapty.updateProfile(params) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```

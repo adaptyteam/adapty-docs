@@ -1,0 +1,164 @@
+---
+title: "Pasar datos a flows en el SDK de Flutter"
+description: "Pasa un valor desde tu app de Flutter a un flow y muéstralo en un elemento de texto."
+metadataTitle: "Pasar datos a flows | Flutter SDK | Documentación de Adapty"
+---
+
+Una [etiqueta personalizada](flow-custom-tags) es una variable personalizada con un valor proveniente de tu app. Cuando seleccionas **Value comes from outside the app** en la configuración de una variable, tu app puede establecer su valor a través del SDK de Adapty. Por ejemplo, un elemento de texto contiene "Coins:" y una etiqueta personalizada. Si tu app pasa 120 para la etiqueta, los usuarios verán "Coins: 120".
+
+## Antes de empezar \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Añadir etiquetas personalizadas al flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Pasar valores de etiquetas personalizadas \{#pass-custom-tag-values\}
+
+Pasa los valores de tu app al parámetro `customTags` de `AdaptyUI().createFlowView` o `AdaptyUIFlowPlatformView`, como un `Map<String, String>`:
+
+- Cada clave es el nombre completo de una etiqueta personalizada, como `user.streak`.
+- Cada valor es la cadena que los usuarios verán en lugar de la etiqueta.
+- Cada valor debe ser legible por humanos, por ejemplo "1,250" en lugar de "1250.0". Adapty no lo formatea ni traduce.
+
+El SDK lee los valores una vez, cuando crea la vista, por lo que no cambian mientras el flow está abierto.
+
+<Tabs>
+<TabItem value="standalone" label="Pantalla independiente" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Incrustado en la jerarquía de widgets">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+Un `AdaptyUIFlowPlatformView` montado ignora los cambios posteriores en `customTags`.
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Si tu app ya establece valores de etiquetas personalizadas para paywalls del antiguo Paywall Builder, consulta [cómo difieren las etiquetas personalizadas en los flows](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Lo que ven los usuarios sin un valor \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ejemplo: mostrar un IMC a partir de las respuestas del onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Configura los flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Pasar el IMC al paywall \{#pass-the-bmi-to-the-paywall\}
+
+Recoge el peso y la altura de los eventos `flow_user_input` del flow de onboarding, como se explica en [Procesar datos de flows](flutter-flow-input). Para saber que el usuario llegó a la última pantalla, observa el evento `flow_screen_showed` con `is_last_screen` establecido en `true`, como se describe en [Rastrear vistas de pantallas del flow](flutter-flow-screen-views). Cuando el usuario cierre el flow de onboarding tras esa pantalla, calcula el IMC. Luego crea la vista del paywall y pasa el IMC para la etiqueta personalizada `bmi`.
+
+Implementa los siguientes métodos en el observer que registras con `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` siempre utiliza un punto como separador decimal. Para usar el separador de la configuración regional del usuario, formatea el IMC con `NumberFormat` del paquete `intl`.
+
+### Guarda el IMC en el perfil del usuario \{#save-the-bmi-to-the-users-profile\}
+
+Para mostrar diferentes flows a los usuarios según su IMC, guárdalo como un [atributo personalizado](flutter-setting-user-attributes#custom-user-attributes) de su perfil. En el Adapty Dashboard, [crea un atributo personalizado de tipo **Number**](segments#custom-attributes) con la clave `bmi`. Luego muestra cada flow a una [audiencia](audience) definida a partir de ese atributo.
+
+Llama al método `updateProfile` después de calcular el IMC. Guarda el número, no una cadena formateada, para que un segmento pueda comparar el IMC con un umbral:
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```

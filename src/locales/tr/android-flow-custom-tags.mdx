@@ -1,0 +1,190 @@
+---
+title: "Android SDK'da flow'lara veri aktarma"
+description: "Android uygulamanızdan bir flow'a değer aktarın ve bunu bir metin öğesinde gösterin."
+metadataTitle: "Flow'lara veri aktarma | Android SDK | Adapty Dokümanları"
+---
+
+[Özel etiket](flow-custom-tags), uygulamanızdan gelen bir değer içeren özel bir değişkendir. Bir değişkenin ayarlarında **Value comes from outside the app** seçeneğini belirledikten sonra uygulamanız, Adapty SDK aracılığıyla bu değişkenin değerini ayarlayabilir. Örneğin, bir metin öğesi "Coins:" ifadesini ve bir özel etiketi içeriyorsa uygulamanız etikete 120 değerini aktardığında kullanıcılar "Coins: 120" metnini görür.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Flow'a özel etiket ekleme \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Özel etiket değerlerini aktarma \{#pass-custom-tag-values\}
+
+Bir `AdaptyUiTagResolver` oluşturun ve bunu `AdaptyUI.getFlowView` metodunun `tagResolver` parametresine geçirin. SDK, her özel etiketin tam adıyla (örneğin `user.streak`) resolver'ı çağırır. Resolver aşağıdakilerden birini döndürür:
+
+- **Bir string**: Kullanıcılar etiketi bu değeri göreceği şekilde görür. "1250.0" gibi değil, "1.250" gibi insan tarafından okunabilir bir format olmalıdır. Adapty bunu biçimlendirmez veya çevirmez.
+- **`null`**: Kullanıcılar yedek olarak etiketin Başlangıç değerini görür.
+- **Boş bir string**: Kullanıcılar etiket yerine hiçbir şey görmez.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    tagResolver = tagResolver,
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+Map<String, String> customTags = new HashMap<>();
+customTags.put("username", "DragonSlayer42");
+customTags.put("coins", "1,250");
+AdaptyUiTagResolver tagResolver = customTags::get;
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null,
+        eventListener,
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        tagResolver
+);
+```
+
+</TabItem>
+</Tabs>
+
+`AdaptyFlowView`'ı kendiniz oluşturuyorsanız, resolver'ı onun `showFlow` metoduna geçirin. Jetpack Compose'da ise `AdaptyFlowScreen`'e geçirin. Her çağrı için örnek görmek üzere [Flow'ları ve paywallları gösterme](android-present-paywalls) bölümünü okuyun.
+
+<FlowCustomTagsVerify />
+
+Uygulamanız eski Paywall Builder paywallları için zaten özel etiket değerleri ayarlıyorsa, [flow'lardaki özel etiketlerin nasıl farklılaştığını](migrate-to-flows#custom-tags-from-the-old-paywall-builder) inceleyin.
+
+## Kullanıcılar değer olmadığında ne görür \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Örnek: onboarding yanıtlarından VKİ gösterme \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Flow'ları ayarlayın \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### BMI'yi paywalle aktarma \{#pass-the-bmi-to-the-paywall\}
+
+Onboarding flow'unun `flow_user_input` olaylarından kullanıcının ağırlığını ve boyunu toplayın; bunun için [Flow'lardan veri işleme](android-flow-input) bölümüne bakın. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olarak ayarlanmış bir `flow_screen_showed` olayını izleyin; bunun için [Flow ekran görüntülemelerini takip etme](android-flow-screen-views) bölümüne bakın. Kullanıcı o ekrandan sonra onboarding flow'unu kapattığında BMI'yi hesaplayın. Ardından paywallın flow görünümünü oluşturun ve `bmi` özel etiketi için BMI değerini aktarın.
+
+Onboarding flow'unun görünümüne aşağıdaki listener'ı geçirin:
+
+```kotlin showLineNumbers title="Kotlin"
+class OnboardingEventListener(
+    private val onBmiCalculated: (bmi: String) -> Unit,
+) : AdaptyFlowDefaultEventListener() {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        // Reset `bodyAnswers` and `reachedLastScreen` on every close,
+        // so that the next run starts without old answers.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+
+        onBmiCalculated(String.format(Locale.getDefault(), "%.1f", bmi))
+    }
+}
+```
+
+When the user closes the onboarding flow after its last screen, the listener calls `onBmiCalculated` with the BMI. Pass a lambda for `onBmiCalculated` that calls the following function. The function fetches the paywall flow, creates its view, and passes the BMI for the `bmi` custom tag:
+
+```kotlin showLineNumbers title="Kotlin"
+fun showBmiPaywall(activity: Activity, bmi: String) {
+    Adapty.getFlow("bmi_paywall") { flowResult ->
+        when (flowResult) {
+            is AdaptyResult.Success -> {
+                AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+                    when (configResult) {
+                        is AdaptyResult.Success -> {
+                            val flowView = AdaptyUI.getFlowView(
+                                activity,
+                                configResult.value,
+                                products = null,
+                                eventListener = AdaptyFlowDefaultEventListener(),
+                                tagResolver = AdaptyUiTagResolver { tag ->
+                                    if (tag == "bmi") bmi else null
+                                },
+                            )
+                            // add flowView to your view hierarchy
+                        }
+                        is AdaptyResult.Error -> {
+                            // handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+`String.format` ile `Locale.getDefault()` kullanmak, kullanıcının yerel ayarına göre ondalık ayracı uygular: İngilizce'de "22.7", Almanca'da "22,7".
+
+### BMI'ı kullanıcının profiline kaydetme \{#save-the-bmi-to-the-users-profile\}
+
+Kullanıcılara BMI değerlerine göre farklı flow'lar göstermek için BMI'ı profillerinin [özel attribute'u](android-setting-user-attributes#custom-user-attributes) olarak kaydedin. Adapty Kontrol Paneli'nde `bmi` anahtarıyla bir **Number** özel attribute'u [oluşturun](segments#custom-attributes). Ardından her flow'u bu attribute'tan oluşturulan bir [kitle](audience) için gösterin.
+
+BMI'ı hesapladıktan sonra `updateProfile` metodunu çağırın. Bir segment'in BMI'ı bir eşik değeriyle karşılaştırabilmesi için biçimlendirilmiş bir string yerine sayıyı kaydedin:
+
+```kotlin showLineNumbers title="Kotlin"
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+Adapty.updateProfile(params) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```

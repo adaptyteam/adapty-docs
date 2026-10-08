@@ -1,0 +1,155 @@
+---
+title: "在 Unity SDK 中向流程传递数据"
+description: "将 Unity 应用中的值传递给流程，并在文本元素中显示。"
+metadataTitle: "向流程传递数据 | Unity SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags)是一个自定义变量，其值来自你的应用。在变量设置中选择 **Value comes from outside the app** 后，你的应用就可以通过 Adapty SDK 为其设置值。例如，一个文本元素包含"Coins:"和一个自定义标签，若应用传入 120，用户看到的就是"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 向流程添加自定义标签 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传递自定义标签值 \{#pass-custom-tag-values\}
+
+将应用的值作为 `Dictionary<string, string>` 传递给 `AdaptyUICreateFlowViewParameters` 对象的 `SetCustomTags` 方法，并使用该对象调用 `AdaptyUI.CreateFlowView`：
+
+- 每个键是自定义标签的完整名称，例如 `user.streak`。
+- 每个值是用户在标签处看到的字符串。
+- 每个值必须是人类可读的格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+
+SDK 在创建视图时读取一次这些值，因此在流程打开期间它们不会发生变化。
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+如果您的应用已经为旧版付费墙编辑工具的付费墙设置了自定义标签值，请查看[流程中自定义标签的差异](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在未设置值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递给付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高数据，具体方法请参考[处理流程数据](unity-flow-input)。若要判断用户是否到达了最后一个屏幕，可以监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，详见[跟踪流程屏幕浏览](unity-flow-screen-views)。当用户关闭该屏幕后的用户引导流程时，计算 BMI，然后创建付费墙视图，并将 BMI 传入 `bmi` 自定义标签。
+
+在您通过 `Adapty.SetFlowsEventsListener` 注册的监听器上实现以下方法：
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+private bool reachedLastScreen;
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name == "flow_screen_showed") {
+        if (parameters.TryGetValue("is_last_screen", out var lastScreen)
+            && lastScreen is bool isLast && isLast) {
+            reachedLastScreen = true;
+        }
+        return;
+    }
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // The listener receives events from every flow. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    var answers = new Dictionary<string, string>(bodyAnswers);
+    var finished = reachedLastScreen;
+    bodyAnswers.Clear();
+    reachedLastScreen = false;
+
+    // Number inputs send their values as strings.
+    if (!finished) return;
+    if (!answers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!answers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` 使用当前区域设置的小数分隔符：英语环境下为 "22.7"，德语环境下为 "22,7"。
+
+### 将 BMI 保存到用户画像
+
+要根据用户的 BMI 展示不同流程，请将其作为用户画像的[自定义属性](unity-setting-user-attributes#custom-user-attributes)保存。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后为每个流程配置基于该属性构建的[目标受众](audience)。
+
+在计算出 BMI 后，调用 `updateProfile` 方法。请保存数字而非格式化字符串，这样市场细分才能将 BMI 与阈值进行比较：
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyProfileParameters.Builder()
+    .SetCustomDoubleAttribute("bmi", bmi)
+    .Build();
+
+Adapty.UpdateProfile(parameters, (error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```

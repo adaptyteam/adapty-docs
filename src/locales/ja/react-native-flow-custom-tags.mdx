@@ -1,0 +1,147 @@
+---
+title: "React Native SDKでフローにデータを渡す"
+description: "React Nativeアプリからフローに値を渡し、テキスト要素に表示します。"
+metadataTitle: "フローにデータを渡す | React Native SDK | Adapty ドキュメント"
+---
+
+[カスタムタグ](flow-custom-tags)は、アプリからの値を持つカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、アプリはAdapty SDKを通じてその値を設定できます。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれている場合、アプリがタグに120を渡すと、ユーザーには「Coins: 120」と表示されます。
+
+## 始める前に \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## フローにカスタムタグを追加する \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## カスタムタグの値を渡す \{#pass-custom-tag-values\}
+
+アプリの値を `AdaptyFlowView` または `createFlowView` の `customTags` パラメータにオブジェクトとして渡します：
+
+- 各キーは `user.streak` のようなカスタムタグのフル名です。
+- 各値はタグの代わりにユーザーに表示される文字列です。
+- 各値は "1250.0" ではなく "1,250" のように人が読める形式である必要があります。Adapty はフォーマットや翻訳を行いません。
+
+SDK はビューを作成する際に値を一度だけ読み込むため、フローが開いている間は変更されません。
+
+<Tabs>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const flowParams = {
+  customTags: {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+};
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return <AdaptyFlowView flow={flow} params={flowParams} style={{ flex: 1 }} />;
+}
+```
+
+</TabItem>
+<TabItem value="modal" label="モーダル表示">
+
+```typescript showLineNumbers title="React Native"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+アプリが旧ペイウォールビルダーのペイウォール向けにすでにカスタムタグの値を設定している場合は、[フローにおけるカスタムタグの違い](migrate-to-flows#custom-tags-from-the-old-paywall-builder)を確認してください。
+
+## 値が設定されていない場合にユーザーに表示されること \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 例：オンボーディングの回答からBMIを表示する \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### フローを設定する \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### ペイウォールにBMIを渡す \{#pass-the-bmi-to-the-paywall\}
+
+オンボーディングフローの `flow_user_input` イベントから体重と身長を収集します。詳しくは[フローからのデータ処理](react-native-flow-input)を参照してください。ユーザーが最後の画面に到達したことを確認するには、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視します。詳しくは[フロー画面ビューのトラッキング](react-native-flow-screen-views)を参照してください。その画面の後にユーザーがオンボーディングフローを閉じたら、BMIを計算します。次にペイウォールのビューを作成し、`bmi` カスタムタグにBMIを渡します。
+
+`onboardingView` に以下のハンドラーを登録してください。このビューはオンボーディングフロー用に作成したものです。
+
+```javascript showLineNumbers title="React Native"
+
+const bodyAnswers = {};
+let reachedLastScreen = false;
+
+const unsubscribe = onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id] = params.value;
+    }
+    return false; // keep the flow open
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi) {
+  try {
+    const flow = await adapty.getFlow('bmi_paywall');
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` は、ユーザーのロケールに応じた小数点区切り文字を使用します（英語では「22.7」、ドイツ語では「22,7」）。
+
+### BMIをユーザーのプロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
+
+BMIに基づいて異なるフローをユーザーに表示するには、BMIをプロファイルの[カスタム属性](react-native-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー `bmi` を持つ **Number** タイプの[カスタム属性を作成](segments#custom-attributes)してください。その後、この属性をもとに作成した[オーディエンス](audience)に対して各フローを表示します。
+
+BMIを計算したら、`updateProfile` メソッドを呼び出してください。セグメントがBMIをしきい値と比較できるように、フォーマットされた文字列ではなく数値で保存します：
+
+```javascript showLineNumbers title="React Native"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

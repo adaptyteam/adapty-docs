@@ -1,0 +1,164 @@
+---
+title: "Truyền dữ liệu vào flow trong Flutter SDK"
+description: "Truyền một giá trị từ ứng dụng Flutter của bạn vào một flow và hiển thị nó trong phần tử văn bản."
+metadataTitle: "Truyền dữ liệu vào flow | Flutter SDK | Tài liệu Adapty"
+---
+
+[Custom tag](flow-custom-tags) là một biến tùy chỉnh với giá trị lấy từ ứng dụng của bạn. Sau khi bạn chọn **Value comes from outside the app** trong cài đặt biến, ứng dụng của bạn có thể đặt giá trị cho nó thông qua Adapty SDK. Ví dụ, một phần tử văn bản chứa "Coins:" và một custom tag. Nếu ứng dụng của bạn truyền 120 cho tag đó, người dùng sẽ thấy "Coins: 120".
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Thêm custom tag vào flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Truyền giá trị custom tag \{#pass-custom-tag-values\}
+
+Truyền các giá trị từ ứng dụng của bạn vào tham số `customTags` của `AdaptyUI().createFlowView` hoặc `AdaptyUIFlowPlatformView`, dưới dạng `Map<String, String>`:
+
+- Mỗi key là tên đầy đủ của một custom tag, ví dụ như `user.streak`.
+- Mỗi value là chuỗi mà người dùng nhìn thấy thay thế cho tag đó.
+- Mỗi value phải ở dạng con người đọc được, ví dụ "1,250" chứ không phải "1250.0". Adapty không tự định dạng hay dịch giá trị này.
+
+SDK đọc các giá trị một lần duy nhất khi tạo view, vì vậy chúng sẽ không thay đổi trong khi flow đang mở.
+
+<Tabs>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Nhúng vào cây widget">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+Một `AdaptyUIFlowPlatformView` đã được mount sẽ bỏ qua các thay đổi sau này đối với `customTags`.
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Nếu ứng dụng của bạn đã thiết lập giá trị custom tag cho các paywall trong Paywall Builder cũ, hãy xem lại [sự khác biệt của custom tags trong flows](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Người dùng thấy gì khi không có giá trị \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ví dụ: hiển thị chỉ số BMI từ câu trả lời onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Thiết lập flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Truyền chỉ số BMI đến paywall \{#pass-the-bmi-to-the-paywall\}
+
+Thu thập cân nặng và chiều cao từ các sự kiện `flow_user_input` của flow onboarding, như được mô tả trong [Xử lý dữ liệu từ flow](flutter-flow-input). Để biết người dùng đã đến màn hình cuối, hãy theo dõi sự kiện `flow_screen_showed` có `is_last_screen` được đặt là `true`, như trong [Theo dõi lượt xem màn hình flow](flutter-flow-screen-views). Khi người dùng đóng flow onboarding sau màn hình đó, hãy tính BMI. Sau đó tạo view cho paywall và truyền BMI vào custom tag `bmi`.
+
+Implement the following methods on the observer you register with `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` luôn dùng dấu chấm làm dấu phân cách thập phân. Để dùng dấu phân cách theo ngôn ngữ của người dùng, hãy định dạng BMI với `NumberFormat` từ package `intl`.
+
+### Lưu BMI vào hồ sơ người dùng \{#save-the-bmi-to-the-users-profile\}
+
+Để hiển thị các flow khác nhau cho người dùng dựa trên BMI của họ, hãy lưu BMI dưới dạng [thuộc tính tùy chỉnh](flutter-setting-user-attributes#custom-user-attributes) trong hồ sơ người dùng. Trên Adapty Dashboard, [tạo một thuộc tính tùy chỉnh kiểu **Number**](segments#custom-attributes) với key `bmi`. Sau đó hiển thị mỗi flow cho một [đối tượng](audience) được xây dựng từ thuộc tính đó.
+
+Gọi phương thức `updateProfile` sau khi tính toán BMI. Lưu dưới dạng số, không phải chuỗi đã định dạng, để phân khúc có thể so sánh BMI với một ngưỡng nhất định:
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```

@@ -1,0 +1,190 @@
+---
+title: "Передача данных во флоу в Android SDK"
+description: "Передайте значение из вашего Android-приложения во флоу и отобразите его в текстовом элементе."
+metadataTitle: "Передача данных во флоу | Android SDK | Документация Adapty"
+---
+
+[Пользовательский тег](flow-custom-tags) — это переменная с произвольным значением из вашего приложения. Если в настройках переменной выбрать **Value comes from outside the app**, ваше приложение сможет задать её значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и пользовательский тег. Если приложение передаёт 120 для этого тега, пользователь видит «Coins: 120».
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Добавьте пользовательские теги во флоу \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Передача пользовательских значений тегов \{#pass-custom-tag-values\}
+
+Создайте `AdaptyUiTagResolver` и передайте его в параметр `tagResolver` метода `AdaptyUI.getFlowView`. SDK вызывает резолвер с полным именем каждого кастомного тега, например `user.streak`. Резолвер возвращает одно из следующих значений:
+
+- **Строка**: пользователи видят её вместо тега. Она должна быть удобочитаемой, например «1 250», а не «1250.0». Adapty не форматирует и не переводит её.
+- **`null`**: пользователи видят начальное значение тега как запасной вариант.
+- **Пустая строка**: пользователи не видят ничего вместо тега.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val customTags = mapOf(
+    "username" to "DragonSlayer42",
+    "coins" to "1,250",
+)
+val tagResolver = AdaptyUiTagResolver { tag -> customTags[tag] }
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    tagResolver = tagResolver,
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+Map<String, String> customTags = new HashMap<>();
+customTags.put("username", "DragonSlayer42");
+customTags.put("coins", "1,250");
+AdaptyUiTagResolver tagResolver = customTags::get;
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null,
+        eventListener,
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        tagResolver
+);
+```
+
+</TabItem>
+</Tabs>
+
+Если вы создаёте `AdaptyFlowView` самостоятельно, передайте резолвер в его метод `showFlow`. В Jetpack Compose передайте его в `AdaptyFlowScreen`. Примеры каждого вызова смотрите в разделе [Отображение флоу и пейволов](android-present-paywalls).
+
+<FlowCustomTagsVerify />
+
+Если ваше приложение уже задаёт значения кастомных тегов для старых пейволов Paywall Builder, ознакомьтесь с тем, [чем кастомные теги во флоу отличаются от старых](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Что пользователи видят при отсутствии значения \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Пример: показ ИМТ на основе ответов из онбординга \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Настройка флоу \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Передача BMI на пейвол \{#pass-the-bmi-to-the-paywall\}
+
+Собирайте данные о весе и росте из событий `flow_user_input` флоу онбординга, как описано в разделе [Обработка данных из флоу](android-flow-input). Чтобы определить, что пользователь достиг последнего экрана, отслеживайте событие `flow_screen_showed` с параметром `is_last_screen`, равным `true`, — подробнее в разделе [Отслеживание просмотров экранов флоу](android-flow-screen-views). Когда пользователь закрывает флоу онбординга после этого экрана, вычислите BMI. Затем создайте представление флоу пейвола и передайте BMI в качестве значения кастомного тега `bmi`.
+
+Передайте следующий листенер в представление флоу онбординга:
+
+```kotlin showLineNumbers title="Kotlin"
+class OnboardingEventListener(
+    private val onBmiCalculated: (bmi: String) -> Unit,
+) : AdaptyFlowDefaultEventListener() {
+
+    private val bodyAnswers = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        bodyAnswers[elementId] = value
+    }
+
+    override fun onFlowClosed() {
+        // Reset `bodyAnswers` and `reachedLastScreen` on every close,
+        // so that the next run starts without old answers.
+        val answers = bodyAnswers.toMap()
+        val finished = reachedLastScreen
+        bodyAnswers.clear()
+        reachedLastScreen = false
+
+        // Number inputs send their values as strings.
+        if (!finished) return
+        val weight = answers["weight"]?.toDoubleOrNull() ?: return
+        val height = answers["height"]?.toDoubleOrNull()?.takeIf { it > 0 } ?: return
+
+        val heightInMeters = height / 100
+        val bmi = weight / (heightInMeters * heightInMeters)
+
+        onBmiCalculated(String.format(Locale.getDefault(), "%.1f", bmi))
+    }
+}
+```
+
+Когда пользователь закрывает флоу онбординга после последнего экрана, слушатель вызывает `onBmiCalculated` с BMI. Передайте лямбду для `onBmiCalculated`, которая вызывает следующую функцию. Функция получает флоу пейвола, создаёт его представление и передаёт BMI для кастомного тега `bmi`:
+
+```kotlin showLineNumbers title="Kotlin"
+fun showBmiPaywall(activity: Activity, bmi: String) {
+    Adapty.getFlow("bmi_paywall") { flowResult ->
+        when (flowResult) {
+            is AdaptyResult.Success -> {
+                AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+                    when (configResult) {
+                        is AdaptyResult.Success -> {
+                            val flowView = AdaptyUI.getFlowView(
+                                activity,
+                                configResult.value,
+                                products = null,
+                                eventListener = AdaptyFlowDefaultEventListener(),
+                                tagResolver = AdaptyUiTagResolver { tag ->
+                                    if (tag == "bmi") bmi else null
+                                },
+                            )
+                            // add flowView to your view hierarchy
+                        }
+                        is AdaptyResult.Error -> {
+                            // handle the error
+                        }
+                    }
+                }
+            }
+            is AdaptyResult.Error -> {
+                // handle the error
+            }
+        }
+    }
+}
+```
+
+`String.format` с `Locale.getDefault()` использует десятичный разделитель локали пользователя: "22.7" для английского, "22,7" для немецкого.
+
+### Сохранение ИМТ в профиль пользователя \{#save-the-bmi-to-the-users-profile\}
+
+Чтобы показывать пользователям разные флоу в зависимости от их ИМТ, сохраните его как [пользовательский атрибут](android-setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу [аудитории](audience), собранной на основе этого атрибута.
+
+Вызовите метод `updateProfile` после вычисления ИМТ. Сохраните число, а не отформатированную строку — это позволит сегменту сравнивать ИМТ с пороговым значением:
+
+```kotlin showLineNumbers title="Kotlin"
+val params = AdaptyProfileParameters.Builder()
+    .withCustomAttribute("bmi", bmi)
+    .build()
+
+Adapty.updateProfile(params) { error ->
+    if (error != null) {
+        // handle the error
+    }
+}
+```

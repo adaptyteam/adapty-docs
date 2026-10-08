@@ -1,0 +1,147 @@
+---
+title: "Passer des données aux flows dans le SDK React Native"
+description: "Passez une valeur depuis votre application React Native à un flow, et affichez-la dans un élément de texte."
+metadataTitle: "Passer des données aux flows | SDK React Native | Documentation Adapty"
+---
+
+Un [tag personnalisé](flow-custom-tags) est une variable personnalisée dont la valeur provient de votre application. Une fois que vous avez sélectionné **Value comes from outside the app** dans les paramètres d'une variable, votre application peut définir sa valeur via le SDK Adapty. Par exemple, un élément de texte contient « Coins : » et un tag personnalisé. Si votre application passe 120 pour le tag, les utilisateurs voient « Coins : 120 ».
+
+## Avant de commencer \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Ajouter des balises personnalisées au flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Passer des valeurs de tags personnalisés \{#pass-custom-tag-values\}
+
+Passez les valeurs de votre application au paramètre `customTags` de `AdaptyFlowView` ou `createFlowView`, sous forme d'objet :
+
+- Chaque clé est le nom complet d'un tag personnalisé, comme `user.streak`.
+- Chaque valeur est la chaîne que les utilisateurs voient à la place du tag.
+- Chaque valeur doit être lisible par un humain, par exemple "1 250" et non "1250.0". Adapty ne la formate ni ne la traduit.
+
+Le SDK lit les valeurs une seule fois, lors de la création de la vue, elles ne changent donc pas pendant que le flow est ouvert.
+
+<Tabs>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const flowParams = {
+  customTags: {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+};
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return <AdaptyFlowView flow={flow} params={flowParams} style={{ flex: 1 }} />;
+}
+```
+
+</TabItem>
+<TabItem value="modal" label="Présentation modale">
+
+```typescript showLineNumbers title="React Native"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Si votre application définit déjà des valeurs de tags personnalisés pour les paywalls de l'ancien Paywall Builder, consultez [les différences entre les tags personnalisés dans les flows et l'ancien Paywall Builder](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Ce que les utilisateurs voient sans valeur \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Exemple : afficher un IMC à partir des réponses de l'onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Configurer les flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Transmettre l'IMC au paywall \{#pass-the-bmi-to-the-paywall\}
+
+Récupérez le poids et la taille depuis les événements `flow_user_input` du flow d'onboarding, comme indiqué dans [Traiter les données des flows](react-native-flow-input). Pour savoir que l'utilisateur a atteint le dernier écran, attendez un événement `flow_screen_showed` avec `is_last_screen` défini à `true`, comme indiqué dans [Suivre les vues d'écran des flows](react-native-flow-screen-views). Lorsque l'utilisateur ferme le flow d'onboarding après cet écran, calculez l'IMC. Ensuite, créez la vue du paywall et transmettez l'IMC pour le tag personnalisé `bmi`.
+
+Enregistrez les gestionnaires suivants sur `onboardingView`, la vue que vous créez pour le flow d'onboarding :
+
+```javascript showLineNumbers title="React Native"
+
+const bodyAnswers = {};
+let reachedLastScreen = false;
+
+const unsubscribe = onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id] = params.value;
+    }
+    return false; // keep the flow open
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi) {
+  try {
+    const flow = await adapty.getFlow('bmi_paywall');
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` utilise le séparateur décimal de la locale de l'utilisateur : « 22.7 » en anglais, « 22,7 » en allemand.
+
+### Enregistrer l'IMC dans le profil de l'utilisateur \{#save-the-bmi-to-the-users-profile\}
+
+Pour afficher différents flows aux utilisateurs selon leur IMC, enregistrez-le en tant qu'[attribut personnalisé](react-native-setting-user-attributes#custom-user-attributes) de leur profil. Dans l'Adapty Dashboard, [créez un attribut personnalisé de type **Number**](segments#custom-attributes) avec la clé `bmi`. Affichez ensuite chaque flow à une [audience](audience) construite à partir de cet attribut.
+
+Appelez la méthode `updateProfile` après avoir calculé l'IMC. Enregistrez le nombre, et non une chaîne formatée, afin qu'un segment puisse comparer l'IMC à un seuil :
+
+```javascript showLineNumbers title="React Native"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

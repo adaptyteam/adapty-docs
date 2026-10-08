@@ -1,0 +1,151 @@
+---
+title: "iOS SDK'da flow'lara veri aktarma"
+description: "iOS uygulamanızdan bir flow'a değer aktarın ve bunu bir metin öğesinde gösterin."
+metadataTitle: "Flow'lara veri aktarma | iOS SDK | Adapty Dokümanları"
+---
+
+[Özel etiket](flow-custom-tags), uygulamanızdan gelen bir değere sahip özel bir değişkendir. Bir değişkenin ayarlarında **Value comes from outside the app** seçeneğini belirledikten sonra, uygulamanız Adapty SDK aracılığıyla bu değişkenin değerini ayarlayabilir. Örneğin, bir metin öğesi "Coins:" ve bir özel etiket içeriyorsa, uygulamanız etikete 120 değerini aktardığında kullanıcılar "Coins: 120" görür.
+
+## Başlamadan önce \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Flow'a özel etiketler ekle \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Özel etiket değerlerini aktarma \{#pass-custom-tag-values\}
+
+`getFlowConfiguration` metodunun `tagResolver` parametresine, uygulamanızın değerlerini `[String: String]` sözlüğü olarak aktarın:
+
+- Her anahtar, `user.streak` gibi özel bir etiketin tam adıdır.
+- Her değer, kullanıcıların etiket yerine gördüğü metindir.
+- Her değer, "1250.0" değil "1,250" gibi okunabilir bir formatta olmalıdır. Adapty bu değerleri biçimlendirmez veya çevirmez.
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+SwiftUI [`.flow` modifier ve `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) ile UIKit [flow controller](ios-present-paywalls#present-flows-and-paywalls-in-uikit), özel etiket değerleri için herhangi bir parametre almaz. Bu bileşenler, verdiğiniz flow yapılandırmasındaki değerleri gösterir.
+
+<FlowCustomTagsVerify />
+
+Uygulamanız eski Paywall Builder paywallları için zaten özel etiket değerleri ayarlıyorsa, [flow'lardaki özel etiketlerin nasıl farklılaştığını](migrate-to-flows#custom-tags-from-the-old-paywall-builder) inceleyin.
+
+## Kullanıcılar değer olmadığında ne görür \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Örnek: onboarding yanıtlarından VKİ gösterme \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Flow'ları ayarlayın \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### BMI'yi paywall'a aktarın \{#pass-the-bmi-to-the-paywall\}
+
+Onboarding flow'unun `flow_user_input` etkinliklerinden ağırlık ve boy bilgilerini toplayın; bunun nasıl yapıldığını [Flow'lardan veri işleme](ios-flow-input) bölümünde bulabilirsiniz. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olan bir `flow_screen_showed` etkinliğini izleyin; bkz. [Flow ekran görüntülemelerini takip etme](ios-flow-screen-views). Kullanıcı o ekranın ardından onboarding flow'unu kapattığında BMI'yi hesaplayın. Ardından paywall'ın flow yapılandırmasını çekin ve `bmi` özel etiketi için BMI değerini aktarın.
+
+Aşağıdaki kod UIKit içindir. Hem onboarding flow kontrolcüsünün hem de paywall kontrolcüsünün delegate'i olan tek bir view controller üzerinde `AdaptyFlowControllerDelegate` metodlarını uygular.
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+`formatted`, kullanıcının yerel ayarına göre ondalık ayırıcı kullanır: İngilizce'de "22.7", Almanca'da "22,7".
+
+SwiftUI'da, delegate metotları yerine onboarding flow'unun `.flow` modifier'ının closure'larını kullanın:
+
+- `didReceiveAnalyticEvent`: Ağırlığı ve boyu toplayın ve son ekranın `flow_screen_showed` eventini izleyin.
+- `didDisappear`: Kullanıcı son ekrana ulaştıysa BMI'yı hesaplayın. Ardından paywall'ın flow yapılandırmasını çekin ve `bmi` custom tag'i için BMI değerini geçirin. Bu yapılandırmayı ikinci bir `.flow` modifier ile gösterin.
+
+### BMI'yı kullanıcı profiline kaydedin \{#save-the-bmi-to-the-users-profile\}
+
+Kullanıcılara BMI'larına göre farklı flow'lar göstermek için BMI'yı profillerinin [özel niteliği](setting-user-attributes#custom-user-attributes) olarak kaydedin. Adapty Kontrol Paneli'nde `bmi` anahtarıyla bir **Number** [özel niteliği oluşturun](segments#custom-attributes). Ardından her flow'u bu nitelikten oluşturulan bir [kitleye](audience) gösterin.
+
+BMI'yı hesapladıktan sonra `updateProfile` metodunu çağırın. Bir segment'in BMI'yı bir eşikle karşılaştırabilmesi için biçimlendirilmiş bir dize değil, sayıyı kaydedin:
+
+```swift showLineNumbers title="Swift"
+do {
+    let params = try AdaptyProfileParameters.Builder()
+        .with(customAttribute: bmi, forKey: "bmi")
+        .build()
+    try await Adapty.updateProfile(params: params)
+} catch {
+    // handle the error
+}
+```

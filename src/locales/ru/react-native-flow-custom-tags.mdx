@@ -1,0 +1,147 @@
+---
+title: "Передача данных во флоу в React Native SDK"
+description: "Передайте значение из вашего приложения на React Native во флоу и отобразите его в текстовом элементе."
+metadataTitle: "Передача данных во флоу | React Native SDK | Документация Adapty"
+---
+
+[Кастомный тег](flow-custom-tags) — это переменная с произвольным значением из вашего приложения. После того как вы выбираете **Value comes from outside the app** в настройках переменной, ваше приложение может задать ей значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и кастомный тег. Если приложение передаёт для тега значение 120, пользователь видит «Coins: 120».
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Добавьте пользовательские теги во флоу \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Передача значений пользовательских тегов \{#pass-custom-tag-values\}
+
+Передайте значения вашего приложения в параметр `customTags` компонента `AdaptyFlowView` или функции `createFlowView` в виде объекта:
+
+- Каждый ключ — это полное имя пользовательского тега, например `user.streak`.
+- Каждое значение — это строка, которую пользователи видят вместо тега.
+- Каждое значение должно быть читаемым для человека, например «1 250», а не «1250.0». Adapty не форматирует и не переводит его.
+
+SDK считывает значения один раз — в момент создания представления, поэтому они не меняются, пока флоу открыт.
+
+<Tabs>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const flowParams = {
+  customTags: {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+};
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return <AdaptyFlowView flow={flow} params={flowParams} style={{ flex: 1 }} />;
+}
+```
+
+</TabItem>
+<TabItem value="modal" label="Модальное отображение">
+
+```typescript showLineNumbers title="React Native"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+Если ваше приложение уже задаёт значения пользовательских тегов для пейволов на старом Paywall Builder, ознакомьтесь с тем, [чем пользовательские теги во флоу отличаются от старых](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Что видят пользователи, если значение отсутствует \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Пример: отображение ИМТ на основе ответов онбординга \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Настройте флоу \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Передайте ИМТ на пейвол
+
+Соберите вес и рост из событий `flow_user_input` онбординг-флоу, как описано в разделе [Обработка данных из флоу](react-native-flow-input). Чтобы определить, что пользователь дошёл до последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen` равным `true`, как описано в разделе [Отслеживание просмотров экранов флоу](react-native-flow-screen-views). Когда пользователь закроет онбординг-флоу после этого экрана, рассчитайте ИМТ. Затем создайте представление пейвола и передайте ИМТ в кастомный тег `bmi`.
+
+Зарегистрируйте следующие обработчики на `onboardingView` — объекте представления, который вы создаёте для онбординга:
+
+```javascript showLineNumbers title="React Native"
+
+const bodyAnswers = {};
+let reachedLastScreen = false;
+
+const unsubscribe = onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id] = params.value;
+    }
+    return false; // keep the flow open
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi) {
+  try {
+    const flow = await adapty.getFlow('bmi_paywall');
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` использует десятичный разделитель из локали пользователя: «22.7» в английской и «22,7» в немецкой.
+
+### Сохранение ИМТ в профиль пользователя \{#save-the-bmi-to-the-users-profile\}
+
+Чтобы показывать пользователям разные флоу в зависимости от ИМТ, сохраните его как [пользовательский атрибут](react-native-setting-user-attributes#custom-user-attributes) их профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу нужной [аудитории](audience), построенной на основе этого атрибута.
+
+Вызовите метод `updateProfile` после расчёта ИМТ. Сохраняйте число, а не отформатированную строку — это позволит сегменту сравнивать ИМТ с пороговым значением:
+
+```javascript showLineNumbers title="React Native"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```

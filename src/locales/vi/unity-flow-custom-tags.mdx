@@ -1,0 +1,155 @@
+---
+title: "Truyền dữ liệu vào flow trong Unity SDK"
+description: "Truyền một giá trị từ ứng dụng Unity của bạn vào một flow và hiển thị nó trong một thành phần văn bản."
+metadataTitle: "Truyền dữ liệu vào flow | Unity SDK | Tài liệu Adapty"
+---
+
+[Custom tag](flow-custom-tags) là một biến tùy chỉnh với giá trị đến từ ứng dụng của bạn. Sau khi bạn chọn **Value comes from outside the app** trong cài đặt của biến, ứng dụng của bạn có thể đặt giá trị cho nó thông qua Adapty SDK. Ví dụ: một thành phần văn bản chứa "Coins:" và một custom tag. Nếu ứng dụng của bạn truyền 120 cho tag đó, người dùng sẽ thấy "Coins: 120".
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Thêm custom tags vào flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Truyền giá trị custom tag \{#pass-custom-tag-values\}
+
+Truyền các giá trị từ app của bạn vào phương thức `SetCustomTags` của đối tượng `AdaptyUICreateFlowViewParameters`, dưới dạng `Dictionary<string, string>`, rồi gọi `AdaptyUI.CreateFlowView` với đối tượng đó:
+
+- Mỗi key là tên đầy đủ của một custom tag, ví dụ `user.streak`.
+- Mỗi value là chuỗi mà người dùng nhìn thấy thay cho tag đó.
+- Mỗi value phải ở dạng con người đọc được, ví dụ "1,250" chứ không phải "1250.0". Adapty không tự định dạng hay dịch giá trị này.
+
+SDK đọc các giá trị một lần duy nhất khi tạo view, nên chúng sẽ không thay đổi trong khi flow đang mở.
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+Nếu ứng dụng của bạn đã thiết lập giá trị custom tag cho các paywall cũ của Paywall Builder, hãy xem [cách custom tag trong flow khác biệt như thế nào](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Người dùng thấy gì khi không có giá trị \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ví dụ: hiển thị BMI từ câu trả lời onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Thiết lập các flow \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Truyền chỉ số BMI vào paywall \{#pass-the-bmi-to-the-paywall\}
+
+Thu thập cân nặng và chiều cao từ các sự kiện `flow_user_input` của flow onboarding, như trong [Xử lý dữ liệu từ flow](unity-flow-input). Để biết người dùng đã đến màn hình cuối cùng, hãy theo dõi sự kiện `flow_screen_showed` với `is_last_screen` được đặt thành `true`, như trong [Theo dõi lượt xem màn hình flow](unity-flow-screen-views). Khi người dùng đóng flow onboarding sau màn hình đó, hãy tính chỉ số BMI. Sau đó tạo view của paywall và truyền BMI vào custom tag `bmi`.
+
+Triển khai các phương thức sau trên listener mà bạn đăng ký với `Adapty.SetFlowsEventsListener`:
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+private bool reachedLastScreen;
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name == "flow_screen_showed") {
+        if (parameters.TryGetValue("is_last_screen", out var lastScreen)
+            && lastScreen is bool isLast && isLast) {
+            reachedLastScreen = true;
+        }
+        return;
+    }
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // The listener receives events from every flow. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    var answers = new Dictionary<string, string>(bodyAnswers);
+    var finished = reachedLastScreen;
+    bodyAnswers.Clear();
+    reachedLastScreen = false;
+
+    // Number inputs send their values as strings.
+    if (!finished) return;
+    if (!answers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!answers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` sử dụng dấu phân cách thập phân theo ngôn ngữ hiện tại: "22.7" trong tiếng Anh, "22,7" trong tiếng Đức.
+
+### Lưu chỉ số BMI vào hồ sơ người dùng \{#save-the-bmi-to-the-users-profile\}
+
+Để hiển thị các flow khác nhau dựa trên chỉ số BMI của người dùng, hãy lưu nó dưới dạng [thuộc tính tùy chỉnh](unity-setting-user-attributes#custom-user-attributes) trong hồ sơ của họ. Trên Adapty Dashboard, [tạo một thuộc tính tùy chỉnh kiểu **Number**](segments#custom-attributes) với key `bmi`. Sau đó hiển thị từng flow cho [đối tượng](audience) được xây dựng từ thuộc tính đó.
+
+Gọi phương thức `updateProfile` sau khi bạn tính xong chỉ số BMI. Lưu dưới dạng số, không phải chuỗi đã định dạng, để phân khúc có thể so sánh BMI với một ngưỡng cụ thể:
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyProfileParameters.Builder()
+    .SetCustomDoubleAttribute("bmi", bmi)
+    .Build();
+
+Adapty.UpdateProfile(parameters, (error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```

@@ -1,0 +1,155 @@
+---
+title: "Unity SDKでフローにデータを渡す"
+description: "Unityアプリからフローに値を渡し、テキスト要素に表示する方法を説明します。"
+metadataTitle: "フローへのデータの受け渡し | Unity SDK | Adapty ドキュメント"
+---
+
+[カスタムタグ](flow-custom-tags)は、アプリから値を受け取るカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、アプリはAdapty SDKを通じてその値を設定できます。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれている場合、アプリがタグに120を渡すと、ユーザーには「Coins: 120」と表示されます。
+
+## 始める前に \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## フローにカスタムタグを追加する \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## カスタムタグの値を渡す \{#pass-custom-tag-values\}
+
+アプリの値を `AdaptyUICreateFlowViewParameters` オブジェクトの `SetCustomTags` メソッドに `Dictionary<string, string>` として渡し、そのオブジェクトで `AdaptyUI.CreateFlowView` を呼び出します。
+
+- 各キーは `user.streak` などのカスタムタグのフルネームです。
+- 各値は、タグの代わりにユーザーに表示される文字列です。
+- 各値は "1250.0" ではなく "1,250" のように、人が読みやすい形式にする必要があります。Adapty はフォーマットや翻訳を行いません。
+
+SDK はビューの作成時に値を一度だけ読み込むため、フローが開いている間は変更されません。
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+アプリがすでに旧ペイウォールビルダーのペイウォールにカスタムタグ値を設定している場合は、[フローにおけるカスタムタグの違い](migrate-to-flows#custom-tags-from-the-old-paywall-builder)を確認してください。
+
+## 値が設定されていない場合にユーザーに表示されるもの \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## オンボーディングの回答からBMIを表示する例 \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### フローを設定する \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### ペイウォールにBMIを渡す \{#pass-the-bmi-to-the-paywall\}
+
+オンボーディングフローの `flow_user_input` イベントから体重と身長を取得する方法については、[フローからのデータを処理する](unity-flow-input)を参照してください。ユーザーが最後の画面に到達したことを確認するには、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視します。詳細は[フロー画面の表示をトラッキングする](unity-flow-screen-views)を参照してください。その画面の後にユーザーがオンボーディングフローを閉じたら、BMIを計算します。その後、ペイウォールのビューを作成し、`bmi` カスタムタグにBMIを渡します。
+
+Adapty.SetFlowsEventsListenerに登録するリスナーに、以下のメソッドを実装します：
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+private bool reachedLastScreen;
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name == "flow_screen_showed") {
+        if (parameters.TryGetValue("is_last_screen", out var lastScreen)
+            && lastScreen is bool isLast && isLast) {
+            reachedLastScreen = true;
+        }
+        return;
+    }
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // The listener receives events from every flow. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    var answers = new Dictionary<string, string>(bodyAnswers);
+    var finished = reachedLastScreen;
+    bodyAnswers.Clear();
+    reachedLastScreen = false;
+
+    // Number inputs send their values as strings.
+    if (!finished) return;
+    if (!answers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!answers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` は現在のカルチャの小数点区切り文字を使用します。英語では "22.7"、ドイツ語では "22,7" となります。
+
+### BMIをユーザーのプロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
+
+ユーザーのBMIに基づいて異なるフローを表示するには、BMIをプロファイルの[カスタム属性](unity-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー `bmi` を持つ[**Number** カスタム属性を作成](segments#custom-attributes)してください。その後、その属性から作成した[オーディエンス](audience)に各フローを表示します。
+
+BMIを計算した後、`updateProfile` メソッドを呼び出してください。セグメントがBMIをしきい値と比較できるように、フォーマットされた文字列ではなく数値を保存します：
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyProfileParameters.Builder()
+    .SetCustomDoubleAttribute("bmi", bmi)
+    .Build();
+
+Adapty.UpdateProfile(parameters, (error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```

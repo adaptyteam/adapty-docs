@@ -1,0 +1,155 @@
+---
+title: "Pasar datos a flows en Unity SDK"
+description: "Pasa un valor desde tu app de Unity a un flow y muéstralo en un elemento de texto."
+metadataTitle: "Pasar datos a flows | Unity SDK | Documentación de Adapty"
+---
+
+Una [etiqueta personalizada](flow-custom-tags) es una variable personalizada con un valor procedente de tu app. Después de seleccionar **Value comes from outside the app** en la configuración de una variable, tu app puede establecer su valor a través del SDK de Adapty. Por ejemplo, un elemento de texto contiene "Coins:" y una etiqueta personalizada. Si tu app pasa 120 para la etiqueta, los usuarios ven "Coins: 120".
+
+## Antes de comenzar \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Añadir etiquetas personalizadas al flow \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Pasar valores de etiquetas personalizadas \{#pass-custom-tag-values\}
+
+Pasa los valores de tu aplicación al método `SetCustomTags` de un objeto `AdaptyUICreateFlowViewParameters`, como un `Dictionary<string, string>`, y llama a `AdaptyUI.CreateFlowView` con ese objeto:
+
+- Cada clave es el nombre completo de una etiqueta personalizada, como `user.streak`.
+- Cada valor es la cadena que los usuarios ven en lugar de la etiqueta.
+- Cada valor debe ser legible para las personas, como "1.250", no "1250.0". Adapty no lo formatea ni traduce.
+
+El SDK lee los valores una sola vez, cuando crea la vista, por lo que no cambian mientras el flow está abierto.
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyUICreateFlowViewParameters()
+    .SetCustomTags(new Dictionary<string, string> {
+        { "username", "DragonSlayer42" },
+        { "coins", "1,250" }
+    });
+
+AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // present the view
+});
+```
+
+<FlowCustomTagsVerify />
+
+Si tu app ya establece valores de etiquetas personalizadas para paywalls del antiguo Paywall Builder, consulta [cómo difieren las etiquetas personalizadas en los flows](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Lo que ven los usuarios sin un valor \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Ejemplo: mostrar el IMC a partir de las respuestas del onboarding \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Configura los flows \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Pasar el IMC al paywall
+
+Recoge el peso y la altura de los eventos `flow_user_input` del flow de onboarding, como se explica en [Procesar datos de flows](unity-flow-input). Para saber que el usuario llegó a la última pantalla, observa el evento `flow_screen_showed` con `is_last_screen` a `true`, como en [Rastrear vistas de pantallas del flow](unity-flow-screen-views). Cuando el usuario cierre el flow de onboarding tras esa pantalla, calcula el IMC. Luego crea la vista del paywall y pasa el IMC para la etiqueta personalizada `bmi`.
+
+Implementa los siguientes métodos en el listener que registras con `Adapty.SetFlowsEventsListener`:
+
+```csharp showLineNumbers title="Unity"
+private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
+private bool reachedLastScreen;
+
+public void FlowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    string name,
+    IReadOnlyDictionary<string, object> parameters
+) {
+    if (name == "flow_screen_showed") {
+        if (parameters.TryGetValue("is_last_screen", out var lastScreen)
+            && lastScreen is bool isLast && isLast) {
+            reachedLastScreen = true;
+        }
+        return;
+    }
+    if (name != "flow_user_input") return;
+    if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
+
+    var elementId = parameters["element_id"] as string;
+    bodyAnswers[elementId] = value;
+}
+
+public void FlowViewDidDisappear(AdaptyUIFlowView view) {
+    // The listener receives events from every flow. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    var answers = new Dictionary<string, string>(bodyAnswers);
+    var finished = reachedLastScreen;
+    bodyAnswers.Clear();
+    reachedLastScreen = false;
+
+    // Number inputs send their values as strings.
+    if (!finished) return;
+    if (!answers.TryGetValue("weight", out var weightText)
+        || !double.TryParse(weightText, out var weight)) return;
+    if (!answers.TryGetValue("height", out var heightText)
+        || !double.TryParse(heightText, out var height)
+        || height <= 0) return;
+
+    var heightInMeters = height / 100;
+    var bmi = weight / (heightInMeters * heightInMeters);
+    ShowBmiPaywall(bmi.ToString("0.0"));
+}
+
+private void ShowBmiPaywall(string bmi) {
+    Adapty.GetFlow("bmi_paywall", (flow, flowError) => {
+        if (flowError != null) {
+            // handle the error
+            return;
+        }
+
+        var parameters = new AdaptyUICreateFlowViewParameters()
+            .SetCustomTags(new Dictionary<string, string> { { "bmi", bmi } });
+
+        AdaptyUI.CreateFlowView(flow, parameters, (view, viewError) => {
+            if (viewError != null) {
+                // handle the error
+                return;
+            }
+
+            view.Present((presentError) => {
+                if (presentError != null) {
+                    // handle the error
+                }
+            });
+        });
+    });
+}
+```
+
+`ToString("0.0")` usa el separador decimal de la cultura actual: "22.7" en inglés, "22,7" en alemán.
+
+### Guardar el IMC en el perfil del usuario \{#save-the-bmi-to-the-users-profile\}
+
+Para mostrar a los usuarios diferentes flows según su IMC, guárdalo como un [atributo personalizado](unity-setting-user-attributes#custom-user-attributes) de su perfil. En el Adapty Dashboard, [crea un atributo personalizado de tipo **Number**](segments#custom-attributes) con la clave `bmi`. Luego muestra cada flow a una [audiencia](audience) definida a partir de ese atributo.
+
+Llama al método `updateProfile` después de calcular el IMC. Guarda el número, no una cadena formateada, para que un segmento pueda comparar el IMC con un umbral:
+
+```csharp showLineNumbers title="Unity"
+var parameters = new AdaptyProfileParameters.Builder()
+    .SetCustomDoubleAttribute("bmi", bmi)
+    .Build();
+
+Adapty.UpdateProfile(parameters, (error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```

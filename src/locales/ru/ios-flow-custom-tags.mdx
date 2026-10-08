@@ -1,0 +1,151 @@
+---
+title: "Передача данных во флоу в iOS SDK"
+description: "Передайте значение из вашего iOS-приложения во флоу и отобразите его в текстовом элементе."
+metadataTitle: "Передача данных во флоу | iOS SDK | Документация Adapty"
+---
+
+[Кастомный тег](flow-custom-tags) — это пользовательская переменная со значением из вашего приложения. После того как вы выбираете **Value comes from outside the app** в настройках переменной, приложение может задать её значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и кастомный тег. Если приложение передаёт для тега значение 120, пользователи увидят «Coins: 120».
+
+## Прежде чем начать \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## Добавление кастомных тегов во флоу \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## Передача значений кастомных тегов \{#pass-custom-tag-values\}
+
+Передайте значения вашего приложения в параметр `tagResolver` метода `getFlowConfiguration` в виде словаря `[String: String]`:
+
+- Каждый ключ — это полное имя кастомного тега, например `user.streak`.
+- Каждое значение — это строка, которую пользователи видят вместо тега.
+- Каждое значение должно быть удобочитаемым, например "1 250", а не "1250.0". Adapty не форматирует и не переводит его.
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+SwiftUI [модификатор `.flow` и `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui), а также UIKit [контроллер флоу](ios-present-paywalls#present-flows-and-paywalls-in-uikit) не имеют параметра для пользовательских значений тегов. Они отображают значения из конфигурации флоу, которую вы им передаёте.
+
+<FlowCustomTagsVerify />
+
+Если ваше приложение уже задаёт пользовательские значения тегов для пейволов старого Paywall Builder, ознакомьтесь с тем, [чем пользовательские теги во флоу отличаются](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## Что видят пользователи при отсутствии значения \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## Пример: показ ИМТ по ответам из онбординга \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### Настройка флоу \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### Передайте BMI на пейвол \{#pass-the-bmi-to-the-paywall\}
+
+Соберите вес и рост пользователя из событий `flow_user_input` флоу онбординга, как описано в [Обработка данных из флоу](ios-flow-input). Чтобы определить, что пользователь дошёл до последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen` равным `true`, как описано в [Отслеживание просмотров экранов флоу](ios-flow-screen-views). Когда пользователь закрывает флоу онбординга после этого экрана, вычислите BMI. Затем загрузите конфигурацию флоу пейвола и передайте BMI для кастомного тега `bmi`.
+
+Следующий код написан для UIKit. Он реализует методы `AdaptyFlowControllerDelegate` в одном контроллере, который является делегатом как контроллера флоу онбординга, так и контроллера пейвола.
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+`formatted` использует десятичный разделитель из локали пользователя: "22.7" в английской, "22,7" в немецкой.
+
+В SwiftUI используйте замыкания модификатора `.flow` онбординг-флоу вместо методов делегата:
+
+- `didReceiveAnalyticEvent`: собирайте вес и рост, а также отслеживайте событие `flow_screen_showed` последнего экрана.
+- `didDisappear`: если пользователь дошёл до последнего экрана, вычислите ИМТ. Затем получите конфигурацию флоу пейвола и передайте ИМТ в кастомный тег `bmi`. Отобразите эту конфигурацию с помощью второго модификатора `.flow`.
+
+### Сохранение ИМТ в профиле пользователя \{#save-the-bmi-to-the-users-profile\}
+
+Чтобы показывать пользователям разные флоу в зависимости от их ИМТ, сохраните его как [пользовательский атрибут](setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу нужной [аудитории](audience), настроенной на основе этого атрибута.
+
+Вызовите метод `updateProfile` сразу после вычисления ИМТ. Сохраняйте число, а не отформатированную строку, чтобы сегмент мог сравнивать ИМТ с пороговым значением:
+
+```swift showLineNumbers title="Swift"
+do {
+    let params = try AdaptyProfileParameters.Builder()
+        .with(customAttribute: bmi, forKey: "bmi")
+        .build()
+    try await Adapty.updateProfile(params: params)
+} catch {
+    // handle the error
+}
+```

@@ -1,0 +1,164 @@
+---
+title: "FlutterSDKでフローにデータを渡す"
+description: "FlutterアプリからフローへValue（値）を渡し、テキスト要素に表示します。"
+metadataTitle: "フローにデータを渡す | Flutter SDK | Adapty ドキュメント"
+---
+
+[カスタムタグ](flow-custom-tags)は、アプリからの値を持つカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、Adapty SDKを通じてアプリが値を設定できるようになります。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれていて、アプリがタグに120を渡すと、ユーザーには「Coins: 120」と表示されます。
+
+## 始める前に \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## フローにカスタムタグを追加する \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## カスタムタグの値を渡す \{#pass-custom-tag-values\}
+
+アプリの値を `AdaptyUI().createFlowView` または `AdaptyUIFlowPlatformView` の `customTags` パラメータに `Map<String, String>` 形式で渡します。
+
+- 各キーは `user.streak` のようなカスタムタグの完全な名前です。
+- 各値はタグの代わりにユーザーに表示される文字列です。
+- 各値は "1,250" のように人間が読める形式である必要があります。"1250.0" ではありません。Adapty はフォーマットや翻訳を行いません。
+
+SDK はビューを作成する際に値を一度だけ読み込むため、フローが開いている間は変更されません。
+
+<Tabs>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="ウィジェット階層に埋め込む">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+マウントされた `AdaptyUIFlowPlatformView` は、後から `customTags` を変更しても反映されません。
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+アプリが旧ペイウォールビルダーのペイウォールにカスタムタグを設定している場合は、[フローにおけるカスタムタグの違い](migrate-to-flows#custom-tags-from-the-old-paywall-builder)を確認してください。
+
+## 値が設定されていない場合にユーザーに表示されるもの \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 例：オンボーディングの回答からBMIを表示する \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### フローを設定する \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### ペイウォールにBMIを渡す \{#pass-the-bmi-to-the-paywall\}
+
+オンボーディングフローの `flow_user_input` イベントから体重と身長を収集します。詳細は[フローからデータを処理する](flutter-flow-input)を参照してください。ユーザーが最後の画面に到達したかどうかは、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視することで確認できます。詳細は[フロー画面のビューを追跡する](flutter-flow-screen-views)を参照してください。その画面の後にユーザーがオンボーディングフローを閉じたら、BMIを計算します。次に、ペイウォールのビューを作成し、`bmi` カスタムタグにBMIを渡します。
+
+`AdaptyUI().setFlowsEventsObserver` に登録するオブザーバーに、以下のメソッドを実装してください：
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` は常にピリオドを小数点の区切り文字として使用します。ユーザーのロケールの区切り文字を使用するには、`intl` パッケージの `NumberFormat` を使って BMI をフォーマットしてください。
+
+### BMIをユーザープロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
+
+BMIに基づいて異なるフローをユーザーに表示するには、BMIをプロファイルの[カスタム属性](flutter-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー `bmi` を持つ[**Number**型のカスタム属性を作成](segments#custom-attributes)してください。その後、その属性から作成した[オーディエンス](audience)に対して各フローを表示します。
+
+BMIを計算したら、`updateProfile` メソッドを呼び出します。セグメントがBMIをしきい値と比較できるよう、フォーマットされた文字列ではなく数値で保存してください：
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
