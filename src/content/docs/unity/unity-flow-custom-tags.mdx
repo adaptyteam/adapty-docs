@@ -4,7 +4,7 @@ description: "Pass a value from your Unity app to a flow, and show it in a text 
 metadataTitle: "Pass data to flows | Unity SDK | Adapty Docs"
 ---
 
-A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes "120" for the tag, users see "Coins: 120".
 
 ## Before you start
 
@@ -16,7 +16,7 @@ A [custom tag](flow-custom-tags) is a custom variable with a value from your app
 
 ## Pass custom tag values
 
-Pass your app's values to the `SetCustomTags` method of an `AdaptyUICreateFlowViewParameters` object, as a `Dictionary<string, string>`, and call `AdaptyUI.CreateFlowView` with that object:
+Pass your app's values to the `SetCustomTags` method of an `AdaptyUICreateFlowViewParameters` object, as a string-to-string dictionary, such as a `Dictionary<string, string>`, and call `AdaptyUI.CreateFlowView` with that object:
 
 - Each key is the full name of a custom tag, such as `user.streak`.
 - Each value is the string that users see in place of the tag.
@@ -61,7 +61,7 @@ If your app already sets custom tag values for old Paywall Builder paywalls, rev
 
 Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](unity-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`, as in [Track flow screen views](unity-flow-screen-views). When the user closes the onboarding flow after that screen, calculate the BMI. Then create the paywall's view, and pass the BMI for the `bmi` custom tag.
 
-Implement the following methods on the listener you register with `Adapty.SetFlowsEventsListener`:
+Implement the following methods on the listener you register with `Adapty.SetFlowsEventsListener`. `FlowViewDidDisappear` fires only after your app dismisses the onboarding flow, so the listener must also handle the **Close flow** action, as in [Close flows and paywalls](unity-handle-paywall-actions#close-flows-and-paywalls):
 
 ```csharp showLineNumbers title="Unity"
 private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
@@ -82,7 +82,8 @@ public void FlowViewDidReceiveAnalyticEvent(
     if (name != "flow_user_input") return;
     if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
 
-    var elementId = parameters["element_id"] as string;
+    if (!parameters.TryGetValue("element_id", out var idRaw) || !(idRaw is string elementId)) return;
+
     bodyAnswers[elementId] = value;
 }
 
@@ -140,7 +141,7 @@ private void ShowBmiPaywall(string bmi) {
 
 To show users different flows based on their BMI, save it as a [custom attribute](unity-setting-user-attributes#custom-user-attributes) of their profile. In the Adapty Dashboard, [create a **Number** custom attribute](segments#custom-attributes) with the key `bmi`. Then show each flow to an [audience](audience) built from the attribute.
 
-Call the `updateProfile` method after you calculate the BMI. Save the number, not a formatted string, so that a segment can compare the BMI with a threshold:
+Call the `Adapty.UpdateProfile` method in `FlowViewDidDisappear`, right after the line that calculates `bmi`. Pass that `double`, not the formatted string, so that a segment can compare the BMI with a threshold:
 
 ```csharp showLineNumbers title="Unity"
 var parameters = new AdaptyProfileParameters.Builder()
