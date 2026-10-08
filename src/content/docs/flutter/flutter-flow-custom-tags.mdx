@@ -1,0 +1,164 @@
+---
+title: "Pass data to flows in Flutter SDK"
+description: "Pass a value from your Flutter app to a flow, and show it in a text element."
+metadataTitle: "Pass data to flows | Flutter SDK | Adapty Docs"
+---
+
+A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+
+## Before you start
+
+<FlowCustomTagsPrerequisites />
+
+## Add custom tags to the flow
+
+<FlowCustomTagsAddToFlow />
+
+## Pass custom tag values
+
+Pass your app's values to the `customTags` parameter of `AdaptyUI().createFlowView` or `AdaptyUIFlowPlatformView`, as a `Map<String, String>`:
+
+- Each key is the full name of a custom tag, such as `user.streak`.
+- Each value is the string that users see in place of the tag.
+- Each value must be human-readable, such as "1,250", not "1250.0". Adapty doesn't format or translate it.
+
+The SDK reads the values once, when it creates the view, so they don't change while the flow is open.
+
+<Tabs>
+<TabItem value="standalone" label="Standalone screen" default>
+
+```dart showLineNumbers title="Flutter"
+final customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  final view = await AdaptyUI().createFlowView(
+    flow: flow,
+    customTags: customTags,
+  );
+  await view.present();
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```
+
+</TabItem>
+<TabItem value="embedded" label="Embedded in widget hierarchy">
+
+```dart showLineNumbers title="Flutter"
+AdaptyUIFlowPlatformView(
+  flow: flow,
+  customTags: const {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+)
+```
+
+A mounted `AdaptyUIFlowPlatformView` ignores later changes to `customTags`.
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+If your app already sets custom tag values for old Paywall Builder paywalls, review [how custom tags in flows differ](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## What users see without a value
+
+<FlowCustomTagsFallback />
+
+## Example: show a BMI from onboarding answers
+
+<FlowCustomTagsBmiIntro />
+
+### Set up the flows
+
+<FlowCustomTagsBmiSetup />
+
+### Pass the BMI to the paywall
+
+Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](flutter-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`, as in [Track flow screen views](flutter-flow-screen-views). When the user closes the onboarding flow after that screen, calculate the BMI. Then create the paywall's view, and pass the BMI for the `bmi` custom tag.
+
+Implement the following methods on the observer you register with `AdaptyUI().setFlowsEventsObserver`:
+
+```dart showLineNumbers title="Flutter"
+final Map<String, String> bodyAnswers = {};
+bool reachedLastScreen = false;
+
+void flowViewDidReceiveAnalyticEvent(
+  AdaptyUIFlowView view,
+  String name,
+  Map<String, dynamic> params,
+) {
+  if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+    reachedLastScreen = true;
+    return;
+  }
+  if (name != 'flow_user_input') return;
+
+  final elementId = params['element_id'];
+  final value = params['value'];
+  if (elementId is! String || value is! String) return;
+
+  bodyAnswers[elementId] = value;
+}
+
+void flowViewDidDisappear(AdaptyUIFlowView view) {
+  // The observer receives events from every flow. Reset `bodyAnswers` and
+  // `reachedLastScreen` whenever a flow disappears, so that the paywall
+  // doesn't open again when the user closes it.
+  final answers = Map<String, String>.of(bodyAnswers);
+  final finished = reachedLastScreen;
+  bodyAnswers.clear();
+  reachedLastScreen = false;
+
+  // Number inputs send their values as strings.
+  final weight = double.tryParse(answers['weight'] ?? '');
+  final height = double.tryParse(answers['height'] ?? '');
+  if (!finished || weight == null || height == null || height <= 0) return;
+
+  final heightInMeters = height / 100;
+  final bmi = weight / (heightInMeters * heightInMeters);
+  showBmiPaywall(bmi.toStringAsFixed(1));
+}
+
+Future<void> showBmiPaywall(String bmi) async {
+  try {
+    final flow = await Adapty().getFlow(placementId: 'bmi_paywall');
+    final view = await AdaptyUI().createFlowView(
+      flow: flow,
+      customTags: {'bmi': bmi},
+    );
+    await view.present();
+  } on AdaptyError catch (e) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+`toStringAsFixed` always uses a period as the decimal separator. To use the separator of the user's locale, format the BMI with `NumberFormat` from the `intl` package.
+
+### Save the BMI to the user's profile
+
+To show users different flows based on their BMI, save it as a [custom attribute](flutter-setting-user-attributes#custom-user-attributes) of their profile. In the Adapty Dashboard, [create a **Number** custom attribute](segments#custom-attributes) with the key `bmi`. Then show each flow to an [audience](audience) built from the attribute.
+
+Call the `updateProfile` method after you calculate the BMI. Save the number, not a formatted string, so that a segment can compare the BMI with a threshold:
+
+```dart showLineNumbers title="Flutter"
+try {
+  final builder = AdaptyProfileParametersBuilder()
+    ..setCustomDoubleAttribute(bmi, 'bmi');
+  await Adapty().updateProfile(builder.build());
+} on AdaptyError catch (e) {
+  // handle the error
+} catch (e) {
+  // handle the error
+}
+```

@@ -1,0 +1,151 @@
+---
+title: "Pass data to flows in iOS SDK"
+description: "Pass a value from your iOS app to a flow, and show it in a text element."
+metadataTitle: "Pass data to flows | iOS SDK | Adapty Docs"
+---
+
+A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+
+## Before you start
+
+<FlowCustomTagsPrerequisites />
+
+## Add custom tags to the flow
+
+<FlowCustomTagsAddToFlow />
+
+## Pass custom tag values
+
+Pass your app's values to the `tagResolver` parameter of `getFlowConfiguration`, as a `[String: String]` dictionary:
+
+- Each key is the full name of a custom tag, such as `user.streak`.
+- Each value is the string that users see in place of the tag.
+- Each value must be human-readable, such as "1,250", not "1250.0". Adapty doesn't format or translate it.
+
+```swift showLineNumbers title="Swift"
+let customTags = [
+    "username": "DragonSlayer42",
+    "coins": "1,250",
+]
+
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: customTags
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+The SwiftUI [`.flow` modifier and `AdaptyFlowView`](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) and the UIKit [flow controller](ios-present-paywalls#present-flows-and-paywalls-in-uikit) have no parameter for custom tag values. They display the values from the flow configuration you give them.
+
+<FlowCustomTagsVerify />
+
+If your app already sets custom tag values for old Paywall Builder paywalls, review [how custom tags in flows differ](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## What users see without a value
+
+<FlowCustomTagsFallback />
+
+## Example: show a BMI from onboarding answers
+
+<FlowCustomTagsBmiIntro />
+
+### Set up the flows
+
+<FlowCustomTagsBmiSetup />
+
+### Pass the BMI to the paywall
+
+Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](ios-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`, as in [Track flow screen views](ios-flow-screen-views). When the user closes the onboarding flow after that screen, calculate the BMI. Then fetch the paywall's flow configuration, and pass the BMI for the `bmi` custom tag.
+
+The following code is for UIKit. It implements the `AdaptyFlowControllerDelegate` methods on one view controller, which is the delegate of both the onboarding flow's controller and the paywall's controller.
+
+```swift showLineNumbers title="Swift"
+private var bodyAnswers: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    bodyAnswers[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset `bodyAnswers` and
+    // `reachedLastScreen` whenever a flow disappears, so that the paywall
+    // doesn't open again when the user closes it.
+    let answers = bodyAnswers
+    let finished = reachedLastScreen
+    bodyAnswers.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings.
+    guard finished,
+          let weight = answers["weight"].flatMap({ Double($0) }),
+          let height = answers["height"].flatMap({ Double($0) }),
+          height > 0
+    else { return }
+
+    let heightInMeters = height / 100
+    let bmi = weight / (heightInMeters * heightInMeters)
+
+    Task {
+        await showBMIPaywall(bmi: bmi.formatted(.number.precision(.fractionLength(1))))
+    }
+}
+
+func showBMIPaywall(bmi: String) async {
+    do {
+        let flow = try await Adapty.getFlow(placementId: "bmi_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            tagResolver: ["bmi": bmi]
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+`formatted` uses the decimal separator of the user's locale: "22.7" in English, "22,7" in German.
+
+In SwiftUI, use the closures of the onboarding flow's `.flow` modifier instead of the delegate methods:
+
+- `didReceiveAnalyticEvent`: Collect the weight and the height, and watch for the `flow_screen_showed` event of the last screen.
+- `didDisappear`: If the user reached the last screen, calculate the BMI. Then fetch the paywall's flow configuration, and pass the BMI for the `bmi` custom tag. Present that configuration with a second `.flow` modifier.
+
+### Save the BMI to the user's profile
+
+To show users different flows based on their BMI, save it as a [custom attribute](setting-user-attributes#custom-user-attributes) of their profile. In the Adapty Dashboard, [create a **Number** custom attribute](segments#custom-attributes) with the key `bmi`. Then show each flow to an [audience](audience) built from the attribute.
+
+Call the `updateProfile` method after you calculate the BMI. Save the number, not a formatted string, so that a segment can compare the BMI with a threshold:
+
+```swift showLineNumbers title="Swift"
+do {
+    let params = try AdaptyProfileParameters.Builder()
+        .with(customAttribute: bmi, forKey: "bmi")
+        .build()
+    try await Adapty.updateProfile(params: params)
+} catch {
+    // handle the error
+}
+```

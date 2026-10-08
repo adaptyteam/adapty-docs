@@ -1,0 +1,126 @@
+---
+title: "Pass data to flows in Capacitor SDK"
+description: "Pass a value from your Capacitor app to a flow, and show it in a text element."
+metadataTitle: "Pass data to flows | Capacitor SDK | Adapty Docs"
+---
+
+A [custom tag](flow-custom-tags) is a custom variable with a value from your app. After you select **Value comes from outside the app** in a variable's settings, your app can set its value through the Adapty SDK. For example, a text element contains "Coins:" and a custom tag. If your app passes 120 for the tag, users see "Coins: 120".
+
+## Before you start
+
+<FlowCustomTagsPrerequisites />
+
+## Add custom tags to the flow
+
+<FlowCustomTagsAddToFlow />
+
+## Pass custom tag values
+
+Pass your app's values to the `customTags` parameter of `createFlowView`, as an object:
+
+- Each key is the full name of a custom tag, such as `user.streak`.
+- Each value is the string that users see in place of the tag.
+- Each value must be human-readable, such as "1,250", not "1250.0". Adapty doesn't format or translate it.
+
+The SDK reads the values once, when it creates the view, so they don't change while the flow is open.
+
+```typescript showLineNumbers title="Capacitor"
+import { createFlowView } from '@adapty/capacitor';
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+<FlowCustomTagsVerify />
+
+If your app already sets custom tag values for old Paywall Builder paywalls, review [how custom tags in flows differ](migrate-to-flows#custom-tags-from-the-old-paywall-builder).
+
+## What users see without a value
+
+<FlowCustomTagsFallback />
+
+## Example: show a BMI from onboarding answers
+
+<FlowCustomTagsBmiIntro />
+
+### Set up the flows
+
+<FlowCustomTagsBmiSetup />
+
+### Pass the BMI to the paywall
+
+Collect the weight and the height from the onboarding flow's `flow_user_input` events, as in [Process data from flows](capacitor-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`, as in [Track flow screen views](capacitor-flow-screen-views). When the user closes the onboarding flow after that screen, calculate the BMI. Then create the paywall's view, and pass the BMI for the `bmi` custom tag.
+
+Register the following handlers on `onboardingView`, the view you create for the onboarding flow:
+
+```typescript showLineNumbers title="Capacitor"
+import { adapty, createFlowView } from '@adapty/capacitor';
+
+const bodyAnswers: Record<string, string> = {};
+let reachedLastScreen = false;
+
+await onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id as string] = params.value;
+    }
+    return false;
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi: string) {
+  try {
+    const flow = await adapty.getFlow({ placementId: 'bmi_paywall' });
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` uses the decimal separator of the user's locale: "22.7" in English, "22,7" in German.
+
+### Save the BMI to the user's profile
+
+To show users different flows based on their BMI, save it as a [custom attribute](capacitor-setting-user-attributes#custom-user-attributes) of their profile. In the Adapty Dashboard, [create a **Number** custom attribute](segments#custom-attributes) with the key `bmi`. Then show each flow to an [audience](audience) built from the attribute.
+
+Call the `updateProfile` method after you calculate the BMI. Save the number, not a formatted string, so that a segment can compare the BMI with a threshold:
+
+```typescript showLineNumbers title="Capacitor"
+try {
+  await adapty.updateProfile({
+    codableCustomAttributes: { bmi: bmi },
+  });
+} catch (error) {
+  // handle the error
+}
+```
