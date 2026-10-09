@@ -435,3 +435,17 @@ don't re-litigate them; the remaining content work is tracked as a separate task
     `adapty_flutter: ^<the latest SDK version>`, which would resolve to 4.x. Whether pub.dev's latest stable
     is in fact 3.x could not be checked offline. Question filed.
 
+13. **React Native iOS has a third install path from SDK 4.2.3, and the brief's Surfaces line didn't name it**
+    (autolog 2026-10-09, from `AdaptySDK-React-Native` branch `release/4.2.3`: `ios/adapty_podfile.rb`,
+    `react-native-adapty-sdk.podspec`, `plugin/src/with-cocoapods-ios.ts`, plus the public
+    `AdaptySDK-CocoaPods-Specs` README). The Surfaces line says "plain npm + CocoaPods/SPM" for the pure
+    article, and that now covers three paths: `spm_dependency` (default), React Native's SPM integration, and
+    an opt-in **pods mode**. Pods mode is `adapty_disable_spm!` before `use_native_modules!`, or Expo
+    `iosDisableSPM: true`, and it installs `Adapty`/`AdaptyUI`/`AdaptyPlugin` from Adapty's own spec repo with
+    no dynamic frameworks. It is positioned for RN projects that can't switch to dynamic frameworks. **Don't
+    carry it to `sdk-installation-ios`**: native iOS docs deliberately don't advertise it. Two consequences
+    for this zone. First, the "SDK 3.x only" note on the `SWIFT_VERSION` troubleshooting entry stopped being
+    true, because the v4 pods declare Swift 6.0 again. Second, `kids-mode-react-native`'s Podfile helper moved
+    to `adapty_podfile.rb`; `adapty_kids_mode.rb` stays as a shim. **Unconfirmed:** whether pods mode lowers
+    the React Native 0.75 floor. The podspec's missing-`spm_dependency` error suggests trying pods mode, but
+    the Requirements table still says 0.75, and nobody has confirmed a lower floor.
