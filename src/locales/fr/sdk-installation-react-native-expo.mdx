@@ -56,7 +56,7 @@ La compatibilité avec une version de la Billing Library ne signifie pas qu'Adap
 ## Installer le SDK Adapty \{#install-adapty-sdk\}
 
 :::important
-Le SDK Adapty React Native v4 et versions ultérieures embarquent leurs SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) sous forme de packages Swift. CocoaPods les installe toujours dans un projet Expo, mais les packages Swift se lient dynamiquement, donc votre build nécessite des frameworks dynamiques — voir [Activer les frameworks dynamiques pour le SDK Adapty v4](#enable-dynamic-frameworks).
+Adapty React Native SDK v4 et versions ultérieures fournissent leurs SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) sous forme de packages Swift. CocoaPods les installe toujours dans un projet Expo, mais les packages Swift se lient dynamiquement, ce qui impose l'utilisation de frameworks dynamiques pour votre build. À partir du SDK 4.2.3, les projets qui ne peuvent pas passer aux frameworks dynamiques peuvent installer les SDK natifs sous forme de pods. Consultez [Configurer votre projet iOS](#enable-dynamic-frameworks).
 :::
 
 [![Release](https://img.shields.io/github/v/release/adaptyteam/AdaptySDK-React-Native.svg?style=flat&logo=react)](https://github.com/adaptyteam/AdaptySDK-React-Native/releases)
@@ -66,7 +66,7 @@ Le SDK Adapty React Native v4 et versions ultérieures embarquent leurs SDK iOS 
 :::important
 [Expo Dev Client](https://docs.expo.dev/versions/latest/sdk/dev-client/) (un build de développement personnalisé) est requis pour utiliser Adapty dans un projet Expo.
 
-Expo Go ne prend pas en charge les modules natifs personnalisés, vous pouvez donc l'utiliser uniquement avec le [**mode mock**](#set-up-mock-mode-for-expo-go--expo-web) pour le développement UI/logique (pas d'achats réels ni de rendu AdaptyUI/Paywall Builder).
+Expo Go ne prend pas en charge les modules natifs personnalisés, vous ne pouvez donc l'utiliser qu'avec le [**mode mock**](#set-up-mock-mode-for-expo-go--expo-web) pour le développement UI/logique (sans vrais achats ni rendu AdaptyUI/Paywall Builder).
 :::
 
 1. Installez le SDK Adapty :
@@ -74,9 +74,9 @@ Expo Go ne prend pas en charge les modules natifs personnalisés, vous pouvez do
    npx expo install react-native-adapty
    npx expo prebuild
    ```
-2. Compilez votre application pour le développement avec EAS ou un build local :
+2. Compilez votre application pour le développement avec EAS ou une compilation locale :
 
-<Tabs>
+   <Tabs>
    <TabItem value="eas" label="EAS build" default>
       ```sh
       # For iOS
@@ -102,7 +102,7 @@ Expo Go ne prend pas en charge les modules natifs personnalisés, vous pouvez do
    npx expo start --dev-client
    ```
 
-### Activer les frameworks dynamiques pour le SDK Adapty v4 \{#enable-dynamic-frameworks\}
+### Configurer votre projet iOS \{#enable-dynamic-frameworks\}
 
 Le SDK React Native 4.0 — qui ajoute la prise en charge des [flows](adapty-flow-builder) — nécessite **React Native 0.75 ou version ultérieure**. Installez le SDK :
 
@@ -110,7 +110,16 @@ Le SDK React Native 4.0 — qui ajoute la prise en charge des [flows](adapty-flo
 npx expo install react-native-adapty@^4.0.0
 ```
 
-v4 récupère les SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) en tant que Swift packages plutôt que des sous-dépendances CocoaPods ([le dépôt de specs CocoaPods passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Les Swift packages se lient dynamiquement, ce que vous activez dans Expo avec le plugin [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/). Ajoutez-le à `app.json` (ou `app.config.js`) :
+Le SDK React Native installe ses SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) de deux façons :
+
+- **CocoaPods + SPM (par défaut, SDK 4.0 et ultérieur)** : CocoaPods ajoute les packages Swift d'Adapty à votre projet. Les packages Swift se lient dynamiquement, ce qui oblige votre build à passer aux frameworks dynamiques. C'est l'approche recommandée.
+- **CocoaPods sans SPM (SDK 4.2.3 et ultérieur)** : CocoaPods installe les SDK natifs sous forme de pods depuis [le dépôt de specs d'Adapty](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), et non depuis le dépôt de specs public de CocoaPods, qui [passe en lecture seule en décembre 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). Ces pods ne nécessitent pas de frameworks dynamiques.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="cocoapods" label="CocoaPods + SPM (recommended)" default>
+
+Pour activer les frameworks dynamiques dans Expo, utilisez le plugin [`expo-build-properties`](https://docs.expo.dev/versions/latest/sdk/build-properties/). Ajoutez-le dans `app.json` (ou `app.config.js`) :
 
 ```json showLineNumbers title="app.json"
 {
@@ -129,7 +138,7 @@ v4 récupère les SDK iOS natifs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) en tant 
 }
 ```
 
-Ensuite, installez le plugin et regénérez le projet natif :
+Installez ensuite le plugin et régénérez le projet natif :
 
 ```sh
 npx expo install expo-build-properties
@@ -138,7 +147,39 @@ npx expo prebuild --clean
 
 Si le build iOS échoue avec `'React/RCTBridge.h' file not found`, consultez [l'entrée de dépannage correspondante](#react-header-not-found).
 
-Consultez [Migrer le SDK Adapty React Native vers la v4](migration-to-react-native-sdk-v4) pour la migration complète.
+</TabItem>
+
+<TabItem value="cocoapods-pods" label="CocoaPods without SPM">
+
+:::warning
+N'utilisez cette option que si votre projet ne peut pas passer aux frameworks dynamiques — par exemple parce qu'il repose sur une liaison statique ou Flipper. Pour tous les autres projets, installez les SDK natifs en tant que packages Swift.
+:::
+
+Cette option nécessite le SDK 4.2.3 ou version ultérieure. Pour installer les pods, activez l'option `iosDisableSPM` du plugin de configuration Adapty dans `app.json` (ou `app.config.js`) :
+
+```json showLineNumbers title="app.json"
+{
+  "expo": {
+    "plugins": [
+      ["react-native-adapty", { "iosDisableSPM": true }]
+    ]
+  }
+}
+```
+
+Ensuite, régénérez le projet natif :
+
+```sh
+npx expo prebuild
+```
+
+Avec `iosDisableSPM` activé, vous n'avez pas besoin du plugin `expo-build-properties` pour Adapty.
+
+</TabItem>
+
+</Tabs>
+
+Consultez [Migrer le SDK Adapty React Native vers v4](migration-to-react-native-sdk-v4) pour la migration complète.
 
 ## Activer le module Adapty du SDK \{#activate-adapty-module-of-adapty-sdk\}
 

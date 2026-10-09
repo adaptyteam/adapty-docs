@@ -63,22 +63,23 @@ yarn add react-native-adapty
 
 ### 设置你的 iOS 项目 \{#set-up-your-ios-project\}
 
-Adapty 原生 iOS SDK（`Adapty`、`AdaptyUI`、`AdaptyPlugin`）仅以 Swift Package 形式发布——v4 已放弃 CocoaPods 分发方式（[CocoaPods 的 spec 仓库将于 2026 年 12 月变为只读](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)）。以下两种方式均可安装这些 Swift Package，区别在于驱动安装的机制不同。
+React Native SDK 通过以下三种方式之一安装其原生 iOS SDK（`Adapty`、`AdaptyUI`、`AdaptyPlugin`）。前两种方式以 Swift 包的形式安装，这是推荐路径；两者的区别在于驱动安装的方式不同。
 
-- **CocoaPods（默认方式，SDK 4.0 及以上）**：你的 iOS 项目保留 `Podfile`，React Native 的 `spm_dependency` 辅助方法将 Adapty 的 Swift 包添加到 Pods 项目中。Swift 包以动态方式链接，因此 Podfile 需要切换为动态框架。
-- **React Native 的 SPM 集成（SDK 4.1 及以上）**：你的 iOS 项目不再使用 CocoaPods，React Native 通过 Adapty 附带的 `Package.swift` 清单文件自行解析 Swift 包。[React Native 在 0.87 版本中新增了该集成](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios)，目前处于预览阶段，官方暂不建议在生产环境中使用。
+- **CocoaPods + SPM（默认，SDK 4.0 及更高版本）**：您的 iOS 项目保留 `Podfile`，React Native 的 `spm_dependency` 助手将 Adapty 的 Swift 包添加到 Pods 项目中。Swift 包采用动态链接，因此 Podfile 必须切换为动态框架。
+- **React Native 的 SPM 集成（SDK 4.1 及更高版本）**：您的 iOS 项目放弃 CocoaPods，由 React Native 直接从 Adapty 提供的 `Package.swift` 清单解析 Swift 包。[React Native 在 0.87 版本中新增了此集成](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios)，目前处于预览阶段，暂不建议用于生产环境。
+- **不使用 SPM 的 CocoaPods（SDK 4.2.3 及更高版本）**：您的 `Podfile` 通过 [Adapty 的 spec 仓库](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs)以 pod 形式安装原生 SDK，而非从公共 CocoaPods spec 仓库安装（该仓库将于 [2026 年 12 月起设为只读](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)）。这些 pod 无需动态框架。仅当您的项目无法切换到动态框架时才选用此方案，例如项目依赖静态链接或 Flipper。
 
 <Tabs groupId="ios-package-manager" queryString>
 
-<TabItem value="cocoapods" label="CocoaPods" default>
+<TabItem value="cocoapods" label="CocoaPods + SPM (recommended)" default>
 
-在你的 `ios/Podfile` target 中声明动态框架：
+在你的 `ios/Podfile` 目标中声明动态框架：
 
 ```ruby showLineNumbers title="ios/Podfile"
 use_frameworks! :linkage => :dynamic
 ```
 
-如果你之前通过 CocoaPods 子依赖引入了 `Adapty`、`AdaptyUI` 或 `AdaptyPlugin`，请先从 `Podfile` 中移除所有显式的 `pod 'Adapty'`、`pod 'AdaptyUI'` 或 `pod 'AdaptyPlugin'` 行。
+如果你之前通过 CocoaPods 子依赖引入了 `Adapty`、`AdaptyUI` 或 `AdaptyPlugin`，请先从 `Podfile` 中删除所有显式的 `pod 'Adapty'`、`pod 'AdaptyUI'` 或 `pod 'AdaptyPlugin'` 行。
 
 然后安装 pods：
 
@@ -107,14 +108,55 @@ React Native 会读取 Adapty 的 `Package.swift` 清单文件，并自动解析
 如果你的应用除 React Native 之外还使用了其他 Pod，请保留它们在 Podfile 中，运行 `pod install`，并打开 `.xcworkspace` 而非 `.xcodeproj`。Workspace 会同时覆盖两种包管理器。
 
 :::note
-在全新克隆或 CI 检出后，构建前请先运行一次 `npx react-native spm`。Xcode 项目会在构建期间重新同步依赖，但此时 Xcode 已完成包图解析，因此紧接安装后立即启动的构建可能因缺少 Adapty 而成功（实则缺失）。
+在全新克隆或 CI 检出后，构建前请先运行一次 `npx react-native spm`。Xcode 项目会在构建过程中重新同步依赖，但此时 Xcode 已完成包依赖图的解析，因此在安装完成后立即启动构建可能会因缺少 Adapty 而失败。
 :::
 
-如需切换回 CocoaPods，请运行 `npx react-native spm deinit`，然后执行 `pod install`。
+如需切回 CocoaPods，请运行 `npx react-native spm deinit`，然后执行 `pod install`。
+
+</TabItem>
+
+<TabItem value="cocoapods-pods" label="CocoaPods without SPM">
+
+:::warning
+仅当您的项目无法切换到动态框架时才使用此选项——例如，项目依赖静态链接或 Flipper。对于其他所有项目，请以 Swift Package 的形式安装原生 SDK。
+:::
+
+此选项需要 SDK 4.2.3 或更高版本。在 `ios/Podfile` 中引入 Adapty Podfile 辅助工具，然后在您的 app target 中，于 `use_native_modules!` **之前**调用 `adapty_disable_spm!`：
+
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'MyApp' do
+  adapty_disable_spm!
+  config = use_native_modules!
+  # ...
+end
+```
+
+`adapty_disable_spm!` 会声明 `Adapty`、`AdaptyUI` 和 `AdaptyPlugin` pods，并将它们固定到 Adapty 的 spec repo，因此你无需添加对应的 `source` 行。请从你的 `Podfile` 中移除所有显式的 `pod 'Adapty'`、`pod 'AdaptyUI'` 或 `pod 'AdaptyPlugin'` 行。如果 `adapty_disable_spm!` 放在 `use_native_modules!` 之后，执行 `pod install` 时会报错并提示你移动该调用。
+
+然后安装 pods：
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install --repo-update
+```
+
+当您之后更新 `react-native-adapty` 时，`pod install` 不会刷新 Adapty 的 spec 仓库。要更新原生 SDK，请运行：
+
+```sh showLineNumbers title="Shell"
+cd ios
+pod repo update
+pod update Adapty AdaptyUI AdaptyPlugin
+```
 
 </TabItem>
 
 </Tabs>
+
 ## 激活 Adapty SDK 的 Adapty 模块 \{#activate-adapty-module-of-adapty-sdk\}
 
 <GetKey />
@@ -414,14 +456,14 @@ buildscript {
 #### 由 Podfile SWIFT_VERSION 覆盖导致的 Swift 6 构建错误 \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
 
 :::note
-此说明适用于 **SDK 3.x**，在该版本中，原生 iOS SDK 以 CocoaPods 方式安装。从 SDK 4.0 起，它们改为以 Swift Package 方式安装，因此在 `post_install` 中覆盖 `SWIFT_VERSION` 将不再对其生效。
+这适用于原生 iOS SDK 以 CocoaPods pods 方式安装的情况：**SDK 3.x**，以及 SDK 4.2.3 及更高版本中使用 [不带 SPM 的 CocoaPods](#set-up-your-ios-project) 选项时。当它们以 Swift 包形式安装时，`post_install` 中的 `SWIFT_VERSION` 覆盖设置不会对其生效。
 :::
 
-在为 iOS 构建 React Native 应用时，你可能会在 Adapty pod 目标上看到 Swift 6 编译错误。常见症状包括：`AdaptyUIBuilderLogic` 中的 `@Sendable` 不匹配、Adapty 类型缺少 `Sendable` 协议遵循，或 actor 隔离错误。
+在为 iOS 构建 React Native 应用时，你可能会在 Adapty pod 目标上遇到 Swift 6 编译错误。常见症状包括：`AdaptyUIBuilderLogic` 中出现 `@Sendable` 不匹配问题、Adapty 类型缺少 `Sendable` 一致性，或者 actor 隔离错误。
 
-Adapty 的 pods 声明了 `s.swift_version = '6.0'`，需要使用 Swift 6 进行编译。您自己的应用代码可以继续使用 Swift 5——只有 Adapty 相关的 pod 目标（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`、`AdaptyLogger`、`AdaptyPlugin`）需要使用 Swift 6 编译。
+Adapty pods 声明了 `s.swift_version = '6.0'`，构建时需要 Swift 6。你自己的应用代码可以继续使用 Swift 5——只有 Adapty 相关的 pod target（`Adapty`、`AdaptyUI`、`AdaptyUIBuilder`、`AdaptyLogger`、`AdaptyPlugin`，以及 SDK 4.2.3 及更高版本中的 `AdaptyCodable`）需要使用 Swift 6 构建。
 
-最常见的原因是 `ios/Podfile` 中存在一个 `post_install` 钩子，它会为所有 pod 目标重写 `SWIFT_VERSION`：
+最常见的原因是 `ios/Podfile` 中存在一个 `post_install` hook，它会为所有 pod target 重写 `SWIFT_VERSION`：
 
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|
@@ -438,7 +480,7 @@ end
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end
