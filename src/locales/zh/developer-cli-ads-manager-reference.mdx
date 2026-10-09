@@ -528,7 +528,18 @@ adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --d
 
 支持[分页参数](#global-flags)以及 `--campaign-group`、`--app`、`--campaign`、`--ad-group` 和 `--search` [列表过滤器](#list-filters)。
 
-该命令与 [`asa metrics`](#metrics) 共享分析资源池。请参阅[错误](#errors)。
+除了效果数据指标外，每个搜索词行还包含 Apple 对该词的洞察信息：
+
+| 字段 | 值 |
+|---|---|
+| `impression_share_all`, `impression_share_first` | 任意广告位或首位广告位的展示份额 |
+| `impression_midpoint_all`, `impression_midpoint_first` | 以单一百分比表示的展示份额 |
+| `rank_all`, `rank_first` | 您的应用在任意广告位或首位广告位中针对该词的排名（与其他应用相比） |
+| `search_popularity` | 搜索热度，范围 1 到 5 |
+
+当 Apple 没有该字段的数据时，其值为 `null`。有关 Apple 如何定义这些值，请参阅 [Insights](adapty-ads-manager-metrics#insights)。
+
+此命令与 [`asa metrics`](#metrics) 共享同一分析数据池。详见[错误说明](#errors)。
 
 ## 广告 \{#ads\}
 
@@ -789,6 +800,16 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 `--metric` 接受 Ads Manager 跟踪的数据指标名称，使用看板命名规范——例如 `spend`、`taps` 或 `gross_roas`。完整列表及各指标的计算方式，请参阅[数据指标](adapty-ads-manager-metrics)。如果指标名称不存在，命令会报错并列出所有有效名称。
 
+使用 `--entity keyword` 时，`--metric` 还支持仅适用于关键词的数据图表。Apple 会分别针对任意广告位置和首个广告位置上报展示份额与排名，因此每项均有两个版本：`_all` 和 `_first`。各项的具体定义请参阅 [Insights](adapty-ads-manager-metrics#insights)。
+
+| 数据图表 | 值 |
+|---|---|
+| `impression_midpoint_all`, `impression_midpoint_first` | 报告周期内的展示份额，以百分比表示 |
+| `rank_all`, `rank_first` | 你的应用针对该关键词相对于其他应用的排名。取最新值，不受 `--date-from` 和 `--date-to` 限制 |
+| `search_popularity` | 搜索热度，范围 1 到 5 |
+
+若某关键词没有报告数据，这些数据图表的返回值均为 `0`。自 CLI 0.9.2 起，这些名称取代了原有的 `rank` 和 `impression_midpoint`。
+
 每个数据图表都在分页之前跨整个实体层级进行计算，因此请只请求你实际读取的列，而不是获取全部字段。`subscribers` 和 `paid_subscribers` 统计每个实体的唯一用户画像数量，其开销约为普通花费和安装量调用的 17 倍，`arppu` 和 `arpas` 由它们派生，同样如此。在任意 `--entity` 下，这四个字段名需要配合 `--campaign` 或 `--ad-group` 来缩小调用范围：
 
 ```bash
@@ -835,13 +856,13 @@ adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2
 | `--metric` | 否 | 数据图表名称，可重复使用。省略则返回所有数据图表 |
 | `--by-days` | 否 | 同期群数据图表的续订窗口天数，可重复使用。每次调用最多 16 个 |
 
-此命令返回整个实体级别的汇总数据以及按时间段的序列数据，因此只需一次调用即可回答"总体花费或收入了多少"。它没有排序标志，也不支持分页。
+此命令返回整个实体层级的汇总数据以及按时间段划分的序列数据，因此只需一次调用即可回答"总体花费或收益是多少"。该命令没有排序标志，也不支持分页。
 
-在此命令中，`--metric` 仅接受同期群根指标——`revenue`、`roas` 和 `arpu`——不接受其 `gross_`、`proceeds_` 或 `net_` 变体。
+在此命令中，`--metric` 仅接受同期群根指标——`revenue`、`roas` 和 `arpu`——不接受其 `gross_`、`proceeds_` 或 `net_` 变体，也不接受[仅关键词指标](#adapty-asa-metrics)。
 
-报告周期的长度受 `--period-unit` 限制：
+报告周期的长度由 `--period-unit` 限制：
 
-| `--period-unit` | 最大周期 |
+| `--period-unit` | 最长周期 |
 |---|---|
 | `day` | 90 天 |
 | `week` | 180 天 |

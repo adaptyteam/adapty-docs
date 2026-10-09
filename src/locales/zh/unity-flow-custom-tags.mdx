@@ -4,7 +4,7 @@ description: "将 Unity 应用中的值传递给流程，并在文本元素中�
 metadataTitle: "向流程传递数据 | Unity SDK | Adapty 文档"
 ---
 
-[自定义标签](flow-custom-tags)是一个自定义变量，其值来自你的应用。在变量设置中选择 **Value comes from outside the app** 后，你的应用就可以通过 Adapty SDK 为其设置值。例如，一个文本元素包含"Coins:"和一个自定义标签，若应用传入 120，用户看到的就是"Coins: 120"。
+[自定义标签](flow-custom-tags)是一个带有来自应用中的值的自定义变量。在变量设置中选择 **Value comes from outside the app** 后，你的应用就可以通过 Adapty SDK 为其设置值。例如，某个文本元素包含"Coins:"和一个自定义标签。如果你的应用为该标签传入"120"，用户将看到"Coins: 120"。
 
 ## 开始之前 \{#before-you-start\}
 
@@ -16,13 +16,13 @@ metadataTitle: "向流程传递数据 | Unity SDK | Adapty 文档"
 
 ## 传递自定义标签值 \{#pass-custom-tag-values\}
 
-将应用的值作为 `Dictionary<string, string>` 传递给 `AdaptyUICreateFlowViewParameters` 对象的 `SetCustomTags` 方法，并使用该对象调用 `AdaptyUI.CreateFlowView`：
+将应用的值以字符串到字符串字典（如 `Dictionary<string, string>`）的形式传递给 `AdaptyUICreateFlowViewParameters` 对象的 `SetCustomTags` 方法，然后使用该对象调用 `AdaptyUI.CreateFlowView`：
 
 - 每个键是自定义标签的完整名称，例如 `user.streak`。
-- 每个值是用户在标签处看到的字符串。
-- 每个值必须是人类可读的格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+- 每个值是用户在标签位置看到的字符串。
+- 每个值必须是易于阅读的格式，例如 "1,250"，而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
 
-SDK 在创建视图时读取一次这些值，因此在流程打开期间它们不会发生变化。
+SDK 在创建视图时读取一次这些值，因此在流程打开期间这些值不会发生变化。
 
 ```csharp showLineNumbers title="Unity"
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -61,7 +61,7 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 从用户引导流程的 `flow_user_input` 事件中收集体重和身高数据，具体方法请参考[处理流程数据](unity-flow-input)。若要判断用户是否到达了最后一个屏幕，可以监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，详见[跟踪流程屏幕浏览](unity-flow-screen-views)。当用户关闭该屏幕后的用户引导流程时，计算 BMI，然后创建付费墙视图，并将 BMI 传入 `bmi` 自定义标签。
 
-在您通过 `Adapty.SetFlowsEventsListener` 注册的监听器上实现以下方法：
+在使用 `Adapty.SetFlowsEventsListener` 注册的监听器上实现以下方法。`FlowViewDidDisappear` 仅在你的应用关闭用户引导流程后触发，因此监听器还必须处理**关闭流程**操作，详见[关闭流程和付费墙](unity-handle-paywall-actions#close-flows-and-paywalls)：
 
 ```csharp showLineNumbers title="Unity"
 private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
@@ -82,7 +82,8 @@ public void FlowViewDidReceiveAnalyticEvent(
     if (name != "flow_user_input") return;
     if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
 
-    var elementId = parameters["element_id"] as string;
+    if (!parameters.TryGetValue("element_id", out var idRaw) || !(idRaw is string elementId)) return;
+
     bodyAnswers[elementId] = value;
 }
 
@@ -138,9 +139,9 @@ private void ShowBmiPaywall(string bmi) {
 
 ### 将 BMI 保存到用户画像
 
-要根据用户的 BMI 展示不同流程，请将其作为用户画像的[自定义属性](unity-setting-user-attributes#custom-user-attributes)保存。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后为每个流程配置基于该属性构建的[目标受众](audience)。
+要根据用户的 BMI 展示不同的流程，将其作为[自定义属性](unity-setting-user-attributes#custom-user-attributes)保存到用户画像中。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后将每个流程展示给根据该属性创建的[目标受众](audience)。
 
-在计算出 BMI 后，调用 `updateProfile` 方法。请保存数字而非格式化字符串，这样市场细分才能将 BMI 与阈值进行比较：
+在 `FlowViewDidDisappear` 中调用 `Adapty.UpdateProfile` 方法，紧跟在计算 `bmi` 的那行代码之后。传入 `double` 值而非格式化后的字符串，这样市场细分才能将 BMI 与阈值进行比较：
 
 ```csharp showLineNumbers title="Unity"
 var parameters = new AdaptyProfileParameters.Builder()

@@ -528,7 +528,18 @@ adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --d
 
 Chấp nhận [flag phân trang](#global-flags) và các [bộ lọc danh sách](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group`, và `--search`.
 
-Lệnh này dùng chung pool phân tích với [`asa metrics`](#metrics). Xem [Lỗi](#errors).
+Ngoài các chỉ số hiệu suất, mỗi hàng từ khóa tìm kiếm còn mang theo thông tin phân tích của Apple cho từ khóa đó:
+
+| Trường | Giá trị |
+|---|---|
+| `impression_share_all`, `impression_share_first` | Tỷ lệ hiển thị ở bất kỳ vị trí quảng cáo nào, hoặc ở vị trí quảng cáo đầu tiên |
+| `impression_midpoint_all`, `impression_midpoint_first` | Tỷ lệ hiển thị dưới dạng một phần trăm đơn lẻ |
+| `rank_all`, `rank_first` | Thứ hạng ứng dụng của bạn so với các ứng dụng khác cho từ khóa đó, ở bất kỳ vị trí quảng cáo nào hoặc ở vị trí đầu tiên |
+| `search_popularity` | Độ phổ biến tìm kiếm từ 1 đến 5 |
+
+Mỗi trường là `null` khi Apple không có dữ liệu cho chỉ số đó. Xem [Insights](adapty-ads-manager-metrics#insights) để biết Apple định nghĩa các giá trị này như thế nào.
+
+Lệnh này dùng chung bộ phân tích với [`asa metrics`](#metrics). Xem [Errors](#errors).
 
 ## Quảng cáo \{#ads\}
 
@@ -789,6 +800,16 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 `--metric` nhận tên các chỉ số mà Ads Manager theo dõi, theo cách đặt tên trên dashboard — ví dụ `spend`, `taps`, hoặc `gross_roas`. Xem [Metrics](adapty-ads-manager-metrics) để có danh sách đầy đủ và cách tính từng chỉ số. Tên không tồn tại sẽ báo lỗi kèm danh sách các tên hợp lệ.
 
+Với `--entity keyword`, `--metric` cũng chấp nhận các chỉ số chỉ dành cho keyword. Apple báo cáo impression share và rank cho cả vị trí quảng cáo bất kỳ lẫn vị trí quảng cáo đầu tiên, vì vậy mỗi chỉ số có hai phiên bản: `_all` và `_first`. Xem [Insights](adapty-ads-manager-metrics#insights) để biết Apple định nghĩa chúng như thế nào.
+
+| Chỉ số | Giá trị |
+|---|---|
+| `impression_midpoint_all`, `impression_midpoint_first` | Tỷ lệ hiển thị trong khoảng thời gian báo cáo, tính theo phần trăm |
+| `rank_all`, `rank_first` | Thứ hạng ứng dụng của bạn so với các ứng dụng khác cho từ khóa đó. Giá trị mới nhất, bất kể `--date-from` và `--date-to` |
+| `search_popularity` | Độ phổ biến tìm kiếm từ 1 đến 5 |
+
+Một từ khóa không có dữ liệu báo cáo sẽ trả về `0` cho các chỉ số này. Kể từ CLI 0.9.2, các tên này thay thế cho `rank` và `impression_midpoint`.
+
 Mỗi chỉ số bạn đặt tên đều được tính trên toàn bộ cấp entity trước khi trang được cắt, vì vậy hãy chỉ yêu cầu các cột bạn thực sự cần thay vì lấy toàn bộ danh mục. `subscribers` và `paid_subscribers` đếm các hồ sơ người dùng duy nhất theo entity, chi phí cao hơn khoảng mười bảy lần so với một lần gọi chỉ lấy spend và installs — `arppu` và `arpas` cũng vậy vì chúng được tính từ các chỉ số đó. Ở bất kỳ `--entity` nào, bốn tên đó cần có `--campaign` hoặc `--ad-group` để thu hẹp phạm vi gọi:
 
 ```bash
@@ -835,13 +856,13 @@ adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2
 | `--metric` | Không | Tên chỉ số, có thể lặp lại. Bỏ qua để lấy tất cả chỉ số |
 | `--by-days` | Không | Cửa sổ gia hạn tính bằng ngày cho các chỉ số cohort, có thể lặp lại. Tối đa 16 mỗi lần gọi |
 
-Lệnh này trả về tổng hợp cho toàn bộ cấp độ entity cùng với một chuỗi theo từng kỳ, giúp trả lời câu hỏi "tôi đã chi tiêu hoặc thu được bao nhiêu tổng cộng" chỉ trong một lần gọi. Lệnh này không có cờ sắp xếp và không có phân trang.
+Lệnh này trả về tổng số liệu cho toàn bộ cấp độ thực thể cộng với một chuỗi theo từng khoảng thời gian, giúp bạn biết "tổng doanh thu hoặc chi tiêu là bao nhiêu" chỉ trong một lần gọi. Lệnh này không có cờ sắp xếp và không hỗ trợ phân trang.
 
-Đối với lệnh này, `--metric` chỉ chấp nhận các cohort gốc — `revenue`, `roas`, và `arpu` — không chấp nhận các biến thể `gross_`, `proceeds_`, hoặc `net_` của chúng.
+Với lệnh này, `--metric` chỉ chấp nhận các cohort root — `revenue`, `roas`, và `arpu` — không nhận các biến thể `gross_`, `proceeds_`, hay `net_`. Lệnh cũng không nhận các [chỉ số dành riêng cho keyword](#adapty-asa-metrics).
 
 Độ dài của kỳ báo cáo bị giới hạn bởi `--period-unit`:
 
-| `--period-unit` | Kỳ tối đa |
+| `--period-unit` | Khoảng thời gian tối đa |
 |---|---|
 | `day` | 90 ngày |
 | `week` | 180 ngày |

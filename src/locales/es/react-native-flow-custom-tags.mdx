@@ -1,10 +1,10 @@
 ---
 title: "Pasar datos a flows en React Native SDK"
-description: "Pasa un valor desde tu app React Native a un flow y muéstralo en un elemento de texto."
+description: "Pasa un valor desde tu app de React Native a un flow y muéstralo en un elemento de texto."
 metadataTitle: "Pasar datos a flows | React Native SDK | Documentación de Adapty"
 ---
 
-Un [custom tag](flow-custom-tags) es una variable personalizada con un valor de tu app. Cuando seleccionas **Value comes from outside the app** en la configuración de una variable, tu app puede establecer su valor a través del SDK de Adapty. Por ejemplo, un elemento de texto contiene "Coins:" y un custom tag. Si tu app pasa 120 para el tag, los usuarios ven "Coins: 120".
+Un [custom tag](flow-custom-tags) es una variable personalizada con un valor proveniente de tu app. Cuando seleccionas **Value comes from outside the app** en la configuración de una variable, tu app puede establecer su valor a través del SDK de Adapty. Por ejemplo, un elemento de texto contiene "Coins:" y un custom tag. Si tu app pasa "120" para el tag, los usuarios ven "Coins: 120".
 
 ## Antes de comenzar \{#before-you-start\}
 
@@ -16,13 +16,13 @@ Un [custom tag](flow-custom-tags) es una variable personalizada con un valor de 
 
 ## Pasar valores de etiquetas personalizadas \{#pass-custom-tag-values\}
 
-Pasa los valores de tu app al parámetro `customTags` de `AdaptyFlowView` o `createFlowView`, como un objeto:
+Pasa los valores de tu app en el campo `customTags` de los parámetros de la vista, como un objeto. Con el componente `AdaptyFlowView`, los parámetros son su prop `params`. Con `createFlowView`, son su segundo argumento.
 
 - Cada clave es el nombre completo de una etiqueta personalizada, como `user.streak`.
-- Cada valor es el texto que los usuarios ven en lugar de la etiqueta.
-- Cada valor debe ser legible por personas, por ejemplo "1,250" y no "1250.0". Adapty no lo formatea ni traduce.
+- Cada valor es la cadena que los usuarios ven en lugar de la etiqueta.
+- Cada valor debe ser legible por humanos, como "1,250", no "1250.0". Adapty no lo formatea ni traduce.
 
-El SDK lee los valores una vez, al crear la vista, por lo que no cambian mientras el flow está abierto.
+`createFlowView` lee los valores una sola vez, al crear la vista, por lo que no cambian mientras el flow está abierto. Si los `params` de un `AdaptyFlowView` montado cambian, el componente vuelve a crear la vista del flow y el flow comienza de nuevo desde su primera pantalla. Mantén los `params` iguales mientras el flow esté abierto.
 
 <Tabs>
 <TabItem value="component" label="React component" default>
@@ -82,7 +82,7 @@ Si tu app ya establece valores de etiquetas personalizadas para paywalls del ant
 
 Recopila el peso y la altura de los eventos `flow_user_input` del onboarding, tal como se describe en [Procesar datos de flows](react-native-flow-input). Para saber que el usuario llegó a la última pantalla, observa el evento `flow_screen_showed` con `is_last_screen` configurado como `true`, tal como se describe en [Rastrear vistas de pantallas de flows](react-native-flow-screen-views). Cuando el usuario cierre el onboarding después de esa pantalla, calcula el IMC. Luego crea la vista del paywall y pasa el IMC para el custom tag `bmi`.
 
-Registra los siguientes handlers en `onboardingView`, la vista que creas para el flow de onboarding:
+Registra los siguientes handlers en `onboardingView`, la vista que devuelve `createFlowView` para el flow de onboarding. El componente `AdaptyFlowView` no tiene un handler `onDisappeared`, por lo que este ejemplo no funciona con él.
 
 ```javascript showLineNumbers title="React Native"
 
@@ -132,16 +132,14 @@ async function showBmiPaywall(bmi) {
 
 ### Guardar el IMC en el perfil del usuario \{#save-the-bmi-to-the-users-profile\}
 
-Para mostrar distintos flows a los usuarios según su IMC, guárdalo como un [atributo personalizado](react-native-setting-user-attributes#custom-user-attributes) de su perfil. En el Adapty Dashboard, [crea un atributo personalizado de tipo **Number**](segments#custom-attributes) con la clave `bmi`. Luego muestra cada flow a una [audiencia](audience) definida a partir de ese atributo.
+Para mostrar distintos flows a los usuarios según su IMC, guárdalo como un [atributo personalizado](react-native-setting-user-attributes#custom-user-attributes) de su perfil. En el Adapty Dashboard, [crea un atributo personalizado de tipo **Number**](segments#custom-attributes) con la clave `bmi`. Luego muestra cada flow a una [audiencia](audience) creada a partir de ese atributo.
 
-Llama al método `updateProfile` después de calcular el IMC. Guarda el número, no una cadena formateada, para que un segmento pueda comparar el IMC con un umbral:
+Llama al método `updateProfile` en `onDisappeared`, justo después de la línea que calcula `bmi`. Pasa ese número, no la cadena formateada, para que un segmento pueda comparar el IMC con un umbral. `onDisappeared` no puede ser `async`, así que gestiona el resultado con `.catch` en lugar de `await`:
 
 ```javascript showLineNumbers title="React Native"
-try {
-  await adapty.updateProfile({
-    codableCustomAttributes: { bmi: bmi },
+adapty
+  .updateProfile({ codableCustomAttributes: { bmi } })
+  .catch((error) => {
+    // handle the error
   });
-} catch (error) {
-  // handle the error
-}
 ```

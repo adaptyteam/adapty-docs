@@ -4,7 +4,7 @@ description: "Передайте значение из вашего Unity-при
 metadataTitle: "Передача данных во флоу | Unity SDK | Документация Adapty"
 ---
 
-[Кастомный тег](flow-custom-tags) — это пользовательская переменная, значение которой задаётся вашим приложением. Если в настройках переменной выбрать **Value comes from outside the app**, приложение сможет передать её значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и кастомный тег. Если приложение передаёт для тега значение 120, пользователь видит «Coins: 120».
+[Кастомный тег](flow-custom-tags) — это пользовательская переменная со значением из вашего приложения. После того как вы выбираете **Value comes from outside the app** в настройках переменной, приложение может задавать её значение через Adapty SDK. Например, текстовый элемент содержит «Coins:» и кастомный тег. Если приложение передаёт «120» для этого тега, пользователи видят «Coins: 120».
 
 ## Прежде чем начать \{#before-you-start\}
 
@@ -16,11 +16,11 @@ metadataTitle: "Передача данных во флоу | Unity SDK | Док
 
 ## Передача пользовательских значений тегов \{#pass-custom-tag-values\}
 
-Передайте значения из вашего приложения в метод `SetCustomTags` объекта `AdaptyUICreateFlowViewParameters` в виде `Dictionary<string, string>`, а затем вызовите `AdaptyUI.CreateFlowView` с этим объектом:
+Передайте значения вашего приложения в метод `SetCustomTags` объекта `AdaptyUICreateFlowViewParameters` в виде словаря строк, например `Dictionary<string, string>`, и вызовите `AdaptyUI.CreateFlowView` с этим объектом:
 
 - Каждый ключ — это полное имя пользовательского тега, например `user.streak`.
-- Каждое значение — это строка, которую пользователи видят вместо тега.
-- Каждое значение должно быть удобочитаемым, например «1 250», а не «1250.0». Adapty не форматирует и не переводит его.
+- Каждое значение — строка, которую пользователи видят вместо тега.
+- Каждое значение должно быть читаемым для человека, например «1 250», а не «1250.0». Adapty не форматирует и не переводит его.
 
 SDK считывает значения один раз — при создании представления, поэтому они не изменяются, пока флоу открыт.
 
@@ -61,7 +61,7 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 Соберите вес и рост из событий `flow_user_input` флоу онбординга, как описано в [Обработка данных из флоу](unity-flow-input). Чтобы узнать, что пользователь дошёл до последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen` равным `true`, как описано в [Отслеживание просмотров экранов флоу](unity-flow-screen-views). Когда пользователь закроет флоу онбординга после этого экрана, вычислите BMI. Затем создайте представление пейвола и передайте BMI для кастомного тега `bmi`.
 
-Реализуйте следующие методы на слушателе, который вы регистрируете с помощью `Adapty.SetFlowsEventsListener`:
+Реализуйте следующие методы в листенере, который вы регистрируете через `Adapty.SetFlowsEventsListener`. Метод `FlowViewDidDisappear` срабатывает только после того, как ваше приложение закрывает флоу онбординга, поэтому листенер также должен обрабатывать действие **Close flow**, как описано в [Закрытие флоу и пейволов](unity-handle-paywall-actions#close-flows-and-paywalls):
 
 ```csharp showLineNumbers title="Unity"
 private readonly Dictionary<string, string> bodyAnswers = new Dictionary<string, string>();
@@ -82,7 +82,8 @@ public void FlowViewDidReceiveAnalyticEvent(
     if (name != "flow_user_input") return;
     if (!parameters.TryGetValue("value", out var raw) || !(raw is string value)) return;
 
-    var elementId = parameters["element_id"] as string;
+    if (!parameters.TryGetValue("element_id", out var idRaw) || !(idRaw is string elementId)) return;
+
     bodyAnswers[elementId] = value;
 }
 
@@ -136,11 +137,11 @@ private void ShowBmiPaywall(string bmi) {
 
 `ToString("0.0")` использует разделитель дробной части текущей культуры: "22.7" для английской и "22,7" для немецкой.
 
-### Сохраните ИМТ в профиле пользователя \{#save-the-bmi-to-the-users-profile\}
+### Сохранение ИМТ в профиль пользователя \{#save-the-bmi-to-the-users-profile\}
 
-Чтобы показывать пользователям разные флоу на основе их ИМТ, сохраните его как [пользовательский атрибут](unity-setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте пользовательский атрибут типа **Number**](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу аудитории, сформированной на основе этого атрибута.
+Чтобы показывать пользователям разные флоу на основе их ИМТ, сохраните его как [пользовательский атрибут](unity-setting-user-attributes#custom-user-attributes) профиля. В дашборде Adapty [создайте числовой (**Number**) пользовательский атрибут](segments#custom-attributes) с ключом `bmi`. Затем показывайте каждый флоу аудитории, [сформированной](audience) на основе этого атрибута.
 
-Вызовите метод `updateProfile` после того, как вычислите ИМТ. Сохраняйте число, а не отформатированную строку — это нужно для того, чтобы сегмент мог сравнивать ИМТ с пороговым значением:
+Вызовите метод `Adapty.UpdateProfile` в `FlowViewDidDisappear`, сразу после строки, вычисляющей `bmi`. Передайте именно `double`, а не отформатированную строку — это позволит сегменту сравнивать ИМТ с пороговым значением:
 
 ```csharp showLineNumbers title="Unity"
 var parameters = new AdaptyProfileParameters.Builder()

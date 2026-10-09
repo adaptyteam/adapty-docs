@@ -4,7 +4,7 @@ description: "React Nativeアプリからフローに値を渡し、テキスト
 metadataTitle: "フローにデータを渡す | React Native SDK | Adapty ドキュメント"
 ---
 
-[カスタムタグ](flow-custom-tags)は、アプリからの値を持つカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、アプリはAdapty SDKを通じてその値を設定できます。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれている場合、アプリがタグに120を渡すと、ユーザーには「Coins: 120」と表示されます。
+[カスタムタグ](flow-custom-tags)は、アプリからの値を持つカスタム変数です。変数の設定で **Value comes from outside the app** を選択すると、アプリはAdapty SDKを通じてその値を設定できます。たとえば、テキスト要素に「Coins:」とカスタムタグが含まれている場合、アプリがタグに「120」を渡すと、ユーザーには「Coins: 120」と表示されます。
 
 ## 始める前に \{#before-you-start\}
 
@@ -16,13 +16,13 @@ metadataTitle: "フローにデータを渡す | React Native SDK | Adapty ド�
 
 ## カスタムタグの値を渡す \{#pass-custom-tag-values\}
 
-アプリの値を `AdaptyFlowView` または `createFlowView` の `customTags` パラメータにオブジェクトとして渡します：
+アプリの値をビューパラメータの `customTags` フィールドにオブジェクトとして渡します。`AdaptyFlowView` コンポーネントを使う場合は `params` プロップに、`createFlowView` を使う場合は第2引数に指定します。
 
-- 各キーは `user.streak` のようなカスタムタグのフル名です。
-- 各値はタグの代わりにユーザーに表示される文字列です。
-- 各値は "1250.0" ではなく "1,250" のように人が読める形式である必要があります。Adapty はフォーマットや翻訳を行いません。
+- 各キーは `user.streak` のようなカスタムタグのフルネームです。
+- 各値は、タグの代わりにユーザーに表示される文字列です。
+- 各値は "1250.0" ではなく "1,250" のように、人が読める形式にしてください。Adapty は値のフォーマットや翻訳を行いません。
 
-SDK はビューを作成する際に値を一度だけ読み込むため、フローが開いている間は変更されません。
+`createFlowView`は、ビューの作成時に値を一度だけ読み込むため、フローが開いている間は値が変わりません。マウント済みの`AdaptyFlowView`の`params`が変更されると、コンポーネントはフロービューを再作成し、フローは最初の画面から再開します。フローが開いている間は`params`を変更しないようにしてください。
 
 <Tabs>
 <TabItem value="component" label="React component" default>
@@ -82,7 +82,7 @@ try {
 
 オンボーディングフローの `flow_user_input` イベントから体重と身長を収集します。詳しくは[フローからのデータ処理](react-native-flow-input)を参照してください。ユーザーが最後の画面に到達したことを確認するには、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視します。詳しくは[フロー画面ビューのトラッキング](react-native-flow-screen-views)を参照してください。その画面の後にユーザーがオンボーディングフローを閉じたら、BMIを計算します。次にペイウォールのビューを作成し、`bmi` カスタムタグにBMIを渡します。
 
-`onboardingView` に以下のハンドラーを登録してください。このビューはオンボーディングフロー用に作成したものです。
+`createFlowView` がオンボーディングフローに対して返すビューである `onboardingView` に、以下のハンドラを登録します。`AdaptyFlowView` コンポーネントには `onDisappeared` ハンドラがないため、この例はそのコンポーネントでは動作しません。
 
 ```javascript showLineNumbers title="React Native"
 
@@ -132,16 +132,14 @@ async function showBmiPaywall(bmi) {
 
 ### BMIをユーザーのプロファイルに保存する \{#save-the-bmi-to-the-users-profile\}
 
-BMIに基づいて異なるフローをユーザーに表示するには、BMIをプロファイルの[カスタム属性](react-native-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー `bmi` を持つ **Number** タイプの[カスタム属性を作成](segments#custom-attributes)してください。その後、この属性をもとに作成した[オーディエンス](audience)に対して各フローを表示します。
+BMIに基づいてユーザーに異なるフローを表示するには、BMIをプロファイルの[カスタム属性](react-native-setting-user-attributes#custom-user-attributes)として保存します。Adapty ダッシュボードで、キー `bmi` を持つ **Number** 型の[カスタム属性を作成](segments#custom-attributes)し、その属性をもとに作成した[オーディエンス](audience)ごとに各フローを表示します。
 
-BMIを計算したら、`updateProfile` メソッドを呼び出してください。セグメントがBMIをしきい値と比較できるように、フォーマットされた文字列ではなく数値で保存します：
+`onDisappeared`内で、`bmi`を計算する行の直後に`updateProfile`メソッドを呼び出してください。フォーマットされた文字列ではなく数値をそのまま渡すことで、セグメントがBMIを閾値と比較できるようになります。`onDisappeared`は`async`にできないため、`await`の代わりに`.catch`で結果を処理してください：
 
 ```javascript showLineNumbers title="React Native"
-try {
-  await adapty.updateProfile({
-    codableCustomAttributes: { bmi: bmi },
+adapty
+  .updateProfile({ codableCustomAttributes: { bmi } })
+  .catch((error) => {
+    // handle the error
   });
-} catch (error) {
-  // handle the error
-}
 ```
