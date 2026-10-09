@@ -23,7 +23,7 @@ import { remarkFloatClear } from './src/plugins/remark-float-clear.mjs';
 // Slugs of pages carrying `noindex: true` in their frontmatter. The sitemap
 // filter below only receives a URL, so noindex slugs are listed here by hand —
 // add any new one to both the frontmatter and this list.
-const NOINDEX_SLUGS = ['flows-with-your-own-payments'];
+const NOINDEX_SLUGS = ['flows-with-your-own-payments', 'ua-meta-ads'];
 
 // https://astro.build/config
 export default defineConfig({

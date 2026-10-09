@@ -45,3 +45,65 @@ In that case, the following events will be sent:
 4. `subscription_expired` on May 1st
 
 For a detailed breakdown of which events are triggered in each scenario, check out the [Event flows](event-flows).
+
+## Event list
+
+You can control which events each integration receives. Most are available for every integration, except three:
+
+- **Access level updated** only triggers if both the [webhook integration](webhook) is configured and the event is enabled. It appears in the [Event Feed](https://app.adapty.io/event-feed) and reaches the webhook, but no other integration receives it. If the webhook integration isn't configured or the event type isn't enabled, Adapty doesn't create the event at all, and it never appears in the Event Feed.
+- **Trial still active** and **Subscription still active** are [synthetic events](#synthetic-events), and only some integrations receive them.
+
+The following table lists all events that Adapty can send to third-party integrations:
+
+<WebhookEvents />
+
+## Synthetic events
+
+Most events are triggered by a change — a purchase, a renewal, a cancellation. The **Trial still active** and **Subscription still active** events are the opposite. You set a timer. When the timer expires, Adapty checks the status of the trial or subscription. If the trial or subscription **did not end**, Adapty fires the corresponding event.
+
+These synthetic events are available for Adjust, Amplitude, AppMetrica, AppsFlyer, Branch, Facebook Analytics, Firebase, Mixpanel, OneSignal, PostHog, Singular, SplitMetrics, and the webhook. You need to manually turn them on.
+
+If the user turns auto-renewal off before the timer expires, Adapty skips the send. It counts the user as gone, even though their access runs to the end of the paid period.
+
+Turning the event off stops Adapty from starting new timers. Timers already running still send when they expire, so a destination can keep receiving the event for as long as the delay you configured.
+
+:::note
+Adapty Attribution offers a similar feature for Meta, TikTok, and Google Ads campaigns: qualified trials hold a trial event for 1 to 24 hours. You set them up in the [Meta](ua-facebook#qualified-trial), [TikTok](ua-tiktok#qualified-trial), or [Google Ads](ua-google-ads-settings#qualified-trial) integration. `trial_active` waits 1 hour to 90 days. Both skip the send if the user has turned auto-renewal off. You configure them in different places, and they don't affect each other.
+:::
+
+### The trial is still running
+
+- **Integration**: AppsFlyer
+- **Event**: Trial still active
+- **Delay**: 3 days
+- **Trial start**: April 1st
+- **Trial end**: April 7th
+
+AppsFlyer receives:
+
+1. `trial_started` on April 1st
+2. `trial_active` on April 4th
+3. `trial_converted` on April 7th
+
+Note the following:
+- Since it's a converted trial, you never receive a `subscription_active` event. 
+- If the delay was set at 7 days, `trial_active` would never arrive at all. By that time, the user had already converted.
+
+### The subscription is still running
+
+- **Integration**: Webhook
+- **Event**: Subscription still active
+- **Delay**: 7 days
+- **Subscription start**: April 1st, without a trial
+- **Renewal**: May 1st
+
+The webhook receives:
+
+1. `subscription_started` on April 1st
+2. `subscription_active` on April 8th
+3. `subscription_renewed` on May 1st
+
+Note the following:
+- The subscription must start without a trial. A converted trial sends `trial_converted`, which doesn't start the timer.
+- If the user turned off auto-renewal on April 3rd, `subscription_active` never arrives, even though their access runs until May 1st.
+- The May renewal doesn't start a second timer. You receive `subscription_active` once per subscription.
