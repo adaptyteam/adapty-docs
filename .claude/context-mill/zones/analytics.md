@@ -197,6 +197,21 @@ here unchanged and are not restated.
 
 ## Ripple rules
 
+- **An App Store commission change touches four articles, not one.** Checked 2026-10-05 (EU 26%/15% from
+  2026-10-01, China 25%/12%, Japan and Brazil 26%/15%). The per-storefront table lives
+  only in `how-adapty-analytics-works` (`#app-store-commission-rates`). Three more articles state a rate
+  or the "30% → 15%" pair in prose: `analytics-cohorts` (Revenue vs Proceeds), `app-store-small-business-program`
+  (intro and Losing eligibility), and `set-up-app-store-connect` (the closing link list). The
+  `rate_after_first_year` field rows in `webhook-event-types-and-fields`, `analytics-integration` and
+  `messaging` say "typically 15%", which stays true with China at 12%. Found with
+  `grep -rniE "commission|service fee|tax|VAT|small business"` over `src/content/docs` and
+  `src/components/reusable`. The shipped skills restate no rate (grep of the skills repo
+  `*.md`, same date).
+- **Source the rates from Apple, not from the backend ladder.** The backend's new rates matched Apple's pages
+  on 2026-10-05: the EU payment-options page (`#commissions`), the China news item `developer.apple.com/news/?id=dadukodv`, and the
+  Japan and Brazil "Business terms" sections. Japan and Brazil quote 21% + a 5% payment processing fee
+  (10% + 5% reduced), so the docs table shows the sum.
+
 ## Boundaries
 
 - **`attribution`** — does the question concern subscription/revenue performance generally (here), or
@@ -243,9 +258,30 @@ synonyms live in `aliases.md` and aren't repeated.
 | "churn rate", "how many users left", "cancellations", "voluntary vs involuntary churn" | Ambiguous by design — split before answering. Auto-renew switched off while access continues to period end is `cancelled-subscriptions` (trials: `trials-renewal-cancelled`); access actually ending is `churned-expired-subscriptions` (trials: `expired-churned-trials`). The voluntary/involuntary breakdown itself comes from the Expiration reason grouping in `controls-filters-grouping-compare-proceeds` or the churn-reason step in `analytics-funnels`. |
 | "failed payment", "card declined", "dunning", "did we win those subscribers back", "how much revenue did retries recover" | A four-way family. Entering the retry window = `grace-period` (6 days weekly, 16 days otherwise); the state reached only **after** grace expires unpaid = `billing-issue`; recovery counts = `grace-period-converted` / `billing-issue-converted`; recovered money = `grace-period-converted-revenue` / `billing-issue-converted-revenue`. Recovery *rates* are in `analytics-conversion`. |
 | "paywall views missing from the funnel", "funnel step 2 is empty or too low" | `analytics-funnels#paywall-displayed`. Two causes, both easy to miss: the step is built only from `logShowFlow()` / `logShowPaywall()` calls, and it counts only users whose **install** date falls in the selected range — a view by an older user is excluded. |
-| "filter by country", "compare to last month", "group by product", "export the chart data" | `controls-filters-grouping-compare-proceeds`. Not every chart supports every attribute (ARPU and Installs are notably limited), so check the metric's own "Available filters and grouping" section too. Country is stamped **per transaction** from device IP → store country → last known IP, so switching App Store country doesn't rewrite past transactions. |
+| "filter by country", "compare to last month", "group by product", "export the chart data" | `controls-filters-grouping-compare-proceeds`. Not every chart supports every attribute (ARPU and Installs are notably limited), so check the metric's own "Available filters and grouping" section too. Country is stamped **per transaction** from store country → IP country → purchase currency (corrected 2026-10-07; this row and the article used to put device IP first — backend code shows store country first), so switching App Store country doesn't rewrite past transactions. The same country picks the App Store commission rate. |
 | "email me the metrics", "notify me when we make a sale", "daily revenue digest" | Two unrelated products, neither named after email or phone. Email digests are `reports` — they mirror whatever your `overview` page is configured to show (metrics, order, timezone, revenue type), delivered 9 AM local. Phone alerts are `push-notifications` — the Adapty companion app, capped at 1000/day across all apps. |
 | "consumable count is higher than the money we made", "one-time purchase chart" | `non-subscriptions`. It counts purchase events and subtracts nothing for refunds, and it's broader than "one-time purchase" — consumables and non-renewing subscriptions can each be bought repeatedly. |
 
 ## Gaps and misses
+
+- **2026-10-07: the commission rate follows the store country, and the fallback differs by surface.**
+  Per developer feedback, Adapty picks an App Store country rate by the store country (the buyer's
+  Apple account country), never by location or IP. When the store country is unknown, analytics
+  (charts, A/B tests, onboardings) fall back to the IP country, then the purchase currency, while
+  integrations and webhooks use the App Store country in Apple's transaction. So one purchase can carry
+  different proceeds in a chart and in an integration; reported as under 0.1% of EU revenue since
+  2026-10-01. Documented in `how-adapty-analytics-works#commissions` as a note. Backend code (2026-10-07)
+  confirms store country → IP country for the backfill and profile paths; the live chart ingest isn't in
+  that code, so the currency step rests on developer feedback. `controls-filters-grouping-compare-proceeds#how-country-is-determined`
+  was changed to the same order in the same pass.
+
+- **Corrected 2026-10-05: "the stores automatically report" country-specific rates was wrong for the App
+  Store.** `how-adapty-analytics-works#commissions` said App Store renewals after year one and country
+  rates are reported by the stores. Backend code (2026-10-05) shows Apple reports no commission rate on
+  App Store transactions, so Adapty's own country rules always decide it. The article now says Adapty
+  applies the rate.
+- **Open, 2026-10-05: "Adapty does not calculate taxes" is still in `how-adapty-analytics-works#taxes`.**
+  Backend analysis (2026-10-05) describes App Store VAT as derived by Adapty from Apple's price points
+  (customer price against Apple's proceeds) and stored in a synced tax-rate table, which contradicts "Apple and Google … report it back". Not edited: it needs a decision
+  from the docs owner on how much of the estimate to explain. Checked from that analysis only, not by reading the code.
 
