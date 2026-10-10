@@ -13,6 +13,6 @@
 | attribution_adgroup      | array of String values       | :heavy_minus_sign: | Attribution ad group that brought the transaction.           |
 | attribution_adset        | array of String values       | :heavy_minus_sign: | Attribution ad set that led to the transaction.              |
 | attribution_creative     | array of String values       | :heavy_minus_sign: | Specific visual or text elements in an ad or campaign tracked to measure effectiveness (e.g., clicks, conversions). |
-| offer_category       | array of String values       | :heavy_minus_sign: | Specify the offer categories you want to retrieve data for. Possible values are:<ul><li>introductory</li><li>promotional</li><li>winback</li></ul> |
+| offer_category       | array of String values       | :heavy_minus_sign: | Specify the offer categories you want to retrieve data for. Possible values are:<ul><li>no_offer</li><li>introductory</li><li>promotional</li><li>offer_code</li><li>win_back</li><li>retention</li></ul> |
 | offer_type           | array of String values       | :heavy_minus_sign: | Specify the offer types you want to retrieve data for. Possible values are:<ul><li>free_trial</li><li>pay_as_you_go</li><li>pay_up_front</li></ul> |
 | offer_id             | array of String values       | :heavy_minus_sign: | Specify the specific offers you want to retrieve data for.   |
