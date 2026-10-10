@@ -3,6 +3,7 @@ import fsSync from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withSkillNote } from './llm-skill-note.mjs';
+import { resolveLocaleOnly } from './locale-only.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SRC_DOCS_DIR = path.resolve(__dirname, '../src/content/docs');
@@ -100,7 +101,7 @@ async function getReusableComponents() {
     return components;
 }
 
-function stripContent(content, reusableComponents) {
+function stripContent(content, reusableComponents, locale = 'en') {
     let processed = content;
 
     // 1. Remove imports
@@ -153,6 +154,9 @@ ${content}
 ---
 `);
 
+
+    // Keep <LocaleOnly> content only in the listed locales' exports (English is 'en').
+    processed = resolveLocaleOnly(processed, locale);
 
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(
@@ -345,7 +349,7 @@ async function processLocaleFiles(locale, baseComponents, englishFiles) {
         if (isDraft(rawContent)) continue;
 
         let content = cleanFrontmatter(rawContent);
-        content = stripContent(content, components);
+        content = stripContent(content, components, locale);
         content = withSkillNote(content);
 
         const rawBasename = entry.name.replace(/\.(md|mdx)$/, '');

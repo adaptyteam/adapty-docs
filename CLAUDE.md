@@ -104,6 +104,7 @@ The components below are **auto-registered** in `src/pages/[...slug].astro` — 
 | `CustomDocCardList` | `<CustomDocCardList ids={['id1','id2']} />` or `<CustomDocCardList />` for auto |
 | `Button` | `<Button id="page-id">Text</Button>` or `<Button href="url">Text</Button>` |
 | `Inline` | `<Inline id="icon.svg" alt="..." />` — inline SVG/image icon from `src/assets/Inline/` |
+| `LocaleOnly` | `<LocaleOnly locales={['zh']}>content</LocaleOnly>` — renders only on the listed locales' pages and `.md` exports (`'en'` for English). Translation never sees the tag: `translate.mjs` sends listed locales the content without it and cuts the block for the rest (`scripts/locale-only.mjs`). Leave blank lines inside the tags so callouts and markdown render |
 | `Callout` (remark plugin) | `:::note`, `:::tip`, `:::info`, `:::warning`, `:::danger`, `:::important`, `:::link` |
 
 Import path pattern: `import Component from '@site/src/components/Component.astro';`

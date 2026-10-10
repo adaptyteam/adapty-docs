@@ -36,6 +36,7 @@ import { compile } from '@mdx-js/mdx';
 import remarkDirective from 'remark-directive';
 import { remarkAside } from '../src/plugins/remark-aside.mjs';
 import yaml from 'js-yaml';
+import { resolveLocaleOnly } from './locale-only.mjs';
 
 const ROOT = process.cwd();
 const SCAN_DIRS = ['src/content/docs', 'src/locales', 'src/components/reusable'];
@@ -166,7 +167,8 @@ async function repairBrokenLocales(issues) {
       let candidate = guard.fixFrontmatterBackslashQuotes(await fs.readFile(abs, 'utf-8'));
       const englishPath = await englishSourceFor(issue.file);
       if (englishPath) {
-        const english = await fs.readFile(englishPath, 'utf-8');
+        // Compare against the English source as this locale sees it (LocaleOnly resolved).
+        const english = resolveLocaleOnly(await fs.readFile(englishPath, 'utf-8'), issue.file.split('/')[2]);
         candidate = guard.normalizeSectionBoundaries(
           guard.restoreBlankLinesBeforeBlocks(candidate, english),
           english,

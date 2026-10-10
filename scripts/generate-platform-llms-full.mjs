@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { LLM_SKILL_NOTE } from './llm-skill-note.mjs';
+import { resolveLocaleOnly } from './locale-only.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SIDEBARS_DIR = path.resolve(__dirname, '../src/data/sidebars');
@@ -91,7 +92,7 @@ async function getLocaleReusableComponents(baseComponents, locale) {
 }
 
 // Strip content (remove imports, Zoom components, inline reusable components)
-function stripContent(content, reusableComponents) {
+function stripContent(content, reusableComponents, locale = 'en') {
     let processed = content;
 
     // 0. Remove MDX/HTML comments before anything else, so hidden unreleased
@@ -116,6 +117,9 @@ function stripContent(content, reusableComponents) {
     // Replace Inline icon component with its alt text: <Inline id="..." alt="Edit" ... /> → Edit
     processed = processed.replace(/<Inline\s+[^>]*alt="([^"]*)"[^>]*\/>/g, '$1');
     processed = processed.replace(/<Inline\s+[^>]*\/>/g, '');
+
+    // Keep <LocaleOnly> content only in the listed locales' exports (English is 'en').
+    processed = resolveLocaleOnly(processed, locale);
 
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(
@@ -251,7 +255,7 @@ async function processMarkdownFile(docId, reusableComponents, locale = null) {
         content = cleanFrontmatter(content);
 
         // Strip content
-        content = stripContent(content, reusableComponents);
+        content = stripContent(content, reusableComponents, locale ?? 'en');
 
         return content;
     } catch (error) {

@@ -29,6 +29,7 @@ import MethodPromo from './MethodPromo.astro';
 import SkillPromo from './SkillPromo.astro';
 import AIPromo from './AIPromo.astro';
 import ProductMap from './ProductMap.astro';
+import LocaleOnly from './LocaleOnly.astro';
 
 export const mdxComponents = {
   Tabs,
@@ -50,6 +51,7 @@ export const mdxComponents = {
   SkillPromo,
   AIPromo,
   ProductMap,
+  LocaleOnly,
   img: MDXImage,
   // Plain <details> in articles renders through the same component as <Details>,
   // so there is one collapsible implementation rather than two designs.
