@@ -87,11 +87,16 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `claude plugin marketplace add`, `gh skill install`, `gemini skills install`, Cursor's plan mode, and
   "which chat products can make HTTP calls" are third-party surfaces that can be invalidated with no
   commit anywhere in Adapty. Nothing in this repo or either skill repo verifies them — the link checker
-  only proves a URL returns a status. The nearest thing to one source for the install commands is
-  `src/data/agent-tools.json` (which feeds `InstallToolsModal.astro`); the prose reusable
-  `AdaptySdkIntegrationSkill.mdx` restates them by hand and has already diverged, sending Codex to
-  `npx skills add` where the JSON clones the repo into `~/.agents/skills/`. Treat this class of claim as
+  only proves a URL returns a status. Treat this class of claim as
   reader-reported: correct it when someone reports it, and never assert its freshness in a review.
+- **The docs teach one install command, `npx adapty skills install`, and hand every per-agent route to
+  the plugin README** (`plugin/README.md#install` in `adaptyteam/adapty-skills`) — the shape of
+  Stripe's `stripe agent setup` (2026-10-12). The command is `adapty-cli`'s
+  `src/cli/commands/skills/install/`, released in v0.9.3; the per-agent commands it runs live in its
+  `lib/agents.ts`, not in this repo. `src/data/agent-tools.json` holds the command once, for
+  `InstallToolsModal.astro` and `scripts/llm-skill-note.mjs`; the `AdaptySdkIntegrationSkill.mdx`
+  reusable and the four standalone skill articles restate it in prose. The Apple Ads toolset in the
+  same JSON is a different plugin (`adaptyteam/apple-ads-cli`) and still lists per-agent commands.
 
 ## What we document, what we don't
 
@@ -99,7 +104,7 @@ The delta that matters here is that most of the surface belongs to someone else 
 on one side, a non-deterministic agent on the other.
 
 - **We document what to hand the tool and in what order; we never document the tool's own UI.** An
-  install command, the `/adapty-integration` invocation, and "use plan mode if your tool has one"
+  install command, the plain-language prompt that starts a skill (not a slash command — only some agents map those to skills), and "use plan mode if your tool has one"
   are in scope. A walkthrough of Cursor's settings, an editor screenshot, or an MCP config file is not —
   it belongs to someone else's release schedule, and per `scope.md` the reader can see it anyway.
   Confirmed as current practice: `adapty-cursor` mentions plan mode in a single clause and delegates
