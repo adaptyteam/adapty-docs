@@ -55,7 +55,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | add-flow-remote-config-locale | — | marketer | 4 | tutorial |
-| add-paywall-locale-in-adapty-paywall-builder | — | marketer | 9 | tutorial |
+| add-paywall-locale-in-adapty-paywall-builder | — | marketer | 20 | tutorial |
 | builder-containers | — | marketer | 15 | tutorial |
 | builder-element-states | — | marketer | 7 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
