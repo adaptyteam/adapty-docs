@@ -1,11 +1,11 @@
 ---
 title: "Adapty Developer CLI コマンドリファレンス"
-description: "アプリ、プロダクト、ペイウォール、フロー、プレースメントの設定や RevenueCat からの移行に使用する Adapty Developer CLI コマンドのリファレンスです。"
+description: "アプリ、プロダクト、ペイウォール、フロー、プレースメントの設定、RevenueCat からの移行、Adapty スキルのインストールを行う Adapty Developer CLI コマンドのリファレンスです。"
 metadataTitle: "Developer CLI コマンドリファレンス | Adapty ドキュメント"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-この記事では、Adapty CLI のコマンドのうち、アカウント設定（アプリ、アクセスレベル、プロダクト、ペイウォール、フロー、プレースメント、セグメント）を行うコマンドと、RevenueCat プロジェクトを移行するコマンドについて、引数・フラグ・使用可能な値とともに説明します。Apple Ads キャンペーンについては、[Ads Manager コマンド](developer-cli-ads-manager-reference)を参照してください。
+この記事では、Adapty CLI のコマンド一覧を紹介します。アカウントの設定（アプリ、アクセスレベル、プロダクト、ペイウォール、フロー、プレースメント、セグメント）を行うコマンド、RevenueCat プロジェクトを移行するコマンド、Adapty スキルをインストールするコマンドと、それぞれの引数・フラグ・使用可能な値について説明します。Apple Ads キャンペーンについては、[Ads Manager コマンド](developer-cli-ads-manager-reference)を参照してください。
 
 :::link
 認証のセットアップとトークン管理については、[認証](developer-cli-authentication)を参照してください。
@@ -751,10 +751,12 @@ adapty migrations create --flow <flow> --app <app-id>
 
 | フロー | 説明 |
 |---|---|
-| `transactions` | 毎日のRevenueCat Cloud Exportからトランザクション履歴をインポートする |
-| `transactions_support` | Cloud Exportのないplan向けに、RevenueCatサポートとAdaptyサポートを通じてトランザクション履歴をインポートする |
-| `apple_events` | RevenueCatが引き続き受信しながら、App Store通知をAdaptyにも転送する |
-| `google_events` | RevenueCatがGoogle Play通知に使用するPub/SubトピックにAdaptyをサブスクライブする |
+| `transactions` | RevenueCat のデイリークラウドエクスポートからトランザクション履歴をインポートする |
+| `transactions_support` | クラウドエクスポートのない RevenueCat プランを対象に、RevenueCat サポートと Adapty サポートを通じてトランザクション履歴をインポートする |
+| `apple_events` | RevenueCat が引き続き受信しながら、App Store の通知を Adapty にも転送する |
+| `google_events` | RevenueCat が Google Play 通知に使用している Pub/Sub トピックに Adapty をサブスクライブする |
+| `code` | コーディングエージェントにアプリの一つのコードベースで RevenueCat SDK を置き換えさせる |
+| `paywall_design` | コーディングエージェントに、カタログ移行で作成されたフロー内で RevenueCat のペイウォールデザインを再構築させる |
 
 ### adapty migrations use
 
@@ -843,10 +845,11 @@ adapty migrations run <action-id>
 | `--open` | いいえ | パイプや `--json` を使用している場合でも、アクションのリンクを開きます |
 | `--no-browser` | いいえ | ブラウザを開かずにアクションのリンクを表示します |
 
-アクションには2種類あります：
+アクションには3つの種類があります：
 
-- **インプットアクション**はデータをAdaptyに送信します。例えば、移行するRevenueCatのアプリやマッピングの設定などです。
-- **外部アクション**はAdapty ダッシュボードのページを開きます。例えば、RevenueCatのシークレットAPIキーを貼り付けるためのページです。ページでの操作が完了したら、`status`を確認してください。
+- **入力アクション**は、移行するRevenueCatアプリやマッピングの決定など、データをAdaptyに送信します。
+- **外部アクション**は、RevenueCatのシークレットAPIキーを貼り付けるためなど、Adapty ダッシュボードのページを開きます。ページの操作を完了したら、`status`を確認してください。
+- **エージェントアクション**（例：`migrate_code`）は、コーディングエージェントが行う作業です。アプリのgitリポジトリから実行してください。CLIは移行データを`.git/adapty/`に保存し、エージェントへの指示を出力します。エージェントは`--input`を付けて同じアクションを再実行することで結果を報告します。
 
 ### adapty migrations close
 
@@ -860,6 +863,23 @@ adapty migrations close --outcome finish --yes
 |---|---|---|
 | `--outcome` | はい | `finish` でマイグレーションを完了としてマーク。`cancel` で中断 |
 | `-y`, `--yes` | はい | 終了を確認する |
+
+## スキル \{#skills\}
+
+### adapty skills install
+
+このマシン上のコーディングエージェントに Adapty スキルをインストールします。
+
+```bash
+adapty skills install
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--agent` | いいえ | インストール先のエージェント: `claude-code`、`codex`、`gemini-cli`。複数のエージェントを指定するにはフラグを繰り返します。 |
+| `-y`, `--yes` | いいえ | 見つかったすべてのエージェントに確認なしでインストールします。CLI が複数のエージェントを検出し、確認できない場合（例: `--json` 使用時）に必須です。 |
+
+CLIはPATH上でClaude Code、Codex、Gemini CLIを検索します。いずれも見つからない場合は、`npx skills add adaptyteam/adapty-skills --all --global`の実行を提案します。これは他のエージェントもカバーします。スキルを読み込むにはエージェントを再起動してください。
 
 ## 認証 \{#auth\}
 

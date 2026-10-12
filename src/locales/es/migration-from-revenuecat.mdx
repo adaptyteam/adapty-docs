@@ -5,22 +5,23 @@ metadataTitle: "Migra de RevenueCat a Adapty | Documentación de Adapty"
 keywords: ['migración', 'revenuecat']
 ---
 
-Una migración desde RevenueCat consta de seis pasos. Un agente de codificación se encarga de la mayor parte del trabajo: ejecuta las migraciones a través del [Adapty CLI](developer-cli) y reemplaza el SDK de RevenueCat en tu app. Tú te ocupas de lo que el agente no puede gestionar: los secretos y la configuración en RevenueCat, App Store Connect y Google Cloud.
+Una migración desde RevenueCat tiene siete pasos. Un agente de codificación hace la mayor parte del trabajo: ejecuta las migraciones a través de la [Adapty CLI](developer-cli) y reemplaza el SDK de RevenueCat en tu app. Tú te encargas de lo que el agente no puede alcanzar: los secretos y la configuración en RevenueCat, App Store Connect y Google Cloud.
 
-1. [Aprende las diferencias clave](#learn-the-core-differences).
-2. [Mueve tu catálogo a Adapty](#move-your-catalog-to-adapty).
-3. [Sustituye el SDK de RevenueCat](#replace-the-revenuecat-sdk) con tu agente de código.
-4. [Reenvía los eventos de la store a Adapty](#forward-store-events-to-adapty).
-5. [Prueba y publica una nueva versión de tu app](#test-and-release-a-new-version-of-your-app).
-6. (Opcional) [Importa tu historial de transacciones](#optional-import-your-transaction-history).
+1. [Aprende las diferencias principales](#learn-the-core-differences).
+2. [Migra tu catálogo a Adapty](#move-your-catalog-to-adapty).
+3. [Migra los diseños de tus paywalls](#move-your-paywall-designs), si tus ofertas se convierten en flows.
+4. [Reemplaza el SDK de RevenueCat](#replace-the-revenuecat-sdk) con tu agente de código.
+5. [Reenvía los eventos del store a Adapty](#forward-store-events-to-adapty).
+6. [Prueba y publica una nueva versión de tu app](#test-and-release-a-new-version-of-your-app).
+7. (Opcional) [Importa tu historial de transacciones](#optional-import-your-transaction-history).
 
 :::info
-Tus suscriptores se migrarán automáticamente
+Tus suscriptores migrarán automáticamente
 
 Todos los usuarios que alguna vez hayan activado una suscripción pasarán automáticamente a Adapty en cuanto abran la nueva versión de tu app con el SDK de Adapty. La validación del estado de la suscripción y el acceso premium se restaurarán de forma automática.
 :::
 
-Antes de publicar una nueva versión de tu app con el SDK de Adapty, asegúrate de revisar nuestra [lista de verificación para el lanzamiento](release-checklist).
+Antes de publicar la nueva versión de tu app con el SDK de Adapty, asegúrate de revisar nuestra [lista de verificación para el lanzamiento](release-checklist).
 
 ## Aprende las diferencias principales \{#learn-the-core-differences\}
 
@@ -32,13 +33,13 @@ Los nombres difieren ligeramente:
 | :---------- | :-------------- |
 | Package     | Producto        |
 | Offering    | Paywall         |
-| Paywall     | Paywall Builder |
+| Paywall     | Flow            |
 | Entitlement | Nivel de acceso |
 
 Adapty tiene el concepto de [placement](placements). Es un lugar lógico dentro de tu app donde el usuario puede realizar una compra. En la mayoría de los casos, tienes uno o dos placements:
 
 - Onboarding (porque el 80% de todas las compras se realizan ahí);
-- General (lo muestras en los ajustes o dentro de la app tras el onboarding).
+- General (lo muestras en los ajustes o dentro de la app después del onboarding).
 
 <Zoom>
   <img src="/assets/shared/img/2406d97-image.webp"
@@ -51,9 +52,9 @@ Adapty tiene el concepto de [placement](placements). Es un lugar lógico dentro 
 />
 </Zoom>
 
-## Mueve tu catálogo a Adapty \{#move-your-catalog-to-adapty\}
+## Migra tu catálogo a Adapty \{#move-your-catalog-to-adapty\}
 
-La migración del catálogo crea una nueva app de Adapty a partir de tu proyecto de RevenueCat: niveles de acceso a partir de entitlements, productos a partir de packages, y un paywall y un placement por cada offering.
+La migración del catálogo crea una nueva app de Adapty a partir de tu proyecto de RevenueCat: niveles de acceso a partir de entitlements, productos a partir de paquetes y un placement con un paywall o un flow para cada offering.
 
 ### Antes de empezar
 
@@ -88,50 +89,66 @@ Cuando la migración solicite la clave, pégala en la página del Adapty Dashboa
    Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
    ```
 
-2. Para conectar RevenueCat, pega la clave secreta de API en la página del Adapty Dashboard que el agente abre. La clave va directamente a Adapty y nunca pasa por el agente ni por la CLI.
-3. Para elegir qué migrar, dile al agente qué apps de RevenueCat van juntas, normalmente una por plataforma del mismo producto. Juntas forman una sola app de Adapty.
-4. Para confirmar el mapeo, responde las preguntas del agente sobre las entidades que Adapty no pudo mapear por sí solo.
+2. Para conectar RevenueCat, pega la clave API secreta en la página del Adapty Dashboard que abre el agente. La clave va directamente a Adapty y nunca pasa por el agente ni por la CLI.
+3. Para elegir qué migrar, indícale al agente qué aplicaciones de RevenueCat pertenecen juntas, normalmente una por plataforma del mismo producto. Juntas formarán una única app de Adapty.
+4. Para cerrar el mapeo, responde las preguntas del agente sobre las entidades que Adapty no pudo mapear por sí solo. Para cada offering, elige qué contiene su placement: un paywall que tu app renderiza por su cuenta, o un flow del [Flow & Paywall Builder](adapty-paywall-builder). Adapty sugiere un flow para los offerings que tienen un paywall de RevenueCat.
 
-:::warning
-   Las decisiones son definitivas. Cuando cada entidad tiene una decisión, Adapty crea el catálogo y no podrás cambiar el mapeo después.
+   :::warning
+   Las decisiones son definitivas. Cuando todas las entidades tienen una decisión, Adapty crea el catálogo y no podrás cambiar el mapeo después.
    :::
 
-   Adapty crea niveles de acceso, productos, paywalls y placements, en ese orden. Si alguno falla, el agente te indica el motivo. Cuando todas las entidades están en Adapty, la migración se completa.
+   Adapty crea niveles de acceso, productos, paywalls y flows, y placements, en ese orden. Si alguno falla, el agente te indica el motivo. Cuando todas las entidades están en Adapty, la migración se completa.
 
-5. Para que la nueva app valide las compras, conéctala a los stores en el Adapty Dashboard: [App Store](initial_ios) y [Google Play](initial-android).
+5. Para que la nueva app pueda validar las compras, conéctala a los stores en el Adapty Dashboard: [App Store](initial_ios) y [Google Play](initial-android).
 
 :::note
 Para ejecutar la migración sin un agente, usa los [comandos de migración](developer-cli-reference#migrations). `adapty migrations status` indica la siguiente acción y los datos que necesita.
 :::
 
-### Cómo se mapean las entidades de RevenueCat a Adapty
+### Cómo se relacionan las entidades de RevenueCat con Adapty
 
-- Un identificador de entitlement se convierte en el ID del nivel de acceso, por lo que `customerInfo.entitlements["premium"]` pasa a ser `profile.accessLevels["premium"]`.
-- Un producto que no otorga ningún entitlement otorga el nivel de acceso `premium`.
+- Un identificador de entitlement se convierte en el ID del nivel de acceso, por lo que `customerInfo.entitlements["premium"]` se convierte en `profile.accessLevels["premium"]`.
+- Un producto que no concede ningún entitlement concede el nivel de acceso `premium`.
 - Un identificador de offering se convierte en el ID del placement.
-- Los metadatos del offering se convierten en el [Remote Config](customize-paywall-with-remote-config) del paywall, con un límite de 256 KB.
+- Los metadatos del offering se convierten en el [Remote Config](customize-paywall-with-remote-config) del paywall o del flow, hasta 256 KB.
 
-### Lo que la migración del catálogo no incluye \{#what-the-catalog-migration-leaves-out\}
+### Qué excluye la migración del catálogo \{#what-the-catalog-migration-leaves-out\}
 
-- **Offerings con un paywall del Paywall Editor**: Adapty no puede importar un paywall del Paywall Editor de RevenueCat, por lo que estas offerings no reciben paywall ni placement. Sus IDs de placement quedan libres: crea tú mismo un flow o un paywall con el mismo ID.
 - Offerings sin productos.
-- Productos cuyo ID de producto en App Store Adapty rechaza, por ejemplo un ID con dos puntos o un espacio. El agente te indica cuáles son y no requieren ninguna decisión por tu parte.
+- Productos cuyo ID de producto de App Store Adapty rechaza, por ejemplo un ID con dos puntos o un espacio. El agente te indica cuáles son y no requieren ninguna decisión.
 - Apps en stores distintos de App Store y Google Play.
-- **Integraciones**: Configúralas en Adapty tal como se describe en [Migrar integraciones a Adapty](migrate-integrations-to-adapty).
+- **Integraciones**: Configúralas en Adapty como se describe en [Migrar integraciones a Adapty](migrate-integrations-to-adapty).
 
-## Reemplaza el SDK de RevenueCat \{#replace-the-revenuecat-sdk\}
+## Mueve los diseños de tus paywalls
 
-Un agente de código reemplaza el SDK de RevenueCat por el SDK de Adapty en el código de tu app, usando el skill `adapty-integration`. Ejecútalo después de migrar el catálogo, para que el código utilice los IDs de nivel de acceso y los IDs de placement de la nueva app de Adapty.
-
-1. Para darle el skill a tu agente, instálalo en tu herramienta siguiendo las instrucciones de [SDK integration skill](adapty-sdk-integration-skill).
-2. Para iniciar la migración, abre el proyecto de tu app en el agente y pide:
+Cada flow que crea la migración del catálogo se publica con una pantalla vacía sobre los productos de la oferta. Para reconstruir los diseños de tus paywalls de RevenueCat en estos flows, pídele a tu agente:
 
 ```text
-   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+Migrate my RevenueCat paywall designs to my Adapty app "Acme Fitness" with the Adapty CLI.
+```
+
+El agente reconstruye los flows uno a uno y publica cada uno después de que lo apruebes. Indica qué elementos debes añadir tú mismo, como vídeos y fuentes personalizadas. Lee los diseños con tu clave secreta de API de RevenueCat, así que consérvala hasta que todos los diseños estén migrados.
+
+:::warning
+Hasta que se le asigne un diseño, un flow muestra una pantalla en blanco. No publiques una versión de la app que muestre ese flow.
+:::
+
+## Reemplazar el SDK de RevenueCat \{#replace-the-revenuecat-sdk\}
+
+Un agente de codificación reemplaza el SDK de RevenueCat con el SDK de Adapty en el código de tu app, usando los IDs del catálogo que creó la migración. Cada ejecución migra una base de código: si tu app tiene proyectos separados para iOS y Android, ejecútalo en cada uno.
+
+Antes de empezar, haz commit o stash de tus cambios en el repositorio de la app, para que la migración quede como un único diff revisable.
+
+1. Para iniciar la migración de código, abre tu agente en la raíz del repositorio de la app y pregunta:
+
+   ```text
+   Migrate the app code in this repository from RevenueCat to Adapty with the Adapty CLI, for my Adapty app "Acme Fitness".
    ```
 
-   El skill detecta tu plataforma y el SDK de RevenueCat a partir de los archivos del proyecto, así que no hace falta incluirlo en el prompt.
-3. Para terminar la migración del código, revisa los cambios del agente y luego sigue los pasos de `ADAPTY_SETUP.md` en la raíz del proyecto. Ahí se indica lo que el agente dejó pendiente para ti, como las integraciones que hay que configurar.
+   Si el agente te pide que lo reinicies para cargar los skills de Adapty, reinícialo y repite la solicitud.
+
+2. Si el diseño de un flow todavía no se ha migrado, dile al agente si la app muestra el flow o si mantiene su propia pantalla de paywall hasta entonces.
+3. Para terminar la migración del código, revisa los cambios en la rama `adapty-migrate` y luego sigue las instrucciones de `ADAPTY_SETUP.md` en la raíz de tu proyecto. Ahí encontrarás lo que el agente dejó pendiente para ti.
 
 ## Reenvía los eventos de la store a Adapty \{#forward-store-events-to-adapty\}
 
@@ -177,7 +194,7 @@ No cambies el topic en Google Play Console y no sigas los pasos de [Habilitar RT
 3. Para subir la clave, en la página del Adapty Dashboard que abre el agente, carga el archivo en **Google Play service account key (JSON)**. La clave va directamente a Adapty y nunca pasa por el agente ni por la CLI.
 4. Para suscribir a Adapty al topic, proporciona al agente su ID. En RevenueCat, abre la configuración de tu app de Google Play y copia el **Topic ID** de **Google developer notifications**. Google Play Console muestra el mismo valor en **Monetize** > **Monetization setup** > **Topic name**.
 
-Adapty se suscribe al tema, luego publica una notificación de prueba y espera recibirla. Si no llega, el agente te indica el motivo.
+   Adapty se suscribe al tema, luego publica una notificación de prueba y espera recibirla. Si no llega, el agente te indica el motivo.
 
 5. Si la prueba falla por un problema de permisos, otorga al service account el rol **Pub/Sub Editor** en el proyecto del tema, o el rol **Pub/Sub Subscriber** en el tema y **Pub/Sub Editor** en el proyecto de la clave. Luego pide al agente que vuelva a comprobarlo.
 
@@ -186,13 +203,14 @@ Adapty se suscribe al tema, luego publica una notificación de prueba y espera r
 Si estás leyendo esto, ya has:
 
 - [x] Migrado tu catálogo a Adapty
+- [x] Migrado los diseños de tu paywall, si usas flows
 - [x] Reemplazado el SDK de RevenueCat por Adapty
-- [x] Seguido el archivo `ADAPTY_SETUP.md` de tu agente de código
+- [x] Completado el archivo `ADAPTY_SETUP.md` con tu agente de código
 - [x] Enviado los eventos de App Store y Google Play a Adapty
-- [ ] Realizado una compra en sandbox
+- [ ] Hecho una compra en sandbox
 - [ ] Publicado una nueva versión de la app
 
-Si has completado los puntos anteriores, haz una compra de prueba en el Sandbox y después publica la app.
+Si has marcado los puntos anteriores, haz una compra de prueba en el Sandbox y luego publica la app.
 
 :::info
 Consulta la [lista de verificación para el lanzamiento](release-checklist).
