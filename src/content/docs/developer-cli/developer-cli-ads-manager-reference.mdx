@@ -1,6 +1,6 @@
 ---
 title: "Ads Manager commands for the Adapty Developer CLI"
-description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, automations, and metrics."
+description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, segments, automations, and metrics."
 metadataTitle: "Ads Manager CLI Commands | Adapty Docs"
 ---
 
@@ -37,7 +37,7 @@ All commands that change your account accept these flags:
 | `--yes`, `-y` | Apply without asking for confirmation. Required when the output is piped or `--json` is used |
 | `--idempotency-key` | Fixed key for this write. A repeat with the same key and body within 24 hours returns the stored result instead of applying the change again |
 
-Ads Manager commands take no `--app` flag. The scope is the company that your token belongs to. `--app` exists on some `list` commands as a filter only.
+Ads Manager commands take no `--app` flag. The scope is the company that your token belongs to. `--app` exists on some `list` commands as a filter only. The [segments](#segments) commands are the exception: there, `--app` is the Adapty app that the segment belongs to.
 
 ## List filters \{#list-filters\}
 
@@ -638,6 +638,70 @@ adapty asa product-pages sync --adam-id 123456
 | `--adam-id` | Limit the refresh to one app. Omit to cover every app |
 
 The refresh is queued rather than performed immediately, and the command confirms with `Sync queued.` If the same refresh is already in flight, it reports `Already running; nothing new was queued.` instead.
+
+## Segments \{#segments\}
+
+These commands create Adapty [segments](segments) from Apple Ads campaigns, ad groups, or keywords, the same way as **Create segment from…** in [Ads Manager](ads-manager-create-segments). Use the segments as audiences in placements and A/B tests to show users from a specific campaign a different paywall.
+
+Each segment has one attribution filter over the Apple IDs of the entities you choose. The CLI looks up those IDs, so you pass the UUIDs printed by the `list` commands.
+
+Unlike other `adapty asa` commands, these take `--app`: the ID of the Adapty app that the segment belongs to, from [`adapty apps list`](developer-cli-reference#adapty-apps-list). They don't accept `--idempotency-key`. For segments with other filters, such as country or install date, use [`adapty segments create`](developer-cli-reference#adapty-segments-create).
+
+### adapty asa segments create
+
+Create a segment from campaigns, ad groups, or keywords.
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id>
+adapty asa segments create --app <app-id> --ad-group <ad-group-id> --keyword <keyword-id> --keyword <other-keyword-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | Adapty app ID (UUID) |
+| `--campaign` | One entity type | Campaign ID (UUID). Repeatable |
+| `--ad-group` | One entity type | Ad group ID (UUID). Repeatable. With `--keyword`, pass exactly one: the ad group that contains the keywords |
+| `--keyword` | One entity type | Keyword ID (UUID). Repeatable. Requires one `--ad-group` |
+| `--title` | No | Segment title. Defaults to the Ads Manager format, for example `[ASA] Campaign: <name>` |
+| `--description` | No | Segment description. Defaults to the Ads Manager format |
+
+Build each segment from one entity type. Passing both `--campaign` and `--ad-group`, or `--campaign` with `--keyword`, fails with exit code `2` before any request is sent. Several entities of one type produce one segment that matches users from any of them.
+
+Keep the default title unless you need another one. Ads Manager recognizes its segments by the `[ASA]` prefix, and [`asa segments list`](#adapty-asa-segments-list) lists only the segments with this prefix.
+
+The response contains the whole segment, including `id` and `filters`. `profile_count` starts at `0`, and Adapty recalculates it after the segment is created.
+
+### adapty asa segments update
+
+Replace the campaigns, ad groups, or keywords of an existing segment.
+
+```bash
+adapty asa segments update <segment-id> --app <app-id> --campaign <campaign-id> --campaign <other-campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID), from `asa segments list` or `adapty segments list` |
+
+Takes the same flags as [`asa segments create`](#adapty-asa-segments-create). The segment's filter is replaced with the entities you pass. The title and description stay as they are unless you pass `--title` or `--description`.
+
+### adapty asa segments list
+
+List the segments created from Apple Ads entities — those whose title starts with `[ASA]`.
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | Adapty app ID (UUID) |
+| `--campaign` | No | Keep only the segments built from this campaign (UUID) |
+| `--ad-group` | No | Keep only the segments built from this ad group (UUID) |
+
+Pass `--campaign` or `--ad-group`, not both. To avoid creating a second segment for the same campaign, run this command before `asa segments create`: an empty result means the campaign has no segment yet.
+
+The command reads the first 100 segments of the app.
 
 ## Automations \{#automations\}
 

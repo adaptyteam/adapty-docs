@@ -679,7 +679,7 @@ To swap a paywall across multiple placements without losing segment-specific rou
 
 ## Segments
 
-[Segments](segments) are read-only via the CLI. Create and edit them in the [Adapty dashboard](https://app.adapty.io). Use these commands to look up segment IDs when composing placement audiences.
+[Segments](segments) group users by their profile attributes. Use these commands to create segments and to look up segment IDs when composing [placement audiences](#audiences-shape). To build a segment from Apple Ads campaigns, ad groups, or keywords, use [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) instead: it looks up the Apple IDs for you and names the segment the way Ads Manager does.
 
 ### adapty segments list
 
@@ -711,7 +711,68 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
 
-The response contains `id`, `title`, and `description`. Filter rules are not exposed via this API.
+The response contains `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at`, and `updated_at`. `list` returns `id`, `title`, and `description` only.
+
+### adapty segments create
+
+Create a [segment](segments) from one or more filters.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Segment title |
+| `--filter` | Yes | Filter rule. Repeatable. See [Filter syntax](#filter-syntax) |
+| `--description` | No | Segment description |
+
+A user matches the segment only when they match every filter. The response has the same fields as `segments get`. `profile_count` starts at `0`, and Adapty recalculates it after the segment is created.
+
+### adapty segments update
+
+Replace the title, description, and filters of an existing [segment](segments).
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Segment title |
+| `--filter` | Yes | Filter rule. Repeatable. See [Filter syntax](#filter-syntax) |
+| `--description` | No | Segment description |
+
+:::warning
+`segments update` replaces the whole segment. Pass every filter you want to keep, not only the one you change. To read the current filters, run `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Filter syntax
+
+Write each `--filter` as `field:OPERATOR:value`. To match any of several values, separate them with commas: `ip_country:IN:US,CA`.
+
+| Operator | Values | Example |
+|---|---|---|
+| `IN`, `NOT IN` | One or more | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | One | `age:>:18` |
+| `BETWEEN` | Two | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | None | `age:IS NULL` |
+
+Pass numbers as plain values, for example `age:>:18`. Adapty converts them for numeric fields such as `age`, `total_revenue_usd`, and custom attributes of type float.
+
+For a value that this short form can't express, pass the filter as a JSON object:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty validates field names, operators, and value types, and reports one error for each invalid filter. To see the field names and value formats of existing filters, run `adapty segments get --app <app-id> <segment-id> --json` on a segment created in the dashboard.
 
 ## Migrations
 
