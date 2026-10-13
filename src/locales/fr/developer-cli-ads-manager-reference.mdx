@@ -1,13 +1,13 @@
 ---
 title: "Commandes Ads Manager pour l'Adapty Developer CLI"
-description: "Référence de toutes les commandes adapty asa — campagnes, groupes d'annonces, mots-clés, annonces, automatisations et métriques."
+description: "Référence de toutes les commandes adapty asa — campagnes, groupes d'annonces, mots-clés, annonces, automatisations, métriques et historique des modifications."
 metadataTitle: "Commandes CLI Ads Manager | Documentation Adapty"
 ---
 
-Cet article liste toutes les commandes [Ads Manager](adapty-ads-manager) de l'Adapty CLI, avec leurs arguments, indicateurs et valeurs acceptées. Les commandes Ads Manager se trouvent sous le topic `adapty asa`.
+Cet article répertorie toutes les commandes [Ads Manager](adapty-ads-manager) de l'Adapty CLI, avec leurs arguments, options et valeurs acceptées. Les commandes Ads Manager se trouvent sous le topic `adapty asa`.
 
 :::link
-Pour les prérequis, les bonnes pratiques d'écriture et des exemples orientés tâches, consultez [Gérer Ads Manager depuis la CLI](developer-cli-ads-manager).
+Pour les prérequis, les bonnes pratiques d'écriture et des exemples concrets, consultez [Gérer Ads Manager depuis la CLI](developer-cli-ads-manager).
 :::
 
 Ces commandes nécessitent un compte Apple Ads connecté et un abonnement Ads Manager actif. Exécutez [`adapty asa whoami`](#adapty-asa-whoami) pour vérifier les deux. Pour le reste de la CLI, consultez la [référence des commandes](developer-cli-reference).
@@ -888,19 +888,75 @@ La commande affiche trois blocs : les totaux de l'analyse, les meilleures applic
 
 Le premier appel pour un ensemble d'applications peut prendre plusieurs dizaines de secondes pendant la préparation des données. Les appels suivants pour les mêmes applications sont plus rapides.
 
+## Historique des modifications \{#change-history\}
+
+L'historique des modifications est récupéré en direct depuis l'API Apple Ads. Adapty ne le stocke pas, et Apple le conserve pendant 6 mois. Il couvre chaque modification apportée à l'organisation, qu'elle ait été effectuée directement dans Apple Ads, par le support Apple ou via d'autres outils API.
+
+### adapty asa change-history list
+
+Liste les modifications apportées dans une organisation Apple Ads, de la plus récente à la plus ancienne.
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--campaign-group` | Oui | Organisation à lire (UUID issu de [`orgs list`](#adapty-asa-orgs-list)). Une organisation par appel. Pour en lire plusieurs, exécutez la commande pour chacune |
+| `--date-from` | Non | Début de la période (`YYYY-MM-DD`). Par défaut : il y a 7 jours |
+| `--date-to` | Non | Fin de la période (`YYYY-MM-DD`). Par défaut : aujourd'hui. La période ne peut pas dépasser 14 jours |
+| `--entity-type` | Non | `Campaign`, `AdGroup`, `Keyword`, `NegativeKeyword`, `Ad`, `Creative`, `LocationGroup`, `Org` ou `AdAccount`. Répétable. Par défaut : tous les types sauf `Org` et `AdAccount`. `Org` et `AdAccount` ne peuvent pas être combinés avec les autres types |
+| `--event-type` | Non | `CREATE`, `UPDATE` ou `DELETE`. Répétable |
+| `--user-type` | Non | Qui a effectué la modification : `CUSTOMER` (dans Apple Ads), `CUSTOMER_API` (via l'API Apple Ads) ou `APPLE_SUPPORT`. Répétable |
+| `--campaign`, `--ad-group`, `--entity-id` | Non | Identifiants numériques Apple de la campagne, du groupe d'annonces ou de l'entité modifiée. Répétable |
+| `--user` | Non | Identifiant utilisateur Apple de la personne ayant effectué la modification. Répétable |
+| `--txn` | Non | Identifiant de transaction Apple. Répétable |
+| `--fields` | Non | Développe chaque modification en une ligne par champ modifié, avec ses anciennes et nouvelles valeurs |
+
+:::important
+Contrairement aux [filtres de liste](#list-filters) des autres commandes, `--campaign`, `--ad-group` et `--entity-id` prennent les identifiants numériques d'Apple, tels qu'ils apparaissent dans les lignes de l'historique des modifications — et non des UUIDs. De même, `modified_by` dans chaque ligne est un identifiant utilisateur Apple, et non un e-mail.
+:::
+
+Chaque ligne correspond à une transaction : qui l'a effectuée (`modified_by`, `user_type`), quand (`event_time`), et les entités qu'elle a modifiées. Chaque entité porte un `detail_id` pour [`change-history get`](#adapty-asa-change-history-get).
+
+Avec `--fields`, la taille de page est limitée à 10 par défaut, et une valeur `--page-size` plus grande est refusée. Une page nécessitant plus de 20 requêtes échoue : affinez les filtres, ou supprimez `--fields` et lisez les modifications individuellement avec `change-history get`.
+
+Accepte les [drapeaux de pagination](#global-flags). `--page` × `--page-size` ne peut pas dépasser 1000.
+
+### adapty asa change-history get
+
+Affiche les modifications au niveau des champs d'une entité dans une transaction.
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `detail-id` | `detail_id` issu de [`change-history list`](#adapty-asa-change-history-list), sous la forme `EntityType.entityId.txnId` |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--campaign-group` | Oui | Organisation à laquelle appartient la modification. Récupérez-la depuis `campaign_group_id` dans la ligne de la liste |
+
+La réponse liste chaque champ modifié avec ses `old_values` et `new_values`, ainsi que les métadonnées de l'entité dans `entity_metadata`. Un `detail_id` qu'Apple ne reconnaît pas renvoie `404`.
+
 ## Erreurs \{#errors\}
 
 | Statut | Code | Signification |
 |---|---|---|
-| `402` | `ads_manager_subscription_required` | La société n'a pas d'abonnement Ads Manager actif |
-| `404` | — | L'entité n'existe pas ou appartient à une autre société |
+| `402` | `ads_manager_subscription_required` | L'entreprise n'a pas d'abonnement Ads Manager actif |
+| `403` | `cli_ad_account_unreadable` | `change-history` ne peut pas lire l'organisation : le token Apple Ads est révoqué, l'organisation n'est plus liée, ou Apple a refusé l'accès |
+| `404` | — | L'entité n'existe pas, ou elle appartient à une autre entreprise |
 | `409` | `cli_idempotency_in_progress` | Une écriture avec la même clé d'idempotence est toujours en cours |
 | `422` | `cli_idempotency_key_reuse` | La même clé d'idempotence a été utilisée avec un corps de requête différent |
 | `422` | `cli_metric_scope_too_wide` | Une métrique de comptage de profils a été demandée sans `--campaign` ni `--ad-group` |
 | `422` | `cli_response_too_large` | Une page `metrics` dépasserait 5000 lignes de ventilation |
-| `429` | `cli_analytics_busy` | Le pool d'analyse est occupé, ou un autre build de pool de mots-clés pour la société est toujours en cours. Le délai d'attente est indiqué dans l'en-tête `Retry-After` |
+| `429` | `cli_analytics_busy` | Le pool d'analyse est occupé, ou une autre construction de pool de mots-clés pour l'entreprise est toujours en cours. Le délai d'attente est dans l'en-tête `Retry-After` |
 | `429` | `cli_cooldown_active` | Trop de requêtes rejetées ont mis le token en période de refroidissement |
+| `429` | `cli_upstream_rate_limited` | Apple a limité le débit d'une requête `change-history`. Le délai d'attente d'Apple est dans l'en-tête `Retry-After` |
+| `504` | `cli_read_timeout` | Une requête `change-history` a pris plus de 50 secondes. Réduisez la période ou les filtres |
 
-Les métriques et la liste des termes de recherche partagent un seul budget d'appels par entreprise : 5 appels par minute, et au maximum 2 sur 10 secondes. Une rafale de 20 requêtes rejetées en 5 minutes déclenche un blocage progressif de 5 minutes, puis 30 minutes, puis 3 heures. Relancer des requêtes pendant la pause ne l'allonge pas, mais la solution est de corriger la requête défaillante plutôt que de la répéter.
+Les métriques et la liste des termes de recherche partagent un même budget d'appels API par entreprise : 5 appels par minute, et au plus 2 toutes les 10 secondes. `change-history` dispose de son propre budget : 30 appels par minute, au plus 5 toutes les 10 secondes, et une seule requête à la fois par entreprise. Une rafale de 20 requêtes rejetées en 5 minutes déclenche une période de refroidissement progressive : 5 minutes, puis 30 minutes, puis 3 heures. Effectuer de nouvelles tentatives pendant la pause ne la prolonge pas, mais la solution consiste à corriger la requête défaillante plutôt que de la répéter.
 
-La CLI gère les courtes attentes automatiquement. Sur un `429` qui n'est pas un blocage, si `Retry-After` est inférieur ou égal à 60 secondes, la commande attend ce délai et réessaie une fois, en signalant l'attente sur la sortie d'erreur standard.
+L'interface CLI gère les courtes attentes pour vous. En cas de `429` qui n'est pas un refroidissement, si `Retry-After` est inférieur ou égal à 60 secondes, la commande attend ce délai et réessaie une fois, en signalant l'attente sur la sortie d'erreur standard.

@@ -1,13 +1,13 @@
 ---
 title: "Lệnh Ads Manager trong Adapty Developer CLI"
-description: "Tài liệu tham khảo cho mọi lệnh adapty asa — chiến dịch, nhóm quảng cáo, từ khóa, quảng cáo, tự động hóa và chỉ số."
-metadataTitle: "Lệnh Ads Manager CLI | Tài liệu Adapty"
+description: "Tham chiếu cho mọi lệnh adapty asa — chiến dịch, nhóm quảng cáo, từ khóa, quảng cáo, tự động hóa, chỉ số và lịch sử thay đổi."
+metadataTitle: "Lệnh CLI Ads Manager | Tài liệu Adapty"
 ---
 
-Bài viết này liệt kê mọi lệnh [Ads Manager](adapty-ads-manager) trong Adapty CLI, cùng các đối số, cờ và giá trị được chấp nhận. Các lệnh Ads Manager nằm trong chủ đề `adapty asa`.
+Bài viết này liệt kê tất cả các lệnh [Ads Manager](adapty-ads-manager) trong Adapty CLI, cùng với các đối số, cờ và giá trị được chấp nhận. Các lệnh Ads Manager nằm trong topic `adapty asa`.
 
 :::link
-Để biết điều kiện tiên quyết, các biện pháp ghi an toàn và ví dụ theo tác vụ, hãy xem [Quản lý Ads Manager từ CLI](developer-cli-ads-manager).
+Để biết điều kiện tiên quyết, các phương pháp ghi an toàn và ví dụ theo tác vụ, hãy xem [Quản lý Ads Manager từ CLI](developer-cli-ads-manager).
 :::
 
 Các lệnh này yêu cầu tài khoản Apple Ads đã được kết nối và gói đăng ký Ads Manager đang hoạt động. Chạy [`adapty asa whoami`](#adapty-asa-whoami) để kiểm tra cả hai. Để xem toàn bộ CLI, hãy xem [tài liệu tham khảo lệnh](developer-cli-reference).
@@ -888,19 +888,75 @@ Lệnh in ra ba khối: tổng số liệu phân tích, các ứng dụng hàng 
 
 Lần gọi đầu tiên cho một tập hợp ứng dụng có thể mất vài chục giây trong khi dữ liệu đang được chuẩn bị. Các lần gọi sau cho cùng những ứng dụng đó sẽ nhanh hơn.
 
+## Lịch sử thay đổi \{#change-history\}
+
+Lịch sử thay đổi được lấy trực tiếp từ Apple Ads API. Adapty không lưu trữ dữ liệu này, và Apple chỉ giữ lại trong 6 tháng. Nó bao gồm mọi thay đổi trong tổ chức, kể cả những thay đổi thực hiện trực tiếp trên Apple Ads, bởi Apple Support, hoặc bởi các công cụ API khác.
+
+### adapty asa change-history list
+
+Liệt kê các thay đổi đã thực hiện trong một tổ chức Apple Ads, mới nhất trước.
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--campaign-group` | Có | Tổ chức cần đọc (UUID từ [`orgs list`](#adapty-asa-orgs-list)). Mỗi lần gọi chỉ đọc được một tổ chức. Để đọc nhiều tổ chức, hãy chạy lệnh cho từng tổ chức một |
+| `--date-from` | Không | Ngày bắt đầu khoảng thời gian (`YYYY-MM-DD`). Mặc định: 7 ngày trước |
+| `--date-to` | Không | Ngày kết thúc khoảng thời gian (`YYYY-MM-DD`). Mặc định: hôm nay. Khoảng thời gian tối đa 14 ngày |
+| `--entity-type` | Không | `Campaign`, `AdGroup`, `Keyword`, `NegativeKeyword`, `Ad`, `Creative`, `LocationGroup`, `Org`, hoặc `AdAccount`. Có thể dùng nhiều lần. Mặc định: mọi loại trừ `Org` và `AdAccount`. `Org` và `AdAccount` không thể kết hợp với các loại khác |
+| `--event-type` | Không | `CREATE`, `UPDATE`, hoặc `DELETE`. Có thể dùng nhiều lần |
+| `--user-type` | Không | Người thực hiện thay đổi: `CUSTOMER` (trong Apple Ads), `CUSTOMER_API` (qua Apple Ads API), hoặc `APPLE_SUPPORT`. Có thể dùng nhiều lần |
+| `--campaign`, `--ad-group`, `--entity-id` | Không | ID số của Apple cho campaign, ad group, hoặc entity đã thay đổi. Có thể dùng nhiều lần |
+| `--user` | Không | Apple user ID của người thực hiện thay đổi. Có thể dùng nhiều lần |
+| `--txn` | Không | Apple transaction ID. Có thể dùng nhiều lần |
+| `--fields` | Không | Mở rộng mỗi thay đổi thành một hàng cho mỗi trường đã thay đổi, kèm giá trị cũ và mới |
+
+:::important
+Không giống như [bộ lọc danh sách](#list-filters) của các lệnh khác, `--campaign`, `--ad-group`, và `--entity-id` nhận ID số của Apple, như được in trong các hàng lịch sử thay đổi — không phải UUID. Tương tự, `modified_by` trong mỗi hàng là ID người dùng Apple, không phải email.
+:::
+
+Mỗi hàng là một giao dịch: ai thực hiện (`modified_by`, `user_type`), khi nào (`event_time`), và các thực thể đã thay đổi. Mỗi thực thể có `detail_id` dùng cho [`change-history get`](#adapty-asa-change-history-get).
+
+Với `--fields`, kích thước trang mặc định là 10, và `--page-size` lớn hơn sẽ bị từ chối. Một trang cần hơn 20 lần tra cứu sẽ thất bại: hãy thu hẹp bộ lọc, hoặc bỏ `--fields` và đọc từng thay đổi bằng `change-history get`.
+
+Chấp nhận [cờ phân trang](#global-flags). Tích `--page` × `--page-size` không được vượt quá 1000.
+
+### adapty asa change-history get
+
+Hiển thị các thay đổi ở cấp độ trường của một thực thể trong một giao dịch.
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `detail-id` | `detail_id` từ [`change-history list`](#adapty-asa-change-history-list), ở dạng `EntityType.entityId.txnId` |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--campaign-group` | Có | Tổ chức mà thay đổi thuộc về. Lấy từ `campaign_group_id` trong hàng danh sách |
+
+Phản hồi liệt kê từng trường đã thay đổi cùng với `old_values` và `new_values`, cộng thêm metadata của entity trong `entity_metadata`. Một `detail_id` mà Apple không có bản ghi sẽ trả về `404`.
+
 ## Lỗi \{#errors\}
 
 | Trạng thái | Mã | Ý nghĩa |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | Công ty không có gói đăng ký Ads Manager đang hoạt động |
-| `404` | — | Thực thể không tồn tại, hoặc thuộc về công ty khác |
-| `409` | `cli_idempotency_in_progress` | Một lệnh ghi với cùng idempotency key vẫn đang chạy |
-| `422` | `cli_idempotency_key_reuse` | Cùng idempotency key đã được sử dụng với một request body khác |
+| `403` | `cli_ad_account_unreadable` | `change-history` không thể đọc tổ chức: token Apple Ads đã bị thu hồi, tổ chức không còn được liên kết, hoặc Apple từ chối truy cập |
+| `404` | — | Thực thể không tồn tại hoặc thuộc về công ty khác |
+| `409` | `cli_idempotency_in_progress` | Một lần ghi với cùng idempotency key vẫn đang chạy |
+| `422` | `cli_idempotency_key_reuse` | Cùng một idempotency key được dùng với request body khác |
 | `422` | `cli_metric_scope_too_wide` | Một chỉ số đếm hồ sơ người dùng được yêu cầu mà không có `--campaign` hoặc `--ad-group` |
-| `422` | `cli_response_too_large` | Một trang `metrics` sẽ vượt quá 5000 hàng breakdown |
-| `429` | `cli_analytics_busy` | Pool analytics đang bận, hoặc một lần build keyword pool khác cho công ty vẫn đang chạy. Thời gian chờ nằm trong header `Retry-After` |
+| `422` | `cli_response_too_large` | Một trang `metrics` sẽ vượt quá 5000 dòng breakdown |
+| `429` | `cli_analytics_busy` | Pool analytics đang bận, hoặc một quá trình xây dựng keyword pool khác cho công ty vẫn đang chạy. Thời gian chờ nằm trong header `Retry-After` |
 | `429` | `cli_cooldown_active` | Quá nhiều request bị từ chối khiến token rơi vào trạng thái cool-down |
+| `429` | `cli_upstream_rate_limited` | Apple đã rate-limit một request `change-history`. Thời gian chờ từ Apple nằm trong header `Retry-After` |
+| `504` | `cli_read_timeout` | Một request `change-history` mất hơn 50 giây. Hãy thu hẹp khoảng thời gian hoặc bộ lọc |
 
-Chỉ số và danh sách từ khóa tìm kiếm dùng chung một ngân sách API theo từng công ty: 5 lần gọi mỗi phút, và tối đa 2 lần trong bất kỳ khoảng 10 giây nào. Nếu có 20 request bị từ chối trong vòng 5 phút, hệ thống sẽ kích hoạt cool-down theo cấp độ tăng dần: 5 phút, rồi 30 phút, rồi 3 tiếng. Retry trong thời gian chờ không kéo dài thêm thời gian đó, nhưng cách xử lý đúng là sửa request lỗi thay vì lặp lại nó.
+Chỉ số và danh sách từ khóa tìm kiếm dùng chung một ngân sách API theo công ty: 5 lần gọi mỗi phút, tối đa 2 lần trong bất kỳ 10 giây nào. `change-history` có ngân sách riêng: 30 lần gọi mỗi phút, tối đa 5 lần trong 10 giây, và chỉ một yêu cầu tại một thời điểm cho mỗi công ty. Nếu có 20 yêu cầu bị từ chối trong vòng 5 phút, thời gian chờ sẽ tăng dần: 5 phút, rồi 30 phút, rồi 3 giờ. Thử lại trong thời gian chờ không kéo dài thêm thời gian đó, nhưng cách xử lý đúng là sửa yêu cầu lỗi thay vì lặp lại nó.
 
-CLI sẽ tự xử lý các lần chờ ngắn cho bạn. Khi nhận được `429` mà không phải cool-down, nếu `Retry-After` từ 60 giây trở xuống, lệnh sẽ chờ đúng thời gian đó rồi thử lại một lần, đồng thời thông báo thời gian chờ ra standard error.
+CLI xử lý các lần chờ ngắn cho bạn. Với lỗi `429` không phải cool-down, nếu `Retry-After` là 60 giây hoặc ít hơn, lệnh sẽ chờ trong khoảng thời gian đó rồi thử lại một lần, và thông báo thời gian chờ ra standard error.
