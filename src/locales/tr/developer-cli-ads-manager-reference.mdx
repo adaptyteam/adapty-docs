@@ -1,16 +1,16 @@
 ---
 title: "Adapty Geliştirici CLI için Ads Manager komutları"
-description: "Her adapty asa komutu için referans — kampanyalar, reklam grupları, anahtar kelimeler, reklamlar, otomasyonlar ve metrikler."
+description: "Her adapty asa komutu için referans — kampanyalar, reklam grupları, anahtar kelimeler, reklamlar, segmentler, otomasyonlar, metrikler ve değişiklik geçmişi."
 metadataTitle: "Ads Manager CLI Komutları | Adapty Dokümanları"
 ---
 
-Bu makale, Adapty CLI'daki her [Ads Manager](adapty-ads-manager) komutunu argümanları, bayrakları ve kabul edilen değerleriyle birlikte listeler. Ads Manager komutları `adapty asa` konusu altında yer alır.
+Bu makale, Adapty CLI'daki her [Ads Manager](adapty-ads-manager) komutunu argümanları, bayrakları ve kabul edilen değerleriyle listeler. Ads Manager komutları `adapty asa` konusu altında yer alır.
 
 :::link
-Ön koşullar, güvenli yazma uygulamaları ve göreve dayalı örnekler için bkz. [CLI'dan Ads Manager'ı yönetme](developer-cli-ads-manager).
+Ön koşullar, güvenli yazma uygulamaları ve göreve dayalı örnekler için bkz. [CLI'dan Ads Manager'ı Yönetme](developer-cli-ads-manager).
 :::
 
-Bu komutlar, bağlı bir Apple Ads hesabı ve aktif bir Ads Manager aboneliği gerektirir. İkisini de kontrol etmek için [`adapty asa whoami`](#adapty-asa-whoami) komutunu çalıştırın. CLI'ın geri kalanı için [komut referansına](developer-cli-reference) bakın.
+Bu komutlar, bağlı bir Apple Ads hesabı ve aktif bir Ads Manager aboneliği gerektirir. Her ikisini de kontrol etmek için [`adapty asa whoami`](#adapty-asa-whoami) komutunu çalıştırın. CLI'ın geri kalanı için [komut referansına](developer-cli-reference) bakın.
 
 ## Global flag'ler \{#global-flags\}
 
@@ -34,10 +34,10 @@ Hesabınızda değişiklik yapan tüm komutlar şu flag'leri kabul eder:
 
 | Bayrak | Açıklama |
 |---|---|
-| `--yes`, `-y` | Onay istemeden uygular. Çıktı yönlendirildiğinde veya `--json` kullanıldığında zorunludur |
-| `--idempotency-key` | Bu yazma işlemi için sabit anahtar. Aynı anahtar ve gövdeyle 24 saat içinde tekrarlanan bir istek, değişikliği yeniden uygulamak yerine saklanan sonucu döndürür |
+| `--yes`, `-y` | Onay istemeden uygula. Çıktı yönlendirildiğinde veya `--json` kullanıldığında zorunludur |
+| `--idempotency-key` | Bu yazma işlemi için sabit anahtar. Aynı anahtar ve gövdeyle 24 saat içinde yapılan tekrar, değişikliği yeniden uygulamak yerine saklanan sonucu döndürür |
 
-Ads Manager komutları `--app` bayrağı almaz. Kapsam, token'ınızın ait olduğu şirkettir. `--app` yalnızca bazı `list` komutlarında filtre olarak bulunur.
+Ads Manager komutları `--app` bayrağı almaz. Kapsam, token'ınızın ait olduğu şirkettir. `--app`, bazı `list` komutlarında yalnızca filtre olarak bulunur. [segments](#segments) komutları bu kuralın istisnasıdır: orada `--app`, segmentin ait olduğu Adapty uygulamasını belirtir.
 
 ## Liste filtreleri \{#list-filters\}
 
@@ -528,7 +528,18 @@ adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --d
 
 [Sayfalama flag'lerini](#global-flags) ve `--campaign-group`, `--app`, `--campaign`, `--ad-group` ile `--search` [liste filtrelerini](#list-filters) kabul eder.
 
-Bu komut, [`asa metrics`](#metrics) ile analitik havuzunu paylaşır. Bkz. [Hatalar](#errors).
+Her arama terimi satırı, performans metriklerinin yanı sıra Apple'ın o terim için sunduğu içgörüleri de taşır:
+
+| Alan | Değer |
+|---|---|
+| `impression_share_all`, `impression_share_first` | Herhangi bir reklam konumunda veya ilk reklam konumundaki gösterim payı |
+| `impression_midpoint_all`, `impression_midpoint_first` | Tek bir yüzde olarak gösterim payı |
+| `rank_all`, `rank_first` | Uygulamanızın söz konusu terim için diğer uygulamalar arasındaki sıralaması; herhangi bir reklam konumu veya ilk konum için |
+| `search_popularity` | 1 ile 5 arasında arama popülaritesi |
+
+Her alan, Apple'ın ilgili terim için veri bulunmadığında `null` olur. Apple'ın bu değerleri nasıl tanımladığını görmek için [Insights](adapty-ads-manager-metrics#insights) bölümüne bakın.
+
+Bu komut, [`asa metrics`](#metrics) ile aynı analitik havuzunu paylaşır. Bkz. [Hatalar](#errors).
 
 ## Reklamlar \{#ads\}
 
@@ -627,6 +638,70 @@ adapty asa product-pages sync --adam-id 123456
 | `--adam-id` | Yenilemeyi tek bir uygulamayla sınırlar. Her uygulamayı kapsamak için atlayın |
 
 Yenileme hemen gerçekleştirilmez, sıraya alınır ve komut `Sync queued.` mesajıyla bunu onaylar. Aynı yenileme zaten devam ediyorsa bunun yerine `Already running; nothing new was queued.` mesajı görüntülenir.
+
+## Segmentler \{#segments\}
+
+Bu komutlar, Apple Ads kampanyalarından, reklam gruplarından veya anahtar kelimelerden Adapty [segmentleri](segments) oluşturur; tıpkı [Ads Manager](ads-manager-create-segments) içindeki **Create segment from…** işlevi gibi. Belirli bir kampanyadan gelen kullanıcılara farklı bir paywall göstermek için bu segmentleri placement'larda ve A/B testlerinde kitle olarak kullanabilirsiniz.
+
+Her segment, seçtiğiniz varlıkların Apple ID'leri üzerinde tek bir attribution filtresi içerir. CLI bu ID'leri kendisi arar; bu nedenle siz yalnızca `list` komutlarının yazdırdığı UUID'leri geçersiniz.
+
+Diğer `adapty asa` komutlarının aksine, bunlar `--app` alır: segmentin ait olduğu Adapty uygulamasının ID'si, [`adapty apps list`](developer-cli-reference#adapty-apps-list) komutundan alınır. `--idempotency-key` desteklenmez. Ülke veya yükleme tarihi gibi başka filtreler içeren segmentler için [`adapty segments create`](developer-cli-reference#adapty-segments-create) komutunu kullanın.
+
+### adapty asa segments create
+
+Kampanyalardan, reklam gruplarından veya anahtar kelimelerden bir segment oluşturun.
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id>
+adapty asa segments create --app <app-id> --ad-group <ad-group-id> --keyword <keyword-id> --keyword <other-keyword-id>
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Adapty uygulama ID'si (UUID) |
+| `--campaign` | Bir varlık türü | Kampanya ID'si (UUID). Tekrarlanabilir |
+| `--ad-group` | Bir varlık türü | Reklam grubu ID'si (UUID). Tekrarlanabilir. `--keyword` ile birlikte kullanırken tam olarak bir tane girin: anahtar kelimeleri içeren reklam grubu |
+| `--keyword` | Bir varlık türü | Anahtar kelime ID'si (UUID). Tekrarlanabilir. Bir `--ad-group` gerektirir |
+| `--title` | Hayır | Segment başlığı. Varsayılan olarak Ads Manager formatını kullanır, örneğin `[ASA] Campaign: <name>` |
+| `--description` | Hayır | Segment açıklaması. Varsayılan olarak Ads Manager formatını kullanır |
+
+Her segmenti tek bir varlık türünden oluşturun. `--campaign` ile `--ad-group` ya da `--campaign` ile `--keyword` birlikte kullanıldığında, herhangi bir istek gönderilmeden önce çıkış kodu `2` ile hata verir. Aynı türden birden fazla varlık, bunlardan herhangi birindeki kullanıcılarla eşleşen tek bir segment oluşturur.
+
+Başka bir başlığa ihtiyaç duymadığınız sürece varsayılan başlığı kullanın. Ads Manager kendi segmentlerini `[ASA]` önekiyle tanır ve [`asa segments list`](#adapty-asa-segments-list) yalnızca bu öneke sahip segmentleri listeler.
+
+Yanıt, `id` ve `filters` dahil tüm segmenti içerir. `profile_count` başlangıçta `0` olarak gelir ve Adapty, segment oluşturulduktan sonra bunu yeniden hesaplar.
+
+### adapty asa segments update
+
+Mevcut bir segmentin kampanyalarını, reklam gruplarını veya anahtar kelimelerini değiştirir.
+
+```bash
+adapty asa segments update <segment-id> --app <app-id> --campaign <campaign-id> --campaign <other-campaign-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `segment-id` | Segment ID'si (UUID), `asa segments list` veya `adapty segments list` komutundan alınır |
+
+[`asa segments create`](#adapty-asa-segments-create) komutuyla aynı flag'leri alır. Segmentin filtresi, ilettiğiniz öğelerle değiştirilir. `--title` veya `--description` flag'lerini geçmediğiniz sürece başlık ve açıklama olduğu gibi kalır.
+
+### adapty asa segments list
+
+Apple Ads varlıklarından oluşturulan segmentleri listeler — başlığı `[ASA]` ile başlayanlar.
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Adapty uygulama ID'si (UUID) |
+| `--campaign` | Hayır | Yalnızca bu kampanyadan oluşturulan segmentleri getirir (UUID) |
+| `--ad-group` | Hayır | Yalnızca bu reklam grubundan oluşturulan segmentleri getirir (UUID) |
+
+`--campaign` veya `--ad-group` parametresinden yalnızca birini geçin, ikisini birden değil. Aynı kampanya için ikinci bir segment oluşturmaktan kaçınmak amacıyla, `asa segments create` komutundan önce bu komutu çalıştırın: boş bir sonuç, kampanyanın henüz segmenti olmadığı anlamına gelir.
+
+Bu komut, uygulamanın ilk 100 segmentini okur.
 
 ## Otomasyonlar \{#automations\}
 
@@ -789,6 +864,16 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 `--metric`, Ads Manager'ın takip ettiği metrik adlarını kontrol paneli adlandırmasıyla alır; örneğin `spend`, `taps` veya `gross_roas`. Tam liste ve her birinin nasıl hesaplandığı için [Metrikler](adapty-ads-manager-metrics) bölümüne bakın. Var olmayan bir ad, hata mesajında geçerli adlar listelenerek başarısız olur.
 
+`--entity keyword` ile birlikte `--metric`, yalnızca keyword'e özgü metrikleri de kabul eder. Apple, impression share ve sıralamayı hem herhangi bir reklam pozisyonu hem de ilk reklam pozisyonu için raporladığından, her biri iki versiyonda gelir: `_all` ve `_first`. Apple'ın bunları nasıl tanımladığını görmek için [Insights](adapty-ads-manager-metrics#insights) bölümüne bakın.
+
+| Metrik | Değer |
+|---|---|
+| `impression_midpoint_all`, `impression_midpoint_first` | Raporlama dönemi boyunca gösterim payı, yüzde olarak |
+| `rank_all`, `rank_first` | Uygulamanızın anahtar kelime için diğer uygulamalara kıyasla sıralaması. `--date-from` ve `--date-to` değerlerinden bağımsız olarak en güncel değer |
+| `search_popularity` | 1'den 5'e kadar arama popülerliği |
+
+Rapor verisi bulunmayan bir anahtar kelime bu metrikler için `0` döndürür. CLI 0.9.2 sürümünden itibaren bu isimler `rank` ve `impression_midpoint` yerini almaktadır.
+
 Her metrik, sayfa kesilmeden önce tüm entity seviyesinde hesaplandığından, kataloğun tamamını değil yalnızca ihtiyacınız olan sütunları isteyin. `subscribers` ve `paid_subscribers`, entity başına benzersiz profilleri sayar; bu da sıradan bir spend-and-installs çağrısına kıyasla yaklaşık on yedi kat daha maliyetlidir. `arppu` ve `arpas` ise bunlardan türetildiğinden aynı durum geçerlidir. Herhangi bir `--entity` seviyesinde bu dört isim için çağrıyı daraltmak amacıyla `--campaign` veya `--ad-group` belirtmeniz gerekir:
 
 ```bash
@@ -835,13 +920,13 @@ adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2
 | `--metric` | Hayır | Metrik adı, tekrarlanabilir. Tüm metrikler için belirtmeyin |
 | `--by-days` | Hayır | Kohort metrikleri için yenileme penceresi (gün cinsinden), tekrarlanabilir. Çağrı başına en fazla 16 |
 
-Bu komut, tüm varlık düzeyi için toplamları ve dönem bazlı bir seriyi birlikte döndürür; böylece "toplamda ne kadar harcadım veya kazandım" sorusunu tek bir çağrıyla yanıtlar. Sıralama bayrağı ve sayfalama içermez.
+Bu komut, tüm varlık düzeyi için toplamları ve dönem başına bir seri döndürür; böylece tek bir çağrıyla "toplam ne kadar harcadım veya kazandım" sorusunu yanıtlar. Sıralama bayrakları ve sayfalama içermez.
 
-Bu komutta `--metric`, yalnızca kohort köklerini kabul eder — `revenue`, `roas` ve `arpu` — `gross_`, `proceeds_` veya `net_` varyantlarını kabul etmez.
+Bu komutta `--metric`, yalnızca kohort köklerini kabul eder — `revenue`, `roas` ve `arpu` — bunların `gross_`, `proceeds_` veya `net_` varyantlarını kabul etmez. [Yalnızca anahtar kelime metriklerini](#adapty-asa-metrics) de kabul etmez.
 
-Raporlama döneminin uzunluğu `--period-unit` tarafından sınırlandırılır:
+Raporlama döneminin uzunluğu `--period-unit` ile sınırlandırılır:
 
-| `--period-unit` | Maksimum dönem |
+| `--period-unit` | Maksimum süre |
 |---|---|
 | `day` | 90 gün |
 | `week` | 180 gün |
@@ -867,19 +952,75 @@ Komut üç blok yazdırır: analize ilişkin toplamlar, performansa göre öne �
 
 Bir uygulama kümesi için ilk çağrı, veriler hazırlanırken onlarca saniye sürebilir. Aynı uygulamalar için sonraki çağrılar daha hızlı döner.
 
+## Değişiklik geçmişi \{#change-history\}
+
+Değişiklik geçmişi, Apple Ads API'sinden canlı olarak gelir. Adapty bunu saklamaz; Apple ise 6 ay boyunca tutar. Bu geçmiş, Apple Ads üzerinde doğrudan yapılan, Apple Destek tarafından gerçekleştirilen veya diğer API araçlarıyla yapılan değişiklikler dahil olmak üzere kuruluştaki her değişikliği kapsar.
+
+### adapty asa change-history list
+
+Bir Apple Ads organizasyonunda yapılan değişiklikleri, en yeniden en eskiye doğru listeler.
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--campaign-group` | Evet | Okunacak organizasyon (UUID, [`orgs list`](#adapty-asa-orgs-list) komutundan alınır). Her çağrıda bir organizasyon. Birden fazlası için komutu ayrı ayrı çalıştırın |
+| `--date-from` | Hayır | Dönemin başlangıcı (`YYYY-MM-DD`). Varsayılan: 7 gün önce |
+| `--date-to` | Hayır | Dönemin sonu (`YYYY-MM-DD`). Varsayılan: bugün. Dönem en fazla 14 gün kapsayabilir |
+| `--entity-type` | Hayır | `Campaign`, `AdGroup`, `Keyword`, `NegativeKeyword`, `Ad`, `Creative`, `LocationGroup`, `Org` veya `AdAccount`. Tekrarlanabilir. Varsayılan: `Org` ve `AdAccount` hariç tüm türler. `Org` ve `AdAccount`, diğer türlerle birlikte kullanılamaz |
+| `--event-type` | Hayır | `CREATE`, `UPDATE` veya `DELETE`. Tekrarlanabilir |
+| `--user-type` | Hayır | Değişikliği yapan kişi: `CUSTOMER` (Apple Ads'de), `CUSTOMER_API` (Apple Ads API aracılığıyla) veya `APPLE_SUPPORT`. Tekrarlanabilir |
+| `--campaign`, `--ad-group`, `--entity-id` | Hayır | Kampanyanın, reklam grubunun veya değiştirilen varlığın Apple'a ait sayısal kimlikleri. Tekrarlanabilir |
+| `--user` | Hayır | Değişikliği yapan kişinin Apple kullanıcı kimliği. Tekrarlanabilir |
+| `--txn` | Hayır | Apple işlem kimliği. Tekrarlanabilir |
+| `--fields` | Hayır | Her değişikliği, eski ve yeni değerleriyle birlikte değiştirilen alan başına bir satır olacak şekilde genişletir |
+
+:::important
+Diğer komutların [liste filtreleri](#list-filters) aksine, `--campaign`, `--ad-group` ve `--entity-id` değişkenlik geçmişi satırlarında yazdırılan Apple'ın sayısal ID'lerini alır — UUID'leri değil. Benzer şekilde, her satırdaki `modified_by` de bir Apple kullanıcı ID'sidir, e-posta adresi değil.
+:::
+
+Her satır bir işlemi temsil eder: kim yaptığını (`modified_by`, `user_type`), ne zaman yapıldığını (`event_time`) ve hangi varlıkların değiştirildiğini gösterir. Her varlık, [`change-history get`](#adapty-asa-change-history-get) için bir `detail_id` taşır.
+
+`--fields` ile sayfa boyutu varsayılan olarak 10'dur ve daha büyük bir `--page-size` reddedilir. 20'den fazla arama gerektiren bir sayfa başarısız olur: filtreleri daraltın ya da `--fields` seçeneğini bırakıp `change-history get` ile tek tek değişiklikleri okuyun.
+
+[Sayfalama flag'lerini](#global-flags) kabul eder. `--page` × `--page-size` değeri 1000'i aşamaz.
+
+### adapty asa change-history get
+
+Bir işlemdeki bir varlığın alan düzeyindeki değişikliklerini gösterir.
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `detail-id` | [`change-history list`](#adapty-asa-change-history-list) komutundan alınan `detail_id`, `EntityType.entityId.txnId` biçiminde |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--campaign-group` | Evet | Değişikliğin ait olduğu organizasyon. Liste satırındaki `campaign_group_id` alanından alın |
+
+`old_values` ve `new_values` ile birlikte her değişen alanı ve `entity_metadata` içinde varlığın meta verilerini listeler. Apple'ın kaydı olmayan bir `detail_id` için `404` döner.
+
 ## Hatalar \{#errors\}
 
 | Durum | Kod | Anlam |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | Şirketin aktif bir Ads Manager aboneliği yok |
-| `404` | — | Varlık mevcut değil veya başka bir şirkete ait |
+| `403` | `cli_ad_account_unreadable` | `change-history` organizasyonu okuyamıyor: Apple Ads token'ı iptal edilmiş, organizasyon artık bağlı değil veya Apple erişimi reddetti |
+| `404` | — | Varlık mevcut değil ya da başka bir şirkete ait |
 | `409` | `cli_idempotency_in_progress` | Aynı idempotency anahtarıyla bir yazma işlemi hâlâ devam ediyor |
 | `422` | `cli_idempotency_key_reuse` | Aynı idempotency anahtarı farklı bir istek gövdesiyle kullanıldı |
-| `422` | `cli_metric_scope_too_wide` | `--campaign` veya `--ad-group` belirtilmeden profil sayımı metriği istendi |
-| `422` | `cli_response_too_large` | Bir `metrics` sayfası 5000 döküm satırını aşıyor |
-| `429` | `cli_analytics_busy` | Analytics havuzu meşgul veya şirket için başka bir anahtar kelime havuzu oluşturma işlemi hâlâ devam ediyor. Bekleme süresi `Retry-After` başlığında yer alıyor |
-| `429` | `cli_cooldown_active` | Çok fazla reddedilen istek, token'ı bekleme süresine soktu |
+| `422` | `cli_metric_scope_too_wide` | `--campaign` veya `--ad-group` belirtilmeden profil sayma metriği istendi |
+| `422` | `cli_response_too_large` | Bir `metrics` sayfası 5000 satır dökümü sınırını aşacak |
+| `429` | `cli_analytics_busy` | Analytics havuzu meşgul ya da şirkete ait başka bir anahtar kelime havuzu derlemesi hâlâ çalışıyor. Bekleme süresi `Retry-After` başlığında yer alıyor |
+| `429` | `cli_cooldown_active` | Çok fazla reddedilen istek token'ı bekleme süresine aldı |
+| `429` | `cli_upstream_rate_limited` | Apple bir `change-history` isteğini hız sınırına tabi tuttu. Apple'ın bekleme süresi `Retry-After` başlığında yer alıyor |
+| `504` | `cli_read_timeout` | Bir `change-history` isteği 50 saniyeden uzun sürdü. Dönemi veya filtreleri daraltın |
 
-Metrikler ve arama terimleri listesi, şirket başına tek bir analitik bütçesini paylaşır: dakikada 5 çağrı ve her 10 saniyede en fazla 2 çağrı. 5 dakika içinde 20 reddedilen istek birikimi, kademeli bir bekleme süresi başlatır: önce 5 dakika, ardından 30 dakika, sonra 3 saat. Bekleme süresi boyunca yeniden deneme yapmak bu süreyi uzatmaz; ancak asıl çözüm, başarısız isteği düzeltmektir, tekrarlamak değil.
+Metrikler ve arama terimleri listesi, şirket başına tek bir analitik bütçeyi paylaşır: dakikada 5 çağrı ve her 10 saniyede en fazla 2 çağrı. `change-history` ise kendi bütçesine sahiptir: dakikada 30 çağrı, her 10 saniyede en fazla 5 çağrı ve şirket başına aynı anda yalnızca bir istek. 5 dakika içinde 20 reddedilen istek, önce 5 dakika, ardından 30 dakika, sonra 3 saat olmak üzere kademeli bir bekleme sürecini başlatır. Bekleme süresi boyunca tekrar denemek bu süreyi uzatmaz; ancak asıl çözüm, isteği tekrarlamak yerine hatalı isteği düzeltmektir.
 
-CLI, kısa bekleme sürelerini sizin yerinize yönetir. Bekleme süresi olmayan bir `429` hatasında, `Retry-After` değeri 60 saniye veya daha azsa komut bu kadar bekler ve bir kez daha dener; bekleme süresi standart hata çıktısında raporlanır.
+CLI, kısa bekleme sürelerini sizin adınıza yönetir. Bir cool-down olmayan `429` hatasında, `Retry-After` değeri 60 saniye veya daha azsa komut bu süre kadar bekler ve bir kez daha dener; bekleme süresi standart hataya raporlanır.

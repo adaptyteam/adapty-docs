@@ -1,6 +1,6 @@
 ---
 zone: getting-started
-sources: [dashboard-backend, dashboard-interface]
+sources: []
 reviewed_shape:
 reviewed_at:
 ---
@@ -27,18 +27,16 @@ Three more are checkable only as URL lists (`sample-apps`, `installation-of-adap
 `adapty-ecosystem` — are positioning and routing prose, and no repo, spec or backend module can say
 whether they are right. Don't hunt for provenance there, and don't file its absence as a gap.
 
-- **dashboard-interface** — the dashboard labels and control names in the three quickstart step
-  articles. Confirmed against `origin/master` (2026-08-12): `quickstart-products`' two options are
-  verbatim strings in `apps/web/src/features/productForm/ProductSidebar.tsx`, and `quickstart-paywalls`'
-  **Save & publish** is in `apps/web/src/pages/placements/placement-form/PlacementPage.tsx`.
-  **Composed labels will not grep literally** — "Run flow" / "Run paywall" returns zero hits because the
-  UI builds it as `Run {contentLabelCap}` in that same directory. An empty grep here is not evidence a
-  label is wrong; find the template before concluding anything.
-- **dashboard-backend** — the set of stores and payment platforms `integrate-payments` routes to. The
-  `Store` enum on `origin/develop` (`src/sdk/in_app_context/constants.py`) is exactly
+- **Dashboard labels (closed-source dashboard code, not citable here)** — the dashboard labels and
+  control names in the three quickstart step articles. Confirmed against dashboard code (2026-08-12):
+  `quickstart-products`' two options and `quickstart-paywalls`' **Save & publish** are verbatim UI
+  strings. **Composed labels will not match literally** — "Run flow" / "Run paywall" is built from a
+  template (`Run <content type>`), so a search for the full label returns nothing. An empty search is
+  not evidence a label is wrong; check the product UI before concluding anything.
+- **Backend (closed-source, not citable here)** — the set of stores and payment platforms
+  `integrate-payments` routes to. The backend's store list is exactly
   `app_store`/`play_store`/`stripe`/`paddle`, matching the article's four named entries; "other stores"
-  has no enum member because a custom store is created by the user, not shipped as a choice. Read the
-  ref, never the working tree — see that source's entry in `sources.md`.
+  has no built-in entry because a custom store is created by the user, not shipped as a choice.
 - **The seven SDK repos, each at its `sources.md` `default_ref`** — the only check on the sample-app
   URLs. All 13 paths in `sample-apps` resolve today (iOS/Android/Flutter/RN/Capacitor on `origin/master`,
   Unity/KMP on `origin/main`). The same links exist in three articles here in three different shapes, so
@@ -133,7 +131,7 @@ becoming a second copy of the deep article.
 | quickstart-test | — | dev, marketer | 7 | tutorial |
 | sample-apps | — | dev, marketer | 2 | tutorial |
 | what-is-adapty | entry | dev, marketer | 0 | tutorial |
-| whats-new | — | dev, marketer | 9 | tutorial |
+| whats-new | — | dev, marketer | 10 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

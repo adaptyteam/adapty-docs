@@ -1,6 +1,6 @@
 ---
 zone: apple-platform
-sources: [dashboard-backend, dashboard-interface, jscore]
+sources: [jscore]
 reviewed_shape:
 reviewed_at:
 ---
@@ -19,7 +19,7 @@ and not the Adapty Dashboard's own settings.
 ## Sources of truth
 
 **The defining fact of this zone: most of what it claims belongs to Apple, and Apple changes it without
-telling us.** `sources.md` registers eleven Adapty clones and five in-repo specs, and **not one of them
+telling us.** `sources.md` registers Adapty's public SDK and tool repos and five in-repo specs, and **not one of them
 can verify a claim about App Store Connect.** For the Apple-owned half there is no ground truth an agent
 can grep; the only check is a re-read of Apple's own page, and the only honest record is "confirmed
 against \<Apple URL\> on \<date\>". Never promote an Apple-side claim to verified because a sibling
@@ -35,61 +35,44 @@ notices when they go stale.
   eligibility and its fiscal-period timing; `in_app_ownership_type` semantics for Family Sharing;
   whether one downloaded `.p8` may legitimately serve two roles. A task that changes any of these cites
   Apple, not a repo — and dates the citation.
-- **Adapty-owned claim classes live in `dashboard-backend`, and there they are precise.** What we do
-  with a key: **three independent ES256 signers, not one** — corrected 2026-08-12; the previous "single
-  ES256 signer" wording was wrong, disproved by `git grep -n ES256 origin/develop -- 'src/*'` plus a
-  caller grep for each class. (a) `share/ddd_components/applications/services/generate_app_store_connect_token.py`
-  (`GenerateAppStoreConnectToken`) is the shared one, and its only production caller is product push,
-  `portal/in_app_context/applications/app_store_token_app.py`, which passes the App Store Connect API
-  (Team) key trio and no `bid` — so 19 min. Its `SERVER_API_TOKEN_LIFETIME` 59-min-plus-`bid` branch is
-  real but reached only by that module's own unit test; no production code passes `bid`. (b) The App
-  Store **Server** API is signed by a *separate* class that does not import (a):
-  `sdk/purchase_context/applications/services/transaction/app_store/generate_token_for_app_store_server_api.py`
-  (`GenerateTokenForAppStoreServerAPIService`) — **30 min**, with `nonce` *and* `bid` — and this is what
-  refund, transaction V2, manual validation, and the App serializer actually call. (c) A third,
-  `GenerateAppStoreServerAPITokenService` in
-  `portal/analytics_context/applications/services/app_store_connect_auth.py`, is named for the Server API
-  but signs 19 min with no `bid`, and serves the analytics-side App Store Connect adapter. So "the Server
-  API token lives 59 min" is wrong on the live path, and a task touching lifetimes must name which
-  signer. Where
-  notifications land: `sdk/purchase_context/infrastructure/ports/http/app_store_notification_webhook.py`,
-  which resolves the app from the token in the URL (`App.apple_subscription_status_token`, unique),
-  auto-detects V1 vs V2 from the payload format, and returns `200` unconditionally — including for an
-  unrecognised token. What the dashboard shows: the App model in `api/models/analytics.py` and its
-  serializer gates in `api/serializers/analytics.py`. Refund Saver decisioning:
-  `sdk/purchase_context/applications/app_store/app_store_refund.py`. Product/price push against Apple:
-  `portal/in_app_context/infrastructure/adapters/external/appstore_products/`. Dashboard labels and
-  section headings: `dashboard-interface`, `apps/web/src/pages/settings-section/ios-sdk-setting/`.
+- **Adapty-owned claim classes live in Adapty's backend code, and there they are precise.** That code
+  is closed-source and not citable here — confirm with the product team or by testing in the
+  dashboard. What we do with a key: **three independent ES256 signers, not one** — corrected
+  2026-08-12 (backend code); the previous "single ES256 signer" wording was wrong. (a) Product push
+  signs with the App Store Connect API (Team) key and no `bid` — 19-minute tokens. A 59-minute,
+  `bid`-carrying variant exists in the same signer but no production path uses it. (b) The App Store
+  **Server** API is signed separately — **30 min**, with `nonce` *and* `bid` — and this is what refund,
+  transaction V2, manual validation, and the dashboard's credential check actually use. (c) A third
+  signer, named for the Server API, signs 19 min with no `bid` and serves the analytics-side App Store
+  Connect calls. So "the Server API token lives 59 min" is wrong on the live path, and a task touching
+  lifetimes must name which signer. Where notifications land: Adapty resolves the app from the
+  per-app token in the notification URL, auto-detects V1 vs V2 from the payload format, and returns
+  `200` unconditionally — including for an unrecognised token.
 - **The credentials are this zone's sharpest trap: four distinct Apple artifacts, and the naming
-  collides in three directions.** Settle which is which from the code and `dashboard-interface`, never
-  from an article. (1) **In-App Purchase key** — Issuer ID + Key ID + `.p8`, article Steps 2–3,
-  dashboard section **In-app purchase API (StoreKit 2)**, stored `apple_store_key_id` /
-  `apple_store_issuer_id` / `apple_store_private_key` on the App — note the Django `verbose_name` on
-  those three fields reads *"App Store Connect Key ID / Issuer ID / Private Key"*, which is the wrong
-  key's name; they sign the App Store **Server** API. (2) **App Store Connect API (Team) key** — article
-  Step 6, dashboard section **App Store Connect API key**, stored in a different table entirely
-  (`portal/purchase_context/.../app_store_connect_credentials.py`). (3) **Subscription /
-  promotional-offer key** — article Step 4, dashboard fields **Subscription key ID** and **Subscription
-  key (.p8 file)**, stored `app_store_subscription_key*` and converted to DER at save. (4)
-  **App-Specific Shared Secret** — not a `.p8` at all, `apple_shared_secret`. The trap proper: (1) and
+  collides in three directions.** Settle which is which from the dashboard itself, never from an
+  article. (1) **In-App Purchase key** — Issuer ID + Key ID + `.p8`, article Steps 2–3, dashboard
+  section **In-app purchase API (StoreKit 2)**; it signs the App Store **Server** API. (2) **App Store
+  Connect API (Team) key** — article Step 6, dashboard section **App Store Connect API key**, stored
+  separately from the app's other credentials. (3) **Subscription / promotional-offer key** — article
+  Step 4, dashboard fields **Subscription key ID** and **Subscription key (.p8 file)**, converted to
+  DER at save. (4) **App-Specific Shared Secret** — not a `.p8` at all. The trap proper: (1) and
   (2) render **byte-identical field labels** — "Issuer ID", "Key ID", "Private key (.p8 file)" — in two
   different places on the same settings page. A cropped screenshot cannot tell them apart; only the
   section heading can. So never crop a credential screenshot tight, and never reuse one across those two
   steps.
-- **Three Adapty-side facts that read as configuration but are not, and must be checked in code before
-  being described:** `apple_shared_secret_valid` is set optimistically to `True` the moment a secret is
+- **Three Adapty-side facts that read as configuration but are not, and must be confirmed before
+  being described:** the shared secret's "valid" status is set optimistically the moment a secret is
   saved and is only corrected later, when a live receipt verification returns Apple status `21004` — so
   a green "valid" in the dashboard is not evidence the secret works. Private keys are write-only: the
-  serializer replaces them with a random float on read, so a key is unreadable once saved on our side as
-  well as downloadable once on Apple's, which makes "check what you pasted" never valid advice and
-  "regenerate" always the fix. And `apple_store_notification_version` is **observed, not configured** —
-  it is overwritten by whichever handler processed the most recent notification.
+  dashboard never returns a saved key (a placeholder replaces it on read), so a key is unreadable once
+  saved on our side as well as downloadable once on Apple's, which makes "check what you pasted" never
+  valid advice and "regenerate" always the fix. And the app's notification version is **observed, not
+  configured** — it is overwritten by whichever handler processed the most recent notification.
 - **Claim classes that must not be inferred from a sibling article, ever.** Which of the four credentials
   a given feature needs (Refund Saver's dashboard gate demands the bundle ID plus the In-App Purchase
   trio, and nothing else — the V2 requirement comes from a different place, see below). Whether a
-  credential is per-app or per-company: `Company.app_store_key_id` / `app_store_key` /
-  `app_store_issuer_id` exist but sit under a `# deprecated fields` comment, so a per-company reading of
-  any Apple credential is wrong today. Whether a dashboard "valid"/"connected" flag means anything was
+  credential is per-app or per-company: company-level Apple credential fields still exist but are
+  deprecated, so a per-company reading of any Apple credential is wrong today. Whether a dashboard "valid"/"connected" flag means anything was
   validated. And which Apple key an article's screenshot is actually showing.
 - TODO(owner): `sources.md` has no entry that covers Apple's own surface, by construction — every entry
   is an Adapty repo or spec. Should this zone carry a dated, per-claim "confirmed against Apple's page on
@@ -97,18 +80,16 @@ notices when they go stale.
   fresh one? Right now nothing distinguishes them.
 - TODO(owner): `troubleshoot-app-store-integration` claims that unsigned Apple agreements make the App
   Store Connect API return **403** on product endpoints and that Adapty then *silently filters the
-  products out*. I could not confirm the filtering. The mechanism I looked for was explicit 403/`FORBIDDEN`
-  handling in the product and price adapters (`portal/in_app_context/.../appstore_products/`,
-  `portal/analytics_context/`); that adapter's retry/status list covers 429/500/502/503/504 and not 403,
-  and no `403`, `FORBIDDEN`, or `agreement` handling exists in either path. **That does not disprove the
-  claim** — a 403 could fall through the adapter's generic error path, or the filtering could live in a
-  module I did not find (a sync task, or an older import path). Treat the claim as unverified, not wrong,
-  and do not delete it. Which module decides a product is unavailable and drops it is the specific
-  question. Related but *not* the same thing, and easy to mistake for it:
-  `TransactionCancellationReason.PRODUCT_WAS_NOT_AVAILABLE`, mapped from Apple's expiration intent `4` in
-  `sdk/purchase_context/applications/services/transaction/app_store/v1|v2/create_store_transaction_collection_from_v*.py`
-  — that is a subscription that expired because the product was withdrawn, not a product missing from
-  the dashboard.
+  products out*. I could not confirm the filtering in backend code. The mechanism I looked for was
+  explicit 403 handling in the product and price fetch paths; their retry/status list covers
+  429/500/502/503/504 and not 403, and no 403 or agreement handling exists in either path. **That does
+  not disprove the claim** — a 403 could fall through a generic error path, or the filtering could live
+  somewhere I did not find (a sync task, or an older import path). Treat the claim as unverified, not
+  wrong, and do not delete it; confirm with the product team which component decides a product is
+  unavailable and drops it. Related but *not* the same thing, and easy to mistake for it: the
+  cancellation reason Adapty maps from Apple's expiration intent `4` (product not available) — that is
+  a subscription that expired because the product was withdrawn, not a product missing from the
+  dashboard.
 
 ## What we document, what we don't
 
@@ -134,7 +115,7 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
   whether a notification arrives at all. Write what Adapty does once something arrives, and what the
   reader can observe — Apple's own **Delayed** status, install counts computed at first launch rather
   than from notifications. A number that comes from Apple gets attributed and dated; a number that comes
-  from us gets a module.
+  from us gets a dated source.
 - **Irreversible and once-only actions get written up front, never in a closing note.** Keys downloadable
   exactly once, enabling Family Sharing on a product, a Small Business Program period whose exit date has
   to be set at the same time as its start. This is a scope rule and not a style preference: an
@@ -224,25 +205,23 @@ step. `troubleshoot-app-store-integration` is symptom-first and routes back into
 ## Gaps and misses
 
 - **The dashboard deep-links into this zone's article anchors, and nothing checks those links.** Added
-  2026-08-14. `git grep -n "refundSaver" origin/master -- apps/web/src/domain.tsx` in
-  `dashboard-interface` returns `refundSaverPreference:
-  'https://adapty.io/docs/refund-saver#set-a-default-refund-preference'` (line 612) and a sibling
-  `refundSaverConsent`. That anchor did not exist — the heading read *Set a default refund **behavior***
-  — so the in-product **Learn more** link landed on the page top. Fixed 2026-08-14 by renaming the
-  heading to match the link. `npm run check-links` cannot catch this class: the inbound link lives in
-  another repo. Before renaming any heading in a Refund Saver, App Store Connect or notification
-  article, grep `domain.tsx` for a link to its anchor.
-- **Refund Saver preference values, verified against `dashboard-backend` `origin/develop` on
-  2026-08-14.** App-level default is `AppRefundPreference` in `src/common/enums/purchase.py`
-  (`no_preference`, `always_decline`, `always_refund`, `decline_first_grant_next`, `always_prorated`);
-  the per-profile override is a different enum with different spellings — `CustomPreference` in
-  `src/common/domains/dto/sdk_event.py` (`grant`, `no_preference`, `decline`, `grant_prorated`). The two
-  are mapped in `app_store_refund.py`; never carry a value from one into the other. Adapty now answers
-  consumption requests with **v2** (`domains/value_objects/app_store/consumption_information_v2.py`),
-  which is what makes `GRANT_PRORATED` and the `consumptionPercentage` field available at all.
+  2026-08-14 (dashboard code). The Refund Saver **Learn more** link points at
+  `https://adapty.io/docs/refund-saver#set-a-default-refund-preference`, and a sibling link covers
+  consent. That anchor did not exist — the heading read *Set a default refund **behavior*** — so the
+  in-product link landed on the page top. Fixed 2026-08-14 by renaming the heading to match the link.
+  `npm run check-links` cannot catch this class: the inbound link lives outside this repo. Before
+  renaming any heading in a Refund Saver, App Store Connect or notification article, confirm with the
+  dashboard team that no in-product link targets its anchor.
+- **Refund Saver preference values, verified against backend code on 2026-08-14.** The app-level
+  default (set in the dashboard) and the per-profile override are different enums with different
+  spellings. The app-level default has five options — no preference, always decline, always refund,
+  decline first then grant, and always prorated; the per-profile override is the server-side API
+  spec's `grant`, `no_preference`, `decline`, `grant_prorated`. Adapty maps between them; never carry
+  a value from one into the other. Adapty now answers consumption requests with Apple's **v2**
+  consumption information, which is what makes prorated grants and the `consumptionPercentage` field
+  available at all.
 - **The prorated preference has no SDK surface, as of 2026-08-14.** Grepped `AdaptyRefundPreference` /
   `RefundPreference` on the default ref of all seven SDK repos plus `jscore`: every one still exposes
   exactly `no_preference`, `grant`, `decline`. So a Refund Saver preference added on the backend reaches
   users through the Dashboard and the server-side API spec only — the SDK snippets in `refund-saver` and
   the enum list in `unity-sdk-models` stay untouched until an SDK ships the case.
-

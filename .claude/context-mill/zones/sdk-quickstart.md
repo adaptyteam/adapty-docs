@@ -1,6 +1,6 @@
 ---
 zone: sdk-quickstart
-sources: [android-sdk, dashboard-interface, jscore, kmp-sdk, sdk-integration-skill]
+sources: [android-sdk, jscore, kmp-sdk, sdk-integration-skill]
 reviewed_shape:
 reviewed_at:
 ---
@@ -87,10 +87,10 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
   both be right, for different readers. Read the pinned `crossplatform` version's build file rather than
   copying either sentence between install articles — and see Gaps and misses #4, where the corpus currently
   states both.
-- **Exact dashboard labels** (the `GetKey` path, "Show on device") → `dashboard-interface` per
-  `sources.md`. Verified while writing this brief: "Show on device" exists only under `packages/builder`
-  (the legacy Paywall Builder) and `packages/paywall-builder-migration`, with **zero** hits in
-  `packages/unified-builder` (the Flow & Paywall Builder). Do not describe it as a Flow & Paywall Builder control without
+- **Exact dashboard labels** (the `GetKey` path, "Show on device") → Adapty's closed-source dashboard
+  code, not citable here — confirm with the product team. Verified while writing this brief (dashboard
+  code): "Show on device" exists only in the legacy Paywall Builder and the paywall-to-flow migration UI,
+  never in the Flow & Paywall Builder. Do not describe it as a Flow & Paywall Builder control without
   re-checking.
 - **The Adapty CLI commands inside the `GetKey` snippet are `agent-tooling`'s**, not this zone's — change
   them there, not by editing seven install articles.
@@ -336,9 +336,8 @@ don't re-litigate them; the remaining content work is tracked as a separate task
    over.
 2. **"Show on device" is not required for flows. No.** So the note is **stale in the four quickstarts that
    carry it** (Android, Flutter, Unity, KMP) rather than missing from the three that don't (iOS, RN,
-   Capacitor) — remove it, don't propagate it. This matches the code evidence: the string lives only in
-   the `builder` and `paywall-builder-migration` packages of `adapty-dashboard-interface`, with zero hits
-   in `unified-builder`.
+   Capacitor) — remove it, don't propagate it. This matches the code evidence: in the dashboard code the string lives only in
+   the legacy Paywall Builder and the paywall-to-flow migration UI, never in the Flow & Paywall Builder.
 3. **The Google Play Billing v8 fact must reach Flutter and Unity — if it is true.** The owner's condition
    is explicit, so verify before writing: on one commit of the Android SDK, `adapty/build.gradle` pins
    7.0.0 while `crossplatform/build.gradle` pins 8.0.0, and Flutter, Unity and KMP all depend on
@@ -424,8 +423,8 @@ don't re-litigate them; the remaining content work is tracked as a separate task
     obsolete on all of them.** Present in `android-quickstart-paywalls` (phrased "in the Flow Builder"),
     `flutter-quickstart-paywalls`, `unity-quickstart-paywalls`, `kmp-quickstart-paywalls`; absent from iOS,
     React Native and Capacitor — the same 4/3 split as the Developer-CLI tip, which suggests one rewrite wave
-    dropped both. In `dashboard-interface` at `origin/master` the string exists only under
-    `packages/builder` and `packages/paywall-builder-migration` and **not once** in `packages/unified-builder`,
+    dropped both. In the dashboard code the string exists only in the legacy Paywall Builder and the
+    paywall-to-flow migration UI and **not once** in the Flow & Paywall Builder,
     and in this corpus the only non-SDK article that documents it (`quickstart-paywalls`, zone
     `getting-started`) does so in its *legacy paywall* branch, not its flow branch. Question filed — this is
     either four stale notes or three missing ones, and the evidence leans stale.
@@ -436,3 +435,17 @@ don't re-litigate them; the remaining content work is tracked as a separate task
     `adapty_flutter: ^<the latest SDK version>`, which would resolve to 4.x. Whether pub.dev's latest stable
     is in fact 3.x could not be checked offline. Question filed.
 
+13. **React Native iOS has a third install path from SDK 4.2.3, and the brief's Surfaces line didn't name it**
+    (autolog 2026-10-09, from `AdaptySDK-React-Native` branch `release/4.2.3`: `ios/adapty_podfile.rb`,
+    `react-native-adapty-sdk.podspec`, `plugin/src/with-cocoapods-ios.ts`, plus the public
+    `AdaptySDK-CocoaPods-Specs` README). The Surfaces line says "plain npm + CocoaPods/SPM" for the pure
+    article, and that now covers three paths: `spm_dependency` (default), React Native's SPM integration, and
+    an opt-in **pods mode**. Pods mode is `adapty_disable_spm!` before `use_native_modules!`, or Expo
+    `iosDisableSPM: true`, and it installs `Adapty`/`AdaptyUI`/`AdaptyPlugin` from Adapty's own spec repo with
+    no dynamic frameworks. It is positioned for RN projects that can't switch to dynamic frameworks. **Don't
+    carry it to `sdk-installation-ios`**: native iOS docs deliberately don't advertise it. Two consequences
+    for this zone. First, the "SDK 3.x only" note on the `SWIFT_VERSION` troubleshooting entry stopped being
+    true, because the v4 pods declare Swift 6.0 again. Second, `kids-mode-react-native`'s Podfile helper moved
+    to `adapty_podfile.rb`; `adapty_kids_mode.rb` stays as a shim. **Unconfirmed:** whether pods mode lowers
+    the React Native 0.75 floor. The podspec's missing-`spm_dependency` error suggests trying pods mode, but
+    the Requirements table still says 0.75, and nobody has confirmed a lower floor.

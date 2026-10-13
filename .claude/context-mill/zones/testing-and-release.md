@@ -1,6 +1,6 @@
 ---
 zone: testing-and-release
-sources: [android-sdk, dashboard-backend, ios-sdk, jscore, server-side-api-spec]
+sources: [android-sdk, ios-sdk, jscore, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -25,32 +25,28 @@ to trigger a review. Split every claim by owner before verifying it.
   article already links; there is no Adapty artefact to diff and nothing in `sources.md` covers them.
   Treat the numbers in `test-purchases-in-sandbox`'s renewal table and the policy claims in
   `prepare-your-app-for-store-review` as re-read-the-vendor-page tasks, never as code-verification tasks.
-- **Adapty-owned, all three in `dashboard-backend`.** These are the claims a task *can* verify:
-  - **What the Event Feed reflects.** It is the integration-event stream, not a raw transaction log:
-    `src/portal/integration_context/infrastructure/ports/http/event_feed.py` serves `IntegrationEvent`
-    at `<app_id>/event_feed/`, and its serializer exposes `environment` with exactly `Production` and
-    `Sandbox` plus per-integration send statuses. So `validate-test-purchases`'s yes/no gate is really
-    "did an integration event get created for this transaction", which is what the 10-minute wait is for.
-  - **Sandbox exclusion from charts is structural, not a chart filter.**
-    `src/portal/analytics_context/domain/enums/environment.py` declares an `Environment` enum with a
-    single member, `PRODUCTION = 'Production'`; the scheduled ClickHouse loaders
-    (`migrate_transactions_to_clickhouse.py`, `migrate_profiles_to_clickhouse.py`) pass it, and the ETL
-    SQL filters `pe.environment = {environment}`. Sandbox rows never enter the analytics store, so there
-    is nothing to un-filter — which is why the `SandboxExclusion` reusable can state it absolutely.
-  - **Test-device identifier types** are the enum in `src/common/enums/profile_test_user_type.py`
-    (`profile_id`, `customer_user_id`, `idfa`, `idfv`, `advertising_id`, `android_id`) — the authority for
-    `test-devices`'s identifier tables, and the reason there are six and not more.
-- **The revoke claim is backend behaviour and it is defined in exactly one place.**
-  `src/sdk/purchase_context/applications/transaction.py`, in `_revoke_access_level`, does not mark
-  anything revoked: it builds a synthetic in-memory transaction through `TemporaryTransactionService`
-  (`transaction_id=None`) that reuses the profile's `vendor_original_transaction_id`, sets
-  `expires_at_date` to the revoke time and `cancellation_reason` to `ADAPTY_REVOKED`, then re-derives the
-  access level from that chain. Any later real store transaction on the same chain re-derives it upward —
-  that is the whole mechanism, and it is not sandbox-specific. The dashboard's **Add access level** with
-  an earlier expiry is not a second mechanism: `src/api/views/profiles.py` routes it into the same
-  `revoke_access_level` call. Cite this module, not `test-purchases-in-sandbox`, whenever a task turns on
-  revoke durability — and note that `server-side-api-spec` documents only *when* access expires
-  (`revokeAccessLevel`, `RevokeAccessRequest.revoke_at`), never that the expiry can be overridden.
+- **Adapty-owned, all three in backend code.** These are the claims a task *can* verify, though only
+  by asking backend/product or testing in the dashboard — the code is closed-source and not citable here:
+  - **What the Event Feed reflects.** It is the integration-event stream, not a raw transaction log: each
+    row is an integration event with an environment of exactly `Production` or `Sandbox` plus
+    per-integration send statuses. So `validate-test-purchases`'s yes/no gate is really "did an
+    integration event get created for this transaction", which is what the 10-minute wait is for.
+  - **Sandbox exclusion from charts is structural, not a chart filter.** The scheduled loaders that feed
+    the analytics store load production data only (backend code, 2026-08). Sandbox rows never enter the
+    analytics store, so there is nothing to un-filter — which is why the `SandboxExclusion` reusable can
+    state it absolutely.
+  - **Test-device identifier types** are exactly six (`profile_id`, `customer_user_id`, `idfa`, `idfv`,
+    `advertising_id`, `android_id`) — the authority for `test-devices`'s identifier tables, and the
+    reason there are six and not more.
+- **The revoke claim is backend behaviour and it is defined in exactly one place.** Revoking does not
+  mark anything revoked: the backend builds a synthetic transaction on the profile's existing original
+  transaction chain, with its expiry set to the revoke time, then re-derives the access level from that
+  chain. Any later real store transaction on the same chain re-derives it upward — that is the whole
+  mechanism, and it is not sandbox-specific. The dashboard's **Add access level** with an earlier expiry
+  is not a second mechanism: it routes into the same revoke path (backend code, 2026-08). Cite this
+  mechanism, not `test-purchases-in-sandbox`, whenever a task turns on revoke durability — and note that
+  `server-side-api-spec` documents only *when* access expires (`revokeAccessLevel`,
+  `RevokeAccessRequest.revoke_at`), never that the expiry can be overridden.
 - **Version floors for test devices live in the SDK repos, not here and not in the dashboard.** The gate
   is client-side: the SDK bypasses the CDN cache only by appending `disable_cache` when the profile comes
   back `is_test_user` — iOS `Sources/Backend/Backend.QueryItems.swift` fed by
@@ -95,7 +91,7 @@ to trigger a review. Split every claim by owner before verifying it.
   (sandbox vs. `local-sk-files`).
 - **We document the sandbox-exclusion guarantee, not the pipeline behind it.** The reader gets the
   contract — excluded from every analytics chart, still visible on the profile page and in the Event Feed
-  — and nothing about the ClickHouse loader that produces it (see *Sources of truth*). Same rule as
+  — and nothing about the loader that produces it (see *Sources of truth*). Same rule as
   elsewhere in the corpus: publish the observable contract, not the mechanism.
 - **Boundary with access-levels and server-side-api, stated as what gets written.**
   `test-purchases-in-sandbox`'s *Resetting a tester's subscription* table is the sandbox-scoped write-up

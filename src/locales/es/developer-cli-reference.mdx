@@ -1,11 +1,11 @@
 ---
-title: "Referencia de comandos del CLI de desarrollador de Adapty"
-description: "Referencia de los comandos del CLI de desarrollador de Adapty para configurar apps, productos, paywalls, flows y placements."
-metadataTitle: "Referencia de comandos del CLI de desarrollador | Documentación de Adapty"
+title: "Referencia de comandos del CLI para desarrolladores de Adapty"
+description: "Referencia de los comandos del CLI para desarrolladores de Adapty que configuran apps, productos, paywalls, flows y placements, migran desde RevenueCat e instalan los skills de Adapty."
+metadataTitle: "Referencia de comandos del CLI para desarrolladores | Documentación de Adapty"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-Este artículo lista los comandos de la CLI de Adapty para configurar tu cuenta — apps, niveles de acceso, productos, paywalls, flows, placements y segmentos — con sus argumentos, flags y valores aceptados. Para campañas de Apple Ads, consulta [Comandos de Ads Manager](developer-cli-ads-manager-reference).
+Este artículo lista los comandos de la CLI de Adapty que configuran tu cuenta — apps, niveles de acceso, productos, paywalls, flows, placements y segmentos — además de los comandos para migrar un proyecto de RevenueCat e instalar los skills de Adapty, con sus argumentos, flags y valores aceptados. Para campañas de Apple Ads, consulta [Comandos de Ads Manager](developer-cli-ads-manager-reference).
 
 :::link
 Para la configuración de autenticación y gestión de tokens, consulta [Autenticación](developer-cli-authentication).
@@ -679,7 +679,7 @@ Para intercambiar un paywall en varios placements sin perder el enrutamiento por
 
 ## Segmentos \{#segments\}
 
-Los [segmentos](segments) son de solo lectura a través de la CLI. Créalos y edítalos en el [Adapty dashboard](https://app.adapty.io). Usa estos comandos para buscar los IDs de segmento al componer audiencias de placements.
+Los [segmentos](segments) agrupan usuarios según los atributos de su perfil. Usa estos comandos para crear segmentos y buscar IDs de segmento al componer [audiencias de placement](#audiences-shape). Para construir un segmento a partir de campañas, grupos de anuncios o palabras clave de Apple Ads, usa [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) en su lugar: busca los IDs de Apple por ti y le da al segmento el nombre que usa Ads Manager.
 
 ### adapty segments list \{#adapty-segments-list\}
 
@@ -695,9 +695,9 @@ adapty segments list --app <app-id>
 
 Acepta [flags de paginación](#global-flags).
 
-### adapty segments get \{#adapty-segments-get\}
+### adapty segments get
 
-Obtén los detalles de un [segmento](segments) específico.
+Obtén detalles de un [segmento](segments) específico.
 
 ```bash
 adapty segments get --app <app-id> <segment-id>
@@ -707,20 +707,250 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|
 | `segment-id` | ID del segmento (UUID) |
 
-| Flag | Requerido | Descripción |
+| Flag | Obligatorio | Descripción |
 |---|---|---|
 | `--app` | Sí | ID de la app (UUID) |
 
-La respuesta contiene `id`, `title` y `description`. Las reglas de filtro no están expuestas a través de esta API.
+La respuesta contiene `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` y `updated_at`. `list` devuelve solo `id`, `title` y `description`.
+
+### adapty segments create
+
+Crea un [segmento](segments) a partir de uno o más filtros.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--title` | Sí | Título del segmento |
+| `--filter` | Sí | Regla de filtro. Repetible. Ver [Sintaxis de filtros](#filter-syntax) |
+| `--description` | No | Descripción del segmento |
+
+Un usuario coincide con el segmento solo cuando cumple todos los filtros. La respuesta tiene los mismos campos que `segments get`. `profile_count` empieza en `0`, y Adapty lo recalcula después de crear el segmento.
+
+### adapty segments update
+
+Reemplaza el título, la descripción y los filtros de un [segmento](segments) existente.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argumento | Descripción |
+|---|---|
+| `segment-id` | ID del segmento (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--title` | Sí | Título del segmento |
+| `--filter` | Sí | Regla de filtro. Repetible. Ver [Sintaxis de filtros](#filter-syntax) |
+| `--description` | No | Descripción del segmento |
+
+:::warning
+`segments update` reemplaza el segmento completo. Incluye todos los filtros que quieras conservar, no solo el que modificas. Para leer los filtros actuales, ejecuta `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Sintaxis de filtros \{#filter-syntax\}
+
+Escribe cada `--filter` con el formato `campo:OPERADOR:valor`. Para coincidir con varios valores, sepáralos con comas: `ip_country:IN:US,CA`.
+
+| Operador | Valores | Ejemplo |
+|---|---|---|
+| `IN`, `NOT IN` | Uno o más | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Uno | `age:>:18` |
+| `BETWEEN` | Dos | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Ninguno | `age:IS NULL` |
+
+Pasa los números como valores simples, por ejemplo `age:>:18`. Adapty los convierte para campos numéricos como `age`, `total_revenue_usd` y atributos personalizados de tipo float.
+
+Para un valor que esta forma abreviada no pueda expresar, pasa el filtro como un objeto JSON:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty valida los nombres de campos, operadores y tipos de valores, e informa de un error por cada filtro inválido. Para ver los nombres de campos y formatos de valores de los filtros existentes, ejecuta `adapty segments get --app <app-id> <segment-id> --json` en un segmento creado en el dashboard.
+
+## Migraciones \{#migrations\}
+
+Mueve un proyecto de RevenueCat a Adapty: su catálogo, y opcionalmente sus eventos de store y su historial de transacciones. Adapty ejecuta cada migración como una secuencia de pasos e indica qué acciones puedes ejecutar a continuación, así que lee `status` antes de cada acción. Para conocer el procedimiento completo, consulta [Migración desde RevenueCat](migration-from-revenuecat).
+
+Todos los comandos excepto `list`, `create`, `use`, `current` y `unuse` aceptan el flag de migración:
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `-m`, `--migration` | No | ID de migración. Sin él, el CLI usa la variable de entorno `ADAPTY_MIGRATION`, luego la migración guardada por `create` o `use`. |
+
+### adapty migrations list
+
+Lista tus migraciones y los flows de migración que puedes iniciar, agrupados por app.
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+Inicia una migración y la guarda como la actual.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--name` | Uno de `--name` o `--flow` | Nombre de la nueva app de Adapty. Inicia la migración del catálogo. No se puede combinar con `--flow` ni con `--app`. |
+| `--flow` | Uno de `--name` o `--flow` | Flow que se iniciará en una app existente, tal como lo muestra `adapty migrations list`. Requiere `--app`. |
+| `--app` | Con `--flow` | ID de la app (UUID) |
+| `--no-select` | No | Crea la migración sin guardarla como la actual |
+
+Los flows disponibles para una app existente tras su migración de catálogo:
+
+| Flow | Descripción |
+|---|---|
+| `transactions` | Importar el historial de transacciones desde una exportación diaria de RevenueCat Cloud Export |
+| `transactions_support` | Importar el historial de transacciones a través del soporte de RevenueCat y el soporte de Adapty, para planes de RevenueCat sin Cloud Export |
+| `apple_events` | Reenviar las notificaciones de App Store a Adapty mientras RevenueCat sigue recibiéndolas |
+| `google_events` | Suscribir Adapty al tema Pub/Sub que usa RevenueCat para las notificaciones de Google Play |
+| `code` | Hacer que tu agente de código reemplace el SDK de RevenueCat en una base de código de la app |
+| `integrations` | Hacer que tu agente de código encuentre las herramientas de analíticas, atribución y mensajería en el código de la app para configurarlas en Adapty |
+| `paywall_design` | Hacer que tu agente de código reconstruya los diseños de paywall de RevenueCat en los flows creados por la migración del catálogo |
+
+### adapty migrations use
+
+Guarda una migración como la actual, para que los demás comandos no necesiten `-m`.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `migration-id` | ID de migración obtenido con `adapty migrations list` |
+
+La CLI verifica que tienes acceso a la migración antes de guardar el ID. La migración guardada pertenece al token actual y se aplica en cualquier terminal.
+
+### adapty migrations current
+
+Muestra la migración actual y su origen: la variable de entorno `ADAPTY_MIGRATION` o la selección guardada.
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+Borra la migración guardada. Un valor `ADAPTY_MIGRATION` establecido en tu shell permanece activo hasta que lo elimines.
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+Muestra el estado de una migración, sus problemas y las acciones que puedes ejecutar a continuación.
+
+```bash
+adapty migrations status
+```
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--wait` | No | Sondea hasta que la migración cambie y devuelve el estado más reciente |
+| `--timeout` | No | Tiempo de sondeo para `--wait`: de 1 a 600 segundos, 120 por defecto. Acepta `300`, `300s` o `5m`. Requiere `--wait`. |
+
+Con `--json`, `next_actions` y `available_actions` muestran el ID de cada acción, los recursos que lee, su `input_schema` y el texto de `confirm`.
+
+El código de salida `0` indica que la solicitud se completó correctamente, no que la migración haya tenido éxito. Comprueba `migration.state` en la respuesta.
+
+### adapty migrations steps
+
+Muestra el checklist de migración y el estado de cada paso.
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+Lista los recursos que puedes leer ahora, o lee uno.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argument | Description |
+|---|---|
+| `resource` | Resource name, for example `apps`, `mapping`, `report`, or `export-config`. Omit it to list the resources available at the current step. |
+
+### adapty migrations run
+
+Ejecuta una acción de `adapty migrations status`.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Argument | Description |
+|---|---|
+| `action-id` | Action ID from `next_actions` or `available_actions` in `adapty migrations status` |
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--input` | No | Entrada de la acción como objeto JSON que coincide con el `input_schema` de la acción. Sin entrada, la CLI envía `{}`. |
+| `--input-file` | No | Ruta a un archivo con la entrada de la acción, o `-` para leerla desde stdin. No se puede combinar con `--input`. |
+| `-y`, `--yes` | Para acciones con texto `confirm` | Confirma la acción después de leer su texto `confirm`. No hay ningún prompt interactivo. |
+| `--open` | No | Abre el enlace de la acción incluso con una tubería o `--json` |
+| `--no-browser` | No | Imprime el enlace de la acción sin abrir un navegador |
+
+Las acciones son de tres tipos:
+
+- **Las acciones de entrada** envían tus datos a Adapty, por ejemplo las apps de RevenueCat a migrar o tus decisiones de mapeo.
+- **Las acciones externas** abren una página en el Adapty Dashboard, por ejemplo para pegar la clave API secreta de RevenueCat. Completa la página y luego comprueba `status`.
+- **Las acciones del agente**, por ejemplo `migrate_code`, son tareas para tu agente de codificación. Ejecútalas desde el repositorio git de la app: la CLI guarda los datos de la migración en `.git/adapty/<migration-id>/` e imprime las instrucciones para el agente. El agente reporta el resultado ejecutando la acción de nuevo con `--input`.
+
+### adapty migrations close
+
+Finaliza o cancela una migración. No podrás reabrirla después.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` marca la migración como completada; `cancel` la abandona |
+| `-y`, `--yes` | Yes | Confirma el cierre |
+
+## Skills \{#skills\}
+
+### adapty skills install
+
+Instala los skills de Adapty en los agentes de codificación de esta máquina.
+
+```bash
+adapty skills install
+```
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--agent` | No | Agente en el que instalar: `claude-code`, `codex` o `gemini-cli`. Repite la flag para varios agentes. |
+| `-y`, `--yes` | No | Instala en todos los agentes encontrados sin preguntar. Obligatorio cuando el CLI encuentra varios agentes y no puede preguntar, por ejemplo con `--json`. |
+
+The CLI looks for Claude Code, Codex, and Gemini CLI on `PATH`. If it finds none, it asks whether to run `npx skills@1.7.0 add adaptyteam/adapty-skills --all --global`, which covers other agents. Restart the agent to load the skills.
 
 ## Auth \{#auth\}
 
 | Comando | Descripción |
 |---|---|
 | `adapty auth login` | Autenticarse mediante el navegador usando el flujo de dispositivo |
-| `adapty auth logout` | Borrar las credenciales almacenadas localmente |
+| `adapty auth logout` | Eliminar las credenciales almacenadas y la migración guardada localmente |
 | `adapty auth whoami` | Verificar el token con el servidor y mostrar información del usuario |
-| `adapty auth status` | Mostrar el estado de autenticación local sin hacer una llamada al servidor |
-| `adapty auth revoke` | Revocar el token en el servidor y borrarlo localmente |
+| `adapty auth status` | Mostrar el estado de autenticación local sin llamar al servidor |
+| `adapty auth revoke` | Revocar el token en el servidor y luego eliminarlo junto con su migración guardada localmente |
 
-Consulta [Autenticación](developer-cli-authentication) para ver todos los detalles de cada comando.
+Consulta [Autenticación](developer-cli-authentication) para obtener información detallada sobre cada comando.

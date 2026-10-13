@@ -66,14 +66,15 @@ yarn add react-native-adapty
 
 ### Set up your iOS project
 
-Adapty publishes its native iOS SDKs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) as Swift packages only — v4 dropped the CocoaPods distribution ([CocoaPods' spec repo goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Both options install those Swift packages; they differ in what drives the install.
+The React Native SDK installs its native iOS SDKs (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) in one of three ways. The first two install them as Swift packages, which is the recommended path; they differ in what drives the install.
 
-- **CocoaPods (default, SDK 4.0 and later)**: Your iOS project keeps its `Podfile`, and React Native's `spm_dependency` helper adds Adapty's Swift packages to the Pods project. Swift packages link dynamically, so the Podfile has to switch to dynamic frameworks.
+- **CocoaPods + SPM (default, SDK 4.0 and later)**: Your iOS project keeps its `Podfile`, and React Native's `spm_dependency` helper adds Adapty's Swift packages to the Pods project. Swift packages link dynamically, so the Podfile has to switch to dynamic frameworks.
 - **React Native's SPM integration (SDK 4.1 and later)**: Your iOS project drops CocoaPods, and React Native resolves the Swift packages itself from the `Package.swift` manifest Adapty ships. [React Native added this integration in 0.87](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios) as a preview and doesn't recommend it for production yet.
+- **CocoaPods without SPM (SDK 4.2.3 and later)**: Your `Podfile` installs the native SDKs as pods from [Adapty's spec repo](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), not from the public CocoaPods spec repo, which [goes read-only in December 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). The pods don't require dynamic frameworks. Use this option only if your project can't switch to dynamic frameworks — for example, because it relies on static linkage or Flipper.
 
 <Tabs groupId="ios-package-manager" queryString>
 
-<TabItem value="cocoapods" label="CocoaPods" default>
+<TabItem value="cocoapods" label="CocoaPods + SPM (recommended)" default>
 
 Declare dynamic frameworks in your `ios/Podfile` target:
 
@@ -117,7 +118,48 @@ To move back to CocoaPods, run `npx react-native spm deinit`, then `pod install`
 
 </TabItem>
 
+<TabItem value="cocoapods-pods" label="CocoaPods without SPM">
+
+:::warning
+Use this option only if your project can't switch to dynamic frameworks — for example, because it relies on static linkage or Flipper. For all other projects, install the native SDKs as Swift packages.
+:::
+
+This option requires SDK 4.2.3 or later. In `ios/Podfile`, require the Adapty Podfile helpers. Then, in your app target, call `adapty_disable_spm!` **before** `use_native_modules!`:
+
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'MyApp' do
+  adapty_disable_spm!
+  config = use_native_modules!
+  # ...
+end
+```
+
+`adapty_disable_spm!` declares the `Adapty`, `AdaptyUI`, and `AdaptyPlugin` pods and pins them to Adapty's spec repo, so you don't add a `source` line for that repo. Remove any explicit `pod 'Adapty'`, `pod 'AdaptyUI'`, or `pod 'AdaptyPlugin'` lines from your `Podfile`. If `adapty_disable_spm!` comes after `use_native_modules!`, `pod install` fails and asks you to move the call.
+
+Then install pods:
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install --repo-update
+```
+
+When you update `react-native-adapty` later, `pod install` doesn't refresh Adapty's spec repo. To update the native SDKs, run:
+
+```sh showLineNumbers title="Shell"
+cd ios
+pod repo update
+pod update Adapty AdaptyUI AdaptyPlugin
+```
+
+</TabItem>
+
 </Tabs>
+
 ## Activate Adapty module of Adapty SDK
 
 <GetKey />
@@ -420,12 +462,12 @@ buildscript {
 #### Swift 6 build errors caused by Podfile SWIFT_VERSION override
 
 :::note
-This applies to **SDK 3.x**, where the native iOS SDKs install as CocoaPods. From SDK 4.0 they install as Swift packages, so a `SWIFT_VERSION` override in `post_install` no longer reaches them.
+This applies when the native iOS SDKs install as CocoaPods pods: in **SDK 3.x**, and in SDK 4.2.3 and later with the [CocoaPods without SPM](#set-up-your-ios-project) option. When they install as Swift packages, a `SWIFT_VERSION` override in `post_install` doesn't reach them.
 :::
 
 When building your React Native app for iOS, you may see Swift 6 compilation errors on Adapty pod targets. Typical symptoms include `@Sendable` mismatches in `AdaptyUIBuilderLogic`, missing `Sendable` conformance on Adapty types, or actor isolation errors.
 
-The Adapty pods declare `s.swift_version = '6.0'` and require Swift 6 to build. Your own app code can stay on Swift 5 — only the Adapty pod targets (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) need to build with Swift 6.
+The Adapty pods declare `s.swift_version = '6.0'` and require Swift 6 to build. Your own app code can stay on Swift 5 — only the Adapty pod targets (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`, and in SDK 4.2.3 and later `AdaptyCodable`) need to build with Swift 6.
 
 The most common cause is a `post_install` hook in `ios/Podfile` that rewrites `SWIFT_VERSION` for every pod target:
 
@@ -444,7 +486,7 @@ end
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end

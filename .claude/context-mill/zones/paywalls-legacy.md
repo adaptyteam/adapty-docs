@@ -1,6 +1,6 @@
 ---
 zone: paywalls-legacy
-sources: [dashboard-backend, dashboard-interface, server-side-api-spec]
+sources: [server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -74,41 +74,34 @@ near-identical title on the flow side; three confirmed traps:
   the reverse: the server-side push route in `customize-paywall-with-remote-config` has no flow
   counterpart to defer to.
 
-**Where the dashboard side of a legacy paywall is defined.** All in `dashboard-interface` at
-`origin/master`, and it is *not* one package:
+**Where the dashboard side of a legacy paywall is defined.** Adapty's dashboard code, closed-source and
+not citable here, and it is *not* one module:
 
-- **The legacy visual builder is `packages/builder` (`@adapty/builder`)** — widgets `BuilderMenuTree`,
-  `BuilderPreview`, `TemplateLibrary`, `TestOnDevice`, `BuilderLocalizationsWidget`. The flow-era builder
-  is the separate `packages/unified-builder` (`@flows/monorepo`); `sources.md`'s "builder labels live in
-  `unified-builder`" rule is a flow-era rule and does not answer a legacy-builder question.
-- **The legacy paywall's non-builder surface lives under `apps/web/src/pages/ab-section/`** —
-  `paywall-list`, `paywall-form`, `paywall-metric`. That placement inside the A/B subtree is historical,
-  not a hint that these topics belong to `ab-tests`. In-code the legacy builder is called `BuilderV3`
-  (`paywall-form/ui/BuilderV3/`), and the same form carries `WebPaywallSection` and the
-  legacy→flow conversion entry points (`RecreateAsFlowButton`, `MigrateBuilderBanner`), whose logic is
-  `packages/paywall-builder-migration` (`convertPaywallToFlow`, `normalizeLegacyPaywall`).
-- **The remote-config editor is shared by both generations** — `apps/web/src/features/remoteConfig/`
-  (`JSONTable`, `LocalizationTable`, `SelectLocales`, `usePaywallTranslation`, plus a distinct
-  `DeprecatedRemoteConfig` rendered by `paywall-form/PaywallPage.tsx`). This is why the two remote-config
-  articles legitimately look alike on the dashboard side and diverge only in the SDK — the shared module
-  is a fact about the UI, never a licence to share SDK text.
-- **Semantics are backend-owned, in `dashboard-backend` at `origin/develop`, `src/portal/in_app_context/`.**
-  Paywall **state is derived, never stored**: `get_state_annotation` in
-  `infrastructure/repositories/paywall/paywall_repository/paywall_repository.py` computes `ARCHIVED` from
-  `is_deleted=True` and `LIVE` from existence in a non-deleted placement audience; the enum in
-  `domains/enums/state.py` is `live` / `inactive` / `draft` / `archived`. The rules the articles state are
-  exception classes in `domains/exceptions/paywall.py` — `NotDraftPaywallCanNotBeChanged` (the frozen
-  -products rule), `PaywallInUseCannotBeRemoved` with `PaywallUsingInValue{placements, ab_tests}` (the two
-  archive blockers, confirmed exactly as `archive-paywalls` names them),
-  `PaywallMustHaveDefaultRemoteConfigError` and `PaywallShouldNotContainTheSameRemoteConfigsError` (the
-  locale rules behind `add-remote-config-locale`), and `PaywallBelongsToFlowError` — a paywall owned by a
-  flow cannot be edited through the legacy surface at all, which is the hard edge of this zone's
-  applicability.
+- **The legacy visual builder is a separate builder from the flow-era one** — its own menu tree,
+  preview, template library, **Test on device**, and localizations widget. A rule about where flow-era
+  builder labels come from does not answer a legacy-builder question.
+- **The legacy paywall's non-builder surface (paywall list, paywall form, paywall metrics) sits inside
+  the dashboard's A/B-test code.** That placement is historical, not a hint that these topics belong to
+  `ab-tests`. The same paywall form carries the web paywall section and the legacy→flow conversion entry
+  points (the recreate-as-flow button and the migrate-builder banner).
+- **The remote-config editor is shared by both generations** (JSON table, localization table, locale
+  picker, translation), plus a distinct deprecated remote-config view on the legacy paywall page. This is
+  why the two remote-config articles legitimately look alike on the dashboard side and diverge only in
+  the SDK — the shared editor is a fact about the UI, never a licence to share SDK text.
+- **Semantics are backend-owned** (backend code). Paywall **state is derived, never
+  stored**: **Archived** comes from the paywall being deleted, **Live** from its presence in a
+  non-deleted placement audience; the states are `live` / `inactive` / `draft` / `archived`. The rules
+  the articles state are backend errors: a non-draft paywall's products can't be changed (the
+  frozen-products rule); a paywall in use can't be archived, with the two blockers being placements and
+  A/B tests (confirmed exactly as `archive-paywalls` names them); a paywall must have a default remote
+  config and can't contain the same remote config twice (the locale rules behind
+  `add-remote-config-locale`); and a paywall owned by a flow cannot be edited through the legacy surface
+  at all, which is the hard edge of this zone's applicability.
 
-**The dashboard merge (read 2026-09-30, `dashboard-interface` branch `design-review/new-paywalls`, unmerged at the time; switch date `FLOWS_PAYWALLS_LAUNCH_AT = Date.UTC(2026, 9, 1)` in `shared/config/flowsPaywallsLaunch.ts`).** The standalone **Paywalls** menu item goes away; custom paywalls become the second tab of **Flows & Paywalls** (`widgets/FlowsPaywalls/`). Tab labels are **Flow & Paywall builder** (lowercase *b*, as-is) and **Custom Paywalls**, which `getCustomPaywallsTabLabel` renames **Custom Paywalls & Legacy** once `config.paywallCreated` is true. The URL stays `/paywalls`; the create button is **Create custom paywall**; the form breadcrumb is **Custom Paywalls / New paywall**. A *new* custom paywall hides **Builder & Generator** and **Legacy Builder** (`hideBuilderTabs={isCustomPaywallCreate}`, where `isCustomPaywallCreate = isMerged && isCreate && !isCopy`) — so a duplicate of a builder paywall keeps its builder tabs. The docs term for this zone's object is **custom paywall** (user decision 2026-09-30), replacing "remote config paywall" / "manual paywall" in prose; ids stay frozen. Re-check the labels once the branch reaches `origin/master`.
+**The dashboard merge (read 2026-09-30, before release; switch date October 1, 2026).** The standalone **Paywalls** menu item goes away; custom paywalls become the second tab of **Flows & Paywalls**. Tab labels are **Flow & Paywall builder** (lowercase *b*, as-is) and **Custom Paywalls**, which the dashboard renames **Custom Paywalls & Legacy** once the app has a paywall from the old Paywall Builder. The URL stays `/paywalls`; the create button is **Create custom paywall**; the form breadcrumb is **Custom Paywalls / New paywall**. A *new* custom paywall hides the **Builder & Generator** and **Legacy Builder** tabs, but a duplicate of a builder paywall keeps them. The docs term for this zone's object is **custom paywall** (user decision 2026-09-30), replacing "remote config paywall" / "manual paywall" in prose; ids stay frozen. Re-check the labels in the released dashboard.
 
-**Two source gaps to state rather than paper over.** The web paywall editor is **not ours**:
-`paywall-form/ui/WebPaywallSection/lib/webPaywallBuilder.ts` SSOs to `app.funnelfox.com/login/adapty`, so
+**Two source gaps to state rather than paper over.** The web paywall editor is **not ours**: the
+dashboard SSOs to `app.funnelfox.com/login/adapty`, so
 nothing inside that editor — Stripe key fields, hand-typed plans and prices, Publish vs Preview — has a
 registered source. Verify it in-product or with the team; never by analogy to the Adapty builder. And on
 **Unity and KMP**, flows exist in code on the beta branches only (zero flow symbols on `origin/main` for
@@ -174,7 +167,7 @@ readers and links it already has, so we correct it and we do not grow it.**
 | paywall-metrics | — | marketer | 3 | tutorial |
 | paywalls | entry | marketer | 0 | tutorial |
 | restore-paywall | — | marketer | 0 | tutorial |
-| web-paywall | entry | marketer | 9 | tutorial |
+| web-paywall | entry | marketer | 10 | tutorial |
 | web-paywall-configuration | — | marketer | 3 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -216,5 +209,5 @@ zones would be wrong.
 
 ## Gaps and misses
 
-- **Open (2026-09-30):** `add-remote-config-locale` step 3 says "Go to the **Remote config** tab", but `PaywallNavMenu` on `design-review/new-paywalls` has only General / Builder & Generator / Web Paywall / Legacy Builder tabs; `paywall-form/lib.ts` lists "Remote config" as a `PaywallMenu` *section* key. Looked for a tab by that label in `PaywallNavMenu.tsx`; did not check whether the section renders as a sub-tab inside General. Not changed.
+- **Open (2026-09-30):** `add-remote-config-locale` step 3 says "Go to the **Remote config** tab", but the pre-release custom paywall form showed only **General** / **Builder & Generator** / **Web Paywall** / **Legacy Builder** tabs, with remote config as a section rather than a tab. Did not check whether the section renders as a sub-tab inside **General**. Not changed.
 

@@ -1,14 +1,14 @@
 ---
 title: "Adapty 开发者 CLI 命令参考"
-description: "Adapty 开发者 CLI 命令参考，涵盖应用、产品、付费墙、流程和版位的配置。"
+description: "Adapty 开发者 CLI 命令参考，涵盖应用配置、产品、付费墙、流程、版位管理，从 RevenueCat 迁移，以及安装 Adapty 技能等功能。"
 metadataTitle: "开发者 CLI 命令参考 | Adapty 文档"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-本文列出了用于配置账户的 Adapty CLI 命令，涵盖应用、访问等级、产品、付费墙、流程、版位和市场细分，并介绍了各命令的参数、标志及可接受值。关于 Apple Ads 广告系列，请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference)。
+本文列出了用于配置 Adapty 账户的 CLI 命令——包括应用、访问等级、产品、付费墙、流程、版位和市场细分——以及迁移 RevenueCat 项目和安装 Adapty 技能的命令，并附有对应的参数、标志和可用值。如需了解 Apple 广告系列相关命令，请参阅 [Ads Manager 命令](developer-cli-ads-manager-reference)。
 
 :::link
-关于身份验证设置和令牌管理，请参阅[身份验证](developer-cli-authentication)。
+有关身份验证设置和令牌管理，请参阅[身份验证](developer-cli-authentication)。
 :::
 
 ## 全局标志 \{#global-flags\}
@@ -679,7 +679,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
 
 ## 市场细分 \{#segments\}
 
-[市场细分](segments)通过 CLI 只读访问。请在 [Adapty 看板](https://app.adapty.io)中创建和编辑它们。使用以下命令在配置版位目标受众时查找市场细分 ID。
+[市场细分](segments)根据用户画像属性对用户进行分组。使用以下命令创建市场细分，并在构建[版位目标受众](#audiences-shape)时查找市场细分 ID。若要基于 Apple Ads 广告系列、广告组或关键词创建市场细分，请改用 [`adapty asa segments create`](developer-cli-ads-manager-reference#segments)：它会自动查找 Apple ID，并按照 Ads Manager 的命名方式为市场细分命名。
 
 ### adapty 市场细分列表 \{#adapty-segments-list\}
 
@@ -697,30 +697,260 @@ adapty segments list --app <app-id>
 
 ### adapty segments get
 
-获取指定[市场细分](segments)的详细信息。
+获取特定[市场细分](segments)的详细信息。
 
 ```bash
 adapty segments get --app <app-id> <segment-id>
 ```
 
-| 参数 | 说明 |
+| 参数 | 描述 |
 |---|---|
 | `segment-id` | 市场细分 ID（UUID） |
 
-| 标志 | 必填 | 说明 |
+| 标志 | 必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 
-响应包含 `id`、`title` 和 `description`。过滤规则不通过此 API 暴露。
+响应包含 `id`、`title`、`description`、`filters`、`profile_count`、`refresh_in_progress`、`created_at` 和 `updated_at`。`list` 仅返回 `id`、`title` 和 `description`。
 
-## 身份验证 \{#auth\}
+### adapty segments create
+
+从一个或多个筛选条件创建[市场细分](segments)。
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--title` | 是 | 市场细分名称 |
+| `--filter` | 是 | 筛选规则，可重复使用。详见[筛选条件语法](#filter-syntax) |
+| `--description` | 否 | 市场细分描述 |
+
+用户只有在满足所有筛选条件时，才会匹配该市场细分。响应字段与 `segments get` 相同。`profile_count` 初始值为 `0`，市场细分创建完成后，Adapty 会重新计算该值。
+
+### adapty segments update
+
+替换现有[市场细分](segments)的标题、描述和筛选条件。
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| 参数 | 描述 |
+|---|---|
+| `segment-id` | 市场细分 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--title` | 是 | 市场细分标题 |
+| `--filter` | 是 | 筛选规则。可重复使用。参见[筛选语法](#filter-syntax) |
+| `--description` | 否 | 市场细分描述 |
+
+:::warning
+`segments update` 会替换整个市场细分。请传入所有要保留的筛选条件，而不仅仅是你要修改的那一个。若要查看当前筛选条件，请运行 `adapty segments get --app <app-id> <segment-id> --json`。
+:::
+
+#### 筛选条件语法 \{#filter-syntax\}
+
+每个 `--filter` 的格式为 `field:OPERATOR:value`。若要匹配多个值中的任意一个，请用逗号分隔：`ip_country:IN:US,CA`。
+
+| 操作符 | 值 | 示例 |
+|---|---|---|
+| `IN`, `NOT IN` | 一个或多个 | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | 一个 | `age:>:18` |
+| `BETWEEN` | 两个 | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | 无 | `age:IS NULL` |
+
+数字请直接以原始值传入，例如 `age:>:18`。Adapty 会对 `age`、`total_revenue_usd` 以及 float 类型的自定义属性进行数值转换。
+
+对于无法用简写形式表达的值，请将过滤条件以 JSON 对象的形式传入：
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty 会验证字段名、运算符和值类型，并对每个无效过滤器报告一条错误。如需查看现有过滤器的字段名和值格式，可对看板中创建的市场细分运行 `adapty segments get --app <app-id> <segment-id> --json`。
+
+## 迁移 \{#migrations\}
+
+将 RevenueCat 项目迁移到 Adapty：先迁移产品目录，再按需迁移商店事件和交易历史。Adapty 会将每次迁移作为一系列步骤执行，并告知你下一步可执行的操作，因此在每次操作前请先查看 `status`。完整流程请参阅[从 RevenueCat 迁移](migration-from-revenuecat)。
+
+除 `list`、`create`、`use`、`current` 和 `unuse` 之外，所有命令均支持迁移标志：
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `-m`, `--migration` | 否 | 迁移 ID。若未指定，CLI 将依次使用 `ADAPTY_MIGRATION` 环境变量，然后使用由 `create` 或 `use` 命令保存的迁移。 |
+
+### adapty migrations list
+
+列出您的迁移记录及可启动的迁移流程，按应用分组显示。
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+启动一次迁移并将其保存为当前迁移。
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--name` | `--name` 或 `--flow` 二选一 | 新 Adapty 应用的名称。启动目录迁移。不能与 `--flow` 或 `--app` 同时使用。 |
+| `--flow` | `--name` 或 `--flow` 二选一 | 在已有应用中启动的流程，格式与 `adapty migrations list` 显示的一致。需配合 `--app` 使用。 |
+| `--app` | 与 `--flow` 配合使用 | 应用 ID（UUID） |
+| `--no-select` | 否 | 创建迁移时不将其保存为当前迁移 |
+
+现有应用完成目录迁移后可用的流程：
+
+| 流程 | 描述 |
+|---|---|
+| `transactions` | 通过每日 RevenueCat 云导出功能导入历史交易记录 |
+| `transactions_support` | 通过 RevenueCat 支持团队和 Adapty 支持团队导入历史交易记录，适用于没有云导出功能的 RevenueCat 方案 |
+| `apple_events` | 将 App Store 通知转发给 Adapty，同时 RevenueCat 继续接收这些通知 |
+| `google_events` | 将 Adapty 订阅到 RevenueCat 用于 Google Play 通知的 Pub/Sub 主题 |
+| `code` | 让你的编程代理在应用的某个代码库中替换 RevenueCat SDK |
+| `integrations` | 让你的编程代理在应用代码中找出需要在 Adapty 中配置的分析、归因和消息推送工具 |
+| `paywall_design` | 让你的编程代理在目录迁移创建的流程中重建 RevenueCat 付费墙设计 |
+
+### adapty migrations use
+
+将某个迁移设置为当前迁移，这样其他命令就不需要再加 `-m` 参数了。
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `migration-id` | 从 `adapty migrations list` 获取的迁移 ID |
+
+CLI 在保存 ID 前会先验证你是否有权限访问该迁移。保存后的迁移绑定当前 token，并在所有终端中生效。
+
+### adapty migrations current
+
+显示当前迁移及其来源：`ADAPTY_MIGRATION` 环境变量或已保存的选择。
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+清除已保存的迁移记录。在 shell 中设置的 `ADAPTY_MIGRATION` 值会一直生效，直到你取消设置为止。
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+显示迁移的状态、存在的问题以及可执行的后续操作。
+
+```bash
+adapty migrations status
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--wait` | 否 | 轮询直到迁移状态发生变化，然后返回最新状态 |
+| `--timeout` | 否 | `--wait` 的轮询时长：1–600 秒，默认 120 秒。接受 `300`、`300s` 或 `5m`。需配合 `--wait` 使用。 |
+
+使用 `--json` 时，`next_actions` 和 `available_actions` 会列出每个操作的 ID、所读取的资源、`input_schema` 以及 `confirm` 文本。
+
+退出码 `0` 表示请求成功，并不代表迁移本身成功。请检查响应中的 `migration.state`。
+
+### adapty migrations steps
+
+显示迁移清单及每个步骤的状态。
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+列出当前可读取的资源，或读取某个特定资源。
+
+```bash
+adapty migrations show [resource]
+```
+
+| 参数 | 描述 |
+|---|---|
+| `resource` | 资源名称，例如 `apps`、`mapping`、`report` 或 `export-config`。省略此参数可列出当前步骤中可用的资源。 |
+
+### adapty migrations run
+
+运行 `adapty migrations status` 中的某个操作。
+
+```bash
+adapty migrations run <action-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `action-id` | 来自 `adapty migrations status` 中 `next_actions` 或 `available_actions` 的操作 ID |
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--input` | 否 | 以 JSON 对象形式传入的操作输入，需符合该操作的 `input_schema`。若不提供输入，CLI 将发送 `{}`。 |
+| `--input-file` | 否 | 操作输入文件的路径，或使用 `-` 从标准输入读取。不能与 `--input` 同时使用。 |
+| `-y`, `--yes` | 操作包含 `confirm` 文本时必填 | 阅读操作的 `confirm` 文本后确认执行。无交互式提示。 |
+| `--open` | 否 | 即使在管道模式或使用 `--json` 时，也打开操作的链接 |
+| `--no-browser` | 否 | 打印操作的链接，但不打开浏览器 |
+
+Actions 分为三种类型：
+
+- **输入操作**将您的数据发送至 Adapty，例如要迁移的 RevenueCat 应用或您的映射决策。
+- **外部操作**在 Adapty 看板中打开一个页面，例如粘贴 RevenueCat 密钥 API key。完成页面操作后，检查 `status`。
+- **Agent 操作**（例如 `migrate_code`）是交给您的编程 Agent 执行的任务。请从应用的 Git 仓库中运行这些操作：CLI 会将迁移数据保存在 `.git/adapty/<migration-id>/` 目录下，并向 Agent 打印相关说明。Agent 通过再次运行该操作并附带 `--input` 参数来报告结果。
+
+### adapty migrations close
+
+完成或取消迁移。操作后无法重新打开。
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` 将迁移标记为已完成；`cancel` 放弃迁移 |
+| `-y`, `--yes` | Yes | 确认关闭操作 |
+
+## 技能 \{#skills\}
+
+### adapty skills install
+
+将 Adapty 技能安装到本机的编程智能体中。
+
+```bash
+adapty skills install
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--agent` | No | Agent to install into: `claude-code`, `codex`, or `gemini-cli`. Repeat the flag for several agents. |
+| `-y`, `--yes` | No | Install into every agent found without asking. Required when the CLI finds several agents and can't ask, for example with `--json`. |
+
+The CLI looks for Claude Code, Codex, and Gemini CLI on `PATH`. If it finds none, it asks whether to run `npx skills@1.7.0 add adaptyteam/adapty-skills --all --global`, which covers other agents. Restart the agent to load the skills.
+
+## 认证 \{#auth\}
 
 | 命令 | 描述 |
 |---|---|
-| `adapty auth login` | 通过浏览器使用设备流进行身份验证 |
-| `adapty auth logout` | 清除本地存储的凭据 |
-| `adapty auth whoami` | 向服务器验证令牌并显示用户信息 |
-| `adapty auth status` | 不发起服务器调用，显示本地身份验证状态 |
-| `adapty auth revoke` | 在服务器端撤销令牌并在本地清除 |
+| `adapty auth login` | 通过浏览器使用设备流程进行身份验证 |
+| `adapty auth logout` | 清除本地存储的凭据及已保存的迁移记录 |
+| `adapty auth whoami` | 通过服务器验证令牌并显示用户信息 |
+| `adapty auth status` | 在不请求服务器的情况下显示本地认证状态 |
+| `adapty auth revoke` | 在服务器端撤销令牌，并清除本地令牌及已保存的迁移记录 |
 
-有关每个命令的完整详情，请参阅[身份验证](developer-cli-authentication)。
+各命令的详细说明请参阅[认证](developer-cli-authentication)。

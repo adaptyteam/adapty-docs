@@ -335,7 +335,7 @@ Discrepancies vs the Android canon (verified against `adapty/api/adapty.klib.api
 
 ### On the pre-code KMP assumptions file
 
-`~/Documents/kmp-v4-api-assumptions.md` (2026-07-10) drove the pre-code v4 drafting. Now that real
+A local working-notes file of KMP v4 API assumptions (2026-07-10, not in this repo) drove the pre-code v4 drafting. Now that real
 code exists, its Conf-M call on `hasViewConfiguration` ("removed") is **confirmed wrong for 4.1** —
 see point 4. Everything else touched by this pass held up: `updateExternalAttribution` shape, the
 `AdaptyConfig.Builder` idiom, and the flow/paywall renames all match. The file has not been rewritten;

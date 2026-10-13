@@ -1,13 +1,13 @@
 ---
-title: "Commandes Ads Manager pour l'Adapty Developer CLI"
-description: "Référence de toutes les commandes adapty asa — campagnes, groupes d'annonces, mots-clés, annonces, automatisations et métriques."
+title: "Commandes Ads Manager pour la CLI développeur Adapty"
+description: "Référence pour toutes les commandes adapty asa — campagnes, groupes d'annonces, mots-clés, publicités, segments, automatisations, métriques et historique des modifications."
 metadataTitle: "Commandes CLI Ads Manager | Documentation Adapty"
 ---
 
-Cet article liste toutes les commandes [Ads Manager](adapty-ads-manager) de l'Adapty CLI, avec leurs arguments, indicateurs et valeurs acceptées. Les commandes Ads Manager se trouvent sous le topic `adapty asa`.
+Cet article liste toutes les commandes [Ads Manager](adapty-ads-manager) dans la CLI Adapty, avec leurs arguments, indicateurs et valeurs acceptées. Les commandes Ads Manager sont regroupées sous le topic `adapty asa`.
 
 :::link
-Pour les prérequis, les bonnes pratiques d'écriture et des exemples orientés tâches, consultez [Gérer Ads Manager depuis la CLI](developer-cli-ads-manager).
+Pour les prérequis, les bonnes pratiques d'écriture et des exemples concrets, consultez [Gérer Ads Manager depuis la CLI](developer-cli-ads-manager).
 :::
 
 Ces commandes nécessitent un compte Apple Ads connecté et un abonnement Ads Manager actif. Exécutez [`adapty asa whoami`](#adapty-asa-whoami) pour vérifier les deux. Pour le reste de la CLI, consultez la [référence des commandes](developer-cli-reference).
@@ -34,10 +34,10 @@ Toutes les commandes qui modifient votre compte acceptent ces indicateurs :
 
 | Indicateur | Description |
 |---|---|
-| `--yes`, `-y` | Applique sans demander de confirmation. Requis lorsque la sortie est redirigée ou que `--json` est utilisé |
+| `--yes`, `-y` | Applique sans demander de confirmation. Obligatoire quand la sortie est redirigée ou que `--json` est utilisé |
 | `--idempotency-key` | Clé fixe pour cette écriture. Une répétition avec la même clé et le même corps dans les 24 heures renvoie le résultat stocké au lieu d'appliquer à nouveau la modification |
 
-Les commandes Ads Manager ne prennent pas d'indicateur `--app`. La portée est l'entreprise à laquelle appartient votre token. `--app` existe sur certaines commandes `list` uniquement comme filtre.
+Les commandes Ads Manager ne prennent pas d'indicateur `--app`. La portée est la société à laquelle appartient votre token. `--app` existe sur certaines commandes `list` uniquement comme filtre. Les commandes [segments](#segments) font exception : là, `--app` désigne l'application Adapty à laquelle appartient le segment.
 
 ## Filtres de liste \{#list-filters\}
 
@@ -528,7 +528,18 @@ adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --d
 
 Accepte les [options de pagination](#global-flags) ainsi que les [filtres de liste](#list-filters) `--campaign-group`, `--app`, `--campaign`, `--ad-group` et `--search`.
 
-Cette commande partage un pool d'analyse avec [`asa metrics`](#metrics). Voir [Erreurs](#errors).
+En plus de ses métriques de performance, chaque ligne de terme de recherche contient les insights Apple pour ce terme :
+
+| Champ | Valeur |
+|---|---|
+| `impression_share_all`, `impression_share_first` | Part d'impression dans n'importe quelle position publicitaire, ou en première position |
+| `impression_midpoint_all`, `impression_midpoint_first` | Part d'impression exprimée en pourcentage unique |
+| `rank_all`, `rank_first` | Classement de votre application par rapport aux autres applications pour ce terme, en n'importe quelle position publicitaire ou en première position |
+| `search_popularity` | Popularité de la recherche de 1 à 5 |
+
+Chaque champ est `null` lorsqu'Apple ne dispose d'aucune donnée pour ce terme. Voir [Insights](adapty-ads-manager-metrics#insights) pour la définition d'Apple de ces valeurs.
+
+Cette commande partage un pool d'analyse avec [`asa metrics`](#metrics). Voir [Errors](#errors).
 
 ## Publicités \{#ads\}
 
@@ -627,6 +638,70 @@ adapty asa product-pages sync --adam-id 123456
 | `--adam-id` | Limite l'actualisation à une seule application. Omettez ce flag pour couvrir toutes les applications |
 
 L'actualisation est mise en file d'attente plutôt qu'exécutée immédiatement, et la commande confirme avec `Sync queued.` Si la même actualisation est déjà en cours, elle retourne `Already running; nothing new was queued.` à la place.
+
+## Segments \{#segments\}
+
+Ces commandes créent des [segments](segments) Adapty à partir de campagnes Apple Ads, de groupes d'annonces ou de mots-clés, de la même manière que **Create segment from…** dans [Ads Manager](ads-manager-create-segments). Utilisez les segments comme audiences dans les placements et les tests A/B pour afficher un paywall différent aux utilisateurs provenant d'une campagne spécifique.
+
+Chaque segment comporte un filtre d'attribution sur les identifiants Apple des entités que vous choisissez. La CLI recherche ces identifiants, vous passez donc les UUID affichés par les commandes `list`.
+
+Contrairement aux autres commandes `adapty asa`, celles-ci acceptent `--app` : l'ID de l'application Adapty à laquelle appartient le segment, disponible via [`adapty apps list`](developer-cli-reference#adapty-apps-list). Elles n'acceptent pas `--idempotency-key`. Pour les segments avec d'autres filtres, comme le pays ou la date d'installation, utilisez [`adapty segments create`](developer-cli-reference#adapty-segments-create).
+
+### adapty asa segments create
+
+Créez un segment à partir de campagnes, groupes d'annonces ou mots-clés.
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id>
+adapty asa segments create --app <app-id> --ad-group <ad-group-id> --keyword <keyword-id> --keyword <other-keyword-id>
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application Adapty (UUID) |
+| `--campaign` | Un type d'entité | ID de campagne (UUID). Répétable |
+| `--ad-group` | Un type d'entité | ID de groupe d'annonces (UUID). Répétable. Avec `--keyword`, indiquez exactement un : le groupe d'annonces contenant les mots-clés |
+| `--keyword` | Un type d'entité | ID de mot-clé (UUID). Répétable. Nécessite un `--ad-group` |
+| `--title` | Non | Titre du segment. Par défaut au format Ads Manager, par exemple `[ASA] Campaign: <name>` |
+| `--description` | Non | Description du segment. Par défaut au format Ads Manager |
+
+Construisez chaque segment à partir d'un seul type d'entité. Passer à la fois `--campaign` et `--ad-group`, ou `--campaign` avec `--keyword`, échoue avec le code de sortie `2` avant l'envoi de toute requête. Plusieurs entités d'un même type produisent un segment qui correspond aux utilisateurs provenant de n'importe laquelle d'entre elles.
+
+Conservez le titre par défaut à moins d'en avoir besoin d'un autre. Ads Manager reconnaît ses segments grâce au préfixe `[ASA]`, et [`asa segments list`](#adapty-asa-segments-list) liste uniquement les segments avec ce préfixe.
+
+La réponse contient l'ensemble du segment, y compris `id` et `filters`. `profile_count` commence à `0`, et Adapty le recalcule après la création du segment.
+
+### adapty asa segments update
+
+Remplace les campagnes, groupes d'annonces ou mots-clés d'un segment existant.
+
+```bash
+adapty asa segments update <segment-id> --app <app-id> --campaign <campaign-id> --campaign <other-campaign-id>
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | ID du segment (UUID), obtenu via `asa segments list` ou `adapty segments list` |
+
+Accepte les mêmes flags que [`asa segments create`](#adapty-asa-segments-create). Le filtre du segment est remplacé par les entités que vous fournissez. Le titre et la description restent inchangés, sauf si vous passez `--title` ou `--description`.
+
+### adapty asa segments list
+
+Listez les segments créés à partir d'entités Apple Ads — ceux dont le titre commence par `[ASA]`.
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application Adapty (UUID) |
+| `--campaign` | Non | Ne conserver que les segments construits à partir de cette campagne (UUID) |
+| `--ad-group` | Non | Ne conserver que les segments construits à partir de ce groupe d'annonces (UUID) |
+
+Passez `--campaign` ou `--ad-group`, mais pas les deux. Pour éviter de créer un second segment pour la même campagne, exécutez cette commande avant `asa segments create` : un résultat vide signifie que la campagne n'a pas encore de segment.
+
+La commande lit les 100 premiers segments de l'application.
 
 ## Automations \{#automations\}
 
@@ -789,6 +864,16 @@ adapty asa metrics --entity campaign --date-from 2026-07-01 --date-to 2026-07-31
 
 `--metric` prend les noms de métriques suivis par Ads Manager, dans la nomenclature du tableau de bord — par exemple `spend`, `taps` ou `gross_roas`. Consultez [Métriques](adapty-ads-manager-metrics) pour la liste complète et le mode de calcul de chacune. Un nom inexistant échoue en affichant les noms valides dans le message d'erreur.
 
+Avec `--entity keyword`, `--metric` accepte aussi les métriques réservées aux mots-clés. Apple reporte la part d'impressions et le rang pour n'importe quelle position d'annonce et pour la première position d'annonce, ce qui donne deux versions de chaque : `_all` et `_first`. Voir [Insights](adapty-ads-manager-metrics#insights) pour la définition d'Apple.
+
+| Métrique | Valeur |
+|---|---|
+| `impression_midpoint_all`, `impression_midpoint_first` | Part d'impression sur la période de rapport, en pourcentage |
+| `rank_all`, `rank_first` | Classement de votre application par rapport aux autres applications pour le mot-clé. La dernière valeur, indépendamment de `--date-from` et `--date-to` |
+| `search_popularity` | Popularité de recherche de 1 à 5 |
+
+Un mot-clé sans données de rapport renvoie `0` pour ces métriques. Depuis CLI 0.9.2, ces noms remplacent `rank` et `impression_midpoint`.
+
 Chaque métrique que vous nommez est calculée sur l'ensemble du niveau d'entité avant que la page ne soit découpée, donc demandez les colonnes dont vous avez besoin plutôt que tout le catalogue. `subscribers` et `paid_subscribers` comptent les profils uniques par entité, ce qui coûte environ dix-sept fois plus qu'un appel dépenses-et-installations classique ; `arppu` et `arpas` aussi, car ils en sont dérivés. Pour tout `--entity`, ces quatre noms nécessitent `--campaign` ou `--ad-group` pour affiner l'appel :
 
 ```bash
@@ -835,11 +920,11 @@ adapty asa metrics overview --entity campaign --date-from 2026-07-01 --date-to 2
 | `--metric` | Non | Nom de la métrique, répétable. Omettez ce paramètre pour toutes les métriques |
 | `--by-days` | Non | Fenêtre de renouvellement en jours pour les métriques de cohorte, répétable. Maximum 16 par appel |
 
-Cette commande renvoie les totaux pour l'ensemble du niveau d'entité ainsi qu'une série par période, ce qui permet de répondre à la question « combien ai-je dépensé ou gagné au total » en un seul appel. Elle ne comporte ni indicateurs de tri ni pagination.
+Cette commande renvoie les totaux pour l'ensemble du niveau d'entité ainsi qu'une série par période, répondant ainsi à la question « combien ai-je dépensé ou gagné au total » en un seul appel. Elle ne dispose ni d'options de tri ni de pagination.
 
-Sur cette commande, `--metric` accepte uniquement les racines de cohorte — `revenue`, `roas` et `arpu` — et non leurs variantes `gross_`, `proceeds_` ou `net_`.
+Sur cette commande, `--metric` accepte uniquement les racines de cohorte — `revenue`, `roas` et `arpu` — et non leurs variantes `gross_`, `proceeds_` ou `net_`. Elle n'accepte pas non plus les [métriques réservées aux mots-clés](#adapty-asa-metrics).
 
-La durée de la période de rapport est limitée par `--period-unit` :
+La durée de la période de reporting est plafonnée par `--period-unit` :
 
 | `--period-unit` | Période maximale |
 |---|---|
@@ -867,19 +952,75 @@ La commande affiche trois blocs : les totaux de l'analyse, les meilleures applic
 
 Le premier appel pour un ensemble d'applications peut prendre plusieurs dizaines de secondes pendant la préparation des données. Les appels suivants pour les mêmes applications sont plus rapides.
 
+## Historique des modifications \{#change-history\}
+
+L'historique des modifications est récupéré en direct depuis l'API Apple Ads. Adapty ne le stocke pas, et Apple le conserve pendant 6 mois. Il couvre chaque modification apportée à l'organisation, qu'elle ait été effectuée directement dans Apple Ads, par le support Apple ou via d'autres outils API.
+
+### adapty asa change-history list
+
+Liste les modifications apportées dans une organisation Apple Ads, de la plus récente à la plus ancienne.
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--campaign-group` | Oui | Organisation à lire (UUID issu de [`orgs list`](#adapty-asa-orgs-list)). Une organisation par appel. Pour en lire plusieurs, exécutez la commande pour chacune |
+| `--date-from` | Non | Début de la période (`YYYY-MM-DD`). Par défaut : il y a 7 jours |
+| `--date-to` | Non | Fin de la période (`YYYY-MM-DD`). Par défaut : aujourd'hui. La période ne peut pas dépasser 14 jours |
+| `--entity-type` | Non | `Campaign`, `AdGroup`, `Keyword`, `NegativeKeyword`, `Ad`, `Creative`, `LocationGroup`, `Org` ou `AdAccount`. Répétable. Par défaut : tous les types sauf `Org` et `AdAccount`. `Org` et `AdAccount` ne peuvent pas être combinés avec les autres types |
+| `--event-type` | Non | `CREATE`, `UPDATE` ou `DELETE`. Répétable |
+| `--user-type` | Non | Qui a effectué la modification : `CUSTOMER` (dans Apple Ads), `CUSTOMER_API` (via l'API Apple Ads) ou `APPLE_SUPPORT`. Répétable |
+| `--campaign`, `--ad-group`, `--entity-id` | Non | Identifiants numériques Apple de la campagne, du groupe d'annonces ou de l'entité modifiée. Répétable |
+| `--user` | Non | Identifiant utilisateur Apple de la personne ayant effectué la modification. Répétable |
+| `--txn` | Non | Identifiant de transaction Apple. Répétable |
+| `--fields` | Non | Développe chaque modification en une ligne par champ modifié, avec ses anciennes et nouvelles valeurs |
+
+:::important
+Contrairement aux [filtres de liste](#list-filters) des autres commandes, `--campaign`, `--ad-group` et `--entity-id` prennent les identifiants numériques d'Apple, tels qu'ils apparaissent dans les lignes de l'historique des modifications — et non des UUIDs. De même, `modified_by` dans chaque ligne est un identifiant utilisateur Apple, et non un e-mail.
+:::
+
+Chaque ligne correspond à une transaction : qui l'a effectuée (`modified_by`, `user_type`), quand (`event_time`), et les entités qu'elle a modifiées. Chaque entité porte un `detail_id` pour [`change-history get`](#adapty-asa-change-history-get).
+
+Avec `--fields`, la taille de page est limitée à 10 par défaut, et une valeur `--page-size` plus grande est refusée. Une page nécessitant plus de 20 requêtes échoue : affinez les filtres, ou supprimez `--fields` et lisez les modifications individuellement avec `change-history get`.
+
+Accepte les [drapeaux de pagination](#global-flags). `--page` × `--page-size` ne peut pas dépasser 1000.
+
+### adapty asa change-history get
+
+Affiche les modifications au niveau des champs d'une entité dans une transaction.
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `detail-id` | `detail_id` issu de [`change-history list`](#adapty-asa-change-history-list), sous la forme `EntityType.entityId.txnId` |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--campaign-group` | Oui | Organisation à laquelle appartient la modification. Récupérez-la depuis `campaign_group_id` dans la ligne de la liste |
+
+La réponse liste chaque champ modifié avec ses `old_values` et `new_values`, ainsi que les métadonnées de l'entité dans `entity_metadata`. Un `detail_id` qu'Apple ne reconnaît pas renvoie `404`.
+
 ## Erreurs \{#errors\}
 
 | Statut | Code | Signification |
 |---|---|---|
-| `402` | `ads_manager_subscription_required` | La société n'a pas d'abonnement Ads Manager actif |
-| `404` | — | L'entité n'existe pas ou appartient à une autre société |
+| `402` | `ads_manager_subscription_required` | L'entreprise n'a pas d'abonnement Ads Manager actif |
+| `403` | `cli_ad_account_unreadable` | `change-history` ne peut pas lire l'organisation : le token Apple Ads est révoqué, l'organisation n'est plus liée, ou Apple a refusé l'accès |
+| `404` | — | L'entité n'existe pas, ou elle appartient à une autre entreprise |
 | `409` | `cli_idempotency_in_progress` | Une écriture avec la même clé d'idempotence est toujours en cours |
 | `422` | `cli_idempotency_key_reuse` | La même clé d'idempotence a été utilisée avec un corps de requête différent |
 | `422` | `cli_metric_scope_too_wide` | Une métrique de comptage de profils a été demandée sans `--campaign` ni `--ad-group` |
 | `422` | `cli_response_too_large` | Une page `metrics` dépasserait 5000 lignes de ventilation |
-| `429` | `cli_analytics_busy` | Le pool d'analyse est occupé, ou un autre build de pool de mots-clés pour la société est toujours en cours. Le délai d'attente est indiqué dans l'en-tête `Retry-After` |
+| `429` | `cli_analytics_busy` | Le pool d'analyse est occupé, ou une autre construction de pool de mots-clés pour l'entreprise est toujours en cours. Le délai d'attente est dans l'en-tête `Retry-After` |
 | `429` | `cli_cooldown_active` | Trop de requêtes rejetées ont mis le token en période de refroidissement |
+| `429` | `cli_upstream_rate_limited` | Apple a limité le débit d'une requête `change-history`. Le délai d'attente d'Apple est dans l'en-tête `Retry-After` |
+| `504` | `cli_read_timeout` | Une requête `change-history` a pris plus de 50 secondes. Réduisez la période ou les filtres |
 
-Les métriques et la liste des termes de recherche partagent un seul budget d'appels par entreprise : 5 appels par minute, et au maximum 2 sur 10 secondes. Une rafale de 20 requêtes rejetées en 5 minutes déclenche un blocage progressif de 5 minutes, puis 30 minutes, puis 3 heures. Relancer des requêtes pendant la pause ne l'allonge pas, mais la solution est de corriger la requête défaillante plutôt que de la répéter.
+Les métriques et la liste des termes de recherche partagent un même budget d'appels API par entreprise : 5 appels par minute, et au plus 2 toutes les 10 secondes. `change-history` dispose de son propre budget : 30 appels par minute, au plus 5 toutes les 10 secondes, et une seule requête à la fois par entreprise. Une rafale de 20 requêtes rejetées en 5 minutes déclenche une période de refroidissement progressive : 5 minutes, puis 30 minutes, puis 3 heures. Effectuer de nouvelles tentatives pendant la pause ne la prolonge pas, mais la solution consiste à corriger la requête défaillante plutôt que de la répéter.
 
-La CLI gère les courtes attentes automatiquement. Sur un `429` qui n'est pas un blocage, si `Retry-After` est inférieur ou égal à 60 secondes, la commande attend ce délai et réessaie une fois, en signalant l'attente sur la sortie d'erreur standard.
+L'interface CLI gère les courtes attentes pour vous. En cas de `429` qui n'est pas un refroidissement, si `Retry-After` est inférieur ou égal à 60 secondes, la commande attend ce délai et réessaie une fois, en signalant l'attente sur la sortie d'erreur standard.
