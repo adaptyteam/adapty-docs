@@ -1,13 +1,13 @@
 ---
-title: "Adapty Developer CLI の Ads Manager コマンド"
-description: "adapty asa コマンドのリファレンス — キャンペーン、広告グループ、キーワード、広告、オートメーション、指標について。"
-metadataTitle: "Ads Manager CLI コマンド | Adapty ドキュメント"
+title: "Adapty Developer CLIのAds Managerコマンド"
+description: "adapty asaコマンドの完全リファレンス — キャンペーン、広告グループ、キーワード、広告、自動化、指標、変更履歴。"
+metadataTitle: "Ads Manager CLIコマンド | Adapty ドキュメント"
 ---
 
-この記事では、Adapty CLI における [Ads Manager](adapty-ads-manager) のすべてのコマンドを、引数・フラグ・使用可能な値とともに説明します。Ads Manager コマンドは `adapty asa` トピック配下にあります。
+この記事では、Adapty CLIの[Ads Manager](adapty-ads-manager)コマンドをすべて一覧表示し、引数、フラグ、および使用可能な値を説明します。Ads Managerコマンドは`adapty asa`トピック配下にあります。
 
 :::link
-前提条件、安全な書き込み操作、タスクベースの使用例については、[CLI から Ads Manager を管理する](developer-cli-ads-manager) を参照してください。
+前提条件、安全な書き込み方法、およびタスクベースの例については、[CLIからAds Managerを管理する](developer-cli-ads-manager)を参照してください。
 :::
 
 これらのコマンドを使用するには、Apple Ads アカウントの連携と有効な Ads Manager サブスクリプションが必要です。両方の確認は [`adapty asa whoami`](#adapty-asa-whoami) を実行してください。その他の CLI コマンドについては、[コマンドリファレンス](developer-cli-reference)を参照してください。
@@ -888,19 +888,75 @@ adapty asa competitors summary --app-ids 1668337467,6503873027
 
 あるアプリセットに対する最初の呼び出しは、データの準備中に数十秒かかることがあります。同じアプリへの以降の呼び出しはより速く返ります。
 
+## 変更履歴 \{#change-history\}
+
+変更履歴は Apple Ads API からリアルタイムで取得されます。Adapty はこのデータを保存せず、Apple 側では6か月間保持されます。Apple Ads で直接行われた変更、Apple サポートによる変更、その他の API ツールによる変更など、組織内のすべての変更が記録されます。
+
+### adapty asa change-history list
+
+1つのApple Ads組織内で行われた変更を、新しい順に一覧表示します。
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--campaign-group` | Yes | 読み取る組織（[`orgs list`](#adapty-asa-orgs-list) の UUID）。1回の呼び出しにつき1組織。複数の組織を読み取る場合は、それぞれに対してコマンドを実行してください |
+| `--date-from` | No | 期間の開始日（`YYYY-MM-DD`）。デフォルト：7日前 |
+| `--date-to` | No | 期間の終了日（`YYYY-MM-DD`）。デフォルト：今日。期間は最大14日間 |
+| `--entity-type` | No | `Campaign`、`AdGroup`、`Keyword`、`NegativeKeyword`、`Ad`、`Creative`、`LocationGroup`、`Org`、または `AdAccount`。繰り返し指定可能。デフォルト：`Org` と `AdAccount` を除くすべてのタイプ。`Org` と `AdAccount` は他のタイプと組み合わせることはできません |
+| `--event-type` | No | `CREATE`、`UPDATE`、または `DELETE`。繰り返し指定可能 |
+| `--user-type` | No | 変更を行ったユーザー：`CUSTOMER`（Apple Ads 内）、`CUSTOMER_API`（Apple Ads API 経由）、または `APPLE_SUPPORT`。繰り返し指定可能 |
+| `--campaign`、`--ad-group`、`--entity-id` | No | キャンペーン、広告グループ、または変更されたエンティティの Apple の数値 ID。繰り返し指定可能 |
+| `--user` | No | 変更を行った人の Apple ユーザー ID。繰り返し指定可能 |
+| `--txn` | No | Apple のトランザクション ID。繰り返し指定可能 |
+| `--fields` | No | 各変更を変更されたフィールドごとに1行に展開し、変更前後の値を表示します |
+
+:::important
+[他のコマンドのリストフィルター](#list-filters)とは異なり、`--campaign`、`--ad-group`、`--entity-id` はAppleの数値IDを受け取ります（変更履歴の行に表示されているもの）。UUIDではありません。同様に、各行の `modified_by` はAppleのユーザーIDであり、メールアドレスではありません。
+:::
+
+各行は1つのトランザクションを表します。変更者（`modified_by`、`user_type`）、変更日時（`event_time`）、および変更されたエンティティが含まれます。すべてのエンティティには [`change-history get`](#adapty-asa-change-history-get) 用の `detail_id` が付与されています。
+
+`--fields` を使用した場合、ページサイズはデフォルトで10になり、それより大きな `--page-size` は拒否されます。20件を超えるルックアップが必要なページは失敗します。フィルターを絞り込むか、`--fields` を外して `change-history get` で個別の変更を読み取ってください。
+
+[ページネーションフラグ](#global-flags)を使用できます。`--page` × `--page-size` は1000を超えることはできません。
+
+### adapty asa change-history get
+
+1つのトランザクションにおける1エンティティのフィールドレベルの変更を表示します。
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `detail-id` | [`change-history list`](#adapty-asa-change-history-list) からの `detail_id`。`EntityType.entityId.txnId` の形式 |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--campaign-group` | はい | 変更が属する組織。リスト行の `campaign_group_id` から取得 |
+
+レスポンスには、変更された各フィールドの `old_values` と `new_values`、およびエンティティのメタデータ `entity_metadata` が含まれます。Apple に記録のない `detail_id` の場合は `404` が返されます。
+
 ## エラー \{#errors\}
 
 | ステータス | コード | 意味 |
 |---|---|---|
-| `402` | `ads_manager_subscription_required` | 会社に有効な Ads Manager サブスクリプションがない |
+| `402` | `ads_manager_subscription_required` | 会社にアクティブな Ads Manager サブスクリプションがない |
+| `403` | `cli_ad_account_unreadable` | `change-history` が組織を読み取れない: Apple Ads トークンが失効している、組織のリンクが解除されている、または Apple がアクセスを拒否した |
 | `404` | — | エンティティが存在しないか、別の会社に属している |
-| `409` | `cli_idempotency_in_progress` | 同じ冪等性キーを持つ書き込みが実行中 |
+| `409` | `cli_idempotency_in_progress` | 同じ冪等性キーによる書き込みがまだ実行中 |
 | `422` | `cli_idempotency_key_reuse` | 同じ冪等性キーが異なるリクエストボディで使用された |
 | `422` | `cli_metric_scope_too_wide` | `--campaign` または `--ad-group` なしでプロファイルカウント指標がリクエストされた |
-| `422` | `cli_response_too_large` | `metrics` ページが 5000 行のブレークダウン行を超える |
-| `429` | `cli_analytics_busy` | アナリティクスプールがビジー状態、またはその会社の別のキーワードプールビルドが実行中。待機時間は `Retry-After` ヘッダーに記載 |
-| `429` | `cli_cooldown_active` | 拒否されたリクエストが多すぎるため、トークンがクールダウン状態になっている |
+| `422` | `cli_response_too_large` | `metrics` ページが 5000 件のブレークダウン行を超える |
+| `429` | `cli_analytics_busy` | アナリティクスプールがビジー状態、またはその会社の別のキーワードプールビルドがまだ実行中。待機時間は `Retry-After` ヘッダーに記載 |
+| `429` | `cli_cooldown_active` | 拒否されたリクエストが多すぎてトークンがクールダウン状態になった |
+| `429` | `cli_upstream_rate_limited` | Apple が `change-history` リクエストをレート制限した。Apple からの待機時間は `Retry-After` ヘッダーに記載 |
+| `504` | `cli_read_timeout` | `change-history` リクエストが 50 秒を超えた。期間またはフィルターを絞り込んでください |
 
-指標と検索語リストは、1社あたりの分析APIバジェットを共有します。1分あたり5回の呼び出し、かつ10秒間に最大2回までです。5分以内に20件のリクエストが拒否されると、5分→30分→3時間と段階的にクールダウンが始まります。一時停止中に再試行してもクールダウンは延長されませんが、失敗したリクエストを繰り返すのではなく、修正することが解決策です。
+指標と検索語リストは1社あたりの分析APIバジェットを共有します。制限は1分間に5回、かつ10秒間に最大2回です。`change-history` には独自のバジェットがあり、1分間に30回、10秒間に最大5回、1社あたり同時リクエスト1件までとなっています。5分以内に20件の拒否リクエストが発生すると、段階的なクールダウンが始まり、5分→30分→3時間と延長されます。一時停止中にリクエストを再試行しても停止時間は延長されませんが、同じリクエストを繰り返すのではなく、失敗しているリクエストを修正することが解決策です。
 
-CLIは短い待機を自動で処理します。クールダウン以外の`429`レスポンスで、`Retry-After`が60秒以下の場合、コマンドはその時間だけ待機してから1回リトライし、標準エラーに待機時間を出力します。
+CLIは短い待機を自動で処理します。クールダウンではない`429`エラーが返された場合、`Retry-After`が60秒以下であれば、その時間だけ待機してから1回リトライし、待機中である旨を標準エラー出力に表示します。
