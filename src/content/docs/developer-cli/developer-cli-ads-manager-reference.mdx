@@ -1,6 +1,6 @@
 ---
 title: "Ads Manager commands for the Adapty Developer CLI"
-description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, automations, and metrics."
+description: "Reference for every adapty asa command — campaigns, ad groups, keywords, ads, automations, metrics, and change history."
 metadataTitle: "Ads Manager CLI Commands | Adapty Docs"
 ---
 
@@ -888,11 +888,65 @@ The command prints three blocks: the totals for the analysis, the top apps by pe
 
 The first call for a set of apps can take tens of seconds while the data is prepared. Later calls for the same apps return faster.
 
+## Change history \{#change-history\}
+
+Change history comes live from the Apple Ads API. Adapty does not store it, and Apple keeps it for 6 months. It covers every change in the organization, including changes made in Apple Ads directly, by Apple Support, or by other API tools.
+
+### adapty asa change-history list
+
+List the changes made in one Apple Ads organization, newest first.
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--campaign-group` | Yes | Organization to read (UUID from [`orgs list`](#adapty-asa-orgs-list)). One organization per call. To read several, run the command for each one |
+| `--date-from` | No | Start of the period (`YYYY-MM-DD`). Default: 7 days ago |
+| `--date-to` | No | End of the period (`YYYY-MM-DD`). Default: today. The period can span at most 14 days |
+| `--entity-type` | No | `Campaign`, `AdGroup`, `Keyword`, `NegativeKeyword`, `Ad`, `Creative`, `LocationGroup`, `Org`, or `AdAccount`. Repeatable. Default: every type except `Org` and `AdAccount`. `Org` and `AdAccount` can't be combined with the other types |
+| `--event-type` | No | `CREATE`, `UPDATE`, or `DELETE`. Repeatable |
+| `--user-type` | No | Who made the change: `CUSTOMER` (in Apple Ads), `CUSTOMER_API` (through the Apple Ads API), or `APPLE_SUPPORT`. Repeatable |
+| `--campaign`, `--ad-group`, `--entity-id` | No | Apple's numeric IDs of the campaign, the ad group, or the changed entity. Repeatable |
+| `--user` | No | Apple user ID of the person who made the change. Repeatable |
+| `--txn` | No | Apple transaction ID. Repeatable |
+| `--fields` | No | Expand each change into one row per changed field, with its old and new values |
+
+:::important
+Unlike the [list filters](#list-filters) of other commands, `--campaign`, `--ad-group`, and `--entity-id` take Apple's numeric IDs, as printed in the change history rows — not UUIDs. Likewise, `modified_by` in each row is an Apple user ID, not an email.
+:::
+
+Each row is one transaction: who made it (`modified_by`, `user_type`), when (`event_time`), and the entities it changed. Every entity carries a `detail_id` for [`change-history get`](#adapty-asa-change-history-get).
+
+With `--fields`, the page size defaults to 10, and a larger `--page-size` is refused. A page that would need more than 20 lookups fails: narrow the filters, or drop `--fields` and read single changes with `change-history get`.
+
+Accepts [pagination flags](#global-flags). `--page` × `--page-size` can't exceed 1000.
+
+### adapty asa change-history get
+
+Show the field-level changes of one entity in one transaction.
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| Argument | Description |
+|---|---|
+| `detail-id` | `detail_id` from [`change-history list`](#adapty-asa-change-history-list), in the form `EntityType.entityId.txnId` |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--campaign-group` | Yes | Organization the change belongs to. Take it from `campaign_group_id` in the list row |
+
+The response lists each changed field with its `old_values` and `new_values`, plus the entity's metadata in `entity_metadata`. A `detail_id` that Apple has no record of returns `404`.
+
 ## Errors \{#errors\}
 
 | Status | Code | Meaning |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | The company has no active Ads Manager subscription |
+| `403` | `cli_ad_account_unreadable` | `change-history` can't read the organization: the Apple Ads token is revoked, the organization is no longer linked, or Apple denied access |
 | `404` | — | The entity does not exist, or it belongs to another company |
 | `409` | `cli_idempotency_in_progress` | A write with the same idempotency key is still running |
 | `422` | `cli_idempotency_key_reuse` | The same idempotency key was used with a different request body |
@@ -900,7 +954,9 @@ The first call for a set of apps can take tens of seconds while the data is prep
 | `422` | `cli_response_too_large` | A `metrics` page would exceed 5000 breakdown rows |
 | `429` | `cli_analytics_busy` | The analytics pool is busy, or another keyword pool build for the company is still running. The wait is in the `Retry-After` header |
 | `429` | `cli_cooldown_active` | Too many rejected requests put the token into a cool-down |
+| `429` | `cli_upstream_rate_limited` | Apple rate-limited a `change-history` request. The wait from Apple is in the `Retry-After` header |
+| `504` | `cli_read_timeout` | A `change-history` request took longer than 50 seconds. Narrow the period or the filters |
 
-Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
+Metrics and the search terms list share one analytics budget per company: 5 calls per minute, and at most 2 in any 10 seconds. `change-history` has its own budget: 30 calls per minute, at most 5 in any 10 seconds, and one request at a time per company. A burst of 20 rejected requests within 5 minutes starts an escalating cool-down of 5 minutes, then 30 minutes, then 3 hours. Retrying during the pause does not extend it, but the fix is to correct the failing request rather than repeat it.
 
 The CLI handles short waits for you. On a `429` that is not a cool-down, if `Retry-After` is 60 seconds or less, the command waits for that long and retries once, reporting the wait on standard error.
