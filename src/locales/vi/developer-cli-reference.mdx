@@ -679,7 +679,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
 
 ## Phân khúc \{#segments\}
 
-[Phân khúc](segments) chỉ có thể đọc qua CLI. Tạo và chỉnh sửa chúng trên [Adapty dashboard](https://app.adapty.io). Dùng các lệnh này để tra cứu ID phân khúc khi soạn audiences cho placement.
+[Phân khúc](segments) nhóm người dùng theo các thuộc tính hồ sơ người dùng của họ. Sử dụng các lệnh sau để tạo phân khúc và tra cứu ID phân khúc khi soạn [đối tượng placement](#audiences-shape). Để xây dựng phân khúc từ các chiến dịch Apple Ads, nhóm quảng cáo hoặc từ khóa, hãy dùng [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) thay thế: lệnh này sẽ tra cứu Apple ID cho bạn và đặt tên phân khúc theo cách Ads Manager sử dụng.
 
 ### adapty segments list \{#adapty-segments-list\}
 
@@ -695,9 +695,9 @@ adapty segments list --app <app-id>
 
 Chấp nhận [cờ phân trang](#global-flags).
 
-### adapty segments get \{#adapty-segments-get\}
+### adapty segments get
 
-Lấy thông tin chi tiết của một [phân khúc](segments) cụ thể.
+Lấy thông tin chi tiết cho một [phân khúc](segments) cụ thể.
 
 ```bash
 adapty segments get --app <app-id> <segment-id>
@@ -705,13 +705,74 @@ adapty segments get --app <app-id> <segment-id>
 
 | Đối số | Mô tả |
 |---|---|
-| `segment-id` | Segment ID (UUID) |
+| `segment-id` | ID phân khúc (UUID) |
 
 | Cờ | Bắt buộc | Mô tả |
 |---|---|---|
-| `--app` | Có | App ID (UUID) |
+| `--app` | Có | ID ứng dụng (UUID) |
 
-Kết quả trả về chứa `id`, `title` và `description`. Các quy tắc lọc không được hiển thị qua API này.
+Kết quả trả về bao gồm `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` và `updated_at`. Lệnh `list` chỉ trả về `id`, `title` và `description`.
+
+### adapty segments create
+
+Tạo một [phân khúc](segments) từ một hoặc nhiều bộ lọc.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Segment title |
+| `--filter` | Yes | Filter rule. Repeatable. See [Filter syntax](#filter-syntax) |
+| `--description` | No | Segment description |
+
+Người dùng chỉ khớp với phân khúc khi họ khớp với mọi bộ lọc. Phản hồi có các trường giống như `segments get`. `profile_count` bắt đầu từ `0`, và Adapty sẽ tính lại sau khi phân khúc được tạo.
+
+### adapty segments update
+
+Thay thế tiêu đề, mô tả và bộ lọc của một [phân khúc](segments) hiện có.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `segment-id` | ID phân khúc (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--title` | Có | Tiêu đề phân khúc |
+| `--filter` | Có | Quy tắc lọc. Có thể lặp lại. Xem [Cú pháp bộ lọc](#filter-syntax) |
+| `--description` | Không | Mô tả phân khúc |
+
+:::warning
+`segments update` thay thế toàn bộ phân khúc. Hãy truyền vào mọi bộ lọc bạn muốn giữ lại, không chỉ bộ lọc bạn đang thay đổi. Để đọc các bộ lọc hiện tại, chạy `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Cú pháp bộ lọc \{#filter-syntax\}
+
+Viết mỗi `--filter` theo dạng `field:OPERATOR:value`. Để khớp với bất kỳ giá trị nào trong số nhiều giá trị, hãy phân tách chúng bằng dấu phẩy: `ip_country:IN:US,CA`.
+
+| Toán tử | Giá trị | Ví dụ |
+|---|---|---|
+| `IN`, `NOT IN` | Một hoặc nhiều | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Một | `age:>:18` |
+| `BETWEEN` | Hai | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Không có | `age:IS NULL` |
+
+Truyền số dưới dạng giá trị thuần túy, ví dụ `age:>:18`. Adapty tự động chuyển đổi chúng cho các trường kiểu số như `age`, `total_revenue_usd`, và các thuộc tính tùy chỉnh kiểu float.
+
+Với giá trị mà dạng rút gọn này không thể biểu diễn được, hãy truyền bộ lọc dưới dạng đối tượng JSON:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty xác thực tên trường, toán tử và kiểu giá trị, đồng thời báo cáo một lỗi cho mỗi bộ lọc không hợp lệ. Để xem tên trường và định dạng giá trị của các bộ lọc hiện có, hãy chạy `adapty segments get --app <app-id> <segment-id> --json` trên một phân khúc đã tạo trong dashboard.
 
 ## Migration \{#migrations\}
 

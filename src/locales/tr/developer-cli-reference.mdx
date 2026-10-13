@@ -679,7 +679,7 @@ Segment'e özgü yönlendirmeyi kaybetmeden bir paywall'ı birden fazla placemen
 
 ## Segmentler \{#segments\}
 
-[Segmentler](segments) CLI üzerinden yalnızca okunabilir. Oluşturmak ve düzenlemek için [Adapty Kontrol Paneli](https://app.adapty.io)'ni kullanın. Placement kitlelerini oluştururken segment ID'lerini bulmak için bu komutları kullanın.
+[Segmentler](segments), kullanıcıları profil özelliklerine göre gruplar. Segment oluşturmak ve [placement kitleleri](#audiences-shape) oluştururken segment ID'lerini aramak için bu komutları kullanın. Apple Ads kampanyalarından, reklam gruplarından veya anahtar kelimelerden segment oluşturmak için bunun yerine [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) komutunu kullanın: Apple ID'lerini sizin için arar ve segmenti Ads Manager'ın yaptığı şekilde adlandırır.
 
 ### adapty segments list
 
@@ -711,7 +711,68 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|---|
 | `--app` | Evet | Uygulama ID (UUID) |
 
-Yanıt `id`, `title` ve `description` alanlarını içerir. Filtre kuralları bu API aracılığıyla gösterilmez.
+Yanıt; `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` ve `updated_at` alanlarını içerir. `list` yalnızca `id`, `title` ve `description` alanlarını döndürür.
+
+### adapty segments create
+
+Bir veya daha fazla filtreden [segment](segments) oluşturur.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Segment başlığı |
+| `--filter` | Evet | Filtre kuralı. Tekrarlanabilir. Bkz. [Filtre sözdizimi](#filter-syntax) |
+| `--description` | Hayır | Segment açıklaması |
+
+Bir kullanıcı, yalnızca her filtreyle eşleştiğinde segmentle eşleşir. Yanıt, `segments get` ile aynı alanlara sahiptir. `profile_count` `0` ile başlar ve Adapty, segment oluşturulduktan sonra bunu yeniden hesaplar.
+
+### adapty segments update
+
+Mevcut bir [segment](segments)'in başlığını, açıklamasını ve filtrelerini günceller.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `segment-id` | Segment ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Segment başlığı |
+| `--filter` | Evet | Filtre kuralı. Tekrarlanabilir. Bkz. [Filtre sözdizimi](#filter-syntax) |
+| `--description` | Hayır | Segment açıklaması |
+
+:::warning
+`segments update` tüm segmenti değiştirir. Korumak istediğiniz her filtreyi, yalnızca değiştirdiğinizi değil, tümünü geçirin. Mevcut filtreleri okumak için `adapty segments get --app <app-id> <segment-id> --json` komutunu çalıştırın.
+:::
+
+#### Filtre sözdizimi \{#filter-syntax\}
+
+Her `--filter` değerini `field:OPERATOR:value` biçiminde yazın. Birden fazla değerden herhangi birini eşleştirmek için değerleri virgülle ayırın: `ip_country:IN:US,CA`.
+
+| Operatör | Değerler | Örnek |
+|---|---|---|
+| `IN`, `NOT IN` | Bir veya daha fazla | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Bir | `age:>:18` |
+| `BETWEEN` | İki | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Hiçbiri | `age:IS NULL` |
+
+Sayıları düz değer olarak girin; örneğin `age:>:18`. Adapty, `age`, `total_revenue_usd` ve float türündeki özel nitelikler gibi sayısal alanlar için bunları otomatik olarak dönüştürür.
+
+Bu kısa formun ifade edemediği bir değer için filtreyi JSON nesnesi olarak geçirin:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty alan adlarını, operatörleri ve değer türlerini doğrular; her geçersiz filtre için bir hata bildirir. Mevcut filtrelerin alan adlarını ve değer biçimlerini görmek için kontrol panelinde oluşturulmuş bir segment üzerinde `adapty segments get --app <app-id> <segment-id> --json` komutunu çalıştırın.
 
 ## Geçişler \{#migrations\}
 

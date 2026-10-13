@@ -1,16 +1,16 @@
 ---
-title: "Comandos de Ads Manager para la CLI de desarrollador de Adapty"
-description: "Referencia de todos los comandos adapty asa — campañas, grupos de anuncios, palabras clave, anuncios, automatizaciones, métricas e historial de cambios."
-metadataTitle: "Comandos CLI de Ads Manager | Documentación de Adapty"
+title: "Comandos de Ads Manager para el CLI de Adapty Developer"
+description: "Referencia de todos los comandos adapty asa: campañas, grupos de anuncios, palabras clave, anuncios, segmentos, automatizaciones, métricas e historial de cambios."
+metadataTitle: "Comandos de Ads Manager CLI | Documentación de Adapty"
 ---
 
-Este artículo lista todos los comandos de [Ads Manager](adapty-ads-manager) en la CLI de Adapty, con sus argumentos, flags y valores aceptados. Los comandos de Ads Manager se encuentran bajo el tema `adapty asa`.
+Este artículo lista todos los comandos de [Ads Manager](adapty-ads-manager) en el CLI de Adapty, con sus argumentos, flags y valores aceptados. Los comandos de Ads Manager se encuentran bajo el topic `adapty asa`.
 
 :::link
-Para conocer los requisitos previos, las prácticas seguras de escritura y ejemplos por tarea, consulta [Gestionar Ads Manager desde la CLI](developer-cli-ads-manager).
+Para conocer los requisitos previos, las prácticas de escritura segura y ejemplos basados en tareas, consulta [Gestionar Ads Manager desde la CLI](developer-cli-ads-manager).
 :::
 
-Estos comandos requieren una cuenta de Apple Ads conectada y una suscripción activa a Ads Manager. Ejecuta [`adapty asa whoami`](#adapty-asa-whoami) para verificar ambas. Para el resto de la CLI, consulta la [referencia de comandos](developer-cli-reference).
+Estos comandos requieren una cuenta de Apple Ads conectada y una suscripción activa de Ads Manager. Ejecuta [`adapty asa whoami`](#adapty-asa-whoami) para verificar ambas. Para el resto de la CLI, consulta la [referencia de comandos](developer-cli-reference).
 
 ## Flags globales \{#global-flags\}
 
@@ -34,10 +34,10 @@ Todos los comandos que modifican tu cuenta aceptan estos flags:
 
 | Indicador | Descripción |
 |---|---|
-| `--yes`, `-y` | Aplica sin pedir confirmación. Obligatorio cuando la salida se redirige por pipe o se usa `--json` |
-| `--idempotency-key` | Clave fija para esta escritura. Si se repite con la misma clave y cuerpo en un plazo de 24 horas, devuelve el resultado almacenado en lugar de aplicar el cambio de nuevo |
+| `--yes`, `-y` | Aplica sin pedir confirmación. Es obligatorio cuando la salida se redirige por pipe o se usa `--json` |
+| `--idempotency-key` | Clave fija para esta escritura. Una repetición con la misma clave y cuerpo en 24 horas devuelve el resultado almacenado en lugar de aplicar el cambio de nuevo |
 
-Los comandos de Ads Manager no admiten el indicador `--app`. El ámbito es la empresa a la que pertenece tu token. `--app` existe en algunos comandos `list` únicamente como filtro.
+Los comandos de Ads Manager no aceptan el indicador `--app`. El ámbito es la empresa a la que pertenece tu token. `--app` existe en algunos comandos `list` solo como filtro. Los comandos de [segmentos](#segments) son la excepción: allí, `--app` es la app de Adapty a la que pertenece el segmento.
 
 ## Filtros de lista \{#list-filters\}
 
@@ -638,6 +638,70 @@ adapty asa product-pages sync --adam-id 123456
 | `--adam-id` | Limita la actualización a una sola app. Omítelo para cubrir todas las apps |
 
 La actualización se pone en cola en lugar de ejecutarse de inmediato, y el comando confirma con `Sync queued.` Si la misma actualización ya está en curso, muestra `Already running; nothing new was queued.` en su lugar.
+
+## Segmentos \{#segments\}
+
+Estos comandos crean [segmentos](segments) de Adapty a partir de campañas, grupos de anuncios o palabras clave de Apple Ads, de la misma forma que **Create segment from…** en [Ads Manager](ads-manager-create-segments). Usa los segmentos como audiencias en placements y pruebas A/B para mostrar a los usuarios de una campaña específica un paywall diferente.
+
+Cada segmento tiene un filtro de atribución sobre los Apple IDs de las entidades que elijas. El CLI busca esos IDs, por lo que debes pasar los UUIDs que muestran los comandos `list`.
+
+A diferencia de otros comandos `adapty asa`, estos aceptan `--app`: el ID de la app de Adapty a la que pertenece el segmento, obtenido con [`adapty apps list`](developer-cli-reference#adapty-apps-list). No admiten `--idempotency-key`. Para segmentos con otros filtros, como país o fecha de instalación, usa [`adapty segments create`](developer-cli-reference#adapty-segments-create).
+
+### adapty asa segments create
+
+Crea un segmento a partir de campañas, grupos de anuncios o palabras clave.
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id>
+adapty asa segments create --app <app-id> --ad-group <ad-group-id> --keyword <keyword-id> --keyword <other-keyword-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | ID de la app de Adapty (UUID) |
+| `--campaign` | Un tipo de entidad | ID de campaña (UUID). Repetible |
+| `--ad-group` | Un tipo de entidad | ID de grupo de anuncios (UUID). Repetible. Con `--keyword`, indica exactamente uno: el grupo de anuncios que contiene las palabras clave |
+| `--keyword` | Un tipo de entidad | ID de palabra clave (UUID). Repetible. Requiere un `--ad-group` |
+| `--title` | No | Título del segmento. Por defecto usa el formato de Ads Manager, por ejemplo `[ASA] Campaign: <name>` |
+| `--description` | No | Descripción del segmento. Por defecto usa el formato de Ads Manager |
+
+Construye cada segmento a partir de un solo tipo de entidad. Pasar `--campaign` y `--ad-group` a la vez, o `--campaign` con `--keyword`, falla con el código de salida `2` antes de enviar ninguna petición. Varias entidades del mismo tipo generan un único segmento que incluye a los usuarios de cualquiera de ellas.
+
+Conserva el título por defecto salvo que necesites otro. Ads Manager reconoce sus segmentos por el prefijo `[ASA]`, y [`asa segments list`](#adapty-asa-segments-list) solo muestra los segmentos con este prefijo.
+
+La respuesta contiene el segmento completo, incluyendo `id` y `filters`. `profile_count` comienza en `0`, y Adapty lo recalcula después de que se crea el segmento.
+
+### adapty asa segments update
+
+Reemplaza las campañas, grupos de anuncios o palabras clave de un segmento existente.
+
+```bash
+adapty asa segments update <segment-id> --app <app-id> --campaign <campaign-id> --campaign <other-campaign-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `segment-id` | ID del segmento (UUID), obtenido desde `asa segments list` o `adapty segments list` |
+
+Acepta los mismos flags que [`asa segments create`](#adapty-asa-segments-create). El filtro del segmento se reemplaza con las entidades que indiques. El título y la descripción permanecen igual a menos que pases `--title` o `--description`.
+
+### adapty asa segments list
+
+Lista los segmentos creados a partir de entidades de Apple Ads — aquellos cuyo título empieza por `[ASA]`.
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app de Adapty (UUID) |
+| `--campaign` | No | Muestra solo los segmentos creados a partir de esta campaña (UUID) |
+| `--ad-group` | No | Muestra solo los segmentos creados a partir de este grupo de anuncios (UUID) |
+
+Pasa `--campaign` o `--ad-group`, no ambos. Para evitar crear un segundo segmento para la misma campaña, ejecuta este comando antes de `asa segments create`: un resultado vacío significa que la campaña aún no tiene ningún segmento.
+
+El comando lee los primeros 100 segmentos de la app.
 
 ## Automatizaciones \{#automations\}
 

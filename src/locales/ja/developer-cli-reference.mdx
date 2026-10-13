@@ -679,7 +679,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
 
 ## セグメント \{#segments\}
 
-[セグメント](segments)はCLI経由では読み取り専用です。作成・編集は[Adaptyダッシュボード](https://app.adapty.io)で行ってください。プレースメントのオーディエンスを構成する際にセグメントIDを調べるためにこれらのコマンドを使用します。
+[セグメント](segments)は、プロファイルの属性によってユーザーをグループ化します。以下のコマンドを使用して、セグメントを作成したり、[プレースメントオーディエンス](#audiences-shape)を設定する際にセグメントIDを検索したりできます。Apple Ads のキャンペーン、広告グループ、またはキーワードからセグメントを作成するには、代わりに [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) を使用してください。このコマンドは Apple ID を自動で検索し、Ads Manager と同じ命名規則でセグメントに名前を付けます。
 
 ### adapty segments list \{#adapty-segments-list\}
 
@@ -695,7 +695,7 @@ adapty segments list --app <app-id>
 
 [ページネーションフラグ](#global-flags)を使用できます。
 
-### adapty segments get \{#adapty-segments-get\}
+### adapty segments get
 
 特定の[セグメント](segments)の詳細を取得します。
 
@@ -705,13 +705,74 @@ adapty segments get --app <app-id> <segment-id>
 
 | 引数 | 説明 |
 |---|---|
-| `segment-id` | セグメントID（UUID） |
+| `segment-id` | セグメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+レスポンスには `id`、`title`、`description`、`filters`、`profile_count`、`refresh_in_progress`、`created_at`、`updated_at` が含まれます。`list` は `id`、`title`、`description` のみを返します。
+
+### adapty segments create
+
+[セグメント](segments)を1つ以上のフィルターから作成します。
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
 | `--app` | はい | アプリID（UUID） |
+| `--title` | はい | セグメントのタイトル |
+| `--filter` | はい | フィルタールール。繰り返し指定可能。[フィルター構文](#filter-syntax)を参照 |
+| `--description` | いいえ | セグメントの説明 |
 
-レスポンスには `id`、`title`、`description` が含まれます。フィルタールールはこのAPIでは公開されていません。
+ユーザーがセグメントに一致するのは、すべてのフィルターに一致する場合のみです。レスポンスのフィールドは `segments get` と同じです。`profile_count` は `0` から始まり、セグメント作成後にAdaptyが再計算します。
+
+### adapty segments update
+
+既存の[セグメント](segments)のタイトル、説明、フィルターを置き換えます。
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| 引数 | 説明 |
+|---|---|
+| `segment-id` | セグメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--title` | はい | セグメントのタイトル |
+| `--filter` | はい | フィルタールール。繰り返し指定可能。[フィルター構文](#filter-syntax)を参照 |
+| `--description` | いいえ | セグメントの説明 |
+
+:::warning
+`segments update` はセグメント全体を置き換えます。変更するフィルターだけでなく、保持したいすべてのフィルターを渡してください。現在のフィルターを確認するには、`adapty segments get --app <app-id> <segment-id> --json` を実行してください。
+:::
+
+#### フィルター構文 \{#filter-syntax\}
+
+各 `--filter` は `field:OPERATOR:value` の形式で記述します。複数の値のいずれかに一致させるには、値をカンマで区切ります: `ip_country:IN:US,CA`。
+
+| 演算子 | 値 | 例 |
+|---|---|---|
+| `IN`, `NOT IN` | 1つ以上 | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | 1つ | `age:>:18` |
+| `BETWEEN` | 2つ | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | なし | `age:IS NULL` |
+
+数値はそのまま渡してください（例: `age:>:18`）。Adapty は `age`、`total_revenue_usd`、float 型のカスタム属性などの数値フィールドに対して自動的に変換します。
+
+この短縮形で表現できない値については、フィルターを JSON オブジェクトとして渡してください:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty はフィールド名、演算子、値の型を検証し、無効なフィルターごとにエラーを報告します。既存のフィルターのフィールド名と値のフォーマットを確認するには、ダッシュボードで作成したセグメントに対して `adapty segments get --app <app-id> <segment-id> --json` を実行してください。
 
 ## マイグレーション \{#migrations\}
 

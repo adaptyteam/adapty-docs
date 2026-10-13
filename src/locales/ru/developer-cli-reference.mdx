@@ -679,7 +679,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
 
 ## Сегменты \{#segments\}
 
-[Сегменты](segments) доступны через CLI только для чтения. Создавайте и редактируйте их в [дашборде Adapty](https://app.adapty.io). Используйте эти команды, чтобы найти идентификаторы сегментов при составлении аудиторий плейсментов.
+[Сегменты](segments) группируют пользователей по атрибутам их профиля. Используйте эти команды, чтобы создавать сегменты и находить их ID при составлении [аудиторий плейсментов](#audiences-shape). Чтобы создать сегмент на основе кампаний Apple Ads, групп объявлений или ключевых слов, используйте [`adapty asa segments create`](developer-cli-ads-manager-reference#segments): эта команда сама найдёт Apple ID и назовёт сегмент так, как это делает Ads Manager.
 
 ### adapty segments list
 
@@ -697,7 +697,7 @@ adapty segments list --app <app-id>
 
 ### adapty segments get
 
-Получите сведения о конкретном [сегменте](segments).
+Получение информации о конкретном [сегменте](segments).
 
 ```bash
 adapty segments get --app <app-id> <segment-id>
@@ -711,7 +711,68 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|---|
 | `--app` | Да | ID приложения (UUID) |
 
-В ответе содержатся `id`, `title` и `description`. Правила фильтрации через этот API не доступны.
+Ответ содержит поля `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` и `updated_at`. Команда `list` возвращает только `id`, `title` и `description`.
+
+### adapty segments create
+
+Создание [сегмента](segments) по одному или нескольким фильтрам.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Флаг | Обязателен | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--title` | Да | Название сегмента |
+| `--filter` | Да | Правило фильтра. Можно указывать несколько раз. См. [Синтаксис фильтров](#filter-syntax) |
+| `--description` | Нет | Описание сегмента |
+
+Пользователь попадает в сегмент только если соответствует каждому фильтру. Ответ содержит те же поля, что и `segments get`. `profile_count` начинается с `0`, и Adapty пересчитывает его после создания сегмента.
+
+### adapty segments update
+
+Замените название, описание и фильтры существующего [сегмента](segments).
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Аргумент | Описание |
+|---|---|
+| `segment-id` | ID сегмента (UUID) |
+
+| Флаг | Обязателен | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--title` | Да | Название сегмента |
+| `--filter` | Да | Правило фильтрации. Можно указывать несколько раз. См. [Синтаксис фильтров](#filter-syntax) |
+| `--description` | Нет | Описание сегмента |
+
+:::warning
+`segments update` полностью заменяет сегмент. Передавайте все фильтры, которые хотите сохранить, а не только изменяемый. Чтобы прочитать текущие фильтры, выполните `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Синтаксис фильтров \{#filter-syntax\}
+
+Каждый `--filter` записывается в формате `field:OPERATOR:value`. Чтобы указать несколько допустимых значений, разделите их запятыми: `ip_country:IN:US,CA`.
+
+| Оператор | Значения | Пример |
+|---|---|---|
+| `IN`, `NOT IN` | Одно или несколько | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Одно | `age:>:18` |
+| `BETWEEN` | Два | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Нет | `age:IS NULL` |
+
+Передавайте числа как обычные значения, например `age:>:18`. Adapty автоматически преобразует их для числовых полей, таких как `age`, `total_revenue_usd`, и пользовательских атрибутов типа float.
+
+Если значение нельзя выразить в этой краткой форме, передайте фильтр как JSON-объект:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty проверяет имена полей, операторы и типы значений, и сообщает об ошибке для каждого некорректного фильтра. Чтобы узнать имена полей и форматы значений существующих фильтров, выполните `adapty segments get --app <app-id> <segment-id> --json` для сегмента, созданного в дашборде.
 
 ## Миграции \{#migrations\}
 

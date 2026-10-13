@@ -679,7 +679,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
 
 ## 市场细分 \{#segments\}
 
-[市场细分](segments)通过 CLI 只读访问。请在 [Adapty 看板](https://app.adapty.io)中创建和编辑它们。使用以下命令在配置版位目标受众时查找市场细分 ID。
+[市场细分](segments)根据用户画像属性对用户进行分组。使用以下命令创建市场细分，并在构建[版位目标受众](#audiences-shape)时查找市场细分 ID。若要基于 Apple Ads 广告系列、广告组或关键词创建市场细分，请改用 [`adapty asa segments create`](developer-cli-ads-manager-reference#segments)：它会自动查找 Apple ID，并按照 Ads Manager 的命名方式为市场细分命名。
 
 ### adapty 市场细分列表 \{#adapty-segments-list\}
 
@@ -697,21 +697,82 @@ adapty segments list --app <app-id>
 
 ### adapty segments get
 
-获取指定[市场细分](segments)的详细信息。
+获取特定[市场细分](segments)的详细信息。
 
 ```bash
 adapty segments get --app <app-id> <segment-id>
 ```
 
-| 参数 | 说明 |
+| 参数 | 描述 |
 |---|---|
 | `segment-id` | 市场细分 ID（UUID） |
 
-| 标志 | 必填 | 说明 |
+| 标志 | 必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 
-响应包含 `id`、`title` 和 `description`。过滤规则不通过此 API 暴露。
+响应包含 `id`、`title`、`description`、`filters`、`profile_count`、`refresh_in_progress`、`created_at` 和 `updated_at`。`list` 仅返回 `id`、`title` 和 `description`。
+
+### adapty segments create
+
+从一个或多个筛选条件创建[市场细分](segments)。
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--title` | 是 | 市场细分名称 |
+| `--filter` | 是 | 筛选规则，可重复使用。详见[筛选条件语法](#filter-syntax) |
+| `--description` | 否 | 市场细分描述 |
+
+用户只有在满足所有筛选条件时，才会匹配该市场细分。响应字段与 `segments get` 相同。`profile_count` 初始值为 `0`，市场细分创建完成后，Adapty 会重新计算该值。
+
+### adapty segments update
+
+替换现有[市场细分](segments)的标题、描述和筛选条件。
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| 参数 | 描述 |
+|---|---|
+| `segment-id` | 市场细分 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--title` | 是 | 市场细分标题 |
+| `--filter` | 是 | 筛选规则。可重复使用。参见[筛选语法](#filter-syntax) |
+| `--description` | 否 | 市场细分描述 |
+
+:::warning
+`segments update` 会替换整个市场细分。请传入所有要保留的筛选条件，而不仅仅是你要修改的那一个。若要查看当前筛选条件，请运行 `adapty segments get --app <app-id> <segment-id> --json`。
+:::
+
+#### 筛选条件语法 \{#filter-syntax\}
+
+每个 `--filter` 的格式为 `field:OPERATOR:value`。若要匹配多个值中的任意一个，请用逗号分隔：`ip_country:IN:US,CA`。
+
+| 操作符 | 值 | 示例 |
+|---|---|---|
+| `IN`, `NOT IN` | 一个或多个 | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | 一个 | `age:>:18` |
+| `BETWEEN` | 两个 | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | 无 | `age:IS NULL` |
+
+数字请直接以原始值传入，例如 `age:>:18`。Adapty 会对 `age`、`total_revenue_usd` 以及 float 类型的自定义属性进行数值转换。
+
+对于无法用简写形式表达的值，请将过滤条件以 JSON 对象的形式传入：
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty 会验证字段名、运算符和值类型，并对每个无效过滤器报告一条错误。如需查看现有过滤器的字段名和值格式，可对看板中创建的市场细分运行 `adapty segments get --app <app-id> <segment-id> --json`。
 
 ## 迁移 \{#migrations\}
 
