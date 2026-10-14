@@ -256,29 +256,38 @@ Etkinlik özellikleri, etkinlik türüne ve hatta aynı türdeki etkinlikler ara
 | **variation_id** | UUID | Satın almanın yapıldığı paywall'ın benzersiz ID'si. |
 | **vendor_product_id** | String | <p>Apple App Store, Google Play Store veya Stripe'taki ürün ID'si.</p><p>Erişim gerçek bir mağaza işlemi olmadan verilmişse `vendor_product_id` şunlardan biri olur:</p><ul><li>`adapty_server_side_product` — [sunucu tarafı API'si](api-adapty/operations/grantAccessLevel) aracılığıyla verilmiş.</li><li>`adapty_dashboard_product` — Adapty Kontrol Paneli'nde [manuel olarak verilmiş](give-access-level-to-specific-customer).</li><li>`adapty_promotion` — eski sürüm.</li></ul> |
 
-#### Ek vergi ve gelir olayı özellikleri \{#additional-tax-and-revenue-event-properties\}
+#### Vergi ve gelir olayı için ek özellikler \{#additional-tax-and-revenue-event-properties\}
 
-Aşağıdaki vergi ve gelirle ilgili olay özellikleri, yalnızca belirli olay türleri için geçerli olan ek alanlardır. Yani listelenen olay türleri, [Çoğu olay türü için olay özellikleri](webhook-event-types-and-fields#for-most-event-types) bölümündeki alanların yanı sıra aşağıda listelenen ek alanları da içerir.
+Aşağıdaki vergi ve gelirle ilgili olay özellikleri, yalnızca belirli olay türleri için geçerli olan ek alanlardır. Bu, listelenen olay türlerinin [Çoğu olay türü için olay özellikleri](webhook-event-types-and-fields#for-most-event-types) alanlarını ve aşağıda listelenen ek alanları içerdiği anlamına gelir.
 
 Vergi ve gelir olay özelliklerine sahip olay türleri:
 
 - `subscription_renewed`
-- `subscription_initial_purchase` (`subscription_started` olarak da bilinir — aynı olaydır)
+- `subscription_initial_purchase` (aynı zamanda `subscription_started` olarak da anılır — aynı event)
 - `subscription_refunded`
 - `non_subscription_purchase`
+- `non_subscription_purchase_refunded`
+- `trial_started`
+- `trial_converted`
 
 | Alan                  | Tür   | Açıklama                                                     |
 | :-------------------- | :---- | :----------------------------------------------------------- |
-| **net_revenue_local** | Float | Net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir) yerel para biriminde. |
-| **net_revenue_usd**   | Float | Net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir) ABD doları cinsinden. |
-| **proceeds_local**    | Float | Apple/Google payı düşüldükten sonraki ürün fiyatı yerel para biriminde. |
-| **proceeds_usd**      | Float | Apple/Google payı düşüldükten sonraki ürün fiyatı.           |
-| **tax_amount_local**  | Float | Kesilen vergi tutarı yerel para biriminde.                   |
-| **tax_amount_usd**    | Float | Kesilen vergi tutarı ABD doları cinsinden.                   |
+| **net_revenue_local** | Float | Yerel para biriminde net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir). |
+| **net_revenue_usd**   | Float | USD cinsinden net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir). |
+| **proceeds_local**    | Float | Apple/Google payı düşüldükten sonra `price_local`. |
+| **proceeds_usd**      | Float | Apple/Google payı düşüldükten sonra `price_usd`. |
+| **tax_amount_local**  | Float | `price_local` içinde yer alan [tahmini vergi](how-adapty-analytics-works#taxes). Kullanıcı vergi ödemiş olsa bile Stripe ve Paddle için `0`. |
+| **tax_amount_usd**    | Float | `price_usd` içinde yer alan [tahmini vergi](how-adapty-analytics-works#taxes). Kullanıcı vergi ödemiş olsa bile Stripe ve Paddle için `0`. |
 
-#### `non_subscription_purchase` örnek payload'u
+Net gelir için doğrudan `net_revenue_*` kullanın. `tax_amount_*` değeri `0` olmadığı sürece, `proceeds_*` eksi `tax_amount_*` daha küçük bir miktar verir. Örneğin, 12 fiyat, %30 komisyon ve %20 vergi oranıyla Adapty şu şekilde hesaplar:
 
-`non_subscription_purchase`, abonelik etkinlikleriyle aynı yapıyı izler ancak tek seferlik veya consumable bir satın almayı yansıtır. Yalnızca aboneliğe özgü alanlar geçerli değildir: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime` ve `trial_duration` bulunmaz. `subscription_expires_at` mevcut olsa da değeri `null`'dır. Vergi ve gelir alanları (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) dahil edilmiştir.
+- `proceeds_*` = `price_*` × (1 − komisyon) = 12 × 0.7 = 8.40
+- `tax_amount_*` = `price_*` × vergi oranı ÷ (1 + vergi oranı) = 12 × 0.2 ÷ 1.2 = 2.00
+- `net_revenue_*` = `proceeds_*` ÷ (1 + vergi oranı) = 8.40 ÷ 1.2 = 7.00
+
+#### `non_subscription_purchase` örnek payload \{#non-subscription-purchase-example-payload\}
+
+`non_subscription_purchase` abonelik etkinlikleriyle aynı yapıyı izler, ancak tek seferlik veya consumable satın alımları yansıtır. Yalnızca aboneliğe özgü alanlar geçerli değildir: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime` ve `trial_duration` alanları bulunmaz. `subscription_expires_at` mevcut olmakla birlikte `null` değerini alır. Vergi ve gelir alanları (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) dahil edilir.
 
 <details>
 <summary>Örnek payload (genişletmek için tıklayın)</summary>

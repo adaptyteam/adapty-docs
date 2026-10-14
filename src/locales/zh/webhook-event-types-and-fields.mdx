@@ -256,32 +256,41 @@ Webhook 事件以 JSON 格式序列化。发送到您服务器的 `POST` 请求�
 | **variation_id** | UUID | 发生购买的付费墙的唯一 ID。 |
 | **vendor_product_id** | String | <p>Apple App Store、Google Play Store 或 Stripe 中的产品 ID。</p><p>若访问权限是在没有真实商店交易的情况下授予的，`vendor_product_id` 将为以下之一：</p><ul><li>`adapty_server_side_product` — 通过[服务端 API](api-adapty/operations/grantAccessLevel) 授予。</li><li>`adapty_dashboard_product` — 在 Adapty 看板中[手动授予](give-access-level-to-specific-customer)。</li><li>`adapty_promotion` — 旧版。</li></ul> |
 
-#### 额外的税费与收入事件属性 \{#additional-tax-and-revenue-event-properties\}
+#### 税费与收入事件的附加属性 \{#additional-tax-and-revenue-event-properties\}
 
-以下与税费和收入相关的事件属性是仅适用于特定事件类型的附加字段。也就是说，下列事件类型在包含[大多数事件类型的事件属性](webhook-event-types-and-fields#for-most-event-types)的基础上，还会额外附带以下字段。
+以下与税费和收入相关的事件属性是仅适用于特定事件类型的附加字段。这意味着列出的事件类型包含[大多数事件类型的事件属性](webhook-event-types-and-fields#for-most-event-types)，以及下方列出的额外字段。
 
-包含税费与收入事件属性的事件类型：
+具有税费与收入事件属性的事件类型：
 
 - `subscription_renewed`
-- `subscription_initial_purchase`（也称为 `subscription_started`，属于同一事件）
+- `subscription_initial_purchase`（也称为 `subscription_started`——同一事件）
 - `subscription_refunded`
 - `non_subscription_purchase`
+- `non_subscription_purchase_refunded`
+- `trial_started`
+- `trial_converted`
 
 | 字段 | 类型 | 描述 |
 | :-------------------- | :---- | :----------------------------------------------------------- |
-| **net_revenue_local** | Float | 净收入（扣除 Apple/Google 手续费和税费后的收入），以本地货币计。 |
-| **net_revenue_usd**   | Float | 净收入（扣除 Apple/Google 手续费和税费后的收入），以 USD 计。 |
-| **proceeds_local**    | Float | 扣除 Apple/Google 手续费后的产品价格，以本地货币计。 |
-| **proceeds_usd**      | Float | 扣除 Apple/Google 手续费后的产品价格，以 USD 计。 |
-| **tax_amount_local**  | Float | 扣除的税费金额，以本地货币计。 |
-| **tax_amount_usd**    | Float | 扣除的税费金额，以 USD 计。 |
+| **net_revenue_local** | Float | 净收入（扣除 Apple/Google 抽成及税费后的收入），以本地货币计。 |
+| **net_revenue_usd** | Float | 净收入（扣除 Apple/Google 抽成及税费后的收入），以 USD 计。 |
+| **proceeds_local** | Float | 扣除 Apple/Google 抽成后的 `price_local`。 |
+| **proceeds_usd** | Float | 扣除 Apple/Google 抽成后的 `price_usd`。 |
+| **tax_amount_local** | Float | `price_local` 中包含的[预估税费](how-adapty-analytics-works#taxes)。Stripe 和 Paddle 始终为 `0`，即使用户实际缴纳了税费。 |
+| **tax_amount_usd** | Float | `price_usd` 中包含的[预估税费](how-adapty-analytics-works#taxes)。Stripe 和 Paddle 始终为 `0`，即使用户实际缴纳了税费。 |
 
-#### `non_subscription_purchase` 示例载荷
+对于净收入，请直接使用 `net_revenue_*`。除非 `tax_amount_*` 为 `0`，否则 `proceeds_*` 减去 `tax_amount_*` 得到的金额会更小。例如，价格为 12、佣金率为 30%、税率为 20% 时，Adapty 计算如下：
 
-`non_subscription_purchase` 与订阅事件结构相同，但反映的是一次性购买或消耗型商品的购买。仅适用于订阅的字段不适用：`cancellation_reason`、`will_renew`、`is_in_grace_period`、`is_refund`、`is_lifetime` 和 `trial_duration` 均不存在。`subscription_expires_at` 字段存在但值为 `null`。税费和收入字段（`net_revenue_*`、`proceeds_*`、`tax_amount_*`）包含在内。
+- `proceeds_*` = `price_*` × (1 − 佣金率) = 12 × 0.7 = 8.40
+- `tax_amount_*` = `price_*` × 税率 ÷ (1 + 税率) = 12 × 0.2 ÷ 1.2 = 2.00
+- `net_revenue_*` = `proceeds_*` ÷ (1 + 税率) = 8.40 ÷ 1.2 = 7.00
+
+#### `non_subscription_purchase` 示例 payload
+
+`non_subscription_purchase` 的结构与订阅事件相同，但反映的是一次性或消耗型商品购买。与订阅相关的字段不适用：`cancellation_reason`、`will_renew`、`is_in_grace_period`、`is_refund`、`is_lifetime` 和 `trial_duration` 均不存在。`subscription_expires_at` 字段存在，但值为 `null`。税费和收入相关字段（`net_revenue_*`、`proceeds_*`、`tax_amount_*`）均包含在内。
 
 <details>
-<summary>示例载荷（点击展开）</summary>
+<summary>示例 payload（点击展开）</summary>
 
 ```json title="Json" showLineNumbers
 {
