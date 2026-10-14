@@ -152,6 +152,14 @@ core in-app paywall/subscription product.
   The apex-domain-only rule and the fixed `mail.` / `email.` sending prefixes with the `hello.` MAIL
   FROM prefix *are* our constants, so those are safe to state flatly. A provider-owned fact must be
   attributed as the provider's, because it can change without us.
+- **Each sending domain has an optional Reply-to address** (verified 2026-10-14 against backend and
+  dashboard code, both on the production line). It sits on the verified domain card under **Email
+  sender name** and saves with it. The `hello@` From mailbox is the warm-up inbox and nobody reads it,
+  so before this field existed every reader reply was lost — "my customers' replies vanish" is this.
+  The address is a plain Reply-To header on each send: any domain, no verification or DNS. It applies
+  to emails sent after saving; empty means no header. Documented in `mail-sending-domain` §4 and a
+  troubleshooting row. Not confirmed: whether double opt-in confirmation emails carry it too — the
+  send path suggests every email from the domain does, but no test was run.
 - **The domain layer was reshaped between 2026-07-23 and 2026-08-17, and the bullet above is now stale
   in four places** (verified 2026-08-18 against backend and dashboard code; the multidomain,
   custom-subdomain and DNS-validation releases are merged). (1) **A project holds up to five sending
