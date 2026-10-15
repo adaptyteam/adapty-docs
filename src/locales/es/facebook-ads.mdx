@@ -69,25 +69,36 @@ También puedes usar esta integración con apps Android. Si configuras la config
 
 ### Configurar eventos y etiquetas \{#configure-events-and-tags\}
 
-Ten en cuenta que la integración de Facebook Ads está orientada específicamente a empresas que utilizan Meta para sus campañas publicitarias y las optimizan en función del comportamiento de los clientes. Es compatible con los eventos estándar de Meta para fines de optimización. Por ello, no es posible modificar el nombre del evento en la integración de Meta Ads. Adapty mapea automáticamente los eventos de tus clientes a sus correspondientes eventos de Meta para un análisis preciso.
+Adapty mapea sus eventos de compra a los eventos estándar de Meta, que Meta puede usar para optimizar campañas: `StartTrial`, `Subscribe` y `fb_mobile_purchase`, el evento de compra de Meta. **Subscription started**, **Subscription renewed**, **Trial started** y **Trial converted** envían un evento de Meta por cada nombre seleccionado en el campo del evento, y todos los nombres están seleccionados por defecto. Un inicio de prueba, por ejemplo, llega a Meta como tres eventos. Para enviar menos, elimina nombres del campo.
 
-| Evento de Adapty                  | Evento de Meta Ads          |
-| :---------------------------- | :-------------------------- |
-| Subscription initial purchase | Subscribe                   |
-| Subscription renewed          | Subscribe                   |
-| Subscription cancelled        | CancelSubscription          |
-| Trial started                 | StartTrial                  |
-| Trial converted               | Subscribe                   |
-| Trial cancelled               | CancelTrial                 |
-| Non subscription purchase     | fb_mobile_purchase          |
-| Billing issue detected        | billing_issue_detected      |
-| Entered grace period          | entered_grace_period        |
-| Auto renew off                | auto_renew_off              |
-| Auto renew on                 | auto_renew_on               |
-| Auto renew off subscription   | auto_renew_off_subscription |
-| Auto renew on subscription    | auto_renew_on_subscription  |
+| Evento de Adapty              | Eventos Meta predeterminados                           |
+| :------------------------ | :-------------------------------------------- |
+| Subscription started      | `Subscribe`, `fb_mobile_purchase`             |
+| Subscription renewed      | `Subscribe`, `fb_mobile_purchase`             |
+| Trial started             | `StartTrial`, `Subscribe`, `fb_mobile_purchase` |
+| Trial converted           | `Subscribe`, `fb_mobile_purchase`             |
+| Non-subscription purchase | `fb_mobile_purchase`                          |
 
-StartTrial, Subscribe y CancelSubscription son eventos estándar.
+Meta no tiene un evento estándar para el resto de eventos, por lo que Adapty los envía como eventos personalizados con sus nombres de Adapty. Para ajustar el nombre a tu convención, cámbialo en el campo del evento.
+
+| Evento de Adapty                       | Evento Meta predeterminado           |
+| :--------------------------------- | :----------------------------------- |
+| Subscription expired (Churned)     | `subscription_expired`               |
+| Subscription renewal cancelled     | `subscription_renewal_cancelled`     |
+| Subscription renewal reactivated   | `subscription_renewal_reactivated`   |
+| Subscription paused (Android only) | `subscription_paused`                |
+| Subscription deferred (Android only) | `subscription_deferred`            |
+| Subscription refunded              | `subscription_refunded`              |
+| Trial expired                      | `trial_expired`                      |
+| Trial renewal cancelled            | `trial_renewal_cancelled`            |
+| Trial renewal reactivated          | `trial_renewal_reactivated`          |
+| Entered grace period               | `entered_grace_period`               |
+| Billing issue detected             | `billing_issue_detected`             |
+| Non-subscription purchase refunded | `non_subscription_purchase_refunded` |
+| Trial still active                 | `trial_active`                       |
+| Subscription still active          | `subscription_active`                |
+
+**Trial still active** y **Subscription still active** son [eventos sintéticos](events#synthetic-events): Adapty los envía a Meta mediante un temporizador, y solo si el período de prueba o la suscripción siguen activos cuando el temporizador expira. No llevan ingresos asociados, por lo que Meta no los contabiliza en el valor de compra. Ambos están desactivados por defecto. Para enviarlos, actívalos y [configura el retraso](configuration#set-the-timer-for-synthetic-events).
 
 <Zoom>
   <img src="/assets/shared/img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.webp"
@@ -99,8 +110,6 @@ StartTrial, Subscribe y CancelSubscription son eventos estándar.
   }}
 />
 </Zoom>
-
-Para activar eventos específicos, simplemente activa los que necesites. Si se seleccionan varios nombres de eventos, Adapty consolidará los datos de todos los eventos seleccionados en un único nombre de evento de Adapty.
 
 ### Conectar tu app con Facebook Ads \{#connect-your-app-to-facebook-ads\}
 
@@ -187,14 +196,14 @@ Donde:
 |:---|:---|:---|
 | `event` | String | Siempre "CUSTOM_APP_EVENTS". |
 | `app_user_id` | String | El Customer User ID del usuario. |
-| `advertiser_id` | String | IDFA (iOS) o Advertising ID (Android). |
+| `advertiser_id` | String | En iOS, el IDFA, o el IDFV cuando el IDFA no está disponible. En Android, el Advertising ID. Cuando el perfil no tiene ID de dispositivo, `00000000-0000-0000-0000-000000000000`. |
 | `advertiser_tracking_enabled` | Integer | `1` si el seguimiento está habilitado (ATT autorizado), `0` en caso contrario. |
 | `application_tracking_enabled` | Integer | Siempre `1`. |
-| `custom_events` | String | Cadena codificada en JSON con los objetos de evento (ver más abajo). |
+| `custom_events` | String | Cadena codificada en JSON con objetos de evento (véase más abajo). |
 | `extinfo` | String | Cadena codificada en JSON con información de la app y el dispositivo (p. ej., versión, SO, idioma). |
-| `anon_id` | String | Facebook Anonymous ID (si está disponible). |
+| `anon_id` | String | ID anónimo de Facebook (si está disponible). |
 
-El parámetro `custom_events` es un array codificado en JSON de objetos que contiene:
+El parámetro `custom_events` es un array codificado en JSON con un objeto por cada evento de Meta al que se asigna el evento de Adapty. Solo `StartTrial`, `Subscribe` y `fb_mobile_purchase` incluyen `fb_content_id`, `fb_content_type`, `fb_num_items` y `fb_transaction_id`. Cada objeto contiene:
 
 | Parámetro | Tipo | Descripción |
 |:---|:---|:---|
@@ -207,10 +216,6 @@ El parámetro `custom_events` es un array codificado en JSON de objetos que cont
 | `fb_transaction_id` | String | ID de la transacción original. |
 | `fb_content_type` | String | Siempre "in_app". |
 | `fb_num_items` | Integer | Siempre 1 para eventos de compra. |
-
-## Coincidencia avanzada (Conversions API) \{#advanced-matching-conversions-api\}
-
-Facebook CAPI es una integración independiente de la integración de Facebook Ads descrita anteriormente, con sus propias credenciales, y se configura de forma independiente en el Adapty Dashboard. Si la activas, Adapty reenvía un payload de identidad hasheado a la API de Conversiones de Meta para un matching avanzado. Desde el perfil de Adapty del cliente, Adapty aplica SHA-256 y envía: email, número de teléfono, nombre y apellidos, fecha de nacimiento, género y país. Los identificadores de clic y navegador de Facebook (`fbc`, `fbp`) y la dirección IP/user agent se envían sin hashear, igual que en cualquier integración de Meta CAPI.
 
 ## Solución de problemas \{#troubleshooting\}
 

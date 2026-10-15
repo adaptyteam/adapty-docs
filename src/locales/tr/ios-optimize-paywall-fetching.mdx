@@ -18,9 +18,9 @@ Bu kurallar, `Adapty.activate()` ve `Adapty.identify()` fonksiyonlarının zaten
 | Attribution'ın çözülmesine fırsat tanıdıktan sonra `getFlow`'u çekin — örneğin `activate`'ten 1–2 saniye sonra ya da `didLoadLatestProfile` tetiklendikten sonra. | `getFlow`'u `App.init()` içinde çağırmayın. | Attribution henüz tamamlanmamıştır. Flow, varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
 | Her placement için bir `loadTimeout` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'u süresiz olarak beklemeyin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş ekran görür — ya da uygulamayı kapatır. |
 
-Herhangi bir fetch işleminde `loadTimeout` tetiklendiğinde — basit bir `getFlow` dahil — SDK, önbelleğe alınmış bir varyant varsa onu döner; yoksa kalan süre içinde varsayılan kitle (**All Users**) varyantını getirir. Hedefleme o istek için kaybolur, ertelenmez: segmentler ve attribution tabanlı kitleler sonuca uygulanmaz.
+Herhangi bir fetch işleminde — sıradan bir `getFlow` dahil — `loadTimeout` tetiklendiğinde, SDK mevcut bir önbelleklenmiş varyant varsa onu döndürür; yoksa kalan süre içinde varsayılan kitle (**All Users**) varyantını çeker. Bu istek için hedefleme kaybedilir, ertelenmez: segment ve attribution tabanlı kitleler sonuca uygulanmaz.
 
-`fetchPolicy` ve `loadTimeout` parametre referansı için [Paywall ve ürünleri getirme](fetch-paywalls-and-products) sayfasına, doğru placement seçimi için ise [Placement'lar](placements) sayfasına bakın.
+`fetchPolicy` ve `loadTimeout` parametre referansı için [Özel paywallları ve ürünleri getirme](fetch-paywalls-and-products) bölümüne, doğru placement'ı seçmek için ise [Placementlar](placements) bölümüne bakın.
 
 ## Placement'ları önceden yükle \{#preload-placements\}
 
@@ -122,6 +122,38 @@ Kitle segmentasyonunu hiç beklemeden önbelleği ısıtmak için varsayılan ki
 ```swift showLineNumbers
 try await Adapty.preloadFlowsForDefaultAudience(placementIds: ["main_paywall"])
 ```
+
+## Uygulama paketinden ilk ekran medyasını göster \{#show-first-screen-media-from-the-app-bundle\}
+
+Bir flow, resim ve videolarını Adapty'den indirir. İlk ekranın medyasını anında göstermek için bunları uygulama paketinden sunun. Bu yöntem, mevcut yerel bir onboarding'in görselleri gibi zaten paketlediğiniz medyaları yeniden kullanmanın iyi bir yoludur.
+
+1. Flow & Paywall Builder'da, resim veya video üzerinde bir [özel medya ID'si](custom-media#custom-media-id) ayarlayın. Oraya yüklediğiniz dosya yedek olarak kalır.
+2. Dosyayı uygulama paketinize ekleyin.
+3. `getFlowConfiguration` çağrısı yaparken, söz konusu ID için paketlenmiş dosyayı `assetsResolver` aracılığıyla iletin:
+
+```swift showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+let bundledAssets: [String: AdaptyCustomAsset] = [
+    "welcome_video": .video(
+        .file(
+            url: Bundle.main.url(forResource: "welcome", withExtension: "mp4")!,
+            preview: .uiImage(value: UIImage(named: "welcome_poster")!),
+            resolution: CGSize(width: 1080, height: 1920)
+        )
+    ),
+]
+
+let flowConfig = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    assetsResolver: bundledAssets
+)
+```
+
+Paketlenmiş dosyalar uygulamanızın indirme boyutunu artırır; bu yüzden yalnızca kullanıcıların ilk gördüğü medyaları paketleyin.
+
+Paketlemediğiniz medyalar yine de hemen görünür: görünüm yapılandırması, video duraklatma karesi dahil her görselin küçük, düşük çözünürlüklü bir kopyasını içerir ve tam dosya yüklenene kadar bunu gösterir.
+
+`assetsResolver` için tam referansa ulaşmak üzere [Varlıkları özelleştirin](get-pb-paywalls#customize-assets) sayfasına bakın.
 
 ## Zayıf bağlantı için ayarlama \{#tune-for-poor-connectivity\}
 

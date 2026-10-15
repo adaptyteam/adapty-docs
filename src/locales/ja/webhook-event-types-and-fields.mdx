@@ -190,6 +190,7 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 - `one_signal_subscription_id`
 - `tenjin_analytics_installation_id`
 - `posthog_distinct_user_id`
+- `singular_sdid`
 
 ### Play Store の購入トークン \{#play-store-purchase-token\}
 
@@ -257,7 +258,7 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 
 #### 税金と収益に関する追加イベントプロパティ \{#additional-tax-and-revenue-event-properties\}
 
-以下の税金と収益に関するイベントプロパティは、特定のイベントタイプにのみ適用される追加フィールドです。つまり、ここに列挙されているイベントタイプには、[ほとんどのイベントタイプ共通のイベントプロパティ](webhook-event-types-and-fields#for-most-event-types)に加えて、以下の追加フィールドが含まれます。
+以下の税金と収益に関するイベントプロパティは、特定のイベントタイプにのみ適用される追加フィールドです。つまり、ここに記載されているイベントタイプには、[ほとんどのイベントタイプに共通するイベントプロパティ](webhook-event-types-and-fields#for-most-event-types)に加えて、以下の追加フィールドが含まれます。
 
 税金と収益に関するイベントプロパティを持つイベントタイプ：
 
@@ -265,22 +266,31 @@ Webhookイベントは JSON 形式でシリアライズされます。サーバ�
 - `subscription_initial_purchase`（`subscription_started` とも呼ばれる — 同じイベント）
 - `subscription_refunded`
 - `non_subscription_purchase`
+- `non_subscription_purchase_refunded`
+- `trial_started`
+- `trial_converted`
 
-| フィールド            | 型    | 説明                                                         |
+| フィールド | 型 | 説明 |
 | :-------------------- | :---- | :----------------------------------------------------------- |
-| **net_revenue_local** | Float | ローカル通貨でのネット収益（Apple/Google の手数料および税金控除後の収入）。 |
-| **net_revenue_usd**   | Float | USD でのネット収益（Apple/Google の手数料および税金控除後の収入）。 |
-| **proceeds_local**    | Float | ローカル通貨での Apple/Google 手数料控除後のプロダクト価格。 |
-| **proceeds_usd**      | Float | Apple/Google 手数料控除後のプロダクト価格（USD）。           |
-| **tax_amount_local**  | Float | ローカル通貨での控除税額。                                   |
-| **tax_amount_usd**    | Float | USD での控除税額。                                           |
+| **net_revenue_local** | Float | ローカル通貨でのネット収益（Apple/Googleの手数料および税金を差し引いた収益）。 |
+| **net_revenue_usd** | Float | USD でのネット収益（Apple/Googleの手数料および税金を差し引いた収益）。 |
+| **proceeds_local** | Float | Apple/Googleの手数料を差し引いた `price_local`。 |
+| **proceeds_usd** | Float | Apple/Googleの手数料を差し引いた `price_usd`。 |
+| **tax_amount_local** | Float | `price_local` に含まれる[推定税額](how-adapty-analytics-works#taxes)。ユーザーが税金を支払った場合でも、Stripe および Paddle では `0`。 |
+| **tax_amount_usd** | Float | `price_usd` に含まれる[推定税額](how-adapty-analytics-works#taxes)。ユーザーが税金を支払った場合でも、Stripe および Paddle では `0`。 |
 
-#### `non_subscription_purchase` のペイロード例 \{#non-subscription-purchase-example-payload\}
+純収益には`net_revenue_*`を直接使用してください。`tax_amount_*`が`0`でない限り、`proceeds_*`から`tax_amount_*`を引いた金額は小さくなります。例えば、価格が12、手数料30%、税率20%の場合、Adaptyは以下のように計算します：
 
-`non_subscription_purchase` はサブスクリプションイベントと同じ構造に従いますが、買い切り購入または消耗型アイテムの購入を反映します。サブスクリプション専用フィールドは適用されません。`cancellation_reason`、`will_renew`、`is_in_grace_period`、`is_refund`、`is_lifetime`、`trial_duration` は存在しません。`subscription_expires_at` は含まれますが `null` になります。税金および収益フィールド（`net_revenue_*`、`proceeds_*`、`tax_amount_*`）は含まれます。
+- `proceeds_*` = `price_*` × (1 − 手数料) = 12 × 0.7 = 8.40
+- `tax_amount_*` = `price_*` × 税率 ÷ (1 + 税率) = 12 × 0.2 ÷ 1.2 = 2.00
+- `net_revenue_*` = `proceeds_*` ÷ (1 + 税率) = 8.40 ÷ 1.2 = 7.00
+
+#### `non_subscription_purchase`のペイロード例
+
+`non_subscription_purchase`はサブスクリプションイベントと同じ構造に従いますが、買い切り購入または消耗型アイテムの購入を反映します。サブスクリプション専用フィールドは適用されません：`cancellation_reason`、`will_renew`、`is_in_grace_period`、`is_refund`、`is_lifetime`、`trial_duration`は存在しません。`subscription_expires_at`は存在しますが`null`です。税金と収益のフィールド（`net_revenue_*`、`proceeds_*`、`tax_amount_*`）は含まれます。
 
 <details>
-<summary>ペイロード例（クリックして展開）</summary>
+<summary>ペイロードの例（クリックして展開）</summary>
 
 ```json title="Json" showLineNumbers
 {

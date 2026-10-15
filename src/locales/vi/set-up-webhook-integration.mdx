@@ -146,5 +146,20 @@ Tên sự kiện có thể là bất kỳ chuỗi nào. Bạn không thể để
 
 ## Xử lý sự kiện webhook \{#handle-webhook-events\}
 
-Webhook thường được gửi trong vòng 5 đến 60 giây sau khi sự kiện xảy ra. Tuy nhiên, các sự kiện hủy có thể mất đến 2 giờ để được gửi sau khi người dùng hủy gói đăng ký của họ.
-Nếu mã trạng thái phản hồi của server nằm ngoài khoảng 200-404, Adapty sẽ thử gửi lại với backoff theo cấp số nhân. Lần thử lại đầu tiên xảy ra khoảng **1 phút** sau lần thất bại đầu tiên, tăng gấp đôi sau mỗi lần tiếp theo — tối đa 9 lần thử trong vòng 24 giờ. Chúng tôi khuyến nghị bạn thiết lập webhook chỉ thực hiện các xác thực cơ bản đối với nội dung sự kiện từ Adapty trước khi phản hồi. Nếu server của bạn không thể xử lý sự kiện và bạn không muốn Adapty thử lại, hãy sử dụng mã trạng thái trong khoảng 200-404. Ngoài ra, hãy xử lý các tác vụ tốn thời gian một cách bất đồng bộ và phản hồi Adapty nhanh chóng. Nếu Adapty không nhận được phản hồi trong vòng 10 giây, hệ thống sẽ coi đó là lần thất bại và sẽ thử lại.
+Webhook thường được gửi trong vòng 5 đến 60 giây sau khi sự kiện xảy ra. Tuy nhiên, sự kiện hủy gói đăng ký có thể mất đến 2 giờ để được gửi sau khi người dùng hủy gói đăng ký của họ.
+
+Cơ chế gửi webhook của Adapty là at-least-once: mỗi sự kiện sẽ được gửi ít nhất một lần, và Adapty sẽ thử lại nếu thất bại thay vì bỏ qua. Nếu mã trạng thái phản hồi từ server của bạn nằm ngoài khoảng 200-404, Adapty sẽ thử gửi lại với cơ chế exponential backoff. Lần thử đầu tiên diễn ra sau khoảng **1 phút** kể từ lần thất bại ban đầu, và thời gian chờ sẽ tăng gấp đôi sau mỗi lần — tổng cộng tối đa 9 lần thử trong vòng 24 giờ. Chúng tôi khuyến nghị bạn cấu hình webhook để chỉ thực hiện xác thực cơ bản nội dung sự kiện từ Adapty trước khi phản hồi. Nếu server của bạn không thể xử lý sự kiện và bạn không muốn Adapty thử lại, hãy trả về mã trạng thái trong khoảng 200-404. Ngoài ra, hãy xử lý các tác vụ tốn thời gian theo cơ chế bất đồng bộ và phản hồi Adapty thật nhanh. Nếu Adapty không nhận được phản hồi trong vòng 10 giây, lần gửi đó sẽ bị coi là thất bại và sẽ được thử lại.
+
+Các sự kiện không được đảm bảo sẽ đến theo thứ tự — xem [Trường sự kiện](webhook-event-types-and-fields#event-fields) để biết cách tự sắp xếp thứ tự và loại bỏ trùng lặp.
+
+:::note
+Hai giới hạn được áp dụng cho các lần thử lại ngoài lịch trình trên. Nếu endpoint của bạn không có lần gửi thành công nào trong 24 giờ, Adapty sẽ dừng thử lại các sự kiện thất bại cho endpoint đó cho đến khi có một lần gửi thành công. Ngoài ra, một sự kiện chưa được gửi trong vòng 24 giờ kể từ khi được tạo sẽ không còn được thử lại nữa. Các sự kiện thất bại trong thời gian ngừng hoạt động kéo dài sẽ không được gửi lại tự động — hãy liên hệ với [bộ phận hỗ trợ Adapty](mailto:support@adapty.io) để gửi lại.
+:::
+
+### Tạm dừng phân phối sau nhiều lần thất bại \{#paused-delivery-after-repeated-failures\}
+
+Khi hầu hết các lần gửi gần đây đến endpoint của bạn thất bại, Adapty sẽ tạm dừng việc gửi webhook cho ứng dụng của bạn. Một lần thất bại ở đây được định nghĩa giống như với các lần thử lại: mã trạng thái phản hồi nằm ngoài khoảng 200-404, lỗi kết nối, hoặc không có phản hồi trong vòng 10 giây. Trong thời gian tạm dừng, Adapty không gửi các sự kiện mới đến endpoint của bạn và cũng không thử lại chúng sau đó. Các sự kiện này sẽ hiển thị trạng thái **Sending failed**, dù server của bạn chưa nhận được request nào. Sau một khoảng thời gian chờ, Adapty sẽ gửi sự kiện tiếp theo để kiểm tra endpoint. Nếu lần gửi đó thành công, việc gửi sẽ tiếp tục bình thường. Nếu thất bại, việc gửi sẽ bị tạm dừng lại với thời gian chờ dài hơn.
+
+Yêu cầu xác minh mà Adapty gửi khi bạn nhấn **Save** không đi qua pipeline phân phối này, vì vậy yêu cầu đó có thể thành công ngay cả khi phân phối đang bị tạm dừng.
+
+Để giữ cho quá trình phân phối hoạt động liên tục, hãy phản hồi với trạng thái `2xx` cho mọi sự kiện, kể cả những sự kiện mà server của bạn chưa thể khớp với người dùng nào, và xử lý chúng ở phía bạn.

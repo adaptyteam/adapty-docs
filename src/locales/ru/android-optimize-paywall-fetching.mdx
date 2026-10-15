@@ -18,7 +18,7 @@ metadataTitle: "Оптимизация загрузки флоу и пейвол
 | Вызывайте `getFlow` после того, как атрибуция успела отработать — например, через 1–2 секунды после `activate` или после срабатывания `setOnProfileUpdatedListener`. | Вызывайте `getFlow` в `Application.onCreate()`. | Атрибуция ещё не пришла. Флоу разрешается по аудитории по умолчанию и незаметно обходит сегменты и персонализацию ASA. |
 | Задайте `loadTimeout` и настройте [резервный пейвол](fallback-paywalls) для каждого плейсмента. | Ждите ответа `getFlow` бесконечно. | Без таймаута пользователи с плохим соединением видят пустой экран до восстановления сети — или просто закрывают приложение. |
 
-Подробнее о параметрах `fetchPolicy` и `loadTimeout` — в разделе [Получение пейволов и продуктов](fetch-paywalls-and-products-android), о выборе подходящего плейсмента — в разделе [Плейсменты](placements).
+Подробнее о параметрах `fetchPolicy` и `loadTimeout` см. в разделе [Получение кастомных пейволов и продуктов](fetch-paywalls-and-products-android), а о выборе подходящего плейсмента — в разделе [Плейсменты](placements).
 
 ## Предзагрузка плейсментов \{#preload-placements\}
 
@@ -127,6 +127,43 @@ Adapty.preloadFlows(listOf("onboarding", "main_paywall")) { error ->
 ```kotlin showLineNumbers
 Adapty.preloadFlowsForDefaultAudience(listOf("main_paywall")) { error -> }
 ```
+
+## Показывайте медиа первого экрана из бандла приложения \{#show-first-screen-media-from-the-app-bundle\}
+
+Флоу загружает изображения и видео из Adapty. Чтобы медиа первого экрана отображалось мгновенно, отдавайте его из бандла приложения. Это удобно, если вы уже поставляете нужные файлы с приложением — например, визуальные материалы существующего нативного онбординга.
+
+1. В Flow & Paywall Builder задайте [пользовательский медиа ID](custom-media#custom-media-id) для изображения или видео. Загруженный там файл остаётся в качестве резервного.
+2. Добавьте файл в папку `res/raw` или `assets` вашего приложения.
+3. При создании представления флоу с помощью `getFlowView` передайте встроенный файл для этого ID в `customAssets`:
+
+```kotlin showLineNumbers
+// "welcome_video" is the custom media ID set in the Flow & Paywall Builder
+val bundledAssets = AdaptyCustomAssets.of(
+    "welcome_video" to
+            AdaptyCustomVideoAsset.file(
+                FileLocation.fromResId(requireContext(), R.raw.welcome),
+                preview = AdaptyCustomImageAsset.file(
+                    FileLocation.fromResId(requireContext(), R.drawable.welcome_poster),
+                ),
+                resolution = AdaptyCustomVideoAsset.Resolution(width = 1080, height = 1920),
+            ),
+)
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    insets,
+    bundledAssets,
+)
+```
+
+Встроенные файлы увеличивают размер загрузки приложения, поэтому встраивайте только те медиафайлы, которые пользователь видит в первую очередь.
+
+Медиафайлы, которые не встроены, всё равно отображаются сразу: конфигурация вида содержит небольшую копию каждого изображения в низком разрешении, включая стоп-кадр видео, и показывает её до загрузки полного файла.
+
+Полное описание `customAssets` см. в разделе [Настройка ресурсов](android-get-pb-paywalls#customize-assets).
 
 ## Настройка для нестабильного соединения \{#tune-for-poor-connectivity\}
 

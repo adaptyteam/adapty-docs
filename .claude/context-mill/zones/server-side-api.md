@@ -1,6 +1,6 @@
 ---
 zone: server-side-api
-sources: [dashboard-backend, server-side-api-spec]
+sources: [server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -22,7 +22,7 @@ Adapty's Server-Side API v2 — the REST API a developer's own backend calls to 
 
 `server-side-api-objects.mdx` and `Offer.md` are **not maintained** — they are older hand-written object references that the team has stopped updating. Never edit them to describe a field change; put the field in the spec. (`ss-authorization` still links to `server-side-api-objects`; where that link should point instead is an open owner decision, not something to fix in passing.)
 
-Backend ground truth, when the spec itself is what's in question: the `adapty-dashboard-api` repo in `~/Documents`. Field composition — which integrations or payloads carry a given field — must be read out of that code, never inferred from how a neighbouring doc describes it.
+Backend ground truth, when the spec itself is what's in question: Adapty's closed-source backend, not citable here — confirm with the backend/product team. Field composition — which integrations or payloads carry a given field — must be confirmed there, never inferred from how a neighbouring doc describes it.
 
 Naming and linking, both settled conventions:
 

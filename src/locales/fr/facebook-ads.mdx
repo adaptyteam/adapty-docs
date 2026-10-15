@@ -69,25 +69,36 @@ Vous pouvez également utiliser cette intégration avec les applications Android
 
 ### Configurer les événements et les tags \{#configure-events-and-tags\}
 
-Veuillez noter que l'intégration Facebook Ads est spécifiquement conçue pour les entreprises qui utilisent Meta pour leurs campagnes publicitaires et souhaitent les optimiser en fonction du comportement de leurs clients. Elle prend en charge les événements standard de Meta à des fins d'optimisation. Par conséquent, la modification du nom des événements n'est pas disponible pour l'intégration Meta Ads. Adapty associe efficacement vos événements clients aux événements Meta correspondants pour une analyse précise.
+Adapty associe ses événements d'achat aux événements standard de Meta, que Meta peut utiliser pour optimiser ses campagnes : `StartTrial`, `Subscribe` et `fb_mobile_purchase`, l'événement d'achat de Meta. **Subscription started**, **Subscription renewed**, **Trial started** et **Trial converted** envoient chacun un événement Meta pour chaque nom sélectionné dans le champ de l'événement, et tous les noms sont sélectionnés par défaut. Un début d'essai, par exemple, génère trois événements Meta. Pour en envoyer moins, retirez des noms du champ.
 
-| Événement Adapty                  | Événement Meta Ads          |
-| :---------------------------- | :-------------------------- |
-| Subscription initial purchase | Subscribe                   |
-| Subscription renewed          | Subscribe                   |
-| Subscription cancelled        | CancelSubscription          |
-| Trial started                 | StartTrial                  |
-| Trial converted               | Subscribe                   |
-| Trial cancelled               | CancelTrial                 |
-| Non subscription purchase     | fb_mobile_purchase          |
-| Billing issue detected        | billing_issue_detected      |
-| Entered grace period          | entered_grace_period        |
-| Auto renew off                | auto_renew_off              |
-| Auto renew on                 | auto_renew_on               |
-| Auto renew off subscription   | auto_renew_off_subscription |
-| Auto renew on subscription    | auto_renew_on_subscription  |
+| Événement Adapty              | Événements Meta par défaut                           |
+| :---------------------------- | :--------------------------------------------------- |
+| Subscription started          | `Subscribe`, `fb_mobile_purchase`                    |
+| Subscription renewed          | `Subscribe`, `fb_mobile_purchase`                    |
+| Trial started                 | `StartTrial`, `Subscribe`, `fb_mobile_purchase`      |
+| Trial converted               | `Subscribe`, `fb_mobile_purchase`                    |
+| Non-subscription purchase     | `fb_mobile_purchase`                                 |
 
-StartTrial, Subscribe, CancelSubscription sont des événements standard.
+Meta ne dispose pas d'événement standard pour les événements restants, donc Adapty les envoie en tant qu'événements personnalisés sous leurs noms Adapty. Pour utiliser votre propre nommage, modifiez le nom dans le champ de l'événement.
+
+| Événement Adapty                       | Événement Meta par défaut            |
+| :--------------------------------- | :----------------------------------- |
+| Subscription expired (Churned)     | `subscription_expired`               |
+| Subscription renewal cancelled     | `subscription_renewal_cancelled`     |
+| Subscription renewal reactivated   | `subscription_renewal_reactivated`   |
+| Subscription paused (Android only) | `subscription_paused`                |
+| Subscription deferred (Android only) | `subscription_deferred`            |
+| Subscription refunded              | `subscription_refunded`              |
+| Trial expired                      | `trial_expired`                      |
+| Trial renewal cancelled            | `trial_renewal_cancelled`            |
+| Trial renewal reactivated          | `trial_renewal_reactivated`          |
+| Entered grace period               | `entered_grace_period`               |
+| Billing issue detected             | `billing_issue_detected`             |
+| Non-subscription purchase refunded | `non_subscription_purchase_refunded` |
+| Trial still active                 | `trial_active`                       |
+| Subscription still active          | `subscription_active`                |
+
+**Trial still active** et **Subscription still active** sont des [événements synthétiques](events#synthetic-events) : Adapty les envoie à Meta selon un minuteur, et uniquement si l'essai ou l'abonnement est toujours en cours à l'expiration du minuteur. Ils ne portent aucun revenu, donc Meta ne les comptabilise pas dans la valeur des achats. Tous deux sont désactivés par défaut. Pour les envoyer, activez-les et [définissez le délai](configuration#set-the-timer-for-synthetic-events).
 
 <Zoom>
   <img src="/assets/shared/img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.webp"
@@ -99,8 +110,6 @@ StartTrial, Subscribe, CancelSubscription sont des événements standard.
   }}
 />
 </Zoom>
-
-Pour activer des événements spécifiques, activez simplement ceux dont vous avez besoin. Si plusieurs noms d'événements sont sélectionnés, Adapty regroupera les données de tous les événements choisis sous un seul nom d'événement Adapty.
 
 ### Connectez votre application à Facebook Ads \{#connect-your-app-to-facebook-ads\}
 
@@ -187,14 +196,14 @@ Where:
 |:---|:---|:---|
 | `event` | String | Toujours "CUSTOM_APP_EVENTS". |
 | `app_user_id` | String | Le Customer User ID de l'utilisateur. |
-| `advertiser_id` | String | IDFA (iOS) ou Advertising ID (Android). |
-| `advertiser_tracking_enabled` | Integer | `1` si le suivi est activé (ATT autorisé), `0` sinon. |
+| `advertiser_id` | String | Sur iOS, l'IDFA, ou l'IDFV si l'IDFA est indisponible. Sur Android, l'Advertising ID. Si le profil n'a pas d'identifiant d'appareil, `00000000-0000-0000-0000-000000000000`. |
+| `advertiser_tracking_enabled` | Integer | `1` si le tracking est activé (ATT autorisé), `0` sinon. |
 | `application_tracking_enabled` | Integer | Toujours `1`. |
-| `custom_events` | String | Chaîne JSON encodée contenant les objets d'événements (voir ci-dessous). |
-| `extinfo` | String | Chaîne JSON encodée contenant les informations sur l'application/l'appareil (ex. : version, OS, locale). |
+| `custom_events` | String | Chaîne encodée en JSON contenant des objets d'événements (voir ci-dessous). |
+| `extinfo` | String | Chaîne encodée en JSON contenant les informations sur l'application/l'appareil (par exemple, version, OS, locale). |
 | `anon_id` | String | Facebook Anonymous ID (si disponible). |
 
-Le paramètre `custom_events` est un tableau d'objets encodé en JSON, contenant :
+Le paramètre `custom_events` est un tableau encodé en JSON comportant un objet pour chaque événement Meta auquel l'événement Adapty est associé. Seuls `StartTrial`, `Subscribe` et `fb_mobile_purchase` contiennent `fb_content_id`, `fb_content_type`, `fb_num_items` et `fb_transaction_id`. Chaque objet contient :
 
 | Paramètre | Type | Description |
 |:---|:---|:---|
@@ -207,10 +216,6 @@ Le paramètre `custom_events` est un tableau d'objets encodé en JSON, contenant
 | `fb_transaction_id` | String | Identifiant de transaction original. |
 | `fb_content_type` | String | Toujours "in_app". |
 | `fb_num_items` | Integer | Toujours 1 pour les événements d'achat. |
-
-## Correspondance avancée (Conversions API) \{#advanced-matching-conversions-api\}
-
-Facebook CAPI est une intégration distincte de l'intégration Facebook Ads décrite ci-dessus, avec ses propres identifiants, et vous la configurez indépendamment dans l'Adapty Dashboard. Si vous l'activez, Adapty transmet un payload d'identité haché à l'API Conversions de Meta pour la correspondance avancée. À partir du profil Adapty du client, Adapty hache en SHA-256 et envoie : l'adresse e-mail, le numéro de téléphone, le prénom et le nom, la date de naissance, le genre et le pays. Les identifiants de clic et de navigateur Facebook (`fbc`, `fbp`) ainsi que l'adresse IP et le user agent transitent sans hachage, comme dans toute intégration Meta CAPI.
 
 ## Résolution des problèmes \{#troubleshooting\}
 

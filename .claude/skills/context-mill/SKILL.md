@@ -149,7 +149,8 @@ Carrying one feature from a shipped platform to the next.
 6. Check the migration-guide criteria below; write the guide if they're met.
 7. Write docs for **the target platform only** — never another platform's docs in the same pass.
 8. Update the rollout file's platform table (branch, code/docs status, articles written, docs commit,
-   PR). Append anything learned the hard way to the zone's "Gaps and misses".
+   PR). Append anything learned the hard way to the zone's "Gaps and misses". Commit these files as
+   Mode 4 describes: in their own commit, when the target platform's docs are committed.
 
 > **Never check out.** No `checkout`, `switch`, `pull`, `stash`, or `merge` in another repository.
 > Read with `git show <ref>:<path>` and `git diff a...b` only. The user's working tree in the SDK repo
@@ -170,6 +171,8 @@ Deepens one zone's brief.
    what ripples when this changes.
 3. Write the answers into the brief's judgment sections (not the roster).
 4. Run `npm run mill:reviewed <zone-id>` to stamp it reviewed.
+5. Commit as Mode 4 describes. When the interview is the whole task, commit when the user asks for a
+   commit.
 
 ## Mode 4 — Autolog
 
@@ -184,20 +187,96 @@ brief said the store never writes prices back to Adapty (there is a second price
 UTC claim in doubt that turned out correct, another asserted three claims about Adapty Mail that a
 five-week-old checkout had made stale.
 
-### Report, don't silently edit
+### The mill is public: keep it anonymous
 
-Produce a **diff against the brief**, in your final report to the user:
+Everything under `.claude/context-mill/` and this skill ships in a public repository. Write every
+brief, rollout, and registry entry as if a customer will read it, because one can.
 
-1. What you learned from the source that the brief does not say.
-2. **What the brief says that you found to be wrong** — lead with this.
+Never write:
+
+- **Support ticket numbers or links** — Pylon, Intercom, Zendesk, or any other helpdesk.
+- **Task-tracker keys or links** — Jira keys (`<PROJECT>-<number>`), including inside a branch name
+  (`origin/<PROJECT>-<number>`). Name the branch by its role instead: "the fix branch", "the feature branch before merge".
+- **Customer cases** — a customer's or app's name, a config, app, or profile ID taken from a case, or a
+  retelling of what one customer did or saw. Aggregates are fine ("the most frequent handoff in a
+  one-week sample"); one customer's story is not.
+- **People** — staff names and personal accounts. Write the role: "product decision", "reviewer
+  feedback".
+- **Chat links** — Slack thread or message URLs.
+- **Closed-source code** — anything from Adapty's private repos (the dashboard backend and frontend,
+  the Flow & Paywall Builder and its transformer, the UA service, the Adapty Mail backend and dashboard):
+  repo names, file paths, function and table names, commits, branches, and the commands that read them.
+  Keep the behavior the code shows, and cite it as "backend code, 2026-09-29" or "dashboard code,
+  2026-10-01". Dashboard labels and messages users can see are public; quote those verbatim.
+- **Internal infrastructure** — internal hosts, GitLab project or group IDs, access requests and
+  permissions, non-public API hosts.
+
+Cite paths, commits, and PRs freely in the public repos: the SDKs on GitHub (`adaptyteam/AdaptySDK-*`,
+`AdaptySDK-JS-Core`), `adapty-cli`, `adapty-skills`, `adapty-sdk-integration-skill`, `apple-ads-cli`, and
+this docs repo with its OpenAPI specs. Only these are registered in `sources.md`. When the only source for a claim is a ticket or a chat, write the
+claim, date it, and name the kind of source ("confirmed by product, 2026-09-16"), not the record.
+
+`scripts/__tests__/context-mill-anonymity.test.mjs` fails on tracker keys, helpdesk and chat links,
+internal hosts, and private repo names. It can't catch people's names, case retellings, or a private file
+path cited without its repo name, so check those yourself before you commit.
+
+### Write the brief, then report what you wrote
+
+Always write the findings into the brief yourself. Don't stop at a proposal and don't wait for the
+owner's go-ahead: a finding that stays in a chat message is lost when the session ends. The same
+applies to rollout files in Mode 2 and to interview answers in Mode 3.
+
+What varies is **how** a finding goes in, not **whether** it does:
+
+| Finding | How it goes into the brief |
+|---|---|
+| Command output settles it | Write it as a claim in the section it belongs to. Date it and name the evidence (`2026-09-28, AdaptySDK-iOS 4.2.0 Sources/…/Foo.swift`). |
+| The brief says something the output contradicts | Correct it in place, with the date and the evidence. Don't leave the old claim beside the new one. |
+| You could not confirm a claim the brief makes | Keep the claim. Add a dated note: you could not confirm it, and which mechanism you looked for. |
+| An open question you could not settle | Add it to `Gaps and misses` as an open question, with how you checked. |
+
+Then list the same diff in your final report to the user:
+
+1. **What the brief said that turned out wrong.** Put this first.
+2. What the source says that the brief didn't say.
 3. What you could not verify, and which mechanism you looked for.
 
-Then edit the brief only where **both** hold: you have command output that settles it, and the edit is
-dated with the evidence named. Everything else stays a proposal for the owner.
+The evidence rules exist because a wrong brief is worse than a missing one: later agents trust it without
+re-checking. Dated claims with named evidence keep a written finding checkable. `mill:reviewed` keeps
+agent edits apart from human-vouched judgment. You don't need to hold edits back to protect either.
 
-Why the asymmetry: a wrong brief is worse than a missing one, because it is authoritative — it becomes the
-context every later agent trusts without re-checking. And if agents append to briefs freely during article
-work, every zone sits in `drafted, unreviewed` forever and that state stops distinguishing anything.
+### Commit mill changes in their own commit, together with the rest
+
+Changes under `.claude/context-mill/` (briefs, rollout files, `zones.json`, re-rendered rosters) go into
+**one separate commit**, made at the same time as the task's other changes are committed:
+
+- **Not earlier.** Don't commit a brief as soon as you've written it. Until the rest of the task is
+  committed, the mill changes stay in the working tree with everything else.
+- **Not later.** When the rest of the task gets committed — the user asks for it, or a workflow such as
+  `youtube-video` or `sync-branch-to-develop` reaches its commit step — commit the mill changes right
+  after it, in the same turn. Never leave them uncommitted once the task's work is committed.
+- **Separate.** The task's own commit stages its files by name and leaves out every path under
+  `.claude/context-mill/`. The mill commit stages only paths under `.claude/context-mill/`:
+
+  ```bash
+  git add .claude/context-mill/
+  ```
+
+  ```bash
+  git commit -m "chore(context-mill): <what the briefs learned, in one line>"
+  ```
+
+  Name the zones in the subject when there are one or two (`chore(context-mill): ios-sdk brief — store
+  messages need SDK 4.2`).
+- **Only this task's changes.** Before staging, run `git status .claude/context-mill/`. If it shows
+  changes you didn't make in this task, ask the user before you stage them.
+
+If the task never gets committed, nothing gets committed: leave the mill changes in the working tree and
+say so in the report. If the mill changes are the whole task (Mode 3, a brief-only fix), they are "the
+rest": commit them when the user asks for a commit.
+
+This doesn't override the rule that commits happen only when the user or the workflow asks for one. It
+decides where mill changes land when a commit happens.
 
 ### Never
 
@@ -212,7 +291,7 @@ work, every zone sits in `drafted, unreviewed` forever and that state stops dist
 
 Run `npm run mill`. The roster re-renders and `sources:` follows from what the sections cite — both are
 script-owned, so there is no judgment to defer. What you must not touch by hand is anything between the
-`mill:auto` markers.
+`mill:auto` markers. The re-rendered rosters go into the mill commit, not the task's commit.
 
 ## Judgment rules
 

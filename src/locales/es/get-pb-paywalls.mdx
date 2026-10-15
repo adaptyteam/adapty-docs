@@ -92,7 +92,7 @@ Usa el método `getFlowConfiguration` para cargar la configuración de la vista.
 ```swift showLineNumbers
 
 guard flow.hasViewConfiguration else {
-    // handle as remote config paywall
+    // handle as custom paywall
     return
 }
 
@@ -104,13 +104,14 @@ Parámetros:
 | Parámetro                | Presencia       | Descripción |
 | :----------------------- | :------------- | :---------- |
 | **forFlow**              | obligatorio       | Un objeto `AdaptyFlow` obtenido mediante `Adapty.getFlow`. |
-| **locale**               | <p>opcional</p><p>predeterminado: `nil`</p> | El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera como un código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-br`). Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes). |
-| **customLayoutId**       | <p>opcional</p><p>predeterminado: `nil`</p><p>SDK 4.1+</p> | El ID personalizado de un layout en la configuración de layouts del flow. Pásalo para renderizar ese layout específico en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, la llamada falla con un error de no-view-configuration. El Flow & Paywall Builder aún no asigna IDs de layout personalizados, así que deja este campo sin definir. |
-| **loadTimeout**          | predeterminado: 5 seg | Este valor limita el tiempo de espera de este método. Si se alcanza el tiempo de espera, se devolverán los datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede consistir en varias solicitudes internas. |
+| **locale**               | <p>opcional</p><p>por defecto: `nil`</p> | El identificador de la [localización del paywall](add-paywall-locale-in-adapty-paywall-builder). Se espera como un código de idioma con una o dos subetiquetas separadas por `-` (p. ej., `en`, `pt-br`). Consulta [Localizaciones y códigos de idioma](localizations-and-locale-codes). |
+| **customLayoutId**       | <p>opcional</p><p>por defecto: `nil`</p><p>SDK 4.1+</p> | El ID personalizado de un layout en la configuración de layouts del flow. Pásalo para renderizar ese layout específico en lugar del que el SDK selecciona automáticamente según el tipo de dispositivo y el tamaño de pantalla. Si ningún layout coincide con el ID, la llamada falla con un error de no-view-configuration. El Flow & Paywall Builder aún no asigna IDs de layout personalizados, así que deja este campo sin definir. |
+| **loadTimeout**          | por defecto: 5 seg | Este valor limita el tiempo de espera de este método. Si se alcanza el límite, se devolverán datos en caché o el fallback local. Ten en cuenta que en casos excepcionales este método puede superar ligeramente el tiempo indicado en `loadTimeout`, ya que la operación puede estar compuesta por varias solicitudes internas. |
 | **products**             | opcional       | Proporciona un array de objetos `AdaptyPaywallProduct` para optimizar el momento en que se muestran los productos en pantalla. Si se pasa `nil`, AdaptyUI obtendrá automáticamente los productos necesarios. |
-| **systemRequestsHandler** | opcional      | Un objeto que implementa `AdaptySystemRequestsHandler` y gestiona las solicitudes de permisos del sistema y de valoración activadas por las acciones del flow. Solo es necesario si tu flow incluye este tipo de acciones. |
+| **systemRequestsHandler** | opcional      | Un objeto que implementa `AdaptySystemRequestsHandler` y gestiona las solicitudes de permisos del sistema y de valoración desencadenadas por acciones del flow. Solo es necesario si tu flow incluye este tipo de acciones. |
 | **assetsResolver**       | opcional       | Un diccionario `[String: AdaptyCustomAsset]` que sobreescribe imágenes y vídeos en el flow/paywall. Consulta [Personalizar assets](#customize-assets). |
-| **timerResolver**        | opcional       | Un objeto que implementa `AdaptyTimerResolver` y proporciona fechas de fin para los temporizadores definidos por el desarrollador. Consulta [Configurar temporizadores definidos por el desarrollador](#set-up-developer-defined-timers). |
+| **tagResolver**          | opcional       | Los valores de tu app para las [etiquetas personalizadas](flow-custom-tags) del flow, en un diccionario `[String: String]` con el nombre completo de cada etiqueta como clave, o en un objeto que implemente `AdaptyTagResolver`. Para más detalles, consulta [Pasar datos a flows](ios-flow-custom-tags). |
+| **timerResolver**        | opcional       | Un objeto que implementa `AdaptyTimerResolver` y proporciona fechas de finalización para los temporizadores definidos por el desarrollador. Consulta [Configurar temporizadores definidos por el desarrollador](#set-up-developer-defined-timers). |
 
 Una vez cargado, [presenta el flow/paywall](ios-present-paywalls).
 
@@ -158,11 +159,12 @@ Para otras imágenes y vídeos, necesitas [establecer un ID personalizado](custo
 Por ejemplo, puedes:
 
 - Muestra una imagen o vídeo diferente a algunos usuarios.
-- Muestra una imagen de vista previa local mientras se carga la imagen principal remota.
+- Muestra una imagen de vista previa local mientras se carga una imagen principal remota.
 - Muestra una imagen de vista previa antes de reproducir un vídeo.
-- Indica la resolución en píxeles del vídeo para que el reproductor reserve espacio en el layout (relación de aspecto = `width / height`) antes de que cargue el vídeo. Pasa `nil` para omitirlo.
+- Muestra contenido multimedia incluido en la app, para que la primera pantalla se renderice sin necesidad de descarga. Consulta [Mostrar contenido multimedia de la primera pantalla desde el bundle de la app](ios-optimize-paywall-fetching#show-first-screen-media-from-the-app-bundle).
+- Proporciona la resolución en píxeles del vídeo para que el reproductor reserve espacio en el layout (relación de aspecto = `width / height`) antes de que el vídeo se cargue. Pasa `nil` para omitir esto.
 
-A continuación se muestra un ejemplo de cómo puedes proporcionar assets personalizados mediante un diccionario sencillo:
+Aquí tienes un ejemplo de cómo puedes proporcionar recursos personalizados mediante un diccionario simple:
 
 ```swift showLineNumbers
 let customAssets: [String: AdaptyCustomAsset] = [
@@ -228,9 +230,9 @@ En este ejemplo, `CUSTOM_TIMER_NY` y `CUSTOM_TIMER_6H` son los **Timer ID** de l
 
 <SDKv3>
 
-Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, tal como se describe a continuación.
+Después de [diseñar la parte visual de tu paywall](adapty-paywall-builder) con el Paywall Builder en el Adapty Dashboard, puedes mostrarlo en tu app móvil. El primer paso es obtener el paywall asociado al placement y su configuración de vista, como se describe a continuación.
 
-Ten en cuenta que este tema hace referencia a paywalls personalizados con el Paywall Builder. Si implementas tus paywalls manualmente, consulta [Obtener paywalls y productos para paywalls con Remote Config](fetch-paywalls-and-products).
+Ten en cuenta que este tema hace referencia a paywalls personalizados con el Paywall Builder. Si implementas paywalls personalizados, consulta [Obtener paywalls y productos personalizados](fetch-paywalls-and-products).
 
 :::tip
 
@@ -294,13 +296,13 @@ Parámetros de respuesta:
 | :-------- | :---------- |
 | Paywall   | Un objeto `AdaptyPaywall` con una lista de IDs de producto, el identificador del paywall, el Remote Config y otras propiedades. |
 
-## Obtener la configuración de vista de un paywall creado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+## Obtener la configuración de vista de un paywall diseñado con Paywall Builder \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
 
 :::important
 Asegúrate de activar el botón **Show on device** en el Paywall Builder. Si esta opción no está activada, la configuración de vista no estará disponible para recuperar.
 :::
 
-Después de obtener el paywall, comprueba si incluye una configuración de vista, lo que indica que fue creado con Paywall Builder. Esto te indicará cómo mostrar el paywall. Si la configuración de vista está presente, trátalo como un paywall de Paywall Builder; si no, [trátalo como un paywall de Remote Config](present-remote-config-paywalls).
+Tras obtener el paywall, comprueba si incluye una configuración de vista, lo que indica que fue creado con Paywall Builder. Esto te orientará sobre cómo mostrar el paywall. Si la configuración de vista está presente, trátalo como un paywall de Paywall Builder; si no, [trátalo como un paywall personalizado](present-remote-config-paywalls).
 
 Usa el método `getPaywallConfiguration` para cargar la configuración de la vista.
 

@@ -84,7 +84,7 @@ Present final content with a brief writing summary. See `references/output-templ
 
 You read the source to write this article, which is the cheapest moment there will ever be to test what the zone brief claims. Invoke the `context-mill` skill and follow **Mode 4 — Autolog**; it holds the full rule, so don't reimplement it here.
 
-The short version: treat the brief as a hypothesis and the code as the check, then report a **diff** — what you learned that the brief doesn't say, **what the brief says that turned out wrong** (lead with this), and what you couldn't verify. Edit the brief only where you have command output that settles it, and date the edit. Never run `mill:reviewed` — that is the owner's act, not a side effect of writing an article.
+The short version: treat the brief as a hypothesis and the code as the check. Write every finding into the brief, dated and with its evidence named — unconfirmed findings go in as unconfirmed, not as proposals. Then report the same diff: **what the brief said that turned out wrong** (lead with this), what you learned that the brief doesn't say, and what you couldn't verify. When the article gets committed, commit the `.claude/context-mill/` changes right after it, in their own commit. Never run `mill:reviewed` — that is the owner's act, not a side effect of writing an article.
 
 Skip this phase only if you wrote from the user's prose alone and never opened an SDK repo, a backend module or a spec. If you read source, you owe the diff.
 
@@ -391,6 +391,8 @@ This governs *steps* — for a warning about something that genuinely goes wrong
 - Reason before mitigation in limitations — what's restricted and why it hurts, then the workaround.
 - Symptom before mechanism in troubleshooting — headings and opening sentences name what the reader observes, not the cause. ❌ "Exclude historical events is on by default" → ✅ "PostHog is missing historical events."
 - Good news is not a footnote. If a passage has one actionable sentence and four constraints, the actionable one leads.
+- **Lead a feature section with what it lets the reader do, not with the gap it fills.** Open with the outcome and the way to get it. State plain behavior neutrally, the way you'd describe any design ("A flow downloads its images from Adapty"). Don't write it up as a shortcoming: "nothing reports when…", "there's no way to…" and "the SDK doesn't tell you…" make a design choice read as the product's fault, and they add drama without adding a step. Keep a limit only when the reader acts on it, and then say it once, flatly, after the instructions. ❌ "The flow's images keep downloading after `getFlowConfiguration` returns, and nothing reports when they finish." → ✅ "A flow downloads its images and videos from Adapty. To show the first screen's media instantly, serve it from the app bundle." This rule is for feature and how-to prose. Warnings and troubleshooting still name the consequence, as purpose-not-penalty and the no-tautologies rule above say.
+- **Write a section for the general case, not the ticket that prompted it.** When a customer case prompts new docs, keep the part that answers a general reader's question and drop that customer's architecture. A step that only makes sense in their setup ("if it's still `nil`, show your native onboarding") belongs in the support reply. If the article already describes the neighboring options, the new section covers only what's new.
 
 **Placement across passages:**
 - Recovery goes after diagnosis, not inside it: symptom → causes → repair window → how to confirm → repair → prevention.
@@ -459,6 +461,8 @@ Write guidance that survives either resolution. ❌ three sentences explaining t
 If readers will hit the defect and need to recognize it, the symptom and workaround still belong in troubleshooting — describe what they see and what to do, not the mechanism as though it were designed.
 
 File the bug. The finding is valuable; it belongs in a ticket, not an article.
+
+**Don't mention pricing.** Plan tiers, prices, quotas, and which plan includes a feature are outside the docs' domain. Don't name plans, don't say a feature depends on the plan, and don't link to the pricing page.
 
 **Verification steps state the expectation, not the fact.** The reader is checking, not being told. ❌ "Your sandbox purchase **has** `environment: Sandbox`" → ✅ "The `environment` property of your purchase **should be** `Sandbox`."
 

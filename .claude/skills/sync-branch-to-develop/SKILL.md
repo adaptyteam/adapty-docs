@@ -34,6 +34,7 @@ Users end where they started. Never leave them on `develop`.
 - Draft the commit message following the rules in "Writing the commit message" below.
 - Show the user the diff summary **and** the drafted message. Commit only after they approve (or implicitly approve by telling you to proceed).
 - Stage specific files by name. Never `git add -A` or `git add .` (risks staging secrets, unrelated files).
+- If anything under `.claude/context-mill/` changed, keep it out of this commit and commit it separately right after, as `context-mill` Mode 4 describes. Draft both messages and show both for approval.
 - Refuse to stage files that likely contain secrets (`.env`, `credentials.json`, private keys). Warn and skip.
 - Use a HEREDOC to pass the commit message so multi-line formatting is preserved (see example below).
 - If a pre-commit hook fails: surface the error, fix the underlying issue, re-stage, and create a **new** commit. Never `--amend` (the failed commit didn't happen), never `--no-verify`.

@@ -92,7 +92,7 @@ Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID") { result in
 ```swift showLineNumbers
 
 guard flow.hasViewConfiguration else {
-    // handle as remote config paywall
+    // handle as custom paywall
     return
 }
 
@@ -104,13 +104,14 @@ let flowConfiguration = try await AdaptyUI.getFlowConfiguration(forFlow: flow)
 | 参数                      | 是否必填       | 描述 |
 | :----------------------- | :------------- | :---------- |
 | **forFlow**              | 必填           | 通过 `Adapty.getFlow` 获取的 `AdaptyFlow` 对象。 |
-| **locale**               | <p>可选</p><p>默认值：`nil`</p> | [付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。格式为语言代码，包含一个或两个以 `-` 分隔的子标签（例如 `en`、`pt-br`）。详见[本地化与语言代码](localizations-and-locale-codes)。 |
-| **customLayoutId**       | <p>可选</p><p>默认值：`nil`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入后将渲染该指定布局，而非 SDK 根据设备类型和屏幕尺寸自动选择的布局。若找不到匹配该 ID 的布局，调用将以无视图配置错误失败。Flow & 付费墙编辑工具目前尚不支持设置自定义布局 ID，请保持不填。 |
-| **loadTimeout**          | 默认值：5 秒   | 该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为底层操作可能由多个请求组成。 |
-| **products**             | 可选           | 提供 `AdaptyPaywallProduct` 对象数组，以优化产品在屏幕上的显示时机。若传入 `nil`，AdaptyUI 将自动获取所需产品。 |
-| **systemRequestsHandler** | 可选          | 符合 `AdaptySystemRequestsHandler` 协议的对象，用于处理由流程操作触发的系统权限请求和评价请求。仅在流程中包含此类操作时才需要传入。 |
-| **assetsResolver**       | 可选           | `[String: AdaptyCustomAsset]` 字典，用于覆盖流程/付费墙中的图片和视频。详见[自定义资源](#customize-assets)。 |
-| **timerResolver**        | 可选           | 符合 `AdaptyTimerResolver` 协议的对象，用于为开发者自定义计时器提供截止日期。详见[设置开发者自定义计时器](#set-up-developer-defined-timers)。 |
+| **locale**               | <p>可选</p><p>默认值：`nil`</p> | [付费墙本地化](add-paywall-locale-in-adapty-paywall-builder)的标识符。格式为语言代码，可包含一个或两个以 `-` 分隔的子标签（例如 `en`、`pt-br`）。详见[本地化与语言代码](localizations-and-locale-codes)。 |
+| **customLayoutId**       | <p>可选</p><p>默认值：`nil`</p><p>SDK 4.1+</p> | 流程布局配置中某个布局的自定义 ID。传入后将渲染指定布局，而非 SDK 根据设备类型和屏幕尺寸自动选取的布局。若没有布局与该 ID 匹配，调用将以"无视图配置"错误失败。Flow & Paywall Builder 目前尚未支持为布局分配自定义 ID，请保持此参数未设置。 |
+| **loadTimeout**          | 默认：5 秒     | 该方法的超时时间上限。超时后将返回缓存数据或本地备用内容。请注意，在极少数情况下，由于底层可能包含多个请求，实际超时时间可能略晚于 `loadTimeout` 中指定的值。 |
+| **products**             | 可选           | 传入 `AdaptyPaywallProduct` 对象数组，以优化产品在屏幕上的展示时机。若传入 `nil`，AdaptyUI 将自动获取所需产品。 |
+| **systemRequestsHandler** | 可选          | 符合 `AdaptySystemRequestsHandler` 协议的对象，用于处理流程操作触发的系统权限和评价请求。仅当流程中包含此类操作时才需要传入。 |
+| **assetsResolver**       | 可选           | 类型为 `[String: AdaptyCustomAsset]` 的字典，用于覆盖流程/付费墙中的图片和视频。详见[自定义资源](#customize-assets)。 |
+| **tagResolver**          | 可选           | 应用为流程[自定义标签](flow-custom-tags)提供的值，格式为以标签完整名称为键的 `[String: String]` 字典，或符合 `AdaptyTagResolver` 协议的对象。详见[向流程传递数据](ios-flow-custom-tags)。 |
+| **timerResolver**        | 可选           | 符合 `AdaptyTimerResolver` 协议的对象，用于为开发者自定义计时器提供结束时间。详见[设置开发者自定义计时器](#set-up-developer-defined-timers)。 |
 
 加载完成后，[展示流程/付费墙](ios-present-paywalls)。
 
@@ -158,11 +159,12 @@ Adapty.getFlowForDefaultAudience(placementId: "YOUR_PLACEMENT_ID") { result in
 例如，你可以：
 
 - 向部分用户展示不同的图片或视频。
-- 在远程主图加载时，先展示本地预览图。
-- 在视频播放前展示预览图。
-- 提供视频的像素分辨率，以便播放器在视频加载前预留布局空间（宽高比 = `width / height`）。传入 `nil` 可跳过此项。
+- 在远程主图加载时显示本地预览图。
+- 在播放视频前显示预览图。
+- 展示随应用一同打包的媒体资源，让首屏无需下载即可渲染。请参阅[从应用包中展示首屏媒体资源](ios-optimize-paywall-fetching#show-first-screen-media-from-the-app-bundle)。
+- 提供视频的像素分辨率，以便播放器在视频加载前预留布局空间（宽高比 = `width / height`）。传入 `nil` 可跳过此设置。
 
-下面是一个通过简单字典提供自定义资源的示例：
+以下是如何通过简单字典提供自定义资源的示例：
 
 ```swift showLineNumbers
 let customAssets: [String: AdaptyCustomAsset] = [
@@ -228,9 +230,9 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
 
 <SDKv3>
 
-在 [Adapty 看板的付费墙编辑工具中完成付费墙的视觉设计](adapty-paywall-builder)之后，你可以在移动应用中展示它。第一步是获取与版位关联的付费墙及其视图配置，具体步骤如下。
+在 [Adapty 看板中使用付费墙编辑工具完成付费墙的视觉设计](adapty-paywall-builder)后，你可以在移动应用中展示它。第一步是获取与版位关联的付费墙及其视图配置，具体方法如下所述。
 
-请注意，本文介绍的是通过付费墙编辑工具自定义的付费墙。如果你是手动实现付费墙，请参阅[获取远程配置付费墙的付费墙和产品](fetch-paywalls-and-products)。
+请注意，本文内容适用于通过付费墙编辑工具自定义的付费墙。如果你使用的是自定义付费墙，请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products)。
 
 :::tip
 
@@ -294,13 +296,13 @@ Adapty.getPaywall(placementId: "YOUR_PLACEMENT_ID", locale: "en") { result in
 | :-------- | :---------- |
 | Paywall   | 一个 `AdaptyPaywall` 对象，包含产品 ID 列表、付费墙标识符、远程配置及其他若干属性。 |
 
-## 获取使用付费墙编辑工具设计的付费墙视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
+## 获取使用付费墙编辑工具设计的付费墙的视图配置 \{#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder\}
 
 :::important
-请确保在付费墙编辑工具中开启了 **Show on device** 开关。如果未开启该选项，将无法获取视图配置。
+请确保在付费墙编辑工具中启用了 **Show on device** 开关。如果未开启此选项，将无法获取视图配置。
 :::
 
-获取付费墙后，检查其是否包含视图配置——视图配置的存在表明该付费墙是通过付费墙编辑工具创建的。这将指导你如何展示付费墙。如果存在视图配置，则将其视为付费墙编辑工具付费墙；否则，[将其作为远程配置付费墙处理](present-remote-config-paywalls)。
+获取付费墙后，请检查其是否包含视图配置——若有，则说明该付费墙是使用付费墙编辑工具创建的。这将指导你如何展示该付费墙。如果存在视图配置，将其作为付费墙编辑工具付费墙处理；如果不存在，则[将其作为自定义付费墙处理](present-remote-config-paywalls)。
 
 使用 `getPaywallConfiguration` 方法加载视图配置。
 

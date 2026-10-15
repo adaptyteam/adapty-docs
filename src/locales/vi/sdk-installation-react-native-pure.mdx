@@ -63,14 +63,15 @@ yarn add react-native-adapty
 
 ### Thiết lập dự án iOS của bạn \{#set-up-your-ios-project\}
 
-Adapty phân phối các iOS SDK native (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) dưới dạng Swift package — v4 đã ngừng hỗ trợ CocoaPods ([kho spec của CocoaPods sẽ chuyển sang chế độ chỉ đọc vào tháng 12 năm 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Cả hai tùy chọn đều cài đặt các Swift package đó; điểm khác biệt nằm ở cách thức thực hiện việc cài đặt.
+SDK React Native cài đặt các native iOS SDK (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) theo một trong ba cách. Hai cách đầu tiên cài đặt chúng dưới dạng Swift package, đây là cách được khuyến nghị; sự khác biệt nằm ở cơ chế điều khiển việc cài đặt.
 
-- **CocoaPods (mặc định, SDK 4.0 trở lên)**: Dự án iOS của bạn vẫn giữ `Podfile`, và helper `spm_dependency` của React Native thêm các Swift package của Adapty vào Pods project. Swift package link động, vì vậy Podfile phải chuyển sang dynamic frameworks.
-- **Tích hợp SPM của React Native (SDK 4.1 trở lên)**: Dự án iOS của bạn bỏ CocoaPods, và React Native tự giải quyết các Swift package từ manifest `Package.swift` mà Adapty cung cấp. [React Native đã thêm tích hợp này trong phiên bản 0.87](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios) dưới dạng bản xem trước và chưa khuyến nghị dùng cho production.
+- **CocoaPods + SPM (mặc định, SDK 4.0 trở lên)**: Dự án iOS của bạn vẫn giữ `Podfile`, và helper `spm_dependency` của React Native sẽ thêm các Swift package của Adapty vào Pods project. Swift package liên kết động, vì vậy Podfile phải chuyển sang dynamic frameworks.
+- **Tích hợp SPM của React Native (SDK 4.1 trở lên)**: Dự án iOS của bạn không cần CocoaPods nữa, và React Native tự phân giải các Swift package từ manifest `Package.swift` mà Adapty cung cấp. [React Native đã thêm tích hợp này trong phiên bản 0.87](https://reactnative.dev/blog/2026/08/11/react-native-0.87#experimental-swift-package-manager-support-for-ios) dưới dạng preview và chưa khuyến nghị dùng cho production.
+- **CocoaPods không dùng SPM (SDK 4.2.3 trở lên)**: `Podfile` của bạn cài đặt các native SDK dưới dạng pod từ [spec repo của Adapty](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), thay vì từ public CocoaPods spec repo vốn [sẽ chuyển sang chế độ chỉ đọc vào tháng 12 năm 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). Các pod này không yêu cầu dynamic frameworks. Chỉ dùng tùy chọn này nếu dự án của bạn không thể chuyển sang dynamic frameworks — ví dụ, vì nó phụ thuộc vào static linkage hoặc Flipper.
 
 <Tabs groupId="ios-package-manager" queryString>
 
-<TabItem value="cocoapods" label="CocoaPods" default>
+<TabItem value="cocoapods" label="CocoaPods + SPM (recommended)" default>
 
 Khai báo dynamic frameworks trong target `ios/Podfile` của bạn:
 
@@ -107,14 +108,55 @@ Giữ nguyên `ios/Podfile` dù file này không cài đặt pod nào. React Nat
 Nếu app của bạn dùng các pod khác ngoài React Native, hãy giữ chúng trong Podfile, chạy `pod install`, và mở `.xcworkspace` thay vì `.xcodeproj`. Workspace bao gồm cả hai trình quản lý gói.
 
 :::note
-Trên một bản clone mới hoặc CI checkout, hãy chạy `npx react-native spm` một lần trước khi build. Xcode project sẽ đồng bộ lại các dependency trong quá trình build, sau khi Xcode đã giải quyết xong package graph, vì vậy một lần build bắt đầu ngay sau khi cài đặt có thể thành công mà không có Adapty.
+Trên bản clone mới hoặc CI checkout, hãy chạy `npx react-native spm` một lần trước khi build. Xcode project đồng bộ lại dependencies trong quá trình build, sau khi Xcode đã phân giải package graph, do đó một build bắt đầu ngay sau khi cài đặt có thể thành công mà thiếu Adapty.
 :::
 
-Để quay lại CocoaPods, hãy chạy `npx react-native spm deinit`, sau đó chạy `pod install`.
+Để quay lại CocoaPods, chạy `npx react-native spm deinit`, rồi `pod install`.
+
+</TabItem>
+
+<TabItem value="cocoapods-pods" label="CocoaPods without SPM">
+
+:::warning
+Chỉ sử dụng tùy chọn này nếu dự án của bạn không thể chuyển sang dynamic frameworks — ví dụ: do phụ thuộc vào static linkage hoặc Flipper. Với tất cả các dự án khác, hãy cài đặt native SDK dưới dạng Swift packages.
+:::
+
+Tùy chọn này yêu cầu SDK 4.2.3 trở lên. Trong `ios/Podfile`, hãy require Adapty Podfile helpers. Sau đó, trong app target của bạn, gọi `adapty_disable_spm!` **trước** `use_native_modules!`:
+
+```ruby showLineNumbers title="ios/Podfile"
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "react-native-adapty/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'MyApp' do
+  adapty_disable_spm!
+  config = use_native_modules!
+  # ...
+end
+```
+
+`adapty_disable_spm!` khai báo các pods `Adapty`, `AdaptyUI`, và `AdaptyPlugin` và ghim chúng vào spec repo của Adapty, vì vậy bạn không cần thêm dòng `source` cho repo đó. Xóa bất kỳ dòng `pod 'Adapty'`, `pod 'AdaptyUI'`, hoặc `pod 'AdaptyPlugin'` nào trong `Podfile` của bạn. Nếu `adapty_disable_spm!` đặt sau `use_native_modules!`, lệnh `pod install` sẽ thất bại và yêu cầu bạn di chuyển lệnh gọi đó.
+
+Sau đó cài đặt pods:
+
+```sh showLineNumbers title="Shell"
+cd ios && pod install --repo-update
+```
+
+Khi bạn cập nhật `react-native-adapty` sau này, `pod install` sẽ không làm mới spec repo của Adapty. Để cập nhật các native SDK, hãy chạy:
+
+```sh showLineNumbers title="Shell"
+cd ios
+pod repo update
+pod update Adapty AdaptyUI AdaptyPlugin
+```
 
 </TabItem>
 
 </Tabs>
+
 ## Kích hoạt module Adapty của Adapty SDK \{#activate-adapty-module-of-adapty-sdk\}
 
 <GetKey />
@@ -414,14 +456,14 @@ buildscript {
 #### Lỗi build Swift 6 do Podfile ghi đè SWIFT_VERSION \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
 
 :::note
-Điều này áp dụng cho **SDK 3.x**, nơi các iOS SDK native được cài đặt dưới dạng CocoaPods. Từ SDK 4.0 trở đi, chúng được cài đặt dưới dạng Swift package, vì vậy việc ghi đè `SWIFT_VERSION` trong `post_install` sẽ không còn ảnh hưởng đến chúng nữa.
+Điều này áp dụng khi các native iOS SDK được cài đặt dưới dạng CocoaPods pods: trong **SDK 3.x**, và trong SDK 4.2.3 trở lên với tùy chọn [CocoaPods without SPM](#set-up-your-ios-project). Khi chúng được cài đặt dưới dạng Swift packages, việc ghi đè `SWIFT_VERSION` trong `post_install` sẽ không có tác dụng với chúng.
 :::
 
-Khi build ứng dụng React Native cho iOS, bạn có thể gặp lỗi biên dịch Swift 6 trên các target pod của Adapty. Các triệu chứng điển hình bao gồm lỗi không khớp `@Sendable` trong `AdaptyUIBuilderLogic`, thiếu conformance `Sendable` trên các kiểu Adapty, hoặc lỗi actor isolation.
+Khi build ứng dụng React Native cho iOS, bạn có thể gặp lỗi biên dịch Swift 6 trên các Adapty pod targets. Các triệu chứng điển hình bao gồm lỗi `@Sendable` không khớp trong `AdaptyUIBuilderLogic`, thiếu conformance `Sendable` trên các kiểu Adapty, hoặc lỗi actor isolation.
 
-Các pods Adapty khai báo `s.swift_version = '6.0'` và yêu cầu Swift 6 để build. Code của ứng dụng bạn vẫn có thể dùng Swift 5 — chỉ các pod target của Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) mới cần build với Swift 6.
+Các pod Adapty khai báo `s.swift_version = '6.0'` và yêu cầu Swift 6 để build. Code ứng dụng của bạn vẫn có thể dùng Swift 5 — chỉ các pod target Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`, và từ SDK 4.2.3 trở đi là `AdaptyCodable`) mới cần build với Swift 6.
 
-Nguyên nhân phổ biến nhất là một `post_install` hook trong `ios/Podfile` ghi đè `SWIFT_VERSION` cho mọi pod target:
+Nguyên nhân phổ biến nhất là một `post_install` hook trong `ios/Podfile` đang ghi đè `SWIFT_VERSION` cho tất cả các pod target:
 
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|
@@ -438,7 +480,7 @@ end
 ```ruby showLineNumbers title="ios/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end
