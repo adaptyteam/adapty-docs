@@ -20,6 +20,10 @@ Here's how it works:
 2. When Adapty registers the install event, it gets deferred data from the click.
 3. After the user installs your app, and it launches for the first time, Adapty retrieves the stored data and your app receives the custom parameters, allowing you to react to different values in the app code.
 
+Your app only receives deferred data when Adapty matches the install to the click. If a user who already has your app clicks your ad, the app receives no new deferred data.
+
+On iOS, Adapty only matches the install to the click if both come from the same IP address range. For example, Adapty doesn't match a click on Wi-Fi to a first launch on cellular, so your app receives no deferred data.
+
 Adapty supports the following deferred data parameters:
 
 - `ios_deferred_data`
@@ -38,7 +42,10 @@ To add deferred data parameters, append them to your link in your campaign setti
 https://api-ua.adapty.io/api/v1/attribution/click?adpt_cid=__ADAPTY__ID__&ios_deferred_data=welcome&campaign_id=__CAMPAIGN_ID__&adset_id=__AID__&ad_id=__CID__&campaign_name=__CAMPAIGN_NAME__&adset_name=__AID_NAME__&ad_name=__CID_NAME__&redirect_url=__APP_LINK__
 ```
 
-3. Respond to parameters in your app code. Note that deferred data parameters are in the `payload` parameter, and the `payload` parameter is an escaped JSON, so you need to parse it in your app code.
+3. Respond to the parameters in your app code. The SDK passes them in the `payload` property of the installation details:
+   - **iOS**: Read them from `payload.dictionary`.
+   - **Android**: Read them from `payload.dataMap`.
+   - **React Native and Flutter**: `payload` is a JSON string, so parse it first.
 
 For example, here is how you can handle installations where `ios_deferred_data` is `welcome`:
 
@@ -50,10 +57,7 @@ Adapty.delegate = self
 
 nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetails) {
     guard
-        let payloadStr = details.payload,
-        let data = payloadStr.data(using: .utf8),
-        let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-        let deeplink = payload["ios_deferred_data"] as? String,
+        let deeplink = details.payload?.dictionary?["ios_deferred_data"] as? String,
         deeplink == "welcome"
     else { return }
 
@@ -71,15 +75,14 @@ nonisolated func onInstallationDetailsSuccess(_ details: AdaptyInstallationDetai
 ```kotlin showLineNumbers
 Adapty.setOnInstallationDetailsListener(object : OnInstallationDetailsListener {
     override fun onInstallationDetailsSuccess(details: AdaptyInstallationDetails) {
-        details.payload?.let {
-            runCatching {
-                val json = JSONObject(it)
-                if (json.optString("android_deferred_data") == "welcome") {
-                    println("Navigate to welcome screen")
-                    // navigate here
-                }
-            }.onFailure(Throwable::printStackTrace)
+        if (details.payload?.dataMap?.get("android_deferred_data") == "welcome") {
+            println("Navigate to welcome screen")
+            // navigate here
         }
+    }
+
+    override fun onInstallationDetailsFailure(error: AdaptyError) {
+        // handle the error
     }
 })
 
