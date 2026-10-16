@@ -241,6 +241,13 @@ reusable is actually for — but it is already a callout, so folding it into a s
 second callout layer around it.
 
 
+- **Corrected 2026-10-12: a Countdown set to Hide is not published.** `flow-timer`'s "Delay when a close
+  button appears" told readers to hide the Countdown, and its **On timer end** action then never ran on a
+  device. Verified against the flow publishing code: an element set to **Hide** that no Show/Hide action
+  targets is left out of the published screen, and the timer-end action is attached only to a Countdown
+  text that carries timer digits. So the reveal Countdown stays visible with its digits and is made
+  transparent instead. Unverified: that a transparent Countdown runs on every SDK platform — the support
+  case that prompted the fix had not reported back.
 - **Broken cross-link:** `builder-elements.mdx`'s Countdown section links "Countdown timer" to
   `paywall-timer` — the old Paywall-Builder-era article (`version-3.0/paywall-timer.mdx`) — instead of
   this zone's `flow-timer`, which is the actual flow-era Countdown timer article and matches the
