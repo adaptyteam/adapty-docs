@@ -238,6 +238,11 @@ or developer can see and click.
   device**, pick a locale, scan the QR) and both carry a near-identical "prices shown aren't real, Adapty
   can't reach the stores" caveat. Git confirms this pair already ripples together in practice: commit
   `9159e2e69` ("Add Android app links alongside iOS app links") touched both files in the same pass.
+- **Test on device needs the Adapty mobile app signed in (2026-10-12).** Both walkthroughs now say to sign
+  in with the account used in the dashboard, and the preview article's troubleshooting maps an HTTP 401 to
+  a signed-out app. Verified against backend code: the mobile preview request requires an authenticated
+  user with access to the app. The 401 wording comes from a customer report, not from the mobile app's
+  source, which isn't available here.
 - **The product card's offer dropdown is labelled in three articles across two zones.** `create-offer`
   (`products-and-offers`) is the canon for binding an offer to a product card
   (`create-offer#add-offer-to-flow`); `paywall-product-block` and the `paywall-with-trial-toggle` recipe
