@@ -1,16 +1,16 @@
 ---
-title: "Adapty 开发者 CLI 的 Ads Manager 命令"
-description: "每个 adapty asa 命令的参考文档——涵盖广告系列、广告组、关键词、广告、自动化规则及数据图表。"
-metadataTitle: "Ads Manager CLI 命令 | Adapty 文档"
+title: "Adapty 开发者 CLI 的广告管理器命令"
+description: "每个 adapty asa 命令的参考文档——活动、广告组、关键词、广告、市场细分、自动化、数据图表及变更历史。"
+metadataTitle: "广告管理器 CLI 命令 | Adapty 文档"
 ---
 
-本文列出了 Adapty CLI 中所有 [Ads Manager](adapty-ads-manager) 命令，包括其参数、标志及可接受的值。Ads Manager 命令位于 `adapty asa` 主题下。
+本文列出了 Adapty CLI 中每个 [广告管理器](adapty-ads-manager) 命令，包括其参数、标志和可接受的值。广告管理器命令位于 `adapty asa` 主题下。
 
 :::link
-有关前提条件、安全写入实践及基于任务的示例，请参阅[通过 CLI 管理 Ads Manager](developer-cli-ads-manager)。
+有关前提条件、安全写入操作和基于任务的示例，请参阅[通过 CLI 管理 Ads Manager](developer-cli-ads-manager)。
 :::
 
-这些命令需要已连接的 Apple Ads 账户以及有效的 Ads Manager 订阅。运行 [`adapty asa whoami`](#adapty-asa-whoami) 可同时查看两者的状态。其余 CLI 命令请参阅[命令参考](developer-cli-reference)。
+这些命令需要已连接的 Apple Ads 账户和有效的 Ads Manager 订阅。运行 [`adapty asa whoami`](#adapty-asa-whoami) 可检查两者状态。关于 CLI 的其他命令，请参阅[命令参考](developer-cli-reference)。
 
 ## 全局标志 \{#global-flags\}
 
@@ -34,10 +34,10 @@ Ads Manager 的每页数据量大于 CLI 其他部分。建议使用单次大页
 
 | 标志 | 描述 |
 |---|---|
-| `--yes`, `-y` | 不询问确认直接应用。当输出被管道传输或使用 `--json` 时必须指定 |
-| `--idempotency-key` | 为本次写入操作指定固定键。在 24 小时内使用相同键和请求体重复调用时，将返回已存储的结果，而不会再次应用变更 |
+| `--yes`, `-y` | 无需确认直接执行。在输出通过管道传输或使用 `--json` 时必须指定 |
+| `--idempotency-key` | 为本次写入操作指定固定键。24 小时内使用相同的键和请求体重复调用时，将返回已存储的结果，而不会再次执行变更 |
 
-Ads Manager 命令不接受 `--app` 标志。操作范围为您的令牌所属的公司。`--app` 仅在部分 `list` 命令中作为过滤参数存在。
+Ads Manager 命令不接受 `--app` 标志，其作用范围为您的令牌所属公司。`--app` 仅在部分 `list` 命令中作为筛选条件存在。[市场细分](#segments)命令是个例外：在这些命令中，`--app` 指定的是该市场细分所属的 Adapty 应用。
 
 ## 列表筛选 \{#list-filters\}
 
@@ -639,6 +639,70 @@ adapty asa product-pages sync --adam-id 123456
 
 刷新操作会进入队列而非立即执行，命令成功后返回 `Sync queued.`。如果相同的刷新已在进行中，则返回 `Already running; nothing new was queued.`。
 
+## 市场细分 \{#segments\}
+
+这些命令根据 Apple Ads 广告系列、广告组或关键词创建 Adapty [市场细分](segments)，与 [Ads Manager](ads-manager-create-segments) 中的 **Create segment from…** 功能一致。将市场细分用作版位和 A/B 测试中的目标受众，可以向来自特定广告系列的用户展示不同的付费墙。
+
+每个市场细分都包含一个归因过滤条件，针对你所选实体的 Apple ID。CLI 会自动查找这些 ID，因此你需要传入 `list` 命令输出的 UUID。
+
+与其他 `adapty asa` 命令不同，这些命令使用 `--app`：即该市场细分所属的 Adapty 应用 ID，可通过 [`adapty apps list`](developer-cli-reference#adapty-apps-list) 获取。它们不支持 `--idempotency-key`。如需创建包含其他筛选条件（如国家或安装日期）的市场细分，请使用 [`adapty segments create`](developer-cli-reference#adapty-segments-create)。
+
+### adapty asa segments create
+
+从广告系列、广告组或关键词创建市场细分。
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id>
+adapty asa segments create --app <app-id> --ad-group <ad-group-id> --keyword <keyword-id> --keyword <other-keyword-id>
+```
+
+| 参数 | 必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | Adapty 应用 ID（UUID） |
+| `--campaign` | 选填其一 | 广告系列 ID（UUID）。可重复使用 |
+| `--ad-group` | 选填其一 | 广告组 ID（UUID）。可重复使用。与 `--keyword` 同时使用时，只能传入一个：即包含相关关键词的广告组 |
+| `--keyword` | 选填其一 | 关键词 ID（UUID）。可重复使用。需要同时指定一个 `--ad-group` |
+| `--title` | 否 | 市场细分标题。默认使用 Ads Manager 格式，例如 `[ASA] Campaign: <name>` |
+| `--description` | 否 | 市场细分描述。默认使用 Ads Manager 格式 |
+
+每个细分市场只能由同一类实体构成。同时传入 `--campaign` 和 `--ad-group`，或者 `--campaign` 与 `--keyword` 一起使用，会在发送任何请求之前以退出码 `2` 报错。同一类型的多个实体会生成一个细分市场，匹配其中任意一个实体的用户。
+
+除非有特殊需求，保持默认标题即可。Ads Manager 通过 `[ASA]` 前缀识别其细分市场，[`asa segments list`](#adapty-asa-segments-list) 只会列出带有此前缀的细分市场。
+
+响应包含完整的片段，包括 `id` 和 `filters`。`profile_count` 初始值为 `0`，Adapty 会在市场细分创建完成后重新计算该值。
+
+### adapty asa segments update
+
+替换现有市场细分的广告系列、广告组或关键词。
+
+```bash
+adapty asa segments update <segment-id> --app <app-id> --campaign <campaign-id> --campaign <other-campaign-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `segment-id` | 市场细分 ID（UUID），来自 `asa segments list` 或 `adapty segments list` |
+
+接受与 [`asa segments create`](#adapty-asa-segments-create) 相同的标志。市场细分的筛选条件将替换为你传入的实体，标题和描述保持不变，除非你传入 `--title` 或 `--description`。
+
+### adapty asa segments list
+
+列出从 Apple Ads 实体创建的市场细分——即标题以 `[ASA]` 开头的市场细分。
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | Adapty 应用 ID（UUID） |
+| `--campaign` | 否 | 仅保留从此推广活动构建的市场细分（UUID） |
+| `--ad-group` | 否 | 仅保留从此广告组构建的市场细分（UUID） |
+
+传入 `--campaign` 或 `--ad-group`，二者不可同时使用。为避免为同一广告系列重复创建市场细分，请在执行 `asa segments create` 之前先运行此命令：若结果为空，说明该广告系列尚未关联任何市场细分。
+
+该命令最多读取应用的前 100 个市场细分。
+
 ## 自动化 \{#automations\}
 
 CLI 会存储您提供的规则 JSON，但有一个例外：**Add as keyword** 操作的设置来自命令行参数。有关每种规则类型的功能，请参阅[自动化](ads-manager-automations)；有关如何生成规则文件，请参阅[运行自动化规则](developer-cli-ads-manager#run-automation-rules)。
@@ -888,19 +952,75 @@ adapty asa competitors summary --app-ids 1668337467,6503873027
 
 对于一组应用的首次调用，数据准备期间可能需要数十秒。后续对相同应用的调用将更快返回。
 
+## 变更历史 \{#change-history\}
+
+变更历史直接从 Apple Ads API 实时获取。Adapty 不会存储这些数据，Apple 保留期限为 6 个月。它涵盖组织内的所有变更，包括直接在 Apple Ads 中进行的变更、由 Apple 客服操作的变更，以及通过其他 API 工具所做的变更。
+
+### adapty asa change-history list
+
+列出某个 Apple Ads 组织中的变更历史，按时间倒序排列。
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --date-from 2026-10-01 --entity-type Campaign --event-type UPDATE
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--campaign-group` | 是 | 要读取的组织（来自 [`orgs list`](#adapty-asa-orgs-list) 的 UUID）。每次调用只能指定一个组织。如需读取多个，请对每个组织分别执行该命令 |
+| `--date-from` | 否 | 时间段起始日期（`YYYY-MM-DD`）。默认值：7 天前 |
+| `--date-to` | 否 | 时间段结束日期（`YYYY-MM-DD`）。默认值：今天。时间段最长不超过 14 天 |
+| `--entity-type` | 否 | `Campaign`、`AdGroup`、`Keyword`、`NegativeKeyword`、`Ad`、`Creative`、`LocationGroup`、`Org` 或 `AdAccount`。可重复指定。默认值：除 `Org` 和 `AdAccount` 之外的所有类型。`Org` 和 `AdAccount` 不能与其他类型混合使用 |
+| `--event-type` | 否 | `CREATE`、`UPDATE` 或 `DELETE`。可重复指定 |
+| `--user-type` | 否 | 操作人类型：`CUSTOMER`（在 Apple Ads 中操作）、`CUSTOMER_API`（通过 Apple Ads API 操作）或 `APPLE_SUPPORT`。可重复指定 |
+| `--campaign`、`--ad-group`、`--entity-id` | 否 | 广告系列、广告组或被修改实体的 Apple 数字 ID。可重复指定 |
+| `--user` | 否 | 执行变更操作的人员的 Apple 用户 ID。可重复指定 |
+| `--txn` | 否 | Apple 交易 ID。可重复指定 |
+| `--fields` | 否 | 将每条变更展开为每个已更改字段一行，并显示其新旧值 |
+
+:::important
+与其他命令的[列表过滤器](#list-filters)不同，`--campaign`、`--ad-group` 和 `--entity-id` 接受的是 Apple 的数字 ID（如变更历史记录行中所显示的），而非 UUID。同样，每一行中的 `modified_by` 是 Apple 用户 ID，而非电子邮件地址。
+:::
+
+每一行代表一次操作记录：操作者（`modified_by`、`user_type`）、操作时间（`event_time`）以及所变更的实体。每个实体都包含一个 `detail_id`，可用于 [`change-history get`](#adapty-asa-change-history-get)。
+
+使用 `--fields` 时，页面大小默认为 10，更大的 `--page-size` 会被拒绝。若某页需要超过 20 次查找，则操作失败：请缩小过滤条件，或去掉 `--fields`，改用 `change-history get` 逐条读取变更记录。
+
+支持[分页标志](#global-flags)。`--page` × `--page-size` 不能超过 1000。
+
+### adapty asa change-history get
+
+显示某一实体在某一事务中的字段级变更详情。
+
+```bash
+adapty asa change-history get Campaign.444555666.TXN_ID --campaign-group <campaign-group-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `detail-id` | 来自 [`change-history list`](#adapty-asa-change-history-list) 的 `detail_id`，格式为 `EntityType.entityId.txnId` |
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--campaign-group` | 是 | 该变更所属的组织。从列表行中的 `campaign_group_id` 获取 |
+
+响应中列出了每个变更字段的 `old_values` 和 `new_values`，以及 `entity_metadata` 中的实体元数据。如果 Apple 没有对应记录的 `detail_id`，则返回 `404`。
+
 ## 错误 \{#errors\}
 
-| 状态码 | 错误码 | 含义 |
+| 状态码 | 代码 | 含义 |
 |---|---|---|
 | `402` | `ads_manager_subscription_required` | 该公司没有有效的 Ads Manager 订阅 |
+| `403` | `cli_ad_account_unreadable` | `change-history` 无法读取该组织：Apple Ads 令牌已被撤销、组织不再关联，或 Apple 拒绝了访问 |
 | `404` | — | 该实体不存在，或属于其他公司 |
-| `409` | `cli_idempotency_in_progress` | 使用相同幂等键的写操作仍在运行中 |
+| `409` | `cli_idempotency_in_progress` | 使用相同幂等键的写入操作仍在运行中 |
 | `422` | `cli_idempotency_key_reuse` | 相同的幂等键被用于不同的请求体 |
-| `422` | `cli_metric_scope_too_wide` | 请求了用户画像计数指标，但未指定 `--campaign` 或 `--ad-group` |
-| `422` | `cli_response_too_large` | `metrics` 分页结果将超过 5000 行明细数据 |
-| `429` | `cli_analytics_busy` | 分析池繁忙，或该公司的另一个关键词池构建任务仍在运行。等待时间见 `Retry-After` 响应头 |
-| `429` | `cli_cooldown_active` | 过多被拒请求导致该令牌进入冷却状态 |
+| `422` | `cli_metric_scope_too_wide` | 请求了用户画像计数类数据图表，但未指定 `--campaign` 或 `--ad-group` |
+| `422` | `cli_response_too_large` | `metrics` 分页结果超过 5000 行明细数据 |
+| `429` | `cli_analytics_busy` | 分析池繁忙，或该公司的另一个关键词池构建仍在运行中。等待时间见 `Retry-After` 响应头 |
+| `429` | `cli_cooldown_active` | 过多的被拒请求导致令牌进入冷却期 |
+| `429` | `cli_upstream_rate_limited` | Apple 对 `change-history` 请求进行了限流。Apple 返回的等待时间见 `Retry-After` 响应头 |
+| `504` | `cli_read_timeout` | `change-history` 请求耗时超过 50 秒。请缩小时间范围或过滤条件 |
 
-数据图表与搜索词列表共用同一个分析预算，每家公司每分钟最多调用 5 次，任意 10 秒内最多调用 2 次。若在 5 分钟内累计出现 20 次被拒绝的请求，将触发逐级递增的冷却机制：依次为 5 分钟、30 分钟和 3 小时。在冷却期间重试不会延长等待时间，但解决问题的正确方式是修正失败的请求，而非反复重试。
+数据图表与搜索词列表共享同一个分析预算（每家公司）：每分钟 5 次调用，且任意 10 秒内不超过 2 次。`change-history` 有独立的预算：每分钟 30 次调用，任意 10 秒内不超过 5 次，且每家公司同一时间只能发起 1 个请求。若在 5 分钟内有 20 个请求被拒绝，将触发逐步升级的冷却机制：依次冷却 5 分钟、30 分钟、3 小时。在冷却期间重试不会延长冷却时间，但真正的解决办法是修正出错的请求，而不是反复重试。
 
-CLI 会自动处理短暂等待。若收到非冷却触发的 `429` 响应，且 `Retry-After` 不超过 60 秒，命令会等待相应时长后重试一次，并将等待信息输出至标准错误流。
+CLI 会自动处理短暂的等待。当遇到非冷却期的 `429` 错误时，如果 `Retry-After` 不超过 60 秒，命令会等待相应时间后重试一次，并在标准错误输出中报告等待情况。

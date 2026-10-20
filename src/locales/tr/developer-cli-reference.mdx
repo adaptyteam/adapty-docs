@@ -679,7 +679,7 @@ Segment'e özgü yönlendirmeyi kaybetmeden bir paywall'ı birden fazla placemen
 
 ## Segmentler \{#segments\}
 
-[Segmentler](segments) CLI üzerinden yalnızca okunabilir. Oluşturmak ve düzenlemek için [Adapty Kontrol Paneli](https://app.adapty.io)'ni kullanın. Placement kitlelerini oluştururken segment ID'lerini bulmak için bu komutları kullanın.
+[Segmentler](segments), kullanıcıları profil özelliklerine göre gruplar. Segment oluşturmak ve [placement kitleleri](#audiences-shape) oluştururken segment ID'lerini aramak için bu komutları kullanın. Apple Ads kampanyalarından, reklam gruplarından veya anahtar kelimelerden segment oluşturmak için bunun yerine [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) komutunu kullanın: Apple ID'lerini sizin için arar ve segmenti Ads Manager'ın yaptığı şekilde adlandırır.
 
 ### adapty segments list
 
@@ -711,7 +711,68 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|---|
 | `--app` | Evet | Uygulama ID (UUID) |
 
-Yanıt `id`, `title` ve `description` alanlarını içerir. Filtre kuralları bu API aracılığıyla gösterilmez.
+Yanıt; `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` ve `updated_at` alanlarını içerir. `list` yalnızca `id`, `title` ve `description` alanlarını döndürür.
+
+### adapty segments create
+
+Bir veya daha fazla filtreden [segment](segments) oluşturur.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Segment başlığı |
+| `--filter` | Evet | Filtre kuralı. Tekrarlanabilir. Bkz. [Filtre sözdizimi](#filter-syntax) |
+| `--description` | Hayır | Segment açıklaması |
+
+Bir kullanıcı, yalnızca her filtreyle eşleştiğinde segmentle eşleşir. Yanıt, `segments get` ile aynı alanlara sahiptir. `profile_count` `0` ile başlar ve Adapty, segment oluşturulduktan sonra bunu yeniden hesaplar.
+
+### adapty segments update
+
+Mevcut bir [segment](segments)'in başlığını, açıklamasını ve filtrelerini günceller.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `segment-id` | Segment ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Segment başlığı |
+| `--filter` | Evet | Filtre kuralı. Tekrarlanabilir. Bkz. [Filtre sözdizimi](#filter-syntax) |
+| `--description` | Hayır | Segment açıklaması |
+
+:::warning
+`segments update` tüm segmenti değiştirir. Korumak istediğiniz her filtreyi, yalnızca değiştirdiğinizi değil, tümünü geçirin. Mevcut filtreleri okumak için `adapty segments get --app <app-id> <segment-id> --json` komutunu çalıştırın.
+:::
+
+#### Filtre sözdizimi \{#filter-syntax\}
+
+Her `--filter` değerini `field:OPERATOR:value` biçiminde yazın. Birden fazla değerden herhangi birini eşleştirmek için değerleri virgülle ayırın: `ip_country:IN:US,CA`.
+
+| Operatör | Değerler | Örnek |
+|---|---|---|
+| `IN`, `NOT IN` | Bir veya daha fazla | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Bir | `age:>:18` |
+| `BETWEEN` | İki | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Hiçbiri | `age:IS NULL` |
+
+Sayıları düz değer olarak girin; örneğin `age:>:18`. Adapty, `age`, `total_revenue_usd` ve float türündeki özel nitelikler gibi sayısal alanlar için bunları otomatik olarak dönüştürür.
+
+Bu kısa formun ifade edemediği bir değer için filtreyi JSON nesnesi olarak geçirin:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty alan adlarını, operatörleri ve değer türlerini doğrular; her geçersiz filtre için bir hata bildirir. Mevcut filtrelerin alan adlarını ve değer biçimlerini görmek için kontrol panelinde oluşturulmuş bir segment üzerinde `adapty segments get --app <app-id> <segment-id> --json` komutunu çalıştırın.
 
 ## Geçişler \{#migrations\}
 
@@ -846,11 +907,11 @@ adapty migrations run <action-id>
 | `--open` | Hayır | Pipe kullanılırken veya `--json` ile bile aksiyonun bağlantısını açar |
 | `--no-browser` | Hayır | Aksiyonun bağlantısını tarayıcı açmadan yazdırır |
 
-Aksiyonlar üç türde gelir:
+Eylemler üç türde gelir:
 
-- **Girdi aksiyonları** verilerinizi Adapty'ye gönderir; örneğin geçirilecek RevenueCat uygulamalarını veya eşleme kararlarınızı.
-- **Harici aksiyonlar** Adapty Kontrol Paneli'nde bir sayfayı açar; örneğin RevenueCat gizli API anahtarını yapıştırmak için. Sayfayı tamamlayın, ardından `status`'u kontrol edin.
-- **Agent aksiyonları**, örneğin `migrate_code`, kodlama agent'ınız için yapılacak işlerdir. Bunları uygulamanın git deposundan çalıştırın: CLI, migration verilerini `.git/adapty/` altına kaydeder ve agent için talimatları yazdırır. Agent, aksiyonu `--input` ile yeniden çalıştırarak sonucu bildirir.
+- **Girdi eylemleri** Adapty'ye veri gönderir; örneğin taşınacak RevenueCat uygulamaları veya eşleştirme kararlarınız.
+- **Dış eylemler** Adapty Kontrol Paneli'nde bir sayfa açar; örneğin RevenueCat gizli API anahtarını yapıştırmak için. Sayfayı tamamlayın, ardından `status` ile durumu kontrol edin.
+- **Agent eylemleri**, örneğin `migrate_code`, kodlama agent'ınız için gereken çalışmalardır. Bunları uygulamanın git deposundan çalıştırın: CLI, migration verilerini `.git/adapty/<migration-id>/` altına kaydeder ve agent için talimatları yazdırır. Agent, eylemi `--input` ile tekrar çalıştırarak sonucu bildirir.
 
 ### adapty migrations close
 
@@ -880,7 +941,7 @@ adapty skills install
 | `--agent` | Hayır | Yüklenecek agent: `claude-code`, `codex` veya `gemini-cli`. Birden fazla agent için bayrağı tekrarlayın. |
 | `-y`, `--yes` | Hayır | Sormadan bulunan tüm agent'lara yükler. CLI birden fazla agent bulduğunda ve sormak mümkün olmadığında gereklidir; örneğin `--json` ile kullanıldığında. |
 
-CLI, `PATH` üzerinde Claude Code, Codex ve Gemini CLI'yı arar. Hiçbirini bulamazsa `npx skills add adaptyteam/adapty-skills --all --global` komutunu çalıştırmayı teklif eder; bu komut diğer agent'ları da kapsar. Skill'leri yüklemek için agent'ı yeniden başlatın.
+The CLI looks for Claude Code, Codex, and Gemini CLI on `PATH`. If it finds none, it asks whether to run `npx skills@1.7.0 add adaptyteam/adapty-skills --all --global`, which covers other agents. Restart the agent to load the skills.
 
 ## Auth \{#auth\}
 

@@ -29,11 +29,11 @@ Ads Manager 命令与 CLI 其他功能共用同一套安装和登录方式。如
 adapty asa whoami
 ```
 
-### 与其他 CLI 命令的区别 \{#differences-from-the-rest-of-the-cli\}
+### 与 CLI 其他部分的区别 \{#differences-from-the-rest-of-the-cli\}
 
-- **没有 `--app` 标志**：操作范围是你的 Token 所属公司。`--app` 仅在部分 `list` 命令中作为过滤条件存在。
-- **写操作直接触达 Apple**：每个会修改账户的命令都会打印请求体，并在发送前要求你确认。没有预发布步骤。
-- **读操作代价低，写操作代价高**：可以随意执行 `list` 命令和 `--dry-run`。其他所有操作都应视为不可逆。
+- **没有 `--app` 标志**：操作范围是你的 token 所属的公司。`--app` 仅在部分 `list` 命令中作为过滤器存在。`asa segments` 命令是例外：它们会写入某个 Adapty 应用，因此 `--app` 用于指定该应用。
+- **写操作直接发送到 Apple**：每条修改账户的命令都会打印请求体并要求确认后再发送，没有暂存步骤。
+- **读操作代价低，写操作代价高**：可以随意运行 `list` 命令和 `--dry-run`。其他所有操作都应视为不可逆的。
 
 要在脚本中跳过确认提示，请传入 `--yes`。在 `--json` 模式下或管道中，写入命令会拒绝执行而非等待一个永远不会到来的输入，因此在这些情况下必须使用 `--yes`。
 
@@ -179,6 +179,40 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 时间周期和国家/地区由服务端固定——取最近一个完整月份，覆盖所有国家/地区——因此该命令除应用 ID 外无其他参数。首次查询某组应用时，可能需要数十秒才能返回结果。
 
 使用此功能可按计划将竞品关键词数据拉取到报告中。如需筛选结果、对比不同国家/地区的数据，或将找到的关键词直接添加到推广活动，请使用看板中的 [Market Intelligence](ads-manager-market-intelligence)。
+
+## 为每个广告系列创建市场细分 \{#create-a-segment-for-each-campaign\}
+
+要向来自特定广告系列的用户展示专属付费墙，请为该广告系列创建一个[市场细分](segments)，并将其作为版位中的[目标受众](audience)使用。首先，确认该广告系列尚未关联市场细分：
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+如果结果为空，则创建市场细分：
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id> --yes
+```
+
+`--app` 是来自 `adapty apps list` 的 Adapty 应用 ID。CLI 将市场细分命名为 `[ASA] Campaign: <name>`，与 Ads Manager 的命名方式一致，以便 Ads Manager 能识别该市场细分。如需从广告组或关键词构建单个市场细分，请参阅命令参考中的[市场细分](developer-cli-ads-manager-reference#segments)。
+
+## 查找谁修改了你的广告系列 \{#find-who-changed-your-campaigns\}
+
+要查看是谁暂停了广告系列或修改了出价，以及修改时间，可以读取组织的变更历史记录。该数据直接来自 Apple，因此也包含在 Apple Ads 中直接操作或由其他工具所做的变更：
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --entity-type Campaign --event-type UPDATE
+```
+
+要查看每个已修改字段的新旧值，请添加 `--fields`。要查看某条变更的详细信息，将其 `detail_id` 传入 `change-history get`：
+
+```bash
+adapty asa change-history get <detail-id> --campaign-group <campaign-group-id>
+```
+
+每次调用读取一个组织，最多 14 天的数据，限于 Apple 保留的 6 个月范围内。该命令的 `--campaign` 和 `--ad-group` 过滤器使用 Apple 的数字 ID，而非 UUID。所有标志说明请参见[变更历史](developer-cli-ads-manager-reference#change-history)。
+
+如需在 Adapty 看板中查看相同的变更，请使用 [Change History 页面](ads-manager-change-history)。
 
 ## 运行自动化规则 \{#run-automation-rules\}
 

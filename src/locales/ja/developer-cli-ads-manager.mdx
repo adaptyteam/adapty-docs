@@ -31,9 +31,9 @@ adapty asa whoami
 
 ### CLIの他の部分との違い \{#differences-from-the-rest-of-the-cli\}
 
-- **`--app` フラグはありません**: スコープはトークンが属する会社です。`--app` は一部の `list` コマンドにフィルターとしてのみ存在します。
-- **書き込みはAppleに直接届きます**: アカウントを変更するコマンドはリクエスト本文を表示し、送信前に確認を求めます。ステージング手順はありません。
-- **読み取りは低コスト、書き込みは高コスト**: `list` コマンドと `--dry-run` は自由に使用できます。それ以外はすべて不可逆的なものとして扱ってください。
+- **`--app` フラグはありません**: スコープはトークンが属する会社です。`--app` は一部の `list` コマンドにフィルターとしてのみ存在します。`asa segments` コマンドは例外で、Adapty アプリへの書き込みを行うため、`--app` でそのアプリを指定します。
+- **書き込みは直接 Apple に届きます**: アカウントを変更するコマンドは、リクエスト本文を表示し、送信前に確認を求めます。ステージングのステップはありません。
+- **読み取りはコスト低、書き込みはそうではありません**: `list` コマンドと `--dry-run` は自由に使用してください。それ以外はすべて取り消し不可として扱ってください。
 
 確認プロンプトをスクリプト内でスキップするには、`--yes` を渡してください。`--json` モードまたはパイプ経由では、書き込みコマンドは応答を無限に待つ代わりに拒否するため、`--yes` が必要です。
 
@@ -179,6 +179,40 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 期間と対象国はサーバー側で固定されており（直近の完全な月、全国対象）、フラグはアプリIDのみです。アプリのセットに対する初回の呼び出しは、数十秒かかる場合があります。
 
 スケジュールに従って競合他社のキーワードデータをレポートに取り込む際に使用します。結果をフィルタリングしたり、国ごとに比較したり、見つかったキーワードをキャンペーンに直接追加したりするには、ダッシュボードの [Market Intelligence](ads-manager-market-intelligence) を使用してください。
+
+## キャンペーンごとにセグメントを作成する \{#create-a-segment-for-each-campaign\}
+
+特定のキャンペーンのユーザーに専用のペイウォールを表示するには、そのキャンペーン用の[セグメント](segments)を作成し、プレースメントの[オーディエンス](audience)として設定します。まず、そのキャンペーンにセグメントがまだ存在しないことを確認します。
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+結果が空の場合は、セグメントを作成します。
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id> --yes
+```
+
+`--app` は `adapty apps list` で取得できる Adapty アプリ ID です。CLI はセグメントに `[ASA] Campaign: <name>` という名前を付けます（Ads Manager と同じ形式）。これにより、Ads Manager はそのセグメントを自分のものとして認識できます。広告グループやキーワードからセグメントを作成する方法については、コマンドリファレンスの[セグメント](developer-cli-ads-manager-reference#segments)を参照してください。
+
+## キャンペーンの変更者を確認する \{#find-who-changed-your-campaigns\}
+
+キャンペーンを一時停止したのが誰か、入札額を変更したのが誰かを調べるには、組織の変更履歴を参照してください。この情報はAppleからリアルタイムで取得されるため、Apple Ads上で直接行われた変更や他のツールによる変更も含まれます。
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --entity-type Campaign --event-type UPDATE
+```
+
+変更されたフィールドの変更前・変更後の値を確認するには、`--fields` を追加してください。特定の変更の詳細を確認するには、その `detail_id` を `change-history get` に渡してください。
+
+```bash
+adapty asa change-history get <detail-id> --campaign-group <campaign-group-id>
+```
+
+各呼び出しでは、Appleが保持する6ヶ月以内で1つの組織と最大14日間を読み取ります。このコマンドの `--campaign` および `--ad-group` フィルターには、UUIDではなくAppleの数値IDを使用します。すべてのフラグについては[変更履歴](developer-cli-ads-manager-reference#change-history)を参照してください。
+
+Adapty ダッシュボードで同じ変更内容を確認するには、[Change Historyページ](ads-manager-change-history)を使用してください。
 
 ## 自動化ルールを実行する \{#run-automation-rules\}
 

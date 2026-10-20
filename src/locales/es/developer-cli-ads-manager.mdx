@@ -29,11 +29,11 @@ Un comando muestra ambas a la vez:
 adapty asa whoami
 ```
 
-### Diferencias con el resto de la CLI \{#differences-from-the-rest-of-the-cli\}
+### Diferencias con el resto de la CLI
 
-- **No existe el flag `--app`**: El alcance es la empresa a la que pertenece tu token. `--app` solo existe en algunos comandos `list` como filtro.
-- **Las escrituras llegan directamente a Apple**: Cada comando que modifica tu cuenta muestra el cuerpo de la solicitud y pide confirmación antes de enviarla. No hay paso intermedio.
-- **Las lecturas son baratas, las escrituras no**: Usa los comandos `list` y `--dry-run` libremente. Trata todo lo demás como irreversible.
+- **No existe el flag `--app`**: El alcance es la empresa a la que pertenece tu token. `--app` solo existe en algunos comandos `list` como filtro. Los comandos `asa segments` son la excepción: escriben en una app de Adapty, por lo que `--app` indica esa app.
+- **Las escrituras llegan directamente a Apple**: Cada comando que modifica tu cuenta imprime el cuerpo de la solicitud y pide confirmación antes de enviarla. No hay paso de staging.
+- **Las lecturas son baratas, las escrituras no**: Usa los comandos `list` y `--dry-run` con libertad. Trata todo lo demás como irreversible.
 
 Para omitir el mensaje de confirmación en un script, usa `--yes`. Con `--json` o en una tubería, un comando de escritura rechaza la operación en lugar de esperar una respuesta que nunca llegará, por lo que `--yes` es obligatorio en esos casos.
 
@@ -179,6 +179,40 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 El período y los países están fijados en el servidor —el último mes completo, en todos los países— así que el comando no tiene más flags que los IDs de las apps. La primera llamada para un conjunto de apps puede tardar decenas de segundos.
 
 Utiliza esto para extraer datos de palabras clave de la competencia en un informe de forma programada. Para filtrar los resultados, comparar países en paralelo o añadir directamente las palabras clave que encuentres a una campaña, usa [Market Intelligence](ads-manager-market-intelligence) en el dashboard.
+
+## Crear un segmento para cada campaña \{#create-a-segment-for-each-campaign\}
+
+Para mostrar a los usuarios de una campaña específica su propio paywall, crea un [segmento](segments) para esa campaña y úsalo como [audiencia](audience) en un placement. Primero, verifica que la campaña no tenga ya un segmento:
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+Si el resultado está vacío, crea el segmento:
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id> --yes
+```
+
+`--app` es el ID de la app de Adapty que se obtiene con `adapty apps list`. La CLI nombra el segmento `[ASA] Campaign: <name>`, igual que Ads Manager, para que Ads Manager lo reconozca como propio. Para crear un segmento a partir de grupos de anuncios o palabras clave, consulta [Segments](developer-cli-ads-manager-reference#segments) en la referencia de comandos.
+
+## Encuentra quién modificó tus campañas \{#find-who-changed-your-campaigns\}
+
+Para saber quién pausó una campaña o cambió una puja, y cuándo, consulta el historial de cambios de la organización. Llega en tiempo real desde Apple, por lo que también incluye los cambios realizados directamente en Apple Ads o mediante otras herramientas:
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --entity-type Campaign --event-type UPDATE
+```
+
+Para ver el valor anterior y el nuevo de cada campo modificado, añade `--fields`. Para consultar un cambio en detalle, pasa su `detail_id` a `change-history get`:
+
+```bash
+adapty asa change-history get <detail-id> --campaign-group <campaign-group-id>
+```
+
+Cada llamada lee una organización y hasta 14 días, dentro de los 6 meses que Apple conserva. Los filtros `--campaign` y `--ad-group` de este comando aceptan los IDs numéricos de Apple, no UUIDs. Consulta [Historial de cambios](developer-cli-ads-manager-reference#change-history) para ver todos los flags.
+
+Para ver los mismos cambios en el Adapty Dashboard, usa la [página de Historial de cambios](ads-manager-change-history).
 
 ## Ejecutar reglas de automatización \{#run-automation-rules\}
 

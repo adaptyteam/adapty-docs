@@ -29,11 +29,11 @@ Her `adapty asa` komutu için iki ek koşul geçerlidir:
 adapty asa whoami
 ```
 
-### CLI'nin Geri Kalanından Farkları \{#differences-from-the-rest-of-the-cli\}
+### CLI'ın Geri Kalanından Farkları \{#differences-from-the-rest-of-the-cli\}
 
-- **`--app` bayrağı yoktur**: Kapsam, token'ınızın ait olduğu şirkettir. `--app` yalnızca bazı `list` komutlarında filtre olarak bulunur.
-- **Yazma işlemleri doğrudan Apple'a ulaşır**: Hesabınızda değişiklik yapan her komut, göndermeden önce istek gövdesini yazdırır ve onay ister. Bir hazırlık (staging) adımı yoktur.
-- **Okumalar ucuz, yazmalar değil**: `list` komutlarını ve `--dry-run` seçeneğini özgürce kullanın. Diğer her şeye geri alınamaz gözüyle bakın.
+- **`--app` bayrağı yoktur**: Kapsam, tokenınızın ait olduğu şirkettir. `--app`, yalnızca filtre olarak bazı `list` komutlarında bulunur. `asa segments` komutları istisnadır: bunlar bir Adapty uygulamasına yazı yazar, bu yüzden `--app` o uygulamayı belirtir.
+- **Yazma işlemleri doğrudan Apple'a ulaşır**: Hesabınızı değiştiren her komut, göndermeden önce istek gövdesini yazdırır ve onay ister. Ara bir aşama yoktur.
+- **Okumalar ucuz, yazmalar değil**: `list` komutlarını ve `--dry-run` seçeneğini özgürce kullanın. Geri kalanına geri alınamaz işlem gözüyle bakın.
 
 Bir komut dosyasında onay istemini atlamak için `--yes` parametresini kullanın. `--json` modunda veya bir pipe içinde, bir yazma komutu hiçbir zaman gelmeyecek bir yanıtı beklemek yerine reddeder; bu nedenle `--yes` burada zorunludur.
 
@@ -183,6 +183,40 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 Dönem ve ülkeler sunucu tarafında sabit tutulur — her ülke genelinde son tam ay — dolayısıyla komutun uygulama ID'lerinin ötesinde herhangi bir parametresi yoktur. Belirli bir uygulama kümesi için ilk çağrı onlarca saniye sürebilir.
 
 Rakip anahtar kelime verilerini bir rapora düzenli aralıklarla çekmek için bunu kullanın. Sonuçları filtrelemek, ülkeleri yan yana karşılaştırmak veya bulduğunuz anahtar kelimeleri doğrudan bir kampanyaya eklemek için kontrol panelindeki [Market Intelligence](ads-manager-market-intelligence) bölümünü kullanın.
+
+## Her kampanya için segment oluşturun \{#create-a-segment-for-each-campaign\}
+
+Belirli bir kampanyadaki kullanıcılara kendi paywalllarını göstermek için o kampanyaya ait bir [segment](segments) oluşturun ve bunu bir placement'taki [kitle](audience) olarak kullanın. Önce kampanyaya ait bir segment olup olmadığını doğrulayın:
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+Sonuç boşsa segmenti oluşturun:
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id> --yes
+```
+
+`--app`, `adapty apps list` komutundan alınan Adapty uygulama kimliğidir. CLI, segment'i `[ASA] Campaign: <name>` olarak adlandırır; bu sayede Ads Manager segmenti kendi segmenti olarak tanır. Bunun yerine reklam gruplarından veya anahtar kelimelerden tek bir segment oluşturmak için komut referansındaki [Segment'ler](developer-cli-ads-manager-reference#segments) bölümüne bakın.
+
+## Kampanyalarınızı kimin değiştirdiğini bulun \{#find-who-changed-your-campaigns\}
+
+Bir kampanyayı kimin duraklatttığını veya teklifin ne zaman değiştirildiğini öğrenmek için kuruluşun değişiklik geçmişini okuyun. Bu bilgi doğrudan Apple'dan geldiği için Apple Ads üzerinden veya başka araçlarla yapılan değişiklikleri de kapsar:
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --entity-type Campaign --event-type UPDATE
+```
+
+Değiştirilen her alanın eski ve yeni değerini görmek için `--fields` ekleyin. Bir değişikliği ayrıntılı incelemek için `detail_id` değerini `change-history get` komutuna geçirin:
+
+```bash
+adapty asa change-history get <detail-id> --campaign-group <campaign-group-id>
+```
+
+Her çağrı, Apple'ın sakladığı 6 ay içinde bir organizasyonu ve en fazla 14 günü okur. Bu komutun `--campaign` ve `--ad-group` filtreleri, UUID değil Apple'ın sayısal ID'lerini alır. Her flag için bkz. [Değişiklik geçmişi](developer-cli-ads-manager-reference#change-history).
+
+Aynı değişiklikleri Adapty kontrol panelinde görüntülemek için [Değişiklik Geçmişi sayfasını](ads-manager-change-history) kullanın.
 
 ## Otomasyon kurallarını çalıştırma \{#run-automation-rules\}
 

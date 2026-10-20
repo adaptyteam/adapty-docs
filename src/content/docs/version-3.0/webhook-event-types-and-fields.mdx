@@ -222,7 +222,7 @@ The event properties for most event types are consistent (except for **Access Le
 | **cancellation_reason**       | String        | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_cancelled`, `subscription_refunded`, and `trial_cancelled`. |
 | **cohort_name**               | String        | The name of the [audience](audience) that determined which paywall the user was shown.                                                                                                                                                                                                                                                                           |
 | **consecutive_payments**      | Integer       | The number of periods, that a user is subscribed to without interruptions. Includes the current period.                                                                                                                                                                                                                                                          |
-| **currency**                  | String        | Local currency.                                                                                                                                                                                                                                                                                                                                                  |
+| **currency**                  | String        | Local currency. `null` in `trial_started` unless **Send trial price** is enabled. See [Additional tax and revenue event properties](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties). |
 | **developer_id**              | String        | The ID of the [placement](placements) where the transaction originated.                                                                                                                                                                                                                                                                                          |
 | **discount_amount_local**     | Float         | The discount applied to the transaction: the standard price minus the amount actually charged, before the Apple/Google cut, in local currency. `0` for a full-price purchase. For a free trial, equals the full standard price (`original_price_local`), since nothing is charged. `null` when an offer applied but the standard price is unknown (see `original_price_local`). Always `null` for App Store pay-up-front offers: the single up-front charge covers multiple billing periods, so it can't be compared with the per-period standard price. |
 | **discount_amount_usd**       | Float         | The value of `discount_amount_local` in USD. |
@@ -234,8 +234,8 @@ The event properties for most event types are consistent (except for **Access Le
 | **original_transaction_id**   | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>                                                                           |
 | **paywall_name**              | String        | Name of the paywall where the transaction originated.                                                                                                                                                                                                                                                                                                            |
 | **paywall_revision**          | String        | Revision of the paywall where the transaction originated. The default value is 1.                                                                                                                                                                                                                                                                                |
-| **price_local**               | Float         | The amount charged for the transaction before the Apple/Google cut, in local currency. `null` for free trials, since nothing is charged.                                                                                                                                                                                                                         |
-| **price_usd**                 | Float         | The amount charged for the transaction before the Apple/Google cut, in USD. `null` for free trials, since nothing is charged.                                                                                                                                                                                                                                    |
+| **price_local**               | Float         | The amount charged for the transaction before the Apple/Google cut, in local currency. `null` in `trial_started`, since nothing is charged, unless **Send trial price** is enabled.                                                                                                                                                                                                                         |
+| **price_usd**                 | Float         | The amount charged for the transaction before the Apple/Google cut, in USD. `null` in `trial_started`, since nothing is charged, unless **Send trial price** is enabled.                                                                                                                                                                                                                                    |
 | **profile_country**           | String        | Determined by Adapty, based on profile IP.                                                                                                                                                                                                                                                                                                                       |
 | **profile_event_id**          | UUID          | Unique event ID that can be used for deduplication.                                                                                                                                                                                                                                                                                                              |
 | **profile_has_access_level**  | Boolean       | A boolean that indicates whether the profile has an active access level.                                                                                                                                                                                                                                                                                         |
@@ -266,15 +266,26 @@ Event types that have the tax and revenue event properties:
 - `subscription_initial_purchase` (also referred to as `subscription_started` — same event)
 - `subscription_refunded`
 - `non_subscription_purchase`
+- `non_subscription_purchase_refunded`
+- `trial_started`
+- `trial_converted`
 
 | Field                 | Type  | Description                                                  |
 | :-------------------- | :---- | :----------------------------------------------------------- |
 | **net_revenue_local** | Float | Net revenue (income after Apple/Google cut and taxes) in local currency. |
 | **net_revenue_usd**   | Float | Net revenue (income after Apple/Google cut and taxes) in USD. |
-| **proceeds_local**    | Float | Product price after Apple/Google cut in local currency.      |
-| **proceeds_usd**      | Float | Product price after Apple/Google cut.                        |
-| **tax_amount_local**  | Float | Tax amount deducted in local currency.                       |
-| **tax_amount_usd**    | Float | Tax amount deducted in USD.                                  |
+| **proceeds_local**    | Float | `price_local` after Apple/Google cut. |
+| **proceeds_usd**      | Float | `price_usd` after Apple/Google cut. |
+| **tax_amount_local**  | Float | [Estimated tax](how-adapty-analytics-works#taxes) included in `price_local`. `0` for Stripe and Paddle, even when the user paid tax. |
+| **tax_amount_usd**    | Float | [Estimated tax](how-adapty-analytics-works#taxes) included in `price_usd`. `0` for Stripe and Paddle, even when the user paid tax. |
+
+For net revenue, use `net_revenue_*` directly. Unless `tax_amount_*` is `0`, `proceeds_*` minus `tax_amount_*` gives a smaller amount. For example, with a price of 12, a 30% commission, and a 20% tax rate, Adapty calculates:
+
+- `proceeds_*` = `price_*` × (1 − commission) = 12 × 0.7 = 8.40
+- `tax_amount_*` = `price_*` × tax rate ÷ (1 + tax rate) = 12 × 0.2 ÷ 1.2 = 2.00
+- `net_revenue_*` = `proceeds_*` ÷ (1 + tax rate) = 8.40 ÷ 1.2 = 7.00
+
+A free trial charges nothing, so in `trial_started` the price fields (`price_*`, `proceeds_*`, `net_revenue_*`, `tax_amount_*`) and `currency` are `null` by default. To receive them, enable **Send trial price** in the [webhook settings](set-up-webhook-integration). Adapty then calculates them from the subscription price multiplied by **Trial price percentage**, and sends `currency`. These values describe the subscription, not a charge, so leave `trial_started` out of revenue totals.
 
 #### `non_subscription_purchase` example payload
 
