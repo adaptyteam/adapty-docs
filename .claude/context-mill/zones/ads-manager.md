@@ -40,7 +40,17 @@ inside Adapty instead of Apple's own console.
     is Adapty's — the label-to-field map sends "Installs" to `adaptyInstalls` and "Downloads (Total)" to
     Apple's `totalInstalls`. Two adjacent columns, two different systems of record. Every "installs don't
     match downloads" ticket is this.
-  - **Insights** (Impression share, Rank, Search popularity) is Apple's competitive data, not computed by us.
+  - **Insights** — Impression share (all), Impression share (first), Rank (all), Rank (first), and Search
+    popularity (current) (labels: `shared/asa/lib/Table/commonColumns.tsx:130-156`, dashboard
+    `origin/master` @ `dcc60b692`, read 2026-10-01). Search-term rows carry Apple's values. **Keyword rows
+    are Adapty's calculation** from the search terms matched to the keyword (ASA-809 §10: "Based on the
+    search terms matched to it"), because Apple's impression share report has no keyword dimension.
+    Corrected 2026-10-01: this line used to say Insights are "not computed by us".
+    - Unconfirmed, 2026-10-01: ASA-809 §4–5 specify **>90%** for the 91–100% bucket, and Rank as the
+      latest day only, whatever the date range. The released frontend has no `>90` case (it rounds
+      `impression_midpoint_*`) and sends the date range with every request. The backend
+      (`adapty/asa-analytics`, GitLab project 78) returns 404 for Gene's token, so its side is unchecked.
+      The docs follow ASA-809.
   - The service models the reconciliation itself: the generated schema `MetricComparison` carries
     `apple_value` and `internal_value` side by side, so an Apple-vs-Adapty gap is an expected state, not
     necessarily a bug.
@@ -167,6 +177,16 @@ inside Adapty instead of Apple's own console.
 
 ## Ripple rules
 
+- **An Insights metric changes** (2026-09-30, ADP-7994): `adapty-ads-manager-metrics` § Insights, and the
+  **Insights** bullet in `adapty-ads-manager-analytics` § Metrics. Outside this repo, the API names live in
+  `adapty-cli` (`docs/agent/asa-metrics.md`, `skills/adapty-cli/references/asa-agent-playbook.md`),
+  `adapty-skills` (`skills/ads-manager/references/asa-metrics.md`), and the `apple-ads-cli` plugin, which
+  syncs from `adapty-cli`. Report those; don't edit them from here.
+- **Impression share is not Share of Voice.** Insights **Impression share** is your app's share per search
+  term. Market intelligence reports competitors' **Share of Voice** (UI labels `Share of Voice` and
+  `Avg SOV`: `pages/asa/market-intelligence/by-app/ui/AnalysisResultsStep/ui/ByAppTab.tsx:100`,
+  `ByCountryTab.tsx:211`). Keep the two terms apart in `ads-manager-market-intelligence`.
+
 ## Boundaries
 
 - **`integrations`** — `apple-search-ads` (in `integrations`) is the basic ASA attribution/analytics-only
@@ -205,6 +225,4 @@ near-identical names and a ticket almost never says which one it means.
 | "test two product pages", "which App Store page converts better", "statistical significance" | `ads-manager-cpp-ab-tests`. The mechanism is what tickets trip over: Adapty clones the source ad group once per variant and rotates them, pausing the original until the test ends and then restoring it. The source ad group must be at least 28 days old with traffic, precision and confidence set the required sample, and stopping a test is final. |
 | "competitor keywords", "what are rivals bidding on", "brand protection", "new country research" | `ads-manager-market-intelligence` — 30-day aggregate across 50+ countries, refreshed daily. Selected keywords can be pushed straight into a campaign as keywords, negatives or SKAG from the results table, so a ticket about "acting on competitor keywords" doesn't need `ads-manager-manage-keywords`. |
 | "personalize the paywall by campaign or keyword", "audience from ad source" | `ads-manager-create-segments` — **Actions > Create segment from…** on the Campaigns, Ad groups or Keywords tab. Selecting several rows produces one combined segment, not one per row. |
-
-## Gaps and misses
-
+| "impression share over 100%", "impression share doesn't match Apple", "first-position impression share" | `adapty-ads-manager-metrics` § Insights. Keyword values above 100%, and search-term values that read low, are a known defect: ASA-827 (in Review on 2026-09-24, deploy unconfirmed). Don't document it. |

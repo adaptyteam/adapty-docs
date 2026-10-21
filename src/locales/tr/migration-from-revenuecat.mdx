@@ -1,44 +1,44 @@
 ---
 title: "RevenueCat'ten Geçiş"
-description: "Adım adım kılavuzumuzla RevenueCat'ten Adapty'e geçiş yapın."
-metadataTitle: "RevenueCat'ten Adapty'e Geçiş | Adapty Dokümanları"
+description: "RevenueCat'ten Adapty'ye geçiş yapın: kataloğunuzu ve uygulama kodunuzu Adapty CLI ile taşıyın, mağaza bildirimlerini değiştirin ve işlem geçmişinizi içe aktarın."
+metadataTitle: "RevenueCat'ten Adapty'ye Geçiş | Adapty Dokümanları"
 keywords: ['migration', 'revenuecat']
 ---
 
-Geçiş planınız 5 mantıksal adımdan oluşur ve ortalama 2 saat sürer. Tüm geçişlerin %90'ı bir iş gününden kısa sürede tamamlanır.
+RevenueCat'tan bir geçiş altı adımdan oluşur. Bir kodlama ajanı işin büyük bölümünü yapar: [Adapty CLI](developer-cli) aracılığıyla geçişleri çalıştırır ve uygulamanızdaki RevenueCat SDK'sını değiştirir. Ajanın ulaşamadığı kısmı siz halledirsiniz — gizli anahtarlar ve RevenueCat, App Store Connect ile Google Cloud'daki ayarlar.
 
-1. Temel farklılıkları öğrenin; bir Adapty hesabı oluşturun ve hazırlayın _(5 dakika)_;
-2. RevenueCat SDK yerine platformunuz için Adapty SDK'sını yükleyin ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) _(1 saat)_;
-3. Adapty için [Apple App Store sunucu bildirimlerini](enable-app-store-server-notifications) ayarlayın ve isteğe bağlı olarak [ham event iletimini](enable-app-store-server-notifications#raw-events-forwarding) etkinleştirin _(5 dakika)_;
-4. Uygulamanızın güncellemelerini test edin ve yayınlayın _(30 dakika);_
-5. (İsteğe bağlı) [RevenueCat'in zamanlanmış veri dışa aktarımını](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) kullanarak RevenueCat geçmiş verilerinizi CSV formatında dışa aktarın _(5 dakika);_
-6. (İsteğe bağlı) Adapty desteği aracılığıyla geçmiş verileri içe aktarın _(30 dakika)_.
+1. [Temel farklılıkları öğrenin](#learn-the-core-differences).
+2. [Kataloğunuzu Adapty'ye taşıyın](#move-your-catalog-to-adapty).
+3. [RevenueCat SDK'yı değiştirin](#replace-the-revenuecat-sdk) — bunu kodlama ajanınızla yapın.
+4. [Mağaza olaylarını Adapty'ye iletin](#forward-store-events-to-adapty).
+5. [Uygulamanızın yeni sürümünü test edin ve yayına alın](#test-and-release-a-new-version-of-your-app).
+6. (İsteğe bağlı) [İşlem geçmişinizi içe aktarın](#optional-import-your-transaction-history).
 
 :::info
 Aboneleriniz otomatik olarak taşınacak
 
-Daha önce bir abonelik etkinleştirmiş olan tüm kullanıcılar, Adapty SDK içeren uygulamanızın yeni sürümünü açar açmaz Adapty'ye anında geçiş yapacak. Abonelik durumu doğrulaması ve premium erişim otomatik olarak geri yüklenecek.
+Adapty SDK'yı kullanan uygulamanızın yeni sürümünü ilk açtıklarında, daha önce abonelik etkinleştirmiş tüm kullanıcılar anında Adapty'e aktarılacaktır. Abonelik durumu doğrulaması ve premium erişim otomatik olarak geri yüklenecektir.
 :::
 
 Adapty SDK içeren uygulamanızın yeni sürümünü yayınlamadan önce [yayın kontrol listemizi](release-checklist) incelediğinizden emin olun.
 
-## Temel farklılıkları öğrenin; Adapty hesabı oluşturun ve hazırlayın \{#learn-the-core-differences-create-and-prepare-an-adapty-account\}
+## Temel farklılıkları öğrenin \{#learn-the-core-differences\}
 
-Adapty ve RevenueCat SDK'ları benzer şekilde tasarlanmıştır. En büyük fark ağ kullanımı ve hızdır: Adapty SDK, talep ettiğinizde bilgileri olabildiğince hızlı sunmak için tasarlanmıştır. Örneğin bir paywall talep ettiğinizde, onboarding veya paywallınızı önceden oluşturmak için önce [remote config](customize-paywall-with-remote-config) gelir, ardından ürünler ayrı bir istekle alınır.
+Adapty ve RevenueCat SDK'ları benzer şekilde tasarlanmıştır. En büyük fark ağ kullanımı ve hızdır: Adapty SDK, istediğinizde size olabildiğince hızlı bilgi sunmak için tasarlanmıştır. Örneğin, bir paywall talep ettiğinizde, onboarding veya paywall'unuzu önceden oluşturmak için önce [remote config](customize-paywall-with-remote-config)'u alırsınız, ardından ürünleri ayrı bir istekle talep edersiniz.
 
 İsimlendirme biraz farklıdır:
 
 | RevenueCat  | Adapty          |
 | :---------- | :-------------- |
-| Package     | Product         |
+| Package     | Ürün            |
 | Offering    | Paywall         |
 | Paywall     | Paywall Builder |
 | Entitlement | Access level    |
 
-Adapty'de [placement](placements) kavramı vardır. Placement, uygulamanızda kullanıcının satın alma yapabileceği mantıksal bir yerdir. Çoğu durumda bir ya da iki placement'ınız olur:
+Adapty'nin [placement](placements) adlı bir kavramı vardır. Bu, kullanıcının uygulama içinde satın alma yapabileceği mantıksal bir yerdir. Çoğu durumda bir ya da iki placement olur:
 
 - Onboarding (tüm satın almaların %80'i burada gerçekleşir);
-- Genel (onboarding sonrası ayarlarda veya uygulama içinde gösterilen).
+- Genel (onboarding'den sonra ayarlarda veya uygulama içinde gösterilir).
 
 <Zoom>
   <img src="/assets/shared/img/2406d97-image.webp"
@@ -51,78 +51,148 @@ Adapty'de [placement](placements) kavramı vardır. Placement, uygulamanızda ku
 />
 </Zoom>
 
-## Adapty SDK'yı yükleyin ve RevenueCat SDK'yı değiştirin \{#install-adapty-sdk-and-replace-revenuecat-sdk\}
+## Kataloğunuzu Adapty'ye taşıyın \{#move-your-catalog-to-adapty\}
 
-Uygulamanıza platformunuz için Adapty SDK'yı yükleyin ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)).
+Katalog migrasyonu, RevenueCat projenizden yeni bir Adapty uygulaması oluşturur: entitlement'lardan access level'lar, paketlerden ürünler ve her offering için bir paywall ile bir placement oluşturulur.
 
-Uygulama tarafında birkaç SDK metodunu değiştirmeniz gerekecek. En yaygın fonksiyonlara ve bunları Adapty SDK metodlarıyla nasıl değiştireceğinize bakalım.
+### Başlamadan önce
 
-### SDK aktivasyonu \{#sdk-activation\}
+- Terminal komutları çalıştırabilen bir kodlama aracısı kullanın; örneğin Claude Code, Codex veya Cursor.
+- Aracınızın kullandığı terminalde [Adapty CLI'yi yükleyin](developer-cli-quickstart) ve [oturum açın](developer-cli-authentication).
+- RevenueCat'te, geçiş yapacağınız proje için [bir gizli API anahtarı (v2) oluşturun](#create-a-revenuecat-secret-api-key).
+- Store'ları kontrol edin. Geçiş yalnızca App Store ve Google Play uygulamalarını kapsar.
 
-`Purchases.configure` yerine `Adapty.activate` kullanın.
+### RevenueCat gizli API anahtarı oluşturun \{#create-a-revenuecat-secret-api-key\}
 
-### Paywall alma (offering'ler) \{#getting-paywalls-offerings\}
+Adapty, taşıma işlemi yapacağınız projenin gizli API anahtarını kullanarak RevenueCat kataloğunuzu okur. RevenueCat'teki gizli anahtarlar bir projeye ait olduğundan, anahtarı o projede oluşturmanız gerekir.
 
-`Purchases.shared.getOfferings` yerine [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information) kullanın.
+1. Anahtar listesini açmak için RevenueCat kontrol panelinde projeyi açın, ardından **API keys** bölümüne gidin.
+2. Anahtarı oluşturmak için **New secret API key** seçeneğine tıklayın.
+3. Anahtarı yapılandırmak için bir ad girin, örneğin `Adapty migration`, ve **API version** alanında **V2** seçeneğini belirleyin.
+4. Adapty'nin kataloğu okuyabilmesi için **Project configuration permissions** ayarını **Read only** olarak belirleyin. Adapty'nin başka bir izne ihtiyacı yoktur.
+5. Anahtarı oluşturmak için **Generate** seçeneğine tıklayın ve ardından kopyalayın.
 
-Adapty'de paywallı her zaman [placement id](placements) üzerinden talep edersiniz. Pratikte en fazla 1-2 paywall çektiğinizden, bu yapıyı SDK'yı hızlandırmak ve ağ kullanımını azaltmak amacıyla bilerek böyle tasarladık.
+:::warning
+Genel anahtar değil, gizli API anahtarı kullanın. Uygulamaya özgü genel anahtar, proje yapılandırmasını okuyamaz.
+:::
 
-### Kullanıcı (müşteri profili) alma \{#getting-a-user-customer-profile\}
+<ZoomImage id="rc-api-key.webp" width="600px" alt="RevenueCat secret API key form with API version V2 and Project configuration permissions set to Read only" />
 
-`Purchases.shared.getCustomerInfo` yerine `Adapty.getProfile` kullanın.
+Göç işlemi anahtarı istediğinde, açılan Adapty Kontrol Paneli sayfasına yapıştırın.
 
-### Ürün alma \{#getting-products\}
+### Katalog migrasyonunu çalıştırın \{#run-the-catalog-migration\}
 
-RevenueCat'te şu yapıyı kullanırsınız: `Purchases.shared.getOfferings` ve ardından `self.offering?.availablePackages`.
+1. Migrasyonu başlatmak için agent'ınıza şunu sorun:
 
-Adapty'de önce bir paywall talep edersiniz (yukarıya bakın) — bu sayede Adapty'nin [remote config](customize-paywall-with-remote-config)'una anında erişirsiniz — ardından [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products) ile ürünleri alırsınız.
+   ```text
+   Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
+   ```
 
-### Satın alma yapma \{#making-a-purchase\}
+2. RevenueCat'i bağlamak için, aracın açtığı Adapty Kontrol Paneli sayfasına gizli API anahtarını yapıştırın. Anahtar doğrudan Adapty'ye gider; araçtan veya CLI'dan geçmez.
+3. Nelerin taşınacağını seçmek için, aynı ürünün hangi RevenueCat uygulamalarının birbirine ait olduğunu araca söyleyin; genellikle platform başına bir tane. Bu uygulamalar birleşerek tek bir Adapty uygulaması olur.
+4. Eşleştirmeyi tamamlamak için, Adapty'nin kendi başına eşleyemediği öğeler hakkında aracın sorularını yanıtlayın.
 
-`Purchases.shared.purchase` yerine [`Adapty.makePurchase`](making-purchases#make-purchase) kullanın.
+:::warning
+   Kararlar kesindir. Her varlık için bir karar verildiğinde Adapty kataloğu oluşturur ve bu eşleştirmeyi daha sonra değiştiremezsiniz.
+   :::
 
-### Access level (entitlement) kontrolü \{#checking-access-level-entitlement\}
+   Adapty, access level'ları, ürünleri, paywall'ları ve placement'ları bu sırayla oluşturur. Bazıları başarısız olursa, agent size nedenini açıklar. Her varlık Adapty'de oluşturulduğunda migrasyon tamamlanır.
 
-Müşteri profilini alın (önce yukarıyı okuyun) ve ardından şunu değiştirin:
+5. Yeni uygulamanın satın alma işlemlerini doğrulayabilmesi için Adapty Kontrol Paneli'nde uygulamayı mağazalara bağlayın: [App Store](initial_ios) ve [Google Play](initial-android).
 
-`customerInfo?.entitlements["premium"]?.isActive == true`
+:::note
+Migrasyonu bir agent olmadan çalıştırmak için [migration komutlarını](developer-cli-reference#migrations) kullanın. `adapty migrations status` bir sonraki eylemi ve alacağı girdiyi adlandırır.
+:::
 
-şununla:
+### RevenueCat varlıklarının Adapty'ye nasıl eşlendiği \{#how-revenuecat-entities-map-to-adapty\}
 
-[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server).
+- Bir entitlement tanımlayıcısı, access level ID'sine dönüşür; bu nedenle `customerInfo.entitlements["premium"]`, `profile.accessLevels["premium"]` olur.
+- Herhangi bir entitlement vermeyen bir ürün, `premium` access level'ını verir.
+- Bir offering tanımlayıcısı, placement ID'sine dönüşür.
+- Offering metadata'sı, paywallın [remote config](customize-paywall-with-remote-config)'ına dönüşür; en fazla 256 KB.
 
-### Satın alma geri yükleme \{#restore-purchase\}
+### Katalog geçişinin kapsamı dışında kalanlar \{#what-the-catalog-migration-leaves-out\}
 
-`Purchases.shared.restorePurchases` yerine [`Adapty.restorePurchases`](restore-purchase) kullanın.
+- **Paywall Editor paywallına sahip Offerings**: Adapty, RevenueCat Paywall Editor paywallını içe aktaramaz; bu nedenle bu offering'ler ne paywall ne de placement alır. Placement ID'leri serbest kalır: aynı ID ile kendiniz bir flow veya paywall oluşturun.
+- Ürün içermeyen Offerings.
+- Adapty'nin reddettiği App Store ürün ID'sine sahip ürünler; örneğin iki nokta üst üste veya boşluk içeren bir ID. Agent size hangilerini söyler ve bunlar için herhangi bir karar gerekmez.
+- App Store ve Google Play dışındaki mağazalardaki uygulamalar.
+- **Entegrasyonlar**: Bunları Adapty'de [Entegrasyonları Adapty'ye taşıma](migrate-integrations-to-adapty) bölümünde açıklandığı şekilde ayarlayın.
 
-### Kullanıcının giriş yapıp yapmadığını kontrol etme \{#check-if-the-user-is-logged-in\}
+## RevenueCat SDK'yı Değiştirme \{#replace-the-revenuecat-sdk\}
 
-`Purchases.shared.isAnonymous` yerine `if profile.customerUserId == nil` kullanın.
+Bir kodlama ajanı, `adapty-integration` skill'ini kullanarak uygulamanızdaki RevenueCat SDK'yı Adapty SDK ile değiştirir. Kod, yeni Adapty uygulamasının access level ID'lerini ve placement ID'lerini kullanacak şekilde, katalog migrasyonundan sonra çalıştırın.
 
-### Kullanıcı girişi \{#log-in-user\}
+1. Ajanınıza skill'i vermek için [SDK integration skill](adapty-sdk-integration-skill) sayfasında açıklandığı şekilde aracınıza yükleyin.
+2. Migrasyonu başlatmak için ajanınızda uygulamanızın projesini açın ve şunu sorun:
 
-`Purchases.shared.logIn` yerine [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration) kullanın.
+```text
+   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+   ```
 
-### Kullanıcı çıkışı \{#log-out-user\}
+   Skill platformunuzu ve RevenueCat SDK'sını proje dosyalarından algılar, bu nedenle prompt'ta bunlara gerek yoktur.
+3. Kod geçişini tamamlamak için ajanın değişikliklerini inceleyin, ardından projenizin kökündeki `ADAPTY_SETUP.md` dosyasını takip edin. Bu dosya, örneğin kurulacak entegrasyonlar gibi ajandan size kalan görevleri listeler.
 
-`Purchases.shared.logOut` yerine [`Adapty.logout`](identifying-users#logging-out-and-logging-in) kullanın.
+## Mağaza olaylarını Adapty'ye yönlendirin \{#forward-store-events-to-adapty\}
 
-## App Store sunucu tarafı bildirimlerini Adapty'ye geçirin \{#switch-app-store-server-side-notifications-to-adapty\}
+App Store ve Google Play, uygulamanızın dışında gerçekleşenler de dahil olmak üzere yenilemeleri, iptalleri ve iadeleri sunucunuza bildirimler aracılığıyla iletir. İki migration, RevenueCat her olayı almaya devam ederken Adapty'yi de bu bildirimlere bağlar; böylece kullanıcılarınız yeni uygulama sürümüne geçerken her iki sistem de güncel kalır.
 
-Bunu nasıl yapacağınızı [buradan](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications) okuyun.
+Bu adımlara [katalog migration'ı](#move-your-catalog-to-adapty) tamamlandıktan sonra başlayın. Adapty, bundle ID ve paket adını orada seçtiğiniz RevenueCat uygulamalarından alır.
+
+{/* Kept for links to the section this one replaced, including the Adapty Dashboard. */}
+<span id="switch-app-store-server-side-notifications-to-adapty"></span>
+
+### App Store olaylarını ilet \{#forward-app-store-events\}
+
+Adapty, App Store bildirimlerini alır ve her birini RevenueCat'e iletir.
+
+Başlamadan önce, App Store Connect'te bir [Uygulama İçi Satın Alma anahtarı](in-app-purchase-api-storekit-2) oluşturun ve **Issuer ID** ile **Key ID** değerlerini not edin.
+
+1. İletmeyi başlatmak için agentınıza şunu sorun:
+
+   ```text
+   Forward App Store events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
+   ```
+
+2. Adapty'ye App Store etkinliklerine erişim vermek için, aracının açtığı Adapty Kontrol Paneli sayfasında `.p8` dosyasını yükleyin, ardından **Issuer ID** ve **Key ID** bilgilerini girin. Anahtar doğrudan Adapty'ye gider ve asla araç veya CLI üzerinden geçmez.
+3. RevenueCat'in App Store etkinliklerini almaya devam etmesi için, aracıya RevenueCat bildirim URL'sini verin. RevenueCat'te iOS uygulamanızı açın, ardından **Apple Server to Server notification settings** bölümündeki **Apple Server Notification URL**'yi kopyalayın. Bu URL `https://api.revenuecat.com/v1/incoming-webhooks/` ile başlar.
+4. App Store'u Adapty'ye yönlendirmek için App Store Connect'te uygulamanızı açın, ardından **App Information** > **App Store Server Notifications** bölümüne gidin. Hem **Production Server URL** hem de **Sandbox Server URL** alanlarını, aracının size verdiği Adapty URL'sine ayarlayın ve bildirimleri **Version 2** olarak seçin. Ayrıntılar için bkz. [App Store sunucu bildirimlerini etkinleştirme](enable-app-store-server-notifications). Bu noktada RevenueCat'e yönlendirme zaten aktif olduğundan hiçbir etkinlik kaybolmaz.
+5. Bağlantıyı doğrulamak için aracınıza URL'lerin ayarlandığını söyleyin. Adapty, App Store'dan bir test bildirimi ister ve bekler. Bildirim gelmezse araç size nedenini açıklar.
+
+### Google Play olaylarını iletme \{#forward-google-play-events\}
+
+Google Play, bildirimleri bir Pub/Sub konusuna gönderir. Adapty, RevenueCat'in zaten kullandığı konuya ikinci bir abone olarak bağlanır; bu sayede RevenueCat olayları almaya devam eder.
+
+:::warning
+Google Play Console'daki konuyu değiştirmeyin ve bu uygulama için [RTDN'yi Etkinleştir](enable-real-time-developer-notifications-rtdn) adımlarını uygulamayın. Yeni bir konu, RevenueCat'e giden bildirimleri keser.
+:::
+
+1. İletmeye başlamak için agent'ınıza şunu sorun:
+
+   ```text
+   Forward Google Play events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
+   ```
+
+2. Adapty'ye konu erişimi vermek için, RevenueCat'in kullandığı hizmet hesabına ait bir JSON anahtarı oluşturun. Google Cloud Console'da **IAM & Admin** > **Service Accounts** bölümüne gidin, genellikle `revenuecat-service-account` adlı hesabı açın, ardından **Keys** > **Add key** seçeneğine gidip **JSON**'ı seçin. Yeni bir anahtar RevenueCat'i etkilemez. Daha fazla bilgi için Google'ın [hizmet hesabı anahtarı oluşturma](https://cloud.google.com/iam/docs/keys-create-delete#creating) kılavuzuna bakın.
+3. Anahtarı yüklemek için, agent'ın açtığı Adapty Kontrol Paneli sayfasında dosyayı **Google Play service account key (JSON)** alanına yükleyin. Anahtar doğrudan Adapty'ye gider; agent veya CLI üzerinden geçmez.
+4. Adapty'yi konuya abone etmek için agent'a konu kimliğini verin. RevenueCat'te Google Play uygulama ayarlarınızı açın, ardından **Google developer notifications** bölümündeki **Topic ID**'yi kopyalayın. Google Play Console'da aynı değeri **Monetize** > **Monetization setup** > **Topic name** altında görebilirsiniz.
+
+Adapty konuya abone olur, ardından bir test bildirimi yayınlar ve bekler. Bildirim gelmezse, agent size nedenini açıklar.
+
+5. Test bir izin hatası nedeniyle başarısız olursa, hizmet hesabına konunun bulunduğu projede **Pub/Sub Editor** rolünü veya konu üzerinde **Pub/Sub Subscriber** rolünü ve anahtarın bulunduğu projeye **Pub/Sub Editor** rolünü verin. Ardından agent'tan tekrar kontrol etmesini isteyin.
 
 ## Uygulamanızın yeni sürümünü test edin ve yayınlayın \{#test-and-release-a-new-version-of-your-app\}
 
-Buradasanız şunları yapmışsınızdır:
+Buraya geldiğinize göre aşağıdakileri zaten tamamladınız:
 
-- [x] Adapty Kontrol Panelini yapılandırdınız
-- [x] Adapty SDK'yı yüklediniz
-- [x] SDK mantığını Adapty fonksiyonlarıyla değiştirdiniz
-- [x] App Store sunucu tarafı bildirimlerini Adapty'ye geçirdiniz ve isteğe bağlı olarak RevenueCat'e ham olay iletmeyi etkinleştirdiniz
+- [x] Kataloğunuzu Adapty'ye taşıdınız
+- [x] RevenueCat SDK'sını Adapty ile değiştirdiniz
+- [x] Kodlama ajanınızdan `ADAPTY_SETUP.md` dosyasını tamamladınız
+- [x] App Store ve Google Play etkinliklerini Adapty'ye ilettiniz
 - [ ] Sandbox satın alması yaptınız
 - [ ] Yeni bir uygulama sürümü yayınladınız
 
-Yukarıdaki maddeleri işaretlediyseniz, Sandbox'ta bir test satın alması yapın ve uygulamayı yayınlayın.
+Yukarıdaki adımları tamamladıysanız Sandbox'ta bir test satın alması yapın ve ardından uygulamayı yayınlayın.
 
 :::info
 [Yayın kontrol listesini](release-checklist) gözden geçirin.
@@ -130,55 +200,71 @@ Yukarıdaki maddeleri işaretlediyseniz, Sandbox'ta bir test satın alması yap�
 Mevcut entegrasyonu doğrulamak ya da [attribution](attribution-integration) veya [analitik](analytics-integration) entegrasyonları gibi ek özellikler eklemek için listemizi kullanarak son kontrolü yapın.
 :::
 
-## (İsteğe Bağlı) RevenueCat geçmiş verilerinizi CSV formatında dışa aktarın \{#optional-export-your-revenuecat-historical-data-in-csv-format\}
+## (İsteğe Bağlı) İşlem geçmişinizi içe aktarın \{#optional-import-your-transaction-history\}
+
+İçe aktarma işlemi, [profiller](profiles-crm) ve [grafikler](charts) bölümlerini kullanıcılarınızın ödeme geçmişiyle doldurur. Kimsenin erişimini etkilemez.
 
 :::warning
-Geçmiş veri içe aktarımını aceleye getirmeyin
+Geçmiş verileri içe aktarmak için acele etmeyin
 
-SDK ile sürümü yayınladıktan sonra geçmiş veri içe aktarımı yapmadan önce en az bir hafta beklemeniz gerekir. Bu süre zarfında SDK'dan satın alma fiyatlarına ilişkin tüm bilgileri alacağız; böylece içe aktardığınız veriler daha doğru olacaktır.
+SDK ile birlikte yayınladıktan sonra geçmiş veri içe aktarma işlemi yapmadan önce en az bir hafta beklemelisiniz. Bu süre zarfında SDK üzerinden satın alma fiyatlarına ilişkin tüm bilgileri alacağız; böylece içe aktardığınız veriler daha doğru olacaktır.
 :::
 
-Geçmiş verilerinizi RevenueCat'ten CSV formatında dışa aktarmak için [RevenueCat'in resmi belgelerindeki](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) talimatları izleyin.
+Katalog migrasyonunuzun oluşturduğu uygulamaya geçmişi aktarmak için iki migrasyon kullanılır. RevenueCat planınızda Cloud Export varsa bunu kullanın.
 
-## (İsteğe bağlı) RevenueCat desteğinden Google Purchase Token'larını isteyin \{#optional-ask-revenuecat-support-for-google-purchase-tokens\}
+### RevenueCat Cloud Export ile \{#with-a-revenuecat-cloud-export\}
 
-Google Play işlemlerini içe aktarmanız gerekiyorsa, [destek sayfaları](https://app.revenuecat.com/settings/support) üzerinden RevenueCat desteğiyle iletişime geçerek Google Purchase Token'larını içeren bir CSV dosyası talep edin. Google Purchase Token, Google Play'in her işlem için sağladığı benzersiz bir tanımlayıcıdır ve Adapty'de satın almaların doğru şekilde takip edilip doğrulanması için gereklidir. Bu bilgi standart dışa aktarma dosyasına dahil değildir. Dosya şu üç sütunu içerir:
+RevenueCat, Adapty'nin uygulamanız için hazırladığı bir bucket'a günlük dışa aktarım yapar ve Adapty aldığı her dosyayı içe aktarır.
 
-- `user_id`
-- `google_purchase_token`
-- `google_product_id`
+1. İçe aktarımı başlatmak için agent'ınıza şunu sorun:
 
-## Geçmiş verilerinizi aktarmak için bize yazın \{#write-us-to-import-your-historical-data\}
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" with a Cloud Export.
+   ```
 
-Web sitesi mesajlaşma aracı üzerinden veya CSV dosyalarınızla birlikte [support@adapty.io](mailto:support@adapty.io) adresine e-posta göndererek bizimle iletişime geçin.
+2. Dışa aktarımı bağlamak için, aracıya RevenueCat'teki External ID'yi verin. RevenueCat'te **Scheduled Data Exports** ayarlarını açın, kimlik bilgisi türü olarak **IAM Role (ARN)** seçin ve RevenueCat'in gösterdiği **External ID**'yi kopyalayın. External ID gizli bir bilgi değildir.
+3. Dışa aktarım ayarlarını tamamlamak için RevenueCat'e aracının verdiği bucket, region ve role ARN bilgilerini girin. **Receive new and updated transactions only** seçeneğini açın. Aksi takdirde RevenueCat her gün tüm geçmişi dışa aktarır ve Adapty her dosyayı içe aktarır.
 
-1. RevenueCat'ten dışa aktardığınız CSV dosyasını doğrudan destek ekibimize gönderin.
-2. Google Play işlemlerini içe aktarıyorsanız, RevenueCat desteğinden aldığınız Google Purchase Token'larını içeren CSV dosyasını da ekleyin.
-3. Customer User ID olarak (Adapty'nin birincil kullanıcı tanımlayıcısı) hangi kullanıcı ID'sinin kullanılması gerektiğini belirtin: `rc_original_app_user_id` mi yoksa `rc_last_seen_app_user_id_alias` mi.
+RevenueCat ilk dosyayı teslim etmek için 24 saate kadar sürebilir ve Adapty her saat bucket'ta yeni dosyaları arar. Migrasyon, Adapty'nin ilk dosyayı içe aktarmasından bir hafta sonra otomatik olarak tamamlanır. İçe aktarılan her profilin Customer User ID'si `rc_last_seen_app_user_id_alias` şeklindedir.
 
-Destek Ekibimiz işlemlerinizi Adapty'ye aktaracaktır. Her işlem için aşağıdaki veriler Adapty'ye aktarılır:
+### Destek aracılığıyla \{#through-support\}
 
-| Parametre                     | Açıklama                                                     |
+RevenueCat planınızda Cloud Export yoksa bu yöntemi kullanın: RevenueCat desteği size dışa aktarımı gönderir, Adapty desteği ise içe aktarır.
+
+1. İçe aktarmayı başlatmak için ajanınıza şunu sorun:
+
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" through support.
+   ```
+
+2. Dışa aktarma talebinde bulunmak için, ajansın size verdiği iki mesajdan birincisini RevenueCat desteğine gönderin.
+3. Dışa aktarılan dosyaları içe aktarmak için, RevenueCat'in size gönderdiği dosyaları ikinci mesajla birlikte Adapty desteğine iletin. Dosyaları RevenueCat'in gönderdiği haliyle ekleyin: açmak, yeniden kaydetmek veya birleştirmek, içe aktarmanın beklediği sütun biçimini bozar.
+
+### İçe aktarma neleri kapsar \{#what-the-import-brings-over\}
+
+Her işlem için Adapty'ye aşağıdaki veriler içe aktarılacaktır:
+
+| Parametre                     | Açıklama                                                  |
 | ----------------------------- | ------------------------------------------------------------ |
-| user_id                       | Customer User ID, Adapty'deki ve sisteminizde kullanıcınızın ana tanımlayıcısı. |
+| user_id                       | Müşteri Kullanıcı Kimliği, Adapty'deki ve sisteminizdeki kullanıcınızın ana tanımlayıcısı. |
 | apple_original_transaction_id | Abonelik zincirleri için bu, `store_original_transaction_id` ile bağlantılı orijinal işlemin satın alma tarihidir. |
-| google_product_id             | Google Play Store'daki ürün ID'si.                           |
-| google_purchase_token         | Google Play'in her işlem için sağladığı, doğrulama için gerekli benzersiz tanımlayıcı. |
-| country                       | Kullanıcının ülkesi.                                         |
-| created_at                    | Kullanıcının oluşturulma tarihi ve saati.                    |
-| subscription_expiration_date  | Aboneliğin sona erme tarihi ve saati.                        |
-| email                         | Son kullanıcının e-posta adresi.                             |
-| phone_number                  | Son kullanıcının telefon numarası.                           |
-| idfa                          | Apple'ın bir kullanıcının cihazına atadığı Reklamverenler için Tanımlayıcı (IDFA). |
-| idfv                          | Bir geliştirici tarafından tüm uygulamalara atanan ve o uygulamalar arasında cihazda paylaşılan Satıcılar için Tanımlayıcı (IDFV). |
-| advertising_id                | Reklamcıların takip amacıyla kullanabileceği, Android işletim sistemi tarafından sağlanan benzersiz tanımlayıcı. |
-| attribution_channel           | Pazarlama kanalı adı.                                        |
-| attribution_campaign          | Pazarlama kampanyası adı.                                    |
+| google_product_id             | Google Play Store'daki ürün kimliği.                     |
+| google_purchase_token         | Google Play tarafından her işlem için sağlanan ve doğrulama için gerekli olan benzersiz tanımlayıcı. |
+| country                       | Kullanıcının ülkesi.                                     |
+| created_at                    | Kullanıcının oluşturulduğu tarih ve saat.                      |
+| subscription_expiration_date  | Aboneliğin sona erdiği tarih ve saat.             |
+| email                         | Son kullanıcının e-posta adresi.                                        |
+| phone_number                  | Son kullanıcının telefon numarası.                                 |
+| idfa                          | Apple tarafından kullanıcının cihazına atanan Reklamverenler için Tanımlayıcı (IDFA). |
+| idfv                          | Bir geliştiriciye ait tüm uygulamalara atanan ve bu uygulamalar arasında bir cihazda paylaşılan Satıcılar için Tanımlayıcı (IDFV). |
+| advertising_id                | Reklamverenlerin takip amacıyla kullanabileceği, Android işletim sistemi tarafından sağlanan benzersiz tanımlayıcı. |
+| attribution_channel           | Pazarlama kanalının adı.                                  |
+| attribution_campaign          | Pazarlama kampanyasının adı.                                   |
 | attribution_ad_group          | Attribution reklam grubu.                                    |
-| attribution_ad_set            | Attribution reklam seti.                                     |
-| attribution_creative          | Attribution kreatif anahtar kelimesi.                        |
+| attribution_ad_set            | Attribution reklam seti.                                      |
+| attribution_creative          | Attribution kreatif anahtar kelimesi.                            |
 
-Bunlara ek olarak, şu entegrasyonlara ait entegrasyon tanımlayıcıları da içe aktarılacaktır: Amplitude, Mixpanel, AppsFlyer, Adjust ve FacebookAds.
+Ayrıca aşağıdaki entegrasyonlara ait entegrasyon tanımlayıcıları içe aktarılacaktır: Amplitude, Mixpanel, AppsFlyer, Adjust ve FacebookAds.
 
 ### Aktarılmayanlar \{#what-doesnt-come-across\}
 
@@ -192,10 +278,10 @@ Bunlara ek olarak, şu entegrasyonlara ait entegrasyon tanımlayıcıları da i�
 
 Kullanıcıların büyük çoğunluğu telefonlarını geceleri şarj eder; App Store da genellikle tüm uygulamaları bu sırada otomatik olarak günceller, dolayısıyla bu bir sorun olmamalıdır. Güncelleme yapmayan küçük bir ücretli abone grubu olabilir, ancak bu kullanıcılar premium içeriğe erişmeye devam eder. Onları güncellemeye zorlamanıza gerek yok.
 
-### RevenueCat'teki geçmiş verilerimi mümkün olduğunca hızlı dışa aktarmam mı gerekiyor, yoksa kaybeder miyim? \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
+### Geçmiş verilerimi RevenueCat'ten mümkün olduğunca hızlı bir şekilde dışa aktarmam gerekiyor mu, yoksa kaybeder miyim? \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
 
-Çok acele etmenize gerek yok; önce Adapty SDK ile bir sürüm yayınlayın, ardından geçmiş verilerinizi bize iletin. Kullanıcılarınızın ödeme geçmişini geri yükleyip [profiller](profiles-crm) ve [grafikler](charts) bölümlerini dolduracağız.
+Bunu çok hızlı yapmanıza gerek yok; önce Adapty SDK ile bir sürüm yayınlayın, ardından geçmişinizi içe aktarın. Kullanıcılarınızın ödeme geçmişini geri yükleyerek [profilleri](profiles-crm) ve [grafikleri](charts) dolduracağız.
 
-### MMP (AppsFlyer, Adjust vb.) ve analitik (Mixpanel, Amplitude vb.) kullanıyorum. Her şeyin düzgün çalışacağından nasıl emin olabilirim? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
+### MMP (AppsFlyer, Adjust, vb.) ve analitik (Mixpanel, Amplitude, vb.) kullanıyorum. Her şeyin düzgün çalışacağından nasıl emin olabilirim? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
 
-Öncelikle SDK'mız aracılığıyla veri göndermek istediğiniz üçüncü taraf hizmetlerinin ID'lerini bize iletmeniz gerekir. [Attribution entegrasyonu](attribution-integration) ve [analitik entegrasyonu](analytics-integration) kılavuzlarını okuyun. Geçmiş veriler ve eski kullanıcılar için **RevenueCat'ten dışa aktardığınız verilerdeki bu ID'leri bize aktardığınızdan emin olun.**
+Öncelikle, veri göndermek istediğiniz üçüncü taraf servislerin ID'lerini SDK'mız aracılığıyla bize iletmeniz gerekir. [Attribution entegrasyonu](attribution-integration) ve [analitik entegrasyonu](analytics-integration) için ilgili kılavuzları okuyun. Geçmiş veriler ve eski kullanıcılar için **RevenueCat'ten dışa aktardığınız verilerden bu ID'leri mutlaka bize ilettiğinizden emin olun.**

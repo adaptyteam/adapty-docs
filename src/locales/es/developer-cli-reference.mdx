@@ -1,14 +1,14 @@
 ---
-title: "Referencia de comandos del CLI de desarrollador de Adapty"
-description: "Referencia de los comandos del CLI de desarrollador de Adapty para configurar apps, productos, paywalls, flows y placements."
-metadataTitle: "Referencia de comandos del CLI de desarrollador | Documentación de Adapty"
-keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
+title: "Referencia de comandos del Adapty Developer CLI"
+description: "Referencia de los comandos del Adapty Developer CLI para configurar apps, productos, paywalls, flows y placements, y migrar desde RevenueCat."
+metadataTitle: "Referencia de comandos del Developer CLI | Documentación de Adapty"
+keywords: ['cli', 'developer', 'referencia', 'comandos', 'mcp']
 ---
 
-Este artículo lista los comandos de la CLI de Adapty para configurar tu cuenta — apps, niveles de acceso, productos, paywalls, flows, placements y segmentos — con sus argumentos, flags y valores aceptados. Para campañas de Apple Ads, consulta [Comandos de Ads Manager](developer-cli-ads-manager-reference).
+Este artículo enumera los comandos de la CLI de Adapty para configurar tu cuenta (apps, niveles de acceso, productos, paywalls, flows, placements y segmentos), además de los comandos para migrar un proyecto de RevenueCat, con sus argumentos, flags y valores aceptados. Para campañas de Apple Ads, consulta [Comandos de Ads Manager](developer-cli-ads-manager-reference).
 
 :::link
-Para la configuración de autenticación y gestión de tokens, consulta [Autenticación](developer-cli-authentication).
+Para la configuración de autenticación y la gestión de tokens, consulta [Autenticación](developer-cli-authentication).
 :::
 
 ## Flags globales \{#global-flags\}
@@ -713,14 +713,162 @@ adapty segments get --app <app-id> <segment-id>
 
 La respuesta contiene `id`, `title` y `description`. Las reglas de filtro no están expuestas a través de esta API.
 
+## Migraciones \{#migrations\}
+
+Mueve un proyecto de RevenueCat a Adapty: su catálogo, y opcionalmente sus eventos de store y su historial de transacciones. Adapty ejecuta cada migración como una secuencia de pasos e indica qué acciones puedes ejecutar a continuación, así que lee `status` antes de cada acción. Para conocer el procedimiento completo, consulta [Migración desde RevenueCat](migration-from-revenuecat).
+
+Todos los comandos excepto `list`, `create`, `use`, `current` y `unuse` aceptan el flag de migración:
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `-m`, `--migration` | No | ID de migración. Sin él, el CLI usa la variable de entorno `ADAPTY_MIGRATION`, luego la migración guardada por `create` o `use`. |
+
+### adapty migrations list
+
+Lista tus migraciones y los flows de migración que puedes iniciar, agrupados por app.
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+Inicia una migración y la guarda como la actual.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--name` | Uno de `--name` o `--flow` | Nombre de la nueva app de Adapty. Inicia la migración del catálogo. No se puede combinar con `--flow` ni con `--app`. |
+| `--flow` | Uno de `--name` o `--flow` | Flow que se iniciará en una app existente, tal como lo muestra `adapty migrations list`. Requiere `--app`. |
+| `--app` | Con `--flow` | ID de la app (UUID) |
+| `--no-select` | No | Crea la migración sin guardarla como la actual |
+
+Los flows disponibles para una app existente tras su migración de catálogo:
+
+| Flow | Descripción |
+|---|---|
+| `transactions` | Importa el historial de transacciones desde una exportación diaria de RevenueCat Cloud Export |
+| `transactions_support` | Importa el historial de transacciones a través del soporte de RevenueCat y el soporte de Adapty, para los planes de RevenueCat sin Cloud Export |
+| `apple_events` | Reenvía las notificaciones de App Store a Adapty mientras RevenueCat sigue recibiéndolas |
+| `google_events` | Suscribe a Adapty al tema Pub/Sub que RevenueCat utiliza para las notificaciones de Google Play |
+
+### adapty migrations use
+
+Guarda una migración como la actual, para que los demás comandos no necesiten `-m`.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `migration-id` | ID de migración obtenido con `adapty migrations list` |
+
+La CLI verifica que tienes acceso a la migración antes de guardar el ID. La migración guardada pertenece al token actual y se aplica en cualquier terminal.
+
+### adapty migrations current
+
+Muestra la migración actual y su origen: la variable de entorno `ADAPTY_MIGRATION` o la selección guardada.
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+Borra la migración guardada. Un valor `ADAPTY_MIGRATION` establecido en tu shell permanece activo hasta que lo elimines.
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+Muestra el estado de una migración, sus problemas y las acciones que puedes ejecutar a continuación.
+
+```bash
+adapty migrations status
+```
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--wait` | No | Sondea hasta que la migración cambie y devuelve el estado más reciente |
+| `--timeout` | No | Tiempo de sondeo para `--wait`: de 1 a 600 segundos, 120 por defecto. Acepta `300`, `300s` o `5m`. Requiere `--wait`. |
+
+Con `--json`, `next_actions` y `available_actions` muestran el ID de cada acción, los recursos que lee, su `input_schema` y el texto de `confirm`.
+
+El código de salida `0` indica que la solicitud se completó correctamente, no que la migración haya tenido éxito. Comprueba `migration.state` en la respuesta.
+
+### adapty migrations steps
+
+Muestra el checklist de migración y el estado de cada paso.
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+Lista los recursos que puedes leer ahora, o lee uno.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argument | Description |
+|---|---|
+| `resource` | Resource name, for example `apps`, `mapping`, `report`, or `export-config`. Omit it to list the resources available at the current step. |
+
+### adapty migrations run
+
+Ejecuta una acción de `adapty migrations status`.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Argument | Description |
+|---|---|
+| `action-id` | Action ID from `next_actions` or `available_actions` in `adapty migrations status` |
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--input` | No | Entrada de la acción como objeto JSON que coincide con el `input_schema` de la acción. Sin entrada, la CLI envía `{}`. |
+| `--input-file` | No | Ruta a un archivo con la entrada de la acción, o `-` para leerla desde stdin. No se puede combinar con `--input`. |
+| `-y`, `--yes` | Para acciones con texto `confirm` | Confirma la acción después de leer su texto `confirm`. No hay ningún prompt interactivo. |
+| `--open` | No | Abre el enlace de la acción incluso con una tubería o `--json` |
+| `--no-browser` | No | Imprime el enlace de la acción sin abrir un navegador |
+
+Las acciones son de dos tipos:
+
+- **Acciones de entrada** envían tus datos a Adapty, por ejemplo, las apps de RevenueCat que quieres migrar o tus decisiones de mapeo.
+- **Acciones externas** abren una página en el Adapty Dashboard, por ejemplo, para pegar la clave de API secreta de RevenueCat. Completa la página y luego comprueba `status`.
+
+### adapty migrations close
+
+Finaliza o cancela una migración. No podrás reabrirla después.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` marca la migración como completada; `cancel` la abandona |
+| `-y`, `--yes` | Yes | Confirma el cierre |
+
 ## Auth \{#auth\}
 
 | Comando | Descripción |
 |---|---|
 | `adapty auth login` | Autenticarse mediante el navegador usando el flujo de dispositivo |
-| `adapty auth logout` | Borrar las credenciales almacenadas localmente |
+| `adapty auth logout` | Eliminar las credenciales almacenadas y la migración guardada localmente |
 | `adapty auth whoami` | Verificar el token con el servidor y mostrar información del usuario |
-| `adapty auth status` | Mostrar el estado de autenticación local sin hacer una llamada al servidor |
-| `adapty auth revoke` | Revocar el token en el servidor y borrarlo localmente |
+| `adapty auth status` | Mostrar el estado de autenticación local sin llamar al servidor |
+| `adapty auth revoke` | Revocar el token en el servidor y luego eliminarlo junto con su migración guardada localmente |
 
-Consulta [Autenticación](developer-cli-authentication) para ver todos los detalles de cada comando.
+Consulta [Autenticación](developer-cli-authentication) para obtener información detallada sobre cada comando.

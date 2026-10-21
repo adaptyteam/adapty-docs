@@ -1,11 +1,11 @@
 ---
 title: "Adapty Developer CLI コマンドリファレンス"
-description: "アプリ、プロダクト、ペイウォール、フロー、プレースメントを設定するための Adapty Developer CLI コマンドリファレンス。"
+description: "アプリ、プロダクト、ペイウォール、フロー、プレースメントの設定や RevenueCat からの移行に使用する Adapty Developer CLI コマンドのリファレンスです。"
 metadataTitle: "Developer CLI コマンドリファレンス | Adapty ドキュメント"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-この記事では、アカウントの設定（アプリ、アクセスレベル、プロダクト、ペイウォール、フロー、プレースメント、セグメント）に関する Adapty CLI コマンドを引数・フラグ・使用可能な値とともに紹介します。Apple 広告キャンペーンについては、[Ads Manager コマンド](developer-cli-ads-manager-reference)を参照してください。
+この記事では、Adapty CLI のコマンドのうち、アカウント設定（アプリ、アクセスレベル、プロダクト、ペイウォール、フロー、プレースメント、セグメント）を行うコマンドと、RevenueCat プロジェクトを移行するコマンドについて、引数・フラグ・使用可能な値とともに説明します。Apple Ads キャンペーンについては、[Ads Manager コマンド](developer-cli-ads-manager-reference)を参照してください。
 
 :::link
 認証のセットアップとトークン管理については、[認証](developer-cli-authentication)を参照してください。
@@ -713,14 +713,162 @@ adapty segments get --app <app-id> <segment-id>
 
 レスポンスには `id`、`title`、`description` が含まれます。フィルタールールはこのAPIでは公開されていません。
 
+## マイグレーション \{#migrations\}
+
+RevenueCat プロジェクトを Adapty に移行します。まずカタログを移行し、必要に応じてストアイベントとトランザクション履歴も移行できます。Adapty は各マイグレーションをステップの連続として実行し、次に実行できるアクションを通知するため、各アクションの前に `status` を確認してください。手順全体については、[RevenueCat からの移行](migration-from-revenuecat)を参照してください。
+
+`list`、`create`、`use`、`current`、`unuse` を除くすべてのコマンドは、マイグレーションフラグを受け付けます：
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `-m`, `--migration` | いいえ | マイグレーション ID。指定しない場合、CLI は `ADAPTY_MIGRATION` 環境変数を使用し、次に `create` または `use` で保存されたマイグレーションを使用します。 |
+
+### adapty migrations list
+
+アプリごとにグループ化された、マイグレーション一覧と開始可能なマイグレーションフローを表示します。
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+マイグレーションを開始し、現在のマイグレーションとして保存します。
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--name` | `--name` または `--flow` のいずれか | 新しい Adapty アプリの名前。カタログのマイグレーションを開始します。`--flow` や `--app` と組み合わせることはできません。 |
+| `--flow` | `--name` または `--flow` のいずれか | 既存アプリで開始するフロー（`adapty migrations list` に表示される形式）。`--app` が必要です。 |
+| `--app` | `--flow` と共に使用 | アプリ ID（UUID） |
+| `--no-select` | いいえ | 現在のマイグレーションとして保存せずに作成します |
+
+既存アプリのカタログマイグレーション後に利用できるフロー:
+
+| フロー | 説明 |
+|---|---|
+| `transactions` | 毎日のRevenueCat Cloud Exportからトランザクション履歴をインポートする |
+| `transactions_support` | Cloud Exportのないplan向けに、RevenueCatサポートとAdaptyサポートを通じてトランザクション履歴をインポートする |
+| `apple_events` | RevenueCatが引き続き受信しながら、App Store通知をAdaptyにも転送する |
+| `google_events` | RevenueCatがGoogle Play通知に使用するPub/SubトピックにAdaptyをサブスクライブする |
+
+### adapty migrations use
+
+マイグレーションを現在のものとして保存し、他のコマンドで `-m` を指定しなくて済むようにします。
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `migration-id` | `adapty migrations list` で確認できるマイグレーション ID |
+
+CLI は ID を保存する前に、そのマイグレーションにアクセスできるかどうかを確認します。保存されたマイグレーションは現在のトークンに紐づき、すべてのターミナルで有効になります。
+
+### adapty migrations current
+
+現在のマイグレーションとその参照元（`ADAPTY_MIGRATION` 環境変数または保存された選択）を表示します。
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+保存済みのマイグレーションをクリアします。シェルで設定した `ADAPTY_MIGRATION` の値は、解除するまで有効です。
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+マイグレーションの状態、問題点、および次に実行できるアクションを表示します。
+
+```bash
+adapty migrations status
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--wait` | いいえ | マイグレーションに変化があるまでポーリングし、最新の状態を返します |
+| `--timeout` | いいえ | `--wait` のポーリング時間: 1〜600秒、デフォルトは120秒。`300`、`300s`、`5m` の形式で指定できます。`--wait` が必要です。 |
+
+`--json` を使用すると、`next_actions` と `available_actions` に各アクションの ID、読み取るリソース、`input_schema`、および `confirm` テキストが含まれます。
+
+終了コード `0` はリクエストの成功を意味するものであり、マイグレーションの成功を意味するものではありません。レスポンスの `migration.state` を確認してください。
+
+### adapty migrations steps
+
+マイグレーションのチェックリストと各ステップのステータスを表示します。
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+現在読み取れるリソースの一覧を表示するか、特定のリソースを読み取ります。
+
+```bash
+adapty migrations show [resource]
+```
+
+| 引数 | 説明 |
+|---|---|
+| `resource` | リソース名。例: `apps`、`mapping`、`report`、`export-config`。省略すると、現在のステップで利用可能なリソースの一覧が表示されます。 |
+
+### adapty migrations run
+
+`adapty migrations status` のアクションを実行します。
+
+```bash
+adapty migrations run <action-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `action-id` | `adapty migrations status` の `next_actions` または `available_actions` に表示されるアクション ID |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--input` | いいえ | アクションの `input_schema` に一致する JSON オブジェクトとしてのアクション入力。入力がない場合、CLI は `{}` を送信します。 |
+| `--input-file` | いいえ | アクション入力が含まれるファイルへのパス、または標準入力から読み込む場合は `-`。`--input` と組み合わせることはできません。 |
+| `-y`, `--yes` | `confirm` テキストを持つアクションの場合 | `confirm` テキストを確認した後にアクションを承認します。インタラクティブなプロンプトはありません。 |
+| `--open` | いいえ | パイプや `--json` を使用している場合でも、アクションのリンクを開きます |
+| `--no-browser` | いいえ | ブラウザを開かずにアクションのリンクを表示します |
+
+アクションには2種類あります：
+
+- **インプットアクション**はデータをAdaptyに送信します。例えば、移行するRevenueCatのアプリやマッピングの設定などです。
+- **外部アクション**はAdapty ダッシュボードのページを開きます。例えば、RevenueCatのシークレットAPIキーを貼り付けるためのページです。ページでの操作が完了したら、`status`を確認してください。
+
+### adapty migrations close
+
+マイグレーションを完了またはキャンセルします。一度閉じると再度開くことはできません。
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--outcome` | はい | `finish` でマイグレーションを完了としてマーク。`cancel` で中断 |
+| `-y`, `--yes` | はい | 終了を確認する |
+
 ## 認証 \{#auth\}
 
 | コマンド | 説明 |
 |---|---|
 | `adapty auth login` | デバイスフローを使用してブラウザ経由で認証する |
-| `adapty auth logout` | ローカルに保存された認証情報を削除する |
-| `adapty auth whoami` | サーバーでトークンを検証してユーザー情報を表示する |
+| `adapty auth logout` | 保存された認証情報とローカルに保存されたマイグレーションを削除する |
+| `adapty auth whoami` | サーバーでトークンを検証し、ユーザー情報を表示する |
 | `adapty auth status` | サーバーへの問い合わせなしにローカルの認証状態を表示する |
-| `adapty auth revoke` | サーバー側でトークンを失効させ、ローカルからも削除する |
+| `adapty auth revoke` | サーバー側でトークンを無効化し、トークンおよび保存されたマイグレーションをローカルから削除する |
 
-各コマンドの詳細については[認証](developer-cli-authentication)を参照してください。
+各コマンドの詳細については、[認証](developer-cli-authentication)を参照してください。

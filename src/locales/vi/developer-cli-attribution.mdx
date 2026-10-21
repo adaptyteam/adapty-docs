@@ -1,0 +1,188 @@
+---
+title: "Truy vấn Attribution từ CLI"
+description: "Đọc báo cáo Attribution của Adapty từ terminal: chi tiêu, lượt cài đặt, doanh thu, ROAS, cohort và dự đoán theo kênh, chiến dịch, quảng cáo, quốc gia và ngày."
+metadataTitle: "Attribution trong Developer CLI | Tài liệu Adapty"
+---
+
+Adapty CLI đọc dữ liệu phân tích [Adapty Attribution](adapty-user-acquisition) từ terminal, dưới chủ đề `adapty attribution`. Nó trả về cùng các con số như trên [Attribution dashboard](ua-analytics): chi tiêu, lượt cài đặt, doanh thu, ROAS, giá trị cohort và dự đoán, được nhóm theo kênh, chiến dịch, nhóm quảng cáo, quảng cáo, từ khóa, quốc gia, cửa hàng hoặc ngày.
+
+Dùng nó để cung cấp cho AI agent quyền truy cập trực tiếp vào số liệu thu hút người dùng, để kéo báo cáo vào script, hoặc để trả lời một câu hỏi mà không cần xây dựng view trên dashboard.
+
+:::tip
+Để có công cụ lập trình AI trả lời các câu hỏi như "Kênh nào hoàn vốn tốt nhất tháng trước?" cho bạn, hãy cài đặt [Attribution skill](developer-cli-attribution-skill). Nó biết cần chạy lệnh nào và cách đọc kết quả.
+:::
+
+Mỗi lệnh `attribution` đều chỉ có thể đọc. Không có gì bạn chạy sẽ thay đổi chiến dịch, liên kết theo dõi, hay tích hợp nào.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Chủ đề `attribution` sử dụng cùng cách cài đặt và đăng nhập như phần còn lại của CLI. Nếu bạn chưa thiết lập, hãy làm theo bước 1 và 2 trong [hướng dẫn quickstart](developer-cli-quickstart). Chủ đề này yêu cầu CLI phiên bản 0.8.8 trở lên. Để xem phiên bản của bạn, chạy lệnh `adapty --version`.
+
+Có thêm hai điều kiện cần đáp ứng:
+
+- **Quyền truy cập Attribution**: Nếu không có quyền này, `report` và `values` sẽ thất bại với lỗi `402 attribution_access_required`. Đăng nhập lại không thay đổi điều đó. `metrics` và `dimensions` hoạt động mà không cần quyền truy cập, vì vậy một lệnh `metrics` thành công chứng minh bạn đã đăng nhập, không phải chứng minh bạn có quyền truy cập.
+- **Một ứng dụng được thiết lập trong Attribution**: `report` và `values` lấy UUID của ứng dụng từ `adapty apps list`. Một ứng dụng chưa được thiết lập trong Attribution, hoặc mà người dùng Adapty của bạn không thể đọc, sẽ thất bại với lỗi `404 attribution_app_not_found`.
+
+## Xây dựng báo cáo \{#build-a-report\}
+
+Xây dựng mọi báo cáo theo cùng một thứ tự: chọn tên từ danh mục, tra cứu giá trị bộ lọc, rồi chạy báo cáo.
+
+1. **Liệt kê các chỉ số**. Mỗi chỉ số đi kèm với đơn vị và, đối với tỷ lệ, các chỉ số mà nó chia cho:
+
+   ```bash
+   adapty attribution metrics
+   ```
+
+   Một số tên là template, chẳng hạn như `d{N}_roas`. Bạn tự điền vào ngày: `d7_roas`, `d30_roas`. Số 0 đứng đầu, như trong `d07_roas`, sẽ bị từ chối.
+
+2. **Liệt kê các dimension** mà bạn có thể nhóm hoặc lọc theo:
+
+   ```bash
+   adapty attribution dimensions
+   ```
+
+`--group-by` nhận các giá trị `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country`, và `store`. Campaigns, ad sets, và ads được lọc theo ID, không theo tên.
+
+3. **Tra cứu giá trị bộ lọc**. Bỏ qua bước này nếu bạn không lọc. Với campaigns, lệnh này trả về ID, tên và channel của từng campaign trong khoảng thời gian đó:
+
+   ```bash
+   adapty attribution values --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 --dimension campaign
+   ```
+
+4. **Chạy báo cáo**:
+
+```bash
+   adapty attribution report --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 \
+     --metrics spend,installs,cpi,roas,d7_roas --group-by campaign --sort roas:desc
+   ```
+
+Báo cáo trả về một hàng cho mỗi tổ hợp của các chiều `--group-by`, cộng với `totals`. Đọc tổng từ `totals`, không cộng các hàng lại với nhau: tỷ lệ và số lượng duy nhất không thể cộng gộp theo hàng.
+
+### Ví dụ
+
+Xu hướng hàng tuần cho hai quốc gia trong một chiến dịch:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-31 \
+  --metrics spend,installs,cost_per_trial,d7_roas --group-by date,channel --granularity week \
+  --filter campaign=<campaign-id> --filter country=US,GB
+```
+
+Chất lượng trial theo chiến dịch, tính trên doanh thu sau khi trừ hoa hồng của cửa hàng:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-15 \
+  --metrics spend,count_trial_started,d14_count_trial_converted,cost_per_trial,d30_roas \
+  --group-by campaign --revenue-basis proceeds
+```
+
+Dự đoán hoàn vốn theo ngày cài đặt:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-09-01 --date-to 2026-09-29 \
+  --metrics spend,d7_revenue,d90_predict_roas,d365_predict_roas --group-by date,campaign --granularity day
+```
+
+Để lấy response thô cho script hoặc agent, thêm `--json` vào bất kỳ lệnh nào.
+
+## Đọc kết quả \{#read-the-results\}
+
+- **Tiền tệ**: Đơn vị tiền tệ là USD. Doanh thu tuân theo `--revenue-basis`: `gross` (mặc định, và cũng là mặc định trên dashboard), `proceeds` (sau khi trừ hoa hồng của cửa hàng), hoặc `net` (sau khi trừ hoa hồng và thuế). Trường `meta.query` trong response sẽ cho biết basis đang được áp dụng.
+- **Phần trăm**: ROAS và các tỷ lệ được tính theo thang 0–100. Giá trị `roas` bằng 150 tương đương 150%, hay 1,5x.
+- **Giá trị trống**: Giá trị trống có nghĩa là không thể tính được, không phải bằng không. Một tỷ lệ sẽ trống khi không có gì để chia, một dự đoán sẽ trống khi mô hình không có dữ liệu cho ngày đó, và mọi chỉ số dựa trên chi tiêu sẽ trống với các kênh mà Attribution không có dữ liệu chi tiêu. Trong output `--json`, các giá trị này là `null`; ở chế độ xem bảng, chúng hiển thị là `—`.
+- **Chỉ số cohort**: Chỉ số cohort chỉ tính những gì cohort đã thực hiện cho đến thời điểm hiện tại. `d30_roas` cho các lượt cài đặt từ tuần trước chỉ bao gồm doanh thu của một tuần và sẽ tiếp tục tăng. Chỉ so sánh các chiến dịch tại một ngày mà mọi cohort trong khoảng thời gian đó đều đã đạt đến.
+- **Ngày tháng**: Ngày tháng được tính theo múi giờ báo cáo của ứng dụng. Không có cờ múi giờ. Múi giờ xuất hiện dưới dạng `meta.query.timezone` trong output `--json` của lệnh `report` và `values`.
+
+### Chi phí Apple Search Ads \{#apple-search-ads-spend\}
+
+Attribution thu thập chi phí quảng cáo từ Meta, TikTok và Google Ads. Các hàng Apple Search Ads có dữ liệu lượt cài đặt và doanh thu, nhưng chi phí, CPI, ROAS và mọi chỉ số liên quan đến chi phí khác đều trống. Kết nối Apple Ads không bổ sung khoản chi phí đó vào Attribution: chi phí Apple Search Ads và ROAS nằm trong [Ads Manager](developer-cli-ads-manager), mục `adapty asa metrics`.
+
+Đừng cộng số liệu từ Ads Manager vào các hàng hoặc tổng cộng trong Attribution. Ads Manager báo cáo theo đơn vị tiền tệ của nhóm chiến dịch và attribution lượt cài đặt theo cách khác.
+
+## Giới hạn \{#limits\}
+
+Mức độ phân nhóm ngày chi tiết nhất sẽ xác định khoảng thời gian tối đa mà một báo cáo có thể bao phủ:
+
+| Phân nhóm | Khoảng thời gian dài nhất |
+|---|---|
+| `--granularity day` | 31 ngày |
+| `--granularity week` | 180 ngày |
+| `--granularity month`, `quarter`, hoặc `year` | 366 ngày |
+| Không có phân nhóm `date` | 92 ngày |
+
+Để lấy dữ liệu trong khoảng thời gian dài hơn, hãy dùng `--granularity` có độ chi tiết thấp hơn. Dữ liệu cả năm chỉ cần một báo cáo với `--granularity month`.
+
+Một báo cáo còn có các giới hạn sau:
+
+- Tối đa 10.000 hàng. Nếu cần nhiều hơn, hãy giảm độ chi tiết theo ngày, bỏ nhóm `keyword` hoặc `ad`, hoặc lọc bớt.
+- Tối đa 25 chỉ số, và tối đa 100 giá trị trong một bộ lọc.
+- Các chỉ số dự đoán (`d{N}_predict_…`) yêu cầu `--group-by date --granularity day` và tối đa 2 nhóm khác, với tối đa 4 mốc thời gian riêng biệt, mỗi mốc không quá 365 ngày.
+
+`adapty attribution metrics --json` trả về các giới hạn này trong `data.limits`.
+
+Chạy các báo cáo tuần tự, không chạy song song: dịch vụ chỉ xử lý một vài truy vấn mỗi lần cho mỗi công ty.
+
+## Lỗi \{#errors\}
+
+Yêu cầu bị dịch vụ từ chối sẽ thoát với mã 4. Đầu vào bị CLI từ chối trước khi gửi, chẳng hạn như ngày sai định dạng hoặc `--granularity` không có `--group-by date`, sẽ thoát với mã 2. Với `--json`, lỗi bao gồm `error_code` từ dịch vụ.
+
+| Mã | HTTP | Cần làm gì |
+|---|---|---|
+| `auth_required` | 401 | Đăng nhập lại bằng `adapty auth login`. |
+| `attribution_access_required` | 402 | Công ty của bạn không có quyền truy cập Attribution. Đăng nhập lại cũng không giải quyết được. |
+| `attribution_app_not_found` | 404 | Tra cứu ID ứng dụng trong `adapty apps list`, danh sách này chỉ hiển thị các ứng dụng bạn có quyền đọc. |
+| `attribution_unknown_metric` | 422 | Sửa tên chỉ số theo kết quả từ `adapty attribution metrics`. Thông báo lỗi sẽ nêu rõ từng tên không hợp lệ, và toàn bộ báo cáo sẽ không chạy được. |
+| `attribution_validation_error` | 422 | Sửa dimension, filter, trường sắp xếp hoặc ngày tháng được nêu trong thông báo lỗi. Đặt tất cả giá trị của một dimension trong một `--filter` duy nhất. |
+| `attribution_query_too_large` | 422 | Thu hẹp báo cáo theo hướng dẫn trong thông báo lỗi. Xem [Giới hạn](#limits). |
+| `attribution_busy` | 429 | Quá nhiều truy vấn đang chạy cùng lúc cho công ty của bạn. Chờ `retry_after_seconds` giây rồi chạy lại báo cáo. |
+| `attribution_upstream_unavailable`, `attribution_query_unavailable` | 503 | Chờ `retry_after_seconds` giây rồi chạy lại. Nếu `attribution_query_unavailable` vẫn lặp lại, hãy thu nhỏ báo cáo. |
+
+CLI không bao giờ tự thử lại lệnh `report` hay `values`, vì vậy nếu một báo cáo thất bại, nó sẽ vẫn thất bại cho đến khi bạn chạy lại.
+
+## Tham chiếu lệnh \{#command-reference\}
+
+### `attribution metrics` \{#attribution-metrics\}
+
+Liệt kê mọi chỉ số mà một báo cáo chấp nhận, kèm đơn vị, mô tả, và các chỉ số mà một tỷ lệ chia theo, cùng với giới hạn báo cáo. Không nhận flag nào ngoài `--json`.
+
+### `attribution dimensions`
+
+Liệt kê những gì `--group-by` và `--filter` chấp nhận, cho biết mỗi dimension lọc theo ID hay theo giá trị, và các mức độ chi tiết của `date`. Không nhận flag nào ngoài `--json`.
+
+### `attribution values`
+
+Liệt kê các giá trị mà một chiều dữ liệu nhận trong một ứng dụng trong khoảng thời gian nhất định. Đây chính xác là các giá trị mà `report --filter` chấp nhận.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | UUID của ứng dụng, lấy từ `adapty apps list`. |
+| `--date-from` | Có | Ngày đầu tiên của khoảng thời gian, bao gồm cả ngày này, theo định dạng `YYYY-MM-DD` theo múi giờ của ứng dụng. |
+| `--date-to` | Có | Ngày cuối cùng của khoảng thời gian, bao gồm cả ngày này. Không được sớm hơn `--date-from`. |
+| `--dimension` | Có | Một chiều dữ liệu có thể lọc từ `adapty attribution dimensions`. |
+| `--revenue-basis` | Không | `gross`, `proceeds`, hoặc `net`. |
+
+Đối với `campaign`, `adset` và `ad`, mỗi giá trị bao gồm ID, tên và kênh. Giá trị có ID rỗng là lưu lượng truy cập tự nhiên (organic) hoặc store-referrer, không có bộ lọc nào có thể chọn được.
+
+### `attribution report`
+
+Chạy báo cáo: các chỉ số theo khoảng thời gian, được nhóm theo các chiều.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | UUID của app, lấy từ `adapty apps list`. |
+| `--date-from` | Có | Ngày đầu tiên của kỳ, tính cả ngày này, định dạng `YYYY-MM-DD` theo múi giờ của app. |
+| `--date-to` | Có | Ngày cuối cùng của kỳ, tính cả ngày này. |
+| `--metrics` | Có | Tên các chỉ số lấy từ `adapty attribution metrics`, phân cách bằng dấu phẩy hoặc lặp lại nhiều lần. Tối đa 25 chỉ số. |
+| `--group-by` | Có | `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country`, hoặc `store`, phân cách bằng dấu phẩy hoặc lặp lại nhiều lần. |
+| `--granularity` | Khi dùng `--group-by date` | `day`, `week`, `month`, `quarter`, hoặc `year`. Bắt buộc khi nhóm theo `date`, và không được dùng trong trường hợp khác. |
+| `--filter` | Không | `dimension=value[,value]`. Nhiều giá trị khớp với bất kỳ giá trị nào trong số đó; các bộ lọc trên các chiều khác nhau đều được áp dụng. Mỗi chiều chỉ dùng một `--filter`. Dùng `\,` cho dấu phẩy bên trong một giá trị. |
+| `--revenue-basis` | Không | `gross` (mặc định), `proceeds`, hoặc `net`. |
+| `--sort` | Không | `field:asc` hoặc `field:desc`, trong đó field là một chỉ số được yêu cầu hoặc chiều `--group-by`. Mặc định sắp xếp tăng dần nếu bỏ qua hướng. Các giá trị rỗng được xếp cuối. |
+
+Các hàng được nhóm theo `campaign`, `adset`, hoặc `ad` sẽ mang ID, tên và kênh của thực thể đó. Tên của một campaign là tên mới nhất mà nó có trong khoảng thời gian đó, vì vậy hãy khớp các campaign theo các kỳ bằng ID. Giá trị `date` là ngày đầu tiên của bucket tương ứng.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Phân tích Attribution bằng công cụ AI](developer-cli-attribution-skill) — skill chạy các lệnh này cho bạn.
+- [Chỉ số](ua-metrics) — mỗi chỉ số đo gì trong dashboard.
+- [Dự đoán](ua-predicted-metrics) — cách dự đoán doanh thu được mô hình hóa.

@@ -1,0 +1,104 @@
+---
+title: "AIコーディングツールでアトリビューションを分析する"
+description: "adapty-attribution スキルをインストールして、Claude Code、Copilot CLI、Codex、Gemini CLI が Adapty のアトリビューションデータからキャンペーンのパフォーマンスに関する質問に答えられるようにします。"
+metadataTitle: "アトリビューション AI スキル | Adapty ドキュメント"
+---
+
+adapty-attribution スキルを使うと、AIコーディングツールが[Adapty アトリビューション](adapty-user-acquisition)データをもとに、広告キャンペーンに関する質問に答えられるようになります。「先月、どのチャネルが最も費用対効果が高かった？」「このキャンペーンは終了すべき？」といった自然な言葉で質問するだけで、スキルが[`adapty attribution` コマンド](developer-cli-attribution)を実行し、結果を読み取って、判断の根拠となる数値とともに回答を返します。
+
+スキルとは、AIツールがオンデマンドで読み込む一連の指示です。このスキルには、アトリビューションレポートで誤読しやすい部分が含まれています。ROASの収益基準、まだ計算できない値、Apple Search Adsの支出の出所などです。
+
+:::note
+このスキルは読み取り専用です。キャンペーン、トラッキングリンク、インテグレーションは一切変更せず、予算の移動提案はあくまでユーザー自身が判断するものです。
+:::
+
+## 何に答えるか \{#what-it-answers\}
+
+このスキルはプレイブックを基に動作します。チームがよく尋ねる質問に対して、コマンドのセット、その読み取り方、そして回答の形式を定義しています。
+
+- **回収率と予算**: チャネルやキャンペーンをROASでランク付けし、追加予算をどこにどの程度配分すべきかを提示します。
+- **新規キャンペーン**: D30のデータにまだ1週間分の収益しかない段階でも、コホートが到達した時点で新しいキャンペーンを評価します。
+- **トライアルの質**: インストール単価ではなく、課金トライアル単価でキャンペーンをランク付けすることで、トライアルが転換しないキャンペーンを浮き彫りにします。
+- **週次ダイジェスト**: 直近の1週間を前の週と比較し、変化した項目をフラグします。
+- **国とストア**: 展開を拡大すべき場所と、支出を抑えるべき場所を示します。
+- **キャンペーン内の勝者**: 1つのキャンペーン内の広告セットと広告をランク付けします。
+- **低品質トラフィック**: アプリ平均より返金やチャージバックの多いキャンペーンをフラグします。
+- **予測回収期間**: より長い期間での予測ROASを読み取り、損益分岐点となるCPIに変換します。
+- **数値の不一致**: Meta、TikTok、またはGoogleのレポートROASがAdaptyと異なる理由を説明します。
+- **インストール数の減少**: 減少のパターンを読み取り、アプリ側の原因か特定ネットワークの原因かを判別します。
+
+Setup questions — connecting Meta、TikTok、または Google Ads の接続、トラッキングリンク、ウェブピクセル、Stripe、または Paddle に関するセットアップの質問については、それぞれの専用ドキュメントページを参照してください。
+
+## Apple Search Ads
+
+アトリビューションは Apple Search Ads の広告費を収集しないため、そこでの ROAS は空になります。スキルは [Ads Manager](developer-cli-ads-manager) から Apple Search Ads の広告費と ROAS を取得し、アトリビューションの数値に統合するのではなく、キャンペーングループの通貨で独立した行として報告します。広告費を自分で入力した場合、ROAS を計算するのではなく「Apple Search Ads の広告費が $X 未満であれば Google より有利」というしきい値で回答します。
+
+## スキルをインストールする \{#install-the-skill\}
+
+このスキルは `adapty-skills` リポジトリに `adapty-integration`、`ads-manager`、`flow-generator` などと一緒に含まれています。以下のコマンドはそれぞれリポジトリ内のすべてのスキルをインストールします。
+
+<Tabs>
+  <TabItem value="claude-code" label="Claude Code">
+    ```bash
+    claude plugin marketplace add adaptyteam/adapty-skills
+    claude plugin install adapty-skills@adapty
+    ```
+
+その後、Claude Codeで `/reload-plugins` を実行してスキルを有効化します。
+  </TabItem>
+  <TabItem value="copilot-cli" label="Copilot CLI">
+    ```bash
+    git clone https://github.com/adaptyteam/adapty-skills.git
+    cp -r adapty-skills/skills/* ~/.copilot/skills/
+    ```
+  </TabItem>
+  <TabItem value="gemini-cli" label="Gemini CLI">
+    ```bash
+    gemini skills install https://github.com/adaptyteam/adapty-skills
+    ```
+  </TabItem>
+  <TabItem value="codex" label="Codex">
+    ```bash
+    codex plugin marketplace add adaptyteam/adapty-skills
+    codex plugin add adapty-skills@adapty
+    ```
+
+その後、新しいスレッドを開始して Codex にスキルを読み込ませます。
+  </TabItem>
+  <TabItem value="any-tool" label="Any tool">
+    ```bash
+    npx skills add adaptyteam/adapty-skills --all
+    ```
+
+    `--all` はすべてのスキルを、[skills CLI](https://skills.sh) が検出したすべてのエージェントにインストールします。このスキルのみをインストールする場合は `--skill adapty-attribution` を使用してください。この方法でインストールしたスキルは自動更新されません。新しいバージョンを取得するには `npx skills update` を実行してください。
+  </TabItem>
+</Tabs>
+
+このスキルを使用するには、[Adapty CLI](developer-cli-quickstart)へのログイン、および会社のアトリビューションへのアクセス権が必要です。準備ができたら、スラッシュコマンドをスキルにマッピングするツールでは `/adapty-attribution` を、そうでないツールでは「Use the adapty-attribution skill」と入力してください。
+
+## プロンプトの例 \{#example-prompts\}
+
+アプリ名、期間、判断したい内容を伝えるだけで、スキルが必要なコマンドを組み立てます。
+
+```
+Our app is app_finance. Which paid channels paid back best in August, and where
+should next month's extra $20k of budget go? Judge on revenue after the store's
+cut.
+```
+
+```
+Our TikTok "Fall Promo" campaign started on Sep 15. Leadership's rule is to kill
+anything under 80% D30 ROAS. How is it doing against "Spring Sleep", and should
+we kill it?
+```
+
+```
+Meta Ads Manager says our "Broad US" campaign had a 2.4 purchase ROAS in August.
+Adapty shows something much lower. Which number is right, and what do I tell my
+boss?
+```
+
+## 次のステップ \{#whats-next\}
+
+- [CLIからアトリビューションを照会する](developer-cli-attribution) — AIツールを使わずに手動で同じレポートを取得する方法。
+- [アトリビューション分析](ua-analytics) — 同じデータをダッシュボードで確認する方法。

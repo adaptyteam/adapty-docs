@@ -11,7 +11,7 @@ Adapty Mail API cho phép bạn gửi hồ sơ người dùng và giao dịch đ
 - Cung cấp dữ liệu cho Adapty Mail theo phương thức server-to-server, với backend của bạn là nguồn dữ liệu chính.
 
 :::note
-**API hay SDK?** Hầu hết các ứng dụng gửi dữ liệu đến Adapty Mail thông qua SDK, vốn tự động thu thập email và thông tin mua hàng — xem [Kết nối Adapty với Adapty Mail](mail-collect-emails). Chọn API khi ứng dụng của bạn không có SDK, khi dữ liệu đã có sẵn trên server, hoặc khi bạn import người dùng từ nguồn khác. Bạn cũng có thể dùng API song song với một điểm nhập khác: Adapty Mail khớp dữ liệu đến theo `customer_user_id` và địa chỉ email, chỉ lưu một hồ sơ người dùng cho mỗi người.
+**API hay SDK?** Hầu hết các ứng dụng gửi dữ liệu đến Adapty Mail thông qua Adapty SDK, SDK này tự động thu thập email và các giao dịch mua — xem [Kết nối Adapty với Adapty Mail](mail-collect-emails). Chọn API khi ứng dụng của bạn không có Adapty SDK, khi dữ liệu đã có sẵn trên máy chủ của bạn, hoặc khi bạn import người dùng đã đăng ký từ nguồn khác. Bạn cũng có thể dùng API kết hợp với một điểm đầu vào khác. Adapty Mail khớp người dùng theo địa chỉ email. Hai nguồn báo cáo cùng một địa chỉ sẽ quy về một hồ sơ người dùng; hai địa chỉ khác nhau sẽ tạo ra các hồ sơ người dùng riêng biệt, ngay cả khi `customer_user_id` giống nhau.
 :::
 
 ## Trước khi bắt đầu \{#before-you-start\}
@@ -43,7 +43,7 @@ Ba trường bắt buộc:
 Luôn gửi `external_profile_id` ổn định, không dùng giá trị ẩn danh hoặc thay đổi theo từng lần cài đặt. Adapty Mail dùng giá trị này để liên kết email, lượt nhấp và giao dịch mua vào một hồ sơ duy nhất.
 :::
 
-Nếu cùng một người dùng cũng tiếp cận Adapty Mail thông qua Adapty SDK, hãy thêm `customer_user_id` — đây là ID người dùng của bạn, tức là ID bạn truyền vào `Adapty.identify()`. Adapty Mail sẽ khớp theo ID này và giữ cả hai nguồn trong cùng một hồ sơ người dùng, thay vì tạo ra một bản sao trùng lặp khiến người dùng nhận được email hai lần.
+Nếu cùng một người cũng truy cập Adapty Mail qua [entry point](mail-entry-points) khác, hãy gửi `customer_user_id` — cùng user ID mà nguồn đó gửi. Đối với Adapty SDK, đó là giá trị bạn truyền vào `Adapty.identify()`; FunnelFox gửi ID mà nó đang lưu. Giá trị này không quyết định hồ sơ người dùng nào được chọn — địa chỉ email mới là thứ làm điều đó. Điều nó bổ sung là một cách thứ hai để tìm hồ sơ: một sự kiện giao dịch mang theo nó có thể được xử lý mà không cần email, và một yêu cầu xóa có thể dùng nó thay vì địa chỉ email.
 
 ```bash
 curl --request POST \
@@ -62,10 +62,21 @@ curl --request POST \
 ```
 
 :::note
-`country` và `store_country` nhận mã hai chữ cái theo chuẩn [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) — `US`, không phải `USA` hay `United States`. Mọi giá trị khác đều bị từ chối.
+`country` và `store_country` nhận mã [ISO 3166-1 alpha-2](https://en.wikipedia.org/wiki/ISO_3166-1_alpha-2) hai chữ cái — `US`, không phải `USA` hay `United States`. Mọi giá trị khác đều bị từ chối.
 :::
 
-Xem tài liệu tham khảo [Save profile](api-mail/operations/saveProfile) để biết tất cả các trường có sẵn.
+`device_info` mô tả thiết bị của người dùng. Đối tượng này là tùy chọn, nhưng `platform` phải có mặt bất cứ khi nào bạn gửi nó.
+
+| Trường | Tùy chọn | Bộ lọc phân khúc | Ghi chú |
+| --- | --- | --- | --- |
+| `platform` | Không | Có | |
+| `device` | Có | Có | Kiểu thiết bị. |
+| `os` | Có | Có | |
+| `locale` | Có | Có | |
+| `app_version` | Có | Có | So sánh theo thứ tự phiên bản, nên `1.10.0` cao hơn `1.9.0`. |
+| `timezone` | Có | Không | Xác định thời điểm người dùng nhận email. Nếu không có, Adapty Mail xử lý họ theo UTC, nên khung giờ gửi 08:00–21:00 sẽ theo UTC thay vì múi giờ của họ. |
+
+Xem tài liệu tham khảo [Save profile](api-mail/operations/saveProfile) để biết tất cả các trường có thể dùng.
 
 ## Gửi sự kiện giao dịch \{#send-transaction-events\}
 
@@ -115,9 +126,9 @@ curl --request POST \
   }'
 ```
 
-Xác định hồ sơ người dùng bằng `external_profile_id`, `customer_user_id`, hoặc `email` — cần gửi ít nhất một trong số này. Việc xóa là vĩnh viễn: một yêu cầu lưu sau đó mang cùng các định danh sẽ không tạo lại hồ sơ người dùng.
+Xác định hồ sơ người dùng bằng `external_profile_id`, `customer_user_id`, hoặc `email` — cần gửi ít nhất một trong số đó. Adapty Mail sẽ xóa dữ liệu đã lưu, nhưng không chặn địa chỉ đó: nếu nguồn gửi lại, một hồ sơ người dùng mới sẽ xuất hiện mà không có lịch sử. Để loại bỏ ai đó vĩnh viễn, hãy ngăn nguồn không gửi dữ liệu của họ nữa.
 
-Để thực hiện thử lại an toàn, hãy xác định hồ sơ người dùng bằng `external_profile_id` hoặc `customer_user_id`. Lặp lại thao tác xóa chỉ dùng `email` sẽ trả về `404`, vì việc xóa đã xóa sạch địa chỉ đã lưu. Xem tài liệu tham khảo [Xóa hồ sơ người dùng](api-mail/operations/deleteProfile) để biết thêm chi tiết.
+Một yêu cầu xóa bị timeout khiến bạn không chắc liệu nó có được xử lý không, nên bạn gửi lại lần nữa. Lần gọi thứ hai này an toàn khi bạn xác định hồ sơ người dùng bằng `external_profile_id` hoặc `customer_user_id` — nó thành công và không thay đổi gì. Một lần gọi thứ hai chỉ mang theo `email` sẽ trả về `404`, vì lần xóa đầu tiên đã xóa địa chỉ mà nó sẽ khớp. Tài liệu tham khảo [Delete profile](api-mail/operations/deleteProfile) liệt kê các mã phản hồi.
 
 ### Ánh xạ sự kiện vào flow \{#map-your-events-to-flows\}
 

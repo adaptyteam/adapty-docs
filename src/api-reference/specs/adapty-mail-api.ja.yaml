@@ -88,13 +88,13 @@ paths:
     post:
       summary: プロファイルを削除する
       description: |
-        プロファイルの個人データを消去し、スケジュールされたメールをキャンセルします。削除権（忘れられる権利）のリクエストを処理するために使用します。
+        プロファイルの個人データを消去し、スケジュールされたメールをキャンセルします。削除権（忘れられる権利）のリクエストを履行するために使用します。
 
-        `external_profile_id`、`customer_user_id`、`email` のいずれかの組み合わせでプロファイルを識別します — Adapty Mail は保存時と同じ方法でプロファイルを解決します。
+        `external_profile_id`、`customer_user_id`、または `email` でプロファイルを特定します — 少なくとも1つを送信してください。Adapty Mail はメールアドレスでユーザーを照合するため、送信した `email` のみが識別子として使用されます。`email` を省略した場合は、`external_profile_id` または `customer_user_id` でプロファイルが検索されます。
 
-        消去は最終的なものです。同じ識別子を持つ後続の [プロファイルを保存する](#operation/saveProfile) リクエストはプロファイルを再作成しません。
+        削除によって保存済みデータはクリアされますが、そのアドレスがブロックされるわけではありません。その後の [プロファイルを保存する](#operation/saveProfile) リクエストによって新しいプロファイルが作成されますが、削除されたプロファイルの履歴は引き継がれません。誰かを永続的に除外したい場合は、そのデータの送信を停止してください。
 
-        `external_profile_id` または `customer_user_id` による削除を繰り返すと、何も変更せずに再度成功します。`email` のみを含む削除を繰り返すと `404` が返されます：消去により保存されたアドレスがクリアされるため、メールアドレスには一致するものが残りません。
+        `external_profile_id` または `customer_user_id` による削除を繰り返しても、何も変更せずに成功します。`email` のみで行った削除を繰り返した場合は `404` が返されます。消去によって保存済みアドレスがクリアされるため、メールアドレスで照合できるものが残っていないためです。
       operationId: deleteProfile
       security:
         - apikeyAuth: []
@@ -115,9 +115,9 @@ paths:
                   email: jane@example.com
       responses:
         '204':
-          description: プロファイルが削除されました。レスポンスのボディはありません。
+          description: プロファイルが削除されました。レスポンスにボディはありません。
         '400':
-          description: 識別子が提供されませんでした。
+          description: 識別子が指定されていません。
           content:
             application/json:
               schema:
@@ -145,7 +145,7 @@ paths:
                         status_code: 403
                         field_name: null
         '404':
-          description: 送信した識別子に一致するプロファイルがありません。
+          description: 送信した識別子に一致するプロファイルが見つかりません。
           content:
             application/json:
               schema:
@@ -250,7 +250,7 @@ components:
         external_profile_id:
           type: string
           description: |
-            アプリまたはバックエンドが管理するユーザーの安定した識別子。Adapty Mail がメールアドレス、クリック、購入を1つのプロファイルに紐付けられるよう、リクエスト間で同じ値を使用してください。匿名またはインストールごとの識別子は使用しないでください。
+            アプリまたはバックエンドが管理するユーザーの安定した識別子。Adapty Mail がメールアドレス、クリック、購入を1つのプロファイルに紐付けられるよう、リクエスト間で同じ値を再利用してください。匿名識別子やインストールごとの識別子は使用しないでください。
         external_created_at:
           type: string
           format: date-time
@@ -263,11 +263,11 @@ components:
           description: |
             ユーザーのメールアドレス。Adapty Mail はこのアドレスにキャンペーンを配信します。
 
-            このアドレスは一度のみ書き込み可能です。プロファイル作成時に設定され、以降の保存では上書きされません。
+            このアドレスは一度書き込むと変更できません。プロファイル作成時に設定され、その後の保存では上書きされません。
         customer_user_id:
           type: string
           description: |
-            お客様のシステムにおけるユーザー識別子（Adapty も認識している場合）。Adapty Mail はこれを使用して、Adapty SDK 経由でもアクセスする人物を識別します。これにより、同一人物に重複してメールを送信するプロファイルが作成される代わりに、2つのソースが1つのプロファイルを共有します。
+            Adapty も認識しているお客様自身のシステムにおけるユーザーの識別子（存在する場合）。Adapty Mail はこれを使用して、Adapty SDK 経由でアクセスするユーザーを識別し、同一人物に重複してメールを送信するプロファイルが作成されるのではなく、2つのソースが1つのプロファイルを共有できるようにします。
         first_name:
           type: string
           description: ユーザーの名。
@@ -283,14 +283,14 @@ components:
           description: ISO 8601 形式のユーザーの生年月日（例：`"1990-05-21"`）。
         country:
           type: string
-          description: 2文字の大文字 ISO 3166-1 alpha-2 コードで表すユーザーの国（例：`US`）。
+          description: ISO 3166-1 alpha-2 の2文字コードで表すユーザーの国（例：`US`）。
         store_country:
           type: string
-          description: 2文字の大文字 ISO 3166-1 alpha-2 コードで表すユーザーのストアリージョン（例：`US`）。
+          description: ISO 3166-1 alpha-2 の2文字コードで表すユーザーのストアリージョン（例：`US`）。
         custom_attributes:
           type: object
           description: |
-            プロファイルに付加する任意のキーと値のペア（文字列または数値）。これらを使用して[セグメント](/docs/mail-segments)を構築します。例：`plan`、`signup_source`、`trial_days`。
+            プロファイルに付加する任意のキーと値のペア（文字列または数値）。[セグメント](/docs/mail-segments)の構築に使用します。例えば、`plan`、`signup_source`、`trial_days` などです。
         device_info:
           $ref: '#/components/schemas/DeviceInfoDTO'
     ProfileDeleteDTO:

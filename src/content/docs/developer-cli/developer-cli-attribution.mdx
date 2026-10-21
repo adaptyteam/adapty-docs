@@ -1,0 +1,188 @@
+---
+title: "Query Attribution from the CLI"
+description: "Read Adapty Attribution reports from the terminal: spend, installs, revenue, ROAS, cohorts, and predictions by channel, campaign, ad, country, and date."
+metadataTitle: "Attribution in the Developer CLI | Adapty Docs"
+---
+
+The Adapty CLI reads [Adapty Attribution](adapty-user-acquisition) analytics from the terminal, under the `adapty attribution` topic. It returns the same numbers as the [Attribution dashboard](ua-analytics): spend, installs, revenue, ROAS, cohort values, and predictions, grouped by channel, campaign, ad set, ad, keyword, country, store, or date.
+
+Use it to hand an AI agent live access to your acquisition numbers, to pull a report into a script, or to answer one question without building a view in the dashboard.
+
+:::tip
+To have an AI coding tool answer questions like "Which channel paid back best last month?" for you, install the [Attribution skill](developer-cli-attribution-skill). It knows which commands to run and how to read their results.
+:::
+
+Every `attribution` command is read-only. Nothing you run changes a campaign, a tracking link, or an integration.
+
+## Before you start
+
+The `attribution` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). The topic needs CLI version 0.8.8 or later. To see your version, run `adapty --version`.
+
+Two more conditions apply:
+
+- **Attribution access**: Without it, `report` and `values` fail with `402 attribution_access_required`. Logging in again doesn't change that. `metrics` and `dimensions` work without access, so a working `metrics` call proves your login, not your access.
+- **An app set up in Attribution**: `report` and `values` take the app's UUID from `adapty apps list`. An app that isn't set up in Attribution, or that your Adapty user can't read, fails with `404 attribution_app_not_found`.
+
+## Build a report
+
+Build every report in the same order: pick names from the catalogs, look up filter values, then run the report.
+
+1. **List the metrics**. Each metric comes with its unit and, for ratios, the metrics it divides by:
+
+   ```bash
+   adapty attribution metrics
+   ```
+
+   Some names are templates, such as `d{N}_roas`. Fill in the day yourself: `d7_roas`, `d30_roas`. A leading zero, as in `d07_roas`, is refused.
+
+2. **List the dimensions** you can group or filter by:
+
+   ```bash
+   adapty attribution dimensions
+   ```
+
+   `--group-by` takes `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country`, and `store`. Campaigns, ad sets, and ads filter by ID, never by name.
+
+3. **Look up filter values**. Skip this step when you don't filter. For campaigns, it returns each campaign's ID, name, and channel over the period:
+
+   ```bash
+   adapty attribution values --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 --dimension campaign
+   ```
+
+4. **Run the report**:
+
+   ```bash
+   adapty attribution report --app <app-id> --date-from 2026-08-01 --date-to 2026-08-31 \
+     --metrics spend,installs,cpi,roas,d7_roas --group-by campaign --sort roas:desc
+   ```
+
+A report returns one row for every combination of the `--group-by` dimensions, plus `totals`. Read totals from `totals`, not by adding rows up: ratios and unique counts don't sum across rows.
+
+### Examples
+
+A weekly trend for two countries in one campaign:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-31 \
+  --metrics spend,installs,cost_per_trial,d7_roas --group-by date,channel --granularity week \
+  --filter campaign=<campaign-id> --filter country=US,GB
+```
+
+Trial quality by campaign, on revenue after the store's commission:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-07-01 --date-to 2026-08-15 \
+  --metrics spend,count_trial_started,d14_count_trial_converted,cost_per_trial,d30_roas \
+  --group-by campaign --revenue-basis proceeds
+```
+
+Predicted payback per day of installs:
+
+```bash
+adapty attribution report --app <app-id> --date-from 2026-09-01 --date-to 2026-09-29 \
+  --metrics spend,d7_revenue,d90_predict_roas,d365_predict_roas --group-by date,campaign --granularity day
+```
+
+To get the raw response for a script or an agent, add `--json` to any command.
+
+## Read the results
+
+- **Currency**: Money is in USD. Revenue follows `--revenue-basis`: `gross` (the default, and the dashboard's default), `proceeds` (after the store's commission), or `net` (after commission and taxes). The response's `meta.query` names the basis in effect.
+- **Percentages**: ROAS and rates are on a 0–100 scale. A `roas` of 150 is 150%, or 1.5x.
+- **Empty values**: An empty value means it can't be computed, never zero. A ratio is empty when there is nothing to divide by, a prediction is empty when the model has no value for that day, and every spend-based metric is empty on channels Attribution has no spend for. In `--json` output these values are `null`; the table view prints `—`.
+- **Cohort metrics**: A cohort metric counts only what the cohort has done so far. `d30_roas` for installs from last week covers one week of revenue and will keep rising. Compare campaigns only at a day that every cohort in the period has reached.
+- **Dates**: Dates are days in your app's reporting timezone. There is no timezone flag. The timezone appears as `meta.query.timezone` in the `--json` output of `report` and `values`.
+
+### Apple Search Ads spend
+
+Attribution collects ad spend from Meta, TikTok, and Google Ads. Apple Search Ads rows carry installs and revenue, but spend, CPI, ROAS, and every other spend-based metric are empty on them. Connecting Apple Ads doesn't add that spend to Attribution: Apple Search Ads spend and ROAS are in [Ads Manager](developer-cli-ads-manager), under `adapty asa metrics`.
+
+Don't add Ads Manager numbers to Attribution rows or totals. Ads Manager reports in your campaign group's currency and attributes installs differently.
+
+## Limits
+
+The finest date grouping sets the widest period a report can cover:
+
+| Grouping | Longest period |
+|---|---|
+| `--granularity day` | 31 days |
+| `--granularity week` | 180 days |
+| `--granularity month`, `quarter`, or `year` | 366 days |
+| No `date` grouping | 92 days |
+
+For a longer period, use a coarser `--granularity`. A year of data is one report at `--granularity month`.
+
+A report also has these limits:
+
+- At most 10,000 rows. For more, coarsen the date grouping, drop the `keyword` or `ad` grouping, or filter.
+- At most 25 metrics, and at most 100 values in one filter.
+- Prediction metrics (`d{N}_predict_…`) need `--group-by date --granularity day` and at most 2 other groupings, with at most 4 distinct horizons of up to 365 days.
+
+`adapty attribution metrics --json` returns these limits in `data.limits`.
+
+Run reports one after another, not in parallel: the service runs only a few queries per company at a time.
+
+## Errors
+
+A request the service rejects exits with code 4. Input the CLI rejects before sending, such as a malformed date or `--granularity` without `--group-by date`, exits with code 2. With `--json`, the error includes the service's `error_code`.
+
+| Code | HTTP | What to do |
+|---|---|---|
+| `auth_required` | 401 | Log in again with `adapty auth login`. |
+| `attribution_access_required` | 402 | Your company has no Attribution access. Logging in again doesn't help. |
+| `attribution_app_not_found` | 404 | Look up the app ID in `adapty apps list`, which lists only the apps you can read. |
+| `attribution_unknown_metric` | 422 | Fix the metric names from `adapty attribution metrics`. The message names each invalid one, and nothing else in the report runs. |
+| `attribution_validation_error` | 422 | Fix the dimension, filter, sort field, or dates named in the message. Put all values for one dimension in a single `--filter`. |
+| `attribution_query_too_large` | 422 | Coarsen the report as the message says. See [Limits](#limits). |
+| `attribution_busy` | 429 | Too many queries are running for your company. Wait `retry_after_seconds`, then run the report once more. |
+| `attribution_upstream_unavailable`, `attribution_query_unavailable` | 503 | Wait `retry_after_seconds`, then run it again. If `attribution_query_unavailable` repeats, make the report smaller. |
+
+The CLI never retries `report` or `values` for you, so a failed report stays failed until you run it again.
+
+## Command reference
+
+### `attribution metrics`
+
+Lists every metric a report accepts, with its unit, description, and the metrics a ratio divides by, plus the report limits. Takes no flags besides `--json`.
+
+### `attribution dimensions`
+
+Lists what `--group-by` and `--filter` accept, whether each dimension filters by ID or by value, and the granularities of `date`. Takes no flags besides `--json`.
+
+### `attribution values`
+
+Lists the values one dimension takes for an app over a period. These are exactly the values `report --filter` accepts.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App UUID, from `adapty apps list`. |
+| `--date-from` | Yes | First day of the period, inclusive, as `YYYY-MM-DD` in the app's timezone. |
+| `--date-to` | Yes | Last day of the period, inclusive. Can't be earlier than `--date-from`. |
+| `--dimension` | Yes | A filterable dimension from `adapty attribution dimensions`. |
+| `--revenue-basis` | No | `gross`, `proceeds`, or `net`. |
+
+For `campaign`, `adset`, and `ad`, each value comes with an ID, a name, and a channel. A value with an empty ID is organic or store-referrer traffic, which no filter can select.
+
+### `attribution report`
+
+Runs a report: metrics over a period, grouped by dimensions.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App UUID, from `adapty apps list`. |
+| `--date-from` | Yes | First day of the period, inclusive, as `YYYY-MM-DD` in the app's timezone. |
+| `--date-to` | Yes | Last day of the period, inclusive. |
+| `--metrics` | Yes | Metric names from `adapty attribution metrics`, comma-separated or repeated. At most 25. |
+| `--group-by` | Yes | `date`, `campaign`, `adset`, `ad`, `keyword`, `channel`, `country`, or `store`, comma-separated or repeated. |
+| `--granularity` | With `--group-by date` | `day`, `week`, `month`, `quarter`, or `year`. Required when you group by `date`, and refused otherwise. |
+| `--filter` | No | `dimension=value[,value]`. Several values match any of them; filters on different dimensions all apply. One `--filter` per dimension. Write `\,` for a comma inside a value. |
+| `--revenue-basis` | No | `gross` (default), `proceeds`, or `net`. |
+| `--sort` | No | `field:asc` or `field:desc`, where the field is a requested metric or `--group-by` dimension. Ascending when you leave out the direction. Empty values sort last. |
+
+Rows grouped by `campaign`, `adset`, or `ad` carry that entity's ID, name, and channel. A campaign's name is the latest name it had within the period, so match campaigns across periods by ID. A `date` value is the first day of its bucket.
+
+## What's next
+
+- [Analyze Attribution with an AI coding tool](developer-cli-attribution-skill) — the skill that runs these commands for you.
+- [Metrics](ua-metrics) — what each metric measures in the dashboard.
+- [Predictions](ua-predicted-metrics) — how predicted revenue is modeled.

@@ -69,25 +69,36 @@ Facebook Ads連携は、ATTの同意を得たユーザーに対してiOS 14.5以
 
 ### イベントとタグの設定 \{#configure-events-and-tags\}
 
-Facebook Ads連携は、Metaを広告キャンペーンに活用し、顧客行動に基づいて最適化している企業向けです。Metaの標準イベントを最適化目的でサポートしています。そのため、Meta Ads連携ではイベント名の変更はできません。Adaptyはお客様の顧客イベントを対応するMetaイベントに正確にマッピングします。
+AdaptyはサブスクリプションのイベントをMetaの標準イベント（`StartTrial`、`Subscribe`、`fb_mobile_purchase`）にマッピングします。これらはMetaがキャンペーンの最適化に使用するイベントです。**Subscription started**、**Subscription renewed**、**Trial started**、**Trial converted** はそれぞれ、イベントのフィールドで選択された名前ごとに1つのMetaイベントを送信します。デフォルトではすべての名前が選択されています。たとえばトライアル開始は、3つのイベントとしてMetaに届きます。送信数を減らすには、フィールドから名前を削除してください。
 
-| Adaptyイベント                  | Meta Adsイベント          |
-| :---------------------------- | :-------------------------- |
-| Subscription initial purchase | Subscribe                   |
-| Subscription renewed          | Subscribe                   |
-| Subscription cancelled        | CancelSubscription          |
-| Trial started                 | StartTrial                  |
-| Trial converted               | Subscribe                   |
-| Trial cancelled               | CancelTrial                 |
-| Non subscription purchase     | fb_mobile_purchase          |
-| Billing issue detected        | billing_issue_detected      |
-| Entered grace period          | entered_grace_period        |
-| Auto renew off                | auto_renew_off              |
-| Auto renew on                 | auto_renew_on               |
-| Auto renew off subscription   | auto_renew_off_subscription |
-| Auto renew on subscription    | auto_renew_on_subscription  |
+| Adapty イベント | デフォルト Meta イベント |
+| :------------------------ | :-------------------------------------------- |
+| サブスクリプション開始 | `Subscribe`, `fb_mobile_purchase` |
+| サブスクリプション更新 | `Subscribe`, `fb_mobile_purchase` |
+| トライアル開始 | `StartTrial`, `Subscribe`, `fb_mobile_purchase` |
+| トライアル変換 | `Subscribe`, `fb_mobile_purchase` |
+| 買い切り購入 | `fb_mobile_purchase` |
 
-StartTrial、Subscribe、CancelSubscriptionは標準イベントです。
+Metaには残りのイベントに対応する標準イベントがないため、AdaptyはこれらをAdaptyの名前でカスタムイベントとして送信します。独自の命名規則に合わせる場合は、イベントのフィールドで名前を変更してください。
+
+| Adapty イベント                           | デフォルト Meta イベント                     |
+| :---------------------------------------- | :------------------------------------------- |
+| Subscription expired (Churned)            | `subscription_expired`                       |
+| Subscription renewal cancelled            | `subscription_renewal_cancelled`             |
+| Subscription renewal reactivated          | `subscription_renewal_reactivated`           |
+| Subscription paused (Android only)        | `subscription_paused`                        |
+| Subscription deferred (Android only)      | `subscription_deferred`                      |
+| Subscription refunded                     | `subscription_refunded`                      |
+| Trial expired                             | `trial_expired`                              |
+| Trial renewal cancelled                   | `trial_renewal_cancelled`                    |
+| Trial renewal reactivated                 | `trial_renewal_reactivated`                  |
+| Entered grace period                      | `entered_grace_period`                       |
+| Billing issue detected                    | `billing_issue_detected`                     |
+| Non-subscription purchase refunded        | `non_subscription_purchase_refunded`         |
+| Trial still active                        | `trial_active`                               |
+| Subscription still active                 | `subscription_active`                        |
+
+**Trial still active** と **Subscription still active** は[合成イベント](events#synthetic-events)です。Adapty はタイマーに基づいてこれらを Meta に送信しますが、タイマーが切れた時点でトライアルまたはサブスクリプションがまだ有効な場合のみ送信されます。これらは収益を含まないため、Meta は購入金額としてカウントしません。どちらもデフォルトでは無効です。送信するには、有効にして[遅延を設定](configuration#set-the-timer-for-synthetic-events)してください。
 
 <Zoom>
   <img src="/assets/shared/img/8a5df9d-CleanShot_2023-07-04_at_12.47.312x.webp"
@@ -99,8 +110,6 @@ StartTrial、Subscribe、CancelSubscriptionは標準イベントです。
   }}
 />
 </Zoom>
-
-特定のイベントを有効にするには、必要なものをトグルでオンにするだけです。複数のイベント名が選択された場合、Adaptyはすべての選択されたイベントのデータを1つのAdaptyイベント名にまとめます。
 
 ### アプリをFacebook Adsに接続する \{#connect-your-app-to-facebook-ads\}
 
@@ -183,18 +192,18 @@ AdaptyはGraph API経由でFacebook Ads（Meta）にイベントを送信しま�
 
 各パラメーターの説明：
 
-| パラメーター | 型 | 説明 |
+| パラメータ | タイプ | 説明 |
 |:---|:---|:---|
-| `event` | String | 常に「CUSTOM_APP_EVENTS」。 |
-| `app_user_id` | String | ユーザーのCustomer User ID。 |
-| `advertiser_id` | String | IDFA（iOS）またはAdvertising ID（Android）。 |
-| `advertiser_tracking_enabled` | Integer | トラッキングが有効（ATT承認済み）の場合は`1`、それ以外は`0`。 |
-| `application_tracking_enabled` | Integer | 常に`1`。 |
-| `custom_events` | String | イベントオブジェクトのJSON形式の文字列（下記参照）。 |
-| `extinfo` | String | アプリ・デバイス情報（バージョン、OS、ロケールなど）を含むJSON形式の文字列。 |
+| `event` | String | 常に "CUSTOM_APP_EVENTS"。 |
+| `app_user_id` | String | ユーザーの Customer User ID。 |
+| `advertiser_id` | String | iOS では IDFA、IDFA が利用できない場合は IDFV。Android では Advertising ID。プロファイルにデバイス ID がない場合は `00000000-0000-0000-0000-000000000000`。 |
+| `advertiser_tracking_enabled` | Integer | トラッキングが有効（ATT 承認済み）の場合は `1`、それ以外は `0`。 |
+| `application_tracking_enabled` | Integer | 常に `1`。 |
+| `custom_events` | String | イベントオブジェクトの JSON エンコード文字列（下記参照）。 |
+| `extinfo` | String | アプリ／デバイス情報（バージョン、OS、ロケールなど）を含む JSON エンコード文字列。 |
 | `anon_id` | String | Facebook Anonymous ID（利用可能な場合）。 |
 
-`custom_events` パラメーターはオブジェクトのJSON配列で、以下の情報を含みます：
+`custom_events` パラメータは、Adapty イベントが対応する各 Meta イベントを表すオブジェクトを含む JSON エンコードされた配列です。`StartTrial`、`Subscribe`、`fb_mobile_purchase` のみが `fb_content_id`、`fb_content_type`、`fb_num_items`、`fb_transaction_id` を持ちます。各オブジェクトには以下が含まれます：
 
 | パラメーター | 型 | 説明 |
 |:---|:---|:---|
@@ -207,10 +216,6 @@ AdaptyはGraph API経由でFacebook Ads（Meta）にイベントを送信しま�
 | `fb_transaction_id` | String | オリジナルトランザクションID。 |
 | `fb_content_type` | String | 常に「in_app」。 |
 | `fb_num_items` | Integer | 購入イベントでは常に1。 |
-
-## 高度なマッチング（Conversions API） \{#advanced-matching-conversions-api\}
-
-Facebook CAPIは、上記のFacebook Ads連携とは別の独立した連携で、独自の認証情報を持ち、Adapty ダッシュボードで個別に設定します。有効にすると、AdaptyはMetaのConversions APIに高度なマッチング用のハッシュ化されたIDペイロードを送信します。顧客のAdaptyプロファイルから、AdaptyはSHA-256でハッシュ化して次の情報を送信します：メールアドレス、電話番号、氏名、誕生日、性別、国。Facebookのクリック識別子およびブラウザ識別子（`fbc`、`fbp`）とIPアドレス/ユーザーエージェントは、他のMeta CAPI連携と同様にハッシュ化されずに送信されます。
 
 ## トラブルシューティング \{#troubleshooting\}
 

@@ -1,44 +1,44 @@
 ---
 title: "Migration từ RevenueCat"
-description: "Migrate từ RevenueCat sang Adapty với hướng dẫn từng bước của chúng tôi."
+description: "Migrate từ RevenueCat sang Adapty: chuyển catalog và code ứng dụng bằng Adapty CLI, chuyển đổi thông báo cửa hàng, và import lịch sử giao dịch."
 metadataTitle: "Migrate từ RevenueCat sang Adapty | Tài liệu Adapty"
 keywords: ['migration', 'revenuecat']
 ---
 
-Kế hoạch migration của bạn gồm 5 bước logic và mất trung bình 2 tiếng. 90% các migration đều hoàn thành trong chưa đầy một ngày làm việc.
+Migration từ RevenueCat gồm sáu bước. Một coding agent sẽ thực hiện phần lớn công việc: chạy migration qua [Adapty CLI](developer-cli) và thay thế RevenueCat SDK trong ứng dụng của bạn. Bạn chỉ cần xử lý những phần agent không thể tiếp cận — các secret, và các cài đặt trong RevenueCat, App Store Connect, và Google Cloud.
 
-1. Tìm hiểu những khác biệt cốt lõi; tạo và chuẩn bị tài khoản Adapty _(5 phút)_;
-2. Cài đặt Adapty SDK cho nền tảng của bạn ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) thay thế cho RevenueCat SDK _(1 giờ)_;
-3. Thiết lập [thông báo máy chủ Apple App Store](enable-app-store-server-notifications) tới Adapty và (tùy chọn) [chuyển tiếp sự kiện thô](enable-app-store-server-notifications#raw-events-forwarding) _(5 phút)_;
-4. Kiểm tra và phát hành bản cập nhật ứng dụng của bạn _(30 phút);_
-5. (Tùy chọn) Xuất dữ liệu lịch sử RevenueCat của bạn ở định dạng CSV bằng [tính năng xuất dữ liệu theo lịch của RevenueCat](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) _(5 phút);_
-6. (Tùy chọn) Import dữ liệu lịch sử qua bộ phận hỗ trợ của Adapty _(30 phút)_.
+1. [Tìm hiểu các điểm khác biệt cốt lõi](#learn-the-core-differences).
+2. [Chuyển catalog của bạn sang Adapty](#move-your-catalog-to-adapty).
+3. [Thay thế SDK RevenueCat](#replace-the-revenuecat-sdk) bằng coding agent của bạn.
+4. [Chuyển tiếp sự kiện từ cửa hàng sang Adapty](#forward-store-events-to-adapty).
+5. [Kiểm thử và phát hành phiên bản mới của ứng dụng](#test-and-release-a-new-version-of-your-app).
+6. (Tùy chọn) [Import lịch sử giao dịch của bạn](#optional-import-your-transaction-history).
 
 :::info
 Người dùng đăng ký của bạn sẽ được migrate tự động
 
-Tất cả người dùng đã từng kích hoạt gói đăng ký sẽ ngay lập tức chuyển sang Adapty ngay khi họ mở phiên bản mới của ứng dụng có tích hợp Adapty SDK. Trạng thái gói đăng ký sẽ được xác thực và quyền truy cập premium sẽ được khôi phục tự động.
+Tất cả người dùng đã từng kích hoạt gói đăng ký sẽ được chuyển sang Adapty ngay khi họ mở phiên bản mới của ứng dụng có tích hợp Adapty SDK. Trạng thái gói đăng ký và quyền truy cập premium sẽ được khôi phục tự động.
 :::
 
-Trước khi phát hành phiên bản mới của ứng dụng có tích hợp Adapty SDK, hãy kiểm tra [danh sách kiểm tra trước khi phát hành](release-checklist) của chúng tôi.
+Trước khi phát hành phiên bản mới của ứng dụng có tích hợp Adapty SDK, hãy kiểm tra [danh sách kiểm tra khi phát hành](release-checklist) của chúng tôi.
 
-## Tìm hiểu các điểm khác biệt cốt lõi; tạo và chuẩn bị tài khoản Adapty \{#learn-the-core-differences-create-and-prepare-an-adapty-account\}
+## Tìm hiểu những điểm khác biệt cơ bản \{#learn-the-core-differences\}
 
-Adapty và RevenueCat SDK được thiết kế tương tự nhau. Sự khác biệt lớn nhất nằm ở mức sử dụng mạng và tốc độ: Adapty SDK được thiết kế để cung cấp thông tin theo yêu cầu nhanh nhất có thể khi bạn cần. Ví dụ, khi yêu cầu một paywall, bạn nhận được [Remote Config](customize-paywall-with-remote-config) trước để xây dựng sẵn onboarding hoặc paywall, sau đó mới gọi lấy sản phẩm trong một request riêng.
+Adapty và RevenueCat SDK được thiết kế theo cách tương tự nhau. Điểm khác biệt lớn nhất là về mức sử dụng mạng và tốc độ: Adapty SDK được thiết kế để cung cấp thông tin theo yêu cầu nhanh nhất có thể khi bạn cần. Ví dụ, khi yêu cầu một paywall, bạn nhận được [Remote Config](customize-paywall-with-remote-config) trước để dựng sẵn onboarding hoặc paywall, sau đó mới gửi yêu cầu riêng để lấy sản phẩm.
 
-Tên gọi có một số điểm khác nhau:
+Tên gọi có một chút khác biệt:
 
 | RevenueCat  | Adapty          |
 | :---------- | :-------------- |
-| Package     | Product         |
+| Package     | Sản phẩm        |
 | Offering    | Paywall         |
 | Paywall     | Paywall Builder |
-| Entitlement | Access level    |
+| Entitlement | Mức độ truy cập |
 
-Adapty có khái niệm [placement](placements) — một vị trí logic bên trong ứng dụng nơi người dùng có thể thực hiện mua hàng. Trong hầu hết các trường hợp, bạn có một hoặc hai placement:
+Adapty có khái niệm [placement](placements). Đây là vị trí logic bên trong ứng dụng nơi người dùng có thể thực hiện mua hàng. Trong hầu hết các trường hợp, bạn sẽ có một hoặc hai placement:
 
 - Onboarding (vì 80% tất cả các giao dịch mua diễn ra ở đây);
-- General (hiển thị trong phần cài đặt hoặc bên trong ứng dụng sau onboarding).
+- General (bạn hiển thị nó trong phần cài đặt hoặc bên trong ứng dụng sau onboarding).
 
 <Zoom>
   <img src="/assets/shared/img/2406d97-image.webp"
@@ -51,78 +51,148 @@ Adapty có khái niệm [placement](placements) — một vị trí logic bên t
 />
 </Zoom>
 
-## Cài đặt Adapty SDK và thay thế RevenueCat SDK \{#install-adapty-sdk-and-replace-revenuecat-sdk\}
+## Chuyển danh mục sản phẩm của bạn sang Adapty \{#move-your-catalog-to-adapty\}
 
-Cài đặt Adapty SDK cho nền tảng của bạn ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) vào ứng dụng.
+Quá trình migration danh mục sẽ tạo một ứng dụng Adapty mới từ dự án RevenueCat của bạn: mức độ truy cập từ các entitlement, sản phẩm từ các package, và một paywall cùng một placement cho mỗi offering.
 
-Bạn cần thay thế một số phương thức SDK ở phía ứng dụng. Hãy cùng xem các hàm phổ biến nhất và cách thay thế chúng bằng Adapty SDK.
+### Trước khi bắt đầu
 
-### Khởi động SDK \{#sdk-activation\}
+- Sử dụng một coding agent có thể chạy lệnh terminal, ví dụ Claude Code, Codex, hoặc Cursor.
+- Trong terminal mà agent của bạn sử dụng, [cài đặt Adapty CLI](developer-cli-quickstart) và [đăng nhập](developer-cli-authentication).
+- Trong RevenueCat, [tạo secret API key (v2)](#create-a-revenuecat-secret-api-key) cho dự án bạn muốn migrate.
+- Kiểm tra các cửa hàng. Migration chỉ áp dụng cho các ứng dụng trên App Store và Google Play.
 
-Thay `Purchases.configure` bằng `Adapty.activate`.
+### Tạo RevenueCat secret API key \{#create-a-revenuecat-secret-api-key\}
 
-### Lấy paywall (offerings) \{#getting-paywalls-offerings\}
+Adapty đọc catalog RevenueCat của bạn bằng secret API key của project bạn cần migrate. Secret key trong RevenueCat thuộc về một project cụ thể, vì vậy hãy tạo key trong project đó.
 
-Thay `Purchases.shared.getOfferings` bằng [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information).
+1. Để mở danh sách key, trong RevenueCat dashboard, mở project rồi vào **API keys**.
+2. Để tạo key, nhấn **New secret API key**.
+3. Để thiết lập key, nhập tên, ví dụ `Adapty migration`, và chọn **V2** trong **API version**.
+4. Để cho phép Adapty đọc catalog, đặt **Project configuration permissions** thành **Read only**. Adapty không cần các quyền khác.
+5. Để tạo key, nhấn **Generate**, rồi sao chép lại.
 
-Trong Adapty, bạn luôn yêu cầu paywall thông qua [placement id](placements). Trên thực tế, bạn chỉ lấy tối đa 1-2 paywall, vì vậy chúng tôi thiết kế như vậy để tăng tốc SDK và giảm mức sử dụng mạng.
+:::warning
+Hãy dùng secret API key, không phải public key. Public app-specific key không thể đọc cấu hình project.
+:::
 
-### Lấy thông tin người dùng (customer profile) \{#getting-a-user-customer-profile\}
+<ZoomImage id="rc-api-key.webp" width="600px" alt="RevenueCat secret API key form with API version V2 and Project configuration permissions set to Read only" />
 
-Thay `Purchases.shared.getCustomerInfo` bằng `Adapty.getProfile`.
+Khi quá trình migration yêu cầu khóa, hãy dán nó vào trang Adapty Dashboard mở ra.
 
-### Lấy sản phẩm \{#getting-products\}
+### Chạy migration catalog
 
-Trong RevenueCat, bạn dùng cấu trúc sau: `Purchases.shared.getOfferings` rồi `self.offering?.availablePackages`.
+1. Để bắt đầu migration, hãy yêu cầu agent của bạn:
 
-Trong Adapty, bạn trước tiên yêu cầu paywall (xem ở trên) để có ngay [Remote Config](customize-paywall-with-remote-config) của Adapty, sau đó gọi lấy sản phẩm bằng [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products).
+   ```text
+   Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
+   ```
 
-### Thực hiện mua hàng \{#making-a-purchase\}
+2. Để kết nối RevenueCat, dán secret API key vào trang Adapty Dashboard mà agent mở. Key được gửi thẳng đến Adapty và không đi qua agent hay CLI.
+3. Để chọn nội dung cần migrate, cho agent biết những RevenueCat app nào thuộc về nhau — thường là một app cho mỗi nền tảng của cùng một sản phẩm. Chúng sẽ được gộp thành một Adapty app duy nhất.
+4. Để xác nhận mapping, trả lời các câu hỏi của agent về những thực thể mà Adapty không thể tự map được.
 
-Thay `Purchases.shared.purchase` bằng [`Adapty.makePurchase`](making-purchases#make-purchase).
+:::warning
+   Quyết định là cuối cùng. Khi mọi thực thể đã có quyết định, Adapty sẽ tạo catalog và bạn không thể thay đổi ánh xạ sau đó.
+   :::
 
-### Kiểm tra mức độ truy cập (entitlement) \{#checking-access-level-entitlement\}
+   Adapty tạo mức độ truy cập, sản phẩm, paywall và placement theo thứ tự đó. Nếu một số trong số chúng thất bại, agent sẽ cho bạn biết lý do. Khi mọi thực thể đã có trong Adapty, quá trình migration hoàn tất.
 
-Lấy hồ sơ người dùng (xem ở trên trước) rồi thay thế
+5. Để ứng dụng mới có thể xác thực giao dịch mua, hãy kết nối nó với các cửa hàng trong Adapty Dashboard: [App Store](initial_ios) và [Google Play](initial-android).
 
-`customerInfo?.entitlements["premium"]?.isActive == true`
+:::note
+Để chạy migration mà không cần agent, hãy dùng [lệnh migration](developer-cli-reference#migrations). `adapty migrations status` cho biết hành động tiếp theo và dữ liệu đầu vào cần thiết.
+:::
 
-bằng
+### Cách các thực thể RevenueCat ánh xạ sang Adapty \{#how-revenuecat-entities-map-to-adapty\}
 
-[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server).
+- Mã định danh entitlement trở thành ID mức độ truy cập, vì vậy `customerInfo.entitlements["premium"]` sẽ thành `profile.accessLevels["premium"]`.
+- Sản phẩm không cấp entitlement nào sẽ cấp mức độ truy cập `premium`.
+- Mã định danh offering trở thành ID placement.
+- Metadata của offering trở thành [Remote Config](customize-paywall-with-remote-config) của paywall, tối đa 256 KB.
 
-### Khôi phục mua hàng \{#restore-purchase\}
+### Những gì migration danh mục bỏ qua \{#what-the-catalog-migration-leaves-out\}
 
-Thay `Purchases.shared.restorePurchases` bằng [`Adapty.restorePurchases`](restore-purchase).
+- **Offerings có paywall từ Paywall Editor**: Adapty không thể import paywall từ RevenueCat Paywall Editor, vì vậy các offering này sẽ không có paywall và không có placement. Các placement ID của chúng vẫn còn trống: hãy tự tạo một flow hoặc một paywall với cùng ID đó.
+- Offerings không có sản phẩm.
+- Sản phẩm có App Store product ID mà Adapty từ chối, ví dụ như ID chứa dấu hai chấm hoặc khoảng trắng. Agent sẽ cho bạn biết ID nào bị lỗi và bạn không cần đưa ra quyết định gì với chúng.
+- Ứng dụng trên các cửa hàng khác ngoài App Store và Google Play.
+- **Integrations**: Thiết lập chúng trong Adapty theo hướng dẫn tại [Migrate integrations sang Adapty](migrate-integrations-to-adapty).
 
-### Kiểm tra người dùng đã đăng nhập chưa \{#check-if-the-user-is-logged-in\}
+## Thay thế RevenueCat SDK \{#replace-the-revenuecat-sdk\}
 
-Thay `Purchases.shared.isAnonymous` bằng `if profile.customerUserId == nil`.
+Một coding agent sẽ thay thế RevenueCat SDK bằng Adapty SDK trong code ứng dụng của bạn, sử dụng skill `adapty-integration`. Hãy chạy sau khi đã migrate catalog, để code sử dụng đúng access level ID và placement ID của ứng dụng Adapty mới.
 
-### Đăng nhập người dùng \{#log-in-user\}
+1. Để cung cấp skill cho agent, hãy cài đặt theo hướng dẫn tại [SDK integration skill](adapty-sdk-integration-skill).
+2. Để bắt đầu migration, mở project ứng dụng trong agent và yêu cầu:
 
-Thay `Purchases.shared.logIn` bằng [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration).
+```text
+   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+   ```
 
-### Đăng xuất người dùng \{#log-out-user\}
+   Skill tự phát hiện nền tảng và RevenueCat SDK từ các file dự án, nên prompt không cần thêm thông tin đó.
+3. Để hoàn tất việc migrate code, hãy xem lại các thay đổi của agent, sau đó làm theo hướng dẫn trong `ADAPTY_SETUP.md` ở thư mục gốc của dự án. File này liệt kê những gì agent để lại cho bạn, ví dụ như các tích hợp cần thiết lập.
 
-Thay `Purchases.shared.logOut` bằng [`Adapty.logout`](identifying-users#logging-out-and-logging-in).
+## Chuyển tiếp sự kiện cửa hàng đến Adapty \{#forward-store-events-to-adapty\}
 
-## Chuyển App Store server-side notifications sang Adapty \{#switch-app-store-server-side-notifications-to-adapty\}
+App Store và Google Play gửi thông báo về các sự kiện gia hạn, hủy và hoàn tiền đến máy chủ của bạn, kể cả những sự kiện xảy ra bên ngoài ứng dụng. Hai migrations kết nối Adapty với các thông báo này trong khi RevenueCat vẫn tiếp tục nhận mọi sự kiện, để cả hai đều được cập nhật trong khi người dùng chuyển sang phiên bản ứng dụng mới.
 
-Đọc hướng dẫn thực hiện [tại đây](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications).
+Bắt đầu sau khi hoàn tất [migration catalog](#move-your-catalog-to-adapty). Adapty lấy bundle ID và package name từ các ứng dụng RevenueCat bạn đã chọn ở đó.
+
+{/* Kept for links to the section this one replaced, including the Adapty Dashboard. */}
+<span id="switch-app-store-server-side-notifications-to-adapty"></span>
+
+### Chuyển tiếp sự kiện App Store
+
+Adapty nhận thông báo từ App Store và chuyển tiếp từng thông báo đó đến RevenueCat.
+
+Trước khi bắt đầu, hãy tạo một [In-App Purchase key](in-app-purchase-api-storekit-2) trong App Store Connect và ghi lại **Issuer ID** và **Key ID** của nó.
+
+1. Để bắt đầu chuyển tiếp, hãy yêu cầu agent của bạn:
+
+   ```text
+   Forward App Store events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
+   ```
+
+2. Để cấp quyền truy cập App Store events cho Adapty, trên trang Adapty Dashboard mà agent mở ra, hãy tải lên file `.p8`, nhập **Issuer ID** và **Key ID**. Key được gửi thẳng đến Adapty mà không đi qua agent hay CLI.
+3. Để RevenueCat tiếp tục nhận App Store events, hãy cung cấp cho agent URL thông báo của RevenueCat. Trong RevenueCat, mở ứng dụng iOS của bạn, sau đó sao chép **Apple Server Notification URL** từ **Apple Server to Server notification settings**. URL này bắt đầu bằng `https://api.revenuecat.com/v1/incoming-webhooks/`.
+4. Để trỏ App Store về Adapty, trong App Store Connect, mở ứng dụng của bạn, rồi vào **App Information** > **App Store Server Notifications**. Đặt cả **Production Server URL** và **Sandbox Server URL** thành URL Adapty mà agent cung cấp, với thông báo **Version 2**. Xem chi tiết tại [Bật thông báo server App Store](enable-app-store-server-notifications). Lúc này việc chuyển tiếp sang RevenueCat đã được bật, nên không có event nào bị mất.
+5. Để kiểm tra kết nối, hãy thông báo cho agent rằng các URL đã được thiết lập. Adapty sẽ yêu cầu App Store gửi một thông báo kiểm tra và chờ nhận. Nếu thông báo không đến, agent sẽ cho bạn biết nguyên nhân.
+
+### Chuyển tiếp sự kiện Google Play
+
+Google Play gửi thông báo đến một Pub/Sub topic. Adapty đăng ký vào topic mà RevenueCat đang dùng với tư cách là subscriber thứ hai, để RevenueCat tiếp tục nhận sự kiện.
+
+:::warning
+Đừng thay đổi topic trong Google Play Console và đừng thực hiện các bước trong [Enable RTDN](enable-real-time-developer-notifications-rtdn) cho ứng dụng này. Một topic mới sẽ làm ngừng thông báo đến RevenueCat.
+:::
+
+1. Để bắt đầu chuyển tiếp, hãy hỏi agent của bạn:
+
+   ```text
+   Forward Google Play events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
+   ```
+
+2. Để cấp quyền truy cập cho Adapty vào topic, hãy tạo JSON key cho service account mà RevenueCat đang sử dụng. Trong Google Cloud console, vào **IAM & Admin** > **Service Accounts**, mở tài khoản (thường là `revenuecat-service-account`), sau đó vào **Keys** > **Add key** và chọn **JSON**. Việc tạo key mới không ảnh hưởng đến RevenueCat. Xem thêm hướng dẫn của Google về [cách tạo service account key](https://cloud.google.com/iam/docs/keys-create-delete#creating).
+3. Để tải key lên, trong trang Adapty Dashboard mà agent mở, hãy tải file lên ô **Google Play service account key (JSON)**. Key sẽ được gửi thẳng đến Adapty và không đi qua agent hay CLI.
+4. Để đăng ký Adapty nhận thông báo từ topic, hãy cung cấp ID của topic cho agent. Trong RevenueCat, mở cài đặt ứng dụng Google Play của bạn, sau đó sao chép **Topic ID** từ mục **Google developer notifications**. Google Play Console cũng hiển thị giá trị này tại **Monetize** > **Monetization setup** > **Topic name**.
+
+Adapty đăng ký theo dõi topic, sau đó xuất bản một thông báo kiểm tra và chờ nhận nó. Nếu thông báo không đến, agent sẽ cho bạn biết lý do.
+
+5. Nếu quá trình kiểm tra thất bại do lỗi quyền, hãy cấp cho service account vai trò **Pub/Sub Editor** trong project của topic, hoặc vai trò **Pub/Sub Subscriber** trên topic và **Pub/Sub Editor** trong project của key. Sau đó yêu cầu agent kiểm tra lại.
 
 ## Kiểm tra và phát hành phiên bản mới của ứng dụng \{#test-and-release-a-new-version-of-your-app\}
 
-Nếu bạn đang đọc phần này, bạn đã:
+Nếu bạn đang đọc phần này, bạn đã hoàn thành:
 
-- [x] Cấu hình Adapty Dashboard
-- [x] Cài đặt Adapty SDK
-- [x] Thay thế logic SDK bằng các hàm Adapty
-- [x] Chuyển App Store server-side notifications sang Adapty và tùy chọn bật chuyển tiếp raw events sang RevenueCat
-- [ ] Thực hiện mua hàng thử trong Sandbox
+- [x] Chuyển catalog của bạn sang Adapty
+- [x] Thay thế SDK RevenueCat bằng Adapty
+- [x] Thực hiện theo `ADAPTY_SETUP.md` từ coding agent của bạn
+- [x] Chuyển tiếp các sự kiện App Store và Google Play sang Adapty
+- [ ] Thực hiện giao dịch mua thử trong sandbox
 - [ ] Phát hành phiên bản ứng dụng mới
 
-Nếu bạn đã hoàn thành các bước trên, hãy thực hiện mua hàng thử trong Sandbox rồi phát hành ứng dụng.
+Nếu bạn đã hoàn thành các bước trên, hãy thực hiện một giao dịch mua thử trong Sandbox rồi phát hành ứng dụng.
 
 :::info
 Xem qua [danh sách kiểm tra trước khi phát hành](release-checklist).
@@ -130,55 +200,71 @@ Xem qua [danh sách kiểm tra trước khi phát hành](release-checklist).
 Thực hiện kiểm tra cuối cùng bằng danh sách của chúng tôi để xác nhận tích hợp hiện tại hoặc thêm các tính năng bổ sung như tích hợp [attribution](attribution-integration) hay [analytics](analytics-integration).
 :::
 
-## (Tùy chọn) Xuất dữ liệu lịch sử của bạn từ RevenueCat sang định dạng CSV \{#optional-export-your-revenuecat-historical-data-in-csv-format\}
+## (Tùy chọn) Nhập lịch sử giao dịch của bạn \{#optional-import-your-transaction-history\}
+
+Việc nhập dữ liệu sẽ điền vào [hồ sơ người dùng](profiles-crm) và [biểu đồ](charts) lịch sử thanh toán của người dùng. Việc này không ảnh hưởng đến quyền truy cập của bất kỳ ai.
 
 :::warning
-Đừng vội vàng nhập dữ liệu lịch sử
+Đừng vội nhập dữ liệu lịch sử
 
-Bạn nên đợi ít nhất một tuần sau khi phát hành với SDK trước khi thực hiện nhập dữ liệu lịch sử. Trong thời gian đó, chúng tôi sẽ thu thập được toàn bộ thông tin về giá mua hàng từ SDK, giúp dữ liệu bạn nhập trở nên chính xác hơn.
+Bạn nên chờ ít nhất một tuần sau khi phát hành phiên bản có SDK trước khi thực hiện nhập dữ liệu lịch sử. Trong thời gian đó, chúng tôi sẽ thu thập đầy đủ thông tin về giá mua hàng từ SDK, giúp dữ liệu bạn nhập vào chính xác hơn.
 :::
 
-Xuất dữ liệu lịch sử của bạn từ RevenueCat sang định dạng CSV bằng cách làm theo hướng dẫn trong [tài liệu chính thức của RevenueCat](https://www.revenuecat.com/docs/integrations/scheduled-data-exports).
+Hai migration sẽ nhập lịch sử vào ứng dụng mà quá trình migration danh mục của bạn đã tạo. Hãy sử dụng Cloud Export nếu gói RevenueCat của bạn hỗ trợ tính năng này.
 
-## (Tùy chọn) Yêu cầu bộ phận hỗ trợ RevenueCat cung cấp Google Purchase Tokens \{#optional-ask-revenuecat-support-for-google-purchase-tokens\}
+### Với RevenueCat Cloud Export \{#with-a-revenuecat-cloud-export\}
 
-Nếu bạn cần import giao dịch Google Play, hãy liên hệ bộ phận hỗ trợ RevenueCat để lấy file CSV chứa Google Purchase Tokens qua [trang hỗ trợ](https://app.revenuecat.com/settings/support) của họ. Google Purchase Token là mã định danh duy nhất do Google Play cung cấp cho mỗi giao dịch, cần thiết để theo dõi và xác minh giao dịch chính xác trong Adapty. Thông tin này không có trong file xuất tiêu chuẩn. File chứa ba cột sau:
+RevenueCat gửi một bản export hàng ngày vào bucket mà Adapty chuẩn bị cho ứng dụng của bạn, và Adapty import mọi file nhận được.
 
-- `user_id`
-- `google_purchase_token`
-- `google_product_id`
+1. Để bắt đầu import, hãy yêu cầu agent của bạn:
 
-## Liên hệ chúng tôi để import dữ liệu lịch sử \{#write-us-to-import-your-historical-data\}
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" with a Cloud Export.
+   ```
 
-Liên hệ với chúng tôi qua tin nhắn trên website hoặc gửi email đến [support@adapty.io](mailto:support@adapty.io) kèm theo file CSV của bạn.
+2. Để kết nối export, hãy cung cấp cho agent External ID từ RevenueCat. Trong RevenueCat, mở cài đặt **Scheduled Data Exports**, chọn **IAM Role (ARN)** làm loại thông tin xác thực, và sao chép **External ID** mà RevenueCat hiển thị. External ID không phải là thông tin bí mật.
+3. Để hoàn tất cài đặt export, trong RevenueCat, nhập bucket, region và role ARN mà agent cung cấp cho bạn. Bật **Receive new and updated transactions only**. Nếu không, RevenueCat sẽ export toàn bộ lịch sử mỗi ngày, và Adapty sẽ import mọi file.
 
-1. Gửi trực tiếp file CSV bạn đã xuất từ RevenueCat cho đội ngũ hỗ trợ của chúng tôi.
-2. Nếu import giao dịch Google Play, hãy đính kèm file CSV chứa Google Purchase Tokens mà bạn nhận được từ bộ phận hỗ trợ RevenueCat.
-3. Cho chúng tôi biết ID người dùng nào sẽ được dùng làm Customer User ID (định danh người dùng chính của Adapty): `rc_original_app_user_id` hay `rc_last_seen_app_user_id_alias`.
+RevenueCat có thể mất tới 24 giờ để gửi file đầu tiên, và Adapty kiểm tra các file mới trong bucket mỗi giờ một lần. Quá trình migration sẽ tự động hoàn tất sau một tuần kể từ khi Adapty import file đầu tiên. Customer User ID của mỗi hồ sơ người dùng được import là `rc_last_seen_app_user_id_alias`.
 
-Đội ngũ hỗ trợ của chúng tôi sẽ import các giao dịch của bạn vào Adapty. Dữ liệu sau sẽ được import vào Adapty cho mỗi giao dịch:
+### Thông qua bộ phận hỗ trợ \{#through-support\}
+
+Sử dụng cách này nếu gói RevenueCat của bạn không có Cloud Export: bộ phận hỗ trợ RevenueCat gửi cho bạn bản xuất dữ liệu, và bộ phận hỗ trợ Adapty sẽ nhập dữ liệu đó vào.
+
+1. Để bắt đầu quá trình nhập, hãy yêu cầu agent của bạn:
+
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" through support.
+   ```
+
+2. Để yêu cầu xuất dữ liệu, hãy gửi cho bộ phận hỗ trợ của RevenueCat tin nhắn đầu tiên trong hai tin nhắn mà agent cung cấp cho bạn.
+3. Để import dữ liệu, hãy chuyển tiếp các file RevenueCat gửi cho bạn đến bộ phận hỗ trợ của Adapty kèm theo tin nhắn thứ hai. Đính kèm các file đúng như RevenueCat đã gửi: việc mở, lưu lại hoặc gộp chúng sẽ làm thay đổi định dạng cột mà quá trình import yêu cầu.
+
+### Dữ liệu nào sẽ được import \{#what-the-import-brings-over\}
+
+Dữ liệu sau đây sẽ được import vào Adapty cho mỗi giao dịch:
 
 | Tham số                       | Mô tả                                                        |
 | ----------------------------- | ------------------------------------------------------------ |
 | user_id                       | Customer User ID, định danh chính của người dùng trong Adapty và hệ thống của bạn. |
 | apple_original_transaction_id | Đối với chuỗi gói đăng ký, đây là ngày mua của giao dịch gốc, được liên kết qua `store_original_transaction_id`. |
 | google_product_id             | ID sản phẩm trên Google Play Store.                          |
-| google_purchase_token         | Mã định danh duy nhất do Google Play cung cấp cho mỗi giao dịch, cần thiết để xác thực. |
+| google_purchase_token         | Định danh duy nhất do Google Play cung cấp cho mỗi giao dịch, cần thiết để xác thực. |
 | country                       | Quốc gia của người dùng.                                     |
 | created_at                    | Ngày và giờ tạo người dùng.                                  |
 | subscription_expiration_date  | Ngày và giờ gói đăng ký hết hạn.                             |
 | email                         | Email của người dùng cuối.                                   |
 | phone_number                  | Số điện thoại của người dùng cuối.                           |
-| idfa                          | Identifier for Advertisers (IDFA), được Apple gán cho thiết bị của người dùng. |
-| idfv                          | Identifier for Vendors (IDFV), mã được gán cho tất cả ứng dụng của một nhà phát triển và dùng chung trên các ứng dụng đó trong cùng một thiết bị. |
-| advertising_id                | Mã định danh duy nhất do hệ điều hành Android cung cấp, các nhà quảng cáo có thể dùng để theo dõi. |
+| idfa                          | Identifier for Advertisers (IDFA), do Apple gán cho thiết bị của người dùng. |
+| idfv                          | Identifier for Vendors (IDFV), mã được gán cho tất cả ứng dụng của một nhà phát triển và dùng chung trên các ứng dụng đó trong một thiết bị. |
+| advertising_id                | Định danh duy nhất do Android OS cung cấp, dùng cho mục đích theo dõi của nhà quảng cáo. |
 | attribution_channel           | Tên kênh marketing.                                          |
 | attribution_campaign          | Tên chiến dịch marketing.                                    |
 | attribution_ad_group          | Nhóm quảng cáo attribution.                                  |
 | attribution_ad_set            | Bộ quảng cáo attribution.                                    |
-| attribution_creative          | Từ khóa creative của attribution.                            |
+| attribution_creative          | Từ khóa creative attribution.                                |
 
-Ngoài ra, các định danh tích hợp cho các tích hợp sau cũng sẽ được import: Amplitude, Mixpanel, AppsFlyer, Adjust và FacebookAds.
+Ngoài ra, các mã định danh tích hợp cho các tích hợp sau sẽ được nhập: Amplitude, Mixpanel, AppsFlyer, Adjust và FacebookAds.
 
 ### Những gì không được truyền tải \{#what-doesnt-come-across\}
 
@@ -194,8 +280,8 @@ Hầu hết người dùng sạc điện thoại qua đêm — đó là lúc App
 
 ### Tôi có cần xuất dữ liệu lịch sử từ RevenueCat càng sớm càng tốt không, hay tôi sẽ mất dữ liệu đó? \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
 
-Bạn không cần phải vội; hãy phát hành bản cập nhật với Adapty SDK trước, sau đó mới cung cấp dữ liệu lịch sử cho chúng tôi. Chúng tôi sẽ khôi phục lịch sử thanh toán của người dùng và điền vào [hồ sơ người dùng](profiles-crm) và [biểu đồ](charts).
+Bạn không cần phải làm gấp; hãy phát hành phiên bản ứng dụng với Adapty SDK trước, sau đó mới import lịch sử. Chúng tôi sẽ khôi phục lịch sử thanh toán của người dùng và điền đầy đủ vào [hồ sơ người dùng](profiles-crm) và [biểu đồ](charts).
 
-### Tôi đang dùng MMP (AppsFlyer, Adjust, v.v.) và analytics (Mixpanel, Amplitude, v.v.). Làm sao để đảm bảo mọi thứ hoạt động bình thường? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
+### Tôi đang dùng MMP (AppsFlyer, Adjust, v.v.) và analytics (Mixpanel, Amplitude, v.v.). Làm sao để đảm bảo mọi thứ hoạt động đúng? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
 
-Trước tiên bạn cần truyền cho chúng tôi các ID của các dịch vụ bên thứ ba mà bạn muốn chúng tôi gửi dữ liệu đến, thông qua SDK của chúng tôi. Đọc hướng dẫn về [tích hợp attribution](attribution-integration) và [tích hợp analytics](analytics-integration). Đối với dữ liệu lịch sử và người dùng cũ, **hãy đảm bảo bạn truyền cho chúng tôi các ID đó từ dữ liệu bạn đã xuất từ RevenueCat.**
+Trước tiên, bạn cần truyền cho chúng tôi các ID của các dịch vụ bên thứ ba đó qua SDK để chúng tôi có thể gửi dữ liệu tới chúng. Đọc hướng dẫn về [tích hợp attribution](attribution-integration) và [tích hợp analytics](analytics-integration). Đối với dữ liệu lịch sử và người dùng cũ, **hãy đảm bảo bạn truyền cho chúng tôi các ID đó từ dữ liệu bạn đã xuất từ RevenueCat.**

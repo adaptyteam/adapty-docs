@@ -1,0 +1,104 @@
+---
+title: "Phân tích Attribution bằng công cụ lập trình AI"
+description: "Cài đặt skill adapty-attribution để Claude Code, Copilot CLI, Codex hoặc Gemini CLI có thể trả lời các câu hỏi về hiệu suất chiến dịch từ dữ liệu Attribution của Adapty."
+metadataTitle: "Attribution AI Skill | Tài liệu Adapty"
+---
+
+Skill adapty-attribution cho phép công cụ AI trả lời các câu hỏi về chiến dịch quảng cáo của bạn dựa trên dữ liệu [Adapty Attribution](adapty-user-acquisition). Chỉ cần hỏi bằng ngôn ngữ tự nhiên — "Kênh nào mang lại lợi nhuận tốt nhất tháng trước?", "Có nên dừng chiến dịch này không?" — và skill sẽ chạy các [lệnh `adapty attribution`](developer-cli-attribution), đọc kết quả rồi trả lời kèm theo các con số cụ thể.
+
+Một skill là một tập hợp hướng dẫn mà công cụ AI của bạn tải theo yêu cầu. Skill này chứa các phần trong báo cáo Attribution dễ bị đọc nhầm: ROAS dựa trên cơ sở doanh thu nào, những giá trị nào chưa thể tính toán được, và chi phí Apple Search Ads đến từ đâu.
+
+:::note
+Skill này chỉ đọc dữ liệu. Nó không thay đổi bất kỳ chiến dịch, link tracking hay integration nào, và các đề xuất điều chỉnh ngân sách là do bạn quyết định.
+:::
+
+## Skill này trả lời điều gì \{#what-it-answers\}
+
+Skill hoạt động dựa trên các playbook — một tập lệnh, cách đọc chúng, và hình thức trả lời — cho những câu hỏi mà các nhóm thường xuyên đặt ra nhất:
+
+- **Hoàn vốn và ngân sách**: Xếp hạng các kênh và chiến dịch theo ROAS, đồng thời chỉ ra nơi cần phân bổ thêm ngân sách và mức tăng phù hợp.
+- **Chiến dịch mới**: Đánh giá chiến dịch mới dựa trên số ngày cohort đã đạt được, thay vì dùng D30 khi mới chỉ có một tuần doanh thu.
+- **Chất lượng trial**: Xếp hạng chiến dịch theo chi phí mỗi trial có trả phí thay vì chi phí mỗi lượt cài đặt, giúp phát hiện các chiến dịch có trial không chuyển đổi.
+- **Tóm tắt hàng tuần**: So sánh tuần vừa qua với các tuần trước và đánh dấu những thay đổi đáng chú ý.
+- **Quốc gia và cửa hàng**: Cho thấy nơi nên mở rộng và nơi cần giới hạn chi tiêu.
+- **Hiệu quả trong chiến dịch**: Xếp hạng các nhóm quảng cáo và quảng cáo trong một chiến dịch.
+- **Lưu lượng kém chất lượng**: Đánh dấu các chiến dịch có tỷ lệ hoàn tiền và chargeback cao hơn mức trung bình của ứng dụng.
+- **Dự đoán hoàn vốn**: Đọc ROAS dự đoán theo các mốc thời gian dài hơn và chuyển đổi thành CPI hòa vốn.
+- **Số liệu không khớp**: Giải thích lý do tại sao Meta, TikTok hoặc Google báo cáo ROAS khác với Adapty.
+- **Lượt cài đặt giảm**: Phân tích xu hướng của sự sụt giảm để phân biệt nguyên nhân từ phía ứng dụng hay từ một mạng quảng cáo cụ thể.
+
+Setup questions — connecting Meta, TikTok, or Google Ads, tracking links, the web pixel, Stripe, or Paddle — go to the docs pages that own them.
+
+## Apple Search Ads
+
+Attribution không thu thập chi phí Apple Search Ads, vì vậy ROAS của nó sẽ trống ở đó. Skill lấy chi phí và ROAS của Apple Search Ads từ [Ads Manager](developer-cli-ads-manager) và báo cáo chúng thành dòng riêng, theo đơn vị tiền tệ của nhóm chiến dịch của bạn, thay vì gộp chúng vào số liệu Attribution. Nếu bạn tự cung cấp một khoản chi phí, skill sẽ trả lời bằng một ngưỡng — "Apple Search Ads vượt trội hơn Google nếu chi phí dưới $X" — thay vì tính ROAS dựa trên ước tính của bạn.
+
+## Cài đặt skill \{#install-the-skill\}
+
+Skill này nằm trong repository `adapty-skills` cùng với `adapty-integration`, `ads-manager`, `flow-generator` và các skill khác. Mỗi lệnh dưới đây sẽ cài đặt toàn bộ skill trong repository.
+
+<Tabs>
+  <TabItem value="claude-code" label="Claude Code">
+    ```bash
+    claude plugin marketplace add adaptyteam/adapty-skills
+    claude plugin install adapty-skills@adapty
+    ```
+
+Sau đó chạy `/reload-plugins` trong Claude Code để kích hoạt các skill.
+  </TabItem>
+  <TabItem value="copilot-cli" label="Copilot CLI">
+    ```bash
+    git clone https://github.com/adaptyteam/adapty-skills.git
+    cp -r adapty-skills/skills/* ~/.copilot/skills/
+    ```
+  </TabItem>
+  <TabItem value="gemini-cli" label="Gemini CLI">
+    ```bash
+    gemini skills install https://github.com/adaptyteam/adapty-skills
+    ```
+  </TabItem>
+  <TabItem value="codex" label="Codex">
+    ```bash
+    codex plugin marketplace add adaptyteam/adapty-skills
+    codex plugin add adapty-skills@adapty
+    ```
+
+Sau đó bắt đầu một thread mới để Codex tải các skill.
+  </TabItem>
+  <TabItem value="any-tool" label="Any tool">
+    ```bash
+    npx skills add adaptyteam/adapty-skills --all
+    ```
+
+    `--all` cài tất cả skill vào mọi agent mà [skills CLI](https://skills.sh) phát hiện được. Nếu chỉ muốn cài skill này, dùng `--skill adapty-attribution`. Skill cài theo cách này không tự động cập nhật — chạy `npx skills update` để lấy phiên bản mới hơn.
+  </TabItem>
+</Tabs>
+
+Skill này cần [Adapty CLI](developer-cli-quickstart), đã đăng nhập, và quyền truy cập Attribution cho công ty của bạn. Sau đó yêu cầu nó — `/adapty-attribution` trong các công cụ ánh xạ lệnh gạch chéo thành skill, hoặc "Use the adapty-attribution skill" trong các công cụ không hỗ trợ.
+
+## Ví dụ về các câu lệnh \{#example-prompts\}
+
+Đặt tên app, khoảng thời gian và quyết định bạn cần đưa ra. Skill sẽ tự tính ra các lệnh cần thiết.
+
+```
+Our app is app_finance. Which paid channels paid back best in August, and where
+should next month's extra $20k of budget go? Judge on revenue after the store's
+cut.
+```
+
+```
+Our TikTok "Fall Promo" campaign started on Sep 15. Leadership's rule is to kill
+anything under 80% D30 ROAS. How is it doing against "Spring Sleep", and should
+we kill it?
+```
+
+```
+Meta Ads Manager says our "Broad US" campaign had a 2.4 purchase ROAS in August.
+Adapty shows something much lower. Which number is right, and what do I tell my
+boss?
+```
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Truy vấn Attribution từ CLI](developer-cli-attribution) — các báo cáo tương tự theo cách thủ công, không cần công cụ AI.
+- [Phân tích Attribution](ua-analytics) — xem dữ liệu tương tự trên dashboard.

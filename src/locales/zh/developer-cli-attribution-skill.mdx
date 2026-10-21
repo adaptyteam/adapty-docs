@@ -1,0 +1,104 @@
+---
+title: "使用 AI 编程工具分析归因数据"
+description: "安装 adapty-attribution 技能，让 Claude Code、Copilot CLI、Codex 或 Gemini CLI 能够根据你的 Adapty 归因数据回答广告系列效果相关问题。"
+metadataTitle: "归因 AI 技能 | Adapty 文档"
+---
+
+adapty-attribution 技能让 AI 编程工具能够根据你的 [Adapty 归因](adapty-user-acquisition)数据回答关于广告投放的问题。用自然语言提问——"上个月哪个渠道的回报最好？"、"这个广告系列该不该砍掉？"——它会执行 [`adapty attribution` 命令](developer-cli-attribution)，读取结果，并用数据支撑给出答案。
+
+技能是你的 AI 工具按需加载的一套指令。本技能涵盖归因报告中容易误读的部分：ROAS 基于哪种营收口径计算、哪些数值尚无法计算，以及 Apple Search Ads 的消耗数据来源。
+
+:::note
+该技能仅作读取操作，不会修改任何广告系列、追踪链接或集成配置，预算调整建议由你自行决策。
+:::
+
+## 它能解答哪些问题 \{#what-it-answers\}
+
+该技能基于操作手册运行——包含一组指令、读取方式以及答案的形式——专门用于解答团队最常遇到的问题：
+
+- **回报与预算**：按 ROAS 对渠道和广告系列排名，并指出额外预算应投向何处及分配步骤。
+- **新兴广告系列**：根据同期群已积累的天数来评估新广告系列，而非依赖仅有一周收入数据的 D30 指标。
+- **试用质量**：按付费试用成本（而非安装成本）对广告系列排名，从而识别试用未转化的广告系列。
+- **每周摘要**：将上一周与此前数周对比，标记出发生变化的指标。
+- **国家与商店**：显示应扩展投放的地区，以及应限制支出的地区。
+- **广告系列内的优胜者**：对单个广告系列内的广告组和广告进行排名。
+- **低质量流量**：标记退款和拒付率超过应用平均水平的广告系列。
+- **预测回收期**：读取更长时间段的预测 ROAS，并将其转化为盈亏平衡 CPI。
+- **数据不一致**：解释为何 Meta、TikTok 或 Google 上报的 ROAS 与 Adapty 中的数据存在差异。
+- **安装量下降**：通过分析下降规律，区分原因来自应用端还是单一广告网络。
+
+Setup questions — connecting Meta, TikTok, or Google Ads, tracking links, the web pixel, Stripe, or Paddle — go to the docs pages that own them.
+
+## Apple Search Ads \{#apple-search-ads\}
+
+归因数据不包含 Apple Search Ads 的广告支出，因此该渠道的 ROAS 为空。技能会从 [Ads Manager](developer-cli-ads-manager) 获取 Apple Search Ads 的支出和 ROAS，并以独立行的形式呈现，以广告系列组的货币计价，而不是将其合并到归因数据中。如果你自己提供了支出金额，技能会给出一个阈值——"Apple Search Ads 的支出低于 $X 时优于 Google"——而不是根据你的估算值计算 ROAS。
+
+## 安装技能 \{#install-the-skill\}
+
+技能随 `adapty-skills` 代码库一起提供，与 `adapty-integration`、`ads-manager`、`flow-generator` 等技能并列。以下每条命令均会安装代码库中的所有技能。
+
+<Tabs>
+  <TabItem value="claude-code" label="Claude Code">
+    ```bash
+    claude plugin marketplace add adaptyteam/adapty-skills
+    claude plugin install adapty-skills@adapty
+    ```
+
+然后在 Claude Code 中运行 `/reload-plugins` 以激活技能。
+  </TabItem>
+  <TabItem value="copilot-cli" label="Copilot CLI">
+    ```bash
+    git clone https://github.com/adaptyteam/adapty-skills.git
+    cp -r adapty-skills/skills/* ~/.copilot/skills/
+    ```
+  </TabItem>
+  <TabItem value="gemini-cli" label="Gemini CLI">
+    ```bash
+    gemini skills install https://github.com/adaptyteam/adapty-skills
+    ```
+  </TabItem>
+  <TabItem value="codex" label="Codex">
+    ```bash
+    codex plugin marketplace add adaptyteam/adapty-skills
+    codex plugin add adapty-skills@adapty
+    ```
+
+然后新建一个线程，这样 Codex 就会加载这些技能。
+  </TabItem>
+  <TabItem value="any-tool" label="Any tool">
+    ```bash
+    npx skills add adaptyteam/adapty-skills --all
+    ```
+
+    `--all` 会将每个技能安装到 [skills CLI](https://skills.sh) 检测到的所有 Agent 中。若只安装此技能，请使用 `--skill adapty-attribution`。通过此方式安装的技能不会自动更新——请运行 `npx skills update` 以获取最新版本。
+  </TabItem>
+</Tabs>
+
+该技能需要 [Adapty CLI](developer-cli-quickstart)、已登录状态，以及贵公司的 Attribution 访问权限。准备好后，直接调用即可——在支持斜杠命令映射技能的工具中输入 `/adapty-attribution`，在不支持的工具中输入"Use the adapty-attribution skill"。
+
+## 示例提示词 \{#example-prompts\}
+
+说明应用名称、时间范围以及你要做的决策，技能会自动推算所需命令。
+
+```
+Our app is app_finance. Which paid channels paid back best in August, and where
+should next month's extra $20k of budget go? Judge on revenue after the store's
+cut.
+```
+
+```
+Our TikTok "Fall Promo" campaign started on Sep 15. Leadership's rule is to kill
+anything under 80% D30 ROAS. How is it doing against "Spring Sleep", and should
+we kill it?
+```
+
+```
+Meta Ads Manager says our "Broad US" campaign had a 2.4 purchase ROAS in August.
+Adapty shows something much lower. Which number is right, and what do I tell my
+boss?
+```
+
+## 下一步 \{#whats-next\}
+
+- [通过 CLI 查询归因数据](developer-cli-attribution) — 无需 AI 工具，手动生成相同报表。
+- [归因分析](ua-analytics) — 在看板中查看相同数据。

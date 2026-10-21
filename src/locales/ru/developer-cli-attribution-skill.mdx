@@ -1,0 +1,104 @@
+---
+title: "Анализ атрибуции с помощью AI-инструмента"
+description: "Установите скилл adapty-attribution, чтобы Claude Code, Copilot CLI, Codex или Gemini CLI могли отвечать на вопросы об эффективности кампаний на основе данных атрибуции Adapty."
+metadataTitle: "Скилл атрибуции для AI | Документация Adapty"
+---
+
+Скилл adapty-attribution позволяет AI-инструменту отвечать на вопросы о ваших рекламных кампаниях на основе данных [Adapty Attribution](adapty-user-acquisition). Спрашивайте обычным языком — «Какой канал лучше всего окупился в прошлом месяце?», «Стоит ли отключить эту кампанию?» — и скилл выполняет команды [`adapty attribution`](developer-cli-attribution), читает результаты и отвечает с цифрами в обоснование вывода.
+
+Скилл — это набор инструкций, которые ваш AI-инструмент загружает по запросу. Этот скилл охватывает части отчётов Attribution, которые легко неправильно прочитать: на какой базе считается ROAS, какие значения ещё не могут быть вычислены и откуда берутся расходы Apple Search Ads.
+
+:::note
+Скилл работает только на чтение. Он не изменяет ни кампании, ни ссылки отслеживания, ни интеграции — решения о перераспределении бюджета принимаете вы.
+:::
+
+## Что это отвечает \{#what-it-answers\}
+
+Скилл работает по плейбукам — набору команд, способу их интерпретации и форме ответа — для вопросов, которые команды задают чаще всего:
+
+- **Окупаемость и бюджет**: ранжирует каналы и кампании по ROAS и указывает, куда направить дополнительный бюджет и в каком объёме.
+- **Молодые кампании**: оценивает новую кампанию на том дне, которого достигли её когорты, а не по D30, где только неделя выручки.
+- **Качество триалов**: ранжирует кампании по стоимости одного платящего триала, а не по стоимости установки — так видно, чьи триалы не конвертируются.
+- **Еженедельный дайджест**: сравнивает последнюю неделю с предыдущими и отмечает, что изменилось.
+- **Страны и сторы**: показывает, где стоит расширяться, а где ограничить расходы.
+- **Победители внутри кампании**: ранжирует группы объявлений и объявления внутри одной кампании.
+- **Некачественный трафик**: выявляет кампании с повышенным числом возвратов и чарджбэков по сравнению со средним по приложению.
+- **Прогнозируемая окупаемость**: читает прогнозируемый ROAS на длинных горизонтах и переводит его в безубыточный CPI.
+- **Расхождение цифр**: объясняет, почему Meta, TikTok или Google показывают другой ROAS, чем Adapty.
+- **Упали установки**: анализирует паттерн падения и отличает причину на стороне приложения от проблемы отдельной сети.
+
+Setup questions — connecting Meta, TikTok, or Google Ads, tracking links, the web pixel, Stripe, or Paddle — go to the docs pages that own them.
+
+## Apple Search Ads
+
+Атрибуция не собирает расходы Apple Search Ads, поэтому ROAS там пустой. Скилл получает расходы Apple Search Ads и ROAS из [Ads Manager](developer-cli-ads-manager) и показывает их отдельной строкой в валюте вашей группы кампаний, не объединяя с данными атрибуции. Если вы сами укажете сумму расходов, скилл вернёт порог — «Apple Search Ads выгоднее Google, если расходы были меньше $X» — вместо ROAS на основе вашей оценки.
+
+## Установите скилл \{#install-the-skill\}
+
+Скилл поставляется в репозитории `adapty-skills` вместе с `adapty-integration`, `ads-manager`, `flow-generator` и другими. Каждая из этих команд устанавливает все скиллы в репозитории.
+
+<Tabs>
+  <TabItem value="claude-code" label="Claude Code">
+    ```bash
+    claude plugin marketplace add adaptyteam/adapty-skills
+    claude plugin install adapty-skills@adapty
+    ```
+
+Затем запустите `/reload-plugins` в Claude Code, чтобы активировать скиллы.
+  </TabItem>
+  <TabItem value="copilot-cli" label="Copilot CLI">
+    ```bash
+    git clone https://github.com/adaptyteam/adapty-skills.git
+    cp -r adapty-skills/skills/* ~/.copilot/skills/
+    ```
+  </TabItem>
+  <TabItem value="gemini-cli" label="Gemini CLI">
+    ```bash
+    gemini skills install https://github.com/adaptyteam/adapty-skills
+    ```
+  </TabItem>
+  <TabItem value="codex" label="Codex">
+    ```bash
+    codex plugin marketplace add adaptyteam/adapty-skills
+    codex plugin add adapty-skills@adapty
+    ```
+
+Затем начните новый чат, чтобы Codex загрузил скиллы.
+  </TabItem>
+  <TabItem value="any-tool" label="Any tool">
+    ```bash
+    npx skills add adaptyteam/adapty-skills --all
+    ```
+
+    `--all` устанавливает все скиллы во все агенты, обнаруженные [skills CLI](https://skills.sh). Чтобы установить только этот скилл, используйте `--skill adapty-attribution`. Скиллы, установленные таким способом, не обновляются автоматически — запустите `npx skills update`, чтобы получить новую версию.
+  </TabItem>
+</Tabs>
+
+Для работы скилла необходимы [Adapty CLI](developer-cli-quickstart), авторизация и доступ Attribution для вашей компании. Запросите его командой — `/adapty-attribution` в инструментах, поддерживающих слэш-команды, или фразой «Use the adapty-attribution skill» в остальных.
+
+## Примеры запросов \{#example-prompts\}
+
+Укажите название приложения, период и решение, которое нужно принять. Скилл сам разберётся с командами.
+
+```
+Our app is app_finance. Which paid channels paid back best in August, and where
+should next month's extra $20k of budget go? Judge on revenue after the store's
+cut.
+```
+
+```
+Our TikTok "Fall Promo" campaign started on Sep 15. Leadership's rule is to kill
+anything under 80% D30 ROAS. How is it doing against "Spring Sleep", and should
+we kill it?
+```
+
+```
+Meta Ads Manager says our "Broad US" campaign had a 2.4 purchase ROAS in August.
+Adapty shows something much lower. Which number is right, and what do I tell my
+boss?
+```
+
+## Что дальше \{#whats-next\}
+
+- [Запрос атрибуции через CLI](developer-cli-attribution) — те же отчёты вручную, без AI-инструментов.
+- [Аналитика атрибуции](ua-analytics) — тот же набор данных на дашборде.

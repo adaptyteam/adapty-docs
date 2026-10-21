@@ -1,43 +1,43 @@
 ---
 title: "Миграция с RevenueCat"
-description: "Перейдите с RevenueCat на Adapty по нашему пошаговому руководству."
+description: "Мигрируйте с RevenueCat на Adapty: перенесите каталог и код приложения с помощью Adapty CLI, переключите уведомления стора и импортируйте историю транзакций."
 metadataTitle: "Миграция с RevenueCat на Adapty | Документация Adapty"
-keywords: ['миграция', 'revenuecat']
+keywords: ['migration', 'revenuecat']
 ---
 
-Ваш план миграции состоит из 5 логических шагов и занимает в среднем 2 часа. 90% всех миграций укладываются менее чем в один рабочий день.
+Миграция с RevenueCat состоит из шести шагов. Большую часть работы выполняет агент: он запускает миграцию через [Adapty CLI](developer-cli) и заменяет RevenueCat SDK в вашем приложении. Вы берёте на себя то, что агенту недоступно, — секреты и настройки в RevenueCat, App Store Connect и Google Cloud.
 
-1. Изучите ключевые отличия; создайте и настройте аккаунт Adapty _(5 минут)_;
-2. Установите Adapty SDK для вашей платформы ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) вместо RevenueCat SDK _(1 час)_;
-3. Настройте [серверные уведомления Apple App Store](enable-app-store-server-notifications) для Adapty и (опционально) [пересылку raw-событий](enable-app-store-server-notifications#raw-events-forwarding) _(5 минут)_;
-4. Протестируйте и выпустите обновления приложения _(30 минут);_
-5. (Опционально) Экспортируйте исторические данные RevenueCat в формате CSV с помощью [плановых экспортов данных RevenueCat](https://www.revenuecat.com/docs/integrations/scheduled-data-exports) _(5 минут);_
-6. (Опционально) Импортируйте исторические данные через поддержку Adapty _(30 минут)_.
+1. [Изучите ключевые отличия](#learn-the-core-differences).
+2. [Перенесите каталог в Adapty](#move-your-catalog-to-adapty).
+3. [Замените RevenueCat SDK](#replace-the-revenuecat-sdk) с помощью вашего агента для работы с кодом.
+4. [Настройте пересылку событий из стора в Adapty](#forward-store-events-to-adapty).
+5. [Протестируйте и выпустите новую версию приложения](#test-and-release-a-new-version-of-your-app).
+6. (Необязательно) [Импортируйте историю транзакций](#optional-import-your-transaction-history).
 
 :::info
 Ваши подписчики мигрируют автоматически
 
-Все пользователи, у которых когда-либо была активна подписка, автоматически перейдут в Adapty, как только откроют новую версию вашего приложения с Adapty SDK. Статус подписки и доступ к премиум-функциям восстановятся автоматически.
+Все пользователи, у которых когда-либо была активная подписка, автоматически перейдут в Adapty, как только откроют новую версию приложения с SDK Adapty. Статус подписки будет подтверждён, а доступ к премиум-функциям — восстановлен автоматически.
 :::
 
-Перед тем как выпустить новую версию приложения с Adapty SDK, ознакомьтесь с нашим [чеклистом релиза](release-checklist).
+Прежде чем выпустить новую версию приложения с SDK Adapty, ознакомьтесь с нашим [чеклистом для релиза](release-checklist).
 
-## Изучите ключевые отличия; создайте и настройте аккаунт Adapty \{#learn-the-core-differences-create-and-prepare-an-adapty-account\}
+## Ознакомьтесь с основными отличиями \{#learn-the-core-differences\}
 
-SDK Adapty и RevenueCat устроены схожим образом. Главное отличие — в сетевом взаимодействии и скорости: Adapty SDK разработан так, чтобы как можно быстрее предоставлять информацию по запросу. Например, при запросе пейвола вы сначала получаете [Remote Config](customize-paywall-with-remote-config) для предварительной сборки онбординга или пейвола, а затем запрашиваете продукты отдельным запросом.
+SDK Adapty и RevenueCat устроены похожим образом. Главное отличие — в работе с сетью и скорости: SDK Adapty разработан так, чтобы предоставлять нужную информацию по запросу максимально быстро. Например, при запросе пейвола вы сначала получаете [Remote Config](customize-paywall-with-remote-config) для предварительной сборки онбординга или пейвола, а затем в отдельном запросе запрашиваете продукты.
 
-Терминология немного отличается:
+Названия немного отличаются:
 
 | RevenueCat  | Adapty          |
 | :---------- | :-------------- |
-| Package     | Product         |
-| Offering    | Paywall         |
+| Package     | Продукт         |
+| Offering    | Пейвол          |
 | Paywall     | Paywall Builder |
-| Entitlement | Access level    |
+| Entitlement | Уровень доступа |
 
-В Adapty есть концепция [плейсмента](placements). Это логическое место внутри приложения, где пользователь может совершить покупку. В большинстве случаев плейсментов один или два:
+В Adapty есть концепция [плейсмента](placements). Это логическое место внутри приложения, где пользователь может совершить покупку. В большинстве случаев у вас один или два плейсмента:
 
-- Онбординг (80% всех покупок происходит именно там);
+- Онбординг (так как 80% всех покупок происходит именно там);
 - Общий (показывается в настройках или внутри приложения после онбординга).
 
 <Zoom>
@@ -51,134 +51,220 @@ SDK Adapty и RevenueCat устроены схожим образом. Глав�
 />
 </Zoom>
 
-## Установите Adapty SDK и замените RevenueCat SDK \{#install-adapty-sdk-and-replace-revenuecat-sdk\}
+## Перенесите каталог в Adapty \{#move-your-catalog-to-adapty\}
 
-Установите Adapty SDK для вашей платформы ([iOS](sdk-installation-ios), [Android](sdk-installation-android), [React Native](sdk-installation-reactnative), [Flutter](sdk-installation-flutter), [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform), [Unity](sdk-installation-unity)) в своём приложении.
+Миграция каталога создаёт новое приложение в Adapty на основе вашего проекта RevenueCat: уровни доступа из entitlements, продукты из packages, а также пейвол и плейсмент для каждого offering.
 
-Нужно заменить несколько методов SDK на стороне приложения. Разберём наиболее распространённые функции и то, как их заменить на методы Adapty SDK.
+### Перед началом работы \{#before-you-start\}
 
-### Активация SDK \{#sdk-activation\}
+- Используйте агента для написания кода, который может выполнять команды в терминале, например Claude Code, Codex или Cursor.
+- В терминале, который использует агент, [установите Adapty CLI](developer-cli-quickstart) и [войдите в систему](developer-cli-authentication).
+- В RevenueCat [создайте секретный API-ключ (v2)](#create-a-revenuecat-secret-api-key) для проекта, который вы переносите.
+- Проверьте сторы. Миграция поддерживает только приложения из App Store и Google Play.
 
-Замените `Purchases.configure` на `Adapty.activate`.
+### Создайте секретный API-ключ RevenueCat \{#create-a-revenuecat-secret-api-key\}
 
-### Получение пейволов (офферингов) \{#getting-paywalls-offerings\}
+Adapty читает каталог RevenueCat с помощью секретного API-ключа проекта, из которого вы переходите. В RevenueCat секретные ключи принадлежат конкретному проекту, поэтому создайте ключ именно в нём.
 
-Замените `Purchases.shared.getOfferings` на [`Adapty.getPaywall`](fetch-paywalls-and-products#fetch-paywall-information).
+1. Чтобы открыть список ключей, в дашборде RevenueCat откройте проект и перейдите в **API keys**.
+2. Чтобы создать ключ, нажмите **New secret API key**.
+3. Чтобы настроить ключ, введите название, например `Adapty migration`, и выберите **V2** в поле **API version**.
+4. Чтобы Adapty мог читать каталог, установите **Project configuration permissions** в значение **Read only**. Другие разрешения Adapty не нужны.
+5. Чтобы создать ключ, нажмите **Generate** и скопируйте его.
 
-В Adapty пейвол всегда запрашивается через [placement id](placements). На практике вы запрашиваете не более 1–2 пейволов, поэтому мы намеренно сделали именно так — чтобы ускорить SDK и снизить сетевую нагрузку.
+:::warning
+Используйте секретный API-ключ, а не публичный. Публичный app-specific ключ не может читать конфигурацию проекта.
+:::
 
-### Получение профиля пользователя \{#getting-a-user-customer-profile\}
+<ZoomImage id="rc-api-key.webp" width="600px" alt="RevenueCat secret API key form with API version V2 and Project configuration permissions set to Read only" />
 
-Замените `Purchases.shared.getCustomerInfo` на `Adapty.getProfile`.
+Когда в процессе миграции потребуется ключ, вставьте его на открывшейся странице дашборда Adapty.
 
-### Получение продуктов \{#getting-products\}
+### Запустите миграцию каталога
 
-В RevenueCat используется следующая структура: `Purchases.shared.getOfferings`, затем `self.offering?.availablePackages`.
+1. Чтобы начать миграцию, попросите агента:
 
-В Adapty вы сначала запрашиваете пейвол (см. выше), чтобы получить мгновенный доступ к [Remote Config](customize-paywall-with-remote-config) Adapty, а затем запрашиваете продукты через [`Adapty.getPaywallProducts`](fetch-paywalls-and-products#fetch-products).
+   ```text
+   Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
+   ```
 
-### Совершение покупки \{#making-a-purchase\}
+2. Чтобы подключить RevenueCat, вставьте секретный API-ключ на страницу дашборда Adapty, которую откроет агент. Ключ передаётся напрямую в Adapty и никогда не проходит через агента или CLI.
+3. Чтобы выбрать, что мигрировать, скажите агенту, какие приложения RevenueCat относятся друг к другу — обычно по одному на каждую платформу одного и того же продукта. Вместе они образуют одно приложение в Adapty.
+4. Чтобы завершить маппинг, ответьте на вопросы агента о сущностях, которые Adapty не смог сопоставить самостоятельно.
 
-Замените `Purchases.shared.purchase` на [`Adapty.makePurchase`](making-purchases#make-purchase).
+:::warning
+   Решения окончательны. Когда для каждой сущности принято решение, Adapty создаёт каталог, и изменить маппинг после этого невозможно.
+   :::
 
-### Проверка уровня доступа (entitlement) \{#checking-access-level-entitlement\}
+   Adapty создаёт уровни доступа, продукты, пейволы и плейсменты — именно в таком порядке. Если что-то не удастся создать, агент объяснит причину. Когда все сущности появятся в Adapty, миграция завершится.
 
-Получите профиль пользователя (см. выше) и замените
+5. Чтобы новое приложение могло валидировать покупки, подключите его к сторам в дашборде Adapty: [App Store](initial_ios) и [Google Play](initial-android).
 
-`customerInfo?.entitlements["premium"]?.isActive == true`
+:::note
+Чтобы выполнить миграцию без агента, используйте [команды миграции](developer-cli-reference#migrations). Команда `adapty migrations status` сообщает о следующем действии и необходимых входных данных.
+:::
 
-на
+### Как сущности RevenueCat соответствуют Adapty
 
-[`profile.accessLevels["premium"]?.isActive == true`](subscription-status#retrieving-the-access-level-from-the-server).
+- Идентификатор entitlement становится ID уровня доступа, то есть `customerInfo.entitlements["premium"]` превращается в `profile.accessLevels["premium"]`.
+- Продукт, не связанный ни с одним entitlement, получает уровень доступа `premium`.
+- Идентификатор offering становится ID плейсмента.
+- Метаданные offering становятся [Remote Config](customize-paywall-with-remote-config) пейвола — объёмом до 256 КБ.
 
-### Восстановление покупки \{#restore-purchase\}
+### Что не переносится при миграции каталога \{#what-the-catalog-migration-leaves-out\}
 
-Замените `Purchases.shared.restorePurchases` на [`Adapty.restorePurchases`](restore-purchase).
+- **Офферинги с пейволом из Paywall Editor**: Adapty не может импортировать пейвол, созданный в RevenueCat Paywall Editor, поэтому такие офферинги получают ни пейвол, ни плейсмент. Их ID плейсментов остаются свободными: создайте флоу или пейвол с тем же ID самостоятельно.
+- Офферинги без продуктов.
+- Продукты, чей ID продукта в App Store Adapty отклоняет, — например, ID с двоеточием или пробелом. Агент сообщит, какие именно; никаких решений принимать не нужно.
+- Приложения в сторах, кроме App Store и Google Play.
+- **Интеграции**: настройте их в Adapty, как описано в [Миграция интеграций в Adapty](migrate-integrations-to-adapty).
 
-### Проверка авторизации пользователя \{#check-if-the-user-is-logged-in\}
+## Замените RevenueCat SDK \{#replace-the-revenuecat-sdk\}
 
-Замените `Purchases.shared.isAnonymous` на `if profile.customerUserId == nil`.
+Агент кодинга заменяет RevenueCat SDK на Adapty SDK в коде вашего приложения, используя скилл `adapty-integration`. Запустите его после миграции каталога, чтобы код использовал идентификаторы уровней доступа и плейсментов нового приложения Adapty.
 
-### Вход пользователя \{#log-in-user\}
+1. Чтобы подключить скилл к агенту, установите его для вашего инструмента, как описано в [SDK integration skill](adapty-sdk-integration-skill).
+2. Чтобы начать миграцию, откройте проект приложения в агенте и спросите:
 
-Замените `Purchases.shared.logIn` на [`Adapty.identify`](identifying-users#set-customer-user-id-after-configuration).
+```text
+   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+   ```
 
-### Выход пользователя \{#log-out-user\}
+   Скилл автоматически определяет вашу платформу и RevenueCat SDK из файлов проекта, поэтому указывать их в промпте не нужно.
+3. Чтобы завершить миграцию кода, просмотрите изменения агента, затем пройдитесь по файлу `ADAPTY_SETUP.md` в корне проекта. В нём перечислено то, что агент оставил вам — например, интеграции для настройки.
 
-Замените `Purchases.shared.logOut` на [`Adapty.logout`](identifying-users#logging-out-and-logging-in).
+## Перенаправьте события стора в Adapty \{#forward-store-events-to-adapty\}
 
-## Переключите серверные уведомления App Store на Adapty \{#switch-app-store-server-side-notifications-to-adapty\}
+App Store и Google Play сообщают о продлениях, отменах и возвратах на ваш сервер через уведомления — в том числе те, что происходят за пределами приложения. Два сценария миграции подключают Adapty к этим уведомлениям, при этом RevenueCat продолжает получать все события, так что обе системы остаются актуальными, пока ваши пользователи переходят на новую версию приложения.
 
-Как это сделать — читайте [здесь](migrate-to-adapty-from-another-solutions#changing-apple-server-notifications).
+Запустите их после завершения [миграции каталога](#move-your-catalog-to-adapty). Adapty автоматически возьмёт bundle ID и package name из выбранных вами приложений RevenueCat.
+
+{/* Kept for links to the section this one replaced, including the Adapty Dashboard. */}
+<span id="switch-app-store-server-side-notifications-to-adapty"></span>
+
+### Пересылка событий App Store \{#forward-app-store-events\}
+
+Adapty получает уведомления от App Store и пересылает каждое из них в RevenueCat.
+
+Перед началом создайте [ключ In-App Purchase](in-app-purchase-api-storekit-2) в App Store Connect и сохраните его **Issuer ID** и **Key ID**.
+
+1. Чтобы начать пересылку, обратитесь к агенту:
+
+   ```text
+   Forward App Store events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
+   ```
+
+2. Чтобы предоставить Adapty доступ к событиям App Store, загрузите файл `.p8` на открытую агентом страницу дашборда Adapty, а также введите **Issuer ID** и **Key ID**. Ключ передаётся напрямую в Adapty — через агент или CLI он не проходит.
+3. Чтобы RevenueCat продолжал получать события App Store, передайте агенту URL уведомлений RevenueCat. В RevenueCat откройте своё iOS-приложение и скопируйте **Apple Server Notification URL** из раздела **Apple Server to Server notification settings**. Он начинается с `https://api.revenuecat.com/v1/incoming-webhooks/`.
+4. Чтобы направить App Store на Adapty, откройте своё приложение в App Store Connect и перейдите в **App Information** > **App Store Server Notifications**. Установите и **Production Server URL**, и **Sandbox Server URL** на URL Adapty, который вам предоставит агент, выбрав уведомления **Version 2**. Подробнее см. в разделе [Включение серверных уведомлений App Store](enable-app-store-server-notifications). Пересылка в RevenueCat уже настроена на этом этапе, поэтому ни одно событие не теряется.
+5. Чтобы проверить подключение, сообщите агенту, что URL установлены. Adapty запросит у App Store тестовое уведомление и дождётся его получения. Если оно не придёт, агент объяснит причину.
+
+### Пересылка событий Google Play
+
+Google Play отправляет уведомления в топик Pub/Sub. Adapty подписывается на тот же топик, который уже использует RevenueCat, в качестве второго подписчика — RevenueCat при этом продолжает получать события.
+
+:::warning
+Не меняйте топик в Google Play Console и не выполняйте шаги из раздела [Включение RTDN](enable-real-time-developer-notifications-rtdn) для этого приложения. Новый топик прекратит отправку уведомлений в RevenueCat.
+:::
+
+1. Чтобы начать пересылку, спросите у агента:
+
+   ```text
+   Forward Google Play events for my Adapty app "Acme Fitness" to Adapty, and keep RevenueCat receiving them.
+   ```
+
+2. Чтобы предоставить Adapty доступ к топику, создайте JSON-ключ для сервисного аккаунта, который использует RevenueCat. В Google Cloud Console перейдите в **IAM & Admin** > **Service Accounts**, откройте аккаунт — обычно это `revenuecat-service-account`, затем перейдите в **Keys** > **Add key** и выберите **JSON**. Новый ключ не затронет работу RevenueCat. Подробнее см. в руководстве Google по [созданию ключа сервисного аккаунта](https://cloud.google.com/iam/docs/keys-create-delete#creating).
+3. Чтобы загрузить ключ, на открытой агентом странице дашборда Adapty загрузите файл в поле **Google Play service account key (JSON)**. Ключ передаётся напрямую в Adapty и никогда не проходит через агент или CLI.
+4. Чтобы подписать Adapty на топик, передайте агенту его ID. В RevenueCat откройте настройки вашего приложения Google Play и скопируйте **Topic ID** из раздела **Google developer notifications**. Это же значение отображается в Google Play Console в разделе **Monetize** > **Monetization setup** > **Topic name**.
+
+Adapty подписывается на топик, затем публикует тестовое уведомление и ожидает его получения. Если уведомление не приходит, агент сообщит причину.
+
+5. Если тест завершается ошибкой из-за прав доступа, выдайте сервисному аккаунту роль **Pub/Sub Editor** в проекте топика либо роль **Pub/Sub Subscriber** на топике и **Pub/Sub Editor** в проекте ключа. Затем попросите агента повторить проверку.
 
 ## Протестируйте и выпустите новую версию приложения \{#test-and-release-a-new-version-of-your-app\}
 
-Если вы дошли до этого пункта, значит вы уже:
+Если вы читаете это, значит, вы уже:
 
-- [x] Настроили дашборд Adapty
-- [x] Установили Adapty SDK
-- [x] Заменили логику SDK на функции Adapty
-- [x] Переключили серверные уведомления App Store на Adapty и при необходимости включили пересылку raw-событий в RevenueCat
-- [ ] Совершили покупку в песочнице
+- [x] Перенесли каталог в Adapty
+- [x] Заменили RevenueCat SDK на Adapty
+- [x] Проработали `ADAPTY_SETUP.md` вместе с вашим coding-агентом
+- [x] Настроили пересылку событий App Store и Google Play в Adapty
+- [ ] Сделали тестовую покупку в песочнице
 - [ ] Выпустили новую версию приложения
 
 Если все пункты выше отмечены, просто совершите тестовую покупку в песочнице, а затем выпустите приложение.
 
 :::info
-Пройдите [чеклист перед релизом](release-checklist).
+Пройдите [чеклист релиза](release-checklist).
 
 Выполните финальную проверку по нашему списку, чтобы убедиться в корректности интеграции или добавить дополнительные функции, например [атрибуцию](attribution-integration) или интеграцию с [аналитикой](analytics-integration).
 :::
 
-## (Опционально) Экспортируйте исторические данные из RevenueCat в формате CSV \{#optional-export-your-revenuecat-historical-data-in-csv-format\}
+## (Необязательно) Импортируйте историю транзакций \{#optional-import-your-transaction-history\}
+
+Импорт заполняет [профили](profiles-crm) и [графики](charts) историей платежей ваших пользователей. Он не влияет на чей-либо доступ.
 
 :::warning
 Не торопитесь с импортом исторических данных
 
-Перед импортом исторических данных рекомендуем подождать не менее недели после релиза с SDK. За это время мы получим от SDK всю информацию о ценах покупок, и импортированные данные будут более точными.
+Дождитесь как минимум недели после релиза с SDK, прежде чем выполнять импорт исторических данных. За это время мы получим всю информацию о ценах покупок из SDK, и импортированные данные будут более актуальными.
 :::
 
-Экспортируйте исторические данные из RevenueCat в формате CSV, следуя инструкциям в [официальной документации RevenueCat](https://www.revenuecat.com/docs/integrations/scheduled-data-exports).
+Два миграционных процесса импортируют историю в приложение, созданное в ходе миграции каталога. Воспользуйтесь Cloud Export, если ваш тарифный план RevenueCat его поддерживает.
 
-## (Опционально) Запросите у поддержки RevenueCat токены Google Purchase Tokens \{#optional-ask-revenuecat-support-for-google-purchase-tokens\}
+### С экспортом через RevenueCat Cloud Export
 
-Если вам нужно импортировать транзакции Google Play, обратитесь в поддержку RevenueCat через их [страницу поддержки](https://app.revenuecat.com/settings/support) и запросите CSV-файл с Google Purchase Tokens. Google Purchase Token — это уникальный идентификатор, предоставляемый Google Play для каждой транзакции; он необходим для точного отслеживания и верификации покупок в Adapty. Эта информация не включается в стандартный экспортный файл. Файл содержит три столбца:
+RevenueCat ежедневно отправляет экспорт в бакет, который Adapty подготавливает для вашего приложения, а Adapty импортирует каждый полученный файл.
 
-- `user_id`
-- `google_purchase_token`
-- `google_product_id`
+1. Чтобы начать импорт, обратитесь к агенту:
 
-## Напишите нам для импорта исторических данных \{#write-us-to-import-your-historical-data\}
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" with a Cloud Export.
+   ```
 
-Свяжитесь с нами через мессенджер на сайте или по электронной почте [support@adapty.io](mailto:support@adapty.io), прикрепив ваши CSV-файлы.
+2. Чтобы подключить экспорт, передайте агенту External ID из RevenueCat. В RevenueCat откройте настройки **Scheduled Data Exports**, выберите **IAM Role (ARN)** в качестве типа учётных данных и скопируйте **External ID**, который показывает RevenueCat. External ID не является секретным.
+3. Чтобы завершить настройку экспорта, введите в RevenueCat bucket, регион и role ARN, которые предоставил агент. Включите **Receive new and updated transactions only**. Иначе RevenueCat будет каждый день экспортировать всю историю, а Adapty — импортировать каждый файл.
 
-1. Отправьте CSV-файл, экспортированный из RevenueCat, напрямую в нашу службу поддержки.
-2. Если вы импортируете транзакции Google Play, приложите CSV-файл с Google Purchase Tokens, полученный от поддержки RevenueCat.
-3. Укажите, какой идентификатор пользователя следует использовать в качестве Customer User ID (основного идентификатора пользователя в Adapty): `rc_original_app_user_id` или `rc_last_seen_app_user_id_alias`.
+RevenueCat может доставить первый файл с задержкой до 24 часов, а Adapty проверяет наличие новых файлов в бакете каждый час. Миграция завершается автоматически через неделю после того, как Adapty импортирует первый файл. Customer User ID каждого импортированного профиля — `rc_last_seen_app_user_id_alias`.
 
-Наша команда поддержки импортирует ваши транзакции в Adapty. Для каждой транзакции будут импортированы следующие данные:
+### Через поддержку \{#through-support\}
 
-| Параметр                      | Описание                                                                                                                                  |
-| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| user_id                       | Customer User ID — основной идентификатор пользователя в Adapty и вашей системе.                                                         |
-| apple_original_transaction_id | Для цепочек подписок — это дата покупки исходной транзакции, связанная через `store_original_transaction_id`.                             |
-| google_product_id             | Идентификатор продукта в Google Play Store.                                                                                               |
-| google_purchase_token         | Уникальный идентификатор, предоставляемый Google Play для каждой транзакции; необходим для валидации.                                     |
-| country                       | Страна пользователя.                                                                                                                      |
-| created_at                    | Дата и время создания пользователя.                                                                                                       |
-| subscription_expiration_date  | Дата и время окончания подписки.                                                                                                          |
-| email                         | Email конечного пользователя.                                                                                                             |
-| phone_number                  | Номер телефона конечного пользователя.                                                                                                    |
-| idfa                          | Identifier for Advertisers (IDFA) — идентификатор устройства пользователя, присваиваемый Apple.                                          |
-| idfv                          | Identifier for Vendors (IDFV) — код, присваиваемый всем приложениям одного разработчика и используемый совместно на одном устройстве.    |
-| advertising_id                | Уникальный идентификатор, предоставляемый ОС Android и используемый рекламодателями для отслеживания.                                    |
-| attribution_channel           | Название маркетингового канала.                                                                                                           |
-| attribution_campaign          | Название маркетинговой кампании.                                                                                                          |
-| attribution_ad_group          | Группа объявлений атрибуции.                                                                                                              |
-| attribution_ad_set            | Набор объявлений атрибуции.                                                                                                               |
-| attribution_creative          | Ключевое слово креатива атрибуции.                                                                                                        |
+Используйте этот способ, если ваш тарифный план RevenueCat не включает Cloud Export: поддержка RevenueCat отправляет вам экспорт, а поддержка Adapty его импортирует.
 
-Кроме того, будут импортированы идентификаторы интеграций для следующих сервисов: Amplitude, Mixpanel, AppsFlyer, Adjust и FacebookAds.
+1. Чтобы начать импорт, попросите своего агента:
+
+   ```text
+   Import the RevenueCat transaction history into my Adapty app "Acme Fitness" through support.
+   ```
+
+2. Чтобы запросить экспорт, отправьте в поддержку RevenueCat первое из двух сообщений, которые предложит агент.
+3. Чтобы импортировать данные, перешлите файлы, полученные от RevenueCat, в поддержку Adapty вместе со вторым сообщением. Прикрепите файлы точно в том виде, в каком их прислал RevenueCat: открытие, пересохранение или объединение файлов изменит формат столбцов, который ожидает импорт.
+
+### Что импортируется \{#what-the-import-brings-over\}
+
+Следующие данные будут импортированы в Adapty для каждой транзакции:
+
+| Параметр                      | Описание                                                     |
+| ----------------------------- | ------------------------------------------------------------ |
+| user_id                       | Customer User ID — основной идентификатор пользователя в Adapty и вашей системе. |
+| apple_original_transaction_id | Для цепочек подписок — это дата покупки исходной транзакции, связанной через `store_original_transaction_id`. |
+| google_product_id             | Идентификатор продукта в Google Play Store.                  |
+| google_purchase_token         | Уникальный идентификатор транзакции, выдаваемый Google Play и необходимый для валидации. |
+| country                       | Страна пользователя.                                         |
+| created_at                    | Дата и время создания пользователя.                          |
+| subscription_expiration_date  | Дата и время истечения подписки.                             |
+| email                         | Электронная почта конечного пользователя.                    |
+| phone_number                  | Номер телефона конечного пользователя.                       |
+| idfa                          | Identifier for Advertisers (IDFA) — идентификатор, присваиваемый Apple устройству пользователя. |
+| idfv                          | Identifier for Vendors (IDFV) — код, присваиваемый всем приложениям одного разработчика и общий для этих приложений на устройстве. |
+| advertising_id                | Уникальный идентификатор, предоставляемый ОС Android для отслеживания рекламодателями. |
+| attribution_channel           | Название маркетингового канала.                              |
+| attribution_campaign          | Название маркетинговой кампании.                             |
+| attribution_ad_group          | Группа объявлений атрибуции.                                 |
+| attribution_ad_set            | Набор объявлений атрибуции.                                  |
+| attribution_creative          | Ключевое слово креатива атрибуции.                           |
+
+В дополнение к этому будут импортированы идентификаторы интеграций для следующих интеграций: Amplitude, Mixpanel, AppsFlyer, Adjust и FacebookAds.
 
 ### Что остаётся за кадром \{#what-doesnt-come-across\}
 
@@ -192,10 +278,10 @@ SDK Adapty и RevenueCat устроены схожим образом. Глав�
 
 Большинство пользователей заряжают телефоны на ночь — именно тогда App Store обычно автоматически обновляет все приложения, так что это не должно стать проблемой. Небольшое количество платных подписчиков всё же может не обновиться, но они по-прежнему сохранят доступ к премиум-контенту. Беспокоиться об этом не нужно, и принудительно заставлять их обновляться тоже.
 
-### Нужно ли мне как можно скорее экспортировать исторические данные из RevenueCat, или я рискую их потерять? \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
+### Нужно ли мне как можно быстрее экспортировать исторические данные из RevenueCat, или я их потеряю? \{#do-i-need-to-export-my-historical-data-from-revenuecat-as-quickly-as-possible-or-will-i-lose-it\}
 
-Торопиться не нужно: сначала выпустите приложение с Adapty SDK, а потом передайте нам исторические данные. Мы восстановим историю платежей ваших пользователей и заполним [профили](profiles-crm) и [графики](charts).
+Торопиться не нужно — сначала выпустите релиз с SDK Adapty, а уже потом импортируйте историю. Мы восстановим историю платежей ваших пользователей и заполним [профили](profiles-crm) и [графики](charts).
 
-### Я использую MMP (AppsFlyer, Adjust и др.) и аналитику (Mixpanel, Amplitude и др.). Как убедиться, что всё будет работать? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
+### Я использую MMP (AppsFlyer, Adjust и т. д.) и аналитику (Mixpanel, Amplitude и т. д.). Как убедиться, что всё будет работать? \{#i-use-mmp-appsflyer-adjust-etc-and-analytics-mixpanel-amplitude-etc-how-do-i-make-sure-that-everything-will-work\}
 
-Сначала нужно передать нам идентификаторы сторонних сервисов через наш SDK — тех, которым вы хотите отправлять данные. Ознакомьтесь с гайдом по [интеграции атрибуции](attribution-integration) и [интеграции аналитики](analytics-integration). Для исторических данных и существующих пользователей **обязательно передайте нам эти идентификаторы из данных, экспортированных из RevenueCat.**
+Сначала нужно передать нам идентификаторы сторонних сервисов через SDK, чтобы мы могли отправлять туда данные. Прочитайте гайд по [интеграции атрибуции](attribution-integration) и по [интеграции аналитики](analytics-integration). Для исторических данных и старых пользователей **обязательно передайте нам эти идентификаторы из данных, экспортированных из RevenueCat.**

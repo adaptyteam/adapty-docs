@@ -1,11 +1,11 @@
 ---
-title: "Tham chiếu lệnh cho Adapty Developer CLI"
-description: "Tài liệu tham chiếu cho các lệnh Adapty Developer CLI dùng để cấu hình ứng dụng, sản phẩm, paywall, flow và placement."
-metadataTitle: "Tài liệu tham chiếu lệnh Developer CLI | Tài liệu Adapty"
+title: "Tài liệu tham khảo lệnh cho Adapty Developer CLI"
+description: "Tài liệu tham khảo các lệnh Adapty Developer CLI để cấu hình ứng dụng, sản phẩm, paywall, flow và placement, cũng như migrate từ RevenueCat."
+metadataTitle: "Tài liệu tham khảo lệnh Developer CLI | Tài liệu Adapty"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-Bài viết này liệt kê các lệnh Adapty CLI dùng để cấu hình tài khoản của bạn — ứng dụng, mức độ truy cập, sản phẩm, paywall, flow, placement và phân khúc — kèm theo các đối số, cờ và giá trị được chấp nhận. Để biết thêm về các chiến dịch Apple Ads, xem [Lệnh Ads Manager](developer-cli-ads-manager-reference).
+Bài viết này liệt kê các lệnh Adapty CLI dùng để cấu hình tài khoản của bạn — ứng dụng, mức độ truy cập, sản phẩm, paywall, flow, placement và phân khúc — cùng các lệnh migrate dự án RevenueCat, với các đối số, cờ và giá trị được chấp nhận. Đối với các chiến dịch Apple Ads, xem [Lệnh Ads Manager](developer-cli-ads-manager-reference).
 
 :::link
 Để thiết lập xác thực và quản lý token, xem [Xác thực](developer-cli-authentication).
@@ -713,14 +713,162 @@ adapty segments get --app <app-id> <segment-id>
 
 Kết quả trả về chứa `id`, `title` và `description`. Các quy tắc lọc không được hiển thị qua API này.
 
+## Migration \{#migrations\}
+
+Di chuyển một dự án RevenueCat vào Adapty: catalog sản phẩm, sau đó tùy chọn các sự kiện từ cửa hàng và lịch sử giao dịch. Adapty thực hiện mỗi migration theo từng bước và cho bạn biết những hành động nào có thể thực hiện tiếp theo, vì vậy hãy đọc `status` trước mỗi hành động. Để xem toàn bộ quy trình, xem [Migration từ RevenueCat](migration-from-revenuecat).
+
+Tất cả các lệnh ngoại trừ `list`, `create`, `use`, `current`, và `unuse` đều chấp nhận cờ migration:
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `-m`, `--migration` | Không | ID migration. Nếu không có, CLI sẽ sử dụng biến môi trường `ADAPTY_MIGRATION`, sau đó là migration đã được lưu bởi `create` hoặc `use`. |
+
+### adapty migrations list
+
+Liệt kê các migration của bạn và các migration flow bạn có thể khởi động, được nhóm theo ứng dụng.
+
+```bash
+adapty migrations list
+```
+
+### adapty migrations create
+
+Bắt đầu một migration và lưu nó làm migration hiện tại.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name` | Một trong `--name` hoặc `--flow` | Tên của Adapty app mới. Bắt đầu quá trình migration catalog. Không thể kết hợp với `--flow` hoặc `--app`. |
+| `--flow` | Một trong `--name` hoặc `--flow` | Flow cần khởi động trong một app hiện có, như hiển thị trong `adapty migrations list`. Yêu cầu `--app`. |
+| `--app` | Với `--flow` | App ID (UUID) |
+| `--no-select` | Không | Tạo migration mà không lưu nó làm migration hiện tại |
+
+Các flow có sẵn cho một app hiện có sau khi migration catalog của nó:
+
+| Flow | Mô tả |
+|---|---|
+| `transactions` | Import lịch sử giao dịch từ RevenueCat Cloud Export hàng ngày |
+| `transactions_support` | Import lịch sử giao dịch thông qua hỗ trợ RevenueCat và Adapty, dành cho các gói RevenueCat không có Cloud Export |
+| `apple_events` | Chuyển tiếp thông báo App Store đến Adapty trong khi RevenueCat vẫn tiếp tục nhận chúng |
+| `google_events` | Đăng ký Adapty vào Pub/Sub topic mà RevenueCat sử dụng cho thông báo Google Play |
+
+### adapty migrations use
+
+Lưu một migration làm migration hiện tại, để các lệnh khác không cần dùng `-m`.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Argument | Description |
+|---|---|
+| `migration-id` | Migration ID từ `adapty migrations list` |
+
+CLI kiểm tra xem bạn có quyền truy cập migration đó không trước khi lưu ID. Migration đã lưu thuộc về token hiện tại và có hiệu lực trong mọi terminal.
+
+### adapty migrations current
+
+Hiển thị migration hiện tại và nguồn gốc của nó: biến môi trường `ADAPTY_MIGRATION` hoặc lựa chọn đã lưu.
+
+```bash
+adapty migrations current
+```
+
+### adapty migrations unuse
+
+Xóa migration đã lưu. Giá trị `ADAPTY_MIGRATION` được đặt trong shell của bạn sẽ có hiệu lực cho đến khi bạn hủy đặt nó.
+
+```bash
+adapty migrations unuse
+```
+
+### adapty migrations status
+
+Hiển thị trạng thái của một migration, các vấn đề liên quan và các hành động bạn có thể thực hiện tiếp theo.
+
+```bash
+adapty migrations status
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--wait` | Không | Kiểm tra định kỳ cho đến khi migration thay đổi, sau đó trả về trạng thái mới nhất |
+| `--timeout` | Không | Thời gian kiểm tra cho `--wait`: 1–600 giây, mặc định là 120. Chấp nhận `300`, `300s`, hoặc `5m`. Yêu cầu `--wait`. |
+
+Với `--json`, `next_actions` và `available_actions` liệt kê ID của từng hành động, các tài nguyên mà hành động đó đọc, `input_schema` và nội dung `confirm`.
+
+Mã thoát `0` có nghĩa là yêu cầu đã thành công, không phải là quá trình migration đã hoàn tất. Hãy kiểm tra `migration.state` trong phản hồi.
+
+### Các bước migration của adapty
+
+Hiển thị danh sách kiểm tra migration và trạng thái của từng bước.
+
+```bash
+adapty migrations steps
+```
+
+### adapty migrations show
+
+Liệt kê các tài nguyên bạn có thể đọc hiện tại, hoặc đọc một tài nguyên cụ thể.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argument | Description |
+|---|---|
+| `resource` | Tên tài nguyên, ví dụ `apps`, `mapping`, `report`, hoặc `export-config`. Bỏ qua để liệt kê các tài nguyên có sẵn ở bước hiện tại. |
+
+### adapty migrations run
+
+Chạy một hành động từ `adapty migrations status`.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `action-id` | ID hành động từ `next_actions` hoặc `available_actions` trong `adapty migrations status` |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--input` | Không | Đầu vào của action dưới dạng JSON object khớp với `input_schema` của action đó. Nếu không có input, CLI sẽ gửi `{}`. |
+| `--input-file` | Không | Đường dẫn đến file chứa đầu vào của action, hoặc `-` để đọc từ stdin. Không thể kết hợp với `--input`. |
+| `-y`, `--yes` | Với các action có văn bản `confirm` | Xác nhận action sau khi đọc văn bản `confirm` của nó. Không có prompt tương tác. |
+| `--open` | Không | Mở link của action ngay cả khi dùng pipe hoặc `--json` |
+| `--no-browser` | Không | In link của action mà không mở trình duyệt |
+
+Có hai loại actions:
+
+- **Input actions** gửi dữ liệu của bạn đến Adapty, ví dụ như các ứng dụng RevenueCat cần migrate hoặc các quyết định mapping của bạn.
+- **External actions** mở một trang trong Adapty Dashboard, ví dụ để dán RevenueCat secret API key. Hoàn tất trang đó, sau đó kiểm tra `status`.
+
+### adapty migrations close
+
+Kết thúc hoặc hủy một migration. Bạn không thể mở lại sau đó.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` đánh dấu migration là đã hoàn thành; `cancel` hủy bỏ nó |
+| `-y`, `--yes` | Yes | Xác nhận việc đóng |
+
 ## Xác thực \{#auth\}
 
 | Lệnh | Mô tả |
 |---|---|
 | `adapty auth login` | Xác thực qua trình duyệt bằng device flow |
-| `adapty auth logout` | Xóa thông tin đăng nhập đã lưu ở máy cục bộ |
+| `adapty auth logout` | Xóa thông tin đăng nhập đã lưu và migration đã lưu cục bộ |
 | `adapty auth whoami` | Xác minh token với máy chủ và hiển thị thông tin người dùng |
-| `adapty auth status` | Hiển thị trạng thái xác thực cục bộ mà không gọi máy chủ |
-| `adapty auth revoke` | Thu hồi token ở phía máy chủ và xóa ở máy cục bộ |
+| `adapty auth status` | Hiển thị trạng thái xác thực cục bộ mà không gọi lên máy chủ |
+| `adapty auth revoke` | Thu hồi token phía máy chủ, sau đó xóa token và migration đã lưu cục bộ |
 
-Xem [Xác thực](developer-cli-authentication) để biết chi tiết từng lệnh.
+Xem [Xác thực](developer-cli-authentication) để biết thêm chi tiết về từng lệnh.
