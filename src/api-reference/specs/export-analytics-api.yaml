@@ -293,7 +293,6 @@ paths:
                     date: ["2024-01-01", "2024-12-31"]
                     compare_date: ["2023-01-01", "2023-12-31"]
                     offer_category: ["promotional"]
-                  period_unit: "quarter"
                   show_value_as: "absolute"
                   format: "csv"
       responses:
@@ -461,8 +460,6 @@ paths:
                   filters:
                     date: ["2024-01-01", "2024-12-31"]
                     compare_date: ["2023-01-01", "2023-12-31"]
-                  period_unit: "quarter"
-                  period_type: "renewals"
                   segmentation: "store_product_id"
                   format: "csv"
       responses:
@@ -500,7 +497,7 @@ paths:
   /api/v1/client-api/exports/placements/:
     post:
       summary: Retrieve placement info
-      description: "Retrieves information about paywall or onboarding placements: paywalls, segments, audiences, and A/B tests. This can help you ensure everything is set up correctly without having to open each placement you have separately.\n\nRate limit: 2 requests per second."
+      description: "Retrieves the setup of your paywall, onboarding, or flow placements: the audiences, segments, and A/B tests in each placement, and the paywall, onboarding, or flow each audience gets. This can help you ensure everything is set up correctly without having to open each placement you have separately.\n\nRate limit: 2 requests per second."
       operationId: retrievePlacementInfo
       security:
         - apikeyAuth: []
@@ -578,8 +575,7 @@ components:
           description: Specify which date should be treated as a user joining date
           default: "purchase_date"
         segmentation:
-          type: string
-          description: Sets the basis for segmentation
+          $ref: '#/components/schemas/Segmentation'
         format:
           type: string
           enum: [json, csv]
@@ -655,15 +651,14 @@ components:
           type: string
           enum: [day, week, month, quarter, year]
           description: Specify the time interval for aggregating analytics data
-          default: "month"
+          default: "day"
         date_type:
           type: string
           enum: [purchase_date, profile_install_date]
           description: Specify which date should be treated as a user joining date
           default: "purchase_date"
         segmentation:
-          type: string
-          description: Sets the basis for segmentation
+          $ref: '#/components/schemas/Segmentation'
         format:
           type: string
           enum: [json, csv]
@@ -677,17 +672,12 @@ components:
       properties:
         filters:
           $ref: '#/components/schemas/MetricsFilters'
-        period_unit:
-          type: string
-          enum: [day, week, month, quarter, year]
-          description: Specify the time interval for aggregating analytics data
         show_value_as:
           type: string
           enum: [absolute, relative, both]
           description: Specify how values are displayed
         segmentation:
-          type: string
-          description: Sets the basis for segmentation
+          $ref: '#/components/schemas/Segmentation'
         format:
           type: string
           enum: [json, csv]
@@ -710,8 +700,7 @@ components:
           enum: [renewals, days]
           description: Analyze data by renewals or by days
         segmentation:
-          type: string
-          description: Sets the basis for segmentation
+          $ref: '#/components/schemas/Segmentation'
         format:
           type: string
           enum: [json, csv]
@@ -725,13 +714,8 @@ components:
       properties:
         filters:
           $ref: '#/components/schemas/MetricsFilters'
-        period_unit:
-          type: string
-          enum: [day, week, month, quarter, year]
-          description: Specify the time interval for aggregating analytics data
         segmentation:
-          type: string
-          description: Sets the basis for segmentation
+          $ref: '#/components/schemas/Segmentation'
         use_trial:
           type: boolean
           description: Boolean indicating whether a trial was used
@@ -741,6 +725,13 @@ components:
           enum: [json, csv]
           description: Specify the export file format
           default: "json"
+
+    Segmentation:
+      type: string
+      enum: [period, renewal_status, cancellation_reason, store_product_id, country, store, paywall_id, audience_id, placement_id, flow_id, flow_screen_id, segment_id, duration, offer_category, offer_type, offer_id, attribution_source, attribution_status, attribution_channel, attribution_campaign, attribution_adgroup, attribution_adset, attribution_creative, day, week, month, year]
+      description: >-
+        Splits the data into one series per value of this dimension. For example, `flow_id` returns
+        a separate series for each flow, and `placement_id` for each placement.
 
     PlacementInfoRequest:
       type: object
@@ -754,43 +745,111 @@ components:
           properties:
             placement_type:
               type: string
-              enum: [paywall, onboarding]
-              description: Filter which placements will be sent in the response
+              enum: [paywall, onboarding, flow]
+              description: Type of placements to return. Each request returns placements of one type.
 
     PlacementInfoResponse:
       type: object
+      description: >-
+        The response holds one array, named after the `placement_type` you requested:
+        `paywall_placements`, `onboarding_placements`, or `flow_placements`.
       properties:
-        data:
+        paywall_placements:
           type: array
+          description: Returned when `placement_type` is `paywall`
           items:
-            type: object
-            properties:
-              developer_id:
-                type: string
-                description: Placement ID
-              placement_name:
-                type: string
-                description: Placement name
-              audience_name:
-                type: string
-                description: Audience name
-              segment_name:
-                type: string
-                description: Audience ID
-              cross_placement_ab_test_name:
-                type: string
-                nullable: true
-                description: Cross-placement A/B test name
-              ab_test_name:
-                type: string
-                nullable: true
-                description: A/B test name
-              paywall_name:
-                type: string
-                description: Paywall name (only returned if placement_type is paywall)
-              onboarding_name:
-                type: string
-                description: Onboarding name (only returned if placement_type is onboarding)
+            $ref: '#/components/schemas/PaywallPlacementInfo'
+        onboarding_placements:
+          type: array
+          description: Returned when `placement_type` is `onboarding`
+          items:
+            $ref: '#/components/schemas/OnboardingPlacementInfo'
+        flow_placements:
+          type: array
+          description: Returned when `placement_type` is `flow`
+          items:
+            $ref: '#/components/schemas/FlowPlacementInfo'
+
+    PaywallPlacementInfo:
+      type: object
+      properties:
+        developer_id:
+          type: string
+          description: Placement ID
+        placement_name:
+          type: string
+          description: Placement name
+        audience_name:
+          type: string
+          description: Audience name
+        segment_name:
+          type: string
+          description: Name of the segment the audience is based on
+        cross_placement_ab_test_name:
+          type: string
+          nullable: true
+          description: Cross-placement A/B test name
+        ab_test_name:
+          type: string
+          nullable: true
+          description: A/B test name
+        paywall_name:
+          type: string
+          description: Name of the paywall shown in this placement
+
+    OnboardingPlacementInfo:
+      type: object
+      properties:
+        developer_id:
+          type: string
+          description: Placement ID
+        placement_name:
+          type: string
+          description: Placement name
+        audience_name:
+          type: string
+          description: Audience name
+        segment_name:
+          type: string
+          description: Name of the segment the audience is based on
+        cross_placement_ab_test_name:
+          type: string
+          nullable: true
+          description: Cross-placement A/B test name
+        ab_test_name:
+          type: string
+          nullable: true
+          description: A/B test name
+        onboarding_name:
+          type: string
+          description: Name of the onboarding shown in this placement
+
+    FlowPlacementInfo:
+      type: object
+      properties:
+        developer_id:
+          type: string
+          description: Placement ID
+        placement_name:
+          type: string
+          description: Placement name
+        audience_name:
+          type: string
+          description: Audience name
+        segment_name:
+          type: string
+          description: Name of the segment the audience is based on
+        cross_placement_ab_test_name:
+          type: string
+          nullable: true
+          description: Cross-placement A/B test name
+        ab_test_name:
+          type: string
+          nullable: true
+          description: A/B test name
+        flow_name:
+          type: string
+          description: Name of the flow shown in this placement
 
     MetricsFilters:
       type: object
@@ -880,6 +939,45 @@ components:
           items:
             type: string
           description: Specify the specific offers you want to retrieve data for
+        placement_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: >-
+            Adapty's internal IDs of the placements to retrieve data for — the UUID in the placement's
+            dashboard URL, not the placement ID you pass to the SDK
+        audience_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Adapty's internal IDs of the placement audiences to retrieve data for
+        paywall_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Adapty's internal IDs of the paywalls to retrieve data for — the UUID in the paywall's dashboard URL
+        flow_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Adapty's internal IDs of the flows to retrieve data for — the UUID in the flow's dashboard URL
+        flow_screen_id:
+          type: array
+          items:
+            type: string
+          description: >-
+            Flow screens to retrieve data for, each formatted as `<flow_id>:<screen_id>` — for example
+            `3f8a1c2e-0b7d-4e5a-9c61-2d4f8e7b1a90:paywall`
+        segment_id:
+          type: array
+          items:
+            type: string
+            format: uuid
+          description: Adapty's internal IDs of the segments to retrieve data for
 
     ErrorResponse:
       type: object

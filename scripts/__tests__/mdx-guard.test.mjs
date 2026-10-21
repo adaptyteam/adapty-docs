@@ -7,6 +7,7 @@ import {
   fixFrontmatterBackslashQuotes,
   repairLocaleMdx,
   structureSignature,
+  repairAttributeQuotes,
 } from '../mdx-guard.mjs';
 import { hashPathFor } from '../check-mdx-parse.mjs';
 
@@ -65,6 +66,31 @@ test('normalizeSectionBoundaries is a no-op when boundaries already match', () =
 // ---------------------------------------------------------------------------
 // restoreBlankLinesBeforeBlocks
 // ---------------------------------------------------------------------------
+
+test('normalizeSectionBoundaries restores the indentation a model stripped from the first line', () => {
+  const en = '\n        3. Select **Connect an existing store product**.\n        4. Add product details:\n';
+  const tr = '3. Sélectionnez **Connect an existing store product**.\n        4. Renseignez les détails :';
+  assert.equal(
+    normalizeSectionBoundaries(tr, en),
+    '\n        3. Sélectionnez **Connect an existing store product**.\n        4. Renseignez les détails :\n',
+  );
+});
+
+test('normalizeSectionBoundaries never adds or removes indentation the English first line lacks', () => {
+  assert.equal(normalizeSectionBoundaries('Texte.\n', 'Text.\n'), 'Texte.\n');
+  assert.equal(normalizeSectionBoundaries('      Texte.\n', '    Text.\n'), '      Texte.\n');
+});
+
+test('a chunk whose first line lost its indentation parses once boundaries are normalized', async () => {
+  // quickstart-products (fr, 2026-10-05): the nested list item came back at
+  // column 0 and closed the surrounding <TabItem> early.
+  const head = '<Tabs>\n    <TabItem value="a" label="A">\n\n';
+  const enChunk = '        3. Select **Connect**.\n\n        <Tabs>\n            <TabItem value="b" label="B" default>\n\n                - **ID**: x\n\n            </TabItem>\n        </Tabs>\n';
+  const trChunk = '3. Sélectionnez **Connect**.\n\n        <Tabs>\n            <TabItem value="b" label="B" default>\n\n                - **ID** : x\n\n            </TabItem>\n        </Tabs>';
+  const tail = '\n    </TabItem>\n</Tabs>\n';
+  assert.notEqual(await validateLocaleMdx(head + trChunk + tail), null, 'fixture must reproduce the break');
+  assert.equal(await validateLocaleMdx(head + normalizeSectionBoundaries(trChunk, enChunk) + tail), null);
+});
 
 test('restoreBlankLinesBeforeBlocks re-inserts the dropped blank line before <div', () => {
   // The exact adapty-flow-builder failure shape: blank line between the last
@@ -219,6 +245,38 @@ test('repairLocaleMdx reports ok:false when nothing helps', async () => {
   });
   assert.equal(r.ok, false);
   assert.ok(r.error);
+});
+
+test('repairAttributeQuotes converts quotes a translation put inside an attribute value', async () => {
+  const en = '<ZoomImage id="ctx.webp" width="500px" alt="Context menu with the Replace in 2 places submenu open" />\n';
+  const zh = '<ZoomImage id="ctx.webp" width="500px" alt="产品条目的上下文菜单，"替换 2 处"子菜单已打开" />\n';
+  assert.notEqual(await validateLocaleMdx(zh), null, 'fixture must reproduce the break');
+  const fixed = repairAttributeQuotes(zh, en);
+  assert.equal(fixed, '<ZoomImage id="ctx.webp" width="500px" alt="产品条目的上下文菜单，“替换 2 处”子菜单已打开" />\n');
+  assert.equal(await validateLocaleMdx(fixed), null);
+});
+
+test('repairAttributeQuotes handles a quoted value that is not the last attribute', () => {
+  const en = '<ZoomImage id="a.webp" alt="Save button" width="500px" />';
+  const tr = '<ZoomImage id="a.webp" alt="Le bouton "Enregistrer"" width="500px" />';
+  assert.equal(repairAttributeQuotes(tr, en), '<ZoomImage id="a.webp" alt="Le bouton “Enregistrer”" width="500px" />');
+});
+
+test('repairAttributeQuotes leaves correct lines, prose and expression attributes alone', () => {
+  const en = '<ZoomImage id="a.webp" width="500px" alt="Save" />\nClick "Save".\n<Tabs groupId="x" values={[1]}>';
+  const tr = '<ZoomImage id="a.webp" width="500px" alt="Enregistrer" />\nCliquez sur "Enregistrer".\n<Tabs groupId="x" values={[1]}>';
+  assert.equal(repairAttributeQuotes(tr, en), tr);
+});
+
+test('repairLocaleMdx repairs attribute quotes without falling back to English', async () => {
+  const english = ['Intro.\n', '<ZoomImage id="a.webp" width="500px" alt="The Save button" />\n', 'More.\n'];
+  const zh = ['介绍。\n', '<ZoomImage id="a.webp" width="500px" alt=""保存"按钮" />\n', '更多。\n'];
+  const sections = english.map((en, i) => ({ id: `s${i}`, english: en, translation: zh[i] }));
+  const reassemble = (parts) => parts.join('\n');
+  const r = await repairLocaleMdx({ content: reassemble(zh), sections, reassemble, label: 'test' });
+  assert.equal(r.ok, true);
+  assert.deepEqual(r.fallbackSectionIds, []);
+  assert.match(r.content, /alt="“保存”按钮"/);
 });
 
 test('structureSignature keeps markup and indentation, ignores translated text', () => {

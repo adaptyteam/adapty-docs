@@ -11,6 +11,7 @@ Apps most often use that data to:
 - **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
 - **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](unity-setting-user-attributes) as custom attributes.
 - **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Show values calculated from the answers**: For example, calculate a BMI from the user's weight and height, and [pass it to a custom tag in the next flow](unity-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
 - **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
 
 Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
@@ -35,48 +36,16 @@ public void FlowViewDidReceiveAnalyticEvent(
 }
 ```
 
-The `FlowViewDidReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](unity-flow-screen-views).
-- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
-- The `element_type` parameter names the element category.
-- The value of the input is stored in different parameters depending on the element type:
-     - Text fields, pickers, and toggles store the user's input in `value`
-     - Selectable groups report the active options in `item_ids` and `item_titles`
+The `FlowViewDidReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](unity-flow-screen-views). To filter for user input events, compare `name` to `flow_user_input`. The parameter that stores the value depends on `element_type`:
 
-```csharp showLineNumbers title="Unity"
-private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
-    if (name != "flow_user_input") return;
+| `element_type` | Parameter that stores value | C# type |
+|:---------------|:----------------------------|:------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `string` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `long`, Unix time in milliseconds. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `JArray` |
+| `toggle` | `value` | `bool` |
 
-    var elementId = parameters["element_id"] as string;
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    var screenId = parameters["instanceId"] as string;
-
-    switch (parameters["element_type"] as string) {
-        case "text_input":
-        case "email_input":
-        case "number_input":
-        case "phone_input":
-            var text = parameters["value"] as string;
-            break;
-        case "date_picker":
-        case "time_picker":
-        case "date_time_picker":
-            // Unix time in milliseconds.
-            var millis = Convert.ToInt64(parameters["value"]);
-            break;
-        case "single_choice":
-            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
-            break;
-        case "multi_choice":
-            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
-            break;
-        case "toggle":
-            var isOn = (bool)parameters["value"];
-            break;
-    }
-}
-```
+The [What you receive](#what-you-receive) section lists every parameter and what each builder element reports.
 
 <FlowInputVerify />
 

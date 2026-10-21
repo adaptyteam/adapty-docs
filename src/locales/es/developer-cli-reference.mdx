@@ -1,14 +1,14 @@
 ---
-title: "Referencia de comandos del Adapty Developer CLI"
-description: "Referencia de los comandos del Adapty Developer CLI para configurar apps, productos, paywalls, flows y placements, y migrar desde RevenueCat."
-metadataTitle: "Referencia de comandos del Developer CLI | Documentación de Adapty"
-keywords: ['cli', 'developer', 'referencia', 'comandos', 'mcp']
+title: "Referencia de comandos del CLI para desarrolladores de Adapty"
+description: "Referencia de los comandos del CLI para desarrolladores de Adapty que configuran apps, productos, paywalls, flows y placements, migran desde RevenueCat e instalan los skills de Adapty."
+metadataTitle: "Referencia de comandos del CLI para desarrolladores | Documentación de Adapty"
+keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-Este artículo enumera los comandos de la CLI de Adapty para configurar tu cuenta (apps, niveles de acceso, productos, paywalls, flows, placements y segmentos), además de los comandos para migrar un proyecto de RevenueCat, con sus argumentos, flags y valores aceptados. Para campañas de Apple Ads, consulta [Comandos de Ads Manager](developer-cli-ads-manager-reference).
+Este artículo lista los comandos de la CLI de Adapty que configuran tu cuenta — apps, niveles de acceso, productos, paywalls, flows, placements y segmentos — además de los comandos para migrar un proyecto de RevenueCat e instalar los skills de Adapty, con sus argumentos, flags y valores aceptados. Para campañas de Apple Ads, consulta [Comandos de Ads Manager](developer-cli-ads-manager-reference).
 
 :::link
-Para la configuración de autenticación y la gestión de tokens, consulta [Autenticación](developer-cli-authentication).
+Para la configuración de autenticación y gestión de tokens, consulta [Autenticación](developer-cli-authentication).
 :::
 
 ## Flags globales \{#global-flags\}
@@ -679,7 +679,7 @@ Para intercambiar un paywall en varios placements sin perder el enrutamiento por
 
 ## Segmentos \{#segments\}
 
-Los [segmentos](segments) son de solo lectura a través de la CLI. Créalos y edítalos en el [Adapty dashboard](https://app.adapty.io). Usa estos comandos para buscar los IDs de segmento al componer audiencias de placements.
+Los [segmentos](segments) agrupan usuarios según los atributos de su perfil. Usa estos comandos para crear segmentos y buscar IDs de segmento al componer [audiencias de placement](#audiences-shape). Para construir un segmento a partir de campañas, grupos de anuncios o palabras clave de Apple Ads, usa [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) en su lugar: busca los IDs de Apple por ti y le da al segmento el nombre que usa Ads Manager.
 
 ### adapty segments list \{#adapty-segments-list\}
 
@@ -695,9 +695,9 @@ adapty segments list --app <app-id>
 
 Acepta [flags de paginación](#global-flags).
 
-### adapty segments get \{#adapty-segments-get\}
+### adapty segments get
 
-Obtén los detalles de un [segmento](segments) específico.
+Obtén detalles de un [segmento](segments) específico.
 
 ```bash
 adapty segments get --app <app-id> <segment-id>
@@ -707,11 +707,72 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|
 | `segment-id` | ID del segmento (UUID) |
 
-| Flag | Requerido | Descripción |
+| Flag | Obligatorio | Descripción |
 |---|---|---|
 | `--app` | Sí | ID de la app (UUID) |
 
-La respuesta contiene `id`, `title` y `description`. Las reglas de filtro no están expuestas a través de esta API.
+La respuesta contiene `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` y `updated_at`. `list` devuelve solo `id`, `title` y `description`.
+
+### adapty segments create
+
+Crea un [segmento](segments) a partir de uno o más filtros.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--title` | Sí | Título del segmento |
+| `--filter` | Sí | Regla de filtro. Repetible. Ver [Sintaxis de filtros](#filter-syntax) |
+| `--description` | No | Descripción del segmento |
+
+Un usuario coincide con el segmento solo cuando cumple todos los filtros. La respuesta tiene los mismos campos que `segments get`. `profile_count` empieza en `0`, y Adapty lo recalcula después de crear el segmento.
+
+### adapty segments update
+
+Reemplaza el título, la descripción y los filtros de un [segmento](segments) existente.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argumento | Descripción |
+|---|---|
+| `segment-id` | ID del segmento (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--title` | Sí | Título del segmento |
+| `--filter` | Sí | Regla de filtro. Repetible. Ver [Sintaxis de filtros](#filter-syntax) |
+| `--description` | No | Descripción del segmento |
+
+:::warning
+`segments update` reemplaza el segmento completo. Incluye todos los filtros que quieras conservar, no solo el que modificas. Para leer los filtros actuales, ejecuta `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Sintaxis de filtros \{#filter-syntax\}
+
+Escribe cada `--filter` con el formato `campo:OPERADOR:valor`. Para coincidir con varios valores, sepáralos con comas: `ip_country:IN:US,CA`.
+
+| Operador | Valores | Ejemplo |
+|---|---|---|
+| `IN`, `NOT IN` | Uno o más | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Uno | `age:>:18` |
+| `BETWEEN` | Dos | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Ninguno | `age:IS NULL` |
+
+Pasa los números como valores simples, por ejemplo `age:>:18`. Adapty los convierte para campos numéricos como `age`, `total_revenue_usd` y atributos personalizados de tipo float.
+
+Para un valor que esta forma abreviada no pueda expresar, pasa el filtro como un objeto JSON:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty valida los nombres de campos, operadores y tipos de valores, e informa de un error por cada filtro inválido. Para ver los nombres de campos y formatos de valores de los filtros existentes, ejecuta `adapty segments get --app <app-id> <segment-id> --json` en un segmento creado en el dashboard.
 
 ## Migraciones \{#migrations\}
 
@@ -751,10 +812,13 @@ Los flows disponibles para una app existente tras su migración de catálogo:
 
 | Flow | Descripción |
 |---|---|
-| `transactions` | Importa el historial de transacciones desde una exportación diaria de RevenueCat Cloud Export |
-| `transactions_support` | Importa el historial de transacciones a través del soporte de RevenueCat y el soporte de Adapty, para los planes de RevenueCat sin Cloud Export |
-| `apple_events` | Reenvía las notificaciones de App Store a Adapty mientras RevenueCat sigue recibiéndolas |
-| `google_events` | Suscribe a Adapty al tema Pub/Sub que RevenueCat utiliza para las notificaciones de Google Play |
+| `transactions` | Importar el historial de transacciones desde una exportación diaria de RevenueCat Cloud Export |
+| `transactions_support` | Importar el historial de transacciones a través del soporte de RevenueCat y el soporte de Adapty, para planes de RevenueCat sin Cloud Export |
+| `apple_events` | Reenviar las notificaciones de App Store a Adapty mientras RevenueCat sigue recibiéndolas |
+| `google_events` | Suscribir Adapty al tema Pub/Sub que usa RevenueCat para las notificaciones de Google Play |
+| `code` | Hacer que tu agente de código reemplace el SDK de RevenueCat en una base de código de la app |
+| `integrations` | Hacer que tu agente de código encuentre las herramientas de analíticas, atribución y mensajería en el código de la app para configurarlas en Adapty |
+| `paywall_design` | Hacer que tu agente de código reconstruya los diseños de paywall de RevenueCat en los flows creados por la migración del catálogo |
 
 ### adapty migrations use
 
@@ -843,10 +907,11 @@ adapty migrations run <action-id>
 | `--open` | No | Abre el enlace de la acción incluso con una tubería o `--json` |
 | `--no-browser` | No | Imprime el enlace de la acción sin abrir un navegador |
 
-Las acciones son de dos tipos:
+Las acciones son de tres tipos:
 
-- **Acciones de entrada** envían tus datos a Adapty, por ejemplo, las apps de RevenueCat que quieres migrar o tus decisiones de mapeo.
-- **Acciones externas** abren una página en el Adapty Dashboard, por ejemplo, para pegar la clave de API secreta de RevenueCat. Completa la página y luego comprueba `status`.
+- **Las acciones de entrada** envían tus datos a Adapty, por ejemplo las apps de RevenueCat a migrar o tus decisiones de mapeo.
+- **Las acciones externas** abren una página en el Adapty Dashboard, por ejemplo para pegar la clave API secreta de RevenueCat. Completa la página y luego comprueba `status`.
+- **Las acciones del agente**, por ejemplo `migrate_code`, son tareas para tu agente de codificación. Ejecútalas desde el repositorio git de la app: la CLI guarda los datos de la migración en `.git/adapty/<migration-id>/` e imprime las instrucciones para el agente. El agente reporta el resultado ejecutando la acción de nuevo con `--input`.
 
 ### adapty migrations close
 
@@ -860,6 +925,23 @@ adapty migrations close --outcome finish --yes
 |---|---|---|
 | `--outcome` | Yes | `finish` marca la migración como completada; `cancel` la abandona |
 | `-y`, `--yes` | Yes | Confirma el cierre |
+
+## Skills \{#skills\}
+
+### adapty skills install
+
+Instala los skills de Adapty en los agentes de codificación de esta máquina.
+
+```bash
+adapty skills install
+```
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--agent` | No | Agente en el que instalar: `claude-code`, `codex` o `gemini-cli`. Repite la flag para varios agentes. |
+| `-y`, `--yes` | No | Instala en todos los agentes encontrados sin preguntar. Obligatorio cuando el CLI encuentra varios agentes y no puede preguntar, por ejemplo con `--json`. |
+
+The CLI looks for Claude Code, Codex, and Gemini CLI on `PATH`. If it finds none, it asks whether to run `npx skills@1.7.0 add adaptyteam/adapty-skills --all --global`, which covers other agents. Restart the agent to load the skills.
 
 ## Auth \{#auth\}
 

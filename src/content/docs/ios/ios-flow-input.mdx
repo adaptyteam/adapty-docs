@@ -11,6 +11,7 @@ Apps most often use that data to:
 - **Register users on their own backend**: Take the email address and the name a user entered in your onboarding flow, and create their account when the flow closes.
 - **Save answers and preferences**: Track what the user picked so your app can act on it later — for example, [write it to their Adapty profile](setting-user-attributes) as custom attributes.
 - **Customize future flows**: Save quiz answers as custom attributes, then target a later placement so each segment gets a different flow, or a different paywall inside it.
+- **Show values calculated from the answers**: For example, calculate a BMI from the user's weight and height, and [pass it to a custom tag in the next flow](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
 - **Feed third-party analytics platforms**: Forward answers to Amplitude, Mixpanel, or whichever product analytics you run.
 
 Inputs and selectable groups report their values automatically. To tell inputs apart in your code, give each input a meaningful **Element ID** and each selectable group a **Group ID** in the builder.
@@ -31,7 +32,7 @@ Input values reach the same callback as every other analytics event from a flow,
 Pass a `didReceiveAnalyticEvent` closure to the `.flow` modifier:
 
 ```swift showLineNumbers title="Swift"
-Text("Hello, AdaptyUI!")
+YourContentView()
     .flow(
         isPresented: $flowPresented,
         flowConfiguration: flowConfiguration,
@@ -66,41 +67,16 @@ func flowController(
 
 The closure and the delegate method receive the same two arguments, so the code that reads the value is the same either way.
 
-The `didReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](ios-flow-screen-views).
-- The `name` parameter contains the event name. To filter for user input events, compare `name` to `flow_user_input`.
-- The `element_type` parameter names the element category.
-- The value of the input is stored in different parameters depending on the element type:
-     - Text fields, pickers, and toggles store the user's input in `value`
-     - Selectable groups report the active options in `item_ids` and `item_titles`
+The `didReceiveAnalyticEvent` callback delivers all analytics events from a flow, including [screen views](ios-flow-screen-views). To filter for user input events, compare `name` to `flow_user_input`. The parameter that stores the value depends on `element_type`:
 
-```swift showLineNumbers title="Swift"
-func handleFlowInput(name: String, params: [String: any Sendable]) {
-    guard name == "flow_user_input",
-          let elementId = params["element_id"] as? String,
-          let elementType = params["element_type"] as? String
-    else { return }
+| `element_type` | Parameter that stores value | Swift type |
+|:---------------|:----------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`, Unix time in milliseconds. Divide it by 1000 for `Date`. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
 
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    let screenId = params["instanceId"] as? String
-
-    switch elementType {
-    case "text_input", "email_input", "number_input", "phone_input":
-        let text = params["value"] as? String
-    case "date_picker", "time_picker", "date_time_picker":
-        // Integer Unix time in milliseconds, not the seconds Date expects.
-        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
-    case "single_choice":
-        let optionId = (params["item_ids"] as? [String])?.first
-    case "multi_choice":
-        let optionIds = params["item_ids"] as? [String]
-    case "toggle":
-        let isOn = params["value"] as? Bool
-    default:
-        break
-    }
-}
-```
+The [What you receive](#what-you-receive) section lists every parameter and what each builder element reports.
 
 <FlowInputVerify />
 
@@ -140,7 +116,7 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 func handleFlowInput(name: String, params: [String: any Sendable]) {
     params["element_id"];      // "birthday"
     params["element_type"];    // "date_picker"
-    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
 }
 ```
 </Details>
@@ -289,3 +265,24 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 3. [Create a segment](segments) for each custom attribute value.
 4. Create a [placement](placements) and add an [audience](audience) for each segment.
 5. [Display the flow](ios-present-paywalls) for that placement in your app.
+
+### Send answers to your analytics platform
+
+To filter your charts by user answer, track each answer as an event in your analytics platform.
+
+For example, if your flow has a selectable group with the Group ID `experience`, send the selected option to Amplitude:
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

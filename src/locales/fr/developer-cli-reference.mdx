@@ -1,14 +1,14 @@
 ---
-title: "Référence des commandes du CLI Développeur Adapty"
-description: "Référence des commandes du CLI Développeur Adapty pour configurer les applications, produits, paywalls, flows et placements, et migrer depuis RevenueCat."
-metadataTitle: "Référence des commandes du CLI Développeur | Documentation Adapty"
+title: "Référence des commandes de l'Adapty Developer CLI"
+description: "Référence des commandes de l'Adapty Developer CLI pour configurer les apps, produits, paywalls, flows et placements, migrer depuis RevenueCat, et installer les skills Adapty."
+metadataTitle: "Référence des commandes du Developer CLI | Documentation Adapty"
 keywords: ['cli', 'developer', 'reference', 'commands', 'mcp']
 ---
 
-Cet article liste les commandes Adapty CLI qui configurent votre compte — applications, niveaux d'accès, produits, paywalls, flows, placements et segments — ainsi que les commandes qui migrent un projet RevenueCat, avec leurs arguments, flags et valeurs acceptées. Pour les campagnes Apple Ads, voir [Commandes Ads Manager](developer-cli-ads-manager-reference).
+Cet article liste les commandes Adapty CLI qui configurent votre compte — applications, niveaux d'accès, produits, paywalls, flows, placements et segments — ainsi que les commandes permettant de migrer un projet RevenueCat et d'installer les skills Adapty, avec leurs arguments, indicateurs et valeurs acceptées. Pour les campagnes Apple Ads, consultez [Commandes Ads Manager](developer-cli-ads-manager-reference).
 
 :::link
-Pour la configuration de l'authentification et la gestion des tokens, voir [Authentification](developer-cli-authentication).
+Pour la configuration de l'authentification et la gestion des tokens, consultez [Authentification](developer-cli-authentication).
 :::
 
 ## Indicateurs globaux \{#global-flags\}
@@ -679,7 +679,7 @@ Pour remplacer un paywall dans plusieurs placements sans perdre le routage par s
 
 ## Segments \{#segments\}
 
-Les [segments](segments) sont en lecture seule via la CLI. Créez-les et modifiez-les dans l'[Adapty Dashboard](https://app.adapty.io). Utilisez ces commandes pour rechercher les ID de segment lors de la composition des audiences de placement.
+Les [segments](segments) regroupent les utilisateurs selon leurs attributs de profil. Utilisez ces commandes pour créer des segments et rechercher des identifiants de segment lors de la composition des [audiences de placement](#audiences-shape). Pour créer un segment à partir de campagnes Apple Ads, de groupes d'annonces ou de mots-clés, utilisez plutôt [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) : cette commande recherche les identifiants Apple à votre place et nomme le segment de la même façon qu'Ads Manager.
 
 ### adapty segments list
 
@@ -711,7 +711,68 @@ adapty segments get --app <app-id> <segment-id>
 |---|---|---|
 | `--app` | Oui | ID de l'application (UUID) |
 
-La réponse contient `id`, `title` et `description`. Les règles de filtrage ne sont pas exposées via cette API.
+La réponse contient `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` et `updated_at`. `list` retourne uniquement `id`, `title` et `description`.
+
+### adapty segments create
+
+Créez un [segment](segments) à partir d'un ou plusieurs filtres.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--title` | Oui | Titre du segment |
+| `--filter` | Oui | Règle de filtre. Répétable. Voir [Syntaxe des filtres](#filter-syntax) |
+| `--description` | Non | Description du segment |
+
+Un utilisateur correspond au segment uniquement s'il correspond à chaque filtre. La réponse contient les mêmes champs que `segments get`. `profile_count` commence à `0`, et Adapty le recalcule après la création du segment.
+
+### adapty segments update
+
+Remplace le titre, la description et les filtres d'un [segment](segments) existant.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | ID du segment (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--title` | Oui | Titre du segment |
+| `--filter` | Oui | Règle de filtre. Répétable. Voir [Syntaxe des filtres](#filter-syntax) |
+| `--description` | Non | Description du segment |
+
+:::warning
+`segments update` remplace l'intégralité du segment. Passez tous les filtres que vous souhaitez conserver, pas seulement celui que vous modifiez. Pour lire les filtres actuels, exécutez `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Syntaxe des filtres \{#filter-syntax\}
+
+Écrivez chaque `--filter` sous la forme `field:OPERATOR:value`. Pour correspondre à plusieurs valeurs, séparez-les par des virgules : `ip_country:IN:US,CA`.
+
+| Opérateur | Valeurs | Exemple |
+|---|---|---|
+| `IN`, `NOT IN` | Une ou plusieurs | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Une | `age:>:18` |
+| `BETWEEN` | Deux | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Aucune | `age:IS NULL` |
+
+Passez les nombres sous forme de valeurs simples, par exemple `age:>:18`. Adapty les convertit pour les champs numériques tels que `age`, `total_revenue_usd` et les attributs personnalisés de type float.
+
+Pour une valeur que cette forme abrégée ne peut pas exprimer, passez le filtre sous forme d'objet JSON :
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty valide les noms de champs, les opérateurs et les types de valeurs, et signale une erreur pour chaque filtre invalide. Pour voir les noms de champs et les formats de valeurs des filtres existants, exécutez `adapty segments get --app <app-id> <segment-id> --json` sur un segment créé dans le tableau de bord.
 
 ## Migrations \{#migrations\}
 
@@ -751,10 +812,13 @@ Les flows disponibles pour une application existante après sa migration de cata
 
 | Flow | Description |
 |---|---|
-| `transactions` | Importer l'historique des transactions depuis un export Cloud RevenueCat quotidien |
-| `transactions_support` | Importer l'historique des transactions via le support RevenueCat et le support Adapty, pour les plans RevenueCat sans Cloud Export |
+| `transactions` | Importer l'historique des transactions depuis un export cloud RevenueCat quotidien |
+| `transactions_support` | Importer l'historique des transactions via le support RevenueCat et le support Adapty, pour les plans RevenueCat sans export cloud |
 | `apple_events` | Transférer les notifications App Store à Adapty pendant que RevenueCat continue de les recevoir |
-| `google_events` | Abonner Adapty au sujet Pub/Sub que RevenueCat utilise pour les notifications Google Play |
+| `google_events` | Abonner Adapty au sujet Pub/Sub utilisé par RevenueCat pour les notifications Google Play |
+| `code` | Demander à votre agent de code de remplacer le SDK RevenueCat dans une base de code de l'application |
+| `integrations` | Demander à votre agent de code d'identifier les outils d'analytics, d'attribution et de messagerie dans le code de l'application pour les configurer dans Adapty |
+| `paywall_design` | Demander à votre agent de code de reconstruire les designs de paywall RevenueCat dans les flows créés par la migration du catalogue |
 
 ### adapty migrations use
 
@@ -843,10 +907,11 @@ adapty migrations run <action-id>
 | `--open` | Non | Ouvre le lien de l'action même avec un pipe ou `--json` |
 | `--no-browser` | Non | Affiche le lien de l'action sans ouvrir de navigateur |
 
-Les actions sont de deux types :
+Les actions se déclinent en trois types :
 
-- Les **actions d'entrée** envoient vos données à Adapty, par exemple les apps RevenueCat à migrer ou vos décisions de mappage.
-- Les **actions externes** ouvrent une page dans l'Adapty Dashboard, par exemple pour coller la clé API secrète RevenueCat. Complétez la page, puis vérifiez `status`.
+- Les **actions d'entrée** envoient vos données à Adapty, par exemple les applications RevenueCat à migrer ou vos décisions de mapping.
+- Les **actions externes** ouvrent une page dans l'Adapty Dashboard, par exemple pour coller la clé API secrète RevenueCat. Remplissez la page, puis vérifiez `status`.
+- Les **actions agent**, par exemple `migrate_code`, sont des tâches pour votre agent de codage. Exécutez-les depuis le dépôt git de l'application : le CLI enregistre les données de la migration dans `.git/adapty/<migration-id>/` et affiche les instructions pour l'agent. L'agent rapporte le résultat en relançant l'action avec `--input`.
 
 ### adapty migrations close
 
@@ -860,6 +925,23 @@ adapty migrations close --outcome finish --yes
 |---|---|---|
 | `--outcome` | Yes | `finish` marque la migration comme terminée ; `cancel` l'abandonne |
 | `-y`, `--yes` | Yes | Confirmer la fermeture |
+
+## Skills \{#skills\}
+
+### adapty skills install
+
+Installe les skills Adapty dans les agents de code sur cette machine.
+
+```bash
+adapty skills install
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--agent` | No | Agent to install into: `claude-code`, `codex`, or `gemini-cli`. Repeat the flag for several agents. |
+| `-y`, `--yes` | No | Install into every agent found without asking. Required when the CLI finds several agents and can't ask, for example with `--json`. |
+
+The CLI looks for Claude Code, Codex, and Gemini CLI on `PATH`. If it finds none, it asks whether to run `npx skills@1.7.0 add adaptyteam/adapty-skills --all --global`, which covers other agents. Restart the agent to load the skills.
 
 ## Auth
 

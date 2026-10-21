@@ -5,22 +5,24 @@ metadataTitle: "RevenueCat'ten Adapty'ye Geçiş | Adapty Dokümanları"
 keywords: ['migration', 'revenuecat']
 ---
 
-RevenueCat'tan bir geçiş altı adımdan oluşur. Bir kodlama ajanı işin büyük bölümünü yapar: [Adapty CLI](developer-cli) aracılığıyla geçişleri çalıştırır ve uygulamanızdaki RevenueCat SDK'sını değiştirir. Ajanın ulaşamadığı kısmı siz halledirsiniz — gizli anahtarlar ve RevenueCat, App Store Connect ile Google Cloud'daki ayarlar.
+RevenueCat'ten yapılan migration sekiz adımdan oluşur. Kodlama aracısı işin büyük kısmını üstlenir: migration'ları [Adapty CLI](developer-cli) aracılığıyla çalıştırır ve uygulamanızdaki RevenueCat SDK'sını değiştirir. Aracının erişemeyeceği kısımları siz hallediyorsunuz — gizli anahtarlar ile RevenueCat, App Store Connect ve Google Cloud'daki ayarlar.
 
-1. [Temel farklılıkları öğrenin](#learn-the-core-differences).
+1. [Temel farkları öğrenin](#learn-the-core-differences).
 2. [Kataloğunuzu Adapty'ye taşıyın](#move-your-catalog-to-adapty).
-3. [RevenueCat SDK'yı değiştirin](#replace-the-revenuecat-sdk) — bunu kodlama ajanınızla yapın.
-4. [Mağaza olaylarını Adapty'ye iletin](#forward-store-events-to-adapty).
-5. [Uygulamanızın yeni sürümünü test edin ve yayına alın](#test-and-release-a-new-version-of-your-app).
-6. (İsteğe bağlı) [İşlem geçmişinizi içe aktarın](#optional-import-your-transaction-history).
+3. Teklifleriniz flow'lara dönüşüyorsa [paywall tasarımlarınızı taşıyın](#move-your-paywall-designs).
+4. [RevenueCat SDK'yı değiştirin](#replace-the-revenuecat-sdk) — bunu kodlama ajanınızla yapın.
+5. [Entegrasyonlarınızı taşıyın](#move-your-integrations).
+6. [Mağaza olaylarını Adapty'ye yönlendirin](#forward-store-events-to-adapty).
+7. [Uygulamanızın yeni sürümünü test edip yayınlayın](#test-and-release-a-new-version-of-your-app).
+8. (İsteğe bağlı) [İşlem geçmişinizi içe aktarın](#optional-import-your-transaction-history).
 
 :::info
 Aboneleriniz otomatik olarak taşınacak
 
-Adapty SDK'yı kullanan uygulamanızın yeni sürümünü ilk açtıklarında, daha önce abonelik etkinleştirmiş tüm kullanıcılar anında Adapty'e aktarılacaktır. Abonelik durumu doğrulaması ve premium erişim otomatik olarak geri yüklenecektir.
+Daha önce abonelik etkinleştirmiş tüm kullanıcılar, Adapty SDK içeren uygulamanızın yeni sürümünü açar açmaz Adapty'ye geçiş yapacak. Abonelik durumu doğrulaması ve premium erişim otomatik olarak geri yüklenecektir.
 :::
 
-Adapty SDK içeren uygulamanızın yeni sürümünü yayınlamadan önce [yayın kontrol listemizi](release-checklist) incelediğinizden emin olun.
+Adapty SDK ile uygulamanızın yeni sürümünü yayınlamadan önce [yayın kontrol listemizi](release-checklist) incelediğinizden emin olun.
 
 ## Temel farklılıkları öğrenin \{#learn-the-core-differences\}
 
@@ -32,13 +34,13 @@ Adapty ve RevenueCat SDK'ları benzer şekilde tasarlanmıştır. En büyük far
 | :---------- | :-------------- |
 | Package     | Ürün            |
 | Offering    | Paywall         |
-| Paywall     | Paywall Builder |
+| Paywall     | Flow            |
 | Entitlement | Access level    |
 
-Adapty'nin [placement](placements) adlı bir kavramı vardır. Bu, kullanıcının uygulama içinde satın alma yapabileceği mantıksal bir yerdir. Çoğu durumda bir ya da iki placement olur:
+Adapty'nin [placement](placements) adında bir kavramı vardır. Bu, uygulamanızda kullanıcının satın alma yapabileceği mantıksal bir yerdir. Çoğu durumda bir veya iki placement'a sahip olursunuz:
 
 - Onboarding (tüm satın almaların %80'i burada gerçekleşir);
-- Genel (onboarding'den sonra ayarlarda veya uygulama içinde gösterilir).
+- Genel (onboarding sonrasında ayarlarda veya uygulama içinde gösterirsiniz).
 
 <Zoom>
   <img src="/assets/shared/img/2406d97-image.webp"
@@ -51,9 +53,9 @@ Adapty'nin [placement](placements) adlı bir kavramı vardır. Bu, kullanıcın�
 />
 </Zoom>
 
-## Kataloğunuzu Adapty'ye taşıyın \{#move-your-catalog-to-adapty\}
+## Kataloğunuzu Adapty'ye Taşıyın \{#move-your-catalog-to-adapty\}
 
-Katalog migrasyonu, RevenueCat projenizden yeni bir Adapty uygulaması oluşturur: entitlement'lardan access level'lar, paketlerden ürünler ve her offering için bir paywall ile bir placement oluşturulur.
+Katalog migrasyonu, RevenueCat projenizden yeni bir Adapty uygulaması oluşturur: entitlement'lardan access level'lar, paket'lerden ürünler ve her offering için bir placement ile bir paywall ya da flow oluşturulur.
 
 ### Başlamadan önce
 
@@ -88,50 +90,76 @@ Göç işlemi anahtarı istediğinde, açılan Adapty Kontrol Paneli sayfasına 
    Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
    ```
 
-2. RevenueCat'i bağlamak için, aracın açtığı Adapty Kontrol Paneli sayfasına gizli API anahtarını yapıştırın. Anahtar doğrudan Adapty'ye gider; araçtan veya CLI'dan geçmez.
-3. Nelerin taşınacağını seçmek için, aynı ürünün hangi RevenueCat uygulamalarının birbirine ait olduğunu araca söyleyin; genellikle platform başına bir tane. Bu uygulamalar birleşerek tek bir Adapty uygulaması olur.
-4. Eşleştirmeyi tamamlamak için, Adapty'nin kendi başına eşleyemediği öğeler hakkında aracın sorularını yanıtlayın.
+2. RevenueCat'i bağlamak için, aracının açtığı Adapty Kontrol Paneli sayfasına gizli API anahtarını yapıştırın. Anahtar doğrudan Adapty'ye gider; aracı veya CLI üzerinden geçmez.
+3. Neyin taşınacağını seçmek için, hangi RevenueCat uygulamalarının birlikte yer aldığını aracıya söyleyin; genellikle aynı ürünün platform başına bir uygulaması olur. Bunlar bir araya gelerek tek bir Adapty uygulaması oluşturur.
+4. Eşleştirmeyi tamamlamak için, Adapty'nin kendi başına eşleyemediği öğeler hakkındaki aracı sorularını yanıtlayın. Her offering için, placement'ının ne tutacağını seçin: uygulamanızın kendi çizdiği bir paywall mı, yoksa [Flow & Paywall Builder](adapty-paywall-builder)'dan bir flow mu. Adapty, RevenueCat paywallı offering'ler için bir flow önerir.
 
-:::warning
-   Kararlar kesindir. Her varlık için bir karar verildiğinde Adapty kataloğu oluşturur ve bu eşleştirmeyi daha sonra değiştiremezsiniz.
-   :::
+   :::warning
+Kararlar kesindir. Her entity için bir karar alındığında, Adapty kataloğu oluşturur ve bu işlemden sonra eşleştirmeyi değiştiremezsiniz.
+:::
 
-   Adapty, access level'ları, ürünleri, paywall'ları ve placement'ları bu sırayla oluşturur. Bazıları başarısız olursa, agent size nedenini açıklar. Her varlık Adapty'de oluşturulduğunda migrasyon tamamlanır.
+Adapty; access level'ları, ürünleri, paywall'ları, flow'ları ve placement'ları bu sırayla oluşturur. Bazıları başarısız olursa agent size nedenini söyler. Her entity Adapty'ye eklendiğinde migrasyon tamamlanır.
 
-5. Yeni uygulamanın satın alma işlemlerini doğrulayabilmesi için Adapty Kontrol Paneli'nde uygulamayı mağazalara bağlayın: [App Store](initial_ios) ve [Google Play](initial-android).
+5. Yeni uygulamanın satın almaları doğrulayabilmesi için Adapty Kontrol Paneli'nde mağazalara bağlayın: [App Store](initial_ios) ve [Google Play](initial-android).
 
 :::note
 Migrasyonu bir agent olmadan çalıştırmak için [migration komutlarını](developer-cli-reference#migrations) kullanın. `adapty migrations status` bir sonraki eylemi ve alacağı girdiyi adlandırır.
 :::
 
-### RevenueCat varlıklarının Adapty'ye nasıl eşlendiği \{#how-revenuecat-entities-map-to-adapty\}
+### RevenueCat varlıklarının Adapty'ye eşlenmesi \{#how-revenuecat-entities-map-to-adapty\}
 
-- Bir entitlement tanımlayıcısı, access level ID'sine dönüşür; bu nedenle `customerInfo.entitlements["premium"]`, `profile.accessLevels["premium"]` olur.
-- Herhangi bir entitlement vermeyen bir ürün, `premium` access level'ını verir.
-- Bir offering tanımlayıcısı, placement ID'sine dönüşür.
-- Offering metadata'sı, paywallın [remote config](customize-paywall-with-remote-config)'ına dönüşür; en fazla 256 KB.
+- Bir entitlement tanımlayıcısı, access level ID'si olur; yani `customerInfo.entitlements["premium"]`, `profile.accessLevels["premium"]` haline gelir.
+- Hiçbir entitlement vermeyen bir ürün, `premium` access level'ı tanır.
+- Bir offering tanımlayıcısı, placement ID'si olur.
+- Offering meta verileri, paywall veya flow'un [remote config](customize-paywall-with-remote-config) değerine dönüşür; en fazla 256 KB.
 
-### Katalog geçişinin kapsamı dışında kalanlar \{#what-the-catalog-migration-leaves-out\}
+### Katalog migrasyonunun kapsamadıkları \{#what-the-catalog-migration-leaves-out\}
 
-- **Paywall Editor paywallına sahip Offerings**: Adapty, RevenueCat Paywall Editor paywallını içe aktaramaz; bu nedenle bu offering'ler ne paywall ne de placement alır. Placement ID'leri serbest kalır: aynı ID ile kendiniz bir flow veya paywall oluşturun.
-- Ürün içermeyen Offerings.
-- Adapty'nin reddettiği App Store ürün ID'sine sahip ürünler; örneğin iki nokta üst üste veya boşluk içeren bir ID. Agent size hangilerini söyler ve bunlar için herhangi bir karar gerekmez.
+- Ürün içermeyen offering'ler.
+- App Store ürün ID'sini Adapty'nin reddettiği ürünler; örneğin iki nokta üst üste veya boşluk içeren bir ID. Agent hangilerinin olduğunu söyler ve bunlar için herhangi bir karar vermeniz gerekmez.
 - App Store ve Google Play dışındaki mağazalardaki uygulamalar.
-- **Entegrasyonlar**: Bunları Adapty'de [Entegrasyonları Adapty'ye taşıma](migrate-integrations-to-adapty) bölümünde açıklandığı şekilde ayarlayın.
+- **Entegrasyonlar**: Bunları [ayrıca taşıyın](#move-your-integrations).
+
+## Paywall tasarımlarınızı taşıyın \{#move-your-paywall-designs\}
+
+Katalog migrasyonunun oluşturduğu her flow, teklifin ürünleri üzerinde boş bir ekranla yayınlanır. RevenueCat paywall tasarımlarınızı bu flow'larda yeniden oluşturmak için agentınıza şunu sorun:
+
+```text
+Migrate my RevenueCat paywall designs to my Adapty app "Acme Fitness" with the Adapty CLI.
+```
+
+Agent, flow'ları tek tek yeniden oluşturur ve siz onayladıktan sonra her birini yayınlar. Videolar ve özel fontlar gibi kendiniz eklemeniz gerekenleri listeler. Tasarımları RevenueCat gizli API anahtarınızla okur; bu nedenle tasarımlar taşınana kadar anahtarı saklayın.
+
+:::warning
+Tasarımı taşınana kadar bir flow boş bir ekran gösterir. Böyle bir flow'u gösteren uygulama sürümü yayınlamayın.
+:::
 
 ## RevenueCat SDK'yı Değiştirme \{#replace-the-revenuecat-sdk\}
 
-Bir kodlama ajanı, `adapty-integration` skill'ini kullanarak uygulamanızdaki RevenueCat SDK'yı Adapty SDK ile değiştirir. Kod, yeni Adapty uygulamasının access level ID'lerini ve placement ID'lerini kullanacak şekilde, katalog migrasyonundan sonra çalıştırın.
+Bir kodlama ajanı, migration'ın oluşturduğu katalog ID'lerini kullanarak uygulama kodunuzdaki RevenueCat SDK'yı Adapty SDK ile değiştirir. Her çalıştırma tek bir kod tabanını migrate eder: ayrı iOS ve Android projeleri olan bir uygulama için her birinde ayrı ayrı çalıştırın.
 
-1. Ajanınıza skill'i vermek için [SDK integration skill](adapty-sdk-integration-skill) sayfasında açıklandığı şekilde aracınıza yükleyin.
-2. Migrasyonu başlatmak için ajanınızda uygulamanızın projesini açın ve şunu sorun:
+Başlamadan önce, migration'ın tek bir incelenebilir diff olarak kalması için uygulamanın deposundaki değişikliklerinizi commit'leyin veya stash'leyin.
 
-```text
-   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+1. Kod migration'ını başlatmak için ajanınızı uygulama deposunun kökünde açın ve şunu sorun:
+
+   ```text
+   Migrate the app code in this repository from RevenueCat to Adapty with the Adapty CLI, for my Adapty app "Acme Fitness".
    ```
 
-   Skill platformunuzu ve RevenueCat SDK'sını proje dosyalarından algılar, bu nedenle prompt'ta bunlara gerek yoktur.
-3. Kod geçişini tamamlamak için ajanın değişikliklerini inceleyin, ardından projenizin kökündeki `ADAPTY_SETUP.md` dosyasını takip edin. Bu dosya, örneğin kurulacak entegrasyonlar gibi ajandan size kalan görevleri listeler.
+   Ajan sizi Adapty skill'lerini yüklemek için yeniden başlatmanızı isterse, yeniden başlatın ve isteği tekrarlayın.
+
+2. Bir flow'un tasarımı henüz taşınmadıysa, ajana uygulamanın o flow'u gösterip göstermeyeceğini mi yoksa kendi paywall ekranını mı kullanmaya devam edeceğini söyleyin.
+3. Kod geçişini tamamlamak için `adapty-migrate` branch'indeki değişiklikleri inceleyin, ardından projenizin kök dizinindeki `ADAPTY_SETUP.md` dosyasını takip edin. Bu dosyada ajanın size bıraktıkları listelenmiştir.
+
+## Entegrasyonlarınızı taşıyın \{#move-your-integrations\}
+
+Agent, uygulama kodunuzdaki analitik, attribution ve mesajlaşma araçlarını bulur ve her birini Adapty'de nasıl kuracağınızı raporlar. Hiçbir dosyayı değiştirmez. Şunu sorun:
+
+```text
+Find the integrations in my app code to set up in my Adapty app "Acme Fitness", with the Adapty CLI.
+```
+
+Eğer depo yalnızca bir platformun kodunu içeriyorsa, ajana diğerinin nerede olduğunu söyle. Ardından entegrasyonları [Adapty'ye entegrasyonları taşı](migrate-integrations-to-adapty) bölümünde açıklandığı gibi kur. Webhook'lar, Slack ve bulut depolama dışa aktarmaları uygulama kodunda yer almaz: bunları RevenueCat'teki **Integrations** sayfasında bulabilirsin.
 
 ## Mağaza olaylarını Adapty'ye yönlendirin \{#forward-store-events-to-adapty\}
 
@@ -177,27 +205,29 @@ Google Play Console'daki konuyu değiştirmeyin ve bu uygulama için [RTDN'yi Et
 3. Anahtarı yüklemek için, agent'ın açtığı Adapty Kontrol Paneli sayfasında dosyayı **Google Play service account key (JSON)** alanına yükleyin. Anahtar doğrudan Adapty'ye gider; agent veya CLI üzerinden geçmez.
 4. Adapty'yi konuya abone etmek için agent'a konu kimliğini verin. RevenueCat'te Google Play uygulama ayarlarınızı açın, ardından **Google developer notifications** bölümündeki **Topic ID**'yi kopyalayın. Google Play Console'da aynı değeri **Monetize** > **Monetization setup** > **Topic name** altında görebilirsiniz.
 
-Adapty konuya abone olur, ardından bir test bildirimi yayınlar ve bekler. Bildirim gelmezse, agent size nedenini açıklar.
+   Adapty konuya abone olur, ardından bir test bildirimi yayınlar ve bekler. Bildirim gelmezse, agent size nedenini açıklar.
 
 5. Test bir izin hatası nedeniyle başarısız olursa, hizmet hesabına konunun bulunduğu projede **Pub/Sub Editor** rolünü veya konu üzerinde **Pub/Sub Subscriber** rolünü ve anahtarın bulunduğu projeye **Pub/Sub Editor** rolünü verin. Ardından agent'tan tekrar kontrol etmesini isteyin.
 
 ## Uygulamanızın yeni sürümünü test edin ve yayınlayın \{#test-and-release-a-new-version-of-your-app\}
 
-Buraya geldiğinize göre aşağıdakileri zaten tamamladınız:
+Bunu okuyorsanız şunları zaten yaptınız demektir:
 
 - [x] Kataloğunuzu Adapty'ye taşıdınız
+- [x] Flow kullanıyorsanız paywall tasarımlarınızı taşıdınız
 - [x] RevenueCat SDK'sını Adapty ile değiştirdiniz
-- [x] Kodlama ajanınızdan `ADAPTY_SETUP.md` dosyasını tamamladınız
-- [x] App Store ve Google Play etkinliklerini Adapty'ye ilettiniz
-- [ ] Sandbox satın alması yaptınız
+- [x] Kodlama aracınızdan gelen `ADAPTY_SETUP.md` dosyasını tamamladınız
+- [x] Adapty'deki entegrasyonlarınızı kurdunuz
+- [x] App Store ve Google Play olaylarını Adapty'ye ilettiniz
+- [ ] Sandbox'ta test satın alması yaptınız
 - [ ] Yeni bir uygulama sürümü yayınladınız
 
-Yukarıdaki adımları tamamladıysanız Sandbox'ta bir test satın alması yapın ve ardından uygulamayı yayınlayın.
+Yukarıdaki maddeleri işaretlediyseniz Sandbox'ta bir test satın alması yapın ve ardından uygulamayı yayınlayın.
 
 :::info
-[Yayın kontrol listesini](release-checklist) gözden geçirin.
+[Yayın kontrol listesine](release-checklist) göz atın.
 
-Mevcut entegrasyonu doğrulamak ya da [attribution](attribution-integration) veya [analitik](analytics-integration) entegrasyonları gibi ek özellikler eklemek için listemizi kullanarak son kontrolü yapın.
+Mevcut entegrasyonu doğrulamak veya [attribution](attribution-integration) ya da [analytics](analytics-integration) entegrasyonları gibi ek özellikler eklemek için listemizi kullanarak son kontrolü yapın.
 :::
 
 ## (İsteğe Bağlı) İşlem geçmişinizi içe aktarın \{#optional-import-your-transaction-history\}

@@ -8,10 +8,11 @@ Bir kullanıcı [flow](adapty-flow-builder)'daki bir giriş alanına yazı yazd�
 
 Uygulamalar bu verileri en sık şu amaçlarla kullanır:
 
-- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unda girdiği e-posta adresini ve adı alıp, flow kapandığında hesaplarını oluşturun.
-- **Cevapları ve tercihleri kaydedin**: Kullanıcının neyi seçtiğini takip edin; böylece uygulamanız bunu daha sonra kullanabilir — örneğin, özel nitelikler olarak [Adapty profiline yazın](kmp-setting-user-attributes).
-- **Gelecekteki flow'ları özelleştirin**: Quiz cevaplarını özel nitelik olarak kaydedin, ardından sonraki bir placement'ı hedefleyin; böylece her segment farklı bir flow ya da içinde farklı bir paywall görsün.
-- **Üçüncü taraf analitik platformlarına veri gönderin**: Cevapları Amplitude, Mixpanel veya kullandığınız ürün analitik platformuna iletin.
+- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unda girdiği e-posta adresini ve adını alın, flow kapandığında hesaplarını oluşturun.
+- **Yanıtları ve tercihleri kaydedin**: Kullanıcının ne seçtiğini takip edin, böylece uygulamanız bunu sonradan kullanabilir — örneğin [Adapty profiline özel attribute olarak yazın](kmp-setting-user-attributes).
+- **Gelecekteki flow'ları özelleştirin**: Quiz yanıtlarını özel attribute olarak kaydedin, ardından sonraki bir placement'ı hedefleyerek her segmentin farklı bir flow görmesini ya da içinde farklı bir paywall sunulmasını sağlayın.
+- **Yanıtlardan hesaplanan değerleri gösterin**: Örneğin kullanıcının kilosu ve boyundan BMI hesaplayın ve [bunu sonraki flow'daki özel bir tag'e aktarın](kmp-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Üçüncü taraf analitik platformlarına veri gönderin**: Yanıtları Amplitude, Mixpanel veya kullandığınız ürün analitik platformuna iletin.
 
 Girdiler ve seçilebilir gruplar, değerlerini otomatik olarak raporlar. Kodunuzda girdileri birbirinden ayırt edebilmek için builder'da her girdiye anlamlı bir **Element ID**, her seçilebilir gruba ise bir **Group ID** verin.
 
@@ -38,44 +39,16 @@ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
 })
 ```
 
-`flowViewDidReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](kmp-flow-screen-views) dahil bir flow'dan gelen tüm analitik olayları iletir. Olay parametreleri `paramsJsonString` içinde tek bir JSON dizesi olarak gelir; bir kez çözümleyin ve alanları okuyun.
-- `name` parametresi olay adını içerir. Kullanıcı girişi olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın.
-- `element_type` parametresi element kategorisini belirtir.
-- Girişin değeri, element türüne göre farklı parametrelerde saklanır:
-     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
-     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` olarak raporlar
+`flowViewDidReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](kmp-flow-screen-views) dahil bir flow'dan gelen tüm analitik olayları iletir. Olay parametreleri `paramsJsonString` içinde tek bir JSON dizesi olarak gelir; bir kez decode edin ve alanları okuyun. Kullanıcı girişi olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın. Değeri saklayan parametre `element_type`'a göre değişir:
 
-```kotlin showLineNumbers title="Kotlin"
-private fun handleFlowInput(name: String, paramsJsonString: String) {
-    if (name != "flow_user_input") return
+| `element_type` | Değeri saklayan parametre | Çözümlendikten sonraki tür |
+|:---------------|:--------------------------|:--------------------------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | String |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | Number, milisaniye cinsinden Unix zamanı. Android sayıları bu şekilde serileştirdiğinden double olarak okuyun. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | String dizisi |
+| `toggle` | `value` | Boolean |
 
-    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
-    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
-
-    when (params["element_type"]?.jsonPrimitive?.content) {
-        "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = params["value"]?.jsonPrimitive?.content
-        }
-        "date_picker", "time_picker", "date_time_picker" -> {
-            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
-            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
-        }
-        "single_choice" -> {
-            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
-        }
-        "multi_choice" -> {
-            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
-        }
-        "toggle" -> {
-            val isOn = params["value"]?.jsonPrimitive?.boolean
-        }
-    }
-}
-```
+[Ne alırsınız](#what-you-receive) bölümünde her parametre ve her builder öğesinin ne raporladığı listelenmektedir.
 
 <FlowInputVerify />
 
@@ -127,7 +100,7 @@ override fun flowViewDidReceiveAnalyticEvent(
     // paramsJsonString, once decoded:
     params["element_id"]       // "birthday"
     params["element_type"]     // "date_picker"
-    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; read it as a double, since Android serializes numbers that way)
 }
 ```
 </Details>

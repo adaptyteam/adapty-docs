@@ -8,10 +8,11 @@ Lorsqu'un utilisateur saisit quelque chose dans un champ de saisie, répond à u
 
 Les applications utilisent le plus souvent ces données pour :
 
-- **Enregistrer les utilisateurs sur votre propre backend** : récupérez l'adresse e-mail et le nom saisis dans votre onboarding, puis créez leur compte à la fermeture du flow.
-- **Sauvegarder les réponses et préférences** : suivez ce que l'utilisateur a choisi pour que votre app puisse en tenir compte plus tard — par exemple, [écrivez-les dans son profil Adapty](setting-user-attributes) comme attributs personnalisés.
-- **Personnaliser les flows futurs** : enregistrez les réponses du quiz comme attributs personnalisés, puis ciblez un placement ultérieur pour que chaque segment voie un flow différent, ou un paywall différent à l'intérieur.
-- **Alimenter des plateformes d'analytics tierces** : transmettez les réponses à Amplitude, Mixpanel ou tout autre outil d'analyse produit que vous utilisez.
+- **Enregistrer les utilisateurs sur votre propre backend** : Récupérez l'adresse e-mail et le nom saisis dans votre onboarding, puis créez leur compte à la fermeture du flow.
+- **Sauvegarder les réponses et préférences** : Conservez les choix de l'utilisateur pour que votre application puisse les exploiter ensuite — par exemple, [écrivez-les dans son profil Adapty](setting-user-attributes) en tant qu'attributs personnalisés.
+- **Personnaliser les flows suivants** : Enregistrez les réponses au quiz comme attributs personnalisés, puis ciblez un placement ultérieur pour que chaque segment reçoive un flow différent, ou un paywall différent à l'intérieur de celui-ci.
+- **Afficher des valeurs calculées à partir des réponses** : Par exemple, calculez un IMC à partir du poids et de la taille de l'utilisateur, puis [transmettez-le à un tag personnalisé dans le flow suivant](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Alimenter des plateformes d'analytics tierces** : Transmettez les réponses à Amplitude, Mixpanel ou tout autre outil d'analytics produit que vous utilisez.
 
 Les entrées et les groupes de sélection rapportent leurs valeurs automatiquement. Pour les distinguer dans votre code, donnez à chaque entrée un **Element ID** significatif et à chaque groupe de sélection un **Group ID** dans le builder.
 
@@ -31,7 +32,7 @@ Les valeurs saisies arrivent dans le même callback que tous les autres événem
 Passez une closure `didReceiveAnalyticEvent` au modificateur `.flow` :
 
 ```swift showLineNumbers title="Swift"
-Text("Hello, AdaptyUI!")
+YourContentView()
     .flow(
         isPresented: $flowPresented,
         flowConfiguration: flowConfiguration,
@@ -66,41 +67,16 @@ func flowController(
 
 La closure et la méthode du délégué reçoivent les deux mêmes arguments, le code qui lit la valeur est donc identique dans les deux cas.
 
-Le callback `didReceiveAnalyticEvent` transmet tous les événements analytiques d'un flow, y compris les [vues d'écran](ios-flow-screen-views).
-- Le paramètre `name` contient le nom de l'événement. Pour filtrer les événements de saisie utilisateur, comparez `name` à `flow_user_input`.
-- Le paramètre `element_type` indique la catégorie de l'élément.
-- La valeur saisie est stockée dans différents paramètres selon le type d'élément :
-     - Les champs texte, les sélecteurs et les bascules stockent la saisie de l'utilisateur dans `value`
-     - Les groupes sélectionnables indiquent les options actives dans `item_ids` et `item_titles`
+Le callback `didReceiveAnalyticEvent` transmet tous les événements analytiques d'un flow, y compris les [vues d'écran](ios-flow-screen-views). Pour filtrer les événements d'entrée utilisateur, comparez `name` à `flow_user_input`. Le paramètre qui stocke la valeur dépend de `element_type` :
 
-```swift showLineNumbers title="Swift"
-func handleFlowInput(name: String, params: [String: any Sendable]) {
-    guard name == "flow_user_input",
-          let elementId = params["element_id"] as? String,
-          let elementType = params["element_type"] as? String
-    else { return }
+| `element_type` | Paramètre qui stocke la valeur | Type Swift |
+|:---------------|:-------------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`, Unix time en millisecondes. Divisez par 1000 pour obtenir une `Date`. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
 
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    let screenId = params["instanceId"] as? String
-
-    switch elementType {
-    case "text_input", "email_input", "number_input", "phone_input":
-        let text = params["value"] as? String
-    case "date_picker", "time_picker", "date_time_picker":
-        // Integer Unix time in milliseconds, not the seconds Date expects.
-        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
-    case "single_choice":
-        let optionId = (params["item_ids"] as? [String])?.first
-    case "multi_choice":
-        let optionIds = params["item_ids"] as? [String]
-    case "toggle":
-        let isOn = params["value"] as? Bool
-    default:
-        break
-    }
-}
-```
+La section [Ce que vous recevez](#what-you-receive) liste tous les paramètres et ce que chaque élément du builder remonte.
 
 <FlowInputVerify />
 
@@ -140,7 +116,7 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 func handleFlowInput(name: String, params: [String: any Sendable]) {
     params["element_id"];      // "birthday"
     params["element_type"];    // "date_picker"
-    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
 }
 ```
 </Details>
@@ -289,3 +265,24 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 3. [Créez un segment](segments) pour chaque valeur d'attribut personnalisé.
 4. Créez un [placement](placements) et ajoutez une [audience](audience) pour chaque segment.
 5. [Affichez le flow](ios-present-paywalls) correspondant à ce placement dans votre application.
+
+### Envoyer les réponses à votre plateforme d'analyse \{#send-answers-to-your-analytics-platform\}
+
+Pour filtrer vos graphiques par réponse utilisateur, envoyez chaque réponse sous forme d'événement à votre plateforme d'analyse.
+
+Par exemple, si votre flow contient un groupe sélectionnable avec l'ID de groupe `experience`, envoyez l'option sélectionnée à Amplitude :
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

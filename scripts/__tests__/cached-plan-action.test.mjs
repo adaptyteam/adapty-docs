@@ -82,3 +82,20 @@ test('any section that needed translation is written', () => {
     'write',
   );
 });
+
+test('a retry-marked file whose sections now all land clears the marker', async () => {
+  const { retryHash } = await import('../translate.mjs');
+  const onDisk = reassemble(before);
+  const stored = retryHash('sha256:same');
+  assert.notEqual(stored, 'sha256:same', 'a retry marker never matches a real hash');
+  assert.equal(
+    cachedPlanAction({
+      allHits: true,
+      reconstructed: onDisk,
+      onDisk,
+      storedFileHash: stored,
+      fileHashCurrent: 'sha256:same',
+    }),
+    'hash',
+  );
+});

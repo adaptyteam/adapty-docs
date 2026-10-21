@@ -1,0 +1,145 @@
+---
+title: "在 React Native SDK 中向流程传递数据"
+description: "从 React Native 应用向流程传递值，并在文本元素中显示。"
+metadataTitle: "向流程传递数据 | React Native SDK | Adapty 文档"
+---
+
+[自定义标签](flow-custom-tags)是一个从应用中获取值的自定义变量。在变量设置中选择 **Value comes from outside the app** 后，应用即可通过 Adapty SDK 设置其值。例如，某个文本元素包含"Coins:"和一个自定义标签，若应用为该标签传入"120"，用户看到的内容便是"Coins: 120"。
+
+## 开始之前 \{#before-you-start\}
+
+<FlowCustomTagsPrerequisites />
+
+## 向流程添加自定义标签 \{#add-custom-tags-to-the-flow\}
+
+<FlowCustomTagsAddToFlow />
+
+## 传递自定义标签值 \{#pass-custom-tag-values\}
+
+在视图参数的 `customTags` 字段中传入你的应用数据，格式为对象。使用 `AdaptyFlowView` 组件时，通过其 `params` prop 传入；使用 `createFlowView` 时，通过其第二个参数传入。
+
+- 每个键是自定义标签的完整名称，例如 `user.streak`。
+- 每个值是用户在标签位置看到的字符串。
+- 每个值必须是人类可读的格式，例如 "1,250" 而非 "1250.0"。Adapty 不会对其进行格式化或翻译。
+
+`createFlowView` 在创建视图时只读取一次参数值，因此这些值在流程打开期间不会发生变化。如果已挂载的 `AdaptyFlowView` 的 `params` 发生变化，组件会重新创建流程视图，流程将从第一屏重新开始。请在流程打开期间保持 `params` 不变。
+
+<Tabs>
+<TabItem value="component" label="React component" default>
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+const flowParams = {
+  customTags: {
+    'username': 'DragonSlayer42',
+    'coins': '1,250',
+  },
+};
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return <AdaptyFlowView flow={flow} params={flowParams} style={{ flex: 1 }} />;
+}
+```
+
+</TabItem>
+<TabItem value="modal" label="弹窗展示">
+
+```typescript showLineNumbers title="React Native"
+
+const customTags = {
+  'username': 'DragonSlayer42',
+  'coins': '1,250',
+};
+
+try {
+  const view = await createFlowView(flow, { customTags });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+</TabItem>
+</Tabs>
+
+<FlowCustomTagsVerify />
+
+如果你的应用已经为旧版付费墙编辑工具的付费墙设置了自定义标签值，请了解[流程中的自定义标签与旧版有何不同](migrate-to-flows#custom-tags-from-the-old-paywall-builder)。
+
+## 用户在没有值时看到的内容 \{#what-users-see-without-a-value\}
+
+<FlowCustomTagsFallback />
+
+## 示例：根据用户引导答案显示 BMI \{#example-show-a-bmi-from-onboarding-answers\}
+
+<FlowCustomTagsBmiIntro />
+
+### 设置流程 \{#set-up-the-flows\}
+
+<FlowCustomTagsBmiSetup />
+
+### 将 BMI 传递给付费墙 \{#pass-the-bmi-to-the-paywall\}
+
+从用户引导流程的 `flow_user_input` 事件中收集体重和身高，具体方式参见[处理流程数据](react-native-flow-input)。要判断用户是否到达了最后一个屏幕，可监听 `flow_screen_showed` 事件中 `is_last_screen` 为 `true` 的情况，具体方式参见[追踪流程屏幕浏览](react-native-flow-screen-views)。当用户在该屏幕后关闭用户引导流程时，计算 BMI，然后创建付费墙的视图，并将 BMI 作为 `bmi` 自定义标签传入。
+
+在 `onboardingView`（即 `createFlowView` 为用户引导流程返回的视图）上注册以下处理程序。`AdaptyFlowView` 组件没有 `onDisappeared` 处理程序，因此此示例不适用于该组件。
+
+```javascript showLineNumbers title="React Native"
+
+const bodyAnswers = {};
+let reachedLastScreen = false;
+
+const unsubscribe = onboardingView.setEventHandlers({
+  onAnalytics(name, params) {
+    if (name === 'flow_screen_showed' && params.is_last_screen) {
+      reachedLastScreen = true;
+    }
+    if (name === 'flow_user_input' && typeof params.value === 'string') {
+      bodyAnswers[params.element_id] = params.value;
+    }
+    return false; // keep the flow open
+  },
+  onDisappeared() {
+    // Number inputs send their values as strings.
+    const weight = Number(bodyAnswers.weight);
+    const height = Number(bodyAnswers.height);
+    const finished = reachedLastScreen;
+    delete bodyAnswers.weight;
+    delete bodyAnswers.height;
+    reachedLastScreen = false;
+
+    if (finished && weight > 0 && height > 0) {
+      const heightInMeters = height / 100;
+      const bmi = weight / (heightInMeters * heightInMeters);
+      showBmiPaywall(bmi.toLocaleString(undefined, { maximumFractionDigits: 1 }));
+    }
+    return false;
+  },
+});
+
+async function showBmiPaywall(bmi) {
+  try {
+    const flow = await adapty.getFlow('bmi_paywall');
+    const view = await createFlowView(flow, { customTags: { 'bmi': bmi } });
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+`toLocaleString` 会使用用户所在地区的小数分隔符：英语为 "22.7"，德语为 "22,7"。
+
+### 将 BMI 保存到用户画像 \{#save-the-bmi-to-the-users-profile\}
+
+要根据用户的 BMI 显示不同的流程，请将其作为[自定义属性](react-native-setting-user-attributes#custom-user-attributes)保存到用户画像中。在 Adapty 看板中，[创建一个 **Number** 类型的自定义属性](segments#custom-attributes)，键名设为 `bmi`。然后为每个流程设置基于该属性构建的[目标受众](audience)。
+
+在计算 `bmi` 的那行代码之后，在 `onDisappeared` 中调用 `updateProfile` 方法。传入数字本身，而不是格式化后的字符串，这样市场细分才能将 BMI 与阈值进行比较。由于 `onDisappeared` 不能是 `async`，请使用 `.catch` 而非 `await` 来处理结果：
+
+```javascript showLineNumbers title="React Native"
+adapty
+  .updateProfile({ codableCustomAttributes: { bmi } })
+  .catch((error) => {
+    // handle the error
+  });
+```

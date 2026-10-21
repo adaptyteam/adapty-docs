@@ -8,10 +8,11 @@ metadataTitle: "处理流程数据 | Android SDK | Adapty 文档"
 
 应用最常见的用途包括：
 
-- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程结束时创建其账号。
-- **保存答案与偏好设置**：记录用户的选择，方便应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](android-setting-user-attributes)。
-- **个性化未来的流程**：将测验答案保存为自定义属性，然后针对某个版位进行定向投放，让每个市场细分看到不同的流程，或其中不同的付费墙。
-- **接入第三方分析平台**：将答案转发至 Amplitude、Mixpanel 或你正在使用的任何产品分析工具。
+- **在自有后端注册用户**：获取用户在引导流程中输入的邮箱和姓名，在流程结束时为其创建账户。
+- **保存答案和偏好设置**：记录用户的选择，以便应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](android-setting-user-attributes)。
+- **自定义后续流程**：将问卷答案保存为自定义属性，再通过版位定向投放，让不同市场细分的用户看到不同的流程，或流程中不同的付费墙。
+- **展示根据答案计算出的值**：例如，根据用户的体重和身高计算 BMI，并[将其传递给下一个流程中的自定义标签](android-flow-custom-tags#example-show-a-bmi-from-onboarding-answers)。
+- **向第三方分析平台传送数据**：将答案转发至 Amplitude、Mixpanel 或你正在使用的其他产品分析工具。
 
 输入框和可选组会自动上报其值。为了在代码中区分各个输入框，请在编辑工具中为每个输入框设置有意义的 **Element ID**，为每个可选组设置 **Group ID**。
 
@@ -38,43 +39,16 @@ class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
 }
 ```
 
-`onAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](android-flow-screen-views)。
-- `name` 参数包含事件名称。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
-- `element_type` 参数标识元素类别。
-- 输入值根据元素类型存储在不同的参数中：
-     - 文本框、选择器和开关将用户输入存储在 `value` 中
-     - 可选择分组在 `item_ids` 和 `item_titles` 中报告当前选中的选项
+`onAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](android-flow-screen-views)。如需筛选用户输入事件，可将 `name` 与 `flow_user_input` 进行比较。存储值的参数取决于 `element_type`：
 
-```kotlin showLineNumbers title="Kotlin"
-private fun handleFlowInput(name: String, params: Map<String, Any?>) {
-    if (name != "flow_user_input") return
+| `element_type` | 存储值的参数 | Kotlin 类型 |
+|:---------------|:----------------------------|:----------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Double`，Unix 时间戳，单位为毫秒。通过 `Number` 读取。 |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `List<String>` |
+| `toggle` | `value` | `Boolean` |
 
-    val elementId = params["element_id"] as? String ?: return
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    val screenId = params["instanceId"] as? String
-
-    when (params["element_type"]) {
-        "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = params["value"] as? String
-        }
-        "date_picker", "time_picker", "date_time_picker" -> {
-            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
-            val millis = (params["value"] as? Number)?.toLong()
-        }
-        "single_choice" -> {
-            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
-        }
-        "multi_choice" -> {
-            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
-        }
-        "toggle" -> {
-            val isOn = params["value"] as? Boolean
-        }
-    }
-}
-```
+[您将收到的内容](#what-you-receive) 部分列出了每个参数以及每个构建器元素报告的内容。
 
 <FlowInputVerify />
 

@@ -29,11 +29,11 @@ Une seule commande fournit les deux informations :
 adapty asa whoami
 ```
 
-### Différences avec le reste du CLI \{#differences-from-the-rest-of-the-cli\}
+### Différences par rapport au reste de la CLI
 
-- **Pas de flag `--app`** : Le périmètre correspond à la société associée à votre token. `--app` existe sur certaines commandes `list` uniquement comme filtre.
-- **Les écritures atteignent Apple directement** : Chaque commande qui modifie votre compte affiche le corps de la requête et demande une confirmation avant l'envoi. Il n'y a pas d'étape intermédiaire.
-- **Les lectures sont sans risque, pas les écritures** : Utilisez librement les commandes `list` et `--dry-run`. Considérez tout le reste comme irréversible.
+- **Pas de flag `--app`** : la portée correspond à l'entreprise associée à votre token. `--app` existe sur certaines commandes `list` en tant que filtre uniquement. Les commandes `asa segments` font exception : elles écrivent dans une app Adapty, donc `--app` désigne cette app.
+- **Les écritures atteignent Apple directement** : chaque commande qui modifie votre compte affiche le corps de la requête et demande une confirmation avant de l'envoyer. Il n'y a pas d'étape intermédiaire.
+- **Les lectures sont légères, pas les écritures** : utilisez librement les commandes `list` et `--dry-run`. Traitez tout le reste comme irréversible.
 
 Pour ignorer l'invite de confirmation dans un script, passez `--yes`. Sous `--json` ou dans un pipe, une commande d'écriture refuse plutôt que d'attendre une réponse qui n'arrivera jamais, donc `--yes` est requis dans ce cas.
 
@@ -179,6 +179,40 @@ adapty asa competitors summary --app-ids 1668337467,6503873027 --json
 La période et les pays sont fixés côté serveur — le dernier mois complet, dans tous les pays — donc la commande n'a pas d'autres options que les identifiants d'application. Le premier appel pour un ensemble d'applications peut prendre plusieurs dizaines de secondes.
 
 Utilisez ceci pour extraire des données de mots-clés concurrents dans un rapport selon un planning. Pour filtrer les résultats, comparer des pays côte à côte, ou ajouter directement les mots-clés trouvés à une campagne, utilisez [Market Intelligence](ads-manager-market-intelligence) dans le tableau de bord.
+
+## Créer un segment pour chaque campagne \{#create-a-segment-for-each-campaign\}
+
+Pour afficher aux utilisateurs d'une campagne spécifique leur propre paywall, créez un [segment](segments) pour cette campagne et utilisez-le comme [audience](audience) dans un placement. Vérifiez d'abord que la campagne n'a pas encore de segment :
+
+```bash
+adapty asa segments list --app <app-id> --campaign <campaign-id>
+```
+
+Si le résultat est vide, créez le segment :
+
+```bash
+adapty asa segments create --app <app-id> --campaign <campaign-id> --yes
+```
+
+`--app` est l'identifiant de l'application Adapty issu de `adapty apps list`. Le CLI nomme le segment `[ASA] Campaign: <name>`, comme le fait Ads Manager, afin qu'Ads Manager le reconnaisse comme le sien. Pour créer un segment à partir de groupes d'annonces ou de mots-clés, consultez [Segments](developer-cli-ads-manager-reference#segments) dans la référence des commandes.
+
+## Identifier les auteurs des modifications de vos campagnes \{#find-who-changed-your-campaigns\}
+
+Pour savoir qui a mis en pause une campagne ou modifié une enchère, et à quel moment, consultez l'historique des modifications de l'organisation. Il est synchronisé en direct depuis Apple, ce qui couvre aussi les modifications effectuées directement dans Apple Ads ou via d'autres outils :
+
+```bash
+adapty asa change-history list --campaign-group <campaign-group-id> --entity-type Campaign --event-type UPDATE
+```
+
+Pour voir l'ancienne et la nouvelle valeur de chaque champ modifié, ajoutez `--fields`. Pour consulter le détail d'une modification, passez son `detail_id` à `change-history get` :
+
+```bash
+adapty asa change-history get <detail-id> --campaign-group <campaign-group-id>
+```
+
+Chaque appel lit une organisation et jusqu'à 14 jours, dans la limite des 6 mois conservés par Apple. Les filtres `--campaign` et `--ad-group` de cette commande prennent les identifiants numériques d'Apple, pas les UUIDs. Voir [Historique des modifications](developer-cli-ads-manager-reference#change-history) pour la liste complète des options.
+
+Pour consulter les mêmes modifications dans Adapty Dashboard, utilisez la [page Historique des modifications](ads-manager-change-history).
 
 ## Exécuter des règles d'automatisation \{#run-automation-rules\}
 

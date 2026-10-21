@@ -8,14 +8,16 @@ keywords: ['migration', 'revenuecat']
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-A migration from RevenueCat has six steps. A coding agent does most of the work: it runs the migrations through the [Adapty CLI](developer-cli) and replaces the RevenueCat SDK in your app. You handle what the agent can't reach — the secrets, and the settings in RevenueCat, App Store Connect, and Google Cloud.
+A migration from RevenueCat has eight steps. A coding agent does most of the work: it runs the migrations through the [Adapty CLI](developer-cli) and replaces the RevenueCat SDK in your app. You handle what the agent can't reach — the secrets, and the settings in RevenueCat, App Store Connect, and Google Cloud.
 
 1. [Learn the core differences](#learn-the-core-differences).
 2. [Move your catalog to Adapty](#move-your-catalog-to-adapty).
-3. [Replace the RevenueCat SDK](#replace-the-revenuecat-sdk) with your coding agent.
-4. [Forward store events to Adapty](#forward-store-events-to-adapty).
-5. [Test and release a new version of your app](#test-and-release-a-new-version-of-your-app).
-6. (Optional) [Import your transaction history](#optional-import-your-transaction-history).
+3. [Move your paywall designs](#move-your-paywall-designs), if your offerings become flows.
+4. [Replace the RevenueCat SDK](#replace-the-revenuecat-sdk) with your coding agent.
+5. [Move your integrations](#move-your-integrations).
+6. [Forward store events to Adapty](#forward-store-events-to-adapty).
+7. [Test and release a new version of your app](#test-and-release-a-new-version-of-your-app).
+8. (Optional) [Import your transaction history](#optional-import-your-transaction-history).
 
 :::info
 Your subscribers will migrate automatically
@@ -35,7 +37,7 @@ Naming is slightly different:
 | :---------- | :-------------- |
 | Package     | Product         |
 | Offering    | Paywall         |
-| Paywall     | Paywall Builder |
+| Paywall     | Flow            |
 | Entitlement | Access level    |
 
 Adapty has a concept of [placement](placements). It's a logical place inside your app where the user can make a purchase. In most cases, you have one or two placements:
@@ -56,7 +58,7 @@ Adapty has a concept of [placement](placements). It's a logical place inside you
 
 ## Move your catalog to Adapty
 
-The catalog migration creates a new Adapty app from your RevenueCat project: access levels from entitlements, products from packages, and a paywall and a placement for each offering.
+The catalog migration creates a new Adapty app from your RevenueCat project: access levels from entitlements, products from packages, and a placement with a paywall or a flow for each offering.
 
 ### Before you start
 
@@ -93,13 +95,13 @@ When the migration asks for the key, paste it into the Adapty Dashboard page tha
 
 2. To connect RevenueCat, paste the secret API key into the Adapty Dashboard page the agent opens. The key goes to Adapty directly and never passes through the agent or the CLI.
 3. To choose what to migrate, tell the agent which RevenueCat apps belong together, usually one per platform of the same product. Together they become a single Adapty app.
-4. To settle the mapping, answer the agent's questions about the entities Adapty couldn't map on its own.
+4. To settle the mapping, answer the agent's questions about the entities Adapty couldn't map on its own. For each offering, choose what its placement holds: a paywall that your app draws itself, or a flow from the [Flow & Paywall Builder](adapty-paywall-builder). Adapty suggests a flow for offerings with a RevenueCat paywall.
 
    :::warning
    Decisions are final. When every entity has a decision, Adapty creates the catalog, and you can't change the mapping after that.
    :::
 
-   Adapty creates access levels, products, paywalls, and placements, in that order. If some of them fail, the agent tells you why. When every entity is in Adapty, the migration completes.
+   Adapty creates access levels, products, paywalls and flows, and placements, in that order. If some of them fail, the agent tells you why. When every entity is in Adapty, the migration completes.
 
 5. To let the new app validate purchases, connect it to the stores in the Adapty Dashboard: [App Store](initial_ios) and [Google Play](initial-android).
 
@@ -112,29 +114,55 @@ To run the migration without an agent, use the [migration commands](developer-cl
 - An entitlement identifier becomes the access level ID, so `customerInfo.entitlements["premium"]` becomes `profile.accessLevels["premium"]`.
 - A product that grants no entitlement grants the `premium` access level.
 - An offering identifier becomes the placement ID.
-- Offering metadata becomes the paywall's [remote config](customize-paywall-with-remote-config), up to 256 KB.
+- Offering metadata becomes the [remote config](customize-paywall-with-remote-config) of the paywall or the flow, up to 256 KB.
 
 ### What the catalog migration leaves out
 
-- **Offerings with a Paywall Editor paywall**: Adapty can't import a RevenueCat Paywall Editor paywall, so these offerings get no paywall and no placement. Their placement IDs stay free: create a flow or a paywall with the same ID yourself.
 - Offerings without products.
 - Products whose App Store product ID Adapty rejects, for example an ID with a colon or a space. The agent tells you which ones, and they need no decision.
 - Apps in stores other than App Store and Google Play.
-- **Integrations**: Set them up in Adapty as described in [Migrate integrations to Adapty](migrate-integrations-to-adapty).
+- **Integrations**: [Move them](#move-your-integrations) separately.
+
+## Move your paywall designs
+
+Each flow the catalog migration creates is published with an empty screen over the offering's products. To rebuild your RevenueCat paywall designs in these flows, ask your agent:
+
+```text
+Migrate my RevenueCat paywall designs to my Adapty app "Acme Fitness" with the Adapty CLI.
+```
+
+The agent rebuilds the flows one at a time and publishes each one after you approve it. It lists what to add yourself, such as videos and custom fonts. It reads the designs with your RevenueCat secret API key, so keep the key until the designs are moved.
+
+:::warning
+Until its design is moved, a flow shows an empty screen. Don't release an app version that shows such a flow.
+:::
 
 ## Replace the RevenueCat SDK
 
-A coding agent replaces the RevenueCat SDK with the Adapty SDK in your app code, using the `adapty-integration` skill. Run it after the catalog migration, so the code uses the access level IDs and placement IDs of the new Adapty app.
+A coding agent replaces the RevenueCat SDK with the Adapty SDK in your app code, using the IDs of the catalog the migration created. Each run migrates one codebase: for an app with separate iOS and Android projects, run it in each.
 
-1. To give your agent the skill, install it for your tool as described in [SDK integration skill](adapty-sdk-integration-skill).
-2. To start the migration, open your app's project in the agent and ask:
+Before you start, commit or stash your changes in the app's repository, so the migration stays one reviewable diff.
+
+1. To start the code migration, open your agent in the root of the app's repository and ask:
 
    ```text
-   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+   Migrate the app code in this repository from RevenueCat to Adapty with the Adapty CLI, for my Adapty app "Acme Fitness".
    ```
 
-   The skill detects your platform and the RevenueCat SDK from the project files, so the prompt needs neither.
-3. To finish the code migration, review the agent's changes, then work through `ADAPTY_SETUP.md` in the root of your project. It lists what the agent left to you, for example integrations to set up.
+   If the agent asks you to restart it to load the Adapty skills, restart it and repeat the request.
+
+2. If a flow's design isn't moved yet, tell the agent whether the app shows the flow or keeps its own paywall screen until then.
+3. To finish the code migration, review the changes on the `adapty-migrate` branch, then work through `ADAPTY_SETUP.md` in the root of your project. It lists what the agent left to you.
+
+## Move your integrations
+
+Your agent finds the analytics, attribution, and messaging tools in your app code and reports how to set each one up in Adapty. It changes no files. Ask:
+
+```text
+Find the integrations in my app code to set up in my Adapty app "Acme Fitness", with the Adapty CLI.
+```
+
+If the repository has the code of only one platform, tell the agent where the other one is. Then set up the integrations as described in [Migrate integrations to Adapty](migrate-integrations-to-adapty). Webhooks, Slack, and cloud storage exports aren't in the app code: find them on the **Integrations** page in RevenueCat.
 
 ## Forward store events to Adapty
 
@@ -189,8 +217,10 @@ Don't change the topic in Google Play Console, and don't follow the steps in [En
 If you're reading this, you've already:
 
 - [x] Moved your catalog to Adapty
+- [x] Moved your paywall designs, if you use flows
 - [x] Replaced the RevenueCat SDK with Adapty
 - [x] Worked through `ADAPTY_SETUP.md` from your coding agent
+- [x] Set up your integrations in Adapty
 - [x] Forwarded App Store and Google Play events to Adapty
 - [ ] Made a sandbox purchase
 - [ ] Made a new app release
