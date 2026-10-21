@@ -571,7 +571,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Có | App ID (UUID) |
 
-Phản hồi chứa `id`, `developer_id`, `title`, `is_active`, và một mảng `audiences`. `is_active` là `true` cho placement đang hoạt động và `false` cho placement không hoạt động. Mỗi mục trong audience chứa `content_type` (`paywall` hoặc `flow`), `segment_ids`, `priority`, và `paywall_id` hoặc `flow_id`. Đối tượng mặc định có `segment_ids: []` và giá trị priority cao nhất (được đánh giá sau cùng). Xem [Cấu trúc Audiences](#audiences-shape).
+Phản hồi chứa `id`, `developer_id`, `title`, `is_active`, và một mảng `audiences`. `is_active` là `true` cho placement đang hoạt động và `false` cho placement không hoạt động. Mỗi mục trong audiences chứa `content_type`, `segment_ids`, `priority`, và ID của nội dung tương ứng: `paywall_id` cho `paywall`, `flow_id` cho `flow`, hoặc `ab_test_id` và `ab_test_title` cho đối tượng chạy [A/B test](ab-tests). Đối tượng mặc định có `segment_ids: []` và giá trị priority cao nhất (được đánh giá sau cùng). Xem [Cấu trúc Audiences](#audiences-shape).
 
 ### adapty placements create \{#adapty-placements-create\}
 
@@ -627,17 +627,25 @@ Cờ `--audiences` nhận một mảng JSON. Mỗi phần tử có các trườn
 
 | Trường | Kiểu | Mô tả |
 |---|---|---|
-| `content_type` | `string` | `"paywall"` hoặc `"flow"`. Bắt buộc trong mỗi mục. Tất cả các mục trong một placement phải có cùng giá trị |
-| `segment_ids` | `string[]` | ID [Phân khúc](segments) được nhắm mục tiêu bởi đối tượng này. Độ dài 0 hoặc 1. Mảng rỗng đánh dấu **đối tượng mặc định** — phương án dự phòng cho người dùng không khớp với bất kỳ phân khúc nào khác |
-| `paywall_id` | `string` | ID [Paywall](paywalls) (UUID) hiển thị cho người dùng trong đối tượng này. Bắt buộc khi `content_type` là `"paywall"` |
-| `flow_id` | `string` | ID [Flow](adapty-flow-builder) (UUID) hiển thị cho người dùng trong đối tượng này. Bắt buộc khi `content_type` là `"flow"` |
-| `priority` | `number` | Bắt đầu từ 0, duy nhất trong placement. Các đối tượng được đánh giá từ thấp đến cao; đối tượng mặc định phải có giá trị cao nhất |
+| `content_type` | `string` | Bắt buộc ở mỗi entry. `"paywall"`, `"flow"`, `"ab_test"` (A/B test paywall), `"flow_ab_test"` (A/B test flow), `"cross_ab_test"` hoặc `"flow_cross_ab_test"` (A/B test đa placement). Dùng `paywall`, `ab_test` và `cross_ab_test` trong placement paywall, và `flow`, `flow_ab_test` cùng `flow_cross_ab_test` trong placement flow |
+| `segment_ids` | `string[]` | ID các [phân khúc](segments) mà đối tượng này nhắm đến. Độ dài 0 hoặc 1. Mảng rỗng đánh dấu **đối tượng mặc định** — dự phòng cho những người dùng không khớp với phân khúc nào khác |
+| `paywall_id` | `string` | ID (UUID) của [paywall](paywalls) hiển thị cho người dùng trong đối tượng này. Bắt buộc khi `content_type` là `"paywall"` |
+| `flow_id` | `string` | ID (UUID) của [flow](adapty-flow-builder) hiển thị cho người dùng trong đối tượng này. Bắt buộc khi `content_type` là `"flow"` |
+| `ab_test_id` | `string` | ID của [A/B test](ab-tests) chạy cho người dùng trong đối tượng này. Bắt buộc với bốn loại content_type A/B test |
+| `ab_test_title` | `string` | Tiêu đề A/B test. Chỉ đọc: API bỏ qua giá trị này khi ghi |
+| `priority` | `number` | Bắt đầu từ 0, duy nhất trong placement. Các đối tượng được đánh giá theo thứ tự từ thấp đến cao; đối tượng mặc định phải có giá trị cao nhất |
 
-Mỗi placement phải có đúng một đối tượng mặc định.
+Một placement phải có đúng một đối tượng mặc định.
 
-Loại nội dung của một placement được cố định khi bạn tạo nó, vì vậy `placements update` không thể chuyển một paywall placement thành flow hoặc ngược lại. Hãy phục vụ flow từ một placement riêng — xem [Tạo một placement mới cho flow của bạn](migrate-to-flows#create-a-new-placement-for-your-flow).
+:::warning
+`placements update` thay thế toàn bộ danh sách đối tượng, kể cả những đối tượng đang chạy A/B test. Để giữ nguyên một A/B test đang chạy, hãy sao chép mục đó từ `placements get` vào `--audiences` mà không thay đổi gì, giữ nguyên `ab_test_id` và `segment_ids`. Nếu bạn xóa hoặc thay thế mục đó, A/B test sẽ dừng lại mà không có người thắng. Nếu bạn chuyển mục đó sang các phân khúc khác, A/B test sẽ bắt đầu lại, và `ab_test_id` trên một đối tượng khác sẽ khởi chạy A/B test tại đó. Nếu bạn chỉ thay đổi thứ tự ưu tiên, A/B test sẽ tiếp tục chạy bình thường. CLI sẽ không cảnh báo bạn về những trường hợp này.
+:::
 
-CLI kiểm tra từng mục trước khi gửi yêu cầu. Một mục có `content_type` bị thiếu hoặc không hợp lệ, hoặc thiếu ID mà `content_type` của nó yêu cầu, sẽ thoát với mã 2 và không có gì được gửi đi.
+Các mục A/B test xuyên placement (`cross_ab_test`, `flow_cross_ab_test`) là chỉ đọc. API bỏ qua chúng khi ghi và giữ nguyên các giá trị đã lưu.
+
+Loại nội dung của một placement được cố định khi bạn tạo nó, vì vậy `placements update` không thể chuyển một paywall placement sang flow hoặc ngược lại. Hãy phục vụ flow từ một placement riêng — xem [Tạo placement mới cho flow của bạn](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+CLI kiểm tra từng mục trước khi gửi yêu cầu. Một mục thiếu hoặc có `content_type` không xác định, hoặc không có ID mà `content_type` yêu cầu, sẽ thoát với mã 2 và không có gì được gửi đi. Với `content_type` mà CLI không nhận ra, CLI sẽ in `this CLI does not know this audience kind; update the CLI`. Nếu mục đó đến từ `placements get`, hãy cập nhật CLI thay vì xóa mục đó: mục đó có thể là một A/B test đang chạy.
 
 Flow chỉ có thể được đính kèm sau khi đã được xuất bản. Flow ở trạng thái `draft`, hoặc flow có lần xuất bản đầu tiên vẫn đang diễn ra, sẽ bị server từ chối; CLI nhận ra sự từ chối đó và thoát với mã 2, in ra lệnh `flows publish` cho flow đó. Để xuất bản một flow, hãy dùng [`flows publish`](#adapty-flows-publish) hoặc [Flow & Paywall Builder](builder-save-publish), sau đó chờ trạng thái của nó chuyển thành `published`.
 
@@ -655,7 +663,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
   --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
 ```
 
-Để thay đổi paywall trên nhiều placement mà không mất routing theo phân khúc:
+Để thay thế một paywall trên nhiều placement mà không mất cấu hình routing theo phân khúc:
 
 1. Tìm các placement bị ảnh hưởng:
 
@@ -669,7 +677,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
    adapty placements get --app <app-id> <placement-id> --json
    ```
 
-3. Thay thế các giá trị `paywall_id` tương ứng ở phía client.
+3. Thay thế các giá trị `paywall_id` tương ứng ở phía client. Giữ nguyên tất cả các mục khác, kể cả các mục A/B test.
 
 4. Ghi payload đã chỉnh sửa trở lại:
 

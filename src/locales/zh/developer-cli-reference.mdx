@@ -571,7 +571,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 
-响应包含 `id`、`developer_id`、`title`、`is_active` 以及一个 `audiences` 数组。`is_active` 为 `true` 表示版位处于上线状态，`false` 表示未激活。每个受众条目包含 `content_type`（`paywall` 或 `flow`）、`segment_ids`、`priority`，以及 `paywall_id` 或 `flow_id` 之一。默认目标受众的 `segment_ids: []`，且具有最高的优先级值（最后被评估）。详见 [受众结构](#audiences-shape)。
+响应包含 `id`、`developer_id`、`title`、`is_active` 以及一个 `audiences` 数组。`is_active` 为 `true` 表示版位已上线，为 `false` 表示版位未激活。每个目标受众条目包含 `content_type`、`segment_ids`、`priority`，以及其内容的 ID：付费墙对应 `paywall_id`，流程对应 `flow_id`，运行 [A/B 测试](ab-tests) 的目标受众对应 `ab_test_id` 和 `ab_test_title`。默认目标受众的 `segment_ids: []`，且优先级值最高（最后被评估）。详见 [Audiences shape](#audiences-shape)。
 
 ### adapty placements create
 
@@ -627,17 +627,25 @@ adapty placements update --app <app-id> <placement-id> --title "Main" --develope
 
 | 字段 | 类型 | 描述 |
 |---|---|---|
-| `content_type` | `string` | `"paywall"` 或 `"flow"`。每条条目必填。同一版位中所有条目的值必须相同 |
-| `segment_ids` | `string[]` | 此目标受众所针对的[市场细分](segments) ID。长度为 0 或 1。空数组表示**默认目标受众**——用于未匹配任何其他市场细分的用户的兜底选项 |
-| `paywall_id` | `string` | 展示给此目标受众用户的[付费墙](paywalls) ID（UUID）。当 `content_type` 为 `"paywall"` 时必填 |
-| `flow_id` | `string` | 展示给此目标受众用户的[流程](adapty-flow-builder) ID（UUID）。当 `content_type` 为 `"flow"` 时必填 |
-| `priority` | `number` | 从 0 开始，在版位内唯一。目标受众按从低到高的顺序依次评估；默认目标受众必须具有最高值 |
+| `content_type` | `string` | 每条记录必填。`"paywall"`、`"flow"`、`"ab_test"`（付费墙 A/B 测试）、`"flow_ab_test"`（流程 A/B 测试）、`"cross_ab_test"` 或 `"flow_cross_ab_test"`（跨版位 A/B 测试）。付费墙版位中使用 `paywall`、`ab_test` 和 `cross_ab_test`，流程版位中使用 `flow`、`flow_ab_test` 和 `flow_cross_ab_test` |
+| `segment_ids` | `string[]` | 此目标受众所针对的[市场细分](segments) ID。长度为 0 或 1。空数组表示**默认受众**——适用于不匹配任何其他市场细分的用户的兜底选项 |
+| `paywall_id` | `string` | 向此目标受众中的用户展示的[付费墙](paywalls) ID（UUID）。当 `content_type` 为 `"paywall"` 时必填 |
+| `flow_id` | `string` | 向此目标受众中的用户展示的[流程](adapty-flow-builder) ID（UUID）。当 `content_type` 为 `"flow"` 时必填 |
+| `ab_test_id` | `string` | 针对此目标受众中的用户运行的 [A/B 测试](ab-tests) ID。四种 A/B 测试内容类型均必填 |
+| `ab_test_title` | `string` | A/B 测试标题。只读：写入时 API 会忽略此字段 |
+| `priority` | `number` | 从 0 开始，在版位内唯一。目标受众按从低到高的顺序评估；默认受众必须具有最高值 |
 
-每个版位必须有且仅有一个默认目标受众。
+一个版位必须恰好拥有一个默认目标受众。
 
-版位的内容类型在创建时即已固定，因此 `placements update` 无法将付费墙版位切换为流程，反之亦然。请为流程单独创建一个版位——详见[为流程创建新版位](migrate-to-flows#create-a-new-placement-for-your-flow)。
+:::warning
+`placements update` 会替换完整的目标受众列表，包括正在运行 A/B 测试的目标受众。要保留正在运行的测试，请从 `placements get` 中复制对应条目到 `--audiences`，保持 `ab_test_id` 和 `segment_ids` 不变。如果写入时移除或替换了该条目，测试将在没有获胜者的情况下停止。如果写入时将该条目移动到其他市场细分，测试将重新开始；如果将 `ab_test_id` 指定给另一个目标受众，测试将在那里启动。仅更改优先级的写入不会影响测试的运行。CLI 不会对上述情况发出警告。
+:::
 
-CLI 在发送请求前会逐条校验每个条目。若某条目的 `content_type` 缺失或未知，或者缺少 `content_type` 所需的 ID，CLI 将以退出码 2 终止，且不会发送任何请求。
+跨版位 A/B 测试条目（`cross_ab_test`、`flow_cross_ab_test`）为只读字段。API 在写入时会忽略这些条目，并保留已存储的值。
+
+版位的内容类型在创建时即已固定，因此 `placements update` 无法将付费墙版位切换为流程版位，反之亦然。请为流程单独创建一个版位——详见[为流程创建新版位](migrate-to-flows#create-a-new-placement-for-your-flow)。
+
+CLI 在发送请求前会对每条条目进行校验。如果某条条目缺少 `content_type` 或 `content_type` 未知，或者缺少其 `content_type` 所需的 ID，CLI 将以代码 2 退出，且不会发送任何请求。对于 CLI 无法识别的 `content_type`，CLI 会输出 `this CLI does not know this audience kind; update the CLI`。如果该条目来自 `placements get`，请更新 CLI 而不是删除该条目：该条目可能正在运行 A/B 测试。
 
 流程只有在发布后才能被关联。处于 `draft` 状态的流程，或首次发布仍在进行中的流程，会被服务器拒绝；CLI 识别到该拒绝后将以代码 2 退出，并打印该流程对应的 `flows publish` 命令。要发布流程，请使用 [`flows publish`](#adapty-flows-publish) 或 [流程与付费墙编辑工具](builder-save-publish)，然后等待其状态变为 `published`。
 
@@ -655,23 +663,23 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
   --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
 ```
 
-要在多个版位之间替换付费墙而不丢失特定市场细分的路由配置：
+要在多个版位之间替换付费墙而不丢失市场细分路由规则，请执行以下步骤：
 
-1. 找到受影响的版位：
+1. 查找受影响的版位：
 
    ```bash
    adapty paywalls placements --app <app-id> <old-paywall-id>
    ```
 
-2. 对每个版位，读取完整的 `audiences` 数组：
+2. 对每个版位读取完整的 `audiences` 数组：
 
    ```bash
    adapty placements get --app <app-id> <placement-id> --json
    ```
 
-3. 在客户端替换匹配的 `paywall_id` 值。
+3. 在客户端替换匹配的 `paywall_id` 值。保持其他所有条目不变，包括 A/B 测试条目。
 
-4. 将修改后的 payload 写回：
+4. 将修改后的数据写回：
 
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'

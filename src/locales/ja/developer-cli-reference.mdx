@@ -571,7 +571,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | はい | アプリID（UUID） |
 
-レスポンスには `id`、`developer_id`、`title`、`is_active`、および `audiences` 配列が含まれます。`is_active` はライブ中のプレースメントでは `true`、非アクティブな場合は `false` になります。各オーディエンスエントリには `content_type`（`paywall` または `flow`）、`segment_ids`、`priority`、および `paywall_id` または `flow_id` のいずれかが含まれます。デフォルトオーディエンスは `segment_ids: []` を持ち、優先度の値が最も高く（最後に評価されます）。[オーディエンスの構造](#audiences-shape)を参照してください。
+レスポンスには `id`、`developer_id`、`title`、`is_active`、そして `audiences` 配列が含まれます。`is_active` はライブのプレースメントの場合は `true`、無効の場合は `false` です。各オーディエンスエントリには `content_type`、`segment_ids`、`priority`、およびコンテンツのID（`paywall` の場合は `paywall_id`、`flow` の場合は `flow_id`、[A/B テスト](ab-tests)を実行するオーディエンスの場合は `ab_test_id` と `ab_test_title`）が含まれます。デフォルトのオーディエンスは `segment_ids: []` を持ち、最も高い優先度の値（最後に評価される）を持ちます。[オーディエンスの構造](#audiences-shape)を参照してください。
 
 ### adapty placements create \{#adapty-placements-create\}
 
@@ -627,17 +627,25 @@ adapty placements update --app <app-id> <placement-id> --title "Main" --develope
 
 | フィールド | 型 | 説明 |
 |---|---|---|
-| `content_type` | `string` | `"paywall"` または `"flow"`。すべてのエントリで必須。1つのプレースメント内のすべてのエントリは同じ値を持つ必要があります |
-| `segment_ids` | `string[]` | このオーディエンスが対象とする[セグメント](segments) ID。長さは0または1。空の配列は**デフォルトオーディエンス**（他のセグメントにマッチしないユーザーのフォールバック）を示します |
+| `content_type` | `string` | すべてのエントリで必須。`"paywall"`、`"flow"`、`"ab_test"`（ペイウォール A/B テスト）、`"flow_ab_test"`（フロー A/B テスト）、`"cross_ab_test"` または `"flow_cross_ab_test"`（クロスプレースメント A/B テスト）。ペイウォールのプレースメントには `paywall`、`ab_test`、`cross_ab_test` を使用し、フローのプレースメントには `flow`、`flow_ab_test`、`flow_cross_ab_test` を使用してください |
+| `segment_ids` | `string[]` | このオーディエンスがターゲットとする[セグメント](segments) ID。長さは 0 または 1。空の配列は**デフォルトオーディエンス**を示し、他のどのセグメントにも一致しないユーザーへのフォールバックです |
 | `paywall_id` | `string` | このオーディエンスのユーザーに表示される[ペイウォール](paywalls) ID（UUID）。`content_type` が `"paywall"` の場合に必須 |
 | `flow_id` | `string` | このオーディエンスのユーザーに表示される[フロー](adapty-flow-builder) ID（UUID）。`content_type` が `"flow"` の場合に必須 |
-| `priority` | `number` | 0始まりで、プレースメント内で一意。オーディエンスは値の低い順に評価され、デフォルトオーディエンスは最も高い値を持つ必要があります |
+| `ab_test_id` | `string` | このオーディエンスのユーザーに対して実行される [A/B テスト](ab-tests) ID。4 つの A/B テストコンテンツタイプすべてで必須 |
+| `ab_test_title` | `string` | A/B テストのタイトル。読み取り専用：書き込み時は API によって無視されます |
+| `priority` | `number` | 0 始まりで、プレースメント内で一意。オーディエンスは値の低い順に評価されます。デフォルトオーディエンスは最も高い値を持つ必要があります |
 
-プレースメントには、デフォルトのオーディエンスが必ず1つ必要です。
+プレースメントには、デフォルトオーディエンスが必ず1つ必要です。
 
-プレースメントのコンテンツタイプは作成時に固定されるため、`placements update` でペイウォールのプレースメントをフローに切り替えたり、その逆を行うことはできません。フロー専用のプレースメントを作成してください。詳しくは[フロー用の新しいプレースメントを作成する](migrate-to-flows#create-a-new-placement-for-your-flow)をご覧ください。
+:::warning
+`placements update` はA/Bテストを実行中のオーディエンスを含む、オーディエンスリスト全体を置き換えます。実行中のテストを維持するには、`placements get` のエントリを `--audiences` にそのままコピーし、同じ `ab_test_id` と `segment_ids` を保持してください。エントリを削除または置き換えると、勝者なしでテストが停止します。エントリを別のセグメントに移動するとテストが再開され、別のオーディエンスに `ab_test_id` を指定するとそちらでテストが開始されます。優先度のみを変更する場合はテストが継続されます。CLIはこれらのケースについて警告を表示しません。
+:::
 
-CLIはリクエストを送信する前にすべてのエントリを検証します。`content_type` が不明または未設定のエントリ、あるいは `content_type` に必要なIDが指定されていないエントリがある場合は、コード2で終了し、何も送信されません。
+クロスプレースメントA/BテストのエントリーI（`cross_ab_test`、`flow_cross_ab_test`）は読み取り専用です。APIは書き込み時にこれらを無視し、保存済みの値を維持します。
+
+プレースメントのコンテンツタイプは作成時に固定されるため、`placements update` でペイウォールプレースメントをフローに切り替えたり、その逆を行うことはできません。フロー専用のプレースメントを別途作成してください。[フロー用の新しいプレースメントを作成する](migrate-to-flows#create-a-new-placement-for-your-flow)をご参照ください。
+
+CLIはリクエストを送信する前に、すべてのエントリを確認します。`content_type`が欠落または不明なエントリ、あるいはその`content_type`が必要とするIDが欠落しているエントリがある場合、コード2で終了し、何も送信されません。認識できない`content_type`に対しては、CLIは`this CLI does not know this audience kind; update the CLI`と表示します。エントリが`placements get`から取得されたものである場合、エントリを削除するのではなくCLIをアップデートしてください。そのエントリは実行中のA/B テストである可能性があります。
 
 フローをアタッチできるのは、公開済みの場合のみです。`draft` 状態のフロー、または初回公開がまだ進行中のフローはサーバーに拒否されます。CLIはその拒否を認識し、コード2で終了し、該当フローの `flows publish` コマンドを表示します。フローを公開するには、[`flows publish`](#adapty-flows-publish) または [フロー & ペイウォールビルダー](builder-save-publish) を使用し、ステータスが `published` になるまで待ちます。
 
@@ -655,23 +663,23 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
   --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
 ```
 
-複数のプレースメントにわたってペイウォールをセグメント別ルーティングを維持しながら入れ替えるには:
+複数のプレースメントにまたがって、セグメント別ルーティングを失わずにペイウォールを入れ替えるには:
 
-1. 影響を受けるプレースメントを探す:
+1. 影響を受けるプレースメントを検索します:
 
    ```bash
    adapty paywalls placements --app <app-id> <old-paywall-id>
    ```
 
-2. それぞれについて、`audiences` 配列全体を取得する:
+2. それぞれについて、`audiences` 配列全体を取得します:
 
    ```bash
    adapty placements get --app <app-id> <placement-id> --json
    ```
 
-3. 対象の `paywall_id` の値をクライアント側で置き換える。
+3. 一致する `paywall_id` の値をクライアント側で置き換えます。A/B テストのエントリを含む他のすべてのエントリはそのまま維持します。
 
-4. 変更したペイロードを書き戻す:
+4. 変更したペイロードを書き戻します:
 
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'

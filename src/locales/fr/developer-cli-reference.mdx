@@ -571,7 +571,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Oui | ID de l'application (UUID) |
 
-La réponse contient `id`, `developer_id`, `title`, `is_active`, et un tableau `audiences`. `is_active` est `true` pour un placement actif et `false` pour un placement inactif. Chaque entrée d'audience comporte `content_type` (`paywall` ou `flow`), `segment_ids`, `priority`, ainsi que `paywall_id` ou `flow_id`. L'audience par défaut a `segment_ids: []` et la valeur de priorité la plus élevée (évaluée en dernier). Voir [Forme des audiences](#audiences-shape).
+La réponse contient `id`, `developer_id`, `title`, `is_active`, et un tableau `audiences`. `is_active` est `true` pour un placement actif et `false` pour un placement inactif. Chaque entrée d'audience comporte `content_type`, `segment_ids`, `priority`, ainsi que l'identifiant de son contenu : `paywall_id` pour `paywall`, `flow_id` pour `flow`, ou `ab_test_id` et `ab_test_title` pour une audience qui exécute un [test A/B](ab-tests). L'audience par défaut a `segment_ids: []` et la valeur de priorité la plus élevée (évaluée en dernier). Voir [Structure des audiences](#audiences-shape).
 
 ### adapty placements create
 
@@ -627,17 +627,25 @@ Le paramètre `--audiences` prend un tableau JSON. Chaque entrée contient :
 
 | Champ | Type | Description |
 |---|---|---|
-| `content_type` | `string` | `"paywall"` ou `"flow"`. Obligatoire pour chaque entrée. Toutes les entrées d'un même placement doivent avoir la même valeur |
-| `segment_ids` | `string[]` | IDs de [segment](segments) ciblés par cette audience. Longueur 0 ou 1. Un tableau vide désigne l'**audience par défaut** — le repli pour les utilisateurs qui ne correspondent à aucun autre segment |
-| `paywall_id` | `string` | ID (UUID) du [paywall](paywalls) affiché aux utilisateurs de cette audience. Obligatoire lorsque `content_type` vaut `"paywall"` |
-| `flow_id` | `string` | ID (UUID) du [flow](adapty-flow-builder) affiché aux utilisateurs de cette audience. Obligatoire lorsque `content_type` vaut `"flow"` |
-| `priority` | `number` | Basé sur 0, unique au sein du placement. Les audiences sont évaluées de la valeur la plus basse à la plus haute ; l'audience par défaut doit avoir la valeur la plus élevée |
+| `content_type` | `string` | Obligatoire pour chaque entrée. `"paywall"`, `"flow"`, `"ab_test"` (test A/B paywall), `"flow_ab_test"` (test A/B flow), `"cross_ab_test"` ou `"flow_cross_ab_test"` (test A/B cross-placement). Utilisez `paywall`, `ab_test` et `cross_ab_test` dans un placement paywall, et `flow`, `flow_ab_test` et `flow_cross_ab_test` dans un placement flow |
+| `segment_ids` | `string[]` | IDs de [segments](segments) ciblés par cette audience. Longueur 0 ou 1. Un tableau vide désigne l'**audience par défaut** — le fallback pour les utilisateurs qui ne correspondent à aucun autre segment |
+| `paywall_id` | `string` | ID (UUID) du [paywall](paywalls) affiché aux utilisateurs de cette audience. Obligatoire quand `content_type` vaut `"paywall"` |
+| `flow_id` | `string` | ID (UUID) du [flow](adapty-flow-builder) affiché aux utilisateurs de cette audience. Obligatoire quand `content_type` vaut `"flow"` |
+| `ab_test_id` | `string` | ID du [test A/B](ab-tests) exécuté pour les utilisateurs de cette audience. Obligatoire pour les quatre types de contenu A/B test |
+| `ab_test_title` | `string` | Titre du test A/B. Lecture seule : l'API l'ignore en écriture |
+| `priority` | `number` | Base 0, unique au sein du placement. Les audiences sont évaluées de la plus faible à la plus haute ; l'audience par défaut doit avoir la valeur la plus élevée |
 
 Un placement doit avoir exactement une audience par défaut.
 
-Le type de contenu d'un placement est fixé à sa création, donc `placements update` ne peut pas convertir un placement paywall en flow ni l'inverse. Servez le flow depuis un placement dédié — voir [Créer un nouveau placement pour votre flow](migrate-to-flows#create-a-new-placement-for-your-flow).
+:::warning
+`placements update` remplace la liste complète des audiences, y compris celles qui exécutent un test A/B. Pour conserver un test en cours, copiez son entrée depuis `placements get` dans `--audiences` telle quelle, avec le même `ab_test_id` et les mêmes `segment_ids`. Une écriture qui supprime ou remplace cette entrée arrête le test sans désigner de gagnant. Une écriture qui déplace l'entrée vers d'autres segments redémarre le test, et un `ab_test_id` sur une autre audience y démarre le test. Une écriture qui ne modifie que les priorités laisse le test en cours. La CLI ne vous avertit pas dans ces cas.
+:::
 
-La CLI vérifie chaque entrée avant d'envoyer la requête. Une entrée avec un `content_type` manquant ou inconnu, ou sans l'ID requis par son `content_type`, provoque une sortie avec le code 2 et rien n'est envoyé.
+Les entrées de test A/B cross-placement (`cross_ab_test`, `flow_cross_ab_test`) sont en lecture seule. L'API les ignore lors d'une écriture et conserve celles déjà enregistrées.
+
+Le type de contenu d'un placement est fixé à sa création, donc `placements update` ne peut pas faire passer un placement de paywall à un flow, ni l'inverse. Servez le flow depuis un placement qui lui est propre — voir [Créer un nouveau placement pour votre flow](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+La CLI vérifie chaque entrée avant d'envoyer la requête. Une entrée avec un `content_type` manquant ou inconnu, ou sans l'identifiant requis par son `content_type`, entraîne une sortie avec le code 2 et rien n'est envoyé. Pour un `content_type` qu'elle ne reconnaît pas, la CLI affiche `this CLI does not know this audience kind; update the CLI`. Si l'entrée provient de `placements get`, mettez à jour la CLI plutôt que de supprimer l'entrée : celle-ci peut correspondre à un test A/B en cours.
 
 Un flow ne peut être associé qu'après avoir été publié. Un flow à l'état `draft`, ou dont la première publication est encore en cours, est rejeté par le serveur ; le CLI reconnaît ce rejet et se termine avec le code 2, en affichant la commande `flows publish` correspondant à ce flow. Pour publier un flow, utilisez [`flows publish`](#adapty-flows-publish) ou le [Flow & Paywall Builder](builder-save-publish), puis attendez que son statut passe à `published`.
 
@@ -655,7 +663,7 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
   --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
 ```
 
-Pour remplacer un paywall dans plusieurs placements sans perdre le routage par segment :
+Pour remplacer un paywall dans plusieurs placements sans perdre le routage spécifique aux segments :
 
 1. Trouvez les placements concernés :
 
@@ -669,9 +677,9 @@ Pour remplacer un paywall dans plusieurs placements sans perdre le routage par s
    adapty placements get --app <app-id> <placement-id> --json
    ```
 
-3. Remplacez les valeurs `paywall_id` correspondantes côté client.
+3. Remplacez les valeurs `paywall_id` correspondantes côté client. Laissez toutes les autres entrées inchangées, y compris les entrées de test A/B.
 
-4. Renvoyez le payload modifié :
+4. Réécrivez le payload modifié :
 
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'

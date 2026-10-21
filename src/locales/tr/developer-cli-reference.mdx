@@ -571,7 +571,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Evet | Uygulama ID (UUID) |
 
-Yanıt `id`, `developer_id`, `title`, `is_active` ve bir `audiences` dizisi içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için ise `false` değerini alır. Her kitle girişi `content_type` (`paywall` veya `flow`), `segment_ids`, `priority` ve `paywall_id` ya da `flow_id` içerir. Varsayılan kitle `segment_ids: []` değerine ve en yüksek priority değerine (en son değerlendirilen) sahiptir. Bkz. [Audiences shape](#audiences-shape).
+Yanıt; `id`, `developer_id`, `title`, `is_active` ve bir `audiences` dizisi içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için `false` değerini alır. Her kitle girişi şunları taşır: `content_type`, `segment_ids`, `priority` ve içeriğinin kimliği: `paywall` için `paywall_id`, `flow` için `flow_id` ya da bir [A/B testi](ab-tests) çalıştıran bir kitle için `ab_test_id` ve `ab_test_title`. Varsayılan kitle `segment_ids: []` değerine sahiptir ve en yüksek öncelik değerini alır (en son değerlendirilir). Bkz. [Kitle yapısı](#audiences-shape).
 
 ### adapty placements create
 
@@ -627,17 +627,25 @@ Bu komut, tüm kitle listesi dahil olmak üzere placement'ın tüm alanlarını 
 
 | Alan | Tür | Açıklama |
 |---|---|---|
-| `content_type` | `string` | `"paywall"` veya `"flow"`. Her girdide zorunludur. Bir placement içindeki tüm girdiler aynı değere sahip olmalıdır |
-| `segment_ids` | `string[]` | Bu kitle tarafından hedeflenen [Segment](segments) ID'leri. Uzunluğu 0 veya 1. Boş dizi, **varsayılan kitleyi** işaret eder — başka hiçbir segmentle eşleşmeyen kullanıcılar için yedek |
-| `paywall_id` | `string` | Bu kitleye gösterilen [Paywall](paywalls) ID'si (UUID). `content_type` `"paywall"` olduğunda zorunludur |
-| `flow_id` | `string` | Bu kitleye gösterilen [Flow](adapty-flow-builder) ID'si (UUID). `content_type` `"flow"` olduğunda zorunludur |
-| `priority` | `number` | 0 tabanlı, placement içinde benzersiz. Kitlelerin değerlendirilmesi küçükten büyüğe doğru yapılır; varsayılan kitle en yüksek değere sahip olmalıdır |
+| `content_type` | `string` | Her girişte zorunludur. `"paywall"`, `"flow"`, `"ab_test"` (paywall A/B testi), `"flow_ab_test"` (flow A/B testi), `"cross_ab_test"` veya `"flow_cross_ab_test"` (çapraz placement A/B testi). Paywall placement'ında `paywall`, `ab_test` ve `cross_ab_test`; flow placement'ında `flow`, `flow_ab_test` ve `flow_cross_ab_test` kullanın |
+| `segment_ids` | `string[]` | Bu kitle tarafından hedeflenen [Segment](segments) ID'leri. Uzunluk 0 veya 1. Boş dizi, **varsayılan kitleyi** işaret eder — başka hiçbir segmentle eşleşmeyen kullanıcılar için yedek |
+| `paywall_id` | `string` | Bu kitleye gösterilen [Paywall](paywalls) ID'si (UUID). `content_type` değeri `"paywall"` olduğunda zorunludur |
+| `flow_id` | `string` | Bu kitleye gösterilen [Flow](adapty-flow-builder) ID'si (UUID). `content_type` değeri `"flow"` olduğunda zorunludur |
+| `ab_test_id` | `string` | Bu kitle için çalıştırılan [A/B testi](ab-tests) ID'si. Dört A/B testi içerik türünde zorunludur |
+| `ab_test_title` | `string` | A/B testi başlığı. Salt okunur: API, yazma işleminde bunu yoksayar |
+| `priority` | `number` | 0 tabanlı, placement içinde benzersiz. Kitleler düşükten yükseğe değerlendirilir; varsayılan kitlenin en yüksek değere sahip olması gerekir |
 
 Bir placement'ın tam olarak bir varsayılan kitlesi olmalıdır.
 
-Bir placement'ın içerik türü oluşturulduğunda sabitlenir; bu nedenle `placements update` komutu bir paywall placement'ını flow'a veya tersine dönüştüremez. Flow'u kendi placement'ından sunun — bkz. [Flow için yeni bir placement oluşturma](migrate-to-flows#create-a-new-placement-for-your-flow).
+:::warning
+`placements update` komutu, A/B testi çalıştıran kitleler dahil tüm kitle listesini değiştirir. Çalışan bir testi korumak için `placements get` komutundan ilgili girişi `--audiences` parametresine olduğu gibi kopyalayın; `ab_test_id` ve `segment_ids` değerlerini değiştirmeyin. Bu girişi kaldıran veya değiştiren bir yazma işlemi, testi kazanansız sonlandırır. Girişi başka segmentlere taşıyan bir yazma işlemi testi yeniden başlatır; başka bir kitledeki `ab_test_id` ise testi orada başlatır. Yalnızca öncelikleri değiştiren bir yazma işlemi testi çalışmaya devam ettirir. CLI bu durumlar için sizi uyarmaz.
+:::
 
-CLI, isteği göndermeden önce her girişi kontrol eder. Eksik veya bilinmeyen `content_type` içeren ya da `content_type`'ının gerektirdiği ID'yi içermeyen bir giriş, 2 koduyla çıkış yapar ve hiçbir şey gönderilmez.
+Çapraz placement A/B testi girişleri (`cross_ab_test`, `flow_cross_ab_test`) salt okunurdur. API, bunları yazma işleminde yok sayar ve mevcut olanları korur.
+
+Bir placement'ın içerik türü oluşturulduğunda sabitlenir; bu nedenle `placements update` komutu, bir paywall placement'ını flow'a veya tersine çeviremez. Flow'u kendi placement'ından yayınlayın — bkz. [Flow'unuz için yeni bir placement oluşturma](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+CLI, istek göndermeden önce her girişi kontrol eder. `content_type` eksik veya bilinmiyorsa ya da `content_type`'ın gerektirdiği ID yoksa, çıkış kodu 2 ile işlem sonlanır ve hiçbir şey gönderilmez. Tanımadığı bir `content_type` için CLI şunu yazdırır: `this CLI does not know this audience kind; update the CLI`. Giriş `placements get` komutundan geldiyse, girişi silmek yerine CLI'ı güncelleyin: giriş, devam eden bir A/B testi olabilir.
 
 Bir flow, yalnızca yayımlandıktan sonra eklenebilir. `draft` durumundaki bir flow veya ilk yayımlama işlemi hâlâ devam eden bir flow, sunucu tarafından reddedilir; CLI bu reddi algılar ve `flows publish` komutunu yazdırarak 2 koduyla çıkar. Bir flow yayımlamak için [`flows publish`](#adapty-flows-publish) komutunu veya [Flow & Paywall Builder](builder-save-publish) aracını kullanın, ardından durumunun `published` olmasını bekleyin.
 
@@ -663,13 +671,13 @@ Segment'e özgü yönlendirmeyi kaybetmeden bir paywall'ı birden fazla placemen
    adapty paywalls placements --app <app-id> <old-paywall-id>
    ```
 
-2. Her biri için `audiences` dizisinin tamamını okuyun:
+2. Her biri için tam `audiences` dizisini okuyun:
 
    ```bash
    adapty placements get --app <app-id> <placement-id> --json
    ```
 
-3. Eşleşen `paywall_id` değerlerini istemci tarafında değiştirin.
+3. Eşleşen `paywall_id` değerlerini istemci tarafında değiştirin. A/B testi girişleri dahil diğer tüm girişleri değiştirmeden bırakın.
 
 4. Değiştirilmiş payload'ı geri yazın:
 
