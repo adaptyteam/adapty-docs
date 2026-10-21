@@ -83,7 +83,7 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   this module, so cite `dashboard-backend` and the path, as the `analytics` brief does. Facts settled there
   for `flow-funnel` (all 2026-10-02): a step is the screen's position in the profile's path, not the builder
   `screen_order`; one path per profile (first appearance per screen within a session, then the session with
-  the longest path); completion = path ends on a screen with `is_last_screen`; funnel Revenue/Purchases are
+  the longest path); completion = path ends on a screen with `is_last_screen`, or a trial or purchase on a paywall screen (a purchase closes the flow; agreed 2026-10-21, tracked under the same task); funnel Revenue/Purchases are
   initial purchases (`renewal_period = 1` on `subscription_started`/`trial_converted`, plus one-time
   purchases) net of their refunds, gross USD — unlike `flow-metrics` Revenue, which counts every transaction
   after the show. The Platform and Subscription state filters are a funnel-only filter class
