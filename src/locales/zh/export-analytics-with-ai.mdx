@@ -1,88 +1,93 @@
 ---
 title: "向 AI 询问您的分析数据"
-description: "使用导出分析 API，通过 AI 编码代理以自然语言查询您的 Adapty 分析数据。"
+description: "用自然语言查询您的 Adapty 分析数据，借助运行 Adapty CLI 分析命令的 AI 编程助手实现。"
 metadataTitle: "向 AI 询问您的分析数据 | Adapty 文档"
-keywords: ['向ai询问分析', 'adapty分析ai', '用ai查询分析', '导出分析api', '分析ai代理', 'mcp', 'llm']
+keywords: ['向 AI 询问分析数据', 'adapty 分析 ai', '用 ai 查询分析', 'adapty cli', '分析 ai 助手', 'mcp', 'llm']
 ---
 
-Ask an AI coding agent about your Adapty analytics in plain language — revenue, conversions, retention, LTV — and let it pull the numbers for you. Point a tool that can make API calls at the [Export Analytics API](https://adapty.io/docs/zh/export-analytics-api.md), and it queries your metrics on demand.
+用自然语言向 AI 编程助手查询 Adapty 数据分析——营收、转化率、留存率、LTV——让它帮你获取数据。该助手会在你的终端中运行 [Adapty CLI 分析命令](developer-cli-analytics)并读取结果。
 
-## 可查询的内容 \{#what-you-can-ask-about\}
+## 你可以询问哪些内容 \{#what-you-can-ask-about\}
 
-Export Analytics API 返回的数据与 Adapty 看板数据图表中展示的内容一致。每个数据图表对应一个独立的操作：
+CLI 返回的数字与 Adapty Analytics 看板上显示的数据完全一致。每种问题对应一条命令：
 
-| 数据图表 | 涵盖内容 | 操作 |
+| 问题类型 | 涵盖内容 | 命令 |
 | --- | --- | --- |
-| 收入、MRR、ARR、ARPU | 按时间段、国家或推广活动分组的收入情况 | [retrieveAnalyticsData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveAnalyticsData.md) |
-| 同期群留存 | 某一同期群的订阅用户持续付费的时长 | [retrieveCohortData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveCohortData.md) |
-| 转化率 | 用户从某一步骤或渠道进入下一步骤的比例 | [retrieveConversionData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveConversionData.md) |
-| 流失与漏斗 | 用户在哪些环节流失以及退订速度 | [retrieveFunnelData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveFunnelData.md) |
-| 用户生命周期价值 (LTV) | 各用户市场细分的平均收入随时间的变化 | [retrieveLTVData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveLTVData.md) |
-| 留存率 | 若干天后仍活跃的用户占比 | [retrieveRetentionData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveRetentionData.md) |
+| 收入、MRR、ARR、ARPU 及其他数据图表 | 某项数据图表随时间的变化，按该图表支持的维度（如国家）分组 | `adapty analytics chart` |
+| 转化率 | 用户从一个步骤推进到下一步骤的比例，例如从试用转为付费 | `adapty analytics conversion` |
+| 漏斗 | 用户在安装到续费之间的流失节点 | `adapty analytics funnel` |
+| 留存率 | 每个周期后仍活跃的订阅用户数量 | `adapty analytics retention` |
+| 生命周期价值（LTV） | 每位付费用户在每次续费或每天后产生的收入 | `adapty analytics ltv` |
+| 安装同期群 | 同一时期安装的用户的收入、订阅者数量及趋势预测 | `adapty analytics cohort` |
 
-有关参数和过滤器的完整列表，请参阅 [API 参考文档](https://adapty.io/docs/zh/api-export-analytics.md)。
+所有命令均为只读操作。代理无法通过这些命令对您的 Adapty 账户进行任何更改。
 
 ## 开始之前 \{#before-you-start\}
 
 你需要准备以下三样东西：
 
-- **已有数据的 Adapty 账户**：该 API 返回的数据图表与看板中显示的一致，因此你的应用必须已经在收集分析数据。
-- **Secret API 密钥**：在 [App settings → General](https://app.adapty.io/settings/general) 的 **Secret key** 字段中找到。密钥与应用绑定，每个应用需使用独立的密钥。建议将其存储在环境变量中（例如 `ADAPTY_SECRET_KEY`），这样 AI 代理可以直接读取，无需手动粘贴到对话中。
-- **能够调用 API 的 AI 工具**：例如 Claude Code、Cursor，或配置了 fetch 工具的 Claude Desktop。claude.ai 或 ChatGPT 等纯对话工具无法直接调用 API。
+- **已有数据的 Adapty 账号**：CLI 返回的数据与看板中的数字一致，因此你的应用必须已经开始收集分析数据。
+- **Adapty CLI 0.10.0 或更高版本，并已登录**：运行以下命令安装 CLI 并登录。登录时会打开一个浏览器标签页，在其中确认终端显示的验证码。
 
-<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Adapty 应用设置常规页面，Secret key 字段中显示密钥 API key" />
+  ```bash
+  npm install -g adapty
+  ```
 
-## 为你的 Agent 提供 API 规范 \{#give-your-agent-the-api-spec\}
+  ```bash
+  adapty auth login
+  ```
 
-[OpenAPI 规范](https://adapty.io/docs/zh/api-specs/export-analytics-api.yaml)描述了每个端点、认证请求头、请求体以及响应示例。Agent 获取规范后，无需你编写任何代码即可构建正确的请求。
+  一次登录即可访问你的 Adapty 用户有权限查看的所有应用，无需 API 密钥。
 
-通过 URL 向 Agent 提供规范：
+- **能够运行终端命令的 AI 工具**：例如 Claude Code、Cursor、Codex 或 Gemini CLI。claude.ai 或 ChatGPT 等纯聊天工具无法运行 CLI。
 
-- **粘贴 URL**：如果你的 AI 助手支持抓取 URL，将 `https://adapty.io/docs/zh/api-specs/export-analytics-api.yaml` 提供给它，让它读取该规范文件。
-- **使用抓取工具**：如果你的 AI 助手有可以获取 URL 的工具（例如 MCP fetch 服务器），将其指向同一 URL 即可。
+## 为你的 Agent 提供命令参考 \{#give-your-agent-the-commands\}
 
-该规范将 base URL 设置为 `https://api-admin.adapty.io`，因此只要你的密钥已配置到环境中，AI 助手即可获取所有所需信息。
+[CLI 分析参考文档](https://adapty.io/docs/zh/developer-cli-analytics.md)详细描述了每个命令、其参数标志以及如何解读结果。Agent 读取后，无需你手动编写即可构建正确的命令。
 
-## 查询你的数据 \{#ask-about-your-data\}
+通过 URL 将参考文档提供给 Agent：如果你的 Agent 支持抓取 URL，请将 `https://adapty.io/docs/zh/developer-cli-analytics.md` 提供给它，并让它读取该页面。
 
-加载好规范文件并将密钥设置为环境变量后，就可以用自然语言描述你想查询的数据图表了。
+代理无需提前了解您的数据图表名称。只需运行 `adapty analytics catalog --app <app-id>`，即可列出您的应用支持的所有数据图表、转化指标、分组维度和筛选条件。
 
-示例提示词：
+## 询问你的数据 \{#ask-about-your-data\}
+
+加载好参考文档并登录 CLI 后，说明应用名称、数据图表、时间段以及你想做的决策。
+
+示例提示语：
 
 ```
-What was my MRR at the end of each month this year, and how does it compare to last year?
+For my app "Sleep Tracker", what was MRR at the end of each month this year,
+and how does it compare to the same months last year?
 
-Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+Show the trial-to-paid conversion rate for the last 90 days, by product.
+Which product converts worst?
 
-Which countries drive the most revenue from my yearly subscription? Top 10.
+Which 10 countries brought the most revenue in Q3? Use revenue after the
+store's commission.
 
-How is week-1 retention trending for subscribers who started in the last 6 months?
+How does retention compare between iOS and Android for subscribers who started
+in the last 6 months?
 
-What's the refund rate on my annual plan since launch, by month?
-
-Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
+Compare LTV after 30 and 90 days for users who installed in July and in August,
+and save it as a CSV file.
 ```
 
-代理会将您的请求映射到对应操作，从环境变量中读取密钥，并返回数据。默认响应格式为 JSON。如果需要方便导入电子表格的文件，可以要求 CSV 格式——代理会在请求体中将 `format` 设置为 `csv`。
-
-:::warning
-请将密钥保存在环境变量中，不要粘贴到聊天记录里，也不要提交到规则文件中。密钥与应用绑定，如有泄露，请在 **Settings → General** 中轮换密钥。详见[轮换 API 密钥](https://adapty.io/docs/zh/export-analytics-api-authorization.md)。
-:::
+智能体通过 `adapty apps list` 查找应用的 UUID，选择对应命令并返回数据。结果以 JSON 格式读取（`--json`）。如需电子表格格式的文件，可要求 CSV 输出——智能体会在命令中添加 `--csv`。
 
 ## 一次配置，反复使用 \{#set-up-once-for-repeated-use\}
 
-为避免每次会话都重复配置，请将 spec 和 key 保存到 agent 可复用的位置：
+为避免每次会话都重复配置，请将参考内容保存到 agent 可复用的位置：
 
-- **保存规格链接**：将规格 URL 添加到你的智能体规则或记忆文件中（例如 `CLAUDE.md` 或 Cursor 规则文件），这样每次会话都会自动加载。
-- **将密钥存入环境变量**：将 `ADAPTY_SECRET_KEY` 保存到你的 Shell 配置文件或工具的密钥存储中，以后就不需要再手动粘贴了。
-- **保存常用提示词或创建自定义技能**：将常用问题保存为提示词，或封装成自定义技能或斜杠命令，让智能体随时按需生成报告。
+- **保存参考链接**：将 `https://adapty.io/docs/zh/developer-cli-analytics.md` 添加到你的 agent 规则或记忆文件（例如 `CLAUDE.md` 或 Cursor 规则文件）中，以便每次会话时自动加载。
+- **命名你的应用**：将应用名称或 UUID 也添加到同一文件，这样就不必在每个提示中重复指定了。
+- **保存常用提示或创建自定义技能**：将你的常见问题保存为固定提示，或者将其封装成自定义技能或斜杠命令，让 agent 随时按需生成报告。
 
 ## 限制 \{#limits\}
 
-请注意以下约束：
+请注意以下限制：
 
-- **频率限制**：API 允许每个应用每秒 2 次请求，由该应用的所有 API 密钥共享。超出限制将返回 `429 Too Many Requests` 错误。请告知你的 Agent 在遇到 `429` 时等待并重试。
-- **应用专属密钥**：每个密钥仅适用于一个应用。如需从多个应用拉取数据，请为每个应用提供对应的密钥。
-- **输出格式**：响应默认为 JSON 格式。如需导出 CSV，请在请求体中将 `format` 设置为 `csv`。
+- **速率限制**：每个分析命令每个应用每秒允许 2 次请求。CLI 不会自动重试，因此发送过快的命令会以退出码 4 失败。请告知你的 agent 逐条运行命令，并在失败后等待 `retry_after_seconds` 再重试。
+- **每条命令对应一个应用**：每条命令只读取一个应用的数据。如需比较多个应用，agent 需为每个应用分别运行命令。
+- **不纳入归因数据**：广告花费、安装量和按广告系列统计的 ROAS，请使用 [归因命令](developer-cli-attribution)。不要将其数据与分析数据相加，因为 Adapty 的计算方式不同。
 
-有关完整的身份验证和请求规则，请参阅[授权与请求格式](https://adapty.io/docs/zh/export-analytics-api-authorization.md)。
+要从服务器或定时任务中提取分析数据（这类场景无法通过浏览器登录），请改用[导出分析 API](export-analytics-api) 并配合密钥使用。

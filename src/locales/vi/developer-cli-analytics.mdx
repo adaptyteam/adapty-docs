@@ -1,0 +1,235 @@
+---
+title: "Truy vấn Analytics từ CLI"
+description: "Đọc Adapty Analytics từ terminal: các biểu đồ như doanh thu và MRR, tỷ lệ chuyển đổi, funnel, retention, LTV và install cohort, dưới dạng bảng, JSON hoặc CSV."
+metadataTitle: "Analytics trong Developer CLI | Tài liệu Adapty"
+---
+
+CLI Adapty đọc [Adapty Analytics](analytics) trực tiếp từ terminal, thông qua topic `adapty analytics`. Nó trả về các số liệu mà dashboard Analytics hiển thị cho một ứng dụng: các [biểu đồ](charts) như doanh thu và MRR, [chuyển đổi](analytics-conversion), [phễu](analytics-funnels), [retention](analytics-retention), [LTV](ltv), và [install cohort](analytics-cohorts).
+
+Dùng nó để cấp cho AI agent quyền truy cập trực tiếp vào số liệu ứng dụng của bạn, kéo biểu đồ vào script hoặc bảng tính, hoặc tra cứu nhanh một chỉ số mà không cần mở dashboard.
+
+Every `analytics` command is read-only and takes one app.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Chủ đề `analytics` sử dụng cùng cách cài đặt và đăng nhập như các phần còn lại của CLI. Nếu bạn chưa thiết lập, hãy làm theo bước 1 và 2 trong [hướng dẫn quickstart](developer-cli-quickstart). Chủ đề này yêu cầu CLI phiên bản 0.10.0 trở lên. Để xem phiên bản hiện tại, chạy lệnh `adapty --version`.
+
+Khác với [Export Analytics API](export-analytics-api), CLI không cần secret API key. Khi đăng nhập vào CLI, bạn có thể truy cập mọi ứng dụng mà tài khoản Adapty của bạn có quyền.
+
+Mọi lệnh đều yêu cầu UUID của ứng dụng trong `--app`. Để tìm UUID, chạy:
+
+```bash
+adapty apps list
+```
+
+## Xây dựng một truy vấn \{#build-a-query\}
+
+Xây dựng mọi truy vấn theo cùng một thứ tự: tìm tên trong danh mục, tra cứu giá trị bộ lọc, rồi chạy một lệnh dữ liệu.
+
+1. **Liệt kê những gì analytics của ứng dụng có thể trả lời**. Danh mục liệt kê mọi biểu đồ cùng đơn vị, mọi chuyển đổi, các nhóm và bộ lọc mà mỗi lệnh chấp nhận, cùng các giá trị được chấp nhận và mặc định của từng tùy chọn:
+
+   ```bash
+   adapty analytics catalog --app <app-id>
+   ```
+
+   Tên biểu đồ và chỉ số chuyển đổi như `revenue`, `mrr`, hay `trial-paid` đều lấy từ danh sách này. CLI không tự lưu danh sách riêng, nên khi Adapty bổ sung biểu đồ mới, CLI vẫn hoạt động bình thường mà không cần cập nhật.
+
+2. **Tra cứu giá trị bộ lọc**. Bỏ qua bước này nếu bạn không dùng bộ lọc. Ví dụ, để liệt kê các quốc gia có thể lọc:
+
+   ```bash
+   adapty analytics values --app <app-id> --dimension country
+   ```
+
+3. **Chạy lệnh dữ liệu**:
+
+   ```bash
+   adapty analytics chart --app <app-id> --chart revenue \
+     --date-from 2026-07-01 --date-to 2026-09-30 --group-by country
+   ```
+
+Câu trả lời có một hàng cho tổng cộng, sau đó một hàng cho mỗi nhóm.
+
+### Ví dụ
+
+MRR quý này, so sánh với quý trước:
+
+```bash
+adapty analytics chart --app <app-id> --chart mrr \
+  --date-from 2026-07-01 --date-to 2026-09-30 \
+  --compare-from 2026-04-01 --compare-to 2026-06-30
+```
+
+Tỷ lệ chuyển đổi từ dùng thử sang trả phí hàng tháng tại hai quốc gia:
+
+```bash
+adapty analytics conversion --app <app-id> --conversion trial-paid \
+  --date-from 2026-04-01 --date-to 2026-09-30 --granularity month --filter country=US,GB
+```
+
+Giữ chân người dùng theo quốc gia, tính từ thời điểm dùng thử:
+
+```bash
+adapty analytics retention --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --group-by country --use-trial
+```
+
+LTV sau 7, 30 và 90 ngày, tính trên doanh thu sau khi trừ hoa hồng và thuế, được lưu thành file CSV:
+
+```bash
+adapty analytics ltv --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --revenue-basis net --period-type days --renewal-days 7,30,90 --csv > ltv.csv
+```
+
+Cohort cài đặt theo tuần tính trên doanh thu sau khi trừ hoa hồng của cửa hàng:
+
+```bash
+adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --granularity week --revenue-basis proceeds
+```
+
+## Chọn định dạng đầu ra \{#choose-the-output\}
+
+Mỗi lệnh dữ liệu in ra theo một trong ba định dạng:
+
+| Đầu ra | Cờ | Dùng khi |
+|---|---|---|
+| Table | Không có | Đọc trong terminal. Mỗi bảng bắt đầu bằng tiêu đề ghi tên biểu đồ, khoảng thời gian, múi giờ và các bộ lọc. Tiền tệ có 2 chữ số thập phân. Một số trường bị bỏ qua, chẳng hạn như lý do churn trong funnel và dự đoán cohort, và một dòng bên dưới bảng sẽ ghi chú điều đó. |
+| JSON | `--json` | Script và AI agent. Kết quả trả về từ API, nguyên vẹn, với đầy đủ các trường. |
+| CSV | `--csv` | Bảng tính. Mỗi nhóm một hàng, với đầy đủ các trường của kết quả. Khoảng thời gian so sánh được đưa vào các cột `compare.*` của cùng hàng đó. |
+
+Bạn không thể dùng `--csv` và `--json` cùng lúc.
+
+Trong JSON, tổng thể là mục đầu tiên của `data.segments`, còn `data.value` là con số cho toàn bộ khoảng thời gian. `meta.query` hiển thị truy vấn đã chạy, với mọi giá trị mặc định được điền đầy đủ và múi giờ đang áp dụng.
+
+## Đọc kết quả \{#read-the-results\}
+
+- **Ngày tháng**: `--date-from` và `--date-to` là các ngày bao gồm cả hai đầu theo [múi giờ báo cáo](general) của ứng dụng. Để đọc dữ liệu theo múi giờ khác, truyền tên IANA vào `--timezone`, ví dụ `Europe/Berlin`. `meta.query.timezone` cho biết múi giờ đang được áp dụng.
+- **Doanh thu**: `--revenue-basis` chọn cơ sở tính các giá trị tiền tệ: `gross` (mặc định), `proceeds` (sau khi trừ hoa hồng của cửa hàng), hoặc `net` (sau khi trừ hoa hồng và thuế). Tùy chọn này có tác dụng với `ltv`, `cohort`, và các biểu đồ hiển thị tiền tệ. Danh mục đánh dấu các biểu đồ đó bằng `takes revenue_basis`.
+- **Giá trị rỗng**: Giá trị rỗng có nghĩa là Adapty không có dữ liệu, không phải bằng không. Một khoảng thời gian LTV mà cohort chưa đạt đến sẽ là rỗng, tương tự với cohort không thể dự đoán được. Trong đầu ra `--json`, các giá trị này là `null`. Bảng in ra `—`, còn CSV để trống ô đó.
+- **Hàng tổng cộng**: Xác định tổng bằng `is_total`, không phải bằng `key` rỗng. `key` của một nhóm cũng có thể rỗng, ví dụ nhóm người dùng không có quốc gia.
+- **Khóa nhóm**: `key` của một nhóm không phải lúc nào cũng là giá trị mà `--filter` chấp nhận. Để lọc, hãy lấy giá trị từ `analytics values`.
+- **Khoảng thời gian so sánh**: Chỉ `chart` và `conversion` mới chấp nhận `--compare-from` và `--compare-to`. Khoảng thời gian so sánh có tổng và nhóm riêng, và bảng in nó dưới dạng bảng thứ hai.
+- **Số liệu attribution**: Đừng cộng các số liệu này với số liệu [Attribution](developer-cli-attribution). Adapty tính chúng theo cách khác.
+
+CLI trả về các số liệu của dashboard, với hai ngoại lệ:
+
+- `funnel` áp dụng bộ lọc `cancellation_reason`, còn funnel trên dashboard thì bỏ qua bộ lọc này. Do đó, hai con số có thể khác nhau.
+- `retention` cung cấp danh sách nhóm khác so với dashboard. Lấy danh sách từ catalog.
+
+## Giới hạn \{#limits\}
+
+Mỗi lệnh analytics chấp nhận tối đa 2 yêu cầu mỗi giây cho mỗi ứng dụng và 360 yêu cầu mỗi phút tổng cộng. CLI không bao giờ thử lại yêu cầu. Khi bạn gửi yêu cầu quá nhanh, lệnh sẽ thoát với mã 4. Với `--json`, lỗi bao gồm `retry_after_seconds`: hãy chờ khoảng thời gian đó, sau đó chạy lại lệnh.
+
+## Lỗi \{#errors\}
+
+Mỗi lỗi đều thoát ra với một mã lỗi cho bạn biết cần sửa gì:
+
+| Mã thoát | Nguyên nhân | Cách xử lý |
+|---|---|---|
+| 2 | CLI từ chối dữ liệu đầu vào trước khi gửi: UUID ứng dụng không hợp lệ, phạm vi ngày sai định dạng hoặc bị đảo ngược, khoảng thời gian so sánh thiếu một đầu, `--renewal-days` không có `--period-type days`, `--filter` không có `=`, hoặc dùng `--csv` cùng lúc với `--json`. | Sửa flag được nêu trong thông báo lỗi. |
+| 3 | Bạn chưa đăng nhập, hoặc tài khoản Adapty của bạn không có quyền truy cập ứng dụng này. | Đăng nhập bằng `adapty auth login`. Nếu đã đăng nhập, tìm ID ứng dụng trong `adapty apps list` — lệnh này chỉ liệt kê các ứng dụng bạn có quyền đọc. |
+| 4 | Adapty từ chối yêu cầu: biểu đồ, conversion, grouping, filter hoặc múi giờ không tồn tại; dùng `--revenue-basis` trên biểu đồ không hiển thị doanh thu; hoặc quá nhiều yêu cầu. | Sửa tên từ `adapty analytics catalog`. Với `--json`, lỗi sẽ bao gồm mã lỗi từ API. Với lỗi quá nhiều yêu cầu, xem [Giới hạn](#limits). |
+
+## Tài liệu tham khảo lệnh \{#command-reference\}
+
+Mỗi lệnh dữ liệu đều nhận các flag sau:
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | UUID của ứng dụng, lấy từ `adapty apps list`. |
+| `--date-from` | Có | Ngày đầu tiên của khoảng thời gian, bao gồm cả ngày này, định dạng `YYYY-MM-DD`. |
+| `--date-to` | Có | Ngày cuối cùng của khoảng thời gian, bao gồm cả ngày này. Không thể sớm hơn `--date-from`. |
+| `--filter` | Không | `dimension=value[,value]`. Chỉ giữ lại dữ liệu có dimension khớp với một trong các giá trị. Lặp lại flag để lọc theo nhiều dimension. Dùng `\,` để nhập dấu phẩy trong một giá trị. Giá trị rỗng cũng là một giá trị hợp lệ: `country=` giữ lại dữ liệu không có thông tin quốc gia. |
+| `--timezone` | Không | Múi giờ IANA của các ngày, ví dụ `Europe/Berlin`. Nếu bỏ qua, sẽ dùng múi giờ của ứng dụng. |
+| `--csv` | Không | In bảng dạng CSV thay vì bảng thông thường. Không thể dùng cùng với `--json`. |
+
+Mỗi lệnh thêm các cờ riêng của nó vào đây.
+
+### `analytics catalog`
+
+Liệt kê những gì analytics của ứng dụng có thể trả lời: mỗi lệnh với các tùy chọn, nhóm và bộ lọc; mỗi biểu đồ với đơn vị của nó; mọi chuyển đổi; và mọi chiều bộ lọc.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | UUID của ứng dụng, lấy từ `adapty apps list`. |
+
+### `analytics values`
+
+Liệt kê các giá trị mà một chiều lọc nhận được cho ứng dụng. Mỗi `value` chính xác là những gì `--filter <dimension>=<value>` chấp nhận.
+
+| Flag | Required | Mô tả |
+|---|---|---|
+| `--app` | Yes | UUID của ứng dụng, lấy từ `adapty apps list`. |
+| `--dimension` | Yes | Một chiều lọc từ `adapty analytics catalog`. |
+
+### `analytics chart`
+
+Đọc một [biểu đồ](charts): con số cho toàn bộ khoảng thời gian, các điểm dữ liệu, và các nhóm của nó.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--chart` | Có | Tên biểu đồ từ `adapty analytics catalog`, ví dụ `revenue` hoặc `mrr`. |
+| `--group-by` | Không | Một nhóm của biểu đồ này, lấy từ catalog. |
+| `--granularity` | Không | Độ dài một điểm dữ liệu: `day`, `week`, `month` (mặc định), `quarter`, hoặc `year`. |
+| `--revenue-basis` | Không | `gross` (mặc định), `proceeds`, hoặc `net`. Chỉ dùng cho các biểu đồ hiển thị tiền. |
+| `--compare-from` | Không | Ngày đầu tiên của kỳ cần so sánh. Cần có `--compare-to`. |
+| `--compare-to` | Không | Ngày cuối cùng của kỳ cần so sánh. Cần có `--compare-from`. |
+
+### `analytics conversion`
+
+Đọc một [conversion](analytics-conversion): tỷ lệ tính theo phần trăm, cùng hai số liệu được chia, cho từng điểm và nhóm.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--conversion` | Có | Tên chuyển đổi từ `adapty analytics catalog`, ví dụ `trial-paid` hoặc `install-paid`. |
+| `--group-by` | Không | Một nhóm từ catalog. |
+| `--granularity` | Không | Độ dài một điểm: `day` (mặc định), `week`, `month`, `quarter`, hoặc `year`. |
+| `--compare-from` | Không | Ngày đầu tiên của khoảng thời gian để so sánh. Cần có `--compare-to`. |
+| `--compare-to` | Không | Ngày cuối cùng của khoảng thời gian để so sánh. Cần có `--compare-from`. |
+
+When the period has no conversions, `meta.recommended_period` in the `--json` output can name a period that has some.
+
+### `analytics funnel`
+
+Đọc [kênh](analytics-funnels): số lượng ở mỗi bước từ lần cài đặt đến các lần gia hạn.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--group-by` | Không | Một nhóm từ danh mục. |
+
+### `analytics retention`
+
+Đọc dữ liệu [retention](analytics-retention): số người đăng ký còn lại trong mỗi kỳ.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--group-by` | Không | Một nhóm từ danh mục. |
+| `--use-trial` | Không | Tính từ thời điểm dùng thử, không phải từ kỳ thanh toán đầu tiên. |
+
+### `analytics ltv`
+
+Đọc [LTV](ltv): doanh thu trên mỗi người dùng trả phí sau mỗi lần gia hạn hoặc theo ngày.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--group-by` | Không | Một tiêu chí nhóm từ danh mục. |
+| `--revenue-basis` | Không | `gross` (mặc định), `proceeds`, hoặc `net`. |
+| `--period-type` | Không | `renewals` (mặc định) đếm theo lần gia hạn. `days` đếm theo số ngày kể từ khi cài đặt. |
+| `--renewal-days` | Không | Số ngày cần đếm khi dùng `--period-type days`, cách nhau bằng dấu phẩy, theo thứ tự tăng dần, ví dụ `7,30,90`. Chỉ dùng với `--period-type days`. |
+
+### `analytics cohort`
+
+Đọc [install cohorts](analytics-cohorts): doanh thu, số người đăng ký, giá trị trung bình và các dự đoán của từng cohort theo lần gia hạn hoặc theo ngày. Mỗi cohort là một hàng, và ngày bắt đầu của nó là `key`. Các cohort không thể được nhóm lại.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--granularity` | Không | Độ dài của một cohort: `day`, `week`, `month` (mặc định), `quarter`, hoặc `year`. |
+| `--revenue-basis` | Không | `gross` (mặc định), `proceeds`, hoặc `net`. |
+| `--period-type` | Không | `renewals` (mặc định) đếm theo lần gia hạn. `days` đếm theo số ngày kể từ khi cài đặt. |
+| `--renewal-days` | Không | Số ngày cần đếm với `--period-type days`, phân cách bằng dấu phẩy, theo thứ tự tăng dần. Chỉ dùng với `--period-type days`. |
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Cách Adapty Analytics hoạt động](how-adapty-analytics-works) — nguồn gốc của các con số.
+- [Điều khiển, bộ lọc và nhóm](controls-filters-grouping-compare-proceeds) — ý nghĩa của các bộ lọc và tùy chọn doanh thu trên dashboard.
+- [Truy vấn Attribution từ CLI](developer-cli-attribution) — chi tiêu, lượt cài đặt và ROAS theo kênh và chiến dịch.

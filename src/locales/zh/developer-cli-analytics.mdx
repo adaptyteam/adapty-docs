@@ -1,0 +1,235 @@
+---
+title: "从 CLI 查询分析数据"
+description: "通过终端读取 Adapty 分析数据：收入、MRR 等数据图表，转化率、漏斗、留存率、LTV 及安装同期群，支持表格、JSON 或 CSV 格式输出。"
+metadataTitle: "开发者 CLI 中的分析数据 | Adapty 文档"
+---
+
+Adapty CLI 可在终端中通过 `adapty analytics` 主题读取 [Adapty 数据分析](analytics)。它返回某个应用在 Analytics 看板中显示的所有数据：[数据图表](charts)（如营收和 MRR）、[转化](analytics-conversion)、[漏斗](analytics-funnels)、[留存](analytics-retention)、[LTV](ltv) 以及[安装同期群](analytics-cohorts)。
+
+可以用它让 AI 智能体实时访问应用数据、将数据图表导入脚本或表格，或者无需打开看板就能快速获取某个具体数据。
+
+Every `analytics` command is read-only and takes one app.
+
+## 开始之前 \{#before-you-start\}
+
+`analytics` 主题的安装和登录方式与 CLI 的其他部分相同。如果尚未完成配置，请按照[快速入门指南](developer-cli-quickstart)的第 1 步和第 2 步进行操作。该主题需要 CLI 0.10.0 或更高版本。要查看当前版本，请运行 `adapty --version`。
+
+与 [Export Analytics API](export-analytics-api) 不同，CLI 无需密钥 API key。CLI 登录后即可读取您的 Adapty 用户有权访问的所有应用。
+
+每个命令都通过 `--app` 参数接收应用的 UUID。要查找 UUID，请运行：
+
+```bash
+adapty apps list
+```
+
+## 构建查询 \{#build-a-query\}
+
+按照相同的顺序构建每一条查询：先在目录中查找名称，再查找筛选器的值，最后执行一个数据命令。
+
+1. **列出应用分析功能可以回答的问题**。目录列出了每个数据图表及其单位、每项转化、各命令支持的分组和筛选器，以及每个选项的可用值和默认值：
+
+   ```bash
+   adapty analytics catalog --app <app-id>
+   ```
+
+   数据图表和转化名称（如 `revenue`、`mrr` 或 `trial-paid`）均来自此列表。CLI 自身不维护这份列表，因此 Adapty 后续新增的数据图表无需更新 CLI 即可直接使用。
+
+2. **查询筛选条件的可选值**。如果不需要筛选，可跳过此步骤。例如，要列出可用于筛选的国家/地区：
+
+   ```bash
+   adapty analytics values --app <app-id> --dimension country
+   ```
+
+3. **执行数据命令**：
+
+   ```bash
+   adapty analytics chart --app <app-id> --chart revenue \
+     --date-from 2026-07-01 --date-to 2026-09-30 --group-by country
+   ```
+
+答案包含一行总计，以及每个分组各一行。
+
+### 示例 \{#examples\}
+
+本季度 MRR 与上季度对比：
+
+```bash
+adapty analytics chart --app <app-id> --chart mrr \
+  --date-from 2026-07-01 --date-to 2026-09-30 \
+  --compare-from 2026-04-01 --compare-to 2026-06-30
+```
+
+按国家统计的月度试用转付费转化率：
+
+```bash
+adapty analytics conversion --app <app-id> --conversion trial-paid \
+  --date-from 2026-04-01 --date-to 2026-09-30 --granularity month --filter country=US,GB
+```
+
+按国家统计的同期群留存率（从试用期开始计算）：
+
+```bash
+adapty analytics retention --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --group-by country --use-trial
+```
+
+第 7、30 和 90 天的 LTV，基于扣除佣金和税款后的收入，保存为 CSV 文件：
+
+```bash
+adapty analytics ltv --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --revenue-basis net --period-type days --renewal-days 7,30,90 --csv > ltv.csv
+```
+
+按周划分的安装同期群，基于扣除应用商店佣金后的收入：
+
+```bash
+adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --granularity week --revenue-basis proceeds
+```
+
+## 选择输出格式 \{#choose-the-output\}
+
+每个数据命令支持以下三种输出格式之一：
+
+| 输出格式 | 标志 | 适用场景 |
+|---|---|---|
+| 表格 | 无 | 在终端中阅读。每个表格以标题开头，包含数据图表名称、时间段、时区和筛选条件。金额保留两位小数。部分字段会被省略，例如漏斗流失原因和同期群趋势预测，表格下方会有相应说明。 |
+| JSON | `--json` | 脚本和 AI 代理。直接返回 API 原始响应，包含所有字段。 |
+| CSV | `--csv` | 电子表格。每组数据占一行，包含响应中的所有字段。对比时段的数据会写入同一行的 `compare.*` 列。 |
+
+你不能同时使用 `--csv` 和 `--json`。
+
+在 JSON 中，总计是 `data.segments` 的第一个条目，`data.value` 是整个周期的数值。`meta.query` 显示已运行的查询，其中填入了所有默认值以及生效的时区。
+
+## 查看结果 \{#read-the-results\}
+
+- **日期**：`--date-from` 和 `--date-to` 是应用[报告时区](general)中的包含日期。如需以其他时区读取数据，可通过 `--timezone` 传入 IANA 时区名称，例如 `Europe/Berlin`。`meta.query.timezone` 会显示当前生效的时区。
+- **收入**：`--revenue-basis` 用于设置收入相关数值的计算基准：`gross`（默认值，即总收入）、`proceeds`（扣除商店佣金后）或 `net`（扣除佣金和税费后）。该参数适用于 `ltv`、`cohort` 以及所有展示金额的数据图表。目录中标注了 `takes revenue_basis` 的数据图表均支持此参数。
+- **空值**：空值表示 Adapty 没有该数据，而非零值。同期群尚未达到的 LTV 周期为空值，无法进行趋势预测的同期群同样如此。在 `--json` 输出中，这些值显示为 `null`；表格中打印为 `—`，CSV 中则留空。
+- **汇总行**：请通过 `is_total` 字段来找到汇总行，而非通过空的 `key`。分组的 `key` 本身也可能为空，例如没有国家信息的用户分组。
+- **分组键**：分组的 `key` 不一定是 `--filter` 所接受的值。如需筛选，请从 `analytics values` 中取值。
+- **对比周期**：只有 `chart` 和 `conversion` 支持 `--compare-from` 和 `--compare-to`。对比周期拥有独立的汇总行和分组，表格会将其作为第二张表打印。
+- **归因数据**：请勿将这些数字与[归因](developer-cli-attribution)中的数字相加，Adapty 对二者的计算方式不同。
+
+CLI 返回的数字与看板一致，但有两个例外：
+
+- `funnel` 会应用 `cancellation_reason` 过滤器，而看板的漏斗图会忽略该过滤器。因此，这两个数字可能存在差异。
+- `retention` 提供的分组列表与看板不同。请以目录中的列表为准。
+
+## 限制 \{#limits\}
+
+每个分析命令每个应用每秒最多接受 2 次请求，每分钟总计最多 360 次请求。CLI 不会自动重试请求。当请求发送过快时，命令会以退出码 4 退出。使用 `--json` 时，错误信息中会包含 `retry_after_seconds` 字段：等待该时长后，重新运行命令即可。
+
+## 错误 \{#errors\}
+
+每个错误都会以一个错误代码退出，帮助你定位问题：
+
+| 退出码 | 原因 | 处理方法 |
+|---|---|---|
+| 2 | CLI 在发送请求前拒绝了输入：无效的应用 UUID、格式错误或日期区间首尾颠倒、对比周期缺少某一端、`--renewal-days` 未搭配 `--period-type days`、`--filter` 缺少 `=`，或同时使用了 `--csv` 和 `--json`。 | 根据提示信息修复对应的参数标志。 |
+| 3 | 您尚未登录，或您的 Adapty 账号无权访问该应用。 | 使用 `adapty auth login` 登录。若已登录，请通过 `adapty apps list` 查找应用 ID，该命令仅列出您有读取权限的应用。 |
+| 4 | Adapty 拒绝了请求：未知的数据图表、转化方式、分组方式、过滤条件或时区；在不显示金额的数据图表上使用了 `--revenue-basis`；或请求过于频繁。 | 通过 `adapty analytics catalog` 核对名称。使用 `--json` 时，错误信息中包含 API 错误码。请求频率超限的处理方式，请参见[限制](#limits)。 |
+
+## 命令参考 \{#command-reference\}
+
+每条数据命令都支持以下标志：
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用的 UUID，来自 `adapty apps list`。 |
+| `--date-from` | 是 | 时间段的第一天（含当天），格式为 `YYYY-MM-DD`。 |
+| `--date-to` | 是 | 时间段的最后一天（含当天）。不能早于 `--date-from`。 |
+| `--filter` | 否 | `dimension=value[,value]`。保留指定维度具有其中某个值的数据。可重复使用该标志以按多个维度筛选。在值中需要使用逗号时，请写 `\,`。空值也是一个值：`country=` 保留没有国家信息的数据。 |
+| `--timezone` | 否 | 天数所用的 IANA 时区，例如 `Europe/Berlin`。省略时使用应用的时区。 |
+| `--csv` | 否 | 以 CSV 表格格式输出，而非人类可读表格。不能与 `--json` 同时使用。 |
+
+每个命令都会在此基础上添加各自的标志参数。
+
+### `analytics catalog`
+
+列出应用分析功能所能回答的问题：包括每条命令及其选项、分组和筛选条件；每个数据图表及其单位；每次转化；以及每个筛选维度。
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用的 UUID，可通过 `adapty apps list` 获取。 |
+
+### `analytics values`
+
+列出某个过滤维度在应用中所有可取的值。每个 `value` 就是 `--filter <dimension>=<value>` 所接受的参数。
+
+| 标志 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 UUID，来自 `adapty apps list`。 |
+| `--dimension` | 是 | 来自 `adapty analytics catalog` 的过滤维度。 |
+
+### `analytics chart` \{#analytics-chart\}
+
+读取一个[数据图表](charts)：整个周期的数值、各数据点及其分组。
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--chart` | 是 | 来自 `adapty analytics catalog` 的数据图表名称，例如 `revenue` 或 `mrr`。 |
+| `--group-by` | 否 | 该数据图表的某个分组维度，来自 catalog。 |
+| `--granularity` | 否 | 单个数据点的时间粒度：`day`、`week`、`month`（默认）、`quarter` 或 `year`。 |
+| `--revenue-basis` | 否 | `gross`（默认）、`proceeds` 或 `net`。仅适用于显示金额的数据图表。 |
+| `--compare-from` | 否 | 对比周期的起始日期。需与 `--compare-to` 配合使用。 |
+| `--compare-to` | 否 | 对比周期的结束日期。需与 `--compare-from` 配合使用。 |
+
+### `analytics conversion`
+
+读取一个[转化率](analytics-conversion)：每个数据点和分组的百分比转化率，以及对应的两个计数值。
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--conversion` | 是 | 来自 `adapty analytics catalog` 的转化名称，例如 `trial-paid` 或 `install-paid`。 |
+| `--group-by` | 否 | 来自目录的一个分组维度。 |
+| `--granularity` | 否 | 单个数据点的时间粒度：`day`（默认）、`week`、`month`、`quarter` 或 `year`。 |
+| `--compare-from` | 否 | 对比周期的起始日期，需与 `--compare-to` 配合使用。 |
+| `--compare-to` | 否 | 对比周期的结束日期，需与 `--compare-from` 配合使用。 |
+
+当某个周期内没有转化时，`--json` 输出中的 `meta.recommended_period` 可能会指向一个有转化数据的周期。
+
+### `analytics funnel`
+
+读取[漏斗](analytics-funnels)：从安装到续订，每个步骤的计数。
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--group-by` | 否 | 目录中的一种分组方式。 |
+
+### `analytics retention`
+
+读取[留存率](analytics-retention)：每个周期内剩余的订阅用户数。
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--group-by` | 否 | 从目录中选择一个分组维度。 |
+| `--use-trial` | 否 | 从试用期开始计算，而非从首个付费周期开始。 |
+
+### `analytics ltv`
+
+读取 [LTV](ltv)：每位付费用户在每次续订或每天的收入。
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--group-by` | 否 | 从目录中选择一个分组维度。 |
+| `--revenue-basis` | 否 | `gross`（默认）、`proceeds` 或 `net`。 |
+| `--period-type` | 否 | `renewals`（默认）按续订次数统计。`days` 按安装后的天数统计。 |
+| `--renewal-days` | 否 | 与 `--period-type days` 配合使用，指定要统计的天数，以逗号分隔，按升序排列，例如 `7,30,90`。仅在使用 `--period-type days` 时有效。 |
+
+### `analytics cohort`
+
+读取[安装同期群](analytics-cohorts)：每个同期群在每次续订或每天的收入、订阅者数量、平均值和趋势预测。每个同期群对应一行，其开始日期为 `key`。同期群不支持分组。
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--granularity` | 否 | 单个同期群的时长：`day`、`week`、`month`（默认）、`quarter` 或 `year`。 |
+| `--revenue-basis` | 否 | `gross`（默认）、`proceeds` 或 `net`。 |
+| `--period-type` | 否 | `renewals`（默认）按续订次数计算。`days` 按安装后天数计算。 |
+| `--renewal-days` | 否 | 使用 `--period-type days` 时要统计的天数，以逗号分隔，按升序排列。仅在 `--period-type days` 时可用。 |
+
+## 下一步 \{#whats-next\}
+
+- [Adapty 分析的工作原理](how-adapty-analytics-works) — 数据来源说明。
+- [控件、筛选器与分组](controls-filters-grouping-compare-proceeds) — 看板中筛选器和收入选项的含义。
+- [通过 CLI 查询归因数据](developer-cli-attribution) — 按渠道和广告系列查看消耗、安装量及 ROAS。

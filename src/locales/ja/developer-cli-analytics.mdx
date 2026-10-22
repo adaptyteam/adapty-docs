@@ -1,0 +1,235 @@
+---
+title: "CLIからアナリティクスを照会する"
+description: "ターミナルからAdaptyアナリティクスを読み取る：収益やMRRなどのチャート、コンバージョン、ファネル、リテンション、LTV、インストールコホートを、テーブル、JSON、またはCSV形式で取得できます。"
+metadataTitle: "デベロッパーCLIでのアナリティクス | Adapty ドキュメント"
+---
+
+Adapty CLIは、`adapty analytics`トピック配下で、ターミナルから[Adapty Analytics](analytics)を参照できます。1つのアプリに対してAnalyticsダッシュボードに表示される数値を返します。具体的には、収益やMRRなどの[チャート](charts)、[コンバージョン](analytics-conversion)、[ファネル](analytics-funnels)、[リテンション](analytics-retention)、[LTV](ltv)、[インストールコホート](analytics-cohorts)です。
+
+AIエージェントにアプリの数値をリアルタイムで参照させたり、チャートをスクリプトやスプレッドシートに取り込んだり、ダッシュボードを開かずに1つの疑問に答えたりするのに活用できます。
+
+Every `analytics` command is read-only and takes one app.
+
+## 始める前に \{#before-you-start\}
+
+`analytics` トピックは、CLI の他の機能と同じインストールおよびログインを使用します。まだ設定していない場合は、[クイックスタートガイド](developer-cli-quickstart)のステップ 1 と 2 に従ってください。このトピックには CLI バージョン 0.10.0 以降が必要です。現在のバージョンを確認するには、`adapty --version` を実行してください。
+
+[Export Analytics API](export-analytics-api) とは異なり、CLI にはシークレット API キーが不要です。CLI のログインにより、Adapty ユーザーがアクセスできるすべてのアプリを読み取ることができます。
+
+すべてのコマンドは `--app` にアプリの UUID を指定します。UUID を確認するには、次のコマンドを実行してください：
+
+```bash
+adapty apps list
+```
+
+## クエリを作成する \{#build-a-query\}
+
+クエリは常に同じ順序で作成します。カタログで名前を確認し、フィルター値を調べてから、データコマンドを1つ実行してください。
+
+1. **アプリのアナリティクスで何が調べられるかを一覧表示する**。カタログには、各チャートとその単位、コンバージョン、各コマンドで使えるグループ化とフィルター、各オプションの使用可能な値とデフォルト値が一覧表示されます:
+
+   ```bash
+   adapty analytics catalog --app <app-id>
+   ```
+
+   `revenue`、`mrr`、`trial-paid` などのチャートおよびコンバージョン名はこのリストから取得されます。CLI 自体はリストを持たないため、Adapty が後から追加したチャートも CLI のアップデートなしで利用できます。
+
+2. **フィルター値を調べる**。フィルターを使わない場合はこの手順をスキップしてください。たとえば、フィルターできる国の一覧を表示するには:
+
+   ```bash
+   adapty analytics values --app <app-id> --dimension country
+   ```
+
+3. **データコマンドを実行する**:
+
+   ```bash
+   adapty analytics chart --app <app-id> --chart revenue \
+     --date-from 2026-07-01 --date-to 2026-09-30 --group-by country
+   ```
+
+答えには合計の行が1行、そして各グループに対して1行ずつ含まれています。
+
+### 使用例
+
+今四半期のMRR（前四半期との比較）:
+
+```bash
+adapty analytics chart --app <app-id> --chart mrr \
+  --date-from 2026-07-01 --date-to 2026-09-30 \
+  --compare-from 2026-04-01 --compare-to 2026-06-30
+```
+
+2カ国のトライアルから有料への月次コンバージョン:
+
+```bash
+adapty analytics conversion --app <app-id> --conversion trial-paid \
+  --date-from 2026-04-01 --date-to 2026-09-30 --granularity month --filter country=US,GB
+```
+
+国別リテンション（トライアル開始時点からカウント）:
+
+```bash
+adapty analytics retention --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --group-by country --use-trial
+```
+
+手数料と税金控除後の収益に基づく、7日・30日・90日後のLTVをCSVファイルに保存:
+
+```bash
+adapty analytics ltv --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --revenue-basis net --period-type days --renewal-days 7,30,90 --csv > ltv.csv
+```
+
+ストア手数料控除後の収益に基づく、週次インストールコホート:
+
+```bash
+adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --granularity week --revenue-basis proceeds
+```
+
+## 出力形式の選択 \{#choose-the-output\}
+
+各データコマンドは、次の3つのフォーマットのいずれかで出力されます。
+
+| 出力 | フラグ | 用途 |
+|---|---|---|
+| テーブル | なし | ターミナルでの閲覧。各テーブルはチャート名、期間、タイムゾーン、フィルターを示す見出しで始まります。金額は小数点以下2桁で表示。ファネルのチャーン理由やコホートの予測など一部のフィールドは省略され、テーブルの下にその旨が表示されます。 |
+| JSON | `--json` | スクリプトやAIエージェント向け。すべてのフィールドを含むAPIレスポンスをそのまま出力します。 |
+| CSV | `--csv` | スプレッドシート向け。グループごとに1行で、レスポンスのすべてのフィールドを含みます。比較期間のデータは同じ行の `compare.*` 列に入ります。 |
+
+`--csv` と `--json` は同時に使用できません。
+
+JSON では、合計は `data.segments` の最初のエントリで、`data.value` は期間全体の数値です。`meta.query` には実行されたクエリが表示され、すべてのデフォルト値と有効なタイムゾーンが含まれます。
+
+## 結果を読む \{#read-the-results\}
+
+- **日付**: `--date-from` と `--date-to` は、アプリの[レポートタイムゾーン](general)における両端を含む日付です。別のタイムゾーンで日付を読み取るには、`--timezone` に `Europe/Berlin` のような IANA 名を渡してください。`meta.query.timezone` には適用中のタイムゾーンが表示されます。
+- **収益**: `--revenue-basis` は、収益の金額値に使用する基準を設定します。`gross`（デフォルト）、`proceeds`（ストアの手数料控除後）、または `net`（手数料と税金の控除後）から選択できます。`ltv`、`cohort`、および金額を表示するチャートに適用されます。カタログでは該当するチャートに `takes revenue_basis` が付いています。
+- **空の値**: 空の値は Adapty に値がないことを意味し、ゼロではありません。コホートがまだ到達していない LTV 期間は空になり、予測できないコホートも同様です。`--json` 出力ではこれらの値は `null` になります。テーブルでは `—` と表示され、CSV ではセルが空白になります。
+- **合計行**: 合計は空の `key` ではなく `is_total` で見つけてください。グループの `key` も空になる場合があります。たとえば、国が設定されていないユーザーのグループがその例です。
+- **グループキー**: グループの `key` は必ずしも `--filter` で受け付ける値とは限りません。フィルタリングには `analytics values` から値を取得してください。
+- **比較期間**: `--compare-from` と `--compare-to` を受け付けるのは `chart` と `conversion` のみです。比較期間には独自の合計とグループがあり、テーブルでは 2 番目のテーブルとして表示されます。
+- **アトリビューション数値**: これらの数値を [Attribution](developer-cli-attribution) の数値に加算しないでください。Adapty では計算方法が異なります。
+
+CLIはダッシュボードの数値を返しますが、2つの例外があります：
+
+- `funnel`は`cancellation_reason`フィルターを適用しますが、ダッシュボードのファンネルはこれを無視します。そのフィルターにより、2つの数値が異なる場合があります。
+- `retention`はダッシュボードとは異なるグループ化の一覧を提供します。一覧はカタログから取得してください。
+
+## 制限 \{#limits\}
+
+各アナリティクスコマンドは、アプリごとに1秒あたり最大2リクエスト、合計で1分あたり最大360リクエストまで受け付けます。CLIはリクエストを再試行しません。リクエストが速すぎる場合、コマンドはコード4で終了します。`--json` を使用している場合、エラーには `retry_after_seconds` が含まれます。その時間だけ待ってから、コマンドを再実行してください。
+
+## エラー \{#errors\}
+
+エラーが発生すると、何を修正すべきかを示すコードとともに終了します:
+
+| 終了コード | 原因 | 対処法 |
+|---|---|---|
+| 2 | CLIが送信前に入力を拒否した: 無効なアプリUUID、不正な形式または逆順の日付範囲、片側のみ指定された比較期間、`--renewal-days` を `--period-type days` なしで使用、`=` のない `--filter`、または `--csv` と `--json` の同時指定。 | エラーメッセージに示されたフラグを修正してください。 |
+| 3 | ログインしていない、またはAdaptyユーザーがそのアプリにアクセスできない。 | `adapty auth login` でログインしてください。すでにログインしている場合は、`adapty apps list` でアプリIDを確認してください（このコマンドは閲覧権限のあるアプリのみ表示します）。 |
+| 4 | Adaptyがリクエストを拒否した: 不明なチャート、コンバージョン、グルーピング、フィルター、またはタイムゾーン; 金額を表示しないチャートでの `--revenue-basis` 使用; またはリクエスト過多。 | `adapty analytics catalog` で正しい名前を確認してください。`--json` を使用している場合、エラーにはAPIのエラーコードが含まれます。リクエスト過多については、[制限](#limits)を参照してください。 |
+
+## コマンドリファレンス \{#command-reference\}
+
+すべてのデータコマンドは以下のフラグを受け取ります：
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | `adapty apps list` で確認できるアプリの UUID。 |
+| `--date-from` | はい | 期間の開始日（当日を含む）。`YYYY-MM-DD` 形式。 |
+| `--date-to` | はい | 期間の終了日（当日を含む）。`--date-from` より前の日付は指定できません。 |
+| `--filter` | いいえ | `dimension=value[,value]`。指定したディメンションが指定した値のいずれかに一致するデータのみを残します。複数のディメンションでフィルタリングするにはフラグを繰り返し指定します。値の中にカンマを含める場合は `\,` と記述します。空の値も有効な値です。`country=` と指定すると国が設定されていないデータのみを残します。 |
+| `--timezone` | いいえ | 日付に使用する IANA タイムゾーン（例：`Europe/Berlin`）。省略した場合はアプリのタイムゾーンが使用されます。 |
+| `--csv` | いいえ | 通常のテーブルの代わりに CSV 形式で出力します。`--json` と同時に使用することはできません。 |
+
+各コマンドはそれぞれ固有のフラグを追加します。
+
+### `analytics catalog`
+
+アプリのアナリティクスが何に答えられるかを一覧表示します: オプション・グループ・フィルターを含む各コマンド、単位付きの各チャート、すべてのコンバージョン、そしてすべてのフィルターディメンション。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリのUUID。`adapty apps list` から取得します。 |
+
+### `analytics values`
+
+フィルター ディメンションがアプリで取り得る値を一覧表示します。各 `value` は、`--filter <dimension>=<value>` に渡せる値そのものです。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリの UUID（`adapty apps list` で確認）。 |
+| `--dimension` | はい | `adapty analytics catalog` で取得したフィルター ディメンション。 |
+
+### `analytics chart` \{#analytics-chart\}
+
+1つの[チャート](charts)を読み取ります：期間全体の数値、データポイント、グループ情報。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--chart` | はい | `adapty analytics catalog` に含まれるチャート名（例：`revenue`、`mrr`）。 |
+| `--group-by` | いいえ | カタログに含まれるこのチャートのグループ化条件。 |
+| `--granularity` | いいえ | 1ポイントの期間：`day`、`week`、`month`（デフォルト）、`quarter`、または `year`。 |
+| `--revenue-basis` | いいえ | `gross`（デフォルト）、`proceeds`、または `net`。金額を表示するチャートのみ対象。 |
+| `--compare-from` | いいえ | 比較対象期間の開始日。`--compare-to` が必要。 |
+| `--compare-to` | いいえ | 比較対象期間の終了日。`--compare-from` が必要。 |
+
+### `analytics conversion` \{#analytics-conversion\}
+
+[コンバージョン](analytics-conversion)を読み取ります。各ポイントおよびグループごとに、パーセント単位のレートとその計算に使用される2つのカウントが返されます。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--conversion` | Yes | `adapty analytics catalog` に含まれるコンバージョン名（例：`trial-paid` や `install-paid`）。 |
+| `--group-by` | No | カタログから選択した1つのグループ化条件。 |
+| `--granularity` | No | 1データポイントの長さ：`day`（デフォルト）、`week`、`month`、`quarter`、または `year`。 |
+| `--compare-from` | No | 比較対象期間の開始日。`--compare-to` と併用が必要。 |
+| `--compare-to` | No | 比較対象期間の終了日。`--compare-from` と併用が必要。 |
+
+期間にコンバージョンがない場合、`--json` 出力の `meta.recommended_period` には、コンバージョンが存在する期間が示されることがあります。
+
+### `analytics funnel`
+
+[ファネル](analytics-funnels)を読み取ります: インストールから更新までの各ステップのカウントです。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--group-by` | No | カタログからのグルーピングを1つ指定します。 |
+
+### `analytics retention`
+
+[リテンション](analytics-retention)を読み取ります: 各期間に残っているサブスクライバー数。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--group-by` | No | カタログからグループ化を1つ選択します。 |
+| `--use-trial` | No | 最初の有料期間からではなく、トライアルから集計します。 |
+
+### `analytics ltv`
+
+[LTV](ltv)（課金ユーザーあたりの収益を更新回数または日数ごとに確認）を読み取ります。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--group-by` | いいえ | カタログからグループ化の条件を1つ指定します。 |
+| `--revenue-basis` | いいえ | `gross`（デフォルト）、`proceeds`、または `net`。 |
+| `--period-type` | いいえ | `renewals`（デフォルト）は更新ごとにカウントします。`days` はインストールからの日数ごとにカウントします。 |
+| `--renewal-days` | いいえ | `--period-type days` 使用時にカウントする日数をカンマ区切りの昇順で指定します（例：`7,30,90`）。`--period-type days` と組み合わせてのみ使用可能です。 |
+
+### `analytics cohort`
+
+[インストールコホート](analytics-cohorts)を読み取ります：各コホートの更新回数または日数ごとの収益、サブスクライバー数、平均値、予測を取得します。各コホートは1行で表され、開始日が`key`になります。コホートはグループ化できません。
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--granularity` | いいえ | コホートの期間単位：`day`、`week`、`month`（デフォルト）、`quarter`、または `year`。 |
+| `--revenue-basis` | いいえ | `gross`（デフォルト）、`proceeds`、または `net`。 |
+| `--period-type` | いいえ | `renewals`（デフォルト）は更新ごとにカウント。`days` はインストールからの日数でカウント。 |
+| `--renewal-days` | いいえ | `--period-type days` 使用時にカウントする日数。カンマ区切りで昇順に指定。`--period-type days` のみで使用可能。 |
+
+## 次のステップ \{#whats-next\}
+
+- [Adapty アナリティクスの仕組み](how-adapty-analytics-works) — 数値がどこから来るかについて。
+- [コントロール、フィルター、グルーピング](controls-filters-grouping-compare-proceeds) — ダッシュボードのフィルターと収益オプションの意味について。
+- [CLI からアトリビューションをクエリする](developer-cli-attribution) — チャネルとキャンペーン別の費用、インストール数、ROAS について。
