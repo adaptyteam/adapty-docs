@@ -128,11 +128,11 @@ or developer can see and click.
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 15 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 13 | tutorial |
+| flow-common-issues | reference | marketer, dev | 14 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
-| flows-and-paywalls | entry | marketer, dev | 0 | tutorial |
+| flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
-| migrate-to-flows | migration | marketer, dev | 7 | tutorial |
+| migrate-to-flows | migration | marketer, dev | 8 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |

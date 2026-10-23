@@ -249,7 +249,7 @@ core in-app paywall/subscription product.
 | mail-segments | — | marketer | 7 | tutorial |
 | mail-send-data-via-api | — | marketer | 5 | tutorial |
 | mail-sending-domain | — | marketer | 13 | tutorial |
-| mail-suppression | — | marketer | 10 | tutorial |
+| mail-suppression | — | marketer | 12 | tutorial |
 | mail-testing | — | marketer | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
