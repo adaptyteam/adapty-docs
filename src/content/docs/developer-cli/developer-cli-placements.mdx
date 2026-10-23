@@ -1,0 +1,258 @@
+---
+title: "Placements and segments commands"
+description: "Adapty CLI commands that create and update placements and their audiences, and create the segments those audiences target."
+metadataTitle: "Placements and Segments CLI Commands | Adapty Docs"
+---
+
+These Adapty CLI commands manage [placements](placements), the audiences on them, and the [segments](segments) those audiences target.
+
+## Placements
+
+[Placements](placements) are where your flows, paywalls, and onboardings reach users. A placement's content type is fixed at creation, so moving an app from paywalls to flows means creating new placements rather than updating the existing ones — the [migrate-placements skill](migrate-placements-skill) drives these commands to do that in bulk.
+
+### adapty placements list
+
+List all [placements](placements) for an app.
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepts [pagination flags](developer-cli-reference#global-flags).
+
+Each item contains `id`, `developer_id`, `title`, and `is_active`. `is_active` is `true` for a live placement and `false` for an inactive one.
+
+### adapty placements get
+
+Get details for a specific [placement](placements).
+
+```bash
+adapty placements get --app <app-id> <placement-id>
+```
+
+| Argument | Description |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The response contains `id`, `developer_id`, `title`, `is_active`, and an `audiences` array. `is_active` is `true` for a live placement and `false` for an inactive one. Each audience entry carries `content_type`, `segment_ids`, `priority`, and the ID of its content: `paywall_id` for `paywall`, `flow_id` for `flow`, or `ab_test_id` and `ab_test_title` for an audience that runs an [A/B test](ab-tests). The default audience has `segment_ids: []` and the highest priority value (last evaluated). See [Audiences shape](#audiences-shape).
+
+### adapty placements create
+
+Create a new [placement](placements).
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Placement title |
+| `--developer-id` | Yes | String identifier used in app code to request this [placement](placements) |
+| `--audiences` | One of the two | JSON array of audience entries, each with an explicit `content_type`. See [Audiences shape](#audiences-shape) |
+| `--paywall-id` | One of the two | **Deprecated.** [Paywall](paywalls) ID (UUID). Wrapped client-side into a single default audience |
+
+Pass exactly one of `--audiences` or `--paywall-id`. Passing both or neither errors out.
+
+:::warning
+`--paywall-id` is deprecated and will be removed. When passed, the CLI prints a stderr warning and converts the value into a default audience. Use `--audiences` for new automation.
+:::
+
+### adapty placements update
+
+Replace all fields of an existing [placement](placements).
+
+```bash
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+This command replaces all placement fields, including the full audiences list.
+
+| Argument | Description |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Placement title |
+| `--developer-id` | Yes | String identifier used in app code to request this [placement](placements) |
+| `--audiences` | One of the two | JSON array of audience entries, each with an explicit `content_type`. See [Audiences shape](#audiences-shape) |
+| `--paywall-id` | One of the two | **Deprecated.** [Paywall](paywalls) ID (UUID). Replaces all audiences with a single default audience |
+
+:::warning
+Passing `--paywall-id` rewrites all audiences on the placement. Segment-specific audiences are dropped. To preserve them, use `--audiences` and include all entries you want to keep.
+:::
+
+#### Audiences shape
+
+The `--audiences` flag takes a JSON array. Each entry has:
+
+| Field | Type | Description |
+|---|---|---|
+| `content_type` | `string` | Required on every entry. `"paywall"`, `"flow"`, `"ab_test"` (paywall A/B test), `"flow_ab_test"` (flow A/B test), `"cross_ab_test"` or `"flow_cross_ab_test"` (crossplacement A/B test). Use `paywall`, `ab_test` and `cross_ab_test` in a paywall placement, and `flow`, `flow_ab_test` and `flow_cross_ab_test` in a flow placement |
+| `segment_ids` | `string[]` | [Segment](segments) IDs targeted by this audience. Length 0 or 1. Empty array marks the **default audience** — the fallback for users who match no other segment |
+| `paywall_id` | `string` | [Paywall](paywalls) ID (UUID) shown to users in this audience. Required when `content_type` is `"paywall"` |
+| `flow_id` | `string` | [Flow](adapty-flow-builder) ID (UUID) shown to users in this audience. Required when `content_type` is `"flow"` |
+| `ab_test_id` | `string` | [A/B test](ab-tests) ID run for users in this audience. Required on the four A/B test content types |
+| `ab_test_title` | `string` | A/B test title. Read-only: the API ignores it on a write |
+| `priority` | `number` | 0-based, unique within the placement. Audiences are evaluated low-to-high; the default audience must have the highest value |
+
+A placement must have exactly one default audience.
+
+:::warning
+`placements update` replaces the full audiences list, including audiences that run an A/B test. To keep a running test, copy its entry from `placements get` into `--audiences` unchanged, with the same `ab_test_id` and `segment_ids`. A write that removes or replaces that entry stops the test with no winner. A write that moves the entry to other segments starts the test again, and an `ab_test_id` on another audience starts the test there. A write that only changes priorities keeps the test running. The CLI doesn't warn you about these cases.
+:::
+
+Crossplacement A/B test entries (`cross_ab_test`, `flow_cross_ab_test`) are read-only. The API ignores them on a write and keeps the stored ones.
+
+A placement's content type is fixed when you create it, so `placements update` can't switch a paywall placement to a flow or the reverse. Serve the flow from a placement of its own — see [Create a new placement for your flow](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+The CLI checks every entry before sending the request. An entry with a missing or unknown `content_type`, or without the ID its `content_type` requires, exits with code 2 and nothing is sent. For a `content_type` it does not know, the CLI prints `this CLI does not know this audience kind; update the CLI`. If the entry came from `placements get`, update the CLI instead of removing the entry: the entry can be a running A/B test.
+
+A flow can be attached only after it has been published. A `draft` flow, or one whose first publication is still in progress, is rejected by the server; the CLI recognizes that rejection and exits with code 2, printing the `flows publish` command for that flow. To publish a flow, use [`flows publish`](developer-cli-flows#adapty-flows-publish) or the [Flow & Paywall Builder](builder-save-publish), then wait for its status to reach `published`.
+
+Example with one targeted audience and one default:
+
+```bash
+adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+Example of a placement that serves a published flow to all users:
+
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+```
+
+To swap a paywall across multiple placements without losing segment-specific routing:
+
+1. Find affected placements:
+
+   ```bash
+   adapty paywalls placements --app <app-id> <old-paywall-id>
+   ```
+
+2. For each, read the full `audiences` array:
+
+   ```bash
+   adapty placements get --app <app-id> <placement-id> --json
+   ```
+
+3. Replace the matching `paywall_id` values client-side. Keep every other entry unchanged, including A/B test entries.
+
+4. Write the modified payload back:
+
+   ```bash
+   adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
+   ```
+
+## Segments
+
+[Segments](segments) group users by their profile attributes. Use these commands to create segments and to look up segment IDs when composing [placement audiences](#audiences-shape). To build a segment from Apple Ads campaigns, ad groups, or keywords, use [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) instead: it looks up the Apple IDs for you and names the segment the way Ads Manager does.
+
+### adapty segments list
+
+List all [segments](segments) for an app.
+
+```bash
+adapty segments list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepts [pagination flags](developer-cli-reference#global-flags).
+
+### adapty segments get
+
+Get details for a specific [segment](segments).
+
+```bash
+adapty segments get --app <app-id> <segment-id>
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The response contains `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at`, and `updated_at`. `list` returns `id`, `title`, and `description` only.
+
+### adapty segments create
+
+Create a [segment](segments) from one or more filters.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Segment title |
+| `--filter` | Yes | Filter rule. Repeatable. See [Filter syntax](#filter-syntax) |
+| `--description` | No | Segment description |
+
+A user matches the segment only when they match every filter. The response has the same fields as `segments get`. `profile_count` starts at `0`, and Adapty recalculates it after the segment is created.
+
+### adapty segments update
+
+Replace the title, description, and filters of an existing [segment](segments).
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Segment title |
+| `--filter` | Yes | Filter rule. Repeatable. See [Filter syntax](#filter-syntax) |
+| `--description` | No | Segment description |
+
+:::warning
+`segments update` replaces the whole segment. Pass every filter you want to keep, not only the one you change. To read the current filters, run `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Filter syntax
+
+Write each `--filter` as `field:OPERATOR:value`. To match any of several values, separate them with commas: `ip_country:IN:US,CA`.
+
+| Operator | Values | Example |
+|---|---|---|
+| `IN`, `NOT IN` | One or more | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | One | `age:>:18` |
+| `BETWEEN` | Two | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | None | `age:IS NULL` |
+
+Pass numbers as plain values, for example `age:>:18`. Adapty converts them for numeric fields such as `age`, `total_revenue_usd`, and custom attributes of type float.
+
+For a value that this short form can't express, pass the filter as a JSON object:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty validates field names, operators, and value types, and reports one error for each invalid filter. To see the field names and value formats of existing filters, run `adapty segments get --app <app-id> <segment-id> --json` on a segment created in the dashboard.
+
+## What's next
+
+- [Command reference](developer-cli-reference) — every CLI topic, the global flags, and the pagination flags.

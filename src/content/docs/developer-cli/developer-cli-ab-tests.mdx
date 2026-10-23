@@ -1,0 +1,253 @@
+---
+title: "Run A/B tests from the CLI"
+description: "Create, start, stop, replace, and archive paywall and flow A/B tests from the terminal with the Adapty CLI, and see the exact effect before each step that can't be undone."
+metadataTitle: "A/B Tests in the Developer CLI | Adapty Docs"
+---
+
+The Adapty CLI runs regular [A/B tests](ab-tests) of paywalls or flows from the terminal, under the `adapty ab-tests` topic. You can create a test as a draft, start it on a placement for one audience, stop it with a winner, replace a live test with a changed one, and archive old tests.
+
+Use it to let an AI agent run your tests, to script a test across several apps, or to start or stop a test without opening the dashboard.
+
+A regular test splits the users of one audience on one placement between two or more paywalls, or between two or more flows. To run a test across several placements, use a [crossplacement test](ab-test-types) in the dashboard. The `ab-tests` commands don't return test results. To see the results, such as the probability to be best, use the dashboard: [A/B test results and metrics](results-and-metrics). To read analytics for the users of one test, filter the [analytics commands](developer-cli-analytics) by the **A/B tests** dimension from `adapty analytics catalog`.
+
+## Before you start
+
+The `ab-tests` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). The topic needs CLI version 0.13.0 or later. To see your version, run `adapty --version`.
+
+Every command takes the app's UUID in `--app`. To find it, run:
+
+```bash
+adapty apps list
+```
+
+A test uses content that already exists:
+
+- **Flows**: A flow joins a test only when it is published. A draft flow, or a flow with unpublished changes, is refused. To publish a flow, run `adapty flows publish`.
+- **Paywalls**: To create a paywall from products that are already in Adapty, run `adapty paywalls create`. To give a paywall a new design, use the [Paywall Builder](adapty-paywall-builder).
+- **Placements**: A paywall test runs on a paywall placement, and a flow test on a flow placement. To create a placement, run `adapty placements create`. Your app shows nothing from a new placement until its code fetches that placement.
+- **Segments**: To run a test for some users only, create a [segment](segments) first with `adapty segments create`.
+
+For these commands, see the [command reference](developer-cli-reference).
+
+## List and read tests
+
+`list` shows flow tests unless you pass `--type paywall`. To see every test of an app, run it once for each type:
+
+```bash
+adapty ab-tests list --app <app-id> --type flow --page-size 100
+```
+
+```bash
+adapty ab-tests list --app <app-id> --type paywall --page-size 100
+```
+
+A test is in one of these states: `draft`, `live`, `completed`, `inactive`, or `archived`.
+
+To read one test with its arms, run:
+
+```bash
+adapty ab-tests get --app <app-id> <test-id>
+```
+
+In `get --json`, `segment_ids` is the test's audience: `[]` is All users, and `null` is no audience planned yet. Each arm has its `weight` and the paywall or flow ID. To identify an arm, use `paywall_title` or `flow_name`. The arm's `title` is empty unless you set one.
+
+## Create a test
+
+A new test is a draft. No user sees a draft, so you can create and change one at any time.
+
+1. **Find the IDs** of the content to test, with `adapty paywalls list` or `adapty flows list`.
+
+2. **Create the draft** with two or more arms. Each arm is one paywall or flow with a weight. The weight is the percentage of users who see that arm, and the weights must add up to 100:
+
+   ```bash
+   adapty ab-tests create --app <app-id> --title "Annual vs monthly" \
+     --goal "More revenue per user" \
+     --paywalls '[{"paywall_id":"<paywall-a>","weight":50},{"paywall_id":"<paywall-b>","weight":50}]'
+   ```
+
+   For a flow test, pass `--flows` with `flow_id` in each arm instead. An arm can also have a `title`, such as `"title":"A"`.
+
+3. **Review the draft** with `ab-tests get`.
+
+`create` can also take a planned placement and audience, with `--placement` and `--segment` or `--all-users`. These planned values have no effect on users. When you start the test, pass the placement and audience to `start` again.
+
+## Start a test
+
+:::warning
+You can't undo a start. From the moment the test starts, users of the audience you name no longer see their current paywall or flow.
+:::
+
+To start a draft, name the placement and one audience: `--all-users`, or `--segment` with one segment ID:
+
+```bash
+adapty ab-tests start --app <app-id> <test-id> --placement <placement-id> --segment <segment-id>
+```
+
+The CLI prints what the start does and asks `Apply? [y/N]` before it sends anything. Where the test runs depends on the placement's audiences:
+
+- **The placement has an audience for this segment** (or for All users): The test runs on that audience. A test that runs there now stops and moves to the `completed` state.
+- **The placement has no audience for this segment**: `start` adds a new audience with the highest priority on the placement. Users of this segment who currently match another audience move into the test.
+
+To give the test a lower priority than another audience, first add the segment as an audience with that priority. Give it the paywall or flow that those users see now, then start the test on that audience. See [Change audience priority](change-audience-priority).
+
+A change on a segment audience can take up to 20 minutes to reach every user.
+
+Start only draft tests. A completed, inactive, or archived test starts again with the same ID, and users who were in it get their old arm again. To run a test again, create a new one: read the old test with `get`, then `create` a test with the same arms.
+
+## Change a test
+
+`update` sends the whole test again. Pass every flag each time. If you leave out a flag, Adapty clears its value: for example, the goal, the planned placement, or the planned audience.
+
+```bash
+adapty ab-tests update --app <app-id> <test-id> --title "Annual vs monthly, Q4" \
+  --goal "More revenue per user" \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":70},{"paywall_id":"<paywall-b>","weight":30}]'
+```
+
+On a live test, `update` changes only the title and the goal. Pass the arms and the placement exactly as `get` returns them; other arms or another placement are refused. The test keeps its start time, and users keep their arms.
+
+To change the arms or weights of a live test, replace it. `replace` is the **Modify** action in the dashboard:
+
+```bash
+adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" \
+  --placement <placement-id> \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":80},{"paywall_id":"<paywall-b>","weight":20}]'
+```
+
+The live test stops and moves to the `completed` state, and its results stay with its ID. A new test with a new ID starts on the same audience, and Adapty assigns every user of the audience to an arm again. If you pass a different placement in `--placement`, Adapty moves the audience to that placement. You can't move an All users test.
+
+## Stop a test
+
+`stop` ends the test. You choose what users of its audience see afterwards. Pass exactly one of these flags:
+
+| Flag | After the stop |
+|---|---|
+| `--winner <id>` | The whole audience sees one arm of the test. Pass the arm's paywall ID or flow ID. |
+| `--other <id>` | The whole audience sees a paywall or flow that was not in the test, of the same kind as the test. |
+| `--no-content` | The audience leaves the placement, and its users get the next audience they match. Refused for an All users test. |
+
+```bash
+adapty ab-tests stop --app <app-id> <test-id> --winner <paywall-b>
+```
+
+The test moves to the `completed` state. To test the same arms again, create a new test, as described in [Start a test](#start-a-test). To choose the winner, see [A/B test results and metrics](results-and-metrics).
+
+## Archive a test
+
+You can archive any test that isn't live. To archive a live test, stop it first. You can't restore an archived test.
+
+```bash
+adapty ab-tests archive --app <app-id> <test-id>
+```
+
+## Confirmation in scripts and agents
+
+`start`, `stop`, `replace`, and `archive` can't be undone, so each one shows its effect before it sends anything. How it asks depends on how the command runs:
+
+| How the command runs | What happens |
+|---|---|
+| In a terminal | The CLI prints the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
+| With `--yes` | The CLI sends the request without asking. |
+| With `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error message describes the effect. |
+
+So a script or an agent can read the effect of a command first: run it without `--yes`, read the message, and run it again with `--yes` only after someone has approved that effect.
+
+## Errors
+
+| Exit code | Cause | What to do |
+|---|---|---|
+| 1 | You answered something other than `y` at the prompt. Nothing was sent. | Run the command again if you meant to. |
+| 2 | The CLI rejected the input before sending it: an invalid UUID, arms that aren't a JSON array, an arm without an ID or an integer weight, both or neither of `--paywalls` and `--flows`, or two stop options. | Fix the flag that the message names. |
+| 3 | You aren't logged in, or your Adapty user can't access the app. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. |
+| 4 | Adapty refused the request. The message gives the reason. | See [Messages from Adapty](#messages-from-adapty). |
+| 5 | The CLI couldn't reach Adapty. | Make sure you are online, and run the command again. |
+| 6 | A command that can't be undone ran without `--yes` and with no one to answer. Nothing was sent. | Read the effect in the message, then run the command again with `--yes`. |
+| 130 | You pressed Ctrl+C at the prompt. Nothing was sent. | — |
+
+### Messages from Adapty
+
+| Message | What to do |
+|---|---|
+| `The sum of the weights must equal 100, but has N.` | Change the weights so they add up to 100. |
+| `Flow(<id>) must be published before adding to AB test.` | Publish the flow, then run the command again. |
+| `Paywalls cannot be changed in non-draft ab tests.` or `Placement cannot be changed in non-draft ab tests.` | Pass the arms and placement as `get` returns them, or use `replace`. |
+| `AB Test from default audience can not be stopped.` | An All users test needs a paywall or flow after the stop: use `--winner` or `--other`. |
+| `AB Test to stop must be live.` | Only a live test can be stopped or replaced. |
+| `Live Ab Test can not be deleted.` | Stop the test before you archive it. |
+
+## Command reference
+
+Every command takes `--app`, the app UUID from `adapty apps list`. Every command except `list` takes the test ID as its argument.
+
+### `ab-tests list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--type` | No | `flow` (default) or `paywall`. |
+| `--state` | No | `live`, `draft`, `completed`, `inactive`, or `archived`. |
+| `--placement` | No | Only the tests of this placement (ID). |
+| `--search` | No | Only the tests whose title contains this text. |
+| `--page` | No | Page number. Default: 1. |
+| `--page-size` | No | Tests per page, up to 100. Default: 20. |
+
+### `ab-tests get`
+
+Returns the test with its arms. Takes no other flags.
+
+### `ab-tests create`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--title` | Yes | Test title. |
+| `--paywalls` | One of the two | Arms of a paywall test, as JSON: `[{"paywall_id":"<id>","weight":50,"title":"A"}, …]`. `title` is optional. |
+| `--flows` | One of the two | Arms of a flow test, as JSON, with `flow_id` instead of `paywall_id`. |
+| `--goal` | No | What the test is meant to show. |
+| `--placement` | No | Placement the test is planned for (ID). |
+| `--segment` | No | Plan the test for one segment (ID). Can't be used with `--all-users`. |
+| `--all-users` | No | Plan the test for All users. |
+
+### `ab-tests update`
+
+Takes the same flags as `create`. A flag that you leave out is cleared. On a live test, only `--title` and `--goal` can change.
+
+### `ab-tests start`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--placement` | Yes | Placement to run the test on (ID). |
+| `--segment` | One of the two | Run the test for one segment (ID). |
+| `--all-users` | One of the two | Run the test for All users. |
+| `--yes`, `-y` | No | Start without asking. Required with `--json` or in a pipe. |
+
+### `ab-tests stop`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--winner` | One of the three | Show this arm's paywall or flow (ID) to the whole audience. |
+| `--other` | One of the three | Show a paywall or flow that was not in the test (ID). |
+| `--no-content` | One of the three | Remove the audience from the placement. Refused for an All users test. |
+| `--yes`, `-y` | No | Stop without asking. Required with `--json` or in a pipe. |
+
+### `ab-tests replace`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--title` | Yes | Title of the new test. |
+| `--placement` | Yes | Placement of the new test (ID). A different placement moves the audience to that placement. |
+| `--paywalls` or `--flows` | Yes | Arms of the new test, as in `create`. |
+| `--goal` | No | What the new test is meant to show. |
+| `--yes`, `-y` | No | Replace without asking. Required with `--json` or in a pipe. |
+
+The new test takes the audience of the test it replaces, so `replace` takes no audience flag.
+
+### `ab-tests archive`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--yes`, `-y` | No | Archive without asking. Required with `--json` or in a pipe. |
+
+## What's next
+
+- [Agent skill for A/B tests](ab-tests-skill) — let your agent plan, start, and stop tests, with your yes before each step that can't be undone.
+- [Create, run, and stop an A/B test](run_stop_ab_tests) — the same steps in the dashboard.
+- [A/B test results and metrics](results-and-metrics) — how to read the results and pick a winner.
