@@ -154,6 +154,23 @@ ${content}
 `);
 
 
+    // Flatten <AgentChat> transcripts into labelled paragraphs: the caption
+    // first, then each <ChatTurn> as "**User:**", "**Agent:**" and so on.
+    processed = processed.replace(/<AgentChat\b([^>]*)>/g, (_, attrs) => {
+        const caption = attrs.match(/caption="([^"]*)"/)?.[1];
+        return caption ? `*${caption}*\n` : '';
+    });
+    processed = processed.replace(/<\/AgentChat>/g, '');
+    processed = processed.replace(/<ChatTurn\b([^>]*)>/g, (_, attrs) => {
+        const role = attrs.match(/role="([^"]*)"/)?.[1];
+        const summary = attrs.match(/summary="([^"]*)"/)?.[1];
+        if (role === 'user') return '\n**User:** ';
+        if (role === 'tool') return `\n**Agent ran:** ${summary ?? ''}\n`;
+        if (role === 'confirm') return `\n**Agent asks:** ${summary ?? ''}\n`;
+        return '\n**Agent:**\n';
+    });
+    processed = processed.replace(/<\/ChatTurn>/g, '');
+
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(
         /<SkillPromo\b[^>]*\/>/g,
