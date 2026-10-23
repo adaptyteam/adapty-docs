@@ -94,7 +94,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | pushwoosh | — | dev, analyst | 5 | tutorial |
 | s3-exports | — | dev, analyst | 7 | tutorial |
 | set-up-webhook-integration | — | dev, analyst | 7 | tutorial |
-| singular | — | dev, analyst | 6 | tutorial |
+| singular | — | dev, analyst | 8 | tutorial |
 | slack | — | dev, analyst | 6 | tutorial |
 | splitmetrics | — | dev, analyst | 7 | tutorial |
 | switch-from-appsflyer-s2s-api-2-to-3 | — | dev, analyst | 0 | tutorial |

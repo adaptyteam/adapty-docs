@@ -134,7 +134,7 @@ source id is named.
 | create-product | — | marketer | 3 | tutorial |
 | create-virtual-currency | — | marketer | 4 | tutorial |
 | delete-product | — | marketer | 0 | tutorial |
-| edit-product | — | marketer | 4 | tutorial |
+| edit-product | — | marketer | 5 | tutorial |
 | google-play-offers | — | marketer | 1 | tutorial |
 | grant-initial-balance | — | marketer | 4 | tutorial |
 | offers | entry | marketer | 1 | tutorial |
