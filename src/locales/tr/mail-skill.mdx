@@ -1,0 +1,117 @@
+---
+title: "Adapty Mail için Agent Skill"
+description: "adapty-mail skillini yükleyerek AI kodlama aracınızın Adapty Mail MCP sunucusuna bağlanmasını, e-posta flow'larını başlatmasını ve bir e-postanın neden gönderilmediğini yanıtlamasını sağlayın."
+metadataTitle: "Adapty Mail Agent Skill | Adapty Dokümanları"
+---
+
+adapty-mail skilli, Adapty Mail projenizi AI kodlama aracınızdan çalıştırır. [Adapty Mail MCP sunucusu](mail-mcp) üzerinden sizin adınıza oturum açarak çalışır. Flow'ları başlatır, kampanyaları çevirir, bir gönderme alan adını DNS ve doğrulama sürecinde adım adım ilerletir, kampanya ve A/B testi sonuçlarını okur ve bir kişinin neden e-posta almadığını bulur.
+
+The MCP server alone gives your agent the tools. The skill adds what an agent gets wrong without it:
+
+- **Sunucuya bağlanma**: Sunucunun bağlı ve oturum açılmış olup olmadığını doğrular. Değilse, istemciniz için kurulum adımını gösterir.
+- **Mail mi, yoksa Adapty'nin geri kalanı mı**: Flow'lar, segmentler ve profiller, Adapty Mail ile Adapty'nin uygulama içi paywalllarında farklı şeyler ifade eder. Skill, herhangi bir değişiklik yapmadan önce hangisini kastettiğinizi netleştirir.
+- **Yalnızca kontrol panelinin yapabilecekleri**: Bir isteğin şirket adresinizi, web checkout'u veya veri göndermeyi etkinleştirmeyi gerektirdiğini size söyler ve bunu ele alan sayfanın bağlantısını verir.
+- **Yayın sonrası yapılacaklar**: Sonuçlar, A/B testleri, teslim edilebilirlik ve eksik bir e-postayı izleme.
+
+:::note
+Gerçek kişilere bir şey ulaşmadan önce onayınız gerekir. Bir flow'u kaydetmek göndermeyi başlatır ve kaydettiği segment listesi tüm flow'un yerini alır; bu nedenle skill önce flow'u olduğu gibi gösterir: her segment, her kampanya ve kaldırılan her şey. Silme, abonelik iptali ve A/B testi başlatma ve bitirme işlemleri de onayınızı bekler.
+:::
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+adapty-mail skill'i, [`adapty-skills` eklentisinin](https://github.com/adaptyteam/adapty-skills) bir parçasıdır. Eklentiyi yüklemek için terminalinizde şunu çalıştırın:
+
+```bash
+npx adapty skills install
+```
+
+Skill'leri yüklemek için ajanınızı yeniden başlatın. Diğer kurulum yöntemleri için [eklenti README](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install) dosyasına bakın.
+
+Bu skill, Adapty Mail MCP sunucusuna ihtiyaç duyar. Ajanınızda henüz bağlı değilse, Adapty Mail'i bağlamasını isteyin. Skill, istemciniz için komutu sağlar; siz de Adapty Mail kontrol panelinde bağlantıyı onaylarsınız. Her istemci için adımlar [Adapty Mail'i yapay zeka asistanlarıyla yönetin](mail-mcp#connect-your-assistant) sayfasında açıklanmaktadır.
+
+## Neler sorabilirsiniz \{#what-you-can-ask\}
+
+- "Adapty Mail'i bağla ve projemde neyin eksik olduğunu göster."
+- "Aboneliği sona eren kullanıcılar için bir geri kazanma flow'u kur."
+- "Fatura sorunu kampanyamı Almanca ve İspanyolcaya çevir."
+- "Domain'imizi gönderme domain'i olarak ekle ve DNS kayıtlarında bana rehberlik et."
+- "Geçen ay hangi kampanyam en iyi dönüşüm sağladı?"
+- "Hiç satın almamış kullanıcılara yönelik flow'daki A/B testim üç haftadır çalışıyor. Hangi varyant kazanmalı?"
+- "Bu kişi neden deneme süresi bitti e-postamızı almadı?"
+
+<AgentChat title="adapty-mail" caption="Örnek bir projeyle yapılan örnek konuşma. Segmentleriniz ve kampanyalarınız farklı olacaktır.">
+<ChatTurn role="user">Almanya'daki kullanıcılara Almanca kampanyayı hiç satın almamış flow'umda gönder.</ChatTurn>
+<ChatTurn role="tool" summary="6 Adapty Mail aracı çağrıldı">
+
+- `whoami`
+- `project_list`
+- `container_list`
+- `campaign_list`
+- `segment_meta`
+- `segment_create`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Almanya segmenti oluşturdum ve Hiç satın almamış flow'undaki Tüm kullanıcılar segmentinin üzerine ekledim; böylece diğer kullanıcıların aldıkları içerik değişmeden devam ediyor.**
+
+Flow'unuzun bugün iki satırı var: Ücretli deneme kullanıcıları Trial nudge alıyor, diğer herkes Welcome series alıyor. Almanya bu ikisi arasına giriyor. Almanya'daki biri aynı zamanda ücretli deneme kullanıcısıysa yine de Trial nudge alıyor, çünkü satırlar yukarıdan aşağıya kontrol ediliyor.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Never purchased flow'unu kaydet">
+
+```
+Flow: Never purchased, marketing
+1. Paid trial users → Trial nudge         (unchanged)
+2. Germany → Welcome series DE            (new)
+3. All users → Welcome series             (moved from 2)
+Removed: nothing
+```
+
+Kaydedince bu gerçek kişilere gönderilecek. Kaydedeyim mi?
+
+1. Evet, flow'u kaydet
+2. Hayır, önce bir şeyi değiştir
+
+</ChatTurn>
+</AgentChat>
+
+## Nasıl çalışır \{#how-it-works\}
+
+1. **Bağlan.** Skill, MCP sunucusunun yanıt verdiğini ve oturum açtığınızı doğrular.
+2. **Yönlen.** Projenizi bulur ve halihazırda kurulu olanları okur: marka, şirket adresi, gönderme alanı, kampanyalar, flow'lar ve verilerin en son ne zaman ulaştığı. Mevcut olanları yeniden kullanır.
+3. **Planla.** Başlamadan önce yalnızca sizin kontrol panelinde yapabileceğiniz şeyleri adlandırır.
+4. **Harekete geç.** Sunucunun araçları üzerinden çalışır ve her sonucu size gösterir. Gerçek kişilere e-posta gönderen veya geri alınamayan her şey sizin onayınızı bekler.
+
+## Neden bir e-posta gönderilmedi \{#why-an-email-didnt-send\}
+
+Bir kişi hakkında sorduğunuzda, skill o kişinin profilini ve profil geçmişini okur, ardından aşağıdaki nedenleri sırayla inceler ve ilk uygun açıklamayı bulduğunda durur:
+
+1. Profil bastırılmış: abonelikten çıkmış, bounced, şikâyet bildirmiş veya adres doğrulamasından geçememiş. Bkz. [Abonelikten çıkma ve bastırma](mail-suppression).
+2. Kişi zaten başka bir pazarlama flow'unda.
+3. Kişi satın aldı, dolayısıyla sıra tasarlandığı gibi sona erdi.
+4. Gönderim limitleri, domain ısınması sırasında e-postayı bekletti.
+5. Tetikleyici hiç ateşlenmedi. Ya Adapty Mail'e hiç satın alma olayı ulaşmıyor ya da profil kurulum tamamlanmadan önce geldi.
+6. Flow'daki hiçbir segment kişiyle eşleşmedi.
+7. Çift onay (double opt-in) açık ve kişi adresini henüz onaylamadı.
+8. E-posta, kişinin saat dilimine göre belirlenen gönderim penceresi için hâlâ zamanlanmış durumda.
+
+<AgentChat title="adapty-mail" caption="Örnek bir proje ile yapılmış örnek konuşma. Adres ve tarihler uydurulmuştur.">
+<ChatTurn role="user">Neden sam@example.com deneme süresi biten e-postamızı almadı?</ChatTurn>
+<ChatTurn role="tool" summary="3 salt okunur Adapty Mail aracı çağrıldı">
+
+- `profile_list`
+- `profile_get`
+- `profile_journey`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Bu adres 12 Ekim'de abonelikten çıktığı için Adapty Mail artık bu adrese pazarlama e-postası göndermiyor.**
+
+The unsubscribe came from the link in the second email of your Trial expired campaign. The trial expired on October 15, after that, so the flow never started for this person. Purchase confirmations and other transactional emails still reach the address.
+
+Only Adapty support can lift a suppression, and only the person who unsubscribed should ask for it.
+
+</ChatTurn>
+</AgentChat>

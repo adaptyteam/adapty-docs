@@ -1,0 +1,117 @@
+---
+title: "Adapty Mail 智能体技能"
+description: "安装 adapty-mail 技能，让你的 AI 编码工具连接 Adapty Mail MCP 服务器，启动邮件流程，并排查邮件未送达的原因。"
+metadataTitle: "Adapty Mail 智能体技能 | Adapty 文档"
+---
+
+adapty-mail 技能让你可以在 AI 编码工具中运行 Adapty Mail 项目。它通过 [Adapty Mail MCP 服务器](mail-mcp) 以你的身份登录并运行。它可以启动流程、翻译营销活动内容、引导你完成发送域名的 DNS 配置与验证、查看营销活动和 A/B 测试结果，以及排查某用户未收到邮件的原因。
+
+The MCP server alone gives your agent the tools. The skill adds what an agent gets wrong without it:
+
+- **连接服务器**：验证服务器是否已连接并登录。如果未连接，会为你提供客户端的配置步骤。
+- **邮件还是 Adapty 其他功能**：流程、市场细分和用户画像在 Adapty Mail 与 Adapty 应用内付费墙中含义不同。该技能会在做任何修改前先确认你指的是哪一个。
+- **只能在看板中完成的操作**：当请求需要填写公司地址、开启网页结账或数据发送时，它会告知你，并提供相关说明页面的链接。
+- **上线后的工作**：效果分析、A/B 测试、送达率以及追踪丢失的邮件。
+
+:::note
+没有您的确认，任何内容都不会发送给真实用户。保存流程即开始发送，保存时的市场细分列表将替换整个流程，因此该技能会首先展示流程的完整面貌：每个市场细分、每个活动，以及所有已移除的内容。删除、取消订阅，以及 A/B 测试的启动和结束，同样需要您的确认。
+:::
+
+## 安装技能 \{#install-the-skill\}
+
+adapty-mail 技能是 [`adapty-skills` 插件](https://github.com/adaptyteam/adapty-skills) 的一部分。要安装该插件，请在终端中运行：
+
+```bash
+npx adapty skills install
+```
+
+重启你的 agent 以加载技能。其他安装方式请参阅[插件 README](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install)。
+
+该技能需要 Adapty Mail MCP 服务器。如果你的 AI 助手尚未连接，请让它连接 Adapty Mail。技能会为你的客户端提供连接命令，你在 Adapty Mail 看板中确认连接即可。每个客户端的详细步骤请参阅[使用 AI 助手管理 Adapty Mail](mail-mcp#connect-your-assistant)。
+
+## 你可以这样提问 \{#what-you-can-ask\}
+
+- "连接 Adapty Mail，告诉我我的项目缺少什么。"
+- "为订阅已到期的用户设置赢回优惠流程。"
+- "将我的账单问题活动翻译成德语和西班牙语。"
+- "添加我们的域名作为发送域，并引导我完成 DNS 记录配置。"
+- "上个月哪个活动的转化效果最好？"
+- "我在从未购买过的用户流程上的 A/B 测试已经运行了三周。哪个实验变体应该胜出？"
+- "为什么这个用户没有收到我们的试用到期邮件？"
+
+<AgentChat title="adapty-mail" caption="示例对话（基于示例项目，您的市场细分和营销活动可能有所不同）。">
+<ChatTurn role="user">向德国用户发送我的"未购买"流程中的德语营销活动。</ChatTurn>
+<ChatTurn role="tool" summary="调用了 6 个 Adapty Mail 工具">
+
+- `whoami`
+- `project_list`
+- `container_list`
+- `campaign_list`
+- `segment_meta`
+- `segment_create`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**我已创建了一个德国市场细分，并将其置于您"未购买"流程中"所有用户"的上方，这样其他用户仍会收到原来的内容。**
+
+你的流程目前有两行：付费试用用户进入 Trial nudge，其他所有人进入 Welcome series。德国行插入在它们之间。在德国的付费试用用户仍然会进入 Trial nudge，因为行是从上到下依次检查的。
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="保存 Never purchased 流程">
+
+```
+Flow: Never purchased, marketing
+1. Paid trial users → Trial nudge         (unchanged)
+2. Germany → Welcome series DE            (new)
+3. All users → Welcome series             (moved from 2)
+Removed: nothing
+```
+
+保存后会立即发送给真实用户。确认保存吗？
+
+1. 是，保存流程
+2. 否，先修改一些内容
+
+</ChatTurn>
+</AgentChat>
+
+## 工作原理 \{#how-it-works\}
+
+1. **连接。** 技能会验证 MCP 服务器是否正常响应，并确认您已登录。
+2. **了解现状。** 技能会找到您的项目，并读取已有的配置信息：品牌、公司地址、发送域、活动、流程，以及数据最后到达的时间。它会复用现有内容。
+3. **制定计划。** 在开始执行前，技能会列出只能由您在看板中完成的操作。
+4. **执行。** 技能通过服务器工具逐步操作，并向您展示每一步的结果。凡是会向真实用户发送邮件或无法撤销的操作，都会等待您的确认。
+
+## 为什么邮件未发送 \{#why-an-email-didnt-send\}
+
+当你询问某个用户时，该技能会读取其用户画像及行为旅程，然后按顺序逐一排查以下原因，找到第一个能解释问题的原因后即停止：
+
+1. 该用户画像已被屏蔽：已退订、邮件退回、投诉举报或地址验证失败。详见[退订与屏蔽](mail-suppression)。
+2. 该用户已在另一个营销流程中。
+3. 该用户已完成购买，因此序列按预期结束。
+4. 在域名预热期间，发送限制导致邮件被延迟。
+5. 触发器从未触发。原因可能是没有购买事件到达 Adapty Mail，或者用户画像在设置完成前就已进入。
+6. 流程中没有任何市场细分匹配该用户。
+7. 双重确认订阅已开启，但该用户尚未确认地址。
+8. 该邮件仍在按用户所在时区安排的发送窗口中等待发送。
+
+<AgentChat title="adapty-mail" caption="与示例项目的对话示例。地址和日期均为虚构。">
+<ChatTurn role="user">为什么 sam@example.com 没有收到我们的试用期到期邮件？</ChatTurn>
+<ChatTurn role="tool" summary="调用了 3 个只读 Adapty Mail 工具">
+
+- `profile_list`
+- `profile_get`
+- `profile_journey`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**该地址已于 10 月 12 日取消订阅，因此 Adapty Mail 不再向其发送任何营销邮件。**
+
+取消订阅来自您"试用期已到期"活动第二封邮件中的链接。试用期于 10 月 15 日到期，此后该流程从未为此用户启动。购买确认邮件及其他事务性邮件仍可正常送达该地址。
+
+只有 Adapty 支持团队才能解除抑制，且只有取消订阅的用户本人才能提出申请。
+
+</ChatTurn>
+</AgentChat>

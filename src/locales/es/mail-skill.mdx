@@ -1,0 +1,117 @@
+---
+title: "Skill de agente para Adapty Mail"
+description: "Instala el skill adapty-mail para que tu herramienta de codificación con IA conecte el servidor MCP de Adapty Mail, lance flows de correo y averigüe por qué no se envió un email."
+metadataTitle: "Skill de agente para Adapty Mail | Documentación de Adapty"
+---
+
+El skill adapty-mail ejecuta tu proyecto de Adapty Mail desde tu herramienta de codificación con IA. Funciona a través del [servidor MCP de Adapty Mail](mail-mcp), con tu sesión iniciada. Lanza flows, traduce campañas, guía un dominio de envío a través de DNS y verificación, lee los resultados de campañas y pruebas A/B, y averigua por qué una persona no recibió un email.
+
+The MCP server alone gives your agent the tools. The skill adds what an agent gets wrong without it:
+
+- **Conexión con el servidor**: Verifica si el servidor está conectado y tiene sesión iniciada. Si no es así, te indica el paso de configuración para tu cliente.
+- **Mail o el resto de Adapty**: Los flows, segmentos y perfiles tienen significados distintos en Adapty Mail y en los paywalls in-app de Adapty. El skill aclara cuál de los dos quieres decir antes de hacer cualquier cambio.
+- **Lo que solo hace el dashboard**: Te indica cuándo una solicitud requiere activar tu dirección de empresa, el checkout web o el envío de datos, y enlaza la página que lo explica.
+- **El trabajo posterior al lanzamiento**: Resultados, pruebas A/B, entregabilidad y rastreo de un email que no ha llegado.
+
+:::note
+Nada llega a personas reales sin tu confirmación. Guardar un flow inicia el envío, y la lista de segmentos que guarda reemplaza todo el flow, por lo que el skill primero muestra el flow tal como quedará: cada segmento, cada campaña y cualquier elemento eliminado. Las eliminaciones, cancelaciones de suscripción y los lanzamientos y finalizaciones de pruebas A/B también esperan tu confirmación.
+:::
+
+## Instalar el skill \{#install-the-skill\}
+
+El skill adapty-mail forma parte del [plugin `adapty-skills`](https://github.com/adaptyteam/adapty-skills). Para instalarlo, ejecuta en tu terminal:
+
+```bash
+npx adapty skills install
+```
+
+Reinicia tu agente para cargar los skills. Para otros métodos de instalación, consulta el [README del plugin](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install).
+
+El skill necesita el servidor MCP de Adapty Mail. Si tu agente aún no lo tiene, pídele que conecte Adapty Mail. El skill te proporciona el comando para tu cliente, y tú apruebas la conexión en el dashboard de Adapty Mail. Los pasos para cada cliente están en [Gestiona Adapty Mail con asistentes de IA](mail-mcp#connect-your-assistant).
+
+## Qué puedes preguntar \{#what-you-can-ask\}
+
+- "Conecta Adapty Mail y dime qué le falta a mi proyecto."
+- "Configura un flow de recuperación para usuarios cuya suscripción haya expirado."
+- "Traduce mi campaña de problemas de facturación al alemán y al español."
+- "Añade nuestro dominio como dominio de envío y guíame por los registros DNS."
+- "¿Cuál de mis campañas tuvo mejor conversión el mes pasado?"
+- "Mi prueba A/B en el flow de usuarios que nunca compraron lleva tres semanas activa. ¿Qué variante debería ganar?"
+- "¿Por qué esta persona no recibió nuestro correo de trial expirado?"
+
+<AgentChat title="adapty-mail" caption="Ejemplo de conversación con un proyecto de muestra. Tus segmentos y campañas serán diferentes.">
+<ChatTurn role="user">Envía a los usuarios de Alemania la campaña en alemán en mi flow de nunca comprado.</ChatTurn>
+<ChatTurn role="tool" summary="Se llamaron 6 herramientas de Adapty Mail">
+
+- `whoami`
+- `project_list`
+- `container_list`
+- `campaign_list`
+- `segment_meta`
+- `segment_create`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Creé un segmento de Alemania y lo coloqué por encima de Todos los usuarios en tu flow de Nunca comprado, para que el resto de tus usuarios sigan recibiendo lo que reciben ahora.**
+
+Tu flow tiene hoy dos filas: los usuarios de prueba de pago reciben Trial nudge, y todos los demás reciben Welcome series. Alemania va entre ellas. Alguien de Alemania que además sea usuario de prueba de pago seguirá recibiendo Trial nudge, porque las filas se comprueban de arriba a abajo.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Guardar el flow Never purchased">
+
+```
+Flow: Never purchased, marketing
+1. Paid trial users → Trial nudge         (unchanged)
+2. Germany → Welcome series DE            (new)
+3. All users → Welcome series             (moved from 2)
+Removed: nothing
+```
+
+Esto se enviará a personas reales en cuanto lo guarde. ¿Guardarlo?
+
+1. Sí, guardar el flow
+2. No, cambiar algo primero
+
+</ChatTurn>
+</AgentChat>
+
+## Cómo funciona \{#how-it-works\}
+
+1. **Conectar.** El skill verifica que el servidor MCP responde y que has iniciado sesión.
+2. **Orientar.** Encuentra tu proyecto y lee lo que ya está configurado: marca, dirección de la empresa, dominio de envío, campañas, flows y cuándo llegaron los últimos datos. Reutiliza lo que ya existe.
+3. **Planificar.** Nombra cualquier cosa que solo tú puedas hacer en el dashboard antes de comenzar.
+4. **Actuar.** Trabaja con las herramientas del servidor y te muestra cada resultado. Cualquier acción que envíe correos a personas reales o que no pueda deshacerse espera tu confirmación.
+
+## Por qué no se envió un email \{#why-an-email-didnt-send\}
+
+Cuando preguntas por una persona, el skill lee el perfil y el journey de ese perfil, y luego recorre estas razones en orden, deteniéndose en la primera que lo explique:
+
+1. El perfil está suprimido: se ha dado de baja, ha rebotado, ha marcado el correo como spam o no ha superado la verificación de dirección. Consulta [Cancelación de suscripción y supresión](mail-suppression).
+2. La persona ya está en otro flow de marketing.
+3. La persona compró, por lo que la secuencia finalizó según lo previsto.
+4. Los límites de envío retuvieron el correo durante el calentamiento del dominio.
+5. El disparador nunca se activó. O bien ningún evento de compra llega a Adapty Mail, o el perfil llegó antes de que se completara la configuración.
+6. Ningún segmento del flow coincidió con la persona.
+7. El doble opt-in está activado y la persona no ha confirmado la dirección.
+8. El correo sigue programado para la ventana de envío en la zona horaria de la persona.
+
+<AgentChat title="adapty-mail" caption="Ejemplo de conversación con un proyecto de muestra. La dirección y las fechas son ficticias.">
+<ChatTurn role="user">¿Por qué sam@example.com no recibió nuestro correo de prueba expirada?</ChatTurn>
+<ChatTurn role="tool" summary="Se llamaron 3 herramientas de solo lectura de Adapty Mail">
+
+- `profile_list`
+- `profile_get`
+- `profile_journey`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Esta dirección se dio de baja el 12 de octubre, por lo que Adapty Mail ya no le envía ningún correo de marketing.**
+
+La cancelación de la suscripción provino del enlace del segundo correo electrónico de tu campaña Trial expired. El trial expiró el 15 de octubre, por lo que el flow nunca se inició para esta persona. Los correos de confirmación de compra y otros transaccionales siguen llegando a la dirección.
+
+Solo el soporte de Adapty puede levantar una supresión, y solo la persona que canceló la suscripción puede solicitarlo.
+
+</ChatTurn>
+</AgentChat>
