@@ -23,7 +23,7 @@ If mode is ambiguous, ask to clarify.
    - Full-article reviews, and all writing: `references/article-structure.md`
    - Anything touching links, images, imports, or anchors: `references/astro-patterns.md`
    - Producing a plan or annotated feedback: `references/output-templates.md`
-3. **Identify the doc type** (integration guide, feature doc, troubleshooting, API reference, conceptual, release notes) and check the article follows that shape — see `references/article-structure.md` → Doc-Type Conventions
+3. **Identify the doc type** (integration guide, feature doc, troubleshooting, API reference, conceptual, release notes, agent skill) and check the article follows that shape — see `references/article-structure.md` → Doc-Type Conventions
 4. **Check structure** (full articles): Introduction, heading hierarchy, parallel structure
 5. **Perform checks**: Work through the Review Pass Order below — it sequences every Key Review Area
 6. **Report findings**: Organized by priority — see Output Format
