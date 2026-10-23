@@ -262,3 +262,14 @@ repeated here.
   for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
   webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
   for this change, so `adapty-api.yaml` stays as is.
+- **Braze revenue goes out only as legacy purchases (2026-10-23, backend code + Braze docs).** Adapty
+  sends revenue as the `purchases` array of `/users/track`, with no format setting in the integration.
+  Braze put legacy purchase events in maintenance mode and does not enable them for new customers; such
+  a workspace rejects the whole request with HTTP 400 ("Legacy purchase ingestion is disabled…"), so
+  every revenue-bearing event (first purchase, renewal, trial conversion, refund) is lost, not only the
+  revenue. Braze is not retried automatically. A revenue-format selector (eCommerce
+  `ecommerce.order_placed` / `ecommerce.order_refunded` vs legacy) is planned but not shipped; until it
+  is, `braze` carries a warning to check that the workspace accepts legacy purchases; replace it with
+  the selector docs when the selector ships. The same check found the setup section
+  stale: Braze now creates REST keys and lists app identifiers under **Settings** > **APIs and
+  Identifiers**, and a key's permissions can't be edited after creation.
