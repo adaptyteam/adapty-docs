@@ -19,10 +19,9 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 ## Surfaces
 
 - **Adapty Dashboard → Flows page**: flow list, status column, **Create flow**, **Fallbacks** download,
-  the Flow metrics view. Since ADP-6763 (2026-10-02, `dashboard-interface` branch `ADP-6763`) a flow's
-  page has two tabs, **Metrics** (`/flows/{id}/metrics/`) and **Funnel** (`/flows/{id}/funnel/`); the
-  Funnel tab is behind the `flowFunnel` feature flag, off by default, so re-check the flag before
-  calling `flow-funnel` live.
+  the Flow metrics view. A flow's page has two tabs, **Metrics** (`/flows/{id}/metrics/`) and **Funnel**
+  (`/flows/{id}/funnel/`). The `flowFunnel` feature flag that hid the Funnel tab was removed before
+  release (2026-10-26), so the tab is open to everyone.
 - **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
@@ -75,15 +74,21 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   the article's prose. The calculations live under
   `src/portal/analytics_context/infrastructure/repositories/metrics_repositories/in_app_metrics_repositories/flow_metrics_repositories/`
   (Jinja + ClickHouse, the same layout the `analytics` brief describes for chart metrics), and the funnel
-  added by ADP-6763 sits beside them: `queries/flow_metrics/select_flow_screen_funnel_metrics.sql` is the
+  (2026-10) sits beside them: `queries/flow_metrics/select_flow_screen_funnel_metrics.sql` is the
   query, `domain/value_objects/metrics/in_app_metrics/flow_screen_funnel_metrics/` the value objects, and
   `infrastructure/ports/http/flow_screen_funnel_metrics_view_set.py` the endpoint
   (`POST …/analytics/flows/{flow_id}/screen-funnel/metrics/`, `?format=csv` for the export). Read on
-  `origin/ADP-6763` until it merges, then `origin/develop`. What is still true: no `sources.md` entry names
+  the feature branch until it merges, then `origin/develop`. What is still true: no `sources.md` entry names
   this module, so cite `dashboard-backend` and the path, as the `analytics` brief does. Facts settled there
   for `flow-funnel` (all 2026-10-02): a step is the screen's position in the profile's path, not the builder
-  `screen_order`; one path per profile (first appearance per screen within a session, then the session with
-  the longest path); completion = path ends on a screen with `is_last_screen`, or a trial or purchase on a paywall screen (a purchase closes the flow; agreed 2026-10-21, tracked under the same task); funnel Revenue/Purchases are
+  `screen_order`; one path per profile (first appearance per screen within a session, then one session:
+  a completing one first, else the longest, else the latest — revised 2026-10-23); completion = a trial or
+  purchase on a paywall screen (a purchase closes the flow), or the path ends on a screen with
+  `is_last_screen`, except that a last screen which is a paywall completes only with a purchase (rule
+  settled 2026-10-23). A later refund keeps the profile completed. The funnel's Completed deliberately
+  differs from `flow-metrics` Completions, which still count last screens only. The Revenue card also counts
+  purchases on the flow's paywall screens outside the kept session, so it can exceed the table's sum. Flows
+  shown without a placement are excluded. Funnel Revenue/Purchases are
   initial purchases (`renewal_period = 1` on `subscription_started`/`trial_converted`, plus one-time
   purchases) net of their refunds, gross USD — unlike `flow-metrics` Revenue, which counts every transaction
   after the show. The Platform and Subscription state filters are a funnel-only filter class
@@ -221,7 +226,9 @@ or developer can see and click.
   that now says the dashboard funnel already shows per-screen drop-off. If the funnel's scope changes
   (branching coverage, an all-versions mode), those eight sentences move with it. The two Revenue
   definitions differ on purpose (initial purchases vs every transaction after the show); a change to either
-  must keep the contrast sentence in `flow-funnel#revenue` true.
+  must keep the contrast sentence in `flow-funnel#revenue` true. The same holds for completion: a change to
+  `flow-metrics` Completions (last screen only) must keep the contrast sentence in `flow-funnel#completed`
+  true.
 - **`adapty-flow-builder` ↔ `migrate-to-flows`: verified duplicated content, not just co-change.** Both
   articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
   word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
@@ -384,7 +391,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
   in the corpus.
 
-- **`flow-funnel` open questions, from the backend write-up on ADP-6763 (2026-10-02, unresolved there
+- **`flow-funnel` open questions, from the backend write-up on the funnel task (2026-10-02, unresolved there
   too).** (1) No all-versions mode: a flow republished often (one real flow had ~50 versions in a month)
   shows a few days of data per version; the article documents the per-version scope as a limitation. (2)
   Purchases are dated by payment date, so trial conversions after the period end are missing from it —
