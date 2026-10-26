@@ -288,7 +288,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flutter-web-paywall | — | dev | 1 | flutter |
 | get-pb-paywalls | — | dev | 11 | ios |
 | handle-paywall-actions | — | dev | 7 | ios |
-| ios-flow-input | — | dev | 10 | ios |
+| ios-flow-input | — | dev | 11 | ios |
 | ios-flow-screen-views | — | dev | 4 | ios |
 | ios-handling-events | — | dev | 14 | ios |
 | ios-paywalls | entry | dev | 4 | ios |
