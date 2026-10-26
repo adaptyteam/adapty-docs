@@ -166,19 +166,20 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
-| developer-cli-ads-manager | entry | dev | 15 | api |
-| developer-cli-ads-manager-reference | — | dev | 53 | api |
+| developer-cli-ads-manager | entry | dev | 17 | api |
+| developer-cli-ads-manager-reference | — | dev | 60 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
+| developer-cli-analytics | entry | dev | 17 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
-| developer-cli-reference | — | dev | 53 | api |
-| export-analytics-with-ai | — | dev | 6 | tutorial |
+| developer-cli-reference | — | dev | 57 | api |
+| export-analytics-with-ai | — | dev | 7 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 10 | tutorial |
+| manage-adapty-with-ai | entry | dev | 11 | tutorial |
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->

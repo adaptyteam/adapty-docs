@@ -89,9 +89,11 @@ Each SDK gates on `isCustomerEvent` and forwards the map untouched: iOS
 platform's first v4 tag and HEAD, so the SDK floor for this feature is "first v4" on all seven
 (4.0.0 for iOS, Android, Flutter, React Native; 4.0.0-beta.1 for Capacitor, Unity, KMP; all tagged
 2026-07-10 … 07-31). Three per-wrapper shape facts that a sibling article cannot tell you: Android
-delivers JSON numbers to the listener as `Double` (the `Double`→`Long` normalisation in
-`AnalyticsEffectHandler.kt:44-58` runs only on the copy sent to Adapty's own analytics; a fix is
-planned for 4.2); Unity decodes into `Dictionary<string, object>` with Newtonsoft and no loose
+delivers JSON numbers to the listener as `Double` before 4.3.0, and from 4.3.0 delivers whole numbers
+inside the `Long` range as `Long`, keeping fractional and out-of-range values as `Double` — so a picker's
+Unix-milliseconds value arrives as `Long` (2026-10-26, Android SDK 4.3.0 release branch:
+`FlowReducer` now runs `normalizeJsonNumbers` on the listener path too; corrects this brief's earlier
+"fix planned for 4.2"); Unity decodes into `Dictionary<string, object>` with Newtonsoft and no loose
 converter (`Runtime/Adapty.Events.cs:424`, `Runtime/Serialization/AdaptyJson.cs:96-115`), so arrays
 arrive as `JArray`, integers as `long`, and the listener signature is
 `IReadOnlyDictionary<string, object>`; KMP hands the whole map over as one JSON string
@@ -288,7 +290,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flutter-web-paywall | — | dev | 1 | flutter |
 | get-pb-paywalls | — | dev | 11 | ios |
 | handle-paywall-actions | — | dev | 7 | ios |
-| ios-flow-input | — | dev | 10 | ios |
+| ios-flow-input | — | dev | 11 | ios |
 | ios-flow-screen-views | — | dev | 4 | ios |
 | ios-handling-events | — | dev | 14 | ios |
 | ios-paywalls | entry | dev | 4 | ios |
@@ -391,7 +393,7 @@ and are deliberately not repeated here.
 | "where do I start with paywalls" | The `paywalls` family — the per-platform entry pages, whose job is routing to builder vs manual. |
 | "get the email the user typed in the flow", "read quiz answers in the app", "save onboarding answers as custom attributes" | `flow-input`. Values ride the analytics callback as `flow_user_input`; text fields report on focus loss, selectables per tap, pickers on close. A default or pre-selected value never fires an event — the shared `FlowInputTiming` snippet is where that lives. |
 | "the input event never arrives", "no flow_user_input on my device" | `flow-input`, the `## Before you start` snippet: the flow must have been published after 2026-09-07; the SDK floor is only "first v4". The Adapty preview app never shows these events — its `AdaptyUIFlowView` call registers no analytics callback (preview app code, closed-source) — so the test has to run in the developer's own build. |
-| "date picker value is 6.45E11", "picker gives a Double on Android" | `flow-input`, the Android / Flutter / KMP code comments. Not a doc bug: the Android listener receives JSON numbers as `Double` until the planned 4.2 fix. |
+| "date picker value is 6.45E11", "picker gives a Double on Android" | `flow-input`, the Android / Flutter / KMP code comments. Not a doc bug: the Android listener receives JSON numbers as `Double` before SDK 4.3.0, and whole numbers as `Long` from 4.3.0. The Android article states both. |
 
 ## Gaps and misses
 
