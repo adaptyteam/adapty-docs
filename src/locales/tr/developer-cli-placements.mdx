@@ -1,0 +1,258 @@
+---
+title: "Placement ve segment komutları"
+description: "Placement'ları ve bunların kitlelerini oluşturan ve güncelleyen, bu kitlelerin hedeflediği segmentleri oluşturan Adapty CLI komutları."
+metadataTitle: "Placement ve Segment CLI Komutları | Adapty Dokümanları"
+---
+
+Bu Adapty CLI komutları, [placement'ları](placements), bunların üzerindeki kitleleri ve bu kitlelerin hedeflediği [segmentleri](segments) yönetir.
+
+## Placement'lar \{#placements\}
+
+[Placement'lar](placements), flow'larınızın, paywall'larınızın ve onboarding'lerinizin kullanıcılara ulaştığı yerlerdir. Bir placement'ın içerik türü oluşturma sırasında belirlenir; bu nedenle bir uygulamayı paywall'lardan flow'lara taşımak, mevcut placement'ları güncellemek yerine yeni placement'lar oluşturmayı gerektirir — [migrate-placements skill](migrate-placements-skill) bu komutları toplu olarak gerçekleştirmek için kullanılır.
+
+### adapty placements list
+
+Bir uygulama için tüm [placement'ları](placements) listeler.
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+[Sayfalama flag'lerini](developer-cli-reference#global-flags) destekler.
+
+Her öğe `id`, `developer_id`, `title` ve `is_active` alanlarını içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için `false` değerini alır.
+
+### adapty placements get
+
+Belirli bir [placement](placements) için ayrıntıları alır.
+
+```bash
+adapty placements get --app <app-id> <placement-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID (UUID) |
+
+Yanıt; `id`, `developer_id`, `title`, `is_active` ve bir `audiences` dizisi içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için `false` değerini alır. Her kitle girdisi; `content_type`, `segment_ids`, `priority` ve içeriğin ID'sini taşır: `paywall` için `paywall_id`, `flow` için `flow_id`, [A/B testi](ab-tests) çalıştıran bir kitle için ise `ab_test_id` ve `ab_test_title`. Varsayılan kitle `segment_ids: []` değerine ve en yüksek öncelik sayısına (en son değerlendirilen) sahiptir. Bkz. [Kitle yapısı](#audiences-shape).
+
+### adapty placements create
+
+Yeni bir [placement](placements) oluşturur.
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Placement başlığı |
+| `--developer-id` | Evet | Uygulamanın kodunda bu [placement](placements)'ı istemek için kullanılan string tanımlayıcı |
+| `--audiences` | İkisinden biri | Her biri açık bir `content_type` içeren audience girdilerinden oluşan JSON dizisi. Bkz. [Audiences shape](#audiences-shape) |
+| `--paywall-id` | İkisinden biri | **Kullanımdan kaldırıldı.** [Paywall](paywalls) ID'si (UUID). İstemci tarafında tek bir varsayılan audience içine sarılır |
+
+`--audiences` veya `--paywall-id` seçeneklerinden yalnızca birini geçirin. İkisini birden ya da hiçbirini geçmek hatayla sonuçlanır.
+
+:::warning
+`--paywall-id` kullanımdan kaldırılmıştır ve ileride kaldırılacaktır. Geçirildiğinde, CLI bir stderr uyarısı yazdırır ve değeri varsayılan bir kitleye dönüştürür. Yeni otomasyon için `--audiences` kullanın.
+:::
+
+### adapty placements update
+
+Mevcut bir [placement](placements)'ın tüm alanlarını değiştirir.
+
+```bash
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+Bu komut, tam kitle listesi de dahil olmak üzere placement'ın tüm alanlarını değiştirir.
+
+| Argüman | Açıklama |
+|---|---|
+| `placement-id` | Placement ID'si (UUID) |
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Placement başlığı |
+| `--developer-id` | Evet | Uygulamada bu [placement](placements)'ı istemek için kullanılan string tanımlayıcı |
+| `--audiences` | İkisinden biri | Her biri açık bir `content_type` içeren kitle girdilerinden oluşan JSON dizisi. Bkz. [Kitleler şekli](#audiences-shape) |
+| `--paywall-id` | İkisinden biri | **Kullanımdan kaldırıldı.** [Paywall](paywalls) ID'si (UUID). Tüm kitleleri tek bir varsayılan kitleyle değiştirir |
+
+:::warning
+`--paywall-id` parametresi geçirildiğinde, placement üzerindeki tüm kitleler yeniden yazılır. Segmente özgü kitleler silinir. Bunları korumak için `--audiences` kullanın ve tutmak istediğiniz tüm girişleri dahil edin.
+:::
+
+#### Kitleler yapısı \{#audiences-shape\}
+
+`--audiences` bayrağı bir JSON dizisi alır. Her girişin şunları içerir:
+
+| Alan | Tür | Açıklama |
+|---|---|---|
+| `content_type` | `string` | Her girdide zorunludur. `"paywall"`, `"flow"`, `"ab_test"` (paywall A/B testi), `"flow_ab_test"` (flow A/B testi), `"cross_ab_test"` veya `"flow_cross_ab_test"` (crossplacement A/B testi). Paywall placement'ında `paywall`, `ab_test` ve `cross_ab_test`; flow placement'ında ise `flow`, `flow_ab_test` ve `flow_cross_ab_test` kullanın |
+| `segment_ids` | `string[]` | Bu kitle tarafından hedeflenen [Segment](segments) ID'leri. Uzunluk 0 veya 1. Boş dizi, başka hiçbir segmentle eşleşmeyen kullanıcılar için yedek olan **varsayılan kitleyi** işaret eder |
+| `paywall_id` | `string` | Bu kitledeki kullanıcılara gösterilen [Paywall](paywalls) ID'si (UUID). `content_type` değeri `"paywall"` olduğunda zorunludur |
+| `flow_id` | `string` | Bu kitledeki kullanıcılara gösterilen [Flow](adapty-flow-builder) ID'si (UUID). `content_type` değeri `"flow"` olduğunda zorunludur |
+| `ab_test_id` | `string` | Bu kitledeki kullanıcılar için çalıştırılan [A/B testi](ab-tests) ID'si. Dört A/B testi içerik türünde de zorunludur |
+| `ab_test_title` | `string` | A/B testi başlığı. Salt okunur: API, yazma işleminde bu alanı yok sayar |
+| `priority` | `number` | 0 tabanlı, placement içinde benzersizdir. Kitleler düşükten yükseğe doğru değerlendirilir; varsayılan kitle en yüksek değere sahip olmalıdır |
+
+Bir placement'ın tam olarak bir varsayılan kitlesi olmalıdır.
+
+:::warning
+`placements update` komutu, A/B testi çalıştıran kitleler de dahil olmak üzere tam kitle listesini değiştirir. Çalışan bir testi korumak için `placements get` komutundan ilgili girişi `--audiences` parametresine olduğu gibi kopyalayın; `ab_test_id` ve `segment_ids` değerleri aynı kalmalıdır. Bu girişi kaldıran veya değiştiren bir yazma işlemi, testi kazanansız durdurur. Girişi başka segmentlere taşıyan bir yazma işlemi testi yeniden başlatır; başka bir kitlede `ab_test_id` belirtmek ise testi orada başlatır. Yalnızca öncelikleri değiştiren bir yazma işlemi testi çalışmaya devam ettirir. CLI bu durumlar için sizi uyarmaz.
+:::
+
+Çapraz placement A/B testi girdileri (`cross_ab_test`, `flow_cross_ab_test`) salt okunurdur. API, yazma işlemlerinde bunları yok sayar ve mevcut olanları korur.
+
+Bir placement'ın içerik türü oluşturulduğunda sabitlenir; bu nedenle `placements update` komutu bir paywall placement'ını flow'a veya tersine çeviremez. Flow'u kendi placement'ından sunun — bkz. [Flow için yeni bir placement oluşturma](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+CLI, isteği göndermeden önce her girişi kontrol eder. Eksik veya bilinmeyen `content_type` içeren ya da `content_type`'ının gerektirdiği ID'ye sahip olmayan bir giriş, kod 2 ile çıkar ve hiçbir şey gönderilmez. Tanımadığı bir `content_type` için CLI, `this CLI does not know this audience kind; update the CLI` mesajını yazdırır. Giriş `placements get` komutundan geldiyse, girişi kaldırmak yerine CLI'yi güncelleyin: giriş çalışan bir A/B testi olabilir.
+
+Bir flow yalnızca yayımlandıktan sonra eklenebilir. `draft` durumundaki bir flow veya ilk yayımlaması hâlâ devam eden bir flow sunucu tarafından reddedilir; CLI bu reddi algılar ve `flows publish` komutunu yazdırarak 2 koduyla çıkar. Bir flow'u yayımlamak için [`flows publish`](developer-cli-flows#adapty-flows-publish) komutunu veya [Flow & Paywall Builder](builder-save-publish)'ı kullanın, ardından durumunun `published` olmasını bekleyin.
+
+Bir hedefli kitle ve bir varsayılan kitle içeren örnek:
+
+```bash
+adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+Yayımlanmış bir flow'u tüm kullanıcılara sunan bir placement örneği:
+
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+```
+
+Segment'e özgü yönlendirmeyi kaybetmeden bir paywall'u birden fazla placement'ta değiştirmek için:
+
+1. Etkilenen placement'ları bulun:
+
+   ```bash
+   adapty paywalls placements --app <app-id> <old-paywall-id>
+   ```
+
+2. Her biri için `audiences` dizisinin tamamını okuyun:
+
+   ```bash
+   adapty placements get --app <app-id> <placement-id> --json
+   ```
+
+3. Eşleşen `paywall_id` değerlerini istemci tarafında değiştirin. A/B testi girdileri dahil diğer tüm girdileri değiştirmeden bırakın.
+
+4. Değiştirilen payload'ı geri yazın:
+
+   ```bash
+   adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
+   ```
+
+## Segmentler \{#segments\}
+
+[Segmentler](segments), kullanıcıları profil özelliklerine göre gruplar. [Placement kitlelerini](#audiences-shape) oluştururken segment ID'lerini bulmak veya yeni segment oluşturmak için bu komutları kullanın. Apple Ads kampanyalarına, reklam gruplarına veya anahtar kelimelere göre segment oluşturmak için [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) komutunu kullanın: Apple ID'lerini sizin yerinize bulur ve segmenti Ads Manager'ın kullandığı şekilde adlandırır.
+
+### adapty segments list
+
+Bir uygulamaya ait tüm [segment](segments)'leri listeler.
+
+```bash
+adapty segments list --app <app-id>
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+[Sayfalandırma bayraklarını](developer-cli-reference#global-flags) kabul eder.
+
+### adapty segments get
+
+Belirli bir [segment](segments) için ayrıntıları alır.
+
+```bash
+adapty segments get --app <app-id> <segment-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `segment-id` | Segment ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+Yanıt, `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` ve `updated_at` alanlarını içerir. `list` yalnızca `id`, `title` ve `description` alanlarını döndürür.
+
+### adapty segments create
+
+Bir veya daha fazla filtreden [segment](segments) oluşturur.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Segment başlığı |
+| `--filter` | Evet | Filtre kuralı. Tekrarlanabilir. Bkz. [Filtre söz dizimi](#filter-syntax) |
+| `--description` | Hayır | Segment açıklaması |
+
+Bir kullanıcı, segmente yalnızca tüm filtreleri sağladığında dahil edilir. Yanıt, `segments get` ile aynı alanları içerir. `profile_count` `0` ile başlar ve Adapty, segment oluşturulduktan sonra bunu yeniden hesaplar.
+
+### adapty segments update
+
+Mevcut bir [segment](segments)'in başlığını, açıklamasını ve filtrelerini değiştirir.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `segment-id` | Segment ID (UUID) |
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID (UUID) |
+| `--title` | Evet | Segment başlığı |
+| `--filter` | Evet | Filtre kuralı. Tekrarlanabilir. Bkz. [Filtre sözdizimi](#filter-syntax) |
+| `--description` | Hayır | Segment açıklaması |
+
+:::warning
+`segments update` tüm segmenti değiştirir. Yalnızca değiştirdiğiniz filtreyi değil, korumak istediğiniz her filtreyi geçirin. Mevcut filtreleri okumak için şunu çalıştırın: `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Filtre sözdizimi \{#filter-syntax\}
+
+Her `--filter` değerini `field:OPERATOR:value` biçiminde yazın. Birden fazla değerden herhangi biriyle eşleştirmek için değerleri virgülle ayırın: `ip_country:IN:US,CA`.
+
+| Operatör | Değerler | Örnek |
+|---|---|---|
+| `IN`, `NOT IN` | Bir veya daha fazla | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Bir | `age:>:18` |
+| `BETWEEN` | İki | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Hiçbiri | `age:IS NULL` |
+
+Sayıları düz değerler olarak iletin; örneğin `age:>:18`. Adapty, bunları `age`, `total_revenue_usd` ve float türündeki özel öznitelikler gibi sayısal alanlar için dönüştürür.
+
+Bu kısa formun ifade edemediği bir değer için filtreyi JSON nesnesi olarak iletin:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty alan adlarını, operatörleri ve değer türlerini doğrular; geçersiz her filtre için ayrı bir hata bildirir. Mevcut filtrelerin alan adlarını ve değer biçimlerini görmek için kontrol panelinde oluşturulmuş bir segment üzerinde `adapty segments get --app <app-id> <segment-id> --json` komutunu çalıştırın.
+
+## Sırada ne var \{#whats-next\}
+
+- [Komut referansı](developer-cli-reference) — tüm CLI konuları, genel bayraklar ve sayfalama bayrakları.

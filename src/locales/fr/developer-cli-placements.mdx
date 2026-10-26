@@ -1,0 +1,258 @@
+---
+title: "Commandes pour les placements et segments"
+description: "Commandes CLI Adapty qui créent et mettent à jour les placements et leurs audiences, ainsi que les segments ciblés par ces audiences."
+metadataTitle: "Commandes CLI pour les placements et segments | Documentation Adapty"
+---
+
+Ces commandes CLI Adapty gèrent les [placements](placements), les audiences qui leur sont associées, et les [segments](segments) ciblés par ces audiences.
+
+## Placements \{#placements\}
+
+Les [placements](placements) sont les endroits où vos flows, paywalls et onboardings atteignent les utilisateurs. Le type de contenu d'un placement est fixé à la création ; faire passer une app des paywalls aux flows implique donc de créer de nouveaux placements plutôt que de modifier les existants — le [skill migrate-placements](migrate-placements-skill) pilote ces commandes pour le faire en masse.
+
+### adapty placements list
+
+Lister tous les [placements](placements) d'une application.
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepte les [options de pagination](developer-cli-reference#global-flags).
+
+Chaque élément contient `id`, `developer_id`, `title` et `is_active`. `is_active` vaut `true` pour un placement actif et `false` pour un placement inactif.
+
+### adapty placements get
+
+Obtenez les détails d'un [placement](placements) spécifique.
+
+```bash
+adapty placements get --app <app-id> <placement-id>
+```
+
+| Argument | Description |
+|---|---|
+| `placement-id` | ID du placement (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+La réponse contient `id`, `developer_id`, `title`, `is_active`, ainsi qu'un tableau `audiences`. `is_active` vaut `true` pour un placement actif et `false` pour un placement inactif. Chaque entrée d'audience comporte `content_type`, `segment_ids`, `priority`, et l'identifiant de son contenu : `paywall_id` pour `paywall`, `flow_id` pour `flow`, ou `ab_test_id` et `ab_test_title` pour une audience qui exécute un [test A/B](ab-tests). L'audience par défaut a `segment_ids: []` et la valeur de priorité la plus élevée (évaluée en dernier). Voir [Structure des audiences](#audiences-shape).
+
+### adapty placements create
+
+Crée un nouveau [placement](placements).
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--title` | Oui | Titre du placement |
+| `--developer-id` | Oui | Identifiant string utilisé dans le code de l'app pour demander ce [placement](placements) |
+| `--audiences` | L'un des deux | Tableau JSON d'entrées d'audience, chacune avec un `content_type` explicite. Voir [Forme des audiences](#audiences-shape) |
+| `--paywall-id` | L'un des deux | **Obsolète.** ID du [paywall](paywalls) (UUID). Encapsulé côté client dans une seule audience par défaut |
+
+Passez exactement l'un de `--audiences` ou `--paywall-id`. Passer les deux ou aucun génère une erreur.
+
+:::warning
+`--paywall-id` est déprécié et sera supprimé. Lorsqu'il est fourni, la CLI affiche un avertissement sur stderr et convertit la valeur en audience par défaut. Utilisez `--audiences` pour les nouvelles automatisations.
+:::
+
+### adapty placements update
+
+Remplace tous les champs d'un [placement](placements) existant.
+
+```bash
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+Cette commande remplace tous les champs du placement, y compris la liste complète des audiences.
+
+| Argument | Description |
+|---|---|
+| `placement-id` | ID du placement (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--title` | Oui | Titre du placement |
+| `--developer-id` | Oui | Identifiant utilisé dans le code de l'application pour demander ce [placement](placements) |
+| `--audiences` | L'un des deux | Tableau JSON d'entrées d'audience, chacune avec un `content_type` explicite. Voir [Format des audiences](#audiences-shape) |
+| `--paywall-id` | L'un des deux | **Déprécié.** ID du [paywall](paywalls) (UUID). Remplace toutes les audiences par une seule audience par défaut |
+
+:::warning
+Passer `--paywall-id` réécrit toutes les audiences du placement. Les audiences spécifiques aux segments sont supprimées. Pour les conserver, utilisez `--audiences` et incluez toutes les entrées que vous souhaitez garder.
+:::
+
+#### Structure des audiences \{#audiences-shape\}
+
+Le flag `--audiences` prend un tableau JSON. Chaque entrée contient :
+
+| Champ | Type | Description |
+|---|---|---|
+| `content_type` | `string` | Requis pour chaque entrée. `"paywall"`, `"flow"`, `"ab_test"` (test A/B de paywall), `"flow_ab_test"` (test A/B de flow), `"cross_ab_test"` ou `"flow_cross_ab_test"` (test A/B inter-placement). Utilisez `paywall`, `ab_test` et `cross_ab_test` dans un placement de paywall, et `flow`, `flow_ab_test` et `flow_cross_ab_test` dans un placement de flow |
+| `segment_ids` | `string[]` | IDs de [segment](segments) ciblés par cette audience. Longueur 0 ou 1. Un tableau vide indique l'**audience par défaut** — le fallback pour les utilisateurs qui ne correspondent à aucun autre segment |
+| `paywall_id` | `string` | ID (UUID) du [paywall](paywalls) affiché aux utilisateurs de cette audience. Requis lorsque `content_type` vaut `"paywall"` |
+| `flow_id` | `string` | ID (UUID) du [flow](adapty-flow-builder) affiché aux utilisateurs de cette audience. Requis lorsque `content_type` vaut `"flow"` |
+| `ab_test_id` | `string` | ID du [test A/B](ab-tests) exécuté pour les utilisateurs de cette audience. Requis pour les quatre types de contenu test A/B |
+| `ab_test_title` | `string` | Titre du test A/B. Lecture seule : l'API l'ignore lors d'une écriture |
+| `priority` | `number` | Base 0, unique au sein du placement. Les audiences sont évaluées du plus petit au plus grand ; l'audience par défaut doit avoir la valeur la plus élevée |
+
+Un placement doit avoir exactement une audience par défaut.
+
+:::warning
+`placements update` remplace la liste complète des audiences, y compris celles qui font tourner un test A/B. Pour conserver un test en cours, copiez son entrée depuis `placements get` dans `--audiences` sans la modifier, avec les mêmes `ab_test_id` et `segment_ids`. Une écriture qui supprime ou remplace cette entrée arrête le test sans désigner de gagnant. Une écriture qui déplace l'entrée vers d'autres segments relance le test, et un `ab_test_id` sur une autre audience démarre le test là. Une écriture qui ne modifie que les priorités laisse le test tourner. La CLI ne vous avertit pas dans ces cas.
+:::
+
+Les entrées de test A/B croisé (`cross_ab_test`, `flow_cross_ab_test`) sont en lecture seule. L'API les ignore lors d'une écriture et conserve celles qui sont stockées.
+
+Le type de contenu d'un placement est fixé à sa création, donc `placements update` ne peut pas faire passer un placement de paywall à un flow, ni l'inverse. Servez le flow depuis un placement qui lui est propre — voir [Créer un nouveau placement pour votre flow](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+Le CLI vérifie chaque entrée avant d'envoyer la requête. Une entrée avec un `content_type` manquant ou inconnu, ou sans l'ID requis par son `content_type`, provoque une sortie avec le code 2 et rien n'est envoyé. Pour un `content_type` qu'il ne reconnaît pas, le CLI affiche `this CLI does not know this audience kind; update the CLI`. Si l'entrée provient de `placements get`, mettez à jour le CLI plutôt que de supprimer l'entrée : celle-ci peut correspondre à un test A/B en cours.
+
+Un flow ne peut être associé qu'après avoir été publié. Un flow en état `draft`, ou dont la première publication est encore en cours, est rejeté par le serveur ; le CLI reconnaît ce rejet et quitte avec le code 2, en affichant la commande `flows publish` correspondant à ce flow. Pour publier un flow, utilisez [`flows publish`](developer-cli-flows#adapty-flows-publish) ou le [Flow & Paywall Builder](builder-save-publish), puis attendez que son statut passe à `published`.
+
+Exemple avec une audience ciblée et une audience par défaut :
+
+```bash
+adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+Exemple de placement qui sert un flow publié à tous les utilisateurs :
+
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+```
+
+Pour remplacer un paywall dans plusieurs placements sans perdre le routage par segment :
+
+1. Trouvez les placements concernés :
+
+   ```bash
+   adapty paywalls placements --app <app-id> <old-paywall-id>
+   ```
+
+2. Pour chacun, lisez le tableau `audiences` complet :
+
+   ```bash
+   adapty placements get --app <app-id> <placement-id> --json
+   ```
+
+3. Remplacez les valeurs `paywall_id` correspondantes côté client. Laissez toutes les autres entrées inchangées, y compris les entrées de test A/B.
+
+4. Réécrivez le payload modifié :
+
+   ```bash
+   adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
+   ```
+
+## Segments \{#segments\}
+
+Les [segments](segments) regroupent les utilisateurs selon leurs attributs de profil. Utilisez ces commandes pour créer des segments et retrouver leurs identifiants lors de la composition des [audiences de placement](#audiences-shape). Pour créer un segment à partir de campagnes, groupes d'annonces ou mots-clés Apple Ads, utilisez plutôt [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) : cette commande recherche automatiquement les identifiants Apple et nomme le segment comme le fait Ads Manager.
+
+### adapty segments list
+
+Listez tous les [segments](segments) d'une application.
+
+```bash
+adapty segments list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Accepte les [options de pagination](developer-cli-reference#global-flags).
+
+### adapty segments get
+
+Obtenez les détails d'un [segment](segments) spécifique.
+
+```bash
+adapty segments get --app <app-id> <segment-id>
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | ID du segment (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+
+La réponse contient `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` et `updated_at`. La commande `list` retourne uniquement `id`, `title` et `description`.
+
+### adapty segments create
+
+Créez un [segment](segments) à partir d'un ou plusieurs filtres.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--title` | Oui | Titre du segment |
+| `--filter` | Oui | Règle de filtre. Répétable. Voir [Syntaxe des filtres](#filter-syntax) |
+| `--description` | Non | Description du segment |
+
+Un utilisateur correspond au segment uniquement s'il correspond à chaque filtre. La réponse contient les mêmes champs que `segments get`. `profile_count` commence à `0`, et Adapty le recalcule après la création du segment.
+
+### adapty segments update
+
+Remplacez le titre, la description et les filtres d'un [segment](segments) existant.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | ID du segment (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--title` | Oui | Titre du segment |
+| `--filter` | Oui | Règle de filtre. Répétable. Voir [Syntaxe des filtres](#filter-syntax) |
+| `--description` | Non | Description du segment |
+
+:::warning
+`segments update` remplace l'intégralité du segment. Transmettez tous les filtres que vous souhaitez conserver, pas seulement celui que vous modifiez. Pour lire les filtres actuels, exécutez `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Syntaxe des filtres \{#filter-syntax\}
+
+Écrivez chaque `--filter` sous la forme `field:OPERATOR:value`. Pour correspondre à plusieurs valeurs, séparez-les par des virgules : `ip_country:IN:US,CA`.
+
+| Opérateur | Valeurs | Exemple |
+|---|---|---|
+| `IN`, `NOT IN` | Une ou plusieurs | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Une | `age:>:18` |
+| `BETWEEN` | Deux | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Aucune | `age:IS NULL` |
+
+Passez les nombres comme valeurs brutes, par exemple `age:>:18`. Adapty les convertit pour les champs numériques comme `age`, `total_revenue_usd` et les attributs personnalisés de type float.
+
+Pour une valeur que cette forme courte ne peut pas exprimer, passez le filtre sous forme d'objet JSON :
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty valide les noms de champs, les opérateurs et les types de valeurs, et signale une erreur pour chaque filtre invalide. Pour voir les noms de champs et les formats de valeurs des filtres existants, exécutez `adapty segments get --app <app-id> <segment-id> --json` sur un segment créé dans le tableau de bord.
+
+## Et ensuite \{#whats-next\}
+
+- [Référence des commandes](developer-cli-reference) — tous les sujets CLI, les options globales et les options de pagination.
