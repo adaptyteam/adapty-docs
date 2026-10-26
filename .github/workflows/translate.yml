@@ -128,6 +128,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          # Branch tip, not the pushed SHA. Runs are queued, so by the time this
+          # one starts the previous run may have pushed its translations. At the
+          # pushed SHA those files still look stale, `--include-stale`
+          # re-translates them, and the commit conflicts with the previous
+          # run's output on rebase.
+          ref: ${{ github.ref }}
           # Exclude src/assets (87% of checkout bytes; unused by this job).
           # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
           sparse-checkout: |
@@ -148,7 +154,9 @@ jobs:
       - name: Translate changed files for ${{ matrix.locale }}
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-        run: node scripts/translate.mjs --lang ${{ matrix.locale }} --incremental --batch --only-files "${{ needs.setup.outputs.changed }}"
+        # --include-stale also retries files earlier runs left stale: a failed
+        # or cancelled run, or a page written with an English fallback.
+        run: node scripts/translate.mjs --lang ${{ matrix.locale }} --incremental --batch --include-stale --only-files "${{ needs.setup.outputs.changed }}"
 
       # Upload the locale's full state on success — the apply job consumes
       # these to assemble the final commit. include-hidden-files preserves
@@ -209,6 +217,9 @@ jobs:
       # src/assets from the tree. This job only stages src/locales/ anyway.
       - uses: actions/checkout@v4
         with:
+          # Branch tip, matching the translate job's checkout, so the artifacts
+          # copied in below apply on top of the tree they were built from.
+          ref: ${{ github.ref }}
           # Exclude src/assets (87% of checkout bytes; unused by this job).
           # sparse-checkout without `filter` ⇒ fetch uses --filter=blob:none.
           sparse-checkout: |

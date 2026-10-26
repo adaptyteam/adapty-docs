@@ -1,6 +1,6 @@
 ---
 zone: placements-and-audiences
-sources: [dashboard-backend, ios-sdk]
+sources: [ios-sdk]
 reviewed_shape:
 reviewed_at:
 ---
@@ -17,63 +17,46 @@ A/B test) and the one ID the app hardcodes.
 
 ## Sources of truth
 
-- **dashboard-backend** — audience matching *and* placement resolution both happen there, in the
-  SDK-facing half of the repo (`src/sdk/`), not in any SDK. Read in this order:
-  `profile_context/domains/aggregates/profile_segment_filter_collection.py` (a profile's segment
-  membership is computed per request — every segment's filters, ANDed, against the profile aggregate
-  just read; no membership table exists),
-  `profile_context/domains/aggregates/profile_segment_id_collection.py` (that membership is hashed,
-  xxh64 over the sorted segment ids), then
-  `in_app_context/repositories/flow_variation_repository/select_flow_variations.sql` — the single
-  query that turns those segment ids into the one winning audience per placement. Verified on
-  `origin/develop` at `0cadcfffa2`. The placement itself is resolved by `developer_id`, the immutable
-  ID the app hardcodes (`in_app_context/repositories/placement_repository.py`).
+- **Backend and dashboard behavior: Adapty's closed-source code, not citable here — confirm with the
+  product team or by testing in the dashboard.** Audience matching *and* placement resolution both
+  happen backend-side, not in any SDK (verified against backend code, 2026-08-12): a profile's segment
+  membership is computed per request — every segment's filters, ANDed, against the profile just read;
+  no membership is stored — then hashed (xxh64 over the sorted segment ids), then turned into the one
+  winning audience per placement. The placement itself is resolved by its placement ID, the immutable
+  ID the app hardcodes.
 - **A profile is evaluated against audiences at fetch time, on every fetch, and the result is never
-  stored per profile.** The segment hash the SDK sends is a staleness check, not the input: all three
-  variation apps recompute membership and reject a mismatch —
-  `in_app_context/applications/flow_variation_app.py:82` (also `variation_app.py:178`,
-  `onboarding_variation_app.py:100`) raises `IncorrectSegmentHashError`, HTTP 400,
-  `INCORRECT_SEGMENT_HASH_ERROR`. The hash itself is recomputed on every profile read, too
-  (`profile_context/applications/profile.py:361`, comment `Getting of dynamic segment hash`), so a
-  changed custom attribute produces a new hash on the next profile response. What makes a dashboard
-  change *look* delayed is therefore caching, never stickiness: the variations response carries
-  `Cache-Control: public, max-age=1200` (`common/domains/constants/headers.py:103`) and the CDN key is
-  an md5 the SDK builds from builder version + segment hash + store + cross-placement eligibility
-  (**ios-sdk**, `Sources/Backend/Main+Backend/Requests/FetchPlacementVariationsRequest.swift`), on top
-  of the SDK's own cache.
-- **Priority is enforced in two places, and it is a check order rather than a stored assignment.** At
-  read time `select_flow_variations.sql:46-58` takes `distinct on (placement_id)` ordered by
-  `pa.priority asc` — #1, the lowest number, wins, and a qualifying user is legitimately bypassed into
-  a higher one. At write time
-  `portal/in_app_context/infrastructure/repositories/placement/placement_audience_repository/placement_audience_repository.py:122`
-  (`_reorder_placement_audiences_by_type`) renumbers a placement's audiences to a dense `0..n` ordered
-  by `audience__is_default, priority` — that, not a convention, is what pins "All users" last, and it
-  runs per `audience_version_type` separately. The cross-placement rule is the `case` sorted above
-  `pa.priority` (`cross_flow_child` 0 < `regular_flow` 1 < everything else 2) and applies only when the
-  request declares cross-placement eligibility; without it those rows are filtered out of the candidate
-  set entirely.
+  stored per profile.** The segment hash the SDK sends is a staleness check, not the input: the backend
+  recomputes membership and rejects a mismatch with HTTP 400 for flows, paywalls and onboardings alike.
+  The hash itself is recomputed on every profile read, too, so a changed custom attribute produces a new
+  hash on the next profile response (backend code, 2026-08-12). What makes a dashboard change *look*
+  delayed is therefore caching, never stickiness: the variations response carries
+  `Cache-Control: public, max-age=1200` and the CDN key is an md5 the SDK builds from builder version +
+  segment hash + store + cross-placement eligibility (**ios-sdk**,
+  `Sources/Backend/Main+Backend/Requests/FetchPlacementVariationsRequest.swift`), on top of the SDK's
+  own cache.
+- **Priority is enforced in two places, and it is a check order rather than a stored assignment**
+  (backend code, 2026-08-12). At read time the lowest priority number wins — #1 — and a qualifying user
+  is legitimately bypassed into a higher one. At write time the backend renumbers a placement's
+  audiences densely with the default audience sorted last — that, not a convention, is what pins "All
+  users" last, and it runs separately per audience type. Cross-placement rows sort ahead of regular
+  priority (cross-placement flow children, then regular flows, then everything else) and apply only
+  when the request declares cross-placement eligibility; without it those rows are dropped from the
+  candidate set entirely.
 - **Nothing is sticky at the audience level; stickiness lives one level down and is computed on the
   device.** The variant a profile draws inside an audience is
   `md5("<placement_audience_version_id>-<profile_id>") % 100` walked against the weight-sorted
   variations (**ios-sdk**, `Sources/Placements/Entities/AdaptyPlacement.Variation.swift:48`). So it is
   stable while that audience keeps the same assigned content and re-draws for everyone when the content
-  is replaced, because that mints a new `placement_audience_version_id`. The server-side stickiness row
-  is written once per (profile, `placement_audience_version_id`) and never updated
-  (`in_app_context/repositories/profile_variation_stickiness_repository/insert_stickiness.sql` —
-  `NOT EXISTS` plus `ON CONFLICT DO NOTHING`); it feeds cross-placement A/B tests and analytics, not the
-  regular draw. Cross-placement stickiness has its own expiry
-  (`cross_placement_stickiness_duration_days`, default 90, in `select_stickiness_variations.sql`) and
-  belongs to `ab-tests`.
-- **The downloadable fallback file spans dashboard and SDK, so cite both ends.** Generation is a portal
-  endpoint taking `platform` plus `sdk_version` from a fixed enum
-  (`portal/in_app_context/infrastructure/ports/http/fallback_variations.py`), branching in
-  `portal/in_app_context/applications/fallback_variation_app.py` on
-  `sdk_version.meta_version >= SDK_META_VERSION_WITH_FLOWS`, and assembled in
-  `portal/in_app_context/domains/value_objects/fallback_variation_collection.py`, which stamps
-  `version=10` (line 185) plus `developer_ids` and a `ui_builder` map. The SDK end is the contract to
-  match: **ios-sdk** `Sources/Versions.swift:13` sets `fallbackFormatVersion = 10` and
-  `Sources/Placements/Entities/FallbackPlacements.swift:119` hard-fails a mismatch with either "download
-  a new one" or "update the AdaptySDK". Do **not** read
+  is replaced, because that mints a new `placement_audience_version_id`. The backend writes a stickiness
+  record once per (profile, audience version) and never updates it; it feeds cross-placement A/B tests
+  and analytics, not the regular draw. Cross-placement stickiness has its own expiry (90 days by
+  default) and belongs to `ab-tests`.
+- **The downloadable fallback file spans dashboard and SDK, so cite both ends.** The dashboard generates
+  it per platform and per SDK version picked from a fixed list; SDK 4.0+ selections get the flows
+  format, and the file is stamped format `version` 10 plus `developer_ids` and a `ui_builder` map
+  (backend code, 2026-08-12). The SDK end is the contract to match: **ios-sdk** `Sources/Versions.swift:13`
+  sets `fallbackFormatVersion = 10` and `Sources/Placements/Entities/FallbackPlacements.swift:119`
+  hard-fails a mismatch with either "download a new one" or "update the AdaptySDK". Do **not** read
   `Sources/Placements/adapty.fallback.schema.yaml` as the contract — it is not machine-checked (it
   carries a YAML syntax error and names `developer_id` where both the backend and the SDK's own decoder
   use `developer_ids`).
@@ -85,34 +68,28 @@ A/B test) and the one ID the app hardcodes.
   `delete-placement`'s danger note is about; the file format is `flow-logic`'s. Establish which one a
   ticket means before answering.
 - **A placement ID is unique per app, not per type, and the type itself is frozen at creation.** Verified
-  2026-08-26 on **dashboard-backend** `origin/develop` @ `79b61067e8`:
-  `portal/in_app_context/infrastructure/models/placement.py` declares
-  `UniqueConstraint(fields=('app','developer_id'), name='in_apps_app_developer_id_unique',
-  condition=Q(is_deleted=False))` — no `type` in the constraint — and
-  `portal/in_app_context/applications/placement/placement_app.py:98` gates creation on
-  `repo.exists(app_id, developer_id)`, which filters on `app_id` + `developer_id` + `is_deleted=False`
-  only (`placement_repository.py:196`), raising `PlacementWithDeveloperIdAlreadyExist`. So a new flow
-  placement cannot take the ID of a live paywall or onboarding placement, and
-  `PlacementTypeCanNotBeChanged` / `PlacementDeveloperIdCanNotBeChanged` in
-  `domains/exceptions/placement.py` close the two workarounds a reader reaches for next. Two nuances the
-  articles deliberately don't state: the constraint is partial on `is_deleted=False`, so deleting a
-  placement does release its ID (never advise this — `delete-placement`'s danger note applies), and the
-  uniqueness is on `developer_id`, **not** on `title`, which carries no unique constraint at all. Tickets
+  against backend code, 2026-08-26: uniqueness covers app + placement ID among non-deleted placements —
+  no type in it — and creation is refused when a live placement in the app already has that ID. So a
+  new flow placement cannot take the ID of a live paywall or onboarding placement, and the backend also
+  refuses to change a placement's type or its ID, closing the two workarounds a reader reaches for next.
+  Two nuances the articles deliberately don't state: uniqueness ignores deleted placements, so deleting
+  a placement does release its ID (never advise this — `delete-placement`'s danger note applies), and
+  the uniqueness is on the ID, **not** on the title, which carries no uniqueness rule at all. Tickets
   that say "can't reuse the placement *name*" mean the ID.
 - **Claim classes that must never be inferred from a neighbouring article in this zone:** which audience
-  a user gets and why (read the SQL); what a segment filter can express (`subscribers-and-profiles`);
-  how long a dashboard change takes to reach a device (two cache layers, both cited above); what the
-  fallback bundle contains for a given SDK version (the `sdk_version` branch, and the enum limits which
-  versions are offered at all); and every metric definition in `placement-metrics`, which is
-  ClickHouse-backed —
-  `portal/analytics_context/domain/value_objects/metrics/in_app_metrics/placement_metrics/placement_detail_metrics/placement_detail_audience_based_metrics.py`
-  — and must never be copied from an `ab-tests` results article.
-- TODO(owner): the flow branch of the generator builds paywall-derived plus native flow variations only
-  (`sdk/in_app_context/applications/flow_variation_app.py`, `get_fallback_list`), and nothing in that
-  path adds onboarding placements, while the pre-4.0 branch explicitly does (`is_onboarding=True`).
-  `placements` tells readers the download covers flows, paywalls "or onboardings". Unsettled here:
-  whether an SDK 4.0 bundle carries onboarding placements by some other route. Read that branch before
-  restating the sentence in either direction — do not delete it on the strength of this note alone.
+  a user gets and why (confirm against backend behavior); what a segment filter can express
+  (`subscribers-and-profiles`); how long a dashboard change takes to reach a device (two cache layers,
+  both described above); what the fallback bundle contains for a given SDK version (the SDK-version
+  branch, and the fixed list limits which versions are offered at all); and every metric definition in
+  `placement-metrics`, which is computed backend-side and must never be copied from an `ab-tests`
+  results article.
+- TODO(owner): per backend code, the flow branch of the fallback generator builds
+  paywall-derived plus native flow variations only, and nothing in that path adds onboarding placements,
+  while the pre-4.0 branch explicitly does. `placements` tells readers the download covers flows,
+  paywalls "or onboardings". Unsettled here: whether an SDK 4.0 bundle carries onboarding placements by
+  some other route. Confirm with backend/product, or download an SDK 4.0 bundle from an app with an
+  onboarding placement, before restating the sentence in either direction — do not delete it on the
+  strength of this note alone.
 
 ## What we document, what we don't
 
@@ -213,24 +190,23 @@ in v4, segment vocabulary) live in `aliases.md` and are not repeated here.
 ### Settled 2026-08-12 — this zone's two long-standing open questions are answered
 
 Both were recorded as unresolved by earlier passes, and ten articles still say nothing about either.
-Established in `dashboard-backend` and **re-verified on `origin/develop`** (the first pass read the
-clone's working tree, which was ~1,989 commits stale; the logic is identical on both, so the answer
-holds — see the freshness warning on that source in `sources.md`).
+Established against backend code and **re-verified against its current state** (the first pass read a
+stale snapshot; the logic is identical on both, so the answer holds).
 
 - **When is a profile evaluated against audiences? At every fetch, server-side, and it is never stored.**
-  `ProfileSegmentFilterCollection.get_segment_id_collection` ANDs every segment's filters against a
-  freshly read profile aggregate. There is no membership table. The segment hash the SDK carries is only
-  a staleness check — a mismatch raises `IncorrectSegmentHashError` (400), it does not select anything.
+  The backend ANDs every segment's filters against a freshly read profile. There is no stored
+  membership. The segment hash the SDK carries is only a staleness check — a mismatch returns HTTP 400,
+  it does not select anything.
   So an attribute change takes effect on the next fetch, and the lag readers report is **two cache
   layers** — a CDN entry at `max-age=1200` (20 minutes) plus the SDK's own cache — not stickiness.
 - **What happens to users already in an audience? At the audience level, nothing is retained.** A
-  priority or segment change simply changes which row wins the next `distinct on (placement_id)`.
+  priority or segment change simply changes which audience wins on the next fetch.
   Stickiness lives one level down and is client-side: the variant is a deterministic draw over
   `md5("<placement_audience_version_id>-<profile_id>") % 100`, so it holds while that audience keeps the
   same assigned content and re-draws for everyone the moment the content is replaced.
 
-Priority turned out to be enforced **twice** — a read-time `order by pa.priority`, and a write-time
-renumbering that sorts by `audience__is_default` first, which is what actually pins "All users" last
+Priority turned out to be enforced **twice** — a read-time sort by priority, and a write-time
+renumbering that sorts the default audience last, which is what actually pins "All users" last
 rather than a convention anyone has to remember.
 
 **This is documentation-shaped, not brief-shaped.** Every "wrong audience" ticket in the corpus depends

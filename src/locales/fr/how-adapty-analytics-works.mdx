@@ -60,36 +60,74 @@ Ces délais affectent la rapidité avec laquelle un événement apparaît, pas l
 
 ## Commissions et taxes \{#commissions-and-taxes\}
 
-Lorsque vous consultez les graphiques liés aux revenus, vous pouvez choisir entre **Gross revenue**, **Revenue after commissions** et **Revenue after commissions and taxes**.
+Les graphiques liés aux revenus disposent d'un menu déroulant permettant de définir comment Adapty calcule les revenus :
+
+- **Gross revenue** (par défaut) : ce que les utilisateurs ont payé.
+- **Proceeds after store commission** : ce que les utilisateurs ont payé, moins la [commission du store](#commissions).
+- **Proceeds after store commission and taxes** (revenu net) : ce que les utilisateurs ont payé, moins la commission du store et les [taxes](#taxes).
 
 ### Commissions \{#commissions\}
 
-Les stores déduisent une commission sur chaque transaction. Si votre organisation est inscrite à un programme de commission réduite, modifiez vos paramètres Adapty pour ajuster le calcul des taux de commission :
+Les stores déduisent une commission sur chaque transaction. Adapty applique le taux de commission correspondant au store, au pays du store, à la date d'achat et à l'ancienneté de l'abonnement.
 
-* [Programme Small Business de l'App Store](app-store-small-business-program)
-* [Programme de frais de service réduits](google-reduced-service-fee) de Google
+Adapty ne peut pas détecter l'appartenance à un programme de commission réduite. Si votre organisation est inscrite à l'un d'eux, ajoutez la période d'adhésion à vos paramètres Adapty :
 
-Les stores indiquent automatiquement si d'autres facteurs réduisent la commission sur vos transactions :
+- [App Store Small Business Program](app-store-small-business-program)
+- [Programme de frais de service réduits](google-reduced-service-fee) de Google
 
-* [Renouvellements pour les abonnements App Store d'une durée d'un an ou plus](https://developer.apple.com/app-store/subscriptions/) — commission de 15 %
-* Taux spécifiques à certains pays (par exemple, [21 % pour les applications App Store distribuées au Japon](https://developer.apple.com/support/app-distribution-in-japan/#business-terms))
+#### Taux de commission App Store \{#app-store-commission-rates\}
+
+Adapty applique ces taux aux transactions App Store. Le taux réduit s'applique aux membres du programme Small Business Program, ainsi qu'aux [abonnements auto-renouvelables après leur première année](https://developer.apple.com/app-store/subscriptions/) de service payant.
+
+| Storefront | Taux standard | Taux réduit | S'applique aux transactions à partir du |
+| --- | --- | --- | --- |
+| [Union européenne](https://developer.apple.com/support/payment-options-on-the-app-store-in-the-eu#commissions) (27 États membres) | 26% | 15% | 1er octobre 2026 |
+| [Chine continentale](https://developer.apple.com/news/?id=dadukodv) | 25% | 12% | 15 mars 2026 |
+| [Japon](https://developer.apple.com/support/app-distribution-in-japan/#business-terms) | 26% | 15% | 18 décembre 2025 |
+| [Brésil](https://developer.apple.com/support/app-distribution-in-brazil/) | 26% | 15% | 6 juillet 2026 |
+| Tous les autres storefronts | 30% | 15% | — |
+
+- Chaque nouveau taux s'applique uniquement aux achats effectués à partir de sa date dans le tableau. Les achats antérieurs conservent le taux précédent. Par exemple, un achat en Allemagne le 30 septembre 2026 est soumis au taux standard de 30 %, et non à 26 %.
+- Une mise à jour de taux s'applique différemment aux analyses et aux intégrations :
+  - Adapty recalcule les revenus dans les analyses pour tous les achats à partir de la date indiquée dans le tableau, y compris les achats passés.
+  - Les événements qu'Adapty a déjà envoyés aux intégrations et aux webhooks conservent leurs revenus d'origine.
+- Les taux de l'Union européenne ne s'appliquent pas à la Norvège, à l'Islande ni au Liechtenstein.
+- Pour le Japon et le Brésil, Apple décompose chaque taux en une commission et des frais de traitement de paiement de 5 %. Adapty déduit les deux, le tableau affiche donc leur somme.
+- Adapty n'a pas connaissance de l'appartenance au Mini Apps Partner Program ou au Video Partner Program, et applique le taux standard à ces transactions.
+
+Adapty sélectionne le taux en fonction du pays du store : le pays de l'App Store où l'achat a été effectué. Il s'agit du pays du compte Apple de l'acheteur, sur lequel il paie. La localisation de l'utilisateur et son adresse IP n'ont aucune incidence sur le taux. Par exemple, un utilisateur avec un compte Apple américain qui s'abonne depuis l'Allemagne effectue son achat sur l'App Store américain ; Adapty applique donc le taux de 30 %, et non le taux européen de 26 %.
+
+:::note
+Parfois, Adapty ne connaît pas le pays du store d'un utilisateur. Pour ces achats, les analyses et les intégrations utilisent des valeurs de secours différentes :
+
+- Les graphiques, les tests A/B et les onboardings utilisent le pays de l'adresse IP de l'utilisateur, ou la devise d'achat si le pays de l'IP est également inconnu. C'est le même pays que celui utilisé par les graphiques pour le [filtre Pays](controls-filters-grouping-compare-proceeds#how-country-is-determined).
+- Les intégrations et les webhooks utilisent le pays de l'App Store qu'Apple inclut dans la transaction.
+
+Pour cette raison, les revenus bruts et nets d'un même achat peuvent différer entre les analyses et une intégration. Cela concerne une très faible part des achats.
+:::
 
 ### Taxes \{#taxes\}
 
-**Adapty ne calcule pas les taxes.** Apple et Google déterminent le taux de taxe applicable à chaque transaction et le communiquent à Adapty, qui affiche la valeur telle quelle.
+Pour calculer les **revenus après commission du store et taxes**, Adapty déduit les taxes des transactions. Le montant dépend du store et du pays :
 
-Le taux de taxe affiché pour une transaction donnée dépend de :
+- **App Store et Google Play** : Adapty [estime la taxe par lui-même](#how-adapty-estimates-the-tax).
+  - Adapty applique un taux de taxe par pays, identique pour chaque application et catégorie de taxe.
+  - Si un store applique un taux différent lors du paiement, le revenu net dans Adapty diffère des rapports dans App Store Connect ou Google Play Console.
+- **Stripe et Paddle** : Le processeur de paiement indique le montant de la taxe en amont. Adapty le déduit de chaque transaction, à l'exception des [achats uniques via Stripe](stripe#net-revenue-and-tax).
 
-- Le **pays de facturation de l'acheteur** et le taux de taxe local en vigueur.
-- Les **règles fiscales du store**. Dans certaines juridictions, le store collecte et reverse la taxe pour le compte du développeur ; dans d'autres, c'est le développeur qui en est responsable.
-- Pour les transactions App Store, la **catégorie fiscale** assignée à l'application ou à l'achat intégré (livres, presse, vidéos, etc.) — les catégories peuvent être taxées à des taux différents selon les règles locales.
+#### Comment Adapty estime la taxe \{#how-adapty-estimates-the-tax\}
 
-Les taux de taxe peuvent varier considérablement d'une application à l'autre — et même entre les transactions d'une même application — en raison du mélange de pays des acheteurs, des règles de traitement des stores et (pour l'App Store) de la catégorie de taxe assignée.
+Adapty possède son propre abonnement test sur l'App Store et Google Play. Chaque jour, Adapty télécharge les prix de cet abonnement dans chaque pays :
 
-Pour les règles officielles, consultez la documentation officielle des stores :
+- **App Store** : Apple indique le prix payé par les clients ainsi que les revenus perçus par les développeurs. Adapty connaît la commission et calcule donc la taxe à partir de la différence.
+- **Google Play** : Google indique le montant de la taxe pour chaque prix.
+
+Lorsqu'un taux de taxe change, le nouveau taux s'applique aux achats effectués à partir de ce jour-là.
+
+Pour les règles fiscales officielles, consultez la documentation de l'App Store et de Google Play :
 
 - [App Store : Comprendre les taxes](https://developer.apple.com/help/app-store-connect/making-payments-to-apple/understanding-taxes/)
-- [Google Play : Taux de taxe et TVA](https://support.google.com/googleplay/android-developer/answer/138000)
+- [Google Play : Taux de taxes et TVA](https://support.google.com/googleplay/android-developer/answer/138000)
 
 ## Dépannage \{#troubleshooting\}
 

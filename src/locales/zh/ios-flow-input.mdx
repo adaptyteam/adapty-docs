@@ -8,10 +8,11 @@ metadataTitle: "处理来自流程的数据 | iOS SDK | Adapty 文档"
 
 应用通常会将这些数据用于：
 
-- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程结束时创建其账号。
-- **保存答案和偏好设置**：记录用户的选择，以便应用后续使用——例如，[将其作为自定义属性写入 Adapty 用户画像](setting-user-attributes)。
-- **自定义后续流程**：将问卷答案保存为自定义属性，再针对特定版位进行定向，使每个市场细分看到不同的流程，或其中不同的付费墙。
-- **接入第三方分析平台**：将答案转发至 Amplitude、Mixpanel 或你正在使用的其他产品分析工具。
+- **在用户自有后端注册账户**：获取用户在用户引导流程中填写的邮箱和姓名，并在流程关闭时创建其账户。
+- **保存答案与偏好设置**：记录用户的选择，供应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](setting-user-attributes)。
+- **自定义后续流程**：将问卷答案保存为自定义属性，然后针对特定版位进行定向，让不同市场细分的用户看到不同的流程，或其中不同的付费墙。
+- **展示根据答案计算出的数值**：例如，根据用户的体重和身高计算 BMI，并[将其传入下一个流程的自定义标签](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers)。
+- **接入第三方数据分析平台**：将答案转发至 Amplitude、Mixpanel 或您使用的其他产品分析工具。
 
 输入框和可选组会自动上报其值。为了在代码中区分各个输入框，请在编辑工具中为每个输入框设置有意义的 **Element ID**，并为每个可选组设置 **Group ID**。
 
@@ -31,7 +32,7 @@ metadataTitle: "处理来自流程的数据 | iOS SDK | Adapty 文档"
 将 `didReceiveAnalyticEvent` 闭包传入 `.flow` 修饰符：
 
 ```swift showLineNumbers title="Swift"
-Text("Hello, AdaptyUI!")
+YourContentView()
     .flow(
         isPresented: $flowPresented,
         flowConfiguration: flowConfiguration,
@@ -66,41 +67,16 @@ func flowController(
 
 闭包和委托方法接收相同的两个参数，因此读取值的代码在两种方式下完全一致。
 
-`didReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[页面浏览事件](ios-flow-screen-views)。
-- `name` 参数包含事件名称。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
-- `element_type` 参数表示元素类别。
-- 输入值根据元素类型存储在不同的参数中：
-     - 文本框、选择器和开关将用户输入存储在 `value` 中
-     - 可选组在 `item_ids` 和 `item_titles` 中报告当前选中的选项
+`didReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[屏幕浏览事件](ios-flow-screen-views)。如需筛选用户输入事件，可将 `name` 与 `flow_user_input` 进行比较。存储值的参数取决于 `element_type`：
 
-```swift showLineNumbers title="Swift"
-func handleFlowInput(name: String, params: [String: any Sendable]) {
-    guard name == "flow_user_input",
-          let elementId = params["element_id"] as? String,
-          let elementType = params["element_type"] as? String
-    else { return }
+| `element_type` | 存储值的参数 | Swift 类型 |
+|:---------------|:----------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`，Unix 时间（毫秒）。除以 1000 可得到 `Date`。 |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
 
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    let screenId = params["instanceId"] as? String
-
-    switch elementType {
-    case "text_input", "email_input", "number_input", "phone_input":
-        let text = params["value"] as? String
-    case "date_picker", "time_picker", "date_time_picker":
-        // Integer Unix time in milliseconds, not the seconds Date expects.
-        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
-    case "single_choice":
-        let optionId = (params["item_ids"] as? [String])?.first
-    case "multi_choice":
-        let optionIds = params["item_ids"] as? [String]
-    case "toggle":
-        let isOn = params["value"] as? Bool
-    default:
-        break
-    }
-}
-```
+[您将收到的内容](#what-you-receive) 部分列出了所有参数以及每个编辑工具元素的上报内容。
 
 <FlowInputVerify />
 
@@ -140,7 +116,7 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 func handleFlowInput(name: String, params: [String: any Sendable]) {
     params["element_id"];      // "birthday"
     params["element_type"];    // "date_picker"
-    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
 }
 ```
 </Details>
@@ -289,3 +265,24 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 3. 为每个自定义属性值[创建市场细分](segments)。
 4. 创建[版位](placements)，并为每个市场细分添加[目标受众](audience)。
 5. 在您的应用中[展示该版位的流程](ios-present-paywalls)。
+
+### 将答案发送到您的数据分析平台 \{#send-answers-to-your-analytics-platform\}
+
+如需在数据图表中按用户答案进行筛选，请将每个答案作为事件发送到您的数据分析平台。
+
+例如，如果您的流程中有一个 Group ID 为 `experience` 的可选组，可将选中的选项发送至 Amplitude：
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

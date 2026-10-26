@@ -1,17 +1,18 @@
 ---
-title: "邮件停止发送的原因：退订、停止条件、投递失败"
-description: "Adapty Mail 停止向某人发送邮件的所有原因——验证失败、取消订阅、退信和停止条件——以及每种情况的处理方法。"
-metadataTitle: "退订与抑制 | Adapty Mail | Adapty 文档"
+title: "邮件停止发送的原因：退出订阅、停止条件、投递失败"
+description: "Adapty Mail 停止向某人发送邮件的所有原因——包括验证失败、取消订阅、退信和停止条件——以及每种情况下的处理方法。"
+metadataTitle: "取消订阅与抑制 | Adapty Mail | Adapty 文档"
 keywords: ['adapty mail', '抑制', '退信', '投诉', '停止条件']
 ---
 
-Adapty Mail 停止向用户发送邮件有三种不同的原因：
+Adapty Mail 会因以下四种原因之一停止向用户发送邮件：
 
-- **停止条件**：用户的当前序列因转化而终止。该用户不会被抑制，仍可参与其他活动。
-- **抑制**：用户被排除在该项目所有后续发送之外。
-- **限流**：新域名的每日发送上限会随发送量逐渐提升，最终自动解除。超出限额的邮件会顺延至之后的某天发送。若再次未能发送，则被标记为 **Cancelled**，且该收件人一周内无法开启其他营销活动。
+- **Stop condition**：用户当前的流程因已完成转化而结束。用户不会被屏蔽，仍可参与其他营销活动。
+- **No engagement**：用户当前的营销流程因未打开或点击任何邮件而结束。用户不会被屏蔽，仍可参与其他营销活动。
+- **Suppression**：用户被排除在该项目所有后续营销发送之外。[事务性邮件](#what-still-reaches-a-suppressed-profile)仍可正常触达。
+- **Throttle**：新域名每日有发送上限，随着发送量增加该上限会逐步提高，最终取消限制。超出上限的邮件将等待配额释放。若三天内仍无法发出，则标记为 **Cancelled**，并停止对该收件人的营销活动。
 
-以上三种机制均针对特定项目生效。在一个 Adapty 项目中设置的抑制不会影响其他项目。
+这四项均针对具体项目。在某个 Adapty 项目中设置的屏蔽规则不会影响其他项目。
 
 ## 停止条件（活动成功后的结束机制）\{#stop-conditions-campaign-conclusion-on-success\}
 
@@ -27,7 +28,25 @@ Adapty Mail 收到的每个事件——购买、退款、确认——都会更�
 
 打开活动分析，查看触发停止条件的用户详情。
 
+## 无互动（被忽略的营销活动提前结束）\{#no-engagement-an-ignored-marketing-campaign-ends-early\}
+
+对于未打开、未点击任何邮件的收件人，营销活动将提前结束。前三封邮件无论是否被打开都会正常发送。在发送后续每封邮件之前，Adapty Mail 会将已发送邮件数与收件人进入活动的时间进行比较：
+
+| 已发送邮件数 | 若收件人进入活动至少满以下时间，则活动结束 |
+| --- | --- |
+| 3 | 2 天前 |
+| 4 | 36 小时前 |
+| 5 封或更多 | 1 天前 |
+
+活动中任意一封邮件被打开或点击，即可让收件人留在活动中直至结束。事务性活动不会以这种方式结束。
+
+在用户画像的[旅程](mail-profiles#the-activity-journey)中，未发出的邮件会显示为 **Cancelled**，原因为 **No engagement**。该用户画像不会被屏蔽，可以进入其他活动。
+
 ## 取消订阅（从邮件列表中移除） \{#suppression-removal-from-mailing-list\}
+
+### 被屏蔽的用户画像仍能收到哪些邮件 \{#what-still-reaches-a-suppressed-profile\}
+
+无论出于何种原因，被屏蔽的用户画像将不再收到任何营销邮件。但事务性邮件（例如购买后的应用访问通知或[双重确认](mail-double-opt-in)请求）仍会正常发送，除非该用户画像是因为邮件退回、垃圾邮件举报或地址验证失败而被屏蔽。出现上述情况后，邮件无法送达该邮箱，Adapty Mail 将不再发送任何邮件。
 
 ### 地址验证失败 \{#address-verification-failed\}
 
@@ -74,27 +93,29 @@ Amazon SES 会对其处理的每封邮件进行反馈上报。以下三种反馈
 
 | 事件 | 含义 |
 | --- | --- |
-| Bounce | 接收邮件服务器拒绝接收并退回了邮件。Adapty Mail 不区分硬退信（地址不存在或域名无效）和软退信（邮箱已满）。有助于捕获那些通过了[初始验证](#address-verification-failed)但后来失效的邮件地址。 |
+| Bounce | 接收邮件服务器拒绝了该邮件并将其退回。硬退信（邮箱或域名不存在）和软退信（例如邮箱已满）均会屏蔽该用户画像。有助于识别通过了[初始验证](#address-verification-failed)但后来失效的邮件地址。 |
 | Complaint | 收件人将邮件标记为垃圾邮件。 |
-| Reject | Amazon SES 在发送前就拒绝了该邮件。 |
+| Reject | Amazon SES 在发送前拒绝了该邮件。 |
 
-用户画像的[旅程](mail-profiles#the-activity-journey)中，退信显示为 **Bounced**，投诉显示为 **Spam report**。
+{/* 2026-10-07: The Bounces card in Domain health says soft bounces are retried for 72 h, but every bounce suppresses the profile. Raised with the Mail team; update this row if the behavior changes. */}
 
-### 恢复被抑制的收件人 \{#bring-a-recipient-back\}
+用户画像的[旅程](mail-profiles#the-activity-journey)将退信显示为 **Bounced**，将投诉显示为 **Spam report**。
 
-看板中没有任何操作可以撤销抑制状态。如需恢复（例如某人将测试邮件标记为垃圾邮件），请联系 Adapty 支持团队。
+### 恢复收件人 \{#bring-a-recipient-back\}
 
-用户画像页面会显示该用户画像是否处于抑制状态：无论具体原因如何，状态均显示为 **Unsubscribed**。同一页面上的 ⋯ 菜单也可以手动抑制用户画像。
+看板中没有任何操作可以撤销抑制状态。如需恢复（例如某人将测试邮件标记为垃圾邮件时），请联系 Adapty 支持团队。
+
+用户画像页面会显示该用户画像是否处于抑制状态：页面顶部会注明原因，例如 **Bounced** 或 **Reported spam**。同一页面上的 ⋯ 菜单也可手动对用户画像执行抑制操作。
 
 ## 限速（临时延迟与取消发送）\{#throttle-temporary-delays-and-cancellations\}
 
 新发件域名每天最多可发送 100 封邮件。随着发送量的增加，上限会逐步提高，域名完成预热后上限将自动解除——详见[域名预热](mail-sending-domain#warm-up-and-daily-limits)。Adapty Mail 会依次检查您的每个域名是否达到上限，并从第一个尚未超限的域名发送邮件。因此，添加第二个已验证的域名可以提升项目每天的总发送量。
 
-当所有域名均超出上限时，邮件永远无法到达 Amazon SES。用户画像的[流程](mail-profiles#the-activity-journey)状态为 **Throttled**。Adapty Mail 会稍后重试——事务类营销活动间隔一天，营销类间隔一周。到那时，上限通常已经提高。在第一天被拦截的邮件会在一周后重试，那时上限已远高于当初。
+每日上限会分摊到全天，因此每个域名也有每小时限制——请参阅[分级机制说明](mail-sending-domain#how-tiers-work)。当你所有域名都超出限制时，邮件将无法发送至 Amazon SES。该用户画像的[流程](mail-profiles#the-activity-journey)状态会显示为 **Throttled**。Adapty Mail 会在限制解除后重试：如果是每小时限制导致的延迟，则在下一小时重试；如果是每日上限导致的延迟，则在 UTC 午夜后重试。重试顺序依次为：事务性邮件优先，其次是流程中的首封邮件，最后是其余邮件。
 
-如果超出上限，该收件人的营销活动状态将显示为 **Cancelled**。该用户画像不会被屏蔽，但在一周内无法进入其他营销活动。系统不会单独上报取消情况，这个状态标记是唯一的记录。如果计划从新域名进行大规模发送，建议提前添加第二个已验证域名，或等待上限自然提升后再进行。
+如果一封邮件在首次发送日期起的三个 UTC 日内（含当天）仍无法发出，其状态将变为 **Cancelled**，该收件人的活动也随之停止。用户画像不会被屏蔽，仍可进入其他活动。系统不会主动上报取消事件，该状态标记是唯一的记录。在从新域名大批量发送之前，建议先添加第二个已验证域名，或等待发送上限逐步提升。
 
-测试发送完全不受上限限制，因此即使[测试邮件](mail-testing)发送成功，也无法说明正式发送是否能够顺利进行。
+测试发送完全不受上限限制，因此即便[测试邮件](mail-testing)发送成功，也无法说明正式发送能够顺利送出。
 
 ## 合规 \{#compliance\}
 

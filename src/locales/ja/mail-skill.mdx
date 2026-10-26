@@ -1,0 +1,113 @@
+---
+title: "Adapty Mail のエージェントスキル"
+description: "adapty-mail スキルをインストールして、AI コーディングツールが Adapty Mail MCP サーバーに接続し、メールフローを起動し、メールが送信されなかった理由を確認できるようにしましょう。"
+metadataTitle: "Adapty Mail エージェントスキル | Adapty ドキュメント"
+---
+
+adapty-mail スキルを使うと、AI コーディングツールから Adapty Mail プロジェクトを操作できます。あなたのアカウントでサインインした [Adapty Mail MCP サーバー](mail-mcp) を経由して動作します。フローの起動、キャンペーンの翻訳、送信ドメインの DNS 設定と認証、キャンペーンや A/B テストの結果確認、特定のユーザーにメールが届かなかった理由の調査などが行えます。
+
+The MCP server alone gives your agent the tools. The skill adds what an agent gets wrong without it:
+
+- **サーバーへの接続**: サーバーが接続済みでサインイン状態かどうかを確認します。未接続の場合は、クライアント向けのセットアップ手順を案内します。
+- **Adapty Mail か、それ以外の Adapty 機能か**: フロー、セグメント、プロファイルは、Adapty Mail とアプリ内ペイウォールの Adapty とでは意味が異なります。スキルは変更を加える前に、どちらを指しているかを確認します。
+- **ダッシュボードでのみ行える操作**: 会社の住所、ウェブチェックアウト、データ送信の有効化が必要なリクエストの場合、その旨を通知し、該当ページへのリンクを提供します。
+- **ローンチ後の作業**: 結果の確認、A/B テスト、配信到達性、メールが届かない場合のトレースなど。
+
+:::note
+あなたの承認なしに実際のユーザーへ何かが送信されることはありません。フローを保存すると送信が開始され、保存されたセグメントリストがフロー全体を置き換えるため、スキルはまずフローの現在の状態を表示します（すべてのセグメント、すべてのキャンペーン、および削除されたものを含む）。削除、配信停止、A/B テストの開始と終了も、あなたの承認を待ちます。
+:::
+
+## スキルをインストールする \{#install-the-skill\}
+
+adapty-mail スキルは [`adapty-skills` プラグイン](https://github.com/adaptyteam/adapty-skills) の一部です。
+
+<AdaptySkillsInstall />
+
+このスキルには Adapty Mail MCP サーバーが必要です。エージェントにまだ接続されていない場合は、Adapty Mail に接続するよう指示してください。スキルがクライアント用のコマンドを提供し、Adapty Mail ダッシュボードで接続を承認します。各クライアントの手順は [AI アシスタントで Adapty Mail を管理する](mail-mcp#connect-your-assistant) を参照してください。
+
+## 質問できること \{#what-you-can-ask\}
+
+- 「Adapty Mail を接続して、プロジェクトに不足しているものを教えて。」
+- 「サブスクリプションが期限切れになったユーザー向けにウィンバックフローを設定して。」
+- 「請求に関するキャンペーンをドイツ語とスペイン語に翻訳して。」
+- 「送信ドメインとして自社ドメインを追加して、DNS レコードの設定を一緒に進めて。」
+- 「先月、どのキャンペーンのコンバージョンが一番良かった？」
+- 「未購入者向けフローの A/B テストを 3 週間実施した。どちらのバリアントが勝つべき？」
+- 「なぜこのユーザーはトライアル期限切れメールを受け取れなかったの？」
+
+<AgentChat title="adapty-mail" caption="サンプルプロジェクトとの会話例。セグメントやキャンペーンはご自身のものとは異なります。">
+<ChatTurn role="user">Germanyのユーザーにドイツ語キャンペーンをnever-purchased flowで送信してください。</ChatTurn>
+<ChatTurn role="tool" summary="6つのAdapty Mailツールを呼び出しました">
+
+- `whoami`
+- `project_list`
+- `container_list`
+- `campaign_list`
+- `segment_meta`
+- `segment_create`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**ドイツのセグメントを作成し、Never purchased flowのAll usersの上に配置しました。これにより、他のユーザーは現在と同じ内容を引き続き受け取ります。**
+
+フローには現在2つの行があります。「有料トライアルユーザー」はTrial nudgeを受け取り、それ以外の全員はWelcome seriesを受け取ります。Germanyはその間に入ります。有料トライアルユーザーでもあるドイツのユーザーは、行が上から順にチェックされるため、Trial nudgeを受け取ります。
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Never purchasedフローを保存する">
+
+```
+Flow: Never purchased, marketing
+1. Paid trial users → Trial nudge         (unchanged)
+2. Germany → Welcome series DE            (new)
+3. All users → Welcome series             (moved from 2)
+Removed: nothing
+```
+
+保存すると、すぐに実際のユーザーに送信されます。保存しますか？
+
+1. Yes, save the flow
+2. No, change something first
+
+</ChatTurn>
+</AgentChat>
+
+## 仕組み \{#how-it-works\}
+
+1. **接続。** スキルは MCP サーバーが応答しているか、またサインインしているかを確認します。
+2. **把握。** プロジェクトを見つけ、すでに設定されている内容（ブランド、会社の住所、送信ドメイン、キャンペーン、フロー、最終データ到着日時）を読み込みます。既存のものを再利用します。
+3. **計画。** 開始前にダッシュボードで自分だけが行える操作を明示します。
+4. **実行。** サーバーのツールを順に使い、各結果を表示します。実際の人にメールを送信する操作や元に戻せない操作は、確認を求めてから実行します。
+
+## メールが送信されなかった理由 \{#why-an-email-didnt-send\}
+
+特定のユーザーについて確認すると、スキルはそのプロファイルとプロファイルのジャーニーを読み取り、以下の理由を順番に確認して、最初に該当する理由で停止します：
+
+1. プロファイルが抑制されています：配信停止、バウンス、苦情報告、またはアドレス認証失敗。[配信停止と抑制](mail-suppression)を参照してください。
+2. その人はすでに別のマーケティングフローに入っています。
+3. 購入が完了したため、設計通りにシーケンスが終了しました。
+4. ドメインウォームアップ中に送信制限によってメールが保留されました。
+5. トリガーが一度も発火しませんでした。購入イベントが Adapty Mail に届いていないか、セットアップ完了前にプロファイルが到着しています。
+6. フロー内のどのセグメントもその人に一致しませんでした。
+7. ダブルオプトインが有効になっており、その人がアドレスを確認していません。
+8. その人のタイムゾーンの送信ウィンドウに合わせてメールがまだスケジュールされています。
+
+<AgentChat title="adapty-mail" caption="サンプルプロジェクトとの会話例。メールアドレスと日付は架空のものです。">
+<ChatTurn role="user">sam@example.com がトライアル終了メールを受け取れなかったのはなぜですか？</ChatTurn>
+<ChatTurn role="tool" summary="3つの読み取り専用 Adapty Mail ツールを呼び出しました">
+
+- `profile_list`
+- `profile_get`
+- `profile_journey`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**このアドレスは10月12日に配信停止を行ったため、Adapty Mail はマーケティングメールを送信しなくなりました。**
+
+The unsubscribe came from the link in the second email of your Trial expired campaign. The trial expired on October 15, after that, so the flow never started for this person. Purchase confirmations and other transactional emails still reach the address.
+
+Only Adapty support can lift a suppression, and only the person who unsubscribed should ask for it.
+
+</ChatTurn>
+</AgentChat>

@@ -8,9 +8,10 @@ Quand un utilisateur saisit du texte dans un champ, répond à un quiz ou active
 
 Les applications utilisent le plus souvent ces données pour :
 
-- **Enregistrer les utilisateurs sur votre propre backend** : Récupérez l'adresse e-mail et le nom saisis par l'utilisateur dans votre onboarding, puis créez son compte à la fermeture du flow.
-- **Sauvegarder les réponses et préférences** : Suivez les choix de l'utilisateur pour que votre application puisse les exploiter plus tard — par exemple, [écrivez-les dans son profil Adapty](unity-setting-user-attributes) comme attributs personnalisés.
-- **Personnaliser les flows ultérieurs** : Enregistrez les réponses au quiz comme attributs personnalisés, puis ciblez un placement ultérieur pour que chaque segment reçoive un flow différent, ou un paywall différent au sein de ce flow.
+- **Enregistrer les utilisateurs sur votre propre backend** : Récupérez l'adresse e-mail et le nom saisis dans votre onboarding, puis créez leur compte à la fermeture du flow.
+- **Sauvegarder les réponses et préférences** : Conservez les choix de l'utilisateur pour que votre application puisse les exploiter plus tard — par exemple, [écrivez-les dans son profil Adapty](unity-setting-user-attributes) comme attributs personnalisés.
+- **Personnaliser les flows futurs** : Sauvegardez les réponses au quiz comme attributs personnalisés, puis ciblez un placement ultérieur pour que chaque segment reçoive un flow différent, ou un paywall différent à l'intérieur.
+- **Afficher des valeurs calculées à partir des réponses** : Par exemple, calculez un IMC à partir du poids et de la taille de l'utilisateur, puis [transmettez-le à un tag personnalisé dans le flow suivant](unity-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
 - **Alimenter des plateformes d'analyse tierces** : Transmettez les réponses à Amplitude, Mixpanel ou tout autre outil d'analyse produit que vous utilisez.
 
 Les champs de saisie et les groupes de sélection transmettent automatiquement leurs valeurs. Pour les distinguer dans votre code, attribuez un **Element ID** significatif à chaque champ et un **Group ID** à chaque groupe sélectionnable dans le builder.
@@ -35,48 +36,16 @@ public void FlowViewDidReceiveAnalyticEvent(
 }
 ```
 
-Le callback `FlowViewDidReceiveAnalyticEvent` transmet tous les événements analytiques d'un flow, y compris les [vues d'écran](unity-flow-screen-views).
-- Le paramètre `name` contient le nom de l'événement. Pour filtrer les événements de saisie utilisateur, comparez `name` à `flow_user_input`.
-- Le paramètre `element_type` indique la catégorie de l'élément.
-- La valeur de la saisie est stockée dans différents paramètres selon le type d'élément :
-     - Les champs de texte, les sélecteurs et les boutons à bascule stockent la saisie de l'utilisateur dans `value`
-     - Les groupes sélectionnables reportent les options actives dans `item_ids` et `item_titles`
+Le callback `FlowViewDidReceiveAnalyticEvent` transmet tous les événements analytiques d'un flow, y compris les [vues d'écran](unity-flow-screen-views). Pour filtrer les événements de saisie utilisateur, comparez `name` à `flow_user_input`. Le paramètre qui stocke la valeur dépend de `element_type` :
 
-```csharp showLineNumbers title="Unity"
-private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
-    if (name != "flow_user_input") return;
+| `element_type` | Paramètre qui stocke la valeur | Type C# |
+|:---------------|:-------------------------------|:--------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `string` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `long`, Unix time en millisecondes. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `JArray` |
+| `toggle` | `value` | `bool` |
 
-    var elementId = parameters["element_id"] as string;
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    var screenId = parameters["instanceId"] as string;
-
-    switch (parameters["element_type"] as string) {
-        case "text_input":
-        case "email_input":
-        case "number_input":
-        case "phone_input":
-            var text = parameters["value"] as string;
-            break;
-        case "date_picker":
-        case "time_picker":
-        case "date_time_picker":
-            // Unix time in milliseconds.
-            var millis = Convert.ToInt64(parameters["value"]);
-            break;
-        case "single_choice":
-            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
-            break;
-        case "multi_choice":
-            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
-            break;
-        case "toggle":
-            var isOn = (bool)parameters["value"];
-            break;
-    }
-}
-```
+La section [Ce que vous recevez](#what-you-receive) liste tous les paramètres et ce que chaque élément du builder renvoie.
 
 <FlowInputVerify />
 

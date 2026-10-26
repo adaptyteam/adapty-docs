@@ -8,10 +8,11 @@ metadataTitle: "フローのデータを処理する | Kotlin Multiplatform SDK 
 
 アプリでこのデータを活用する主な用途は次のとおりです：
 
-- **ユーザーを自社バックエンドに登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を取得し、フローが閉じられたタイミングでアカウントを作成します。
-- **回答と設定を保存する**: ユーザーが選択した内容を追跡して、後でアプリから活用できるようにします。たとえば、カスタム属性として[Adapty プロファイルに書き込む](kmp-setting-user-attributes)といった使い方ができます。
-- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後続のプレースメントでターゲティングすることで、各セグメントに異なるフローや、その中の異なるペイウォールを表示できます。
-- **サードパーティの分析プラットフォームに連携する**: Amplitude や Mixpanel など、利用中のプロダクト分析ツールに回答を転送します。
+- **ユーザーを独自のバックエンドに登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を使って、フローが閉じたときにアカウントを作成します。
+- **回答と設定を保存する**: ユーザーが選択した内容を記録し、アプリが後で活用できるようにします。たとえば、[Adapty プロファイルにカスタム属性として書き込む](kmp-setting-user-attributes)ことができます。
+- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後のプレースメントをターゲティングすることで、各セグメントに異なるフローや、その中の異なるペイウォールを表示できます。
+- **回答から算出した値を表示する**: たとえば、ユーザーの体重と身長からBMIを計算し、[次のフローのカスタムタグに渡す](kmp-flow-custom-tags#example-show-a-bmi-from-onboarding-answers)ことができます。
+- **サードパーティの分析プラットフォームに転送する**: 回答をAmplitude、Mixpanel、または利用中のプロダクト分析ツールに送信します。
 
 インプットとセレクタブルグループは、自動的に値を報告します。コード内でインプットを区別するために、ビルダーで各インプットに意味のある **Element ID** を、各セレクタブルグループに **Group ID** を設定してください。
 
@@ -38,44 +39,16 @@ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
 })
 ```
 
-`flowViewDidReceiveAnalyticEvent`コールバックは、[画面ビュー](kmp-flow-screen-views)を含むフローのすべての分析イベントを配信します。イベントパラメータは`paramsJsonString`に1つのJSON文字列として届きます。一度デコードしてフィールドを読み取ってください。
-- `name`パラメータにはイベント名が含まれます。ユーザー入力イベントをフィルタリングするには、`name`を`flow_user_input`と比較してください。
-- `element_type`パラメータは要素のカテゴリを示します。
-- 入力の値は要素タイプによって異なるパラメータに格納されます：
-     - テキストフィールド、ピッカー、トグルはユーザーの入力を`value`に格納します
-     - セレクタブルグループはアクティブなオプションを`item_ids`と`item_titles`で報告します
+`flowViewDidReceiveAnalyticEvent` コールバックは、[スクリーンビュー](kmp-flow-screen-views)を含むフローのすべての分析イベントを配信します。イベントパラメータは `paramsJsonString` に1つのJSON文字列として届きます。一度デコードしてフィールドを読み取ってください。ユーザー入力イベントをフィルタリングするには、`name` を `flow_user_input` と比較します。値を格納するパラメータは `element_type` によって異なります：
 
-```kotlin showLineNumbers title="Kotlin"
-private fun handleFlowInput(name: String, paramsJsonString: String) {
-    if (name != "flow_user_input") return
+| `element_type` | 値を格納するパラメーター | デコード後の型 |
+|:---------------|:----------------------------|:----------------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | String |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | Number（ミリ秒単位のUnix時間）。Androidは数値をdoubleとしてシリアライズするため、doubleとして読み取ってください。 |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | 文字列の配列 |
+| `toggle` | `value` | Boolean |
 
-    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
-    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
-
-    when (params["element_type"]?.jsonPrimitive?.content) {
-        "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = params["value"]?.jsonPrimitive?.content
-        }
-        "date_picker", "time_picker", "date_time_picker" -> {
-            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
-            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
-        }
-        "single_choice" -> {
-            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
-        }
-        "multi_choice" -> {
-            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
-        }
-        "toggle" -> {
-            val isOn = params["value"]?.jsonPrimitive?.boolean
-        }
-    }
-}
-```
+[受け取る内容](#what-you-receive)のセクションには、すべてのパラメーターと各ビルダー要素が報告する内容が一覧表示されています。
 
 <FlowInputVerify />
 
@@ -127,7 +100,7 @@ override fun flowViewDidReceiveAnalyticEvent(
     // paramsJsonString, once decoded:
     params["element_id"]       // "birthday"
     params["element_type"]     // "date_picker"
-    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; read it as a double, since Android serializes numbers that way)
 }
 ```
 </Details>

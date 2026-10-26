@@ -8,10 +8,11 @@ metadataTitle: "フローのデータを処理する | iOS SDK | Adapty ドキ�
 
 アプリでこのデータを活用する主なケース：
 
-- **バックエンドでユーザーを登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を取得し、フローが閉じたタイミングでアカウントを作成します。
-- **回答と設定を保存する**: ユーザーが選択した内容を記録して、後からアプリで活用できるようにします。たとえば、[Adapty プロファイルにカスタム属性として書き込む](setting-user-attributes)ことができます。
-- **後続のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後続のプレースメントをターゲティングすることで、各セグメントに異なるフローや異なるペイウォールを表示できます。
-- **サードパーティの分析プラットフォームに連携する**: 回答を Amplitude、Mixpanel、または利用中のプロダクトアナリティクスツールに転送します。
+- **ユーザーを自社バックエンドに登録する**: オンボーディングフローでユーザーが入力したメールアドレスと名前を取得し、フローが閉じたときにアカウントを作成します。
+- **回答と設定を保存する**: ユーザーが選択した内容を記録して、後でアプリがそれを活用できるようにします。たとえば、[Adapty プロファイルにカスタム属性として書き込む](setting-user-attributes)ことができます。
+- **今後のフローをカスタマイズする**: クイズの回答をカスタム属性として保存し、後続のプレースメントをターゲティングすることで、各セグメントに異なるフローや、その中の異なるペイウォールを表示できます。
+- **回答から計算した値を表示する**: たとえば、ユーザーの体重と身長から BMI を計算し、[次のフローのカスタムタグに渡す](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers)ことができます。
+- **サードパーティの分析プラットフォームに連携する**: 回答を Amplitude、Mixpanel、または利用中のプロダクト分析ツールに転送します。
 
 インプットと選択可能なグループは、値を自動的に報告します。コード内でインプットを区別するために、各インプットには意味のある **Element ID** を、各選択可能なグループには **Group ID** をビルダーで設定してください。
 
@@ -31,7 +32,7 @@ metadataTitle: "フローのデータを処理する | iOS SDK | Adapty ドキ�
 `didReceiveAnalyticEvent` クロージャを `.flow` モディファイアに渡します。
 
 ```swift showLineNumbers title="Swift"
-Text("Hello, AdaptyUI!")
+YourContentView()
     .flow(
         isPresented: $flowPresented,
         flowConfiguration: flowConfiguration,
@@ -66,41 +67,16 @@ func flowController(
 
 クロージャとデリゲートメソッドはどちらも同じ2つの引数を受け取るため、値を読み取るコードはどちらの方法でも同じです。
 
-`didReceiveAnalyticEvent` コールバックは、[画面表示](ios-flow-screen-views)を含むフローのすべての分析イベントを配信します。
-- `name` パラメータにはイベント名が含まれます。ユーザー入力イベントをフィルタリングするには、`name` を `flow_user_input` と比較してください。
-- `element_type` パラメータは要素のカテゴリを示します。
-- 入力値は要素タイプに応じて異なるパラメータに格納されます：
-     - テキストフィールド、ピッカー、トグルはユーザーの入力を `value` に格納します
-     - セレクタブルグループはアクティブなオプションを `item_ids` および `item_titles` で報告します
+`didReceiveAnalyticEvent` コールバックは、[スクリーンビュー](ios-flow-screen-views)を含むフローのすべてのアナリティクスイベントを配信します。ユーザー入力イベントに絞り込むには、`name` を `flow_user_input` と比較してください。値を格納するパラメータは `element_type` によって異なります。
 
-```swift showLineNumbers title="Swift"
-func handleFlowInput(name: String, params: [String: any Sendable]) {
-    guard name == "flow_user_input",
-          let elementId = params["element_id"] as? String,
-          let elementType = params["element_type"] as? String
-    else { return }
+| `element_type` | 値を格納するパラメータ | Swift 型 |
+|:---------------|:----------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`、ミリ秒単位の Unix 時間。`Date` に変換する場合は 1000 で割ってください。 |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
 
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    let screenId = params["instanceId"] as? String
-
-    switch elementType {
-    case "text_input", "email_input", "number_input", "phone_input":
-        let text = params["value"] as? String
-    case "date_picker", "time_picker", "date_time_picker":
-        // Integer Unix time in milliseconds, not the seconds Date expects.
-        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
-    case "single_choice":
-        let optionId = (params["item_ids"] as? [String])?.first
-    case "multi_choice":
-        let optionIds = params["item_ids"] as? [String]
-    case "toggle":
-        let isOn = params["value"] as? Bool
-    default:
-        break
-    }
-}
-```
+[受け取る内容](#what-you-receive) セクションに、すべてのパラメータと各ビルダー要素が報告する内容の一覧があります。
 
 <FlowInputVerify />
 
@@ -140,7 +116,7 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 func handleFlowInput(name: String, params: [String: any Sendable]) {
     params["element_id"];      // "birthday"
     params["element_type"];    // "date_picker"
-    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
 }
 ```
 </Details>
@@ -289,3 +265,24 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 3. 各カスタム属性値に対して[セグメントを作成します](segments)。
 4. [プレースメント](placements)を作成し、各セグメントに対して[オーディエンス](audience)を追加します。
 5. アプリ内でそのプレースメントの[フローを表示します](ios-present-paywalls)。
+
+### 分析プラットフォームに回答を送信する \{#send-answers-to-your-analytics-platform\}
+
+ユーザーの回答でチャートをフィルタリングするには、各回答をイベントとして分析プラットフォームに送信します。
+
+たとえば、フローにグループ ID `experience` のセレクタブルグループがある場合、選択されたオプションを Amplitude に送信するには次のようにします。
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

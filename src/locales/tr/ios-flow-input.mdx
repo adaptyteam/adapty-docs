@@ -8,10 +8,11 @@ Bir kullanıcı [flow](adapty-flow-builder)'daki bir giriş alanına bir şey ya
 
 Uygulamalar bu verileri genellikle şu amaçlarla kullanır:
 
-- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unuzda girdiği e-posta adresi ve adı alın, flow kapandığında hesabını oluşturun.
-- **Yanıtları ve tercihleri kaydedin**: Kullanıcının ne seçtiğini takip edin, böylece uygulamanız bunu daha sonra kullanabilsin — örneğin, [bunu Adapty profiline yazın](setting-user-attributes) ve özel attribute olarak saklayın.
-- **Gelecekteki flow'ları özelleştirin**: Quiz yanıtlarını özel attribute olarak kaydedin, ardından sonraki bir placement'ı hedefleyin; böylece her segment farklı bir flow veya içinde farklı bir paywall görsün.
-- **Üçüncü taraf analitik platformlara iletin**: Yanıtları Amplitude, Mixpanel veya kullandığınız başka bir ürün analitiğine iletin.
+- **Kullanıcıları kendi backend'lerinde kaydedin**: Kullanıcının onboarding flow'unda girdiği e-posta adresini ve ismi alın, flow kapandığında hesabını oluşturun.
+- **Cevapları ve tercihleri kaydedin**: Kullanıcının neyi seçtiğini takip edin, böylece uygulamanız bunu daha sonra kullanabilir — örneğin, özel nitelikler olarak [kullanıcının Adapty profiline yazın](setting-user-attributes).
+- **Gelecekteki flow'ları özelleştirin**: Sınav cevaplarını özel nitelikler olarak kaydedin, ardından belirli bir placement'ı hedefleyin; böylece her segment farklı bir flow veya içinde farklı bir paywall görür.
+- **Cevaplardan hesaplanan değerleri gösterin**: Örneğin, kullanıcının kilosu ve boyundan VKİ hesaplayın ve [bunu bir sonraki flow'daki özel bir etikete aktarın](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Üçüncü taraf analitik platformlarına veri gönderin**: Cevapları Amplitude, Mixpanel veya kullandığınız ürün analitiği platformuna iletin.
 
 Girişler ve seçilebilir gruplar, değerlerini otomatik olarak raporlar. Kodunuzda girişleri birbirinden ayırt edebilmek için builder'da her girişe anlamlı bir **Element ID**, her seçilebilir gruba ise bir **Group ID** verin.
 
@@ -31,7 +32,7 @@ Giriş değerleri, bir flow'dan gelen diğer tüm analitik olaylarla aynı callb
 `.flow` modifier'ına bir `didReceiveAnalyticEvent` closure'ı iletin:
 
 ```swift showLineNumbers title="Swift"
-Text("Hello, AdaptyUI!")
+YourContentView()
     .flow(
         isPresented: $flowPresented,
         flowConfiguration: flowConfiguration,
@@ -66,41 +67,16 @@ func flowController(
 
 Closure ve delegate metodu aynı iki argümanı alır; bu nedenle değeri okuyan kod her iki durumda da aynıdır.
 
-`didReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](ios-flow-screen-views) dahil bir flow'daki tüm analitik olayları iletir.
-- `name` parametresi olay adını içerir. Kullanıcı girişi olaylarını filtrelemek için `name`'i `flow_user_input` ile karşılaştırın.
-- `element_type` parametresi öğe kategorisini belirtir.
-- Girişin değeri, öğe türüne bağlı olarak farklı parametrelerde saklanır:
-     - Metin alanları, seçiciler ve geçiş düğmeleri kullanıcının girişini `value` içinde saklar
-     - Seçilebilir gruplar, aktif seçenekleri `item_ids` ve `item_titles` ile bildirir
+`didReceiveAnalyticEvent` callback'i, [ekran görüntülemeleri](ios-flow-screen-views) dahil bir flow'dan gelen tüm analitik olayları iletir. Kullanıcı girişi olaylarını filtrelemek için `name` değerini `flow_user_input` ile karşılaştırın. Değeri saklayan parametre, `element_type`'a göre değişir:
 
-```swift showLineNumbers title="Swift"
-func handleFlowInput(name: String, params: [String: any Sendable]) {
-    guard name == "flow_user_input",
-          let elementId = params["element_id"] as? String,
-          let elementType = params["element_type"] as? String
-    else { return }
+| `element_type` | Değeri saklayan parametre | Swift türü |
+|:---------------|:----------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`, milisaniye cinsinden Unix zamanı. `Date` için 1000'e bölün. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
 
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    let screenId = params["instanceId"] as? String
-
-    switch elementType {
-    case "text_input", "email_input", "number_input", "phone_input":
-        let text = params["value"] as? String
-    case "date_picker", "time_picker", "date_time_picker":
-        // Integer Unix time in milliseconds, not the seconds Date expects.
-        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
-    case "single_choice":
-        let optionId = (params["item_ids"] as? [String])?.first
-    case "multi_choice":
-        let optionIds = params["item_ids"] as? [String]
-    case "toggle":
-        let isOn = params["value"] as? Bool
-    default:
-        break
-    }
-}
-```
+[Ne alırsınız](#what-you-receive) bölümünde tüm parametreler ve her builder öğesinin ne bildirdiği listelenmektedir.
 
 <FlowInputVerify />
 
@@ -140,7 +116,7 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 func handleFlowInput(name: String, params: [String: any Sendable]) {
     params["element_id"];      // "birthday"
     params["element_type"];    // "date_picker"
-    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
 }
 ```
 </Details>
@@ -289,3 +265,24 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 3. Her özel nitelik değeri için bir [segment](segments) oluşturun.
 4. Bir [placement](placements) oluşturun ve her segment için bir [kitle](audience) ekleyin.
 5. Uygulamanızda o placement için [flow'u görüntüleyin](ios-present-paywalls).
+
+### Analitik platformunuza yanıtları gönderin \{#send-answers-to-your-analytics-platform\}
+
+Grafiklerinizi kullanıcı yanıtına göre filtrelemek için her yanıtı analitik platformunuzda bir olay olarak takip edin.
+
+Örneğin, flow'unuzda `experience` Grup ID'sine sahip seçilebilir bir grup varsa, seçilen seçeneği Amplitude'e gönderin:
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

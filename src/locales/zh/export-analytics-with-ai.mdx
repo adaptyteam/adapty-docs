@@ -1,74 +1,159 @@
 ---
-title: "向 AI 询问您的分析数据"
-description: "使用导出分析 API，通过 AI 编码代理以自然语言查询您的 Adapty 分析数据。"
-metadataTitle: "向 AI 询问您的分析数据 | Adapty 文档"
-keywords: ['向ai询问分析', 'adapty分析ai', '用ai查询分析', '导出分析api', '分析ai代理', 'mcp', 'llm']
+title: "用于增长收入的智能体技能"
+description: "安装 growth-advisor 技能，让你的 AI 编程工具读取 Adapty 数据分析、找出应用收入流失环节，并建议下一步要做哪些 A/B 测试。"
+metadataTitle: "Growth Advisor 智能体技能 | Adapty 文档"
+keywords: ['向 AI 询问数据分析', 'adapty 数据分析 ai', '用 AI 查询数据分析', 'adapty cli', '数据分析 ai 智能体', 'mcp', 'llm']
 ---
-Ask an AI coding agent about your Adapty analytics in plain language — revenue, conversions, retention, LTV — and let it pull the numbers for you. Point a tool that can make API calls at the [Export Analytics API](https://adapty.io/docs/zh/export-analytics-api.md), and it queries your metrics on demand.
-## 可查询的内容 \{#what-you-can-ask-about\}
 
-Export Analytics API 返回的数据与 Adapty 看板数据图表中展示的内容一致。每个数据图表对应一个独立的操作：
-| 数据图表 | 涵盖内容 | 操作 |
-| --- | --- | --- |
-| 收入、MRR、ARR、ARPU | 按时间段、国家或推广活动分组的收入情况 | [retrieveAnalyticsData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveAnalyticsData.md) |
-| 同期群留存 | 某一同期群的订阅用户持续付费的时长 | [retrieveCohortData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveCohortData.md) |
-| 转化率 | 用户从某一步骤或渠道进入下一步骤的比例 | [retrieveConversionData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveConversionData.md) |
-| 流失与漏斗 | 用户在哪些环节流失以及退订速度 | [retrieveFunnelData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveFunnelData.md) |
-| 用户生命周期价值 (LTV) | 各用户市场细分的平均收入随时间的变化 | [retrieveLTVData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveLTVData.md) |
-| 留存率 | 若干天后仍活跃的用户占比 | [retrieveRetentionData](https://adapty.io/docs/zh/api-export-analytics/operations/retrieveRetentionData.md) |
-有关参数和过滤器的完整列表，请参阅 [API 参考文档](https://adapty.io/docs/zh/api-export-analytics.md)。
+growth-advisor 技能能根据你自己的订阅数据回答"下一步该测试什么？"。你的 AI 编程工具通过 [Adapty CLI](developer-cli-analytics) 读取你的分析数据、版位、付费墙和产品，沿着最大的信号追溯根因，最终返回一份按潜在购买量排序的 A/B 测试假设清单。
+
+:::note
+growth-advisor 不会在未经你确认的情况下对账户做任何修改。所有分析数据的读取均为只读操作，每一项写入操作——无论是新建流程副本、新建市场细分，还是修改版位——都需要你的确认才会执行。
+:::
+
+## 你可以问什么 \{#what-you-can-ask\}
+
+像给同事做简报一样提问，不需要指明使用哪个技能：
+
+```
+审查一下我的应用，接下来测试什么能提升收入？
+
+上个月收入下滑了，原因是什么？
+
+用户引导付费墙的 A/B 测试结束了，新版本赢了，下一步怎么做？
+
+我有三个想法：按周订阅、年度订阅加试用期，以及增加一个版位。
+先测哪个？
+
+哪个国家的退款最多？开始试用的用户续订率更高吗？
+
+我们下个月上线，目前还没有数据，从哪里开始？
+```
+
+关于您数据的问题将直接从您的数据中得到解答，无需附加审核。尚无数据的应用将根据 Adapty 2026 年付费墙状态报告中的市场中位数，获得一份初始方案，所有数字均标注为估算值。
+
+<AgentChat title="growth-advisor" caption="示例对话，数据来自示例应用。您的实际数据会有所不同。">
+<ChatTurn role="user">上个月收入下降了。为什么？</ChatTurn>
+<ChatTurn role="tool" summary="运行了 4 条只读命令">
+
+- `adapty analytics chart --chart revenue --compare-from 2026-08-01 --compare-to 2026-08-31`
+- `adapty analytics chart --chart revenue --group-by store`
+- `adapty analytics chart --chart subscriptions_new --group-by store`
+- `adapty analytics chart --chart subscriptions_expired --group-by cancellation_reason`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**收入下降是因为 Google Play 上的续订减少了，而不是因为购买人数减少。**
+
+New subscriptions held steady in September. Renewals on Google Play fell by a third, while the App Store didn't change. Most of the lost renewals are monthly subscribers whose payment failed.
+
+**Next steps**
+
+1. You: did anything change in your Google Play billing setup in early September?
+2. Me: suggest hypotheses to win back the monthly subscribers who left. Want me to?
+
+</ChatTurn>
+</AgentChat>
+
 ## 开始之前 \{#before-you-start\}
 
-你需要准备以下三样东西：
-- **已有数据的 Adapty 账户**：该 API 返回的数据图表与看板中显示的一致，因此你的应用必须已经在收集分析数据。
-- **Secret API 密钥**：在 [App settings → General](https://app.adapty.io/settings/general) 的 **Secret key** 字段中找到。密钥与应用绑定，每个应用需使用独立的密钥。建议将其存储在环境变量中（例如 `ADAPTY_SECRET_KEY`），这样 AI 代理可以直接读取，无需手动粘贴到对话中。
-- **能够调用 API 的 AI 工具**：例如 Claude Code、Cursor，或配置了 fetch 工具的 Claude Desktop。claude.ai 或 ChatGPT 等纯对话工具无法直接调用 API。
-<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Adapty 应用设置常规页面，Secret key 字段中显示密钥 API key" />
-## 为你的 Agent 提供 API 规范 \{#give-your-agent-the-api-spec\}
+- **包含数据的 Adapty 账户**：该技能读取的是看板中显示的相同分析数据。没有数据时，它只能为你提供初步方案。
+- **可以运行终端命令的 AI 工具**：例如 Claude Code、Codex、Copilot CLI 或 Gemini CLI。像 claude.ai 或 ChatGPT 这样的聊天工具无法运行 CLI，因此无法访问你的 Adapty 账户。
 
-[OpenAPI 规范](https://adapty.io/docs/zh/api-specs/export-analytics-api.yaml)描述了每个端点、认证请求头、请求体以及响应示例。Agent 获取规范后，无需你编写任何代码即可构建正确的请求。
+## 安装技能 \{#install-the-skill\}
 
-通过 URL 向 Agent 提供规范：
-- **粘贴 URL**：如果你的 AI 助手支持抓取 URL，将 `https://adapty.io/docs/zh/api-specs/export-analytics-api.yaml` 提供给它，让它读取该规范文件。
-- **使用抓取工具**：如果你的 AI 助手有可以获取 URL 的工具（例如 MCP fetch 服务器），将其指向同一 URL 即可。
+growth-advisor 是 [`adapty-skills` 插件](https://github.com/adaptyteam/adapty-skills) 的一部分。
 
-该规范将 base URL 设置为 `https://api-admin.adapty.io`，因此只要你的密钥已配置到环境中，AI 助手即可获取所有所需信息。
-## 查询你的数据 \{#ask-about-your-data\}
+<AdaptySkillsInstall />
 
-加载好规范文件并将密钥设置为环境变量后，就可以用自然语言描述你想查询的数据图表了。
+## 审计如何运作 \{#how-the-audit-works\}
 
-示例提示词：
-```
-What was my MRR at the end of each month this year, and how does it compare to last year?
+当你没有具体问题、只是询问"该怎么做"时，技能会启动审计。它会读取你的数据和版位配置，梳理你已经尝试过的内容，并顺着最大的变化追溯到能解释该变化的商店、渠道、国家或版位。在对某个页面发表任何看法之前，它会先查看线上的流程，或请你提供一张由应用自行绘制的付费墙截图。
 
-Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+## 你会得到什么 \{#what-you-get-back\}
 
-Which countries drive the most revenue from my yearly subscription? Top 10.
+该技能会先给出一个简短的回答，然后列出按版位分组的假设列表，并按测试顺序排列。每条假设都会说明你的应用为何需要它、预期会产生什么结果以及该估算的依据、A/B 测试需要多长时间，以及各方需要做什么。一条假设可以针对某个版位的所有用户，也可以针对某个特定的[市场细分](segments)，例如曾经订阅过的用户。
 
-How is week-1 retention trending for subscribers who started in the last 6 months?
+<AgentChat title="growth-advisor" caption="对话示例来自一款示例应用，您的数据和假设可能有所不同。">
+<ChatTurn role="user">审计我的应用。接下来应该测试什么来增加收入？</ChatTurn>
+<ChatTurn role="tool" summary="运行了 9 个只读命令">
 
-What's the refund rate on my annual plan since launch, by month?
+- `adapty apps list`
+- `adapty analytics chart --chart revenue --group-by country`
+- `adapty analytics chart --chart revenue --group-by duration`
+- `adapty analytics chart --chart subscriptions_new --group-by placement_id`
+- `adapty analytics chart --chart subscriptions_expired --group-by cancellation_reason`
+- `adapty analytics conversion --conversion trial-paid --granularity month`
+- `adapty placements list`
+- `adapty flows list`
+- `adapty flows config get <flow-id>`
 
-Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
-```
+</ChatTurn>
+<ChatTurn role="agent">
 
-代理会将您的请求映射到对应操作，从环境变量中读取密钥，并返回数据。默认响应格式为 JSON。如果需要方便导入电子表格的文件，可以要求 CSV 格式——代理会在请求体中将 `format` 设置为 `csv`。
+**您的大部分收入来自用户引导付费墙，而且几乎所有人都在那里购买周计划。**
 
-:::warning
-请将密钥保存在环境变量中，不要粘贴到聊天记录里，也不要提交到规则文件中。密钥与应用绑定，如有泄露，请在 **Settings → General** 中轮换密钥。详见[轮换 API 密钥](https://adapty.io/docs/zh/export-analytics-api-authorization.md)。
-:::
-## 一次配置，反复使用 \{#set-up-once-for-repeated-use\}
+从您的数据来看：7 月同时运行了两个用户引导付费墙，最终保留了"Main"。年计划虽然出现在界面上，但 9 月仅占购买量的 6%。大多数订阅以用户关闭续订结束，也没有任何版位针对老订阅用户展示不同内容。
 
-为避免每次会话都重复配置，请将 spec 和 key 保存到 agent 可复用的位置：
-- **保存规格链接**：将规格 URL 添加到你的智能体规则或记忆文件中（例如 `CLAUDE.md` 或 Cursor 规则文件），这样每次会话都会自动加载。
-- **将密钥存入环境变量**：将 `ADAPTY_SECRET_KEY` 保存到你的 Shell 配置文件或工具的密钥存储中，以后就不需要再手动粘贴了。
-- **保存常用提示词或创建自定义技能**：将常用问题保存为提示词，或封装成自定义技能或斜杠命令，让智能体随时按需生成报告。
+**建议的假设**
+
+在 `onboarding` 版位上：
+
+**1. 在"Main"中预选年计划**
+
+- **原因：** "主页"默认选中周订阅，大多数用户根本不会去比较年度价格。
+- **预期效果：** ARPU 提升 25–40%，以每次付费墙浏览产生的收入衡量。这是 Adapty 真实订阅 A/B 测试案例库中最稳定的增长点之一。
+- **周期：** 按你们目前的购买量，约需 3 周。
+- **分工：** 我负责编写流程文案，你负责在看板中启动 A/B 测试。
+
+在 `settings` 版位：
+
+**2. 向前订阅用户展示赢回优惠付费墙**
+
+- **原因：** 9 月份流失的用户中有 71% 是主动关闭了续费，他们回来时看到的付费墙和其他所有人一样。
+- **预期：** 在 Adapty 的资料库中尚未测试过，视为一次押注，以该市场细分的购买数据作为评判标准。
+- **时间：** 约 8 周。
+- **分工：** 我：创建"前订阅者"市场细分并将其添加到版位。你：启动 A/B 测试。
+
+**后续步骤**
+
+1. 你：想从哪个开始？我会选第 1 个，因为每位新用户都会看到它。
+2. 我：复制一份"Main"付费墙并将年度计划设为预选项。需要我来做吗？
+
+</ChatTurn>
+<ChatTurn role="user">Go with 1.</ChatTurn>
+<ChatTurn role="confirm" summary="创建流程副本">
+
+创建 **Main – annual pre-selected**，即"Main"的副本，并预先选中年度计划？其他内容不变，线上流程保持原样。
+
+1. 是
+2. 否，先修改一些内容
+
+</ChatTurn>
+</AgentChat>
+
+你来决定从哪个假设开始。如果你不确定，技能会给出它自己的选择及原因。技能不保留待办列表，如果之后想回顾其他假设，请自行保存回复。
+
+## 从假设到 A/B 测试 \{#from-hypothesis-to-ab-test\}
+
+确定假设后，该技能会逐步配置 CLI 可操作的各个部分，每一步都需要你确认：
+
+- **新的流程设计或产品组合**：该技能通过 [flow-generator 技能](flow-generator-skill) 创建流程副本，每个假设只改动一处，从而在 A/B 测试中清晰呈现该改动的效果。在你发布副本之前，它会提议通过 [flow-audit 技能](flow-audit-skill) 对副本进行审查。
+- **不同的目标受众**：该技能创建市场细分，并通过 `audiences` 技能将其目标受众添加到版位中。
+
+然后，选择如何将变更推送给用户。在看板中创建 [A/B 测试](ab-tests) 是默认方式，也是唯一能衡量变更效果的方法。你也可以立即展示，可以新建一个版位，或者向现有版位的部分或全部用户展示。
+
+在技能修改现有版位之前，它会将该版位保存到文件中以便回滚，并询问该版位是否正在运行 A/B 测试。CLI 无法查看 A/B 测试的目标受众，而更新版位会替换所有目标受众，因此正在运行的测试会被静默删除。确认操作前，请先在看板中打开该版位的页面，确认是否有测试正在运行。
+
+新方案、试用期和 A/B 测试的决策权始终在你手中。针对每一项，技能会为你提供在 App Store Connect、Google Play Console 或 Adapty 看板中操作的具体步骤。在 App Store 上，试用期需要创建新产品；在 Google Play 上，则是在现有方案上添加优惠。新产品的价格由你自行设定。
+
+A/B 测试结束后，将本次测试内容和获胜结果告知技能，它会据此为你提供下一个测试假设。
+
 ## 限制 \{#limits\}
 
-请注意以下约束：
+- **暂不支持价格分析**：该技能不会读取、比较或建议定价。当数据指向价格问题时，它会指出这一点，并说明暂不支持价格分析。
+- **无 A/B 测试历史**：CLI 不返回过去的 A/B 测试结果。该技能通过同期运行的付费墙来推断历史测试，并依赖你告知哪个版本获胜。
+- **无广告支出数据**：该技能可以按归因渠道拆分安装量、试用量和收入，但不支持支出或 ROAS。如需这些数据，请使用 [adapty-attribution 技能](developer-cli-attribution-skill)。
 
-- **速率限制**：API 每个 API key 每秒允许 2 次请求，超出限制将返回 `429 Too Many Requests` 错误。请告知你的 agent 在收到 `429` 时等待并重试。
-- **应用专属密钥**：每个密钥仅对应一个应用。如需拉取多个应用的数据，请为每个应用提供对应的密钥。
-- **输出格式**：默认响应格式为 JSON。如需导出 CSV，请在请求体中将 `format` 设置为 `csv`。
-
-完整的身份验证和请求规则，请参阅[授权与请求格式](https://adapty.io/docs/zh/export-analytics-api-authorization.md)。
+如需不借助技能自行查询分析数据，请参阅 [CLI 分析数据参考文档](developer-cli-analytics)。如需从服务器或定时任务中拉取分析数据（无法通过浏览器登录的场景），请使用 [导出分析数据 API](export-analytics-api) 配合密钥。

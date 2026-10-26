@@ -8,10 +8,11 @@ metadataTitle: "Обработка данных из флоу | Android SDK | Д
 
 Чаще всего приложения используют эти данные для:
 
-- **Регистрируйте пользователей на своём бэкенде**: Берите email и имя, которые пользователь ввёл в онбординге, и создавайте аккаунт, когда флоу закрывается.
-- **Сохраняйте ответы и предпочтения**: Отслеживайте, что выбрал пользователь, чтобы приложение могло использовать это позже — например, [записывайте данные в профиль Adapty](android-setting-user-attributes) как пользовательские атрибуты.
-- **Настраивайте последующие флоу**: Сохраняйте ответы на вопросы квиза как пользовательские атрибуты, затем настраивайте таргетинг на нужный плейсмент, чтобы каждый сегмент видел свой флоу или свой пейвол внутри него.
-- **Передавайте данные в сторонние аналитические платформы**: Отправляйте ответы в Amplitude, Mixpanel или любую другую аналитическую систему, которую вы используете.
+- **Регистрация пользователей на собственном бэкенде**: возьмите email и имя, которые пользователь ввёл в онбординге, и создайте его аккаунт по завершении флоу.
+- **Сохранение ответов и предпочтений**: отслеживайте выборы пользователя, чтобы приложение могло использовать их позже — например, [записать их в профиль Adapty](android-setting-user-attributes) как кастомные атрибуты.
+- **Настройка будущих флоу**: сохраняйте ответы на вопросы как кастомные атрибуты, а затем настройте таргетинг в плейсменте так, чтобы каждый сегмент видел свой флоу или отдельный пейвол внутри него.
+- **Отображение значений, рассчитанных по ответам**: например, вычислите ИМТ из веса и роста пользователя и [передайте его в кастомный тег следующего флоу](android-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Передача данных в сторонние аналитические платформы**: пересылайте ответы в Amplitude, Mixpanel или любую другую используемую вами аналитику.
 
 Инпуты и группы выбора автоматически передают свои значения. Чтобы различать их в коде, задайте каждому инпуту понятный **Element ID**, а каждой группе выбора — **Group ID** в билдере.
 
@@ -38,43 +39,16 @@ class MyFlowEventListener : AdaptyFlowDefaultEventListener() {
 }
 ```
 
-Колбэк `onAnalyticEvent` доставляет все аналитические события из флоу, включая [просмотры экранов](android-flow-screen-views).
-- Параметр `name` содержит название события. Чтобы отфильтровать события пользовательского ввода, сравните `name` со значением `flow_user_input`.
-- Параметр `element_type` указывает категорию элемента.
-- Значение ввода хранится в разных параметрах в зависимости от типа элемента:
-     - Текстовые поля, пикеры и переключатели хранят пользовательский ввод в `value`
-     - Группы с выбором сообщают об активных опциях через `item_ids` и `item_titles`
+Колбэк `onAnalyticEvent` передаёт все аналитические события флоу, включая [просмотры экранов](android-flow-screen-views). Чтобы отфильтровать события пользовательского ввода, сравните `name` со значением `flow_user_input`. Параметр, в котором хранится значение, зависит от `element_type`:
 
-```kotlin showLineNumbers title="Kotlin"
-private fun handleFlowInput(name: String, params: Map<String, Any?>) {
-    if (name != "flow_user_input") return
+| `element_type` | Параметр, хранящий значение | Тип Kotlin |
+|:---------------|:----------------------------|:----------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Double`, Unix-время в миллисекундах. Читайте через `Number`. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `List<String>` |
+| `toggle` | `value` | `Boolean` |
 
-    val elementId = params["element_id"] as? String ?: return
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    val screenId = params["instanceId"] as? String
-
-    when (params["element_type"]) {
-        "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = params["value"] as? String
-        }
-        "date_picker", "time_picker", "date_time_picker" -> {
-            // Unix time in milliseconds. Numbers arrive as Double — read them through Number.
-            val millis = (params["value"] as? Number)?.toLong()
-        }
-        "single_choice" -> {
-            val optionId = (params["item_ids"] as? List<*>)?.firstOrNull() as? String
-        }
-        "multi_choice" -> {
-            val optionIds = (params["item_ids"] as? List<*>)?.filterIsInstance<String>()
-        }
-        "toggle" -> {
-            val isOn = params["value"] as? Boolean
-        }
-    }
-}
-```
+В разделе [Что вы получаете](#what-you-receive) перечислены все параметры и то, что сообщает каждый элемент билдера.
 
 <FlowInputVerify />
 

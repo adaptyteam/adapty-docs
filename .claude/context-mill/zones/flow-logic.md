@@ -1,6 +1,6 @@
 ---
 zone: flow-logic
-sources: [dashboard-interface, ios-sdk, jscore]
+sources: [ios-sdk, jscore]
 reviewed_shape: fd915eb8bdcf
 reviewed_at: 2026-08-10
 ---
@@ -32,81 +32,60 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 
 ## Sources of truth
 
-- **`dashboard-interface`** (`packages/unified-builder`) is the authority for exact in-product labels:
+- **Builder code (closed-source, not citable here)** is the authority for exact in-product labels:
   the Interactions tab's trigger/action names, the conditional-action if/then/else editor and its
   comparison operators, and preset names like **Close flow**. Verified in this pass against the docs
   themselves: `onboarding-actions.mdx` and `onboarding-flow-tutorial.mdx` describe the conditional chain
   as IF / ELSE IF / ELSE, and `show-offer-on-close.mdx`'s screenshot alt text names the actual UI chips
   as lowercase **if** / **then** / **else** blocks with an **Equals** operator — consistent with each
   other. No flow-logic article uses or shows a **Does not equal** operator; take that operator's exact
-  wording from `dashboard-interface` directly rather than from any article in this zone, since it isn't
+  wording from the builder UI directly rather than from any article in this zone, since it isn't
   independently confirmed here.
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
   `sdk-flows-manual` and their own sources (`jscore`, `ios-sdk`, etc. in `sources.md`) — don't correct or
   extend them from inside a flow-logic article.
-- **What the in-dashboard preview can resolve is decided in the host app, not in `unified-builder`.**
-  `apps/web/src/pages/flows/flow-builder/api/products.ts` maps the catalog product into the builder's
-  `IProduct`, and it sends exactly six fields: `id`, `title`, `access_level`, `price` (from `priceUsd`),
-  `price_per_day`, `billing_period`. `IProduct` (`builder/src/shared/types/products.ts`) declares no
-  offer fields at all. Read that mapper before writing any claim about what a preview shows: the
-  builder's variable table (`PRODUCT_SUB_VAR_DEFS` in
-  `builder/src/blocks/shared/variables/variables.common.ts`) can only resolve what the mapper sent, and
-  a field's *absence* there is why a variable renders as a token. Verified 2026-08-24 against
-  `origin/master` `db365e184`.
-- **The per-screen product registry (ADP-7541, flow schema v12) has two specs in `dashboard-interface`:**
-  `packages/unified-builder/builder/src/blocks/products/products.spec.md` (panel behaviour, menu items,
-  toasts, dialog labels) and `packages/unified-builder/builder/src/core/entities/screen-products/issues.spec.md`
-  (the publish-blocking issue codes with their exact titles). `paywall-product-block` and
-  `flow-common-issues` quote those titles verbatim — verify against the specs, not against a screenshot.
-  Two label traps verified 2026-09-13 on `origin/ADP-7541`. First, the group label for already-used
-  products depends on the picker: the card's **Product** dropdown and the plain product pickers say
-  **Added** and mean this screen's list (`blocks/shared/products/ProductSelect.tsx`); a text element's
-  `{ }` picker also says **Added** but spans every screen's list (`BindingCatalog.flowBindings()` in
-  `core/entities/product-bindings/catalog.ts`); the variables picker opened for a product-typed
-  comparison or assignment says **Current** (`blocks/shared/variables/ProductsTab.tsx`,
-  `scope === 'screen'`), and inside a card **Current** is the enclosing card's own product. Second, the
-  panel's **Missing** badge (product deleted from the catalog) is a different state from **This product
-  is off this screen** (product exists, not on the screen's list).
-- **Flow metrics and the flow funnel are computed in `dashboard-backend`, and the module is readable —
-  corrected 2026-10-02.** This brief used to say no source existed for the Flow metrics definitions beyond
-  the article's prose. The calculations live under
-  `src/portal/analytics_context/infrastructure/repositories/metrics_repositories/in_app_metrics_repositories/flow_metrics_repositories/`
-  (Jinja + ClickHouse, the same layout the `analytics` brief describes for chart metrics), and the funnel
-  (2026-10) sits beside them: `queries/flow_metrics/select_flow_screen_funnel_metrics.sql` is the
-  query, `domain/value_objects/metrics/in_app_metrics/flow_screen_funnel_metrics/` the value objects, and
-  `infrastructure/ports/http/flow_screen_funnel_metrics_view_set.py` the endpoint
-  (`POST …/analytics/flows/{flow_id}/screen-funnel/metrics/`, `?format=csv` for the export). Read on
-  the feature branch until it merges, then `origin/develop`. What is still true: no `sources.md` entry names
-  this module, so cite `dashboard-backend` and the path, as the `analytics` brief does. Facts settled there
-  for `flow-funnel` (all 2026-10-02): a step is the screen's position in the profile's path, not the builder
-  `screen_order`; one path per profile (first appearance per screen within a session, then one session:
-  a completing one first, else the longest, else the latest — revised 2026-10-23); completion = a trial or
-  purchase on a paywall screen (a purchase closes the flow), or the path ends on a screen with
-  `is_last_screen`, except that a last screen which is a paywall completes only with a purchase (rule
-  settled 2026-10-23). A later refund keeps the profile completed. The funnel's Completed deliberately
-  differs from `flow-metrics` Completions, which still count last screens only. The Revenue card also counts
-  purchases on the flow's paywall screens outside the kept session, so it can exceed the table's sum. Flows
-  shown without a placement are excluded. Funnel Revenue/Purchases are
-  initial purchases (`renewal_period = 1` on `subscription_started`/`trial_converted`, plus one-time
-  purchases) net of their refunds, gross USD — unlike `flow-metrics` Revenue, which counts every transaction
-  after the show. The Platform and Subscription state filters are a funnel-only filter class
-  (`FlowScreenFunnelMetricsFilters`); other flow endpoints never see them.
+- **What the in-dashboard preview can resolve is decided by the dashboard, not by the builder.** The
+  dashboard passes the builder exactly six product fields: `id`, `title`, `access_level`, `price` (the
+  USD price), `price_per_day`, `billing_period` — and no offer fields at all. Check that before writing
+  any claim about what a preview shows: the builder's product variables can only resolve what the
+  dashboard sent, and a field's *absence* is why a variable renders as a token (dashboard code,
+  2026-08-24).
+- **The per-screen product registry (flow schema v12)** — panel behaviour, menu items, toasts, dialog
+  labels, and the publish-blocking issues with their exact titles. `paywall-product-block` and
+  `flow-common-issues` quote those titles verbatim — verify against the builder UI, not against a
+  screenshot. Two label traps verified 2026-09-13 against builder code before release. First, the group
+  label for already-used products depends on the picker: the card's **Product** dropdown and the plain
+  product pickers say **Added** and mean this screen's list; a text element's `{ }` picker also says
+  **Added** but spans every screen's list; the variables picker opened for a product-typed comparison or
+  assignment says **Current**, and inside a card **Current** is the enclosing card's own product. Second,
+  the panel's **Missing** badge (product deleted from the catalog) is a different state from **This
+  product is off this screen** (product exists, not on the screen's list).
+- **Flow metrics and the flow funnel are backend calculations with no source registered in
+  `sources.md`** — cross-check `flow-metrics.mdx` against `paywall-metrics.mdx` for the terms they share.
+  Facts settled for `flow-funnel` with the backend team before release (2026-10-02, completion rule
+  revised 2026-10-23): a step is the screen's position in the profile's path, not its builder order; one
+  path per profile (first appearance per screen within a run, then one run: a completing one first, else
+  the longest, else the latest). Completion = a trial or purchase on a paywall screen (a purchase closes
+  the flow), or the path ends on a last screen — except that a last screen which is a paywall completes
+  only with a purchase. A later refund keeps the profile completed. The funnel's Completed deliberately
+  differs from `flow-metrics` Completions, which count last screens only. Funnel Revenue/Purchases are
+  initial purchases (first subscription payment or trial conversion, plus one-time purchases) net of
+  their refunds, gross USD — unlike `flow-metrics` Revenue, which counts every transaction after the
+  show; the Revenue card also counts purchases on the flow's paywall screens outside the kept run, so it
+  can exceed the table's sum. Flows shown without a placement are excluded. The Platform and Subscription
+  state filters exist only in the funnel; other flow views never see them.
 
-- **Figma import's ground truth is split across three places, and only one of them is a declared source.** The
-  `/figma-import` landing page — its state machine, failure copy, and the mint call — lives in
-  `dashboard-interface` but under `apps/web/src/pages/figma-import/**`, *not* `packages/unified-builder`,
-  with a canonical design spec beside it at `docs/specs/figma/figma-import-landing.md`. The plugin is its
-  own artifact, published to the Figma Community on 2026-08-31 as **Import to Adapty**
-  (`figma.com/community/plugin/1674065404672377144`); the zip sideload was the early-access channel only.
-  **The converter that actually maps a Figma tree to an IFlow lives in `adapty-agents`, which is absent
-  from `sources.md`** (`rg 'adapty-agents' .claude/context-mill/sources.md` → no hits, 2026-08-27) and is
-  not reachable through GitHub `adaptyteam` or the GitLab `adapty` group either (checked 2026-09-08; the
-  only Figma repo on GitHub, `adaptyteam/figma-flow`, is an evidence dashboard, not the mapper). What *is*
-  reachable is the mapper's output: `adapty flows config get --app <app> <flow-id> --json` returns the
-  minted IFlow, and reading two imports that way on 2026-09-08 is what the fidelity section of
-  `import-from-figma` now rests on. Prefer that over Jira for any behaviour claim.
+- **Figma import's ground truth is split across three places, and none of the closed-source ones is
+  citable here.** The `/figma-import` landing page — its state machine, failure copy, and the mint call —
+  is dashboard code, separate from the builder. The plugin is its own artifact, published to the Figma
+  Community on 2026-08-31 as **Import to Adapty** (`figma.com/community/plugin/1674065404672377144`); the
+  zip sideload was the early-access channel only. **The converter that actually maps a Figma tree to a
+  flow config is closed-source and unreadable from here** (2026-09-08). What *is* reachable is the
+  converter's output: `adapty flows config get --app <app> <flow-id> --json` returns the minted flow
+  config, and reading two imports that way on 2026-09-08 is what the fidelity section of
+  `import-from-figma` now rests on. Prefer that over task-tracker descriptions for any behaviour claim.
 
 ## What we document, what we don't
 
@@ -161,11 +140,12 @@ or developer can see and click.
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 15 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 13 | tutorial |
+| flow-common-issues | reference | marketer, dev | 14 | tutorial |
 | flow-funnel | — | marketer, dev | 13 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
+| flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
-| migrate-to-flows | migration | marketer, dev | 7 | tutorial |
+| migrate-to-flows | migration | marketer, dev | 8 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
@@ -280,13 +260,18 @@ or developer can see and click.
   device**, pick a locale, scan the QR) and both carry a near-identical "prices shown aren't real, Adapty
   can't reach the stores" caveat. Git confirms this pair already ripples together in practice: commit
   `9159e2e69` ("Add Android app links alongside iOS app links") touched both files in the same pass.
+- **Test on device needs the Adapty mobile app signed in (2026-10-12).** Both walkthroughs now say to sign
+  in with the account used in the dashboard, and the preview article's troubleshooting maps an HTTP 401 to
+  a signed-out app. Verified against backend code: the mobile preview request requires an authenticated
+  user with access to the app. The 401 wording comes from a customer report, not from the mobile app's
+  source, which isn't available here.
 - **The product card's offer dropdown is labelled in three articles across two zones.** `create-offer`
   (`products-and-offers`) is the canon for binding an offer to a product card
   (`create-offer#add-offer-to-flow`); `paywall-product-block` and the `paywall-with-trial-toggle` recipe
   each repeat the control's label in their own steps. When the control is relabelled, all three move
   together — `grep -rn "offer dropdown\|Select offer" src/content/docs/` finds them. This already went
-  stale once: the dropdown's placeholder **Select offer (optional)** was replaced by **No offer** in
-  `origin/master` `db365e184`, and all three articles still carried the old label until 2026-08-24.
+  stale once: the dropdown's placeholder **Select offer (optional)** was replaced by **No offer** in the
+  builder (builder code, 2026-08-24), and all three articles still carried the old label until 2026-08-24.
 - **Metrics-field additions are a cross-zone ripple that still touches this zone.** Commit `c65300c71`
   ("New webhook fields") touched `flow-metrics.mdx` together with `paywall-metrics.mdx`,
   `placement-metrics.mdx`, `results-and-metrics.mdx`, and `webhook-event-types-and-fields.mdx` in one
@@ -327,7 +312,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 |---|---|
 | "flow logic", "flow behavior", "the branch didn't fire", "what does this panel do", "where is the publish button" | This zone, not `flow-design` — apply the Boundaries test (trigger/action/condition/variable/lifecycle = here; layout, look, style, copy = `flow-design`). A pure "tour the interface" question is `builder-ui`, which is also the fastest way to answer "where is X in the editor". |
 | "create a flow", "start from a template", "template gallery", "duplicate flow name warning" | `paywall-builder-templates` — the create-a-flow entry point despite the pre-flow filename. `adapty-flow-builder` only orients; it doesn't walk the creation steps. |
-| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. Since ADP-7541 the "won't publish" half has names: **No product selected**, **This product no longer exists**, **This product is off this screen**, **Offer required** — all listed with fixes in `flow-common-issues`, and fixed in bulk from the **Products** panel (`paywall-product-block#product-actions`). |
+| "buy button does nothing", "restore link", "price inside the button label", "pre-selected plan", "assign a product to a card" | `paywall-product-block` is canon for all of it — and an unassigned product element is also one of the conditions that blocks publishing, so a "flow won't publish" ticket often ends here. Five recipes re-explain these steps verbatim; fix the mechanic here first. Since flow schema v12 the "won't publish" half has names: **No product selected**, **This product no longer exists**, **This product is off this screen**, **Offer required** — all listed with fixes in `flow-common-issues`, and fixed in bulk from the **Products** panel (`paywall-product-block#product-actions`). |
 | "product shows as Missing", "off this screen", "Can't publish yet", "the same product appears twice in the panel", "how do I swap a product on every screen" | `paywall-product-block#product-actions`. **Missing** = deleted from the Dashboard catalog; **off this screen** = exists but not on that screen's list (after a panel **Remove**). Two entries for one product = two product-and-offer pairs. **Replace in N places** rewrites every use on one screen and offers the same change on the other screens that use the pair. |
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
@@ -338,7 +323,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "push the change to users", "does saving make it live", "draft vs published", "flow status", "publish blocked/publish error", "swap a font without breaking older app builds" | `builder-save-publish` — saving is not publishing, and the "Flow status" table decodes the Flows-page column. **The canonical block list moved to `flow-common-issues` on 2026-08-13** (see Ripple rules); `builder-save-publish#troubleshooting` survives as a cross-link, so route a "publish blocked" ticket to `flow-common-issues` directly. Font/asset availability is an app-version compatibility constraint documented here and in `paywall-builder-templates`, not a typography question for `flow-design`: custom fonts do **not** ship with the flow, so changing one on a published flow means duplicating it and targeting the copy at app versions that bundle the file. |
 | "test on device", "QR code", "prices are wrong in the preview", "iPad view", "check it before publishing" | `paywall-device-compatibility-preview`. **The two preview surfaces resolve different things, and conflating them is how this row was wrong until 2026-08-24.** Test-on-device can't reach the stores, so its prices aren't real — expected, not a bug, and `migrate-to-flows` carries a near-duplicate of that caveat. The in-dashboard canvas is not the same: `prod_title`, `prod_price` and `prod_price_per_*` do resolve, from the Adapty catalog in USD, so "the preview shows the wrong price" there usually means "the canvas shows the catalog USD price, not the localized store price". What the canvas genuinely cannot resolve is the three offer values — `offer_price`, `offer_billing_period`, `offer_full_duration` render as `{{token}}`s by design — while `is_free_trial` / `is_pay_up_front` / `is_pay_as_you_go` do resolve from the card's bound offer and can be simulated per element with **Preview as**. All of this lives in `paywall-device-compatibility-preview#preview-products-and-offers`. |
 | "where users drop off", "which screen loses users", "screen funnel", "drop-off per screen", "funnel per flow version", "why is the funnel empty", "N routes / N variants" | `flow-funnel` (2026-10-02). Per-screen path funnel on the flow's **Funnel** tab, one published version at a time. Not the account-level `analytics-funnels` chart (installs → paywall → trial → paid), which tickets also call "the funnel". A branched flow shows screens of different branches as one step with an **N routes** / **N variants** badge; branches of unequal length put the same screen on two steps — a known v1 limit, not a bug to file. |
-| "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (the computation is readable in `dashboard-backend`; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
+| "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (there is no registered metrics spec; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
 | "change copy without an app release", "hard-paywall flag", "server-driven values", "per-locale JSON" | `customize-flow-with-remote-config` for authoring the JSON. Reading it at runtime (`remoteConfig` dictionary vs `jsonString`, `remoteConfigs` on the flow) is `sdk-flows-manual` — a different zone from the one that renders the flow. |
 | "flow won't load without internet", "offline flow", "fallback file was generated for another SDK version" | `fallback-flows` for downloading and scoping the file; wiring it into app code is `sdk-flows-display`'s fallback family. The SDK-version stamp on the file is the usual cause of "the fallback loads but looks wrong". |
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
@@ -374,7 +359,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   `reference`, `conceptual`, `migration`, `legacy-orphan` (`scripts/context-mill/zones.mjs:8`), so this
   article is filed as `reference`.
 
-- **`import-from-figma`'s fidelity claims were Jira-sourced and two of them were wrong** (written
+- **`import-from-figma`'s fidelity claims were sourced from task descriptions and two of them were wrong** (written
   2026-08-27, re-measured 2026-09-08). "Prototype interactions are dropped" and "pricing cards import as
   plain frames" both failed against real imports: the converter wires Navigate to screen actions (linear, layer
   order, prototype links ignored) and builds product groups with Purchase actions and `_meta.screens.*.products`
@@ -383,11 +368,11 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   font list doesn't know, so the dropdown shows **Select font** while the preview renders it — the article
   deliberately documents only the symptom. Still unverified: whether the mapper would bind products whose
   titles match the design (the test app had none), and why auto-layout chart bars drop out of a flattened
-  raster. The mapper itself (`services/figma_to_iflow.py` in `adapty-agents`) remains unreadable from here;
-  ADP-7158's own description warns that "neither child statuses nor assignees carry signal here", so keep
+  raster. The mapper itself is closed-source and remains unreadable from here;
+  the task's own description warns that "neither child statuses nor assignees carry signal here", so keep
   measuring against minted configs rather than tickets.
   One claim was already wrong and cut before publication: an earlier draft said designs on Google Fonts
-  "import most cleanly", inferred from ADP-7158 saying non-Google faces fail — which does not follow, and
+  "import most cleanly", inferred from the task description saying non-Google faces fail — which does not follow, and
   `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
   in the corpus.
 

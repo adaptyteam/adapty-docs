@@ -1,6 +1,6 @@
 ---
 zone: agent-tooling
-sources: [adapty-cli, analytics-export-api-spec, capacitor-sdk, dashboard-backend, developer-api-spec, jscore, kmp-sdk, sdk-integration-skill, server-side-api-spec]
+sources: [adapty-cli, analytics-export-api-spec, capacitor-sdk, developer-api-spec, jscore, kmp-sdk, sdk-integration-skill, server-side-api-spec]
 reviewed_shape:
 reviewed_at:
 ---
@@ -68,18 +68,17 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   disagree about the very hazard the Ticket language table attributes to this platform. Re-derive the
   current pre-release from `capacitor-sdk`/`jscore` before repeating either.
 - **For the "with AI" guides the spec YAML is authoritative for host, auth scheme and rate limit — never
-  the article.** `export-analytics-with-ai` drives `analytics-export-api-spec`: `servers:` is
-  `https://api-admin.adapty.io`, `securitySchemes.apikeyAuth` is `type: apiKey` / `in: header` /
-  `name: Authorization`, and the 2-requests-per-second limit is stated in every operation description
-  plus a `429` response per path. `server-side-api-with-ai` drives `server-side-api-spec`:
+  the article.** (`export-analytics-with-ai` no longer drives a spec: since 2026-10-19 it drives the
+  `adapty analytics` CLI commands, whose truth is `adapty-cli` — see Gaps and misses.)
+  `server-side-api-with-ai` drives `server-side-api-spec`:
   `https://api.adapty.io`, `Authorization: Api-Key {secret}`. **The spec and the article currently
   disagree on the server-side limit** — `server-side-api-with-ai` and `ss-authorization` both say 40,000
   requests per minute per app; the spec's `429` says "600 requests per minute per app and 6000 requests
   per minute globally". Quote the spec, and see Gaps and misses.
 - **`handle-webhooks-with-ai` drives no API at all** — no host, no Adapty key; the reader's own endpoint
   receives the `POST` and the shared secret is a string they invent. Its ground truth is the webhook
-  payload schema, which the `integrations` brief records as having no registered source: use
-  `dashboard-backend` and name the module you read. The delivery contract it restates (10-second ack,
+  payload schema, which the `integrations` brief records as having no registered source: it is
+  closed-source backend code, so confirm with the backend team and name what you checked. The delivery contract it restates (10-second ack,
   retries outside 200–404, `profile_event_id` for dedupe) is canonically
   `webhook-event-types-and-fields` and `set-up-webhook-integration`, not this page.
 - **A third skill exists beyond the two above** (verified 2026-08-18, `git show origin/main:docs/agent/skills/adapty-cli-setup/SKILL.md` in `adapty-cli`): `adapty-cli-setup` — install + device-code auth for agent sessions (Cowork/cloud). It lives in the `adapty-cli` repo but **ships in the `adaptyteam/apple-ads-cli` plugin marketplace** alongside the `apple-ads` skill (its own closing line says so). That marketplace repo is the URL `developer-cli-cowork` and `developer-cli-ads-manager-skill` tell readers to add, and it is registered nowhere in `sources.md`. Cowork-behavior claims in `developer-cli-cowork` (settings apply at task start, clean machine per task, apex + wildcard both needed, ~15-min code TTL) trace to this skill file plus the PM's screenshots.
@@ -87,11 +86,16 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `claude plugin marketplace add`, `gh skill install`, `gemini skills install`, Cursor's plan mode, and
   "which chat products can make HTTP calls" are third-party surfaces that can be invalidated with no
   commit anywhere in Adapty. Nothing in this repo or either skill repo verifies them — the link checker
-  only proves a URL returns a status. The nearest thing to one source for the install commands is
-  `src/data/agent-tools.json` (which feeds `InstallToolsModal.astro`); the prose reusable
-  `AdaptySdkIntegrationSkill.mdx` restates them by hand and has already diverged, sending Codex to
-  `npx skills add` where the JSON clones the repo into `~/.agents/skills/`. Treat this class of claim as
+  only proves a URL returns a status. Treat this class of claim as
   reader-reported: correct it when someone reports it, and never assert its freshness in a review.
+- **The docs teach one install command, `npx adapty skills install`, and hand every per-agent route to
+  the plugin README** (`plugin/README.md#install` in `adaptyteam/adapty-skills`) — the shape of
+  Stripe's `stripe agent setup` (2026-10-12). The command is `adapty-cli`'s
+  `src/cli/commands/skills/install/`, released in v0.9.3; the per-agent commands it runs live in its
+  `lib/agents.ts`, not in this repo. `src/data/agent-tools.json` holds the command once, for
+  `InstallToolsModal.astro` and `scripts/llm-skill-note.mjs`; the `AdaptySdkIntegrationSkill.mdx`
+  reusable and the four standalone skill articles restate it in prose. The Apple Ads toolset in the
+  same JSON is a different plugin (`adaptyteam/apple-ads-cli`) and still lists per-agent commands.
 
 ## What we document, what we don't
 
@@ -99,7 +103,7 @@ The delta that matters here is that most of the surface belongs to someone else 
 on one side, a non-deterministic agent on the other.
 
 - **We document what to hand the tool and in what order; we never document the tool's own UI.** An
-  install command, the `/adapty-integration` invocation, and "use plan mode if your tool has one"
+  install command, the plain-language prompt that starts a skill (not a slash command — only some agents map those to skills), and "use plan mode if your tool has one"
   are in scope. A walkthrough of Cursor's settings, an editor screenshot, or an MCP config file is not —
   it belongs to someone else's release schedule, and per `scope.md` the reader can see it anyway.
   Confirmed as current practice: `adapty-cursor` mentions plan mode in a single clause and delegates
@@ -162,19 +166,26 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
-| developer-cli-ads-manager | entry | dev | 15 | api |
-| developer-cli-ads-manager-reference | — | dev | 53 | api |
+| developer-cli-ads-manager | entry | dev | 17 | api |
+| developer-cli-ads-manager-reference | — | dev | 60 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
+| developer-cli-analytics | entry | dev | 17 | api |
+| developer-cli-apps | reference | dev | 11 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
+| developer-cli-flows | reference | dev | 11 | api |
+| developer-cli-migrations | reference | dev | 11 | api |
+| developer-cli-paywalls | reference | dev | 6 | api |
+| developer-cli-placements | reference | dev | 11 | api |
+| developer-cli-products | reference | dev | 11 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
-| developer-cli-reference | — | dev | 42 | api |
-| export-analytics-with-ai | — | dev | 6 | tutorial |
+| developer-cli-reference | — | dev | 3 | api |
+| export-analytics-with-ai | — | dev | 7 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 9 | tutorial |
+| manage-adapty-with-ai | entry | dev | 11 | tutorial |
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
@@ -202,7 +213,7 @@ on one side, a non-deterministic agent on the other.
     `ads-manager/references/asa-management.md` (writes) or
     `ads-manager/references/asa-metrics.md` (reads). The skill links into those by **exact
     heading string**, so a renamed heading breaks its entry point silently.
-  - A flows or placements command in `developer-cli-reference` / `developer-cli-quickstart` →
+  - A flows or placements command in `developer-cli-flows` / `developer-cli-placements` / `developer-cli-quickstart` →
     `flow-generator/references/placements.md` and `migrate-placements/references/api-surface.md`.
   - An `adapty-sdk-integration-skill*` page claiming what the skill does → the claim is settled
     by `adapty-integration/SKILL.md`, never the other way round.
@@ -228,13 +239,13 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 | "vibe code the integration", "have Cursor/Claude add Adapty to my app", "AI pair-programming for IAP" | Two competing families, and `manage-adapty-with-ai` is the router between them: `adapty-sdk-integration-skill*` = one command, the agent drives the whole thing; `adapty-cursor*` = staged walkthrough where the developer feeds docs and reviews each step. Pick by how much control the reader wants, not by tool. |
 | "which skill do I install", "the skill didn't set up my app/products" | Three *different* skills, easily conflated. `adapty-integration` (own repo, marketplace/`gh skill`/`npx skills` install) does the full app-code integration. The `adapty-cli` skill only drives dashboard entities through the CLI — it's linked from `developer-cli`, `developer-cli-quickstart`, `developer-cli-authentication`, and from the dashboard-setup step of every `adapty-cursor*`. The third, adapty-cli-setup (ships in the apple-ads-cli plugin), only installs and authenticates the CLI in agent sessions — `developer-cli-cowork` is the article that has readers install it. |
 | "the skill stalled", "the agent went off the rails halfway" | The `adapty-sdk-integration-skill*` pages. The skill is beta and the documented fallback is the matching `adapty-cursor*` guide — that redirect is the answer, not a bug report. |
-| "which key does my agent need", "agent got 401", "where's the API key" | The single commonest confusion in this zone, and it splits three ways. SDK integration (`adapty-cursor*`, `adapty-sdk-integration-skill*`) = **public SDK key**, passed to `activate`. Analytics and backend guides (`export-analytics-with-ai`, `server-side-api-with-ai`) = **secret app-specific key**, and note the base URLs differ (`api-admin.adapty.io` for analytics vs `api.adapty.io` for server-side). The CLI (`developer-cli-authentication`) uses **no key at all** — browser device-code login. **Refined 2026-08-11 against `adapty-cli` `origin/main`:** the docs describe only the device-code path, but the CLI checks `ADAPTY_TOKEN` in the environment *before* it reads the config file, and the config location is oclif's `configDir` (`~/.config/adapty/config.json` by default on darwin, overridable via `XDG_CONFIG_HOME`), not a fixed path. So "no key at all" is true of the documented flow and false of the tool — a reader debugging a 401 in CI needs the env-var branch, which no article mentions. |
-| "MCP server for Adapty", "connect Adapty to my agent via MCP" | `manage-adapty-with-ai`. There is no first-party Adapty MCP server. Context7 is third-party and indexes only code snippets, not prose; the CLI is the "agent can actually act" path; analytics needs only a fetch-capable tool. |
+| "which key does my agent need", "agent got 401", "where's the API key" | The single commonest confusion in this zone, and it splits three ways. SDK integration (`adapty-cursor*`, `adapty-sdk-integration-skill*`) = **public SDK key**, passed to `activate`. The backend guide (`server-side-api-with-ai`) = **secret app-specific key** on `api.adapty.io`. The CLI (`developer-cli-authentication`) — and so `export-analytics-with-ai`, which drives it since 2026-10-19 — uses **no key at all** — browser device-code login. **Refined 2026-08-11 against `adapty-cli` `origin/main`:** the docs describe only the device-code path, but the CLI checks `ADAPTY_TOKEN` in the environment *before* it reads the config file, and the config location is oclif's `configDir` (`~/.config/adapty/config.json` by default on darwin, overridable via `XDG_CONFIG_HOME`), not a fixed path. So "no key at all" is true of the documented flow and false of the tool — a reader debugging a 401 in CI needs the env-var branch, which no article mentions. |
+| "MCP server for Adapty", "connect Adapty to my agent via MCP" | `manage-adapty-with-ai`. There is no first-party Adapty MCP server. Context7 is third-party and indexes only code snippets, not prose; the CLI is the "agent can actually act" path; analytics needs a tool that can run the CLI. |
 | "give my agent the docs", "llms.txt", "Copy for LLM", "context window too small" | `manage-adapty-with-ai` for the overview, `adapty-cursor*` ("Plain text doc index files") for the detail: per-platform subsets (`ios-llms.txt`) exist specifically to save tokens vs `llms-full.txt`, and ChatGPT needs `llms.txt` downloaded and uploaded as a file rather than linked. |
-| "ChatGPT/claude.ai can't fetch my numbers", "the model made the metrics up" | `export-analytics-with-ai`. The hard requirement is a tool that can make HTTP calls (Claude Code, Cursor, a fetch tool) — plain chat products cannot, and this is called out explicitly. |
-| "ask AI about my revenue", "natural-language LTV/retention query", "export as CSV" | `export-analytics-with-ai`. The mechanism is just handing the agent the OpenAPI spec URL; the two limits that bite are 2 requests/second per key and CSV being a `format` field in the request body. |
-| "automate account setup", "configure Adapty without the dashboard", "scripted app/product creation" | `developer-cli-quickstart`. Two boundaries matter more than the commands: connecting App Store Connect / Google Play still requires the dashboard, and segments are read-only from the CLI (`developer-cli-reference`) — you can look up IDs but not create them. |
-| "swap a paywall across placements", "`--paywall-id` deprecated warning", "segment routing disappeared" | `developer-cli-reference`. `--paywall-id` rewrites the placement's whole `audiences` array and silently drops segment-specific entries; the safe path is read with `placements get --json`, edit, write back with `--audiences`. |
+| "ChatGPT/claude.ai can't fetch my numbers", "the model made the metrics up" | `export-analytics-with-ai`. The hard requirement is a tool that can run terminal commands (Claude Code, Cursor, Codex, Gemini CLI) — plain chat products cannot, and this is called out explicitly. |
+| "what should I test next", "audit my app", "why did revenue drop", "ask AI about my revenue" | `export-analytics-with-ai`, which since 2026-10-22 documents the `growth-advisor` skill: it reads `adapty analytics` with the CLI logged in and returns hypotheses grouped by placement. It does no pricing analysis, by design. Raw commands, flags, the 2 requests/second limit and `--csv` are `developer-cli-analytics`; a server-side or scheduled job with no browser login still belongs on the Export Analytics API (`export-analytics-api`). |
+| "automate account setup", "configure Adapty without the dashboard", "scripted app/product creation" | `developer-cli-quickstart`. One boundary matters more than the commands: connecting App Store Connect / Google Play still requires the dashboard. Segments are no longer read-only: `segments create`/`update` take `--filter field:OPERATOR:value` and `update` replaces the whole segment; segments from Apple Ads entities go through `asa segments create` in `developer-cli-ads-manager-reference` (adapty-cli PR #48, `feat/segments-write`, 2026-10-12; needs the backend release that opens segment writes on the Developer API, which answers 405 before it). |
+| "swap a paywall across placements", "`--paywall-id` deprecated warning", "segment routing disappeared" | `developer-cli-placements`. `--paywall-id` rewrites the placement's whole `audiences` array and silently drops segment-specific entries; the safe path is read with `placements get --json`, edit, write back with `--audiences`. |
 | "the CLI doesn't work in Cowork", "Claude can't reach adapty.io", "network error installing the CLI", "it keeps asking me to log in again", "the authorization code expired" | `developer-cli-cowork`, and the causes are what make the lookup land: the sandbox blocks non-allowlisted domains and needs **both** `adapty.io` and `*.adapty.io` (a wildcard doesn't cover the apex); settings apply only when a task starts, so a mid-conversation change does nothing until a new task; every task starts on a clean machine, so reinstall-and-login each session is by design, not a bug; and the device code dies after ~15 minutes — the fix is a fresh link, never retyping the old one. |
 | "CLI token expired", "log the CLI out everywhere", "credentials leaked" | `developer-cli-authentication`. `auth logout` only clears the local config — the token stays valid server-side; `auth revoke` is the one that invalidates it. `auth status` reads local state, `auth whoami` actually checks with the server. |
 | "unlock premium for a support case / promo code / investor", "no `is_active` in the response" | `server-side-api-with-ai`, one article for both. Manual grants reach only the webhook integration and Event Feed, so they never show up in analytics; and the server-side profile has no `is_active` — status must be derived from `access_levels[].expires_at` (`null` = lifetime) plus `is_in_grace_period`. |
@@ -243,4 +254,12 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 | "the agent installed the wrong SDK version" | `adapty-cursor-capacitor` is the only variant that **warns** about this, not the only one exposed to it — corrected 2026-08-11. Capacitor's documented API is the v4 pre-release while an LLM left to itself installs the latest stable 3.x, and the guide says to pin the exact beta. KMP and Unity are v4-beta-only too (`platforms.md`), yet `adapty-cursor-kmp` and `adapty-cursor-unity` contain zero occurrences of `beta` or `4.0.0` — and KMP is worse, because Gradle cannot resolve a pre-release through a version range at all. Treat the silence in those two as a documentation gap, not as evidence the hazard is absent. |
 
 ## Gaps and misses
+
+- **2026-10-26:** `developer-cli-reference` split by topic. It is now the root: a topic table, the global and pagination flags, and `skills install` with its auto-update note. The commands moved verbatim, heading text unchanged so anchors survive, into `developer-cli-apps` (apps, access levels), `developer-cli-products` (products, and `product-offers` under a "Product offers" section), `developer-cli-paywalls`, `developer-cli-flows`, `developer-cli-placements` (placements, the audiences shape, segments and filter syntax) and `developer-cli-migrations`. The Auth table was dropped: `developer-cli-authentication` covers all five `auth` commands. In the api sidebar, "Command reference" is a category with those pages plus `developer-cli-analytics`; the Ads Manager and Attribution categories stay apart because they hold skill and setup pages too. English inbound anchors were repointed; locale copies keep the old `developer-cli-reference#…` anchors until the next translation run, and those land on the root page. A new CLI topic gets its own page, a row in the root table, and a sidebar entry under the category.
+- **2026-10-19:** `export-analytics-with-ai` rewritten from the Export Analytics API (secret key + OpenAPI spec URL + `format: csv`) to the `adapty analytics` CLI commands (device-code login, `developer-cli-analytics.md` as the hand-off URL, `--csv`). No skill in `adaptyteam/adapty-skills` covers analytics on this date (checked `plugin/skills` via the GitHub API); the `adapty-cli` repo's own `skills/adapty-cli` skill does, but the docs don't link it as an install target, so the guide hands over the reference page. The secret-key screenshot `export-analytics-secret-key.webp` is no longer used by this article.
+- **2026-10-22:** `export-analytics-with-ai` repurposed (filename kept for SEO) as the article for the `growth-advisor` skill in `adaptyteam/adapty-skills`: install, the audit steps, the hypothesis reply shape, how a picked hypothesis becomes an A/B test, and its limits (no pricing, no A/B test history, no ad spend). The "hand the agent the reference URL" setup moved out; `developer-cli-analytics` is linked for querying without the skill. Sidebar label is now "Find what to test next".
+- **2026-10-19:** CLI v0.10.0 adds the read-only `adapty analytics` topic (`adapty-cli` PR #51, branch `wb-26-analytics-parity`, still open on this date while npm `adapty` already reports 0.10.0): `catalog`, `values`, `chart`, `conversion`, `funnel`, `retention`, `ltv`, `cohort`. Written into the new `developer-cli-analytics` (task + reference on one page, the `developer-cli-attribution` shape), with tips in `analytics`. Ground truth is the repo's `docs/agent/analytics.md` plus `src/cli/base/adapty/flags.ts`; the CLI holds no list of chart or conversion names, so the docs name only the examples the PR itself uses (`revenue`, `mrr`, `trial-paid`, `install-paid`) and send readers to `analytics catalog`. API error codes in the PR's tests are mock fixtures, so the article documents exit codes (2/3/4), not codes. A 403 exits 3 like a missing token (open reviewer point in the PR) — re-check if that mapping changes before merge.
+- **2026-10-13:** CLI v0.9.3–v0.9.4 (`adapty-cli` `origin/main` at the merge of PR #49). Added `asa change-history list` / `get` (`src/commands/asa/change-history/`) to `developer-cli-ads-manager-reference` and a task section to `developer-cli-ads-manager`. Its id filters take Apple numeric ids, unlike every other `asa` list filter, and its rate budget (30/min, burst 5 per 10 s, one in flight) is separate from the analytics pool — limits per the repo's `docs/agent/asa-management.md`; the PR description's "5 calls/min" was superseded by a later commit. Re-checked the 2026-09-30 entry below against the merged `feat/migrate-code`: headless agent runs were dropped before merge (the action now hands instructions to the calling agent), agent data moved to `.git/adapty/<migration ID>/`, and the `skills install` fallback is pinned to `skills@1.7.0` and always asks — `--yes` never runs it. `developer-cli-reference` corrected.
+- **2026-10-09:** CLI v0.9.1 and v0.9.2 (both tagged 2026-10-07, `git diff v0.9.0 v0.9.2` in `adapty-cli`). v0.9.1: the login token response no longer carries an email (`AuthUser` in `src/sdk/adapty/auth/model.ts` is `name` only), so `auth login` prints the name and `auth status` gains a `User:` line and a `name` JSON field; `Email:` survives only in a config written by an earlier version. v0.9.2: keyword-only metric names became `rank_all`/`rank_first` and `impression_midpoint_all`/`_first` (was `rank`, `impression_midpoint`), and `asa search-terms list` rows gained `impression_share_*`, `impression_midpoint_*`, `rank_*` (`AsaSearchTermDTO` in `src/lib/asa-schemas.ts`). Metric names are validated server-side, so the CLI source does not list them; the list lives in the repo's `docs/agent/asa-metrics.md`. Written into `developer-cli-authentication` and `developer-cli-ads-manager-reference`. Could not confirm the format of the string-typed `impression_share_*` values (no fixture in the repo), so the docs describe what they mean, not their shape. The Sources of truth version line (`v0.8.3`) is stale: `origin/main` is v0.9.2 as of this date.
+- **2026-09-30:** `adapty migrations *` and `adapty skills install` added to `developer-cli-reference` from `adapty-cli` branch `feat/migrate-code` (not yet on `origin/main`; npm `adapty` was 0.8.8, the branch's `package.json` 0.8.6). Re-check flags against `origin/main` once it merges. `migrate_code` runs headless only with `claude-code` / `codex` (`src/cli/agents/headless.ts`); `skills install` also knows `gemini-cli` (`src/cli/agents/catalog.ts`). The server-side step logic behind these commands is Adapty's closed-source migration service — see the `migration-from-competitors` brief.
 

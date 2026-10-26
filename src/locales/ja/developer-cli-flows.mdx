@@ -1,0 +1,211 @@
+---
+title: "Flowsコマンド"
+description: "フローの作成、ビルダー設定の読み書き、検証とプレビュー、メディアのアップロード、公開を行うAdapty CLIコマンド。"
+metadataTitle: "Flows CLIコマンド | Adapty ドキュメント"
+---
+
+[フロー](adapty-flow-builder)は、Flow & Paywall Builder で作成するペイウォールとオンボーディングです。CLIはフローのレコード、ビルダーコンフィグ、および公開を管理します。ビルダーコンフィグはFlow & Paywall Builderが通常生成する大きなJSONドキュメントであり、CLIはこれを生成しません。ターミナルからコンフィグを作成または編集するには、[flow-generatorスキル](flow-generator-skill)を使用してください。このスキルがこれらのコマンドを代わりに実行します。公開前には、[flow-auditスキル](flow-audit-skill)がフローを本番環境に向けて準備できているかどうかを確認します。コマンドはリファレンスとしてここに記載されています。
+
+## adapty flows list \{#adapty-flows-list\}
+
+アプリのすべてのフローを一覧表示します。
+
+```bash
+adapty flows list --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID (UUID) |
+
+[ページネーションフラグ](developer-cli-reference#global-flags)を使用できます。
+
+## adapty flows get
+
+特定のフローの詳細を取得します。
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+レスポンスには `id`、`name`、`status`、`updated_at` が含まれます。ステータスは次のいずれかです：
+
+| ステータス | 意味 |
+|---|---|
+| `draft` | フローが一度も公開されていない |
+| `published` | 現在のバージョンが公開中 |
+| `dirty` | フローは以前に公開されており、現在のバージョンに未公開の変更がある。ユーザーには最後に公開されたバージョンが表示され続ける |
+| `publishing` | 公開処理中 |
+| `publication_failed` | 最後の公開が失敗した。設定を修正して再度公開してください |
+| `archived` | フローがアーカイブされている |
+
+## adapty flows create \{#adapty-flows-create\}
+
+フローを作成します。新しいフローには名前があり、設定はありません。設定を追加するには、[`flows config update`](#adapty-flows-config-update) を使用してください。
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--name` | Yes | フロー名 |
+
+## adapty flows update
+
+フローの名前を変更します。
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--name` | Yes | 新しいフロー名 |
+
+## adapty flows publish \{#adapty-flows-publish\}
+
+フローの現在のバージョンをユーザーに公開します。
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--yes`, `-y` | いいえ | 確認なしで公開します。出力がパイプされている場合や `--json` を使用する場合に必要です |
+
+変更を公開するとユーザーが見る内容が変わるため、このコマンドはフロー名を表示して確認を求めます。`y` 以外の回答を入力した場合、コマンドは終了コード 1 でキャンセルされます。`--json` オプションを指定した場合、またはパイプ経由で実行した場合は、回答を待たずに終了コード 2 で拒否されます。スクリプトやエージェントセッションでは `--yes` を渡してください。
+
+公開は非同期で行われます。レスポンスには `status: publishing` が返され、フローはまだライブ状態ではありません。[`flows get`](#adapty-flows-get) をポーリングして、ステータスが `published` または `publication_failed` になるまで待ちます。`publication_failed` の場合、[`flows config get`](#adapty-flows-config-get) で原因を確認できます。
+
+フローにコンフィグがない場合、コンフィグが公開可能な状態でない場合、または現在のバージョンがすでにライブの場合は、HTTP 400 で公開が失敗します。公開前にコンフィグを確認するには、[`flows config validate`](#adapty-flows-config-validate) を使用してください。
+
+## adapty flows config get
+
+フローのビルダー設定を読み取ります。
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+レスポンスには `config`、`remote_configs`、`status`、`updated_at` が含まれます。`updated_at` は最後にコンフィグが変更されたときのミリ秒タイムスタンプです。同時編集による上書きを防ぐために、これを [`flows config update`](#adapty-flows-config-update) の `--expected-updated-at` として渡してください。コンフィグが一度も書き込まれていないフローは 404 を返します。
+
+パブリッシュを試みた後、レスポンスにはその結果を示す 3 つのフィールドも含まれます。[`flows get`](#adapty-flows-get) が `publication_failed` を返した場合はこれらを確認してください：
+
+| フィールド | 説明 |
+|---|---|
+| `publication_status` | このフローバージョンの公開がどの段階まで進んだか: `transforming`、`transformed`、`uploading`、`uploaded`、`published`、または `failed` |
+| `transform_error` | 変換失敗の生データ — 問題を列挙した JSON ペイロード、またはサマリー文字列 |
+| `publication_error` | 公開失敗時の読みやすいエラーメッセージ |
+
+## adapty flows config update
+
+フローのビルダー設定を書き込みます。
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--config` | どちらか一方 | JSON 文字列としてのビルダー設定 |
+| `--config-file` | どちらか一方 | ビルダー設定が記載された JSON ファイルへのパス。`-` を指定すると標準入力から読み込む |
+| `--remote-configs` | いいえ | `{locale, data}` エントリの JSON 配列。`data` は文字列としてのリモートコンフィグ |
+| `--expected-updated-at` | いいえ | 事前に `flows config get` を実行して取得した `updated_at` の値。その読み取り後に設定が変更されていた場合、上書きせずにコマンドが失敗する。無条件で上書きする場合は省略する |
+
+コンフィグを書き込んでも下書きとして保存されるだけで、公開はされません。公開済みフローに対して書き込みを行うと、新しいバージョンが作成され、フローのステータスが `dirty` になります。[`flows publish`](#adapty-flows-publish) を実行するまで、ユーザーには公開済みバージョンが表示され続けます。
+
+## adapty flows config validate
+
+ビルダーコンフィグを保存せずに、公開可能かどうかを確認します。
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--config` | どちらか一方 | JSON 文字列としてのビルダーコンフィグ |
+| `--config-file` | どちらか一方 | ビルダーコンフィグが記載された JSON ファイルへのパス、または標準入力から読み込む場合は `-` |
+
+レスポンスには `valid` と `issues` のリストが含まれます。設定が公開できない状態の場合、コマンドはコード 1 で終了するため、スクリプトでゲート処理を行えます。
+
+## adapty flows config preview
+
+ローカルの設定ファイルをブラウザでレンダリングします。このコマンドはAPIコールを行わず、`--app` フラグも使用しません。
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| 引数 | 説明 |
+|---|---|
+| `config-file` | ローカルのビルダー設定JSONファイルへのパス |
+
+| フラグ | デフォルト | 説明 |
+|---|---|---|
+| `--screen` | フローの最初の画面 | レンダリングする画面ID |
+| `--device` | `iphone-14` | レンダリングに使用するデバイスフレーム |
+| `--orientation` | `portrait` | `portrait` または `landscape` |
+
+ターミナルでこのコマンドを実行すると、ブラウザでプレビューが開きます。パイプや `--json` オプションを使うと、代わりに URL が出力されます。URL にはコンフィグ全体が含まれるため非常に長くなります。表示するのではなく、スクリーンショットツールにパイプして使用してください。コンフィグが約 32 KB を超えると、レンダリングが遅くなります。
+
+## adapty flows media upload
+
+フローコンフィグで使用する画像をアップロードします。
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| 引数 | 説明 |
+|---|---|
+| `file` | 画像ファイルのパス |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+対応フォーマット：GIF、HEIC、JPEG、PNG、SVG、WebP。レスポンスには画像の `id`、`name`、およびコンフィグから参照するための CDN `url` が含まれます。
+
+## 次のステップ \{#whats-next\}
+
+- [コマンドリファレンス](developer-cli-reference) — すべての CLI トピック、グローバルフラグ、ページネーションフラグ。

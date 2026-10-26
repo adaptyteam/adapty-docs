@@ -9,9 +9,10 @@ Cuando un usuario escribe en un campo de texto, responde un cuestionario o activ
 Las apps suelen usar esos datos para:
 
 - **Registrar usuarios en tu propio backend**: Toma el correo electrónico y el nombre que el usuario introdujo en tu onboarding flow, y crea su cuenta cuando el flow se cierre.
-- **Guardar respuestas y preferencias**: Registra lo que eligió el usuario para que tu app pueda usarlo más adelante — por ejemplo, [escríbelo en su perfil de Adapty](unity-setting-user-attributes) como atributos personalizados.
-- **Personalizar flows futuros**: Guarda las respuestas del cuestionario como atributos personalizados y, a continuación, orienta un placement posterior para que cada segmento vea un flow diferente, o un paywall distinto dentro de él.
-- **Enviar datos a plataformas de análisis de terceros**: Reenvía las respuestas a Amplitude, Mixpanel o cualquier plataforma de análisis de producto que utilices.
+- **Guardar respuestas y preferencias**: Registra lo que eligió el usuario para que tu app pueda utilizarlo más adelante — por ejemplo, [escríbelo en su perfil de Adapty](unity-setting-user-attributes) como atributos personalizados.
+- **Personalizar flows futuros**: Guarda las respuestas del cuestionario como atributos personalizados y luego apunta a un placement posterior para que cada segmento vea un flow diferente, o un paywall distinto dentro de él.
+- **Mostrar valores calculados a partir de las respuestas**: Por ejemplo, calcula el IMC a partir del peso y la altura del usuario, y [pásalo a una etiqueta personalizada en el siguiente flow](unity-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Enviar datos a plataformas de analíticas de terceros**: Reenvía las respuestas a Amplitude, Mixpanel o cualquier otra herramienta de analíticas de producto que uses.
 
 Los inputs y los grupos de selección reportan sus valores automáticamente. Para distinguirlos en tu código, asigna a cada input un **Element ID** significativo y a cada grupo de selección un **Group ID** en el builder.
 
@@ -35,48 +36,16 @@ public void FlowViewDidReceiveAnalyticEvent(
 }
 ```
 
-El callback `FlowViewDidReceiveAnalyticEvent` entrega todos los eventos de análisis de un flow, incluyendo [vistas de pantalla](unity-flow-screen-views).
-- El parámetro `name` contiene el nombre del evento. Para filtrar los eventos de entrada del usuario, compara `name` con `flow_user_input`.
-- El parámetro `element_type` indica la categoría del elemento.
-- El valor de la entrada se almacena en distintos parámetros según el tipo de elemento:
-     - Los campos de texto, selectores y toggles almacenan la entrada del usuario en `value`
-     - Los grupos seleccionables reportan las opciones activas en `item_ids` e `item_titles`
+El callback `FlowViewDidReceiveAnalyticEvent` entrega todos los eventos de análisis de un flow, incluidas las [vistas de pantalla](unity-flow-screen-views). Para filtrar los eventos de entrada del usuario, compara `name` con `flow_user_input`. El parámetro que almacena el valor depende de `element_type`:
 
-```csharp showLineNumbers title="Unity"
-private void HandleFlowInput(string name, IReadOnlyDictionary<string, object> parameters) {
-    if (name != "flow_user_input") return;
+| `element_type` | Parámetro que almacena el valor | Tipo C# |
+|:---------------|:--------------------------------|:--------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `string` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `long`, tiempo Unix en milisegundos. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `JArray` |
+| `toggle` | `value` | `bool` |
 
-    var elementId = parameters["element_id"] as string;
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    var screenId = parameters["instanceId"] as string;
-
-    switch (parameters["element_type"] as string) {
-        case "text_input":
-        case "email_input":
-        case "number_input":
-        case "phone_input":
-            var text = parameters["value"] as string;
-            break;
-        case "date_picker":
-        case "time_picker":
-        case "date_time_picker":
-            // Unix time in milliseconds.
-            var millis = Convert.ToInt64(parameters["value"]);
-            break;
-        case "single_choice":
-            var optionId = (parameters["item_ids"] as JArray)?.First?.ToString();
-            break;
-        case "multi_choice":
-            var optionIds = (parameters["item_ids"] as JArray)?.ToObject<List<string>>();
-            break;
-        case "toggle":
-            var isOn = (bool)parameters["value"];
-            break;
-    }
-}
-```
+La sección [Qué recibes](#what-you-receive) enumera todos los parámetros y lo que reporta cada elemento del builder.
 
 <FlowInputVerify />
 

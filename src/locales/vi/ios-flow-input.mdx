@@ -8,10 +8,11 @@ Khi người dùng nhập vào trường văn bản, trả lời câu hỏi, ho�
 
 Các ứng dụng thường sử dụng dữ liệu đó để:
 
-- **Đăng ký người dùng trên backend riêng của bạn**: Lấy địa chỉ email và tên người dùng đã nhập trong flow onboarding, rồi tạo tài khoản cho họ khi flow đóng lại.
-- **Lưu câu trả lời và tùy chọn**: Theo dõi những gì người dùng đã chọn để ứng dụng của bạn có thể xử lý sau — ví dụ: [ghi vào hồ sơ người dùng Adapty của họ](setting-user-attributes) dưới dạng custom attributes.
-- **Tùy chỉnh các flow sau**: Lưu câu trả lời quiz dưới dạng custom attributes, sau đó nhắm mục tiêu một placement sau để mỗi phân khúc nhận được một flow khác nhau, hoặc một paywall khác bên trong đó.
-- **Đẩy dữ liệu sang các nền tảng analytics bên thứ ba**: Chuyển tiếp câu trả lời đến Amplitude, Mixpanel, hoặc bất kỳ nền tảng product analytics nào bạn đang dùng.
+- **Đăng ký người dùng trên backend của bạn**: Lấy địa chỉ email và tên người dùng đã nhập trong flow onboarding, rồi tạo tài khoản cho họ khi flow đóng lại.
+- **Lưu câu trả lời và tùy chọn**: Theo dõi những gì người dùng đã chọn để ứng dụng có thể sử dụng sau — ví dụ, [ghi vào hồ sơ người dùng Adapty](setting-user-attributes) dưới dạng thuộc tính tùy chỉnh.
+- **Tùy chỉnh các flow sau**: Lưu câu trả lời quiz dưới dạng thuộc tính tùy chỉnh, sau đó nhắm mục tiêu vào một placement sau để mỗi phân khúc nhận được một flow khác nhau, hoặc một paywall khác nhau bên trong đó.
+- **Hiển thị các giá trị được tính từ câu trả lời**: Ví dụ, tính BMI từ cân nặng và chiều cao của người dùng, rồi [truyền nó vào một custom tag trong flow tiếp theo](ios-flow-custom-tags#example-show-a-bmi-from-onboarding-answers).
+- **Cung cấp dữ liệu cho các nền tảng analytics bên thứ ba**: Chuyển tiếp câu trả lời đến Amplitude, Mixpanel, hoặc bất kỳ nền tảng product analytics nào bạn đang sử dụng.
 
 Các input và selectable group tự động báo cáo giá trị của chúng. Để phân biệt các input trong code, hãy đặt cho mỗi input một **Element ID** có ý nghĩa và mỗi selectable group một **Group ID** trong builder.
 
@@ -31,7 +32,7 @@ Giá trị đầu vào được truyền qua cùng callback với các sự ki�
 Truyền một closure `didReceiveAnalyticEvent` vào modifier `.flow`:
 
 ```swift showLineNumbers title="Swift"
-Text("Hello, AdaptyUI!")
+YourContentView()
     .flow(
         isPresented: $flowPresented,
         flowConfiguration: flowConfiguration,
@@ -66,41 +67,16 @@ func flowController(
 
 Closure và delegate method nhận cùng hai tham số, vì vậy code đọc giá trị là như nhau trong cả hai trường hợp.
 
-Callback `didReceiveAnalyticEvent` cung cấp tất cả các sự kiện analytics từ một flow, bao gồm cả [lượt xem màn hình](ios-flow-screen-views).
-- Tham số `name` chứa tên sự kiện. Để lọc các sự kiện nhập liệu của người dùng, hãy so sánh `name` với `flow_user_input`.
-- Tham số `element_type` cho biết danh mục của phần tử.
-- Giá trị nhập liệu được lưu ở các tham số khác nhau tùy theo loại phần tử:
-     - Trường văn bản, picker và toggle lưu dữ liệu nhập của người dùng trong `value`
-     - Nhóm có thể chọn báo cáo các tùy chọn đang active trong `item_ids` và `item_titles`
+Callback `didReceiveAnalyticEvent` truyền tất cả các sự kiện phân tích từ một flow, bao gồm cả [lượt xem màn hình](ios-flow-screen-views). Để lọc các sự kiện nhập liệu của người dùng, hãy so sánh `name` với `flow_user_input`. Tham số lưu trữ giá trị phụ thuộc vào `element_type`:
 
-```swift showLineNumbers title="Swift"
-func handleFlowInput(name: String, params: [String: any Sendable]) {
-    guard name == "flow_user_input",
-          let elementId = params["element_id"] as? String,
-          let elementType = params["element_type"] as? String
-    else { return }
+| `element_type` | Tham số lưu trữ giá trị | Kiểu Swift |
+|:---------------|:----------------------------|:---------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | `String` |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | `Int`, Unix time tính bằng mili giây. Chia cho 1000 để lấy `Date`. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | `[String]` |
+| `toggle` | `value` | `Bool` |
 
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    let screenId = params["instanceId"] as? String
-
-    switch elementType {
-    case "text_input", "email_input", "number_input", "phone_input":
-        let text = params["value"] as? String
-    case "date_picker", "time_picker", "date_time_picker":
-        // Integer Unix time in milliseconds, not the seconds Date expects.
-        let date = (params["value"] as? Int).map { Date(timeIntervalSince1970: Double($0) / 1000) }
-    case "single_choice":
-        let optionId = (params["item_ids"] as? [String])?.first
-    case "multi_choice":
-        let optionIds = params["item_ids"] as? [String]
-    case "toggle":
-        let isOn = params["value"] as? Bool
-    default:
-        break
-    }
-}
-```
+Phần [Dữ liệu bạn nhận được](#what-you-receive) liệt kê đầy đủ các tham số và thông tin mà mỗi phần tử builder báo cáo.
 
 <FlowInputVerify />
 
@@ -140,7 +116,7 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 func handleFlowInput(name: String, params: [String: any Sendable]) {
     params["element_id"];      // "birthday"
     params["element_type"];    // "date_picker"
-    params["value"];           // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"];           // 645408000000   (Int — Unix milliseconds, 1990-06-15, local midnight; divide by 1000 for Date)
 }
 ```
 </Details>
@@ -289,3 +265,24 @@ func handleFlowInput(name: String, params: [String: any Sendable]) {
 3. [Tạo một phân khúc](segments) cho mỗi giá trị thuộc tính tùy chỉnh.
 4. Tạo một [placement](placements) và thêm một [đối tượng](audience) cho mỗi phân khúc.
 5. [Hiển thị flow](ios-present-paywalls) cho placement đó trong ứng dụng của bạn.
+
+### Gửi câu trả lời đến nền tảng phân tích của bạn \{#send-answers-to-your-analytics-platform\}
+
+Để lọc các biểu đồ theo câu trả lời của người dùng, hãy theo dõi mỗi câu trả lời dưới dạng một sự kiện trong nền tảng phân tích của bạn.
+
+Ví dụ: nếu flow của bạn có một nhóm có thể chọn với Group ID là `experience`, hãy gửi tùy chọn đã chọn đến Amplitude:
+
+```swift showLineNumbers title="Swift"
+func handleFlowInput(name: String, params: [String: any Sendable]) {
+    guard name == "flow_user_input",
+          params["element_id"] as? String == "experience",
+          let optionId = (params["item_ids"] as? [String])?.first
+    else { return }
+
+    // `amplitude` is your initialized Amplitude instance.
+    amplitude.track(
+        eventType: "Experience Selected",
+        eventProperties: ["experience": optionId]
+    )
+}
+```

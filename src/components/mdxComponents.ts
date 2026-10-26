@@ -30,6 +30,8 @@ import MethodPromo from './MethodPromo.astro';
 import SkillPromo from './SkillPromo.astro';
 import AIPromo from './AIPromo.astro';
 import ProductMap from './ProductMap.astro';
+import AgentChat from './AgentChat.astro';
+import ChatTurn from './ChatTurn.astro';
 
 export const mdxComponents = {
   Tabs,
@@ -52,6 +54,8 @@ export const mdxComponents = {
   SkillPromo,
   AIPromo,
   ProductMap,
+  AgentChat,
+  ChatTurn,
   img: MDXImage,
   // Plain <details> in articles renders through the same component as <Details>,
   // so there is one collapsible implementation rather than two designs.

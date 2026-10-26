@@ -23,7 +23,7 @@ If mode is ambiguous, ask to clarify.
    - Full-article reviews, and all writing: `references/article-structure.md`
    - Anything touching links, images, imports, or anchors: `references/astro-patterns.md`
    - Producing a plan or annotated feedback: `references/output-templates.md`
-3. **Identify the doc type** (integration guide, feature doc, troubleshooting, API reference, conceptual, release notes) and check the article follows that shape — see `references/article-structure.md` → Doc-Type Conventions
+3. **Identify the doc type** (integration guide, feature doc, troubleshooting, API reference, conceptual, release notes, agent skill) and check the article follows that shape — see `references/article-structure.md` → Doc-Type Conventions
 4. **Check structure** (full articles): Introduction, heading hierarchy, parallel structure
 5. **Perform checks**: Work through the Review Pass Order below — it sequences every Key Review Area
 6. **Report findings**: Organized by priority — see Output Format
@@ -461,6 +461,8 @@ Write guidance that survives either resolution. ❌ three sentences explaining t
 If readers will hit the defect and need to recognize it, the symptom and workaround still belong in troubleshooting — describe what they see and what to do, not the mechanism as though it were designed.
 
 File the bug. The finding is valuable; it belongs in a ticket, not an article.
+
+**Don't mention pricing.** Plan tiers, prices, quotas, and which plan includes a feature are outside the docs' domain. Don't name plans, don't say a feature depends on the plan, and don't link to the pricing page.
 
 **Verification steps state the expectation, not the fact.** The reader is checking, not being told. ❌ "Your sandbox purchase **has** `environment: Sandbox`" → ✅ "The `environment` property of your purchase **should be** `Sandbox`."
 

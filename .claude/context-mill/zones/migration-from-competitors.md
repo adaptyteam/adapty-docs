@@ -24,6 +24,10 @@ integration.
 
 ## Sources of truth
 
+- **The RevenueCat migration wizard — Adapty's closed-source migration service, not citable here; confirm with the product team or by running the wizard.** It owns every step, action ID, input field and user-facing string that `migration-from-revenuecat` restates: flows, actions and their detail/confirm texts, phase summaries, and input schemas. The CLI (`adapty-cli`, `src/cli/commands/migrations/`) only relays them. Verified against the service code 2026-09-30.
+- **RevenueCat is the only source the wizard migrates** (no Superwall/Qonversion code; the older adapty-cli epic draft promised them), and only App Store / Play Store apps. Store-events flows for Apple and Google are defined but not supported yet — treat as unreleased; don't document them until that changes (service code, 2026-09-30).
+- **The Cloud Export import fixes the Customer User ID to `rc_last_seen_app_user_id_alias`** (service code, 2026-09-30). The pre-2026-09-30 article let the reader choose `rc_original_app_user_id` instead; whether the support flow still allows that choice is unverified.
+
 ## What we document, what we don't
 
 ## Articles
@@ -34,7 +38,7 @@ integration.
 | importing-historical-data-to-adapty | — | dev | 5 | tutorial |
 | migrate-integrations-to-adapty | migration | dev | 8 | tutorial |
 | migrate-to-adapty-from-another-solutions | entry | dev | 3 | tutorial |
-| migration-from-revenuecat | migration | dev | 22 | tutorial |
+| migration-from-revenuecat | migration | dev | 23 | tutorial |
 | migration-from-superwall | migration | dev | 17 | tutorial |
 | observer-vs-full-mode | — | dev | 3 | tutorial |
 <!-- /mill:auto -->
@@ -82,4 +86,7 @@ Flow Builder ↔ Flow & Paywall Builder) live in `aliases.md` and are not repeat
 | "run both systems in parallel", "keep RevenueCat/Superwall receiving store events" | Raw events forwarding, linked from `migrate-to-adapty-from-another-solutions` and both named guides — Adapty proxies store notifications on to the legacy system during the overlap. The mechanics live in `apple-platform`. |
 
 ## Gaps and misses
+
+- **2026-09-30, open:** `migration-from-revenuecat` was restructured around the CLI migration (catalog → code migration or the `adapty-integration` skill → close; history via Cloud Export or through support). The old manual import route (download CSV, request Google purchase tokens from RevenueCat, email Adapty support) was dropped in favour of the wizard's through-support guide, which asks RevenueCat support for the export and never mentions purchase tokens. Unconfirmed: whether Adapty support still accepts the old route, and whether the imported-fields table (written for the support CSV) holds for the Cloud Export path.
+- **2026-09-30:** the removed per-method RevenueCat→Adapty mapping taught v3 `getPaywall`; the `adapty-integration` skill states v4 fetches with `getFlow` on every platform. Don't restore that mapping without rewriting it for v4.
 

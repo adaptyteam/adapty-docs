@@ -1,0 +1,211 @@
+---
+title: "Comandos de flows"
+description: "Comandos de la CLI de Adapty para crear flows, leer y escribir sus configuraciones del builder, validarlos y previsualizarlos, subir archivos multimedia y publicarlos."
+metadataTitle: "Comandos de Flows en la CLI | Documentación de Adapty"
+---
+
+Los [flows](adapty-flow-builder) son los paywalls y onboardings que construyes en el Flow & Paywall Builder. La CLI gestiona el registro del flow, su configuración del builder y la publicación. Una configuración del builder es un documento JSON extenso que normalmente genera el Flow & Paywall Builder, y la CLI no lo genera por sí sola. Para crear o editar una configuración desde la terminal, usa el [skill flow-generator](flow-generator-skill), que ejecuta estos comandos por ti. Antes de publicar, el [skill flow-audit](flow-audit-skill) verifica si el flow está listo para producción. Los comandos se enumeran aquí como referencia.
+
+## adapty flows list \{#adapty-flows-list\}
+
+Lista todos los flows de una aplicación.
+
+```bash
+adapty flows list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Acepta [flags de paginación](developer-cli-reference#global-flags).
+
+## adapty flows get
+
+Obtén los detalles de un flow específico.
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+La respuesta contiene `id`, `name`, `status` y `updated_at`. El status es uno de los siguientes:
+
+| Estado | Significado |
+|---|---|
+| `draft` | El flow nunca ha sido publicado |
+| `published` | La versión actual está activa |
+| `dirty` | El flow fue publicado anteriormente y la versión actual tiene cambios sin publicar. Los usuarios siguen viendo la última versión publicada |
+| `publishing` | La publicación está en curso |
+| `publication_failed` | La última publicación falló. Corrige la configuración y vuelve a publicar |
+| `archived` | El flow está archivado |
+
+## adapty flows create
+
+Crea un flow. El nuevo flow tiene un nombre y sin configuración. Para añadir una configuración, usa [`flows config update`](#adapty-flows-config-update).
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--name` | Sí | Nombre del flow |
+
+## adapty flows update
+
+Renombra un flow.
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | ID de la app (UUID) |
+| `--name` | Yes | Nuevo nombre del flow |
+
+## adapty flows publish
+
+Publica la versión actual de un flow para tus usuarios.
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--yes`, `-y` | No | Publica sin pedir confirmación. Obligatorio cuando la salida se redirige o se usa `--json` |
+
+Dado que publicar cambia lo que ven tus usuarios, el comando muestra el nombre del flow y pide confirmación. Cualquier respuesta distinta de `y` cancela el comando con código de salida 1. Con `--json` o en una tubería, el comando rechaza con código de salida 2 en lugar de esperar una respuesta, así que usa `--yes` en scripts y sesiones de agentes.
+
+La publicación es asíncrona: la respuesta devuelve `status: publishing` y el flow aún no está activo. Consulta [`flows get`](#adapty-flows-get) hasta que el estado pase a `published` o `publication_failed`. Si ocurre `publication_failed`, [`flows config get`](#adapty-flows-config-get) indica el motivo.
+
+La publicación falla con HTTP 400 cuando el flow no tiene configuración, cuando la configuración no es publicable o cuando la versión actual ya está activa. Para validar una configuración antes de publicarla, usa [`flows config validate`](#adapty-flows-config-validate).
+
+## adapty flows config get
+
+Lee la configuración del builder de un flow.
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+La respuesta contiene `config`, `remote_configs`, `status` y `updated_at`. `updated_at` es una marca de tiempo en milisegundos del último cambio de configuración. Pásala a [`flows config update`](#adapty-flows-config-update) como `--expected-updated-at` para evitar sobreescribir una edición concurrente. Un flow cuya configuración nunca se ha escrito devuelve 404.
+
+Tras un intento de publicación, la respuesta también incluye tres campos que describen cómo fue. Léelos cuando [`flows get`](#adapty-flows-get) indique `publication_failed`:
+
+| Campo | Descripción |
+|---|---|
+| `publication_status` | El estado de publicación de esta versión del flow: `transforming`, `transformed`, `uploading`, `uploaded`, `published` o `failed` |
+| `transform_error` | El error de transformación sin procesar: puede ser un payload JSON con los problemas o una cadena de resumen |
+| `publication_error` | Un mensaje legible para una publicación fallida |
+
+## adapty flows config update
+
+Escribe la configuración del builder de un flow.
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--config` | Uno de los dos | Configuración del Builder como cadena JSON |
+| `--config-file` | Uno de los dos | Ruta a un archivo JSON con la configuración del Builder, o `-` para leer desde stdin |
+| `--remote-configs` | No | Array JSON de entradas `{locale, data}`, donde `data` es el Remote Config como cadena |
+| `--expected-updated-at` | No | El valor `updated_at` de un `flows config get` anterior. Si la configuración cambió después de esa lectura, el comando falla en lugar de sobrescribir el cambio. Omítelo para sobrescribir sin condiciones |
+
+Al escribir la configuración se guarda un borrador sin publicarlo. En un flow publicado, la escritura crea una nueva versión: el estado del flow pasa a `dirty`, y los usuarios siguen viendo la versión publicada hasta que ejecutes [`flows publish`](#adapty-flows-publish).
+
+## adapty flows config validate
+
+Comprueba si una configuración del builder es publicable, sin guardarla.
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--config` | Una de las dos | Configuración del builder como cadena JSON |
+| `--config-file` | Una de las dos | Ruta a un archivo JSON con la configuración del builder, o `-` para leer desde stdin |
+
+La respuesta contiene `valid` y una lista de `issues`. Cuando la configuración no es publicable, el comando termina con el código 1, por lo que los scripts pueden usarlo como condición de bloqueo.
+
+## adapty flows config preview
+
+Renderiza un archivo de configuración local en el navegador. Este comando no realiza ninguna llamada a la API y no acepta el flag `--app`.
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| Argumento | Descripción |
+|---|---|
+| `config-file` | Ruta a un archivo JSON de configuración del builder local |
+
+| Flag | Por defecto | Descripción |
+|---|---|---|
+| `--screen` | La primera pantalla del flow | ID de pantalla a renderizar |
+| `--device` | `iphone-14` | Marco de dispositivo en el que renderizar |
+| `--orientation` | `portrait` | `portrait` o `landscape` |
+
+En la terminal, el comando abre la vista previa en tu navegador. Cuando se usa con pipes o con `--json`, imprime la URL en su lugar. La URL contiene toda la configuración y es larga: pásala por un pipe a una herramienta de capturas de pantalla en lugar de imprimirla. Las configuraciones de más de 32 KB aproximadamente se renderizan lentamente.
+
+## adapty flows media upload
+
+Sube una imagen para usarla en la configuración de un flow.
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| Argumento | Descripción |
+|---|---|
+| `file` | Ruta al archivo de imagen |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+Formatos aceptados: GIF, HEIC, JPEG, PNG, SVG y WebP. La respuesta contiene el `id`, el `name` y la `url` del CDN de la imagen para referenciarla desde la configuración.
+
+## ¿Qué viene ahora? \{#whats-next\}
+
+- [Referencia de comandos](developer-cli-reference) — todos los temas de la CLI, los flags globales y los flags de paginación.

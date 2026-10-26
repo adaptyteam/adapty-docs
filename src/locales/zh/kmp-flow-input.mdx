@@ -8,10 +8,11 @@ metadataTitle: "处理流程数据 | Kotlin Multiplatform SDK | Adapty 文档"
 
 应用最常将这些数据用于：
 
-- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱地址和姓名，在流程关闭时为其创建账号。
-- **保存答案和偏好设置**：记录用户的选择，以便应用后续使用——例如，[将其写入用户的 Adapty 用户画像](kmp-setting-user-attributes)作为自定义属性。
-- **个性化未来流程**：将问卷答案保存为自定义属性，然后针对后续版位进行定向，让每个市场细分看到不同的流程，或流程中不同的付费墙。
-- **向第三方分析平台传送数据**：将答案转发给 Amplitude、Mixpanel 或您使用的任何产品分析工具。
+- **在自有后端注册用户**：获取用户在引导流程中填写的邮箱和姓名，在流程结束时创建其账户。
+- **保存答案和偏好设置**：记录用户的选择，供应用后续使用——例如，[将其作为自定义属性写入用户的 Adapty 用户画像](kmp-setting-user-attributes)。
+- **自定义后续流程**：将测验答案保存为自定义属性，然后针对后续版位进行定向，让不同的市场细分看到不同的流程，或其中不同的付费墙。
+- **展示根据答案计算出的数值**：例如，根据用户的体重和身高计算 BMI，并[将其传入下一个流程的自定义标签](kmp-flow-custom-tags#example-show-a-bmi-from-onboarding-answers)。
+- **向第三方分析平台传送数据**：将答案转发至 Amplitude、Mixpanel 或你使用的任何产品分析工具。
 
 输入框和可选择组会自动上报其值。要在代码中区分各个输入框，请在编辑工具中为每个输入框设置一个有意义的 **Element ID**，并为每个可选择组设置一个 **Group ID**。
 
@@ -38,44 +39,16 @@ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
 })
 ```
 
-`flowViewDidReceiveAnalyticEvent` 回调会传递流程中的所有分析事件，包括[屏幕浏览事件](kmp-flow-screen-views)。事件参数以单个 JSON 字符串的形式通过 `paramsJsonString` 传入，解码一次后即可读取各字段。
-- `name` 参数包含事件名称。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。
-- `element_type` 参数标识元素类别。
-- 输入值根据元素类型存储在不同的参数中：
-     - 文本字段、选择器和开关将用户输入存储在 `value` 中
-     - 可选组在 `item_ids` 和 `item_titles` 中报告当前选中的选项
+`flowViewDidReceiveAnalyticEvent` 回调会传递来自流程的所有分析事件，包括[页面浏览事件](kmp-flow-screen-views)。事件参数以一个 JSON 字符串的形式通过 `paramsJsonString` 传入；解析一次后即可读取各字段。若要筛选用户输入事件，请将 `name` 与 `flow_user_input` 进行比较。存储值的参数取决于 `element_type`：
 
-```kotlin showLineNumbers title="Kotlin"
-private fun handleFlowInput(name: String, paramsJsonString: String) {
-    if (name != "flow_user_input") return
+| `element_type` | 存储值的参数 | 解码后的类型 |
+|:---------------|:----------------------------|:----------------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | String |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | Number，Unix 时间（毫秒）。请以 double 类型读取，因为 Android 会以该方式序列化数字。 |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | Array of strings |
+| `toggle` | `value` | Boolean |
 
-    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
-    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
-
-    when (params["element_type"]?.jsonPrimitive?.content) {
-        "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = params["value"]?.jsonPrimitive?.content
-        }
-        "date_picker", "time_picker", "date_time_picker" -> {
-            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
-            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
-        }
-        "single_choice" -> {
-            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
-        }
-        "multi_choice" -> {
-            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
-        }
-        "toggle" -> {
-            val isOn = params["value"]?.jsonPrimitive?.boolean
-        }
-    }
-}
-```
+[你将收到的内容](#what-you-receive)部分列出了每个参数以及每个构建器元素的上报内容。
 
 <FlowInputVerify />
 
@@ -127,7 +100,7 @@ override fun flowViewDidReceiveAnalyticEvent(
     // paramsJsonString, once decoded:
     params["element_id"]       // "birthday"
     params["element_type"]     // "date_picker"
-    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; read it as a double, since Android serializes numbers that way)
 }
 ```
 </Details>

@@ -339,7 +339,14 @@ Adapty 仅追踪全额退款，目前不支持按比例退款或部分退款。
 
 ### 净收入与税费 \{#net-revenue-and-tax\}
 
-要计算 Stripe 交易的 `net_revenue_usd` 和 `net_revenue_local`，Adapty 会扣除固定的 4.5%。这是一个建模估算值，并非 Stripe 实际收取的税费——Adapty 不会从 Stripe 读取税额（包括 Stripe Tax），因此 Stripe 交易的 `tax_amount_usd` 和 `tax_amount_local` 始终为 `0`。
+Stripe 交易的收益与净收入，在数据图表和集成事件之间可能存在差异：
+
+- **数据图表**：对于订阅，Adapty 会扣除 Stripe 费用及 Stripe 报告的税费。对于一次性购买，Adapty 按价格的 4.5% 统一扣除 Stripe 费用。由于这些购买的 Stripe 支付数据中不含税额，Adapty 不扣除税费。
+- **集成事件**（发送至 Webhook、Amazon S3、Google Cloud Storage 及其他集成）：Adapty 按价格的 4.5% 统一扣除 Stripe 费用，不扣除税费，因此 `tax_amount_usd` 和 `tax_amount_local` 始终为 `0`。
+
+### 优惠券和促销码 \{#coupons-and-promo-codes\}
+
+Adapty 中的收入是 Stripe 在扣除优惠券或促销码折扣后实际收取的金额。Adapty 不存储客户使用的优惠券或促销码信息。如需查看，请在 Stripe 看板中找到对应的订阅或付款记录。
 
 ### 交易 ID 唯一性 \{#transaction-id-uniqueness\}
 
@@ -380,9 +387,11 @@ Adapty 从会话的第一个订单项中获取产品，因此同时销售多个�
 
 这些购买的退款尚未生效：Stripe 会发送 `charge.refunded` 事件，但对于通过 Checkout 或 Payment Link 购买的一次性商品，Adapty 不会撤销访问权限。通过 Stripe 发票结算的订阅和一次性购买的退款仍可正常处理。
 
-### 一个 Stripe 账户连接多个 Adapty 应用 \{#one-stripe-account-connected-to-several-adapty-apps\}
+### 一个 Stripe 账户关联多个 Adapty 应用 \{#one-stripe-account-connected-to-several-adapty-apps\}
 
-决定由哪个 Adapty 应用处理事件的是接收 webhook 的端点地址——每个 Adapty 应用都有自己专属的端点 URL——而非受限 API 密钥。你在 Stripe 中注册的每个端点都会收到所有事件，各应用独立处理属于自己的那份数据。如果某个产品未添加到某应用中，该应用会直接忽略相关事件，因此使用不同产品集的多个应用可以安全共存。但如果同一个 Stripe 产品和价格被添加到多个应用中，这些应用将各自记录该笔交易。
+决定哪个 Adapty 应用处理事件的是接收该事件的 webhook 端点——每个 Adapty 应用都有自己的端点 URL——而非受限 API 密钥。你在 Stripe 中注册的每个端点都会收到所有事件，各应用独立处理自己的那份副本。如果某个产品未添加到某应用中，该应用会忽略与其相关的事件，因此拥有各自独立产品集的应用可以安全共存。但是，如果同一个 Stripe 产品和价格被添加到多个应用中，每个应用都会记录该笔交易。
+
+在 [Developers → Webhooks](https://dashboard.stripe.com/webhooks) 中，每个 Adapty 端点 URL 的路径以 `/<Adapty app ID>/production/` 结尾（正式模式）或以 `/<Adapty app ID>/sandbox/` 结尾（测试模式）。当你为某个应用保存受限密钥时，Adapty 会复用该应用对应模式的端点；如果端点不存在，才会新建一个，其他应用的端点不受影响。
 
 ## 充分利用您的 Stripe 数据 \{#get-more-from-your-stripe-data\}
 完成 Stripe 集成后，Adapty 即可立即提供数据洞察。为充分利用您的 Stripe 数据，您可以设置额外的 Adapty 集成来转发 Stripe 事件——将所有订阅分析数据汇聚到单一 Adapty 看板中。
