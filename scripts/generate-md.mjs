@@ -117,6 +117,10 @@ function stripContent(content, reusableComponents) {
     // div-wrapped and bare iframes that predate it, which src/locales still
     // carries until each file is retranslated from its English source.
     processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    // A narrated walkthrough is a video player; like a YouTube embed, it carries nothing for a text reader.
+    processed = processed.replace(/<NarratedVideo\b[^>]*\/>/g, '');
+    // Demo loops are dropped like screenshots: the surrounding prose already states what they show.
+    processed = processed.replace(/<DocVideo\b[^>]*\/>/g, '');
     processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
     processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
 
