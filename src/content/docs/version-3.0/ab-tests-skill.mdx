@@ -1,0 +1,136 @@
+---
+title: "Agent skill for A/B tests"
+description: "Install the ab-tests skill so your AI coding tool creates, starts, stops, and replaces paywall and flow A/B tests in Adapty, and shows you who sees what before each step that can't be undone."
+metadataTitle: "A/B Tests Agent Skill | Adapty Docs"
+---
+
+The ab-tests skill runs regular [A/B tests](ab-tests) of paywalls or flows from your AI coding tool. Your agent plans the test with you, makes the pieces that are missing, creates the test as a draft, and starts it, stops it with a winner, or replaces it with a changed one. It works through the [`adapty ab-tests` CLI commands](developer-cli-ab-tests).
+
+:::note
+You can't undo starting, stopping, replacing, or archiving a test. Before each of these steps, the skill tells you in plain words who sees what from when, and it runs the command only after your yes.
+:::
+
+## What you can ask
+
+Ask the way you'd brief a colleague. You don't need to name the skill:
+
+```
+Run a 50/50 test of my Monthly and Annual paywalls for users in Germany.
+
+Test my new onboarding flow against the current one.
+
+Which A/B tests are running in my app?
+
+Stop the price test. B wins.
+
+Change the weights of my flow test to 70/30.
+
+Archive the old tests on the settings placement.
+```
+
+<AgentChat title="ab-tests" caption="Example conversation with a sample app. Your placements and paywalls will differ.">
+<ChatTurn role="user">Run a 50/50 test of my Monthly and Annual paywalls for users in Germany on the Main placement.</ChatTurn>
+<ChatTurn role="tool" summary="Ran 5 read-only commands and created a draft">
+
+- `adapty paywalls list`
+- `adapty placements list`
+- `adapty segments list`
+- `adapty ab-tests create --title "Monthly vs Annual" --paywalls '[…]'`
+- `adapty ab-tests get <test-id>`
+- `adapty placements get <placement-id>`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+I created the test "Monthly vs Annual" as a draft. No user sees it yet.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Start the A/B test">
+
+Start "Monthly vs Annual" on the Main placement for users in Germany.
+
+- Now: users in Germany see the Monthly paywall.
+- From now: they see the Monthly paywall (50%) or the Annual paywall (50%). A change for a segment can take up to 20 minutes to reach every user.
+- Stops: the Monthly paywall stops for users in Germany. No test runs there now, so none stops.
+- **Can't be undone.** Stopping the test later doesn't bring back what it replaced.
+
+Start it?
+
+1. Yes
+2. No
+
+</ChatTurn>
+</AgentChat>
+
+## Before you start
+
+- **An AI tool that can run terminal commands**: For example, Claude Code, Codex, Copilot CLI, or Gemini CLI. Chat tools like claude.ai or ChatGPT can't run the CLI, so they can't reach your Adapty account.
+- **The Adapty CLI, version 0.13.0 or later**: The skill installs the CLI if it's missing. When your CLI has no `ab-tests` commands, the skill says so and sends you to the [dashboard](run_stop_ab_tests).
+
+## Install the skill
+
+The ab-tests skill is part of the [`adapty-skills` plugin](https://github.com/adaptyteam/adapty-skills). To install the plugin, in your terminal, run:
+
+```bash
+npx adapty skills install
+```
+
+Restart your agent to load the skills. For other installation methods, see the [plugin README](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install).
+
+## How the skill runs a test
+
+1. The skill agrees on the plan with you: a paywall test or a flow test, the paywalls or flows to compare and their weights, the placement, the audience, and the goal. It asks for all missing details in one message.
+2. It verifies each piece and makes what it can. See [What the test needs](#what-the-test-needs).
+3. It creates the test as a draft. No user sees a draft, so this step needs no yes.
+4. It reads the test and the placement, then shows you the effect of the start: what the audience sees now, what it sees from the start, which paywall, flow, or running test stops, and which users move into the test.
+5. It waits for your yes. An earlier "go ahead" about the plan doesn't count. If you say no, it sends nothing.
+6. It reads the placement again right before the start. If the placement changed since you saw the effect, it shows you the new effect and asks again.
+7. It starts the test and reads it back to confirm what runs now.
+
+Stopping, replacing, and archiving a test follow steps 4–7, with that action in place of the start.
+
+The skill doesn't start a test again after it ran, because users who were in it would get their old arm again. It offers a new test with the same arms instead.
+
+## What the test needs
+
+A test can only compare content that exists. The skill verifies each piece and makes the ones the CLI can make:
+
+| Piece | What the skill does |
+|---|---|
+| A flow | Verifies that the flow is published. A flow joins a test only once it is published. To build or publish one, the [flow-generator skill](flow-generator-skill) takes over. |
+| A paywall from products already in Adapty | Creates it, after your yes. |
+| A paywall with a new design | Asks you to make it in the [Paywall Builder](adapty-paywall-builder), or in your app's code for a paywall your app draws itself. |
+| A new product | Asks you to create it in App Store Connect or Google Play Console and add it to Adapty. See [Products](product). |
+| A segment | Creates it through the audiences skill, after your yes. |
+| A placement | Creates it after you approve its developer ID, which can't be changed later. Your app shows nothing from a new placement until its code fetches that placement. A test on the placement reaches no users until you release an app version whose code fetches it. |
+
+## Which audience the test runs on
+
+A test runs on one audience of the placement:
+
+- When the placement already has an audience for your segment, or the test is for All users, the test takes that audience. A test running there now stops.
+- When the placement has no audience for your segment, the skill adds an audience for your segment with the highest priority on the placement. Users of the segment who currently match another audience move into the test, and the skill names those audiences before you say yes.
+
+To give the test a lower priority than another audience, ask the skill. The skill first adds your segment as an audience with that priority and with the paywall or flow those users see now, so nothing changes for them. Then it starts the test on that audience.
+
+## Change, stop, or archive a test
+
+- **Rename it or change its goal**: The skill updates the test. Users keep their arms, and the test keeps its start time.
+- **Change the arms or weights of a live test**: The skill replaces the test. The live test stops and keeps its results, and a new test starts on the same audience. Adapty assigns every user of the audience to an arm again. In the dashboard, this is **Modify**.
+- **Stop it**: Tell the skill which paywall or flow the audience should see afterwards — the winner, other content, or nothing. To choose the winner, read the results in the dashboard: [A/B test results and metrics](results-and-metrics).
+- **Archive it**: The skill archives any test that isn't live. You can't restore an archived test.
+
+## With other skills
+
+- **Find what to test**: The [growth-advisor skill](export-analytics-with-ai) reads your numbers and suggests hypotheses. When you pick one, growth-advisor verifies that everything the test needs exists, then hands the test to the ab-tests skill.
+- **Build the content**: The [flow-generator skill](flow-generator-skill) builds a copy of your flow with the change to test.
+- **Show content without a test**: To show different paywalls or flows to different users without a test, ask your agent. The audiences skill makes the change.
+
+## Limits
+
+- **No results**: The skill doesn't read test results. Read them in the dashboard, then tell the skill which arm won.
+- **One placement per test**: To run a [crossplacement test](ab-test-types), use the dashboard.
+- **Old onboarding builder**: Manage onboarding tests made in the old onboarding builder in the dashboard.
+- **No unattended starts**: In a scheduled run or a script, with no one to answer, the skill only lists and reads tests, and creates and changes drafts. For a start, stop, replace, or archive, it reports the effect and the command for you to run.
+
+To run the commands yourself, without the skill, see [Run A/B tests from the CLI](developer-cli-ab-tests).
