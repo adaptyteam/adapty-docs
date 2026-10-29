@@ -1,10 +1,10 @@
 ---
 title: "Flows commands"
-description: "Adapty CLI commands that create flows, read and write their builder configs, validate and preview them, upload media, and publish them."
+description: "Adapty CLI commands that create flows, read and write their builder configs, validate and preview them, upload media, publish them, and read their metrics."
 metadataTitle: "Flows CLI Commands | Adapty Docs"
 ---
 
-[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, and publication. A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The commands are listed here as a reference.
+[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, and publication. A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The commands are listed here as a reference.
 
 ## adapty flows list
 
@@ -205,6 +205,110 @@ adapty flows media upload --app <app-id> ./hero.png
 | `--app` | Yes | App ID (UUID) |
 
 Accepted formats: GIF, HEIC, JPEG, PNG, SVG, and WebP. The response contains the image `id`, `name`, and the CDN `url` to reference from the config.
+
+## adapty flows metrics list
+
+Show the lifetime metrics of several flows, one line for each flow. This is the data of the flows table in the dashboard.
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--ids` | Yes | Flow IDs (UUIDs). Separate them with commas, or repeat the flag |
+| `--csv` | No | Print CSV: one row for each flow, with the flow ID and all 27 metrics. Can't be used with `--json` |
+
+Each line shows the flow ID with its views, purchases, trials, and revenue. `--json` and `--csv` carry all 27 metrics of the [flow metrics](flow-metrics#metrics-definitions) page, such as `unique_profiles_views`, `net_revenue`, and `conversion_rate_purchases`. A metric with no data is `0`, never `null`.
+
+## adapty flows metrics values
+
+List the filter keys and values of a flow: what [`flows metrics get --filter`](#filter-the-metrics) takes.
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Each line shows a label and, in parentheses, the value to pass. Values are nested as the dashboard filters nest them:
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+The top value of each group is the filter key, and the innermost values are what the key takes. In the example, `--filter country=US` keeps the United States, and `--filter store=play_store` keeps Google Play.
+
+## adapty flows metrics get
+
+Show the metrics of one flow for a period, as the tree of the [flow metrics](flow-metrics) page.
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--based-on` | Yes | What the first level of the tree splits by: `placement` or `audience`. These are the placement-based and audience-based views of the [flow metrics](flow-metrics#view-options-for-metrics-data) page |
+| `--date-type` | Yes | Which date the period applies to: `purchase_date`, or `profile_install_date` to [filter by install date](flow-metrics#filter-metrics-by-install-date) |
+| `--date-from` | No | First day of the period, inclusive (`YYYY-MM-DD`). Pass it together with `--date-to` |
+| `--date-to` | No | Last day of the period, inclusive (`YYYY-MM-DD`). Pass it together with `--date-from` |
+| `--granularity` | No | Split the period into points: `day`, `week`, `month`, `quarter`, or `year` |
+| `--filter` | No | Keep only data with these values of a filter key. Repeatable. See [Filter the metrics](#filter-the-metrics) |
+| `--timezone` | No | IANA time zone of the period points, for example `Europe/Berlin`. Without it, Adapty uses the app time zone |
+| `--depth` | No | How many levels of the tree to print under `Total`. Default: `1` |
+| `--csv` | No | Print CSV: one row for each node of the whole tree. Can't be used with `--json` |
+
+The CLI exits with code 2 and sends no request when `--based-on` or `--date-type` is missing, or when only one end of the period is given. Adapty validates the values of `--based-on`, `--date-type`, and `--granularity`: a wrong value exits with code 4, and the error lists the accepted values.
+
+### Read the output
+
+The command prints a `Total` line, then the first level of the tree under it. Each line shows views, purchases, trials, and revenue. With `--granularity`, the points of the period come right under their node:
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+The levels of the tree are the levels of the dashboard: placement, audience, A/B test, flow variation, screen, and product. With `--based-on audience`, the placement level is left out. To print more levels, pass `--depth`, for example `--depth 3`.
+
+For the whole tree with all 27 metrics, use one of these flags:
+
+- `--json` prints the answer of the server unchanged.
+- `--csv` prints one row for each node, period points included. The columns are `path` (the titles from `Total` down to the node, separated by ` > `), `level`, `title`, and then the metrics.
+
+### Filter the metrics
+
+Write each `--filter` as `key=value`, with the keys and values that [`flows metrics values`](#adapty-flows-metrics-values) lists. To keep any of several values, separate them with commas or repeat the flag with the same key. Filters with different keys combine, so data must match all of them:
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+The CLI sends each value exactly as written. To put a comma inside a value, write `\,`. An empty value is a value too: `attribution_channel=` keeps the data with no channel, which `flows metrics values` lists as **No Data**.
 
 ## What's next
 
