@@ -56,8 +56,11 @@ Webhook events are serialized in JSON. The body of a `POST` request to your serv
     "discount_amount_local": 0,
     "base_plan_id": "b1",
     "developer_id": "onboarding_placement",
+    "ab_test_id": "00000000-0000-0000-0000-000000000000",
     "ab_test_name": "onboarding_ab_test",
     "ab_test_revision": 1,
+    "ab_test_variant_id": "00000000-0000-0000-0000-000000000000",
+    "ab_test_variant_name": "Variant B",
     "paywall_name": "UsedPaywall",
     "proceeds_usd": 4.2315,
     "variation_id": "00000000-0000-0000-0000-000000000000",
@@ -216,8 +219,12 @@ The event properties for most event types are consistent (except for **Access Le
 
 | Field                         | Type          | Description                                                                                                                                                                                                                                                                                                                                                      |
 |:------------------------------|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **ab_test_name**              | String        | Name of the [Adapty A/B test](ab-tests) where the transaction originated.                                                                                                                                                                                                                                                                                        |
+| **ab_test_id**                | String        | ID of the [Adapty A/B test](ab-tests) where the transaction originated. For a crossplacement A/B test, the ID of the crossplacement test, the same on every placement. See [Flow and A/B test fields](#flow-and-ab-test-fields). |
+| **ab_test_name**              | String        | Name of the [Adapty A/B test](ab-tests) where the transaction originated. For a crossplacement A/B test, this is the name of the test on one placement, in the `<test name> child-N` format, where N is the placement number, not the variant. To group a crossplacement test across placements, use `ab_test_id`, and take its name from `ab_test_parent_name`. |
+| **ab_test_parent_name**       | String        | Name of the crossplacement A/B test where the transaction originated. Present only for crossplacement A/B tests. |
 | **ab_test_revision**          | Integer       | Revision of the A/B test where the transaction originated.                                                                                                                                                                                                                                                                                                       |
+| **ab_test_variant_id**        | String        | ID of the A/B test variant where the transaction originated. In a regular paywall A/B test, it matches `variation_id`. In a flow A/B test, it matches `flow_variation_id`. In a crossplacement A/B test, it is the same for the variant on every placement. Use it to split transactions by test variant. |
+| **ab_test_variant_name**      | String        | Name of the A/B test variant. For a crossplacement A/B test, the variant name from the test settings. For other tests, the variant name, or the paywall or flow name when the variant has no name. Present together with `ab_test_variant_id`. |
 | **base_plan_id**              | String        | [Base plan ID](https://support.google.com/googleplay/android-developer/answer/12154973) in the Google Play Store or [price ID](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices) in Stripe.                                                                                                                                  |
 | **cancellation_reason**       | String        | <p>Possible reasons for cancellation: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Present in the following event types:</p>`subscription_cancelled`, `subscription_refunded`, and `trial_cancelled`. |
 | **cohort_name**               | String        | The name of the [audience](audience) that determined which paywall the user was shown.                                                                                                                                                                                                                                                                           |
@@ -228,11 +235,14 @@ The event properties for most event types are consistent (except for **Access Le
 | **discount_amount_usd**       | Float         | The value of `discount_amount_local` in USD. |
 | **environment**               | String        | Possible values are `Sandbox` or `Production`.                                                                                                                                                                                                                                                                                                                   |
 | **event_datetime**            | ISO 8601 date | The date and time of the event. The same as on the root level of the event.                                                                                                                                                                                                                                                                                      |
+| **flow_id**                   | String        | ID of the [flow](adapty-flow-builder) where the transaction originated. Present for every transaction made in a flow, in an A/B test or not. |
+| **flow_name**                 | String        | Name of the flow where the transaction originated. Present together with `flow_id`. |
+| **flow_variation_id**         | String        | ID of the flow variant on this placement. The same value the SDK returns to the app as `flow.variationId`. Present together with `flow_id`. |
 | **original_price_local**      | Float         | The product's standard, non-discounted price before the Apple/Google cut, in local currency. For subscriptions, this is the renewal price. Equals `price_local` for a full-price purchase and always equals `price_local` for one-time purchases, as stores don't report a separate standard price for them. `null` for a discounted purchase when the store reports no reliable standard price (for example, auto-renew is off, the renewal still carries an offer, or a product change is pending). |
 | **original_price_usd**        | Float         | Same as `original_price_local`, in USD. |
 | **original_purchase_date**    | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction.                                                                                |
 | **original_transaction_id**   | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>                                                                           |
-| **paywall_name**              | String        | Name of the paywall where the transaction originated.                                                                                                                                                                                                                                                                                                            |
+| **paywall_name**              | String        | Name of the paywall where the transaction originated. For a flow, this is the ID of the paywall screen inside the flow (`scr_...`), not a name. The flow name is in `flow_name`. |
 | **paywall_revision**          | String        | Revision of the paywall where the transaction originated. The default value is 1.                                                                                                                                                                                                                                                                                |
 | **price_local**               | Float         | The amount charged for the transaction before the Apple/Google cut, in local currency. `null` in `trial_started`, since nothing is charged, unless **Send trial price** is enabled.                                                                                                                                                                                                                         |
 | **price_usd**                 | Float         | The amount charged for the transaction before the Apple/Google cut, in USD. `null` in `trial_started`, since nothing is charged, unless **Send trial price** is enabled.                                                                                                                                                                                                                                    |
@@ -253,8 +263,51 @@ The event properties for most event types are consistent (except for **Access Le
 | **subscription_expires_at**   | ISO 8601 date | <p>The expiration date of the subscription.</p><p>In refund, billing issue, grace period, and access level events, it holds the cancellation date or the grace period end when one applies. In purchase and renewal events, it holds the regular subscription expiration date.</p>                                |
 | **transaction_id**            | String        | Unique identifier for a transaction.                                                                                                                                                                                                                                                                                                                             |
 | **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                                                   |
-| **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made.                                                                                                                                                                                                                                                                                                            |
+| **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made. For a flow, this is the ID of the paywall screen inside the flow, not the A/B test variant. Each published flow version gets new screen IDs, so Adapty sends one variant with different `variation_id` values over time. To split transactions by test variant, use `ab_test_variant_id`. |
 | **vendor_product_id**         | String        | <p>Product ID in the Apple App Store, Google Play Store, or Stripe.</p><p>For a [12-month commitment plan](app-store-12-month-commitment), the value is `<product_id>:monthly`.</p><p>If access was granted without a real store transaction, `vendor_product_id` will be one of:</p><ul><li>`adapty_server_side_product` — granted via the [server-side API](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [granted manually](give-access-level-to-specific-customer) in the Adapty Dashboard.</li><li>`adapty_promotion` — legacy.</li></ul> |
+
+#### Flow and A/B test fields
+
+The flow and A/B test fields tell you which flow, A/B test, and variant a transaction came from. They work for every [A/B test type](ab-test-types): regular paywall and flow A/B tests, and crossplacement A/B tests on paywalls and on flows.
+
+Adapty sends these fields in the events of a transaction made on a placement, the same events that carry `developer_id` and `variation_id`. Renewals, refunds, cancellations, and other subscription events carry the same flow, A/B test, and variant as the original purchase, even after the A/B test stops. When a field has no value, the event doesn't include it: these fields are never empty or `null`.
+
+| Transaction source | `flow_id`, `flow_name`, `flow_variation_id` | `ab_test_id` | `ab_test_variant_id`, `ab_test_variant_name` | `ab_test_parent_name` |
+|---|---|---|---|---|
+| Regular paywall A/B test | — | A/B test ID | Matches `variation_id` | — |
+| Paywall outside an A/B test | — | — | — | — |
+| Flow A/B test | ✅ | A/B test ID | Matches `flow_variation_id` | — |
+| Flow outside an A/B test | ✅ | — | — | — |
+| Crossplacement A/B test on paywalls | — | Crossplacement test ID | Shared by all placements | ✅ |
+| Crossplacement A/B test on flows | ✅, with the flow variant on this placement | Crossplacement test ID | Shared by all placements | ✅ |
+| Not a placement | — | — | — | — |
+
+For example, for a purchase in variant A on the second placement of a crossplacement A/B test on flows, Adapty sends:
+
+```json title="Json" showLineNumbers
+{
+  "variation_id": "<paywall screen ID on this placement>",
+  "ab_test_name": "Onboarding test child-1",
+  "paywall_name": "scr_a1b2c3d4",
+  "flow_id": "<flow ID>",
+  "flow_name": "Onboarding X",
+  "flow_variation_id": "<variant A on this placement>",
+  "ab_test_id": "<crossplacement test ID>",
+  "ab_test_variant_id": "<variant A, shared by all placements>",
+  "ab_test_variant_name": "A",
+  "ab_test_parent_name": "Onboarding test"
+}
+```
+
+To build reports on these fields, group transactions by the IDs (`ab_test_id`, `ab_test_variant_id`, `flow_id`) and use the names as labels. Adapty takes names at the time it sends the event, so after you rename a test, variant, or flow, later events carry the new name. Events already sent aren't sent again or updated.
+
+:::note
+The shared variant ID of a crossplacement A/B test matches the variant ID on one placement only, usually the first. To match an event with the variant the SDK returned on a specific placement, use `flow_variation_id` or `variation_id`.
+:::
+
+:::warning
+In a crossplacement A/B test where the same flow appears in more than one variant, the purchase alone doesn't tell which variant the user was in. Adapty takes the variant from the user's assignment record instead. If that record isn't available, Adapty sends `flow_id`, `flow_name`, and `ab_test_id`, but not `flow_variation_id`, `ab_test_variant_id`, or `ab_test_variant_name`. This happens when the user buys right after seeing the flow, before the record is saved, and for renewals that come after the record expires. The Adapty Dashboard counts such transactions in the first variant, so your integration data can differ from the dashboard.
+:::
 
 #### Additional tax and revenue event properties
 
@@ -350,7 +403,11 @@ Use this event to update the user’s access level in your database, grant or re
 
 | Property                           | Type          | Description                                                  |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
-| **ab_test_name**                   | String        | Name of the A/B test where the transaction originated.       |
+| **ab_test_id**                     | String        | ID of the A/B test where the transaction originated. See [Flow and A/B test fields](#flow-and-ab-test-fields). |
+| **ab_test_name**                   | String        | Name of the A/B test where the transaction originated. For a crossplacement A/B test, the name of the test on one placement (`<test name> child-N`). |
+| **ab_test_parent_name**            | String        | Name of the crossplacement A/B test. Present only for crossplacement A/B tests. |
+| **ab_test_variant_id**             | String        | ID of the A/B test variant where the transaction originated. |
+| **ab_test_variant_name**           | String        | Name of the A/B test variant.                                |
 | **access_level_id**                | String        | The ID of the access level.                                  |
 | **activated_at**                   | ISO 8601 date | Date and time when the access was latest activated.          |
 | **active_introductory_offer_type** | String        | Type of introductory offer applied. Possible values are `free_trial`, `pay_as_you_go`, and `pay_up_front`. |
@@ -365,13 +422,16 @@ Use this event to update the user’s access level in your database, grant or re
 | **environment**                    | String        | Possible values are `Sandbox` or `Production`.               |
 | **event_datetime**                 | ISO 8601 date | The date and time of the event.                              |
 | **expires_at**                     | ISO 8601 date | <p>Date and time when the access expires. Adapty computes `is_active` from this field.</p><p>During a grace period, it holds the end of the grace period; after a refund or cancellation, it holds the cancellation date. There is no separate field for the grace period end.</p> |
+| **flow_id**                        | String        | ID of the flow where the transaction originated.             |
+| **flow_name**                      | String        | Name of the flow where the transaction originated.           |
+| **flow_variation_id**              | String        | ID of the flow variant on this placement, the same as `flow.variationId` in the SDK. |
 | **is_active**                      | Boolean       | Boolean indicating whether the access level is active. Computed from `expires_at` (together with `starts_at` and `is_lifetime`) when the event is generated. |
 | **is_in_grace_period**             | Boolean       | Boolean indicating whether the profile is in the grace period. While `true`, `expires_at` holds the end of the grace period. |
 | **is_lifetime**                    | Boolean       | Boolean indicating whether the access level is lifetime.     |
 | **is_refund**                      | Boolean       | Boolean indicating whether the transaction is a refund.      |
 | **original_purchase_date**         | ISO 8601 date | For recurring subscriptions, the original purchase is the first transaction in the chain, its ID called original transaction ID  links the chain of renewals; later transactions are extensions of it. The original purchase date is the date and time of this first transaction. |
 | **original_transaction_id**        | String        | <p>For recurring subscriptions, this is the original transaction ID that links the chain of renewals. The original transaction is the first in the chain; later transactions are extensions of it.</p><p>If no extensions, `original_transaction_id` matches store_transaction_id.</p>The transaction identifier of the original purchase. |
-| **paywall_name**                   | String        | Name of the paywall where the transaction originated.        |
+| **paywall_name**                   | String        | Name of the paywall where the transaction originated. For a flow, the ID of the paywall screen (`scr_...`). |
 | **paywall_revision**               | String        | Revision of the paywall where the transaction originated. The default value is 1. |
 | **profile_country**                | String        | Determined by Adapty, based on profile IP.                   |
 | **profile_event_id**               | UUID          | Unique event ID that can be used for deduplication.          |
@@ -387,7 +447,7 @@ Use this event to update the user’s access level in your database, grant or re
 | **subscription_expires_at**        | ISO 8601 date | The expiration date of the subscription. In this event it holds the same value as `expires_at`: during a grace period, the end of the grace period; after a refund or cancellation, the cancellation date. |
 | **transaction_id**                 | String        | Unique identifier for a transaction.                         |
 | **trial_duration**                 | String        | Duration of a trial period in days (e.g., "7 days").         |
-| **variation_id**                   | UUID          | An identifier of a variation, used to attribute purchases to this paywall. |
+| **variation_id**                   | UUID          | An identifier of a variation, used to attribute purchases to this paywall. For a flow, the ID of the paywall screen inside the flow, not the A/B test variant. |
 | **vendor_product_id**              | String        | <p>Product ID in the store (Apple/Google/Stripe).</p><p>For a [12-month commitment plan](app-store-12-month-commitment), the value is `<product_id>:monthly`.</p><p>If access was granted without a real store transaction, `vendor_product_id` will be one of:</p><ul><li>`adapty_server_side_product` — granted via the [server-side API](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [granted manually](give-access-level-to-specific-customer) in the Adapty Dashboard.</li><li>`adapty_promotion` — legacy.</li></ul> |
 | **will_renew**                     | Boolean       | Indicates whether the paid access level will be renewed.     |
 
