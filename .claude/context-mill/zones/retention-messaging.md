@@ -59,6 +59,19 @@ there is no Google Play equivalent.
 - **Reactivation does not re-enter Apple's review.** The confirm-modal copy is explicit: deactivating
   hides the message "but not deleted. You can reactivate it anytime without going through review
   again", and activating "may take a few minutes to appear for all users".
+- **The analytics metrics are now readable in the backend** (backend metrics query on the production line
+  and the release QA notes, 2026-10-29) — this corrects "the backend carries no retention-messaging
+  logic" above, for analytics only. The table has six columns: **Shown**, **Retained users** (was
+  **Retained** until 2026-10-28), **Saved users**, **Retention rate**, **Save rate**, **Saved revenue**.
+  The unit is one (message, original transaction, day) — still attempts, not people, despite the "users"
+  labels. Retained = a paid start, renewal or trial conversion billed after the view and before the first
+  auto-renew-off or expiry; ties go to churn. Not retained: offer accepted then cancelled before paying,
+  a $0 period, cancel → re-enable → pay, resubscribe after expiry, a charge Apple billed before the view,
+  a refunded payment. Saved = no auto-renew-off within 24 h of the day's first view, counted only once
+  24 h have passed; Save rate = saved / views older than 24 h. Saved revenue = USD price before Apple's
+  commission of the retained attempts' payments until the first cancel or expiry, each payment credited
+  to the latest retaining view before it; Family Sharing payments count as retained but add no revenue.
+  Documented in `retention-messaging-analytics`.
 
 ## What we document, what we don't
 
