@@ -12,15 +12,15 @@ Una prueba regular divide los usuarios de una audiencia en un placement entre do
 
 ## Antes de empezar \{#before-you-start\}
 
-El tema `ab-tests` utiliza la misma instalación e inicio de sesión que el resto de la CLI. Si aún no lo has configurado, sigue los pasos 1 y 2 de la [guía de inicio rápido](developer-cli-quickstart). El tema requiere la versión 0.13.0 o posterior de la CLI. Para ver tu versión, ejecuta `adapty --version`.
+El tema `ab-tests` utiliza la misma instalación e inicio de sesión que el resto de la CLI. Si aún no lo has configurado, sigue los pasos 1 y 2 de la [guía de inicio rápido](developer-cli-quickstart). El tema requiere la versión 0.14.0 o posterior de la CLI. Para ver tu versión, ejecuta `adapty --version`.
 
-Cada comando recibe el UUID de la aplicación mediante `--app`. Para encontrarlo, ejecuta:
+Cada comando requiere el UUID de la app en `--app`. Para encontrarlo, ejecuta:
 
 ```bash
 adapty apps list
 ```
 
-Una prueba utiliza contenido que ya existe:
+Una prueba usa contenido que ya existe:
 
 - **Flows**: Un flow se une a una prueba solo cuando está publicado. Un flow en borrador, o con cambios sin publicar, no es aceptado. Para publicar un flow, ejecuta `adapty flows publish`.
 - **Paywalls**: Para crear un paywall con productos que ya están en Adapty, ejecuta `adapty paywalls create`. Para darle un nuevo diseño a un paywall, usa el [Paywall Builder](adapty-paywall-builder).
@@ -61,15 +61,15 @@ Una prueba nueva es un borrador. Ningún usuario ve un borrador, así que puedes
 
    ```bash
    adapty ab-tests create --app <app-id> --title "Annual vs monthly" \
-     --goal "More revenue per user" \
+     --goal "More revenue per user" --placement <placement-id> \
      --paywalls '[{"paywall_id":"<paywall-a>","weight":50},{"paywall_id":"<paywall-b>","weight":50}]'
    ```
 
-   Para una prueba de flow, pasa `--flows` con `flow_id` en cada rama. Una rama también puede tener un `title`, como `"title":"A"`.
+   `--placement` es obligatorio. Una prueba de paywall necesita un placement de paywall, y una prueba de flow necesita un placement de flow. Para una prueba de flow, usa `--flows` con `flow_id` en cada variante. Una variante también puede tener un `title`, como `"title":"A"`.
 
 3. **Revisa el borrador** con `ab-tests get`.
 
-`create` también puede tomar un placement y audiencia planificados, con `--placement` y `--segment` o `--all-users`. Estos valores planificados no tienen ningún efecto sobre los usuarios. Cuando inicies la prueba, pasa el placement y la audiencia a `start` de nuevo.
+La ubicación de un borrador es solo provisional. `create` también puede aceptar una audiencia provisional, con `--segment` o `--all-users`. Estos valores provisionales no tienen ningún efecto sobre los usuarios. Cuando inicies la prueba, vuelve a pasar el placement y la audiencia a `start`.
 
 ## Iniciar una prueba \{#start-a-test\}
 
@@ -88,25 +88,25 @@ El CLI muestra lo que hará el inicio y pregunta `Apply? [y/N]` antes de enviar 
 - **El placement tiene una audiencia para este segmento** (o para todos los usuarios): La prueba se ejecuta en esa audiencia. Una prueba que esté activa en ese momento se detiene y pasa al estado `completed`.
 - **El placement no tiene audiencia para este segmento**: `start` añade una nueva audiencia con la máxima prioridad en el placement. Los usuarios de este segmento que actualmente coincidan con otra audiencia pasan a la prueba.
 
-Para dar a la prueba una prioridad menor que otra audiencia, primero añade el segmento como audiencia con esa prioridad. Asígnale el paywall o flow que esos usuarios ven actualmente y luego inicia la prueba en esa audiencia. Consulta [Cambiar la prioridad de una audiencia](change-audience-priority).
+Para dar a la prueba una prioridad menor que otra audiencia, primero añade el segmento como audiencia con esa prioridad. Asígnale el paywall o flow que esos usuarios ven ahora y luego inicia la prueba en esa audiencia. Consulta [Cambiar la prioridad de la audiencia](change-audience-priority).
 
 Un cambio en una audiencia de segmento puede tardar hasta 20 minutos en llegar a todos los usuarios.
 
-Inicia solo pruebas en borrador. Una prueba completada, inactiva o archivada se reinicia con el mismo ID, y los usuarios que participaron en ella vuelven a su variante anterior. Para volver a ejecutar una prueba, crea una nueva: lee la prueba anterior con `get` y luego `create` una prueba con las mismas variantes.
+Solo se inicia una prueba en borrador. Para ejecutar una prueba de nuevo, crea una nueva: lee la prueba antigua con `get` y luego crea una prueba con los mismos grupos usando `create`.
 
 ## Cambiar una prueba \{#change-a-test\}
 
-`update` envía la prueba completa de nuevo. Incluye todos los flags cada vez. Si omites alguno, Adapty borra su valor: por ejemplo, el objetivo, el placement previsto o la audiencia prevista.
+`update` envía la prueba completa de nuevo. Incluye todos los parámetros cada vez, incluyendo el obligatorio `--placement`. Si omites un parámetro, Adapty borra su valor: por ejemplo, el objetivo o la audiencia planificada.
 
 ```bash
 adapty ab-tests update --app <app-id> <test-id> --title "Annual vs monthly, Q4" \
-  --goal "More revenue per user" \
+  --goal "More revenue per user" --placement <placement-id> \
   --paywalls '[{"paywall_id":"<paywall-a>","weight":70},{"paywall_id":"<paywall-b>","weight":30}]'
 ```
 
-En una prueba activa, `update` solo cambia el título y el objetivo. Pasa los arms y el placement exactamente como los devuelve `get`; se rechazarán otros arms o un placement diferente. La prueba conserva su hora de inicio y los usuarios conservan sus arms.
+En una prueba en vivo, `update` solo cambia el título y el objetivo. Pasa los brazos, el placement y la audiencia exactamente como los devuelve `get`; se rechazarán otros brazos u otro placement. La prueba mantiene su hora de inicio y los usuarios conservan sus brazos. No puedes modificar una prueba completada o archivada.
 
-Para cambiar los arms o los pesos de una prueba activa, reemplázala. `replace` corresponde a la acción **Modify** en el dashboard:
+Para cambiar los brazos o los pesos de una prueba en vivo, reemplázala. `replace` es la acción **Modify** del dashboard:
 
 ```bash
 adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" \
@@ -114,7 +114,7 @@ adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" 
   --paywalls '[{"paywall_id":"<paywall-a>","weight":80},{"paywall_id":"<paywall-b>","weight":20}]'
 ```
 
-La prueba en curso se detiene y pasa al estado `completed`, y sus resultados se conservan con su ID. Se inicia una nueva prueba con un nuevo ID sobre la misma audiencia, y Adapty asigna de nuevo cada usuario de la audiencia a un grupo. Si indicas un placement diferente en `--placement`, Adapty mueve la audiencia a ese placement. No se puede mover una prueba de todos los usuarios.
+La prueba activa se detiene y pasa al estado `completed`, y sus resultados se conservan con su ID. Una nueva prueba con un nuevo ID comienza en la misma audiencia, y Adapty asigna de nuevo a cada usuario de la audiencia a un grupo. Si indicas un placement diferente en `--placement`, Adapty mueve la audiencia a ese placement. No puedes mover una prueba de todos los usuarios.
 
 ## Detener una prueba \{#stop-a-test\}
 
@@ -181,14 +181,15 @@ Todos los comandos requieren `--app`, el UUID de la app obtenido con `adapty app
 
 ### `ab-tests list`
 
-| Flag | Requerido | Descripción |
+| Flag | Required | Description |
 |---|---|---|
-| `--type` | No | `flow` (por defecto) o `paywall`. |
+| `--type` | No | `flow` (predeterminado) o `paywall`. |
 | `--state` | No | `live`, `draft`, `completed`, `inactive` o `archived`. |
-| `--placement` | No | Solo las pruebas de este placement (ID). |
+| `--placement` | No | Solo las pruebas de este placement (ID). Repite el flag para varios placements. |
+| `--segment` | No | Solo las pruebas que se ejecutan para exactamente este segmento (ID). Repite el flag para varios segmentos. |
 | `--search` | No | Solo las pruebas cuyo título contenga este texto. |
-| `--page` | No | Número de página. Por defecto: 1. |
-| `--page-size` | No | Pruebas por página, hasta 100. Por defecto: 20. |
+| `--page` | No | Número de página. Predeterminado: 1. |
+| `--page-size` | No | Pruebas por página, hasta 100. Predeterminado: 20. |
 
 ### `ab-tests get`
 
@@ -196,19 +197,19 @@ Devuelve el test con sus ramas. No acepta otros flags.
 
 ### `ab-tests create`
 
-| Flag | Obligatorio | Descripción |
+| Indicador | Obligatorio | Descripción |
 |---|---|---|
-| `--title` | Sí | Título del test. |
-| `--paywalls` | Uno de los dos | Brazos de una prueba A/B de paywall, en JSON: `[{"paywall_id":"<id>","weight":50,"title":"A"}, …]`. `title` es opcional. |
-| `--flows` | Uno de los dos | Brazos de una prueba A/B de flow, en JSON, con `flow_id` en lugar de `paywall_id`. |
-| `--goal` | No | Lo que el test pretende demostrar. |
-| `--placement` | No | Placement para el que está planificado el test (ID). |
-| `--segment` | No | Planifica el test para un segmento (ID). No se puede usar con `--all-users`. |
-| `--all-users` | No | Planifica el test para todos los usuarios. |
+| `--title` | Sí | Título de la prueba. |
+| `--paywalls` | Uno de los dos | Variantes de una prueba A/B de paywall, en JSON: `[{"paywall_id":"<id>","weight":50,"title":"A"}, …]`. `title` es opcional. |
+| `--flows` | Uno de los dos | Variantes de una prueba A/B de flow, en JSON, con `flow_id` en lugar de `paywall_id`. |
+| `--goal` | No | Lo que la prueba pretende demostrar. |
+| `--placement` | Sí | Placement para el que se planifica la prueba (ID). Una prueba de paywall necesita un placement de paywall, y una prueba de flow necesita un placement de flow. |
+| `--segment` | No | Planifica la prueba para un segmento (ID). No se puede usar junto con `--all-users`. |
+| `--all-users` | No | Planifica la prueba para todos los usuarios. |
 
 ### `ab-tests update`
 
-Acepta las mismas opciones que `create`. Una opción que omitas se borrará. En una prueba activa, solo se pueden cambiar `--title` y `--goal`.
+Acepta los mismos flags que `create`, y `--placement` es obligatorio. Un flag que omitas se borrará. En una prueba en curso, solo se pueden cambiar `--title` y `--goal`. Pasa de nuevo el mismo placement y audiencia.
 
 ### `ab-tests start`
 
