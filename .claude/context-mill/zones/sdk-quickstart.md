@@ -172,7 +172,7 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | react-native-quickstart-identify | — | dev | 7 | react-native |
 | react-native-quickstart-paywalls | — | dev | 6 | react-native |
 | react-native-sdk-overview | entry | dev | 3 | react-native |
-| sdk-installation-android | — | dev | 14 | android |
+| sdk-installation-android | — | dev | 15 | android |
 | sdk-installation-capacitor | — | dev | 13 | capacitor |
 | sdk-installation-flutter | — | dev | 13 | flutter |
 | sdk-installation-ios | — | dev | 12 | ios |

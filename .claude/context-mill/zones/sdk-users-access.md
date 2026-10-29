@@ -81,6 +81,17 @@ version boundary.
   `androidObfuscatedAccountId` on Flutter and KMP, a positional third argument on Unity, absent from the
   two native articles); which Kids Mode mechanism class applies; and the poll interval plus whether it
   is foreground-gated.
+- **Store messages work in opposite directions on iOS and Android** (2026-10-26; iOS from
+  `ios-store-messages`, Android from the Android SDK code on its 4.3.0 release branch). On iOS, StoreKit
+  shows App Store messages by itself, and the SDK's manual mode intercepts them into a pending list. Google
+  Play shows nothing unless the app calls `BillingClient.showInAppMessages`, so on Android the default
+  `AdaptyConfig.StoreMessagesHandling.AUTO` means *Adapty* makes that call on every `Activity` start, and
+  `MANUAL` means nobody does until the app calls `Adapty.showStoreMessages(activity)`. Android has no
+  pending list, no message types, no type filter and no error codes — the method returns `Unit` and is a
+  no-op when the SDK isn't activated or the `Activity` is finishing, destroyed or not attached to a
+  window. When Google Play reports that the subscription status was updated from the message, the SDK
+  runs a purchase sync. Never carry an iOS sentence about pending messages or error codes into another
+  platform's article without reading that platform's code. Requires Android SDK 4.3.0.
 
 ## What we document, what we don't
 
@@ -144,7 +155,7 @@ Delta from `scope.md` only.
 | kids-mode | kids-mode | kids-mode-android | kids-mode-react-native | kids-mode-flutter | kids-mode-unity | kids-mode-kmp | kids-mode-capacitor |
 | listen-subscription-changes |  | android-listen-subscription-changes | react-native-listen-subscription-changes | flutter-listen-subscription-changes | unity-listen-subscription-changes | kmp-listen-subscription-changes | capacitor-listen-subscription-changes |
 | setting-user-attributes | setting-user-attributes | android-setting-user-attributes | react-native-setting-user-attributes | flutter-setting-user-attributes | unity-setting-user-attributes | kmp-setting-user-attributes | capacitor-setting-user-attributes |
-| store-messages | ios-store-messages |  |  |  |  |  |  |
+| store-messages | ios-store-messages | android-store-messages |  |  |  |  |  |
 | subscription-status | subscription-status |  |  |  |  |  |  |
 | user | ios-user | android-user | react-native-user | flutter-user | unity-user | kmp-user | capacitor-user |
 
@@ -153,6 +164,7 @@ Delta from `scope.md` only.
 | android-identifying-users | — | dev | 4 | android |
 | android-listen-subscription-changes | — | dev | 4 | android |
 | android-setting-user-attributes | — | dev | 4 | android |
+| android-store-messages | how-to | dev | 3 | android |
 | android-user | entry | dev | 0 | android |
 | capacitor-deal-with-att | — | dev | 0 | capacitor |
 | capacitor-identifying-users | — | dev | 6 | capacitor |
@@ -226,6 +238,7 @@ profile) live in `aliases.md` and are deliberately not repeated here.
 | "segment users by app usage", "target a paywall by user property" | `setting-user-attributes` for the SDK-side write; defining the segment that consumes it is dashboard-side and lives outside this zone. |
 | "IDFA permission", "iOS 14 tracking prompt", "attribution data missing or wrong after the prompt" | `deal-with-att`. The SDK does not read the ATT status itself — you forward it via a profile update, and late forwarding is what corrupts integration data. iOS-only concern, so there is no Android article even though the cross-platform SDKs all have one. |
 | "COPPA", "app rejected from the Kids Category", "disable IDFA/GAID collection", "remove AD_ID permission" | `kids-mode`. Two-part answer that tickets usually only half-know: a dashboard toggle to stop IP-address collection *plus* a build-time SDK variant (separate package/Podfile flag/manifest change per platform). Unity's article documents that support is still pending and points at the native guides. |
+| "price increase popup over my paywall", "billing issue sheet interrupts onboarding", "Google Play payment declined message", "in-app messages" | `store-messages`. iOS and Android only so far. On Android the message appears only because Adapty requests it (default since SDK 4.3.0); on iOS StoreKit shows it unless the SDK runs in manual mode. |
 | "where are the user/profile docs" | The `user` family — per-platform index pages with no content of their own. |
 
 ## Gaps and misses
