@@ -273,7 +273,7 @@ repeated here.
   the selector docs when the selector ships. The same check found the setup section
   stale: Braze now creates REST keys and lists app identifiers under **Settings** > **APIs and
   Identifiers**, and a key's permissions can't be edited after creation.
-- **Flow and A/B test fields (2026-10-29, confirmed by the backend team; QA-tested on the webhook only).**
+- **Flow and A/B test fields (2026-10-29, confirmed by the backend team and checked against backend code on the feature branch before merge; QA-tested on the webhook only).**
   Seven fields join the events that already carry `developer_id`/`variation_id`: `flow_id`, `flow_name`,
   `flow_variation_id`, `ab_test_id`, `ab_test_variant_id`, `ab_test_variant_name`, `ab_test_parent_name`.
   Absent rather than `null` when empty. Existing fields keep their values on purpose: for flows
@@ -289,3 +289,11 @@ repeated here.
   properties; the backend team confirmed the whole event goes out in `properties`. And
   `firebase-and-google-analytics` cited a 36-character value limit for everything — that is the
   user-property limit; event parameter values allow 100, and Adapty now cuts text values to 100.
+- **Code-verified details of the same change (backend code, 2026-10-29):** the four IDs are UUIDs; the
+  names are strings. The fields are added in the same branch of the event body as `variation_id`, gated on
+  `developer_id`, so `access_level_updated` carries them too. S3/GCS columns follow `attributes`, the
+  last pre-existing column in the export (the docs tables list `integration_ids` last, so the file order
+  and the table order differ). Firebase cuts every text value, `transaction_id` and the item ID included,
+  to 100 characters. Regular onboarding A/B tests also get `ab_test_id` and the variant fields, which
+  the docs don't call out. The same branch drops the segment-title fallback from `cohort_name`, which
+  is now the audience title only (the docs already describe it that way).
