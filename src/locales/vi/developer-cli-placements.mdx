@@ -1,10 +1,10 @@
 ---
-title: "Lệnh Placements và Segments"
-description: "Các lệnh Adapty CLI tạo và cập nhật các placement cùng đối tượng của chúng, đồng thời tạo các phân khúc mà các đối tượng đó nhắm đến."
-metadataTitle: "Lệnh CLI cho Placements và Segments | Tài liệu Adapty"
+title: "Lệnh quản lý Placements và Segments"
+description: "Các lệnh Adapty CLI dùng để tạo và cập nhật placements cùng các đối tượng của chúng, đọc chỉ số của flow placements, và tạo các phân khúc mà những đối tượng đó nhắm đến."
+metadataTitle: "Lệnh CLI quản lý Placements và Segments | Tài liệu Adapty"
 ---
 
-Các lệnh Adapty CLI này quản lý [placement](placements), các đối tượng trên đó, và các [phân khúc](segments) mà các đối tượng đó nhắm đến.
+Các lệnh Adapty CLI này quản lý [placements](placements), các đối tượng trên đó, và các [phân khúc](segments) mà những đối tượng đó nhắm đến.
 
 ## Placements \{#placements\}
 
@@ -21,10 +21,11 @@ adapty placements list --app <app-id>
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
+| `--type` | No | Chỉ liệt kê các placement thuộc loại này: `paywall`, `flow`, hoặc `onboarding` |
 
 Chấp nhận [pagination flags](developer-cli-reference#global-flags).
 
-Mỗi mục chứa `id`, `developer_id`, `title`, và `is_active`. `is_active` là `true` cho placement đang hoạt động và `false` cho placement không hoạt động.
+Mỗi mục chứa `id`, `developer_id`, `title`, `is_active` và `type`. `is_active` là `true` nếu placement đang hoạt động và `false` nếu không hoạt động. `type` là loại nội dung của placement: `paywall`, `flow` hoặc `onboarding`. Trong `--json`, một placement không có type sẽ có `type: null`. Cờ `--type` và trường `type` yêu cầu CLI phiên bản 0.15.0 trở lên.
 
 ### adapty placements get
 
@@ -42,7 +43,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
 
-Phản hồi chứa `id`, `developer_id`, `title`, `is_active`, và một mảng `audiences`. `is_active` là `true` cho một placement đang hoạt động và `false` cho placement không hoạt động. Mỗi mục audience chứa `content_type`, `segment_ids`, `priority`, và ID của nội dung tương ứng: `paywall_id` cho `paywall`, `flow_id` cho `flow`, hoặc `ab_test_id` và `ab_test_title` cho một audience chạy [A/B test](ab-tests). Đối tượng mặc định có `segment_ids: []` và giá trị priority cao nhất (được đánh giá sau cùng). Xem [Cấu trúc Audiences](#audiences-shape).
+Phản hồi chứa `id`, `developer_id`, `title`, `is_active`, `type`, và mảng `audiences`. `is_active` là `true` cho placement đang hoạt động và `false` cho placement không hoạt động. Mỗi mục trong audiences chứa `content_type`, `segment_ids`, `priority`, và ID của nội dung tương ứng: `paywall_id` cho `paywall`, `flow_id` cho `flow`, hoặc `ab_test_id` và `ab_test_title` cho đối tượng chạy [A/B test](ab-tests). Đối tượng mặc định có `segment_ids: []` và giá trị priority cao nhất (được đánh giá sau cùng). Xem [Cấu trúc Audiences](#audiences-shape).
 
 ### adapty placements create
 
@@ -155,6 +156,80 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
    ```
+
+### Danh sách chỉ số placement của adapty
+
+Hiển thị các chỉ số trọn đời của nhiều flow placement, mỗi dòng là một placement. Đây là dữ liệu của bảng placements trên dashboard.
+
+```bash
+adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--type` | Có | Loại placement, như [`placements list`](#adapty-placements-list) hiển thị: `flow` |
+| `--ids` | Có | Placement ID (UUID). Phân cách bằng dấu phẩy, hoặc lặp lại cờ |
+| `--csv` | Không | In CSV: một hàng cho mỗi placement, với placement ID và tất cả 27 chỉ số. Không dùng được với `--json` |
+
+Lệnh `placements metrics` đọc các số liệu từ trang [placement metrics](placement-metrics) dành cho flow placements, và yêu cầu CLI phiên bản 0.15.0 trở lên. `--type` phải khớp với loại placement: Adapty sẽ từ chối placement thuộc loại khác.
+
+Mỗi dòng hiển thị ID placement cùng với số lượt xem, lượt mua, lượt dùng thử và doanh thu. `--json` và `--csv` mang đầy đủ 27 chỉ số.
+
+### adapty placements metrics values
+
+Liệt kê các filter key và value của một flow placement: những gì `placements metrics get --filter` nhận vào.
+
+```bash
+adapty placements metrics values --app <app-id> <placement-id> --type flow
+```
+
+| Argument | Description |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--type` | Yes | Loại placement: `flow` |
+
+Đầu ra có cùng dạng với [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): giá trị trên cùng của mỗi nhóm là khóa bộ lọc, và các giá trị trong cùng là những gì khóa đó nhận.
+
+### adapty placements metrics get
+
+Hiển thị các chỉ số của một placement flow dưới dạng cây của trang [chỉ số placement](placement-metrics), cho toàn bộ vòng đời hoặc một khoảng thời gian.
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `placement-id` | ID placement (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--type` | Có | Loại placement: `flow` |
+| `--based-on` | Có | Cấp đầu tiên của cây phân chia theo: `audience`, `flow`, hoặc `placement` |
+| `--group-by` | Không | Phân chia mỗi đối tượng theo `country` hoặc `store` |
+| `--date-from` | Không | Ngày đầu tiên của khoảng thời gian, bao gồm cả ngày này (`YYYY-MM-DD`). Dùng kèm với `--date-to` và `--date-type` |
+| `--date-to` | Không | Ngày cuối cùng của khoảng thời gian, bao gồm cả ngày này (`YYYY-MM-DD`). Dùng kèm với `--date-from` và `--date-type` |
+| `--date-type` | Không | Ngày nào được áp dụng cho khoảng thời gian: `purchase_date` hoặc `profile_install_date`. Dùng kèm với `--date-from` và `--date-to` |
+| `--granularity` | Không | Chia khoảng thời gian thành các điểm: `day`, `week`, `month`, `quarter`, hoặc `year` |
+| `--filter` | Không | Chỉ giữ lại dữ liệu có các giá trị của khóa lọc này. Có thể lặp lại. Xem [Lọc các chỉ số](developer-cli-flows#filter-the-metrics) |
+| `--timezone` | Không | Múi giờ IANA của các điểm trong khoảng thời gian, ví dụ `Europe/Berlin`. Nếu không có, Adapty sử dụng múi giờ của ứng dụng |
+| `--depth` | Không | Số cấp của cây sẽ in dưới `Total`. Mặc định: `1` |
+| `--csv` | Không | In CSV: một hàng cho mỗi nút của toàn bộ cây. Không thể dùng cùng với `--json` |
+
+Không có `--date-from`, `--date-to` và `--date-type`, lệnh sẽ trả về chỉ số trọn đời. Để lấy theo khoảng thời gian, hãy truyền cả ba tham số: nếu chỉ truyền khoảng thời gian mà không có `--date-type`, lệnh sẽ thoát với mã lỗi 4.
+
+Đầu ra, `--depth`, `--json`, `--csv` và `--filter` hoạt động giống như trong [`flows metrics get`](developer-cli-flows#read-the-output). Ví dụ, để so sánh các đối tượng của một placement theo cửa hàng:
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
+```
 
 ## Phân khúc \{#segments\}
 

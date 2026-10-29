@@ -1,10 +1,10 @@
 ---
 title: "Placement ve segment komutları"
-description: "Placement'ları ve bunların kitlelerini oluşturan ve güncelleyen, bu kitlelerin hedeflediği segmentleri oluşturan Adapty CLI komutları."
+description: "Placement'ları ve kitlelerini oluşturan ve güncelleyen, flow placement'larının metriklerini okuyan ve bu kitlelerin hedeflediği segmentleri oluşturan Adapty CLI komutları."
 metadataTitle: "Placement ve Segment CLI Komutları | Adapty Dokümanları"
 ---
 
-Bu Adapty CLI komutları, [placement'ları](placements), bunların üzerindeki kitleleri ve bu kitlelerin hedeflediği [segmentleri](segments) yönetir.
+Bu Adapty CLI komutları [placement'ları](placements), üzerlerindeki kitleleri ve bu kitlelerin hedeflediği [segmentleri](segments) yönetir.
 
 ## Placement'lar \{#placements\}
 
@@ -21,10 +21,11 @@ adapty placements list --app <app-id>
 | Flag | Gerekli | Açıklama |
 |---|---|---|
 | `--app` | Evet | Uygulama ID'si (UUID) |
+| `--type` | Hayır | Yalnızca şu türdeki placement'ları listeler: `paywall`, `flow` veya `onboarding` |
 
-[Sayfalama flag'lerini](developer-cli-reference#global-flags) destekler.
+[Sayfalama flag'lerini](developer-cli-reference#global-flags) kabul eder.
 
-Her öğe `id`, `developer_id`, `title` ve `is_active` alanlarını içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için `false` değerini alır.
+Her öğe `id`, `developer_id`, `title`, `is_active` ve `type` içerir. `is_active`, aktif bir placement için `true`, etkin olmayan bir placement için `false` değerini alır. `type`, placement'ın içerik türüdür: `paywall`, `flow` veya `onboarding`. `--json` çıktısında, türü olmayan bir placement için `type: null` gösterilir. `--type` bayrağı ve `type` alanı için CLI 0.15.0 veya sonraki bir sürüm gereklidir.
 
 ### adapty placements get
 
@@ -42,7 +43,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Evet | Uygulama ID (UUID) |
 
-Yanıt; `id`, `developer_id`, `title`, `is_active` ve bir `audiences` dizisi içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için `false` değerini alır. Her kitle girdisi; `content_type`, `segment_ids`, `priority` ve içeriğin ID'sini taşır: `paywall` için `paywall_id`, `flow` için `flow_id`, [A/B testi](ab-tests) çalıştıran bir kitle için ise `ab_test_id` ve `ab_test_title`. Varsayılan kitle `segment_ids: []` değerine ve en yüksek öncelik sayısına (en son değerlendirilen) sahiptir. Bkz. [Kitle yapısı](#audiences-shape).
+Yanıt; `id`, `developer_id`, `title`, `is_active`, `type` ve bir `audiences` dizisi içerir. `is_active`, aktif bir placement için `true`, pasif bir placement için `false` değerini alır. Her kitle girişi; `content_type`, `segment_ids`, `priority` ve içeriğinin ID'sini taşır: `paywall` için `paywall_id`, `flow` için `flow_id`, ya da [A/B testi](ab-tests) çalıştıran bir kitle için `ab_test_id` ve `ab_test_title`. Varsayılan kitle `segment_ids: []` değerine sahiptir ve en yüksek priority değerini alır (en son değerlendirilir). Bkz. [Audiences şekli](#audiences-shape).
 
 ### adapty placements create
 
@@ -155,6 +156,80 @@ Segment'e özgü yönlendirmeyi kaybetmeden bir paywall'u birden fazla placement
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
    ```
+
+### adapty placements metrics list
+
+Birden fazla flow placement'ının tüm zamanlara ait metriklerini gösterir; her placement için bir satır. Bu, kontrol panelindeki placement'lar tablosunun verisidir.
+
+```bash
+adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
+```
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--type` | Evet | [`placements list`](#adapty-placements-list) komutunun gösterdiği şekliyle placement türü: `flow` |
+| `--ids` | Evet | Placement ID'leri (UUID'ler). Virgülle ayırın veya bayrağı tekrarlayın |
+| `--csv` | Hayır | CSV yazdırır: her placement için bir satır, placement ID'si ve 27 metriğin tamamıyla. `--json` ile birlikte kullanılamaz |
+
+`placements metrics` komutları, flow placement'larına ait [placement metrics](placement-metrics) sayfasındaki sayıları okur ve CLI 0.15.0 veya daha yeni bir sürüm gerektirir. `--type` değeri, placement'ın türüyle eşleşmelidir: Adapty, farklı türdeki bir placement'ı reddeder.
+
+Her satırda placement ID'si ile birlikte görüntüleme, satın alma, deneme ve gelir bilgileri gösterilir. `--json` ve `--csv` seçenekleri 27 metriğin tamamını içerir.
+
+### adapty placements metrics values
+
+Bir flow placement'ının filtre anahtarlarını ve değerlerini listeler: `placements metrics get --filter` parametresinin aldığı değerler.
+
+```bash
+adapty placements metrics values --app <app-id> <placement-id> --type flow
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `placement-id` | Placement ID'si (UUID) |
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--type` | Evet | Placement türü: `flow` |
+
+[`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) çıktısıyla aynı yapıya sahiptir: her grubun üst değeri filtre anahtarıdır ve en içteki değerler ise anahtarın aldığı değerlerdir.
+
+### adapty placements metrics get
+
+Bir flow placement'ının metriklerini, [placement metrikleri](placement-metrics) sayfasındaki ağaç yapısında gösterir; tüm yaşam süresi veya belirli bir dönem için.
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--type` | Evet | Placement türü: `flow` |
+| `--based-on` | Evet | Ağacın ilk düzeyinin neye göre bölüneceği: `audience`, `flow` veya `placement` |
+| `--group-by` | Hayır | Her kitleyi `country` veya `store` bazında böler |
+| `--date-from` | Hayır | Dönemin ilk günü, dahil (`YYYY-MM-DD`). `--date-to` ve `--date-type` ile birlikte kullanın |
+| `--date-to` | Hayır | Dönemin son günü, dahil (`YYYY-MM-DD`). `--date-from` ve `--date-type` ile birlikte kullanın |
+| `--date-type` | Hayır | Dönemin hangi tarihe göre uygulanacağı: `purchase_date` veya `profile_install_date`. `--date-from` ve `--date-to` ile birlikte kullanın |
+| `--granularity` | Hayır | Dönemi noktalara böler: `day`, `week`, `month`, `quarter` veya `year` |
+| `--filter` | Hayır | Yalnızca belirtilen filtre anahtarı değerlerine sahip verileri tutar. Tekrarlanabilir. Bkz. [Metrikleri filtrele](developer-cli-flows#filter-the-metrics) |
+| `--timezone` | Hayır | Dönem noktaları için IANA saat dilimi, örneğin `Europe/Berlin`. Belirtilmezse Adapty, uygulama saat dilimini kullanır |
+| `--depth` | Hayır | `Total` altında kaç ağaç düzeyi yazdırılacağı. Varsayılan: `1` |
+| `--csv` | Hayır | CSV olarak yazdırır: tüm ağacın her düğümü için bir satır. `--json` ile birlikte kullanılamaz |
+
+`--date-from`, `--date-to` ve `--date-type` olmadan komut, tüm zamana ait metrikleri döndürür. Belirli bir dönem için üçünü birden girin: `--date-type` olmadan bir dönem belirtmek 4 koduyla çıkış yapar.
+
+Çıktı, `--depth`, `--json`, `--csv` ve `--filter` seçenekleri [`flows metrics get`](developer-cli-flows#read-the-output) ile aynı şekilde çalışır. Örneğin, bir placement'ın kitlelerini mağazaya göre karşılaştırmak için:
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
+```
 
 ## Segmentler \{#segments\}
 

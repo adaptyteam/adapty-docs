@@ -1,18 +1,18 @@
 ---
 title: "Comandos de placements y segmentos"
-description: "Comandos de Adapty CLI que crean y actualizan placements y sus audiencias, y crean los segmentos a los que apuntan esas audiencias."
+description: "Comandos de la CLI de Adapty que crean y actualizan placements y sus audiencias, leen las métricas de los placements de flow y crean los segmentos a los que se dirigen esas audiencias."
 metadataTitle: "Comandos CLI de Placements y Segmentos | Documentación de Adapty"
 ---
 
-Estos comandos de Adapty CLI gestionan los [placements](placements), las audiencias asociadas a ellos y los [segmentos](segments) a los que apuntan esas audiencias.
+Estos comandos de la CLI de Adapty gestionan los [placements](placements), las audiencias en ellos y los [segmentos](segments) a los que se dirigen esas audiencias.
 
 ## Placements \{#placements\}
 
 Los [placements](placements) son los puntos donde tus flows, paywalls y onboardings llegan a los usuarios. El tipo de contenido de un placement se fija en el momento de su creación, por lo que migrar una app de paywalls a flows implica crear nuevos placements en lugar de actualizar los existentes — el [skill migrate-placements](migrate-placements-skill) ejecuta estos comandos en bloque.
 
-### adapty placements list
+### Lista de placements de Adapty \{#adapty-placements-list\}
 
-Lista todos los [placements](placements) de una app.
+Lista todos los [placements](placements) de una aplicación.
 
 ```bash
 adapty placements list --app <app-id>
@@ -21,10 +21,11 @@ adapty placements list --app <app-id>
 | Flag | Requerido | Descripción |
 |---|---|---|
 | `--app` | Sí | ID de la app (UUID) |
+| `--type` | No | Lista solo los placements de este tipo: `paywall`, `flow` u `onboarding` |
 
 Acepta [flags de paginación](developer-cli-reference#global-flags).
 
-Cada elemento contiene `id`, `developer_id`, `title` e `is_active`. `is_active` es `true` para un placement activo y `false` para uno inactivo.
+Cada elemento contiene `id`, `developer_id`, `title`, `is_active` y `type`. `is_active` es `true` para un placement activo y `false` para uno inactivo. `type` es el tipo de contenido del placement: `paywall`, `flow` u `onboarding`. En `--json`, un placement sin tipo tiene `type: null`. El flag `--type` y el campo `type` requieren la versión 0.15.0 o posterior de la CLI.
 
 ### adapty placements get
 
@@ -42,7 +43,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Sí | ID de la app (UUID) |
 
-La respuesta contiene `id`, `developer_id`, `title`, `is_active` y un array `audiences`. `is_active` es `true` para un placement activo y `false` para uno inactivo. Cada entrada de audiencia incluye `content_type`, `segment_ids`, `priority` y el ID de su contenido: `paywall_id` para `paywall`, `flow_id` para `flow`, o `ab_test_id` y `ab_test_title` para una audiencia que ejecuta una [prueba A/B](ab-tests). La audiencia por defecto tiene `segment_ids: []` y el valor de prioridad más alto (se evalúa la última). Consulta [Forma de las audiencias](#audiences-shape).
+La respuesta contiene `id`, `developer_id`, `title`, `is_active`, `type` y un array `audiences`. `is_active` es `true` para un placement activo y `false` para uno inactivo. Cada entrada de audiencia incluye `content_type`, `segment_ids`, `priority` y el ID de su contenido: `paywall_id` para `paywall`, `flow_id` para `flow`, o `ab_test_id` y `ab_test_title` para una audiencia que ejecuta una [prueba A/B](ab-tests). La audiencia predeterminada tiene `segment_ids: []` y el valor de prioridad más alto (la última en evaluarse). Consulta [Formato de audiencias](#audiences-shape).
 
 ### adapty placements create
 
@@ -155,6 +156,80 @@ Para intercambiar un paywall en varios placements sin perder el enrutamiento esp
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
    ```
+
+### Lista de métricas de placements de adapty
+
+Muestra las métricas de por vida de varios placements de flow, una línea por cada placement. Estos son los datos de la tabla de placements en el dashboard.
+
+```bash
+adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
+```
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--type` | Sí | Tipo de placement, tal como lo muestra [`placements list`](#adapty-placements-list): `flow` |
+| `--ids` | Sí | IDs de placements (UUIDs). Sepáralos con comas o repite el indicador |
+| `--csv` | No | Imprime CSV: una fila por placement, con el ID del placement y las 27 métricas. No se puede usar con `--json` |
+
+Los comandos `placements metrics` leen los números de la página de [métricas de placement](placement-metrics) para placements de flow, y requieren la versión 0.15.0 o posterior de la CLI. `--type` debe coincidir con el tipo de placement: Adapty rechaza un placement de otro tipo.
+
+Cada línea muestra el ID del placement con sus visualizaciones, compras, pruebas e ingresos. `--json` y `--csv` incluyen las 27 métricas.
+
+### adapty placements metrics values
+
+Lista las claves y valores de filtro de un placement de tipo flow: lo que acepta `placements metrics get --filter`.
+
+```bash
+adapty placements metrics values --app <app-id> <placement-id> --type flow
+```
+
+| Argumento | Descripción |
+|---|---|
+| `placement-id` | ID del placement (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--type` | Sí | Tipo de placement: `flow` |
+
+El resultado tiene la misma forma que [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): el valor superior de cada grupo es la clave de filtro, y los valores más internos son lo que toma la clave.
+
+### adapty placements metrics get
+
+Muestra las métricas de un placement de flow como el árbol de la página de [métricas de placement](placement-metrics), para toda su vida útil o para un período.
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
+```
+
+| Argumento | Descripción |
+|---|---|
+| `placement-id` | ID del placement (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--type` | Sí | Tipo de placement: `flow` |
+| `--based-on` | Sí | Por qué divide el primer nivel del árbol: `audience`, `flow` o `placement` |
+| `--group-by` | No | Divide cada audiencia por `country` o `store` |
+| `--date-from` | No | Primer día del período, inclusive (`YYYY-MM-DD`). Pásalo junto con `--date-to` y `--date-type` |
+| `--date-to` | No | Último día del período, inclusive (`YYYY-MM-DD`). Pásalo junto con `--date-from` y `--date-type` |
+| `--date-type` | No | A qué fecha se aplica el período: `purchase_date` o `profile_install_date`. Pásalo junto con `--date-from` y `--date-to` |
+| `--granularity` | No | Divide el período en puntos: `day`, `week`, `month`, `quarter` o `year` |
+| `--filter` | No | Muestra solo los datos con estos valores de una clave de filtro. Repetible. Ver [Filtrar las métricas](developer-cli-flows#filter-the-metrics) |
+| `--timezone` | No | Zona horaria IANA de los puntos del período, por ejemplo `Europe/Berlin`. Sin ella, Adapty usa la zona horaria de la app |
+| `--depth` | No | Cuántos niveles del árbol se muestran bajo `Total`. Por defecto: `1` |
+| `--csv` | No | Imprime CSV: una fila por cada nodo de todo el árbol. No se puede usar con `--json` |
+
+Sin `--date-from`, `--date-to` y `--date-type`, el comando devuelve las métricas de por vida. Para un período, pasa los tres: un período sin `--date-type` termina con el código 4.
+
+La salida, `--depth`, `--json`, `--csv` y `--filter` funcionan igual que en [`flows metrics get`](developer-cli-flows#read-the-output). Por ejemplo, para comparar las audiencias de un placement por store:
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
+```
 
 ## Segmentos \{#segments\}
 

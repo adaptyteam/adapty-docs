@@ -1,10 +1,10 @@
 ---
 title: "Lệnh Flows"
-description: "Các lệnh Adapty CLI để tạo flow, đọc và ghi cấu hình builder, kiểm tra và xem trước, tải lên media, và xuất bản chúng."
+description: "Các lệnh CLI của Adapty để tạo flow, đọc và ghi cấu hình builder, xác thực và xem trước, tải lên media, xuất bản và đọc các chỉ số của chúng."
 metadataTitle: "Lệnh CLI cho Flows | Tài liệu Adapty"
 ---
 
-[Flows](adapty-flow-builder) là các paywall và onboarding bạn xây dựng trong Flow & Paywall Builder. CLI quản lý bản ghi flow, cấu hình builder và quá trình xuất bản. Cấu hình builder là một tài liệu JSON lớn mà Flow & Paywall Builder thường tạo ra, và CLI không tự tạo cấu hình này. Để soạn thảo hoặc chỉnh sửa cấu hình từ terminal, hãy dùng [skill flow-generator](flow-generator-skill), vốn điều khiển các lệnh này cho bạn. Trước khi xuất bản, [skill flow-audit](flow-audit-skill) sẽ kiểm tra xem flow đã sẵn sàng cho môi trường production chưa. Các lệnh được liệt kê ở đây như một tài liệu tham khảo.
+[Flows](adapty-flow-builder) là các paywall và onboarding bạn xây dựng trong Flow & Paywall Builder. CLI quản lý bản ghi flow, cấu hình builder, và việc xuất bản. Cấu hình builder là một tài liệu JSON lớn mà Flow & Paywall Builder thường tạo ra, và CLI không tự tạo cấu hình này. Để soạn thảo hoặc chỉnh sửa cấu hình từ terminal, hãy dùng [flow-generator skill](flow-generator-skill) — skill này sẽ điều phối các lệnh này cho bạn. Trước khi xuất bản, [flow-audit skill](flow-audit-skill) sẽ kiểm tra xem flow có sẵn sàng cho môi trường sản xuất chưa. Các lệnh `flows metrics` đọc số liệu từ trang [flow metrics](flow-metrics) và yêu cầu CLI phiên bản 0.15.0 trở lên. Các lệnh được liệt kê ở đây để tham khảo.
 
 ## adapty flows list
 
@@ -205,6 +205,110 @@ adapty flows media upload --app <app-id> ./hero.png
 | `--app` | Yes | App ID (UUID) |
 
 Định dạng được chấp nhận: GIF, HEIC, JPEG, PNG, SVG và WebP. Phản hồi chứa `id`, `name` và `url` CDN của hình ảnh để tham chiếu từ cấu hình.
+
+## adapty flows metrics list
+
+Hiển thị chỉ số tổng hợp của nhiều flow, mỗi dòng tương ứng một flow. Đây là dữ liệu từ bảng flow trên dashboard.
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--ids` | Có | Flow ID (UUID). Phân tách bằng dấu phẩy hoặc lặp lại flag |
+| `--csv` | Không | In dạng CSV: mỗi hàng là một flow, bao gồm flow ID và 27 chỉ số. Không dùng được cùng với `--json` |
+
+Mỗi dòng hiển thị ID của flow cùng với lượt xem, lượt mua, số lượt dùng thử và doanh thu. `--json` và `--csv` bao gồm toàn bộ 27 chỉ số của trang [flow metrics](flow-metrics#metrics-definitions), chẳng hạn như `unique_profiles_views`, `net_revenue` và `conversion_rate_purchases`. Chỉ số không có dữ liệu sẽ là `0`, không bao giờ là `null`.
+
+## Giá trị chỉ số của adapty flows \{#adapty-flows-metrics-values\}
+
+Liệt kê các khóa và giá trị bộ lọc của một flow: những gì [`flows metrics get --filter`](#filter-the-metrics) nhận vào.
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `flow-id` | ID của flow (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+
+Mỗi dòng hiển thị một nhãn và, trong ngoặc đơn, giá trị cần truyền vào. Các giá trị được lồng nhau theo cách bộ lọc trên dashboard lồng nhau:
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+Giá trị đầu tiên của mỗi nhóm là khóa bộ lọc, còn các giá trị trong cùng là những gì khóa đó nhận. Trong ví dụ trên, `--filter country=US` giữ lại Hoa Kỳ, và `--filter store=play_store` giữ lại Google Play.
+
+## adapty flows metrics get
+
+Hiển thị chỉ số của một flow trong một khoảng thời gian, dưới dạng cây của trang [chỉ số flow](flow-metrics).
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Tham số | Mô tả |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--based-on` | Có | Cấp đầu tiên của cây phân chia theo tiêu chí gì: `placement` hoặc `audience`. Đây là chế độ xem theo placement và theo đối tượng của trang [chỉ số flow](flow-metrics#view-options-for-metrics-data) |
+| `--date-type` | Có | Ngày nào áp dụng cho khoảng thời gian: `purchase_date`, hoặc `profile_install_date` để [lọc theo ngày cài đặt](flow-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Không | Ngày đầu tiên của khoảng thời gian, bao gồm ngày đó (`YYYY-MM-DD`). Dùng cùng với `--date-to` |
+| `--date-to` | Không | Ngày cuối cùng của khoảng thời gian, bao gồm ngày đó (`YYYY-MM-DD`). Dùng cùng với `--date-from` |
+| `--granularity` | Không | Chia khoảng thời gian thành các điểm: `day`, `week`, `month`, `quarter`, hoặc `year` |
+| `--filter` | Không | Chỉ giữ lại dữ liệu có các giá trị của khóa lọc này. Có thể lặp lại. Xem [Lọc chỉ số](#filter-the-metrics) |
+| `--timezone` | Không | Múi giờ IANA cho các điểm trong khoảng thời gian, ví dụ `Europe/Berlin`. Nếu không có, Adapty sẽ dùng múi giờ của ứng dụng |
+| `--depth` | Không | Số cấp của cây được in dưới `Total`. Mặc định: `1` |
+| `--csv` | Không | In dạng CSV: một hàng cho mỗi nút của toàn bộ cây. Không thể dùng cùng với `--json` |
+
+CLI thoát với mã 2 và không gửi yêu cầu nào khi thiếu `--based-on` hoặc `--date-type`, hoặc khi chỉ cung cấp một đầu của khoảng thời gian. Adapty xác thực các giá trị của `--based-on`, `--date-type` và `--granularity`: giá trị sai sẽ thoát với mã 4, và thông báo lỗi liệt kê các giá trị được chấp nhận.
+
+### Đọc kết quả đầu ra \{#read-the-output\}
+
+Lệnh in ra một dòng `Total`, sau đó là cấp đầu tiên của cây bên dưới. Mỗi dòng hiển thị lượt xem, lượt mua, số lần dùng thử và doanh thu. Khi dùng `--granularity`, các điểm dữ liệu của khoảng thời gian sẽ hiển thị ngay bên dưới nút tương ứng:
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+Các cấp của cây tương ứng với các cấp trên dashboard: placement, đối tượng, A/B test, biến thể flow, màn hình và sản phẩm. Với `--based-on audience`, cấp placement bị bỏ qua. Để in thêm nhiều cấp hơn, truyền `--depth`, ví dụ `--depth 3`.
+
+Để xem toàn bộ cây với tất cả 27 chỉ số, sử dụng một trong các flag sau:
+
+- `--json` in nguyên văn kết quả trả về từ server.
+- `--csv` in một hàng cho mỗi nút, bao gồm cả các điểm period. Các cột gồm `path` (tiêu đề từ `Total` xuống đến nút, phân cách bằng ` > `), `level`, `title`, và sau đó là các chỉ số.
+
+### Lọc các chỉ số \{#filter-the-metrics\}
+
+Viết mỗi `--filter` theo dạng `key=value`, với các key và value mà [`flows metrics values`](#adapty-flows-metrics-values) liệt kê. Để giữ nhiều giá trị cùng lúc, hãy phân tách chúng bằng dấu phẩy hoặc lặp lại cờ với cùng key. Các filter với key khác nhau kết hợp với nhau, nghĩa là dữ liệu phải khớp với tất cả chúng:
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+CLI gửi mỗi giá trị đúng như đã viết. Để đặt dấu phẩy trong một giá trị, hãy dùng `\,`. Giá trị rỗng cũng là một giá trị hợp lệ: `attribution_channel=` giữ lại dữ liệu mà không có kênh, và `flows metrics values` sẽ liệt kê giá trị đó là **No Data**.
 
 ## Tiếp theo \{#whats-next\}
 

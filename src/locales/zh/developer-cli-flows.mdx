@@ -1,10 +1,10 @@
 ---
 title: "Flows 命令"
-description: "Adapty CLI 命令，用于创建流程、读写构建器配置、验证和预览流程、上传媒体文件以及发布流程。"
+description: "Adapty CLI 命令，用于创建流程、读写流程编辑器配置、验证和预览流程、上传媒体、发布流程以及读取相关数据图表。"
 metadataTitle: "Flows CLI 命令 | Adapty 文档"
 ---
 
-[流程（Flows）](adapty-flow-builder)是你在 Flow & Paywall Builder 中构建的付费墙和用户引导。CLI 负责管理流程记录、其 Builder 配置以及发布操作。Builder 配置是一个大型 JSON 文档，通常由 Flow & Paywall Builder 生成，CLI 本身不会生成该文档。如需在终端中编写或编辑配置，请使用 [flow-generator 技能](flow-generator-skill)，它会代你驱动这些命令。在发布之前，[flow-audit 技能](flow-audit-skill) 会检查流程是否已准备好投入生产。以下命令仅供参考。
+[流程](adapty-flow-builder)是您在 Flow & Paywall Builder 中构建的付费墙和用户引导。CLI 负责管理流程记录、其编辑器配置以及发布操作。编辑器配置是一个由 Flow & Paywall Builder 生成的大型 JSON 文档，CLI 本身不会生成该配置。如需在终端中创建或编辑配置，请使用 [flow-generator 技能](flow-generator-skill)，它会为您驱动这些命令。发布前，[flow-audit 技能](flow-audit-skill)会检查流程是否已准备好投入生产。`flows metrics` 命令用于读取[流程数据图表](flow-metrics)页面上的数据，需要 CLI 0.15.0 或更高版本。以下命令仅供参考。
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -205,6 +205,110 @@ adapty flows media upload --app <app-id> ./hero.png
 | `--app` | 是 | App ID（UUID） |
 
 支持的格式：GIF、HEIC、JPEG、PNG、SVG 和 WebP。响应中包含图片的 `id`、`name` 以及用于在配置中引用的 CDN `url`。
+
+## adapty flows metrics list \{#adapty-flows-metrics-list\}
+
+显示多个流程的生命周期数据，每个流程占一行。这是看板中流程表格的数据。
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--ids` | 是 | 流程 ID（UUID）。多个 ID 用逗号分隔，或重复使用该参数 |
+| `--csv` | 否 | 以 CSV 格式输出：每个流程占一行，包含流程 ID 和全部 27 个数据指标。不能与 `--json` 同时使用 |
+
+每行显示流程 ID 及其浏览量、购买量、试用量和收入。`--json` 和 `--csv` 包含[流程数据图表](flow-metrics#metrics-definitions)页面中全部 27 个数据指标，例如 `unique_profiles_views`、`net_revenue` 和 `conversion_rate_purchases`。没有数据的指标显示为 `0`，而非 `null`。
+
+## adapty flows metrics values \{#adapty-flows-metrics-values\}
+
+列出流程的筛选键和值：即 [`flows metrics get --filter`](#filter-the-metrics) 所接受的内容。
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+每行显示一个标签，括号内为实际传入的值。值的层级结构与看板筛选器的嵌套结构一致：
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+每个分组的顶部值是筛选键，最内层的值是该键接受的参数。例如，`--filter country=US` 保留美国数据，`--filter store=play_store` 保留 Google Play 数据。
+
+## adapty flows metrics get
+
+显示某个流程在指定时间段内的数据指标，以[流程数据图表](flow-metrics)页面的树状结构呈现。
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--based-on` | 是 | 树状结构第一层的分组依据：`placement` 或 `audience`。对应[流程数据图表](flow-metrics#view-options-for-metrics-data)页面中基于版位和基于目标受众的视图 |
+| `--date-type` | 是 | 时间段所应用的日期类型：`purchase_date` 或 `profile_install_date`（按[安装日期筛选](flow-metrics#filter-metrics-by-install-date)） |
+| `--date-from` | 否 | 时间段起始日期（含当天，格式 `YYYY-MM-DD`）。需与 `--date-to` 一起使用 |
+| `--date-to` | 否 | 时间段结束日期（含当天，格式 `YYYY-MM-DD`）。需与 `--date-from` 一起使用 |
+| `--granularity` | 否 | 将时间段拆分为时间点：`day`、`week`、`month`、`quarter` 或 `year` |
+| `--filter` | 否 | 仅保留指定筛选键值的数据，可重复使用。详见[筛选数据图表](#filter-the-metrics) |
+| `--timezone` | 否 | 时间段所用的 IANA 时区，例如 `Europe/Berlin`。若不指定，Adapty 将使用应用所设时区 |
+| `--depth` | 否 | 在 `Total` 下打印的树状层级数，默认值为 `1` |
+| `--csv` | 否 | 以 CSV 格式输出：树中每个节点对应一行。不可与 `--json` 同时使用 |
+
+当 `--based-on` 或 `--date-type` 缺失，或仅提供了时间范围的一端时，CLI 以退出码 2 退出且不发送任何请求。Adapty 会验证 `--based-on`、`--date-type` 和 `--granularity` 的值：值有误时以退出码 4 退出，并在错误信息中列出可接受的值。
+
+### 读取输出 \{#read-the-output\}
+
+该命令会先打印一行 `Total`，然后在其下显示树形结构的第一层。每行包含浏览量、购买数、试用数和收入。使用 `--granularity` 后，各时间周期的数据点会直接显示在对应节点下方：
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+树的层级与看板层级一致：版位、目标受众、A/B 测试、流程变体、屏幕和产品。使用 `--based-on audience` 时，版位层级会被省略。要显示更多层级，请传入 `--depth` 参数，例如 `--depth 3`。
+
+要获取包含全部 27 个数据图表的完整树，请使用以下标志之一：
+
+- `--json` 原样输出服务器的响应内容。
+- `--csv` 为每个节点输出一行（包含各时间段的数据点）。各列依次为 `path`（从 `Total` 到该节点的标题，以 ` > ` 分隔）、`level`、`title`，以及各数据图表。
+
+### 筛选数据图表 \{#filter-the-metrics\}
+
+每个 `--filter` 的格式为 `key=value`，键和值的具体内容请参见 [`flows metrics values`](#adapty-flows-metrics-values)。若需保留多个值，可用逗号分隔，或使用相同的键多次传入该标志。不同键的筛选条件会组合生效，数据必须满足所有条件：
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+CLI 会将每个值按原样发送。若要在值中包含逗号，请使用 `\,`。空值也是有效值：`attribution_channel=` 会保留不含渠道的数据，在 `flows metrics values` 中显示为 **No Data**。
 
 ## 下一步 \{#whats-next\}
 

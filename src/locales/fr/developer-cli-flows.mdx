@@ -1,10 +1,10 @@
 ---
 title: "Commandes Flows"
-description: "Commandes CLI Adapty pour créer des flows, lire et écrire leurs configurations de builder, les valider et les prévisualiser, uploader des médias et les publier."
+description: "Commandes CLI Adapty permettant de créer des flows, lire et écrire leurs configurations builder, les valider et prévisualiser, uploader des médias, les publier et lire leurs métriques."
 metadataTitle: "Commandes CLI Flows | Documentation Adapty"
 ---
 
-Les [flows](adapty-flow-builder) sont les paywalls et onboardings que vous créez dans le Flow & Paywall Builder. Le CLI gère le flow, sa configuration builder et sa publication. Une configuration builder est un volumineux document JSON que le Flow & Paywall Builder produit normalement — le CLI n'en génère pas. Pour créer ou modifier une configuration depuis le terminal, utilisez le [skill flow-generator](flow-generator-skill), qui pilote ces commandes à votre place. Avant la publication, le [skill flow-audit](flow-audit-skill) vérifie si le flow est prêt pour la production. Les commandes sont listées ici à titre de référence.
+Les [flows](adapty-flow-builder) sont les paywalls et onboardings que vous créez dans le Flow & Paywall Builder. La CLI gère l'enregistrement du flow, sa configuration de builder et sa publication. Une configuration de builder est un document JSON volumineux que le Flow & Paywall Builder produit normalement — la CLI n'en génère pas. Pour créer ou modifier une configuration depuis le terminal, utilisez le [skill flow-generator](flow-generator-skill), qui pilote ces commandes à votre place. Avant la publication, le [skill flow-audit](flow-audit-skill) vérifie que le flow est prêt pour la production. Les commandes `flows metrics` lisent les données de la page [métriques de flow](flow-metrics) et nécessitent la version 0.15.0 ou ultérieure de la CLI. Les commandes sont listées ici à titre de référence.
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -205,6 +205,110 @@ adapty flows media upload --app <app-id> ./hero.png
 | `--app` | Oui | ID de l'app (UUID) |
 
 Formats acceptés : GIF, HEIC, JPEG, PNG, SVG et WebP. La réponse contient l'`id`, le `name` et l'`url` CDN de l'image à référencer depuis la configuration.
+
+## adapty flows metrics list \{#adapty-flows-metrics-list\}
+
+Affiche les métriques sur toute la durée de vie de plusieurs flows, une ligne par flow. Ce sont les données du tableau des flows dans le tableau de bord.
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--ids` | Oui | IDs des flows (UUIDs). Séparez-les avec des virgules ou répétez le flag |
+| `--csv` | Non | Affiche le CSV : une ligne par flow, avec l'ID du flow et les 27 métriques. Incompatible avec `--json` |
+
+Chaque ligne affiche l'ID du flow avec ses vues, achats, essais et revenus. `--json` et `--csv` incluent les 27 métriques de la page [métriques de flow](flow-metrics#metrics-definitions), comme `unique_profiles_views`, `net_revenue` et `conversion_rate_purchases`. Une métrique sans données vaut `0`, jamais `null`.
+
+## adapty flows metrics values \{#adapty-flows-metrics-values\}
+
+Liste les clés et valeurs de filtre d'un flow : ce que [`flows metrics get --filter`](#filter-the-metrics) accepte.
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+
+Chaque ligne affiche un libellé et, entre parenthèses, la valeur à passer. Les valeurs sont imbriquées de la même façon que les filtres du tableau de bord :
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+La valeur en tête de chaque groupe est la clé de filtre, et les valeurs les plus imbriquées sont celles qu'accepte cette clé. Dans l'exemple, `--filter country=US` conserve les États-Unis, et `--filter store=play_store` conserve Google Play.
+
+## adapty flows metrics get \{#adapty-flows-metrics-get\}
+
+Affiche les métriques d'un flow pour une période donnée, sous forme d'arborescence comme sur la page [métriques de flow](flow-metrics).
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | ID du flow (UUID) |
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--based-on` | Oui | Ce sur quoi se base le premier niveau de l'arborescence : `placement` ou `audience`. Il s'agit des vues par placement et par audience de la page [métriques de flow](flow-metrics#view-options-for-metrics-data) |
+| `--date-type` | Oui | La date à laquelle la période s'applique : `purchase_date`, ou `profile_install_date` pour [filtrer par date d'installation](flow-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Non | Premier jour de la période, inclus (`YYYY-MM-DD`). À utiliser avec `--date-to` |
+| `--date-to` | Non | Dernier jour de la période, inclus (`YYYY-MM-DD`). À utiliser avec `--date-from` |
+| `--granularity` | Non | Découpe la période en points : `day`, `week`, `month`, `quarter`, ou `year` |
+| `--filter` | Non | Ne conserve que les données correspondant à ces valeurs de clé de filtre. Répétable. Voir [Filtrer les métriques](#filter-the-metrics) |
+| `--timezone` | Non | Fuseau horaire IANA des points de la période, par exemple `Europe/Berlin`. Sans cela, Adapty utilise le fuseau horaire de l'app |
+| `--depth` | Non | Nombre de niveaux de l'arborescence à afficher sous `Total`. Par défaut : `1` |
+| `--csv` | Non | Affiche le CSV : une ligne par nœud de l'arborescence complète. Incompatible avec `--json` |
+
+La CLI quitte avec le code 2 et n'envoie aucune requête lorsque `--based-on` ou `--date-type` est absent, ou lorsqu'une seule borne de la période est fournie. Adapty valide les valeurs de `--based-on`, `--date-type` et `--granularity` : une valeur incorrecte entraîne une sortie avec le code 4, et l'erreur liste les valeurs acceptées.
+
+### Lire le résultat
+
+La commande affiche une ligne `Total`, puis le premier niveau de l'arborescence en dessous. Chaque ligne indique les vues, les achats, les essais et le revenu. Avec `--granularity`, les points de la période apparaissent directement sous leur nœud :
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+Les niveaux de l'arborescence correspondent aux niveaux du tableau de bord : placement, audience, test A/B, variante de flow, écran et produit. Avec `--based-on audience`, le niveau placement est omis. Pour afficher plus de niveaux, utilisez `--depth`, par exemple `--depth 3`.
+
+Pour l'arborescence complète avec les 27 métriques, utilisez l'un de ces flags :
+
+- `--json` affiche la réponse du serveur sans modification.
+- `--csv` affiche une ligne par nœud, points de période inclus. Les colonnes sont `path` (les titres de `Total` jusqu'au nœud, séparés par ` > `), `level`, `title`, puis les métriques.
+
+### Filtrer les métriques \{#filter-the-metrics\}
+
+Écrivez chaque `--filter` sous la forme `key=value`, avec les clés et valeurs listées par [`flows metrics values`](#adapty-flows-metrics-values). Pour conserver plusieurs valeurs, séparez-les par des virgules ou répétez le flag avec la même clé. Les filtres avec des clés différentes se combinent, les données doivent donc correspondre à tous :
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+Le CLI envoie chaque valeur exactement telle qu'elle est écrite. Pour inclure une virgule dans une valeur, utilisez `\,`. Une valeur vide est aussi une valeur : `attribution_channel=` conserve la donnée sans canal, que `flows metrics values` affiche comme **No Data**.
 
 ## Et ensuite \{#whats-next\}
 

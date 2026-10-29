@@ -1,10 +1,10 @@
 ---
 title: "プレースメントとセグメントのコマンド"
-description: "プレースメントとそのオーディエンスを作成・更新し、オーディエンスが対象とするセグメントを作成するAdapty CLIコマンドです。"
-metadataTitle: "プレースメントとセグメントのCLIコマンド | Adapty ドキュメント"
+description: "プレースメントとそのオーディエンスの作成・更新、フロープレースメントの指標の読み取り、オーディエンスが対象とするセグメントの作成を行う Adapty CLI コマンド。"
+metadataTitle: "プレースメントとセグメントの CLI コマンド | Adapty ドキュメント"
 ---
 
-これらのAdapty CLIコマンドは、[プレースメント](placements)、プレースメント上のオーディエンス、およびオーディエンスが対象とする[セグメント](segments)を管理します。
+これらの Adapty CLI コマンドは、[プレースメント](placements)、プレースメント上のオーディエンス、およびオーディエンスが対象とする[セグメント](segments)を管理します。
 
 ## プレースメント \{#placements\}
 
@@ -20,11 +20,12 @@ adapty placements list --app <app-id>
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
-| `--app` | はい | アプリ ID（UUID） |
+| `--app` | はい | アプリ ID (UUID) |
+| `--type` | いいえ | 指定したタイプのプレースメントのみ表示: `paywall`、`flow`、または `onboarding` |
 
 [ページネーションフラグ](developer-cli-reference#global-flags)を使用できます。
 
-各アイテムには `id`、`developer_id`、`title`、`is_active` が含まれます。`is_active` は有効なプレースメントの場合は `true`、無効な場合は `false` です。
+各アイテムには `id`、`developer_id`、`title`、`is_active`、`type` が含まれます。`is_active` はライブのプレースメントの場合は `true`、非アクティブの場合は `false` です。`type` はプレースメントのコンテンツタイプで、`paywall`、`flow`、`onboarding` のいずれかです。`--json` では、タイプのないプレースメントは `type: null` となります。`--type` フラグと `type` フィールドを使用するには、CLIバージョン 0.15.0 以降が必要です。
 
 ### adapty placements get
 
@@ -42,7 +43,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | はい | アプリ ID（UUID） |
 
-レスポンスには `id`、`developer_id`、`title`、`is_active`、および `audiences` 配列が含まれます。`is_active` は有効なプレースメントの場合は `true`、無効な場合は `false` です。各オーディエンスエントリには `content_type`、`segment_ids`、`priority`、およびコンテンツの ID（`paywall` の場合は `paywall_id`、`flow` の場合は `flow_id`、[A/B テスト](ab-tests)を実行するオーディエンスの場合は `ab_test_id` と `ab_test_title`）が含まれます。デフォルトオーディエンスは `segment_ids: []` を持ち、最も高い優先度値（最後に評価）となります。[オーディエンスの構造](#audiences-shape)を参照してください。
+レスポンスには `id`、`developer_id`、`title`、`is_active`、`type`、および `audiences` 配列が含まれます。`is_active` は有効なプレースメントの場合は `true`、無効な場合は `false` です。各オーディエンスエントリには `content_type`、`segment_ids`、`priority`、およびコンテンツのID（`paywall` の場合は `paywall_id`、`flow` の場合は `flow_id`、[A/B テスト](ab-tests)を実行するオーディエンスの場合は `ab_test_id` と `ab_test_title`）が含まれます。デフォルトのオーディエンスは `segment_ids: []` を持ち、最も高い優先度の値（最後に評価される）を持ちます。[オーディエンスの構造](#audiences-shape)を参照してください。
 
 ### adapty placements create
 
@@ -155,6 +156,80 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
    ```
+
+### adapty placements metrics list
+
+いくつかのフロープレースメントの生涯指標を、プレースメントごとに1行ずつ表示します。これはダッシュボードのプレースメントテーブルのデータです。
+
+```bash
+adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--type` | はい | プレースメントタイプ。[`placements list`](#adapty-placements-list) に表示される形式: `flow` |
+| `--ids` | はい | プレースメントID（UUID）。カンマ区切りで複数指定するか、フラグを繰り返して指定 |
+| `--csv` | いいえ | CSVで出力: プレースメントIDと27種類の指標すべてを1行で表示。`--json` と同時使用不可 |
+
+`placements metrics` コマンドは、フロープレースメント向けの [プレースメント指標](placement-metrics) ページの数値を読み取ります。CLIバージョン 0.15.0 以降が必要です。`--type` はプレースメントのタイプと一致させる必要があります。異なるタイプのプレースメントを指定した場合、Adapty はエラーを返します。
+
+各行には、プレースメント ID とそのビュー数、購入数、トライアル数、収益が表示されます。`--json` および `--csv` では、27 個の指標すべてが取得できます。
+
+### adapty placements metrics values
+
+フロープレースメントのフィルターキーと値の一覧を表示します。`placements metrics get --filter` で使用できる値です。
+
+```bash
+adapty placements metrics values --app <app-id> <placement-id> --type flow
+```
+
+| 引数 | 説明 |
+|---|---|
+| `placement-id` | プレースメント ID (UUID) |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID (UUID) |
+| `--type` | Yes | プレースメントタイプ: `flow` |
+
+[`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) の出力と同じ形式です。各グループの先頭の値がフィルターキーで、最も内側の値がそのキーに対応する値です。
+
+### adapty placements metrics get
+
+1つのフロープレースメントの指標を、[プレースメント指標](placement-metrics)ページのツリー形式で、全期間または特定期間について表示します。
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
+```
+
+| 引数 | 説明 |
+|---|---|
+| `placement-id` | プレースメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--type` | はい | プレースメントのタイプ：`flow` |
+| `--based-on` | はい | ツリーの第1レベルで分割する基準：`audience`、`flow`、または `placement` |
+| `--group-by` | いいえ | 各オーディエンスを `country` または `store` で分割する |
+| `--date-from` | いいえ | 期間の開始日（当日を含む）（`YYYY-MM-DD`）。`--date-to` および `--date-type` と合わせて指定してください |
+| `--date-to` | いいえ | 期間の終了日（当日を含む）（`YYYY-MM-DD`）。`--date-from` および `--date-type` と合わせて指定してください |
+| `--date-type` | いいえ | 期間に適用する日付の種別：`purchase_date` または `profile_install_date`。`--date-from` および `--date-to` と合わせて指定してください |
+| `--granularity` | いいえ | 期間を分割する単位：`day`、`week`、`month`、`quarter`、または `year` |
+| `--filter` | いいえ | フィルターキーの値に一致するデータのみを保持する。複数指定可能。[指標のフィルタリング](developer-cli-flows#filter-the-metrics)を参照 |
+| `--timezone` | いいえ | 期間の各ポイントに適用するIANAタイムゾーン（例：`Europe/Berlin`）。省略した場合、Adaptyはアプリのタイムゾーンを使用します |
+| `--depth` | いいえ | `Total` の下に表示するツリーのレベル数。デフォルト：`1` |
+| `--csv` | いいえ | CSVで出力する：ツリー全体の各ノードを1行で表示。`--json` と同時には使用できません |
+
+`--date-from`、`--date-to`、`--date-type` を指定しない場合、コマンドは全期間の指標を返します。期間を指定する場合は、3 つすべてを渡してください。`--date-type` なしで期間を指定すると、コード 4 で終了します。
+
+出力、`--depth`、`--json`、`--csv`、`--filter` の動作は [`flows metrics get`](developer-cli-flows#read-the-output) と同じです。たとえば、プレースメントのオーディエンスをストア別に比較するには次のようにします。
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
+```
 
 ## セグメント \{#segments\}
 

@@ -1,10 +1,10 @@
 ---
 title: "Команды для плейсментов и сегментов"
-description: "Команды Adapty CLI для создания и обновления плейсментов и их аудиторий, а также создания сегментов, на которые эти аудитории нацелены."
+description: "Команды Adapty CLI для создания и обновления плейсментов и их аудиторий, чтения метрик флоу-плейсментов и создания сегментов, на которые нацелены эти аудитории."
 metadataTitle: "Команды CLI для плейсментов и сегментов | Документация Adapty"
 ---
 
-Эти команды Adapty CLI управляют [плейсментами](placements), аудиториями в них и [сегментами](segments), на которые эти аудитории нацелены.
+Эти команды Adapty CLI управляют [плейсментами](placements), аудиториями на них и [сегментами](segments), на которые эти аудитории нацелены.
 
 ## Плейсменты \{#placements\}
 
@@ -12,19 +12,20 @@ metadataTitle: "Команды CLI для плейсментов и сегмен
 
 ### adapty placements list
 
-Список всех [плейсментов](placements) для приложения.
+Список всех [плейсментов](placements) приложения.
 
 ```bash
 adapty placements list --app <app-id>
 ```
 
-| Флаг | Обязательный | Описание |
+| Flag | Required | Description |
 |---|---|---|
-| `--app` | Да | ID приложения (UUID) |
+| `--app` | Yes | App ID (UUID) |
+| `--type` | No | List only placements of this type: `paywall`, `flow`, or `onboarding` |
 
 Принимает [флаги пагинации](developer-cli-reference#global-flags).
 
-Каждый элемент содержит `id`, `developer_id`, `title` и `is_active`. `is_active` равно `true` для активного плейсмента и `false` для неактивного.
+Каждый элемент содержит `id`, `developer_id`, `title`, `is_active` и `type`. `is_active` равно `true` для активного плейсмента и `false` — для неактивного. `type` — тип контента плейсмента: `paywall`, `flow` или `onboarding`. В режиме `--json` плейсмент без типа имеет `type: null`. Флаг `--type` и поле `type` требуют CLI версии 0.15.0 или выше.
 
 ### adapty placements get
 
@@ -42,7 +43,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Да | ID приложения (UUID) |
 
-Ответ содержит поля `id`, `developer_id`, `title`, `is_active` и массив `audiences`. `is_active` равно `true` для активного плейсмента и `false` для неактивного. Каждый элемент массива аудиторий содержит `content_type`, `segment_ids`, `priority` и идентификатор контента: `paywall_id` для `paywall`, `flow_id` для `flow`, либо `ab_test_id` и `ab_test_title` для аудитории, запускающей [A/B-тест](ab-tests). Аудитория по умолчанию имеет `segment_ids: []` и наибольшее значение приоритета (оценивается последней). См. раздел [Структура аудиторий](#audiences-shape).
+Ответ содержит `id`, `developer_id`, `title`, `is_active`, `type` и массив `audiences`. `is_active` равен `true` для активного плейсмента и `false` для неактивного. Каждая запись аудитории содержит `content_type`, `segment_ids`, `priority` и идентификатор контента: `paywall_id` для `paywall`, `flow_id` для `flow`, либо `ab_test_id` и `ab_test_title` для аудитории, в которой запущен [A/B-тест](ab-tests). Аудитория по умолчанию имеет `segment_ids: []` и наибольшее значение `priority` (вычисляется последней). См. раздел [Структура audiences](#audiences-shape).
 
 ### adapty placements create
 
@@ -155,6 +156,80 @@ adapty placements create --app <app-id> --title "Onboarding" --developer-id "onb
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
    ```
+
+### adapty placements metrics list
+
+Показывает метрики за всё время для нескольких плейсментов флоу — по одной строке на каждый плейсмент. Это данные из таблицы плейсментов в дашборде.
+
+```bash
+adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--type` | Да | Тип плейсмента, как показывает [`placements list`](#adapty-placements-list): `flow` |
+| `--ids` | Да | ID плейсментов (UUID). Перечислите через запятую или повторите флаг |
+| `--csv` | Нет | Вывести CSV: одна строка на каждый плейсмент с его ID и всеми 27 метриками. Нельзя использовать вместе с `--json` |
+
+Команды `placements metrics` считывают показатели со страницы [метрики плейсментов](placement-metrics) для флоу-плейсментов и требуют CLI версии 0.15.0 или выше. Значение `--type` должно совпадать с типом плейсмента: Adapty отклонит запрос, если тип не соответствует.
+
+Каждая строка отображает ID плейсмента с количеством просмотров, покупок, триалов и выручкой. Флаги `--json` и `--csv` выгружают все 27 метрик.
+
+### adapty placements metrics values
+
+Список ключей и значений фильтров для флоу-плейсмента: что принимает `placements metrics get --filter`.
+
+```bash
+adapty placements metrics values --app <app-id> <placement-id> --type flow
+```
+
+| Аргумент | Описание |
+|---|---|
+| `placement-id` | ID плейсмента (UUID) |
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--type` | Да | Тип плейсмента: `flow` |
+
+Вывод имеет ту же форму, что и [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): верхнее значение каждой группы — это ключ фильтра, а самые внутренние значения — это то, что принимает ключ.
+
+### adapty placements metrics get
+
+Показывает метрики одного флоу-плейсмента в виде дерева, как на странице [метрик плейсментов](placement-metrics), за всё время или за указанный период.
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
+```
+
+| Аргумент | Описание |
+|---|---|
+| `placement-id` | ID плейсмента (UUID) |
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--type` | Да | Тип плейсмента: `flow` |
+| `--based-on` | Да | По чему разбивается первый уровень дерева: `audience`, `flow` или `placement` |
+| `--group-by` | Нет | Разбить каждую аудиторию по `country` или `store` |
+| `--date-from` | Нет | Первый день периода включительно (`YYYY-MM-DD`). Передавайте вместе с `--date-to` и `--date-type` |
+| `--date-to` | Нет | Последний день периода включительно (`YYYY-MM-DD`). Передавайте вместе с `--date-from` и `--date-type` |
+| `--date-type` | Нет | К какой дате применяется период: `purchase_date` или `profile_install_date`. Передавайте вместе с `--date-from` и `--date-to` |
+| `--granularity` | Нет | Разбить период на точки: `day`, `week`, `month`, `quarter` или `year` |
+| `--filter` | Нет | Оставить только данные с указанными значениями ключа фильтра. Можно указывать несколько раз. См. [Фильтрация метрик](developer-cli-flows#filter-the-metrics) |
+| `--timezone` | Нет | Часовой пояс IANA для точек периода, например `Europe/Berlin`. Без него Adapty использует часовой пояс приложения |
+| `--depth` | Нет | Сколько уровней дерева выводить под `Total`. По умолчанию: `1` |
+| `--csv` | Нет | Вывод в формате CSV: одна строка для каждого узла всего дерева. Нельзя использовать вместе с `--json` |
+
+Без `--date-from`, `--date-to` и `--date-type` команда возвращает метрики за всё время. Чтобы задать период, передайте все три параметра: период без `--date-type` завершается с кодом 4.
+
+Вывод, `--depth`, `--json`, `--csv` и `--filter` работают так же, как в [`flows metrics get`](developer-cli-flows#read-the-output). Например, чтобы сравнить аудитории плейсмента по стору:
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
+```
 
 ## Сегменты \{#segments\}
 

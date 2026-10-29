@@ -1,10 +1,10 @@
 ---
 title: "Flowsコマンド"
-description: "フローの作成、ビルダー設定の読み書き、検証とプレビュー、メディアのアップロード、公開を行うAdapty CLIコマンド。"
+description: "フローの作成、ビルダー設定の読み書き、検証とプレビュー、メディアのアップロード、公開、指標の取得を行うAdapty CLIコマンド。"
 metadataTitle: "Flows CLIコマンド | Adapty ドキュメント"
 ---
 
-[フロー](adapty-flow-builder)は、Flow & Paywall Builder で作成するペイウォールとオンボーディングです。CLIはフローのレコード、ビルダーコンフィグ、および公開を管理します。ビルダーコンフィグはFlow & Paywall Builderが通常生成する大きなJSONドキュメントであり、CLIはこれを生成しません。ターミナルからコンフィグを作成または編集するには、[flow-generatorスキル](flow-generator-skill)を使用してください。このスキルがこれらのコマンドを代わりに実行します。公開前には、[flow-auditスキル](flow-audit-skill)がフローを本番環境に向けて準備できているかどうかを確認します。コマンドはリファレンスとしてここに記載されています。
+[フロー](adapty-flow-builder)とは、Flow & Paywall Builder で作成するペイウォールやオンボーディングのことです。CLI はフローのレコード、ビルダーのコンフィグ、および公開を管理します。ビルダーのコンフィグは Flow & Paywall Builder が生成する大きな JSON ドキュメントであり、CLI 自体は生成しません。ターミナルからコンフィグを作成・編集するには、[flow-generator スキル](flow-generator-skill)を使用してください。このスキルがコマンドを代わりに実行します。公開前には、[flow-audit スキル](flow-audit-skill)でフローが本番環境に対応しているか確認します。`flows metrics` コマンドは[フロー指標](flow-metrics)ページの数値を読み取るため、CLI バージョン 0.15.0 以降が必要です。以下はコマンドのリファレンスです。
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -205,6 +205,110 @@ adapty flows media upload --app <app-id> ./hero.png
 | `--app` | Yes | アプリ ID（UUID） |
 
 対応フォーマット：GIF、HEIC、JPEG、PNG、SVG、WebP。レスポンスには画像の `id`、`name`、およびコンフィグから参照するための CDN `url` が含まれます。
+
+## adapty flows metrics list
+
+複数のフローのライフタイム指標を表示します（フローごとに1行）。これはダッシュボードのフローテーブルのデータです。
+
+```bash
+adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--ids` | はい | フローID（UUID）。カンマ区切りで指定するか、フラグを繰り返し使用します |
+| `--csv` | いいえ | CSVで出力します：フローIDと27個すべての指標を含む行をフローごとに1行出力します。`--json` と同時には使用できません |
+
+各行には、フローIDとそのビュー数、購入数、トライアル数、収益が表示されます。`--json` と `--csv` では、`unique_profiles_views`、`net_revenue`、`conversion_rate_purchases` など、[フロー指標](flow-metrics#metrics-definitions) ページの27個すべての指標が取得できます。データがない指標は `null` ではなく `0` になります。
+
+## adapty flows metrics values \{#adapty-flows-metrics-values\}
+
+フローのフィルターキーと値の一覧です。[`flows metrics get --filter`](#filter-the-metrics) に渡す値を確認できます。
+
+```bash
+adapty flows metrics values --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+各行にはラベルと、括弧内に渡す値が表示されます。値はダッシュボードのフィルターと同じ階層構造になっています：
+
+```text
+Country (country)
+  Americas (Americas)
+    United States (US)
+  Europe (Europe)
+    Germany (DE)
+Store (store)
+  App Store (app_store)
+  Google Play (play_store)
+```
+
+各グループの先頭の値がフィルターキーで、最も内側の値がそのキーに渡す値です。上の例では、`--filter country=US` でアメリカ合衆国を絞り込み、`--filter store=play_store` で Google Play を絞り込みます。
+
+## adapty flows metrics get
+
+指定した期間のフローの指標を、[フロー指標](flow-metrics)ページのツリー形式で表示します。
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フローID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--based-on` | はい | ツリーの第1レベルの分割基準：`placement`または`audience`。[フローの指標](flow-metrics#view-options-for-metrics-data)ページのプレースメントベースおよびオーディエンスベースのビューに対応します |
+| `--date-type` | はい | 期間に適用する日付の種類：`purchase_date`または`profile_install_date`（[インストール日でフィルター](flow-metrics#filter-metrics-by-install-date)する場合） |
+| `--date-from` | いいえ | 期間の開始日（当日を含む）（`YYYY-MM-DD`）。`--date-to`と合わせて指定してください |
+| `--date-to` | いいえ | 期間の終了日（当日を含む）（`YYYY-MM-DD`）。`--date-from`と合わせて指定してください |
+| `--granularity` | いいえ | 期間を分割する単位：`day`、`week`、`month`、`quarter`、または`year` |
+| `--filter` | いいえ | フィルターキーの値が一致するデータのみを表示します。複数回指定可能。[指標のフィルタリング](#filter-the-metrics)を参照してください |
+| `--timezone` | いいえ | 期間ポイントのIANAタイムゾーン（例：`Europe/Berlin`）。指定しない場合、AdaptyはアプリのタイムゾーンをUseします |
+| `--depth` | いいえ | `Total`の下に表示するツリーのレベル数。デフォルト：`1` |
+| `--csv` | いいえ | CSV形式で出力します：ツリー全体の各ノードを1行で表示。`--json`と同時には使用できません |
+
+`--based-on`、`--date-type` が指定されていない場合、または期間の片方のみが指定されている場合、CLIはリクエストを送信せずにコード2で終了します。Adaptyは `--based-on`、`--date-type`、`--granularity` の値を検証します。値が不正な場合はコード4で終了し、エラーメッセージに受け付け可能な値の一覧が表示されます。
+
+### 出力を読む \{#read-the-output\}
+
+コマンドは `Total` 行を表示した後、その下にツリーの第一レベルを表示します。各行にはビュー数、購入数、トライアル数、収益が表示されます。`--granularity` を指定すると、期間のデータポイントが対応するノードの直下に表示されます。
+
+```text
+Total           views 19  purchases 7  trials 4  revenue 241.93
+  Onboarding    views 10  purchases 7  trials 0  revenue 241.93
+    2026-09-01  views  0  purchases 0  trials 0  revenue   0.00
+    2026-10-01  views 10  purchases 0  trials 0  revenue 241.93
+  Settings      views  0  purchases 0  trials 0  revenue   0.00
+```
+
+ツリーの階層はダッシュボードの階層（プレースメント、オーディエンス、A/B テスト、フローバリアント、スクリーン、プロダクト）に対応しています。`--based-on audience` を指定した場合、プレースメントのレベルは省略されます。より多くの階層を表示するには `--depth` を渡してください。例：`--depth 3`。
+
+27 指標すべてを含むツリー全体を取得するには、以下のいずれかのフラグを使用します：
+
+- `--json` はサーバーのレスポンスをそのまま出力します。
+- `--csv` は各ノードを 1 行で出力し、ピリオドのポイントも含まれます。カラムは `path`（`Total` からそのノードまでのタイトルを ` > ` で区切ったもの）、`level`、`title`、そして各指標です。
+
+### 指標のフィルタリング \{#filter-the-metrics\}
+
+`--filter` はそれぞれ `key=value` の形式で記述します。使用できるキーと値は [`flows metrics values`](#adapty-flows-metrics-values) を参照してください。複数の値のいずれかに一致させるには、値をカンマで区切るか、同じキーでフラグを繰り返します。異なるキーのフィルターは組み合わせて使用でき、データはすべての条件に一致する必要があります。
+
+```bash
+adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter country=US,DE --filter store=app_store
+```
+
+CLIは各値をそのまま送信します。値の中にカンマを含めるには、`\,` と記述してください。空の値も値として扱われます。`attribution_channel=` はチャンネルなしのデータを保持し、`flows metrics values` では **No Data** として表示されます。
 
 ## 次のステップ \{#whats-next\}
 
