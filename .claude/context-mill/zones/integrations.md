@@ -273,3 +273,19 @@ repeated here.
   the selector docs when the selector ships. The same check found the setup section
   stale: Braze now creates REST keys and lists app identifiers under **Settings** > **APIs and
   Identifiers**, and a key's permissions can't be edited after creation.
+- **Flow and A/B test fields (2026-10-29, confirmed by the backend team; QA-tested on the webhook only).**
+  Seven fields join the events that already carry `developer_id`/`variation_id`: `flow_id`, `flow_name`,
+  `flow_variation_id`, `ab_test_id`, `ab_test_variant_id`, `ab_test_variant_name`, `ab_test_parent_name`.
+  Absent rather than `null` when empty. Existing fields keep their values on purpose: for flows
+  `variation_id` is a paywall-screen ID and `paywall_name` is `scr_...`; for crossplacement tests
+  `ab_test_name` is the per-placement `<name> child-N`. Destination split, per the backend team: the
+  whole event (so the new fields) reaches webhook, Amplitude, Mixpanel, Adjust, Branch, Braze, PostHog,
+  SplitMetrics, AppMetrica, Pushwoosh; A/B fields still don't reach AppsFlyer, Facebook, Singular,
+  Tenjin, Asapty, Airbridge, OneSignal, Slack. Firebase gets a subset (no `flow_variation_id`), only
+  where the 25-parameter limit leaves room, except `purchase`/`refund`. S3/GCS get 8 trailing CSV
+  columns. Unlike ripple rule 1's 2026-07-22 precedent, this change did land in the shared
+  `messaging`/`analytics-integration` table and the S3/GCS tables.
+- **Corrected 2026-10-29:** `mixpanel`'s "Mixpanel event structure" read as a closed list of ten
+  properties; the backend team confirmed the whole event goes out in `properties`. And
+  `firebase-and-google-analytics` cited a 36-character value limit for everything — that is the
+  user-property limit; event parameter values allow 100, and Adapty now cuts text values to 100.
