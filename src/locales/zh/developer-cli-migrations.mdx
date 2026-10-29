@@ -1,0 +1,159 @@
+---
+title: "迁移命令"
+description: "Adapty CLI 命令，用于将 RevenueCat 项目迁移至 Adapty：创建迁移任务、执行迁移步骤、查看迁移状态及关闭迁移任务。"
+metadataTitle: "迁移 CLI 命令 | Adapty 文档"
+---
+
+将 RevenueCat 项目迁移至 Adapty：先迁移产品目录，再根据需要迁移商店事件和交易历史。Adapty 以一系列步骤的形式执行每次迁移，并告知您接下来可以执行哪些操作，因此请在每次操作前先执行 `status` 命令。完整迁移流程请参阅[从 RevenueCat 迁移](migration-from-revenuecat)。
+
+除 `list`、`create`、`use`、`current` 和 `unuse` 之外的所有命令都接受迁移标志：
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `-m`, `--migration` | 否 | 迁移 ID。若未指定，CLI 将依次使用 `ADAPTY_MIGRATION` 环境变量，然后是由 `create` 或 `use` 保存的迁移。 |
+
+## adapty migrations list
+
+列出可以启动的迁移及迁移流程，按应用分组。
+
+```bash
+adapty migrations list
+```
+
+## adapty migrations create
+
+启动一个迁移并将其保存为当前迁移。
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--name` | `--name` 或 `--flow` 二选一 | 新 Adapty 应用的名称。启动 catalog 迁移。不能与 `--flow` 或 `--app` 同时使用。 |
+| `--flow` | `--name` 或 `--flow` 二选一 | 在已有应用中启动的流程，格式与 `adapty migrations list` 显示的一致。需要配合 `--app` 使用。 |
+| `--app` | 与 `--flow` 配合使用 | 应用 ID（UUID） |
+| `--no-select` | 否 | 创建迁移但不将其保存为当前迁移 |
+
+现有应用完成 catalog 迁移后可用的流程：
+
+| 流程 | 描述 |
+|---|---|
+| `transactions` | 通过每日 RevenueCat 云端导出功能，导入历史交易记录 |
+| `transactions_support` | 通过 RevenueCat 客服与 Adapty 客服导入历史交易记录，适用于不含云端导出功能的 RevenueCat 套餐 |
+| `apple_events` | 将 App Store 通知转发至 Adapty，同时 RevenueCat 继续接收这些通知 |
+| `google_events` | 将 Adapty 订阅至 RevenueCat 用于接收 Google Play 通知的 Pub/Sub 主题 |
+| `code` | 让你的编程智能体在应用的某个代码库中替换 RevenueCat SDK |
+| `integrations` | 让你的编程智能体找出应用代码中使用的分析、归因和消息推送工具，并在 Adapty 中完成配置 |
+| `paywall_design` | 让你的编程智能体将 RevenueCat 付费墙的设计，在目录迁移所创建的流程中重新构建 |
+
+## adapty migrations use \{#adapty-migrations-use\}
+
+将某个迁移保存为当前迁移，这样其他命令就不需要再指定 `-m` 参数了。
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `migration-id` | 从 `adapty migrations list` 获取的迁移 ID |
+
+CLI 在保存 ID 之前会验证你是否有权访问该迁移。保存的迁移与当前 token 绑定，并在所有终端中生效。
+
+## adapty migrations current \{#adapty-migrations-current\}
+
+显示当前迁移及其来源：来自 `ADAPTY_MIGRATION` 环境变量或已保存的选择。
+
+```bash
+adapty migrations current
+```
+
+## adapty migrations unuse \{#adapty-migrations-unuse\}
+
+清除已保存的迁移记录。在 shell 中设置的 `ADAPTY_MIGRATION` 值会持续生效，直到你取消设置为止。
+
+```bash
+adapty migrations unuse
+```
+
+## adapty migrations status \{#adapty-migrations-status\}
+
+显示迁移的状态、存在的问题以及可执行的后续操作。
+
+```bash
+adapty migrations status
+```
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--wait` | 否 | 轮询直到迁移状态发生变化，然后返回最新状态 |
+| `--timeout` | 否 | `--wait` 的轮询时间：1–600 秒，默认 120 秒。接受 `300`、`300s` 或 `5m` 格式。需配合 `--wait` 使用。 |
+
+使用 `--json` 时，`next_actions` 和 `available_actions` 会列出每个操作的 ID、所读取的资源、`input_schema` 以及 `confirm` 文本。
+
+退出码 `0` 表示请求成功，而非迁移成功。请检查响应中的 `migration.state`。
+
+## Adapty 迁移步骤 \{#adapty-migrations-steps\}
+
+显示迁移检查清单及每个步骤的状态。
+
+```bash
+adapty migrations steps
+```
+
+## adapty migrations show
+
+列出当前可读取的资源，或读取某个特定资源。
+
+```bash
+adapty migrations show [resource]
+```
+
+| 参数 | 描述 |
+|---|---|
+| `resource` | 资源名称，例如 `apps`、`mapping`、`report` 或 `export-config`。省略此参数可列出当前步骤可用的资源。 |
+
+## adapty migrations run
+
+运行 `adapty migrations status` 中的某项操作。
+
+```bash
+adapty migrations run <action-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `action-id` | 来自 `adapty migrations status` 中 `next_actions` 或 `available_actions` 的操作 ID |
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--input` | 否 | 以 JSON 对象形式传入的操作输入，须与该操作的 `input_schema` 匹配。不传时，CLI 默认发送 `{}`。 |
+| `--input-file` | 否 | 操作输入文件的路径，或 `-` 表示从标准输入读取。不能与 `--input` 同时使用。 |
+| `-y`, `--yes` | 操作含 `confirm` 文本时必填 | 阅读操作的 `confirm` 文本后确认执行。无交互式提示。 |
+| `--open` | 否 | 即使使用管道或 `--json`，也打开操作的链接 |
+| `--no-browser` | 否 | 打印操作的链接但不打开浏览器 |
+
+操作分为三种类型：
+
+- **输入操作**将您的数据发送给 Adapty，例如要迁移的 RevenueCat 应用或您的映射决策。
+- **外部操作**会在 Adapty 看板中打开一个页面，例如粘贴 RevenueCat 的 secret API key。完成页面操作后，检查 `status`。
+- **代理操作**（例如 `migrate_code`）是交给您的代码代理执行的任务。请在应用的 git 仓库中运行这些操作：CLI 会将迁移数据保存在 `.git/adapty/<migration-id>/` 下，并为代理打印相应指令。代理通过再次运行该操作并附加 `--input` 来报告结果。
+
+## adapty migrations close
+
+完成或取消迁移。操作完成后无法重新打开。
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--outcome` | 是 | `finish` 将迁移标记为已完成；`cancel` 放弃迁移 |
+| `-y`, `--yes` | 是 | 确认关闭操作 |
+
+## 下一步 \{#whats-next\}
+
+- [命令参考](developer-cli-reference) — 所有 CLI 主题、全局标志和分页标志。

@@ -1,0 +1,258 @@
+---
+title: "Lệnh Placements và Segments"
+description: "Các lệnh Adapty CLI tạo và cập nhật các placement cùng đối tượng của chúng, đồng thời tạo các phân khúc mà các đối tượng đó nhắm đến."
+metadataTitle: "Lệnh CLI cho Placements và Segments | Tài liệu Adapty"
+---
+
+Các lệnh Adapty CLI này quản lý [placement](placements), các đối tượng trên đó, và các [phân khúc](segments) mà các đối tượng đó nhắm đến.
+
+## Placements \{#placements\}
+
+[Placements](placements) là nơi các flow, paywall và onboarding của bạn tiếp cận người dùng. Loại nội dung của một placement được cố định khi tạo, vì vậy việc chuyển ứng dụng từ paywall sang flow đồng nghĩa với việc tạo các placement mới thay vì cập nhật các placement hiện có — [skill migrate-placements](migrate-placements-skill) sẽ điều khiển các lệnh này để thực hiện hàng loạt.
+
+### adapty placements list
+
+Liệt kê tất cả các [placement](placements) của một ứng dụng.
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Chấp nhận [pagination flags](developer-cli-reference#global-flags).
+
+Mỗi mục chứa `id`, `developer_id`, `title`, và `is_active`. `is_active` là `true` cho placement đang hoạt động và `false` cho placement không hoạt động.
+
+### adapty placements get
+
+Lấy thông tin chi tiết của một [placement](placements) cụ thể.
+
+```bash
+adapty placements get --app <app-id> <placement-id>
+```
+
+| Argument | Description |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Phản hồi chứa `id`, `developer_id`, `title`, `is_active`, và một mảng `audiences`. `is_active` là `true` cho một placement đang hoạt động và `false` cho placement không hoạt động. Mỗi mục audience chứa `content_type`, `segment_ids`, `priority`, và ID của nội dung tương ứng: `paywall_id` cho `paywall`, `flow_id` cho `flow`, hoặc `ab_test_id` và `ab_test_title` cho một audience chạy [A/B test](ab-tests). Đối tượng mặc định có `segment_ids: []` và giá trị priority cao nhất (được đánh giá sau cùng). Xem [Cấu trúc Audiences](#audiences-shape).
+
+### adapty placements create
+
+Tạo một [placement](placements) mới.
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Tiêu đề placement |
+| `--developer-id` | Yes | Chuỗi định danh dùng trong code ứng dụng để yêu cầu [placement](placements) này |
+| `--audiences` | Một trong hai | Mảng JSON gồm các mục đối tượng, mỗi mục có `content_type` rõ ràng. Xem [Cấu trúc Audiences](#audiences-shape) |
+| `--paywall-id` | Một trong hai | **Không còn được hỗ trợ.** ID [Paywall](paywalls) (UUID). Được bọc phía client thành một đối tượng mặc định duy nhất |
+
+Chỉ truyền một trong hai tham số `--audiences` hoặc `--paywall-id`. Truyền cả hai hoặc không truyền tham số nào đều gây lỗi.
+
+:::warning
+`--paywall-id` đã bị deprecated và sẽ bị xóa. Khi được truyền vào, CLI sẽ in cảnh báo ra stderr và chuyển đổi giá trị thành một đối tượng mặc định. Hãy dùng `--audiences` cho các tác vụ tự động mới.
+:::
+
+### adapty placements update
+
+Thay thế tất cả các trường của một [placement](placements) hiện có.
+
+```bash
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+Lệnh này thay thế toàn bộ các trường của placement, bao gồm cả danh sách đối tượng đầy đủ.
+
+| Đối số | Mô tả |
+|---|---|
+| `placement-id` | ID placement (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--title` | Có | Tiêu đề placement |
+| `--developer-id` | Có | Chuỗi định danh dùng trong code ứng dụng để gọi [placement](placements) này |
+| `--audiences` | Một trong hai | Mảng JSON các mục đối tượng, mỗi mục có `content_type` tường minh. Xem [Định dạng Audiences](#audiences-shape) |
+| `--paywall-id` | Một trong hai | **Không còn được hỗ trợ.** ID [Paywall](paywalls) (UUID). Thay thế tất cả đối tượng bằng một đối tượng mặc định duy nhất |
+
+:::warning
+Truyền `--paywall-id` sẽ ghi đè tất cả các đối tượng trên placement. Các đối tượng dành riêng cho phân khúc sẽ bị xóa. Để giữ lại chúng, hãy dùng `--audiences` và đưa vào tất cả các mục bạn muốn giữ.
+:::
+
+#### Cấu trúc audiences \{#audiences-shape\}
+
+Cờ `--audiences` nhận một mảng JSON. Mỗi mục có:
+
+| Trường | Kiểu | Mô tả |
+|---|---|---|
+| `content_type` | `string` | Bắt buộc ở mỗi mục. `"paywall"`, `"flow"`, `"ab_test"` (A/B test paywall), `"flow_ab_test"` (A/B test flow), `"cross_ab_test"` hoặc `"flow_cross_ab_test"` (A/B test đa placement). Dùng `paywall`, `ab_test` và `cross_ab_test` trong paywall placement, và `flow`, `flow_ab_test` và `flow_cross_ab_test` trong flow placement |
+| `segment_ids` | `string[]` | ID [phân khúc](segments) được nhắm mục tiêu bởi đối tượng này. Độ dài 0 hoặc 1. Mảng rỗng đánh dấu **đối tượng mặc định** — dự phòng cho người dùng không khớp với phân khúc nào khác |
+| `paywall_id` | `string` | ID (UUID) [paywall](paywalls) hiển thị cho người dùng trong đối tượng này. Bắt buộc khi `content_type` là `"paywall"` |
+| `flow_id` | `string` | ID (UUID) [flow](adapty-flow-builder) hiển thị cho người dùng trong đối tượng này. Bắt buộc khi `content_type` là `"flow"` |
+| `ab_test_id` | `string` | ID [A/B test](ab-tests) chạy cho người dùng trong đối tượng này. Bắt buộc với bốn kiểu nội dung A/B test |
+| `ab_test_title` | `string` | Tiêu đề A/B test. Chỉ đọc: API bỏ qua giá trị này khi ghi |
+| `priority` | `number` | Bắt đầu từ 0, duy nhất trong placement. Các đối tượng được đánh giá từ thấp đến cao; đối tượng mặc định phải có giá trị cao nhất |
+
+Một placement phải có đúng một đối tượng mặc định.
+
+:::warning
+`placements update` thay thế toàn bộ danh sách đối tượng, bao gồm cả các đối tượng đang chạy A/B test. Để giữ nguyên một test đang chạy, hãy sao chép mục đó từ `placements get` vào `--audiences` mà không thay đổi gì, với cùng `ab_test_id` và `segment_ids`. Nếu bạn ghi đè mà xóa hoặc thay thế mục đó, test sẽ dừng lại mà không có người thắng. Nếu bạn chuyển mục đó sang các phân khúc khác, test sẽ bắt đầu lại, và nếu có `ab_test_id` trên một đối tượng khác thì test sẽ chạy ở đó. Nếu bạn chỉ thay đổi thứ tự ưu tiên, test sẽ tiếp tục chạy bình thường. CLI sẽ không cảnh báo bạn về các trường hợp này.
+:::
+
+Các mục A/B test liên placement (`cross_ab_test`, `flow_cross_ab_test`) là chỉ đọc. API bỏ qua chúng khi ghi và giữ nguyên dữ liệu đã lưu.
+
+Loại nội dung của một placement được cố định khi bạn tạo, vì vậy `placements update` không thể chuyển một paywall placement sang flow hoặc ngược lại. Hãy phục vụ flow từ một placement riêng — xem [Tạo một placement mới cho flow của bạn](migrate-to-flows#create-a-new-placement-for-your-flow).
+
+CLI kiểm tra từng mục trước khi gửi yêu cầu. Một mục thiếu hoặc có `content_type` không xác định, hoặc thiếu ID mà `content_type` yêu cầu, sẽ thoát với mã 2 và không gửi gì cả. Với `content_type` mà CLI không nhận ra, CLI in ra `this CLI does not know this audience kind; update the CLI`. Nếu mục đó đến từ lệnh `placements get`, hãy cập nhật CLI thay vì xóa mục đó: mục đó có thể là một A/B test đang chạy.
+
+Một flow chỉ có thể được gắn vào sau khi đã được xuất bản. Flow ở trạng thái `draft`, hoặc flow đang trong quá trình xuất bản lần đầu, sẽ bị server từ chối; CLI nhận ra lỗi đó và thoát với code 2, đồng thời in ra lệnh `flows publish` cho flow đó. Để xuất bản một flow, hãy dùng [`flows publish`](developer-cli-flows#adapty-flows-publish) hoặc [Flow & Paywall Builder](builder-save-publish), rồi chờ cho đến khi trạng thái của flow chuyển thành `published`.
+
+Ví dụ với một đối tượng mục tiêu và một đối tượng mặc định:
+
+```bash
+adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+Ví dụ về một placement phục vụ flow đã xuất bản cho tất cả người dùng:
+
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+```
+
+Để thay thế paywall trên nhiều placement mà không mất các routing theo phân khúc:
+
+1. Tìm các placement bị ảnh hưởng:
+
+   ```bash
+   adapty paywalls placements --app <app-id> <old-paywall-id>
+   ```
+
+2. Với mỗi placement, đọc toàn bộ mảng `audiences`:
+
+   ```bash
+   adapty placements get --app <app-id> <placement-id> --json
+   ```
+
+3. Thay thế các giá trị `paywall_id` tương ứng ở phía client. Giữ nguyên tất cả các mục khác, kể cả các mục A/B test.
+
+4. Ghi lại payload đã chỉnh sửa:
+
+   ```bash
+   adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
+   ```
+
+## Phân khúc \{#segments\}
+
+[Phân khúc](segments) nhóm người dùng theo các thuộc tính hồ sơ của họ. Sử dụng các lệnh này để tạo phân khúc và tra cứu ID phân khúc khi tạo [đối tượng placement](#audiences-shape). Để xây dựng phân khúc từ các chiến dịch Apple Ads, nhóm quảng cáo hoặc từ khóa, hãy dùng [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) thay thế: lệnh này sẽ tra cứu Apple ID cho bạn và đặt tên phân khúc theo cách Ads Manager thực hiện.
+
+### Danh sách phân khúc adapty \{#adapty-segments-list\}
+
+Liệt kê tất cả [phân khúc](segments) của một ứng dụng.
+
+```bash
+adapty segments list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Chấp nhận [pagination flags](developer-cli-reference#global-flags).
+
+### adapty segments get
+
+Lấy thông tin chi tiết cho một [phân khúc](segments) cụ thể.
+
+```bash
+adapty segments get --app <app-id> <segment-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `segment-id` | ID phân khúc (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+
+Phản hồi chứa `id`, `title`, `description`, `filters`, `profile_count`, `refresh_in_progress`, `created_at` và `updated_at`. Lệnh `list` chỉ trả về `id`, `title` và `description`.
+
+### adapty segments create
+
+Tạo một [phân khúc](segments) từ một hoặc nhiều bộ lọc.
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--title` | Có | Tiêu đề phân khúc |
+| `--filter` | Có | Quy tắc lọc. Có thể lặp lại. Xem [Cú pháp bộ lọc](#filter-syntax) |
+| `--description` | Không | Mô tả phân khúc |
+
+Người dùng chỉ khớp với phân khúc khi họ khớp với mọi bộ lọc. Phản hồi có các trường giống như `segments get`. `profile_count` bắt đầu từ `0`, và Adapty sẽ tính toán lại sau khi phân khúc được tạo.
+
+### adapty segments update
+
+Thay thế tiêu đề, mô tả và bộ lọc của một [phân khúc](segments) hiện có.
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| Argument | Description |
+|---|---|
+| `segment-id` | Segment ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--title` | Yes | Tiêu đề phân khúc |
+| `--filter` | Yes | Quy tắc lọc. Có thể lặp lại. Xem [Cú pháp filter](#filter-syntax) |
+| `--description` | No | Mô tả phân khúc |
+
+:::warning
+`segments update` thay thế toàn bộ phân khúc. Hãy truyền vào mọi filter bạn muốn giữ, không chỉ filter đang thay đổi. Để đọc các filter hiện tại, chạy `adapty segments get --app <app-id> <segment-id> --json`.
+:::
+
+#### Cú pháp filter \{#filter-syntax\}
+
+Viết mỗi `--filter` theo dạng `field:OPERATOR:value`. Để khớp với nhiều giá trị, hãy phân cách chúng bằng dấu phẩy: `ip_country:IN:US,CA`.
+
+| Toán tử | Giá trị | Ví dụ |
+|---|---|---|
+| `IN`, `NOT IN` | Một hoặc nhiều | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | Một | `age:>:18` |
+| `BETWEEN` | Hai | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | Không có | `age:IS NULL` |
+
+Truyền số dưới dạng giá trị thông thường, ví dụ `age:>:18`. Adapty tự động chuyển đổi cho các trường số như `age`, `total_revenue_usd` và các thuộc tính tùy chỉnh kiểu float.
+
+Với giá trị mà dạng rút gọn này không thể biểu diễn, hãy truyền bộ lọc dưới dạng đối tượng JSON:
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty xác thực tên trường, toán tử và kiểu giá trị, đồng thời báo cáo một lỗi cho mỗi bộ lọc không hợp lệ. Để xem tên trường và định dạng giá trị của các bộ lọc hiện có, chạy `adapty segments get --app <app-id> <segment-id> --json` trên một phân khúc đã được tạo trong dashboard.
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Tham chiếu lệnh](developer-cli-reference) — mọi chủ đề CLI, các cờ toàn cục và cờ phân trang.

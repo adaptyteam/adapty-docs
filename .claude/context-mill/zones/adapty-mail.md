@@ -152,6 +152,14 @@ core in-app paywall/subscription product.
   The apex-domain-only rule and the fixed `mail.` / `email.` sending prefixes with the `hello.` MAIL
   FROM prefix *are* our constants, so those are safe to state flatly. A provider-owned fact must be
   attributed as the provider's, because it can change without us.
+- **Each sending domain has an optional Reply-to address** (verified 2026-10-14 against backend and
+  dashboard code, both on the production line). It sits on the verified domain card under **Email
+  sender name** and saves with it. The `hello@` From mailbox is the warm-up inbox and nobody reads it,
+  so before this field existed every reader reply was lost — "my customers' replies vanish" is this.
+  The address is a plain Reply-To header on each send: any domain, no verification or DNS. It applies
+  to emails sent after saving; empty means no header. Documented in `mail-sending-domain` §4 and a
+  troubleshooting row. Not confirmed: whether double opt-in confirmation emails carry it too — the
+  send path suggests every email from the domain does, but no test was run.
 - **The domain layer was reshaped between 2026-07-23 and 2026-08-17, and the bullet above is now stale
   in four places** (verified 2026-08-18 against backend and dashboard code; the multidomain,
   custom-subdomain and DNS-validation releases are merged). (1) **A project holds up to five sending
@@ -187,6 +195,16 @@ core in-app paywall/subscription product.
   disabled integration already exists. The tooltip is *"Set up at least one flow before enabling Adapty
   integration"* with no trailing period. Check these strings in the dashboard before writing any
   navigation path here — a tab rename ships without a docs ticket, and nothing in this repo catches it.
+- **Marketing consent is opt-out: only a recorded `false` blocks it** (verified 2026-10-27 against backend
+  and dashboard code on the production line). A profile carries `email_consent` (true / false / none),
+  set by the public `profile/save/` field or by a custom attribute `email_consent` (`true`/`false`/`1`/`0`)
+  from any source except FunnelFox, whose attribute is ignored. `false` stops marketing, the double
+  opt-in request, and already-scheduled marketing at send time; other transactional email is unaffected.
+  `true` does not skip double opt-in. A save without the field keeps the stored answer; a later answer
+  replaces it. The dashboard shows it as **Email consent** (Granted / Denied / Not provided) on the
+  Profile card and a **Consent denied** header badge. A 30-day "answer required" deadline and US
+  exemption existed for two days (2026-10-24..26) and were removed with their dashboard banner and
+  settings section — never document them.
 
 ## What we document, what we don't
 
@@ -237,11 +255,13 @@ core in-app paywall/subscription product.
 | mail-flows | entry | marketer | 8 | tutorial |
 | mail-funnelfox | how-to | marketer | 4 | tutorial |
 | mail-get-started | — | marketer | 15 | tutorial |
+| mail-mcp | — | — | 14 | tutorial |
 | mail-profiles | — | marketer | 14 | tutorial |
 | mail-segments | — | marketer | 7 | tutorial |
 | mail-send-data-via-api | — | marketer | 5 | tutorial |
 | mail-sending-domain | — | marketer | 13 | tutorial |
-| mail-suppression | — | marketer | 10 | tutorial |
+| mail-skill | — | — | 4 | tutorial |
+| mail-suppression | — | marketer | 12 | tutorial |
 | mail-testing | — | marketer | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

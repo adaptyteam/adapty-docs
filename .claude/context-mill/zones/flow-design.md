@@ -55,13 +55,14 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | add-flow-remote-config-locale | — | marketer | 4 | tutorial |
-| add-paywall-locale-in-adapty-paywall-builder | — | marketer | 9 | tutorial |
+| add-paywall-locale-in-adapty-paywall-builder | — | marketer | 20 | tutorial |
 | builder-containers | — | marketer | 15 | tutorial |
 | builder-element-states | — | marketer | 7 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
+| builder-reusable-styles | — | — | 8 | tutorial |
 | builder-reviews-and-testimonials | — | marketer | 5 | tutorial |
-| builder-styling | — | marketer | 23 | tutorial |
+| builder-styling | — | marketer | 20 | tutorial |
 | builder-tabs | — | marketer | 5 | tutorial |
 | builder-toggles | — | marketer | 4 | tutorial |
 | custom-media | — | marketer | 9 | tutorial |
@@ -72,12 +73,12 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | onboarding-quizzes | — | marketer | 3 | tutorial |
 | onboarding-text | entry | marketer | 10 | tutorial |
 | paywall-buttons | — | marketer | 6 | tutorial |
-| paywall-dark-mode | — | marketer | 4 | tutorial |
-| paywall-head-picture | — | marketer | 6 | tutorial |
+| paywall-dark-mode | — | marketer | 8 | tutorial |
+| paywall-head-picture | — | marketer | 7 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
 | reuse-flow-elements | — | marketer | 8 | tutorial |
-| using-custom-fonts-in-flow-builder | — | marketer | 5 | tutorial |
+| using-custom-fonts-in-flow-builder | — | marketer | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

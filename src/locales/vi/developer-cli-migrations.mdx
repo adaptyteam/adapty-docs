@@ -1,0 +1,159 @@
+---
+title: "Lệnh migrations"
+description: "Các lệnh Adapty CLI giúp chuyển một dự án RevenueCat sang Adapty: tạo migration, chạy các bước, kiểm tra trạng thái và đóng migration."
+metadataTitle: "Lệnh CLI Migrations | Tài liệu Adapty"
+---
+
+Chuyển một dự án RevenueCat sang Adapty: danh mục sản phẩm, rồi tùy chọn các sự kiện cửa hàng và lịch sử giao dịch. Adapty thực hiện mỗi migration theo một chuỗi các bước và cho bạn biết những hành động nào có thể thực hiện tiếp theo, vì vậy hãy chạy `status` trước mỗi hành động. Để xem toàn bộ quy trình, xem [Migration từ RevenueCat](migration-from-revenuecat).
+
+Tất cả các lệnh ngoại trừ `list`, `create`, `use`, `current`, và `unuse` đều chấp nhận cờ migration:
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `-m`, `--migration` | Không | ID migration. Nếu không có, CLI sẽ sử dụng biến môi trường `ADAPTY_MIGRATION`, sau đó là migration đã được lưu bởi `create` hoặc `use`. |
+
+## adapty migrations list
+
+Liệt kê các migration của bạn và các migration flow bạn có thể bắt đầu, được nhóm theo ứng dụng.
+
+```bash
+adapty migrations list
+```
+
+## adapty migrations create \{#adapty-migrations-create\}
+
+Bắt đầu một migration và lưu nó làm migration hiện tại.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name` | Một trong `--name` hoặc `--flow` | Tên của app Adapty mới. Bắt đầu quá trình migration danh mục. Không thể kết hợp với `--flow` hoặc `--app`. |
+| `--flow` | Một trong `--name` hoặc `--flow` | Flow cần khởi động trong app hiện có, như `adapty migrations list` hiển thị. Yêu cầu `--app`. |
+| `--app` | Với `--flow` | App ID (UUID) |
+| `--no-select` | Không | Tạo migration mà không lưu nó làm migration hiện tại |
+
+Các flow khả dụng cho app hiện có sau khi migration danh mục của nó:
+
+| Flow | Mô tả |
+|---|---|
+| `transactions` | Import lịch sử giao dịch từ RevenueCat Cloud Export hàng ngày |
+| `transactions_support` | Import lịch sử giao dịch qua bộ phận hỗ trợ của RevenueCat và Adapty, dành cho các gói RevenueCat không có Cloud Export |
+| `apple_events` | Chuyển tiếp thông báo App Store đến Adapty trong khi RevenueCat vẫn tiếp tục nhận chúng |
+| `google_events` | Đăng ký Adapty vào Pub/Sub topic mà RevenueCat sử dụng cho thông báo Google Play |
+| `code` | Để coding agent của bạn thay thế RevenueCat SDK trong một codebase của ứng dụng |
+| `integrations` | Để coding agent của bạn tìm các công cụ analytics, attribution và messaging trong code ứng dụng để thiết lập trong Adapty |
+| `paywall_design` | Để coding agent của bạn xây dựng lại các thiết kế paywall RevenueCat trong các flow mà catalog migration đã tạo |
+
+## Sử dụng lệnh adapty migrations use \{#adapty-migrations-use\}
+
+Lưu một migration làm migration hiện tại, để các lệnh khác không cần truyền `-m`.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `migration-id` | ID migration lấy từ `adapty migrations list` |
+
+CLI kiểm tra xem bạn có quyền truy cập migration đó trước khi lưu ID. Migration đã lưu thuộc về token hiện tại và có hiệu lực trong mọi terminal.
+
+## adapty migrations current
+
+Hiển thị migration hiện tại và nguồn gốc của nó: biến môi trường `ADAPTY_MIGRATION` hoặc lựa chọn đã lưu.
+
+```bash
+adapty migrations current
+```
+
+## adapty migrations unuse \{#adapty-migrations-unuse\}
+
+Xóa migration đã lưu. Giá trị `ADAPTY_MIGRATION` được đặt trong shell của bạn sẽ có hiệu lực cho đến khi bạn hủy đặt nó.
+
+```bash
+adapty migrations unuse
+```
+
+## adapty migrations status
+
+Hiển thị trạng thái của một migration, các vấn đề gặp phải, và các hành động bạn có thể thực hiện tiếp theo.
+
+```bash
+adapty migrations status
+```
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--wait` | Không | Thăm dò cho đến khi migration thay đổi, sau đó trả về trạng thái mới nhất |
+| `--timeout` | Không | Thời gian thăm dò cho `--wait`: 1–600 giây, mặc định là 120. Chấp nhận `300`, `300s`, hoặc `5m`. Yêu cầu `--wait`. |
+
+Với `--json`, `next_actions` và `available_actions` liệt kê ID của từng hành động, các tài nguyên mà hành động đó đọc, `input_schema` của nó, và nội dung `confirm`.
+
+Exit code `0` nghĩa là yêu cầu thành công, không phải migration đã hoàn tất. Hãy kiểm tra `migration.state` trong phản hồi.
+
+## Các bước migration của adapty \{#adapty-migrations-steps\}
+
+Hiển thị danh sách kiểm tra migration và trạng thái của từng bước.
+
+```bash
+adapty migrations steps
+```
+
+## adapty migrations show
+
+Liệt kê các tài nguyên bạn có thể đọc hiện tại, hoặc đọc một tài nguyên cụ thể.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argument | Description |
+|---|---|
+| `resource` | Tên tài nguyên, ví dụ `apps`, `mapping`, `report`, hoặc `export-config`. Bỏ qua để liệt kê các tài nguyên khả dụng ở bước hiện tại. |
+
+## adapty migrations run \{#adapty-migrations-run\}
+
+Chạy một hành động từ `adapty migrations status`.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `action-id` | ID hành động từ `next_actions` hoặc `available_actions` trong `adapty migrations status` |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--input` | Không | Đầu vào của action dưới dạng JSON object khớp với `input_schema` của action đó. Nếu không có đầu vào, CLI sẽ gửi `{}`. |
+| `--input-file` | Không | Đường dẫn đến file chứa đầu vào của action, hoặc `-` để đọc từ stdin. Không thể dùng kết hợp với `--input`. |
+| `-y`, `--yes` | Đối với các action có văn bản `confirm` | Xác nhận action sau khi bạn đọc văn bản `confirm` của nó. Không có lời nhắc tương tác. |
+| `--open` | Không | Mở link của action ngay cả khi dùng pipe hoặc `--json` |
+| `--no-browser` | Không | In link của action mà không mở trình duyệt |
+
+Các hành động có ba loại:
+
+- **Hành động đầu vào (Input actions)** gửi dữ liệu của bạn đến Adapty, ví dụ như các app RevenueCat cần migrate hoặc các quyết định mapping của bạn.
+- **Hành động bên ngoài (External actions)** mở một trang trong Adapty Dashboard, ví dụ để dán RevenueCat secret API key. Hoàn tất trang đó, rồi kiểm tra `status`.
+- **Hành động agent (Agent actions)**, ví dụ như `migrate_code`, là công việc dành cho coding agent của bạn. Chạy chúng từ git repository của app: CLI lưu dữ liệu migration vào `.git/adapty/<migration-id>/` và in ra hướng dẫn cho agent. Agent báo cáo kết quả bằng cách chạy lại hành động đó với `--input`.
+
+## adapty migrations close
+
+Kết thúc hoặc hủy một migration. Bạn không thể mở lại sau khi đã đóng.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` đánh dấu migration là đã hoàn thành; `cancel` hủy bỏ nó |
+| `-y`, `--yes` | Yes | Xác nhận việc đóng |
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Tham chiếu lệnh](developer-cli-reference) — mọi chủ đề CLI, các cờ toàn cục và cờ phân trang.

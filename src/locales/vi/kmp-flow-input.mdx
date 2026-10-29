@@ -39,44 +39,16 @@ AdaptyUI.setFlowsEventsObserver(object : AdaptyUIFlowsEventsObserver {
 })
 ```
 
-Callback `flowViewDidReceiveAnalyticEvent` truyền tất cả các sự kiện analytics từ một flow, bao gồm cả [lượt xem màn hình](kmp-flow-screen-views). Các tham số sự kiện được truyền vào dưới dạng một chuỗi JSON trong `paramsJsonString`; hãy giải mã một lần và đọc các trường.
-- Tham số `name` chứa tên sự kiện. Để lọc các sự kiện nhập liệu của người dùng, so sánh `name` với `flow_user_input`.
-- Tham số `element_type` cho biết danh mục của phần tử.
-- Giá trị của dữ liệu nhập được lưu ở các tham số khác nhau tùy thuộc vào loại phần tử:
-     - Trường văn bản, picker và toggle lưu dữ liệu nhập của người dùng trong `value`
-     - Nhóm có thể chọn (selectable groups) báo cáo các tùy chọn đang hoạt động trong `item_ids` và `item_titles`
+Callback `flowViewDidReceiveAnalyticEvent` truyền tất cả các sự kiện analytics từ một flow, bao gồm [lượt xem màn hình](kmp-flow-screen-views). Các tham số sự kiện được truyền dưới dạng một chuỗi JSON trong `paramsJsonString`; giải mã một lần và đọc các trường. Để lọc các sự kiện nhập liệu của người dùng, so sánh `name` với `flow_user_input`. Tham số lưu trữ giá trị phụ thuộc vào `element_type`:
 
-```kotlin showLineNumbers title="Kotlin"
-private fun handleFlowInput(name: String, paramsJsonString: String) {
-    if (name != "flow_user_input") return
+| `element_type` | Tham số lưu trữ giá trị | Kiểu sau khi giải mã |
+|:---------------|:------------------------|:---------------------|
+| `text_input`, `email_input`, `number_input`, `phone_input` | `value` | String |
+| `date_picker`, `time_picker`, `date_time_picker` | `value` | Number, Unix time tính bằng milliseconds. Đọc dưới dạng double, vì Android serialize số theo cách đó. |
+| `single_choice`, `multi_choice` | `item_ids`, `item_titles` | Array of strings |
+| `toggle` | `value` | Boolean |
 
-    val params = Json.parseToJsonElement(paramsJsonString).jsonObject
-    val elementId = params["element_id"]?.jsonPrimitive?.content ?: return
-
-    // The screen the input sits on. Pair it with elementId to tell apart
-    // two fields that share an Element ID on different screens.
-    val screenId = params["instanceId"]?.jsonPrimitive?.contentOrNull
-
-    when (params["element_type"]?.jsonPrimitive?.content) {
-        "text_input", "email_input", "number_input", "phone_input" -> {
-            val text = params["value"]?.jsonPrimitive?.content
-        }
-        "date_picker", "time_picker", "date_time_picker" -> {
-            // Unix time in milliseconds. Read it as a double — Android serializes numbers that way.
-            val millis = params["value"]?.jsonPrimitive?.double?.toLong()
-        }
-        "single_choice" -> {
-            val optionId = params["item_ids"]?.jsonArray?.firstOrNull()?.jsonPrimitive?.content
-        }
-        "multi_choice" -> {
-            val optionIds = params["item_ids"]?.jsonArray?.map { it.jsonPrimitive.content }
-        }
-        "toggle" -> {
-            val isOn = params["value"]?.jsonPrimitive?.boolean
-        }
-    }
-}
-```
+Phần [Những gì bạn nhận được](#what-you-receive) liệt kê mọi tham số và nội dung từng phần tử trong builder báo cáo.
 
 <FlowInputVerify />
 
@@ -128,7 +100,7 @@ override fun flowViewDidReceiveAnalyticEvent(
     // paramsJsonString, once decoded:
     params["element_id"]       // "birthday"
     params["element_type"]     // "date_picker"
-    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight)
+    params["value"]            // 645408000000   (Unix milliseconds — 1990-06-15, local midnight; read it as a double, since Android serializes numbers that way)
 }
 ```
 </Details>

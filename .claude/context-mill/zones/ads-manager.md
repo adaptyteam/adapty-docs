@@ -77,6 +77,19 @@ inside Adapty instead of Apple's own console.
   - **Not established: what an enabled rule overrides.** Nothing in the dashboard says a rule's next run
     overwrites a manual bid edit; that is server-side behavior. Treat it as unverified until the product
     team confirms it.
+- **Segments page** (dashboard code, 2026-10-20 — on for everyone from that date): a sidebar
+  **Segments** page replaced the old **Create segment** window. The Ads Manager **Actions** menu now has
+  **Create segment from …** and **Add to segment…**, both opening one editor drawer; rows must come from
+  one app. A segment built there is an ordinary Adapty segment titled with a fixed `[ASA] ` prefix and
+  exactly one `IN` condition on campaign, ad group or keyword (Apple Ads numeric IDs). Keywords can't share
+  a segment with campaigns or ad groups; campaigns mixed with ad groups are saved as their *current* ad
+  groups, so later ad groups don't join. The page lists only `[ASA]` segments of that exact shape; one
+  edited elsewhere is hidden behind a link to **Profiles & Segments**. Creating a segment never attaches it
+  to a placement. Apple Ads app → Adapty app matching: Apple Ads settings link, then Apple app ID, then a
+  unique bundle ID, then a manual pick that only the current browser remembers.
+  - The page's own hint says to add the App Store ID in the Adapty app's "general settings", but the
+    matched field is the **Apple app ID** of the App Store integration. The docs point to the integration
+    step, not general settings.
 - **What is Apple's, and therefore not ours to define**: keyword match types (`BROAD`, `EXACT`, `AUTO`),
   placements (`SupplySources`), channel / billing-event / pricing model (`CPC`, `CPM`), and the entire
   not-serving vocabulary (`ServingStateReasons`, ~40 values from `APP_NOT_ELIGIBLE_SEARCHADS` to
@@ -150,7 +163,7 @@ inside Adapty instead of Apple's own console.
 | ads-manager-cpp-ab-tests | — | marketer | 13 | tutorial |
 | ads-manager-create-ad-group | — | marketer | 5 | tutorial |
 | ads-manager-create-campaign | — | marketer | 6 | tutorial |
-| ads-manager-create-segments | — | marketer | 2 | tutorial |
+| ads-manager-create-segments | — | marketer | 7 | tutorial |
 | ads-manager-keyword-suggester | — | marketer | 4 | tutorial |
 | ads-manager-manage-ads | — | marketer | 5 | tutorial |
 | ads-manager-manage-keywords | — | marketer | 12 | tutorial |

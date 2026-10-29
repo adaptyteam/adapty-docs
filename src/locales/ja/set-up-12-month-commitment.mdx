@@ -1,0 +1,107 @@
+---
+title: "12ヶ月コミットメントプランの設定"
+description: "App Store ConnectとAdaptyでAppleの月次サブスクリプション（12ヶ月コミットメント付き）を設定し、フローまたはカスタムペイウォールに追加してサンドボックスでテストする方法を説明します。"
+metadataTitle: "12ヶ月コミットメントプランの設定 | Adapty ドキュメント"
+---
+
+:::important
+コミットメントプランを提供するには、年次App Storeサブスクリプションと[フロー](adapty-flow-builder)または[カスタムペイウォール](paywalls)が必要です。フローにはiOS向けAdapty SDK v4.3.1以降、Android向けv4.3以降が必要です。カスタムペイウォールにはAdapty SDK v4.3以降が必要です。
+:::
+
+年間プロダクトに[12ヶ月コミットメントプラン](app-store-12-month-commitment)を追加することで、サブスクライバーに年間サブスクリプションを月払いで契約させることができます。設定はApp Store ConnectとAdaptyの両方で行います。
+
+## 始める前に \{#before-you-begin\}
+
+コミットメントプランを実装する前に、以下を確認してください。
+
+- **適切な市場をターゲットにする**: コミットメントプランはアメリカでは利用できません。ドイツ、イスラエル、南アフリカ、トルコでは、サブスクライバーはApple Supportを通じて即時解約できます。
+- **適切なOSバージョンをターゲットにする**: サブスクライバーはiOS 26.4以降、またはiPadOS、macOS、tvOS、visionOSの同バージョンが必要です。Xcode 26.5以降でアプリをビルドしてください。
+- **適切な価格帯をターゲットにする**: 月額12回分の合計金額は、年払いサブスクリプションの一括価格の1倍以上1.5倍以下の範囲内である必要があります。
+- **サポートされているAdapty SDKバージョンを使用する**: フローはiOSでAdapty SDK v4.3.1以降、AndroidでAdapty SDK v4.3以降が必要です。カスタムペイウォールはAdapty SDK v4.3以降が必要です。それより古いSDKを使用しているアプリバージョンでは、ユーザーは一括プランのみ購入できます。
+- **プロダクトIDを読み取るコードを更新する**: Webhook、インテグレーション、データエクスポート、サーバーサイドAPIはコミットメントプランの購入を`<product_id>:monthly`として報告します。プロダクトIDを処理するコードがある場合は、最初のコミットメントプラン購入が行われる前にロジックを更新してください。
+
+## App Store Connect の設定 \{#1-app-store-connect-configuration\}
+
+1. App Store Connectで年間サブスクリプションを開くか、**1 Year**の期間で[新しいサブスクリプションを作成](app-store-products)します。
+2. **Availability**セクションで、**1 Year Upfront**と**Monthly with 12-Month Commitment**に同じ国を追加します。Appleは、一括請求が利用可能な国でのみコミットメント請求を提供しています。逆は必須ではありません。つまり、コミットメントプランのない国で一括プランを提供することは可能です。
+3. **Subscription Prices**セクションで、まだ設定されていない場合は、基本テリトリーの一括価格を設定します。コミットメントプランのみをユーザーに表示する場合でも、Appleは一括価格を必須としています。
+4. 基本テリトリーの月額価格を設定します。月額価格は一括価格の1/12〜1/8の範囲内である必要があります。例えば、一括価格が€59.99の場合、月額価格は€5.00〜€7.49が設定可能です。
+
+App Store Connect は、基準地域の価格をもとに他の国の価格を自動計算します。
+
+詳しい手順については、Apple の[12ヶ月コミットメント付き月次サブスクリプションの提供](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-availability-for-an-auto-renewable-subscription#offer-monthly-subscriptions-with-12-month-commitment)ガイドをご覧ください。
+
+## 2. Adaptyの設定 \{#2-adapty-configuration\}
+
+フローまたはカスタムペイウォールでコミットメントプランを表示するには、Adaptyの年額プロダクトでこれを有効にしてください。どちらも使用しない場合は、この手順をスキップできます。
+
+1. 年額プロダクトを開きます。まだ存在しない場合は、App Store Connectで設定したサブスクリプションを[作成して接続](create-product#create-product-and-connect-existing-store-products)してください。Adaptyから新しいプロダクトをプッシュしないでください。コミットメントプランのない別のサブスクリプションが作成されてしまいます。
+2. **App Store** タブを開き、**Offer monthly payments with a 12-month commitment** を選択します。
+
+   <ZoomImage id="offer-monthly-payments.webp" width="500px" alt="App Store tab of a yearly product with the Offer monthly payments with a 12-month commitment checkbox" />
+
+3. ポップアップで、**Monthly price, USD** リストから App Store Connect に合わせた分割払い価格を選択します。リストには許可された範囲内の App Store の価格ポイントのみが表示されます。この価格は参照値であり、Adapty が App Store Connect に送信することはありません。
+
+   <ZoomImage id="commitment-set-price.webp" width="500px" alt="Monthly with 12-month commitment pop-up with the Monthly price, USD field" />
+
+## 3. オファーの設定 \{#3-set-up-offers\}
+
+App Store Connect では、各請求プランにそれぞれ独自の初回オファー、プロモーションオファー、ウィンバックオファー、オファーコードがあります。アップフロントプランのオファーはコミットメントプランには適用されません。
+
+- **無料トライアルおよびその他の初回オファー**: App Store Connect でコミットメントプランの初回オファーを設定します。Adapty は[初回オファー](app-store-offers#introductory-offers)を自動的に適用します。初回オファーが終了すると、サブスクライバーの12ヶ月コミットメントが開始されます。
+- **プロモーションオファーおよびウィンバックオファー**: App Store Connect でコミットメントプランの[プロモーションオファー](app-store-offers#promotional-offers)または[ウィンバックオファー](app-store-offers#win-back-offers)を設定します。次に[オファーを Adapty に追加](create-offer)し、**App Store plan** を **Monthly with 12-month commitment** に設定します。フローまたはペイウォールのプロダクトには、そのプランに対応するオファーのみが表示されます。フローもカスタムペイウォールも使用しない場合は、Adapty にオファーを追加する必要はありません。
+- **オファーコード**: App Store Connect でコミットメントプランのオファーコードを設定します。
+
+## 4. フローまたはカスタムペイウォールに追加する \{#4-add-to-a-flow-or-custom-paywall\}
+
+:::warning
+Appleは、購入前に分割払い価格と年間合計金額の両方を表示することを義務付けています。
+:::
+
+### フロー \{#flow\}
+
+1. フローエビルダーで **Products** パネルを開き、**Monthly** タグが付いた年間プロダクトを[画面に追加](paywall-product-block#sell-a-yearly-product-with-monthly-payments)します。同じ画面で一括払いプランも販売する場合は、**Upfront** タグが付いたプロダクトも追加してください。
+   - 古いバージョンの SDK を使用している場合や、コミットメントプランが適用されない場合に、一括払いプランを購入したユーザーに一括払いオファーを提供するには、**Fallback offer** でそのオファーを選択します。
+2. **Monthly** プロダクトを[プロダクトカード](paywall-product-block#configure-a-product-card)または [**Purchase** アクション](paywall-product-block#trigger-a-purchase)に割り当てます。
+3. 分割払いの価格を表示するには、`prod_billing_price` と `prod_billing_period` の[変数](onboarding-variables#12-month-commitment-plan)を挿入します。年間合計を表示するには、`prod_price` を挿入します。分割払いの変数を使用するには、Adapty SDK v4.3.1 以降が必要です。
+4. コミットメントプランを購入できないユーザーの画面をプレビューするには、**Products** パネルで **Monthly** プロダクトのメニューを開き、**Offer** > **Monthly plan unavailable** を選択します。
+
+### カスタムペイウォール \{#custom-paywall\}
+
+1. カスタムペイウォールで[年間プロダクトを追加](add-product-to-paywall)し、**Billing plan** を **Monthly** に設定します。同じペイウォールで一括払いプランも販売する場合は、年間プロダクトをもう一度追加し、**Upfront** の請求プランを設定してください。
+   - 一括払いプランを購入したユーザーに対して（旧バージョンの SDK や、コミットメントプランが適用されない場合など）、代わりに一括払いオファーを提供するには、**Fallback offer** でそれを選択します。
+2. アプリ内では `product.subscriptionPricingTerms` から価格を表示します。コミットメントプランを購入できるユーザーに対しては、Adapty SDK がそのプランの価格を返します。それ以外のユーザーには、一括払いプランの価格が返されます。
+   - SDK が返したプランを確認するには、`product.subscriptionPricingTerms?.billingPlan` をチェックします。コミットメントプランの場合は `.monthly`、一括払いプランの場合は `.upFront` が返されます。
+   - 分割払いの価格を表示するには、`subscriptionPricingTerms.localizedBillingPrice` と `subscriptionPricingTerms.billingPeriod` を使用します。
+   - 年間合計を表示するには、`subscriptionPricingTerms.commitmentInfo.localizedPrice` と `subscriptionPricingTerms.commitmentInfo.period` を使用します。コミットメントプランの場合、`product.localizedPrice` と `product.subscriptionPeriod` も同じ年間値を返します。
+
+ユーザーが以下の場合、コミットメントプランを購入できません。
+
+- **サポート外のOSバージョンまたは国**: ユーザーのAppleデバイスが26.4より古いシステムバージョンで動作している場合、またはプランがユーザーのApp Storeの国で利用できない場合。Adapty SDKは代わりに一括払いプランの価格を返します。
+- **既存の一括払いサブスクリプション**: StoreKitは、ユーザーがすでにサブスクライブしていると報告します。プランを切り替えるには、サブスクライバーはAppleのサブスクリプション設定を使用します。
+- **[プロモートされたアプリ内課金](making-purchases#in-app-purchases-from-the-app-store)**: ユーザーがApp Storeでプロダクトを選択すると、Adapty SDKがアプリ内で購入を開始します。これらの購入では、SDKは一括払いプランのみをサポートします。
+
+コミットメントプランの提供を停止するには、フローでは**月額**プロダクトを置き換えるか削除してください。カスタムペイウォールでは、年額プロダクトの**課金プラン**を**前払い**に設定するか、**月額**行を削除してください。Adapty で**12か月コミットメントで月払いを提供する**チェックボックスをオフにすることはできません。既存のサブスクライバーは、App Store Connect の年額サブスクリプションで**Remove Monthly Billing**をクリックしない限り、毎年新しいコミットメントに更新され続けます。すでにコミットしたサブスクライバーは、コミットメント期間が終了するまで支払いを続けます。
+
+## 5. サンドボックスでプランをテストする \{#5-test-the-plan-in-a-sandbox\}
+
+[サンドボックステストガイド](test-purchases-in-sandbox)に従って、2つのサンドボックスアカウントでテストします。
+
+- **コミットメントプランを提供している国のアカウント**: ペイウォールには、合計金額と並んで月額料金付きのコミットメントプランが表示されます。購入後、サンドボックスユーザーのプロファイルには年間プロダクトのアクセスレベルが付与されます。
+- **USアカウント**: ペイウォールには前払いプランのみが表示されます。
+
+ウェブフックまたはServer-side APIからプロダクトIDを処理するコードがある場合は、コミットメントプランの購入が `<product_id>:monthly` として受信されることを確認してください。
+
+購入ロジックをローカルでテストするには、[Xcode の StoreKit Testing](local-sk-files) 26.5 以降を使用してください。StoreKit Testing での購入は Adapty には届きません。
+
+## トラブルシューティング \{#troubleshooting\}
+
+- **月払いのチェックボックスが表示されない**: **Offer monthly payments with a 12-month commitment** チェックボックスは、App Store プロダクト ID が設定された **Annual** プロダクトにのみ表示されます。**Price (USD)** が設定されるまで無効のままです。
+- **コミットメントプランで無料トライアルや他のオファーがユーザーに表示されない**: App Store Connect では、各オファーは1つの請求プランに紐付けられます。コミットメントプランの[オファーを設定](#3-set-up-offers)してください。プロモーションオファーまたはウィンバックオファーの場合は、Adapty でそのオファーの **App Store plan** を **Monthly with 12-month commitment** に設定してください。
+- **すべてのユーザーに一括払い価格が表示される**: 以下の両方を確認してください。
+  - アプリが Xcode 26.5 以降でビルドされていること。それより古いバージョンの Xcode では、Adapty SDK は常に一括払いプランの価格を返します。
+  - フローでは、**Monthly** タグが付いた年次プロダクトがスクリーンで使用されていること。カスタムペイウォールでは、年次プロダクトの **Billing plan** が **Monthly** になっていること。
+- **一部のユーザーに一括払い価格が表示される**: それらのユーザーは[コミットメントプランを購入できません](#4-add-to-a-flow-or-custom-paywall)。
+- **ペイウォールに分割払い価格ではなく年間合計金額が表示される**:
+  - フローでは、`prod_price` は年間合計金額を返します。分割払い価格を表示するには、`prod_billing_price` を使用してください。Adapty SDK v4.3.0 では `prod_billing_price` も年間合計金額を返すため、SDK を v4.3.1 以降にアップデートしてください。
+  - カスタムペイウォールでは、`product.localizedPrice` は年間合計金額を返します。分割払い価格を表示するには、`subscriptionPricingTerms.localizedBillingPrice` を使用してください。

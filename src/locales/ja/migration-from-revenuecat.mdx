@@ -5,22 +5,24 @@ metadataTitle: "RevenueCatからAdaptyへの移行 | Adapty ドキュメント"
 keywords: ['移行', 'revenuecat']
 ---
 
-RevenueCat からの移行は6つのステップで構成されています。コーディングエージェントが大部分の作業を担当します。エージェントは [Adapty CLI](developer-cli) を通じて移行を実行し、アプリ内の RevenueCat SDK を置き換えます。エージェントが対応できない部分——シークレット情報や RevenueCat、App Store Connect、Google Cloud の設定——はあなたが担当します。
+RevenueCatからの移行は8つのステップで構成されています。コーディングエージェントが大部分の作業を担当します。具体的には、[Adapty CLI](developer-cli)を通じて移行を実行し、アプリ内のRevenueCat SDKを置き換えます。エージェントが対応できない部分、つまりシークレットの設定やRevenueCat、App Store Connect、Google Cloudでの設定はあなたが行います。
 
-1. [主な違いを理解する](#learn-the-core-differences)。
-2. [カタログを Adapty に移行する](#move-your-catalog-to-adapty)。
-3. コーディングエージェントを使って [RevenueCat SDK を置き換える](#replace-the-revenuecat-sdk)。
-4. [ストアイベントを Adapty に転送する](#forward-store-events-to-adapty)。
-5. [アプリの新バージョンをテストしてリリースする](#test-and-release-a-new-version-of-your-app)。
-6. （任意）[トランザクション履歴をインポートする](#optional-import-your-transaction-history)。
+1. [コアの違いを理解する](#learn-the-core-differences)。
+2. [カタログをAdaptyに移行する](#move-your-catalog-to-adapty)。
+3. オファリングがフローになる場合は、[ペイウォールのデザインを移行する](#move-your-paywall-designs)。
+4. コーディングエージェントを使って[RevenueCat SDKを置き換える](#replace-the-revenuecat-sdk)。
+5. [インテグレーションを移行する](#move-your-integrations)。
+6. [ストアイベントをAdaptyに転送する](#forward-store-events-to-adapty)。
+7. [アプリの新バージョンをテストしてリリースする](#test-and-release-a-new-version-of-your-app)。
+8. （オプション）[トランザクション履歴をインポートする](#optional-import-your-transaction-history)。
 
 :::info
-既存のサブスクライバーは自動的に移行されます
+サブスクライバーは自動的に移行されます
 
-サブスクリプションをアクティベートしたことがあるユーザーは、Adapty SDK を搭載した新バージョンのアプリを開いた時点で、即座に Adapty に移行されます。サブスクリプションのステータス検証とプレミアムアクセスは自動的に復元されます。
+サブスクリプションを一度でも有効化したユーザーは、Adapty SDK を組み込んだ新バージョンのアプリを開いた瞬間に自動的に Adapty へ移行されます。サブスクリプションステータスの検証とプレミアムアクセスは自動的に復元されます。
 :::
 
-Adapty SDK を搭載したアプリの新バージョンをリリースする前に、[リリースチェックリスト](release-checklist)を必ずご確認ください。
+Adapty SDK を組み込んだ新バージョンのアプリをリリースする前に、[リリースチェックリスト](release-checklist)をご確認ください。
 
 ## コアとなる違いを把握する \{#learn-the-core-differences\}
 
@@ -32,13 +34,13 @@ Adapty と RevenueCat の SDK は、設計が似ています。最大の違い�
 | :---------- | :-------------- |
 | Package     | プロダクト         |
 | Offering    | ペイウォール         |
-| Paywall     | ペイウォールビルダー |
+| Paywall     | フロー            |
 | Entitlement | アクセスレベル    |
 
-Adaptyには[プレースメント](placements)という概念があります。これはアプリ内でユーザーが購入を行う論理的な場所です。多くの場合、プレースメントは1〜2つです：
+Adaptyには[プレースメント](placements)というコンセプトがあります。これはアプリ内でユーザーが購入を行う論理的な場所です。多くの場合、プレースメントは1つか2つです：
 
-- オンボーディング（全購入の80%がここで発生します）
-- 汎用（オンボーディング後にSettings画面やアプリ内で表示します）
+- オンボーディング（全購入の80%はここで発生します）；
+- 一般（オンボーディング後、設定画面やアプリ内で表示します）。
 
 <Zoom>
   <img src="/assets/shared/img/2406d97-image.webp"
@@ -51,9 +53,9 @@ Adaptyには[プレースメント](placements)という概念があります。
 />
 </Zoom>
 
-## カタログをAdaptyに移行する \{#move-your-catalog-to-adapty\}
+## カタログを Adapty に移行する \{#move-your-catalog-to-adapty\}
 
-カタログの移行では、RevenueCatプロジェクトからAdaptyアプリを新規作成します。エンタイトルメントからアクセスレベル、パッケージからプロダクト、そして各オファリングに対してペイウォールとプレースメントが作成されます。
+カタログの移行により、RevenueCat プロジェクトから新しい Adapty アプリが作成されます。エンタイトルメントからアクセスレベル、パッケージからプロダクト、そして各オファリングにはペイウォールまたはフローを持つプレースメントが作成されます。
 
 ### 始める前に
 
@@ -88,50 +90,76 @@ Adapty は、移行するプロジェクトのシークレット API キーを�
    Migrate my RevenueCat project to a new Adapty app called "Acme Fitness" with the Adapty CLI.
    ```
 
-2. RevenueCat を接続するには、エージェントが開く Adapty ダッシュボードページにシークレット API キーを貼り付けます。キーは Adapty に直接送信され、エージェントや CLI を経由することはありません。
-3. 移行対象を選択するには、どの RevenueCat アプリをまとめるかをエージェントに伝えます。通常、同じプロダクトのプラットフォームごとに 1 つずつです。これらをまとめて 1 つの Adapty アプリにします。
-4. マッピングを確定するには、Adapty が自動でマッピングできなかったエンティティについて、エージェントの質問に答えます。
+2. RevenueCat を接続するには、エージェントが開く Adapty ダッシュボードのページにシークレット API キーを貼り付けてください。このキーは Adapty に直接送信され、エージェントや CLI を経由することはありません。
+3. 移行対象を選択するには、どの RevenueCat アプリをまとめるかをエージェントに伝えてください。通常は同じプロダクトのプラットフォームごとに 1 つずつです。それらをまとめて 1 つの Adapty アプリにします。
+4. マッピングを確定するには、Adapty が自動でマッピングできなかったエンティティについてエージェントの質問に答えてください。各オファリングについて、そのプレースメントに何を設定するかを選択します。アプリが独自に描画するペイウォールか、[フロー & ペイウォールビルダー](adapty-paywall-builder)のフローかです。Adapty は RevenueCat のペイウォールがあるオファリングにはフローを提案します。
 
-:::warning
+   :::warning
 決定は最終的なものです。すべてのエンティティに決定が下されると、Adapty はカタログを作成します。その後、マッピングを変更することはできません。
 :::
 
-Adapty はアクセスレベル、プロダクト、ペイウォール、プレースメントをこの順序で作成します。一部が失敗した場合、エージェントがその理由を伝えます。すべてのエンティティが Adapty に登録されると、移行が完了します。
+Adapty はアクセスレベル、プロダクト、ペイウォールとフロー、プレースメントをこの順番で作成します。一部の作成に失敗した場合、エージェントがその理由を説明します。すべてのエンティティが Adapty に登録されると、移行が完了します。
 
-5. 新しいアプリで購入を検証できるようにするには、Adapty ダッシュボードでストアに接続してください: [App Store](initial_ios) と [Google Play](initial-android)。
+5. 新しいアプリが購入を検証できるようにするため、Adapty ダッシュボードでアプリをストアに接続してください: [App Store](initial_ios) および [Google Play](initial-android)。
 
 :::note
-エージェントを使わずに移行を実行するには、[マイグレーションコマンド](developer-cli-reference#migrations)を使用してください。`adapty migrations status` を実行すると、次のアクションとその入力内容が表示されます。
+エージェントなしでマイグレーションを実行するには、[マイグレーションコマンド](developer-cli-migrations)を使用してください。`adapty migrations status` は次のアクションとその入力を表示します。
 :::
 
 ### RevenueCat エンティティと Adapty のマッピング \{#how-revenuecat-entities-map-to-adapty\}
 
-- エンタイトルメントの識別子はアクセスレベルの ID になります。つまり、`customerInfo.entitlements["premium"]` は `profile.accessLevels["premium"]` に対応します。
+- エンタイトルメント識別子はアクセスレベル ID になります。つまり、`customerInfo.entitlements["premium"]` は `profile.accessLevels["premium"]` に対応します。
 - エンタイトルメントを付与しないプロダクトは、`premium` アクセスレベルを付与します。
-- オファリングの識別子はプレースメント ID になります。
-- オファリングのメタデータは最大 256 KB までペイウォールの[リモートコンフィグ](customize-paywall-with-remote-config)になります。
+- オファリング識別子はプレースメント ID になります。
+- オファリングのメタデータは、ペイウォールまたはフローの[リモートコンフィグ](customize-paywall-with-remote-config)（最大 256 KB）になります。
 
-### カタログ移行で対象外となるもの \{#what-the-catalog-migration-leaves-out\}
+### カタログ移行で除外されるもの \{#what-the-catalog-migration-leaves-out\}
 
-- **ペイウォールエディターのペイウォールを持つオファリング**: Adapty は RevenueCat のペイウォールエディターで作成されたペイウォールをインポートできないため、これらのオファリングはペイウォールもプレースメントも持ちません。プレースメント ID は空きのまま残るので、同じ ID でフローまたはペイウォールをご自身で作成してください。
-- プロダクトのないオファリング。
-- App Store のプロダクト ID が Adapty で受け付けられないプロダクト（例: コロンやスペースが含まれている ID）。対象のプロダクトはエージェントが通知します。特別な対応は不要です。
-- App Store および Google Play 以外のストアのアプリ。
-- **インテグレーション**: [インテグレーションを Adapty に移行する](migrate-integrations-to-adapty)の説明に従って、Adapty でセットアップしてください。
+- プロダクトが設定されていないオファリング。
+- AdaptyがApp StoreのプロダクトIDを拒否する場合（例：コロンやスペースを含むIDなど）。エージェントがどれかを教えてくれるため、判断不要です。
+- App StoreおよびGoogle Play以外のストアのアプリ。
+- **Integrations**：[別途移行してください](#move-your-integrations)。
 
-## RevenueCat SDKを置き換える \{#replace-the-revenuecat-sdk\}
+## ペイウォールデザインを移行する \{#move-your-paywall-designs\}
 
-コーディングエージェントが`adapty-integration`スキルを使用して、アプリコード内のRevenueCat SDKをAdapty SDKに置き換えます。カタログの移行後に実行し、コードが新しいAdaptyアプリのアクセスレベルIDとプレースメントIDを使用できるようにしてください。
-
-1. エージェントにスキルを付与するには、[SDK統合スキル](adapty-sdk-integration-skill)の説明に従い、お使いのツール用にインストールしてください。
-2. 移行を開始するには、エージェントでアプリのプロジェクトを開き、次のように依頼してください。
+カタログの移行で作成される各フローは、オファリングのプロダクトの上に空のスクリーンが配置された状態で公開されます。これらのフローに RevenueCat のペイウォールデザインを再構築するには、エージェントに次のように依頼してください：
 
 ```text
-   Migrate this app from RevenueCat to Adapty with the adapty-integration skill. Use my existing Adapty app "Acme Fitness".
+Migrate my RevenueCat paywall designs to my Adapty app "Acme Fitness" with the Adapty CLI.
+```
+
+エージェントは一度に1つずつフローを再構築し、あなたが承認した後にそれぞれを公開します。動画やカスタムフォントなど、自分で追加が必要な項目も一覧表示されます。デザインの読み取りには RevenueCat のシークレット API キーを使用するため、デザインの移行が完了するまでキーを保持しておいてください。
+
+:::warning
+デザインが設定されるまで、フローは空白の画面を表示します。このようなフローを表示するアプリバージョンはリリースしないでください。
+:::
+
+## RevenueCat SDK の置き換え \{#replace-the-revenuecat-sdk\}
+
+コーディングエージェントが、マイグレーションで作成したカタログの ID を使って、アプリのコード内の RevenueCat SDK を Adapty SDK に置き換えます。1 回の実行で 1 つのコードベースがマイグレーションされます。iOS と Android のプロジェクトが分かれているアプリの場合は、それぞれのプロジェクトで実行してください。
+
+開始前に、アプリのリポジトリでの変更をコミットまたはスタッシュしておいてください。マイグレーションを 1 つのレビュー可能な差分にまとめるためです。
+
+1. コードのマイグレーションを開始するには、アプリのリポジトリのルートでエージェントを開き、次のように入力します。
+
+   ```text
+   Migrate the app code in this repository from RevenueCat to Adapty with the Adapty CLI, for my Adapty app "Acme Fitness".
    ```
 
-   スキルはプロジェクトファイルからプラットフォームとRevenueCat SDKを自動検出するため、プロンプトにそれらを記述する必要はありません。
-3. コードの移行を完了するには、エージェントの変更内容を確認したうえで、プロジェクトルートにある`ADAPTY_SETUP.md`を参照してください。このファイルには、エージェントが手動対応として残したタスク（例：設定が必要なインテグレーションなど）が一覧されています。
+   エージェントが Adapty スキルを読み込むために再起動を求めてきたら、再起動して同じリクエストを繰り返してください。
+
+2. フローのデザインがまだ移行されていない場合は、移行完了までアプリがそのフローを表示するのか、それとも独自のペイウォール画面を維持するのかをエージェントに伝えてください。
+3. コードの移行を完了するには、`adapty-migrate` ブランチの変更内容を確認し、プロジェクトのルートにある `ADAPTY_SETUP.md` を参照してください。エージェントが残した作業内容が記載されています。
+
+## インテグレーションの移行 \{#move-your-integrations\}
+
+エージェントはアプリのコード内でアナリティクス、アトリビューション、メッセージングツールを検出し、Adapty でそれぞれをセットアップする方法をレポートします。ファイルの変更は行いません。次のように聞いてみましょう：
+
+```text
+Find the integrations in my app code to set up in my Adapty app "Acme Fitness", with the Adapty CLI.
+```
+
+リポジトリに1つのプラットフォームのコードのみが含まれている場合は、もう一方のプラットフォームの場所をエージェントに伝えてください。次に、[Adaptyへのインテグレーションの移行](migrate-integrations-to-adapty)に記載されている手順に従ってインテグレーションをセットアップします。Webhook、Slack、クラウドストレージのエクスポートはアプリのコードには含まれていません。RevenueCatの**Integrations**ページで確認してください。
 
 ## ストアのイベントをAdaptyに転送する \{#forward-store-events-to-adapty\}
 
@@ -177,27 +205,29 @@ Google Play Console でトピックを変更したり、このアプリに対し
 3. キーをアップロードするには、エージェントが開いたAdaptyダッシュボードのページで、ファイルを **Google Play service account key (JSON)** にアップロードします。キーはAdaptyに直接送信され、エージェントやCLIを経由することはありません。
 4. AdaptyをトピックにサブスクライブするにはAdaptyにそのIDを渡します。RevenueCatでGoogle Playアプリの設定を開き、**Google developer notifications** から **Topic ID** をコピーします。Google Play コンソールでも同じ値を **Monetize** > **Monetization setup** > **Topic name** で確認できます。
 
-Adaptyはトピックをサブスクライブし、テスト通知を発行して待機します。届かない場合、エージェントがその理由を教えてくれます。
+   Adaptyはトピックをサブスクライブし、テスト通知を発行して待機します。届かない場合、エージェントがその理由を教えてくれます。
 
 5. 権限の問題でテストが失敗した場合は、サービスアカウントにトピックのプロジェクトで **Pub/Sub Editor** ロールを付与するか、トピックに **Pub/Sub Subscriber** ロール、キーのプロジェクトに **Pub/Sub Editor** ロールを付与してください。その後、エージェントに再度確認を依頼してください。
 
 ## アプリの新バージョンをテストしてリリースする \{#test-and-release-a-new-version-of-your-app\}
 
-ここまで読んでいれば、以下の作業はすでに完了しているはずです。
+ここまで読んでいるなら、すでに次の手順を完了しているはずです：
 
-- [x] カタログを Adapty に移行した
-- [x] RevenueCat SDK を Adapty に置き換えた
-- [x] コーディングエージェントが生成した `ADAPTY_SETUP.md` を実施した
-- [x] App Store と Google Play のイベントを Adapty に転送した
-- [ ] サンドボックスで購入テストをした
-- [ ] 新しいアプリをリリースした
+- [x] カタログを Adapty に移行済み
+- [x] フローを使用している場合はペイウォールのデザインを移行済み
+- [x] RevenueCat SDK を Adapty に置き換え済み
+- [x] コーディングエージェントが生成した `ADAPTY_SETUP.md` の内容を実施済み
+- [x] Adapty でインテグレーションを設定済み
+- [x] App Store および Google Play のイベントを Adapty に転送済み
+- [ ] サンドボックス購入のテスト
+- [ ] 新しいアプリリリース
 
-上記の項目を確認したら、サンドボックスでテスト購入を行い、アプリをリリースしましょう。
+上記の項目を確認済みであれば、サンドボックスでテスト購入を行い、アプリをリリースしてください。
 
 :::info
 [リリースチェックリスト](release-checklist)を確認してください。
 
-リストを使って既存のインテグレーションを検証し、[アトリビューション](attribution-integration)や[アナリティクス](analytics-integration)インテグレーションなどの追加機能の設定も行いましょう。
+既存のインテグレーションの検証や、[アトリビューション](attribution-integration)・[アナリティクス](analytics-integration)インテグレーションなどの追加機能の設定は、このリストを使って最終確認を行ってください。
 :::
 
 ## （任意）トランザクション履歴のインポート \{#optional-import-your-transaction-history\}

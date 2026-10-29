@@ -3,9 +3,17 @@ import './Homepage.css';
 
 const T = {
   en: {
-    skillLabel: "Automated integration",
-    skillDesc: "The Adapty SDK integration skill runs the whole integration from your AI coding tool in one command.",
-    skillCta: "Use the skill",
+    aiTitle: "Build with AI",
+    aiLead: "Hand Adapty work to your AI coding agent — Cursor, Claude Code, or any tool that runs terminal commands.",
+    aiAll: "All AI guides",
+    aiSdkTitle: "Integrate the SDK with AI",
+    aiSdkDesc: "The integration skill runs the whole Adapty SDK setup from your AI coding tool in one command.",
+    aiFlowTitle: "Create flows and paywalls with AI",
+    aiFlowDesc: "Describe a paywall or onboarding, or share a screenshot, and your agent builds a flow the Adapty SDK renders natively. It also translates and edits the flows you already have.",
+    aiDataTitle: "Ask about your data",
+    aiDataDesc: "Your agent runs the Adapty CLI to answer questions about revenue, retention, and LTV.",
+    aiCliTitle: "Manage your app setup with AI",
+    aiCliDesc: "Your agent creates and updates products, access levels, paywalls, flows, and placements through the Adapty CLI.",
     hero: "Adapty is a powerful and adaptable in-app purchase platform that helps you grow your subscriber base. Whether you're just starting or already have millions of users, Adapty makes it easy to set up the best subscription prices, test different approaches, and see what works best for your app's success.",
     discoverTitle: "Is Adapty right for me?",
     discoverDesc: "Find your use case — whether you're launching a new app, optimizing revenue, or migrating from another tool.",
@@ -35,9 +43,17 @@ const T = {
     capacitor: "Guide for integrating Adapty with Capacitor",
   },
   zh: {
-    skillLabel: "自动化集成",
-    skillDesc: "Adapty SDK 集成技能可在你的 AI 编程工具中通过一条命令完成整个集成。",
-    skillCta: "使用该技能",
+    aiTitle: "使用 AI 构建",
+    aiLead: "把 Adapty 相关工作交给你的 AI 编程代理——Cursor、Claude Code 或任何能运行终端命令的工具。",
+    aiAll: "全部 AI 指南",
+    aiSdkTitle: "用 AI 集成 SDK",
+    aiSdkDesc: "集成技能可在你的 AI 编程工具中通过一条命令完成整个 Adapty SDK 设置。",
+    aiFlowTitle: "用 AI 创建流程和付费墙",
+    aiFlowDesc: "描述一个付费墙或引导流程，或分享一张截图，AI 代理就会构建由 Adapty SDK 原生渲染的流程。它还能翻译和编辑你现有的流程。",
+    aiDataTitle: "询问你的数据",
+    aiDataDesc: "AI 代理运行 Adapty CLI，回答有关收入、留存和 LTV 的问题。",
+    aiCliTitle: "用 AI 管理应用配置",
+    aiCliDesc: "AI 代理通过 Adapty CLI 创建和更新产品、访问等级、付费墙、流程和版位。",
     hero: "Adapty 是一个强大、灵活的应用内购买平台，帮助您扩大订阅用户规模。无论您刚刚起步还是已拥有数百万用户，Adapty 都能轻松帮您设置最优订阅价格、测试不同方案，并找出最适合您应用成功的策略。",
     discoverTitle: "Adapty 适合我吗？",
     discoverDesc: "找到您的使用场景——无论是发布新应用、优化收入，还是从其他工具迁移。",
@@ -67,9 +83,17 @@ const T = {
     capacitor: "Capacitor 版 Adapty 集成指南",
   },
   tr: {
-    skillLabel: "Otomatik entegrasyon",
-    skillDesc: "Adapty SDK entegrasyon skill'i, tüm entegrasyonu AI kodlama aracınızda tek komutla gerçekleştirir.",
-    skillCta: "Skill'i kullan",
+    aiTitle: "AI ile geliştirin",
+    aiLead: "Adapty işlerini AI kodlama ajanınıza devredin — Cursor, Claude Code veya terminal komutu çalıştırabilen herhangi bir araç.",
+    aiAll: "Tüm AI rehberleri",
+    aiSdkTitle: "SDK'yı AI ile entegre edin",
+    aiSdkDesc: "Entegrasyon skill'i, Adapty SDK kurulumunun tamamını AI kodlama aracınızdan tek komutla gerçekleştirir.",
+    aiFlowTitle: "AI ile flow ve paywall oluşturun",
+    aiFlowDesc: "Bir paywall'u veya onboarding'i tarif edin ya da ekran görüntüsü paylaşın; ajanınız Adapty SDK'nın natif olarak render ettiği bir flow oluşturur. Mevcut flow'larınızı da çevirir ve düzenler.",
+    aiDataTitle: "Verilerinize soru sorun",
+    aiDataDesc: "Ajanınız Adapty CLI'ı çalıştırarak gelir, elde tutma ve LTV ile ilgili sorularınızı yanıtlar.",
+    aiCliTitle: "Uygulama ayarlarınızı AI ile yönetin",
+    aiCliDesc: "Ajanınız Adapty CLI üzerinden ürünleri, erişim seviyelerini, paywall'ları, flow'ları ve placement'ları oluşturur ve günceller.",
     hero: "Adapty, abone tabanınızı büyütmenize yardımcı olan güçlü ve esnek bir uygulama içi satın alma platformudur. İster yeni başlıyor olun ister milyonlarca kullanıcınız olsun, Adapty en iyi abonelik fiyatlarını belirlemenizi, farklı yaklaşımları test etmenizi ve uygulamanızın başarısı için en iyi sonucu vereni bulmanızı kolaylaştırır.",
     discoverTitle: "Adapty benim için uygun mu?",
     discoverDesc: "Kullanım senaryonuzu bulun — yeni bir uygulama mı başlatıyorsunuz, geliri mi optimize ediyorsunuz, yoksa başka bir araçtan mı geçiş yapıyorsunuz.",
@@ -99,9 +123,17 @@ const T = {
     capacitor: "Adapty'yi Capacitor ile entegre etme rehberi",
   },
   ru: {
-    skillLabel: "Автоматическая интеграция",
-    skillDesc: "Skill для интеграции Adapty SDK выполняет всю интеграцию из вашего AI-инструмента одной командой.",
-    skillCta: "Использовать skill",
+    aiTitle: "Работа с AI",
+    aiLead: "Поручите задачи в Adapty вашему AI-агенту — Cursor, Claude Code или любому инструменту, который умеет запускать команды в терминале.",
+    aiAll: "Все AI-гайды",
+    aiSdkTitle: "Интеграция SDK с помощью AI",
+    aiSdkDesc: "Skill для интеграции выполняет всю настройку Adapty SDK из вашего AI-инструмента одной командой.",
+    aiFlowTitle: "Создание флоу и пейволов с помощью AI",
+    aiFlowDesc: "Опишите пейвол или онбординг или поделитесь скриншотом — агент соберёт флоу, который Adapty SDK рендерит нативно. Он также переводит и редактирует уже готовые флоу.",
+    aiDataTitle: "Вопросы о ваших данных",
+    aiDataDesc: "Агент запускает Adapty CLI и отвечает на вопросы о выручке, удержании и LTV.",
+    aiCliTitle: "Управление настройками приложения с помощью AI",
+    aiCliDesc: "Агент создаёт и обновляет продукты, уровни доступа, пейволы, флоу и плейсменты через Adapty CLI.",
     hero: "Adapty — мощная и гибкая платформа для встроенных покупок, которая помогает вам развивать базу подписчиков. Независимо от того, только ли вы начинаете или уже имеете миллионы пользователей, Adapty позволяет легко устанавливать лучшие цены на подписки, тестировать различные подходы и находить то, что лучше всего работает для успеха вашего приложения.",
     discoverTitle: "Подходит ли мне Adapty?",
     discoverDesc: "Найдите свой сценарий использования — будь то запуск нового приложения, оптимизация доходов или миграция с другого инструмента.",
@@ -131,9 +163,17 @@ const T = {
     capacitor: "Интеграция Adapty с Capacitor",
   },
   es: {
-    skillLabel: "Integración automatizada",
-    skillDesc: "La skill de integración del SDK de Adapty realiza toda la integración desde tu herramienta de IA con un solo comando.",
-    skillCta: "Usar la skill",
+    aiTitle: "Trabaja con IA",
+    aiLead: "Delega el trabajo con Adapty en tu agente de IA: Cursor, Claude Code o cualquier herramienta que ejecute comandos en la terminal.",
+    aiAll: "Todas las guías de IA",
+    aiSdkTitle: "Integra el SDK con IA",
+    aiSdkDesc: "La skill de integración configura todo el SDK de Adapty desde tu herramienta de IA con un solo comando.",
+    aiFlowTitle: "Crea flows y paywalls con IA",
+    aiFlowDesc: "Describe un paywall o un onboarding, o comparte una captura, y tu agente crea un flow que el SDK de Adapty renderiza de forma nativa. También traduce y edita los flows que ya tienes.",
+    aiDataTitle: "Pregunta por tus datos",
+    aiDataDesc: "Tu agente ejecuta el CLI de Adapty para responder preguntas sobre ingresos, retención y LTV.",
+    aiCliTitle: "Gestiona la configuración de tu app con IA",
+    aiCliDesc: "Tu agente crea y actualiza productos, niveles de acceso, paywalls, flows y placements con el CLI de Adapty.",
     hero: "Adapty es una plataforma de compras in-app potente y flexible que te ayuda a hacer crecer tu base de suscriptores. Tanto si estás empezando como si ya tienes millones de usuarios, Adapty te permite establecer fácilmente los mejores precios de suscripción, probar distintos enfoques y descubrir qué funciona mejor para el éxito de tu app.",
     discoverTitle: "¿Es Adapty adecuado para mí?",
     discoverDesc: "Encuentra tu caso de uso — tanto si vas a lanzar una nueva app, optimizar los ingresos o migrar desde otra herramienta.",
@@ -151,8 +191,8 @@ const T = {
     analyticsDesc: "Revisa métricas detalladas sobre la monetización de tu app.",
     integrationsTitle: "Conecta integraciones",
     integrationsDesc: "Envía eventos a los servicios externos de analítica y atribución que tu equipo ya utiliza.",
-    paywallTitle: "Diseña paywalls en el builder no-code",
-    paywallDesc: "Crea paywalls en minutos con Adapty Paywall Builder. Modifica tus paywalls sin publicar una nueva versión de tu app.",
+    builderTitle: "Crea flows en el builder no-code",
+    builderDesc: "Crea paywalls personalizables y onboardings de varias pantallas sin programar. El SDK de Adapty los renderiza de forma nativa.",
     platformsTitle: "SDKs para cada plataforma",
     ios: "Guía para integrar Adapty con iOS",
     android: "Guía para integrar Adapty con Android",
@@ -163,9 +203,17 @@ const T = {
     capacitor: "Guía para integrar Adapty con Capacitor",
   },
   ja: {
-    skillLabel: "自動連携",
-    skillDesc: "Adapty SDK 連携スキルは、AI コーディングツールから 1 つのコマンドで連携全体を実行します。",
-    skillCta: "スキルを使う",
+    aiTitle: "AI で構築する",
+    aiLead: "Adapty の作業を AI コーディングエージェントに任せましょう。Cursor、Claude Code など、ターミナルコマンドを実行できるツールに対応しています。",
+    aiAll: "AI ガイドをすべて見る",
+    aiSdkTitle: "AI で SDK を連携する",
+    aiSdkDesc: "連携スキルが、AI コーディングツールから 1 つのコマンドで Adapty SDK のセットアップ全体を実行します。",
+    aiFlowTitle: "AI でフローとペイウォールを作成する",
+    aiFlowDesc: "ペイウォールやオンボーディングを説明するか、スクリーンショットを共有するだけで、Adapty SDK がネイティブにレンダリングするフローをエージェントが作成します。既存のフローの翻訳や編集もできます。",
+    aiDataTitle: "データについて質問する",
+    aiDataDesc: "エージェントが Adapty CLI を実行し、収益、リテンション、LTV に関する質問に答えます。",
+    aiCliTitle: "AI でアプリの設定を管理する",
+    aiCliDesc: "エージェントが Adapty CLI を使って、商品、アクセスレベル、ペイウォール、フロー、プレースメントを作成・更新します。",
     hero: "Adapty は、サブスクライバー基盤の拡大を支援する、強力で柔軟なアプリ内課金プラットフォームです。始めたばかりでも、すでに数百万人のユーザーがいても、Adapty を使えば最適なサブスクリプション価格の設定、さまざまなアプローチのテスト、そしてアプリの成功にとって何が最も効果的かの把握が簡単に行えます。",
     discoverTitle: "Adapty は自分に合っていますか？",
     discoverDesc: "新しいアプリのリリース、収益の最適化、他のツールからの移行など、あなたのユースケースを見つけましょう。",
@@ -195,9 +243,17 @@ const T = {
     capacitor: "Adapty を Capacitor と連携するためのガイド",
   },
   vi: {
-    skillLabel: "Tích hợp tự động",
-    skillDesc: "Skill tích hợp Adapty SDK thực hiện toàn bộ quá trình tích hợp từ công cụ lập trình AI của bạn chỉ bằng một lệnh.",
-    skillCta: "Dùng skill",
+    aiTitle: "Làm việc với AI",
+    aiLead: "Giao việc với Adapty cho agent lập trình AI của bạn — Cursor, Claude Code hoặc bất kỳ công cụ nào chạy được lệnh terminal.",
+    aiAll: "Tất cả hướng dẫn AI",
+    aiSdkTitle: "Tích hợp SDK bằng AI",
+    aiSdkDesc: "Skill tích hợp thực hiện toàn bộ thiết lập Adapty SDK từ công cụ lập trình AI của bạn chỉ bằng một lệnh.",
+    aiFlowTitle: "Tạo flow và paywall bằng AI",
+    aiFlowDesc: "Mô tả một paywall hoặc onboarding, hoặc chia sẻ ảnh chụp màn hình, agent sẽ tạo flow được Adapty SDK render nguyên bản. Agent cũng dịch và chỉnh sửa các flow bạn đã có.",
+    aiDataTitle: "Hỏi về dữ liệu của bạn",
+    aiDataDesc: "Agent chạy Adapty CLI để trả lời câu hỏi về doanh thu, tỷ lệ giữ chân và LTV.",
+    aiCliTitle: "Quản lý thiết lập ứng dụng bằng AI",
+    aiCliDesc: "Agent tạo và cập nhật sản phẩm, access level, paywall, flow và placement thông qua Adapty CLI.",
     hero: "Adapty là nền tảng mua hàng trong ứng dụng mạnh mẽ và linh hoạt, giúp bạn mở rộng lượng người đăng ký. Dù bạn mới bắt đầu hay đã có hàng triệu người dùng, Adapty giúp bạn dễ dàng thiết lập mức giá đăng ký tối ưu, thử nghiệm các phương án khác nhau và tìm ra điều phù hợp nhất cho sự thành công của ứng dụng.",
     discoverTitle: "Adapty có phù hợp với tôi không?",
     discoverDesc: "Tìm trường hợp sử dụng của bạn — dù bạn đang ra mắt ứng dụng mới, tối ưu doanh thu hay migrate từ một công cụ khác.",
@@ -227,9 +283,17 @@ const T = {
     capacitor: "Hướng dẫn tích hợp Adapty với Capacitor",
   },
   fr: {
-    skillLabel: "Intégration automatisée",
-    skillDesc: "La skill d'intégration du SDK Adapty réalise toute l'intégration depuis votre outil de développement IA en une seule commande.",
-    skillCta: "Utiliser la skill",
+    aiTitle: "Travaillez avec l'IA",
+    aiLead: "Confiez le travail sur Adapty à votre agent de code IA : Cursor, Claude Code ou tout outil capable d'exécuter des commandes dans le terminal.",
+    aiAll: "Tous les guides IA",
+    aiSdkTitle: "Intégrez le SDK avec l'IA",
+    aiSdkDesc: "La skill d'intégration configure tout le SDK Adapty depuis votre outil de développement IA en une seule commande.",
+    aiFlowTitle: "Créez des flows et des paywalls avec l'IA",
+    aiFlowDesc: "Décrivez un paywall ou un onboarding, ou partagez une capture d'écran : votre agent crée un flow que le SDK Adapty affiche en natif. Il traduit et modifie aussi vos flows existants.",
+    aiDataTitle: "Interrogez vos données",
+    aiDataDesc: "Votre agent exécute la CLI Adapty pour répondre à vos questions sur les revenus, la rétention et la LTV.",
+    aiCliTitle: "Gérez la configuration de votre app avec l'IA",
+    aiCliDesc: "Votre agent crée et met à jour les produits, niveaux d'accès, paywalls, flows et placements via la CLI Adapty.",
     hero: "Adapty est une plateforme d'achats intégrés puissante et flexible qui vous aide à développer votre base d'abonnés. Que vous débutiez ou que vous comptiez déjà des millions d'utilisateurs, Adapty vous permet de définir facilement les meilleurs prix d'abonnement, de tester différentes approches et de découvrir ce qui fonctionne le mieux pour le succès de votre application.",
     discoverTitle: "Adapty est-il fait pour moi ?",
     discoverDesc: "Trouvez votre cas d'usage — que vous lanciez une nouvelle application, optimisiez vos revenus ou migriez depuis un autre outil.",
@@ -382,21 +446,79 @@ const Homepage: React.FC<HomepageProps> = ({ locale }) => {
             <span className="platform-card-title">Capacitor</span>
           </a>
         </div>
+      </section>
 
-        {/* Skill strip — one quiet line under the SDK tiles; violet is the
-            page's single accent, so it carries the "AI" hint alone. */}
-        <a href={`${base}/adapty-sdk-integration-skill`} className="skill-strip">
-          <svg className="skill-strip-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-            <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z"/>
-          </svg>
-          <span className="skill-strip-desc">{(t as any).skillDesc ?? T.en.skillDesc}</span>
-          <span className="skill-strip-cta">
-            {(t as any).skillCta ?? T.en.skillCta}
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </span>
-        </a>
+      {/* AI — one tinted panel right under the SDKs; violet is the page's
+          single accent, so it carries the "AI" signal alone. */}
+      <section className="ai-section">
+        <div className="ai-panel">
+          <div className="ai-panel-header">
+            <h2 className="section-title ai-title">
+              <svg className="ai-title-icon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 2l1.9 6.1L20 10l-6.1 1.9L12 18l-1.9-6.1L4 10l6.1-1.9L12 2z"/>
+                <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15z"/>
+              </svg>
+              {t.aiTitle}
+            </h2>
+            <a href={`${base}/manage-adapty-with-ai`} className="hero-link ai-all">
+              {t.aiAll}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M5 12h14M12 5l7 7-7 7" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </a>
+          </div>
+          <p className="ai-lead">{t.aiLead}</p>
+
+          <div className="ai-grid">
+            <a href={`${base}/flow-generator-skill`} className="ai-item">
+              <span className="ai-item-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="5" y="2" width="14" height="20" rx="2.5"/>
+                  <path d="M9 17h6M9 7h6M9 11h4" strokeLinecap="round"/>
+                </svg>
+              </span>
+              <span className="ai-item-text">
+                <span className="ai-item-title">{t.aiFlowTitle}</span>
+                <span className="ai-item-desc">{t.aiFlowDesc}</span>
+              </span>
+            </a>
+            <a href={`${base}/adapty-sdk-integration-skill`} className="ai-item">
+              <span className="ai-item-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M16 18l6-6-6-6M8 6l-6 6 6 6" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+              <span className="ai-item-text">
+                <span className="ai-item-title">{t.aiSdkTitle}</span>
+                <span className="ai-item-desc">{t.aiSdkDesc}</span>
+              </span>
+            </a>
+            <a href={`${base}/export-analytics-with-ai`} className="ai-item">
+              <span className="ai-item-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 13V11M12 13V8M16 13v-3" strokeLinecap="round"/>
+                </svg>
+              </span>
+              <span className="ai-item-text">
+                <span className="ai-item-title">{t.aiDataTitle}</span>
+                <span className="ai-item-desc">{t.aiDataDesc}</span>
+              </span>
+            </a>
+            <a href={`${base}/developer-cli-quickstart`} className="ai-item">
+              <span className="ai-item-icon">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2.5"/>
+                  <path d="M6 9l3 3-3 3M12 15h5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </span>
+              <span className="ai-item-text">
+                <span className="ai-item-title">{t.aiCliTitle}</span>
+                <span className="ai-item-desc">{t.aiCliDesc}</span>
+              </span>
+            </a>
+          </div>
+        </div>
       </section>
 
       {/* Ecosystem — the product-family pitch, right after the SDKs */}

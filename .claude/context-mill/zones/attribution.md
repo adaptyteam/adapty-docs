@@ -107,6 +107,38 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
   them one sentence and a link out; do not restate them as Adapty behaviour, and do not treat a support
   report about them as a docs defect until the provider's own docs are checked.
+- **Google Ads network columns and the Google Ads preset** (backend and dashboard code on the production
+  line, 2026-10-29). New analytics columns, Google Ads rows only ("—" elsewhere): **Conversions (Network)**,
+  **All Conv. (Network)**, **Cost per Conversion (Network)** (`Spend / Conversions (Network)`, only the spend
+  of rows that report conversions), **First Page Bid Est.**, **First Position Bid Est.** (keyword rows,
+  shown only under a keyword grouping; none for Display/App keywords or automated-bidding Search campaigns),
+  and **Status** (Enabled / Paused / Removed, daily structure sync, needs Google spend in range; a name shared
+  by several campaigns shows Enabled > Paused > Removed). Conversions are by click date, re-pulled for 3 days
+  then frozen, not back-filled. The columns join no default or saved view; a built-in **Google Ads** preset
+  appears in the preset list for companies with a Google Ads login, adds Impressions, Clicks and the new
+  columns except Cost per Conversion after Spend, and is saved as a company-shared preset on first pick.
+  Documented in `ua-metrics` (Google Ads metrics), `ua-analytics` (Google Ads preset), pointer in
+  `ua-google-ads`. Unverified: the production release date, which is why the docs give no date for when
+  conversions start.
+- **Revenue sent to Meta / TikTok / Google Ads** (backend and dashboard code on the production line,
+  2026-10-29). One dropdown per Meta, TikTok and Google configuration (Google App and Other campaigns
+  alike), right after **Send events from all users** and before **Revenue override**, with the dashboard
+  revenue selector's three labels: **Gross revenue** (the default; a configuration that never chose sends
+  gross), **Proceeds after store commission**, **Proceeds after store commission and taxes**. App Store
+  and Google Play purchases send Adapty's per-purchase proceeds or net, in the purchase currency. Stripe
+  sends price × 0.955 and Paddle the full price for both proceeds types: these are Attribution analytics'
+  flat web rates with no tax deducted, while the main Analytics deducts the Stripe/Paddle tax, so never
+  write "as in the dashboard" without naming which one. A purchase with no amount of the type (or, Google
+  only, from another store) goes out at gross. The Revenue override percentage applies to the price of
+  the selected type. Refunds: Meta gets a negative value in the type; TikTok and Google App campaigns get
+  the refund event with no value; Google Other campaigns get no refund events at all. A save reaches the
+  senders within about 5 minutes, nothing already sent is re-sent, and a trial held by Qualified trial
+  keeps the type it was held with. Configurations sharing a pixel (or, on Google Other campaigns, one
+  conversion action across apps) may pick different types with no guard, so the docs prescribe one type
+  per pixel and per Google Ads account. Documented in the **Revenue sent to …** sections of `ua-facebook`,
+  `ua-tiktok` and `ua-google-ads`. Product decision (2026-10-29): the docs say nothing about how this
+  setting relates to Predicted LTV; don't add it without product sign-off. Left out as Google-side and
+  unverified: whether a conversion action's value setting makes Google ignore the sent value.
 
 ## What we document, what we don't
 
@@ -149,21 +181,21 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | meta-create-campaign | — | marketer, analyst | 7 | tutorial |
 | tiktok-create-campaign | — | marketer, analyst | 8 | tutorial |
 | ua-amazon-s3 | — | marketer, analyst | 5 | tutorial |
-| ua-analytics | entry | marketer, analyst | 6 | tutorial |
+| ua-analytics | entry | marketer, analyst | 7 | tutorial |
 | ua-attribution-data | — | marketer, analyst | 0 | tutorial |
 | ua-custom-s3 | — | marketer, analyst | 3 | tutorial |
 | ua-deferred-data | — | marketer, analyst | 0 | tutorial |
-| ua-facebook | — | marketer, analyst | 10 | tutorial |
+| ua-facebook | — | marketer, analyst | 11 | tutorial |
 | ua-funnelfox | — | marketer, analyst | 6 | tutorial |
-| ua-google-ads | — | marketer, analyst | 16 | tutorial |
+| ua-google-ads | — | marketer, analyst | 18 | tutorial |
 | ua-google-cloud-storage | — | marketer, analyst | 5 | tutorial |
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
-| ua-metrics | — | marketer, analyst | 2 | tutorial |
+| ua-metrics | — | marketer, analyst | 6 | tutorial |
 | ua-paddle | — | marketer, analyst | 6 | tutorial |
 | ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
 | ua-stripe | — | marketer, analyst | 6 | tutorial |
 | ua-tag-ad-urls | — | marketer, analyst | 2 | tutorial |
-| ua-tiktok | — | marketer, analyst | 9 | tutorial |
+| ua-tiktok | — | marketer, analyst | 10 | tutorial |
 | ua-tracking-links | — | marketer, analyst | 2 | tutorial |
 | ua-web-pixel | — | marketer, analyst | 5 | tutorial |
 | user-acquisition | — | marketer, analyst | 7 | tutorial |
@@ -214,11 +246,12 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
 | "deep link the user to a screen after install", "show a welcome screen based on which ad was clicked" | `ua-deferred-data`, not `ua-attribution-data`, even though it is the same callback. The difference is who authored the values: deferred data is parameters *you* appended to the click link yourself (`ios_deferred_data`, `android_deferred_data`, `deferred_data_sub[1-10]`), so the setup step is in the ad's destination URL, not anywhere in the Adapty UI — and they sit at the top level of `payload`, not inside `attribution`. |
 | "no ad spend for this channel", "ROAS/CPI is empty", "why is my Google Ads campaign missing cost" | `user-acquisition`. Only Meta (`ua-facebook`), TikTok (`ua-tiktok`) and — since 2026-09-28 — Google Ads (`ua-google-ads`) have native integrations that pull spend; for Google, missing cost is usually an ad-account token that went INVALID or a manager account (skipped for metrics). Every other network is tracking-links-only, so every metric with Spend in its formula is structurally unavailable there. This is also what decides link type: native links fill campaign/adset/ad dynamically and can be reused across ads, manual links (`ua-tracking-links`) need every parameter typed at creation. |
 | "what do I have to implement", "which SDK version", "we don't use Adapty for purchases", "Attribution doesn't appear in the dashboard", "stop sending events to Attribution" | All `user-acquisition`. No API keys, tokens, or identifiers are passed — just an SDK floor (3.9.1 iOS/Android/Flutter, 3.10.0 RN/Capacitor, 3.12.0 Unity, 3.15.0 KMP) and, if purchases are handled outside Adapty, observer mode. If **Attribution** is missing from the product switcher under the Adapty logo, the documented fix is clearing cookies and site data for adapty.io — check that before debugging anything else. Pausing event delivery is the **Integrations > Adapty** toggle. |
-| "Meta rejected/disapproved the ad because of the URL" | `meta-create-campaign`, repeated in `user-acquisition`. The click link must be split: bare `https://api-ua.adapty.io/api/v1/attribution/click` in **Website URL**, the query string into **URL parameters** under Tracking. Pasting the whole link into Website URL is what gets ads rejected. |
+| "Meta rejected/disapproved the ad because of the URL" | `meta-create-campaign`, repeated in `user-acquisition`. The click link must be split at the `?`: the part before it — `https://api-ua.adapty.io/api/v1/attribution/c/<code>`, different for each web campaign — in **Website URL**, everything after it (no leading `?`) into **URL parameters** under Tracking. Pasting the whole link into Website URL is what gets ads rejected. **Corrected 2026-10-17 against UA service code:** since 2026-10-16 every generated Meta, TikTok and Universal link is a path link, with the code in the path and no `adpt_cid` in the query, so the old split — bare `https://api-ua.adapty.io/api/v1/attribution/click` in Website URL — drops every click of a new link. Older `/click?adpt_cid=` links already in ads keep working; Google's tracking template stays on `/track`. |
 | "how do I run a Meta/TikTok campaign", "campaign objective", "budget and creative setup" | `meta-create-campaign` / `tiktok-create-campaign` — these are ad-platform-side walkthroughs (objective, ad set, targeting, creative) with almost no Adapty configuration in them. The Adapty-side connection is `ua-facebook` / `ua-tiktok`. Don't answer one from the other. |
 | "attribution suddenly stopped", "Meta token expired", "data stopped after I added a custom parameter" | `ua-facebook` (or `ua-tiktok`), two separate causes. A Meta token with an expiration date must be regenerated and reconnected before it lapses or attribution stops — `ads_read` is the only permission needed, and there are two connection paths (OAuth vs. system user token; TikTok documents only OAuth). Separately, adding an **Additional parameter** rewrites the **Click link**, so the link already live in the ad platform is stale and must be re-copied. |
 | "installs attributed to the wrong campaign", "attribution window", "fingerprinting / probabilistic match" | The **Settings** tab of the campaign configuration, documented in `ua-facebook` and `ua-tiktok` (deterministic 168 h, probabilistic 6 h by default). It is per campaign configuration, not a project-wide setting — which is why two campaigns can disagree. "Does matching use the IDFA / apply to users who denied ATT" → no IDFA; probabilistic applies to all iOS users (see Sources of truth). As of 2026-10-02 both articles still say IDFA and "device fingerprinting" — wrong, see Gaps. |
 | "Meta/TikTok isn't optimizing", "send conversions back to the pixel", "trials report $0 revenue", "the pixel should see organic users too" | One page each — `ua-facebook` / `ua-tiktok` — three different controls: **Events names** mapping, **Revenue override** (a percentage of the subscription price for trial events; the section only appears once **Trial started** is enabled), and **Send all events** (forwards organic and non-attributed events to the pixel). |
+| "Meta's ROAS is higher than in Adapty", "send net revenue / proceeds to Meta", "which revenue do you send to TikTok / Google Ads" | The **Revenue sent to …** section of `ua-facebook` / `ua-tiktok` / `ua-google-ads`. The default is **Gross revenue**, so a network's ROAS runs above an Adapty view in proceeds until the configuration is switched. A switch applies only to events sent after it, and a ROAS goal or target set against gross then needs lowering. |
 | "web funnel", "charge users outside the App Store", "purchases with no install event", "web2app A/B test" | `ua-funnelfox`. Linked by Project ID; channel is derived automatically from the click ID, not configured. The load-bearing constraint: FunnelFox transactions cohort on **first paid date**, not install date, so those cohorts don't line up with install cohorts elsewhere in the dashboard. |
 | "prediction shows a dash", "forecast ROAS before the cohort matures", "why is pRevenue missing" | `ua-predicted-metrics`. Availability is gated on the cohort reaching its **baseline day** (the first day ~90% of initial revenue has typically landed; renewals don't count toward it), so a long trial pushes predictions later — that alone explains most em-dashes. Only `pRevenue` is modeled; the other four derive from it arithmetically. Predictions on the Cohort analysis page are a different feature (`predicted-ltv-and-revenue`). |
 | "ROAS / CPI / LTV formula", "which metrics support cohorts", "ARPU and LTV disagree", "I can't chart this metric" | `ua-metrics` for definitions and formulas — cost-side metrics are non-cohort, revenue and event-count ones are, and LTV is `Revenue / Installs` while ARPU is `Revenue / Users`, which is the usual reason two numbers "don't match". A metric existing in the table does not make it chartable: the **Charts** tab plots a fixed 15-metric subset, listed in `ua-analytics`. |
@@ -235,8 +268,7 @@ A ticket asking "how do I turn it on" wants `user-acquisition`, not the one whos
   attribution**; **Clicks** is only the row label — don't call it a section (dashboard code, 2026-10-02).
 
 - **Revenue override's button is "Add event", not "Add override", on every network** (2026-09-29,
-  dashboard code — one shared form). `ua-facebook`
-  and `ua-tiktok` still say **Add override**; `ua-google-ads` uses the current label. `ua-tiktok` also
-  still names the section **Events names** where the UI says **Events mapping** — not re-verified for
-  TikTok specifically; checked only the Google form.
+  dashboard code — one shared form). Fixed as of 2026-10-29: `ua-facebook`, `ua-tiktok` and
+  `ua-google-ads` all say **Add event**, and `ua-tiktok` says **Events mapping** (grep of
+  `Add override|Events names` in the three articles: no hits).
 

@@ -1,88 +1,165 @@
 ---
-title: "Ask AI about your analytics data"
-description: "Query your Adapty analytics in plain language with an AI coding agent, using the Export Analytics API."
-metadataTitle: "Ask AI About Your Analytics Data | Adapty Docs"
-keywords: ['ask ai about analytics', 'adapty analytics ai', 'query analytics with ai', 'export analytics api', 'analytics ai agent', 'mcp', 'llm']
+title: "Agent skill for growing revenue"
+description: "Install the growth-advisor skill so your AI coding tool reads your Adapty analytics, finds where your app loses revenue, and suggests what to A/B test next."
+metadataTitle: "Growth Advisor Agent Skill | Adapty Docs"
+keywords: ['ask ai about analytics', 'adapty analytics ai', 'query analytics with ai', 'adapty cli', 'analytics ai agent', 'mcp', 'llm']
 ---
 
-Ask an AI coding agent about your Adapty analytics in plain language — revenue, conversions, retention, LTV — and let it pull the numbers for you. Point a tool that can make API calls at the [Export Analytics API](https://adapty.io/docs/export-analytics-api.md), and it queries your metrics on demand.
+The growth-advisor skill answers "what should I test next?" from your own subscription numbers. Your AI coding tool reads your analytics, placements, paywalls, and products through the [Adapty CLI](developer-cli-analytics), follows the biggest signal down to a cause, and returns a short list of hypotheses to A/B test, ranked by the purchases each one puts at stake.
 
-## What you can ask about
+:::note
+growth-advisor changes nothing in your account without your yes. Every analytics read is read-only, and each write — a new flow copy, a new segment, an A/B test, a placement change — waits for you to confirm it.
+:::
 
-The Export Analytics API returns the same metrics you see in the Adapty dashboard charts. Each metric has its own operation:
+## What you can ask
 
-| Metric | What it covers | Operation |
-| --- | --- | --- |
-| Revenue, MRR, ARR, ARPU | Money earned over time, grouped by period, country, or campaign | [retrieveAnalyticsData](https://adapty.io/docs/api-export-analytics/operations/retrieveAnalyticsData.md) |
-| Cohort retention | How long subscribers from a given cohort keep paying | [retrieveCohortData](https://adapty.io/docs/api-export-analytics/operations/retrieveCohortData.md) |
-| Conversion rates | How many users move from one step or channel to the next | [retrieveConversionData](https://adapty.io/docs/api-export-analytics/operations/retrieveConversionData.md) |
-| Churn and funnel | Where users drop off and how fast they unsubscribe | [retrieveFunnelData](https://adapty.io/docs/api-export-analytics/operations/retrieveFunnelData.md) |
-| Lifetime value (LTV) | Average revenue per user segment over time | [retrieveLTVData](https://adapty.io/docs/api-export-analytics/operations/retrieveLTVData.md) |
-| Retention | Share of users still active after a number of days | [retrieveRetentionData](https://adapty.io/docs/api-export-analytics/operations/retrieveRetentionData.md) |
+Ask the way you'd brief a colleague. You don't need to name the skill:
 
-For the full list of parameters and filters, see the [API reference](https://adapty.io/docs/api-export-analytics.md).
+```
+Audit my app. What should I test next to grow revenue?
+
+Revenue dropped last month. Why?
+
+My A/B test on the onboarding paywall ended and the new version won. What now?
+
+I have three ideas: a weekly plan, a trial on annual, and a second placement.
+Which one should I test first?
+
+Which country refunds the most, and do people who start a trial renew better?
+
+We launch next month and have no data yet. Where should we start?
+```
+
+A question about your numbers gets an answer from your numbers, with no audit attached. An app with no data yet gets a starting plan built from market medians in Adapty's State of Paywalls 2026 report, with every number labeled as an estimate.
+
+<AgentChat title="growth-advisor" caption="Example conversation with a sample app. Your numbers will differ.">
+<ChatTurn role="user">Revenue dropped last month. Why?</ChatTurn>
+<ChatTurn role="tool" summary="Ran 4 read-only commands">
+
+- `adapty analytics chart --chart revenue --compare-from 2026-08-01 --compare-to 2026-08-31`
+- `adapty analytics chart --chart revenue --group-by store`
+- `adapty analytics chart --chart subscriptions_new --group-by store`
+- `adapty analytics chart --chart subscriptions_expired --group-by cancellation_reason`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Your revenue dropped because fewer people renewed on Google Play, not because fewer people bought.**
+
+New subscriptions held steady in September. Renewals on Google Play fell by a third, while the App Store didn't change. Most of the lost renewals are monthly subscribers whose payment failed.
+
+**Next steps**
+
+1. You: did anything change in your Google Play billing setup in early September?
+2. Me: suggest hypotheses to win back the monthly subscribers who left. Want me to?
+
+</ChatTurn>
+</AgentChat>
 
 ## Before you start
 
-You need three things:
+- **An Adapty account with data**: The skill reads the same analytics your dashboard shows. Without data, it can only give you a starting plan.
+- **An AI tool that can run terminal commands**: For example, Claude Code, Codex, Copilot CLI, or Gemini CLI. Chat tools like claude.ai or ChatGPT can't run the CLI, so they can't reach your Adapty account.
 
-- **An Adapty account with data**: The API returns the same metrics as your dashboard charts, so your app must already collect analytics.
-- **A secret API key**: Find it in [App settings → General](https://app.adapty.io/settings/general), in the **Secret key** field. Keys are app-specific, so use a separate key for each app. Store it in an environment variable (for example, `ADAPTY_SECRET_KEY`) so your agent can read it without you pasting it into chat.
-- **An AI tool that can call APIs**: For example, Claude Code, Cursor, or Claude Desktop with a fetch tool. Plain chat tools like claude.ai or ChatGPT can't call the API directly.
+## Install the skill
 
-<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Adapty App settings General page with the secret API key in the Secret key field" />
+growth-advisor is part of the [`adapty-skills` plugin](https://github.com/adaptyteam/adapty-skills).
 
-## Give your agent the API spec
+<AdaptySkillsInstall />
 
-The [OpenAPI spec](https://adapty.io/docs/api-specs/export-analytics-api.yaml) describes every endpoint, the authentication header, the request body, and example responses. Once your agent has the spec, it builds correct requests without you writing any code.
+## How the audit works
 
-Give your agent the spec by URL:
+When you ask what to do without a specific question, the skill runs an audit. It reads your numbers and your placement setup, works out what you've already tried, and follows the biggest change down to the store, channel, country, or placement that explains it. Before it says anything about a screen, it looks at the live flow, or asks you for a screenshot of a paywall your app draws itself.
 
-- **Paste the URL**: If your agent can fetch URLs, give it `https://adapty.io/docs/api-specs/export-analytics-api.yaml` and ask it to read the spec.
-- **Use a fetch tool**: If your agent has a tool that retrieves URLs (for example, an MCP fetch server), point it at the same URL.
+## What you get back
 
-The spec sets the base URL to `https://api-admin.adapty.io`, so your agent has everything it needs once your key is in the environment.
+The skill replies with a short answer, then a list of hypotheses grouped by placement, in the order to test them. Each hypothesis says why your app needs it, what result to expect and where that estimate comes from, how long the A/B test would take, and who does what. A hypothesis can target everyone at a placement or one [segment](segments), such as former subscribers.
 
-## Ask about your data
+<AgentChat title="growth-advisor" caption="Example conversation with a sample app. Your numbers and hypotheses will differ.">
+<ChatTurn role="user">Audit my app. What should I test next to grow revenue?</ChatTurn>
+<ChatTurn role="tool" summary="Ran 9 read-only commands">
 
-With the spec loaded and your key in an environment variable, describe the metric you want in plain language.
+- `adapty apps list`
+- `adapty analytics chart --chart revenue --group-by country`
+- `adapty analytics chart --chart revenue --group-by duration`
+- `adapty analytics chart --chart subscriptions_new --group-by placement_id`
+- `adapty analytics chart --chart subscriptions_expired --group-by cancellation_reason`
+- `adapty analytics conversion --conversion trial-paid --granularity month`
+- `adapty placements list`
+- `adapty flows list`
+- `adapty flows config get <flow-id>`
 
-Example prompts:
+</ChatTurn>
+<ChatTurn role="agent">
 
-```
-What was my MRR at the end of each month this year, and how does it compare to last year?
+**Most of your revenue comes from the onboarding paywall, and almost everyone there buys the weekly plan.**
 
-Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+From your data: two onboarding paywalls ran side by side in July, and you kept "Main". Annual is on the screen but took 6% of purchases in September. Most subscriptions end with users switching off renewal, and no placement shows former subscribers anything different.
 
-Which countries drive the most revenue from my yearly subscription? Top 10.
+**Suggested hypotheses**
 
-How is week-1 retention trending for subscribers who started in the last 6 months?
+On the `onboarding` placement:
 
-What's the refund rate on my annual plan since launch, by month?
+**1. Pre-select the annual plan on "Main"**
 
-Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
-```
+- **Why:** Weekly is pre-selected on "Main", so most buyers never weigh the yearly price.
+- **Expected:** ARPU up 25–40%, judged by revenue per paywall view. This is one of the most reliable wins in Adapty's library of real subscription A/B tests.
+- **Time:** About 3 weeks at your purchase volume.
+- **Who:** Me: build the flow copy and set up the A/B test. You: publish the copy.
 
-The agent maps your request to the right operation, reads the key from the environment, and returns the data. Responses are JSON by default. Ask for CSV when you want a spreadsheet-ready file — the agent sets `format` to `csv` in the request body.
+On the `settings` placement:
 
-:::warning
-Keep your secret key in an environment variable — not pasted into chat or committed in a rules file. Keys are app-specific, so rotate yours in **Settings → General** if it leaks. See [rotate API keys](https://adapty.io/docs/export-analytics-api-authorization.md).
-:::
+**2. Show former subscribers a win-back paywall**
 
-## Set up once for repeated use
+- **Why:** 71% of endings in September were users switching off renewal, and they see the same paywall as everyone else when they come back.
+- **Expected:** Untested in Adapty's library, so treat it as a bet. Judged by purchases from the segment.
+- **Time:** About 8 weeks.
+- **Who:** Me: build the win-back flow, create the "Former subscribers" segment, and set up the A/B test for it. You: publish the flow.
 
-To avoid repeating setup every session, save the spec and key where your agent can reuse them:
+**Next steps**
 
-- **Save the spec link**: Add the spec URL to your agent's rules or memory file (for example, a `CLAUDE.md` or Cursor rules file) so it loads every session.
-- **Store the key in your environment**: Keep `ADAPTY_SECRET_KEY` in your shell profile or the tool's secret store, so you never paste it again.
-- **Save reusable prompts or create a custom skill**: Keep your common questions as saved prompts, or wrap them in a custom skill or slash command so your agent runs a report on demand.
+1. You: which one do you want to start with? I'd pick 1, because every new user sees it.
+2. Me: build a copy of "Main" with the annual plan pre-selected. Want me to?
+
+</ChatTurn>
+<ChatTurn role="user">Go with 1.</ChatTurn>
+<ChatTurn role="confirm" summary="Create a flow copy">
+
+Create **Main – annual pre-selected**, a copy of "Main" with the annual plan pre-selected? Nothing else changes, and the live flow stays as it is.
+
+1. Yes
+2. No, change something first
+
+</ChatTurn>
+</AgentChat>
+
+You pick which hypothesis to start with. If you're not sure, the skill names its own pick and why. The skill keeps no backlog, so save the reply if you want to come back to the other hypotheses later.
+
+## From hypothesis to A/B test
+
+For every hypothesis, the skill suggests an A/B test and offers to set it up. Before it does, it verifies that everything the test needs exists, and names what is missing and who makes it:
+
+| The test needs | Who makes it |
+|---|---|
+| A changed flow: a new design, copy, or product set | The skill builds a copy of the flow through the [flow-generator skill](flow-generator-skill), with one change per hypothesis, so the test shows what that change did. Before you publish the copy, the skill offers to review the copy with the [flow-audit skill](flow-audit-skill). A flow joins a test only once it is published. |
+| A new plan length, trial, or offer | You create the product in App Store Connect or Google Play Console and add it to Adapty. On the App Store, a trial needs a new product; on Google Play, it's an offer on the existing plan. You set the price. |
+| A paywall from products already in Adapty | The skill creates it. |
+| A paywall with a new design | You make it in the [Paywall Builder](adapty-paywall-builder). |
+| A segment | The skill creates it through the audiences skill. |
+| A new placement | The skill creates it after you approve its developer ID. Your app needs a code change and a release to fetch it. |
+
+Each piece the skill makes waits for your yes. When a piece is yours to make, the skill's **Next steps** list says so, and the skill sets up the test once you tell it the piece is ready. It never sets up a test with a piece that doesn't exist yet.
+
+When every piece exists, the [ab-tests skill](ab-tests-skill) creates the test as a draft. Before it starts the test, it shows you exactly who sees what. An [A/B test](ab-tests) is the default, and the only way to measure what the change did.
+
+To show the change without a test, ask for that. The skill can show it on a new placement, or to some or all users of an existing placement. Before the skill changes an existing placement, it saves the placement to a file so you can restore it. It also names any A/B test that runs on the placement. The change doesn't affect that test.
+
+When an A/B test ends, tell the skill which version won. It offers to stop the test with that winner if the test is still live. Then it suggests the next hypothesis.
 
 ## Limits
 
-Keep these constraints in mind:
+- **No pricing analysis yet**: The skill doesn't read, compare, or suggest prices. When your numbers point at price, it says so and says that pricing analysis isn't supported yet.
+- **No A/B test results**: The skill doesn't read A/B test results. It infers past tests from paywalls that ran side by side, and relies on you to say which version won.
+- **No ad spend**: The skill can split installs, trials, and revenue by attribution channel, but not spend or ROAS. For those, use the [adapty-attribution skill](developer-cli-attribution-skill).
 
-- **Rate limit**: The API allows 2 requests per second per app, shared by all of the app's API keys. Exceeding it returns a `429 Too Many Requests` error. Tell your agent to wait and retry on `429`.
-- **App-specific keys**: Each key works for one app. To pull data from several apps, provide the matching key for each.
-- **Output format**: Responses are JSON by default. Set `format` to `csv` in the request body for a CSV export.
-
-For the full authentication and request rules, see [Authorization and request format](https://adapty.io/docs/export-analytics-api-authorization.md).
+To query your analytics yourself, without the skill, see the [CLI analytics reference](developer-cli-analytics). To pull analytics from a server or a scheduled job, where no one can log in through a browser, use the [Export Analytics API](export-analytics-api) with a secret API key.

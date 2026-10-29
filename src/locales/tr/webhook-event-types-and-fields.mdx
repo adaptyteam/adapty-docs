@@ -56,8 +56,11 @@ Webhook olayları JSON formatında serileştirilir. Sunucunuza gönderilen `POST
     "discount_amount_local": 0,
     "base_plan_id": "b1",
     "developer_id": "onboarding_placement",
+    "ab_test_id": "00000000-0000-0000-0000-000000000000",
     "ab_test_name": "onboarding_ab_test",
     "ab_test_revision": 1,
+    "ab_test_variant_id": "00000000-0000-0000-0000-000000000000",
+    "ab_test_variant_name": "Variant B",
     "paywall_name": "UsedPaywall",
     "proceeds_usd": 4.2315,
     "variation_id": "00000000-0000-0000-0000-000000000000",
@@ -216,69 +219,130 @@ Etkinlik özellikleri, etkinlik türüne ve hatta aynı türdeki etkinlikler ara
 
 | Alan | Tür | Açıklama |
 |:------------------------------|:--------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **ab_test_name** | String | İşlemin gerçekleştiği [Adapty A/B testinin](ab-tests) adı. |
+| **ab_test_id** | UUID | İşlemin gerçekleştiği [Adapty A/B testinin](ab-tests) ID'si. Çok placement'lı bir A/B testinde, her placement'ta aynı olan çok placement'lı testin ID'si. Bkz. [Flow ve A/B testi alanları](#flow-and-ab-test-fields). |
+| **ab_test_name** | String | İşlemin gerçekleştiği [Adapty A/B testinin](ab-tests) adı. Çok placement'lı bir A/B testinde, testin bir placement'taki adı olup `<test adı> child-N` biçimindedir; burada N, varyant numarası değil placement numarasıdır. Çok placement'lı bir testi placement'lar genelinde gruplamak için `ab_test_id` kullanın ve adını `ab_test_parent_name`'den alın. |
+| **ab_test_parent_name** | String | İşlemin gerçekleştiği çok placement'lı A/B testinin adı. Yalnızca çok placement'lı A/B testlerinde bulunur. |
 | **ab_test_revision** | Integer | İşlemin gerçekleştiği A/B testinin revizyonu. |
+| **ab_test_variant_id** | UUID | İşlemin gerçekleştiği A/B testi varyantının ID'si. Normal bir paywall A/B testinde `variation_id` ile eşleşir. Bir flow A/B testinde `flow_variation_id` ile eşleşir. Çok placement'lı bir A/B testinde, her placement'taki varyant için aynıdır. İşlemleri test varyantına göre ayırmak için kullanın. |
+| **ab_test_variant_name** | String | A/B testi varyantının adı. Çok placement'lı bir A/B testinde, test ayarlarındaki varyant adı. Diğer testlerde varyant adı ya da varyantın adı yoksa paywall veya flow adı. `ab_test_variant_id` ile birlikte bulunur. |
 | **base_plan_id** | String | Google Play Store'daki [temel plan ID'si](https://support.google.com/googleplay/android-developer/answer/12154973) veya Stripe'taki [fiyat ID'si](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices). |
-| **cancellation_reason** | String | <p>Olası iptal nedenleri: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Aşağıdaki etkinlik türlerinde bulunur:</p>`subscription_cancelled`, `subscription_refunded` ve `trial_cancelled`. |
-| **cohort_name** | String | Kullanıcıya hangi paywall'ın gösterileceğini belirleyen [kitlenin](audience) adı. |
+| **cancellation_reason** | String | <p>Olası iptal nedenleri: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`.</p><p>Şu etkinlik türlerinde bulunur:</p>`subscription_cancelled`, `subscription_refunded` ve `trial_cancelled`. |
+| **cohort_name** | String | Kullanıcıya hangi paywall'un gösterileceğini belirleyen [kitlenin](audience) adı. |
 | **consecutive_payments** | Integer | Kullanıcının kesintisiz olarak abone olduğu dönem sayısı. Mevcut dönemi de içerir. |
-| **currency** | String | Yerel para birimi. |
+| **currency** | String | Yerel para birimi. **Send trial price** etkinleştirilmediği sürece `trial_started`'da `null` olur. Bkz. [Ek vergi ve gelir etkinlik özellikleri](webhook-event-types-and-fields#additional-tax-and-revenue-event-properties). |
 | **developer_id** | String | İşlemin gerçekleştiği [placement'ın](placements) ID'si. |
-| **discount_amount_local** | Float | İşleme uygulanan indirim: standart fiyat eksi gerçekte tahsil edilen tutar; Apple/Google payı düşülmeden önce, yerel para biriminde. Tam fiyatlı satın almalarda `0`. Ücretsiz deneme sürümlerinde hiçbir şey tahsil edilmediğinden standart fiyatın tamamına (`original_price_local`) eşittir. Bir teklif uygulandığında ancak standart fiyat bilinmediğinde `null` (bkz. `original_price_local`). App Store'un peşin ödeme teklifleri için her zaman `null`'dur: tek seferlik peşin ödeme birden fazla fatura dönemini kapsadığından dönem başına standart fiyatla karşılaştırılamaz. |
-| **discount_amount_usd** | Float | `discount_amount_local` değerinin USD cinsinden karşılığı. |
+| **discount_amount_local** | Float | İşleme uygulanan indirim: standart fiyat eksi gerçekte tahsil edilen tutar, Apple/Google kesintisi öncesi, yerel para biriminde. Tam fiyatlı bir satın alma için `0`. Ücretsiz deneme için hiçbir şey tahsil edilmediğinden tam standart fiyata eşittir (`original_price_local`). Bir teklif uygulandığında ancak standart fiyat bilinmediğinde `null` olur (bkz. `original_price_local`). App Store peşin ödeme teklifleri için her zaman `null`'dur: tek seferlik peşin ödeme birden fazla fatura dönemini kapsadığından dönem başına standart fiyatla karşılaştırılamaz. |
+| **discount_amount_usd** | Float | `discount_amount_local`'ın USD cinsinden değeri. |
 | **environment** | String | Olası değerler: `Sandbox` veya `Production`. |
-| **event_datetime** | ISO 8601 date | Etkinliğin tarihi ve saati. Etkinliğin kök düzeyindeki değerle aynıdır. |
-| **original_price_local** | Float | Ürünün Apple/Google payı düşülmeden önceki standart, indirimsiz fiyatı; yerel para biriminde. Abonelikler için bu, yenileme fiyatıdır. Tam fiyatlı satın almalarda `price_local` değerine eşittir; mağazalar tek seferlik satın almalar için ayrı bir standart fiyat bildirmediğinden tek seferlik satın almalarda her zaman `price_local` değerine eşittir. Mağazanın güvenilir bir standart fiyat bildirmediği indirimli satın almalarda `null` (örneğin otomatik yenileme kapalıysa, yenileme hâlâ bir teklif taşıyorsa veya ürün değişikliği bekleniyorsa). |
+| **event_datetime** | ISO 8601 date | Etkinliğin tarih ve saati. Etkinliğin kök düzeyindekiyle aynıdır. |
+| **flow_id** | UUID | İşlemin gerçekleştiği [flow'un](adapty-flow-builder) ID'si. A/B testinde olsun ya da olmasın, bir flow içinde gerçekleştirilen her işlem için bulunur. |
+| **flow_name** | String | İşlemin gerçekleştiği flow'un adı. `flow_id` ile birlikte bulunur. |
+| **flow_variation_id** | UUID | Bu placement'taki flow varyantının ID'si. SDK'nın uygulamaya `flow.variationId` olarak döndürdüğü değerle aynıdır. `flow_id` ile birlikte bulunur. |
+| **original_price_local** | Float | Ürünün Apple/Google kesintisi öncesi standart, indirimsiz fiyatı, yerel para biriminde. Abonelikler için bu, yenileme fiyatıdır. Tam fiyatlı bir satın alma için `price_local`'a eşittir ve mağazalar tek seferlik satın almalar için ayrı bir standart fiyat raporlamadığından tek seferlik satın almalarda her zaman `price_local`'a eşittir. Mağazanın güvenilir bir standart fiyat raporlamadığı indirimli satın almalarda `null` olur (örneğin otomatik yenileme kapalı, yenileme hâlâ bir teklife sahip veya ürün değişikliği beklemede). |
 | **original_price_usd** | Float | `original_price_local` ile aynı, USD cinsinden. |
-| **original_purchase_date** | ISO 8601 date | Yinelenen aboneliklerde orijinal satın alma, zincirdeki ilk işlemdir; orijinal işlem ID'si olarak adlandırılan ID'si yenileme zincirini birbirine bağlar; sonraki işlemler bunun uzantılarıdır. Orijinal satın alma tarihi, bu ilk işlemin tarih ve saatidir. |
-| **original_transaction_id** | String | <p>Yinelenen aboneliklerde bu, yenileme zincirini birbirine bağlayan orijinal işlem ID'sidir. Orijinal işlem zincirdeki ilkidir; sonraki işlemler bunun uzantılarıdır.</p><p>Uzantı yoksa `original_transaction_id`, store_transaction_id ile eşleşir.</p> |
-| **paywall_name** | String | İşlemin gerçekleştiği paywall'ın adı. |
-| **paywall_revision** | String | İşlemin gerçekleştiği paywall'ın revizyonu. Varsayılan değer 1'dir. |
-| **price_local** | Float | Apple/Google payı düşülmeden önce işlem için tahsil edilen tutar; yerel para biriminde. Ücretsiz denemelerde hiçbir şey tahsil edilmediğinden `null`. |
-| **price_usd** | Float | Apple/Google payı düşülmeden önce işlem için tahsil edilen tutar; USD cinsinden. Ücretsiz denemelerde hiçbir şey tahsil edilmediğinden `null`. |
+| **original_purchase_date** | ISO 8601 date | Yinelenen abonelikler için orijinal satın alma, zincirdeki ilk işlemdir; orijinal işlem ID'si olarak adlandırılan bu ID, yenileme zincirini birbirine bağlar; sonraki işlemler bunun uzantılarıdır. Orijinal satın alma tarihi, bu ilk işlemin tarih ve saatidir. |
+| **original_transaction_id** | String | <p>Yinelenen abonelikler için bu, yenileme zincirini birbirine bağlayan orijinal işlem ID'sidir. Orijinal işlem zincirdeki ilk işlemdir; sonraki işlemler bunun uzantılarıdır.</p><p>Uzantı yoksa `original_transaction_id`, store_transaction_id ile eşleşir.</p> |
+| **paywall_name** | String | İşlemin gerçekleştiği paywall'un adı. Bir flow için bu, flow içindeki paywall ekranının ID'sidir (`scr_...`), bir ad değil. Flow adı `flow_name`'dedir. |
+| **paywall_revision** | String | İşlemin gerçekleştiği paywall'un revizyonu. Varsayılan değer 1'dir. |
+| **price_local** | Float | Apple/Google kesintisi öncesi işlem için tahsil edilen tutar, yerel para biriminde. **Send trial price** etkinleştirilmediği sürece hiçbir şey tahsil edilmediğinden `trial_started`'da `null` olur. |
+| **price_usd** | Float | Apple/Google kesintisi öncesi işlem için tahsil edilen tutar, USD cinsinden. **Send trial price** etkinleştirilmediği sürece hiçbir şey tahsil edilmediğinden `trial_started`'da `null` olur. |
 | **profile_country** | String | Adapty tarafından profil IP'sine göre belirlenir. |
-| **profile_event_id** | UUID | Tekilleştirme amacıyla kullanılabilecek benzersiz etkinlik ID'si. |
-| **profile_has_access_level** | Boolean | Profilin aktif bir access level'ı olup olmadığını gösteren boolean değer. |
-| **profile_id** | UUID | Adapty tarafından oluşturulan profil ID'si. Etkinliğin kök düzeyindeki değerle aynıdır. |
-| **profile_ip_address** | String | Profil IP'si (IPv4 veya IPv6 olabilir; mevcut olduğunda IPv4 tercih edilir). [Uygulama ayarlarında](https://app.adapty.io/settings/general) **Collect users' IP addresses** devre dışıysa `null`. |
-| **profile_total_revenue_usd** | Float | İadeler düşüldükten sonra profil için toplam gelir. |
-| **promotional_offer_id** | String | Kullanılan [promosyon teklifinin](offers) Adapty ID'si. Bu ID'yi kontrol panelinde teklif oluştururken siz belirlersiniz. |
-| **purchase_date** | ISO 8601 date | Ürün satın alma işleminin tarih ve saati. |
-| **rate_after_first_year** | Boolean | Aboneliğin bir yıllık kesintisiz yenilemeden sonra indirimli komisyon oranına (genellikle %15) hak kazanıp kazanmadığını gösteren boolean değer. Komisyon oranları programa uygunluk durumuna ve ülkeye göre değişir. Ayrıntılar için [Mağaza komisyonu ve vergiler](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue) bölümüne bakın. |
+| **profile_event_id** | UUID | Tekilleştirme için kullanılabilecek benzersiz etkinlik ID'si. |
+| **profile_has_access_level** | Boolean | Profilin etkin bir access level'a sahip olup olmadığını gösteren bir boolean. |
+| **profile_id** | UUID | Adapty tarafından oluşturulan profil ID'si. Etkinliğin kök düzeyindekiyle aynıdır. |
+| **profile_ip_address** | String | Profil IP'si (IPv4 veya IPv6 olabilir; mevcut olduğunda IPv4 tercih edilir). [Uygulama ayarlarında](https://app.adapty.io/settings/general) **Collect users' IP addresses** devre dışı bırakılmışsa `null` olur. |
+| **profile_total_revenue_usd** | Float | İadeler düşülerek hesaplanan profil için toplam gelir. |
+| **promotional_offer_id** | String | Kullanılan [promosyon teklifinin](offers) Adapty ID'si. Bu ID'yi kontrol panelinde bir teklif oluştururken siz belirlersiniz. |
+| **purchase_date** | ISO 8601 date | Ürün satın alma tarihi ve saati. |
+| **rate_after_first_year** | Boolean | Aboneliğin bir yıllık kesintisiz yenilemeden sonra indirimli komisyon oranına (genellikle %15) hak kazandığını gösteren boolean. Komisyon oranları program uygunluğuna ve ülkeye göre değişir. Ayrıntılar için bkz. [Mağaza komisyonu ve vergiler](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue). |
 | **store** | String | Ürünün satın alındığı mağaza. Standart değerler: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Sunucu tarafı API'sini kullanarak [özel mağaza işlemleri](api-adapty/operations/setTransaction) ayarladıysanız **store** parametresindeki değer kullanılır. |
 | **store_country** | String | Uygulama mağazası tarafından bize gönderilen ülke. |
 | **store_offer_category** | String | Uygulanan teklif kategorisi. Olası değerler: `introductory`, `promotional`, `winback`. |
 | **store_offer_discount_type** | String | Uygulanan teklif türü. Olası değerler: `free_trial`, `pay_as_you_go` ve `pay_up_front`. |
-| **store_offer_number_of_periods** | Integer | Bir teklifin indirim uyguladığı temel fatura dönemi sayısı (1 veya daha fazla). Yalnızca bir teklif geçerliyse bulunur. App Store'un peşin ödeme teklifleri için ve mağaza teklif süresini bildirmediğinde `null`. |
-| **subscription_expires_at** | ISO 8601 date | <p>Aboneliğin sona erme tarihi.</p><p>İade, fatura sorunu, ek süre ve access level etkinliklerinde, varsa iptal tarihini veya ek süre bitiş tarihini tutar. Satın alma ve yenileme etkinliklerinde ise normal abonelik sona erme tarihini tutar.</p> |
-| **transaction_id** | String | İşlem için benzersiz tanımlayıcı. |
-| **trial_duration** | String | Deneme süresinin gün cinsinden uzunluğu. "{} days" biçiminde gönderilir; örneğin "7 days". Yalnızca denemeyle ilgili etkinlik türlerinde bulunur: `trial_started`, `trial_converted`, `trial_cancelled`. |
-| **variation_id** | UUID | Satın almanın yapıldığı paywall'ın benzersiz ID'si. |
-| **vendor_product_id** | String | <p>Apple App Store, Google Play Store veya Stripe'taki ürün ID'si.</p><p>Erişim gerçek bir mağaza işlemi olmadan verilmişse `vendor_product_id` şunlardan biri olur:</p><ul><li>`adapty_server_side_product` — [sunucu tarafı API'si](api-adapty/operations/grantAccessLevel) aracılığıyla verilmiş.</li><li>`adapty_dashboard_product` — Adapty Kontrol Paneli'nde [manuel olarak verilmiş](give-access-level-to-specific-customer).</li><li>`adapty_promotion` — eski sürüm.</li></ul> |
+| **store_offer_number_of_periods** | Integer | Bir teklifin indirim uyguladığı temel fatura dönemi sayısı (1 veya daha fazla). Yalnızca bir teklif uygulandığında bulunur. App Store peşin ödeme teklifleri için ve mağazanın teklif süresini raporlamadığı durumlarda `null` olur. |
+| **subscription_expires_at** | ISO 8601 date | <p>Aboneliğin sona erme tarihi.</p><p>İade, fatura sorunu, ek süre ve access level etkinliklerinde, geçerliyse iptal tarihini veya ek süre bitiş tarihini tutar. Satın alma ve yenileme etkinliklerinde, normal abonelik sona erme tarihini tutar.</p> |
+| **transaction_id** | String | Bir işlem için benzersiz tanımlayıcı. |
+| **trial_duration** | String | Deneme süresinin gün cinsinden uzunluğu. "{} days" biçiminde gönderilir, örneğin "7 days". Yalnızca denemeyle ilgili etkinlik türlerinde bulunur: `trial_started`, `trial_converted`, `trial_cancelled`. |
+| **variation_id** | UUID | Satın almanın yapıldığı paywall'un benzersiz ID'si. Bir flow için bu, A/B testi varyantı değil, flow içindeki paywall ekranının ID'sidir. Yayınlanan her yeni flow sürümü yeni ekran ID'leri aldığından Adapty, zaman içinde farklı `variation_id` değerleriyle tek bir varyant gönderir. İşlemleri test varyantına göre ayırmak için `ab_test_variant_id` kullanın. |
+| **vendor_product_id** | String | <p>Apple App Store, Google Play Store veya Stripe'taki ürün ID'si.</p><p>[12 aylık taahhüt planı](app-store-12-month-commitment) için değer `<product_id>:monthly` şeklindedir.</p><p>Erişim gerçek bir mağaza işlemi olmaksızın sağlandıysa `vendor_product_id` şunlardan biri olur:</p><ul><li>`adapty_server_side_product` — [sunucu tarafı API'si](api-adapty/operations/grantAccessLevel) aracılığıyla sağlandı.</li><li>`adapty_dashboard_product` — Adapty Kontrol Paneli'nde [manuel olarak sağlandı](give-access-level-to-specific-customer).</li><li>`adapty_promotion` — eski sürüm.</li></ul> |
 
-#### Ek vergi ve gelir olayı özellikleri \{#additional-tax-and-revenue-event-properties\}
+#### Flow ve A/B testi alanları \{#flow-and-ab-test-fields\}
 
-Aşağıdaki vergi ve gelirle ilgili olay özellikleri, yalnızca belirli olay türleri için geçerli olan ek alanlardır. Yani listelenen olay türleri, [Çoğu olay türü için olay özellikleri](webhook-event-types-and-fields#for-most-event-types) bölümündeki alanların yanı sıra aşağıda listelenen ek alanları da içerir.
+Flow ve A/B testi alanları, bir işlemin hangi flow'dan, A/B testinden ve varyanttan geldiğini gösterir. Her [A/B testi türü](ab-test-types) için çalışır: normal paywall ve flow A/B testleri ile paywall'lar ve flow'lar üzerindeki çapraz placement A/B testleri.
+
+Adapty, bir placement üzerinde gerçekleştirilen işlemlerin olaylarında bu alanları gönderir; bunlar `developer_id` ve `variation_id` içeren olayların aynısıdır. Yenilemeler, iade talepler, iptaller ve diğer abonelik olayları, A/B testi dursa bile orijinal satın almayla aynı flow, A/B testi ve varyant bilgilerini taşır. Bir alanın değeri yoksa, olay o alanı içermez: bu alanlar hiçbir zaman boş veya `null` olmaz.
+
+| İşlem kaynağı | `flow_id`, `flow_name`, `flow_variation_id` | `ab_test_id` | `ab_test_variant_id`, `ab_test_variant_name` | `ab_test_parent_name` |
+|---|---|---|---|---|
+| Normal paywall A/B testi | — | A/B testi ID'si | `variation_id` ile eşleşir | — |
+| A/B testi dışındaki paywall | — | — | — | — |
+| Flow A/B testi | ✅ | A/B testi ID'si | `flow_variation_id` ile eşleşir | — |
+| A/B testi dışındaki flow | ✅ | — | — | — |
+| Paywall'larda crossplacement A/B testi | — | Crossplacement testi ID'si | Tüm placement'lar tarafından paylaşılır | ✅ |
+| Flow'larda crossplacement A/B testi | ✅, bu placement'taki flow varyantıyla | Crossplacement testi ID'si | Tüm placement'lar tarafından paylaşılır | ✅ |
+| Placement değil | — | — | — | — |
+
+Örneğin, flow'lar üzerindeki çapraz-placement A/B testinin ikinci placement'ındaki A varyantında gerçekleşen bir satın alma için Adapty şunu gönderir:
+
+```json title="Json" showLineNumbers
+{
+  "variation_id": "<paywall screen ID on this placement>",
+  "ab_test_name": "Onboarding test child-1",
+  "paywall_name": "scr_a1b2c3d4",
+  "flow_id": "<flow ID>",
+  "flow_name": "Onboarding X",
+  "flow_variation_id": "<variant A on this placement>",
+  "ab_test_id": "<crossplacement test ID>",
+  "ab_test_variant_id": "<variant A, shared by all placements>",
+  "ab_test_variant_name": "A",
+  "ab_test_parent_name": "Onboarding test"
+}
+```
+
+Bu alanlara ilişkin raporlar oluşturmak için işlemleri ID'lere (`ab_test_id`, `ab_test_variant_id`, `flow_id`) göre gruplandırın ve adları etiket olarak kullanın. Adapty, olayı gönderdiği andaki adı alır; dolayısıyla bir testi, varyantı veya flow'u yeniden adlandırdıktan sonra sonraki olaylar yeni adı taşır. Önceden gönderilmiş olaylar yeniden gönderilmez veya güncellenmez.
+
+:::note
+Birden fazla placement'a yayılan bir A/B testinin paylaşılan varyant ID'si, yalnızca bir placement'taki varyant ID'siyle eşleşir; genellikle bu ilk placement olur. Bir olayı SDK'nın belirli bir placement'ta döndürdüğü varyantla eşleştirmek için `flow_variation_id` veya `variation_id` kullanın.
+:::
+
+:::warning
+Aynı flow'un birden fazla varyantta yer aldığı çapraz placement A/B testlerinde, satın alma işlemi tek başına kullanıcının hangi varyantta olduğunu göstermez. Adapty, varyantı kullanıcının atama kaydından alır. Bu kayıt mevcut değilse Adapty `flow_id`, `flow_name` ve `ab_test_id` gönderir; ancak `flow_variation_id`, `ab_test_variant_id` veya `ab_test_variant_name` göndermez. Bu durum, kullanıcının flow'u gördükten hemen sonra kayıt kaydedilmeden satın alma yapması ile kaydın süresi dolduktan sonra gelen yenilemeler için geçerlidir. Adapty Kontrol Paneli bu tür işlemleri ilk varyantta sayar; bu nedenle entegrasyon verileriniz kontrol paneli verileriyle farklılık gösterebilir.
+:::
+
+#### Vergi ve gelir olayı için ek özellikler \{#additional-tax-and-revenue-event-properties\}
+
+Aşağıdaki vergi ve gelirle ilgili olay özellikleri, yalnızca belirli olay türleri için geçerli olan ek alanlardır. Bu, listelenen olay türlerinin [Çoğu olay türü için olay özellikleri](webhook-event-types-and-fields#for-most-event-types) alanlarını ve aşağıda listelenen ek alanları içerdiği anlamına gelir.
 
 Vergi ve gelir olay özelliklerine sahip olay türleri:
 
 - `subscription_renewed`
-- `subscription_initial_purchase` (`subscription_started` olarak da bilinir — aynı olaydır)
+- `subscription_initial_purchase` (aynı zamanda `subscription_started` olarak da anılır — aynı event)
 - `subscription_refunded`
 - `non_subscription_purchase`
+- `non_subscription_purchase_refunded`
+- `trial_started`
+- `trial_converted`
 
 | Alan                  | Tür   | Açıklama                                                     |
 | :-------------------- | :---- | :----------------------------------------------------------- |
-| **net_revenue_local** | Float | Net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir) yerel para biriminde. |
-| **net_revenue_usd**   | Float | Net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir) ABD doları cinsinden. |
-| **proceeds_local**    | Float | Apple/Google payı düşüldükten sonraki ürün fiyatı yerel para biriminde. |
-| **proceeds_usd**      | Float | Apple/Google payı düşüldükten sonraki ürün fiyatı.           |
-| **tax_amount_local**  | Float | Kesilen vergi tutarı yerel para biriminde.                   |
-| **tax_amount_usd**    | Float | Kesilen vergi tutarı ABD doları cinsinden.                   |
+| **net_revenue_local** | Float | Yerel para biriminde net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir). |
+| **net_revenue_usd**   | Float | USD cinsinden net gelir (Apple/Google payı ve vergiler düşüldükten sonraki gelir). |
+| **proceeds_local**    | Float | Apple/Google payı düşüldükten sonra `price_local`. |
+| **proceeds_usd**      | Float | Apple/Google payı düşüldükten sonra `price_usd`. |
+| **tax_amount_local**  | Float | `price_local` içinde yer alan [tahmini vergi](how-adapty-analytics-works#taxes). Kullanıcı vergi ödemiş olsa bile Stripe ve Paddle için `0`. |
+| **tax_amount_usd**    | Float | `price_usd` içinde yer alan [tahmini vergi](how-adapty-analytics-works#taxes). Kullanıcı vergi ödemiş olsa bile Stripe ve Paddle için `0`. |
 
-#### `non_subscription_purchase` örnek payload'u
+Net gelir için doğrudan `net_revenue_*` kullanın. `tax_amount_*` değeri `0` olmadıkça, `proceeds_*` eksi `tax_amount_*` daha küçük bir miktar verir. Örneğin, 12 fiyat, %30 komisyon ve %20 vergi oranıyla Adapty şu hesabı yapar:
 
-`non_subscription_purchase`, abonelik etkinlikleriyle aynı yapıyı izler ancak tek seferlik veya consumable bir satın almayı yansıtır. Yalnızca aboneliğe özgü alanlar geçerli değildir: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime` ve `trial_duration` bulunmaz. `subscription_expires_at` mevcut olsa da değeri `null`'dır. Vergi ve gelir alanları (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) dahil edilmiştir.
+- `proceeds_*` = `price_*` × (1 − komisyon) = 12 × 0.7 = 8.40
+- `tax_amount_*` = `price_*` × vergi oranı ÷ (1 + vergi oranı) = 12 × 0.2 ÷ 1.2 = 2.00
+- `net_revenue_*` = `proceeds_*` ÷ (1 + vergi oranı) = 8.40 ÷ 1.2 = 7.00
+
+Ücretsiz deneme herhangi bir ücret içermez; bu nedenle `trial_started` olayında fiyat alanları (`price_*`, `proceeds_*`, `net_revenue_*`, `tax_amount_*`) ve `currency` varsayılan olarak `null` değerini alır. Bu değerleri almak için [webhook ayarları](set-up-webhook-integration) bölümünden **Send trial price** seçeneğini etkinleştirin. Adapty bu değerleri, abonelik fiyatını **Trial price percentage** ile çarparak hesaplar ve `currency` değerini gönderir. Bu değerler bir ücretlendirmeyi değil, aboneliği tanımladığından `trial_started` olayını gelir toplamlarına dahil etmeyin.
+
+#### `non_subscription_purchase` örnek payload'ı \{#non-subscription-purchase-example-payload\}
+
+`non_subscription_purchase` abonelik etkinlikleriyle aynı yapıyı izler, ancak tek seferlik veya consumable satın alımları yansıtır. Yalnızca aboneliğe özgü alanlar geçerli değildir: `cancellation_reason`, `will_renew`, `is_in_grace_period`, `is_refund`, `is_lifetime` ve `trial_duration` alanları bulunmaz. `subscription_expires_at` mevcut olmakla birlikte `null` değerini alır. Vergi ve gelir alanları (`net_revenue_*`, `proceeds_*`, `tax_amount_*`) dahil edilir.
 
 <details>
 <summary>Örnek payload (genişletmek için tıklayın)</summary>
@@ -337,48 +401,55 @@ Vergi ve gelir olay özelliklerine sahip olay türleri:
 Bu etkinliği kullanarak veritabanınızdaki kullanıcının access level'ını güncelleyebilir, backend'inizde premium özellikleri etkinleştirip devre dışı bırakabilir ve erişimi cihazlar veya platformlar arasında senkronize tutabilirsiniz.
 :::
 
-| Özellik                            | Tür           | Açıklama                                                     |
+| Özellik | Tür | Açıklama |
 | ---------------------------------- | ------------- | ------------------------------------------------------------ |
-| **ab_test_name**                   | String        | İşlemin kaynaklandığı A/B testi adı.                         |
-| **access_level_id**                | String        | Access level'ın ID'si.                                       |
-| **activated_at**                   | ISO 8601 date | Erişimin en son etkinleştirildiği tarih ve saat.             |
-| **active_introductory_offer_type** | String        | Uygulanan başlangıç teklifinin türü. Olası değerler: `free_trial`, `pay_as_you_go` ve `pay_up_front`. |
-| **active_promotional_offer_id**    | String        | Adapty Kontrol Paneli'nin Ürün bölümünde belirtilen promosyon teklifinin ID'si. |
-| **active_promotional_offer_type**  | String        | Uygulanan promosyon teklifinin türü. Olası değerler: `free_trial`, `pay_as_you_go` ve `pay_up_front`. |
-| **base_plan_id**                   | String        | Google Play Store'daki [temel plan ID'si](https://support.google.com/googleplay/android-developer/answer/12154973) veya Stripe'taki [fiyat ID'si](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices). |
-| **billing_issue_detected_at**      | ISO 8601 date | Faturalandırma sorununun tarih ve saati.                     |
-| **cancellation_reason**            | String        | Olası iptal nedenleri: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`. |
-| **cohort_name**                    | String        | Profilin ait olduğu kitlenin adı.                            |
-| **currency**                       | String        | Yerel para birimi (varsayılan USD).                          |
-| **developer_id**                   | String        | İşlemin kaynaklandığı placement'ın ID'si.                    |
-| **environment**                    | String        | Olası değerler: `Sandbox` veya `Production`.                 |
-| **event_datetime**                 | ISO 8601 date | Etkinliğin tarih ve saati.                                   |
-| **expires_at**                     | ISO 8601 date | <p>Erişimin sona erdiği tarih ve saat. Adapty, `is_active` değerini bu alandan hesaplar.</p><p>Ek süre boyunca ek sürenin bitiş anını; iade veya iptal sonrasında iptal tarihini içerir. Ek süre bitişi için ayrı bir alan yoktur.</p> |
-| **is_active**                      | Boolean       | Access level'ın aktif olup olmadığını gösteren boolean değer. Etkinlik oluşturulurken `expires_at` (ayrıca `starts_at` ve `is_lifetime`) alanından hesaplanır. |
-| **is_in_grace_period**             | Boolean       | Profilin ek sürede olup olmadığını gösteren boolean değer. `true` iken `expires_at`, ek sürenin bitiş anını içerir. |
-| **is_lifetime**                    | Boolean       | Access level'ın süresiz olup olmadığını gösteren boolean değer. |
-| **is_refund**                      | Boolean       | İşlemin iade olup olmadığını gösteren boolean değer.         |
-| **original_purchase_date**         | ISO 8601 date | Yinelenen aboneliklerde orijinal satın alma, zincirdeki ilk işlemdir; orijinal işlem ID'si adı verilen bu ID, yenilemeler zincirini birbirine bağlar; sonraki işlemler bunun uzantısıdır. Orijinal satın alma tarihi, bu ilk işlemin tarih ve saatidir. |
-| **original_transaction_id**        | String        | <p>Yinelenen aboneliklerde, yenilemeler zincirini birbirine bağlayan orijinal işlem ID'sidir. Orijinal işlem zincirdeki ilk işlemdir; sonraki işlemler bunun uzantısıdır.</p><p>Uzantı yoksa `original_transaction_id`, store_transaction_id ile aynıdır.</p>Orijinal satın almanın işlem tanımlayıcısı. |
-| **paywall_name**                   | String        | İşlemin kaynaklandığı paywall'un adı.                        |
-| **paywall_revision**               | String        | İşlemin kaynaklandığı paywall'un revizyonu. Varsayılan değer 1'dir. |
-| **profile_country**                | String        | Adapty tarafından profil IP'sine göre belirlenir.            |
-| **profile_event_id**               | UUID          | Tekilleştirme için kullanılabilecek benzersiz etkinlik ID'si. |
-| **profile_has_access_level**       | Boolean       | Profilin aktif bir access level'a sahip olup olmadığını gösteren boolean değer. |
-| **profile_id**                     | UUID          | Adapty dahili kullanıcı profil ID'si.                        |
-| **profile_ip_address**             | String        | Profil IP'si (IPv4 veya IPv6 olabilir; mevcut olduğunda IPv4 tercih edilir). [Uygulama ayarlarında](https://app.adapty.io/settings/general) **Collect users' IP addresses** devre dışıysa `null`. |
-| **profile_total_revenue_usd**      | Float         | Profil için iadeler dahil toplam gelir.                      |
-| **purchase_date**                  | ISO 8601 date | Ürün satın alma tarihi ve saati.                             |
-| **renewed_at**                     | ISO 8601 date | Ücretli erişimin mevcut döneminin en son başladığı tarih ve saat. İlk yenilemeden önce `activated_at` ile aynıdır. |
-| **starts_at**                      | ISO 8601 date | Access level'ın başladığı tarih ve saat.                     |
-| **store**                          | String        | Ürünün satın alındığı mağaza. Standart değerler: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Sunucu tarafı API'yi kullanarak [özel mağaza işlemleri](api-adapty/operations/setTransaction) ayarlarsanız, **store** parametresindeki değer kullanılır. |
-| **store_country**                  | String        | Uygulama mağazası tarafından Adapty'e gönderilen ülke.       |
-| **subscription_expires_at**        | ISO 8601 date | Aboneliğin sona erme tarihi. Bu etkinlikte `expires_at` ile aynı değeri içerir: ek süre boyunca ek sürenin bitiş anını; iade veya iptal sonrasında iptal tarihini. |
-| **transaction_id**                 | String        | Bir işlem için benzersiz tanımlayıcı.                        |
-| **trial_duration**                 | String        | Deneme süresinin gün cinsinden süresi (örneğin "7 days").    |
-| **variation_id**                   | UUID          | Satın almaları bu paywall'a atfetmek için kullanılan varyant tanımlayıcısı. |
-| **vendor_product_id**              | String        | <p>Mağazadaki ürün ID'si (Apple/Google/Stripe).</p><p>Erişim gerçek bir mağaza işlemi olmadan sağlandıysa `vendor_product_id` şunlardan biri olur:</p><ul><li>`adapty_server_side_product` — [sunucu tarafı API](api-adapty/operations/grantAccessLevel) aracılığıyla sağlandı.</li><li>`adapty_dashboard_product` — Adapty Kontrol Paneli'nde [manuel olarak sağlandı](give-access-level-to-specific-customer).</li><li>`adapty_promotion` — eski sürüm.</li></ul> |
-| **will_renew**                     | Boolean       | Ücretli access level'ın yenilenip yenilenmeyeceğini gösterir. |
+| **ab_test_id** | UUID | İşlemin kaynaklandığı A/B testinin ID'si. Bkz. [Flow ve A/B testi alanları](#flow-and-ab-test-fields). |
+| **ab_test_name** | String | İşlemin kaynaklandığı A/B testinin adı. Çapraz placement A/B testi için, bir placement'taki testin adı (`<test adı> child-N`). |
+| **ab_test_parent_name** | String | Çapraz placement A/B testinin adı. Yalnızca çapraz placement A/B testlerinde bulunur. |
+| **ab_test_variant_id** | UUID | İşlemin kaynaklandığı A/B testi varyantının ID'si. |
+| **ab_test_variant_name** | String | A/B testi varyantının adı. |
+| **access_level_id** | String | Access level'ın ID'si. |
+| **activated_at** | ISO 8601 date | Erişimin en son etkinleştirildiği tarih ve saat. |
+| **active_introductory_offer_type** | String | Uygulanan başlangıç teklifinin türü. Olası değerler: `free_trial`, `pay_as_you_go` ve `pay_up_front`. |
+| **active_promotional_offer_id** | String | Adapty Kontrol Paneli'nin Ürün bölümünde belirtilen promosyon teklifinin ID'si. |
+| **active_promotional_offer_type** | String | Uygulanan promosyon teklifinin türü. Olası değerler: `free_trial`, `pay_as_you_go` ve `pay_up_front`. |
+| **base_plan_id** | String | Google Play Store'daki [temel plan ID'si](https://support.google.com/googleplay/android-developer/answer/12154973) veya Stripe'taki [fiyat ID'si](https://docs.stripe.com/products-prices/how-products-and-prices-work#use-products-and-prices). |
+| **billing_issue_detected_at** | ISO 8601 date | Ödeme sorununun tarih ve saati. |
+| **cancellation_reason** | String | Olası iptal nedenleri: `voluntarily_cancelled`, `billing_error`, `price_increase`, `product_was_not_available`, `refund`, `cancelled_by_developer`, `new_subscription_replace`, `upgraded`, `unknown`, `adapty_revoked`. |
+| **cohort_name** | String | Profilin ait olduğu kitlenin adı. |
+| **currency** | String | Yerel para birimi (varsayılan: USD). |
+| **developer_id** | String | İşlemin kaynaklandığı placement'ın ID'si. |
+| **environment** | String | Olası değerler: `Sandbox` veya `Production`. |
+| **event_datetime** | ISO 8601 date | Olayın tarih ve saati. |
+| **expires_at** | ISO 8601 date | <p>Erişimin sona erdiği tarih ve saat. Adapty, `is_active` değerini bu alandan hesaplar.</p><p>Ek süre boyunca ek sürenin bitişini; iade veya iptalden sonra ise iptal tarihini tutar. Ek süre bitişi için ayrı bir alan yoktur.</p> |
+| **flow_id** | UUID | İşlemin kaynaklandığı flow'un ID'si. |
+| **flow_name** | String | İşlemin kaynaklandığı flow'un adı. |
+| **flow_variation_id** | UUID | Bu placement'taki flow varyantının ID'si; SDK'daki `flow.variationId` ile aynıdır. |
+| **is_active** | Boolean | Access level'ın aktif olup olmadığını gösteren boolean. Olay oluşturulurken `expires_at` (`starts_at` ve `is_lifetime` ile birlikte) kullanılarak hesaplanır. |
+| **is_in_grace_period** | Boolean | Profilin ek sürede olup olmadığını gösteren boolean. `true` iken `expires_at`, ek sürenin bitişini tutar. |
+| **is_lifetime** | Boolean | Access level'ın süresiz olup olmadığını gösteren boolean. |
+| **is_refund** | Boolean | İşlemin iade olup olmadığını gösteren boolean. |
+| **original_purchase_date** | ISO 8601 date | Yinelenen abonelikler için orijinal satın alma, zincirdeki ilk işlemdir; orijinal işlem ID'si olarak adlandırılan bu ID yenileme zincirini birbirine bağlar; sonraki işlemler bunun uzantısıdır. Orijinal satın alma tarihi, bu ilk işlemin tarih ve saatidir. |
+| **original_transaction_id** | String | <p>Yinelenen abonelikler için, yenileme zincirini birbirine bağlayan orijinal işlem ID'sidir. Orijinal işlem zincirdeki ilkidir; sonraki işlemler bunun uzantısıdır.</p><p>Uzantı yoksa `original_transaction_id`, store_transaction_id ile eşleşir.</p>Orijinal satın almanın işlem tanımlayıcısı. |
+| **paywall_name** | String | İşlemin kaynaklandığı paywall'un adı. Bir flow için paywall ekranının ID'si (`scr_...`). |
+| **paywall_revision** | String | İşlemin kaynaklandığı paywall'un revizyonu. Varsayılan değer 1'dir. |
+| **profile_country** | String | Adapty tarafından profil IP'sine göre belirlenir. |
+| **profile_event_id** | UUID | Tekilleştirme için kullanılabilecek benzersiz olay ID'si. |
+| **profile_has_access_level** | Boolean | Profilin aktif bir access level'a sahip olup olmadığını gösteren boolean. |
+| **profile_id** | UUID | Adapty dahili kullanıcı profil ID'si. |
+| **profile_ip_address** | String | Profil IP'si (IPv4 veya IPv6 olabilir; IPv4 mevcut olduğunda tercih edilir). [Uygulama ayarlarında](https://app.adapty.io/settings/general) **Collect users' IP addresses** devre dışıysa `null`. |
+| **profile_total_revenue_usd** | Float | Profil için iadeler dahil toplam gelir. |
+| **purchase_date** | ISO 8601 date | Ürün satın alma tarihi ve saati. |
+| **renewed_at** | ISO 8601 date | Mevcut ücretli erişim döneminin en son başladığı tarih ve saat. İlk yenilemeden önce `activated_at` ile eşleşir. |
+| **starts_at** | ISO 8601 date | Access level'ın başladığı tarih ve saat. |
+| **store** | String | Ürünün satın alındığı mağaza. Standart değerler: **app_store**, **play_store**, **stripe**, **paddle**. <br/>Sunucu taraflı API ile [özel mağaza işlemleri](api-adapty/operations/setTransaction) ayarladıysanız **store** parametresindeki değer kullanılır. |
+| **store_country** | String | Uygulama mağazası tarafından Adapty'ye gönderilen ülke. |
+| **subscription_expires_at** | ISO 8601 date | Aboneliğin sona erme tarihi. Bu olayda `expires_at` ile aynı değeri tutar: ek süre boyunca ek sürenin sonu; iade veya iptalden sonra iptal tarihi. |
+| **transaction_id** | String | İşlem için benzersiz tanımlayıcı. |
+| **trial_duration** | String | Deneme süresinin gün cinsinden uzunluğu (ör. "7 days"). |
+| **variation_id** | UUID | Satın almaları bu paywall'a atfetmek için kullanılan varyasyon tanımlayıcısı. Bir flow için, A/B testi varyantı değil, flow içindeki paywall ekranının ID'si. |
+| **vendor_product_id** | String | <p>Mağazadaki ürün ID'si (Apple/Google/Stripe).</p><p>[12 aylık taahhüt planı](app-store-12-month-commitment) için değer `<product_id>:monthly` şeklindedir.</p><p>Gerçek bir mağaza işlemi olmadan erişim verilmişse `vendor_product_id` şunlardan biri olur:</p><ul><li>`adapty_server_side_product` — [sunucu taraflı API](api-adapty/operations/grantAccessLevel) aracılığıyla verilmiş.</li><li>`adapty_dashboard_product` — Adapty Kontrol Paneli'nde [manuel olarak verilmiş](give-access-level-to-specific-customer).</li><li>`adapty_promotion` — eski sürüm.</li></ul> |
+| **will_renew** | Boolean | Ücretli access level'ın yenilenip yenilenmeyeceğini gösterir. |
 
 :::warning
 Bu yapının zamanla büyüyebileceğini unutmayın — biz veya birlikte çalıştığımız üçüncü taraflar tarafından yeni veriler eklenebilir. Bu yapıyı işleyen kodunuzun yeterince sağlam olduğundan ve tüm yapıya değil, belirli alanlara dayandığından emin olun.

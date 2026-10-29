@@ -16,9 +16,11 @@ Firebase プロジェクトと、それにリンクされた Google Analytics �
 購入と返金のイベントは、収益、通貨、プロダクトの詳細を付加した状態で届きます。同じデータが Firebase のモバイルツール（Audiences、Remote Config など）と Google Analytics のレポートに反映されます。
 
 これはアナリティクス連携であり、Google 広告のアトリビューションツールではありません。詳しくは[制限事項](#limitations)をご覧ください。
+
 ## このインテグレーションでできること \{#what-you-can-do-with-this-integration\}
 
 Adapty はユーザーを `subscription_state`（`subscribed`、`active_trial`、`never_subscribed` など）でグループ化し、サブスクリプションのライフサイクルイベントを Firebase および Google Analytics に転送します。
+
 - **オーディエンス**: Firebase と Google Analytics でサブスクライバーオーディエンスを作成し、外部チャネルに活用 — Google Ads リターゲティング、FCM キャンペーン、類似ユーザーモデリング。
 - **Google Ads コンバージョン** *(Google Analytics)*: `purchase` および `refund` を Google Ads のコンバージョン目標として使用。
 - **Firebase Remote Config**: アプリを更新せずに利用制限、コピー、機能フラグを変更 — サブスクリプション状態を条件として設定。（フロー/ペイウォールのコンテンツを設定する [Adapty リモートコンフィグ](customize-paywall-with-remote-config) とは異なります。）
@@ -27,14 +29,18 @@ Adapty はユーザーを `subscription_state`（`subscribed`、`active_trial`�
 - **コンバージョンファネル** *(Google Analytics)*: ユーザーがコンバージョンまたはチャーンに至る前にアプリ内で何を行ったか確認。
 - **予測**: 購入履歴を使ってチャーンや支出を予測。
 - **A/B テスト**: サブスクライバーコホートを対象にアプリ機能をテスト — たとえば、トライアルユーザーに新しいナビゲーションパターンを展開してセッション長を計測。（ペイウォールのバリアントには [Adapty A/B テスト](ab-tests) を使用してください。）
+
 ## インテグレーションの仕組み \{#how-the-integration-works\}
+
 1. ユーザーが初めてアプリを開くと、Firebase SDK はインストールに対して一意の識別子（**Firebase App Instance ID**）を生成します。Firebase と Google Analytics はこの ID を使って、各イベントの発生元となるインストールを特定します。
 2. アプリは Firebase App Instance ID を Adapty の SDK に渡します。Adapty はユーザーのプロファイルをこの Firebase インストールに紐づけます。
 3. ユーザーが購入を行うと、Adapty のサーバーは Firebase App Instance ID を付与したうえで、イベントを Firebase にサーバー間通信で転送します。このデータのやり取りはアプリの外部で行われます。
 4. Firebase は購入をインストールと照合するため、ユーザーがアプリ内で行ったその他のアクティビティと並べて購入状況を確認できます。
+
 :::note
 Firebase App Instance ID はデバイス固有の情報です。同じ Adapty ユーザーが別のデバイスでアプリを開くと、新しい Firebase ID が以前の ID を上書きします。デバイスをまたいでユーザーを特定し続けるには、[カスタマーユーザー ID](identifying-users) を使用してください。
 :::
+
 ### Web購入（StripeおよびPaddle） \{#web-purchases-stripe-and-paddle\}
 
 StripeまたはPaddleの購入がFirebaseに連携されるのは、購入者がモバイルアプリを**先に**起動した場合のみです。Web購入が発生する**前に**、Firebase App Instance IDが設定されている必要があります。
@@ -44,18 +50,21 @@ App StoreおよびPlay Storeの購入では、この処理は自動的に行わ�
 Stripe と Paddle の購入はアプリ外（ウェブ）で発生します。モバイルアプリは起動時に `setIntegrationIdentifier` を呼び出す必要があります — ウェブ購入が実行される前に。そうしないと、Adapty には紐付けるIDがなく、購入が Firebase に届きません。
 
 ### 制限事項 \{#limitations\}
+
 - **Google Ads のアトリビューションツールではありません。** このインテグレーションは Adapty イベントを Firebase および Google Analytics に送信するためのものです。Google Ads キャンペーン（UAC / ユニバーサルアプリキャンペーン）へのアプリインストールのアトリビューションや、有料トラフィックとオーガニックトラフィックの区別には対応していません。インストールのアトリビューションには、Adapty の組み込み機能である [Adapty アトリビューション](adapty-user-acquisition) をご利用ください。
 - **過去のイベントはユーザーの初回起動時に Firebase に届きます。** Adapty は、インテグレーションを有効化する前に処理したイベントを再送信しません。ただし、既存のサブスクライバーが Adapty SDK を含むビルドを初めて起動した場合、Adapty はそのユーザーのストア履歴全体を取り込み、通常のイベントと同様に転送します。Firebase は初回購入、更新、トライアルコンバージョン、買い切り購入をすべて GA4 の `purchase` イベントにマッピングするため、Adapty は遡及された更新をそれぞれ収益付きで送信します。（過去のデータは Adapty の [S3](s3-exports) / [GCS](google-cloud-storage) エクスポートにも保存されていますが、Firebase へのインポートはこのインテグレーションの対象外です。）
 - **Web のみの購入者は Firebase に届きません。** Adapty はモバイルアプリが設定した Firebase App Instance ID を使って購入を Firebase に転送します。アプリをインストールしていない購入者には ID がないため、その購入は Firebase に届きません。詳細は上記の [Web 購入（Stripe と Paddle）](#web-purchases-stripe-and-paddle) をご覧ください。Web トラッキングには [FunnelFox の Firebase インテグレーション](https://funnelfox.com/docs/integrations/subscription-management/adapty) または Google Analytics の Web データストリームの利用を検討してください。
 - **Web 購入はストア固有の制限を継承します。** 詳細は [Stripe インテグレーションの制限事項](stripe#current-limitations) および [Paddle インテグレーションの制限事項](paddle#current-limitations) をご覧ください。
 
 ## セットアップ手順 \{#setup-instructions\}
+
 ### Firebase を設定する \{#configure-firebase\}
 
 1. [Firebase Console](https://console.firebase.google.com/) を開き、プロジェクトを選択または作成します。サンドボックスイベントを本番のアナリティクスに混入させないために、開発ビルド用には別の Firebase プロジェクトを使用してください。
 2. プロジェクトを Google Analytics プロパティにリンクします。Firebase ではプロジェクト作成時にリンクを促しますが、後から **Project settings** > **Integrations** > **Google Analytics** で追加することもできます。
 
     <ZoomImage id="firebase-analytics-integration-settings.webp" width="700px" alt="Adapty ダッシュボードの Firebase インテグレーション設定ページ" />
+
 3. **Project settings** > **General** > **Your apps** で、リリースするプラットフォーム（iOS / Android / Web）ごとにエントリを追加します。Stripe と Paddle の場合は Web アプリのエントリを追加してください（どちらもネイティブアプリタイプはありません）。各エントリには一意の **Firebase App ID** と、Google Analytics 上の対応するデータストリームが生成されます。セットアップ時に、この ID を Adapty の Firebase インテグレーション設定に貼り付けます。
 
     <ZoomImage id="firebase-app-id.webp" width="700px" alt="Firebase Console showing the App ID for an iOS app entry" />
@@ -68,35 +77,40 @@ Stripe と Paddle の購入はアプリ外（ウェブ）で発生します。�
 
 3. 対応する各プラットフォームの認証情報を入力します。Adapty はプラットフォームごとに **Firebase App ID** と **Google Analytics secret** の両方が必要です。各値は iOS、Android、Stripe、Paddle ごとに異なります。どちらか一方の値しか設定されていないプラットフォームからはイベントが送信されません。
 
-| Adapty ダッシュボード | Google Analytics | 確認場所 |
+   | Adapty ダッシュボード | Google Analytics | 確認場所 |
    | --- | --- | --- |
    | **Firebase App ID** | **App ID** | Firebase Console > **Project settings** > **General** > **Your apps** |
    | **Google Analytics secret** | **Measurement Protocol API secret** | Google Analytics > **Admin** > **Data streams** > **Measurement Protocol API secrets** > **Create** |
 
    <ZoomImage id="ga4-firebase-secret.webp" width="700px" alt="Google Analytics Measurement Protocol API シークレット作成画面" />
+
 4. Adapty がどのように収益とユーザーデータを転送するかを設定します。4つのコントロールはダッシュボードの1行に並んでいます：
-- **Revenue definition** ドロップダウン: 総収益、ストア手数料後の収益、または[ストア手数料と税金後の収益](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)。
+
+   - **Revenue definition** ドロップダウン: 総収益、ストア手数料後の収益、または[ストア手数料と税金後の収益](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)。
    - **Send user properties** トグル: オンにすると、イベントに `subscription_state` と `subscription_product_id` が含まれます。レポートやオーディエンスで使用するには、[レポートでサブスクリプションデータを使用する](#use-subscription-data-in-reports-and-audiences)を参照してください。
    - **Report user's currency** トグル: オンにすると、Adapty は各販売を購入者が支払った通貨で報告します。オフにすると、USD で報告します。
    - **Send trial price** トグル: トライアル開始は重要なシグナルです — 有料ユーザーの多くはトライアルから始まります。ただし、Google 広告の入札最適化は収益を持つイベントのみを対象とします。これをオンにすると、各トライアルに仮の価格が割り当てられ、Google がコンバージョンとして認識し、トライアル開始者の獲得に向けて広告費を最適化できます。オンにすると、**Trial price percentage** フィールドが表示されます。Google が各トライアルに対してサブスクリプション全額のどの割合を価値として扱うかを設定します — たとえば `50%` と設定すると、トライアル期間中はサブスクリプション価格の半額として報告されます。
 
-<ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
+   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
 
 5. Adapty のイベントを Firebase/Google Analytics のイベント名にマッピングします。Adapty では **iOS** と **Android** それぞれに独立したイベントマップを用意しているため、プラットフォームごとに異なる名前を使用できます。**Stripe および Paddle の購入には iOS のイベントマップが使用されます** — どちらにも専用のマップはありません。
 
-Google Analytics は、Measurement Protocol に厳格な制限を設けています。イベント名は40文字、ユーザープロパティ名は24文字、値は36文字が上限です。これらの制限を超えるカスタムイベントは、Google Analytics によって警告なしに破棄されます。
+    Google Analytics では、Measurement Protocol に厳格な制限が設けられています。イベント名は40文字、ユーザープロパティ名は24文字、ユーザープロパティ値は36文字、イベントパラメータ値は100文字が上限です。この制限を超えるカスタムイベントは、Google Analytics によって通知なく破棄されます。Adapty はテキスト形式のイベントパラメータ値を100文字に切り詰めて、この制限に対応しています。
 
-:::warning
-一部のイベントは、Firebase および Google Analytics の予約済みeコマース語彙（`purchase` および `refund`）を使用しています。Google 広告のコンバージョンインポート、Google Analytics の収益レポート、予測オーディエンスはこれらの正確な文字列に依存しています。これらの機能が不要な場合にのみ、デフォルト値を変更してください。
+    :::warning
+一部のイベントは、Firebase および Google Analytics で予約されている e コマースの語彙（`purchase` および `refund`）を使用しています。Google 広告のコンバージョンインポート、Google Analytics の収益レポート、および予測オーディエンスは、これらの正確な文字列に依存しています。これらの機能が不要な場合にのみ、デフォルト値を変更してください。
 :::
+
 <ZoomImage id="ios-event-map-firebase.webp" width="700px" alt="Adapty Dashboard Firebase event names configuration" />
 
 6. **Save** をクリックします。数分以内に Adapty が Firebase へのイベント転送を開始します。
+
 ### アプリコードの設定 \{#configure-your-app-code\}
 
 :::tip
 アプリに <InlineTooltip tooltip="Firebase SDK">[iOS](https://firebase.google.com/docs/ios/setup)、[Android](https://firebase.google.com/docs/android/setup)、[Flutter](https://firebase.google.com/docs/flutter/setup)、[Unity](https://firebase.google.com/docs/unity/setup)、[React Native](https://rnfirebase.io/)、[Capacitor](https://github.com/capawesome-team/capacitor-firebase)</InlineTooltip> が含まれていることを確認してください。
 :::
+
 Adaptyが各イベントに**Firebase App Instance ID**を含める必要があります。これがないとFirebaseにデータが届きません（`MISSING_INTEGRATION_ID`）。
 
 `FirebaseApp.configure()`と`Adapty.activate()`の後、Firebase SDKにApp Instance IDを問い合わせ、`setIntegrationIdentifier`経由でAdaptyに渡してください。この処理は購入フローの前に、アプリ起動ごとに1回実行してください。
@@ -108,6 +122,7 @@ Adaptyが各イベントに**Firebase App Instance ID**を含める必要があ�
 
 <Tabs groupId="sdk-version" queryString>
 <TabItem value="v4" label="Adapty SDK v4+">
+
 ```swift showLineNumbers
 
 FirebaseApp.configure()
@@ -123,6 +138,7 @@ if let appInstanceId = Analytics.appInstanceID() {
 
 </TabItem>
 <TabItem value="v3" label="Adapty SDK v3" default>
+
 ```swift showLineNumbers
 
 FirebaseApp.configure()
@@ -144,6 +160,7 @@ if let appInstanceId = Analytics.appInstanceID() {
 
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)">
+
 ```kotlin showLineNumbers
 // after Adapty.activate()
 
@@ -158,6 +175,7 @@ FirebaseAnalytics.getInstance(context).appInstanceId.addOnSuccessListener { appI
 
 </TabItem>
 <TabItem value="java" label="Android (Java)">
+
 ```java showLineNumbers
 // after Adapty.activate()
 
@@ -172,6 +190,7 @@ FirebaseAnalytics.getInstance(context).getAppInstanceId().addOnSuccessListener(a
 
 </TabItem>
 <TabItem value="flutter" label="Flutter (Dart)">
+
 ```dart showLineNumbers
 
 final appInstanceId = await FirebaseAnalytics.instance.appInstanceId;
@@ -192,6 +211,7 @@ if (appInstanceId != null) {
 
 </TabItem>
 <TabItem value="unity" label="Unity (C#)">
+
 ```csharp showLineNumbers
 using AdaptySDK;
 using Firebase.Analytics;
@@ -216,6 +236,7 @@ FirebaseAnalytics
 
 </TabItem>
 <TabItem value="rn" label="React Native (TS)">
+
 ```typescript showLineNumbers
 
 try {
@@ -230,6 +251,7 @@ try {
 
 </TabItem>
 </Tabs>
+
 ### インテグレーションを確認する \{#verify-the-integration\}
 
 イベントが正しく流れているかを確認する最も手軽な方法は、Firebase DebugView です。
@@ -239,14 +261,17 @@ try {
 3. Firebase Console > **Analytics** > **DebugView** を開きます。イベントはすべてのパラメーターとともに数秒以内に表示されます。
 
 リアルタイム、レポート、オーディエンスなどの標準レポートは、レポートの種類に応じて数分〜24時間以内に反映されます。リアルタイムで確認できるのは DebugView だけです。
+
 ## レポートやオーディエンスでサブスクリプションデータを活用する \{#use-subscription-data-in-reports-and-audiences\}
 
 **Send user properties** を Adapty ダッシュボードで有効にしてください（[Adapty の設定](#configure-adapty)、手順 4）。これを有効にしないと、Adapty は `subscription_state` や `subscription_product_id` を転送しないため、このセクションの内容は機能しません。
+
 デフォルトでは、FirebaseとGoogle Analyticsはユーザープロパティを公開しません。それぞれをカスタムディメンションとして登録することで、`subscription_state`と`subscription_product_id`がレポート、Explorations、オーディエンスで利用できるようになります。ディメンションはGoogle Analytics管理画面で設定します。FirebaseとGoogle Analyticsはバックエンドを共有しているため、両方でクエリを実行できます。
 
 有料ユーザーのGoogle Adsオーディエンスを構築したり、予測モデルへのデータ供給に役立ちます。
 
 設定が完了すると、Adaptyはそれ以降のイベントにこれらのプロパティを付与します。既存のイベントは更新されません。
+
 1. Google Analytics で **Admin** > **Custom definitions** を開きます。
     <ZoomImage id="firebase-ga4-custom-definitions.webp" width="700px" alt="Google Analytics Custom Definitions" />
 2. **Create custom dimensions** をクリックします。
@@ -254,13 +279,42 @@ try {
    - **Dimension name**：人間が読める任意の名前。例：「Subscription state」。
    - **Scope**：**User**。
    - **User property**：`subscription_state` または `subscription_product_id`。名前は完全に一致している必要があります。Google Analytics は大文字と小文字を区別します。
-   <ZoomImage id="ga4-new-custom-dimension.webp" width="500px" alt="Google Analytics 新規カスタム定義" />
+
+    <ZoomImage id="ga4-new-custom-dimension.webp" width="500px" alt="Google Analytics 新規カスタム定義" />
+
+## A/B テストとフローでイベントを分割する \{#split-events-by-ab-test-and-flow\}
+
+[A/B テスト](ab-tests)のバリアントやフローを Google Analytics で比較するには、フローおよび A/B テストのイベントパラメータを使用してください。Adapty はこれらのパラメータに値がある場合にのみ付加します。
+
+| パラメーター | 説明 |
+|---|---|
+| `ab_test_id` | A/B テストの ID。クロスプレースメント A/B テストの場合、すべてのプレースメントで同じ値になります。 |
+| `ab_test_variant_id` | A/B テストのバリアントの ID。 |
+| `ab_test_variant_name` | A/B テストのバリアントの名前。 |
+| `ab_test_parent_name` | クロスプレースメント A/B テストの名前。クロスプレースメント A/B テストの場合のみ存在します。 |
+| `flow_id` | フローの ID。 |
+| `flow_name` | フローの名前。 |
+| `developer_id` | プレースメントの ID。 |
+| `paywall_name` | ペイウォールの名前。フローの場合は、ペイウォール画面の ID（`scr_...`）。 |
+
+各フィールドの詳細については、[フローと A/B テストのフィールド](webhook-event-types-and-fields#flow-and-ab-test-fields)を参照してください。Adapty は Firebase に `flow_variation_id` を送信しません。
+
+Adapty はすべての `purchase` および `refund` イベントにこれらのパラメーターを追加します。他のイベントには、収まる場合にのみ追加されます。Google Analytics はイベントごとに最大 25 個のパラメーターを受け付けており、Adapty はイベントの他のパラメーターの後にこれらを追加します。`trial_started` やイベントマップでリネームした購入イベントなど、すでに上限に達しているイベントにはこれらは追加されません。
+
+Google Analytics のレポートでパラメータを使用するには、各パラメータを**イベント**スコープのカスタムディメンションとして登録してください。BigQuery では登録なしで使用できます。
+
+:::note
+Adapty はテキスト値を 100 文字に切り詰めます。ID は常にそれより短いですが、名前が長くなる場合があります。2 つの A/B テストまたはフローの名前の最初の 100 文字が同じ場合、Google Analytics では同じものとして表示されます。区別するには、`ab_test_id` または `flow_id` を使用してください。
+:::
+
 ## トラブルシューティング \{#troubleshooting\}
+
 ### Firebaseにイベントが表示されない \{#events-dont-appear-in-firebase\}
 
 - Firebaseアプリインスタンスの ID が、**最初の購入が行われる前**に設定されていることを確認してください。Firebase IDが設定されていないイベントはFirebaseに届かず、エラーが発生します。
 - Firebase ConsoleでリンクされているGoogle Analyticsプロパティがデータストリームと一致していることを確認してください。
 - Adaptyに設定した認証情報（IDとシークレット）がプラットフォームと一致していることを確認してください。
+
 ### `access_level_updated` がイベントフィードで失敗と表示される \{#access-level-updated-shows-as-failed-in-the-event-feed\}
 
 <AccessLevelUpdatedEventFeed />
@@ -268,13 +322,17 @@ try {
 ### サンドボックスイベントが本番データを汚染する \{#sandbox-events-pollute-production-data\}
 
 Adapty はサンドボックスと本番のトランザクションを同じ Firebase プロジェクトに転送します。[Firebase の設定](#configure-firebase) を参照してください — 開発ビルド用に別の Firebase プロジェクトを使うことで、この問題を完全に回避できます。
+
 ### StoreKit 2 アプリでは Firebase が収益を過小計上する \{#firebase-undercounts-revenue-for-storekit-2-apps\}
 
 Firebase は StoreKit 1 のすべての購入に対して `in_app_purchase` イベントを自動ログに記録します — コード不要です。StoreKit 2 は異なる API を使用しており、Firebase はそれらのトランザクションを認識できません。
 
 その影響として、別の収益パイプラインを持たない SK2 中心のアプリでは、Firebase・Google Analytics・下流のすべての Google 広告キャンペーンで収益が半分以下に過小報告されます。入札の最適化は誤った数値に基づいて動作し、収益レポートには実態の半分しか表示されません。
+
 修正方法：`firebase_app_instance_id` を Adapty に渡してください（[アプリコードの設定](#configure-your-app-code)を参照）。Adapty は Measurement Protocol を通じて、収益・通貨・プロダクトを含むすべての購入データを転送します。
+
 ### Adapty アナリティクスと Firebase の数値が一致しない \{#adapty-analytics-and-firebase-numbers-diverge\}
+
 - **StoreKit 2**: 最も大きな原因です。[Firebase が StoreKit 2 アプリの収益を過少計上する](#firebase-undercounts-revenue-for-storekit-2-apps)をご覧ください。
 - **SDK の導入状況**: Firebase は、Firebase App Instance ID を送信するアプリからのイベントのみをカウントします。古いアプリバージョンはその呼び出しを行いません。Adapty はそれらのユーザーもカウントしますが、Firebase はカウントしません。
 - **サンドボックスイベント**: Adapty はサンドボックストランザクションも Firebase に転送します。開発ビルドを分離するために、別の Firebase プロジェクトを使用してください。

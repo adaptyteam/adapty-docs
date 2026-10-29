@@ -1,0 +1,254 @@
+---
+title: "A/B testlerini CLI'dan çalıştırın"
+description: "Adapty CLI ile terminalden paywall ve flow A/B testleri oluşturun, başlatın, durdurun, değiştirin ve arşivleyin; geri alınamaz her adımdan önce tam etkisini görün."
+metadataTitle: "Geliştirici CLI'da A/B Testleri | Adapty Dokümanları"
+---
+
+Adapty CLI, `adapty ab-tests` komutu altında terminalden paywall veya flow'ların standart [A/B testlerini](ab-tests) çalıştırır. Bir testi taslak olarak oluşturabilir, bir placement üzerinde tek bir kitle için başlatabilir, kazananı belirleyerek durdurabilir, canlı bir testi değiştirilmiş biriyle değiştirebilir ve eski testleri arşivleyebilirsiniz.
+
+Bir AI ajanının testlerinizi çalıştırmasına izin vermek, birkaç uygulama genelinde bir testi komut dosyasıyla yönetmek ya da kontrol panelini açmadan bir testi başlatmak veya durdurmak için kullanın.
+
+Düzenli bir test, bir placement'taki bir kitlenin kullanıcılarını iki veya daha fazla paywall arasında ya da iki veya daha fazla flow arasında böler. Testi birkaç placement genelinde çalıştırmak için kontrol panelindeki [crossplacement testi](ab-test-types) kullanın. `ab-tests` komutları test sonuçlarını döndürmez. En iyi olma olasılığı gibi sonuçları görmek için kontrol panelini kullanın: [A/B testi sonuçları ve metrikleri](results-and-metrics). Bir testin kullanıcılarına ait analizleri okumak için [analiz komutlarını](developer-cli-analytics) `adapty analytics catalog` içindeki **A/B tests** boyutuna göre filtreleyin.
+
+## Başlamadan önce \{#before-you-start\}
+
+`ab-tests` konusu, CLI'ın geri kalanıyla aynı kurulum ve girişi kullanır. Bunu henüz yapmadıysanız, [hızlı başlangıç kılavuzundaki](developer-cli-quickstart) 1. ve 2. adımları takip edin. Bu konu için CLI sürüm 0.14.0 veya üstü gereklidir. Sürümünüzü görmek için şunu çalıştırın: `adapty --version`.
+
+Her komut, `--app` parametresinde uygulamanın UUID'sini alır. Bunu bulmak için şunu çalıştırın:
+
+```bash
+adapty apps list
+```
+
+Bir test, zaten mevcut olan içerikleri kullanır:
+
+- **Flow'lar**: Bir flow, yalnızca yayınlandığında teste dahil edilir. Taslak hâlindeki veya yayınlanmamış değişiklikler içeren bir flow reddedilir. Bir flow'u yayınlamak için `adapty flows publish` komutunu çalıştırın.
+- **Paywall'lar**: Adapty'de zaten bulunan ürünlerden bir paywall oluşturmak için `adapty paywalls create` komutunu çalıştırın. Bir paywall'a yeni bir tasarım vermek için [Paywall Builder](adapty-paywall-builder) aracını kullanın.
+- **Placement'lar**: Bir paywall testi, paywall placement'ı üzerinde; bir flow testi ise flow placement'ı üzerinde çalışır. Bir placement oluşturmak için `adapty placements create` komutunu çalıştırın. Uygulamanızın kodu o placement'ı getirene kadar yeni bir placement'tan herhangi bir şey gösterilmez.
+- **Segment'ler**: Testi yalnızca belirli kullanıcılar için çalıştırmak istiyorsanız önce `adapty segments create` komutuyla bir [segment](segments) oluşturun.
+
+Bu komutlar için [komut referansına](developer-cli-reference) bakın.
+
+## Testleri listele ve oku \{#list-and-read-tests\}
+
+`list` komutu, `--type paywall` geçmediğiniz sürece flow testlerini gösterir. Bir uygulamanın tüm testlerini görmek için her tür için ayrı çalıştırın:
+
+```bash
+adapty ab-tests list --app <app-id> --type flow --page-size 100
+```
+
+```bash
+adapty ab-tests list --app <app-id> --type paywall --page-size 100
+```
+
+Bir test şu durumlardan birinde olabilir: `draft`, `live`, `completed`, `inactive` veya `archived`.
+
+Bir testin kollarıyla birlikte tamamını okumak için şunu çalıştırın:
+
+```bash
+adapty ab-tests get --app <app-id> <test-id>
+```
+
+`get --json` komutunda `segment_ids`, testin kitlesini belirtir: `[]` Tüm kullanıcılar anlamına gelir, `null` ise henüz kitle planlanmadığı anlamına gelir. Her kolun `weight` değeri ve paywall ya da flow ID'si bulunur. Bir kolu tanımlamak için `paywall_title` veya `flow_name` kullanın. Kolun `title` değeri, siz ayarlamadıkça boş kalır.
+
+## Test oluşturma \{#create-a-test\}
+
+Yeni bir test taslak olarak oluşturulur. Hiçbir kullanıcı taslağı görmez, dolayısıyla istediğiniz zaman taslak oluşturabilir ve düzenleyebilirsiniz.
+
+1. Test etmek istediğiniz içeriklerin ID'lerini `adapty paywalls list` veya `adapty flows list` komutuyla **bulun**.
+
+2. İki veya daha fazla kol içeren **taslağı oluşturun**. Her kol, bir paywall veya flow ile bir ağırlıktan oluşur. Ağırlık, o kolu görecek kullanıcıların yüzdesidir ve tüm ağırlıkların toplamı 100 olmalıdır:
+
+   ```bash
+   adapty ab-tests create --app <app-id> --title "Annual vs monthly" \
+     --goal "More revenue per user" --placement <placement-id> \
+     --paywalls '[{"paywall_id":"<paywall-a>","weight":50},{"paywall_id":"<paywall-b>","weight":50}]'
+   ```
+
+   `--placement` zorunludur. Paywall testi için bir paywall placement, flow testi için ise bir flow placement gerekir. Flow testi için her kolda `flow_id` ile birlikte `--flows` parametresini kullanın. Bir kolun ayrıca `"title":"A"` gibi bir `title` değeri de olabilir.
+
+3. **Taslağı inceleyin** `ab-tests get` komutuyla.
+
+Bir taslağın placement'ı yalnızca planlanmış durumdadır. `create` komutu, `--segment` veya `--all-users` ile planlanmış bir kitle de alabilir. Bu planlanmış değerlerin kullanıcılar üzerinde hiçbir etkisi yoktur. Testi başlatırken placement ve kitleyi `start` komutuna tekrar geçin.
+
+## Bir test başlat \{#start-a-test\}
+
+:::warning
+Başlatmayı geri alamazsınız. Test başladığı andan itibaren, belirlediğiniz kitledeki kullanıcılar mevcut paywall'larını veya flow'larını görmez.
+:::
+
+Bir taslağı başlatmak için placement ve bir kitle belirtin: `--all-users` ya da `--segment` ile birlikte bir segment ID'si:
+
+```bash
+adapty ab-tests start --app <app-id> <test-id> --placement <placement-id> --segment <segment-id>
+```
+
+CLI, herhangi bir şey göndermeden önce başlatmanın ne yapacağını yazdırır ve `Apply? [y/N]` diye sorar. Testin nerede çalışacağı, placement'ın kitlesine göre belirlenir:
+
+- **Placement'in bu segment için bir kitlesi var** (veya Tüm kullanıcılar için): Test o kitle üzerinde çalışır. Şu anda orada çalışan bir test durur ve `completed` durumuna geçer.
+- **Placement'in bu segment için kitlesi yok**: `start` komutu, placement'e en yüksek öncelikli yeni bir kitle ekler. Şu anda başka bir kitleyle eşleşen bu segmentteki kullanıcılar teste taşınır.
+
+Teste başka bir kitleye göre daha düşük öncelik vermek için, önce segmenti o öncelikte bir kitle olarak ekleyin. Bu kullanıcıların şu an gördüğü paywall veya flow'u verin, ardından testi o kitle üzerinde başlatın. Bkz. [Kitle önceliğini değiştirme](change-audience-priority).
+
+Bir segment kitlesindeki değişikliğin tüm kullanıcılara ulaşması 20 dakika kadar sürebilir.
+
+Yalnızca taslak hâlindeki bir test başlatılabilir. Testi yeniden çalıştırmak için yeni bir tane oluşturun: eski testi `get` ile okuyun, ardından aynı kollarla `create` ile yeni bir test oluşturun.
+
+## Bir testi değiştirme \{#change-a-test\}
+
+`update` komutu testi baştan sona tekrar gönderir. Her seferinde `--placement` dahil tüm flag'leri belirtmen gerekir. Bir flag'i atlarsan Adapty o değeri temizler: örneğin hedef veya planlanan kitle.
+
+```bash
+adapty ab-tests update --app <app-id> <test-id> --title "Annual vs monthly, Q4" \
+  --goal "More revenue per user" --placement <placement-id> \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":70},{"paywall_id":"<paywall-b>","weight":30}]'
+```
+
+Canlı bir testte `update` yalnızca başlık ve hedefi değiştirir. Kolları, placement'ı ve kitleyi `get`'in döndürdüğü şekilde iletmelisiniz; farklı kollar veya başka bir placement reddedilir. Test başlangıç zamanını korur ve kullanıcılar kendi kollarında kalmaya devam eder. Tamamlanmış veya arşivlenmiş bir testi değiştiremezsiniz.
+
+Canlı bir testin kollarını veya ağırlıklarını değiştirmek için testi değiştirin. `replace`, kontrol panelindeki **Modify** eylemidir:
+
+```bash
+adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" \
+  --placement <placement-id> \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":80},{"paywall_id":"<paywall-b>","weight":20}]'
+```
+
+Canlı test durur ve `completed` durumuna geçer; sonuçları kendi ID'siyle saklanır. Aynı kitle üzerinde yeni bir ID ile yeni bir test başlar ve Adapty, kitledeki her kullanıcıyı yeniden bir kola atar. `--placement` parametresinde farklı bir placement belirtirseniz Adapty, kitleyi o placement'a taşır. Tüm kullanıcılar testini taşıyamazsınız.
+
+## Testi Durdurma \{#stop-a-test\}
+
+`stop` testi bitirir. Test kitlesindeki kullanıcıların bundan sonra ne göreceğini siz belirlersiniz. Aşağıdaki flag'lerden tam olarak birini geçin:
+
+| Flag | Durdurmadan sonra |
+|---|---|
+| `--winner <id>` | Kitlenin tamamı testin bir kolunu görür. Kolun paywall ID'sini veya flow ID'sini geçin. |
+| `--other <id>` | Kitlenin tamamı, testte yer almayan ve testle aynı türde bir paywall veya flow görür. |
+| `--no-content` | Kitle placement'tan çıkar; bu kullanıcılar eşleştikleri bir sonraki kitleye geçer. "All users" testi için kabul edilmez. |
+
+```bash
+adapty ab-tests stop --app <app-id> <test-id> --winner <paywall-b>
+```
+
+Test, `completed` durumuna geçer. Aynı kolları tekrar test etmek için [Bir test başlat](#start-a-test) bölümünde açıklandığı gibi yeni bir test oluşturun. Kazananı seçmek için [A/B testi sonuçları ve metrikler](results-and-metrics) bölümüne bakın.
+
+## Testi arşivle \{#archive-a-test\}
+
+Yayında olmayan herhangi bir testi arşivleyebilirsiniz. Yayındaki bir testi arşivlemek için önce durdurmanız gerekir. Arşivlenmiş bir testi geri yükleyemezsiniz.
+
+```bash
+adapty ab-tests archive --app <app-id> <test-id>
+```
+
+## Betiklerde ve ajanlarda onay \{#confirmation-in-scripts-and-agents\}
+
+`start`, `stop`, `replace` ve `archive` işlemleri geri alınamaz; bu nedenle her biri bir şey göndermeden önce etkisini gösterir. Onay isteme şekli, komutun nasıl çalıştırıldığına bağlıdır:
+
+| Komutun nasıl çalıştırıldığı | Ne olur |
+|---|---|
+| Terminalde | CLI etkiyi yazdırır ve `Apply? [y/N]` diye sorar. `y` veya `yes` yanıtı verirseniz CLI isteği gönderir. Başka bir yanıt verilirse CLI, kod 1 ile çıkar ve hiçbir şey göndermez. |
+| `--yes` ile | CLI, sormadan isteği gönderir. |
+| `--json` ile, bir pipe içinde veya terminal yokken | CLI hiçbir şey göndermez ve kod 6 ile çıkar. Hata mesajı etkiyi açıklar. |
+
+Böylece bir script ya da agent, bir komutun etkisini önce okuyabilir: `--yes` olmadan çalıştırır, mesajı okur ve yalnızca biri o etkiyi onayladıktan sonra `--yes` ile tekrar çalıştırır.
+
+## Hatalar \{#errors\}
+
+| Çıkış kodu | Neden | Ne yapmalı |
+|---|---|---|
+| 1 | Prompt'ta `y` dışında bir şey girdiniz. Hiçbir şey gönderilmedi. | Göndermek istiyorsanız komutu tekrar çalıştırın. |
+| 2 | CLI, göndermeden önce girişi reddetti: geçersiz bir UUID, JSON dizisi olmayan kollar, ID'si veya tam sayı ağırlığı olmayan bir kol, `--paywalls` ve `--flows`'un ikisinin birden ya da hiçbirinin belirtilmemesi veya iki durdurma seçeneği. | Mesajın adını verdiği flag'i düzeltin. |
+| 3 | Giriş yapmadınız ya da Adapty kullanıcınızın uygulamaya erişimi yok. | `adapty auth login` ile giriş yapın ve uygulama ID'sini `adapty apps list` üzerinden bulun. |
+| 4 | Adapty isteği reddetti. Mesaj, nedeni belirtiyor. | [Adapty'den Gelen Mesajlar](#messages-from-adapty) bölümüne bakın. |
+| 5 | CLI, Adapty'ye ulaşamadı. | İnternet bağlantınızı kontrol edin ve komutu tekrar çalıştırın. |
+| 6 | Geri alınamaz bir komut `--yes` olmadan ve cevap verecek kimse yokken çalıştırıldı. Hiçbir şey gönderilmedi. | Mesajdaki etkiyi okuyun, ardından komutu `--yes` ile tekrar çalıştırın. |
+| 130 | Prompt'ta Ctrl+C'ye bastınız. Hiçbir şey gönderilmedi. | — |
+
+### Adapty'den Gelen Mesajlar \{#messages-from-adapty\}
+
+| Mesaj | Ne yapmalı |
+|---|---|
+| `The sum of the weights must equal 100, but has N.` | Ağırlıkların toplamı 100 olacak şekilde değiştirin. |
+| `Flow(<id>) must be published before adding to AB test.` | Flow'u yayınlayın, ardından komutu tekrar çalıştırın. |
+| `Paywalls cannot be changed in non-draft ab tests.` veya `Placement cannot be changed in non-draft ab tests.` | Kolları ve placement'ı `get` komutunun döndürdüğü şekilde iletin ya da `replace` kullanın. |
+| `AB Test from default audience can not be stopped.` | Tüm kullanıcılar testinin durdurulduktan sonra bir paywall veya flow'a ihtiyacı var: `--winner` ya da `--other` kullanın. |
+| `AB Test to stop must be live.` | Yalnızca yayındaki bir test durdurulabilir veya değiştirilebilir. |
+| `Live Ab Test can not be deleted.` | Arşivlemeden önce testi durdurun. |
+
+## Komut referansı \{#command-reference\}
+
+Her komut, `adapty apps list` komutundan alınan uygulama UUID'si için `--app` parametresini alır. `list` dışındaki her komut, test kimliğini argüman olarak alır.
+
+### `ab-tests list`
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--type` | Hayır | `flow` (varsayılan) veya `paywall`. |
+| `--state` | Hayır | `live`, `draft`, `completed`, `inactive` veya `archived`. |
+| `--placement` | Hayır | Yalnızca bu placement'a ait testler (ID). Birden fazla placement için bayrağı tekrarlayın. |
+| `--segment` | Hayır | Yalnızca tam olarak bu segment için çalışan testler (ID). Birden fazla segment için bayrağı tekrarlayın. |
+| `--search` | Hayır | Yalnızca başlığı bu metni içeren testler. |
+| `--page` | Hayır | Sayfa numarası. Varsayılan: 1. |
+| `--page-size` | Hayır | Sayfa başına test sayısı, en fazla 100. Varsayılan: 20. |
+
+### `ab-tests get`
+
+Testin kollarıyla birlikte testi döndürür. Başka flag almaz.
+
+### `ab-tests create`
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--title` | Evet | Test başlığı. |
+| `--paywalls` | İkisinden biri | JSON formatında paywall testi kolları: `[{"paywall_id":"<id>","weight":50,"title":"A"}, …]`. `title` isteğe bağlıdır. |
+| `--flows` | İkisinden biri | JSON formatında flow testi kolları; `paywall_id` yerine `flow_id` kullanılır. |
+| `--goal` | Hayır | Testin neyi ölçmeyi hedeflediği. |
+| `--placement` | Evet | Testin planlandığı placement (ID). Paywall testi bir paywall placement'ı, flow testi ise bir flow placement'ı gerektirir. |
+| `--segment` | Hayır | Testi belirli bir segment için planlar (ID). `--all-users` ile birlikte kullanılamaz. |
+| `--all-users` | Hayır | Testi tüm kullanıcılar için planlar. |
+
+### `ab-tests update`
+
+`create` ile aynı flag'leri alır ve `--placement` zorunludur. Dışarıda bıraktığınız bir flag temizlenir. Canlı bir testte yalnızca `--title` ve `--goal` değiştirilebilir. Aynı placement ve kitleyi tekrar geçirin.
+
+### `ab-tests start`
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--placement` | Evet | Testin çalıştırılacağı placement (ID). |
+| `--segment` | İkisinden biri | Testi belirli bir segment için çalıştır (ID). |
+| `--all-users` | İkisinden biri | Testi tüm kullanıcılar için çalıştır. |
+| `--yes`, `-y` | Hayır | Sormadan başlat. `--json` ile veya pipe içinde kullanıldığında zorunludur. |
+
+### `ab-tests stop`
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--winner` | Üçünden biri | Bu kolun paywall veya flow'unu (ID) tüm kitleye göster. |
+| `--other` | Üçünden biri | Testte yer almayan bir paywall veya flow göster (ID). |
+| `--no-content` | Üçünden biri | Kitleyi placement'tan kaldır. Tüm kullanıcılar testi için reddedilir. |
+| `--yes`, `-y` | Hayır | Onay sormadan durdur. `--json` ile veya bir pipe içinde zorunludur. |
+
+### `ab-tests replace`
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--title` | Evet | Yeni testin başlığı. |
+| `--placement` | Evet | Yeni testin placement'ı (ID). Farklı bir placement, kitleyi o placement'a taşır. |
+| `--paywalls` or `--flows` | Evet | `create` komutundaki gibi yeni testin kolları. |
+| `--goal` | Hayır | Yeni testin kanıtlamayı hedeflediği şey. |
+| `--yes`, `-y` | Hayır | Onay istemeden değiştirir. `--json` kullanırken veya pipe içinde zorunludur. |
+
+Yeni test, yerine geçtiği testin kitlesini devralır; bu nedenle `replace` komutu kitle flag'i almaz.
+
+### `ab-tests archive`
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--yes`, `-y` | Hayır | Onay istemeden arşivle. `--json` ile veya pipe içinde kullanırken zorunludur. |
+
+## Sırada ne var \{#whats-next\}
+
+- [A/B testleri için agent skill](ab-tests-skill) — ajanınızın testleri planlamasını, başlatmasını ve durdurmasını sağlayın; geri alınamayan her adımda onayınız alınır.
+- [A/B testi oluşturma, çalıştırma ve durdurma](run_stop_ab_tests) — kontrol panelinde aynı adımlar.
+- [A/B testi sonuçları ve metrikler](results-and-metrics) — sonuçları nasıl okuyacağınız ve kazananı nasıl seçeceğiniz.
