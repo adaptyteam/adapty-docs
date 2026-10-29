@@ -56,6 +56,13 @@ there is no Google Play equivalent.
   through a single update no matter which step's button was pressed — so **Save Changes** on the
   General step is not a lighter-weight save, and "any edit to a Live message returns it to review" is
   correct as the docs state it.
+- **Title position** (dashboard code, 2026-10-28): a Default message with an image has a **Title position**
+  choice on the Content step — **Below the image** (default) or **Above the image**; the body stays below the
+  image either way. It is fixed at creation: in edit mode the radios are disabled with a hint to create a new
+  message. No image at creation → the default position is stored, so an image added later in edit shows the
+  title below. Promo messages carry no image, so no choice.
+- **Alt text is not localized** (dashboard code, 2026-10-28): one alt text is sent for the message, not per locale.
+- **Locales with an empty title and body are dropped on submit**, silently (dashboard code, 2026-10-28).
 - **Reactivation does not re-enter Apple's review.** The confirm-modal copy is explicit: deactivating
   hides the message "but not deleted. You can reactivate it anytime without going through review
   again", and activating "may take a few minutes to appear for all users".
@@ -136,6 +143,19 @@ aggregated support handoffs; the third stage has no ticket evidence yet.
 
 ## Gaps and misses
 
+- **Resolved 2026-10-28 in favor of the dashboard code** (the docs owner's call: "trust the code"):
+  `retention-messaging-create` now says a message goes live once Apple approves **at least one** locale
+  (Localization step footer: "Production stays gated until at least one locale is approved."), and that
+  **AI Translate All Cells** overwrites manual edits in every added locale (the UI intro still claims
+  otherwise). Unconfirmed against the backend — revisit if a ticket shows a message stuck in review with
+  some locales approved.
+- **Setup copy fixed 2026-10-28**: alt texts and the two-click **Configure Sandbox URL** path updated, and
+  both setup screenshots recaptured from a mocked dashboard.
+- **A pending dashboard change will surface the missing App Store Connect key on Plan Switch** (2026-10-28,
+  unmerged): today the plan list just stays empty when the key is missing. Once it ships, a ticket line
+  ("plan switch list is empty") belongs under Ticket language pointing at the key.
+- **Unwritten but verified** (2026-10-28): the analytics table's filters (type, state, name search) and its
+  **Started at** column; the locale picker's **Add All Locales**; the empty-state copy. Low reader impact.
 - **The backend's "no active sandbox transaction" failure remains unverified.** The dashboard has no
   error branch for it (checked 2026-08-20), and the backend carries no retention-messaging code that
   could be read, so this needs product or backend confirmation — another code read will not settle it.
@@ -147,7 +167,10 @@ aggregated support handoffs; the third stage has no ticket evidence yet.
   "Failed to update message status. Please try again." Left in the article unchanged and flagged here: it
   may well be a backend rule that was known when the article was written, and this is not evidence
   against it.
-- **Both setup screenshots are stale**, neither caused by a docs edit: the sandbox card was retitled and
+- **Fixed 2026-10-28:** the Content, promo-offer and plan-switch screenshots in `retention-messaging-create`
+  were recaptured from a mocked dashboard (labels **Associated product**, **Associated offers**,
+  **Associated plan**, **Link Promo Offer** / **Link Plan Switch**).
+- **(Superseded 2026-10-28 — recaptured.)** Both setup screenshots were stale, neither caused by a docs edit: the sandbox card was retitled and
   its button relabelled 2026-08-04–11, and the test card's copy changed with it.
   `retention-messaging-configure-sandbox-url.webp` and `retention-messaging-test-sandbox-url.webp` both
   need recapture, plus a new one for the access-request guide.
