@@ -1,0 +1,253 @@
+---
+title: "Lancer des tests A/B depuis la CLI"
+description: "Créez, démarrez, arrêtez, remplacez et archivez des tests A/B de paywalls et de flows depuis le terminal avec la CLI Adapty, et visualisez l'effet exact avant chaque étape irréversible."
+metadataTitle: "Tests A/B dans la CLI développeur | Documentation Adapty"
+---
+
+La CLI Adapty gère les [tests A/B](ab-tests) de paywalls ou de flows depuis le terminal, sous le topic `adapty ab-tests`. Vous pouvez créer un test en brouillon, le démarrer sur un placement pour une audience donnée, l'arrêter avec un gagnant, remplacer un test en cours par une version modifiée, et archiver les anciens tests.
+
+Utilisez-le pour laisser un agent IA exécuter vos tests, scripter un test sur plusieurs applications, ou démarrer ou arrêter un test sans ouvrir le tableau de bord.
+
+Un test standard répartit les utilisateurs d'une audience sur un placement entre deux ou plusieurs paywalls, ou entre deux ou plusieurs flows. Pour effectuer un test sur plusieurs placements, utilisez un [test crossplacement](ab-test-types) dans le tableau de bord. Les commandes `ab-tests` ne renvoient pas les résultats des tests. Pour consulter les résultats, comme la probabilité d'être le meilleur, utilisez le tableau de bord : [Résultats et métriques des tests A/B](results-and-metrics). Pour lire les analyses des utilisateurs d'un test, filtrez les [commandes d'analyse](developer-cli-analytics) selon la dimension **A/B tests** de `adapty analytics catalog`.
+
+## Avant de commencer \{#before-you-start\}
+
+Le sujet `ab-tests` utilise la même installation et la même connexion que le reste de la CLI. Si vous ne l'avez pas encore configuré, suivez les étapes 1 et 2 du [guide de démarrage rapide](developer-cli-quickstart). Ce sujet nécessite la version 0.13.0 ou ultérieure de la CLI. Pour afficher votre version, exécutez `adapty --version`.
+
+Chaque commande prend l'UUID de l'application dans `--app`. Pour le trouver, exécutez :
+
+```bash
+adapty apps list
+```
+
+Un test A/B utilise du contenu qui existe déjà :
+
+- **Flows** : Un flow ne rejoint un test A/B que s'il est publié. Un flow en brouillon, ou un flow avec des modifications non publiées, est refusé. Pour publier un flow, exécutez `adapty flows publish`.
+- **Paywalls** : Pour créer un paywall à partir de produits déjà présents dans Adapty, exécutez `adapty paywalls create`. Pour donner un nouveau design à un paywall, utilisez le [Paywall Builder](adapty-paywall-builder).
+- **Placements** : Un test A/B de paywall s'exécute sur un placement de paywall, et un test de flow sur un placement de flow. Pour créer un placement, exécutez `adapty placements create`. Votre application n'affiche rien depuis un nouveau placement tant que son code ne récupère pas ce placement.
+- **Segments** : Pour exécuter un test uniquement pour certains utilisateurs, créez d'abord un [segment](segments) avec `adapty segments create`.
+
+Pour ces commandes, voir la [référence des commandes](developer-cli-reference).
+
+## Lister et consulter des tests \{#list-and-read-tests\}
+
+`list` affiche les tests A/B de flow sauf si vous passez `--type paywall`. Pour voir tous les tests d'une app, exécutez la commande une fois pour chaque type :
+
+```bash
+adapty ab-tests list --app <app-id> --type flow --page-size 100
+```
+
+```bash
+adapty ab-tests list --app <app-id> --type paywall --page-size 100
+```
+
+Un test peut se trouver dans l'un de ces états : `draft`, `live`, `completed`, `inactive` ou `archived`.
+
+Pour consulter un test avec ses variantes, exécutez :
+
+```bash
+adapty ab-tests get --app <app-id> <test-id>
+```
+
+Dans `get --json`, `segment_ids` correspond à l'audience du test : `[]` signifie Tous les utilisateurs, et `null` signifie qu'aucune audience n'a encore été définie. Chaque variante a son `weight` et l'ID du paywall ou du flow. Pour identifier une variante, utilisez `paywall_title` ou `flow_name`. Le `title` de la variante est vide sauf si vous en avez défini un.
+
+## Créer un test \{#create-a-test\}
+
+Un nouveau test est un brouillon. Aucun utilisateur ne voit un brouillon, vous pouvez donc en créer et en modifier un à tout moment.
+
+1. **Trouvez les ID** du contenu à tester avec `adapty paywalls list` ou `adapty flows list`.
+
+2. **Créez le brouillon** avec deux bras ou plus. Chaque bras correspond à un paywall ou un flow avec un poids. Le poids représente le pourcentage d'utilisateurs qui voient ce bras, et la somme des poids doit être égale à 100 :
+
+   ```bash
+   adapty ab-tests create --app <app-id> --title "Annual vs monthly" \
+     --goal "More revenue per user" \
+     --paywalls '[{"paywall_id":"<paywall-a>","weight":50},{"paywall_id":"<paywall-b>","weight":50}]'
+   ```
+
+   Pour un test de flow, passez `--flows` avec `flow_id` dans chaque bras. Un bras peut aussi avoir un `title`, par exemple `"title":"A"`.
+
+3. **Vérifiez le brouillon** avec `ab-tests get`.
+
+`create` peut aussi accepter un placement et une audience planifiés, via `--placement` et `--segment` ou `--all-users`. Ces valeurs planifiées n'ont aucun effet sur les utilisateurs. Lorsque vous démarrez le test, passez à nouveau le placement et l'audience à `start`.
+
+## Démarrer un test \{#start-a-test\}
+
+:::warning
+Cette action est irréversible. Dès le démarrage du test, les utilisateurs de l'audience concernée ne voient plus leur paywall ou flow actuel.
+:::
+
+Pour démarrer un brouillon, indiquez le placement et une audience : `--all-users`, ou `--segment` avec un identifiant de segment :
+
+```bash
+adapty ab-tests start --app <app-id> <test-id> --placement <placement-id> --segment <segment-id>
+```
+
+Le CLI affiche ce que le démarrage implique et demande `Apply? [y/N]` avant d'envoyer quoi que ce soit. L'endroit où le test s'exécute dépend des audiences du placement :
+
+- **Le placement a une audience pour ce segment** (ou pour tous les utilisateurs) : le test s'exécute sur cette audience. Un test en cours sur cette audience s'arrête et passe à l'état `completed`.
+- **Le placement n'a pas d'audience pour ce segment** : `start` ajoute une nouvelle audience avec la priorité la plus haute sur le placement. Les utilisateurs de ce segment qui correspondent actuellement à une autre audience basculent dans le test.
+
+Pour donner au test une priorité inférieure à celle d'une autre audience, ajoutez d'abord le segment en tant qu'audience avec cette priorité. Attribuez-lui le paywall ou le flow que ces utilisateurs voient actuellement, puis démarrez le test sur cette audience. Consultez [Modifier la priorité d'une audience](change-audience-priority).
+
+Une modification sur une audience de segment peut prendre jusqu'à 20 minutes pour atteindre tous les utilisateurs.
+
+Ne démarrez que les tests en brouillon. Un test terminé, inactif ou archivé redémarre avec le même identifiant, et les utilisateurs qui en faisaient partie retrouvent leur ancienne branche. Pour relancer un test, créez-en un nouveau : lisez l'ancien test avec `get`, puis `create` un test avec les mêmes branches.
+
+## Modifier un test \{#change-a-test\}
+
+`update` renvoie l'intégralité du test. Passez tous les indicateurs à chaque fois. Si vous omettez un indicateur, Adapty efface sa valeur : par exemple, l'objectif, le placement prévu ou l'audience prévue.
+
+```bash
+adapty ab-tests update --app <app-id> <test-id> --title "Annual vs monthly, Q4" \
+  --goal "More revenue per user" \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":70},{"paywall_id":"<paywall-b>","weight":30}]'
+```
+
+Lors d'un test en cours, `update` ne modifie que le titre et l'objectif. Passez les variantes et le placement exactement tels que `get` les retourne ; d'autres variantes ou un autre placement seront refusés. Le test conserve son heure de démarrage, et les utilisateurs gardent leurs variantes.
+
+Pour modifier les variantes ou les poids d'un test en cours, remplacez-le. `replace` correspond à l'action **Modify** dans le tableau de bord :
+
+```bash
+adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" \
+  --placement <placement-id> \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":80},{"paywall_id":"<paywall-b>","weight":20}]'
+```
+
+Le test en cours s'arrête et passe à l'état `completed`, et ses résultats restent associés à son ID. Un nouveau test avec un nouvel ID démarre sur la même audience, et Adapty réassigne chaque utilisateur de l'audience à un groupe. Si vous passez un placement différent dans `--placement`, Adapty déplace l'audience vers ce placement. Vous ne pouvez pas déplacer un test ciblant tous les utilisateurs.
+
+## Arrêter un test \{#stop-a-test\}
+
+`stop` met fin au test. Vous choisissez ce que les utilisateurs de son audience voient ensuite. Passez exactement l'un de ces flags :
+
+| Flag | Après l'arrêt |
+|---|---|
+| `--winner <id>` | Toute l'audience voit l'une des variantes du test. Passez l'ID du paywall ou du flow de la variante. |
+| `--other <id>` | Toute l'audience voit un paywall ou un flow qui ne faisait pas partie du test, du même type que le test. |
+| `--no-content` | L'audience quitte le placement, et ses utilisateurs accèdent à la prochaine audience correspondante. Refusé pour un test portant sur tous les utilisateurs. |
+
+```bash
+adapty ab-tests stop --app <app-id> <test-id> --winner <paywall-b>
+```
+
+Le test passe à l'état `completed`. Pour tester à nouveau les mêmes variantes, créez un nouveau test, comme décrit dans [Démarrer un test](#start-a-test). Pour choisir le gagnant, consultez [Résultats et métriques du test A/B](results-and-metrics).
+
+## Archiver un test \{#archive-a-test\}
+
+Vous pouvez archiver n'importe quel test qui n'est pas en cours. Pour archiver un test en cours, arrêtez-le d'abord. Un test archivé ne peut pas être restauré.
+
+```bash
+adapty ab-tests archive --app <app-id> <test-id>
+```
+
+## Confirmation dans les scripts et les agents \{#confirmation-in-scripts-and-agents\}
+
+`start`, `stop`, `replace`, et `archive` sont des actions irréversibles : chacune affiche ce qu'elle va faire avant d'envoyer quoi que ce soit. La manière dont elle demande confirmation dépend du contexte d'exécution :
+
+| Mode d'exécution | Ce qui se passe |
+|---|---|
+| Dans un terminal | Le CLI affiche l'effet et demande `Apply? [y/N]`. Si vous répondez `y` ou `yes`, le CLI envoie la requête. Pour toute autre réponse, le CLI quitte avec le code 1 et n'envoie rien. |
+| Avec `--yes` | Le CLI envoie la requête sans demander de confirmation. |
+| Avec `--json`, dans un pipe, ou sans terminal | Le CLI n'envoie rien et quitte avec le code 6. Le message d'erreur décrit l'effet. |
+
+Ainsi, un script ou un agent peut d'abord lire l'effet d'une commande : l'exécuter sans `--yes`, lire le message, puis la relancer avec `--yes` seulement après qu'une personne a approuvé cet effet.
+
+## Erreurs \{#errors\}
+
+| Code de sortie | Cause | Que faire |
+|---|---|---|
+| 1 | Vous avez répondu autre chose que `y` à l'invite. Rien n'a été envoyé. | Relancez la commande si c'était votre intention. |
+| 2 | Le CLI a rejeté la saisie avant l'envoi : UUID invalide, bras qui ne sont pas un tableau JSON, un bras sans ID ou avec un poids non entier, `--paywalls` et `--flows` tous les deux présents ou tous les deux absents, ou deux options d'arrêt. | Corrigez le flag mentionné dans le message. |
+| 3 | Vous n'êtes pas connecté, ou votre utilisateur Adapty n'a pas accès à l'application. | Connectez-vous avec `adapty auth login` et trouvez l'ID de l'application dans `adapty apps list`. |
+| 4 | Adapty a refusé la requête. Le message en indique la raison. | Consultez [Messages d'Adapty](#messages-from-adapty). |
+| 5 | Le CLI n'a pas pu joindre Adapty. | Vérifiez votre connexion et relancez la commande. |
+| 6 | Une commande irréversible a été exécutée sans `--yes` et sans personne pour répondre. Rien n'a été envoyé. | Lisez l'effet décrit dans le message, puis relancez la commande avec `--yes`. |
+| 130 | Vous avez appuyé sur Ctrl+C à l'invite. Rien n'a été envoyé. | — |
+
+### Messages d'Adapty
+
+| Message | Que faire |
+|---|---|
+| `The sum of the weights must equal 100, but has N.` | Modifiez les poids pour qu'ils totalisent 100. |
+| `Flow(<id>) must be published before adding to AB test.` | Publiez le flow, puis relancez la commande. |
+| `Paywalls cannot be changed in non-draft ab tests.` ou `Placement cannot be changed in non-draft ab tests.` | Transmettez les arms et le placement tels que `get` les retourne, ou utilisez `replace`. |
+| `AB Test from default audience can not be stopped.` | Un test sur tous les utilisateurs nécessite un paywall ou un flow après l'arrêt : utilisez `--winner` ou `--other`. |
+| `AB Test to stop must be live.` | Seul un test en cours peut être arrêté ou remplacé. |
+| `Live Ab Test can not be deleted.` | Arrêtez le test avant de l'archiver. |
+
+## Référence des commandes \{#command-reference\}
+
+Chaque commande prend `--app`, l'UUID de l'application issu de `adapty apps list`. Toutes les commandes sauf `list` prennent l'identifiant du test en argument.
+
+### `ab-tests list`
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--type` | Non | `flow` (par défaut) ou `paywall`. |
+| `--state` | Non | `live`, `draft`, `completed`, `inactive` ou `archived`. |
+| `--placement` | Non | Uniquement les tests de ce placement (ID). |
+| `--search` | Non | Uniquement les tests dont le titre contient ce texte. |
+| `--page` | Non | Numéro de page. Par défaut : 1. |
+| `--page-size` | Non | Tests par page, jusqu'à 100. Par défaut : 20. |
+
+### `ab-tests get`
+
+Retourne le test avec ses variantes. Ne prend pas d'autres drapeaux.
+
+### `ab-tests create`
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--title` | Oui | Titre du test. |
+| `--paywalls` | L'un des deux | Variantes d'un test A/B de paywall, en JSON : `[{"paywall_id":"<id>","weight":50,"title":"A"}, …]`. `title` est optionnel. |
+| `--flows` | L'un des deux | Variantes d'un test A/B de flow, en JSON, avec `flow_id` à la place de `paywall_id`. |
+| `--goal` | Non | Ce que le test est censé démontrer. |
+| `--placement` | Non | Placement prévu pour le test (ID). |
+| `--segment` | Non | Planifier le test pour un segment (ID). Incompatible avec `--all-users`. |
+| `--all-users` | Non | Planifier le test pour tous les utilisateurs. |
+
+### `ab-tests update`
+
+Prend les mêmes options que `create`. Une option omise est effacée. Sur un test en cours, seuls `--title` et `--goal` peuvent être modifiés.
+
+### `ab-tests start`
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--placement` | Oui | Placement sur lequel lancer le test (ID). |
+| `--segment` | L'un ou l'autre | Lancer le test pour un segment (ID). |
+| `--all-users` | L'un ou l'autre | Lancer le test pour tous les utilisateurs. |
+| `--yes`, `-y` | Non | Démarrer sans confirmation. Requis avec `--json` ou dans un pipe. |
+
+### `ab-tests stop`
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--winner` | L'un des trois | Afficher le paywall ou flow de cette variante (ID) à toute l'audience. |
+| `--other` | L'un des trois | Afficher un paywall ou flow qui ne faisait pas partie du test (ID). |
+| `--no-content` | L'un des trois | Retirer l'audience du placement. Refusé pour un test Tous les utilisateurs. |
+| `--yes`, `-y` | Non | Arrêter sans confirmation. Requis avec `--json` ou dans un pipe. |
+
+### `ab-tests replace`
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--title` | Oui | Titre du nouveau test. |
+| `--placement` | Oui | Placement du nouveau test (ID). Un placement différent déplace l'audience vers ce placement. |
+| `--paywalls` ou `--flows` | Oui | Variantes du nouveau test, comme dans `create`. |
+| `--goal` | Non | Ce que le nouveau test est censé démontrer. |
+| `--yes`, `-y` | Non | Remplacer sans confirmation. Requis avec `--json` ou dans un pipe. |
+
+Le nouveau test hérite de l'audience du test qu'il remplace, donc `replace` ne prend pas de flag d'audience.
+
+### `ab-tests archive`
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--yes`, `-y` | Non | Archiver sans confirmation. Requis avec `--json` ou dans un pipe. |
+
+## Et ensuite ? \{#whats-next\}
+
+- [Skill d'agent pour les tests A/B](ab-tests-skill) — laissez votre agent planifier, démarrer et arrêter des tests, avec votre validation avant chaque étape irréversible.
+- [Créer, lancer et arrêter un test A/B](run_stop_ab_tests) — les mêmes étapes dans le tableau de bord.
+- [Résultats et métriques des tests A/B](results-and-metrics) — comment lire les résultats et choisir un gagnant.

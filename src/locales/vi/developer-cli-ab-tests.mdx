@@ -1,0 +1,253 @@
+---
+title: "Chạy A/B test từ CLI"
+description: "Tạo, khởi động, dừng, thay thế và lưu trữ A/B test cho paywall và flow từ terminal với Adapty CLI, và xem trước kết quả chính xác trước mỗi bước không thể hoàn tác."
+metadataTitle: "A/B Test trong Developer CLI | Tài liệu Adapty"
+---
+
+Adapty CLI chạy các [A/B test](ab-tests) thông thường cho paywall hoặc flow từ terminal, trong topic `adapty ab-tests`. Bạn có thể tạo một test ở trạng thái nháp, khởi động nó trên một placement cho một đối tượng, dừng test với một biến thể thắng, thay thế test đang chạy bằng phiên bản đã chỉnh sửa, và lưu trữ các test cũ.
+
+Dùng tính năng này để cho phép AI agent chạy các A/B test của bạn, viết script để thực hiện test trên nhiều ứng dụng, hoặc bắt đầu hay dừng một test mà không cần mở dashboard.
+
+Một test thông thường chia người dùng của một đối tượng tại một placement thành hai hoặc nhiều paywall, hoặc giữa hai hoặc nhiều flow. Để chạy test trên nhiều placement, hãy dùng [crossplacement test](ab-test-types) trong dashboard. Lệnh `ab-tests` không trả về kết quả test. Để xem kết quả, chẳng hạn như xác suất để trở thành tốt nhất, hãy dùng dashboard: [Kết quả và chỉ số A/B test](results-and-metrics). Để đọc analytics cho người dùng của một test, hãy lọc [lệnh analytics](developer-cli-analytics) theo chiều **A/B tests** từ `adapty analytics catalog`.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Topic `ab-tests` sử dụng cùng cài đặt và đăng nhập như phần còn lại của CLI. Nếu bạn chưa thiết lập, hãy làm theo bước 1 và 2 của [hướng dẫn quickstart](developer-cli-quickstart). Topic này yêu cầu CLI phiên bản 0.13.0 trở lên. Để xem phiên bản hiện tại, chạy `adapty --version`.
+
+Mỗi lệnh đều yêu cầu UUID của app trong `--app`. Để tìm UUID, chạy:
+
+```bash
+adapty apps list
+```
+
+Một A/B test sử dụng nội dung đã tồn tại sẵn:
+
+- **Flows**: Một flow chỉ tham gia vào test khi đã được xuất bản. Flow đang ở trạng thái nháp hoặc có thay đổi chưa xuất bản sẽ bị từ chối. Để xuất bản một flow, chạy lệnh `adapty flows publish`.
+- **Paywalls**: Để tạo paywall từ các sản phẩm đã có trong Adapty, chạy lệnh `adapty paywalls create`. Để thiết kế giao diện mới cho paywall, sử dụng [Paywall Builder](adapty-paywall-builder).
+- **Placements**: Test paywall chạy trên placement của paywall, test flow chạy trên placement của flow. Để tạo placement, chạy lệnh `adapty placements create`. App sẽ không hiển thị gì từ placement mới cho đến khi code lấy placement đó.
+- **Segments**: Để chạy test chỉ cho một số người dùng nhất định, trước tiên hãy tạo [phân khúc](segments) bằng lệnh `adapty segments create`.
+
+Để biết thêm về các lệnh này, hãy xem [tài liệu tham khảo lệnh](developer-cli-reference).
+
+## Danh sách và đọc các test \{#list-and-read-tests\}
+
+`list` hiển thị các A/B test flow trừ khi bạn truyền `--type paywall`. Để xem tất cả các test của một ứng dụng, hãy chạy lệnh này cho từng loại:
+
+```bash
+adapty ab-tests list --app <app-id> --type flow --page-size 100
+```
+
+```bash
+adapty ab-tests list --app <app-id> --type paywall --page-size 100
+```
+
+Một test có thể ở một trong các trạng thái sau: `draft`, `live`, `completed`, `inactive`, hoặc `archived`.
+
+Để đọc một test cùng với các nhánh của nó, hãy chạy:
+
+```bash
+adapty ab-tests get --app <app-id> <test-id>
+```
+
+Trong `get --json`, `segment_ids` là đối tượng của test: `[]` là Tất cả người dùng, còn `null` là chưa có đối tượng nào được lên kế hoạch. Mỗi biến thể có `weight` và ID của paywall hoặc flow. Để xác định một biến thể, dùng `paywall_title` hoặc `flow_name`. `title` của biến thể sẽ trống trừ khi bạn đặt.
+
+## Tạo một test \{#create-a-test\}
+
+Một test mới sẽ ở trạng thái draft. Không có người dùng nào thấy draft, vì vậy bạn có thể tạo và chỉnh sửa bất kỳ lúc nào.
+
+1. **Tìm ID** của nội dung cần test bằng `adapty paywalls list` hoặc `adapty flows list`.
+
+2. **Tạo draft** với hai arm trở lên. Mỗi arm là một paywall hoặc flow kèm theo trọng số. Trọng số là tỷ lệ phần trăm người dùng thấy arm đó, và tổng các trọng số phải bằng 100:
+
+   ```bash
+   adapty ab-tests create --app <app-id> --title "Annual vs monthly" \
+     --goal "More revenue per user" \
+     --paywalls '[{"paywall_id":"<paywall-a>","weight":50},{"paywall_id":"<paywall-b>","weight":50}]'
+   ```
+
+   Để test flow, truyền `--flows` với `flow_id` trong mỗi nhánh. Mỗi nhánh cũng có thể có `title`, ví dụ `"title":"A"`.
+
+3. **Xem lại bản nháp** bằng `ab-tests get`.
+
+`create` cũng có thể nhận placement và đối tượng theo kế hoạch, với `--placement` và `--segment` hoặc `--all-users`. Các giá trị đã lên kế hoạch này không có tác động gì đến người dùng. Khi bạn bắt đầu test, hãy truyền placement và đối tượng vào `start` lần nữa.
+
+## Bắt đầu một test \{#start-a-test\}
+
+:::warning
+Bạn không thể hoàn tác sau khi đã bắt đầu. Kể từ thời điểm test bắt đầu, người dùng thuộc đối tượng bạn chỉ định sẽ không còn thấy paywall hoặc flow hiện tại của họ nữa.
+:::
+
+Để bắt đầu một bản nháp, hãy chỉ định placement và một đối tượng: `--all-users`, hoặc `--segment` kèm theo một segment ID:
+
+```bash
+adapty ab-tests start --app <app-id> <test-id> --placement <placement-id> --segment <segment-id>
+```
+
+CLI sẽ in ra những gì thao tác bắt đầu này thực hiện và hỏi `Apply? [y/N]` trước khi gửi bất cứ thứ gì. Vị trí test chạy phụ thuộc vào các đối tượng của placement:
+
+- **Placement có đối tượng cho phân khúc này** (hoặc cho All users): Test chạy trên đối tượng đó. Một test đang chạy ở đó sẽ dừng lại và chuyển sang trạng thái `completed`.
+- **Placement không có đối tượng cho phân khúc này**: `start` sẽ thêm một đối tượng mới với mức ưu tiên cao nhất vào placement. Người dùng thuộc phân khúc này đang khớp với đối tượng khác sẽ được chuyển vào test.
+
+Để đặt mức ưu tiên của test thấp hơn một đối tượng khác, trước tiên hãy thêm phân khúc đó làm đối tượng với mức ưu tiên tương ứng. Gán cho nó paywall hoặc flow mà những người dùng đó đang xem hiện tại, sau đó bắt đầu test trên đối tượng đó. Xem [Thay đổi mức ưu tiên đối tượng](change-audience-priority).
+
+Thay đổi trên một đối tượng theo phân khúc có thể mất đến 20 phút để áp dụng cho tất cả người dùng.
+
+Chỉ bắt đầu các test ở trạng thái nháp. Một test đã hoàn thành, không hoạt động hoặc đã lưu trữ sẽ bắt đầu lại với cùng ID, và những người dùng đã tham gia sẽ nhận lại nhóm cũ của họ. Để chạy lại một test, hãy tạo mới: đọc test cũ bằng `get`, sau đó `create` một test với các nhóm tương tự.
+
+## Thay đổi một test \{#change-a-test\}
+
+`update` gửi lại toàn bộ thông tin test. Hãy truyền đầy đủ các flag mỗi lần. Nếu bỏ sót một flag, Adapty sẽ xóa giá trị đó: ví dụ như mục tiêu, placement đã lên kế hoạch, hoặc đối tượng đã lên kế hoạch.
+
+```bash
+adapty ab-tests update --app <app-id> <test-id> --title "Annual vs monthly, Q4" \
+  --goal "More revenue per user" \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":70},{"paywall_id":"<paywall-b>","weight":30}]'
+```
+
+Trong bài test đang chạy, `update` chỉ thay đổi tiêu đề và mục tiêu. Truyền các arm và placement đúng như `get` trả về; nếu dùng arm khác hoặc placement khác sẽ bị từ chối. Bài test giữ nguyên thời gian bắt đầu và người dùng giữ nguyên arm của họ.
+
+Để thay đổi các arm hoặc trọng số của bài test đang chạy, hãy thay thế nó. `replace` tương ứng với hành động **Modify** trên dashboard:
+
+```bash
+adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" \
+  --placement <placement-id> \
+  --paywalls '[{"paywall_id":"<paywall-a>","weight":80},{"paywall_id":"<paywall-b>","weight":20}]'
+```
+
+Bài kiểm tra đang chạy sẽ dừng lại và chuyển sang trạng thái `completed`, kết quả của nó vẫn được lưu theo ID đó. Một bài kiểm tra mới với ID mới sẽ bắt đầu trên cùng đối tượng đó, và Adapty sẽ phân bổ lại mọi người dùng trong đối tượng vào một nhánh. Nếu bạn truyền một placement khác vào `--placement`, Adapty sẽ chuyển đối tượng sang placement đó. Bạn không thể di chuyển bài kiểm tra All users.
+
+## Dừng một test \{#stop-a-test\}
+
+`stop` kết thúc test. Bạn chọn những gì người dùng trong đối tượng của test sẽ thấy sau đó. Truyền đúng một trong các flag sau:
+
+| Flag | Sau khi dừng |
+|---|---|
+| `--winner <id>` | Toàn bộ đối tượng sẽ thấy một nhánh của test. Truyền paywall ID hoặc flow ID của nhánh đó. |
+| `--other <id>` | Toàn bộ đối tượng sẽ thấy một paywall hoặc flow không nằm trong test, cùng loại với test. |
+| `--no-content` | Đối tượng rời khỏi placement, và người dùng của nó sẽ được chuyển sang đối tượng tiếp theo mà họ khớp. Không được phép với test Tất cả người dùng. |
+
+```bash
+adapty ab-tests stop --app <app-id> <test-id> --winner <paywall-b>
+```
+
+Test chuyển sang trạng thái `completed`. Để thử nghiệm lại các nhánh tương tự, hãy tạo một test mới như mô tả trong [Bắt đầu test](#start-a-test). Để chọn biến thể chiến thắng, xem [Kết quả và chỉ số A/B test](results-and-metrics).
+
+## Lưu trữ một test \{#archive-a-test\}
+
+Bạn có thể lưu trữ bất kỳ test nào chưa chạy. Để lưu trữ một test đang chạy, hãy dừng nó trước. Bạn không thể khôi phục một test đã lưu trữ.
+
+```bash
+adapty ab-tests archive --app <app-id> <test-id>
+```
+
+## Xác nhận trong script và agent \{#confirmation-in-scripts-and-agents\}
+
+`start`, `stop`, `replace`, và `archive` không thể hoàn tác, vì vậy mỗi lệnh sẽ hiển thị hiệu quả của nó trước khi gửi bất cứ điều gì. Cách hỏi xác nhận phụ thuộc vào cách lệnh được chạy:
+
+| Cách lệnh chạy | Điều gì xảy ra |
+|---|---|
+| Trong terminal | CLI in ra kết quả và hỏi `Apply? [y/N]`. Nếu bạn trả lời `y` hoặc `yes`, CLI sẽ gửi yêu cầu. Với bất kỳ câu trả lời nào khác, CLI thoát với mã 1 và không gửi gì. |
+| Với `--yes` | CLI gửi yêu cầu mà không hỏi. |
+| Với `--json`, trong pipe, hoặc không có terminal | CLI không gửi gì và thoát với mã 6. Thông báo lỗi mô tả kết quả. |
+
+Vì vậy, một script hoặc một agent có thể đọc hiệu ứng của lệnh trước: chạy lệnh đó không có `--yes`, đọc thông báo, và chạy lại với `--yes` chỉ sau khi ai đó đã phê duyệt hiệu ứng đó.
+
+## Lỗi \{#errors\}
+
+| Mã thoát | Nguyên nhân | Cách xử lý |
+|---|---|---|
+| 1 | Bạn đã nhập một giá trị khác `y` tại dấu nhắc. Không có gì được gửi đi. | Chạy lại lệnh nếu bạn muốn tiếp tục. |
+| 2 | CLI từ chối đầu vào trước khi gửi: UUID không hợp lệ, các nhánh không phải mảng JSON, một nhánh thiếu ID hoặc trọng số nguyên, cả hai hoặc không có cả `--paywalls` và `--flows`, hoặc có hai tùy chọn dừng. | Sửa flag được đề cập trong thông báo. |
+| 3 | Bạn chưa đăng nhập, hoặc tài khoản Adapty của bạn không có quyền truy cập ứng dụng. | Đăng nhập bằng `adapty auth login` và tìm ID ứng dụng trong `adapty apps list`. |
+| 4 | Adapty từ chối yêu cầu. Thông báo sẽ nêu rõ lý do. | Xem [Thông báo từ Adapty](#messages-from-adapty). |
+| 5 | CLI không thể kết nối tới Adapty. | Kiểm tra kết nối internet và chạy lại lệnh. |
+| 6 | Một lệnh không thể hoàn tác đã chạy mà không có `--yes` và không có ai xác nhận. Không có gì được gửi đi. | Đọc kỹ mô tả tác động trong thông báo, rồi chạy lại lệnh với `--yes`. |
+| 130 | Bạn đã nhấn Ctrl+C tại dấu nhắc. Không có gì được gửi đi. | — |
+
+### Tin nhắn từ Adapty
+
+| Thông báo | Cách xử lý |
+|---|---|
+| `The sum of the weights must equal 100, but has N.` | Thay đổi trọng số sao cho tổng bằng 100. |
+| `Flow(<id>) must be published before adding to AB test.` | Xuất bản flow, sau đó chạy lại lệnh. |
+| `Paywalls cannot be changed in non-draft ab tests.` hoặc `Placement cannot be changed in non-draft ab tests.` | Truyền arms và placement đúng như kết quả `get` trả về, hoặc dùng `replace`. |
+| `AB Test from default audience can not be stopped.` | A/B test dành cho tất cả người dùng cần có paywall hoặc flow sau khi dừng: dùng `--winner` hoặc `--other`. |
+| `AB Test to stop must be live.` | Chỉ có thể dừng hoặc thay thế test đang chạy. |
+| `Live Ab Test can not be deleted.` | Dừng test trước khi lưu trữ. |
+
+## Tham chiếu lệnh \{#command-reference\}
+
+Mỗi lệnh đều nhận `--app`, là UUID của ứng dụng lấy từ `adapty apps list`. Mọi lệnh trừ `list` đều nhận ID của test làm đối số.
+
+### `ab-tests list`
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--type` | Không | `flow` (mặc định) hoặc `paywall`. |
+| `--state` | Không | `live`, `draft`, `completed`, `inactive`, hoặc `archived`. |
+| `--placement` | Không | Chỉ các A/B test của placement này (ID). |
+| `--search` | Không | Chỉ các A/B test có tiêu đề chứa văn bản này. |
+| `--page` | Không | Số trang. Mặc định: 1. |
+| `--page-size` | Không | Số A/B test mỗi trang, tối đa 100. Mặc định: 20. |
+
+### `ab-tests get`
+
+Trả về test cùng với các nhánh của nó. Không nhận thêm flag nào khác.
+
+### `ab-tests create`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--title` | Yes | Tiêu đề test. |
+| `--paywalls` | Một trong hai | Các nhánh của paywall test, dạng JSON: `[{"paywall_id":"<id>","weight":50,"title":"A"}, …]`. `title` là tùy chọn. |
+| `--flows` | Một trong hai | Các nhánh của flow test, dạng JSON, dùng `flow_id` thay cho `paywall_id`. |
+| `--goal` | No | Mục tiêu mà test cần chứng minh. |
+| `--placement` | No | Placement mà test được lên kế hoạch cho (ID). |
+| `--segment` | No | Lên kế hoạch test cho một phân khúc (ID). Không thể dùng cùng với `--all-users`. |
+| `--all-users` | No | Lên kế hoạch test cho tất cả người dùng. |
+
+### `ab-tests update`
+
+Nhận các cờ tương tự như `create`. Cờ nào bạn bỏ qua sẽ bị xóa. Đối với A/B test đang chạy, chỉ có thể thay đổi `--title` và `--goal`.
+
+### `ab-tests start`
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--placement` | Có | Placement để chạy test (ID). |
+| `--segment` | Một trong hai | Chạy test cho một phân khúc (ID). |
+| `--all-users` | Một trong hai | Chạy test cho tất cả người dùng. |
+| `--yes`, `-y` | Không | Bắt đầu mà không cần xác nhận. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+### `ab-tests stop`
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--winner` | Một trong ba | Hiển thị paywall hoặc flow của nhánh này (ID) cho toàn bộ đối tượng. |
+| `--other` | Một trong ba | Hiển thị paywall hoặc flow không có trong test (ID). |
+| `--no-content` | Một trong ba | Xóa đối tượng khỏi placement. Không áp dụng được cho test Tất cả người dùng. |
+| `--yes`, `-y` | Không | Dừng mà không cần xác nhận. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+### `ab-tests replace`
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--title` | Có | Tiêu đề của test mới. |
+| `--placement` | Có | Placement của test mới (ID). Placement khác sẽ chuyển đối tượng sang placement đó. |
+| `--paywalls` hoặc `--flows` | Có | Các nhánh của test mới, tương tự như `create`. |
+| `--goal` | Không | Mục tiêu mà test mới cần chứng minh. |
+| `--yes`, `-y` | Không | Thay thế mà không hỏi xác nhận. Bắt buộc khi dùng `--json` hoặc trong pipe. |
+
+Test mới sẽ kế thừa đối tượng của test mà nó thay thế, nên `replace` không có flag đối tượng.
+
+### `ab-tests archive`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--yes`, `-y` | Không | Lưu trữ mà không hỏi. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+## Tiếp theo là gì \{#whats-next\}
+
+- [Agent skill cho A/B test](ab-tests-skill) — để agent lên kế hoạch, khởi chạy và dừng các A/B test, với sự xác nhận của bạn trước mỗi bước không thể hoàn tác.
+- [Tạo, chạy và dừng A/B test](run_stop_ab_tests) — các bước tương tự trên dashboard.
+- [Kết quả và chỉ số A/B test](results-and-metrics) — cách đọc kết quả và chọn biến thể chiến thắng.

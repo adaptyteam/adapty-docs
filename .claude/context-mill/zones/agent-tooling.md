@@ -151,6 +151,7 @@ on one side, a non-deterministic agent on the other.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
+| ab-tests-skill | how-to | dev | 9 | tutorial |
 | adapty-cursor | — | dev | 15 | ios |
 | adapty-cursor-android | — | dev | 15 | android |
 | adapty-cursor-capacitor | — | dev | 15 | capacitor |
@@ -166,20 +167,27 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
+| developer-cli-ab-tests | reference | dev | 20 | api |
 | developer-cli-ads-manager | entry | dev | 17 | api |
 | developer-cli-ads-manager-reference | — | dev | 60 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
 | developer-cli-analytics | entry | dev | 17 | api |
+| developer-cli-apps | reference | dev | 11 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
+| developer-cli-flows | reference | dev | 11 | api |
+| developer-cli-migrations | reference | dev | 11 | api |
+| developer-cli-paywalls | reference | dev | 6 | api |
+| developer-cli-placements | reference | dev | 11 | api |
+| developer-cli-products | reference | dev | 11 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
-| developer-cli-reference | — | dev | 57 | api |
+| developer-cli-reference | — | dev | 3 | api |
 | export-analytics-with-ai | — | dev | 7 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 11 | tutorial |
+| manage-adapty-with-ai | entry | dev | 12 | tutorial |
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
@@ -207,7 +215,7 @@ on one side, a non-deterministic agent on the other.
     `ads-manager/references/asa-management.md` (writes) or
     `ads-manager/references/asa-metrics.md` (reads). The skill links into those by **exact
     heading string**, so a renamed heading breaks its entry point silently.
-  - A flows or placements command in `developer-cli-reference` / `developer-cli-quickstart` →
+  - A flows or placements command in `developer-cli-flows` / `developer-cli-placements` / `developer-cli-quickstart` →
     `flow-generator/references/placements.md` and `migrate-placements/references/api-surface.md`.
   - An `adapty-sdk-integration-skill*` page claiming what the skill does → the claim is settled
     by `adapty-integration/SKILL.md`, never the other way round.
@@ -239,7 +247,7 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 | "ChatGPT/claude.ai can't fetch my numbers", "the model made the metrics up" | `export-analytics-with-ai`. The hard requirement is a tool that can run terminal commands (Claude Code, Cursor, Codex, Gemini CLI) — plain chat products cannot, and this is called out explicitly. |
 | "what should I test next", "audit my app", "why did revenue drop", "ask AI about my revenue" | `export-analytics-with-ai`, which since 2026-10-22 documents the `growth-advisor` skill: it reads `adapty analytics` with the CLI logged in and returns hypotheses grouped by placement. It does no pricing analysis, by design. Raw commands, flags, the 2 requests/second limit and `--csv` are `developer-cli-analytics`; a server-side or scheduled job with no browser login still belongs on the Export Analytics API (`export-analytics-api`). |
 | "automate account setup", "configure Adapty without the dashboard", "scripted app/product creation" | `developer-cli-quickstart`. One boundary matters more than the commands: connecting App Store Connect / Google Play still requires the dashboard. Segments are no longer read-only: `segments create`/`update` take `--filter field:OPERATOR:value` and `update` replaces the whole segment; segments from Apple Ads entities go through `asa segments create` in `developer-cli-ads-manager-reference` (adapty-cli PR #48, `feat/segments-write`, 2026-10-12; needs the backend release that opens segment writes on the Developer API, which answers 405 before it). |
-| "swap a paywall across placements", "`--paywall-id` deprecated warning", "segment routing disappeared" | `developer-cli-reference`. `--paywall-id` rewrites the placement's whole `audiences` array and silently drops segment-specific entries; the safe path is read with `placements get --json`, edit, write back with `--audiences`. |
+| "swap a paywall across placements", "`--paywall-id` deprecated warning", "segment routing disappeared" | `developer-cli-placements`. `--paywall-id` rewrites the placement's whole `audiences` array and silently drops segment-specific entries; the safe path is read with `placements get --json`, edit, write back with `--audiences`. |
 | "the CLI doesn't work in Cowork", "Claude can't reach adapty.io", "network error installing the CLI", "it keeps asking me to log in again", "the authorization code expired" | `developer-cli-cowork`, and the causes are what make the lookup land: the sandbox blocks non-allowlisted domains and needs **both** `adapty.io` and `*.adapty.io` (a wildcard doesn't cover the apex); settings apply only when a task starts, so a mid-conversation change does nothing until a new task; every task starts on a clean machine, so reinstall-and-login each session is by design, not a bug; and the device code dies after ~15 minutes — the fix is a fresh link, never retyping the old one. |
 | "CLI token expired", "log the CLI out everywhere", "credentials leaked" | `developer-cli-authentication`. `auth logout` only clears the local config — the token stays valid server-side; `auth revoke` is the one that invalidates it. `auth status` reads local state, `auth whoami` actually checks with the server. |
 | "unlock premium for a support case / promo code / investor", "no `is_active` in the response" | `server-side-api-with-ai`, one article for both. Manual grants reach only the webhook integration and Event Feed, so they never show up in analytics; and the server-side profile has no `is_active` — status must be derived from `access_levels[].expires_at` (`null` = lifetime) plus `is_in_grace_period`. |
@@ -249,6 +257,10 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-10-26:** `developer-cli-reference` split by topic. It is now the root: a topic table, the global and pagination flags, and `skills install` with its auto-update note. The commands moved verbatim, heading text unchanged so anchors survive, into `developer-cli-apps` (apps, access levels), `developer-cli-products` (products, and `product-offers` under a "Product offers" section), `developer-cli-paywalls`, `developer-cli-flows`, `developer-cli-placements` (placements, the audiences shape, segments and filter syntax) and `developer-cli-migrations`. The Auth table was dropped: `developer-cli-authentication` covers all five `auth` commands. In the api sidebar, "Command reference" is a category with those pages plus `developer-cli-analytics`; the Ads Manager and Attribution categories stay apart because they hold skill and setup pages too. English inbound anchors were repointed; locale copies keep the old `developer-cli-reference#…` anchors until the next translation run, and those land on the root page. A new CLI topic gets its own page, a row in the root table, and a sidebar entry under the category.
+- **2026-10-23:** "The CLI returns no A/B test results" is true of the `ab-tests` topic only. Its resource has list, get, create, update, start, stop, replace and archive and nothing else (`src/sdk/adapty/ab-tests/resource.ts`, `adapty-cli` PR #59), and no other branch adds a results read. But `adapty analytics catalog` (CLI 0.12.0, read live 2026-10-23) lists a filter dimension `placement_audience_version_id` labelled "A/B tests" and `cross_ab_test_id` ("Cross-placement A/B tests"), accepted by every chart's filters and by conversion, funnel, retention, LTV and cohort; charts and conversion/funnel/retention group by `paywall_id` and `flow_id`. So per-arm numbers can be approximated; the dashboard's own test metrics (P2BB and the rest) cannot. Not verified: what a value of the "A/B tests" dimension is, or whether it equals `ab_test_id` — `analytics values` returned no values for it on every app of the account checked. The three pages that said "the CLI doesn't return test results" now say the `ab-tests` commands or the skill don't.
+- **2026-10-23:** New `developer-cli-ab-tests` (task + reference, the `developer-cli-analytics` shape) for the CLI `ab-tests` topic, and `ab-tests-skill` for the `ab-tests` skill in `adaptyteam/adapty-skills`. Written ahead of the release: the commands are in `adapty-cli` PR #59, still open on this date, and npm `adapty` is 0.12.0; the page says 0.13.0 is the first release with the topic. Re-check every flag against `src/cli/commands/ab-tests/*.ts` and `src/cli/input/ab-tests.ts` when the PR merges. Facts the dashboard docs do not carry: `update` on a started test changes only title and goal (`run_stop_ab_tests` says a live test cannot be edited at all, which is the dashboard's own limit); a one-way command (`start`, `stop`, `replace`, `archive`) without `--yes` and with `--json` or a pipe exits 6 `confirm_required` with the effect text and sends nothing, so a script can read the effect first; a start on a segment with no row adds the row at the top, with no flag to place it lower. Server refusal texts in the page come from the skill's table, which quotes them from test runs, not from the CLI source.
+- **2026-10-23:** `export-analytics-with-ai` (growth-advisor) "From hypothesis to A/B test" rewritten: the skill now hands a picked hypothesis to `ab-tests` once a read shows every piece exists, instead of sending the reader to the dashboard. The old text also said the CLI cannot see A/B-test audiences, wrong since CLI 0.11.0 (`placements get` returns test entries). The two example "Who" lines changed with it.
 - **2026-10-19:** `export-analytics-with-ai` rewritten from the Export Analytics API (secret key + OpenAPI spec URL + `format: csv`) to the `adapty analytics` CLI commands (device-code login, `developer-cli-analytics.md` as the hand-off URL, `--csv`). No skill in `adaptyteam/adapty-skills` covers analytics on this date (checked `plugin/skills` via the GitHub API); the `adapty-cli` repo's own `skills/adapty-cli` skill does, but the docs don't link it as an install target, so the guide hands over the reference page. The secret-key screenshot `export-analytics-secret-key.webp` is no longer used by this article.
 - **2026-10-22:** `export-analytics-with-ai` repurposed (filename kept for SEO) as the article for the `growth-advisor` skill in `adaptyteam/adapty-skills`: install, the audit steps, the hypothesis reply shape, how a picked hypothesis becomes an A/B test, and its limits (no pricing, no A/B test history, no ad spend). The "hand the agent the reference URL" setup moved out; `developer-cli-analytics` is linked for querying without the skill. Sidebar label is now "Find what to test next".
 - **2026-10-19:** CLI v0.10.0 adds the read-only `adapty analytics` topic (`adapty-cli` PR #51, branch `wb-26-analytics-parity`, still open on this date while npm `adapty` already reports 0.10.0): `catalog`, `values`, `chart`, `conversion`, `funnel`, `retention`, `ltv`, `cohort`. Written into the new `developer-cli-analytics` (task + reference on one page, the `developer-cli-attribution` shape), with tips in `analytics`. Ground truth is the repo's `docs/agent/analytics.md` plus `src/cli/base/adapty/flags.ts`; the CLI holds no list of chart or conversion names, so the docs name only the examples the PR itself uses (`revenue`, `mrr`, `trial-paid`, `install-paid`) and send readers to `analytics catalog`. API error codes in the PR's tests are mock fixtures, so the article documents exit codes (2/3/4), not codes. A 403 exits 3 like a missing token (open reviewer point in the PR) — re-check if that mapping changes before merge.

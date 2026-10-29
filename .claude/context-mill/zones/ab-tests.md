@@ -39,6 +39,8 @@ being varied or the placement wiring that attaches the test.
 
 ## Ripple rules
 
+- **The run/stop/edit behaviour in `run_stop_ab_tests` has a terminal twin in `developer-cli-ab-tests` (agent-tooling zone), added 2026-10-23.** A change to what a start, stop or Modify does (who moves into the test, the three stop options, archive rules) moves both; the CLI page states it from `adapty-cli` source, the dashboard page from the UI. Every article in the A/B tests sidebar category except `results-and-metrics` (`ab-tests`, `ab-test-types`, `run_stop_ab_tests`, `ab-test-no-paywall-variants`, `maths-behind-it`) carries the same `:::tip` before its first heading, linking the CLI and skill pages; a new article in the category gets it too. `results-and-metrics` has none by request (2026-10-23): the CLI reads no results.
+
 ## Boundaries
 
 - **`placements-and-audiences`** — is the ticket about attaching an A/B test to a placement/audience

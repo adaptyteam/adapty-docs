@@ -1,0 +1,211 @@
+---
+title: "Flow komutları"
+description: "Adapty CLI komutları; flow oluşturur, builder config'lerini okur ve yazar, doğrular ve önizler, medya yükler ve yayınlar."
+metadataTitle: "Flow CLI Komutları | Adapty Dokümanları"
+---
+
+[Flow'lar](adapty-flow-builder), Flow & Paywall Builder'da oluşturduğunuz paywall'lar ve onboarding'lerdir. CLI, flow kaydını, builder config'ini ve yayımlamayı yönetir. Builder config, Flow & Paywall Builder'ın normalde ürettiği büyük bir JSON belgesidir; CLI bunu kendisi oluşturmaz. Terminaldeki bir config'i yazmak veya düzenlemek için bu komutları sizin adınıza çalıştıran [flow-generator skill](flow-generator-skill)'ini kullanın. Yayımlamadan önce [flow-audit skill](flow-audit-skill), flow'un üretime hazır olup olmadığını kontrol eder. Komutlar burada referans olarak listelenmiştir.
+
+## adapty flows list
+
+Bir uygulamaya ait tüm flow'ları listeler.
+
+```bash
+adapty flows list --app <app-id>
+```
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+[Sayfalandırma flag'lerini](developer-cli-reference#global-flags) kabul eder.
+
+## adapty flows get
+
+Belirli bir flow için ayrıntıları alır.
+
+```bash
+adapty flows get --app <app-id> <flow-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID (UUID) |
+
+Yanıt `id`, `name`, `status` ve `updated_at` içerir. Status değerlerinden biri şunlardır:
+
+| Durum | Anlam |
+|---|---|
+| `draft` | Flow hiç yayınlanmadı |
+| `published` | Mevcut sürüm yayında |
+| `dirty` | Flow daha önce yayınlandı ve mevcut sürümde yayınlanmamış değişiklikler var. Kullanıcılar son yayınlanan sürümü görmeye devam eder |
+| `publishing` | Yayınlama işlemi devam ediyor |
+| `publication_failed` | Son yayınlama başarısız oldu. Yapılandırmayı düzeltin ve tekrar yayınlayın |
+| `archived` | Flow arşivlendi |
+
+## adapty flows create \{#adapty-flows-create\}
+
+Bir flow oluşturur. Yeni flow'un bir adı vardır ancak yapılandırması yoktur. Yapılandırma eklemek için [`flows config update`](#adapty-flows-config-update) komutunu kullanın.
+
+```bash
+adapty flows create --app <app-id> --name "Onboarding"
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--name` | Evet | Flow adı |
+
+## adapty flows update
+
+Bir flow'u yeniden adlandırır.
+
+```bash
+adapty flows update --app <app-id> <flow-id> --name "Onboarding v2"
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | Uygulama ID'si (UUID) |
+| `--name` | Yes | Yeni flow adı |
+
+## adapty flows publish
+
+Flow'un mevcut sürümünü kullanıcılarınıza yayınlayın.
+
+```bash
+adapty flows publish --app <app-id> <flow-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `flow-id` | Flow ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--yes`, `-y` | Hayır | Onay sormadan yayınlayın. Çıktı yönlendirildiğinde veya `--json` kullanıldığında zorunludur |
+
+Değişiklikleri yayımlamak kullanıcılarınızın gördüğü içeriği etkilediğinden, komut flow adını ekrana yazdırır ve onay ister. `y` dışındaki her yanıt, komutu çıkış kodu 1 ile iptal eder. `--json` bayrağı kullanılırken veya bir pipe içinde çalıştırılırken komut, yanıt beklemek yerine çıkış kodu 2 ile reddeder; bu nedenle script'lerde ve agent oturumlarında `--yes` parametresini kullanın.
+
+Yayımlama işlemi asenkrondur: yanıt `status: publishing` döner ve flow henüz yayında değildir. Durum `published` ya da `publication_failed` olana kadar [`flows get`](#adapty-flows-get) ile sorgulama yapın. `publication_failed` durumunda, [`flows config get`](#adapty-flows-config-get) nedenini raporlar.
+
+Flow'un config'i yoksa, config yayımlanabilir değilse veya mevcut sürüm zaten yayındaysa yayımlama HTTP 400 hatasıyla başarısız olur. Yayımlamadan önce bir config'i kontrol etmek için [`flows config validate`](#adapty-flows-config-validate) kullanın.
+
+## adapty flows config get
+
+Bir flow'un builder config'ini okur.
+
+```bash
+adapty flows config get --app <app-id> <flow-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID (UUID) |
+
+Yanıt `config`, `remote_configs`, `status` ve `updated_at` alanlarını içerir. `updated_at`, son config değişikliğinin milisaniye cinsinden zaman damgasıdır. Eş zamanlı bir düzenlemenin üzerine yazmamak için bunu [`flows config update`](#adapty-flows-config-update) komutuna `--expected-updated-at` parametresi olarak geçirin. Config'i hiç yazılmamış bir flow için 404 döner.
+
+Bir yayımlama girişiminin ardından yanıt, sürecin nasıl ilerlediğini açıklayan üç alan daha içerir. Bu alanları [`flows get`](#adapty-flows-get) komutu `publication_failed` döndürdüğünde okuyun:
+
+| Alan | Açıklama |
+|---|---|
+| `publication_status` | Bu flow sürümünün yayınlanma aşaması: `transforming`, `transformed`, `uploading`, `uploaded`, `published` veya `failed` |
+| `transform_error` | Ham dönüştürme hatası — sorunları listeleyen bir JSON yükü veya özet bir metin dizesi |
+| `publication_error` | Başarısız yayın için okunabilir bir mesaj |
+
+## adapty flows config update
+
+Bir flow'un builder config'ini yazar.
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argument | Description |
+|---|---|
+| `flow-id` | Flow ID (UUID) |
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--config` | İkisinden biri | JSON dizesi olarak builder config |
+| `--config-file` | İkisinden biri | Builder config içeren bir JSON dosyasının yolu veya stdin'den okumak için `-` |
+| `--remote-configs` | Hayır | `{locale, data}` girişlerinden oluşan JSON dizisi; `data`, remote config'i dize olarak içerir |
+| `--expected-updated-at` | Hayır | Önceki bir `flows config get` komutundan alınan `updated_at` değeri. Config bu okumadan sonra değiştirildiyse, komut değişikliğin üzerine yazmak yerine başarısız olur. Koşulsuz olarak üzerine yazmak için bu bayrağı atlayın |
+
+Yapılandırmayı kaydetmek bir taslak oluşturur ve yayımlamaz. Yayımlanmış bir flow'da, yazma işlemi yeni bir sürüm oluşturur: flow'un durumu `dirty` olur ve siz [`flows publish`](#adapty-flows-publish) komutunu çalıştırana kadar kullanıcılar yayımlanmış sürümü görmeye devam eder.
+
+## adapty flows config validate
+
+Bir builder config'in kaydedilmeden yayınlanabilir olup olmadığını kontrol eder.
+
+```bash
+adapty flows config validate --app <app-id> <flow-id> --config-file config.json
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `flow-id` | Flow ID'si (UUID) |
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--config` | İkisinden biri | JSON string olarak builder config |
+| `--config-file` | İkisinden biri | Builder config içeren JSON dosyasının yolu veya stdin'den okumak için `-` |
+
+`valid` yanıtı ve bir `issues` listesi içerir. Config yayınlanamaz durumda olduğunda, komut 1 koduyla çıkar; bu sayede scriptler bunu bir kontrol noktası olarak kullanabilir.
+
+## adapty flows config preview
+
+Yerel bir config dosyasını tarayıcıda görüntüler. Bu komut herhangi bir API çağrısı yapmaz ve `--app` bayrağı almaz.
+
+```bash
+adapty flows config preview ./config.json --screen <screen-id> --device iphone-14 --orientation portrait
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `config-file` | Yerel bir builder config JSON dosyasının yolu |
+
+| Bayrak | Varsayılan | Açıklama |
+|---|---|---|
+| `--screen` | Flow'un ilk ekranı | Görüntülenecek ekran ID'si |
+| `--device` | `iphone-14` | Görüntüleneceği cihaz çerçevesi |
+| `--orientation` | `portrait` | `portrait` veya `landscape` |
+
+Terminalde komut, önizlemeyi tarayıcınızda açar. Bir pipe'a yönlendirildiğinde veya `--json` ile kullanıldığında URL'yi yazdırır. URL'nin tamamı config'i içerdiğinden oldukça uzundur: yazdırmak yerine bir ekran görüntüsü aracına pipe edin. Yaklaşık 32 KB'ı aşan config'ler yavaş render edilir.
+
+## adapty flows media upload
+
+Bir flow config'inde kullanmak üzere görsel yükleyin.
+
+```bash
+adapty flows media upload --app <app-id> ./hero.png
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `file` | Görsel dosyasının yolu |
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+
+Kabul edilen formatlar: GIF, HEIC, JPEG, PNG, SVG ve WebP. Yanıt, config'den referans almak için görselin `id`, `name` ve CDN `url` bilgilerini içerir.
+
+## Sırada ne var \{#whats-next\}
+
+- [Komut referansı](developer-cli-reference) — tüm CLI konuları, genel bayraklar ve sayfalama bayrakları.

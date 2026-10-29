@@ -1,0 +1,136 @@
+---
+title: "A/B testleri için ajan skilli"
+description: "ab-tests skillini yükleyerek AI kodlama aracınızın Adapty'de paywall ve flow A/B testleri oluşturmasını, başlatmasını, durdurmasını ve değiştirmesini sağlayın; geri alınamaz her adımdan önce kimin neyi gördüğünü görün."
+metadataTitle: "A/B Testleri Ajan Skilli | Adapty Dokümanları"
+---
+
+ab-tests skill'i, AI kodlama aracınızdan paywall veya flow'ların düzenli [A/B testlerini](ab-tests) çalıştırır. Agent, testi sizinle birlikte planlar, eksik parçaları oluşturur, testi taslak olarak oluşturur ve başlatır, bir kazananla durdurur ya da değiştirilmiş bir versiyonla değiştirir. [`adapty ab-tests` CLI komutları](developer-cli-ab-tests) üzerinden çalışır.
+
+:::note
+Bir testi başlatmayı, durdurmayı, değiştirmeyi veya arşivlemeyi geri alamazsınız. Bu adımların her birinden önce skill, kimin ne zaman ne göreceğini sade bir dille açıklar ve komutu yalnızca onayınızın ardından çalıştırır.
+:::
+
+## Neler sorabilirsiniz \{#what-you-can-ask\}
+
+Bir meslektaşınıza brifing verir gibi sorun. Skill adını belirtmenize gerek yok:
+
+```
+Run a 50/50 test of my Monthly and Annual paywalls for users in Germany.
+
+Test my new onboarding flow against the current one.
+
+Which A/B tests are running in my app?
+
+Stop the price test. B wins.
+
+Change the weights of my flow test to 70/30.
+
+Archive the old tests on the settings placement.
+```
+
+<AgentChat title="ab-tests" caption="Örnek bir uygulama ile örnek konuşma. Placement'larınız ve paywall'larınız farklı olacaktır.">
+<ChatTurn role="user">Almanya'daki kullanıcılar için Main placement'ında Aylık ve Yıllık paywall'larımın 50/50 testini çalıştır.</ChatTurn>
+<ChatTurn role="tool" summary="5 salt okunur komut çalıştırıldı ve taslak oluşturuldu">
+
+- `adapty paywalls list`
+- `adapty placements list`
+- `adapty segments list`
+- `adapty ab-tests create --title "Monthly vs Annual" --paywalls '[…]'`
+- `adapty ab-tests get <test-id>`
+- `adapty placements get <placement-id>`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+"Monthly vs Annual" testini taslak olarak oluşturdum. Henüz hiçbir kullanıcı görmüyor.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="A/B testini başlat">
+
+"Monthly vs Annual" testini Almanya'daki kullanıcılar için Main placement'ta başlat.
+
+- Şu an: Almanya'daki kullanıcılar Monthly paywall'ı görüyor.
+- Bundan sonra: Monthly paywall (%50) veya Annual paywall (%50) görüyorlar. Bir segment için yapılan değişikliğin tüm kullanıcılara ulaşması 20 dakika kadar sürebilir.
+- Durdurulanlar: Monthly paywall, Almanya'daki kullanıcılar için duruyor. Orada şu an çalışan bir test olmadığından durdurulan test yok.
+- **Geri alınamaz.** Testi daha sonra durdurmak, onun yerini aldığı şeyi geri getirmez.
+
+Başlatılsın mı?
+
+1. Yes
+2. No
+
+</ChatTurn>
+</AgentChat>
+
+## Başlamadan önce \{#before-you-start\}
+
+- **Terminal komutları çalıştırabilen bir yapay zeka aracı**: Örneğin Claude Code, Codex, Copilot CLI veya Gemini CLI. claude.ai veya ChatGPT gibi sohbet araçları CLI çalıştıramadığından Adapty hesabınıza erişemez.
+- **Adapty CLI, sürüm 0.13.0 veya üzeri**: Skill, CLI eksikse onu otomatik olarak yükler. CLI'nızda `ab-tests` komutları yoksa skill bunu belirtir ve sizi [kontrol paneline](run_stop_ab_tests) yönlendirir.
+
+## Skill'i yükleyin \{#install-the-skill\}
+
+ab-tests skill'i [`adapty-skills` eklentisinin](https://github.com/adaptyteam/adapty-skills) bir parçasıdır. Eklentiyi yüklemek için terminalinizde şu komutu çalıştırın:
+
+```bash
+npx adapty skills install
+```
+
+Skill'leri yüklemek için agent'ınızı yeniden başlatın. Diğer kurulum yöntemleri için [eklenti README'sine](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install) bakın.
+
+## Skill bir test nasıl çalıştırır \{#how-the-skill-runs-a-test\}
+
+1. Skill sizinle planı üzerinde anlaşır: bir paywall testi mi yoksa flow testi mi, karşılaştırılacak paywall'lar veya flow'lar ve ağırlıkları, placement, kitle ve hedef. Eksik tüm ayrıntıları tek bir mesajda sorar.
+2. Her parçayı doğrular ve yapabileceklerini oluşturur. Bkz. [Testin ihtiyaç duyduğu şeyler](#what-the-test-needs).
+3. Testi taslak olarak oluşturur. Hiçbir kullanıcı taslağı görmez, bu nedenle bu adım onay gerektirmez.
+4. Testi ve placement'ı okur, ardından başlatmanın etkisini gösterir: kitlenin şu an ne gördüğünü, başlatmadan sonra ne göreceğini, hangi paywall, flow veya çalışan testin duracağını ve hangi kullanıcıların teste dahil edileceğini.
+5. Onayınızı bekler. Planla ilgili daha önce verilen bir "devam et" onayı geçerli sayılmaz. Hayır derseniz hiçbir şey göndermez.
+6. Başlatmadan hemen önce placement'ı yeniden okur. Efekti gördüğünüzden bu yana placement değiştiyse yeni etkiyi gösterir ve tekrar sorar.
+7. Testi başlatır ve şu anda nelerin çalıştığını doğrulamak için geri okur.
+
+Bir testi durdurmak, değiştirmek ve arşivlemek 4–7. adımları izler; başlatma yerine ilgili eylem gerçekleştirilir.
+
+Skill, bir kez çalıştırılmış bir testi yeniden başlatmaz; çünkü testte yer alan kullanıcılar eski kollarını tekrar görecektir. Bunun yerine aynı kollarla yeni bir A/B testi önerir.
+
+## Testin ihtiyaç duyduğu şeyler \{#what-the-test-needs\}
+
+Bir test yalnızca var olan içerikleri karşılaştırabilir. Skill her birini doğrular ve CLI'ın oluşturabileceği olanları yapar:
+
+| Parça | Skill'in yaptığı |
+|---|---|
+| Bir flow | Flow'un yayınlandığını doğrular. Bir flow, yayınlandıktan sonra teste katılır. Flow oluşturmak veya yayınlamak için [flow-generator skill](flow-generator-skill) devreye girer. |
+| Adapty'de zaten mevcut ürünlerden oluşan bir paywall | Onayınızın ardından oluşturur. |
+| Yeni tasarımlı bir paywall | Bunu [Paywall Builder](adapty-paywall-builder)'da ya da uygulamanızın kendi çizdiği bir paywall için uygulama kodunuzda yapmanızı ister. |
+| Yeni bir ürün | App Store Connect veya Google Play Console'da oluşturmanızı ve Adapty'ye eklemenizi ister. Bkz. [Ürünler](product). |
+| Bir segment | Onayınızın ardından audiences skill aracılığıyla oluşturur. |
+| Bir placement | Sonradan değiştirilemeyen geliştirici kimliğini onaylamanızın ardından oluşturur. Uygulamanız bu placement'ı kodda çekene kadar yeni placement'tan herhangi bir şey göstermez. Placement üzerindeki bir test, kodu bu placement'ı çeken bir uygulama sürümü yayınlayana kadar hiçbir kullanıcıya ulaşmaz. |
+
+## Testin hangi kitlede yürütüldüğü \{#which-audience-the-test-runs-on\}
+
+Bir test, placement'ın bir kitlesinde yürütülür:
+
+- Placement'ın segmentiniz için zaten bir kitlesi varsa veya test Tüm kullanıcılar için ise, test o kitleyi alır. Orada şu anda yürütülen bir test durur.
+- Placement'ın segmentiniz için kitlesi yoksa, skill placement'a segmentiniz için en yüksek öncelikli bir kitle ekler. Şu anda başka bir kitleyle eşleşen segmentin kullanıcıları teste taşınır ve skill, siz onaylamadan önce bu kitleleri adlandırır.
+
+Teste başka bir kitleden daha düşük öncelik vermek için skill'e sorun. Skill önce segmentinizi, o kullanıcıların şu anda gördüğü paywall veya flow ile birlikte belirtilen öncelikte bir kitle olarak ekler; böylece onlar için hiçbir şey değişmez. Ardından bu kitle üzerinde testi başlatır.
+
+## Testi değiştirme, durdurma veya arşivleme \{#change-stop-or-archive-a-test\}
+
+- **Yeniden adlandırmak veya hedefini değiştirmek**: Skill testi günceller. Kullanıcılar kollarını korur ve test başlangıç zamanını korur.
+- **Canlı bir testin kollarını veya ağırlıklarını değiştirmek**: Skill testi değiştirir. Canlı test durur ve sonuçlarını korur; aynı kitle üzerinde yeni bir test başlar. Adapty, kitledeki her kullanıcıyı yeniden bir kola atar. Kontrol panelinde bu işleme **Modify** denir.
+- **Durdurmak**: Skill'e, kitlenin ardından hangi paywall'u veya flow'u görmesi gerektiğini söyleyin — kazananı, başka bir içeriği ya da hiçbirini. Kazananı seçmek için kontrol panelindeki sonuçları okuyun: [A/B testi sonuçları ve metrikler](results-and-metrics).
+- **Arşivlemek**: Skill, canlı olmayan herhangi bir testi arşivler. Arşivlenmiş bir testi geri yükleyemezsiniz.
+
+## Diğer skill'lerle birlikte \{#with-other-skills\}
+
+- **Ne test edeceğinizi bulun**: [growth-advisor skill'i](export-analytics-with-ai), rakamlarınızı okuyarak hipotezler önerir. Bir tanesini seçtiğinizde growth-advisor, testin ihtiyaç duyduğu her şeyin mevcut olduğunu doğrular ve testi ab-tests skill'ine devreder.
+- **İçeriği oluşturun**: [flow-generator skill'i](flow-generator-skill), test etmek istediğiniz değişiklikle birlikte flow'unuzun bir kopyasını oluşturur.
+- **Test olmadan içerik gösterin**: Farklı kullanıcılara test açmadan farklı paywall'lar veya flow'lar göstermek için agentınıza sorun. audiences skill'i değişikliği gerçekleştirir.
+
+## Sınırlamalar \{#limits\}
+
+- **Sonuç yok**: Skill, test sonuçlarını okumaz. Sonuçları kontrol panelinde inceleyin, ardından hangi kolun kazandığını skill'e bildirin.
+- **Test başına bir placement**: [Çapraz placement testi](ab-test-types) yapmak için kontrol panelini kullanın.
+- **Eski onboarding builder**: Eski onboarding builder'da oluşturulan onboarding testlerini kontrol panelinden yönetin.
+- **Gözetimsiz başlatma yok**: Zamanlanmış bir çalıştırmada veya bir scriptte, soruları yanıtlayacak kimse yokken skill yalnızca testleri listeler ve okur, taslak oluşturur ve değiştirir. Başlatma, durdurma, değiştirme veya arşivleme işlemleri için etkiyi ve çalıştırmanız gereken komutu raporlar.
+
+Komutu skill olmadan kendiniz çalıştırmak için bkz. [CLI'dan A/B testleri çalıştırma](developer-cli-ab-tests).

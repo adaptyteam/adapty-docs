@@ -1,0 +1,136 @@
+---
+title: "Skill cho A/B test"
+description: "Cài skill ab-tests để công cụ AI của bạn có thể tạo, bắt đầu, dừng và thay thế A/B test paywall và flow trong Adapty, đồng thời hiển thị ai đang xem gì trước mỗi bước không thể hoàn tác."
+metadataTitle: "Skill cho A/B Test dành cho Agent | Tài liệu Adapty"
+---
+
+Skill ab-tests chạy các [A/B test](ab-tests) thông thường cho paywall hoặc flow từ công cụ AI coding của bạn. Agent lên kế hoạch test cùng bạn, tạo những phần còn thiếu, tạo test ở trạng thái draft, rồi khởi động, dừng với một người thắng, hoặc thay thế bằng phiên bản đã chỉnh sửa. Tất cả hoạt động thông qua [lệnh CLI `adapty ab-tests`](developer-cli-ab-tests).
+
+:::note
+Bạn không thể hoàn tác việc khởi động, dừng, thay thế hoặc lưu trữ một test. Trước mỗi bước này, skill sẽ giải thích rõ ràng ai sẽ thấy gì và từ khi nào, và chỉ chạy lệnh sau khi bạn xác nhận.
+:::
+
+## Những gì bạn có thể hỏi \{#what-you-can-ask\}
+
+Hỏi như khi bạn briefing cho đồng nghiệp. Bạn không cần đặt tên skill:
+
+```
+Run a 50/50 test of my Monthly and Annual paywalls for users in Germany.
+
+Test my new onboarding flow against the current one.
+
+Which A/B tests are running in my app?
+
+Stop the price test. B wins.
+
+Change the weights of my flow test to 70/30.
+
+Archive the old tests on the settings placement.
+```
+
+<AgentChat title="ab-tests" caption="Ví dụ cuộc trò chuyện với một ứng dụng mẫu. Các placement và paywall của bạn có thể khác.">
+<ChatTurn role="user">Chạy A/B test 50/50 giữa paywall Monthly và Annual cho người dùng ở Đức trên placement Main.</ChatTurn>
+<ChatTurn role="tool" summary="Đã chạy 5 lệnh chỉ đọc và tạo bản nháp">
+
+- `adapty paywalls list`
+- `adapty placements list`
+- `adapty segments list`
+- `adapty ab-tests create --title "Monthly vs Annual" --paywalls '[…]'`
+- `adapty ab-tests get <test-id>`
+- `adapty placements get <placement-id>`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Tôi đã tạo A/B test "Monthly vs Annual" dưới dạng bản nháp. Chưa có người dùng nào thấy nó.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Bắt đầu A/B test">
+
+Bắt đầu "Monthly vs Annual" trên placement Main cho người dùng ở Đức.
+
+- Hiện tại: người dùng ở Đức thấy paywall Monthly.
+- Từ bây giờ: họ sẽ thấy paywall Monthly (50%) hoặc paywall Annual (50%). Một thay đổi cho một phân khúc có thể mất đến 20 phút để đến được mọi người dùng.
+- Dừng lại: paywall Monthly sẽ dừng cho người dùng ở Đức. Không có A/B test nào đang chạy ở đó, vì vậy không có gì bị dừng.
+- **Không thể hoàn tác.** Dừng A/B test sau này sẽ không khôi phục lại những gì đã được thay thế.
+
+Bắt đầu không?
+
+1. Yes
+2. No
+
+</ChatTurn>
+</AgentChat>
+
+## Trước khi bắt đầu
+
+- **Một công cụ AI có thể chạy lệnh terminal**: Ví dụ như Claude Code, Codex, Copilot CLI, hoặc Gemini CLI. Các công cụ chat như claude.ai hay ChatGPT không thể chạy CLI, nên chúng không thể kết nối với tài khoản Adapty của bạn.
+- **Adapty CLI phiên bản 0.13.0 trở lên**: Skill sẽ tự cài CLI nếu chưa có. Khi CLI của bạn chưa có lệnh `ab-tests`, skill sẽ thông báo và chuyển bạn đến [dashboard](run_stop_ab_tests).
+
+## Cài đặt skill \{#install-the-skill\}
+
+Skill ab-tests là một phần của [`adapty-skills` plugin](https://github.com/adaptyteam/adapty-skills). Để cài đặt plugin, chạy lệnh sau trong terminal:
+
+```bash
+npx adapty skills install
+```
+
+Khởi động lại agent để tải các skill. Để biết các phương thức cài đặt khác, xem [plugin README](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install).
+
+## Skill chạy test như thế nào \{#how-the-skill-runs-a-test\}
+
+1. Skill thống nhất với bạn về kế hoạch: test paywall hay test flow, các paywall hoặc flow cần so sánh và tỷ lệ phân bổ, placement, đối tượng, và mục tiêu. Skill sẽ hỏi tất cả các thông tin còn thiếu trong một tin nhắn.
+2. Skill xác minh từng thông tin và tạo những gì có thể. Xem [Những gì test cần](#what-the-test-needs).
+3. Skill tạo test ở trạng thái draft. Không có người dùng nào thấy draft, vì vậy bước này không cần xác nhận.
+4. Skill đọc test và placement, sau đó hiển thị cho bạn thấy tác động của việc bắt đầu: đối tượng hiện đang thấy gì, đối tượng sẽ thấy gì sau khi bắt đầu, paywall, flow hoặc test đang chạy nào sẽ dừng lại, và người dùng nào sẽ được đưa vào test.
+5. Skill chờ xác nhận từ bạn. Một lần "tiếp tục" trước đó về kế hoạch không được tính. Nếu bạn nói không, skill sẽ không gửi gì cả.
+6. Skill đọc lại placement ngay trước khi bắt đầu. Nếu placement đã thay đổi kể từ khi bạn xem hiệu ứng, skill sẽ hiển thị hiệu ứng mới và hỏi lại.
+7. Skill bắt đầu test và đọc lại để xác nhận những gì đang chạy.
+
+Dừng, thay thế và lưu trữ một test thực hiện theo bước 4–7, với hành động tương ứng thay thế cho bước bắt đầu.
+
+Skill sẽ không khởi động lại một test sau khi nó đã chạy, vì những người dùng đã tham gia sẽ lại được phân vào nhóm cũ của họ. Thay vào đó, skill sẽ đề xuất một test mới với các nhóm tương tự.
+
+## Test cần những gì \{#what-the-test-needs\}
+
+Một test chỉ có thể so sánh những nội dung đã tồn tại. Skill sẽ kiểm tra từng phần và tạo ra những phần mà CLI có thể tạo được:
+
+| Phần | Skill làm gì |
+|---|---|
+| Một flow | Xác minh rằng flow đã được published. Một flow chỉ tham gia test sau khi được published. Để build hoặc publish, [skill flow-generator](flow-generator-skill) sẽ đảm nhận. |
+| Một paywall từ các sản phẩm đã có trong Adapty | Tạo paywall đó, sau khi bạn xác nhận. |
+| Một paywall với thiết kế mới | Yêu cầu bạn tạo trong [Paywall Builder](adapty-paywall-builder), hoặc trong code của app nếu đó là paywall do app tự render. |
+| Một sản phẩm mới | Yêu cầu bạn tạo trong App Store Connect hoặc Google Play Console và thêm vào Adapty. Xem [Sản phẩm](product). |
+| Một phân khúc | Tạo thông qua audiences skill, sau khi bạn xác nhận. |
+| Một placement | Tạo sau khi bạn phê duyệt developer ID của nó, vì ID này không thể thay đổi sau này. App của bạn sẽ không hiển thị gì từ một placement mới cho đến khi code lấy placement đó. Một test trên placement sẽ không tiếp cận người dùng nào cho đến khi bạn phát hành phiên bản app có code lấy nó. |
+
+## A/B test chạy trên đối tượng nào \{#which-audience-the-test-runs-on\}
+
+Một A/B test chạy trên một đối tượng của placement:
+
+- Khi placement đã có đối tượng cho phân khúc của bạn, hoặc A/B test dành cho All users, A/B test sẽ lấy đối tượng đó. Mọi A/B test đang chạy ở đó sẽ dừng lại.
+- Khi placement chưa có đối tượng cho phân khúc của bạn, skill sẽ thêm một đối tượng cho phân khúc đó với mức ưu tiên cao nhất trên placement. Người dùng thuộc phân khúc đó hiện đang khớp với một đối tượng khác sẽ được chuyển vào A/B test, và skill sẽ đặt tên cho các đối tượng đó trước khi bạn xác nhận.
+
+Để cho test có mức ưu tiên thấp hơn một đối tượng khác, hãy hỏi skill. Skill sẽ trước tiên thêm phân khúc của bạn làm một đối tượng với mức ưu tiên đó và với paywall hoặc flow mà những người dùng đó đang thấy hiện tại, để mọi thứ không thay đổi với họ. Sau đó skill mới bắt đầu test trên đối tượng đó.
+
+## Thay đổi, dừng hoặc lưu trữ một bài test \{#change-stop-or-archive-a-test\}
+
+- **Đổi tên hoặc thay đổi mục tiêu**: Skill cập nhật A/B test. Người dùng giữ nguyên biến thể của mình và A/B test giữ nguyên thời gian bắt đầu.
+- **Thay đổi biến thể hoặc tỷ lệ phân bổ của một A/B test đang chạy**: Skill thay thế A/B test. A/B test đang chạy sẽ dừng lại và giữ nguyên kết quả, đồng thời một A/B test mới bắt đầu trên cùng đối tượng. Adapty sẽ phân bổ lại mọi người dùng trong đối tượng vào một biến thể. Trên dashboard, thao tác này là **Modify**.
+- **Dừng lại**: Cho skill biết paywall hoặc flow nào mà đối tượng sẽ thấy sau đó — biến thể thắng, nội dung khác, hoặc không có gì. Để chọn biến thể thắng, hãy xem kết quả trên dashboard: [Kết quả và chỉ số A/B test](results-and-metrics).
+- **Lưu trữ**: Skill lưu trữ bất kỳ A/B test nào chưa đang chạy. Bạn không thể khôi phục A/B test đã lưu trữ.
+
+## Kết hợp với các skill khác \{#with-other-skills\}
+
+- **Tìm điều cần kiểm thử**: Skill [growth-advisor](export-analytics-with-ai) đọc số liệu của bạn và đề xuất các giả thuyết. Khi bạn chọn một giả thuyết, growth-advisor sẽ xác minh rằng mọi thứ cần thiết cho bài test đều đã có sẵn, sau đó chuyển bài test cho skill ab-tests.
+- **Xây dựng nội dung**: Skill [flow-generator](flow-generator-skill) tạo một bản sao flow của bạn với thay đổi cần kiểm thử.
+- **Hiển thị nội dung không qua test**: Để hiển thị các paywall hoặc flow khác nhau cho những người dùng khác nhau mà không cần A/B test, hãy hỏi agent của bạn. Skill audiences sẽ thực hiện thay đổi đó.
+
+## Giới hạn \{#limits\}
+
+- **Không có kết quả**: Skill không đọc kết quả test. Hãy xem kết quả trên dashboard, sau đó cho skill biết biến thể nào thắng.
+- **Một placement mỗi test**: Để chạy [crossplacement test](ab-test-types), hãy dùng dashboard.
+- **Old onboarding builder**: Quản lý các test onboarding được tạo bằng old onboarding builder trên dashboard.
+- **Không tự động khởi chạy**: Khi chạy theo lịch hoặc trong script mà không có người trả lời, skill chỉ liệt kê và đọc các test, cũng như tạo và chỉnh sửa các bản nháp. Đối với các thao tác bắt đầu, dừng, thay thế hoặc lưu trữ, skill sẽ báo cáo hiệu ứng và lệnh để bạn tự chạy.
+
+Để tự chạy các lệnh mà không cần skill, xem [Chạy A/B test từ CLI](developer-cli-ab-tests).

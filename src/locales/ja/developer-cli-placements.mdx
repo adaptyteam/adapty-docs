@@ -1,0 +1,258 @@
+---
+title: "プレースメントとセグメントのコマンド"
+description: "プレースメントとそのオーディエンスを作成・更新し、オーディエンスが対象とするセグメントを作成するAdapty CLIコマンドです。"
+metadataTitle: "プレースメントとセグメントのCLIコマンド | Adapty ドキュメント"
+---
+
+これらのAdapty CLIコマンドは、[プレースメント](placements)、プレースメント上のオーディエンス、およびオーディエンスが対象とする[セグメント](segments)を管理します。
+
+## プレースメント \{#placements\}
+
+[プレースメント](placements)は、フロー、ペイウォール、オンボーディングがユーザーに届く場所です。プレースメントのコンテンツタイプは作成時に固定されるため、アプリをペイウォールからフローに移行する際は既存のプレースメントを更新するのではなく新しいプレースメントを作成する必要があります。[migrate-placements スキル](migrate-placements-skill)を使用すると、これらのコマンドを一括で実行できます。
+
+### adapty placements list
+
+アプリのすべての[プレースメント](placements)を一覧表示します。
+
+```bash
+adapty placements list --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+[ページネーションフラグ](developer-cli-reference#global-flags)を使用できます。
+
+各アイテムには `id`、`developer_id`、`title`、`is_active` が含まれます。`is_active` は有効なプレースメントの場合は `true`、無効な場合は `false` です。
+
+### adapty placements get
+
+特定の[プレースメント](placements)の詳細を取得します。
+
+```bash
+adapty placements get --app <app-id> <placement-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `placement-id` | プレースメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+レスポンスには `id`、`developer_id`、`title`、`is_active`、および `audiences` 配列が含まれます。`is_active` は有効なプレースメントの場合は `true`、無効な場合は `false` です。各オーディエンスエントリには `content_type`、`segment_ids`、`priority`、およびコンテンツの ID（`paywall` の場合は `paywall_id`、`flow` の場合は `flow_id`、[A/B テスト](ab-tests)を実行するオーディエンスの場合は `ab_test_id` と `ab_test_title`）が含まれます。デフォルトオーディエンスは `segment_ids: []` を持ち、最も高い優先度値（最後に評価）となります。[オーディエンスの構造](#audiences-shape)を参照してください。
+
+### adapty placements create
+
+新しい[プレースメント](placements)を作成します。
+
+```bash
+adapty placements create --app <app-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--title` | はい | プレースメントのタイトル |
+| `--developer-id` | はい | アプリのコードでこの[プレースメント](placements)をリクエストする際に使用する文字列識別子 |
+| `--audiences` | どちらか一方 | オーディエンスエントリの JSON 配列。各エントリには明示的な `content_type` が必要です。[オーディエンスの形式](#audiences-shape)を参照 |
+| `--paywall-id` | どちらか一方 | **非推奨。** [ペイウォール](paywalls) ID（UUID）。クライアント側で単一のデフォルトオーディエンスとしてラップされます |
+
+`--audiences` または `--paywall-id` のどちらか一方のみを指定してください。両方指定するか、どちらも指定しない場合はエラーになります。
+
+:::warning
+`--paywall-id` は非推奨であり、将来削除される予定です。渡された場合、CLI は stderr に警告を表示し、その値をデフォルトのオーディエンスに変換します。新しい自動化には `--audiences` を使用してください。
+:::
+
+### adapty placements update
+
+既存の[プレースメント](placements)の全フィールドを置き換えます。
+
+```bash
+adapty placements update --app <app-id> <placement-id> --title "Main" --developer-id "main" --audiences '[{"content_type":"paywall","segment_ids":[],"paywall_id":"<paywall-id>","priority":0}]'
+```
+
+このコマンドは、オーディエンスの完全なリストを含む、プレースメントの全フィールドを置き換えます。
+
+| 引数 | 説明 |
+|---|---|
+| `placement-id` | プレースメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--title` | はい | プレースメントのタイトル |
+| `--developer-id` | はい | アプリのコードでこの[プレースメント](placements)をリクエストする際に使用する文字列識別子 |
+| `--audiences` | どちらか一方 | オーディエンスエントリの JSON 配列。各エントリには明示的な `content_type` が必要です。[Audiences shape](#audiences-shape) を参照 |
+| `--paywall-id` | どちらか一方 | **非推奨。** [ペイウォール](paywalls) ID（UUID）。すべてのオーディエンスを単一のデフォルトオーディエンスに置き換えます |
+
+:::warning
+`--paywall-id` を渡すと、プレースメント上のすべてのオーディエンスが上書きされます。セグメント固有のオーディエンスは削除されます。保持するには `--audiences` を使用し、残したいエントリをすべて含めてください。
+:::
+
+#### オーディエンスの構造 \{#audiences-shape\}
+
+`--audiences` フラグは JSON 配列を受け取ります。各エントリには以下が含まれます:
+
+| フィールド | 型 | 説明 |
+|---|---|---|
+| `content_type` | `string` | すべてのエントリで必須。`"paywall"`、`"flow"`、`"ab_test"`（ペイウォール A/B テスト）、`"flow_ab_test"`（フロー A/B テスト）、`"cross_ab_test"`または`"flow_cross_ab_test"`（クロスプレースメント A/B テスト）。ペイウォールのプレースメントでは`paywall`、`ab_test`、`cross_ab_test`を使用し、フローのプレースメントでは`flow`、`flow_ab_test`、`flow_cross_ab_test`を使用する |
+| `segment_ids` | `string[]` | このオーディエンスのターゲットとなる[セグメント](segments) ID。長さは0または1。空の配列は**デフォルトオーディエンス**を示し、他のどのセグメントにもマッチしないユーザーへのフォールバックとなる |
+| `paywall_id` | `string` | このオーディエンスのユーザーに表示する[ペイウォール](paywalls) ID（UUID）。`content_type`が`"paywall"`の場合は必須 |
+| `flow_id` | `string` | このオーディエンスのユーザーに表示する[フロー](adapty-flow-builder) ID（UUID）。`content_type`が`"flow"`の場合は必須 |
+| `ab_test_id` | `string` | このオーディエンスのユーザーに対して実行する[A/B テスト](ab-tests) ID。4つの A/B テストコンテンツタイプすべてで必須 |
+| `ab_test_title` | `string` | A/B テストのタイトル。読み取り専用：書き込み時は API によって無視される |
+| `priority` | `number` | 0始まりで、プレースメント内で一意。オーディエンスは値の低い順に評価され、デフォルトオーディエンスは最も高い値を持つ必要がある |
+
+プレースメントには、デフォルトのオーディエンスが必ず1つ必要です。
+
+:::warning
+`placements update` はオーディエンスリスト全体を置き換えます。A/B テストを実行中のオーディエンスも対象です。実行中のテストを維持するには、`placements get` からそのエントリをコピーして、`ab_test_id` と `segment_ids` を変更せずに `--audiences` にそのまま含めてください。エントリを削除または置き換えると、勝者なしでテストが停止します。エントリを別のセグメントに移動するとテストが再開され、別のオーディエンスに `ab_test_id` を指定するとそこでテストが開始されます。優先順位だけを変更した場合はテストが継続されます。これらのケースについて CLI は警告を表示しません。
+:::
+
+クロスプレースメント A/B テスト エントリ（`cross_ab_test`、`flow_cross_ab_test`）は読み取り専用です。API は書き込み時にそれらを無視し、保存済みの値を維持します。
+
+プレースメントのコンテンツタイプは作成時に固定されるため、`placements update` でペイウォールのプレースメントをフローに切り替えたり、その逆を行ったりすることはできません。フロー専用のプレースメントを作成してください — [フロー用の新しいプレースメントを作成する](migrate-to-flows#create-a-new-placement-for-your-flow)をご覧ください。
+
+CLIはリクエストを送信する前にすべてのエントリを確認します。`content_type` が不明または欠落しているエントリ、あるいはその `content_type` が必要とするIDが不足しているエントリは、コード2で終了し、何も送信されません。CLIが認識できない `content_type` の場合、`this CLI does not know this audience kind; update the CLI` と表示されます。エントリが `placements get` から取得されたものであれば、エントリを削除するのではなくCLIをアップデートしてください。そのエントリは実行中のA/B テストである可能性があります。
+
+フローをアタッチできるのは、公開済みの場合のみです。`draft` 状態のフロー、またはまだ最初の公開処理が完了していないフローは、サーバーによって拒否されます。CLI はその拒否を認識し、終了コード 2 で終了し、対象フローの `flows publish` コマンドを出力します。フローを公開するには、[`flows publish`](developer-cli-flows#adapty-flows-publish) または [フロー＆ペイウォールビルダー](builder-save-publish) を使用し、ステータスが `published` になるまで待ってください。
+
+ターゲットオーディエンスが 1 つとデフォルトが 1 つある場合の例：
+
+```bash
+adapty placements update <placement-id> --app <app-id> --title "Main" --developer-id "main" \
+  --audiences '[{"content_type":"paywall","segment_ids":["<vip-segment-id>"],"paywall_id":"<vip-paywall-id>","priority":0},{"content_type":"paywall","segment_ids":[],"paywall_id":"<default-paywall-id>","priority":1}]'
+```
+
+公開済みのフローをすべてのユーザーに配信するプレースメントの例：
+
+```bash
+adapty placements create --app <app-id> --title "Onboarding" --developer-id "onboarding" \
+  --audiences '[{"content_type":"flow","segment_ids":[],"flow_id":"<flow-id>","priority":0}]'
+```
+
+セグメント固有のルーティングを失わずに複数のプレースメント間でペイウォールを入れ替えるには:
+
+1. 影響を受けるプレースメントを検索する:
+
+   ```bash
+   adapty paywalls placements --app <app-id> <old-paywall-id>
+   ```
+
+2. それぞれについて、`audiences` 配列全体を取得する:
+
+   ```bash
+   adapty placements get --app <app-id> <placement-id> --json
+   ```
+
+3. 該当する `paywall_id` の値をクライアント側で置き換える。A/B テストのエントリを含め、他のすべてのエントリは変更しない。
+
+4. 変更したペイロードを書き戻す:
+
+   ```bash
+   adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
+   ```
+
+## セグメント \{#segments\}
+
+[セグメント](segments)は、プロファイル属性によってユーザーをグループ化します。以下のコマンドを使用してセグメントを作成したり、[プレースメントのオーディエンス](#audiences-shape)を構成する際にセグメントIDを検索したりできます。Apple Ads のキャンペーン、広告グループ、またはキーワードからセグメントを作成するには、代わりに [`adapty asa segments create`](developer-cli-ads-manager-reference#segments) を使用してください。Apple IDを自動的に検索し、Ads Manager と同じ方法でセグメントに名前を付けます。
+
+### adapty segments list
+
+アプリのすべての[セグメント](segments)を一覧表示します。
+
+```bash
+adapty segments list --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+[ページネーションフラグ](developer-cli-reference#global-flags)を使用できます。
+
+### adapty segments get
+
+特定の[セグメント](segments)の詳細を取得します。
+
+```bash
+adapty segments get --app <app-id> <segment-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `segment-id` | セグメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+レスポンスには `id`、`title`、`description`、`filters`、`profile_count`、`refresh_in_progress`、`created_at`、`updated_at` が含まれます。`list` は `id`、`title`、`description` のみを返します。
+
+### adapty segments create
+
+[セグメント](segments)を1つ以上のフィルターから作成します。
+
+```bash
+adapty segments create --app <app-id> --title "US installs" --filter ip_country:IN:US --filter install_date:>=:2026-01-01
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--title` | はい | セグメントのタイトル |
+| `--filter` | はい | フィルタールール。繰り返し指定可能。[フィルター構文](#filter-syntax)を参照 |
+| `--description` | いいえ | セグメントの説明 |
+
+ユーザーがセグメントに一致するのは、すべてのフィルターに一致する場合のみです。レスポンスは `segments get` と同じフィールドを持ちます。`profile_count` は `0` から始まり、セグメント作成後に Adapty が再計算します。
+
+### adapty segments update
+
+既存の[セグメント](segments)のタイトル、説明、フィルターを置き換えます。
+
+```bash
+adapty segments update --app <app-id> <segment-id> --title "US installs" --filter ip_country:IN:US,CA
+```
+
+| 引数 | 説明 |
+|---|---|
+| `segment-id` | セグメント ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--title` | Yes | セグメントのタイトル |
+| `--filter` | Yes | フィルタールール。繰り返し指定可。[フィルター構文](#filter-syntax)を参照 |
+| `--description` | No | セグメントの説明 |
+
+:::warning
+`segments update` はセグメント全体を置き換えます。変更したいフィルターだけでなく、保持したいすべてのフィルターを渡してください。現在のフィルターを確認するには、`adapty segments get --app <app-id> <segment-id> --json` を実行してください。
+:::
+
+#### フィルターの構文 \{#filter-syntax\}
+
+各 `--filter` は `field:OPERATOR:value` の形式で記述します。複数の値のいずれかに一致させるには、値をカンマで区切ります（例: `ip_country:IN:US,CA`）。
+
+| オペレーター | 値 | 例 |
+|---|---|---|
+| `IN`, `NOT IN` | 1つ以上 | `ip_country:NOT IN:US,CA` |
+| `>`, `>=`, `<`, `<=` | 1つ | `age:>:18` |
+| `BETWEEN` | 2つ | `total_revenue_usd:BETWEEN:10,100` |
+| `IS NULL`, `IS NOT NULL` | なし | `age:IS NULL` |
+
+数値はそのまま渡してください（例：`age:>:18`）。Adapty は `age`、`total_revenue_usd`、float型のカスタム属性などの数値フィールドに対して自動的に変換します。
+
+この短縮形では表現できない値については、フィルターを JSON オブジェクトとして渡してください：
+
+```bash
+adapty segments create --app <app-id> --title "Adults" --filter '{"field_name":"age","operator":">","value_list":[18]}'
+```
+
+Adapty はフィールド名、演算子、値の型を検証し、無効なフィルターごとにエラーを報告します。既存のフィルターのフィールド名や値のフォーマットを確認するには、ダッシュボードで作成したセグメントに対して `adapty segments get --app <app-id> <segment-id> --json` を実行してください。
+
+## 次のステップ \{#whats-next\}
+
+- [コマンドリファレンス](developer-cli-reference) — すべての CLI トピック、グローバルフラグ、ページネーションフラグ。

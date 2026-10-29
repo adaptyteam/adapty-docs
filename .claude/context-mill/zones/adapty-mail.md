@@ -195,6 +195,16 @@ core in-app paywall/subscription product.
   disabled integration already exists. The tooltip is *"Set up at least one flow before enabling Adapty
   integration"* with no trailing period. Check these strings in the dashboard before writing any
   navigation path here — a tab rename ships without a docs ticket, and nothing in this repo catches it.
+- **Marketing consent is opt-out: only a recorded `false` blocks it** (verified 2026-10-27 against backend
+  and dashboard code on the production line). A profile carries `email_consent` (true / false / none),
+  set by the public `profile/save/` field or by a custom attribute `email_consent` (`true`/`false`/`1`/`0`)
+  from any source except FunnelFox, whose attribute is ignored. `false` stops marketing, the double
+  opt-in request, and already-scheduled marketing at send time; other transactional email is unaffected.
+  `true` does not skip double opt-in. A save without the field keeps the stored answer; a later answer
+  replaces it. The dashboard shows it as **Email consent** (Granted / Denied / Not provided) on the
+  Profile card and a **Consent denied** header badge. A 30-day "answer required" deadline and US
+  exemption existed for two days (2026-10-24..26) and were removed with their dashboard banner and
+  settings section — never document them.
 
 ## What we document, what we don't
 

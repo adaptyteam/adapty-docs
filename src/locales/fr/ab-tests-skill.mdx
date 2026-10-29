@@ -1,0 +1,136 @@
+---
+title: "Skill agent pour les tests A/B"
+description: "Installez le skill ab-tests pour que votre outil de codage IA crée, lance, arrête et remplace des tests A/B de paywall et de flow dans Adapty, et vous montre qui voit quoi avant chaque étape irréversible."
+metadataTitle: "Skill Agent pour les Tests A/B | Documentation Adapty"
+---
+
+Le skill ab-tests exécute des [tests A/B](ab-tests) de paywalls ou de flows directement depuis votre outil de codage IA. Votre agent planifie le test avec vous, crée les éléments manquants, génère le test en brouillon, puis le démarre, l'arrête avec un gagnant, ou le remplace par une version modifiée. Il fonctionne via les [commandes CLI `adapty ab-tests`](developer-cli-ab-tests).
+
+:::note
+Vous ne pouvez pas annuler le démarrage, l'arrêt, le remplacement ou l'archivage d'un test. Avant chacune de ces étapes, le skill vous explique clairement qui verra quoi et à partir de quand, et n'exécute la commande qu'après votre confirmation.
+:::
+
+## Ce que vous pouvez demander \{#what-you-can-ask\}
+
+Formulez votre demande comme si vous briefiez un collègue. Vous n'avez pas besoin de nommer le skill :
+
+```
+Run a 50/50 test of my Monthly and Annual paywalls for users in Germany.
+
+Test my new onboarding flow against the current one.
+
+Which A/B tests are running in my app?
+
+Stop the price test. B wins.
+
+Change the weights of my flow test to 70/30.
+
+Archive the old tests on the settings placement.
+```
+
+<AgentChat title="ab-tests" caption="Exemple de conversation avec un exemple d'application. Vos placements et paywalls seront différents.">
+<ChatTurn role="user">Lance un test 50/50 de mes paywalls Mensuel et Annuel pour les utilisateurs en Allemagne sur le placement Principal.</ChatTurn>
+<ChatTurn role="tool" summary="A exécuté 5 commandes en lecture seule et créé un brouillon">
+
+- `adapty paywalls list`
+- `adapty placements list`
+- `adapty segments list`
+- `adapty ab-tests create --title "Monthly vs Annual" --paywalls '[…]'`
+- `adapty ab-tests get <test-id>`
+- `adapty placements get <placement-id>`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+J'ai créé le test « Monthly vs Annual » en tant que brouillon. Aucun utilisateur ne le voit encore.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Démarrer le test A/B">
+
+Démarrer « Monthly vs Annual » sur le placement Main pour les utilisateurs en Allemagne.
+
+- Maintenant : les utilisateurs en Allemagne voient le paywall Monthly.
+- À partir de maintenant : ils voient le paywall Monthly (50 %) ou le paywall Annual (50 %). Une modification pour un segment peut mettre jusqu'à 20 minutes à atteindre chaque utilisateur.
+- Arrêt : le paywall Monthly s'arrête pour les utilisateurs en Allemagne. Aucun test ne s'y exécute actuellement, donc aucun ne s'arrête.
+- **Irréversible.** Arrêter le test plus tard ne rétablit pas ce qu'il a remplacé.
+
+Démarrer ?
+
+1. Yes
+2. No
+
+</ChatTurn>
+</AgentChat>
+
+## Avant de commencer \{#before-you-start\}
+
+- **Un outil IA capable d'exécuter des commandes dans le terminal** : par exemple Claude Code, Codex, Copilot CLI ou Gemini CLI. Les outils de chat comme claude.ai ou ChatGPT ne peuvent pas exécuter la CLI et n'ont donc pas accès à votre compte Adapty.
+- **L'Adapty CLI, version 0.13.0 ou ultérieure** : le skill installe la CLI si elle est absente. Si votre CLI ne dispose pas des commandes `ab-tests`, le skill vous en informe et vous renvoie vers le [tableau de bord](run_stop_ab_tests).
+
+## Installer le skill \{#install-the-skill\}
+
+Le skill ab-tests fait partie du [plugin `adapty-skills`](https://github.com/adaptyteam/adapty-skills). Pour installer le plugin, exécutez dans votre terminal :
+
+```bash
+npx adapty skills install
+```
+
+Redémarrez votre agent pour charger les skills. Pour d'autres méthodes d'installation, consultez le [README du plugin](https://github.com/adaptyteam/adapty-skills/blob/main/plugin/README.md#install).
+
+## Comment le skill exécute un test \{#how-the-skill-runs-a-test\}
+
+1. Le skill s'accorde avec vous sur le plan : un test de paywall ou de flow, les paywalls ou flows à comparer et leurs poids, le placement, l'audience et l'objectif. Il vous demande tous les détails manquants en un seul message.
+2. Il vérifie chaque élément et crée ce qu'il peut. Voir [Ce dont le test a besoin](#what-the-test-needs).
+3. Il crée le test en tant que brouillon. Aucun utilisateur ne voit un brouillon, donc cette étape ne nécessite pas de confirmation.
+4. Il lit le test et le placement, puis vous montre l'effet du démarrage : ce que l'audience voit maintenant, ce qu'elle verra après le démarrage, quel paywall, flow ou test en cours s'arrête, et quels utilisateurs rejoignent le test.
+5. Il attend votre confirmation. Un « allez-y » donné plus tôt au sujet du plan ne compte pas. Si vous dites non, il n'envoie rien.
+6. Il relit le placement juste avant le démarrage. Si le placement a changé depuis que vous avez vu l'effet, il vous présente le nouvel effet et vous redemande confirmation.
+7. Il démarre le test et le relit pour confirmer ce qui est en cours d'exécution.
+
+Arrêter, remplacer ou archiver un test suit les étapes 4 à 7, avec l'action correspondante à la place du démarrage.
+
+Le skill ne relance pas un test après son exécution, car les utilisateurs qui y participaient retrouveraient leur ancienne variante. Il propose plutôt un nouveau test avec les mêmes variantes.
+
+## Ce dont le test a besoin \{#what-the-test-needs\}
+
+Un test ne peut comparer que du contenu qui existe. Le skill vérifie chaque élément et crée ceux que le CLI peut générer :
+
+| Élément | Ce que le skill fait |
+|---|---|
+| Un flow | Vérifie que le flow est publié. Un flow ne rejoint un test qu'une fois publié. Pour en créer ou publier un, le [skill flow-generator](flow-generator-skill) prend le relais. |
+| Un paywall avec des produits déjà dans Adapty | Le crée, après votre confirmation. |
+| Un paywall avec un nouveau design | Vous demande de le créer dans le [Paywall Builder](adapty-paywall-builder), ou dans le code de votre application pour un paywall dessiné par l'application elle-même. |
+| Un nouveau produit | Vous demande de le créer dans App Store Connect ou Google Play Console et de l'ajouter à Adapty. Voir [Produits](product). |
+| Un segment | Le crée via le skill audiences, après votre confirmation. |
+| Un placement | Le crée après que vous ayez approuvé son identifiant développeur, qui ne peut pas être modifié ultérieurement. Votre application n'affiche rien depuis un nouveau placement tant que son code ne récupère pas ce placement. Un test sur le placement n'atteint aucun utilisateur tant que vous ne publiez pas une version de l'application dont le code récupère ce placement. |
+
+## Sur quelle audience le test s'exécute \{#which-audience-the-test-runs-on\}
+
+Un test s'exécute sur une audience du placement :
+
+- Quand le placement possède déjà une audience pour votre segment, ou que le test concerne tous les utilisateurs, le test utilise cette audience. Tout test en cours sur cette audience s'arrête.
+- Quand le placement ne possède pas d'audience pour votre segment, le skill ajoute une audience pour votre segment avec la priorité la plus haute sur le placement. Les utilisateurs du segment qui correspondent actuellement à une autre audience sont déplacés dans le test, et le skill nomme ces audiences avant que vous ne confirmiez.
+
+Pour donner au test une priorité inférieure à celle d'une autre audience, demandez au skill. Le skill commence par ajouter votre segment comme audience avec cette priorité et avec le paywall ou le flow que ces utilisateurs voient actuellement, afin que rien ne change pour eux. Ensuite, il lance le test sur cette audience.
+
+## Modifier, arrêter ou archiver un test \{#change-stop-or-archive-a-test\}
+
+- **Le renommer ou modifier son objectif** : le skill met à jour le test. Les utilisateurs conservent leurs variantes et le test conserve sa date de démarrage.
+- **Modifier les variantes ou les pondérations d'un test en cours** : le skill remplace le test. Le test en cours s'arrête et conserve ses résultats, et un nouveau test démarre sur la même audience. Adapty réassigne chaque utilisateur de l'audience à une variante. Dans le tableau de bord, c'est **Modify**.
+- **L'arrêter** : indiquez au skill quel paywall ou flow l'audience doit voir ensuite — le gagnant, un autre contenu, ou rien. Pour choisir le gagnant, consultez les résultats dans le tableau de bord : [Résultats et métriques du test A/B](results-and-metrics).
+- **L'archiver** : le skill archive tout test qui n'est pas en cours. Un test archivé ne peut pas être restauré.
+
+## Avec les autres skills \{#with-other-skills\}
+
+- **Trouver quoi tester** : Le [skill growth-advisor](export-analytics-with-ai) analyse vos chiffres et suggère des hypothèses. Quand vous en choisissez une, growth-advisor vérifie que tout ce dont le test a besoin existe, puis confie le test au skill ab-tests.
+- **Créer le contenu** : Le [skill flow-generator](flow-generator-skill) crée une copie de votre flow avec la modification à tester.
+- **Afficher du contenu sans test** : Pour montrer différents paywalls ou flows à différents utilisateurs sans test, demandez à votre agent. Le skill audiences effectue le changement.
+
+## Limites \{#limits\}
+
+- **Aucun résultat** : Le skill ne lit pas les résultats des tests. Consultez-les dans le tableau de bord, puis indiquez au skill quel bras a gagné.
+- **Un placement par test** : Pour exécuter un [test croisé de placements](ab-test-types), utilisez le tableau de bord.
+- **Ancien builder d'onboarding** : Gérez les tests d'onboarding créés dans l'ancien builder d'onboarding depuis le tableau de bord.
+- **Pas de démarrage sans surveillance** : Lors d'une exécution planifiée ou d'un script, sans personne pour répondre, le skill se contente de lister et lire les tests, et de créer ou modifier des brouillons. Pour démarrer, arrêter, remplacer ou archiver, il indique l'effet et la commande à exécuter.
+
+Pour exécuter les commandes vous-même, sans le skill, consultez [Lancer des tests A/B depuis la CLI](developer-cli-ab-tests).
