@@ -1,6 +1,6 @@
 ---
 title: "Placements and segments commands"
-description: "Adapty CLI commands that create and update placements and their audiences, and create the segments those audiences target."
+description: "Adapty CLI commands that create and update placements and their audiences, read the metrics of flow placements, and create the segments those audiences target."
 metadataTitle: "Placements and Segments CLI Commands | Adapty Docs"
 ---
 
@@ -21,10 +21,11 @@ adapty placements list --app <app-id>
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
+| `--type` | No | List only placements of this type: `paywall`, `flow`, or `onboarding` |
 
 Accepts [pagination flags](developer-cli-reference#global-flags).
 
-Each item contains `id`, `developer_id`, `title`, and `is_active`. `is_active` is `true` for a live placement and `false` for an inactive one.
+Each item contains `id`, `developer_id`, `title`, `is_active`, and `type`. `is_active` is `true` for a live placement and `false` for an inactive one. `type` is the content type of the placement: `paywall`, `flow`, or `onboarding`. In `--json`, a placement without a type has `type: null`. The `--type` flag and the `type` field need CLI version 0.15.0 or later.
 
 ### adapty placements get
 
@@ -42,7 +43,7 @@ adapty placements get --app <app-id> <placement-id>
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
 
-The response contains `id`, `developer_id`, `title`, `is_active`, and an `audiences` array. `is_active` is `true` for a live placement and `false` for an inactive one. Each audience entry carries `content_type`, `segment_ids`, `priority`, and the ID of its content: `paywall_id` for `paywall`, `flow_id` for `flow`, or `ab_test_id` and `ab_test_title` for an audience that runs an [A/B test](ab-tests). The default audience has `segment_ids: []` and the highest priority value (last evaluated). See [Audiences shape](#audiences-shape).
+The response contains `id`, `developer_id`, `title`, `is_active`, `type`, and an `audiences` array. `is_active` is `true` for a live placement and `false` for an inactive one. Each audience entry carries `content_type`, `segment_ids`, `priority`, and the ID of its content: `paywall_id` for `paywall`, `flow_id` for `flow`, or `ab_test_id` and `ab_test_title` for an audience that runs an [A/B test](ab-tests). The default audience has `segment_ids: []` and the highest priority value (last evaluated). See [Audiences shape](#audiences-shape).
 
 ### adapty placements create
 
@@ -155,6 +156,80 @@ To swap a paywall across multiple placements without losing segment-specific rou
    ```bash
    adapty placements update --app <app-id> <placement-id> --title "<title>" --developer-id "<developer-id>" --audiences '<modified-payload>'
    ```
+
+### adapty placements metrics list
+
+Show the lifetime metrics of several flow placements, one line for each placement. This is the data of the placements table in the dashboard.
+
+```bash
+adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--type` | Yes | Placement type, as [`placements list`](#adapty-placements-list) shows it: `flow` |
+| `--ids` | Yes | Placement IDs (UUIDs). Separate them with commas, or repeat the flag |
+| `--csv` | No | Print CSV: one row for each placement, with the placement ID and all 27 metrics. Can't be used with `--json` |
+
+The `placements metrics` commands read the numbers of the [placement metrics](placement-metrics) page for flow placements, and need CLI version 0.15.0 or later. `--type` must match the type of the placement: Adapty refuses a placement of another type.
+
+Each line shows the placement ID with its views, purchases, trials, and revenue. `--json` and `--csv` carry all 27 metrics.
+
+### adapty placements metrics values
+
+List the filter keys and values of a flow placement: what `placements metrics get --filter` takes.
+
+```bash
+adapty placements metrics values --app <app-id> <placement-id> --type flow
+```
+
+| Argument | Description |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--type` | Yes | Placement type: `flow` |
+
+The output has the same form as [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): the top value of each group is the filter key, and the innermost values are what the key takes.
+
+### adapty placements metrics get
+
+Show the metrics of one flow placement as the tree of the [placement metrics](placement-metrics) page, for its whole lifetime or for a period.
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
+```
+
+| Argument | Description |
+|---|---|
+| `placement-id` | Placement ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--type` | Yes | Placement type: `flow` |
+| `--based-on` | Yes | What the first level of the tree splits by: `audience`, `flow`, or `placement` |
+| `--group-by` | No | Split each audience by `country` or `store` |
+| `--date-from` | No | First day of the period, inclusive (`YYYY-MM-DD`). Pass it together with `--date-to` and `--date-type` |
+| `--date-to` | No | Last day of the period, inclusive (`YYYY-MM-DD`). Pass it together with `--date-from` and `--date-type` |
+| `--date-type` | No | Which date the period applies to: `purchase_date` or `profile_install_date`. Pass it together with `--date-from` and `--date-to` |
+| `--granularity` | No | Split the period into points: `day`, `week`, `month`, `quarter`, or `year` |
+| `--filter` | No | Keep only data with these values of a filter key. Repeatable. See [Filter the metrics](developer-cli-flows#filter-the-metrics) |
+| `--timezone` | No | IANA time zone of the period points, for example `Europe/Berlin`. Without it, Adapty uses the app time zone |
+| `--depth` | No | How many levels of the tree to print under `Total`. Default: `1` |
+| `--csv` | No | Print CSV: one row for each node of the whole tree. Can't be used with `--json` |
+
+Without `--date-from`, `--date-to`, and `--date-type`, the command returns the lifetime metrics. For a period, pass all three: a period without `--date-type` exits with code 4.
+
+The output, `--depth`, `--json`, `--csv`, and `--filter` work as in [`flows metrics get`](developer-cli-flows#read-the-output). For example, to compare the audiences of a placement by store:
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
+```
 
 ## Segments
 
