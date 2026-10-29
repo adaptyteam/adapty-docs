@@ -107,6 +107,19 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
   them one sentence and a link out; do not restate them as Adapty behaviour, and do not treat a support
   report about them as a docs defect until the provider's own docs are checked.
+- **Google Ads network columns and the Google Ads preset** (backend and dashboard code on the production
+  line, 2026-10-29). New analytics columns, Google Ads rows only ("—" elsewhere): **Conversions (Network)**,
+  **All Conv. (Network)**, **Cost per Conversion (Network)** (`Spend / Conversions (Network)`, only the spend
+  of rows that report conversions), **First Page Bid Est.**, **First Position Bid Est.** (keyword rows,
+  shown only under a keyword grouping; none for Display/App keywords or automated-bidding Search campaigns),
+  and **Status** (Enabled / Paused / Removed, daily structure sync, needs Google spend in range; a name shared
+  by several campaigns shows Enabled > Paused > Removed). Conversions are by click date, re-pulled for 3 days
+  then frozen, not back-filled. The columns join no default or saved view; a built-in **Google Ads** preset
+  appears in the preset list for companies with a Google Ads login, adds Impressions, Clicks and the new
+  columns except Cost per Conversion after Spend, and is saved as a company-shared preset on first pick.
+  Documented in `ua-metrics` (Google Ads metrics), `ua-analytics` (Google Ads preset), pointer in
+  `ua-google-ads`. Unverified: the production release date, which is why the docs give no date for when
+  conversions start.
 
 ## What we document, what we don't
 
