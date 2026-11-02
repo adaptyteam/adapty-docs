@@ -1,0 +1,242 @@
+---
+title: "AI asistanlarını Adapty'ye bağlayın (MCP)"
+description: "Claude uygulamasını, Claude Code'u, Codex'i veya başka bir MCP istemcisini Adapty hesabınıza bağlayın ve ürünleri, paywallları, flow'ları, placement'ları, A/B testlerini ve analizleri bir sohbetten yönetin."
+metadataTitle: "Adapty MCP sunucusu | Adapty Dokümanları"
+---
+
+Adapty MCP sunucusu, bir yapay zeka asistanını Adapty hesabınıza bağlar. Sohbet yoluyla, sade bir dille gelir ve dönüşüm verilerini sorgulayabilir, ürün ve placement'ları ayarlayabilir, flow'ları yayımlayabilir veya A/B testi başlatabilirsiniz. Asistan, tarayıcıda Adapty hesabınızla oturum açar ve izinlerinizi alır. API anahtarına gerek yoktur.
+
+| | |
+|---|---|
+| Sunucu URL'si | `https://mcp.adapty.io/mcp` |
+| Protokol | Streamable HTTP üzerinden MCP, tarayıcıda OAuth 2.1 oturum açma |
+| Çalıştığı ortamlar | Claude uygulaması (web ve masaüstü), Claude Code, Codex ve OAuth oturum açmayı destekleyen diğer MCP istemcileri |
+
+:::important
+MCP sunucusu, [Adapty skill'leri](#add-the-adapty-skills) ile birlikte en iyi şekilde çalışır. Sunucu, asistana hesabınıza erişim sağlar; skill'ler ise iş akışları için test edilmiş yöntemler sunar. Flow ve paywall oluşturma ile analizlerinizdeki test edilecek alanları bulma işlemleri skill'lere bağlıdır.
+:::
+
+<AgentChat title="Claude" caption="Örnek bir uygulama ile yapılan örnek konuşma. Sizin numaralarınız, paywall'larınız ve testleriniz farklılık gösterecektir.">
+<ChatTurn role="user">Geçen ay deneme sürümünden ücretli aboneliğe geçiş düştü. Nerede düştüğünü bul ve bunu geri kazanmak için bir test kur.</ChatTurn>
+<ChatTurn role="tool" summary="6 Adapty aracı kullanıldı">
+
+- `analytics_conversion` — trial to paid, by country, last two months
+- `analytics_conversion` — trial to paid in Germany, by placement
+- `placements_get` — `settings_upgrade`
+- `paywalls_list`
+- `ab_tests_list` — paywall tests on `settings_upgrade`
+- `ab_tests_create` — a draft test, 50/50
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Trial-to-paid yalnızca Almanya'da düştü, %41'den %29'a, ve yalnızca `settings_upgrade` placement'ında.**
+
+Diğer ülkeler sabit kaldı. 2 Ekim'de `settings_upgrade`, paywall'u Yıllık önce'den Haftalık odaklı'ya geçirdi; bu versiyon haftalık planı öne çıkarıyor. O tarihten bu yana, orada deneme başlatan Alman kullanıcıların daha azı deneme bitiminde ödeme yapıyor.
+
+`settings_upgrade` için Almanya'daki kullanıcılara yönelik bir taslak A/B testi oluşturdum: Yıllık önce ile Haftalık odaklı, 50/50. Kullanıcılarınız için henüz hiçbir şey değişmedi.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="A/B testini başlat">
+
+Testi başlatırsam, bugünden itibaren `settings_upgrade`'i açan Alman kullanıcıların yarısı önce Yıllık planı görecek. Diğer ülkelerdeki kullanıcılar Haftalık odağı görmeye devam edecek. Testi istediğin zaman durdurabilirsin, ancak başlatmayı geri alamazsın. Başlatayım mı?
+
+1. Evet, testi başlat
+2. Hayır, taslak olarak kalsın
+
+</ChatTurn>
+</AgentChat>
+
+## Adapty skill'lerini ekleyin \{#add-the-adapty-skills\}
+
+MCP sunucusu, asistanınıza Adapty hesabınıza erişim sağlar. Adapty skill'leri ise gerekli bilgi birikimini sunar: bir değişikliği planlayan, doğrulayan ve kullanıcılarınıza ulaşan her adımda onay isteyen test edilmiş iş akışlarıdır. İkisini birlikte kurun. `adapty-skills` eklentisi hem skill'leri hem de bu MCP sunucusunu içerir.
+
+Skill'lere bağımlı iki tür çalışma vardır:
+
+- **Flow'lar ve paywall'lar**: [flow-generator skill](flow-generator-skill), Flow Builder'ın yapılandırma kurallarını içerir. Ekran görüntüsünden veya bir açıklamadan ekranlar oluşturur; her değişikliği flow'u kaydetmeden önce doğrular ve önizler. Skill olmadan, bir asistan flow yapılandırmasını okuyup yazabilir; ancak geçerli bir yapılandırma için gerekli kurallara sahip değildir.
+- **Analitik ve sırada ne test edilmeli**: [growth-advisor skill](export-analytics-with-ai), hangi raporların okunacağını ve nasıl okunacağını bilir; sayılarınızı A/B testi için hipotezlere dönüştürür. Skill olmadan, bir asistan grafiklerinizi getirebilir; ancak bunları açıklamak için bir yöntemi yoktur.
+
+### Claude uygulamasında eklentiyi ekleyin \{#add-the-plugin-in-the-claude-app\}
+
+Eklentiyi Claude ayarlarından ekleyebilirsiniz; komut satırı gerekmez.
+
+1. Claude'da **Settings** → **Plugins** bölümünü açın.
+2. **Add** → **Add marketplace** seçeneğine tıklayın.
+3. **Add from a repository** seçeneğini belirleyin.
+4. **URL** alanına `adaptyteam/adapty-skills` girin ve depoyu seçin. Yeni skill'ler ve düzeltmeler çıktıkça otomatik olarak almak için **Sync automatically** seçeneğini açık bırakın.
+5. **Sync** düğmesine tıklayın.
+
+<ZoomImage id="adapty-skills-claude-add-marketplace.png" width="584px" alt="Add marketplace dialog in Claude with adaptyteam/adapty-skills in the URL field and Sync automatically turned on" />
+
+Claude, **Discover** sekmesini Adapty marketplace'indeki eklentilerle birlikte açar. Skill'leri yüklemek için **Adapty** satırında **Add** düğmesine tıklayın.
+
+<ZoomImage id="adapty-skills-claude-discover.png" width="600px" alt="Discover tab in Claude listing the Adapty, Apple ads, and Apple ads benchmarks plugins, each with an Add button" />
+
+Skill'ler betiklerini Claude'un sandbox ortamında çalıştırır. Buna izin vermek için **Settings** → **Capabilities** bölümünde **Code execution and file creation** seçeneğini açın.
+
+### Bir kodlama ajanına eklenti ekleyin \{#add-the-plugin-in-a-coding-agent\}
+
+Claude Code, Codex, Copilot CLI, Gemini CLI, Cursor ve diğer kodlama ajanlarında şunu çalıştırın:
+
+```bash
+npx adapty skills install
+```
+
+Bu komut, ajanınızın kendi yükleyicisi varsa eklentiyi o yükleyici aracılığıyla kurar. Kurulumdan sonra ajanınızı yeniden başlatın. Claude Code ve Codex'te eklenti aynı zamanda Adapty MCP sunucusunu da ekler; bu nedenle yalnızca [Asistanınızı bağlayın](#connect-your-assistant) bölümünde anlatıldığı gibi giriş yapmanız yeterlidir.
+
+<Details summary="Hangi skill'ler MCP sunucusunu, hangileri CLI'yi kullanır">
+
+İlk adımından önce, her skill ajanın MCP sunucusuna, [Adapty Developer CLI](developer-cli)'a veya her ikisine sahip olup olmadığını tespit eder. Biri varsa, skill onu kullanır. Her ikisi de varsa, skill işine en uygun olanı kullanır:
+
+- **MCP sunucusu**: A/B testleri çalıştırma, Adapty Attribution okuma, SDK entegrasyonu, Apple Ads çalıştırma ve satın almaları test etme.
+- **Adapty CLI**: Flow oluşturma ve denetleme, neyi test edeceğini bulma, placement'ları flow'lara taşıma ve segment oluşturma. Bu skill'ler kendi betiklerini ve dosyalarını çalıştırır; CLI ise dosyaları doğrudan onlara iletir.
+
+</Details>
+
+<CustomDocCardList ids={['flow-generator-skill', 'export-analytics-with-ai', 'ab-tests-skill', 'adapty-sdk-integration-skill']} />
+
+## Asistanın yapabilecekleri \{#what-the-assistant-can-do\}
+
+Sunucunun araçları, Adapty Kontrol Paneli ve [Adapty Developer CLI](developer-cli) ile uyumludur. Asistan, talebinize uygun araçları kendisi seçer; siz araç adı belirtmezsiniz.
+
+| Alan | Asistan ne yapabilir | Örnek soru |
+|---|---|---|
+| Uygulamalar ve access level'lar | Uygulamaları ve access level'ları listele, oluştur ve güncelle | "Fitness Pro'da `premium` adında bir access level oluştur." |
+| Ürünler ve teklifler | Ürünleri store ürün ID'leriyle oluştur ve store tekliflerini bunlara bağla | "Google Play ürün ID'si olmayan ürünlerim hangileri?" |
+| Paywalllar | Paywall oluştur ve güncelle, her paywallı hangi placement'ların gösterdiğini bul | "Annual sale paywallını hangi placement'lar gösteriyor?" |
+| Flow'lar | Flow oluştur, builder config'lerini oku ve yaz, doğrula, önizle, yayınla ve flow metriklerini oku | "Onboarding v2 flow'unu yayınla ve hangi placement'ların gösterdiğini söyle." |
+| Placement'lar ve kitleler | Placement oluştur, kimin ne gördüğünü değiştir ve flow placement metriklerini oku | "`onboarding` placement'ında kim ne görüyor?" |
+| Segmentler | Segmentleri ve filtrelerini oku | "Segmentlerimi ve her birinin hangi filtreyi kullandığını listele." |
+| A/B testleri | Paywall ve flow A/B testleri oluştur, başlat, durdur, değiştir ve arşivle | "Almanya'daki kullanıcılar için Weekly vs annual taslak testini başlat." |
+| Analitik | Gelir, MRR, dönüşümler, huni, elde tutma, LTV ve kurulum kohortlarını oku | "Geçen ay ülkelere göre deneme-ücretli dönüşümünü karşılaştır." |
+| Attribution | [Adapty Attribution](user-acquisition) üzerinden kampanya performansını oku | "Eylül'de hangi kampanyalar geri döndü?" |
+| Apple Ads | [Adapty Ads Manager](developer-cli-ads-manager)'da kampanyalar, reklam grupları, anahtar kelimeler ve otomasyon kuralları yönet ve metriklerini oku | "Geçen hafta en çok harcayan ama hiç kurulum getirmeyen anahtar kelimeler hangileri?" |
+| RevenueCat'ten geçiş | RevenueCat kataloğunuzu yeni bir Adapty uygulamasına taşımak için bir geçiş oluştur ve çalıştır | "RevenueCat projemi yeni bir Adapty uygulamasına taşı." |
+
+Adapty Mail'in kendi MCP sunucusu vardır. Bir asistanı Adapty Mail projenize bağlamak için bkz. [Adapty Mail'i AI asistanlarla yönetin](mail-mcp).
+
+## MCP sunucusunu veya CLI'yi seçin \{#choose-the-mcp-server-or-the-cli\}
+
+MCP sunucusu ve [Adapty Developer CLI](developer-cli), aynı Adapty hesabına erişir. Asistanınızın nerede çalıştığına göre seçim yapın:
+
+| | Adapty MCP sunucusu | Adapty CLI |
+|---|---|---|
+| Çalıştığı yer | Claude uygulaması gibi sohbet uygulamaları dahil tüm MCP istemcileri | Terminal komutları çalıştıran agent'lar ve kendi betikleriniz |
+| Oturum açma | İstemci başına bir kez, tarayıcıda | `adapty auth login`, makine başına bir kez |
+| En iyi kullanım | Sohbet üzerinden sorular ve değişiklikler | Flow config dosyalarını düzenleme, toplu değişiklikler ve betikler |
+| Kurulum | Kurulum gerekmez | `npm install -g adapty` |
+
+Bir agent her ikisini de kullanabilir. Claude uygulamasında MCP sunucusu, CLI'ya kıyasla daha az kurulum gerektirir: CLI'nın her konuşmada yüklenmesi ve yetkilendirilmesi gerekir; bu işlem [Claude uygulamasında Adapty CLI'yi kurma](developer-cli-cowork) bölümünde açıklanmaktadır.
+
+## Başlamadan Önce \{#before-you-start\}
+
+- **Adapty hesabı**: Asistan, Adapty hesabınızın erişebildiği şirket ve uygulamalarda, sizin izinlerinizle çalışır.
+- **OAuth destekli MCP istemcisi**: İstemciniz, OAuth ile oturum açan uzak MCP sunucularını desteklemelidir.
+
+:::warning
+Asistan sizin haklarınızla hareket eder ve yaptığı değişiklikler gerçektir. Başlatılan bir A/B testi veya güncellenen bir placement kullanıcılarınıza ulaşır. Asistan bir A/B testi başlatmadan veya durdurmadan ya da bir placement'ta kimin ne göreceğini değiştirmeden önce, sunucu ondan tam etkiyi açıklamasını ve onayınızı beklemesini ister. Onaylamadan önce planı okuyun.
+:::
+
+## Asistanınızı bağlayın \{#connect-your-assistant\}
+
+<Tabs groupId="mcp-client" queryString>
+<TabItem value="claude-app" label="Claude app" default>
+
+Claude uygulaması (claude.ai ve Claude desktop), uzak MCP sunucularını özel bağlayıcılar olarak ekler.
+
+1. Sunucuyu eklemek için **Settings → Connectors** bölümünü açın ve **Add custom connector** seçeneğine tıklayın.
+2. Bir ad girin, örneğin `Adapty`, ve URL olarak `https://mcp.adapty.io/mcp` yazın.
+3. Varsayılan kimlik doğrulama ayarlarını koruyun ve **Add** seçeneğine tıklayın.
+4. Açılan tarayıcı sekmesinde Adapty'ye giriş yapın. Bkz. [Giriş yap](#sign-in).
+
+Workspace yöneticileri, bağlayıcıyı tüm organizasyon için bir kez ekleyebilir. Her üye, ilk kullanımında kendi Adapty hesabıyla giriş yapar.
+
+</TabItem>
+<TabItem value="claude-code" label="Claude Code">
+
+`adapty-skills` eklentisini kullanıyorsanız, Claude Code sunucuyu zaten `plugin:adapty-skills:adapty` olarak listeler ve durumu **Needs authentication** şeklinde gösterir. Giriş yapmak için Claude Code'da `/mcp` komutunu çalıştırın, `plugin:adapty-skills:adapty` seçeneğini belirleyin ve **Authenticate** seçeneğine tıklayın.
+
+Eklenti kullanmıyorsanız, önce sunucuyu ekleyin:
+
+```bash
+claude mcp add --transport http --scope user adapty https://mcp.adapty.io/mcp
+```
+
+Ardından Claude Code'da `/mcp` komutunu çalıştırın, `adapty` seçeneğini seçin ve **Authenticate** üzerine tıklayın. Adapty araçları mevcut oturumda görünmüyorsa yeni bir oturum başlatın.
+
+</TabItem>
+<TabItem value="codex" label="Codex">
+
+`adapty-skills` eklentisini kullanıyorsanız, eklenti sunucuyu otomatik olarak ekler ve Codex bağlandığında oturum açmanızı ister.
+
+Eklenti kullanmadan sunucuyu eklemek ve oturum açmak için:
+
+```bash
+codex mcp add adapty --url https://mcp.adapty.io/mcp
+codex mcp login adapty
+```
+
+Giriş komutu tarayıcınızı açar. Sunucuyu manuel olarak yapılandırmak için `~/.codex/config.toml` dosyasına ekleyin, ardından giriş komutunu çalıştırın:
+
+```toml
+[mcp_servers.adapty]
+url = "https://mcp.adapty.io/mcp"
+```
+
+Adapty araçlarını yüklemek için yeni bir `codex` oturumu başlatın.
+
+</TabItem>
+<TabItem value="other" label="Diğer istemciler">
+
+`https://mcp.adapty.io/mcp` adresini istemcinizin ayarlarında veya MCP yapılandırma dosyasında uzak bir MCP sunucusu olarak ekleyin. İstemci, ilk bağlantıda oturum açmanız için tarayıcınızı açar.
+
+Sunucu, her istemciyi Mevcut MCP spesifikasyonunun istemci kayıt yöntemi olan Client ID Metadata Document ile tanımlar. Bu yöntemi desteklemeyen bir istemci oturum açmayı tamamlayamaz. Bu durumda, terminal ajanı yerine [Adapty Developer CLI](developer-cli-quickstart) kullanın.
+
+</TabItem>
+</Tabs>
+
+## Oturum Açma \{#sign-in\}
+
+Her istemci aynı yere yönlendirilir: tarayıcınızdaki Adapty oturum açma sayfasına.
+
+1. Henüz oturum açmadıysanız Adapty hesabınızla giriş yapın.
+2. İstemcinin Adapty hesabınıza erişmesine izin verin.
+
+İstemci bundan sonra hesabınızın erişebildiği şirketlerdeki verileri okuyup değiştirebilir ve siz bağlantıyı kesene kadar oturumu açık kalır. Yalnızca kendinizin başlattığı oturum açma isteklerini onaylayın.
+
+Bağlantıyı doğrulamak için asistana hangi Adapty hesabıyla oturum açtığını sorun. Yanıtta adınız ve hesabınızın erişebildiği şirketler görünmelidir.
+
+## Çalışmaya Başlama \{#start-working\}
+
+Asistana hangi uygulamaları görebildiğini sorun, ardından üzerinde çalışmak istediğiniz uygulamanın adını belirtin. Deneyebileceğiniz bazı istekler:
+
+```text
+List my Adapty apps and their placements.
+How did revenue and new subscriptions change last month compared with the month before?
+Which products in Fitness Pro have no App Store product ID?
+Show who sees what on the onboarding placement, including any A/B test.
+Create a draft A/B test on main_paywall: the current paywall against Annual sale, 50/50.
+```
+
+Asistan, kullanıcıların gördüklerini değiştiren adımlardan önce onay ister. Yalnızca veri okuyan bir istek soru sormadan çalışır.
+
+Birden fazla adımdan oluşan bir görevin ardından asistan, Adapty ekibine görevin nasıl geçtiğine dair kısa bir not gönderebilir. Not, uygulamanızın kullanıcılarına ait hiçbir kişisel veri içermez.
+
+## Bağlantıyı Kes \{#disconnect\}
+
+Bağlantıyı kesmek için sunucuyu istemciden kaldırın:
+
+- **Claude app**: **Settings → Connectors** bölümünde Adapty connector'ını kaldırın.
+- **Claude Code**: `claude mcp remove adapty` komutunu çalıştırın. Sunucu `adapty-skills` eklentisiyle geldiyse `/mcp` üzerinden devre dışı bırakın.
+- **Codex**: `adapty` sunucusunu `~/.codex/config.toml` dosyasından kaldırın.
+
+Yeniden bağlanmak için sunucuyu ekleyin ve tekrar oturum açın.
+
+## Sorun Giderme \{#troubleshooting\}
+
+| Sorun | Çözüm |
+|---|---|
+| Claude Code sunucuyu **Needs authentication** olarak gösteriyor | İstemci sunucuyu ekledi ancak giriş yapılmadı. `/mcp` komutunu çalıştırın, Adapty sunucusunu seçin ve **Authenticate** seçeneğini seçin. |
+| İstemci hiç Adapty aracı listelemiyor | Girişi tamamlayın, ardından yeni bir oturum başlatın. Bazı istemciler araçları yalnızca oturum başlangıcında yükler. |
+| Asistan bir uygulamayı bulamıyor | Uygulama, Adapty hesabınızın erişemediği bir şirkete ait. Erişim için şirket sahibinden talepte bulunun. |
+| İstemci girişi tamamlayamıyor | İstemci, sunucunun kullandığı giriş yöntemini desteklemiyor. Claude uygulamasından, Claude Code'dan veya Codex'ten bağlanın ya da [Adapty Developer CLI](developer-cli-quickstart) kullanın. |
