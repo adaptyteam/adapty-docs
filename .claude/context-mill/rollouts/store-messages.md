@@ -21,7 +21,7 @@ Manual control over when store messages appear: App Store messages (price increa
 |---|---|---|---|---|---|---|
 | ios | — | shipped (4.2) | shipped | ios-store-messages, sdk-installation-ios, ios-sdk-error-handling | 6c9606264 + 0584ae26f | #650, #664 |
 | android | — | shipped (4.3.0) | shipped | android-store-messages, sdk-installation-android | 4180a8d23 | — |
-| react-native | dev (4.3.0) | shipped (4.3.0, 2026-11-03) | in progress | react-native-store-messages, sdk-installation-react-native-pure, sdk-installation-react-native-expo, react-native-handle-errors | — | — |
+| react-native | dev (4.3.0) | shipped (4.3.0, 2026-11-03) | in progress | react-native-store-messages, sdk-installation-react-native-pure, sdk-installation-react-native-expo, react-native-handle-errors | b3e62f613 + 73b8f42ce | — |
 | flutter | — | not started | — | — | — | — |
 | unity | — | not started | — | — | — | — |
 | kmp | — | not started | — | — | — | — |
@@ -29,4 +29,4 @@ Manual control over when store messages appear: App Store messages (price increa
 
 ## Open questions for the SDK team
 
-- React Native (2026-11-03): on iOS below 16, does `showStoreMessages` reject like `getPendingStoreMessageTypes` does? The JSDoc states the rejection only for `getPendingStoreMessageTypes`; the article says both methods throw.
+- Resolved 2026-11-03 (AdaptySDK-iOS 4.3.1 `Sources.AdaptyPlugin/Requests/Request.swift`): below iOS 16, the plugin doesn't register either store messages request, so both `getPendingStoreMessageTypes` and `showStoreMessages` reject with an unknown-request error on React Native.
