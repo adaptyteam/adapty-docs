@@ -1,0 +1,100 @@
+---
+title: "Control store messages in React Native SDK"
+description: "Choose when your React Native app shows App Store and Google Play messages about price increases, billing issues, and declined payments, so they don't interrupt a flow or onboarding."
+metadataTitle: "Control store messages | React Native SDK | Adapty Docs"
+---
+
+The App Store and Google Play sometimes need to show your users a message about their subscription:
+
+- **App Store**: A request to consent to a price increase, a billing issue notice, or a win-back offer. By default, StoreKit shows these messages on its own while your app is open.
+- **Google Play**: A notice that a subscription payment was declined and the payment method needs an update. By default, the Adapty SDK requests these messages every time an `Activity` of your app starts.
+
+Either way, a message can appear on top of a flow, an onboarding, or a checkout. To choose the moment yourself, switch the Adapty SDK to manual message handling, and call `showStoreMessages` when a message won't interrupt the user.
+
+:::warning
+In manual mode, the stores don't show messages on their own. If your app never calls `showStoreMessages`, users never see a price increase consent request, a billing issue notice, or a declined payment notice.
+:::
+
+## Before you start
+
+You need:
+
+- **Adapty React Native SDK 4.3.0 or later**: Earlier versions don't have the store messages API.
+- **iOS 16 or later** for App Store messages: StoreKit doesn't deliver messages to apps on earlier versions. On iOS 15, the store messages methods throw an error.
+
+## Enable manual handling
+
+To show store messages only when your app calls `showStoreMessages`, set `storeMessagesHandling` to `'manual'` when you [activate the SDK](sdk-installation-react-native-pure#activate-adapty-module-of-adapty-sdk):
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  storeMessagesHandling: 'manual', // 'auto' is the default
+});
+```
+
+On iOS, the SDK then adds each App Store message to a pending list for the current app session. On Android, the SDK stops requesting Google Play messages on its own. With the default `'auto'` value, the SDK doesn't capture App Store messages, so on iOS, `getPendingStoreMessageTypes` and `showStoreMessages` have nothing to return or show.
+
+## Get pending message types
+
+On iOS, to find out whether any App Store messages are waiting, call `getPendingStoreMessageTypes`. It returns the types of the pending messages without showing or removing them:
+
+```typescript showLineNumbers
+const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+if (pendingTypes === null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.includes('billing_issue')) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+On Android, the method returns `null`: Google Play doesn't report pending messages, and decides whether a message applies only when your app requests it. An empty array means that there are no pending messages on iOS.
+
+Each App Store message has one of these types:
+
+| Type | Message |
+|:-----|:--------|
+| `generic` | A general App Store message. |
+| `price_increase_consent` | A request to consent to a subscription price increase. |
+| `billing_issue` | A notice about a subscription billing issue. Available on iOS 16.4 and later. |
+| `win_back_offer` | An eligible [win-back offer](app-store-offers#win-back-offers). Available on iOS 18 and later. |
+
+A message type that the SDK doesn't recognize has the value `storekit_<number>`.
+
+## Show messages
+
+When your app reaches a point where a store message won't interrupt the user — for example, after the user closes a flow or finishes onboarding — call `showStoreMessages`:
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**: The SDK shows the pending messages one after another. After StoreKit shows a message, the SDK removes it from the pending list. If StoreKit fails to show a message, the SDK writes the error to the Adapty log, keeps the message for the next call, and continues with the other messages.
+- **Android**: The SDK requests Google Play messages for the current `Activity`. Google Play decides whether a message applies to the user, so a request doesn't always show a message. If the user fixes their payment method from the message, the SDK syncs the user's purchases with Adapty, and your [profile listener](react-native-listen-subscription-changes) receives the updated access level.
+
+In the default `'auto'` mode, you can also call `showStoreMessages` on Android — for example, to request a message again on an `Activity` that is already running.
+
+### Show only some message types
+
+To show only some of the pending App Store messages, pass the types in `ios.filter`. The other messages stay pending:
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+Without `filter`, the SDK shows all pending messages, including types it doesn't recognize. Android ignores `filter` and requests all Google Play messages.
+
+### Errors
+
+`showStoreMessages` throws an [`AdaptyError`](react-native-handle-errors) with one of these codes:
+
+| Code | Name | Cause |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Another `showStoreMessages` call is still showing messages. Wait for it to finish, then try again. |
+| 3202 | `resolverFailure` | iOS only: the SDK found no foreground-active window scene to show the messages in. Call the method again when your app is in the foreground. |

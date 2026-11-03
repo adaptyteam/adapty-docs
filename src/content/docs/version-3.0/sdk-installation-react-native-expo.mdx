@@ -227,6 +227,7 @@ Adapty logs errors and other important information to help you understand what i
 | `warn`     | Errors and messages from the SDK that do not cause critical errors, but are worth paying attention to will be logged |
 | `info`     | Errors, warnings, and various information messages will be logged |
 | `verbose`  | Any additional information that may be useful during debugging, such as function calls, API queries, etc. will be logged |
+| `debug`    | Everything above, plus low-level internal details of the native SDK. Available starting from SDK version 4.3.0 |
 
 You can set the log level in your app before or during Adapty configuration:
 
@@ -240,6 +241,35 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
   logLevel: 'verbose',
 });
 ```
+
+#### Send logs to your own destination
+
+:::info
+Custom log sinks are available starting from SDK version 4.3.0.
+:::
+
+By default, the SDK writes its JavaScript logs to the console. To also send them somewhere else — for example, to your crash reporter — pass your own sinks in the `logger` option of `setLogLevel`. A sink receives every log entry as a `LogEvent` with `level`, `message`, `params`, and `timestamp`:
+
+```typescript showLineNumbers title="App.tsx"
+import { adapty, consoleLogSink, type LogSink } from 'react-native-adapty';
+
+const reporterSink: LogSink = {
+  id: 'crash-reporter',
+  levels: ['error', 'warn'], // optional: receive only these levels
+  handle: (event) => {
+    // send event.level, event.message, and event.params to your service
+  },
+};
+
+await adapty.setLogLevel('verbose', {
+  logger: { sinks: [consoleLogSink, reporterSink] },
+});
+```
+
+- `sinks` replaces all current sinks. To keep console output, include `consoleLogSink` in the list.
+- Import `consoleLogSink` and the logger types from `react-native-adapty`, not from `@adapty/core`.
+- To change only the log level later, call `setLogLevel` without the `logger` option. The current sinks stay in place.
+- Sinks receive the JavaScript layer's logs only. Native SDK logs still go to Xcode and Logcat.
 
 ### Data policies
 
@@ -324,6 +354,22 @@ adapty.activate('YOUR_PUBLIC_SDK_KEY', {
    },
 });
 ```
+
+### Store messages handling
+
+:::info
+This parameter is available starting from SDK version 4.3.0.
+:::
+
+By default, StoreKit shows App Store messages — price increase consent requests, billing issue notices, and win-back offers — on its own while your app is open, and the SDK requests Google Play messages, such as declined payment notices, every time an `Activity` of your app starts. To choose when your app shows them, set `storeMessagesHandling` to `'manual'`. The default value is `'auto'`.
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+   storeMessagesHandling: 'manual',
+});
+```
+
+In manual mode, the stores don't show messages on their own, so your app must call `showStoreMessages`. See how in [Control store messages](react-native-store-messages).
 
 ### Enable Adapty Attribution
 
