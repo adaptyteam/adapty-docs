@@ -166,7 +166,7 @@ recommendations become articles and which stay where the mechanism is documented
 | kmp-sdk-call-order | — | dev | 2 | kmp |
 | kmp-show-aa-targeted-paywall | — | dev | 3 | kmp |
 | react-native-best-practices | entry | dev | 0 | react-native |
-| react-native-optimize-paywall-fetching | — | dev | 3 | react-native |
+| react-native-optimize-paywall-fetching | — | dev | 6 | react-native |
 | react-native-sdk-call-order | — | dev | 2 | react-native |
 | react-native-show-aa-targeted-paywall | — | dev | 4 | react-native |
 | unity-best-practices | entry | dev | 0 | unity |

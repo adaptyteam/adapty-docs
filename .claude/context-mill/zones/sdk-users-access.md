@@ -155,7 +155,7 @@ Delta from `scope.md` only.
 | kids-mode | kids-mode | kids-mode-android | kids-mode-react-native | kids-mode-flutter | kids-mode-unity | kids-mode-kmp | kids-mode-capacitor |
 | listen-subscription-changes |  | android-listen-subscription-changes | react-native-listen-subscription-changes | flutter-listen-subscription-changes | unity-listen-subscription-changes | kmp-listen-subscription-changes | capacitor-listen-subscription-changes |
 | setting-user-attributes | setting-user-attributes | android-setting-user-attributes | react-native-setting-user-attributes | flutter-setting-user-attributes | unity-setting-user-attributes | kmp-setting-user-attributes | capacitor-setting-user-attributes |
-| store-messages | ios-store-messages | android-store-messages |  |  |  |  |  |
+| store-messages | ios-store-messages | android-store-messages | react-native-store-messages |  |  |  |  |
 | subscription-status | subscription-status |  |  |  |  |  |  |
 | user | ios-user | android-user | react-native-user | flutter-user | unity-user | kmp-user | capacitor-user |
 
@@ -196,6 +196,7 @@ Delta from `scope.md` only.
 | react-native-identifying-users | — | dev | 6 | react-native |
 | react-native-listen-subscription-changes | — | dev | 4 | react-native |
 | react-native-setting-user-attributes | — | dev | 4 | react-native |
+| react-native-store-messages | how-to | dev | 6 | react-native |
 | react-native-user | entry | dev | 0 | react-native |
 | setting-user-attributes | — | dev | 4 | ios |
 | subscription-status | — | dev | 4 | ios |
@@ -242,4 +243,8 @@ profile) live in `aliases.md` and are deliberately not repeated here.
 | "where are the user/profile docs" | The `user` family — per-platform index pages with no content of their own. |
 
 ## Gaps and misses
+
+- **React Native store messages differ from both native SDKs (2026-11-03, AdaptySDK-React-Native `dev` 4.3.0 `src/adapty-handler.ts`).** `getPendingStoreMessageTypes()` resolves `null` on Android without calling native (Google Play can't report pending messages); `[]` means nothing pending on iOS. The type filter is iOS-only and nested: `showStoreMessages({ ios: { filter } })`. The activation option is top-level `storeMessagesHandling: 'auto' | 'manual'`. The features first shipped in RN 4.3.0: the store messages and preload commits are not ancestors of tag `v4.2.0` (checked with `git merge-base --is-ancestor`), although npm published 4.2.0–4.2.3.
+- **RN error 1060 arrives without a name (2026-11-03).** iOS 4.3.1 throws `billingPlanUnavailable = 1060` (`Sources/Errors/AdaptyError.swift`), and `@adapty/core` passes unknown native codes through, so `error.adaptyCode === 1060` reaches the app. Core `0726ac7`, `origin/master` and `v4.3.2` have no `1060` entry in `src/types/error.ts`, so `getErrorCode('billingPlanUnavailable')` is `undefined`. Documented in `react-native-handle-errors` as a literal-code comparison. The error lives in the errors zone, but is recorded here next to the other RN 4.3.0 findings.
+- **RN commitment and profile fields have no per-field home (2026-11-03).** `billingPlan`, `commitmentInfo` and the top-level `offerId` (with `android.offerId` deprecated) on profile access levels and subscriptions are documented only in the generated reference, since `*-sdk-models` articles aren't edited. Checked with `grep -n "offerId\|billingPlan" src/content/docs/react-native/*.mdx`.
 
