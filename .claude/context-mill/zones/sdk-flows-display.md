@@ -320,7 +320,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
 | react-native-present-flows-in-observer-mode | — | dev | 3 | react-native |
-| react-native-present-paywalls | — | dev | 14 | react-native |
+| react-native-present-paywalls | — | dev | 15 | react-native |
 | react-native-troubleshoot-paywall-builder | — | dev | 3 | react-native |
 | react-native-use-fallback-paywalls | entry | dev | 0 | react-native |
 | react-native-use-fallback-paywalls-expo | — | dev | 2 | react-native |
