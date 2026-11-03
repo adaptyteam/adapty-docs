@@ -136,14 +136,29 @@ Sau khi domain được xác minh, thẻ của domain sẽ có thêm trường *
 
 Các tên miền mới chưa có uy tín với các nhà cung cấp email như Gmail hay Yahoo, nên việc gửi email với số lượng lớn từ một tên miền mới có nguy cơ bị lọc vào thư rác. Adapty Mail tự động khởi động dần cho mọi tên miền theo hai cách chạy song song. Bạn không cần cấu hình gì cả.
 
-- **Hộp thư khởi động**: Ngay khi DNS xác minh xong, Adapty Mail tạo một hộp thư trên subdomain gửi của bạn. Hộp thư này trao đổi thư thông thường với các hộp thư kiểm tra tại các nhà cung cấp lớn. Việc gửi nhận hai chiều này cho thấy với các nhà cung cấp rằng domain gửi email bình thường, từ đó xây dựng uy tín cho domain. Thẻ domain hiển thị hộp thư đang ở giai đoạn nào. Quá trình khởi động sẽ không bắt đầu cho đến khi các bản ghi [**Warmup mailbox**](#2-add-the-dns-records) được xác minh.
-- **Giới hạn gửi hàng ngày**: Các chiến dịch của bạn được tính riêng so với hộp thư khởi động, chia thành 20 cấp. Giới hạn này giữ cho lượng gửi của bạn ở mức thấp hơn ngưỡng khiến domain mới bị gắn cờ spam, và giới hạn sẽ tăng dần khi bạn gửi nhiều hơn.
+- **Hộp thư khởi động**: Ngay khi DNS xác minh xong, Adapty Mail tạo một hộp thư trên subdomain gửi của bạn. Hộp thư này trao đổi thư thông thường với các hộp thư test tại các nhà cung cấp lớn. Việc gửi/nhận hai chiều này cho thấy với các nhà cung cấp rằng domain gửi email bình thường, từ đó xây dựng uy tín cho domain. Thẻ domain hiển thị giai đoạn hiện tại của hộp thư. Quá trình khởi động sẽ không bắt đầu cho đến khi các bản ghi [**Warmup mailbox**](#2-add-the-dns-records) được xác minh.
+- **Giới hạn gửi hàng ngày**: Các chiến dịch của bạn được tính riêng với hộp thư khởi động, qua 20 cấp độ, cho từng nhóm nhà cung cấp hộp thư riêng biệt. Giới hạn này giữ lượng email của bạn dưới mức có thể khiến domain mới bị gắn cờ spam, và sẽ tăng dần khi bạn gửi nhiều hơn.
 
-### Cách các tier hoạt động \{#how-tiers-work\}
+### Cách tier hoạt động \{#how-tiers-work\}
 
-Tên miền của bạn bắt đầu ở **Tier 1** (100 lượt gửi/ngày). Giới hạn sẽ tăng dần từng tier một, khi vượt quá giới hạn hàng ngày hiện tại (cả lượt gửi thành công lẫn các lần bị giữ lại đều được tính, mỗi email chỉ tính một lần). Giới hạn cao hơn sẽ có hiệu lực vào ngày hôm sau.
+Một domain sẽ được làm ấm riêng cho từng nhóm nhà cung cấp hộp thư: **Google**, **Microsoft**, **Yahoo**, **iCloud**, và **Other**. Mỗi nhóm bắt đầu ở **Tier 1** (100 lượt gửi/ngày), vì vậy một domain mới có thể gửi 100 email mỗi ngày đến địa chỉ Gmail và 100 email khác đến địa chỉ iCloud. Để xem nhóm đó bao gồm những tên miền hộp thư nào, hãy hover vào tên nhóm trên [thẻ **Send tiers**](mail-domain-health#send-tiers-daily-email-caps).
 
-Giới hạn được phân bổ đều trong ngày: trong bất kỳ một giờ nào, một domain gửi tối đa khoảng một phần mười sáu giới hạn hàng ngày của nó, và Adapty Mail sẽ gửi các email bị giữ lại trong một giờ vào một giờ muộn hơn. Email giao dịch có thể sử dụng tối đa gấp đôi giới hạn, còn email đầu tiên của một flow và yêu cầu xác nhận double opt-in có thể dùng thêm tới 20%, do đó chúng được ưu tiên trước các email khác khi giới hạn sắp cạn. Việc nâng cấp chỉ dựa trên khối lượng, và các cấp độ chỉ tăng lên: không có bước tự động hạ xuống. Vượt qua cấp độ cao nhất, domain gửi email mà không có giới hạn hàng ngày.
+Mỗi ngày một lần, ngay sau nửa đêm UTC, Adapty Mail xem xét tier của từng nhóm. Quá trình xem xét đọc tỷ lệ mở của các email marketing và yêu cầu xác nhận double opt-in đã gửi đến nhóm trong ba ngày đầy đủ gần nhất trên tier hiện tại. Tier mới sẽ được áp dụng cho toàn bộ ngày tiếp theo sau khi xem xét.
+
+| Nhóm | Tăng tier khi tỷ lệ mở từ | Giảm tier khi tỷ lệ mở dưới |
+| --- | --- | --- |
+| Google, Microsoft, Yahoo | 15% | 5% |
+| iCloud | 40% | 20% |
+| Other | Không áp dụng | Không áp dụng |
+
+Để tăng tier, một nhóm còn cần đáp ứng các điều kiện sau:
+
+- **Đủ số lượng email để đánh giá**: Ít nhất 200 email đã được gửi đến nhóm trong những ngày đó. Nếu ít hơn, nhóm giữ nguyên tier hiện tại.
+- **Đạt đầy đủ giới hạn hàng ngày**: Nhóm đã đạt giới hạn gửi trong ngày trước khi xét duyệt. Cả lượt gửi thành công lẫn lượt bị giữ lại đều được tính, mỗi email chỉ tính một lần.
+
+Nhóm **Other** chỉ tăng tier dựa trên giới hạn hàng ngày và không bao giờ bị hạ tier. Khi tỷ lệ mở nằm giữa hai ngưỡng, nhóm giữ nguyên tier dù đã qua bao nhiêu ngày. Đối với việc hạ tier, quá trình xét duyệt bỏ qua ngày gần nhất vì lượt mở của ngày đó vẫn còn đang tiếp tục được ghi nhận.
+
+Hạn mức được phân bổ theo từng giờ trong ngày: trong bất kỳ một giờ nào, một nhóm gửi tối đa khoảng một phần mười sáu hạn mức hàng ngày của mình, và Adapty Mail sẽ gửi những email bị giữ lại trong một giờ vào một giờ muộn hơn. Email giao dịch có thể dùng đến gấp đôi hạn mức, còn email đầu tiên của một flow và yêu cầu xác nhận double opt-in có thể dùng thêm tới 20%, vì vậy chúng được ưu tiên gửi trước các email khác khi hạn mức sắp hết. Vượt qua mức cao nhất, nhóm đó không còn hạn mức hàng ngày nữa.
 
 | Tier | Daily limit |
 | ---- | ----------- |
@@ -196,10 +211,10 @@ Cho đến khi các domain của bạn hoàn tất quá trình khởi động, A
 
 Adapty sử dụng logic sau để quyết định domain nào của bạn sẽ gửi email:
 
-- **Một domain cho mỗi người nhận trong mỗi chiến dịch.** Để đảm bảo tính nhất quán cho chiến dịch, Adapty Mail sử dụng cùng một địa chỉ email để gửi thư đến cùng một người nhận. Nếu bạn xóa domain đó hoặc ngừng gửi từ nó, email tiếp theo sẽ được gửi từ domain mới nhất còn dư hạn mức.
-- **Domain mới hơn được ưu tiên hơn.** Domain được thêm vào sau sẽ được ưu tiên hơn domain cũ.
+- **Mỗi recipient chỉ dùng một domain mỗi campaign.** Để giữ cho campaign nhất quán, Adapty Mail dùng cùng một địa chỉ email để gửi tới cùng một recipient. Nếu bạn xóa domain đó hoặc ngừng gửi từ domain đó, email tiếp theo sẽ được gửi từ domain mới nhất còn dung lượng.
+- **Domain mới được ưu tiên hơn.** Domain được thêm sau sẽ được ưu tiên hơn domain cũ.
 
-Khi tất cả các domain đều vượt quá hạn mức, Adapty Mail sẽ trì hoãn email — [Throttle](mail-suppression#throttle-temporary-delays-and-cancellations) giải thích điều gì xảy ra với người nhận khi đó.
+Khi mọi domain đều đã vượt giới hạn đối với nhà cung cấp hộp thư của recipient, Adapty Mail sẽ trì hoãn email đó — [Throttle](mail-suppression#throttle-temporary-delays-and-cancellations) giải thích những gì xảy ra với recipient từ đó trở đi.
 
 ## Dừng và tiếp tục gửi \{#stop-and-resume-sending\}
 

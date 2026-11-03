@@ -136,14 +136,29 @@ Alıcılarınızın gönderdiği yanıtları almak için, aynı domain kartında
 
 Gmail veya Yahoo gibi e-posta sağlayıcıları nezdinde yeni alan adlarının henüz bir itibarı olmadığından, yeni bir alan adından yüksek hacimli gönderimler spam'e düşme riskini beraberinde getirir. Adapty Mail, her alan adını otomatik olarak ısıtır; bunu eş zamanlı çalışan iki farklı yöntemle yapar. Herhangi bir yapılandırma gerekmez.
 
-- **Isınma posta kutusu**: DNS doğrulanır doğrulanmaz, Adapty Mail gönderim alt alan adınızda bir posta kutusu oluşturur. Bu posta kutusu, büyük e-posta sağlayıcılarındaki test posta kutularıyla sıradan yazışmalar yapar. Bu iki yönlü yazışma, sağlayıcılara alanın normal e-posta gönderdiğini göstererek itibarını artırır. Alan kartı, posta kutusunun hangi aşamada olduğunu gösterir. [**Warmup mailbox** kayıtları](#2-add-the-dns-records) doğrulanmadan ısınma başlamaz.
-- **Günlük gönderim limiti**: Kampanyalarınız, ısınma posta kutusundan bağımsız olarak 20 kademe üzerinden ölçülür. Bu limit, yeni bir alanın spam olarak işaretlenmesine yol açacak hacmin altında kalmanızı sağlar ve gönderdikçe artar.
+- **Isınma posta kutusu**: DNS doğrulanır doğrulanmaz Adapty Mail, gönderme alt alan adınızda bir posta kutusu oluşturur. Bu posta kutusu, büyük sağlayıcılardaki test posta kutularıyla sıradan konuşma mailleri alışverişinde bulunur. Bu iki yönlü mail trafiği, sağlayıcılara domain'in normal e-posta gönderdiğini kanıtlar ve itibarını geliştirir. Domain kartı, posta kutusunun hangi aşamada olduğunu gösterir. [**Warmup mailbox** kayıtları](#2-add-the-dns-records) doğrulanmadan ısınma başlamaz.
+- **Günlük gönderme limiti**: Kampanyalarınız, ısınma posta kutusundan bağımsız olarak, her posta kutusu sağlayıcı grubu için ayrı ayrı ve 20 kademede ölçümlenir. Bu limit, hacminizi yeni bir domain'in spam olarak işaretleneceği düzeyin altında tutar ve gönderdikçe artar.
 
 ### Katmanlar nasıl çalışır \{#how-tiers-work\}
 
-Alan adınız **Katman 1** ile başlar (günlük 100 gönderim). Mevcut günlük limit aşıldığında (gönderimler ve engellenen denemeler birlikte sayılır, her e-posta bir kez), izin verilen miktar bir katman artır. Yüksek limit ertesi gün geçerli olur.
+Bir domain, her posta kutusu sağlayıcı grubu için ayrı ayrı ısınır: **Google**, **Microsoft**, **Yahoo**, **iCloud** ve **Other**. Her grup **Tier 1**'den başlar (günde 100 gönderim), yani yeni bir domain, Gmail adreslerine günde 100 e-posta, iCloud adreslerine ise ayrıca 100 e-posta gönderebilir. Bir grubun hangi posta kutusu domainlerini kapsadığını görmek için [**Send tiers** kartındaki](mail-domain-health#send-tiers-daily-email-caps) grup adının üzerine gelin.
 
-Günlük gönderim hakkı güne yayılır: herhangi bir saatte, bir domain günlük limitinin yaklaşık onda biri kadar e-posta gönderebilir ve Adapty Mail, o saatte bekletilen e-postaları sonraki bir saatte gönderir. İşlemsel e-postalar limitin iki katına kadar kullanabilir; bir flow'un ilk e-postası ve çift onay (double opt-in) isteği ise %20 daha fazlasına kadar öncelik alır, böylece limit azaldığında diğer e-postalara göre önce sıralanırlar. Kademe ilerlemesi yalnızca hacme bağlıdır ve kademeler yalnızca yukarı doğru hareket eder: otomatik geri düşüş yoktur. En üst kademedeki domain ise günlük limit olmaksızın gönderim yapar.
+Her gün, UTC gece yarısından kısa süre sonra, Adapty Mail her grubun tier'ını inceler. İnceleme, gruba mevcut tier'ında geçirdiği son üç tam günde iletilen pazarlama e-postalarının ve çift onay (double opt-in) doğrulama isteklerinin açılma oranını okur. Yeni bir tier, incelemenin ardından gelen günün tamamı için geçerlidir.
+
+| Grup | En az şu açılma oranında bir üst tier'a geçer | Şu açılma oranının altında bir alt tier'a iner |
+| --- | --- | --- |
+| Google, Microsoft, Yahoo | %15 | %5 |
+| iCloud | %40 | %20 |
+| Other | Kullanılmaz | Kullanılmaz |
+
+Bir grubun tier'ının yükselmesi için aşağıdakiler de gereklidir:
+
+- **Yeterli e-posta**: O günler içinde gruba en az 200 e-posta teslim edilmiş olmalıdır. Daha az teslimatta grup mevcut kademesinde kalır.
+- **Tam günlük limit**: Grup, inceleme gününden bir önceki gün günlük limitine ulaşmış olmalıdır. Gönderilen ve engellenen denemeler her ikisi de sayılır; her e-posta yalnızca bir kez hesaba katılır.
+
+**Diğer** grubu yalnızca günlük limite göre yükselir ve hiçbir zaman düşmez. İki açılma oranı arasında kalan bir grup, ne kadar gün geçerse geçsin mevcut kademesinde kalır. Düşüş değerlendirmesinde en son gün hesaba katılmaz; çünkü o güne ait açılmalar hâlâ gelmektedir.
+
+Ödenek güne yayılır: herhangi bir saatte bir grup, günlük limitinin yaklaşık onda birini gönderebilir; Adapty Mail, bir saatte bekletilen e-postaları daha sonraki bir saatte iletir. İşlemsel e-postalar limitin iki katına kadar kullanabilir; bir flow'un ilk e-postası ile çift opt-in onay isteği ise %20'ye kadar daha fazla kullanabilir; böylece limit azaldığında diğer e-postalara göre öncelik kazanırlar. En üst kademesinin ötesinde grubun günlük limiti yoktur.
 
 | Tier | Günlük limit |
 | ---- | ------------ |
@@ -196,10 +211,10 @@ Domainlerinizin ısınma sürecini tamamlayana kadar, Adapty her birinin günlü
 
 Adapty, hangi domainin e-postayı göndereceğine şu mantıkla karar verir:
 
-- **Alıcı başına kampanyada tek alan adı.** Kampanyayı tutarlı tutmak için Adapty Mail, aynı alıcıya e-posta gönderirken hep aynı e-posta adresini kullanır. O alan adını silerseniz ya da oradan gönderimi durdurursanız, bir sonraki e-posta boş kotası olan en yeni alan adından gönderilir.
-- **Yeni alan adları önceliklidir.** Daha sonra eklenen bir alan adı, daha eskisine tercih edilir.
+- **Alıcı başına kampanya başına bir alan adı.** Kampanyanın tutarlı olması için Adapty Mail, aynı alıcıya e-posta göndermek üzere her zaman aynı e-posta adresini kullanır. O alan adını silerseniz ya da o adresten göndermeyi durdurursanız, bir sonraki e-posta en yeni ve kapasitesi dolmamış alan adından gönderilir.
+- **Yeni eklenen alan adları önceliklidir.** Daha sonra eklenen bir alan adı, daha eskiye göre tercih edilir.
 
-Tüm alan adları limitini aştığında Adapty Mail e-postayı geciktirir — alıcının bu durumda ne yaşadığını [Throttle](mail-suppression#throttle-temporary-delays-and-cancellations) bölümü açıklar.
+Alıcının posta kutusu sağlayıcısı için tüm alan adları limitini doldurmişsa Adapty Mail, e-postayı geciktirir — buradan sonra alıcıya ne olduğunu [Throttle](mail-suppression#throttle-temporary-delays-and-cancellations) bölümü açıklar.
 
 ## Gönderimi durdurma ve devam ettirme \{#stop-and-resume-sending\}
 
