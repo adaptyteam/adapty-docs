@@ -20,9 +20,9 @@ Adapty Flutter SDK 提供两种展示流程和付费墙的方式：
 
 - **嵌入式组件**
 
-## 以独立屏幕形式展示 \{#present-as-standalone-screen\}
+## 以独立页面形式展示 \{#present-as-standalone-screen\}
 
-要将流程或付费墙以独立屏幕形式展示，请对 [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 调用 `view.present()` 方法。每个 `view` 只能展示一次：关闭后，该视图将从内存中释放。如需再次展示流程或付费墙，请重新调用 `createFlowView` 创建新的 `view` 实例，或在 SDK 4.1 及更高版本中使用[关闭但不释放](#dismiss-the-flow-or-paywall)的方式。
+要将流程或付费墙以独立页面形式展示，请对由 [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 调用 `view.present()` 方法。默认情况下，关闭 `view` 后会将其从内存中释放，因此无法再次展示。如需再次显示该流程或付费墙，请再次调用 `createFlowView` 创建新的 `view` 实例，或在 SDK 4.1 及更高版本中使用[关闭但不释放](#dismiss-the-flow-or-paywall)的方式。
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -60,6 +60,26 @@ await view.dismiss(destroy: false);
 ```
 
 以这种方式保留的视图，再次展示时用户会回到离开时的界面，并保留流程已积累的状态。以这种方式保留的视图会一直持有，直到你使用 `destroy: true` 将其销毁。
+
+默认的关闭操作会调用 `view.dismiss()`，即使你之前通过 `destroy: false` 保留了该视图，它也会被释放。若要在用户关闭时保留视图，请覆盖 `flowViewDidPerformAction` 并自行关闭视图。该方法会在应用中的每个流程和付费墙上触发，因此需通过比较 `view.id` 来确保只保留你计划再次呈现的视图。保留 `OpenUrlAction` 的处理逻辑以维持 URL 跳转功能：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+保留获取到的 `view`：你需要用它来再次展示流程或付费墙，以及通过 `dismiss(destroy: true)` 释放它。其他任何 `view.dismiss()` 调用也会释放该视图，包括 [`flowViewDidReceiveError`](flutter-handling-events#view-errors) 中的调用。视图出错后，请使用 `createFlowView` 创建新视图。
 
 ### 显示对话框 \{#show-dialog\}
 

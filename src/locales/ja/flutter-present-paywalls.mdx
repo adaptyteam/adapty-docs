@@ -22,7 +22,7 @@ Adapty Flutter SDK では、フローとペイウォールを表示する方法�
 
 ## スタンドアロン画面として表示する \{#present-as-standalone-screen\}
 
-フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。各 `view` は一度しか表示できません。閉じると、そのビューはメモリから解放されます。フローまたはペイウォールを再度表示する必要がある場合は、`createFlowView` をもう一度呼び出して新しい `view` インスタンスを作成するか、SDK 4.1 以降では[解放せずに閉じる](#dismiss-the-flow-or-paywall)ことができます。
+フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。デフォルトでは、`view` を閉じるとメモリから解放されるため、再度表示することはできません。フローまたはペイウォールを再表示する必要がある場合は、`createFlowView` をもう一度呼び出して新しい `view` インスタンスを作成するか、SDK 4.1 以降では[解放せずに閉じる](#dismiss-the-flow-or-paywall)方法を使用してください。
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -60,6 +60,26 @@ await view.dismiss(destroy: false);
 ```
 
 このビューを再度表示すると、ユーザーはフローが積み上げた状態のまま、離れた画面に戻ります。この方法で保持されたビューは、`destroy: true` で削除するまで保持されます。
+
+デフォルトのクローズアクションは `view.dismiss()` を呼び出します。これは、`destroy: false` で以前にビューを保持していた場合でもビューを解放します。ユーザーがビューを閉じたときにビューを保持するには、`flowViewDidPerformAction` をオーバーライドして、自分でビューを閉じてください。このメソッドはアプリ内のすべてのフローとペイウォールに対して実行されるため、再度表示する予定のビューのみを保持するために `view.id` を比較してください。URL オープンを維持するために `OpenUrlAction` のケースは残しておいてください：
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+保持した`view`は必要です。フローまたはペイウォールを再表示するときや、`dismiss(destroy: true)`で解放するときに使います。それ以外の`view.dismiss()`呼び出しでもビューは解放されます。[`flowViewDidReceiveError`](flutter-handling-events#view-errors)内の呼び出しも同様です。ビューエラーが発生したら、`createFlowView`で新しいビューを作成してください。
 
 ### ダイアログを表示する \{#show-dialog\}
 

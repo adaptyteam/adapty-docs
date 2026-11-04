@@ -20,9 +20,9 @@ Le SDK Flutter d'Adapty propose deux façons de présenter des flows et des payw
 
 - **Widget intégré**
 
-## Afficher en tant qu'écran autonome \{#present-as-standalone-screen\}
+## Présenter comme écran autonome \{#present-as-standalone-screen\}
 
-Pour afficher un flow ou un paywall en tant qu'écran autonome, utilisez la méthode `view.present()` sur le `view` créé par la méthode [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Chaque `view` ne peut être affiché qu'une seule fois : une fois fermé, il est libéré de la mémoire. Si vous avez besoin d'afficher à nouveau le flow ou le paywall, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`, ou [fermez-le sans le libérer](#dismiss-the-flow-or-paywall) à partir du SDK 4.1.
+Pour afficher un flow ou un paywall comme écran autonome, utilisez la méthode `view.present()` sur le `view` créé par la méthode [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Par défaut, fermer un `view` le libère de la mémoire, vous ne pouvez donc pas le présenter à nouveau. Si vous avez besoin d'afficher le flow ou le paywall une nouvelle fois, appelez `createFlowView` une nouvelle fois pour créer une nouvelle instance de `view`, ou [fermez-le sans le libérer](#dismiss-the-flow-or-paywall) avec le SDK 4.1 ou une version ultérieure.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -60,6 +60,26 @@ await view.dismiss(destroy: false);
 ```
 
 Affichez à nouveau cette vue et l'utilisateur retrouve l'écran qu'il avait quitté, avec l'état que le flow avait construit. Une vue conservée de cette façon est maintenue jusqu'à ce que vous la supprimiez avec `destroy: true`.
+
+L'action de fermeture par défaut appelle `view.dismiss()`, ce qui libère la vue même si vous l'avez conservée avec `destroy: false`. Pour garder une vue quand l'utilisateur la ferme, surchargez `flowViewDidPerformAction` et effectuez vous-même la fermeture. Cette méthode s'exécute pour chaque flow et chaque paywall de votre application, donc comparez `view.id` pour ne conserver que la vue que vous comptez réafficher. Conservez le cas `OpenUrlAction` pour préserver l'ouverture des URLs :
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Conservez bien la `view` obtenue : vous en aurez besoin pour présenter à nouveau le flow ou le paywall, et pour le libérer avec `dismiss(destroy: true)`. Tout autre appel à `view.dismiss()` libère également la vue, y compris l'appel dans [`flowViewDidReceiveError`](flutter-handling-events#view-errors). Après une erreur de vue, créez une nouvelle vue avec `createFlowView`.
 
 ### Afficher une boîte de dialogue \{#show-dialog\}
 

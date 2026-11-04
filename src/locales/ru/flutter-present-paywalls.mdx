@@ -20,9 +20,9 @@ Adapty Flutter SDK предоставляет два способа отобра
 
 - **Embedded widget**
 
-## Отображение в виде отдельного экрана \{#present-as-standalone-screen\}
+## Отображение как отдельный экран \{#present-as-standalone-screen\}
 
-Чтобы отобразить флоу или пейвол как отдельный экран, используйте метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно отобразить только один раз: после закрытия он освобождается из памяти. Если нужно снова показать флоу или пейвол, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`, либо [закройте без освобождения](#dismiss-the-flow-or-paywall) в SDK 4.1 и выше.
+Чтобы отобразить флоу или пейвол как отдельный экран, вызовите метод `view.present()` на объекте `view`, созданном методом [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). По умолчанию при закрытии `view` освобождается из памяти, и повторно показать его не получится. Если нужно снова отобразить флоу или пейвол, вызовите `createFlowView` ещё раз, чтобы создать новый экземпляр `view`, либо [закройте его без освобождения памяти](#dismiss-the-flow-or-paywall) — эта возможность доступна начиная с SDK 4.1.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -60,6 +60,26 @@ await view.dismiss(destroy: false);
 ```
 
 Покажите этот вид снова, и пользователь вернётся к экрану, на котором остановился, сохранив состояние, которое успел накопить флоу. Вид, сохранённый таким образом, удерживается до тех пор, пока вы не закроете его с `destroy: true`.
+
+Стандартное действие закрытия вызывает `view.dismiss()`, что освобождает вью, даже если вы ранее сохранили её с помощью `destroy: false`. Чтобы сохранить вью при закрытии пользователем, переопределите `flowViewDidPerformAction` и самостоятельно закройте вью. Этот метод вызывается для каждого флоу и пейвола в вашем приложении, поэтому сравнивайте `view.id`, чтобы сохранять только ту вью, которую планируете показать снова. Оставьте обработку `OpenUrlAction` для корректного открытия URL:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Сохраняйте полученный `view`: он понадобится, чтобы снова показать флоу или пейвол, а также чтобы освободить его вызовом `dismiss(destroy: true)`. Любой другой вызов `view.dismiss()` тоже освобождает вью, включая вызов в [`flowViewDidReceiveError`](flutter-handling-events#view-errors). После ошибки вью создайте новый вью с помощью `createFlowView`.
 
 ### Показать диалог \{#show-dialog\}
 

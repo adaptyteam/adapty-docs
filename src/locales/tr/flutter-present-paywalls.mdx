@@ -22,7 +22,7 @@ Adapty Flutter SDK, flow'ları ve paywall'ları sunmak için iki yöntem sunar:
 
 ## Bağımsız ekran olarak göster \{#present-as-standalone-screen\}
 
-Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için, [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) metodu tarafından oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez gösterilebilir: kapattıktan sonra, view bellekten serbest bırakılır. Flow veya paywall'ı tekrar görüntülemeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createFlowView`'ı bir kez daha çağırın ya da SDK 4.1 ve sonrasında [bellekten serbest bırakmadan kapatın](#dismiss-the-flow-or-paywall).
+Bir flow veya paywall'ı bağımsız ekran olarak görüntülemek için [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Varsayılan olarak, bir `view` kapatıldığında bellekten serbest bırakılır; dolayısıyla tekrar gösteremezsiniz. Flow veya paywall'ı yeniden görüntülemeniz gerekiyorsa `createFlowView`'ı bir kez daha çağırarak yeni bir `view` örneği oluşturun ya da SDK 4.1 ve sonrasında [serbest bırakmadan kapatın](#dismiss-the-flow-or-paywall).
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -60,6 +60,26 @@ await view.dismiss(destroy: false);
 ```
 
 Bu görünümü yeniden sunduğunuzda kullanıcı, flow'un o ana kadar oluşturduğu durumla birlikte ayrıldığı ekrana geri döner. Bu şekilde saklanan bir görünüm, `destroy: true` ile kapatılana kadar bellekte tutulur.
+
+Varsayılan kapatma eylemi, daha önce `destroy: false` ile görünümü saklasanız bile `view.dismiss()` çağırarak görünümü serbest bırakır. Kullanıcı görünümü kapattığında saklamak istiyorsanız `flowViewDidPerformAction` metodunu override edin ve görünümü kendiniz kapatın. Bu metot uygulamanızdaki her flow ve paywall için çalıştığından, yalnızca yeniden göstermeyi planladığınız görünümü saklamak için `view.id` değerini karşılaştırın. URL açmayı korumak için `OpenUrlAction` case'ini de dahil edin:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Sakladığınız `view`'i elinizde tutun: flow veya paywall'ı yeniden göstermek için ve `dismiss(destroy: true)` ile serbest bırakmak için buna ihtiyacınız olacak. Diğer tüm `view.dismiss()` çağrıları da görünümü serbest bırakır; buna [`flowViewDidReceiveError`](flutter-handling-events#view-errors) içindeki çağrı da dahildir. Bir görünüm hatasından sonra `createFlowView` ile yeni bir görünüm oluşturun.
 
 ### Diyalog göster \{#show-dialog\}
 
