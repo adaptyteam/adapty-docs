@@ -6,7 +6,6 @@
 // --network prints each API response, to find the one that feeds a screen.
 // The shot-list format is in the skill's SKILL.md.
 import { existsSync, mkdirSync } from 'fs';
-import { homedir } from 'os';
 import { dirname, resolve } from 'path';
 import { pathToFileURL } from 'url';
 
@@ -23,10 +22,10 @@ if (!listPath) {
   process.exit(1);
 }
 
-const videos = resolve(process.env.DEMO_VIDEOS_REPO ?? `${homedir()}/Documents/adapty-demo-videos`);
+const videos = resolve(process.env.DEMO_VIDEOS_REPO ?? '../adapty-demo-videos');
 const targetModule = resolve(videos, 'recorder/target.mjs');
 if (!existsSync(targetModule)) {
-  console.error(`Can't find the recorder at ${videos}. Clone adapty-demo-videos there or set DEMO_VIDEOS_REPO.`);
+  console.error(`Can't find the recorder at ${videos}. Set DEMO_VIDEOS_REPO to your adapty-demo-videos clone.`);
   process.exit(1);
 }
 

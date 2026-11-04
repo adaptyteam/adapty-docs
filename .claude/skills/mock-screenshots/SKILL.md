@@ -17,10 +17,22 @@ outside the dashboard. Those need a real capture, so list them for the user.
 
 ## First run
 
-1. `adapty-demo-videos` and `adapty-dashboard-interface` are cloned side by side in `~/Documents`. If
-   the recorder is elsewhere, set `DEMO_VIDEOS_REPO`.
-2. If the recorder has no `node_modules/`, run `npm install` there. Node must be 22.18+.
-3. The first run takes a few minutes: it creates a worktree and installs dependencies.
+The skill needs two private repos, and authors keep them in different places. Find both before
+anything else:
+
+| Repo | Looked for in | Override |
+|---|---|---|
+| `adapty-demo-videos` (the recorder, on GitHub) | next to the docs repo | `DEMO_VIDEOS_REPO` |
+| `adapty-dashboard-interface` (on GitLab) | next to the recorder | `DASHBOARD_REPO` |
+
+1. If a repo isn't in that location, ask the author where their clone is, then prefix every command in
+   this skill with the override, for example `DEMO_VIDEOS_REPO=/path/to/clone`.
+2. If the author has no clone, offer to clone it. If they have no access to either repo, stop: give
+   them the capture table instead.
+3. If the recorder has no `node_modules/`, run `npm install` there. Node must be 22.18+.
+4. If `recorder/explore.mjs` reports a missing browser, run `npx playwright install chromium
+   chromium-headless-shell` in the recorder.
+5. The first run takes a few minutes: it creates a worktree and installs dependencies.
 
 The dev servers use port 3000 for the dashboard and 3010 for the builder, and keep running after the
 shoot. A run restarts a recorder server that serves another checkout, so say so if the user may be
@@ -37,7 +49,7 @@ working with it. A foreign process on the port stops the run instead.
    recorder's `out/explore/`. For the builder, use `--target builder` with no `--route`.
 
    ```bash
-   (cd ~/Documents/adapty-demo-videos && node recorder/explore.mjs --target dashboard --route /products --branch master)
+   (cd <recorder> && node recorder/explore.mjs --target dashboard --route /products --branch master)
    ```
 
    Explore runs at 1600x900 and `shoot.mjs` at 1440x900, so use its test ids, not its boxes, in a shot
