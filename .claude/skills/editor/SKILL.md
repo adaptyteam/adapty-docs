@@ -288,7 +288,7 @@ Additionally check images manually: image files exist, `@assets/` not `@asset/`,
 - Missing alt entirely: `<ZoomImage id="x.webp" width="500px" />` — flag, always required
 - Generic alt text copied from a nearby image: e.g., two consecutive images both with `alt="Static navigation"` — the second was copy-pasted and describes the wrong image. Each alt must describe its specific screenshot
 
-**Screenshot placeholders**: In UI workflow articles, every distinct UI state — screen selection, dialog, results view, confirmation — should have a `:::note` placeholder callout. Check that sections describing a UI step are not missing one. See Screenshot Placeholders section below.
+**Screenshot placeholders**: In UI workflow articles, a UI state where the reader has to find something, choose between similar controls, or confirm the result should have a `:::note` placeholder callout. Check that sections describing such a step are not missing one. See Screenshot Placeholders section below.
 
 See `references/astro-patterns.md`
 
@@ -570,7 +570,7 @@ Sweeping the same section, entry, or claim across a set of articles (integration
 
 ### Screenshot Placeholders (UI Workflow Articles)
 
-When writing an article that describes a step-by-step UI workflow, add `:::note` callouts as screenshot placeholders at every distinct UI state — screen selections, modal dialogs, results views, confirmation states, and any step that produces a visible change.
+When writing an article that describes a step-by-step UI workflow, add `:::note` callouts as screenshot placeholders at the UI states that need one — typically screen selections, modal dialogs, results views, and confirmation states.
 
 **Format** — the callout contains only the intended filename, nothing else:
 
@@ -584,7 +584,7 @@ feature-name-screen.webp
 
 **Where to place them**: After the prose that describes the UI state, not before it. The reader reads the description, then sees the screenshot that confirms it.
 
-**How many**: Aim for one per distinct UI state. Err on the side of more — it's easier to remove a placeholder than to remember later what needed capturing.
+**How many**: Aim for one per distinct UI state where the reader has to find something, has to choose between similar controls, or needs to confirm the result. Skip a state when the step is a single obvious click, or the image would only repeat the sentence.
 
 After drafting, output a capture table as part of the writing summary:
 
@@ -592,7 +592,9 @@ After drafting, output a capture table as part of the writing summary:
 |---|---|
 | `feature-name-screen.webp` | What is visible on screen at this point |
 
-This lets the user take all screenshots in one pass and replace placeholders with `<ZoomImage>` elements.
+To capture the dashboard and builder rows, use the `mock-screenshots` skill. It takes them from mock data and replaces the placeholders with `<ZoomImage>` elements. Leave mobile app and store console rows for the user, who captures them manually.
+
+In review mode, offer the same skill when an article has unresolved placeholders, or when a screenshot no longer matches the prose.
 
 ### False Positives
 Don't flag: technical terms, industry-standard terminology, code/API names, clear sentences slightly over length, passive voice when appropriate, single value word per paragraph with specific context, descriptive adjectives like "real-time", "built-in", "automatic".
