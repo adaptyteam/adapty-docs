@@ -1,6 +1,6 @@
 ---
 title: "Placements and segments commands"
-description: "Adapty CLI commands that create and update placements and their audiences, read the metrics of flow placements, and create the segments those audiences target."
+description: "Adapty CLI commands that create and update placements and their audiences, read the metrics of flow and paywall placements, and create the segments those audiences target."
 metadataTitle: "Placements and Segments CLI Commands | Adapty Docs"
 ---
 
@@ -159,7 +159,7 @@ To swap a paywall across multiple placements without losing segment-specific rou
 
 ### adapty placements metrics list
 
-Show the lifetime metrics of several flow placements, one line for each placement. This is the data of the placements table in the dashboard.
+Show the lifetime metrics of several flow placements or several paywall placements, one line for each placement. This is the data of the placements table in the dashboard.
 
 ```bash
 adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<placement-id>
@@ -168,17 +168,19 @@ adapty placements metrics list --app <app-id> --type flow --ids <placement-id>,<
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--type` | Yes | Placement type, as [`placements list`](#adapty-placements-list) shows it: `flow` |
+| `--type` | Yes | Placement type, as [`placements list`](#adapty-placements-list) shows it: `flow` or `paywall` |
 | `--ids` | Yes | Placement IDs (UUIDs). Separate them with commas, or repeat the flag |
-| `--csv` | No | Print CSV: one row for each placement, with the placement ID and all 27 metrics. Can't be used with `--json` |
+| `--csv` | No | Print CSV: one row for each placement, with the placement ID and the numeric metrics. Can't be used with `--json` |
 
-The `placements metrics` commands read the numbers of the [placement metrics](placement-metrics) page for flow placements, and need CLI version 0.15.0 or later. `--type` must match the type of the placement: Adapty refuses a placement of another type.
+The `placements metrics` commands read the numbers of the [placement metrics](placement-metrics) page. They need CLI version 0.15.0 or later for flow placements and 0.16.0 or later for paywall placements. `--type` must match the type of the placement: Adapty refuses a placement of another type, and has no metrics for onboarding placements.
 
-Each line shows the placement ID with its views, purchases, trials, and revenue. `--json` and `--csv` carry all 27 metrics.
+Each line shows the placement ID with its views, purchases, trials, and revenue. For a flow placement, `--json` and `--csv` carry all 27 metrics.
+
+A lifetime row of a paywall placement has no views, so its views column shows `—`. It carries 15 metrics, such as `purchases`, `revenue`, and `refunds`. To read the viewers of a paywall placement, use [`placements metrics get`](#adapty-placements-metrics-get) with a period.
 
 ### adapty placements metrics values
 
-List the filter keys and values of a flow placement: what `placements metrics get --filter` takes.
+List the filter keys and values of a flow placement or a paywall placement: what `placements metrics get --filter` takes.
 
 ```bash
 adapty placements metrics values --app <app-id> <placement-id> --type flow
@@ -191,13 +193,13 @@ adapty placements metrics values --app <app-id> <placement-id> --type flow
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--type` | Yes | Placement type: `flow` |
+| `--type` | Yes | Placement type: `flow` or `paywall` |
 
-The output has the same form as [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): the top value of each group is the filter key, and the innermost values are what the key takes.
+The output has the same form as [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): the top value of each group is the filter key, and the innermost values are what the key takes. A placement with no filter keys prints `No filter values.`
 
 ### adapty placements metrics get
 
-Show the metrics of one flow placement as the tree of the [placement metrics](placement-metrics) page, for its whole lifetime or for a period.
+Show the metrics of one flow placement or paywall placement as the tree of the [placement metrics](placement-metrics) page. A flow placement takes its whole lifetime or a period. A paywall placement takes a period.
 
 ```bash
 adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on flow
@@ -210,9 +212,9 @@ adapty placements metrics get --app <app-id> <placement-id> --type flow --based-
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--type` | Yes | Placement type: `flow` |
-| `--based-on` | Yes | What the first level of the tree splits by: `audience`, `flow`, or `placement` |
-| `--group-by` | No | Split each audience by `country` or `store` |
+| `--type` | Yes | Placement type: `flow` or `paywall` |
+| `--based-on` | Yes | What the first level of the tree splits by. For a flow placement: `audience`, `flow`, or `placement`. For a paywall placement: `audience` or `paywall` |
+| `--group-by` | No | For a flow placement, split each audience by `country` or `store`. For a paywall placement, group the products by `product`, `store`, or `country` |
 | `--date-from` | No | First day of the period, inclusive (`YYYY-MM-DD`). Pass it together with `--date-to` and `--date-type` |
 | `--date-to` | No | Last day of the period, inclusive (`YYYY-MM-DD`). Pass it together with `--date-from` and `--date-type` |
 | `--date-type` | No | Which date the period applies to: `purchase_date` or `profile_install_date`. Pass it together with `--date-from` and `--date-to` |
@@ -222,14 +224,23 @@ adapty placements metrics get --app <app-id> <placement-id> --type flow --based-
 | `--depth` | No | How many levels of the tree to print under `Total`. Default: `1` |
 | `--csv` | No | Print CSV: one row for each node of the whole tree. Can't be used with `--json` |
 
-Without `--date-from`, `--date-to`, and `--date-type`, the command returns the lifetime metrics. For a period, pass all three: a period without `--date-type` exits with code 4.
+For a flow placement, the command returns the lifetime metrics without `--date-from`, `--date-to`, and `--date-type`. For a period, pass all three: a period without `--date-type` exits with code 4. A paywall placement always needs all three, and exits with code 4 without them.
 
-The output, `--depth`, `--json`, `--csv`, and `--filter` work as in [`flows metrics get`](developer-cli-flows#read-the-output). For example, to compare the audiences of a placement by store:
+For a flow placement, the output, `--depth`, `--json`, `--csv`, and `--filter` work as in [`flows metrics get`](developer-cli-flows#read-the-output). For a paywall placement, they work as in [`paywalls metrics get`](developer-cli-paywalls#read-the-output). For example, to compare the audiences of a placement by store:
 
 ```bash
 adapty placements metrics get --app <app-id> <placement-id> --type flow --based-on audience --group-by store \
   --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 2
 ```
+
+To read each arm of an A/B test on a paywall placement, split the tree by paywall. Under each paywall, the line of the A/B test holds the numbers of that arm:
+
+```bash
+adapty placements metrics get --app <app-id> <placement-id> --type paywall --based-on paywall \
+  --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --depth 3
+```
+
+The total of the whole A/B test is on its line in the `--based-on audience` tree. That total counts each user once, so it can be lower than the sum of the arms: a user who saw both arms counts in each arm.
 
 ## Segments
 

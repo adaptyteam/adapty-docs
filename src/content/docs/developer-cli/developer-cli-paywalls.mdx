@@ -1,10 +1,10 @@
 ---
 title: "Paywalls commands"
-description: "Adapty CLI commands that list, read, create, and update paywalls, and list the placements that show a paywall."
+description: "Adapty CLI commands that list, read, create, and update paywalls, list the placements that show a paywall, and read paywall metrics."
 metadataTitle: "Paywalls CLI Commands | Adapty Docs"
 ---
 
-These Adapty CLI commands manage [paywalls](paywalls) and the products each paywall sells.
+These Adapty CLI commands manage [paywalls](paywalls) and the products each paywall sells, and read their metrics.
 
 ## adapty paywalls list
 
@@ -93,6 +93,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 Use this command before swapping a paywall to see which placements would be affected.
 
 The items in this list carry no `is_active` field. To read a placement's activation state, use [`placements list`](developer-cli-placements#adapty-placements-list) or [`placements get`](developer-cli-placements#adapty-placements-get).
+
+## adapty paywalls metrics list
+
+Show the lifetime metrics of several paywalls, one line for each paywall. This is the data of the paywalls table in the dashboard.
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--ids` | Yes | Paywall IDs (UUIDs). Separate them with commas, or repeat the flag |
+| `--csv` | No | Print CSV: one row for each paywall, with the paywall ID and the numeric metrics. Can't be used with `--json` |
+
+The `paywalls metrics` commands read the numbers of the [paywall metrics](paywall-metrics) page, and need CLI version 0.16.0 or later.
+
+Each line shows the paywall ID with its views, purchases, trials, and revenue. `--json` carries all 21 metrics, such as `unique_profiles_views`, `net_revenue`, and `conversion_rate_purchases`, plus `last_purchases`. `--csv` leaves out the two fields that are not numbers, `in_current_state` and `last_purchases`. A metric with no data is `0`, never `null`.
+
+## adapty paywalls metrics values
+
+List the filter keys and values of a paywall: what [`paywalls metrics get --filter`](#filter-the-metrics) takes.
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | Paywall ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The output has the same form as [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): the top value of each group is the filter key, and the innermost values are what the key takes.
+
+## adapty paywalls metrics get
+
+Show the metrics of one paywall for a period, as the tree of the [paywall metrics](paywall-metrics) page.
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | Paywall ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--based-on` | Yes | What the first level of the tree splits by: `placement` or `audience`. These are the placement-based and audience-based views of the [paywall metrics](paywall-metrics#view-options-for-metrics-data) page |
+| `--date-type` | Yes | Which date the period applies to: `purchase_date`, or `profile_install_date` to [filter by install date](paywall-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Yes | First day of the period, inclusive (`YYYY-MM-DD`) |
+| `--date-to` | Yes | Last day of the period, inclusive (`YYYY-MM-DD`) |
+| `--group-by` | No | Group the products by `product`, `store`, or `country`. Default: `product` |
+| `--granularity` | No | Split the period into points: `day`, `week`, `month`, `quarter`, or `year` |
+| `--filter` | No | Keep only data with these values of a filter key. Repeatable. See [Filter the metrics](#filter-the-metrics) |
+| `--timezone` | No | IANA time zone of the period points, for example `Europe/Berlin`. Without it, Adapty uses the app time zone |
+| `--depth` | No | How many levels of the tree to print under `Total`. Default: `1` |
+| `--csv` | No | Print CSV: one row for each node of the whole tree. Can't be used with `--json` |
+
+The CLI exits with code 2 and sends no request when `--based-on` or `--date-type` is missing, or when only one end of the period is given. Without the period, Adapty refuses the request and the command exits with code 4. Adapty validates the values of `--based-on`, `--date-type`, `--group-by`, and `--granularity`: a wrong value exits with code 4, and the error lists the accepted values.
+
+### Read the output
+
+The command prints a `Total` line, then the first level of the tree under it, with the same columns as [`flows metrics get`](developer-cli-flows#read-the-output). The nodes of the first level always come with their points of the period, with or without `--granularity`.
+
+The levels of the tree are placement or audience, then the paywall or the A/B test that ran there, then the `--group-by` groups. To print more levels, pass `--depth`, for example `--depth 4`.
+
+For the whole tree with all the metrics, use one of these flags:
+
+- `--json` prints the answer of the server unchanged.
+- `--csv` prints one row for each node, period points included. The columns are `path` (the titles from `Total` down to the node, separated by ` > `), `level`, `title`, and then the numeric metrics. A paywall tree has no levels, so `level` is `root` on `Total` and empty on every other row.
+
+### Filter the metrics
+
+Write each `--filter` as `key=value`, with the keys and values that [`paywalls metrics values`](#adapty-paywalls-metrics-values) lists. Filters follow the same rules as in [`flows metrics get`](developer-cli-flows#filter-the-metrics):
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## What's next
 
