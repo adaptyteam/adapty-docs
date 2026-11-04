@@ -1,10 +1,10 @@
 ---
-title: "Lệnh quản lý Paywall"
-description: "Các lệnh Adapty CLI để liệt kê, đọc, tạo và cập nhật paywall, cũng như liệt kê các placement hiển thị paywall."
-metadataTitle: "Lệnh CLI Paywalls | Tài liệu Adapty"
+title: "Lệnh Paywalls"
+description: "Các lệnh Adapty CLI để liệt kê, đọc, tạo và cập nhật paywall, liệt kê các placement hiển thị paywall, và đọc chỉ số của paywall."
+metadataTitle: "Lệnh CLI cho Paywalls | Tài liệu Adapty"
 ---
 
-Các lệnh Adapty CLI này quản lý [paywall](paywalls) và các sản phẩm mà mỗi paywall bán.
+Các lệnh Adapty CLI này quản lý [paywall](paywalls) và các sản phẩm mà mỗi paywall bán, đồng thời đọc các chỉ số của chúng.
 
 ## Danh sách paywall của Adapty \{#adapty-paywalls-list\}
 
@@ -93,6 +93,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 Dùng lệnh này trước khi thay thế một paywall để xem những placement nào sẽ bị ảnh hưởng.
 
 Các mục trong danh sách này không có trường `is_active`. Để đọc trạng thái kích hoạt của một placement, hãy dùng [`placements list`](developer-cli-placements#adapty-placements-list) hoặc [`placements get`](developer-cli-placements#adapty-placements-get).
+
+## Danh sách chỉ số adapty paywalls metrics \{#adapty-paywalls-metrics-list\}
+
+Hiển thị các chỉ số theo thời gian của nhiều paywall, mỗi dòng là một paywall. Đây là dữ liệu từ bảng paywalls trong dashboard.
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+| `--ids` | Có | ID các paywall (UUID). Phân cách bằng dấu phẩy hoặc lặp lại cờ |
+| `--csv` | Không | In CSV: mỗi hàng là một paywall, gồm ID paywall và các chỉ số dạng số. Không dùng được cùng với `--json` |
+
+Các lệnh `paywalls metrics` đọc dữ liệu từ trang [paywall metrics](paywall-metrics), và yêu cầu CLI phiên bản 0.16.0 trở lên.
+
+Mỗi dòng hiển thị ID paywall cùng với số lượt xem, lượt mua, số lượng trial và doanh thu. `--json` cung cấp đầy đủ 21 chỉ số, chẳng hạn như `unique_profiles_views`, `net_revenue` và `conversion_rate_purchases`, cùng với `last_purchases`. `--csv` bỏ qua hai trường không phải số là `in_current_state` và `last_purchases`. Chỉ số không có dữ liệu sẽ là `0`, không bao giờ là `null`.
+
+## adapty paywalls metrics values
+
+Liệt kê các khóa và giá trị bộ lọc của một paywall: những gì [`paywalls metrics get --filter`](#filter-the-metrics) nhận vào.
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `paywall-id` | ID paywall (UUID) |
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | ID ứng dụng (UUID) |
+
+Đầu ra có dạng giống với [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): giá trị đầu tiên của mỗi nhóm là khóa bộ lọc, và các giá trị trong cùng là những gì khóa đó nhận vào.
+
+## adapty paywalls metrics get
+
+Hiển thị các chỉ số của một paywall trong một khoảng thời gian, dưới dạng cây của trang [paywall metrics](paywall-metrics).
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Đối số | Mô tả |
+|---|---|
+| `paywall-id` | ID paywall (UUID) |
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--app` | Có | App ID (UUID) |
+| `--based-on` | Có | Cấp đầu tiên của cây phân chia theo: `placement` hoặc `audience`. Đây là các chế độ xem theo placement và audience của trang [chỉ số paywall](paywall-metrics#view-options-for-metrics-data) |
+| `--date-type` | Có | Ngày áp dụng cho khoảng thời gian: `purchase_date`, hoặc `profile_install_date` để [lọc theo ngày cài đặt](paywall-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Có | Ngày đầu tiên của khoảng thời gian, bao gồm cả ngày này (`YYYY-MM-DD`) |
+| `--date-to` | Có | Ngày cuối cùng của khoảng thời gian, bao gồm cả ngày này (`YYYY-MM-DD`) |
+| `--group-by` | Không | Nhóm sản phẩm theo `product`, `store`, hoặc `country`. Mặc định: `product` |
+| `--granularity` | Không | Chia khoảng thời gian thành các điểm: `day`, `week`, `month`, `quarter`, hoặc `year` |
+| `--filter` | Không | Chỉ giữ lại dữ liệu có các giá trị của filter key này. Có thể dùng lặp lại. Xem [Lọc các chỉ số](#filter-the-metrics) |
+| `--timezone` | Không | Múi giờ IANA cho các điểm thời gian, ví dụ `Europe/Berlin`. Nếu không có, Adapty sẽ dùng múi giờ của ứng dụng |
+| `--depth` | Không | Số cấp của cây sẽ được in dưới `Total`. Mặc định: `1` |
+| `--csv` | Không | In dạng CSV: mỗi hàng tương ứng với một node của toàn bộ cây. Không thể dùng cùng với `--json` |
+
+CLI thoát với mã 2 và không gửi yêu cầu khi thiếu `--based-on` hoặc `--date-type`, hoặc khi chỉ cung cấp một đầu của khoảng thời gian. Nếu không có khoảng thời gian, Adapty từ chối yêu cầu và lệnh thoát với mã 4. Adapty kiểm tra các giá trị của `--based-on`, `--date-type`, `--group-by` và `--granularity`: giá trị sai sẽ thoát với mã 4, và thông báo lỗi liệt kê các giá trị được chấp nhận.
+
+### Đọc kết quả đầu ra \{#read-the-output\}
+
+Lệnh này in ra một dòng `Total`, tiếp theo là cấp đầu tiên của cây bên dưới, với các cột tương tự như [`flows metrics get`](developer-cli-flows#read-the-output). Các nút ở cấp đầu tiên luôn hiển thị điểm của kỳ, dù có hay không có `--granularity`.
+
+Các cấp của cây lần lượt là placement hoặc đối tượng, rồi đến paywall hoặc A/B test đã chạy ở đó, rồi đến các nhóm theo `--group-by`. Để in thêm các cấp, hãy truyền `--depth`, ví dụ `--depth 4`.
+
+Để xem toàn bộ cây với tất cả các chỉ số, hãy dùng một trong các flag sau:
+
+- `--json` in ra câu trả lời của server không thay đổi.
+- `--csv` in ra một hàng cho mỗi node, bao gồm cả các điểm chu kỳ. Các cột gồm `path` (tiêu đề từ `Total` xuống đến node, phân cách bằng ` > `), `level`, `title`, và các chỉ số dạng số. Cây paywall không có level, vì vậy `level` là `root` ở `Total` và trống ở mọi hàng khác.
+
+### Lọc các chỉ số \{#filter-the-metrics\}
+
+Viết mỗi `--filter` theo dạng `key=value`, với các khóa và giá trị mà [`paywalls metrics values`](#adapty-paywalls-metrics-values) liệt kê. Các bộ lọc tuân theo cùng quy tắc như trong [`flows metrics get`](developer-cli-flows#filter-the-metrics):
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## Tiếp theo \{#whats-next\}
 

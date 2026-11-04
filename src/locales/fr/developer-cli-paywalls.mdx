@@ -1,10 +1,10 @@
 ---
-title: "Commandes de paywalls"
-description: "Commandes CLI Adapty pour lister, lire, créer et mettre à jour des paywalls, et lister les placements qui affichent un paywall."
-metadataTitle: "Commandes CLI de paywalls | Documentation Adapty"
+title: "Commandes pour les paywalls"
+description: "Commandes CLI Adapty pour lister, lire, créer et mettre à jour les paywalls, lister les placements qui affichent un paywall, et lire les métriques des paywalls."
+metadataTitle: "Commandes CLI pour les paywalls | Documentation Adapty"
 ---
 
-Ces commandes CLI Adapty gèrent les [paywalls](paywalls) et les produits vendus par chaque paywall.
+Ces commandes CLI Adapty gèrent les [paywalls](paywalls) et les produits que chaque paywall propose à la vente, et permettent de consulter leurs métriques.
 
 ## adapty paywalls list \{#adapty-paywalls-list\}
 
@@ -93,6 +93,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 Utilisez cette commande avant de remplacer un paywall pour voir quels placements seraient affectés.
 
 Les éléments de cette liste ne comportent pas de champ `is_active`. Pour lire l'état d'activation d'un placement, utilisez [`placements list`](developer-cli-placements#adapty-placements-list) ou [`placements get`](developer-cli-placements#adapty-placements-get).
+
+## Liste des métriques des paywalls Adapty \{#adapty-paywalls-metrics-list\}
+
+Affiche les métriques sur toute la durée de vie de plusieurs paywalls, une ligne par paywall. Il s'agit des données du tableau des paywalls dans le tableau de bord.
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--ids` | Oui | ID des paywalls (UUID). Séparez-les par des virgules ou répétez le flag |
+| `--csv` | Non | Affiche le CSV : une ligne par paywall, avec l'ID du paywall et les métriques numériques. Incompatible avec `--json` |
+
+Les commandes `paywalls metrics` lisent les données de la page [métriques des paywalls](paywall-metrics) et nécessitent la version CLI 0.16.0 ou ultérieure.
+
+Chaque ligne affiche l'ID du paywall avec ses vues, achats, essais et revenus. `--json` inclut les 21 métriques, comme `unique_profiles_views`, `net_revenue` et `conversion_rate_purchases`, ainsi que `last_purchases`. `--csv` exclut les deux champs non numériques, `in_current_state` et `last_purchases`. Une métrique sans données vaut `0`, jamais `null`.
+
+## adapty paywalls metrics values \{#adapty-paywalls-metrics-values\}
+
+Liste les clés et valeurs de filtre d'un paywall : ce qu'accepte [`paywalls metrics get --filter`](#filter-the-metrics).
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | Identifiant du paywall (UUID) |
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--app` | Oui | Identifiant de l'app (UUID) |
+
+La sortie a la même forme que [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) : la valeur en tête de chaque groupe est la clé de filtre, et les valeurs les plus imbriquées sont celles qu'accepte cette clé.
+
+## adapty paywalls metrics get
+
+Affiche les métriques d'un paywall pour une période donnée, sous forme d'arborescence similaire à la page [métriques des paywalls](paywall-metrics).
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | ID du paywall (UUID) |
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'application (UUID) |
+| `--based-on` | Oui | Ce sur quoi se base le premier niveau de l'arborescence : `placement` ou `audience`. Ce sont les vues par placement et par audience de la page [métriques des paywalls](paywall-metrics#view-options-for-metrics-data) |
+| `--date-type` | Oui | La date à laquelle la période s'applique : `purchase_date` ou `profile_install_date` pour [filtrer par date d'installation](paywall-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Oui | Premier jour de la période, inclus (`YYYY-MM-DD`) |
+| `--date-to` | Oui | Dernier jour de la période, inclus (`YYYY-MM-DD`) |
+| `--group-by` | Non | Regrouper les produits par `product`, `store` ou `country`. Par défaut : `product` |
+| `--granularity` | Non | Découper la période en points : `day`, `week`, `month`, `quarter` ou `year` |
+| `--filter` | Non | Ne conserver que les données correspondant à ces valeurs de clé de filtre. Répétable. Voir [Filtrer les métriques](#filter-the-metrics) |
+| `--timezone` | Non | Fuseau horaire IANA des points de la période, par exemple `Europe/Berlin`. Sans cela, Adapty utilise le fuseau horaire de l'application |
+| `--depth` | Non | Nombre de niveaux de l'arborescence à afficher sous `Total`. Par défaut : `1` |
+| `--csv` | Non | Afficher en CSV : une ligne par nœud de l'arborescence complète. Incompatible avec `--json` |
+
+Le CLI se ferme avec le code 2 et n'envoie aucune requête si `--based-on` ou `--date-type` est absent, ou si une seule des deux bornes de la période est fournie. Sans la période, Adapty refuse la requête et la commande se ferme avec le code 4. Adapty valide les valeurs de `--based-on`, `--date-type`, `--group-by` et `--granularity` : une valeur incorrecte provoque une sortie avec le code 4, et l'erreur liste les valeurs acceptées.
+
+### Lire la sortie \{#read-the-output\}
+
+La commande affiche une ligne `Total`, puis le premier niveau de l'arborescence en dessous, avec les mêmes colonnes que [`flows metrics get`](developer-cli-flows#read-the-output). Les nœuds du premier niveau affichent toujours leurs points pour la période, avec ou sans `--granularity`.
+
+Les niveaux de l'arborescence sont : placement ou audience, puis le paywall ou le test A/B qui s'y est exécuté, puis les groupes `--group-by`. Pour afficher davantage de niveaux, utilisez `--depth`, par exemple `--depth 4`.
+
+Pour obtenir l'arborescence complète avec toutes les métriques, utilisez l'un de ces flags :
+
+- `--json` affiche la réponse du serveur telle quelle.
+- `--csv` affiche une ligne par nœud, points de période inclus. Les colonnes sont `path` (les titres de `Total` jusqu'au nœud, séparés par ` > `), `level`, `title`, puis les métriques numériques. Un arbre de paywall n'a pas de niveaux, donc `level` vaut `root` sur `Total` et est vide sur toutes les autres lignes.
+
+### Filtrer les métriques \{#filter-the-metrics\}
+
+Rédigez chaque `--filter` sous la forme `key=value`, avec les clés et valeurs listées par [`paywalls metrics values`](#adapty-paywalls-metrics-values). Les filtres suivent les mêmes règles que dans [`flows metrics get`](developer-cli-flows#filter-the-metrics) :
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## Et ensuite \{#whats-next\}
 

@@ -1,10 +1,10 @@
 ---
 title: "ペイウォールコマンド"
-description: "ペイウォールの一覧取得・読み取り・作成・更新、およびペイウォールを表示するプレースメントの一覧取得を行うAdapty CLIコマンド。"
-metadataTitle: "ペイウォール CLIコマンド | Adapty ドキュメント"
+description: "ペイウォールの一覧取得、読み込み、作成、更新、ペイウォールを表示するプレースメントの一覧取得、ペイウォール指標の読み込みを行う Adapty CLI コマンドです。"
+metadataTitle: "ペイウォール CLI コマンド | Adapty ドキュメント"
 ---
 
-これらのAdapty CLIコマンドは、[ペイウォール](paywalls)と各ペイウォールで販売するプロダクトを管理します。
+これらの Adapty CLI コマンドは、[ペイウォール](paywalls)と各ペイウォールが販売するプロダクトを管理し、指標を読み込みます。
 
 ## adapty paywalls list
 
@@ -93,6 +93,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 ペイウォールを切り替える前に、このコマンドを使用してどのプレースメントに影響があるかを確認してください。
 
 このリストのアイテムには `is_active` フィールドが含まれていません。プレースメントのアクティベーション状態を確認するには、[`placements list`](developer-cli-placements#adapty-placements-list) または [`placements get`](developer-cli-placements#adapty-placements-get) を使用してください。
+
+## adapty paywalls metrics list
+
+複数のペイウォールのライフタイム指標を表示します。ペイウォールごとに1行で表示されます。ダッシュボードのペイウォールテーブルのデータです。
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--ids` | はい | ペイウォールID（UUID）。カンマ区切りで指定するか、フラグを繰り返して指定 |
+| `--csv` | いいえ | CSVで出力：ペイウォールIDと数値指標を含む行をペイウォールごとに1行。`--json` との併用不可 |
+
+`paywalls metrics` コマンドは [ペイウォール指標](paywall-metrics) ページの数値を読み取るもので、CLI バージョン 0.16.0 以降が必要です。
+
+各行にはペイウォール ID とそのビュー数、購入数、トライアル数、収益が表示されます。`--json` を使うと `unique_profiles_views`、`net_revenue`、`conversion_rate_purchases`、`last_purchases` など 21 項目すべての指標が取得できます。`--csv` では数値以外の 2 フィールド（`in_current_state` と `last_purchases`）が省かれます。データのない指標は `null` ではなく `0` になります。
+
+## adapty paywalls metrics values
+
+[`paywalls metrics get --filter`](#filter-the-metrics) のフィルターキーと値の一覧を表示します。
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `paywall-id` | ペイウォール ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+出力形式は [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) と同じです。各グループの先頭の値がフィルターキーで、最も内側の値がそのキーに指定できる値です。
+
+## adapty paywalls metrics get
+
+[ペイウォール指標](paywall-metrics)ページのツリーと同様に、1つのペイウォールの指定期間における指標を表示します。
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| 引数 | 説明 |
+|---|---|
+| `paywall-id` | ペイウォール ID (UUID) |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--based-on` | はい | ツリーの第1レベルの分割基準：`placement`（プレースメント）または `audience`（オーディエンス）。[ペイウォール指標](paywall-metrics#view-options-for-metrics-data)ページのプレースメントベースビューとオーディエンスベースビューに対応します |
+| `--date-type` | はい | 期間に適用する日付の種類：`purchase_date`（購入日）または `profile_install_date`（[インストール日でフィルタリング](paywall-metrics#filter-metrics-by-install-date)） |
+| `--date-from` | はい | 期間の開始日（`YYYY-MM-DD`、当日を含む） |
+| `--date-to` | はい | 期間の終了日（`YYYY-MM-DD`、当日を含む） |
+| `--group-by` | いいえ | プロダクトを `product`、`store`、または `country` でグループ化。デフォルト：`product` |
+| `--granularity` | いいえ | 期間を `day`、`week`、`month`、`quarter`、または `year` の単位で分割 |
+| `--filter` | いいえ | フィルターキーの値に一致するデータのみ表示。繰り返し指定可能。[指標のフィルタリング](#filter-the-metrics)を参照 |
+| `--timezone` | いいえ | 期間ポイントのIANAタイムゾーン（例：`Europe/Berlin`）。指定しない場合、Adaptyはアプリのタイムゾーンを使用 |
+| `--depth` | いいえ | `Total` の下に表示するツリーの階層数。デフォルト：`1` |
+| `--csv` | いいえ | CSVで出力：ツリー全体の各ノードを1行で表示。`--json` と同時使用不可 |
+
+`--based-on` または `--date-type` が指定されていない場合、または期間の一方の端のみが指定されている場合、CLI はコード 2 で終了し、リクエストを送信しません。期間がない場合、Adapty はリクエストを拒否し、コマンドはコード 4 で終了します。Adapty は `--based-on`、`--date-type`、`--group-by`、`--granularity` の値を検証します。値が誤っている場合はコード 4 で終了し、エラーには受け付けられる値の一覧が表示されます。
+
+### 出力を読む \{#read-the-output\}
+
+このコマンドは `Total` 行を出力し、その下にツリーの第1レベルを表示します。列は [`flows metrics get`](developer-cli-flows#read-the-output) と同じです。第1レベルのノードは、`--granularity` の有無に関わらず、常に期間のポイントとともに表示されます。
+
+ツリーの階層は、プレースメントまたはオーディエンス、次にそこで実行されたペイウォールまたは A/B テスト、そして `--group-by` グループとなります。さらに深い階層を表示するには、`--depth` を指定します（例: `--depth 4`）。
+
+すべての指標を含むツリー全体を表示するには、次のいずれかのフラグを使用します：
+
+- `--json` はサーバーからの回答をそのまま出力します。
+- `--csv` はノードごとに1行出力します（ピリオドポイントを含む）。カラムは `path`（`Total` からノードまでのタイトルを ` > ` で区切ったもの）、`level`、`title`、そして数値の指標です。ペイウォールツリーにはレベルがないため、`Total` の `level` は `root` になり、他のすべての行では空になります。
+
+### 指標のフィルタリング \{#filter-the-metrics\}
+
+各 `--filter` は `key=value` の形式で記述します。キーと値は [`paywalls metrics values`](#adapty-paywalls-metrics-values) に一覧があります。フィルターのルールは [`flows metrics get`](developer-cli-flows#filter-the-metrics) と同じです。
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## 次のステップ \{#whats-next\}
 

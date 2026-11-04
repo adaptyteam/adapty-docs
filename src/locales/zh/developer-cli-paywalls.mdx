@@ -1,10 +1,10 @@
 ---
 title: "付费墙命令"
-description: "Adapty CLI 命令，用于列出、读取、创建和更新付费墙，以及列出展示付费墙的版位。"
+description: "Adapty CLI 命令，用于列出、读取、创建和更新付费墙，列出显示付费墙的版位，以及读取付费墙数据图表。"
 metadataTitle: "付费墙 CLI 命令 | Adapty 文档"
 ---
 
-这些 Adapty CLI 命令用于管理[付费墙](paywalls)及每个付费墙所销售的产品。
+这些 Adapty CLI 命令用于管理[付费墙](paywalls)及其销售的产品，并读取相关数据图表。
 
 ## adapty paywalls list
 
@@ -93,6 +93,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 在替换付费墙之前，使用此命令可以查看哪些版位会受到影响。
 
 此列表中的条目不包含 `is_active` 字段。如需读取版位的激活状态，请使用 [`placements list`](developer-cli-placements#adapty-placements-list) 或 [`placements get`](developer-cli-placements#adapty-placements-get)。
+
+## adapty paywalls metrics list
+
+显示多个付费墙的全生命周期数据指标，每行对应一个付费墙。这是看板中付费墙表格的数据。
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--ids` | 是 | 付费墙 ID（UUID）。用逗号分隔，或重复使用该参数 |
+| `--csv` | 否 | 输出 CSV 格式：每个付费墙占一行，包含付费墙 ID 和数字指标。不能与 `--json` 同时使用 |
+
+`paywalls metrics` 命令读取[付费墙数据图表](paywall-metrics)页面中的数据，需要 CLI 0.16.0 或更高版本。
+
+每行显示付费墙 ID 及其浏览量、购买量、试用量和收入。`--json` 包含全部 21 个数据指标，例如 `unique_profiles_views`、`net_revenue` 和 `conversion_rate_purchases`，以及 `last_purchases`。`--csv` 会排除两个非数字字段：`in_current_state` 和 `last_purchases`。没有数据的指标显示为 `0`，而非 `null`。
+
+## adapty paywalls metrics values \{#adapty-paywalls-metrics-values\}
+
+列出付费墙的过滤键及其可选值：即 [`paywalls metrics get --filter`](#filter-the-metrics) 所接受的内容。
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `paywall-id` | 付费墙 ID（UUID） |
+
+| 标志 | 必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+输出格式与 [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) 相同：每个分组的顶层值为过滤键，最内层的值为该键可接受的内容。
+
+## adapty paywalls metrics get
+
+显示单个付费墙在指定时间段内的数据图表，以[付费墙数据图表](paywall-metrics)页面的树形结构展示。
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| 参数 | 描述 |
+|---|---|
+| `paywall-id` | 付费墙 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--based-on` | 是 | 树形结构第一层的拆分维度：`placement` 或 `audience`。对应[付费墙数据图表](paywall-metrics#view-options-for-metrics-data)页面的按版位视图和按目标受众视图 |
+| `--date-type` | 是 | 时间段所适用的日期类型：`purchase_date` 或 `profile_install_date`（用于[按安装日期筛选](paywall-metrics#filter-metrics-by-install-date)） |
+| `--date-from` | 是 | 时间段起始日期（含当天，格式：`YYYY-MM-DD`） |
+| `--date-to` | 是 | 时间段结束日期（含当天，格式：`YYYY-MM-DD`） |
+| `--group-by` | 否 | 按 `product`、`store` 或 `country` 对产品分组。默认值：`product` |
+| `--granularity` | 否 | 将时间段拆分为数据点：`day`、`week`、`month`、`quarter` 或 `year` |
+| `--filter` | 否 | 仅保留指定筛选键值的数据，可重复使用。详见[筛选数据图表](#filter-the-metrics) |
+| `--timezone` | 否 | 时间段数据点所用的 IANA 时区，例如 `Europe/Berlin`。若不填，Adapty 将使用应用时区 |
+| `--depth` | 否 | 在 `Total` 下打印的树形层级数。默认值：`1` |
+| `--csv` | 否 | 以 CSV 格式输出：树中每个节点占一行。不可与 `--json` 同时使用 |
+
+当 `--based-on` 或 `--date-type` 缺失，或者只提供了时间段的一个端点时，CLI 会以代码 2 退出且不发送任何请求。若未提供时间段，Adapty 会拒绝该请求，命令以代码 4 退出。Adapty 会验证 `--based-on`、`--date-type`、`--group-by` 和 `--granularity` 的值：若值不正确，则以代码 4 退出，并在错误信息中列出可接受的值。
+
+### 读取输出 \{#read-the-output\}
+
+该命令会先打印一行 `Total`，再打印树结构第一层的内容，列格式与 [`flows metrics get`](developer-cli-flows#read-the-output) 相同。第一层节点始终显示该时间段的数据点，无论是否传入 `--granularity`。
+
+树结构的层级依次为：版位或目标受众，然后是该处运行的付费墙或 A/B 测试，最后是 `--group-by` 分组。若需展开更多层级，请传入 `--depth`，例如 `--depth 4`。
+
+如需展示包含所有数据图表的完整树结构，请使用以下标志之一：
+
+- `--json` 以原始格式打印服务器返回的结果。
+- `--csv` 为每个节点打印一行，包含各周期数据点。列包括 `path`（从 `Total` 到该节点的标题，以 ` > ` 分隔）、`level`、`title`，以及各数值类数据图表。付费墙树没有层级，因此 `Total` 行的 `level` 为 `root`，其他所有行的 `level` 为空。
+
+### 筛选数据图表 \{#filter-the-metrics\}
+
+每个 `--filter` 以 `key=value` 形式填写，键与值参见 [`paywalls metrics values`](#adapty-paywalls-metrics-values)。筛选规则与 [`flows metrics get`](developer-cli-flows#filter-the-metrics) 中相同：
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## 下一步 \{#whats-next\}
 
