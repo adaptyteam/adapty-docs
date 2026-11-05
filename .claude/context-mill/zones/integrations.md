@@ -83,7 +83,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | event-statuses | — | dev, analyst | 0 | tutorial |
 | events | — | dev, analyst | 7 | tutorial |
 | facebook-ads | — | dev, analyst | 7 | tutorial |
-| firebase-and-google-analytics | — | dev, analyst | 17 | tutorial |
+| firebase-and-google-analytics | — | dev, analyst | 18 | tutorial |
 | firebase-apps | — | dev, analyst | 1 | tutorial |
 | google-cloud-storage | — | dev, analyst | 9 | tutorial |
 | handle-integration-errors | — | dev, analyst | 8 | tutorial |
