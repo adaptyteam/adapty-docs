@@ -32,7 +32,7 @@ being varied or the placement wiring that attaches the test.
 | ab-test-types | — | marketer | 6 | tutorial |
 | ab-tests | — | marketer | 3 | tutorial |
 | maths-behind-it | — | marketer | 2 | tutorial |
-| results-and-metrics | — | marketer | 30 | tutorial |
+| results-and-metrics | — | marketer | 32 | tutorial |
 | run_stop_ab_tests | — | marketer | 5 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

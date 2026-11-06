@@ -192,7 +192,7 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-cowork | how-to | dev | 6 | api |
 | developer-cli-flows | reference | dev | 16 | api |
 | developer-cli-migrations | reference | dev | 11 | api |
-| developer-cli-paywalls | reference | dev | 6 | api |
+| developer-cli-paywalls | reference | dev | 11 | api |
 | developer-cli-placements | reference | dev | 14 | api |
 | developer-cli-products | reference | dev | 11 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
