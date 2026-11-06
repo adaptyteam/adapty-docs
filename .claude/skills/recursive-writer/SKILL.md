@@ -13,7 +13,8 @@ It owns the approval words, one pending proposal, and the change table ("Hand-of
 strike-list policy is in lib/loop.md, "Strike list".
 - In: the prompt, the ticket or PR, the session id.
 - Out (session folder): `mode.md` (the mode, the phase, the pending proposal, and the objections per
-  unit), `frame.md` (once per article, before the first stage: lib/checks/frame.md), and the hand-offs.
+  unit), `frame.md` (once per article, before the first stage; its path lines at gate 2:
+  lib/checks/frame.md), and the hand-offs.
 - `lib/` is `.claude/skills/recursive-writer/lib/`: the checks, the loop, and the tools. Each
   module is a skill folder next to this one, `.claude/skills/rw-*/`: hidden from users, and run only
   when this manager calls it. Start a module with the Skill tool, passing the session folder and the
@@ -106,8 +107,8 @@ new article, or when the user asks for a review or to re-read the whole thing.
 The cost to cut is the user's waiting time, not tokens: wherever work splits, run agents in parallel.
 
 The passes: 1, structure and facts, is mode F up to gate 2 (rw-research, rw-questions, and rw-plan,
-which holds the gate; rw-ripple follows the gate); 2, fit, and 3, wording, are in rw-draft. A cost 36
-in your own draft: rw-plan.
+which holds the gate; rw-ripple follows the gate); 2, fit, 3, wording, and 4, through-line, are in
+rw-draft. A cost 36 in your own draft: rw-plan.
 
 - Report to the user once per pass, with the hand-off itself. An agent's report gets one line at
   most, and only when it changes what the writer sees next. Between tool calls, a status line only
