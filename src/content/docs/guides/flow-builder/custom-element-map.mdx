@@ -1,0 +1,156 @@
+---
+title: "Show nearby places on a map in a flow"
+description: "Display a map of places near each user, such as fitness centers, in a custom element on a flow screen."
+metadataTitle: "Show nearby places on a map in a flow | Flows & paywalls | Adapty Docs"
+---
+
+Follow this recipe to include an interactive map in the flow. We will use a [custom element](flow-custom-elements) to render a native MapKit view. Your app requests location access straight on the flow screen.
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="The finished flow: a map shows fitness centers near the user, who drags the map to another area and back." />
+
+## Before you start
+
+- Update your app to Adapty iOS SDK 4.4 or later. Earlier versions do not support custom elements — they will always render [fallback content](flow-custom-elements#set-fallback-content).
+- Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
+- To ask users for location access, add the `NSLocationWhenInUseUsageDescription` key to the `Info.plist` file of your app. Set its value to the text of the prompt, such as "Find fitness centers near you."
+
+## 1. Add the custom element to the screen
+
+In the Flow & Paywall Builder, [add a custom element](flow-custom-elements#add-and-configure) to a flow screen, and set it up for the map:
+
+- **Type**: `map`.
+- **ID**: `fitness_centers`.
+- **Height**: **Fixed**. The map fills the custom element.
+
+Keep the custom element out of containers that respond to touch, such as a carousel. Otherwise, a drag on the map also moves the carousel.
+
+Inside the custom element, add an [**Image**](custom-media#image) with a picture of a map. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when:
+
+- Their version of your app doesn't display the map.
+- They denied location access earlier.
+- Their device runs iOS 16.
+
+If the user hasn't answered the location access prompt yet, iOS shows it when the map appears. To tell users why your app needs their location, add a text element above the custom element, such as "Find fitness centers near you."
+
+## 2. Create the map view
+
+Create a SwiftUI view with a map. The following view requests location access, finds fitness centers within 2 km of the user, and displays a marker for each one:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+import CoreLocation
+import MapKit
+import SwiftUI
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @State private var locationManager = CLLocationManager()
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var places: [MKMapItem] = []
+
+    var body: some View {
+        Map(position: $position) {
+            UserAnnotation()
+            ForEach(places, id: \.self) { place in
+                Marker(item: place)
+            }
+        }
+        .task {
+            // Shows the prompt only if the user hasn't answered it yet
+            locationManager.requestWhenInUseAuthorization()
+            do {
+                for try await update in CLLocationUpdate.liveUpdates() {
+                    guard let location = update.location else { continue }
+                    places = try await fitnessCenters(around: location.coordinate)
+                    withAnimation {
+                        position = .automatic // zoom to fit the user and the places
+                    }
+                    break
+                }
+            } catch {
+                // the map still shows the location of the user
+            }
+        }
+    }
+
+    private func fitnessCenters(around center: CLLocationCoordinate2D) async throws -> [MKMapItem] {
+        let request = MKLocalPointsOfInterestRequest(center: center, radius: 2_000) // meters
+        request.pointOfInterestFilter = MKPointOfInterestFilter(including: [.fitnessCenter])
+        return try await MKLocalSearch(request: request).start().mapItems
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+The map view needs iOS 17 or later. On iOS 16, users see the fallback.
+
+## 3. Match the map to the custom element
+
+Write a [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) that returns the map view for the `map` Type and the `fitness_centers` ID. If the user denied location access, the resolver returns `nil`, and users see the fallback instead of a map with no places:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+import AdaptyUIBuilder
+import CoreLocation
+import SwiftUI
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map":
+            guard #available(iOS 17.0, *), id == "fitness_centers" else {
+                return nil // iOS 16, or another ID: show the fallback
+            }
+            switch CLLocationManager().authorizationStatus {
+            case .denied, .restricted:
+                return nil // no location access: show the fallback
+            default:
+                return AnyView(NearbyFitnessCentersMap())
+            }
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Before the user answers the location access prompt, the resolver returns the map view, so that the view can request access.
+
+## 4. Display the map in the custom element
+
+Set `CustomElementsResolver` as the [app-wide resolver](ios-flow-custom-elements#display-the-same-views-to-all-users), because the map view finds the places itself and needs no data from your app. Call `AdaptyUI.setCustomElementsResolver(_:)` once, before you present a flow, such as at app launch:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+```
+
+</TabItem>
+</Tabs>
+
+If your app already sets an app-wide resolver, add the `map` case to that resolver instead.
+
+## 5. Test on a device
+
+The builder canvas shows the fallback, never the map. To see the map:
+
+1. [Publish the flow](builder-save-publish). To see the latest published version instead of a cached one, register the device as a [test device](test-devices).
+2. Run a build of your app that includes the resolver, on iOS 17 or later. Open the screen, and allow location access. Verify that the map shows your location and markers for fitness centers near you.
+3. To see the fallback, deny location access: in the **Settings** app, go to **Privacy & Security** > **Location Services** > *your app*, and select **Never**. Then open the screen again.
+
+To find out why the fallback appears instead of the map, follow the instructions in the [Test on a device](ios-flow-custom-elements#test-on-a-device) section of the iOS guide.
