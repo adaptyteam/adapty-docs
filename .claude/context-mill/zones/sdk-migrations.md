@@ -119,6 +119,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | 3.16 |  |  |  |  |  |  | migration-to-capacitor-316 |
 | 4.0 | migration-to-ios-sdk-v4 | migration-to-android-sdk-v4 | migration-to-react-native-sdk-v4 | migration-to-flutter-sdk-v4 | migration-to-unity-sdk-v4 | migration-to-kmp-sdk-v4 | migration-to-capacitor-sdk-v4 |
 | 4.1 | migration-to-ios-sdk-41 | migration-to-android-sdk-41 | migration-to-react-native-sdk-41 | migration-to-flutter-sdk-41 |  |  |  |
+| 4.3 |  |  |  | migration-to-flutter-sdk-43 |  |  |  |
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
@@ -135,32 +136,33 @@ question there. The real open question is the two Observer-mode changes below, i
 | migration-to-android-sdk-34 | migration | dev | 2 | android |
 | migration-to-android-sdk-41 | migration | dev | 8 | android |
 | migration-to-android-sdk-v3 | migration | dev | 0 | android |
-| migration-to-android-sdk-v4 | migration | dev | 16 | android |
+| migration-to-android-sdk-v4 | migration | dev | 17 | android |
 | migration-to-android330 | migration | dev | 16 | android |
 | migration-to-capacitor-316 | migration | dev | 0 | capacitor |
-| migration-to-capacitor-sdk-v4 | migration | dev | 29 | capacitor |
+| migration-to-capacitor-sdk-v4 | migration | dev | 30 | capacitor |
 | migration-to-flutter-sdk-34 | migration | dev | 2 | flutter |
 | migration-to-flutter-sdk-41 | migration | — | 10 | flutter |
+| migration-to-flutter-sdk-43 | migration | — | 7 | flutter |
 | migration-to-flutter-sdk-v3 | migration | dev | 4 | flutter |
-| migration-to-flutter-sdk-v4 | migration | dev | 24 | flutter |
+| migration-to-flutter-sdk-v4 | migration | dev | 25 | flutter |
 | migration-to-flutter330 | migration | dev | 14 | flutter |
 | migration-to-ios-315 | migration | dev | 0 | ios |
 | migration-to-ios-sdk-34 | migration | dev | 1 | ios |
 | migration-to-ios-sdk-41 | migration | — | 10 | ios |
 | migration-to-ios-sdk-v3 | migration | dev | 2 | ios |
-| migration-to-ios-sdk-v4 | migration | dev | 24 | ios |
+| migration-to-ios-sdk-v4 | migration | dev | 25 | ios |
 | migration-to-ios330 | migration | dev | 18 | ios |
 | migration-to-kmp-315 | migration | dev | 3 | kmp |
-| migration-to-kmp-sdk-v4 | migration | dev | 25 | kmp |
+| migration-to-kmp-sdk-v4 | migration | dev | 26 | kmp |
 | migration-to-react-native-sdk-34 | migration | dev | 2 | react-native |
 | migration-to-react-native-sdk-41 | migration | — | 10 | react-native |
 | migration-to-react-native-sdk-v3 | migration | dev | 1 | react-native |
-| migration-to-react-native-sdk-v4 | migration | dev | 26 | react-native |
+| migration-to-react-native-sdk-v4 | migration | dev | 27 | react-native |
 | migration-to-react-native330 | migration | dev | 26 | react-native |
 | migration-to-unity-sdk-314 | migration | dev | 8 | unity |
 | migration-to-unity-sdk-34 | migration | dev | 2 | unity |
 | migration-to-unity-sdk-v3 | migration | dev | 1 | unity |
-| migration-to-unity-sdk-v4 | migration | dev | 20 | unity |
+| migration-to-unity-sdk-v4 | migration | dev | 21 | unity |
 | migration-to-unity330 | migration | dev | 22 | unity |
 | react-native-migration-guide-380 | migration | dev | 3 | react-native |
 | react-native-sdk-migration-guides | entry | dev | 0 | react-native |
