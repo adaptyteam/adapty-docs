@@ -1,10 +1,10 @@
 ---
-title: "Flowsコマンド"
-description: "フローの作成、ビルダー設定の読み書き、検証とプレビュー、メディアのアップロード、公開、指標の取得を行うAdapty CLIコマンド。"
-metadataTitle: "Flows CLIコマンド | Adapty ドキュメント"
+title: "Flows コマンド"
+description: "フローの作成、ビルダー設定の読み書き、バリデーションとプレビュー、メディアのアップロード、公開、指標とスクリーンファネルの読み取りを行う Adapty CLI コマンド。"
+metadataTitle: "Flows CLI コマンド | Adapty ドキュメント"
 ---
 
-[フロー](adapty-flow-builder)とは、Flow & Paywall Builder で作成するペイウォールやオンボーディングのことです。CLI はフローのレコード、ビルダーのコンフィグ、および公開を管理します。ビルダーのコンフィグは Flow & Paywall Builder が生成する大きな JSON ドキュメントであり、CLI 自体は生成しません。ターミナルからコンフィグを作成・編集するには、[flow-generator スキル](flow-generator-skill)を使用してください。このスキルがコマンドを代わりに実行します。公開前には、[flow-audit スキル](flow-audit-skill)でフローが本番環境に対応しているか確認します。`flows metrics` コマンドは[フロー指標](flow-metrics)ページの数値を読み取るため、CLI バージョン 0.15.0 以降が必要です。以下はコマンドのリファレンスです。
+[フロー](adapty-flow-builder)は、フロー＆ペイウォールビルダーで作成するペイウォールやオンボーディングです。CLIはフローのレコード、ビルダーの設定、および公開を管理します。ビルダーの設定とは、フロー＆ペイウォールビルダーが生成する大きなJSONドキュメントであり、CLIはこれを自動生成しません。ターミナルから設定を作成・編集するには、[flow-generator スキル](flow-generator-skill)を使用してください。このスキルがコマンドを代わりに実行します。公開前には、[flow-audit スキル](flow-audit-skill)がフローの本番環境への準備状況を確認します。`flows metrics` コマンドは[フロー指標](flow-metrics)ページの数値を読み取り、CLIバージョン0.15.0以降が必要です。`flows funnel` コマンドは[フローファネル](flow-funnel)を読み取り、CLIバージョン0.19.0以降が必要です。各コマンドはリファレンスとしてここに記載されています。
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -309,6 +309,51 @@ adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-
 ```
 
 CLIは各値をそのまま送信します。値の中にカンマを含めるには、`\,` と記述してください。空の値も値として扱われます。`attribution_channel=` はチャンネルなしのデータを保持し、`flows metrics values` では **No Data** として表示されます。
+
+## adapty flows funnel values
+
+フローファンネルのフィルターキーと値の一覧を表示します。[`flows funnel get --filter`](#adapty-flows-funnel-get) で使用できる値です。
+
+```bash
+adapty flows funnel values --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+
+出力形式は [`flows metrics values`](#adapty-flows-metrics-values) と同じです。
+
+## adapty flows funnel get
+
+フローのどの画面でユーザーが離脱するかを表示します。フローの[ファネル](flow-funnel)タブと同様に、1つのフローバージョンのファネルをステップごと・画面ごとに確認できます。
+
+```bash
+adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリID（UUID） |
+| `--date-from` | Yes | 期間の開始日（含む）（`YYYY-MM-DD`）、`--timezone` またはアプリのタイムゾーン基準 |
+| `--date-to` | Yes | 期間の終了日（含む）（`YYYY-MM-DD`）、`--timezone` またはアプリのタイムゾーン基準 |
+| `--date-type` | Yes | 期間を適用する日付の種類：`purchase_date` または `profile_install_date` |
+| `--flow-version-id` | No | 読み込むフローバージョンID（UUID）。指定しない場合、CLIは公開済みバージョンを読み込む |
+| `--filter` | No | フィルターキーの値が一致するユーザーのみを保持する。`key=value` 形式で指定。繰り返し指定可能。キーと値は [`flows funnel values`](#adapty-flows-funnel-values) から取得し、[Filter the metrics](#filter-the-metrics) と同様に機能する |
+| `--timezone` | No | 日付のIANAタイムゾーン（例：`Europe/Berlin`）。指定しない場合、Adaptyはアプリのタイムゾーンを使用する |
+| `--csv` | No | ダッシュボードがダウンロードするCSVファイルを、合計行を先頭に出力する。`--json` との併用不可 |
+
+コマンドはフローのバージョンと期間、サマリー行、そしてテーブルを出力します。サマリーには、フローに入ったユーザー数、完了したユーザー数、ドロップ率、収益が表示されます。テーブルには各ステップが1行で表示され、列は `Step`、`Type`、`Reached`、`Completed`、`Drop rate`、`Revenue` です。複数の画面を持つステップは、各画面につき1行が追加されます。オンボーディング画面の収益など、適用されない値は `—` と表示されます。
+
+フローに入ったユーザーが該当期間に存在しない場合、テーブルにはそのバージョンの画面がゼロで表示されます。回答の各フィールドには `--json` を使用してください。
 
 ## 次のステップ \{#whats-next\}
 
