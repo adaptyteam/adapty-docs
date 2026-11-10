@@ -79,7 +79,7 @@ Flutter 3.44 and later enables Swift Package Manager by default, so no action is
 
 ### getPaywall → getFlow
 
-The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and you no longer pass a `locale` — when you render a flow, the localization is resolved automatically; for custom paywalls, all configured locales are returned in `flow.remoteConfigs`:
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter moves from the fetch call to `createFlowView` (Flutter SDK 4.0.3 and later; earlier 4.0.x releases have no way to choose the localization) — see [Locale matching is exact](#locale-matching-is-exact); for custom paywalls, all configured locales are returned in `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
@@ -94,6 +94,19 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and you no longe
 ```
 
 The fetch policy type is renamed from `AdaptyPaywallFetchPolicy` to `AdaptyFlowFetchPolicy`; its options (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) are unchanged.
+
+### Locale matching is exact
+
+:::warning
+In v3, the Adapty server picked the localization and fell back to the language: a `pt-br` request got the `pt` localization when the paywall had no `pt-br`. In v4, the SDK picks the localization on the device and uses only an exact match. A code that matches no localization renders the flow in its default localization, without an error or a warning.
+:::
+
+Before you upgrade, check the locale codes your app passes:
+
+- For each regional code you pass, add a localization with that code — for example, `pt-br` next to `pt` — or map the code to one that the flow has.
+- Pass codes exactly as they appear in the dashboard — lowercase subtags separated by hyphens. Don't pass a system locale identifier as is: `Platform.localeName` returns `pt_BR`, which matches no localization.
+
+See [Localizations and locale codes](flutter-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -254,6 +267,7 @@ These symbols were deprecated in 3.x and are removed in v4:
 
 These changes do not cause compile errors, so test them at runtime:
 
+- **Flow localization**: A regional locale code no longer falls back to its language — `pt-br` doesn't get the `pt` localization. A code with no exact match renders the flow in its default localization. See [Locale matching is exact](#locale-matching-is-exact).
 - **Successful purchase**: In v3, the default `paywallViewDidFinishPurchase` dismissed the view. In v4, `flowViewDidFinishPurchase` is required and has no default — dismiss the view yourself if that's the behavior you want.
 - **Android system back button**: It no longer dismisses a flow by default. The action is delivered to `flowViewDidPerformAction` as `AndroidSystemBackAction` — handle it there if you want the back button to close the flow.
 - **URL opening**: The default `flowViewDidPerformAction` now handles `OpenUrlAction` by opening the URL natively (honoring the in-app or external browser setting from the dashboard), in addition to dismissing the view on `CloseAction`. Override the callback to handle URLs yourself.
