@@ -148,7 +148,7 @@ The output is one line: `NAME: dashboard-interface-<suffix>`. Strip the prefix â
 
 If `$GITLAB_TOKEN` is unset, or the curl returns 401/404, fall through to manual paste:
 
-> "Open this and paste back the `NAME:` line:
+> "Open this and paste back the `NAME:` line:  
 > https://gitlab.adapty.io/adapty/adapty-dashboard-interface/-/jobs/<job_id>/raw"
 
 Don't loop or retry token setup mid-task. If a session hits an auth failure, complete the lookup via paste and (optionally, at the end) suggest the user verify their token still has the right scope.
