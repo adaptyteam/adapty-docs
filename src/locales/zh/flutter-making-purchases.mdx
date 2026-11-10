@@ -66,6 +66,8 @@ try {
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Profile** | <p>请求成功后，响应中会包含此对象。[AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) 对象提供了用户在应用内的访问等级、订阅及一次性购买的完整信息。</p><p>请检查访问等级状态，以确认用户是否具备所需的应用访问权限。</p> |
 
+在 Android 上，如果用户选择了延迟付款方式（例如在商店付现金），`makePurchase` 会返回 `AdaptyPurchaseResultPending`，用户暂时无法获得访问权限。从 Adapty SDK 4.3.0 开始，当 Google Play 批准付款后，SDK 会立即向 Adapty 验证购买（如果应用正在运行），否则会在应用回到前台时进行验证。若要在验证完成时授予访问权限，请[监听用户画像更新](flutter-listen-subscription-changes)。
+
 :::warning
 **注意：** 如果你使用的 Apple StoreKit 版本低于 v2.0，且 Adapty SDK 版本低于 v2.9.0，则需要提供 [Apple App Store 共享密钥](app-store-connection-configuration#step-5-enter-app-store-shared-secret)。此方法目前已被 Apple 弃用。
 :::
@@ -144,9 +146,11 @@ try {
 
 当用户从 App Store 产品页面发起购买，且该交易被传递到您的应用时，SDK 会自动完成购买——Apple 购买系统界面会立即显示，Adapty 会像处理其他任何购买一样处理该交易。这无需您编写任何代码。
 
-如果推广产品附带订阅优惠，SDK 会在购买时自动应用该优惠。该优惠从 App Store 购买意图中读取，iOS 18.0 及更高版本支持此功能。在 iOS 16.4–17.x 上，购买将按原价进行。
+如果推广产品附带订阅优惠，SDK 会在购买时自动应用该优惠。优惠信息从 App Store 购买意图中读取，该功能在 iOS 18.0 及更高版本上可用。在 iOS 16.4–17.x 上，购买将以原价进行。
 
-如需自行处理推广购买——例如先展示自定义页面——请订阅 `didReceivePromotedPurchaseStream` 并将产品传入 `makePromotedPurchase`：
+推广购买始终采用预付费计划，即使该产品同时提供 [12 个月承诺计划](app-store-12-month-commitment)。
+
+如需自行处理推广购买（例如先展示自定义页面），请订阅 `didReceivePromotedPurchaseStream` 并将产品传入 `makePromotedPurchase`：
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -162,10 +166,10 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 ```
 
 :::warning
-在流有订阅者期间，SDK 会停止自动为你完成推广购买。如果你的处理程序始终不调用 `makePromotedPurchase`，购买将永远不会发生：App Store 会将产品交给你的应用并等待。如果你的处理程序抛出异常，SDK 也不会介入。
+当有任何订阅者监听该流时，SDK 将停止为你自动完成促销购买。如果你的处理程序始终未调用 `makePromotedPurchase`，购买将永远不会发生：App Store 会将产品传递给你的应用并一直等待。如果你的处理程序抛出异常，SDK 也不会介入处理。
 :::
 
-`makePromotedPurchase` 不接受任何购买参数，因为推广产品来自 App Store 而非付费墙，也不携带任何付费墙上下文。它返回与 `makePurchase` 相同的 `AdaptyPurchaseResult`。
+`makePromotedPurchase` 不需要传入任何购买参数，因为推广产品来自 App Store 而非付费墙，不携带任何付费墙上下文。它返回与 `makePurchase` 相同的 `AdaptyPurchaseResult`。请直接将从流中获取的产品传入：它携带完成购买所需的 App Store 购买意图。
 
 每个事件的购买处理方都是独立决定的，因此当某个页面卸载后，只在该页面挂载期间监听的流会将已促成的购买归还给 SDK。你可以在 `activate` 之前订阅，这样就能捕获应用启动时商店下发的购买。
 

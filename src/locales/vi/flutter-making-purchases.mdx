@@ -66,6 +66,8 @@ Tham số phản hồi:
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Profile** | <p>Nếu yêu cầu thành công, phản hồi sẽ chứa đối tượng này. Đối tượng [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) cung cấp thông tin đầy đủ về mức độ truy cập, các gói đăng ký và sản phẩm mua một lần của người dùng trong ứng dụng.</p><p>Kiểm tra trạng thái mức độ truy cập để xác định xem người dùng có quyền truy cập cần thiết vào ứng dụng hay không.</p> |
 
+Trên Android, nếu người dùng chọn phương thức thanh toán trì hoãn, chẳng hạn như thanh toán tiền mặt tại cửa hàng, `makePurchase` sẽ trả về `AdaptyPurchaseResultPending` và người dùng chưa được cấp quyền truy cập. Kể từ Adapty SDK 4.3.0, SDK sẽ xác thực giao dịch mua với Adapty khi Google Play phê duyệt: ngay lập tức nếu ứng dụng đang chạy, hoặc khi ứng dụng quay lại foreground. Để cấp quyền truy cập vào thời điểm đó, hãy [lắng nghe các cập nhật hồ sơ người dùng](flutter-listen-subscription-changes).
+
 :::warning
 **Lưu ý:** Nếu bạn đang dùng StoreKit của Apple phiên bản thấp hơn v2.0 và Adapty SDK phiên bản thấp hơn v2.9.0, bạn cần cung cấp [Apple App Store shared secret](app-store-connection-configuration#step-5-enter-app-store-shared-secret) thay thế. Phương thức này hiện đã bị Apple deprecate.
 :::
@@ -144,7 +146,9 @@ Các in-app purchase được quảng bá được hỗ trợ từ SDK phiên b�
 
 Khi người dùng bắt đầu mua hàng từ trang sản phẩm App Store của bạn và giao dịch được chuyển tiếp vào ứng dụng, SDK sẽ tự động hoàn tất giao dịch đó — màn hình mua hàng của Apple hiển thị ngay lập tức, và Adapty xử lý giao dịch như bất kỳ lần mua hàng nào khác. Bạn không cần viết thêm bất kỳ đoạn code nào.
 
-Nếu sản phẩm được quảng bá có kèm ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua. Ưu đãi được đọc từ purchase intent của App Store, tính năng này chỉ khả dụng trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ được thực hiện theo giá gốc.
+Nếu sản phẩm được quảng bá có kèm ưu đãi gói đăng ký, SDK sẽ tự động áp dụng ưu đãi đó khi mua. Ưu đãi được đọc từ App Store purchase intent, chức năng này chỉ khả dụng trên iOS 18.0 trở lên. Trên iOS 16.4–17.x, giao dịch mua sẽ được thực hiện theo giá gốc.
+
+Giao dịch mua được quảng bá luôn sử dụng hình thức thanh toán trả trước, ngay cả khi sản phẩm cũng có [gói cam kết 12 tháng](app-store-12-month-commitment).
 
 Để tự xử lý các giao dịch mua được quảng bá — ví dụ để hiển thị màn hình của riêng bạn trước — hãy đăng ký `didReceivePromotedPurchaseStream` và truyền sản phẩm vào `makePromotedPurchase`:
 
@@ -162,10 +166,10 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 ```
 
 :::warning
-Trong khi có bất kỳ subscriber nào đang lắng nghe stream, SDK sẽ ngừng tự động hoàn tất các promoted purchase cho bạn. Nếu handler của bạn không bao giờ gọi `makePromotedPurchase`, giao dịch mua sẽ không bao giờ xảy ra: App Store chuyển sản phẩm cho app của bạn và chờ. SDK cũng không can thiệp khi handler của bạn throw exception.
+Khi có bất kỳ thành phần nào đang đăng ký stream, SDK sẽ ngừng tự động hoàn tất các giao dịch mua được quảng bá thay bạn. Nếu handler của bạn không bao giờ gọi `makePromotedPurchase`, giao dịch mua sẽ không bao giờ xảy ra: App Store trao sản phẩm cho app của bạn và chờ đợi. SDK cũng không can thiệp khi handler của bạn ném ra lỗi.
 :::
 
-`makePromotedPurchase` không nhận tham số mua hàng nào, vì sản phẩm được promoted đến từ App Store chứ không phải từ paywall và không mang theo bất kỳ context paywall nào. Hàm này trả về `AdaptyPurchaseResult` giống như `makePurchase`.
+`makePromotedPurchase` không nhận tham số mua hàng, vì sản phẩm được quảng bá đến từ App Store chứ không phải từ paywall và không mang theo ngữ cảnh paywall. Hàm này trả về cùng `AdaptyPurchaseResult` như `makePurchase`. Truyền sản phẩm từ stream vào nguyên trạng: nó mang theo ý định mua hàng từ App Store để hoàn tất giao dịch.
 
 Ai hoàn tất giao dịch mua được quyết định cho từng sự kiện, vì vậy một stream bạn chỉ lắng nghe khi màn hình đang hiển thị sẽ trả lại các giao dịch mua được thăng cấp cho SDK ngay khi màn hình đó biến mất. Bạn có thể đăng ký trước `activate`, đây là cách để bắt các giao dịch mua mà cửa hàng giao vào lúc khởi chạy.
 
