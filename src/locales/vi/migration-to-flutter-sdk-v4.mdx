@@ -79,14 +79,14 @@ Flutter 3.44 trở lên đã bật Swift Package Manager theo mặc định, nê
 
 ### getPaywall → getFlow
 
-Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và bạn không cần truyền `locale` nữa — khi render một flow, localization sẽ được tự động xử lý; với các paywall tùy chỉnh, tất cả locale đã cấu hình sẽ được trả về trong `flow.remoteConfigs`:
+Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` chuyển từ lệnh gọi fetch sang `createFlowView` (Flutter SDK 4.0.3 trở lên; các bản phát hành 4.0.x trước đó không có cách nào để chọn ngôn ngữ) — xem [Locale matching is exact](#locale-matching-is-exact); đối với các paywall tùy chỉnh, tất cả các locale đã cấu hình được trả về trong `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
 + final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
 ```
 
-`getPaywallForDefaultAudience` cũng được đổi tên theo cách tương tự:
+`getPaywallForDefaultAudience` được đổi tên theo cách tương tự:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
@@ -94,6 +94,19 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và bạn 
 ```
 
 Kiểu fetch policy được đổi tên từ `AdaptyPaywallFetchPolicy` thành `AdaptyFlowFetchPolicy`; các tùy chọn của nó (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) không thay đổi.
+
+### Locale matching là chính xác \{#locale-matching-is-exact\}
+
+:::warning
+Trong v3, server Adapty chọn bản dịch và dự phòng theo ngôn ngữ: yêu cầu `pt-br` sẽ nhận bản dịch `pt` nếu paywall không có `pt-br`. Trong v4, SDK chọn bản dịch trực tiếp trên thiết bị và chỉ dùng kết quả khớp chính xác. Mã không khớp với bản dịch nào sẽ hiển thị flow ở bản dịch mặc định, không có lỗi hay cảnh báo.
+:::
+
+Trước khi nâng cấp, hãy kiểm tra các mã locale mà ứng dụng của bạn truyền vào:
+
+- Đối với mỗi mã vùng bạn truyền vào, hãy thêm một localization với mã đó — ví dụ: `pt-br` bên cạnh `pt` — hoặc ánh xạ mã đó sang mã mà flow có.
+- Truyền mã chính xác như chúng xuất hiện trong dashboard — subtag viết thường, phân cách bằng dấu gạch ngang. Đừng truyền trực tiếp system locale identifier: `Platform.localeName` trả về `pt_BR`, và mã này không khớp với bất kỳ localization nào.
+
+Xem [Localizations và mã locale](flutter-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -254,11 +267,12 @@ Các ký hiệu này đã bị deprecated trong 3.x và bị xóa trong v4:
 
 Những thay đổi này không gây ra lỗi biên dịch, vì vậy hãy kiểm tra chúng ở runtime:
 
-- **Mua hàng thành công**: Trong v3, `paywallViewDidFinishPurchase` mặc định sẽ đóng view. Trong v4, `flowViewDidFinishPurchase` là bắt buộc và không có hành vi mặc định — bạn cần tự đóng view nếu muốn.
-- **Nút back hệ thống Android**: Nút này không còn đóng flow theo mặc định nữa. Hành động sẽ được gửi đến `flowViewDidPerformAction` dưới dạng `AndroidSystemBackAction` — hãy xử lý ở đó nếu muốn nút back đóng flow.
-- **Mở URL**: `flowViewDidPerformAction` mặc định hiện xử lý `OpenUrlAction` bằng cách mở URL theo cách native (tôn trọng cài đặt trình duyệt in-app hoặc bên ngoài từ dashboard), ngoài việc đóng view khi nhận `CloseAction`. Ghi đè callback này nếu bạn muốn tự xử lý URL.
-- **Lỗi view**: `flowViewDidReceiveError` là bắt buộc, và việc đóng view tùy thuộc vào cách bạn triển khai. Nếu tích hợp v3 của bạn phụ thuộc vào việc view tự đóng khi có lỗi render, hãy gọi `view.dismiss()` trong callback này.
-- **Vòng đời view**: Đóng một flow hoặc onboarding view sẽ giải phóng nó khỏi bộ nhớ. View đã đóng không thể hiển thị lại — hãy tạo một view mới thay thế.
+- **Bản địa hóa flow**: Mã locale khu vực không còn fallback về ngôn ngữ của nó nữa — `pt-br` sẽ không lấy bản địa hóa `pt`. Mã không khớp chính xác sẽ hiển thị flow theo bản địa hóa mặc định. Xem [Locale matching is exact](#locale-matching-is-exact).
+- **Mua hàng thành công**: Trong v3, `paywallViewDidFinishPurchase` mặc định đóng view. Trong v4, `flowViewDidFinishPurchase` là bắt buộc và không có hành vi mặc định — bạn phải tự đóng view nếu muốn.
+- **Nút Back của Android**: Nút này không còn đóng flow theo mặc định nữa. Hành động được chuyển đến `flowViewDidPerformAction` dưới dạng `AndroidSystemBackAction` — xử lý tại đó nếu bạn muốn nút back đóng flow.
+- **Mở URL**: `flowViewDidPerformAction` mặc định giờ xử lý `OpenUrlAction` bằng cách mở URL theo cách native (tuân theo cài đặt trình duyệt in-app hoặc external từ dashboard), ngoài việc đóng view khi nhận `CloseAction`. Ghi đè callback để tự xử lý URL.
+- **Lỗi view**: `flowViewDidReceiveError` là bắt buộc, và việc đóng view phụ thuộc vào cách bạn triển khai. Nếu tích hợp v3 của bạn dựa vào việc view tự đóng khi gặp lỗi render, hãy gọi `view.dismiss()` trong callback này.
+- **Vòng đời view**: Đóng một flow hoặc onboarding view sẽ giải phóng nó khỏi bộ nhớ. Một view đã đóng không thể hiển thị lại — hãy tạo view mới thay thế.
 
 ## Onboarding API không còn được hỗ trợ \{#onboarding-api-deprecation\}
 

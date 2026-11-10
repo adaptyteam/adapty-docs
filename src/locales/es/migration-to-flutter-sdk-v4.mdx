@@ -79,7 +79,7 @@ Flutter 3.44 y versiones posteriores activan Swift Package Manager por defecto, 
 
 ### getPaywall → getFlow
 
-El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y ya no se pasa un `locale` — cuando renderizas un flow, la localización se resuelve automáticamente; para paywalls personalizados, todos los idiomas configurados se devuelven en `flow.remoteConfigs`:
+El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `locale` se mueve de la llamada de fetch a `createFlowView` (SDK de Flutter 4.0.3 y versiones posteriores; las versiones anteriores de 4.0.x no tienen forma de elegir la localización) — ver [La coincidencia de locale es exacta](#locale-matching-is-exact); para paywalls personalizados, todos los locales configurados se devuelven en `flow.remoteConfigs`:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
@@ -93,7 +93,20 @@ El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y ya no se pasa un `l
 + final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
 ```
 
-El tipo de política de obtención cambia su nombre de `AdaptyPaywallFetchPolicy` a `AdaptyFlowFetchPolicy`; sus opciones (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) no cambian.
+El tipo de política de recuperación se renombra de `AdaptyPaywallFetchPolicy` a `AdaptyFlowFetchPolicy`; sus opciones (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) no cambian.
+
+### La coincidencia de configuración regional es exacta \{#locale-matching-is-exact\}
+
+:::warning
+En v3, el servidor de Adapty seleccionaba la localización y hacía un fallback al idioma: una solicitud con `pt-br` obtenía la localización `pt` cuando el paywall no tenía `pt-br`. En v4, el SDK selecciona la localización en el dispositivo y solo usa coincidencias exactas. Un código que no coincide con ninguna localización renderiza el flow en su localización predeterminada, sin error ni advertencia.
+:::
+
+Antes de actualizar, comprueba los códigos de configuración regional que pasa tu aplicación:
+
+- Para cada código regional que pases, añade una localización con ese código — por ejemplo, `pt-br` junto a `pt` — o mapea el código a uno que el flow tenga.
+- Pasa los códigos exactamente como aparecen en el dashboard — subtags en minúsculas separados por guiones. No pases un identificador de configuración regional del sistema tal cual: `Platform.localeName` devuelve `pt_BR`, que no coincide con ninguna localización.
+
+Consulta [Localizaciones y códigos de idioma](flutter-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -254,10 +267,11 @@ Estos símbolos fueron declarados obsoletos en la versión 3.x y se eliminan en 
 
 Estos cambios no causan errores de compilación, así que pruébalos en tiempo de ejecución:
 
-- **Compra exitosa**: En v3, el comportamiento predeterminado de `paywallViewDidFinishPurchase` cerraba la vista. En v4, `flowViewDidFinishPurchase` es obligatorio y no tiene comportamiento predeterminado — cierra la vista tú mismo si eso es lo que quieres.
+- **Localización del flow**: Un código de región ya no recurre al idioma base — `pt-br` no utiliza la localización `pt`. Un código sin coincidencia exacta renderiza el flow con su localización predeterminada. Consulta [La coincidencia de idioma es exacta](#locale-matching-is-exact).
+- **Compra exitosa**: En v3, el `paywallViewDidFinishPurchase` predeterminado cerraba la vista. En v4, `flowViewDidFinishPurchase` es obligatorio y no tiene comportamiento predeterminado — cierra la vista tú mismo si eso es lo que quieres.
 - **Botón Atrás del sistema Android**: Ya no cierra un flow de forma predeterminada. La acción se entrega a `flowViewDidPerformAction` como `AndroidSystemBackAction` — gestiónala ahí si quieres que el botón Atrás cierre el flow.
-- **Apertura de URLs**: El comportamiento predeterminado de `flowViewDidPerformAction` ahora gestiona `OpenUrlAction` abriendo la URL de forma nativa (respetando la configuración de navegador interno o externo del dashboard), además de cerrar la vista con `CloseAction`. Sobreescribe el callback para gestionar las URLs tú mismo.
-- **Errores de vista**: `flowViewDidReceiveError` es obligatorio, y el cierre depende de tu implementación. Si tu integración de v3 dependía del cierre automático de la vista al producirse errores de renderizado, llama a `view.dismiss()` en este callback.
+- **Apertura de URLs**: El `flowViewDidPerformAction` predeterminado ahora gestiona `OpenUrlAction` abriendo la URL de forma nativa (respetando la configuración de navegador interno o externo del dashboard), además de cerrar la vista con `CloseAction`. Sobreescribe el callback para gestionar las URLs tú mismo.
+- **Errores de vista**: `flowViewDidReceiveError` es obligatorio, y el cierre depende de tu implementación. Si tu integración en v3 dependía de que la vista se cerrara automáticamente al producirse errores de renderizado, llama a `view.dismiss()` en este callback.
 - **Ciclo de vida de la vista**: Cerrar una vista de flow u onboarding la libera de la memoria. Una vista cerrada no puede volver a mostrarse — crea una nueva en su lugar.
 
 ## Obsolescencia de la API de onboarding \{#onboarding-api-deprecation\}

@@ -64,7 +64,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### GetPaywall → GetFlow
 
-返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，同时移除了 `locale` 参数——当你渲染一个流程时，语言环境会自动解析；对于自定义付费墙，所有语言环境的配置都会通过 `flow.RemoteConfigs` 返回：
+返回类型从 `AdaptyPaywall` 变更为 `AdaptyFlow`，`locale` 参数移至流程视图参数（`AdaptyUICreateFlowViewParameters.SetLocale`）——详见[语言区域匹配为精确匹配](#locale-matching-is-exact)；对于自定义付费墙，所有语言区域均在 `flow.RemoteConfigs` 中返回：
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -78,12 +78,25 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
   });
 ```
 
-`GetPaywallForDefaultAudience` 已按相同方式重命名：
+`GetPaywallForDefaultAudience` 也以相同方式重命名：
 
 ```diff showLineNumbers
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### 语言区域匹配为精确匹配 \{#locale-matching-is-exact\}
+
+:::warning
+在 v3 中，Adapty 服务器会选择本地化方案并回退到语言级别：当付费墙没有 `pt-br` 本地化时，`pt-br` 请求会使用 `pt` 本地化。在 v4 中，SDK 在设备端选择本地化方案，且仅支持精确匹配。如果传入的语言区域代码与任何本地化方案均不匹配，流程将以其默认本地化方案渲染，不会报错或发出警告。
+:::
+
+在升级之前，请检查应用传入的语言区域代码：
+
+- 对于每个传入的地区代码，请添加该代码对应的本地化——例如在 `pt` 旁边添加 `pt-br`——或将该代码映射到流程中已有的代码。
+- 传入的代码必须与看板中显示的完全一致——小写子标签，以连字符分隔。不要直接传入系统语言标识符：`CultureInfo.CurrentCulture.Name` 返回的是 `pt-BR`，这与任何本地化都不匹配。
+
+参见[本地化与语言代码](unity-localizations-and-locale-codes#flows-and-paywalls)。
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -309,10 +322,11 @@ var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
 
 这些变更不会导致编译错误，请在运行时进行测试：
 
-- **购买完成**：在 v3 中，购买成功后视图会自动关闭。在 v4 中，**购买或发生错误后，流程会保持打开状态，直到您主动关闭它** — SDK 不会应用任何默认行为。请在用户获得访问权限后，在 `FlowViewDidFinishPurchase` 中自行调用 `view.Dismiss(...)`。
-- **Android 系统返回**：系统返回按钮（或返回手势）会以 `SystemBack` 动作的形式传递给 `FlowViewDidPerformAction`，不再自动关闭流程 — 这与 iOS 保持一致，iOS 上的流程同样无法通过系统手势关闭。请为用户提供明确的退出方式（**关闭**按钮或 `on_device_back` 动作），或在处理该动作时自行关闭视图。
-- **视图只能使用一次**：调用 `Dismiss` 后，视图将被销毁。如需再次展示流程，请重新调用 `CreateFlowView`。
-- **观察者模式事务**：`ReportTransaction` 在成功时不再返回解码错误 — 在 v3 中，成功响应解析有误，导致成功的上报始终以错误结束。
+- **流程本地化**：区域语言代码不再回退到其对应语言——`pt-br` 不会使用 `pt` 本地化。如果找不到精确匹配的代码，流程将以默认本地化语言渲染。详见[语言匹配为精确匹配](#locale-matching-is-exact)。
+- **购买完成**：在 v3 中，购买成功后视图会自动关闭。在 v4 中，**流程在购买或发生错误后会保持打开状态，直到你主动关闭**——SDK 不会执行任何默认行为。请在 `FlowViewDidFinishPurchase` 中自行调用 `view.Dismiss(...)`，确保用户获得访问权限后再关闭视图。
+- **Android 系统返回**：系统返回按钮（或返回手势）将作为 `SystemBack` 动作传递给 `FlowViewDidPerformAction`，不再自动关闭流程——与 iOS 保持一致（iOS 上流程不能通过系统手势关闭）。请为用户提供明确的退出方式（如 **Close** 按钮或 `on_device_back` 动作），或在处理该动作时自行关闭视图。
+- **视图为一次性使用**：调用 `Dismiss` 后，视图将被销毁。如需再次展示流程，请重新调用 `CreateFlowView`。
+- **旁观者模式下的交易**：`ReportTransaction` 在成功时不再返回解码错误——在 v3 中，成功响应被错误解析，导致成功上报始终以错误结束。
 
 ## 用户引导 API 弃用 \{#onboarding-api-deprecation\}
 

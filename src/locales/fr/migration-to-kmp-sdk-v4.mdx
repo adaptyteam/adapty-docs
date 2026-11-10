@@ -106,6 +106,19 @@ Le type retourné passe de `AdaptyPaywall` à `AdaptyFlow`, et le paramètre `lo
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
 
+### La correspondance des locales est exacte \{#locale-matching-is-exact\}
+
+:::warning
+Dans la v3, le serveur Adapty sélectionnait la localisation et se rabattait sur la langue : une requête `pt-br` obtenait la localisation `pt` quand le paywall n'avait pas de `pt-br`. Dans la v4, le SDK sélectionne la localisation sur l'appareil et n'utilise que les correspondances exactes. Un code qui ne correspond à aucune localisation affiche le flow dans sa localisation par défaut, sans erreur ni avertissement.
+:::
+
+Avant de procéder à la mise à niveau, vérifiez les codes de locale que votre application transmet :
+
+- Pour chaque code régional que vous transmettez, ajoutez une localisation avec ce code — par exemple, `pt-br` à côté de `pt` — ou faites correspondre le code à l'un de ceux que le flow possède.
+- Transmettez les codes exactement tels qu'ils apparaissent dans le tableau de bord — sous-balises en minuscules séparées par des tirets. Ne transmettez pas un identifiant de locale système tel quel : `pt-BR` et `pt_BR` ne correspondent à aucune localisation.
+
+Voir [Localisations et codes de locale](kmp-localizations-and-locale-codes#flows-and-paywalls).
+
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
 `getPaywallProducts` conserve son nom mais prend désormais un `AdaptyFlow` :
@@ -326,10 +339,11 @@ Si aucune mise en page ne correspond à l'ID, le flow se charge sans configurati
 
 Ces changements ne génèrent pas d'erreurs de compilation, testez-les donc à l'exécution :
 
-- **Finalisation d'achat** : En v3, le comportement par défaut de `paywallViewDidFinishPurchase` fermait la vue après tout résultat d'achat autre que `AdaptyPurchaseResult.UserCanceled`. En v4, le comportement par défaut de `flowViewDidFinishPurchase` ne fait rien, donc **un flow reste ouvert après un achat jusqu'à ce que vous le fermiez vous-même** — comme sur iOS. Si vous vous appuyiez sur cette fermeture automatique, appelez `view.dismiss()` une fois l'achat terminé.
-- **Bouton retour Android** : En v3, le comportement par défaut de `paywallViewDidPerformAction` fermait la vue pour `CloseAction` et `AndroidSystemBackAction`. En v4, le comportement par défaut ne gère que `CloseAction` — **le bouton retour système ne ferme plus un flow automatiquement**, comme sur iOS où un flow ne peut pas être fermé par un geste système. Donnez aux utilisateurs un moyen explicite de sortir (un bouton **Close** ou une action `on_device_back`), ou fermez la vue vous-même dans `flowViewDidPerformAction`.
-- **Erreurs de vue** : En v3, le comportement par défaut de `paywallViewDidFailRendering` ne faisait rien. En v4, le comportement par défaut de `flowViewDidReceiveError` **ferme la vue** — surchargez-le si vous souhaitez garder la vue ouverte ou gérer l'erreur différemment.
-- **Les vues sont à usage unique** : Après `dismiss()`, la vue est détruite. Appelez à nouveau `createFlowView` pour afficher le flow une nouvelle fois.
+- **Localisation des flows** : Un code de paramètres régionaux ne se rabat plus sur sa langue — `pt-br` n'utilise pas la localisation `pt`. Un code sans correspondance exacte affiche le flow dans sa localisation par défaut. Voir [La correspondance des paramètres régionaux est exacte](#locale-matching-is-exact).
+- **Fin d'achat** : En v3, le `paywallViewDidFinishPurchase` par défaut fermait la vue après tout résultat d'achat autre que `AdaptyPurchaseResult.UserCanceled`. En v4, le `flowViewDidFinishPurchase` par défaut ne fait rien, donc **un flow reste ouvert après un achat jusqu'à ce que vous le fermiez** — comme sur iOS. Si vous comptiez sur cette fermeture automatique, appelez `view.dismiss()` vous-même une fois l'achat terminé.
+- **Retour système Android** : En v3, le `paywallViewDidPerformAction` par défaut fermait la vue sur `CloseAction` et `AndroidSystemBackAction`. En v4, le comportement par défaut ne gère que `CloseAction` — **le bouton retour système ne ferme plus un flow tout seul**, comme sur iOS où un flow ne peut pas être fermé par un geste système. Donnez aux utilisateurs un moyen de sortir explicite (un bouton **Close** ou une action `on_device_back`), ou fermez la vue vous-même dans `flowViewDidPerformAction`.
+- **Erreurs de vue** : En v3, le `paywallViewDidFailRendering` par défaut ne faisait rien. En v4, le `flowViewDidReceiveError` par défaut **ferme la vue** — redéfinissez-le si vous voulez garder la vue ouverte ou gérer l'erreur différemment.
+- **Les vues sont à usage unique** : Après `dismiss()`, la vue est détruite. Appelez de nouveau `createFlowView` pour afficher le flow une autre fois.
 
 ## Dépréciation de l'API Onboarding \{#onboarding-api-deprecation\}
 

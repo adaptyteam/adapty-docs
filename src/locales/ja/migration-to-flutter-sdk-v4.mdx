@@ -79,21 +79,34 @@ Flutter 3.44以降ではSwift Package Managerがデフォルトで有効にな�
 
 ### getPaywall → getFlow
 
-返り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` を渡す必要がなくなりました — フローをレンダリングする際にローカライズは自動的に解決され、カスタムペイウォールの場合はすべての設定済みロケールが `flow.remoteConfigs` に返されます。
+戻り値の型が `AdaptyPaywall` から `AdaptyFlow` に変更され、`locale` パラメータはフェッチ呼び出しから `createFlowView` に移動しました（Flutter SDK 4.0.3 以降；それより前の 4.0.x リリースではローカライズを選択する方法がありません）— [ロケールマッチングは完全一致](#locale-matching-is-exact) を参照してください。カスタムペイウォールの場合、設定済みのすべてのロケールが `flow.remoteConfigs` に返されます：
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
 + final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
 ```
 
-`getPaywallForDefaultAudience` も同様にリネームされています。
+`getPaywallForDefaultAudience` も同様に名前が変更されています:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
 + final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
 ```
 
-フェッチポリシーの型名が `AdaptyPaywallFetchPolicy` から `AdaptyFlowFetchPolicy` に変更されました。オプション（`reloadRevalidatingCacheData`、`returnCacheDataElseLoad`、`returnCacheDataIfNotExpiredElseLoad`）は変更ありません。
+フェッチポリシーの型名は `AdaptyPaywallFetchPolicy` から `AdaptyFlowFetchPolicy` に変更されました。オプション（`reloadRevalidatingCacheData`、`returnCacheDataElseLoad`、`returnCacheDataIfNotExpiredElseLoad`）は変更ありません。
+
+### ロケールのマッチングは完全一致 \{#locale-matching-is-exact\}
+
+:::warning
+v3 では、Adapty サーバーがローカライズを選択し、言語へのフォールバックを行っていました。つまり、ペイウォールに `pt-br` のローカライズがない場合、`pt-br` のリクエストに対して `pt` のローカライズが返されていました。v4 では、SDK がデバイス上でローカライズを選択し、完全一致のみを使用します。どのローカライズにも一致しないコードは、エラーや警告なしにデフォルトのローカライズでフローをレンダリングします。
+:::
+
+アップグレードの前に、アプリが渡すロケールコードを確認してください：
+
+- 渡す地域コードごとに、そのコードで `pt-br` を `pt` の隣に追加するか、フローが持つコードにマッピングしてください。
+- コードはダッシュボードに表示されているとおりに渡してください（ハイフンで区切られた小文字のサブタグ）。システムロケール識別子をそのまま渡さないでください：`Platform.localeName` は `pt_BR` を返しますが、これはどのローカリゼーションにも一致しません。
+
+[ローカリゼーションとロケールコード](flutter-localizations-and-locale-codes#flows-and-paywalls)を参照してください。
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -254,11 +267,12 @@ v4 では、オプトインで利用できる機能も追加されています�
 
 これらの変更はコンパイルエラーを引き起こしませんが、実行時にテストしてください：
 
-- **購入成功時**: v3 では `paywallViewDidFinishPurchase` のデフォルト動作でビューが閉じられていましたが、v4 では `flowViewDidFinishPurchase` が必須となり、デフォルトの動作はありません。ビューを閉じたい場合は自分でその処理を実装してください。
-- **Android システムの戻るボタン**: デフォルトではフローを閉じなくなりました。このアクションは `AndroidSystemBackAction` として `flowViewDidPerformAction` に渡されるため、戻るボタンでフローを閉じたい場合はそこで処理してください。
-- **URL を開く処理**: `flowViewDidPerformAction` のデフォルト動作が変更され、`CloseAction` 時のビュー閉鎖に加え、`OpenUrlAction` をネイティブに処理する（ダッシュボードで設定されたアプリ内ブラウザまたは外部ブラウザの設定に従う）ようになりました。URL を独自に処理したい場合はコールバックをオーバーライドしてください。
-- **ビューのエラー**: `flowViewDidReceiveError` が必須となり、ビューを閉じるかどうかはご自身の実装次第です。v3 でレンダリングエラー時に自動的にビューが閉じられる動作に依存していた場合は、このコールバック内で `view.dismiss()` を呼び出してください。
-- **ビューのライフサイクル**: フローまたはオンボーディングのビューを閉じると、そのビューはメモリから解放されます。一度閉じたビューは再表示できないため、新しいビューを作成してください。
+- **フローのローカライズ**: 地域ロケールコードは、対応する言語にフォールバックしなくなりました。`pt-br` は `pt` のローカライズを取得しません。完全一致するコードがない場合、フローはデフォルトのローカライズで表示されます。詳細は[ロケールの一致は完全一致](#locale-matching-is-exact)を参照してください。
+- **購入成功時**: v3 ではデフォルトの `paywallViewDidFinishPurchase` がビューを閉じていました。v4 では `flowViewDidFinishPurchase` が必須となり、デフォルトの動作はありません。ビューを閉じたい場合は、自分で実装してください。
+- **Android のシステムバックボタン**: デフォルトではフローを閉じなくなりました。このアクションは `flowViewDidPerformAction` に `AndroidSystemBackAction` として渡されます。バックボタンでフローを閉じたい場合は、そこで処理してください。
+- **URL の開き方**: デフォルトの `flowViewDidPerformAction` は、`CloseAction` でビューを閉じるのに加え、`OpenUrlAction` を処理してネイティブに URL を開くようになりました（ダッシュボードのアプリ内ブラウザまたは外部ブラウザの設定に従います）。URL を独自に処理したい場合は、コールバックをオーバーライドしてください。
+- **ビューのエラー**: `flowViewDidReceiveError` が必須となり、閉じるかどうかは実装次第です。v3 でレンダリングエラー時にビューが自動的に閉じる動作に依存していた場合は、このコールバック内で `view.dismiss()` を呼び出してください。
+- **ビューのライフサイクル**: フローまたはオンボーディングのビューを閉じると、メモリから解放されます。一度閉じたビューは再表示できないため、新しいビューを作成してください。
 
 ## オンボーディング API の非推奨化 \{#onboarding-api-deprecation\}
 

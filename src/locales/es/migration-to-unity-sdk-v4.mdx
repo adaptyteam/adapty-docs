@@ -64,7 +64,7 @@ Las versiones nativas del SDK de Adapty se actualizan a la 4.x en ambas platafor
 
 ### GetPaywall → GetFlow
 
-El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `locale` se elimina — cuando renderizas un flow, el idioma se resuelve automáticamente; para paywalls personalizados, todos los idiomas se devuelven en `flow.RemoteConfigs`:
+El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `locale` se traslada a los parámetros de vista del flow (`AdaptyUICreateFlowViewParameters.SetLocale`) — ver [La coincidencia de idioma es exacta](#locale-matching-is-exact); para paywalls personalizados, todos los idiomas se devuelven en `flow.RemoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +84,19 @@ El tipo devuelto cambia de `AdaptyPaywall` a `AdaptyFlow`, y el parámetro `loca
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### La coincidencia de configuración regional es exacta \{#locale-matching-is-exact\}
+
+:::warning
+En v3, el servidor de Adapty seleccionaba la localización y aplicaba un fallback al idioma: una solicitud con `pt-br` obtenía la localización `pt` cuando el paywall no tenía `pt-br`. En v4, el SDK selecciona la localización en el dispositivo y solo utiliza coincidencias exactas. Un código que no coincida con ninguna localización renderiza el flow en su localización predeterminada, sin errores ni advertencias.
+:::
+
+Antes de actualizar, comprueba los códigos de configuración regional que pasa tu app:
+
+- Para cada código regional que pases, añade una localización con ese código — por ejemplo, `pt-br` junto a `pt` — o mapea el código a uno que el flow tenga.
+- Pasa los códigos exactamente como aparecen en el dashboard — subtags en minúsculas separados por guiones. No pases un identificador de locale del sistema tal cual: `CultureInfo.CurrentCulture.Name` devuelve `pt-BR`, que no coincide con ninguna localización.
+
+Consulta [Localizaciones y códigos de locale](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -309,10 +322,11 @@ Este paso no genera ningún error de compilación. Si lo omites, `SetFallback` r
 
 Estos cambios no causan errores de compilación, así que compruébalos en tiempo de ejecución:
 
-- **Finalización de la compra**: En v3, la vista se cerraba automáticamente tras una compra exitosa. En v4, **un flow permanece abierto tras una compra o un error hasta que lo cierres tú** — el SDK no aplica ningún comportamiento por defecto. Llama a `view.Dismiss(...)` en `FlowViewDidFinishPurchase` una vez que el usuario obtenga acceso.
-- **Botón Atrás de Android**: El botón Atrás del sistema (o el gesto de retroceso) se entrega a `FlowViewDidPerformAction` como una acción `SystemBack` y ya no cierra un flow por sí solo — igual que en iOS, donde un flow no puede cerrarse con un gesto del sistema. Ofrece a los usuarios una salida explícita (un botón **Close** o una acción `on_device_back`), o cierra la vista tú mismo al gestionar la acción.
+- **Localización de flows**: Un código de configuración regional ya no recurre a su idioma base — `pt-br` no utiliza la localización `pt`. Un código sin coincidencia exacta muestra el flow con su localización predeterminada. Consulta [La coincidencia de idioma es exacta](#locale-matching-is-exact).
+- **Finalización de compra**: En v3, la vista se cerraba automáticamente tras una compra exitosa. En v4, **un flow permanece abierto después de una compra o un error hasta que tú lo cierres** — el SDK no aplica ningún comportamiento predeterminado. Llama a `view.Dismiss(...)` en `FlowViewDidFinishPurchase` una vez que el usuario obtenga acceso.
+- **Botón Atrás de Android**: El botón Atrás del sistema (o el gesto de retroceso) se entrega a `FlowViewDidPerformAction` como una acción `SystemBack` y ya no cierra un flow por sí solo — igual que en iOS, donde un flow no puede cerrarse mediante un gesto del sistema. Ofrece a los usuarios una salida explícita (un botón **Close** o una acción `on_device_back`), o cierra la vista tú mismo al gestionar la acción.
 - **Las vistas son de un solo uso**: Después de `Dismiss`, la vista se destruye. Llama a `CreateFlowView` de nuevo para mostrar el flow otra vez.
-- **Transacciones en modo Observer**: `ReportTransaction` ya no devuelve un error de decodificación cuando tiene éxito — en v3 la respuesta de éxito se parseaba incorrectamente, por lo que un reporte exitoso siempre terminaba con un error.
+- **Transacciones en modo Observer**: `ReportTransaction` ya no produce un error de decodificación cuando tiene éxito — en v3 la respuesta de éxito se analizaba incorrectamente, por lo que un reporte exitoso siempre finalizaba con un error.
 
 ## Obsolescencia de la API de onboarding \{#onboarding-api-deprecation\}
 
