@@ -79,3 +79,8 @@ Five articles, so rows name article ids directly. Corpus-wide synonyms (profile 
 
 ## Gaps and misses
 
+
+- **Device filter lists unseen iOS models (2026-11-10, confirmed by product).** For iOS apps the
+  `segments` **Device** dropdown includes new Apple models (iPhone Duo, iPhone 18 Pro / Pro Max, the
+  iPhone 17 line, 2025+ iPads) before any user on them reaches the app. Every other device enters the list only once the app's own
+  users run the app on it (docs owner, 2026-11-10).
