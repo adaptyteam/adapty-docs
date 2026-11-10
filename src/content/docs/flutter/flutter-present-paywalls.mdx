@@ -62,7 +62,17 @@ Starting from SDK 4.1, pass `destroy: false` to keep the view in memory instead:
 await view.dismiss(destroy: false);
 ```
 
-Present that view again and the user returns to the screen they left, with the state the flow had built up. A view kept this way is held until you dismiss it with `destroy: true`.
+Present that view again and the user returns to the screen they left, with the state the flow had built up. A view kept this way stays in memory until you release it.
+
+Starting from SDK 4.3.0, when you no longer need a kept view, release it with `destroy()`:
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` also releases a view that you created but never presented, and a page-sheet view that the user swiped down on iOS. Don't call it after a regular `dismiss()`: that view is already released, and the call fails with the `wrongParam` error. On earlier SDK versions, present the kept view again and dismiss it with `destroy: true` to release it.
 
 The default close action calls `view.dismiss()`, which releases the view even if you kept it earlier with `destroy: false`. To keep a view when the user closes it, override `flowViewDidPerformAction` and dismiss the view yourself. This method runs for every flow and paywall in your app, so compare `view.id` to keep only the view you plan to present again. Keep the `OpenUrlAction` case to preserve URL opening:
 
@@ -82,7 +92,7 @@ void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
 }
 ```
 
-Hold on to the kept `view`: you need it to present the flow or paywall again, and to release it with `dismiss(destroy: true)`. Any other `view.dismiss()` call releases the view too, including the call in [`flowViewDidReceiveError`](flutter-handling-events#view-errors). After a view error, create a new view with `createFlowView`.
+Hold on to the kept `view`: you need it to present the flow or paywall again, and to release it with `destroy()`. Any other `view.dismiss()` call releases the view too, including the call in [`flowViewDidReceiveError`](flutter-handling-events#view-errors). After a view error, create a new view with `createFlowView`.
 
 ### Show dialog
 
@@ -120,6 +130,8 @@ try {
   // handle the error
 }
 ```
+
+The user can swipe a page sheet down to close it. The view then stays in memory without a `dismiss()` call: present it again, or, on SDK 4.3.0 and later, release it with [`destroy()`](#dismiss-the-flow-or-paywall).
 
 ## Embed in widget hierarchy
 
