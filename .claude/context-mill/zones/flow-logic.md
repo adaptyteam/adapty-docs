@@ -134,7 +134,7 @@ or developer can see and click.
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
 | convert-paywall-to-flow | migration | marketer, dev | 4 | tutorial |
-| copy-flows | — | marketer, dev | 2 | tutorial |
+| copy-flows | — | marketer, dev | 6 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
 | filter-flows | — | marketer, dev | 6 | tutorial |
@@ -150,12 +150,12 @@ or developer can see and click.
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
-| onboarding-variables | — | marketer, dev | 8 | tutorial |
+| onboarding-variables | — | marketer, dev | 9 | tutorial |
 | paywall-builder-templates | — | marketer, dev | 7 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 16 | tutorial |
+| paywall-product-block | — | marketer, dev | 17 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
 | respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |

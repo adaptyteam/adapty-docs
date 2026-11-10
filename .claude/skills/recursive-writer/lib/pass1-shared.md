@@ -15,4 +15,4 @@ Fill in the brackets. Every agent gets the shared part and its own step.
   after it passes the checks. Never take a sibling's prose as a model.
 - Checks: [checks-all.txt]. The level checks (`L4`, `L3`, `L2`), `headings`, `lists`, `06`, and `12`
   judge structure. `12` tries removing a unit, or folding it into a clause, before `lists` climbs a
-  rung.
+  rung. `07` judges every term in a heading, a path line, or a question.
