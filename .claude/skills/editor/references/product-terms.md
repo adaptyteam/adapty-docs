@@ -27,6 +27,7 @@ marks when a term changed. UI labels still come from the frontend (Area 11).
 - **Profiles**, not "user accounts" or "users", where anonymous profiles count.
 - **Field** only for something on screen. SDK and API members are **properties** or **parameters**.
 - **Google Analytics** and **Firebase**, never "GA4" or "Firebase Analytics".
+- **Apple Ads**, never "Apple Search Ads" in new text; code values such as `apple_search_ads` stay as they are. **Adapty SDK**, not a bare "SDK", where another SDK could be meant.
 - **Products panel**: "the products you added to the screen", never "products on the screen".
 - **Add element** panel: "Open the **Add element** panel.", with no route: it has several entry
   points.

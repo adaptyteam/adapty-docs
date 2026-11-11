@@ -1,6 +1,6 @@
 ---
 name: "editor"
-description: Use when reviewing or writing MDX files in src/content/docs — proofreading, checking technical writing quality, verifying Simplified Technical English compliance, validating links and images, or drafting new doc content.
+description: Use when reviewing or writing MDX files in src/content/docs, or addressing review comments on a docs PR — proofreading, checking technical writing quality, verifying Simplified Technical English compliance, validating links and images, or drafting new doc content.
 ---
 
 # Editor - Technical Documentation Review and Writing
@@ -14,6 +14,8 @@ Review or write technical documentation as a senior technical writer, focusing o
 **Write mode**: User asks to write, draft, create, or add new content → follow Writing Workflow. Do NOT start writing immediately.
 
 If mode is ambiguous, ask to clarify.
+
+**Comments mode**: User asks to address, apply, or answer review comments on a docs PR → follow `references/review-comments.md`, then this skill's rules for every edit. `review-assistant` can drive the walk; the reference still decides what each comment means and how far its fix reaches.
 
 ## Review Workflow
 
@@ -258,6 +260,7 @@ Check for: missing intro before first heading, H4 overuse, non-parallel headings
 - **Parallel paragraphs are a list**: three or more consecutive paragraphs with the same shape (bold lead + explanation) → convert to a bullet list.
 - **Tables carry data; prose carries reasoning**: if a sentence describes a pattern that holds across items (a `_local` / `_usd` naming convention, say), that pattern is a table column, not a sentence. First confirm the set belongs in the article at all — see Area 13, don't enumerate what lives in code.
 - **Group items that share a claim under that claim**: five flat bullets, three of them about missing data → one parent bullet stating the claim, with those three as sub-bullets. A flat list hides the pattern.
+- **New code snippets** come only from verified sources (`snippet-master`, the SDK repo, an existing tested snippet). Don't write a new untested one into an article.
 - **Speculative `keywords`**: `keywords` feeds doc search — do not add or expand it unless the user explicitly asks. Flag frontmatter where keywords were added during writing/editing without a request; propose removing them. If keywords are requested, keep the list to a few specific terms.
 
 See `references/article-structure.md`
@@ -396,6 +399,13 @@ This governs *steps* — for a warning about something that genuinely goes wrong
 - Symptom before mechanism in troubleshooting — headings and opening sentences name what the reader observes, not the cause. ❌ "Exclude historical events is on by default" → ✅ "PostHog is missing historical events."
 - Good news is not a footnote. If a passage has one actionable sentence and four constraints, the actionable one leads.
 - **Lead a feature section with what it lets the reader do, not with the gap it fills.** Open with the outcome and the way to get it. State plain behavior neutrally, the way you'd describe any design ("A flow downloads its images from Adapty"). Don't write it up as a shortcoming: "nothing reports when…", "there's no way to…" and "the SDK doesn't tell you…" make a design choice read as the product's fault, and they add drama without adding a step. Keep a limit only when the reader acts on it, and then say it once, flatly, after the instructions. ❌ "The flow's images keep downloading after `getFlowConfiguration` returns, and nothing reports when they finish." → ✅ "A flow downloads its images and videos from Adapty. To show the first screen's media instantly, serve it from the app bundle." This rule is for feature and how-to prose. Warnings and troubleshooting still name the consequence, as purpose-not-penalty and the no-tautologies rule above say.
+- **No risk framing.** Don't sell a step by what goes wrong without it: "poor UX", "broken", "you risk…", "issues". Say what the step gets the reader. Warnings are the exception, and they stay rare (below).
+- **Limitations last, in one place.** A feature article opens with what the reader can do; its limitations go at the end, in one section. A limitation that belongs to another feature lives in that feature's article, and this one links to it.
+- **Keep warnings rare.** A `:::warning` or `:::danger` only for what every reader must know before acting. Anything else is a `:::note`, or goes in troubleshooting. A silent failure (nothing errors, the result is just wrong) is a troubleshooting entry, not a warning in the setup steps.
+- **Leave out niche cases.** A case few readers hit, or a feature that belongs to another article, stays out. When in doubt, link to the owner.
+- **Order:** the important content first; text before its image; SDK v4 before v3, and v3 content only while v4 is in beta.
+- **Integration articles** describe what the integration sends and how to set it up. They don't sell features Adapty already has, and don't compare them with the partner's.
+- **Method names** belong in SDK articles. Conceptual and dashboard text describes the behavior: method names differ between SDK versions and platforms.
 - **Write a section for the general case, not the ticket that prompted it.** When a customer case prompts new docs, keep the part that answers a general reader's question and drop that customer's architecture. A step that only makes sense in their setup ("if it's still `nil`, show your native onboarding") belongs in the support reply. If the article already describes the neighboring options, the new section covers only what's new.
 
 **Placement across passages:**
