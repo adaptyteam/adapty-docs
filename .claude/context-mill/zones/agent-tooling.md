@@ -182,7 +182,7 @@ on one side, a non-deterministic agent on the other.
 | adapty-sdk-integration-skill-react-native | — | dev | 0 | react-native |
 | adapty-sdk-integration-skill-unity | — | dev | 0 | unity |
 | developer-cli | entry | dev | 0 | api |
-| developer-cli-ab-tests | reference | dev | 20 | api |
+| developer-cli-ab-tests | reference | dev | 25 | api |
 | developer-cli-ads-manager | entry | dev | 17 | api |
 | developer-cli-ads-manager-reference | — | dev | 60 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
@@ -190,14 +190,14 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-apps | reference | dev | 11 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
-| developer-cli-flows | reference | dev | 16 | api |
+| developer-cli-flows | reference | dev | 18 | api |
 | developer-cli-migrations | reference | dev | 11 | api |
 | developer-cli-paywalls | reference | dev | 11 | api |
 | developer-cli-placements | reference | dev | 14 | api |
 | developer-cli-products | reference | dev | 11 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
 | developer-cli-reference | — | dev | 3 | api |
-| export-analytics-with-ai | — | dev | 7 | tutorial |
+| export-analytics-with-ai | — | dev | 10 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |

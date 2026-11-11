@@ -110,7 +110,7 @@ Delta from `scope.md` only.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| retention-messaging | entry | — | 1 | tutorial |
+| retention-messaging | entry | — | 2 | tutorial |
 | retention-messaging-analytics | — | — | 6 | tutorial |
 | retention-messaging-create | — | — | 9 | tutorial |
 | retention-messaging-setup | — | — | 7 | tutorial |
