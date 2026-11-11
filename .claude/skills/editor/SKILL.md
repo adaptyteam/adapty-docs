@@ -17,9 +17,9 @@ If mode is ambiguous, ask to clarify.
 
 ## Review Workflow
 
-1. **Identify scope**: Diff or full article?
+1. **Identify scope**: Diff or full article? For a new article, a full-article review, or a diff that changes more than one section, offer the multi-role review first (`references/multi-review.md`): ask before you start it, and ask whether the user suspects a specific problem. If the user declines, continue with this workflow.
 2. **Load references** — trigger on the task, never on the findings. You cannot know an issue is present until you have read the list that names it, so "load if relevant" resolves to "never load":
-   - Always: `references/simplified-technical-english.md`
+   - Always: `references/simplified-technical-english.md` and `references/product-terms.md`
    - Full-article reviews, and all writing: `references/article-structure.md`
    - Anything touching links, images, imports, or anchors: `references/astro-patterns.md`
    - Producing a plan or annotated feedback: `references/output-templates.md`
@@ -79,6 +79,8 @@ After writing:
 8. **For UI workflow articles**: Output a screenshot capture table after the writing summary — one row per `:::note` placeholder, with filename and what the screenshot should show. This lets the user capture everything in one pass.
 
 Present final content with a brief writing summary. See `references/output-templates.md` for format.
+
+When the draft is a new article, or adds or rewrites a section or more, run the multi-role review on it by default, without asking (`references/multi-review.md`), and apply its fixes yourself. The draft isn't done until that round of review and fixes is over: don't present it, or call it finished, before then. Present only the final text. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
 
 ### Phase 6: Report back to the zone brief
 
@@ -160,7 +162,7 @@ Name it at every section entry, in every heading, and anywhere the nearest candi
 
 **Abstract entities have no body and no location.** A flow, paywall, screen, placement, variable, or style is a record. It has no sides, no inside, no surface, and it takes no human action. Only its representation does — a **row**, **card**, **panel**, **column**, **dropdown**, **entry**.
 
-- *Verbs*: ❌ "the setting lives in the Design panel", "every call finds a person", "the page manages your settings" → name what Adapty does or what the reader sees. ✅ "The page lets you manage your settings."
+- *Verbs*: ❌ "the setting lives in the Design panel", "every call finds a person", "the page manages your settings" → name what Adapty does or what the reader sees. ✅ "On this page, you can manage your settings." Don't write "lets you" or "allows you to": make the reader the subject.
 - *Prepositions of place*: for every `next to`, `beside`, `inside`, `at the end of`, name what it modifies. If that's an abstract entity, substitute the representation. ❌ "open the context menu next to the flow" → ✅ "in the flow's row".
 - *Possessives*: the possessive must be true of the representation. ✅ "the flow's row". ❌ "the flow's context menu" — the row displays the menu. ❌ "users whose app version includes the font" — the app is yours; the user installed a build of it.
 - *Reverse error*: a label is not the control. ❌ "Open **All placements**" → ✅ "Open the **All placements** filter above the list."
@@ -242,7 +244,7 @@ Often, naming the control is the entire deliverable: `- **All states**: Filters 
 
 This rule and the instruction pattern run in order, not in competition: **this one decides whether the step exists; Goal → Location → Action shapes the ones that survive.** A step that earns its place still names its location.
 
-**Do not over-granularize**: A short inline instruction (2–3 steps expressible in one clear sentence) should stay inline. Breaking it into a numbered list introduces unnecessary friction. Use numbered steps only when: (a) the sequence has 4+ distinct actions, (b) each step requires separate verification, or (c) the sentence becomes unreadably long. Conciseness takes priority — do not flag a clear one-sentence instruction as a problem.
+**Inline or numbered is a judgment call.** A short instruction (2–3 actions that read as one clear sentence) can stay inline; numbering it adds friction. Number the steps when the reader must track their place: 4+ distinct actions, a step that needs its own verification, a sentence that gets hard to read, or neighbouring procedures in the same section that are numbered. Neither form is a defect by itself — don't flag a clear one-sentence instruction, and don't flag a short numbered list that reads well.
 
 See `references/simplified-technical-english.md` → Instruction Pattern
 
@@ -251,7 +253,7 @@ See `references/simplified-technical-english.md` → Instruction Pattern
 Check for: missing intro before first heading, H4 overuse, non-parallel headings at same level, text blocks over 300 words without structure, consecutive callouts, callouts that interrupt flow.
 
 - **Title/description scope mismatch**: the frontmatter `title` or `description` claims coverage the article doesn't provide. ❌ `description: "Show or hide elements and screens"` when only elements are covered → fix to match actual scope
-- **Product/feature name capitalization**: "Flow Builder" not "Flow builder". Check that multi-word product names are consistently capitalized as proper nouns throughout
+- **Product/feature name capitalization**: "Flow & Paywall Builder", not "Flow Builder" or "Flow & Paywall builder". Check that multi-word product names are consistently capitalized as proper nouns throughout. Current names: `references/product-terms.md`
 - **Split anything that outgrows its container**: a callout over ~3 sentences, or a troubleshooting entry that has grown subsections, gets promoted to its own section. Leave a pointer behind where it was.
 - **Parallel paragraphs are a list**: three or more consecutive paragraphs with the same shape (bold lead + explanation) → convert to a bullet list.
 - **Tables carry data; prose carries reasoning**: if a sentence describes a pattern that holds across items (a `_local` / `_usd` naming convention, say), that pattern is a table column, not a sentence. First confirm the set belongs in the article at all — see Area 13, don't enumerate what lives in code.
@@ -333,6 +335,8 @@ See `references/simplified-technical-english.md` → Filler Words + Advanced STE
 **Names come from the source, not from memory.**
 - UI labels: grep the frontend for the exact string before you bold it. Quote typos as-is — the reader has to find it on screen.
 - Vendor terms: use the vendor's own noun (PostHog says *insight*, not *query*). Check their glossary.
+- Platform and store terms: for a part of iOS, Android, Xcode, App Store Connect, or Google Play Console, use the name that vendor uses. ❌ "the emulator" → ✅ Xcode's **Simulator**; ❌ an "auto-recurring" base plan → ✅ Google Play's **auto-renewing** base plan. Check every such term in the text, not only the ones that look wrong: a familiar-sounding term is the one nobody checks.
+- No coined names: if the UI has no label for a thing, describe it instead of inventing a name.
 - Never a competitor's vocabulary: `entitlements` is RevenueCat's word — Adapty says **access levels**.
 - Reader-visible names, not internal ones: a webhook field may be `event_datetime` internally while the payload the reader inspects says `timestamp`. Document what they see.
 
@@ -400,7 +404,7 @@ This governs *steps* — for a warning about something that genuinely goes wrong
 - When you subsection a long passage, re-home its parent-level content. Splitting a section strands facts that applied to the whole under one subsection.
 - Promote content that outgrows its container and put it where the decision is made, not where it grew. Leave a pointer behind.
 
-**One concern per unit.** For every step, bullet, or beat: can you name two concerns in it? Split. A setup step carrying both a dropdown and four unrelated toggles is two steps; a date-range bullet carrying timezone is two bullets. Two contrasting limits hold apart as sub-bullets and collapse as prose. A procedure in prose becomes numbered steps — one action per step, conditions as sub-points.
+**One concern per unit.** For every step, bullet, or beat: can you name two concerns in it? Split. A setup step carrying both a dropdown and four unrelated toggles is two steps; a date-range bullet carrying timezone is two bullets. Two contrasting limits hold apart as sub-bullets and collapse as prose. A procedure that is hard to follow in prose becomes numbered steps — one action per step, conditions as sub-points (see "Inline or numbered" above).
 
 **Sections are entry points, not continuations.** Readers arrive from search, mid-article.
 - Read any section cold, skipping everything above it. Does every method, label, and acronym identify its owner? "the `identify` call" — whose SDK?
@@ -478,9 +482,7 @@ File the bug. The finding is valuable; it belongs in a ticket, not an article.
 - Missing intro, heading hierarchy issues, long unstructured blocks, consecutive callouts
 - List consistency, wordiness, ambiguous pronouns
 
-### Suggestions
-- Passive → active where it flows better
-- Minor wording improvements
+No style-only tier. Every finding names what the reader gets wrong, misses, or can't do because of the text. Style preference alone is not a reason to change published text: if the only reason is "reads better", leave the text alone. In a new draft, polish wording during writing instead of reporting it.
 
 For each issue: quote the text (with line number) → explain why → provide specific rewrite.
 
@@ -490,7 +492,7 @@ See `references/output-templates.md` for annotated feedback example.
 
 After completing all checks, follow this flow:
 
-1. **Number every finding** sequentially across all categories (Critical, Important, Suggestions). Assign a single global number to each, not per-category numbers.
+1. **Number every finding** sequentially across both categories (Critical, Important). Assign a single global number to each, not per-category numbers.
 
 2. **Present the full numbered list** as a concise "whole picture" — one line per finding, format: `**N.** [article if multiple] brief description → proposed fix`
 
