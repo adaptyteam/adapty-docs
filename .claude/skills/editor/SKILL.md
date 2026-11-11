@@ -98,7 +98,16 @@ Work outside-in: decide what stays before polishing it, and fix what's *wrong* b
 
 **Pass 0 — the linter.** `node scripts/lint-prose.mjs --full <file>`. Free and mechanical: banned words, overclaim candidates, vague verbs, spatial metaphors, roadmap leaks. Runs automatically on every MDX edit via the `PostToolUse` hook, so in review mode you're re-running it deliberately over the whole file. Every hit is a candidate, not a verdict.
 
-**Pass 1 — what stays.** The heading↔content contract (Area 12). Read each heading, then ask of every paragraph under it whether it advances that promise. This decides scope, so it comes before any line editing.
+**Pass 1 — what stays.** Decide, for every section and paragraph, whether it stays, gets cut, shrinks to a tip or a link, or moves to another article. Report these decisions first, as their own findings, and don't line-edit text you propose to cut: a review that polishes a paragraph the reader doesn't need has endorsed it. Ask, in this order:
+- **The heading↔content contract** (Area 12): does every paragraph advance its heading's promise?
+- **Does the intro promise what the body delivers?** If the body covers two ways to do the task, the intro names both, or the secondary way shrinks.
+- **Is the recommended way first?** When a task can be done in the dashboard or in app code, lead with the dashboard way and recommend it: it changes without an app release. App code is for what needs native logic (custom UI, routing, analytics), and comes after, often as a tip. Say when to use which.
+- **Does it belong in this article?** A procedure that many articles share (testing a purchase in sandbox, publishing, creating a placement) is a link, not a section. Content for a different mode, platform, or setup goes in that mode's article, with a link at most.
+- **Would a reader do this?** A step that guards against a setup nobody builds is cut, or becomes a one-line note.
+- **Is the advice safe to follow?** Advice that conflicts with App Store or Google Play review guidelines, or with common practice, is a Major finding even when the product allows it.
+- **Does it name the use cases in the reader's words?** The intro and headings name what readers build with the feature (continue an onboarding, show a thank-you screen), so search and skimming find it.
+
+This decides scope, so it comes before any line editing.
 
 **Pass 2 — correctness.** Wrong documentation, in the order the defects actually occur:
 - Referents (Area 4) — the highest-frequency defect by a wide margin
@@ -108,7 +117,7 @@ Work outside-in: decide what stays before polishing it, and fix what's *wrong* b
 
 **Pass 3 — shape.** Structure (Areas 6, 8), framing and order (Area 12), instruction pattern (Area 7). Regroup before polishing: sentences you're about to move don't need their commas fixed yet.
 
-**Pass 4 — polish.** Sentence length as a range (Area 2), register and literary patterns (Areas 1, 3), conciseness (Area 10).
+**Pass 4 — polish.** Sentence length as a range (Area 2), register and literary patterns (Areas 1, 3), conciseness (Area 10). Titles and sidebar labels too: the shortest label that covers the article wins, and a change to an existing label needs a reason.
 
 **Pass 5 — connections.** Links and images (Area 9), redundancy and consolidation (Area 10).
 

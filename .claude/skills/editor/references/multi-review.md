@@ -57,7 +57,7 @@ One agent gets all eight reports and the articles, and writes the final review:
    on. Settle a disagreement on the evidence: the merge agent may read the code they cite. Drop
    findings that don't hold up. Two partial findings about the same mechanism can add up to one full
    finding.
-2. **Merge across roles** into one review: **Major**, then **Minor**, most important first. Each
+2. **Merge across roles** into one review: **Major**, then **Minor**, most important first. Within Major, content decisions come first (a section to cut, shrink, or move; advice that's unsafe or not the recommended way; see the Review Pass Order, Pass 1), then wrong facts. Drop line edits to text that a content decision removes. Each
    finding has the article and line, what's wrong, the evidence, and the fix. Merge duplicates.
    Problems outside the docs (an unmerged branch, a bug in the code) go in their own section at the
    end, as information for the user.
