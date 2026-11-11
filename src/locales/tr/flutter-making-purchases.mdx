@@ -66,6 +66,8 @@ Yanıt parametreleri:
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Profile** | <p>İstek başarılı olursa yanıt bu nesneyi içerir. Bir [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) nesnesi, kullanıcının uygulama içindeki access level'ları, abonelikleri ve tek seferlik satın almaları hakkında kapsamlı bilgi sağlar.</p><p>Kullanıcının uygulamaya gerekli erişime sahip olup olmadığını belirlemek için access level durumunu kontrol edin.</p> |
 
+Android'de kullanıcı mağazada nakit gibi ertelenmiş bir ödeme yöntemi seçerse `makePurchase`, `AdaptyPurchaseResultPending` döndürür ve kullanıcı henüz erişim kazanamaz. Adapty SDK 4.3.0 ile birlikte SDK, Google Play satın alma işlemini onayladığında Adapty ile doğrulama yapar: uygulama çalışıyorsa hemen, değilse uygulama ön plana geçtiğinde. O anda erişim vermek için [profil güncellemelerini dinleyin](flutter-listen-subscription-changes).
+
 :::warning
 **Not:** Apple'ın StoreKit sürümü v2.0'ın altında ve Adapty SDK sürümü v2.9.0'ın altında kullanıyorsanız, bunun yerine [Apple App Store paylaşılan sırrı](app-store-connection-configuration#step-5-enter-app-store-shared-secret) sağlamanız gerekir. Bu yöntem şu anda Apple tarafından kullanımdan kaldırılmıştır.
 :::
@@ -144,9 +146,11 @@ Tanıtılan uygulama içi satın almalar, **iOS 16.4** ve sonrasında SDK 4.1 s�
 
 Bir kullanıcı App Store ürün sayfanızdan satın alma işlemi başlattığında ve işlem uygulamanıza aktarıldığında, SDK bunu otomatik olarak tamamlar — Apple satın alma sistemi ekranı hemen görünür ve Adapty işlemi diğer satın almalar gibi işler. Bunun için tarafınızdan herhangi bir kod yazmanız gerekmez.
 
-Tanıtılan ürün bir abonelik teklifi içeriyorsa, SDK satın alma sırasında bunu otomatik olarak uygular. Teklif, App Store satın alma intent'inden okunur; bu özellik iOS 18.0 ve sonrasında kullanılabilir. iOS 16.4–17.x sürümlerinde satın alma normal fiyat üzerinden gerçekleşir.
+Tanıtılan ürün bir abonelik teklifi içeriyorsa, SDK bunu satın alma sırasında otomatik olarak uygular. Teklif, iOS 18.0 ve sonraki sürümlerde bunu açığa çıkaran App Store satın alma niyetinden okunur. iOS 16.4–17.x'te satın alma, temel fiyat üzerinden gerçekleşir.
 
-Tanıtılan satın alma işlemlerini kendiniz tamamlamak için — örneğin önce kendi ekranınızı göstermek istiyorsanız — `didReceivePromotedPurchaseStream`'e abone olun ve ürünü `makePromotedPurchase`'a geçirin:
+Tanıtılan bir satın alma, ürün [12 aylık taahhüt planı](app-store-12-month-commitment) da sunsa bile her zaman peşin ödeme planını kullanır.
+
+Tanıtılan satın almaları kendiniz tamamlamak için — örneğin önce kendi ekranınızı göstermek amacıyla — `didReceivePromotedPurchaseStream` aboneliği yapın ve ürünü `makePromotedPurchase` metoduna geçirin:
 
 ```dart showLineNumbers
 Adapty().didReceivePromotedPurchaseStream.listen((product) async {
@@ -162,10 +166,10 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 ```
 
 :::warning
-Stream'e herhangi bir şey abone olduğu sürece SDK, promosyon satın alımlarını sizin yerinize tamamlamayı durdurur. Handler'ınız hiçbir zaman `makePromotedPurchase` çağırmazsa satın alma gerçekleşmez: App Store ürünü uygulamanıza iletir ve bekler. Handler'ınız hata fırlatırsa da SDK devreye girmez.
+Stream'e herhangi bir şey abone olduğu sürece, SDK tamamlayacağı promosyon satın almalarını duraksatır. Handler'ınız hiçbir zaman `makePromotedPurchase` çağırmazsa, satın alma gerçekleşmez: App Store ürünü uygulamanıza teslim eder ve bekler. Handler'ınız hata fırlatırsa da SDK devreye girmez.
 :::
 
-`makePromotedPurchase`, herhangi bir satın alma parametresi almaz; çünkü promosyon ürünü bir paywall'dan değil, doğrudan App Store'dan gelir ve paywall bağlamı taşımaz. `makePurchase` ile aynı `AdaptyPurchaseResult` değerini döndürür.
+`makePromotedPurchase`, satın alma parametresi almaz; çünkü tanıtılan ürün bir paywall'dan değil, doğrudan App Store'dan gelir ve herhangi bir paywall bağlamı taşımaz. `makePurchase` ile aynı `AdaptyPurchaseResult` değerini döndürür. Stream'den gelen ürünü olduğu gibi geçirin: bu ürün, satın alma işlemini tamamlayan App Store satın alma amacını taşır.
 
 Satın almayı kimin tamamlayacağı her event için ayrı ayrı belirlenir; bu sayede yalnızca bir ekran açıkken dinlediğiniz bir stream, ekran kapandığında promosyonlu satın almaları SDK'ya geri devreder. `activate` çağrısından önce abone olabilirsiniz; böylece mağazanın uygulama açılışında ilettiği bir satın almayı yakalayabilirsiniz.
 

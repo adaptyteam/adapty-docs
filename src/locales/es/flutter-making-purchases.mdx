@@ -66,6 +66,8 @@ Parámetros de la respuesta:
 |---------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | **Profile** | <p>Si la solicitud se ha completado correctamente, la respuesta contiene este objeto. Un objeto [AdaptyProfile](https://pub.dev/documentation/adapty_flutter/latest/adapty_flutter/AdaptyProfile-class.html) proporciona información completa sobre los niveles de acceso, suscripciones y compras únicas de un usuario dentro de la app.</p><p>Comprueba el estado del nivel de acceso para determinar si el usuario tiene el acceso requerido a la app.</p> |
 
+En Android, si el usuario eligió un método de pago diferido, como efectivo en una tienda, `makePurchase` devuelve `AdaptyPurchaseResultPending` y el usuario no obtiene acceso todavía. A partir de Adapty SDK 4.3.0, el SDK valida la compra con Adapty cuando Google Play la aprueba: de inmediato si la app está en ejecución, o cuando la app vuelve al primer plano en caso contrario. Para conceder acceso en ese momento, [escucha las actualizaciones del perfil](flutter-listen-subscription-changes).
+
 :::warning
 **Nota:** si todavía usas una versión de StoreKit de Apple inferior a la v2.0 y una versión del SDK de Adapty inferior a la v2.9.0, debes proporcionar el [secreto compartido de Apple App Store](app-store-connection-configuration#step-5-enter-app-store-shared-secret) en su lugar. Apple ha deprecado este método.
 :::
@@ -144,7 +146,9 @@ Las compras in-app promocionadas son compatibles a partir de la versión 4.1 del
 
 Cuando un usuario inicia una compra desde la página de tu producto en la App Store y la transacción llega a tu app, el SDK la completa automáticamente: la pantalla del sistema de compras de Apple aparece de inmediato y Adapty procesa la transacción como cualquier otra compra. No necesitas escribir ningún código para esto.
 
-Si el producto promocionado lleva una oferta de suscripción, el SDK la aplica automáticamente en el momento de la compra. La oferta se obtiene del intent de compra de App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+Si el producto promocionado incluye una oferta de suscripción, el SDK la aplica automáticamente en el momento de la compra. La oferta se lee desde el intent de compra de App Store, que la expone en iOS 18.0 y versiones posteriores. En iOS 16.4–17.x, la compra se realiza al precio base.
+
+Una compra promocionada siempre utiliza el plan de facturación inmediata, incluso si el producto también ofrece un [plan de compromiso de 12 meses](app-store-12-month-commitment).
 
 Para gestionar tú mismo las compras promocionadas —por ejemplo, para mostrar primero tu propia pantalla— suscríbete a `didReceivePromotedPurchaseStream` y pasa el producto a `makePromotedPurchase`:
 
@@ -162,10 +166,10 @@ Adapty().didReceivePromotedPurchaseStream.listen((product) async {
 ```
 
 :::warning
-Mientras haya algo suscrito al stream, el SDK deja de completar las compras promocionadas por ti. Si tu handler nunca llama a `makePromotedPurchase`, la compra nunca se realiza: el App Store entrega el producto a tu app y espera. El SDK tampoco interviene si tu handler lanza un error.
+Mientras haya algo suscrito al stream, el SDK deja de completar las compras promocionadas por ti. Si tu handler nunca llama a `makePromotedPurchase`, la compra nunca se realiza: el App Store entrega el producto a tu app y espera. El SDK tampoco interviene si tu handler lanza una excepción.
 :::
 
-`makePromotedPurchase` no recibe parámetros de compra, porque un producto promocionado proviene del App Store en lugar de un paywall y no lleva contexto de paywall. Devuelve el mismo `AdaptyPurchaseResult` que `makePurchase`.
+`makePromotedPurchase` no recibe parámetros de compra, porque el producto promocionado proviene del App Store y no de un paywall, por lo que no lleva contexto de paywall. Devuelve el mismo `AdaptyPurchaseResult` que `makePurchase`. Pasa el producto del stream tal cual: lleva la intención de compra del App Store que completa la transacción.
 
 El responsable de completar la compra se decide para cada evento, por lo que un stream al que escuchas solo mientras una pantalla está montada devuelve las compras promocionadas al SDK una vez que esa pantalla desaparece. Puedes suscribirte antes de `activate`, que es la forma de capturar una compra que la store entrega al arrancar.
 

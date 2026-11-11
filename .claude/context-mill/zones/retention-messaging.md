@@ -61,6 +61,13 @@ there is no Google Play equivalent.
   image either way. It is fixed at creation: in edit mode the radios are disabled with a hint to create a new
   message. No image at creation → the default position is stored, so an image added later in edit shows the
   title below. Promo messages carry no image, so no choice.
+- **Bullet points** (dashboard code and release QA notes, 2026-11-09): Default messages only, with or without an
+  image; up to 5; each needs an icon (PNG, exactly 1024 × 1024 px, no transparency, 10 MB cap), text up to 66
+  characters, optional alt text up to 150 (empty → a default is sent). Icons are shared across locales and only
+  the text is translated; alt text is not localized. A locale with any text must fill every bullet point, and an
+  over-long or empty bullet cell blocks **Submit To Review**. Bullet points can't be reordered. Not yet shipped:
+  the **Rejected** state for an icon Apple turns down, and removing replaced icons from Apple — don't document
+  either until they land. Documented in `retention-messaging-create` → *Content* and *Localization*.
 - **Alt text is not localized** (dashboard code, 2026-10-28): one alt text is sent for the message, not per locale.
 - **Locales with an empty title and body are dropped on submit**, silently (dashboard code, 2026-10-28).
 - **Reactivation does not re-enter Apple's review.** The confirm-modal copy is explicit: deactivating
@@ -103,7 +110,7 @@ Delta from `scope.md` only.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| retention-messaging | entry | — | 1 | tutorial |
+| retention-messaging | entry | — | 2 | tutorial |
 | retention-messaging-analytics | — | — | 6 | tutorial |
 | retention-messaging-create | — | — | 9 | tutorial |
 | retention-messaging-setup | — | — | 7 | tutorial |

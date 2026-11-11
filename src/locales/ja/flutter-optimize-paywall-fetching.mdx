@@ -12,13 +12,82 @@ Flutter でフローやペイウォールを確実に取得するには、次の
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| これをすること | これをしないこと | 理由 |
+| これをやる | これをやらない | 理由 |
 |---|---|---|
-| 表示しようとしているプレースメントをフェッチする。 | 起動時にすべてのプレースメントを一括でプリフェッチする。 | 一括プリフェッチはメインスレッドをブロックし、バースト中にブラックスクリーンが発生する。 |
-| アトリビューションが解決する機会を得た後に `getFlow` をフェッチする — 例えば、`activate` の 1〜2 秒後、または `didUpdateProfileStream` が発火した後。 | `runApp` の前に `main()` で `getFlow` を呼び出す。 | アトリビューションがまだ反映されていない。フローはデフォルトのオーディエンスに対して解決され、セグメントや ASA パーソナライゼーションが暗黙的にスキップされる。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getFlow` を無制限に待機する。 | タイムアウトがないと、通信状態が悪いユーザーはネットワークが解決するまで — またはアプリを閉じるまで — 空白の画面を見続けることになる。 |
+| 表示しようとしているプレースメントをフェッチするか、[`preloadFlows`](#preload-placements) でキャッシュをウォームアップする（SDK 4.3.0+）。 | 起動時に独自の並行 `getFlow` 呼び出しを広げる。 | 手作りのプリフェッチバーストはメインスレッドをブロックし、ブラックスクリーンを引き起こす。`preloadFlows` はこのために設計されており、バッチをネイティブ SDK に一度の呼び出しで送信する。 |
+| アトリビューションが解決される機会を得た後に `getFlow` をフェッチする — たとえば、`activate` から 1〜2 秒後、または `didUpdateProfileStream` が発火した後。 | `runApp` の前に `main()` で `getFlow` を呼び出す。 | アトリビューションがまだ届いていない。フローはデフォルトのオーディエンスに対して解決され、セグメントや ASA パーソナライゼーションが暗黙的にバイパスされる。 |
+| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `getFlow` を無制限に待つ。 | タイムアウトがないと、接続状況が悪いユーザーはネットワークが解決されるまで空白画面を見続けるか、アプリを閉じてしまう。 |
 
 カスタムペイウォールとプロダクトの取得方法については [カスタムペイウォールとプロダクトの取得](fetch-paywalls-and-products-flutter) を、適切なプレースメントの選び方については [プレースメント](placements) を参照してください。
+
+## プレースメントをプリロードする \{#preload-placements\}
+
+:::info
+`preloadFlows` および `preloadFlowsForDefaultAudience` は SDK バージョン 4.3.0 以降で利用できます。
+:::
+
+`preloadFlows` はフローの JSON を事前にキャッシュします。その後は通常通り使用できます：フローの取得には `getFlow`、ビューの作成には `createFlowView` を使用します。
+
+`fetchPolicy` は、後続の `getFlow` がどのレイヤーを最初に読み込むかを制御するものであり、キャッシュにアクセスできるかどうかを制御するものではありません：
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` はキャッシュ済みのコピーを最初に読み込み、キャッシュがない場合のみネットワークにアクセスします。`AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` は、コピーが `maxAge` より新しい間は同じ動作をします。
+- デフォルトの `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` は最初にネットワークにアクセスし、リクエストが失敗またはタイムアウトした場合にキャッシュ済みのコピーにフォールバックします。
+
+プリロードはどのポリシーでも効果がありますが、動作は異なります。キャッシュファーストポリシーではリクエスト自体がなくなり、デフォルトポリシーではリクエストは残りつつウォームコピーがフォールバックとして使われます。[テストデバイス](test-devices)では、`getFlow` はどのポリシーでもキャッシュをスキップし、ネットワークリクエストが失敗した場合のみプリロード済みコピーを使用します。
+
+セッションで必要になるプレースメントがわかっているが、まだ表示したくない場合に使用してください。たとえば、`activate` と `identify` が完了した直後に、ユーザーがまだタップしていないボタンの背後にあるフローを準備しておく場合などです。
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**パラメーター:**
+
+- `placementIds`（必須）：プリロードするプレースメント。
+- `loadTimeout`（任意）：オーディエンスターゲティングされたフローのプリロード待機時間。デフォルトは5秒で、1秒未満の値は1秒に引き上げられます。タイムアウトに達した場合、SDKはデフォルトオーディエンスのフローを代わりに読み込むことがあります。
+
+**知っておくべき動作：**
+
+- すべてのプレースメントの試行が完了してから、失敗したすべてのプレースメントをまとめた1つの `AdaptyError` でコールが失敗します。1つのプレースメントの失敗が他のプレースメントの処理を停止させることはなく、ロードに成功したプレースメントはキャッシュに残ります。
+- プリロードは常にネットワークにアクセスします。独自の `fetchPolicy` はありません。
+- プリロードはキャッシュを温めるだけです。コンテンツを返すわけではないため、表示するには引き続き `getFlow` を呼び出す必要があります。
+
+### プリロードの対象範囲 \{#what-a-preload-covers\}
+
+フローは段階的に画面に表示されます。プリロードは最初の段階をカバーします。これは `getFlow` が行う処理と同じです。
+
+| レイヤー | 取得元 | プリロードによるウォーミング |
+|---|---|---|
+| フロー JSON — 選択されたバリアント、プロダクト ID、リモートコンフィグ | `getFlow` | あり |
+| UI レイアウト — 画面の構造、スタイリング、テキスト | `createFlowView` | なし |
+| 画像（動画要素の代替となる静止フレームを含む） | `createFlowView`（バックグラウンド） | なし |
+| プロダクト | `createFlowView` または `getPaywallProducts` | なし |
+| 動画ファイル | 画面レンダリング時にシステムプレーヤーが取得 | SDK ではキャッシュされない |
+
+そのため、特定のレイアウトに対して最初に `createFlowView` を呼び出す際は、プリロード後であっても1回のラウンドトリップが発生します。その後、ネイティブ SDK はそのレイアウトをディスクキャッシュに保持します。このキャッシュはアプリの再起動後も保持されるため、コストが発生するのはすべてのリクエストではなく、最初のリクエスト時のみとなります。
+
+### オーディエンスのセグメンテーションをスキップする \{#skip-audience-segmentation\}
+
+オーディエンスのセグメンテーションを一切待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。タイムアウトは不要です：
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+その後 `getFlowForDefaultAudience` を呼び出すと、`getFlow` が `preloadFlows` のコピーを読み取るのと同じ方法で、キャッシュされたコピーを読み取ります。
 
 ## アプリバンドルから最初の画面のメディアを表示する \{#show-first-screen-media-from-the-app-bundle\}
 

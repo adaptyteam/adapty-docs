@@ -1,0 +1,122 @@
+---
+title: "Flutter SDK'da mağaza mesajlarını kontrol edin"
+description: "Flutter uygulamanızın, fiyat artışları, faturalama sorunları ve reddedilen ödemeler hakkındaki App Store ve Google Play mesajlarını ne zaman göstereceğini seçin; böylece bir flow veya onboarding akışını bölmezler."
+metadataTitle: "Mağaza mesajlarını kontrol edin | Flutter SDK | Adapty Dokümanları"
+---
+
+App Store ve Google Play, zaman zaman kullanıcılarınıza abonelikleri hakkında bir mesaj göstermesi gerekir:
+
+- **App Store**: Fiyat artışına onay isteği, faturalandırma sorunu bildirimi veya geri kazanma teklifi. Varsayılan olarak, StoreKit bu mesajları uygulamanız açıkken kendi başına gösterir.
+- **Google Play**: Bir abonelik ödemesinin reddedildiğine ve ödeme yönteminin güncellenmesi gerektiğine dair bildirim. Varsayılan olarak, Adapty SDK bu mesajları `activate` sonrasında uygulamanızın bir `Activity`'si her başladığında talep eder; buna uygulamanın ön plana geçmesi, bir flow veya onboarding'in açılıp kapanması da dahildir.
+
+Ya da bir mesaj, bir flow, onboarding veya checkout'un üzerinde görünebilir. Mesajın ne zaman gösterileceğini kendiniz seçmek için Adapty SDK'yı manuel mesaj yönetimine geçirin ve `showStoreMessages` fonksiyonunu kullanıcıyı rahatsız etmeyecek bir anda çağırın.
+
+:::warning
+Manuel modda mağazalar mesajları kendi başlarına göstermez. Uygulamanız hiçbir zaman `showStoreMessages` çağırmazsa, kullanıcılar fiyat artışı onay taleplerini, fatura sorunlarına ilişkin bildirimleri veya ödeme reddedildi bildirimlerini hiç göremez.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty Flutter SDK 4.3.0 veya üzeri**: Daha eski sürümlerde store mesajları API'si bulunmaz.
+- **iOS 16 veya üzeri** App Store mesajları için: StoreKit, daha eski sürümlerdeki uygulamalara mesaj iletmez. iOS 15'te `getPendingStoreMessageTypes` ve `showStoreMessages`, `decodingFailed` hatasıyla başarısız olur; bu nedenle uygulamanız iOS 15'i destekliyorsa bu fonksiyonları yalnızca iOS 16 ve üzerinde çağırın.
+
+## Manuel yönetimi etkinleştirme \{#enable-manual-handling\}
+
+Mağaza mesajlarının yalnızca uygulamanız `showStoreMessages` çağırdığında gösterilmesini sağlamak için, [SDK'yı etkinleştirirken](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk) `withStoreMessagesHandling` fonksiyonunu `AdaptyStoreMessagesHandling.manual` parametresiyle çağırın:
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual), // auto is the default
+);
+```
+
+iOS'ta SDK, App Store mesajlarını mevcut uygulama oturumu için bekleyen bir listeye ekler. Android'de ise SDK, Google Play mesajlarını kendi başına istemeyi durdurur. Varsayılan `auto` değeriyle SDK, App Store mesajlarını yakalamaz; bu nedenle iOS'ta `getPendingStoreMessageTypes` ve `showStoreMessages`'ın döndüreceği veya göstereceği hiçbir şey olmaz.
+
+## Bekleyen mesaj türlerini alma \{#get-pending-message-types\}
+
+iOS'ta App Store mesajlarının bekleyip beklemediğini öğrenmek için `getPendingStoreMessageTypes` çağrısını kullanın. Bu çağrı, bekleyen mesajları göstermeden veya kaldırmadan yalnızca türlerini döndürür:
+
+```dart showLineNumbers
+final pendingTypes = await Adapty().getPendingStoreMessageTypes();
+
+if (pendingTypes == null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.contains(AdaptyStoreMessageType.billingIssue)) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+Android'de bu metot `null` döndürür: Google Play bekleyen mesajları raporlamaz; bir mesajın uygulanıp uygulanmayacağına yalnızca uygulamanız talep ettiğinde karar verir. iOS'ta boş bir liste, bekleyen mesaj olmadığı anlamına gelir. `activate` tamamlanana kadar liste her zaman boştur.
+
+Her App Store mesajının şu türlerinden biri bulunur:
+
+| Tür | Mesaj |
+|:-----|:--------|
+| `AdaptyStoreMessageType.generic` | Genel bir App Store mesajı. |
+| `AdaptyStoreMessageType.priceIncreaseConsent` | Abonelik fiyat artışını onaylama isteği. |
+| `AdaptyStoreMessageType.billingIssue` | Abonelik faturalama sorununa ilişkin bildirim. iOS 16.4 ve sonrasında kullanılabilir. |
+| `AdaptyStoreMessageType.winBackOffer` | Uygun bir [geri kazanma teklifi](app-store-offers#win-back-offers). iOS 18 ve sonrasında kullanılabilir. |
+
+SDK'nın tanımadığı mesaj türlerinin `value` değeri `storekit_<number>` şeklindedir. Yalnızca bu dört türün var olduğunu varsaymak yerine türleri `==` ile karşılaştırın.
+
+## Mesajları Göster \{#show-messages\}
+
+Uygulamanız, bir mağaza mesajının kullanıcıyı kesmeyeceği bir noktaya ulaştığında — örneğin kullanıcı bir flow'u kapattıktan veya onboarding'i tamamladıktan sonra — `showStoreMessages` metodunu çağırın:
+
+```dart showLineNumbers
+try {
+  await Adapty().showStoreMessages();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+- **iOS**: SDK, bekleyen mesajları birbiri ardına gösterir. StoreKit bir mesajı gösterdikten sonra SDK, onu bekleyen listesinden çıkarır. StoreKit bir mesajı gösteremezse SDK, mesajı bir sonraki çağrı için saklar ve diğer mesajlarla devam eder.
+- **Android**: SDK, mevcut `Activity` için Google Play mesajlarını ister. Google Play bir mesajın kullanıcıya uygun olup olmadığına kendisi karar verir; dolayısıyla bir istek her zaman mesaj göstermez. Çağrı, Google Play'i beklemeden hemen döner ve hiçbir zaman başarısız olmaz. Kullanıcı mesaj üzerinden ödeme yöntemini düzeltirse SDK, kullanıcının satın almalarını Adapty ile senkronize eder ve [profil dinleyiciniz](flutter-listen-subscription-changes) güncellenmiş access level'ı alır.
+
+### Android'de Başlangıçta Mesajları Gösterme \{#show-messages-at-launch-on-android\}
+
+Varsayılan `auto` modunda, `activate` çağrısından önce başlatılan bir `Activity` istek tetiklemez; bu yüzden Google Play mesajları başlangıçta görünmez. Başlangıçta göstermek için yalnızca Android'de `activate` sonrasında bir kez `showStoreMessages` çağırın:
+
+```dart showLineNumbers title="main.dart"
+
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
+);
+
+if (Platform.isAndroid) {
+  await Adapty().showStoreMessages();
+}
+```
+
+iOS'ta bu çağrıyı yapmayın: `auto` modunda gösterecek hiçbir şey yoktur ve iOS 15'te başarısız olur.
+
+### Yalnızca belirli mesaj türlerini göster \{#show-only-some-message-types\}
+
+Bekleyen App Store mesajlarının yalnızca bir kısmını göstermek için türleri `iosFilter` ile belirtin. Diğer mesajlar beklemede kalmaya devam eder:
+
+```dart showLineNumbers
+await Adapty().showStoreMessages(
+  iosFilter: [
+    AdaptyStoreMessageType.billingIssue,
+    AdaptyStoreMessageType.priceIncreaseConsent,
+  ],
+);
+```
+
+`iosFilter` belirtilmezse SDK, tanımadığı türler dahil tüm bekleyen mesajları gösterir. Boş bir liste hiçbirini göstermez. Android, `iosFilter` parametresini dikkate almaz ve tüm Google Play mesajlarını talep eder.
+
+### Hatalar
+
+iOS'ta `showStoreMessages`, aşağıdaki kodlardan biriyle bir [`AdaptyError`](error-handling-on-flutter-react-native-unity) döndürerek başarısız olur:
+
+| Kod | Ad | Neden |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | Cihaz iOS 15 veya daha eski bir sürüm çalıştırıyor. Bu metodu yalnızca iOS 16 ve sonrasında çağırın. |
+| 3201 | `operationInProgress` | Başka bir `showStoreMessages` çağrısı hâlâ mesajları gösteriyor. Bitmesini bekleyin, ardından tekrar deneyin. |
+| 3202 | `resolverFailure` | SDK, mesajları göstermek için ön planda aktif bir pencere sahnesi bulamadı. Uygulamanız ön plandayken metodu tekrar çağırın. |

@@ -25,6 +25,12 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 - **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
+- **Edit action window** (opens by itself when you add an action, or when you click one; dashboard code,
+  2026-11-10). For **Show element** / **Hide element**: the **Elements** picker, then **Animation**
+  (**None**, **Fade in** / **Fade out**, **Rise**, **Pop**) with **Easing**, **Duration**, **Distance**
+  (Rise), **Start scale** (Pop), a looping preview, and **Delay** (0–5000 ms, shown even with **None**).
+  For **Navigate to Screen**, **Delay** shows only when **Animation** isn't **None**. A screen itself has no
+  triggers: with nothing selected, the right panel is **Screen settings**, which has no Interactions tab.
 - **Adapty mobile app** (iOS/Android): receiving end of **Test on device** — not documented here beyond
   "download it and scan the QR code"; the app itself has no dedicated flow-logic article.
 - **Placements page**: where a published flow is attached to go live — placements themselves are a
@@ -87,6 +93,13 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   config, and reading two imports that way on 2026-09-08 is what the fidelity section of
   `import-from-figma` now rests on. Prefer that over task-tracker descriptions for any behaviour claim.
 
+- **What an action does on a device is decided when the flow is compiled for the SDK, not by the editor**
+  (builder code, 2026-11-10; closed-source). The canvas runs no actions at all: no **On Screen Appear**,
+  no delays, no Show/Hide animation. The **Edit action** window's loop previews a Show/Hide animation
+  without its delay, and a **Navigate to Screen** transition with its delay. **Test on device** plays
+  everything. Check any claim about delays, animation, auto-advance, or what cancels it against the
+  compiled behavior or a device, never against the canvas.
+
 ## What we document, what we don't
 
 **Document:** building a flow's behavior in the no-code editor — screens' navigation wiring, triggers
@@ -143,6 +156,8 @@ or developer can see and click.
 | flow-common-issues | reference | marketer, dev | 14 | tutorial |
 | flow-funnel | — | marketer, dev | 13 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
+| flow-screen-transitions | — | marketer, dev | 3 | tutorial |
+| flow-show-hide-animations | — | marketer, dev | 6 | tutorial |
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
@@ -278,6 +293,33 @@ or developer can see and click.
   pass — mostly outside flow-logic, but a new revenue/proceeds/webhook field belongs in `flow-metrics`
   too whenever it lands in that cluster.
 
+- **`flow-show-hide-animations` owns how to use Show element and Hide element (2026-11-10).** It covers
+  the default (every element appears when the screen opens), which trigger fits which moment and where it
+  goes, the starting **Visibility** of each target, the **Delay** and **Animation** settings, and three
+  cases where both settings do nothing: conditional visibility, reusable components, bottom sheets.
+  `onboarding-actions#showhide-elements` stays a short reference entry with a link, as **Navigate to
+  screen** does for `flow-screen-transitions`. A change to the action's settings or exceptions ripples
+  into `onboarding-element-visibility` (a condition overrides Show/Hide when its variable changes;
+  conditional elements neither animate nor wait), `show-plans-bottom-sheet` and `flow-design`'s
+  `builder-containers` (a sheet ignores **Animation** and **Delay**), `flow-design`'s `builder-styling`
+  (**Show** / **Hide** are starting states), `convert-paywall-to-flow` (a converted close-button delay is
+  a hidden button with its own **On Screen Appear** **Show element**), `builder-loaders-and-progress-bars`
+  (a loader offers only **On Screen Appear**), and `flow-design`'s `flow-timer` (the close-button recipe).
+- **Auto-advance has one canon: `flow-screen-transitions#move-users-to-another-screen-automatically`
+  (2026-11-10).** Five pointers link to that anchor: `onboarding-actions` (Navigate to screen),
+  `onboarding-navigation-branching`, `builder-navigation-actions`, `builder-loaders-and-progress-bars`,
+  and the note in `flow-show-hide-animations`. Renaming the heading means retargeting all five
+  (`rg -n move-users-to-another-screen-automatically src/content/docs`).
+- **The 5-second **Delay** limit is stated in four articles, and one sentence is shared word for word.**
+  `flow-screen-transitions`, `flow-show-hide-animations`, `flow-timer` (the Countdown route takes over
+  beyond 5 seconds), and `builder-loaders-and-progress-bars`. The first two carry the identical "Use whole
+  seconds: on iOS, a delay rounds up to a whole second." Keep that sentence identical in both.
+- **The **On tap** "Supported on" cell in `onboarding-actions` was completed on 2026-11-11** from the
+  element types that offer the trigger in the builder (dashboard code, 2026-11-10): buttons and other
+  containers, quiz options, toggles, countdowns, images, videos, icons, text, carousels, bottom sheets,
+  tabs, products. A new tappable element type needs an entry there and a check of the trigger table in
+  `flow-show-hide-animations`.
+
 ## Boundaries
 
 flow-logic is behaviour and lifecycle; `flow-design` is appearance. The distinguishing question: **is
@@ -330,6 +372,9 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
 | "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
+| "show the close button after 3 seconds", "Show after delay is gone", "delayed close button", "make an element appear later", "fade in a headline", "animate a button" | `flow-show-hide-animations`. The usual trap is that a **Show element** action on an element that is already visible does nothing, with no animation: the target must start with **Visibility** set to **Hide**. Users can't tap a hidden element, so its own **On Tap** can never reveal it, but its own **On Screen Appear** can (that is how a converted close button is built). **Delay** tops out at 5000 ms; longer waits go through a visible, transparent Countdown (`flow-design`'s `flow-timer`). There is no toggle action: **Show element** only shows, **Hide element** only hides. |
+| "the animation doesn't play", "the delay is ignored", "it shows up instantly" | `flow-show-hide-animations#when-animation-and-delay-dont-apply`: a target with conditional visibility, anything inside a reusable component, or a bottom sheet changes at once, and publishing shows no warning. Rule out the canvas first: it plays nothing, so only **Test on device** shows the result. |
+| "auto-advance", "splash screen should move on by itself", "go to the next screen after the loader", "timer to the next screen" | `flow-screen-transitions#move-users-to-another-screen-automatically`: **On Screen Appear** + **Navigate to Screen** + **Delay**. Traps: **Delay** shows only when **Animation** isn't **None** (an animated type with **Duration** 0 switches at once after the delay); opening an alert, a bottom sheet, a date picker, or a web page, or starting a purchase or a restore, cancels the pending move; coming back to the screen starts the delay again. |
 
 ## Gaps and misses
 
@@ -385,6 +430,28 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   (reads as a defect; re-check before writing it up). Not verified from code: the "about once an hour"
   refresh of Subscription state, which is the backend author's statement; and the minimum SDK version that
   sends flow screen views, which the article avoids by saying only that the SDK reports them.
+
+- **Three published recipe sentences say hidden elements can't be edited** (`builder-containers.mdx:139`,
+  `show-offer-on-close.mdx:33`, `show-plans-bottom-sheet.mdx:45`; found with
+  `rg -n -i "can't be edited|can't edit" src/content/docs/guides/flow-builder/` on 2026-11-11). Dashboard
+  code (2026-11-10) says only the canvas hides them: the **Layers** panel still selects a hidden element,
+  and the right panel's **Design** and **Interactions** tabs stay enabled for it. "Build it visible first"
+  is still good advice; the stated reason is wrong. `flow-show-hide-animations` and
+  `convert-paywall-to-flow` already rely on the **Layers** route.
+- **Not verified on a device (2026-11-10).** Auto-advance with an animated type at **Duration** 0 rests on
+  compiled behavior only. The Countdown route in `flow-timer` (visible, transparent, digits kept) comes
+  from open docs PR #717, whose own text flags on-device firing as an assumption.
+- **Behavior deliberately left out of `flow-show-hide-animations`** (builder code, 2026-11-10): a delayed
+  Show under **On Screen Appear** keeps its first deadline for the flow run (leave early and come back:
+  it waits the rest; later visits: shown at once, no animation); a newer Show/Hide of the same element
+  replaces a pending one; reversing a half-done animation jumps to its start value; **Duration** 0 is
+  instant. Add any of these only when tickets show readers hit them.
+- **Dropped before release, so don't document them** (builder code, 2026-11-10): auto-advance once per flow
+  run (it re-arms on every appear), and the **Direction** and **Stagger** controls of the animation design.
+  To stagger, the article uses one action per element with growing **Delay**.
+- **Four screenshots show the Edit action window before the animation settings shipped:**
+  `plans-bottom-sheet-show-action.webp`, `close-offer-dismiss.webp`, `close-offer-conditional-2.webp`,
+  `flow-builder/on-tap-show.webp`. Not replaced as of 2026-11-11.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
