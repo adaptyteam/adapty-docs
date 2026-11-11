@@ -101,8 +101,11 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   Stripe's `stripe agent setup` (2026-10-12). The command is `adapty-cli`'s
   `src/cli/commands/skills/install/`, released in v0.9.3; the per-agent commands it runs live in its
   `lib/agents.ts`, not in this repo. `src/data/agent-tools.json` holds the command once, for
-  `InstallToolsModal.astro` and `scripts/llm-skill-note.mjs`; the `AdaptySdkIntegrationSkill.mdx`
-  reusable and the four standalone skill articles restate it in prose. The Apple Ads toolset in the
+  `InstallToolsModal.astro` and `scripts/llm-skill-note.mjs`. In prose it lives in three places
+  (2026-11-10): the `AdaptySkillsInstall.mdx` reusable, which the seven standalone skill articles
+  render (flow-generator, flow-audit, migrate-placements, growth-advisor, ab-tests, attribution,
+  mail); the `AdaptySdkIntegrationSkill.mdx` reusable; and the coding-agent tab of
+  `manage-adapty-with-ai`, which can't render the reusable because the reusable links back to it. The Apple Ads toolset in the
   same JSON is a different plugin (`adaptyteam/apple-ads-cli`) and still lists per-agent commands.
 
 ## What we document, what we don't
@@ -125,12 +128,14 @@ on one side, a non-deterministic agent on the other.
   plugin marketplace), in one article, for one tool, with the product team supplying the screenshots.
   "Cursor changed its settings page" still doesn't create doc work anywhere else in the zone — and when
   Anthropic changes Claude's UI, this one article is the whole blast radius (see Ripple rules).
-  **A second sanctioned exception (product decision, 2026-10-30): `adapty-mcp`** gives per-client
-  connection steps (the Claude app's custom connector, the Claude Code and Codex commands, Codex's
-  `config.toml`) and walks the Claude app's plugin settings with two screenshots, because a remote MCP
-  server has no single install command to hand over. Same limits as the first: Anthropic-owned labels
-  are reader-reported, and every other client gets one generic line, not a walkthrough. So Claude's UI
-  now has two articles in its blast radius, not one.
+  **A second sanctioned exception (product decision, 2026-10-30, split 2026-11-10):** claude.ai has
+  no install command to hand over, so two articles walk its settings. `manage-adapty-with-ai` walks the
+  plugin settings (**Settings → Plugins**, **Capabilities**) with two screenshots, in its claude.ai
+  tab; `adapty-mcp` gives per-client connection steps (claude.ai's custom connector, the Claude Code
+  and Codex commands, Codex's `config.toml`) and no screenshots. Same limits as the first:
+  Anthropic-owned labels are reader-reported, and every other client gets one generic line, not a
+  walkthrough. So Claude's UI has three articles in its blast radius: `developer-cli-cowork`,
+  `manage-adapty-with-ai`, `adapty-mcp`.
 - **Duplication in the agent-facing guides is deliberate and bounded.** `server-side-api-with-ai` and
   `handle-webhooks-with-ai` each open with a `:::tip` telling the reader to use **Copy for LLM** on the
   whole page, and then carry a runnable code block, the field gotchas, and the limits inline — content
@@ -173,7 +178,7 @@ on one side, a non-deterministic agent on the other.
 | adapty-cursor-kmp | — | dev | 15 | kmp |
 | adapty-cursor-react-native | — | dev | 15 | react-native |
 | adapty-cursor-unity | — | dev | 15 | unity |
-| adapty-mcp | how-to | dev | 11 | tutorial |
+| adapty-mcp | how-to | dev | 8 | tutorial |
 | adapty-sdk-integration-skill | — | dev | 0 | ios |
 | adapty-sdk-integration-skill-android | — | dev | 0 | android |
 | adapty-sdk-integration-skill-capacitor | — | dev | 0 | capacitor |
@@ -202,7 +207,7 @@ on one side, a non-deterministic agent on the other.
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 13 | tutorial |
+| manage-adapty-with-ai | entry | dev | 15 | tutorial |
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
 <!-- /mill:auto -->
@@ -237,10 +242,12 @@ on one side, a non-deterministic agent on the other.
   - **A version pin named in an `adapty-cursor*` guide has no automation behind it at all.**
     `lint-symbols.mjs` checks symbols, never versions; see `sources.md` under `sdk-integration-skill`.
 
-- **`adapty-mcp` restates two things owned elsewhere, and both move its "Add the Adapty skills"
-  section.** Each skill's choice between the MCP server and the CLI is the skills' `## CLI or MCP`
-  section; the Claude app's plugin settings and their two screenshots are Anthropic-owned, the same
-  class as `developer-cli-cowork`. The homepage's "Build with AI" panel links the article as its first
+- **`adapty-mcp` restates one thing owned elsewhere.** The "Which skills use the MCP server and
+  which use the CLI" details block under "Choose the MCP server or the CLI" restates each skill's
+  `## CLI or MCP` section in `adaptyteam/adapty-skills`; when a skill changes its way, that block
+  moves. The article's old "Add the Adapty skills" section is gone (2026-11-10): plugin install lives
+  in `manage-adapty-with-ai` only, and `adapty-mcp` opens with an `:::important` that sends the
+  reader there first. The homepage's "Build with AI" panel links the article as its first
   card, with strings hand-written for eight locales in `src/components/Homepage.tsx`, so a rename of
   the article or of what the server does reaches all eight.
 
@@ -260,11 +267,11 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 | How a ticket says it | Where it actually lives |
 |---|---|
-| "vibe code the integration", "have Cursor/Claude add Adapty to my app", "AI pair-programming for IAP" | Two competing families, and `manage-adapty-with-ai` is the router between them: `adapty-sdk-integration-skill*` = one command, the agent drives the whole thing; `adapty-cursor*` = staged walkthrough where the developer feeds docs and reviews each step. Pick by how much control the reader wants, not by tool. |
+| "vibe code the integration", "have Cursor/Claude add Adapty to my app", "AI pair-programming for IAP" | `adapty-sdk-integration-skill*` — the Adapty plugin's integration skill; one command, the agent drives the whole thing. Since 2026-11-10 `manage-adapty-with-ai` routes only to the skill: the `adapty-cursor*` staged walkthroughs (developer feeds docs and reviews each step) are still live and in the platform sidebars, but no longer linked from the landing page. Send a reader there only when they ask to drive each stage themselves. |
 | "which skill do I install", "the skill didn't set up my app/products" | Three *different* skills, easily conflated. `adapty-integration` (own repo, marketplace/`gh skill`/`npx skills` install) does the full app-code integration. The `adapty-cli` skill only drives dashboard entities through the CLI — it's linked from `developer-cli`, `developer-cli-quickstart`, `developer-cli-authentication`, and from the dashboard-setup step of every `adapty-cursor*`. The third, adapty-cli-setup (ships in the apple-ads-cli plugin), only installs and authenticates the CLI in agent sessions — `developer-cli-cowork` is the article that has readers install it. |
 | "the skill stalled", "the agent went off the rails halfway" | The `adapty-sdk-integration-skill*` pages. The skill is beta and the documented fallback is the matching `adapty-cursor*` guide — that redirect is the answer, not a bug report. |
 | "which key does my agent need", "agent got 401", "where's the API key" | The single commonest confusion in this zone, and it splits three ways. SDK integration (`adapty-cursor*`, `adapty-sdk-integration-skill*`) = **public SDK key**, passed to `activate`. The backend guide (`server-side-api-with-ai`) = **secret app-specific key** on `api.adapty.io`. The CLI (`developer-cli-authentication`) — and so `export-analytics-with-ai`, which drives it since 2026-10-19 — uses **no key at all** — browser device-code login. **Refined 2026-08-11 against `adapty-cli` `origin/main`:** the docs describe only the device-code path, but the CLI checks `ADAPTY_TOKEN` in the environment *before* it reads the config file, and the config location is oclif's `configDir` (`~/.config/adapty/config.json` by default on darwin, overridable via `XDG_CONFIG_HOME`), not a fixed path. So "no key at all" is true of the documented flow and false of the tool — a reader debugging a 401 in CI needs the env-var branch, which no article mentions. |
-| "MCP server for Adapty", "connect Adapty to my agent via MCP", "connect Claude to Adapty" | `adapty-mcp`. **Corrected 2026-10-30:** this row used to say there is no first-party Adapty MCP server. There is one, at `https://mcp.adapty.io/mcp`: OAuth sign-in in the browser, no API key (live server, 2026-10-30: `/.well-known/oauth-protected-resource/mcp` names `auth.adapty.io`; that server's metadata has no `registration_endpoint` and sets `client_id_metadata_document_supported`, so clients that only do dynamic registration can't sign in). `manage-adapty-with-ai` routes to it. Context7 is a different, third-party MCP server that serves docs code snippets only. Adapty Mail runs its own server (`mail-mcp`). |
+| "MCP server for Adapty", "connect Adapty to my agent via MCP", "connect Claude to Adapty" | `adapty-mcp`. **Corrected 2026-10-30:** this row used to say there is no first-party Adapty MCP server. There is one, at `https://mcp.adapty.io/mcp`: OAuth sign-in in the browser, no API key (live server, 2026-10-30: `/.well-known/oauth-protected-resource/mcp` names `auth.adapty.io`; that server's metadata has no `registration_endpoint` and sets `client_id_metadata_document_supported`, so clients that only do dynamic registration can't sign in). `manage-adapty-with-ai` presents it as one of the two connections the plugin uses, not as a product of its own. Context7 is a different, third-party MCP server that serves docs code snippets only. Adapty Mail runs its own server (`mail-mcp`). |
 | "give my agent the docs", "llms.txt", "Copy for LLM", "context window too small" | `manage-adapty-with-ai` for the overview, `adapty-cursor*` ("Plain text doc index files") for the detail: per-platform subsets (`ios-llms.txt`) exist specifically to save tokens vs `llms-full.txt`, and ChatGPT needs `llms.txt` downloaded and uploaded as a file rather than linked. |
 | "ChatGPT/claude.ai can't fetch my numbers", "the model made the metrics up" | `export-analytics-with-ai`. **Corrected 2026-10-30:** a chat product can read the numbers once the Adapty MCP server is connected (`adapty-mcp`; the server has `analytics_*` tools). The growth-advisor skill still prefers the CLI, because its audit reads run through the CLI; the article now says so instead of "chat tools can't reach your account". |
 | "what should I test next", "audit my app", "why did revenue drop", "ask AI about my revenue" | `export-analytics-with-ai`, which since 2026-10-22 documents the `growth-advisor` skill: it reads `adapty analytics` with the CLI logged in and returns hypotheses grouped by placement. **Corrected 2026-11-10** (adapty-skills `plugin/skills/growth-advisor` at b19708b): it now does pricing — reads `product-prices list`, places prices against the State of In-App Subscriptions price index, suggests price hypotheses (raises only in Tier-1) and runs them on a product copy; it also reads past A/B tests and their results (`ab-tests metrics`), grades conversions, renewals and refunds against market grids, reads a flow's funnel, works over MCP, and answers without an Adapty account from a store link, code or screens. The article covers all of these; `adapty product-prices` has no CLI reference page yet (grep of `src/content/docs` for "product-prices", 2026-11-10: only `InvalidProductIdentifiers*` hits). Raw commands, flags, the 2 requests/second limit and `--csv` are `developer-cli-analytics`; a server-side or scheduled job with no browser login still belongs on the Export Analytics API (`export-analytics-api`). |
@@ -280,6 +287,18 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-11-10, positioning (product decision):** the Adapty plugin is the product; the MCP server and
+  the CLI are the two connections it uses. `manage-adapty-with-ai` was rewritten around that: why the
+  plugin (flow config rules, tested methods, current APIs, confirmations, the connection), install in
+  two tabs (coding agent with `npx adapty skills install` first and default, claude.ai settings second), then tasks. There is deliberately no section for clients without
+  plugin support — treat a "can I use just the MCP server" ticket as a pointer to install the plugin,
+  not as a gap. The tutorial sidebar category was renamed "Use Adapty with AI agents" and grouped by
+  task; ids owned by another sidebar (`adapty-sdk-integration-skill` in `ios.json`,
+  `developer-cli-attribution-skill` and `developer-cli-quickstart` in `api.json`, `mail-skill` under
+  Adapty Mail) appear as `link` items, because adding the id would move the page to another sidebar.
+  No id was renamed. Not verified: whether a plugin added on claude.ai registers its `.mcp.json`
+  server as a connector on its own; the landing page keeps the connector as a separate step, matching
+  `adapty-mcp`. If it does, that step goes from both.
 - **2026-10-30:** New `adapty-mcp` for the Adapty MCP server: per-client connection, why the skills
   matter (flows and analytics need them), an example session, sign-in, troubleshooting. It is the first
   item of the tutorial sidebar's AI category and the first card of the homepage's AI panel.
