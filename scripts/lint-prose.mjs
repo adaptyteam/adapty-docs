@@ -150,6 +150,12 @@ const RULES = [
     hint: 'Not ESL-safe and we auto-translate: "select" for checkboxes, "review"/"verify" for inspection. (Area 10)',
   },
   {
+    id: 'banned-lets-you',
+    scope: 'changed',
+    re: /\b(lets you|allows you to)\b/gi,
+    hint: 'Make the reader the subject: "you can …", or name what Adapty does. (Area 5)',
+  },
+  {
     id: 'banned-you-want',
     scope: 'changed',
     re: /\byou want\b/gi,
