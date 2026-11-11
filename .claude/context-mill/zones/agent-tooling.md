@@ -290,7 +290,7 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 - **2026-11-10, positioning (product decision):** the Adapty plugin is the product; the MCP server and
   the CLI are the two connections it uses. `manage-adapty-with-ai` was rewritten around that: why the
   plugin (flow config rules, tested methods, current APIs, confirmations, the connection), install in
-  two tabs (claude.ai, coding agent), then tasks. There is deliberately no section for clients without
+  two tabs (coding agent with `npx adapty skills install` first and default, claude.ai settings second), then tasks. There is deliberately no section for clients without
   plugin support — treat a "can I use just the MCP server" ticket as a pointer to install the plugin,
   not as a gap. The tutorial sidebar category was renamed "Use Adapty with AI agents" and grouped by
   task; ids owned by another sidebar (`adapty-sdk-integration-skill` in `ios.json`,
