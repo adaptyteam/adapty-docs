@@ -287,6 +287,15 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-11-11, Apple Ads over MCP:** the `ads-manager` skill works through the MCP server and prefers
+  it when both ways are ready (`adaptyteam/adapty-skills` `plugin/skills/ads-manager/SKILL.md`,
+  "This skill prefers MCP"; the repo README lists `ads-manager` among the MCP-first skills). This
+  reverses the 2026-11-02 removal: `adapty-mcp` has an Apple Ads row in "What the assistant can do"
+  again and lists Apple Ads under the MCP server in the skills details block. `asa segments create`
+  still has no tool, so segment writes from Apple Ads entities need the CLI. Not verified: the live
+  server's Apple Ads tool list (this session's server listing showed no `asa_*` tools); confirm
+  against the server before adding tool names to the article. `adapty-attribution` is also MCP-first
+  in the same README and its row is still absent from `adapty-mcp`.
 - **2026-11-10, positioning (product decision):** the Adapty plugin is the product; the MCP server and
   the CLI are the two connections it uses. `manage-adapty-with-ai` was rewritten around that: why the
   plugin (flow config rules, tested methods, current APIs, confirmations, the connection), install in
