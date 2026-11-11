@@ -1,10 +1,10 @@
 ---
 title: "Flows 命令"
-description: "Adapty CLI 命令，用于创建流程、读写其编辑器配置、验证和预览、上传媒体、发布，以及读取其数据图表和页面漏斗。"
+description: "Adapty CLI 命令，用于创建流程、读写其编辑器配置、验证与预览、上传媒体、发布、列出并还原版本、复制，以及读取流程的数据图表和屏幕漏斗。"
 metadataTitle: "Flows CLI 命令 | Adapty 文档"
 ---
 
-[流程](adapty-flow-builder)是您在 Flow & Paywall Builder 中构建的付费墙和用户引导。CLI 负责管理流程记录、其编辑器配置以及发布操作。编辑器配置是一个大型 JSON 文档，通常由 Flow & Paywall Builder 生成，CLI 本身不会自动生成。如需在终端中创作或编辑配置，请使用 [flow-generator 技能](flow-generator-skill)，它会替您驱动这些命令。在发布之前，[flow-audit 技能](flow-audit-skill)会检查流程是否已准备好投入生产。`flows metrics` 命令用于读取[流程数据图表](flow-metrics)页面的数据，需要 CLI 0.15.0 或更高版本。`flows funnel` 命令用于读取[流程漏斗](flow-funnel)数据，需要 CLI 0.19.0 或更高版本。以下命令仅供参考。
+[流程](adapty-flow-builder)是您在 Flow & Paywall Builder 中构建的付费墙和用户引导。CLI 负责管理流程记录、其编辑工具配置、发布状态以及[版本历史](flow-version-history)。编辑工具配置是一个大型 JSON 文档，通常由 Flow & Paywall Builder 生成，CLI 本身不会自动创建。如需通过终端编写或修改配置，请使用 [flow-generator 技能](flow-generator-skill)，它会替您驱动这些命令。在发布前，[flow-audit 技能](flow-audit-skill)会检查流程是否已准备好上线。`flows metrics` 命令用于读取[流程数据图表](flow-metrics)页面上的数据，需要 CLI 0.15.0 或更高版本。`flows funnel` 命令用于读取[流程漏斗](flow-funnel)，需要 CLI 0.19.0 或更高版本。以下命令仅供参考。
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -32,11 +32,11 @@ adapty flows get --app <app-id> <flow-id>
 |---|---|
 | `flow-id` | 流程 ID（UUID） |
 
-| 标志 | 必填 | 描述 |
+| 标志 | 是否必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
 
-响应包含 `id`、`name`、`status` 和 `updated_at`。`status` 的值为以下之一：
+响应包含 `id`、`name`、`status`、`published_flow_version_id` 和 `updated_at`。`published_flow_version_id` 是当前上线版本的 ID，若该流程从未发布则为 `null`。`status` 的可能值为：
 
 | 状态 | 含义 |
 |---|---|
@@ -206,6 +206,163 @@ adapty flows media upload --app <app-id> ./hero.png
 
 支持的格式：GIF、HEIC、JPEG、PNG、SVG 和 WebP。响应中包含图片的 `id`、`name` 以及用于在配置中引用的 CDN `url`。
 
+## adapty flows versions list \{#adapty-flows-versions-list\}
+
+列出某个流程的所有版本，按从新到旧排序。这些版本来自 Flow & Paywall Builder 中的[版本历史](flow-version-history)。
+
+```bash
+adapty flows versions list --app <app-id> <flow-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 说明 |
+|---|---|---|
+| `--app` | 是 | App ID（UUID） |
+| `--search` | 否 | 仅显示标题包含指定文本的版本。不区分大小写，支持部分匹配：`friday` 可匹配 **Black Friday** |
+
+每行显示版本的标题、状态、日期和 ID。标题是版本名称，若版本无名称则显示为 **Version N**。状态的含义如下：
+
+| 状态 | 含义 |
+|---|---|
+| `draft` | 正在编辑的版本。一个流程只有一个草稿，也可能没有草稿。草稿发布过程中，该行末尾会显示 `Publishing…`；发布失败后则显示 `Publish failed` |
+| `live` | 用户当前看到的版本 |
+| `previous` | 较早的版本。它之前曾是正式版本，或在发布前被更新的版本所替代 |
+
+`live` 或 `previous` 版本的日期是其发布开始的日期。对于草稿，以及从未发布过的 `previous` 版本，日期为该版本的创建日期。
+
+对于从未发布过的流程，该命令会打印 `History will appear after the first publish.`，并在其下方显示草稿行。看板中的[版本历史](flow-version-history)不会为此类流程显示任何行。当没有版本与 `--search` 匹配时，该命令会打印 `No versions match the search.`
+
+该命令始终列出所有版本，不支持分页参数。
+
+使用 `--json` 时，命令将原样输出 Adapty 返回的 `{data, meta}`，其中 `data` 包含各行数据。每行包含以下字段：`flow_version_id`、`version`、`name`、`title`、`state`、`is_current`、`publication_status`、`published_at`、`created_at`、`updated_at` 和 `last_edited_by`。`updated_at` 是该版本最后一次内容变更的毫秒级时间戳：将草稿的 `updated_at` 值作为 `--expected-updated-at` 参数传入 [`flows versions restore`](#adapty-flows-versions-restore)。`last_edited_by` 表示最后修改该版本的用户名，若 Adapty 无法识别该用户，则值为 `null`。
+
+## adapty flows versions get
+
+读取某个流程的指定版本。读取操作不会更改任何内容：草稿和上线版本均保持不变。
+
+该命令会输出版本的标题、ID、编号、状态、日期、最后修改人以及 **Test on device** 链接。版本的完整内容（包含所有布局的编辑器配置、远程配置和付费墙）可通过 `--json` 输出，或保存到 `--output` 指定的文件中。
+
+```bash
+adapty flows versions get --app <app-id> <flow-id> <version-id> --output version.json
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+| `version-id` | 版本 ID（UUID），来自 [`flows versions list`](#adapty-flows-versions-list) |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--output` | 否 | 将该版本的完整内容以 JSON 格式写入此文件 |
+| `--yes`, `-y` | 否 | 覆盖已存在的 `--output` 文件时无需确认。在使用 `--json` 或通过管道传输时，若文件已存在则必须指定此标志 |
+
+如果 CLI 无法写入 `--output` 文件（例如目标文件夹不存在），命令会打印 `Could not write <path> (<errno>).` 并以退出码 1 退出。
+
+## adapty flows versions preview
+
+打印某个版本的 **Test on device** 链接。在测试设备上打开该链接，即可在 [Adapty 移动应用](paywall-device-compatibility-preview#preview-on-devices)中预览该版本。草稿版本、线上版本或历史版本均可使用。
+
+```bash
+adapty flows versions preview --app <app-id> <flow-id> <version-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+| `version-id` | 版本 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+
+## adapty flows versions rename \{#adapty-flows-versions-rename\}
+
+重命名某个版本。你可以重命名草稿版本、线上版本以及历史版本。
+
+```bash
+adapty flows versions rename --app <app-id> <flow-id> <version-id> --name "Black Friday"
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+| `version-id` | 版本 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--name` | 是 | 新版本名称。传入 `--name ""` 可移除名称，版本将重新显示为 **Version N**。仅包含空格的名称同样会移除名称 |
+
+该命令会输出版本 ID 和新标题。Adapty 会自动去除名称两端的空格。两个版本可以拥有相同的名称。重命名不会更改版本内容或其 `updated_at` 时间戳，因此不会与后续保存草稿的操作产生冲突。
+
+## adapty flows versions restore \{#adapty-flows-versions-restore\}
+
+将某个版本恢复为同一流程的草稿，即[版本历史](flow-version-history#restore-an-earlier-version)中的 **Duplicate as draft** 功能。恢复后的版本在你[发布](#adapty-flows-publish)之前不会对用户生效。
+
+:::tip
+恢复操作会替换当前草稿。如需保留草稿，请先通过 [`flows duplicate`](#adapty-flows-duplicate) 将其复制为新流程。
+:::
+
+```bash
+adapty flows versions restore --app <app-id> <flow-id> <version-id>
+```
+
+| 参数 | 描述 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+| `version-id` | `live` 或 `previous` 版本的版本 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--expected-updated-at` | 使用 `--yes` 且流程存在草稿时 | 草稿的 `updated_at` 值，来自 [`flows versions list --json`](#adapty-flows-versions-list)。若在读取之后草稿发生了变更，命令将报错而非覆盖该变更 |
+| `--yes`, `-y` | 否 | 直接替换草稿，不询问确认。在流程存在草稿时，使用 `--json` 或通过管道运行时为必填 |
+
+该命令首先读取流程的版本：
+
+- **流程没有草稿**：该命令不会询问任何内容。Adapty 会使用下一个版本号创建一个新草稿，不含名称，内容与该版本完全相同。正式版本和您要恢复的版本保持不变。
+- **流程已有草稿**：该命令会提示 `Replace the draft '<draft>' (last change <time> by <user>) with '<version>'? To keep the draft, duplicate it to a new flow first.`，然后提示 `Apply? [y/N]`。如果您输入 `y`，草稿将保留其 ID、编号和名称，并获取该版本的内容。不会新增任何版本。输入其他任何内容则以退出码 1 退出，不发送任何内容。
+
+使用 `--json`、在管道中运行或无终端时，命令无法交互询问。当流程存在草稿时，除非传入 `--yes`，否则命令不发送任何内容并以退出码 6 退出。其提示信息会抛出问题，并附上 `To replace it, re-run with --yes --expected-updated-at <ms> (the draft's updated_at).`，其中 `<ms>` 替换为该草稿的 `updated_at` 值。使用 `--yes` 时，还需同时传入 `--expected-updated-at`：若未传入，命令将以退出码 6 退出且不发送任何内容。在终端中若未传入 `--expected-updated-at`，命令会从它在问题中展示给你的草稿中自动取用 `updated_at` 值。
+
+恢复操作完成后，命令会打印 `Restored '<version>' as the draft '<draft>' (<draft-id>). Nothing is published.`
+
+在以下情况下，Adapty 会拒绝恢复操作，不做任何更改。命令会打印 Adapty 的提示信息，对部分情况给出处理建议，并以退出码 4 退出：
+
+| 消息 | 处理方式 |
+|---|---|
+| `This flow version is already the current draft.` | 请选择其他版本。 |
+| `Flow version does not exist.` | 该版本 ID 不在此流程的版本列表中。请从 [`flows versions list`](#adapty-flows-versions-list) 获取 ID。 |
+| `Flow version is already being published.` | 等待发布完成后再执行恢复操作。 |
+| `This flow version uses deleted products: …` | 请选择未使用已删除产品的版本。 |
+| `This flow configuration was already updated by …` | 有团队成员在你读取草稿后对其进行了修改。请重新列出版本并重试。 |
+| `Flow is deleted.` | 该流程已归档。请先在看板中[从归档中恢复](archive-flows#restore-a-flow)。 |
+
+## adapty flows duplicate \{#adapty-flows-duplicate\}
+
+复制一个流程或其某个版本，生成新流程。对应付费墙编辑工具顶部操作按钮中的 **Duplicate flow**（详见[复制流程](copy-flows)），以及[版本历史](flow-version-history#restore-an-earlier-version)中的 **Duplicate as new flow**。
+
+```bash
+adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
+```
+
+| 参数 | 说明 |
+|---|---|
+| `flow-id` | 流程 ID（UUID） |
+
+| 标志 | 是否必填 | 描述 |
+|---|---|---|
+| `--app` | 是 | 应用 ID（UUID） |
+| `--version` | 否 | 要复制的版本 ID（UUID），可从 [`flows versions list`](#adapty-flows-versions-list) 获取。任意版本均可复制，包括草稿。若不指定，则复制草稿；如果该流程没有草稿，则复制线上版本 |
+
+该命令会输出 `New flow '<name>' (<flow-id>), not published.`。新流程以源流程命名，末尾附加 `_copy`。新流程处于未发布状态，包含一个以该版本内容为基础的草稿。源流程、其草稿及历史记录保持不变。在流程发布过程中也可进行复制操作。
+
+如果版本使用了已删除的产品，或源流程已归档，Adapty 将拒绝复制。错误提示与 [`flows versions restore`](#adapty-flows-versions-restore) 的提示相同。
+
 ## adapty flows metrics list \{#adapty-flows-metrics-list\}
 
 显示多个流程的生命周期数据，每个流程占一行。这是看板中流程表格的数据。
@@ -220,7 +377,7 @@ adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
 | `--ids` | 是 | 流程 ID（UUID）。多个 ID 用逗号分隔，或重复使用该参数 |
 | `--csv` | 否 | 以 CSV 格式输出：每个流程占一行，包含流程 ID 和全部 27 个数据指标。不能与 `--json` 同时使用 |
 
-每行显示流程 ID 及其浏览量、购买量、试用量和收入。`--json` 和 `--csv` 包含[流程数据图表](flow-metrics#metrics-definitions)页面中全部 27 个数据指标，例如 `unique_profiles_views`、`net_revenue` 和 `conversion_rate_purchases`。没有数据的指标显示为 `0`，而非 `null`。
+每行显示流程 ID 及其浏览量、购买量、试用量和收入。`--json` 和 `--csv` 包含 [流程数据图表](flow-metrics#metrics-definitions) 页面中全部 27 个数据指标，例如 `unique_profiles_views`、`net_revenue` 和 `conversion_rate_purchases`。若某项指标无数据，则显示 `0`，而非 `null`。对于从未发布过的流程，该命令会在表格下方打印 `<flow-id>: No data: the flow was never published.`。使用 `--json` 时，会在该流程的行中添加 `note: "never_published"`；使用 `--csv` 时，提示信息会输出到 stderr，以保持 CSV 文件的整洁。
 
 ## adapty flows metrics values \{#adapty-flows-metrics-values\}
 
@@ -277,6 +434,10 @@ adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-
 | `--timezone` | 否 | 时间段所用的 IANA 时区，例如 `Europe/Berlin`。若不指定，Adapty 将使用应用所设时区 |
 | `--depth` | 否 | 在 `Total` 下打印的树状层级数，默认值为 `1` |
 | `--csv` | 否 | 以 CSV 格式输出：树中每个节点对应一行。不可与 `--json` 同时使用 |
+
+对于从未发布过的流程，该命令会在数据上方打印提示信息 `No data: the flow was never published.`，`--json` 模式下会附加 `note: "never_published"`。使用 `--csv` 时，提示信息会输出到 stderr，以保持 CSV 数据的整洁。
+
+如需查看某个流程的收入，请运行 `adapty analytics chart --app <app-id> --chart revenue --date-from <YYYY-MM-DD> --date-to <YYYY-MM-DD> --filter flow_id=<flow-id>`。详见[分析命令](developer-cli-analytics)。
 
 当 `--based-on` 或 `--date-type` 缺失，或仅提供了时间范围的一端时，CLI 以退出码 2 退出且不发送任何请求。Adapty 会验证 `--based-on`、`--date-type` 和 `--granularity` 的值：值有误时以退出码 4 退出，并在错误信息中列出可接受的值。
 
@@ -355,6 +516,7 @@ adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-t
 
 当所选时间段内没有用户进入该流程时，表格会以零值列出该版本的各个屏幕。对于答案的每个字段，请使用 `--json`。
 
-## 下一步 \{#whats-next\}
+## 接下来 \{#whats-next\}
 
-- [命令参考](developer-cli-reference) — 所有 CLI 主题、全局标志和分页标志。
+- [命令参考](developer-cli-reference) — 每个 CLI 主题、全局标志和分页标志。
+- [流程版本历史](flow-version-history) — 在流程与付费墙编辑工具中查看相同的版本记录。

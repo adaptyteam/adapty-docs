@@ -1,10 +1,10 @@
 ---
 title: "Flows コマンド"
-description: "フローの作成、ビルダー設定の読み書き、バリデーションとプレビュー、メディアのアップロード、公開、指標とスクリーンファネルの読み取りを行う Adapty CLI コマンド。"
+description: "Adapty CLI コマンドを使用して、フローの作成、ビルダー設定の読み書き、バリデーションとプレビュー、メディアのアップロード、公開、バージョン一覧と復元、複製、指標とスクリーンファネルの読み取りを行います。"
 metadataTitle: "Flows CLI コマンド | Adapty ドキュメント"
 ---
 
-[フロー](adapty-flow-builder)は、フロー＆ペイウォールビルダーで作成するペイウォールやオンボーディングです。CLIはフローのレコード、ビルダーの設定、および公開を管理します。ビルダーの設定とは、フロー＆ペイウォールビルダーが生成する大きなJSONドキュメントであり、CLIはこれを自動生成しません。ターミナルから設定を作成・編集するには、[flow-generator スキル](flow-generator-skill)を使用してください。このスキルがコマンドを代わりに実行します。公開前には、[flow-audit スキル](flow-audit-skill)がフローの本番環境への準備状況を確認します。`flows metrics` コマンドは[フロー指標](flow-metrics)ページの数値を読み取り、CLIバージョン0.15.0以降が必要です。`flows funnel` コマンドは[フローファネル](flow-funnel)を読み取り、CLIバージョン0.19.0以降が必要です。各コマンドはリファレンスとしてここに記載されています。
+[フロー](adapty-flow-builder)は、フロー＆ペイウォールビルダーで作成するペイウォールやオンボーディングです。CLIはフローのレコード、ビルダーの設定、公開、および[バージョン履歴](flow-version-history)を管理します。ビルダーの設定は、フロー＆ペイウォールビルダーが通常生成する大きなJSONドキュメントであり、CLIはこれを生成しません。ターミナルから設定を作成・編集するには、[flow-generatorスキル](flow-generator-skill)を使用してください。このスキルがコマンドを代わりに実行します。公開前には、[flow-auditスキル](flow-audit-skill)がフローを本番環境に出す準備ができているか確認します。`flows metrics`コマンドは[フロー指標](flow-metrics)ページの数値を読み取り、CLIバージョン0.15.0以降が必要です。`flows funnel`コマンドは[フローファネル](flow-funnel)を読み取り、CLIバージョン0.19.0以降が必要です。各コマンドはこちらにリファレンスとして掲載されています。
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -30,13 +30,13 @@ adapty flows get --app <app-id> <flow-id>
 
 | 引数 | 説明 |
 |---|---|
-| `flow-id` | フロー ID（UUID） |
+| `flow-id` | フロー ID (UUID) |
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
-| `--app` | Yes | アプリ ID（UUID） |
+| `--app` | Yes | アプリ ID (UUID) |
 
-レスポンスには `id`、`name`、`status`、`updated_at` が含まれます。ステータスは次のいずれかです：
+レスポンスには `id`、`name`、`status`、`published_flow_version_id`、`updated_at` が含まれます。`published_flow_version_id` は公開中のバージョンの ID で、フローが一度も公開されていない場合は `null` になります。ステータスは次のいずれかです：
 
 | ステータス | 意味 |
 |---|---|
@@ -206,6 +206,163 @@ adapty flows media upload --app <app-id> ./hero.png
 
 対応フォーマット：GIF、HEIC、JPEG、PNG、SVG、WebP。レスポンスには画像の `id`、`name`、およびコンフィグから参照するための CDN `url` が含まれます。
 
+## adapty flows versions list
+
+フローのバージョン一覧を新しい順に表示します。これらはフロー & ペイウォールビルダーの[バージョン履歴](flow-version-history)に対応するバージョンです。
+
+```bash
+adapty flows versions list --app <app-id> <flow-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--search` | No | タイトルに指定したテキストを含むバージョンのみ表示します。大文字・小文字を区別せず、部分一致も有効です（例：`friday` と入力すると **Black Friday** がヒットします）。 |
+
+各行には、バージョンのタイトル、状態、日付、IDが表示されます。タイトルはバージョン名、または名前がない場合は **Version N** となります。状態は次のいずれかです：
+
+| 状態 | 意味 |
+|---|---|
+| `draft` | 編集中のバージョン。フローには1つのドラフトがあるか、ドラフトなしの状態です。ドラフトの公開中は行の末尾に `Publishing…` と表示され、公開に失敗した場合は `Publish failed` と表示されます |
+| `live` | ユーザーに表示されているバージョン |
+| `previous` | 以前のバージョン。過去に公開されていたか、公開前に新しいバージョンに置き換えられたものです |
+
+`live` または `previous` バージョンの日付は、そのバージョンの公開が開始された日付です。ドラフト、および一度も公開されていない `previous` バージョンの場合は、バージョンが作成された日付です。
+
+一度も公開されていないフローの場合、コマンドは `History will appear after the first publish.` と表示し、その下にドラフト行を表示します。ダッシュボードの[バージョン履歴](flow-version-history)には、そのようなフローの行は表示されません。`--search` に一致するバージョンがない場合、コマンドは `No versions match the search.` と表示します。
+
+このコマンドは常にすべてのバージョンを一覧表示し、ページネーションフラグには対応していません。
+
+`--json` を使用すると、コマンドは Adapty の `{data, meta}` をそのまま出力し、`data` に行が含まれます。各行には `flow_version_id`、`version`、`name`、`title`、`state`、`is_current`、`publication_status`、`published_at`、`created_at`、`updated_at`、`last_edited_by` が含まれます。`updated_at` はそのバージョンのコンテンツが最後に変更されたミリ秒タイムスタンプです。ドラフトの `updated_at` を [`flows versions restore`](#adapty-flows-versions-restore) に `--expected-updated-at` として渡してください。`last_edited_by` はそのバージョンを最後に変更したユーザー名を示し、Adapty がユーザーを特定できない場合は `null` になります。
+
+## adapty flows versions get
+
+フローの1つのバージョンを取得します。バージョンの取得によって状態は変わりません。ドラフトとライブバージョンはそのままです。
+
+このコマンドは、バージョンのタイトル、ID、番号、状態、日付、最後に変更したユーザー、および **Test on device** リンクを出力します。バージョンの完全なコンテンツ（すべてのレイアウトを含むビルダー設定、リモートコンフィグ、ペイウォール）は、`--json` の出力と `--output` のファイルに含まれます。
+
+```bash
+adapty flows versions get --app <app-id> <flow-id> <version-id> --output version.json
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+| `version-id` | バージョン ID（UUID）、[`flows versions list`](#adapty-flows-versions-list) から取得 |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--output` | いいえ | バージョンの全コンテンツを JSON としてこのファイルに書き出す |
+| `--yes`, `-y` | いいえ | 確認なしで既存の `--output` ファイルを上書きする。ファイルが存在する場合、`--json` 使用時またはパイプ経由の場合に必須 |
+
+CLIが`--output`ファイルに書き込めない場合（例：フォルダが存在しない場合）、コマンドは`Could not write <path> (<errno>).`と表示してコード1で終了します。
+
+## adapty flows versions preview
+
+バージョンの **Test on device** リンクを出力します。テストデバイスでリンクを開くと、[Adapty モバイルアプリ](paywall-device-compatibility-preview#preview-on-devices)でそのバージョンを確認できます。ドラフト、ライブバージョン、以前のバージョンなど、どのバージョンでも使用できます。
+
+```bash
+adapty flows versions preview --app <app-id> <flow-id> <version-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+| `version-id` | バージョン ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+
+## adapty flows versions rename
+
+バージョンの名前を変更します。ドラフト、ライブバージョン、および以前のバージョンの名前を変更できます。
+
+```bash
+adapty flows versions rename --app <app-id> <flow-id> <version-id> --name "Black Friday"
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フロー ID（UUID） |
+| `version-id` | バージョン ID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | Yes | アプリ ID（UUID） |
+| `--name` | Yes | 新しいバージョン名。`--name ""` を渡すと名前が削除され、バージョンが再び **Version N** と表示されます。スペースのみの名前も同様に削除されます |
+
+このコマンドはバージョン ID と新しいタイトルを出力します。Adapty は名前の両端のスペースを削除します。2 つのバージョンが同じ名前を持つことができます。名前の変更はバージョンのコンテンツや `updated_at` を変更しないため、後でドラフトを保存する操作と競合しません。
+
+## adapty flows versions restore \{#adapty-flows-versions-restore\}
+
+同じフローのドラフトとしてバージョンを復元します。これは[バージョン履歴](flow-version-history#restore-an-earlier-version)の **Duplicate as draft** に相当します。復元されたバージョンは[公開](#adapty-flows-publish)するまでユーザーには反映されません。
+
+:::tip
+復元を行うと現在のドラフトが上書きされます。ドラフトを残したい場合は、先に [`flows duplicate`](#adapty-flows-duplicate) で新しいフローとして複製してください。
+:::
+
+```bash
+adapty flows versions restore --app <app-id> <flow-id> <version-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フローID（UUID） |
+| `version-id` | `live` または `previous` バージョンのバージョンID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリID（UUID） |
+| `--expected-updated-at` | `--yes` を使用し、フローにドラフトがある場合 | [`flows versions list --json`](#adapty-flows-versions-list) から取得したドラフトの `updated_at`。その読み取り後にドラフトが変更されていた場合、変更を上書きせずにコマンドが失敗します |
+| `--yes`, `-y` | いいえ | 確認なしでドラフトを置き換えます。フローにドラフトがある場合、`--json` 使用時またはパイプ実行時に必須です |
+
+このコマンドはまず、フローのバージョンを読み込みます：
+
+- **フローにドラフトがない場合**: コマンドは何も確認せず、次のバージョン番号・名前なし・そのバージョンの内容をすべて持つ新しいドラフトを作成します。ライブバージョンと復元元のバージョンはそのまま維持されます。
+- **フローにドラフトがある場合**: `Replace the draft '<draft>' (last change <time> by <user>) with '<version>'? To keep the draft, duplicate it to a new flow first.` と表示され、次に `Apply? [y/N]` と確認を求めます。`y` と答えると、ドラフトはその ID・番号・名前を保持したまま、指定したバージョンの内容に置き換えられます。バージョンは追加されません。それ以外の回答ではコード 1 で終了し、何も送信されません。
+
+`--json`を使用する場合、パイプ経由の場合、またはターミナルがない場合、コマンドは確認を求めることができません。フローにドラフトがある場合、`--yes`を渡さない限り、何も送信せずにコード6で終了します。メッセージは質問を表示し、`To replace it, re-run with --yes --expected-updated-at <ms> (the draft's updated_at).`というテキストに、`<ms>`の部分にドラフトの`updated_at`を入れた形で追加されます。`--yes`を使用する場合は、`--expected-updated-at`も渡してください。これがないと、コマンドはコード6で終了し、何も送信しません。`--expected-updated-at`なしでターミナルを使用する場合、コマンドは質問の中で表示するドラフトの`updated_at`を使用します。
+
+リストアが完了すると、コマンドは `Restored '<version>' as the draft '<draft>' (<draft-id>). Nothing is published.` と表示します。
+
+以下のケースでは、Adapty はリストアを拒否し、何も変更しません。コマンドは Adapty のメッセージを表示し、一部のケースでは対処方法も案内したうえで、終了コード 4 で終了します。
+
+| メッセージ | 対処方法 |
+|---|---|
+| `This flow version is already the current draft.` | 別のバージョンを選択してください。 |
+| `Flow version does not exist.` | バージョン ID がこのフローのバージョン一覧に存在しません。[`flows versions list`](#adapty-flows-versions-list) から ID を取得してください。 |
+| `Flow version is already being published.` | 公開が完了するまで待ってから、再度リストアしてください。 |
+| `This flow version uses deleted products: …` | 削除済みプロダクトを使用していないバージョンを選択してください。 |
+| `This flow configuration was already updated by …` | チームメンバーがドラフトを読み取った後に変更しています。バージョン一覧を再取得してから再試行してください。 |
+| `Flow is deleted.` | フローはアーカイブされています。先にダッシュボードの[アーカイブからリストア](archive-flows#restore-a-flow)してください。 |
+
+## adapty flows duplicate \{#adapty-flows-duplicate\}
+
+フローまたはそのバージョンの1つを新しいフローにコピーします。これはフロー＆ペイウォールビルダーのトップバーにあるフローアクションボタンの **Duplicate flow** 、および[バージョン履歴](flow-version-history#restore-an-earlier-version)の **Duplicate as new flow** に対応しています（[フローのコピー](copy-flows)を参照）。
+
+```bash
+adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `flow-id` | フローID（UUID） |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--app` | はい | アプリ ID（UUID） |
+| `--version` | いいえ | コピーするバージョン ID（UUID）。[`flows versions list`](#adapty-flows-versions-list) から確認できます。ドラフトを含む任意のバージョンを指定できます。省略した場合は、ドラフトをコピーします。ドラフトが存在しない場合はライブバージョンをコピーします |
+
+このコマンドを実行すると、`New flow '<name>' (<flow-id>), not published.` と表示されます。新しいフローはコピー元のフロー名に `_copy` を付けた名前になります。未公開の状態で、そのバージョンの内容を持つドラフトが1つ作成されます。コピー元のフロー、そのドラフト、履歴はそのまま維持されます。公開中のフローも複製できます。
+
+削除済みのプロダクトを使用しているバージョンのコピーや、アーカイブ済みフローのコピーはAdaptyに拒否されます。エラーメッセージは [`flows versions restore`](#adapty-flows-versions-restore) と同じです。
+
 ## adapty flows metrics list
 
 複数のフローのライフタイム指標を表示します（フローごとに1行）。これはダッシュボードのフローテーブルのデータです。
@@ -220,7 +377,7 @@ adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
 | `--ids` | はい | フローID（UUID）。カンマ区切りで指定するか、フラグを繰り返し使用します |
 | `--csv` | いいえ | CSVで出力します：フローIDと27個すべての指標を含む行をフローごとに1行出力します。`--json` と同時には使用できません |
 
-各行には、フローIDとそのビュー数、購入数、トライアル数、収益が表示されます。`--json` と `--csv` では、`unique_profiles_views`、`net_revenue`、`conversion_rate_purchases` など、[フロー指標](flow-metrics#metrics-definitions) ページの27個すべての指標が取得できます。データがない指標は `null` ではなく `0` になります。
+各行には、フローID、ビュー数、購入数、トライアル数、収益が表示されます。`--json` および `--csv` オプションでは、`unique_profiles_views`、`net_revenue`、`conversion_rate_purchases` など、[フロー指標](flow-metrics#metrics-definitions)ページに記載されている27の指標がすべて出力されます。データのない指標は `null` ではなく `0` として表示されます。一度も公開されたことのないフローについては、テーブルの下に `<flow-id>: No data: the flow was never published.` と表示されます。`--json` の場合はそのフローの行に `note: "never_published"` が追加されます。`--csv` の場合は、CSVをクリーンな状態に保つため、注記はstderrに出力されます。
 
 ## adapty flows metrics values \{#adapty-flows-metrics-values\}
 
@@ -277,6 +434,10 @@ adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-
 | `--timezone` | いいえ | 期間ポイントのIANAタイムゾーン（例：`Europe/Berlin`）。指定しない場合、AdaptyはアプリのタイムゾーンをUseします |
 | `--depth` | いいえ | `Total`の下に表示するツリーのレベル数。デフォルト：`1` |
 | `--csv` | いいえ | CSV形式で出力します：ツリー全体の各ノードを1行で表示。`--json`と同時には使用できません |
+
+一度も公開されたことのないフローの場合、コマンドは数値の上に `No data: the flow was never published.` というメモを表示し、`--json` では `note: "never_published"` が追加されます。`--csv` の場合、メモは stderr に出力されるため、CSV はクリーンな状態を保ちます。
+
+特定のフローの収益を確認するには、`adapty analytics chart --app <app-id> --chart revenue --date-from <YYYY-MM-DD> --date-to <YYYY-MM-DD> --filter flow_id=<flow-id>` を実行してください。詳細は[アナリティクスコマンド](developer-cli-analytics)を参照してください。
 
 `--based-on`、`--date-type` が指定されていない場合、または期間の片方のみが指定されている場合、CLIはリクエストを送信せずにコード2で終了します。Adaptyは `--based-on`、`--date-type`、`--granularity` の値を検証します。値が不正な場合はコード4で終了し、エラーメッセージに受け付け可能な値の一覧が表示されます。
 
@@ -358,3 +519,4 @@ adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-t
 ## 次のステップ \{#whats-next\}
 
 - [コマンドリファレンス](developer-cli-reference) — すべての CLI トピック、グローバルフラグ、ページネーションフラグ。
+- [フローのバージョン履歴](flow-version-history) — Flow & Paywall Builder でのバージョン管理。
