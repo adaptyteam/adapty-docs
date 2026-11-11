@@ -1,64 +1,89 @@
 ---
-title: "Respond to purchase outcomes"
-description: "React to every purchase outcome in your app code, and open a second flow when the purchase succeeds."
-metadataTitle: "Respond to purchase outcomes | Flows & paywalls | Adapty Docs"
+title: "Respond to purchases and purchase restorations"
+description: "Continue a flow after its paywall screen: set what users see after each result of a purchase or a purchase restoration."
+metadataTitle: "Respond to purchases and purchase restorations | Flows & paywalls | Adapty Docs"
 ---
 
-When a purchase finishes, the Adapty SDK calls your app with the result. Nothing changes on screen until your app reacts. Your app can close the paywall, leave it open for another attempt, or open a second flow that confirms the purchase.
+A flow can continue after a paywall screen — resume the onboarding, show the new subscribers a thank-you screen, or upsell those who restore an earlier purchase.
 
-The builder can't branch on a purchase result: no [trigger](onboarding-actions#trigger-types) fires when a purchase finishes, and no [variable](onboarding-variables) carries its outcome. So the transition belongs in your code, where the result arrives.
+You set outcomes in the action settings, one for each purchase condition. An empty outcome keeps users on the paywall screen — close the flow yourself.
 
-The work splits into three parts:
+- The **Purchase** action has the following conditions: **When succeeded**, **When failed**, **When cancelled by user**, and **When pending**.
+- The **Restore purchases** action has two conditions: **When restore completed** and **When restore failed**. 
 
-- Build the post-purchase flow and assign it to its own placement.
-- In your app code, branch on the purchase result.
-- On success, close the paywall and present the post-purchase flow.
+:::important
+If you want the user to see a screen after a purchase or a purchase restoration, [keep the flow open after a purchase or a purchase restoration](#handle-purchase-results-in-your-app). Otherwise, the flow closes before the outcome runs.
+::: 
 
 ## Before you start
 
 - Flows require Adapty SDK v4.0 or later.
 - Build a paywall screen — for example, follow the [Create a basic paywall screen](basic-paywall-screen) recipe.
+- The paywall screen has an element with a [**Purchase** action](paywall-product-block#trigger-a-purchase).
 
-## 1. Build the post-purchase flow
+## Add actions for a result
 
-[Create the flow](paywall-builder-templates). It runs after the purchase, so it needs no products. To send the user back to your app's own UI, add a button with the **Close Flow** action to the final screen.
+:::important
+The flow can only respond to **In-App Store** purchases. It doesn't receive the result of a **Web Payment** purchase.
+:::
 
-<ZoomImage id="post-purchase-flow-close-action.webp" width="700px" alt="Post-purchase flow in the builder with a Thank you screen, the Start button selected, and its On Tap trigger set to the Close Flow action" />
+For each **Purchase** or **Restore purchases** action on the paywall:
 
-Use a [**Custom Action**](onboarding-actions#custom-actions) when the flow has more than one way out. Create multiple buttons, each with its own action ID, so your app can tell **Set up now** from **Set up later**.
+1. Select the element that has the action.
+2. In the **Interactions** panel, remove any navigation or **Close Flow** action that follows **Purchase** or **Restore purchases**. Such an action interferes with outcome handling.
+3. Click the **Purchase** or **Restore purchases** action.
+4. For the purchase or restoration result you need, such as **When succeeded**, click <Inline id="plus.svg" alt="Add action" />.
+5. From the **Action** dropdown, select the action to run instead of **Do nothing**.
 
-## 2. Add the post-purchase flow to its own placement
+### Show the next screen after a successful purchase
 
-To fetch the post-purchase flow from your app, assign it to its own placement. Your flow's placement can't serve it too — a placement serves one flow per audience.
+Pair the **When succeeded** outcome with a [**Navigate to Screen**](onboarding-actions#navigate-to-screen) action, and select the destination screen. After a successful purchase, users see the screen you selected.
 
-1. [Publish the flow](builder-save-publish).
-2. [Create a flow placement](create-placement). Note the **Placement ID** — your app uses it to fetch the flow.
-3. Assign the post-purchase flow to the new placement.
+To offer an upsell, display another paywall screen first. The actions you add for **When succeeded** can't start another purchase.
 
-## 3. Branch on the purchase result
+### Close the flow after a successful purchase
 
-Your app receives the purchase result through two callbacks:
+To end the flow after a successful purchase, add [**Close Flow**](onboarding-actions#close-flow) for **When succeeded** instead of a navigation. The flow then closes only when the purchase succeeds, so your app code doesn't need to close it.
 
-- **Completion**: The purchase reached a conclusion — it succeeded, the user cancelled it, or the payment is pending approval (a parent's confirmation, for example). Read the result's type to tell the three apart. On success, the result carries the updated `AdaptyProfile`.
-- **Failure**: An error stopped the purchase, and the callback carries an `AdaptyError` — payment restrictions, invalid products, network failures, or transaction verification failures.
+### Respond to a failed, canceled, or pending purchase
+
+To show an alert or a screen after a failed, canceled, or pending purchase, add actions for these outcomes of the **Purchase** action:
+
+- **When failed**: An error stopped the purchase. For example, [show an alert](onboarding-actions#show-alert) that asks the user to try again later.
+- **When cancelled by user**: The user canceled the purchase. For example, show a screen with another offer.
+- **When pending**: The purchase waits for approval, for example while the bank confirms the payment, or while a parent approves it through Ask to Buy on iOS. The flow doesn't respond when the bank or the parent approves the purchase, so show a screen that explains the wait.
+
+### Respond to a purchase restoration
+
+The [**Restore purchases**](paywall-product-block#restore-purchases) action has two outcomes: **When restore completed** and **When restore failed**.
+
+**When restore completed** means that the restoration finished without an error, not that the user has access. You can't verify access levels in a flow. To show content that depends on access, add **Close Flow** for **When restore completed**, and verify the [access level](access-level) in the app.
+
+### Respond to purchases in Observer mode
+
+If your app handles purchases itself, while Adapty is only used in [Observer mode](flows-with-your-own-payments#observer-mode-limits), the flow runs the same outcome actions whatever happened: the **When pending** actions on iOS and the **When succeeded** actions on Android. To show users the same screen on both platforms, add the same actions for **When pending** and **When succeeded**. After a purchase restoration, the flow runs the **When restore completed** actions, whatever happened.
+
+## Handle purchase results in your app
+
+Your app can respond to purchase results in its own code instead of the flow. This takes more work: each change to that code needs an app release.
+
+The SDK passes the result of a purchase or a purchase restoration to your app first, then to the flow. The flow only receives the result while it's open. If a purchase or restoration callback in your app closes the flow, the outcome actions don't run. The default callbacks don't close the flow on any platform, so this only happens with code you added. If you use outcomes, leave the flow open in these callbacks.
+
+:::warning
+On Android, outcome actions only run if the app sets an `AdaptyFlowEventListener` for the flow, and its callbacks don't throw errors. Otherwise, no outcome actions run after the purchase, or after later purchases on the same screen.
+:::
 
 Callback names and signatures: [iOS](ios-handling-events) | [Android](android-handling-events) | [React Native](react-native-handling-events-1) | [Flutter](flutter-handling-events) | [Unity](unity-handling-events) | [Kotlin Multiplatform](kmp-handling-events) | [Capacitor](capacitor-handling-events)
 
-Branch on the outcome:
+If the app closes the flow after a purchase and then opens a second flow, remove that code. Add the screens of the second flow to the flow that contains the paywall. Show them after a successful purchase.
 
-- On success, close the paywall, then present the post-purchase flow.
-- On a cancellation, a pending payment, or a failure, leave the paywall open.
+## Test the outcomes
 
-:::note
-Restores report through their own callback, which covers users who reinstall or switch devices. Confirm the returned profile has your [access level](access-level) active, then close and present a flow the same way. Point that callback at a separate flow — a screen that thanks the user for a purchase doesn't fit a restore.
-:::
+To see each outcome in a build of your app that keeps the flow open:
 
-## 4. Load and present the post-purchase flow
+1. [Publish the flow](builder-save-publish).
+2. If no placement serves the flow yet, [create a flow placement](create-placement) and assign the flow to it.
+3. On a test device, open the flow and [make a sandbox purchase](test-purchases-in-sandbox) on the paywall. To see **When cancelled by user**, cancel the purchase rather than confirm it.
+4. If the paywall has an element with a **Restore purchases** action, tap that element.
 
-To open the post-purchase flow without a wait, fetch it alongside the paywall, rather than inside the handler. Request its UI configuration too — that call is what starts caching the flow's images in the background.
-
-On [iOS](ios-optimize-paywall-fetching#preload-placements) and [Android](android-optimize-paywall-fetching#preload-placements), `preloadFlows` (SDK 4.1+) warms several placements in one call. It caches the placement JSON only, so pair it with a `ReturnCacheDataElseLoad` fetch policy and still request the UI configuration ahead of time.
-
-Get flows and paywalls: [iOS](get-pb-paywalls) | [Android](android-get-pb-paywalls) | [React Native](react-native-get-pb-paywalls) | [Flutter](flutter-get-pb-paywalls) | [Unity](unity-get-pb-paywalls) | [Kotlin Multiplatform](kmp-get-pb-paywalls) | [Capacitor](capacitor-get-pb-paywalls)
-
-Display flows and paywalls: [iOS](ios-present-paywalls) | [Android](android-present-paywalls) | [React Native](react-native-present-paywalls) | [Flutter](flutter-present-paywalls) | [Unity](unity-present-paywalls) | [Kotlin Multiplatform](kmp-present-paywalls) | [Capacitor](capacitor-present-paywalls)
+After each result, the flow runs the outcome actions you added for it.
