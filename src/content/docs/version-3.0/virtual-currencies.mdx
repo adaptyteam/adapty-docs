@@ -35,6 +35,59 @@ For a complete walkthrough — from currency setup to spending credits through t
 For subscription allowances, turn on [credit expiration](create-virtual-currency#link-products). When unused credits reset at each renewal, the allowance stays a reason to keep the subscription, and heavy users buy credit packs instead of spending down a stockpile.
 :::
 
+## Label transactions
+
+When your backend grants or spends credits through [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction), label each transaction with what it means and what the credits were for. With `operation`, you can tell spending apart from bonuses, reversals, and corrections in the transaction history. With `feature`, you can see what users spend on and what you grant for.
+
+All labeling fields are optional. You can't add labels to a transaction after Adapty saves it, so label from your first call. A transaction sent without labels is saved with `operation: null`.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### Operation
+
+Most integrations need these `operation` values:
+
+| Value | When to use it |
+|-------|----------------|
+| `spend` | The user spends credits on a feature or content. |
+| `spend_reversal` | You return credits for a failed action, such as a failed generation. |
+| `reward` | You grant a bonus, a reward, or a support compensation. |
+| `reward_reversal` | You take a reward back. |
+
+Adapty sets `operation` on the transactions it creates: purchases, renewals, and trials get `top_up`, store refunds get `refund`, and expired credits get `expiry`. For the full list of values, see [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Feature
+
+`feature` names what the credits were spent on or granted for: one word of letters, digits, and `_`, optionally followed by one subtype after a dot. Adapty stores it as sent and case-sensitive, so `photoFilter` and `photofilter` are two different features.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`: contains a space.
+- ❌ `photo_filter.vintage.v2`: has two subtype levels.
+- ❌ `pack_499`, `premium_tier`: a price or a tier in the name splits one feature into several when prices or tiers change. Keep price, tier, version, and variant out of `feature`.
+
+For a bonus, use the name of the program, such as `welcome`, `daily_bonus`, `referral`, or `support_compensation`.
+
+### Other fields
+
+- **`reference_id`**: The ID of the related object in your system, up to 128 characters. Use it to link a `spend_reversal` to the `spend` it reverses, or a `reward` to the action it was granted for. Don't put personal data here.
+- **`customer_placement_id`**: The ID of the screen in your app where the operation happened. This is your own ID, not an Adapty [placement](placements) ID.
+- **`store` and `store_transaction_id`**: Send them together when your backend credits coins for a purchase itself. Adapty doesn't verify that the purchase exists. If the purchase is refunded in the store, Adapty takes back the coins credited with this reference.
+- **`is_sandbox`**: Send `true` for credits you grant while testing. On store transactions, Adapty sets it from the environment of the purchase.
+
+:::warning
+Don't credit coins for a product that is [linked to the currency](create-virtual-currency#link-products) in Adapty. Adapty already credits those purchases, so a credit from your backend gives the user the credits twice.
+:::
+
+Transactions created before November 12, 2026, when labeling became available, keep their data: Adapty labeled its own transactions retroactively, and your API transactions from before that date stay with `operation: null`. `metadata` is unchanged and still accepts any keys you need.
+
 ## Limitations
 
 - **Cross-device access requires identification**: A balance belongs to one profile. An anonymous user keeps their balance only on the installation where they earned it, so it is lost when they reinstall your app or open it on another device. Identify users to make a balance available on every device and after every reinstall. See [Balances, profiles, and devices](virtual-currency-balance#balances-profiles-and-devices).
