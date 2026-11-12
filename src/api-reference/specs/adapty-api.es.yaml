@@ -1295,9 +1295,11 @@ paths:
     post:
       summary: Crear transacción de moneda virtual
       description: |
-        Acredita o debita una o más monedas virtuales para un perfil en una única transacción atómica. Utiliza un `amount` positivo para acreditar (conceder) y un `amount` negativo para debitar (gastar). Todos los elementos se aplican de forma conjunta: si alguno falla, ninguno se aplica.
+        Acredita o debita una o más monedas virtuales para un perfil en una única transacción atómica. Usa un `amount` positivo para acreditar (otorgar) y un `amount` negativo para debitar (gastar). Todos los elementos se aplican juntos — si algún elemento falla, ninguno se aplica.
 
-        Cada código de moneda puede aparecer solo una vez por solicitud. Una acreditación a través de este endpoint siempre crea un saldo sin vencimiento.
+        Cada código de moneda puede aparecer solo una vez por solicitud. Un crédito a través de este endpoint siempre crea un saldo sin expiración.
+
+        Para que la transacción sea utilizable en los análisis de moneda virtual, etiquétala con `operation` y `feature`. Todos los campos de etiquetado son opcionales: una solicitud con solo `items` y `metadata` se guarda con `operation: null`.
       operationId: createVirtualCurrencyTransaction
       tags:
         - Virtual Currency
@@ -1315,7 +1317,7 @@ paths:
           required: false
           schema:
             type: string
-          description: El ID único del perfil en tu sistema. Es la mejor opción si trabajas con perfiles anónimos. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
+          description: El ID único del perfil en tu sistema. La mejor opción si trabajas con perfiles anónimos. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
         - name: Idempotency-Key
           in: header
           required: false
@@ -1323,9 +1325,9 @@ paths:
             type: string
             format: uuid
           description: |
-            Un UUID v4 que hace la solicitud idempotente. Si reintentas una solicitud con la misma clave, Adapty devuelve el resultado de la transacción original sin modificar los saldos nuevamente. Debe ser un UUID v4 válido.
+            Un UUID v4 que hace la solicitud idempotente. Si reintenta una solicitud con la misma clave, Adapty devuelve el resultado de la transacción original sin modificar los saldos de nuevo. Debe ser un UUID v4 válido.
 
-            Las claves se recuerdan hasta una hora, dentro del ámbito de un único perfil. Pasado ese período, una solicitud con la misma clave se aplica como una nueva transacción; por lo tanto, usa la clave para reintentar una llamada de forma segura, no para deduplicar una concesión a largo plazo.
+            Las claves se recuerdan durante hasta una hora, con alcance a un único perfil. Pasado ese período, una solicitud con la misma clave se aplica como una nueva transacción — por lo tanto, usa la clave para reintentar una llamada de forma segura, no para deduplicar una concesión a largo plazo.
       requestBody:
         required: true
         content:
@@ -1334,17 +1336,32 @@ paths:
               $ref: '#/components/schemas/VirtualCurrencyTransactionRequest'
             examples:
               debit:
-                summary: Gastar (debitar) una moneda
+                summary: Gastar (debitar) una moneda en una funcionalidad
                 value:
                   items:
                     - currency_code: COINS
                       amount: -10
+                  operation: spend
+                  feature: power_up.extra_life
+                  customer_placement_id: level-complete
+                  reference_id: session_7781
               credit:
-                summary: Conceder (acreditar) una moneda
+                summary: Otorgar (acreditar) una moneda como bonificación
                 value:
                   items:
                     - currency_code: COINS
                       amount: 500
+                  operation: reward
+                  feature: welcome
+              store_purchase_credit:
+                summary: Acreditar monedas por una compra que gestiona tu backend
+                value:
+                  items:
+                    - currency_code: COINS
+                      amount: 500
+                  operation: top_up
+                  store: app_store
+                  store_transaction_id: '2000001218103228'
               multi_currency:
                 summary: Debitar dos monedas a la vez
                 value:
@@ -1361,68 +1378,95 @@ paths:
                       amount: -100
                     - currency_code: GOLD
                       amount: 10
-                  metadata:
-                    reason: exchange
+                  operation: exchange
       responses:
-        '200':
-          description: Transacción aplicada correctamente
+        '201':
+          description: Transacción creada. El cuerpo es la transacción creada, con la misma estructura que un elemento del historial de transacciones, más los saldos posteriores a la transacción.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VirtualCurrencyTransactionResponse'
               example:
-                transaction_id: 0190e8a4-1c2b-7def-8abc-2c1a4b6d8e90
+                transaction_id: 019a7c3e-5b2a-7c1d-9e4f-0a1b2c3d4e5f
+                transaction_type: api_transaction
+                items:
+                  - currency_code: COINS
+                    amount: -10
+                    balance_after: 90
+                metadata: null
+                operation: spend
+                feature: power_up.extra_life
+                customer_placement_id: level-complete
+                reference_id: session_7781
+                is_sandbox: false
+                store: null
+                store_transaction_id: null
+                created_at: '2026-11-12T10:00:00.123Z'
+                response_created_at: 1794477600123
                 balances:
                   - code: COINS
-                    name: Gold Coins
-                    balance: 12950
+                    name: Coins
+                    balance: 90
                     held: 0
-                    available: 12950
+                    available: 90
         '400':
           description: |
-            Solicitud incorrecta. El campo `error_code` identifica la causa: `insufficient_balance`, `unknown_currency`, `duplicate_currency`, `amount_zero`, `balance_overflow`, `empty_items` o `idempotency_key_invalid`.
+            Solicitud incorrecta. El campo `error_code` identifica la causa:
+
+            - `validation_error` — el cuerpo o los encabezados no son válidos. Por ejemplo, un campo de etiquetado no cumple su formato, `items` está vacío o tiene más de 20 entradas, un `amount` es 0 o está fuera del rango int32, un código de moneda se repite, `metadata` no cumple sus restricciones, o no se envía ni `adapty-profile-id` ni `adapty-customer-user-id`. `errors[].source` indica el campo. Para una validación que abarca varios campos, como `store` enviado sin `store_transaction_id`, `source` es una cadena vacía.
+            - `parse_error` — el cuerpo no es JSON válido.
+            - `idempotency_key_invalid` — `Idempotency-Key` no es un UUID v4.
+            - `unknown_currency` — la moneda no está configurada en la aplicación.
+            - `unknown_store` — `store` es un store personalizado que no está configurado en la aplicación.
+            - `insufficient_balance` — un débito supera el saldo disponible.
+            - `balance_overflow` — un crédito llevaría el saldo más allá del rango int32.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: currency_code
+              examples:
+                validation_error:
+                  summary: Formato de feature inválido
+                  value:
                     errors:
-                      - Insufficient balance for currency COINS
-                error_code: insufficient_balance
-                status_code: 400
+                      - source: feature
+                        errors:
+                          - String should match pattern '^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$'
+                    error_code: validation_error
+                    status_code: 400
+                store_pair:
+                  summary: store enviado sin store_transaction_id
+                  value:
+                    errors:
+                      - source: ''
+                        errors:
+                          - Value error, store and store_transaction_id must be sent together
+                    error_code: validation_error
+                    status_code: 400
+                insufficient_balance:
+                  summary: Saldo insuficiente
+                  value:
+                    errors:
+                      - source: currency_code
+                        errors:
+                          - Insufficient balance for currency COINS
+                    error_code: insufficient_balance
+                    status_code: 400
         '401':
-          description: No autorizado. La clave de API falta o no es válida.
+          description: No autorizado. La clave de API falta o no es válida (`error_code` es `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Prohibido. La Server API para monedas virtuales no está habilitada para esta aplicación. Contacta con el soporte de Adapty para solicitar acceso.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: null
-                    errors:
-                      - Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access.
-                error_code: feature_not_enabled
-                status_code: 403
         '404':
-          description: Perfil no encontrado.
+          description: Perfil no encontrado (`error_code` es `profile_does_not_exist`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: |
-            Conflicto. El campo `error_code` identifica la causa:
-
-            - `idempotency_in_flight` — una solicitud con el mismo `Idempotency-Key` aún está siendo procesada. Reintenta después del intervalo indicado en el encabezado de respuesta `Retry-After`.
-            - `duplicate_source_transaction` — la transacción de store subyacente ya fue acreditada, por lo que no se aplica de nuevo.
+            Conflicto. Una solicitud con el mismo `Idempotency-Key` todavía está siendo procesada (`error_code` es `idempotency_in_flight`). Reintenta después del intervalo indicado en el encabezado de respuesta `Retry-After`.
           content:
             application/json:
               schema:
@@ -1434,16 +1478,9 @@ paths:
                       - A similar request is being processed.
                 error_code: idempotency_in_flight
                 status_code: 409
-        '422':
-          description: |
-            Entidad no procesable. El cuerpo de la solicitud no superó la validación del esquema; por ejemplo, `items` contiene más de 20 entradas, o una clave o valor de `metadata` incumple sus restricciones.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '429':
           description: |
-            Demasiadas solicitudes. Se superó el límite de velocidad por aplicación o global (`error_code` es `rate_limited`). Los límites predeterminados son 600 solicitudes por minuto por aplicación y 6000 solicitudes por minuto a nivel global.
+            Demasiadas solicitudes. Se superó el límite de tasa por aplicación o global (`error_code` es `rate_limited`). Los límites predeterminados son 600 solicitudes por minuto por aplicación y 6000 solicitudes por minuto a nivel global.
           content:
             application/json:
               schema:
@@ -1453,7 +1490,7 @@ paths:
     get:
       summary: Listar transacciones de moneda virtual
       description: |
-        Devuelve el historial de transacciones de moneda virtual de un perfil, de más reciente a más antigua. Los resultados usan paginación por cursor: cuando la respuesta incluye un `pagination.next_cursor` no nulo, pásalo como parámetro de consulta `cursor` para obtener la siguiente página.
+        Devuelve el historial de transacciones de moneda virtual de un perfil, del más reciente al más antiguo. Los resultados usan paginación por cursor: cuando la respuesta incluye un `pagination.next_cursor` no nulo, pásalo como parámetro de consulta `cursor` para obtener la siguiente página.
       operationId: listVirtualCurrencyTransactions
       tags:
         - Virtual Currency
@@ -1471,13 +1508,13 @@ paths:
           required: false
           schema:
             type: string
-          description: El ID único del perfil en tu sistema. Es la mejor opción si trabajas con perfiles anónimos. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
+          description: El ID único del perfil en tu sistema. La mejor opción si trabajas con perfiles anónimos. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
         - name: currency_code
           in: query
           required: false
           schema:
             type: string
-          description: Filtra el historial por un único código de moneda virtual.
+          description: Filtra el historial a un único código de moneda virtual.
         - name: cursor
           in: query
           required: false
@@ -1508,8 +1545,14 @@ paths:
                       - currency_code: COINS
                         amount: 500
                         balance_after: 12950
-                    metadata:
-                      reason: promo_bonus
+                    metadata: null
+                    operation: reward
+                    feature: daily_bonus
+                    customer_placement_id: home-screen
+                    reference_id: null
+                    is_sandbox: false
+                    store: null
+                    store_transaction_id: null
                     created_at: '2026-05-23T10:30:00Z'
                   - transaction_id: 0190e7b2-9a44-7c10-bb31-7d2e9f0a1c55
                     transaction_type: store_purchase
@@ -1517,6 +1560,14 @@ paths:
                       - currency_code: COINS
                         amount: 1000
                         balance_after: 12450
+                    metadata: null
+                    operation: top_up
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: app_store
+                    store_transaction_id: '2000001218103228'
                     created_at: '2026-05-22T18:05:12Z'
                   - transaction_id: 0190e5c0-3f18-7b9a-9e6d-44a1c8b27e03
                     transaction_type: subscription_renewal
@@ -1524,29 +1575,35 @@ paths:
                       - currency_code: GEMS
                         amount: 200
                         balance_after: 3280
+                    metadata: null
+                    operation: top_up
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: play_store
+                    store_transaction_id: GPA.3345-1234-5678-90123
                     created_at: '2026-05-20T09:00:00Z'
                 pagination:
                   next_cursor: MjAyNi0wNS0yMFQwOTowMDowMFowMTkwZTVjMC0zZjE4LTdiOWEtOWU2ZC00NGExYzhiMjdlMDM=
         '400':
-          description: Solicitud incorrecta. El valor de `cursor` no es válido (`error_code` es `invalid_cursor`).
+          description: |
+            Solicitud incorrecta. El campo `error_code` identifica la causa:
+
+            - `validation_error` — `limit` está fuera del rango 1–100, o no se envía ni `adapty-profile-id` ni `adapty-customer-user-id`.
+            - `invalid_cursor` — el valor de `cursor` no se puede analizar.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: No autorizado. La clave de API falta o no es válida.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Prohibido. La Server API para monedas virtuales no está habilitada para esta aplicación.
+          description: No autorizado. La clave de API falta o no es válida (`error_code` es `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Perfil no encontrado.
+          description: Perfil no encontrado (`error_code` es `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -1569,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: El ID único del cliente en tu sistema. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
+          description: El ID único del cliente en su sistema. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: El ID único del perfil en tu sistema. Es la mejor opción si trabajas con perfiles anónimos. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
+          description: El ID único del perfil en su sistema. La mejor opción si trabaja con perfiles anónimos. Se requiere `adapty-customer-user-id` o `adapty-profile-id`.
       responses:
         '200':
           description: Saldos devueltos correctamente
@@ -1602,25 +1659,19 @@ paths:
                     held: 0
                     available: 840
         '400':
-          description: Solicitud incorrecta.
+          description: Solicitud incorrecta. No se envía ni `adapty-profile-id` ni `adapty-customer-user-id` (`error_code` es `validation_error`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: No autorizado. La clave de API falta o no es válida.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Prohibido. La API de servidor para monedas virtuales no está habilitada para esta aplicación.
+          description: No autorizado. La clave de API falta o no es válida (`error_code` es `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Perfil no encontrado.
+          description: Perfil no encontrado (`error_code` es `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -3208,7 +3259,49 @@ components:
           additionalProperties:
             type: string
           description: |
-            Pares clave-valor opcionales almacenados con la transacción. Como máximo 5 claves. Cada clave debe coincidir con `^[a-z0-9_]{1,30}$`, y cada valor tiene como máximo 200 caracteres.
+            Pares clave-valor opcionales almacenados con la transacción. Como máximo 5 claves. Cada clave coincide con `^[a-z0-9_]{1,30}$`, y cada valor tiene como máximo 200 caracteres.
+        operation:
+          type: string
+          enum:
+            - top_up
+            - refund
+            - spend
+            - spend_reversal
+            - reward
+            - reward_reversal
+            - exchange
+            - expiry
+            - migration
+            - adjustment
+          description: |
+            El significado de la transacción. La mayoría de las integraciones necesitan cuatro valores: `spend`, `spend_reversal`, `reward`, `reward_reversal`. Si se omite, la transacción se guarda y se devuelve con `operation: null`.
+
+
+            Valores: `top_up` — monedas acreditadas por una compra, una suscripción o una prueba; `refund` — monedas retiradas porque el dinero fue reembolsado; `spend` — monedas gastadas en una función o contenido; `spend_reversal` — monedas devueltas por una acción fallida, como una generación fallida; `reward` — un bono, una recompensa o una compensación de soporte; `reward_reversal` — una recompensa retirada; `exchange` — una conversión entre monedas en una sola transacción, con elementos de signos opuestos; `expiry` — monedas vencidas; `migration` — saldos transferidos desde su propio sistema; `adjustment` — una corrección técnica de saldo fuera de la economía in-app.
+        feature:
+          type: string
+          description: |
+            En qué se gastaron las monedas o para qué se otorgaron. Una palabra, opcionalmente con un subtipo separado por punto: debe coincidir con `^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$`. Se almacena tal como se envía, distinguiendo mayúsculas de minúsculas. No codifique precio, nivel, versión o variante. Ejemplo: `power_up.extra_life`.
+        customer_placement_id:
+          type: string
+          description: |
+            ID de la pantalla o placement en su aplicación donde ocurrió la operación. Este es su propio ID, no un ID de placement de Adapty. Debe coincidir con `^[a-zA-Z0-9_.-]{1,128}$`. Se almacena tal como se envía. Ejemplo: `onboarding-step-3`.
+        reference_id:
+          type: string
+          description: |
+            ID del objeto relacionado en su sistema, como una generación, una recompensa o un ticket de soporte. Entre 1 y 128 caracteres; se rechazan caracteres de control, BIDI y de ancho cero. No incluya datos personales aquí. Ejemplo: `ticket_48213`.
+        is_sandbox:
+          type: boolean
+          default: false
+          description: Establezca en `true` para las monedas que otorgue durante las pruebas.
+        store:
+          type: string
+          description: |
+            Store de la compra a la que hace referencia esta transacción: `app_store`, `play_store`, `stripe`, `paddle`, o el ID de un store personalizado configurado en la aplicación. Hasta 30 caracteres. Si la compra es reembolsada en el store, las monedas acreditadas con esta referencia serán recuperadas. Envíe junto con `store_transaction_id`.
+        store_transaction_id:
+          type: string
+          description: |
+            ID de transacción del store de esa compra. Hasta 50 caracteres. Es solo una referencia: Adapty no verifica que exista ni que sea única. Envíe junto con `store`.
       required:
         - items
     VirtualCurrencyBalanceAdjustment:
@@ -3226,22 +3319,24 @@ components:
         - currency_code
         - amount
     VirtualCurrencyTransactionResponse:
-      type: object
-      description: Resultado de una transacción de moneda virtual.
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-          description: ID único de la transacción creada.
-        balances:
-          type: array
-          description: |
-            Saldo posterior a la transacción para cada moneda afectada por esta solicitud (una entrada por cada elemento en `items`). Para leer la lista completa de saldos del perfil, use `GET /api/v2/server-side-api/vc/balances/`.
-          items:
-            $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
-      required:
-        - transaction_id
-        - balances
+      description: La transacción creada, con la misma estructura que un elemento del historial de transacciones, más los saldos posteriores a la transacción.
+      allOf:
+        - $ref: '#/components/schemas/VirtualCurrencyTransactionsHistoryItem'
+        - type: object
+          properties:
+            response_created_at:
+              type: integer
+              format: int64
+              description: Momento en que se generó la respuesta, como marca de tiempo Unix en milisegundos.
+            balances:
+              type: array
+              description: |
+                Saldo posterior a la transacción para cada moneda afectada por esta solicitud (una entrada por elemento en `items`). Para leer la lista completa de saldos del perfil, utilice `GET /api/v2/server-side-api/vc/balances/`.
+              items:
+                $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
+          required:
+            - response_created_at
+            - balances
     VirtualCurrencyBalanceSnapshot:
       type: object
       properties:
@@ -3338,7 +3433,7 @@ components:
         transaction_type:
           type: string
           description: |
-            El origen de la transacción. Uno de `store_purchase`, `subscription_renewal`, `trial_start`, `api_transaction`, `dashboard_transaction`, `refund` o `expiry`.
+            El origen de la transacción. Uno de los siguientes valores: `store_purchase`, `subscription_renewal`, `trial_start`, `api_transaction`, `dashboard_transaction`, `refund` o `expiry`.
         items:
           type: array
           description: Cambios de saldo por moneda registrados en esta transacción.
@@ -3349,15 +3444,63 @@ components:
           nullable: true
           additionalProperties:
             type: string
-          description: Pares clave-valor almacenados con la transacción, si los hubiera.
+          description: Pares clave-valor almacenados con la transacción, si los hay.
+        operation:
+          type: string
+          nullable: true
+          enum:
+            - top_up
+            - refund
+            - spend
+            - spend_reversal
+            - reward
+            - reward_reversal
+            - exchange
+            - expiry
+            - migration
+            - adjustment
+          description: |
+            Lo que representa la transacción. Adapty lo establece en sus propias transacciones: `store_purchase`, `subscription_renewal` y `trial_start` reciben `top_up`, `refund` recibe `refund`, `expiry` recibe `expiry` y `dashboard_transaction` recibe `reward`. En una `api_transaction`, es el valor que enviaste, o `null` si no enviaste ninguno.
+        feature:
+          type: string
+          nullable: true
+          description: En qué se gastaron o por qué se otorgaron las monedas, tal como tú lo enviaste. `null` en las transacciones creadas por Adapty.
+        customer_placement_id:
+          type: string
+          nullable: true
+          description: El ID de pantalla o placement de tu aplicación, tal como tú lo enviaste. `null` en las transacciones creadas por Adapty.
+        reference_id:
+          type: string
+          nullable: true
+          description: El ID del objeto relacionado en tu sistema, tal como tú lo enviaste. `null` en las transacciones creadas por Adapty.
+        is_sandbox:
+          type: boolean
+          description: |
+            Indica si la transacción es de prueba. En las transacciones creadas por Adapty, sigue el entorno de la compra en el store. En una `api_transaction`, es el valor que enviaste, `false` por defecto.
+        store:
+          type: string
+          nullable: true
+          description: |
+            Store de la compra relacionada. Se establece en las transacciones creadas por Adapty a partir de eventos del store (compra, renovación, prueba, reembolso) y en una `api_transaction` enviada con una referencia de compra.
+        store_transaction_id:
+          type: string
+          nullable: true
+          description: ID de transacción del store de la compra relacionada. Se establece en las mismas transacciones que `store`.
         created_at:
           type: string
           format: date-time
-          description: Momento en que se registró la transacción.
+          description: Cuándo se registró la transacción.
       required:
         - transaction_id
         - transaction_type
         - items
+        - operation
+        - feature
+        - customer_placement_id
+        - reference_id
+        - is_sandbox
+        - store
+        - store_transaction_id
         - created_at
     VirtualCurrencyBalanceChange:
       type: object

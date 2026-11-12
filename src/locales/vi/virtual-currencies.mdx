@@ -35,6 +35,59 @@ Cấp tiền tệ ảo cho người dùng — AI token, credit, hoặc coin — 
 Đối với các allowance theo gói đăng ký, hãy bật [hết hạn tín dụng](create-virtual-currency#link-products). Khi tín dụng chưa dùng được đặt lại sau mỗi lần gia hạn, allowance vẫn là lý do để giữ gói đăng ký, và người dùng nhiều sẽ mua thêm gói tín dụng thay vì tiêu hết lượng tích lũy.
 :::
 
+## Gắn nhãn giao dịch \{#label-transactions\}
+
+Khi backend của bạn cấp hoặc tiêu trừ credits thông qua [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction), hãy gắn nhãn cho mỗi giao dịch để ghi rõ ý nghĩa và mục đích sử dụng credits. Với `operation`, bạn có thể phân biệt giao dịch tiêu dùng với tiền thưởng, hoàn tiền và điều chỉnh trong lịch sử giao dịch. Với `feature`, bạn có thể thấy người dùng chi tiêu vào việc gì và bạn cấp credits cho mục đích gì.
+
+Tất cả các trường gắn nhãn đều là tùy chọn. Bạn không thể thêm nhãn vào một giao dịch sau khi Adapty đã lưu nó, vì vậy hãy gắn nhãn ngay từ lần gọi đầu tiên. Một giao dịch được gửi mà không có nhãn sẽ được lưu với `operation: null`.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### Thao tác \{#operation\}
+
+Hầu hết các tích hợp cần các giá trị `operation` sau:
+
+| Giá trị | Khi nào sử dụng |
+|---------|----------------|
+| `spend` | Người dùng dùng credit để mua một tính năng hoặc nội dung. |
+| `spend_reversal` | Bạn hoàn trả credit cho một thao tác thất bại, chẳng hạn như một lần tạo nội dung bị lỗi. |
+| `reward` | Bạn tặng thưởng, phần thưởng, hoặc bồi thường hỗ trợ. |
+| `reward_reversal` | Bạn thu hồi lại phần thưởng. |
+
+Adapty đặt `operation` trên các giao dịch mà nó tạo ra: các lần mua, gia hạn và dùng thử nhận giá trị `top_up`, hoàn tiền từ cửa hàng nhận giá trị `refund`, và tín dụng hết hạn nhận giá trị `expiry`. Để xem danh sách đầy đủ các giá trị, hãy xem [Tạo giao dịch tiền tệ ảo](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Tính năng \{#feature\}
+
+`feature` đặt tên cho mục đích sử dụng hoặc lý do được cấp credit: một từ gồm chữ cái, chữ số và `_`, có thể theo sau bởi một kiểu phụ sau dấu chấm. Adapty lưu trữ giá trị này đúng như khi gửi lên và phân biệt chữ hoa/thường, vì vậy `photoFilter` và `photofilter` là hai tính năng khác nhau.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`: chứa dấu cách.
+- ❌ `photo_filter.vintage.v2`: có hai cấp subtype.
+- ❌ `pack_499`, `premium_tier`: đặt giá hoặc tier vào tên sẽ làm phân mảnh một tính năng khi giá hoặc tier thay đổi. Hãy giữ giá, tier, phiên bản và biến thể ra khỏi `feature`.
+
+Với bonus, hãy dùng tên của chương trình, chẳng hạn `welcome`, `daily_bonus`, `referral`, hoặc `support_compensation`.
+
+### Các trường khác \{#other-fields\}
+
+- **`reference_id`**: ID của đối tượng liên quan trong hệ thống của bạn, tối đa 128 ký tự. Dùng để liên kết một `spend_reversal` với `spend` mà nó đảo ngược, hoặc một `reward` với hành động mà nó được cấp cho. Không đặt dữ liệu cá nhân ở đây.
+- **`customer_placement_id`**: ID của màn hình trong ứng dụng của bạn nơi thao tác xảy ra. Đây là ID của bạn, không phải ID [placement](placements) của Adapty.
+- **`store` và `store_transaction_id`**: Gửi cả hai cùng nhau khi backend của bạn cộng coin cho một giao dịch mua. Adapty không xác minh rằng giao dịch mua đó tồn tại. Nếu giao dịch mua được hoàn tiền tại cửa hàng, Adapty sẽ thu hồi lại số coin đã cộng với tham chiếu này.
+- **`is_sandbox`**: Gửi `true` cho các khoản coin bạn cấp trong khi kiểm thử. Đối với các giao dịch mua tại cửa hàng, Adapty tự động đặt giá trị này dựa trên môi trường của giao dịch mua.
+
+:::warning
+Đừng cộng coin cho sản phẩm đã được [liên kết với tiền tệ](create-virtual-currency#link-products) trong Adapty. Adapty đã tự động cộng cho những giao dịch mua đó rồi, nên nếu backend của bạn cộng thêm, người dùng sẽ nhận được coin hai lần.
+:::
+
+Các giao dịch được tạo trước ngày 12 tháng 11 năm 2026 — khi tính năng gắn nhãn chưa có — vẫn giữ nguyên dữ liệu: Adapty đã tự động gắn nhãn ngược cho các giao dịch của mình, còn các giao dịch API của bạn trước ngày đó sẽ giữ `operation: null`. `metadata` không thay đổi và vẫn chấp nhận bất kỳ key nào bạn cần.
+
 ## Hạn chế \{#limitations\}
 
 - **Truy cập đa thiết bị yêu cầu định danh người dùng**: Số dư thuộc về một hồ sơ người dùng. Người dùng ẩn danh chỉ giữ được số dư trên thiết bị đã tạo ra nó, và sẽ mất số dư đó khi cài lại ứng dụng hoặc mở trên thiết bị khác. Hãy định danh người dùng để số dư có thể truy cập được trên mọi thiết bị và sau mỗi lần cài lại. Xem [Số dư, hồ sơ người dùng và thiết bị](virtual-currency-balance#balances-profiles-and-devices).

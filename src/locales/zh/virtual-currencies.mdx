@@ -35,6 +35,59 @@ keywords: ['虚拟货币', '虚拟货币', '应用内货币']
 对于订阅配额，请开启[积分到期](create-virtual-currency#link-products)功能。每次续订时未使用的积分自动清零，这样配额就始终是用户保持订阅的动力，重度用户也会选择购买积分包，而不是慢慢消耗囤积的积分。
 :::
 
+## 给交易打标签 \{#label-transactions\}
+
+当你的后端通过 [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) 授予或消耗积分时，为每笔交易添加标签，说明其含义以及积分的用途。通过 `operation`，你可以在交易历史中区分消耗、奖励、撤销和修正。通过 `feature`，你可以了解用户花积分买了什么，以及你为什么授予积分。
+
+所有标签字段均为可选项。一旦 Adapty 保存交易后，就无法再为其添加标签，因此请在第一次调用时设置标签。未附带标签的交易将以 `operation: null` 保存。
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### 操作 \{#operation\}
+
+大多数集成需要用到以下 `operation` 值：
+
+| 值 | 使用时机 |
+|-------|----------------|
+| `spend` | 用户消耗积分来使用某项功能或内容。 |
+| `spend_reversal` | 因操作失败（例如生成失败）而退还积分。 |
+| `reward` | 发放奖励、赠品或客服补偿积分。 |
+| `reward_reversal` | 撤回已发放的奖励积分。 |
+
+Adapty 在其创建的交易中设置 `operation`：购买、续订和试用获得 `top_up`，商店退款获得 `refund`，过期积分获得 `expiry`。完整的值列表，请参阅 [创建虚拟货币交易](api-adapty/operations/createVirtualCurrencyTransaction)。
+
+### 功能 \{#feature\}
+
+`feature` 表示积分的消耗用途或授予原因：由字母、数字和 `_` 组成的单个单词，后面可跟一个以点号分隔的子类型。Adapty 按原样存储该字段，且区分大小写，因此 `photoFilter` 和 `photofilter` 是两个不同的功能。
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`：包含空格。
+- ❌ `photo_filter.vintage.v2`：有两层子类型。
+- ❌ `pack_499`, `premium_tier`：在名称中包含价格或等级，当价格或等级变化时会将一个功能拆分为多个。请勿在 `feature` 中包含价格、等级、版本和变体信息。
+
+对于奖励，请使用活动名称，例如 `welcome`、`daily_bonus`、`referral` 或 `support_compensation`。
+
+### 其他字段 \{#other-fields\}
+
+- **`reference_id`**：你系统中关联对象的 ID，最多 128 个字符。用于将 `spend_reversal` 与其对应的 `spend` 关联，或将 `reward` 与其对应的授予操作关联。请勿在此存放个人数据。
+- **`customer_placement_id`**：操作发生时，应用内对应页面的 ID。这是你自己的 ID，不是 Adapty 的[版位](placements) ID。
+- **`store` 和 `store_transaction_id`**：当你的后端为某次购买直接发放金币时，请将两者一起传入。Adapty 不会验证该购买是否存在。如果该购买在商店发生退款，Adapty 会收回通过此引用发放的金币。
+- **`is_sandbox`**：测试期间发放的金币请传入 `true`。对于商店交易，Adapty 会根据购买的环境自动设置该字段。
+
+:::warning
+不要为已在 Adapty 中[关联货币](create-virtual-currency#link-products)的产品手动发放代币。Adapty 已自动为这类购买发放代币，若后端再次发放，用户将获得双倍代币。
+:::
+
+在标记功能上线（2026 年 11 月 12 日）之前创建的交易，其数据保持不变：Adapty 已对自身交易进行了追溯标记，而您在此日期之前通过 API 创建的交易仍保留 `operation: null`。`metadata` 不受影响，依然支持您所需的任意键名。
+
 ## 限制 \{#limitations\}
 
 - **跨设备访问需要身份识别**：余额归属于某个用户画像。匿名用户的余额仅保存在获得余额的设备上，卸载重装或在其他设备上登录后余额将丢失。请为用户建立身份识别，以便在所有设备上及每次重装后都能访问余额。详见[余额、用户画像与设备](virtual-currency-balance#balances-profiles-and-devices)。
