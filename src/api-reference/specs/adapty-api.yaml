@@ -1292,6 +1292,8 @@ paths:
         Credits or debits one or more virtual currencies for a profile in a single atomic transaction. Use a positive `amount` to credit (grant) and a negative `amount` to debit (spend). All items are applied together — if any item fails, none are applied.
 
         Each currency code may appear only once per request. A credit through this endpoint always creates a non-expiring balance.
+
+        To make the transaction usable in virtual currency analytics, label it with `operation` and `feature`. All labeling fields are optional: a request with only `items` and `metadata` is saved with `operation: null`.
       operationId: createVirtualCurrencyTransaction
       tags:
         - Virtual Currency
@@ -1328,17 +1330,32 @@ paths:
               $ref: '#/components/schemas/VirtualCurrencyTransactionRequest'
             examples:
               debit:
-                summary: Spend (debit) one currency
+                summary: Spend (debit) one currency on a feature
                 value:
                   items:
                     - currency_code: "COINS"
                       amount: -10
+                  operation: "spend"
+                  feature: "power_up.extra_life"
+                  customer_placement_id: "level-complete"
+                  reference_id: "session_7781"
               credit:
-                summary: Grant (credit) one currency
+                summary: Grant (credit) one currency as a bonus
                 value:
                   items:
                     - currency_code: "COINS"
                       amount: 500
+                  operation: "reward"
+                  feature: "welcome"
+              store_purchase_credit:
+                summary: Credit coins for a purchase your backend handles
+                value:
+                  items:
+                    - currency_code: "COINS"
+                      amount: 500
+                  operation: "top_up"
+                  store: "app_store"
+                  store_transaction_id: "2000001218103228"
               multi_currency:
                 summary: Debit two currencies at once
                 value:
@@ -1355,66 +1372,92 @@ paths:
                       amount: -100
                     - currency_code: "GOLD"
                       amount: 10
-                  metadata:
-                    reason: "exchange"
+                  operation: "exchange"
       responses:
-        '200':
-          description: Transaction applied successfully
+        '201':
+          description: Transaction created. The body is the created transaction, in the same shape as an item of the transaction history, plus the post-transaction balances.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VirtualCurrencyTransactionResponse'
               example:
-                transaction_id: "0190e8a4-1c2b-7def-8abc-2c1a4b6d8e90"
+                transaction_id: "019a7c3e-5b2a-7c1d-9e4f-0a1b2c3d4e5f"
+                transaction_type: "api_transaction"
+                items:
+                  - currency_code: "COINS"
+                    amount: -10
+                    balance_after: 90
+                metadata: null
+                operation: "spend"
+                feature: "power_up.extra_life"
+                customer_placement_id: "level-complete"
+                reference_id: "session_7781"
+                is_sandbox: false
+                store: null
+                store_transaction_id: null
+                created_at: "2026-11-12T10:00:00.123Z"
+                response_created_at: 1794477600123
                 balances:
                   - code: "COINS"
-                    name: "Gold Coins"
-                    balance: 12950
+                    name: "Coins"
+                    balance: 90
                     held: 0
-                    available: 12950
+                    available: 90
         '400':
           description: |
-            Bad request. The `error_code` field identifies the cause: `insufficient_balance`, `unknown_currency`, `duplicate_currency`, `amount_zero`, `balance_overflow`, `empty_items`, or `idempotency_key_invalid`.
+            Bad request. The `error_code` field identifies the cause:
+
+            - `validation_error` — the body or headers are invalid. For example, a labeling field breaks its format, `items` is empty or has more than 20 entries, an `amount` is 0 or out of the int32 range, a currency code repeats, `metadata` breaks its constraints, or neither `adapty-profile-id` nor `adapty-customer-user-id` is sent. `errors[].source` names the field. For a check that spans several fields, such as `store` sent without `store_transaction_id`, `source` is an empty string.
+            - `parse_error` — the body is not valid JSON.
+            - `idempotency_key_invalid` — `Idempotency-Key` is not a UUID v4.
+            - `unknown_currency` — the currency is not set up in the app.
+            - `unknown_store` — `store` is a custom store that is not set up in the app.
+            - `insufficient_balance` — a debit exceeds the available balance.
+            - `balance_overflow` — a credit would take the balance beyond the int32 range.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: "currency_code"
-                    errors: ["Insufficient balance for currency COINS"]
-                error_code: "insufficient_balance"
-                status_code: 400
+              examples:
+                validation_error:
+                  summary: Invalid feature format
+                  value:
+                    errors:
+                      - source: "feature"
+                        errors: ["String should match pattern '^[a-zA-Z0-9_]{1,32}(\\.[a-zA-Z0-9_]{1,32})?$'"]
+                    error_code: "validation_error"
+                    status_code: 400
+                store_pair:
+                  summary: store sent without store_transaction_id
+                  value:
+                    errors:
+                      - source: ""
+                        errors: ["Value error, store and store_transaction_id must be sent together"]
+                    error_code: "validation_error"
+                    status_code: 400
+                insufficient_balance:
+                  summary: Not enough balance
+                  value:
+                    errors:
+                      - source: "currency_code"
+                        errors: ["Insufficient balance for currency COINS"]
+                    error_code: "insufficient_balance"
+                    status_code: 400
         '401':
-          description: Unauthorized. The API key is missing or invalid.
+          description: Unauthorized. The API key is missing or invalid (`error_code` is `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden. The Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: null
-                    errors: ["Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access."]
-                error_code: "feature_not_enabled"
-                status_code: 403
         '404':
-          description: Profile not found.
+          description: Profile not found (`error_code` is `profile_does_not_exist`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: |
-            Conflict. The `error_code` field identifies the cause:
-
-            - `idempotency_in_flight` — a request with the same `Idempotency-Key` is still being processed. Retry after the interval in the `Retry-After` response header.
-            - `duplicate_source_transaction` — the underlying store transaction was already credited, so it is not applied again.
+            Conflict. A request with the same `Idempotency-Key` is still being processed (`error_code` is `idempotency_in_flight`). Retry after the interval in the `Retry-After` response header.
           content:
             application/json:
               schema:
@@ -1425,13 +1468,6 @@ paths:
                     errors: ["A similar request is being processed."]
                 error_code: "idempotency_in_flight"
                 status_code: 409
-        '422':
-          description: |
-            Unprocessable entity. The request body failed schema validation — for example, `items` contains more than 20 entries, or a `metadata` key or value breaks its constraints.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '429':
           description: |
             Too many requests. The per-app or global rate limit was exceeded (`error_code` is `rate_limited`). The default limits are 600 requests per minute per app and 6000 requests per minute globally.
@@ -1499,8 +1535,14 @@ paths:
                       - currency_code: "COINS"
                         amount: 500
                         balance_after: 12950
-                    metadata:
-                      reason: "promo_bonus"
+                    metadata: null
+                    operation: "reward"
+                    feature: "daily_bonus"
+                    customer_placement_id: "home-screen"
+                    reference_id: null
+                    is_sandbox: false
+                    store: null
+                    store_transaction_id: null
                     created_at: "2026-05-23T10:30:00Z"
                   - transaction_id: "0190e7b2-9a44-7c10-bb31-7d2e9f0a1c55"
                     transaction_type: "store_purchase"
@@ -1508,6 +1550,14 @@ paths:
                       - currency_code: "COINS"
                         amount: 1000
                         balance_after: 12450
+                    metadata: null
+                    operation: "top_up"
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: "app_store"
+                    store_transaction_id: "2000001218103228"
                     created_at: "2026-05-22T18:05:12Z"
                   - transaction_id: "0190e5c0-3f18-7b9a-9e6d-44a1c8b27e03"
                     transaction_type: "subscription_renewal"
@@ -1515,29 +1565,35 @@ paths:
                       - currency_code: "GEMS"
                         amount: 200
                         balance_after: 3280
+                    metadata: null
+                    operation: "top_up"
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: "play_store"
+                    store_transaction_id: "GPA.3345-1234-5678-90123"
                     created_at: "2026-05-20T09:00:00Z"
                 pagination:
                   next_cursor: "MjAyNi0wNS0yMFQwOTowMDowMFowMTkwZTVjMC0zZjE4LTdiOWEtOWU2ZC00NGExYzhiMjdlMDM="
         '400':
-          description: Bad request. The `cursor` value is invalid (`error_code` is `invalid_cursor`).
+          description: |
+            Bad request. The `error_code` field identifies the cause:
+
+            - `validation_error` — `limit` is outside 1–100, or neither `adapty-profile-id` nor `adapty-customer-user-id` is sent.
+            - `invalid_cursor` — the `cursor` value can't be parsed.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Unauthorized. The API key is missing or invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden. The Server API for virtual currencies is not enabled for this app.
+          description: Unauthorized. The API key is missing or invalid (`error_code` is `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Profile not found.
+          description: Profile not found (`error_code` is `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -1594,25 +1650,19 @@ paths:
                     held: 0
                     available: 840
         '400':
-          description: Bad request.
+          description: Bad request. Neither `adapty-profile-id` nor `adapty-customer-user-id` is sent (`error_code` is `validation_error`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Unauthorized. The API key is missing or invalid.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Forbidden. The Server API for virtual currencies is not enabled for this app.
+          description: Unauthorized. The API key is missing or invalid (`error_code` is `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Profile not found.
+          description: Profile not found (`error_code` is `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -3149,6 +3199,38 @@ components:
             type: string
           description: |
             Optional key-value pairs stored with the transaction. At most 5 keys. Each key matches `^[a-z0-9_]{1,30}$`, and each value is at most 200 characters.
+        operation:
+          type: string
+          enum: [top_up, refund, spend, spend_reversal, reward, reward_reversal, exchange, expiry, migration, adjustment]
+          description: |
+            What the transaction means. Most integrations need four values: `spend`, `spend_reversal`, `reward`, `reward_reversal`. If omitted, the transaction is saved and returned with `operation: null`.
+
+
+            Values: `top_up` — coins credited for a purchase, a subscription, or a trial; `refund` — coins taken back because the money was refunded; `spend` — coins spent on a feature or content; `spend_reversal` — coins returned for a failed action, such as a failed generation; `reward` — a bonus, a reward, or a support compensation; `reward_reversal` — a reward taken back; `exchange` — a conversion between currencies in one transaction, with items of opposite signs; `expiry` — coins expired; `migration` — balances moved from your own system; `adjustment` — a technical balance correction outside the in-app economy.
+        feature:
+          type: string
+          description: |
+            What the coins were spent on or granted for. One word, optionally with one dotted subtype: must match `^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$`. Stored as sent, case-sensitive. Do not encode price, tier, version, or variant. Example: `power_up.extra_life`.
+        customer_placement_id:
+          type: string
+          description: |
+            ID of the screen or placement in your app where the operation happened. This is your own ID, not an Adapty placement ID. Must match `^[a-zA-Z0-9_.-]{1,128}$`. Stored as sent. Example: `onboarding-step-3`.
+        reference_id:
+          type: string
+          description: |
+            ID of the related object in your system, such as a generation, a reward, or a support ticket. 1–128 characters; control, BIDI, and zero-width characters are rejected. Do not put personal data here. Example: `ticket_48213`.
+        is_sandbox:
+          type: boolean
+          default: false
+          description: Set to `true` for test coins. Sandbox transactions are excluded from virtual currency analytics by default.
+        store:
+          type: string
+          description: |
+            Store of the purchase this transaction refers to: `app_store`, `play_store`, `stripe`, `paddle`, or the ID of a custom store set up in the app. Up to 30 characters. If the purchase is refunded in the store, the coins credited with this reference are clawed back. Send together with `store_transaction_id`.
+        store_transaction_id:
+          type: string
+          description: |
+            Store transaction ID of that purchase. Up to 50 characters. It is only a reference: Adapty does not check that it exists or is unique. Send together with `store`.
       required:
         - items
 
@@ -3168,22 +3250,24 @@ components:
         - amount
 
     VirtualCurrencyTransactionResponse:
-      type: object
-      description: Result of a virtual currency transaction.
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-          description: Unique ID of the created transaction.
-        balances:
-          type: array
-          description: |
-            Post-transaction balance for each currency affected by this request (one entry per item in `items`). To read the full balance list for the profile, use `GET /api/v2/server-side-api/vc/balances/`.
-          items:
-            $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
-      required:
-        - transaction_id
-        - balances
+      description: The created transaction, in the same shape as an item of the transaction history, plus the post-transaction balances.
+      allOf:
+        - $ref: '#/components/schemas/VirtualCurrencyTransactionsHistoryItem'
+        - type: object
+          properties:
+            response_created_at:
+              type: integer
+              format: int64
+              description: When the response was generated, as a Unix timestamp in milliseconds.
+            balances:
+              type: array
+              description: |
+                Post-transaction balance for each currency affected by this request (one entry per item in `items`). To read the full balance list for the profile, use `GET /api/v2/server-side-api/vc/balances/`.
+              items:
+                $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
+          required:
+            - response_created_at
+            - balances
 
     VirtualCurrencyBalanceSnapshot:
       type: object
@@ -3297,6 +3381,37 @@ components:
           additionalProperties:
             type: string
           description: Key-value pairs stored with the transaction, if any.
+        operation:
+          type: string
+          nullable: true
+          enum: [top_up, refund, spend, spend_reversal, reward, reward_reversal, exchange, expiry, migration, adjustment]
+          description: |
+            What the transaction means. Adapty sets it on its own transactions: `store_purchase`, `subscription_renewal`, and `trial_start` get `top_up`, `refund` gets `refund`, and `expiry` gets `expiry`. On an `api_transaction`, it is the value you sent, or `null` if you sent none.
+        feature:
+          type: string
+          nullable: true
+          description: What the coins were spent on or granted for, as you sent it. `null` on transactions created by Adapty.
+        customer_placement_id:
+          type: string
+          nullable: true
+          description: The screen or placement ID from your app, as you sent it. `null` on transactions created by Adapty.
+        reference_id:
+          type: string
+          nullable: true
+          description: The ID of the related object in your system, as you sent it. `null` on transactions created by Adapty.
+        is_sandbox:
+          type: boolean
+          description: |
+            Whether the transaction is a test one. On transactions created by Adapty, it follows the environment of the store purchase. On an `api_transaction`, it is the value you sent, `false` by default.
+        store:
+          type: string
+          nullable: true
+          description: |
+            Store of the related purchase. Set on transactions created by Adapty from store events (purchase, renewal, trial, refund), and on an `api_transaction` sent with a purchase reference.
+        store_transaction_id:
+          type: string
+          nullable: true
+          description: Store transaction ID of the related purchase. Set on the same transactions as `store`.
         created_at:
           type: string
           format: date-time
@@ -3305,6 +3420,13 @@ components:
         - transaction_id
         - transaction_type
         - items
+        - operation
+        - feature
+        - customer_placement_id
+        - reference_id
+        - is_sandbox
+        - store
+        - store_transaction_id
         - created_at
 
     VirtualCurrencyBalanceChange:
