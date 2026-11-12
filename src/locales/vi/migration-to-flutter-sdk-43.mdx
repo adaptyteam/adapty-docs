@@ -1,0 +1,102 @@
+---
+title: "Migrate Adapty Flutter SDK to v4.3"
+description: "Migrate sang Adapty Flutter SDK v4.3: quyết định cách hiển thị thông báo Google Play, đọc tham số sự kiện flow dạng số là num, và xử lý nhập email từ onboarding."
+metadataTitle: "Migrate lên Adapty Flutter SDK v4.3 | Tài liệu Adapty"
+---
+
+Adapty Flutter SDK 4.3 mặc định hiển thị thông báo in-app của Google Play và thay đổi kiểu Dart của một số dữ liệu sự kiện flow và onboarding. Không có API công khai nào bị xóa hoặc đổi tên, vì vậy ứng dụng của bạn vẫn biên dịch được với 4.3 mà không cần thay đổi. Để giữ nguyên hành vi, hãy xem xét từng thay đổi trong hướng dẫn này.
+
+Nếu bạn vẫn đang dùng 4.0, hãy bắt đầu với [Migrate sang v4.1](migration-to-flutter-sdk-41) rồi làm theo hướng dẫn này.
+
+## Tóm tắt nhanh \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Google Play messages không được yêu cầu | Google Play messages được hiển thị theo mặc định trên Android, kể cả trên các flow |
+| Tham số sự kiện flow là số nguyên sẽ đến dưới dạng `double` trên Android | Chúng đến dưới dạng `int` trên cả hai nền tảng |
+| Trường email onboarding đến dưới dạng `AdaptyOnboardingsTextInput` | Chúng đến dưới dạng `AdaptyOnboardingsEmailInput` |
+| In dữ liệu nhập onboarding sẽ ẩn giá trị đã nhập | In dữ liệu nhập sẽ hiển thị giá trị đã nhập |
+
+## Cài đặt \{#installation\}
+
+Cập nhật `adapty_flutter` lên v4.3 trong file `pubspec.yaml` của bạn:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.3.0
+```
+
+Nếu ứng dụng của bạn sử dụng [Kids Mode](kids-mode-flutter), hãy chỉ định `adapty_flutter_kids` thay thế:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.3.0
+```
+
+Yêu cầu không thay đổi so với 4.1: **Flutter 3.32.0** (Dart 3.8.0) và **iOS 15.0**. Xem [Cài đặt Adapty SDK](sdk-installation-flutter) để biết hướng dẫn thiết lập đầy đủ.
+
+## Thông báo Google Play hiển thị mặc định \{#google-play-messages-are-shown-by-default\}
+
+Từ phiên bản 4.3 trở đi, SDK sẽ yêu cầu các thông báo in-app của Google Play — chẳng hạn như thông báo thanh toán bị từ chối — mỗi khi một `Activity` của ứng dụng khởi động sau lệnh `activate`. Điều này bao gồm cả khi ứng dụng quay lại foreground và khi một flow hoặc onboarding mở ra hoặc đóng lại, vì vậy thông báo có thể xuất hiện đè lên paywall.
+
+Nếu điều đó không ảnh hưởng đến ứng dụng của bạn, không cần thay đổi gì. Để tự chọn thời điểm hiển thị thông báo, hãy kích hoạt SDK với chế độ xử lý thủ công trên Android, và gọi `showStoreMessages` vào thời điểm phù hợp với ứng dụng của bạn:
+
+```dart showLineNumbers title="main.dart"
+
+final configuration = AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY');
+if (Platform.isAndroid) {
+  configuration.withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual);
+}
+await Adapty().activate(configuration: configuration);
+```
+
+Chỉ đặt chế độ xử lý thủ công trên Android để giữ nguyên iOS: trên iOS 16 trở lên, chế độ xử lý thủ công cũng sẽ giữ lại các thông báo App Store cho đến khi ứng dụng của bạn gọi `showStoreMessages`. Để xem toàn bộ API, hãy tham khảo [Kiểm soát thông báo cửa hàng](flutter-store-messages).
+
+:::warning
+Trong chế độ thủ công, các cửa hàng sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `showStoreMessages`, người dùng sẽ không bao giờ thấy thông báo thanh toán bị từ chối.
+:::
+
+## Tham số sự kiện flow dạng số là `int` trên Android \{#numeric-flow-event-parameters-are-int-on-android\}
+
+Trên Android, các tham số dạng số nguyên của sự kiện phân tích flow trước đây được nhận dưới dạng `double`. Từ phiên bản 4.3 trở đi, chúng được nhận dưới dạng `int`, giống như trên iOS. Điều này ảnh hưởng đến `flowViewDidReceiveAnalyticEvent` và callback `onDidReceiveAnalyticEvent` của `AdaptyUIFlowPlatformView`, bao gồm cả các giá trị ngày và giờ của sự kiện [flow input](flutter-flow-input).
+
+Việc ép kiểu sang `double` hiện sẽ ném lỗi trên Android. Hãy đọc các tham số dạng số dưới dạng `num`:
+
+```diff showLineNumbers
+- final timestamp = params['value'] as double;
++ final timestamp = params['value'] as num;
+```
+
+## Các trường email trong onboarding được nhận dưới dạng `AdaptyOnboardingsEmailInput` \{#onboarding-email-fields-arrive-as-adaptyonboardingsemailinput\}
+
+Kể từ phiên bản 4.3, các trường email trong onboarding sẽ được truyền đến `onboardingViewOnStateUpdatedAction` và callback `onStateUpdatedAction` của `AdaptyUIOnboardingPlatformView` dưới dạng `AdaptyOnboardingsEmailInput`. Trước đây, chúng được truyền dưới dạng `AdaptyOnboardingsTextInput`. Nếu code của bạn đang đọc email từ trường hợp text, hãy xử lý thêm trường hợp email:
+
+```diff showLineNumbers
+  switch (input) {
+    case AdaptyOnboardingsTextInput(:final value):
+      // text fields
+      break;
++   case AdaptyOnboardingsEmailInput(:final value):
++     // email fields
++     break;
+    case AdaptyOnboardingsNumberInput(:final value):
+      // number fields
+      break;
+  }
+```
+
+Các trường số hiện được trả về dưới dạng `AdaptyOnboardingsNumberInput`. Trước phiên bản 4.3, các cập nhật của chúng không được nhận về. Xem [Xử lý dữ liệu từ onboarding](flutter-onboarding-input).
+
+## Giá trị nhập trong onboarding hiển thị trong output khi in \{#onboarding-input-values-appear-in-printed-output\}
+
+Khi in một `AdaptyOnboardingsInputParams` hoặc `AdaptyOnboardingsInput`, giá trị đã nhập sẽ hiển thị. Nếu ứng dụng của bạn ghi log các đối tượng này, hãy kiểm tra lại log: chúng có thể chứa tên, email và các dữ liệu khác mà người dùng đã nhập.
+
+## Những điểm mới trong 4.3 \{#new-in-43\}
+
+Những bổ sung này không yêu cầu thay đổi code:
+
+- **[Kiểm soát thông báo cửa hàng](flutter-store-messages)**: Chọn thời điểm hiển thị thông báo từ App Store và Google Play.
+- **[Tải trước các placement](flutter-optimize-paywall-fetching#preload-placements)**: `preloadFlows` và `preloadFlowsForDefaultAudience` giúp làm ấm bộ nhớ cache của flow.
+- **[Giải phóng view đã giữ](flutter-present-paywalls#dismiss-the-flow-or-paywall)**: Phương thức `destroy()` giải phóng một flow view mà bạn đã giữ bằng `dismiss(destroy: false)` hoặc chưa từng hiển thị.
+- **[Gói cam kết 12 tháng](set-up-12-month-commitment)**: Thuộc tính `AdaptyProductSubscription.pricingTerms` mô tả gói trên iOS, và các mức độ truy cập báo cáo `billingPlan` và `commitmentInfo`.
+- **[Chế độ observer](report-transactions-observer-mode-flutter)**: Phương thức `reportTransaction` nhận tham số tùy chọn `appleJwsTransaction` trên iOS.
