@@ -114,8 +114,8 @@ source id is named.
   and `add-product-to-paywall` are short procedures, not routers — the roster's `0` counts headings,
   not content.)
 - **For virtual currencies we document the dashboard configuration and the calls a reader cannot avoid
-  making, not the API reference.** Because there is no SDK method to read or spend a balance, a backend
-  call is part of the feature, so `virtual-currency-quickstart` carries working `curl` for exactly two
+  making, not the API reference.** No SDK can grant or spend a balance, so a backend
+  call is part of the feature, and `virtual-currency-quickstart` carries working `curl` for exactly two
   operations and links the rest to `server-side-api-spec`. Balance and transaction *fields* stay in the
   spec.
 - **We don't write the backend mechanics established above.** The eligibility derivations, the
@@ -190,9 +190,15 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
 | "regional pricing", "bulk price change", "who changed this price" | `edit-product`. The CSV upload pushes prices *to* both consoles (only differing rows change; applying to existing subscribers is an opt-in checkbox). The audit log answers who/when. |
 | "change the subscription period", "wrong access level on a product" | `edit-product`. Duration is immutable after creation — create a new product. An access-level change applies to new subscriptions and reaches existing subscribers only at their next renewal. |
 | "can't delete this product", "swap a product on a published paywall", "which product appears first", "product display order in the app" | Product-to-paywall coupling: `delete-product` refuses deletion while any paywall uses the product, and `add-product-to-paywall` both sets the display order (preserved SDK-side, not sorted in app code) and warns that post-publish product edits skew that paywall's metrics. For placement on the Flow & Paywall Builder canvas, see `flow-logic`. |
-| "tokens", "credits", "coins", "gems", "hearts", "charge per generation", "usage allowance", "pay per use" | All virtual currency, whatever the app calls it: `virtual-currencies` for the model and its hard limits — max 20 currencies per app, and **no SDK method** to read or spend a balance, so this feature requires a backend calling the server-side API. |
+| "tokens", "credits", "coins", "gems", "hearts", "charge per generation", "usage allowance", "pay per use" | All virtual currency, whatever the app calls it: `virtual-currencies` for the model and its hard limits — max 20 currencies per app, and **no SDK method** to grant or spend a balance, so this feature requires a backend calling the server-side API. Reading is different: from iOS SDK 4.5.0 the profile carries balances (`ios-check-subscription-status`, *Read virtual currency balances*). |
+| "show the coin balance in the app", "balance in the SDK", "`virtualCurrencies` is empty" | `ios-check-subscription-status`, *Read virtual currency balances* — iOS only. The SDK profile response carries a `virtual_currencies` map keyed by currency code, each `{available}`: `null` when the app has no currencies, otherwise every currency of the app with `0` for none, never an empty object (backend contract, 2026-11-12). iOS decodes `null` and absent as an empty dictionary and keys are case-sensitive (AdaptySDK-iOS `feature/virtual-currencies` 01afe805, `Sources/Profile/Entities/AdaptyProfile.swift`, 2026-11-12). Purchase credit is already in the purchase's returned profile; server-side API changes arrive with the next profile fetch. As of 2026-11-12 no other SDK repo has a branch for it, so other platforms read through the server-side API. |
 | "credits vanished", "balance reset", "lost credits after reinstall", "existing subscribers got nothing" | Three distinct causes. Expiry toggle on `create-virtual-currency` zeroes, at each renewal, only the unused credits that renewing subscription granted — credits from other subscriptions, one-time products and Server-side API grants stay (backend code, 2026-11-03); product links apply going forward only, so a current subscriber waits for their next renewal; and per `virtual-currency-balance` a balance belongs to exactly one profile, so an anonymous user loses it on reinstall or a second device. |
 | "`insufficient_balance`", "double-charged tokens on a retry", "convert gems to gold" | `virtual-currency-quickstart`. Balances can't go negative, a transaction is atomic and can debit one currency while crediting another, and `Idempotency-Key` is what makes a retry safe. |
 
 ## Gaps and misses
 
+- **iOS SDK version for reading balances is inferred, not confirmed (2026-11-12).** The docs say 4.5.0
+  because `feature/virtual-currencies` in AdaptySDK-iOS sits on `dev` at `4.5.0-SNAPSHOT` and is absent
+  from `release/4.4.0`; it was not yet merged to `dev` and no tag contains it. Re-check
+  `git tag --contains 01afe805` before the release and fix `ios-check-subscription-status` if it ships
+  in another version.
