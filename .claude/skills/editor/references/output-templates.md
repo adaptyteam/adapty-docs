@@ -27,7 +27,7 @@ integrations"
 Line 58: "This allows you to manage it easily"
 
 Issue: Ambiguous pronouns — unclear what "this" and "it" refer to
-Rewrite: "The Profiles / CRM panel lets you manage user subscriptions"
+Rewrite: "In the **Profiles / CRM** panel, you can manage user subscriptions"
 
 ---
 

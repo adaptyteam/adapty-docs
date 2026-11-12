@@ -64,7 +64,7 @@ Altta yatan yerel Adapty SDK'ları her iki platformda da otomatik olarak 4.x sü
 
 ### GetPaywall → GetFlow
 
-Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` parametresi kaldırılır — bir flow render ettiğinizde, locale otomatik olarak belirlenir; özel paywalllar için tüm locale'ler `flow.RemoteConfigs` içinde döndürülür:
+Döndürülen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişir ve `locale` parametresi flow görünümü parametrelerine taşınır (`AdaptyUICreateFlowViewParameters.SetLocale`) — bkz. [Locale eşleştirmesi tam eşleşmedir](#locale-matching-is-exact); özel paywall'lar için tüm locale'ler `flow.RemoteConfigs` içinde döndürülür:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +84,19 @@ Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` para
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Yerel ayar eşleşmesi tam olmalıdır \{#locale-matching-is-exact\}
+
+:::warning
+v3'te Adapty sunucusu yerelleştirmeyi seçer ve dile geri dönebilirdi: paywall'da `pt-br` yoksa `pt-br` isteği `pt` yerelleştirmesini alırdı. v4'te SDK, yerelleştirmeyi cihazda seçer ve yalnızca tam eşleşme kullanır. Hiçbir yerelleştirmeyle eşleşmeyen bir kod, hata veya uyarı vermeden flow'u varsayılan yerelleştirmesiyle gösterir.
+:::
+
+Yükseltme yapmadan önce, uygulamanızın ilettiği yerel ayar kodlarını kontrol edin:
+
+- Geçirdiğiniz her bölgesel kod için, o kodla bir yerelleştirme ekleyin — örneğin `pt` yanına `pt-br` — ya da kodu flow'un sahip olduğu bir kodla eşleştirin.
+- Kodları kontrol panelinde göründüğü gibi tam olarak geçirin — küçük harfli alt etiketler kısa çizgiyle ayrılmış şekilde. Sistem locale tanımlayıcısını olduğu gibi geçirmeyin: `CultureInfo.CurrentCulture.Name`, hiçbir yerelleştirmeyle eşleşmeyen `pt-BR` döndürür.
+
+Bkz. [Yerelleştirmeler ve locale kodları](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -309,10 +322,11 @@ Bu adım herhangi bir derleme hatası oluşturmaz. Atlarsanız `SetFallback`, `D
 
 Bu değişiklikler derleme hatası oluşturmaz, dolayısıyla bunları çalışma zamanında test edin:
 
-- **Satın alma tamamlama**: v3'te, başarılı bir satın almanın ardından görünüm otomatik olarak kapatılıyordu. v4'te, **bir flow satın alma veya hata sonrasında siz kapatana kadar açık kalır** — SDK herhangi bir varsayılan davranış uygulamaz. Kullanıcı erişim kazandıktan sonra `FlowViewDidFinishPurchase` içinde `view.Dismiss(...)` metodunu kendiniz çağırın.
-- **Android sistem geri tuşu**: Sistem geri tuşu (veya geri kaydırma hareketi), `FlowViewDidPerformAction`'a `SystemBack` aksiyonu olarak iletilir ve artık flow'u kendiliğinden kapatmaz — bu durum iOS ile tutarlıdır; iOS'ta bir flow sistem hareketi ile kapatılamaz. Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` aksiyonu) ya da aksiyonu işlerken görünümü kendiniz kapatın.
-- **Görünümler tek kullanımlıktır**: `Dismiss` çağrısından sonra görünüm yok edilir. Flow'u tekrar göstermek için `CreateFlowView` metodunu yeniden çağırın.
-- **Observer mode işlemleri**: `ReportTransaction` artık başarı durumunda kod çözme hatası döndürmez — v3'te başarı yanıtı hatalı şekilde ayrıştırılıyordu, bu yüzden başarılı bir rapor her zaman hatayla tamamlanıyordu.
+- **Flow yerelleştirmesi**: Bölgesel bir yerel ayar kodu artık kendi diline geri dönmez — `pt-br`, `pt` yerelleştirmesini almaz. Tam eşleşme bulunamayan bir kod, flow'u varsayılan yerelleştirmesiyle gösterir. Bkz. [Yerel ayar eşleştirmesi birebir yapılır](#locale-matching-is-exact).
+- **Satın alma tamamlama**: v3'te başarılı bir satın almanın ardından görünüm otomatik olarak kapatılıyordu. v4'te **bir flow, satın alma veya hata sonrasında siz kapatana kadar açık kalır** — SDK varsayılan bir davranış uygulamaz. Kullanıcı erişim kazandıktan sonra `FlowViewDidFinishPurchase` içinde `view.Dismiss(...)` metodunu kendiniz çağırın.
+- **Android sistem geri tuşu**: Sistem geri tuşu (veya geri hareketi) `FlowViewDidPerformAction`'a `SystemBack` eylemi olarak iletilir ve flow'u kendiliğinden kapatmaz — bu, iOS davranışıyla aynıdır (iOS'ta bir flow sistem hareketiyle kapatılamaz). Kullanıcılara açık bir çıkış yolu sunun (bir **Close** düğmesi veya `on_device_back` eylemi) ya da eylemi işlerken görünümü kendiniz kapatın.
+- **Görünümler tek kullanımlıktır**: `Dismiss` çağrısının ardından görünüm yok edilir. Flow'u tekrar göstermek için `CreateFlowView` metodunu yeniden çağırın.
+- **Observer mode işlemleri**: `ReportTransaction` artık başarılı durumda bir çözümleme hatası döndürmez — v3'te başarı yanıtı hatalı ayrıştırılıyordu, bu yüzden başarılı bir raporlama her zaman hatayla tamamlanıyordu.
 
 ## Onboarding API'sinin kullanımdan kaldırılması \{#onboarding-api-deprecation\}
 

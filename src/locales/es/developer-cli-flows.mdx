@@ -1,10 +1,10 @@
 ---
 title: "Comandos de flows"
-description: "Comandos de la CLI de Adapty para crear flows, leer y escribir sus configuraciones del builder, validarlos y previsualizarlos, subir archivos multimedia, publicarlos y leer sus métricas."
+description: "Comandos de la CLI de Adapty que crean flows, leen y escriben sus configuraciones de builder, los validan y previsualizan, suben medios, los publican, listan y restauran sus versiones, los duplican, y leen sus métricas y embudo de pantallas."
 metadataTitle: "Comandos de Flows en la CLI | Documentación de Adapty"
 ---
 
-Los [flows](adapty-flow-builder) son los paywalls y onboardings que construyes en el Flow & Paywall Builder. El CLI gestiona el registro del flow, su configuración del builder y la publicación. Una configuración del builder es un documento JSON extenso que normalmente genera el Flow & Paywall Builder; el CLI no la genera por sí solo. Para crear o editar una configuración desde la terminal, usa el [skill flow-generator](flow-generator-skill), que ejecuta estos comandos por ti. Antes de publicar, el [skill flow-audit](flow-audit-skill) comprueba si el flow está listo para producción. Los comandos `flows metrics` leen los datos de la página de [métricas de flows](flow-metrics) y requieren la versión 0.15.0 o posterior del CLI. Los comandos se incluyen aquí como referencia.
+Los [flows](adapty-flow-builder) son los paywalls y onboardings que creas en el Flow & Paywall Builder. La CLI gestiona el registro del flow, su configuración del builder, la publicación y el [historial de versiones](flow-version-history). Una configuración del builder es un documento JSON de gran tamaño que normalmente genera el Flow & Paywall Builder, y la CLI no genera uno por sí sola. Para crear o editar una configuración desde el terminal, usa el [skill flow-generator](flow-generator-skill), que ejecuta estos comandos por ti. Antes de publicar, el [skill flow-audit](flow-audit-skill) comprueba si el flow está listo para producción. Los comandos `flows metrics` leen los datos de la página de [métricas del flow](flow-metrics) y requieren la versión 0.15.0 o posterior de la CLI. Los comandos `flows funnel` leen el [funnel del flow](flow-funnel) y requieren la versión 0.19.0 o posterior de la CLI. Los comandos se listan aquí como referencia.
 
 ## adapty flows list \{#adapty-flows-list\}
 
@@ -20,7 +20,7 @@ adapty flows list --app <app-id>
 
 Acepta [flags de paginación](developer-cli-reference#global-flags).
 
-## adapty flows get
+## adapty flows get \{#adapty-flows-get\}
 
 Obtén los detalles de un flow específico.
 
@@ -28,15 +28,15 @@ Obtén los detalles de un flow específico.
 adapty flows get --app <app-id> <flow-id>
 ```
 
-| Argument | Description |
+| Argumento | Descripción |
 |---|---|
-| `flow-id` | Flow ID (UUID) |
+| `flow-id` | ID del flow (UUID) |
 
-| Flag | Required | Description |
+| Flag | Obligatorio | Descripción |
 |---|---|---|
-| `--app` | Yes | App ID (UUID) |
+| `--app` | Sí | ID de la app (UUID) |
 
-La respuesta contiene `id`, `name`, `status` y `updated_at`. El status es uno de los siguientes:
+La respuesta contiene `id`, `name`, `status`, `published_flow_version_id` y `updated_at`. `published_flow_version_id` es el ID de la versión en producción, o `null` si el flow nunca ha sido publicado. El estado es uno de los siguientes:
 
 | Estado | Significado |
 |---|---|
@@ -128,23 +128,33 @@ Tras un intento de publicación, la respuesta también incluye tres campos que d
 
 ## adapty flows config update
 
-Escribe la configuración del builder de un flow.
+Escribe la configuración del builder de un flow y sus Remote Configs.
 
 ```bash
-adapty flows config update --app <app-id> <flow-id> --config-file config.json
+adapty flows config get --app <app-id> <flow-id> --json > flow.json
+adapty flows config update --app <app-id> <flow-id> --file flow.json
 ```
 
-| Argument | Description |
+| Argumento | Descripción |
 |---|---|
 | `flow-id` | ID del flow (UUID) |
 
 | Indicador | Requerido | Descripción |
 |---|---|---|
 | `--app` | Sí | ID de la app (UUID) |
-| `--config` | Uno de los dos | Configuración del Builder como cadena JSON |
-| `--config-file` | Uno de los dos | Ruta a un archivo JSON con la configuración del Builder, o `-` para leer desde stdin |
-| `--remote-configs` | No | Array JSON de entradas `{locale, data}`, donde `data` es el Remote Config como cadena |
-| `--expected-updated-at` | No | El valor `updated_at` de un `flows config get` anterior. Si la configuración cambió después de esa lectura, el comando falla en lugar de sobrescribir el cambio. Omítelo para sobrescribir sin condiciones |
+| `--file` | En lugar de `--config`, `--config-file` y `--remote-configs` | Ruta a un archivo JSON con `config` y `remote_configs`, o `-` para leer desde stdin. La salida de `flows config get --json` funciona tal cual. Las demás claves se ignoran |
+| `--config` | Sin `--file`: uno de `--config` y `--config-file` | Configuración del builder como cadena JSON |
+| `--config-file` | Sin `--file`: uno de `--config` y `--config-file` | Ruta a un archivo JSON con la configuración del builder, o `-` para leer desde stdin |
+| `--remote-configs` | Sin `--file` | Array JSON de entradas `{locale, data}`, donde `data` es el Remote Config como cadena. `[]` elimina todos los Remote Configs |
+| `--expected-updated-at` | No | El valor `updated_at` obtenido de un `flows config get` anterior. Si la configuración cambió después de esa lectura, el comando falla en lugar de sobrescribir el cambio. Omítelo para sobrescribir incondicionalmente |
+
+Una escritura reemplaza la configuración y toda la lista de Remote Configs. Para conservar los Remote Configs, envía el `remote_configs` de `flows config get --json`. Sin `--file`, el comando necesita tanto la configuración como `--remote-configs`: si falta alguno, sale con el código 2 y no envía ninguna solicitud. El flag `--file` y el `--remote-configs` requerido necesitan la versión 0.20.0 o posterior de la CLI.
+
+Para escribir la primera configuración de un flow nuevo, pasa una lista vacía de Remote Configs:
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json --remote-configs '[]'
+```
 
 Al escribir la configuración se guarda un borrador sin publicarlo. En un flow publicado, la escritura crea una nueva versión: el estado del flow pasa a `dirty`, y los usuarios siguen viendo la versión publicada hasta que ejecutes [`flows publish`](#adapty-flows-publish).
 
@@ -188,9 +198,9 @@ adapty flows config preview ./config.json --screen <screen-id> --device iphone-1
 
 En la terminal, el comando abre la vista previa en tu navegador. Cuando se usa con pipes o con `--json`, imprime la URL en su lugar. La URL contiene toda la configuración y es larga: pásala por un pipe a una herramienta de capturas de pantalla en lugar de imprimirla. Las configuraciones de más de 32 KB aproximadamente se renderizan lentamente.
 
-## adapty flows media upload
+## adapty flows media upload \{#adapty-flows-media-upload\}
 
-Sube una imagen para usarla en la configuración de un flow.
+Sube una imagen para usar en una configuración de flow.
 
 ```bash
 adapty flows media upload --app <app-id> ./hero.png
@@ -200,11 +210,188 @@ adapty flows media upload --app <app-id> ./hero.png
 |---|---|
 | `file` | Ruta al archivo de imagen |
 
-| Flag | Obligatorio | Descripción |
+| Flag | Requerido | Descripción |
 |---|---|---|
 | `--app` | Sí | ID de la app (UUID) |
 
-Formatos aceptados: GIF, HEIC, JPEG, PNG, SVG y WebP. La respuesta contiene el `id`, el `name` y la `url` del CDN de la imagen para referenciarla desde la configuración.
+Formatos aceptados: PNG, JPEG, WebP y SVG. La respuesta contiene el `id`, el `name` y la `url` de CDN de la imagen para referenciarla desde la configuración. Para subir un vídeo, usa [`flows media upload-video`](#adapty-flows-media-upload-video).
+
+## adapty flows media upload-video
+
+Sube un vídeo para usarlo en una configuración de flow.
+
+```bash
+adapty flows media upload-video --app <app-id> ./intro.mp4
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Path to the video file |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Formatos aceptados: MP4 y WebM. El vídeo debe durar como máximo 30 segundos, pesar como máximo 50 MB, y tanto su ancho como su alto deben ser de al menos 640 píxeles. No se admite GIF y el comando no convierte imágenes animadas a vídeo.
+
+La respuesta contiene la URL del vídeo (una lista de reproducción HLS), la URL de la imagen de vista previa y el `width` y `height` del vídeo. En la configuración, un elemento de vídeo los recibe como `videoUrl`, `previewUrl`, `width` y `height`.
+
+## Lista de versiones de flows de adapty \{#adapty-flows-versions-list\}
+
+Lista las versiones de un flow, de la más reciente a la más antigua. Son las versiones del [historial de versiones](flow-version-history) en el Flow & Paywall Builder.
+
+```bash
+adapty flows versions list --app <app-id> <flow-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--search` | No | Muestra solo las versiones cuyo título contiene este texto. No distingue entre mayúsculas y minúsculas, y coincide con partes de una palabra: `friday` encuentra **Black Friday** |
+
+Cada línea muestra el título, el estado, la fecha y el ID de una versión. El título es el nombre de la versión, o **Version N** cuando la versión no tiene nombre. El estado es uno de los siguientes:
+
+| Estado | Significado |
+|---|---|
+| `draft` | La versión que estás editando. Un flow tiene un borrador o ninguno. Mientras el borrador se está publicando, su línea termina con `Publishing…`, y si la publicación falla, termina con `Publish failed` |
+| `live` | La versión que ven tus usuarios |
+| `previous` | Una versión anterior. Estuvo activa antes, o una versión más reciente la reemplazó antes de que se publicara |
+
+La fecha de una versión `live` o `previous` es la fecha en que comenzó su publicación. Para el borrador y para una versión `previous` que nunca se publicó, es la fecha en que se creó la versión.
+
+Para un flow que nunca se ha publicado, el comando imprime `History will appear after the first publish.` y la línea del borrador debajo. El [historial de versiones](flow-version-history) en el dashboard no muestra ninguna línea para ese flow. Cuando ninguna versión coincide con `--search`, el comando imprime `No versions match the search.`
+
+El comando siempre lista todas las versiones y no acepta flags de paginación.
+
+Con `--json`, el comando imprime `{data, meta}` de Adapty sin modificaciones, con las filas en `data`. Cada fila contiene `flow_version_id`, `version`, `name`, `title`, `state`, `is_current`, `publication_status`, `published_at`, `created_at`, `updated_at` y `last_edited_by`. `updated_at` es un timestamp en milisegundos del último cambio de contenido de la versión: pasa el `updated_at` del borrador a [`flows versions restore`](#adapty-flows-versions-restore) como `--expected-updated-at`. `last_edited_by` indica el usuario que realizó el último cambio en la versión, o es `null` cuando Adapty no conoce al usuario.
+
+## adapty flows versions get
+
+Lee una versión de un flow. Leer una versión no cambia nada: el borrador y la versión publicada permanecen tal cual.
+
+El comando muestra el título, el ID, el número, el estado y la fecha de la versión, el usuario que la modificó por última vez, y su enlace de **Test on device**. El contenido completo de la versión — su configuración del builder con todos los layouts, sus Remote Configs y sus paywalls — está en la salida de `--json`, y en el archivo de `--output`.
+
+```bash
+adapty flows versions get --app <app-id> <flow-id> <version-id> --output version.json
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+| `version-id` | ID de versión (UUID), de [`flows versions list`](#adapty-flows-versions-list) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--output` | No | Escribe el contenido completo de la versión en este archivo como JSON |
+| `--yes`, `-y` | No | Reemplaza un archivo `--output` existente sin preguntar. Obligatorio con `--json` o en un pipe cuando el archivo ya existe |
+
+Si el CLI no puede escribir el archivo `--output`, por ejemplo porque su carpeta no existe, el comando muestra `Could not write <path> (<errno>).` y sale con el código 1.
+
+## adapty flows versions preview
+
+Imprime el enlace **Test on device** de una versión. Ábrelo en tu dispositivo de prueba para ver la versión en la [app móvil de Adapty](paywall-device-compatibility-preview#preview-on-devices). Funciona con cualquier versión: el borrador, la versión publicada o una anterior.
+
+```bash
+adapty flows versions preview --app <app-id> <flow-id> <version-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+| `version-id` | ID de la versión (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+## adapty flows versions rename
+
+Renombra una versión. Puedes renombrar el borrador, la versión en producción y versiones anteriores.
+
+```bash
+adapty flows versions rename --app <app-id> <flow-id> <version-id> --name "Black Friday"
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+| `version-id` | ID de la versión (UUID) |
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--name` | Sí | Nuevo nombre de la versión. Pasa `--name ""` para eliminar el nombre y que la versión vuelva a mostrarse como **Version N**. Un nombre compuesto solo de espacios también lo elimina |
+
+El comando muestra el ID de la versión y el nuevo título. Adapty elimina los espacios al inicio y al final del nombre. Dos versiones pueden tener el mismo nombre. Cambiar el nombre no modifica el contenido ni el campo `updated_at` de la versión, por lo que no entra en conflicto con un guardado posterior del borrador.
+
+## adapty flows versions restore \{#adapty-flows-versions-restore\}
+
+Restaura una versión como borrador del mismo flow. Esto es **Duplicate as draft** en el [historial de versiones](flow-version-history#restore-an-earlier-version). La versión restaurada no llegará a tus usuarios hasta que la [publiques](#adapty-flows-publish).
+
+:::tip
+Una restauración reemplaza el borrador actual. Para conservar el borrador, duplícalo primero en un nuevo flow con [`flows duplicate`](#adapty-flows-duplicate).
+:::
+
+```bash
+adapty flows versions restore --app <app-id> <flow-id> <version-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+| `version-id` | ID de versión (UUID) de una versión `live` o `previous` |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--expected-updated-at` | Con `--yes`, cuando el flow tiene un borrador | El `updated_at` del borrador, obtenido de [`flows versions list --json`](#adapty-flows-versions-list). Si el borrador cambió después de esa lectura, el comando falla en lugar de reemplazar el cambio |
+| `--yes`, `-y` | No | Reemplaza el borrador sin confirmación. Obligatorio con `--json` o en un pipe cuando el flow tiene un borrador |
+
+La instrucción primero lee las versiones del flow:
+
+- **El flow no tiene borrador**: El comando no solicita nada. Adapty crea un nuevo borrador con el siguiente número de versión, sin nombre y con todo el contenido de la versión. La versión publicada y la versión que restauras permanecen tal como están.
+- **El flow tiene un borrador**: El comando solicita `Replace the draft '<draft>' (last change <time> by <user>) with '<version>'? To keep the draft, duplicate it to a new flow first.`, luego `Apply? [y/N]`. Si respondes `y`, el borrador conserva su ID, número y nombre, y recibe el contenido de la versión. No se añade ninguna versión. Cualquier otra respuesta sale con el código 1 y no envía nada.
+
+Con `--json`, en una tubería o sin terminal, el comando no puede hacer preguntas. Si el flow tiene un borrador, no envía nada y termina con código 6 a menos que pases `--yes`. Su mensaje plantea la pregunta y añade `To replace it, re-run with --yes --expected-updated-at <ms> (the draft's updated_at).`, con el `updated_at` del borrador en lugar de `<ms>`. Con `--yes`, pasa también `--expected-updated-at`: sin él, el comando termina con código 6 y no envía nada. En una terminal sin `--expected-updated-at`, el comando toma el `updated_at` del borrador que te muestra en la pregunta.
+
+Después de una restauración, el comando muestra `Restored '<version>' as the draft '<draft>' (<draft-id>). Nothing is published.`
+
+Adapty rechaza la restauración y no realiza ningún cambio en estos casos. El comando muestra el mensaje de Adapty, añade instrucciones para algunos de ellos y sale con código 4:
+
+| Mensaje | Qué hacer |
+|---|---|
+| `This flow version is already the current draft.` | Elige otra versión. |
+| `Flow version does not exist.` | El ID de versión no está en la lista de versiones de este flow. Obtén el ID con [`flows versions list`](#adapty-flows-versions-list). |
+| `Flow version is already being published.` | Espera a que finalice la publicación y vuelve a restaurar. |
+| `This flow version uses deleted products: …` | Elige una versión que no los utilice. |
+| `This flow configuration was already updated by …` | Un compañero modificó el borrador después de que lo consultaste. Vuelve a listar las versiones y reintenta. |
+| `Flow is deleted.` | El flow está archivado. Primero [restáuralo desde el archivo](archive-flows#restore-a-flow) en el dashboard. |
+
+## adapty flows duplicate \{#adapty-flows-duplicate\}
+
+Copia un flow, o una de sus versiones, a un nuevo flow. Esta opción es **Duplicate flow** en el botón de acciones del flow en la barra superior del Flow & Paywall Builder (consulta [Copiar flows](copy-flows)), y **Duplicate as new flow** en el [historial de versiones](flow-version-history#restore-an-earlier-version).
+
+```bash
+adapty flows duplicate --app <app-id> <flow-id> --version <version-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--version` | No | ID de versión (UUID) a copiar, de [`flows versions list`](#adapty-flows-versions-list). Cualquier versión es válida, incluido el borrador. Sin este flag, el comando copia el borrador o, si el flow no tiene borrador, la versión publicada |
+
+El comando imprime `New flow '<name>' (<flow-id>), not published.`. El nuevo flow se nombra igual que el flow de origen con `_copy` al final. No está publicado y tiene un borrador con el contenido de la versión. El flow de origen, su borrador y su historial permanecen tal como están. Puedes duplicar un flow mientras está siendo publicado.
+
+Adapty rechaza copiar una versión que utilice un producto eliminado y copiar un flow archivado. Los mensajes son los mismos que para [`flows versions restore`](#adapty-flows-versions-restore).
 
 ## adapty flows metrics list \{#adapty-flows-metrics-list\}
 
@@ -220,7 +407,7 @@ adapty flows metrics list --app <app-id> --ids <flow-id>,<flow-id>
 | `--ids` | Sí | IDs de los flows (UUIDs). Sepáralos con comas o repite el flag |
 | `--csv` | No | Imprime CSV: una fila por cada flow, con el ID del flow y las 27 métricas. No se puede usar con `--json` |
 
-Cada línea muestra el ID del flow con sus visualizaciones, compras, pruebas y revenue. `--json` y `--csv` incluyen las 27 métricas de la página de [métricas de flow](flow-metrics#metrics-definitions), como `unique_profiles_views`, `net_revenue` y `conversion_rate_purchases`. Una métrica sin datos es `0`, nunca `null`.
+Cada línea muestra el ID del flow con sus vistas, compras, pruebas e ingresos. `--json` y `--csv` incluyen las 27 métricas de la página de [métricas de flow](flow-metrics#metrics-definitions), como `unique_profiles_views`, `net_revenue` y `conversion_rate_purchases`. Una métrica sin datos es `0`, nunca `null`. Para cada flow que nunca ha sido publicado, el comando imprime `<flow-id>: No data: the flow was never published.` debajo de la tabla. `--json` añade `note: "never_published"` a la fila de ese flow, y con `--csv` las notas van a stderr para que el CSV se mantenga limpio.
 
 ## Valores de métricas de flows de Adapty \{#adapty-flows-metrics-values\}
 
@@ -278,6 +465,10 @@ adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-
 | `--depth` | No | Cuántos niveles del árbol se muestran bajo `Total`. Por defecto: `1` |
 | `--csv` | No | Imprime CSV: una fila por cada nodo del árbol completo. No se puede usar con `--json` |
 
+Para un flow que nunca se ha publicado, el comando muestra la nota `No data: the flow was never published.` encima de los números, y `--json` añade `note: "never_published"`. Con `--csv`, la nota va a stderr para que el CSV quede limpio.
+
+Para ver los ingresos de un flow, ejecuta `adapty analytics chart --app <app-id> --chart revenue --date-from <YYYY-MM-DD> --date-to <YYYY-MM-DD> --filter flow_id=<flow-id>`. Consulta [Comandos de Analytics](developer-cli-analytics).
+
 El CLI termina con código 2 y no envía ninguna solicitud cuando falta `--based-on` o `--date-type`, o cuando solo se proporciona un extremo del período. Adapty valida los valores de `--based-on`, `--date-type` y `--granularity`: un valor incorrecto termina con código 4, y el error lista los valores aceptados.
 
 ### Lee el resultado \{#read-the-output\}
@@ -310,6 +501,52 @@ adapty flows metrics get --app <app-id> <flow-id> --date-from 2026-09-01 --date-
 
 La CLI envía cada valor exactamente como está escrito. Para incluir una coma dentro de un valor, escribe `\,`. Un valor vacío también es un valor: `attribution_channel=` conserva los datos sin canal, que `flows metrics values` muestra como **No Data**.
 
-## ¿Qué viene ahora? \{#whats-next\}
+## adapty flows funnel values
 
-- [Referencia de comandos](developer-cli-reference) — todos los temas de la CLI, los flags globales y los flags de paginación.
+Lista las claves y valores de filtro de un funnel de flow: lo que acepta [`flows funnel get --filter`](#adapty-flows-funnel-get).
+
+```bash
+adapty flows funnel values --app <app-id> <flow-id>
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+
+La salida tiene el mismo formato que [`flows metrics values`](#adapty-flows-metrics-values).
+
+## adapty flows funnel get \{#adapty-flows-funnel-get\}
+
+Muestra la pantalla en la que los usuarios abandonan un flow: el embudo de una versión de flow, paso a paso y pantalla a pantalla, tal como aparece en la pestaña [Funnel](flow-funnel) del flow.
+
+```bash
+adapty flows funnel get --app <app-id> <flow-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date
+```
+
+| Argumento | Descripción |
+|---|---|
+| `flow-id` | ID del flow (UUID) |
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--date-from` | Sí | Primer día del período, inclusive (`YYYY-MM-DD`), en la zona `--timezone` o la zona horaria de la app |
+| `--date-to` | Sí | Último día del período, inclusive (`YYYY-MM-DD`), en la zona `--timezone` o la zona horaria de la app |
+| `--date-type` | Sí | A qué fecha se aplica el período: `purchase_date` o `profile_install_date` |
+| `--flow-version-id` | No | ID de versión del flow (UUID) a leer. Sin él, la CLI lee la versión publicada |
+| `--filter` | No | Conserva solo los usuarios con estos valores de una clave de filtro, como `key=value`. Se puede repetir. Las claves y valores provienen de [`flows funnel values`](#adapty-flows-funnel-values) y funcionan como en [Filtrar las métricas](#filter-the-metrics) |
+| `--timezone` | No | Zona horaria IANA de los días, por ejemplo `Europe/Berlin`. Sin ella, Adapty usa la zona horaria de la app |
+| `--csv` | No | Imprime el archivo CSV que descarga el dashboard, con la fila de totales primero. No se puede usar con `--json` |
+
+El comando muestra la versión del flow y el período, una línea de resumen y una tabla. El resumen indica cuántos usuarios entraron al flow, cuántos lo completaron, la tasa de abandono y los ingresos. La tabla tiene una fila por cada paso, con las columnas `Step`, `Type`, `Reached`, `Completed`, `Drop rate` y `Revenue`. Un paso con más de una pantalla también tiene una fila por cada una de sus pantallas. Un valor que no aplica, como los ingresos de una pantalla de onboarding, se muestra como `—`.
+
+When no users entered the flow in the period, the table lists the screens of the version with zeros. For every field of the answer, use `--json`.
+
+## ¿Qué sigue? \{#whats-next\}
+
+- [Referencia de comandos](developer-cli-reference) — todos los temas del CLI, los flags globales y los flags de paginación.
+- [Historial de versiones del flow](flow-version-history) — las mismas versiones en el Flow & Paywall Builder.

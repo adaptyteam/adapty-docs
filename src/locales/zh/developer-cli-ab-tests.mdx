@@ -1,26 +1,26 @@
 ---
-title: "通过 CLI 运行 A/B 测试"
-description: "使用 Adapty CLI 在终端中创建、启动、停止、替换和归档付费墙及流程的 A/B 测试，并在每个不可撤销的步骤前预览实际效果。"
+title: "从 CLI 运行 A/B 测试"
+description: "使用 Adapty CLI 在终端中创建、启动、停止、替换和归档付费墙及流程 A/B 测试，读取测试结果，并在每个不可撤销的步骤前查看具体影响。"
 metadataTitle: "开发者 CLI 中的 A/B 测试 | Adapty 文档"
 ---
 
-Adapty CLI 通过 `adapty ab-tests` 命令主题，在终端中运行付费墙或流程的常规 [A/B 测试](ab-tests)。你可以将测试创建为草稿，在某个版位针对某个目标受众启动测试，选定赢家后停止测试，用修改后的测试替换正在运行的测试，以及归档旧测试。
+Adapty CLI 通过 `adapty ab-tests` 命令，让你直接在终端中管理付费墙或流程的 [A/B 测试](ab-tests)。你可以将测试创建为草稿、在某个版位的某个目标受众上启动测试、指定获胜者并停止测试、用修改后的版本替换正在运行的测试、归档旧测试，以及查看每个实验变体的结果。
 
-使用它让 AI 代理运行你的测试、跨多个应用编写测试脚本，或者无需打开看板即可启动或停止测试。
+无论是让 AI 代理自动运行测试、在多个应用中批量执行测试脚本，还是不打开看板直接启动或停止测试，都可以使用该工具。
 
-常规测试会将某个版位中某个目标受众的用户，分流到两个或多个付费墙，或两个或多个流程之间进行测试。如需跨多个版位运行测试，请在看板中使用[跨版位测试](ab-test-types)。`ab-tests` 命令不会返回测试结果。如需查看最优概率等结果，请前往看板：[A/B 测试结果与数据图表](results-and-metrics)。如需读取某个测试的用户分析数据，请通过 `adapty analytics catalog` 中的 **A/B tests** 维度对[分析命令](developer-cli-analytics)进行筛选。
+普通测试会将某个版位的一个目标受众的用户分配到两个或多个付费墙，或两个或多个流程之间。若要跨多个版位运行测试，请在看板中使用[跨版位测试](ab-test-types)。若要读取结果（例如"最优概率"），请使用 [`ab-tests metrics`](#read-the-results) 命令。看板中相同的结果说明请参阅 [A/B 测试结果与数据指标](results-and-metrics)。若要读取某个测试用户的分析数据，请通过 `adapty analytics catalog` 中的 **A/B tests** 维度对[分析命令](developer-cli-analytics)进行筛选。
 
 ## 开始之前 \{#before-you-start\}
 
-`ab-tests` 主题与 CLI 的其他部分使用相同的安装和登录方式。如果尚未完成配置，请按照[快速入门指南](developer-cli-quickstart)中的步骤 1 和步骤 2 操作。该主题需要 CLI 0.14.0 或更高版本。要查看当前版本，请运行 `adapty --version`。
+`ab-tests` 主题与 CLI 其他部分使用相同的安装和登录方式。如果尚未完成配置，请按照[快速入门指南](developer-cli-quickstart)中的步骤 1 和 2 操作。该主题需要 CLI 0.14.0 或更高版本，`ab-tests metrics` 命令需要 0.18.0 或更高版本。运行 `adapty --version` 可查看当前版本。
 
-每条命令都需要通过 `--app` 传入应用的 UUID。要找到它，请运行：
+每个命令都需要通过 `--app` 传入应用的 UUID。运行以下命令可查找：
 
 ```bash
 adapty apps list
 ```
 
-A/B 测试所使用的内容必须已经存在：
+A/B 测试使用已存在的内容：
 
 - **流程（Flows）**：流程只有在发布后才能加入测试。草稿状态或有未发布更改的流程将被拒绝。如需发布流程，请运行 `adapty flows publish`。
 - **付费墙（Paywalls）**：如需使用 Adapty 中已有的产品创建付费墙，请运行 `adapty paywalls create`。如需为付费墙设计新样式，请使用[付费墙编辑工具](adapty-paywall-builder)。
@@ -115,6 +115,24 @@ adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" 
 ```
 
 正在运行的测试会停止并转为 `completed` 状态，其结果保留在原 ID 下。一个新的测试以新 ID 在相同目标受众上启动，Adapty 会重新为该目标受众中的每位用户分配实验变体。如果在 `--placement` 中传入不同的版位，Adapty 会将目标受众移至该版位。"所有用户"测试无法移动。
+
+## 读取测试结果 \{#read-the-results\}
+
+使用 `ab-tests metrics` 命令读取 A/B 测试各组的表现。每个命令都需要 `--type` 参数：即 `ab-tests get` 返回的 `type`，值为 `paywall` 或 `flow`。若类型与测试不匹配，命令将被拒绝。
+
+要查看哪个分组处于领先，可读取测试的完整生命周期数据：
+
+```bash
+adapty ab-tests metrics total <test-id> --app <app-id> --type flow
+```
+
+每个实验组均显示其流量权重、收入、购买次数、展示次数、成为最优方案的概率（`P2BB %`），以及每 1,000 名独立访客的收入区间。若流程 A/B 测试恰好包含两个实验组，还会额外显示 p 值。在[停止测试](#stop-a-test)之前，请先在此处确认领先方案。
+
+- **P2BB** 是某个实验分支按每位浏览者收益计算成为最优分支的概率（百分比）。每个分支的 P2BB 均为 `0` 表示未计算。某个分支为 `0` 而另一个分支高于 `0`，则表示真实值为 `0`。所有分支 P2BB 相同且任何分支均无购买记录，也表示未计算。若所有分支均无浏览量，则无结果。
+- **区间** 是每 1,000 名独立浏览者收益的 99% 置信区间，包含低值、均值和高值。若某分支的付费用户少于 50 人，区间则为 `0`、均值和两倍均值。若无付费用户，则为 `0`、`0`、`0`。
+- **p 值** 仅在恰好包含两个分支的流程测试中存在。否则为空，或在 `--json` 中为 `null`。
+
+要比较同类型的多个测试，请使用 [`ab-tests metrics list`](#ab-tests-metrics-list)。要查看某段时间内各实验组的数据，请使用 [`ab-tests metrics get`](#ab-tests-metrics-get)。`get` 中某个时段的 P2BB 并不等于该实验组的 P2BB，因此请勿据此选出获胜者。
 
 ## 停止测试 \{#stop-a-test\}
 
@@ -246,6 +264,51 @@ adapty ab-tests archive --app <app-id> <test-id>
 | 标志 | 是否必填 | 描述 |
 |---|---|---|
 | `--yes`, `-y` | 否 | 无需确认直接归档。在使用 `--json` 或管道时必须指定。 |
+
+### `ab-tests metrics total`
+
+显示测试整个生命周期内每个实验变体的数据。请参阅[读取结果](#read-the-results)。
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--type` | 是 | `paywall` 或 `flow`，与 `ab-tests get` 显示的一致。 |
+
+### `ab-tests metrics list`
+
+显示多个同类测试的全生命周期数据图表：每个测试一行 `Total` 汇总，以及每个分组各一行。对于付费墙测试的分组，CLI 仅显示区间均值，不显示上下界。该命令不接受测试 ID 参数。
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--type` | 是 | `paywall` 或 `flow`。 |
+| `--ids` | 是 | 测试 ID。用逗号分隔，或重复使用该参数。 |
+| `--csv` | 否 | 输出 CSV 格式而非表格。不能与 `--json` 同时使用。 |
+
+### `ab-tests metrics get`
+
+显示某个测试在指定时段内的数据指标，包含各实验分组及其下的访问等级，与看板结果页面一致。付费墙测试需要提供 `--date-from`、`--date-to` 和 `--date-type`。流程测试若不传日期，则返回全生命周期数据。
+
+付费墙测试中某时段的 P2BB 是从该时段起始日起的累计值，因此在无浏览量的日期其数值保持不变。对于流程测试，P2BB 则为该时段的当期值。
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--type` | 是 | `paywall` 或 `flow`。 |
+| `--date-from` | 付费墙测试必填 | 时间段的第一天（含当天），格式为 `YYYY-MM-DD`。 |
+| `--date-to` | 付费墙测试必填 | 时间段的最后一天（含当天），格式为 `YYYY-MM-DD`。 |
+| `--date-type` | 付费墙测试必填 | 时间段所对应的日期类型：`purchase_date` 或 `profile_install_date`。浏览量按浏览日期统计，因此两者结果相同。 |
+| `--granularity` | 否 | 将时间段拆分为数据点：`day`、`week`、`month`、`quarter` 或 `year`。 |
+| `--group-by` | 否 | 按 `country` 或 `store` 拆分各实验组。若不指定，则默认按产品拆分。 |
+| `--filter` | 否 | 仅保留指定过滤键对应值的数据，格式为 `key=value`，可重复使用。键和值来自 [`ab-tests metrics values`](#ab-tests-metrics-values)，用法与 [`flows metrics get`](developer-cli-flows#filter-the-metrics) 相同。 |
+| `--timezone` | 否 | 时间段数据点所使用的 IANA 时区，例如 `Europe/Berlin`。若不指定，Adapty 将使用应用时区。 |
+| `--depth` | 否 | 打印树的层级数，默认值为 1。`--json` 和 `--csv` 始终输出完整树结构。 |
+| `--csv` | 否 | 以 CSV 格式输出，而非表格格式。不可与 `--json` 同时使用。 |
+
+### `ab-tests metrics values`
+
+列出 `ab-tests metrics get --filter` 接受的筛选键和值。输出格式与 [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) 相同。
+
+| 参数 | 是否必填 | 描述 |
+|---|---|---|
+| `--type` | 是 | `paywall` 或 `flow`。 |
 
 ## 下一步 \{#whats-next\}
 

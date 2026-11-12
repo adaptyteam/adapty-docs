@@ -22,7 +22,7 @@ Adapty Flutter SDK, flow'ları ve paywall'ları sunmak için iki yöntem sunar:
 
 ## Bağımsız ekran olarak göster \{#present-as-standalone-screen\}
 
-Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için, [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) metodu tarafından oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez gösterilebilir: kapattıktan sonra, view bellekten serbest bırakılır. Flow veya paywall'ı tekrar görüntülemeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createFlowView`'ı bir kez daha çağırın ya da SDK 4.1 ve sonrasında [bellekten serbest bırakmadan kapatın](#dismiss-the-flow-or-paywall).
+Bir flow veya paywall'ı bağımsız ekran olarak görüntülemek için [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Varsayılan olarak, bir `view` kapatıldığında bellekten serbest bırakılır; dolayısıyla tekrar gösteremezsiniz. Flow veya paywall'ı yeniden görüntülemeniz gerekiyorsa `createFlowView`'ı bir kez daha çağırarak yeni bir `view` örneği oluşturun ya da SDK 4.1 ve sonrasında [serbest bırakmadan kapatın](#dismiss-the-flow-or-paywall).
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -59,7 +59,37 @@ SDK 4.1'den itibaren, view'ı bellekte tutmak için `destroy: false` parametresi
 await view.dismiss(destroy: false);
 ```
 
-Bu görünümü yeniden sunduğunuzda kullanıcı, flow'un o ana kadar oluşturduğu durumla birlikte ayrıldığı ekrana geri döner. Bu şekilde saklanan bir görünüm, `destroy: true` ile kapatılana kadar bellekte tutulur.
+Bu görünümü tekrar gösterdiğinizde kullanıcı, flow'un oluşturduğu durumla birlikte ayrıldığı ekrana geri döner. Bu şekilde saklanan bir görünüm, siz serbest bırakana kadar bellekte kalır.
+
+SDK 4.3.0'dan itibaren, sakladığınız bir görünüme artık ihtiyaç duymadığınızda `destroy()` ile serbest bırakın:
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()`, oluşturduğunuz ancak hiç sunmadığınız bir view'ı ve kullanıcının iOS'ta aşağı kaydırdığı page-sheet view'ı da serbest bırakır. Normal bir `dismiss()` işleminin ardından çağırmayın: o view zaten serbest bırakılmıştır ve çağrı `wrongParam` hatasıyla başarısız olur. Daha eski SDK sürümlerinde, saklanan view'ı yeniden sunun ve serbest bırakmak için `destroy: true` ile dismiss edin.
+
+Varsayılan kapatma eylemi, daha önce `destroy: false` ile görünümü saklasanız bile `view.dismiss()` çağırarak görünümü serbest bırakır. Kullanıcı görünümü kapattığında saklamak istiyorsanız `flowViewDidPerformAction` metodunu override edin ve görünümü kendiniz kapatın. Bu metot uygulamanızdaki her flow ve paywall için çalıştığından, yalnızca yeniden göstermeyi planladığınız görünümü saklamak için `view.id` değerini karşılaştırın. URL açmayı korumak için `OpenUrlAction` case'ini de dahil edin:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Saklanan `view`'i elinizde tutun: flow veya paywall'ı yeniden göstermek ve `destroy()` ile serbest bırakmak için buna ihtiyacınız olacak. `view.dismiss()` çağrısı da dahil olmak üzere diğer tüm çağrılar view'i serbest bırakır; [`flowViewDidReceiveError`](flutter-handling-events#view-errors) içindeki çağrı da buna dahildir. Bir view hatası sonrasında `createFlowView` ile yeni bir view oluşturun.
 
 ### Diyalog göster \{#show-dialog\}
 
@@ -97,6 +127,8 @@ try {
   // handle the error
 }
 ```
+
+Kullanıcı, sayfa kaydırarak (page sheet) aşağı kaydırıp kapatabilir. Görünüm, `dismiss()` çağrısı yapılmadan bellekte kalır: yeniden sunabilir ya da SDK 4.3.0 ve sonrasında [`destroy()`](#dismiss-the-flow-or-paywall) ile serbest bırakabilirsiniz.
 
 ## Widget hiyerarşisine gömme \{#embed-in-widget-hierarchy\}
 
@@ -224,9 +256,9 @@ try {
 }
 ```
 
-### iOS sunum stilini yapılandırın \{#configure-ios-presentation-style\}
+### iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
 
-`present()` metoduna `iosPresentationStyle` parametresini geçirerek paywallın iOS'ta nasıl sunulacağını yapılandırın. Parametre, `AdaptyUIIOSPresentationStyle.fullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.pageSheet` değerlerini kabul eder.
+`present()` metoduna `iosPresentationStyle` parametresini geçirerek paywallın iOS'ta nasıl sunulacağını yapılandırın. Parametre `AdaptyUIIOSPresentationStyle.fullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.pageSheet` değerlerini kabul eder.
 
 ```dart showLineNumbers
 try {

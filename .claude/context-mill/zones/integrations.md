@@ -83,7 +83,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | event-statuses | — | dev, analyst | 0 | tutorial |
 | events | — | dev, analyst | 7 | tutorial |
 | facebook-ads | — | dev, analyst | 7 | tutorial |
-| firebase-and-google-analytics | — | dev, analyst | 17 | tutorial |
+| firebase-and-google-analytics | — | dev, analyst | 18 | tutorial |
 | firebase-apps | — | dev, analyst | 1 | tutorial |
 | google-cloud-storage | — | dev, analyst | 9 | tutorial |
 | handle-integration-errors | — | dev, analyst | 8 | tutorial |
@@ -173,6 +173,14 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    into `export-analytics-with-ai`. Both ids are assigned to `agent-tooling` in `zones.json`. A task that
    changes webhook or export behavior should check whether either agent guide needs a matching update,
    even though neither article is in this roster.
+6. **`subscription_deferred` covers both stores since 2026-10-15** (backend code, checked 2026-11-10): a
+   Google Play deferral, and an App Store renewal date extension made through the App Store Server API.
+   The extension moves the subscription's expiration date and the access level with it. The event's
+   description lives once, in the `WebhookEvents` reusable (rendered in `events`, `webhook`, and
+   `webhook-event-types-and-fields`), but destination articles carry their own labels: `facebook-ads` said
+   "(Android only)" until 2026-11-11, matching the integration settings label, which dropped it at the
+   same time. `rg -n -i deferr src/content/docs` finds every copy; `push-notifications` lists the event
+   without naming a store. **Subscription paused** is still Android only.
 
 ## Boundaries
 
@@ -233,9 +241,13 @@ repeated here.
 | "connect SplitMetrics / Asapty" | `splitmetrics` / `asapty`, but both require the `apple-search-ads` integration to be connected first — an undocumented-looking prerequisite that surfaces as "not receiving events". |
 | "field X isn't in our CSV", "which columns does the export have", "paywall impression columns" | `s3-exports` / `google-cloud-storage` "Data structure" — a narrower, separately-maintained schema, so a field's presence in the webhook reference says nothing about the export. |
 | a "Firebase" ticket | Split by what it's about: event forwarding / GA4 / Google Ads → `firebase-and-google-analytics`; keeping Firebase Auth user ids in sync with Adapty profiles → `firebase-apps` (and see Gaps and misses before citing its code). |
+| "subscription_deferred on iOS", "renewal date extension", "we extended subscriptions after an outage and users lost access" | `events` (the shared event table). Since 2026-10-15 an App Store renewal date extension moves the access level to the new date and sends `subscription_deferred`; before that, Adapty kept the old date, so users lost access early. The event has to be turned on per integration, like any other. |
 
 ## Gaps and misses
 
+- **`appmetrica` doesn't say which AppMetrica event `subscription_deferred` becomes.** Backend code
+  (2026-11-10) sends it as `cancellation`, for both stores. Checked with
+  `rg -c -i deferr src/content/docs/version-3.0/appmetrica.mdx` (no hit, 2026-11-11).
 - `firebase-and-google-analytics` is a recently and thoroughly rewritten article (Troubleshooting,
   Limitations, `ZoomImage` component, cross-links to Stripe/S3/GCS/Adapty Attribution) — visibly newer
   and deeper than the rest of the zone's destination articles, most of which still follow a shorter,

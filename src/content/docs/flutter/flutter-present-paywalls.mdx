@@ -25,7 +25,7 @@ Adapty Flutter SDK provides two ways to present flows and paywalls:
 
 ## Present as standalone screen
 
-To display a flow or paywall as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) method. Each `view` can only be presented once: after you dismiss it, the view is released from memory. If you need to display the flow or paywall again, call `createFlowView` one more time to create a new `view` instance, or [dismiss without releasing it](#dismiss-the-flow-or-paywall) on SDK 4.1 and later.
+To display a flow or paywall as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration) method. By default, dismissing a `view` releases it from memory, so you can't present it again. If you need to display the flow or paywall again, call `createFlowView` one more time to create a new `view` instance, or [dismiss without releasing it](#dismiss-the-flow-or-paywall) on SDK 4.1 and later.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -62,7 +62,37 @@ Starting from SDK 4.1, pass `destroy: false` to keep the view in memory instead:
 await view.dismiss(destroy: false);
 ```
 
-Present that view again and the user returns to the screen they left, with the state the flow had built up. A view kept this way is held until you dismiss it with `destroy: true`.
+Present that view again and the user returns to the screen they left, with the state the flow had built up. A view kept this way stays in memory until you release it.
+
+Starting from SDK 4.3.0, when you no longer need a kept view, release it with `destroy()`:
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` also releases a view that you created but never presented, and a page-sheet view that the user swiped down on iOS. Don't call it after a regular `dismiss()`: that view is already released, and the call fails with the `wrongParam` error. On earlier SDK versions, present the kept view again and dismiss it with `destroy: true` to release it.
+
+The default close action calls `view.dismiss()`, which releases the view even if you kept it earlier with `destroy: false`. To keep a view when the user closes it, override `flowViewDidPerformAction` and dismiss the view yourself. This method runs for every flow and paywall in your app, so compare `view.id` to keep only the view you plan to present again. Keep the `OpenUrlAction` case to preserve URL opening:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Hold on to the kept `view`: you need it to present the flow or paywall again, and to release it with `destroy()`. Any other `view.dismiss()` call releases the view too, including the call in [`flowViewDidReceiveError`](flutter-handling-events#view-errors). After a view error, create a new view with `createFlowView`.
 
 ### Show dialog
 
@@ -100,6 +130,8 @@ try {
   // handle the error
 }
 ```
+
+The user can swipe a page sheet down to close it. The view then stays in memory without a `dismiss()` call: present it again, or, on SDK 4.3.0 and later, release it with [`destroy()`](#dismiss-the-flow-or-paywall).
 
 ## Embed in widget hierarchy
 

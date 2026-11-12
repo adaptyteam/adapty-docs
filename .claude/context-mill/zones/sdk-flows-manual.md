@@ -324,3 +324,4 @@ during the `flows-with-your-own-payments` guide work. Each item names the comman
   `reportTransaction`, on the next profile fetch. What that path cannot carry is the `variationId`.
   **The backend half was not read**, and the timing may be why the article states it absolutely.
   Left unedited for the owner to judge.
+- **Promoted purchases are upfront only, enforced twice (2026-11-04, iOS `4.3.2`).** `Sources/StoreKit/PromotedPurchaseIntentObserver.swift` builds the product with `.upFront` terms, and `makePurchase` for `AdaptyPromotedProduct` in `Sources/StoreKit/StoreKitPurchaser.swift` throws `billingPlanUnavailable` for any other plan. Until 2026-11-04 only `set-up-12-month-commitment` stated this. `making-purchases` and `react-native-making-purchases` now carry it too. Its link goes to `making-purchases`, which is the iOS article (`ios.json`), not a general page. Commitment plans are documented for iOS and React Native only.

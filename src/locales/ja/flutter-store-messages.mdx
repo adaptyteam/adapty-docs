@@ -1,0 +1,122 @@
+---
+title: "Flutter SDKでストアメッセージを制御する"
+description: "Flutter アプリで App Store や Google Play からの価格変更、請求の問題、支払い拒否に関するメッセージを表示するタイミングを選択し、フローやオンボーディングの邪魔にならないようにします。"
+metadataTitle: "ストアメッセージの制御 | Flutter SDK | Adapty ドキュメント"
+---
+
+App Store や Google Play は、サブスクリプションに関するメッセージをユーザーに表示する必要がある場合があります。
+
+- **App Store**: 価格引き上げへの同意依頼、請求に関するお知らせ、またはウィンバックオファーです。デフォルトでは、アプリが開いている間、StoreKit がこれらのメッセージを自動的に表示します。
+- **Google Play**: サブスクリプションの支払いが拒否され、支払い方法の更新が必要であることをお知らせするメッセージです。デフォルトでは、Adapty SDK は `activate` 後にアプリの `Activity` が開始されるたびにこれらのメッセージをリクエストします。これには、アプリがフォアグラウンドに戻ったときや、フローまたはオンボーディングが開いたり閉じたりするタイミングも含まれます。
+
+いずれの場合も、フロー、オンボーディング、またはチェックアウトの上にメッセージが表示されることがあります。表示タイミングを自分で制御するには、Adapty SDK をメッセージの手動処理モードに切り替え、ユーザーの操作を妨げないタイミングで `showStoreMessages` を呼び出してください。
+
+:::warning
+手動モードでは、ストアが自動的にメッセージを表示しません。アプリが `showStoreMessages` を一度も呼び出さない場合、ユーザーは価格変更の同意リクエスト、請求に関する通知、または支払い拒否の通知を受け取ることができません。
+:::
+
+## 始める前に \{#before-you-start\}
+
+以下が必要です：
+
+- **Adapty Flutter SDK 4.3.0 以降**：それより古いバージョンにはストアメッセージ API がありません。
+- **iOS 16 以降**（App Store メッセージを使用する場合）：StoreKit はそれより古いバージョンのアプリにはメッセージを配信しません。iOS 15 では、`getPendingStoreMessageTypes` と `showStoreMessages` は `decodingFailed` エラーで失敗するため、アプリが iOS 15 をサポートしている場合は、iOS 16 以降でのみこれらを呼び出してください。
+
+## 手動処理を有効にする \{#enable-manual-handling\}
+
+ストアメッセージをアプリが `showStoreMessages` を呼び出したときのみ表示するには、[SDKを有効化する](sdk-installation-flutter#activate-adapty-module-of-adapty-sdk)際に `withStoreMessagesHandling` を `AdaptyStoreMessagesHandling.manual` で呼び出してください:
+
+```dart showLineNumbers title="main.dart"
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY')
+    ..withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual), // auto is the default
+);
+```
+
+iOSでは、SDKはApp Storeのメッセージを現在のアプリセッションの保留リストに追加します。Androidでは、SDKはGoogle Playのメッセージを自動的にリクエストするのを停止します。デフォルトの`auto`値の場合、SDKはApp Storeのメッセージをキャプチャしないため、iOSでは`getPendingStoreMessageTypes`と`showStoreMessages`は返すべきもの、または表示するものが何もありません。
+
+## 保留中のメッセージタイプを取得する \{#get-pending-message-types\}
+
+iOS では、App Store のメッセージが待機中かどうかを確認するには、`getPendingStoreMessageTypes` を呼び出します。保留中のメッセージのタイプを、表示や削除をせずに返します：
+
+```dart showLineNumbers
+final pendingTypes = await Adapty().getPendingStoreMessageTypes();
+
+if (pendingTypes == null) {
+  // Android: Google Play decides whether a message applies when you show it
+} else if (pendingTypes.contains(AdaptyStoreMessageType.billingIssue)) {
+  // For example, skip the upsell and show the billing message first
+}
+```
+
+Android では、このメソッドは `null` を返します。Google Play は保留中のメッセージを報告せず、アプリがリクエストしたときにのみメッセージが適用されるかどうかを判断します。空のリストは、iOS で保留中のメッセージがないことを意味します。`activate` が完了するまで、リストは常に空です。
+
+各 App Store メッセージには、次のいずれかのタイプがあります。
+
+| タイプ | メッセージ |
+|:-----|:--------|
+| `AdaptyStoreMessageType.generic` | App Store の一般的なメッセージ。 |
+| `AdaptyStoreMessageType.priceIncreaseConsent` | サブスクリプションの価格値上げへの同意リクエスト。 |
+| `AdaptyStoreMessageType.billingIssue` | サブスクリプションの請求に関する通知。iOS 16.4 以降で利用可能。 |
+| `AdaptyStoreMessageType.winBackOffer` | 対象となる[ウィンバックオファー](app-store-offers#win-back-offers)。iOS 18 以降で利用可能。 |
+
+SDKが認識できないメッセージタイプには、`storekit_<number>`という`value`が設定されます。これら4つのタイプが唯一のものであると仮定せず、`==`を使って型を比較してください。
+
+## メッセージを表示する \{#show-messages\}
+
+フローを閉じた後やオンボーディングが完了した後など、ストアメッセージがユーザーの操作を妨げないタイミングになったら、`showStoreMessages` を呼び出します。
+
+```dart showLineNumbers
+try {
+  await Adapty().showStoreMessages();
+} on AdaptyError catch (adaptyError) {
+  // handle the error
+} catch (e) {
+  // handle other errors
+}
+```
+
+- **iOS**: SDKは保留中のメッセージを1件ずつ表示します。StoreKitがメッセージを表示した後、SDKはそれを保留リストから削除します。StoreKitがメッセージの表示に失敗した場合、SDKは次回の呼び出しのためにそのメッセージを保持し、残りのメッセージの処理を続けます。
+- **Android**: SDKは現在の`Activity`に対してGoogle Playのメッセージをリクエストします。Google Playがそのメッセージがユーザーに適用されるかどうかを判断するため、リクエストしても必ずしもメッセージが表示されるわけではありません。この呼び出しはGoogle Playを待たずにすぐに返り、失敗することはありません。ユーザーがメッセージから支払い方法を修正した場合、SDKはAdaptyとユーザーの購入情報を同期し、[プロファイルリスナー](flutter-listen-subscription-changes)が更新されたアクセスレベルを受け取ります。
+
+### Android での起動時にメッセージを表示する \{#show-messages-at-launch-on-android\}
+
+デフォルトの `auto` モードでは、`activate` より前に開始した `Activity` はリクエストをトリガーしないため、起動時に Google Play のメッセージが表示されません。起動時に表示するには、`activate` の後に Android のみで `showStoreMessages` を一度呼び出してください：
+
+```dart showLineNumbers title="main.dart"
+
+await Adapty().activate(
+  configuration: AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY'),
+);
+
+if (Platform.isAndroid) {
+  await Adapty().showStoreMessages();
+}
+```
+
+iOS では、このコールを行わないでください：`auto` モードでは表示するものが何もなく、iOS 15 ではエラーが発生します。
+
+### 一部のメッセージタイプのみ表示する \{#show-only-some-message-types\}
+
+App Store の保留中のメッセージの一部のみ表示するには、`iosFilter` にタイプを渡します。それ以外のメッセージは保留中のままになります：
+
+```dart showLineNumbers
+await Adapty().showStoreMessages(
+  iosFilter: [
+    AdaptyStoreMessageType.billingIssue,
+    AdaptyStoreMessageType.priceIncreaseConsent,
+  ],
+);
+```
+
+`iosFilter` を指定しない場合、SDK は認識できないタイプを含むすべての保留中のメッセージを表示します。空のリストを渡すと何も表示されません。Android は `iosFilter` を無視し、すべての Google Play メッセージをリクエストします。
+
+### エラー
+
+iOSでは、`showStoreMessages`が失敗すると、以下のいずれかのコードを持つ[`AdaptyError`](error-handling-on-flutter-react-native-unity)が返されます：
+
+| コード | 名前 | 原因 |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | デバイスがiOS 15以前で動作しています。このメソッドはiOS 16以降でのみ呼び出してください。 |
+| 3201 | `operationInProgress` | 別の`showStoreMessages`呼び出しがまだメッセージを表示中です。完了するまで待ってから再試行してください。 |
+| 3202 | `resolverFailure` | SDKがメッセージを表示するためのフォアグラウンドアクティブなウィンドウシーンを見つけられませんでした。アプリがフォアグラウンドにあるときに再度メソッドを呼び出してください。 |

@@ -1,0 +1,100 @@
+---
+title: "React Native SDK'da mağaza mesajlarını kontrol etme"
+description: "React Native uygulamanızın App Store ve Google Play'den gelen fiyat artışları, ödeme sorunları ve reddedilen ödemelerle ilgili mesajları ne zaman göstereceğini seçin; böylece bu mesajlar bir flow veya onboarding'i kesintiye uğratmaz."
+metadataTitle: "Mağaza mesajlarını kontrol etme | React Native SDK | Adapty Dokümanları"
+---
+
+App Store ve Google Play, kullanıcılarınıza abonelikleriyle ilgili zaman zaman mesaj göstermesi gerekebilir:
+
+- **App Store**: Fiyat artışına onay isteği, faturalandırma sorunu bildirimi veya geri kazanma teklifi. Varsayılan olarak StoreKit, uygulamanız açıkken bu mesajları kendi kendine gösterir.
+- **Google Play**: Abonelik ödemesinin reddedildiğine ve ödeme yönteminin güncellenmesi gerektiğine dair bildirim. Varsayılan olarak Adapty SDK, uygulamanızın her `Activity` başladığında bu mesajları talep eder.
+
+Bir mesaj, bir flow'un, onboarding'in veya checkout'un üzerinde görünebilir. Mesajın ne zaman gösterileceğini kendiniz seçmek için Adapty SDK'yı manuel mesaj yönetimine alın ve bir mesajın kullanıcıyı bölmeyeceği anda `showStoreMessages` çağrısı yapın.
+
+:::warning
+Manuel modda mağazalar mesajları kendiliğinden göstermez. Uygulamanız hiçbir zaman `showStoreMessages` çağrısı yapmazsa, kullanıcılar fiyat artışı onay taleplerini, faturalama sorunu bildirimlerini veya ödeme reddedilme bildirimlerini hiç göremez.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty React Native SDK 4.3.0 veya üzeri**: Önceki sürümler store mesajları API'sine sahip değildir.
+- **iOS 16 veya üzeri** App Store mesajları için: StoreKit, önceki sürümlerdeki uygulamalara mesaj iletmez. iOS 15'te `getPendingStoreMessageTypes` ve `showStoreMessages` hata fırlatır; bu nedenle uygulamanız iOS 15'i destekliyorsa bunları yalnızca iOS 16 ve sonrasında çağırın.
+
+## Manuel yönetimi etkinleştirin \{#enable-manual-handling\}
+
+Mağaza mesajlarını yalnızca uygulamanız `showStoreMessages` çağırdığında göstermek için, [SDK'yı etkinleştirirken](sdk-installation-react-native-pure#activate-adapty-module-of-adapty-sdk) `storeMessagesHandling` değerini `'manual'` olarak ayarlayın:
+
+```typescript showLineNumbers title="App.tsx"
+adapty.activate('YOUR_PUBLIC_SDK_KEY', {
+  storeMessagesHandling: 'manual', // 'auto' is the default
+});
+```
+
+iOS'ta SDK, her App Store mesajını mevcut uygulama oturumu için bekleyen listeye ekler. Android'de ise SDK, Google Play mesajlarını kendi başına talep etmeyi durdurur. Varsayılan `'auto'` değeriyle SDK, App Store mesajlarını yakalamaz; dolayısıyla iOS'ta `getPendingStoreMessageTypes` ve `showStoreMessages` döndürecek veya gösterecek bir şey bulamaz.
+
+## Bekleyen mesaj türlerini alma \{#get-pending-message-types\}
+
+iOS'ta App Store mesajlarının bekleyip beklemediğini öğrenmek için `getPendingStoreMessageTypes` fonksiyonunu çağırın. Bu fonksiyon, mesajları göstermeden veya silmeden bekleyen mesajların türlerini döndürür:
+
+```typescript showLineNumbers
+const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+if (pendingTypes === null) {
+  // Android: Google Play hangi mesajın geçerli olduğuna siz gösterdiğinizde karar verir
+} else if (pendingTypes.includes('billing_issue')) {
+  // Örneğin, ek satışı atlayıp önce faturalama mesajını gösterin
+}
+```
+
+Android'de metot `null` döndürür: Google Play bekleyen mesajları bildirmez ve bir mesajın uygulanıp uygulanmayacağına yalnızca uygulamanız isteğini gönderdiğinde karar verir. Boş bir dizi, iOS'ta bekleyen mesaj olmadığı anlamına gelir.
+
+Her App Store mesajı şu türlerden birine sahiptir:
+
+| Tür | Mesaj |
+|:-----|:--------|
+| `generic` | Genel bir App Store mesajı. |
+| `price_increase_consent` | Abonelik fiyat artışına onay isteği. |
+| `billing_issue` | Abonelik faturalandırma sorununa ilişkin bildirim. iOS 16.4 ve sonrasında kullanılabilir. |
+| `win_back_offer` | Uygun bir [geri kazanma teklifi](app-store-offers#win-back-offers). iOS 18 ve sonrasında kullanılabilir. |
+
+SDK'nın tanımadığı bir mesaj türü `storekit_<number>` değerini alır.
+
+## Mesajları Göster \{#show-messages\}
+
+Uygulamanız, mağaza mesajının kullanıcıyı rahatsız etmeyeceği bir noktaya ulaştığında — örneğin, kullanıcı bir flow'u kapattıktan veya onboarding'i tamamladıktan sonra — `showStoreMessages` işlevini çağırın:
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**: SDK, bekleyen mesajları tek tek gösterir. StoreKit bir mesajı gösterdikten sonra SDK onu bekleyen listesinden kaldırır. StoreKit bir mesajı göstermeyi başaramazsa SDK, hatayı Adapty günlüğüne yazar, mesajı bir sonraki çağrı için saklar ve diğer mesajlarla devam eder.
+- **Android**: SDK, mevcut `Activity` için Google Play mesajlarını talep eder. Google Play bir mesajın kullanıcıya uygulanıp uygulanmayacağına karar verdiğinden, her talep mutlaka bir mesaj göstermez. Kullanıcı ödeme yöntemini mesajdan düzeltirse SDK, kullanıcının satın almalarını Adapty ile senkronize eder ve [profil dinleyiciniz](react-native-listen-subscription-changes) güncellenmiş access level'ı alır.
+
+Varsayılan `'auto'` modunda, Android'de `showStoreMessages`'ı da çağırabilirsiniz — örneğin, halihazırda çalışan bir `Activity`'de mesajı yeniden istemek için.
+
+### Yalnızca belirli mesaj türlerini göster \{#show-only-some-message-types\}
+
+Bekleyen App Store mesajlarının yalnızca bir kısmını göstermek için türleri `ios.filter` ile belirtin. Diğer mesajlar beklemede kalmaya devam eder:
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+`filter` kullanılmazsa SDK, tanımadığı türler dahil bekleyen tüm mesajları gösterir. Android, `filter` parametresini dikkate almaz ve tüm Google Play mesajlarını talep eder.
+
+### Hatalar \{#errors\}
+
+`showStoreMessages`, şu kodlardan biriyle bir [`AdaptyError`](react-native-handle-errors) fırlatır:
+
+| Kod | Ad | Neden |
+|:-----|:-----|:------|
+| 3201 | `operationInProgress` | Başka bir `showStoreMessages` çağrısı hâlâ mesajları gösteriyor. Bitmesini bekleyip tekrar deneyin. |
+| 3202 | `resolverFailure` | Yalnızca iOS: SDK, mesajları göstermek için ön planda aktif bir pencere sahnesi bulamadı. Uygulamanız ön plandayken yöntemi yeniden çağırın. |

@@ -1295,9 +1295,11 @@ paths:
     post:
       summary: 创建虚拟货币交易
       description: |
-        在单个原子事务中为用户画像充值或扣除一种或多种虚拟货币。使用正数 `amount` 表示充值（授予），负数 `amount` 表示扣除（消费）。所有条目一起应用——如果任何条目失败，则全部不应用。
+        在单个原子事务中为用户画像的一种或多种虚拟货币进行增减操作。使用正数 `amount` 表示增加（授予），负数 `amount` 表示减少（消耗）。所有条目同时生效——若任一条目失败，则全部不生效。
 
-        每个货币代码在每次请求中只能出现一次。通过此端点进行的充值始终创建永不过期的余额。
+        每种货币代码在单次请求中只能出现一次。通过此端点增加的余额始终为永久有效余额。
+
+        若要在虚拟货币数据分析中使用该交易，请使用 `operation` 和 `feature` 对其进行标记。所有标记字段均为可选项：仅包含 `items` 和 `metadata` 的请求将以 `operation: null` 保存。
       operationId: createVirtualCurrencyTransaction
       tags:
         - Virtual Currency
@@ -1315,7 +1317,7 @@ paths:
           required: false
           schema:
             type: string
-          description: 您系统中用户画像的唯一 ID。如果您正在使用匿名用户画像，这是最佳选择。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
+          description: 您系统中用户画像的唯一 ID。如果您使用的是匿名用户画像，建议优先使用此字段。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
         - name: Idempotency-Key
           in: header
           required: false
@@ -1323,9 +1325,9 @@ paths:
             type: string
             format: uuid
           description: |
-            使请求具有幂等性的 UUID v4。如果您使用相同的密钥重试请求，Adapty 将返回原始事务的结果，而不会再次更改余额。必须是有效的 UUID v4。
+            使请求具有幂等性的 UUID v4。如果您使用相同的密钥重试请求，Adapty 将返回原始交易的结果，而不会再次更改余额。必须是有效的 UUID v4。
 
-            密钥的记忆时间最长为一小时，且范围限定为单个用户画像。超过该时间窗口后，使用相同密钥的请求将作为新事务应用——因此请使用该密钥安全地重试调用，而不是用于长期内的重复授予去重。
+            密钥的记忆时间最长为一小时，且仅限于单个用户画像。超过该时间窗口后，使用相同密钥的请求将被视为新交易——因此请使用该密钥安全地重试调用，而非用于长期去重授予操作。
       requestBody:
         required: true
         content:
@@ -1334,17 +1336,32 @@ paths:
               $ref: '#/components/schemas/VirtualCurrencyTransactionRequest'
             examples:
               debit:
-                summary: 消费（扣除）一种货币
+                summary: 在某个功能上消耗（扣除）一种货币
                 value:
                   items:
                     - currency_code: COINS
                       amount: -10
+                  operation: spend
+                  feature: power_up.extra_life
+                  customer_placement_id: level-complete
+                  reference_id: session_7781
               credit:
-                summary: 授予（充值）一种货币
+                summary: 作为奖励授予（增加）一种货币
                 value:
                   items:
                     - currency_code: COINS
                       amount: 500
+                  operation: reward
+                  feature: welcome
+              store_purchase_credit:
+                summary: 为后端处理的购买充值金币
+                value:
+                  items:
+                    - currency_code: COINS
+                      amount: 500
+                  operation: top_up
+                  store: app_store
+                  store_transaction_id: '2000001218103228'
               multi_currency:
                 summary: 同时扣除两种货币
                 value:
@@ -1361,68 +1378,95 @@ paths:
                       amount: -100
                     - currency_code: GOLD
                       amount: 10
-                  metadata:
-                    reason: exchange
+                  operation: exchange
       responses:
-        '200':
-          description: 事务应用成功
+        '201':
+          description: 交易已创建。响应体为已创建的交易，格式与交易历史记录中的条目相同，并附有交易后的余额。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VirtualCurrencyTransactionResponse'
               example:
-                transaction_id: 0190e8a4-1c2b-7def-8abc-2c1a4b6d8e90
+                transaction_id: 019a7c3e-5b2a-7c1d-9e4f-0a1b2c3d4e5f
+                transaction_type: api_transaction
+                items:
+                  - currency_code: COINS
+                    amount: -10
+                    balance_after: 90
+                metadata: null
+                operation: spend
+                feature: power_up.extra_life
+                customer_placement_id: level-complete
+                reference_id: session_7781
+                is_sandbox: false
+                store: null
+                store_transaction_id: null
+                created_at: '2026-11-12T10:00:00.123Z'
+                response_created_at: 1794477600123
                 balances:
                   - code: COINS
-                    name: Gold Coins
-                    balance: 12950
+                    name: Coins
+                    balance: 90
                     held: 0
-                    available: 12950
+                    available: 90
         '400':
           description: |
-            错误请求。`error_code` 字段标识原因：`insufficient_balance`、`unknown_currency`、`duplicate_currency`、`amount_zero`、`balance_overflow`、`empty_items` 或 `idempotency_key_invalid`。
+            请求无效。`error_code` 字段标识原因：
+
+            - `validation_error` — 请求体或请求头无效。例如，标记字段格式错误、`items` 为空或超过 20 个条目、`amount` 为 0 或超出 int32 范围、货币代码重复、`metadata` 不符合约束条件，或未发送 `adapty-profile-id` 也未发送 `adapty-customer-user-id`。`errors[].source` 指明了出错字段。对于跨多个字段的检查（例如发送了 `store` 但未发送 `store_transaction_id`），`source` 为空字符串。
+            - `parse_error` — 请求体不是有效的 JSON。
+            - `idempotency_key_invalid` — `Idempotency-Key` 不是 UUID v4。
+            - `unknown_currency` — 该货币未在应用中配置。
+            - `unknown_store` — `store` 是一个未在应用中配置的自定义商店。
+            - `insufficient_balance` — 扣除金额超过可用余额。
+            - `balance_overflow` — 增加金额将导致余额超出 int32 范围。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: currency_code
+              examples:
+                validation_error:
+                  summary: 无效的 feature 格式
+                  value:
                     errors:
-                      - Insufficient balance for currency COINS
-                error_code: insufficient_balance
-                status_code: 400
+                      - source: feature
+                        errors:
+                          - String should match pattern '^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$'
+                    error_code: validation_error
+                    status_code: 400
+                store_pair:
+                  summary: 发送了 store 但未发送 store_transaction_id
+                  value:
+                    errors:
+                      - source: ''
+                        errors:
+                          - Value error, store and store_transaction_id must be sent together
+                    error_code: validation_error
+                    status_code: 400
+                insufficient_balance:
+                  summary: 余额不足
+                  value:
+                    errors:
+                      - source: currency_code
+                        errors:
+                          - Insufficient balance for currency COINS
+                    error_code: insufficient_balance
+                    status_code: 400
         '401':
-          description: 未授权。API 密钥缺失或无效。
+          description: 未授权。API 密钥缺失或无效（`error_code` 为 `not_authenticated`）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: 禁止访问。此应用未启用虚拟货币的 Server API。请联系 Adapty 支持以申请访问权限。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: null
-                    errors:
-                      - Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access.
-                error_code: feature_not_enabled
-                status_code: 403
         '404':
-          description: 未找到用户画像。
+          description: 未找到用户画像（`error_code` 为 `profile_does_not_exist`）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: |
-            冲突。`error_code` 字段标识原因：
-
-            - `idempotency_in_flight` — 具有相同 `Idempotency-Key` 的请求仍在处理中。在 `Retry-After` 响应头指定的时间间隔后重试。
-            - `duplicate_source_transaction` — 底层存储事务已被充值，因此不会再次应用。
+            冲突。使用相同 `Idempotency-Key` 的请求仍在处理中（`error_code` 为 `idempotency_in_flight`）。请在 `Retry-After` 响应头指定的时间间隔后重试。
           content:
             application/json:
               schema:
@@ -1434,26 +1478,19 @@ paths:
                       - A similar request is being processed.
                 error_code: idempotency_in_flight
                 status_code: 409
-        '422':
-          description: |
-            不可处理的实体。请求体未通过 schema 验证——例如，`items` 包含超过 20 个条目，或 `metadata` 的键或值违反了其约束条件。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '429':
           description: |
-            请求过多。超出了每个应用或全局速率限制（`error_code` 为 `rate_limited`）。默认限制为每个应用每分钟 600 次请求，全局每分钟 6000 次请求。
+            请求过于频繁。超出了每个应用或全局的速率限制（`error_code` 为 `rate_limited`）。默认限制为每个应用每分钟 600 次请求，全局每分钟 6000 次请求。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: 内部服务器错误
+          description: 服务器内部错误
     get:
       summary: 列出虚拟货币交易记录
       description: |
-        返回用户画像的虚拟货币交易历史记录，按最新优先排序。结果使用游标分页：当响应包含非空的 `pagination.next_cursor` 时，将其作为 `cursor` 查询参数传回以获取下一页。
+        返回用户画像的虚拟货币交易历史记录，按最新优先排序。结果使用游标分页：当响应中包含非空的 `pagination.next_cursor` 时，将其作为 `cursor` 查询参数传回以获取下一页。
       operationId: listVirtualCurrencyTransactions
       tags:
         - Virtual Currency
@@ -1471,19 +1508,19 @@ paths:
           required: false
           schema:
             type: string
-          description: 您系统中用户画像的唯一 ID。如果您正在使用匿名用户画像，这是最佳选择。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
+          description: 您系统中用户画像的唯一 ID。如果您使用的是匿名用户画像，建议优先使用此字段。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
         - name: currency_code
           in: query
           required: false
           schema:
             type: string
-          description: 将历史记录过滤为单个虚拟货币代码。
+          description: 将历史记录筛选为单一虚拟货币代码。
         - name: cursor
           in: query
           required: false
           schema:
             type: string
-          description: 上一个响应中作为 `pagination.next_cursor` 返回的不透明分页游标。省略则获取第一页。
+          description: 在上一次响应中作为 `pagination.next_cursor` 返回的不透明分页游标。省略此参数以获取第一页。
         - name: limit
           in: query
           required: false
@@ -1492,7 +1529,7 @@ paths:
             default: 50
             minimum: 1
             maximum: 100
-          description: 每页返回的最大事务数。默认为 50。
+          description: 每页返回的最大交易数量。默认为 50。
       responses:
         '200':
           description: 交易历史记录返回成功
@@ -1508,8 +1545,14 @@ paths:
                       - currency_code: COINS
                         amount: 500
                         balance_after: 12950
-                    metadata:
-                      reason: promo_bonus
+                    metadata: null
+                    operation: reward
+                    feature: daily_bonus
+                    customer_placement_id: home-screen
+                    reference_id: null
+                    is_sandbox: false
+                    store: null
+                    store_transaction_id: null
                     created_at: '2026-05-23T10:30:00Z'
                   - transaction_id: 0190e7b2-9a44-7c10-bb31-7d2e9f0a1c55
                     transaction_type: store_purchase
@@ -1517,6 +1560,14 @@ paths:
                       - currency_code: COINS
                         amount: 1000
                         balance_after: 12450
+                    metadata: null
+                    operation: top_up
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: app_store
+                    store_transaction_id: '2000001218103228'
                     created_at: '2026-05-22T18:05:12Z'
                   - transaction_id: 0190e5c0-3f18-7b9a-9e6d-44a1c8b27e03
                     transaction_type: subscription_renewal
@@ -1524,40 +1575,46 @@ paths:
                       - currency_code: GEMS
                         amount: 200
                         balance_after: 3280
+                    metadata: null
+                    operation: top_up
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: play_store
+                    store_transaction_id: GPA.3345-1234-5678-90123
                     created_at: '2026-05-20T09:00:00Z'
                 pagination:
                   next_cursor: MjAyNi0wNS0yMFQwOTowMDowMFowMTkwZTVjMC0zZjE4LTdiOWEtOWU2ZC00NGExYzhiMjdlMDM=
         '400':
-          description: 错误请求。`cursor` 值无效（`error_code` 为 `invalid_cursor`）。
+          description: |
+            请求无效。`error_code` 字段标识原因：
+
+            - `validation_error` — `limit` 超出 1–100 范围，或未发送 `adapty-profile-id` 也未发送 `adapty-customer-user-id`。
+            - `invalid_cursor` — `cursor` 值无法解析。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: 未授权。API 密钥缺失或无效。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: 禁止访问。此应用未启用虚拟货币的 Server API。
+          description: 未授权。API 密钥缺失或无效（`error_code` 为 `not_authenticated`）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: 未找到用户画像。
+          description: 未找到用户画像（`error_code` 为 `profile_does_not_exist`）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: 内部服务器错误
+          description: 服务器内部错误
   /api/v2/server-side-api/vc/balances/:
     get:
       summary: 列出虚拟货币余额
       description: |
-        返回某个用户画像所有虚拟货币的当前余额。如果应用没有虚拟货币，`data` 为空数组。
+        返回某个用户画像中每种虚拟货币的当前余额。如果应用没有虚拟货币，`data` 为空数组。
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1569,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: 您系统中客户的唯一 ID。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
+          description: 您系统中客户的唯一 ID。`adapty-customer-user-id` 和 `adapty-profile-id` 二者必填其一。
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: 您系统中用户画像的唯一 ID。如果您使用匿名用户画像，此字段为最佳选择。`adapty-customer-user-id` 或 `adapty-profile-id` 二者必填其一。
+          description: 您系统中用户画像的唯一 ID。如果您正在处理匿名用户画像，这是最佳选择。`adapty-customer-user-id` 和 `adapty-profile-id` 二者必填其一。
       responses:
         '200':
           description: 余额返回成功
@@ -1602,25 +1659,19 @@ paths:
                     held: 0
                     available: 840
         '400':
-          description: 请求错误。
+          description: 请求无效。未发送 `adapty-profile-id` 或 `adapty-customer-user-id`（`error_code` 为 `validation_error`）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: 未授权。API 密钥缺失或无效。
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: 禁止访问。此应用未启用虚拟货币服务端 API。
+          description: 未授权。API 密钥缺失或无效（`error_code` 为 `not_authenticated`）。
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: 用户画像未找到。
+          description: 用户画像未找到（`error_code` 为 `profile_does_not_exist`）。
           content:
             application/json:
               schema:
@@ -3206,7 +3257,49 @@ components:
           additionalProperties:
             type: string
           description: |
-            与交易一同存储的可选键值对。最多 5 个键。每个键匹配 `^[a-z0-9_]{1,30}$`，每个值最多 200 个字符。
+            随交易一起存储的可选键值对。最多 5 个键。每个键需匹配 `^[a-z0-9_]{1,30}$`，每个值最多 200 个字符。
+        operation:
+          type: string
+          enum:
+            - top_up
+            - refund
+            - spend
+            - spend_reversal
+            - reward
+            - reward_reversal
+            - exchange
+            - expiry
+            - migration
+            - adjustment
+          description: |
+            交易的类型。大多数集成只需要四个值：`spend`、`spend_reversal`、`reward`、`reward_reversal`。如果省略，交易将被保存并以 `operation: null` 返回。
+
+
+            各值含义：`top_up` — 因购买、订阅或试用而充入的货币；`refund` — 因退款而扣回的货币；`spend` — 用于功能或内容消耗的货币；`spend_reversal` — 因操作失败（如生成失败）而退回的货币；`reward` — 奖励、赠送或客服补偿；`reward_reversal` — 被收回的奖励；`exchange` — 在一笔交易中进行的货币兑换，items 中含有符号相反的条目；`expiry` — 已过期的货币；`migration` — 从您自有系统迁移的余额；`adjustment` — 应用内经济体系之外的技术性余额修正。
+        feature:
+          type: string
+          description: |
+            货币被消耗或发放的用途。一个单词，可选带一个点分子类型，必须匹配 `^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$`。按原样存储，区分大小写。请勿编码价格、等级、版本或实验变体。示例：`power_up.extra_life`。
+        customer_placement_id:
+          type: string
+          description: |
+            应用中发生该操作的页面或版位的 ID。这是您自己的 ID，而非 Adapty 版位 ID。必须匹配 `^[a-zA-Z0-9_.-]{1,128}$`。按原样存储。示例：`onboarding-step-3`。
+        reference_id:
+          type: string
+          description: |
+            您系统中关联对象的 ID，例如某次生成、奖励或支持工单。1–128 个字符；包含控制字符、BIDI 字符或零宽字符将被拒绝。请勿在此存储个人数据。示例：`ticket_48213`。
+        is_sandbox:
+          type: boolean
+          default: false
+          description: 在测试时发放货币时设置为 `true`。
+        store:
+          type: string
+          description: |
+            该交易所关联购买的商店：`app_store`、`play_store`、`stripe`、`paddle`，或在应用中配置的自定义商店 ID。最多 30 个字符。如果该购买在商店中发生退款，通过此引用充入的货币将被扣回。请与 `store_transaction_id` 一同发送。
+        store_transaction_id:
+          type: string
+          description: |
+            该购买的商店交易 ID。最多 50 个字符。仅作为引用使用：Adapty 不会验证其是否存在或唯一。请与 `store` 一同发送。
       required:
         - items
     VirtualCurrencyBalanceAdjustment:
@@ -3224,22 +3317,24 @@ components:
         - currency_code
         - amount
     VirtualCurrencyTransactionResponse:
-      type: object
-      description: 虚拟货币交易的结果。
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-          description: 已创建交易的唯一 ID。
-        balances:
-          type: array
-          description: |
-            本次请求中每种受影响货币的交易后余额（每个 `items` 条目对应一条记录）。如需读取用户画像的完整余额列表，请使用 `GET /api/v2/server-side-api/vc/balances/`。
-          items:
-            $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
-      required:
-        - transaction_id
-        - balances
+      description: 已创建的交易，格式与交易历史记录中的条目相同，并附带交易后余额。
+      allOf:
+        - $ref: '#/components/schemas/VirtualCurrencyTransactionsHistoryItem'
+        - type: object
+          properties:
+            response_created_at:
+              type: integer
+              format: int64
+              description: 响应生成的时间，以毫秒为单位的 Unix 时间戳。
+            balances:
+              type: array
+              description: |
+                本次请求所影响的每种货币在交易后的余额（每个 `items` 条目对应一条记录）。如需读取用户画像的完整余额列表，请使用 `GET /api/v2/server-side-api/vc/balances/`。
+              items:
+                $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
+          required:
+            - response_created_at
+            - balances
     VirtualCurrencyBalanceSnapshot:
       type: object
       properties:
@@ -3336,7 +3431,7 @@ components:
         transaction_type:
           type: string
           description: |
-            交易的来源。可选值为 `store_purchase`、`subscription_renewal`、`trial_start`、`api_transaction`、`dashboard_transaction`、`refund` 或 `expiry`。
+            交易来源。可选值为 `store_purchase`、`subscription_renewal`、`trial_start`、`api_transaction`、`dashboard_transaction`、`refund` 或 `expiry`。
         items:
           type: array
           description: 本次交易中记录的各币种余额变动。
@@ -3348,6 +3443,47 @@ components:
           additionalProperties:
             type: string
           description: 与交易一同存储的键值对（如有）。
+        operation:
+          type: string
+          nullable: true
+          enum:
+            - top_up
+            - refund
+            - spend
+            - spend_reversal
+            - reward
+            - reward_reversal
+            - exchange
+            - expiry
+            - migration
+            - adjustment
+          description: |
+            交易所代表的操作类型。Adapty 会自动为其自身的交易设置该值：`store_purchase`、`subscription_renewal` 和 `trial_start` 对应 `top_up`，`refund` 对应 `refund`，`expiry` 对应 `expiry`，`dashboard_transaction` 对应 `reward`。对于 `api_transaction`，该值为您发送的值，若未发送则为 `null`。
+        feature:
+          type: string
+          nullable: true
+          description: 代币的消费用途或授予原因，取自您发送的值。由 Adapty 创建的交易该字段为 `null`。
+        customer_placement_id:
+          type: string
+          nullable: true
+          description: 您应用中的屏幕或版位 ID，取自您发送的值。由 Adapty 创建的交易该字段为 `null`。
+        reference_id:
+          type: string
+          nullable: true
+          description: 您系统中关联对象的 ID，取自您发送的值。由 Adapty 创建的交易该字段为 `null`。
+        is_sandbox:
+          type: boolean
+          description: |
+            该交易是否为测试交易。对于 Adapty 创建的交易，该值与对应商店购买的环境保持一致。对于 `api_transaction`，该值为您发送的值，默认为 `false`。
+        store:
+          type: string
+          nullable: true
+          description: |
+            关联购买的商店。在 Adapty 根据商店事件（购买、续订、试用、退款）创建的交易以及携带购买引用的 `api_transaction` 中设置该字段。
+        store_transaction_id:
+          type: string
+          nullable: true
+          description: 关联购买的商店交易 ID。与 `store` 字段在相同交易中设置。
         created_at:
           type: string
           format: date-time
@@ -3356,6 +3492,13 @@ components:
         - transaction_id
         - transaction_type
         - items
+        - operation
+        - feature
+        - customer_placement_id
+        - reference_id
+        - is_sandbox
+        - store
+        - store_transaction_id
         - created_at
     VirtualCurrencyBalanceChange:
       type: object

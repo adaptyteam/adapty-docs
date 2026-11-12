@@ -22,7 +22,7 @@ El SDK de Flutter de Adapty ofrece dos formas de presentar flows y paywalls:
 
 ## Presentar como pantalla independiente \{#present-as-standalone-screen\}
 
-Para mostrar un flow o paywall como pantalla independiente, usa el método `view.present()` en el `view` creado por el método [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Cada `view` solo se puede presentar una vez: cuando lo cierras, el view se libera de la memoria. Si necesitas mostrar el flow o paywall de nuevo, vuelve a llamar a `createFlowView` para crear una nueva instancia de `view`, o [ciérralo sin liberarlo](#dismiss-the-flow-or-paywall) en el SDK 4.1 o posterior.
+Para mostrar un flow o paywall como pantalla independiente, usa el método `view.present()` sobre el `view` creado con el método [`createFlowView`](flutter-get-pb-paywalls#fetch-the-view-configuration). Por defecto, al cerrar un `view` este se libera de la memoria, por lo que no puedes volver a mostrarlo. Si necesitas mostrarlo de nuevo, llama a `createFlowView` otra vez para crear una nueva instancia de `view`, o [ciérralo sin liberarlo](#dismiss-the-flow-or-paywall) en SDK 4.1 y versiones posteriores.
 
 ```dart showLineNumbers title="Flutter"
 try {
@@ -59,7 +59,37 @@ A partir del SDK 4.1, pasa `destroy: false` para mantener la vista en memoria:
 await view.dismiss(destroy: false);
 ```
 
-Muestra esa vista de nuevo y el usuario vuelve a la pantalla donde estaba, con el estado que el flow había acumulado. Una vista conservada de esta forma se mantiene hasta que la descartes con `destroy: true`.
+Muestra esa vista de nuevo y el usuario regresa a la pantalla donde lo dejó, con el estado que el flow había acumulado. Una vista conservada de esta forma permanece en memoria hasta que la liberes.
+
+A partir del SDK 4.3.0, cuando ya no necesites una vista conservada, libérala con `destroy()`:
+
+```dart showLineNumbers title="Flutter"
+await view.dismiss(destroy: false);
+// ...
+await view.destroy();
+```
+
+`destroy()` también libera una vista que creaste pero nunca presentaste, y una vista de page-sheet que el usuario deslizó hacia abajo en iOS. No lo llames después de un `dismiss()` normal: esa vista ya está liberada y la llamada fallará con el error `wrongParam`. En versiones anteriores del SDK, presenta de nuevo la vista guardada y ciérrala con `destroy: true` para liberarla.
+
+La acción de cierre predeterminada llama a `view.dismiss()`, lo que libera la vista aunque la hayas retenido antes con `destroy: false`. Para conservar una vista cuando el usuario la cierra, sobreescribe `flowViewDidPerformAction` y descarta la vista tú mismo. Este método se ejecuta para todos los flows y paywalls de tu app, así que compara `view.id` para conservar solo la vista que planeas volver a mostrar. Mantén el caso `OpenUrlAction` para preservar la apertura de URLs:
+
+```dart showLineNumbers title="Flutter"
+void flowViewDidPerformAction(AdaptyUIFlowView view, AdaptyUIAction action) {
+  switch (action) {
+    case const CloseAction():
+      // keptView is the view your app stored to present again
+      view.dismiss(destroy: view.id != keptView?.id);
+      break;
+    case OpenUrlAction(:final url, :final openIn):
+      AdaptyUI().openUrl(url, openIn: openIn);
+      break;
+    default:
+      break;
+  }
+}
+```
+
+Conserva el `view` que has obtenido: lo necesitas para presentar de nuevo el flow o paywall, y para liberarlo con `destroy()`. Cualquier otra llamada a `view.dismiss()` también libera la vista, incluida la llamada en [`flowViewDidReceiveError`](flutter-handling-events#view-errors). Tras un error de vista, crea una nueva vista con `createFlowView`.
 
 ### Mostrar diálogo \{#show-dialog\}
 
@@ -84,9 +114,9 @@ try {
 }
 ```
 
-### Configurar el estilo de presentación en iOS \{#configure-ios-presentation-style\}
+### Configura el estilo de presentación en iOS \{#configure-ios-presentation-style\}
 
-Configura cómo se presenta el flow o el paywall en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `AdaptyUIIOSPresentationStyle.fullScreen` (predeterminado) o `AdaptyUIIOSPresentationStyle.pageSheet`.
+Configura cómo se presenta el flow o paywall en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `AdaptyUIIOSPresentationStyle.fullScreen` (por defecto) o `AdaptyUIIOSPresentationStyle.pageSheet`.
 
 ```dart showLineNumbers
 try {
@@ -97,6 +127,8 @@ try {
   // handle the error
 }
 ```
+
+El usuario puede deslizar la hoja de página hacia abajo para cerrarla. La vista permanece en memoria sin llamar a `dismiss()`: preséntala de nuevo o, a partir del SDK 4.3.0, libérala con [`destroy()`](#dismiss-the-flow-or-paywall).
 
 ## Incorporar en la jerarquía de widgets \{#embed-in-widget-hierarchy\}
 
@@ -224,9 +256,9 @@ try {
 }
 ```
 
-### Configurar el estilo de presentación en iOS \{#configure-ios-presentation-style\}
+### Configura el estilo de presentación en iOS \{#configure-ios-presentation-style\}
 
-Configura cómo se presenta el paywall en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `AdaptyUIIOSPresentationStyle.fullScreen` (por defecto) o `AdaptyUIIOSPresentationStyle.pageSheet`.
+Configura cómo se muestra el paywall en iOS pasando el parámetro `iosPresentationStyle` al método `present()`. El parámetro acepta los valores `AdaptyUIIOSPresentationStyle.fullScreen` (por defecto) o `AdaptyUIIOSPresentationStyle.pageSheet`.
 
 ```dart showLineNumbers
 try {

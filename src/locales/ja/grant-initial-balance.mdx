@@ -16,36 +16,49 @@ metadataTitle: "初期残高を付与する | Adapty ドキュメント"
 
 1. **まずユーザーを特定する**: 残高は1つのプロファイルに紐付いており、別のプロファイルに移動することはありません。そのため、プロファイルに顧客ユーザーIDが設定された後にのみクレジットを付与してください。アプリ内でSDKを使ってユーザーを特定するか（[ユーザーの特定](ios-quickstart-identify)を参照）、バックエンドからサーバーサイドAPIを通じて行ってください。
 
-匿名プロファイルへの付与は、ここで最もよくある間違いです。匿名プロファイルは1つのアプリインストールに紐付いているため、ユーザーがアプリを再インストールしたり別のデバイスで開いたりすると、クレジットが失われます。詳しくは[残高、プロファイル、デバイス](virtual-currency-balance#balances-profiles-and-devices)をご覧ください。
+    匿名プロファイルへの付与は、ここで最もよくある間違いです。匿名プロファイルは1つのアプリインストールに紐付いているため、ユーザーがアプリを再インストールしたり別のデバイスで開いたりすると、クレジットが失われます。詳しくは[残高、プロファイル、デバイス](virtual-currency-balance#balances-profiles-and-devices)をご覧ください。
 
 2. **クレジットを付与する**: 正の `amount` を指定して[仮想通貨トランザクションを作成する](api-adapty/operations/createVirtualCurrencyTransaction)を呼び出します。この例では500トークンを付与します：
 
-```bash title="Grant an initial balance"
-   curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
-     -H "Authorization: Api-Key {your secret key}" \
-     -H "adapty-customer-user-id: user-42" \
-     -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
-     -H "Content-Type: application/json" \
-     -d '{
-           "items": [{"currency_code": "TOKENS", "amount": 500}],
-           "metadata": {"reason": "initial_balance"}
-         }'
-   ```
+    ```bash title="Grant an initial balance"
+    curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+      -H "Authorization: Api-Key {your secret key}" \
+      -H "adapty-customer-user-id: user-42" \
+      -H "Idempotency-Key: 6f2c0b34-9c3a-4f5e-8a1d-2b7e5c9d0a11" \
+      -H "Content-Type: application/json" \
+      -d '{
+            "items": [{"currency_code": "TOKENS", "amount": 500}],
+            "operation": "reward",
+            "feature": "welcome"
+          }'
+    ```
 
-   レスポンスには新しい残高が返されます：
+    The response returns the created transaction and the new balance:
 
-```json title="Response"
+    ```json title="Response"
     {
       "transaction_id": "3a9f8e21-5d4c-4b7a-9e01-8c6d2f4b1a37",
+      "transaction_type": "api_transaction",
+      "items": [{ "currency_code": "TOKENS", "amount": 500, "balance_after": 500 }],
+      "metadata": null,
+      "operation": "reward",
+      "feature": "welcome",
+      "customer_placement_id": null,
+      "reference_id": null,
+      "is_sandbox": false,
+      "store": null,
+      "store_transaction_id": null,
+      "created_at": "2026-11-12T10:00:00.123Z",
+      "response_created_at": 1794477600123,
       "balances": [
         { "code": "TOKENS", "name": "Tokens", "balance": 500, "held": 0, "available": 500 }
       ]
     }
     ```
 
-    この方法で付与されたクレジットは、リンクされたサブスクリプションの周期ごとのクレジットとは異なり、有効期限がありません。
+    この方法で付与されたクレジットは、リンクされたサブスクリプションの各サイクルのクレジットとは異なり、有効期限がありません。
 
-    `metadata` フィールドは任意です。`reason: initial_balance` のようなタグを付けると、[トランザクション履歴](api-adapty/operations/listVirtualCurrencyTransactions)で付与を簡単に識別でき、自分のレポートで購入クレジットと区別するのに役立ちます。
+   `operation` フィールドと `feature` フィールドは省略可能です。`operation: reward` と `feature: welcome` を指定することで、[トランザクション履歴](api-adapty/operations/listVirtualCurrencyTransactions)で付与を簡単に識別し、購入によるクレジットと区別できます。詳しくは [トランザクションへのラベル付け](virtual-currencies#label-transactions) を参照してください。
 
 3. **データベースに付与記録を残す**: このユーザーが初回残高を受け取ったという事実をデータベースに保存し、再サインインやジョブの再試行で二重付与が発生しないようにします。次のセクションでは、この記録が必要な理由を説明します。
 

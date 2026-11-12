@@ -117,6 +117,15 @@ If the zone brief and roster still leave candidates open, search the map:
 3. **User workflow**: From the existing article's step sequence, determine where this feature fits in the user's workflow. Does the user encounter this during initial setup, daily use, or occasional configuration?
 4. **Feature importance**: Is this a core part of the workflow that every reader needs, or an optional setting that most users skip? This determines prominence in the structure.
 
+**Fact research** (every claim the content will make about what Adapty, the SDK, or the UI does):
+1. **Write each fact with its source.** Keep a facts list: the claim, and the file and line, doc, or test that settles it. A claim with no source is a question for the user, not a fact.
+2. **Follow a control end to end.** For a control the article documents, trace it from the frontend call through the backend route to the code that handles it. A stub (a 501, a TODO, an empty list) is a fact: record it, and don't document the control as working.
+3. **Use the owning article for side effects.** Before you record a side effect, find the article that owns that mechanism and use its facts.
+4. **Verify third-party claims on the third party's side.** What a third-party tool does with forwarded data (aggregates, deduplicates, reports) needs that tool's own docs or a test. Adapty's code settles only the Adapty side. In a compound claim, verify each part or cut the part you can't.
+5. **Check scenarios against the product.** A scenario the text puts to the reader is a claim: "if you publish a broken flow" fails when publishing blocks broken flows.
+6. **Name icons from the SVG or a screenshot**, never from the file name.
+7. **Confirm release state in code.** A ticket status, a chat announcement, or a wiki page is a claim, not proof. Find the change on the production branch. When a team brief contradicts production, document production.
+
 **Then classify the change for shipped-skill ripple.** The same feature often changes one of the
 seven skills shipped from `sdk-integration-skill`, and the plan is the moment to find out — asked
 later, the second half surfaces after the docs plan was already approved.
@@ -224,6 +233,18 @@ Use AskUserQuestion for structured choices where options are clear. Use direct q
 
 ### Step 5: Produce the Plan
 
+For a medium or large update, decide what the content covers before you outline it. These three rules come first; the outline follows from them.
+
+1. **Tag the reader questions.** For each goal the reader arrives with, list what they must know or decide to reach the end, and what they do next. Tag each question:
+   - `act`: the reader can't act or conclude correctly without the answer, and the screen doesn't show it.
+   - `see`: the UI answers it as soon as the reader looks or acts: navigation, defaults, and limits the UI states.
+   - `edge`: most readers never hit it.
+   - `owner`: another article owns it. Link there where the reader needs it.
+
+   Only `act` questions get a place in the content. Then match each fact from your research to the `act` question it answers. A fact that answers none stays out of the text. List the `see` and `edge` questions under **Left out** in the plan, one line each with the reason, so the user can overrule you.
+2. **Build the heading tree with path lines.** Under each heading, write one sentence of at most 20 words: what the reader does in that section. Under the title, write the article's path line: who arrives, with what goal, and where the article leaves them. When readers arrive with different goals, name each one, most common first, and order their sections the same way. Under each heading, list the `act` questions it answers. Every `act` question needs a home, and no `see` or `edge` question gets one. The path lines set the order; each section still works for a reader who lands on it directly (see "Non-linear reading").
+3. **Limitations and troubleshooting.** A limitation earns a place only when the product can't do it in any case and a reader would plausibly try it; give its cause. Put limitations in one section at the end, unless a limit changes a step. Leave out what the product never promised and what nobody would ask. Troubleshooting covers only symptoms a reader hits in normal use, each with a fix they can apply.
+
 Generate a plan scaled to the documentation scope. Read `references/plan-templates.md` for the 4 plan format templates (small update, medium update, large update, multi-article update).
 
 If the shipped-skill classification in Step 2 fired, the plan gains an `## Affected skills`
@@ -291,7 +312,7 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **H2 (##) and H3 (###)** for main structure — these appear in TOC
 - **H4 (####)** sparingly — only to hide minor subsections from TOC
 - **Never deeper than H4** — restructure instead
-- **Consistent style within an article**: If sibling headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase ("Analytics integration"). Pick one pattern and maintain it.
+- **Consistent style within an article**: If sibling task headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase for another task ("Analytics integration"). Pick one pattern and maintain it. Exception: a reference section among task sections keeps its noun phrase ("Limitations", "Configuration options"); a reference section never takes a task heading.
 - **Prefer action-oriented** headings for task/procedure sections: Configure, Set up, Create, Enable
 - **Use noun phrases** for concept/reference sections: Configuration options, System requirements, General requirements
 

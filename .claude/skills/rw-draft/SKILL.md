@@ -11,7 +11,7 @@ argument-hint: "[session folder] [the task or gap list]"
 Called by recursive-writer: mode F after gate 2 and rw-ripple, a new article or section, and the
 rounds of a review the user asks for ("Rounds").
 - Runs as: main thread; the fit agents run `briefs/fit-pass.md`, the round agents
-  `briefs/review-round.md`.
+  `briefs/review-round.md`, and the article agent `briefs/article-pass.md`.
 - In (session folder): `outline.md`, `facts.md`, `reader-questions.md`, `frame.md`, `ripple.md`,
   `strike-list.md`, `checks-all.txt`, `hand-edits.md`, and `ledger.md`.
 - Out: the MDX on the task branch; per round, in the session folder, `w{N}-brief.md`,
@@ -23,6 +23,11 @@ rounds of a review the user asks for ("Rounds").
 
 - Writing: load before drafting (`all` for a new article or section). Draft one sentence at a time:
   check each sentence before you write the next, and run L2 after each paragraph.
+- Before the first sentence, check that `frame.md` holds a path line for every section of the approved
+  tree (rw-plan, "On approval"). If one is missing, write it from `outline.md` first.
+- Open each section from its path line: a continuing section starts where the previous one leaves the
+  reader, and a branch starts with who it's for. The reader questions decide what a section covers,
+  not how it opens.
 - Write a new article at its real path under `src/content/docs/`, on the task branch; `_temp/` holds
   only working files. On a branch unrelated to the task, ask where to write it.
 - Before you write or rewrite a passage that chains actions and outcomes across actors, write it in
@@ -33,7 +38,7 @@ rounds of a review the user asks for ("Rounds").
   in a shot that the text contradicts, without blocking on it. Screenshots shared for verification
   stay reference material. When it's unclear which kind a batch is, ask in one line.
 
-## Passes 2 and 3
+## Passes 2 to 4
 
 2. **Fit** (`briefs/fit-pass.md`): one agent per file, reading the whole file, makes the content fit
    the approved structure. Moves, splits, merges, and cuts; no wording polish.
@@ -42,6 +47,9 @@ rounds of a review the user asks for ("Rounds").
    when the delta is large. Stop when a round changes nothing, or at a round cap the user sets: apply
    the last round's pairs, present, and put its open flags in `open-items.md` in the ticket folder; the
    hand-off names their count and, as "Also noticed", at most one that makes the text wrong for the reader.
+4. **Through-line** (`briefs/article-pass.md`): after the last wording round, one agent reads the whole
+   article top to bottom and checks only how the sections connect. Apply its pairs, then run one
+   wording round on the units they changed. Its proposals go into the hand-off.
 
 ## Running a round
 

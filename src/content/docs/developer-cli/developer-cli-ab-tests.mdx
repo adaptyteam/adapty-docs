@@ -1,18 +1,18 @@
 ---
 title: "Run A/B tests from the CLI"
-description: "Create, start, stop, replace, and archive paywall and flow A/B tests from the terminal with the Adapty CLI, and see the exact effect before each step that can't be undone."
+description: "Create, start, stop, replace, and archive paywall and flow A/B tests from the terminal with the Adapty CLI, read their results, and see the exact effect before each step that can't be undone."
 metadataTitle: "A/B Tests in the Developer CLI | Adapty Docs"
 ---
 
-The Adapty CLI runs regular [A/B tests](ab-tests) of paywalls or flows from the terminal, under the `adapty ab-tests` topic. You can create a test as a draft, start it on a placement for one audience, stop it with a winner, replace a live test with a changed one, and archive old tests.
+The Adapty CLI runs regular [A/B tests](ab-tests) of paywalls or flows from the terminal, under the `adapty ab-tests` topic. You can create a test as a draft, start it on a placement for one audience, stop it with a winner, replace a live test with a changed one, archive old tests, and read the results of each arm.
 
 Use it to let an AI agent run your tests, to script a test across several apps, or to start or stop a test without opening the dashboard.
 
-A regular test splits the users of one audience on one placement between two or more paywalls, or between two or more flows. To run a test across several placements, use a [crossplacement test](ab-test-types) in the dashboard. The `ab-tests` commands don't return test results. To see the results, such as the probability to be best, use the dashboard: [A/B test results and metrics](results-and-metrics). To read analytics for the users of one test, filter the [analytics commands](developer-cli-analytics) by the **A/B tests** dimension from `adapty analytics catalog`.
+A regular test splits the users of one audience on one placement between two or more paywalls, or between two or more flows. To run a test across several placements, use a [crossplacement test](ab-test-types) in the dashboard. To read the results, such as the probability to be best, use the [`ab-tests metrics`](#read-the-results) commands. The same results in the dashboard are described in [A/B test results and metrics](results-and-metrics). To read analytics for the users of one test, filter the [analytics commands](developer-cli-analytics) by the **A/B tests** dimension from `adapty analytics catalog`.
 
 ## Before you start
 
-The `ab-tests` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). The topic needs CLI version 0.14.0 or later. To see your version, run `adapty --version`.
+The `ab-tests` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). The topic needs CLI version 0.14.0 or later, and the `ab-tests metrics` commands need 0.18.0 or later. To see your version, run `adapty --version`.
 
 Every command takes the app's UUID in `--app`. To find it, run:
 
@@ -115,6 +115,24 @@ adapty ab-tests replace --app <app-id> <test-id> --title "Annual vs monthly v2" 
 ```
 
 The live test stops and moves to the `completed` state, and its results stay with its ID. A new test with a new ID starts on the same audience, and Adapty assigns every user of the audience to an arm again. If you pass a different placement in `--placement`, Adapty moves the audience to that placement. You can't move an All users test.
+
+## Read the results
+
+Read how each arm of a test performs with the `ab-tests metrics` commands. Each of them takes `--type`: the `type` that `ab-tests get` returns, `paywall` or `flow`. A type that doesn't match the test is refused.
+
+To see which arm leads, read the whole life of the test:
+
+```bash
+adapty ab-tests metrics total <test-id> --app <app-id> --type flow
+```
+
+Each arm shows its weight, revenue, purchases, views, the probability to be best (`P2BB %`), and the range of revenue per 1,000 unique viewers. A flow test with exactly two arms also shows a p-value. Read the leader here before you [stop the test](#stop-a-test).
+
+- **P2BB** is the chance, in percent, that an arm is the best by revenue per viewer. P2BB `0` on every arm means it isn't computed. P2BB `0` on one arm while another arm is above `0` is a real `0`. The same P2BB on every arm with no purchases on any arm also means it isn't computed. With no views on any arm, there is no result.
+- **The range** is the 99 % range of revenue per 1,000 unique viewers: low, mean, and high. With fewer than 50 paying users on an arm, the range is `0`, the mean, and two times the mean. With no paying users, it is `0`, `0`, and `0`.
+- **The p-value** exists only for a flow test with exactly two arms. Otherwise it's empty, or `null` in `--json`.
+
+To compare several tests of one type, use [`ab-tests metrics list`](#ab-tests-metrics-list). To see the arms over a period, use [`ab-tests metrics get`](#ab-tests-metrics-get). The P2BB of a period in `get` is never the P2BB of the arm, so don't choose a winner from it.
 
 ## Stop a test
 
@@ -246,6 +264,51 @@ The new test takes the audience of the test it replaces, so `replace` takes no a
 | Flag | Required | Description |
 |---|---|---|
 | `--yes`, `-y` | No | Archive without asking. Required with `--json` or in a pipe. |
+
+### `ab-tests metrics total`
+
+Shows each arm over the whole life of the test. See [Read the results](#read-the-results).
+
+| Flag | Required | Description |
+|---|---|---|
+| `--type` | Yes | `paywall` or `flow`, as `ab-tests get` shows it. |
+
+### `ab-tests metrics list`
+
+Shows the lifetime metrics of several tests of one type: a `Total` line for each test and a line for each arm. For an arm of a paywall test, the CLI shows only the mean of the range, with no low and no high. Takes no test ID argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--type` | Yes | `paywall` or `flow`. |
+| `--ids` | Yes | Test IDs. Separate them with commas, or repeat the flag. |
+| `--csv` | No | Print CSV instead of the table. Can't be used with `--json`. |
+
+### `ab-tests metrics get`
+
+Shows the metrics of one test for a period, with the arms and the levels under them, as on the results page of the dashboard. A paywall test needs `--date-from`, `--date-to`, and `--date-type`. A flow test without dates returns its lifetime numbers.
+
+The P2BB of a period is a running total from the start of the period for a paywall test, so it keeps its value on days with no views. For a flow test, it is the value of that period.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--type` | Yes | `paywall` or `flow`. |
+| `--date-from` | For a paywall test | First day of the period, inclusive (`YYYY-MM-DD`). |
+| `--date-to` | For a paywall test | Last day of the period, inclusive (`YYYY-MM-DD`). |
+| `--date-type` | For a paywall test | Which date the period applies to: `purchase_date` or `profile_install_date`. Views are counted by the view date, so they are the same with either. |
+| `--granularity` | No | Split the period into points: `day`, `week`, `month`, `quarter`, or `year`. |
+| `--group-by` | No | Split each arm by `country` or `store`. Without it, each arm is split by product. |
+| `--filter` | No | Keep only data with these values of a filter key, as `key=value`. Repeatable. The keys and values come from [`ab-tests metrics values`](#ab-tests-metrics-values) and work as in [`flows metrics get`](developer-cli-flows#filter-the-metrics). |
+| `--timezone` | No | IANA time zone of the period points, for example `Europe/Berlin`. Without it, Adapty uses the app time zone. |
+| `--depth` | No | How many levels of the tree to print. Default: 1. `--json` and `--csv` always carry the whole tree. |
+| `--csv` | No | Print CSV instead of the table. Can't be used with `--json`. |
+
+### `ab-tests metrics values`
+
+Lists the filter keys and values that `ab-tests metrics get --filter` takes. The output has the same form as [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values).
+
+| Flag | Required | Description |
+|---|---|---|
+| `--type` | Yes | `paywall` or `flow`. |
 
 ## What's next
 

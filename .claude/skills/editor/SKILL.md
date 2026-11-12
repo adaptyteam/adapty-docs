@@ -1,6 +1,6 @@
 ---
 name: "editor"
-description: Use when reviewing or writing MDX files in src/content/docs — proofreading, checking technical writing quality, verifying Simplified Technical English compliance, validating links and images, or drafting new doc content.
+description: Use when reviewing or writing MDX files in src/content/docs, or addressing review comments on a docs PR — proofreading, checking technical writing quality, verifying Simplified Technical English compliance, validating links and images, or drafting new doc content.
 ---
 
 # Editor - Technical Documentation Review and Writing
@@ -15,11 +15,13 @@ Review or write technical documentation as a senior technical writer, focusing o
 
 If mode is ambiguous, ask to clarify.
 
+**Comments mode**: User asks to address, apply, or answer review comments on a docs PR → follow `references/review-comments.md`, then this skill's rules for every edit. `review-assistant` can drive the walk; the reference still decides what each comment means and how far its fix reaches.
+
 ## Review Workflow
 
-1. **Identify scope**: Diff or full article?
+1. **Identify scope**: Diff or full article? For a new article, a full-article review, or a diff that changes more than one section, offer the multi-role review first (`references/multi-review.md`): ask before you start it, and ask whether the user suspects a specific problem. If the user declines, continue with this workflow.
 2. **Load references** — trigger on the task, never on the findings. You cannot know an issue is present until you have read the list that names it, so "load if relevant" resolves to "never load":
-   - Always: `references/simplified-technical-english.md`
+   - Always: `references/simplified-technical-english.md` and `references/product-terms.md`
    - Full-article reviews, and all writing: `references/article-structure.md`
    - Anything touching links, images, imports, or anchors: `references/astro-patterns.md`
    - Producing a plan or annotated feedback: `references/output-templates.md`
@@ -80,6 +82,8 @@ After writing:
 
 Present final content with a brief writing summary. See `references/output-templates.md` for format.
 
+When the draft is a new article, or adds or rewrites a section or more, run the multi-role review on it by default, without asking (`references/multi-review.md`), and apply its fixes yourself. The draft isn't done until that round of review and fixes is over: don't present it, or call it finished, before then. Present only the final text. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
+
 ### Phase 6: Report back to the zone brief
 
 You read the source to write this article, which is the cheapest moment there will ever be to test what the zone brief claims. Invoke the `context-mill` skill and follow **Mode 4 — Autolog**; it holds the full rule, so don't reimplement it here.
@@ -94,7 +98,16 @@ Work outside-in: decide what stays before polishing it, and fix what's *wrong* b
 
 **Pass 0 — the linter.** `node scripts/lint-prose.mjs --full <file>`. Free and mechanical: banned words, overclaim candidates, vague verbs, spatial metaphors, roadmap leaks. Runs automatically on every MDX edit via the `PostToolUse` hook, so in review mode you're re-running it deliberately over the whole file. Every hit is a candidate, not a verdict.
 
-**Pass 1 — what stays.** The heading↔content contract (Area 12). Read each heading, then ask of every paragraph under it whether it advances that promise. This decides scope, so it comes before any line editing.
+**Pass 1 — what stays.** Decide, for every section and paragraph, whether it stays, gets cut, shrinks to a tip or a link, or moves to another article. Report these decisions first, as their own findings, and don't line-edit text you propose to cut: a review that polishes a paragraph the reader doesn't need has endorsed it. Ask, in this order:
+- **The heading↔content contract** (Area 12): does every paragraph advance its heading's promise?
+- **Does the intro promise what the body delivers?** If the body covers two ways to do the task, the intro names both, or the secondary way shrinks.
+- **Is the recommended way first?** When a task can be done in the dashboard or in app code, lead with the dashboard way and recommend it: it changes without an app release. App code is for what needs native logic (custom UI, routing, analytics), and comes after, often as a tip. Say when to use which.
+- **Does it belong in this article?** A procedure that many articles share (testing a purchase in sandbox, publishing, creating a placement) is a link, not a section. Content for a different mode, platform, or setup goes in that mode's article, with a link at most.
+- **Would a reader do this?** A step that guards against a setup nobody builds is cut, or becomes a one-line note.
+- **Is the advice safe to follow?** Advice that conflicts with App Store or Google Play review guidelines, or with common practice, is a Major finding even when the product allows it.
+- **Does it name the use cases in the reader's words?** The intro and headings name what readers build with the feature (continue an onboarding, show a thank-you screen), so search and skimming find it.
+
+This decides scope, so it comes before any line editing.
 
 **Pass 2 — correctness.** Wrong documentation, in the order the defects actually occur:
 - Referents (Area 4) — the highest-frequency defect by a wide margin
@@ -104,7 +117,7 @@ Work outside-in: decide what stays before polishing it, and fix what's *wrong* b
 
 **Pass 3 — shape.** Structure (Areas 6, 8), framing and order (Area 12), instruction pattern (Area 7). Regroup before polishing: sentences you're about to move don't need their commas fixed yet.
 
-**Pass 4 — polish.** Sentence length as a range (Area 2), register and literary patterns (Areas 1, 3), conciseness (Area 10).
+**Pass 4 — polish.** Sentence length as a range (Area 2), register and literary patterns (Areas 1, 3), conciseness (Area 10). Titles and sidebar labels too: the shortest label that covers the article wins, and a change to an existing label needs a reason.
 
 **Pass 5 — connections.** Links and images (Area 9), redundancy and consolidation (Area 10).
 
@@ -160,7 +173,7 @@ Name it at every section entry, in every heading, and anywhere the nearest candi
 
 **Abstract entities have no body and no location.** A flow, paywall, screen, placement, variable, or style is a record. It has no sides, no inside, no surface, and it takes no human action. Only its representation does — a **row**, **card**, **panel**, **column**, **dropdown**, **entry**.
 
-- *Verbs*: ❌ "the setting lives in the Design panel", "every call finds a person", "the page manages your settings" → name what Adapty does or what the reader sees. ✅ "The page lets you manage your settings."
+- *Verbs*: ❌ "the setting lives in the Design panel", "every call finds a person", "the page manages your settings" → name what Adapty does or what the reader sees. ✅ "On this page, you can manage your settings." Don't write "lets you" or "allows you to": make the reader the subject.
 - *Prepositions of place*: for every `next to`, `beside`, `inside`, `at the end of`, name what it modifies. If that's an abstract entity, substitute the representation. ❌ "open the context menu next to the flow" → ✅ "in the flow's row".
 - *Possessives*: the possessive must be true of the representation. ✅ "the flow's row". ❌ "the flow's context menu" — the row displays the menu. ❌ "users whose app version includes the font" — the app is yours; the user installed a build of it.
 - *Reverse error*: a label is not the control. ❌ "Open **All placements**" → ✅ "Open the **All placements** filter above the list."
@@ -242,7 +255,7 @@ Often, naming the control is the entire deliverable: `- **All states**: Filters 
 
 This rule and the instruction pattern run in order, not in competition: **this one decides whether the step exists; Goal → Location → Action shapes the ones that survive.** A step that earns its place still names its location.
 
-**Do not over-granularize**: A short inline instruction (2–3 steps expressible in one clear sentence) should stay inline. Breaking it into a numbered list introduces unnecessary friction. Use numbered steps only when: (a) the sequence has 4+ distinct actions, (b) each step requires separate verification, or (c) the sentence becomes unreadably long. Conciseness takes priority — do not flag a clear one-sentence instruction as a problem.
+**Inline or numbered is a judgment call.** A short instruction (2–3 actions that read as one clear sentence) can stay inline; numbering it adds friction. Number the steps when the reader must track their place: 4+ distinct actions, a step that needs its own verification, a sentence that gets hard to read, or neighbouring procedures in the same section that are numbered. Neither form is a defect by itself — don't flag a clear one-sentence instruction, and don't flag a short numbered list that reads well.
 
 See `references/simplified-technical-english.md` → Instruction Pattern
 
@@ -251,11 +264,12 @@ See `references/simplified-technical-english.md` → Instruction Pattern
 Check for: missing intro before first heading, H4 overuse, non-parallel headings at same level, text blocks over 300 words without structure, consecutive callouts, callouts that interrupt flow.
 
 - **Title/description scope mismatch**: the frontmatter `title` or `description` claims coverage the article doesn't provide. ❌ `description: "Show or hide elements and screens"` when only elements are covered → fix to match actual scope
-- **Product/feature name capitalization**: "Flow Builder" not "Flow builder". Check that multi-word product names are consistently capitalized as proper nouns throughout
+- **Product/feature name capitalization**: "Flow & Paywall Builder", not "Flow Builder" or "Flow & Paywall builder". Check that multi-word product names are consistently capitalized as proper nouns throughout. Current names: `references/product-terms.md`
 - **Split anything that outgrows its container**: a callout over ~3 sentences, or a troubleshooting entry that has grown subsections, gets promoted to its own section. Leave a pointer behind where it was.
 - **Parallel paragraphs are a list**: three or more consecutive paragraphs with the same shape (bold lead + explanation) → convert to a bullet list.
 - **Tables carry data; prose carries reasoning**: if a sentence describes a pattern that holds across items (a `_local` / `_usd` naming convention, say), that pattern is a table column, not a sentence. First confirm the set belongs in the article at all — see Area 13, don't enumerate what lives in code.
 - **Group items that share a claim under that claim**: five flat bullets, three of them about missing data → one parent bullet stating the claim, with those three as sub-bullets. A flat list hides the pattern.
+- **New code snippets** come only from verified sources (`snippet-master`, the SDK repo, an existing tested snippet). Don't write a new untested one into an article.
 - **Speculative `keywords`**: `keywords` feeds doc search — do not add or expand it unless the user explicitly asks. Flag frontmatter where keywords were added during writing/editing without a request; propose removing them. If keywords are requested, keep the list to a few specific terms.
 
 See `references/article-structure.md`
@@ -288,7 +302,7 @@ Additionally check images manually: image files exist, `@assets/` not `@asset/`,
 - Missing alt entirely: `<ZoomImage id="x.webp" width="500px" />` — flag, always required
 - Generic alt text copied from a nearby image: e.g., two consecutive images both with `alt="Static navigation"` — the second was copy-pasted and describes the wrong image. Each alt must describe its specific screenshot
 
-**Screenshot placeholders**: In UI workflow articles, every distinct UI state — screen selection, dialog, results view, confirmation — should have a `:::note` placeholder callout. Check that sections describing a UI step are not missing one. See Screenshot Placeholders section below.
+**Screenshot placeholders**: In UI workflow articles, a UI state where the reader has to find something, choose between similar controls, or confirm the result should have a `:::note` placeholder callout. Check that sections describing such a step are not missing one. See Screenshot Placeholders section below.
 
 See `references/astro-patterns.md`
 
@@ -333,6 +347,8 @@ See `references/simplified-technical-english.md` → Filler Words + Advanced STE
 **Names come from the source, not from memory.**
 - UI labels: grep the frontend for the exact string before you bold it. Quote typos as-is — the reader has to find it on screen.
 - Vendor terms: use the vendor's own noun (PostHog says *insight*, not *query*). Check their glossary.
+- Platform and store terms: for a part of iOS, Android, Xcode, App Store Connect, or Google Play Console, use the name that vendor uses. ❌ "the emulator" → ✅ Xcode's **Simulator**; ❌ an "auto-recurring" base plan → ✅ Google Play's **auto-renewing** base plan. Check every such term in the text, not only the ones that look wrong: a familiar-sounding term is the one nobody checks.
+- No coined names: if the UI has no label for a thing, describe it instead of inventing a name.
 - Never a competitor's vocabulary: `entitlements` is RevenueCat's word — Adapty says **access levels**.
 - Reader-visible names, not internal ones: a webhook field may be `event_datetime` internally while the payload the reader inspects says `timestamp`. Document what they see.
 
@@ -392,6 +408,13 @@ This governs *steps* — for a warning about something that genuinely goes wrong
 - Symptom before mechanism in troubleshooting — headings and opening sentences name what the reader observes, not the cause. ❌ "Exclude historical events is on by default" → ✅ "PostHog is missing historical events."
 - Good news is not a footnote. If a passage has one actionable sentence and four constraints, the actionable one leads.
 - **Lead a feature section with what it lets the reader do, not with the gap it fills.** Open with the outcome and the way to get it. State plain behavior neutrally, the way you'd describe any design ("A flow downloads its images from Adapty"). Don't write it up as a shortcoming: "nothing reports when…", "there's no way to…" and "the SDK doesn't tell you…" make a design choice read as the product's fault, and they add drama without adding a step. Keep a limit only when the reader acts on it, and then say it once, flatly, after the instructions. ❌ "The flow's images keep downloading after `getFlowConfiguration` returns, and nothing reports when they finish." → ✅ "A flow downloads its images and videos from Adapty. To show the first screen's media instantly, serve it from the app bundle." This rule is for feature and how-to prose. Warnings and troubleshooting still name the consequence, as purpose-not-penalty and the no-tautologies rule above say.
+- **No risk framing.** Don't sell a step by what goes wrong without it: "poor UX", "broken", "you risk…", "issues". Say what the step gets the reader. Warnings are the exception, and they stay rare (below).
+- **Limitations last, in one place.** A feature article opens with what the reader can do; its limitations go at the end, in one section. A limitation that belongs to another feature lives in that feature's article, and this one links to it.
+- **Keep warnings rare.** A `:::warning` or `:::danger` only for what every reader must know before acting. Anything else is a `:::note`, or goes in troubleshooting. A silent failure (nothing errors, the result is just wrong) is a troubleshooting entry, not a warning in the setup steps.
+- **Leave out niche cases.** A case few readers hit, or a feature that belongs to another article, stays out. When in doubt, link to the owner.
+- **Order:** the important content first; text before its image; SDK v4 before v3, and v3 content only while v4 is in beta.
+- **Integration articles** describe what the integration sends and how to set it up. They don't sell features Adapty already has, and don't compare them with the partner's.
+- **Method names** belong in SDK articles. Conceptual and dashboard text describes the behavior: method names differ between SDK versions and platforms.
 - **Write a section for the general case, not the ticket that prompted it.** When a customer case prompts new docs, keep the part that answers a general reader's question and drop that customer's architecture. A step that only makes sense in their setup ("if it's still `nil`, show your native onboarding") belongs in the support reply. If the article already describes the neighboring options, the new section covers only what's new.
 
 **Placement across passages:**
@@ -400,7 +423,7 @@ This governs *steps* — for a warning about something that genuinely goes wrong
 - When you subsection a long passage, re-home its parent-level content. Splitting a section strands facts that applied to the whole under one subsection.
 - Promote content that outgrows its container and put it where the decision is made, not where it grew. Leave a pointer behind.
 
-**One concern per unit.** For every step, bullet, or beat: can you name two concerns in it? Split. A setup step carrying both a dropdown and four unrelated toggles is two steps; a date-range bullet carrying timezone is two bullets. Two contrasting limits hold apart as sub-bullets and collapse as prose. A procedure in prose becomes numbered steps — one action per step, conditions as sub-points.
+**One concern per unit.** For every step, bullet, or beat: can you name two concerns in it? Split. A setup step carrying both a dropdown and four unrelated toggles is two steps; a date-range bullet carrying timezone is two bullets. Two contrasting limits hold apart as sub-bullets and collapse as prose. A procedure that is hard to follow in prose becomes numbered steps — one action per step, conditions as sub-points (see "Inline or numbered" above).
 
 **Sections are entry points, not continuations.** Readers arrive from search, mid-article.
 - Read any section cold, skipping everything above it. Does every method, label, and acronym identify its owner? "the `identify` call" — whose SDK?
@@ -478,9 +501,7 @@ File the bug. The finding is valuable; it belongs in a ticket, not an article.
 - Missing intro, heading hierarchy issues, long unstructured blocks, consecutive callouts
 - List consistency, wordiness, ambiguous pronouns
 
-### Suggestions
-- Passive → active where it flows better
-- Minor wording improvements
+No style-only tier. Every finding names what the reader gets wrong, misses, or can't do because of the text. Style preference alone is not a reason to change published text: if the only reason is "reads better", leave the text alone. In a new draft, polish wording during writing instead of reporting it.
 
 For each issue: quote the text (with line number) → explain why → provide specific rewrite.
 
@@ -490,7 +511,7 @@ See `references/output-templates.md` for annotated feedback example.
 
 After completing all checks, follow this flow:
 
-1. **Number every finding** sequentially across all categories (Critical, Important, Suggestions). Assign a single global number to each, not per-category numbers.
+1. **Number every finding** sequentially across both categories (Critical, Important). Assign a single global number to each, not per-category numbers.
 
 2. **Present the full numbered list** as a concise "whole picture" — one line per finding, format: `**N.** [article if multiple] brief description → proposed fix`
 
@@ -570,7 +591,7 @@ Sweeping the same section, entry, or claim across a set of articles (integration
 
 ### Screenshot Placeholders (UI Workflow Articles)
 
-When writing an article that describes a step-by-step UI workflow, add `:::note` callouts as screenshot placeholders at every distinct UI state — screen selections, modal dialogs, results views, confirmation states, and any step that produces a visible change.
+When writing an article that describes a step-by-step UI workflow, add `:::note` callouts as screenshot placeholders at the UI states that need one — typically screen selections, modal dialogs, results views, and confirmation states.
 
 **Format** — the callout contains only the intended filename, nothing else:
 
@@ -584,7 +605,7 @@ feature-name-screen.webp
 
 **Where to place them**: After the prose that describes the UI state, not before it. The reader reads the description, then sees the screenshot that confirms it.
 
-**How many**: Aim for one per distinct UI state. Err on the side of more — it's easier to remove a placeholder than to remember later what needed capturing.
+**How many**: Aim for one per distinct UI state where the reader has to find something, has to choose between similar controls, or needs to confirm the result. Skip a state when the step is a single obvious click, or the image would only repeat the sentence.
 
 After drafting, output a capture table as part of the writing summary:
 
@@ -592,7 +613,9 @@ After drafting, output a capture table as part of the writing summary:
 |---|---|
 | `feature-name-screen.webp` | What is visible on screen at this point |
 
-This lets the user take all screenshots in one pass and replace placeholders with `<ZoomImage>` elements.
+To capture the dashboard and builder rows, use the `mock-screenshots` skill. It takes them from mock data and replaces the placeholders with `<ZoomImage>` elements. Leave mobile app and store console rows for the user, who captures them manually.
+
+In review mode, offer the same skill when an article has unresolved placeholders, or when a screenshot no longer matches the prose.
 
 ### False Positives
 Don't flag: technical terms, industry-standard terminology, code/API names, clear sentences slightly over length, passive voice when appropriate, single value word per paragraph with specific context, descriptive adjectives like "real-time", "built-in", "automatic".

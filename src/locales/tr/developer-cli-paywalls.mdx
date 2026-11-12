@@ -1,10 +1,10 @@
 ---
 title: "Paywall komutları"
-description: "Adapty CLI komutları; paywall'ları listeler, okur, oluşturur ve günceller; bir paywall'ı gösteren placement'ları listeler."
+description: "Paywall'ları listeleyen, okuyan, oluşturan ve güncelleyen, bir paywall'ı gösteren placement'ları listeleyen ve paywall metriklerini okuyan Adapty CLI komutları."
 metadataTitle: "Paywall CLI Komutları | Adapty Dokümanları"
 ---
 
-Bu Adapty CLI komutları, [paywall'ları](paywalls) ve her paywall'ın sattığı ürünleri yönetir.
+Bu Adapty CLI komutları [paywall](paywalls)'ları ve her paywall'ın sattığı ürünleri yönetir, ayrıca metriklerini okur.
 
 ## adapty paywalls list
 
@@ -38,31 +38,42 @@ adapty paywalls get --app <app-id> <paywall-id>
 
 ## adapty paywalls create
 
-Yeni bir [paywall](paywalls) oluşturur.
+Yeni bir [paywall](paywalls) oluşturun.
 
 ```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
 ```
 
-| Bayrak | Zorunlu | Açıklama |
+| Bayrak | Gerekli | Açıklama |
 |---|---|---|
-| `--app` | Evet | Uygulama ID (UUID) |
+| `--app` | Evet | Uygulama ID'si (UUID) |
 | `--title` | Evet | Paywall başlığı |
-| `--product-id` | Evet | [Ürün](product) ID (UUID). Birden fazla ürün için tekrarlayın: `--product-id <id1> --product-id <id2>` |
+| `--products` | Evet | Görüntüleme sırasına göre ürünlerin JSON dizisi: `[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`. Yalnızca `product_id` ([ürün](product) ID'si, UUID) gereklidir; diğer anahtarlar `paywalls get` komutunun yazdırdığı `products` listesinden gelir |
+| `--remote-configs` | Hayır | `{locale, data}` girişlerinden oluşan JSON dizisi; `data`, JSON dizesi olarak [remote config](customize-paywall-with-remote-config) içeriğidir |
+| `--use-paywall-builder-v4` | Hayır | Paywall'ın [Paywall Builder](adapty-paywall-builder) kullanıp kullanmadığı |
+| `--screenshot-id` | Hayır | Paywall ekran görüntüsünün görsel ID'si (bir tam sayı) veya `null` |
+| `--builder-screenshot-id` | Hayır | Builder ekran görüntüsünün görsel ID'si (bir tam sayı) veya `null` |
+| `--web-purchase-url` | Hayır | Web satın alma URL'si veya `null` |
+| `--product-id` | Hayır | Kullanımdan kaldırıldı: `--products` kullanın. Her ürün için tekrarlanan [ürün](product) ID'si (UUID). Teklif ve faturalama planı olmadan ürünleri ayarlar; `--products` ile birlikte kullanılamaz |
 
-## adapty paywalls update \{#adapty-paywalls-update\}
+Boş bıraktığınız bir alan, kontrol paneli varsayılanını alır: remote config yok, builder yok, ekran görüntüsü yok ve web satın alma URL'si yok. `--app`, `--title` ve `--product-id` dışındaki flag'ler CLI 0.20.0 veya üstü sürüm gerektirir.
+
+## adapty paywalls update
 
 Mevcut bir [paywall](paywalls)'ın tüm alanlarını günceller.
 
 :::important
-Bir paywall placement'a bağlandıktan sonra ürünleri değiştirilemez. Canlı bir paywall'da farklı ürünler kullanmak için yeni bir paywall oluşturun ve placement'ı bu yeni paywall'a yönlendirin.
+Bir paywall placement'a bağlandıktan sonra ürünleri değiştirilemez. Canlı bir paywall'da farklı ürünler kullanmak için yeni bir paywall oluşturun ve placement'ı buna yönlendirin.
 :::
 
+Tek bir alanı değiştirmek için önce paywall'ı okuyun, ilgili alanı düzenleyin ve dosyanın tamamını geri gönderin:
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-Bu komut, ürün listesinin tamamı dahil olmak üzere tüm paywall alanlarını değiştirir.
+Bu komut, tam ürün listesi ve remote config listesinin tamamı dahil olmak üzere paywall'ın her alanını değiştirir. Her alan zorunludur: bir flag eksik olduğunda, komut 2 koduyla çıkar, eksik flag'leri listeler ve istek göndermez. Bunun için CLI 0.20.0 veya üzeri gereklidir: bu sürümden önceki sürümler yalnızca `--title` ve `--product-id` alır.
 
 | Argüman | Açıklama |
 |---|---|
@@ -70,9 +81,16 @@ Bu komut, ürün listesinin tamamı dahil olmak üzere tüm paywall alanlarını
 
 | Bayrak | Gerekli | Açıklama |
 |---|---|---|
-| `--app` | Evet | Uygulama ID'si (UUID) |
-| `--title` | Evet | Paywall başlığı |
-| `--product-id` | Evet | [Ürün](product) ID'si (UUID). Birden fazla ürün için tekrarlayın: `--product-id <id1> --product-id <id2>` |
+| `--app` | Evet | Uygulama kimliği (UUID) |
+| `--file` | Alan bayrakları yerine | Tüm paywall'ı içeren bir JSON dosyasının yolu veya stdin'den okumak için `-`. `paywalls get --json` çıktısı olduğu gibi kullanılabilir; `id` alanı yok sayılır. Hiçbir alan bayrağıyla birlikte kullanılamaz |
+| `--title` | `--file` olmadan | Paywall başlığı |
+| `--products` | `--file` olmadan | [`paywalls create`](#adapty-paywalls-create) ile aynı biçimde ürünlerin JSON dizisi. Teklifleri ve fatura planlarını korumak için `paywalls get` çıktısındaki listeyi gönderin |
+| `--remote-configs` | `--file` olmadan | `{locale, data}` girdilerinden oluşan JSON dizisi; `data` bir JSON dizesidir. `[]` tüm remote config'leri siler |
+| `--use-paywall-builder-v4` veya `--no-use-paywall-builder-v4` | `--file` olmadan | Paywall'ın Paywall Builder kullanıp kullanmadığı. `paywalls get` çıktısındaki değeri gönderin: `--no-use-paywall-builder-v4` builder düzenini cihazlardan kaldırır |
+| `--screenshot-id` | `--file` olmadan | Paywall ekran görüntüsünün resim kimliği veya `null` |
+| `--builder-screenshot-id` | `--file` olmadan | Builder ekran görüntüsünün resim kimliği veya `null` |
+| `--web-purchase-url` | `--file` olmadan | Web satın alma URL'si veya `null` |
+| `--product-id` | Hayır | Kullanım dışı: `--products` kullanın. Ürünleri teklif ve fatura planı olmadan ayarlar |
 
 ## adapty paywalls placements
 
@@ -93,6 +111,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 Bir paywall'ı değiştirmeden önce hangi placement'ların etkileneceğini görmek için bu komutu kullanın.
 
 Bu listedeki öğeler `is_active` alanı taşımaz. Bir placement'ın aktiflik durumunu okumak için [`placements list`](developer-cli-placements#adapty-placements-list) veya [`placements get`](developer-cli-placements#adapty-placements-get) komutunu kullanın.
+
+## adapty paywalls metrics list \{#adapty-paywalls-metrics-list\}
+
+Birkaç paywall'ın ömür boyu metriklerini gösterir; her paywall için bir satır. Bu, kontrol panelindeki paywalls tablosunun verileridir.
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--ids` | Evet | Paywall ID'leri (UUID'ler). Virgülle ayırın ya da flag'i tekrarlayın |
+| `--csv` | Hayır | CSV yazdırır: her paywall için paywall ID'si ve sayısal metrikleri içeren bir satır. `--json` ile birlikte kullanılamaz |
+
+`paywalls metrics` komutları, [paywall metrikleri](paywall-metrics) sayfasındaki verileri okur ve CLI 0.16.0 veya daha yeni bir sürüm gerektirir.
+
+Her satır, paywall ID'sini ve bu paywall'a ait görüntüleme, satın alma, deneme ve gelir bilgilerini gösterir. `--json` ile `unique_profiles_views`, `net_revenue` ve `conversion_rate_purchases` gibi tüm 21 metrik, ayrıca `last_purchases` alanı da döner. `--csv` ise sayısal olmayan iki alanı (`in_current_state` ve `last_purchases`) dışarıda bırakır. Verisi bulunmayan bir metrik `null` değil, `0` olarak görünür.
+
+## adapty paywalls metrics values
+
+[`paywalls metrics get --filter`](#filter-the-metrics) komutunun aldığı paywall filtre anahtarlarını ve değerlerini listeler.
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `paywall-id` | Paywall ID (UUID) |
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | App ID (UUID) |
+
+Çıktı, [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values) ile aynı biçimdedir: her grubun en üst değeri filtre anahtarıdır, en içteki değerler ise o anahtarın kabul ettiği değerlerdir.
+
+## adapty paywalls metrics get
+
+Bir paywall'ın belirli bir dönemdeki metriklerini, [paywall metrikleri](paywall-metrics) sayfasındaki ağaç yapısı şeklinde gösterir.
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argüman | Açıklama |
+|---|---|
+| `paywall-id` | Paywall ID'si (UUID) |
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--based-on` | Evet | Ağacın ilk seviyesinin neye göre bölüneceği: `placement` veya `audience`. Bunlar, [paywall metrikleri](paywall-metrics#view-options-for-metrics-data) sayfasının placement tabanlı ve kitle tabanlı görünümleridir |
+| `--date-type` | Evet | Dönemin hangi tarihe uygulanacağı: `purchase_date` veya [yükleme tarihine göre filtrelemek](paywall-metrics#filter-metrics-by-install-date) için `profile_install_date` |
+| `--date-from` | Evet | Dönemin ilk günü, dahil (`YYYY-MM-DD`) |
+| `--date-to` | Evet | Dönemin son günü, dahil (`YYYY-MM-DD`) |
+| `--group-by` | Hayır | Ürünleri `product`, `store` veya `country` değerlerine göre gruplandırır. Varsayılan: `product` |
+| `--granularity` | Hayır | Dönemi noktalara böler: `day`, `week`, `month`, `quarter` veya `year` |
+| `--filter` | Hayır | Yalnızca belirtilen filtre anahtarı değerlerine sahip verileri tutar. Tekrarlanabilir. Bkz. [Metrikleri filtreleme](#filter-the-metrics) |
+| `--timezone` | Hayır | Dönem noktalarının IANA zaman dilimi, örneğin `Europe/Berlin`. Belirtilmezse Adapty, uygulamanın zaman dilimini kullanır |
+| `--depth` | Hayır | `Total` altında kaç seviye ağacın yazdırılacağı. Varsayılan: `1` |
+| `--csv` | Hayır | CSV olarak yazdırır: tüm ağacın her düğümü için bir satır. `--json` ile birlikte kullanılamaz |
+
+`--based-on` veya `--date-type` eksik olduğunda ya da dönemin yalnızca bir ucu verildiğinde CLI, kod 2 ile çıkar ve hiçbir istek göndermez. Dönem belirtilmezse Adapty isteği reddeder ve komut kod 4 ile çıkar. Adapty, `--based-on`, `--date-type`, `--group-by` ve `--granularity` değerlerini doğrular: yanlış bir değer kod 4 ile çıkışa neden olur ve hata mesajı kabul edilen değerleri listeler.
+
+### Çıktıyı okuma \{#read-the-output\}
+
+Komut bir `Total` satırı yazdırır, ardından [`flows metrics get`](developer-cli-flows#read-the-output) ile aynı sütunlara sahip ağacın ilk seviyesini gösterir. İlk seviyenin düğümleri, `--granularity` kullanılıp kullanılmadığına bakılmaksızın her zaman dönemin puanlarıyla birlikte gelir.
+
+Ağacın seviyeleri sırasıyla placement veya kitle, ardından orada çalışan paywall ya da A/B testi ve son olarak `--group-by` gruplarıdır. Daha fazla seviye yazdırmak için `--depth` parametresini kullanın; örneğin `--depth 4`.
+
+Tüm metrikleriyle birlikte ağacın tamamını görmek için şu flag'lerden birini kullanın:
+
+- `--json` sunucunun yanıtını olduğu gibi yazdırır.
+- `--csv` her düğüm için, dönem noktaları dahil olmak üzere bir satır yazdırır. Sütunlar şunlardır: `path` (`Total`'den düğüme kadar olan başlıklar, ` > ` ile ayrılmış), `level`, `title` ve ardından sayısal metrikler. Paywall ağacında seviye olmadığından `level`, `Total`'de `root` ve diğer tüm satırlarda boştur.
+
+### Metrikleri filtreleyin \{#filter-the-metrics\}
+
+Her `--filter`'ı `key=value` biçiminde yazın; anahtarlar ve değerler [`paywalls metrics values`](#adapty-paywalls-metrics-values) sayfasında listelenmiştir. Filtreler, [`flows metrics get`](developer-cli-flows#filter-the-metrics) içindekiyle aynı kuralları izler:
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## Sırada ne var \{#whats-next\}
 

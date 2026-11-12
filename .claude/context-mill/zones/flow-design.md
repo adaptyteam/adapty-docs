@@ -56,7 +56,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 |---|---|---|---|---|
 | add-flow-remote-config-locale | — | marketer | 4 | tutorial |
 | add-paywall-locale-in-adapty-paywall-builder | — | marketer | 20 | tutorial |
-| builder-containers | — | marketer | 15 | tutorial |
+| builder-containers | — | marketer | 14 | tutorial |
 | builder-element-states | — | marketer | 7 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
@@ -74,7 +74,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | onboarding-text | entry | marketer | 10 | tutorial |
 | paywall-buttons | — | marketer | 6 | tutorial |
 | paywall-dark-mode | — | marketer | 8 | tutorial |
-| paywall-head-picture | — | marketer | 7 | tutorial |
+| paywall-head-picture | — | marketer | 6 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
 | reuse-flow-elements | — | marketer | 8 | tutorial |
@@ -158,6 +158,12 @@ article for platform X" as a gap — coverage review isn't in scope for this too
   commits; large sweep commits (translation runs, link-checker passes) are excluded as noise, so an
   absent co-change signal is not evidence a ripple rule doesn't exist — the screenshot-reuse and
   duplicated-warning rules above were both found by reading, not by co-change.
+- **`flow-timer`'s "Delay when a close button appears" now routes to `flow-logic` (2026-11-11).** Delays
+  up to 5 seconds use a delayed **Show element** action (`flow-show-hide-animations`, the owner of how to
+  use the action); the Countdown route stays only for longer delays. Open docs PR #717 rewrites the same
+  section, and its Countdown steps share most of their wording with the merged version. `builder-styling`'s
+  **Visibility** options now describe starting states (**Hide**: hidden until a **Show element** action
+  reveals it) and link to the same article, so a change to how Show/Hide works ripples into both.
 
 ## Boundaries
 
@@ -222,10 +228,12 @@ articles in this zone are plausible and one is right.
 | "selected style only applied to one option", "grey out the submit button", "error style appears too late", "empty field counts as valid" | `builder-element-states` for the look, `builder-inputs-and-forms` for the rules. Four constraints do the work: state styling does **not** propagate to siblings (style one element, then duplicate it); **Disabled** never activates on its own — it needs a condition, typically `<elementId>.isValid = false`; **Invalid** activates only when the user submits, so nothing turns red while typing; and an empty input is always valid (Text inputs have no rules at all, so their `isValid` is always true). |
 | "swipeable slides", "let users switch monthly/yearly", "branch on which slide they picked" | A Carousel's active slide is **not** a selectable group — slides can't be referenced in conditions or dynamic text, so it's for visual rotation only (`builder-containers#carousel`). `builder-tabs` is the single-choice-group version, exposing `selectedOptionId` / `selectedOptionTitle`. Switching whole product groups is `flow-logic`'s `paywall-with-tabs` recipe. |
 | "countdown restarts every time the screen opens", "timer should survive an app restart" | `flow-timer` — the **Behavior** dropdown: **Every appear** (default), **First appear** (first view in the current app session), **First appear (persisted)** (keeps counting across launches). Hiding a badge or navigating when it reaches zero is an **On timer end** action (`flow-logic`'s `onboarding-actions`). |
+| "show 48:00:00 / 72:00:00", "Black Friday timer without days", "hours field stops at 23" | `flow-timer` — **Change the time format**: the `timer_total_hours` variable shows all remaining hours (53 for 2d 5h), so `timer_total_hours:timer_minutes:timer_seconds` replaces a days block. The Duration hours field accepts up to 999; `timer_days`/`timer_hours` still split hours above 23 into days. Verified against builder code, 2026-11-12. |
 | "translate the flow", "send strings to a translator", "TSV import failed", "some screens fell back to English" | Two unrelated surfaces; `paywall-localization` exists only to route between them. On-screen text and media: `add-paywall-locale-in-adapty-paywall-builder` — despite the filename it is the flow-era Localizations panel (see the Boundaries TODO on its zoning). Export/import is `.tsv`; the pinned default locale is the fallback for anything missing. Corrected 2026-10-01 against unreleased builder code, pending release: variables export as `{{name}}` and survive the import, locale columns the flow lacks are skipped rather than rejected, and a blank cell clears a non-default translation. Earlier this row said the export strips variables and that import locale codes must already exist. Per-locale remote-config JSON is `add-flow-remote-config-locale`. Icons, screen backgrounds and custom media IDs **can't** be localized at all (`custom-media#limitations`). |
 | "can't upload the image/video", "upload fails", "file rejected", "my logo is an SVG", "the GIF doesn't animate" | `custom-media` carries the hard limits, and they are the answer to most "upload doesn't work" tickets (`custom-media.mdx:20,32`, read 2026-08-13): images `.JPG`/`.PNG`/`.WEBP` up to 20 MB; videos `.MP4`/`.WEBM` up to 50 MB, no longer than 30 s, minimum 640×640 px. **SVG is not an accepted format** (it isn't in the list — export to PNG or WEBP), and animated GIFs and animated WEBPs are explicitly unsupported at any size, with a Video element as the documented way to add motion. Icons are never uploaded: the Icon element draws from the bundled Tabler Icons library. Note the reader-facing troubleshooting entry for this lives outside this zone, at `flow-logic`'s `flow-common-issues` — this zone stays the source of truth for the numbers. |
 | "the Position toggle disappeared", "Fill and Hug are missing from Width", "the Spacing section is gone", "Fixed is greyed out" | The element and its container both use the **Free** direction. That combination leaves one legal configuration — Absolute position with a fixed width and height — so the builder removes every control that could express another. Rule and remedy in `manage-paywall-ui-elements` (section: Position in a Free container); symptom-first entry in `flow-common-issues`. Verified against builder code, 2026-09-18. |
 | "pre-checked trial switch", "App Store rejected our paywall" | `builder-toggles` — a trial toggle that defaults to "on" can be flagged as a manipulative dark pattern under the App Store Review Guidelines; the documented advice is to default it to off and let users opt in. What flipping it then swaps is `flow-logic` (`onboarding-actions`, `paywall-product-block`). |
+| "Countdown to show the close button doesn't fire", "On timer end never runs" | `flow-timer#delay-when-a-close-button-appears`. A Countdown set to **Hide** that no action targets isn't published, so its **On timer end** never fires; keep it visible with transparent text and its digits (docs PR #717, partly confirmed in builder code 2026-11-10). For delays up to 5 seconds the answer is no Countdown at all: a delayed **Show element** action (`flow-logic`'s `flow-show-hide-animations`). |
 
 ## Gaps and misses
 

@@ -1,10 +1,10 @@
 ---
 title: "Команды для пейволов"
-description: "Команды Adapty CLI для получения списка, чтения, создания и обновления пейволов, а также получения списка плейсментов, в которых показывается пейвол."
+description: "Команды Adapty CLI для просмотра, чтения, создания и обновления пейволов, получения списка плейсментов, показывающих пейвол, и чтения метрик пейвола."
 metadataTitle: "Команды CLI для пейволов | Документация Adapty"
 ---
 
-Эти команды Adapty CLI управляют [пейволами](paywalls) и продуктами, которые продаются через каждый пейвол.
+Эти команды Adapty CLI управляют [пейволами](paywalls) и продуктами, которые каждый пейвол продаёт, а также считывают их метрики.
 
 ## adapty paywalls list
 
@@ -41,38 +41,56 @@ adapty paywalls get --app <app-id> <paywall-id>
 Создайте новый [пейвол](paywalls).
 
 ```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
 ```
 
 | Флаг | Обязательный | Описание |
 |---|---|---|
 | `--app` | Да | ID приложения (UUID) |
 | `--title` | Да | Название пейвола |
-| `--product-id` | Да | ID [продукта](product) (UUID). Повторите для нескольких продуктов: `--product-id <id1> --product-id <id2>` |
+| `--products` | Да | JSON-массив продуктов в порядке отображения: `[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`. Обязателен только `product_id` (ID [продукта](product), UUID); остальные ключи берутся из списка `products`, который выводит `paywalls get` |
+| `--remote-configs` | Нет | JSON-массив записей `{locale, data}`, где `data` — это [Remote Config](customize-paywall-with-remote-config) в виде JSON-строки |
+| `--use-paywall-builder-v4` | Нет | Использует ли пейвол [Paywall Builder](adapty-paywall-builder) |
+| `--screenshot-id` | Нет | ID изображения скриншота пейвола (целое число) или `null` |
+| `--builder-screenshot-id` | Нет | ID изображения скриншота билдера (целое число) или `null` |
+| `--web-purchase-url` | Нет | URL для веб-покупки или `null` |
+| `--product-id` | Нет | Устарело: используйте `--products`. ID [продукта](product) (UUID), указывается отдельно для каждого продукта. Задаёт продукты без оффера и тарифного плана; нельзя использовать вместе с `--products` |
+
+Поле, которое вы не указываете, получает стандартное значение дашборда: без Remote Config, без билдера, без скриншотов и без URL для веб-покупок. Флаги, отличные от `--app`, `--title` и `--product-id`, требуют версии CLI 0.20.0 или выше.
 
 ## adapty paywalls update
 
-Заменяет все поля существующего [пейвола](paywalls).
+Замените все поля существующего [пейвола](paywalls).
 
 :::important
-После того как пейвол привязан к плейсменту, его продукты нельзя изменить. Чтобы использовать другие продукты в активном пейволе, создайте новый пейвол и обновите плейсмент так, чтобы он указывал на него.
+После того как пейвол привязан к плейсменту, изменить его продукты невозможно. Чтобы использовать другие продукты в активном пейволе, создайте новый пейвол и обновите плейсмент, указав на него.
 :::
 
+Чтобы изменить одно поле, получите пейвол, отредактируйте нужное поле в файле и отправьте весь файл обратно:
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-Эта команда заменяет все поля пейвола, включая полный список продуктов.
+Команда заменяет все поля пейвола, включая полный список продуктов и весь список Remote Config. Все поля обязательны: если какой-либо флаг отсутствует, команда завершается с кодом 2, перечисляет недостающие флаги и не отправляет запрос. Требуется CLI версии 0.20.0 или выше: более ранние версии принимают только `--title` и `--product-id`.
 
 | Аргумент | Описание |
 |---|---|
 | `paywall-id` | ID пейвола (UUID) |
 
-| Флаг | Обязательный | Описание |
+| Флаг | Обязателен | Описание |
 |---|---|---|
 | `--app` | Да | ID приложения (UUID) |
-| `--title` | Да | Название пейвола |
-| `--product-id` | Да | ID [продукта](product) (UUID). Повторите для нескольких продуктов: `--product-id <id1> --product-id <id2>` |
+| `--file` | Вместо флагов полей | Путь к JSON-файлу с полным пейволом или `-` для чтения из stdin. Вывод команды `paywalls get --json` подходит без изменений; поле `id` игнорируется. Нельзя использовать вместе с флагами полей |
+| `--title` | Без `--file` | Заголовок пейвола |
+| `--products` | Без `--file` | JSON-массив продуктов, как в [`paywalls create`](#adapty-paywalls-create). Передайте список, выведенный командой `paywalls get`, чтобы сохранить офферы и тарифные планы |
+| `--remote-configs` | Без `--file` | JSON-массив записей `{locale, data}`, где `data` — строка JSON. `[]` удаляет все Remote Config |
+| `--use-paywall-builder-v4` или `--no-use-paywall-builder-v4` | Без `--file` | Использует ли пейвол Paywall Builder. Передайте значение из `paywalls get`: `--no-use-paywall-builder-v4` удаляет макет конструктора с устройств |
+| `--screenshot-id` | Без `--file` | ID изображения скриншота пейвола или `null` |
+| `--builder-screenshot-id` | Без `--file` | ID изображения скриншота конструктора или `null` |
+| `--web-purchase-url` | Без `--file` | URL для веб-покупки или `null` |
+| `--product-id` | Нет | Устарело: используйте `--products`. Устанавливает продукты без оффера и тарифного плана |
 
 ## adapty paywalls placements
 
@@ -93,6 +111,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 Используйте эту команду перед заменой пейвола, чтобы заранее увидеть, какие плейсменты будут затронуты.
 
 Элементы в этом списке не содержат поля `is_active`. Чтобы узнать состояние активации плейсмента, используйте [`placements list`](developer-cli-placements#adapty-placements-list) или [`placements get`](developer-cli-placements#adapty-placements-get).
+
+## adapty paywalls metrics list
+
+Показывает метрики за всё время для нескольких пейволов — по одной строке на каждый пейвол. Это данные из таблицы пейволов в дашборде.
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| Флаг | Обязателен | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--ids` | Да | ID пейволов (UUID). Разделяйте запятыми или повторяйте флаг |
+| `--csv` | Нет | Вывести CSV: по одной строке на каждый пейвол с его ID и числовыми метриками. Нельзя использовать вместе с `--json` |
+
+Команды `paywalls metrics` считывают данные со страницы [метрики пейволов](paywall-metrics) и требуют CLI версии 0.16.0 или выше.
+
+Каждая строка содержит ID пейвола с количеством просмотров, покупок, пробных периодов и выручкой. Флаг `--json` возвращает все 21 метрику, например `unique_profiles_views`, `net_revenue` и `conversion_rate_purchases`, а также `last_purchases`. Флаг `--csv` исключает два нечисловых поля: `in_current_state` и `last_purchases`. Метрика без данных равна `0`, но не `null`.
+
+## adapty paywalls metrics values \{#adapty-paywalls-metrics-values\}
+
+Список ключей и значений фильтра для пейвола: то, что принимает [`paywalls metrics get --filter`](#filter-the-metrics).
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| Аргумент | Описание |
+|---|---|
+| `paywall-id` | ID пейвола (UUID) |
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+
+Вывод имеет ту же форму, что и [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): верхнее значение каждой группы — это ключ фильтра, а самые вложенные значения — то, что принимает этот ключ.
+
+## adapty paywalls metrics get
+
+Показывает метрики одного пейвола за период в виде дерева, как на странице [метрик пейвола](paywall-metrics).
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Аргумент | Описание |
+|---|---|
+| `paywall-id` | ID пейвола (UUID) |
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--based-on` | Да | По чему строится первый уровень дерева: `placement` или `audience`. Это виды «по плейсменту» и «по аудитории» на странице [метрик пейвола](paywall-metrics#view-options-for-metrics-data) |
+| `--date-type` | Да | К какой дате привязан период: `purchase_date` или `profile_install_date` для [фильтрации по дате установки](paywall-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Да | Первый день периода включительно (`YYYY-MM-DD`) |
+| `--date-to` | Да | Последний день периода включительно (`YYYY-MM-DD`) |
+| `--group-by` | Нет | Группировка продуктов по `product`, `store` или `country`. По умолчанию: `product` |
+| `--granularity` | Нет | Разбивка периода на точки: `day`, `week`, `month`, `quarter` или `year` |
+| `--filter` | Нет | Оставить только данные с указанными значениями ключа фильтра. Можно указывать несколько раз. См. [Фильтрация метрик](#filter-the-metrics) |
+| `--timezone` | Нет | Часовой пояс IANA для точек периода, например `Europe/Berlin`. Без него Adapty использует часовой пояс приложения |
+| `--depth` | Нет | Сколько уровней дерева выводить под `Total`. По умолчанию: `1` |
+| `--csv` | Нет | Вывод в формате CSV: одна строка для каждого узла всего дерева. Нельзя использовать вместе с `--json` |
+
+CLI завершается с кодом 2 и не отправляет запрос, если не указан `--based-on` или `--date-type`, либо задан только один конец периода. Без периода Adapty отклоняет запрос, и команда завершается с кодом 4. Adapty проверяет значения `--based-on`, `--date-type`, `--group-by` и `--granularity`: неверное значение приводит к завершению с кодом 4, а в сообщении об ошибке перечислены допустимые значения.
+
+### Вывод результатов \{#read-the-output\}
+
+Команда выводит строку `Total`, затем первый уровень дерева под ней с теми же столбцами, что и [`flows metrics get`](developer-cli-flows#read-the-output). Узлы первого уровня всегда включают точки периода — с флагом `--granularity` или без него.
+
+Уровни дерева: плейсмент или аудитория, затем пейвол или A/B-тест, который там использовался, затем группы `--group-by`. Чтобы вывести больше уровней, передайте `--depth`, например `--depth 4`.
+
+Для получения полного дерева со всеми метриками используйте один из этих флагов:
+
+- `--json` выводит ответ сервера без изменений.
+- `--csv` выводит одну строку на каждый узел, включая промежуточные итоги. Столбцы: `path` (заголовки от `Total` до узла, разделённые ` > `), `level`, `title`, а затем числовые метрики. В дереве пейволов уровней нет, поэтому `level` равен `root` для `Total` и пуст для всех остальных строк.
+
+### Фильтрация метрик \{#filter-the-metrics\}
+
+Каждый `--filter` задаётся в формате `key=value`, где ключи и значения перечислены в [`paywalls metrics values`](#adapty-paywalls-metrics-values). Правила применения фильтров такие же, как в [`flows metrics get`](developer-cli-flows#filter-the-metrics):
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## Что дальше \{#whats-next\}
 

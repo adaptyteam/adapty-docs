@@ -14,11 +14,75 @@ Las reglas asumen que `adapty.activate()` y `adapty.identify()` ya se han resuel
 
 | Haz esto | No hagas esto | Por qué |
 |---|---|---|
-| Obtén el placement que vas a mostrar.                                                                                  | Precarga todos los placements de forma concurrente al arrancar.        | La precarga masiva bloquea el hilo JS y produce una pantalla en negro durante el pico.                                  |
-| Llama a `getFlow` después de que la atribución haya tenido oportunidad de resolverse — por ejemplo, 1-2 segundos después de `activate` o tras que se dispare `onLatestProfileLoad`. | Llama a `getFlow` en el montaje del componente raíz. | La atribución aún no ha llegado. El flow se resuelve contra la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
-| Establece un `loadTimeoutMs` y configura un [paywall de respaldo](fallback-paywalls) para cada placement.                             | Espera indefinidamente a `getFlow`.                     | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responde — o cierran la app.     |
+| Obtén el placement que vas a mostrar, o precarga la caché con [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Lanza tus propias llamadas concurrentes a `getFlow` al iniciar. | Una ráfaga de precarga manual bloquea el hilo JS y produce una pantalla en negro. `preloadFlows` está diseñado para esto y envía el lote al SDK nativo en una sola llamada. |
+| Llama a `getFlow` después de que la atribución haya tenido tiempo de resolverse — por ejemplo, 1–2 segundos después de `activate` o tras que se dispare `onLatestProfileLoad`. | Llama a `getFlow` en el montaje del componente raíz. | La atribución aún no ha llegado. El flow se resuelve con la audiencia predeterminada y omite silenciosamente los segmentos y la personalización de ASA. |
+| Establece un `loadTimeoutMs` y configura un [paywall de respaldo](fallback-paywalls) para cada placement. | Esperes indefinidamente a que `getFlow` responda. | Sin un timeout, los usuarios con mala conectividad ven una pantalla en blanco hasta que la red responda, o cierran la app. |
 
 Consulta [Obtener paywalls y productos personalizados](fetch-paywalls-and-products-react-native) para la referencia de los parámetros `fetchPolicy` y `loadTimeoutMs`, y [Placements](placements) para elegir el placement adecuado.
+
+## Precargar placements \{#preload-placements\}
+
+:::info
+`preloadFlows` y `preloadFlowsForDefaultAudience` están disponibles a partir de la versión 4.3.0 del SDK.
+:::
+
+`preloadFlows` almacena en caché el JSON del flow de antemano — una solicitud por placement. Luego lo usas de la forma habitual: `getFlow` para el flow y `createFlowView` para su vista.
+
+`fetchPolicy` decide desde qué capa lee primero un `getFlow` posterior, no si puede acceder a la caché:
+
+- `'return_cache_data_else_load'` lee primero la copia precargada y va a la red solo cuando no hay nada en caché. `'return_cache_data_if_not_expired_else_load'` hace lo mismo mientras la copia es más reciente que `maxAgeSeconds`.
+- El valor por defecto, `'reload_revalidating_cache_data'`, va primero a la red y recurre a la copia precargada cuando la solicitud falla o se agota el tiempo de espera.
+
+La precarga resulta útil en ambos casos, pero de forma diferente: una política de caché primero elimina la solicitud, mientras que el valor por defecto la mantiene y obtiene una copia en caliente a la que recurrir.
+
+Úsalo cuando sepas qué placements necesitará la sesión pero no quieras mostrarlos todavía — por ejemplo, justo después de que `activate` e `identify` resuelvan, para el flow detrás de un botón que el usuario aún no ha pulsado.
+
+```typescript showLineNumbers
+try {
+  await adapty.preloadFlows(['onboarding', 'main_paywall'], {
+    loadTimeoutMs: 5000,
+  });
+} catch (error) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+const flow = await adapty.getFlow('main_paywall', {
+  fetchPolicy: 'return_cache_data_else_load',
+});
+```
+
+**Parámetros:**
+
+- `placementIds` (requerido): los placements que se van a precargar.
+- `loadTimeoutMs` (opcional): el tiempo de espera en milisegundos. Por defecto es 5000, y los valores por debajo de 1000 se elevan a 1000. En iOS, el tiempo de espera se aplica a todo el lote; en Android, a cada placement.
+
+**Comportamiento importante:**
+
+- La promesa solo se rechaza después de que se hayan intentado todos los placements, y el error agrega los fallos por placement. El fallo de un placement no detiene los demás, y los placements que se cargaron correctamente permanecen en la caché.
+- Si un placement supera el tiempo de espera o falla con un error de red, el SDK usa la variación de la audiencia predeterminada para ese placement. Los demás fallos se reportan tal cual.
+- La precarga solo calienta la caché. No devuelve contenido — para mostrarlo, sigue llamando a `getFlow`.
+
+### Qué cubre una precarga \{#what-a-preload-covers\}
+
+Un flow llega a la pantalla en capas. Una precarga cubre la primera, exactamente igual que `getFlow`:
+
+| Capa | Recuperado por | Precalentado por una precarga |
+|---|---|---|
+| JSON del flow — la variación seleccionada, sus IDs de producto y el Remote Config | `getFlow` | Sí |
+| Diseño de la UI — la estructura, el estilo y el texto de la pantalla | `createFlowView` | No |
+| Imágenes, incluido el fotograma estático que sustituye a un elemento de vídeo | `createFlowView`, en segundo plano | No |
+| Archivos de vídeo | El reproductor del sistema, mientras se renderiza la pantalla | No almacenado en caché por el SDK |
+
+Así que el primer `createFlowView` para un layout determinado sigue requiriendo un viaje de ida y vuelta aunque se haya hecho una precarga. El SDK nativo guarda ese layout en su caché de disco, que persiste entre reinicios de la app, de modo que el coste recae en la primera solicitud y no en todas.
+
+### Omitir la segmentación de audiencia \{#skip-audience-segmentation\}
+
+Para calentar la caché sin esperar la segmentación de audiencia, usa la variante de audiencia predeterminada. No requiere ningún timeout:
+
+```typescript showLineNumbers
+await adapty.preloadFlowsForDefaultAudience(['main_paywall']);
+```
 
 ## Mostrar el contenido multimedia de la primera pantalla desde el bundle de la app \{#show-first-screen-media-from-the-app-bundle\}
 

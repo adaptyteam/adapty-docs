@@ -136,14 +136,29 @@ Pour recevoir les réponses de vos destinataires, dans la même carte de domaine
 
 Les nouveaux domaines n'ont aucune réputation auprès des fournisseurs d'e-mails comme Gmail ou Yahoo, donc envoyer des volumes élevés depuis un domaine tout neuf risque d'atterrir dans les spams. Adapty Mail réchauffe chaque domaine automatiquement, de deux manières qui s'exécutent en parallèle. Aucune configuration n'est nécessaire.
 
-- **Une boîte mail de chauffe** : Dès que le DNS est vérifié, Adapty Mail crée une boîte mail sur votre sous-domaine d'envoi. Cette boîte échange des messages ordinaires avec des boîtes de test chez les principaux fournisseurs. Ces échanges montrent aux fournisseurs que le domaine envoie des e-mails normaux, ce qui construit sa réputation. La carte du domaine indique la phase en cours. Aucune chauffe ne démarre tant que les enregistrements [**Warmup mailbox**](#2-add-the-dns-records) ne sont pas vérifiés.
-- **Une limite d'envoi quotidienne** : Vos campagnes sont comptabilisées séparément de la boîte de chauffe, sur 20 niveaux. Cette limite maintient votre volume en dessous du seuil qui ferait signaler un nouveau domaine comme spam, et elle augmente au fur et à mesure de vos envois.
+- **Une boîte mail de préchauffage** : dès que le DNS est vérifié, Adapty Mail crée une boîte mail sur votre sous-domaine d'envoi. Cette boîte échange des messages conversationnels ordinaires avec des boîtes de test chez les principaux fournisseurs. Cet échange bidirectionnel montre aux fournisseurs que le domaine envoie des e-mails normaux, ce qui construit sa réputation. La carte du domaine indique la phase en cours. Aucun préchauffage n'a lieu tant que les enregistrements [**Warmup mailbox**](#2-add-the-dns-records) ne sont pas vérifiés.
+- **Une limite d'envoi quotidienne** : vos campagnes sont comptabilisées séparément de la boîte de préchauffage, sur 20 niveaux, pour chaque groupe de fournisseurs de messagerie. Cette limite maintient votre volume en dessous du seuil qui ferait signaler un nouveau domaine comme spam, et elle augmente au fur et à mesure de vos envois.
 
-### Comment fonctionnent les paliers \{#how-tiers-work\}
+### Fonctionnement des niveaux \{#how-tiers-work\}
 
-Votre domaine commence au **Palier 1** (100 envois/jour). Le quota augmente d'un palier à la fois, dès que la limite quotidienne est dépassée (les envois et les tentatives bloquées comptent tous les deux, chaque e-mail une seule fois). La limite supérieure prend effet le lendemain.
+Un domaine se réchauffe séparément pour chaque groupe de fournisseurs de messagerie : **Google**, **Microsoft**, **Yahoo**, **iCloud** et **Other**. Chaque groupe commence au **Tier 1** (100 envois/jour), ce qui signifie qu'un nouveau domaine peut envoyer 100 e-mails par jour aux adresses Gmail et 100 autres aux adresses iCloud. Pour voir quels domaines de messagerie un groupe couvre, survolez son nom dans la [carte **Send tiers**](mail-domain-health#send-tiers-daily-email-caps).
 
-La limite est répartie sur la journée : en une heure donnée, un domaine envoie au maximum environ un seizième de sa limite quotidienne, et Adapty Mail envoie lors d'une heure ultérieure les e-mails mis en attente. Les e-mails transactionnels peuvent utiliser jusqu'à deux fois la limite, et le premier e-mail d'un flow ainsi que la demande de confirmation de double opt-in jusqu'à 20 % de plus, ce qui leur donne la priorité sur les autres e-mails quand la limite est proche. La progression est uniquement basée sur le volume, et les niveaux ne font que monter : il n'y a pas de retour automatique à un niveau inférieur. Au-delà du niveau le plus élevé, le domaine envoie sans limite quotidienne.
+Une fois par jour, peu après minuit UTC, Adapty Mail réévalue le niveau de chaque groupe. Cette réévaluation prend en compte le taux d'ouverture des e-mails marketing et des demandes de confirmation de double opt-in envoyés au groupe sur ses trois derniers jours complets au niveau actuel. Le nouveau niveau s'applique pour la journée entière qui suit la réévaluation.
+
+| Groupe | Monte d'un niveau à un taux d'ouverture d'au moins | Descend d'un niveau à un taux d'ouverture inférieur à |
+| --- | --- | --- |
+| Google, Microsoft, Yahoo | 15 % | 5 % |
+| iCloud | 40 % | 20 % |
+| Other | Non utilisé | Non utilisé |
+
+Un groupe doit également remplir les conditions suivantes pour monter d'un niveau :
+
+- **Suffisamment d'e-mails pour juger** : au moins 200 e-mails délivrés au groupe pendant ces jours. En dessous de ce seuil, le groupe reste sur son palier.
+- **Une limite quotidienne atteinte** : le groupe a atteint sa limite quotidienne la veille de la révision. Les envois et les tentatives retenues comptent tous les deux, chaque e-mail une seule fois.
+
+Le groupe **Other** monte uniquement sur la base de la limite quotidienne et ne descend jamais. Entre les deux taux d'ouverture, un groupe reste sur son palier, quel que soit le nombre de jours écoulés. Pour une descente, la révision exclut le jour le plus récent, car les ouvertures de ce jour arrivent encore.
+
+La limite est répartie sur la journée : en une heure donnée, un groupe envoie au maximum environ un seizième de sa limite quotidienne, et Adapty Mail envoie lors d'une heure ultérieure les e-mails mis en attente. Les e-mails transactionnels peuvent utiliser jusqu'au double de la limite, et le premier e-mail d'un flow ainsi que la demande de confirmation du double opt-in jusqu'à 20 % de plus, ce qui leur réserve de la place avant les autres e-mails en cas de limite atteinte. Au-delà du palier supérieur, le groupe n'a pas de limite quotidienne.
 
 | Tier | Limite quotidienne |
 | ---- | ----------- |
@@ -196,10 +211,10 @@ Jusqu'à ce que vos domaines aient terminé leur phase de chauffe, Adapty [limit
 
 Adapty applique la logique suivante pour décider lequel de vos domaines envoie l'e-mail :
 
-- **Un seul domaine par destinataire par campagne.** Pour assurer la cohérence de la campagne, Adapty Mail utilise la même adresse e-mail pour envoyer ses messages à un même destinataire. Si vous supprimez ce domaine ou arrêtez de l'utiliser, l'e-mail suivant est envoyé depuis le domaine le plus récent disposant encore de capacité.
-- **Les domaines les plus récents sont prioritaires.** Un domaine ajouté ultérieurement est préféré à un domaine plus ancien.
+- **Un domaine par destinataire par campagne.** Pour garder la campagne cohérente, Adapty Mail utilise la même adresse e-mail pour envoyer ses messages au même destinataire. Si vous supprimez ce domaine ou arrêtez de l'utiliser, le prochain e-mail est envoyé depuis le domaine le plus récent disposant encore de capacité.
+- **Les domaines les plus récents sont prioritaires.** Un domaine ajouté plus tard est préféré à un domaine plus ancien.
 
-Lorsque tous les domaines ont atteint leur limite, Adapty Mail retarde l'e-mail — [Throttle](mail-suppression#throttle-temporary-delays-and-cancellations) explique ce qui se passe pour le destinataire à partir de là.
+Quand tous les domaines ont atteint leur limite pour le fournisseur de messagerie du destinataire, Adapty Mail reporte l'envoi — [Throttle](mail-suppression#throttle-temporary-delays-and-cancellations) explique ce qui se passe pour le destinataire à partir de là.
 
 ## Mettre en pause et reprendre l'envoi \{#stop-and-resume-sending\}
 

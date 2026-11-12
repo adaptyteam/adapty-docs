@@ -1,10 +1,10 @@
 ---
 title: "Paywalls commands"
-description: "Adapty CLI commands that list, read, create, and update paywalls, and list the placements that show a paywall."
+description: "Adapty CLI commands that list, read, create, and update paywalls, list the placements that show a paywall, and read paywall metrics."
 metadataTitle: "Paywalls CLI Commands | Adapty Docs"
 ---
 
-These Adapty CLI commands manage [paywalls](paywalls) and the products each paywall sells.
+These Adapty CLI commands manage [paywalls](paywalls) and the products each paywall sells, and read their metrics.
 
 ## adapty paywalls list
 
@@ -41,14 +41,22 @@ adapty paywalls get --app <app-id> <paywall-id>
 Create a new [paywall](paywalls).
 
 ```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
 ```
 
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
 | `--title` | Yes | Paywall title |
-| `--product-id` | Yes | [Product](product) ID (UUID). Repeat for multiple products: `--product-id <id1> --product-id <id2>` |
+| `--products` | Yes | JSON array of the products, in display order: `[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`. Only `product_id` ([product](product) ID, UUID) is needed; the other keys come from the `products` list that `paywalls get` prints |
+| `--remote-configs` | No | JSON array of `{locale, data}` entries, where `data` is the [remote config](customize-paywall-with-remote-config) as a JSON string |
+| `--use-paywall-builder-v4` | No | Whether the paywall uses the [Paywall Builder](adapty-paywall-builder) |
+| `--screenshot-id` | No | Image ID of the paywall screenshot (an integer), or `null` |
+| `--builder-screenshot-id` | No | Image ID of the builder screenshot (an integer), or `null` |
+| `--web-purchase-url` | No | Web purchase URL, or `null` |
+| `--product-id` | No | Deprecated: use `--products`. [Product](product) ID (UUID), repeated for each product. It sets products with no offer and no billing plan, and can't be used with `--products` |
+
+A field you leave out gets the dashboard default: no remote configs, no builder, no screenshots, and no web purchase URL. The flags other than `--app`, `--title`, and `--product-id` need CLI version 0.20.0 or later.
 
 ## adapty paywalls update
 
@@ -58,11 +66,14 @@ Replace all fields of an existing [paywall](paywalls).
 Once a paywall is linked to a placement, its products cannot be changed. To use different products in a live paywall, create a new paywall and update the placement to point to it.
 :::
 
+To change one field, read the paywall, edit that field in the file, and send the whole file back:
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-This command replaces all paywall fields, including the full product list.
+The command replaces every field of the paywall, including the full product list and the whole list of remote configs. Every field is required: when a flag is missing, the command exits with code 2, lists the missing flags, and sends no request. This needs CLI version 0.20.0 or later: versions before it take only `--title` and `--product-id`.
 
 | Argument | Description |
 |---|---|
@@ -71,8 +82,15 @@ This command replaces all paywall fields, including the full product list.
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--title` | Yes | Paywall title |
-| `--product-id` | Yes | [Product](product) ID (UUID). Repeat for multiple products: `--product-id <id1> --product-id <id2>` |
+| `--file` | Instead of the field flags | Path to a JSON file with the whole paywall, or `-` to read from stdin. The output of `paywalls get --json` works as is; its `id` is ignored. Can't be used with any field flag |
+| `--title` | Without `--file` | Paywall title |
+| `--products` | Without `--file` | JSON array of the products, as in [`paywalls create`](#adapty-paywalls-create). Send the list that `paywalls get` printed to keep the offers and billing plans |
+| `--remote-configs` | Without `--file` | JSON array of `{locale, data}` entries, where `data` is a JSON string. `[]` deletes all remote configs |
+| `--use-paywall-builder-v4` or `--no-use-paywall-builder-v4` | Without `--file` | Whether the paywall uses the Paywall Builder. Send the value from `paywalls get`: `--no-use-paywall-builder-v4` removes the builder layout from devices |
+| `--screenshot-id` | Without `--file` | Image ID of the paywall screenshot, or `null` |
+| `--builder-screenshot-id` | Without `--file` | Image ID of the builder screenshot, or `null` |
+| `--web-purchase-url` | Without `--file` | Web purchase URL, or `null` |
+| `--product-id` | No | Deprecated: use `--products`. Sets products with no offer and no billing plan |
 
 ## adapty paywalls placements
 
@@ -93,6 +111,90 @@ adapty paywalls placements --app <app-id> <paywall-id>
 Use this command before swapping a paywall to see which placements would be affected.
 
 The items in this list carry no `is_active` field. To read a placement's activation state, use [`placements list`](developer-cli-placements#adapty-placements-list) or [`placements get`](developer-cli-placements#adapty-placements-get).
+
+## adapty paywalls metrics list
+
+Show the lifetime metrics of several paywalls, one line for each paywall. This is the data of the paywalls table in the dashboard.
+
+```bash
+adapty paywalls metrics list --app <app-id> --ids <paywall-id>,<paywall-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--ids` | Yes | Paywall IDs (UUIDs). Separate them with commas, or repeat the flag |
+| `--csv` | No | Print CSV: one row for each paywall, with the paywall ID and the numeric metrics. Can't be used with `--json` |
+
+The `paywalls metrics` commands read the numbers of the [paywall metrics](paywall-metrics) page, and need CLI version 0.16.0 or later.
+
+Each line shows the paywall ID with its views, purchases, trials, and revenue. `--json` carries all 21 metrics, such as `unique_profiles_views`, `net_revenue`, and `conversion_rate_purchases`, plus `last_purchases`. `--csv` leaves out the two fields that are not numbers, `in_current_state` and `last_purchases`. A metric with no data is `0`, never `null`.
+
+## adapty paywalls metrics values
+
+List the filter keys and values of a paywall: what [`paywalls metrics get --filter`](#filter-the-metrics) takes.
+
+```bash
+adapty paywalls metrics values --app <app-id> <paywall-id>
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | Paywall ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The output has the same form as [`flows metrics values`](developer-cli-flows#adapty-flows-metrics-values): the top value of each group is the filter key, and the innermost values are what the key takes.
+
+## adapty paywalls metrics get
+
+Show the metrics of one paywall for a period, as the tree of the [paywall metrics](paywall-metrics) page.
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 --date-type purchase_date --based-on placement
+```
+
+| Argument | Description |
+|---|---|
+| `paywall-id` | Paywall ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--based-on` | Yes | What the first level of the tree splits by: `placement` or `audience`. These are the placement-based and audience-based views of the [paywall metrics](paywall-metrics#view-options-for-metrics-data) page |
+| `--date-type` | Yes | Which date the period applies to: `purchase_date`, or `profile_install_date` to [filter by install date](paywall-metrics#filter-metrics-by-install-date) |
+| `--date-from` | Yes | First day of the period, inclusive (`YYYY-MM-DD`) |
+| `--date-to` | Yes | Last day of the period, inclusive (`YYYY-MM-DD`) |
+| `--group-by` | No | Group the products by `product`, `store`, or `country`. Default: `product` |
+| `--granularity` | No | Split the period into points: `day`, `week`, `month`, `quarter`, or `year` |
+| `--filter` | No | Keep only data with these values of a filter key. Repeatable. See [Filter the metrics](#filter-the-metrics) |
+| `--timezone` | No | IANA time zone of the period points, for example `Europe/Berlin`. Without it, Adapty uses the app time zone |
+| `--depth` | No | How many levels of the tree to print under `Total`. Default: `1` |
+| `--csv` | No | Print CSV: one row for each node of the whole tree. Can't be used with `--json` |
+
+The CLI exits with code 2 and sends no request when `--based-on` or `--date-type` is missing, or when only one end of the period is given. Without the period, Adapty refuses the request and the command exits with code 4. Adapty validates the values of `--based-on`, `--date-type`, `--group-by`, and `--granularity`: a wrong value exits with code 4, and the error lists the accepted values.
+
+### Read the output
+
+The command prints a `Total` line, then the first level of the tree under it, with the same columns as [`flows metrics get`](developer-cli-flows#read-the-output). The nodes of the first level always come with their points of the period, with or without `--granularity`.
+
+The levels of the tree are placement or audience, then the paywall or the A/B test that ran there, then the `--group-by` groups. To print more levels, pass `--depth`, for example `--depth 4`.
+
+For the whole tree with all the metrics, use one of these flags:
+
+- `--json` prints the answer of the server unchanged.
+- `--csv` prints one row for each node, period points included. The columns are `path` (the titles from `Total` down to the node, separated by ` > `), `level`, `title`, and then the numeric metrics. A paywall tree has no levels, so `level` is `root` on `Total` and empty on every other row.
+
+### Filter the metrics
+
+Write each `--filter` as `key=value`, with the keys and values that [`paywalls metrics values`](#adapty-paywalls-metrics-values) lists. Filters follow the same rules as in [`flows metrics get`](developer-cli-flows#filter-the-metrics):
+
+```bash
+adapty paywalls metrics get --app <app-id> <paywall-id> --date-from 2026-09-01 --date-to 2026-10-21 \
+  --date-type purchase_date --based-on placement --filter state=live
+```
 
 ## What's next
 

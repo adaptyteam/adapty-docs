@@ -1295,9 +1295,11 @@ paths:
     post:
       summary: Sanal para birimi işlemi oluştur
       description: |
-        Tek bir atomik işlemde bir profil için bir veya daha fazla sanal para birimini alacaklandırır veya borçlandırır. Alacaklandırmak (vermek) için pozitif `amount`, borçlandırmak (harcamak) için negatif `amount` kullanın. Tüm öğeler birlikte uygulanır — herhangi bir öğe başarısız olursa hiçbiri uygulanmaz.
+        Tek bir atomik işlemde bir profil için bir veya daha fazla sanal para birimini alacaklandırır veya borçlandırır. Alacaklandırmak (vermek) için pozitif `amount`, borçlandırmak (harcamak) için negatif `amount` kullanın. Tüm öğeler birlikte uygulanır — herhangi bir öğe başarısız olursa, hiçbiri uygulanmaz.
 
-        Her para birimi kodu istek başına yalnızca bir kez görünebilir. Bu uç nokta aracılığıyla yapılan bir alacak her zaman süresi dolmayan bir bakiye oluşturur.
+        Her para birimi kodu istek başına yalnızca bir kez görünebilir. Bu uç nokta aracılığıyla yapılan bir alacaklandırma her zaman süresi dolmayan bir bakiye oluşturur.
+
+        İşlemi sanal para birimi analizlerinde kullanılabilir hale getirmek için `operation` ve `feature` ile etiketleyin. Tüm etiketleme alanları isteğe bağlıdır: yalnızca `items` ve `metadata` içeren bir istek `operation: null` ile kaydedilir.
       operationId: createVirtualCurrencyTransaction
       tags:
         - Virtual Currency
@@ -1309,13 +1311,13 @@ paths:
           required: false
           schema:
             type: string
-          description: Sisteminizdeki müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizdeki müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id`'den biri zorunludur.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: Sisteminizdeki profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizdeki profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id`'den biri zorunludur.
         - name: Idempotency-Key
           in: header
           required: false
@@ -1323,9 +1325,9 @@ paths:
             type: string
             format: uuid
           description: |
-            İsteği idempotent yapan bir UUID v4 değeri. Aynı anahtarla bir isteği yeniden denerseniz Adapty, bakiyeleri tekrar değiştirmeden orijinal işlemin sonucunu döndürür. Geçerli bir UUID v4 olmalıdır.
+            İsteği idempotent yapan bir UUID v4. Aynı anahtarla bir isteği yeniden denerseniz, Adapty bakiyeleri tekrar değiştirmeden orijinal işlemin sonucunu döndürür. Geçerli bir UUID v4 olmalıdır.
 
-            Anahtarlar tek bir profil kapsamında en fazla bir saat boyunca hatırlanır. Bu süre geçtikten sonra aynı anahtarla yapılan bir istek yeni bir işlem olarak uygulanır — dolayısıyla anahtarı uzun vadede tekrarlı bir vermeyi önlemek için değil, bir çağrıyı güvenli şekilde yeniden denemek için kullanın.
+            Anahtarlar tek bir profile kapsamlı olarak bir saate kadar hatırlanır. Bu süre dolduktan sonra, aynı anahtara sahip bir istek yeni bir işlem olarak uygulanır — dolayısıyla anahtarı bir çağrıyı güvenli şekilde yeniden denemek için kullanın, uzun vadede bir vermeyi tekilleştirmek için değil.
       requestBody:
         required: true
         content:
@@ -1334,19 +1336,34 @@ paths:
               $ref: '#/components/schemas/VirtualCurrencyTransactionRequest'
             examples:
               debit:
-                summary: Bir para birimini harca (borçlandır)
+                summary: Bir özellik için bir para birimini harca (borçlandır)
                 value:
                   items:
                     - currency_code: COINS
                       amount: -10
+                  operation: spend
+                  feature: power_up.extra_life
+                  customer_placement_id: level-complete
+                  reference_id: session_7781
               credit:
-                summary: Bir para birimini ver (alacaklandır)
+                summary: Bonus olarak bir para birimini ver (alacaklandır)
                 value:
                   items:
                     - currency_code: COINS
                       amount: 500
+                  operation: reward
+                  feature: welcome
+              store_purchase_credit:
+                summary: Arka ucunuzun işlediği bir satın alma için coin alacaklandır
+                value:
+                  items:
+                    - currency_code: COINS
+                      amount: 500
+                  operation: top_up
+                  store: app_store
+                  store_transaction_id: '2000001218103228'
               multi_currency:
-                summary: İki para birimini aynı anda borçlandır
+                summary: Aynı anda iki para birimini borçlandır
                 value:
                   items:
                     - currency_code: GOLD
@@ -1361,68 +1378,95 @@ paths:
                       amount: -100
                     - currency_code: GOLD
                       amount: 10
-                  metadata:
-                    reason: exchange
+                  operation: exchange
       responses:
-        '200':
-          description: İşlem başarıyla uygulandı
+        '201':
+          description: İşlem oluşturuldu. Gövde, işlem geçmişinin bir öğesiyle aynı biçimde oluşturulan işlemi ve işlem sonrası bakiyeleri içerir.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/VirtualCurrencyTransactionResponse'
               example:
-                transaction_id: 0190e8a4-1c2b-7def-8abc-2c1a4b6d8e90
+                transaction_id: 019a7c3e-5b2a-7c1d-9e4f-0a1b2c3d4e5f
+                transaction_type: api_transaction
+                items:
+                  - currency_code: COINS
+                    amount: -10
+                    balance_after: 90
+                metadata: null
+                operation: spend
+                feature: power_up.extra_life
+                customer_placement_id: level-complete
+                reference_id: session_7781
+                is_sandbox: false
+                store: null
+                store_transaction_id: null
+                created_at: '2026-11-12T10:00:00.123Z'
+                response_created_at: 1794477600123
                 balances:
                   - code: COINS
-                    name: Gold Coins
-                    balance: 12950
+                    name: Coins
+                    balance: 90
                     held: 0
-                    available: 12950
+                    available: 90
         '400':
           description: |
-            Hatalı istek. `error_code` alanı nedeni belirtir: `insufficient_balance`, `unknown_currency`, `duplicate_currency`, `amount_zero`, `balance_overflow`, `empty_items` veya `idempotency_key_invalid`.
+            Hatalı istek. `error_code` alanı nedeni tanımlar:
+
+            - `validation_error` — gövde veya başlıklar geçersiz. Örneğin, bir etiketleme alanı biçimini bozuyor, `items` boş veya 20'den fazla girişe sahip, bir `amount` 0 ya da int32 aralığının dışında, bir para birimi kodu tekrarlanıyor, `metadata` kısıtlamalarını ihlal ediyor ya da ne `adapty-profile-id` ne de `adapty-customer-user-id` gönderilmiş. `errors[].source` alanı isimlendirir. `store`'un `store_transaction_id` olmadan gönderilmesi gibi birden fazla alanı kapsayan bir kontrol için `source` boş bir dizedir.
+            - `parse_error` — gövde geçerli JSON değil.
+            - `idempotency_key_invalid` — `Idempotency-Key` bir UUID v4 değil.
+            - `unknown_currency` — para birimi uygulamada kurulu değil.
+            - `unknown_store` — `store` uygulamada kurulu olmayan özel bir mağaza.
+            - `insufficient_balance` — bir borçlandırma mevcut bakiyeyi aşıyor.
+            - `balance_overflow` — bir alacaklandırma bakiyeyi int32 aralığının ötesine taşıyacak.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: currency_code
+              examples:
+                validation_error:
+                  summary: Geçersiz özellik biçimi
+                  value:
                     errors:
-                      - Insufficient balance for currency COINS
-                error_code: insufficient_balance
-                status_code: 400
+                      - source: feature
+                        errors:
+                          - String should match pattern '^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$'
+                    error_code: validation_error
+                    status_code: 400
+                store_pair:
+                  summary: store_transaction_id olmadan store gönderildi
+                  value:
+                    errors:
+                      - source: ''
+                        errors:
+                          - Value error, store and store_transaction_id must be sent together
+                    error_code: validation_error
+                    status_code: 400
+                insufficient_balance:
+                  summary: Yetersiz bakiye
+                  value:
+                    errors:
+                      - source: currency_code
+                        errors:
+                          - Insufficient balance for currency COINS
+                    error_code: insufficient_balance
+                    status_code: 400
         '401':
-          description: Yetkisiz. API anahtarı eksik veya geçersiz.
+          description: Yetkisiz. API anahtarı eksik veya geçersiz (`error_code` değeri `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Erişim reddedildi. Bu uygulama için sanal para birimleri Sunucu API'si etkin değil. Erişim talep etmek için Adapty destek ekibiyle iletişime geçin.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              example:
-                errors:
-                  - source: null
-                    errors:
-                      - Server API for virtual currencies is not enabled for this app. Contact Adapty support to request access.
-                error_code: feature_not_enabled
-                status_code: 403
         '404':
-          description: Profil bulunamadı.
+          description: Profil bulunamadı (`error_code` değeri `profile_does_not_exist`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
           description: |
-            Çakışma. `error_code` alanı nedeni belirtir:
-
-            - `idempotency_in_flight` — aynı `Idempotency-Key` değerine sahip bir istek hâlâ işleniyor. `Retry-After` yanıt başlığındaki aralıktan sonra yeniden deneyin.
-            - `duplicate_source_transaction` — temel mağaza işlemi zaten alacaklandırıldığından tekrar uygulanmaz.
+            Çakışma. Aynı `Idempotency-Key` ile bir istek hâlâ işleniyor (`error_code` değeri `idempotency_in_flight`). `Retry-After` yanıt başlığındaki aralıktan sonra yeniden deneyin.
           content:
             application/json:
               schema:
@@ -1434,16 +1478,9 @@ paths:
                       - A similar request is being processed.
                 error_code: idempotency_in_flight
                 status_code: 409
-        '422':
-          description: |
-            İşlenemeyen varlık. İstek gövdesi şema doğrulamasından geçemedi — örneğin `items` 20'den fazla giriş içeriyor ya da bir `metadata` anahtarı veya değeri kısıtlamalarını ihlal ediyor.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
         '429':
           description: |
-            Çok fazla istek. Uygulama başına veya global hız sınırı aşıldı (`error_code` değeri `rate_limited`). Varsayılan sınırlar uygulama başına dakikada 600 istek ve global olarak dakikada 6000 istektir.
+            Çok fazla istek. Uygulama başına veya global istek sınırı aşıldı (`error_code` değeri `rate_limited`). Varsayılan sınırlar uygulama başına dakikada 600 istek ve global olarak dakikada 6000 istektir.
           content:
             application/json:
               schema:
@@ -1453,7 +1490,7 @@ paths:
     get:
       summary: Sanal para birimi işlemlerini listele
       description: |
-        Bir profil için sanal para birimi işlem geçmişini en yeniden en eskiye doğru döndürür. Sonuçlar imleç tabanlı sayfalama kullanır: yanıt null olmayan bir `pagination.next_cursor` içerdiğinde, sonraki sayfayı almak için bunu `cursor` sorgu parametresi olarak geri gönderin.
+        Bir profil için sanal para birimi işlem geçmişini en yeniden en eskiye döndürür. Sonuçlar imleç tabanlı sayfalama kullanır: yanıt null olmayan bir `pagination.next_cursor` içerdiğinde, bir sonraki sayfayı getirmek için bunu `cursor` sorgu parametresi olarak geri gönderin.
       operationId: listVirtualCurrencyTransactions
       tags:
         - Virtual Currency
@@ -1465,25 +1502,25 @@ paths:
           required: false
           schema:
             type: string
-          description: Sisteminizdeki müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizdeki müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id`'den biri zorunludur.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: Sisteminizdeki profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizdeki profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id`'den biri zorunludur.
         - name: currency_code
           in: query
           required: false
           schema:
             type: string
-          description: Geçmişi tek bir sanal para birimi koduna göre filtreler.
+          description: Geçmişi tek bir sanal para birimi koduna göre filtrele.
         - name: cursor
           in: query
           required: false
           schema:
             type: string
-          description: Önceki yanıtta `pagination.next_cursor` olarak döndürülen opak sayfalama imleci. İlk sayfayı almak için belirtmeyin.
+          description: Önceki yanıtta `pagination.next_cursor` olarak döndürülen opak sayfalama imleci. İlk sayfayı getirmek için atlayın.
         - name: limit
           in: query
           required: false
@@ -1508,8 +1545,14 @@ paths:
                       - currency_code: COINS
                         amount: 500
                         balance_after: 12950
-                    metadata:
-                      reason: promo_bonus
+                    metadata: null
+                    operation: reward
+                    feature: daily_bonus
+                    customer_placement_id: home-screen
+                    reference_id: null
+                    is_sandbox: false
+                    store: null
+                    store_transaction_id: null
                     created_at: '2026-05-23T10:30:00Z'
                   - transaction_id: 0190e7b2-9a44-7c10-bb31-7d2e9f0a1c55
                     transaction_type: store_purchase
@@ -1517,6 +1560,14 @@ paths:
                       - currency_code: COINS
                         amount: 1000
                         balance_after: 12450
+                    metadata: null
+                    operation: top_up
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: app_store
+                    store_transaction_id: '2000001218103228'
                     created_at: '2026-05-22T18:05:12Z'
                   - transaction_id: 0190e5c0-3f18-7b9a-9e6d-44a1c8b27e03
                     transaction_type: subscription_renewal
@@ -1524,29 +1575,35 @@ paths:
                       - currency_code: GEMS
                         amount: 200
                         balance_after: 3280
+                    metadata: null
+                    operation: top_up
+                    feature: null
+                    customer_placement_id: null
+                    reference_id: null
+                    is_sandbox: false
+                    store: play_store
+                    store_transaction_id: GPA.3345-1234-5678-90123
                     created_at: '2026-05-20T09:00:00Z'
                 pagination:
                   next_cursor: MjAyNi0wNS0yMFQwOTowMDowMFowMTkwZTVjMC0zZjE4LTdiOWEtOWU2ZC00NGExYzhiMjdlMDM=
         '400':
-          description: Hatalı istek. `cursor` değeri geçersiz (`error_code` değeri `invalid_cursor`).
+          description: |
+            Hatalı istek. `error_code` alanı nedeni tanımlar:
+
+            - `validation_error` — `limit` 1–100 aralığının dışında ya da ne `adapty-profile-id` ne de `adapty-customer-user-id` gönderilmiş.
+            - `invalid_cursor` — `cursor` değeri ayrıştırılamıyor.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Yetkisiz. API anahtarı eksik veya geçersiz.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Erişim reddedildi. Bu uygulama için sanal para birimleri Sunucu API'si etkin değil.
+          description: Yetkisiz. API anahtarı eksik veya geçersiz (`error_code` değeri `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Profil bulunamadı.
+          description: Profil bulunamadı (`error_code` değeri `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -1557,7 +1614,7 @@ paths:
     get:
       summary: Sanal para birimi bakiyelerini listele
       description: |
-        Bir profil için her sanal para biriminin mevcut bakiyesini döndürür. Uygulamanın sanal para birimi yoksa `data` boş bir dizi olur.
+        Bir profil için her sanal para biriminin mevcut bakiyesini döndürür. Uygulamada sanal para birimi yoksa `data` boş bir dizi olur.
       operationId: listVirtualCurrencyBalances
       tags:
         - Virtual Currency
@@ -1569,13 +1626,13 @@ paths:
           required: false
           schema:
             type: string
-          description: Müşterinin sisteminizdeki benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizde müşterinin benzersiz kimliği. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
         - name: adapty-profile-id
           in: header
           required: false
           schema:
             type: string
-          description: Profilin sisteminizdeki benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
+          description: Sisteminizde profilin benzersiz kimliği. Anonim profillerle çalışıyorsanız en iyi seçeneğinizdir. `adapty-customer-user-id` veya `adapty-profile-id` alanlarından biri zorunludur.
       responses:
         '200':
           description: Bakiyeler başarıyla döndürüldü
@@ -1602,25 +1659,19 @@ paths:
                     held: 0
                     available: 840
         '400':
-          description: Geçersiz istek.
+          description: Geçersiz istek. Ne `adapty-profile-id` ne de `adapty-customer-user-id` gönderilmedi (`error_code` değeri `validation_error`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '401':
-          description: Yetkisiz. API anahtarı eksik veya geçersiz.
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '403':
-          description: Erişim engellendi. Bu uygulama için sanal para birimleri Server API'si etkin değil.
+          description: Yetkisiz. API anahtarı eksik veya geçersiz (`error_code` değeri `not_authenticated`).
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Profil bulunamadı.
+          description: Profil bulunamadı (`error_code` değeri `profile_does_not_exist`).
           content:
             application/json:
               schema:
@@ -3199,7 +3250,7 @@ components:
           type: array
           minItems: 1
           maxItems: 20
-          description: Atomik olarak uygulanacak bakiye ayarlamaları. Her para birimi kodu yalnızca bir kez görünebilir.
+          description: Atomik olarak uygulanacak bakiye düzenlemeleri. Her para birimi kodu yalnızca bir kez görünebilir.
           items:
             $ref: '#/components/schemas/VirtualCurrencyBalanceAdjustment'
         metadata:
@@ -3208,7 +3259,49 @@ components:
           additionalProperties:
             type: string
           description: |
-            İşlemle birlikte depolanan isteğe bağlı anahtar-değer çiftleri. En fazla 5 anahtar. Her anahtar `^[a-z0-9_]{1,30}$` ile eşleşmeli, her değer en fazla 200 karakter olmalıdır.
+            İşlemle birlikte saklanan isteğe bağlı anahtar-değer çiftleri. En fazla 5 anahtar. Her anahtar `^[a-z0-9_]{1,30}$` kalıbıyla eşleşmeli, her değer en fazla 200 karakter olmalıdır.
+        operation:
+          type: string
+          enum:
+            - top_up
+            - refund
+            - spend
+            - spend_reversal
+            - reward
+            - reward_reversal
+            - exchange
+            - expiry
+            - migration
+            - adjustment
+          description: |
+            İşlemin ne anlama geldiği. Çoğu entegrasyon dört değere ihtiyaç duyar: `spend`, `spend_reversal`, `reward`, `reward_reversal`. Belirtilmezse işlem kaydedilir ve `operation: null` ile döndürülür.
+
+
+            Değerler: `top_up` — bir satın alma, abonelik veya deneme için yüklenen jetonlar; `refund` — para iade edildiği için geri alınan jetonlar; `spend` — bir özellik veya içerik için harcanan jetonlar; `spend_reversal` — başarısız bir işlem (örneğin başarısız bir üretim) nedeniyle iade edilen jetonlar; `reward` — bonus, ödül veya destek tazminatı; `reward_reversal` — geri alınan bir ödül; `exchange` — tek bir işlemde zıt işaretli kalemlerle para birimleri arasında dönüşüm; `expiry` — süresi dolan jetonlar; `migration` — kendi sisteminizden taşınan bakiyeler; `adjustment` — uygulama içi ekonominin dışında teknik bir bakiye düzeltmesi.
+        feature:
+          type: string
+          description: |
+            Jetonların ne için harcandığı veya ne karşılığında verildiği. Bir kelime, isteğe bağlı olarak noktalı bir alt tür içerebilir: `^[a-zA-Z0-9_]{1,32}(\.[a-zA-Z0-9_]{1,32})?$` kalıbıyla eşleşmelidir. Gönderildiği şekilde saklanır, büyük/küçük harf duyarlıdır. Fiyat, katman, sürüm veya varyant kodlamayın. Örnek: `power_up.extra_life`.
+        customer_placement_id:
+          type: string
+          description: |
+            Uygulamanızda işlemin gerçekleştiği ekran veya placement'ın kimliği. Bu sizin kendi kimliğinizdir, bir Adapty placement kimliği değildir. `^[a-zA-Z0-9_.-]{1,128}$` kalıbıyla eşleşmelidir. Gönderildiği şekilde saklanır. Örnek: `onboarding-step-3`.
+        reference_id:
+          type: string
+          description: |
+            Sisteminizdeki ilgili nesnenin kimliği; örneğin bir üretim, ödül veya destek talebi. 1–128 karakter; kontrol, BIDI ve sıfır genişlikli karakterler reddedilir. Buraya kişisel veri koymayın. Örnek: `ticket_48213`.
+        is_sandbox:
+          type: boolean
+          default: false
+          description: Test sırasında verdiğiniz jetonlar için `true` olarak ayarlayın.
+        store:
+          type: string
+          description: |
+            Bu işlemin atıfta bulunduğu satın almanın mağazası: `app_store`, `play_store`, `stripe`, `paddle` veya uygulamada yapılandırılmış özel bir mağazanın kimliği. En fazla 30 karakter. Satın alma mağazada iade edilirse, bu referansla yüklenen jetonlar geri alınır. `store_transaction_id` ile birlikte gönderin.
+        store_transaction_id:
+          type: string
+          description: |
+            İlgili satın almanın mağaza işlem kimliği. En fazla 50 karakter. Yalnızca bir referanstır: Adapty bunun var olup olmadığını veya benzersiz olup olmadığını kontrol etmez. `store` ile birlikte gönderin.
       required:
         - items
     VirtualCurrencyBalanceAdjustment:
@@ -3226,22 +3319,24 @@ components:
         - currency_code
         - amount
     VirtualCurrencyTransactionResponse:
-      type: object
-      description: Sanal para birimi işleminin sonucu.
-      properties:
-        transaction_id:
-          type: string
-          format: uuid
-          description: Oluşturulan işlemin benzersiz kimliği.
-        balances:
-          type: array
-          description: |
-            Bu istek tarafından etkilenen her para birimi için işlem sonrası bakiye (`items` içindeki her öğe için bir giriş). Profil için tam bakiye listesini okumak üzere `GET /api/v2/server-side-api/vc/balances/` kullanın.
-          items:
-            $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
-      required:
-        - transaction_id
-        - balances
+      description: Oluşturulan işlem, işlem geçmişinin bir öğesiyle aynı biçimde, artı işlem sonrası bakiyeler.
+      allOf:
+        - $ref: '#/components/schemas/VirtualCurrencyTransactionsHistoryItem'
+        - type: object
+          properties:
+            response_created_at:
+              type: integer
+              format: int64
+              description: Yanıtın oluşturulduğu zaman, milisaniye cinsinden Unix zaman damgası olarak.
+            balances:
+              type: array
+              description: |
+                Bu istek tarafından etkilenen her para birimi için işlem sonrası bakiye (`items` içindeki her öğe için bir giriş). Profil için tam bakiye listesini okumak üzere `GET /api/v2/server-side-api/vc/balances/` kullanın.
+              items:
+                $ref: '#/components/schemas/VirtualCurrencyBalanceSnapshot'
+          required:
+            - response_created_at
+            - balances
     VirtualCurrencyBalanceSnapshot:
       type: object
       properties:
@@ -3341,7 +3436,7 @@ components:
             İşlemin kaynağı. `store_purchase`, `subscription_renewal`, `trial_start`, `api_transaction`, `dashboard_transaction`, `refund` veya `expiry` değerlerinden biri.
         items:
           type: array
-          description: Bu işlemde kaydedilen para birimi bazında bakiye değişiklikleri.
+          description: Bu işlemde kaydedilen para birimi başına bakiye değişiklikleri.
           items:
             $ref: '#/components/schemas/VirtualCurrencyBalanceChange'
         metadata:
@@ -3350,6 +3445,47 @@ components:
           additionalProperties:
             type: string
           description: Varsa işlemle birlikte saklanan anahtar-değer çiftleri.
+        operation:
+          type: string
+          nullable: true
+          enum:
+            - top_up
+            - refund
+            - spend
+            - spend_reversal
+            - reward
+            - reward_reversal
+            - exchange
+            - expiry
+            - migration
+            - adjustment
+          description: |
+            İşlemin ne anlama geldiği. Adapty bunu kendi işlemlerinde otomatik olarak belirler: `store_purchase`, `subscription_renewal` ve `trial_start` için `top_up`, `refund` için `refund`, `expiry` için `expiry` ve `dashboard_transaction` için `reward` atanır. Bir `api_transaction` işleminde, gönderdiğiniz değer kullanılır; hiçbir değer gönderilmemişse `null` olur.
+        feature:
+          type: string
+          nullable: true
+          description: Coinlerin ne için harcandığı veya ne karşılığında verildiği; sizin gönderdiğiniz değer. Adapty tarafından oluşturulan işlemlerde `null` olur.
+        customer_placement_id:
+          type: string
+          nullable: true
+          description: Uygulamanızdaki ekran veya placement kimliği; sizin gönderdiğiniz değer. Adapty tarafından oluşturulan işlemlerde `null` olur.
+        reference_id:
+          type: string
+          nullable: true
+          description: Kendi sisteminizdeki ilgili nesnenin kimliği; sizin gönderdiğiniz değer. Adapty tarafından oluşturulan işlemlerde `null` olur.
+        is_sandbox:
+          type: boolean
+          description: |
+            İşlemin test işlemi olup olmadığı. Adapty tarafından oluşturulan işlemlerde, mağaza satın alımının ortamını takip eder. Bir `api_transaction` işleminde, gönderdiğiniz değer kullanılır; varsayılan olarak `false` kabul edilir.
+        store:
+          type: string
+          nullable: true
+          description: |
+            İlgili satın alımın mağazası. Adapty tarafından mağaza olaylarından (satın alma, yenileme, deneme, iade) oluşturulan işlemlerde ve bir satın alma referansıyla gönderilen `api_transaction` işlemlerinde belirlenir.
+        store_transaction_id:
+          type: string
+          nullable: true
+          description: İlgili satın alımın mağaza işlem kimliği. `store` ile aynı işlemlerde belirlenir.
         created_at:
           type: string
           format: date-time
@@ -3358,6 +3494,13 @@ components:
         - transaction_id
         - transaction_type
         - items
+        - operation
+        - feature
+        - customer_placement_id
+        - reference_id
+        - is_sandbox
+        - store
+        - store_transaction_id
         - created_at
     VirtualCurrencyBalanceChange:
       type: object

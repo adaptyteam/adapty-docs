@@ -46,14 +46,18 @@ try {
 }
 ```
 
-| 参数                | 是否必填 | 说明 |
+| 参数 | 是否必填 | 描述 |
 |-------------------|--------|-----------|
-| **placementId**   | 必填 | [版位](placements)的标识符。这是你在 Adapty 看板中创建版位时指定的值。 |
-| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否允许使用缓存。默认情况下，SDK 会先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络连接不稳定，可以考虑使用 `'return_cache_data_else_load'`——该策略顺序相反，优先读取缓存，仅在缓存为空时才请求服务器。用户可能无法获取到绝对最新的数据，但无论网络状况多差，都能享受更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：当缓存数据的生成时间早于你传入的 `maxAgeSeconds` 时，优先读取缓存；超出时限后则请求服务器。</p><p></p><p>请注意，缓存在重启应用后依然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将流程和付费墙存储在两个层级：上述定期更新的缓存以及[备用付费墙](react-native-use-fallback-paywalls)。我们还使用 CDN 加速流程和付费墙的获取，并在 CDN 不可用时使用独立的备用服务器。该系统旨在确保你始终获取最新版本的流程，同时在网络条件较差的情况下也能保持可靠性。</p> |
-| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p></p><p>请注意，在极少数情况下，此方法的实际超时时间可能略长于 `loadTimeout` 中设定的值，因为该操作在底层可能包含多个不同请求。</p> |
+| **placementId**   | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐使用此方式，因为它可以确保用户始终获取最新数据。</p><p></p><p>但是，如果您认为用户的网络连接不稳定，可以考虑使用 `'return_cache_data_else_load'`，该策略会反转读取顺序——优先读取缓存，仅在没有缓存时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况多么不稳定，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存来避免网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：当缓存副本的存在时间小于您传入的 `maxAgeSeconds` 时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后依然保留，仅在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将流程和付费墙存储在两个层：上述定期更新的缓存以及[备用付费墙](react-native-use-fallback-paywalls)。我们还使用 CDN 加速流程和付费墙的获取，并在 CDN 不可达时提供独立的备用服务器。该系统旨在确保您始终获取最新版本的流程，同时在网络条件较差的情况下也能保证可靠性。</p> |
+| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果 Adapty 服务器未能及时响应或返回错误，SDK 将返回缓存的流程。如果没有缓存且服务器超时或返回服务器错误，SDK 将从备用服务器（仅服务于版位 **All Users** 目标受众的 CDN 副本）请求流程。作为最后手段，SDK 将从您的[备用文件](react-native-use-fallback-paywalls)返回流程。</p><p></p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为底层操作可能由多个请求组成。</p> |
+
+:::tip
+要在用户需要之前提前填充缓存，可以调用 [`preloadFlows`](react-native-optimize-paywall-fetching#preload-placements)（React Native SDK 4.3.0+）一次性预加载多个版位。传入 `fetchPolicy: 'return_cache_data_else_load'` 即可在网络请求之前优先读取预加载的缓存数据。
+:::
 
 :::note
-在 v4 中，`getFlow` 不再接受 `locale` 参数。对于自定义付费墙，所有可用的语言环境都会在流程的远程配置（`flow.remoteConfigs`）中返回——选择与用户设备或应用设置相匹配的那个即可。
+在 v4 中，`getFlow` 不再接受 `locale` 参数。对于自定义付费墙，所有可用的语言版本均会通过流程的远程配置（`flow.remoteConfigs`）返回——请从中选取与用户设备或应用设置相匹配的语言。
 :::
 
 不要硬编码产品 ID！由于流程是远程配置的，可用产品的数量以及特殊优惠（如免费试用）都可能随时变化。请确保你的代码能够处理这些情况。
@@ -90,10 +94,11 @@ try {
 
 | 属性 | 描述 |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Title** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户在商店中选择的国家/地区，而非设备本身的语言环境。 |
-| **Price** | 要显示本地化价格，请使用 `product.price?.localizedString`。该本地化基于设备的语言环境信息。您也可以通过 `product.price?.amount` 以数字形式获取价格，值将以当地货币表示。要获取对应的货币符号，请使用 `product.price?.currencySymbol`。 |
-| **Subscription Period** | 要显示订阅周期（如周、月、年等），请使用 `product.subscription?.localizedSubscriptionPeriod`，该本地化基于设备语言环境。若需以编程方式获取订阅周期，请使用 `product.subscription?.subscriptionPeriod`，通过其 `unit` 属性可获取周期单位（即 `'day'`、`'week'`、`'month'`、`'year'` 或 `'unknown'`），`numberOfUnits` 则表示周期单位的数量。例如，对于按季度订阅，`unit` 属性值为 `'month'`，`numberOfUnits` 值为 `3`。 |
-| **Introductory Offer** | 要显示订阅包含新用户优惠的标识或其他提示，请查看 `product.subscription?.offer?.phases` 属性。这是一个列表，最多包含两个折扣阶段：免费试用阶段和新用户优惠价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：字符串类型，可选值为 `'free_trial'`、`'pay_as_you_go'`、`'pay_up_front'` 和 `'unknown'`。免费试用对应 `'free_trial'` 类型。<br/>• `price`：折扣价格（数字）。免费试用时此值为 `0`。<br/>• `localizedNumberOfPeriods`：根据设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `'3 days'`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的详细信息，其使用方式与上一节中描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：按用户语言环境格式化的折扣订阅周期。 |
+| **Title** | 要显示产品标题，请使用 `product.localizedTitle`。注意，本地化基于用户所选的商店国家/地区，而非设备本身的语言区域。 |
+| **Price** | 要显示本地化价格，请使用 `product.price?.localizedString`。本地化基于设备的语言区域信息。你也可以通过 `product.price?.amount` 以数字形式获取价格，该值以当地货币为单位。要获取对应的货币符号，请使用 `product.price?.currencySymbol`。 |
+| **Subscription Period** | 要显示订阅周期（如周、月、年等），请使用 `product.subscription?.localizedSubscriptionPeriod`。本地化基于设备的语言区域。如需以编程方式获取订阅周期，请使用 `product.subscription?.subscriptionPeriod`，通过其 `unit` 属性可获取周期单位（即 `'day'`、`'week'`、`'month'`、`'year'` 或 `'unknown'`），`numberOfUnits` 可获取周期数量。例如，季度订阅的 `unit` 属性值为 `'month'`，`numberOfUnits` 属性值为 `3`。 |
+| **Billing plan** | 仅限 iOS。对于 [12 个月承诺](app-store-12-month-commitment) 产品，使用 `product.subscription?.ios?.pricingTerms` 来显示 Apple 要求的两个价格：`billingPrice.localizedString` 和 `billingPeriod` 用于月度分期付款，`commitmentInfo.price.localizedString` 和 `commitmentInfo.period` 用于年度总价。承诺计划的 `billingPlan` 为 `'monthly'`，其他情况为 `'up_front'`。对于承诺计划，`product.price` 和 `product.subscription?.subscriptionPeriod` 返回的是年度总价和周期，而非分期付款金额。需要 Adapty SDK 4.3.0 或更高版本。 |
+| **Introductory Offer** | 要显示徽章或其他标识来表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个最多包含两个折扣阶段的列表：免费试用阶段和新用户优惠价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：字符串，可选值为 `'free_trial'`、`'pay_as_you_go'`、`'pay_up_front'` 和 `'unknown'`。免费试用对应 `'free_trial'` 类型。<br/>• `price`：折扣价格（数字形式）。免费试用时此值为 `0`。<br/>• `localizedNumberOfPeriods`：使用设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段显示为 `'3 days'`。<br/>• `subscriptionPeriod`：或者，你也可以通过此属性获取优惠周期的各项详细信息，其使用方式与上一节中描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：根据用户语言区域格式化后的折扣订阅周期。 |
 
 ## 使用默认目标受众流程加速流程获取 \{#speed-up-flow-fetching-with-default-audience-flow\}
 
@@ -173,9 +178,9 @@ try {
 | 参数 | 是否必填 | 描述 |
 |-------------------|--------|-----------|
 | **placementId**   | 必填 | [版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
-| **locale**        | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为由一个或多个子标签组成的语言代码，子标签之间用连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言代码及推荐使用方式的详细信息，请参阅[本地化与语言代码](react-native-localizations-and-locale-codes)。</p> |
-| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而不是是否可以使用缓存。默认情况下，SDK 优先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络连接不稳定，可以考虑使用 `'return_cache_data_else_load'`，该策略的顺序相反——优先读取缓存，仅在没有缓存时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：当缓存时间早于您传入的 `maxAgeSeconds` 时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 将付费墙存储在两个层级：上述定期更新的缓存层，以及[备用付费墙](react-native-use-fallback-paywalls)。我们还使用 CDN 加速付费墙的加载，并配置了独立的备用服务器以应对 CDN 不可用的情况。该系统旨在确保您始终获取最新版本的付费墙，同时在网络状况较差时也能保证可靠性。</p> |
-| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用内容。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能包含多个请求。</p> |
+| **locale**        | <p>可选</p><p>默认值：`en`</p> | <p>[付费墙本地化](add-remote-config-locale)的标识符。该参数应为语言代码，由一个或多个子标签组成，子标签之间用减号（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p></p><p>有关语言区域代码及推荐使用方式的更多信息，请参阅[本地化与语言区域代码](react-native-localizations-and-locale-codes)。</p> |
+| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先读取哪一层数据，而非是否可以使用缓存。默认情况下，SDK 优先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它可确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `'return_cache_data_else_load'`，该策略与默认策略顺序相反——优先读取缓存，仅在无缓存时才请求服务器。用户可能无法获取绝对最新的数据，但无论网络状况多差，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：在缓存副本未超过您传入的 `maxAgeSeconds` 时优先读取缓存，超过后则请求服务器。</p><p></p><p>请注意，重启应用后缓存仍然保留，只有在重新安装应用或手动清除时才会被清空。</p><p></p><p>Adapty SDK 将付费墙存储在两层中：上述定期更新的缓存，以及[备用付费墙](react-native-use-fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并提供独立的备用服务器，以防 CDN 不可用。该系统旨在确保您始终获取最新版本的付费墙，同时在网络不佳的情况下也能保证可靠性。</p> |
+| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果 Adapty 服务器未能及时响应或返回错误，SDK 将从备用服务器（仅提供版位 **All Users** 目标受众的 CDN 副本）、缓存或您的[备用文件](react-native-use-fallback-paywalls)中返回付费墙。</p><p></p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为底层操作可能由多个请求组成。</p> |
 
 不要硬编码产品 ID！由于付费墙是远程配置的，可用产品的数量以及特别优惠（如免费试用）随时可能发生变化。请确保你的代码能够处理这些情况。
 
@@ -211,10 +216,10 @@ try {
 
 | 属性 | 描述 |
 |-------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **Title** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户所选的商店国家/地区，而非设备本身的语言区域设置。 |
-| **Price** | 要显示本地化价格，请使用 `product.price?.localizedString`。本地化基于设备的语言区域信息。您也可以通过 `product.price?.amount` 以数字形式获取价格，该值将以本地货币为单位。要获取对应的货币符号，请使用 `product.price?.currencySymbol`。 |
-| **Subscription Period** | 要显示订阅周期（如周、月、年等），请使用 `product.subscription?.localizedSubscriptionPeriod`，本地化基于设备的语言区域。如需以编程方式获取订阅周期，请使用 `product.subscription?.subscriptionPeriod`，通过其 `unit` 属性可获取周期单位（即 `'day'`、`'week'`、`'month'`、`'year'` 或 `'unknown'`），`numberOfUnits` 则表示周期单位数量。例如，对于按季度订阅，`unit` 属性显示 `'month'`，`numberOfUnits` 显示 `3`。 |
-| **Introductory Offer** | 要显示徽章或其他指示器以表明订阅包含新用户优惠，请查看 `product.subscription?.offer?.phases` 属性。这是一个最多包含两个折扣阶段的列表：免费试用阶段和新用户优惠价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：字符串类型，可选值为 `'free_trial'`、`'pay_as_you_go'`、`'pay_up_front'` 和 `'unknown'`。免费试用类型为 `'free_trial'`。<br/>• `price`：折扣价格（数字类型）。免费试用时该值为 `0`。<br/>• `localizedNumberOfPeriods`：根据设备语言区域本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段显示 `'3 days'`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的详细信息，用法与上一节中描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：针对用户语言区域格式化后的折扣订阅周期字符串。 |
+| **Title** | 要显示产品标题，请使用 `product.localizedTitle`。请注意，本地化基于用户在商店中选择的国家/地区，而非设备本身的语言环境。 |
+| **Price** | 要显示本地化价格，请使用 `product.price?.localizedString`。该本地化基于设备的语言环境信息。您也可以通过 `product.price?.amount` 以数字形式获取价格，值将以当地货币表示。要获取对应的货币符号，请使用 `product.price?.currencySymbol`。 |
+| **Subscription Period** | 要显示订阅周期（如周、月、年等），请使用 `product.subscription?.localizedSubscriptionPeriod`，该本地化基于设备语言环境。若需以编程方式获取订阅周期，请使用 `product.subscription?.subscriptionPeriod`，通过其 `unit` 属性可获取周期单位（即 `'day'`、`'week'`、`'month'`、`'year'` 或 `'unknown'`），`numberOfUnits` 则表示周期单位的数量。例如，对于按季度订阅，`unit` 属性值为 `'month'`，`numberOfUnits` 值为 `3`。 |
+| **Introductory Offer** | 要显示订阅包含新用户优惠的标识或其他提示，请查看 `product.subscription?.offer?.phases` 属性。这是一个列表，最多包含两个折扣阶段：免费试用阶段和新用户优惠价格阶段。每个阶段对象包含以下实用属性：<br/>• `paymentMode`：字符串类型，可选值为 `'free_trial'`、`'pay_as_you_go'`、`'pay_up_front'` 和 `'unknown'`。免费试用对应 `'free_trial'` 类型。<br/>• `price`：折扣价格（数字）。免费试用时此值为 `0`。<br/>• `localizedNumberOfPeriods`：根据设备语言环境本地化的字符串，描述优惠时长。例如，三天试用优惠在此字段中显示为 `'3 days'`。<br/>• `subscriptionPeriod`：您也可以通过此属性获取优惠周期的详细信息，其使用方式与上一节中描述的订阅周期相同。<br/>• `localizedSubscriptionPeriod`：按用户语言环境格式化的折扣订阅周期。 |
 
 ## 利用默认目标受众付费墙加快付费墙加载速度 \{#speed-up-paywall-fetching-with-default-audience-paywall\}
 
