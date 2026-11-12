@@ -128,10 +128,11 @@ adapty flows config get --app <app-id> <flow-id>
 
 ## adapty flows config update
 
-写入流程的编辑工具配置。
+写入流程的编辑工具配置及其远程配置。
 
 ```bash
-adapty flows config update --app <app-id> <flow-id> --config-file config.json
+adapty flows config get --app <app-id> <flow-id> --json > flow.json
+adapty flows config update --app <app-id> <flow-id> --file flow.json
 ```
 
 | 参数 | 描述 |
@@ -140,11 +141,20 @@ adapty flows config update --app <app-id> <flow-id> --config-file config.json
 
 | 参数 | 是否必填 | 描述 |
 |---|---|---|
-| `--app` | 是 | App ID（UUID） |
-| `--config` | 二选一 | 编辑工具配置，以 JSON 字符串形式传入 |
-| `--config-file` | 二选一 | 指向包含编辑工具配置的 JSON 文件路径，或传入 `-` 以从 stdin 读取 |
-| `--remote-configs` | 否 | `{locale, data}` 条目组成的 JSON 数组，其中 `data` 为字符串形式的远程配置 |
-| `--expected-updated-at` | 否 | 上次执行 `flows config get` 时返回的 `updated_at` 值。若配置在该次读取之后发生了变更，命令将报错而不会覆盖更改。不传此参数则无条件覆盖 |
+| `--app` | 是 | 应用 ID（UUID） |
+| `--file` | 代替 `--config`、`--config-file` 和 `--remote-configs` | 包含 `config` 和 `remote_configs` 的 JSON 文件路径，或 `-` 表示从 stdin 读取。`flows config get --json` 的输出可直接使用，其他键将被忽略 |
+| `--config` | 不使用 `--file` 时：`--config` 和 `--config-file` 二选一 | 以 JSON 字符串形式提供的编辑工具配置 |
+| `--config-file` | 不使用 `--file` 时：`--config` 和 `--config-file` 二选一 | 包含编辑工具配置的 JSON 文件路径，或 `-` 表示从 stdin 读取 |
+| `--remote-configs` | 不使用 `--file` 时 | 由 `{locale, data}` 条目组成的 JSON 数组，其中 `data` 为字符串形式的远程配置。传入 `[]` 将删除所有远程配置 |
+| `--expected-updated-at` | 否 | 先前执行 `flows config get` 时获取的 `updated_at` 值。若在该次读取之后配置已发生变更，命令将报错而非覆盖变更。省略此参数则无条件覆盖 |
+
+写入操作会替换配置及全部远程配置列表。若要保留现有远程配置，请从 `flows config get --json` 的输出中取出 `remote_configs` 字段一并传入。不使用 `--file` 时，命令需要同时提供 config 和 `--remote-configs`：缺少其中任一项，命令将以退出码 2 终止，且不会发送任何请求。`--file` 标志及必填的 `--remote-configs` 需要 CLI 0.20.0 或更高版本。
+
+如需为新流程写入第一个配置，请传入空的远程配置列表：
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json --remote-configs '[]'
+```
 
 保存配置会创建草稿，而不会直接发布。对于已发布的流程，写入操作会创建新版本：流程状态变为 `dirty`，在你执行 [`flows publish`](#adapty-flows-publish) 之前，用户看到的仍是已发布的版本。
 

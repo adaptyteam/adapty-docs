@@ -41,38 +41,56 @@ adapty paywalls get --app <app-id> <paywall-id>
 新しい[ペイウォール](paywalls)を作成します。
 
 ```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
 ```
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
-| `--app` | はい | アプリ ID（UUID） |
+| `--app` | はい | アプリ ID (UUID) |
 | `--title` | はい | ペイウォールのタイトル |
-| `--product-id` | はい | [プロダクト](product) ID（UUID）。複数のプロダクトを指定する場合は繰り返し使用: `--product-id <id1> --product-id <id2>` |
+| `--products` | はい | 表示順のプロダクトの JSON 配列: `[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`。必須は `product_id`（[プロダクト](product) ID、UUID）のみ。その他のキーは `paywalls get` が出力する `products` リストから取得できます |
+| `--remote-configs` | いいえ | `{locale, data}` エントリの JSON 配列。`data` は JSON 文字列形式の[リモートコンフィグ](customize-paywall-with-remote-config) |
+| `--use-paywall-builder-v4` | いいえ | ペイウォールが[ペイウォールビルダー](adapty-paywall-builder)を使用するかどうか |
+| `--screenshot-id` | いいえ | ペイウォールのスクリーンショットの画像 ID（整数）、または `null` |
+| `--builder-screenshot-id` | いいえ | ビルダーのスクリーンショットの画像 ID（整数）、または `null` |
+| `--web-purchase-url` | いいえ | Web 購入 URL、または `null` |
+| `--product-id` | いいえ | 非推奨: `--products` を使用してください。[プロダクト](product) ID（UUID）。プロダクトごとに繰り返し指定します。オファーや請求プランなしでプロダクトを設定しますが、`--products` と同時に使用することはできません |
+
+フィールドを省略すると、ダッシュボードのデフォルト値が適用されます（リモートコンフィグなし、ビルダーなし、スクリーンショットなし、ウェブ購入URLなし）。`--app`、`--title`、`--product-id` 以外のフラグを使用するには、CLIバージョン 0.20.0 以降が必要です。
 
 ## adapty paywalls update
 
 既存の[ペイウォール](paywalls)のすべてのフィールドを置き換えます。
 
 :::important
-ペイウォールがプレースメントにリンクされると、そのプロダクトは変更できません。本番のペイウォールで別のプロダクトを使用するには、新しいペイウォールを作成し、プレースメントがそちらを指すように更新してください。
+ペイウォールがプレースメントにリンクされると、そのプロダクトは変更できません。公開中のペイウォールで別のプロダクトを使用するには、新しいペイウォールを作成し、プレースメントがそちらを指すように更新してください。
 :::
 
+1つのフィールドを変更するには、ペイウォールを取得し、そのファイルでフィールドを編集してから、ファイル全体を送り返します：
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-このコマンドは、プロダクトリスト全体を含むペイウォールのすべてのフィールドを置き換えます。
+このコマンドは、プロダクトの全リストとリモートコンフィグの全リストを含む、ペイウォールのすべてのフィールドを置き換えます。すべてのフィールドが必須です。フラグが不足している場合、コマンドはコード2で終了し、不足しているフラグを表示してリクエストを送信しません。この機能にはCLIバージョン0.20.0以降が必要です。それ以前のバージョンでは `--title` と `--product-id` のみを受け付けます。
 
 | 引数 | 説明 |
 |---|---|
-| `paywall-id` | ペイウォール ID (UUID) |
+| `paywall-id` | ペイウォールID（UUID） |
 
 | フラグ | 必須 | 説明 |
 |---|---|---|
-| `--app` | Yes | アプリ ID (UUID) |
-| `--title` | Yes | ペイウォールのタイトル |
-| `--product-id` | Yes | [プロダクト](product) ID (UUID)。複数指定する場合は繰り返します: `--product-id <id1> --product-id <id2>` |
+| `--app` | はい | アプリID（UUID） |
+| `--file` | フィールドフラグの代わりに使用 | ペイウォール全体を含むJSONファイルへのパス、または標準入力から読み込む場合は `-`。`paywalls get --json` の出力をそのまま使用可能（`id` は無視される）。フィールドフラグとの併用不可 |
+| `--title` | `--file` なしの場合 | ペイウォールのタイトル |
+| `--products` | `--file` なしの場合 | プロダクトのJSON配列（[`paywalls create`](#adapty-paywalls-create) と同形式）。オファーや課金プランを維持するには `paywalls get` で取得したリストをそのまま送信してください |
+| `--remote-configs` | `--file` なしの場合 | `{locale, data}` エントリのJSON配列（`data` はJSON文字列）。`[]` を指定するとすべてのリモートコンフィグが削除されます |
+| `--use-paywall-builder-v4` または `--no-use-paywall-builder-v4` | `--file` なしの場合 | ペイウォールがペイウォールビルダーを使用するかどうか。`paywalls get` の値をそのまま送信してください。`--no-use-paywall-builder-v4` を指定するとデバイスからビルダーレイアウトが削除されます |
+| `--screenshot-id` | `--file` なしの場合 | ペイウォールスクリーンショットの画像ID、または `null` |
+| `--builder-screenshot-id` | `--file` なしの場合 | ビルダースクリーンショットの画像ID、または `null` |
+| `--web-purchase-url` | `--file` なしの場合 | Web購入URL、または `null` |
+| `--product-id` | いいえ | 非推奨：`--products` を使用してください。オファーなし・課金プランなしのプロダクトを設定します |
 
 ## adapty paywalls placements
 
