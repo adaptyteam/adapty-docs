@@ -7,18 +7,47 @@ metadataTitle: "Enable App Store Server Notifications | Adapty Docs"
 import Zoom from 'react-medium-image-zoom';
 import 'react-medium-image-zoom/dist/styles.css';
 
-Setting up App Store server notifications is crucial for ensuring data accuracy as it enables you to receive updates instantly from the App Store, including information on refunds and other events.
+The Adapty SDK reports purchases made in your app. Server notifications report changes that happen outside the app, for example:
 
-:::important
-Adapty iOS SDK 2.10.0 or later is required for full App Store Server Notifications V2 support.
-:::
+- A subscription renews.
+- A user turns off auto-renewal.
+- A payment fails because of a billing issue.
+- A subscription expires.
+- A user requests a refund. [Refund Saver](refund-saver) answers the request.
+- Apple refunds a purchase.
 
-1. Copy the **URL for App Store server notification** in the Adapty Dashboard. 
+Enter the notification URL from Adapty in App Store Connect, then check that notifications reach Adapty.
 
-   
+## Enter the notification URL in App Store Connect
+
+If another server already receives notifications for your app, [set up forwarding to it](#raw-events-forwarding) before you replace its URL.
+
+<AppStoreServerNotificationsSetup />
+
+## Check that notifications reach Adapty
+
+To confirm that notifications reach Adapty, make a [sandbox purchase](test-purchases-in-sandbox). Then review the status of the **App Store server notifications** section in Adapty. The purchase itself appears in Adapty even without notifications, because the SDK reports it. Once Apple sends a notification about the purchase, Adapty changes the status from **Waiting** to **Active**. A test notification from Apple doesn't change the status.
+
+The status then shows how long ago the last notification arrived:
+
+- **Active**: Less than 24 hours ago.
+- **Delayed**: 24 to 72 hours ago.
+- **Stalled**: 72 hours ago or more.
+
+**Delayed** and **Stalled** don't always mean a broken setup: in an app with few subscribers, days can pass without a notification. **Active** only shows that notifications arrive at the URL.
+
+To make sure the notifications are about your app, verify the setup:
+
+1. In App Store Connect, open the **App Information** page of your app.
+2. Make sure that **Production Server URL** and **Sandbox Server URL** both match the URL in Adapty.
+3. Make another sandbox purchase, and confirm that the status reads **Active**.
+
+## Share notifications with another server \{#raw-events-forwarding\}
+
+If another server needs the notifications from Apple too, Adapty can forward them to that server. In Adapty, go to [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk). In the **App Store server notifications** section, enter the URL of that server in the **URL for forwarding raw Apple events** field, and click **Save**.
 
 <Zoom>
-  <img src="/assets/shared/img/2901185-app_server_notifications.webp"
+  <img src="/assets/shared/img/app-settings-forwarding-url.webp"
   style={{
     border: '1px solid #727272', /* border width and color */
     width: '700px', /* image width */
@@ -28,48 +57,23 @@ Adapty iOS SDK 2.10.0 or later is required for full App Store Server Notificatio
 />
 </Zoom>
 
-2. Open [App Store Connect](https://appstoreconnect.apple.com/apps). Select your app and proceed to **General** → **App Information** section, **App Store Server Notifications** subsection. 
-3. Paste the copied **URL for App Store server notification** into the **Production Server URL** and **Sandbox Server URL** fields.
+Adapty forwards the notifications it receives from Apple to the other server. If you enter the notification URL from Adapty under **Sandbox Server URL** in App Store Connect, Adapty forwards sandbox notifications too. The forwarded body keeps the signed payload from Apple unchanged, so the other server can verify the signature. Adapty doesn't pass on the request headers from Apple.
 
-After you save the URLs, the notifications status in the Adapty Dashboard changes only when Apple sends the first real notification — that is, when the first subscription event, such as a purchase or a renewal, occurs. Apple's test notification doesn't change it. A waiting status right after setup doesn't mean the connection is broken.
+Adapty doesn't forward:
 
-   
+- Purchases that the SDK reports without a notification from Apple.
+- A test notification from Apple.
+- A notification that Adapty already received within the last hour.
 
-<Zoom>
-  <img src="/assets/shared/img/86fb3d2-app_server_notifications_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+To prevent a loop, don't post forwarded notifications back to the notification URL. Don't enter an Adapty URL in the **URL for forwarding raw Apple events** field either.
 
-## Raw events forwarding
-
-Sometimes, you might still want to receive raw S2S events from Apple. To continue receiving them while using Adapty, just add your endpoint to the **URL for forwarding raw Apple events** field, and we'll send raw events as-is from Apple.
-
-<Zoom>
-  <img src="/assets/shared/img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-:::warning
-If notifications stop reaching Adapty, new transactions, renewals, and refunds stop appearing. Adapty doesn't flag it — see [If updates stop arriving](store-sync#if-updates-stop-arriving).
-:::
+If your backend must keep its URL in App Store Connect, [pass the notifications to Adapty from your backend](forwarding-events-to-adapty) instead.
 
 ## Notification authenticity
 
-Adapty doesn't verify the origin of incoming App Store server notifications beyond the notification URL itself — it doesn't verify the sender's IP address or validate Apple's JWS signature. Treat the notification URL as a credential: anyone who has it can post a payload to it.
+Treat the notification URL as a credential. Adapty identifies the app by the URL alone, so anyone who has the URL can post a payload to it.
 
-Apple's Sandbox **TEST** notification type is never stored, regardless of who sends it, so sending one manually never creates an event in the [Event Feed](event-feed).
+A test notification never creates an event in the [Event Feed](event-feed), whoever sends it.
 
 **What's next**
 
@@ -80,3 +84,6 @@ Set up the Adapty SDK for:
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)
+
+Then [make a sandbox purchase to check that notifications reach Adapty](#check-that-notifications-reach-adapty).
