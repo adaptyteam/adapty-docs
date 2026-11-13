@@ -1,274 +1,125 @@
 ---
 title: "Configurer l'intégration App Store"
-description: "Configurez votre connexion App Store pour un suivi fluide des abonnements."
+description: "Connectez votre application iOS à Adapty pour qu'Adapty valide les achats et reçoive les événements d'abonnement. Ce guide couvre les identifiants App Store dans App settings > iOS SDK."
 metadataTitle: "Configuration de la connexion App Store | Documentation Adapty"
 ---
 
+Pour connecter votre application iOS à Adapty, saisissez ses identifiants App Store dans **App settings** > **iOS SDK**. Adapty peut alors :
+
+- Valider les achats.
+- Recevoir les événements d'abonnement.
+- Synchroniser vos produits avec App Store Connect.
+
+Si les achats ou les événements d'abonnement cessent d'arriver dans Adapty, [vérifiez chaque identifiant](#check-each-credential).
 
 <YouTube id="VJQbzoTCkqs" />
 
-Cette section explique comment établir la connexion entre l'App Store et Adapty pour votre application iOS. C'est indispensable pour afficher les analyses d'abonnements et valider les achats. Vous pouvez effectuer cette intégration lors de l'onboarding initial ou plus tard dans les **App Settings** de l'Adapty Dashboard.
+Avant de commencer :
 
-Chaque identifiant sur cette page débloque une partie différente de l'échange. [Comment Adapty synchronise les données avec les stores](store-sync#what-adapty-reads-from-the-stores) indique quelles données chacun transporte.
+- Vous devez avoir accès à l'application cible dans App Store Connect. Si elle n'y figure pas encore, [configurez App Store Connect](set-up-app-store-connect). Si vous n'avez pas accès à la plateforme, faites-en la demande.
+- Votre équipe doit avoir accès à l'API App Store Connect — elle est nécessaire pour générer la clé d'accès requise. Si ce n'est pas encore le cas, demandez au titulaire du compte de [faire la demande](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api). Apple examine chaque demande.
+- Ouvrez deux onglets dans votre navigateur : votre application dans [App Store Connect](https://appstoreconnect.apple.com/apps) dans l'un, et [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk) dans Adapty dans l'autre. Vous copierez des valeurs entre les deux onglets tout au long de ce guide.
 
-Bien que vous ayez peut-être configuré l'intégration de votre application mobile et Adapty lors de l'onboarding, vous pouvez modifier ces paramètres ultérieurement dans **App settings**.
+## Vue d'ensemble \{#overview\}
 
-:::danger
-Les modifications de configuration peuvent être effectuées en toute sécurité pendant la phase sandbox, jusqu'à la mise en production de votre application mobile avec le SDK Adapty installé. Des modifications après la mise en production peuvent interrompre le flow d'achat dans votre application.
+Chaque identifiant présenté dans ce guide est obligatoire. Adapty utilise chacun d'eux pour [une partie différente de l'échange de données avec l'App Store](store-sync#if-updates-stop-arriving). Pour terminer la configuration, suivez ces sept étapes :
 
-Si une clé est révoquée, supprimée ou remplacée dans App Store Connect, importez le remplacement dès que vous le remarquez : tout ce qu'elle alimente reste en panne jusqu'à ce que vous le fassiez. Consultez [Si les mises à jour cessent d'arriver](store-sync#if-updates-stop-arriving).
-:::
+1. Entrez [le Bundle ID et l'Apple App ID](#enter-the-bundle-id-and-apple-app-id)
+2. Entrez [le secret partagé propre à l'application](#enter-the-app-specific-shared-secret)
+3. Activez [les notifications du serveur App Store](#enable-app-store-server-notifications) avec l'URL d'Adapty
+4. Ajoutez la [clé d'achat intégré](#add-the-in-app-purchase-key)
+5. Ajoutez la [clé API App Store Connect](#add-the-app-store-connect-api-key)
+6. Installez le [SDK Adapty et effectuez un achat sandbox](#check-each-credential)
+7. [Vérifiez toutes les informations d'identification](#check-each-credential)
 
-## Étape 1. Fournir le Bundle ID et l'Apple app ID \{#step-1-provide-bundle-id-and-apple-app-id\}
+## Saisir le Bundle ID et l'Apple App ID \{#enter-the-bundle-id-and-apple-app-id\}
 
-Le **Bundle ID** et l'**Apple app ID** sont tous deux obligatoires. Le **Bundle ID** est l'identifiant unique de votre application dans l'App Store. Il permet les fonctionnalités essentielles d'Adapty, comme le traitement des abonnements. L'**Apple app ID** est également requis pour [créer un nouveau produit et le pousser vers les stores](create-product#create-product-and-push-to-store) depuis la page **Products**.
+Deux valeurs identifient votre application dans App Store Connect : le Bundle ID et l'Apple ID, appelé **Apple App ID** dans Adapty. Adapty a besoin du Bundle ID pour traiter les achats. Avec l'Apple ID, Adapty :
 
-:::note
-Sans l'**Apple app ID**, l'option **Create a new product and push to stores** sur la page **Products** est désactivée, sans que le tableau de bord n'en indique la raison.
-:::
+- Trouve vos produits dans App Store Connect et [en crée de nouveaux](create-product#create-product-and-push-to-store).
+- Affiche le statut App Store et les prix de vos produits.
+- Envoie des messages en temps réel pour la [messagerie de rétention](retention-messaging-setup).
+- Exécute l'analyse de l'[AI Growth Advisor](autopilot).
+- Identifie votre application auprès des intégrations d'attribution, comme AppsFlyer.
+
+Apple attribue l'Apple ID lorsque vous ajoutez l'application à App Store Connect, donc renseignez-le même si votre application n'est pas encore sur l'App Store.
 
 <ProvideBundleID />
 
-## Étape 2. Fournir l'Issuer ID et le Key ID \{#step-2-provide-issuer-id-and-key-id\}
+## Saisissez le secret partagé spécifique à l'application \{#enter-the-app-specific-shared-secret\}
 
-L'**In-app purchase Issuer ID**, appelé **Issuer ID** dans App Store Connect, est un identifiant spécial qui identifie l'émetteur ayant créé le jeton d'authentification. L'**In-App Purchase Key ID**, appelé **Key ID** dans App Store Connect, est un identifiant unique associé à une clé cryptographique que vous avez générée dans la section [Générer une clé d'achat intégré dans App Store Connect](generate-in-app-purchase-key).
+Adapty a besoin du secret partagé spécifique à l'application pour valider les reçus d'achat et créer des produits dans App Store Connect.
 
-:::note
-App Store Connect propose deux types de clés dont les champs sont tous deux intitulés **Issuer ID** et **Key ID**. Les étapes 2 à 3 utilisent la clé **In-App Purchase** de l'onglet **Integrations** → **In-App Purchase**. La clé API App Store Connect de l'onglet **Team keys** est une clé différente avec ses propres identifiants — vous l'ajouterez à l'[Étape 6](#step-6-add-app-store-connect-api-key).
+1. Dans [App Store Connect](https://appstoreconnect.apple.com/apps), ouvrez la page **App Information** de votre application. Dans la section **App-Specific Shared Secret**, cliquez sur **Manage**.
+
+   <ZoomImage id="asc-app-information-shared-secret.webp" width="700px" alt="Section App-Specific Shared Secret sur la page App Information dans App Store Connect" />
+
+2. Copiez le secret. Si l'application n'a pas encore de secret, cliquez d'abord sur **Generate**. Pour générer un secret, vous devez avoir le rôle Account Holder ou Admin dans App Store Connect. Si vous n'avez ni l'un ni l'autre, demandez à quelqu'un qui possède ce rôle de générer le secret et de vous l'envoyer.
+
+   Sauf si vous avez reçu l'application via un [transfert d'app](transfer-apps#app-store-ios-transfer), ne cliquez pas sur **Regenerate** : le secret actuel cesserait alors de fonctionner partout où il est utilisé.
+
+   <ZoomImage id="asc-shared-secret-dialog.webp" width="700px" alt="Fenêtre App-Specific Shared Secret avec le secret" />
+
+3. Dans Adapty, collez le secret dans le champ **App Store Connect shared secret**.
+
+   <ZoomImage id="app-settings-shared-secret.webp" width="700px" alt="Champ App Store Connect shared secret dans Adapty" />
+
+4. Cliquez sur **Save**.
+
+## Activer les notifications serveur App Store avec l'URL d'Adapty \{#enable-app-store-server-notifications\}
+
+:::link
+Article principal : [Activer les notifications serveur App Store](enable-app-store-server-notifications)
 :::
 
-1. Ouvrez **App Store Connect**. Rendez-vous dans la section [**Users and Access** → **Integrations** → **In-App Purchase**](https://appstoreconnect.apple.com/access/integrations/api/subs).
-2. Dans la liste **Active**, retrouvez la clé que vous avez créée dans la section [Generate In-App Purchase Key in App Store Connect](generate-in-app-purchase-key).
+Apple envoie à Adapty des notifications serveur concernant les renouvellements, les remboursements et d'autres événements d'abonnement au moment où ils se produisent. Adapty enregistre ces événements même lorsque votre application ne signale aucune transaction.
 
-<Zoom>
-  <img src="/assets/shared/img/19a2868-issuer_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Si Apple envoie déjà ces notifications à un serveur, configurez le transfert vers ce serveur avant de remplacer son URL dans App Store Connect. Dans Adapty, saisissez l'URL de ce serveur dans le champ **URL for forwarding raw Apple events**, puis cliquez sur **Save**. Adapty [transfère alors les notifications reçues d'Apple](enable-app-store-server-notifications#raw-events-forwarding) vers ce serveur.
 
-3. Copiez l'**Issuer ID** et collez-le dans le champ **In-app purchase Issuer ID** de l'Adapty Dashboard.
+Si votre backend doit conserver son URL dans App Store Connect, [transmettez les notifications à Adapty depuis votre backend](forwarding-events-to-adapty) à la place.
 
-<Zoom>
-  <img src="/assets/shared/img/c2b42e7-issuer_id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreServerNotificationsSetup />
 
-4. Copiez le **Key ID** et collez-le dans le champ **In-app purchase Key ID** de l'Adapty Dashboard.
+## Ajouter la clé d'achat intégré \{#add-the-in-app-purchase-key\}
 
-## Étape 3. Téléverser le fichier de clé d'achat intégré \{#step-3-upload-in-app-purchase-key-file\}
-
-Téléversez le fichier **In-App Purchase Key** que vous avez téléchargé dans la section [Générer une clé d'achat intégré dans App Store Connect](generate-in-app-purchase-key)
-
-<Zoom>
-  <img src="/assets/shared/img/88cdfff-download_inapp_file.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-dans le champ **Private key (.p8 file)** de l'Adapty Dashboard.
-
-<Zoom>
-  <img src="/assets/shared/img/253b840-in-app_file_upload.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Étape 4. Pour les essais et offres spéciales – configurer les offres promotionnelles \{#step-4-for-trials-and-special-offers--set-up-promotional-offers\}
-
-:::important
-Cette étape est requise si votre application propose des [essais ou d'autres offres promotionnelles](offers).
+:::link
+Article principal : [Ajouter la clé d'achat intégré à Adapty](generate-in-app-purchase-key)
 :::
 
-1. Copiez le même identifiant de clé utilisé à l'[Étape 2](#step-2-provide-issuer-id-and-key-id) dans le champ **Subscription key ID** de la section **App Store promotional offers**.
-2. Importez le même fichier **In-App Purchase Key** utilisé à l'[Étape 3](#step-3-upload-in-app-purchase-key-file) dans la zone **Subscription key (.p8 file)** de la section **App Store promotional offers**.
+Adapty utilise la clé d'achat intégré pour valider les achats et signer les offres promotionnelles. Si vous ne disposez pas encore du fichier de clé, [générez la clé dans App Store Connect](generate-in-app-purchase-key#generate-the-key-in-app-store-connect) en premier. Pour ajouter la clé à Adapty :
 
-<Zoom>
-  <img src="/assets/shared/img/promo-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreInAppPurchaseKeyAdd />
 
-## Étape 5. Saisir le secret partagé App Store \{#step-5-enter-app-store-shared-secret\}
+## Ajouter la clé API App Store Connect
 
-Le **App Store shared secret**, également appelé App Store Connect Shared Secret, est une chaîne hexadécimale de 32 caractères utilisée pour les achats intégrés et la validation des reçus d'abonnement.
-
-1. Ouvrez [App Store Connect](https://appstoreconnect.apple.com/apps). Sélectionnez votre application et accédez à la section **General** → **App Information**.
-
-2. Faites défiler jusqu'à la sous-section **App-Specific Shared Secret**.
-
-<Zoom>
-  <img src="/assets/shared/img/2bd112a-shared_secret_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-:::info
-Si la sous-section **App-Specific Shared Secret** est absente, vérifiez que vous avez le rôle Account Holder ou Admin. Si vous avez le rôle Admin et ne voyez toujours pas la sous-section **App-Specific Shared Secret**, demandez au Account Holder de l'app (la personne qui a créé l'application dans App Store Connect) de générer le shared secret de l'app. Après cela, la sous-section sera également visible pour les Admins.
+:::link
+Article principal : [Ajouter la clé API App Store Connect à Adapty](app-store-connect-api-key)
 :::
 
-3. Cliquez sur le bouton **Manage**.
+Adapty utilise la clé API App Store Connect pour [créer des produits dans App Store Connect](create-product#create-product-and-push-to-store) et synchroniser leur statut et leurs prix. Cette clé est différente de la clé d'achat intégré (In-App Purchase), bien que les deux partagent les champs **Issuer ID** et **Key ID**.
 
-<Zoom>
-  <img src="/assets/shared/img/2d8b4c0-shared_secret_apple_copy.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Adapty a besoin d'une clé d'équipe avec un accès **Admin**. Si vous n'en avez pas encore, [générez-la dans App Store Connect](app-store-connect-api-key#generate-a-team-key-in-app-store-connect) d'abord. Pour connecter la clé dans Adapty :
 
-4. Dans la fenêtre **App-Specific Shared Secret** qui s'ouvre, copiez le **Shared Secret**. Si aucun secret partagé n'est visible, cliquez d'abord sur le bouton **Manage** ou **Generate** (selon celui qui est disponible), puis copiez le **Shared Secret**.
+<AppStoreConnectApiKeyConnect />
 
-5. Collez le **Shared Secret** copié dans le champ **App Store shared secret** de l'Adapty Dashboard.
+## Vérifiez que chaque identifiant fonctionne \{#check-each-credential\}
 
-<Zoom>
-  <img src="/assets/shared/img/4f9624d-shared_secret.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Pour confirmer qu'Adapty valide les achats, [installez le SDK Adapty](installation-of-adapty-sdks) dans votre application et [effectuez un achat sandbox](test-purchases-in-sandbox).
 
-6. Cliquez sur le bouton **Save** dans l'Adapty Dashboard pour confirmer les modifications.
+L'achat sandbox n'utilise que certains identifiants. Vérifiez chacun d'eux après l'achat, et à nouveau chaque fois que les achats ou les événements d'abonnement cessent de parvenir à Adapty :
 
-## Étape 6. Ajouter une clé API App Store Connect \{#step-6-add-app-store-connect-api-key\}
+- **Bundle ID**, **Apple App ID** et **App Store Connect shared secret** : Comparez ces trois valeurs avec le **Bundle ID**, l'**Apple ID** et le secret sous **App-Specific Shared Secret** sur la page **App Information** dans App Store Connect.
+- **App Store server notifications** : Le statut dans cette section affiche **Active** dès qu'une notification d'achat ou de renouvellement parvient à Adapty. Si un autre statut est affiché, [vérifiez les URL de serveur](enable-app-store-server-notifications#check-that-notifications-reach-adapty).
+- **In-app purchase API (StoreKit 2)** : Adapty vérifie la clé auprès d'Apple lors de l'enregistrement. Si des achats effectués dans votre application ne débloquent aucun accès par la suite, il est possible que la clé ait cessé de fonctionner : [remplacez la clé](generate-in-app-purchase-key#replace-the-key).
+- **App Store promotional offers** : Assurez-vous que le **Subscription key ID** correspond au **Key ID** dans la section **In-app purchase API (StoreKit 2)**. S'ils diffèrent, [saisissez la même clé dans les deux sections](generate-in-app-purchase-key#add-the-key-to-adapty).
+- **App Store Connect API key** : Chaque produit App Store affiche un statut dans la colonne **App Store status** sur la page **Products**. Si un produit affiche un tiret ou **Not Connected**, [vérifiez la clé et l'Apple App ID](troubleshoot-app-store-integration#products-dont-appear-or-show-no-app-store-status).
 
-Générez une clé API App Store Connect et ajoutez-la à Adapty pour pouvoir [gérer vos produits dans l'App Store depuis l'Adapty Dashboard](create-product#create-product-and-push-to-store).
+Juste après la configuration, Analytics peut comptabiliser plus d'essais et d'achats que d'installations, et plus que ce qu'affiche l'Event Feed. La différence correspond aux [transactions sans profils](how-profiles-work#transactions-without-profiles) : des achats d'utilisateurs qui n'ont pas encore ouvert une version de votre application intégrant le SDK Adapty.
 
-:::note
-Il s'agit d'une paire de clés différente de la clé d'achat intégré que vous avez ajoutée aux [étapes 2–3](#step-2-provide-issuer-id-and-key-id). Générez la clé dans l'onglet **Team keys** et copiez-en l'**Issuer ID** et le **Key ID** — les valeurs de la clé d'achat intégré ne fonctionneront pas ici.
-:::
+Les autres différences entre Adapty et les rapports du store proviennent de [la façon dont chacun comptabilise les achats](discrepancies-and-troubleshooting), pas des identifiants.
 
-1. Dans App Store Connect, allez dans [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) et cliquez sur **+**.
+## Prochaines étapes \{#next-steps\}
 
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-api.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Pour préparer votre application à la publication, suivez la [liste de vérification avant publication](release-checklist).
 
-2. Dans la fenêtre **Generate API key**, saisissez un nom pour la clé et accordez-lui l'accès **Admin**.
-
-<Zoom>
-  <img src="/assets/shared/img/generate-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-3. Cliquez sur **Download** à côté de votre clé. Notez que vous ne pouvez la télécharger qu'une seule fois.
-
-<Zoom>
-  <img src="/assets/shared/img/download-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-4. Dans l'Adapty Dashboard, allez dans [**App settings > iOS SDK**](https://app.adapty.io/settings/ios-sdk) et cliquez sur **Connect API key**.
-
-<Zoom>
-  <img src="/assets/shared/img/connect-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-5. Remplissez les champs dans la fenêtre :
-   - **Issuer ID** : Copiez-le depuis [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api). Il se trouve au-dessus du tableau **API keys**.
-
-<Zoom>
-  <img src="/assets/shared/img/issuer-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   - **Key ID** : Copiez-le depuis [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api). Il se trouve dans le tableau **API keys** à côté de votre clé.
-
-<Zoom>
-  <img src="/assets/shared/img/key-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   - **API key** : Importez le fichier de clé API que vous avez téléchargé depuis App Store Connect.
-
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '500px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. Cliquez sur **Connect**.
-
-**Et ensuite**
-
-- [Activer les notifications serveur App Store](enable-app-store-server-notifications)
+Si votre application est également sur Google Play, [connectez ce store](initial-android).

@@ -1,273 +1,125 @@
 ---
 title: "App Store entegrasyonunu yapılandırma"
-description: "Sorunsuz abonelik takibi için App Store bağlantınızı yapılandırın."
+description: "iOS uygulamanızı Adapty'ye bağlayarak Adapty'nin satın almaları doğrulamasını ve abonelik etkinliklerini almasını sağlayın. Bu rehber, App settings > iOS SDK'daki App Store kimlik bilgilerini kapsar."
 metadataTitle: "App Store Bağlantısı Yapılandırması | Adapty Dokümanları"
 ---
 
+iOS uygulamanızı Adapty'ye bağlamak için **App settings** > **iOS SDK** bölümüne App Store kimlik bilgilerini girin. Adapty bunun ardından:
+
+- Satın almaları doğrular.
+- Abonelik etkinliklerini alır.
+- Ürünlerinizi App Store Connect ile senkronize tutar.
+
+Satın alımlar veya abonelik olayları Adapty'ye ulaşmayı durdurursa, [her kimlik bilgisini kontrol edin](#check-each-credential).
 
 <YouTube id="VJQbzoTCkqs" />
 
-Bu bölüm, iOS uygulamanız için App Store ile Adapty arasındaki bağlantının nasıl kurulacağını açıklar. Bu bağlantı, abonelik analizlerini gösterebilmemiz ve satın almaları doğrulayabilmemiz için gereklidir. Entegrasyonu ilk onboarding sırasında veya daha sonra Adapty Kontrol Paneli'ndeki **App Settings** bölümünde tamamlayabilirsiniz.
+Başlamadan önce:
 
-Bu sayfadaki her kimlik bilgisi, veri alışverişinin farklı bir bölümünü açar. [Adapty'nin mağazalarla veriyi nasıl senkronize ettiği](store-sync#what-adapty-reads-from-the-stores) sayfasında her birinin hangi verileri taşıdığı gösterilmektedir.
+- Hedef uygulamaya App Store Connect'te erişiminiz olması gerekir. Uygulama henüz orada değilse, [App Store Connect'i kurun](set-up-app-store-connect). Platforma erişiminiz yoksa, yetkili kişiden talep edin.
+- Ekibinizin App Store Connect API'sine erişimi olması gerekir; bu, gerekli erişim anahtarını oluşturmak için zorunludur. Ekibinizde henüz yoksa, Hesap Sahibinden [talep etmesini](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api) isteyin. Apple her talebi inceler.
+- İki tarayıcı sekmesi açın: birinde [App Store Connect](https://appstoreconnect.apple.com/apps)'teki uygulamanız, diğerinde Adapty'de [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk). Bu kılavuz boyunca iki sekme arasında değerler kopyalayacaksınız.
 
-Mobil uygulamanızın Adapty ile entegrasyonunu onboarding sırasında yapılandırmış olsanız da, bu ayarları daha sonra **App settings** bölümünden değiştirebilirsiniz.
+## Genel Bakış \{#overview\}
 
-:::danger
-Yapılandırma değişiklikleri, Adapty SDK yüklü mobil uygulamanız yayına girmeden önce Sandbox aşamasında güvenle yapılabilir. Yayın sonrasında yapılan değişiklikler, uygulamanızdaki satın alma flow'unu bozabilir.
+Bu kılavuzdaki her kimlik bilgisi zorunludur. Adapty, her birini [App Store ile veri alışverişinin farklı bir bölümü](store-sync#if-updates-stop-arriving) için kullanır. Kurulumu tamamlamak için şu yedi adımı izleyin:
 
-Bir anahtar App Store Connect'te iptal edilir, silinir veya değiştirilirse, yerine geçeni fark eder etmez yükleyin: bu anahtarın yönettiği her şey siz bunu yapana kadar bozuk kalmaya devam eder. Bkz. [Güncellemeler gelmiyorsa](store-sync#if-updates-stop-arriving).
-:::
+1. [Bundle ID ve Apple App ID](#enter-the-bundle-id-and-apple-app-id) girin
+2. [Uygulamaya özel paylaşılan secret](#enter-the-app-specific-shared-secret) girin
+3. Adapty'den gelen URL ile [App Store sunucu bildirimlerini](#enable-app-store-server-notifications) etkinleştirin
+4. [In-App Purchase key](#add-the-in-app-purchase-key) ekleyin
+5. [App Store Connect API key](#add-the-app-store-connect-api-key) ekleyin
+6. [Adapty SDK'yı yükleyin ve sandbox satın alımı yapın](#check-each-credential)
+7. [Tüm kimlik bilgilerini doğrulayın](#check-each-credential)
 
-## Adım 1. Bundle ID ve Apple app ID'yi Girin \{#step-1-provide-bundle-id-and-apple-app-id\}
+## Bundle ID ve Apple App ID'yi Girin \{#enter-the-bundle-id-and-apple-app-id\}
 
-**Bundle ID** ve **Apple app ID** zorunludur. **Bundle ID**, uygulamanızın App Store'daki benzersiz tanımlayıcısıdır ve abonelik işleme gibi temel Adapty işlevlerini etkinleştirir. **Apple app ID** ise **Products** sayfasından [yeni bir ürün oluşturup mağazalara göndermek](create-product#create-product-and-push-to-store) için de gereklidir.
+App Store Connect'te uygulamanızı tanımlayan iki değer vardır: Bundle ID ve Apple ID. Bu değer Adapty'de **Apple App ID** olarak etiketlenir. Adapty, satın almaları işleyebilmek için Bundle ID'ye ihtiyaç duyar. Apple ID ile Adapty:
 
-:::note
-**Apple app ID** olmadan, **Products** sayfasındaki **Create a new product and push to stores** seçeneği devre dışı kalır ve kontrol paneli bunun nedenini göstermez.
-:::
+- Ürünlerinizi App Store Connect'te bulur ve [orada yeni ürünler oluşturur](create-product#create-product-and-push-to-store).
+- Ürünlerinizin App Store durumunu ve fiyatlarını gösterir.
+- [Retention Messaging](retention-messaging-setup) için gerçek zamanlı mesajlar sunar.
+- [AI Growth Advisor](autopilot) analizini çalıştırır.
+- Uygulamanızı AppsFlyer gibi attribution entegrasyonlarına tanıtır.
+
+Apple, uygulamayı App Store Connect'e eklediğinizde Apple ID'yi atar; bu nedenle uygulamanız App Store'da yayınlanmadan önce bile bu değeri girin.
 
 <ProvideBundleID />
-## Adım 2. Issuer ID ve Key ID'yi girin \{#step-2-provide-issuer-id-and-key-id\}
 
-**In-app purchase Issuer ID**, App Store Connect'te **Issuer ID** olarak geçer ve kimlik doğrulama tokenını oluşturan sağlayıcıyı tanımlayan özel bir ID'dir. **In-App Purchase Key ID**, App Store Connect'te **Key ID** olarak geçer ve [App Store Connect'te In-App Purchase Key Oluşturma](generate-in-app-purchase-key) bölümünde oluşturduğunuz kriptografik anahtarla ilişkili benzersiz bir tanımlayıcıdır.
+## Uygulamaya özel paylaşılan gizli anahtarı girin \{#enter-the-app-specific-shared-secret\}
 
-:::note
-App Store Connect'te her ikisinin de alanları **Issuer ID** ve **Key ID** olarak etiketlenmiş iki farklı anahtar türü bulunur. 2–3. adımlarda **Integrations** → **In-App Purchase** sekmesindeki **In-App Purchase** anahtarı kullanılır. **Team keys** sekmesindeki App Store Connect API anahtarı ise kendi ID'lerine sahip farklı bir anahtardır — bunu [6. Adım](#step-6-add-app-store-connect-api-key)'da ekleyeceksiniz.
+Adapty, satın alma makbuzlarını doğrulamak ve App Store Connect'te ürün oluşturmak için uygulamaya özel paylaşılan gizli anahtara ihtiyaç duyar.
+
+1. [App Store Connect](https://appstoreconnect.apple.com/apps)'te uygulamanızın **App Information** sayfasını açın. **App-Specific Shared Secret** bölümünde **Manage**'e tıklayın.
+
+   <ZoomImage id="asc-app-information-shared-secret.webp" width="700px" alt="App Store Connect'teki App Information sayfasında Uygulamaya Özel Paylaşılan Gizli Anahtar bölümü" />
+
+2. Gizli anahtarı kopyalayın. Uygulamanın henüz bir gizli anahtarı yoksa önce **Generate** butonuna tıklayın. Gizli anahtar oluşturmak için App Store Connect'te Hesap Sahibi veya Yönetici rolüne sahip olmanız gerekir. Bu rollerden birine sahip değilseniz, sahip olan birinden gizli anahtarı oluşturmasını ve size göndermesini isteyin.
+
+   Uygulamayı bir [uygulama transferi](transfer-apps#app-store-ios-transfer) yoluyla almadıysanız **Regenerate** butonuna tıklamayın: mevcut gizli anahtar, kullanıldığı her yerde çalışmayı durdurur.
+
+   <ZoomImage id="asc-shared-secret-dialog.webp" width="700px" alt="App-Specific Shared Secret window with the secret" />
+
+3. Adapty'de, gizli anahtarı **App Store Connect shared secret** alanına yapıştırın.
+
+   <ZoomImage id="app-settings-shared-secret.webp" width="700px" alt="App Store Connect shared secret field in Adapty" />
+
+4. **Save**'e tıklayın.
+
+## Adapty'den gelen URL ile App Store sunucu bildirimlerini etkinleştirin \{#enable-app-store-server-notifications\}
+
+:::link
+Ana makale: [App Store sunucu bildirimlerini etkinleştirin](enable-app-store-server-notifications)
 :::
 
-1. **App Store Connect**'i açın. [**Users and Access** → **Integrations** → **In-App Purchase**](https://appstoreconnect.apple.com/access/integrations/api/subs) bölümüne gidin.
-2. **Active** listesinde, [App Store Connect'te In-App Purchase Key Oluşturma](generate-in-app-purchase-key) bölümünde oluşturduğunuz anahtarı bulun.
+Apple, yenilemeler, iadeler ve diğer abonelik olayları gerçekleştiğinde Adapty'ye sunucu bildirimleri gönderir. Adapty, uygulamanız herhangi bir işlem bildirmese bile bu olayları kaydeder.
 
-<Zoom>
-  <img src="/assets/shared/img/19a2868-issuer_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Apple bu bildirimleri zaten bir sunucuya gönderiyorsa, App Store Connect'teki URL'yi değiştirmeden önce o sunucuya yönlendirme ayarını yapın. Adapty'de, **URL for forwarding raw Apple events** alanına o sunucunun URL'sini girin ve **Save**'e tıklayın. Adapty, [Apple'dan aldığı bildirimleri](enable-app-store-server-notifications#raw-events-forwarding) bu sunucuya yönlendirir.
 
-3. **Issuer ID**'yi kopyalayıp Adapty Kontrol Paneli'ndeki **In-app purchase Issuer ID** alanına yapıştırın.
+Arka uç sisteminizin URL'sinin App Store Connect'te kalması gerekiyorsa, [bildirimleri arka ucunuzdan Adapty'ye iletin](forwarding-events-to-adapty).
 
-<Zoom>
-  <img src="/assets/shared/img/c2b42e7-issuer_id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreServerNotificationsSetup />
 
-4. **Key ID**'yi kopyalayıp Adapty Kontrol Paneli'ndeki **In-app purchase Key ID** alanına yapıştırın.
+## In-App Purchase anahtarını ekleyin \{#add-the-in-app-purchase-key\}
 
-## Adım 3. In-App Purchase Key dosyasını yükleyin \{#step-3-upload-in-app-purchase-key-file\}
-
-[App Store Connect'te In-App Purchase Key Oluşturma](generate-in-app-purchase-key) bölümünde indirdiğiniz **In-App Purchase Key** dosyasını
-
-<Zoom>
-  <img src="/assets/shared/img/88cdfff-download_inapp_file.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Adapty Kontrol Paneli'ndeki **Private key (.p8 file)** alanına yükleyin.
-
-<Zoom>
-  <img src="/assets/shared/img/253b840-in-app_file_upload.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## Adım 4. Deneme süreleri ve özel teklifler için – promosyon tekliflerini ayarlayın \{#step-4-for-trials-and-special-offers--set-up-promotional-offers\}
-
-:::important
-Bu adım, uygulamanızda [deneme süresi veya başka promosyon teklifleri](offers) varsa zorunludur.
+:::link
+Ana makale: [In-App Purchase anahtarını Adapty'ye ekleyin](generate-in-app-purchase-key)
 :::
 
-1. [Adım 2](#step-2-provide-issuer-id-and-key-id)'de kullandığınız Key ID'yi **App Store promotional offers** bölümündeki **Subscription key ID** alanına kopyalayın.
-2. [Adım 3](#step-3-upload-in-app-purchase-key-file)'te kullandığınız **In-App Purchase Key** dosyasını **App Store promotional offers** bölümündeki **Subscription key (.p8 file)** alanına yükleyin.
+Adapty, satın alımları doğrulamak ve promosyon tekliflerini imzalamak için In-App Purchase anahtarını kullanır. Henüz anahtar dosyanız yoksa önce [App Store Connect'te anahtarı oluşturun](generate-in-app-purchase-key#generate-the-key-in-app-store-connect). Anahtarı Adapty'ye eklemek için:
 
-<Zoom>
-  <img src="/assets/shared/img/promo-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreInAppPurchaseKeyAdd />
 
-## Adım 5. App Store paylaşılan sırrını girin \{#step-5-enter-app-store-shared-secret\}
+## App Store Connect API anahtarını ekleyin \{#add-the-app-store-connect-api-key\}
 
-**App Store shared secret**, aynı zamanda App Store Connect Shared Secret olarak da bilinir; uygulama içi satın almalar ve abonelik makbuzu doğrulaması için kullanılan 32 karakterlik onaltılık bir dizedir.
-
-1. [App Store Connect](https://appstoreconnect.apple.com/apps)'i açın. Uygulamanızı seçip **General** → **App Information** bölümüne gidin.
-
-2. **App-Specific Shared Secret** alt bölümüne kadar aşağı kaydırın.
-
-<Zoom>
-  <img src="/assets/shared/img/2bd112a-shared_secret_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   :::info
-   **App-Specific Shared Secret** alt bölümü görünmüyorsa Account Holder veya Admin rolüne sahip olduğunuzdan emin olun. Admin rolünüz olmasına rağmen bu alt bölümü göremiyorsanız, uygulamanın Account Holder'ından (App Store Connect'te uygulamayı oluşturan kişiden) uygulama için App Store paylaşılan sırrını oluşturmasını isteyin. Bundan sonra alt bölüm Admin'lere de gösterilecektir.
-   :::
-
-3. **Manage** düğmesine tıklayın.
-
-<Zoom>
-  <img src="/assets/shared/img/2d8b4c0-shared_secret_apple_copy.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-4. Açılan **App-Specific Shared Secret** penceresinde **Shared Secret**'i kopyalayın. Paylaşılan sır görünmüyorsa önce mevcut olan **Manage** veya **Generate** düğmesine tıklayın, ardından **Shared Secret**'i kopyalayın.
-
-5. Kopyaladığınız **Shared Secret**'i Adapty Kontrol Paneli'ndeki **App Store shared secret** alanına yapıştırın.
-
-<Zoom>
-  <img src="/assets/shared/img/4f9624d-shared_secret.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. Değişiklikleri kaydetmek için Adapty Kontrol Paneli'nde **Save** düğmesine tıklayın.
-
-## Adım 6. App Store Connect API anahtarı ekleyin \{#step-6-add-app-store-connect-api-key\}
-
-Bir App Store Connect API anahtarı oluşturun ve Adapty'ye ekleyin; böylece [Adapty kontrol panelinden App Store'daki ürünlerinizi yönetebilirsiniz](create-product#create-product-and-push-to-store).
-
-:::note
-Bu, [2–3. Adımlarda](#step-2-provide-issuer-id-and-key-id) eklediğiniz Uygulama İçi Satın Alma anahtarından farklı bir anahtar çiftidir. Anahtarı **Team keys** sekmesinde oluşturun ve **Issuer ID** ile **Key ID** değerlerini buradan kopyalayın — Uygulama İçi Satın Alma anahtarının değerleri burada işe yaramaz.
+:::link
+Ana makale: [App Store Connect API anahtarını Adapty'ye ekleyin](app-store-connect-api-key)
 :::
 
-1. App Store Connect'te [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) bölümüne gidin ve **+** düğmesine tıklayın.
+Adapty, [App Store Connect'te ürün oluşturmak](create-product#create-product-and-push-to-store) ve ürünlerin durumunu ile fiyatlarını senkronize tutmak için App Store Connect API anahtarını kullanır. Bu anahtar, Uygulama İçi Satın Alma anahtarından farklıdır; ancak her ikisi de **Issuer ID** ve **Key ID** alan adlarını paylaşır.
 
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-api.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Adapty'nin **Admin** erişimine sahip bir takım anahtarına ihtiyacı var. Henüz bir anahtarınız yoksa, önce [App Store Connect'te bir takım anahtarı oluşturun](app-store-connect-api-key#generate-a-team-key-in-app-store-connect). Anahtarı Adapty'ye bağlamak için:
 
-2. **Generate API key** penceresinde anahtar için bir ad girin ve **Admin** erişimi verin.
+<AppStoreConnectApiKeyConnect />
 
-<Zoom>
-  <img src="/assets/shared/img/generate-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Her kimlik bilgisinin çalıştığını doğrulayın \{#check-each-credential\}
 
-3. Anahtarınızın yanındaki **Download** düğmesine tıklayın. Anahtarı yalnızca bir kez indirebileceğinizi unutmayın.
+Adapty'nin satın almaları doğruladığını onaylamak için uygulamanıza [Adapty SDK'yı yükleyin](installation-of-adapty-sdks) ve [sandbox ortamında bir satın alma yapın](test-purchases-in-sandbox).
 
-<Zoom>
-  <img src="/assets/shared/img/download-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Sandbox satın alması yalnızca bazı kimlik bilgilerini kullanır. Her birini satın alma işleminin ardından ve satın almalar veya abonelik olayları Adapty'ye ulaşmayı her durduğunda doğrulayın:
 
-4. Adapty kontrol panelinde [**App settings > iOS SDK**](https://app.adapty.io/settings/ios-sdk) bölümüne gidin ve **Connect API key** düğmesine tıklayın.
+- **Bundle ID**, **Apple App ID** ve **App Store Connect shared secret**: Bu üç değeri App Store Connect'teki **App Information** sayfasında yer alan **Bundle ID**, **Apple ID** ve **App-Specific Shared Secret** altındaki gizli anahtarla karşılaştırın.
+- **App Store sunucu bildirimleri**: Bu bölümdeki durum, Adapty'ye bir satın alma veya yenileme bildirimi ulaştığında **Active** olarak görünür. Farklı bir değer gösteriyorsa [sunucu URL'lerini kontrol edin](enable-app-store-server-notifications#check-that-notifications-reach-adapty).
+- **Uygulama içi satın alma API'si (StoreKit 2)**: Adapty, anahtarı kaydettiğinizde Apple ile doğrular. Uygulamanızdaki satın almalar daha sonra hiçbir erişim sağlamıyorsa anahtar çalışmayı durdurmuş olabilir: [anahtarı değiştirin](generate-in-app-purchase-key#replace-the-key).
+- **App Store promosyon teklifleri**: **Subscription key ID**'nin **In-app purchase API (StoreKit 2)** bölümündeki **Key ID** ile eşleştiğinden emin olun. Farklıysa [her iki bölüme de aynı anahtarı girin](generate-in-app-purchase-key#add-the-key-to-adapty).
+- **App Store Connect API anahtarı**: Her App Store ürünü, **Products** sayfasındaki **App Store status** sütununda bir durum gösterir. Bir ürün tire ya da **Not Connected** gösteriyorsa [anahtarı ve Apple App ID'yi kontrol edin](troubleshoot-app-store-integration#products-dont-appear-or-show-no-app-store-status).
 
-<Zoom>
-  <img src="/assets/shared/img/connect-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Kurulumun hemen ardından Analytics, Event Feed'de gösterilenden daha fazla deneme ve satın alma sayabilir; bu aradaki fark [profili olmayan işlemlerden](how-profiles-work#transactions-without-profiles) kaynaklanır: Adapty SDK'sını içeren bir uygulama sürümünü henüz açmamış kullanıcıların satın almaları bunlardır.
 
-5. Açılan penceredeki alanları doldurun:
-   - **Issuer ID**: [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) bölümünden kopyalayın. **API keys** tablosunun üzerinde yer alır.
+Adapty ile mağaza raporları arasındaki diğer farklılıklar ise kimlik bilgilerinden değil, [her birinin satın almaları nasıl saydığından](discrepancies-and-troubleshooting) kaynaklanır.
 
-<Zoom>
-  <img src="/assets/shared/img/issuer-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Sonraki adımlar \{#next-steps\}
 
-   - **Key ID**: [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) bölümünden kopyalayın. Anahtarınızın yanında **API keys** tablosunda yer alır.
+Uygulamanızı yayına hazırlamak için [yayın kontrol listesini](release-checklist) inceleyin.
 
-<Zoom>
-  <img src="/assets/shared/img/key-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   - **API key**: App Store Connect'ten indirdiğiniz API anahtar dosyasını yükleyin.
-
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '500px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. **Connect** düğmesine tıklayın.
-
-**Sıradaki adım**
-
-- [App Store sunucu bildirimlerini etkinleştirme](enable-app-store-server-notifications)
+Uygulamanız Google Play'de de mevcutsa, [o mağazayı da bağlayın](initial-android).

@@ -1,0 +1,167 @@
+---
+title: "App Store サーバー通知をバックエンドから Adapty に転送する"
+description: "バックエンドの URL を App Store Connect に登録したまま、Apple のサーバー通知を変更せずに Adapty へ転送することで、Adapty がサブスクリプションイベントを受信できるようにします。"
+metadataTitle: ""
+
+---
+
+バックエンドのURLをApp Store Connectに保持する必要がある場合は、App Serverの通知をバックエンドからAdaptyへそのまま転送してください。バックエンドのURLをApp Store Connectに設定する必要がない場合は、代わりに[Adaptyでバックエンドへの転送を設定](enable-app-store-server-notifications#raw-events-forwarding)してください。その方法ではコードは不要です。
+
+Adaptyはバックエンドから受け取った通知を、Appleから直接送信されたかのように処理します。[Refund Saver](refund-saver)を使用している場合、Adaptyはその中の返金リクエストにも引き続き対応します。
+
+バックエンドが独自の Pub/Sub トピックを通じて Google Play からリアルタイム デベロッパー通知を受信している場合、それを Adapty に転送するコードは不要です。[そのトピックに Adapty 向けのプッシュサブスクリプションを追加してください](enable-real-time-developer-notifications-rtdn#send-notifications-to-two-adapty-apps)。
+
+App Store サーバー通知を Adapty に転送するには:
+
+1. Adaptyで接続するアプリを開きます。各AdaptyアプリにはそれぞれNotification URLがあります。[**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk) に移動し、**App Store server notifications** セクションの **URL for App Store server notifications** フィールドからURLをコピーします。
+2. バックエンドで、AppleからのNotificationをコピーしたURLに転送します。各リクエストでは以下を守ってください：
+
+   - Appleからのリクエストボディをそのまま使用します：`{"signedPayload": "…"}`
+   - `Content-Type: application/json` ヘッダーを設定します。
+   - `Authorization` ヘッダーは追加しません。
+
+   もしAdaptyがバックエンドに通知を転送している場合、それをAdaptyに再送信しないでください。
+
+以下に、各プログラミング言語のサンプルコードを示します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="python" label="Python" default>
+
+```python showLineNumbers
+
+url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" # このURLを忘れずに置き換えてください
+
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # Appleのリクエストボディ（そのまま使用）
+
+headers = {
+  'Content-Type': 'application/json'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+```
+
+</TabItem>
+<TabItem value="javascript" label="Javascript" default>
+
+```javascript  showLineNumbers
+const axios = require('axios');
+
+const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
+
+const payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
+
+const config = {
+  method: 'post',
+  url: url,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  data: payload,
+};
+
+const response = await axios(config);
+```
+
+</TabItem>
+<TabItem value="php" label="PHP" default>
+
+```php  showLineNumbers
+<?php
+require_once 'HTTP/Request2.php';
+
+$url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
+
+$payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
+
+$request = new HTTP_Request2();
+$request->setUrl($url);
+$request->setMethod(HTTP_Request2::METHOD_POST);
+$request->setConfig(array(
+  'follow_redirects' => TRUE
+));
+$request->setHeader(array(
+  'Content-Type' => 'application/json'
+));
+$request->setBody($payload);
+$response = $request->send();
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby" default>
+
+```ruby  showLineNumbers
+require "uri"
+require "net/http"
+
+url = URI("https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/") # don't forget to replace this URL
+
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # Apple's request body, unchanged
+
+https = Net::HTTP.new(url.host, url.port)
+https.use_ssl = true
+
+request = Net::HTTP::Post.new(url)
+request["Content-Type"] = "application/json"
+request.body = payload
+
+response = https.request(request)
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/"; // don't forget to replace this URL
+
+String payload = "{\"signedPayload\":\"eyJhbGciOiJFUzI1NiIs...\"}"; // Apple's request body, unchanged
+
+OkHttpClient client = new OkHttpClient().newBuilder()
+  .build();
+MediaType mediaType = MediaType.parse("application/json");
+RequestBody body = RequestBody.create(mediaType, payload);
+Request request = new Request.Builder()
+  .url(url)
+  .method("POST", body)
+  .addHeader("Content-Type", "application/json")
+  .build();
+Response response = client.newCall(request).execute();
+```
+
+</TabItem>
+<TabItem value="go" label="Go" default>
+
+  ```go showLineNumbers
+package main
+
+	"fmt"
+	"strings"
+	"net/http"
+)
+
+func main() {
+	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" // Replace this with the actual URL
+
+	payload := strings.NewReader(`{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}`) // Apple's request body, unchanged
+
+	method := "POST"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+	defer res.Body.Close()
+}
+  ```
+
+</TabItem>  </Tabs>
+
+`200` レスポンスは、Adapty が通知を利用できたことを確認するものではありません。Adapty は署名済みペイロードをデコードする前に応答します。通知が Adapty に届いていることを確認するには、[サンドボックス購入](test-purchases-in-sandbox)を行ってください。その後、**App Store server notifications** セクションの[通知ステータス](enable-app-store-server-notifications#check-that-notifications-reach-adapty)が **Active** と表示されていることを確認してください。

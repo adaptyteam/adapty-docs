@@ -1,75 +1,77 @@
 ---
-title: "App Storeサーバー通知を有効にする"
-description: "App Storeサーバー通知を有効にして、サブスクリプションイベントをリアルタイムで追跡しましょう。"
-metadataTitle: "App Storeサーバー通知を有効にする | Adapty ドキュメント"
+title: "App Store サーバー通知を有効にする"
+description: "App Store サーバー通知を有効にして、サブスクリプションイベントをリアルタイムで追跡します。"
+metadataTitle: "App Store サーバー通知を有効にする | Adapty ドキュメント"
 ---
 
-App Storeサーバー通知を設定することは、データの正確性を確保するうえで非常に重要です。これにより、返金やその他のイベントに関する情報を含む更新をApp Storeからリアルタイムで受け取ることができます。
+Adapty SDK はアプリ内で行われた購入を報告します。サーバー通知は、アプリの外部で発生した変更を報告します。例えば：
 
-:::important
-App Store Server Notifications V2 の完全サポートには、Adapty iOS SDK 2.10.0 以降が必要です。
-:::
+- サブスクリプションが更新される。
+- ユーザーが自動更新をオフにする。
+- 請求の問題により支払いが失敗する。
+- サブスクリプションが期限切れになる。
+- ユーザーが返金をリクエストする。[Refund Saver](refund-saver) がリクエストに応答する。
+- Apple が購入を返金する。
 
-1. Adapty ダッシュボードで **URL for App Store server notification** をコピーします。
+Adapty の通知 URL を App Store Connect に入力し、通知が Adapty に届いていることを確認してください。
 
-<Zoom>
-  <img src="/assets/shared/img/2901185-app_server_notifications.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## App Store Connect に通知URLを入力する \{#enter-the-notification-url-in-app-store-connect\}
 
-2. [App Store Connect](https://appstoreconnect.apple.com/apps) を開きます。アプリを選択し、**General** → **App Information** セクションの **App Store Server Notifications** サブセクションに進みます。
-3. コピーした **URL for App Store server notification** を **Production Server URL** フィールドと **Sandbox Server URL** フィールドに貼り付けます。
+別のサーバーがすでにアプリの通知を受信している場合は、URLを置き換える前に[そちらへの転送を設定](#raw-events-forwarding)してください。
 
-URLを保存すると、Adapty ダッシュボードの通知ステータスは、Appleが最初の実際の通知（購入や更新などの最初のサブスクリプションイベント）を送信したときにのみ変わります。Appleのテスト通知ではステータスは変わりません。設定直後に「待機中」ステータスが表示されても、接続に問題があるわけではありません。
+<AppStoreServerNotificationsSetup />
 
-<Zoom>
-  <img src="/assets/shared/img/86fb3d2-app_server_notifications_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 通知がAdaptyに届いていることを確認する \{#check-that-notifications-reach-adapty\}
 
-## Appleからの生イベントの転送 \{#raw-events-forwarding\}
+通知がAdaptyに届いていることを確認するには、[サンドボックス購入](test-purchases-in-sandbox)を行ってください。その後、Adaptyで **App Store server notifications** セクションのステータスを確認します。購入自体はSDKが報告するため、通知がなくてもAdaptyに表示されます。Appleから購入に関する通知が送信されると、Adaptyはステータスを **Waiting** から **Active** に変更します。Appleからのテスト通知ではステータスは変わりません。
 
-場合によっては、Appleからの生のS2Sイベントを引き続き受け取りたいこともあるでしょう。Adaptyを使いながらも受け取り続けるには、**URL for forwarding raw Apple events** フィールドにエンドポイントを追加するだけで、Appleからの生イベントをそのまま転送します。
+ステータスには、最後に通知が届いてからの経過時間が表示されます：
 
-<Zoom>
-  <img src="/assets/shared/img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+- **Active**：24時間以内。
+- **Delayed**：24〜72時間前。
+- **Stalled**：72時間以上前。
 
-:::warning
-通知がAdaptyに届かなくなると、新規トランザクション、更新、返金が表示されなくなります。Adaptyはそれを通知しません。詳しくは[更新が届かなくなった場合](store-sync#if-updates-stop-arriving)を参照してください。
-:::
+**Delayed** と **Stalled** は必ずしも設定が壊れていることを意味するわけではありません。サブスクライバーが少ないアプリでは、通知が来ない日が続くこともあります。**Active** は単に、URLに通知が届いていることを示しているにすぎません。
+
+通知が自分のアプリに関するものであることを確認するには、設定を検証してください：
+
+1. App Store Connect で、アプリの **App Information** ページを開きます。
+2. **Production Server URL** と **Sandbox Server URL** の両方が Adapty の URL と一致していることを確認します。
+3. もう一度サンドボックス購入を行い、ステータスが **Active** になっていることを確認します。
+
+## 別のサーバーへの通知の転送 \{#raw-events-forwarding\}
+
+Appleからの通知を別のサーバーにも送る必要がある場合、Adaptyはその通知を転送できます。Adaptyで [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk) に移動してください。**App Store server notifications** セクションの **URL for forwarding raw Apple events** フィールドに転送先サーバーのURLを入力し、**Save** をクリックします。
+
+<ZoomImage id="app-settings-forwarding-url.webp" width="700px" />
+
+Adaptyは、Appleから受信した通知を別のサーバーに転送します。App Store ConnectでAdaptyの通知URLを**Sandbox Server URL**に入力すると、Adaptyはサンドボックス通知も転送します。転送されるボディはAppleの署名済みペイロードをそのまま保持するため、別のサーバーが署名を検証できます。なお、AdaptyはAppleからのリクエストヘッダーは転送しません。
+
+Adaptyが転送しないケース：
+
+- SDKがAppleからの通知なしにレポートした購入。
+- Appleからのテスト通知。
+- 過去1時間以内にAdaptyがすでに受信した通知。
+
+ループを防ぐため、転送された通知を通知URLに再投稿しないでください。**URL for forwarding raw Apple events** フィールドにAdaptyのURLを入力しないでください。
+
+バックエンドのURLをApp Store Connectに保持する必要がある場合は、代わりに[バックエンドからAdaptyに通知を渡す](forwarding-events-to-adapty)ようにしてください。
 
 ## 通知の信頼性 \{#notification-authenticity\}
 
-Adapty は、受信する App Store サーバー通知の送信元を、通知 URL 自体を超えて検証しません。送信者の IP アドレスの確認や Apple の JWS 署名の検証は行いません。通知 URL はクレデンシャルとして扱ってください。URL を持つ人であれば誰でもペイロードをポストできます。
+通知URLはクレデンシャルとして扱ってください。AdaptyはURLのみでアプリを識別するため、URLを知っている人なら誰でもペイロードを送信できます。
 
-Apple のサンドボックス **TEST** 通知タイプは、送信者に関わらず保存されません。そのため、手動で送信しても [イベントフィード](event-feed) にイベントは作成されません。
+テスト通知は、送信者を問わず[イベントフィード](event-feed)にイベントを作成しません。
 
 **次のステップ**
 
-以下のプラットフォーム向けに Adapty SDK をセットアップしてください：
+以下のプラットフォーム向けにAdapty SDKをセットアップしてください：
 
 - [iOS](sdk-installation-ios)
 - [React Native](sdk-installation-reactnative)
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)
+
+次に、[サンドボックス購入を行って、通知が Adapty に届くことを確認してください](#check-that-notifications-reach-adapty)。

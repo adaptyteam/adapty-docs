@@ -1,68 +1,67 @@
 ---
-title: "Включение уведомлений сервера App Store"
-description: "Включите уведомления сервера App Store для отслеживания событий подписки в режиме реального времени."
-metadataTitle: "Включение уведомлений сервера App Store | Документация Adapty"
+title: "Включение серверных уведомлений App Store"
+description: "Включите серверные уведомления App Store для отслеживания событий подписки в реальном времени."
+metadataTitle: "Включение серверных уведомлений App Store | Документация Adapty"
 ---
 
-Настройка уведомлений сервера App Store необходима для обеспечения точности данных: они позволяют получать обновления из App Store в режиме реального времени, включая информацию о возвратах средств и других событиях.
+SDK Adapty отслеживает покупки, совершённые в вашем приложении. Серверные уведомления сообщают об изменениях, которые происходят за пределами приложения, например:
 
-:::important
-Для полной поддержки App Store Server Notifications V2 требуется Adapty iOS SDK версии 2.10.0 или выше.
-:::
+- Подписка продлевается.
+- Пользователь отключает автопродление.
+- Платёж не проходит из-за проблемы с оплатой.
+- Подписка истекает.
+- Пользователь запрашивает возврат средств. [Refund Saver](refund-saver) обрабатывает запрос.
+- Apple возвращает средства за покупку.
 
-1. Скопируйте **URL for App Store server notification** в дашборде Adapty.
+Введите URL уведомлений из Adapty в App Store Connect, затем убедитесь, что уведомления доходят до Adapty.
 
-<Zoom>
-  <img src="/assets/shared/img/2901185-app_server_notifications.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Укажите URL уведомлений в App Store Connect \{#enter-the-notification-url-in-app-store-connect\}
 
-2. Откройте [App Store Connect](https://appstoreconnect.apple.com/apps). Выберите приложение и перейдите в раздел **General** → **App Information**, подраздел **App Store Server Notifications**.
-3. Вставьте скопированный **URL for App Store server notification** в поля **Production Server URL** и **Sandbox Server URL**.
+Если другой сервер уже получает уведомления для вашего приложения, [настройте пересылку на него](#raw-events-forwarding) перед тем, как заменить URL.
 
-После сохранения URL-адресов статус уведомлений в дашборде Adapty изменится только после того, как Apple отправит первое реальное уведомление — то есть при первом событии подписки, например покупке или продлении. Тестовое уведомление Apple статус не меняет. Статус «ожидание» сразу после настройки не означает, что соединение не работает.
+<AppStoreServerNotificationsSetup />
 
-<Zoom>
-  <img src="/assets/shared/img/86fb3d2-app_server_notifications_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Убедитесь, что уведомления доходят до Adapty \{#check-that-notifications-reach-adapty\}
 
-## Пересылка необработанных событий \{#raw-events-forwarding\}
+Чтобы убедиться, что уведомления доходят до Adapty, совершите [покупку в песочнице](test-purchases-in-sandbox). Затем проверьте статус раздела **App Store server notifications** в Adapty. Сама покупка появится в Adapty даже без уведомлений — SDK сообщает о ней самостоятельно. Как только Apple отправит уведомление о покупке, Adapty изменит статус с **Waiting** на **Active**. Тестовое уведомление от Apple статус не меняет.
 
-Иногда вам может потребоваться получать необработанные S2S-события от Apple напрямую. Чтобы продолжать их получать при использовании Adapty, просто добавьте свой эндпоинт в поле **URL for forwarding raw Apple events** — мы будем пересылать события в том виде, в каком они приходят от Apple.
+Затем в статусе отображается, как давно пришло последнее уведомление:
 
-<Zoom>
-  <img src="/assets/shared/img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+- **Active**: Менее 24 часов назад.
+- **Delayed**: 24–72 часа назад.
+- **Stalled**: 72 часа назад или более.
 
-:::warning
-Если уведомления перестают поступать в Adapty, новые транзакции, продления и возвраты средств перестают отображаться. Adapty не сигнализирует об этом — см. [Если обновления перестают поступать](store-sync#if-updates-stop-arriving).
-:::
+**Delayed** и **Stalled** не всегда означают неправильную настройку: в приложении с небольшим числом подписчиков могут пройти дни без единого уведомления. **Active** лишь говорит о том, что уведомления поступают на указанный URL.
+
+Чтобы убедиться, что уведомления относятся именно к вашему приложению, проверьте настройку:
+
+1. В App Store Connect откройте страницу **App Information** вашего приложения.
+2. Убедитесь, что **Production Server URL** и **Sandbox Server URL** совпадают с URL в Adapty.
+3. Совершите ещё одну тестовую покупку в песочнице и убедитесь, что статус отображается как **Active**.
+
+## Переадресация уведомлений на другой сервер \{#raw-events-forwarding\}
+
+Если другому серверу тоже нужны уведомления от Apple, Adapty может переадресовывать их туда. В дашборде Adapty перейдите в [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk). В разделе **App Store server notifications** укажите URL этого сервера в поле **URL for forwarding raw Apple events** и нажмите **Save**.
+
+<ZoomImage id="app-settings-forwarding-url.webp" width="700px" />
+
+Adapty пересылает уведомления от Apple на другой сервер. Если вы укажете URL уведомлений от Adapty в поле **Sandbox Server URL** в App Store Connect, Adapty будет пересылать и уведомления песочницы. Тело пересылаемого запроса сохраняет подписанный payload от Apple без изменений, поэтому другой сервер может проверить подпись. Заголовки запроса от Apple Adapty не передаёт.
+
+Adapty не пересылает:
+
+- Покупки, о которых SDK сообщает без уведомления от Apple.
+- Тестовые уведомления от Apple.
+- Уведомления, которые Adapty уже получал в течение последнего часа.
+
+Чтобы избежать зацикливания, не пересылайте уведомления обратно на URL уведомлений. Также не вводите URL Adapty в поле **URL for forwarding raw Apple events**.
+
+Если ваш бэкенд должен сохранить свой URL в App Store Connect, [передавайте уведомления в Adapty с вашего бэкенда](forwarding-events-to-adapty).
 
 ## Подлинность уведомлений \{#notification-authenticity\}
 
-Adapty не проверяет происхождение входящих уведомлений от сервера App Store, кроме самого URL уведомления — IP-адрес отправителя не проверяется, а JWS-подпись Apple не валидируется. Относитесь к URL уведомления как к учётным данным: любой, кто им владеет, может отправить на него payload.
+Относитесь к URL уведомления как к учётным данным. Adapty идентифицирует приложение только по URL, поэтому любой, кто знает этот URL, может отправить на него payload.
 
-Тип уведомлений Apple Sandbox **TEST** никогда не сохраняется, независимо от того, кто его отправляет, поэтому ручная отправка такого уведомления не создаёт событие в [Event Feed](event-feed).
+Тестовое уведомление никогда не создаёт событие в [Event Feed](event-feed), кто бы его ни отправил.
 
 **Что дальше**
 
@@ -73,3 +72,6 @@ Adapty не проверяет происхождение входящих ув�
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)
+
+Затем [сделайте покупку в песочнице, чтобы убедиться, что уведомления доходят до Adapty](#check-that-notifications-reach-adapty).

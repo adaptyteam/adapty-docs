@@ -1,274 +1,125 @@
 ---
-title: "App Store 連携の設定"
-description: "シームレスなサブスクリプション追跡のために App Store との接続を設定します。"
-metadataTitle: "App Store 接続設定 | Adapty ドキュメント"
+title: "App Store インテグレーションの設定"
+description: "iOS アプリを Adapty に接続して、購入の検証とサブスクリプションイベントの受信を行います。このガイドでは、App settings > iOS SDK での App Store 認証情報の設定について説明します。"
+metadataTitle: "App Store 接続の設定 | Adapty ドキュメント"
 ---
 
+iOS アプリを Adapty に接続するには、**App settings** > **iOS SDK** にアプリの App Store 認証情報を入力します。設定後、Adapty は次の処理を行います：
+
+- 購入を検証する。
+- サブスクリプションイベントを受信する。
+- プロダクトを App Store Connect と同期し続ける。
+
+購入やサブスクリプションのイベントが Adapty に届かなくなった場合は、[各認証情報を確認する](#check-each-credential)を参照してください。
 
 <YouTube id="VJQbzoTCkqs" />
 
-このセクションでは、iOSアプリのApp StoreとAdaptyを接続する方法について説明します。これは、サブスクリプションアナリティクスの表示と購入の検証に必要です。初回オンボーディング中、またはAdapty ダッシュボードの **App Settings** から後で設定を完了できます。
+始める前に：
 
-このページの各認証情報は、データ交換の異なる部分を解放します。[Adaptyがストアとデータをどのように同期するか](store-sync#what-adapty-reads-from-the-stores)では、各認証情報が扱うデータを確認できます。
+- App Store Connect のターゲットアプリへのアクセス権が必要です。まだアプリがない場合は、[App Store Connect のセットアップ](set-up-app-store-connect)を行ってください。プラットフォームへのアクセス権がない場合は、担当者にリクエストしてください。
+- チームが App Store Connect API にアクセスできる必要があります。これは必要なアクセスキーを生成するために必要です。まだアクセスできない場合は、Account Holder に[リクエスト](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api)するよう依頼してください。Apple は各リクエストを審査します。
+- ブラウザのタブを2つ開いてください：一方に [App Store Connect](https://appstoreconnect.apple.com/apps) のアプリ画面、もう一方に Adapty の [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk) を開きます。このガイドを通じて、2つのタブ間で値をコピーします。
 
-モバイルアプリとAdaptyの連携はオンボーディング時に設定済みかもしれませんが、後から **App settings** で変更することもできます。
+## 概要 \{#overview\}
 
-:::danger
-設定の変更は、Adapty SDKをインストールしたモバイルアプリがリリースされるまでのサンドボックスフェーズ中であれば安全に行えます。リリース後に変更すると、アプリの購入フローが壊れる可能性があります。
+このガイドで紹介するすべての認証情報は必須です。Adapty はそれぞれを [App Store とのデータ交換の異なる部分](store-sync#if-updates-stop-arriving)に使用します。設定を完了するには、以下の7つのステップに従ってください。
 
-App Store Connectでキーが無効化、削除、またはローテーションされた場合は、気づいた時点ですぐに交換用のキーをアップロードしてください。アップロードするまで、そのキーに依存するすべての機能が停止したままになります。詳しくは[アップデートが届かなくなった場合](store-sync#if-updates-stop-arriving)を参照してください。
-:::
+1. [バンドルIDとApple App ID](#enter-the-bundle-id-and-apple-app-id)を入力する
+2. [アプリ固有の共有シークレット](#enter-the-app-specific-shared-secret)を入力する
+3. AdaptyのURLを使用して[App Serverサーバー通知](#enable-app-store-server-notifications)を有効にする
+4. [アプリ内購入キー](#add-the-in-app-purchase-key)を追加する
+5. [App Store Connect APIキー](#add-the-app-store-connect-api-key)を追加する
+6. [Adapty SDKをインストールしてサンドボックス購入を行う](#check-each-credential)
+7. [すべての認証情報を確認する](#check-each-credential)
 
-## ステップ 1. Bundle ID と Apple app ID を入力する \{#step-1-provide-bundle-id-and-apple-app-id\}
+## Bundle ID と Apple App ID の入力 \{#enter-the-bundle-id-and-apple-app-id\}
 
-**Bundle ID** と **Apple app ID** はどちらも必須です。**Bundle ID** は App Store におけるアプリの一意の識別子で、サブスクリプション処理などの Adapty のコア機能を有効にします。**Apple app ID** は、**Products** ページから[新しいプロダクトを作成してストアにプッシュする](create-product#create-product-and-push-to-store)際にも必要です。
+App Store Connect でアプリを識別する値は、Bundle ID と Apple ID（Adapty では **Apple App ID** と表示）の2つです。Adapty は購入を処理するために Bundle ID を必要とします。Apple ID を使用することで、Adapty は以下のことが可能になります：
 
-:::note
-**Apple app ID** がない場合、**Products** ページの **Create a new product and push to stores** オプションは無効になりますが、ダッシュボードにはその理由が表示されません。
-:::
+- App Store Connect でプロダクトを検索し、[そこで新規プロダクトを作成します](create-product#create-product-and-push-to-store)。
+- プロダクトの App Store ステータスと価格を表示します。
+- [リテンションメッセージング](retention-messaging-setup) のリアルタイムメッセージを配信します。
+- [AI 成長アドバイザー](autopilot) の分析を実行します。
+- AppsFlyer などのアトリビューション連携にアプリを識別させます。
+
+Apple ID は App Store Connect にアプリを追加したときに Apple が割り当てるため、アプリが App Store に公開される前でも入力してください。
 
 <ProvideBundleID />
 
-## ステップ 2. Issuer ID と Key ID を入力する \{#step-2-provide-issuer-id-and-key-id\}
+## アプリ固有の共有シークレットを入力する \{#enter-the-app-specific-shared-secret\}
 
-**In-app purchase Issuer ID**（App Store Connect では **Issuer ID** と表記）は、認証トークンを作成した発行者を識別する特別な ID です。**In-App Purchase Key ID**（App Store Connect では **Key ID** と表記）は、[App Store Connect でアプリ内購入キーを生成する](generate-in-app-purchase-key)セクションで生成した暗号化キーに関連付けられた一意の識別子です。
+Adaptyが購入レシートを検証し、App Store Connectでプロダクトを作成するには、アプリ固有の共有シークレットが必要です。
 
-:::note
-App Store Connect には、フィールドがどちらも **Issuer ID** と **Key ID** と表示される2種類のキーがあります。手順2〜3では、**Integrations** → **In-App Purchase** タブの **In-App Purchase** キーを使用します。**Team keys** タブの App Store Connect API キーは別のキーで、それ自体のIDを持っています。これは[手順6](#step-6-add-app-store-connect-api-key)で追加します。
+1. [App Store Connect](https://appstoreconnect.apple.com/apps)で、アプリの **App Information** ページを開きます。**App-Specific Shared Secret** セクションで、**Manage** をクリックします。
+
+   <ZoomImage id="asc-app-information-shared-secret.webp" width="700px" alt="App Store ConnectのApp InformationページにあるApp-Specific Shared Secretセクション" />
+
+2. シークレットをコピーします。アプリにまだシークレットがない場合は、先に **Generate** をクリックしてください。シークレットを生成するには、App Store Connect の Account Holder または Admin ロールが必要です。どちらのロールも持っていない場合は、該当するロールを持つ人にシークレットの生成と共有を依頼してください。
+
+   [アプリ転送](transfer-apps#app-store-ios-transfer)でアプリを受け取った場合を除き、**Regenerate** はクリックしないでください。クリックすると、現在のシークレットが使用されているすべての場所で機能しなくなります。
+
+   <ZoomImage id="asc-shared-secret-dialog.webp" width="700px" alt="App-Specific Shared Secret window with the secret" />
+
+3. Adapty で、シークレットを **App Store Connect shared secret** フィールドに貼り付けます。
+
+   <ZoomImage id="app-settings-shared-secret.webp" width="700px" alt="App Store Connect shared secret field in Adapty" />
+
+4. **Save** をクリックします。
+
+## AdaptyのURLを使ってApp Storeサーバー通知を有効にする \{#enable-app-store-server-notifications\}
+
+:::link
+メイン記事：[App Storeサーバー通知を有効にする](enable-app-store-server-notifications)
 :::
 
-1. **App Store Connect** を開きます。[**Users and Access** → **Integrations** → **In-App Purchase**](https://appstoreconnect.apple.com/access/integrations/api/subs) セクションに進みます。
-2. **Active** リストで、[App Store Connect でアプリ内購入キーを生成する](generate-in-app-purchase-key)セクションで作成したキーを見つけます。
+Appleはサブスクリプションの更新、返金、その他のイベントが発生すると、サーバー通知をAdaptyに送信します。アプリがトランザクションを報告しない場合でも、Adaptyはこれらのイベントを記録します。
 
-<Zoom>
-  <img src="/assets/shared/img/19a2868-issuer_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+もし Apple がすでにこれらの通知を別のサーバーに送信している場合は、App Store Connect でその URL を置き換える前に、そのサーバーへの転送を設定してください。Adapty の **URL for forwarding raw Apple events** フィールドに転送先サーバーの URL を入力し、**Save** をクリックしてください。その後、Adapty は [Apple から受け取った通知をそのサーバーに転送します](enable-app-store-server-notifications#raw-events-forwarding)。
 
-3. **Issuer ID** をコピーして、Adapty ダッシュボードの **In-app purchase Issuer ID** フィールドに貼り付けます。
+バックエンドが App Store Connect に自身の URL を維持する必要がある場合は、代わりに[バックエンドから Adapty に通知を渡してください](forwarding-events-to-adapty)。
 
-<Zoom>
-  <img src="/assets/shared/img/c2b42e7-issuer_id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreServerNotificationsSetup />
 
-4. **Key ID** をコピーして、Adapty ダッシュボードの **In-app purchase Key ID** フィールドに貼り付けます。
+## アプリ内課金キーの追加 \{#add-the-in-app-purchase-key\}
 
-## ステップ 3. アプリ内購入キーファイルをアップロードする \{#step-3-upload-in-app-purchase-key-file\}
-
-[App Store Connect でアプリ内購入キーを生成する](generate-in-app-purchase-key)セクションでダウンロードした **In-App Purchase Key** ファイルを
-
-<Zoom>
-  <img src="/assets/shared/img/88cdfff-download_inapp_file.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-Adapty ダッシュボードの **Private key (.p8 file)** フィールドにアップロードします。
-
-<Zoom>
-  <img src="/assets/shared/img/253b840-in-app_file_upload.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-## ステップ 4. トライアルと特別オファー向け – プロモーションオファーを設定する \{#step-4-for-trials-and-special-offers--set-up-promotional-offers\}
-
-:::important
-このステップは、アプリに[トライアルやその他のプロモーションオファー](offers)がある場合に必要です。
+:::link
+メイン記事: [アプリ内課金キーをAdaptyに追加する](generate-in-app-purchase-key)
 :::
 
-1. [ステップ 2](#step-2-provide-issuer-id-and-key-id) で使用したのと同じキー ID を、**App Store promotional offers** セクションの **Subscription key ID** フィールドにコピーします。
-2. [ステップ 3](#step-3-upload-in-app-purchase-key-file) で使用したのと同じ **In-App Purchase Key** ファイルを、**App Store promotional offers** セクションの **Subscription key (.p8 file)** エリアにアップロードします。
+Adaptyはアプリ内課金キーを使用して、購入の検証とプロモーションオファーの署名を行います。キーファイルをまだお持ちでない場合は、まず[App Store Connectでキーを生成](generate-in-app-purchase-key#generate-the-key-in-app-store-connect)してください。Adaptyにキーを追加するには:
 
-<Zoom>
-  <img src="/assets/shared/img/promo-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreInAppPurchaseKeyAdd />
 
-## ステップ 5. App Store 共有シークレットを入力する \{#step-5-enter-app-store-shared-secret\}
+## App Store Connect APIキーを追加する \{#add-the-app-store-connect-api-key\}
 
-**App Store shared secret**（App Store Connect Shared Secret とも呼ばれます）は、アプリ内購入とサブスクリプションのレシート検証に使用される 32 文字の16進数文字列です。
-
-1. [App Store Connect](https://appstoreconnect.apple.com/apps) を開きます。アプリを選択し、**General** → **App Information** セクションに進みます。
-
-2. **App-Specific Shared Secret** サブセクションまでスクロールします。
-
-<Zoom>
-  <img src="/assets/shared/img/2bd112a-shared_secret_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   :::info
-   **App-Specific Shared Secret** サブセクションが表示されない場合は、Account Holder または Admin ロールを持っているか確認してください。Admin ロールを持っているにもかかわらず **App-Specific Shared Secret** サブセクションが表示されない場合は、アプリの Account Holder（App Store Connect でアプリケーションを作成した人）に App Store 共有シークレットを生成するよう依頼してください。その後、Admin にもサブセクションが表示されるようになります。
-   :::
-
-3. **Manage** ボタンをクリックします。
-
-<Zoom>
-  <img src="/assets/shared/img/2d8b4c0-shared_secret_apple_copy.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-4. 開いた **App-Specific Shared Secret** ウィンドウで、**Shared Secret** をコピーします。共有シークレットが表示されていない場合は、まず **Manage** または **Generate** のどちらか利用可能なボタンをクリックしてから、**Shared Secret** をコピーします。
-
-5. コピーした **Shared Secret** を、Adapty ダッシュボードの **App Store shared secret** フィールドに貼り付けます。
-
-<Zoom>
-  <img src="/assets/shared/img/4f9624d-shared_secret.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. Adapty ダッシュボードの **Save** ボタンをクリックして変更を確定します。
-
-## ステップ 6. App Store Connect API キーを追加する \{#step-6-add-app-store-connect-api-key\}
-
-App Store Connect API キーを生成して Adapty に追加すると、[Adapty ダッシュボードから App Store のプロダクトを管理](create-product#create-product-and-push-to-store)できるようになります。
-
-:::note
-これは、[ステップ 2〜3](#step-2-provide-issuer-id-and-key-id) で追加したアプリ内課金キーとは別のキーペアです。**Team keys** タブでキーを生成し、そこから **Issuer ID** と **Key ID** をコピーしてください。アプリ内課金キーの値はここでは使用できません。
+:::link
+メイン記事：[App Store Connect APIキーをAdaptyに追加する](app-store-connect-api-key)
 :::
 
-1. App Store Connectで、[**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) を開き、**+** をクリックします。
+AdaptyはApp Store Connect APIキーを使って、[App Store Connectでプロダクトを作成](create-product#create-product-and-push-to-store)したり、ステータスや価格を同期したりします。これはIn-App Purchase keyとは別のキーですが、**Issuer ID**と**Key ID**というフィールド名は共通です。
 
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-api.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Adapty には **Admin** アクセス権限を持つチームキーが必要です。まだお持ちでない場合は、先に [App Store Connect でチームキーを生成してください](app-store-connect-api-key#generate-a-team-key-in-app-store-connect)。Adapty でキーを連携するには：
 
-2. **Generate API key** ウィンドウで、キーの名前を入力し、**Admin** アクセス権を付与します。
+<AppStoreConnectApiKeyConnect />
 
-<Zoom>
-  <img src="/assets/shared/img/generate-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 各認証情報が機能しているかを確認する \{#check-each-credential\}
 
-3. キーの横にある **Download** をクリックします。ダウンロードは一度しか行えません。
+Adapty が購入を検証していることを確認するには、アプリに [Adapty SDK をインストール](installation-of-adapty-sdks)し、[サンドボックス購入を実行](test-purchases-in-sandbox)してください。
 
-<Zoom>
-  <img src="/assets/shared/img/download-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+サンドボックス購入では、一部の認証情報のみが使用されます。購入後に各認証情報を確認し、購入やサブスクリプションイベントが Adapty に届かなくなった際にも再度確認してください：
 
-4. Adapty ダッシュボードで [**App settings > iOS SDK**](https://app.adapty.io/settings/ios-sdk) に移動し、**Connect API key** をクリックします。
+- **Bundle ID**、**Apple App ID**、**App Store Connect shared secret**: この3つの値を、App Store Connectの **App Information** ページにある **Bundle ID**、**Apple ID**、および **App-Specific Shared Secret** のシークレットと照合してください。
+- **App Store server notifications**: このセクションのステータスは、購入または更新に関する通知がAdaptyに届くと **Active** と表示されます。それ以外の表示になっている場合は、[サーバーURLを確認](enable-app-store-server-notifications#check-that-notifications-reach-adapty)してください。
+- **In-app purchase API (StoreKit 2)**: 保存時にAdaptyがAppleでキーを検証します。その後、アプリ内での購入でアクセスが解除されない場合、キーが機能しなくなっている可能性があります。[キーを置き換えて](generate-in-app-purchase-key#replace-the-key)ください。
+- **App Store promotional offers**: **Subscription key ID** が **In-app purchase API (StoreKit 2)** セクションの **Key ID** と一致していることを確認してください。異なる場合は、[両方のセクションに同じキーを入力](generate-in-app-purchase-key#add-the-key-to-adapty)してください。
+- **App Store Connect API key**: 各App StoreプロダクトのステータスはAdaptyの **Products** ページの **App Store status** 列に表示されます。プロダクトにダッシュまたは **Not Connected** が表示されている場合は、[キーとApple App IDを確認](troubleshoot-app-store-integration#products-dont-appear-or-show-no-app-store-status)してください。
 
-<Zoom>
-  <img src="/assets/shared/img/connect-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+セットアップ直後は、Analytics でトライアルや購入がインストール数より多くカウントされたり、イベントフィードに表示される数より多くなることがあります。この差は[プロファイルのないトランザクション](how-profiles-work#transactions-without-profiles)によるものです。これは、Adapty SDK を含むバージョンのアプリをまだ開いていないユーザーの購入です。
 
-5. ウィンドウの各フィールドに入力します：
-   - **Issuer ID**：[**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) からコピーします。**API keys** テーブルの上に表示されています。
+Adapty とストアのレポートにおけるその他の差異は、認証情報の問題ではなく、[それぞれの購入カウント方法](discrepancies-and-troubleshooting)の違いによるものです。
 
-<Zoom>
-  <img src="/assets/shared/img/issuer-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 次のステップ \{#next-steps\}
 
-   - **Key ID**：[**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) からコピーします。**API keys** テーブルのキーの横に表示されています。
+アプリのリリース準備を進めるには、[リリースチェックリスト](release-checklist)を確認してください。
 
-<Zoom>
-  <img src="/assets/shared/img/key-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   - **API key**：App Store Connect からダウンロードした API キーファイルをアップロードします。
-
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '500px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. **Connect** をクリックします。
-
-**次のステップ**
-
-- [App Store サーバー通知を有効にする](enable-app-store-server-notifications)
+アプリが Google Play にも対応している場合は、[そのストアを接続](initial-android)してください。

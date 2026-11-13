@@ -1,0 +1,167 @@
+---
+title: "Chuyển tiếp thông báo máy chủ App Store đến Adapty từ backend của bạn"
+description: "Nếu backend của bạn cần giữ URL riêng trong App Store Connect, hãy chuyển tiếp thông báo máy chủ của Apple đến Adapty mà không thay đổi để Adapty nhận được các sự kiện gói đăng ký."
+metadataTitle: ""
+
+---
+
+Nếu backend của bạn cần giữ URL trong App Store Connect, hãy chuyển tiếp thông báo máy chủ App Store từ backend của bạn sang Adapty mà không thay đổi gì. Nếu backend của bạn không cần URL trong App Store Connect, hãy [thiết lập chuyển tiếp đến backend của bạn trong Adapty](enable-app-store-server-notifications#raw-events-forwarding). Cách đó không cần viết code.
+
+Adapty xử lý các thông báo từ backend của bạn như thể Apple gửi trực tiếp. Với [Refund Saver](refund-saver), Adapty vẫn xử lý các yêu cầu hoàn tiền trong số đó.
+
+Nếu backend của bạn nhận thông báo thời gian thực từ nhà phát triển của Google Play thông qua chủ đề Pub/Sub riêng, bạn không cần viết thêm code để chuyển tiếp chúng sang Adapty. [Thêm một push subscription cho Adapty vào chủ đề đó](enable-real-time-developer-notifications-rtdn#send-notifications-to-two-adapty-apps).
+
+Để chuyển tiếp thông báo máy chủ App Store sang Adapty:
+
+1. Trong Adapty, mở ứng dụng bạn đang kết nối: mỗi ứng dụng Adapty có URL thông báo riêng. Truy cập [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk). Trong mục **App Store server notifications**, sao chép URL từ trường **URL for App Store server notifications**.
+2. Trong backend của bạn, chuyển tiếp mỗi thông báo từ Apple đến URL vừa sao chép. Trong mỗi request:
+
+   - Giữ nguyên body từ Apple: `{"signedPayload": "…"}`.
+   - Đặt header `Content-Type: application/json`.
+   - Không thêm header `Authorization`.
+
+   Nếu Adapty cũng chuyển tiếp thông báo đến backend của bạn, đừng gửi lại những thông báo đó cho Adapty.
+
+Dưới đây là các ví dụ cho các ngôn ngữ lập trình khác nhau:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="python" label="Python" default>
+
+```python showLineNumbers
+
+url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" # don't forget to replace this URL
+
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # Apple's request body, unchanged
+
+headers = {
+  'Content-Type': 'application/json'
+}
+
+response = requests.request("POST", url, headers=headers, data=payload)
+```
+
+</TabItem>
+<TabItem value="javascript" label="Javascript" default>
+
+```javascript  showLineNumbers
+const axios = require('axios');
+
+const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
+
+const payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
+
+const config = {
+  method: 'post',
+  url: url,
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  data: payload,
+};
+
+const response = await axios(config);
+```
+
+</TabItem>
+<TabItem value="php" label="PHP" default>
+
+```php  showLineNumbers
+<?php
+require_once 'HTTP/Request2.php';
+
+$url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
+
+$payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
+
+$request = new HTTP_Request2();
+$request->setUrl($url);
+$request->setMethod(HTTP_Request2::METHOD_POST);
+$request->setConfig(array(
+  'follow_redirects' => TRUE
+));
+$request->setHeader(array(
+  'Content-Type' => 'application/json'
+));
+$request->setBody($payload);
+$response = $request->send();
+```
+
+</TabItem>
+<TabItem value="ruby" label="Ruby" default>
+
+```ruby  showLineNumbers
+require "uri"
+require "net/http"
+
+url = URI("https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/") # don't forget to replace this URL
+
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # Apple's request body, unchanged
+
+https = Net::HTTP.new(url.host, url.port)
+https.use_ssl = true
+
+request = Net::HTTP::Post.new(url)
+request["Content-Type"] = "application/json"
+request.body = payload
+
+response = https.request(request)
+```
+
+</TabItem>
+<TabItem value="java" label="Java" default>
+
+```java showLineNumbers
+String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/"; // don't forget to replace this URL
+
+String payload = "{\"signedPayload\":\"eyJhbGciOiJFUzI1NiIs...\"}"; // Apple's request body, unchanged
+
+OkHttpClient client = new OkHttpClient().newBuilder()
+  .build();
+MediaType mediaType = MediaType.parse("application/json");
+RequestBody body = RequestBody.create(mediaType, payload);
+Request request = new Request.Builder()
+  .url(url)
+  .method("POST", body)
+  .addHeader("Content-Type", "application/json")
+  .build();
+Response response = client.newCall(request).execute();
+```
+
+</TabItem>
+<TabItem value="go" label="Go" default>
+
+  ```go showLineNumbers
+package main
+
+	"fmt"
+	"strings"
+	"net/http"
+)
+
+func main() {
+	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" // Replace this with the actual URL
+
+	payload := strings.NewReader(`{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}`) // Apple's request body, unchanged
+
+	method := "POST"
+
+	client := &http.Client{}
+	req, err := http.NewRequest(method, url, payload)
+	if err != nil {
+		fmt.Println("Error creating request:", err)
+		return
+	}
+	req.Header.Add("Content-Type", "application/json")
+
+	res, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request:", err)
+		return
+	}
+	defer res.Body.Close()
+}
+  ```
+
+</TabItem>  </Tabs>
+
+Phản hồi `200` không xác nhận rằng Adapty có thể sử dụng thông báo đó. Adapty phản hồi trước khi giải mã payload đã ký. Để xác nhận rằng thông báo đã đến Adapty, hãy thực hiện [mua hàng trong sandbox](test-purchases-in-sandbox). Sau đó kiểm tra [trạng thái thông báo](enable-app-store-server-notifications#check-that-notifications-reach-adapty) trong phần **App Store server notifications** có hiển thị **Active** hay không.

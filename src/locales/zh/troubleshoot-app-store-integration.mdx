@@ -1,61 +1,77 @@
 ---
 title: "排查 App Store 集成问题"
-description: "解决常见的 Apple App Store 配置问题——协议待处理、服务器通知延迟以及价格不匹配等情况。"
+description: "解决常见的 Apple App Store 集成问题：凭据被拒、产品缺失、产品推送失败、通知延迟、访问丢失以及价格不匹配。"
 metadataTitle: "排查 App Store 集成问题 | Adapty 文档"
 ---
 
-本文介绍常见的 App Store 集成问题，每个部分均包含症状描述、根本原因及解决方案。
-## 保存凭据时提示"The provided field values are incorrect" \{#the-provided-field-values-are-incorrect-when-saving-credentials\}
+如需解决 App Store 集成问题，请找到描述你所遇到症状的对应章节。
 
-当你保存应用内购买凭据时，Adapty 会根据 **In-app purchase Issuer ID**、**In-app purchase Key ID** 和 **.p8 文件** 构建身份验证令牌，并与 Apple 进行验证。此错误表示 Apple 拒绝了该令牌。请按以下顺序逐一检查：
+## 保存凭据时出现"提供的字段值不正确"错误 \{#the-provided-field-values-are-incorrect-when-saving-credentials\}
 
-1. **密钥类型。** 密钥必须是 App Store Connect 中 **Users and Access** → **Integrations** → **In-App Purchase** 下的 **In-App Purchase** 密钥。**Team keys** 标签页中的密钥（即 App Store Connect API 密钥）有其自己的 **Issuer ID** 和 **Key ID**，但 Apple 在此处会拒绝该密钥——那类密钥应用于[配置的第 6 步](app-store-connection-configuration#step-6-add-app-store-connect-api-key)。
-2. **同一账号和团队。** Issuer ID、Key ID 和 .p8 文件必须来自与应用相同的 App Store Connect 团队。在其他团队账号（例如代理商账号）中生成的密钥将无法通过验证。
-3. **.p8 文件本身。** 请按从 App Store Connect 下载的原始文件上传，不要做任何修改。通过粘贴密钥内容重新生成的文件通常会验证失败。App Store Connect 只允许下载一次密钥，若原始文件已丢失，请重新生成新密钥。
-4. **Bundle ID。** Bundle ID 必须与 App Store Connect 中应用的 Bundle ID 完全一致——采用反向 DNS 格式，不含空格，例如 `com.company.app`。
-5. **隐藏字符。** 请直接从 App Store Connect 重新复制每个 ID。多余的空格或形似字符——例如用小写字母 `l` 代替数字 `1`——都会导致验证失败。
+当你保存应用内购买密钥时，Adapty 会根据 **Issuer ID**、**Key ID** 和 **Private key (.p8 file)** 字段构建一个认证令牌，并通过 Apple 验证。此错误表示 Apple 拒绝了该令牌。请按以下顺序检查各字段的值：
 
-此验证仅使用三个内购密钥字段和 Bundle ID。App-Specific Shared Secret 和 [App Store Connect API 密钥](app-store-connection-configuration#step-6-add-app-store-connect-api-key)不参与此验证，因此重新输入其中任何一个都不会改变结果。
+1. **密钥类型。** 此密钥必须是 App Store Connect 中 **Users and Access** > **Integrations** > **In-App Purchase** 页面下的 **In-App Purchase** 密钥。**Team Keys** 选项卡下的密钥（即 App Store Connect API 密钥）有其独立的 **Issuer ID** 和 **Key ID**，Apple 不接受将其用于此处。请改在 **App Store Connect API key** 部分[连接该密钥](app-store-connect-api-key#connect-the-key-in-adapty)。
+2. **同一账户和团队。** Issuer ID、Key ID 和 .p8 文件必须来自与该应用相同的 App Store Connect 团队。使用其他团队账户（例如代理商账户）生成的密钥将无法通过验证。
+3. **.p8 文件本身。** 请直接上传从 App Store Connect 下载的原始文件。通过粘贴密钥内容重新生成的文件往往会验证失败。每个密钥只能下载一次，如果原始文件丢失，请重新生成一个新密钥。
+4. **Bundle ID。** Bundle ID 必须与 App Store Connect 中应用的 Bundle ID 完全一致，使用反向 DNS 格式，不含空格，例如 `com.company.app`。
+5. **隐藏字符。** 请直接从 App Store Connect 复制每个 ID。多余的空白字符或形似字符——例如用小写字母 `l` 替代数字 `1`——都会导致验证失败。
 
-## 产品未显示 \{#products-dont-appear\}
+此验证仅使用三个应用内购买密钥字段和 Bundle ID。App-Specific Shared Secret 和 [App Store Connect API 密钥](app-store-connect-api-key) 不参与此验证，因此重新填写任何一个都不会影响结果。
 
-以下两种表现通常指向同一个根本原因：
+如果所有值均与 App Store Connect 匹配，但仍看到此错误，请通过 [support@adapty.io](mailto:support@adapty.io) 联系 Adapty 支持团队。
 
-- App Store Connect API 密钥配置正确，但 Adapty 无法获取任何产品。
-- 产品已在 App Store Connect 中创建，但未出现在 Adapty 中，或显示数量少于预期。SDK 在尝试购买时报告 "Product Id not found"。
-最常见的根本原因是 **Apple 协议未签署** — 付款协议、税务表格或银行表格处于待处理或未签署状态。当协议处于待处理状态时，App Store Connect API 会在产品相关端点静默返回 403 错误。Adapty 不会收到任何明确的报错提示，产品会被静默过滤掉。
+{/* Kept for links to the sections this one replaced. */}
+<span id="products-dont-appear"></span>
+<span id="csv-price-export-is-empty"></span>
 
-请前往 **App Store Connect → Agreements, Tax, and Banking**，签署所有待处理的协议。然后在 Adapty 的 **App settings → iOS SDK** 中重新同步。
-## App Store 服务器通知显示"Delayed" \{#app-store-server-notifications-show-delayed\}
+## 产品未显示或 App Store 状态缺失 \{#products-dont-appear-or-show-no-app-store-status\}
 
-在 App Store Connect 中，App Store 服务器通知的状态可能会显示为 **Delayed**。这意味着 Apple 在发送订阅事件通知方面出现了延迟——续订、取消和账单问题等通知会排队等待，并延迟到达。
+当 Adapty 无法从 App Store Connect 读取您的产品时，您会看到以下一种或多种现象：
 
-安装统计数据不受影响。Adapty 从应用首次启动开始统计安装量，而非依赖服务器端通知。
+- **App Store Product ID** 下拉列表中未显示您的产品。
+- 产品列表的 **App Store status** 列显示破折号或"Not Connected"，或产品页面持续停留在"Status pending"状态。
+- 留存消息的 **Associated plan** 列表显示"No options"。
+- 您为产品下载的价格 CSV 文件仅包含列标题，无任何数据。
 
-如果续订或取消数据出现滞后，**Delayed** 状态是最可能的原因。随着 Apple 处理积压的通知，该状态通常会自动恢复正常。
-## 购买成功但用户失去访问权限 \{#a-purchase-succeeds-but-the-customer-loses-access\}
+请按顺序逐一排查以下原因：
 
-用户完成付款后短暂获得了访问权限，但下次应用从 Adapty 刷新用户画像时访问权限消失。Apple 已扣款，但交易从未到达 Adapty——在此之前，该用户画像没有任何访问等级，且这笔销售也不会出现在你的报告中。
+- **应用未配置 App Store Connect API 密钥**：[关联团队密钥](app-store-connect-api-key)。
+- **Apple 拒绝 App Store Connect API 密钥**：该密钥属于其他团队、已被撤销，或者 Key ID 与其 .p8 文件不匹配。请[替换密钥](app-store-connect-api-key#replace-the-key)，使用拥有该应用的团队的密钥。
+- **Apple App ID 为空或填写有误**：请从 App Store Connect 中[复制应用的 Apple ID](app-store-connection-configuration#enter-the-bundle-id-and-apple-app-id)，并填入 **Apple App ID** 字段。
+- **产品属于其他应用**：Adapty 仅在与您 Apple App ID 对应的 App Store Connect 应用中查找产品。请确认该产品确实属于该应用。
+- **产品创建时间不足 10 分钟**：在 App Store Connect 中创建产品后，请等待 10 分钟，然后再在 **App Store Product ID** 下拉列表中查找。
 
-原因通常是以下几种之一：
+{/* Kept for links to the section this one replaced. */}
+<span id="cant-push-new-products-to-app-store"></span>
 
-- **凭据失效**：Adapty 无法通过 Apple 验证交易。请参考[更新停止推送时的处理方法](store-sync#if-updates-stop-arriving)逐一排查凭据，并替换负责购买验证的凭据。
-- **产品未在 Adapty 中关联**：客户购买的 Store 产品 ID 未关联到任何 Adapty 产品，因此没有可授予的访问等级。请确认该产品以正确的 **App Store Product ID** 存在，并已分配[访问等级](access-level)。
+## 推送产品时出现"403 Client Error: Forbidden"错误 \{#403-client-error-forbidden-when-you-push-a-product\}
 
-Adapty SDK 会持续重试该交易，因此一旦 Adapty 能够记录，访问等级便会恢复。
+推送产品时，如果账户持有人尚未接受最新的付费应用协议，App Store Connect 会返回此错误。账户持有人可在 App Store Connect 中打开 **Business** > **Agreements**，然后点击付费应用对应的 **View and Agree to Terms** 以接受协议。
+
+App Store Connect API 密钥被撤销同样会导致 403 错误：[替换密钥](app-store-connect-api-key#replace-the-key)。
+
+{/* Kept for links to the section this one replaced. */}
+<span id="app-store-server-notifications-show-delayed"></span>
+
+## 通知状态显示"Delayed"或"Stalled" \{#the-notifications-status-reads-delayed-or-stalled\}
+
+**App settings** > **iOS SDK** 页面上的通知状态显示"Delayed"，表示最近一条通知到达时间已超过 24 小时。超过 72 小时后，状态将变为"Stalled"。[请验证 App Store Connect 中的 **Production Server URL** 和 **Sandbox Server URL** 是否与 Adapty 中的 **URL for App Store server notifications** 保持一致](enable-app-store-server-notifications#check-that-notifications-reach-adapty)。
+
+## 购买成功，但用户失去访问权限 \{#a-purchase-succeeds-but-the-customer-loses-access\}
+
+用户完成付款后可能短暂拥有访问权限，但在应用从 Adapty 刷新用户画像后，该权限消失了。
+
+通常原因如下：
+
+- **应用内购买密钥已失效**：Adapty 无法向 Apple 验证交易。[替换密钥](generate-in-app-purchase-key#replace-the-key)。
+- **产品未在 Adapty 中关联**：客户购买的商店产品 ID 未关联至 Adapty 产品，因此没有可授予的访问等级。请确认该产品以正确的 **App Store Product ID** 存在，并已分配[访问等级](access-level)。
+
+替换应用内购买密钥后，请让在密钥失效期间完成购买的用户恢复购买记录。恢复操作可立即找回他们的访问权限。
 
 ## Adapty 中的价格与 App Store 不匹配 \{#prices-in-adapty-dont-match-app-store\}
 
-Adapty 产品编辑页面上的**价格**字段的行为方式取决于产品的添加方式。
+如果 Adapty 与 App Store 显示的产品价格不一致，请检查你添加产品的方式。Adapty 产品页面上的 **price** 字段在不同情况下有不同的用途。
 
-如果你在 Adapty 中创建产品并从看板推送到商店，该价格将作为商店的初始价格使用。
+如果你在 Adapty 中创建产品并从看板推送到商店，该价格将作为商店的初始定价。
+
 如果你添加的产品在商店中已存在，此价格仅作为占位符使用。Adapty 的分析、集成和 SDK 均以从 App Store 实际获取的价格为准，而非该占位符。App Store 价格发生变更后不会同步更新占位符，且目前无法在看板中手动编辑占位符。
-## CSV 价格导出为空 \{#csv-price-export-is-empty\}
-
-如果你导出的 CSV 价格文件只有列标题，说明 App Store Connect API 密钥未完成配置。请参阅[第 6 步 — 添加 App Store Connect API 密钥](app-store-connection-configuration#step-6-add-app-store-connect-api-key)。
-## 无法将新产品推送至 App Store \{#cant-push-new-products-to-app-store\}
-
-当你在看板中创建产品时，Adapty 可以将新产品推送至 App Store Connect。如果你的 App Store 集成尚未完整配置，推送选项将被禁用。以下两项设置为必填项：
-
-- **Apple app ID**：在 [第 1 步 — 提供 Bundle ID 和 Apple app ID](app-store-connection-configuration#step-1-provide-bundle-id-and-apple-app-id) 中进行配置。
-- **App Store Connect API 密钥**：在 [第 6 步 — 添加 App Store Connect API 密钥](app-store-connection-configuration#step-6-add-app-store-connect-api-key) 中进行配置。

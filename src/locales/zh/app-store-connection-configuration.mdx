@@ -1,255 +1,125 @@
 ---
 title: "配置 App Store 集成"
-description: "配置您的 App Store 连接，实现无缝的订阅追踪。"
+description: "将您的 iOS 应用连接到 Adapty，让 Adapty 验证购买并接收订阅事件。本指南介绍 App settings > iOS SDK 中的 App Store 凭据配置。"
 metadataTitle: "App Store 连接配置 | Adapty 文档"
 ---
 
+要将您的 iOS 应用连接到 Adapty，请在 **App settings** > **iOS SDK** 中填写 App Store 凭据。Adapty 随后将：
+
+- 验证购买。
+- 接收订阅事件。
+- 保持您的产品与 App Store Connect 同步。
+
+如果购买或订阅事件停止到达 Adapty，请[逐项检查凭据](#check-each-credential)。
 
 <YouTube id="VJQbzoTCkqs" />
 
-本节介绍如何为您的 iOS 应用建立 App Store 与 Adapty 之间的连接。这是我们显示订阅分析数据和验证购买所必需的步骤。您可以在初始用户引导期间完成集成，也可以稍后在 Adapty 看板的 **App Settings** 中完成。
+开始之前：
 
-本页中的每项凭证解锁不同部分的数据交换。[Adapty 与商店的数据同步方式](store-sync#what-adapty-reads-from-the-stores)说明了每项凭证所承载的数据内容。
+- 您需要在 App Store Connect 中访问目标应用。如果应用尚未创建，请先[配置 App Store Connect](set-up-app-store-connect)。如果您没有平台访问权限，请向相关人员申请。
+- 您的团队需要访问 App Store Connect API——这是生成所需访问密钥的必要条件。如果团队尚未获得访问权限，请联系 Account Holder [申请开通](https://developer.apple.com/help/app-store-connect/get-started/app-store-connect-api)。Apple 会对每个申请进行审核。
+- 请打开两个浏览器标签页：一个打开 [App Store Connect](https://appstoreconnect.apple.com/apps) 中的应用页面，另一个打开 Adapty 中的 [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk)。在本指南的操作过程中，您需要在两个标签页之间复制相关信息。
 
-虽然您可能在初始引导阶段已完成移动应用与 Adapty 的集成配置，但您仍可以在 **App settings** 中随时修改这些设置。
+## 概述 \{#overview\}
 
-:::danger
-配置更改可以在沙盒阶段安全进行，但请在移动应用集成 Adapty SDK 正式上线之前完成。上线后再进行更改可能会破坏应用中的购买流程。
+本指南中的每项凭据都是必需的。Adapty 将每项凭据用于[与 App Store 数据交换的不同环节](store-sync#if-updates-stop-arriving)。要完成配置，请按以下七个步骤操作：
 
-如果某个密钥在 App Store Connect 中被撤销、删除或轮换，请在发现后立即上传替换密钥：在此之前，所有依赖该密钥的功能都将无法正常工作。详情请参阅[更新停止同步时的处理方法](store-sync#if-updates-stop-arriving)。
-:::
+1. 输入 [Bundle ID 和 Apple App ID](#enter-the-bundle-id-and-apple-app-id)
+2. 输入 [App 专属共享密钥](#enter-the-app-specific-shared-secret)
+3. 使用 Adapty 提供的 URL [启用 App Store 服务器通知](#enable-app-store-server-notifications)
+4. 添加 [App 内购买密钥](#add-the-in-app-purchase-key)
+5. 添加 [App Store Connect API 密钥](#add-the-app-store-connect-api-key)
+6. 安装 [Adapty SDK 并进行沙盒购买](#check-each-credential)
+7. [验证所有凭据](#check-each-credential)
 
-## 步骤 1. 填写 Bundle ID 和 Apple app ID \{#step-1-provide-bundle-id-and-apple-app-id\}
+## 输入 Bundle ID 和 Apple App ID \{#enter-the-bundle-id-and-apple-app-id\}
 
-**Bundle ID** 和 **Apple app ID** 均为必填项。**Bundle ID** 是您的应用在 App Store 中的唯一标识符，它是订阅处理等 Adapty 核心功能的基础。**Apple app ID** 也是必须填写的，这样才能在 **Products** 页面[创建新产品并推送到商店](create-product#create-product-and-push-to-store)。
+两个值用于在 App Store Connect 中标识你的应用：Bundle ID 和 Apple ID（在 Adapty 中标记为 **Apple App ID**）。Adapty 需要 Bundle ID 来处理购买。有了 Apple ID，Adapty 能够：
 
-:::note
-若未填写 **Apple app ID**，**Products** 页面上的 **Create a new product and push to stores** 选项将被禁用，且看板不会给出任何提示说明原因。
-:::
+- 在 App Store Connect 中查找您的产品，并[在那里创建新产品](create-product#create-product-and-push-to-store)。
+- 显示您产品的 App Store 状态和价格。
+- 为[留存消息推送](retention-messaging-setup)提供实时消息服务。
+- 运行 [AI 增长顾问](autopilot)分析。
+- 向归因集成（如 AppsFlyer）标识您的应用。
+
+Apple 会在您将应用添加到 App Store Connect 时分配 Apple ID，因此即使您的应用尚未上架 App Store，也请填写该 ID。
 
 <ProvideBundleID />
-## 第二步：提供 Issuer ID 和 Key ID \{#step-2-provide-issuer-id-and-key-id\}
 
-**In-app purchase Issuer ID**（在 App Store Connect 中称为 **Issuer ID**）是一个特殊 ID，用于标识创建身份验证令牌的颁发者。**In-App Purchase Key ID**（在 App Store Connect 中称为 **Key ID**）是与您在[在 App Store Connect 中生成应用内购买密钥](generate-in-app-purchase-key)部分生成的加密密钥关联的唯一标识符。
-:::note
-App Store Connect 有两种密钥类型，它们的字段都标注为 **Issuer ID** 和 **Key ID**。第 2–3 步使用的是 **Integrations** → **In-App Purchase** 标签页中的 **In-App Purchase** 密钥。**Team keys** 标签页中的 App Store Connect API 密钥是另一种密钥，有其独立的 ID——你将在[第 6 步](#step-6-add-app-store-connect-api-key)中添加它。
+## 输入应用专用共享密钥 \{#enter-the-app-specific-shared-secret\}
+
+Adapty 需要应用专用共享密钥来验证购买凭证，并在 App Store Connect 中创建产品。
+
+1. 在 [App Store Connect](https://appstoreconnect.apple.com/apps) 中，打开应用的 **App Information** 页面。在 **App-Specific Shared Secret** 部分，点击 **Manage**。
+
+   <ZoomImage id="asc-app-information-shared-secret.webp" width="700px" alt="App Store Connect 中 App Information 页面上的 App-Specific Shared Secret 部分" />
+
+2. 复制密钥。如果该应用尚未生成密钥，请先点击 **Generate**。生成密钥需要在 App Store Connect 中拥有 Account Holder 或 Admin 角色。如果您没有上述角色，请联系拥有该角色的人员生成密钥并发送给您。
+
+   除非您是通过[应用转让](transfer-apps#app-store-ios-transfer)接收该应用，否则请勿点击 **Regenerate**：点击后，当前密钥将在所有使用该密钥的地方立即失效。
+
+   <ZoomImage id="asc-shared-secret-dialog.webp" width="700px" alt="App-Specific Shared Secret window with the secret" />
+
+3. 在 Adapty 中，将密钥粘贴到 **App Store Connect shared secret** 字段。
+
+   <ZoomImage id="app-settings-shared-secret.webp" width="700px" alt="App Store Connect shared secret field in Adapty" />
+
+4. 点击 **Save**。
+
+## 使用 Adapty 提供的 URL 启用 App Store 服务器通知 \{#enable-app-store-server-notifications\}
+
+:::link
+主要文章：[启用 App Store 服务器通知](enable-app-store-server-notifications)
 :::
 
-1. 打开 **App Store Connect**。前往 [**Users and Access** → **Integrations** → **In-App Purchase**](https://appstoreconnect.apple.com/access/integrations/api/subs) 页面。
-2. 在 **Active** 列表中，找到你在 [在 App Store Connect 中生成应用内购买密钥](generate-in-app-purchase-key) 章节里创建的密钥。
-<Zoom>
-  <img src="/assets/shared/img/19a2868-issuer_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Apple 会在续订、退款及其他订阅事件发生时，将服务器通知实时推送给 Adapty。即使您的应用未上报任何交易，Adapty 也会记录这些事件。
 
-3. 复制 **Issuer ID**，并将其粘贴到 Adapty 看板中的 **In-app purchase Issuer ID** 字段。
-<Zoom>
-  <img src="/assets/shared/img/c2b42e7-issuer_id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+如果 Apple 已在向某台服务器发送这些通知，请在 App Store Connect 中替换其 URL 之前，先设置好转发。在 Adapty 中，将该服务器的 URL 填入 **URL for forwarding raw Apple events** 字段，然后点击 **Save**。Adapty 随后会将[从 Apple 收到的通知转发](enable-app-store-server-notifications#raw-events-forwarding)到该服务器。
 
-4. 复制 **Key ID**，并将其粘贴到 Adapty 看板的 **In-app purchase Key ID** 字段中。
-## 步骤 3. 上传应用内购买密钥文件 \{#step-3-upload-in-app-purchase-key-file\}
+如果您的后端必须在 App Store Connect 中保留其 URL，请改为[从后端将通知传递给 Adapty](forwarding-events-to-adapty)。
 
-将你在[在 App Store Connect 中生成应用内购买密钥](generate-in-app-purchase-key)章节中下载的 **In-App Purchase Key** 文件
+<AppStoreServerNotificationsSetup />
 
-<Zoom>
-  <img src="/assets/shared/img/88cdfff-download_inapp_file.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 添加应用内购买密钥 \{#add-the-in-app-purchase-key\}
 
-上传到 Adapty 看板中的 **Private key (.p8 file)** 字段。
-<Zoom>
-  <img src="/assets/shared/img/253b840-in-app_file_upload.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-## 第四步：针对试用期和特殊优惠——配置促销活动 \{#step-4-for-trials-and-special-offers--set-up-promotional-offers\}
-
-:::important
-如果你的应用包含[试用期或其他促销活动](offers)，此步骤为必填项。
+:::link
+主要文章：[将应用内购买密钥添加到 Adapty](generate-in-app-purchase-key)
 :::
 
-1. 将你在[第二步](#step-2-provide-issuer-id-and-key-id)中使用的同一个 Key ID 复制到 **App Store promotional offers** 部分的 **Subscription key ID** 字段中。
-2. 将你在[第三步](#step-3-upload-in-app-purchase-key-file)中使用的同一个 **In-App Purchase Key** 文件上传到 **App Store promotional offers** 部分的 **Subscription key (.p8 file)** 区域。
-<Zoom>
-  <img src="/assets/shared/img/promo-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-## 第 5 步：输入 App Store 共享密钥 \{#step-5-enter-app-store-shared-secret\}
+Adapty 使用应用内购买密钥来验证购买并为促销活动签名。如果你还没有密钥文件，请先[在 App Store Connect 中生成密钥](generate-in-app-purchase-key#generate-the-key-in-app-store-connect)。将密钥添加到 Adapty 的步骤如下：
 
-**App Store shared secret**（即 App Store Connect Shared Secret）是一个 32 位十六进制字符串，用于应用内购买和订阅收据验证。
+<AppStoreInAppPurchaseKeyAdd />
 
-1. 打开 [App Store Connect](https://appstoreconnect.apple.com/apps)，选择您的应用，进入 **General** → **App Information** 页面。
+## 添加 App Store Connect API 密钥 \{#add-the-app-store-connect-api-key\}
 
-2. 向下滚动，找到 **App-Specific Shared Secret** 子板块。
-<Zoom>
-  <img src="/assets/shared/img/2bd112a-shared_secret_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-:::info
-如果 **App-Specific Shared Secret** 子部分未显示，请确认您拥有 Account Holder 或 Admin 角色。如果您已具有 Admin 角色但仍看不到 **App-Specific Shared Secret** 子部分，请联系该应用的 Account Holder（即在 App Store Connect 中创建该应用的人），让其为该应用生成 App Store shared secret。生成后，Admin 也可以看到该子部分。
+:::link
+主文章：[将 App Store Connect API 密钥添加到 Adapty](app-store-connect-api-key)
 :::
 
-3. 点击 **Manage** 按钮。
-<Zoom>
-  <img src="/assets/shared/img/2d8b4c0-shared_secret_apple_copy.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+Adapty 使用 App Store Connect API 密钥在 [App Store Connect 中创建产品](create-product#create-product-and-push-to-store)，并同步产品状态和价格。该密钥与内购密钥不同，但两者共享 **Issuer ID** 和 **Key ID** 这两个字段名称。
 
-4. 在打开的 **App-Specific Shared Secret** 窗口中，复制 **Shared Secret**。如果没有看到共享密钥，请先点击可用的 **Manage** 或 **Generate** 按钮，然后再复制 **Shared Secret**。
-5. 将复制的 **Shared Secret** 粘贴到 Adapty 看板中的 **App Store shared secret** 字段。
+Adapty 需要一个具有 **Admin** 访问权限的团队密钥。如果你还没有，请先[在 App Store Connect 中生成它](app-store-connect-api-key#generate-a-team-key-in-app-store-connect)。要在 Adapty 中连接该密钥：
 
-<Zoom>
-  <img src="/assets/shared/img/4f9624d-shared_secret.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+<AppStoreConnectApiKeyConnect />
 
-6. 点击 Adapty 看板中的 **Save** 按钮确认更改。
-## 步骤 6. 添加 App Store Connect API 密钥 \{#step-6-add-app-store-connect-api-key\}
+## 检查每个凭据是否有效 \{#check-each-credential\}
 
-生成 App Store Connect API 密钥并将其添加到 Adapty，即可[在 Adapty 看板中管理 App Store 产品](create-product#create-product-and-push-to-store)。
+要确认 Adapty 能验证购买，请先在应用中[安装 Adapty SDK](installation-of-adapty-sdks)，再[进行沙盒购买](test-purchases-in-sandbox)。
 
-:::note
-此密钥对与您在[步骤 2–3](#step-2-provide-issuer-id-and-key-id) 中添加的内购密钥不同。请在 **Team keys** 标签页中生成该密钥，并从中复制其 **Issuer ID** 和 **Key ID** ——内购密钥的值在此处无效。
-:::
+沙盒购买只会用到部分凭据。请在购买后逐一验证，每当购买或订阅事件无法送达 Adapty 时，也请重新核查：
 
-1. 在 App Store Connect 中，前往 [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) 并点击 **+**。
+- **Bundle ID**、**Apple App ID** 和 **App Store Connect shared secret**：将这三个值与 App Store Connect **App Information** 页面上的 **Bundle ID**、**Apple ID** 以及 **App-Specific Shared Secret** 下的密钥进行比对。
+- **App Store server notifications**：一旦有购买或续订通知到达 Adapty，该部分的状态会显示为 **Active**。如果显示其他状态，请[检查服务器 URL](enable-app-store-server-notifications#check-that-notifications-reach-adapty)。
+- **In-app purchase API (StoreKit 2)**：Adapty 在您保存时会向 Apple 验证密钥。如果之后应用内购买未能解锁任何访问等级，说明密钥可能已失效，请[更换密钥](generate-in-app-purchase-key#replace-the-key)。
+- **App Store promotional offers**：确认 **Subscription key ID** 与 **In-app purchase API (StoreKit 2)** 部分中的 **Key ID** 一致。如果不一致，请[在两个部分中输入相同的密钥](generate-in-app-purchase-key#add-the-key-to-adapty)。
+- **App Store Connect API key**：**Products** 页面的 **App Store status** 列会显示每个 App Store 产品的状态。如果某个产品显示横线或 **Not Connected**，请[检查密钥和 Apple App ID](troubleshoot-app-store-integration#products-dont-appear-or-show-no-app-store-status)。
 
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-api.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+刚完成设置后，Analytics 中统计到的试用和购买数量可能多于安装量，也可能多于 Event Feed 中显示的数量。这是因为存在[没有用户画像的交易](how-profiles-work#transactions-without-profiles)：这些购买来自尚未打开过集成了 Adapty SDK 版本应用的用户。
 
-2. 在 **Generate API key window** 中，输入密钥名称并授予其 **Admin** 权限。
+Adapty 与应用商店报告之间的其他差异，源于[各自统计购买的方式](discrepancies-and-troubleshooting)，而非凭据配置问题。
 
-<Zoom>
-  <img src="/assets/shared/img/generate-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 下一步 \{#next-steps\}
 
-3. 点击密钥旁边的 **Download**。请注意，该密钥只能下载一次。
-<Zoom>
-  <img src="/assets/shared/img/download-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+在发布应用前，请查看[发布检查清单](release-checklist)。
 
-4. 在 Adapty 看板中，前往 [**App settings > iOS SDK**](https://app.adapty.io/settings/ios-sdk)，然后点击 **Connect API key**。
-<Zoom>
-  <img src="/assets/shared/img/connect-api-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-5. 在弹窗中填写以下字段：
-   - **Issuer ID**：从 [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) 复制。它位于 **API keys** 表格上方。
-<Zoom>
-  <img src="/assets/shared/img/issuer-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   - **Key ID**：从 [**Users and Access > Integrations > Team keys**](https://appstoreconnect.apple.com/access/integrations/api) 复制。它在 **API keys** 表格中，位于您的密钥旁边。
-<Zoom>
-  <img src="/assets/shared/img/key-id.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-   - **API key**：上传你从 App Store Connect 下载的 API 密钥文件。
-<Zoom>
-  <img src="/assets/shared/img/app-store-connect-key.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '500px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
-
-6. 点击 **Connect**。
-
-**下一步**
-
-- [启用 App Store 服务器通知](enable-app-store-server-notifications)
+如果你的应用同时上架 Google Play，请[连接该商店](initial-android)。
