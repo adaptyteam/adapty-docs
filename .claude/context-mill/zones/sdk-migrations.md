@@ -210,7 +210,9 @@ question there. The real open question is the two Observer-mode changes below, i
    `sdk-installation-flutter`. Co-change corroborates this with `flutter-sdk-migration-guides +
    migrate-to-flows`, `+ adapty-flow-builder`, `+ quickstart-paywalls`, `+ whats-new` (all cross-zone).
    Whenever a platform's v4 guide moves from "(beta)" to GA in its title, check all of these together, not
-   just the guide itself.
+   just the guide itself — except `whats-new`. That commit's `whats-new` edit is history, not a rule: a
+   feature change never touches `whats-new.mdx`. The page is written once a month, on demand, with the
+   `update-whats-new` skill, which picks the release up from `main` then.
 5. **A v4-era change to locale handling or the fallback-file format touches all six live v4 guides at
    once, not one platform at a time.** Evidence: commit `40b608f0b` ("Big localization PR…") edited
    `migration-to-ios-sdk-v4`, `migration-to-android-sdk-v4`, `migration-to-react-native-sdk-v4`,
@@ -247,8 +249,9 @@ question there. The real open question is the two Observer-mode changes below, i
   itself.** Every v4 guide's "Fallback files" subsection is one or two sentences plus a link — confirmed
   structurally identical across all six — never an inline explanation of the file format.
 - **`getting-started` (`whats-new`) owns the announcement; this zone owns the reference.** A new major
-  or beta guide gets a line in `whats-new.mdx` in the same pass (ripple rule 4/5), but the guide itself
-  never doubles as the announcement.
+  or beta guide does not get a line in `whats-new.mdx` in the same pass: the announcement is written
+  once a month, on demand, with the `update-whats-new` skill. The guide itself never doubles as the
+  announcement.
 - **Migrating a whole app off a competing SDK is a different zone (`migration-from-competitors`),
   despite the shared "migration" filename prefix.** `migration-from-revenuecat`, `migration-from-glassfy`,
   `migration-from-superwall` (all in `src/content/docs/version-3.0/`) are about switching vendors, not
