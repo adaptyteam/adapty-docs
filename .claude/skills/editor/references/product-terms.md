@@ -49,5 +49,6 @@ marks when a term changed. UI labels still come from the frontend (Area 11).
 - **Integrations**: present a third-party tool by what only it does (external channels, its own
   reports). Don't suggest it for what Adapty already does (in-app targeting, paywall A/B tests,
   subscription analytics).
+- **Version scope**: mention SDK version support only where versions behave differently, and then give the range for each.
 - **Scope**: edit release notes and What's new only as their own task. Code samples are the
   developers' call: never add, drop, or merge them on the writer's authority.
