@@ -9,6 +9,8 @@ Every article must start with an introduction before the first heading that prov
 2. **Why it matters**: Value or benefit to the reader
 3. **When to use it**: Context for application
 
+For an article with three or more stages, consider a numbered overview after the intro: one item per H2, in the same order, each linking to its section.
+
 ❌ No introduction:
 ```markdown
 # Configure Placements
