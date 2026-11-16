@@ -265,6 +265,7 @@ The event properties for most event types are consistent (except for **Access Le
 | **trial_duration**            | String        | Duration of a trial period in days. Sent in a format "{} days", for example, "7 days". Present in the trial connected event types only: `trial_started`, `trial_converted`, `trial_cancelled`.                                                                                                                                                                   |
 | **variation_id**              | UUID          | Unique ID of the paywall where the purchase was made. For a flow, this is the ID of the paywall screen inside the flow, not the A/B test variant. Each published flow version gets new screen IDs, so Adapty sends one variant with different `variation_id` values over time. To split transactions by test variant, use `ab_test_variant_id`. |
 | **vendor_product_id**         | String        | <p>Product ID in the Apple App Store, Google Play Store, or Stripe.</p><p>For a [12-month commitment plan](app-store-12-month-commitment), the value is `<product_id>:monthly`.</p><p>If access was granted without a real store transaction, `vendor_product_id` will be one of:</p><ul><li>`adapty_server_side_product` — granted via the [server-side API](api-adapty/operations/grantAccessLevel).</li><li>`adapty_dashboard_product` — [granted manually](give-access-level-to-specific-customer) in the Adapty Dashboard.</li><li>`adapty_promotion` — legacy.</li></ul> |
+| **virtual_currency_credits**  | Array         | The [virtual currency](virtual-currencies) the purchase credited to the user. Present only in purchase events that credited a currency. See [Virtual currency credits](#virtual-currency-credits). |
 
 #### Flow and A/B test fields
 
@@ -307,6 +308,47 @@ The shared variant ID of a crossplacement A/B test matches the variant ID on one
 
 :::warning
 In a crossplacement A/B test where the same flow appears in more than one variant, the purchase alone doesn't tell which variant the user was in. Adapty takes the variant from the user's assignment record instead. If that record isn't available, Adapty sends `flow_id`, `flow_name`, and `ab_test_id`, but not `flow_variation_id`, `ab_test_variant_id`, or `ab_test_variant_name`. This happens when the user buys right after seeing the flow, before the record is saved, and for renewals that come after the record expires. The Adapty Dashboard counts such transactions in the first variant, so your integration data can differ from the dashboard.
+:::
+
+#### Virtual currency credits
+
+`virtual_currency_credits` shows how much [virtual currency](virtual-currencies) a purchase credited to the user, so you can see the credits in your webhook handler or analytics without a separate API request. Adapty sends it in five events:
+
+- `subscription_initial_purchase`
+- `subscription_renewed`
+- `trial_started`
+- `trial_converted`
+- `non_subscription_purchase`
+
+The field is an array with one object for each currency the purchase credited. The objects are sorted by `currency_code`:
+
+| Field             | Type                  | Description |
+|:------------------|:----------------------|:------------|
+| **currency_code** | String                | Code of the virtual currency. |
+| **amount**        | Integer               | How much of the currency the purchase credited. |
+| **expires_at**    | ISO 8601 date or `null` | When the credited amount expires, if the product link has [credit expiration](create-virtual-currency#link-products) turned on. `null` if the credits don't expire. |
+
+For example, a purchase that credits 100 coins that don't expire and 10 gems that expire in a month:
+
+```json title="Json" showLineNumbers
+"virtual_currency_credits": [
+  {"currency_code": "COINS", "amount": 100, "expires_at": null},
+  {"currency_code": "GEMS", "amount": 10, "expires_at": "2026-12-13T10:41:07.000000+0000"}
+]
+```
+
+The event doesn't include `virtual_currency_credits` when the purchase credited nothing. This applies to:
+
+- Purchases of products that aren't linked to a virtual currency.
+- All other event types, including refunds, `access_level_updated`, `subscription_active`, and `trial_active`. A refund event doesn't show the credits Adapty takes back.
+- Historical data you [import](importing-historical-data-to-adapty).
+
+Sandbox purchases credit virtual currency too, so their events include the field. To tell them apart, use `environment`.
+
+Adapty sends `virtual_currency_credits` to the webhook and to [Amplitude](amplitude), [Mixpanel](mixpanel), [PostHog](posthog), [Braze](braze), and [Branch](branch) as an array. [Adjust](adjust) accepts only string values, so Adapty sends the array to Adjust as a JSON string. Other integrations, such as Firebase and AppsFlyer, have a fixed set of parameters and don't receive the field.
+
+:::warning
+Don't calculate a user's balance from these events. `virtual_currency_credits` shows only what a purchase credited. Other transactions change the balance too: spends, expirations, and credits you grant through the server-side API. For example, when a subscription with expiring credits renews, the unused credits from the previous period expire in a separate transaction, and the renewal event shows only the new credits. To get the current balance, use [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances).
 :::
 
 #### Additional tax and revenue event properties
