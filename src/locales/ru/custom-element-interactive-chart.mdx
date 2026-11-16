@@ -1,0 +1,256 @@
+---
+title: "Показать интерактивный график цели по весу в пейволе"
+description: "Отображайте прогнозируемый вес каждого пользователя в виде графика в пейволе. Пользователи могут перетаскивать ползунок по графику, чтобы увидеть вес для любой недели."
+metadataTitle: "Показать интерактивный график цели по весу в пейволе | Флоу и пейволы | Документация Adapty"
+---
+
+Следуйте этому рецепту, чтобы отображать прогнозируемый вес пользователя в виде графика в флоу пейвола. Пользователь вводит текущий и целевой вес в онбординговом флоу. Ваше приложение собирает оба значения. График показывает еженедельный прогресс, которого пользователь может ожидать с вашим приложением, — от одного значения к другому. Приложение отображает график как нативный Swift Charts view в [кастомном элементе](flow-custom-elements).
+
+:::tip
+Этот рецепт распространяется только на iOS-приложения. В приложениях, созданных с помощью других фреймворков, отображается только [резервный контент](flow-custom-elements#set-fallback-content) кастомных элементов. Поддержка Android и кросс-платформенных фреймворков появится в будущем.
+:::
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="Готовый пейвол: пользователь перетаскивает ползунок по графику, и метка показывает прогнозируемый вес для каждой недели вплоть до целевого веса 72 кг." />
+
+## Перед началом работы \{#before-you-start\}
+
+- Обновите приложение до Adapty iOS SDK 4.4 или выше. Более ранние версии SDK показывают [резервный контент](flow-custom-elements#set-fallback-content) для каждого кастомного элемента.
+- Настройте приложение для [получения](get-pb-paywalls) и [отображения](ios-present-paywalls) флоу.
+- Создайте два отдельных флоу — один для онбординга, другой для пейвола. Добавьте каждый в [плейсмент](placements). Код в этом рецепте получает флоу пейвола из плейсмента с ID `weight_paywall`.
+
+## 1. Запросите текущий и целевой вес в онбординге \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+В Flow & Paywall Builder добавьте два поля [**Number**](builder-inputs-and-forms) в онбординг-флоу:
+
+- Одно для текущего веса в килограммах с **Element ID** `weight`.
+- Одно для целевого веса в килограммах с **Element ID** `goal_weight`.
+
+Чтобы ваше приложение одинаково считывало веса во всех локалях, выберите **Integer** в выпадающем списке **Format** для обоих полей ввода. Поле ввода отправляет значение в приложение в виде текста, точно в том виде, как его напечатал пользователь. Код из этого рецепта по-разному обрабатывает «70.5» и «70,5». Целые числа не имеют десятичного разделителя.
+
+Чтобы приложение гарантированно получило оба значения, завершите флоу онбординга экраном без полей ввода. На этом экране добавьте кнопку с действием [**Close flow**](onboarding-actions#close-flow). Поля ввода отправляют свои значения, когда теряют фокус или когда пользователь переходит на другой экран.
+
+## 2. Добавьте пользовательский элемент на экран пейвола \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+В флоу пейвола [добавьте пользовательский элемент](flow-custom-elements#add-and-configure) на экран и настройте его для графика:
+
+- **Type**: `line_chart`.
+- **ID**: `weight_goal`.
+- **Height**: Оставьте высоту **Fixed** по умолчанию. График заполнит пользовательский элемент.
+
+Не помещайте пользовательский элемент в контейнеры, реагирующие на касание, например в карусель. Иначе перетаскивание по графику будет также перемещать карусель.
+
+Внутри кастомного элемента добавьте [**Image**](custom-media#image) с примером графика веса. Пользователи увидят его как [резервный контент](flow-custom-elements#set-fallback-content), если версия их приложения не поддерживает отображение графика.
+
+## 3. Сохраните текущий и целевой вес в приложении \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+Собирайте текущий и целевой вес из событий `flow_user_input` онбординг-флоу, как описано в разделе [Обработка данных из флоу](ios-flow-input). Чтобы определить, что пользователь достиг последнего экрана, отслеживайте событие `flow_screen_showed` с `is_last_screen` равным `true`. Когда онбординг-флоу закрывается после этого экрана, передайте оба значения веса в метод `showWeightPaywall`, который [открывает пейвол-флоу с графиком](#5-match-the-chart-to-the-custom-element).
+
+Следующий код предназначен для UIKit. Один контроллер представления является делегатом обоих флоу. Он также должен реализовывать методы покупки и восстановления протокола `AdaptyFlowControllerDelegate`. В этом примере они опущены. Чтобы их увидеть, перейдите к разделу [Отображение флоу и пейволов в UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+private var enteredWeights: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    enteredWeights[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset the entered
+    // weights whenever a flow disappears, so that the paywall doesn't open
+    // again when the user closes it.
+    let weights = enteredWeights
+    let finished = reachedLastScreen
+    enteredWeights.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings
+    guard finished,
+          let currentWeight = weights["weight"].flatMap({ Double($0) }),
+          let goalWeight = weights["goal_weight"].flatMap({ Double($0) })
+    else { return }
+
+    Task {
+        await showWeightPaywall(currentWeight: currentWeight, goalWeight: goalWeight)
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+В SwiftUI используйте замыкания `didReceiveAnalyticEvent` и `didDisappear` модификатора `.flow` вместо методов делегата. Отображайте флоу пейвола с помощью второго модификатора `.flow`.
+
+## 4. Создайте представление графика \{#create-the-chart-view\}
+
+Создайте модель плана похудения и SwiftUI-представление с графиком. В плане одна запись на неделю — от текущего веса до целевого. Когда пользователь проводит пальцем по графику, представление отмечает неделю в точке касания и показывает прогнозируемый вес для этой недели:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+В плане предполагается, что вес меняется на 0,5 кг в неделю. Чтобы изменить темп, отредактируйте `weeklyChange`.
+
+Перетаскивание по графику требует iOS 17 или новее. На iOS 16 пользователи видят линию, но не могут перетаскивать по ней.
+
+## 5. Сопоставьте график с кастомным элементом \{#match-the-chart-to-the-custom-element\}
+
+Напишите [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), который возвращает вью с графиком для типа `line_chart` и ID `weight_goal`. Сохраните план веса как свойство resolver-а:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 16.0, *) // the chart needs iOS 16
+struct WeightChartResolver: AdaptyUICustomElementsResolver {
+    let plan: WeightPlan
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        guard type == "line_chart", id == "weight_goal" else {
+            return nil // another custom element: show the fallback
+        }
+        return AnyView(WeightGoalChart(entries: plan.entries))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Прикрепите resolver к флоу пейвола при получении его конфигурации. Создайте resolver с планом веса на основе текущего и целевого веса:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
+    let plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+    do {
+        let flow = try await Adapty.getFlow(placementId: "weight_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: WeightChartResolver(plan: plan)
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Если в вашем приложении задан [общий resolver для всего приложения](ios-flow-custom-elements#set-an-app-wide-resolver), этот resolver заменяет его во флоу пейвола. `WeightChartResolver` возвращает `nil` для любых других Type и ID, поскольку флоу пейвола в данном рецепте не содержит других кастомных элементов. Если в вашем флоу пейвола есть другие кастомные элементы, передайте общий resolver в этот. Затем вызывайте общий resolver для их Types и IDs, как описано в разделе [Привязать resolver к одному флоу](ios-flow-custom-elements#attach-a-resolver-to-one-flow).
+
+## 6. Протестируйте на устройстве \{#6-test-on-a-device\}
+
+Flow & Paywall Builder не может выполнять код вашего приложения, поэтому на холсте отображается только резервный вариант. Чтобы посмотреть график:
+
+1. [Опубликуйте оба флоу](builder-save-publish). Чтобы видеть последние опубликованные версии вместо закэшированных, зарегистрируйте устройство как [тестовое](test-devices).
+2. Запустите сборку приложения с резолвером на iOS 17 или новее. Пройдите флоу онбординга, указав текущий и целевой вес. Убедитесь, что линия графика начинается с текущего веса и заканчивается на целевом.
+3. Проведите пальцем по графику и убедитесь, что прогнозируемый вес для недели под пальцем отображается над линией.
+
+Чтобы протестировать резервный вариант, удалите аргумент `customElementsResolver` из вызова `getFlowConfiguration` и снова откройте флоу пейвола.
+
+Чтобы разобраться, почему вместо графика отображается резервный вариант, следуйте инструкциям из раздела [Тест на устройстве](ios-flow-custom-elements#test-on-a-device) в руководстве для iOS.
