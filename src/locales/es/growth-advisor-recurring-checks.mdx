@@ -1,0 +1,98 @@
+---
+title: "Programar comprobaciones periódicas"
+description: "Haz que tu agente de IA compruebe el estado de tu app y tus pruebas A/B en curso según un calendario con el skill growth-advisor, y envía el informe a Slack, correo electrónico o el chat de tu agente."
+metadataTitle: "Programar comprobaciones periódicas | AI Growth Advisor | Documentación de Adapty"
+---
+
+El [skill growth-advisor](export-analytics-with-ai) puede revisar tu aplicación automáticamente cada semana: si los ingresos están en su nivel habitual y si una prueba A/B en curso está lista para tomar una decisión. La revisión se ejecuta como una tarea programada en tu agente de IA. Cada ejecución lee tus datos de Adapty e informa de los cambios, ya sea en tu agente o en un lugar que tu equipo ya consulta, como un canal de Slack. Una ejecución no cambia nada en tu cuenta hasta que respondes a su informe.
+
+:::note
+Una comprobación es una tarea en el planificador de tu agente de IA, no una configuración en Adapty. Se ejecuta solo mientras tu agente pueda ejecutar tareas programadas, por ejemplo mientras tu ordenador está encendido, o en la nube si tu agente lo admite.
+:::
+
+## Verificaciones que puedes programar \{#checks-you-can-schedule\}
+
+| Verificación | Programación predeterminada | Qué dice el informe |
+|---|---|---|
+| **Estado de salud de tu app** | Cada lunes a las 9:00 | Cómo han ido los últimos 7 días comparados con una semana normal: ingresos, nuevas suscripciones de pago, nuevos trials, instalaciones y reembolsos, con un veredicto al inicio. También lista todo lo que tengas pendiente en tu [backlog](autopilot), como una prueba que terminó sin resultado. La verificación mensual compara los últimos 28 días con los 28 anteriores. |
+| **Una prueba A/B** | Cada lunes y jueves a las 9:00 | Si la prueba está **Not ready yet**, **Ready to decide**, o si **Something changed** desde que se configuró la verificación, como un grupo, un peso o su audiencia. Para cada grupo, cuánto le falta para llegar a unas 200 compras. El líder solo se nombra una vez que se ha estabilizado. |
+| **Todas las pruebas A/B activas** | Cada lunes a las 9:00 | Un bloque por cada prueba A/B de paywall o flow activa, primero las que están listas para decidir: su placement, días en ejecución, compras por grupo y si ya hay un líder estabilizado. |
+
+Tú decides el horario. Los valores predeterminados son los que el skill sugiere cuando no especificas nada.
+
+Una verificación de una prueba A/B termina con la prueba. Una vez que la prueba se detiene y su hipótesis tiene un resultado, el informe indica que la verificación no tiene nada más que hacer y nombra la tarea a eliminar.
+
+<AgentChat title="Adapty: health for Snapshot" caption="Ejemplo de informe de una verificación semanal de una app de muestra. Tus números serán distintos.">
+<ChatTurn role="agent">
+
+**Los ingresos han estado un 22% por debajo de su nivel habitual desde el 3 de marzo, unos 9.000 $ hasta ahora, y todo es de Google Play.**
+
+| | Últimos 7 días | Semana habitual | Cambio |
+|---|---|---|---|
+| Ingresos | $31.2k | $40.0k | **−22%** |
+| Nuevas suscripciones de pago | 410 | 425 | −4% |
+| Nuevos trials | 1.180 | 1.210 | −2% |
+| Instalaciones | 24,1k | 24,6k | −2% |
+| Reembolsos | $610 | $590 | +3% |
+
+Los usuarios siguen llegando con normalidad, así que la pérdida de ingresos está en las renovaciones o en los pagos de una store concreta.
+
+Pendiente en tu backlog: "Anual a $33,99 en onboarding" está listo para decidir.
+
+**Próximos pasos**
+
+1. Tú: ¿se publicó algo en Google Play alrededor del 3 de marzo?
+2. Averiguar por qué cayeron los ingresos de Google Play.
+
+</ChatTurn>
+</AgentChat>
+
+## Configurar una verificación \{#set-up-a-check\}
+
+Para configurar una verificación, pregunta a tu agente, por ejemplo:
+
+```
+Check my app every Monday and tell me if something is off.
+
+Tell me when my onboarding A/B test is ready to decide.
+
+Send a weekly report on my running A/B tests to the #growth channel in Slack.
+```
+
+El skill también propone una verificación por su cuenta: tras un [health check](export-analytics-with-ai#health-check) y después de vincular una prueba A/B activa con su hipótesis. Si ya existe una verificación para la misma app y tu agente puede listar sus tareas, el skill ofrece modificar esa verificación en lugar de añadir una segunda.
+
+Antes de crear la tarea, el skill pregunta dos cosas:
+
+1. **Con qué frecuencia**: Mantén la programación predeterminada o define la tuya.
+2. **Dónde van los informes**: Por defecto, el informe aparece donde tu agente muestra una ejecución programada, como su chat o notificaciones. Para publicar informes en otro lugar, conecta una herramienta que pueda enviar mensajes o escribir páginas, como Slack, correo electrónico, Teams, Notion o Linear, en los ajustes de conectores o MCP de tu agente. Luego indica el canal exacto, la dirección o la página. El skill nunca elige uno por ti.
+
+El skill crea entonces la tarea con la herramienta de programación propia de tu agente y la nombra según la verificación, por ejemplo `Adapty: health for Snapshot` o `Adapty: tests for Snapshot`.
+
+### Dónde se ejecuta la verificación \{#where-the-check-runs\}
+
+- **En tu ordenador**: La verificación usa tu sesión de Adapty y tus conectores en este equipo.
+- **En otro equipo o en la nube**: Establece la variable de entorno `ADAPTY_TOKEN` con tu [token de Adapty CLI](developer-cli-authentication), y conecta también la herramienta de informes allí. El skill nunca incluye un token en el prompt de la tarea.
+
+Si una ejecución no puede acceder a tu cuenta de Adapty, el informe completo se reduce a una sola línea que te pide que vuelvas a iniciar sesión en ese equipo o que establezcas `ADAPTY_TOKEN` donde se ejecuta la verificación.
+
+### Si tu agente no tiene programador de tareas
+
+El skill te proporciona el prompt de la comprobación para guardarlo como archivo, y una línea para el programador de tareas de tu sistema, como cron. La línea ejecuta tu agente en modo no interactivo con ese prompt y añade cada informe a un archivo de tu elección. Para Claude Code, la línea tiene este aspecto:
+
+```bash
+0 9 * * 1 cd ~/my-app && claude -p "$(cat adapty-weekly-health.txt)" --allowedTools "Bash" >> ~/adapty-checks.md
+```
+
+Other agents have their own non-interactive mode, such as `codex exec` or `gemini -p`. The run needs permission to run shell commands without asking, and each agent names that permission differently: see your agent's docs.
+
+## Actúa sobre un informe \{#act-on-a-report\}
+
+Una ejecución solo lee. No sugiere nuevas hipótesis ni cambia nada hasta que tú respondas. Cada acción que el agente puede realizar por ti aparece en **Próximos pasos** como una pregunta a la que puedes responder sí, como "¿Detener la prueba y mantener Annual 2?". Los pasos que solo tú puedes realizar empiezan con "You:".
+
+Para actuar sobre un informe, respóndelo en tu agente: en el chat de la ejecución programada, o pegando el informe en un nuevo chat. Un informe publicado en Slack o por correo electrónico no puede responderse desde allí, por lo que su última línea indica dónde responder.
+
+Una vez que respondas, el agente funciona como en cualquier conversación con el skill. Primero vuelve a leer la prueba A/B y el placement, porque el informe puede tener días de antigüedad. Cada cambio espera tu confirmación: detener una prueba, marcar una hipótesis como ganadora, perdedora o no concluyente, o vincular una nueva prueba.
+
+## Cambiar o detener una verificación \{#change-or-stop-a-check\}
+
+Para cambiar la frecuencia de una verificación o el destino de sus informes, consulta al agente que la configuró. Para detenerla, elimina su tarea en el planificador de tu agente o elimina la línea de cron.
