@@ -318,7 +318,7 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **H4 (####)** sparingly — only to hide minor subsections from TOC
 - **Never deeper than H4** — restructure instead
 - **Consistent style within an article**: If sibling task headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase for another task ("Analytics integration"). Pick one pattern and maintain it. Exception: a reference section among task sections keeps its noun phrase ("Limitations", "Configuration options"); a reference section never takes a task heading.
-- **Prefer action-oriented** headings for task/procedure sections. Name the action when it is what the reader came to do (`Create a placement`). Name the goal when the action only serves it: `Display the animation in the custom element`, not `Attach the resolver when you fetch the flow`.
+- **Prefer action-oriented** headings for task/procedure sections. To choose which action to name, apply the heading test **The reader's goal** in step 2 of the planning process.
 - **Use noun phrases** for concept/reference sections: Configuration options, System requirements, General requirements
 
 ### Introduction
