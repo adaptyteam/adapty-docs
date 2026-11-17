@@ -34,7 +34,8 @@ outcomes.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| autopilot | entry | marketer | 6 | tutorial |
+| autopilot | entry | marketer | 7 | tutorial |
+| growth-advisor-recurring-checks | how-to | marketer | 6 | tutorial |
 | predicted-ltv-and-revenue | — | marketer | 9 | tutorial |
 | predictions-in-ab-tests | — | marketer | 5 | tutorial |
 <!-- /mill:auto -->
@@ -76,6 +77,17 @@ forecasts — and a ticket saying only "predictions are wrong" has to be disambi
 | "trial vs non-trial test looks wrong", "yearly vs weekly test takes forever" | `predictions-in-ab-tests` — this comparison bias is the reason the forecast exists: observed revenue ignores active trials and long periods that haven't renewed yet. |
 
 ## Gaps and misses
+
+- **2026-11-17:** sidebar: AI Growth Advisor is a category again (landing `autopilot`), with
+  `export-analytics-with-ai` (label "Audit your app with AI") and `growth-advisor-recurring-checks`
+  as children; the "Use Adapty with AI agents" section keeps a link item to the skill article.
+  `growth-advisor-recurring-checks` documents the skill's scheduled checks (adapty-skills
+  `references/recurring-checks.md`, 2026-11-17): app health, one A/B test, every running A/B test;
+  reads only until the user answers. `ADAPTY_TOKEN` for checks off the user's machine is not
+  documented on `developer-cli-authentication` (grep of `src/content/docs` for ADAPTY_TOKEN,
+  2026-11-17: only the new article) — open: how a user gets the token value.
+- **2026-11-17:** screenshots `ai-growth-advisor-hypotheses.webp`, `-completed.webp`, `-empty.webp`
+  are mock-data stills with an overridden hypotheses list; retake with the mock-screenshots skill.
 
 - **2026-11-17:** `autopilot` rewritten for the hypothesis list; `autopilot-analysis`,
   `autopilot-growth-plan`, `autopilot-execute-plan` and `autopilot-how-it-works` deleted with their
