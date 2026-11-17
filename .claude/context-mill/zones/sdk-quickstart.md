@@ -172,13 +172,13 @@ The "Get started" category of each platform SDK's sidebar: installing the SDK, a
 | react-native-quickstart-identify | — | dev | 7 | react-native |
 | react-native-quickstart-paywalls | — | dev | 6 | react-native |
 | react-native-sdk-overview | entry | dev | 3 | react-native |
-| sdk-installation-android | — | dev | 14 | android |
+| sdk-installation-android | — | dev | 15 | android |
 | sdk-installation-capacitor | — | dev | 13 | capacitor |
-| sdk-installation-flutter | — | dev | 13 | flutter |
+| sdk-installation-flutter | — | dev | 14 | flutter |
 | sdk-installation-ios | — | dev | 12 | ios |
 | sdk-installation-kotlin-multiplatform | — | dev | 14 | kmp |
-| sdk-installation-react-native-expo | — | dev | 14 | react-native |
-| sdk-installation-react-native-pure | — | dev | 14 | react-native |
+| sdk-installation-react-native-expo | — | dev | 15 | react-native |
+| sdk-installation-react-native-pure | — | dev | 15 | react-native |
 | sdk-installation-reactnative | entry | dev | 0 | react-native |
 | sdk-installation-unity | — | dev | 14 | unity |
 | unity-check-subscription-status | — | dev | 5 | unity |

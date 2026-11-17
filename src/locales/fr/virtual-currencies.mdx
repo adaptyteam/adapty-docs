@@ -35,6 +35,59 @@ Pour un guide complet — de la configuration de la devise à l'utilisation des 
 Pour les allocations d'abonnement, activez l'[expiration des crédits](create-virtual-currency#link-products). Quand les crédits inutilisés sont réinitialisés à chaque renouvellement, l'allocation reste une raison de conserver l'abonnement, et les utilisateurs intensifs achètent des packs de crédits plutôt que d'épuiser un stock accumulé.
 :::
 
+## Étiqueter les transactions \{#label-transactions\}
+
+Lorsque votre backend accorde ou dépense des crédits via [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction), étiquetez chaque transaction pour indiquer ce qu'elle représente et à quoi les crédits sont destinés. Avec `operation`, vous pouvez distinguer les dépenses des bonus, remboursements et corrections dans l'historique des transactions. Avec `feature`, vous pouvez voir ce sur quoi les utilisateurs dépensent leurs crédits et ce pour quoi vous les accordez.
+
+Tous les champs d'étiquetage sont facultatifs. Vous ne pouvez pas ajouter d'étiquettes à une transaction après qu'Adapty l'a enregistrée, donc étiquetez dès votre premier appel. Une transaction envoyée sans étiquettes est enregistrée avec `operation: null`.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### Opération \{#operation\}
+
+La plupart des intégrations utilisent ces valeurs `operation` :
+
+| Valeur | Quand l'utiliser |
+|-------|----------------|
+| `spend` | L'utilisateur dépense des crédits pour une fonctionnalité ou du contenu. |
+| `spend_reversal` | Vous restituez des crédits suite à une action échouée, par exemple une génération ratée. |
+| `reward` | Vous accordez un bonus, une récompense ou une compensation de support. |
+| `reward_reversal` | Vous reprenez une récompense. |
+
+Adapty définit `operation` sur les transactions qu'il crée : les achats, renouvellements et essais reçoivent `top_up`, les remboursements du store reçoivent `refund`, et les crédits expirés reçoivent `expiry`. Pour la liste complète des valeurs, consultez [Créer une transaction de monnaie virtuelle](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Fonctionnalité \{#feature\}
+
+`feature` désigne ce pour quoi les crédits ont été dépensés ou accordés : un mot composé de lettres, de chiffres et de `_`, suivi optionnellement d'un sous-type après un point. Adapty le stocke tel quel, en respectant la casse, donc `photoFilter` et `photofilter` sont deux fonctionnalités distinctes.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter` : contient un espace.
+- ❌ `photo_filter.vintage.v2` : a deux niveaux de sous-type.
+- ❌ `pack_499`, `premium_tier` : inclure un prix ou un niveau dans le nom divise une fonctionnalité en plusieurs parties dès que les prix ou niveaux changent. Évitez prix, niveaux, versions et variantes dans `feature`.
+
+Pour le bonus, utilisez le nom du programme, par exemple `welcome`, `daily_bonus`, `referral` ou `support_compensation`.
+
+### Autres champs
+
+- **`reference_id`** : L'identifiant de l'objet associé dans votre système, jusqu'à 128 caractères. Utilisez-le pour relier un `spend_reversal` au `spend` qu'il annule, ou un `reward` à l'action pour laquelle il a été accordé. N'y mettez pas de données personnelles.
+- **`customer_placement_id`** : L'identifiant de l'écran dans votre application où l'opération a eu lieu. Il s'agit de votre propre identifiant, pas d'un identifiant de [placement](placements) Adapty.
+- **`store` et `store_transaction_id`** : Envoyez-les ensemble lorsque votre backend crédite des coins pour un achat. Adapty ne vérifie pas que l'achat existe. Si l'achat est remboursé dans le store, Adapty reprend les coins crédités avec cette référence.
+- **`is_sandbox`** : Envoyez `true` pour les crédits accordés lors de vos tests. Pour les transactions en store, Adapty le définit à partir de l'environnement de l'achat.
+
+:::warning
+Ne créditez pas les pièces pour un produit [lié à la devise](create-virtual-currency#link-products) dans Adapty. Adapty crédite déjà ces achats, donc un crédit depuis votre backend donnerait les crédits deux fois à l'utilisateur.
+:::
+
+Les transactions créées avant le 12 novembre 2026, date à laquelle le marquage est devenu disponible, conservent leurs données : Adapty a rétroactivement marqué ses propres transactions, et vos transactions API antérieures à cette date restent avec `operation: null`. `metadata` est inchangé et accepte toujours les clés dont vous avez besoin.
+
 ## Limitations \{#limitations\}
 
 - **L'accès multi-appareils nécessite une identification** : un solde appartient à un seul profil. Un utilisateur anonyme ne conserve son solde que sur l'installation où il l'a gagné ; il est donc perdu en cas de réinstallation ou d'ouverture sur un autre appareil. Identifiez vos utilisateurs pour rendre un solde disponible sur tous les appareils et après chaque réinstallation. Voir [Soldes, profils et appareils](virtual-currency-balance#balances-profiles-and-devices).

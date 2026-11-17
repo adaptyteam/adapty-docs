@@ -1,0 +1,256 @@
+---
+title: "ペイウォールでインタラクティブな体重目標チャートを表示する"
+description: "ペイウォールフローでユーザーごとの予測体重をチャートで表示します。ユーザーはチャート上をドラッグして任意の週の体重を確認できます。"
+metadataTitle: "ペイウォールでインタラクティブな体重目標チャートを表示する | フローとペイウォール | Adapty ドキュメント"
+---
+
+レシピに従って、ペイウォールフローでユーザーの予測体重をチャートとして表示しましょう。ユーザーはオンボーディングフローで現在の体重と目標体重を入力します。アプリは両方の値を収集します。チャートには、アプリを使って一方の値からもう一方の値へと期待できる毎週の進捗が表示されます。アプリはチャートをネイティブの Swift Charts ビューとして[カスタム要素](flow-custom-elements)にレンダリングします。
+
+:::tip
+このレシピはiOSアプリのみに対応しています。他のフレームワークで作成されたアプリは、カスタム要素の[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)のみを表示します。Androidおよびクロスプラットフォームフレームワークへのサポートは近日公開予定です。
+:::
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="完成したペイウォール：ユーザーがチャート上をドラッグすると、目標体重72kgまで毎週の予測体重を示すラベルが表示されます。" />
+
+## 始める前に \{#before-you-start\}
+
+- アプリを Adapty iOS SDK 4.4 以降にアップデートしてください。それより古いバージョンの SDK では、すべてのカスタム要素に[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)が表示されます。
+- アプリでフローを[取得](get-pb-paywalls)・[表示](ios-present-paywalls)できるよう設定してください。
+- オンボーディング用とペイウォール用に、それぞれ別のフローを作成してください。それぞれを[プレースメント](placements)に追加します。このレシピのコードは、ID が `weight_paywall` のプレースメントからペイウォールフローを取得します。
+
+## 1. オンボーディングフローで現在の体重と目標体重を入力してもらう \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+フロー＆ペイウォールビルダーで、オンボーディングフローに2つの[**Number** 入力](builder-inputs-and-forms)を追加します：
+
+- 現在の体重（キログラム）を入力するもの（**Element ID** は `weight`）
+- 目標体重（キログラム）を入力するもの（**Element ID** は `goal_weight`）
+
+すべてのロケールでウェイトを同じように読み取るには、両方の入力フィールドの **Format** ドロップダウンから **Integer** を選択してください。入力フィールドは、ユーザーが入力したテキストをそのままアプリに送信します。このレシピのコードでは、"70.5" と "70,5" は異なる値として読み取られます。整数には小数点区切り文字がないため、この問題は発生しません。
+
+アプリが両方の値を確実に受け取れるようにするには、入力フィールドのないスクリーンでオンボーディングフローを終了してください。そのスクリーンに、[**Close flow**](onboarding-actions#close-flow) アクションを設定したボタンを追加します。入力フィールドは、フォーカスが外れたとき、またはユーザーが別のスクリーンに移動したときに値を送信します。
+
+## 2. ペイウォール画面にカスタム要素を追加する \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+ペイウォールフローで、画面に[カスタム要素を追加](flow-custom-elements#add-and-configure)し、チャート用に次のように設定します。
+
+- **Type**: `line_chart`
+- **ID**: `weight_goal`
+- **Height**: デフォルトの **Fixed** 高さのままにします。チャートはカスタム要素全体を埋めます。
+
+カスタム要素は、カルーセルなどのタッチに反応するコンテナの中に配置しないでください。そうしないと、チャート上でドラッグするとカルーセルも動いてしまいます。
+
+カスタム要素の中に、体重チャートのサンプル画像として [**Image**](custom-media#image) を追加します。アプリのバージョンがチャートを表示できない場合、ユーザーはこれを[フォールバック](flow-custom-elements#set-fallback-content)として見ることになります。
+
+## 3. アプリに現在の体重と目標体重を保存する \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+オンボーディングフローの `flow_user_input` イベントから現在の体重と目標体重を収集します。方法は[フローからデータを処理する](ios-flow-input)を参照してください。ユーザーが最後の画面に到達したことを検知するには、`is_last_screen` が `true` に設定された `flow_screen_showed` イベントを監視します。その画面の後にオンボーディングフローが閉じたら、両方の体重を `showWeightPaywall`（[チャートをカスタム要素に対応させる](#5-match-the-chart-to-the-custom-element)ペイウォールフローを開くメソッド）に渡します。
+
+以下のコードはUIKit用です。1つのビューコントローラーが両方のフローのデリゲートとなります。また、`AdaptyFlowControllerDelegate` プロトコルの購入・リストアメソッドも実装する必要があります。この例ではそれらを省略しています。詳細は [UIKitでフローとペイウォールを表示する](ios-present-paywalls#present-flows-and-paywalls-in-uikit) を参照してください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+private var enteredWeights: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    enteredWeights[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset the entered
+    // weights whenever a flow disappears, so that the paywall doesn't open
+    // again when the user closes it.
+    let weights = enteredWeights
+    let finished = reachedLastScreen
+    enteredWeights.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings
+    guard finished,
+          let currentWeight = weights["weight"].flatMap({ Double($0) }),
+          let goalWeight = weights["goal_weight"].flatMap({ Double($0) })
+    else { return }
+
+    Task {
+        await showWeightPaywall(currentWeight: currentWeight, goalWeight: goalWeight)
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+SwiftUI では、デリゲートメソッドの代わりに `.flow` モディファイアの `didReceiveAnalyticEvent` クロージャと `didDisappear` クロージャを使用します。ペイウォールフローを表示するには、2つ目の `.flow` モディファイアを使用します。
+
+## 4. チャートビューを作成する \{#create-the-chart-view\}
+
+体重プランのモデルと、チャートを含む SwiftUI ビューを作成します。プランには現在の体重から目標体重まで、1 週間ごとのエントリが含まれます。ユーザーがチャート上をドラッグすると、タッチポイントの週がマークされ、その週の予測体重が表示されます。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+このプランでは、体重が1週間あたり0.5 kgずつ変化すると仮定しています。別のペースを使用するには、`weeklyChange` を編集してください。
+
+チャート上でのドラッグ操作にはiOS 17以降が必要です。iOS 16では、ユーザーはラインを見ることはできますが、ドラッグはできません。
+
+## 5. カスタム要素にチャートを対応付ける \{#5-match-the-chart-to-the-custom-element\}
+
+`line_chart` タイプおよび `weight_goal` IDに対してチャートビューを返す[リゾルバー](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)を記述します。ウェイトプランはリゾルバーのプロパティに保存してください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 16.0, *) // the chart needs iOS 16
+struct WeightChartResolver: AdaptyUICustomElementsResolver {
+    let plan: WeightPlan
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        guard type == "line_chart", id == "weight_goal" else {
+            return nil // another custom element: show the fallback
+        }
+        return AnyView(WeightGoalChart(entries: plan.entries))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+リゾルバーをペイウォールフローにアタッチするには、その設定を取得する際に行います。現在の体重と目標体重を使って、リゾルバーをウェイトプランとともに作成します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
+    let plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+    do {
+        let flow = try await Adapty.getFlow(placementId: "weight_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: WeightChartResolver(plan: plan)
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+アプリに[アプリ全体のリゾルバー](ios-flow-custom-elements#set-an-app-wide-resolver)が設定されている場合、このリゾルバーはペイウォールフロー内でそれを置き換えます。`WeightChartResolver` は他の Type と ID に対して `nil` を返します。このレシピのペイウォールフローには他のカスタム要素がないためです。ペイウォールフローに他のカスタム要素がある場合は、アプリ全体のリゾルバーをこのリゾルバーに渡してください。そして、[1つのフローにリゾルバーをアタッチする](ios-flow-custom-elements#attach-a-resolver-to-one-flow)の説明に従い、それらの Type と ID に対してアプリ全体のリゾルバーを呼び出してください。
+
+## 6. デバイスでテストする \{#6-test-on-a-device\}
+
+Flow & ペイウォールビルダーはアプリのコードを実行できないため、キャンバスにはフォールバックのみが表示されます。チャートをプレビューするには:
+
+1. [両方のフローを公開する](builder-save-publish)。キャッシュではなく最新の公開バージョンを確認するには、デバイスを[テストデバイス](test-devices)として登録してください。
+2. リゾルバーを含むアプリのビルドを iOS 17 以降で実行します。現在の体重と目標体重を入力してオンボーディングフローを完了します。チャートの線が現在の体重から始まり、目標体重で終わることを確認してください。
+3. チャート上をドラッグして、指の下の週の予測体重が線の上に表示されることを確認してください。
+
+フォールバックをテストするには、`getFlowConfiguration` の呼び出しから `customElementsResolver` 引数を削除し、ペイウォールフローを再度開いてください。
+
+フォールバックがチャートの代わりに表示される原因を調べるには、iOSガイドの[デバイスでテストする](ios-flow-custom-elements#test-on-a-device)セクションの手順に従ってください。

@@ -1,0 +1,235 @@
+---
+title: "Interroger les analyses depuis la CLI"
+description: "Lisez les analyses Adapty depuis le terminal : graphiques comme le chiffre d'affaires et le MRR, les conversions, l'entonnoir, la rétention, la LTV et les cohortes d'installation, sous forme de tableau, JSON ou CSV."
+metadataTitle: "Analyses dans la CLI développeur | Documentation Adapty"
+---
+
+Le CLI Adapty lit les [Analyses Adapty](analytics) depuis le terminal, sous la rubrique `adapty analytics`. Il renvoie les chiffres affichés dans le tableau de bord Analytics pour une application : les [graphiques](charts) tels que les revenus et le MRR, les [conversions](analytics-conversion), l'[entonnoir](analytics-funnels), la [rétention](analytics-retention), la [LTV](ltv) et les [cohortes d'installation](analytics-cohorts).
+
+Utilisez-le pour donner à un agent IA un accès en direct aux chiffres de votre application, pour intégrer un graphique dans un script ou une feuille de calcul, ou pour répondre à une question sans ouvrir le tableau de bord.
+
+Every `analytics` command is read-only and takes one app.
+
+## Avant de commencer \{#before-you-start\}
+
+Le topic `analytics` utilise la même installation et la même connexion que le reste du CLI. Si vous ne l'avez pas encore configuré, suivez les étapes 1 et 2 du [guide de démarrage rapide](developer-cli-quickstart). Ce topic nécessite la version 0.10.0 ou supérieure du CLI. Pour voir votre version, exécutez `adapty --version`.
+
+Contrairement à l'[API Export Analytics](export-analytics-api), le CLI n'a pas besoin de clé API secrète. Votre connexion CLI donne accès à toutes les applications auxquelles votre utilisateur Adapty a accès.
+
+Chaque commande prend l'UUID de l'application via `--app`. Pour le trouver, exécutez :
+
+```bash
+adapty apps list
+```
+
+## Créer une requête \{#build-a-query\}
+
+Construisez chaque requête dans le même ordre : trouvez les noms dans le catalogue, recherchez les valeurs de filtre, puis exécutez une commande de données.
+
+1. **Listez ce que l'analyse de l'application peut répondre**. Le catalogue répertorie chaque graphique avec son unité, chaque conversion, les regroupements et filtres acceptés par chaque commande, ainsi que les valeurs acceptées et les valeurs par défaut de chaque option :
+
+   ```bash
+   adapty analytics catalog --app <app-id>
+   ```
+
+   Les noms des graphiques et des conversions, tels que `revenue`, `mrr`, ou `trial-paid`, proviennent de cette liste. Le CLI ne tient pas sa propre liste, donc un graphique qu'Adapty ajoute ultérieurement fonctionnera sans mise à jour du CLI.
+
+2. **Recherchez les valeurs de filtre**. Ignorez cette étape si vous ne filtrez pas. Par exemple, pour lister les pays disponibles comme filtres :
+
+   ```bash
+   adapty analytics values --app <app-id> --dimension country
+   ```
+
+3. **Exécutez la commande de données** :
+
+   ```bash
+   adapty analytics chart --app <app-id> --chart revenue \
+     --date-from 2026-07-01 --date-to 2026-09-30 --group-by country
+   ```
+
+La réponse comporte une ligne pour le total, puis une ligne pour chaque groupe.
+
+### Exemples
+
+MRR ce trimestre, comparé au trimestre précédent :
+
+```bash
+adapty analytics chart --app <app-id> --chart mrr \
+  --date-from 2026-07-01 --date-to 2026-09-30 \
+  --compare-from 2026-04-01 --compare-to 2026-06-30
+```
+
+Conversion essai-vers-payant mensuelle dans deux pays :
+
+```bash
+adapty analytics conversion --app <app-id> --conversion trial-paid \
+  --date-from 2026-04-01 --date-to 2026-09-30 --granularity month --filter country=US,GB
+```
+
+Rétention par pays, comptée depuis l'essai :
+
+```bash
+adapty analytics retention --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --group-by country --use-trial
+```
+
+LTV après 7, 30 et 90 jours, sur les revenus après commission et taxes, enregistré dans un fichier CSV :
+
+```bash
+adapty analytics ltv --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --revenue-basis net --period-type days --renewal-days 7,30,90 --csv > ltv.csv
+```
+
+Cohortes d'installation hebdomadaires sur les revenus après commission du store :
+
+```bash
+adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --granularity week --revenue-basis proceeds
+```
+
+## Choisir le format de sortie \{#choose-the-output\}
+
+Chaque commande de données s'affiche dans l'un des trois formats suivants :
+
+| Sortie | Option | À utiliser pour |
+|---|---|---|
+| Table | Aucune | Lecture dans le terminal. Chaque table commence par un en-tête indiquant le nom du graphique, la période, le fuseau horaire et les filtres. Les montants ont 2 décimales. Certains champs sont omis, comme les raisons de churn des entonnoirs et les prédictions de cohortes, et une ligne sous la table l'indique. |
+| JSON | `--json` | Scripts et agents IA. La réponse de l'API, sans modification, avec tous les champs. |
+| CSV | `--csv` | Tableurs. Une ligne par groupe, avec tous les champs de la réponse. Une période de comparaison est intégrée dans les colonnes `compare.*` de la même ligne. |
+
+Vous ne pouvez pas utiliser `--csv` et `--json` ensemble.
+
+En JSON, le total est la première entrée de `data.segments`, et `data.value` correspond au nombre pour toute la période. `meta.query` affiche la requête qui s'est exécutée, avec toutes les valeurs par défaut renseignées et le fuseau horaire en vigueur.
+
+## Lire les résultats \{#read-the-results\}
+
+- **Dates** : `--date-from` et `--date-to` sont des jours inclusifs dans le [fuseau horaire de reporting](general) de l'application. Pour lire les données dans un autre fuseau horaire, passez un nom IANA dans `--timezone`, par exemple `Europe/Berlin`. `meta.query.timezone` indique le fuseau horaire en vigueur.
+- **Revenus** : `--revenue-basis` définit les valeurs monétaires utilisées : `gross` (par défaut), `proceeds` (après la commission du store) ou `net` (après commission et taxes). S'applique à `ltv`, `cohort` et aux graphiques affichant des montants. Le catalogue signale ces graphiques avec `takes revenue_basis`.
+- **Valeurs vides** : Une valeur vide signifie qu'Adapty ne dispose d'aucune donnée, jamais zéro. Une période LTV qu'une cohorte n'a pas encore atteinte est vide, tout comme une cohorte qui ne peut pas être prédite. Dans la sortie `--json`, ces valeurs sont `null`. Le tableau affiche `—` et le CSV laisse la cellule vide.
+- **La ligne de total** : Identifiez le total par `is_total`, non par une `key` vide. La `key` d'un groupe peut également être vide, par exemple pour le groupe d'utilisateurs sans pays.
+- **Clés de groupe** : La `key` d'un groupe n'est pas toujours une valeur acceptée par `--filter`. Pour filtrer, utilisez les valeurs issues de `analytics values`.
+- **Périodes comparées** : Seuls `chart` et `conversion` acceptent `--compare-from` et `--compare-to`. La période comparée possède son propre total et ses propres groupes, et le tableau l'affiche sous forme de second tableau.
+- **Chiffres d'attribution** : N'ajoutez pas ces chiffres aux chiffres d'[Attribution](developer-cli-attribution). Adapty les calcule différemment.
+
+Le CLI renvoie les mêmes chiffres que le tableau de bord, avec deux exceptions :
+
+- `funnel` applique le filtre `cancellation_reason`, que le funnel du tableau de bord ignore. Avec ce filtre, les deux chiffres peuvent différer.
+- `retention` propose une liste de regroupements différente de celle du tableau de bord. Consultez le catalogue pour obtenir la liste.
+
+## Limites \{#limits\}
+
+Chaque commande d'analyse accepte au maximum 2 requêtes par seconde par application et 360 requêtes par minute au total. Le CLI ne relance jamais une requête. Si vous envoyez des requêtes trop rapidement, la commande se termine avec le code 4. Avec `--json`, l'erreur inclut `retry_after_seconds` : attendez ce délai, puis relancez la commande.
+
+## Erreurs \{#errors\}
+
+Chaque erreur se termine par un code qui indique ce qu'il faut corriger :
+
+| Code de sortie | Cause | Que faire |
+|---|---|---|
+| 2 | La CLI a rejeté la saisie avant de l'envoyer : UUID d'application invalide, plage de dates malformée ou inversée, période comparée avec une extrémité manquante, `--renewal-days` sans `--period-type days`, un `--filter` sans `=`, ou `--csv` avec `--json`. | Corrigez le paramètre mentionné dans le message. |
+| 3 | Vous n'êtes pas connecté, ou votre utilisateur Adapty n'a pas accès à l'application. | Connectez-vous avec `adapty auth login`. Si vous êtes déjà connecté, retrouvez l'ID de l'application dans `adapty apps list`, qui ne liste que les applications auxquelles vous avez accès en lecture. |
+| 4 | Adapty a refusé la requête : graphique, conversion, regroupement, filtre ou fuseau horaire inconnu ; `--revenue-basis` sur un graphique qui n'affiche pas de données financières ; ou trop de requêtes. | Corrigez le nom à partir de `adapty analytics catalog`. Avec `--json`, l'erreur inclut le code d'erreur de l'API. En cas de trop nombreuses requêtes, consultez [Limites](#limits). |
+
+## Référence des commandes \{#command-reference\}
+
+Chaque commande de données accepte ces options :
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | UUID de l'app, obtenu via `adapty apps list`. |
+| `--date-from` | Oui | Premier jour de la période, inclus, au format `YYYY-MM-DD`. |
+| `--date-to` | Oui | Dernier jour de la période, inclus. Ne peut pas être antérieur à `--date-from`. |
+| `--filter` | Non | `dimension=value[,value]`. Conserve les données où la dimension correspond à l'une des valeurs. Répétez le flag pour filtrer sur plusieurs dimensions. Utilisez `\,` pour insérer une virgule dans une valeur. Une valeur vide est une valeur : `country=` conserve les données sans pays. |
+| `--timezone` | Non | Fuseau horaire IANA des jours, par exemple `Europe/Berlin`. Utilise le fuseau horaire de l'app si omis. |
+| `--csv` | Non | Affiche un tableau CSV au lieu du tableau lisible. Incompatible avec `--json`. |
+
+Chaque commande ajoute ses propres options à celles-ci.
+
+### `analytics catalog`
+
+Affiche ce à quoi les analyses de l'application peuvent répondre : chaque commande avec ses options, regroupements et filtres ; chaque graphique avec son unité ; chaque conversion ; et chaque dimension de filtre.
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--app` | Oui | UUID de l'application, obtenu via `adapty apps list`. |
+
+### `analytics values`
+
+Liste les valeurs que prend une dimension de filtre pour l'application. Chaque `value` correspond exactement à ce qu'accepte `--filter <dimension>=<value>`.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | UUID de l'application, obtenu via `adapty apps list`. |
+| `--dimension` | Yes | Une dimension de filtre issue de `adapty analytics catalog`. |
+
+### `analytics chart`
+
+Lit un [graphique](charts) : le nombre pour toute la période, ses points et ses groupes.
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--chart` | Oui | Nom d'un graphique tiré de `adapty analytics catalog`, par exemple `revenue` ou `mrr`. |
+| `--group-by` | Non | Un regroupement de ce graphique, issu du catalogue. |
+| `--granularity` | Non | Durée d'un point : `day`, `week`, `month` (par défaut), `quarter` ou `year`. |
+| `--revenue-basis` | Non | `gross` (par défaut), `proceeds` ou `net`. Uniquement pour les graphiques affichant des montants. |
+| `--compare-from` | Non | Premier jour de la période de comparaison. Nécessite `--compare-to`. |
+| `--compare-to` | Non | Dernier jour de la période de comparaison. Nécessite `--compare-from`. |
+
+### `analytics conversion`
+
+Lit une [conversion](analytics-conversion) : le taux en pourcentage, avec les deux compteurs qui le divisent, pour chaque point et groupe.
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--conversion` | Oui | Un nom de conversion issu de `adapty analytics catalog`, comme `trial-paid` ou `install-paid`. |
+| `--group-by` | Non | Un regroupement issu du catalogue. |
+| `--granularity` | Non | Durée d'un point : `day` (par défaut), `week`, `month`, `quarter` ou `year`. |
+| `--compare-from` | Non | Premier jour d'une période à comparer. Nécessite `--compare-to`. |
+| `--compare-to` | Non | Dernier jour d'une période à comparer. Nécessite `--compare-from`. |
+
+Lorsque la période ne contient aucune conversion, `meta.recommended_period` dans la sortie `--json` peut nommer une période qui en contient.
+
+### `analytics funnel`
+
+Lit le [funnel](analytics-funnels) : le nombre à chaque étape, de l'installation jusqu'aux renouvellements.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--group-by` | No | Un regroupement du catalogue. |
+
+### `analytics retention`
+
+Lit les données de [rétention](analytics-retention) : les abonnés restants à chaque période.
+
+| Indicateur | Requis | Description |
+|---|---|---|
+| `--group-by` | Non | Un regroupement parmi les options disponibles. |
+| `--use-trial` | Non | Compter depuis l'essai, et non depuis la première période payante. |
+
+### `analytics ltv`
+
+Lit la [LTV](ltv) : le revenu par utilisateur payant après chaque renouvellement ou chaque jour.
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--group-by` | Non | Un regroupement du catalogue. |
+| `--revenue-basis` | Non | `gross` (par défaut), `proceeds`, ou `net`. |
+| `--period-type` | Non | `renewals` (par défaut) compte par renouvellement. `days` compte par jour depuis l'installation. |
+| `--renewal-days` | Non | Jours à compter avec `--period-type days`, séparés par des virgules, dans l'ordre croissant, par exemple `7,30,90`. Uniquement avec `--period-type days`. |
+
+### `analytics cohort`
+
+Lit les [cohortes d'installation](analytics-cohorts) : les revenus, abonnés, moyennes et prédictions de chaque cohorte par renouvellement ou par jour. Chaque cohorte correspond à une ligne, et sa date de début est sa `key`. Les cohortes ne peuvent pas être groupées.
+
+| Flag | Obligatoire | Description |
+|---|---|---|
+| `--granularity` | Non | Durée d'une cohorte : `day`, `week`, `month` (défaut), `quarter` ou `year`. |
+| `--revenue-basis` | Non | `gross` (défaut), `proceeds` ou `net`. |
+| `--period-type` | Non | `renewals` (défaut) compte par renouvellement. `days` compte par jour depuis l'installation. |
+| `--renewal-days` | Non | Jours à comptabiliser avec `--period-type days`, séparés par des virgules, en ordre croissant. Uniquement avec `--period-type days`. |
+
+## Et maintenant ? \{#whats-next\}
+
+- [Comment fonctionne Adapty Analytics](how-adapty-analytics-works) — d'où viennent les chiffres.
+- [Contrôles, filtres et regroupement](controls-filters-grouping-compare-proceeds) — ce que signifient les filtres et les options de revenus dans le tableau de bord.
+- [Interroger l'attribution depuis la CLI](developer-cli-attribution) — dépenses, installations et ROAS par canal et campagne.

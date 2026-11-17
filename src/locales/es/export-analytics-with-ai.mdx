@@ -1,88 +1,210 @@
 ---
-title: "Pregunta a la IA sobre tus datos de analíticas"
-description: "Consulta tus analíticas de Adapty en lenguaje natural con un agente de codificación de IA, usando la API de Export Analytics."
-metadataTitle: "Pregunta a la IA sobre tus datos de analíticas | Documentación de Adapty"
-keywords: ['pregunta a la ia sobre analíticas', 'ia analíticas adapty', 'consultar analíticas con ia', 'api de export analytics', 'agente ia analíticas', 'mcp', 'llm']
+title: "Skill de agente para aumentar los ingresos"
+description: "Instala el skill growth-advisor para que tu herramienta de IA audite tus métricas y precios de Adapty frente al mercado, lea tus pruebas A/B anteriores y configure la siguiente."
+metadataTitle: "Skill de Agente Growth Advisor | Documentación de Adapty"
+keywords: ['preguntar a la ia sobre analytics', 'analytics de adapty con ia', 'consultar analytics con ia', 'adapty cli', 'agente de ia para analytics', 'mcp', 'llm']
 ---
 
-Pregunta a un agente de codificación con IA sobre tu analítica de Adapty en lenguaje natural — ingresos, conversiones, retención, LTV — y deja que obtenga los datos por ti. Apunta una herramienta que pueda hacer llamadas a la API hacia la [API de exportación de analítica](https://adapty.io/docs/es/export-analytics-api.md), y consultará tus métricas bajo demanda.
+El skill growth-advisor responde a "¿qué debería probar a continuación?" a partir de tus propios números de suscripción. Tu herramienta de código con IA lee tus analíticas, precios, placements, flows y pruebas A/B anteriores, puntúa cada parte de tu negocio frente al mercado y devuelve una lista corta de hipótesis ordenadas por el dinero que está en juego en cada una. Cuando eliges una, el skill construye lo que necesita la prueba A/B y configura el test.
 
-## Qué puedes consultar \{#what-you-can-ask-about\}
+:::note
+growth-advisor no cambia nada en tu cuenta sin tu confirmación. Cada lectura es de solo lectura, y cada escritura — una copia de flow, un segmento, un producto, un precio, una prueba A/B, un cambio en un placement — espera a que lo apruebes.
+:::
 
-La Export Analytics API devuelve las mismas métricas que ves en los gráficos del Adapty Dashboard. Cada métrica tiene su propia operación:
+## Qué puedes preguntar \{#what-you-can-ask\}
 
-| Métrica | Qué cubre | Operación |
-| --- | --- | --- |
-| Ingresos, MRR, ARR, ARPU | Dinero generado a lo largo del tiempo, agrupado por período, país o campaña | [retrieveAnalyticsData](https://adapty.io/docs/es/api-export-analytics/operations/retrieveAnalyticsData.md) |
-| Retención de cohortes | Cuánto tiempo siguen pagando los suscriptores de una cohorte determinada | [retrieveCohortData](https://adapty.io/docs/es/api-export-analytics/operations/retrieveCohortData.md) |
-| Tasas de conversión | Cuántos usuarios avanzan de un paso o canal al siguiente | [retrieveConversionData](https://adapty.io/docs/es/api-export-analytics/operations/retrieveConversionData.md) |
-| Churn y embudo | Dónde abandonan los usuarios y con qué rapidez se dan de baja | [retrieveFunnelData](https://adapty.io/docs/es/api-export-analytics/operations/retrieveFunnelData.md) |
-| Valor del ciclo de vida (LTV) | Ingresos medios por segmento de usuarios a lo largo del tiempo | [retrieveLTVData](https://adapty.io/docs/es/api-export-analytics/operations/retrieveLTVData.md) |
-| Retención | Porcentaje de usuarios que siguen activos tras un número determinado de días | [retrieveRetentionData](https://adapty.io/docs/es/api-export-analytics/operations/retrieveRetentionData.md) |
+Pregunta como si le explicaras algo a un compañero. No hace falta que menciones el skill:
 
-Para ver la lista completa de parámetros y filtros, consulta la [referencia de la API](https://adapty.io/docs/es/api-export-analytics.md).
+```
+Audit my app. What should I test next to grow revenue?
+
+Revenue dropped last month. Why?
+
+Is our annual plan too cheap in Germany?
+
+My A/B test on the onboarding paywall ended. What now?
+
+Where do users leave our onboarding?
+
+I have three ideas: a weekly plan, a trial on annual, and a second placement.
+Which one should I test first?
+
+Which country refunds the most, and do people who start a trial renew better?
+
+Here's our App Store link. Where are we losing money?
+```
+
+Una pregunta sobre tus números obtiene una respuesta de tus números, sin auditoría adjunta. Una app sin datos aún recibe un plan inicial basado en medianas del mercado del informe State of Paywalls 2026 de Adapty, con cada número etiquetado como estimación.
+
+<AgentChat title="growth-advisor" caption="Ejemplo de conversación con una app de muestra. Tus números serán diferentes.">
+<ChatTurn role="user">Los ingresos cayeron el mes pasado. ¿Por qué?</ChatTurn>
+<ChatTurn role="tool" summary="Ejecutó 4 comandos de solo lectura">
+
+- `adapty analytics chart --chart revenue --compare-from 2026-08-01 --compare-to 2026-08-31`
+- `adapty analytics chart --chart revenue --group-by store`
+- `adapty analytics chart --chart subscriptions_new --group-by store`
+- `adapty analytics chart --chart subscriptions_expired --group-by cancellation_reason`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**Los ingresos cayeron porque menos personas renovaron en Google Play, no porque menos personas compraran.**
+
+Las nuevas suscripciones se mantuvieron estables en septiembre. Las renovaciones en Google Play cayeron un tercio, mientras que en App Store no hubo cambios. La mayoría de las renovaciones perdidas corresponden a suscriptores mensuales cuyo pago falló.
+
+**Próximos pasos**
+
+1. Tú: ¿cambió algo en tu configuración de facturación de Google Play a principios de septiembre?
+2. Yo: sugerir hipótesis para recuperar a los suscriptores mensuales que se fueron. ¿Quieres que lo haga?
+
+</ChatTurn>
+</AgentChat>
 
 ## Antes de empezar \{#before-you-start\}
 
-Necesitas tres cosas:
+- **Una cuenta de Adapty con datos**: El skill lee los mismos análisis que muestra tu dashboard. Sin datos, te da un plan de partida. Sin cuenta, trabaja con lo que le envíes (consulta [Sin cuenta de Adapty](#without-an-adapty-account)).
+- **Una herramienta de IA que acceda a tu cuenta de Adapty**: El skill funciona a través de la [CLI de Adapty](developer-cli-analytics) o del [servidor MCP de Adapty](adapty-mcp). Prefiere la CLI, porque la auditoría realiza sus lecturas a través de ella. Usa un agente de código como Claude Code, Codex, Copilot CLI o Gemini CLI, o claude.ai, donde la CLI necesita [configuración en cada conversación](developer-cli-cowork). Solo con MCP, el skill ofrece configurar la CLI; si rechazas, realiza las lecturas por MCP e indica cuáles no se ejecutaron.
 
-- **Una cuenta de Adapty con datos**: La API devuelve las mismas métricas que los gráficos del dashboard, así que tu app ya debe recopilar analíticas.
-- **Una clave de API secreta**: Encuéntrala en [App settings → General](https://app.adapty.io/settings/general), en el campo **Secret key**. Las claves son específicas por app, así que usa una clave distinta para cada una. Guárdala en una variable de entorno (por ejemplo, `ADAPTY_SECRET_KEY`) para que tu agente pueda leerla sin que tengas que pegarla en el chat.
-- **Una herramienta de IA capaz de llamar APIs**: Por ejemplo, Claude Code, Cursor o Claude Desktop con una herramienta de fetch. Las herramientas de chat básicas como claude.ai o ChatGPT no pueden llamar a la API directamente.
+## Instala el skill \{#install-the-skill\}
 
-<ZoomImage id="export-analytics-secret-key.webp" width="700px" alt="Página de configuración general de la app en Adapty con la clave secreta de API en el campo Secret key" />
+growth-advisor es parte del [plugin de Adapty](manage-adapty-with-ai).
 
-## Dale a tu agente la especificación de la API \{#give-your-agent-the-api-spec\}
+<AdaptySkillsInstall />
 
-La [especificación OpenAPI](https://adapty.io/docs/es/api-specs/export-analytics-api.yaml) describe cada endpoint, la cabecera de autenticación, el cuerpo de la solicitud y ejemplos de respuesta. Una vez que tu agente tenga la especificación, construye solicitudes correctas sin que tengas que escribir ningún código.
+## Cómo funciona la auditoría \{#how-the-audit-works\}
 
-Dale a tu agente la especificación mediante la URL:
+Cuando preguntas qué hacer sin una pregunta concreta, el skill ejecuta una auditoría. Analiza todo el negocio durante los últimos seis meses, no solo lo que ha cambiado recientemente: una parte que ha estado débil todo el tiempo cuesta más que una bajada reciente.
 
-- **Pega la URL**: Si tu agente puede obtener URLs, dale `https://adapty.io/docs/es/api-specs/export-analytics-api.yaml` y pídele que lea la especificación.
-- **Usa una herramienta de fetch**: Si tu agente tiene una herramienta para recuperar URLs (por ejemplo, un servidor MCP de fetch), apúntala a la misma URL.
+1. **Cómo genera ingresos tu app**: El skill identifica el store que aporta el dinero, tu mercado principal, tu producto principal por ingresos y qué muestra cada placement en este momento.
+2. **Lo que ya has probado**: El skill lista tus pruebas A/B de paywalls y flows pasadas con sus fechas, audiencias y resultados, y detecta paywalls que se ejecutaron en paralelo sin ninguna prueba. No necesitas escribir tu historial de pruebas; la respuesta lo expone como hechos, así que solo corriges lo que sea incorrecto.
+3. **Una tarjeta de puntuación**: El skill evalúa cada parte del negocio como fuerte, típica o débil: de dónde viene el dinero, el embudo desde la instalación hasta el pago, la combinación de planes, las renovaciones, los reembolsos y la configuración de tus placements. Las conversiones se comparan con la tabla de referencia del mercado según tu plan, región y categoría, tomada del State of Paywalls 2026 de Adapty, y las renovaciones y reembolsos se contrastan con el State of In-App Subscriptions 2026 de Adapty. Las partes débiles se ordenan por los dólares mensuales en juego.
+4. **La causa**: El skill sigue la señal más importante desglosando por store, canal de atribución, duración del plan, país o semana hasta identificar el grupo que la explica. Antes de culpar al tráfico o a un cambio concreto, verifica las demás causas posibles.
+5. **Las pantallas**: Antes de decir nada sobre una pantalla, el skill renderiza el flow en vivo y, si es un flow, lee su embudo para encontrar la pantalla donde los usuarios abandonan. Un paywall que dibuja la propia app necesita una captura de pantalla. La auditoría lista las capturas que necesita bajo **Send me screenshots** e indica qué hipótesis desbloquea cada una.
 
-La especificación establece la URL base en `https://api-admin.adapty.io`, así que tu agente tiene todo lo que necesita una vez que tu clave esté en el entorno.
+## Lo que obtienes como respuesta \{#what-you-get-back\}
 
-## Pregunta sobre tus datos \{#ask-about-your-data\}
+El skill responde con una respuesta breve y el scorecard, seguido de una lista de hipótesis agrupadas por placement, en el orden en que deberías probarlas. Cada hipótesis explica por qué tu app la necesita, qué resultado esperar y de dónde proviene esa estimación, cuánto vale el cambio en dólares al mes, cuánto tiempo tardaría la prueba A/B con tu volumen de compras, y quién hace qué. Una hipótesis puede dirigirse a todos los usuarios de un placement o a un [segmento](segments) concreto, como antiguos suscriptores.
 
-Con la especificación cargada y tu clave en una variable de entorno, describe en lenguaje natural la métrica que necesitas.
+<AgentChat title="growth-advisor" caption="Ejemplo de conversación con una app de muestra. Tus números e hipótesis serán distintos.">
+<ChatTurn role="user">Audita mi app. ¿Qué debería probar a continuación para aumentar los ingresos?</ChatTurn>
+<ChatTurn role="tool" summary="Se ejecutaron las lecturas de auditoría">
 
-Ejemplos de prompts:
+- `adapty apps list`
+- `adapty analytics chart --chart revenue --group-by country`
+- `adapty analytics chart --chart revenue --group-by duration`
+- `adapty analytics conversion --conversion trial-paid --granularity month`
+- `adapty ab-tests list --type flow`
+- `adapty placements get <placement-id>`
+- `adapty product-prices list --product <product-id> --csv`
+- `adapty flows config get <flow-id>`
 
-```
-What was my MRR at the end of each month this year, and how does it compare to last year?
+</ChatTurn>
+<ChatTurn role="agent">
 
-Show my trial-to-paid conversion rate for the last 90 days, broken down by product.
+**Tu app convierte como una app típica de EE. UU.; un plan anual barato y las renovaciones perdidas te cuestan la mayor parte.**
 
-Which countries drive the most revenue from my yearly subscription? Top 10.
+| Parte | Tuyo | Contra | |
+|---|---|---|---|
+| Vista de paywall → pago | 3,1% | 2,75% mediana en EE. UU. | típico |
+| Prueba → pago | 29% | 26,2% mediana en EE. UU. | sólido |
+| Precio anual | **$29,99** | percentil 10, apps de fotos en EE. UU. | débil |
+| Primera renovación, mensual | 41% | 58% hace seis meses | débil |
 
-How is week-1 retention trending for subscribers who started in the last 6 months?
+El plan anual es más barato que el 90% de las apps de fotos en EE. UU., mientras que tu conversión está por encima de la mediana.
 
-What's the refund rate on my annual plan since launch, by month?
+De tus datos: probaste dos flows de onboarding en julio y te quedaste con "Main".
 
-Compare LTV for paid-campaign users vs. organic over the last year, and export it as CSV.
-```
+**Hipótesis sugeridas**
 
-El agente asigna tu solicitud a la operación correcta, lee la clave del entorno y devuelve los datos. Las respuestas son JSON por defecto. Pide CSV cuando quieras un archivo listo para hoja de cálculo — el agente establece `format` a `csv` en el cuerpo de la solicitud.
+En el placement `onboarding`:
+
+**1. Reemplazar el plan 'Annual' a $29,99 con una copia a $33,99 en el onboarding, para usuarios de App Store en EE. UU.**
+
+- **Por qué:** Tu plan anual está en la décima parte más barata de las apps de fotos en EE. UU., mientras que tu paywall convierte por encima de la mediana, así que la prueba A/B comprueba si $33,99 genera más ingresos por usuario.
+- **Resultado esperado:** ARPU sube un 15–25 %, medido por ingresos por usuario con reembolsos incluidos. Las subidas de precio en mercados Tier-1 suelen ganar en la biblioteca de pruebas A/B reales de suscripciones de Adapty.
+- **Tiempo:** Unas 4 semanas, con unas 110 compras semanales en este placement. Las renovaciones aún no se verán, así que la prueba se juzga por los ingresos del primer año y los reembolsos.
+- **Quién:** Yo: creo el copy del producto, lo publico en la App Store, construyo el copy del flow y configuro la prueba A/B. Tú: apruebas el nuevo ID de producto y publicas el copy del flow.
+
+**Próximos pasos**
+
+1. Tú: ¿con cuál quieres empezar? Yo elegiría el 1, porque lo ven todos los nuevos usuarios.
+2. Yo: crear "Annual 2" a $33.99. ¿Lo hago?
+
+</ChatTurn>
+<ChatTurn role="user">Ve con el 1.</ChatTurn>
+<ChatTurn role="confirm" summary="Crear una copia de producto">
+
+¿Crear **Annual 2**, una copia de "Annual" a $33.99 en EE. UU., con el ID de producto de store `com.app.annual2`? El ID de producto de store es permanente. El producto activo y sus suscriptores quedan como están.
+
+1. Sí
+2. No, cambiar algo primero
+
+</ChatTurn>
+</AgentChat>
+
+Esta entrada no es un fragmento MDX para traducir, sino un mensaje de instrucciones en inglés dirigido a un asistente de IA. No hay contenido MDX que traducir.
+
+## Precios \{#prices\}
+
+El skill lee el precio de cada producto en cada país y store, tal como lo cobra el store, en moneda local. Luego compara cada precio con el índice de precios de Adapty del informe State of In-App Subscriptions: del percentil 10 al 90 para tu categoría y plan, en 22 países. Para el resto de países, el skill compara con la región o con el historial del propio país.
+
+A partir de eso, el skill puede sugerir estas hipótesis de precios en la misma lista que el resto:
+
+- **Sube o baja el precio base** de tu plan principal en tu mercado principal.
+- **Sube o baja el precio en un país** cuyo precio no esté alineado con tu mercado principal. Para un desajuste en un mercado concreto, el skill primero verifica que el paywall esté en el idioma de ese mercado.
+- **Cambia la escalera de planes** cuando el precio anual sea demasiado alto o bajo en comparación con el semanal o mensual.
+
+El skill sugiere una subida de precio solo en mercados de nivel 1, como Estados Unidos, Reino Unido, Alemania o Japón: en la biblioteca de pruebas A/B de Adapty, el mismo incremento resultó negativo en otros mercados. El nuevo precio parte del que cobra actualmente el store y se sitúa en un punto de precio que los compradores esperan, como €38,99. El skill no lee los precios de la competencia.
+
+La prueba A/B se ejecuta sobre una copia del producto, no sobre el original. El skill crea la copia, la publica en el store, configura sus precios, construye la copia del flow que la vende, y configura un segmento por país y la prueba A/B. El precio ganador se traslada luego al producto original. Los suscriptores existentes mantienen su precio a menos que pidas migrarlos.
+
+Para cambiar un precio en producción sin hacer una prueba, simplemente pídelo. El skill guarda los precios actuales en un archivo para que puedas restaurarlos, muestra una vista previa de los nuevos precios e indica cuándo los aplica cada store.
 
 :::warning
-Guarda tu clave secreta en una variable de entorno, no la pegues en el chat ni la incluyas en un archivo de reglas. Las claves son específicas de la app, así que rótala en **Settings → General** si se filtra. Consulta [rotar las claves de API](https://adapty.io/docs/es/export-analytics-api-authorization.md).
+Los precios solo se pueden leer en un store que esté conectado a Adapty. En el App Store, se necesita la [clave de API de App Store Connect](app-store-connect-api-key), no solo la clave de compra in-app.
 :::
 
-## Configura una vez para reutilizar \{#set-up-once-for-repeated-use\}
+## De la hipótesis a la prueba A/B \{#from-hypothesis-to-ab-test\}
 
-Para no repetir la configuración en cada sesión, guarda la especificación y la clave donde tu agente pueda reutilizarlas:
+Para cada hipótesis, el skill sugiere una prueba A/B y se ofrece a configurarla. Antes de hacerlo, verifica que todo lo necesario para la prueba existe, e indica qué falta y quién debe crearlo:
 
-- **Guarda el enlace de la spec**: Añade la URL de la spec a las reglas o al archivo de memoria de tu agente (por ejemplo, un archivo `CLAUDE.md` o las reglas de Cursor) para que se cargue en cada sesión.
-- **Guarda la clave en tu entorno**: Mantén `ADAPTY_SECRET_KEY` en el perfil de tu shell o en el almacén de secretos de la herramienta para no tener que pegarla nunca más.
-- **Guarda prompts reutilizables o crea una skill personalizada**: Conserva tus preguntas habituales como prompts guardados, o envuélvelas en una skill personalizada o en un slash command para que tu agente genere un informe cuando lo necesites.
+| El test necesita | Quién lo hace |
+|---|---|
+| Un flow modificado: nuevo diseño, copy o conjunto de productos | El skill crea una copia del flow mediante el [skill flow-generator](flow-generator-skill), con un cambio por hipótesis, para que el test muestre qué produjo ese cambio. Antes de publicar la copia, el skill ofrece revisarla con el [skill flow-audit](flow-audit-skill). Un flow se une a un test solo una vez publicado. |
+| Una nueva duración de plan | El skill crea el producto y lo envía a App Store Connect y Google Play Console, después de que confirmes los IDs de producto en la store y el precio en USD. |
+| Una copia de producto para un test de precio | El skill crea la copia, la envía y establece sus precios. Tú apruebas el nuevo ID de producto en la store. |
+| Una prueba o oferta | Tú la creas en App Store Connect o Google Play Console. En App Store, una prueba requiere un nuevo producto; en Google Play, es una oferta sobre el plan existente. Una vez que le das al skill el ID de oferta de la store, este añade la oferta al producto en Adapty. |
+| Un paywall con productos ya presentes en Adapty | El skill lo crea. |
+| Un paywall con un nuevo diseño | Tú lo haces en el [Paywall Builder](adapty-paywall-builder). |
+| Un segmento | El skill lo crea mediante el skill de audiencias. |
+| Un nuevo placement | El skill lo crea después de que apruebes su ID de desarrollador. Tu app necesita un cambio de código y una nueva versión para cargarlo. |
+
+Cada pieza que genera el skill espera tu confirmación. Cuando una pieza es tuya para crear, la lista **Next steps** del skill te lo indica, y el skill configura el test en cuanto le confirmas que la pieza está lista. Nunca configura un test con una pieza que todavía no existe.
+
+Cuando todas las piezas existen, el [skill ab-tests](ab-tests-skill) crea el test como borrador. Antes de iniciarlo, te muestra exactamente quién verá qué. Una [prueba A/B](ab-tests) es la opción por defecto y la única forma de medir el impacto del cambio.
+
+Para mostrar el cambio sin una prueba, indícaselo. El skill puede mostrarlo en un nuevo placement, o a algunos o todos los usuarios de un placement existente. Antes de modificar un placement existente, el skill guarda el placement en un archivo para que puedas restaurarlo. También nombra cualquier prueba A/B que se ejecute en el placement. El cambio no afecta a esa prueba.
+
+## Cuando termina una prueba A/B \{#when-an-ab-test-ends\}
+
+Dile al skill que ha terminado una prueba. Busca la prueba, muestra los ingresos de cada variante y la probabilidad de ser la mejor, y te pregunta cuál fue la ganadora. La variante que va en cabeza no es la ganadora hasta que tú lo digas: con menos de unas 200 compras por variante, la prueba aún no ha concluido. Si la prueba sigue activa, el skill ofrece detenerla con tu variante ganadora y luego sugiere la siguiente hipótesis para ese placement.
+
+Mientras la prueba está en curso, el skill indica cuánto le falta a cada variante para llegar a unas 200 compras, pero nunca cuál va en cabeza.
+
+## Sin una cuenta de Adapty \{#without-an-adapty-account\}
+
+Envía un enlace de App Store o Google Play, el código de la app, o capturas de pantalla de tu onboarding y paywall, y pregunta cómo ganar más dinero. El skill responde de forma completa a partir de lo que enviaste, las medianas del mercado y la biblioteca de pruebas A/B de Adapty:
+
+- **Un enlace de la store**: El skill lee la categoría, las suscripciones en la lista de compras in-app, los idiomas y lo que dicen las reseñas sobre el pago.
+- **Capturas de pantalla**: El skill lee la duración de los planes, el plan preseleccionado, el período de prueba y el botón de compra.
+- **El código de la app**: El skill lee los IDs de producto, las pantallas de paywall y onboarding, sus textos en cada idioma y los demás lugares donde se abre el paywall.
+
+La skill revisa las pantallas con las skills paywall-teardown y onboarding-teardown. Los precios y la conversión necesitan tus propios datos, por lo que el último paso siguiente ofrece configurar Adapty en la app. Una vez configurado, la siguiente respuesta se ejecuta con tus propios datos.
 
 ## Límites \{#limits\}
 
-Ten en cuenta estas restricciones:
+- **Sin gasto publicitario**: el skill puede desglosar instalaciones, pruebas y revenue por canal de atribución, pero no el gasto ni el ROAS. Para esos datos, usa el [skill adapty-attribution](developer-cli-attribution-skill).
+- **Sin resultados para algunos tipos de pruebas**: el skill lee los resultados de las pruebas A/B de paywalls y flows normales. Para pruebas que abarcan varios placements y pruebas de onboarding, indica el nombre de la prueba y los resultados los consultas directamente en el dashboard.
+- **Sin categoría propia**: la categoría de tu app no está en tus datos de Adapty. El skill la infiere a partir del nombre de la app y del paywall, e indica cuál usó para que puedas corregirla.
 
-- **Límite de peticiones**: La API permite 2 solicitudes por segundo por aplicación, compartidas entre todas las claves API de esa app. Si se supera, devuelve un error `429 Too Many Requests`. Indica a tu agente que espere y reintente en caso de `429`.
-- **Claves por aplicación**: Cada clave funciona para una sola app. Para obtener datos de varias apps, proporciona la clave correspondiente a cada una.
-- **Formato de salida**: Por defecto, las respuestas son JSON. Establece `format` como `csv` en el cuerpo de la solicitud para exportar en CSV.
-
-Para conocer las reglas completas de autenticación y formato de solicitudes, consulta [Autorización y formato de solicitudes](https://adapty.io/docs/es/export-analytics-api-authorization.md).
+Para consultar tus analíticas directamente, sin el skill, consulta la [referencia de analíticas de la CLI](developer-cli-analytics). Para obtener analíticas desde un servidor o una tarea programada, donde nadie puede iniciar sesión a través de un navegador, usa la [API de exportación de analíticas](export-analytics-api) con una clave de API secreta.

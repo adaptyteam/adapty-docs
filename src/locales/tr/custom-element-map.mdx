@@ -1,0 +1,199 @@
+---
+title: "Bir flow'da yakındaki yerleri haritada göster"
+description: "Fitness merkezleri gibi her kullanıcıya yakın yerlerin haritasını, bir flow ekranındaki özel öğede göster."
+metadataTitle: "Bir flow'da yakındaki yerleri haritada göster | Flow'lar ve paywalllar | Adapty Dokümanları"
+---
+
+Bir flow'a etkileşimli harita eklemek için bu tarifi uygula. Uygulaman, haritayı [özel öğe](flow-custom-elements) içinde yerel bir MapKit görünümü olarak render eder. Uygulamana, flow ekranında konum erişimi istenir.
+
+:::tip
+Bu tarif yalnızca iOS uygulamalarını kapsar. Diğer framework'lerle oluşturulan uygulamalar yalnızca özel öğelerin [yedek içeriğini](flow-custom-elements#set-fallback-content) görüntüler. Android ve çapraz platform framework desteği yakında geliyor.
+:::
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="Tamamlanmış flow: kullanıcıya yakın spor salonlarını gösteren bir harita; kullanıcı haritayı başka bir alana sürükleyip geri getiriyor." />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Uygulamanızı Adapty iOS SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel öğe için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [getirme](get-pb-paywalls) ve [görüntüleme](ios-present-paywalls) için yapılandırın.
+- Kullanıcılardan konum erişimi istemek için uygulamanızın `Info.plist` dosyasına `NSLocationWhenInUseUsageDescription` anahtarını ekleyin. Değerini "Yakınındaki spor salonlarını bul." gibi bir istem metniyle ayarlayın.
+
+## 1. Ekrana özel öğeyi ekle \{#1-add-the-custom-element-to-the-screen\}
+
+Flow & Paywall Builder'da, bir flow ekranına [özel öğe ekleyin](flow-custom-elements#add-and-configure) ve harita için şu şekilde ayarlayın:
+
+- **Type**: `map`.
+- **ID**: `fitness_centers`.
+- **Height**: Varsayılan **Fixed** yüksekliği koruyun. Harita, özel öğeyi tamamen kaplar.
+
+Özel öğeyi; carousel gibi dokunuşa tepki veren container'ların içine koymayın. Aksi takdirde haritada yapılan bir sürükleme hareketi carousel'i de hareket ettirir.
+
+Özel öğenin içine, harita resmi içeren bir [**Image**](custom-media#image) ekleyin. Kullanıcılar bunu şu durumlarda [yedek içerik](flow-custom-elements#set-fallback-content) olarak görür:
+
+- Uygulamanızın sürümü haritayı görüntüleyemiyorsa.
+- Ekran açılmadan önce konum erişimini reddettilerse.
+- Cihazları iOS 16 çalıştırıyorsa.
+
+Kullanıcı konum erişim istemine henüz yanıt vermediyse, harita göründüğünde iOS bu isteği otomatik olarak gösterir. Uygulamanızın konuma neden ihtiyaç duyduğunu kullanıcılara açıklamak için özel öğenin üzerine "Yakınındaki spor salonlarını bul" gibi bir metin öğesi ekleyin.
+
+## 2. Harita görünümünü oluşturun \{#create-the-map-view\}
+
+Konum erişimi için bir model ve haritanın yer aldığı bir SwiftUI görünümü oluşturun. Görünüm konum erişimi ister, kullanıcının 2 km yakınındaki spor merkezlerini bulur ve her biri için bir işaretçi gösterir:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var places: [MKMapItem] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(places, id: \.self) { place in
+                        Marker(item: place)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            places = try await fitnessCenters(around: location.coordinate)
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+
+    private func fitnessCenters(around center: CLLocationCoordinate2D) async throws -> [MKMapItem] {
+        let request = MKLocalPointsOfInterestRequest(center: center, radius: 2_000) // meters
+        request.pointOfInterestFilter = MKPointOfInterestFilter(including: [.fitnessCenter])
+        return try await MKLocalSearch(request: request).start().mapItems
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Harita görünümü iOS 17 veya üzerini gerektirir. iOS 16'da kullanıcılar yedek paywall'u görür. Kullanıcı ekranda konum erişimini reddederse, görünüm haritayı Ayarlar'dan erişimin nasıl etkinleştirileceğini açıklayan bir mesajla değiştirir.
+
+## 3. Özel öğeyle eşleştirme \{#match-the-map-to-the-custom-element\}
+
+[Uygulama genelinde resolver](ios-flow-custom-elements#set-an-app-wide-resolver)'ınıza `LocationAccess` modeli için bir property ekleyin. Ardından `map` Tipi ve `fitness_centers` ID'si için harita görünümünü döndüren bir case ekleyin. Vurgulanan satırlar eklenecek kısımları göstermektedir. Uygulamanızda henüz uygulama genelinde bir [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yoksa kodun tamamını kopyalayabilirsiniz:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift" {5,13-20}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+SDK, ekran açıldığında ve ekran açıkken (örneğin ürünler yüklenirken) resolver'ı çağırır. Konum erişimi, her çağrıda resolver'ın ne döndüreceğini belirler:
+
+- **Henüz yanıtlanmadı**: Harita görünümü, böylece görünüm erişim talep edebilir.
+- **İzin verildi**: Kullanıcının yakınındaki spor salonlarını gösteren harita görünümü.
+- **Ekran açılmadan önce reddedildi**: `nil`, böylece kullanıcılar Ayarlar hakkındaki mesaj yerine yedeği görür.
+- **Ekranda reddedildi**: Harita görünümü, çünkü görünüm ekrandayken `isMapOnScreen` değerini ayarlar. Çözümleyici burada `nil` döndürseydi, SDK bir sonraki çağrıda Ayarlar hakkındaki mesajı yedekle değiştirirdi.
+
+Uygulamanız henüz uygulama genelinde bir çözümleyici (resolver) ayarlamadıysa, uygulama başlangıcı gibi uygun bir yerde `AdaptyUI.setCustomElementsResolver(_:)` fonksiyonunu bir kez çağırın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+</TabItem>
+</Tabs>
+
+## 4. Cihazda Test Edin \{#test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle tuval yalnızca yedeği gösterir. Haritayı önizlemek için:
+
+1. [Flow'u yayınlayın](builder-save-publish). Önbelleğe alınmış bir sürüm yerine en son yayınlanan sürümü görmek için cihazı [test cihazı](test-devices) olarak kaydedin.
+2. Çözümleyiciyi içeren uygulamanızın bir derlemesini iOS 17 veya sonraki bir sürümde çalıştırın. Ekranı açın ve konum erişimine izin verin. Haritanın konumunuzu ve yakınındaki spor salonlarına ait işaretçileri gösterdiğini doğrulayın.
+
+Yedeği test etmek için konum erişimini reddedin: **Ayarlar** uygulamasında **Gizlilik ve Güvenlik** > **Konum Servisleri** > *uygulamanız* yolunu izleyip **Asla**'yı seçin. Ardından ekranı tekrar açın.
+
+Harita yerine yedeğin neden göründüğünü öğrenmek için iOS kılavuzunun [Cihazda test etme](ios-flow-custom-elements#test-on-a-device) bölümündeki talimatları izleyin.

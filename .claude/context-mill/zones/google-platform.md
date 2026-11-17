@@ -156,7 +156,7 @@ most, deliberately — so the exception needs stating rather than assuming.
 | android-products | — | dev | 4 | tutorial |
 | create-service-account | — | dev | 4 | tutorial |
 | create-service-account-key-file | — | dev | 4 | tutorial |
-| enable-real-time-developer-notifications-rtdn | — | dev | 8 | tutorial |
+| enable-real-time-developer-notifications-rtdn | — | dev | 9 | tutorial |
 | enabling-of-devepoler-api | — | dev | 3 | tutorial |
 | google-platform-resources | entry | dev | 3 | tutorial |
 | google-play-data-safety | — | dev | 7 | tutorial |

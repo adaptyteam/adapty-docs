@@ -1,0 +1,256 @@
+---
+title: "Paywall'da etkileşimli bir kilo hedef grafiği göster"
+description: "Her kullanıcının tahmini kilosunu bir paywall flow'unda grafik olarak göster. Kullanıcılar grafikte sürükleyerek herhangi bir haftanın kilosunu görebilir."
+metadataTitle: "Paywall'da etkileşimli bir kilo hedef grafiği göster | Flow'lar ve paywall'lar | Adapty Dokümanları"
+---
+
+Kullanıcının mevcut ve hedef ağırlığını bir onboarding flow'unda girerek paywall flow'unda grafik olarak göstermek için bu tarifi takip edin. Kullanıcı her iki değeri onboarding'de girer, uygulamanız bu değerleri toplar. Grafik, kullanıcının uygulamanızla haftalık olarak bekleyebileceği ilerlemeyi bir değerden diğerine gösterir. Uygulamanız grafiği, bir [özel element](flow-custom-elements) içinde native Swift Charts view'u olarak render eder.
+
+:::tip
+Bu tarif yalnızca iOS uygulamaları kapsar. Diğer framework'lerle oluşturulan uygulamalar yalnızca özel öğelerin [yedek içeriğini](flow-custom-elements#set-fallback-content) gösterir. Android ve platformlar arası framework desteği yakında gelecek.
+:::
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="Tamamlanmış paywall: kullanıcı grafik üzerinde sürüklediğinde, her hafta için tahmini ağırlığı gösteren bir etiket belirir ve hedef ağırlık olan 72 kg'a kadar iner." />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Uygulamanızı Adapty iOS SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel element için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [çekmek](get-pb-paywalls) ve [görüntülemek](ios-present-paywalls) için ayarlayın.
+- İki ayrı flow oluşturun — biri onboarding için, diğeri paywall için. Her birini bir [placement](placements)'a ekleyin. Bu tarifte paywall flow'u, `weight_paywall` ID'li placement'tan çekilir.
+
+## 1. Onboarding flow'unda mevcut ve hedef kiloyu sorgula \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+Flow & Paywall Builder'da onboarding flow'una iki [**Number** girişi](builder-inputs-and-forms) ekle:
+
+- Mevcut kilo için kilogram cinsinden, **Element ID** olarak `weight` değeriyle.
+- Hedef kilo için kilogram cinsinden, **Element ID** olarak `goal_weight` değeriyle.
+
+Uygulamanızın ağırlıkları her yerel ayarda aynı şekilde okumasını sağlamak için her iki girdinin **Format** açılır menüsünden **Integer** seçeneğini belirleyin. Bir girdi, değerini kullanıcının yazdığı şekliyle metin olarak uygulamanıza gönderir. Bu tarifte yer alan kod "70.5" ve "70,5" değerlerini farklı biçimlerde okur. Tam sayılarda ondalık ayırıcı bulunmaz.
+
+Uygulamanızın her iki değeri de almasını sağlamak için onboarding flow'unu hiç girdi içermeyen bir ekranla sonlandırın. O ekrana [**Close flow**](onboarding-actions#close-flow) eylemiyle bir düğme ekleyin. Girdiler, odağı kaybettiklerinde veya kullanıcı başka bir ekrana geçtiğinde değerlerini gönderir.
+
+## 2. Paywall ekranına özel öğeyi ekleyin \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+Paywall flow'unda, bir ekrana [özel öğe ekleyin](flow-custom-elements#add-and-configure) ve grafik için şu şekilde yapılandırın:
+
+- **Type**: `line_chart`.
+- **ID**: `weight_goal`.
+- **Height**: Varsayılan **Fixed** yüksekliği koruyun. Grafik, özel öğeyi tamamen kaplar.
+
+Özel öğeyi, carousel gibi dokunmaya tepki veren container'ların içine koymayın. Aksi takdirde grafik üzerinde yapılan bir sürükleme aynı zamanda carousel'i de hareket ettirir.
+
+Özel öğenin içine, örnek bir ağırlık grafiği gösteren bir [**Görsel**](custom-media#image) ekleyin. Uygulamanızın eski sürümlerini kullanan kullanıcılar, grafik görüntülenemediğinde bunu [yedek](flow-custom-elements#set-fallback-content) olarak görür.
+
+## 3. Mevcut ve hedef ağırlığı uygulamanıza kaydedin \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+Onboarding flow'unun `flow_user_input` olaylarından mevcut ve hedef ağırlığı toplayın; bunun için [Flow'lardan veri işleme](ios-flow-input) bölümüne bakın. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olan `flow_screen_showed` olayını takip edin. Bu ekranın ardından onboarding flow kapandığında her iki ağırlığı da `showWeightPaywall` metoduna iletin; bu metot [özel öğeyle grafiği eşleştiren paywall flow'unu açar](#5-match-the-chart-to-the-custom-element).
+
+Aşağıdaki kod UIKit içindir. Bir view controller her iki flow'un da delegate'idir. Aynı zamanda `AdaptyFlowControllerDelegate` protokolünün satın alma ve geri yükleme metotlarını da uygulamalıdır. Bu örnekte bunlar dahil edilmemiştir. Görmek için [UIKit'te flow ve paywall'ları gösterme](ios-present-paywalls#present-flows-and-paywalls-in-uikit) sayfasına gidin.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+private var enteredWeights: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    enteredWeights[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset the entered
+    // weights whenever a flow disappears, so that the paywall doesn't open
+    // again when the user closes it.
+    let weights = enteredWeights
+    let finished = reachedLastScreen
+    enteredWeights.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings
+    guard finished,
+          let currentWeight = weights["weight"].flatMap({ Double($0) }),
+          let goalWeight = weights["goal_weight"].flatMap({ Double($0) })
+    else { return }
+
+    Task {
+        await showWeightPaywall(currentWeight: currentWeight, goalWeight: goalWeight)
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+SwiftUI'de delegate metodları yerine `.flow` modifier'ının `didReceiveAnalyticEvent` ve `didDisappear` closure'larını kullanın. Paywall flow'unu ikinci bir `.flow` modifier ile sunun.
+
+## 4. Grafik görünümünü oluşturma \{#create-the-chart-view\}
+
+Bir kilo planı modeli ve grafikli bir SwiftUI görünümü oluşturun. Plan, mevcut kilodan hedef kiloya kadar haftada bir girdi içerir. Kullanıcı grafik üzerinde sürüklediğinde, görünüm dokunulan noktadaki haftayı işaretler ve o hafta için tahmini kiloyu gösterir:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Plan, haftada 0,5 kg değişim olduğunu varsayar. Farklı bir oran kullanmak için `weeklyChange` değerini düzenleyin.
+
+Grafik üzerinde sürükleme özelliği iOS 17 veya sonrasını gerektirir. iOS 16'da kullanıcılar çizgiyi görebilir ancak üzerinde sürükleyemez.
+
+## 5. Grafiği özel öğeyle eşleştirin \{#match-the-chart-to-the-custom-element\}
+
+`line_chart` Türü ve `weight_goal` ID'si için grafik view'ını döndüren bir [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yazın. Ağırlık planını resolver'ın bir özelliğinde saklayın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 16.0, *) // the chart needs iOS 16
+struct WeightChartResolver: AdaptyUICustomElementsResolver {
+    let plan: WeightPlan
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        guard type == "line_chart", id == "weight_goal" else {
+            return nil // another custom element: show the fallback
+        }
+        return AnyView(WeightGoalChart(entries: plan.entries))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Attach the resolver to the paywall flow when you fetch its configuration. Create the resolver with the weight plan from the current and goal weight:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
+    let plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+    do {
+        let flow = try await Adapty.getFlow(placementId: "weight_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: WeightChartResolver(plan: plan)
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Uygulamanız [uygulama genelinde bir resolver](ios-flow-custom-elements#set-an-app-wide-resolver) belirliyorsa, bu resolver paywall flow'unda onu geçersiz kılar. `WeightChartResolver`, başka herhangi bir Tür ve ID için `nil` döndürür; çünkü bu tarif içindeki paywall flow'unda başka özel element bulunmamaktadır. Paywall flow'unuzda başka özel elementler varsa, uygulama genelindeki resolver'ı bu resolver'a aktarın. Ardından, [Bir flow'a resolver ekleme](ios-flow-custom-elements#attach-a-resolver-to-one-flow) bölümünde olduğu gibi, ilgili Tür ve ID'ler için uygulama genelindeki resolver'ı çağırın.
+
+## 6. Cihazda test edin \{#6-test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle tuval yalnızca yedek içeriği gösterir. Grafiği önizlemek için:
+
+1. [Her iki flow'u da yayınlayın](builder-save-publish). Önbelleğe alınmış sürümler yerine en son yayınlanan sürümleri görmek için cihazınızı bir [test cihazı](test-devices) olarak kaydedin.
+2. iOS 17 veya sonraki bir sürümde resolver'ı içeren bir uygulama derlemesi çalıştırın. Mevcut ve hedef ağırlığı girerek onboarding flow'unu tamamlayın. Grafiğin çizgisinin mevcut ağırlıktan başlayıp hedef ağırlıkta bittiğini doğrulayın.
+3. Grafiğin üzerinde sürükleyin ve parmağınızın altındaki haftaya ait tahmini ağırlığın çizginin üzerinde göründüğünü doğrulayın.
+
+Yedek paywall'ı test etmek için `getFlowConfiguration` çağrısından `customElementsResolver` argümanını kaldırın ve paywall flow'unu tekrar açın.
+
+Yedek paywall'ın grafik yerine neden göründüğünü öğrenmek için iOS kılavuzunun [Cihazda test etme](ios-flow-custom-elements#test-on-a-device) bölümündeki talimatları izleyin.

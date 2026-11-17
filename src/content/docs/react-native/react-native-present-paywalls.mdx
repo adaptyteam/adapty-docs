@@ -96,10 +96,10 @@ function MyFlow({ flow }) {
 
 ## Modal presentation
 
-To display a flow as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) method. Each `view` can only be used once. If you need to display the flow again, call `createFlowView` one more time to create a new `view` instance.
+To display a flow as a standalone screen, use the `view.present()` method on the `view` created by the [`createFlowView`](react-native-get-pb-paywalls#fetch-the-view-configuration) method. If you need to display the flow again, call `createFlowView` one more time to create a new `view` instance, or [keep the closed view](#keep-a-closed-flow-for-later) to present it again.
 
 :::warning
-Reusing the same `view` without recreating it is forbidden. It will result in an `AdaptyUIError.viewAlreadyPresented` error.
+After `view.dismiss()` with default options, the view is released, and calling `present()` on it again fails. Calling `present()` while a flow is already on the screen also fails. In both cases, you get an `AdaptyError` with code `3001` (`wrongParam`), and its message names the cause: `AdaptyUIError.viewNotFound` or `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```typescript showLineNumbers title="React Native (TSX)"
@@ -131,6 +131,45 @@ try {
 } catch (error) {
   // handle the error
 }
+```
+
+### Keep a closed flow for later
+
+:::info
+The `destroy` option and the `destroy()` method are available starting from SDK version 4.3.0.
+:::
+
+By default, `view.dismiss()` closes the flow and destroys its native view, so the `view` can't be presented again. To present the same flow again later, pass `destroy: false`. The next `present()` call opens the flow on the screen where the user closed it, with the state the user left it in, and your event handlers stay set:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+The native view stays in memory until you release it. When you no longer need the flow, call `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+Call `destroy()` only for a view that you closed with `destroy: false`. A regular `dismiss()` releases the view on its own.
+
+An event handler that returns `true` closes the flow with a regular `dismiss()`, which destroys the native view even if you kept it earlier. The default `onCloseButtonPress` and `onError` handlers return `true`. To keep the flow when the user closes it, close the flow yourself and return `false`:
+
+```typescript showLineNumbers
+view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
 ```
 
 ## Use developer-defined timer

@@ -35,6 +35,59 @@ Para kurulumundan API aracılığıyla kredi harcamaya kadar eksiksiz bir adım 
 Abonelik ödenekleri için [kredi son kullanma](create-virtual-currency#link-products) özelliğini etkinleştirin. Kullanılmayan krediler her yenilemede sıfırlandığında, ödenek aboneliği sürdürmek için bir neden olmaya devam eder; yoğun kullanıcılar ise birikmiş stoku harcamak yerine kredi paketi satın alır.
 :::
 
+## İşlemleri etiketle \{#label-transactions\}
+
+Backend'iniz [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) aracılığıyla kredi verdiğinde veya harcadığında, her işlemi ne anlama geldiğini ve kredilerin ne için kullanıldığını belirtecek şekilde etiketleyin. `operation` ile işlem geçmişinde harcamalar, bonuslar, geri almalar ve düzeltmeler arasında ayrım yapabilirsiniz. `feature` ile ise kullanıcıların neye harcama yaptığını ve neyin karşılığında kredi verdiğinizi görebilirsiniz.
+
+Tüm etiket alanları isteğe bağlıdır. Adapty bir işlemi kaydettikten sonra etiket ekleyemezsiniz, bu nedenle etiketleri ilk çağrınızda belirtin. Etiketsiz gönderilen bir işlem `operation: null` olarak kaydedilir.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### İşlem \{#operation\}
+
+Çoğu entegrasyon şu `operation` değerlerine ihtiyaç duyar:
+
+| Değer | Ne zaman kullanılır |
+|-------|----------------|
+| `spend` | Kullanıcı bir özellik veya içerik için kredi harcar. |
+| `spend_reversal` | Başarısız bir işlem (örneğin başarısız bir üretim) için kredi iade edersiniz. |
+| `reward` | Bir bonus, ödül veya destek tazminatı verirsiniz. |
+| `reward_reversal` | Bir ödülü geri alırsınız. |
+
+Adapty, oluşturduğu işlemlerde `operation` değerini belirler: satın almalar, yenilemeler ve denemeler `top_up`, mağaza iadeler `refund`, süresi dolan krediler ise `expiry` değerini alır. Değerlerin tam listesi için bkz. [Sanal para birimi işlemi oluşturma](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Özellik \{#feature\}
+
+`feature`, kredilerin ne için harcandığını veya ne için verildiğini tanımlar: bir veya daha fazla harf, rakam ve `_` karakterinden oluşan tek bir sözcük; isteğe bağlı olarak bir noktanın ardından bir alt tür gelebilir. Adapty bunu gönderildiği şekilde ve büyük/küçük harf duyarlı olarak saklar; bu nedenle `photoFilter` ile `photofilter` birbirinden farklı iki özellik olarak kabul edilir.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`: boşluk içeriyor.
+- ❌ `photo_filter.vintage.v2`: iki alt tür seviyesi var.
+- ❌ `pack_499`, `premium_tier`: isimde fiyat veya kademe bulunması, fiyat ya da kademeler değiştiğinde bir özelliği birden fazlaya böler. `feature` alanından fiyat, kademe, versiyon ve varyantı uzak tutun.
+
+Bonus için programın adını kullanın; örneğin `welcome`, `daily_bonus`, `referral` veya `support_compensation`.
+
+### Diğer alanlar
+
+- **`reference_id`**: Sisteminizdeki ilgili nesnenin kimliği; en fazla 128 karakter. Bir `spend_reversal`'ı tersine çevirdiği `spend`'e veya bir `reward`'ı verildiği eyleme bağlamak için kullanın. Buraya kişisel veri koymayın.
+- **`customer_placement_id`**: Uygulamanızda işlemin gerçekleştiği ekranın kimliği. Bu sizin kendi kimliğinizdir; Adapty [placement](placements) kimliği değildir.
+- **`store` ve `store_transaction_id`**: Backend'iniz bir satın alma işlemi için coin kredisi verdiğinde ikisini birlikte gönderin. Adapty, satın almanın var olduğunu doğrulamaz. Satın alma mağazada iade edilirse Adapty, bu referansla kredilenen coinleri geri alır.
+- **`is_sandbox`**: Test sırasında verdiğiniz krediler için `true` gönderin. Mağaza işlemlerinde Adapty, bu değeri satın almanın ortamından otomatik olarak belirler.
+
+:::warning
+[Adapty'de para birimine bağlı](create-virtual-currency#link-products) bir ürün için coin yüklemeyin. Adapty bu satın almaları zaten yükler; backend'inizden de yükleme yaparsanız kullanıcı kredileri iki kez almış olur.
+:::
+
+12 Kasım 2026'dan önce, etiketleme özelliği sunulmadan oluşturulan işlemler verilerini korur: Adapty kendi işlemlerini geriye dönük olarak etiketledi, bu tarihten önceki API işlemleriniz ise `operation: null` olarak kalır. `metadata` değişmeden kalır ve ihtiyacınız olan tüm anahtarları kabul etmeye devam eder.
+
 ## Sınırlamalar \{#limitations\}
 
 - **Cihazlar arası erişim için kimlik doğrulama gereklidir**: Bir bakiye tek bir profile aittir. Anonim bir kullanıcı bakiyesini yalnızca kazandığı cihazda korur; bu nedenle uygulamayı yeniden yüklediğinde veya başka bir cihazda açtığında bakiye kaybolur. Bakiyenin her cihazda ve her yeniden yüklemeden sonra erişilebilir olması için kullanıcıları tanımlayın. Bkz. [Bakiyeler, profiller ve cihazlar](virtual-currency-balance#balances-profiles-and-devices).

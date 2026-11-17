@@ -77,6 +77,19 @@ inside Adapty instead of Apple's own console.
   - **Not established: what an enabled rule overrides.** Nothing in the dashboard says a rule's next run
     overwrites a manual bid edit; that is server-side behavior. Treat it as unverified until the product
     team confirms it.
+- **Segments page** (dashboard code, 2026-10-20 — on for everyone from that date): a sidebar
+  **Segments** page replaced the old **Create segment** window. The Ads Manager **Actions** menu now has
+  **Create segment from …** and **Add to segment…**, both opening one editor drawer; rows must come from
+  one app. A segment built there is an ordinary Adapty segment titled with a fixed `[ASA] ` prefix and
+  exactly one `IN` condition on campaign, ad group or keyword (Apple Ads numeric IDs). Keywords can't share
+  a segment with campaigns or ad groups; campaigns mixed with ad groups are saved as their *current* ad
+  groups, so later ad groups don't join. The page lists only `[ASA]` segments of that exact shape; one
+  edited elsewhere is hidden behind a link to **Profiles & Segments**. Creating a segment never attaches it
+  to a placement. Apple Ads app → Adapty app matching: Apple Ads settings link, then Apple app ID, then a
+  unique bundle ID, then a manual pick that only the current browser remembers.
+  - The page's own hint says to add the App Store ID in the Adapty app's "general settings", but the
+    matched field is the **Apple app ID** of the App Store integration. The docs point to the integration
+    step, not general settings.
 - **What is Apple's, and therefore not ours to define**: keyword match types (`BROAD`, `EXACT`, `AUTO`),
   placements (`SupplySources`), channel / billing-event / pricing model (`CPC`, `CPM`), and the entire
   not-serving vocabulary (`ServingStateReasons`, ~40 values from `APP_NOT_ELIGIBLE_SEARCHADS` to
@@ -150,7 +163,7 @@ inside Adapty instead of Apple's own console.
 | ads-manager-cpp-ab-tests | — | marketer | 13 | tutorial |
 | ads-manager-create-ad-group | — | marketer | 5 | tutorial |
 | ads-manager-create-campaign | — | marketer | 6 | tutorial |
-| ads-manager-create-segments | — | marketer | 2 | tutorial |
+| ads-manager-create-segments | — | marketer | 7 | tutorial |
 | ads-manager-keyword-suggester | — | marketer | 4 | tutorial |
 | ads-manager-manage-ads | — | marketer | 5 | tutorial |
 | ads-manager-manage-keywords | — | marketer | 12 | tutorial |
@@ -201,7 +214,7 @@ near-identical names and a ticket almost never says which one it means.
 | "automate bids", "rule to pause things automatically", "budget automation" | Route by the object the rule **changes**, not the metric it measures. Keyword bid, enable/pause keyword, copy keyword to another ad group, add as negative → `ads-manager-automations-keyword-rules`. Ad group default bid or CPA goal → `ads-manager-automations-ad-group-rules`. Campaign daily budget or status → `ads-manager-automations-campaign-rules`. Promoting real user queries into keywords → `ads-manager-automations-search-terms`. |
 | "rule didn't run", "did the rule change anything", "undo a rule", "run it now", "start from a template" | `ads-manager-automations` — Logs with per-run CSV, **Date last run** / **Date next run**, run-now, duplicate, pause vs delete, and where **Templates** lives (keyword, search term and campaign rules have templates; ad group rules don't yet). Two constraints do most of the work: an enabled rule can overwrite manual bid changes on its next run, so pause it rather than managing bids by hand; deleting is permanent. |
 | "harvest keywords from search queries", "negate wasted search terms", "Discovery → Probing pipeline" | `ads-manager-automations-search-terms`. The rule needs a Discovery or Search Match campaign as its source — exact-match-only campaigns generate no search term reports, so there is nothing to evaluate. Promoting without negating at source makes both campaigns bid on the same query. |
-| "AI recommendations for ads", "chatbot for ad performance", "have the AI pause my keywords" | `ads-manager-ai-agent`. Advisory only: it analyzes the account and recommends, but changes no campaign, bid or budget. Entered from **Ask AI Agent** in the account header, and an app must be picked first to scope it. |
+| "AI recommendations for ads", "chatbot for ad performance", "have the AI pause my keywords" | `ads-manager-ai-agent`. Advisory only: it analyzes the account and recommends, but changes no campaign, bid or budget. Entered from **Ask AI Agent** in the account header, and an app must be picked first to scope it. An AI tool that should make the change goes through the Adapty MCP server (`adapty-mcp`, from 2026-11-11) or the Apple Ads plugin over the CLI (`developer-cli-ads-manager-skill`). |
 | "connect Apple Ads", "we already enabled the Apple Search Ads integration", "import historical spend" | `adapty-ads-manager-get-started`. Ads Manager deliberately does **not** use the Apple Ads integration in App settings — it needs its own Apple sign-in, and the Account Admin role in Apple Ads. It is a standalone product: observer-mode SDK plus App Store server notifications is the minimum for revenue data, no full migration to Adapty required. |
 | "connect a second Apple Ads account", "billing / plan", "hide paused campaigns" | `ads-manager-settings`. **Campaign groups** is the tab where Apple Ads accounts are connected and aggregated into one dashboard; subscription/payment method and the **Hide Paused by Default** switch are there too. |
 | "can't delete a campaign", "campaign created but not serving", "CPA cap vs max CPT bid" | `ads-manager-create-campaign` for the wizard — deletion is not supported (pause instead), and placement, bid strategy and scheduling can't be edited after creation. `ads-manager-create-ad-group` for why nothing serves: bid, audience and keywords all live on the ad group, so a campaign without one has no targeting or bidding. The ad group's CPA cap sets an effective ceiling of `CPA cap × tap-through CR`, which can undercut a higher max CPT bid. |

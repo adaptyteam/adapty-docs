@@ -9,6 +9,8 @@ Every article must start with an introduction before the first heading that prov
 2. **Why it matters**: Value or benefit to the reader
 3. **When to use it**: Context for application
 
+When an article has three or more H2 sections that the reader completes in order, add a numbered overview after the intro: one item per H2, in the same order, each linking to its section.
+
 ❌ No introduction:
 ```markdown
 # Configure Placements
@@ -40,7 +42,7 @@ Placements determine which paywall users see based on their location in your app
 
 ## Parallel Heading Structure
 
-Headings at the same level must follow consistent grammatical structure — all verb phrases OR all noun phrases.
+Headings at the same level follow one grammatical shape by default — all verb phrases OR all noun phrases. The one exception: a reference section (limits, options, requirements, troubleshooting) next to task sections keeps its noun phrase. A reference section never takes a task heading, and a task section never takes a noun heading.
 
 **Procedural sections — imperative verbs:**
 ```markdown
@@ -234,6 +236,45 @@ just to whole troubleshooting guides.
 - Define terms on first use
 - Build from simple to complex
 - Link to related concepts
+
+### Agent Skill Articles
+An article that documents an agent skill (growth-advisor, flow-generator, adapty-attribution, and so on) shows at least one example session with the `AgentChat` and `ChatTurn` components. A described reply tells the reader what the skill does; a shown one lets them recognize it. Model: `export-analytics-with-ai.mdx`.
+
+```mdx
+<AgentChat title="growth-advisor" caption="Example conversation with a sample app. Your numbers will differ.">
+<ChatTurn role="user">Revenue dropped last month. Why?</ChatTurn>
+<ChatTurn role="tool" summary="Ran 4 read-only commands">
+
+- `adapty analytics chart --chart revenue --group-by store`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+**The answer in one bold sentence.**
+
+Supporting facts.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Create a flow copy">
+
+The question the skill asks before it writes?
+
+1. Yes
+2. No, change something first
+
+</ChatTurn>
+</AgentChat>
+```
+
+- **Roles**: `user` is what the developer types. `tool` is the commands the skill ran, one list item each, collapsed behind `summary`. `agent` is the reply, in markdown. `confirm` is a write the skill waits on: `summary` is its title, then the question and a numbered list of options.
+- **No import**: both components are registered in `src/components/mdxComponents.ts`.
+- **Blank lines inside multi-line turns**: without them, MDX doesn't parse the markdown in the turn.
+- **No `##`/`###` headings inside a turn**: they would show up in the article's table of contents. Use a bold line, such as `**Next steps**`.
+- **The reply follows the skill's own reply rules**, from the skill's `SKILL.md` in the [adapty-skills](https://github.com/adaptyteam/adapty-skills) repo: its length, its opening, its labelled lines, and its closing. A transcript the skill could never produce is a false claim about the skill.
+- **Commands in a `tool` turn are real**: check each command and flag against its CLI reference article. Drop `--app` and other noise so a command fits on one or two lines.
+- **Show a `confirm` turn whenever the session writes**: it shows the reader that the skill asks first.
+- **Always set `caption`** to say that the conversation is an example and that the numbers are made up. Invented numbers without a caption read as a benchmark.
+- **Keep a plain code block for prompts readers copy**: a transcript shows the session, but readers can't copy a prompt from it.
 
 ### Release Notes
 - Group by: New features, Improvements, Bug fixes, Breaking changes

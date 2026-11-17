@@ -117,6 +117,10 @@ function stripContent(content, reusableComponents) {
     // div-wrapped and bare iframes that predate it, which src/locales still
     // carries until each file is retranslated from its English source.
     processed = processed.replace(/<YouTube\b[^>]*\/>/g, '');
+    // A narrated walkthrough is a video player; like a YouTube embed, it carries nothing for a text reader.
+    processed = processed.replace(/<NarratedVideo\b[^>]*\/>/g, '');
+    // Demo loops are dropped like screenshots: the surrounding prose already states what they show.
+    processed = processed.replace(/<DocVideo\b[^>]*\/>/g, '');
     processed = processed.replace(/<div[^>]*>\s*<iframe\b[^>]*youtube\.com\/embed[\s\S]*?<\/div>/g, '');
     processed = processed.replace(/<iframe\b[^>]*youtube\.com\/embed[\s\S]*?(?:<\/iframe>|\/>)/g, '');
 
@@ -153,6 +157,23 @@ ${content}
 ---
 `);
 
+
+    // Flatten <AgentChat> transcripts into labelled paragraphs: the caption
+    // first, then each <ChatTurn> as "**User:**", "**Agent:**" and so on.
+    processed = processed.replace(/<AgentChat\b([^>]*)>/g, (_, attrs) => {
+        const caption = attrs.match(/caption="([^"]*)"/)?.[1];
+        return caption ? `*${caption}*\n` : '';
+    });
+    processed = processed.replace(/<\/AgentChat>/g, '');
+    processed = processed.replace(/<ChatTurn\b([^>]*)>/g, (_, attrs) => {
+        const role = attrs.match(/role="([^"]*)"/)?.[1];
+        const summary = attrs.match(/summary="([^"]*)"/)?.[1];
+        if (role === 'user') return '\n**User:** ';
+        if (role === 'tool') return `\n**Agent ran:** ${summary ?? ''}\n`;
+        if (role === 'confirm') return `\n**Agent asks:** ${summary ?? ''}\n`;
+        return '\n**Agent:**\n';
+    });
+    processed = processed.replace(/<\/ChatTurn>/g, '');
 
     // Replace <SkillPromo ... /> with a plain-text promo + a markdown link to the skill repo
     processed = processed.replace(

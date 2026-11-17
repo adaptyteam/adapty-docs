@@ -64,7 +64,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### GetPaywall → GetFlow
 
-戻り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` パラメーターが削除されます — フローをレンダリングする際、ロケールは自動的に解決されます。カスタムペイウォールの場合、すべてのロケールは `flow.RemoteConfigs` に返されます。
+返り値の型が `AdaptyPaywall` から `AdaptyFlow` に変わり、`locale` パラメータはフロービューのパラメータ（`AdaptyUICreateFlowViewParameters.SetLocale`）に移動します — [ロケールの照合は完全一致](#locale-matching-is-exact) を参照してください。カスタムペイウォールの場合、すべてのロケールは `flow.RemoteConfigs` に返されます。
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -78,12 +78,25 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
   });
 ```
 
-`GetPaywallForDefaultAudience` も同様にリネームされます：
+`GetPaywallForDefaultAudience` は同じように名前が変わっています：
 
 ```diff showLineNumbers
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### ロケールのマッチングは完全一致 \{#locale-matching-is-exact\}
+
+:::warning
+v3では、Adaptyサーバーがローカライゼーションを選択し、言語へのフォールバックも行っていました。つまり、ペイウォールに`pt-br`がない場合、`pt-br`のリクエストに対して`pt`のローカライゼーションが返されていました。v4では、SDKがデバイス上でローカライゼーションを選択し、完全一致のみを使用します。どのローカライゼーションにも一致しないコードは、エラーや警告なしにデフォルトのローカライゼーションでフローをレンダリングします。
+:::
+
+アップグレードの前に、アプリが渡しているロケールコードを確認してください：
+
+- 渡す地域コードごとに、そのコードを含むローカライズを追加してください（例：`pt` の隣に `pt-br`）。または、そのコードをフローが持つコードにマッピングしてください。
+- コードはダッシュボードに表示されているとおり、小文字のサブタグをハイフンで区切った形式で渡してください。システムのロケール識別子をそのまま渡さないでください：`CultureInfo.CurrentCulture.Name` は `pt-BR` を返しますが、これはどのローカライズとも一致しません。
+
+[ローカライズとロケールコード](unity-localizations-and-locale-codes#flows-and-paywalls)を参照してください。
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -309,10 +322,11 @@ Adapty アトリビューションを使用しない場合は、変更不要で�
 
 これらの変更はコンパイルエラーを引き起こしませんが、実行時にテストしてください。
 
-- **購入完了時の動作**: v3 では購入成功後にビューが自動的に閉じられていました。v4 では、**購入またはエラーの後もフローは開いたまま維持され、明示的に閉じるまで SDK は何も行いません**。ユーザーがアクセスを取得したら、`FlowViewDidFinishPurchase` 内で自ら `view.Dismiss(...)` を呼び出してください。
-- **Android のシステムバック**: システムの戻るボタン（または戻るジェスチャー）は、`SystemBack` アクションとして `FlowViewDidPerformAction` に渡されるようになり、フローを自動的に閉じなくなりました。これは、システムジェスチャーでフローを閉じられない iOS の動作に合わせたものです。ユーザーが明示的に離脱できるよう（**Close** ボタンや `on_device_back` アクションなど）、またはアクション処理時に自分でビューを閉じてください。
-- **ビューは使い捨て**: `Dismiss` を呼び出すとビューは破棄されます。フローを再度表示するには `CreateFlowView` を再度呼び出してください。
-- **オブザーバーモードのトランザクション**: `ReportTransaction` は成功時にデコードエラーを返さなくなりました。v3 では成功レスポンスのパースに誤りがあり、成功した報告が常にエラーで完了していました。
+- **フローのローカライズ**: 地域ロケールコードは、言語へのフォールバックを行わなくなりました。`pt-br` は `pt` のローカライズを使用しません。完全一致するコードが存在しない場合、フローはデフォルトのローカライズで表示されます。詳細は[ロケールの完全一致](#locale-matching-is-exact)を参照してください。
+- **購入完了時の動作**: v3 では購入成功後にビューが自動的に閉じられていましたが、v4 では**購入またはエラーが発生してもフローは開いたままとなり、明示的に閉じるまで表示され続けます**。SDK はデフォルトの動作を持ちません。ユーザーがアクセスを取得したら、`FlowViewDidFinishPurchase` 内で `view.Dismiss(...)` を呼び出してください。
+- **Android のシステムバック**: システムの戻るボタン（または戻るジェスチャー）は、`SystemBack` アクションとして `FlowViewDidPerformAction` に渡されるようになり、フローを自動的に閉じなくなりました。iOS ではシステムジェスチャーでフローを閉じることができないため、この動作が統一されました。ユーザーが明示的に終了できるよう（**Close** ボタンや `on_device_back` アクションなど）、またはアクションを処理する際にビューを自分で閉じてください。
+- **ビューは使い捨て**: `Dismiss` 後、ビューは破棄されます。フローを再度表示するには、`CreateFlowView` を再度呼び出してください。
+- **オブザーバーモードのトランザクション**: `ReportTransaction` は成功時にデコードエラーを返さなくなりました。v3 では成功レスポンスのパースが誤っており、成功したレポートが常にエラーで完了していました。
 
 ## オンボーディング API の廃止 \{#onboarding-api-deprecation\}
 

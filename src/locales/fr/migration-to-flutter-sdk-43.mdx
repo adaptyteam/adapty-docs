@@ -1,0 +1,102 @@
+---
+title: "Migrer vers l'Adapty Flutter SDK v4.3"
+description: "Migrez vers l'Adapty Flutter SDK v4.3 : décidez comment les messages Google Play s'affichent, lisez les paramètres numériques des événements de flow en tant que num, et gérez la saisie d'e-mail depuis les onboardings."
+metadataTitle: "Migration vers l'Adapty Flutter SDK v4.3 | Documentation Adapty"
+---
+
+L'Adapty Flutter SDK 4.3 affiche les messages intégrés Google Play par défaut et modifie les types Dart de certaines données d'événements de flow et d'onboarding. Aucune API publique n'est supprimée ni renommée, donc votre application compile avec la version 4.3 sans modification. Pour conserver le même comportement, passez en revue chaque changement dans ce guide.
+
+Si vous utilisez encore la version 4.0, commencez par [Migrer vers la v4.1](migration-to-flutter-sdk-41) puis suivez ce guide.
+
+## Référence rapide \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Les messages Google Play ne sont pas demandés | Les messages Google Play s'affichent par défaut sur Android, y compris au-dessus des flows |
+| Les paramètres d'événements de flow en nombre entier arrivent en tant que `double` sur Android | Ils arrivent en tant que `int` sur les deux plateformes |
+| Les champs e-mail d'onboarding arrivent en tant que `AdaptyOnboardingsTextInput` | Ils arrivent en tant que `AdaptyOnboardingsEmailInput` |
+| L'affichage d'une saisie d'onboarding masque la valeur saisie | L'affichage d'une saisie montre la valeur saisie |
+
+## Installation \{#installation\}
+
+Mettez à jour `adapty_flutter` vers la v4.3 dans votre `pubspec.yaml` :
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.3.0
+```
+
+Si votre application utilise le [Mode Enfant](kids-mode-flutter), spécifiez plutôt `adapty_flutter_kids` :
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.3.0
+```
+
+Les prérequis sont inchangés par rapport à la v4.1 : **Flutter 3.32.0** (Dart 3.8.0) et **iOS 15.0**. Consultez [Installer le SDK Adapty](sdk-installation-flutter) pour la configuration complète.
+
+## Les messages Google Play sont affichés par défaut \{#google-play-messages-are-shown-by-default\}
+
+À partir de la version 4.3, le SDK envoie des requêtes à Google Play pour les messages intégrés, comme les notifications de paiement refusé, chaque fois qu'une `Activity` de votre application démarre après `activate`. Cela inclut les moments où l'application revient au premier plan, et lorsqu'un flow ou un onboarding s'ouvre ou se ferme — un message peut donc apparaître par-dessus un paywall.
+
+Si cela convient à votre application, aucune modification n'est nécessaire. Pour choisir le moment où les messages s'affichent, activez le SDK avec la gestion manuelle sur Android, puis appelez `showStoreMessages` au moment qui vous convient :
+
+```dart showLineNumbers title="main.dart"
+
+final configuration = AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY');
+if (Platform.isAndroid) {
+  configuration.withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual);
+}
+await Adapty().activate(configuration: configuration);
+```
+
+Définissez la gestion manuelle uniquement sur Android pour ne pas modifier le comportement sur iOS : sur iOS 16 et versions ultérieures, la gestion manuelle retient également les messages de l'App Store jusqu'à ce que votre application appelle `showStoreMessages`. Pour l'API complète, consultez [Contrôler les messages du store](flutter-store-messages).
+
+:::warning
+En mode manuel, les stores n'affichent pas de messages par eux-mêmes. Si votre application n'appelle jamais `showStoreMessages`, les utilisateurs ne verront jamais de notification de paiement refusé.
+:::
+
+## Les paramètres numériques d'événements flow sont en `int` sur Android \{#numeric-flow-event-parameters-are-int-on-android\}
+
+Sur Android, les paramètres entiers des événements analytiques de flow arrivaient auparavant en `double`. À partir de la version 4.3, ils arrivent en `int`, comme sur iOS. Cela affecte `flowViewDidReceiveAnalyticEvent` et le callback `onDidReceiveAnalyticEvent` de `AdaptyUIFlowPlatformView`, y compris les valeurs de date et d'heure des événements [flow input](flutter-flow-input).
+
+Un cast vers `double` lève désormais une exception sur Android. Lisez les paramètres numériques en tant que `num` :
+
+```diff showLineNumbers
+- final timestamp = params['value'] as double;
++ final timestamp = params['value'] as num;
+```
+
+## Les champs email d'onboarding arrivent sous forme `AdaptyOnboardingsEmailInput` \{#onboarding-email-fields-arrive-as-adaptyonboardingsemailinput\}
+
+À partir de la version 4.3, les champs email d'un onboarding parviennent à `onboardingViewOnStateUpdatedAction` et au callback `onStateUpdatedAction` de `AdaptyUIOnboardingPlatformView` sous forme `AdaptyOnboardingsEmailInput`. Auparavant, ils arrivaient sous forme `AdaptyOnboardingsTextInput`. Si votre code lit les emails depuis le cas texte, gérez également le cas email :
+
+```diff showLineNumbers
+  switch (input) {
+    case AdaptyOnboardingsTextInput(:final value):
+      // text fields
+      break;
++   case AdaptyOnboardingsEmailInput(:final value):
++     // email fields
++     break;
+    case AdaptyOnboardingsNumberInput(:final value):
+      // number fields
+      break;
+  }
+```
+
+Les champs numériques arrivent désormais sous forme d'`AdaptyOnboardingsNumberInput`. Avant la version 4.3, leurs mises à jour n'arrivaient pas du tout. Voir [Traiter les données des onboardings](flutter-onboarding-input).
+
+## Les valeurs saisies dans l'onboarding apparaissent dans la sortie affichée \{#onboarding-input-values-appear-in-printed-output\}
+
+L'affichage d'un `AdaptyOnboardingsInputParams` ou d'un `AdaptyOnboardingsInput` montre désormais la valeur saisie. Si votre application enregistre ces objets dans les logs, vérifiez-les : ils peuvent désormais contenir des noms, des adresses e-mail et d'autres données entrées par les utilisateurs.
+
+## Nouveautés de la version 4.3 \{#new-in-43\}
+
+Ces ajouts ne nécessitent aucune modification de code :
+
+- **[Contrôler les messages du store](flutter-store-messages)** : Choisissez quand les messages de l'App Store et de Google Play s'affichent.
+- **[Précharger les placements](flutter-optimize-paywall-fetching#preload-placements)** : Les méthodes `preloadFlows` et `preloadFlowsForDefaultAudience` préchauffent le cache des flows.
+- **[Libérer une vue conservée](flutter-present-paywalls#dismiss-the-flow-or-paywall)** : La méthode `destroy()` libère une vue de flow que vous avez conservée avec `dismiss(destroy: false)` ou que vous n'avez jamais présentée.
+- **[Plans d'engagement 12 mois](set-up-12-month-commitment)** : La propriété `AdaptyProductSubscription.pricingTerms` décrit le plan sur iOS, et les niveaux d'accès indiquent `billingPlan` et `commitmentInfo`.
+- **[Mode observateur](report-transactions-observer-mode-flutter)** : La méthode `reportTransaction` accepte un paramètre optionnel `appleJwsTransaction` sur iOS.

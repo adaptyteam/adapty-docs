@@ -12,13 +12,82 @@ metadataTitle: "优化流程与付费墙获取 | Flutter SDK | Adapty 文档"
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 应该这样做 | 不应该这样做 | 原因 |
+| 建议做法 | 避免做法 | 原因 |
 |---|---|---|
-| 仅获取即将展示的版位。                                                                                  | 启动时并发预取所有版位。        | 批量预取会阻塞主线程，并在突发请求期间导致黑屏。                                  |
-| 在归因有机会完成解析后再调用 `getFlow`——例如，在 `activate` 后 1–2 秒，或在 `didUpdateProfileStream` 触发后。 | 在 `runApp` 之前的 `main()` 中调用 `getFlow`。         | 此时归因尚未落位，流程会按默认目标受众解析，悄然绕过市场细分和 ASA 个性化设置。 |
-| 设置 `loadTimeout`，并为每个版位配置[备用付费墙](fallback-paywalls)。                             | 无限期等待 `getFlow`。                     | 若没有超时机制，网络状况较差的用户将看到空白屏幕，直至网络恢复——或直接关闭应用。     |
+| 获取即将展示的版位，或通过 [`preloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时自行并发调用多个 `getFlow`。 | 手动批量预取会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，只需一次调用即可将请求批量发送至原生 SDK。 |
+| 在归因数据有机会解析之后再调用 `getFlow`，例如 `activate` 后 1–2 秒，或在 `didUpdateProfileStream` 触发之后。 | 在 `runApp` 之前的 `main()` 中调用 `getFlow`。 | 此时归因数据尚未到达。流程将按默认目标受众进行解析，悄无声息地绕过市场细分和 ASA 个性化设置。 |
+| 为每个版位设置 `loadTimeout` 并配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getFlow` 返回。 | 若不设置超时，网络状况较差的用户将看到空白屏幕，直到网络恢复——或直接退出应用。 |
 
 请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products-flutter)以了解 `fetchPolicy` 和 `loadTimeout` 参数说明，并参阅[版位](placements)了解如何选择合适的版位。
+
+## 预加载版位 \{#preload-placements\}
+
+:::info
+`preloadFlows` 和 `preloadFlowsForDefaultAudience` 从 SDK 4.3.0 版本开始支持。
+:::
+
+`preloadFlows` 会提前将流程 JSON 缓存起来。之后的使用方式与平时相同：用 `getFlow` 获取流程，用 `createFlowView` 创建其视图。
+
+`fetchPolicy` 决定后续 `getFlow` 优先从哪一层读取数据，而非是否能访问缓存：
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` 优先读取预加载的缓存副本，仅在无缓存时才请求网络。`AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` 功能相同，但仅在缓存副本未超过 `maxAge` 时使用缓存。
+- 默认策略 `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData` 优先请求网络，仅在请求失败或超时时回退到预加载的缓存副本。
+
+预加载无论如何都会带来收益，只是方式不同：缓存优先策略会直接省去网络请求，而默认策略则保留请求并在请求成功后获得一份热备副本。在[测试设备](test-devices)上，`getFlow` 在任何策略下都会跳过缓存，仅当网络请求失败时才使用预加载的副本。
+
+当你知道本次会话需要哪些版位，但又不想立即展示时，可以使用此方法——例如，在 `activate` 和 `identify` 完成后，为用户尚未点击的按钮背后的流程提前加载。
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**参数：**
+
+- `placementIds`（必填）：要预加载的版位。
+- `loadTimeout`（可选）：等待目标受众流程加载的超时时长。默认为 5 秒，低于 1 秒的值会被提升至 1 秒。超时后，SDK 可以改为加载默认受众的流程。
+
+**需要了解的行为：**
+
+- 只有当所有版位都尝试失败后，调用才会报错，并以一个 `AdaptyError` 涵盖所有失败的版位。某个版位失败不会中断其他版位的加载，已成功加载的版位仍会保留在缓存中。
+- 预加载始终走网络请求：它没有自己的 `fetchPolicy`。
+- 预加载仅用于预热缓存，不返回内容——你仍需调用 `getFlow` 来展示内容。
+
+### 预加载的覆盖范围 \{#what-a-preload-covers\}
+
+一个流程分层抵达屏幕。预加载覆盖第一层，与 `getFlow` 的作用完全相同：
+
+| 层级 | 获取方式 | 是否可预加载 |
+|---|---|---|
+| Flow JSON — 所选实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
+| UI 布局 — 页面结构、样式与文本 | `createFlowView` | 否 |
+| 图片，包括视频元素的静态占位帧 | `createFlowView`，在后台执行 | 否 |
+| 产品 | `createFlowView` 或 `getPaywallProducts` | 否 |
+| 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
+
+因此，对于某个布局，第一次调用 `createFlowView` 在预加载后仍需一次网络往返。不过，原生 SDK 随后会将该布局缓存到磁盘，且缓存在应用重启后依然有效，所以这笔开销只发生在首次请求时，而非每次请求都要承担。
+
+### 跳过目标受众分组 \{#skip-audience-segmentation\}
+
+如需完全跳过目标受众分组直接预热缓存，请使用默认目标受众变体。该方式无需超时设置：
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+后续调用 `getFlowForDefaultAudience` 读取缓存副本的方式，与 `getFlow` 读取 `preloadFlows` 缓存副本的方式相同。
 
 ## 从应用包中显示首屏媒体 \{#show-first-screen-media-from-the-app-bundle\}
 

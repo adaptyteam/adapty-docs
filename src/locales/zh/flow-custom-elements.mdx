@@ -1,0 +1,120 @@
+---
+title: "自定义元素"
+description: "将原生视图（如 Lottie/Rive 动画、交互式图表或摄像头预览）添加到流程屏幕中。"
+metadataTitle: "自定义元素 | 流程与付费墙 | Adapty 文档"
+---
+
+通过在流程与付费墙编辑工具中使用自定义元素，您可以在流程屏幕中添加原生视图。它可以是 Lottie / Rive 动画、交互式图表、地图、摄像头预览——或您的应用可以显示的任何其他视图。只有使用 Adapty iOS SDK 4.4 或更高版本的应用，用户才能看到原生视图。使用 Adapty Android SDK 或跨平台框架（如 Flutter 或 React Native）SDK 的应用，会为每个自定义元素显示备用付费墙。
+
+<DocVideo id="custom-elements-examples.mp4" alt="Three flow screens with native views: a Lottie ring that fills up to 4 of 7 days, a weight chart that the user drags along, and a map of fitness centers near the user." />
+
+在流程屏幕上显示原生视图：
+
+1. [在屏幕上添加自定义元素](#add-and-configure)，并填写其**类型**和 **ID**。
+2. [在自定义元素内添加备用内容](#set-fallback-content)。当您的应用未显示该视图时，用户将看到此内容。
+3. [在应用代码中配置原生视图](#set-up-your-app-code)。使用 Adapty SDK 为其分配相同的类型和 ID。
+4. [发布流程](#publish-and-test)，并在设备上进行测试。
+5. [发布包含原生视图的应用更新](#what-changes-require-an-app-release)。未包含原生视图的旧版本应用用户将看到备用内容。
+
+:::tip
+如需展示图片或动画视频，请使用 [**图片**](custom-media#image) 或 [**视频**](custom-media#video) 元素，而非自定义元素。这两种元素都无需在应用中编写代码，且可在不发布新版本的情况下直接替换文件。
+:::
+
+## 1. 在屏幕中添加自定义元素 \{#add-and-configure\}
+
+1. 打开 **Add element** 面板。在 **Media** 分组中，点击 **Custom element**。
+
+   <ZoomImage id="flow-custom-element-card.webp" width="200px" alt="Add element 面板中 Media 分组里的 Custom element" />
+
+2. 如果原生视图需要响应触摸操作，请勿将自定义元素放入同样响应触摸的容器中（如轮播组件），以免在原生视图中滑动时带动轮播切换。
+3. 在 **Type** 字段中，输入原生视图的类型名称，例如 `lottie_animation`：
+   - **命名规则**：只能使用小写字母、数字和下划线。
+   - **精确匹配**：Type 必须与应用中的完全一致，哪怕一个字母不同，用户看到的也将是备用内容。
+   - **建议项**：该字段提示的是当前流程中已使用的 Type，而非应用中的 Type。
+4. 在 **ID** 字段中，将预填值（如 `custom_1`）替换为你自定义的 ID（如 `welcome_wave`）。ID 用于区分相同 Type 的不同自定义元素。
+
+   <ZoomImage id="flow-custom-element-type-id.webp" width="500px" alt="Type and ID fields in the Element section of the custom element settings" />
+
+5. 若要为原生视图预留固定空间，保持默认的 **Fixed** 高度，并将其设置为该视图所需的高度。
+   - **Shared area**：原生视图与备用内容共享同一区域。
+   - **Alignment**：如果原生视图小于该区域，默认显示在左上角。如需调整位置，请在自定义元素的 **Layout** 部分修改对齐方式。
+
+   :::important
+   使用 **Hug** 高度时，没有自身高度的原生视图（例如地图或滚动列表）会折叠为接近零的高度。
+   :::
+
+6. （可选）若要将原生视图裁剪至自定义元素的圆角 **Corners**，请在 **Layout** 部分勾选 **Clip content** 复选框。
+
+### 在多个自定义元素中使用原生视图 \{#use-native-views-in-several-custom-elements\}
+
+以下规则适用于自定义元素的类型（Type）和 ID：
+
+- **Type**：每种原生视图填写一个 Type，例如 `lottie_animation` 表示 Lottie 播放器，`map` 表示地图。
+- **ID**：在同一 Type 下，为每段内容分配唯一 ID，例如为两个 Lottie 动画分别命名为 `streak_ring` 和 `welcome_wave`。应用通过 ID 来识别对应内容。如果同一屏幕上两个自定义元素的 Type 和 ID 相同，**ID** 字段会显示警告：*Same type and ID as another element on this screen.*（此屏幕上存在相同 Type 和 ID 的元素。）此时仍可发布流程。
+- **元素副本**：复制或粘贴元素，或添加[标签页](builder-tabs)时，编辑工具会自动重命名已在当前屏幕或组件中存在的重复 ID。例如，`custom_1` 变为 `custom_2`，`hero` 变为 `hero_2`。请确保应用代码引用的是正确的 ID。
+
+## 2. 添加备用内容 \{#set-fallback-content\}
+
+在以下情况下，用户将看到备用内容而非原生视图：
+
+- 用户所使用的 app 版本不包含该视图代码。
+- 你的 app 使用的是 Adapty Android SDK、跨平台框架 SDK，或低于 4.4 版本的 Adapty iOS SDK。
+- 自定义元素的 Type 和 ID 与 app 代码中的任何视图均不匹配。
+- app 代码中 Type 和 ID 匹配，但未返回任何视图。例如，该视图所需的文件不在设备上，或用户拒绝了所需权限。
+
+要设置备用内容，请向自定义元素容器中添加元素。当原生视图未显示时，没有备用内容的自定义元素将保持为空。
+
+流程与付费墙编辑工具无法运行您的应用代码，因此其画布上只显示备用内容。[在 Adapty 移动应用中预览](paywall-device-compatibility-preview#preview-on-devices)时也只显示备用内容。如需预览原生视图，请在您的应用构建版本中[在设备上测试该流程](#publish-and-test)。
+
+<ZoomImage id="flow-custom-element-placeholder.webp" width="400px" alt="画布上的空自定义元素，显示文字“Add elements here as a fallback”" />
+
+:::important
+请将导航按钮、购买按钮及其他关键 UI 元素放在自定义元素之外。用户只会看到原生视图或备用内容之一，不会同时看到两者。
+:::
+
+不能在自定义元素内添加 **Footer**、**Sliding sheet** 或 **Bottom Sheet**。
+
+## 3. 在应用中配置原生视图 \{#set-up-your-app-code\}
+
+当包含自定义元素的页面打开时，Adapty SDK 会将该元素的 Type 和 ID 传递给应用代码中的解析函数。解析函数返回以下内容之一：
+
+- **与 Type 和 ID 匹配的视图**：用户将看到原生视图。在代码中，Type 和 ID 的拼写必须与编辑工具中完全一致。
+- **无视图**：用户将看到备用内容。例如，当视图所需的文件不在设备上时，返回无视图。
+
+对于 iOS 代码，请参阅[使用 iOS SDK 展示自定义元素](ios-flow-custom-elements)。该文档介绍了如何编写解析器并在设备上测试原生视图。
+
+:::tip
+原生视图可以展示用户数据，例如早期流程中收集的答案。详见[在付费墙中展示交互式体重目标图表](custom-element-interactive-chart)。
+:::
+
+## 4. 发布并测试流程 \{#publish-and-test\}
+
+要[发布流程](builder-save-publish)，请确保每个自定义元素都具有符合[命名规则](#add-and-configure)的 Type。你可以在发布应用之前先发布流程。在用户更新应用之前，他们将看到备用付费墙。
+
+原生视图中的错误可能导致应用崩溃。在发布应用之前，请在包含原生视图的构建版本中测试每个带有自定义元素的页面。要测试真实用户尚未看到的流程，请将其添加到该构建版本请求、但已发布版本不请求的[版位](create-placement)中。要查看最新发布的流程而非缓存版本，请将设备注册为[测试设备](test-devices)。完整操作步骤，请参阅[在设备上测试](ios-flow-custom-elements#test-on-a-device)。
+
+## 哪些更改需要发布应用 \{#what-changes-require-an-app-release\}
+
+原生视图是应用代码的一部分。如需修改原生视图，需发布应用更新。如需更改备用内容或自定义元素除类型和 ID 以外的任何设置，发布流程即可。
+
+| 变更内容 | 操作方式 | 未更新应用的用户看到的内容 |
+|---|---|---|
+| 现有自定义元素的原生视图，例如不同的动画效果 | 发布包含新原生视图的应用更新 | 旧版原生视图（前提是其应用版本中包含该视图） |
+| 新自定义元素的原生视图 | 发布包含新原生视图的应用更新。添加具有新 Type 和 ID 的自定义元素并发布流程 | 备用内容 |
+| 在另一个屏幕、另一个流程或 A/B 测试中复用现有原生视图 | 添加具有相同 Type 和 ID 的自定义元素并发布流程。如果您的[全局解析器](ios-flow-custom-elements#set-an-app-wide-resolver)能返回该视图，则无需更新应用 | 原生视图（前提是其应用版本中包含该视图） |
+| 自定义元素的 Type 或 ID | 发布包含新 Type 和 ID 对应原生视图的应用更新，并发布流程 | 备用内容 |
+| 备用内容或自定义元素的其他设置 | 发布流程，无需更新应用 | 更新后的内容 |
+
+## 示例 \{#examples\}
+
+每个示例均包含编辑工具中的配置方式以及应用代码：
+
+- [使用 Lottie 动画展示用户进度](custom-element-lottie-animation)：一个随连续打卡天数增长而填充的圆环。
+- [在付费墙中展示可交互的体重目标图表](custom-element-interactive-chart)：付费墙流程中的体重目标图表，位于用户引导流程之后。
+- [在流程中展示地图上的附近地点](custom-element-map)：展示每位用户附近健身房的地图。
+
+## 故障排查 \{#troubleshooting\}
+
+- **用户看到的是备用内容而非原生视图**：请确保 Type 和 ID 与应用中的完全一致，包括每个字母的大小写。未包含该视图的旧版本用户在更新应用之前会一直看到备用内容。如需在代码中定位原因，请参阅 iOS 指南中的[在设备上测试](ios-flow-custom-elements#test-on-a-device)。
+- **用户看到的是空白区域**：[添加备用内容](#set-fallback-content)并发布流程。如果在[测试设备](test-devices)上仍然看到空白区域，说明原生视图显示时没有内容。请确保在内容缺失时，resolver 返回 `nil`，具体可参考[设置备用内容的条件](ios-flow-custom-elements#set-conditions-for-fallback-content)。
+- **原生视图与自定义元素不匹配**：请确保应用将视图适配到自定义元素的区域内。如需将视图裁剪至圆角 **Corners** 范围内，在 **Layout** 部分勾选 **Clip content** 复选框。

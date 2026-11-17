@@ -84,6 +84,15 @@ repeats no version numbers — those drift, and several already have since 2026-
 - **Store- and dashboard-side prerequisites are not this zone's ground truth.** Product,
   paywall and placement configuration, store connection, and what observer mode *is* all belong
   to other zones and are linked out, not verified here — see the next section for the list.
+- **Android pending purchases reach the profile from SDK 4.3.0** (2026-10-26, Android SDK code on its
+  4.3.0 release branch). Before 4.3.0, `makePurchase` reported `Pending` through a one-shot callback and
+  dropped the later `PURCHASED` update, so the purchase never reached the profile. From 4.3.0 the SDK
+  stores the pending purchase by token and validates it when a `PURCHASED` update arrives, or on start
+  and every return to the foreground if Google Play reports it as purchased. A stored purchase is dropped
+  if validation fails with `BAD_REQUEST`, or if Play no longer returns it and it is older than 7 days.
+  The same release also syncs purchases the app didn't start (Play purchase-flow recommendations) and
+  syncs on foreground at most once a minute, outside observer mode. `android-making-purchases` carries
+  one sentence on the pending case; the rest is internal.
 
 ## What we document, what we don't
 
@@ -315,3 +324,4 @@ during the `flows-with-your-own-payments` guide work. Each item names the comman
   `reportTransaction`, on the next profile fetch. What that path cannot carry is the `variationId`.
   **The backend half was not read**, and the timing may be why the article states it absolutely.
   Left unedited for the owner to judge.
+- **Promoted purchases are upfront only, enforced twice (2026-11-04, iOS `4.3.2`).** `Sources/StoreKit/PromotedPurchaseIntentObserver.swift` builds the product with `.upFront` terms, and `makePurchase` for `AdaptyPromotedProduct` in `Sources/StoreKit/StoreKitPurchaser.swift` throws `billingPlanUnavailable` for any other plan. Until 2026-11-04 only `set-up-12-month-commitment` stated this. `making-purchases` and `react-native-making-purchases` now carry it too. Its link goes to `making-purchases`, which is the iOS article (`ios.json`), not a general page. Commitment plans are documented for iOS and React Native only.

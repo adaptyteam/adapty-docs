@@ -1,0 +1,161 @@
+---
+title: "Настройка плана с 12-месячным обязательством"
+description: "Настройте ежемесячную подписку Apple с 12-месячным обязательством в App Store Connect и Adapty, добавьте её во флоу или на кастомный пейвол и протестируйте в песочнице."
+metadataTitle: "Настройка плана с 12-месячным обязательством | Документация Adapty"
+---
+
+:::important
+Чтобы предложить тарифный план с обязательством, вам нужна годовая подписка в App Store и [флоу](adapty-flow-builder) или [кастомный пейвол](paywalls). Флоу требуют Adapty SDK v4.3.1 или новее на iOS, v4.3 или новее на Android, а также v4.3.0 или новее на React Native или Flutter. Кастомные пейволы требуют Adapty SDK v4.3 или новее на iOS, React Native или Flutter.
+:::
+
+Чтобы подписчики брали на себя обязательство на полный год, но платили ежемесячно, добавьте [12-месячный план с обязательством](app-store-12-month-commitment) к вашему годовому продукту в App Store Connect и в Adapty.
+
+## Прежде чем начать \{#before-you-begin\}
+
+Прежде чем внедрять планы с обязательством, убедитесь, что вы:
+
+- **Выбирайте правильный рынок**: Планы с обязательством недоступны в США. В Германии, Израиле, Южной Африке и Турции подписчики могут отменить подписку с немедленным вступлением в силу через Apple Support.
+- **Учитывайте версию ОС**: Подписчикам нужен iOS 26.4 или выше, либо аналогичная версия iPadOS, macOS, tvOS или visionOS. Соберите приложение с помощью Xcode 26.5 или выше.
+- **Учитывайте ценовой диапазон**: Сумма 12 ежемесячных платежей должна составлять от 1x до 1,5x стоимости годовой подписки с единовременной оплатой.
+- **Используйте поддерживаемую версию Adapty SDK**: Флоу требуют Adapty SDK v4.3.1 или выше на iOS, v4.3 или выше на Android и v4.3.0 или выше на React Native или Flutter. Кастомные пейволы требуют Adapty SDK v4.3 или выше на iOS, React Native или Flutter: в версиях приложения с более ранним SDK пользователи смогут купить только план с единовременной оплатой.
+- **Обновите код, обрабатывающий идентификаторы продуктов**: Вебхуки, интеграции, экспорт данных и Server-side API передают покупки плана с обязательством как `<product_id>:monthly`. Если ваш код обрабатывает идентификаторы продуктов, обновите логику до первой покупки плана с обязательством.
+
+## 1. Настройка App Store Connect \{#1-app-store-connect-configuration\}
+
+1. Откройте годовую подписку в App Store Connect или [создайте новую подписку](app-store-products) с длительностью **1 Year**.
+2. В разделе **Availability** добавьте одни и те же страны в разделах **1 Year Upfront** и **Monthly with 12-Month Commitment**. Apple предлагает тарификацию с обязательным сроком только там, где доступна авансовая тарификация. Обратное не обязательно: вы можете предлагать план с единовременной оплатой в странах без плана с обязательным сроком.
+3. В разделе **Subscription Prices** установите авансовую цену для базовой территории, если у подписки её ещё нет. Apple требует авансовую цену, даже если пользователям отображается только план с обязательным сроком.
+4. Установите ежемесячную цену для базовой территории. Ежемесячная цена должна составлять от 1/12 до 1/8 авансовой цены. Например, при авансовой цене €59,99 ежемесячная цена может быть от €5,00 до €7,49.
+
+App Store Connect рассчитывает цены для других стран на основе цен базовой территории.
+
+Подробные инструкции можно найти в гайде Apple по [предложению ежемесячных подписок с обязательством на 12 месяцев](https://developer.apple.com/help/app-store-connect/manage-subscriptions/set-availability-for-an-auto-renewable-subscription#offer-monthly-subscriptions-with-12-month-commitment).
+
+## 2. Настройка Adapty \{#2-adapty-configuration\}
+
+Чтобы commitment plan отображался во флоу или в кастомных пейволах, включите его для годового продукта в Adapty. Если вы не используете ни то ни другое, этот шаг можно пропустить.
+
+1. Откройте годовой продукт. Если его ещё нет, [создайте его и подключите](create-product#create-product-and-connect-existing-store-products) подписку, которую вы настроили в App Store Connect. Не создавайте новый продукт через Adapty: это создаст отдельную подписку без commitment plan.
+2. Откройте вкладку **App Store** и выберите **Offer monthly payments with a 12-month commitment**.
+
+   <ZoomImage id="offer-monthly-payments.webp" width="500px" alt="App Store tab of a yearly product with the Offer monthly payments with a 12-month commitment checkbox" />
+
+3. Во всплывающем окне из списка **Monthly price, USD** выберите цену рассрочки, соответствующую значению в App Store Connect. Список содержит только ценовые точки App Store в допустимом диапазоне. Эта цена является справочным значением: Adapty не отправляет её в App Store Connect.
+
+   <ZoomImage id="commitment-set-price.webp" width="500px" alt="Monthly with 12-month commitment pop-up with the Monthly price, USD field" />
+
+## 3. Настройте офферы \{#3-set-up-offers\}
+
+В App Store Connect у каждого тарифного плана есть собственные introductory offer, promotional offer, win-back offer и коды офферов. Оффер для авансового плана не применяется к плану с обязательством.
+
+- **Бесплатные пробные периоды и другие introductory offers**: Настройте предложение для тарифного плана с обязательством в App Store Connect. Adapty применяет [introductory offers](app-store-offers#introductory-offers) автоматически. Когда introductory offer заканчивается, начинается 12-месячное обязательство подписчика.
+- **Promotional и win-back offers**: Настройте [promotional](app-store-offers#promotional-offers) или [win-back offers](app-store-offers#win-back-offers) для тарифного плана с обязательством в App Store Connect. Затем [добавьте предложения в Adapty](create-offer) и установите для них **App Store plan** — **Monthly with 12-month commitment**. Флоу или продукт пейвола показывает только предложения для своего тарифного плана. Если вы не используете ни флоу, ни кастомные пейволы, добавлять предложения в Adapty не нужно.
+- **Промокоды**: Настройте промокоды для тарифного плана с обязательством в App Store Connect.
+
+## 4. Добавьте на пейвол или во флоу \{#4-add-to-a-flow-or-custom-paywall\}
+
+:::warning
+Apple требует отображать и цену в рассрочку, и годовую сумму до совершения покупки.
+:::
+
+### Флоу
+
+1. В конструкторе флоу откройте панель **Products** и [добавьте годовой продукт](paywall-product-block#sell-a-yearly-product-with-monthly-payments) с тегом **Monthly** на экран. Чтобы также продавать план с единовременной оплатой на том же экране, добавьте продукт с тегом **Upfront**.
+   - Чтобы предложить единовременный оффер пользователям, которые покупают план с полной оплатой, — на более ранней версии SDK или там, где рассрочный план недоступен, — выберите его в поле **Fallback offer**.
+2. Назначьте продукт **Monthly** на [карточку продукта](paywall-product-block#configure-a-product-card) или на [действие **Purchase**](paywall-product-block#trigger-a-purchase).
+3. Чтобы отобразить цену за рассрочку, вставьте [переменные](onboarding-variables#12-month-commitment-plan) `prod_billing_price` и `prod_billing_period`. Чтобы показать общую годовую сумму, вставьте `prod_price`. Переменные рассрочки требуют Adapty SDK v4.3.1 или выше для iOS, либо v4.3.0 или выше для React Native или Flutter.
+4. Чтобы предварительно просмотреть экран для пользователей, которые не могут купить рассрочный план, откройте в панели **Products** меню продукта **Monthly** и выберите **Offer** > **Monthly plan unavailable**.
+
+### Пользовательский пейвол \{#custom-paywall\}
+
+1. В своём кастомном пейволе [добавьте годовой продукт](add-product-to-paywall) и установите для него **Billing plan** в значение **Monthly**. Чтобы на том же пейволе также продавать тариф с полной оплатой, добавьте годовой продукт ещё раз с планом **Upfront**.
+   - Чтобы предложить пользователям, которые покупают тариф с полной оплатой, специальное предложение вместо него — на более ранней версии SDK или там, где тарифный план с рассрочкой недоступен — выберите его в поле **Fallback offer**.
+2. В приложении отображайте цену из `product.subscriptionPricingTerms`. Для пользователей, которые могут купить тарифный план с рассрочкой, SDK Adapty возвращает его цену. Для остальных SDK возвращает цену тарифа с полной оплатой:
+   - Чтобы определить, какой план вернул SDK, проверьте `product.subscriptionPricingTerms?.billingPlan`. Значение `.monthly` соответствует тарифному плану с рассрочкой, `.upFront` — тарифу с полной оплатой.
+   - Для отображения цены одного платежа используйте `subscriptionPricingTerms.localizedBillingPrice` и `subscriptionPricingTerms.localizedBillingPeriod`. Свойство `localizedBillingPeriod` требует Adapty iOS SDK версии 4.4 или выше. В более ранних версиях SDK форматируйте `subscriptionPricingTerms.billingPeriod` самостоятельно в приложении.
+   - Для отображения итоговой годовой суммы используйте `subscriptionPricingTerms.commitmentInfo.localizedPrice` и `subscriptionPricingTerms.commitmentInfo.localizedPeriod`. Свойство `commitmentInfo.localizedPeriod` требует Adapty iOS SDK версии 4.4 или выше. Для тарифного плана с рассрочкой `product.localizedPrice` и `product.localizedSubscriptionPeriod` возвращают те же годовые значения. В более ранних версиях SDK используйте вместо них эти два свойства.
+   - В React Native считывайте цену из `product.subscription?.ios?.pricingTerms`. Его `billingPlan` принимает значение `'monthly'` для тарифного плана с рассрочкой и `'up_front'` для тарифа с полной оплатой. Для цены одного платежа используйте `billingPrice.localizedString` и `billingPeriod`. Для итоговой годовой суммы — `commitmentInfo.price.localizedString` и `commitmentInfo.period`.
+   - В Flutter считывайте цену из `product.subscription?.pricingTerms`. Его `billingPlan` принимает значение `AdaptySubscriptionBillingPlan.monthly` для тарифного плана с рассрочкой и `AdaptySubscriptionBillingPlan.upFront` для тарифа с полной оплатой. Для цены одного платежа используйте `billingPrice.localizedString` и `billingPeriod`. Для итоговой годовой суммы — `commitmentInfo.price.localizedString` и `commitmentInfo.period`.
+
+Пользователи не могут приобрести план с обязательным периодом в следующих случаях:
+
+- **Неподдерживаемая версия ОС или страна**: На устройстве пользователя установлена версия системы ниже 26.4, либо план недоступен в его App Store по стране. SDK Adapty возвращает цену обычного плана без рассрочки.
+- **Существующая подписка без рассрочки**: StoreKit сообщает, что пользователь уже подписан. Для смены плана подписчики используют настройки подписки Apple.
+- **[Встроенная покупка через App Store](making-purchases#in-app-purchases-from-the-app-store)**: Пользователь выбирает продукт в App Store, после чего SDK Adapty инициирует покупку в вашем приложении. Для таких покупок SDK поддерживает только обычный план без рассрочки.
+
+Чтобы прекратить предлагать тарифный план с обязательством, в своих флоу замените или удалите продукт **Monthly**. В пользовательских пейволах установите для годового продукта значение **Billing plan** → **Upfront** или удалите строку **Monthly**. Снять флажок **Offer monthly payments with a 12-month commitment** в Adapty невозможно. Текущие подписчики по-прежнему продлеваются с новым обязательством каждый год — если только вы не нажмёте **Remove Monthly Billing** для годовой подписки в App Store Connect. Подписчики, уже взявшие на себя обязательство, продолжают платить до его окончания.
+
+## 5. Протестируйте план в песочнице \{#5-test-the-plan-in-a-sandbox\}
+
+Следуйте [гайду по тестированию в песочнице](test-purchases-in-sandbox), используя два аккаунта песочницы:
+
+- **Аккаунт из страны, где доступен план с рассрочкой**: пейвол должен отображать план с рассрочкой с ежемесячной ценой и общей суммой. После покупки в профиле пользователя песочницы должен появиться уровень доступа годового продукта.
+- **Аккаунт из США**: пейвол должен отображать только план с единовременной оплатой.
+
+Если ваш код обрабатывает идентификаторы продуктов из вебхуков или Server-side API, убедитесь, что он получает покупки commitment-plan как `<product_id>:monthly`.
+
+Для локального тестирования логики покупок используйте [StoreKit Testing в Xcode](local-sk-files) версии 26.5 или новее. Покупки в StoreKit Testing не попадают в Adapty.
+
+## Отображение прогресса обязательства в приложении \{#show-commitment-progress-in-your-app\}
+
+Чтобы показывать подписчикам, насколько они продвинулись в рамках обязательства, считайте уровень доступа из профиля пользователя. Свойства `billingPlan` и `commitmentInfo` доступны начиная с Adapty SDK v4.3 для iOS и v4.3.0 для React Native и Flutter.
+
+- Чтобы определить, находится ли подписчик на тарифе с обязательным периодом, сравните `billingPlan` с ежемесячным значением. Не проверяйте, установлено ли свойство: оно также может содержать значение upfront.
+- Для отображения прогресса используйте `commitmentInfo.billingPeriodNumber` для текущего платежа и `commitmentInfo.totalBillingPeriods` для количества платежей.
+- Чтобы отобразить дату окончания обязательного периода, используйте `commitmentInfo.expiresAt`, а не свойство `expiresAt` уровня доступа.
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS (Swift)" default>
+
+```swift showLineNumbers
+let profile = try await Adapty.getProfile()
+
+if let premium = profile.accessLevels["premium"],
+   premium.billingPlan == .monthly,
+   let commitment = premium.commitmentInfo {
+    // e.g. "Payment 3 of 12, commitment ends on <commitment.expiresAt>"
+}
+```
+
+</TabItem>
+<TabItem value="rn" label="React Native (TS)">
+
+```typescript showLineNumbers
+
+const profile = await adapty.getProfile();
+const premium = profile.accessLevels?.['premium'];
+
+if (premium?.billingPlan === SubscriptionBillingPlan.Monthly && premium.commitmentInfo) {
+  const { billingPeriodNumber, totalBillingPeriods, expiresAt } = premium.commitmentInfo;
+  // e.g. "Payment 3 of 12, commitment ends on <expiresAt>"
+}
+```
+
+</TabItem>
+<TabItem value="flutter" label="Flutter (Dart)">
+
+```dart showLineNumbers
+final profile = await Adapty().getProfile();
+final premium = profile.accessLevels['premium'];
+final commitment = premium?.commitmentInfo;
+
+if (premium?.billingPlan == AdaptySubscriptionBillingPlan.monthly && commitment != null) {
+  // e.g. "Payment ${commitment.billingPeriodNumber} of ${commitment.totalBillingPeriods},
+  // commitment ends on ${commitment.expiresAt}"
+}
+```
+
+</TabItem>
+</Tabs>
+
+## Устранение неполадок \{#troubleshooting\}
+
+- **Отсутствует флажок для ежемесячных платежей**: флажок **Offer monthly payments with a 12-month commitment** появляется только для продукта типа **Annual** с идентификатором продукта App Store. Он остаётся неактивным, пока у продукта не указана **Price (USD)**.
+- **Пользователи не видят бесплатный пробный период или другое предложение для тарифа с обязательством**: в App Store Connect каждое предложение привязано к одному тарифному плану. [Настройте предложение](#3-set-up-offers) для тарифа с обязательством. Для promotional offer или win-back offer также задайте **App Store plan** предложения в Adapty как **Monthly with 12-month commitment**.
+- **Все пользователи видят единовременную цену**: проверьте оба условия:
+  - Приложение собрано с Xcode 26.5 или более новой версией. При использовании более ранней версии Xcode SDK Adapty всегда возвращает цену единовременного тарифа.
+  - В флоу экран использует годовой продукт с тегом **Monthly**. В кастомном пейволе для годового продукта **Billing plan** установлен как **Monthly**.
+- **Часть пользователей видит единовременную цену**: эти пользователи [не могут купить тариф с обязательством](#4-add-to-a-flow-or-custom-paywall).
+- **Пейвол показывает годовую сумму вместо суммы рассрочки**:
+  - В флоу `prod_price` возвращает годовую сумму. Чтобы отобразить сумму рассрочки, используйте `prod_billing_price`. В Adapty iOS SDK v4.3.0 `prod_billing_price` также показывает годовую сумму: обновите SDK до v4.3.1 или более новой версии.
+  - В кастомном пейволе `product.localizedPrice` возвращает годовую сумму. Чтобы отобразить сумму рассрочки, используйте `subscriptionPricingTerms.localizedBillingPrice`. В React Native используйте `product.subscription?.ios?.pricingTerms?.billingPrice.localizedString`. В Flutter используйте `product.subscription?.pricingTerms?.billingPrice.localizedString`.

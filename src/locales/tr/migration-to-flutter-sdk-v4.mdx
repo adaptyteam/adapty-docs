@@ -79,21 +79,34 @@ Flutter 3.44 ve sonrası Swift Package Manager'ı varsayılan olarak etkinleşti
 
 ### getPaywall → getFlow
 
-Dönen tür `AdaptyPaywall` yerine `AdaptyFlow` olarak değişti ve artık `locale` parametresi geçmiyorsunuz — bir flow render ettiğinizde yerelleştirme otomatik olarak çözümlenir; özel paywalllar için yapılandırılmış tüm locale'lar `flow.remoteConfigs` içinde döner:
+Döndürülen tür `AdaptyPaywall`'dan `AdaptyFlow`'a değişir ve `locale` parametresi fetch çağrısından `createFlowView`'a taşınır (Flutter SDK 4.0.3 ve sonrası; önceki 4.0.x sürümlerinde yerelleştirme seçme imkânı yoktur) — bkz. [Yerel ayar eşleşmesi birebir yapılır](#locale-matching-is-exact); özel paywaller için tüm yapılandırılmış yerel ayarlar `flow.remoteConfigs` içinde döndürülür:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywall(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
 + final flow = await Adapty().getFlow(placementId: 'YOUR_PLACEMENT_ID');
 ```
 
-`getPaywallForDefaultAudience` da aynı şekilde yeniden adlandırıldı:
+`getPaywallForDefaultAudience` aynı şekilde yeniden adlandırılır:
 
 ```diff showLineNumbers
 - final paywall = await Adapty().getPaywallForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID', locale: 'en');
 + final flow = await Adapty().getFlowForDefaultAudience(placementId: 'YOUR_PLACEMENT_ID');
 ```
 
-Fetch policy türü `AdaptyPaywallFetchPolicy`'den `AdaptyFlowFetchPolicy`'ye yeniden adlandırıldı; seçenekleri (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) değişmedi.
+Fetch policy türü `AdaptyPaywallFetchPolicy` yerine `AdaptyFlowFetchPolicy` olarak yeniden adlandırılır; seçenekleri (`reloadRevalidatingCacheData`, `returnCacheDataElseLoad`, `returnCacheDataIfNotExpiredElseLoad`) değişmez.
+
+### Yerel ayar eşleşmesi tam eşleşmeye dayalıdır \{#locale-matching-is-exact\}
+
+:::warning
+v3'te Adapty sunucusu yerelleştirmeyi seçer ve dile geri dönerdi: paywall'ın `pt-br` yerelleştirmesi yoksa `pt` isteği `pt` yerelleştirmesini alırdı. v4'te SDK, yerelleştirmeyi cihaz üzerinde seçer ve yalnızca tam eşleşme kullanır. Hiçbir yerelleştirmeyle eşleşmeyen bir kod, flow'u varsayılan yerelleştirmesiyle hatasız ve uyarısız olarak render eder.
+:::
+
+Yükseltme yapmadan önce, uygulamanızın ilettiği yerel ayar kodlarını kontrol edin:
+
+- Her bölgesel kod için, o koda sahip bir yerelleştirme ekleyin — örneğin `pt` yanına `pt-br` — ya da kodu flow'un sahip olduğu bir kodla eşleştirin.
+- Kodları kontrol panelinde göründüğü şekilde geçirin — küçük harfli, kısa çizgiyle ayrılmış alt etiketler. Sistem locale tanımlayıcısını olduğu gibi geçirmeyin: `Platform.localeName` `pt_BR` döndürür ve bu hiçbir yerelleştirmeyle eşleşmez.
+
+Bkz. [Yerelleştirmeler ve locale kodları](flutter-localizations-and-locale-codes#flows-and-paywalls).
 
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
@@ -254,11 +267,12 @@ Bu semboller 3.x sürümünde kullanımdan kaldırılmıştı ve v4'te tamamen k
 
 Bu değişiklikler derleme hatası oluşturmaz, bu nedenle çalışma zamanında test edin:
 
-- **Başarılı satın alma**: v3'te varsayılan `paywallViewDidFinishPurchase` görünümü kapatıyordu. v4'te `flowViewDidFinishPurchase` zorunludur ve varsayılan davranışı yoktur — bu davranışı istiyorsanız görünümü kendiniz kapatın.
-- **Android sistem geri tuşu**: Artık varsayılan olarak bir flow'u kapatmaz. Eylem, `AndroidSystemBackAction` olarak `flowViewDidPerformAction`'a iletilir — geri tuşunun flow'u kapatmasını istiyorsanız bunu orada ele alın.
-- **URL açma**: Varsayılan `flowViewDidPerformAction` artık `OpenUrlAction`'ı URL'yi yerel olarak açarak işler (kontrol panelindeki uygulama içi veya harici tarayıcı ayarına uyar); `CloseAction`'da ise görünümü kapatmaya devam eder. URL'leri kendiniz işlemek istiyorsanız callback'i geçersiz kılın.
-- **Görünüm hataları**: `flowViewDidReceiveError` zorunludur ve kapatma işlemi sizin implementasyonunuza bağlıdır. v3 entegrasyonunuz render hatalarında görünümün otomatik olarak kapanmasına dayanıyorsa, bu callback içinde `view.dismiss()` çağırın.
-- **Görünüm yaşam döngüsü**: Bir flow veya onboarding görünümünü kapatmak, onu bellekten serbest bırakır. Kapatılmış bir görünüm artık yeniden gösterilemez — bunun yerine yeni bir tane oluşturun.
+- **Flow yerelleştirme**: Bölgesel bir yerel ayar kodu artık kendi diline geri dönmez — `pt-br`, `pt` yerelleştirmesini almaz. Tam eşleşme olmayan bir kod, flow'u varsayılan yerelleştirmesiyle gösterir. Bkz. [Yerel ayar eşleşmesi tamdır](#locale-matching-is-exact).
+- **Başarılı satın alma**: v3'te varsayılan `paywallViewDidFinishPurchase` görünümü kapatıyordu. v4'te `flowViewDidFinishPurchase` zorunludur ve varsayılanı yoktur — bu davranışı istiyorsanız görünümü kendiniz kapatın.
+- **Android sistem geri tuşu**: Artık varsayılan olarak bir flow'u kapatmaz. Eylem, `flowViewDidPerformAction`'a `AndroidSystemBackAction` olarak iletilir — geri tuşunun flow'u kapatmasını istiyorsanız bunu orada ele alın.
+- **URL açma**: Varsayılan `flowViewDidPerformAction` artık `OpenUrlAction`'ı URL'yi yerel olarak açarak işler (kontrol panelindeki uygulama içi veya harici tarayıcı ayarına uygun şekilde); `CloseAction` ile de görünümü kapatır. URL'leri kendiniz ele almak için callback'i geçersiz kılın.
+- **Görünüm hataları**: `flowViewDidReceiveError` zorunludur ve kapatma işlemi sizin uygulamanıza bağlıdır. v3 entegrasyonunuz görünümü oluşturma hatalarında otomatik olarak kapatmaya dayanıyorsa, bu callback'te `view.dismiss()` çağrısı yapın.
+- **Görünüm yaşam döngüsü**: Bir flow veya onboarding görünümünü kapatmak onu bellekten siler. Kapatılan bir görünüm artık yeniden gösterilemez — bunun yerine yeni bir tane oluşturun.
 
 ## Onboarding API kullanımdan kaldırma \{#onboarding-api-deprecation\}
 

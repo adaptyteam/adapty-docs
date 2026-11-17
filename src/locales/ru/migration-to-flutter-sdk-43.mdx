@@ -1,0 +1,102 @@
+---
+title: "Миграция Adapty Flutter SDK на v4.3"
+description: "Миграция на Adapty Flutter SDK v4.3: управление отображением сообщений Google Play, чтение числовых параметров событий флоу как num, обработка ввода email в онбордингах."
+metadataTitle: "Миграция на Adapty Flutter SDK v4.3 | Документация Adapty"
+---
+
+Adapty Flutter SDK 4.3 по умолчанию показывает встроенные сообщения Google Play и изменяет типы Dart для некоторых данных событий флоу и онбординга. Публичный API не удалён и не переименован, поэтому приложение компилируется с версией 4.3 без изменений. Чтобы сохранить прежнее поведение, ознакомьтесь с каждым изменением в этом гайде.
+
+Если вы используете версию 4.0, начните с [перехода на v4.1](migration-to-flutter-sdk-41), а затем следуйте этому руководству.
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Сообщения Google Play не запрашиваются | Сообщения Google Play отображаются по умолчанию на Android, в том числе поверх флоу |
+| Параметры событий флоу с целыми числами приходят как `double` на Android | Они приходят как `int` на обеих платформах |
+| Поля email в онбординге приходят как `AdaptyOnboardingsTextInput` | Они приходят как `AdaptyOnboardingsEmailInput` |
+| Вывод на печать ввода в онбординге скрывает введённое значение | Вывод на печать показывает введённое значение |
+
+## Установка \{#installation\}
+
+Обновите `adapty_flutter` до версии v4.3 в вашем `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.3.0
+```
+
+Если ваше приложение использует [Kids Mode](kids-mode-flutter), укажите `adapty_flutter_kids` вместо этого:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.3.0
+```
+
+Требования остались прежними, как и в версии 4.1: **Flutter 3.32.0** (Dart 3.8.0) и **iOS 15.0**. Подробнее об установке см. в разделе [Установка Adapty SDK](sdk-installation-flutter).
+
+## Сообщения Google Play отображаются по умолчанию \{#google-play-messages-are-shown-by-default\}
+
+Начиная с версии 4.3, SDK запрашивает встроенные сообщения Google Play — например, уведомления об отклонённом платеже — каждый раз, когда `Activity` вашего приложения запускается после `activate`. Это происходит в том числе при возврате приложения на передний план, а также при открытии или закрытии флоу или онбординга, так что сообщение может появиться поверх пейвола.
+
+Если это поведение вас устраивает, никаких изменений не требуется. Чтобы управлять моментом показа сообщений, активируйте SDK с ручной обработкой на Android и вызывайте `showStoreMessages` в подходящий момент:
+
+```dart showLineNumbers title="main.dart"
+
+final configuration = AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY');
+if (Platform.isAndroid) {
+  configuration.withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual);
+}
+await Adapty().activate(configuration: configuration);
+```
+
+Установите ручную обработку только для Android, чтобы не затронуть iOS: на iOS 16 и выше ручная обработка также задерживает сообщения App Store до тех пор, пока приложение не вызовет `showStoreMessages`. Полное описание API — в разделе [Управление сообщениями стора](flutter-store-messages).
+
+:::warning
+В ручном режиме сторы не показывают сообщения самостоятельно. Если ваше приложение никогда не вызывает `showStoreMessages`, пользователи никогда не увидят уведомление об отклонённом платеже.
+:::
+
+## Числовые параметры событий флоу имеют тип `int` на Android \{#numeric-flow-event-parameters-are-int-on-android\}
+
+На Android числовые параметры аналитических событий флоу раньше приходили как `double`. Начиная с версии 4.3, они приходят как `int`, как и на iOS. Это затрагивает `flowViewDidReceiveAnalyticEvent` и колбэк `onDidReceiveAnalyticEvent` у `AdaptyUIFlowPlatformView`, включая значения даты и времени в событиях [ввода флоу](flutter-flow-input).
+
+Приведение к `double` теперь вызывает исключение на Android. Считывайте числовые параметры как `num`:
+
+```diff showLineNumbers
+- final timestamp = params['value'] as double;
++ final timestamp = params['value'] as num;
+```
+
+## Поля email в онбординге передаются как `AdaptyOnboardingsEmailInput` \{#onboarding-email-fields-arrive-as-adaptyonboardingsemailinput\}
+
+Начиная с версии 4.3, поля email в онбординге передаются в `onboardingViewOnStateUpdatedAction` и колбэк `onStateUpdatedAction` компонента `AdaptyUIOnboardingPlatformView` как `AdaptyOnboardingsEmailInput`. Раньше они передавались как `AdaptyOnboardingsTextInput`. Если ваш код считывает email из варианта text, добавьте обработку варианта email:
+
+```diff showLineNumbers
+  switch (input) {
+    case AdaptyOnboardingsTextInput(:final value):
+      // text fields
+      break;
++   case AdaptyOnboardingsEmailInput(:final value):
++     // email fields
++     break;
+    case AdaptyOnboardingsNumberInput(:final value):
+      // number fields
+      break;
+  }
+```
+
+Числовые поля теперь приходят как `AdaptyOnboardingsNumberInput`. До версии 4.3 их обновления не поступали вовсе. См. [Обработка данных из онбордингов](flutter-onboarding-input).
+
+## Введённые значения онбординга отображаются в выводе при логировании \{#onboarding-input-values-appear-in-printed-output\}
+
+Вывод `AdaptyOnboardingsInputParams` или `AdaptyOnboardingsInput` теперь содержит введённые пользователем данные. Если ваше приложение логирует эти объекты, проверьте логи: теперь они могут содержать имена, адреса электронной почты и другие данные, введённые пользователями.
+
+## Новое в 4.3 \{#new-in-43\}
+
+Эти изменения не требуют изменений в коде:
+
+- **[Управление сообщениями стора](flutter-store-messages)**: Выберите, когда показывать сообщения App Store и Google Play.
+- **[Предзагрузка плейсментов](flutter-optimize-paywall-fetching#preload-placements)**: `preloadFlows` и `preloadFlowsForDefaultAudience` прогревают кэш флоу.
+- **[Освобождение сохранённого представления](flutter-present-paywalls#dismiss-the-flow-or-paywall)**: Метод `destroy()` освобождает представление флоу, которое вы сохранили через `dismiss(destroy: false)` или так и не показали.
+- **[Планы с 12-месячными обязательствами](set-up-12-month-commitment)**: Свойство `AdaptyProductSubscription.pricingTerms` описывает план на iOS, а уровни доступа возвращают `billingPlan` и `commitmentInfo`.
+- **[Режим наблюдателя](report-transactions-observer-mode-flutter)**: Метод `reportTransaction` принимает необязательный параметр `appleJwsTransaction` на iOS.

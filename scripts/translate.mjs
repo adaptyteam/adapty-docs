@@ -278,6 +278,7 @@ TRANSLATE:
 - callout content (:::note, :::tip, :::warning, :::danger, :::info, :::important, :::link blocks)
 - human-readable component prop values:
   - summary= in <Details> components
+  - caption= in <AgentChat> and summary= in <ChatTurn> components
   - label= in <TabItem> when it is a human-readable phrase — translate it (e.g. label="Before v.2.x" → label="До v.2.x", label="With fallback" → label="С фолбэком"). Keep platform names unchanged: "iOS", "Android", "React Native", "Flutter", "Unity", "Kotlin Multiplatform", "Capacitor".
   - tooltip= in <InlineTooltip> — this is the visible trigger term shown inline to the reader; always translate it (e.g. tooltip="placement" → tooltip="плейсмент", tooltip="variant" → tooltip="вариант"). Apply glossary terms where they exist.
   - children of <InlineTooltip> — the popup explanation text rendered in the slot; translate it as regular prose, including any markdown links inside it (translate link display text, keep hrefs unchanged).
@@ -2230,6 +2231,7 @@ function collectLabelEntries(nodes) {
  * Starts from the EXISTING file so that sidebars whose cache has no labels yet
  * don't get wiped (safe for partial runs like --only-files).
  * Handles both new format { en, translation } and legacy format string values.
+ * Deletes entries for items that no longer exist in the English sidebars.
  */
 async function rebuildSidebarLabels(
   sidebarFiles,
@@ -2264,6 +2266,24 @@ async function rebuildSidebarLabels(
       /* sidebar not yet translated — skip */
     }
   }
+
+  // Delete entries for items that no longer exist in the English sidebars
+  // (src/data/sidebars). Pages match by id, categories by English label.
+  // A leftover page id can override a category's label, because
+  // Sidebar.astro checks `link.id` before `label`.
+  try {
+    const englishKeys = new Set();
+    for (const file of sidebarFiles) {
+      const sidebar = JSON.parse(await fs.readFile(file, "utf-8"));
+      for (const { key } of collectLabelEntries(sidebar)) englishKeys.add(key);
+    }
+    for (const key of Object.keys(merged)) {
+      if (!englishKeys.has(key)) delete merged[key];
+    }
+  } catch {
+    /* unreadable sidebar — skip pruning rather than drop its labels */
+  }
+
   await fs.mkdir(localesDir, { recursive: true });
   await fs.writeFile(
     path.join(localesDir, "_sidebar-labels.json"),

@@ -12,13 +12,82 @@ Ces règles supposent que `Adapty().activate()` et `Adapty().identify()` ont dé
 
 ## Règles et pièges \{#rules-and-pitfalls\}
 
-| Faites ceci | Évitez cela | Pourquoi |
+| Faites ceci | Ne faites pas cela | Pourquoi |
 |---|---|---|
-| Récupérez le placement que vous êtes sur le point d'afficher.                                                                                  | Prérécupérer tous les placements simultanément au lancement.        | La prérécupération en masse bloque le thread principal et provoque un écran noir pendant le pic.                                  |
-| Récupérez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `didUpdateProfileStream`. | Appelez `getFlow` dans `main()` avant `runApp`.         | L'attribution n'est pas encore arrivée. Le flow se résout sur l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                             | Attendre `getFlow` indéfiniment.                     | Sans délai d'expiration, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application.     |
+| Récupérez le placement que vous êtes sur le point d'afficher, ou préchauffez le cache avec [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Lancez vos propres appels `getFlow` concurrents au démarrage. | Un burst de prefetch manuel bloque le thread principal et produit un écran noir. `preloadFlows` est conçu pour ça et envoie le lot au SDK natif en un seul appel. |
+| Appelez `getFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `activate` ou après le déclenchement de `didUpdateProfileStream`. | Appelez `getFlow` dans `main()` avant `runApp`. | L'attribution n'est pas encore arrivée. Le flow se résout sur l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendez `getFlow` indéfiniment. | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran blanc jusqu'à ce que le réseau réponde — ou ferment l'application. |
 
 Consultez [Récupérer les paywalls personnalisés et les produits](fetch-paywalls-and-products-flutter) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
+
+## Précharger les placements \{#preload-placements\}
+
+:::info
+`preloadFlows` et `preloadFlowsForDefaultAudience` sont disponibles à partir de la version 4.3.0 du SDK.
+:::
+
+`preloadFlows` met en cache le JSON du flow à l'avance. Vous l'utilisez ensuite comme d'habitude : `getFlow` pour le flow, `createFlowView` pour sa vue.
+
+`fetchPolicy` détermine quelle couche un appel ultérieur à `getFlow` consulte en premier, et non si le cache est accessible :
+
+- `AdaptyFlowFetchPolicy.returnCacheDataElseLoad` lit d'abord la copie préchargée et ne fait appel au réseau que si rien n'est en cache. `AdaptyFlowFetchPolicy.returnCacheDataIfNotExpiredElseLoad(maxAge)` fait de même tant que la copie est plus récente que `maxAge`.
+- La valeur par défaut, `AdaptyFlowFetchPolicy.reloadRevalidatingCacheData`, interroge d'abord le réseau et se rabat sur la copie préchargée en cas d'échec ou de dépassement de délai.
+
+Un préchargement est toujours utile, mais différemment selon la politique : une politique cache-first supprime la requête, tandis que la politique par défaut la conserve et dispose d'une copie en cache en cas de besoin. Sur un [appareil de test](test-devices), `getFlow` ignore le cache quelle que soit la politique et n'utilise la copie préchargée que si la requête réseau échoue.
+
+Utilisez-le quand vous savez quels placements la session va nécessiter, mais que vous ne souhaitez pas encore les afficher — par exemple, juste après la fin de `activate` et `identify`, pour le flow derrière un bouton que l'utilisateur n'a pas encore appuyé.
+
+```dart showLineNumbers
+try {
+  await Adapty().preloadFlows(
+    placementIds: ['onboarding', 'main_paywall'],
+    loadTimeout: const Duration(seconds: 5),
+  );
+} on AdaptyError catch (adaptyError) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+final flow = await Adapty().getFlow(
+  placementId: 'main_paywall',
+  fetchPolicy: AdaptyFlowFetchPolicy.returnCacheDataElseLoad,
+);
+```
+
+**Paramètres :**
+
+- `placementIds` (requis) : les placements à précharger.
+- `loadTimeout` (optionnel) : durée d'attente du préchargement pour les flows ciblés par audience. Par défaut 5 secondes ; les valeurs inférieures à 1 seconde sont ramenées à 1 seconde. À l'expiration du délai, le SDK peut charger les flows de l'audience par défaut à la place.
+
+**Points importants à retenir :**
+
+- L'appel échoue uniquement après que tous les placements ont été tentés, avec une seule `AdaptyError` couvrant tous les placements en échec. L'échec d'un placement n'interrompt pas les autres, et les placements chargés restent dans le cache.
+- Le préchargement passe toujours par le réseau : il ne dispose pas de `fetchPolicy` propre.
+- Le préchargement sert uniquement à alimenter le cache. Il ne retourne pas de contenu — vous appelez toujours `getFlow` pour l'afficher.
+
+### Ce que couvre un préchargement \{#what-a-preload-covers\}
+
+Un flow s'affiche à l'écran en plusieurs couches. Un préchargement couvre la première, exactement comme `getFlow` :
+
+| Couche | Récupérée par | Pré-chargée |
+|---|---|---|
+| JSON du flow — la variante choisie, ses identifiants de produits et le Remote Config | `getFlow` | Oui |
+| Mise en page UI — structure, style et texte des écrans | `createFlowView` | Non |
+| Images, y compris la miniature remplaçant un élément vidéo | `createFlowView`, en arrière-plan | Non |
+| Produits | `createFlowView` ou `getPaywallProducts` | Non |
+| Fichiers vidéo | Le lecteur système, au moment du rendu de l'écran | Non mis en cache par le SDK |
+
+Ainsi, le premier `createFlowView` pour un layout donné implique toujours un aller-retour réseau après un préchargement. Le SDK natif conserve ensuite ce layout dans son cache disque, qui survit aux redémarrages de l'application, de sorte que le coût se produit uniquement lors de la première requête, et non à chaque fois.
+
+### Ignorer la segmentation d'audience \{#skip-audience-segmentation\}
+
+Pour réchauffer le cache sans attendre la segmentation d'audience, utilisez la variante default-audience. Elle ne prend aucun timeout :
+
+```dart showLineNumbers
+await Adapty().preloadFlowsForDefaultAudience(placementIds: ['main_paywall']);
+```
+
+Un `getFlowForDefaultAudience` appelé ensuite lit la copie de la même façon que `getFlow` lit une copie `preloadFlows`.
 
 ## Afficher les médias du premier écran depuis le bundle de l'application \{#show-first-screen-media-from-the-app-bundle\}
 

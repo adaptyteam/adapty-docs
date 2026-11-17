@@ -1,0 +1,235 @@
+---
+title: "CLI ile Analytics Sorgulama"
+description: "Adapty Analytics'i terminalden okuyun: gelir ve MRR gibi grafikler, dönüşümler, huni, tutma oranı, LTV ve kurulum kohortları; tablo, JSON veya CSV formatında."
+metadataTitle: "Geliştirici CLI'da Analytics | Adapty Dokümanları"
+---
+
+Adapty CLI, `adapty analytics` konusu altında terminalden [Adapty Analytics](analytics)'e erişmenizi sağlar. Tek bir uygulamaya ait Analytics kontrol panelinin gösterdiği rakamları döndürür: gelir ve MRR gibi [grafikler](charts), [dönüşümler](analytics-conversion), [huni](analytics-funnels), [elde tutma](analytics-retention), [LTV](ltv) ve [kurulum kohortları](analytics-cohorts).
+
+Uygulamanızın verilerine bir AI ajanının canlı olarak erişmesini sağlamak, bir grafiği betik veya tabloya çekmek ya da kontrol panelini açmadan tek bir soruya yanıt bulmak için kullanabilirsiniz.
+
+Every `analytics` command is read-only and takes one app.
+
+## Başlamadan Önce \{#before-you-start\}
+
+`analytics` konusu, CLI'nın geri kalanıyla aynı kurulum ve girişi kullanır. Bunu henüz ayarlamadıysanız, [hızlı başlangıç kılavuzunun](developer-cli-quickstart) 1. ve 2. adımlarını takip edin. Bu konu için CLI sürüm 0.10.0 veya üzeri gereklidir. Sürümünüzü görmek için şunu çalıştırın: `adapty --version`.
+
+[Export Analytics API](export-analytics-api)'nin aksine, CLI için gizli bir API anahtarına ihtiyaç yoktur. CLI girişiniz, Adapty kullanıcınızın erişebildiği her uygulamayı okur.
+
+Her komut, `--app` parametresinde uygulamanın UUID'sini alır. Bunu bulmak için şunu çalıştırın:
+
+```bash
+adapty apps list
+```
+
+## Sorgu oluşturma \{#build-a-query\}
+
+Her sorguyu aynı sırayla oluşturun: katalogda adları bulun, filtre değerlerine bakın, ardından tek bir veri komutu çalıştırın.
+
+1. **Uygulamanın analitiğinin neyi yanıtlayabileceğini listeleyin**. Katalog, her grafiği birimi ile, her dönüşümü, her komutun kabul ettiği gruplandırma ve filtreleri, her seçeneğin kabul ettiği değerleri ve varsayılanları listeler:
+
+   ```bash
+   adapty analytics catalog --app <app-id>
+   ```
+
+   `revenue`, `mrr` veya `trial-paid` gibi grafik ve dönüşüm adları bu listeden gelir. CLI'nın kendi listesi yoktur; dolayısıyla Adapty'nin sonradan eklediği bir grafik, CLI güncellemesi gerektirmeden çalışır.
+
+2. **Filtre değerlerini bulun**. Filtreleme yapmayacaksanız bu adımı atlayın. Örneğin, filtreleyebileceğiniz ülkeleri listelemek için:
+
+   ```bash
+   adapty analytics values --app <app-id> --dimension country
+   ```
+
+3. **Veri komutunu çalıştırın**:
+
+   ```bash
+   adapty analytics chart --app <app-id> --chart revenue \
+     --date-from 2026-07-01 --date-to 2026-09-30 --group-by country
+   ```
+
+Yanıt, toplamı gösteren bir satır ve ardından her grup için bir satır içerir.
+
+### Örnekler
+
+Bu çeyrekteki MRR, bir önceki çeyrektekiyle karşılaştırmalı:
+
+```bash
+adapty analytics chart --app <app-id> --chart mrr \
+  --date-from 2026-07-01 --date-to 2026-09-30 \
+  --compare-from 2026-04-01 --compare-to 2026-06-30
+```
+
+İki ülkede aylık trial'dan ödemeye dönüşüm:
+
+```bash
+adapty analytics conversion --app <app-id> --conversion trial-paid \
+  --date-from 2026-04-01 --date-to 2026-09-30 --granularity month --filter country=US,GB
+```
+
+Ülkeye göre retention, trial'dan itibaren sayılır:
+
+```bash
+adapty analytics retention --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --group-by country --use-trial
+```
+
+Komisyon ve vergiler sonrası gelir üzerinden 7, 30 ve 90 günlük LTV, CSV dosyası olarak kaydedilmiş:
+
+```bash
+adapty analytics ltv --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --revenue-basis net --period-type days --renewal-days 7,30,90 --csv > ltv.csv
+```
+
+Mağaza komisyonu sonrası gelir üzerinden haftalık kurulum kohortları:
+
+```bash
+adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --granularity week --revenue-basis proceeds
+```
+
+## Çıktıyı seçin \{#choose-the-output\}
+
+Her veri komutu üç formattan birinde yazdırılır:
+
+| Çıktı | Flag | Kullanım amacı |
+|---|---|---|
+| Tablo | Yok | Terminalde okumak için. Her tablo; grafik adını, dönemi, saat dilimini ve filtreleri içeren bir başlıkla başlar. Para birimleri 2 ondalık basamakla gösterilir. Huni kayıp nedenleri ve kohort tahminleri gibi bazı alanlar dahil edilmez; tablo altında bu belirtilir. |
+| JSON | `--json` | Script'ler ve yapay zeka ajanları için. Her alanıyla birlikte değiştirilmemiş API yanıtı. |
+| CSV | `--csv` | Elektronik tablolar için. Yanıttaki her alanla birlikte grup başına bir satır. Karşılaştırılan dönem, aynı satırın `compare.*` sütunlarına eklenir. |
+
+`--csv` ve `--json` seçeneklerini birlikte kullanamazsınız.
+
+JSON formatında toplam, `data.segments` dizisinin ilk girdisidir; `data.value` ise tüm dönem için geçerli olan sayıdır. `meta.query` alanı, çalıştırılan sorguyu gösterir: tüm varsayılan değerler doldurulmuş ve geçerli saat dilimi belirtilmiş olarak.
+
+## Sonuçları okuma \{#read-the-results\}
+
+- **Tarihler**: `--date-from` ve `--date-to`, uygulamanın [raporlama saat dilimine](general) göre dahil edilen günlerdir. Günleri başka bir saat diliminde okumak için `--timezone` parametresine `Europe/Berlin` gibi bir IANA adı girin. `meta.query.timezone` geçerli saat dilimini gösterir.
+- **Gelir**: `--revenue-basis`, para değerlerinin hangi gelir bazını kullanacağını belirler: `gross` (varsayılan), `proceeds` (mağaza komisyonu düşüldükten sonra) veya `net` (komisyon ve vergiler düşüldükten sonra). `ltv`, `cohort` ve para gösteren grafiklerde geçerlidir. Katalog, bu grafikleri `takes revenue_basis` ile işaretler.
+- **Boş değerler**: Boş bir değer, Adapty'nin o değere sahip olmadığı anlamına gelir; asla sıfır değil. Bir kohortun henüz ulaşmadığı LTV dönemi boştur; tahmin edilemeyen bir kohort da öyle. `--json` çıktısında bu değerler `null` olarak görünür. Tabloda `—` yazdırılır, CSV'de ise hücre boş bırakılır.
+- **Toplam satırı**: Toplamı, boş bir `key` ile değil `is_total` ile bulun. Bir grubun `key` değeri de boş olabilir; örneğin ülkesi olmayan kullanıcıların grubu.
+- **Grup anahtarları**: Bir grubun `key` değeri her zaman `--filter` parametresinin kabul ettiği bir değer olmayabilir. Filtrelemek için değerleri `analytics values` komutundan alın.
+- **Karşılaştırmalı dönemler**: Yalnızca `chart` ve `conversion`, `--compare-from` ve `--compare-to` parametrelerini kabul eder. Karşılaştırılan dönemin kendi toplamı ve grupları vardır; tablo bunu ikinci bir tablo olarak yazdırır.
+- **Attribution rakamları**: Bu rakamları [Attribution](developer-cli-attribution) rakamlarıyla toplamayın. Adapty bunları farklı hesaplar.
+
+CLI, kontrol panelinin sayılarını döndürür; iki istisna dışında:
+
+- `funnel`, kontrol paneli funnelinin yoksaydığı `cancellation_reason` filtresini uygular. Bu filtre nedeniyle iki sayı birbirinden farklı olabilir.
+- `retention`, kontrol panelinden farklı bir gruplama listesi sunar. Listeyi katalogdan alın.
+
+## Limitler \{#limits\}
+
+Her analytics komutu, uygulama başına saniyede en fazla 2 istek ve toplamda dakikada 360 istek kabul eder. CLI hiçbir zaman bir isteği yeniden denemez. İstekleri çok hızlı gönderdiğinizde komut, 4 koduyla çıkar. `--json` ile hata, `retry_after_seconds` içerir: bu süre kadar bekleyin, ardından komutu tekrar çalıştırın.
+
+## Hatalar \{#errors\}
+
+Her hata, neyi düzeltmeniz gerektiğini belirten bir kodla çıkar:
+
+| Çıkış kodu | Neden | Ne yapmalı |
+|---|---|---|
+| 2 | CLI, isteği göndermeden önce girişi reddetti: geçersiz bir uygulama UUID'si, hatalı biçimlendirilmiş veya tersine çevrilmiş tarih aralığı, bir ucu eksik karşılaştırma dönemi, `--renewal-days` olmadan `--period-type days`, `=` içermeyen `--filter` veya `--csv` ile birlikte `--json`. | Mesajın belirttiği flag'i düzeltin. |
+| 3 | Giriş yapmadınız ya da Adapty kullanıcınızın uygulamaya erişimi yok. | `adapty auth login` ile giriş yapın. Zaten giriş yaptıysanız, yalnızca okuma izninizin olduğu uygulamaları listeleyen `adapty apps list` komutundan uygulama ID'sini bulun. |
+| 4 | Adapty isteği reddetti: bilinmeyen bir grafik, dönüşüm, gruplama, filtre veya saat dilimi; para göstermeyen bir grafikte `--revenue-basis`; ya da çok fazla istek. | Adı `adapty analytics catalog` ile düzeltin. `--json` kullanıldığında hata, API'nin hata kodunu da içerir. Çok fazla istek için bkz. [Limitler](#limits). |
+
+## Komut referansı \{#command-reference\}
+
+Her veri komutu şu flag'leri alır:
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama UUID'si, `adapty apps list` komutundan alınır. |
+| `--date-from` | Evet | Dönemin ilk günü (dahil), `YYYY-MM-DD` formatında. |
+| `--date-to` | Evet | Dönemin son günü (dahil). `--date-from` değerinden önce olamaz. |
+| `--filter` | Hayır | `dimension=value[,value]`. Belirtilen boyutun verilen değerlerden birine sahip olduğu verileri tutar. Birden fazla boyuta göre filtrelemek için bu flag'i tekrarlayın. Değer içindeki virgül için `\,` yazın. Boş değer de geçerli bir değerdir: `country=` ülkesi olmayan verileri tutar. |
+| `--timezone` | Hayır | Günlerin IANA saat dilimi, örneğin `Europe/Berlin`. Belirtilmezse uygulamanın saat dilimi kullanılır. |
+| `--csv` | Hayır | İnsan tarafından okunabilir tablo yerine CSV tablo yazdırır. `--json` ile birlikte kullanılamaz. |
+
+Her komut bunlara kendi bayraklarını ekler.
+
+### `analytics catalog`
+
+Uygulamanın analitiğinin neler cevaplayabileceğini listeler: her komutun seçenekleri, gruplandırmaları ve filtreleri; her grafiğin birimi; her dönüşüm; ve her filtre boyutu.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | `adapty apps list` komutundan alınan uygulama UUID'si. |
+
+### `analytics values`
+
+Bir filtre boyutunun uygulama için aldığı değerleri listeler. Her `value`, `--filter <dimension>=<value>` parametresinin kabul ettiği değerin tam olarak aynısıdır.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--app` | Evet | `adapty apps list` komutundan alınan Uygulama UUID'si. |
+| `--dimension` | Evet | `adapty analytics catalog` komutundan alınan bir filtre boyutu. |
+
+### `analytics chart`
+
+Bir [grafik](charts) okur: tüm dönem için değer, noktalar ve gruplar.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--chart` | Evet | `adapty analytics catalog` içinden bir grafik adı; örneğin `revenue` veya `mrr`. |
+| `--group-by` | Hayır | Katalogdan bu grafiğe ait bir gruplandırma. |
+| `--granularity` | Hayır | Bir noktanın uzunluğu: `day`, `week`, `month` (varsayılan), `quarter` veya `year`. |
+| `--revenue-basis` | Hayır | `gross` (varsayılan), `proceeds` veya `net`. Yalnızca para gösteren grafikler için. |
+| `--compare-from` | Hayır | Karşılaştırılacak dönemin ilk günü. `--compare-to` gerektirir. |
+| `--compare-to` | Hayır | Karşılaştırılacak dönemin son günü. `--compare-from` gerektirir. |
+
+### `analytics conversion` \{#analytics-conversion\}
+
+Bir [dönüşüm](analytics-conversion) okur: her nokta ve grup için oranı yüzde olarak, bölündüğü iki sayıyla birlikte.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--conversion` | Evet | `adapty analytics catalog` içinden bir dönüşüm adı; örneğin `trial-paid` veya `install-paid`. |
+| `--group-by` | Hayır | Katalogdan bir gruplama seçeneği. |
+| `--granularity` | Hayır | Bir noktanın uzunluğu: `day` (varsayılan), `week`, `month`, `quarter` veya `year`. |
+| `--compare-from` | Hayır | Karşılaştırılacak dönemin ilk günü. `--compare-to` ile birlikte kullanılması gerekir. |
+| `--compare-to` | Hayır | Karşılaştırılacak dönemin son günü. `--compare-from` ile birlikte kullanılması gerekir. |
+
+Dönem dönüşüm içermediğinde, `--json` çıktısındaki `meta.recommended_period` değeri dönüşüm içeren bir dönemi işaret edebilir.
+
+### `analytics funnel`
+
+[Funnel](analytics-funnels)'ı okur: kurulumdan yenilemelere kadar her adımdaki sayıyı gösterir.
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--group-by` | Hayır | Katalogdan bir gruplama. |
+
+### `analytics retention`
+
+[Retention](analytics-retention) verisini okur: her dönemde kalan aboneler.
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--group-by` | Hayır | Katalogdan bir gruplama. |
+| `--use-trial` | Hayır | İlk ücretli dönem yerine denemeden itibaren say. |
+
+### `analytics ltv`
+
+[LTV](ltv)'yi okur: her yenileme veya günden sonra ödeme yapan kullanıcı başına gelir.
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--group-by` | Hayır | Katalogdan bir gruplama. |
+| `--revenue-basis` | Hayır | `gross` (varsayılan), `proceeds` veya `net`. |
+| `--period-type` | Hayır | `renewals` (varsayılan) yenileme başına sayar. `days` kurulumdan itibaren gün başına sayar. |
+| `--renewal-days` | Hayır | `--period-type days` ile sayılacak günler; virgülle ayrılmış, artan sırada, örneğin `7,30,90`. Yalnızca `--period-type days` ile kullanılır. |
+
+### `analytics cohort`
+
+[Kurulum kohortlarını](analytics-cohorts) okur: her kohortun yenileme veya güne göre gelirini, abonelerini, ortalamalarını ve tahminlerini içerir. Her kohort bir satırdır ve başlangıç tarihi onun `key`'idir. Kohortlar gruplandırılamaz.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--granularity` | Hayır | Bir kohortun uzunluğu: `day`, `week`, `month` (varsayılan), `quarter` veya `year`. |
+| `--revenue-basis` | Hayır | `gross` (varsayılan), `proceeds` veya `net`. |
+| `--period-type` | Hayır | `renewals` (varsayılan) her yenileme başına sayar. `days` kurulumdan bu yana geçen gün başına sayar. |
+| `--renewal-days` | Hayır | `--period-type days` ile sayılacak günler, virgülle ayrılmış, artan sırada. Yalnızca `--period-type days` ile kullanılır. |
+
+## Sırada ne var \{#whats-next\}
+
+- [Adapty Analytics nasıl çalışır](how-adapty-analytics-works) — sayıların nereden geldiği.
+- [Kontroller, filtreler ve gruplama](controls-filters-grouping-compare-proceeds) — kontrol panelindeki filtreler ve gelir seçeneklerinin ne anlama geldiği.
+- [CLI'dan Attribution sorgulama](developer-cli-attribution) — kanal ve kampanyaya göre harcama, yükleme ve ROAS.

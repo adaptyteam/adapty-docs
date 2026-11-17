@@ -141,7 +141,7 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
 | app-store-connection-configuration | — | dev | 6 | tutorial |
 | app-store-products | — | dev | 1 | tutorial |
 | app-store-small-business-program | — | dev | 8 | tutorial |
-| apple-app-privacy | — | dev | 5 | tutorial |
+| apple-app-privacy | — | dev | 6 | tutorial |
 | apple-family-sharing | — | dev | 0 | tutorial |
 | apple-platform-resources | entry | dev | 3 | tutorial |
 | enable-app-store-server-notifications | — | dev | 2 | tutorial |

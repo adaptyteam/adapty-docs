@@ -1,0 +1,102 @@
+---
+title: "Adapty Flutter SDK'yı v4.3'e Geçir"
+description: "Adapty Flutter SDK v4.3'e geçiş: Google Play mesajlarının nasıl görüneceğine karar verin, sayısal flow olay parametrelerini num olarak okuyun ve onboarding'lerden gelen e-posta girişini işleyin."
+metadataTitle: "Adapty Flutter SDK v4.3'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty Flutter SDK 4.3, Google Play uygulama içi mesajlarını varsayılan olarak gösterir ve bazı flow ile onboarding olay verilerinin Dart türlerini değiştirir. Hiçbir genel API kaldırılmamış veya yeniden adlandırılmamıştır; bu nedenle uygulamanız 4.3'e karşı değişiklik yapmadan derlenir. Davranışı aynı tutmak için bu kılavuzdaki her değişikliği inceleyin.
+
+Hâlâ 4.0 sürümündeyseniz önce [v4.1'e Geçiş](migration-to-flutter-sdk-41) kılavuzunu takip edin, ardından bu kılavuza devam edin.
+
+## Hızlı başvuru \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Google Play mesajları istenmez | Google Play mesajları Android'de varsayılan olarak gösterilir, flow'ların üzerinde de dahil olmak üzere |
+| Tam sayılı flow olay parametreleri Android'de `double` olarak gelir | Her iki platformda da `int` olarak gelir |
+| Onboarding e-posta alanları `AdaptyOnboardingsTextInput` olarak gelir | `AdaptyOnboardingsEmailInput` olarak gelir |
+| Onboarding girişini yazdırmak girilen değeri gizler | Yazdırmak girilen değeri gösterir |
+
+## Kurulum \{#installation\}
+
+`pubspec.yaml` dosyanızda `adapty_flutter` sürümünü v4.3 olarak güncelleyin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.3.0
+```
+
+Uygulamanız [Kids Mode](kids-mode-flutter) kullanıyorsa bunun yerine `adapty_flutter_kids` belirtin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.3.0
+```
+
+Gereksinimler 4.1'den bu yana değişmedi: **Flutter 3.32.0** (Dart 3.8.0) ve **iOS 15.0**. Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-flutter) sayfasına bakın.
+
+## Google Play mesajları varsayılan olarak gösterilir \{#google-play-messages-are-shown-by-default\}
+
+4.3 sürümünden itibaren SDK, `activate` çağrısının ardından uygulamanızın bir `Activity`'si her başladığında —örneğin uygulama ön plana döndüğünde ya da bir flow veya onboarding açılıp kapandığında— reddedilen ödeme bildirimleri gibi Google Play uygulama içi mesajlarını talep eder. Bu nedenle bir mesaj, paywall'ın üzerinde görünebilir.
+
+Uygulamanız için bu durum kabul edilebilirse herhangi bir değişiklik yapmanıza gerek yoktur. Mesajların ne zaman görüneceğini kendiniz belirlemek istiyorsanız SDK'yı Android'de manuel yönetim modunda etkinleştirin ve uygulamanıza uygun bir anda `showStoreMessages` çağırın:
+
+```dart showLineNumbers title="main.dart"
+
+final configuration = AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY');
+if (Platform.isAndroid) {
+  configuration.withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual);
+}
+await Adapty().activate(configuration: configuration);
+```
+
+Manuel işlemeyi yalnızca Android'de ayarlayarak iOS'u değiştirmeden bırakın: iOS 16 ve sonrasında, manuel işleme uygulamanız `showStoreMessages` çağırana kadar App Store mesajlarını da bekletir. Tam API için bkz. [Mağaza mesajlarını kontrol etme](flutter-store-messages).
+
+:::warning
+Manuel modda, mağazalar kendi başlarına mesaj göstermez. Uygulamanız hiçbir zaman `showStoreMessages` çağırmazsa, kullanıcılar reddedilen ödeme bildirimini asla göremez.
+:::
+
+## Android'de flow olay parametreleri artık `int` türünde \{#numeric-flow-event-parameters-are-int-on-android\}
+
+Android'de, flow analitik olaylarının tam sayı parametreleri eskiden `double` olarak geliyordu. 4.3 sürümünden itibaren, iOS'ta olduğu gibi `int` olarak geliyor. Bu durum, `flowViewDidReceiveAnalyticEvent` ile `AdaptyUIFlowPlatformView`'ın `onDidReceiveAnalyticEvent` callback'ini ve [flow input](flutter-flow-input) olaylarının tarih-saat değerlerini etkiliyor.
+
+`double`'a yapılan bir dönüşüm artık Android'de hata fırlatıyor. Sayısal parametreleri `num` olarak okuyun:
+
+```diff showLineNumbers
+- final timestamp = params['value'] as double;
++ final timestamp = params['value'] as num;
+```
+
+## Onboarding e-posta alanları `AdaptyOnboardingsEmailInput` olarak gelir \{#onboarding-email-fields-arrive-as-adaptyonboardingsemailinput\}
+
+4.3'ten itibaren, bir onboarding'in e-posta alanları `onboardingViewOnStateUpdatedAction` ve `AdaptyUIOnboardingPlatformView`'ın `onStateUpdatedAction` callback'ine `AdaptyOnboardingsEmailInput` olarak ulaşır. Daha önce `AdaptyOnboardingsTextInput` olarak geliyordu. Kodunuz e-postaları metin durumundan okuyorsa, e-posta durumunu da işleyin:
+
+```diff showLineNumbers
+  switch (input) {
+    case AdaptyOnboardingsTextInput(:final value):
+      // text fields
+      break;
++   case AdaptyOnboardingsEmailInput(:final value):
++     // email fields
++     break;
+    case AdaptyOnboardingsNumberInput(:final value):
+      // number fields
+      break;
+  }
+```
+
+Sayı alanları artık `AdaptyOnboardingsNumberInput` olarak geliyor. 4.3 öncesinde, bu alanların güncellemeleri hiç gelmiyordu. Bkz. [Onboardinglerden gelen verileri işleme](flutter-onboarding-input).
+
+## Onboarding girdi değerleri yazdırılan çıktıda görünüyor \{#onboarding-input-values-appear-in-printed-output\}
+
+Bir `AdaptyOnboardingsInputParams` veya `AdaptyOnboardingsInput` yazdırıldığında artık girilen değer gösteriliyor. Uygulamanız bu nesneleri logluyorsa logları gözden geçirin: artık kullanıcıların girdiği isimler, e-posta adresleri ve diğer veriler bu loglarda yer alabilir.
+
+## 4.3'teki Yenilikler \{#new-in-43\}
+
+Bu eklemeler kod değişikliği gerektirmez:
+
+- **[Mağaza mesajlarını kontrol etme](flutter-store-messages)**: App Store ve Google Play mesajlarının ne zaman görüneceğini seçin.
+- **[Placement'ları önceden yükleme](flutter-optimize-paywall-fetching#preload-placements)**: `preloadFlows` ve `preloadFlowsForDefaultAudience` fonksiyonları flow önbelleğini ısıtır.
+- **[Tutulan bir görünümü serbest bırakma](flutter-present-paywalls#dismiss-the-flow-or-paywall)**: `destroy()` metodu, `dismiss(destroy: false)` ile tuttuğunuz veya hiç göstermediğiniz bir flow görünümünü serbest bırakır.
+- **[12 aylık taahhüt planları](set-up-12-month-commitment)**: `AdaptyProductSubscription.pricingTerms` özelliği iOS'ta planı açıklar; access level'lar ise `billingPlan` ve `commitmentInfo` değerlerini raporlar.
+- **[Observer modu](report-transactions-observer-mode-flutter)**: `reportTransaction` metodu, iOS'ta isteğe bağlı olarak `appleJwsTransaction` alır.

@@ -35,6 +35,59 @@ Para un recorrido completo —desde la configuración de la moneda hasta el uso 
 Para las asignaciones de suscripción, activa la [expiración de créditos](create-virtual-currency#link-products). Cuando los créditos no utilizados se reinician en cada renovación, la asignación sigue siendo un motivo para mantener la suscripción, y los usuarios más activos compran paquetes de créditos en lugar de agotar un stock acumulado.
 :::
 
+## Etiquetar transacciones \{#label-transactions\}
+
+Cuando tu backend otorga o gasta créditos a través de [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction), etiqueta cada transacción con su significado y el motivo de los créditos. Con `operation`, puedes distinguir los gastos de los bonos, reversiones y correcciones en el historial de transacciones. Con `feature`, puedes ver en qué gastan los usuarios y por qué motivo los otorgas.
+
+Todos los campos de etiquetado son opcionales. No puedes añadir etiquetas a una transacción después de que Adapty la guarde, así que etiqueta desde tu primera llamada. Una transacción enviada sin etiquetas se guarda con `operation: null`.
+
+```json title="Spend credits on a feature"
+{
+  "items": [{ "currency_code": "COINS", "amount": -10 }],
+  "operation": "spend",
+  "feature": "power_up.extra_life",
+  "customer_placement_id": "level-complete",
+  "reference_id": "session_7781"
+}
+```
+
+### Operación \{#operation\}
+
+La mayoría de las integraciones necesitan estos valores de `operation`:
+
+| Valor | Cuándo usarlo |
+|-------|----------------|
+| `spend` | El usuario gasta créditos en una función o contenido. |
+| `spend_reversal` | Devuelves créditos por una acción fallida, como una generación fallida. |
+| `reward` | Concedes un bono, una recompensa o una compensación de soporte. |
+| `reward_reversal` | Retiras una recompensa. |
+
+Adapty establece `operation` en las transacciones que crea: las compras, renovaciones y períodos de prueba reciben `top_up`, los reembolsos de la store reciben `refund`, y los créditos expirados reciben `expiry`. Para ver la lista completa de valores, consulta [Crear transacción de moneda virtual](api-adapty/operations/createVirtualCurrencyTransaction).
+
+### Función
+
+`feature` indica en qué se gastaron o se otorgaron los créditos: una palabra de letras, dígitos y `_`, seguida opcionalmente de un subtipo tras un punto. Adapty lo almacena tal como se envía y distingue mayúsculas de minúsculas, por lo que `photoFilter` y `photofilter` son dos funciones distintas.
+
+- ✅ `hint`, `power_up.extra_life`, `photo_filter.vintage`
+- ❌ `photo filter`: contiene un espacio.
+- ❌ `photo_filter.vintage.v2`: tiene dos niveles de subtipo.
+- ❌ `pack_499`, `premium_tier`: incluir un precio o un nivel en el nombre divide una misma función en varias cuando cambian los precios o los niveles. Mantén precios, niveles, versiones y variantes fuera de `feature`.
+
+Para un bonus, usa el nombre del programa, como `welcome`, `daily_bonus`, `referral` o `support_compensation`.
+
+### Otros campos
+
+- **`reference_id`**: El ID del objeto relacionado en tu sistema, de hasta 128 caracteres. Úsalo para vincular un `spend_reversal` al `spend` que revierte, o un `reward` a la acción por la que se concedió. No incluyas datos personales aquí.
+- **`customer_placement_id`**: El ID de la pantalla en tu app donde ocurrió la operación. Es tu propio ID, no un ID de [placement](placements) de Adapty.
+- **`store` y `store_transaction_id`**: Envíalos juntos cuando tu backend acredite monedas por una compra directamente. Adapty no verifica que la compra exista. Si la compra se reembolsa en el store, Adapty retira las monedas acreditadas con esta referencia.
+- **`is_sandbox`**: Envía `true` para los créditos que concedas durante las pruebas. En las transacciones de store, Adapty lo establece a partir del entorno de la compra.
+
+:::warning
+No acredites monedas por un producto que esté [vinculado a la moneda](create-virtual-currency#link-products) en Adapty. Adapty ya acredita esas compras, por lo que un crédito adicional desde tu backend daría al usuario el doble de créditos.
+:::
+
+Las transacciones creadas antes del 12 de noviembre de 2026, cuando el etiquetado estuvo disponible, conservan sus datos: Adapty etiquetó retroactivamente sus propias transacciones, y tus transacciones de API anteriores a esa fecha se mantienen con `operation: null`. `metadata` no ha cambiado y sigue aceptando cualquier clave que necesites.
+
 ## Limitaciones \{#limitations\}
 
 - **El acceso entre dispositivos requiere identificación**: Un balance pertenece a un perfil. Un usuario anónimo conserva su balance solo en la instalación donde lo obtuvo, por lo que se pierde si reinstala la app o la abre en otro dispositivo. Identifica a los usuarios para que el balance esté disponible en todos los dispositivos y tras cada reinstalación. Consulta [Balances, perfiles y dispositivos](virtual-currency-balance#balances-profiles-and-devices).

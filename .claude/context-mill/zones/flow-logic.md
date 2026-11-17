@@ -19,10 +19,18 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
 ## Surfaces
 
 - **Adapty Dashboard → Flows page**: flow list, status column, **Create flow**, **Fallbacks** download,
-  the Flow metrics view.
+  the Flow metrics view. A flow's page has two tabs, **Metrics** (`/flows/{id}/metrics/`) and **Funnel**
+  (`/flows/{id}/funnel/`). The `flowFunnel` feature flag that hid the Funnel tab was removed before
+  release (2026-10-26), so the tab is open to everyone.
 - **Flow & Paywall Builder editor**: top toolbar (save/publish, view-mode toggle), **Interactions** tab (triggers
   and actions, conditional-action if/then/else editor), **Variables** panel, the Remote Config JSON
   view, the bottom-toolbar preview controls, **Test on device** (QR to the Adapty mobile app).
+- **Edit action window** (opens by itself when you add an action, or when you click one; dashboard code,
+  2026-11-10). For **Show element** / **Hide element**: the **Elements** picker, then **Animation**
+  (**None**, **Fade in** / **Fade out**, **Rise**, **Pop**) with **Easing**, **Duration**, **Distance**
+  (Rise), **Start scale** (Pop), a looping preview, and **Delay** (0–5000 ms, shown even with **None**).
+  For **Navigate to Screen**, **Delay** shows only when **Animation** isn't **None**. A screen itself has no
+  triggers: with nothing selected, the right panel is **Screen settings**, which has no Interactions tab.
 - **Adapty mobile app** (iOS/Android): receiving end of **Test on device** — not documented here beyond
   "download it and scan the QR code"; the app itself has no dedicated flow-logic article.
 - **Placements page**: where a published flow is attached to go live — placements themselves are a
@@ -35,10 +43,36 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   comparison operators, and preset names like **Close flow**. Verified in this pass against the docs
   themselves: `onboarding-actions.mdx` and `onboarding-flow-tutorial.mdx` describe the conditional chain
   as IF / ELSE IF / ELSE, and `show-offer-on-close.mdx`'s screenshot alt text names the actual UI chips
-  as lowercase **if** / **then** / **else** blocks with an **Equals** operator — consistent with each
-  other. No flow-logic article uses or shows a **Does not equal** operator; take that operator's exact
-  wording from the builder UI directly rather than from any article in this zone, since it isn't
-  independently confirmed here.
+  as lowercase **if** / **then** / **else** blocks — consistent with each other. **Corrected
+  2026-11-16 (builder code):** the operator control shows a symbol wherever the operator has one
+  (`=`, `!=`, `>`, `<`) and words only for **Contains**, **Does not contain**, **Is empty** and
+  **Is not empty**. "Equals" and "Does not equal" are internal labels, so an article or alt text
+  that writes **Equals** does not match the screen. This entry used to treat **Equals** as the
+  on-screen label.
+- **Conditions that evaluate an element state** (the picker's **States** tab, released 2026-11-16;
+  builder and transformer code, 2026-11-16). Owner article: `element-states-in-conditions`. Facts
+  that article rests on:
+  - The operand is `{type: elementState, elementId}` compared with a state id (`default`,
+    `selected`, `focused` shown as **Active**, `invalid`, `disabled`); only `=` and `!=`.
+  - The tab lists elements of the same screen (plus reusable components placed on it; inside a
+    component, only its own elements) that have states of their own. A row shows the layer name,
+    and the element's text only when it differs from the layer name.
+  - The reference stores the internal element id, not the **Element ID** field, so renaming an
+    **Element ID** does not break it.
+  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, a
+    tooltip that says the condition is always false, publishing not blocked.
+  - The picker greys out an element that would close a loop of **Disabled** conditions; a loop
+    that arrives in an imported or hand-made config blocks publishing as **Circular state
+    conditions**.
+  - The canvas does not run state conditions: it uses the state activated in the **States**
+    section of each element. Only a device shows real states.
+  - **A visibility condition is stored as an AND group with a `predicates` list.** Selecting
+    **Conditional** writes that group and opens the **Show element if** editor. A bare comparison
+    passes `flows config validate`, but the editor's **Add Condition** does nothing on it until the
+    user switches visibility away and back (measured 2026-11-16 on a flow authored through the
+    CLI).
+  - Element variables for inputs are `value` and `isValid`; no variable holds **Disabled** or
+    **Active**, so those two are reachable only through the **States** tab.
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
@@ -60,10 +94,20 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   assignment says **Current**, and inside a card **Current** is the enclosing card's own product. Second,
   the panel's **Missing** badge (product deleted from the catalog) is a different state from **This
   product is off this screen** (product exists, not on the screen's list).
-- No dedicated source exists for the Flow metrics definitions (revenue, proceeds, ARPPU, conversion
-  rates) beyond the article's own prose — these are backend calculations with no source registered in
-  `sources.md`. Treat `flow-metrics.mdx` itself, cross-checked against `paywall-metrics.mdx` for terms it
-  shares, as the working definition until a metrics source is added.
+- **Flow metrics and the flow funnel are backend calculations with no source registered in
+  `sources.md`** — cross-check `flow-metrics.mdx` against `paywall-metrics.mdx` for the terms they share.
+  Facts settled for `flow-funnel` with the backend team before release (2026-10-02, completion rule
+  revised 2026-10-23): a step is the screen's position in the profile's path, not its builder order; one
+  path per profile (first appearance per screen within a run, then one run: a completing one first, else
+  the longest, else the latest). Completion = a trial or purchase on a paywall screen (a purchase closes
+  the flow), or the path ends on a last screen — except that a last screen which is a paywall completes
+  only with a purchase. A later refund keeps the profile completed. The funnel's Completed deliberately
+  differs from `flow-metrics` Completions, which count last screens only. Funnel Revenue/Purchases are
+  initial purchases (first subscription payment or trial conversion, plus one-time purchases) net of
+  their refunds, gross USD — unlike `flow-metrics` Revenue, which counts every transaction after the
+  show; the Revenue card also counts purchases on the flow's paywall screens outside the kept run, so it
+  can exceed the table's sum. Flows shown without a placement are excluded. The Platform and Subscription
+  state filters exist only in the funnel; other flow views never see them.
 
 - **Figma import's ground truth is split across three places, and none of the closed-source ones is
   citable here.** The `/figma-import` landing page — its state machine, failure copy, and the mint call —
@@ -74,6 +118,13 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   converter's output: `adapty flows config get --app <app> <flow-id> --json` returns the minted flow
   config, and reading two imports that way on 2026-09-08 is what the fidelity section of
   `import-from-figma` now rests on. Prefer that over task-tracker descriptions for any behaviour claim.
+
+- **What an action does on a device is decided when the flow is compiled for the SDK, not by the editor**
+  (builder code, 2026-11-10; closed-source). The canvas runs no actions at all: no **On Screen Appear**,
+  no delays, no Show/Hide animation. The **Edit action** window's loop previews a Show/Hide animation
+  without its delay, and a **Navigate to Screen** transition with its delay. **Test on device** plays
+  everything. Check any claim about delays, animation, auto-advance, or what cancels it against the
+  compiled behavior or a device, never against the canvas.
 
 ## What we document, what we don't
 
@@ -122,27 +173,31 @@ or developer can see and click.
 | builder-save-publish | — | marketer, dev | 4 | tutorial |
 | builder-ui | — | marketer, dev | 15 | tutorial |
 | convert-paywall-to-flow | migration | marketer, dev | 4 | tutorial |
-| copy-flows | — | marketer, dev | 2 | tutorial |
+| copy-flows | — | marketer, dev | 6 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
+| element-states-in-conditions | how-to | marketer, dev | 7 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 15 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 13 | tutorial |
+| flow-common-issues | reference | marketer, dev | 14 | tutorial |
+| flow-funnel | — | marketer, dev | 13 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
-| flows-and-paywalls | entry | marketer, dev | 0 | tutorial |
+| flow-screen-transitions | — | marketer, dev | 3 | tutorial |
+| flow-show-hide-animations | — | marketer, dev | 6 | tutorial |
+| flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
-| migrate-to-flows | migration | marketer, dev | 7 | tutorial |
+| migrate-to-flows | migration | marketer, dev | 8 | tutorial |
 | onboarding-actions | — | marketer, dev | 22 | tutorial |
 | onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
-| onboarding-variables | — | marketer, dev | 8 | tutorial |
+| onboarding-variables | — | marketer, dev | 9 | tutorial |
 | paywall-builder-templates | — | marketer, dev | 7 | tutorial |
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 16 | tutorial |
+| paywall-product-block | — | marketer, dev | 17 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
 | respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |
@@ -187,6 +242,15 @@ or developer can see and click.
 
 ## Ripple rules
 
+- **`flow-funnel` ↔ `flow-metrics` ↔ the seven `*-flow-screen-views` guides (added 2026-10-02).**
+  `flow-metrics` points at the funnel twice (intro, and the "not a per-screen funnel" paragraph under
+  Metrics controls), and every `<platform>-flow-screen-views` guide in `sdk-flows-display` opens with a tip
+  that now says the dashboard funnel already shows per-screen drop-off. If the funnel's scope changes
+  (branching coverage, an all-versions mode), those eight sentences move with it. The two Revenue
+  definitions differ on purpose (initial purchases vs every transaction after the show); a change to either
+  must keep the contrast sentence in `flow-funnel#revenue` true. The same holds for completion: a change to
+  `flow-metrics` Completions (last screen only) must keep the contrast sentence in `flow-funnel#completed`
+  true.
 - **`adapty-flow-builder` ↔ `migrate-to-flows`: verified duplicated content, not just co-change.** Both
   articles carry the identical "Flows require Adapty SDK v4.0 or later." `:::important` callout,
   word-for-word (rewritten 2026-08-13 from the five-platform list after the owner confirmed all seven
@@ -238,6 +302,11 @@ or developer can see and click.
   device**, pick a locale, scan the QR) and both carry a near-identical "prices shown aren't real, Adapty
   can't reach the stores" caveat. Git confirms this pair already ripples together in practice: commit
   `9159e2e69` ("Add Android app links alongside iOS app links") touched both files in the same pass.
+- **Test on device needs the Adapty mobile app signed in (2026-10-12).** Both walkthroughs now say to sign
+  in with the account used in the dashboard, and the preview article's troubleshooting maps an HTTP 401 to
+  a signed-out app. Verified against backend code: the mobile preview request requires an authenticated
+  user with access to the app. The 401 wording comes from a customer report, not from the mobile app's
+  source, which isn't available here.
 - **The product card's offer dropdown is labelled in three articles across two zones.** `create-offer`
   (`products-and-offers`) is the canon for binding an offer to a product card
   (`create-offer#add-offer-to-flow`); `paywall-product-block` and the `paywall-with-trial-toggle` recipe
@@ -250,6 +319,48 @@ or developer can see and click.
   `placement-metrics.mdx`, `results-and-metrics.mdx`, and `webhook-event-types-and-fields.mdx` in one
   pass — mostly outside flow-logic, but a new revenue/proceeds/webhook field belongs in `flow-metrics`
   too whenever it lands in that cluster.
+
+- **`flow-show-hide-animations` owns how to use Show element and Hide element (2026-11-10).** It covers
+  the default (every element appears when the screen opens), which trigger fits which moment and where it
+  goes, the starting **Visibility** of each target, the **Delay** and **Animation** settings, and three
+  cases where both settings do nothing: conditional visibility, reusable components, bottom sheets.
+  `onboarding-actions#showhide-elements` stays a short reference entry with a link, as **Navigate to
+  screen** does for `flow-screen-transitions`. A change to the action's settings or exceptions ripples
+  into `onboarding-element-visibility` (a condition overrides Show/Hide when its variable changes;
+  conditional elements neither animate nor wait), `show-plans-bottom-sheet` and `flow-design`'s
+  `builder-containers` (a sheet ignores **Animation** and **Delay**), `flow-design`'s `builder-styling`
+  (**Show** / **Hide** are starting states), `convert-paywall-to-flow` (a converted close-button delay is
+  a hidden button with its own **On Screen Appear** **Show element**), `builder-loaders-and-progress-bars`
+  (a loader offers only **On Screen Appear**), and `flow-design`'s `flow-timer` (the close-button recipe).
+- **Auto-advance has one canon: `flow-screen-transitions#move-users-to-another-screen-automatically`
+  (2026-11-10).** Five pointers link to that anchor: `onboarding-actions` (Navigate to screen),
+  `onboarding-navigation-branching`, `builder-navigation-actions`, `builder-loaders-and-progress-bars`,
+  and the note in `flow-show-hide-animations`. Renaming the heading means retargeting all five
+  (`rg -n move-users-to-another-screen-automatically src/content/docs`).
+- **The 5-second **Delay** limit is stated in four articles, and one sentence is shared word for word.**
+  `flow-screen-transitions`, `flow-show-hide-animations`, `flow-timer` (the Countdown route takes over
+  beyond 5 seconds), and `builder-loaders-and-progress-bars`. The first two carry the identical "Use whole
+  seconds: on iOS, a delay rounds up to a whole second." Keep that sentence identical in both.
+- **Element state conditions have one owner: `element-states-in-conditions` (2026-11-16).** Pointers
+  to it: `onboarding-element-visibility` (picker tab list and one intro sentence), `onboarding-text`
+  (tab list and one sentence after the conditional-text steps), `onboarding-actions` (the "select a
+  variable or the state of another element" sentence), `builder-navigation-actions` (router list),
+  and `flow-design`'s `builder-element-states` (two pointers). Which state wins when several apply
+  lives in `builder-element-states#when-several-states-apply-to-one-element`, and the article links
+  there. A new picker tab, operand, or system state ripples into all of these. The **Circular state
+  conditions** publish blocker has its row in `flow-common-issues`; the owner article covers only
+  the picker side, as an item in its "you can't pick" list.
+  Shipped-skill delta, flagged 2026-11-16 and not edited (the skills have their own owner):
+  `flow-generator/references/verify-config.py` has no `elementState` case in its condition walker,
+  so its local check rejects a flow the publish gate accepts; `flow-generator/references/flowkit.py`
+  writes a bare comparison from `when()` (the builder expects the AND group above) and says there
+  is no disabled mechanism; `flow-generator/references/flow-schema.md` says a button cannot be
+  disabled. The builder supports a **Disabled** state with a condition.
+- **The **On tap** "Supported on" cell in `onboarding-actions` was completed on 2026-11-11** from the
+  element types that offer the trigger in the builder (dashboard code, 2026-11-10): buttons and other
+  containers, quiz options, toggles, countdowns, images, videos, icons, text, carousels, bottom sheets,
+  tabs, products. A new tappable element type needs an entry there and a check of the trigger table in
+  `flow-show-hide-animations`.
 
 ## Boundaries
 
@@ -290,18 +401,23 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
 | "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. |
+| "explain why Continue is greyed out", "show a message when the button is disabled", "disable two buttons together", "condition on another element", "States tab", "is the field focused" | `element-states-in-conditions` (2026-11-16). Traps: **Selected** yields to **Disabled** (one state at a time; rule in `flow-design`'s `builder-element-states`), so "which option did users pick" is the group variable on the **Elements** tab, not the state; the canvas shows a state only after the user activates it in the element's **States** section; a condition written outside the builder as a bare comparison saves and validates, but its editor's **Add Condition** does nothing until visibility is switched away and back. **Disabled** and **Active** have no variable: the **States** tab is the only route to them. |
 | "hide an element for some users", "show only if the user is on trial", "progress bar", "step indicator", "spinner while the answer is processed" | Element-shaped tickets that are really behaviour: a state-based rule is `onboarding-element-visibility` (which also settles precedence against a Show/Hide *action* in `onboarding-actions`); progress/loading elements are `builder-loaders-and-progress-bars` because they are driven by flow state. Neither is `flow-design`. |
 | "price renders empty", "trial price missing for some users", "localized price in body text", "variable name with dots" | `onboarding-variables`. The usual cause is not a typo: offer variables resolve to empty for users who aren't eligible for that offer, so the text needs a fallback. **Ask which surface the reporter is looking at first** — that is the runtime answer, and in the builder preview the three offer values never resolve at all (see the preview row below), so a ticket filed from the canvas has a different answer from one filed against a device. |
 | "monthly/yearly toggle", "segmented control", "highlight one plan and hide the rest", "slide-up plan picker", "features per tier", "crossed-out price", "percent-off badge" | The recipes, chosen by mechanic rather than by look: `paywall-with-tabs` (multiple product groups on one screen), `show-plans-bottom-sheet` (Show/Hide action), `paywall-features-per-product` (condition on the selected product), `strikethrough-price` (product-variable binding). `flow-builder-recipes` is the index if the ticket is vague, and every one of them assumes the base screen from `basic-paywall-screen` already exists. |
 | "push the change to users", "does saving make it live", "draft vs published", "flow status", "publish blocked/publish error", "swap a font without breaking older app builds" | `builder-save-publish` — saving is not publishing, and the "Flow status" table decodes the Flows-page column. **The canonical block list moved to `flow-common-issues` on 2026-08-13** (see Ripple rules); `builder-save-publish#troubleshooting` survives as a cross-link, so route a "publish blocked" ticket to `flow-common-issues` directly. Font/asset availability is an app-version compatibility constraint documented here and in `paywall-builder-templates`, not a typography question for `flow-design`: custom fonts do **not** ship with the flow, so changing one on a published flow means duplicating it and targeting the copy at app versions that bundle the file. |
 | "test on device", "QR code", "prices are wrong in the preview", "iPad view", "check it before publishing" | `paywall-device-compatibility-preview`. **The two preview surfaces resolve different things, and conflating them is how this row was wrong until 2026-08-24.** Test-on-device can't reach the stores, so its prices aren't real — expected, not a bug, and `migrate-to-flows` carries a near-duplicate of that caveat. The in-dashboard canvas is not the same: `prod_title`, `prod_price` and `prod_price_per_*` do resolve, from the Adapty catalog in USD, so "the preview shows the wrong price" there usually means "the canvas shows the catalog USD price, not the localized store price". What the canvas genuinely cannot resolve is the three offer values — `offer_price`, `offer_billing_period`, `offer_full_duration` render as `{{token}}`s by design — while `is_free_trial` / `is_pay_up_front` / `is_pay_as_you_go` do resolve from the card's bound offer and can be simulated per element with **Preview as**. All of this lives in `paywall-device-compatibility-preview#preview-products-and-offers`. |
-| "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "where users drop off", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (there is no registered metrics spec; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
+| "where users drop off", "which screen loses users", "screen funnel", "drop-off per screen", "funnel per flow version", "why is the funnel empty", "N routes / N variants" | `flow-funnel` (2026-10-02). Per-screen path funnel on the flow's **Funnel** tab, one published version at a time. Not the account-level `analytics-funnels` chart (installs → paywall → trial → paid), which tickets also call "the funnel". A branched flow shows screens of different branches as one step with an **N routes** / **N variants** badge; branches of unequal length put the same screen on two steps — a known v1 limit, not a bug to file. |
+| "what counts as a flow view", "conversion looks wrong", "revenue vs proceeds", "ARPPU/ARPAS", "cohort by install date" | `flow-metrics` — definition questions, answered by the article's own prose (there is no registered metrics spec; see Sources of truth). Shares vocabulary with `paywall-metrics` (`paywalls-legacy`) and `placement-metrics` (`placements-and-audiences`), which is why a new revenue field lands in all of them at once. |
 | "change copy without an app release", "hard-paywall flag", "server-driven values", "per-locale JSON" | `customize-flow-with-remote-config` for authoring the JSON. Reading it at runtime (`remoteConfig` dictionary vs `jsonString`, `remoteConfigs` on the flow) is `sdk-flows-manual` — a different zone from the one that renders the flow. |
 | "flow won't load without internet", "offline flow", "fallback file was generated for another SDK version" | `fallback-flows` for downloading and scoping the file; wiring it into app code is `sdk-flows-display`'s fallback family. The SDK-version stamp on the file is the usual cause of "the fallback loads but looks wrong". |
 | "should we switch to flows", "combine onboarding and paywall", "keep the old paywall live during rollout", "`getFlow` vs `getPaywall`", "A/B test a flow" | `migrate-to-flows` for the decision, the comparison table, and the rollout sequence. Running the A/B test is not this zone — that's `ab-tests` (and `placements-and-audiences` for how a published flow goes live at all); the SDK call itself is `sdk-flows-display`. |
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
 | "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
+| "show the close button after 3 seconds", "Show after delay is gone", "delayed close button", "make an element appear later", "fade in a headline", "animate a button" | `flow-show-hide-animations`. The usual trap is that a **Show element** action on an element that is already visible does nothing, with no animation: the target must start with **Visibility** set to **Hide**. Users can't tap a hidden element, so its own **On Tap** can never reveal it, but its own **On Screen Appear** can (that is how a converted close button is built). **Delay** tops out at 5000 ms; longer waits go through a visible, transparent Countdown (`flow-design`'s `flow-timer`). There is no toggle action: **Show element** only shows, **Hide element** only hides. |
+| "the animation doesn't play", "the delay is ignored", "it shows up instantly" | `flow-show-hide-animations#when-animation-and-delay-dont-apply`: a target with conditional visibility, anything inside a reusable component, or a bottom sheet changes at once, and publishing shows no warning. Rule out the canvas first: it plays nothing, so only **Test on device** shows the result. |
+| "auto-advance", "splash screen should move on by itself", "go to the next screen after the loader", "timer to the next screen" | `flow-screen-transitions#move-users-to-another-screen-automatically`: **On Screen Appear** + **Navigate to Screen** + **Delay**. Traps: **Delay** shows only when **Animation** isn't **None** (an animated type with **Duration** 0 switches at once after the delay); opening an alert, a bottom sheet, a date picker, or a web page, or starting a purchase or a restore, cancels the pending move; coming back to the screen starts the delay again. |
 
 ## Gaps and misses
 
@@ -347,6 +463,47 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   "import most cleanly", inferred from the task description saying non-Google faces fail — which does not follow, and
   `rg -i 'google font' src/content/docs/` returned hits in that draft only, so the term existed nowhere else
   in the corpus.
+
+- **`flow-funnel` open questions, from the backend write-up on the funnel task (2026-10-02, unresolved there
+  too).** (1) No all-versions mode: a flow republished often (one real flow had ~50 versions in a month)
+  shows a few days of data per version; the article documents the per-version scope as a limitation. (2)
+  Purchases are dated by payment date, so trial conversions after the period end are missing from it —
+  documented as a limitation; a cohort mode was floated, not decided. (3) Country/Store/attribution filter
+  values are taken from the flow's purchases, so a flow with no purchases offers none — not documented
+  (reads as a defect; re-check before writing it up). Not verified from code: the "about once an hour"
+  refresh of Subscription state, which is the backend author's statement; and the minimum SDK version that
+  sends flow screen views, which the article avoids by saying only that the SDK reports them.
+
+- **Three published recipe sentences say hidden elements can't be edited** (`builder-containers.mdx:139`,
+  `show-offer-on-close.mdx:33`, `show-plans-bottom-sheet.mdx:45`; found with
+  `rg -n -i "can't be edited|can't edit" src/content/docs/guides/flow-builder/` on 2026-11-11). Dashboard
+  code (2026-11-10) says only the canvas hides them: the **Layers** panel still selects a hidden element,
+  and the right panel's **Design** and **Interactions** tabs stay enabled for it. "Build it visible first"
+  is still good advice; the stated reason is wrong. `flow-show-hide-animations` and
+  `convert-paywall-to-flow` already rely on the **Layers** route.
+- **Element ID renames, corrected 2026-11-16 (builder code).** `flow-common-issues` and
+  `flow-analytics-ids` said that changing an **Element ID** breaks every condition and text
+  variable that refers to the element. Since 2026-08-24 the builder relinks input variables
+  (`<id>.value`, `<id>.isValid`) across the flow on a rename; group IDs and element-state
+  references follow too. What still breaks: a condition that compares a quiz option's **Element
+  ID** as a text value (`quiz.selectedOptionId = option_1`). Both articles now say so; the section
+  in `flow-common-issues` is "A condition stops matching after you change the Element ID of a quiz
+  option". Not verified: what a device does with a variable reference that no longer resolves
+  (looked for a transformer diagnostic, found none).
+- **Not verified on a device (2026-11-10).** Auto-advance with an animated type at **Duration** 0 rests on
+  compiled behavior only. The Countdown route in `flow-timer` (visible, transparent, digits kept) comes
+  from open docs PR #717, whose own text flags on-device firing as an assumption.
+- **Behavior deliberately left out of `flow-show-hide-animations`** (builder code, 2026-11-10): a delayed
+  Show under **On Screen Appear** keeps its first deadline for the flow run (leave early and come back:
+  it waits the rest; later visits: shown at once, no animation); a newer Show/Hide of the same element
+  replaces a pending one; reversing a half-done animation jumps to its start value; **Duration** 0 is
+  instant. Add any of these only when tickets show readers hit them.
+- **Dropped before release, so don't document them** (builder code, 2026-11-10): auto-advance once per flow
+  run (it re-arms on every appear), and the **Direction** and **Stagger** controls of the animation design.
+  To stagger, the article uses one action per element with growing **Delay**.
+- **Four screenshots show the Edit action window before the animation settings shipped:**
+  `plans-bottom-sheet-show-action.webp`, `close-offer-dismiss.webp`, `close-offer-conditional-2.webp`,
+  `flow-builder/on-tap-show.webp`. Not replaced as of 2026-11-11.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or

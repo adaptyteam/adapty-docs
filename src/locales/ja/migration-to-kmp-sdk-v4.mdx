@@ -106,6 +106,19 @@ Adapty Attribution を使用しない場合は、変更は不要です。
 + Adapty.getFlowForDefaultAudience("YOUR_PLACEMENT_ID")
 ```
 
+### ロケールのマッチングは完全一致 \{#locale-matching-is-exact\}
+
+:::warning
+v3 では、Adapty サーバーがローカライズを選択し、言語へのフォールバックを行っていました。つまり、ペイウォールに `pt-br` のローカライズがない場合、`pt-br` のリクエストは `pt` のローカライズにフォールバックされていました。v4 では、SDK がデバイス上でローカライズを選択し、完全一致のみを使用します。どのローカライズにも一致しないコードが指定された場合、エラーや警告なしにデフォルトのローカライズでフローがレンダリングされます。
+:::
+
+アップグレード前に、アプリが渡すロケールコードを確認してください：
+
+- 渡す地域コードごとに、そのコードで `pt` の隣に `pt-br` のようなローカライゼーションを追加するか、フローが持つコードにマッピングしてください。
+- コードはダッシュボードに表示されているとおり（小文字のサブタグをハイフンで区切った形式）で渡してください。システムロケール識別子をそのまま渡さないでください。`pt-BR` や `pt_BR` はどのローカライゼーションにも一致しません。
+
+[ローカライゼーションとロケールコード](kmp-localizations-and-locale-codes#flows-and-paywalls)を参照してください。
+
 ### getPaywallProducts(paywall) → getPaywallProducts(flow)
 
 `getPaywallProducts` は名前はそのままですが、`AdaptyFlow` を受け取るようになりました：
@@ -326,10 +339,11 @@ IDに一致するレイアウトがない場合、フローはビュー設定な
 
 これらの変更はコンパイルエラーを引き起こさないため、ランタイムでテストしてください。
 
-- **購入完了時の挙動**: v3 では、デフォルトの `paywallViewDidFinishPurchase` が `AdaptyPurchaseResult.UserCanceled` 以外の購入結果に対してビューを閉じていました。v4 では、デフォルトの `flowViewDidFinishPurchase` は何もしないため、**購入が完了してもフローは明示的に閉じるまで開いたままになります** — iOS の挙動に合わせた変更です。自動的に閉じる動作に依存していた場合は、購入完了後に自分で `view.dismiss()` を呼び出してください。
-- **Android のシステムバック**: v3 では、デフォルトの `paywallViewDidPerformAction` が `CloseAction` と `AndroidSystemBackAction` の両方でビューを閉じていました。v4 では、デフォルトは `CloseAction` のみを処理します — **システムバックボタンでは単独でフローが閉じなくなりました**。これは、システムジェスチャーでフローを閉じられない iOS の挙動に合わせたものです。ユーザーが明示的に閉じられるよう（**Close** ボタンや `on_device_back` アクションなど）対応するか、`flowViewDidPerformAction` 内で自分でビューを閉じてください。
-- **ビューのエラー**: v3 では、デフォルトの `paywallViewDidFailRendering` は何もしませんでした。v4 では、デフォルトの `flowViewDidReceiveError` が**ビューを閉じます** — ビューを開いたままにしたい場合やエラーを独自に処理したい場合はオーバーライドしてください。
-- **ビューは使い捨て**: `dismiss()` を呼び出すとビューは破棄されます。フローを再度表示するには、`createFlowView` をもう一度呼び出してください。
+- **フローのローカライズ**: 地域ロケールコードは言語へのフォールバックを行わなくなりました。`pt-br` は `pt` のローカライズを使用しません。完全一致がない場合、フローはデフォルトのローカライズで表示されます。詳しくは[ロケールの一致は完全一致](#locale-matching-is-exact)を参照してください。
+- **購入完了**: v3 では、デフォルトの `paywallViewDidFinishPurchase` が `AdaptyPurchaseResult.UserCanceled` 以外の購入結果でビューを閉じていました。v4 では、デフォルトの `flowViewDidFinishPurchase` は何もしないため、**購入後も自分で閉じるまでフローは開いたまま**です（iOS の動作に合わせています）。自動クローズに依存していた場合は、購入完了後に自分で `view.dismiss()` を呼び出してください。
+- **Android のシステムバック**: v3 では、デフォルトの `paywallViewDidPerformAction` が `CloseAction` と `AndroidSystemBackAction` の両方でビューを閉じていました。v4 では、デフォルトは `CloseAction` のみを処理します。**システムの戻るボタンだけではフローが閉じなくなりました**（システムジェスチャーでフローを閉じられない iOS の動作に合わせています）。**Close** ボタンや `on_device_back` アクションなど、明示的な閉じる手段をユーザーに提供するか、`flowViewDidPerformAction` 内で自分でビューを閉じてください。
+- **ビューのエラー**: v3 では、デフォルトの `paywallViewDidFailRendering` は何もしませんでした。v4 では、デフォルトの `flowViewDidReceiveError` が**ビューを閉じます**。ビューを開いたままにしたい場合や別のエラー処理を行いたい場合は、オーバーライドしてください。
+- **ビューは使い捨て**: `dismiss()` 後、ビューは破棄されます。フローを再表示するには、`createFlowView` を再度呼び出してください。
 
 ## オンボーディング API の廃止予定 \{#onboarding-api-deprecation\}
 

@@ -56,28 +56,29 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 |---|---|---|---|---|
 | add-flow-remote-config-locale | — | marketer | 4 | tutorial |
 | add-paywall-locale-in-adapty-paywall-builder | — | marketer | 20 | tutorial |
-| builder-containers | — | marketer | 15 | tutorial |
-| builder-element-states | — | marketer | 7 | tutorial |
+| builder-containers | — | marketer | 14 | tutorial |
+| builder-element-states | — | marketer | 8 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
+| builder-reusable-styles | — | — | 8 | tutorial |
 | builder-reviews-and-testimonials | — | marketer | 5 | tutorial |
-| builder-styling | — | marketer | 23 | tutorial |
+| builder-styling | — | marketer | 22 | tutorial |
 | builder-tabs | — | marketer | 5 | tutorial |
 | builder-toggles | — | marketer | 4 | tutorial |
 | custom-media | — | marketer | 9 | tutorial |
 | flow-analytics-ids | — | — | 6 | tutorial |
 | flow-selectable-elements | entry | marketer | 6 | tutorial |
-| flow-timer | — | marketer | 6 | tutorial |
+| flow-timer | — | marketer | 7 | tutorial |
 | manage-paywall-ui-elements | — | marketer | 15 | tutorial |
 | onboarding-quizzes | — | marketer | 3 | tutorial |
 | onboarding-text | entry | marketer | 10 | tutorial |
 | paywall-buttons | — | marketer | 6 | tutorial |
-| paywall-dark-mode | — | marketer | 4 | tutorial |
+| paywall-dark-mode | — | marketer | 8 | tutorial |
 | paywall-head-picture | — | marketer | 6 | tutorial |
 | paywall-layout-and-products | — | marketer | 13 | tutorial |
 | paywall-localization | entry | marketer | 0 | tutorial |
 | reuse-flow-elements | — | marketer | 8 | tutorial |
-| using-custom-fonts-in-flow-builder | — | marketer | 5 | tutorial |
+| using-custom-fonts-in-flow-builder | — | marketer | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
@@ -157,6 +158,12 @@ article for platform X" as a gap — coverage review isn't in scope for this too
   commits; large sweep commits (translation runs, link-checker passes) are excluded as noise, so an
   absent co-change signal is not evidence a ripple rule doesn't exist — the screenshot-reuse and
   duplicated-warning rules above were both found by reading, not by co-change.
+- **`flow-timer`'s "Delay when a close button appears" now routes to `flow-logic` (2026-11-11).** Delays
+  up to 5 seconds use a delayed **Show element** action (`flow-show-hide-animations`, the owner of how to
+  use the action); the Countdown route stays only for longer delays. Open docs PR #717 rewrites the same
+  section, and its Countdown steps share most of their wording with the merged version. `builder-styling`'s
+  **Visibility** options now describe starting states (**Hide**: hidden until a **Show element** action
+  reveals it) and link to the same article, so a change to how Show/Hide works ripples into both.
 
 ## Boundaries
 
@@ -182,6 +189,11 @@ Confirmed edge cases:
 - **Selectable/state mechanics** (`flow-selectable-elements`, `builder-element-states`) document what a
   state *looks like* once styled; the condition syntax that actually triggers a Disabled state or routes
   on a selection lives in `flow-logic` (`onboarding-actions`, `onboarding-element-visibility`).
+  Since 2026-11-16, a condition that evaluates another element's state is `flow-logic`'s
+  `element-states-in-conditions`. Which state an element is in when several apply stays here, in
+  `builder-element-states#when-several-states-apply-to-one-element`, because it decides the look
+  as well as every condition: the last match wins in the order Selected, Invalid, Active, Disabled
+  (transformer code, 2026-11-16).
 
 **Boundary with `sdk-flows-display`:** this zone stops at what a marketer configures in the dashboard.
 Anything requiring app code — fetching the flow object, reading `AdaptyFlow.remoteConfigs`, bundling a
@@ -218,13 +230,15 @@ articles in this zone are plausible and one is right.
 | "crossed-out price", "different headline per plan", "translated text overflows its box" | `onboarding-text`. The **Old Price** element must sit *inside* a product card — outside one it renders an "Old price" placeholder — and it shows that card's own price × a **Multiplier**; crossing out a *different* product's real price is `flow-logic`'s `strikethrough-price` recipe instead. Content set to **Conditional** swaps the text itself (the content-swap sibling of `flow-logic`'s `onboarding-element-visibility`), and **Truncate** is the answer to variable-length dynamic or localized copy. |
 | "Terms of Service link", "opens in the wrong browser", "'Learn more' inside a paragraph" | Split by the role the text plays: an **inline link** inside flowing copy always opens the in-app browser (`onboarding-text#add-links`); a standalone tap target is a button with an **Open URL** action, which can open in-app or externally (`paywall-buttons`; the action itself is `flow-logic`'s `onboarding-actions`). A purchase button that doesn't purchase is `flow-logic`'s `paywall-product-block`, not a button-design issue. |
 | "quiz lets users pick several answers", "need single choice", "options on two screens won't group" | Most quiz presets are **multi-choice by default** — change **Group type** in **Screen settings > Selectable groups** (`onboarding-quizzes#change-quiz-type`, `flow-selectable-elements#group-types`). A group cannot span screens: all its elements must sit on one screen, though conditions on any screen can read it. Where the answer then routes the user is `flow-logic`. |
-| "selected style only applied to one option", "grey out the submit button", "error style appears too late", "empty field counts as valid" | `builder-element-states` for the look, `builder-inputs-and-forms` for the rules. Four constraints do the work: state styling does **not** propagate to siblings (style one element, then duplicate it); **Disabled** never activates on its own — it needs a condition, typically `<elementId>.isValid = false`; **Invalid** activates only when the user submits, so nothing turns red while typing; and an empty input is always valid (Text inputs have no rules at all, so their `isValid` is always true). |
+| "selected style only applied to one option", "grey out the submit button", "error style appears too late", "empty field counts as valid" | `builder-element-states` for the look, `builder-inputs-and-forms` for the rules. Four constraints do the work: state styling does **not** propagate to siblings (style one element, then duplicate it); **Disabled** never activates on its own — it needs a condition, typically `<elementId>.isValid = false`; **Invalid** activates only when the user submits, so nothing turns red while typing; and an empty input is always valid (Text inputs have no rules at all, so their `isValid` is always true). Unconfirmed since 2026-11-16: "Invalid activates only when the user submits" (`builder-inputs-and-forms`). Transformer code derives **Invalid** from `!isValid` with focus (**Active**) ranked higher, and no submit step was found there; the mechanism looked for was a submit flag in the state derivation, and the SDK may still gate it. Settle on a device before editing either article. An email field becomes **Invalid** only with **Validate email format** selected, which is off by default. |
 | "swipeable slides", "let users switch monthly/yearly", "branch on which slide they picked" | A Carousel's active slide is **not** a selectable group — slides can't be referenced in conditions or dynamic text, so it's for visual rotation only (`builder-containers#carousel`). `builder-tabs` is the single-choice-group version, exposing `selectedOptionId` / `selectedOptionTitle`. Switching whole product groups is `flow-logic`'s `paywall-with-tabs` recipe. |
 | "countdown restarts every time the screen opens", "timer should survive an app restart" | `flow-timer` — the **Behavior** dropdown: **Every appear** (default), **First appear** (first view in the current app session), **First appear (persisted)** (keeps counting across launches). Hiding a badge or navigating when it reaches zero is an **On timer end** action (`flow-logic`'s `onboarding-actions`). |
+| "show 48:00:00 / 72:00:00", "Black Friday timer without days", "hours field stops at 23" | `flow-timer` — **Change the time format**: the `timer_total_hours` variable shows all remaining hours (53 for 2d 5h), so `timer_total_hours:timer_minutes:timer_seconds` replaces a days block. The Duration hours field accepts up to 999; `timer_days`/`timer_hours` still split hours above 23 into days. Verified against builder code, 2026-11-12. |
 | "translate the flow", "send strings to a translator", "TSV import failed", "some screens fell back to English" | Two unrelated surfaces; `paywall-localization` exists only to route between them. On-screen text and media: `add-paywall-locale-in-adapty-paywall-builder` — despite the filename it is the flow-era Localizations panel (see the Boundaries TODO on its zoning). Export/import is `.tsv`; the pinned default locale is the fallback for anything missing. Corrected 2026-10-01 against unreleased builder code, pending release: variables export as `{{name}}` and survive the import, locale columns the flow lacks are skipped rather than rejected, and a blank cell clears a non-default translation. Earlier this row said the export strips variables and that import locale codes must already exist. Per-locale remote-config JSON is `add-flow-remote-config-locale`. Icons, screen backgrounds and custom media IDs **can't** be localized at all (`custom-media#limitations`). |
 | "can't upload the image/video", "upload fails", "file rejected", "my logo is an SVG", "the GIF doesn't animate" | `custom-media` carries the hard limits, and they are the answer to most "upload doesn't work" tickets (`custom-media.mdx:20,32`, read 2026-08-13): images `.JPG`/`.PNG`/`.WEBP` up to 20 MB; videos `.MP4`/`.WEBM` up to 50 MB, no longer than 30 s, minimum 640×640 px. **SVG is not an accepted format** (it isn't in the list — export to PNG or WEBP), and animated GIFs and animated WEBPs are explicitly unsupported at any size, with a Video element as the documented way to add motion. Icons are never uploaded: the Icon element draws from the bundled Tabler Icons library. Note the reader-facing troubleshooting entry for this lives outside this zone, at `flow-logic`'s `flow-common-issues` — this zone stays the source of truth for the numbers. |
 | "the Position toggle disappeared", "Fill and Hug are missing from Width", "the Spacing section is gone", "Fixed is greyed out" | The element and its container both use the **Free** direction. That combination leaves one legal configuration — Absolute position with a fixed width and height — so the builder removes every control that could express another. Rule and remedy in `manage-paywall-ui-elements` (section: Position in a Free container); symptom-first entry in `flow-common-issues`. Verified against builder code, 2026-09-18. |
 | "pre-checked trial switch", "App Store rejected our paywall" | `builder-toggles` — a trial toggle that defaults to "on" can be flagged as a manipulative dark pattern under the App Store Review Guidelines; the documented advice is to default it to off and let users opt in. What flipping it then swaps is `flow-logic` (`onboarding-actions`, `paywall-product-block`). |
+| "Countdown to show the close button doesn't fire", "On timer end never runs" | `flow-timer#delay-when-a-close-button-appears`. A Countdown set to **Hide** that no action targets isn't published, so its **On timer end** never fires; keep it visible with transparent text and its digits (docs PR #717, partly confirmed in builder code 2026-11-10). For delays up to 5 seconds the answer is no Countdown at all: a delayed **Show element** action (`flow-logic`'s `flow-show-hide-animations`). |
 
 ## Gaps and misses
 
@@ -259,6 +273,20 @@ second callout layer around it.
   `<Zoom><img src={require(...)}/></Zoom>` pattern and opens with a stray `:::info This section
   describes the new Flow & Paywall Builder...` banner that no other article in this zone carries — everything
   else already migrated to `<ZoomImage>`. Noted for a cleanup pass, not actioned here.
+
+**Found 2026-11-16 in `builder-element-states`, not fixed (builder code):**
+
+- "Add the Disabled state" says to click **Settings** and choose **Add Disabled state**. On an
+  element without states there is no **Settings** control; the **States** section shows a
+  **Disabled state** button, and after it, hovering **Disabled** offers **Set conditions**.
+  `element-states-in-conditions` documents the current route in its "Synchronize element states"
+  steps and links to this procedure, so fix it here first.
+- The table and the Disabled list name icons among elements with a tap interaction that can be
+  **Disabled**. Icons and texts are not stateful by schema: no **States** section.
+- Text, email, password, number and phone inputs are created with **Disabled** already; date and
+  time pickers with **Disabled** only. The table lists **Disabled** as addable for inputs.
+- A button, image or container gets a **Disabled** state only with a tap interaction, and most
+  button presets ship without one.
 
 **Verified 2026-09-18 while documenting the Free layout direction.** Four layout mechanics that no article carried and this
 brief did not either — all from builder code, all pre-existing rather than part of that change:

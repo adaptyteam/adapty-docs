@@ -1,0 +1,127 @@
+---
+title: "Migrar el SDK de iOS de Adapty a v4.3 y v4.4"
+description: "Migra al SDK de iOS de Adapty v4.3 y v4.4: actualiza el código de precio, código de error, acción personalizada y asset personalizado, y descarga un nuevo archivo de respaldo."
+metadataTitle: "Migración al SDK de iOS de Adapty v4.3 y v4.4 | Documentación de Adapty"
+---
+
+Para actualizar tu app del SDK de iOS de Adapty 4.1 o 4.2 a 4.4, aplica todos los cambios de esta guía. Si tu app ya usa 4.3, aplica solo los [cambios introducidos en v4.4](#changes-in-v44). Una app en 4.0 necesita primero los [cambios de v4.1](migration-to-ios-sdk-41).
+
+:::warning
+El formato del archivo de respaldo cambió en la versión 4.4 y el compilador no puede detectar un archivo desactualizado. Sin un [nuevo archivo de respaldo](#fallback-files), cada placement perderá su respaldo.
+:::
+
+## Referencia rápida \{#quick-reference\}
+
+| Antes | Después | Versión |
+|---|---|---|
+| `localizedPrice` y `currencyCode` pueden ser `nil` | Ambas propiedades siempre devuelven una cadena | 4.3.0 |
+| Sin código de error `billingPlanUnavailable` | `AdaptyError.ErrorCode` incluye `billingPlanUnavailable` | 4.3.0 |
+| `Adapty.reportTransaction` con un `Transaction` simple | `Adapty.reportTransaction` con un `VerificationResult<Transaction>`; la sobrecarga de `Transaction` está obsoleta | 4.3.2 |
+| `case let .custom(id)` | `case let .custom(id, _)` | 4.4.0 |
+| `AdaptyUICustomAsset` | `AdaptyUIAsset`; `AdaptyCustomAsset` no cambia | 4.4.0 |
+| `.color(.uiColor(x))` y `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` y `.color(c)` | 4.4.0 |
+| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` | 4.4.0 |
+| Sin recursos de datos | `AdaptyUIAsset` incluye `.data` para recursos de datos | 4.4.0 |
+| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` | 4.4.0 |
+| Archivo de respaldo descargado para 4.1–4.3 | Nuevo formato de archivo de respaldo; descarga el archivo de nuevo | 4.4.0 |
+
+## Cambios en v4.3 \{#changes-in-v43\}
+
+### localizedPrice y currencyCode ya no son opcionales \{#prices-are-no-longer-optional\}
+
+En la versión 4.3, las propiedades `localizedPrice` y `currencyCode` de `AdaptyPaywallProduct` y `AdaptySubscriptionOffer` siempre devuelven una cadena, nunca `nil`. El código que las comprueba como `nil` con `if let`, `guard let` o `?.` no compila. Elimina estas comprobaciones:
+
+```diff showLineNumbers
+- if let price = product.localizedPrice {
+-     priceLabel.text = price
+- }
++ priceLabel.text = product.localizedPrice
+```
+
+Elimina también los valores por defecto con `??` en estas propiedades: compilan, pero con una advertencia.
+
+### AdaptyError.ErrorCode incluye billingPlanUnavailable \{#new-error-code\}
+
+4.3 añade el [código de error](ios-sdk-error-handling#storekit-errors) `billingPlanUnavailable`. Una sentencia `switch` que lista todos los códigos de error sin rama `default` dejará de compilarse. Para solucionarlo, añade una rama `case .billingPlanUnavailable` o una rama `default`.
+
+### La sobrecarga Transaction de reportTransaction está obsoleta \{#reporttransaction-overload-is-deprecated\}
+
+En la versión 4.3.2, la sobrecarga `Adapty.reportTransaction(_:withVariationId:)` que acepta una `Transaction` sin firma de App Store genera una advertencia de obsolescencia. Para reportar la transacción con su firma de App Store, pasa el `VerificationResult<Transaction>` que devuelve StoreKit:
+
+```diff showLineNumbers
+- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
++ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
+```
+
+## Cambios en v4.4 \{#changes-in-v44\}
+
+### AdaptyUI.Action.custom contiene dos valores \{#custom-actions\}
+
+Cuando un usuario pulsa un botón con una acción personalizada, tu app recibe `AdaptyUI.Action.custom`. En la versión 4.4, incluye un segundo valor, `arguments`, después del ID de la acción. En el closure `didPerformAction` y en el método delegado `flowController(_:didPerform:)`, añade `_` para este segundo valor:
+
+```diff showLineNumbers
+  switch action {
+- case let .custom(id):
++ case let .custom(id, _):
+      if id == "openNewPaywall" {
+          // Display another flow or paywall
+      }
+  default:
+      break
+  }
+```
+
+```swift
+switch action.id {
+case .system(let id) where id == "login":
+    // Handle login
+case .system(let id) where id == "restore":
+    // Handle restore
+case .custom(_, let id):
+    // Custom action
+    print("Custom action: \(id)")
+@unknown default:
+    break
+}
+```
+
+### Recursos personalizados \{#custom-assets\}
+
+En la versión 4.4, `AdaptyUICustomAsset` pasa a llamarse `AdaptyUIAsset`. El nombre anterior genera una advertencia de deprecación.
+
+Los recursos de color, fuente y datos cambian de tres maneras:
+
+- **Recursos de color**: `.color` acepta un `Color` de SwiftUI. `AdaptyUICustomColorAsset` se elimina. Envuelve un `UIColor` en `Color(uiColor:)` y pasa un `Color` de SwiftUI directamente:
+
+  ```diff showLineNumbers
+  - "brand_color": .color(.uiColor(brandColor)),
+  + "brand_color": .color(Color(uiColor: brandColor)),
+  ```
+
+- **Activos de fuente**: `AdaptyUIFontAsset` usa `color:`, `letterSpacing:`, y `lineHeight:` en lugar de `defaultColor:`, `defaultLetterSpacing:`, y `defaultLineHeight:`. El parámetro `color:` acepta un `Color` de SwiftUI:
+
+  ```diff showLineNumbers
+  - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
+  + "title_font": .font(AdaptyUIFontAsset(font: titleFont, color: .white, lineHeight: 24)),
+  ```
+
+- **Activos de datos**: `AdaptyUIAsset` incluye un nuevo tipo de activo, `.data`. Una sentencia `switch` que lista todos los tipos de activo sin rama `default` dejará de compilar. Solo los [elementos personalizados](ios-flow-custom-elements) leen activos de datos, por lo que la nueva rama puede estar vacía: `case .data: break`.
+
+### AdaptyProduct.localizedBillingPeriod está obsoleto \{#localizedbillingperiod-is-deprecated\}
+
+`AdaptyProduct` tiene una propiedad [`subscriptionPricingTerms`](fetch-paywalls-and-products) que describe cada pago del producto: su precio y la frecuencia con la que el usuario paga. En la versión 4.4, `localizedBillingPeriod`, el texto que indica la frecuencia de pago, se traslada de `AdaptyProduct` a `subscriptionPricingTerms`. `AdaptyProduct.localizedBillingPeriod` sigue funcionando, pero con una advertencia de obsolescencia: devuelve `subscriptionPricingTerms?.localizedBillingPeriod`. Para eliminar la advertencia, lee la propiedad desde los términos de precios:
+
+```diff showLineNumbers
+- let period = product.localizedBillingPeriod
++ let period = product.subscriptionPricingTerms?.localizedBillingPeriod
+```
+
+### Archivos de respaldo
+
+El formato del [archivo de respaldo](fallback-flows) cambió en el SDK 4.4. Descarga el archivo nuevamente desde **[Placements](https://app.adapty.io/placements)** > **Fallbacks**, selecciona **Adapty SDK v4.4.0 and higher** y agrégalo a tu app.
+
+El archivo descargado se llama `ios_4_4_0_fallback.json`. Asígnale el nombre que tu app pasa a `Bundle.main.url(forResource:withExtension:)`, o actualiza ese nombre en la llamada.
+
+:::warning
+Un archivo de respaldo desactualizado no produce ningún error de compilación. Cada placement pierde silenciosamente su paywall de respaldo. El log del SDK mostrará entonces "The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
+:::

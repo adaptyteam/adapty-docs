@@ -1,0 +1,145 @@
+---
+title: "Show user progress with a Lottie animation"
+description: "Display the progress of each user, such as a daily streak, as a Lottie animation on a flow screen."
+metadataTitle: "Show user progress with a Lottie animation | Flows & paywalls | Adapty Docs"
+---
+
+Follow this recipe to display the user's progress as a Lottie animation — for example, a ring that fills up to indicate their daily streak. Your app renders the animation as a native Lottie view in a [custom element](flow-custom-elements).
+
+:::tip
+This recipe only covers iOS apps. Apps built with other frameworks only display the custom elements' [fallback content](flow-custom-elements#set-fallback-content). Support for Android and cross-platform frameworks is upcoming.
+:::
+
+<DocVideo id="custom-element-lottie-demo.mp4" width="300px" alt="The finished flow: the user taps See my streak, and on the next screen, the ring fills up to 4 of 7 days." />
+
+## Before you start
+
+- Update your app to Adapty iOS SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
+- Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
+- Add Lottie to your app with Swift Package Manager, from `https://github.com/airbnb/lottie-spm.git`.
+- Prepare a Lottie animation in `.json` format, or download the sample [`streak_ring.json`](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/streak_ring.json). The app plays the animation from the start and stops it in proportion to the progress, such as halfway through for 50%. To show the exact progress, the animation needs:
+  - No progress on its first frame, and full progress on its last frame.
+  - A steady speed, with no easing. If the animation starts slowly and then speeds up, it shows less than half of the progress halfway through.
+
+## 1. Add the custom element to the screen
+
+In the Flow & Paywall Builder, [add a custom element](flow-custom-elements#add-and-configure) to a flow screen, and set it up for the animation:
+
+- **Type**: `lottie_animation`.
+- **ID**: `streak_ring`. In this recipe, the ID is also the name of the animation file.
+- **Height**: Keep the default **Fixed** height. The animation scales to fit the custom element.
+
+Inside the custom element, add an [**Image**](custom-media#image) with a still picture of the ring. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when their version of your app doesn't play the animation.
+
+## 2. Add the animation file to your app
+
+In Xcode, add the animation file to your app target. The file name without `.json` must match the ID of the custom element, such as `streak_ring.json` for `streak_ring`.
+
+## 3. Create the animation view
+
+Create a model for the streak, and a SwiftUI view that plays the animation. Your app updates the model when the streak changes. The view reads the model, so the ring shows the current streak when the screen opens:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+import Lottie
+import SwiftUI
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` fills the ring once, from empty up to `progress`. If your app already keeps the streak in an `ObservableObject`, use that object in place of `StreakStore`.
+
+## 4. Match the animation to the custom element
+
+In your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), add a property for the streak model. Then add a case that returns `StreakRingView` for the `lottie_animation` Type and the `streak_ring` ID. The highlighted lines show what to add. If your app has no app-wide [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift" {2,6,14-18}
+import AdaptyUIBuilder
+import Lottie
+import SwiftUI
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Put the `streak_ring` case before any other `lottie_animation` case, because Swift only runs the first case that matches. If the app bundle has no file for the ID, the resolver returns `nil`, and users see the fallback.
+
+Create the resolver with the streak model, and set it as the app-wide resolver. Call `AdaptyUI.setCustomElementsResolver(_:)` once, such as at app launch:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+import AdaptyUI
+
+// the streak model that your app updates
+@MainActor let streakStore = StreakStore()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(streakStore: streakStore)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Test on a device
+
+The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the animation:
+
+1. [Publish the flow](builder-save-publish). To see the latest published version instead of a cached one, register the device as a [test device](test-devices).
+2. Run a build of your app that includes the resolver. Set the streak to a few values, such as 0, 4, and 7 days. Open the screen for each value, and verify that the ring fills up to it.
+
+To test the fallback, remove the animation file from the build, and open the screen again.
+
+To find out why the fallback appears instead of the animation, follow the instructions in the [Test on a device](ios-flow-custom-elements#test-on-a-device) section of the iOS guide.

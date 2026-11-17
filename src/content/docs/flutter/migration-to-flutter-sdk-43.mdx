@@ -1,0 +1,103 @@
+---
+title: "Migrate Adapty Flutter SDK to v4.3"
+description: "Migrate to Adapty Flutter SDK v4.3: decide how Google Play messages appear, read numeric flow event parameters as num, and handle email input from onboardings."
+metadataTitle: "Migrating to Adapty Flutter SDK v4.3 | Adapty Docs"
+---
+
+Adapty Flutter SDK 4.3 shows Google Play in-app messages by default and changes the Dart types of some flow and onboarding event data. No public API is removed or renamed, so your app compiles against 4.3 without changes. To keep its behavior the same, review each change in this guide.
+
+If you're still on 4.0, start with [Migrate to v4.1](migration-to-flutter-sdk-41) and then follow this guide.
+
+## Quick reference
+
+| v4.1 | v4.3 |
+|---|---|
+| Google Play messages aren't requested | Google Play messages are shown by default on Android, including over flows |
+| Whole-number flow event parameters arrive as `double` on Android | They arrive as `int` on both platforms |
+| Onboarding email fields arrive as `AdaptyOnboardingsTextInput` | They arrive as `AdaptyOnboardingsEmailInput` |
+| Printing onboarding input hides the entered value | Printing it shows the entered value |
+
+## Installation
+
+Update `adapty_flutter` to v4.3 in your `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.3.0
+```
+
+If your app uses [Kids Mode](kids-mode-flutter), specify `adapty_flutter_kids` instead:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.3.0
+```
+
+The requirements are unchanged from 4.1: **Flutter 3.32.0** (Dart 3.8.0) and **iOS 15.0**. See [Install Adapty SDK](sdk-installation-flutter) for the full setup.
+
+## Google Play messages are shown by default
+
+Starting from 4.3, the SDK requests Google Play in-app messages, such as declined payment notices, every time an `Activity` of your app starts after `activate`. This includes the moments when the app returns to the foreground and when a flow or onboarding opens or closes, so a message can appear over a paywall.
+
+If that's fine for your app, no changes are needed. To choose when the messages appear, activate the SDK with manual handling on Android, and call `showStoreMessages` at a moment that suits your app:
+
+```dart showLineNumbers title="main.dart"
+import 'dart:io' show Platform;
+
+final configuration = AdaptyConfiguration(apiKey: 'YOUR_PUBLIC_SDK_KEY');
+if (Platform.isAndroid) {
+  configuration.withStoreMessagesHandling(AdaptyStoreMessagesHandling.manual);
+}
+await Adapty().activate(configuration: configuration);
+```
+
+Set manual handling on Android only to keep iOS unchanged: on iOS 16 and later, manual handling also holds App Store messages until your app calls `showStoreMessages`. For the full API, see [Control store messages](flutter-store-messages).
+
+:::warning
+In manual mode, the stores don't show messages on their own. If your app never calls `showStoreMessages`, users never see a declined payment notice.
+:::
+
+## Numeric flow event parameters are `int` on Android
+
+On Android, whole-number parameters of flow analytic events used to arrive as `double`. Starting from 4.3, they arrive as `int`, the same as on iOS. This affects `flowViewDidReceiveAnalyticEvent` and the `onDidReceiveAnalyticEvent` callback of `AdaptyUIFlowPlatformView`, including the date and time values of [flow input](flutter-flow-input) events.
+
+A cast to `double` now throws on Android. Read numeric parameters as `num`:
+
+```diff showLineNumbers
+- final timestamp = params['value'] as double;
++ final timestamp = params['value'] as num;
+```
+
+## Onboarding email fields arrive as `AdaptyOnboardingsEmailInput`
+
+Starting from 4.3, email fields of an onboarding reach `onboardingViewOnStateUpdatedAction` and the `onStateUpdatedAction` callback of `AdaptyUIOnboardingPlatformView` as `AdaptyOnboardingsEmailInput`. Before, they arrived as `AdaptyOnboardingsTextInput`. If your code reads emails from the text case, handle the email case too:
+
+```diff showLineNumbers
+  switch (input) {
+    case AdaptyOnboardingsTextInput(:final value):
+      // text fields
+      break;
++   case AdaptyOnboardingsEmailInput(:final value):
++     // email fields
++     break;
+    case AdaptyOnboardingsNumberInput(:final value):
+      // number fields
+      break;
+  }
+```
+
+Number fields now arrive as `AdaptyOnboardingsNumberInput`. Before 4.3, their updates didn't arrive at all. See [Process data from onboardings](flutter-onboarding-input).
+
+## Onboarding input values appear in printed output
+
+Printing an `AdaptyOnboardingsInputParams` or an `AdaptyOnboardingsInput` now shows the entered value. If your app logs these objects, review the logs: they can now contain names, emails, and other data that users enter.
+
+## New in 4.3
+
+These additions don't require code changes:
+
+- **[Control store messages](flutter-store-messages)**: Choose when App Store and Google Play messages appear.
+- **[Preload placements](flutter-optimize-paywall-fetching#preload-placements)**: The `preloadFlows` and `preloadFlowsForDefaultAudience` warm the flow cache.
+- **[Release a kept view](flutter-present-paywalls#dismiss-the-flow-or-paywall)**: The `destroy()` method releases a flow view that you kept with `dismiss(destroy: false)` or never presented.
+- **[12-month commitment plans](set-up-12-month-commitment)**: The `AdaptyProductSubscription.pricingTerms` property describes the plan on iOS, and access levels report `billingPlan` and `commitmentInfo`.
+- **[Observer mode](report-transactions-observer-mode-flutter)**: The `reportTransaction` method takes an optional `appleJwsTransaction` on iOS.

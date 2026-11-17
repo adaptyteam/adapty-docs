@@ -64,7 +64,7 @@ Các SDK gốc bên dưới được nâng lên phiên bản 4.x trên cả hai 
 
 ### GetPaywall → GetFlow
 
-Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` bị loại bỏ — khi bạn render một flow, locale sẽ được tự động xác định; đối với các paywall tùy chỉnh, tất cả các locale được trả về trong `flow.RemoteConfigs`:
+Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham số `locale` chuyển sang tham số view của flow (`AdaptyUICreateFlowViewParameters.SetLocale`) — xem [Khớp locale là chính xác](#locale-matching-is-exact); đối với các paywall tùy chỉnh, tất cả các locale được trả về trong `flow.RemoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +84,19 @@ Kiểu trả về thay đổi từ `AdaptyPaywall` sang `AdaptyFlow`, và tham s
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Khớp locale là chính xác \{#locale-matching-is-exact\}
+
+:::warning
+Trong v3, server Adapty chọn bản địa hóa và dự phòng theo ngôn ngữ: yêu cầu `pt-br` sẽ nhận bản địa hóa `pt` khi paywall không có `pt-br`. Trong v4, SDK chọn bản địa hóa trên thiết bị và chỉ dùng kết quả khớp chính xác. Mã không khớp với bất kỳ bản địa hóa nào sẽ hiển thị flow theo bản địa hóa mặc định, không có lỗi hay cảnh báo.
+:::
+
+Trước khi nâng cấp, hãy kiểm tra các mã locale mà ứng dụng của bạn truyền vào:
+
+- Với mỗi mã vùng bạn truyền vào, hãy thêm một localization với mã đó — ví dụ: `pt-br` bên cạnh `pt` — hoặc ánh xạ mã đó sang mã mà flow có.
+- Truyền mã chính xác như chúng xuất hiện trên dashboard — subtag viết thường, phân cách bằng dấu gạch ngang. Đừng truyền thẳng system locale identifier: `CultureInfo.CurrentCulture.Name` trả về `pt-BR`, không khớp với bất kỳ localization nào.
+
+Xem [Localizations và mã locale](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -309,10 +322,11 @@ Bước này không tạo ra lỗi biên dịch. Nếu bỏ qua, `SetFallback` s
 
 Những thay đổi này không gây ra lỗi biên dịch, vì vậy hãy kiểm tra chúng tại runtime:
 
-- **Hoàn tất mua hàng**: Ở v3, view tự động đóng sau khi mua thành công. Ở v4, **flow vẫn mở sau khi mua hàng hoặc xảy ra lỗi cho đến khi bạn đóng nó** — SDK không áp dụng hành vi mặc định nào. Hãy tự gọi `view.Dismiss(...)` trong `FlowViewDidFinishPurchase` khi người dùng có quyền truy cập.
-- **Nút back trên Android**: Nút back hệ thống (hoặc thao tác vuốt back) được chuyển đến `FlowViewDidPerformAction` dưới dạng action `SystemBack` và không còn tự đóng flow nữa — giống với iOS, nơi flow không thể bị đóng bằng thao tác hệ thống. Hãy cung cấp cho người dùng cách thoát rõ ràng (nút **Close** hoặc action `on_device_back`), hoặc tự đóng view khi xử lý action đó.
-- **View chỉ dùng một lần**: Sau khi gọi `Dismiss`, view sẽ bị hủy. Gọi lại `CreateFlowView` nếu muốn hiển thị flow thêm lần nữa.
-- **Giao dịch ở Observer mode**: `ReportTransaction` không còn trả về lỗi giải mã khi thành công nữa — ở v3, response thành công bị phân tích sai, khiến mọi báo cáo thành công đều kết thúc với lỗi.
+- **Bản địa hóa flow**: Mã locale khu vực không còn fallback về ngôn ngữ của nó nữa — `pt-br` sẽ không lấy bản địa hóa `pt`. Mã không khớp chính xác sẽ hiển thị flow theo bản địa hóa mặc định. Xem [Khớp locale là chính xác](#locale-matching-is-exact).
+- **Hoàn tất mua hàng**: Trong v3, view tự động bị đóng sau khi mua thành công. Trong v4, **flow vẫn mở sau khi mua hoặc gặp lỗi cho đến khi bạn đóng nó** — SDK không áp dụng hành vi mặc định nào. Hãy tự gọi `view.Dismiss(...)` trong `FlowViewDidFinishPurchase` khi người dùng đã được cấp quyền truy cập.
+- **Nút Back của Android**: Nút back hệ thống (hoặc cử chỉ vuốt back) được chuyển đến `FlowViewDidPerformAction` dưới dạng action `SystemBack` và không còn tự đóng flow nữa — giống với iOS, nơi flow không thể bị đóng bằng cử chỉ hệ thống. Hãy cung cấp cho người dùng cách thoát rõ ràng (nút **Close** hoặc action `on_device_back`), hoặc tự đóng view khi xử lý action đó.
+- **View chỉ dùng một lần**: Sau khi `Dismiss`, view bị hủy. Gọi lại `CreateFlowView` để hiển thị flow một lần nữa.
+- **Giao dịch ở Observer mode**: `ReportTransaction` không còn trả về lỗi giải mã khi thành công nữa — trong v3, phản hồi thành công bị phân tích sai, khiến mọi báo cáo thành công đều kết thúc với lỗi.
 
 ## Ngừng hỗ trợ Onboarding API \{#onboarding-api-deprecation\}
 

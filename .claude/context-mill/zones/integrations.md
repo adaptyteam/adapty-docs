@@ -83,7 +83,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | event-statuses | — | dev, analyst | 0 | tutorial |
 | events | — | dev, analyst | 7 | tutorial |
 | facebook-ads | — | dev, analyst | 7 | tutorial |
-| firebase-and-google-analytics | — | dev, analyst | 17 | tutorial |
+| firebase-and-google-analytics | — | dev, analyst | 18 | tutorial |
 | firebase-apps | — | dev, analyst | 1 | tutorial |
 | google-cloud-storage | — | dev, analyst | 9 | tutorial |
 | handle-integration-errors | — | dev, analyst | 8 | tutorial |
@@ -94,7 +94,7 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
 | pushwoosh | — | dev, analyst | 5 | tutorial |
 | s3-exports | — | dev, analyst | 7 | tutorial |
 | set-up-webhook-integration | — | dev, analyst | 7 | tutorial |
-| singular | — | dev, analyst | 6 | tutorial |
+| singular | — | dev, analyst | 8 | tutorial |
 | slack | — | dev, analyst | 6 | tutorial |
 | splitmetrics | — | dev, analyst | 7 | tutorial |
 | switch-from-appsflyer-s2s-api-2-to-3 | — | dev, analyst | 0 | tutorial |
@@ -173,6 +173,14 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    into `export-analytics-with-ai`. Both ids are assigned to `agent-tooling` in `zones.json`. A task that
    changes webhook or export behavior should check whether either agent guide needs a matching update,
    even though neither article is in this roster.
+6. **`subscription_deferred` covers both stores since 2026-10-15** (backend code, checked 2026-11-10): a
+   Google Play deferral, and an App Store renewal date extension made through the App Store Server API.
+   The extension moves the subscription's expiration date and the access level with it. The event's
+   description lives once, in the `WebhookEvents` reusable (rendered in `events`, `webhook`, and
+   `webhook-event-types-and-fields`), but destination articles carry their own labels: `facebook-ads` said
+   "(Android only)" until 2026-11-11, matching the integration settings label, which dropped it at the
+   same time. `rg -n -i deferr src/content/docs` finds every copy; `push-notifications` lists the event
+   without naming a store. **Subscription paused** is still Android only.
 
 ## Boundaries
 
@@ -233,9 +241,13 @@ repeated here.
 | "connect SplitMetrics / Asapty" | `splitmetrics` / `asapty`, but both require the `apple-search-ads` integration to be connected first — an undocumented-looking prerequisite that surfaces as "not receiving events". |
 | "field X isn't in our CSV", "which columns does the export have", "paywall impression columns" | `s3-exports` / `google-cloud-storage` "Data structure" — a narrower, separately-maintained schema, so a field's presence in the webhook reference says nothing about the export. |
 | a "Firebase" ticket | Split by what it's about: event forwarding / GA4 / Google Ads → `firebase-and-google-analytics`; keeping Firebase Auth user ids in sync with Adapty profiles → `firebase-apps` (and see Gaps and misses before citing its code). |
+| "subscription_deferred on iOS", "renewal date extension", "we extended subscriptions after an outage and users lost access" | `events` (the shared event table). Since 2026-10-15 an App Store renewal date extension moves the access level to the new date and sends `subscription_deferred`; before that, Adapty kept the old date, so users lost access early. The event has to be turned on per integration, like any other. |
 
 ## Gaps and misses
 
+- **`appmetrica` doesn't say which AppMetrica event `subscription_deferred` becomes.** Backend code
+  (2026-11-10) sends it as `cancellation`, for both stores. Checked with
+  `rg -c -i deferr src/content/docs/version-3.0/appmetrica.mdx` (no hit, 2026-11-11).
 - `firebase-and-google-analytics` is a recently and thoroughly rewritten article (Troubleshooting,
   Limitations, `ZoomImage` component, cross-links to Stripe/S3/GCS/Adapty Attribution) — visibly newer
   and deeper than the rest of the zone's destination articles, most of which still follow a shorter,
@@ -262,3 +274,38 @@ repeated here.
   for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
   webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
   for this change, so `adapty-api.yaml` stays as is.
+- **Braze revenue goes out only as legacy purchases (2026-10-23, backend code + Braze docs).** Adapty
+  sends revenue as the `purchases` array of `/users/track`, with no format setting in the integration.
+  Braze put legacy purchase events in maintenance mode and does not enable them for new customers; such
+  a workspace rejects the whole request with HTTP 400 ("Legacy purchase ingestion is disabled…"), so
+  every revenue-bearing event (first purchase, renewal, trial conversion, refund) is lost, not only the
+  revenue. Braze is not retried automatically. A revenue-format selector (eCommerce
+  `ecommerce.order_placed` / `ecommerce.order_refunded` vs legacy) is planned but not shipped; until it
+  is, `braze` carries a warning to check that the workspace accepts legacy purchases; replace it with
+  the selector docs when the selector ships. The same check found the setup section
+  stale: Braze now creates REST keys and lists app identifiers under **Settings** > **APIs and
+  Identifiers**, and a key's permissions can't be edited after creation.
+- **Flow and A/B test fields (2026-10-29, confirmed by the backend team and checked against backend code on the feature branch before merge; QA-tested on the webhook only).**
+  Seven fields join the events that already carry `developer_id`/`variation_id`: `flow_id`, `flow_name`,
+  `flow_variation_id`, `ab_test_id`, `ab_test_variant_id`, `ab_test_variant_name`, `ab_test_parent_name`.
+  Absent rather than `null` when empty. Existing fields keep their values on purpose: for flows
+  `variation_id` is a paywall-screen ID and `paywall_name` is `scr_...`; for crossplacement tests
+  `ab_test_name` is the per-placement `<name> child-N`. Destination split, per the backend team: the
+  whole event (so the new fields) reaches webhook, Amplitude, Mixpanel, Adjust, Branch, Braze, PostHog,
+  SplitMetrics, AppMetrica, Pushwoosh; A/B fields still don't reach AppsFlyer, Facebook, Singular,
+  Tenjin, Asapty, Airbridge, OneSignal, Slack. Firebase gets a subset (no `flow_variation_id`), only
+  where the 25-parameter limit leaves room, except `purchase`/`refund`. S3/GCS get 8 trailing CSV
+  columns. Unlike ripple rule 1's 2026-07-22 precedent, this change did land in the shared
+  `messaging`/`analytics-integration` table and the S3/GCS tables.
+- **Corrected 2026-10-29:** `mixpanel`'s "Mixpanel event structure" read as a closed list of ten
+  properties; the backend team confirmed the whole event goes out in `properties`. And
+  `firebase-and-google-analytics` cited a 36-character value limit for everything — that is the
+  user-property limit; event parameter values allow 100, and Adapty now cuts text values to 100.
+- **Code-verified details of the same change (backend code, 2026-10-29):** the four IDs are UUIDs; the
+  names are strings. The fields are added in the same branch of the event body as `variation_id`, gated on
+  `developer_id`, so `access_level_updated` carries them too. S3/GCS columns follow `attributes`, the
+  last pre-existing column in the export (the docs tables list `integration_ids` last, so the file order
+  and the table order differ). Firebase cuts every text value, `transaction_id` and the item ID included,
+  to 100 characters. Regular onboarding A/B tests also get `ab_test_id` and the variant fields, which
+  the docs don't call out. The same branch drops the segment-title fallback from `cohort_name`, which
+  is now the audience title only (the docs already describe it that way).

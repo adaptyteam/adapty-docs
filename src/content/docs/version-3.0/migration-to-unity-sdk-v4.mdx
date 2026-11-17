@@ -64,7 +64,7 @@ The underlying native Adapty SDKs are bumped to 4.x on both platforms and are re
 
 ### GetPaywall → GetFlow
 
-The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter is removed — when you render a flow, the locale is resolved automatically; for custom paywalls, all locales are returned in `flow.RemoteConfigs`:
+The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale` parameter moves to the flow view parameters (`AdaptyUICreateFlowViewParameters.SetLocale`) — see [Locale matching is exact](#locale-matching-is-exact); for custom paywalls, all locales are returned in `flow.RemoteConfigs`:
 
 ```diff showLineNumbers
 - Adapty.GetPaywall("YOUR_PLACEMENT_ID", "en", (paywall, error) => {
@@ -84,6 +84,19 @@ The returned type changes from `AdaptyPaywall` to `AdaptyFlow`, and the `locale`
 - Adapty.GetPaywallForDefaultAudience("YOUR_PLACEMENT_ID", "en", (paywall, error) => { /* ... */ });
 + Adapty.GetFlowForDefaultAudience("YOUR_PLACEMENT_ID", (flow, error) => { /* ... */ });
 ```
+
+### Locale matching is exact
+
+:::warning
+In v3, the Adapty server picked the localization and fell back to the language: a `pt-br` request got the `pt` localization when the paywall had no `pt-br`. In v4, the SDK picks the localization on the device and uses only an exact match. A code that matches no localization renders the flow in its default localization, without an error or a warning.
+:::
+
+Before you upgrade, check the locale codes your app passes:
+
+- For each regional code you pass, add a localization with that code — for example, `pt-br` next to `pt` — or map the code to one that the flow has.
+- Pass codes exactly as they appear in the dashboard — lowercase subtags separated by hyphens. Don't pass a system locale identifier as is: `CultureInfo.CurrentCulture.Name` returns `pt-BR`, which matches no localization.
+
+See [Localizations and locale codes](unity-localizations-and-locale-codes#flows-and-paywalls).
 
 ### GetPaywallProducts(paywall) → GetPaywallProducts(flow)
 
@@ -309,6 +322,7 @@ This step produces no compile error. If you skip it, `SetFallback` reports `Deco
 
 These changes do not cause compile errors, so test them at runtime:
 
+- **Flow localization**: A regional locale code no longer falls back to its language — `pt-br` doesn't get the `pt` localization. A code with no exact match renders the flow in its default localization. See [Locale matching is exact](#locale-matching-is-exact).
 - **Purchase completion**: In v3, the view was dismissed automatically after a successful purchase. In v4, **a flow stays open after a purchase or an error until you dismiss it** — the SDK applies no default behavior. Call `view.Dismiss(...)` yourself in `FlowViewDidFinishPurchase` once the user gets access.
 - **Android system back**: The system back button (or back gesture) is delivered to `FlowViewDidPerformAction` as a `SystemBack` action and no longer closes a flow on its own — matching iOS, where a flow can't be dismissed by a system gesture. Give users an explicit way out (a **Close** button or an `on_device_back` action), or dismiss the view yourself when handling the action.
 - **Views are single-use**: After `Dismiss`, the view is destroyed. Call `CreateFlowView` again to present the flow once more.

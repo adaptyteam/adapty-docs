@@ -1,0 +1,235 @@
+---
+title: "Query Analytics from the CLI"
+description: "Read Adapty Analytics from the terminal: charts such as revenue and MRR, conversions, the funnel, retention, LTV, and install cohorts, as a table, JSON, or CSV."
+metadataTitle: "Analytics in the Developer CLI | Adapty Docs"
+---
+
+The Adapty CLI reads [Adapty Analytics](analytics) from the terminal, under the `adapty analytics` topic. It returns the numbers that the Analytics dashboard shows for one app: [charts](charts) such as revenue and MRR, [conversions](analytics-conversion), the [funnel](analytics-funnels), [retention](analytics-retention), [LTV](ltv), and [install cohorts](analytics-cohorts).
+
+Use it to give an AI agent live access to your app's numbers, to pull a chart into a script or a spreadsheet, or to answer one question without opening the dashboard.
+
+Every `analytics` command is read-only and takes one app.
+
+## Before you start
+
+The `analytics` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). The topic needs CLI version 0.10.0 or later. To see your version, run `adapty --version`.
+
+Unlike the [Export Analytics API](export-analytics-api), the CLI needs no secret API key. Your CLI login reads every app that your Adapty user can access.
+
+Every command takes the app's UUID in `--app`. To find it, run:
+
+```bash
+adapty apps list
+```
+
+## Build a query
+
+Build every query in the same order: find the names in the catalog, look up filter values, then run one data command.
+
+1. **List what the app's analytics can answer**. The catalog lists every chart with its unit, every conversion, the groupings and filters each command accepts, and the accepted values and defaults of each option:
+
+   ```bash
+   adapty analytics catalog --app <app-id>
+   ```
+
+   Chart and conversion names, such as `revenue`, `mrr`, or `trial-paid`, come from this list. The CLI keeps no list of its own, so a chart that Adapty adds later works without a CLI update.
+
+2. **Look up filter values**. Skip this step when you don't filter. For example, to list the countries you can filter by:
+
+   ```bash
+   adapty analytics values --app <app-id> --dimension country
+   ```
+
+3. **Run the data command**:
+
+   ```bash
+   adapty analytics chart --app <app-id> --chart revenue \
+     --date-from 2026-07-01 --date-to 2026-09-30 --group-by country
+   ```
+
+The answer has one row for the total, then one row for each group.
+
+### Examples
+
+MRR this quarter, compared with the previous quarter:
+
+```bash
+adapty analytics chart --app <app-id> --chart mrr \
+  --date-from 2026-07-01 --date-to 2026-09-30 \
+  --compare-from 2026-04-01 --compare-to 2026-06-30
+```
+
+Monthly trial-to-paid conversion in two countries:
+
+```bash
+adapty analytics conversion --app <app-id> --conversion trial-paid \
+  --date-from 2026-04-01 --date-to 2026-09-30 --granularity month --filter country=US,GB
+```
+
+Retention by country, counted from the trial:
+
+```bash
+adapty analytics retention --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --group-by country --use-trial
+```
+
+LTV after 7, 30, and 90 days, on revenue after commission and taxes, saved as a CSV file:
+
+```bash
+adapty analytics ltv --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --revenue-basis net --period-type days --renewal-days 7,30,90 --csv > ltv.csv
+```
+
+Weekly install cohorts on revenue after the store's commission:
+
+```bash
+adapty analytics cohort --app <app-id> --date-from 2026-07-01 --date-to 2026-09-30 \
+  --granularity week --revenue-basis proceeds
+```
+
+## Choose the output
+
+Each data command prints in one of three formats:
+
+| Output | Flag | Use it for |
+|---|---|---|
+| Table | None | Reading in the terminal. Each table starts with a heading that names the chart, the period, the time zone, and the filters. Money has 2 decimals. Some fields are left out, such as funnel churn reasons and cohort predictions, and a line under the table says so. |
+| JSON | `--json` | Scripts and AI agents. The API answer, unchanged, with every field. |
+| CSV | `--csv` | Spreadsheets. One row per group, with every field of the answer. A compared period goes into `compare.*` columns of the same row. |
+
+You can't use `--csv` and `--json` together.
+
+In JSON, the total is the first entry of `data.segments`, and `data.value` is the number for the whole period. `meta.query` shows the query that ran, with every default filled in and the time zone in effect.
+
+## Read the results
+
+- **Dates**: `--date-from` and `--date-to` are inclusive days in the app's [reporting time zone](general). To read the days in another time zone, pass an IANA name in `--timezone`, such as `Europe/Berlin`. `meta.query.timezone` shows the time zone in effect.
+- **Revenue**: `--revenue-basis` sets which revenue money values use: `gross` (the default), `proceeds` (after the store's commission), or `net` (after commission and taxes). It works on `ltv`, `cohort`, and the charts that show money. The catalog marks those charts with `takes revenue_basis`.
+- **Empty values**: An empty value means Adapty has no value, never zero. An LTV period that a cohort hasn't reached yet is empty, and so is a cohort that can't be predicted. In `--json` output these values are `null`. The table prints `—`, and the CSV leaves the cell empty.
+- **The total row**: Find the total by `is_total`, not by an empty `key`. A group's `key` can be empty too, for example the group of users with no country.
+- **Group keys**: A group's `key` isn't always a value that `--filter` accepts. To filter, take values from `analytics values`.
+- **Compared periods**: Only `chart` and `conversion` accept `--compare-from` and `--compare-to`. The compared period has its own total and groups, and the table prints it as a second table.
+- **Attribution numbers**: Don't add these numbers to [Attribution](developer-cli-attribution) numbers. Adapty calculates them differently.
+
+The CLI returns the dashboard's numbers, with two exceptions:
+
+- `funnel` applies the `cancellation_reason` filter, which the dashboard funnel ignores. With that filter, the two numbers can differ.
+- `retention` offers a different list of groupings than the dashboard. Take the list from the catalog.
+
+## Limits
+
+Each analytics command accepts at most 2 requests per second per app and 360 requests per minute in total. The CLI never retries a request. When you send requests too fast, the command exits with code 4. With `--json`, the error includes `retry_after_seconds`: wait that long, then run the command again.
+
+## Errors
+
+Every error exits with a code that tells you what to fix:
+
+| Exit code | Cause | What to do |
+|---|---|---|
+| 2 | The CLI rejected the input before sending it: an invalid app UUID, a malformed or reversed date range, a compared period with one end missing, `--renewal-days` without `--period-type days`, a `--filter` without `=`, or `--csv` with `--json`. | Fix the flag that the message names. |
+| 3 | You aren't logged in, or your Adapty user can't access the app. | Log in with `adapty auth login`. If you are logged in, find the app ID in `adapty apps list`, which lists only the apps you can read. |
+| 4 | Adapty refused the request: an unknown chart, conversion, grouping, filter, or time zone; `--revenue-basis` on a chart that doesn't show money; or too many requests. | Fix the name from `adapty analytics catalog`. With `--json`, the error includes the API's error code. For too many requests, see [Limits](#limits). |
+
+## Command reference
+
+Every data command takes these flags:
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App UUID, from `adapty apps list`. |
+| `--date-from` | Yes | First day of the period, inclusive, as `YYYY-MM-DD`. |
+| `--date-to` | Yes | Last day of the period, inclusive. Can't be earlier than `--date-from`. |
+| `--filter` | No | `dimension=value[,value]`. Keeps the data where the dimension has one of the values. Repeat the flag to filter by several dimensions. Write `\,` for a comma inside a value. An empty value is a value: `country=` keeps the data with no country. |
+| `--timezone` | No | IANA time zone of the days, such as `Europe/Berlin`. The app's time zone when omitted. |
+| `--csv` | No | Print a CSV table instead of the human table. Can't be used with `--json`. |
+
+Each command adds its own flags to these.
+
+### `analytics catalog`
+
+Lists what the app's analytics can answer: each command with its options, groupings, and filters; every chart with its unit; every conversion; and every filter dimension.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App UUID, from `adapty apps list`. |
+
+### `analytics values`
+
+Lists the values that one filter dimension takes for the app. Each `value` is exactly what `--filter <dimension>=<value>` accepts.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App UUID, from `adapty apps list`. |
+| `--dimension` | Yes | A filter dimension from `adapty analytics catalog`. |
+
+### `analytics chart`
+
+Reads one [chart](charts): the number for the whole period, its points, and its groups.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--chart` | Yes | A chart name from `adapty analytics catalog`, such as `revenue` or `mrr`. |
+| `--group-by` | No | One grouping of this chart, from the catalog. |
+| `--granularity` | No | Length of one point: `day`, `week`, `month` (default), `quarter`, or `year`. |
+| `--revenue-basis` | No | `gross` (default), `proceeds`, or `net`. Only for charts that show money. |
+| `--compare-from` | No | First day of a period to compare with. Needs `--compare-to`. |
+| `--compare-to` | No | Last day of a period to compare with. Needs `--compare-from`. |
+
+### `analytics conversion`
+
+Reads one [conversion](analytics-conversion): the rate in percent, with the two counts it divides, for each point and group.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--conversion` | Yes | A conversion name from `adapty analytics catalog`, such as `trial-paid` or `install-paid`. |
+| `--group-by` | No | One grouping from the catalog. |
+| `--granularity` | No | Length of one point: `day` (default), `week`, `month`, `quarter`, or `year`. |
+| `--compare-from` | No | First day of a period to compare with. Needs `--compare-to`. |
+| `--compare-to` | No | Last day of a period to compare with. Needs `--compare-from`. |
+
+When the period has no conversions, `meta.recommended_period` in the `--json` output can name a period that has some.
+
+### `analytics funnel`
+
+Reads the [funnel](analytics-funnels): the count at each step from install to renewals.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--group-by` | No | One grouping from the catalog. |
+
+### `analytics retention`
+
+Reads [retention](analytics-retention): the subscribers left in each period.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--group-by` | No | One grouping from the catalog. |
+| `--use-trial` | No | Count from the trial, not from the first paid period. |
+
+### `analytics ltv`
+
+Reads [LTV](ltv): the revenue per paying user after each renewal or day.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--group-by` | No | One grouping from the catalog. |
+| `--revenue-basis` | No | `gross` (default), `proceeds`, or `net`. |
+| `--period-type` | No | `renewals` (default) counts per renewal. `days` counts per day since install. |
+| `--renewal-days` | No | Days to count with `--period-type days`, comma-separated, in ascending order, such as `7,30,90`. Only with `--period-type days`. |
+
+### `analytics cohort`
+
+Reads [install cohorts](analytics-cohorts): the revenue, subscribers, averages, and predictions of each cohort per renewal or day. Each cohort is one row, and its start date is its `key`. Cohorts can't be grouped.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--granularity` | No | Length of one cohort: `day`, `week`, `month` (default), `quarter`, or `year`. |
+| `--revenue-basis` | No | `gross` (default), `proceeds`, or `net`. |
+| `--period-type` | No | `renewals` (default) counts per renewal. `days` counts per day since install. |
+| `--renewal-days` | No | Days to count with `--period-type days`, comma-separated, in ascending order. Only with `--period-type days`. |
+
+## What's next
+
+- [How Adapty Analytics works](how-adapty-analytics-works) — where the numbers come from.
+- [Controls, filters, and grouping](controls-filters-grouping-compare-proceeds) — what the filters and the revenue options mean in the dashboard.
+- [Query Attribution from the CLI](developer-cli-attribution) — spend, installs, and ROAS by channel and campaign.

@@ -4,67 +4,66 @@ description: "启用 App Store 服务器通知，实时追踪订阅事件。"
 metadataTitle: "启用 App Store 服务器通知 | Adapty 文档"
 ---
 
-设置 App Store 服务器通知对于确保数据准确性至关重要，它能让你即时接收来自 App Store 的更新，包括退款及其他事件信息。
+Adapty SDK 会上报应用内发生的购买行为。服务器通知则用于上报在应用外部发生的变更，例如：
 
-:::important
-完整支持 App Store Server Notifications V2 需要 Adapty iOS SDK 2.10.0 或更高版本。
-:::
+- 订阅续费。
+- 用户关闭自动续费。
+- 因账单问题导致付款失败。
+- 订阅到期。
+- 用户申请退款。[Refund Saver](refund-saver) 处理该请求。
+- Apple 退款。
 
-1. 在 Adapty 看板中复制 **URL for App Store server notification**。
+在 App Store Connect 中填写 Adapty 的通知 URL，然后确认通知已成功到达 Adapty。
 
-<Zoom>
-  <img src="/assets/shared/img/2901185-app_server_notifications.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 在 App Store Connect 中输入通知 URL \{#enter-the-notification-url-in-app-store-connect\}
 
-2. 打开 [App Store Connect](https://appstoreconnect.apple.com/apps)。选择您的应用，进入 **General** → **App Information** 部分下的 **App Store Server Notifications** 子部分。
-3. 将复制的 **URL for App Store server notification** 粘贴到 **Production Server URL** 和 **Sandbox Server URL** 字段中。
+如果已有其他服务器在接收您应用的通知，请在替换其 URL 之前先[为其设置转发](#raw-events-forwarding)。
 
-保存 URL 后，Adapty 看板中的通知状态只有在 Apple 发送第一条真实通知时才会更新——即发生首个订阅事件（如购买或续订）时。Apple 的测试通知不会触发状态变更。设置完成后显示等待状态，并不代表连接存在问题。
+<AppStoreServerNotificationsSetup />
 
-<Zoom>
-  <img src="/assets/shared/img/86fb3d2-app_server_notifications_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## 检查通知是否到达 Adapty \{#check-that-notifications-reach-adapty\}
 
-## 原始事件转发 \{#raw-events-forwarding\}
+要确认通知是否到达 Adapty，请先进行[沙盒购买](test-purchases-in-sandbox)。然后在 Adapty 中查看 **App Store server notifications** 部分的状态。即使没有通知，购买记录也会出现在 Adapty 中，因为 SDK 会自行上报。一旦 Apple 发送了关于该购买的通知，Adapty 会将状态从 **Waiting** 更改为 **Active**。来自 Apple 的测试通知不会更改状态。
 
-有时，您可能仍希望直接从 Apple 接收原始 S2S 事件。如需在使用 Adapty 的同时继续接收这些事件，只需将您的端点添加到 **URL for forwarding raw Apple events** 字段，我们会将 Apple 的原始事件原封不动地转发给您。
+状态会显示上次通知到达的时间：
 
-<Zoom>
-  <img src="/assets/shared/img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+- **Active**：不到 24 小时前。
+- **Delayed**：24 到 72 小时前。
+- **Stalled**：72 小时前或更早。
 
-:::warning
-如果通知停止发送到 Adapty，新交易、续订和退款将无法显示。Adapty 不会对此发出警告——请参阅[如果更新停止到达](store-sync#if-updates-stop-arriving)。
-:::
+**Delayed** 和 **Stalled** 并不一定意味着配置有问题：如果应用的订阅用户较少，可能好几天都不会触发通知。**Active** 只表示通知已成功发送到该 URL。
+
+要确认收到的通知确实来自你的应用，请验证以下配置：
+
+1. 在 App Store Connect 中，打开应用的 **App Information** 页面。
+2. 确认 **Production Server URL** 和 **Sandbox Server URL** 均与 Adapty 中的 URL 一致。
+3. 再次进行沙盒购买，确认状态显示为 **Active**。
+
+## 将通知转发至其他服务器 \{#raw-events-forwarding\}
+
+如果另一台服务器也需要接收来自 Apple 的通知，Adapty 可以将通知转发给该服务器。在 Adapty 中，前往 [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk)。在 **App Store server notifications** 部分，将该服务器的 URL 填入 **URL for forwarding raw Apple events** 字段，然后点击 **Save**。
+
+<ZoomImage id="app-settings-forwarding-url.webp" width="700px" />
+
+Adapty 会将从 Apple 收到的通知转发给其他服务器。如果你在 App Store Connect 的 **Sandbox Server URL** 中填入 Adapty 提供的通知 URL，Adapty 也会转发沙盒通知。转发的请求体保留 Apple 原始签名负载，因此其他服务器可以验证签名。Adapty 不会转发 Apple 的请求头。
+
+Adapty 不转发以下内容：
+
+- SDK 上报但未收到 Apple 通知的购买。
+- Apple 发送的测试通知。
+- Adapty 在过去一小时内已接收过的通知。
+
+为防止循环，请不要将转发的通知再次回传到通知 URL。也不要在 **URL for forwarding raw Apple events** 字段中填写 Adapty 的 URL。
+
+如果您的后端必须在 App Store Connect 中保留其 URL，请改为[从您的后端将通知传递给 Adapty](forwarding-events-to-adapty)。
 
 ## 通知真实性 \{#notification-authenticity\}
 
-Adapty 不会对接收到的 App Store 服务器通知的来源进行验证——既不验证发送方的 IP 地址，也不验证 Apple 的 JWS 签名，唯一的验证依据是通知 URL 本身。请将通知 URL 视为一种凭证：任何持有该 URL 的人都可以向其发送有效载荷。
+将通知 URL 视为凭证妥善保管。Adapty 仅凭 URL 识别应用，因此任何持有该 URL 的人都可以向其发送负载数据。
 
-Apple 沙盒的 **TEST** 通知类型不会被存储，无论是谁发送的，因此手动发送此类通知不会在 [Event Feed](event-feed) 中生成任何事件。
+测试通知无论由谁发送，都不会在[事件记录](event-feed)中创建事件。
 
-**下一步**
+**后续步骤**
 
 为以下平台配置 Adapty SDK：
 
@@ -73,3 +72,6 @@ Apple 沙盒的 **TEST** 通知类型不会被存储，无论是谁发送的，�
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)
+
+然后[发起沙盒购买，检查通知是否成功到达 Adapty](#check-that-notifications-reach-adapty)。

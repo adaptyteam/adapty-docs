@@ -1,0 +1,159 @@
+---
+title: "Migrations commands"
+description: "RevenueCatプロジェクトをAdaptyに移行するためのAdapty CLIコマンド：マイグレーションの作成、ステップの実行、ステータスの確認、クローズを行います。"
+metadataTitle: "マイグレーション CLIコマンド | Adapty ドキュメント"
+---
+
+RevenueCatプロジェクトをAdaptyに移行します：カタログ、そして任意でストアのイベントとトランザクション履歴も移行できます。Adaptyは各マイグレーションをステップのシーケンスとして実行し、次に実行できるアクションを案内します。そのため、各アクションの前に`status`を確認してください。手順全体については、[RevenueCatからの移行](migration-from-revenuecat)を参照してください。
+
+`list`、`create`、`use`、`current`、`unuse` を除くすべてのコマンドは、マイグレーションフラグを受け付けます：
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `-m`, `--migration` | いいえ | マイグレーション ID。指定しない場合、CLI は `ADAPTY_MIGRATION` 環境変数を参照し、次に `create` または `use` で保存されたマイグレーションを使用します。 |
+
+## adapty migrations list
+
+アプリ別にグループ化された、マイグレーションとマイグレーションフローの一覧を表示します。
+
+```bash
+adapty migrations list
+```
+
+## adapty migrations create
+
+マイグレーションを開始し、現在のマイグレーションとして保存します。
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--name` | `--name` または `--flow` のいずれか | 新しい Adapty アプリの名前。カタログマイグレーションを開始します。`--flow` または `--app` と組み合わせることはできません。 |
+| `--flow` | `--name` または `--flow` のいずれか | 既存のアプリで開始するフロー。`adapty migrations list` に表示される形式で指定します。`--app` が必要です。 |
+| `--app` | `--flow` と共に使用 | アプリ ID（UUID） |
+| `--no-select` | いいえ | マイグレーションを現在のものとして保存せずに作成します |
+
+既存のアプリのカタログマイグレーション後に利用可能なフロー:
+
+| フロー | 説明 |
+|---|---|
+| `transactions` | RevenueCat のクラウドエクスポートの日次データからトランザクション履歴をインポートする |
+| `transactions_support` | クラウドエクスポートのない RevenueCat プランに対して、RevenueCat サポートと Adapty サポートを通じてトランザクション履歴をインポートする |
+| `apple_events` | RevenueCat が引き続き受信しながら、App Store の通知を Adapty にも転送する |
+| `google_events` | RevenueCat が Google Play 通知に使用している Pub/Sub トピックに Adapty をサブスクライブする |
+| `code` | コーディングエージェントにアプリのコードベース内の RevenueCat SDK を置き換えさせる |
+| `integrations` | コーディングエージェントにアプリコード内のアナリティクス・アトリビューション・メッセージングツールを検出させ、Adapty にセットアップする |
+| `paywall_design` | コーディングエージェントにカタログ移行で作成されたフローに RevenueCat のペイウォールデザインを再構築させる |
+
+## adapty migrations use \{#adapty-migrations-use\}
+
+マイグレーションを現在のものとして保存し、他のコマンドで `-m` を指定しなくても使えるようにします。
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `migration-id` | `adapty migrations list` で確認できるマイグレーション ID |
+
+CLI はID を保存する前に、そのマイグレーションにアクセスできるかを確認します。保存されたマイグレーションは現在のトークンに紐付けられ、すべてのターミナルで有効になります。
+
+## adapty migrations current
+
+現在のマイグレーションとその取得元（`ADAPTY_MIGRATION` 環境変数または保存された選択）を表示します。
+
+```bash
+adapty migrations current
+```
+
+## adapty migrations unuse
+
+保存されたマイグレーションをクリアします。シェルで設定された `ADAPTY_MIGRATION` の値は、アンセットするまで有効です。
+
+```bash
+adapty migrations unuse
+```
+
+## adapty migrations status
+
+マイグレーションの状態、問題点、および次に実行できるアクションを表示します。
+
+```bash
+adapty migrations status
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--wait` | いいえ | マイグレーションが変化するまでポーリングし、最新の状態を返します |
+| `--timeout` | いいえ | `--wait` のポーリング時間: 1〜600秒、デフォルトは120秒。`300`、`300s`、または `5m` の形式で指定可能。`--wait` が必要です。 |
+
+`--json` を使用すると、`next_actions` と `available_actions` に各アクションの ID、読み取るリソース、`input_schema`、および `confirm` テキストが一覧表示されます。
+
+終了コード `0` はリクエストの成功を意味するものであり、マイグレーションの成功を意味するものではありません。レスポンス内の `migration.state` を確認してください。
+
+## adapty migrations steps
+
+マイグレーションチェックリストと各ステップのステータスを表示します。
+
+```bash
+adapty migrations steps
+```
+
+## adapty migrations show
+
+現在読み取り可能なリソースを一覧表示するか、1つのリソースを読み取ります。
+
+```bash
+adapty migrations show [resource]
+```
+
+| 引数 | 説明 |
+|---|---|
+| `resource` | リソース名。例: `apps`、`mapping`、`report`、`export-config`。省略すると、現在のステップで利用可能なリソースが一覧表示されます。 |
+
+## adapty migrations run
+
+`adapty migrations status` からアクションを実行します。
+
+```bash
+adapty migrations run <action-id>
+```
+
+| 引数 | 説明 |
+|---|---|
+| `action-id` | `adapty migrations status` の `next_actions` または `available_actions` にあるアクション ID |
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--input` | いいえ | アクションの `input_schema` に合致する JSON オブジェクトとしてのアクション入力。入力を指定しない場合、CLI は `{}` を送信します。 |
+| `--input-file` | いいえ | アクション入力が含まれるファイルのパス、または標準入力から読み込む場合は `-`。`--input` と組み合わせて使用することはできません。 |
+| `-y`, `--yes` | `confirm` テキストを持つアクションの場合 | `confirm` テキストを確認した後にアクションを承認します。インタラクティブなプロンプトはありません。 |
+| `--open` | いいえ | パイプや `--json` を使用している場合でも、アクションのリンクを開きます。 |
+| `--no-browser` | いいえ | ブラウザを開かずにアクションのリンクを表示します。 |
+
+アクションには3種類あります。
+
+- **インプットアクション**は、移行するRevenueCatアプリやマッピングの設定など、データをAdaptyに送信します。
+- **外部アクション**は、AdaptyダッシュボードのページをAdapty ダッシュボードで開きます。例えば、RevenueCatのシークレットAPIキーを貼り付けるページなどです。ページの操作が完了したら、`status` を確認してください。
+- **エージェントアクション**（例：`migrate_code`）は、コーディングエージェントが実行する作業です。アプリのgitリポジトリから実行してください。CLIは移行データを `.git/adapty/<migration-id>/` 以下に保存し、エージェントへの指示を出力します。エージェントは `--input` オプションを付けてアクションを再度実行することで結果を報告します。
+
+## adapty migrations close
+
+マイグレーションを完了またはキャンセルします。一度閉じると再度開くことはできません。
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| フラグ | 必須 | 説明 |
+|---|---|---|
+| `--outcome` | はい | `finish` はマイグレーションを完了済みとしてマークします。`cancel` は破棄します |
+| `-y`, `--yes` | はい | 閉じる操作を確認します |
+
+## 次のステップ \{#whats-next\}
+
+- [コマンドリファレンス](developer-cli-reference) — すべての CLI トピック、グローバルフラグ、ページネーションフラグ。

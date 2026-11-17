@@ -1,0 +1,159 @@
+---
+title: "Commandes de migration"
+description: "Commandes CLI Adapty pour migrer un projet RevenueCat vers Adapty : créer une migration, exécuter ses étapes, vérifier son statut et la clôturer."
+metadataTitle: "Commandes CLI de migration | Documentation Adapty"
+---
+
+Migrez un projet RevenueCat vers Adapty : son catalogue, puis optionnellement ses événements store et son historique de transactions. Adapty exécute chaque migration sous forme d'une séquence d'étapes et vous indique quelles actions vous pouvez effectuer ensuite — lisez `status` avant chaque action. Pour la procédure complète, consultez [Migration depuis RevenueCat](migration-from-revenuecat).
+
+Toutes les commandes sauf `list`, `create`, `use`, `current` et `unuse` acceptent le flag de migration :
+
+| Flag | Requis | Description |
+|---|---|---|
+| `-m`, `--migration` | Non | ID de migration. Sans ce flag, la CLI utilise la variable d'environnement `ADAPTY_MIGRATION`, puis la migration enregistrée par `create` ou `use`. |
+
+## adapty migrations list
+
+Listez vos migrations et les flows de migration que vous pouvez démarrer, regroupés par application.
+
+```bash
+adapty migrations list
+```
+
+## adapty migrations create \{#adapty-migrations-create\}
+
+Démarrer une migration et l'enregistrer comme migration en cours.
+
+```bash
+adapty migrations create --name <app-name>
+adapty migrations create --flow <flow> --app <app-id>
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--name` | L'un de `--name` ou `--flow` | Nom de la nouvelle application Adapty. Lance la migration du catalogue. Incompatible avec `--flow` ou `--app`. |
+| `--flow` | L'un de `--name` ou `--flow` | Flow à démarrer dans une application existante, tel qu'affiché par `adapty migrations list`. Nécessite `--app`. |
+| `--app` | Avec `--flow` | ID de l'application (UUID) |
+| `--no-select` | Non | Crée la migration sans l'enregistrer comme migration courante |
+
+Les flows disponibles pour une application existante après la migration de son catalogue :
+
+| Flow | Description |
+|---|---|
+| `transactions` | Importer l'historique des transactions depuis un export cloud quotidien RevenueCat |
+| `transactions_support` | Importer l'historique des transactions via le support RevenueCat et le support Adapty, pour les plans RevenueCat sans export cloud |
+| `apple_events` | Transférer les notifications App Store à Adapty pendant que RevenueCat continue de les recevoir |
+| `google_events` | Abonner Adapty au sujet Pub/Sub utilisé par RevenueCat pour les notifications Google Play |
+| `code` | Demander à votre agent de code de remplacer le SDK RevenueCat dans une base de code de l'application |
+| `integrations` | Demander à votre agent de code de trouver les outils d'analytics, d'attribution et de messagerie dans le code de l'application afin de les configurer dans Adapty |
+| `paywall_design` | Demander à votre agent de code de reconstruire les designs de paywall RevenueCat dans les flows créés par la migration du catalogue |
+
+## adapty migrations use \{#adapty-migrations-use\}
+
+Enregistre une migration comme migration courante, pour éviter de passer `-m` aux autres commandes.
+
+```bash
+adapty migrations use <migration-id>
+```
+
+| Argument | Description |
+|---|---|
+| `migration-id` | ID de migration issu de `adapty migrations list` |
+
+Le CLI vérifie que vous avez accès à la migration avant d'en sauvegarder l'ID. La migration enregistrée est liée au token actuel et s'applique dans tous les terminaux.
+
+## adapty migrations current
+
+Affiche la migration en cours et son origine : la variable d'environnement `ADAPTY_MIGRATION` ou la sélection sauvegardée.
+
+```bash
+adapty migrations current
+```
+
+## adapty migrations unuse
+
+Supprime la migration sauvegardée. Une valeur `ADAPTY_MIGRATION` définie dans votre shell reste active jusqu'à ce que vous la désactiviez.
+
+```bash
+adapty migrations unuse
+```
+
+## adapty migrations status
+
+Affiche l'état d'une migration, ses problèmes et les actions disponibles.
+
+```bash
+adapty migrations status
+```
+
+| Option | Obligatoire | Description |
+|---|---|---|
+| `--wait` | Non | Interroge jusqu'à ce que la migration change, puis retourne le dernier état |
+| `--timeout` | Non | Durée d'interrogation pour `--wait` : 1–600 secondes, 120 par défaut. Accepte `300`, `300s` ou `5m`. Nécessite `--wait`. |
+
+Avec `--json`, `next_actions` et `available_actions` listent pour chaque action son ID, les ressources qu'elle lit, son `input_schema` et son texte `confirm`.
+
+Le code de sortie `0` signifie que la requête a réussi, pas que la migration a abouti. Vérifiez `migration.state` dans la réponse.
+
+## Étapes des migrations Adapty \{#adapty-migrations-steps\}
+
+Affiche la liste de contrôle de migration et le statut de chaque étape.
+
+```bash
+adapty migrations steps
+```
+
+## adapty migrations show
+
+Listez les ressources que vous pouvez lire maintenant, ou lisez-en une.
+
+```bash
+adapty migrations show [resource]
+```
+
+| Argument | Description |
+|---|---|
+| `resource` | Nom de la ressource, par exemple `apps`, `mapping`, `report` ou `export-config`. Omettez-le pour lister les ressources disponibles à l'étape actuelle. |
+
+## adapty migrations run \{#adapty-migrations-run\}
+
+Exécute une action depuis `adapty migrations status`.
+
+```bash
+adapty migrations run <action-id>
+```
+
+| Argument | Description |
+|---|---|
+| `action-id` | ID de l'action issu de `next_actions` ou `available_actions` dans `adapty migrations status` |
+
+| Option | Obligatoire | Description |
+|---|---|---|
+| `--input` | Non | Entrée de l'action sous forme d'objet JSON correspondant au `input_schema` de l'action. Sans entrée, le CLI envoie `{}`. |
+| `--input-file` | Non | Chemin vers un fichier contenant l'entrée de l'action, ou `-` pour la lire depuis stdin. Incompatible avec `--input`. |
+| `-y`, `--yes` | Pour les actions avec un texte `confirm` | Confirme l'action après lecture de son texte `confirm`. Aucune invite interactive. |
+| `--open` | Non | Ouvre le lien de l'action même avec un pipe ou `--json` |
+| `--no-browser` | Non | Affiche le lien de l'action sans ouvrir de navigateur |
+
+Les actions se déclinent en trois types :
+
+- Les **actions d'entrée** envoient vos données à Adapty, par exemple les applications RevenueCat à migrer ou vos décisions de correspondance.
+- Les **actions externes** ouvrent une page dans l'Adapty Dashboard, par exemple pour coller la clé API secrète RevenueCat. Complétez la page, puis vérifiez `status`.
+- Les **actions agent**, par exemple `migrate_code`, sont des tâches pour votre agent de code. Exécutez-les depuis le dépôt git de l'application : la CLI enregistre les données de migration sous `.git/adapty/<migration-id>/` et affiche les instructions pour l'agent. L'agent signale le résultat en exécutant à nouveau l'action avec `--input`.
+
+## adapty migrations close
+
+Terminer ou annuler une migration. Vous ne pouvez pas la rouvrir ensuite.
+
+```bash
+adapty migrations close --outcome finish --yes
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--outcome` | Yes | `finish` marque la migration comme terminée ; `cancel` l'abandonne |
+| `-y`, `--yes` | Yes | Confirmer la clôture |
+
+## Et ensuite \{#whats-next\}
+
+- [Référence des commandes](developer-cli-reference) — tous les sujets CLI, les options globales et les options de pagination.
