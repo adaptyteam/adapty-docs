@@ -40,8 +40,8 @@ Unusual for this corpus: half of what this zone asserts is owned by two Adapty r
   `~/.config/adapty` constant, so `ADAPTY_CONFIG_DIR` or `XDG_CONFIG_HOME` silently relocates the file
   that `developer-cli-authentication` prints as a fixed path. Established by grep over the whole corpus,
   not assumed.
-  TODO(owner): is the env-var token path deliberately undocumented — a CI/headless story we don't
-  support yet — or a gap in `developer-cli-authentication`?
+  **Deliberately undocumented, per the CLI team (2026-10-16):** keep the env-var token path out of
+  the docs until the CLI has token management.
 - **The skill — `adapty-sdk-integration-skill`, `origin/main`. Also not in `sources.md`.** Content is
   `skills/adapty-integration/SKILL.md` plus `references/<platform>.md`. It is not generated from the
   SDKs: it is **pinned to our published docs**, and `scripts/lint-symbols.mjs` says so in its own header
@@ -195,7 +195,8 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-apps | reference | dev | 11 | api |
 | developer-cli-authentication | — | dev | 7 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
-| developer-cli-flows | reference | dev | 18 | api |
+| developer-cli-fallbacks | reference | dev | 1 | api |
+| developer-cli-flows | reference | dev | 25 | api |
 | developer-cli-migrations | reference | dev | 11 | api |
 | developer-cli-paywalls | reference | dev | 11 | api |
 | developer-cli-placements | reference | dev | 14 | api |
@@ -237,6 +238,10 @@ on one side, a non-deterministic agent on the other.
     heading string**, so a renamed heading breaks its entry point silently.
   - A flows or placements command in `developer-cli-flows` / `developer-cli-placements` / `developer-cli-quickstart` →
     `flow-generator/references/placements.md` and `migrate-placements/references/api-surface.md`.
+  - `adapty fallbacks get` in `developer-cli-fallbacks` → `adapty-integration/references/fallbacks.md`,
+    which downloads the file at the closing review. The tip in `fallback-flows` and
+    `local-fallback-paywalls`, and the `FallbackPaywallIntroduction` reusable on the seven
+    `use-fallback-paywalls` pages, all point at the `developer-cli-fallbacks` page.
   - An `adapty-sdk-integration-skill*` page claiming what the skill does → the claim is settled
     by `adapty-integration/SKILL.md`, never the other way round.
   - **A version pin named in an `adapty-cursor*` guide has no automation behind it at all.**
@@ -287,6 +292,7 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-11-17, `adapty fallbacks get` shipped (adapty-cli 0.25.0, PR #44 merged):** moved from a section of `developer-cli-reference` to its own topic page `developer-cli-fallbacks`, because the reference became a topic index. From the merged `src/cli/commands/fallbacks/get/command.ts`: the full `--sdk-version` → format table (4.1–4.3 → 11, 4.4.0 and later → 12, down to below 3.0 → 5), flow placements only in formats 10–12, 30 downloads per hour per app shared by all tokens, the 300-second wait for the server to build the file, and the exit codes. The format table changes with the next SDK format; re-read the command's description when an SDK release changes the dashboard's Fallbacks options.
 - **2026-11-11, Apple Ads over MCP:** the `ads-manager` skill works through the MCP server and prefers
   it when both ways are ready (`adaptyteam/adapty-skills` `plugin/skills/ads-manager/SKILL.md`,
   "This skill prefers MCP"; the repo README lists `ads-manager` among the MCP-first skills). This
@@ -331,6 +337,7 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 - **2026-10-19:** `export-analytics-with-ai` rewritten from the Export Analytics API (secret key + OpenAPI spec URL + `format: csv`) to the `adapty analytics` CLI commands (device-code login, `developer-cli-analytics.md` as the hand-off URL, `--csv`). No skill in `adaptyteam/adapty-skills` covers analytics on this date (checked `plugin/skills` via the GitHub API); the `adapty-cli` repo's own `skills/adapty-cli` skill does, but the docs don't link it as an install target, so the guide hands over the reference page. The secret-key screenshot `export-analytics-secret-key.webp` is no longer used by this article.
 - **2026-10-22:** `export-analytics-with-ai` repurposed (filename kept for SEO) as the article for the `growth-advisor` skill in `adaptyteam/adapty-skills`: install, the audit steps, the hypothesis reply shape, how a picked hypothesis becomes an A/B test, and its limits (no pricing, no A/B test history, no ad spend). The "hand the agent the reference URL" setup moved out; `developer-cli-analytics` is linked for querying without the skill. Sidebar label is now "Find what to test next".
 - **2026-10-19:** CLI v0.10.0 adds the read-only `adapty analytics` topic (`adapty-cli` PR #51, branch `wb-26-analytics-parity`, still open on this date while npm `adapty` already reports 0.10.0): `catalog`, `values`, `chart`, `conversion`, `funnel`, `retention`, `ltv`, `cohort`. Written into the new `developer-cli-analytics` (task + reference on one page, the `developer-cli-attribution` shape), with tips in `analytics`. Ground truth is the repo's `docs/agent/analytics.md` plus `src/cli/base/adapty/flags.ts`; the CLI holds no list of chart or conversion names, so the docs name only the examples the PR itself uses (`revenue`, `mrr`, `trial-paid`, `install-paid`) and send readers to `analytics catalog`. API error codes in the PR's tests are mock fixtures, so the article documents exit codes (2/3/4), not codes. A 403 exits 3 like a missing token (open reviewer point in the PR) — re-check if that mapping changes before merge.
+- **2026-10-16:** `adapty fallbacks get` added to `developer-cli-reference` from adapty-cli PR #44 (`src/cli/commands/fallbacks/get/command.ts`; still a draft waiting on the Developer API fallback endpoint). Flags, the `--sdk-version` → format table, stdout versus `--output` and no-retry come from the command's own description. "Live placements only" was confirmed by the CLI team, not read from source. The format table is the help text's "latest mappings", not a full list; re-check it when the SDK file format changes.
 - **2026-10-13:** CLI v0.9.3–v0.9.4 (`adapty-cli` `origin/main` at the merge of PR #49). Added `asa change-history list` / `get` (`src/commands/asa/change-history/`) to `developer-cli-ads-manager-reference` and a task section to `developer-cli-ads-manager`. Its id filters take Apple numeric ids, unlike every other `asa` list filter, and its rate budget (30/min, burst 5 per 10 s, one in flight) is separate from the analytics pool — limits per the repo's `docs/agent/asa-management.md`; the PR description's "5 calls/min" was superseded by a later commit. Re-checked the 2026-09-30 entry below against the merged `feat/migrate-code`: headless agent runs were dropped before merge (the action now hands instructions to the calling agent), agent data moved to `.git/adapty/<migration ID>/`, and the `skills install` fallback is pinned to `skills@1.7.0` and always asks — `--yes` never runs it. `developer-cli-reference` corrected.
 - **2026-10-09:** CLI v0.9.1 and v0.9.2 (both tagged 2026-10-07, `git diff v0.9.0 v0.9.2` in `adapty-cli`). v0.9.1: the login token response no longer carries an email (`AuthUser` in `src/sdk/adapty/auth/model.ts` is `name` only), so `auth login` prints the name and `auth status` gains a `User:` line and a `name` JSON field; `Email:` survives only in a config written by an earlier version. v0.9.2: keyword-only metric names became `rank_all`/`rank_first` and `impression_midpoint_all`/`_first` (was `rank`, `impression_midpoint`), and `asa search-terms list` rows gained `impression_share_*`, `impression_midpoint_*`, `rank_*` (`AsaSearchTermDTO` in `src/lib/asa-schemas.ts`). Metric names are validated server-side, so the CLI source does not list them; the list lives in the repo's `docs/agent/asa-metrics.md`. Written into `developer-cli-authentication` and `developer-cli-ads-manager-reference`. Could not confirm the format of the string-typed `impression_share_*` values (no fixture in the repo), so the docs describe what they mean, not their shape. The Sources of truth version line (`v0.8.3`) is stale: `origin/main` is v0.9.2 as of this date.
 - **2026-09-30:** `adapty migrations *` and `adapty skills install` added to `developer-cli-reference` from `adapty-cli` branch `feat/migrate-code` (not yet on `origin/main`; npm `adapty` was 0.8.8, the branch's `package.json` 0.8.6). Re-check flags against `origin/main` once it merges. `migrate_code` runs headless only with `claude-code` / `codex` (`src/cli/agents/headless.ts`); `skills install` also knows `gemini-cli` (`src/cli/agents/catalog.ts`). The server-side step logic behind these commands is Adapty's closed-source migration service — see the `migration-from-competitors` brief.
