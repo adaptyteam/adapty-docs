@@ -1,73 +1,31 @@
 ---
 title: "Show an interactive weight goal chart in a paywall"
 description: "Display the projected weight of each user as a chart in a paywall flow. Users drag along the chart to see the weight for any week."
-metadataTitle: "Show an interactive weight goal chart in a paywall | Flows & paywalls | Adapty Docs"
+metadataTitle: "Show an interactive weight goal chart in a paywall | iOS SDK | Adapty Docs"
 ---
 
-Follow this recipe to display the projected weight of each user as a chart in a paywall flow. The user enters their current and goal weight in an onboarding flow. Your app collects both values. The chart shows the weekly progress that the user can expect with your app, from one value to the other. Your app renders the chart as a native view in a [custom element](flow-custom-elements). On iOS, the view uses Swift Charts. On Android, the view draws the chart without a chart library.
-
-:::tip
-This recipe covers native iOS and Android apps. Apps built with a cross-platform framework, such as Flutter or React Native, show the [fallback](flow-custom-elements#set-fallback-content) for every custom element. Support for cross-platform frameworks is upcoming.
-:::
+Follow this recipe to display the projected weight of each user as a chart in a paywall flow. The user enters their current and goal weight in an onboarding flow. Your app collects both values. The chart shows the weekly progress that the user can expect with your app, from one value to the other. Your app renders the chart as a native view in a [custom element](flow-custom-elements). The view uses Swift Charts.
 
 <DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="The finished paywall: the user drags along the chart, and a label shows the projected weight for each week, down to the goal weight of 72 kg." />
 
 ## Before you start
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
-
 - Update your app to Adapty iOS SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
 - Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-- Update your app to Adapty Android SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
-- Set up your app to [fetch](android-get-pb-paywalls) and [display](android-present-paywalls) flows.
-- Set up Jetpack Compose in your app module. The chart in this recipe is a composable.
-- Add Compose Foundation to your app with Gradle, from `androidx.compose.foundation:foundation`.
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-- Update your app to Adapty Android SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
-- Set up your app to [fetch](android-get-pb-paywalls) and [display](android-present-paywalls) flows.
-
-</TabItem>
-</Tabs>
-
-Create two separate flows — one for the onboarding, and one for the paywall. Add each to a [placement](placements). The code in this recipe fetches the paywall flow from the placement with the ID `weight_paywall`.
+<CustomElementChartTwoFlows />
 
 ## 1. Ask for the current and goal weight in the onboarding flow
 
-In the Flow & Paywall Builder, add two [**Number** inputs](builder-inputs-and-forms) to the onboarding flow:
-
-- One for the current weight in kilograms, with the **Element ID** `weight`.
-- One for the goal weight in kilograms, with the **Element ID** `goal_weight`.
-
-To make your app read the weights the same way in every locale, select **Integer** from the **Format** dropdown of both inputs. An input sends its value to your app as text, exactly as the user types it. The code in this recipe reads "70.5" and "70,5" differently. Whole numbers have no decimal separator.
-
-To make sure that your app receives both values, end the onboarding flow with a screen that has no inputs. On that screen, add a button with the [**Close flow**](onboarding-actions#close-flow) action. Inputs send their values when they lose focus or when the user moves to another screen.
+<CustomElementChartOnboardingInputs />
 
 ## 2. Add the custom element to the paywall screen
 
-In the paywall flow, [add a custom element](flow-custom-elements#add-and-configure) to a screen, and set it up for the chart:
-
-- **Type**: `line_chart`.
-- **ID**: `weight_goal`.
-- **Height**: Keep the default **Fixed** height. The chart fills the custom element.
-
-Keep the custom element out of containers that respond to touch, such as a carousel. Otherwise, a drag along the chart also moves the carousel.
-
-Inside the custom element, add an [**Image**](custom-media#image) with a sample weight chart. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when their version of your app doesn't display the chart.
+<CustomElementChartBuilderSetup />
 
 ## 3. Save the current and goal weight in your app
 
-Collect the current and goal weight from the `flow_user_input` events of the onboarding flow, as in <InlineTooltip tooltip="Process data from flows">[iOS](ios-flow-input), [Android](android-flow-input)</InlineTooltip>. To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`. When the onboarding flow closes after that screen, pass both weights to `showWeightPaywall`, the function that [opens the paywall flow with the chart](#5-match-the-chart-to-the-custom-element).
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Collect the current and goal weight from the `flow_user_input` events of the onboarding flow, as in [Process data from flows](ios-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`. When the onboarding flow closes after that screen, pass both weights to `showWeightPaywall`, the function that [opens the paywall flow with the chart](#5-match-the-chart-to-the-custom-element).
 
 The following code is for UIKit. One view controller is the delegate of both flows. To add the purchase and restore methods that every `AdaptyFlowControllerDelegate` implements, follow [Present flows and paywalls in UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
 
@@ -115,136 +73,9 @@ func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
 
 In SwiftUI, use the `didReceiveAnalyticEvent` and `didDisappear` closures of the `.flow` modifier instead of the delegate methods. Present the paywall flow with a second `.flow` modifier.
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import android.app.Activity
-import android.content.Context
-import com.adapty.ui.AdaptyUI
-import com.adapty.ui.listeners.AdaptyFlowDefaultEventListener
-
-class WeightOnboardingListener(
-    private val activity: Activity, // the activity that displays the paywall flow
-) : AdaptyFlowDefaultEventListener() {
-
-    private val enteredWeights = mutableMapOf<String, String>()
-    private var reachedLastScreen = false
-
-    override fun onAnalyticEvent(
-        name: String,
-        params: Map<String, Any?>,
-        context: Context,
-    ) {
-        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
-            reachedLastScreen = true
-            return
-        }
-        if (name != "flow_user_input") return
-
-        val elementId = params["element_id"] as? String ?: return
-        val value = params["value"] as? String ?: return
-
-        enteredWeights[elementId] = value
-    }
-
-    override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
-        // number inputs send their values as strings
-        val currentWeight = enteredWeights["weight"]?.toDoubleOrNull()
-        val goalWeight = enteredWeights["goal_weight"]?.toDoubleOrNull()
-
-        if (action == AdaptyUI.Action.Close && reachedLastScreen &&
-            currentWeight != null && goalWeight != null
-        ) {
-            // on the last screen, open the paywall flow in place of the onboarding flow
-            showWeightPaywall(activity, currentWeight, goalWeight)
-        } else {
-            super.onActionPerformed(action, context) // the default handling, such as going back
-        }
-    }
-}
-```
-
-For the onboarding flow, pass `WeightOnboardingListener` in the `eventListener` parameter of `AdaptyUI.getFlowView`. Create the listener with the activity that displays the paywall flow.
-
-When the user taps the button with the [**Close flow** action](android-handle-paywall-actions#close-flows-and-paywalls) on the last screen, the listener opens the paywall flow in place of the onboarding flow.
-
-In Jetpack Compose, pass the listener to `AdaptyFlowScreen` instead, and show the paywall flow in a second `AdaptyFlowScreen`.
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import android.app.Activity;
-import android.content.Context;
-import com.adapty.ui.AdaptyUI;
-import com.adapty.ui.listeners.AdaptyFlowDefaultEventListener;
-import java.util.HashMap;
-import java.util.Map;
-
-public class WeightOnboardingListener extends AdaptyFlowDefaultEventListener {
-    private final Activity activity; // the activity that displays the paywall flow
-    private final Map<String, String> enteredWeights = new HashMap<>();
-    private boolean reachedLastScreen = false;
-
-    public WeightOnboardingListener(Activity activity) {
-        this.activity = activity;
-    }
-
-    @Override
-    public void onAnalyticEvent(String name, Map<String, ?> params, Context context) {
-        if (name.equals("flow_screen_showed") && Boolean.TRUE.equals(params.get("is_last_screen"))) {
-            reachedLastScreen = true;
-            return;
-        }
-        if (!name.equals("flow_user_input")) return;
-
-        Object elementId = params.get("element_id");
-        Object value = params.get("value");
-        if (elementId instanceof String && value instanceof String) {
-            enteredWeights.put((String) elementId, (String) value);
-        }
-    }
-
-    @Override
-    public void onActionPerformed(AdaptyUI.Action action, Context context) {
-        // number inputs send their values as strings
-        Double currentWeight = parseWeight(enteredWeights.get("weight"));
-        Double goalWeight = parseWeight(enteredWeights.get("goal_weight"));
-
-        if (action instanceof AdaptyUI.Action.Close && reachedLastScreen
-                && currentWeight != null && goalWeight != null) {
-            // on the last screen, open the paywall flow in place of the onboarding flow
-            WeightPaywall.showWeightPaywall(activity, currentWeight, goalWeight);
-        } else {
-            super.onActionPerformed(action, context); // the default handling, such as going back
-        }
-    }
-
-    private static Double parseWeight(String value) {
-        if (value == null) return null;
-        try {
-            return Double.parseDouble(value);
-        } catch (NumberFormatException e) {
-            return null;
-        }
-    }
-}
-```
-
-For the onboarding flow, pass `WeightOnboardingListener` in the `eventListener` parameter of `AdaptyUI.getFlowView`. Create the listener with the activity that displays the paywall flow.
-
-When the user taps the button with the [**Close flow** action](android-handle-paywall-actions#close-flows-and-paywalls) on the last screen, the listener opens the paywall flow in place of the onboarding flow.
-
-</TabItem>
-</Tabs>
-
 ## 4. Create the chart view
 
 Create a model of a weight plan, and a view with the chart. The plan has one entry per week, from the current weight to the goal weight. When the user drags along the chart, the view marks the week at the touch point, and displays the projected weight for that week:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
 
 ```swift showLineNumbers title="Swift"
 import Charts
@@ -323,261 +154,11 @@ struct WeightGoalChart: View {
 
 The drag along the chart needs iOS 17 or later. On iOS 16, users see the line, but can't drag along it.
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.drawText
-import androidx.compose.ui.text.rememberTextMeasurer
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import java.text.DateFormat
-import java.util.Date
-import java.util.Locale
-import kotlin.math.abs
-import kotlin.math.ceil
-import kotlin.math.roundToInt
-
-class WeightPlan(currentWeight: Double, goalWeight: Double) {
-    // one entry per week, from the current weight to the goal weight
-    val entries: List<WeightEntry> = run {
-        val weeklyChange = 0.5 // kg per week
-        val start = System.currentTimeMillis()
-        val weekMillis = 7L * 24 * 60 * 60 * 1000
-        val weeks = ceil(abs(goalWeight - currentWeight) / weeklyChange).toInt()
-        val step = if (goalWeight < currentWeight) -weeklyChange else weeklyChange
-        (0..weeks).map { week ->
-            val kilograms = if (week == weeks) goalWeight else currentWeight + step * week
-            WeightEntry(Date(start + week * weekMillis), kilograms)
-        }
-    }
-}
-
-data class WeightEntry(val date: Date, val kilograms: Double)
-
-@Composable
-fun WeightGoalChart(entries: List<WeightEntry>) {
-    // the week under the finger, or null when the user isn't dragging
-    var selectedIndex by remember { mutableStateOf<Int?>(null) }
-    val textMeasurer = rememberTextMeasurer()
-    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
-    val color = Color(0xFFAF52DE)
-    val textStyle = TextStyle(color = Color.Gray, fontSize = 12.sp)
-    val minKg = entries.minOf { it.kilograms }
-    val kgRange = (entries.maxOf { it.kilograms } - minKg).coerceAtLeast(1.0)
-
-    Canvas(
-        Modifier
-            .fillMaxSize()
-            .pointerInput(entries) {
-                // horizontal drags select a week; vertical drags scroll the screen
-                detectHorizontalDragGestures(
-                    onDragEnd = { selectedIndex = null },
-                    onDragCancel = { selectedIndex = null },
-                ) { change, _ ->
-                    val index = (change.position.x / size.width * entries.lastIndex).roundToInt()
-                    selectedIndex = index.coerceIn(0, entries.lastIndex)
-                }
-            }
-    ) {
-        val startDate = textMeasurer.measure(dateFormat.format(entries.first().date), textStyle)
-        val endDate = textMeasurer.measure(dateFormat.format(entries.last().date), textStyle)
-        val dateY = size.height - startDate.size.height
-        val top = 24.dp.toPx() // room for the projected weight above the line
-        val bottom = dateY - 8.dp.toPx()
-        fun pointOf(index: Int) = Offset(
-            x = size.width * index / entries.lastIndex.coerceAtLeast(1),
-            y = bottom - ((entries[index].kilograms - minKg) / kgRange * (bottom - top)).toFloat(),
-        )
-
-        // the line from the current weight to the goal weight
-        for (index in 1..entries.lastIndex) {
-            drawLine(color, pointOf(index - 1), pointOf(index), strokeWidth = 2.dp.toPx())
-        }
-        // the dates of the first and the last week
-        drawText(startDate, topLeft = Offset(0f, dateY))
-        drawText(endDate, topLeft = Offset(size.width - endDate.size.width, dateY))
-
-        // the selected week: a point, and the projected weight above it
-        selectedIndex?.let { index ->
-            val point = pointOf(index)
-            drawCircle(color, radius = 5.dp.toPx(), center = point)
-            val weight = String.format(Locale.getDefault(), "%.1f kg", entries[index].kilograms)
-            val label = textMeasurer.measure(weight, textStyle.copy(color = color))
-            val x = (point.x - label.size.width / 2)
-                .coerceAtMost(size.width - label.size.width)
-                .coerceAtLeast(0f)
-            drawText(label, topLeft = Offset(x, point.y - label.size.height - 8.dp.toPx()))
-        }
-    }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import android.content.Context;
-import android.graphics.Canvas;
-import android.graphics.Color;
-import android.graphics.Paint;
-import android.util.TypedValue;
-import android.view.MotionEvent;
-import android.view.View;
-import android.view.ViewConfiguration;
-import java.text.DateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
-public class WeightPlan {
-    // one entry per week, from the current weight to the goal weight
-    public final List<WeightEntry> entries = new ArrayList<>();
-
-    public WeightPlan(double currentWeight, double goalWeight) {
-        double weeklyChange = 0.5; // kg per week
-        long start = System.currentTimeMillis();
-        long weekMillis = 7L * 24 * 60 * 60 * 1000;
-        int weeks = (int) Math.ceil(Math.abs(goalWeight - currentWeight) / weeklyChange);
-        double step = goalWeight < currentWeight ? -weeklyChange : weeklyChange;
-        for (int week = 0; week <= weeks; week++) {
-            double kilograms = week == weeks ? goalWeight : currentWeight + step * week;
-            entries.add(new WeightEntry(new Date(start + week * weekMillis), kilograms));
-        }
-    }
-}
-
-public class WeightEntry {
-    public final Date date;
-    public final double kilograms;
-
-    public WeightEntry(Date date, double kilograms) {
-        this.date = date;
-        this.kilograms = kilograms;
-    }
-}
-
-public class WeightGoalChartView extends View {
-    private final List<WeightEntry> entries;
-    private final DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM);
-    private final Paint chartPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Paint datePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final float density = getResources().getDisplayMetrics().density;
-    private final int touchSlop;
-    private double minKg = Double.MAX_VALUE;
-    private double maxKg = -Double.MAX_VALUE;
-    private float downX;
-    private float downY;
-    // the week under the finger, or -1 when the user isn't dragging
-    private int selectedIndex = -1;
-
-    public WeightGoalChartView(Context context, List<WeightEntry> entries) {
-        super(context);
-        this.entries = entries;
-        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
-        float textSize = TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics());
-        chartPaint.setColor(0xFFAF52DE);
-        chartPaint.setStrokeWidth(2 * density);
-        chartPaint.setTextSize(textSize);
-        datePaint.setColor(Color.GRAY);
-        datePaint.setTextSize(textSize);
-        for (WeightEntry entry : entries) {
-            minKg = Math.min(minKg, entry.kilograms);
-            maxKg = Math.max(maxKg, entry.kilograms);
-        }
-    }
-
-    @Override
-    protected void onDraw(Canvas canvas) {
-        // the line from the current weight to the goal weight
-        for (int index = 1; index < entries.size(); index++) {
-            canvas.drawLine(xOf(index - 1), yOf(index - 1), xOf(index), yOf(index), chartPaint);
-        }
-        // the dates of the first and the last week
-        String endDate = dateFormat.format(entries.get(entries.size() - 1).date);
-        float dateY = getHeight() - datePaint.descent();
-        canvas.drawText(dateFormat.format(entries.get(0).date), 0, dateY, datePaint);
-        canvas.drawText(endDate, getWidth() - datePaint.measureText(endDate), dateY, datePaint);
-
-        // the selected week: a point, and the projected weight above it
-        if (selectedIndex >= 0) {
-            float x = xOf(selectedIndex);
-            float y = yOf(selectedIndex);
-            canvas.drawCircle(x, y, 5 * density, chartPaint);
-            double kilograms = entries.get(selectedIndex).kilograms;
-            String weight = String.format(Locale.getDefault(), "%.1f kg", kilograms);
-            float width = chartPaint.measureText(weight);
-            float labelX = Math.max(0, Math.min(x - width / 2, getWidth() - width));
-            canvas.drawText(weight, labelX, y - 8 * density, chartPaint);
-        }
-    }
-
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        switch (event.getActionMasked()) {
-            case MotionEvent.ACTION_DOWN:
-                downX = event.getX();
-                downY = event.getY();
-                return true;
-            case MotionEvent.ACTION_MOVE:
-                // horizontal drags select a week; vertical drags scroll the screen
-                float dx = Math.abs(event.getX() - downX);
-                if (selectedIndex < 0 && (dx < touchSlop || dx < Math.abs(event.getY() - downY))) {
-                    return true;
-                }
-                getParent().requestDisallowInterceptTouchEvent(true);
-                int index = Math.round(event.getX() / getWidth() * (entries.size() - 1));
-                selectedIndex = Math.max(0, Math.min(index, entries.size() - 1));
-                invalidate();
-                return true;
-            case MotionEvent.ACTION_UP:
-            case MotionEvent.ACTION_CANCEL:
-                selectedIndex = -1;
-                invalidate();
-                return true;
-        }
-        return super.onTouchEvent(event);
-    }
-
-    private float xOf(int index) {
-        return getWidth() * index / (float) Math.max(entries.size() - 1, 1);
-    }
-
-    private float yOf(int index) {
-        float top = 24 * density; // room for the projected weight above the line
-        float bottom = getHeight() - datePaint.getFontSpacing() - 8 * density; // room for the dates
-        double fraction = (entries.get(index).kilograms - minKg) / Math.max(maxKg - minKg, 1);
-        return (float) (bottom - fraction * (bottom - top));
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-The plan assumes that the weight changes by 0.5 kg per week. To use another rate, edit `weeklyChange`.
+<CustomElementChartWeeklyChange />
 
 ## 5. Match the chart to the custom element
 
-Write a <InlineTooltip tooltip="resolver">[iOS](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), [Android](android-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)</InlineTooltip> that returns the chart view for the `line_chart` Type and the `weight_goal` ID. Store the weight plan in a property of the resolver:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Write a [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) that returns the chart view for the `line_chart` Type and the `weight_goal` ID. Store the weight plan in a property of the resolver:
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUIBuilder
@@ -600,59 +181,7 @@ struct WeightChartResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import com.adapty.ui.AdaptyCustomElementContent
-import com.adapty.ui.AdaptyCustomElementsResolver
-
-class WeightChartResolver(
-    private val plan: WeightPlan,
-) : AdaptyCustomElementsResolver {
-
-    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
-        if (type == "line_chart" && id == "weight_goal") {
-            AdaptyCustomElementContent.compose { WeightGoalChart(plan.entries) }
-        } else {
-            null // another custom element: show the fallback
-        }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import com.adapty.ui.AdaptyCustomElementContent;
-import com.adapty.ui.AdaptyCustomElementsResolver;
-
-public class WeightChartResolver implements AdaptyCustomElementsResolver {
-    private final WeightPlan plan;
-
-    public WeightChartResolver(WeightPlan plan) {
-        this.plan = plan;
-    }
-
-    @Override
-    public AdaptyCustomElementContent resolve(String type, String id) {
-        if (type.equals("line_chart") && id.equals("weight_goal")) {
-            return AdaptyCustomElementContent.view(
-                    (context, elementContext) -> new WeightGoalChartView(context, plan.entries)
-            );
-        }
-        return null; // another custom element: show the fallback
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-On iOS, attach the resolver to the paywall flow when you fetch its configuration. On Android, attach the resolver when you create the view of the paywall flow. Create the resolver with the weight plan from the current and goal weight:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Attach the resolver to the paywall flow when you fetch its configuration. Create the resolver with the weight plan from the current and goal weight:
 
 ```swift showLineNumbers title="Swift"
 func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
@@ -674,92 +203,16 @@ func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
 }
 ```
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import android.app.Activity
-import com.adapty.Adapty
-import com.adapty.ui.AdaptyUI
-import com.adapty.ui.listeners.AdaptyFlowDefaultEventListener
-import com.adapty.utils.AdaptyResult
-
-fun showWeightPaywall(activity: Activity, currentWeight: Double, goalWeight: Double) {
-    val plan = WeightPlan(currentWeight, goalWeight)
-    Adapty.getFlow("weight_paywall") { flowResult ->
-        if (flowResult !is AdaptyResult.Success) return@getFlow // handle the error
-        AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
-            if (configResult !is AdaptyResult.Success) return@getFlowConfiguration // handle the error
-            val flowView = AdaptyUI.getFlowView(
-                activity,
-                configResult.value,
-                products = null,
-                eventListener = AdaptyFlowDefaultEventListener(),
-                customElementsResolver = WeightChartResolver(plan),
-            )
-            activity.setContentView(flowView) // in place of the onboarding flow
-        }
-    }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import android.app.Activity;
-import com.adapty.Adapty;
-import com.adapty.models.AdaptyFlow;
-import com.adapty.ui.AdaptyCustomAssets;
-import com.adapty.ui.AdaptyFlowInsets;
-import com.adapty.ui.AdaptyFlowView;
-import com.adapty.ui.AdaptyUI;
-import com.adapty.ui.listeners.AdaptyFlowDefaultEventListener;
-import com.adapty.ui.listeners.AdaptyUiTagResolver;
-import com.adapty.ui.listeners.AdaptyUiTimerResolver;
-import com.adapty.utils.AdaptyResult;
-
-public class WeightPaywall {
-    public static void showWeightPaywall(Activity activity, double currentWeight, double goalWeight) {
-        WeightPlan plan = new WeightPlan(currentWeight, goalWeight);
-        Adapty.getFlow("weight_paywall", flowResult -> {
-            if (!(flowResult instanceof AdaptyResult.Success)) return; // handle the error
-            AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) flowResult).getValue();
-            AdaptyUI.getFlowConfiguration(flow, configResult -> {
-                if (!(configResult instanceof AdaptyResult.Success)) return; // handle the error
-                AdaptyFlowView flowView = AdaptyUI.getFlowView(
-                        activity,
-                        ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) configResult).getValue(),
-                        null,
-                        new AdaptyFlowDefaultEventListener(),
-                        // defaults: if your app passes other values here, keep them
-                        AdaptyFlowInsets.Unspecified,
-                        AdaptyCustomAssets.Empty,
-                        AdaptyUiTagResolver.Default,
-                        AdaptyUiTimerResolver.Default,
-                        null,
-                        new WeightChartResolver(plan)
-                );
-                activity.setContentView(flowView); // in place of the onboarding flow
-            });
-        });
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-If your app sets an <InlineTooltip tooltip="app-wide resolver">[iOS](ios-flow-custom-elements#set-an-app-wide-resolver), [Android](android-flow-custom-elements#display-views-in-every-flow)</InlineTooltip>, this resolver replaces it in the paywall flow. `WeightChartResolver` returns no view for any other Type and ID, because the paywall flow in this recipe has no other custom elements. If your paywall flow has other custom elements, pass the app-wide resolver to this one. Then call the app-wide resolver for their Types and IDs, as in <InlineTooltip tooltip="Attach a resolver to one flow">[iOS](ios-flow-custom-elements#attach-a-resolver-to-one-flow), [Android](android-flow-custom-elements#display-data-for-one-flow)</InlineTooltip>.
+If your app sets an [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), this resolver replaces it in the paywall flow. `WeightChartResolver` returns no view for any other Type and ID, because the paywall flow in this recipe has no other custom elements. If your paywall flow has other custom elements, pass the app-wide resolver to this one. Then call the app-wide resolver for their Types and IDs, as in [Attach a resolver to one flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow).
 
 ## 6. Test on a device
 
 The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the chart:
 
 1. [Publish both flows](builder-save-publish). To see the latest published versions instead of cached ones, register the device as a [test device](test-devices).
-2. Run a build of your app that includes the resolver. On iOS, use a device with iOS 17 or later. Complete the onboarding flow with a current and a goal weight. Verify that the line of the chart starts at the current weight and ends at the goal weight.
+2. Run a build of your app that includes the resolver. Use a device with iOS 17 or later. Complete the onboarding flow with a current and a goal weight. Verify that the line of the chart starts at the current weight and ends at the goal weight.
 3. Drag along the chart, and verify that the projected weight for the week under your finger appears above the line.
 
 To test the fallback, remove the `WeightChartResolver` argument in `showWeightPaywall`, and open the paywall flow again.
 
-To find out why the fallback appears instead of the chart, follow the platform-specific guides: [iOS](ios-flow-custom-elements#test-on-a-device) and [Android](android-flow-custom-elements#test-on-a-device).
+To find out why the fallback appears instead of the chart, follow the instructions in the [Test on a device](ios-flow-custom-elements#test-on-a-device) section of the iOS guide.

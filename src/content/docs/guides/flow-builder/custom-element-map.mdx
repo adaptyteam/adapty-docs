@@ -1,76 +1,22 @@
 ---
 title: "Show nearby places on a map in a flow"
 description: "Display a map of places near each user, such as partner fitness centers, in a custom element on a flow screen."
-metadataTitle: "Show nearby places on a map in a flow | Flows & paywalls | Adapty Docs"
+metadataTitle: "Show nearby places on a map in a flow | iOS SDK | Adapty Docs"
 ---
 
-Follow this recipe to include an interactive map in a flow. The map shows your places, such as partner fitness centers, within 2 km of the user. Your app renders the map as a native view in a [custom element](flow-custom-elements), with MapKit on iOS and MapLibre on Android. Your app requests location access on the flow screen.
-
-:::tip
-This recipe covers native iOS and Android apps. Apps built with a cross-platform framework, such as Flutter or React Native, show the [fallback](flow-custom-elements#set-fallback-content) for every custom element. Support for cross-platform frameworks is upcoming.
-:::
+Follow this recipe to include an interactive map in a flow. The map shows your places, such as partner fitness centers, within 2 km of the user. Your app renders the map as a native view in a [custom element](flow-custom-elements), with MapKit. Your app requests location access on the flow screen.
 
 <DocVideo id="custom-element-map-demo.mp4" width="300px" alt="The finished flow: a map shows fitness centers near the user, who drags the map to another area and back." />
 
 ## Before you start
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
-
 - Update your app to Adapty iOS SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
 - Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
 - To ask users for location access, add the `NSLocationWhenInUseUsageDescription` key to the `Info.plist` file of your app. Set its value to the text of the prompt, such as "Find fitness centers near you."
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-- Update your app to Adapty Android SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
-- Set up your app to [fetch](android-get-pb-paywalls) and [display](android-present-paywalls) flows.
-- To ask users for location access, display flows in an activity that extends `ComponentActivity`, such as `AppCompatActivity`.
-- Add MapLibre to your app with Gradle, from `org.maplibre.gl:android-sdk-opengl`. With this artifact, Google Play also offers your app to devices without Vulkan, which the default `android-sdk` artifact requires.
-- Set `minSdk` to 23 or higher, as MapLibre requires.
-
-To limit your app to approximate location, add the following inside the `<manifest>` element of `AndroidManifest.xml`. Approximate location is enough to show places within 2 km. Make sure that the `<manifest>` element declares `xmlns:tools="http://schemas.android.com/tools"`.
-
-```xml showLineNumbers title="AndroidManifest.xml"
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<!-- removes precise location, which MapLibre declares -->
-<uses-permission
-    android:name="android.permission.ACCESS_FINE_LOCATION"
-    tools:node="remove" />
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-- Update your app to Adapty Android SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
-- Set up your app to [fetch](android-get-pb-paywalls) and [display](android-present-paywalls) flows.
-- To ask users for location access, display flows in an activity that extends `ComponentActivity`, such as `AppCompatActivity`.
-- Add MapLibre to your app with Gradle, from `org.maplibre.gl:android-sdk-opengl`. With this artifact, Google Play also offers your app to devices without Vulkan, which the default `android-sdk` artifact requires.
-- Set `minSdk` to 23 or higher, as MapLibre requires.
-
-To limit your app to approximate location, add the following inside the `<manifest>` element of `AndroidManifest.xml`. Approximate location is enough to show places within 2 km. Make sure that the `<manifest>` element declares `xmlns:tools="http://schemas.android.com/tools"`.
-
-```xml showLineNumbers title="AndroidManifest.xml"
-<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-<!-- removes precise location, which MapLibre declares -->
-<uses-permission
-    android:name="android.permission.ACCESS_FINE_LOCATION"
-    tools:node="remove" />
-```
-
-</TabItem>
-</Tabs>
-
 ## 1. Add the custom element to the screen
 
-In the Flow & Paywall Builder, [add a custom element](flow-custom-elements#add-and-configure) to a flow screen, and set it up for the map:
-
-- **Type**: `map`.
-- **ID**: `fitness_centers`.
-- **Height**: Keep the default **Fixed** height. The map fills the custom element.
-
-Keep the custom element out of containers that respond to touch, such as a carousel. Otherwise, a drag on the map also moves the carousel.
+<CustomElementMapBuilderSetup />
 
 Inside the custom element, add an [**Image**](custom-media#image) with a picture of a map. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when:
 
@@ -78,14 +24,11 @@ Inside the custom element, add an [**Image**](custom-media#image) with a picture
 - They denied location access before the screen opened.
 - Their device runs iOS 16.
 
-If the user hasn't answered the location access prompt yet, your app shows it when the map appears. To tell users why your app needs their location, add a text element above the custom element, such as "Find fitness centers near you."
+<CustomElementMapLocationPrompt />
 
 ## 2. Create the map view
 
 Create a type for your places, and a model for location access:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
 
 ```swift showLineNumbers title="Swift"
 import Combine
@@ -125,144 +68,7 @@ final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegat
 }
 ```
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import android.Manifest
-import android.content.Context
-import android.content.ContextWrapper
-import android.content.pm.PackageManager
-import androidx.activity.ComponentActivity
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts.RequestPermission
-import androidx.core.content.ContextCompat
-
-// a place of your app, such as a partner fitness center
-data class Place(val name: String, val latitude: Double, val longitude: Double)
-
-private const val PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION // approximate location
-
-// one location access model for the resolver and the map view
-class LocationAccess(context: Context) {
-    private val appContext = context.applicationContext
-    // checkSelfPermission returns the same value before the first request and after a denial: save the answer
-    private val answers = appContext.getSharedPreferences("location_access", Context.MODE_PRIVATE)
-    private var isAsking = false
-    var isMapOnScreen = false
-
-    val isAllowed: Boolean
-        get() = ContextCompat.checkSelfPermission(appContext, PERMISSION) == PackageManager.PERMISSION_GRANTED
-
-    val isDenied: Boolean
-        get() = !isAllowed && answers.getBoolean("denied", false)
-
-    // requests location access and saves the answer
-    // unregister the returned launcher when the view leaves the screen
-    fun requestAccess(activity: ComponentActivity, onAnswer: (Boolean) -> Unit): ActivityResultLauncher<String> {
-        val isPromptOpen = isAsking // after a screen rotation, this request receives the answer from the open prompt
-        val request = activity.activityResultRegistry.register("location_access", RequestPermission()) { granted ->
-            isAsking = false
-            answers.edit().putBoolean("denied", !granted).apply()
-            onAnswer(granted)
-        }
-        if (!isPromptOpen) {
-            isAsking = true
-            request.launch(PERMISSION)
-        }
-        return request
-    }
-}
-
-// the activity that shows the flow
-tailrec fun Context.findComponentActivity(): ComponentActivity =
-    this as? ComponentActivity ?: (this as ContextWrapper).baseContext.findComponentActivity()
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import android.Manifest;
-import android.content.Context;
-import android.content.ContextWrapper;
-import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
-import androidx.activity.ComponentActivity;
-import androidx.activity.result.ActivityResultCallback;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.activity.result.contract.ActivityResultContracts.RequestPermission;
-import androidx.core.content.ContextCompat;
-
-// a place of your app, such as a partner fitness center
-public class Place {
-    public final String name;
-    public final double latitude;
-    public final double longitude;
-
-    public Place(String name, double latitude, double longitude) {
-        this.name = name;
-        this.latitude = latitude;
-        this.longitude = longitude;
-    }
-}
-
-// one location access model for the resolver and the map view
-public class LocationAccess {
-    private static final String PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION; // approximate location
-    private final Context appContext;
-    // checkSelfPermission returns the same value before the first request and after a denial: save the answer
-    private final SharedPreferences answers;
-    private boolean isAsking;
-    public boolean isMapOnScreen;
-
-    public LocationAccess(Context context) {
-        appContext = context.getApplicationContext();
-        answers = appContext.getSharedPreferences("location_access", Context.MODE_PRIVATE);
-    }
-
-    public boolean isAllowed() {
-        return ContextCompat.checkSelfPermission(appContext, PERMISSION) == PackageManager.PERMISSION_GRANTED;
-    }
-
-    public boolean isDenied() {
-        return !isAllowed() && answers.getBoolean("denied", false);
-    }
-
-    // requests location access and saves the answer
-    // unregister the returned launcher when the view leaves the screen
-    public ActivityResultLauncher<String> requestAccess(ComponentActivity activity, ActivityResultCallback<Boolean> onAnswer) {
-        boolean isPromptOpen = isAsking; // after a screen rotation, this request receives the answer from the open prompt
-        ActivityResultLauncher<String> request = activity.getActivityResultRegistry().register(
-                "location_access", new RequestPermission(), granted -> {
-                    isAsking = false;
-                    answers.edit().putBoolean("denied", !granted).apply();
-                    onAnswer.onActivityResult(granted);
-                });
-        if (!isPromptOpen) {
-            isAsking = true;
-            request.launch(PERMISSION);
-        }
-        return request;
-    }
-
-    // the activity that shows the flow
-    public static ComponentActivity findComponentActivity(Context context) {
-        while (!(context instanceof ComponentActivity)) {
-            context = ((ContextWrapper) context).getBaseContext();
-        }
-        return (ComponentActivity) context;
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
 Create a view with a map. The view requests location access and displays a marker for each of your places within 2 km of the user:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
 
 ```swift showLineNumbers title="Swift"
 import CoreLocation
@@ -324,286 +130,11 @@ struct NearbyFitnessCentersMap: View {
 
 The map view needs iOS 17 or later. On iOS 16, users see the fallback.
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import android.annotation.SuppressLint
-import android.content.Context
-import android.graphics.Color
-import android.location.Location
-import android.os.Looper
-import android.view.Gravity
-import android.widget.FrameLayout
-import android.widget.TextView
-import androidx.activity.result.ActivityResultLauncher
-import androidx.lifecycle.DefaultLifecycleObserver
-import androidx.lifecycle.LifecycleOwner
-import org.maplibre.android.MapLibre
-import org.maplibre.android.camera.CameraUpdateFactory
-import org.maplibre.android.geometry.LatLng
-import org.maplibre.android.location.LocationComponentActivationOptions
-import org.maplibre.android.location.engine.LocationEngineCallback
-import org.maplibre.android.location.engine.LocationEngineDefault
-import org.maplibre.android.location.engine.LocationEngineRequest
-import org.maplibre.android.location.engine.LocationEngineResult
-import org.maplibre.android.maps.MapView
-import org.maplibre.android.style.layers.CircleLayer
-import org.maplibre.android.style.layers.PropertyFactory
-import org.maplibre.android.style.sources.GeoJsonSource
-import org.maplibre.geojson.Feature
-import org.maplibre.geojson.FeatureCollection
-import org.maplibre.geojson.Point
-
-// map tiles without an API key
-const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
-
-class NearbyFitnessCentersMap(
-    context: Context,
-    private val access: LocationAccess,
-    private val places: List<Place>,
-) : FrameLayout(context), DefaultLifecycleObserver, LocationEngineCallback<LocationEngineResult> {
-    private val activity = context.findComponentActivity()
-    private val locationEngine = LocationEngineDefault.getDefaultLocationEngine(context)
-    private val mapView: MapView
-    private var permissionRequest: ActivityResultLauncher<String>? = null
-
-    init {
-        MapLibre.getInstance(context)
-        mapView = MapView(context)
-        mapView.onCreate(null)
-        mapView.getMapAsync { map -> map.setStyle(MAP_STYLE_URL) }
-        addView(mapView)
-    }
-
-    override fun onAttachedToWindow() {
-        super.onAttachedToWindow()
-        access.isMapOnScreen = true // tells the resolver that the map is on the screen
-        activity.lifecycle.addObserver(this)
-        when {
-            access.isAllowed -> showUser()
-            access.isDenied -> showAccessOff()
-            else -> permissionRequest = access.requestAccess(activity) { granted ->
-                if (granted) showUser() else showAccessOff()
-            }
-        }
-    }
-
-    override fun onDetachedFromWindow() {
-        access.isMapOnScreen = false
-        permissionRequest?.unregister()
-        locationEngine.removeLocationUpdates(this)
-        activity.lifecycle.removeObserver(this)
-        // the SDK creates a new view each time the custom element appears: release this map
-        mapView.onPause()
-        mapView.onStop()
-        mapView.onDestroy()
-        super.onDetachedFromWindow()
-    }
-
-    // passes the lifecycle of the activity to the map
-    override fun onStart(owner: LifecycleOwner) = mapView.onStart()
-    override fun onResume(owner: LifecycleOwner) = mapView.onResume()
-    override fun onPause(owner: LifecycleOwner) = mapView.onPause()
-    override fun onStop(owner: LifecycleOwner) = mapView.onStop()
-
-    @SuppressLint("MissingPermission") // runs only after the user allows location access
-    private fun showUser() = mapView.getMapAsync { map ->
-        map.getStyle { style ->
-            val options = LocationComponentActivationOptions.builder(context, style).locationEngine(locationEngine)
-            map.locationComponent.activateLocationComponent(options.build())
-            map.locationComponent.isLocationComponentEnabled = true
-            val request = LocationEngineRequest.Builder(1_000).build() // milliseconds between updates
-            locationEngine.requestLocationUpdates(request, this, Looper.getMainLooper()) // calls onSuccess
-        }
-    }
-
-    // the first location of the user
-    override fun onSuccess(result: LocationEngineResult) {
-        val user = result.lastLocation ?: return
-        locationEngine.removeLocationUpdates(this)
-        showPlaces(user)
-    }
-
-    override fun onFailure(exception: Exception) = Unit
-
-    // a teal circle for each of your places within 2 km of the user
-    private fun showPlaces(user: Location) = mapView.getMapAsync { map ->
-        val distance = FloatArray(1)
-        val pins = places.filter { place ->
-            Location.distanceBetween(user.latitude, user.longitude, place.latitude, place.longitude, distance)
-            distance[0] <= 2_000 // meters
-        }.map { place -> Feature.fromGeometry(Point.fromLngLat(place.longitude, place.latitude)) }
-        map.getStyle { style ->
-            style.addSource(GeoJsonSource("places", FeatureCollection.fromFeatures(pins)))
-            val teal = PropertyFactory.circleColor(Color.rgb(0, 128, 128))
-            style.addLayer(CircleLayer("pins", "places").withProperties(teal, PropertyFactory.circleRadius(8f)))
-        }
-        // zoom in on the area around the user
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(user.latitude, user.longitude), 12.0))
-    }
-
-    private fun showAccessOff() {
-        mapView.visibility = GONE
-        addView(TextView(context).apply {
-            text = "Location access is off. To see fitness centers near you, allow location access in Settings."
-            gravity = Gravity.CENTER
-        })
-    }
-}
-```
-
-The view loads the map from OpenFreeMap, a free service that needs no API key and has no uptime guarantee. To switch to another tile source, change the `MAP_STYLE_URL` constant.
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.graphics.Color;
-import android.location.Location;
-import android.os.Looper;
-import android.view.Gravity;
-import android.widget.FrameLayout;
-import android.widget.TextView;
-import androidx.activity.ComponentActivity;
-import androidx.activity.result.ActivityResultLauncher;
-import androidx.lifecycle.DefaultLifecycleObserver;
-import androidx.lifecycle.LifecycleOwner;
-import java.util.ArrayList;
-import java.util.List;
-import org.maplibre.android.MapLibre;
-import org.maplibre.android.camera.CameraUpdateFactory;
-import org.maplibre.android.geometry.LatLng;
-import org.maplibre.android.location.LocationComponentActivationOptions;
-import org.maplibre.android.location.engine.*;
-import org.maplibre.android.maps.MapView;
-import org.maplibre.android.style.layers.CircleLayer;
-import org.maplibre.android.style.layers.PropertyFactory;
-import org.maplibre.android.style.sources.GeoJsonSource;
-import org.maplibre.geojson.Feature;
-import org.maplibre.geojson.FeatureCollection;
-import org.maplibre.geojson.Point;
-
-public class NearbyFitnessCentersMap extends FrameLayout
-        implements DefaultLifecycleObserver, LocationEngineCallback<LocationEngineResult> {
-    // map tiles without an API key
-    public static final String MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty";
-
-    private final LocationAccess access;
-    private final List<Place> places;
-    private final ComponentActivity activity = LocationAccess.findComponentActivity(getContext());
-    private final LocationEngine locationEngine =
-            LocationEngineDefault.INSTANCE.getDefaultLocationEngine(getContext());
-    private final MapView mapView;
-    private ActivityResultLauncher<String> permissionRequest;
-
-    public NearbyFitnessCentersMap(Context context, LocationAccess access, List<Place> places) {
-        super(context);
-        this.access = access;
-        this.places = places;
-        MapLibre.getInstance(context);
-        mapView = new MapView(context);
-        mapView.onCreate(null);
-        mapView.getMapAsync(map -> map.setStyle(MAP_STYLE_URL));
-        addView(mapView);
-    }
-
-    @Override
-    protected void onAttachedToWindow() {
-        super.onAttachedToWindow();
-        access.isMapOnScreen = true; // tells the resolver that the map is on the screen
-        activity.getLifecycle().addObserver(this);
-        if (access.isAllowed()) showUser();
-        else if (access.isDenied()) showAccessOff();
-        else permissionRequest = access.requestAccess(activity, granted -> {
-            if (granted) showUser(); else showAccessOff();
-        });
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        access.isMapOnScreen = false;
-        if (permissionRequest != null) permissionRequest.unregister();
-        locationEngine.removeLocationUpdates(this);
-        activity.getLifecycle().removeObserver(this);
-        // the SDK creates a new view each time the custom element appears: release this map
-        mapView.onPause();
-        mapView.onStop();
-        mapView.onDestroy();
-        super.onDetachedFromWindow();
-    }
-
-    // passes the lifecycle of the activity to the map
-    @Override public void onStart(LifecycleOwner owner) { mapView.onStart(); }
-    @Override public void onResume(LifecycleOwner owner) { mapView.onResume(); }
-    @Override public void onPause(LifecycleOwner owner) { mapView.onPause(); }
-    @Override public void onStop(LifecycleOwner owner) { mapView.onStop(); }
-
-    @SuppressLint("MissingPermission") // runs only after the user allows location access
-    private void showUser() {
-        mapView.getMapAsync(map -> map.getStyle(style -> {
-            map.getLocationComponent().activateLocationComponent(
-                    LocationComponentActivationOptions.builder(getContext(), style).locationEngine(locationEngine).build());
-            map.getLocationComponent().setLocationComponentEnabled(true);
-            LocationEngineRequest request = new LocationEngineRequest.Builder(1000).build(); // milliseconds between updates
-            locationEngine.requestLocationUpdates(request, this, Looper.getMainLooper()); // calls onSuccess
-        }));
-    }
-
-    // the first location of the user
-    @Override
-    public void onSuccess(LocationEngineResult result) {
-        Location user = result.getLastLocation();
-        if (user == null) return;
-        locationEngine.removeLocationUpdates(this);
-        showPlaces(user);
-    }
-
-    @Override public void onFailure(Exception exception) {}
-
-    // a teal circle for each of your places within 2 km of the user
-    private void showPlaces(Location user) {
-        List<Feature> pins = new ArrayList<>();
-        float[] distance = new float[1];
-        for (Place place : places) {
-            Location.distanceBetween(user.getLatitude(), user.getLongitude(), place.latitude, place.longitude, distance);
-            if (distance[0] > 2000) continue; // meters
-            pins.add(Feature.fromGeometry(Point.fromLngLat(place.longitude, place.latitude)));
-        }
-        mapView.getMapAsync(map -> map.getStyle(style -> {
-            style.addSource(new GeoJsonSource("places", FeatureCollection.fromFeatures(pins)));
-            style.addLayer(new CircleLayer("pins", "places").withProperties(
-                    PropertyFactory.circleColor(Color.rgb(0, 128, 128)), PropertyFactory.circleRadius(8f)));
-            // zoom in on the area around the user
-            map.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(user.getLatitude(), user.getLongitude()), 12));
-        }));
-    }
-
-    private void showAccessOff() {
-        mapView.setVisibility(GONE);
-        TextView message = new TextView(getContext());
-        message.setText("Location access is off. To see fitness centers near you, allow location access in Settings.");
-        message.setGravity(Gravity.CENTER);
-        addView(message);
-    }
-}
-```
-
-The view loads the map from OpenFreeMap, a free service that needs no API key and has no uptime guarantee. To switch to another tile source, change the `MAP_STYLE_URL` constant.
-
-</TabItem>
-</Tabs>
-
 If the user denies location access on the screen, the view replaces the map with a message about how to allow access in Settings.
 
 ## 3. Match the map to the custom element
 
-In your <InlineTooltip tooltip="app-wide resolver">[iOS](ios-flow-custom-elements#set-an-app-wide-resolver), [Android](android-flow-custom-elements#display-views-in-every-flow)</InlineTooltip>, add properties for the `LocationAccess` model and your places. Then return the map view for the `map` Type and the `fitness_centers` ID. The highlighted lines show what to add or change. If your app has no app-wide <InlineTooltip tooltip="resolver">[iOS](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), [Android](android-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)</InlineTooltip> yet, copy the whole code:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+In your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), add properties for the `LocationAccess` model and your places. Then return the map view for the `map` Type and the `fitness_centers` ID. The highlighted lines show what to add or change. If your app has no app-wide [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
 
 ```swift showLineNumbers title="Swift" {5-6,14-21}
 import AdaptyUIBuilder
@@ -635,92 +166,9 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin" {7,9,13-24}
-import android.content.Context
-import com.adapty.ui.AdaptyCustomElementContent
-import com.adapty.ui.AdaptyCustomElementsResolver
-
-class CustomElementsResolver(
-    context: Context,
-    private val places: List<Place>, // your app's places, such as partner fitness centers
-) : AdaptyCustomElementsResolver {
-    private val locationAccess = LocationAccess(context)
-
-    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
-        when (type) {
-            "map" -> when (id) {
-                "fitness_centers" ->
-                    if (locationAccess.isDenied && !locationAccess.isMapOnScreen) {
-                        null // access denied before the screen opened: show the fallback
-                    } else {
-                        AdaptyCustomElementContent.view(
-                            factory = { context, _ -> NearbyFitnessCentersMap(context, locationAccess, places) },
-                        )
-                    }
-                // the other maps of your resolver
-                else -> null
-            }
-            // the other Types of your resolver
-            else -> null
-        }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java" {7-8,10-12,17-28}
-import android.content.Context;
-import com.adapty.ui.AdaptyCustomElementContent;
-import com.adapty.ui.AdaptyCustomElementsResolver;
-import java.util.List;
-
-public class CustomElementsResolver implements AdaptyCustomElementsResolver {
-    private final LocationAccess locationAccess;
-    private final List<Place> places; // your app's places, such as partner fitness centers
-
-    public CustomElementsResolver(Context context, List<Place> places) {
-        this.locationAccess = new LocationAccess(context);
-        this.places = places;
-    }
-
-    @Override
-    public AdaptyCustomElementContent resolve(String type, String id) {
-        if (type.equals("map")) {
-            if (id.equals("fitness_centers")) {
-                if (locationAccess.isDenied() && !locationAccess.isMapOnScreen) {
-                    return null; // access denied before the screen opened: show the fallback
-                }
-                return AdaptyCustomElementContent.view(
-                        (context, elementContext) -> new NearbyFitnessCentersMap(context, locationAccess, places)
-                );
-            }
-            // the other maps of your resolver
-            return null;
-        }
-        // the other Types of your resolver
-        return null;
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
-The SDK calls the resolver when the screen opens, and again while it's open. Location access determines what the resolver returns on each call:
-
-- **Not answered yet**: The map view, so that the view can request access.
-- **Allowed**: The map view, which shows your places near the user.
-- **Denied before the screen opened**: No view, so users see the fallback instead of the message about Settings.
-- **Denied on the screen**: The map view, because the view sets `isMapOnScreen` while it's on the screen. If the resolver returned no view here, the SDK would replace the message about Settings with the fallback at the next call.
+<CustomElementMapResolverCalls />
 
 Create the resolver with your places, and set it as the app-wide resolver. Call `AdaptyUI.setCustomElementsResolver` once, such as at app launch:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
@@ -738,75 +186,14 @@ import CoreLocation
 AdaptyUI.setCustomElementsResolver(customElementsResolver)
 ```
 
-</TabItem>
-<TabItem value="kotlin" label="Android (Kotlin)">
-
-```kotlin showLineNumbers title="Kotlin"
-import android.app.Application
-import com.adapty.ui.AdaptyUI
-
-class App : Application() {
-    // your app's places, such as partner fitness centers
-    val places = listOf(
-        Place("Central Fitness", latitude = 52.5219, longitude = 13.4132),
-        Place("Riverside Gym", latitude = 52.5163, longitude = 13.3777),
-    )
-
-    // keep this instance: a resolver for one flow can reuse it
-    // lazy: the context isn't attached yet while App is constructed
-    val customElementsResolver by lazy { CustomElementsResolver(this, places) }
-
-    override fun onCreate() {
-        super.onCreate()
-        AdaptyUI.setCustomElementsResolver(customElementsResolver)
-    }
-}
-```
-
-</TabItem>
-<TabItem value="java" label="Android (Java)">
-
-```java showLineNumbers title="Java"
-import android.app.Application;
-import com.adapty.ui.AdaptyUI;
-import java.util.Arrays;
-import java.util.List;
-
-public class App extends Application {
-    // your app's places, such as partner fitness centers
-    private final List<Place> places = Arrays.asList(
-            new Place("Central Fitness", 52.5219, 13.4132),
-            new Place("Riverside Gym", 52.5163, 13.3777)
-    );
-    // keep this instance: a resolver for one flow can reuse it
-    private CustomElementsResolver customElementsResolver;
-
-    @Override
-    public void onCreate() {
-        super.onCreate();
-        customElementsResolver = new CustomElementsResolver(this, places);
-        AdaptyUI.setCustomElementsResolver(customElementsResolver);
-    }
-
-    public CustomElementsResolver getCustomElementsResolver() {
-        return customElementsResolver;
-    }
-}
-```
-
-</TabItem>
-</Tabs>
-
 ## 4. Test on a device
 
 The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the map:
 
 1. [Publish the flow](builder-save-publish). To see the latest published version instead of a cached one, register the device as a [test device](test-devices).
 2. To see a marker on the map, add a place within 2 km of your location to your list of places.
-3. On iOS, make sure that the device runs iOS 17 or later. Run a build of your app that includes the resolver. Open the screen, and allow location access. Verify that the map shows your location and a marker for the place that you added.
+3. Make sure that the device runs iOS 17 or later. Run a build of your app that includes the resolver. Open the screen, and allow location access. Verify that the map shows your location and a marker for the place that you added.
 
-To test the fallback on iOS, deny location access: in the **Settings** app, go to **Privacy & Security** > **Location Services** > *your app*, and select **Never**. Then open the screen again.
+To test the fallback, deny location access: in the **Settings** app, go to **Privacy & Security** > **Location Services** > *your app*, and select **Never**. Then open the screen again.
 
-To test the fallback on Android, in the **Settings** app, turn off location access for your app. Open the screen, and if the prompt appears, deny location access. The map view shows the message about Settings. Open the screen again, and verify that the fallback appears.
-
-To find out why the fallback appears instead of the map, follow the platform-specific guides: [iOS](ios-flow-custom-elements#test-on-a-device) and [Android](android-flow-custom-elements#test-on-a-device).
+To find out why the fallback appears instead of the map, follow the instructions in the [Test on a device](ios-flow-custom-elements#test-on-a-device) section of the iOS guide.
