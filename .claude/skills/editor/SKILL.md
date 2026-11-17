@@ -141,7 +141,7 @@ Check for: sentences over 20 words (procedures) / 25 words (descriptions), vague
 
 **Sentence length is a range, not a ceiling.** Over-splitting is also a defect — five or more consecutive sentences under eight words read as a telegram. If a passage has been chopped into one-clause sentences, merge some back. Enforcing the ceiling alone produces this failure.
 
-**One idea per sentence, even under the ceiling.** A sentence that joins two facts with ", so" or ", and" carries two ideas: split it. The over-splitting limit still applies.
+**Split a sentence that joins two unrelated facts, even under the ceiling.** A `, and` or `, so` join is the cue. When the two clauses have different subjects and neither explains the other, split at the join. ❌ "The paywall loads its products from the store, and the close button appears after three seconds." ✅ "The paywall loads its products from the store. The close button appears after three seconds." A cause with its result, or two steps the reader takes in a row, stays one sentence. ✅ "Adapty caches the paywall, so changes appear after the next launch."
 
 See `references/simplified-technical-english.md` → Sentence Structure + Word Choice
 
@@ -184,7 +184,7 @@ Name it at every section entry, in every heading, and anywhere the nearest candi
 Also check for:
 - **Abstract nouns**: flag `figure`, `item`, `thing` — replace each with the concrete noun. Words like `value`, `data`, and `entity` are fine when bound to a named field or domain ("the value of `expires_at`", "revenue data") and vague when not ("we send the value"). The test is whether the noun is attached to something named, not the word itself. The same test covers vague states: `missing`, `situation`, `has a value`. Name what the code returns, what the user entered, or what stops happening. ❌ "shows no view because the content is missing" ✅ "returns no view, because the view needs a file that isn't on the device"
 - **Second readings**: Read each heading and sentence as a reader who knows only plain English, and look for a second meaning. It often comes from a number word that also means "a specific one" ("in one flow": a single flow, or the flow you picked?), a verb with many meanings in a heading ("Build"), or a clause that attaches to the nearer noun ("a button on the screen that opens the paywall": does the button open it, or the screen?). Rewrite until one reading is left.
-- **Missing cause-and-effect context**: A common case is a constraint that leaves the reader asking why ("what makes the Type invalid?"). For each `only`, `can't`, `invalid`, or requirement, state the rule behind it in terms the reader sees in the builder or the app. For a requirement, say what happens when it isn't met.
+- **Missing cause-and-effect context**: A common case is a constraint that leaves the reader asking why: "Pick a valid type" leaves them asking which types are invalid, and what makes them so. For each `only`, `can't`, `invalid`, or requirement, state the rule behind it in terms the reader sees in the builder or the app. For a requirement, say what happens when it isn't met.
 - **Inaccurate metaphors**: a metaphor that contradicts the described behavior. ❌ "Works like a checklist" when evaluation stops at the first match (if/else-if/else) → remove or replace with an accurate analogy
 - **Settings by a user action**: don't describe a setting by a user action that may never happen. ❌ "**Start position**: the share of the screen the sheet covers before users scroll" ✅ "**Start position**: the share of the screen the sheet covers when the screen opens"
 - **Self-contradicting callouts**: e.g., saying an action "overrides" a setting and then saying they're "interchangeable" in the same callout — both can't be true. Flag and rewrite to resolve
@@ -421,7 +421,7 @@ This governs *steps* — for a warning about something that genuinely goes wrong
 - Importance before derivation — lead with the more serious of two problems.
 - Consequence before mechanism, when something goes wrong — the damage is the point; how it arose is background. When you explain how a feature works, follow the order it runs: the trigger, what runs, the result.
 - Condition before outcome — put each condition before the action or result it governs, including the condition that allows the reader to skip a step. ❌ "Generate a team key. Existing active keys work too, if you have their files." ✅ "If you have the file of an existing active key, use that key. Otherwise, generate one."
-- Cause before reaction — before the text tells the reader to react to a state, say what produces it ("but why would a warning icon appear?").
+- Cause before reaction — before the text tells the reader to react to a state, say what produces it. ❌ "If a warning icon appears, re-select the product." The fix: first name what makes the icon appear, then the action. If the source doesn't say, ask the author.
 - Reason before mitigation in limitations — what's restricted and why it hurts, then the workaround.
 - Symptom before mechanism in troubleshooting — headings and opening sentences name what the reader observes, not the cause. ❌ "Exclude historical events is on by default" → ✅ "PostHog is missing historical events."
 - Good news is not a footnote. If a passage has one actionable sentence and four constraints, the actionable one leads.
