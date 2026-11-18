@@ -73,6 +73,20 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     CLI).
   - Element variables for inputs are `value` and `isValid`; no variable holds **Disabled** or
     **Active**, so those two are reachable only through the **States** tab.
+- **Conditions on the device platform** (the picker's **System** tab; builder and transformer
+  code, 2026-11-18, before release). Owner sections: `onboarding-element-visibility` ("Show an
+  element on one platform only") and `onboarding-actions` ("Show a screen on one platform only").
+  - The operand is `{type: var, variableId: "system.platform"}`; the row shows `system.platform`,
+    the value is a dropdown of **iOS** / **Android** (stored `ios` / `android`), operators `=` and
+    `!=` only. Picking the variable presets **iOS**.
+  - The SDK supplies the value on every version that renders flows (4.0.0+), so the app passes
+    nothing. Huawei devices report `android`; no separate Huawei value exists.
+  - Offered in every condition row (visibility, **Disabled** state, conditional text,
+    conditional actions); not in text or **Set variable**, and the transformer refuses both.
+  - The canvas evaluates it with the platform of the selected preview device.
+  - A screen has no condition of its own: skipping a screen per platform is a conditional
+    action on the screen before it, so the first screen cannot be skipped. Screen size and device
+    model are not condition operands (open as of 2026-11-18).
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
