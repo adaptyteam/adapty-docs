@@ -1,14 +1,10 @@
 ---
 title: "Show an interactive weight goal chart in a paywall"
 description: "Display the projected weight of each user as a chart in a paywall flow. Users drag along the chart to see the weight for any week."
-metadataTitle: "Show an interactive weight goal chart in a paywall | Flows & paywalls | Adapty Docs"
+metadataTitle: "Show an interactive weight goal chart in a paywall | iOS SDK | Adapty Docs"
 ---
 
-Follow this recipe to display the projected weight of each user as a chart in a paywall flow. The user enters their current and goal weight in an onboarding flow. Your app collects both values. The chart shows the weekly progress that the user can expect with your app, from one value to the other. Your app renders the chart as a native Swift Charts view in a [custom element](flow-custom-elements).
-
-:::tip
-This recipe only covers iOS apps. Apps built with other frameworks only display the custom elements' [fallback content](flow-custom-elements#set-fallback-content). Support for Android and cross-platform frameworks is upcoming.
-:::
+Follow this recipe to display the projected weight of each user as a chart in a paywall flow. The user enters their current and goal weight in an onboarding flow. Your app collects both values. The chart shows the weekly progress that the user can expect with your app, from one value to the other. Your app renders the chart as a native view in a [custom element](flow-custom-elements). The view uses Swift Charts.
 
 <DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="The finished paywall: the user drags along the chart, and a label shows the projected weight for each week, down to the goal weight of 72 kg." />
 
@@ -16,41 +12,22 @@ This recipe only covers iOS apps. Apps built with other frameworks only display 
 
 - Update your app to Adapty iOS SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
 - Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
-- Create two separate flows — one for the onboarding, and one for the paywall. Add each to a [placement](placements). The code in this recipe fetches the paywall flow from the placement with the ID `weight_paywall`.
+
+<CustomElementChartTwoFlows />
 
 ## 1. Ask for the current and goal weight in the onboarding flow
 
-In the Flow & Paywall Builder, add two [**Number** inputs](builder-inputs-and-forms) to the onboarding flow:
-
-- One for the current weight in kilograms, with the **Element ID** `weight`.
-- One for the goal weight in kilograms, with the **Element ID** `goal_weight`.
-
-To make your app read the weights the same way in every locale, select **Integer** from the **Format** dropdown of both inputs. An input sends its value to your app as text, exactly as the user types it. The code in this recipe reads "70.5" and "70,5" differently. Whole numbers have no decimal separator.
-
-If you add a [Number picker](builder-number-picker) instead of each **Number** input, your app code receives `value` as a numeric type, not as a string. In the [code that saves the weights](#3-save-the-current-and-goal-weight-in-your-app), read `value` as a numeric type that accepts decimals.
-
-To make sure that your app receives both values, end the onboarding flow with a screen that has no inputs. On that screen, add a button with the [**Close flow**](onboarding-actions#close-flow) action. Inputs send their values when they lose focus or when the user moves to another screen.
+<CustomElementChartOnboardingInputs />
 
 ## 2. Add the custom element to the paywall screen
 
-In the paywall flow, [add a custom element](flow-custom-elements#add-and-configure) to a screen, and set it up for the chart:
-
-- **Type**: `line_chart`.
-- **ID**: `weight_goal`.
-- **Height**: Keep the default **Fixed** height. The chart fills the custom element.
-
-Keep the custom element out of containers that respond to touch, such as a carousel. Otherwise, a drag along the chart also moves the carousel.
-
-Inside the custom element, add an [**Image**](custom-media#image) with a sample weight chart. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when their version of your app doesn't display the chart.
+<CustomElementChartBuilderSetup />
 
 ## 3. Save the current and goal weight in your app
 
-Collect the current and goal weight from the `flow_user_input` events of the onboarding flow, as in [Process data from flows](ios-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`. When the onboarding flow closes after that screen, pass both weights to `showWeightPaywall`, the method that [opens the paywall flow with the chart](#5-match-the-chart-to-the-custom-element).
+Collect the current and goal weight from the `flow_user_input` events of the onboarding flow, as in [Process data from flows](ios-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`. When the onboarding flow closes after that screen, pass both weights to `showWeightPaywall`, the function that [opens the paywall flow with the chart](#5-match-the-chart-to-the-custom-element).
 
-The following code is for UIKit. One view controller is the delegate of both flows. It must also implement the purchase and restore methods of the `AdaptyFlowControllerDelegate` protocol. This example leaves them out. To see them, go to [Present flows and paywalls in UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+The following code is for UIKit. One view controller is the delegate of both flows. To add the purchase and restore methods that every `AdaptyFlowControllerDelegate` implements, follow [Present flows and paywalls in UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
 
 ```swift showLineNumbers title="Swift"
 private var enteredWeights: [String: String] = [:]
@@ -94,17 +71,11 @@ func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
 }
 ```
 
-</TabItem>
-</Tabs>
-
 In SwiftUI, use the `didReceiveAnalyticEvent` and `didDisappear` closures of the `.flow` modifier instead of the delegate methods. Present the paywall flow with a second `.flow` modifier.
 
 ## 4. Create the chart view
 
-Create a model of a weight plan, and a SwiftUI view with the chart. The plan has one entry per week, from the current weight to the goal weight. When the user drags along the chart, the view marks the week at the touch point, and displays the projected weight for that week:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Create a model of a weight plan, and a view with the chart. The plan has one entry per week, from the current weight to the goal weight. When the user drags along the chart, the view marks the week at the touch point, and displays the projected weight for that week:
 
 ```swift showLineNumbers title="Swift"
 import Charts
@@ -181,19 +152,13 @@ struct WeightGoalChart: View {
 }
 ```
 
-</TabItem>
-</Tabs>
-
-The plan assumes that the weight changes by 0.5 kg per week. To use another rate, edit `weeklyChange`.
-
 The drag along the chart needs iOS 17 or later. On iOS 16, users see the line, but can't drag along it.
+
+<CustomElementChartWeeklyChange />
 
 ## 5. Match the chart to the custom element
 
 Write a [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) that returns the chart view for the `line_chart` Type and the `weight_goal` ID. Store the weight plan in a property of the resolver:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUIBuilder
@@ -216,13 +181,7 @@ struct WeightChartResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-</TabItem>
-</Tabs>
-
 Attach the resolver to the paywall flow when you fetch its configuration. Create the resolver with the weight plan from the current and goal weight:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
 
 ```swift showLineNumbers title="Swift"
 func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
@@ -244,19 +203,16 @@ func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
 }
 ```
 
-</TabItem>
-</Tabs>
-
-If your app sets an [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), this resolver replaces it in the paywall flow. `WeightChartResolver` returns `nil` for any other Type and ID, because the paywall flow in this recipe has no other custom elements. If your paywall flow has other custom elements, pass the app-wide resolver to this one. Then call the app-wide resolver for their Types and IDs, as in [Attach a resolver to one flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow).
+If your app sets an [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), this resolver replaces it in the paywall flow. `WeightChartResolver` returns no view for any other Type and ID, because the paywall flow in this recipe has no other custom elements. If your paywall flow has other custom elements, pass the app-wide resolver to this one. Then call the app-wide resolver for their Types and IDs, as in [Attach a resolver to one flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow).
 
 ## 6. Test on a device
 
 The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the chart:
 
 1. [Publish both flows](builder-save-publish). To see the latest published versions instead of cached ones, register the device as a [test device](test-devices).
-2. Run a build of your app that includes the resolver, on iOS 17 or later. Complete the onboarding flow with a current and a goal weight. Verify that the line of the chart starts at the current weight and ends at the goal weight.
+2. Run a build of your app that includes the resolver. Use a device with iOS 17 or later. Complete the onboarding flow with a current and a goal weight. Verify that the line of the chart starts at the current weight and ends at the goal weight.
 3. Drag along the chart, and verify that the projected weight for the week under your finger appears above the line.
 
-To test the fallback, remove the `customElementsResolver` argument from the `getFlowConfiguration` call, and open the paywall flow again.
+To test the fallback, remove the `WeightChartResolver` argument in `showWeightPaywall`, and open the paywall flow again.
 
 To find out why the fallback appears instead of the chart, follow the instructions in the [Test on a device](ios-flow-custom-elements#test-on-a-device) section of the iOS guide.

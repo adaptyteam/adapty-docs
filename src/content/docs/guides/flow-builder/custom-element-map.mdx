@@ -1,14 +1,10 @@
 ---
 title: "Show nearby places on a map in a flow"
-description: "Display a map of places near each user, such as fitness centers, in a custom element on a flow screen."
-metadataTitle: "Show nearby places on a map in a flow | Flows & paywalls | Adapty Docs"
+description: "Display a map of places near each user, such as partner fitness centers, in a custom element on a flow screen."
+metadataTitle: "Show nearby places on a map in a flow | iOS SDK | Adapty Docs"
 ---
 
-Follow this recipe to include an interactive map in a flow. Your app renders the map as a native MapKit view in a [custom element](flow-custom-elements). Your app requests location access on the flow screen.
-
-:::tip
-This recipe only covers iOS apps. Apps built with other frameworks only display the custom elements' [fallback content](flow-custom-elements#set-fallback-content). Support for Android and cross-platform frameworks is upcoming.
-:::
+Follow this recipe to include an interactive map in a flow. The map shows your places, such as partner fitness centers, within 2 km of the user. Your app renders the map as a native view in a [custom element](flow-custom-elements), with MapKit. Your app requests location access on the flow screen.
 
 <DocVideo id="custom-element-map-demo.mp4" width="300px" alt="The finished flow: a map shows fitness centers near the user, who drags the map to another area and back." />
 
@@ -20,13 +16,7 @@ This recipe only covers iOS apps. Apps built with other frameworks only display 
 
 ## 1. Add the custom element to the screen
 
-In the Flow & Paywall Builder, [add a custom element](flow-custom-elements#add-and-configure) to a flow screen, and set it up for the map:
-
-- **Type**: `map`.
-- **ID**: `fitness_centers`.
-- **Height**: Keep the default **Fixed** height. The map fills the custom element.
-
-Keep the custom element out of containers that respond to touch, such as a carousel. Otherwise, a drag on the map also moves the carousel.
+<CustomElementMapBuilderSetup />
 
 Inside the custom element, add an [**Image**](custom-media#image) with a picture of a map. Users see it as the [fallback](flow-custom-elements#set-fallback-content) when:
 
@@ -34,19 +24,22 @@ Inside the custom element, add an [**Image**](custom-media#image) with a picture
 - They denied location access before the screen opened.
 - Their device runs iOS 16.
 
-If the user hasn't answered the location access prompt yet, iOS shows it when the map appears. To tell users why your app needs their location, add a text element above the custom element, such as "Find fitness centers near you."
+<CustomElementMapLocationPrompt />
 
 ## 2. Create the map view
 
-Create a model for location access, and a SwiftUI view with a map. The view requests location access, finds fitness centers within 2 km of the user, and displays a marker for each one:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Create a type for your places, and a model for location access:
 
 ```swift showLineNumbers title="Swift"
+import Combine
 import CoreLocation
-import MapKit
-import SwiftUI
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
 
 // One location manager for the resolver and the map view
 @MainActor
@@ -73,12 +66,21 @@ final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegat
         Task { @MainActor in self.status = status }
     }
 }
+```
+
+Create a view with a map. The view requests location access and displays a marker for each of your places within 2 km of the user:
+
+```swift showLineNumbers title="Swift"
+import CoreLocation
+import MapKit
+import SwiftUI
 
 @available(iOS 17.0, *)
 struct NearbyFitnessCentersMap: View {
     @ObservedObject var access: LocationAccess
+    let places: [Place]
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
-    @State private var places: [MKMapItem] = []
+    @State private var nearbyPlaces: [Place] = []
 
     var body: some View {
         ZStack {
@@ -91,8 +93,9 @@ struct NearbyFitnessCentersMap: View {
             } else {
                 Map(position: $position) {
                     UserAnnotation()
-                    ForEach(places, id: \.self) { place in
-                        Marker(item: place)
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
                     }
                 }
                 .task {
@@ -100,7 +103,13 @@ struct NearbyFitnessCentersMap: View {
                     do {
                         for try await update in CLLocationUpdate.liveUpdates() {
                             guard let location = update.location else { continue }
-                            places = try await fitnessCenters(around: location.coordinate)
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
                             withAnimation {
                                 position = .automatic // zoom to fit the user and the places
                             }
@@ -116,33 +125,24 @@ struct NearbyFitnessCentersMap: View {
         .onAppear { access.isMapOnScreen = true }
         .onDisappear { access.isMapOnScreen = false }
     }
-
-    private func fitnessCenters(around center: CLLocationCoordinate2D) async throws -> [MKMapItem] {
-        let request = MKLocalPointsOfInterestRequest(center: center, radius: 2_000) // meters
-        request.pointOfInterestFilter = MKPointOfInterestFilter(including: [.fitnessCenter])
-        return try await MKLocalSearch(request: request).start().mapItems
-    }
 }
 ```
 
-</TabItem>
-</Tabs>
+The map view needs iOS 17 or later. On iOS 16, users see the fallback.
 
-The map view needs iOS 17 or later. On iOS 16, users see the fallback. If the user denies location access on the screen, the view replaces the map with a message about how to allow access in Settings.
+If the user denies location access on the screen, the view replaces the map with a message about how to allow access in Settings.
 
 ## 3. Match the map to the custom element
 
-In your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), add a property for the `LocationAccess` model. Then add a case that returns the map view for the `map` Type and the `fitness_centers` ID. The highlighted lines show what to add. If your app has no app-wide [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
+In your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), add properties for the `LocationAccess` model and your places. Then return the map view for the `map` Type and the `fitness_centers` ID. The highlighted lines show what to add or change. If your app has no app-wide [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
-
-```swift showLineNumbers title="Swift" {5,13-20}
+```swift showLineNumbers title="Swift" {5-6,14-21}
 import AdaptyUIBuilder
 import SwiftUI
 
 struct CustomElementsResolver: AdaptyUICustomElementsResolver {
     let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
 
     func view(
         forType type: String,
@@ -157,7 +157,7 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
             if locationAccess.isDenied, !locationAccess.isMapOnScreen {
                 return nil // access denied before the screen opened: show the fallback
             }
-            return AnyView(NearbyFitnessCentersMap(access: locationAccess))
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
         // the other cases of your resolver
         default:
             return nil
@@ -166,39 +166,33 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-</TabItem>
-</Tabs>
+<CustomElementMapResolverCalls />
 
-The SDK calls the resolver when the screen opens, and again while it's open, such as when products load. Location access determines what the resolver returns on each call:
-
-- **Not answered yet**: The map view, so that the view can request access.
-- **Allowed**: The map view, which shows fitness centers near the user.
-- **Denied before the screen opened**: `nil`, so users see the fallback instead of the message about Settings.
-- **Denied on the screen**: The map view, because the view sets `isMapOnScreen` while it's on the screen. If the resolver returned `nil` here, the SDK would replace the message about Settings with the fallback at the next call.
-
-If your app doesn't set the app-wide resolver yet, call `AdaptyUI.setCustomElementsResolver(_:)` once, such as at app launch:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Create the resolver with your places, and set it as the app-wide resolver. Call `AdaptyUI.setCustomElementsResolver` once, such as at app launch:
 
 ```swift showLineNumbers title="Swift"
 import AdaptyUI
+import CoreLocation
+
+// your app's places, such as partner fitness centers
+@MainActor let places = [
+    Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+    Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
 
 // keep this instance: a resolver for one flow can reuse it
-@MainActor let customElementsResolver = CustomElementsResolver()
+@MainActor let customElementsResolver = CustomElementsResolver(places: places)
 
 AdaptyUI.setCustomElementsResolver(customElementsResolver)
 ```
-
-</TabItem>
-</Tabs>
 
 ## 4. Test on a device
 
 The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the map:
 
 1. [Publish the flow](builder-save-publish). To see the latest published version instead of a cached one, register the device as a [test device](test-devices).
-2. Run a build of your app that includes the resolver, on iOS 17 or later. Open the screen, and allow location access. Verify that the map shows your location and markers for fitness centers near you.
+2. To see a marker on the map, add a place within 2 km of your location to your list of places.
+3. Make sure that the device runs iOS 17 or later. Run a build of your app that includes the resolver. Open the screen, and allow location access. Verify that the map shows your location and a marker for the place that you added.
 
 To test the fallback, deny location access: in the **Settings** app, go to **Privacy & Security** > **Location Services** > *your app*, and select **Never**. Then open the screen again.
 
