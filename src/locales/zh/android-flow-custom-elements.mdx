@@ -162,7 +162,7 @@ public class CustomElementsResolver implements AdaptyCustomElementsResolver {
 
 <FlowCustomElementsFallbackConditions />
 
-对于某个权限，仅在用户在屏幕打开之前已拒绝时才返回 `null`。`ContextCompat.checkSelfPermission` 在两种情况下会返回相同的值 `PERMISSION_DENIED`：一是应用首次请求该权限之前，二是用户拒绝之后。为了区分这两种情况，请保存权限请求的结果，并在解析器中读取已保存的结果。如果应用尚未请求过该权限，则返回原生视图而非 `null`，并在视图内部发起权限请求。例如，在[地图视图](android-custom-element-map#3-match-the-map-to-the-custom-element)出现时请求位置访问权限，并在用户授予权限后立即显示地图。如果在用户作出回应之前就返回 `null`，则即使用户授予了权限，备用内容也会一直显示，直到 SDK 再次调用解析器为止。
+对于权限问题，仅在用户于页面打开前已明确拒绝权限时才返回 `null`。`ContextCompat.checkSelfPermission` 在两种情况下都返回 `PERMISSION_DENIED`：应用首次向用户请求权限之前，以及用户拒绝权限之后。为了区分这两种情况，请保存权限请求的结果，并在解析器中读取该保存的结果。如果应用尚未请求权限，请返回原生视图而非 `null`，并在视图内部发起权限请求。例如，在[地图视图](android-custom-element-map#3-match-the-map-to-the-custom-element)出现时请求位置访问权限，并在用户授权后立即显示地图。如果返回了 `null`，即使用户随后授予了权限，他们看到的仍然是备用内容。权限状态变更不会让 SDK 再次调用解析器。只有当 SDK 再次调用解析器时（例如用户返回该页面时），原生视图才会显示出来。
 
 ## 将解析器传入 SDK \{#pass-the-resolver-to-the-sdk\}
 
@@ -308,14 +308,14 @@ App app = (App) activity.getApplication();
 AdaptyFlowView flowView = AdaptyUI.getFlowView(
         activity,
         flowConfiguration,
-        null,
+        null, // products
         eventListener,
         // defaults: if your app passes other values here, keep them
         AdaptyFlowInsets.Unspecified,
         AdaptyCustomAssets.Empty,
         AdaptyUiTagResolver.Default,
         AdaptyUiTimerResolver.Default,
-        null,
+        null, // observerModeHandler
         new ExportPaywallResolver(document, app.getCustomElementsResolver())
 );
 ```
@@ -332,13 +332,13 @@ AdaptyFlowView flowView = AdaptyUI.getFlowView(
 流程与付费墙编辑工具无法运行你的应用代码，因此其画布只会显示备用内容。原生视图中的错误可能导致应用崩溃。在发布应用前，请在设备上测试每个包含自定义元素的页面：
 
 1. 若要查看每个流程的最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
-2. 若要在 Logcat 中查看 Adapty SDK 的警告，请将 [`Adapty.logLevel`](sdk-installation-android#logging) 属性设置为 `AdaptyLogLevel.WARN` 或更详细的级别。默认级别为 `AdaptyLogLevel.NONE`，此时 SDK 不记录任何日志。
-3. 在设备上运行包含解析器的构建版本。打开每个包含自定义元素的界面，验证原生视图是否正常显示并适配自定义元素。如果视图支持滚动或拖拽手势，请一并测试这些交互。
-4. 如果显示的是备用视图而非原生视图，请在 Logcat 中查找以下警告：`custom element <type>:<id> is not served by a resolver`。然后验证以下几点：
-   - 警告中的 Type 和 ID 与代码中的完全一致，包括大小写。
-   - 应用已具备视图所需的文件、数据或权限。
-   - 应用已设置全局解析器。
-   - 如果传入了[针对此流程的解析器](#display-data-for-one-flow)，请确认它会为对应的 Type 和 ID 返回视图。
+2. 若要在 Logcat 中查看 Adapty SDK 的警告，请将[日志级别](sdk-installation-android#logging)设置为 `AdaptyLogLevel.WARN` 或更详细的级别。默认级别 `AdaptyLogLevel.NONE` 下，SDK 不会记录任何日志。
+3. 在设备上运行包含 resolver 的构建版本。打开每个带有自定义元素的页面，验证原生视图是否正确显示并适配自定义元素。如果视图支持滚动或拖拽，请测试这些手势。
+4. 如果显示的是备用内容而非原生视图，请在 Logcat 中查找以下警告：`custom element <type>:<id> is not served by a resolver`。然后确认：
+   - 警告中的 Type 和 ID 与代码中的完全一致，包括每个字母的大小写。
+   - 应用拥有视图所需的文件、数据或权限。
+   - 应用已设置全局 resolver。
+   - [针对此流程的 resolver](#display-data-for-one-flow)（如果有传入）能够为对应的 Type 和 ID 返回视图。
 
    如果警告未出现，请确认应用使用的是 Adapty Android SDK 4.4 或更高版本。
 5. 如果自定义元素保持空白，请在 Logcat 中查找以下警告之一：
