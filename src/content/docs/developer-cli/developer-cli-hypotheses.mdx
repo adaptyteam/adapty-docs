@@ -1,0 +1,209 @@
+---
+title: "Hypotheses commands"
+description: "Adapty CLI commands for the hypotheses backlog: create, accept, dismiss, and restore hypotheses, link them to A/B tests, and record their results."
+metadataTitle: "Hypotheses CLI Commands | Adapty Docs"
+---
+
+Manage the hypotheses backlog from the terminal: the changes proposed for each placement, the ones accepted for testing, the A/B tests that test them, and their results. These are the hypotheses on the [AI Growth Advisor](autopilot) page in the Adapty Dashboard. The `hypotheses` topic needs CLI version 0.24.0 or later.
+
+A hypothesis is in one of these states: `proposed`, `accepted`, `dismissed`, `won`, `lost`, or `inconclusive`. An accepted hypothesis also has a phase from its A/B test: `test_draft`, `testing`, `ended`, or `applied` for a change shipped without a test.
+
+Every command takes the app ID:
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+`get`, `accept`, `dismiss`, `restore`, `unaccept`, `link`, `unlink`, `resolve`, and `reresolve` also take the hypothesis ID as an argument:
+
+| Argument | Description |
+|---|---|
+| `hypothesis_id` | Hypothesis ID (UUID) from `adapty hypotheses list` |
+
+## adapty hypotheses list
+
+List the hypotheses of an app, with the actions each one allows now.
+
+```bash
+adapty hypotheses list --app <app-id>
+adapty hypotheses list --app <app-id> --placement <placement-id> --state proposed --state accepted
+```
+
+Each filter can be repeated. A hypothesis that matches any value of a filter is listed.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--placement` | No | Only the hypotheses of this placement (ID), with the hypotheses of other placements whose flow this placement shows |
+| `--state` | No | Only the hypotheses in this state: `proposed`, `accepted`, `dismissed`, `won`, `lost`, or `inconclusive` |
+| `--phase` | No | Only the hypotheses in this phase: the state, or for an accepted hypothesis `test_draft`, `testing`, `ended`, or `applied` |
+| `--type` | No | Only the hypotheses of this type, as `namespace:name`, for example `adapty:flow_design` |
+| `--flow` | No | Only the hypotheses about this flow (ID) |
+| `--variant-flow` | No | Only the hypotheses that test this flow as the variant (ID) |
+| `--segment` | No | Only the hypotheses about this segment (ID) |
+| `--parent` | No | Only the follow-ups of this hypothesis (ID) |
+| `--order-by` | No | Sort order: `position`, `created_at`, `-created_at`, or `-resolved_at`. The default, `position`, lists the hypotheses that need attention first, then the backlog order. |
+
+## adapty hypotheses summary
+
+Count the open hypotheses, proposed and accepted, of each placement by phase.
+
+```bash
+adapty hypotheses summary --app <app-id>
+```
+
+The table shows placements by ID. To get their names, run `adapty placements list --app <app-id>`.
+
+| Column | Description |
+|---|---|
+| Proposed | Waiting to be accepted or dismissed |
+| Accepted, Test draft, Testing, Ended | The accepted hypotheses by the state of their A/B test. A change applied without a test has no column. |
+| Need attention | An A/B test still in draft, a product the store rejected or wants action on, or a suggested result to confirm |
+| Legacy | About a paywall, from before flows. Only `dismiss` and `restore` apply to them. |
+| Projected | Of another placement, counted here because this placement shows their flow |
+
+## adapty hypotheses get
+
+Show one hypothesis: what it proposes, where it stands, and the actions it allows now.
+
+```bash
+adapty hypotheses get --app <app-id> <hypothesis-id>
+```
+
+## adapty hypotheses by-ab-test
+
+Show the hypotheses an A/B test is linked to.
+
+```bash
+adapty hypotheses by-ab-test --app <app-id> <ab-test-id>
+```
+
+| Argument | Description |
+|---|---|
+| `ab_test_id` | A/B test ID (UUID) |
+
+A test linked to no hypothesis returns an empty list. An unknown test returns `ab_test_not_found`.
+
+## adapty hypotheses create
+
+Create hypotheses from a JSON file.
+
+```bash
+adapty hypotheses create --app <app-id> --file hypothesis.json
+adapty hypotheses create --app <app-id> --file - < batch.json
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--file` | Yes | Path to the JSON file, or `-` for standard input |
+| `--force` | No | Create the hypothesis even when an open hypothesis has the same placement, subject, and type |
+
+The file contains one create body, an array of them, or `{"hypotheses": [...]}`. All of them must be on one placement, and Adapty creates them together or not at all. Each body needs:
+
+| Field | Description |
+|---|---|
+| `placement_id` | The placement the hypothesis is about |
+| `subject` | What the hypothesis changes: `{"type": "flow", "flow_id": ...}`, `{"type": "flow_screen", "flow_id": ..., "flow_screen_id": ...}`, or `{"type": "audience", "segment_id": ...}` |
+| `type` | The hypothesis type, as `namespace:name` |
+| `title` | The hypothesis title |
+
+Adapty refuses a key it doesn't know. You can't edit a hypothesis after you create it. To change one, dismiss it and create a new one.
+
+A body without `hypothesis_id` gets a new ID, which the CLI prints to standard error before it sends the request to Adapty. If the response is lost, add that ID to the body as `hypothesis_id` and run the command again. The same body under the same ID returns the stored hypothesis instead of creating a second one.
+
+An open hypothesis with the same placement, subject, and type is refused unless you pass `--force`. With `--force`, running a body without `hypothesis_id` again creates one more copy.
+
+## adapty hypotheses accept
+
+Accept a proposed hypothesis into the backlog.
+
+```bash
+adapty hypotheses accept --app <app-id> <hypothesis-id>
+adapty hypotheses accept --app <app-id> <hypothesis-id> --variant-flow <flow-id>
+adapty hypotheses accept --app <app-id> <hypothesis-id> --product <hypothesis-product-id>=<product-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--variant-flow` | No | For a flow hypothesis, the published flow to test against the current one (ID). Without it, the variant comes from the A/B test you link later. To change it, run `unaccept` and accept the hypothesis again. |
+| `--placement-audience` | For an audience hypothesis | The live audience of the placement that already carries the change (ID). For a flow hypothesis already shipped without an A/B test, pass it with `--variant-flow`: the hypothesis is then applied and never linked to a test. To find the ID, run `adapty placements get` and read **Placement Audience ID** (`placement_audience_id` in `--json`). |
+| `--product` | For each product row without a product | Fill a product row of the hypothesis, as `HYPOTHESIS_PRODUCT_ID=PRODUCT_ID`. Repeat the flag for several rows. To see the product rows, run `adapty hypotheses get`. |
+
+## adapty hypotheses unaccept
+
+Move an accepted hypothesis back to proposed. Its variant and its A/B test link are dropped.
+
+```bash
+adapty hypotheses unaccept --app <app-id> <hypothesis-id>
+```
+
+## adapty hypotheses dismiss
+
+Dismiss a hypothesis. An A/B test linked to it that never started is unlinked.
+
+```bash
+adapty hypotheses dismiss --app <app-id> <hypothesis-id> --reason "Shipped with the new pricing instead"
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--reason` | No | Why the hypothesis is dismissed. The reason shows until the hypothesis is restored. Dismissing it again with another reason is refused. |
+
+## adapty hypotheses restore
+
+Bring a dismissed hypothesis back as proposed, at the top of its placement backlog. Its earlier accept and variant aren't restored.
+
+```bash
+adapty hypotheses restore --app <app-id> <hypothesis-id>
+```
+
+## adapty hypotheses link
+
+Link an accepted flow hypothesis to the A/B test that tests it.
+
+```bash
+adapty hypotheses link --app <app-id> <hypothesis-id> --ab-test <ab-test-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--ab-test` | Yes | The A/B test (ID): a flow test on the placement of the hypothesis, or a crossplacement test with a child there, whose arms are the current flow and the variant |
+
+When the test stops with a winner, the hypothesis is resolved as `won` or `lost`. If the test had already stopped with a winner, the hypothesis gets a suggested result for `resolve`.
+
+## adapty hypotheses unlink
+
+Unlink the A/B test from a hypothesis whose test hasn't started. The variant stays.
+
+```bash
+adapty hypotheses unlink --app <app-id> <hypothesis-id>
+```
+
+## adapty hypotheses resolve
+
+Record the result of an accepted, ended, or applied hypothesis.
+
+```bash
+adapty hypotheses resolve --app <app-id> <hypothesis-id> --result won
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--result` | Yes | The result: `won`, `lost`, or `inconclusive` |
+| `-y`, `--yes` | No | Resolve without asking. Required with `--json` or when the output is piped. |
+
+The result you record is final: no command changes it. That's why the CLI asks before it sends the request to Adapty.
+
+## adapty hypotheses reresolve
+
+Replace the result an A/B test gave a hypothesis with your own.
+
+```bash
+adapty hypotheses reresolve --app <app-id> <hypothesis-id> --result inconclusive
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--result` | Yes | The result: `won`, `lost`, or `inconclusive` |
+| `-y`, `--yes` | No | Replace the result without asking. Required with `--json` or when the output is piped. |
+
+The result you record is final: no command changes it. That's why the CLI asks before it sends the request to Adapty.
