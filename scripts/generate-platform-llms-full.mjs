@@ -41,12 +41,31 @@ const toPascalCase = (str) => {
     return str.replace(/(^\w|-\w)/g, clear => clear.replace('-', '').toUpperCase());
 };
 
+// Drops MDX import statements. They sit outside code fences; an `import` line inside a fence
+// is sample code (Swift, Kotlin, Java) and stays.
+function stripMdxImports(content) {
+    let fence = null; // the opening fence of the code block being read, such as ``` or ````
+    return content
+        .split('\n')
+        .filter((line) => {
+            if (!fence) {
+                const open = line.match(/^\s*(`{3,}|~{3,})/);
+                if (open) fence = open[1];
+                return open !== null || !/^import\s/.test(line);
+            }
+            const close = line.match(/^\s*(`{3,}|~{3,})\s*$/);
+            if (close && close[1][0] === fence[0] && close[1].length >= fence.length) fence = null;
+            return true;
+        })
+        .join('\n');
+}
+
 // Reusable snippets may be .mdx with frontmatter, import lines, and <Callout>
 // JSX wrappers — normalize to plain markdown before inlining into .md exports.
 function cleanReusableContent(content) {
     let cleaned = content.replace(/<!---.*?--->\s*\n?/gs, '');
     cleaned = cleaned.replace(/^\s*---\n[\s\S]*?\n---\s*\n?/, '');
-    cleaned = cleaned.replace(/^import\s+.*?;?\s*$/gm, '');
+    cleaned = stripMdxImports(cleaned);
     cleaned = cleaned.replace(
         /<Callout\s+type="([\w-]+)"[^>]*>\s*([\s\S]*?)\s*<\/Callout>/g,
         (_, type, body) => `:::${type}\n${body}\n:::`
@@ -99,7 +118,7 @@ function stripContent(content, reusableComponents) {
     processed = stripComments(processed);
 
     // 1. Remove imports
-    processed = processed.replace(/^import\s+.*?;?\s*$/gm, '');
+    processed = stripMdxImports(processed);
 
     // 2. Remove Zoom and ZoomImage tags
     processed = processed.replace(/<ZoomImage\s+[^>]*\/>/g, '');
