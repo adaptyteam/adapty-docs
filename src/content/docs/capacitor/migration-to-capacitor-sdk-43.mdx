@@ -4,7 +4,7 @@ description: "Migrate to Adapty Capacitor SDK v4.3: decide how Google Play messa
 metadataTitle: "Migrating to Adapty Capacitor SDK v4.3 | Adapty Docs"
 ---
 
-Adapty Capacitor SDK 4.3 shows Google Play in-app messages by default, removes an unused parameter from `getOnboardingForDefaultAudience`, and widens the type of error codes. Review each change in this guide to keep your app's behavior the same and your TypeScript build passing.
+Adapty Capacitor SDK 4.3 shows Google Play in-app messages by default, removes an unused parameter from `getOnboardingForDefaultAudience`, widens the type of error codes, and requires the promoted product from the event. Review each change in this guide to keep your app's behavior the same and your TypeScript build passing.
 
 If you're still on 3.x, start with [Migrate to v4.1.1](migration-to-capacitor-sdk-v4) and then follow this guide.
 
@@ -14,7 +14,10 @@ If you're still on 3.x, start with [Migrate to v4.1.1](migration-to-capacitor-sd
 |---|---|
 | Google Play messages aren't requested | Google Play messages are shown by default on Android |
 | `getOnboardingForDefaultAudience` accepts `params.loadTimeoutMs` and ignores it | `params.loadTimeoutMs` is removed from its type |
-| `error.adaptyCode` is typed as a known code | It can also hold a code that your SDK version doesn't know |
+| `error.adaptyCode` is typed as a known code | Its type also admits codes that your SDK version doesn't know |
+| `makePromotedPurchase` accepts a product you build yourself | It needs the product from the `'onPromotedPurchaseReceived'` event |
+| An option passed as `undefined` overrides the default | It keeps the default |
+| `accessLevel.android.offerId` | deprecated — read the top-level `offerId` |
 
 ## Installation
 
@@ -31,7 +34,7 @@ The requirements are unchanged from 4.2: **Capacitor 8**, **iOS 15.0**, and **Xc
 
 Starting from 4.3, the SDK requests Google Play in-app messages, such as declined payment notices, every time the `Activity` of your app starts after `activate`, including when the app returns to the foreground. A message can then appear over a paywall.
 
-If that's fine for your app, no changes are needed. To choose when the messages appear, activate the SDK with manual handling on Android, and call `showStoreMessages` at a moment that suits your app:
+If that's fine for your app, no changes are needed. In `'auto'` mode, messages don't appear at cold launch: see [Show messages at launch on Android](capacitor-store-messages#show-messages-at-launch-on-android). To keep the 4.2 behavior, use manual handling on Android and don't call `showStoreMessages`. To choose when the messages appear instead, activate the SDK with manual handling on Android, and call `showStoreMessages` at a moment that suits your app:
 
 ```typescript showLineNumbers
 import { Capacitor } from '@capacitor/core';
@@ -53,7 +56,7 @@ In manual mode, the stores don't show messages on their own. If your app never c
 
 ## `loadTimeoutMs` is removed from `getOnboardingForDefaultAudience`
 
-`getOnboardingForDefaultAudience` never used `params.loadTimeoutMs`: the default-audience request has no timeout. Starting from 4.3, the parameter is also gone from its type, so passing it fails the TypeScript build. Remove it:
+`getOnboardingForDefaultAudience` never used `params.loadTimeoutMs`: the default-audience request has no timeout. Starting from 4.3, the parameter is also gone from its type, so passing it in an object literal fails the TypeScript build. Remove it in any case: the SDK ignores it.
 
 ```diff showLineNumbers
   const onboarding = await adapty.getOnboardingForDefaultAudience({
@@ -67,23 +70,54 @@ In manual mode, the stores don't show messages on their own. If your app never c
 
 `getOnboarding` keeps `loadTimeoutMs`.
 
-## Error codes can be unknown to your SDK version
+## Error code types admit unknown codes
 
-Starting from 4.3, the native SDKs can return error codes that your installed version of the Capacitor SDK doesn't know yet, and `error.adaptyCode` keeps them as they are. Its `ErrorCode` type now accepts any number, so code that relies on `ErrorCode` covering only known codes — for example, an exhaustive `switch` that ends in a `never` check — no longer compiles.
+Native SDKs can return error codes that are newer than your Capacitor SDK. Earlier versions already passed these codes through at runtime. Starting from 4.3, the `ErrorCode` type admits them too: it's now `KnownErrorCode | (number & {})`. These patterns no longer compile:
+
+- An exhaustive `switch` over `error.adaptyCode` that ends in a `never` check.
+- A lookup such as `ErrorCode[error.adaptyCode]` with a variable index, under `strict`. Use `getErrorCodeName(code)` instead: it takes any number.
+- A `Record<ErrorCode, string>` map: 4.3 adds eleven known codes, and each one becomes a required key. Use `Partial<Record<KnownErrorCode, string>>` with a `getErrorCodeName` fallback, so future codes don't break it either.
+- Assigning the result of `getErrorPrompt` to an `ErrorCodeName`: it now returns `` ErrorCodeName | `Unknown code: ${number}` ``.
 
 To narrow a code to the known ones, use `isKnownErrorCode`. To get a code's name, read `error.codeName` or call `getErrorCodeName`; both return `undefined` for an unknown code:
 
 ```typescript showLineNumbers
-import { getErrorCodeName, isKnownErrorCode } from '@adapty/capacitor';
+import { AdaptyError, getErrorCodeName, isKnownErrorCode } from '@adapty/capacitor';
 
-if (isKnownErrorCode(error.adaptyCode)) {
-  console.log(getErrorCodeName(error.adaptyCode));
-} else {
-  // a code added in a newer native SDK
+try {
+  // an Adapty call
+} catch (error) {
+  if (error instanceof AdaptyError) {
+    if (isKnownErrorCode(error.adaptyCode)) {
+      console.log(getErrorCodeName(error.adaptyCode));
+    } else {
+      // a code added in a newer native SDK
+    }
+  }
 }
 ```
 
-For the other error helpers, see [Handle errors](capacitor-handle-errors).
+4.3 also names codes that earlier versions reported as unknown: 2, 1020, 1030, 1050, 3020, and 4104–4107. If your code matches the `'Unknown code: …'` text, update it: `getErrorPrompt(1050)` now returns `'paymentPendingError'` instead of `'Unknown code: 1050'`. For the other error helpers, see [Handle errors](capacitor-handle-errors).
+
+## Pass the promoted product as is
+
+On iOS, `makePromotedPurchase` now needs the App Store purchase intent that the product from the `'onPromotedPurchaseReceived'` event carries. A product you build yourself, or one you fetched with `getPaywallProducts`, worked in 4.2 and fails in 4.3. Pass the product from the event:
+
+```typescript showLineNumbers
+await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+});
+```
+
+See [Promoted in-app purchases](capacitor-making-purchases#in-app-purchases-from-the-app-store).
+
+## Options passed as `undefined` keep their defaults
+
+Starting from 4.3, an option that you pass with the value `undefined` keeps its default value. For example, `loadTimeoutMs: config.timeout` with an unset `config.timeout` now uses the 5000 ms default. Check option values that come from your own configuration.
+
+## `android.offerId` is deprecated
+
+Access levels and subscriptions now have a top-level `offerId`: the Google Play offer the subscription was bought with. On access levels, `android.offerId` still works but is deprecated. Read the top-level `offerId` instead: it depends on the store of the purchase, not on the device OS.
 
 ## New in 4.3
 
@@ -94,5 +128,5 @@ These additions are opt-in. Your existing code keeps working without them:
 - **[Keep a closed flow](capacitor-present-paywalls#keep-a-closed-flow-for-later)**: `view.dismiss({ destroy: false })` keeps a flow to present it again, and `view.destroy()` releases it.
 - **[12-month commitment plans](set-up-12-month-commitment)**: The `product.subscription?.ios?.pricingTerms` property describes the plan on iOS, and access levels report `billingPlan` and `commitmentInfo`.
 - **[Observer mode](report-transactions-observer-mode-capacitor)**: `reportTransaction` takes an optional `ios.jwsTransaction`.
-- **New error codes**: `billingPlanUnavailable` (1060), `operationInProgress` (3201), and `resolverFailure` (3202), all iOS only. See [Handle errors](capacitor-handle-errors).
+- **New error codes for 4.3 features**: `billingPlanUnavailable` (1060), `operationInProgress` (3201), and `resolverFailure` (3202), all iOS only. See [Handle errors](capacitor-handle-errors).
 - **Debug log level**: `'debug'` logs low-level internal details of the native SDK. See [Logging](sdk-installation-capacitor#logging).
