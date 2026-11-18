@@ -60,6 +60,7 @@ article for platform X" as a gap — coverage review isn't in scope for this too
 | builder-element-states | — | marketer | 8 | tutorial |
 | builder-elements | entry | marketer | 20 | tutorial |
 | builder-inputs-and-forms | — | marketer | 7 | tutorial |
+| builder-number-picker | how-to | marketer, dev | 6 | tutorial |
 | builder-reusable-styles | — | — | 8 | tutorial |
 | builder-reviews-and-testimonials | — | marketer | 5 | tutorial |
 | builder-styling | — | marketer | 22 | tutorial |
@@ -165,6 +166,19 @@ article for platform X" as a gap — coverage review isn't in scope for this too
   **Visibility** options now describe starting states (**Hide**: hidden until a **Show element** action
   reveals it) and link to the same article, so a change to how Show/Hide works ripples into both.
 
+- **The Number picker is restated in a dozen places (2026-11-17).** `builder-number-picker` owns the element. These
+  copies repeat one of its facts and move with it: `builder-inputs-and-forms` (the input list, the sentence that the
+  picker only has **Element ID** and **Typography** from the shared settings, the app-callback tip),
+  `builder-elements` (the Inputs list and the paragraph after the date pickers), `flow-analytics-ids` (when
+  `flow_user_input` fires), `flow-common-issues` (a picker variable is never empty), `builder-ui` and
+  `add-paywall-locale-in-adapty-paywall-builder` (the **Unit** in the Localizations panel), the SDK snippets
+  `FlowInputTiming`, `FlowInputParams`, `FlowInputVerify` and the seven `*-flow-input` type tables
+  (`sdk-flows-display`), and the BMI setup snippet plus `custom-element-interactive-chart` (a picker sends a numeric
+  type, not a string). A change to when the picker reports, or to its value type, touches all of them. The shipped
+  `flow-generator` and `flow-audit` skills (public `adapty-sdk-integration-skill`) restate the input list and the
+  localizable fields without the picker; skill changes go to the skill owner, not the docs writer (owner decision,
+  2026-11-17), so `flow-generator-skill.mdx`'s "every localizable field" stays as is until the skill catalogs the Unit.
+
 ## Boundaries
 
 **flow-design vs. flow-logic — the test:** does the change alter what an element *looks like*, or how
@@ -239,6 +253,7 @@ articles in this zone are plausible and one is right.
 | "the Position toggle disappeared", "Fill and Hug are missing from Width", "the Spacing section is gone", "Fixed is greyed out" | The element and its container both use the **Free** direction. That combination leaves one legal configuration — Absolute position with a fixed width and height — so the builder removes every control that could express another. Rule and remedy in `manage-paywall-ui-elements` (section: Position in a Free container); symptom-first entry in `flow-common-issues`. Verified against builder code, 2026-09-18. |
 | "pre-checked trial switch", "App Store rejected our paywall" | `builder-toggles` — a trial toggle that defaults to "on" can be flagged as a manipulative dark pattern under the App Store Review Guidelines; the documented advice is to default it to off and let users opt in. What flipping it then swaps is `flow-logic` (`onboarding-actions`, `paywall-product-block`). |
 | "Countdown to show the close button doesn't fire", "On timer end never runs" | `flow-timer#delay-when-a-close-button-appears`. A Countdown set to **Hide** that no action targets isn't published, so its **On timer end** never fires; keep it visible with transparent text and its digits (docs PR #717, partly confirmed in builder code 2026-11-10). For delays up to 5 seconds the answer is no Countdown at all: a delayed **Show element** action (`flow-logic`'s `flow-show-hide-animations`). |
+| "wheel picker", "scroll picker", "number wheel", "drum picker", "pick weight/height/age on the screen" | `builder-number-picker`. A **date** wheel isn't built: the first version of the element is numbers only, and dates stay with the **Date** input, which opens the system picker on tap (`builder-inputs-and-forms`). Three pickers side by side don't make a date (months as numbers, no day-month check, three events). For a number that can be any value or that users can skip, the **Number** input fits instead. |
 
 ## Gaps and misses
 
@@ -335,3 +350,33 @@ values including a "Cover" that no longer exists, and described "Fill" as stretc
    `SupportForum.mdx`), or is triplication acceptable because each occurrence is framed slightly
    differently for its article's context?
 
+**Verified 2026-11-17 while documenting the Number picker (builder code; transformer code; the owner's screenshots).**
+
+- **Labels and settings.** **Add element** panel > **Forms & Quiz** > **Input** > **Number picker** (the last of nine
+  cards). It adds a container named **Number Picker** with a **Weight** text and the wheel, and the builder selects
+  the container, so readers must select the wheel to reach **Picker Settings**: **Element ID**, **Min**, **Max**,
+  **Step**, **Default**, **Unit**. The **Unit** field has a `{ }` button, so it can hold a variable (screenshot,
+  2026-11-17). No Type dropdown, placeholder, icons, **States** section, validation, `isValid`, or **On submit**.
+- **Range rules.** Numbers snap to multiples of 0.25; **Max** moves onto the last row; a wheel has at most 1000 rows;
+  **Default** moves to the nearest row. Rows show 0, 1, or 2 decimals; a word unit gets a space ("70 kg"), `%`, `°`
+  and similar don't.
+- **Look.** The canvas draws a still wheel at the default, and canvas texts and conditions read the default. iOS uses
+  the system wheel; Android's SDK draws its own. Font and color apply to every row; there's no picked-row style
+  (promised in the first product scope, not shipped). **Size** sets the width only.
+- **Localization.** Only the **Unit** is localizable; it gets its own row in the screen's section of the
+  **Localizations** panel (screenshot, 2026-11-17). **Min**, **Max**, **Step**, and **Default** are the same in
+  every language, so translating "kg" as "lb" relabels kilograms.
+- **Published claims corrected on 2026-11-17 — don't reintroduce them.** `builder-inputs-and-forms` said to click
+  **+** and select **Input** (the entry point is the **Add element** panel, **Forms & Quiz** > **Input**); named the
+  inputs "Email" and "Date and time" (the builder says **E-mail** and **Date & Time**); said every input has leading
+  and trailing icons (**Password** has only a leading one, the show-password icon takes the trailing spot); and said
+  the **Type** dropdown converts any input to any type (there are two dropdowns: text fields among Text, E-mail,
+  Password, Number, Phone number; pickers among Date, Time, Date & Time). Date and time pickers group their settings
+  under **Picker Settings**, the five text fields under **Input Settings**.
+- **Open, not fixed: On Changed.** The **Interactions** panel offers **On Changed** for every input, but publishing
+  drops change interactions on every input with a warning the builder never shows (transformer code, 2026-11-17).
+  `builder-inputs-and-forms` ("Available on all input types") and `onboarding-actions` (trigger table) still say it
+  works. Owner's call; reported, not documented.
+- **Screenshots.** `flow-builder/input-templates.webp` shows eight input presets beside a list of nine;
+  `add-input.webp` predates the panel's search field. The owner declined both retakes on 2026-11-17 (too laborious;
+  not significant). New: `number-picker-settings.webp`, `number-picker-card.webp`.

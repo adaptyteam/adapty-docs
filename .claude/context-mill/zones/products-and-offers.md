@@ -141,8 +141,8 @@ source id is named.
 | offers-in-stores | entry | marketer | 0 | tutorial |
 | product | entry | marketer | 0 | tutorial |
 | store-sync | entry | marketer | 7 | tutorial |
-| virtual-currencies | entry | marketer | 3 | tutorial |
-| virtual-currency-balance | — | marketer | 3 | tutorial |
+| virtual-currencies | entry | marketer | 7 | tutorial |
+| virtual-currency-balance | — | marketer | 4 | tutorial |
 | virtual-currency-quickstart | — | marketer | 0 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs

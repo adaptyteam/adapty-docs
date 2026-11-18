@@ -522,3 +522,22 @@ Applied here: the five duplicated purchase-button/price-variable micro-recipes
 `onboarding-flow-tutorial`) are candidates to trim to a link into `paywall-product-block` — but a recipe
 that stops being followable end to end is worse than the copy, so judge each one by whether the step is
 needed in place.
+
+**Verified 2026-11-17 while documenting the Number picker (builder code; transformer code).**
+
+- **Number conditions.** For a number variable, the condition picker offers `=`, `!=`, `>`, `<`, **Is empty**, and
+  **Is not empty** — no `>=` or `<=`. The right side takes a typed number or another number variable. A picker's
+  variable is never empty, so **Is empty** never matches it. No article lists the operators; the conditional-action
+  owners (`onboarding-actions`, `onboarding-element-visibility`) are where they'd go.
+- **No arithmetic.** Conditions, texts, and **Set variable** can't calculate (no arithmetic in the expression set, read
+  2026-11-17); a BMI is calculated in app code and passed back through a custom tag (`flow-custom-tags`). Unmerged
+  formula work exists in the builder; don't document it until it ships.
+- **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
+  picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
+- **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),
+  including inside a conditional action, send the screen's pending input values; a tap on a quiz option or a toggle
+  (not a product) sends them too. **Close flow**, a purchase, and a custom action don't. A hidden picker, or one in
+  an unopened tab, still reports; an input inside a reusable component never reports (every input type).
+- **Same-screen updates.** Texts and visibility that read a picker's `.value` re-evaluate when the wheel settles
+  (code); not run on a device.
+- **On Changed** is dropped at publish for every input (see `flow-design` Gaps); `onboarding-actions` still lists it.
