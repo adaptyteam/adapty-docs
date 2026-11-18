@@ -17,7 +17,7 @@
 | privacyAcknowledgementRequired | 9 | This error code indicates that the user has not yet acknowledged the store privacy policy. |
 | unauthorizedRequestData | 10 | This error code indicates that the request is built incorrectly. |
 | invalidOfferIdentifier | 11 | <p>The offer identifier is not valid. Possible reasons:</p><p></p><p>- You have not set up an offer with that identifier in the App Store.</p><p>- You have revoked the offer.</p><p>- You misprinted the offer ID.</p> |
-| invalidSignature | 12 | This error code indicates that the signature in a payment discount is not valid. Make sure you've filled out the **In-app purchase Key ID**  field and uploaded the **In-App Purchase Private Key** file. Refer to the [Configure App Store integration](app-store-connection-configuration) topic for details. |
+| invalidSignature | 12 | This error code indicates that the signature in a payment discount is not valid. Make sure you've filled out the **Subscription key ID** field and uploaded the **Subscription key (.p8 file)** in the **App Store promotional offers** section. Refer to [Add the In-App Purchase key to Adapty](generate-in-app-purchase-key#add-the-key-to-adapty) for details. |
 | missingOfferParams | 13 | <p>This error indicates issues with Adapty integration or with offers.</p><p>Refer to the [Configure App Store integration](app-store-connection-configuration)  and to [Offers](offers)  for details on how to set them up.</p> |
 | invalidOfferPrice | 14 | This error code indicates that the price you specified in the store is no longer valid. Offers must always represent a discounted price. |
 

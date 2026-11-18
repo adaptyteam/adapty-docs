@@ -138,18 +138,18 @@ The delta from `scope.md` here is almost entirely one exception and two boundari
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| app-store-connection-configuration | — | dev | 6 | tutorial |
+| app-store-connection-configuration | — | dev | 8 | tutorial |
 | app-store-products | — | dev | 1 | tutorial |
 | app-store-small-business-program | — | dev | 8 | tutorial |
 | apple-app-privacy | — | dev | 6 | tutorial |
 | apple-family-sharing | — | dev | 0 | tutorial |
 | apple-platform-resources | entry | dev | 3 | tutorial |
-| enable-app-store-server-notifications | — | dev | 2 | tutorial |
-| generate-in-app-purchase-key | — | dev | 0 | tutorial |
+| enable-app-store-server-notifications | — | dev | 4 | tutorial |
+| generate-in-app-purchase-key | — | dev | 3 | tutorial |
 | initial_ios | entry | dev | 1 | tutorial |
 | refund-saver | — | dev | 16 | tutorial |
 | set-up-app-store-connect | — | dev | 8 | tutorial |
-| troubleshoot-app-store-integration | — | dev | 7 | tutorial |
+| troubleshoot-app-store-integration | — | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

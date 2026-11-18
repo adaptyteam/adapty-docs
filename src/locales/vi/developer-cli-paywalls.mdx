@@ -41,38 +41,56 @@ adapty paywalls get --app <app-id> <paywall-id>
 Tạo một [paywall](paywalls) mới.
 
 ```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
 ```
 
-| Flag | Required | Description |
+| Flag | Bắt buộc | Mô tả |
 |---|---|---|
-| `--app` | Yes | App ID (UUID) |
-| `--title` | Yes | Tiêu đề paywall |
-| `--product-id` | Yes | ID [sản phẩm](product) (UUID). Lặp lại để thêm nhiều sản phẩm: `--product-id <id1> --product-id <id2>` |
+| `--app` | Có | App ID (UUID) |
+| `--title` | Có | Tiêu đề paywall |
+| `--products` | Có | Mảng JSON của các sản phẩm, theo thứ tự hiển thị: `[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`. Chỉ cần `product_id` (ID [sản phẩm](product), UUID); các khóa còn lại lấy từ danh sách `products` mà `paywalls get` hiển thị |
+| `--remote-configs` | Không | Mảng JSON gồm các mục `{locale, data}`, trong đó `data` là [Remote Config](customize-paywall-with-remote-config) dưới dạng chuỗi JSON |
+| `--use-paywall-builder-v4` | Không | Paywall có sử dụng [Paywall Builder](adapty-paywall-builder) hay không |
+| `--screenshot-id` | Không | ID hình ảnh của ảnh chụp màn hình paywall (số nguyên), hoặc `null` |
+| `--builder-screenshot-id` | Không | ID hình ảnh của ảnh chụp màn hình builder (số nguyên), hoặc `null` |
+| `--web-purchase-url` | Không | URL mua hàng qua web, hoặc `null` |
+| `--product-id` | Không | Không còn được khuyến nghị: hãy dùng `--products`. ID [sản phẩm](product) (UUID), lặp lại cho từng sản phẩm. Tùy chọn này thiết lập sản phẩm không có ưu đãi và không có billing plan, không thể dùng cùng với `--products` |
+
+Trường nào bạn bỏ trống sẽ dùng giá trị mặc định của dashboard: không có Remote Config, không dùng builder, không có ảnh chụp màn hình và không có URL mua hàng trên web. Các flag khác ngoài `--app`, `--title` và `--product-id` yêu cầu CLI phiên bản 0.20.0 trở lên.
 
 ## adapty paywalls update
 
 Thay thế tất cả các trường của một [paywall](paywalls) hiện có.
 
 :::important
-Khi paywall đã được liên kết với một placement, các sản phẩm của nó không thể thay đổi. Để sử dụng các sản phẩm khác trong paywall đang hoạt động, hãy tạo paywall mới và cập nhật placement để trỏ đến paywall đó.
+Khi paywall đã được liên kết với một placement, sản phẩm của nó không thể thay đổi. Để sử dụng sản phẩm khác trong paywall đang hoạt động, hãy tạo paywall mới và cập nhật placement để trỏ đến paywall đó.
 :::
 
+Để thay đổi một trường, hãy đọc paywall, chỉnh sửa trường đó trong file, rồi gửi lại toàn bộ file:
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-Lệnh này thay thế tất cả các trường của paywall, bao gồm cả danh sách sản phẩm đầy đủ.
+Lệnh này sẽ thay thế toàn bộ các trường của paywall, bao gồm danh sách sản phẩm đầy đủ và toàn bộ danh sách remote config. Tất cả các trường đều bắt buộc: nếu thiếu flag nào, lệnh sẽ thoát với mã 2, liệt kê các flag còn thiếu và không gửi request. Yêu cầu CLI phiên bản 0.20.0 trở lên: các phiên bản trước đó chỉ nhận `--title` và `--product-id`.
 
-| Đối số | Mô tả |
+| Tham số | Mô tả |
 |---|---|
-| `paywall-id` | ID của paywall (UUID) |
+| `paywall-id` | ID paywall (UUID) |
 
 | Cờ | Bắt buộc | Mô tả |
 |---|---|---|
 | `--app` | Có | ID ứng dụng (UUID) |
-| `--title` | Có | Tiêu đề paywall |
-| `--product-id` | Có | ID [Sản phẩm](product) (UUID). Lặp lại cho nhiều sản phẩm: `--product-id <id1> --product-id <id2>` |
+| `--file` | Thay cho các cờ trường | Đường dẫn đến file JSON chứa toàn bộ paywall, hoặc `-` để đọc từ stdin. Kết quả của `paywalls get --json` dùng được ngay; `id` của nó sẽ bị bỏ qua. Không thể dùng cùng với bất kỳ cờ trường nào |
+| `--title` | Không dùng `--file` | Tiêu đề paywall |
+| `--products` | Không dùng `--file` | Mảng JSON các sản phẩm, như trong [`paywalls create`](#adapty-paywalls-create). Gửi danh sách mà `paywalls get` đã in ra để giữ nguyên các ưu đãi và billing plan |
+| `--remote-configs` | Không dùng `--file` | Mảng JSON các mục `{locale, data}`, trong đó `data` là một chuỗi JSON. `[]` sẽ xóa tất cả Remote Config |
+| `--use-paywall-builder-v4` hoặc `--no-use-paywall-builder-v4` | Không dùng `--file` | Paywall có dùng Paywall Builder hay không. Gửi giá trị từ `paywalls get`: `--no-use-paywall-builder-v4` sẽ xóa layout builder khỏi các thiết bị |
+| `--screenshot-id` | Không dùng `--file` | ID hình ảnh của ảnh chụp màn hình paywall, hoặc `null` |
+| `--builder-screenshot-id` | Không dùng `--file` | ID hình ảnh của ảnh chụp màn hình builder, hoặc `null` |
+| `--web-purchase-url` | Không dùng `--file` | URL mua hàng qua web, hoặc `null` |
+| `--product-id` | Không | Đã lỗi thời: hãy dùng `--products`. Thiết lập sản phẩm không có ưu đãi và không có billing plan |
 
 ## adapty paywalls placements
 

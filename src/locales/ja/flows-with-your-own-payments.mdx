@@ -1,0 +1,473 @@
+---
+title: "独自の決済システムでAdaptyフローを使用する"
+description: "既存の決済インフラを移行せずに、Adaptyフローを既存の購入コードと組み合わせて実行します。"
+metadataTitle: "独自の決済システムでAdaptyフローを使用する | Adapty ドキュメント"
+---
+
+Adaptyのフローを使用するために、購入処理をAdaptyに移行する必要はありません。[Observerモード](observer-vs-full-mode)では、既存のコードがすべての購入処理を行いつつ、Adaptyがペイウォールまたはオンボーディングのレンダリング、表示対象ユーザーの決定、A/Bテスト、および結果のレポートを担当します。
+
+このガイドでは、変わる点、変わらない点、そしてセットアップに必要なことを説明します。
+
+:::tip
+フローを初めて使いますか？[フロー & ペイウォールビルダー](adapty-flow-builder)では、実装前に作れるものを紹介しています。
+:::
+
+## あなたのコードが担うこと、Adaptyが担うこと \{#what-stays-yours-what-adapty-takes-over\}
+
+あなたのコードが担う処理:
+
+- 購入の呼び出し
+- トランザクションの完了と確認
+- アクセスの付与と取り消し
+- 更新と請求の再試行
+
+Adaptyが担う処理:
+
+- フローのレンダリング
+- [プレースメント](placements)と[オーディエンス](audience)ターゲティング
+- [A/B テスト](ab-tests)
+- [アナリティクス](analytics)と[インテグレーション](configuration)
+
+課金に関するコードは何も変わりません。Adaptyがフローをレンダリングし、購入タップをあなたのコードに渡すと、あなたのコードが決済を処理します。
+
+## Adapty でプロダクトを作成する \{#create-your-products-in-adapty\}
+
+フロー内のどの画面でも価格を表示したり購入を行わない場合は、このセクションをスキップしてください。オンボーディング画面だけのフローには、Adapty のプロダクトは不要です。
+
+画面にプロダクトが表示される場合は、提供するサブスクリプションや買い切り購入ごとに Adapty でプロダクトを作成してください。フローはカードの価格をプロダクトから読み取るため、カードには現在のストア価格が表示され、その価格を A/B テストしたり、Adapty がアナリティクスでプロダクト別に収益を集計したりできます。
+
+Adapty のプロダクトはすでに販売しているストアのプロダクトを参照しているため、プロダクトを作成しても課金は発生しません。すべての請求処理はあなたのコードが行います。各プロダクトにはアクセスレベルを指定する必要があります。Observer モードでは Adapty はアクセスを付与しません（アクセス管理はあなたのコードが行います）が、それでもプロダクトにはアクセスレベルが必要です。
+
+[Adapty CLI](developer-cli) を使うと、ダッシュボードを開かずにプロダクトを作成できます。Node.js 18 以降をインストールし、サインインしてください：
+
+```bash
+npm install -g adapty
+```
+
+```bash
+adapty auth login
+```
+
+アプリ ID と、紐付けるアクセスレベルを取得します。新しいアプリにはデフォルトで `premium` アクセスレベルが用意されています：
+
+```bash
+adapty apps list
+```
+
+```bash
+adapty access-levels list --app <app-id>
+```
+
+次に、App Store Connect と Google Play Console のプロダクト ID を使用して、販売するストアプロダクトごとに Adapty プロダクトを作成します：
+
+```bash
+adapty products create --app <app-id> --title "Monthly" --access-level-id <access-level-id> --period monthly --ios-product-id com.example.monthly --android-product-id com.example.monthly --android-base-plan-id monthly
+```
+
+買い切り購入の場合は `--period lifetime` を渡し、ウェブで販売するものには `--stripe-product-id` と `--stripe-price-id`（または Paddle の対応するペア）を指定します。すべてのフラグは [`products create`](developer-cli-products#adapty-products-create) に一覧があります。作成後にストアのプロダクト ID は変更できないため、別のストアプロダクトを指定する場合は新しいプロダクトを作成する必要があります。
+
+:::warning
+プロダクト要素に何も割り当てていないと、保存・公開がブロックされるため、ビルダー上で気づくことができます。一方、**Purchase** アクションにプロダクトが設定されていない場合は保存できますが、デバイス上では失敗します（ボタンが何もしない）。すべての Purchase アクションにプロダクトを設定してください。
+:::
+
+<Details summary="プロダクトをスキップして価格を静的テキストとして記述する場合">
+
+プロダクト要素がないフローは保存・公開できるため、テキストに価格を直接入力して、タップ時に何を購入するかは独自のコードで判断させることができます。その場合のデメリットは次のとおりです：
+
+- ストアとフローのテキストの2か所に価格を保持する必要があり、どちらかを変更した時点でズレが生じます。
+- 価格の A/B テストができません。これはフローの主な用途です。
+- Adapty はあなたが報告したトランザクションからプロダクトを把握するため、チャートやインテグレーションでの売上のグループ化が不明確になります。
+- タップされた要素をプロダクトにマッピングするコードが必要で、フローからプロダクトを受け取ることができません。
+
+</Details>
+
+## セットアップ方法 \{#set-it-up\}
+
+1. **SDKをオブザーバーモードで有効化する。** SDK設定時に `observerMode` をオンにします: [iOS](implement-observer-mode)、[Android](implement-observer-mode-android)、[React Native](implement-observer-mode-react-native)、[Flutter](implement-observer-mode-flutter)、[Unity](implement-observer-mode-unity)、[Kotlin Multiplatform](implement-observer-mode-kmp)、[Capacitor](implement-observer-mode-capacitor)。
+2. **AdaptyでプロダクトをSDKで作成する。** フロー内に価格表示がない場合を除き必要です。プロダクトごとにCLIコマンドを1つ実行します — [Adaptyでプロダクトを作成する](#create-your-products-in-adapty)を参照してください。
+3. **フローを構築する。** 画面については[フロー＆ペイウォールビルダー](adapty-flow-builder)を参照し、ペイウォール画面のプロダクトについては[購入のセットアップ](paywall-product-block)を、フローをアプリ内のどこに表示するかについては[プレースメントの作成](create-placement)を参照してください。
+4. **自分のコードでフローを表示し、購入を実行する。** 購入タップはAdaptyから登録したハンドラーに渡されます。
+5. **トランザクションを報告する。** 購入したプロダクトのペイウォールバリアントIDを使って報告することで、購入データがそのペイウォールに帰属したアナリティクスに反映されます。
+
+ステップ4と5はプラットフォームごとに異なります。各スニペットで、`flow`はプレースメントに対して取得した`AdaptyFlow`、`product`はユーザーがタップした`AdaptyPaywallProduct`、`myPurchaseApi`または`yourBillingClient`はすでに持っている購入コードの代わりです。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="swift" label="iOS">
+
+`getFlowConfiguration(forFlow:observerModeResolver:)`に`AdaptyObserverModeResolver`を渡します。購入がタップされると、Adapty は購入を直接行う代わりにリゾルバを呼び出します。
+
+```swift showLineNumbers title="Swift"
+final class MyObserverModeResolver: AdaptyObserverModeResolver {
+    func observerMode(
+        didInitiatePurchase product: AdaptyPaywallProduct,
+        onStartPurchase: @MainActor @Sendable @escaping () -> Void,
+        onFinishPurchase: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartPurchase() // the flow shows its loading indicator
+            do {
+                // your own purchase code, returning StoreKit's VerificationResult<Transaction>
+                let verificationResult = try await myPurchaseApi.purchase(product.vendorProductId)
+                try await Adapty.reportTransaction(verificationResult, withVariationId: product.variationId)
+            } catch {
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    func observerModeDidInitiateRestorePurchases(
+        onStartRestore: @MainActor @Sendable @escaping () -> Void,
+        onFinishRestore: @MainActor @Sendable @escaping () -> Void
+    ) {
+        Task { @MainActor in
+            onStartRestore()
+            try? await myPurchaseApi.restore()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+Then present the flow with the resolver attached:
+
+```swift showLineNumbers title="Swift"
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        observerModeResolver: MyObserverModeResolver()
+    )
+
+    let visualFlow = try AdaptyUI.flowController(
+        with: flowConfiguration,
+        delegate: self // an AdaptyFlowControllerDelegate
+    )
+
+    present(visualFlow, animated: true)
+} catch {
+    // handle the error
+}
+```
+
+[Observer モードでのフローの表示](ios-present-paywall-builder-paywalls-in-observer-mode)および[Observer モードでのトランザクションの報告](report-transactions-observer-mode)を参照してください。
+
+</TabItem>
+<TabItem value="android" label="Android">
+
+フロービューを作成する際に `AdaptyUiObserverModeHandler` を渡してください。このハンドラーは `AdaptyUI.getFlowView`、`AdaptyFlowScreen`、および `AdaptyFlowView` のパラメーターです。`onPurchaseInitiated` が購入タップを受け取ります。`getRestoreHandler` はオプションです。省略した場合、復元処理は SDK が担当します。
+
+:::warning
+必ずハンドラーを渡してください。ハンドラーを渡さない場合、SDK が自動的に購入を完了させます。ユーザーは Adapty を通じて課金され、その旨はログの警告にのみ記録されます。iOS では同じ設定漏れにより購入が失敗します。
+:::
+
+```kotlin showLineNumbers
+val observerModeHandler = object : AdaptyUiObserverModeHandler {
+    override fun onPurchaseInitiated(
+        product: AdaptyPaywallProduct,
+        onStartPurchase: AdaptyUiObserverModeHandler.PurchaseStartCallback,
+        onFinishPurchase: AdaptyUiObserverModeHandler.PurchaseFinishCallback,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        yourBillingClient.makePurchase(
+            product,
+            onSuccess = { purchase ->
+                Adapty.reportTransaction(
+                    TransactionInfo.fromPurchase(purchase),
+                    product.variationId,
+                ) {
+                    onFinishPurchase() // the flow hides the loading indicator
+                }
+            },
+            onError = { onFinishPurchase() },
+            onCancel = { onFinishPurchase() },
+        )
+    }
+
+    override fun getRestoreHandler() =
+        AdaptyUiObserverModeHandler.RestoreHandler { onStartRestore, onFinishRestore ->
+            onStartRestore()
+            yourBillingClient.restorePurchases(
+                onSuccess = { onFinishRestore() },
+                onError = { onFinishRestore() },
+            )
+        }
+}
+```
+
+次に、このハンドラーをフロービューに渡します：
+
+```kotlin showLineNumbers
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products,
+    eventListener,
+    observerModeHandler = observerModeHandler,
+)
+```
+
+[Observerモードでフローを表示する](android-present-paywall-builder-paywalls-in-observer-mode)と[Observerモードでトランザクションを報告する](report-transactions-observer-mode-android)を参照してください。
+
+</TabItem>
+<TabItem value="react-native" label="React Native">
+
+`onObserverPurchaseInitiated` と `onObserverRestoreInitiated` を `AdaptyFlowView` の props として渡すか、`view.setEventHandlers` で登録してください。
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }) {
+  const onObserverPurchaseInitiated = useCallback<
+    FlowEventHandlers['onObserverPurchaseInitiated']
+  >((product, onStartPurchase, onFinishPurchase) => {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) => adapty.reportTransaction(transactionId, product.variationId))
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+  }, []);
+
+  const onObserverRestoreInitiated = useCallback<
+    FlowEventHandlers['onObserverRestoreInitiated']
+  >((onStartRestore, onFinishRestore) => {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+  }, []);
+
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      onObserverPurchaseInitiated={onObserverPurchaseInitiated}
+      onObserverRestoreInitiated={onObserverRestoreInitiated}
+      // ... your other event handlers
+    />
+  );
+}
+```
+
+組み込みコンポーネントでは、ハンドラーが返す値によってフローが閉じられることはありません。購入またはリストアが成功した後、自分でコンポーネントをアンマウントしてください。
+
+[Observerモードでフローを表示する](react-native-present-flows-in-observer-mode)および[Observerモードでトランザクションを報告する](report-transactions-observer-mode-react-native)を参照してください。
+
+</TabItem>
+<TabItem value="flutter" label="Flutter">
+
+`AdaptyUI().setObserverModeResolver` を使用してリゾルバーを登録します。これは `Adapty` ではなく `AdaptyUI()` に対して行います。`observerModeDidInitiatePurchase` と `observerModeDidInitiateRestore` の両方を実装してください。どちらも必須であり、それぞれ最初の引数としてフロービューを受け取ります。
+
+```dart showLineNumbers title="Flutter"
+class MyObserverModeResolver extends AdaptyUIObserverModeResolver {
+  @override
+  void observerModeDidInitiatePurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    void Function() onStartPurchase,
+    void Function() onFinishPurchase,
+  ) async {
+    onStartPurchase(); // the flow shows its loading indicator
+    try {
+      final transactionId = await myPurchaseApi(product.vendorProductId);
+      await Adapty().reportTransaction(
+        transactionId: transactionId,
+        variationId: product.paywallVariationId,
+      );
+    } on AdaptyError catch (adaptyError) {
+      // handle the error
+    } finally {
+      onFinishPurchase(); // the flow hides the loading indicator
+    }
+  }
+
+  @override
+  void observerModeDidInitiateRestore(
+    AdaptyUIFlowView view,
+    void Function() onStartRestore,
+    void Function() onFinishRestore,
+  ) async {
+    onStartRestore();
+    try {
+      await myRestoreApi();
+    } finally {
+      onFinishRestore();
+    }
+  }
+}
+```
+
+フローを表示する前に、リゾルバーを一度だけ登録してください：
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setObserverModeResolver(MyObserverModeResolver());
+```
+
+詳細は[Observerモードでフローを表示する](flutter-present-flows-in-observer-mode)および[ObserverモードでトランザクションをReportする](report-transactions-observer-mode-flutter)を参照してください。
+
+</TabItem>
+<TabItem value="unity" label="Unity">
+
+Adapty.SetObserverModeResolver` を使用してリゾルバーを登録します。これは `AdaptyUI` ではなく `Adapty` に対して行います。`IAdaptyUIObserverModeResolver` を実装し、`FlowViewDidInitiatePurchase` と `FlowViewDidInitiateRestore` を含めてください。Unity のコールバック名は他のプラットフォームと異なります。
+
+```csharp showLineNumbers
+using System;
+using AdaptySDK;
+
+public class MyObserverModeResolver : IAdaptyUIObserverModeResolver
+{
+    public void FlowViewDidInitiatePurchase(
+        AdaptyUIFlowView view,
+        AdaptyPaywallProduct product,
+        Action onStartPurchase,
+        Action onFinishPurchase
+    )
+    {
+        onStartPurchase(); // the flow shows its loading indicator
+        MyPurchaseApi.Purchase(product.VendorProductId, (transactionId, purchaseError) =>
+        {
+            if (purchaseError != null)
+            {
+                onFinishPurchase();
+                return;
+            }
+
+            Adapty.ReportTransaction(transactionId, product.PaywallVariationId, (reportError) =>
+            {
+                onFinishPurchase(); // the flow hides the loading indicator
+            });
+        });
+    }
+
+    public void FlowViewDidInitiateRestore(
+        AdaptyUIFlowView view,
+        Action onStartRestore,
+        Action onFinishRestore
+    )
+    {
+        onStartRestore();
+        MyPurchaseApi.Restore((restoreError) => onFinishRestore());
+    }
+}
+```
+
+リゾルバーは、フローを表示する前に一度登録してください：
+
+```csharp showLineNumbers
+Adapty.SetObserverModeResolver(new MyObserverModeResolver());
+```
+
+[Observerモードでフローを表示する](unity-present-flows-in-observer-mode)および[ObserverモードでトランザクションをReportする](report-transactions-observer-mode-unity)を参照してください。
+
+</TabItem>
+<TabItem value="kmp" label="Kotlin Multiplatform">
+
+リゾルバーは `AdaptyUI.setObserverModeResolver` で登録してください。`observerModeDidInitiatePurchase` と `observerModeDidInitiateRestore` の両方を実装する必要があります。どちらも必須で、それぞれ最初の引数としてフロービューを受け取ります。
+
+```kotlin showLineNumbers
+
+class MyObserverModeResolver(
+    private val scope: CoroutineScope,
+) : AdaptyUIObserverModeResolver {
+
+    override fun observerModeDidInitiatePurchase(
+        view: AdaptyUIFlowView,
+        product: AdaptyPaywallProduct,
+        onStartPurchase: () -> Unit,
+        onFinishPurchase: () -> Unit,
+    ) {
+        onStartPurchase() // the flow shows its loading indicator
+        scope.launch {
+            val transactionId = myPurchaseApi(product.vendorProductId)
+            Adapty.reportTransaction(
+                transactionId = transactionId,
+                variationId = product.paywallVariationId,
+            ).onError { error ->
+                // handle the error
+            }
+            onFinishPurchase() // the flow hides the loading indicator
+        }
+    }
+
+    override fun observerModeDidInitiateRestore(
+        view: AdaptyUIFlowView,
+        onStartRestore: () -> Unit,
+        onFinishRestore: () -> Unit,
+    ) {
+        onStartRestore()
+        scope.launch {
+            myRestoreApi()
+            onFinishRestore()
+        }
+    }
+}
+```
+
+リゾルバーは、フローを表示する前に一度だけ登録してください：
+
+```kotlin showLineNumbers
+
+AdaptyUI.setObserverModeResolver(MyObserverModeResolver(scope))
+```
+
+詳細は [Observerモードでのフローの表示](kmp-present-flows-in-observer-mode) および [Observerモードでのトランザクションの報告](report-transactions-observer-mode-kmp) をご参照ください。
+
+</TabItem>
+<TabItem value="capacitor" label="Capacitor">
+
+`onObserverPurchaseInitiated` と `onObserverRestoreInitiated` は、作成するすべてのフロービューで `view.setEventHandlers` を使って設定してください。Capacitor には独立したリゾルバーオブジェクトがなく、この2つのハンドラーは通常のイベントハンドラーの一部です。
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+const unsubscribe = await view.setEventHandlers({
+  onObserverPurchaseInitiated(product, onStartPurchase, onFinishPurchase) {
+    onStartPurchase(); // the flow shows its loading indicator
+    myPurchaseApi(product.vendorProductId)
+      .then((transactionId) =>
+        adapty.reportTransaction({ transactionId, variationId: product.variationId }),
+      )
+      .finally(() => onFinishPurchase()); // the flow hides the loading indicator
+    return false; // keep the flow open; dismiss it yourself after success
+  },
+  onObserverRestoreInitiated(onStartRestore, onFinishRestore) {
+    onStartRestore();
+    myRestoreApi().finally(() => onFinishRestore());
+    return false;
+  },
+});
+```
+
+[Observer モードでフローを表示する](capacitor-present-flows-in-observer-mode)および[Observer モードでトランザクションをレポートする](report-transactions-observer-mode-capacitor)を参照してください。
+
+</TabItem>
+</Tabs>
+
+### オブザーバーモードの制限 \{#observer-mode-limits\}
+
+- **Adapty はアクセスを付与しません**: 購入イベントに応じてアクセスの付与や制限を行わず、更新や請求の再試行も処理しません。アクセスレベルの管理はあなた自身のコードが担います。
+- **トランザクションの完了はあなたのコードが行います**: Adapty はあなたのコードが行った購入を完了・確認しないため、各トランザクションのクローズはあなたの責任です。
+- **レポートは省略できません**: レポートと共に渡す `variationId` は、購入とそれを生み出したフローを結びつける唯一の手がかりです。すべてのトランザクションをレポートしないと、フローの指標や A/B テストの結果が不正確になります。
+
+## 別のベンダーをすでに使っている場合 \{#if-youre-already-using-another-vendor\}
+
+オブザーバーモードで必要なのは、コードで購入処理を行うことだけです。どのSDKを使って処理するかは関係ありません。RevenueCat、Superwall、Qonversionの上でも、自前のStoreKitやBilling Libraryコードの上でも、フローは同じように動作します。
+
+リリース前に決めておくべき3つのポイント：
+
+- **1つのシステムがトランザクションを完結させる**: 2つのSDKが同じ購入を両方で完結させようとすることが、最もよくある失敗です。
+- **1つのシステムがアクセスを管理する**: Observerモードでは Adapty は何も付与しないため、アクセスレベルはそのままにしておいてください。
+- **各購入を1回だけ報告する**: 同じトランザクションを2か所から報告すると、分析データが歪みます。
+
+他のベンダーから完全に移行する場合は、[RevenueCatからの移行](migration-from-revenuecat)または[Superwallからの移行](migration-from-superwall)を参照してください。
+
+### 代わりにAdaptyで購入処理を行う \{#let-adapty-make-the-purchase-instead\}
+
+:::tip
+ここではアプリがAdaptyを通じて購入を行うため、コード側は通常のAdaptyインテグレーションになります。[クイックスタート](quickstart)や[RevenueCatからの移行](migration-from-revenuecat)を参照するか、[SDKインテグレーションスキル](manage-adapty-with-ai)に任せてください。
+:::
+
+オブザーバーモードは最も手軽な導入方法です。RevenueCatのアナリティクスを維持しつつ[オブザーバーモードの制限](#observer-mode-limits)を回避したい場合は、両者の役割を入れ替えてください。Adaptyが[フルモード](observer-vs-full-mode)で動作してすべての購入処理を行い、RevenueCatは独自のオブザーバーモードで動作してAdaptyが行った購入を記録します。
+
+これにより、各課金がどのフロー、プレースメント、A/B テストのバリアントから発生したかをAdaptyが把握し、[アクセスレベル](access-level)の付与、更新処理、請求リトライ、返金対応を行います。
+
+RevenueCat側では、SDKを設定する際に `purchasesAreCompletedBy` をアプリ側に設定してください。iOSでは `.myApp`、Androidでは `MY_APP` を使用します。RevenueCatの[Using the SDK with your own IAP code](https://www.revenuecat.com/docs/migrating-to-revenuecat/sdk-or-not/finishing-transactions)には、各プラットフォームの設定方法、iOSが必要とするStoreKitのバージョン、および既存の購入履歴を取り込む `syncPurchases()` の呼び出し方が記載されています。AdaptyとRevenueCatの両方のSDKに同じユーザーIDを渡してください。Adaptyの[カスタマーユーザーID](how-profiles-work)とRevenueCatの `appUserID` を一致させないと、2つのダッシュボードで異なるユーザーを参照することになります。
+
+:::warning
+この設定により、RevenueCat のエンタイトルメントが信頼できる情報源としての役割を終え、Adapty のアクセスレベルがその役割を引き継ぎます。RevenueCat は引き続き監視を続け、ダッシュボードでのレポートも継続しますが、各購入情報は間接的に取得されるようになり、RevenueCat 自身のドキュメントに記載されているカバレッジ制限の範囲内での動作となります。現在 RevenueCat のエンタイトルメントを参照しているもの（アプリ、バックエンド、Web やデスクトップのビルドなど）はすべて、Adapty への移行またはコピーの参照が必要です。リリース前にこの点を整理しておいてください。その他は変更ありません。RevenueCat のアカウント、履歴、インテグレーションはすべてそのまま維持されます。
+:::

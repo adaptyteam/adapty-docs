@@ -1,0 +1,193 @@
+---
+title: "使用 iOS SDK 展示自定义元素"
+description: "在流程的每个自定义元素中展示原生 SwiftUI 视图，并在设备上测试流程。"
+metadataTitle: "展示自定义元素 | iOS SDK | Adapty 文档"
+---
+
+当包含[自定义元素](flow-custom-elements)的页面打开时，Adapty SDK 会将该元素的 Type 和 ID 传递给应用代码中的解析器。解析器返回以下内容之一：
+
+- **与 Type 和 ID 匹配的视图**：用户将看到原生 SwiftUI 视图，例如 Lottie 动画、交互式数据图表或摄像头预览。
+- **无视图**：用户将看到备用内容，即 Flow & Paywall Builder 中自定义元素内的内容。
+
+如果用户使用的是旧版本的应用——也就是完全没有解析器的版本——他们仍然会看到备用内容。因此，你可以在发布应用之前先发布流程。
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty iOS SDK 4.4 或更高版本**：旧版本会为每个自定义元素显示备用内容。
+- **原生 iOS 应用**：Flutter 等跨平台框架的 Adapty SDK 会为每个自定义元素显示备用内容。
+- **自定义元素的命名规范**：为每个原生视图指定一个 Type，例如 `lottie_animation`。Type 中只能使用小写字母、数字和下划线。若要区分相同 Type 的自定义元素，可为每个元素指定一个 ID，例如 `welcome_wave`。代码中的 Type 和 ID 必须与[流程与付费墙编辑工具](flow-custom-elements#add-and-configure)中的配置保持一致。
+
+## 为自定义元素创建视图 \{#create-views-for-custom-elements\}
+
+为每种 Type 创建一个原生 SwiftUI 视图，或复用应用中已有的视图。以下是 `lottie_animation` Type 的视图示例，用于播放 Lottie 动画：
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+### 查看要求与最佳实践 \{#view-requirements-and-best-practices\}
+
+- **尺寸**：
+  - **内边距与对齐**：确保原生视图适配你在 Flow 与付费墙编辑工具中为其分配的容器，并留出内边距。如果视图未能填满整个区域，默认会显示在该区域的左上角。若要移动它，请在自定义元素的 **Layout** 部分更改对齐方式。
+  - **自适应高度**：如果自定义元素的高度设置为 **Hug**，会自动拉伸填满可用空间的视图（如地图）将会折叠。请为自定义元素设置[**固定**高度](flow-custom-elements#add-and-configure)。
+- **流程操作**：原生视图无法触发流程操作，例如跳转到下一个屏幕。请将导航按钮、购买按钮及其他带有流程操作的按钮放在自定义元素之外。
+- **可选元素**：请将自定义元素放在产品卡片及其他[可选元素](flow-selectable-elements)之外。当选中状态改变时，原生视图可能会丢失其状态。
+- **导航处理**：当用户跳转到下一个屏幕时，SwiftUI 会执行原生视图的 `onDisappear` 操作。在此操作中，请停止视图启动的任务，例如相机会话、播放器和位置更新。对于异步任务，请使用 `.task`：视图消失时 SwiftUI 会自动取消它。当用户返回时，SDK 会再次调用解析器，SwiftUI 也会重置视图状态。
+- **UIKit 视图**：请使用 `UIViewRepresentable` 进行包装。
+
+## 编写解析器以匹配自定义元素和视图 \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+要编写解析器，需让某个类型遵循 `AdaptyUICustomElementsResolver` 协议，并实现 `view(forType:id:context:)` 方法。
+
+对于 `lottie_animation` 类型，以下解析器会返回 `LottieElementView`。其中 ID 指定的是应用包中的动画文件名，例如 `welcome_wave`：
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+在 `default` 分支中返回 `nil`。如果你在应用发布后[添加了带有新 Type 的自定义元素](flow-custom-elements#what-changes-require-an-app-release)，已发布版本的用户将看到其备用内容。
+
+解析器有以下要求：
+
+- **网络数据与播放器**：将网络数据和播放器保存在[原生视图](#create-views-for-custom-elements)的状态中，而非解析器中。SDK 在屏幕打开期间会多次调用解析器，例如在产品加载或购买开始时。解析器中的代码每次调用时都会重新执行，因此网络请求会重复发起，播放器也会从头开始。SwiftUI 会在多次调用之间保持原生视图的状态，所以数据只加载一次，播放器也能持续播放。请在 `.task` 或 `@StateObject` 中创建播放器、会话和网络请求，而不要在 `@State` 属性的初始值中创建。Swift 每次解析器创建视图时都会重新求值该初始值。
+- **每个自定义元素对应一个原生视图**：部分原生视图在屏幕打开后会发生变化，例如数据加载完成或用户点击时。请在视图的 `body` 中实现这些逻辑，而非在解析器中。如果解析器为同一个自定义元素返回不同的视图，SwiftUI 会重置该视图的状态。
+- **应用数据**：将持有数据的应用对象（例如带有[每日连续登录](custom-element-lottie-animation)的 `ObservableObject`）存储在解析器的属性中，将该对象传递给原生视图，并在视图中使用 `@ObservedObject` 观察它。复制到解析器中的值（例如连续登录天数）会保持创建解析器时的状态不变。不要为此数据使用环境对象：在 UIKit [流程控制器](ios-present-paywalls#present-flows-and-paywalls-in-uikit)中，原生视图无法接收到应用的 SwiftUI 环境。
+
+### 设置备用内容的显示条件 \{#set-conditions-for-fallback-content\}
+
+如需在自定义元素为空时向用户展示[备用内容](flow-custom-elements#set-fallback-content)，请在以下情况下返回 `nil`：
+
+- 无内容可渲染——所需的动画文件或数据文件缺失。
+- 无数据可处理——用户跳过了某道测验题，导致数据不完整。
+- 访问被禁止——权限被拒绝，视图无法访问相应资源。
+
+例如，[resolver](#write-a-resolver-to-match-custom-elements-and-views) 中的 `guard` 语句会在动画文件缺失时返回 `nil`。
+
+对于权限请求，仅当用户在屏幕打开之前已明确拒绝时，才返回 `nil`。如果用户尚未响应权限请求，请返回原生视图而非 `nil`，并在该视图内请求权限。例如，在[在流程中的地图上显示附近地点](custom-element-map#3-match-the-map-to-the-custom-element)中，iOS 会在地图出现时弹出位置访问提示。一旦用户授予权限，原生视图即可立即显示地图。如果在用户响应之前就返回 `nil`，则即使用户已授予权限，备用内容也会保持显示，直到 SDK 再次调用 resolver 为止。
+
+## 将解析器传递给 SDK \{#pass-the-resolver-to-the-sdk\}
+
+首先配置一个全局解析器。SDK 会在每个没有专属解析器的流程中调用它。用户无需更新应用，即可在新流程和 A/B 测试中看到你的原生视图。这些视图仍会为每位用户显示其专属数据（例如[每日连续打卡记录](custom-element-lottie-animation)），因为它们会直接从你的应用中读取该数据。
+
+当流程需要应用在打开该流程时才具备的数据时，可为其附加一个解析器。例如，付费墙显示[用户在前一个流程中输入的体重](custom-element-interactive-chart)，或预览用户想要导出的文档。你也可以为某个流程附加解析器，以便在该流程中为某个 Type 显示不同的视图。
+
+### 设置全局解析器 \{#set-an-app-wide-resolver\}
+
+如需在所有流程中使用解析器，请在应用启动时调用一次 `AdaptyUI.setCustomElementsResolver(_:)`：
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+:::tip
+更简单但功能有限的替代方案是传入一个以类型为键的 `[String: AdaptyUICustomElementBuilder]` 字典。这种方式代码量更少，但无法[为备用内容设置条件](#set-conditions-for-fallback-content)。
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+:::
+
+### 将解析器附加到单个流程 \{#attach-a-resolver-to-one-flow\}
+
+附加到某个流程的解析器会替换该流程中的全局解析器。传递给该解析器的值在你获取流程配置时保持不变。若要显示新值，请重新获取配置。
+
+要在此流程中保留全局视图，请将全局解析器传入该解析器，并对其他 Types 和 IDs 调用全局解析器。以下解析器会预览用户想要导出的文档，并对所有其他自定义元素调用全局解析器：
+
+```swift showLineNumbers title="Swift"
+
+struct ExportPaywallResolver: AdaptyUICustomElementsResolver {
+    let document: Document // the document that the user wants to export
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        if type == "document_preview" {
+            return AnyView(DocumentPreview(document: document))
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+在获取流程配置时，将解析器附加到流程：
+
+```swift showLineNumbers title="Swift"
+func showExportPaywall(flow: AdaptyFlow, document: Document) async {
+    do {
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: ExportPaywallResolver(
+                document: document,
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        // present the flow
+    } catch {
+        // handle the error
+    }
+}
+```
+
+如果你使用字典而非解析器，请合并这两个字典，并将结果附加到流程中：`appWideViews.merging(flowViews) { _, flowView in flowView }`。对于同时存在于两个字典中的类型，此代码会保留当前流程的视图。
+
+## 在设备上测试 \{#test-on-a-device\}
+
+流程与付费墙编辑工具无法运行你的应用代码，因此其画布只会显示备用内容。原生视图中的错误可能导致应用崩溃。在发布应用之前，请在设备上测试每一个包含自定义元素的页面：
+
+1. 若要查看每个流程的最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 在设备上运行包含解析器的构建版本。打开每个包含自定义元素的页面，确认原生视图已正常显示并与自定义元素匹配。如果视图支持滚动或拖拽手势，请一并测试。
+3. 如果显示的是备用内容而非原生视图，请在 Xcode 控制台中查找以下警告：`custom element <type>:<id> is not served by a resolver`。然后确认以下几点：
+   - 警告中的 Type 和 ID 与代码中的完全一致，包括大小写。
+   - 应用拥有该视图所需的文件、数据或权限。
+   - 应用在包含自定义元素的页面打开之前，已完成全局解析器的设置。
+   - 若已为该流程[附加解析器](#attach-a-resolver-to-one-flow)，请确认其能针对对应的 Type 和 ID 返回视图。
+
+   如果警告未出现，请确认应用使用的是 Adapty iOS SDK 4.4 或更高版本，并且 [`Adapty.logLevel`](sdk-installation-ios#logging) 未设置为 `.error`。
+4. 若要预览备用付费墙，请将 Type 返回值设置为 `nil`，然后重新打开该页面。
+
+## 示例 \{#examples\}
+
+每个示例都展示了编辑工具中的配置方式和应用代码：
+
+- [使用 Lottie 动画展示用户进度](custom-element-lottie-animation)：一个随连续打卡天数增长而填充的圆环。
+- [在付费墙中展示可交互的体重目标图表](custom-element-interactive-chart)：一个体重目标图表，位于用户引导流程之后的付费墙流程中。
+- [在流程中显示附近地点的地图](custom-element-map)：展示每位用户附近健身中心的地图。

@@ -38,31 +38,42 @@ adapty paywalls get --app <app-id> <paywall-id>
 
 ## adapty paywalls create
 
-创建一个新的[付费墙](paywalls)。
+创建新[付费墙](paywalls)。
 
 ```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
 ```
 
-| 标志 | 是否必填 | 描述 |
+| 参数 | 是否必填 | 描述 |
 |---|---|---|
 | `--app` | 是 | App ID（UUID） |
 | `--title` | 是 | 付费墙标题 |
-| `--product-id` | 是 | [产品](product) ID（UUID）。重复使用可添加多个产品：`--product-id <id1> --product-id <id2>` |
+| `--products` | 是 | 产品的 JSON 数组，按显示顺序排列：`[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`。只有 `product_id`（[产品](product) ID，UUID）是必填项；其他字段来自 `paywalls get` 输出的 `products` 列表 |
+| `--remote-configs` | 否 | `{locale, data}` 条目的 JSON 数组，其中 `data` 是 JSON 字符串格式的[远程配置](customize-paywall-with-remote-config) |
+| `--use-paywall-builder-v4` | 否 | 付费墙是否使用[付费墙编辑工具](adapty-paywall-builder) |
+| `--screenshot-id` | 否 | 付费墙截图的图片 ID（整数），或 `null` |
+| `--builder-screenshot-id` | 否 | 编辑工具截图的图片 ID（整数），或 `null` |
+| `--web-purchase-url` | 否 | 网页购买链接，或 `null` |
+| `--product-id` | 否 | 已弃用，请使用 `--products`。[产品](product) ID（UUID），每个产品重复一次。该参数设置不带优惠和计费方案的产品，不能与 `--products` 同时使用 |
 
-## adapty paywalls update \{#adapty-paywalls-update\}
+您未填写的字段将使用看板默认值：无远程配置、无编辑工具、无截图、无网页购买 URL。除 `--app`、`--title` 和 `--product-id` 之外的其他标志需要 CLI 0.20.0 或更高版本。
+
+## adapty paywalls update
 
 替换现有[付费墙](paywalls)的所有字段。
 
 :::important
-付费墙一旦与版位关联，其产品便无法更改。如需在已上线的付费墙中使用不同产品，请创建新的付费墙，并更新版位使其指向新付费墙。
+付费墙一旦关联到版位，其产品便无法更改。如需在上线的付费墙中使用不同产品，请创建新的付费墙并更新版位以指向该付费墙。
 :::
 
+如需修改某个字段，先读取付费墙，在文件中编辑该字段，然后将整个文件发送回去：
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-此命令会替换付费墙的所有字段，包括完整的产品列表。
+该命令会替换付费墙的每个字段，包括完整的产品列表和全部远程配置列表。每个字段都是必填项：如果缺少某个标志，命令将以退出码 2 结束，列出缺失的标志，并且不发送任何请求。此功能需要 CLI 0.20.0 或更高版本：更早的版本仅支持 `--title` 和 `--product-id`。
 
 | 参数 | 描述 |
 |---|---|
@@ -71,8 +82,15 @@ adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --p
 | 参数 | 是否必填 | 说明 |
 |---|---|---|
 | `--app` | 是 | 应用 ID（UUID） |
-| `--title` | 是 | 付费墙标题 |
-| `--product-id` | 是 | [产品](product) ID（UUID）。如需添加多个产品，请重复使用：`--product-id <id1> --product-id <id2>` |
+| `--file` | 与字段参数二选一 | JSON 文件路径（包含完整付费墙内容），或使用 `-` 从标准输入读取。`paywalls get --json` 的输出可直接使用，其中的 `id` 会被忽略。不可与任何字段参数同时使用 |
+| `--title` | 不使用 `--file` 时 | 付费墙标题 |
+| `--products` | 不使用 `--file` 时 | 产品的 JSON 数组，格式同 [`paywalls create`](#adapty-paywalls-create)。如需保留优惠和计费方案，请传入 `paywalls get` 输出的列表 |
+| `--remote-configs` | 不使用 `--file` 时 | `{locale, data}` 条目的 JSON 数组，其中 `data` 为 JSON 字符串。传入 `[]` 将删除所有远程配置 |
+| `--use-paywall-builder-v4` 或 `--no-use-paywall-builder-v4` | 不使用 `--file` 时 | 付费墙是否使用付费墙编辑工具。请传入 `paywalls get` 中的值：`--no-use-paywall-builder-v4` 会从设备上移除编辑工具布局 |
+| `--screenshot-id` | 不使用 `--file` 时 | 付费墙截图的图片 ID，或 `null` |
+| `--builder-screenshot-id` | 不使用 `--file` 时 | 编辑工具截图的图片 ID，或 `null` |
+| `--web-purchase-url` | 不使用 `--file` 时 | 网页购买链接，或 `null` |
+| `--product-id` | 否 | 已废弃，请改用 `--products`。设置不含优惠和计费方案的产品 |
 
 ## adapty paywalls placements
 

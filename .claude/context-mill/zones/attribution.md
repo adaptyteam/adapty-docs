@@ -192,7 +192,7 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
 | ua-integrations | entry | marketer, analyst | 4 | tutorial |
 | ua-metrics | — | marketer, analyst | 6 | tutorial |
 | ua-paddle | — | marketer, analyst | 6 | tutorial |
-| ua-predicted-metrics | — | marketer, analyst | 5 | tutorial |
+| ua-predicted-metrics | — | marketer, analyst | 6 | tutorial |
 | ua-stripe | — | marketer, analyst | 6 | tutorial |
 | ua-tag-ad-urls | — | marketer, analyst | 2 | tutorial |
 | ua-tiktok | — | marketer, analyst | 10 | tutorial |

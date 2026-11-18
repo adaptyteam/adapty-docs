@@ -1,15 +1,26 @@
 ---
-title: "Перенаправление событий в Adapty"
-description: ""
+title: "Передача уведомлений сервера App Store в Adapty через ваш бэкенд"
+description: "Если ваш бэкенд должен сохранять URL в App Store Connect, передавайте уведомления сервера Apple в Adapty без изменений, чтобы Adapty получал события подписки."
 metadataTitle: ""
 
 ---
 
-Apple и Google предоставляют возможность отправлять уведомления об обновлениях подписок сразу в момент их возникновения на их серверах. Важно передавать эти события в Adapty, чтобы избежать задержек при обработке статуса подписки и обеспечить наилучший опыт для ваших пользователей.
+Если ваш бэкенд должен сохранить свой URL в App Store Connect, передавайте серверные уведомления App Store из вашего бэкенда в Adapty без изменений. Если бэкенду не нужен собственный URL в App Store Connect, [настройте пересылку на ваш бэкенд в Adapty](enable-app-store-server-notifications#raw-events-forwarding) — этот вариант не требует кода.
 
-В большинстве случаев достаточно [включить серверные уведомления App Store](enable-app-store-server-notifications) или [включить уведомления реального времени (RTDN) в Google Play Console](enable-real-time-developer-notifications-rtdn) — никакого кода писать не нужно.
+Adapty обрабатывает уведомления, поступающие с вашего бэкенда, так же, как если бы их отправила Apple напрямую. С [Refund Saver](refund-saver) Adapty по-прежнему отвечает на запросы возврата средств среди этих уведомлений.
 
-Однако если вы уже обрабатываете эти события и хотите продолжать делать это, убедитесь, что вы пересылаете события в Adapty со своего бэкенда. Это просто: нужно отправить необработанный \(без каких-либо изменений\) payload от Apple или Google в качестве тела запроса на наш сервер, используя тот же URL из настроек.
+Если ваш бэкенд получает уведомления о реальном времени от Google Play через собственный топик Pub/Sub, никаких доработок для передачи их в Adapty не требуется. [Добавьте push-подписку для Adapty к этому топику](enable-real-time-developer-notifications-rtdn#send-notifications-to-two-adapty-apps).
+
+Чтобы передавать серверные уведомления App Store в Adapty:
+
+1. В Adapty откройте приложение, которое подключаете: у каждого приложения Adapty есть собственный URL для уведомлений. Перейдите в [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk). В разделе **App Store server notifications** скопируйте URL из поля **URL for App Store server notifications**.
+2. В вашем бэкенде отправляйте каждое уведомление от Apple на скопированный URL. В каждом запросе:
+
+   - Оставьте тело запроса от Apple без изменений: `{"signedPayload": "…"}`.
+   - Укажите заголовок `Content-Type: application/json`.
+   - Не добавляйте заголовок `Authorization`.
+
+   Если Adapty также пересылает уведомления на ваш бэкенд, не отправляйте их обратно в Adapty.
 
 Вот примеры для разных языков программирования:
 
@@ -18,9 +29,9 @@ Apple и Google предоставляют возможность отправл
 
 ```python showLineNumbers
 
-url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/" # don't forget to replace this URL
+url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" # не забудьте заменить этот URL
 
-payload = '{"latest_receipt":"abc=","notification_type":"INITIAL_BUY",...}' # json encoded payload from Apple/Google
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # тело запроса от Apple, без изменений
 
 headers = {
   'Content-Type': 'application/json'
@@ -30,19 +41,19 @@ response = requests.request("POST", url, headers=headers, data=payload)
 ```
 
 </TabItem>
-<TabItem value="javascript" label="Javascript" default>  
+<TabItem value="javascript" label="Javascript" default>
 
 ```javascript  showLineNumbers
 const axios = require('axios');
 
-const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/'; // don't forget to replace this URL
+const url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
 
-const payload = '{"latest_receipt":"abc=","notification_type":"INITIAL_BUY",...}'; // json encoded payload from Apple/Google
+const payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
 
 const config = {
   method: 'post',
   url: url,
-  headers: { 
+  headers: {
     'Content-Type': 'application/json'
   },
   data: payload,
@@ -52,15 +63,15 @@ const response = await axios(config);
 ```
 
 </TabItem>
-<TabItem value="php" label="PHP" default> 
+<TabItem value="php" label="PHP" default>
 
 ```php  showLineNumbers
 <?php
 require_once 'HTTP/Request2.php';
 
-$url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/'; // don't forget to replace this URL
+$url = 'https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/'; // don't forget to replace this URL
 
-$payload = '{"latest_receipt":"abc=","notification_type":"INITIAL_BUY",...}'; // json encoded payload from Apple/Google
+$payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}'; // Apple's request body, unchanged
 
 $request = new HTTP_Request2();
 $request->setUrl($url);
@@ -76,15 +87,15 @@ $response = $request->send();
 ```
 
 </TabItem>
-<TabItem value="ruby" label="Ruby" default>   
+<TabItem value="ruby" label="Ruby" default>
 
 ```ruby  showLineNumbers
 require "uri"
 require "net/http"
 
-url = URI("https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/") # don't forget to replace this URL
+url = URI("https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/") # don't forget to replace this URL
 
-payload = '{"latest_receipt":"abc=","notification_type":"INITIAL_BUY",...}' # json encoded payload from Apple/Google
+payload = '{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}' # Apple's request body, unchanged
 
 https = Net::HTTP.new(url.host, url.port)
 https.use_ssl = true
@@ -97,12 +108,12 @@ response = https.request(request)
 ```
 
 </TabItem>
-<TabItem value="java" label="Java" default> 
+<TabItem value="java" label="Java" default>
 
 ```java showLineNumbers
-String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/"; // don't forget to replace this URL
+String url = "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/"; // don't forget to replace this URL
 
-String payload = "{\"latest_receipt\":\"abc=\",\"notification_type\":\"INITIAL_BUY\",...}" // json encoded payload from Apple/Google
+String payload = "{\"signedPayload\":\"eyJhbGciOiJFUzI1NiIs...\"}"; // Apple's request body, unchanged
 
 OkHttpClient client = new OkHttpClient().newBuilder()
   .build();
@@ -117,7 +128,7 @@ Response response = client.newCall(request).execute();
 ```
 
 </TabItem>
-<TabItem value="go" label="Go" default>    
+<TabItem value="go" label="Go" default>
 
   ```go showLineNumbers
 package main
@@ -125,13 +136,12 @@ package main
 	"fmt"
 	"strings"
 	"net/http"
-	"io"
 )
 
 func main() {
-	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad456/" // Replace this with the actual URL
+	url := "https://api.adapty.io/api/v1/sdk/apple/webhook/123a258e62fad41bfa734f4b0dbcad45/" // Replace this with the actual URL
 
-	payload := strings.NewReader(`{"latest_receipt":"abc=","notification_type":"INITIAL_BUY"}`) // Ensure valid JSON
+	payload := strings.NewReader(`{"signedPayload":"eyJhbGciOiJFUzI1NiIs..."}`) // Apple's request body, unchanged
 
 	method := "POST"
 
@@ -153,3 +163,5 @@ func main() {
   ```
 
 </TabItem>  </Tabs>
+
+Ответ `200` не подтверждает, что Adapty смог использовать уведомление. Adapty отвечает до того, как декодирует подписанный payload. Чтобы убедиться, что уведомления доходят до Adapty, совершите [покупку в песочнице](test-purchases-in-sandbox). Затем проверьте, что [статус уведомлений](enable-app-store-server-notifications#check-that-notifications-reach-adapty) в разделе **App Store server notifications** отображается как **Active**.

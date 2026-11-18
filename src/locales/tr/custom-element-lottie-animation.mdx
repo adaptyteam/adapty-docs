@@ -1,0 +1,139 @@
+---
+title: "Kullanıcı ilerlemesini Lottie animasyonuyla göster"
+description: "Her kullanıcının ilerlemesini, örneğin günlük seriyi, bir flow ekranında Lottie animasyonu olarak görüntüle."
+metadataTitle: "Kullanıcı ilerlemesini Lottie animasyonuyla göster | Flow'lar ve paywalllar | Adapty Dokümanları"
+---
+
+Kullanıcının ilerlemesini Lottie animasyonu olarak görüntülemek için bu tarifi izle — örneğin, günlük serilerini belirtmek için dolup taşan bir halka. Uygulamanız animasyonu, bir [özel element](flow-custom-elements) içinde yerel bir Lottie görünümü olarak render eder.
+
+:::tip
+Bu tarif yalnızca iOS uygulamalarını kapsar. Diğer framework'lerle oluşturulan uygulamalar, özel öğelerin yalnızca [yedek içeriğini](flow-custom-elements#set-fallback-content) görüntüler. Android ve çapraz platform framework desteği yakında geliyor.
+:::
+
+<DocVideo id="custom-element-lottie-demo.mp4" width="300px" alt="Tamamlanan flow: kullanıcı 'See my streak' düğmesine dokunuyor ve bir sonraki ekranda halka 7 günden 4'ünü dolduruyor." />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Uygulamanızı Adapty iOS SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel öğe için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [çekecek](get-pb-paywalls) ve [gösterecek](ios-present-paywalls) şekilde ayarlayın.
+- Swift Package Manager aracılığıyla `https://github.com/airbnb/lottie-spm.git` adresinden uygulamanıza Lottie ekleyin.
+- `.json` formatında bir Lottie animasyonu hazırlayın ya da örnek [`streak_ring.json`](https://raw.githubusercontent.com/adaptyteam/adapty-docs/refs/heads/main/Downloads/streak_ring.json) dosyasını indirin. Uygulama, animasyonu baştan oynatır ve ilerlemeyle orantılı olarak durdurur; örneğin %50 için animasyonun yarısında durur. Tam ilerlemeyi göstermek için animasyonun şu özelliklere sahip olması gerekir:
+  - İlk karede hiç ilerleme olmamalı, son karede ise tam ilerleme gösterilmeli.
+  - Hız sabit olmalı, easing (yumuşatma) bulunmamalı. Animasyon yavaş başlayıp hızlanıyorsa, yarı yolda gerçek ilerlemenin yarısından daha azını gösterir.
+
+## 1. Özel öğeyi ekrana ekleyin \{#1-add-the-custom-element-to-the-screen\}
+
+Flow & Paywall Builder'da bir flow ekranına [özel öğe ekleyin](flow-custom-elements#add-and-configure) ve animasyon için ayarlayın:
+
+- **Type**: `lottie_animation`.
+- **ID**: `streak_ring`. Bu tarifde ID, aynı zamanda animasyon dosyasının adıdır.
+- **Height**: Varsayılan **Fixed** yüksekliği koruyun. Animasyon, özel öğeye sığacak şekilde ölçeklenir.
+
+Özel elementin içine, yüzüğün durağan bir görüntüsüyle bir [**Image**](custom-media#image) ekleyin. Uygulamanızın eski sürümlerini kullanan kullanıcılar, animasyonu oynatamadığında bunu [yedek](flow-custom-elements#set-fallback-content) olarak görür.
+
+## 2. Animasyon dosyasını uygulamanıza ekleyin \{#2-add-the-animation-file-to-your-app\}
+
+Xcode'da, animasyon dosyasını uygulama hedefinize ekleyin. `.json` uzantısı olmadan dosya adı, özel öğenin ID'siyle eşleşmelidir; örneğin `streak_ring` için `streak_ring.json`.
+
+## 3. Animasyon görünümünü oluşturun \{#create-the-animation-view\}
+
+Streak için bir model ve animasyonu oynatacak bir SwiftUI görünümü oluşturun. Uygulamanız streak değiştiğinde modeli günceller. Görünüm modeli okur, bu sayede ekran açıldığında halka mevcut streak'i gösterir:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` halkayı bir kez, boştan `progress` değerine kadar doldurur. Uygulamanız streak'i zaten bir `ObservableObject` içinde tutuyorsa, `StreakStore` yerine o nesneyi kullanabilirsiniz.
+
+## 4. Animasyonu özel öğeyle eşleştirin \{#match-the-animation-to-the-custom-element\}
+
+[Uygulama genelindeki resolver'ınıza](ios-flow-custom-elements#set-an-app-wide-resolver) streak modeli için bir property ekleyin. Ardından `lottie_animation` Türü ve `streak_ring` ID'si için `StreakRingView` döndüren bir case ekleyin. Vurgulanan satırlar eklemeniz gerekenleri gösteriyor. Uygulamanızda henüz uygulama genelinde bir [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yoksa kodun tamamını kopyalayabilirsiniz:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift" {2,6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+`streak_ring` case'ini diğer tüm `lottie_animation` case'lerinden önce yerleştirin; çünkü Swift yalnızca eşleşen ilk case'i çalıştırır. Uygulama bundle'ında ilgili ID için bir dosya yoksa, resolver `nil` döndürür ve kullanıcılar yedek içeriği görür.
+
+Resolver'ı streak modeliyle oluşturun ve uygulama genelinde geçerli resolver olarak ayarlayın. `AdaptyUI.setCustomElementsResolver(_:)` fonksiyonunu, örneğin uygulama başlangıcında, yalnızca bir kez çağırın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+// the streak model that your app updates
+@MainActor let streakStore = StreakStore()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(streakStore: streakStore)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Cihazda Test Edin \{#5-test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramadığı için tuval yalnızca yedek görseli gösterir. Animasyonu önizlemek için:
+
+1. [Flow'u yayınlayın](builder-save-publish). Önbelleğe alınmış sürüm yerine en son yayınlanan sürümü görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Resolver'ı içeren uygulamanızın bir derlemesini çalıştırın. Streak'i 0, 4 ve 7 gün gibi birkaç farklı değere ayarlayın. Her değer için ekranı açın ve halkanın o değere kadar dolduğunu doğrulayın.
+
+Yedek görseli test etmek için animasyon dosyasını derlemeden kaldırın ve ekranı yeniden açın.
+
+Yedek içeriğin animasyon yerine neden göründüğünü anlamak için iOS kılavuzunun [Cihazda test etme](ios-flow-custom-elements#test-on-a-device) bölümündeki talimatları izleyin.

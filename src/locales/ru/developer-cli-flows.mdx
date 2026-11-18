@@ -128,10 +128,11 @@ adapty flows config get --app <app-id> <flow-id>
 
 ## adapty flows config update
 
-Записывает конфигурацию билдера для флоу.
+Запишите конфигурацию билдера флоу и его Remote Config.
 
 ```bash
-adapty flows config update --app <app-id> <flow-id> --config-file config.json
+adapty flows config get --app <app-id> <flow-id> --json > flow.json
+adapty flows config update --app <app-id> <flow-id> --file flow.json
 ```
 
 | Аргумент | Описание |
@@ -141,10 +142,19 @@ adapty flows config update --app <app-id> <flow-id> --config-file config.json
 | Флаг | Обязательный | Описание |
 |---|---|---|
 | `--app` | Да | ID приложения (UUID) |
-| `--config` | Один из двух | Конфиг Builder в виде JSON-строки |
-| `--config-file` | Один из двух | Путь к JSON-файлу с конфигом Builder или `-` для чтения из stdin |
-| `--remote-configs` | Нет | JSON-массив записей `{locale, data}`, где `data` — Remote Config в виде строки |
-| `--expected-updated-at` | Нет | Значение `updated_at` из предыдущего вызова `flows config get`. Если конфиг изменился после этого чтения, команда завершится с ошибкой вместо перезаписи изменений. Опустите параметр, чтобы перезаписать безусловно |
+| `--file` | Вместо `--config`, `--config-file` и `--remote-configs` | Путь к JSON-файлу с полями `config` и `remote_configs`, или `-` для чтения из stdin. Вывод команды `flows config get --json` подходит как есть. Остальные ключи игнорируются |
+| `--config` | Без `--file`: один из `--config` и `--config-file` | Конфигурация билдера в виде JSON-строки |
+| `--config-file` | Без `--file`: один из `--config` и `--config-file` | Путь к JSON-файлу с конфигурацией билдера, или `-` для чтения из stdin |
+| `--remote-configs` | Без `--file` | JSON-массив записей `{locale, data}`, где `data` — Remote Config в виде строки. `[]` удаляет все Remote Config |
+| `--expected-updated-at` | Нет | Значение `updated_at` из предыдущего вызова `flows config get`. Если конфигурация изменилась после этого чтения, команда завершится с ошибкой вместо того, чтобы перезаписать изменения. Опустите этот флаг, чтобы перезаписывать безусловно |
+
+Запись заменяет конфиг и весь список Remote Config'ов. Чтобы сохранить Remote Config'и, передайте `remote_configs` из `flows config get --json`. Без `--file` команда требует одновременно и конфиг, и `--remote-configs`: если один из них отсутствует, она завершается с кодом 2 и не отправляет запрос. Флаг `--file` и обязательный `--remote-configs` требуют CLI версии 0.20.0 или выше.
+
+Чтобы записать первый конфиг нового флоу, передайте пустой список Remote Config'ов:
+
+```bash
+adapty flows config update --app <app-id> <flow-id> --config-file config.json --remote-configs '[]'
+```
 
 Сохранение конфига создаёт черновик, но не публикует его. Для опубликованного флоу запись создаёт новую версию: статус флоу становится `dirty`, и пользователи видят опубликованную версию до тех пор, пока вы не выполните [`flows publish`](#adapty-flows-publish).
 
@@ -190,21 +200,41 @@ adapty flows config preview ./config.json --screen <screen-id> --device iphone-1
 
 ## adapty flows media upload
 
-Загрузите изображение для использования в конфиге флоу.
+Загрузка изображения для использования в конфигурации флоу.
 
 ```bash
 adapty flows media upload --app <app-id> ./hero.png
 ```
 
-| Аргумент | Описание |
+| Argument | Description |
 |---|---|
-| `file` | Путь к файлу изображения |
+| `file` | Path to the image file |
 
-| Флаг | Обязательный | Описание |
+| Flag | Required | Description |
 |---|---|---|
-| `--app` | Да | ID приложения (UUID) |
+| `--app` | Yes | App ID (UUID) |
 
-Поддерживаемые форматы: GIF, HEIC, JPEG, PNG, SVG и WebP. В ответе содержатся `id`, `name` изображения и CDN `url` для ссылки из конфига.
+Допустимые форматы: PNG, JPEG, WebP и SVG. Ответ содержит `id`, `name` изображения и CDN `url` для ссылки из конфига. Чтобы загрузить видео, используйте [`flows media upload-video`](#adapty-flows-media-upload-video).
+
+## adapty flows media upload-video
+
+Загрузить видео для использования в конфигурации флоу.
+
+```bash
+adapty flows media upload-video --app <app-id> ./intro.mp4
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Path to the video file |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Допустимые форматы: MP4 и WebM. Видео должно быть не длиннее 30 секунд и не более 50 МБ, а ширина и высота — не менее 640 пикселей каждая. GIF не поддерживается; команда не конвертирует анимированные изображения в видео.
+
+Ответ содержит URL видео (HLS-плейлист), URL превью-изображения, а также `width` и `height` видео. В конфиге элемент видео принимает их как `videoUrl`, `previewUrl`, `width` и `height`.
 
 ## adapty flows versions list \{#adapty-flows-versions-list\}
 

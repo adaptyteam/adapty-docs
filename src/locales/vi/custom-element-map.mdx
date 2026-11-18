@@ -1,0 +1,199 @@
+---
+title: "Hiển thị các địa điểm gần đây trên bản đồ trong một flow"
+description: "Hiển thị bản đồ các địa điểm gần người dùng, chẳng hạn như trung tâm thể dục, trong một phần tử tùy chỉnh trên màn hình flow."
+metadataTitle: "Hiển thị các địa điểm gần đây trên bản đồ trong một flow | Flows & paywalls | Tài liệu Adapty"
+---
+
+Làm theo hướng dẫn này để tích hợp bản đồ tương tác vào một flow. Ứng dụng của bạn hiển thị bản đồ dưới dạng native MapKit view trong một [phần tử tùy chỉnh](flow-custom-elements). Ứng dụng sẽ yêu cầu quyền truy cập vị trí trên màn hình flow.
+
+:::tip
+Hướng dẫn này chỉ áp dụng cho ứng dụng iOS. Các ứng dụng được xây dựng bằng framework khác chỉ hiển thị [nội dung dự phòng](flow-custom-elements#set-fallback-content) của các phần tử tùy chỉnh. Hỗ trợ cho Android và các framework đa nền tảng sẽ sớm ra mắt.
+:::
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="The finished flow: a map shows fitness centers near the user, who drags the map to another area and back." />
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- Cập nhật ứng dụng lên Adapty iOS SDK 4.4 trở lên. Các phiên bản SDK cũ hơn sẽ hiển thị [nội dung dự phòng](flow-custom-elements#set-fallback-content) cho mọi phần tử tùy chỉnh.
+- Thiết lập ứng dụng để [tải](get-pb-paywalls) và [hiển thị](ios-present-paywalls) flow.
+- Để yêu cầu người dùng cấp quyền truy cập vị trí, hãy thêm key `NSLocationWhenInUseUsageDescription` vào file `Info.plist` của ứng dụng. Đặt giá trị của key này là nội dung thông báo, ví dụ: "Find fitness centers near you."
+
+## 1. Thêm phần tử tùy chỉnh vào màn hình \{#1-add-the-custom-element-to-the-screen\}
+
+Trong Flow & Paywall Builder, [thêm một phần tử tùy chỉnh](flow-custom-elements#add-and-configure) vào màn hình flow và cấu hình cho bản đồ:
+
+- **Type**: `map`.
+- **ID**: `fitness_centers`.
+- **Height**: Giữ nguyên chiều cao **Fixed** mặc định. Bản đồ sẽ lấp đầy phần tử tùy chỉnh.
+
+Đừng đặt phần tử tùy chỉnh vào trong các container phản hồi thao tác chạm, chẳng hạn như carousel. Nếu không, khi kéo trên bản đồ sẽ làm carousel di chuyển theo.
+
+Bên trong custom element, thêm một [**Image**](custom-media#image) với hình ảnh bản đồ. Người dùng sẽ thấy nó như là [nội dung dự phòng](flow-custom-elements#set-fallback-content) khi:
+
+- Phiên bản ứng dụng của họ không hiển thị được bản đồ.
+- Họ đã từ chối quyền truy cập vị trí trước khi màn hình mở ra.
+- Thiết bị của họ chạy iOS 16.
+
+Nếu người dùng chưa trả lời yêu cầu cấp quyền truy cập vị trí, iOS sẽ hiển thị yêu cầu đó khi bản đồ xuất hiện. Để cho người dùng biết tại sao ứng dụng cần vị trí của họ, hãy thêm một phần tử văn bản phía trên custom element, chẳng hạn như "Tìm trung tâm thể dục gần bạn."
+
+## 2. Tạo map view \{#2-create-the-map-view\}
+
+Tạo một model để quản lý quyền truy cập vị trí, và một SwiftUI view với bản đồ. View này sẽ yêu cầu quyền truy cập vị trí, tìm các trung tâm thể dục trong vòng 2 km quanh người dùng, và hiển thị marker cho từng địa điểm:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var places: [MKMapItem] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(places, id: \.self) { place in
+                        Marker(item: place)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            places = try await fitnessCenters(around: location.coordinate)
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+
+    private func fitnessCenters(around center: CLLocationCoordinate2D) async throws -> [MKMapItem] {
+        let request = MKLocalPointsOfInterestRequest(center: center, radius: 2_000) // meters
+        request.pointOfInterestFilter = MKPointOfInterestFilter(including: [.fitnessCenter])
+        return try await MKLocalSearch(request: request).start().mapItems
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Chế độ xem bản đồ yêu cầu iOS 17 trở lên. Trên iOS 16, người dùng sẽ thấy paywall dự phòng. Nếu người dùng từ chối quyền truy cập vị trí trên màn hình, chế độ xem sẽ thay thế bản đồ bằng thông báo hướng dẫn cách cấp quyền trong Cài đặt.
+
+## 3. Khớp map với custom element \{#3-match-the-map-to-the-custom-element\}
+
+Trong [resolver toàn ứng dụng](ios-flow-custom-elements#set-an-app-wide-resolver) của bạn, thêm một thuộc tính cho model `LocationAccess`. Sau đó thêm một case trả về map view cho Type `map` và ID `fitness_centers`. Các dòng được highlight cho thấy những gì cần thêm. Nếu ứng dụng của bạn chưa có [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) toàn ứng dụng, hãy sao chép toàn bộ đoạn code:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift" {5,13-20}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+SDK sẽ gọi resolver khi màn hình mở ra, và tiếp tục gọi trong khi màn hình đang hiển thị, chẳng hạn khi các sản phẩm được tải. Quyền truy cập vị trí xác định những gì resolver trả về trong mỗi lần gọi:
+
+- **Chưa được trả lời**: View bản đồ, để view có thể yêu cầu quyền truy cập.
+- **Đã cho phép**: View bản đồ, hiển thị các trung tâm thể dục gần người dùng.
+- **Đã từ chối trước khi màn hình mở**: `nil`, để người dùng thấy paywall dự phòng thay vì thông báo về Cài đặt.
+- **Đã từ chối trên màn hình**: View bản đồ, vì view đặt `isMapOnScreen` khi đang hiển thị. Nếu resolver trả về `nil` ở đây, SDK sẽ thay thế thông báo về Cài đặt bằng paywall dự phòng ở lần gọi tiếp theo.
+
+Nếu ứng dụng của bạn chưa thiết lập resolver toàn cục, hãy gọi `AdaptyUI.setCustomElementsResolver(_:)` một lần, chẳng hạn khi khởi động ứng dụng:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="ios" label="iOS" default>
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+</TabItem>
+</Tabs>
+
+## 4. Kiểm tra trên thiết bị \{#4-test-on-a-device\}
+
+Flow & Paywall Builder không thể chạy code ứng dụng của bạn, nên canvas chỉ hiển thị fallback. Để xem trước bản đồ:
+
+1. [Xuất bản flow](builder-save-publish). Để xem phiên bản đã xuất bản mới nhất thay vì phiên bản được cache, hãy đăng ký thiết bị làm [thiết bị test](test-devices).
+2. Chạy bản build ứng dụng có chứa resolver trên iOS 17 trở lên. Mở màn hình và cho phép truy cập vị trí. Kiểm tra xem bản đồ có hiển thị vị trí của bạn và các điểm đánh dấu cho các trung tâm thể dục gần đó không.
+
+Để kiểm tra paywall dự phòng, hãy từ chối quyền truy cập vị trí: trong ứng dụng **Settings**, vào **Privacy & Security** > **Location Services** > *ứng dụng của bạn*, rồi chọn **Never**. Sau đó mở lại màn hình.
+
+Để tìm hiểu lý do tại sao paywall dự phòng hiển thị thay vì bản đồ, hãy làm theo hướng dẫn trong phần [Kiểm tra trên thiết bị](ios-flow-custom-elements#test-on-a-device) của hướng dẫn iOS.

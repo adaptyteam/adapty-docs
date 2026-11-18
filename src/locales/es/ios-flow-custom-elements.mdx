@@ -1,0 +1,193 @@
+---
+title: "Mostrar elementos personalizados con el SDK de iOS"
+description: "Muestra una vista SwiftUI nativa en cada elemento personalizado de un flow, y prueba el flow en un dispositivo."
+metadataTitle: "Mostrar elementos personalizados | SDK de iOS | Documentación de Adapty"
+---
+
+Cuando se abre una pantalla con un [elemento personalizado](flow-custom-elements), el SDK de Adapty pasa el tipo y el ID del elemento a un resolver en el código de tu app. El resolver devuelve uno de los siguientes:
+
+- **La vista que coincide con el Type y el ID**: Los usuarios ven la vista nativa de SwiftUI, como una animación de Lottie, un gráfico interactivo o una vista previa de la cámara.
+- **Sin vista**: Los usuarios ven el contenido de respaldo, que es el contenido dentro del elemento personalizado en el Flow & Paywall Builder.
+
+Si el usuario tiene una versión desactualizada de tu app — una que no tiene el resolver en absoluto — igualmente ve el contenido de respaldo. Por lo tanto, puedes publicar el flow antes de lanzar la app.
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty iOS SDK 4.4 o posterior**: Las versiones anteriores muestran el respaldo para cada elemento personalizado.
+- **Una aplicación iOS nativa**: Los SDK de Adapty para frameworks multiplataforma, como Flutter, muestran el respaldo para cada elemento personalizado.
+- **Un esquema de nomenclatura para los elementos personalizados**: Asigna a cada vista nativa un Type, como `lottie_animation`. Usa únicamente letras minúsculas, números y guiones bajos en los Types. Para distinguir entre elementos personalizados del mismo Type, asigna a cada uno un ID, como `welcome_wave`. Los Types e IDs en tu código deben coincidir con los del [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+
+## Crea vistas para elementos personalizados \{#create-views-for-custom-elements\}
+
+Para cada tipo, crea una vista nativa de SwiftUI o reutiliza una de tu app. La siguiente vista del tipo `lottie_animation` reproduce una animación Lottie:
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+### Ver requisitos y mejores prácticas \{#view-requirements-and-best-practices\}
+
+- **Tamaño**:
+  - **Relleno y alineación**: Asegúrate de que la vista nativa encaje en el contenedor que has reservado en el Flow & Paywall Builder, descontando el relleno. Si la vista no ocupa toda el área, aparece en la esquina superior izquierda de forma predeterminada. Para moverla, cambia la alineación en la sección **Layout** del elemento personalizado.
+  - **Altura Hug**: Si la altura del elemento personalizado está configurada como **Hug**, una vista que se expande para llenar el espacio disponible (como un mapa) se colapsará. Asigna una altura [**Fixed**](flow-custom-elements#add-and-configure) al elemento personalizado.
+- **Acciones de flow**: La vista nativa no puede desencadenar acciones de flow, como la transición a la siguiente pantalla. Mantén los botones de navegación, los botones de compra y cualquier otro botón con acciones de flow fuera del elemento personalizado.
+- **Elementos seleccionables**: Mantén el elemento personalizado fuera de las tarjetas de producto y otros [elementos seleccionables](flow-selectable-elements). Cuando cambia la selección, la vista nativa puede perder su estado.
+- **Gestión de la navegación**: Cuando el usuario avanza a la siguiente pantalla, SwiftUI ejecuta la acción `onDisappear` de la vista nativa. En esa acción, detén lo que la vista haya iniciado, como sesiones de cámara, reproductores y actualizaciones de ubicación. Para trabajo asíncrono, usa `.task`: SwiftUI lo cancela cuando la vista desaparece. Cuando el usuario regresa, el SDK llama de nuevo al resolver y SwiftUI reinicia el estado de la vista.
+- **Vistas UIKit**: Envuélvelas en `UIViewRepresentable`.
+
+## Escribe un resolver para identificar elementos y vistas personalizadas \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Para escribir un resolver, haz que un tipo se ajuste al protocolo `AdaptyUICustomElementsResolver` e implementa el método `view(forType:id:context:)`.
+
+Para el tipo `lottie_animation`, el siguiente resolver devuelve `LottieElementView`. El ID identifica el archivo de animación en el bundle de la app, por ejemplo `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+En el caso `default`, devuelve `nil`. Si [añades un elemento personalizado con un nuevo Type](flow-custom-elements#what-changes-require-an-app-release) después de publicar la app, los usuarios de esa versión verán su fallback.
+
+El resolver tiene los siguientes requisitos:
+
+- **Datos de red y reproductores**: Mantén los datos de red y los reproductores en el estado de la [vista nativa](#create-views-for-custom-elements), no en el resolver. El SDK llama al resolver muchas veces mientras la pantalla está abierta, por ejemplo, cuando se cargan los productos o se inicia una compra. El código del resolver se ejecuta de nuevo en cada llamada, por lo que las solicitudes de red se repiten y los reproductores vuelven a empezar. SwiftUI mantiene el estado de la vista nativa entre llamadas, de modo que los datos se cargan una sola vez y los reproductores siguen reproduciéndose. Crea reproductores, sesiones y solicitudes de red en `.task` o en un `@StateObject`, no en el valor inicial de una propiedad `@State`. Swift evalúa ese valor inicial de nuevo cada vez que el resolver crea la vista.
+- **Una vista nativa por elemento personalizado**: Algunas vistas nativas cambian mientras la pantalla está abierta, por ejemplo, cuando se cargan sus datos o cuando el usuario las toca. Implementa esta lógica en el propio `body` de la vista, no en el resolver. Si el resolver devuelve una vista diferente para el mismo elemento personalizado, SwiftUI restablece el estado de la vista.
+- **Datos de la app**: Almacena un objeto de la app que contenga los datos, como un `ObservableObject` con el [streak diario](custom-element-lottie-animation), en una propiedad del resolver. Pasa el objeto a la vista nativa y obsérvalo allí con `@ObservedObject`. Un valor que copies al resolver, como el número del streak, se quedará tal como estaba cuando creaste el resolver. No uses objetos de entorno para estos datos: con el [controlador de flow](ios-present-paywalls#present-flows-and-paywalls-in-uikit) de UIKit, la vista nativa no recibe el entorno SwiftUI de tu app.
+
+### Establecer condiciones para el contenido de respaldo \{#set-conditions-for-fallback-content\}
+
+Para mostrar a los usuarios el [contenido de respaldo](flow-custom-elements#set-fallback-content) en lugar de un elemento personalizado vacío, devuelve `nil` en las siguientes situaciones:
+
+- Nada que visualizar: falta el archivo de animación o el archivo de datos necesario.
+- Nada que procesar: el usuario omitió una pregunta del cuestionario y los datos están incompletos.
+- Acceso prohibido: un permiso denegado impide que la vista acceda a un recurso.
+
+Por ejemplo, la declaración `guard` en el [resolver](#write-a-resolver-to-match-custom-elements-and-views) devuelve `nil` cuando falta el archivo de animación.
+
+Para un permiso, devuelve `nil` solo cuando el usuario lo haya denegado antes de que se abra la pantalla. Si el usuario aún no ha respondido a la solicitud de permiso, devuelve la vista nativa en lugar de `nil` y pídele el permiso dentro de ella. Por ejemplo, en [Mostrar lugares cercanos en un mapa en un flow](custom-element-map#3-match-the-map-to-the-custom-element), iOS muestra el aviso de acceso a la ubicación cuando aparece el mapa. La vista nativa puede mostrar el mapa en cuanto el usuario concede el acceso. Si devuelves `nil` antes de que el usuario responda, el respaldo permanece incluso después de que conceda el acceso, hasta que el SDK vuelva a llamar al resolver.
+
+## Pasa el resolver al SDK \{#pass-the-resolver-to-the-sdk\}
+
+Empieza con un resolver global para toda la app. El SDK lo llama en cada flow que no tenga su propio resolver. Los usuarios verán tus vistas nativas en los nuevos flows y pruebas A/B sin necesidad de publicar una nueva versión de la app. Estas vistas siguen mostrando a cada usuario sus propios datos, como una [racha diaria](custom-element-lottie-animation), porque los leen directamente desde tu app.
+
+Adjunta un resolver a un flow concreto cuando ese flow necesita datos que tu app solo tiene en el momento de abrirlo. Por ejemplo, una paywall muestra [el peso que el usuario introdujo en un flow anterior](custom-element-interactive-chart), o previsualiza el documento que el usuario quiere exportar. También puedes adjuntar un resolver a un flow para mostrar una vista diferente para un Type en ese flow.
+
+### Establecer un resolver global para la app \{#set-an-app-wide-resolver\}
+
+Para usar el resolver en cada flow, llama a `AdaptyUI.setCustomElementsResolver(_:)` una vez, por ejemplo al iniciar la app:
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+:::tip
+La alternativa más sencilla y limitada al enfoque de resolver es pasar un diccionario `[String: AdaptyUICustomElementBuilder]` con claves de tipo. Requiere menos código, pero no puedes [establecer condiciones para el contenido de respaldo](#set-conditions-for-fallback-content).
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+:::
+
+### Adjuntar un resolver a un flow \{#attach-a-resolver-to-one-flow\}
+
+Un resolver que adjuntas a un flow reemplaza al resolver global en ese flow. Los valores que pasas a este resolver permanecen tal como estaban cuando obtuviste la configuración del flow. Para mostrar nuevos valores, vuelve a obtener la configuración.
+
+Para conservar las vistas globales en este flow, pasa el resolver global a este resolver y llama al resolver global para los demás Types e IDs. El siguiente resolver muestra una vista previa del documento que el usuario quiere exportar y llama al resolver global para cualquier otro elemento personalizado:
+
+```swift showLineNumbers title="Swift"
+
+struct ExportPaywallResolver: AdaptyUICustomElementsResolver {
+    let document: Document // the document that the user wants to export
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        if type == "document_preview" {
+            return AnyView(DocumentPreview(document: document))
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+Adjunta el resolver al flow cuando obtengas su configuración:
+
+```swift showLineNumbers title="Swift"
+func showExportPaywall(flow: AdaptyFlow, document: Document) async {
+    do {
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: ExportPaywallResolver(
+                document: document,
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        // present the flow
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Si usas diccionarios en lugar de resolvers, combina los dos diccionarios y adjunta el resultado al flow: `appWideViews.merging(flowViews) { _, flowView in flowView }`. Si un mismo Type aparece en ambos diccionarios, este código conserva la vista del flow en cuestión.
+
+## Prueba en un dispositivo \{#test-on-a-device\}
+
+El Flow & Paywall Builder no puede ejecutar el código de tu app, por lo que el canvas solo muestra el fallback. Un error en la vista nativa puede hacer que la app se bloquee. Antes de publicar la app, prueba en un dispositivo cada pantalla que tenga un elemento personalizado:
+
+1. Para ver la versión publicada más reciente de cada flow en lugar de una versión en caché, registra el dispositivo como [dispositivo de prueba](test-devices).
+2. En el dispositivo, ejecuta una compilación que incluya el resolver. Abre cada pantalla que tenga un elemento personalizado y verifica que la vista nativa aparece y encaja en el elemento personalizado. Si la vista se desplaza o responde a gestos de arrastre, prueba también esos gestos.
+3. Si aparece el fallback en lugar de la vista nativa, busca esta advertencia en la consola de Xcode: `custom element <type>:<id> is not served by a resolver`. Luego verifica que:
+   - El tipo y el ID de la advertencia coincidan exactamente, letra por letra, con los de tu código.
+   - Tu app tiene el archivo, los datos o el permiso que necesita la vista.
+   - Tu app establece el resolver global antes de que se abra la pantalla con el elemento personalizado.
+   - Un [resolver para este flow](#attach-a-resolver-to-one-flow), si lo adjuntas, devuelve una vista para el tipo y el ID correspondientes.
+
+   Si la advertencia no aparece, verifica que la app use el SDK de Adapty para iOS 4.4 o posterior y que [`Adapty.logLevel`](sdk-installation-ios#logging) no sea `.error`.
+4. Para previsualizar el paywall de respaldo, devuelve `nil` para el Type y abre la pantalla de nuevo.
+
+## Ejemplos \{#examples\}
+
+Cada receta muestra la configuración en el builder y el código para tu app:
+
+- [Mostrar el progreso del usuario con una animación Lottie](custom-element-lottie-animation): Un anillo que se rellena a medida que crece una racha.
+- [Mostrar un gráfico interactivo de objetivo de peso en un paywall](custom-element-interactive-chart): Un gráfico de objetivo de peso, en el flow de paywall que sigue al flow de onboarding.
+- [Mostrar lugares cercanos en un mapa dentro de un flow](custom-element-map): Un mapa de centros de fitness cerca de cada usuario.
