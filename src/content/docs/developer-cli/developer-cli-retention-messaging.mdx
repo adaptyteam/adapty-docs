@@ -63,8 +63,8 @@ Configure `sandbox` first. Adapty refuses `production` until the [performance te
 
 Before it sends anything, the CLI reads the setup status. As with `setup-status`, this read can save the result of a running performance test, also when you then refuse the replacement. If Apple sends the requests of this environment to a different server (`configured_to_other_url`), the Adapty URL replaces that server's URL in Apple. From then on, that server gets no requests from the **Cancel Subscription** screen. The CLI shows a warning that names the environment. To approve the replacement:
 
-- **In a terminal**: Read the warning and answer `y` at the `Apply? [y/N]` prompt. The prompt appears also when you pass `--yes`.
-- **In a script or an agent**: Pass `--replace-other-url --yes`. Without `--replace-other-url`, the CLI sends nothing and exits with code 6, also with `--yes`.
+- **In a terminal, without `--json`**: Read the warning and answer `y` at the `Apply? [y/N]` prompt. The prompt appears also when you pass `--yes`.
+- **In a script or an agent, or with `--json`**: Pass `--replace-other-url --yes`. Without `--replace-other-url`, the CLI sends nothing and exits with code 6, also with `--yes`, and also with `--json` in a terminal.
 
 ## Run the performance test
 
@@ -164,7 +164,7 @@ The file takes these keys:
 Before it asks for your approval, the CLI validates each image file. The CLI then asks for approval in `sandbox` and in `production`, as described in [Confirmation in scripts and agents](#confirmation-in-scripts-and-agents). The new message is `in_review`, and Adapty sends its texts and images to Apple for review.
 
 :::warning
-The CLI sends a create request only once. If the answer to a create request doesn't arrive, because of a network error or a server error, the CLI says that the result isn't known. Don't create the message again. First, run `messages list` for the environment with `--search` and the name of the message, on every page up to `meta.pagination.pages`, and read each candidate with `messages get`. If you didn't read all pages, there can be more candidates. A name match, or no match, doesn't prove the result. A new create is a separate decision.
+The CLI sends a create request only once. If the answer to a create request doesn't arrive, because of a network error or a server error, the CLI says that the result isn't known. Don't create the message again. First, run `messages list` for the environment with `--search` and the name of the message, on every page up to `meta.pagination.pages`, and read each candidate with `messages get`. The hint of the error gives this command with a `<name>` placeholder and the exact name on its own line, `Message name: <name>` (`message_name` in `--json`). If you didn't read all pages, there can be more candidates. A name match, or no match, doesn't prove the result. A new create is a separate decision.
 :::
 
 ## Image requirements
@@ -174,7 +174,7 @@ The CLI sends a create request only once. If the answer to a create request does
 | Image (`--image`) | PNG, 3840 px wide and 160–2160 px tall, no transparency, up to 10 MB |
 | Bullet point icon (`image_path`) | PNG, 1024 × 1024 px, no transparency, up to 10 MB |
 
-The CLI validates each file before it sends anything, and it reads each pixel for transparency. A file with an alpha channel passes if every pixel is fully opaque. If a file fails, the CLI sends nothing and exits with code 2. The message names the file and the rule, for example `… must be 3840 px wide and 160–2160 px tall`.
+The CLI validates each file before it sends anything, and it reads each pixel for transparency. A file with an alpha channel passes if every pixel is fully opaque. A file with damaged PNG data, such as a wrong chunk checksum, a cut data stream, or short pixel rows, fails as `must be a PNG`. If a file fails, the CLI sends nothing and exits with code 2. The message names the file and the rule, for example `… must be 3840 px wide and 160–2160 px tall`.
 
 ## Change a message
 
@@ -221,7 +221,7 @@ The CLI refuses a change before it reads or sends anything, with exit code 2, wh
 - A bullet point that the message has comes with `texts`. Give its locale texts in `bullet_texts` of the locale.
 - A simple field is in a flag and in the changes file.
 
-The CLI then asks for approval, reads the message, and merges your changes into the full message. If you remove a locale, bullet point, or product that the message doesn't have, or name a `bullet_id` that it doesn't have, the CLI sends nothing, exits with code 2, and names it. The same happens when a locale has no text for a bullet point. Otherwise, the CLI sends the full message to Adapty.
+The CLI then asks for approval, reads the message, and merges your changes into the full message. If you remove a locale, bullet point, or product that the message doesn't have, or name a `bullet_id` that it doesn't have, the CLI sends nothing, exits with code 2, and names it. The same happens when a locale has no text for a bullet point, and when the message as read misses a field that the full message needs or has a field of the wrong type. Otherwise, the CLI sends the full message to Adapty.
 
 Each change sends the whole message to Apple's review again, also a change of the name only. The message state becomes `in_review`. An inactive message starts to show again after Apple approves it. If someone changes the message in the dashboard between the read and the write of the CLI, the dashboard change can be lost.
 
@@ -276,11 +276,11 @@ How it asks depends on how the command runs:
 
 | How the command runs | What happens |
 |---|---|
-| In a terminal, without `--yes` | The CLI prints the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
+| In a terminal, without `--yes` and without `--json` | The CLI prints the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
 | With `--yes`, in a terminal or not | The CLI sends the request without asking, also in `production`. The replacement of a different realtime URL is the only exception (next rows). |
 | Without `--yes`, with `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error message describes the effect. |
-| A different realtime URL in Apple, in a terminal, without `--replace-other-url` | The CLI shows the warning and asks `Apply? [y/N]`, also with `--yes`. |
-| A different realtime URL in Apple, with no terminal, without `--replace-other-url` | The CLI sends nothing and exits with code 6, also with `--yes`. |
+| A different realtime URL in Apple, in a terminal without `--json`, without `--replace-other-url` | The CLI shows the warning and asks `Apply? [y/N]`, also with `--yes`. |
+| A different realtime URL in Apple, with `--json`, in a pipe, or with no terminal, without `--replace-other-url` | The CLI sends nothing and exits with code 6, also with `--yes`. |
 | A different realtime URL in Apple, with `--replace-other-url --yes` | The CLI replaces the URL without asking. Pass it only after a separate approval of the replacement. |
 
 So a script or an agent can read the effect of a command first: run it without `--yes`, read the message, and run it again with `--yes` only after someone has approved that effect.
