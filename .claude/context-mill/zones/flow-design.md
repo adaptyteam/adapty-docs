@@ -165,6 +165,14 @@ article for platform X" as a gap — coverage review isn't in scope for this too
   section, and its Countdown steps share most of their wording with the merged version. `builder-styling`'s
   **Visibility** options now describe starting states (**Hide**: hidden until a **Show element** action
   reveals it) and link to the same article, so a change to how Show/Hide works ripples into both.
+- **Countdown timer has four behaviors (dashboard code, 2026-11-17).** **Every appear**, **First appear**,
+  **First appear (persisted)**, and **Until date**. **Until date** hides the duration fields and shows
+  **End date**, **Time** (hours and minutes, default 23:59), **Time zone** (full IANA list plus UTC,
+  default the browser zone) and a **User's local time** checkbox; the flow schema stores it as
+  `behavior: "until_date"` with `endDate: { date, time, timeZone }`, `timeZone: "local"` for the
+  checkbox. The builder refuses to publish an **Until date** timer with no date; a past date is valid and
+  shows zero. `flow-timer` owns this; the public `flow-generator` skill in `adapty-skills` documents the
+  same schema values, so a change to the timer schema ripples into both.
 
 - **The Number picker is restated in a dozen places (2026-11-17).** `builder-number-picker` owns the element. These
   copies repeat one of its facts and move with it: `builder-inputs-and-forms` (the input list, the sentence that the
