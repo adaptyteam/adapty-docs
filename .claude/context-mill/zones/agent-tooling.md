@@ -203,6 +203,7 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-products | reference | dev | 11 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
 | developer-cli-reference | — | dev | 3 | api |
+| developer-cli-retention-messaging | reference | dev | 27 | api |
 | export-analytics-with-ai | — | dev | 10 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
@@ -292,6 +293,16 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-11-18, `adapty retention-messaging` topic page `developer-cli-retention-messaging`:** written from the accepted feature spec
+  and the backend contract before the CLI release, so verify the flag names against the merged
+  `src/cli/commands/retention-messaging/` in `adapty-cli` before the page goes live (the list and suggest flags, and the
+  create and changes file keys, are the parts most likely to move). Product decisions the page carries: `messages create` and
+  `messages set-status` ask for a yes in `sandbox` and in `production`; `realtime-url configure` replaces a different URL only
+  with `--replace-other-url` (a terminal prompt also with `--yes`); the CLI never resends a create or an update. The MCP tools are
+  `retention_messaging_*`, one for each command; not verified against the live server's tool list. The MCP tools can't add an
+  image, an icon or a new bullet point, so `adapty-mcp` and the topic page point to `messages update` or the dashboard for those.
+  The dashboard side of the feature is the `retention-messaging` zone; this page links there for states and metrics instead of
+  restating them.
 - **2026-11-17, `adapty fallbacks get` shipped (adapty-cli 0.25.0, PR #44 merged):** moved from a section of `developer-cli-reference` to its own topic page `developer-cli-fallbacks`, because the reference became a topic index. From the merged `src/cli/commands/fallbacks/get/command.ts`: the full `--sdk-version` → format table (4.1–4.3 → 11, 4.4.0 and later → 12, down to below 3.0 → 5), flow placements only in formats 10–12, 30 downloads per hour per app shared by all tokens, the 300-second wait for the server to build the file, and the exit codes. The format table changes with the next SDK format; re-read the command's description when an SDK release changes the dashboard's Fallbacks options.
 - **2026-11-11, Apple Ads over MCP:** the `ads-manager` skill works through the MCP server and prefers
   it when both ways are ready (`adaptyteam/adapty-skills` `plugin/skills/ads-manager/SKILL.md`,
