@@ -23,7 +23,7 @@ Manual control over when store messages appear: App Store messages (price increa
 | android | — | shipped (4.3.0) | shipped | android-store-messages, sdk-installation-android | 4180a8d23 | — |
 | react-native | dev (4.3.0) | shipped (4.3.0, 2026-11-03) | in progress | react-native-store-messages, sdk-installation-react-native-pure, sdk-installation-react-native-expo, react-native-handle-errors | b3e62f613 + 73b8f42ce | — |
 | flutter | tag 4.3.0 | shipped (4.3.0, 2026-11-09) | in progress | flutter-store-messages, sdk-installation-flutter, error-handling-on-flutter-react-native-unity, migration-to-flutter-sdk-43 | — | — |
-| unity | — | not started | — | — | — | — |
+| unity | tag 4.3.0-beta.1 | beta (4.3.0-beta.1, 2026-11-18) | in progress | unity-store-messages, sdk-installation-unity, migration-to-unity-sdk-43 | — | — |
 | kmp | — | not started | — | — | — | — |
 | capacitor | — | not started | — | — | — | — |
 
@@ -31,3 +31,4 @@ Manual control over when store messages appear: App Store messages (price increa
 
 - Resolved 2026-11-03 (AdaptySDK-iOS 4.3.1 `Sources.AdaptyPlugin/Requests/Request.swift`): below iOS 16, the plugin doesn't register either store messages request, so both `getPendingStoreMessageTypes` and `showStoreMessages` reject with an unknown-request error on React Native.
 - Resolved 2026-11-10 (AdaptySDK-Flutter 4.3.0 `lib/src/adapty.dart`): Flutter differs from React Native in three places. Below iOS 16, both store messages methods fail with `decodingFailed` (2006), not a store-messages code. On Android, `showStoreMessages` returns at once and never fails, and `getPendingStoreMessageTypes` returns `null` without a native call. In `auto` mode an `Activity` started before `activate` doesn't trigger a Google Play request, so the Flutter docs show an Android-only `showStoreMessages` call after `activate` for messages at launch; the release notes list the new Android default as a breaking change, which is why Flutter got a migration guide and React Native didn't.
+- Resolved 2026-11-18 (AdaptySDK-Unity 4.3.0-beta.1 `Runtime/Adapty.cs`; AdaptySDK-iOS 4.3.2 `Sources.AdaptyPlugin/AdaptyJsonData/AdaptyPlugin+AdaptyJsonData.swift`): Unity matches Flutter. The iOS bridge calls `AdaptyPlugin.execute(method:withJson:)`, so below iOS 16 the unregistered request surfaces as `DecodingFailed` (2006). On Android, `GetPendingStoreMessageTypes` completes with a null list and no error without a native call, and the filter of `ShowStoreMessages` isn't sent. The configuration setter is `Builder.SetStoreMessagesHandling`. The Android launch caveat (an `Activity` started before activation triggers no request) is carried over from Flutter, not re-verified against the Unity entry point.

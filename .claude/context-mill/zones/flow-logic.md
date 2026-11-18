@@ -43,10 +43,50 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   comparison operators, and preset names like **Close flow**. Verified in this pass against the docs
   themselves: `onboarding-actions.mdx` and `onboarding-flow-tutorial.mdx` describe the conditional chain
   as IF / ELSE IF / ELSE, and `show-offer-on-close.mdx`'s screenshot alt text names the actual UI chips
-  as lowercase **if** / **then** / **else** blocks with an **Equals** operator — consistent with each
-  other. No flow-logic article uses or shows a **Does not equal** operator; take that operator's exact
-  wording from the builder UI directly rather than from any article in this zone, since it isn't
-  independently confirmed here.
+  as lowercase **if** / **then** / **else** blocks — consistent with each other. **Corrected
+  2026-11-16 (builder code):** the operator control shows a symbol wherever the operator has one
+  (`=`, `!=`, `>`, `<`) and words only for **Contains**, **Does not contain**, **Is empty** and
+  **Is not empty**. "Equals" and "Does not equal" are internal labels, so an article or alt text
+  that writes **Equals** does not match the screen. This entry used to treat **Equals** as the
+  on-screen label.
+- **Conditions that evaluate an element state** (the picker's **States** tab, released 2026-11-16;
+  builder and transformer code, 2026-11-16). Owner article: `element-states-in-conditions`. Facts
+  that article rests on:
+  - The operand is `{type: elementState, elementId}` compared with a state id (`default`,
+    `selected`, `focused` shown as **Active**, `invalid`, `disabled`); only `=` and `!=`.
+  - The tab lists elements of the same screen (plus reusable components placed on it; inside a
+    component, only its own elements) that have states of their own. A row shows the layer name,
+    and the element's text only when it differs from the layer name.
+  - The reference stores the internal element id, not the **Element ID** field, so renaming an
+    **Element ID** does not break it.
+  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, a
+    tooltip that says the condition is always false, publishing not blocked.
+  - The picker greys out an element that would close a loop of **Disabled** conditions; a loop
+    that arrives in an imported or hand-made config blocks publishing as **Circular state
+    conditions**.
+  - The canvas does not run state conditions: it uses the state activated in the **States**
+    section of each element. Only a device shows real states.
+  - **A visibility condition is stored as an AND group with a `predicates` list.** Selecting
+    **Conditional** writes that group and opens the **Show element if** editor. A bare comparison
+    passes `flows config validate`, but the editor's **Add Condition** does nothing on it until the
+    user switches visibility away and back (measured 2026-11-16 on a flow authored through the
+    CLI).
+  - Element variables for inputs are `value` and `isValid`; no variable holds **Disabled** or
+    **Active**, so those two are reachable only through the **States** tab.
+- **Conditions on the device platform** (the picker's **System** tab; builder and transformer
+  code, 2026-11-18, before release). Owner sections: `onboarding-element-visibility` ("Show an
+  element on one platform only") and `onboarding-actions` ("Show a screen on one platform only").
+  - The operand is `{type: var, variableId: "system.platform"}`; the row shows `system.platform`,
+    the value is a dropdown of **iOS** / **Android** (stored `ios` / `android`), operators `=` and
+    `!=` only. Picking the variable presets **iOS**.
+  - The SDK supplies the value on every version that renders flows (4.0.0+), so the app passes
+    nothing. Huawei devices report `android`; no separate Huawei value exists.
+  - Offered in every condition row (visibility, **Disabled** state, conditional text,
+    conditional actions); not in text or **Set variable**, and the transformer refuses both.
+  - The canvas evaluates it with the platform of the selected preview device.
+  - A screen has no condition of its own: skipping a screen per platform is a conditional
+    action on the screen before it, so the first screen cannot be skipped. Screen size and device
+    model are not condition operands (open as of 2026-11-18).
 - **The SDK repos are explicitly not this zone's ground truth.** Articles here reference SDK-side shapes
   loosely (`AdaptyRemoteConfig`, the `remoteConfigs` array on `AdaptyFlow`, `getFlow`) only to hand the
   reader off to the platform SDK docs. Treat those shapes as owned by `sdk-flows-display` /
@@ -149,6 +189,7 @@ or developer can see and click.
 | convert-paywall-to-flow | migration | marketer, dev | 4 | tutorial |
 | copy-flows | — | marketer, dev | 6 | tutorial |
 | customize-flow-with-remote-config | — | marketer, dev | 3 | tutorial |
+| element-states-in-conditions | how-to | marketer, dev | 7 | tutorial |
 | fallback-flows | — | marketer, dev | 4 | tutorial |
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 15 | tutorial |
@@ -314,6 +355,21 @@ or developer can see and click.
   `flow-screen-transitions`, `flow-show-hide-animations`, `flow-timer` (the Countdown route takes over
   beyond 5 seconds), and `builder-loaders-and-progress-bars`. The first two carry the identical "Use whole
   seconds: on iOS, a delay rounds up to a whole second." Keep that sentence identical in both.
+- **Element state conditions have one owner: `element-states-in-conditions` (2026-11-16).** Pointers
+  to it: `onboarding-element-visibility` (picker tab list and one intro sentence), `onboarding-text`
+  (tab list and one sentence after the conditional-text steps), `onboarding-actions` (the "select a
+  variable or the state of another element" sentence), `builder-navigation-actions` (router list),
+  and `flow-design`'s `builder-element-states` (two pointers). Which state wins when several apply
+  lives in `builder-element-states#when-several-states-apply-to-one-element`, and the article links
+  there. A new picker tab, operand, or system state ripples into all of these. The **Circular state
+  conditions** publish blocker has its row in `flow-common-issues`; the owner article covers only
+  the picker side, as an item in its "you can't pick" list.
+  Shipped-skill delta, flagged 2026-11-16 and not edited (the skills have their own owner):
+  `flow-generator/references/verify-config.py` has no `elementState` case in its condition walker,
+  so its local check rejects a flow the publish gate accepts; `flow-generator/references/flowkit.py`
+  writes a bare comparison from `when()` (the builder expects the AND group above) and says there
+  is no disabled mechanism; `flow-generator/references/flow-schema.md` says a button cannot be
+  disabled. The builder supports a **Disabled** state with a condition.
 - **The **On tap** "Supported on" cell in `onboarding-actions` was completed on 2026-11-11** from the
   element types that offer the trigger in the builder (dashboard code, 2026-11-10): buttons and other
   containers, quiz options, toggles, countdowns, images, videos, icons, text, carousels, bottom sheets,
@@ -359,6 +415,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
 | "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. |
+| "explain why Continue is greyed out", "show a message when the button is disabled", "disable two buttons together", "condition on another element", "States tab", "is the field focused" | `element-states-in-conditions` (2026-11-16). Traps: **Selected** yields to **Disabled** (one state at a time; rule in `flow-design`'s `builder-element-states`), so "which option did users pick" is the group variable on the **Elements** tab, not the state; the canvas shows a state only after the user activates it in the element's **States** section; a condition written outside the builder as a bare comparison saves and validates, but its editor's **Add Condition** does nothing until visibility is switched away and back. **Disabled** and **Active** have no variable: the **States** tab is the only route to them. |
 | "hide an element for some users", "show only if the user is on trial", "progress bar", "step indicator", "spinner while the answer is processed" | Element-shaped tickets that are really behaviour: a state-based rule is `onboarding-element-visibility` (which also settles precedence against a Show/Hide *action* in `onboarding-actions`); progress/loading elements are `builder-loaders-and-progress-bars` because they are driven by flow state. Neither is `flow-design`. |
 | "price renders empty", "trial price missing for some users", "localized price in body text", "variable name with dots" | `onboarding-variables`. The usual cause is not a typo: offer variables resolve to empty for users who aren't eligible for that offer, so the text needs a fallback. **Ask which surface the reporter is looking at first** — that is the runtime answer, and in the builder preview the three offer values never resolve at all (see the preview row below), so a ticket filed from the canvas has a different answer from one filed against a device. |
 | "monthly/yearly toggle", "segmented control", "highlight one plan and hide the rest", "slide-up plan picker", "features per tier", "crossed-out price", "percent-off badge" | The recipes, chosen by mechanic rather than by look: `paywall-with-tabs` (multiple product groups on one screen), `show-plans-bottom-sheet` (Show/Hide action), `paywall-features-per-product` (condition on the selected product), `strikethrough-price` (product-variable binding). `flow-builder-recipes` is the index if the ticket is vague, and every one of them assumes the base screen from `basic-paywall-screen` already exists. |
@@ -438,6 +495,15 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   and the right panel's **Design** and **Interactions** tabs stay enabled for it. "Build it visible first"
   is still good advice; the stated reason is wrong. `flow-show-hide-animations` and
   `convert-paywall-to-flow` already rely on the **Layers** route.
+- **Element ID renames, corrected 2026-11-16 (builder code).** `flow-common-issues` and
+  `flow-analytics-ids` said that changing an **Element ID** breaks every condition and text
+  variable that refers to the element. Since 2026-08-24 the builder relinks input variables
+  (`<id>.value`, `<id>.isValid`) across the flow on a rename; group IDs and element-state
+  references follow too. What still breaks: a condition that compares a quiz option's **Element
+  ID** as a text value (`quiz.selectedOptionId = option_1`). Both articles now say so; the section
+  in `flow-common-issues` is "A condition stops matching after you change the Element ID of a quiz
+  option". Not verified: what a device does with a variable reference that no longer resolves
+  (looked for a transformer diagnostic, found none).
 - **Not verified on a device (2026-11-10).** Auto-advance with an animated type at **Duration** 0 rests on
   compiled behavior only. The Countdown route in `flow-timer` (visible, transparent, digits kept) comes
   from open docs PR #717, whose own text flags on-device firing as an assumption.
@@ -470,3 +536,22 @@ Applied here: the five duplicated purchase-button/price-variable micro-recipes
 `onboarding-flow-tutorial`) are candidates to trim to a link into `paywall-product-block` — but a recipe
 that stops being followable end to end is worse than the copy, so judge each one by whether the step is
 needed in place.
+
+**Verified 2026-11-17 while documenting the Number picker (builder code; transformer code).**
+
+- **Number conditions.** For a number variable, the condition picker offers `=`, `!=`, `>`, `<`, **Is empty**, and
+  **Is not empty** — no `>=` or `<=`. The right side takes a typed number or another number variable. A picker's
+  variable is never empty, so **Is empty** never matches it. No article lists the operators; the conditional-action
+  owners (`onboarding-actions`, `onboarding-element-visibility`) are where they'd go.
+- **No arithmetic.** Conditions, texts, and **Set variable** can't calculate (no arithmetic in the expression set, read
+  2026-11-17); a BMI is calculated in app code and passed back through a custom tag (`flow-custom-tags`). Unmerged
+  formula work exists in the builder; don't document it until it ships.
+- **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
+  picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
+- **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),
+  including inside a conditional action, send the screen's pending input values; a tap on a quiz option or a toggle
+  (not a product) sends them too. **Close flow**, a purchase, and a custom action don't. A hidden picker, or one in
+  an unopened tab, still reports; an input inside a reusable component never reports (every input type).
+- **Same-screen updates.** Texts and visibility that read a picker's `.value` re-evaluate when the wheel settles
+  (code); not run on a device.
+- **On Changed** is dropped at publish for every input (see `flow-design` Gaps); `onboarding-actions` still lists it.

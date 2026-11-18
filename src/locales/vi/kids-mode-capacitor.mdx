@@ -58,9 +58,15 @@ try {
 
 <SDKv4>
 
-Ngay cả khi bạn đã tắt thu thập IDFA trong code (như trên), bản build vẫn bao gồm các framework `AdSupport` và `AppTrackingTransparency`. Danh mục Kids Category trên App Store không cho phép điều này. Và vì SDK v4 cài đặt iOS SDK native thông qua Swift Package Manager, không có bước Podfile nào để loại bỏ chúng.
+Dù bạn đã tắt tính năng thu thập IDFA trong code (ở trên), bản build vẫn bao gồm các framework `AdSupport` và `AppTrackingTransparency`. Danh mục Kids Category trên App Store không cho phép sử dụng các framework này.
 
-Để tuân thủ yêu cầu của Apple, hãy thêm lệnh `adapty-kids-mode` đi kèm với SDK vào `postinstall` của ứng dụng. Lệnh này bật trait `KidsMode` của SDK, giúp biên dịch loại bỏ đoạn code đó. Lệnh sẽ được áp dụng lại mỗi khi cài đặt:
+Để tuân thủ các yêu cầu của Apple, hãy build native iOS SDK ở chế độ Kids Mode — chế độ này sẽ loại bỏ hoàn toàn mã liên quan đến IDFA, AdSupport và AppTrackingTransparency trong quá trình biên dịch. Cách bật chế độ này phụ thuộc vào package manager của dự án iOS, được mô tả trong [Thiết lập dự án iOS của bạn](sdk-installation-capacitor#set-up-your-ios-project).
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+Thêm lệnh `adapty-kids-mode` đi kèm với SDK vào `postinstall` của ứng dụng. Lệnh này bật trait `KidsMode` của SDK và sẽ được áp dụng lại sau mỗi lần cài đặt:
 
 ```json showLineNumbers title="package.json"
 {
@@ -70,14 +76,47 @@ Ngay cả khi bạn đã tắt thu thập IDFA trong code (như trên), bản bu
 }
 ```
 
-Sau đó cài đặt lại và re-resolve các gói iOS, rồi build với **Xcode 26** trở lên:
+Sau đó cài đặt lại + giải quyết lại các gói iOS, rồi build với **Xcode 26** trở lên:
 
 ```sh showLineNumbers title="Shell"
 npm install
 npx cap sync ios
 ```
 
-Để tắt Kids Mode, chạy `adapty-kids-mode disable` và sync lại.
+Để tắt Kids Mode, chạy `adapty-kids-mode disable` rồi sync lại.
+
+:::note
+Trong SDK 4.2.0 trở lên, `adapty-kids-mode` sẽ hiển thị cảnh báo mà không làm lỗi quá trình cài đặt, khi phát hiện ứng dụng dùng CocoaPods — nơi tính năng này không có hiệu lực — hoặc không tìm thấy dự án iOS. Nếu ứng dụng của bạn nằm ngoài thư mục bạn đang cài đặt, hãy truyền `--app-root=path/to/app`.
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Tùy chọn này yêu cầu SDK 4.2.0 trở lên và Adapty Podfile helpers từ [Thiết lập dự án iOS của bạn](sdk-installation-capacitor#set-up-your-ios-project). Trong `ios/App/Podfile`, gọi `adapty_enable_kids_mode` trong block `post_install`:
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Trình trợ giúp thêm điều kiện biên dịch `KidsMode` vào pod `Adapty` và gỡ liên kết framework AdSupport. Nó chỉ hoạt động trong `post_install`: từ `post_integrate`, các thay đổi của nó không bao giờ được lưu. Nếu một pod khác trong dự án của bạn cũng liên kết AdSupport, `pod install` sẽ thất bại, vì framework đó sẽ vẫn còn trong bản build.
+
+Sau đó đồng bộ dự án iOS:
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+Để tắt Kids Mode, xóa dòng `adapty_enable_kids_mode` và đồng bộ lại.
+
+</TabItem>
+
+</Tabs>
+
+Để xác nhận Kids Mode đang hoạt động, hãy kiểm tra dòng log `adapty.activate(...)` và đảm bảo nó báo `kids_mode_enabled: true`.
 
 </SDKv4>
 
@@ -87,8 +126,8 @@ Nếu bạn đang dùng CocoaPods cho iOS, bạn cũng có thể bật Kids Mode
 
 1. Cập nhật Podfile của bạn:
 
-- Nếu bạn **chưa có** phần `post_install`, hãy thêm toàn bộ đoạn code bên dưới.
-   - Nếu bạn **đã có** phần `post_install`, hãy gộp các dòng được đánh dấu vào đó.
+   - Nếu bạn **chưa** có phần `post_install`, hãy thêm toàn bộ đoạn code bên dưới.
+   - Nếu bạn **đã** có phần `post_install`, hãy gộp các dòng được đánh dấu vào đó.
 
    ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)

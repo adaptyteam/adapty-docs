@@ -429,3 +429,20 @@ Verified during the `flows-with-your-own-payments` guide work; refs named per it
 - **A kept React Native flow view doesn't survive a handler that returns `true` (2026-11-04, react-native-adapty `v4.3.0`, iOS `4.3.2`, Android `4.3.1`).** The emitter calls `onRequestClose` (`src/ui/flow-view-emitter.ts`), which is a plain `dismiss()` (`src/ui/flow-view-controller.ts`), and `destroy` defaults to `true`. That covers the default `onCloseButtonPress` and `onError`. A released view fails `present()` with `viewNotFound` on both bridges (`Sources.AdaptyUI/Crossplatform/Plugin.swift`, `crossplatform/.../ui/CrossplatformUiHelper.kt`, `handlePresentView`). `viewAlreadyPresented` means a modal flow is already on screen, not that the view was used before. Both bridges report these as code `3001` (`wrongParam`), and the name appears only in the message: `react-native-adapty` exports no `AdaptyUIError`. The React Native flow articles state both as of 2026-11-04. Flutter `4.1.1` differs in mechanism: the default close is plain Dart (`view.dismiss()`, `lib/src/adaptyui_observer.dart`), and `dismiss` defaults to `destroy: true`. Overriding `flowViewDidPerformAction` covers the close path only: `flowViewDidReceiveError` also dismisses, in the default observer (`lib/src/adaptyui_events_defaults.dart`) and in the `flutter-handling-events` sample. The observer is global (`lib/src/adaptyui_events_proxy.dart`) and Flutter has no `destroy()`, so an unconditional `destroy: false` would leave views that the app can't release. `flutter-present-paywalls` compares `view.id` for that reason, as of 2026-11-04.
 - **React Native onboardings don't follow the flow lifecycle (2026-11-04, react-native-adapty `v4.3.0`).** `src/ui/onboarding-view-controller.ts` always sends `destroy: false` and then removes the listeners, so the native view stays cached and the once-only warnings aren't literally what the bridge enforces. Creating a new view is still the right instruction, because the old one has no handlers. Runtime behavior of a second `present()` on an onboarding was not tested.
 - **`destroy` is a cross-platform bridge concept (checked 2026-11-04).** `grep -n -iE "reuse|again|once"` on `ios-present-paywalls` and `android-present-paywalls` finds no once-only claim, and neither article documents `destroy`. iOS `4.3.2` has no `dismiss` or `destroy` function under `Sources.AdaptyUI` outside `Crossplatform`. The public Android API was not checked separately.
+
+**Verified 2026-11-17 while documenting the Number picker.**
+
+- **`flow_user_input` for `wheel_range_picker`** (transformer code, plus the public SDKs): `value` is a JSON number
+  that can have decimals; the untouched default is sent; the event fires on a navigation action or a non-product
+  option/toggle tap on the same screen, and not again while the value is unchanged. Both native SDKs render the
+  picker from 4.0.0 (`AdaptySDK-iOS` `AdaptyUIWheelRangePickerView.swift`; `AdaptySDK-Android`
+  `WheelRangePickerElementMapping.kt`), so no version gate.
+- **Value types per platform.** iOS: an `NSNumber`, read as `Double` (`as? Int` fails on 70.5; bridging is
+  Foundation behavior, medium confidence). Android: `Long` for a whole value on 4.3.0 and later
+  (`utils/jsonNumbers.kt`), `Double` otherwise. Flutter `num`; React Native and Capacitor `number`; KMP raw JSON.
+  Unity: every JSON number in `params` is a boxed `double` (`AdaptyConverterLooseJson.cs`), so a cast to `long`
+  throws.
+- **Pre-existing errors found, not fixed (2026-11-17):** `FlowInputParams.mdx` says Element IDs are unique within a
+  screen — the builder rejects a duplicate anywhere in the flow (builder code). `unity-flow-input` says date values
+  are `long` (they're `double`) and its `item_ids as JArray` example is always null (the converter returns
+  `List<object>`), so "Customize flows shown later" does nothing on Unity.

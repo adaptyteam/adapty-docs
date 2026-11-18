@@ -59,17 +59,73 @@ npm install @adapty/capacitor
 npx cap sync
 ```
 
-En iOS, el SDK de Adapty obtiene los SDKs nativos de Adapty únicamente a través de **Swift Package Manager** — el podspec de CocoaPods fue eliminado ([el repositorio de specs de CocoaPods pasará a ser de solo lectura en diciembre de 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). El proyecto iOS de tu app debe usar la integración SPM de Capacitor:
+### Configura tu proyecto iOS \{#set-up-your-ios-project\}
 
-- Para aplicaciones nuevas, añade la plataforma iOS con el gestor de paquetes SPM:
+En iOS, el SDK instala los SDKs nativos de Adapty (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) a través del gestor de paquetes del proyecto iOS de tu app:
+
+- **Swift Package Manager (recomendado)**: Capacitor 8 crea nuevos proyectos iOS con SPM por defecto, y el SDK no necesita configuración adicional.
+- **CocoaPods (SDK 4.2.0 y versiones posteriores)**: Tu `Podfile` instala los SDK nativos como pods desde [el repositorio de specs de Adapty](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs), no desde el repositorio público de specs de CocoaPods, que [pasará a ser de solo lectura en diciembre de 2026](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). Las versiones SDK 4.0 y 4.1 no son compatibles con CocoaPods.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
+
+- Para nuevas apps, añade la plataforma iOS con el gestor de paquetes SPM:
 
   ```sh
   npx cap add ios --packagemanager SPM
   ```
 
-- Para aplicaciones existentes, migra el proyecto iOS de CocoaPods a SPM siguiendo [la guía de Capacitor para usar SPM en un proyecto existente](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project).
+- Para apps existentes con CocoaPods, migra el proyecto iOS a SPM siguiendo [la guía de Capacitor para usar SPM en un proyecto existente](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project), o mantén CocoaPods y sigue la pestaña **CocoaPods**.
 
-¿Actualizas desde v3? Consulta [Migrar el SDK de Adapty para Capacitor a v4.1](migration-to-capacitor-sdk-v4) para ver la lista completa de cambios en la API.
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Esta opción requiere la versión 4.2.0 o posterior del SDK. Para una nueva aplicación, añade la plataforma iOS con el gestor de paquetes CocoaPods:
+
+```sh
+npx cap add ios --packagemanager CocoaPods
+```
+
+En `ios/App/Podfile`, añade los helpers de Podfile de Adapty **después** de la línea `require_relative` de los `pods_helpers` de Capacitor. Luego, en el target `App`, llama a `adapty_pods!` **después** de `capacitor_pods`:
+
+```ruby showLineNumbers title="ios/App/Podfile" {2-6,10}
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "@adapty/capacitor/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'App' do
+  capacitor_pods
+  adapty_pods!
+  # Add your Pods here
+end
+```
+
+`npx cap sync` regenera el `Podfile` desde su primera línea `require_relative` hasta la línea `pods_helpers`, así como todo el método `def capacitor_pods`. Cualquier llamada `require` o `adapty_pods!` colocada dentro de alguna de esas partes se perderá en el siguiente sync.
+
+`adapty_pods!` declara los pods `Adapty`, `AdaptyUI` y `AdaptyPlugin` y los fija al repositorio de specs de Adapty, por lo que no necesitas añadir una línea `source` para ese repositorio. Elimina cualquier línea explícita `pod 'Adapty'`, `pod 'AdaptyUI'` o `pod 'AdaptyPlugin'` de tu `Podfile`.
+
+Luego sincroniza el proyecto iOS:
+
+```sh
+npx cap sync ios
+```
+
+Cuando actualices `@adapty/capacitor` más adelante, `pod install` no actualizará el repositorio de specs de Adapty. Para instalar la versión del SDK nativo que requiere la nueva versión, ejecuta:
+
+```sh
+cd ios/App && pod install --repo-update
+```
+
+</TabItem>
+
+</Tabs>
+
+¿Estás actualizando desde v3? Consulta [Migrar el SDK de Adapty Capacitor a v4.1](migration-to-capacitor-sdk-v4) para ver la lista completa de cambios en la API.
 
 ## Activar el módulo Adapty del SDK \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -293,17 +349,17 @@ Con esta opción habilitada, el SDK omite la llamada de activación completa una
 #### Error de versión mínima de iOS \{#minimum-ios-version-error\}
 
 :::note
-Esto aplica a proyectos basados en CocoaPods con **SDK 3.x**. El SDK 4 se instala en iOS a través de Swift Package Manager únicamente (no hay `Podfile`) y requiere iOS 15.0 — establece tu deployment target en 15.0 en Xcode.
+Esto aplica a proyectos basados en CocoaPods: en **SDK 3.x**, y en SDK 4.2.0 y versiones posteriores con la opción [CocoaPods](#set-up-your-ios-project). En Swift Package Manager no hay `Podfile` — configura el deployment target a 15.0 directamente en Xcode.
 :::
 
-Si obtienes un error de versión mínima de iOS con el SDK 3.x, actualiza tu Podfile:
+Si recibes un error de versión mínima de iOS, actualiza tu Podfile:
 
 ```diff
 -platform :ios, min_ios_version_supported
 +platform :ios, '15.0'
 ```
 
-#### Reglas de copia de seguridad de Android (configuración de Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
+####  Reglas de copia de seguridad en Android (configuración de Auto Backup) \{#android-backup-rules-auto-backup-configuration\}
 
 <AndroidBackupRules />
 
@@ -328,14 +384,14 @@ En tu `AndroidManifest.xml`, asegúrate de que la Activity que inicia el flujo d
 #### Errores de compilación de Swift 6 causados por la sobreescritura de SWIFT_VERSION en Podfile \{#swift-6-build-errors-caused-by-podfile-swift_version-override\}
 
 :::note
-Esto aplica a proyectos basados en CocoaPods con **SDK 3.x**. El SDK 4 instala los SDKs nativos a través de Swift Package Manager, por lo que no hay ningún `Podfile` que ajustar.
+Esto aplica cuando los SDKs nativos de iOS se instalan como pods de CocoaPods: en **SDK 3.x**, y en SDK 4.2.0 y versiones posteriores con la opción [CocoaPods](#set-up-your-ios-project). Cuando se instalan como paquetes Swift, una anulación de `SWIFT_VERSION` en `post_install` no les llega.
 :::
 
-Al compilar tu app de Capacitor para iOS, es posible que veas errores de compilación de Swift 6 en los targets del pod de Adapty. Los síntomas más comunes son incompatibilidades de `@Sendable` en `AdaptyUIBuilderLogic`, falta de conformidad con `Sendable` en los tipos de Adapty, o errores de aislamiento de actores.
+Al compilar tu app de Capacitor para iOS, puede que veas errores de compilación de Swift 6 en los targets de pods de Adapty. Los síntomas habituales incluyen discrepancias de `@Sendable` en `AdaptyUIBuilderLogic`, falta de conformidad `Sendable` en tipos de Adapty, o errores de aislamiento de actor.
 
-Los pods de Adapty declaran `s.swift_version = '6.0'` y requieren Swift 6 para compilarse. Tu propio código de app puede quedarse en Swift 5 — solo los targets de los pods de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) necesitan compilarse con Swift 6.
+Los pods de Adapty declaran `s.swift_version = '6.0'` y requieren Swift 6 para compilarse. El código de tu propia app puede seguir en Swift 5 — solo los targets de los pods de Adapty (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`, y en el SDK 4.2.0 y versiones posteriores `AdaptyCodable`) necesitan compilarse con Swift 6.
 
-La causa más común es un hook `post_install` en `ios/App/Podfile` que sobreescribe `SWIFT_VERSION` para cada target de pod:
+La causa más común es un hook `post_install` en `ios/App/Podfile` que sobreescribe `SWIFT_VERSION` para todos los targets de pods:
 
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
@@ -352,7 +408,7 @@ end
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end
