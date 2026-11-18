@@ -1,0 +1,496 @@
+---
+title: "Paywall'da interaktif bir kilo hedefi grafiği gösterme"
+description: "Her kullanıcının tahmini kilosunu bir paywall flow'unda grafik olarak gösterin. Kullanıcılar grafiği sürükleyerek herhangi bir haftanın kilosunu görebilir."
+metadataTitle: "Paywall'da interaktif bir kilo hedefi grafiği gösterme | Android SDK | Adapty Dokümanları"
+---
+
+Bu tarifi uygulayarak her kullanıcının tahmini kilo değişimini bir paywall flow'unda grafik olarak gösterin. Kullanıcı, onboarding flow'unda mevcut ve hedef kilosunu girer. Uygulamanız her iki değeri de toplar. Grafik, kullanıcının uygulamanızla birlikte mevcut kilodan hedef kiloya haftalık olarak ne kadar ilerleme bekleyebileceğini gösterir. Uygulamanız, grafiği [özel bir element](flow-custom-elements) içinde native bir görünüm olarak render eder. Görünüm, grafiği herhangi bir grafik kütüphanesi kullanmadan çizer.
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="Tamamlanmış paywall: kullanıcı grafik üzerinde sürükleme yapıyor ve her hafta için tahmini ağırlık, hedef ağırlık olan 72 kg'a kadar bir etiketle gösteriliyor." />
+
+## Başlamadan önce \{#before-you-start\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+- Uygulamanızı Adapty Android SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel element için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [getirmek](android-get-pb-paywalls) ve [görüntülemek](android-present-paywalls) için yapılandırın.
+- Uygulama modülünüzde Jetpack Compose'u kurun. Bu tarifte kullanılan grafik, bir composable bileşendir.
+- `androidx.compose.foundation:foundation` paketinden Gradle ile Compose Foundation'ı uygulamanıza ekleyin.
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+- Uygulamanızı Adapty Android SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri, her özel öğe için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [getirmek](android-get-pb-paywalls) ve [görüntülemek](android-present-paywalls) için ayarlayın.
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartTwoFlows />
+
+## 1. Onboarding flow'unda mevcut ve hedef kiloyu isteyin \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+<CustomElementChartOnboardingInputs />
+
+## 2. Özel öğeyi paywall ekranına ekleyin \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+<CustomElementChartBuilderSetup />
+
+## 3. Mevcut ve hedef ağırlığı uygulamanızda kaydedin \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+Onboarding flow'unun `flow_user_input` etkinliklerinden mevcut ve hedef ağırlığı toplayın; bunun için [Flow'lardan veri işleme](android-flow-input) bölümüne bakın. Kullanıcının son ekrana ulaştığını anlamak için `is_last_screen` değeri `true` olarak ayarlanmış bir `flow_screen_showed` etkinliğini izleyin. Onboarding flow'u o ekranın ardından kapandığında her iki ağırlığı da `showWeightPaywall` fonksiyonuna aktarın; bu fonksiyon [grafiği özel öğeyle eşleştiren paywall flow'unu açar](#5-match-the-chart-to-the-custom-element).
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightOnboardingListener(
+    private val activity: Activity, // the activity that displays the paywall flow
+) : AdaptyFlowDefaultEventListener() {
+
+    private val enteredWeights = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        enteredWeights[elementId] = value
+    }
+
+    override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+        // number inputs send their values as strings
+        val currentWeight = enteredWeights["weight"]?.toDoubleOrNull()
+        val goalWeight = enteredWeights["goal_weight"]?.toDoubleOrNull()
+
+        if (action == AdaptyUI.Action.Close && reachedLastScreen &&
+            currentWeight != null && goalWeight != null
+        ) {
+            // on the last screen, open the paywall flow in place of the onboarding flow
+            showWeightPaywall(activity, currentWeight, goalWeight)
+        } else {
+            super.onActionPerformed(action, context) // the default handling, such as going back
+        }
+    }
+}
+```
+
+Onboarding flow için, `AdaptyUI.getFlowView` fonksiyonunun `eventListener` parametresine `WeightOnboardingListener` değerini geçirin. Listener'ı, paywall flow'unu görüntüleyen activity ile oluşturun.
+
+Jetpack Compose'da ise listener'ı `AdaptyFlowScreen`'e geçirin ve paywall flow'unu ikinci bir `AdaptyFlowScreen`'de gösterin.
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightOnboardingListener extends AdaptyFlowDefaultEventListener {
+    private final Activity activity; // the activity that displays the paywall flow
+    private final Map<String, String> enteredWeights = new HashMap<>();
+    private boolean reachedLastScreen = false;
+
+    public WeightOnboardingListener(Activity activity) {
+        this.activity = activity;
+    }
+
+    @Override
+    public void onAnalyticEvent(String name, Map<String, ?> params, Context context) {
+        if (name.equals("flow_screen_showed") && Boolean.TRUE.equals(params.get("is_last_screen"))) {
+            reachedLastScreen = true;
+            return;
+        }
+        if (!name.equals("flow_user_input")) return;
+
+        Object elementId = params.get("element_id");
+        Object value = params.get("value");
+        if (elementId instanceof String && value instanceof String) {
+            enteredWeights.put((String) elementId, (String) value);
+        }
+    }
+
+    @Override
+    public void onActionPerformed(AdaptyUI.Action action, Context context) {
+        // number inputs send their values as strings
+        Double currentWeight = parseWeight(enteredWeights.get("weight"));
+        Double goalWeight = parseWeight(enteredWeights.get("goal_weight"));
+
+        if (action instanceof AdaptyUI.Action.Close && reachedLastScreen
+                && currentWeight != null && goalWeight != null) {
+            // on the last screen, open the paywall flow in place of the onboarding flow
+            WeightPaywall.showWeightPaywall(activity, currentWeight, goalWeight);
+        } else {
+            super.onActionPerformed(action, context); // the default handling, such as going back
+        }
+    }
+
+    private static Double parseWeight(String value) {
+        if (value == null) return null;
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+}
+```
+
+Onboarding flow için, `AdaptyUI.getFlowView` fonksiyonunun `eventListener` parametresine `WeightOnboardingListener` değerini geçin. Listener'ı, paywall flow'unu görüntüleyen activity ile oluşturun.
+
+</TabItem>
+</Tabs>
+
+Kullanıcı son ekranda [**Close flow** aksiyonuna](android-handle-paywall-actions#close-flows-and-paywalls) sahip butona dokunduğunda, listener onboarding flow'unun yerinde paywall flow'unu açar.
+
+## 4. Grafik görünümünü oluşturun \{#create-the-chart-view\}
+
+Bir kilo planı modeli ve grafikli bir görünüm oluşturun. Plan, mevcut kilodan hedef kiloya kadar haftada bir girişten oluşur. Kullanıcı grafik üzerinde sürüklediğinde, görünüm dokunulan noktadaki haftayı işaretler ve o hafta için tahmini kiloyu gösterir:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightPlan(currentWeight: Double, goalWeight: Double) {
+    // one entry per week, from the current weight to the goal weight
+    val entries: List<WeightEntry> = run {
+        val weeklyChange = 0.5 // kg per week
+        val start = System.currentTimeMillis()
+        val weekMillis = 7L * 24 * 60 * 60 * 1000
+        val weeks = ceil(abs(goalWeight - currentWeight) / weeklyChange).toInt()
+        val step = if (goalWeight < currentWeight) -weeklyChange else weeklyChange
+        (0..weeks).map { week ->
+            val kilograms = if (week == weeks) goalWeight else currentWeight + step * week
+            WeightEntry(Date(start + week * weekMillis), kilograms)
+        }
+    }
+}
+
+data class WeightEntry(val date: Date, val kilograms: Double)
+
+@Composable
+fun WeightGoalChart(entries: List<WeightEntry>) {
+    // the week under the finger, or null when the user isn't dragging
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val textMeasurer = rememberTextMeasurer()
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val color = Color(0xFFAF52DE)
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 12.sp)
+    val minKg = entries.minOf { it.kilograms }
+    val kgRange = (entries.maxOf { it.kilograms } - minKg).coerceAtLeast(1.0)
+
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(entries) {
+                // horizontal drags select a week; vertical drags scroll the screen
+                detectHorizontalDragGestures(
+                    onDragEnd = { selectedIndex = null },
+                    onDragCancel = { selectedIndex = null },
+                ) { change, _ ->
+                    val index = (change.position.x / size.width * entries.lastIndex).roundToInt()
+                    selectedIndex = index.coerceIn(0, entries.lastIndex)
+                }
+            }
+    ) {
+        val startDate = textMeasurer.measure(dateFormat.format(entries.first().date), textStyle)
+        val endDate = textMeasurer.measure(dateFormat.format(entries.last().date), textStyle)
+        val dateY = size.height - startDate.size.height
+        val top = 24.dp.toPx() // room for the projected weight above the line
+        val bottom = dateY - 8.dp.toPx()
+        fun pointOf(index: Int) = Offset(
+            x = size.width * index / entries.lastIndex.coerceAtLeast(1),
+            y = bottom - ((entries[index].kilograms - minKg) / kgRange * (bottom - top)).toFloat(),
+        )
+
+        // the line from the current weight to the goal weight
+        for (index in 1..entries.lastIndex) {
+            drawLine(color, pointOf(index - 1), pointOf(index), strokeWidth = 2.dp.toPx())
+        }
+        // the dates of the first and the last week
+        drawText(startDate, topLeft = Offset(0f, dateY))
+        drawText(endDate, topLeft = Offset(size.width - endDate.size.width, dateY))
+
+        // the selected week: a point, and the projected weight above it
+        selectedIndex?.let { index ->
+            val point = pointOf(index)
+            drawCircle(color, radius = 5.dp.toPx(), center = point)
+            val weight = String.format(Locale.getDefault(), "%.1f kg", entries[index].kilograms)
+            val label = textMeasurer.measure(weight, textStyle.copy(color = color))
+            val x = (point.x - label.size.width / 2)
+                .coerceAtMost(size.width - label.size.width)
+                .coerceAtLeast(0f)
+            drawText(label, topLeft = Offset(x, point.y - label.size.height - 8.dp.toPx()))
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightPlan {
+    // one entry per week, from the current weight to the goal weight
+    public final List<WeightEntry> entries = new ArrayList<>();
+
+    public WeightPlan(double currentWeight, double goalWeight) {
+        double weeklyChange = 0.5; // kg per week
+        long start = System.currentTimeMillis();
+        long weekMillis = 7L * 24 * 60 * 60 * 1000;
+        int weeks = (int) Math.ceil(Math.abs(goalWeight - currentWeight) / weeklyChange);
+        double step = goalWeight < currentWeight ? -weeklyChange : weeklyChange;
+        for (int week = 0; week <= weeks; week++) {
+            double kilograms = week == weeks ? goalWeight : currentWeight + step * week;
+            entries.add(new WeightEntry(new Date(start + week * weekMillis), kilograms));
+        }
+    }
+}
+
+public class WeightEntry {
+    public final Date date;
+    public final double kilograms;
+
+    public WeightEntry(Date date, double kilograms) {
+        this.date = date;
+        this.kilograms = kilograms;
+    }
+}
+
+public class WeightGoalChartView extends View {
+    private final List<WeightEntry> entries;
+    private final DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM);
+    private final Paint chartPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint datePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final float density = getResources().getDisplayMetrics().density;
+    private final int touchSlop;
+    private double minKg = Double.MAX_VALUE;
+    private double maxKg = -Double.MAX_VALUE;
+    private float downX;
+    private float downY;
+    // the week under the finger, or -1 when the user isn't dragging
+    private int selectedIndex = -1;
+
+    public WeightGoalChartView(Context context, List<WeightEntry> entries) {
+        super(context);
+        this.entries = entries;
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        float textSize = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics());
+        chartPaint.setColor(0xFFAF52DE);
+        chartPaint.setStrokeWidth(2 * density);
+        chartPaint.setTextSize(textSize);
+        datePaint.setColor(Color.GRAY);
+        datePaint.setTextSize(textSize);
+        for (WeightEntry entry : entries) {
+            minKg = Math.min(minKg, entry.kilograms);
+            maxKg = Math.max(maxKg, entry.kilograms);
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        // the line from the current weight to the goal weight
+        for (int index = 1; index < entries.size(); index++) {
+            canvas.drawLine(xOf(index - 1), yOf(index - 1), xOf(index), yOf(index), chartPaint);
+        }
+        // the dates of the first and the last week
+        String endDate = dateFormat.format(entries.get(entries.size() - 1).date);
+        float dateY = getHeight() - datePaint.descent();
+        canvas.drawText(dateFormat.format(entries.get(0).date), 0, dateY, datePaint);
+        canvas.drawText(endDate, getWidth() - datePaint.measureText(endDate), dateY, datePaint);
+
+        // the selected week: a point, and the projected weight above it
+        if (selectedIndex >= 0) {
+            float x = xOf(selectedIndex);
+            float y = yOf(selectedIndex);
+            canvas.drawCircle(x, y, 5 * density, chartPaint);
+            double kilograms = entries.get(selectedIndex).kilograms;
+            String weight = String.format(Locale.getDefault(), "%.1f kg", kilograms);
+            float width = chartPaint.measureText(weight);
+            float labelX = Math.max(0, Math.min(x - width / 2, getWidth() - width));
+            canvas.drawText(weight, labelX, y - 8 * density, chartPaint);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                downX = event.getX();
+                downY = event.getY();
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                // horizontal drags select a week; vertical drags scroll the screen
+                float dx = Math.abs(event.getX() - downX);
+                if (selectedIndex < 0 && (dx < touchSlop || dx < Math.abs(event.getY() - downY))) {
+                    return true;
+                }
+                getParent().requestDisallowInterceptTouchEvent(true);
+                int index = Math.round(event.getX() / getWidth() * (entries.size() - 1));
+                selectedIndex = Math.max(0, Math.min(index, entries.size() - 1));
+                invalidate();
+                return true;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                selectedIndex = -1;
+                invalidate();
+                return true;
+        }
+        return super.onTouchEvent(event);
+    }
+
+    private float xOf(int index) {
+        return getWidth() * index / (float) Math.max(entries.size() - 1, 1);
+    }
+
+    private float yOf(int index) {
+        float top = 24 * density; // room for the projected weight above the line
+        float bottom = getHeight() - datePaint.getFontSpacing() - 8 * density; // room for the dates
+        double fraction = (entries.get(index).kilograms - minKg) / Math.max(maxKg - minKg, 1);
+        return (float) (bottom - fraction * (bottom - top));
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartWeeklyChange />
+
+## 5. Grafiği özel öğeyle eşleştirin \{#match-the-chart-to-the-custom-element\}
+
+`line_chart` Türü ve `weight_goal` ID'si için grafik görünümünü döndüren bir [çözümleyici](android-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yazın. Ağırlık planını çözümleyicinin bir özelliğinde saklayın:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightChartResolver(
+    private val plan: WeightPlan,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        if (type == "line_chart" && id == "weight_goal") {
+            AdaptyCustomElementContent.compose { WeightGoalChart(plan.entries) }
+        } else {
+            null // another custom element: show the fallback
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightChartResolver implements AdaptyCustomElementsResolver {
+    private final WeightPlan plan;
+
+    public WeightChartResolver(WeightPlan plan) {
+        this.plan = plan;
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("line_chart") && id.equals("weight_goal")) {
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> new WeightGoalChartView(context, plan.entries)
+            );
+        }
+        return null; // another custom element: show the fallback
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Paywall flow'unun görünümünü oluştururken resolver'ı ekleyin. Resolver'ı mevcut ve hedef ağırlık planıyla oluşturun:
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+fun showWeightPaywall(activity: Activity, currentWeight: Double, goalWeight: Double) {
+    val plan = WeightPlan(currentWeight, goalWeight)
+    Adapty.getFlow("weight_paywall") { flowResult ->
+        if (flowResult !is AdaptyResult.Success) return@getFlow // handle the error
+        AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+            if (configResult !is AdaptyResult.Success) return@getFlowConfiguration // handle the error
+            val flowView = AdaptyUI.getFlowView(
+                activity,
+                configResult.value,
+                products = null,
+                eventListener = AdaptyFlowDefaultEventListener(),
+                customElementsResolver = WeightChartResolver(plan),
+            )
+            activity.setContentView(flowView) // in place of the onboarding flow
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightPaywall {
+    public static void showWeightPaywall(Activity activity, double currentWeight, double goalWeight) {
+        WeightPlan plan = new WeightPlan(currentWeight, goalWeight);
+        Adapty.getFlow("weight_paywall", flowResult -> {
+            if (!(flowResult instanceof AdaptyResult.Success)) return; // handle the error
+            AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) flowResult).getValue();
+            AdaptyUI.getFlowConfiguration(flow, configResult -> {
+                if (!(configResult instanceof AdaptyResult.Success)) return; // handle the error
+                AdaptyFlowView flowView = AdaptyUI.getFlowView(
+                        activity,
+                        ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) configResult).getValue(),
+                        null,
+                        new AdaptyFlowDefaultEventListener(),
+                        // defaults: if your app passes other values here, keep them
+                        AdaptyFlowInsets.Unspecified,
+                        AdaptyCustomAssets.Empty,
+                        AdaptyUiTagResolver.Default,
+                        AdaptyUiTimerResolver.Default,
+                        null,
+                        new WeightChartResolver(plan)
+                );
+                activity.setContentView(flowView); // in place of the onboarding flow
+            });
+        });
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Uygulamanız [uygulama genelinde bir resolver](android-flow-custom-elements#display-views-in-every-flow) tanımlıyorsa, bu resolver paywall flow'unda onun yerini alır. `WeightChartResolver`, başka hiçbir Tür ve ID için görünüm döndürmez; çünkü bu tarifte paywall flow'unda başka özel öğe yoktur. Paywall flow'unuzda başka özel öğeler varsa, uygulama genelindeki resolver'ı bu resolver'a aktarın. Ardından, [Tek bir flow için veri görüntüleme](android-flow-custom-elements#display-data-for-one-flow) bölümünde olduğu gibi ilgili Tür ve ID'ler için uygulama genelindeki resolver'ı çağırın.
+
+## 6. Cihazda test edin \{#6-test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle canvas yalnızca yedek içeriği gösterir. Grafiği önizlemek için:
+
+1. [Her iki flow'u da yayınlayın](builder-save-publish). Önbelleğe alınanlar yerine en son yayınlanan sürümleri görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Resolver'ı içeren uygulamanızın bir build'ini çalıştırın. Mevcut ve hedef ağırlıkla onboarding flow'unu tamamlayın. Grafiğin çizgisinin mevcut ağırlıkta başlayıp hedef ağırlıkta bittiğini doğrulayın.
+3. Grafik üzerinde sürükleyin ve parmağınızın altındaki haftaya ait tahmini ağırlığın çizginin üzerinde göründüğünü doğrulayın.
+
+Yedek paywall'ı test etmek için `showWeightPaywall` içindeki `WeightChartResolver` bağımsız değişkenini kaldırın ve paywall flow'unu yeniden açın.
+
+Yedek paywall'ın grafik yerine neden göründüğünü öğrenmek için Android kılavuzunun [Cihazda test etme](android-flow-custom-elements#test-on-a-device) bölümündeki talimatları izleyin.

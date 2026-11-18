@@ -1,0 +1,265 @@
+---
+title: "Lottieアニメーションでユーザーの進捗状況を表示する"
+description: "Lottieアニメーションとしてフロー画面に各ユーザーの進捗状況（デイリーストリークなど）を表示します。"
+metadataTitle: "Lottieアニメーションでユーザーの進捗状況を表示する | Android SDK | Adapty ドキュメント"
+---
+
+<CustomElementLottieIntro />
+
+## 始める前に \{#before-you-start\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+- アプリを Adapty Android SDK 4.4 以降に更新してください。それより古いバージョンの SDK では、カスタム要素ごとに[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)が表示されます。
+- アプリにフローを[取得](android-get-pb-paywalls)して[表示](android-present-paywalls)する設定を行ってください。
+- アプリモジュールに Jetpack Compose をセットアップしてください。このレシピのアニメーションビューはコンポーザブルです。
+- Gradle を使って `com.airbnb.android:lottie-compose` から Lottie for Jetpack Compose をアプリに追加してください。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+- アプリを Adapty Android SDK 4.4 以降に更新してください。それより古い SDK バージョンでは、すべてのカスタム要素に対して[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)が表示されます。
+- アプリでフローを[取得](android-get-pb-paywalls)して[表示](android-present-paywalls)できるよう設定してください。
+- `com.airbnb.android:lottie` から Gradle を使って Lottie をアプリに追加してください。
+
+</TabItem>
+</Tabs>
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. カスタム要素をスクリーンに追加する \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. アプリにアニメーションファイルを追加する \{#2-add-the-animation-file-to-your-app\}
+
+アニメーションファイルを `src/main/assets`（アプリモジュールの `assets` フォルダ）に配置してください。サブフォルダではなく、このフォルダのルートに置いてください。
+
+`.json` を除いたファイル名は、カスタム要素のIDと一致させる必要があります。たとえば `streak_ring` の場合は `streak_ring.json` となります。
+
+## 3. アニメーションビューを作成する \{#3-create-the-animation-view\}
+
+ストリークのモデルと、アニメーションを再生するビューを作成します。ストリークが変化すると、アプリはモデルを更新します。ビューはモデルを参照するため、画面を開いたときにリングが現在のストリークを表示します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` はリングを空の状態から `progress` まで一度塗りつぶします。アプリがすでにストリークを `StateFlow` で管理している場合は、`StreakStore` の代わりにその `StateFlow` を使用してください。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+// the streak that your app keeps up to date
+public class StreakStore {
+    public final MutableLiveData<Integer> currentStreak = new MutableLiveData<>(0); // days in a row
+}
+
+public class StreakRingView extends LottieAnimationView {
+    private final StreakStore streakStore;
+
+    private final Observer<Integer> streakObserver = streak -> {
+        // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+        float progress = Math.min(streak / 7f, 1f);
+        setMinAndMaxProgress(0f, progress);
+        playAnimation();
+    };
+
+    public StreakRingView(Context context, String animationFile, StreakStore streakStore) {
+        super(context);
+        this.streakStore = streakStore;
+        setAnimation(animationFile);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        streakStore.currentStreak.observeForever(streakObserver);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        streakStore.currentStreak.removeObserver(streakObserver);
+        super.onDetachedFromWindow();
+    }
+}
+```
+
+`setMinAndMaxProgress(0f, progress)` と `playAnimation()` を使うと、リングを空から `progress` まで一度だけ塗りつぶすアニメーションが再生されます。アプリがすでにストリークを `LiveData` で管理している場合は、`StreakStore` の代わりにその `LiveData` を使ってください。
+
+</TabItem>
+</Tabs>
+
+## 4. アニメーションをカスタム要素に対応付ける \{#4-match-the-animation-to-the-custom-element\}
+
+アプリ全体の[リゾルバー](android-flow-custom-elements#display-views-in-every-flow)に、ストリークモデル用のプロパティを追加します。次に、Type が `lottie_animation`、ID が `streak_ring` のビューに対してアニメーションビューを返します。ハイライトされた行が追加・変更箇所です。アプリにまだアプリ全体の[リゾルバー](android-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)がない場合は、コード全体をコピーしてください。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+`streak_ring`ブランチを他のアニメーション用のブランチより前に置いてください。Kotlinは最初にマッチしたブランチのみ実行するためです。`assets`フォルダにそのIDのファイルがない場合、リゾルバーは`null`を返し、ユーザーにはフォールバックが表示されます。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java" {10,14-15,34-40}
+
+public class CustomElementsResolver implements AdaptyCustomElementsResolver {
+    private final StreakStore streakStore;
+    // the animation files in the assets folder, listed once
+    private final Set<String> animationFiles = new HashSet<>();
+
+    public CustomElementsResolver(Context context, StreakStore streakStore) {
+        this.streakStore = streakStore;
+        try {
+            String[] files = context.getAssets().list("");
+            if (files != null) {
+                animationFiles.addAll(Arrays.asList(files));
+            }
+        } catch (IOException e) {
+            // no list of files: every Lottie element shows the fallback
+        }
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("lottie_animation")) {
+            // the ID names the animation file, such as streak_ring.json
+            String file = id + ".json";
+            if (!animationFiles.contains(file)) {
+                return null; // no file for this ID: show the fallback
+            }
+            if (id.equals("streak_ring")) {
+                return AdaptyCustomElementContent.view(
+                        (context, elementContext) -> new StreakRingView(context, file, streakStore)
+                );
+            }
+            // the other animations of your resolver
+            return null;
+        }
+        // the other Types of your resolver
+        return null;
+    }
+}
+```
+
+`assets`フォルダにそのIDに対応するファイルがない場合、リゾルバーは`null`を返し、ユーザーにはフォールバックが表示されます。
+
+</TabItem>
+</Tabs>
+
+ストリークモデルを使ってリゾルバーを作成し、アプリ全体のリゾルバーとして設定します。`AdaptyUI.setCustomElementsResolver`はアプリ起動時など、一度だけ呼び出してください：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    // keep this instance: a resolver for one flow can reuse it
+    // lazy: the context isn't attached yet while App is constructed
+    val customElementsResolver by lazy { CustomElementsResolver(this, streakStore) }
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(customElementsResolver)
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class App extends Application {
+    // the streak model that your app updates
+    private final StreakStore streakStore = new StreakStore();
+    // keep this instance: a resolver for one flow can reuse it
+    private CustomElementsResolver customElementsResolver;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        customElementsResolver = new CustomElementsResolver(this, streakStore);
+        AdaptyUI.setCustomElementsResolver(customElementsResolver);
+    }
+
+    public StreakStore getStreakStore() {
+        return streakStore;
+    }
+
+    public CustomElementsResolver getCustomElementsResolver() {
+        return customElementsResolver;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 5. デバイスでテストする \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+フォールバックがアニメーションの代わりに表示される原因を調べるには、Androidガイドの[デバイスでテストする](android-flow-custom-elements#test-on-a-device)セクションの手順に従ってください。

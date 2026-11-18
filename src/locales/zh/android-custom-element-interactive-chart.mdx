@@ -1,0 +1,496 @@
+---
+title: "在付费墙中展示互动式体重目标图表"
+description: "在付费墙流程中以图表形式展示每位用户的预计体重变化，用户可以在图表上拖动查看任意周的体重数据。"
+metadataTitle: "在付费墙中展示互动式体重目标图表 | Android SDK | Adapty 文档"
+---
+
+按照此方案，在付费墙流程中以数据图表形式展示每位用户的预计体重变化。用户在用户引导流程中输入当前体重和目标体重，你的应用收集这两个值。数据图表展示用户在你的应用帮助下每周可实现的进度，从初始值到目标值。你的应用将该数据图表作为原生视图渲染在[自定义元素](flow-custom-elements)中，无需借助图表库即可绘制。
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="完成后的付费墙效果：用户在图表上拖动，标签会显示每周的预计体重，直至目标体重 72 公斤。" />
+
+## 开始之前 \{#before-you-start\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+- 将应用更新至 Adapty Android SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置应用以[获取](android-get-pb-paywalls)和[展示](android-present-paywalls)流程。
+- 在应用模块中配置 Jetpack Compose。本示例中的数据图表是一个可组合项。
+- 通过 Gradle 将 Compose Foundation 添加到应用中，依赖为 `androidx.compose.foundation:foundation`。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+- 将您的应用升级至 Adapty Android SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置您的应用以[获取](android-get-pb-paywalls)和[展示](android-present-paywalls)流程。
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartTwoFlows />
+
+## 1. 在用户引导流程中询问当前体重和目标体重 \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+<CustomElementChartOnboardingInputs />
+
+## 2. 将自定义元素添加到付费墙页面 \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+<CustomElementChartBuilderSetup />
+
+## 3. 在应用中保存当前体重和目标体重 \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+从用户引导流程的 `flow_user_input` 事件中获取当前体重和目标体重，具体方式参见[处理流程数据](android-flow-input)。若要判断用户是否已到达最后一个屏幕，可监听 `flow_screen_showed` 事件中 `is_last_screen` 是否为 `true`。当用户引导流程在该屏幕关闭后，将两个体重值传入 `showWeightPaywall`——即[打开带数据图表的付费墙流程](#5-match-the-chart-to-the-custom-element)的函数。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightOnboardingListener(
+    private val activity: Activity, // the activity that displays the paywall flow
+) : AdaptyFlowDefaultEventListener() {
+
+    private val enteredWeights = mutableMapOf<String, String>()
+    private var reachedLastScreen = false
+
+    override fun onAnalyticEvent(
+        name: String,
+        params: Map<String, Any?>,
+        context: Context,
+    ) {
+        if (name == "flow_screen_showed" && params["is_last_screen"] == true) {
+            reachedLastScreen = true
+            return
+        }
+        if (name != "flow_user_input") return
+
+        val elementId = params["element_id"] as? String ?: return
+        val value = params["value"] as? String ?: return
+
+        enteredWeights[elementId] = value
+    }
+
+    override fun onActionPerformed(action: AdaptyUI.Action, context: Context) {
+        // number inputs send their values as strings
+        val currentWeight = enteredWeights["weight"]?.toDoubleOrNull()
+        val goalWeight = enteredWeights["goal_weight"]?.toDoubleOrNull()
+
+        if (action == AdaptyUI.Action.Close && reachedLastScreen &&
+            currentWeight != null && goalWeight != null
+        ) {
+            // on the last screen, open the paywall flow in place of the onboarding flow
+            showWeightPaywall(activity, currentWeight, goalWeight)
+        } else {
+            super.onActionPerformed(action, context) // the default handling, such as going back
+        }
+    }
+}
+```
+
+对于用户引导流程，在 `AdaptyUI.getFlowView` 的 `eventListener` 参数中传入 `WeightOnboardingListener`。创建监听器时，传入显示付费墙流程的 Activity。
+
+在 Jetpack Compose 中，改为将监听器传递给 `AdaptyFlowScreen`，并在第二个 `AdaptyFlowScreen` 中显示付费墙流程。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightOnboardingListener extends AdaptyFlowDefaultEventListener {
+    private final Activity activity; // the activity that displays the paywall flow
+    private final Map<String, String> enteredWeights = new HashMap<>();
+    private boolean reachedLastScreen = false;
+
+    public WeightOnboardingListener(Activity activity) {
+        this.activity = activity;
+    }
+
+    @Override
+    public void onAnalyticEvent(String name, Map<String, ?> params, Context context) {
+        if (name.equals("flow_screen_showed") && Boolean.TRUE.equals(params.get("is_last_screen"))) {
+            reachedLastScreen = true;
+            return;
+        }
+        if (!name.equals("flow_user_input")) return;
+
+        Object elementId = params.get("element_id");
+        Object value = params.get("value");
+        if (elementId instanceof String && value instanceof String) {
+            enteredWeights.put((String) elementId, (String) value);
+        }
+    }
+
+    @Override
+    public void onActionPerformed(AdaptyUI.Action action, Context context) {
+        // number inputs send their values as strings
+        Double currentWeight = parseWeight(enteredWeights.get("weight"));
+        Double goalWeight = parseWeight(enteredWeights.get("goal_weight"));
+
+        if (action instanceof AdaptyUI.Action.Close && reachedLastScreen
+                && currentWeight != null && goalWeight != null) {
+            // on the last screen, open the paywall flow in place of the onboarding flow
+            WeightPaywall.showWeightPaywall(activity, currentWeight, goalWeight);
+        } else {
+            super.onActionPerformed(action, context); // the default handling, such as going back
+        }
+    }
+
+    private static Double parseWeight(String value) {
+        if (value == null) return null;
+        try {
+            return Double.parseDouble(value);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+}
+```
+
+对于用户引导流程，在 `AdaptyUI.getFlowView` 的 `eventListener` 参数中传入 `WeightOnboardingListener`。创建监听器时，传入显示付费墙流程的 Activity。
+
+</TabItem>
+</Tabs>
+
+当用户在最后一个页面点击带有 [**关闭流程** 操作](android-handle-paywall-actions#close-flows-and-paywalls) 的按钮时，监听器会用付费墙流程替换用户引导流程。
+
+## 4. 创建数据图表视图 \{#4-create-the-chart-view\}
+
+创建体重计划的数据模型和包含数据图表的视图。该计划按周记录数据，从当前体重到目标体重。当用户在数据图表上拖动时，视图会标记触摸点对应的周次，并显示该周的预测体重：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightPlan(currentWeight: Double, goalWeight: Double) {
+    // one entry per week, from the current weight to the goal weight
+    val entries: List<WeightEntry> = run {
+        val weeklyChange = 0.5 // kg per week
+        val start = System.currentTimeMillis()
+        val weekMillis = 7L * 24 * 60 * 60 * 1000
+        val weeks = ceil(abs(goalWeight - currentWeight) / weeklyChange).toInt()
+        val step = if (goalWeight < currentWeight) -weeklyChange else weeklyChange
+        (0..weeks).map { week ->
+            val kilograms = if (week == weeks) goalWeight else currentWeight + step * week
+            WeightEntry(Date(start + week * weekMillis), kilograms)
+        }
+    }
+}
+
+data class WeightEntry(val date: Date, val kilograms: Double)
+
+@Composable
+fun WeightGoalChart(entries: List<WeightEntry>) {
+    // the week under the finger, or null when the user isn't dragging
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val textMeasurer = rememberTextMeasurer()
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val color = Color(0xFFAF52DE)
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 12.sp)
+    val minKg = entries.minOf { it.kilograms }
+    val kgRange = (entries.maxOf { it.kilograms } - minKg).coerceAtLeast(1.0)
+
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(entries) {
+                // horizontal drags select a week; vertical drags scroll the screen
+                detectHorizontalDragGestures(
+                    onDragEnd = { selectedIndex = null },
+                    onDragCancel = { selectedIndex = null },
+                ) { change, _ ->
+                    val index = (change.position.x / size.width * entries.lastIndex).roundToInt()
+                    selectedIndex = index.coerceIn(0, entries.lastIndex)
+                }
+            }
+    ) {
+        val startDate = textMeasurer.measure(dateFormat.format(entries.first().date), textStyle)
+        val endDate = textMeasurer.measure(dateFormat.format(entries.last().date), textStyle)
+        val dateY = size.height - startDate.size.height
+        val top = 24.dp.toPx() // room for the projected weight above the line
+        val bottom = dateY - 8.dp.toPx()
+        fun pointOf(index: Int) = Offset(
+            x = size.width * index / entries.lastIndex.coerceAtLeast(1),
+            y = bottom - ((entries[index].kilograms - minKg) / kgRange * (bottom - top)).toFloat(),
+        )
+
+        // the line from the current weight to the goal weight
+        for (index in 1..entries.lastIndex) {
+            drawLine(color, pointOf(index - 1), pointOf(index), strokeWidth = 2.dp.toPx())
+        }
+        // the dates of the first and the last week
+        drawText(startDate, topLeft = Offset(0f, dateY))
+        drawText(endDate, topLeft = Offset(size.width - endDate.size.width, dateY))
+
+        // the selected week: a point, and the projected weight above it
+        selectedIndex?.let { index ->
+            val point = pointOf(index)
+            drawCircle(color, radius = 5.dp.toPx(), center = point)
+            val weight = String.format(Locale.getDefault(), "%.1f kg", entries[index].kilograms)
+            val label = textMeasurer.measure(weight, textStyle.copy(color = color))
+            val x = (point.x - label.size.width / 2)
+                .coerceAtMost(size.width - label.size.width)
+                .coerceAtLeast(0f)
+            drawText(label, topLeft = Offset(x, point.y - label.size.height - 8.dp.toPx()))
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightPlan {
+    // one entry per week, from the current weight to the goal weight
+    public final List<WeightEntry> entries = new ArrayList<>();
+
+    public WeightPlan(double currentWeight, double goalWeight) {
+        double weeklyChange = 0.5; // kg per week
+        long start = System.currentTimeMillis();
+        long weekMillis = 7L * 24 * 60 * 60 * 1000;
+        int weeks = (int) Math.ceil(Math.abs(goalWeight - currentWeight) / weeklyChange);
+        double step = goalWeight < currentWeight ? -weeklyChange : weeklyChange;
+        for (int week = 0; week <= weeks; week++) {
+            double kilograms = week == weeks ? goalWeight : currentWeight + step * week;
+            entries.add(new WeightEntry(new Date(start + week * weekMillis), kilograms));
+        }
+    }
+}
+
+public class WeightEntry {
+    public final Date date;
+    public final double kilograms;
+
+    public WeightEntry(Date date, double kilograms) {
+        this.date = date;
+        this.kilograms = kilograms;
+    }
+}
+
+public class WeightGoalChartView extends View {
+    private final List<WeightEntry> entries;
+    private final DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.MEDIUM);
+    private final Paint chartPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final Paint datePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final float density = getResources().getDisplayMetrics().density;
+    private final int touchSlop;
+    private double minKg = Double.MAX_VALUE;
+    private double maxKg = -Double.MAX_VALUE;
+    private float downX;
+    private float downY;
+    // the week under the finger, or -1 when the user isn't dragging
+    private int selectedIndex = -1;
+
+    public WeightGoalChartView(Context context, List<WeightEntry> entries) {
+        super(context);
+        this.entries = entries;
+        touchSlop = ViewConfiguration.get(context).getScaledTouchSlop();
+        float textSize = TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_SP, 12, getResources().getDisplayMetrics());
+        chartPaint.setColor(0xFFAF52DE);
+        chartPaint.setStrokeWidth(2 * density);
+        chartPaint.setTextSize(textSize);
+        datePaint.setColor(Color.GRAY);
+        datePaint.setTextSize(textSize);
+        for (WeightEntry entry : entries) {
+            minKg = Math.min(minKg, entry.kilograms);
+            maxKg = Math.max(maxKg, entry.kilograms);
+        }
+    }
+
+    @Override
+    protected void onDraw(Canvas canvas) {
+        // the line from the current weight to the goal weight
+        for (int index = 1; index < entries.size(); index++) {
+            canvas.drawLine(xOf(index - 1), yOf(index - 1), xOf(index), yOf(index), chartPaint);
+        }
+        // the dates of the first and the last week
+        String endDate = dateFormat.format(entries.get(entries.size() - 1).date);
+        float dateY = getHeight() - datePaint.descent();
+        canvas.drawText(dateFormat.format(entries.get(0).date), 0, dateY, datePaint);
+        canvas.drawText(endDate, getWidth() - datePaint.measureText(endDate), dateY, datePaint);
+
+        // the selected week: a point, and the projected weight above it
+        if (selectedIndex >= 0) {
+            float x = xOf(selectedIndex);
+            float y = yOf(selectedIndex);
+            canvas.drawCircle(x, y, 5 * density, chartPaint);
+            double kilograms = entries.get(selectedIndex).kilograms;
+            String weight = String.format(Locale.getDefault(), "%.1f kg", kilograms);
+            float width = chartPaint.measureText(weight);
+            float labelX = Math.max(0, Math.min(x - width / 2, getWidth() - width));
+            canvas.drawText(weight, labelX, y - 8 * density, chartPaint);
+        }
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        switch (event.getActionMasked()) {
+            case MotionEvent.ACTION_DOWN:
+                downX = event.getX();
+                downY = event.getY();
+                return true;
+            case MotionEvent.ACTION_MOVE:
+                // horizontal drags select a week; vertical drags scroll the screen
+                float dx = Math.abs(event.getX() - downX);
+                if (selectedIndex < 0 && (dx < touchSlop || dx < Math.abs(event.getY() - downY))) {
+                    return true;
+                }
+                getParent().requestDisallowInterceptTouchEvent(true);
+                int index = Math.round(event.getX() / getWidth() * (entries.size() - 1));
+                selectedIndex = Math.max(0, Math.min(index, entries.size() - 1));
+                invalidate();
+                return true;
+            case MotionEvent.ACTION_UP:
+            case MotionEvent.ACTION_CANCEL:
+                selectedIndex = -1;
+                invalidate();
+                return true;
+        }
+        return super.onTouchEvent(event);
+    }
+
+    private float xOf(int index) {
+        return getWidth() * index / (float) Math.max(entries.size() - 1, 1);
+    }
+
+    private float yOf(int index) {
+        float top = 24 * density; // room for the projected weight above the line
+        float bottom = getHeight() - datePaint.getFontSpacing() - 8 * density; // room for the dates
+        double fraction = (entries.get(index).kilograms - minKg) / Math.max(maxKg - minKg, 1);
+        return (float) (bottom - fraction * (bottom - top));
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartWeeklyChange />
+
+## 5. 将数据图表与自定义元素关联 \{#5-match-the-chart-to-the-custom-element\}
+
+编写一个[解析器](android-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，使其为 `line_chart` 类型和 `weight_goal` ID 返回图表视图。将体重计划存储在解析器的属性中：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightChartResolver(
+    private val plan: WeightPlan,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        if (type == "line_chart" && id == "weight_goal") {
+            AdaptyCustomElementContent.compose { WeightGoalChart(plan.entries) }
+        } else {
+            null // another custom element: show the fallback
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightChartResolver implements AdaptyCustomElementsResolver {
+    private final WeightPlan plan;
+
+    public WeightChartResolver(WeightPlan plan) {
+        this.plan = plan;
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("line_chart") && id.equals("weight_goal")) {
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> new WeightGoalChartView(context, plan.entries)
+            );
+        }
+        return null; // another custom element: show the fallback
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+创建付费墙流程视图时，附加解析器。使用当前体重和目标体重的减重计划创建解析器：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+fun showWeightPaywall(activity: Activity, currentWeight: Double, goalWeight: Double) {
+    val plan = WeightPlan(currentWeight, goalWeight)
+    Adapty.getFlow("weight_paywall") { flowResult ->
+        if (flowResult !is AdaptyResult.Success) return@getFlow // handle the error
+        AdaptyUI.getFlowConfiguration(flowResult.value) { configResult ->
+            if (configResult !is AdaptyResult.Success) return@getFlowConfiguration // handle the error
+            val flowView = AdaptyUI.getFlowView(
+                activity,
+                configResult.value,
+                products = null,
+                eventListener = AdaptyFlowDefaultEventListener(),
+                customElementsResolver = WeightChartResolver(plan),
+            )
+            activity.setContentView(flowView) // in place of the onboarding flow
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class WeightPaywall {
+    public static void showWeightPaywall(Activity activity, double currentWeight, double goalWeight) {
+        WeightPlan plan = new WeightPlan(currentWeight, goalWeight);
+        Adapty.getFlow("weight_paywall", flowResult -> {
+            if (!(flowResult instanceof AdaptyResult.Success)) return; // handle the error
+            AdaptyFlow flow = ((AdaptyResult.Success<AdaptyFlow>) flowResult).getValue();
+            AdaptyUI.getFlowConfiguration(flow, configResult -> {
+                if (!(configResult instanceof AdaptyResult.Success)) return; // handle the error
+                AdaptyFlowView flowView = AdaptyUI.getFlowView(
+                        activity,
+                        ((AdaptyResult.Success<AdaptyUI.FlowConfiguration>) configResult).getValue(),
+                        null,
+                        new AdaptyFlowDefaultEventListener(),
+                        // defaults: if your app passes other values here, keep them
+                        AdaptyFlowInsets.Unspecified,
+                        AdaptyCustomAssets.Empty,
+                        AdaptyUiTagResolver.Default,
+                        AdaptyUiTimerResolver.Default,
+                        null,
+                        new WeightChartResolver(plan)
+                );
+                activity.setContentView(flowView); // in place of the onboarding flow
+            });
+        });
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+如果你的应用设置了[全局解析器](android-flow-custom-elements#display-views-in-every-flow)，该解析器会在付费墙流程中被此解析器替换。`WeightChartResolver` 对其他任何 Type 和 ID 均不返回视图，因为此示例中的付费墙流程没有其他自定义元素。如果你的付费墙流程包含其他自定义元素，请将全局解析器传入此解析器，然后针对对应的 Type 和 ID 调用全局解析器，具体方式参见[为单个流程显示数据](android-flow-custom-elements#display-data-for-one-flow)。
+
+## 6. 在设备上测试 \{#6-test-on-a-device\}
+
+流程与付费墙编辑工具无法运行你的应用代码，因此其画布只显示备用内容。要预览数据图表：
+
+1. [发布两个流程](builder-save-publish)。若要查看最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 运行包含解析器的应用构建版本。完成用户引导流程，输入当前体重和目标体重。验证数据图表的折线是否从当前体重开始，到目标体重结束。
+3. 在图表上拖动手指，验证手指所在周的预测体重是否显示在折线上方。
+
+要测试备用付费墙，请移除 `showWeightPaywall` 中的 `WeightChartResolver` 参数，然后重新打开付费墙流程。
+
+要了解为何显示的是备用内容而非数据图表，请参照 Android 指南中[在设备上测试](android-flow-custom-elements#test-on-a-device)部分的说明。

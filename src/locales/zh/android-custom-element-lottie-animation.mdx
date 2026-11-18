@@ -1,0 +1,265 @@
+---
+title: "通过 Lottie 动画展示用户进度"
+description: "在流程页面上以 Lottie 动画的形式展示每位用户的进度，例如每日连续打卡天数。"
+metadataTitle: "通过 Lottie 动画展示用户进度 | Android SDK | Adapty 文档"
+---
+
+<CustomElementLottieIntro />
+
+## 开始前的准备 \{#before-you-start\}
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+- 将应用更新至 Adapty Android SDK 4.4 或更高版本。较早的 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置应用以[获取](android-get-pb-paywalls)和[展示](android-present-paywalls)流程。
+- 在应用模块中配置 Jetpack Compose。本示例中的动画视图是一个可组合项（composable）。
+- 通过 Gradle 将 Lottie for Jetpack Compose 添加到应用中，来源为 `com.airbnb.android:lottie-compose`。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+- 将您的应用更新至 Adapty Android SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置您的应用以[获取](android-get-pb-paywalls)和[展示](android-present-paywalls)流程。
+- 通过 Gradle 从 `com.airbnb.android:lottie` 将 Lottie 添加到您的应用中。
+
+</TabItem>
+</Tabs>
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. 将自定义元素添加到屏幕 \{#add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. 将动画文件添加到应用 \{#2-add-the-animation-file-to-your-app\}
+
+将动画文件放入 `src/main/assets`，即应用模块的 `assets` 文件夹。请将其放在该文件夹的根目录下，不要放在子文件夹中。
+
+文件名（不含 `.json` 扩展名）必须与自定义元素的 ID 一致，例如 `streak_ring` 对应 `streak_ring.json`。
+
+## 3. 创建动画视图 \{#3-create-the-animation-view\}
+
+创建连续打卡的数据模型，以及播放动画的视图。当连续打卡数变化时，你的应用更新该模型。视图读取模型数据，因此当页面打开时，圆环会显示当前的连续打卡数：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` 会将圆环从空填充到 `progress` 指定的位置。如果你的应用已经用 `StateFlow` 管理连续打卡天数，可以直接用该 `StateFlow` 替换 `StreakStore`。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+// the streak that your app keeps up to date
+public class StreakStore {
+    public final MutableLiveData<Integer> currentStreak = new MutableLiveData<>(0); // days in a row
+}
+
+public class StreakRingView extends LottieAnimationView {
+    private final StreakStore streakStore;
+
+    private final Observer<Integer> streakObserver = streak -> {
+        // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+        float progress = Math.min(streak / 7f, 1f);
+        setMinAndMaxProgress(0f, progress);
+        playAnimation();
+    };
+
+    public StreakRingView(Context context, String animationFile, StreakStore streakStore) {
+        super(context);
+        this.streakStore = streakStore;
+        setAnimation(animationFile);
+    }
+
+    @Override
+    protected void onAttachedToWindow() {
+        super.onAttachedToWindow();
+        streakStore.currentStreak.observeForever(streakObserver);
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        streakStore.currentStreak.removeObserver(streakObserver);
+        super.onDetachedFromWindow();
+    }
+}
+```
+
+`setMinAndMaxProgress(0f, progress)` 和 `playAnimation()` 会将圆环从空状态填充至 `progress` 所指定的进度。如果你的应用已通过 `LiveData` 维护连续打卡天数，可以直接用该 `LiveData` 替换 `StreakStore`。
+
+</TabItem>
+</Tabs>
+
+## 4. 将动画与自定义元素关联 \{#4-match-the-animation-to-the-custom-element\}
+
+在你的[全局 resolver](android-flow-custom-elements#display-views-in-every-flow) 中，为 streak 模型添加一个属性。然后为 `lottie_animation` 类型和 `streak_ring` ID 返回动画视图。高亮行表示需要添加或修改的内容。如果你的应用还没有全局 [resolver](android-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，可以直接复制完整代码：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+将 `streak_ring` 分支放在其他动画分支之前，因为 Kotlin 只会执行第一个匹配的分支。如果 `assets` 文件夹中没有对应 ID 的文件，解析器将返回 `null`，用户将看到备用内容。
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java" {10,14-15,34-40}
+
+public class CustomElementsResolver implements AdaptyCustomElementsResolver {
+    private final StreakStore streakStore;
+    // the animation files in the assets folder, listed once
+    private final Set<String> animationFiles = new HashSet<>();
+
+    public CustomElementsResolver(Context context, StreakStore streakStore) {
+        this.streakStore = streakStore;
+        try {
+            String[] files = context.getAssets().list("");
+            if (files != null) {
+                animationFiles.addAll(Arrays.asList(files));
+            }
+        } catch (IOException e) {
+            // no list of files: every Lottie element shows the fallback
+        }
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("lottie_animation")) {
+            // the ID names the animation file, such as streak_ring.json
+            String file = id + ".json";
+            if (!animationFiles.contains(file)) {
+                return null; // no file for this ID: show the fallback
+            }
+            if (id.equals("streak_ring")) {
+                return AdaptyCustomElementContent.view(
+                        (context, elementContext) -> new StreakRingView(context, file, streakStore)
+                );
+            }
+            // the other animations of your resolver
+            return null;
+        }
+        // the other Types of your resolver
+        return null;
+    }
+}
+```
+
+如果 `assets` 文件夹中没有对应 ID 的文件，解析器会返回 `null`，用户将看到备用内容。
+
+</TabItem>
+</Tabs>
+
+使用连胜模型创建解析器，并将其设置为全局解析器。在应用启动时调用一次 `AdaptyUI.setCustomElementsResolver`：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    // keep this instance: a resolver for one flow can reuse it
+    // lazy: the context isn't attached yet while App is constructed
+    val customElementsResolver by lazy { CustomElementsResolver(this, streakStore) }
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(customElementsResolver)
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+
+public class App extends Application {
+    // the streak model that your app updates
+    private final StreakStore streakStore = new StreakStore();
+    // keep this instance: a resolver for one flow can reuse it
+    private CustomElementsResolver customElementsResolver;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        customElementsResolver = new CustomElementsResolver(this, streakStore);
+        AdaptyUI.setCustomElementsResolver(customElementsResolver);
+    }
+
+    public StreakStore getStreakStore() {
+        return streakStore;
+    }
+
+    public CustomElementsResolver getCustomElementsResolver() {
+        return customElementsResolver;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 5. 在设备上测试 \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+要了解为什么显示的是备用内容而不是动画，请参照 Android 指南中[在设备上测试](android-flow-custom-elements#test-on-a-device)部分的说明。
