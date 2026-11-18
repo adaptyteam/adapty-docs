@@ -150,7 +150,7 @@ inside Adapty instead of Apple's own console.
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
 | adapty-ads-manager | entry | marketer | 2 | tutorial |
-| adapty-ads-manager-analytics | entry | marketer | 12 | tutorial |
+| adapty-ads-manager-analytics | entry | marketer | 13 | tutorial |
 | adapty-ads-manager-get-started | — | marketer | 3 | tutorial |
 | adapty-ads-manager-metrics | — | marketer | 4 | tutorial |
 | ads-manager | entry | marketer | 0 | tutorial |

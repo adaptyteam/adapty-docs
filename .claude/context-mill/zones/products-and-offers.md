@@ -141,8 +141,8 @@ source id is named.
 | offers-in-stores | entry | marketer | 0 | tutorial |
 | product | entry | marketer | 0 | tutorial |
 | store-sync | entry | marketer | 7 | tutorial |
-| virtual-currencies | entry | marketer | 3 | tutorial |
-| virtual-currency-balance | — | marketer | 3 | tutorial |
+| virtual-currencies | entry | marketer | 7 | tutorial |
+| virtual-currency-balance | — | marketer | 4 | tutorial |
 | virtual-currency-quickstart | — | marketer | 0 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
@@ -196,3 +196,21 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
 
 ## Gaps and misses
 
+
+- **2026-11-17 — manual balance adjustment from the dashboard (autolog).** Read from the dashboard
+  frontend and backend code (closed-source; confirm with the product team).
+  - *Wrong in the corpus:* the server-side API spec said a `dashboard_transaction` always gets
+    `operation: reward`. The dashboard now writes whichever operation the team member picks — credit:
+    `reward`, `spend_reversal`, `adjustment`; debit: `spend`, `reward_reversal`, `adjustment`. Fixed in
+    `adapty-api.yaml` (English only; locales follow on the next translation run).
+  - *New, not in this brief:* a balance has a **spendable** amount — unexpired credits minus amounts
+    held for a pending spend. The profile card shows it only when it is lower than the balance, and a
+    debit (API or dashboard) is checked against spendable, not against the balance. The dashboard
+    adjustment is gated to Owner, Admin, and Support; requires `feature`; takes an optional reference
+    ID (≤128) and one-line comment (≤200); is idempotent per request key; is marked sandbox when the
+    profile is a test user; and is not sent to webhooks or integrations (the last per the feature
+    owner, not traced in code). The comment reaches the event-history **Details** block as the
+    metadata key `comment`. A **Change history** window lists manual adjustments of the last 3 months
+    with the actor and role, with up to ~2 minutes of lag. Owner article: `virtual-currency-balance`.
+  - *Unverified:* what makes a profile a "test user" for the sandbox flag has no UI label and no docs
+    article; the article says "a test user's balance" without a link.

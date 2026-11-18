@@ -183,6 +183,16 @@ const RULES = [
     re: /^[ \t]*[-*][ \t]+\*\*[^*\n]+\*\*:[ \t]+[a-z]/gm,
     hint: 'Capitalize the word after the colon in a bold-label list. (Area 6)',
   },
+  // Rules with `source: true` match the file with only code and comments
+  // blanked, because they look at the tags that maskNonProse removes.
+  // Six hits across the corpus, so every one is worth reading.
+  {
+    id: 'adjacent-screenshots',
+    scope: 'always',
+    source: true,
+    re: /(?:<ZoomImage\b[^>]*?\/>|<img\b[^>]*?\/?>|<Zoom>[\s\S]*?<\/Zoom>)\s*(?=<ZoomImage\b|<img\b|<Zoom>)/g,
+    hint: 'Two screenshots in a row: split the sentence between them, or drop the one that repeats the other. (Area 9)',
+  },
 ];
 
 /**
@@ -190,17 +200,22 @@ const RULES = [
  * numbers stay true: frontmatter, fenced code, inline code, link targets,
  * JSX/HTML tags and their attributes.
  */
-function maskNonProse(src) {
+const blank = (m) => m.replace(/[^\n]/g, ' ');
+
+/** Blank frontmatter, fenced code, and JSX comments; keep tags. */
+function maskCode(src) {
   let out = src;
-
-  const blank = (m) => m.replace(/[^\n]/g, ' ');
-
   // Frontmatter (only when it opens the file)
   out = out.replace(/^---\n[\s\S]*?\n---/, blank);
   // Fenced code blocks
   out = out.replace(/^[ \t]*(`{3,}|~{3,})[\s\S]*?^[ \t]*\1[ \t]*$/gm, blank);
   // JSX comments — not rendered prose
   out = out.replace(/\{\/\*[\s\S]*?\*\/\}/g, blank);
+  return out;
+}
+
+function maskNonProse(src) {
+  let out = maskCode(src);
   // Inline code
   out = out.replace(/`[^`\n]+`/g, blank);
   // Link and image targets — keep the text, drop the URL
@@ -239,6 +254,7 @@ function changedLines(file) {
 function lintFile(file, { full = false } = {}) {
   const src = readFileSync(file, 'utf8');
   const prose = maskNonProse(src);
+  const source = maskCode(src);
   const lineStarts = [0];
   for (let i = 0; i < prose.length; i++) if (prose[i] === '\n') lineStarts.push(i + 1);
   const lineOf = (idx) => {
@@ -259,10 +275,11 @@ function lintFile(file, { full = false } = {}) {
   const findings = [];
   for (const rule of RULES) {
     rule.re.lastIndex = 0;
-    for (const m of prose.matchAll(rule.re)) {
+    for (const m of (rule.source ? source : prose).matchAll(rule.re)) {
       const line = lineOf(m.index);
       if (rule.scope === 'changed' && !isChanged(line)) continue;
-      findings.push({ line, rule: rule.id, text: m[0].trim(), hint: rule.hint });
+      const text = rule.source ? m[0].trim().split('\n')[0].slice(0, 40) : m[0].trim();
+      findings.push({ line, rule: rule.id, text, hint: rule.hint });
     }
   }
   findings.sort((a, b) => a.line - b.line || a.rule.localeCompare(b.rule));

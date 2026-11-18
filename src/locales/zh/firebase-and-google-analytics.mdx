@@ -84,16 +84,17 @@ Stripe 和 Paddle 的购买行为发生在应用外部的网页端。你的移�
 
    <ZoomImage id="ga4-firebase-secret.webp" width="700px" alt="Google Analytics Measurement Protocol API secret 创建页面" />
 
-4. 配置 Adapty 如何转发收入和用户数据。这四个控制项共享看板中的同一行：
+4. 配置 Adapty 转发收入和用户数据的方式。这些设置位于 **How the revenue data should be send** 下：
 
-   - **Revenue definition** 下拉菜单：可选总收入、扣除应用商店佣金后的收益，或[扣除应用商店佣金及税费后的收益](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)。
-   - **Send user properties** 开关：开启后，事件中将包含 `subscription_state` 和 `subscription_product_id`。若要在报告或目标受众中使用这些数据，请参阅[在报告中使用订阅数据](#use-subscription-data-in-reports-and-audiences)。
-   - **Report user's currency** 开关：开启后，Adapty 以买家实际支付的货币上报每笔销售；关闭后则统一以美元上报。
-   - **Send trial price** 开关：试用开始是重要信号——大多数付费用户往往从试用起步。但 Google Ads 的竞价优化只会追逐带有收益的事件。开启此开关可为每次试用分配一个占位价格，让 Google 将其视为转化并优化广告支出，从而吸引更多试用用户。开启后，**Trial price percentage** 字段将出现。将其设置为完整订阅价格的百分比，代表 Google 应将每次试用视为多少价值——例如，`50%` 表示在试用期间上报订阅价格的一半。
+   - **Revenue definition** 下拉菜单：总收入、扣除应用商店佣金后的收入，或[扣除应用商店佣金和税费后的收入](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue)。
+   - **Send user properties** 开关：开启后，事件将包含 `subscription_state` 和 `subscription_product_id`。如需在报告或目标受众中使用这些数据，请参阅[在报告中使用订阅数据](#use-subscription-data-in-reports-and-audiences)。
+   - **Report user's currency** 开关：开启后，Adapty 以买家实际支付的货币报告每笔销售。关闭后，则以美元报告。
+   - **Send trial price** 开关：试用期开始非常有价值——大多数付费用户往往从试用开始。但 Google Ads 的出价优化只将带有收入的事件视为值得追逐的目标。开启此选项可为每次试用分配一个占位价格，让 Google 将其识别为转化，并优化广告支出以获取试用用户。开启后，将出现 **Trial price percentage** 字段。将其设置为 Google 应将每次试用视为价值几成的完整订阅价格比例——例如，`50%` 表示在试用期间报告订阅价格的一半。
+   - **Send virtual currency earnings** 开关：开启后，Adapty 会为每次购买或试用开始所积累的[虚拟货币](virtual-currencies)发送 Google Analytics 推荐事件 `earn_virtual_currency`。默认关闭。如果您的应用已通过 Firebase SDK 记录 `earn_virtual_currency`，请保持关闭——否则 Google Analytics 会将每次积分计算两次。请参阅[追踪虚拟货币收益](#track-virtual-currency-earnings)。
 
-   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
+   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase 集成收入数据控制，包括发送虚拟货币收益开关" />
 
-5. 将 Adapty 事件映射到 Firebase/Google Analytics 事件名称。Adapty 分别为 **iOS** 和 **Android** 提供独立的事件映射，因此你可以为每个平台使用不同的名称。**Stripe 和 Paddle 购买使用 iOS 事件映射** —— 两者均没有独立的映射配置。
+5. 将 Adapty 事件映射到 Firebase/Google Analytics 事件名称。Adapty 为 **iOS** 和 **Android** 分别提供独立的事件映射，以便您为不同平台使用不同的事件名称。**Stripe 和 Paddle 购买使用 iOS 事件映射** — 两者均没有单独的映射。
 
     Google Analytics 对 Measurement Protocol 有严格的限制——事件名称最多 40 个字符、用户属性名称最多 24 个字符、用户属性值最多 36 个字符、事件参数值最多 100 个字符。超出这些限制的自定义事件会被 Google Analytics 静默丢弃。Adapty 会将文本类事件参数值截断至 100 个字符以符合该限制。
 
@@ -306,6 +307,33 @@ Adapty 会将这些参数添加到每个 `purchase` 和 `refund` 事件中。对
 :::note
 Adapty 会将文本值截断至 100 个字符。ID 通常较短，但名称可能较长：如果两个 A/B 测试或流程的名称前 100 个字符相同，Google Analytics 会将它们视为同一个。要加以区分，请使用 `ab_test_id` 或 `flow_id`。
 :::
+
+## 追踪虚拟货币收益 \{#track-virtual-currency-earnings\}
+
+要在 Google Analytics 中查看用户从购买中获得的[虚拟货币](virtual-currencies)数量，请在 Firebase 集成设置中开启 **Send virtual currency earnings** 开关。Adapty 会随即发送 Google Analytics 推荐事件 `earn_virtual_currency`。该事件将显示在标准事件报告和游戏报告中，无需在应用中编写任何代码。
+
+Adapty 会为购买所赠送的每种货币分别发送一个 `earn_virtual_currency` 事件。若某次购买同时赠送金币和宝石，则会发送两个事件。每个事件包含两个参数：
+
+| 参数 | 描述 |
+|---|---|
+| `virtual_currency_name` | 虚拟货币的代码，在[货币设置](create-virtual-currency)中配置。 |
+| `value` | 本次购买在该货币中授予的积分数量。 |
+
+Adapty 会在购买事件的同一请求中发送 `earn_virtual_currency`。以下事件可以充值货币：
+
+- `subscription_initial_purchase`
+- `subscription_renewed`
+- `trial_started`
+- `trial_converted`
+- `non_subscription_purchase`
+
+Adapty 仅在通过[产品链接](create-virtual-currency#link-products)获得虚拟货币的购买行为时才发送 `earn_virtual_currency` 事件。以下情况不会触发该事件：
+
+- 购买未与任何货币关联的产品。
+- 通过[服务端 API](getting-started-with-server-side-api) 进行的货币充值或消耗操作。
+- 在事件映射中已关闭的购买事件。
+
+`earn_virtual_currency` 报告的是积分获取记录，而非余额或收益：它没有 `currency` 参数，已过期或已消费的积分也不会从中扣减。如需获取用户当前余额，请使用 [获取虚拟货币余额列表](api-adapty/operations/listVirtualCurrencyBalances)。
 
 ## 故障排查 \{#troubleshooting\}
 

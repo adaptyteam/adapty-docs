@@ -59,9 +59,15 @@ try {
 
 <SDKv4>
 
-Even with IDFA collection disabled in code (above), your build still includes the `AdSupport` and `AppTrackingTransparency` frameworks. The App Store Kids Category doesn't allow them. And because the v4 SDK installs the native iOS SDK through Swift Package Manager, there's no Podfile step to strip them.
+Even with IDFA collection disabled in code (above), your build still includes the `AdSupport` and `AppTrackingTransparency` frameworks. The App Store Kids Category doesn't allow them.
 
-To comply with Apple's requirements, add the `adapty-kids-mode` command shipped with the SDK to your app's `postinstall`. It enables the SDK's `KidsMode` trait, which compiles out that code. The command re-applies on every install:
+To comply with Apple's requirements, build the native iOS SDK in Kids Mode, which compiles out all IDFA, AdSupport, and AppTrackingTransparency code. How you enable it depends on the package manager of your iOS project, as described in [Set up your iOS project](sdk-installation-capacitor#set-up-your-ios-project).
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+Add the `adapty-kids-mode` command shipped with the SDK to your app's `postinstall`. It enables the SDK's `KidsMode` trait. The command re-applies on every install:
 
 ```json showLineNumbers title="package.json"
 {
@@ -79,6 +85,39 @@ npx cap sync ios
 ```
 
 To turn Kids Mode off, run `adapty-kids-mode disable` and sync again.
+
+:::note
+In SDK 4.2.0 and later, `adapty-kids-mode` prints a warning, without failing the install, when it detects a CocoaPods app — where the trait has no effect — or can't find the iOS project. When your app is outside the directory you install from, pass `--app-root=path/to/app`.
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+This option requires SDK 4.2.0 or later and the Adapty Podfile helpers from [Set up your iOS project](sdk-installation-capacitor#set-up-your-ios-project). In `ios/App/Podfile`, call `adapty_enable_kids_mode` in the `post_install` block:
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+The helper adds the `KidsMode` compilation condition to the `Adapty` pod and unlinks the AdSupport framework. It works only in `post_install`: from `post_integrate`, its changes are never saved. If another pod in your project also links AdSupport, `pod install` fails, because the framework would stay in the build.
+
+Then sync the iOS project:
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+To turn Kids Mode off, remove the `adapty_enable_kids_mode` line and sync again.
+
+</TabItem>
+
+</Tabs>
+
+To confirm Kids Mode is active, verify that the `adapty.activate(...)` log line reports `kids_mode_enabled: true`.
 
 </SDKv4>
 

@@ -6,25 +6,25 @@ metadataTitle: "Mode Enfants dans le SDK Capacitor | Documentation Adapty"
 
 Si votre application Capacitor est destinée aux enfants, vous devez respecter les politiques d'[Apple](https://developer.apple.com/kids/) et de [Google](https://support.google.com/googleplay/android-developer/answer/9893335). Si vous utilisez le SDK Adapty, quelques étapes simples vous permettront de le configurer pour répondre à ces politiques et passer les révisions des stores.
 
-## Ce qui est requis \{#whats-required\}
+## Qu'est-ce qui est requis ? \{#whats-required\}
 
-Vous devez configurer le SDK Adapty pour désactiver la collecte de :
+Vous devez configurer le SDK Adapty pour désactiver la collecte des éléments suivants :
 
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
 - [Adresse IP](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
 
-De plus, nous vous recommandons d'utiliser l'identifiant utilisateur client avec précaution. Un identifiant au format `<Prénom.Nom>` sera clairement considéré comme une collecte de données personnelles, tout comme l'utilisation d'un e-mail. Pour le Mode Enfants, la bonne pratique consiste à utiliser des identifiants aléatoires ou anonymisés (par exemple, des IDs hachés ou des UUIDs générés par l'appareil) pour assurer la conformité.
+De plus, nous vous recommandons d'utiliser l'identifiant utilisateur client avec prudence. Un identifiant au format `<FirstName.LastName>` sera inévitablement considéré comme une collecte de données personnelles, tout comme l'utilisation d'une adresse e-mail. Pour le mode enfants, la bonne pratique consiste à utiliser des identifiants aléatoires ou anonymisés (par exemple, des identifiants hachés ou des UUID générés par l'appareil) afin de garantir la conformité.
 
-## Activer le Mode Enfants \{#enabling-kids-mode\}
+## Activation du mode Enfants \{#enabling-kids-mode\}
 
-### Modifications dans l'Adapty Dashboard \{#updates-in-the-adapty-dashboard\}
+### Mises à jour dans Adapty Dashboard
 
-Dans l'Adapty Dashboard, vous devez désactiver la collecte des adresses IP. Pour ce faire, rendez-vous dans [App settings](https://app.adapty.io/settings/general) et cliquez sur **Disable IP address collection** sous **Collect users' IP address**.
+Dans Adapty Dashboard, vous devez désactiver la collecte des adresses IP. Pour ce faire, rendez-vous dans [App settings](https://app.adapty.io/settings/general) et cliquez sur **Disable IP address collection** sous **Collect users' IP address**.
 
-### Modifications dans le code de votre application mobile \{#updates-in-your-mobile-app-code\}
+### Mises à jour dans le code de votre application mobile
 
-Pour respecter les politiques, désactivez la collecte de l'IDFA, du GAID et de l'adresse IP de l'utilisateur :
+Afin de respecter les politiques en vigueur, désactivez la collecte de l'IDFA, du GAID et de l'adresse IP de l'utilisateur :
 
 ```typescript showLineNumbers
 
@@ -52,15 +52,21 @@ try {
 }
 ```
 
-### Configurations spécifiques à chaque plateforme \{#platform-specific-configurations\}
+### Configurations spécifiques à la plateforme \{#platform-specific-configurations\}
 
 #### iOS \{#ios\}
 
 <SDKv4>
 
-Même avec la collecte IDFA désactivée dans le code (ci-dessus), votre build inclut toujours les frameworks `AdSupport` et `AppTrackingTransparency`. La catégorie Enfants de l'App Store ne les autorise pas. Et comme le SDK v4 installe le SDK iOS natif via Swift Package Manager, il n'y a pas d'étape Podfile pour les supprimer.
+Même si la collecte d'IDFA est désactivée dans le code (voir ci-dessus), votre build inclut toujours les frameworks `AdSupport` et `AppTrackingTransparency`. La catégorie Kids de l'App Store ne les autorise pas.
 
-Pour respecter les exigences d'Apple, ajoutez la commande `adapty-kids-mode` fournie avec le SDK dans le `postinstall` de votre application. Elle active le trait `KidsMode` du SDK, qui exclut ce code à la compilation. La commande se réapplique à chaque installation :
+Pour respecter les exigences d'Apple, compilez le SDK iOS natif en mode Kids, qui exclut entièrement le code lié à l'IDFA, à AdSupport et à AppTrackingTransparency. La façon de l'activer dépend du gestionnaire de paquets de votre projet iOS, comme décrit dans [Configurer votre projet iOS](sdk-installation-capacitor#set-up-your-ios-project).
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+Ajoutez la commande `adapty-kids-mode` fournie avec le SDK au `postinstall` de votre application. Elle active le trait `KidsMode` du SDK. La commande est réappliquée à chaque installation :
 
 ```json showLineNumbers title="package.json"
 {
@@ -70,25 +76,58 @@ Pour respecter les exigences d'Apple, ajoutez la commande `adapty-kids-mode` fou
 }
 ```
 
-Réinstallez ensuite et résolvez à nouveau les packages iOS, puis compilez avec **Xcode 26** ou une version ultérieure :
+Réinstallez ensuite et re-résolvez les packages iOS, puis compilez avec **Xcode 26** ou une version ultérieure :
 
 ```sh showLineNumbers title="Shell"
 npm install
 npx cap sync ios
 ```
 
-Pour désactiver le Mode Enfants, exécutez `adapty-kids-mode disable` et synchronisez à nouveau.
+Pour désactiver le Kids Mode, exécutez `adapty-kids-mode disable` et synchronisez à nouveau.
+
+:::note
+Dans le SDK 4.2.0 et versions ultérieures, `adapty-kids-mode` affiche un avertissement, sans faire échouer l'installation, lorsqu'il détecte une application CocoaPods — où le trait n'a aucun effet — ou ne trouve pas le projet iOS. Si votre application se trouve en dehors du répertoire depuis lequel vous effectuez l'installation, utilisez `--app-root=path/to/app`.
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Cette option nécessite le SDK 4.2.0 ou ultérieur ainsi que les helpers Podfile d'Adapty fournis dans [Configurer votre projet iOS](sdk-installation-capacitor#set-up-your-ios-project). Dans `ios/App/Podfile`, appelez `adapty_enable_kids_mode` dans le bloc `post_install` :
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Le helper ajoute la condition de compilation `KidsMode` au pod `Adapty` et dissocie le framework AdSupport. Il ne fonctionne que dans `post_install` : depuis `post_integrate`, ses modifications ne sont jamais sauvegardées. Si un autre pod de votre projet lie également AdSupport, `pod install` échoue, car le framework resterait dans le build.
+
+Synchronisez ensuite le projet iOS :
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+Pour désactiver le Kids Mode, supprimez la ligne `adapty_enable_kids_mode` et resynchronisez.
+
+</TabItem>
+
+</Tabs>
+
+Pour confirmer que le mode enfants est actif, vérifiez que la ligne de log `adapty.activate(...)` indique `kids_mode_enabled: true`.
 
 </SDKv4>
 
 <SDKv3>
 
-Si vous utilisez CocoaPods pour iOS, vous pouvez également activer le Mode Enfants au niveau natif :
+Si vous utilisez CocoaPods pour iOS, vous pouvez également activer le mode enfants au niveau natif :
 
 1. Mettez à jour votre Podfile :
 
    - Si vous **n'avez pas** de section `post_install`, ajoutez l'intégralité du bloc de code ci-dessous.
-   - Si vous **avez déjà** une section `post_install`, intégrez les lignes mises en évidence dedans.
+   - Si vous **avez** déjà une section `post_install`, intégrez les lignes mises en évidence dans celle-ci.
 
    ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)
@@ -126,12 +165,12 @@ Si vous utilisez CocoaPods pour iOS, vous pouvez également activer le Mode Enfa
 
 #### Android : supprimer la permission d'identifiant publicitaire \{#android-remove-the-advertising-id-permission\}
 
-Définir `adIdCollectionDisabled: true` (ci-dessus) empêche Adapty de collecter l'identifiant publicitaire, mais le SDK déclare toujours la permission `AD_ID`. Si votre application cible **uniquement** les enfants et est compilée pour Android 13 (API 33) ou supérieur, Google Play vous interdit même de la demander.
+Définir `adIdCollectionDisabled: true` (ci-dessus) empêche Adapty de collecter l'identifiant publicitaire, mais le SDK déclare quand même la permission `AD_ID`. Si votre application cible uniquement les enfants et se compile avec Android 13 (API 33) ou supérieur, Google Play vous interdit même de la demander.
 
-Effectuez deux ajouts dans votre élément `<manifest>` :
+Ajoutez deux éléments à votre balise `<manifest>` :
 
-1. Déclarez le namespace `tools` (le manifeste par défaut de Capacitor l'omet).
-2. Ajoutez une entrée `<uses-permission>` pour `AD_ID` avec `tools:node="remove"` afin de la supprimer.
+1. Déclarez le namespace `tools` (le manifeste par défaut de Capacitor ne l'inclut pas).
+2. Ajoutez une entrée `<uses-permission>` pour `AD_ID` avec `tools:node="remove"` pour la supprimer.
 
 ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
 <manifest
@@ -148,12 +187,12 @@ Effectuez deux ajouts dans votre élément `<manifest>` :
 
 ## Étapes suivantes \{#next-steps\}
 
-Une fois le Mode Enfants activé, assurez-vous de :
+Une fois le mode enfants activé, veillez à :
 
-1. Tester votre application en profondeur pour vérifier que toutes les fonctionnalités fonctionnent correctement
+1. Tester votre application en profondeur pour vous assurer que toutes les fonctionnalités fonctionnent correctement
 2. Mettre à jour la politique de confidentialité de votre application pour refléter la désactivation de la collecte de données
-3. Soumettre votre application pour révision avec une documentation claire sur la conformité au Mode Enfants
+3. Soumettre votre application à la révision avec une documentation claire sur la conformité au mode enfants
 
 Pour plus d'informations sur les exigences spécifiques à chaque plateforme :
-- [Mode Enfants dans le SDK iOS](kids-mode) pour les détails de configuration iOS supplémentaires
-- [Mode Enfants dans le SDK Android](kids-mode-android) pour les détails de configuration Android supplémentaires
+- [Mode enfants dans le SDK iOS](kids-mode) pour des détails de configuration iOS supplémentaires
+- [Mode enfants dans le SDK Android](kids-mode-android) pour des détails de configuration Android supplémentaires

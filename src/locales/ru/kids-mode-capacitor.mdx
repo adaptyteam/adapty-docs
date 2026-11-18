@@ -13,7 +13,9 @@ metadataTitle: "Режим «Для детей» в Capacitor SDK | Докуме
 - [IDFA (Identifier for Advertisers)](https://en.wikipedia.org/wiki/Identifier_for_Advertisers) (iOS)
 - [Android Advertising ID (AAID/GAID)](https://support.google.com/googleplay/android-developer/answer/6048248) (Android)
 - [IP-адреса](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
 Кроме того, рекомендуем обращаться с customer user ID с осторожностью. User ID в формате `<FirstName.LastName>` однозначно расценивается как сбор персональных данных — так же, как и использование email. Для режима «Для детей» лучшая практика — использовать рандомизированные или анонимизированные идентификаторы (например, хэшированные ID или UUID, сгенерированные на устройстве), чтобы обеспечить соответствие требованиям.
+
 ## Включение режима «Для детей» \{#enabling-kids-mode\}
 
 ### Настройки в дашборде Adapty \{#updates-in-the-adapty-dashboard\}
@@ -23,6 +25,7 @@ metadataTitle: "Режим «Для детей» в Capacitor SDK | Докуме
 ### Обновления в коде мобильного приложения \{#updates-in-your-mobile-app-code\}
 
 Чтобы соответствовать требованиям политик, отключите сбор IDFA, GAID и IP-адреса пользователя:
+
 ```typescript showLineNumbers
 
 try {
@@ -49,15 +52,21 @@ try {
 }
 ```
 
-### Конфигурация для отдельных платформ \{#platform-specific-configurations\}
+### Конфигурация для конкретных платформ \{#platform-specific-configurations\}
 
 #### iOS \{#ios\}
 
 <SDKv4>
 
-Даже если сбор IDFA отключён в коде (см. выше), ваш билд всё равно включает фреймворки `AdSupport` и `AppTrackingTransparency`. Категория Kids в App Store их не допускает. А поскольку SDK v4 устанавливает нативный iOS SDK через Swift Package Manager, убрать их через Podfile не получится.
+Даже если сбор IDFA отключён в коде (см. выше), ваш билд всё равно включает фреймворки `AdSupport` и `AppTrackingTransparency`. Категория Kids Category в App Store не допускает их использования.
 
-Чтобы соответствовать требованиям Apple, добавьте команду `adapty-kids-mode`, поставляемую вместе с SDK, в `postinstall` вашего приложения. Она включает трейт `KidsMode` в SDK, который исключает этот код из компиляции. Команда применяется заново при каждой установке:
+Чтобы соответствовать требованиям Apple, соберите нативный iOS SDK в режиме Kids Mode — это исключит из компиляции весь код, связанный с IDFA, AdSupport и AppTrackingTransparency. Способ включения зависит от менеджера пакетов вашего iOS-проекта — подробнее см. в разделе [Настройка iOS-проекта](sdk-installation-capacitor#set-up-your-ios-project).
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+Добавьте команду `adapty-kids-mode`, входящую в состав SDK, в `postinstall` вашего приложения. Она включает трейт `KidsMode` в SDK. Команда применяется повторно при каждой установке:
 
 ```json showLineNumbers title="package.json"
 {
@@ -67,14 +76,47 @@ try {
 }
 ```
 
-Затем переустановите и пересоберите iOS-пакеты, после чего выполните сборку в **Xcode 26** или новее:
+Затем переустановите пакеты и пересинхронизируйте iOS-пакеты, после чего выполните сборку в **Xcode 26** или новее:
 
 ```sh showLineNumbers title="Shell"
 npm install
 npx cap sync ios
 ```
 
-Чтобы отключить Kids Mode, выполните `adapty-kids-mode disable` и синхронизируйте проект снова.
+Чтобы отключить режим Kids Mode, выполните `adapty-kids-mode disable` и снова синхронизируйте проект.
+
+:::note
+В SDK 4.2.0 и выше `adapty-kids-mode` выводит предупреждение (не прерывая установку), если обнаруживает приложение на CocoaPods — где этот параметр не действует — или не может найти iOS-проект. Если ваше приложение находится не в том каталоге, из которого вы запускаете установку, передайте флаг `--app-root=path/to/app`.
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Для этой функции требуется SDK версии 4.2.0 или выше, а также вспомогательные средства Adapty Podfile из раздела [Настройка iOS-проекта](sdk-installation-capacitor#set-up-your-ios-project). В файле `ios/App/Podfile` вызовите `adapty_enable_kids_mode` в блоке `post_install`:
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+Вспомогательный скрипт добавляет условие компиляции `KidsMode` к поду `Adapty` и отвязывает фреймворк AdSupport. Он работает только в `post_install`: из `post_integrate` его изменения не сохраняются. Если другой под в вашем проекте тоже подключает AdSupport, `pod install` завершится с ошибкой, так как фреймворк останется в сборке.
+
+Затем синхронизируйте iOS-проект:
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+Чтобы отключить Kids Mode, удалите строку `adapty_enable_kids_mode` и снова выполните синхронизацию.
+
+</TabItem>
+
+</Tabs>
+
+Чтобы убедиться, что режим Kids Mode активен, проверьте, что в строке лога `adapty.activate(...)` указано `kids_mode_enabled: true`.
 
 </SDKv4>
 
@@ -84,8 +126,8 @@ npx cap sync ios
 
 1. Обновите Podfile:
 
-- Если у вас **нет** раздела `post_install`, добавьте весь блок кода ниже.
-   - Если раздел `post_install` у вас **есть**, добавьте в него выделенные строки.
+   - Если секции `post_install` **нет**, добавьте весь блок кода ниже целиком.
+   - Если секция `post_install` **есть**, добавьте в неё выделенные строки.
 
    ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)
