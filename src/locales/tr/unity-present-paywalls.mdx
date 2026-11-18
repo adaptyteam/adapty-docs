@@ -23,10 +23,10 @@ Bu kılavuz, Adapty tarafından render edilen flow'lar ve paywall'lar için geç
 
 Aşağıda kullanılan `view` nesnesini elde etmek için [Flow ve paywall'ları alma](unity-get-pb-paywalls) sayfasına bakın.
 
-Bir flow veya paywall görüntülemek için [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.Present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir: kapatılan bir `view` yok edilir. Flow'u tekrar görüntülemeniz gerekiyorsa yeni bir `view` örneği oluşturmak için `CreateFlowView`'ı bir kez daha çağırın.
+Bir flow veya paywall görüntülemek için [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.Present()` metodunu kullanın. Varsayılan olarak, kapatılan bir view yok edilir. Flow'u tekrar görüntülemek için `CreateFlowView`'ı bir kez daha çağırarak yeni bir `view` örneği oluşturun ya da kapatırken [view'ı koruyun](#keep-the-view-to-present-it-again).
 
 :::warning
-Aynı `view`'ı yeniden oluşturmadan tekrar kullanmak hataya yol açabilir.
+Yok edilmiş bir `view`'ı yeniden kullanmak hataya yol açar.
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -36,6 +36,64 @@ view.Present((error) => {
 ```
 
 <SampleApp />
+
+## Görünümü tekrar sunmak için saklayın \{#keep-the-view-to-present-it-again\}
+
+:::info
+Saklanan görünümler SDK 4.3.0 sürümünden itibaren kullanılabilir.
+:::
+
+`view.Dismiss()` görünümü bellekten kaldırır. Bunun yerine görünümü saklamak için `destroy` parametresine `false` değerini geçin:
+
+```csharp showLineNumbers title="Unity"
+view.Dismiss(false, (error) => {
+    // handle the error
+});
+```
+
+Bu görünümü tekrar sunduğunuzda kullanıcı, flow'un o ana kadar oluşturduğu durumuyla birlikte kaldığı ekrana döner. Görünüm `Id`'sini koruduğundan, olayları aynı `view.Id` ile dinleyicinize ulaşmaya devam eder.
+
+Tuttuğunuz bir view, siz serbest bırakana kadar bellekte kalır. Artık ihtiyacınız olmadığında `view.Destroy()` çağrısını yapın:
+
+```csharp showLineNumbers title="Unity"
+view.Destroy((error) => {
+    // handle the error
+});
+```
+
+`Destroy()`, view hâlâ ekrandaysa önce onu kapatır. Oluşturup hiç göstermediğiniz bir view'ı ya da iOS'ta kullanıcının aşağı kaydırarak kapattığı sayfa sayfası (page-sheet) view'ını da serbest bırakır. Normal bir `Dismiss()` çağrısından sonra kullanmayın: o view zaten serbest bırakılmıştır ve çağrı başarısız olur.
+
+Kullanıcı **Close** butonuna dokunduğunda görünümü açık tutmak için [`Close` action handler'ınızda](unity-handle-paywall-actions#close-flows-and-paywalls) `destroy: false` ile kapatın. `FlowViewDidPerformAction` metodu uygulamanızdaki her flow ve paywall için çalıştığından, yalnızca yeniden göstermeyi planladığınız görünümü tutmak için `view.Id` değerini karşılaştırın. Görünümü oluştururken bir alana kaydedin; böylece sonradan karşılaştırabilir ve yeniden gösterebilirsiniz:
+
+```csharp showLineNumbers title="Unity"
+private AdaptyUIFlowView keptView;
+
+void CreateKeptView(AdaptyFlow flow) {
+    AdaptyUI.CreateFlowView(flow, new AdaptyUICreateFlowViewParameters(), (view, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+        keptView = view;
+    });
+}
+
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(view.Id != keptView?.Id, null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Sakladığınız `view`'ı elinizde tutun: flow veya paywall'ı yeniden göstermek ve `Destroy()` ile serbest bırakmak için buna ihtiyacınız olacak. `keptView.Destroy()` çağrısından sonra `keptView`'ı `null` olarak ayarlayın; böylece yukarıdaki karşılaştırma, serbest bırakılmış bir view ile eşleşmez. Diğer tüm `view.Dismiss()` çağrıları da view'ı serbest bırakır; buna [`FlowViewDidReceiveError`](unity-handling-events#rendering-and-runtime-errors) içindeki çağrı da dahildir. Bir view hatası sonrasında `CreateFlowView` ile yeni bir view oluşturun.
 
 ## Diyalog göster \{#show-dialog\}
 
@@ -61,7 +119,7 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
 });
 ```
 
-## iOS sunum stilini yapılandırın \{#configure-ios-presentation-style\}
+## iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
 
 `Present()` metoduna `iosPresentationStyle` parametresini geçirerek flow veya paywallın iOS'ta nasıl sunulacağını yapılandırın. Parametre, `AdaptyUIIOSPresentationStyle.FullScreen` (varsayılan) veya `AdaptyUIIOSPresentationStyle.PageSheet` değerlerini kabul eder.
 
@@ -71,25 +129,27 @@ view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
 });
 ```
 
+Kullanıcı, sayfa sayfasını kapatmak için aşağı kaydırabilir. Görünüm, `Dismiss()` çağrısı yapılmadan bellekte kalır: tekrar sunun ya da SDK 4.3.0 ve sonrasında [`Destroy()`](#keep-the-view-to-present-it-again) ile serbest bırakın.
+
 </SDKv4>
 
 <SDKv3>
 
-Paywall Builder kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir paywall, hem paywall içinde ne gösterileceğini hem de nasıl gösterileceğini içerir.
+Paywall Builder kullanarak bir paywall özelleştirdiyseniz, bunu kullanıcıya göstermek için mobil uygulama kodunuzda ayrıca render etmeniz gerekmez. Bu tür bir paywall, hem paywall içinde neyin gösterileceğini hem de nasıl gösterileceğini içerir.
 
 :::warning
 
 Bu kılavuz, Adapty SDK 3.3.0 veya sonrasını gerektiren **eski Paywall Builder**'ı kapsamaktadır.
 
-Özel paywall'ları sunmak için bkz. [Özel paywall'ları sunma](present-remote-config-paywalls-unity).
+Özel paywallları sunmak için bkz. [Özel paywallları sunma](present-remote-config-paywalls-unity).
 
 :::
 
-Bir paywall görüntülemek için, [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) metoduyla oluşturulan `view` üzerinde `view.Present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar göstermeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `CreatePaywallView`'ı bir kez daha çağırın.
+Bir paywall görüntülemek için, [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder) yöntemiyle oluşturulan `view` üzerinde `view.Present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Paywall'ı tekrar görüntülemeniz gerekirse, yeni bir `view` örneği oluşturmak için `CreatePaywallView` metodunu bir kez daha çağırın.
 
 :::warning
 
-Aynı `view`'ı yeniden oluşturmadan kullanmak `AdaptyUIError.viewAlreadyPresented` hatasına neden olabilir.
+Aynı `view`'ı yeniden oluşturmadan tekrar kullanmak `AdaptyUIError.viewAlreadyPresented` hatasına yol açabilir.
 :::
 
 ```csharp showLineNumbers title="Unity"

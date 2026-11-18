@@ -1,0 +1,95 @@
+---
+title: "Adapty Unity SDK'yı v4.3'e Geçir"
+description: "Adapty Unity SDK v4.3'e geçiş: Unity 6'ya geçin, Android eklenti klasörünü temizleyin, GetLogLevel'ı kaldırın, Google Play mesajlarının nasıl görüneceğine karar verin ve uzun sayısal flow olay parametrelerini okuyun."
+metadataTitle: "Adapty Unity SDK v4.3'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty Unity SDK 4.3, Unity 6 gerektirir, `Adapty.GetLogLevel`'ı kaldırır, Google Play uygulama içi mesajlarını varsayılan olarak gösterir ve Android'de bazı flow olay verilerinin C# türünü değiştirir. Uygulamanızın davranışını aynı tutmak için bu kılavuzdaki her değişikliği inceleyin.
+
+3.x sürümünü kullanıyorsanız, önce [v4.1'e geçiş](migration-to-unity-sdk-v4) rehberini takip edin, ardından bu kılavuza devam edin.
+
+## Hızlı başvuru \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Unity 2022.3 veya üzeri | Unity 6.0 (6000.0) veya üzeri |
+| `Adapty.GetLogLevel(...)` | kaldırıldı — `builder.LogLevel` veya `Adapty.SetLogLevel` ile belirlediğiniz seviyeyi kendiniz takip edin |
+| Google Play mesajları talep edilmez | Google Play mesajları Android'de varsayılan olarak gösterilir; flow'ların üzerinde de dahil olmak üzere |
+| Tam sayılı flow olay parametreleri Android'de `double` olarak gelir | Her iki platformda da `long` olarak gelir |
+
+## Kurulum \{#installation\}
+
+Adapty Unity SDK 4.3, **Unity 6.0 (6000.0)** veya sonraki sürümlerini gerektirir. Projeniz Unity 2022.3 üzerindeyse önce projeyi güncelleyin ya da Adapty SDK 4.1.x sürümünde kalmaya devam edin.
+
+:::warning
+Adapty SDK 4.1.x, yeni Unity 6 projelerinin varsayılan Android giriş noktası olan GameActivity ile çalışmaz: completion handler'lar ve event'ler C#'a hiçbir zaman ulaşmaz. SDK'yı güncellemeden önce Unity'yi yükseltirseniz, Adapty SDK 4.3'e geçene kadar **Application Entry Point** ayarını **Activity** olarak bırakın. SDK 4.3 her iki giriş noktasıyla da çalışır.
+:::
+
+SDK 4.3'ü Unity Package Manager aracılığıyla yüklemek için şu Git URL'ini kullanın:
+
+```
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.3.0-beta.1
+```
+
+Unity paketi aracılığıyla kurulum yapıyorsanız, `adapty-unity-plugin-4.3.0-beta.1.unitypackage` dosyasını [4.3.0-beta.1 sürümünden](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.3.0-beta.1) indirin. İçe aktarmadan önce `Assets/AdaptySDK/Plugins/Android/Local` klasörünü silin. SDK 4.3, bu klasörün içerdiği dahili Android Java sarmalayıcısıyla artık birlikte gelmiyor; `.unitypackage` içe aktarması hiçbir zaman dosya silmediğinden eski sarmalayıcı aksi hâlde projenizde kalmaya devam eder.
+
+Diğer gereksinimler 4.1 ile aynıdır: **iOS 15.0** ve **Xcode 26**. Tam kurulum için [Adapty SDK'yı Yükle](sdk-installation-unity) sayfasına bakın.
+
+## `GetLogLevel` kaldırıldı
+
+`Adapty.GetLogLevel` artık kullanılmıyor. Log seviyesi, SDK'yı aktive ederken `builder.LogLevel` ile ya da sonrasında `Adapty.SetLogLevel` ile ayarladığınız değerdir. Kodunuz bu seviyeyi geri okuyorsa, ayarladığınız değeri kendiniz saklayın:
+
+```diff showLineNumbers
+- Adapty.GetLogLevel((level, error) => {
+-     // use level
+- });
++ var logLevel = AdaptyLogLevel.Verbose;
++ builder.LogLevel = logLevel;
++ // use logLevel
+```
+
+## Google Play mesajları varsayılan olarak gösterilir \{#google-play-messages-are-shown-by-default\}
+
+4.3 sürümünden itibaren SDK, aktivasyonun ardından uygulamanızın bir `Activity`'si her başladığında reddedilen ödeme bildirimleri gibi Google Play uygulama içi mesajlarını talep eder. Bu, uygulamanın ön plana döndüğü anları ve bir flow ya da onboarding'in açılıp kapandığı anları da kapsar; dolayısıyla bir mesaj paywall'ın üzerinde görünebilir.
+
+Bu durum uygulamanız için sorun teşkil etmiyorsa herhangi bir değişiklik yapmanıza gerek yoktur. Mesajların ne zaman görüneceğini kendiniz belirlemek istiyorsanız, SDK'yı Android'de manuel yönetimle etkinleştirin ve uygulamanız için uygun bir anda `Adapty.ShowStoreMessages` metodunu çağırın:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+#if UNITY_ANDROID
+builder.SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual);
+#endif
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+Yalnızca Android'de manuel işlemeyi ayarlayarak iOS'un değişmeden kalmasını sağlayın: iOS 16 ve sonrasında, manuel işleme App Store mesajlarını uygulamanız `Adapty.ShowStoreMessages` çağırana kadar bekletir. Tam API için bkz. [Mağaza mesajlarını kontrol etme](unity-store-messages).
+
+:::warning
+Manuel modda, mağazalar kendi başlarına mesaj göstermez. Uygulamanız hiçbir zaman `Adapty.ShowStoreMessages` çağırmazsa, kullanıcılar reddedilen ödeme bildirimini asla göremez.
+:::
+
+## Android'de sayısal flow event parametreleri artık `long` türünde \{#numeric-flow-event-parameters-are-long-on-android\}
+
+Android'de, `FlowViewDidReceiveAnalyticEvent`'in tam sayı parametreleri eskiden `double` olarak geliyordu. 4.3 sürümünden itibaren, iOS ile aynı şekilde `long` olarak geliyor. Bu durum, [flow input](unity-flow-input) event'lerinin tarih ve saat değerlerini de kapsıyor.
+
+Artık Android'de `double`'a cast işlemi hata fırlatıyor. Sayısal parametreleri cast etmek yerine dönüştürün:
+
+```diff showLineNumbers
+- var timestamp = (double)parameters["value"];
++ var timestamp = Convert.ToInt64(parameters["value"]);
+```
+
+## 4.3'teki Yenilikler \{#new-in-43\}
+
+Bu eklemeler isteğe bağlıdır. Mevcut kodunuz bunlar olmadan çalışmaya devam eder:
+
+- **[Mağaza mesajlarını kontrol edin](unity-store-messages)**: App Store ve Google Play mesajlarının ne zaman görüneceğini seçin.
+- **[Placement'ları önceden yükleyin](unity-optimize-paywall-fetching#preload-placements)**: `Adapty.PreloadFlows` ve `Adapty.PreloadFlowsForDefaultAudience` flow önbelleğini önceden ısıtır.
+- **[Flow görünümünü saklayın](unity-present-paywalls#keep-the-view-to-present-it-again)**: `view.Dismiss(false, ...)` görünümü tekrar sunmak için saklar; `view.Destroy(...)` ise serbest bırakır.
+- **[12 aylık taahhüt planları](set-up-12-month-commitment)**: `AdaptySubscription.PricingTerms` özelliği iOS'ta planı açıklar; access level'lar ve abonelikler `BillingPlan` ile `CommitmentInfo` değerlerini raporlar.
+- **Yeni hata kodu**: `AdaptyErrorCode.BillingPlanUnavailable` (1060, yalnızca iOS). `MakePurchase`, ürün cihazda veya mağazada istenen fatura planını sunmadığında bu kodu döner. Kodunuz her `AdaptyErrorCode` değerini işliyorsa bu yeni kodu da ekleyin.
+- **[Observer modu](report-transactions-observer-mode-unity)**: `Adapty.ReportTransaction`, iOS'ta isteğe bağlı bir `appleJWSTransaction` parametresi alır.
+- **Varyasyon adı**: `AdaptyFlow.VariationName`, Adapty Kontrol Paneli'nde belirlediğiniz varyasyon adını döner.

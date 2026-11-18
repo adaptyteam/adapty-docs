@@ -28,7 +28,11 @@ Bạn cần:
 
 Nếu bạn đã thiết kế một flow hoặc paywall trong builder, bạn không cần lo về việc render nó trong code ứng dụng di động để hiển thị cho người dùng. Flow hoặc paywall như vậy đã chứa sẵn cả nội dung cần hiển thị lẫn cách hiển thị. Tuy nhiên, bạn vẫn cần lấy ID của nó thông qua placement, cấu hình view, rồi mới hiển thị nó trong ứng dụng di động.
 
-Để đảm bảo hiệu suất tối ưu, hãy truy xuất flow hoặc paywall cùng với [cấu hình view](unity-get-pb-paywalls#fetch-the-view-configuration) càng sớm càng tốt, nhằm có đủ thời gian tải ảnh trước khi hiển thị cho người dùng.
+Để đảm bảo hiệu suất tối ưu, bạn cần lấy flow hoặc paywall cùng [cấu hình view](unity-get-pb-paywalls#fetch-the-view-configuration) của nó càng sớm càng tốt, nhằm đảm bảo đủ thời gian tải hình ảnh trước khi hiển thị cho người dùng.
+
+:::tip
+Để khởi động trước nhiều placement cùng lúc, hãy gọi [`Adapty.PreloadFlows`](unity-optimize-paywall-fetching#preload-placements) (Unity SDK 4.3.0+). Phương thức này chỉ cache JSON của placement, do đó `CreateFlowView` vẫn sẽ tải layout và hình ảnh.
+:::
 
 Để lấy flow hoặc paywall, sử dụng phương thức `GetFlow`:
 
@@ -56,11 +60,11 @@ Tham số:
 | **fetchPolicy** | mặc định: `AdaptyPlacementFetchPolicy.Default` | <p>`fetchPolicy` xác định SDK đọc dữ liệu từ lớp nào trước, chứ không phải việc có được phép dùng cache hay không. Theo mặc định, SDK sẽ gọi lên server trước và chỉ trả về dữ liệu từ cache nếu yêu cầu đó thất bại. Chúng tôi khuyên dùng tùy chọn này vì nó đảm bảo người dùng luôn nhận được dữ liệu mới nhất.</p><p></p><p>Tuy nhiên, nếu bạn lo ngại người dùng có kết nối internet không ổn định, hãy cân nhắc dùng `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` — tùy chọn này đảo ngược thứ tự đó: đọc cache trước và chỉ gọi lên server khi không có gì trong cache. Người dùng có thể không nhận được dữ liệu mới nhất tuyệt đối, nhưng thời gian tải sẽ nhanh hơn dù kết nối có chập chờn thế nào. Cache được cập nhật thường xuyên nên hoàn toàn an toàn khi sử dụng trong phiên để tránh các yêu cầu mạng.</p><p></p><p>Chính sách thứ ba, `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)`, nằm ở giữa hai tùy chọn trên: đọc cache trước khi bản cache còn trẻ hơn `TimeSpan` bạn truyền vào, và gọi lên server khi cache đã cũ hơn giá trị đó.</p><p></p><p>Lưu ý rằng cache vẫn được giữ nguyên khi khởi động lại ứng dụng và chỉ bị xóa khi gỡ cài đặt ứng dụng hoặc thực hiện dọn dẹp thủ công.</p><p></p><p>Adapty SDK lưu trữ flow và paywall cục bộ trên hai lớp: cache được cập nhật thường xuyên như mô tả ở trên và [paywall dự phòng](fallback-paywalls). Chúng tôi cũng sử dụng CDN để tải dữ liệu nhanh hơn cùng một server dự phòng độc lập trong trường hợp CDN không khả dụng. Hệ thống này được thiết kế để đảm bảo bạn luôn nhận được phiên bản mới nhất đồng thời đảm bảo độ tin cậy ngay cả khi kết nối internet yếu.</p> |
 | **loadTimeout** | mặc định: 5 giây | <p>Giá trị này giới hạn thời gian chờ cho phương thức này. Nếu server Adapty không phản hồi kịp thời hoặc trả về lỗi, SDK sẽ trả về flow từ cache. Nếu không có gì trong cache và server hết thời gian chờ hoặc trả về lỗi, SDK sẽ yêu cầu flow từ server dự phòng (bản sao CDN chỉ phục vụ đối tượng **All Users** của placement). Phương án cuối cùng, SDK sẽ trả về flow từ [tệp dự phòng](unity-use-fallback-paywalls) của bạn.</p><p>Lưu ý rằng trong một số trường hợp hiếm gặp, phương thức này có thể hết thời gian chờ muộn hơn một chút so với giá trị được chỉ định trong `loadTimeout`, do thao tác có thể bao gồm nhiều yêu cầu khác nhau bên dưới.</p> |
 
-Thông số phản hồi:
+Tham số phản hồi:
 
-| Thông số | Mô tả |
+| Tham số | Mô tả |
 | :-------- | :---------- |
-| Flow   | Một đối tượng `AdaptyFlow` chứa placement, các định danh (`InstanceIdentity`, `VariationId`), tên, các biến thể paywall (`Paywalls` — danh sách `AdaptyFlowPaywall`), và Remote Config (`RemoteConfigs` — danh sách với một mục cho mỗi locale). Để lấy các sản phẩm thực tế cho việc tải trước, UI tùy chỉnh, hoặc kiểm tra theo chương trình, hãy gọi `GetPaywallProducts(flow)`. |
+| Flow   | Một đối tượng `AdaptyFlow` chứa placement, các định danh (`InstanceIdentity`, `VariationId`), tên, tên biến thể (`VariationName`, SDK 4.3.0+), các biến thể paywall (`Paywalls` — danh sách `AdaptyFlowPaywall`), và Remote Config (`RemoteConfigs` — danh sách với một mục cho mỗi locale). Để lấy các sản phẩm thực tế phục vụ việc tải trước, giao diện tùy chỉnh, hoặc kiểm tra theo chương trình, hãy gọi `GetPaywallProducts(flow)`. |
 
 ## Tải cấu hình view \{#fetch-the-view-configuration\}
 

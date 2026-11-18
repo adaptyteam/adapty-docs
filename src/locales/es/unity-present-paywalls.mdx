@@ -23,10 +23,10 @@ Esta guía cubre flows y paywalls renderizados por Adapty. El proceso es diferen
 
 Para obtener el objeto `view` que se usa a continuación, consulta [Obtener flows y paywalls](unity-get-pb-paywalls).
 
-Para mostrar un flow o paywall, utiliza el método `view.Present()` en la `view` creada por el método [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration). Cada `view` solo puede usarse una vez: una vez descartada, la vista se destruye. Si necesitas mostrar el flow de nuevo, llama a `CreateFlowView` otra vez para crear una nueva instancia de `view`.
+Para mostrar un flow o un paywall, usa el método `view.Present()` sobre el `view` creado por el método [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration). Por defecto, un view descartado se destruye. Para mostrar el flow de nuevo, llama a `CreateFlowView` otra vez para crear una nueva instancia de `view`, o [conserva el view](#keep-the-view-to-present-it-again) al descartarlo.
 
 :::warning
-Reutilizar la misma `view` sin recrearla puede provocar un error.
+Reutilizar un `view` destruido provoca un error.
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -36,6 +36,64 @@ view.Present((error) => {
 ```
 
 <SampleApp />
+
+## Mantén la vista para mostrarla de nuevo \{#keep-the-view-to-present-it-again\}
+
+:::info
+Las vistas guardadas están disponibles a partir de la versión 4.3.0 del SDK.
+:::
+
+`view.Dismiss()` libera la vista de la memoria. Para conservarla en su lugar, pasa `false` como parámetro `destroy`:
+
+```csharp showLineNumbers title="Unity"
+view.Dismiss(false, (error) => {
+    // handle the error
+});
+```
+
+Vuelve a presentar esa vista y el usuario regresará a la pantalla donde lo dejó, con el estado que el flow había acumulado. La vista conserva su `Id`, por lo que sus eventos siguen llegando a tu listener con el mismo `view.Id`.
+
+Una vista que has conservado permanece en memoria hasta que la liberes. Cuando ya no la necesites, llama a `view.Destroy()`:
+
+```csharp showLineNumbers title="Unity"
+view.Destroy((error) => {
+    // handle the error
+});
+```
+
+`Destroy()` descarta la vista primero si todavía está en pantalla. También libera una vista que hayas creado pero nunca presentado, y una vista en formato hoja que el usuario haya deslizado hacia abajo en iOS. No lo llames después de un `Dismiss()` normal: esa vista ya está liberada y la llamada fallará.
+
+Para mantener una vista cuando el usuario pulsa el botón **Close**, descártala con `destroy: false` en tu [manejador de la acción `Close`](unity-handle-paywall-actions#close-flows-and-paywalls). El método `FlowViewDidPerformAction` se ejecuta para cada flow y paywall de tu app, así que compara `view.Id` para conservar únicamente la vista que planeas volver a mostrar. Guarda la vista en un campo al crearla, para poder compararla y presentarla más tarde:
+
+```csharp showLineNumbers title="Unity"
+private AdaptyUIFlowView keptView;
+
+void CreateKeptView(AdaptyFlow flow) {
+    AdaptyUI.CreateFlowView(flow, new AdaptyUICreateFlowViewParameters(), (view, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+        keptView = view;
+    });
+}
+
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(view.Id != keptView?.Id, null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Mantén la referencia `view` guardada: la necesitarás para volver a mostrar el flow o el paywall, y para liberarlo con `Destroy()`. Después de llamar a `keptView.Destroy()`, establece `keptView` en `null` para que la comparación anterior no coincida con una vista ya liberada. Cualquier otra llamada a `view.Dismiss()` también libera la vista, incluida la llamada en [`FlowViewDidReceiveError`](unity-handling-events#rendering-and-runtime-errors). Tras un error de vista, crea una nueva con `CreateFlowView`.
 
 ## Mostrar diálogo \{#show-dialog\}
 
@@ -71,11 +129,13 @@ view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
 });
 ```
 
+El usuario puede deslizar la hoja hacia abajo para cerrarla. La vista permanece en memoria sin una llamada a `Dismiss()`: preséntala de nuevo o, a partir del SDK 4.3.0, libérala con [`Destroy()`](#keep-the-view-to-present-it-again).
+
 </SDKv4>
 
 <SDKv3>
 
-Si has personalizado un paywall con el Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese paywall ya incluye tanto lo que se debe mostrar como la forma en que debe mostrarse.
+Si has personalizado un paywall con el Paywall Builder, no necesitas preocuparte por renderizarlo en el código de tu app para mostrárselo al usuario. Ese paywall incluye tanto lo que debe mostrarse como la forma en que debe mostrarse.
 
 :::warning
 
