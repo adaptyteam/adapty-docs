@@ -184,7 +184,7 @@ The CLI validates each file before it sends anything, and it reads each pixel fo
 adapty retention-messaging messages update <message-id> --app <app-id> --title "Wait, there's more"
 ```
 
-Change the simple fields with flags: `--name`, `--title`, `--body`, `--alt-text`, `--image`, and `--remove-image`. Change locales, bullet points, and products with a changes file in `--file`:
+Change the simple fields with flags: `--name`, `--title`, `--body`, `--alt-text`, `--image`, and `--remove-image`. Change locales, bullet points, and products with a changes file in `--file`. The changes file also takes `name`, `title`, `body`, `alt_text`, and `remove_image`. The CLI refuses a key that the changes file doesn't know:
 
 ```json title="changes.json"
 {
@@ -213,9 +213,12 @@ You can't change the type or `header_position` of a message. To use a different 
 
 The CLI refuses a change before it reads or sends anything, with exit code 2, when the input conflicts with itself:
 
-- One locale, bullet point, or product is both changed and removed.
-- A new image comes with `--remove-image`.
-- A new bullet point has a text for a locale that the same input removes.
+- The input changes nothing.
+- One locale, bullet point, or product is named twice, or is both changed and removed.
+- A locale has a text for a bullet point that the same input removes.
+- A new image comes with `--remove-image` or `remove_image`.
+- A new bullet point has no `image_path` or no `text`, or it has a text for a locale that the same input removes.
+- A bullet point that the message has comes with `texts`. Give its locale texts in `bullet_texts` of the locale.
 - A simple field is in a flag and in the changes file.
 
 The CLI then asks for approval, reads the message, and merges your changes into the full message. If you change or remove a locale, bullet point, or product that the message doesn't have, the CLI sends nothing, exits with code 2, and names it. Otherwise, the CLI sends the full message to Adapty.
@@ -288,8 +291,8 @@ So a script or an agent can read the effect of a command first: run it without `
 | 1 | You answered something other than `y` at the prompt. Nothing was sent. | Run the command again if you meant to. |
 | 2 | The CLI refused the input before it sent the change: a flag, an image file, a conflict in the input, a new bullet point without a text for each locale, or a removal of something that the message doesn't have. | Fix what the message names. |
 | 3 | You aren't logged in, or Adapty refused access to the app. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. |
-| 4 | Adapty refused the request. The message gives the reason, and `--json` gives the HTTP status and `error_code`. | Fix the request, as the message says. |
-| 5 | The CLI couldn't reach Adapty. | Make sure you are online. For a create or a change, read the messages before you run it again. |
+| 4 | Adapty refused the request. The message gives the reason, and `--json` gives the HTTP status and `error_code`. A server error (5xx) on a create or a change also gives code 4, and the result is unknown. | Fix the request, as the message says. After a server error on a create or a change, don't run it again: read the messages first, as the message and the `hint` field of `--json` say. |
+| 5 | The CLI couldn't reach Adapty. | Make sure you are online. For a create or a change, the result is unknown: read the messages before you run it again. |
 | 6 | A command that asks for approval ran without `--yes` and with no one to answer, or a realtime URL replacement ran without `--replace-other-url`. Nothing was sent. | Read the effect in the message, then run the command again with `--yes`, and with `--replace-other-url` for a replacement. |
 | 130 | You pressed Ctrl+C at the prompt. Nothing was sent. | — |
 
@@ -369,7 +372,7 @@ Takes the message ID as its argument.
 |---|---|---|
 | `--mode` | Yes | `sandbox` or `production`. |
 | `--type` | Yes | `default` or `promo`: the type of the message. |
-| `--search` | No | Part of the product name or ID. |
+| `--search` | No | Part of the product title, any case. |
 | `--message-id` | No | The ID of the message that you change. |
 | `--limit` | No | Products to return, up to 100. Default: 10. |
 
@@ -379,7 +382,7 @@ Takes the product ID from `products suggest` as its argument.
 
 | Flag | Required | Description |
 |---|---|---|
-| `--search` | No | Part of the offer name or ID. |
+| `--search` | No | Part of the offer title, any case. |
 | `--limit` | No | Offers to return, up to 100. Default: 10. |
 
 ### `retention-messaging plan-switches suggest`
@@ -388,12 +391,12 @@ Takes the product ID from `products suggest` as its argument.
 
 | Flag | Required | Description |
 |---|---|---|
-| `--search` | No | Part of the plan name or ID. |
+| `--search` | No | Part of the plan title, any case. |
 | `--limit` | No | Plans to return, up to 100. Default: 10. |
 
 ## Work from an AI assistant
 
-The [Adapty MCP server](adapty-mcp) has the same actions as `retention_messaging_*` tools. The assistant asks for your approval before it creates a message or changes its status, in `sandbox` and in `production`. The MCP tools can't add an image, a bullet point icon, or a new bullet point. For these, use `messages update` in the CLI on your computer, or the dashboard.
+The [Adapty MCP server](adapty-mcp) has the same actions as `retention_messaging_*` tools, for example `retention_messaging_messages_list` for `messages list`. The tools take `message_type` in place of `--type`. The assistant asks for your approval before it configures the realtime URL, creates or changes a message, or changes its status, in `sandbox` and in `production`. Because the setup status read and the message reads can save new states in Adapty, the assistant also asks once in each conversation before the first `retention_messaging_setup_status` call, and once before the first message list or message read. The MCP tools can't add an image, a bullet point icon, or a new bullet point, and `retention_messaging_messages_create` makes a message without an image and bullet points. For these, use `messages update` in the CLI on your computer, or the dashboard.
 
 ## What's next
 
