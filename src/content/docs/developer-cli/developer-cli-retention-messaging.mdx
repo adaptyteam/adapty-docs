@@ -1,0 +1,402 @@
+---
+title: "Manage Retention Messaging from the CLI"
+description: "Set up Apple Retention Messaging from the terminal with the Adapty CLI: connect the realtime URL, run the performance test, create, change, activate, and deactivate retention messages, and read their metrics."
+metadataTitle: "Retention Messaging in the Developer CLI | Adapty Docs"
+---
+
+The Adapty CLI sets up [Apple Retention Messaging](retention-messaging) and its messages from the terminal, under the `adapty retention-messaging` topic. You can read the setup status of an app, connect Apple to the Adapty realtime URL, run Apple's performance test, create and change retention messages, activate and deactivate them, and read the metrics of each message.
+
+Use it to let an AI agent set up Retention Messaging for you, to script messages across several apps, or to read the message metrics without opening the dashboard. The commands do the same actions as the **Retention Messaging** page of the dashboard, and the dashboard shows the same messages.
+
+## Before you start
+
+The `retention-messaging` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). To see whether your CLI has the topic, run `adapty retention-messaging --help`.
+
+Every command takes the app's UUID in `--app`. To find it, run:
+
+```bash
+adapty apps list
+```
+
+What each action needs from your app:
+
+- **Setup status**: Works for any app.
+- **Realtime URL and performance test**: The app needs a complete [App Store setup](app-store-connection-configuration) in Adapty, with the In-App Purchase key, and [Apple's access to the Retention Messaging API](retention-messaging-setup#request-access-from-apple).
+- **Messages that subscribers see**: The app needs Apple's access, the realtime URL that points to Adapty, and Apple's approval of the message.
+
+Retention messages exist in two Apple environments: `sandbox` and `production`. The `--mode` flag selects the environment. Each environment has its own messages, as the **Sandbox mode** toggle of the dashboard shows.
+
+## Read the setup status
+
+```bash
+adapty retention-messaging setup-status --app <app-id>
+```
+
+The status shows the same setup steps as the dashboard:
+
+| Field | Values |
+|---|---|
+| `credentials` | `present` or `missing`: whether the app has the App Store keys that Retention Messaging uses. |
+| `registration_status` | `registered` or `not_registered`: whether Apple gave the app access to the Retention Messaging API. |
+| `sandbox.realtime_url_status`, `production.realtime_url_status` | `not_configured`, `configured_to_other_url`, or `configured_to_adapty`: where Apple sends its requests in each environment. |
+| `sandbox.performance_test_status` | `not_started`, `running`, `passed`, or `failed`. |
+
+When the performance test runs, the status read can save the result of the test in Adapty, as the dashboard does.
+
+## Connect the realtime URL
+
+Apple sends a request to a realtime URL when a subscriber opens the **Cancel Subscription** screen. Adapty answers this request with your message. To read the Adapty URL, run:
+
+```bash
+adapty retention-messaging realtime-url get --app <app-id>
+```
+
+The same URL serves `sandbox` and `production`. You give this URL to Apple when you [request access](retention-messaging-setup#request-access-from-apple).
+
+To set the Adapty URL in Apple for one environment, run:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode sandbox
+```
+
+Configure `sandbox` first. Adapty refuses `production` until the [performance test](#run-the-performance-test) passes. When you configure `sandbox`, Adapty also creates a hidden test message for the performance test. This message isn't in the message list.
+
+Before it sends anything, the CLI reads the setup status. If Apple sends the requests of this environment to a different server (`configured_to_other_url`), the Adapty URL replaces that server's URL in Apple. From then on, that server gets no requests from the **Cancel Subscription** screen. The CLI shows a warning that names the environment. To approve the replacement:
+
+- **In a terminal**: Read the warning and answer `y` at the `Apply? [y/N]` prompt. The prompt appears also when you pass `--yes`.
+- **In a script or an agent**: Pass `--replace-other-url --yes`. Without `--replace-other-url`, the CLI sends nothing and exits with code 6, also with `--yes`.
+
+## Run the performance test
+
+Apple tests how fast Adapty answers before it allows `production`. The test always runs in `sandbox`:
+
+```bash
+adapty retention-messaging performance-test start --app <app-id>
+```
+
+Before you start the test, purchase your longest-duration product with a sandbox account or through TestFlight, and keep the subscription active. The test can take up to an hour. To see the result, read the [setup status](#read-the-setup-status) again: `sandbox.performance_test_status` changes from `running` to `passed` or `failed`. To learn why a test fails, see [Pass the performance test](retention-messaging-setup#pass-the-performance-test).
+
+## List messages and read their metrics
+
+```bash
+adapty retention-messaging messages list --app <app-id> --mode production --state live
+```
+
+`--mode` is required. The list shows each message with its name, type, state, the number of products, the start date, and six metrics for the whole life of the message:
+
+| Field | How Adapty calculates it |
+|---|---|
+| `shown` | Views of the message. One view is one subscription on one UTC day. |
+| `retained` | Views after which the subscriber paid before a cancellation or the end of the subscription. |
+| `saved_users` | Views older than 24 hours after which the subscriber didn't turn off auto-renewal in those 24 hours. |
+| `retention_rate` | `retained` divided by the views after which the subscriber paid, cancelled, or the subscription ended, `× 100`, with one decimal place. Views that wait for the next payment aren't in the divisor. |
+| `save_rate` | `saved_users` divided by the views older than 24 hours, `× 100`, with one decimal place. |
+| `saved_revenue` | What retained subscribers paid in USD before Apple's commission, with two decimal places. |
+
+A rate with a zero divisor is `0.0`. For what each metric means, see [Track message performance](retention-messaging-analytics).
+
+A message is in one of these states: `in_review`, `live`, `rejected`, or `inactive`. For what each state means, see [Message states](retention-messaging-create#message-states).
+
+To read one message with its texts, image, bullet points, products, and locales, run:
+
+```bash
+adapty retention-messaging messages get <message-id> --app <app-id>
+```
+
+The message has no environment field. Its texts and bullet points are the `en-US` source. Each other locale shows its own review state.
+
+:::note
+`messages list` and `messages get` ask Apple about the review of each message and save the new state in Adapty, as the dashboard does. When Apple approved a message, this read can start to show it to subscribers.
+:::
+
+## Create a message
+
+To create a message, put its content in a JSON file:
+
+```json title="message.json"
+{
+  "name": "Annual default",
+  "type": "default",
+  "title": "Before you go",
+  "body": "Your plan keeps every feature you use today.",
+  "alt_text": "App icon on a purple background",
+  "header_position": "above_body",
+  "products": [
+    { "store_id": "com.example.annual" }
+  ],
+  "bullet_points": [
+    { "image_path": "icons/sync.png", "text": "Sync on all your devices" },
+    { "image_path": "icons/offline.png", "text": "Work offline" }
+  ],
+  "localizations": [
+    {
+      "locale": "de-DE",
+      "title": "Bevor du gehst",
+      "body": "Dein Abo behält alle Funktionen, die du heute nutzt.",
+      "bullet_points": [
+        { "text": "Auf allen Geräten synchronisieren" },
+        { "text": "Offline arbeiten" }
+      ]
+    }
+  ]
+}
+```
+
+Then run:
+
+```bash
+adapty retention-messaging messages create --app <app-id> --mode sandbox \
+  --file message.json --image header.png
+```
+
+The file takes these keys:
+
+- **`name`, `title`, `body`**: Required. The title and body are the `en-US` source, up to 66 and 144 characters.
+- **`type`**: The message type, `default` or `promo`. You can't change the type later.
+- **`alt_text`**: The description of the image for screen readers, up to 150 characters.
+- **`header_position`**: The position of the title in a default message with an image. `above_image` shows the title above the image. `above_body` shows it below the image, above the body. You can't change it later.
+- **`products`**: The products that show the message, by their App Store product ID in `store_id`. A promo message links one incentive to each product in `association`: `{"type": "promo_offer", "store_id": "<offer-id>"}` or `{"type": "plan_switch", "store_id": "<product-id>"}`. A default message has no `association`.
+- **`bullet_points`**: Up to five, for a default message only. Each has `text` (1–66 characters), an optional `alt_text`, and `image_path`: the path to its PNG icon, relative to the folder of the JSON file. The CLI refuses `image_index`.
+- **`localizations`**: One entry for each locale other than `en-US`, with `locale`, `title`, `body`, and one `bullet_points` text for each bullet point of the message, in the same order.
+
+`--image` adds the image of a default message. A promo message has no image and no bullet points. To find the product IDs, the promo offers, and the plan switches, use the [suggest commands](#find-products-and-offers).
+
+Before it asks for your approval, the CLI validates each image file. The CLI then asks for approval in `sandbox` and in `production`, as described in [Confirmation in scripts and agents](#confirmation-in-scripts-and-agents). The new message is `in_review`, and Adapty sends its texts and images to Apple for review.
+
+:::warning
+The CLI sends a create request only once. If the answer to a create request doesn't arrive, because of a network error or a server error, the CLI says that the result isn't known. Don't create the message again. First, list the messages of the environment with `--search` and the name of the message, and read each message with that name with `messages get`. Then decide whether to create a new message.
+:::
+
+## Image requirements
+
+| File | Requirements |
+|---|---|
+| Image (`--image`) | PNG, 3840 px wide and 160–2160 px tall, no transparency, up to 10 MB |
+| Bullet point icon (`image_path`) | PNG, 1024 × 1024 px, no transparency, up to 10 MB |
+
+The CLI validates each file before it sends anything, and it reads each pixel for transparency. A file with an alpha channel passes if every pixel is fully opaque. If a file fails, the CLI sends nothing and exits with code 2. The message names the file and the rule, for example `… must be 3840 px wide and 160–2160 px tall`.
+
+## Change a message
+
+`messages update` changes only what you name. Every locale, bullet point, icon, product, and the image that you don't name stay as they are:
+
+```bash
+adapty retention-messaging messages update <message-id> --app <app-id> --title "Wait, there's more"
+```
+
+Change the simple fields with flags: `--name`, `--title`, `--body`, `--alt-text`, `--image`, and `--remove-image`. Change locales, bullet points, and products with a changes file in `--file`:
+
+```json title="changes.json"
+{
+  "localizations": [
+    { "locale": "de-DE", "title": "Warte kurz", "bullet_texts": { "<bullet-id>": "Auf jedem Gerät synchronisieren" } }
+  ],
+  "bullet_points": [
+    { "bullet_id": "<bullet-id>", "text": "Sync on every device" },
+    {
+      "image_path": "icons/backup.png",
+      "text": "Daily backups",
+      "texts": { "de-DE": "Tägliche Backups", "fr-FR": "Sauvegardes quotidiennes" }
+    }
+  ],
+  "remove_localizations": ["it-IT"],
+  "remove_products": ["com.example.monthly"]
+}
+```
+
+- **Locales**: By their code in `locale`, with `title`, `body`, and the bullet point texts of the locale in `bullet_texts`, by `bullet_id`. A locale that the message doesn't have is added, and it needs `title`, `body`, and a text for each bullet point.
+- **Bullet points**: A bullet point that the message has goes by its `bullet_id` from `messages get`, with `text`, `alt_text`, or `image_path` for a new icon. A new bullet point has no `bullet_id`. It needs `image_path`, the `en-US` `text`, and a text in `texts` for each locale of the message. If a locale has no text, the CLI sends nothing and names the locale.
+- **Products**: By their App Store product ID in `store_id`. A product that the message doesn't have is added. For a promo message, `association` sets the incentive of the product, and `"association": null` removes it. A product without `association` keeps its incentive.
+- **Removals**: Only with the remove fields: `remove_localizations` (locale codes), `remove_bullet_points` (bullet IDs), `remove_products` (App Store product IDs), and `remove_image: true` or `--remove-image`. A removed bullet point disappears from every locale.
+
+You can't change the type or `header_position` of a message. To use a different one, create a new message.
+
+The CLI refuses a change before it reads or sends anything, with exit code 2, when the input conflicts with itself:
+
+- One locale, bullet point, or product is both changed and removed.
+- A new image comes with `--remove-image`.
+- A new bullet point has a text for a locale that the same input removes.
+- A simple field is in a flag and in the changes file.
+
+The CLI then asks for approval, reads the message, and merges your changes into the full message. If you change or remove a locale, bullet point, or product that the message doesn't have, the CLI sends nothing, exits with code 2, and names it. Otherwise, the CLI sends the full message to Adapty.
+
+Each change sends the whole message to Apple's review again, also a change of the name only. The message state becomes `in_review`. An inactive message starts to show again after Apple approves it. If someone changes the message in the dashboard between the read and the write of the CLI, the dashboard change can be lost.
+
+If the answer to a change doesn't arrive, the CLI doesn't send the change again. Read the message with `messages get` to see its state.
+
+## Activate or deactivate a message
+
+```bash
+adapty retention-messaging messages set-status <message-id> --app <app-id> --action deactivate
+```
+
+- **`activate`**: Moves an `inactive` message to `in_review`. Locales that Apple has approved don't wait for a new review. After Apple's approval, subscribers see the message.
+- **`deactivate`**: Moves a `live` message to `inactive`. Subscribers no longer see it. Views that occurred stay in the metrics.
+
+A product can have one default message and one promo message in each environment. If another message of the same type took the product while this message was inactive, Adapty refuses the activation.
+
+## Find products and offers
+
+To find the products that a message can show for, run:
+
+```bash
+adapty retention-messaging products suggest --app <app-id> --mode production --type default
+```
+
+When you change a message, pass its ID in `--message-id`, so that the products of this message don't show as `used`. A product with a `disabled_reason` can't be added:
+
+- **`used`**: Another message of the same type in this environment has the product.
+- **`no_default_message`**: The product has no default message, so it can't get a promo message.
+
+A promo message links one incentive to each product. To find the incentives, pass the product `id` from `products suggest`:
+
+```bash
+adapty retention-messaging promo-offers suggest <product-id> --app <app-id>
+```
+
+```bash
+adapty retention-messaging plan-switches suggest <product-id> --app <app-id>
+```
+
+`plan-switches suggest` needs the [App Store Connect API key](app-store-connect-api-key) in the app settings. Put the `store_id` of the offer or the plan in the `association` of the product.
+
+## Confirmation in scripts and agents
+
+These commands change what Apple shows to subscribers, so each one shows its effect and asks for approval before it sends anything:
+
+- `realtime-url configure`
+- `messages create`, in `sandbox` and in `production`
+- `messages update`
+- `messages set-status`, in `sandbox` and in `production`
+
+How it asks depends on how the command runs:
+
+| How the command runs | What happens |
+|---|---|
+| In a terminal | The CLI prints the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
+| With `--yes` | The CLI sends the request without asking. To replace a different realtime URL, also pass `--replace-other-url`. |
+| With `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error message describes the effect. |
+
+So a script or an agent can read the effect of a command first: run it without `--yes`, read the message, and run it again with `--yes` only after someone has approved that effect.
+
+`setup-status`, `realtime-url get`, `performance-test start`, the reads, and the suggest commands don't ask.
+
+## Errors
+
+| Exit code | Cause | What to do |
+|---|---|---|
+| 1 | You answered something other than `y` at the prompt. Nothing was sent. | Run the command again if you meant to. |
+| 2 | The CLI refused the input before it sent the change: a flag, an image file, a conflict in the input, a new bullet point without a text for each locale, or a removal of something that the message doesn't have. | Fix what the message names. |
+| 3 | You aren't logged in, or Adapty refused access to the app. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. |
+| 4 | Adapty refused the request. The message gives the reason, and `--json` gives the HTTP status and `error_code`. | Fix the request, as the message says. |
+| 5 | The CLI couldn't reach Adapty. | Make sure you are online. For a create or a change, read the messages before you run it again. |
+| 6 | A command that asks for approval ran without `--yes` and with no one to answer, or a realtime URL replacement ran without `--replace-other-url`. Nothing was sent. | Read the effect in the message, then run the command again with `--yes`, and with `--replace-other-url` for a replacement. |
+| 130 | You pressed Ctrl+C at the prompt. Nothing was sent. | — |
+
+## Command reference
+
+Every command takes `--app`, the app UUID from `adapty apps list`.
+
+### `retention-messaging setup-status`
+
+Returns the setup status. Takes no other flags.
+
+### `retention-messaging realtime-url get`
+
+Returns the Adapty realtime URL. Takes no other flags.
+
+### `retention-messaging realtime-url configure`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--mode` | Yes | `sandbox` or `production`. |
+| `--replace-other-url` | No | Approve the replacement of a different URL in Apple. |
+| `--yes`, `-y` | No | Configure without asking. Required with `--json` or in a pipe. |
+
+### `retention-messaging performance-test start`
+
+Starts Apple's performance test in `sandbox`. Takes no other flags.
+
+### `retention-messaging messages list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--mode` | Yes | `sandbox` or `production`. |
+| `--search` | No | Part of the name, any case, or the exact message ID. |
+| `--type` | No | `default` or `promo`. |
+| `--state` | No | `in_review`, `live`, `rejected`, or `inactive`. |
+| `--ordering` | No | `name`, `type`, `state`, `products_count`, or `started_at`. Add `-` before the field for the reverse order. Default: `-started_at`. |
+| `--page` | No | Page number. Default: 1. |
+| `--page-size` | No | Messages per page, up to 100. Default: 20. |
+
+### `retention-messaging messages get`
+
+Takes the message ID as its argument. Returns the full message.
+
+### `retention-messaging messages create`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--mode` | Yes | `sandbox` or `production`. |
+| `--file` | Yes | The JSON file of the message, or `-` to read it from standard input. See [Create a message](#create-a-message). |
+| `--image` | No | The PNG image of a default message. |
+| `--yes`, `-y` | No | Create without asking. Required with `--json` or in a pipe. |
+
+### `retention-messaging messages update`
+
+Takes the message ID as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name`, `--title`, `--body`, `--alt-text` | No | New value of the field. |
+| `--image` | No | New PNG image. |
+| `--remove-image` | No | Remove the image. |
+| `--file` | No | The changes file, or `-` to read it from standard input. See [Change a message](#change-a-message). |
+| `--yes`, `-y` | No | Change without asking. Required with `--json` or in a pipe. |
+
+### `retention-messaging messages set-status`
+
+Takes the message ID as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--action` | Yes | `activate` or `deactivate`. |
+| `--yes`, `-y` | No | Change the status without asking. Required with `--json` or in a pipe. |
+
+### `retention-messaging products suggest`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--mode` | Yes | `sandbox` or `production`. |
+| `--type` | Yes | `default` or `promo`: the type of the message. |
+| `--search` | No | Part of the product name or ID. |
+| `--message-id` | No | The ID of the message that you change. |
+| `--limit` | No | Products to return, up to 100. Default: 10. |
+
+### `retention-messaging promo-offers suggest`
+
+Takes the product ID from `products suggest` as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--search` | No | Part of the offer name or ID. |
+| `--limit` | No | Offers to return, up to 100. Default: 10. |
+
+### `retention-messaging plan-switches suggest`
+
+Takes the product ID from `products suggest` as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--search` | No | Part of the plan name or ID. |
+| `--limit` | No | Plans to return, up to 100. Default: 10. |
+
+## Work from an AI assistant
+
+The [Adapty MCP server](adapty-mcp) has the same actions as `retention_messaging_*` tools. The assistant asks for your approval before it creates a message or changes its status, in `sandbox` and in `production`. The MCP tools can't add an image, a bullet point icon, or a new bullet point. For these, use `messages update` in the CLI on your computer, or the dashboard.
+
+## What's next
+
+- [Set up Retention Messaging](retention-messaging-setup) — the same setup steps in the dashboard.
+- [Create a retention message](retention-messaging-create) — the message fields, locales, and states in the dashboard.
+- [Track message performance](retention-messaging-analytics) — what each metric means.
