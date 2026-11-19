@@ -22,10 +22,10 @@ metadataTitle: "Capacitor でのフローとペイウォールの表示 | Adapty
 
 :::
 
-フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを使用します。各 `view` は一度しか使用できません。フローを再度表示する必要がある場合は、`createFlowView` を再度呼び出して新しい `view` インスタンスを作成してください。
+フローまたはペイウォールをスタンドアロン画面として表示するには、[`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) メソッドで作成した `view` に対して `view.present()` メソッドを呼び出します。デフォルトでは、閉じられた `view` は破棄されます。フローを再表示するには、`createFlowView` をもう一度呼び出して新しい `view` インスタンスを作成するか、閉じたフローを[後で再利用するために保持する](#keep-a-closed-flow-for-later)方法を使用してください。
 
 :::warning
-同じ `view` を再作成せずに再利用することは禁止されています。エラーが発生します。
+破棄された `view` を再利用するとエラーが発生します。
 :::
 
 ```typescript showLineNumbers
@@ -46,9 +46,9 @@ try {
 `setEventHandlers` を複数回呼び出すと、指定したハンドラーが上書きされ、そのイベントに対するデフォルトおよび以前に設定したハンドラーが置き換えられます。
 :::
 
-## iOSのプレゼンテーションスタイルを設定する \{#configure-ios-presentation-style\}
+## iOSプレゼンテーションスタイルの設定 \{#configure-ios-presentation-style\}
 
-`present()` メソッドに `iosPresentationStyle` パラメータを渡すことで、iOS でのフローの表示スタイルを設定できます。このパラメータは `'full_screen'`（デフォルト）または `'page_sheet'` を受け付けます。Android では、フローは常にフルスクリーンのアクティビティとして表示されます。
+`present()` メソッドに `iosPresentationStyle` パラメーターを渡すことで、iOS でのフローの表示スタイルを設定できます。このパラメーターには `'full_screen'`（デフォルト）または `'page_sheet'` を指定できます。Android では、フローは常にアプリの Activity 内でフルスクリーン表示されます。
 
 ```typescript showLineNumbers
 try {
@@ -56,6 +56,58 @@ try {
 } catch (error) {
   // handle the error
 }
+```
+
+## フローをクローズ後も保持する \{#keep-a-closed-flow-for-later\}
+
+:::info
+`destroy` オプションと `destroy()` メソッドは、SDK バージョン 4.3.0 以降で利用できます。
+:::
+
+フローを保持しておくと、ユーザーがすぐに再度開けるようになります。たとえば設定画面のボタンからアクセスするペイウォールなど、再表示時にローディングなしで、離脱した場所から再開できます。
+
+デフォルトでは、`view.dismiss()` はフローを閉じてネイティブビューを破棄するため、`view` を再表示することはできません。同じフローを後で再表示したい場合は、`destroy: false` を渡してください。次の `present()` 呼び出しは、ユーザーが閉じた画面の状態でフローを開き、イベントハンドラーもそのまま保持されます：
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+ネイティブビューはリリースするまでメモリに保持されます。フローが不要になったら、`destroy()` を呼び出してください：
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()` はビューがまだ画面に表示されている場合は先にそれを閉じ、イベントハンドラーもクリアします。`destroy: false` で閉じたビューにのみ呼び出してください。通常の `dismiss()` はビューを自動的にリリースするため、その後に `destroy()` を呼び出すと失敗します。
+
+コンポーネントが破棄される際は、保持しているビューを必ず解放してください。Angularの`ngOnDestroy`、Reactの`useEffect`クリーンアップ、またはVueの`onUnmounted`で行います。これを怠るとネイティブビューがセッション中ずっとメモリに残り続けます。エラーも必ずキャッチしてください。たとえばイベントハンドラーが`true`を返した場合など、ビューがすでに解放済みである可能性があります。
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+`true` を返すイベントハンドラーは、通常の `dismiss()` でフローを閉じます。これにより、以前に保持していた場合でもネイティブビューが破棄されます。デフォルトの `onCloseButtonPress` と `onError` ハンドラーは `true` を返します。`onAndroidSystemBack` など、`true` を返すように設定したハンドラーも同様です。ユーザーがフローを閉じたときにフローを保持するには、自分でフローを閉じて `false` を返してください：
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
 ```
 
 ## デベロッパー定義タイマーを使用する \{#use-developer-defined-timer\}

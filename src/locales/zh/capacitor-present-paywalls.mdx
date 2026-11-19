@@ -22,10 +22,10 @@ metadataTitle: "在 Capacitor 中展示流程与付费墙 | Adapty 文档"
 
 :::
 
-要将流程或付费墙显示为独立屏幕，请在由 [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 上调用 `view.present()` 方法。每个 `view` 只能使用一次。如果需要再次显示流程，请再次调用 `createFlowView` 以创建新的 `view` 实例。
+要将流程或付费墙显示为独立屏幕，请对由 [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) 方法创建的 `view` 调用 `view.present()` 方法。默认情况下，关闭的 `view` 会被销毁。如需再次显示该流程，请再次调用 `createFlowView` 创建新的 `view` 实例，或在关闭时[保留已关闭的流程](#keep-a-closed-flow-for-later)。
 
 :::warning
-禁止在未重新创建的情况下复用同一个 `view`，否则将导致错误。
+重复使用已销毁的 `view` 会导致错误。
 :::
 
 ```typescript showLineNumbers
@@ -48,7 +48,7 @@ try {
 
 ## 配置 iOS 展示样式 \{#configure-ios-presentation-style\}
 
-通过向 `present()` 方法传递 `iosPresentationStyle` 参数，可以配置流程在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认值）或 `'page_sheet'` 两个值。在 Android 上，流程始终以全屏 Activity 的形式展示。
+通过向 `present()` 方法传入 `iosPresentationStyle` 参数，可以配置流程在 iOS 上的展示方式。该参数接受 `'full_screen'`（默认值）或 `'page_sheet'` 两种值。在 Android 上，流程始终在应用的 Activity 中以全屏模式展示。
 
 ```typescript showLineNumbers
 try {
@@ -56,6 +56,58 @@ try {
 } catch (error) {
   // handle the error
 }
+```
+
+## 保留已关闭的流程以供后续使用 \{#keep-a-closed-flow-for-later\}
+
+:::info
+`destroy` 选项和 `destroy()` 方法从 SDK 4.3.0 版本开始支持。
+:::
+
+当用户可能很快重新打开某个流程时（例如设置页面中按钮触发的付费墙），保留该流程而不销毁它，这样再次打开时无需重新加载，且可以从上次离开的位置继续。
+
+默认情况下，`view.dismiss()` 会关闭流程并销毁其原生视图，因此 `view` 无法再次呈现。如果希望稍后再次呈现同一流程，请传入 `destroy: false`。下次调用 `present()` 时，流程会从用户关闭时所在的页面重新打开，保留用户离开时的状态，且事件处理程序依然有效：
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+原生视图会一直保留在内存中，直到你主动释放它。当你不再需要该流程时，请调用 `destroy()`：
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()` 会先关闭仍在屏幕上显示的视图，再清除其事件处理器。请仅对使用 `destroy: false` 关闭的视图调用此方法：普通的 `dismiss()` 会自动释放视图，之后再调用 `destroy()` 将会失败。
+
+当拥有视图的组件销毁时（Angular 的 `ngOnDestroy`、React 的 `useEffect` 清理函数、或 Vue 的 `onUnmounted`），请释放所持有的视图。否则原生视图将在整个会话期间持续占用内存。注意捕获错误：视图可能已被提前释放，例如事件处理函数返回 `true` 之后。
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+返回 `true` 的事件处理器会通过常规的 `dismiss()` 关闭流程，即使你之前保留过原生视图，也会将其销毁。默认的 `onCloseButtonPress` 和 `onError` 处理器均返回 `true`。任何你让其返回 `true` 的处理器也是如此，例如 `onAndroidSystemBack`。若要在用户关闭时保留流程，请自行关闭并返回 `false`：
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
 ```
 
 ## 使用开发者自定义计时器 \{#use-developer-defined-timer\}

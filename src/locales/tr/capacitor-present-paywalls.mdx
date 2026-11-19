@@ -22,10 +22,10 @@ Bu kılavuz yalnızca **Adapty tarafından render edilen flow'lar ve paywall'lar
 
 :::
 
-Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için, [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Flow'u tekrar görüntülemeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createFlowView`'ı bir kez daha çağırın.
+Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Varsayılan olarak, kapatılan bir `view` yok edilir. Flow'u tekrar görüntülemek için `createFlowView`'ı bir kez daha çağırarak yeni bir `view` örneği oluşturun ya da kapatırken [kapatılan flow'u ileride kullanmak üzere saklayın](#keep-a-closed-flow-for-later).
 
 :::warning
-Aynı `view`'ı yeniden oluşturmadan kullanmak yasaktır. Bu bir hataya yol açar.
+Yok edilmiş bir `view`'ı yeniden kullanmak hataya neden olur.
 :::
 
 ```typescript showLineNumbers
@@ -48,7 +48,7 @@ try {
 
 ## iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
 
-`present()` metoduna `iosPresentationStyle` parametresini geçirerek flow'un iOS'ta nasıl sunulacağını yapılandırın. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder. Android'de flow'lar her zaman tam ekran activity olarak görüntülenir.
+Flow'un iOS'ta nasıl sunulacağını yapılandırmak için `present()` metoduna `iosPresentationStyle` parametresini geçirin. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder. Android'de flow'lar her zaman uygulamanızın Activity'si içinde tam ekran gösterilir.
 
 ```typescript showLineNumbers
 try {
@@ -56,6 +56,58 @@ try {
 } catch (error) {
   // handle the error
 }
+```
+
+## Flow'u daha sonra kullanmak için kapalı tutun \{#keep-a-closed-flow-for-later\}
+
+:::info
+`destroy` seçeneği ve `destroy()` metodu, SDK 4.3.0 sürümünden itibaren kullanılabilir.
+:::
+
+Kullanıcının yakında yeniden açabileceği bir flow'u — örneğin ayarlar ekranınızdaki bir düğmenin arkasındaki paywall — yeniden yüklenmeden ve kaldığı yerden açılması için kapalı tutun.
+
+Varsayılan olarak, `view.dismiss()` flow'u kapatır ve yerel görünümünü yok eder; bu nedenle `view` tekrar sunulamaz. Aynı flow'u daha sonra tekrar sunmak için `destroy: false` parametresini geçin. Bir sonraki `present()` çağrısı, flow'u kullanıcının kapattığı ekranda, bıraktığı durumuyla açar ve olay işleyicileriniz ayarlı kalmaya devam eder:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+Native view, siz serbest bırakana kadar bellekte kalır. Flow'a artık ihtiyacınız yoksa `destroy()` metodunu çağırın:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()`, view hâlâ ekrandaysa önce onu kapatır ve olay işleyicilerini temizler. Yalnızca `destroy: false` ile kapattığınız bir view için çağırın: normal bir `dismiss()` view'ı kendi başına serbest bırakır ve sonrasında `destroy()` çağırmak başarısız olur.
+
+Sahip olduğu bileşen kaldırıldığında, tutulan view'ı serbest bırakın — Angular'ın `ngOnDestroy` metodunda, React'ın `useEffect` temizliğinde veya Vue'nun `onUnmounted` yaşam döngüsünde. Aksi takdirde native view, oturum boyunca bellekte kalmaya devam eder. Hata yakalamayı unutmayın: view daha önce serbest bırakılmış olabilir; örneğin bir olay işleyicisi `true` döndürdükten sonra.
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+`true` döndüren bir olay işleyicisi, flow'u normal `dismiss()` ile kapatır; bu, native view'ı daha önce korumuş olsanız bile yok eder. Varsayılan `onCloseButtonPress` ve `onError` işleyicileri `true` döndürür. `onAndroidSystemBack` gibi `true` döndürdüğünüz diğer işleyiciler için de aynısı geçerlidir. Kullanıcı kapattığında flow'u korumak istiyorsanız flow'u kendiniz kapatın ve `false` döndürün:
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
 ```
 
 ## Geliştirici tanımlı zamanlayıcıyı kullanma \{#use-developer-defined-timer\}

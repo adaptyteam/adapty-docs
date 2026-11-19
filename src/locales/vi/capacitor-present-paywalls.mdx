@@ -22,10 +22,10 @@ Hướng dẫn này chỉ dành cho **các flow và paywall được Adapty rend
 
 :::
 
-Để hiển thị một flow hoặc paywall dưới dạng màn hình độc lập, hãy dùng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Mỗi `view` chỉ có thể dùng một lần. Nếu cần hiển thị lại flow, hãy gọi `createFlowView` thêm một lần nữa để tạo instance `view` mới.
+Để hiển thị một flow hoặc paywall dưới dạng màn hình độc lập, hãy sử dụng phương thức `view.present()` trên `view` được tạo bởi phương thức [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration). Theo mặc định, một `view` bị đóng sẽ bị hủy. Để hiển thị flow lại, hãy gọi `createFlowView` thêm một lần nữa để tạo một `view` mới, hoặc [giữ lại flow đã đóng](#keep-a-closed-flow-for-later) khi bạn đóng nó.
 
 :::warning
-Không được tái sử dụng cùng một `view` mà không tạo lại. Điều này sẽ gây ra lỗi.
+Việc tái sử dụng một `view` đã bị hủy sẽ gây ra lỗi.
 :::
 
 ```typescript showLineNumbers
@@ -48,7 +48,7 @@ Gọi `setEventHandlers` nhiều lần sẽ ghi đè các handler bạn đã cun
 
 ## Cấu hình kiểu hiển thị trên iOS \{#configure-ios-presentation-style\}
 
-Cấu hình cách flow hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này nhận giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`. Trên Android, flow luôn được hiển thị dưới dạng full-screen activity.
+Cấu hình cách flow được hiển thị trên iOS bằng cách truyền tham số `iosPresentationStyle` vào phương thức `present()`. Tham số này chấp nhận giá trị `'full_screen'` (mặc định) hoặc `'page_sheet'`. Trên Android, flow luôn được hiển thị toàn màn hình bên trong Activity của ứng dụng.
 
 ```typescript showLineNumbers
 try {
@@ -56,6 +56,58 @@ try {
 } catch (error) {
   // handle the error
 }
+```
+
+## Giữ lại flow đã đóng để dùng sau \{#keep-a-closed-flow-for-later\}
+
+:::info
+Tùy chọn `destroy` và phương thức `destroy()` chỉ khả dụng từ SDK phiên bản 4.3.0 trở lên.
+:::
+
+Giữ lại một flow khi người dùng có thể mở lại nó sớm — ví dụ như một paywall ẩn sau một nút trong màn hình cài đặt của bạn — để flow mở ra ngay mà không cần tải lại và người dùng tiếp tục từ nơi họ đã dừng.
+
+Theo mặc định, `view.dismiss()` đóng flow và hủy native view của nó, do đó `view` không thể được hiển thị lại. Để hiển thị lại cùng một flow sau này, hãy truyền `destroy: false`. Lần gọi `present()` tiếp theo sẽ mở flow tại màn hình người dùng đã đóng, với trạng thái mà người dùng để lại, và các event handler của bạn vẫn được giữ nguyên:
+
+```typescript showLineNumbers
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
+
+// Later: open the flow again on the same screen
+await view.present();
+```
+
+Native view sẽ được giữ trong bộ nhớ cho đến khi bạn giải phóng nó. Khi không còn cần dùng flow nữa, hãy gọi `destroy()`:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()` sẽ dismiss view trước (nếu view vẫn đang hiển thị), sau đó xóa các event handler của nó. Chỉ gọi hàm này cho view đã được đóng bằng `destroy: false`: một lệnh `dismiss()` thông thường sẽ tự giải phóng view, và nếu gọi `destroy()` sau đó sẽ bị lỗi.
+
+Giải phóng view đã giữ khi component sở hữu nó bị hủy — trong `ngOnDestroy` của Angular, cleanup của `useEffect` trong React, hoặc `onUnmounted` của Vue. Nếu không, native view sẽ còn trong bộ nhớ suốt phiên làm việc. Hãy bắt lỗi: view có thể đã được giải phóng rồi, ví dụ sau khi event handler trả về `true`.
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+Một event handler trả về `true` sẽ đóng flow bằng `dismiss()` thông thường, điều này sẽ hủy native view ngay cả khi bạn đã giữ lại nó trước đó. Các handler mặc định `onCloseButtonPress` và `onError` đều trả về `true`. Điều tương tự cũng áp dụng cho bất kỳ handler nào bạn cho trả về `true`, chẳng hạn như `onAndroidSystemBack`. Để giữ lại flow khi người dùng đóng nó, hãy tự đóng flow và trả về `false`:
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
 ```
 
 ## Sử dụng bộ đếm ngược do nhà phát triển định nghĩa \{#use-developer-defined-timer\}
