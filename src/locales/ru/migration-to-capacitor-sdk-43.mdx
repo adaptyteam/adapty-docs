@@ -1,0 +1,96 @@
+---
+title: "Миграция Adapty Capacitor SDK на v4.3"
+description: "Переход на Adapty Capacitor SDK v4.3: настройте отображение сообщений Google Play, уберите loadTimeoutMs из getOnboardingForDefaultAudience и обработайте коды ошибок, неизвестные вашей версии SDK."
+metadataTitle: "Миграция на Adapty Capacitor SDK v4.3 | Документация Adapty"
+---
+
+Adapty Capacitor SDK 4.3 по умолчанию показывает встроенные сообщения Google Play, удаляет неиспользуемый параметр из `getOnboardingForDefaultAudience`, расширяет тип кодов ошибок и требует наличия продвигаемого продукта в событии. Изучите каждое изменение в этом гайде, чтобы поведение вашего приложения оставалось прежним, а TypeScript-сборка проходила без ошибок.
+
+Если вы всё ещё используете версию 3.x, сначала пройдите [Миграцию на v4.1.1](migration-to-capacitor-sdk-v4), а затем следуйте этому гайду.
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.2 | v4.3 |
+|---|---|
+| `params: undefined` или `fetchPolicy: undefined` вызывает ошибку | Применяются значения по умолчанию |
+| Сообщения Google Play не запрашиваются | Сообщения Google Play отображаются по умолчанию на Android |
+| `getOnboardingForDefaultAudience` принимает `params.loadTimeoutMs` и игнорирует его | `params.loadTimeoutMs` удалён из типа |
+| `error.adaptyCode` типизирован как известный код | Тип также допускает коды, которые ваша версия SDK не знает |
+| На iOS `makePromotedPurchase` принимает продукт, созданный вами вручную | Требуется продукт из события `'onPromotedPurchaseReceived'` |
+| `accessLevel.android.offerId` | устарело — используйте верхнеуровневый `offerId` |
+
+## Параметры, переданные как `undefined`, принимают значения по умолчанию \{#options-passed-as-undefined-fall-back-to-the-defaults\}
+
+В версии 4.2 передача `params: undefined` в `getFlow`, `getOnboarding` или их варианты с аудиторией по умолчанию вызывала `TypeError`, а `fetchPolicy: undefined` приводила к ошибке на нативной стороне. Начиная с версии 4.3, параметр, переданный как `undefined`, сохраняет своё значение по умолчанию: `fetchPolicy` возвращается к `'reload_revalidating_cache_data'`, а `loadTimeoutMs` — к 5000 мс. Если раньше вы обходили эту ошибку, просто не указывая такие ключи, теперь можно передавать необязательные значения из конфигурации как есть.
+
+## Сообщения Google Play отображаются по умолчанию \{#google-play-messages-are-shown-by-default\}
+
+Начиная с версии 4.3, SDK запрашивает встроенные сообщения Google Play — например, уведомления об отклонённом платеже — каждый раз, когда `Activity` вашего приложения запускается после `activate`, в том числе при возврате приложения на передний план. Такое сообщение может появиться поверх пейвола.
+
+Если это подходит для вашего приложения, никаких изменений не требуется. В режиме `'auto'` сообщения не появляются при холодном запуске — подробнее см. [Показ сообщений при запуске на Android](capacitor-store-messages#show-messages-at-launch-on-android). Чтобы сохранить поведение версии 4.2, используйте ручную обработку на Android и не вызывайте `showStoreMessages`. Чтобы самостоятельно контролировать момент появления сообщений, инициализируйте SDK с ручной обработкой на Android и вызовите `showStoreMessages` в подходящий для вашего приложения момент:
+
+```typescript showLineNumbers
+
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: Capacitor.getPlatform() === 'android' ? 'manual' : 'auto',
+  },
+});
+```
+
+Установите ручную обработку только на Android, чтобы не менять поведение на iOS: на iOS 16 и выше ручная обработка также удерживает сообщения App Store до тех пор, пока ваше приложение не вызовет `showStoreMessages`. Полное описание API см. в разделе [Управление сообщениями стора](capacitor-store-messages).
+
+:::warning
+В ручном режиме сторы не показывают сообщения самостоятельно. Если ваше приложение никогда не вызывает `showStoreMessages`, пользователи никогда не увидят уведомление об отклонённом платеже.
+:::
+
+## `loadTimeoutMs` удалён из `getOnboardingForDefaultAudience` \{#loadtimeoutms-is-removed-from-getonboardingfordefaultaudience\}
+
+`getOnboardingForDefaultAudience` никогда не использовал `params.loadTimeoutMs`: запрос для аудитории по умолчанию не имеет таймаута. Начиная с версии 4.3, параметр также исключён из типа, поэтому передача его в объектном литерале приводит к ошибке сборки TypeScript. Удалите его в любом случае: SDK игнорирует его.
+
+```diff showLineNumbers
+  const onboarding = await adapty.getOnboardingForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data',
+-     loadTimeoutMs: 5000,
+    },
+  });
+```
+
+`getOnboarding` сохраняет `loadTimeoutMs`.
+
+## Типы кодов ошибок допускают неизвестные коды \{#error-code-types-admit-unknown-codes\}
+
+Нативные SDK могут возвращать коды ошибок, более новые, чем ваш Capacitor SDK. Начиная с версии 4.3, тип `ErrorCode` также допускает такие коды, поэтому обращение вида `ErrorCode[error.adaptyCode]` или исчерпывающий `switch` по `error.adaptyCode` может перестать компилироваться. Используйте вместо этого `error.codeName`, `getErrorCodeName()` или `isKnownErrorCode()`. Сравнение вида `error.adaptyCode === ErrorCodeName.paymentCancelled` или `switch` с ветвью `default` изменений не требует.
+
+4.3 также даёт имена кодам, которые в предыдущих версиях отображались как неизвестные, поэтому `getErrorPrompt(1050)` теперь возвращает `'paymentPendingError'` вместо `'Unknown code: 1050'`. Подробнее о вспомогательных методах для работы с ошибками — в разделе [Обработка ошибок](capacitor-handle-errors).
+
+## Передавайте продвигаемый продукт как есть \{#pass-the-promoted-product-as-is\}
+
+На iOS функция `makePromotedPurchase` теперь требует намерение о покупке из App Store, которое несёт продукт из события `'onPromotedPurchaseReceived'`. Продукт, созданный вручную или полученный через `getPaywallProducts`, работал в версии 4.2, но не работает в 4.3. Передавайте продукт именно из события:
+
+```typescript showLineNumbers
+await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+});
+```
+
+См. [Встроенные покупки, продвигаемые в сторе](capacitor-making-purchases#in-app-purchases-from-the-app-store).
+
+## `android.offerId` устарел \{#androidofferid-is-deprecated\}
+
+Уровни доступа и подписки теперь имеют поле `offerId` на верхнем уровне: это офер Google Play, по которому была оформлена подписка. В уровнях доступа `android.offerId` по-прежнему работает, но считается устаревшим. Используйте `offerId` верхнего уровня: его значение зависит от стора, в котором была совершена покупка, а не от операционной системы устройства.
+
+## Новое в 4.3 \{#new-in-43\}
+
+Эти дополнения подключаются по желанию. Существующий код продолжает работать без них:
+
+- **[Управление сообщениями стора](capacitor-store-messages)**: Выберите, когда появляются сообщения App Store и Google Play.
+- **[Предзагрузка плейсментов](capacitor-optimize-paywall-fetching#preload-placements)**: `preloadFlows` и `preloadFlowsForDefaultAudience` прогревают кэш флоу.
+- **[Сохранение закрытого флоу](capacitor-present-paywalls#keep-a-closed-flow-for-later)**: `view.dismiss({ destroy: false })` сохраняет флоу для повторного показа, а `view.destroy()` освобождает его.
+- **[Планы с обязательством на 12 месяцев](set-up-12-month-commitment)**: Свойство `product.subscription?.ios?.pricingTerms` описывает план на iOS, а уровни доступа возвращают `billingPlan` и `commitmentInfo`.
+- **[Режим наблюдателя](report-transactions-observer-mode-capacitor)**: `reportTransaction` принимает необязательный параметр `ios.jwsTransaction`.
+- **Новые коды ошибок для функций 4.3**: `billingPlanUnavailable` (1060), `operationInProgress` (3201) и `resolverFailure` (3202) — только для iOS. См. [Обработка ошибок](capacitor-handle-errors).
+- **Уровень логирования debug**: `'debug'` записывает низкоуровневые внутренние детали работы нативного SDK. См. [Логирование](sdk-installation-capacitor#logging).

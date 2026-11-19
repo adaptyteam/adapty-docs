@@ -1,0 +1,96 @@
+---
+title: "Migrate Adapty Capacitor SDK sang v4.3"
+description: "Migrate sang Adapty Capacitor SDK v4.3: quyết định cách hiển thị thông báo Google Play, bỏ loadTimeoutMs khỏi getOnboardingForDefaultAudience, và xử lý mã lỗi mà phiên bản SDK của bạn không nhận ra."
+metadataTitle: "Hướng dẫn migration lên Adapty Capacitor SDK v4.3 | Tài liệu Adapty"
+---
+
+Adapty Capacitor SDK 4.3 mặc định hiển thị in-app messages của Google Play, xóa một tham số không dùng khỏi `getOnboardingForDefaultAudience`, mở rộng kiểu cho error code, và yêu cầu sản phẩm được quảng cáo từ sự kiện. Xem lại từng thay đổi trong hướng dẫn này để giữ nguyên hành vi của ứng dụng và đảm bảo bản build TypeScript vẫn hoạt động đúng.
+
+Nếu bạn vẫn đang dùng 3.x, hãy bắt đầu với [Migrate sang v4.1.1](migration-to-capacitor-sdk-v4) rồi làm theo hướng dẫn này.
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| v4.2 | v4.3 |
+|---|---|
+| `params: undefined` hoặc `fetchPolicy: undefined` gây lỗi | Các giá trị mặc định được áp dụng |
+| Tin nhắn Google Play không được yêu cầu | Tin nhắn Google Play hiển thị mặc định trên Android |
+| `getOnboardingForDefaultAudience` nhận `params.loadTimeoutMs` và bỏ qua | `params.loadTimeoutMs` bị xóa khỏi kiểu dữ liệu |
+| `error.adaptyCode` được định kiểu là mã đã biết | Kiểu dữ liệu của nó cũng chấp nhận các mã mà phiên bản SDK của bạn chưa biết |
+| Trên iOS, `makePromotedPurchase` nhận sản phẩm bạn tự tạo | Cần sản phẩm từ sự kiện `'onPromotedPurchaseReceived'` |
+| `accessLevel.android.offerId` | deprecated — đọc `offerId` ở cấp trên |
+
+## Các tùy chọn được truyền dưới dạng `undefined` sẽ dùng giá trị mặc định \{#options-passed-as-undefined-fall-back-to-the-defaults\}
+
+Trong phiên bản 4.2, việc truyền `params: undefined` vào `getFlow`, `getOnboarding`, hoặc các biến thể đối tượng mặc định của chúng sẽ ném ra lỗi `TypeError`, và `fetchPolicy: undefined` cũng bị lỗi ở phía native. Từ phiên bản 4.3 trở đi, một tùy chọn được truyền dưới dạng `undefined` sẽ giữ nguyên giá trị mặc định của nó: `fetchPolicy` sẽ dùng `'reload_revalidating_cache_data'`, và `loadTimeoutMs` sẽ dùng 5000 ms. Nếu trước đây bạn đã xử lý lỗi này bằng cách bỏ qua các key đó, giờ đây bạn có thể truyền các giá trị tùy chọn từ cấu hình của mình như bình thường.
+
+## Thông báo Google Play hiển thị theo mặc định \{#google-play-messages-are-shown-by-default\}
+
+Bắt đầu từ phiên bản 4.3, SDK sẽ yêu cầu các thông báo in-app của Google Play — chẳng hạn như thông báo thanh toán bị từ chối — mỗi khi `Activity` của ứng dụng khởi động sau lệnh `activate`, kể cả khi ứng dụng quay lại foreground. Thông báo này sau đó có thể xuất hiện đè lên paywall.
+
+Nếu điều đó phù hợp với ứng dụng của bạn, không cần thay đổi gì. Ở chế độ `'auto'`, các thông báo sẽ không xuất hiện khi khởi động lạnh: xem [Hiển thị thông báo khi khởi động trên Android](capacitor-store-messages#show-messages-at-launch-on-android). Để giữ nguyên hành vi của phiên bản 4.2, hãy sử dụng xử lý thủ công trên Android và không gọi `showStoreMessages`. Để chủ động chọn thời điểm thông báo xuất hiện, hãy kích hoạt SDK với xử lý thủ công trên Android và gọi `showStoreMessages` vào thời điểm phù hợp với ứng dụng của bạn:
+
+```typescript showLineNumbers
+
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: Capacitor.getPlatform() === 'android' ? 'manual' : 'auto',
+  },
+});
+```
+
+Chỉ đặt chế độ xử lý thủ công trên Android để iOS không bị ảnh hưởng: trên iOS 16 trở lên, chế độ xử lý thủ công cũng sẽ giữ lại các thông báo từ App Store cho đến khi ứng dụng của bạn gọi `showStoreMessages`. Xem API đầy đủ tại [Kiểm soát thông báo cửa hàng](capacitor-store-messages).
+
+:::warning
+Trong chế độ thủ công, các cửa hàng sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `showStoreMessages`, người dùng sẽ không bao giờ thấy thông báo thanh toán bị từ chối.
+:::
+
+## `loadTimeoutMs` đã bị xóa khỏi `getOnboardingForDefaultAudience` \{#loadtimeoutms-is-removed-from-getonboardingfordefaultaudience\}
+
+`getOnboardingForDefaultAudience` chưa bao giờ sử dụng `params.loadTimeoutMs`: yêu cầu đối với đối tượng mặc định không có timeout. Từ phiên bản 4.3, tham số này cũng bị loại bỏ khỏi kiểu dữ liệu của nó, nên việc truyền nó trong một object literal sẽ làm TypeScript build thất bại. Hãy xóa nó trong mọi trường hợp: SDK bỏ qua tham số này.
+
+```diff showLineNumbers
+  const onboarding = await adapty.getOnboardingForDefaultAudience({
+    placementId: 'YOUR_PLACEMENT_ID',
+    params: {
+      fetchPolicy: 'reload_revalidating_cache_data',
+-     loadTimeoutMs: 5000,
+    },
+  });
+```
+
+`getOnboarding` vẫn giữ `loadTimeoutMs`.
+
+## Các loại mã lỗi chấp nhận mã không xác định \{#error-code-types-admit-unknown-codes\}
+
+SDK gốc có thể trả về các mã lỗi mới hơn Capacitor SDK của bạn. Kể từ phiên bản 4.3, kiểu `ErrorCode` cũng chấp nhận các mã này, do đó các cách tra cứu như `ErrorCode[error.adaptyCode]` hoặc câu lệnh `switch` liệt kê đầy đủ trên `error.adaptyCode` có thể không còn biên dịch được nữa. Hãy dùng `error.codeName`, `getErrorCodeName()`, hoặc `isKnownErrorCode()` thay thế. Các phép so sánh như `error.adaptyCode === ErrorCodeName.paymentCancelled`, hoặc câu lệnh `switch` có nhánh `default`, không cần thay đổi gì.
+
+4.3 cũng đặt tên cho các mã lỗi mà các phiên bản trước báo cáo là không xác định, vì vậy `getErrorPrompt(1050)` giờ trả về `'paymentPendingError'` thay vì `'Unknown code: 1050'`. Để biết thêm về các hàm xử lý lỗi, xem [Xử lý lỗi](capacitor-handle-errors).
+
+## Truyền sản phẩm được quảng bá nguyên vẹn \{#pass-the-promoted-product-as-is\}
+
+Trên iOS, `makePromotedPurchase` hiện cần có App Store purchase intent mà sản phẩm từ sự kiện `'onPromotedPurchaseReceived'` mang theo. Một sản phẩm bạn tự tạo, hoặc một sản phẩm được lấy bằng `getPaywallProducts`, hoạt động được trong 4.2 nhưng sẽ lỗi trong 4.3. Hãy truyền sản phẩm trực tiếp từ sự kiện:
+
+```typescript showLineNumbers
+await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
+  const result = await adapty.makePromotedPurchase({ product });
+});
+```
+
+Xem [Promoted in-app purchases](capacitor-making-purchases#in-app-purchases-from-the-app-store).
+
+## `android.offerId` đã bị deprecated \{#androidofferid-is-deprecated\}
+
+Mức độ truy cập và gói đăng ký hiện có `offerId` ở cấp độ cao nhất: đây là ưu đãi trên Google Play mà gói đăng ký được mua kèm. Trên mức độ truy cập, `android.offerId` vẫn hoạt động nhưng đã bị deprecated. Hãy đọc `offerId` ở cấp độ cao nhất thay thế: giá trị này phụ thuộc vào cửa hàng của giao dịch mua, không phụ thuộc vào hệ điều hành của thiết bị.
+
+## Mới trong phiên bản 4.3 \{#new-in-43\}
+
+Các tính năng bổ sung này là tùy chọn. Code hiện tại của bạn vẫn hoạt động bình thường mà không cần thay đổi:
+
+- **[Kiểm soát thông báo cửa hàng](capacitor-store-messages)**: Chọn thời điểm hiển thị thông báo từ App Store và Google Play.
+- **[Preload placements](capacitor-optimize-paywall-fetching#preload-placements)**: `preloadFlows` và `preloadFlowsForDefaultAudience` giúp làm ấm bộ nhớ cache của flow.
+- **[Giữ lại flow đã đóng](capacitor-present-paywalls#keep-a-closed-flow-for-later)**: `view.dismiss({ destroy: false })` giữ lại flow để hiển thị lại sau, còn `view.destroy()` giải phóng nó.
+- **[Gói cam kết 12 tháng](set-up-12-month-commitment)**: Thuộc tính `product.subscription?.ios?.pricingTerms` mô tả gói trên iOS, và các mức độ truy cập báo cáo `billingPlan` cùng `commitmentInfo`.
+- **[Observer mode](report-transactions-observer-mode-capacitor)**: `reportTransaction` nhận thêm tham số tùy chọn `ios.jwsTransaction`.
+- **Mã lỗi mới cho tính năng 4.3**: `billingPlanUnavailable` (1060), `operationInProgress` (3201) và `resolverFailure` (3202), chỉ dành cho iOS. Xem [Xử lý lỗi](capacitor-handle-errors).
+- **Mức log debug**: `'debug'` ghi lại các chi tiết nội bộ cấp thấp của SDK gốc. Xem [Logging](sdk-installation-capacitor#logging).

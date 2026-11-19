@@ -90,12 +90,13 @@ Paramètres :
 
 | Paramètre            | Présence | Description                                                  |
 | :------------------- | :------- | :----------------------------------------------------------- |
-| **flow**             | obligatoire | Un objet `AdaptyFlow` permettant d'obtenir une vue pour le flow/paywall souhaité. |
-| **locale**           | optionnel | L'identifiant de la [localisation du flow](add-paywall-locale-in-adapty-paywall-builder) avec laquelle afficher la vue — par exemple, `en` ou `pt-br`. Si omis, la vue s'affiche en `en`, ou dans la localisation par défaut du flow si celui-ci n'a pas de version `en`. Voir [Localisations et codes de langue](flutter-localizations-and-locale-codes). |
-| **customLayoutId**   | <p>optionnel</p><p>par défaut : `null`</p><p>SDK 4.1+</p> | L'identifiant personnalisé d'une mise en page dans la configuration des mises en page du flow. Passez-le pour afficher cette mise en page spécifique plutôt que celle que le SDK sélectionne automatiquement selon le type d'appareil et la taille d'écran. Si aucune mise en page ne correspond à l'identifiant, l'appel échoue avec une `AdaptyError`. Le Flow & Paywall Builder n'assigne pas encore d'identifiants de mise en page personnalisés, laissez donc ce champ non défini. |
-| **customTags**       | optionnel | Les valeurs de votre application pour les [tags personnalisés](flow-custom-tags) du flow, dans une map indexée par le nom complet de chaque tag. Pour plus de détails, lisez [Passer des données aux flows](flutter-flow-custom-tags). |
+| **flow**             | requis | Un objet `AdaptyFlow` pour obtenir une vue pour le flow/paywall souhaité. |
+| **locale**           | optionnel | L'identifiant de la [localisation du flow](add-paywall-locale-in-adapty-paywall-builder) avec laquelle afficher la vue — par exemple, `en` ou `pt-br`. Sans cette valeur, la vue s'affiche en `en`, ou dans la localisation par défaut du flow s'il n'a pas de version `en`. Voir [Localisations et codes de langue](flutter-localizations-and-locale-codes). |
+| **customLayoutId**   | <p>optionnel</p><p>défaut : `null`</p><p>SDK 4.1+</p> | L'ID personnalisé d'un layout dans la configuration des layouts du flow. Passez-le pour afficher ce layout spécifique au lieu de celui sélectionné automatiquement par le SDK selon le type d'appareil et la taille d'écran. Si aucun layout ne correspond à cet ID, l'appel échoue avec une `AdaptyError`. Le Flow & Paywall Builder n'attribue pas encore d'IDs de layout personnalisés, ne définissez donc pas cette valeur. |
+| **customTags**       | optionnel | Les valeurs de votre application pour les [tags personnalisés](flow-custom-tags) du flow, dans une map indexée par le nom complet de chaque tag. Pour en savoir plus, lisez [Passer des données aux flows](flutter-flow-custom-tags). |
+| **customTimers**     | optionnel | Les dates de fin des minuteurs **Developer defined** du flow, dans une map d'IDs de minuteur vers des valeurs `DateTime`. Pour en savoir plus, lisez [Configurer les minuteurs définis par le développeur](#set-up-developer-defined-timers). |
 | **preloadProducts** | optionnel | Activez cette option pour optimiser le moment d'affichage des produits à l'écran. Lorsque `true`, AdaptyUI récupère automatiquement les produits nécessaires. Par défaut : `false`. |
-| **loadTimeout** | optionnel | Une `Duration` qui limite le temps de chargement de la configuration de la vue. Si le délai est dépassé, les données en cache ou le fallback local seront utilisés. |
+| **loadTimeout** | optionnel | Une `Duration` qui limite le temps de chargement de la configuration de la vue. Si le délai est atteint, les données en cache ou le fallback local sont utilisés. |
 
 :::note
 Si vous utilisez plusieurs langues, découvrez comment ajouter une [localisation de flow](add-paywall-locale-in-adapty-paywall-builder) et comment utiliser correctement les codes de langue [ici](flutter-localizations-and-locale-codes).
@@ -185,7 +186,9 @@ Si une ressource est introuvable, le flow/paywall reviendra à son apparence par
 
 ## Configurer les minuteries définies par le développeur \{#set-up-developer-defined-timers\}
 
-Pour utiliser des minuteries personnalisées dans votre application mobile, transmettez une map `customTimers` à la méthode `createFlowView`. Chaque clé de la map correspond à un identifiant de minuterie, et sa valeur est un objet `DateTime` qui définit quand la minuterie se termine. Voici un exemple :
+Utilisez cette section pour une minuterie avec le comportement **Developer defined** dans le Flow & Paywall Builder. Dans le builder, chaque minuterie de ce type possède un **Timer ID** (voir [Laisser votre application définir la date de fin](flow-timer#let-your-app-set-the-end-date)), et votre application définit la date de fin. Utilisez le même Timer ID dans votre code que dans le builder, caractère par caractère, en respectant la casse et les espaces. Si les ID diffèrent, la minuterie ne reçoit aucune date de fin de votre application.
+
+Pour définir les dates de fin, passez une map `customTimers` à la méthode `createFlowView`. Chaque clé de la map est un Timer ID, et sa valeur est un objet `DateTime` qui définit quand le timer se termine. Voici un exemple :
 
 ```dart showLineNumbers
 
@@ -193,8 +196,8 @@ try {
   final view = await AdaptyUI().createFlowView(
     flow: flow,
     customTimers: {
-      'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(seconds: 3600 * 6)),
-      'CUSTOM_TIMER_NY': DateTime(2027, 1, 1), // New Year 2027
+      'CUSTOM_TIMER_6H': DateTime.now().add(const Duration(hours: 6)),
+      'CUSTOM_TIMER_NY': DateTime(DateTime.now().year + 1), // next New Year's Day
     },
   );
 } on AdaptyError catch (e) {
@@ -204,10 +207,14 @@ try {
 }
 ```
 
-Dans cet exemple, `CUSTOM_TIMER_NY` et `CUSTOM_TIMER_6H` sont les **Timer ID**s des minuteries définies par le développeur dans l'Adapty Dashboard. La map `customTimers` permet à votre application de mettre à jour dynamiquement chaque minuterie avec la valeur correcte. Par exemple :
+Pour un flow intégré avec `AdaptyUIFlowPlatformView`, passez la même map à son paramètre `customTimers`.
 
-- `CUSTOM_TIMER_NY` : le temps restant jusqu'à la fin du minuteur, comme le jour du Nouvel An.
-- `CUSTOM_TIMER_6H` : le temps restant dans une période de 6 heures qui a démarré lorsque l'utilisateur a ouvert le flow.
+Dans cet exemple, `CUSTOM_TIMER_NY` et `CUSTOM_TIMER_6H` sont les ID de timer de deux minuteries **définies par le développeur** dans le builder :
+
+- `CUSTOM_TIMER_NY` : le temps restant jusqu'au prochain Nouvel An.
+- `CUSTOM_TIMER_6H` : le temps restant dans une période de 6 heures qui a démarré au moment où votre application a créé la vue.
+
+Le SDK lit `customTimers` une seule fois, au moment où il crée la vue. Ainsi, une date calculée comme `CUSTOM_TIMER_6H` est comptabilisée à partir de ce moment, même si l'utilisateur rouvre l'écran. Si la date est dans le passé, le minuteur affiche immédiatement zéro et son déclencheur **On timer end** s'exécute. Si `customTimers` ne contient pas de clé pour un Timer ID, le minuteur décompte une heure à partir de l'ouverture de l'écran.
 
 </SDKv4>
 

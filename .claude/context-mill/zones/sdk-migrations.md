@@ -119,7 +119,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | 3.16 |  |  |  |  |  |  | migration-to-capacitor-316 |
 | 4.0 | migration-to-ios-sdk-v4 | migration-to-android-sdk-v4 | migration-to-react-native-sdk-v4 | migration-to-flutter-sdk-v4 | migration-to-unity-sdk-v4 | migration-to-kmp-sdk-v4 | migration-to-capacitor-sdk-v4 |
 | 4.1 | migration-to-ios-sdk-41 | migration-to-android-sdk-41 | migration-to-react-native-sdk-41 | migration-to-flutter-sdk-41 |  |  |  |
-| 4.3 |  |  |  | migration-to-flutter-sdk-43 | migration-to-unity-sdk-43 |  |  |
+| 4.3 |  |  |  | migration-to-flutter-sdk-43 | migration-to-unity-sdk-43 |  | migration-to-capacitor-sdk-43 |
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
@@ -139,6 +139,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | migration-to-android-sdk-v4 | migration | dev | 17 | android |
 | migration-to-android330 | migration | dev | 16 | android |
 | migration-to-capacitor-316 | migration | dev | 0 | capacitor |
+| migration-to-capacitor-sdk-43 | migration | dev | 6 | capacitor |
 | migration-to-capacitor-sdk-v4 | migration | dev | 30 | capacitor |
 | migration-to-flutter-sdk-34 | migration | dev | 2 | flutter |
 | migration-to-flutter-sdk-41 | migration | — | 10 | flutter |
