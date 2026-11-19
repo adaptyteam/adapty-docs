@@ -1,0 +1,83 @@
+---
+title: "Migrate Adapty Flutter SDK to v4.4"
+description: "Migrate to Adapty Flutter SDK v4.4: replace both fallback files, and handle the new flow errors on iOS and Android."
+metadataTitle: "Migrating to Adapty Flutter SDK v4.4 | Adapty Docs"
+---
+
+Adapty Flutter SDK 4.4 changes the fallback file format, requires iOS 16 for flows, and reports more flow errors to your app. To update your app from 4.3 to 4.4, set the `adapty_flutter` version to `^4.4.0`, and replace both fallback files in the same build. SDK versions 4.1–4.3 reject the new files. Then review each flow error change in this guide.
+
+If you're still on 4.1, start with [Migrate to v4.3](migration-to-flutter-sdk-43) and then follow this guide. An app on 4.0 needs the [v4.1 changes](migration-to-flutter-sdk-41) first.
+
+:::warning
+The fallback file format changed in 4.4, and the compiler can't detect an outdated file. Without [new fallback files](#replace-the-fallback-files), every placement loses its fallback.
+:::
+
+## Quick reference
+
+| v4.3 | v4.4 |
+|---|---|
+| Fallback files downloaded for 4.1–4.3 | New fallback file format; download both files again |
+| Flows open on iOS 15 | Flows require iOS 16 |
+| On iOS, `AdaptyUIFlowPlatformView` stays empty when its flow can't load | It reports the error to your flow error callbacks |
+| On iOS, `AdaptyUI()` and `AdaptyUIFlowView` calls made while AdaptyUI isn't activated throw errors with `AdaptyErrorCode.unknown` | They throw errors with `adaptyUINotActivated` or `adaptyNotActivated` |
+| On Android, the SDK only logs flow script errors | They reach your flow error callbacks as `AdaptyErrorCode.jsException` |
+
+## Installation
+
+Update `adapty_flutter` to v4.4 in your `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+If your app uses [Kids Mode](kids-mode-flutter), specify `adapty_flutter_kids` instead:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+The requirements are unchanged from 4.3: **Flutter 3.32.0** (Dart 3.8.0) and **iOS 15.0**. Flows are the exception: they require iOS 16.0. See [Install Adapty SDK](sdk-installation-flutter) for the full setup.
+
+## Replace the fallback files
+
+To download the [fallback files](flutter-use-fallback-paywalls) again, in **[Placements](https://app.adapty.io/placements)**, click **Fallbacks** > **Download iOS Fallback**. In the **Adapty SDK v4.4.0 and higher** row, click **Download**. Repeat with **Download Android Fallback**.
+
+The downloaded files are named `ios_4_4_0_fallback.json` and `android_4_4_0_fallback.json`. Move them to the `assets` folder of your project, in place of the outdated files. Give each file the name that your app passes to `Adapty().setFallback`, or update the names in that call.
+
+With an outdated file, `Adapty().setFallback` throws an `AdaptyError`. To verify the new files, run the app on iOS and on Android, and make sure that this call throws no error.
+
+## Flows require iOS 16
+
+Starting from 4.4, flows require iOS 16 or later. On iOS 15, `AdaptyUI().createFlowView()` throws an `AdaptyError` with `AdaptyErrorCode.platformNotSupported`, and `AdaptyUIFlowPlatformView` stays empty and reports the same error. Onboardings and the rest of the SDK still support iOS 15.
+
+When your app receives this error, show your own content instead, such as a [custom paywall](flutter-implement-paywalls-manually).
+
+## Flow load errors reach your callbacks on iOS
+
+On iOS, when `AdaptyUIFlowPlatformView` can't show its flow, it reports the error to its `onDidReceiveError` callback and to `flowViewDidReceiveError` of your flows events observer. Each time your app creates the widget, it reports the error once. Before 4.4, the widget stayed empty. The widget reports the following errors:
+
+- On iOS 15: `AdaptyErrorCode.platformNotSupported`.
+- On iOS 16 and later, when the flow fails to load: the error that `AdaptyUI().createFlowView()` throws for that flow. For example, the flow fails to load while AdaptyUI isn't activated, or for a `customLayoutId` that the flow doesn't have.
+
+Your flow error handling, such as closing the screen, now runs in these cases too. For the view of this widget, `AdaptyUIFlowView.dismiss()` fails. Remove the widget, and show your own content. To retry a temporary failure, such as `AdaptyErrorCode.networkFailed`, build the widget again under a new `Key`.
+
+## AdaptyUI errors have new codes on iOS
+
+On iOS, an `AdaptyUI()` or `AdaptyUIFlowView` call throws an error with a new code when AdaptyUI isn't activated: before `Adapty().activate()` completes, or after activation with `withActivateUI(false)`. What your app requests determines the code:
+
+- A flow view: `AdaptyErrorCode.adaptyUINotActivated`.
+- An onboarding: `AdaptyErrorCode.adaptyNotActivated`.
+
+Before 4.4, these errors had `AdaptyErrorCode.unknown`. If your code handles `unknown` for them, handle the new codes too. For `AdaptyErrorCode.platformNotSupported`, read [Flows require iOS 16](#flows-require-ios-16).
+
+## Flow script errors reach your callbacks on Android
+
+On Android, the flow script can throw an exception while it handles an SDK event, such as a message from `sendAppMessage()`. Starting from 4.4, this exception reaches `flowViewDidReceiveError` and the `onDidReceiveError` callback of `AdaptyUIFlowPlatformView` as `AdaptyErrorCode.jsException`, the same as on iOS. Before, the SDK only logged it.
+
+If your app doesn't set a flows events observer, a flow from `AdaptyUI().createFlowView()` closes on this error. To keep the flow open, set an observer with `AdaptyUI().setFlowsEventsObserver()`, and handle the error there.
+
+## New in 4.4
+
+Flows can display native views that your iOS and Android code draws in [custom elements](flutter-flow-custom-elements).
