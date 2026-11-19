@@ -149,6 +149,13 @@ source id is named.
 
 ## Ripple rules
 
+- **The virtual currency ledger export lives in the `integrations` zone (2026-11-19).** The daily S3 and
+  Google Cloud Storage export has a third feed, one row per balance change; its columns and limits are
+  in the "Virtual currency transactions" section of `s3-exports` and `google-cloud-storage`.
+  `virtual-currencies` only links there ("How it works", item 8). A change to the transaction fields
+  (`operation` values, `feature`, `reference_id`, `customer_placement_id`, `is_sandbox`, `metadata`)
+  also moves that 19-column table, in both pages.
+
 ## Boundaries
 
 - **`access-levels`** — is the ticket about the SKU/price/offer definition being sold (here), or about
