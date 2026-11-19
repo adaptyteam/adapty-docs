@@ -12,13 +12,93 @@ metadataTitle: "优化流程与付费墙获取 | Unity SDK | Adapty 文档"
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 建议做法 | 不建议做法 | 原因 |
+| 推荐做法 | 避免做法 | 原因 |
 |---|---|---|
-| 仅获取即将展示的版位。 | 启动时并发预取所有版位。 | 批量预取会阻塞主线程，并在请求高峰期间导致黑屏。 |
-| 在归因有机会完成解析后再获取 `GetFlow`，例如在 `Activate` 之后延迟 1–2 秒，或等待 `OnLoadLatestProfile` 触发后再调用。 | 在 `Awake()` 中调用 `GetFlow`。 | 此时归因尚未到达。流程会基于默认目标受众进行解析，从而悄无声息地绕过市场细分和 ASA 个性化设置。 |
-| 设置 `loadTimeout` 并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `GetFlow` 返回。 | 如果没有超时机制，网络状况较差的用户会一直看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
+| 获取即将展示的版位，或通过 [`PreloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时自行发起并发的 `GetFlow` 调用。 | 手动预取会阻塞主线程并导致黑屏。`PreloadFlows` 专为此场景设计，只需一次调用即可将批量请求发送到原生 SDK。 |
+| 在归因数据有机会解析之后再调用 `GetFlow`——例如在 `Activate` 后 1–2 秒，或等 `OnLoadLatestProfile` 触发后再调用。 | 在 `Awake()` 中调用 `GetFlow`。 | 此时归因数据尚未到达，流程将按默认目标受众进行解析，悄悄绕过市场细分和 ASA 个性化设置。 |
+| 设置 `loadTimeout` 并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `GetFlow`。 | 若不设置超时，网络较差的用户将看到空白屏幕，直到网络恢复——或直接关闭应用。 |
 
 有关 `fetchPolicy` 和 `loadTimeout` 参数的说明，请参阅[获取自定义付费墙与产品](fetch-paywalls-and-products-unity)；有关如何选择合适版位的说明，请参阅[版位](placements)。
+
+## 预加载版位 \{#preload-placements\}
+
+:::info
+`Adapty.PreloadFlows` 和 `Adapty.PreloadFlowsForDefaultAudience` 从 SDK 4.3.0 版本开始支持。
+:::
+
+`Adapty.PreloadFlows` 会提前缓存流程 JSON。之后按正常流程使用即可：通过 `GetFlow` 获取流程，通过 `CreateFlowView` 创建其视图。
+
+`fetchPolicy` 决定后续 `GetFlow` 优先从哪一层读取数据，而非决定是否能访问缓存：
+
+- `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` 优先读取预加载的缓存副本，仅在无缓存时才请求网络。`AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)` 在此基础上增加了时效判断：缓存副本未超过 `maxAge` 时直接使用。
+- 默认策略 `AdaptyPlacementFetchPolicy.Default` 优先请求网络，仅在请求失败或超时时才回退到预加载的缓存副本。
+
+无论采用哪种策略，预加载都能带来收益，只是方式不同：缓存优先策略会直接省去请求，而默认策略则会保留请求，同时获得一份可回退的热缓存副本。在[测试设备](test-devices)上，所有策略下 `GetFlow` 都会跳过缓存，仅当网络请求失败时才使用预加载的副本。
+
+当你知道本次会话需要用到哪些版位，但暂时不想展示时，可以使用此方法——例如，在 `Activate` 和 `Identify` 完成后立即调用，为用户尚未点击的按钮后面的流程提前加载。
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlows(
+    new List<string> { "onboarding", "main_paywall" },
+    TimeSpan.FromSeconds(5),
+    (error) => {
+        if (error != null) {
+            // at least one placement failed to preload
+        }
+    }
+);
+
+// Later, when the user reaches the paywall:
+Adapty.GetFlow(
+    "main_paywall",
+    AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        // create the flow view
+    }
+);
+```
+
+**参数：**
+
+- `placementIds`（必填）：需要预加载的版位。
+- `loadTimeout`（可选）：等待目标受众流程加载的超时时间。传入 `null` 或使用不带该参数的重载时，默认值为 5 秒。超时后，SDK 可改为加载默认受众的流程。
+
+**需要了解的行为：**
+
+- 只有当所有版位都尝试失败后，调用才会失败，并返回一个 `NetworkFailed` 错误，其中列出所有失败的版位。某个版位的失败不会影响其他版位，已加载的版位会保留在缓存中。
+- 预加载始终走网络请求：它没有自己的 `fetchPolicy`。
+- 预加载仅用于预热缓存，不返回内容——显示时仍需调用 `GetFlow`。
+- 缓存属于当前用户画像。在 `Identify` 或 `Logout` 之前预加载的流程，在切换后将无法找到，因此请在切换用户画像后再执行预加载。
+
+### 预加载涵盖的内容 \{#what-a-preload-covers\}
+
+流程到达屏幕需要经过多个层级。预加载涵盖第一个层级，与 `GetFlow` 的作用完全相同：
+
+| 层级 | 获取方式 | 是否通过预加载预热 |
+|---|---|---|
+| Flow JSON — 所选实验变体、其产品 ID 及远程配置 | `GetFlow` | 是 |
+| UI 布局 — 页面的结构、样式与文本 | `CreateFlowView` | 否 |
+| 图片，包括用于替代视频元素的静态帧 | `CreateFlowView`（后台加载） | 否 |
+| 产品 | `CreateFlowView` 或 `GetPaywallProducts` | 否 |
+| 视频文件 | 系统播放器，在页面渲染时加载 | SDK 不缓存 |
+
+因此，给定版位的第一次 `CreateFlowView` 在预加载之后仍需一次网络往返。此后，原生 SDK 会将该版位缓存到磁盘，重启应用后缓存依然有效，所以这笔开销只发生在首次请求时，而非每次都要付出。
+
+### 跳过目标受众细分 \{#skip-audience-segmentation\}
+
+如需完全跳过目标受众细分来预热缓存，可使用默认目标受众变体。该方式无需超时设置：
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlowsForDefaultAudience(
+    new List<string> { "main_paywall" },
+    (error) => {
+        // handle the error
+    }
+);
+```
+
+后续调用 `GetFlowForDefaultAudience` 读取缓存副本的方式与 `GetFlow` 读取 `PreloadFlows` 副本的方式相同。
 
 ## 从应用包中显示首屏媒体 \{#show-first-screen-media-from-the-app-bundle\}
 

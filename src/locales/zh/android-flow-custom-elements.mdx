@@ -1,0 +1,357 @@
+---
+title: "使用 Android SDK 显示自定义元素"
+description: "在流程的每个自定义元素中显示 Composable 或 Android View，并在设备上测试流程。"
+metadataTitle: "显示自定义元素 | Android SDK | Adapty 文档"
+---
+
+<FlowCustomElementsIntro />
+
+## 开始之前 \{#before-you-start\}
+
+您需要：
+
+- **Adapty Android SDK 4.4 或更高版本**：旧版本会为每个自定义元素显示备用内容。
+- **原生 Android 应用**：Flutter 等跨平台框架的 Adapty SDK 会为每个自定义元素显示备用内容。
+- **自定义元素的命名规范**：为每个原生视图指定一个类型（Type），例如 `lottie_animation`。类型名称只能使用小写字母、数字和下划线。如需区分相同类型的自定义元素，请为每个元素指定一个 ID，例如 `welcome_wave`。代码中的类型和 ID 必须与 [Flow & Paywall Builder](flow-custom-elements#add-and-configure) 中的设置保持一致。
+
+如果你的 iOS 应用已经显示了自定义元素，请复用其 Types 和 IDs。除非你为每个平台单独设置[目标受众](audience)，否则 iOS 和 Android 用户会看到相同的流程。
+
+## 为自定义元素创建视图 \{#create-views-for-custom-elements\}
+
+对于每种 Type，创建或复用一个可组合函数/Android `View`。以下 `lottie_animation` Type 的视图会从应用的 `assets` 文件夹中播放 Lottie 动画。Kotlin 示例是使用 `com.airbnb.android:lottie-compose` 库的可组合函数，Java 示例则使用 `com.airbnb.android:lottie` 库创建 Android `View`：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class LottieViews {
+    public static View createLottieView(Context context, String animationFile) {
+        LottieAnimationView view = new LottieAnimationView(context);
+        view.setAnimation(animationFile);
+        view.setRepeatCount(LottieDrawable.INFINITE);
+        view.playAnimation();
+        return view;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### 要求与最佳实践 \{#requirements-and-best-practices\}
+
+- **尺寸**：
+  - **内边距与对齐**：确保原生视图适配你在 Flow 与付费墙编辑工具中为其分配的容器大小，并减去内边距。如果视图未占满整个区域，默认显示在该区域的起始角位置。如需调整，可在自定义元素的 **Layout** 部分修改对齐方式。
+  - **自适应高度**：如果自定义元素的高度设置为 **Hug**，会导致可延伸填充可用空间的视图（如懒加载列表）发生折叠或撑至屏幕高度。请改为给自定义元素设置[**固定**高度](flow-custom-elements#add-and-configure)。
+- **主题**：要在使用 Views 构建的屏幕中以应用的颜色和字体显示 Composable，请将其包裹在你的 Compose 主题中。
+- **Flow 动作**：原生视图无法触发 Flow 动作，例如跳转到下一屏。请将导航按钮、购买按钮及其他带有 Flow 动作的按钮放在自定义元素之外。
+- **可选择元素**：请将自定义元素放置在产品卡片和其他[可选择元素](flow-selectable-elements)之外。当选中状态发生变化时，原生视图可能会丢失其状态。
+- **导航处理**：当用户跳转到下一屏时，SDK 会将原生视图从屏幕中移除。请停止该视图启动的资源，例如摄像头会话、播放器和位置更新：
+  - **Composable**：使用 `DisposableEffect` 的 `onDispose` 块。对于异步操作，使用 `LaunchedEffect`：当 Composable 离开组合树时，Compose 会自动取消它。
+  - **Android `View`**：在你的 `View` 子类中重写 `onDetachedFromWindow`，或向该 `View` 添加 `View.OnAttachStateChangeListener`。
+
+  当用户返回，或发生配置更改（例如屏幕旋转）时，SDK 会再次调用解析器，并创建一个不保留之前状态的新原生视图。
+- **轮播图**：在[轮播图](builder-containers#carousel)中，所有幻灯片上的原生视图在屏幕打开期间都保持活跃，而不仅仅是当前可见幻灯片上的视图。请勿在轮播图中放置摄像头预览或带有声音的播放器。
+
+## 编写解析器以匹配自定义元素和视图 \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+要编写解析器，请实现 `AdaptyCustomElementsResolver` 接口。其 `resolve` 方法接收自定义元素的类型和 ID，并以下列形式之一返回对应的视图：
+
+- **一个可组合项（Composable）**：返回 `AdaptyCustomElementContent.compose`，并在其 lambda 中传入可组合项。
+- **一个 Android `View`**：返回 `AdaptyCustomElementContent.view`，并传入一个创建 `View` 的函数。在 Kotlin 中，请明确写出 `factory` 参数名：`AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`。如果不写参数名，Kotlin 会将尾随 lambda 传给可选的 `update` 参数，导致代码无法编译。
+
+对于 `lottie_animation` 类型，以下解析器返回 [Lottie 视图](#create-views-for-custom-elements)。ID 对应 `assets` 文件夹中的动画文件名，例如 `welcome_wave` 对应 `welcome_wave.json`：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class CustomElementsResolver implements AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private final Set<String> animationFiles = new HashSet<>();
+
+    public CustomElementsResolver(Context context) {
+        try {
+            String[] files = context.getAssets().list("");
+            if (files != null) {
+                animationFiles.addAll(Arrays.asList(files));
+            }
+        } catch (IOException e) {
+            // no list of files: every Lottie element shows the fallback
+        }
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("lottie_animation")) {
+            // the ID names the animation file, such as welcome_wave.json
+            String file = id + ".json";
+            if (!animationFiles.contains(file)) {
+                return null; // no file for this ID: show the fallback
+            }
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> LottieViews.createLottieView(context, file)
+            );
+        }
+        return null;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+对于任何其他 Type，返回 `null`。如果你在发布应用后[添加了具有新 Type 的自定义元素](flow-custom-elements#what-changes-require-an-app-release)，已发布版本的用户将看到其备用内容。
+
+解析器有以下要求：
+
+- **网络数据与播放器**：将网络数据和播放器保存在[原生视图](#create-views-for-custom-elements)的状态中，而不是保存在解析器里。屏幕打开期间，SDK 会多次调用解析器。解析器中的代码每次调用时都会重新执行，导致网络请求重复发起、播放器重新开始。SDK 在这些调用之间不会重新创建原生视图，因此数据只加载一次，播放器也能持续播放。请在原生视图内创建播放器、会话和网络请求：
+  - **Composable**：在 `remember` 中创建播放器和会话，在 `LaunchedEffect` 中发起网络请求。
+  - **Android `View`**：在 `onAttachedToWindow` 中创建播放器、会话和网络请求。
+- **每个自定义元素对应一个原生视图**：有些原生视图在屏幕打开后会发生变化，例如数据加载完成或用户点击时。请在原生视图内部实现这些逻辑，而不是在解析器中。如果解析器为同一个自定义元素返回不同的 Composable，Compose 会重置该视图的状态。
+- **每次出现都创建新的 `View`**：在 `factory` 的每次调用中创建新的 `View`。每当自定义元素出现时，SDK 都会调用 `factory`，例如屏幕打开时、用户返回该屏幕时，或屏幕旋转后。
+- **应用数据**：将持有数据的对象（例如 `StateFlow` 或 `LiveData`，可参考[每日连续打卡](android-custom-element-lottie-animation)示例）存储在解析器的属性中。将该对象传递给原生视图，并在视图中监听它：
+  - **Composable**：使用 `collectAsState` 收集 `StateFlow`，或使用 `observeAsState` 观察 `LiveData`。
+  - **Android `View`**：在 `onAttachedToWindow` 中开始监听对象，在 `onDetachedFromWindow` 中停止监听。
+
+  您复制到解析器中的值（例如连续天数）将保持创建解析器时的原始状态。
+
+### 设置备用内容的条件 \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+对于权限问题，仅在用户于页面打开前已明确拒绝权限时才返回 `null`。`ContextCompat.checkSelfPermission` 在两种情况下都返回 `PERMISSION_DENIED`：应用首次向用户请求权限之前，以及用户拒绝权限之后。为了区分这两种情况，请保存权限请求的结果，并在解析器中读取该保存的结果。如果应用尚未请求权限，请返回原生视图而非 `null`，并在视图内部发起权限请求。例如，在[地图视图](android-custom-element-map#3-match-the-map-to-the-custom-element)出现时请求位置访问权限，并在用户授权后立即显示地图。如果返回了 `null`，即使用户随后授予了权限，他们看到的仍然是备用内容。权限状态变更不会让 SDK 再次调用解析器。只有当 SDK 再次调用解析器时（例如用户返回该页面时），原生视图才会显示出来。
+
+## 将解析器传入 SDK \{#pass-the-resolver-to-the-sdk\}
+
+首先配置一个应用级别的解析器。SDK 会在每个没有专属解析器的流程中调用它。用户无需更新应用，即可在新流程和 A/B 测试中看到你的原生视图。这些视图仍会为每位用户展示其专属数据，例如[每日连续登录记录](android-custom-element-lottie-animation)，因为它们直接从你的应用中读取这些数据。
+
+当某个流程需要应用在打开该流程时才能获取的数据时，请为该流程附加一个解析器。例如，付费墙需要显示[用户在前一个流程中输入的体重](android-custom-element-interactive-chart)，或预览用户想要导出的文档。你也可以为某个流程附加解析器，以便在该流程中为某个 Type 显示不同的视图。
+
+### 在每个流程中显示视图 \{#display-views-in-every-flow\}
+
+要在每个流程中使用解析器，请调用一次 `AdaptyUI.setCustomElementsResolver`，例如在 `Application` 类的 `onCreate` 方法中：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class App : Application() {
+    // keep this instance: a resolver for one flow can reuse it
+    // lazy: the context isn't attached yet while App is constructed
+    val customElementsResolver by lazy { CustomElementsResolver(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(customElementsResolver)
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class App extends Application {
+    // keep this instance: a resolver for one flow can reuse it
+    private CustomElementsResolver customElementsResolver;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        customElementsResolver = new CustomElementsResolver(this);
+        AdaptyUI.setCustomElementsResolver(customElementsResolver);
+    }
+
+    public CustomElementsResolver getCustomElementsResolver() {
+        return customElementsResolver;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+若要为某个 Type 的所有自定义元素显示同一视图，可将 Types 与视图的映射传递给 `AdaptyCustomElementsResolver.of`。相比解析器类，使用映射所需的代码更少，但无法[为备用内容设置条件](#set-conditions-for-fallback-content)。
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+:::
+
+### 为单个流程显示数据（例如要导出的文档）\{#display-data-for-one-flow\}
+
+传递给流程视图的解析器会替换该流程视图中的全局解析器。
+
+如需在此流程中保留全局视图，请将全局解析器传入该解析器，并针对其他 Type 和 ID 调用全局解析器。下面的解析器会预览用户想要导出的文档，并为其他所有自定义元素调用全局解析器：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class ExportPaywallResolver(
+    private val document: Document, // the document that the user wants to export
+    private val appWideResolver: AdaptyCustomElementsResolver,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        if (type == "document_preview") {
+            AdaptyCustomElementContent.compose { DocumentPreview(document) }
+        } else {
+            // other Types: the views of the app-wide resolver
+            appWideResolver.resolve(type, id)
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class ExportPaywallResolver implements AdaptyCustomElementsResolver {
+    private final Document document; // the document that the user wants to export
+    private final AdaptyCustomElementsResolver appWideResolver;
+
+    public ExportPaywallResolver(Document document, AdaptyCustomElementsResolver appWideResolver) {
+        this.document = document;
+        this.appWideResolver = appWideResolver;
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("document_preview")) {
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> new DocumentPreviewView(context, document)
+            );
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.resolve(type, id);
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+在 `AdaptyUI.getFlowView` 的 `customElementsResolver` 参数中传入解析器：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val app = activity.application as App
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    customElementsResolver = ExportPaywallResolver(
+        document = document,
+        appWideResolver = app.customElementsResolver, // the instance that you set app-wide
+    ),
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+App app = (App) activity.getApplication();
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null, // products
+        eventListener,
+        // defaults: if your app passes other values here, keep them
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        AdaptyUiTagResolver.Default,
+        AdaptyUiTimerResolver.Default,
+        null, // observerModeHandler
+        new ExportPaywallResolver(document, app.getCustomElementsResolver())
+);
+```
+
+</TabItem>
+</Tabs>
+
+如果您自行创建 `AdaptyFlowView`，请将解析器传递给其 `showFlow` 方法。在 Java 中，`showFlow` 接受与 `getFlowView` 相同的参数，但不包含 `activity`。在 Jetpack Compose 中，将解析器传递给 `AdaptyFlowScreen`。如需查看每种调用方式的示例，请阅读[展示流程与付费墙](android-present-paywalls)。
+
+如果你使用 `AdaptyCustomElementsResolver.of` 而非 resolver 类，请将应用级视图的 map 与当前流程的视图 map 合并：`AdaptyCustomElementsResolver.of(appWideViews + flowViews)`。将合并结果传入 flow 视图。若两个 map 中存在相同的 Type，此代码将保留当前流程的视图。
+
+## 在设备上测试 \{#test-on-a-device\}
+
+流程与付费墙编辑工具无法运行你的应用代码，因此其画布只会显示备用内容。原生视图中的错误可能导致应用崩溃。在发布应用前，请在设备上测试每个包含自定义元素的页面：
+
+1. 若要查看每个流程的最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 若要在 Logcat 中查看 Adapty SDK 的警告，请将[日志级别](sdk-installation-android#logging)设置为 `AdaptyLogLevel.WARN` 或更详细的级别。默认级别 `AdaptyLogLevel.NONE` 下，SDK 不会记录任何日志。
+3. 在设备上运行包含 resolver 的构建版本。打开每个带有自定义元素的页面，验证原生视图是否正确显示并适配自定义元素。如果视图支持滚动或拖拽，请测试这些手势。
+4. 如果显示的是备用内容而非原生视图，请在 Logcat 中查找以下警告：`custom element <type>:<id> is not served by a resolver`。然后确认：
+   - 警告中的 Type 和 ID 与代码中的完全一致，包括每个字母的大小写。
+   - 应用拥有视图所需的文件、数据或权限。
+   - 应用已设置全局 resolver。
+   - [针对此流程的 resolver](#display-data-for-one-flow)（如果有传入）能够为对应的 Type 和 ID 返回视图。
+
+   如果警告未出现，请确认应用使用的是 Adapty Android SDK 4.4 或更高版本。
+5. 如果自定义元素保持空白，请在 Logcat 中查找以下警告之一：
+   - `custom element <type>:<id> is not served by a resolver`：自定义元素没有备用内容，且没有任何解析器为其返回视图。请逐一核查第 4 步中的每个条目。
+   - `content does not report its size`：该 composable 本身没有高度。请为自定义元素设置一个[**固定**高度](flow-custom-elements#add-and-configure)。
+
+   The SDK only logs the size warning for composables. If an Android `View` stays empty with no warning, give the custom element a **Fixed** height too.
+6. To preview the fallback, return `null` for the Type, and open the screen again.
+
+## 示例 \{#examples\}
+
+每个示例都展示了在编辑工具中的配置方式以及应用中的代码实现：
+
+- [使用 Lottie 动画展示用户进度](android-custom-element-lottie-animation)：随着连续打卡天数增加而填充的圆环。
+- [在付费墙中展示可交互的体重目标图表](android-custom-element-interactive-chart)：付费墙流程中的体重目标图表，位于用户引导流程之后。
+- [在流程中展示附近地点的地图](android-custom-element-map)：展示每位用户附近健身中心的地图。

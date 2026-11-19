@@ -32,6 +32,10 @@ If you've designed a flow or paywall in the builder, you don't need to worry abo
 
 To ensure optimal performance, it's crucial to retrieve the flow or paywall and its [view configuration](unity-get-pb-paywalls#fetch-the-view-configuration) as early as possible, allowing sufficient time for images to download before presenting them to the user.
 
+:::tip
+To warm several placements at once, call [`Adapty.PreloadFlows`](unity-optimize-paywall-fetching#preload-placements) (Unity SDK 4.3.0+). It caches the placement JSON only, so `CreateFlowView` still loads the layout and images.
+:::
+
 To get a flow or paywall, use the `GetFlow` method:
 
 ```csharp showLineNumbers
@@ -62,7 +66,7 @@ Response parameters:
 
 | Parameter | Description |
 | :-------- | :---------- |
-| Flow   | An `AdaptyFlow` object containing the placement, identifiers (`InstanceIdentity`, `VariationId`), name, paywall variations (`Paywalls` — a list of `AdaptyFlowPaywall`), and remote configs (`RemoteConfigs` — a list with one entry per locale). To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `GetPaywallProducts(flow)`. |
+| Flow   | An `AdaptyFlow` object containing the placement, identifiers (`InstanceIdentity`, `VariationId`), name, variation name (`VariationName`, SDK 4.3.0+), paywall variations (`Paywalls` — a list of `AdaptyFlowPaywall`), and remote configs (`RemoteConfigs` — a list with one entry per locale). To fetch the actual products for pre-loading, custom UI, or programmatic checks, call `GetPaywallProducts(flow)`. |
 
 ## Fetch the view configuration
 
@@ -94,6 +98,7 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 | **LoadTimeout**              | optional       | This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned. Note that in rare cases this method can timeout slightly later than specified in `LoadTimeout`, since the operation may consist of different requests under the hood. |
 | **PreloadProducts**          | optional       | Set to `true` to preload products for better performance. When enabled, products are loaded in advance, reducing the time needed to display the flow or paywall. |
 | **CustomTags**               | optional       | Your app's values for the flow's [custom tags](flow-custom-tags), in a dictionary keyed by each tag's full name. Pass the dictionary to the `SetCustomTags` method. For details, read [Pass data to flows](unity-flow-custom-tags). |
+| **CustomTimers**             | optional       | The end dates of the flow's **Developer defined** timers, in a dictionary of Timer IDs to `DateTime` values. Pass the dictionary to the `SetCustomTimers` method. For details, read [Set up developer-defined timers](#set-up-developer-defined-timers). |
 | **ProductPurchaseParameters** | optional      | Android only (ignored on iOS). A dictionary of `AdaptyProductIdentifier` to `AdaptyPurchaseParameters`. Use this to configure purchase-specific parameters like personalized offers or subscription update parameters for individual products in the flow or paywall. |
 | **EnableSafeAreaPaddings**   | optional       | Android only (ignored on iOS). When `true`, the flow view applies safe-area paddings. Default: `true`. The default is suitable for most cases. |
 
@@ -179,12 +184,14 @@ If an asset is not found or fails to load, the flow or paywall will fall back to
 
 ## Set up developer-defined timers
 
-To use custom timers in your Unity app, pass a dictionary of timer IDs and their end dates to the `SetCustomTimers` method. Here is an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, pass a dictionary of Timer IDs and their end dates to the `SetCustomTimers` method. A `DateTime` with `DateTimeKind.Utc` is a UTC time; a `DateTime` with no kind is read as the user's local time. Here is an example:
 
 ```csharp showLineNumbers
 var customTimers = new Dictionary<string, DateTime> {
     { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
-    { "CUSTOM_TIMER_NY", new DateTime(2026, 1, 1) }
+    { "CUSTOM_TIMER_NY", new DateTime(DateTime.Now.Year + 1, 1, 1) } // next New Year's Day, local time
 };
 
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -192,14 +199,21 @@ var parameters = new AdaptyUICreateFlowViewParameters()
     .SetLoadTimeout(TimeSpan.FromSeconds(3));
 
 AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
-    // handle the result
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // use view
 });
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The timer resolver ensures your app dynamically updates each timer with the correct value. For example:
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the Timer IDs of two **Developer defined** timers in the builder:
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer's end, such as New Year's Day.
-- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the flow or paywall.
+- `CUSTOM_TIMER_NY`: The time left until the next New Year's Day.
+- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when your app created the view.
+
+The SDK reads the custom timers once, when it creates the view, so a computed date such as `CUSTOM_TIMER_6H` counts from that moment, also when the user opens the screen again. If the date is in the past, the timer shows zero at once and its **On timer end** trigger runs. If the dictionary has no key for a Timer ID, the timer counts down one hour from the screen open.
 
 </SDKv4>
 

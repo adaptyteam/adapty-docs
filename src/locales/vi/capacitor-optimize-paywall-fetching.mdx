@@ -12,13 +12,87 @@ Các quy tắc này giả định rằng `adapty.activate()` và `adapty.identif
 
 ## Quy tắc và lưu ý \{#rules-and-pitfalls\}
 
-| Làm điều này | Không làm điều này | Lý do |
+| Nên làm | Không nên làm | Lý do |
 |---|---|---|
-| Tải placement mà bạn sắp hiển thị.                                                                                                                | Tải trước tất cả các placement cùng lúc khi khởi động.        | Tải trước hàng loạt sẽ chặn luồng chính và gây ra màn hình đen trong quá trình tải ồ ạt.                                  |
-| Gọi `getFlow` sau khi attribution đã có cơ hội xử lý xong — ví dụ: 1–2 giây sau `activate` hoặc sau khi listener `onLatestProfileLoad` kích hoạt. | Gọi `getFlow` khi khởi động ứng dụng trong `App.tsx`.          | Attribution chưa được xử lý xong. Flow sẽ được xác định dựa trên đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
-| Đặt `loadTimeoutMs` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement.                                                          | Chờ `getFlow` vô thời hạn.                     | Nếu không có timeout, người dùng với kết nối kém sẽ thấy màn hình trắng cho đến khi mạng phản hồi — hoặc họ sẽ đóng ứng dụng.     |
+| Fetch placement bạn sắp hiển thị, hoặc làm ấm cache bằng [`preloadFlows`](#preload-placements) (SDK 4.3.0+). | Tự tạo nhiều lệnh gọi `getFlow` đồng thời khi khởi động. | Việc tự prefetch hàng loạt sẽ chặn main thread và gây ra màn hình đen. `preloadFlows` được xây dựng cho mục đích này và gửi batch lên native SDK trong một lần gọi. |
+| Fetch `getFlow` sau khi attribution có thời gian để resolve — ví dụ, 1–2 giây sau `activate` hoặc sau khi listener `onLatestProfileLoad` kích hoạt. | Gọi `getFlow` ngay khi khởi động app trong `App.tsx`. | Attribution chưa được xử lý xong. Flow sẽ resolve theo đối tượng mặc định và âm thầm bỏ qua các phân khúc cũng như cá nhân hóa ASA. |
+| Đặt `loadTimeoutMs` và cấu hình [paywall dự phòng](fallback-paywalls) cho mỗi placement. | Chờ `getFlow` vô thời hạn. | Nếu không có timeout, người dùng có kết nối mạng kém sẽ thấy màn hình trắng cho đến khi mạng phục hồi — hoặc đóng app. |
 
 Xem [Tải paywall tùy chỉnh và sản phẩm](fetch-paywalls-and-products-capacitor) để tham khảo các tham số `fetchPolicy` và `loadTimeoutMs`, và [Placements](placements) để chọn placement phù hợp.
+
+## Tải trước placements \{#preload-placements\}
+
+:::info
+`preloadFlows` và `preloadFlowsForDefaultAudience` khả dụng từ SDK phiên bản 4.3.0 trở lên.
+:::
+
+`preloadFlows` lưu JSON của flow vào cache trước. Sau đó bạn sử dụng như thường: `getFlow` để lấy flow, `createFlowView` để tạo view của nó.
+
+`fetchPolicy` quyết định layer nào mà `getFlow` đọc trước, chứ không phải quyết định liệu nó có thể truy cập cache hay không:
+
+- `'return_cache_data_else_load'` đọc bản đã tải sẵn trước, chỉ kết nối mạng khi không có gì trong cache. `'return_cache_data_if_not_expired_else_load'` hoạt động tương tự nhưng chỉ khi bản sao còn trẻ hơn `maxAgeSeconds`.
+- Mặc định là `'reload_revalidating_cache_data'`, ưu tiên kết nối mạng trước và chỉ dùng bản đã tải sẵn khi yêu cầu thất bại hoặc hết thời gian chờ.
+
+Việc tải trước mang lại lợi ích trong cả hai trường hợp, nhưng theo cách khác nhau: chính sách cache-first loại bỏ request, trong khi chính sách mặc định giữ lại request và có được một bản sao warm để dự phòng. Trên [thiết bị thử nghiệm](test-devices), `getFlow` bỏ qua cache với mọi chính sách và chỉ sử dụng bản sao đã tải trước nếu request mạng thất bại.
+
+Dùng tính năng này khi bạn biết những placement nào sẽ cần trong phiên nhưng chưa muốn hiển thị chúng ngay — ví dụ, flow đằng sau một nút mà người dùng chưa nhấn vào.
+
+:::warning
+Việc preload sẽ xác định đối tượng tại thời điểm chạy. Nếu bạn preload trước khi attribution được ghi nhận rồi gọi `getFlow` với `fetchPolicy` cache-first, người dùng sẽ nhận được biến thể được chọn mà không có attribution, điều này bỏ qua các phân khúc và cá nhân hóa ASA. Hãy preload sau khi attribution đã có cơ hội được xác định — ví dụ, sau khi listener `onLatestProfileLoad` kích hoạt — hoặc giữ nguyên `fetchPolicy` mặc định.
+:::
+
+```typescript showLineNumbers
+
+try {
+  await adapty.preloadFlows({
+    placementIds: ['onboarding', 'main_paywall'],
+    params: { loadTimeoutMs: 5000 },
+  });
+} catch (error) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+const flow = await adapty.getFlow({
+  placementId: 'main_paywall',
+  params: { fetchPolicy: 'return_cache_data_else_load' },
+});
+```
+
+**Tham số:**
+
+- `placementIds` (bắt buộc): các placement cần tải trước.
+- `params.loadTimeoutMs` (tùy chọn): tổng thời gian cho phép để tải trước, tính bằng mili giây. Mặc định là 5000, và các giá trị dưới 1000 sẽ được nâng lên 1000. Các placement không tải xong trong thời gian cho phép sẽ được lấy theo đối tượng mặc định.
+
+**Những điều cần lưu ý về cách hoạt động:**
+
+- Lệnh gọi chỉ thất bại sau khi tất cả các placement đã được thử, với một `AdaptyError` duy nhất bao gồm tất cả các placement thất bại. Việc một placement thất bại không làm dừng các placement khác, và những placement đã tải thành công vẫn được giữ trong cache.
+- Preloading luôn gọi lên mạng: nó không có `fetchPolicy` riêng.
+- Preloading chỉ làm ấm cache. Nó không trả về nội dung — bạn vẫn cần gọi `getFlow` để hiển thị.
+
+### Preload bao gồm những gì \{#what-a-preload-covers\}
+
+Một flow hiển thị trên màn hình theo từng lớp. Preload bao gồm lớp đầu tiên, giống hệt như `getFlow` thực hiện:
+
+| Layer | Fetched by | Warmed by a preload |
+|---|---|---|
+| Flow JSON — the chosen variation, its product IDs, and the remote config | `getFlow` | Yes |
+| UI layout — the structure, styling, and text of the screen | `createFlowView` | No |
+| Hình ảnh, including the still frame that stands in for a video element | `createFlowView`, in the background | No |
+| Sản phẩm | `createFlowView` or `getPaywallProducts` | No |
+| Video files | The system player, as the screen renders | Not cached by the SDK |
+
+Vì vậy, lần `createFlowView` đầu tiên cho một layout nhất định vẫn tốn một lần round trip sau khi preload. Sau đó, SDK native sẽ lưu layout đó vào disk cache — cache này tồn tại qua các lần khởi động lại ứng dụng — nên chi phí chỉ rơi vào lần yêu cầu đầu tiên chứ không phải mỗi lần.
+
+### Bỏ qua phân khúc đối tượng \{#skip-audience-segmentation\}
+
+Để làm nóng bộ nhớ cache mà không cần chờ phân khúc đối tượng, hãy dùng biến thể default-audience. Phương thức này không cần timeout:
+
+```typescript showLineNumbers
+await adapty.preloadFlowsForDefaultAudience({ placementIds: ['main_paywall'] });
+```
+
+Lệnh gọi `getFlowForDefaultAudience` sau đó sẽ đọc bản sao theo cách `getFlow` đọc bản sao từ `preloadFlows`.
 
 ## Hiển thị media màn hình đầu tiên từ app bundle \{#show-first-screen-media-from-the-app-bundle\}
 

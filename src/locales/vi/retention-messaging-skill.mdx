@@ -1,0 +1,132 @@
+---
+title: "Agent skill cho Retention Messaging"
+description: "Cài đặt skill retention-messaging để công cụ AI của bạn thiết lập Apple Retention Messaging trong Adapty, tạo và chỉnh sửa các thông điệp mà người đăng ký nhìn thấy khi họy hủy, và đọc hiệu suất của từng thông điệp."
+metadataTitle: "Agent Skill cho Retention Messaging | Tài liệu Adapty"
+---
+
+[Apple Retention Messaging](retention-messaging) hiển thị thông điệp của bạn, hoặc một ưu đãi, trên màn hình **Cancel Subscription** của Apple ngay trước khi người dùng xác nhận hủy, giúp giảm tỷ lệ rời bỏ. Skill retention-messaging thiết lập và quản lý tính năng này từ công cụ AI của bạn. Agent sẽ đọc trạng thái cài đặt của ứng dụng và hướng dẫn bạn qua từng bước còn lại: đặt URL của Adapty trong Apple, chạy bài kiểm tra hiệu suất của Apple, và chuyển sang môi trường production. Sau đó, agent sẽ soạn thông điệp mặc định và thông điệp ưu đãi theo từng ngôn ngữ bạn cần, kích hoạt và vô hiệu hóa chúng, đồng thời đọc số lượng người đăng ký mà mỗi thông điệp giữ lại được. Skill này hoạt động thông qua [các lệnh CLI `adapty retention-messaging`](developer-cli-retention-messaging) hoặc [Adapty MCP server](adapty-mcp).
+
+:::note
+Sau khi Apple phê duyệt một thông điệp, những người đăng ký hủy các sản phẩm được thông điệp đó đề cập sẽ nhìn thấy nó. Trước khi skill đặt URL của Adapty trong Apple hoặc tạo, chỉnh sửa, kích hoạt hay vô hiệu hóa một thông điệp, nó sẽ giải thích rõ bằng lời thường thao tác đó làm gì. Nó chỉ thực hiện thay đổi sau khi bạn đồng ý.
+:::
+
+## Những gì bạn có thể yêu cầu \{#what-you-can-ask\}
+
+Hãy đặt câu hỏi như khi bạn trao đổi với đồng nghiệp. Bạn không cần đặt tên skill:
+
+```
+Set up retention messaging for my app.
+
+Is retention messaging on, and what is missing?
+
+Create a retention message for my Annual plan in English and German.
+
+Show my 50% off promotional offer to monthly subscribers who cancel.
+
+Offer monthly subscribers who cancel a switch to the Annual plan.
+
+Add a German translation to my retention message.
+
+How are my retention messages doing?
+
+Deactivate the Black Friday message.
+```
+
+<AgentChat title="retention-messaging" caption="Ví dụ cuộc hội thoại với ứng dụng mẫu. Sản phẩm và tin nhắn của bạn sẽ khác.">
+<ChatTurn role="user">Tạo tin nhắn giữ chân người dùng cho gói Annual plan bằng tiếng Anh và tiếng Đức.</ChatTurn>
+<ChatTurn role="tool" summary="Đọc thông tin cài đặt và các tin nhắn">
+
+- `adapty retention-messaging setup-status`
+- `adapty retention-messaging products suggest --mode production --type default`
+- `adapty retention-messaging messages list --mode production`
+
+</ChatTurn>
+<ChatTurn role="agent">
+
+Production is ready, and the Annual plan has no default message yet. Here is the message I'd create.
+
+</ChatTurn>
+<ChatTurn role="confirm" summary="Tạo tin nhắn giữ chân">
+
+Create "Annual: stay" as a default message in production.
+
+- Products: Annual. Languages: English, German. No image.
+- English: "Before you go" / "Keep your plan and your saved progress."
+- German: "Bevor du gehst" / "Behalte deinen Plan und deinen Fortschritt."
+- Apple reviews it now. **Once approved, subscribers who cancel the Annual plan see it.**
+
+Create it?
+
+1. Yes
+2. No
+
+</ChatTurn>
+</AgentChat>
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+- **Phê duyệt từ Apple cho ứng dụng của bạn**: Apple chỉ cấp quyền truy cập Retention Messaging API cho những ứng dụng được phê duyệt, và quá trình xét duyệt có thể mất đến một tháng. Bạn tự gửi yêu cầu đến Apple. Khi ứng dụng chưa được cấp quyền, skill sẽ cung cấp URL Adapty để bạn điền vào [biểu mẫu yêu cầu của Apple](retention-messaging-setup#request-access-from-apple).
+- **Thiết lập App Store trong Adapty**: Ứng dụng của bạn cần hoàn tất [thiết lập App Store](app-store-connection-configuration), bao gồm khóa In-App Purchase. Với tin nhắn khuyến mãi, hãy thêm khóa vào phần **App Store promotional offers** và, nếu muốn đề xuất chuyển đổi gói, cần có [App Store Connect API key](app-store-connect-api-key).
+- **Sản phẩm trong Adapty**: Cần có ít nhất một [sản phẩm](create-product) để tin nhắn của bạn áp dụng vào.
+- **Một công cụ AI kết nối với tài khoản Adapty của bạn**: Skill hoạt động thông qua [Adapty MCP server](adapty-mcp) hoặc [Adapty CLI](developer-cli). Trong Claude Code và Codex, plugin tự thêm MCP server, bạn chỉ cần đăng nhập. Khi dùng cả hai, skill sử dụng CLI (xem [Giới hạn](#limits)). Nếu bạn chọn CLI, skill sẽ tự cài đặt hoặc cập nhật nó. Trong claude.ai, ChatGPT, hoặc ứng dụng di động của công cụ AI, skill chỉ dùng MCP server và yêu cầu bạn kết nối. Trên máy tính chưa có cả hai, skill sẽ hỏi bạn muốn thiết lập cái nào. Khi CLI không thể chạy lệnh Retention Messaging, skill chuyển sang MCP server nếu đã kết nối. Nếu không, skill sẽ hướng bạn đến [thiết lập Retention Messaging trong dashboard](retention-messaging-setup).
+
+## Cài đặt skill \{#install-the-skill\}
+
+Skill retention-messaging là một phần của [Adapty plugin](manage-adapty-with-ai).
+
+<AdaptySkillsInstall />
+
+## Cách skill thiết lập Retention Messaging \{#how-the-skill-sets-up-retention-messaging\}
+
+Apple có hai môi trường: sandbox và production. Adapty dùng một URL duy nhất cho cả hai, nhưng Apple lưu trữ riêng cho từng môi trường. Mỗi môi trường có các thông điệp riêng của nó.
+
+Skill sẽ đọc trạng thái thiết lập của ứng dụng trước, rồi đề xuất bước tiếp theo:
+
+1. **Thiếu App Store keys hoặc server notifications**: Skill sẽ dẫn bạn đến phần thiết lập App Store trong dashboard.
+2. **Apple chưa phê duyệt app**: Skill cung cấp URL của Adapty để bạn nhập vào form yêu cầu của Apple.
+3. **Apple chưa gửi sandbox requests đến Adapty**: Skill đề xuất thiết lập URL của Adapty trong Apple cho sandbox.
+4. **Chưa vượt qua performance test**: Để chuẩn bị cho [performance test của Apple](retention-messaging-setup#pass-the-performance-test), hãy mua sản phẩm có thời hạn dài nhất bằng [tài khoản sandbox](test-purchases-in-sandbox) hoặc qua TestFlight ngay trước khi thực hiện test, và giữ gói đăng ký ở trạng thái hoạt động. Sau đó skill sẽ bắt đầu test. Người dùng đang đăng ký không thấy test này, vì vậy bước này không cần xác nhận. Test có thể mất đến một giờ. Trong thời gian chạy, skill đọc lại trạng thái và không bắt đầu test mới.
+5. **Test đã vượt qua**: Skill đề xuất thiết lập URL của Adapty trong Apple cho production, sau đó tạo tin nhắn mặc định đầu tiên của bạn.
+
+## Cách skill soạn tin nhắn \{#how-the-skill-writes-messages\}
+
+- **Tin nhắn mặc định trước**: Một promo message cần có tin nhắn mặc định trên cùng sản phẩm. Skill sẽ tạo tin nhắn mặc định trước, sau đó mới tạo promo message.
+- **Chỉ các sản phẩm còn trống cho tin nhắn**: Skill không đề xuất sản phẩm mà một tin nhắn khác cùng loại đã sử dụng trong cùng môi trường. Với promo message, skill cũng không đề xuất sản phẩm chưa có tin nhắn mặc định.
+- **Chỉ các ưu đãi và plan hiện có**: Một promo message liên kết từng sản phẩm với một ưu đãi hoặc chuyển sang plan khác trong cùng nhóm gói đăng ký. Skill chỉ gợi ý các ưu đãi và plan đã tồn tại trong App Store Connect và trong Adapty.
+- **Từng ngôn ngữ bạn yêu cầu**: Skill viết văn bản tiếng Anh và từng bản dịch trong giới hạn của Apple. Cho đến khi Apple phê duyệt một ngôn ngữ, người đăng ký sử dụng ngôn ngữ đó sẽ thấy văn bản tiếng Anh.
+- **Chỉnh sửa đúng những gì bạn chỉ định**: Mọi văn bản, ngôn ngữ, sản phẩm và hình ảnh khác đều giữ nguyên. Skill chỉ xóa một ngôn ngữ, một bullet point, một sản phẩm, hoặc hình ảnh khi bạn yêu cầu.
+
+Để tìm hiểu ý nghĩa của từng trường trong tin nhắn, xem [Tạo tin nhắn giữ chân người dùng](retention-messaging-create).
+
+## Những gì skill hỏi trước mỗi thay đổi \{#what-the-skill-asks-before-each-change\}
+
+Chỉ câu trả lời của bạn cho câu hỏi của skill mới có giá trị. Việc bạn nói "tiếp đi" chung chung trước khi skill hiển thị thay đổi thì không có tác dụng. Nếu bạn nói không, skill sẽ không thay đổi gì cả.
+
+| Thay đổi | Thông tin skill cung cấp |
+|---|---|
+| Đặt URL của Adapty trong Apple | Với môi trường bạn chọn, Apple sẽ gửi yêu cầu từ màn hình **Cancel Subscription** đến Adapty. Nếu Apple hiện đang gửi yêu cầu của môi trường đó đến máy chủ khác, skill sẽ cảnh báo rằng máy chủ kia sẽ không còn nhận được chúng nữa, và yêu cầu xác nhận lần thứ hai. |
+| Tạo tin nhắn | Apple sẽ xét duyệt tin nhắn. Sau khi Apple phê duyệt, những người đăng ký hủy các sản phẩm được đặt tên sẽ thấy tin nhắn đó. Trong sandbox, chỉ người kiểm thử sandbox mới thấy. |
+| Chỉnh sửa tin nhắn | Mỗi lần chỉnh sửa, kể cả chỉ đổi tên, đều gửi tin nhắn lên Apple để xét duyệt lại. Sau khi Apple phê duyệt, tin nhắn đang không hoạt động sẽ hiển thị trở lại. Những thay đổi được thực hiện trên dashboard trong khoảng thời gian giữa lúc skill đọc và lúc skill ghi có thể bị mất. |
+| Kích hoạt hoặc vô hiệu hóa tin nhắn | Sau khi kích hoạt, Apple hiển thị tin nhắn khi đã phê duyệt. Các ngôn ngữ Apple đã phê duyệt trước đó không cần chờ lại. Sau khi vô hiệu hóa, Apple ngừng hiển thị tin nhắn. Những người đăng ký đã xem tin nhắn đó không bị ảnh hưởng. |
+
+Qua MCP server, hai lần đọc cũng cần xác nhận, mỗi lần một lần trong mỗi cuộc hội thoại. Lần đọc trạng thái thiết lập đầu tiên có thể lưu kết quả kiểm thử hiệu suất của Apple. Lần đọc tin nhắn đầu tiên hỏi Apple về việc xét duyệt từng tin nhắn, và có thể bắt đầu hiển thị tin nhắn đã được phê duyệt cho người đăng ký. Qua CLI, các lần đọc này có tác dụng tương tự và không cần xác nhận.
+
+Nếu Adapty không phản hồi sau khi skill tạo một tin nhắn, skill sẽ không tạo lại tin nhắn đó. Thay vào đó, nó tìm kiếm danh sách tin nhắn theo tên, hiển thị từng kết quả khớp và hỏi bạn cái nào, nếu có, là của bạn.
+
+## Skill đọc hiệu suất tin nhắn như thế nào \{#how-the-skill-reads-message-performance\}
+
+Hỏi về hiệu quả tin nhắn của bạn, và skill sẽ đọc danh sách tin nhắn trên môi trường production cùng các cột **Shown**, **Retained users**, **Saved users**, **Retention rate**, **Save rate**, và **Saved revenue**. Mỗi con số đều bao phủ toàn bộ vòng đời của tin nhắn. Tin nhắn sandbox không được tính vào. **Retained users** chỉ được điền sau ngày thanh toán tiếp theo của mỗi người đăng ký. Để hiểu ý nghĩa từng con số, xem [Theo dõi hiệu suất tin nhắn](retention-messaging-analytics).
+
+## Với các skill khác \{#with-other-skills\}
+
+- **Quyết định có sử dụng Retention Messaging hay không**: Skill [growth-advisor](export-analytics-with-ai) đọc trạng thái Retention Messaging và các tin nhắn hiện có khi App Store hủy đăng ký dẫn đầu danh sách các lý do kết thúc gói đăng ký. Khi bạn đồng ý, nó sẽ chuyển việc thiết lập và các tin nhắn sang skill retention-messaging.
+- **Thêm ưu đãi vào sản phẩm**: Tin nhắn khuyến mãi kèm giảm giá cần có một ưu đãi đã tồn tại trong App Store Connect và trong Adapty. Để thêm ưu đãi từ cửa hàng vào sản phẩm trong Adapty, hãy cung cấp cho agent ID của ưu đãi đó, ví dụ: "Thêm ưu đãi App Store `annual_50_off` vào sản phẩm Annual của tôi." Skill growth-advisor sẽ thực hiện thay đổi sau khi bạn xác nhận.
+
+## Giới hạn \{#limits\}
+
+- **Không xóa được**: Bạn không thể xóa một retention message. Khi bạn yêu cầu xóa, skill sẽ đề nghị vô hiệu hóa nó thay thế.
+- **Hình ảnh và danh sách đầu dòng cần dùng CLI**: Qua MCP server, skill không thể thêm hình ảnh tiêu đề hay danh sách đầu dòng vào default message, vì cả hai đều cần upload file. Với những trường hợp này, skill sẽ cung cấp lệnh CLI hoặc hướng dẫn thực hiện trên dashboard.
+- **Vị trí tiêu đề cố định**: Hãy cho skill biết **Title position** khi tạo default message. Bạn không thể thay đổi sau này, dù là trong skill hay trên dashboard.
+- **Không tự thay đổi khi không có người giám sát**: Trong một lần chạy theo lịch hoặc một script tự động, khi không có ai để trả lời, skill chỉ đọc dữ liệu. Nếu cần thay đổi, skill sẽ báo cáo tác động của thay đổi đó và cung cấp lệnh để bạn tự chạy.
+
+Để tự chạy các lệnh mà không cần skill, xem [Quản lý Retention Messaging từ CLI](developer-cli-retention-messaging).

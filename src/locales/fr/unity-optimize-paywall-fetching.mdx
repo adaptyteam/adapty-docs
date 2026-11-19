@@ -12,13 +12,93 @@ Les règles supposent que `Adapty.Activate()` et `Adapty.Identify()` ont déjà 
 
 ## Règles et pièges \{#rules-and-pitfalls\}
 
-| À faire | À ne pas faire | Pourquoi |
+| Faites ceci | Ne faites pas cela | Pourquoi |
 |---|---|---|
-| Récupérez le placement que vous êtes sur le point d'afficher.                                                                                  | Précharger tous les placements en parallèle au lancement.        | Le préchargement en masse bloque le fil principal et provoque un écran noir pendant la rafale.                                  |
-| Récupérez `GetFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `Activate` ou après le déclenchement de `OnLoadLatestProfile`. | Appeler `GetFlow` dans `Awake()`.                        | L'attribution n'est pas encore arrivée. Le flow se résout par rapport à l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
-| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement.                             | Attendre indéfiniment sur `GetFlow`.                     | Sans délai d'attente, les utilisateurs avec une mauvaise connexion voient un écran vide jusqu'à ce que le réseau réponde — ou ferment l'application.     |
+| Récupérez le placement que vous allez afficher, ou préchauffez le cache avec [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Lancez vos propres appels `GetFlow` concurrents au démarrage. | Un burst de préchargement fait maison bloque le thread principal et produit un écran noir. `PreloadFlows` est conçu pour ça et envoie le lot au SDK natif en un seul appel. |
+| Appelez `GetFlow` après que l'attribution a eu le temps de se résoudre — par exemple, 1 à 2 secondes après `Activate` ou après le déclenchement de `OnLoadLatestProfile`. | Appelez `GetFlow` dans `Awake()`. | L'attribution n'est pas encore arrivée. Le flow se résout selon l'audience par défaut et contourne silencieusement les segments et la personnalisation ASA. |
+| Définissez un `loadTimeout` et configurez un [paywall de secours](fallback-paywalls) pour chaque placement. | Attendez `GetFlow` indéfiniment. | Sans timeout, les utilisateurs avec une mauvaise connexion voient un écran blanc jusqu'à ce que le réseau réponde — ou ferment l'application. |
 
 Consultez [Récupérer les paywalls personnalisés et les produits](fetch-paywalls-and-products-unity) pour la référence des paramètres `fetchPolicy` et `loadTimeout`, et [Placements](placements) pour choisir le bon placement.
+
+## Précharger les placements \{#preload-placements\}
+
+:::info
+`Adapty.PreloadFlows` et `Adapty.PreloadFlowsForDefaultAudience` sont disponibles à partir de la version 4.3.0 du SDK.
+:::
+
+`Adapty.PreloadFlows` met en cache le JSON du flow à l'avance. Vous l'utilisez ensuite comme d'habitude : `GetFlow` pour le flow, `CreateFlowView` pour sa vue.
+
+`fetchPolicy` détermine quelle couche un `GetFlow` ultérieur lit en premier, et non s'il peut accéder au cache :
+
+- `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` lit d'abord la copie préchargée et ne contacte le réseau que si rien n'est en cache. `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)` fait de même tant que la copie est plus récente que `maxAge`.
+- Par défaut, `AdaptyPlacementFetchPolicy.Default` contacte d'abord le réseau et se rabat sur la copie préchargée si la requête échoue ou expire.
+
+Un préchargement est toujours bénéfique, mais différemment selon la politique : une politique cache-first supprime la requête, tandis que la politique par défaut la conserve et dispose d'une copie en cache en cas d'échec. Sur un [appareil de test](test-devices), `GetFlow` ignore le cache quelle que soit la politique et n'utilise la copie préchargée que si la requête réseau échoue.
+
+Utilisez-le lorsque vous savez quels placements la session va nécessiter, mais que vous ne voulez pas les afficher encore — par exemple, juste après que `Activate` et `Identify` se terminent, pour le flow derrière un bouton que l'utilisateur n'a pas encore appuyé.
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlows(
+    new List<string> { "onboarding", "main_paywall" },
+    TimeSpan.FromSeconds(5),
+    (error) => {
+        if (error != null) {
+            // at least one placement failed to preload
+        }
+    }
+);
+
+// Later, when the user reaches the paywall:
+Adapty.GetFlow(
+    "main_paywall",
+    AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        // create the flow view
+    }
+);
+```
+
+**Paramètres :**
+
+- `placementIds` (requis) : les placements à précharger.
+- `loadTimeout` (optionnel) : durée d'attente du préchargement pour les flows ciblés par audience. Par défaut 5 secondes si vous passez `null` ou utilisez la surcharge sans ce paramètre. Lorsque le délai est atteint, le SDK peut charger les flows de l'audience par défaut à la place.
+
+**Points importants à connaître :**
+
+- L'appel échoue uniquement après que tous les placements ont été tentés, avec une seule erreur `NetworkFailed` qui liste tous les placements en échec. L'échec d'un placement n'arrête pas les autres, et les placements chargés restent dans le cache.
+- Le préchargement passe toujours par le réseau : il n'a pas de `fetchPolicy` propre.
+- Le préchargement sert uniquement à alimenter le cache. Il ne retourne pas de contenu — vous appelez toujours `GetFlow` pour l'afficher.
+- Le cache appartient au profil actuel. Les flows préchargés avant `Identify` ou `Logout` ne sont plus accessibles après, donc préchargez après le changement de profil.
+
+### Ce que couvre un préchargement \{#what-a-preload-covers\}
+
+Un flow s'affiche à l'écran en plusieurs couches. Un préchargement couvre la première, exactement comme `GetFlow` le fait :
+
+| Couche | Récupérée par | Préchauffée par un préchargement |
+|---|---|---|
+| JSON du flow — la variante choisie, ses identifiants de produits et la Remote Config | `GetFlow` | Oui |
+| Mise en page UI — la structure, le style et le texte de l'écran | `CreateFlowView` | Non |
+| Images, y compris la miniature qui remplace un élément vidéo | `CreateFlowView`, en arrière-plan | Non |
+| Produits | `CreateFlowView` ou `GetPaywallProducts` | Non |
+| Fichiers vidéo | Le lecteur système, au moment du rendu de l'écran | Non mis en cache par le SDK |
+
+Ainsi, le premier `CreateFlowView` pour un layout donné implique toujours un aller-retour réseau après un préchargement. Le SDK natif conserve ensuite ce layout dans son cache disque, qui survit aux redémarrages de l'application, de sorte que ce coût ne tombe que sur la première requête et non sur chacune d'elles.
+
+### Ignorer la segmentation d'audience \{#skip-audience-segmentation\}
+
+Pour réchauffer le cache sans attendre la segmentation d'audience, utilisez la variante d'audience par défaut. Elle ne prend pas de délai :
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlowsForDefaultAudience(
+    new List<string> { "main_paywall" },
+    (error) => {
+        // handle the error
+    }
+);
+```
+
+Un appel ultérieur à `GetFlowForDefaultAudience` lit la copie de la même façon que `GetFlow` lit une copie issue de `PreloadFlows`.
 
 ## Afficher les médias du premier écran depuis le bundle de l'application \{#show-first-screen-media-from-the-app-bundle\}
 

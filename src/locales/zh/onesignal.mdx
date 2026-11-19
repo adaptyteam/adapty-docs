@@ -105,24 +105,38 @@ Adapty 通过服务器到服务器集成将订阅事件发送到 OneSignal，让
 OneSignal 对标签数量有限制。这包括 Adapty 生成的标签和 OneSignal 中已有的所有标签。超出限制可能会在发送事件时导致错误。
 :::
 
-| 标签 | 类型 | 说明 |
+| 标签 | 类型 | 描述                                                                                                                                                                                                                                                                                                                                                      |
 |---|----|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `adapty_customer_user_id` | String | 用户在您应用中的唯一标识符。必须在您的系统、Adapty 和 OneSignal 中保持一致。 |
-| `adapty_profile_id` | String | Adapty 用户画像 ID，可在您的 [Adapty 看板](profiles-crm)中找到。 |
-| `environment` | String | `Sandbox` 或 `Production`，表示用户当前所处的环境。 |
-| `store` | String | 购买产品的商店。选项：**app_store**、**play_store**、**stripe**，或您的[自定义商店](custom-store)名称。 |
-| `vendor_product_id` | String | 应用商店中的产品 ID（例如 `org.locals.12345`）。 |
-| `subscription_expires_at` | String | 最新订阅的到期日期（`YYYY-MM-DDTHH:MM:SS+0000`，例如 `2023-02-10T17:22:03.000000+0000`）。 |
-| `last_event_type` | String | 来自 [Adapty 事件列表](events)的最新事件类型。<br/> 请注意以下情况：<br/>- 对于 **Subscription expired** 事件，Adapty 将 `last_event_type` 属性发送为 `subscription_cancelled`。<br/>- 对于 **Trial renew canceled**，发送为 `auto_renew_off`<br/>- 对于 **Subscription renew canceled**，发送为 `auto_renew_off_subscription` |
-| `purchase_date` | String | 最近一次交易日期（`YYYY-MM-DDTHH:MM:SS+0000`，例如 `2023-02-10T17:22:03.000000+0000`）。 |
-| `active_subscription` | String | 如果用户有有效订阅则为 `true`，订阅已到期则为 `false`。 |
-| `period_type` | String | 表示购买或续订的最新周期类型。可能的值：`trial` 表示试用期，`normal` 表示其他所有情况。 |
+| `adapty_customer_user_id` | String | 用户在您应用中的唯一标识符。该标识符必须在您的系统、Adapty 和 OneSignal 中保持一致。                                                                                                                                                                                                                                                                  |
+| `adapty_profile_id` | String | Adapty 用户画像 ID，可在您的 [Adapty 看板](profiles-crm) 中查看。                                                                                                                                                                                                                                                                                  |
+| `environment` | String | `Sandbox` 或 `Production`，表示用户当前所处的环境。                                                                                                                                                                                                                                                                                            |
+| `store` | String | 购买产品的商店。可选值：**app_store**、**play_store**、**stripe** 或您的[自定义商店](custom-store)名称。                                                                                                                                                                                                        |
+| `vendor_product_id` | String | 应用商店中的产品 ID（例如 `org.locals.12345`）。                                                                                                                                                                                                                                                                                                      |
+| `subscription_expires_at` | Integer | 最新订阅的到期日期，以 Unix 时间戳（秒）表示，例如 `1797549400`。 |
+| `last_event_type` | String | [最新事件的名称](events)，例如 `subscription_renewed`。对于[七个事件](#last_event_type-values)，Adapty 会向 OneSignal 发送不同的值。 |
+| `purchase_date` | Integer | 最近一次交易日期，以 Unix 时间戳（秒）表示，例如 `1794957400`。 |
+| `active_subscription` | String | 用户有活跃订阅时为 `true`，订阅已过期时为 `false`。                                                                                                                                                                                                                                                                                                       |
+| `period_type` | String | 表示最近一次购买或续订的周期类型。可选值：`trial` 表示试用期，`normal` 表示其他所有情况。                                                                                                                                                                                                                  |
 
 所有浮点值均四舍五入为整数，字符串保持不变。
 
 除了预定义标签之外，您还可以将[自定义属性](segments#custom-attributes)作为标签发送，从而在包含的数据方面获得更大的灵活性。这对于追踪与您的产品或服务相关的特定详细信息非常有用。
 
 如果在[集成页面](https://app.adapty.io/integrations/onesignal)上启用了 **Send user attributes** 复选框，自定义用户属性将自动发送到 OneSignal。未勾选时，Adapty 恰好发送 10 个标签；勾选后，可以发送超过 10 个标签，从而实现更丰富的数据捕获。
+
+### `last_event_type` 的取值 \{#last_event_type-values\}
+
+对于大多数事件，`last_event_type` 的值就是[事件名称](events)，例如 `subscription_renewed`。对于以下七个事件，Adapty 会向 OneSignal 发送不同的值：
+
+| 事件名称 | `last_event_type` 的值 |
+|---|---|
+| `subscription_started` | `subscription_initial_purchase` |
+| `subscription_renewal_cancelled` | `auto_renew_off_subscription` |
+| `subscription_renewal_reactivated` | `auto_renew_on_subscription` |
+| `subscription_expired` | `subscription_cancelled` |
+| `trial_renewal_cancelled` | `auto_renew_off` |
+| `trial_renewal_reactivated` | `auto_renew_on` |
+| `trial_expired` | `trial_cancelled` |
 
 ## SDK 配置 \{#sdk-configuration\}
 
@@ -155,6 +169,7 @@ OneSignal.Notifications.requestPermission({ accepted in
     }
 }, fallbackToSettings: true)
 ```
+
 </TabItem>
 <TabItem value="kotlin" label="Android (Kotlin)" default>
 
@@ -173,6 +188,7 @@ val oneSignalSubscriptionObserver = object: IPushSubscriptionObserver {
 
 </TabItem>
 <TabItem value="java" label="(Android) Java" default>
+
 ```java showLineNumbers
 // SubscriptionID
 IPushSubscriptionObserver oneSignalSubscriptionObserver = state -> {
@@ -282,6 +298,7 @@ val osSubscriptionObserver = OSSubscriptionObserver { stateChanges ->
 
 </TabItem>
 <TabItem value="java" label="Java" default>
+
 ```java showLineNumbers
 // PlayerID
 OSSubscriptionObserver osSubscriptionObserver = stateChanges -> {

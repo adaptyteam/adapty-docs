@@ -12,13 +12,93 @@ Unityで信頼性の高いフローまたはペイウォールの取得には、
 
 ## ルールと注意点 \{#rules-and-pitfalls\}
 
-| こうする | こうしない | 理由 |
+| これをやる | これをやらない | 理由 |
 |---|---|---|
-| 表示しようとしているプレースメントだけを取得する。                                                                                  | 起動時にすべてのプレースメントをまとめてプリフェッチする。        | まとめてプリフェッチするとメインスレッドがブロックされ、バースト中にブラックスクリーンが発生する。                                  |
-| アトリビューションが解決される時間を確保してから `GetFlow` を取得する（例：`Activate` の 1〜2 秒後、または `OnLoadLatestProfile` の発火後）。 | `Awake()` で `GetFlow` を呼び出す。                        | アトリビューションがまだ反映されていないため、フローがデフォルトのオーディエンスで解決され、セグメントや ASA のパーソナライゼーションが無効化される。 |
-| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。                             | `GetFlow` を無制限に待ち続ける。                     | タイムアウトがないと、接続状況が悪いユーザーはネットワークが解決するまで、またはアプリを閉じるまで空白の画面を見続けることになる。     |
+| 表示しようとしているプレースメントをフェッチするか、[`PreloadFlows`](#preload-placements)（SDK 4.3.0+）でキャッシュをウォームアップする。 | 起動時に独自の並行 `GetFlow` 呼び出しを展開する。 | 自前のプリフェッチバーストはメインスレッドをブロックし、黒い画面を引き起こす。`PreloadFlows` はこの用途向けに設計されており、バッチをネイティブ SDK に一度の呼び出しで送信する。 |
+| アトリビューションが解決される機会を得てから `GetFlow` をフェッチする — たとえば、`Activate` から 1〜2 秒後、または `OnLoadLatestProfile` が発火した後。 | `Awake()` で `GetFlow` を呼び出す。 | アトリビューションがまだ到達していない。フローはデフォルトのオーディエンスに対して解決され、セグメントや ASA のパーソナライゼーションが通知なくバイパスされる。 |
+| `loadTimeout` を設定し、すべてのプレースメントに[フォールバックペイウォール](fallback-paywalls)を設定する。 | `GetFlow` を無期限に待ち続ける。 | タイムアウトがないと、接続が不安定なユーザーはネットワークが解決するまで空白の画面を見続けるか、アプリを閉じてしまう。 |
 
 カスタムペイウォールとプロダクトの取得については、`fetchPolicy`と`loadTimeout`パラメーターのリファレンスは[カスタムペイウォールとプロダクトの取得](fetch-paywalls-and-products-unity)を、適切なプレースメントの選び方は[プレースメント](placements)を参照してください。
+
+## プレースメントのプリロード \{#preload-placements\}
+
+:::info
+`Adapty.PreloadFlows` と `Adapty.PreloadFlowsForDefaultAudience` は SDK バージョン 4.3.0 以降で利用できます。
+:::
+
+`Adapty.PreloadFlows` はフローの JSON を事前にキャッシュします。その後は通常どおり使用できます。フローの取得には `GetFlow`、ビューの作成には `CreateFlowView` を使います。
+
+`fetchPolicy` は、後続の `GetFlow` がどのレイヤーを最初に読み取るかを決定するものであり、キャッシュにアクセスできるかどうかを決定するものではありません。
+
+- `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` はキャッシュ済みのコピーを最初に読み込み、キャッシュがない場合のみネットワークにアクセスします。`AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)` は、コピーが `maxAge` より新しい間は同じ動作をします。
+- デフォルトの `AdaptyPlacementFetchPolicy.Default` はまずネットワークにアクセスし、リクエストが失敗またはタイムアウトした場合にキャッシュ済みのコピーにフォールバックします。
+
+プリロードはどのポリシーを選択しても有効ですが、効果の出方が異なります。キャッシュファースト（cache-first）ポリシーではリクエスト自体が不要になるのに対し、デフォルトポリシーではリクエストは発生するものの、ウォームコピーがフォールバックとして利用できます。[テストデバイス](test-devices)では、どのポリシーを設定していても `GetFlow` はキャッシュをスキップし、ネットワークリクエストが失敗した場合のみプリロード済みのコピーを使用します。
+
+セッション中に必要なプレースメントがあらかじめわかっているが、すぐには表示したくない場合に活用してください。たとえば、`Activate` と `Identify` が完了した直後に、ユーザーがまだタップしていないボタンの背後にあるフローをプリロードしておく、といった使い方が典型的です。
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlows(
+    new List<string> { "onboarding", "main_paywall" },
+    TimeSpan.FromSeconds(5),
+    (error) => {
+        if (error != null) {
+            // at least one placement failed to preload
+        }
+    }
+);
+
+// Later, when the user reaches the paywall:
+Adapty.GetFlow(
+    "main_paywall",
+    AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        // create the flow view
+    }
+);
+```
+
+**パラメーター：**
+
+- `placementIds` (必須): プリロードするプレースメント。
+- `loadTimeout` (オプション): オーディエンス対象フローのプリロード待機時間。`null` を渡すか、このパラメータを省略したオーバーロードを使用した場合、デフォルトは5秒です。タイムアウトに達すると、SDKはデフォルトオーディエンスのフローを代わりに読み込む場合があります。
+
+**知っておくべき動作:**
+
+- 呼び出しは、すべてのプレースメントが試行された後にのみ失敗します。失敗した場合は、すべての失敗したプレースメントを含む `NetworkFailed` エラーが1つ返されます。1つのプレースメントの失敗が他のプレースメントの処理を止めることはなく、読み込み済みのプレースメントはキャッシュに残ります。
+- プリロードは常にネットワークにアクセスします。独自の `fetchPolicy` はありません。
+- プリロードはキャッシュを温めるだけです。コンテンツを返すわけではないため、表示するには引き続き `GetFlow` を呼び出す必要があります。
+- キャッシュは現在のプロファイルに紐付いています。`Identify` や `Logout` の前にプリロードしたフローは、その後には見つかりません。そのため、プロファイルの切り替え後にプリロードしてください。
+
+### プリロードでカバーされる範囲 \{#what-a-preload-covers\}
+
+フローは段階的に画面へ届きます。プリロードは最初の段階をカバーします。これは `GetFlow` が行う処理と全く同じです。
+
+| レイヤー | 取得元 | プリロードによるウォームアップ |
+|---|---|---|
+| フロー JSON — 選択されたバリアント、プロダクト ID、リモートコンフィグ | `GetFlow` | あり |
+| UI レイアウト — 画面の構造、スタイル、テキスト | `CreateFlowView` | なし |
+| 画像（動画要素の代替として使用される静止フレームを含む） | `CreateFlowView`（バックグラウンド） | なし |
+| プロダクト | `CreateFlowView` または `GetPaywallProducts` | なし |
+| 動画ファイル | 画面レンダリング時にシステムプレーヤーが取得 | SDK によるキャッシュなし |
+
+そのため、特定のレイアウトに対する最初の `CreateFlowView` は、プリロード後であっても1回のラウンドトリップが発生します。その後、ネイティブ SDK はそのレイアウトをディスクキャッシュに保持します。このキャッシュはアプリの再起動後も保持されるため、コストは毎回ではなく最初のリクエスト時にのみ発生します。
+
+### オーディエンスのセグメンテーションをスキップする \{#skip-audience-segmentation\}
+
+オーディエンスのセグメンテーションを一切待たずにキャッシュをウォームアップするには、デフォルトオーディエンスのバリアントを使用します。タイムアウトは不要です：
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlowsForDefaultAudience(
+    new List<string> { "main_paywall" },
+    (error) => {
+        // handle the error
+    }
+);
+```
+
+その後の `GetFlowForDefaultAudience` は、`GetFlow` が `PreloadFlows` のコピーを読み取るのと同じ方法でコピーを読み取ります。
 
 ## アプリバンドルから最初の画面のメディアを表示する \{#show-first-screen-media-from-the-app-bundle\}
 

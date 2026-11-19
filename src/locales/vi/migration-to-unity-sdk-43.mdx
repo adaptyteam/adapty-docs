@@ -1,0 +1,95 @@
+---
+title: "Migrate Adapty Unity SDK to v4.3"
+description: "Migrate to Adapty Unity SDK v4.3: move to Unity 6, clean up the Android plugin folder, drop GetLogLevel, decide how Google Play messages appear, and read numeric flow event parameters as long."
+metadataTitle: "Migrating to Adapty Unity SDK v4.3 | Tài liệu Adapty"
+---
+
+Adapty Unity SDK 4.3 yêu cầu Unity 6, loại bỏ `Adapty.GetLogLevel`, hiển thị thông báo in-app của Google Play theo mặc định, và thay đổi kiểu dữ liệu C# của một số tham số sự kiện flow trên Android. Xem xét từng thay đổi trong hướng dẫn này để giữ nguyên hành vi của ứng dụng.
+
+Nếu bạn vẫn đang dùng phiên bản 3.x, hãy bắt đầu với [Migrate sang v4.1](migration-to-unity-sdk-v4) rồi làm theo hướng dẫn này.
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Unity 2022.3 trở lên | Unity 6.0 (6000.0) trở lên |
+| `Adapty.GetLogLevel(...)` | đã xóa — hãy tự theo dõi mức độ bạn đã đặt bằng `builder.LogLevel` hoặc `Adapty.SetLogLevel` |
+| Tin nhắn Google Play không được yêu cầu | Tin nhắn Google Play được hiển thị mặc định trên Android, kể cả trong flow |
+| Tham số sự kiện flow là số nguyên sẽ trả về dạng `double` trên Android | Trả về dạng `long` trên cả hai nền tảng |
+
+## Cài đặt \{#installation\}
+
+Adapty Unity SDK 4.3 yêu cầu **Unity 6.0 (6000.0)** trở lên. Nếu dự án của bạn đang dùng Unity 2022.3, hãy nâng cấp dự án trước, hoặc tiếp tục sử dụng Adapty SDK 4.1.x.
+
+:::warning
+Adapty SDK 4.1.x không hoạt động với GameActivity — điểm khởi đầu Android mặc định cho các dự án Unity 6 mới: các completion handler và event sẽ không bao giờ đến được C#. Nếu bạn nâng cấp Unity trước SDK, hãy giữ **Application Entry Point** ở chế độ **Activity** cho đến khi bạn chuyển sang Adapty SDK 4.3. SDK 4.3 hoạt động với cả hai điểm khởi đầu.
+:::
+
+Để cài đặt SDK 4.3 qua Unity Package Manager, sử dụng Git URL sau:
+
+```
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.3.0-beta.1
+```
+
+Nếu bạn cài đặt qua Unity package, hãy tải `adapty-unity-plugin-4.3.0-beta.1.unitypackage` từ [bản phát hành 4.3.0-beta.1](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.3.0-beta.1). Xóa thư mục `Assets/AdaptySDK/Plugins/Android/Local` trước khi import. SDK 4.3 không còn đi kèm Android Java wrapper nội bộ mà thư mục này chứa, và việc import `.unitypackage` không bao giờ xóa file, vì vậy wrapper cũ sẽ vẫn còn trong dự án của bạn nếu không xóa trước.
+
+Các yêu cầu khác không thay đổi so với 4.1: **iOS 15.0** và **Xcode 26**. Xem [Cài đặt Adapty SDK](sdk-installation-unity) để biết hướng dẫn thiết lập đầy đủ.
+
+## `GetLogLevel` đã bị xóa \{#getloglevel-is-removed\}
+
+`Adapty.GetLogLevel` không còn khả dụng nữa. Mức log là mức bạn đã đặt bằng `builder.LogLevel` khi kích hoạt SDK, hoặc sau đó bằng `Adapty.SetLogLevel`. Nếu code của bạn cần đọc lại mức này, hãy lưu giá trị bạn đã đặt thay thế:
+
+```diff showLineNumbers
+- Adapty.GetLogLevel((level, error) => {
+-     // use level
+- });
++ var logLevel = AdaptyLogLevel.Verbose;
++ builder.LogLevel = logLevel;
++ // use logLevel
+```
+
+## Thông báo Google Play hiển thị theo mặc định \{#google-play-messages-are-shown-by-default\}
+
+Từ phiên bản 4.3, SDK yêu cầu các thông báo in-app của Google Play — chẳng hạn như thông báo thanh toán bị từ chối — mỗi khi một `Activity` trong ứng dụng của bạn khởi động sau khi kích hoạt. Điều này bao gồm cả các thời điểm ứng dụng trở lại foreground và khi một flow hoặc onboarding mở hoặc đóng, vì vậy một thông báo có thể xuất hiện đè lên paywall.
+
+Nếu điều đó không ảnh hưởng đến ứng dụng của bạn, không cần thay đổi gì. Để chọn thời điểm hiển thị thông báo, hãy kích hoạt SDK với chế độ xử lý thủ công trên Android và gọi `Adapty.ShowStoreMessages` vào thời điểm phù hợp với ứng dụng của bạn:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+#if UNITY_ANDROID
+builder.SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual);
+#endif
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+Chỉ đặt chế độ xử lý thủ công trên Android để giữ nguyên iOS: trên iOS 16 trở lên, chế độ xử lý thủ công cũng sẽ giữ lại các thông báo App Store cho đến khi ứng dụng của bạn gọi `Adapty.ShowStoreMessages`. Xem toàn bộ API tại [Kiểm soát thông báo cửa hàng](unity-store-messages).
+
+:::warning
+Trong chế độ thủ công, các cửa hàng sẽ không tự hiển thị thông báo. Nếu ứng dụng của bạn không bao giờ gọi `Adapty.ShowStoreMessages`, người dùng sẽ không bao giờ thấy thông báo thanh toán bị từ chối.
+:::
+
+## Tham số sự kiện flow dạng số là `long` trên Android \{#numeric-flow-event-parameters-are-long-on-android\}
+
+Trên Android, các tham số nguyên của `FlowViewDidReceiveAnalyticEvent` trước đây được trả về dưới dạng `double`. Từ phiên bản 4.3, chúng được trả về dưới dạng `long`, giống như trên iOS. Điều này bao gồm các giá trị ngày và giờ của sự kiện [flow input](unity-flow-input).
+
+Việc ép kiểu sang `double` hiện sẽ gây lỗi trên Android. Hãy chuyển đổi tham số số thay vì ép kiểu:
+
+```diff showLineNumbers
+- var timestamp = (double)parameters["value"];
++ var timestamp = Convert.ToInt64(parameters["value"]);
+```
+
+## Những điểm mới trong 4.3 \{#new-in-43\}
+
+Những tính năng bổ sung này là tùy chọn. Code hiện tại của bạn vẫn hoạt động bình thường mà không cần thay đổi:
+
+- **[Kiểm soát tin nhắn từ cửa hàng](unity-store-messages)**: Chọn thời điểm hiển thị tin nhắn từ App Store và Google Play.
+- **[Tải trước placements](unity-optimize-paywall-fetching#preload-placements)**: `Adapty.PreloadFlows` và `Adapty.PreloadFlowsForDefaultAudience` làm nóng bộ nhớ cache của flow.
+- **[Giữ lại một flow view](unity-present-paywalls#keep-the-view-to-present-it-again)**: `view.Dismiss(false, ...)` giữ lại view để hiển thị lại sau, còn `view.Destroy(...)` giải phóng nó.
+- **[Gói cam kết 12 tháng](set-up-12-month-commitment)**: Thuộc tính `AdaptySubscription.PricingTerms` mô tả gói trên iOS, và mức độ truy cập cũng như gói đăng ký báo cáo `BillingPlan` và `CommitmentInfo`.
+- **Mã lỗi mới**: `AdaptyErrorCode.BillingPlanUnavailable` (1060, chỉ trên iOS). `MakePurchase` trả về mã này khi sản phẩm không cung cấp gói thanh toán được yêu cầu trên thiết bị hoặc trong storefront. Nếu code của bạn xử lý từng giá trị `AdaptyErrorCode`, hãy thêm xử lý cho mã mới này.
+- **[Chế độ Observer](report-transactions-observer-mode-unity)**: `Adapty.ReportTransaction` nhận thêm tham số tùy chọn `appleJWSTransaction` trên iOS.
+- **Tên biến thể**: `AdaptyFlow.VariationName` trả về tên biến thể mà bạn đã đặt trong Adapty Dashboard.

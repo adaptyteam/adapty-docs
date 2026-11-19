@@ -154,6 +154,14 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    snippet — not the new field rows. Older base fields (`price_usd`, `proceeds_usd`, `net_revenue_usd`,
    `subscription_expires_at`, etc.) do appear in all of these tables, so the rule reads as "new fields
    default to webhook-only until told otherwise," not "these tables are always kept in lockstep."
+   Counter-example, 2026-11-16: `virtual_currency_credits` went into the webhook schema *and* both
+   duplicated tables, because the product brief named the destinations that receive it (Amplitude,
+   Mixpanel, PostHog, Braze, Branch as an array; Adjust as a JSON string inside `callback_params`;
+   Firebase, AppsFlyer and other fixed-parameter integrations not at all; confirmed by product,
+   2026-11-13). So "told otherwise" means a per-destination list from product — ask for one. Amplitude,
+   Branch and Adjust describe their payload as "all available event fields" with a link to the webhook
+   schema, so they need no row of their own; only a destination that changes the wire shape (Adjust)
+   needs a sentence.
 2. **`messaging`'s and `analytics-integration`'s "## Event properties" tables are a maintained
    duplicate, not a canonical-plus-copy relationship.** Confirmed byte-identical today (`diff` of the
    current table sections returns nothing). Nothing enforces that an edit to one is mirrored in the

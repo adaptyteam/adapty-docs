@@ -23,10 +23,10 @@ displayed_sidebar: sdkunity
 
 Чтобы получить объект `view`, используемый ниже, см. [Получение флоу и пейволов](unity-get-pb-paywalls).
 
-Чтобы отобразить флоу или пейвол, используйте метод `view.Present()` на объекте `view`, созданном методом [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration). Каждый `view` можно использовать только один раз: после закрытия он уничтожается. Если нужно показать флоу снова, вызовите `CreateFlowView` ещё раз, чтобы создать новый экземпляр `view`.
+Чтобы отобразить флоу или пейвол, вызовите метод `view.Present()` на объекте `view`, созданном методом [`CreateFlowView`](unity-get-pb-paywalls#fetch-the-view-configuration). По умолчанию закрытый `view` уничтожается. Чтобы отобразить флоу снова, вызовите `CreateFlowView` ещё раз для создания нового экземпляра `view` или [сохраните view](#keep-the-view-to-present-it-again) при закрытии.
 
 :::warning
-Повторное использование того же `view` без пересоздания может привести к ошибке.
+Повторное использование уничтоженного `view` приводит к ошибке.
 :::
 
 ```csharp showLineNumbers title="Unity"
@@ -36,6 +36,64 @@ view.Present((error) => {
 ```
 
 <SampleApp />
+
+## Сохраните представление для повторного показа \{#keep-the-view-to-present-it-again\}
+
+:::info
+Сохранённые представления доступны начиная с версии SDK 4.3.0.
+:::
+
+`view.Dismiss()` освобождает представление из памяти. Чтобы сохранить его, передайте `false` в качестве параметра `destroy`:
+
+```csharp showLineNumbers title="Unity"
+view.Dismiss(false, (error) => {
+    // handle the error
+});
+```
+
+Покажите это представление снова — и пользователь вернётся к тому экрану, на котором остановился, с тем состоянием, которое флоу успело накопить. Представление сохраняет свой `Id`, поэтому его события по-прежнему будут приходить в ваш слушатель с тем же `view.Id`.
+
+Представление хранится в памяти, пока вы его не освободите. Когда оно больше не нужно, вызовите `view.Destroy()`:
+
+```csharp showLineNumbers title="Unity"
+view.Destroy((error) => {
+    // handle the error
+});
+```
+
+`Destroy()` сначала скрывает представление, если оно ещё отображается на экране. Также освобождает представление, которое вы создали, но так и не показали, и представление в виде page-sheet, которое пользователь смахнул вниз на iOS. Не вызывайте его после обычного `Dismiss()`: такое представление уже освобождено, и вызов завершится ошибкой.
+
+Чтобы сохранить экран при нажатии пользователем кнопки **Close**, вызовите dismiss с `destroy: false` в обработчике [действия `Close`](unity-handle-paywall-actions#close-flows-and-paywalls). Метод `FlowViewDidPerformAction` вызывается для каждого флоу и пейвола в приложении, поэтому сравнивайте `view.Id`, чтобы сохранить только тот экран, который планируете показать снова. Сохраните экран в поле при его создании, чтобы затем сравнивать с ним и отображать его повторно:
+
+```csharp showLineNumbers title="Unity"
+private AdaptyUIFlowView keptView;
+
+void CreateKeptView(AdaptyFlow flow) {
+    AdaptyUI.CreateFlowView(flow, new AdaptyUICreateFlowViewParameters(), (view, error) => {
+        if (error != null) {
+            // handle the error
+            return;
+        }
+        keptView = view;
+    });
+}
+
+public void FlowViewDidPerformAction(
+    AdaptyUIFlowView view,
+    AdaptyUIUserAction action
+) {
+    switch (action.Type) {
+        case AdaptyUIUserActionType.Close:
+            view.Dismiss(view.Id != keptView?.Id, null);
+            break;
+        default:
+            // handle other events
+            break;
+    }
+}
+```
+
+Сохраняйте ссылку на `view`: она нужна, чтобы снова показать флоу или пейвол и освободить его через `Destroy()`. После вызова `keptView.Destroy()` установите `keptView` в `null`, чтобы приведённое выше сравнение не совпало с уже освобождённым объектом. Любой другой вызов `view.Dismiss()` также освобождает объект, включая вызов в [`FlowViewDidReceiveError`](unity-handling-events#rendering-and-runtime-errors). После ошибки объекта создайте новый с помощью `CreateFlowView`.
 
 ## Показ диалогов \{#show-dialog\}
 
@@ -61,7 +119,7 @@ AdaptyUI.ShowDialog(view, dialog, (action, error) => {
 });
 ```
 
-## Настройка стиля отображения на iOS \{#configure-ios-presentation-style\}
+## Настройка стиля презентации на iOS \{#configure-ios-presentation-style\}
 
 Настройте способ отображения флоу или пейвола на iOS, передав параметр `iosPresentationStyle` в метод `Present()`. Параметр принимает значения `AdaptyUIIOSPresentationStyle.FullScreen` (по умолчанию) или `AdaptyUIIOSPresentationStyle.PageSheet`.
 
@@ -71,25 +129,27 @@ view.Present(AdaptyUIIOSPresentationStyle.PageSheet, (error) => {
 });
 ```
 
+Пользователь может смахнуть листок страницы вниз, чтобы закрыть его. После этого представление остаётся в памяти без вызова `Dismiss()`: вы можете показать его снова или, начиная с SDK 4.3.0, освободить с помощью [`Destroy()`](#keep-the-view-to-present-it-again).
+
 </SDKv4>
 
 <SDKv3>
 
-Если вы создали пейвол с помощью Paywall Builder, вам не нужно беспокоиться об его отображении в коде мобильного приложения. Такой пейвол содержит как то, что должно быть показано, так и то, как это должно выглядеть.
+Если вы настроили пейвол с помощью Paywall Builder, вам не нужно беспокоиться об его отрисовке в коде мобильного приложения для показа пользователю. Такой пейвол содержит как то, что должно отображаться внутри него, так и то, как именно это должно отображаться.
 
 :::warning
 
-Этот гайд описывает **старый Paywall Builder**, который требует Adapty SDK 3.3.0 или новее.
+Этот гайд посвящён **старому Paywall Builder**, который требует Adapty SDK 3.3.0 или более новой версии.
 
-Чтобы отобразить кастомные пейволы, см. [Отображение кастомных пейволов](present-remote-config-paywalls-unity).
+Чтобы отображать кастомные пейволы, см. [Отображение кастомных пейволов](present-remote-config-paywalls-unity).
 
 :::
 
-Чтобы отобразить пейвол, используйте метод `view.Present()` на объекте `view`, созданном методом [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый `view` можно использовать только один раз. Если нужно показать пейвол снова, вызовите `CreatePaywallView` ещё раз, чтобы создать новый экземпляр `view`.
+Для отображения пейвола используйте метод `view.Present()` на объекте `view`, созданном методом [`CreatePaywallView`](unity-get-pb-paywalls#fetch-the-view-configuration-of-paywall-designed-using-paywall-builder). Каждый `view` можно использовать только один раз. Если нужно показать пейвол снова, вызовите `CreatePaywallView` ещё раз, чтобы создать новый экземпляр `view`.
 
 :::warning
 
-Повторное использование одного и того же `view` без пересоздания может привести к ошибке `AdaptyUIError.viewAlreadyPresented`.
+Повторное использование одного и того же `view` без его пересоздания может привести к ошибке `AdaptyUIError.viewAlreadyPresented`.
 :::
 
 ```csharp showLineNumbers title="Unity"

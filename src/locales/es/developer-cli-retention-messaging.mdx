@@ -1,0 +1,461 @@
+---
+title: "Gestionar los mensajes de retención desde la CLI"
+description: "Configura los mensajes de retención de Apple desde el terminal con la CLI de Adapty: conecta la URL en tiempo real, ejecuta el test de rendimiento, crea, modifica, activa y desactiva mensajes de retención, y consulta sus métricas."
+metadataTitle: "Mensajes de retención en la CLI para desarrolladores | Documentación de Adapty"
+---
+
+La CLI de Adapty configura [Apple Retention Messaging](retention-messaging), el mensaje que ven los suscriptores en la pantalla **Cancel Subscription**, desde el terminal, bajo el tema `adapty retention-messaging`. Puedes leer el estado de configuración de una app, conectar Apple a la URL en tiempo real de Adapty que responde a las solicitudes de Apple para un mensaje, ejecutar el test de rendimiento de Apple, crear y modificar mensajes de retención, activarlos y desactivarlos, y leer las métricas de cada mensaje.
+
+Úsalo para que un agente de IA configure Retention Messaging por ti, para crear scripts de mensajes en varias apps, o para leer las métricas de mensajes sin abrir el dashboard. Los comandos realizan las mismas acciones que la página **Retention Messaging** del dashboard, y el dashboard muestra los mismos mensajes.
+
+## Antes de empezar \{#before-you-start\}
+
+El tema `retention-messaging` usa la misma instalación e inicio de sesión que el resto de la CLI. Si aún no lo has configurado, sigue los pasos 1 y 2 de la [guía de inicio rápido](developer-cli-quickstart). Para comprobar si tu CLI tiene el tema, ejecuta:
+
+```bash
+adapty retention-messaging --help
+```
+
+Cada comando requiere el UUID de la app en `--app`. Para encontrarlo, ejecuta:
+
+```bash
+adapty apps list
+```
+
+Lo que necesita tu app en cada paso:
+
+- **Leer el estado de configuración**: Nada. Funciona con cualquier aplicación.
+- **Leer la URL en tiempo real**: Una [configuración de App Store](app-store-connection-configuration) completa en Adapty. Esta URL se la envías a Apple cuando solicitas acceso.
+- **Configurar la URL en tiempo real y ejecutar la prueba de rendimiento**: También la clave de compra in-app y el [acceso a la Retention Messaging API](retention-messaging-setup#request-access-from-apple), que solicitas a Apple. La revisión de Apple puede tardar hasta un mes, así que solicita acceso con antelación.
+- **Mostrar mensajes a suscriptores**: Acceso de Apple, la URL en tiempo real configurada en Adapty, al menos un [producto](create-product) y la aprobación de Apple para cada mensaje.
+
+Los mensajes de retención existen en dos entornos de Apple: `sandbox` y `production`. El indicador `--mode` selecciona el entorno. Cada entorno tiene sus propios mensajes, tal como muestra el interruptor **Sandbox mode** del dashboard.
+
+Para configurar los mensajes de retención de principio a fin:
+
+1. [Lee el estado de configuración](#read-the-setup-status).
+2. [Lee la URL en tiempo real](#connect-the-realtime-url) y solicita acceso a Apple con ella.
+3. [Configura la URL en tiempo real](#connect-the-realtime-url) para `sandbox`.
+4. [Ejecuta la prueba de rendimiento](#run-the-performance-test) y lee el estado de configuración hasta que la prueba haya pasado.
+5. [Configura la URL en tiempo real](#connect-the-realtime-url) para `production`.
+6. [Crea los mensajes predeterminados](#create-a-message) y luego los mensajes promocionales.
+7. [Lista los mensajes](#list-and-read-messages) para seguir la revisión de Apple.
+
+## Leer el estado de la configuración \{#read-the-setup-status\}
+
+```bash
+adapty retention-messaging setup-status --app <app-id>
+```
+
+El estado muestra los mismos pasos de configuración que el dashboard:
+
+| Campo | Valores |
+|---|---|
+| `credentials` | `present` o `missing`: indica si la app tiene las claves de App Store que usa Retention Messaging. |
+| `registration_status` | `registered` o `not_registered`: indica si Apple le ha concedido a la app acceso a la API de Retention Messaging. |
+| `sandbox.realtime_url_status`, `production.realtime_url_status` | `not_configured`, `configured_to_other_url` o `configured_to_adapty`: indica a dónde envía Apple sus solicitudes en cada entorno. |
+| `sandbox.performance_test_status` | `not_started`, `running`, `passed` o `failed`. |
+
+:::note
+Algunas lecturas también actualizan Adapty, igual que el dashboard:
+- Mientras se ejecuta la prueba de rendimiento, `setup-status` solicita a Apple el resultado de la prueba y lo guarda. `realtime-url configure` realiza la misma lectura antes de pedir confirmación, por lo que guarda el resultado aunque luego lo rechaces.
+- `messages list`, `messages get` y la lectura que hace `messages update` antes de escribir consultan a Apple sobre la revisión de cada mensaje y guardan el nuevo estado. Si Apple ha aprobado un mensaje, la lectura lo mueve a `live` de inmediato. Adapty también comprueba la revisión de Apple por su cuenta, así que un mensaje aprobado se publica sin necesidad de una lectura.
+:::
+
+## Conectar la URL en tiempo real \{#connect-the-realtime-url\}
+
+Apple envía una solicitud a una URL en tiempo real cuando un suscriptor abre la pantalla **Cancel Subscription**. Adapty responde a esa solicitud con tu mensaje. Para leer la URL de Adapty, ejecuta:
+
+```bash
+adapty retention-messaging realtime-url get --app <app-id>
+```
+
+La misma URL sirve tanto para `sandbox` como para `production`. Proporcionas esta URL a Apple cuando [solicitas acceso](retention-messaging-setup#request-access-from-apple).
+
+Para configurar la URL de Adapty en Apple para un entorno, ejecuta:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode sandbox
+```
+
+Configura primero `sandbox`. Adapty rechaza `production` hasta que la [prueba de rendimiento](#run-the-performance-test) pase. Al configurar `sandbox`, Adapty también crea un mensaje de prueba oculto para la prueba de rendimiento. Este mensaje no aparece en la lista de mensajes.
+
+Si Apple envía las solicitudes de este entorno a un servidor diferente (`configured_to_other_url`), la URL de Adapty reemplaza la URL de ese servidor en Apple. A partir de entonces, ese servidor deja de recibir solicitudes de la pantalla **Cancel Subscription**. El CLI muestra una advertencia con el nombre del entorno. Para aprobar el reemplazo:
+
+- **En un terminal, sin `--json`**: Lee el aviso y responde `y` en el prompt `Apply? [y/N]`. El prompt aparece aunque pases `--yes`.
+- **En un script, un agente, o con `--json`**: Pasa `--replace-other-url --yes`. Sin `--replace-other-url`, el CLI no envía nada y sale con el código 6, incluso con `--yes`.
+
+## Ejecuta la prueba de rendimiento \{#run-the-performance-test\}
+
+Apple comprueba la velocidad de respuesta de Adapty antes de permitir la URL en tiempo real de `production`. Antes de iniciar la prueba, [configura la URL en tiempo real](#connect-the-realtime-url) para `sandbox`. Luego compra tu producto de mayor duración con una cuenta sandbox o a través de TestFlight, mantén la suscripción activa e inicia la prueba justo después de la compra:
+
+```bash
+adapty retention-messaging performance-test start --app <app-id>
+```
+
+La prueba siempre se ejecuta en `sandbox` y puede tardar hasta una hora. Para ver el resultado, consulta de nuevo el [estado de configuración](#read-the-setup-status): `sandbox.performance_test_status` cambia de `running` a `passed` o `failed`. Mientras el estado sea `running`, no inicies la prueba de nuevo: Adapty la rechazará. Para saber por qué falla una prueba, consulta [Pasar la prueba de rendimiento](retention-messaging-setup#pass-the-performance-test).
+
+Cuando la prueba sea exitosa, conecta producción:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode production
+```
+
+## Listar y leer mensajes \{#list-and-read-messages\}
+
+```bash
+adapty retention-messaging messages list --app <app-id> --mode production --state live
+```
+
+`--mode` es obligatorio. La lista muestra cada mensaje con su nombre, tipo, estado, número de productos, fecha de inicio y estas métricas durante toda la vida del mensaje:
+
+| Campo | Columna en el dashboard | Valor |
+|---|---|---|
+| `shown` | **Shown** | Recuento |
+| `retained` | **Retained users** | Recuento |
+| `saved_users` | **Saved users** | Recuento |
+| `retention_rate` | **Retention rate** | Porcentaje, un decimal. `0.0` mientras ninguna vista tiene un resultado. |
+| `save_rate` | **Save rate** | Porcentaje, un decimal. `0.0` mientras ninguna vista tiene más de 24 horas. |
+| `saved_revenue` | **Saved revenue** | USD antes de la comisión de Apple, dos decimales |
+
+Para saber cómo Adapty calcula cada métrica, consulta [Seguimiento del rendimiento de mensajes](retention-messaging-analytics).
+
+Un mensaje puede estar en uno de estos estados: `in_review`, `live`, `rejected` o `inactive`. Para saber qué significa cada estado, consulta [Estados de mensaje](retention-messaging-create#message-states).
+
+Para leer un mensaje con sus textos, imagen, puntos destacados, productos y localizaciones, ejecuta:
+
+```bash
+adapty retention-messaging messages get <message-id> --app <app-id>
+```
+
+El mensaje no tiene campo de entorno. Sus textos y puntos destacados corresponden a la fuente `en-US`. Cada otra localización muestra su propio estado de revisión.
+
+## Crear un mensaje \{#create-a-message\}
+
+Un mensaje promocional necesita un mensaje predeterminado para el mismo producto en el mismo entorno. Crea primero el mensaje predeterminado. No tienes que esperar la revisión de Apple.
+
+Para encontrar los IDs de productos, las ofertas promocionales y los cambios de plan para el archivo, usa los [comandos de sugerencia](#find-products-and-offers). Para crear un mensaje, incluye su contenido en un archivo JSON:
+
+```json title="message.json"
+{
+  "name": "Annual default",
+  "type": "default",
+  "title": "Before you go",
+  "body": "Your plan keeps every feature you use today.",
+  "alt_text": "App icon on a purple background",
+  "header_position": "above_body",
+  "products": [
+    { "store_id": "com.example.annual" }
+  ],
+  "bullet_points": [
+    { "image_path": "icons/sync.png", "text": "Sync on all your devices" },
+    { "image_path": "icons/offline.png", "text": "Work offline" }
+  ],
+  "localizations": [
+    {
+      "locale": "de-DE",
+      "title": "Bevor du gehst",
+      "body": "Dein Abo behält alle Funktionen, die du heute nutzt.",
+      "bullet_points": [
+        { "text": "Auf allen Geräten synchronisieren" },
+        { "text": "Offline arbeiten" }
+      ]
+    }
+  ]
+}
+```
+
+Then run:
+
+```bash
+adapty retention-messaging messages create --app <app-id> --mode sandbox \
+  --file message.json --image header.png
+```
+
+The file takes these keys:
+
+- **`name`, `type`, `title`, `body`**: Obligatorios. El título y el cuerpo son la fuente `en-US`, con un máximo de 66 y 144 caracteres respectivamente.
+- **`type`**: El tipo de mensaje, `default` o `promo`. No se puede cambiar el tipo después.
+- **`alt_text`**: La descripción de la imagen para lectores de pantalla, hasta 150 caracteres.
+- **`header_position`**: La posición del título en un mensaje predeterminado con imagen. `above_image` muestra el título encima de la imagen. `above_body` lo muestra debajo de la imagen, encima del cuerpo. No se puede cambiar después.
+- **`products`**: Los productos cuyos suscriptores ven el mensaje, identificados por su ID de producto de App Store en `store_id`. Un mensaje `default` no tiene `association`. Un mensaje `promo` necesita al menos un producto, y cada producto necesita un incentivo en `association`: `{"type": "promo_offer", "store_id": "<offer-id>"}` o `{"type": "plan_switch", "store_id": "<product-id>"}`. Todos los productos de un mensaje `promo` usan el mismo tipo de incentivo: todos `promo_offer` o todos `plan_switch`.
+- **`bullet_points`**: Hasta cinco, solo para mensajes `default`. Cada uno tiene `text` (1–66 caracteres), un `alt_text` opcional y `image_path`: la ruta a su icono PNG, relativa a la carpeta del archivo JSON. La CLI rechaza `image_index`.
+- **`localizations`**: Una entrada por cada idioma distinto de `en-US`, con `locale`, `title`, `body` y un texto de `bullet_points` por cada punto del mensaje, en el mismo orden.
+
+`--image` añade la imagen de un mensaje predeterminado. Un mensaje promocional no tiene imagen ni viñetas.
+
+Antes de pedir tu aprobación, el CLI valida cada archivo de imagen. Luego solicita confirmación, tal como se describe en [Confirmación en scripts y agentes](#confirmation-in-scripts-and-agents). Adapty envía los textos e imágenes del nuevo mensaje a Apple para su revisión, y el estado del mensaje pasa a `in_review`.
+
+Si una creación falla con un error de red o de servidor, no vuelvas a ejecutarla. Consulta [Si una creación o un cambio no recibe respuesta](#if-a-create-or-a-change-gets-no-answer).
+
+### Requisitos de imagen
+
+| Archivo | Requisitos |
+|---|---|
+| Imagen (`--image`) | PNG, 3840 px de ancho y entre 160 y 2160 px de alto, sin transparencia, máximo 10 MB |
+| Icono de viñeta (`image_path`) | PNG, 1024 × 1024 px, sin transparencia, máximo 10 MB |
+
+El CLI valida cada archivo antes de enviar nada. Un PNG con canal alfa es válido si todos sus píxeles son completamente opacos. Un PNG dañado falla con el error `must be a PNG`. Si un archivo falla, el CLI no envía nada y termina con el código 2. El error indica el archivo y la regla, por ejemplo `… must be 3840 px wide and 160–2160 px tall`.
+
+## Cambiar un mensaje \{#change-a-message\}
+
+:::warning
+Cualquier cambio en un mensaje inactivo lo reactiva, aunque solo sea un cambio de nombre. Cuando Apple aprueba el mensaje, los suscriptores lo ven.
+:::
+
+`messages update` solo modifica lo que indiques. Todos los idiomas, puntos de la lista, iconos, productos e imágenes que no menciones permanecen igual:
+
+```bash
+adapty retention-messaging messages update <message-id> --app <app-id> --title "Wait, there's more"
+```
+
+Cambia el nombre, el título, el cuerpo, el texto alternativo y la imagen con los flags: `--name`, `--title`, `--body`, `--alt-text`, `--image` y `--remove-image`. Cambia los locales, los puntos de viñeta y los productos con un archivo de cambios en `--file`. El archivo de cambios también admite `name`, `title`, `body`, `alt_text` y `remove_image`. La CLI rechaza cualquier clave que el archivo de cambios no reconozca. Este archivo de cambios funciona con el mensaje de [Crear un mensaje](#create-a-message):
+
+```json title="changes.json"
+{
+  "localizations": [
+    { "locale": "de-DE", "title": "Warte kurz", "bullet_texts": { "<bullet-id>": "Auf jedem Gerät synchronisieren" } }
+  ],
+  "bullet_points": [
+    { "bullet_id": "<bullet-id>", "text": "Sync on every device" },
+    {
+      "image_path": "icons/backup.png",
+      "text": "Daily backups",
+      "texts": { "de-DE": "Tägliche Backups" }
+    }
+  ],
+  "remove_bullet_points": ["<other-bullet-id>"]
+}
+```
+
+- **Locales**: Nombra cada locale por su código en `locale`, con `title`, `body` y los textos de los puntos de la lista del locale en `bullet_texts`, por `bullet_id`. Un locale que el mensaje no tiene se agrega, y necesita `title`, `body` y un texto para cada punto de la lista.
+- **Puntos de lista**: Para cambiar un punto de lista, nómbralo por su `bullet_id` de `messages get`, con `text`, `alt_text` o `image_path` para un nuevo icono. Un punto de lista nuevo no tiene `bullet_id`. Necesita `image_path`, el `text` de `en-US` y un texto en `texts` para cada locale del mensaje.
+- **Productos**: Por su ID de producto de App Store en `store_id`. Un producto que el mensaje no tiene se agrega. En un mensaje promocional, cada producto necesita un incentivo: para cambiarlo, pasa una nueva `association`. Para dejar de ofrecer un incentivo en un producto, elimina el producto con `remove_products`. Un producto que añades a un mensaje promocional necesita una `association`.
+- **Eliminaciones**: Usa los campos de eliminación: `remove_localizations` (códigos de locale), `remove_bullet_points` (IDs de bullet), `remove_products` (IDs de producto de App Store), y `remove_image: true` o `--remove-image`. Un punto de lista eliminado desaparece de todos los locales. Mientras un mensaje promocional use un producto, no puedes eliminar ese producto de su mensaje predeterminado.
+
+No puedes cambiar el tipo, la `header_position`, ni el tipo de incentivo de un mensaje promocional (`promo_offer` o `plan_switch`). Para usar uno diferente, crea un mensaje nuevo.
+
+La CLI valida los cambios antes de enviar nada. Si la entrada se contradice, no cambia nada, o nombra o elimina algo que el mensaje no tiene, la CLI no envía nada, sale con el código 2 y el error indica el problema. Incluye los textos de configuración regional de un punto de lista existente en `bullet_texts` de la configuración regional, no en `texts`.
+
+El CLI solicita aprobación, lee el mensaje, fusiona los cambios y lo envía completo a Adapty. Cada actualización envía el mensaje completo a Apple para su revisión, y el estado del mensaje pasa a `in_review`. Si alguien modifica el mensaje en el dashboard mientras se ejecuta `messages update`, la actualización sobreescribirá ese cambio.
+
+## Activar o desactivar un mensaje \{#activate-or-deactivate-a-message\}
+
+```bash
+adapty retention-messaging messages set-status <message-id> --app <app-id> --action deactivate
+```
+
+- **`activate`**: Mueve un mensaje `inactive` a `in_review`. Apple solo revisa los idiomas que no ha aprobado previamente. Una vez que Apple aprueba el mensaje, los suscriptores vuelven a verlo.
+- **`deactivate`**: Mueve un mensaje `live` a `inactive`. Los suscriptores dejan de verlo. Las visualizaciones ya registradas permanecen en las métricas.
+
+Adapty rechaza `activate` para un mensaje que no está `inactive`, y `deactivate` para uno que no está `live`. Un mensaje en estado `in_review` se publica cuando Apple lo aprueba. Para detenerlo, desactívalo después de eso. El CLI no tiene ningún comando para eliminar un mensaje.
+
+Un producto puede tener un mensaje predeterminado y un mensaje promo en cada entorno. Adapty rechaza la activación en estos casos:
+
+- Se añadió otro mensaje del mismo tipo al producto mientras este mensaje estaba inactivo.
+- El mensaje es un mensaje promo y uno de sus productos no tiene mensaje predeterminado en este entorno.
+
+Mientras un mensaje promocional use un producto, Adapty no permitirá desactivar el mensaje predeterminado de ese producto. Primero desactiva el mensaje promocional o elimina el producto de él.
+
+## Buscar productos y ofertas \{#find-products-and-offers\}
+
+Para encontrar los productos que puedes añadir a un mensaje, ejecuta:
+
+```bash
+adapty retention-messaging products suggest --app <app-id> --mode production --type default
+```
+
+Cuando modifiques un mensaje, pasa su ID en `--message-id` para que los productos de ese mensaje no aparezcan como `used`. Un producto con `disabled_reason` no se puede añadir:
+
+- **`used`**: Otro mensaje del mismo tipo en este entorno ya tiene el producto.
+- **`no_default_message`**: El producto no tiene ningún mensaje predeterminado en este entorno, por lo que no puede recibir un mensaje promocional.
+
+Un mensaje promo vincula un incentivo a cada producto. Para encontrar los incentivos de un producto, pasa el `id` del producto desde `products suggest`. Para listar las ofertas promocionales del producto, ejecuta:
+
+```bash
+adapty retention-messaging promo-offers suggest <product-id> --app <app-id>
+```
+
+Para listar los planes a los que puede cambiar un suscriptor, ejecuta:
+
+```bash
+adapty retention-messaging plan-switches suggest <product-id> --app <app-id>
+```
+
+`plan-switches suggest` necesita la [clave API de App Store Connect](app-store-connect-api-key) en la configuración de la app. Pon el `store_id` de la oferta o del plan en la `association` del producto.
+
+## Confirmación en scripts y agentes \{#confirmation-in-scripts-and-agents\}
+
+Estos comandos modifican lo que los suscriptores ven en la pantalla **Cancel Subscription**. Cada uno muestra su efecto y pide aprobación antes de enviar el cambio, tanto en `sandbox` como en `production`:
+
+- `realtime-url configure`
+- `messages create`
+- `messages update`
+- `messages set-status`
+
+La forma de pedir confirmación depende de cómo se ejecute el comando:
+
+| Cómo se ejecuta el comando | Qué ocurre |
+|---|---|
+| En un terminal, sin `--yes` y sin `--json` | El CLI muestra el efecto y pregunta `Apply? [y/N]`. Si respondes `y` o `yes`, el CLI envía la solicitud. Para cualquier otra respuesta, el CLI sale con código 1 y no envía nada. |
+| Con `--yes`, en un terminal o no | El CLI envía la solicitud sin preguntar, incluso en `production`. |
+| Sin `--yes`, con `--json`, en un pipe, o sin terminal | El CLI no envía nada y sale con código 6. El error describe el efecto. |
+
+Reemplazar una URL de tiempo real diferente en Apple tiene sus propias reglas. Consulta [Conectar la URL de tiempo real](#connect-the-realtime-url).
+
+Un script o agente puede leer el efecto de un comando antes de aplicarlo: ejecútalo sin `--yes`, lee el efecto en la salida y vuelve a ejecutarlo con `--yes` solo después de que alguien apruebe ese efecto.
+
+`setup-status`, `realtime-url get`, `performance-test start`, `messages list`, `messages get` y los comandos `suggest` se ejecutan sin preguntar.
+
+## Errores \{#errors\}
+
+| Código de salida | Causa | Qué hacer |
+|---|---|---|
+| 1 | Respondiste algo distinto de `y` en el prompt. No se envió nada. | Vuelve a ejecutar el comando si era tu intención. |
+| 2 | La CLI rechazó la entrada antes de enviar el cambio: un flag, un archivo de imagen, un conflicto en la entrada, una configuración regional sin texto para cada punto, o la eliminación de algo que el mensaje de retención no tiene. | Corrige lo que indica el error. |
+| 3 | No has iniciado sesión, o Adapty rechazó el acceso a la app. | Inicia sesión con `adapty auth login` y encuentra el ID de la app en `adapty apps list`. |
+| 4 | Adapty rechazó la solicitud. El error indica el motivo, y `--json` proporciona el estado HTTP y `error_code`. Un error de servidor (5xx) en una creación o un cambio también devuelve el código 4, y el resultado es desconocido. | Consulta [Mensajes de Adapty](#messages-from-adapty). Tras un error de servidor en una creación o un cambio, consulta [Si una creación o un cambio no recibe respuesta](#if-a-create-or-a-change-gets-no-answer). |
+| 5 | La CLI no pudo conectar con Adapty. | Asegúrate de tener conexión a internet. Tras una creación o un cambio, consulta [Si una creación o un cambio no recibe respuesta](#if-a-create-or-a-change-gets-no-answer). |
+| 6 | Un comando que requiere aprobación se ejecutó sin `--yes` y sin nadie para responder, o se intentó un reemplazo de URL en tiempo real sin `--replace-other-url`. No se envió nada. | Lee el efecto en el error y vuelve a ejecutar el comando con `--yes`, y con `--replace-other-url` si es un reemplazo. |
+| 130 | Pulsaste Ctrl+C en el prompt. No se envió nada. | — |
+
+### Mensajes de Adapty
+
+Con `--json`, el error devuelve el `error_code`:
+
+| `error_code` | Causa | Qué hacer |
+|---|---|---|
+| `app_store_credentials_missing` | La app no tiene claves de App Store en Adapty. | Completa la [configuración de App Store](app-store-connection-configuration). |
+| `app_store_connect_credentials_missing` | `plan-switches suggest` necesita la clave de API de App Store Connect. | Añade la [clave de API de App Store Connect](app-store-connect-api-key). |
+| `realtime_url_unavailable` | La app no tiene configuradas las notificaciones del servidor de App Store en Adapty. | Completa la [configuración de App Store](app-store-connection-configuration). |
+| `apple_rm_api_access_denied` | Apple no ha concedido a la app acceso a la Retention Messaging API. | [Solicita acceso a Apple](retention-messaging-setup#request-access-from-apple). |
+| `performance_test_required` | Configuraste `production` antes de que pasara el test de rendimiento. | Primero [ejecuta el test de rendimiento](#run-the-performance-test). |
+| `performance_test_already_running` | Hay un test de rendimiento en curso. | Espera y vuelve a leer el estado de configuración. |
+| `active_sandbox_transaction_missing` | No hay ninguna suscripción activa en sandbox. | Compra tu producto de mayor duración en sandbox y vuelve a iniciar el test. |
+| `performance_test_request_rejected` | Apple se negó a iniciar el test. | Realiza una nueva compra en sandbox y vuelve a iniciar el test. |
+| `retention_product_claimed` | Otro mensaje del mismo tipo tiene el producto. | Elige otro producto o desactiva el otro mensaje. |
+| `retention_default_message_missing` | Un mensaje promocional tiene un producto sin mensaje predeterminado. | Crea o activa primero un mensaje predeterminado para el producto. |
+| `retention_dependent_promo_messages` | Un mensaje promocional usa un producto que el cambio quitaría a un mensaje predeterminado. | Desactiva el mensaje promocional o elimina el producto de él primero. |
+| `retention_promo_association_invalid` | Un mensaje promocional no tiene producto, tiene un producto sin `association`, o tiene ambos tipos de incentivo. | Asigna a cada producto una `association` del mismo tipo. |
+| `retention_message_type_immutable` | El cambio asigna a un mensaje promocional un tipo de incentivo diferente. | Crea un nuevo mensaje. |
+| `retention_message_invalid_status_transition` | `activate` en un mensaje que no está `inactive`, o `deactivate` en un mensaje que no está `live`. | Lee el estado del mensaje con `messages get`. |
+| `retention_message_not_found` | La app no tiene ningún mensaje con este ID. | Toma el ID de `messages list`. |
+
+### Si una creación o modificación no recibe respuesta \{#if-a-create-or-a-change-gets-no-answer\}
+
+Si el CLI no recibe respuesta a una creación o actualización, ya sea por un error de red o un error del servidor (código de salida 4 o 5), no puede saber si Adapty guardó el cambio. El CLI no vuelve a enviar la solicitud. Tampoco la reenvíes tú manualmente.
+
+- **Después de crear**: Ejecuta `messages list` para el mismo entorno con `--search "<name>" --page-size 100`. El error muestra el nombre exacto en su propia línea (`message_name` en `--json`). Lee todas las páginas hasta `meta.pagination.pages` y abre cada candidato con `messages get`. Un segundo create puede crear un mensaje duplicado y enviarlo a la revisión de Apple. Vuelve a crear el mensaje solo si ningún candidato es tu mensaje.
+- **Después de actualizar**: Ejecuta `messages get` y lee el estado y el contenido del mensaje.
+
+## Referencia de comandos \{#command-reference\}
+
+Every command takes `--app`, the app UUID from `adapty apps list`.
+
+### `retention-messaging setup-status`
+
+Devuelve el estado de configuración. No acepta ningún otro flag.
+
+### `retention-messaging realtime-url get`
+
+Devuelve la URL en tiempo real de Adapty. No acepta ningún otro flag.
+
+### `retention-messaging realtime-url configure`
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--mode` | Sí | `sandbox` o `production`. |
+| `--replace-other-url` | No | Aprueba la sustitución de una URL diferente en Apple. |
+| `--yes`, `-y` | No | Configura sin preguntar. Obligatorio con `--json` o en una tubería. |
+
+### `retention-messaging performance-test start`
+
+Inicia la prueba de rendimiento de Apple en `sandbox`. No acepta otras opciones.
+
+### `retention-messaging messages list`
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--mode` | Sí | `sandbox` o `production`. |
+| `--search` | No | Parte del nombre, en cualquier formato, o el ID exacto del mensaje. |
+| `--type` | No | `default` o `promo`. |
+| `--state` | No | `in_review`, `live`, `rejected`, o `inactive`. |
+| `--ordering` | No | `name`, `type`, `state`, `products_count`, o `started_at`. Añade `-` antes del campo para invertir el orden. Por defecto: `-started_at`. |
+| `--page` | No | Número de página. Por defecto: 1. |
+| `--page-size` | No | Mensajes por página, hasta 100. Por defecto: 20. |
+
+### `retention-messaging messages get`
+
+Toma el ID del mensaje como argumento. Devuelve el mensaje completo.
+
+### `retention-messaging messages create`
+
+| Flag | Requerido | Descripción |
+|---|---|---|
+| `--mode` | Sí | `sandbox` o `production`. |
+| `--file` | Sí | El archivo JSON del mensaje, o `-` para leerlo desde la entrada estándar. Consulta [Crear un mensaje](#create-a-message). |
+| `--image` | No | La imagen PNG de un mensaje predeterminado. |
+| `--yes`, `-y` | No | Crear sin confirmación. Obligatorio con `--json` o en una tubería. |
+
+### `retention-messaging messages update`
+
+Toma el ID del mensaje como argumento.
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--name`, `--title`, `--body`, `--alt-text` | No | Nuevo valor del campo. |
+| `--image` | No | Nueva imagen PNG. |
+| `--remove-image` | No | Elimina la imagen. |
+| `--file` | No | El archivo de cambios, o `-` para leerlo desde la entrada estándar. Consulta [Cambiar un mensaje](#change-a-message). |
+| `--yes`, `-y` | No | Cambia sin pedir confirmación. Obligatorio con `--json` o en un pipe. |
+
+### `retention-messaging messages set-status`
+
+Toma el ID del mensaje como argumento.
+
+| Indicador | Requerido | Descripción |
+|---|---|---|
+| `--action` | Sí | `activate` o `deactivate`. |
+| `--yes`, `-y` | No | Cambia el estado sin preguntar. Requerido con `--json` o en un pipe. |
+
+### `retention-messaging products suggest`
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--mode` | Sí | `sandbox` o `production`. |
+| `--type` | Sí | `default` o `promo`: el tipo de mensaje. |
+| `--search` | No | Parte del título del producto, cualquier capitalización. |
+| `--message-id` | No | El ID del mensaje que deseas modificar. |
+| `--limit` | No | Productos a devolver, hasta 100. Por defecto: 10. |
+
+### `retention-messaging promo-offers suggest`
+
+Toma como argumento el ID de producto devuelto por `products suggest`.
+
+| Indicador | Obligatorio | Descripción |
+|---|---|---|
+| `--search` | No | Parte del título de la oferta, en cualquier formato. |
+| `--limit` | No | Ofertas a devolver, hasta 100. Por defecto: 10. |
+
+### `retention-messaging plan-switches suggest`
+
+Toma el ID de producto devuelto por `products suggest` como argumento.
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--search` | No | Parte del título del plan, en cualquier formato. |
+| `--limit` | No | Planes a devolver, hasta 100. Predeterminado: 10. |
+
+## Trabaja desde un asistente de IA \{#work-from-an-ai-assistant\}
+
+El [servidor MCP de Adapty](adapty-mcp) ofrece las mismas acciones que las herramientas `retention_messaging_*`, por ejemplo `retention_messaging_messages_list` para `messages list`. Las herramientas usan `message_type` en lugar de `--type`.
+
+- **Aprobación**: El asistente pregunta antes de configurar la URL en tiempo real, crear o modificar un mensaje, o cambiar su estado, tanto en `sandbox` como en `production`. Antes de reemplazar la URL en tiempo real de otro servidor, hace una pregunta aparte. También pregunta una vez por conversación antes de la primera lectura del estado de configuración, y una vez antes de la primera lectura de mensajes, porque [estas lecturas pueden actualizar Adapty](#read-the-setup-status).
+- **Imágenes y viñetas**: Las herramientas MCP no pueden añadir una imagen, un icono de viñeta ni una viñeta nueva. `retention_messaging_messages_create` crea un mensaje sin imagen ni viñetas. Para añadirlos, ejecuta `messages update` desde la CLI o usa el dashboard.
+
+## Qué hacer a continuación \{#whats-next\}
+
+- [Skill de agente para Retention Messaging](retention-messaging-skill) — deja que tu agente configure Retention Messaging y redacte tus mensajes, con tu aprobación antes de cada cambio.
+- [Configurar Retention Messaging](retention-messaging-setup) — los mismos pasos de configuración en el dashboard.
+- [Crear un mensaje de retención](retention-messaging-create) — los campos del mensaje, idiomas y estados en el dashboard.
+- [Seguimiento del rendimiento de los mensajes](retention-messaging-analytics) — qué significa cada métrica.

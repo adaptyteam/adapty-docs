@@ -1,16 +1,12 @@
 ---
 title: "Mostrar lugares cercanos en un mapa en un flow"
-description: "Muestra un mapa de lugares cercanos a cada usuario, como gimnasios, en un elemento personalizado de una pantalla de flow."
-metadataTitle: "Mostrar lugares cercanos en un mapa en un flow | Flows y paywalls | Documentación de Adapty"
+description: "Muestra un mapa con lugares cercanos a cada usuario, como gimnasios asociados, en un elemento personalizado de una pantalla de flow."
+metadataTitle: "Mostrar lugares cercanos en un mapa en un flow | iOS SDK | Documentación de Adapty"
 ---
 
-Sigue esta receta para incluir un mapa interactivo en un flow. Tu app renderiza el mapa como una vista nativa de MapKit en un [elemento personalizado](flow-custom-elements). Tu app solicita acceso a la ubicación en la pantalla del flow.
+Sigue esta guía para incluir un mapa interactivo en un flow. El mapa muestra tus lugares, como gimnasios asociados, en un radio de 2 km alrededor del usuario. Tu app renderiza el mapa como una vista nativa en un [elemento personalizado](flow-custom-elements), con MapKit. Tu app solicita acceso a la ubicación en la pantalla del flow.
 
-:::tip
-Esta receta solo cubre aplicaciones iOS. Las aplicaciones creadas con otros frameworks solo muestran el [contenido de respaldo](flow-custom-elements#set-fallback-content) de los elementos personalizados. El soporte para Android y frameworks multiplataforma está en camino.
-:::
-
-<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="El flow terminado: un mapa muestra gimnasios cercanos al usuario, quien arrastra el mapa a otra área y de vuelta." />
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="El flow terminado: un mapa muestra gimnasios cercanos al usuario, que arrastra el mapa a otra zona y vuelve." />
 
 ## Antes de empezar \{#before-you-start\}
 
@@ -18,32 +14,30 @@ Esta receta solo cubre aplicaciones iOS. Las aplicaciones creadas con otros fram
 - Configura tu app para [obtener](get-pb-paywalls) y [mostrar](ios-present-paywalls) flows.
 - Para solicitar a los usuarios acceso a la ubicación, añade la clave `NSLocationWhenInUseUsageDescription` al archivo `Info.plist` de tu app. Establece su valor con el texto del mensaje, por ejemplo, "Encuentra centros de fitness cerca de ti."
 
-## 1. Añade el elemento personalizado a la pantalla \{#1-add-the-custom-element-to-the-screen\}
+## 1. Añade el elemento personalizado a la pantalla
 
-En el Flow & Paywall Builder, [añade un elemento personalizado](flow-custom-elements#add-and-configure) a una pantalla del flow y configúralo para el mapa:
+<CustomElementMapBuilderSetup />
 
-- **Type**: `map`.
-- **ID**: `fitness_centers`.
-- **Height**: Mantén la altura **Fixed** por defecto. El mapa ocupa todo el elemento personalizado.
+Dentro del elemento personalizado, añade una [**Imagen**](custom-media#image) con una foto del mapa. Los usuarios la verán como [respaldo](flow-custom-elements#set-fallback-content) cuando:
 
-No coloques el elemento personalizado dentro de contenedores que respondan al toque, como un carrusel. De lo contrario, al arrastrar el mapa también se moverá el carrusel.
+- Su versión de la app no muestre el mapa.
+- Denegaron el acceso a la ubicación antes de abrir la pantalla.
+- Su dispositivo usa iOS 16.
 
-Dentro del elemento personalizado, añade una [**Image**](custom-media#image) con una imagen de un mapa. Los usuarios la verán como [respaldo](flow-custom-elements#set-fallback-content) cuando:
+<CustomElementMapLocationPrompt />
 
-- La versión de su app no muestre el mapa.
-- Hayan denegado el acceso a la ubicación antes de abrir la pantalla.
-- Su dispositivo use iOS 16.
+## 2. Crea la vista del mapa \{#2-create-the-map-view\}
 
-Si el usuario aún no ha respondido al permiso de ubicación, iOS lo mostrará cuando aparezca el mapa. Para explicarles por qué tu app necesita su ubicación, añade un elemento de texto encima del elemento personalizado, como "Encuentra centros de fitness cerca de ti."
-
-## 2. Crear la vista del mapa \{#2-create-the-map-view\}
-
-Crea un modelo para el acceso a la ubicación y una vista SwiftUI con un mapa. La vista solicita acceso a la ubicación, busca gimnasios en un radio de 2 km del usuario y muestra un marcador por cada uno:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Crea un tipo para tus lugares y un modelo para el acceso a la ubicación:
 
 ```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
 
 // One location manager for the resolver and the map view
 @MainActor
@@ -70,12 +64,18 @@ final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegat
         Task { @MainActor in self.status = status }
     }
 }
+```
+
+Crea una vista con un mapa. La vista solicita acceso a la ubicación y muestra un marcador por cada uno de tus lugares dentro de un radio de 2 km del usuario:
+
+```swift showLineNumbers title="Swift"
 
 @available(iOS 17.0, *)
 struct NearbyFitnessCentersMap: View {
     @ObservedObject var access: LocationAccess
+    let places: [Place]
     @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
-    @State private var places: [MKMapItem] = []
+    @State private var nearbyPlaces: [Place] = []
 
     var body: some View {
         ZStack {
@@ -88,8 +88,9 @@ struct NearbyFitnessCentersMap: View {
             } else {
                 Map(position: $position) {
                     UserAnnotation()
-                    ForEach(places, id: \.self) { place in
-                        Marker(item: place)
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
                     }
                 }
                 .task {
@@ -97,7 +98,13 @@ struct NearbyFitnessCentersMap: View {
                     do {
                         for try await update in CLLocationUpdate.liveUpdates() {
                             guard let location = update.location else { continue }
-                            places = try await fitnessCenters(around: location.coordinate)
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
                             withAnimation {
                                 position = .automatic // zoom to fit the user and the places
                             }
@@ -113,31 +120,22 @@ struct NearbyFitnessCentersMap: View {
         .onAppear { access.isMapOnScreen = true }
         .onDisappear { access.isMapOnScreen = false }
     }
-
-    private func fitnessCenters(around center: CLLocationCoordinate2D) async throws -> [MKMapItem] {
-        let request = MKLocalPointsOfInterestRequest(center: center, radius: 2_000) // meters
-        request.pointOfInterestFilter = MKPointOfInterestFilter(including: [.fitnessCenter])
-        return try await MKLocalSearch(request: request).start().mapItems
-    }
 }
 ```
 
-</TabItem>
-</Tabs>
+La vista de mapa requiere iOS 17 o posterior. En iOS 16, los usuarios ven el paywall de respaldo.
 
-La vista del mapa requiere iOS 17 o posterior. En iOS 16, los usuarios ven el paywall de respaldo. Si el usuario deniega el acceso a la ubicación en la pantalla, la vista reemplaza el mapa con un mensaje sobre cómo permitir el acceso en Ajustes.
+Si el usuario deniega el acceso a la ubicación en la pantalla, la vista reemplaza el mapa con un mensaje sobre cómo permitir el acceso en Ajustes.
 
-## 3. Vincula el mapa al elemento personalizado \{#3-match-the-map-to-the-custom-element\}
+## 3. Asocia el mapa al elemento personalizado \{#match-the-map-to-the-custom-element\}
 
-En tu [resolver global](ios-flow-custom-elements#set-an-app-wide-resolver), añade una propiedad para el modelo `LocationAccess`. Luego añade un caso que devuelva la vista del mapa para el Type `map` y el ID `fitness_centers`. Las líneas resaltadas muestran qué debes añadir. Si tu app aún no tiene un [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) global, copia el código completo:
+En tu [resolver global de la app](ios-flow-custom-elements#set-an-app-wide-resolver), añade propiedades para el modelo `LocationAccess` y tus lugares. Después, devuelve la vista del mapa para el Type `map` y el ID `fitness_centers`. Las líneas resaltadas muestran qué añadir o cambiar. Si tu app aún no tiene un [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) global, copia el código completo:
 
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
-
-```swift showLineNumbers title="Swift" {5,13-20}
+```swift showLineNumbers title="Swift" {5-6,14-21}
 
 struct CustomElementsResolver: AdaptyUICustomElementsResolver {
     let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
 
     func view(
         forType type: String,
@@ -152,7 +150,7 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
             if locationAccess.isDenied, !locationAccess.isMapOnScreen {
                 return nil // access denied before the screen opened: show the fallback
             }
-            return AnyView(NearbyFitnessCentersMap(access: locationAccess))
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
         // the other cases of your resolver
         default:
             return nil
@@ -161,38 +159,31 @@ struct CustomElementsResolver: AdaptyUICustomElementsResolver {
 }
 ```
 
-</TabItem>
-</Tabs>
+<CustomElementMapResolverCalls />
 
-El SDK llama al resolver cuando se abre la pantalla, y de nuevo mientras está abierta, por ejemplo cuando se cargan los productos. El acceso a la ubicación determina lo que devuelve el resolver en cada llamada:
-
-- **Sin respuesta aún**: la vista del mapa, para que la vista pueda solicitar acceso.
-- **Permitido**: la vista del mapa, que muestra gimnasios cercanos al usuario.
-- **Denegado antes de abrir la pantalla**: `nil`, para que los usuarios vean el respaldo en lugar del mensaje sobre Configuración.
-- **Denegado en la pantalla**: la vista del mapa, porque la vista establece `isMapOnScreen` mientras está en pantalla. Si el resolver devolviera `nil` aquí, el SDK reemplazaría el mensaje sobre Configuración con el respaldo en la siguiente llamada.
-
-Si tu app aún no tiene un resolver global, llama a `AdaptyUI.setCustomElementsResolver(_:)` una vez, por ejemplo al iniciar la app:
-
-<Tabs groupId="current-os" queryString>
-<TabItem value="ios" label="iOS" default>
+Crea el resolver con tus elementos y configúralo como resolver global de la app. Llama a `AdaptyUI.setCustomElementsResolver` una vez, por ejemplo al iniciar la app:
 
 ```swift showLineNumbers title="Swift"
 
+// your app's places, such as partner fitness centers
+@MainActor let places = [
+    Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+    Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
+
 // keep this instance: a resolver for one flow can reuse it
-@MainActor let customElementsResolver = CustomElementsResolver()
+@MainActor let customElementsResolver = CustomElementsResolver(places: places)
 
 AdaptyUI.setCustomElementsResolver(customElementsResolver)
 ```
 
-</TabItem>
-</Tabs>
-
 ## 4. Prueba en un dispositivo \{#4-test-on-a-device\}
 
-El Flow & Paywall Builder no puede ejecutar el código de tu app, por lo que el lienzo solo muestra el respaldo. Para previsualizar el mapa:
+El Flow & Paywall Builder no puede ejecutar el código de tu app, por lo que el canvas solo muestra el respaldo. Para previsualizar el mapa:
 
 1. [Publica el flow](builder-save-publish). Para ver la última versión publicada en lugar de una en caché, registra el dispositivo como [dispositivo de prueba](test-devices).
-2. Ejecuta una compilación de tu app que incluya el resolver, en iOS 17 o posterior. Abre la pantalla y permite el acceso a la ubicación. Comprueba que el mapa muestra tu ubicación y marcadores de los centros de fitness cercanos.
+2. Para ver un marcador en el mapa, añade un lugar a menos de 2 km de tu ubicación en tu lista de lugares.
+3. Asegúrate de que el dispositivo tenga iOS 17 o posterior. Ejecuta una compilación de tu app que incluya el resolver. Abre la pantalla y permite el acceso a la ubicación. Comprueba que el mapa muestra tu ubicación y un marcador para el lugar que añadiste.
 
 Para probar el respaldo, deniega el acceso a la ubicación: en la app **Settings**, ve a **Privacy & Security** > **Location Services** > *tu app* y selecciona **Never**. Luego vuelve a abrir la pantalla.
 
