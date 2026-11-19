@@ -1,0 +1,30 @@
+---
+no_index: true
+---
+
+When a player taps the unlimited energy button, your app code calls your backend to spend 30 diamonds. Your app code can't send the spend to Adapty, because the request needs your secret API key. Your backend calls [Create virtual currency transaction](api-adapty/operations/createVirtualCurrencyTransaction) with a negative `amount`, as in the [Virtual currency quickstart](virtual-currency-quickstart) tutorial. Send the spend without a balance request first: Adapty verifies the balance as part of the spend.
+
+```bash title="Spend diamonds"
+curl -X POST https://api.adapty.io/api/v2/server-side-api/vc/transactions/ \
+  -H "Authorization: Api-Key {your secret key}" \
+  -H "adapty-customer-user-id: player-42" \
+  -H "Idempotency-Key: 5221577a-8b4c-419a-a0f5-028e4598b265" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "items": [{"currency_code": "DIAMONDS", "amount": -30}],
+        "operation": "spend",
+        "feature": "unlimited_energy"
+      }'
+```
+
+The request identifies the spend, the player, and the energy:
+
+- **`Idempotency-Key`**: A UUID v4 that your app code creates for each spend. Within an hour, Adapty spends the diamonds once per key. After a failed spend, the key stays valid, so your app code reuses it for the retry after a top-up.
+- **`adapty-customer-user-id`**: The customer user ID of the player. In your backend, read it from the sign-in session.
+- **`feature`**: `unlimited_energy`, a [label](virtual-currencies#feature) for the energy. With this label, you can see what each spend was for in the [event history](virtual-currency-balance#review-balance-changes-in-the-event-history) of the player.
+
+If the spend succeeds, your backend gives the player the energy: Adapty keeps the diamond balance, not the energy. Give the energy once per `transaction_id` of the response, because a retry with the same `Idempotency-Key` returns the original transaction. The response includes the new balance in its `balances` array: return this balance to your app code.
+
+If the balance can't cover 30 diamonds, Adapty spends nothing, and the request fails with HTTP status 400. To detect this error, compare `error_code` with `insufficient_balance`. Then calculate how many diamonds the player needs: read the balance with [List virtual currency balances](api-adapty/operations/listVirtualCurrencyBalances), and subtract the `available` value of `DIAMONDS` from 30. Return the result and the balance to your app code.
+
+If the result is 0 or less, return 0, so that players see the dash in the flow. Such a result means that `available` still counts expired diamonds from a subscription: Adapty can't spend these diamonds.
