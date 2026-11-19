@@ -306,7 +306,7 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
   restating them.
 - **2026-11-18, paywall `kind` in `developer-cli-paywalls`:** `paywalls list` rows and `paywalls get` carry a read-only `kind`, `custom` or `legacy_builder`, and `paywalls list --kind` filters by it; the server checks the value. `legacy_builder` follows the builder setting of the paywall (either builder flag), not a saved layout, and names no builder version. `paywalls update --file` with the `paywalls get --json` body ignores `kind`. Source: backend code and the adapty-cli feature branch before merge, 2026-11-18; not checked against a released CLI. Open: the CLI version that ships `--kind` is not known yet, so the page names no version for it. An update writes the older builder flag as false, so a paywall with only that flag reads `custom` after an update (backend code, 2026-11-18); the page leaves this out as a defect, not a behavior. Ripple: the same fields are named in `migrate-placements` and `growth-advisor` in `adaptyteam/adapty-skills`.
 - **2026-11-19, file uploads over MCP in claude.ai:** the MCP server can hand the assistant a
-  short-lived (10-minute) upload link on an `adapty.io` subdomain, so an image attached in claude.ai (a
+  short-lived (3-minute) upload link on an `adapty.io` subdomain, so an image attached in claude.ai (a
   flow image, an App Store review screenshot) goes from Claude's sandbox to Adapty with `curl`. The
   sandbox reaches only allowed domains, so `adapty-mcp` now has a claude.ai step to add `*.adapty.io`
   once (**Settings → Capabilities**, with **Code execution and file creation** and **Allow network
