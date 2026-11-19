@@ -79,10 +79,10 @@ After writing:
 6. For new articles: add entry to sidebar in `src/data/sidebars/`
 7. **Scan every bullet list with bold labels** — confirm every item is `- **Label**: Capitalized explanation.` Fix any `—`, `-`, `.**`, or lowercase-after-colon patterns. ❌ `- **Label**: connects to...` → ✅ `- **Label**: Connects to...`
 8. **For UI workflow articles**: Output a screenshot capture table after the writing summary — one row per `:::note` placeholder, with filename and what the screenshot should show. This lets the user capture everything in one pass.
+9. **Run the multi-role review** when the draft is a new article, or adds or rewrites a section or more — in a new article or an existing one. Start it without asking (`references/multi-review.md`), wait for the merged review, and apply every fix in it yourself.
+10. Run steps 1–2 again on the text that step 9 changed.
 
-Present final content with a brief writing summary. See `references/output-templates.md` for format.
-
-When the draft is a new article, or adds or rewrites a section or more, run the multi-role review on it by default, without asking (`references/multi-review.md`), and apply its fixes yourself. The draft isn't done until that round of review and fixes is over: don't present it, or call it finished, before then. Present only the final text. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
+Only after step 10, present the final content with a brief writing summary. See `references/output-templates.md` for format. The draft isn't done until the review and its fixes are over: never present it, or call it finished, before then. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
 
 ### Phase 6: Report back to the zone brief
 
@@ -582,7 +582,7 @@ Verify any hide/exclude/transform mechanism against the build output before reco
 Files in `src/locales/` are automatically translated and updated by a GitHub Actions workflow on push to `main`. Do not edit them as part of normal doc work — edit only the source English file in `src/content/docs/`. The exception is targeted manual corrections explicitly requested (e.g., a native speaker flagging a translation error).
 
 ### Writing a Full Article
-- Complete all 5 phases — no shortcuts
+- Complete all 6 phases — no shortcuts. Phase 5 includes the multi-role review.
 - Match tone and depth of neighboring articles
 - Do not invent Adapty features — ask if unsure
 - Extract facts from source material, rewrite in STE
@@ -595,6 +595,7 @@ Files in `src/locales/` are automatically translated and updated by a GitHub Act
 - Match heading level, tone, and conventions already in the file
 - Use Edit tool to insert at correct location
 - Verify no duplication with existing content
+- Run Phase 5 in full, including the multi-role review (step 9)
 
 ### Applying Content Across Multiple Articles
 
@@ -606,6 +607,7 @@ Sweeping the same section, entry, or claim across a set of articles (integration
 
 ### Rewriting an Existing Section
 - Read and understand the section's purpose first
+- A rewrite of a section or more gets the multi-role review: run Phase 5 in full, including step 9
 - **Check whether the text is already published** — `git show main:<path>`. Published wording has survived review; rewriting it reopens settled arguments and enlarges the diff for no gain. Quote it verbatim and change only what's inaccurate. Often the right change is one inserted sentence, not a replacement.
 - **Correctness justifies a change; style doesn't.** On published text the Key Review Areas apply to what's *wrong*, not what's *unpolished*. Do not restructure live prose to satisfy a formatting rule — bold-label lists, parallel-paragraphs-become-a-list, sentence length, register. Those govern new text. This is the rule that gets overridden in practice: a formatting rule always has a visible fix, so it wins unless you stop it. If a published passage genuinely needs restructuring, say so separately and let the user decide — never fold it into an accuracy fix.
 - **Label what you show.** When presenting a passage, say plainly whether it's the live text or your rewrite, and state how much you changed. Never display a rewrite in a way that reads as the current text.
