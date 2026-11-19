@@ -295,13 +295,13 @@ repeated here.
   for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
   webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
   for this change, so `adapty-api.yaml` stays as is.
-- **Open question (2026-11-19): `google-cloud-storage` says that one invalid key fails both uploads.**
-  Its warning in "Set up Google Cloud storage integration" and its "Troubleshooting" say that if either
-  the events or the paywall visits key is invalid, both uploads fail. In backend code (2026-11-19) each
-  feed's upload reads only its own credentials and catches its own error, and a failed virtual currency
-  upload does not stop the other feeds (product spec, 2026-11-19). No shared key check before the
-  uploads was found in the upload path; a check at save time was not looked for. Confirm with the
-  backend team before relying on the warning, and before extending it to the third feed.
+- **S3 and GCS keys are checked at save time; the uploads are separate (2026-11-19, backend code).**
+  When the integration settings are saved, the backend opens the bucket of each credential set whose
+  export switch is on (events, paywall visits, virtual currency). One invalid set refuses the whole
+  save, and the dashboard's one **Save** sends all tabs, so no tab's changes are saved. After the save,
+  each feed's daily upload reads only its own credentials and catches its own error: a failed upload of
+  one feed does not stop the others. The `google-cloud-storage` warning ("all uploads will fail") and
+  its "Troubleshooting" describe the save-time check; both pages state it in the virtual currency section.
 - **Braze revenue goes out only as legacy purchases (2026-10-23, backend code + Braze docs).** Adapty
   sends revenue as the `purchases` array of `/users/track`, with no format setting in the integration.
   Braze put legacy purchase events in maintenance mode and does not enable them for new customers; such
