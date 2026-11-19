@@ -77,6 +77,37 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   can exceed the table's sum. Flows shown without a placement are excluded. The Platform and Subscription
   state filters exist only in the funnel; other flow views never see them.
 
+- **Purchase and restoration outcomes** (builder and transformer code, 2026-11-19, before release).
+  Owner article: `respond-to-purchase-outcomes`. Facts its neighbours rest on:
+  - Labels: **Purchase** has **When succeeded**, **When failed**, **When cancelled by user**,
+    **When pending**; **Restore purchases** has **When restore completed** and **When restore failed**.
+    The **+** of a section adds a **Do nothing** action and opens its editor. A section without actions
+    runs nothing, so the flow stays on the screen.
+  - Only an **In-App Store** purchase has outcomes. Switching a **Purchase** to **Web Payment** drops
+    them (undo brings them back), and the flow never receives a Web Payment result: the SDK reports only
+    whether the checkout opened.
+  - **Purchase** and **Restore purchases** are disabled inside an outcome, at any depth, a conditional
+    action inside an outcome included.
+  - The editor warns, verbatim: "Navigation or Close Flow after a purchase or restore runs right away,
+    before the result. Move it into an outcome of the purchase or restore." It covers **Navigate to
+    Screen**, **Navigate Next**, **Navigate back** and **Close Flow**, also inside a conditional branch.
+  - Outcome actions run only on the screen, and at the stack depth, where the purchase started: a user
+    who left that screen before the result never sees them. A result that arrives during a screen
+    transition runs when the new screen appears.
+  - While a purchase or restoration with outcomes waits for its result, a second tap on the same kind of
+    action is ignored, for a bounded time. Actions without outcomes compile as before, with no such guard.
+  - Observer mode: the SDK reports a fixed result whatever happened, **When pending** on iOS and
+    **When succeeded** on Android (the builder shows this note under the sections).
+  - Android drops a purchase of a product that Google Play hasn't returned yet, with no result at all
+    (AdaptySDK-Android 4.3.1, `adapty-ui/src/main/java/com/adapty/ui/internal/store/FlowReducer.kt`,
+    the `PurchaseProduct` branch); the button works again once the products load. iOS answers the same
+    tap with a failure, so **When failed** runs.
+  - Test on device: the iOS SDK's developer tools answer every purchase, restoration and web purchase
+    with success after 1.5 s (AdaptySDK-iOS 4.2.2,
+    `Sources.DeveloperTools/AdaptyUI/Dev_AdaptyUILogic.swift`). **Unconfirmed** that the Adapty mobile
+    app renders flows through this path, and not checked for the Android app; the preview sentence in
+    `paywall-device-compatibility-preview` rests on this.
+
 - **Figma import's ground truth is split across three places, and none of the closed-source ones is
   citable here.** The `/figma-import` landing page — its state machine, failure copy, and the mint call —
   is dashboard code, separate from the builder. The plugin is its own artifact, published to the Figma
@@ -140,8 +171,8 @@ or developer can see and click.
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 15 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 14 | tutorial |
-| flow-funnel | — | marketer, dev | 13 | tutorial |
+| flow-common-issues | reference | marketer, dev | 16 | tutorial |
+| flow-funnel | — | marketer, dev | 14 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
@@ -155,10 +186,10 @@ or developer can see and click.
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 17 | tutorial |
+| paywall-product-block | — | marketer, dev | 18 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
-| respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |
+| respond-to-purchase-outcomes | — | dev, marketer | 6 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
 | show-plans-bottom-sheet | — | marketer, dev | 11 | tutorial |
 | strikethrough-price | — | marketer, dev | 6 | tutorial |
@@ -277,6 +308,14 @@ or developer can see and click.
   `placement-metrics.mdx`, `results-and-metrics.mdx`, and `webhook-event-types-and-fields.mdx` in one
   pass — mostly outside flow-logic, but a new revenue/proceeds/webhook field belongs in `flow-metrics`
   too whenever it lands in that cluster.
+- **Purchase and restoration outcomes are restated in many places (2026-11-19).** The owner is
+  `respond-to-purchase-outcomes`; short versions live in `onboarding-actions` (Purchase, Restore
+  purchases, Action order), `paywall-product-block` (Continue the flow after the paywall),
+  `onboarding-navigation-branching`, two `flow-common-issues` entries, the preview sentence in
+  `paywall-device-compatibility-preview`, `flows-with-your-own-payments` (observer mode), and the
+  purchase and restore callbacks of the seven `*-handling-events` pages in `sdk-flows-display`. A
+  relabelled outcome, a new result, or a change to which actions may follow a purchase moves all of
+  them.
 
 ## Boundaries
 
@@ -330,6 +369,8 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
 | "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
+| "thank-you screen after purchase", "continue the onboarding after the paywall", "the flow closes after a purchase", "the next screen opens before the purchase finishes", "show an alert when the purchase fails", "welcome-back screen after restore" | `respond-to-purchase-outcomes` for setup; `flow-common-issues#the-flow-doesnt-run-the-actions-set-for-a-purchase-result` when outcomes don't run. The usual cause of "the flow closes after a purchase" is app code that closes the flow in its purchase callback, not the flow. "Opens before the purchase finishes" is a navigation placed after **Purchase** in the same trigger. |
+| "buy button does nothing on Android", "first tap on Purchase is ignored" | `flow-common-issues#a-purchase-button-does-nothing-on-android` when the product exists: Google Play hasn't returned it yet. An unassigned product is still `paywall-product-block`. |
 
 ## Gaps and misses
 
@@ -385,6 +426,12 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   (reads as a defect; re-check before writing it up). Not verified from code: the "about once an hour"
   refresh of Subscription state, which is the backend author's statement; and the minimum SDK version that
   sends flow screen views, which the article avoids by saying only that the SDK reports them.
+
+- **Open question (2026-11-19): what Test on device answers for a purchase.** The preview sentence in
+  `paywall-device-compatibility-preview` and its two mirrors say every purchase and restoration
+  succeeds there. That rests on the iOS SDK developer tools (see Sources of truth), not on the Adapty
+  mobile app's code, which isn't available here; the Android app was not checked. Confirm on both apps
+  before the brief treats it as settled.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
