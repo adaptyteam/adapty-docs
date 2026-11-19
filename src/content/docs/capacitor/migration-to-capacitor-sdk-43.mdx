@@ -12,12 +12,16 @@ If you're still on 3.x, start with [Migrate to v4.1.1](migration-to-capacitor-sd
 
 | v4.2 | v4.3 |
 |---|---|
+| `params: undefined` or `fetchPolicy: undefined` fails | The defaults apply |
 | Google Play messages aren't requested | Google Play messages are shown by default on Android |
 | `getOnboardingForDefaultAudience` accepts `params.loadTimeoutMs` and ignores it | `params.loadTimeoutMs` is removed from its type |
 | `error.adaptyCode` is typed as a known code | Its type also admits codes that your SDK version doesn't know |
-| `makePromotedPurchase` accepts a product you build yourself | It needs the product from the `'onPromotedPurchaseReceived'` event |
-| An option passed as `undefined` overrides the default | It keeps the default |
+| On iOS, `makePromotedPurchase` accepts a product you build yourself | It needs the product from the `'onPromotedPurchaseReceived'` event |
 | `accessLevel.android.offerId` | deprecated — read the top-level `offerId` |
+
+## Options passed as `undefined` fall back to the defaults
+
+In 4.2, passing `params: undefined` to `getFlow`, `getOnboarding`, or their default-audience variants threw a `TypeError`, and `fetchPolicy: undefined` failed on the native side. Starting from 4.3, an option passed as `undefined` keeps its default: `fetchPolicy` falls back to `'reload_revalidating_cache_data'`, and `loadTimeoutMs` to 5000 ms. If you worked around the error by leaving such keys out, you can now pass optional values from your configuration as is.
 
 ## Google Play messages are shown by default
 
@@ -61,32 +65,9 @@ In manual mode, the stores don't show messages on their own. If your app never c
 
 ## Error code types admit unknown codes
 
-Native SDKs can return error codes that are newer than your Capacitor SDK. Earlier versions already passed these codes through at runtime. Starting from 4.3, the `ErrorCode` type admits them too: it's now `KnownErrorCode | (number & {})`. These patterns no longer compile:
+Native SDKs can return error codes that are newer than your Capacitor SDK. Starting from 4.3, the `ErrorCode` type admits these codes too, so a lookup such as `ErrorCode[error.adaptyCode]` or an exhaustive `switch` over `error.adaptyCode` may stop compiling. Use `error.codeName`, `getErrorCodeName()`, or `isKnownErrorCode()` instead. A comparison such as `error.adaptyCode === ErrorCodeName.paymentCancelled`, or a `switch` with a `default` branch, needs no changes.
 
-- An exhaustive `switch` over `error.adaptyCode` that ends in a `never` check.
-- A lookup such as `ErrorCode[error.adaptyCode]` with a variable index, under `strict`. Use `getErrorCodeName(code)` instead: it takes any number.
-- A `Record<ErrorCode, string>` map: 4.3 adds eleven known codes, and each one becomes a required key. Use `Partial<Record<KnownErrorCode, string>>` with a `getErrorCodeName` fallback, so future codes don't break it either.
-- Assigning the result of `getErrorPrompt` to an `ErrorCodeName`: it now returns `` ErrorCodeName | `Unknown code: ${number}` ``.
-
-To narrow a code to the known ones, use `isKnownErrorCode`. To get a code's name, read `error.codeName` or call `getErrorCodeName`; both return `undefined` for an unknown code:
-
-```typescript showLineNumbers
-import { AdaptyError, getErrorCodeName, isKnownErrorCode } from '@adapty/capacitor';
-
-try {
-  // an Adapty call
-} catch (error) {
-  if (error instanceof AdaptyError) {
-    if (isKnownErrorCode(error.adaptyCode)) {
-      console.log(getErrorCodeName(error.adaptyCode));
-    } else {
-      // a code added in a newer native SDK
-    }
-  }
-}
-```
-
-4.3 also names codes that earlier versions reported as unknown: 2, 1020, 1030, 1050, 3020, and 4104–4107. If your code matches the `'Unknown code: …'` text, update it: `getErrorPrompt(1050)` now returns `'paymentPendingError'` instead of `'Unknown code: 1050'`. For the other error helpers, see [Handle errors](capacitor-handle-errors).
+4.3 also names codes that earlier versions reported as unknown, so `getErrorPrompt(1050)` now returns `'paymentPendingError'` instead of `'Unknown code: 1050'`. For the error helpers, see [Handle errors](capacitor-handle-errors).
 
 ## Pass the promoted product as is
 
@@ -99,10 +80,6 @@ await adapty.addListener('onPromotedPurchaseReceived', async ({ product }) => {
 ```
 
 See [Promoted in-app purchases](capacitor-making-purchases#in-app-purchases-from-the-app-store).
-
-## Options passed as `undefined` keep their defaults
-
-Starting from 4.3, an option that you pass with the value `undefined` keeps its default value. For example, `loadTimeoutMs: config.timeout` with an unset `config.timeout` now uses the 5000 ms default. Check option values that come from your own configuration.
 
 ## `android.offerId` is deprecated
 
