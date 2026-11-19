@@ -89,14 +89,15 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 });
 ```
 
-| 参数                           | 是否必填       | 描述                                                         |
+| 参数                         | 是否必填       | 描述                                                         |
 | :--------------------------- | :------------- | :----------------------------------------------------------- |
 | **flow**                     | 必填           | 通过 `Adapty.GetFlow` 获取的 `AdaptyFlow` 对象。 |
-| **Locale**                   | 选填           | 用于渲染流程或付费墙的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。流程在创建视图时完成本地化，因此这是选择本地化语言的唯一时机。SDK 不会读取设备语言：若省略此参数，流程将以 `en` 渲染；如果流程没有 `en` 本地化，则使用其默认语言。代码必须与流程的本地化代码完全匹配。详见[使用本地化和语言代码](unity-localizations-and-locale-codes)。 |
-| **LoadTimeout**              | 选填           | 该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。请注意，在极少数情况下，由于该方法底层可能包含多个请求，实际超时时间可能略晚于 `LoadTimeout` 中指定的值。 |
+| **Locale**                   | 选填           | 用于渲染流程或付费墙的[编辑工具本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。流程在创建视图时完成本地化，因此这是选择本地化的唯一时机。SDK 不会读取设备语言：若省略此参数，流程将以 `en` 渲染；若流程没有 `en` 本地化，则使用其默认语言。传入的语言代码必须与流程的本地化代码完全匹配。详见[使用本地化与语言代码](unity-localizations-and-locale-codes)。 |
+| **LoadTimeout**              | 选填           | 限制此方法的超时时间。超时后将返回缓存数据或本地备用内容。注意，在极少数情况下，该方法的实际超时时间可能略晚于 `LoadTimeout` 中指定的值，因为底层操作可能包含多个请求。 |
 | **PreloadProducts**          | 选填           | 设为 `true` 可预加载产品以提升性能。启用后，产品将提前加载，从而缩短显示流程或付费墙所需的时间。 |
-| **CustomTags**               | 选填           | 您的应用为流程[自定义标签](flow-custom-tags)提供的值，以字典形式传入，键为每个标签的完整名称。将字典传递给 `SetCustomTags` 方法。详情请参阅[向流程传递数据](unity-flow-custom-tags)。 |
-| **ProductPurchaseParameters** | 选填          | 仅限 Android（iOS 上忽略）。`AdaptyProductIdentifier` 到 `AdaptyPurchaseParameters` 的字典。用于为流程或付费墙中的各个产品配置特定购买参数，例如个性化优惠或订阅更新参数。 |
+| **CustomTags**               | 选填           | 应用为流程[自定义标签](flow-custom-tags)提供的值，以每个标签完整名称为键的字典形式传入。将该字典传递给 `SetCustomTags` 方法。详见[向流程传递数据](unity-flow-custom-tags)。 |
+| **CustomTimers**             | 选填           | 流程中**开发者自定义**计时器的截止日期，以计时器 ID 到 `DateTime` 值的字典形式传入。将该字典传递给 `SetCustomTimers` 方法。详见[设置开发者自定义计时器](#set-up-developer-defined-timers)。 |
+| **ProductPurchaseParameters** | 选填          | 仅限 Android（iOS 上忽略）。`AdaptyProductIdentifier` 到 `AdaptyPurchaseParameters` 的字典。用于为流程或付费墙中的各个产品配置购买专属参数，例如个性化优惠或订阅更新参数。 |
 | **EnableSafeAreaPaddings**   | 选填           | 仅限 Android（iOS 上忽略）。设为 `true` 时，流程视图将应用安全区域内边距。默认值：`true`。默认设置适用于大多数场景。 |
 
 :::note
@@ -181,12 +182,14 @@ AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
 
 ## 设置开发者自定义计时器 \{#set-up-developer-defined-timers\}
 
-要在 Unity 应用中使用自定义计时器，请将计时器 ID 及其结束日期的字典传入 `SetCustomTimers` 方法。示例如下：
+本节适用于在 Flow & Paywall Builder 中行为设置为 **Developer defined** 的计时器。在编辑工具中，每个此类计时器都有一个 **Timer ID**（参见[由应用设置结束时间](flow-timer#let-your-app-set-the-end-date)），你的应用需要为其设置结束时间。代码中使用的 Timer ID 必须与编辑工具中完全一致，包括大小写和空格。如果 ID 不匹配，计时器将无法从应用获取结束时间。
+
+要设置结束日期，请将 Timer ID 与其结束日期组成的字典传入 `SetCustomTimers` 方法。`DateTimeKind.Utc` 类型的 `DateTime` 表示 UTC 时间；不指定类型的 `DateTime` 则按用户本地时间处理。示例如下：
 
 ```csharp showLineNumbers
 var customTimers = new Dictionary<string, DateTime> {
     { "CUSTOM_TIMER_6H", DateTime.Now.AddHours(6) },
-    { "CUSTOM_TIMER_NY", new DateTime(2026, 1, 1) }
+    { "CUSTOM_TIMER_NY", new DateTime(DateTime.Now.Year + 1, 1, 1) } // next New Year's Day, local time
 };
 
 var parameters = new AdaptyUICreateFlowViewParameters()
@@ -194,14 +197,21 @@ var parameters = new AdaptyUICreateFlowViewParameters()
     .SetLoadTimeout(TimeSpan.FromSeconds(3));
 
 AdaptyUI.CreateFlowView(flow, parameters, (view, error) => {
-    // handle the result
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    // use view
 });
 ```
 
-在此示例中，`CUSTOM_TIMER_NY` 和 `CUSTOM_TIMER_6H` 是您在 Adapty 看板中设置的开发者自定义计时器的 **Timer ID**。计时器解析器确保您的应用动态地为每个计时器更新正确的值。例如：
+在此示例中，`CUSTOM_TIMER_NY` 和 `CUSTOM_TIMER_6H` 是编辑工具中两个**开发者定义**计时器的 Timer ID：
 
-- `CUSTOM_TIMER_NY`：距计时器结束时间（如元旦）的剩余时间。
-- `CUSTOM_TIMER_6H`：用户打开流程或付费墙时开始计算的 6 小时倒计时的剩余时间。
+- `CUSTOM_TIMER_NY`：距离下一个元旦的剩余时间。
+- `CUSTOM_TIMER_6H`：从应用创建视图时开始计算的 6 小时倒计时剩余时间。
+
+SDK 在创建视图时读取一次自定义计时器，因此 `CUSTOM_TIMER_6H` 等计算出的日期从该时刻开始计算，即使用户再次打开此页面也是如此。如果日期已过，计时器立即显示零并触发其 **On timer end** 事件。如果字典中没有对应 Timer ID 的键，计时器将从页面打开时开始倒计时一小时。
 
 </SDKv4>
 
