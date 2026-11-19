@@ -549,10 +549,10 @@ needed in place.
   no-value rule, the number and date text, and the formula errors; `onboarding-variables` lists the two types and
   links there; the formula publish errors have rows in `flow-common-issues`. The formulas page was written to go live
   before the builder release, because the builder's formula dialog links to `https://adapty.io/docs/flow-formulas`.
-  **Ripple once the builder ships:** `builder-number-picker` ("You can't calculate values in a flow", BMI through a
-  custom tag) and `flow-custom-tags` (the BMI use case and the BMI example in the `<platform>-flow-custom-tags`
-  guides) still send readers to app code for a calculation that a formula now does. Not changed by the formulas
-  branch; update them after the release.
+  **Ripple:** `builder-number-picker` now points the BMI calculation to `flow-formulas` (changed with the formulas
+  page). `flow-custom-tags` (the BMI use case and the BMI example in the `<platform>-flow-custom-tags` guides) still
+  calculates a BMI in app code and passes it through a custom tag; that stays valid, but a formula now does it in
+  the flow.
 - **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
   picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
 - **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),
