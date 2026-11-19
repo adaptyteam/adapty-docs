@@ -543,9 +543,16 @@ needed in place.
   **Is not empty** — no `>=` or `<=`. The right side takes a typed number or another number variable. A picker's
   variable is never empty, so **Is empty** never matches it. No article lists the operators; the conditional-action
   owners (`onboarding-actions`, `onboarding-element-visibility`) are where they'd go.
-- **No arithmetic.** Conditions, texts, and **Set variable** can't calculate (no arithmetic in the expression set, read
-  2026-11-17); a BMI is calculated in app code and passed back through a custom tag (`flow-custom-tags`). Unmerged
-  formula work exists in the builder; don't document it until it ships.
+- **Arithmetic lives in formulas (corrected 2026-11-19, builder code).** Conditions, texts, and **Set variable** still
+  can't calculate, but the builder gained two variable types: **Date** (a calendar day, Initial value `DD.MM.YYYY`) and
+  **Formula** (an expression that gives a Number or a Date). `flow-formulas` owns the language, the functions, the
+  no-value rule, the number and date text, and the formula errors; `onboarding-variables` lists the two types and
+  links there; the formula publish errors have rows in `flow-common-issues`. The formulas page was written to go live
+  before the builder release, because the builder's formula dialog links to `https://adapty.io/docs/flow-formulas`.
+  **Ripple once the builder ships:** `builder-number-picker` ("You can't calculate values in a flow", BMI through a
+  custom tag) and `flow-custom-tags` (the BMI use case and the BMI example in the `<platform>-flow-custom-tags`
+  guides) still send readers to app code for a calculation that a formula now does. Not changed by the formulas
+  branch; update them after the release.
 - **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
   picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
 - **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),
