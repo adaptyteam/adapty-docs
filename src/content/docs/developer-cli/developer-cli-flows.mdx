@@ -96,7 +96,7 @@ adapty flows publish --app <app-id> <flow-id>
 
 Because publishing changes what your users see, the command prints the flow name and asks for confirmation. Any answer other than `y` cancels the command with exit code 1. Under `--json` or in a pipe, the command refuses with exit code 2 instead of waiting for an answer, so pass `--yes` in scripts and agent sessions.
 
-When the config uses a [custom font](#custom-fonts), the command first reads the app's current fonts. If the copy of the fonts in the config is out of date, the command saves the config with the current fonts, then publishes. The save keeps the remote configs, and fails if someone changed the config after the command read it. When the command saved the config and the publication started, its human-readable output has a `Fonts refreshed` line. The command stops before any change in three cases: it can't read the fonts, the config answer has no `updated_at`, or the config names a font family by a name that several families of the app have (exit code 2). For the shared name, rename one of the families, or name the family by its ID in the config. If the save fails, nothing is published. If the publication fails after the save, the saved config stays.
+When the config uses a [custom font](#custom-fonts), the command first reads the app's current fonts. If the copy of the fonts in the config is out of date, the command saves the config with the current fonts, then publishes. The save keeps the remote configs, and fails if someone changed the config after the command read it. When the command saved the config and the publication started, its human-readable output has a `Fonts refreshed` line. The command stops before any change when it can't read the fonts, or when the config names a font family by a name that several families of the app have (exit code 2). For the shared name, rename one of the families, or name the family by its ID in the config. When the copy needs a save, the command also needs an integer `updated_at` and a `remote_configs` list in the config answer. Without them, it stops before any change with `malformed_response`. When the copy is current, the command saves nothing and publishes without them. If the save fails, nothing is published. If the publication fails after the save, the saved config stays.
 
 If you publish through the Developer API instead of the CLI, follow the same steps after a font change:
 
@@ -262,7 +262,10 @@ Adapty doesn't send the font files to users' devices. To show a custom font in y
 
 To use a custom font in a flow config, set the font by font family and weight. On a text element, the font is in `props.font`: `"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`. On a text style in `theme.typography`, `family` and `weight` are keys of the style's `settings`, with no `font` object around them. The family can also be named by its family name. Italic is set on a rich-text span. When you publish the flow, Adapty uses the face with that weight and style. If the family has no such face, Adapty uses the face with the closest weight in the same style, then in any style. When two faces are equally close, the lighter face wins.
 
-A command that changes a font family that flows use lists those flows in `flows_to_publish`. Publish each of them with [`flows publish`](#adapty-flows-publish) to send the change to your users. When the CLI can't read the flows, or when an upload stopped before its last file, `flows_to_publish` is `null`. The command then prints a warning, and with `--json` it adds `flows_to_publish_error` with the reason and the next step: run [`fonts list`](#adapty-fonts-list) to find the changed families, then [`fonts usage`](#adapty-fonts-usage) for each of them.
+A command that changes a font family that flows use lists those flows in `flows_to_publish`. Publish each of them with [`flows publish`](#adapty-flows-publish) to send the change to your users. `flows_to_publish` is `null` in two cases, and the command prints a warning. With `--json`, `flows_to_publish_error` gives the reason and the next step:
+
+- **The upload stopped at a file**, the last or only file included: Adapty may have stored that file, so the changed families aren't known. Run [`fonts list`](#adapty-fonts-list) to find them, then [`fonts usage`](#adapty-fonts-usage) for each of them.
+- **Only the read of the flows failed**: Every file has its result. Run [`fonts usage`](#adapty-fonts-usage) for each family the command changed.
 
 ## adapty fonts list
 
@@ -323,10 +326,14 @@ The command sends one file per request. After the last file, it prints the resul
 | `replaced` | The file replaced the file of the colliding faces, after `--choice replace`. `replaced_faces` lists them |
 | `kept` | The file was skipped, after `--choice keep` |
 | `refused` | Adapty refused the file. `error_code` and `message` say why |
-| `failed` | A network or authentication error stopped the upload at this file |
+| `failed` | A network or authentication error, or an answer the CLI couldn't read, stopped the upload at this file. After a network error or an unreadable answer, Adapty may have stored the file: run [`fonts list`](#adapty-fonts-list) before you send it again |
 | `not_sent` | The file wasn't sent, because the upload stopped at an earlier file |
 
-A file collides with a face in two cases: a face of the family the file joins has the same weight and italic, or any face of the app has the same iOS font name. Two different families can each have a Regular face. Adapty refuses a colliding file, lists every colliding face in `conflicts`, and lists the `choices`. `next_step` gives the command to run again for that file only, with `--choice replace` or `--choice keep`. With `--choice replace`, the file goes on every colliding face in one step. If the collisions changed in the meantime, the file is refused again with the new list.
+A static font file collides with a face in two cases: a face of the family the file joins has the same weight and italic, or any face of the app has the same iOS font name. For the results of a variable font file, see the list after this paragraph. Two different families can each have a Regular face. Adapty refuses a colliding file, lists every colliding face in `conflicts`, and lists the `choices`. `next_step` gives the command to run again for that file only, with `--choice replace` or `--choice keep`. With `--choice replace`, the file goes on every colliding face in one step.
+
+:::warning
+`--choice replace` replaces every face that collides at the moment the command runs. The CLI reads the collisions again by itself, so the replaced faces can be more than the faces an earlier refusal listed. If nothing collides any more, the file is uploaded as a new face. Right before you decide, run the command for that file without `--choice` to see the current list, then run it with `--choice replace` at once, and read `replaced_faces` in the result to see which faces were replaced. Adapty doesn't keep the old files. To replace only specific faces, use [`fonts faces replace`](#adapty-fonts-faces-replace) for each of them.
+:::
 
 A variable font file gives one of these results:
 
@@ -342,8 +349,8 @@ A face that has no iOS or Android font name after the upload is saved, and `warn
 | `0` | Every file was stored or skipped | — |
 | `2` | The CLI couldn't read a file. No file was sent | Correct the path, then run the whole command again |
 | `3` | Adapty refused the CLI session, or the account has no access to the app. The files after that file weren't sent | For a refused session, log in again. For no access, verify the app ID, or log in with an account that has access to the app. Then upload the files that weren't stored |
-| `4` | Adapty refused at least one file. The other files were sent | Read the result of each refused file |
-| `5` | A network error. The files after that file weren't sent | Upload the files that weren't stored again |
+| `4` | Adapty refused at least one file, and the other files were sent. Or the CLI couldn't read an answer, and the upload stopped at that file | Read the result of each refused file. For a `failed` file, run [`fonts list`](#adapty-fonts-list) before you send it again |
+| `5` | A network error. The files after that file weren't sent | Run [`fonts list`](#adapty-fonts-list) to see whether the `failed` file was stored, then upload the files that weren't stored |
 
 ## adapty fonts add
 
@@ -361,7 +368,7 @@ adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--choice` | No | What to do when a file collides with a face the family already has: `replace` or `keep` |
+| `--choice` | No | What to do when a file collides with faces the family already has: `replace` or `keep`. `replace` replaces every face that collides when the command runs |
 
 The results, the collisions, and the exit codes are the same as for [`fonts upload`](#adapty-fonts-upload).
 
