@@ -59,7 +59,8 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     and the element's text only when it differs from the layer name.
   - The reference stores the internal element id, not the **Element ID** field, so renaming an
     **Element ID** does not break it.
-  - A deleted element or state: a red label in the **Variable** field or **State** dropdown.
+  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, and a
+    tooltip that says the condition is always false until you pick another element or state.
     **Corrected 2026-11-20 (builder code, released 2026-11-19):** a condition that uses a deleted
     element, state, or variable now blocks publishing. **Publish to Live** opens **Can't publish
     yet** with the group **Broken references** and the toast "Fix N broken references before
