@@ -59,8 +59,16 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     and the element's text only when it differs from the layer name.
   - The reference stores the internal element id, not the **Element ID** field, so renaming an
     **Element ID** does not break it.
-  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, a
-    tooltip that says the condition is always false, publishing not blocked.
+  - A deleted element or state: a red label in the **Variable** field or **State** dropdown.
+    **Corrected 2026-11-20 (builder code, released 2026-11-19):** a condition that uses a deleted
+    element, state, or variable now blocks publishing. **Publish to Live** opens **Can't publish
+    yet** with the group **Broken references** and the toast "Fix N broken references before
+    publishing."; a reference that only the server rejects fails the publish as **Condition uses a
+    deleted element or state** or **Condition uses a deleted variable**. A delete of an element, a
+    state, or a custom variable that conditions use asks first (`Delete “<name>”?`, Cancel and
+    Delete). Owner rows: `flow-common-issues`, `builder-save-publish#troubleshooting`,
+    `element-states-in-conditions#troubleshooting`, `onboarding-variables`, `copy-flows`. This entry
+    used to say that publishing was not blocked.
   - The picker greys out an element that would close a loop of **Disabled** conditions; a loop
     that arrives in an imported or hand-made config blocks publishing as **Circular state
     conditions**.
