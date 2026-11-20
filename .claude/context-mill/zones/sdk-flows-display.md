@@ -346,7 +346,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | unity-localizations-and-locale-codes | — | dev | 12 | unity |
 | unity-paywalls | entry | dev | 4 | unity |
 | unity-present-flows-in-observer-mode | — | dev | 2 | unity |
-| unity-present-paywalls | — | dev | 4 | unity |
+| unity-present-paywalls | — | dev | 5 | unity |
 | unity-troubleshoot-paywall-builder | — | dev | 3 | unity |
 | unity-use-fallback-paywalls | — | dev | 1 | unity |
 | unity-web-paywalls | — | dev | 2 | unity |
@@ -376,8 +376,11 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   `ios-flow-custom-tags` (open the paywall after the onboarding flow). Each is right for its own
   scenario, because nothing covers the flow there. If one of them gains a step that presents something
   full screen over the flow, such as an ad, a login screen from a custom action, or a second flow, it
-  needs the `.close` route instead. `ios-virtual-currency-top-up` states the rule for ads. A change to
-  the lifecycle semantics moves the note and these four articles together.
+  needs the `.close` route instead. `ios-virtual-currency-top-up` stated the rule for ads until its
+  2026-11-19 rebuild dropped the ad. It now closes one flow before it opens the other: in UIKit, it
+  opens the next flow in the dismissal's completion, and in SwiftUI from the first flow's `didDisappear`.
+  So it relies on the same semantics. A change to the lifecycle semantics moves the note and these four
+  articles together.
 
 ## Boundaries
 
@@ -470,7 +473,8 @@ Verified during the `flows-with-your-own-payments` guide work; refs named per it
   `List<object>`), so "Customize flows shown later" does nothing on Unity.
 
 **Verified 2026-11-18 for the virtual currency top-up recipe** (AdaptySDK-iOS 4.4.0 unless noted; the
-open items name how each was checked).
+open items name how each was checked). The recipe dropped its rewarded ad on 2026-11-19; the facts
+below stay as SDK facts for any app that presents a view controller over a flow.
 
 - **Presenting a view controller over an open flow (UIKit) is unblocked, and the SDK does it itself.**
   The default Open URL action with the in-app browser finds the top presented view controller and
@@ -486,6 +490,10 @@ open items name how each was checked).
   gives app code no place to attach a second `.flow` inside the first. Presenting `AdaptyFlowView` in
   the app's own `.fullScreenCover` with a nested `.flow` should work but is untested, and without the
   modifier the covered flow's `didDisappear` never fires. The docs show no SwiftUI pattern for it.
+  **2026-11-19:** the rebuilt recipe avoids stacking in SwiftUI: two sibling `.flow` modifiers, the
+  second opened from the first one's `didDisappear`, which runs in the `onDismiss` of its
+  `.fullScreenCover` or `.sheet` (`AdaptyFlowViewModifier.swift:134-147`). Standard SwiftUI, not run on
+  a device.
 - **Open: Android native flow over flow.** One process-wide script state handler serves every flow, so a
   second flow takes over the first flow's state until the first is shown again (AdaptySDK-Android
   `origin/master` at 4.3.4, read 2026-11-17; medium-low, code reading only; 4.4.0 not re-read).

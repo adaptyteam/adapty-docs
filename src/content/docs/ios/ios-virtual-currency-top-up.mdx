@@ -1,67 +1,61 @@
 ---
-title: "Build a virtual currency top-up flow with purchases and ads"
-description: "Combine a flow with virtual currency in your iOS app: show a current balance, offer currency packs and a subscription, reward players for watched ads, and retry a spend after a top-up."
-metadataTitle: "Build a virtual currency top-up flow with purchases and ads | iOS SDK | Adapty Docs"
+title: "Spend and sell virtual currency in flows"
+description: "Build two flows for an iOS app with virtual currency: players spend currency with native buttons in one flow, and buy more in the other when their balance is too low."
+metadataTitle: "Spend and sell virtual currency in flows | iOS SDK | Adapty Docs"
 ---
 
-Follow this recipe to build a virtual currency top-up screen as a flow in your iOS app. The recipe shows how to:
+Follow this recipe to combine flows with virtual currency in your iOS app. The recipe shows how to:
 
-- Show the currency balance in the flow, and keep it current while the flow is open.
-- Offer currency packs and a subscription in the flow.
-- Offer subscribers a higher-tier subscription.
-- Add currency to the balance for a watched ad.
-- Retry a spend after a top-up.
+- Show the currency balance in a flow, and keep it current while the flow is open.
+- Spend currency when a player taps a native button in a flow, and show a spinner while the spend runs.
+- Show players how much more currency they need.
+- Offer currency packs and a subscription in a flow.
+- Close one flow and open another from your app code.
 
-Because the top-up screen is a flow, you can change its offers without an app release, and [A/B test](ab-tests) them.
+Because the packs and the subscription are in a flow, you can change them without an app release, and [A/B test](ab-tests) them.
 
-By the end of this recipe, you have a top-up screen for a game. In the game, players tap a button to spend 30 diamonds on an hour of unlimited energy. The finished example works as follows:
+By the end of this recipe, you have two flows for a game. In the out-of-energy flow, players spend diamonds on energy. In the top-up flow, they buy diamonds. The finished example works as follows:
 
 <VcTopUpHowItWorks />
 
-<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="The flow on a phone with the text “You need 30 more diamonds” and the diamond balance. After an ad, the balance grows by 5. After a pack purchase, the flow closes, and the player receives the energy." />
+<DocVideo id="vc-top-up-demo.mp4" width="300px" alt="The out-of-energy flow on a phone, with the diamond balance and two buttons. With too few diamonds, the player taps a button, and the top-up flow opens with the text “You need 10 more diamonds”. After a pack purchase, the out-of-energy flow opens again, and a checkmark appears after a tap on the energy refill button." />
 
 ## Before you start
 
-- Have players sign in, so that they [keep their balance](virtual-currency-balance#balances-profiles-and-devices) on every device and after a reinstall. When a player signs in, [identify the player](identifying-users) in your app code with a customer user ID. Your backend identifies the player to Adapty by this ID.
-- To show the balance in the flow, update your app to Adapty iOS SDK 4.4 or later.
+- Have players sign in, so that they [keep their balance](virtual-currency-balance#balances-profiles-and-devices) on every device and after a reinstall. When a player signs in, [identify the player](identifying-users) in your app code with a customer user ID. Your backend needs this ID to identify the player to Adapty.
+- To show the balance and the buttons in the flows, update your app to Adapty iOS SDK 4.4 or later.
 - Set up your app to [fetch](get-pb-paywalls) and [display](ios-present-paywalls) flows.
 - Set up a backend that calls the server-side API with your [secret API key](ss-authorization). Keep the key on your backend: anyone with the key can add diamonds to any balance.
-- In App Store Connect, create a consumable product for each diamond pack, and two auto-renewable subscriptions for a lower and a higher tier. For the App Store to treat a purchase of the higher tier as an upgrade, put both tiers in one [subscription group](app-store-products). In the group, [rank](https://developer.apple.com/app-store/subscriptions/) the higher tier above the lower tier. Then [add each product to Adapty](create-product).
+- In App Store Connect, [create a consumable product](app-store-products) for each diamond pack, and an auto-renewable subscription. Then [add each product to Adapty](create-product).
 - [Create a virtual currency](create-virtual-currency) with the code `DIAMONDS`. [Link](create-virtual-currency#link-products) each product to `DIAMONDS`, and set how many diamonds Adapty adds to the balance:
   - **Diamond pack**: The **Credit amount**, for each purchase.
-  - **Subscription tier**: The **Credit per cycle**, for each billing period. When a player starts a free trial, Adapty only adds the **Credit on trial start**.
+  - **Subscription**: The **Credit per cycle**, for each billing period. When a player starts a free trial, Adapty only adds the **Credit on trial start**.
 
-  Set each of the three values to at least 30 diamonds, the price of the energy. With these values, every purchase in the flow covers the missing diamonds.
+  Set each of the three values to at least 30 diamonds, the price of an hour of unlimited energy. With these values, every purchase in the top-up flow covers the missing diamonds.
 
-## 1. Build the top-up flow
+## 1. Build the flow where players spend diamonds
 
-<VcTopUpFlowPlacement />
+<VcTopUpEnergyFlowPlacement />
 
 ### Show the diamond balance
 
 <VcTopUpFlowBalance />
 
-### Show how many diamonds the player needs
+### Add buttons for an energy refill and unlimited energy
 
-<VcTopUpFlowDiamondsNeeded />
+<VcTopUpSpendButtons />
 
-### Add diamond packs and a subscription
+## 2. Spend diamonds when a player taps a button
 
-<VcTopUpFlowOffers />
+In this step, you write the backend code and the app code for the out-of-energy flow. After this step, players with enough diamonds can spend them in the flow.
 
-### Offer diamonds for an ad
+### Spend diamonds from your backend
 
-<VcTopUpFlowAdButton />
+<VcTopUpSpend />
 
-### Offer subscribers a higher-tier subscription
+### Create the balance view
 
-<VcTopUpUpgradeFlow />
-
-When a subscriber of the lower tier upgrades, Adapty adds the full **Credit per cycle** of the higher tier to the balance. For the lower tier, the App Store refunds the unused part of the price. If you set the diamonds from the lower tier to [expire](create-virtual-currency#link-products), Adapty removes the unspent diamonds of this tier at the upgrade.
-
-## 2. Create the balance view
-
-Create a model for the diamond balance, and a SwiftUI view for the custom element. The code in steps 3 and 5 sets the balance in the model from the responses of your backend. The view observes the model, so it redraws when the balance changes:
+Create a model for the diamond balance, and a SwiftUI view for the `currency_balance` custom element. The code later in this step and in step 4 sets the balance in the model from the responses of your backend. The view observes the model, so it redraws when the balance changes:
 
 ```swift showLineNumbers title="Swift"
 import Combine
@@ -82,9 +76,9 @@ struct DiamondBalanceView: View {
 }
 ```
 
-`DiamondBalanceView` uses the system text color, which turns white when the device is in dark mode. A flow keeps its light colors unless you [add a dark theme](paywall-dark-mode#add-a-dark-theme) to it. If your flow has no dark theme, set a fixed text color in the view, such as `.foregroundStyle(.black)`.
+`DiamondBalanceView` uses the system text color, which turns white when the device is in dark mode. A flow keeps its light colors unless you [add a dark theme](paywall-dark-mode#add-a-dark-theme) to it. If your flows have no dark theme, set a fixed text color in the view, such as `.foregroundStyle(.black)`.
 
-To display the view in the custom element, return it from your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), which matches each custom element to a view by its Type and ID. Add a `wallet` property of the `DiamondWallet` type, and a case that returns `DiamondBalanceView` for the `currency_balance` Type and the `diamonds` ID. The highlighted lines show what to add. If your app has no app-wide resolver yet, copy the whole code:
+To display the view in both flows, return it from your [app-wide resolver](ios-flow-custom-elements#set-an-app-wide-resolver), which matches each custom element to a view by its Type and ID. Add a `wallet` property of the `DiamondWallet` type, and a case that returns `DiamondBalanceView` for the `currency_balance` Type and the `diamonds` ID. The highlighted lines show what to add. If your app has no app-wide resolver yet, copy the whole code:
 
 ```swift showLineNumbers title="Swift" {5,13-14}
 import AdaptyUIBuilder
@@ -123,51 +117,185 @@ import AdaptyUI
 AdaptyUI.setCustomElementsResolver(customElementsResolver)
 ```
 
-## 3. Open the flow when a player doesn't have enough diamonds
+### Create the button view
 
-### Spend diamonds from your backend
-
-<VcTopUpSpend />
-
-### Open the flow from your app code
-
-Add the following UIKit code to the view controller that shows the unlimited energy button. When a player taps the button, call `spendDiamondsOnEnergy` to spend 30 diamonds through your backend. If your backend returns how many diamonds the player needs, `openOutOfDiamondsFlow` passes this number to the `diamonds_needed` tag, and opens the flow:
+Create one SwiftUI view for both buttons. The view receives the button text, and a closure that spends the diamonds and returns `true` when the spend goes through. While the spend runs, players see a spinner in the button, and the button ignores more taps. After the spend goes through, players see a checkmark:
 
 ```swift showLineNumbers title="Swift"
-private var pendingSpendKey: UUID? // kept until the spend goes through: a retry reuses it
-private var requiredBalance = 0 // the balance that covers the spend, from the last failed spend
-private var isSpending = false
+import SwiftUI
 
-// openFlow: false for the retry after a top-up (step 4)
-func spendDiamondsOnEnergy(openFlow: Bool = true) async {
-    guard !isSpending else { return } // ignore repeat taps while a spend runs
-    isSpending = true
-    defer { isSpending = false }
-    let spendKey = pendingSpendKey ?? UUID() // UUID() creates a version 4 UUID
-    pendingSpendKey = spendKey
+struct SpendButton: View {
+    let title: String
+    let spend: @MainActor () async -> Bool // true when the spend goes through
+
+    @State private var phase = Phase.ready
+    private enum Phase { case ready, spending, done }
+
+    var body: some View {
+        Button {
+            guard phase == .ready else { return } // ignore more taps while the spend runs
+            phase = .spending
+            // a Task keeps running when the flow closes and this view disappears
+            Task {
+                phase = await spend() ? .done : .ready
+            }
+        } label: {
+            Group {
+                switch phase {
+                case .ready: Text(title)
+                case .spending: ProgressView().tint(.white) // white on the filled button
+                case .done: Image(systemName: "checkmark")
+                }
+            }
+            .frame(maxWidth: .infinity) // the full width of the custom element
+        }
+        .buttonStyle(.borderedProminent)
+    }
+}
+```
+
+### Connect the buttons to your backend
+
+Create an enum for the two options. As the raw value of each option, use the ID of its custom element:
+
+```swift showLineNumbers title="Swift"
+// the options to spend diamonds on, with the IDs of their custom elements
+enum EnergyOption: String {
+    case energyRefill = "energy_refill"
+    case unlimitedEnergy = "unlimited_energy"
+
+    // keep the numbers equal to the costs on your backend
+    var title: String {
+        switch self {
+        case .energyRefill: return "Energy refill · 10 ◆"
+        case .unlimitedEnergy: return "Unlimited energy for 1 hour · 30 ◆"
+        }
+    }
+}
+```
+
+The following code is for UIKit. In the view controller that opens the out-of-energy flow, add a method that spends diamonds on an option. The method sends the option to your backend, and sets the balance in `diamondWallet` from the response. Then the method does one of the following:
+
+- **The spend goes through**: The method returns `true`, and players see the checkmark in the button. After one second, the code closes the flow.
+- **The balance is too low**: The method calls `openTopUpFlow`, the function that [opens the top-up flow](#open-the-top-up-flow-when-a-player-doesnt-have-enough-diamonds).
+
+```swift showLineNumbers title="Swift"
+private var outOfEnergyFlow: AdaptyFlowController? // set when the out-of-energy flow opens
+
+// true when the spend goes through
+func spendDiamonds(on option: EnergyOption) async -> Bool {
     do {
         // the client of your backend: your backend sends the spend to Adapty
         let result = try await GameBackend.shared.spendDiamonds(
-            on: "unlimited_energy",
-            idempotencyKey: spendKey
+            on: option.rawValue,
+            idempotencyKey: UUID() // one key per tap; UUID() creates a version 4 UUID
         )
         switch result {
-        case let .spent(balance):
-            pendingSpendKey = nil
-            diamondWallet.balance = balance
-            // your backend granted the energy: show it
-        case let .insufficientBalance(diamondsNeeded, balance):
-            diamondWallet.balance = balance
-            requiredBalance = balance + diamondsNeeded
-            guard openFlow else { return } // the diamonds are late: tell the player in your UI
-            await openOutOfDiamondsFlow(diamondsNeeded: diamondsNeeded)
+        case let .spent(available):
+            diamondWallet.balance = available
+            // your backend gave the player the energy: show it in the game
+            Task {
+                try? await Task.sleep(for: .seconds(1)) // players see the checkmark first
+                outOfEnergyFlow?.dismiss(animated: true)
+            }
+            return true
+        case let .insufficientBalance(diamondsNeeded, available):
+            diamondWallet.balance = available
+            await openTopUpFlow(diamondsNeeded: diamondsNeeded)
+            return false
         }
+    } catch {
+        // handle the error
+        return false
+    }
+}
+```
+
+Then write a resolver for the out-of-energy flow. For each custom element with the `spend_button` Type, the resolver reads the option from the ID, and returns a `SpendButton` that calls the spend method. A resolver that you [attach to a flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow) replaces the app-wide resolver in that flow. To show the balance in the out-of-energy flow, this resolver calls the app-wide resolver:
+
+```swift showLineNumbers title="Swift"
+import AdaptyUIBuilder
+import SwiftUI
+
+struct OutOfEnergyResolver: AdaptyUICustomElementsResolver {
+    let spend: @MainActor (EnergyOption) async -> Bool // the spend method of your view controller
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        // the ID tells the buttons apart: energy_refill or unlimited_energy
+        if type == "spend_button", let option = EnergyOption(rawValue: id) {
+            return AnyView(SpendButton(title: option.title) { await spend(option) })
+        }
+        // other custom elements, such as the balance: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+### Open the out-of-energy flow from your app code
+
+When a player runs out of energy, open the out-of-energy flow with the following function. The function asks your backend for the balance first, so that players see it when the flow opens. Then the function attaches `OutOfEnergyResolver` to the flow, and keeps the flow controller in `outOfEnergyFlow`. With this reference, `spendDiamonds` can close the flow:
+
+```swift showLineNumbers title="Swift"
+// call when a player runs out of energy
+func openOutOfEnergyFlow() async {
+    // the balance that players see when the flow opens; without it, players see a dash
+    if let available = try? await GameBackend.shared.diamondBalance() {
+        diamondWallet.balance = available
+    }
+    do {
+        let flow = try await Adapty.getFlow(placementId: "out_of_energy")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: OutOfEnergyResolver(
+                spend: { [weak self] option in
+                    await self?.spendDiamonds(on: option) ?? false
+                },
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        outOfEnergyFlow = flowController
+        present(flowController, animated: true)
     } catch {
         // handle the error
     }
 }
+```
 
-func openOutOfDiamondsFlow(diamondsNeeded: Int) async {
+As the delegate of the out-of-energy flow, the view controller must also implement the [delegate methods](ios-handling-events#handling-events-in-uikit) for purchases and restores. For `didFinishPurchase`, use the code from [step 4](#open-the-out-of-energy-flow-again-after-a-purchase).
+
+In SwiftUI, attach `OutOfEnergyResolver` when you fetch the flow configuration. In the `spend` closure of the resolver, call your spend method. Present the flow configuration with the `.flow` modifier, and use its closures instead of the delegate methods. The closures receive no view controller. To close the flow, set `isPresented` to `false`.
+
+## 3. Build the flow where players buy diamonds
+
+<VcTopUpFlowPlacement />
+
+### Show how many diamonds the player needs
+
+<VcTopUpFlowDiamondsNeeded />
+
+### Add diamond packs and a subscription
+
+<VcTopUpFlowOffers />
+
+## 4. Close one flow and open the other
+
+After this step, players without enough diamonds can buy more in the top-up flow, and then spend them. In this recipe, one view controller is the delegate of both flows. To tell the flows apart in a delegate method, compare the `controller.flowPlacementId` property with the placement ID of each flow. In SwiftUI, present the top-up flow with a second `.flow` modifier, and open one flow from the `didDisappear` closure of the other.
+
+### Open the top-up flow when a player doesn't have enough diamonds
+
+The following function passes the number of missing diamonds to the `diamonds_needed` tag, and opens the top-up flow. A view controller presents one flow at a time, so the function first closes the out-of-energy flow, and then opens the top-up flow:
+
+```swift showLineNumbers title="Swift"
+func openTopUpFlow(diamondsNeeded: Int) async {
     // with no value, players see the Initial value of the tag
     let tags = diamondsNeeded > 0 ? ["diamonds_needed": diamondsNeeded.formatted()] : [:]
     do {
@@ -180,22 +308,19 @@ func openOutOfDiamondsFlow(diamondsNeeded: Int) async {
             with: flowConfiguration,
             delegate: self
         )
-        present(flowController, animated: true)
+        // a view controller presents one flow at a time
+        outOfEnergyFlow?.dismiss(animated: true) {
+            self.present(flowController, animated: true)
+        }
     } catch {
         // handle the error
     }
 }
 ```
 
-As the delegate of the flow, the view controller must also implement the [delegate methods](ios-handling-events#handling-events-in-uikit) for purchases and restores. For `didFinishPurchase`, use the code from [step 4](#4-retry-the-spend-after-a-purchase).
+### Open the out-of-energy flow again after a purchase
 
-In SwiftUI, present the flow configuration with the `.flow` modifier, and use its closures instead of the delegate methods. The closures receive no view controller. To close the flow, set `isPresented` to `false`. To present a rewarded ad over the flow, pass your ad SDK the topmost view controller.
-
-To show the upgrade copy to a new subscriber of the lower tier the next time the flow opens, keep the default `fetchPolicy` of `getFlow`. A cache-first policy, such as `.returnCacheDataElseLoad`, can return the original flow from the cache.
-
-## 4. Retry the spend after a purchase
-
-When a player buys a pack or a subscription in the flow, Adapty usually adds the diamonds to the balance first. Then the Adapty SDK calls `didFinishPurchase`, but doesn't close the flow. To give the player the energy without a second tap, the following code closes the flow and retries the spend:
+When a player buys a pack or the subscription in the top-up flow, Adapty usually adds the diamonds to the balance first. Then the Adapty SDK calls `didFinishPurchase`, but doesn't close the flow. In this method, the following code asks your backend for the new balance, closes the top-up flow, and opens the out-of-energy flow again. The player sees the new balance there, and taps a button to spend diamonds. Don't spend diamonds right after the purchase: the player may no longer want the energy.
 
 ```swift showLineNumbers title="Swift"
 func flowController(
@@ -204,90 +329,47 @@ func flowController(
     purchaseResult: AdaptyPurchaseResult
 ) {
     // canceled or pending: the flow stays open
-    guard purchaseResult.isPurchaseSuccess else { return }
-    closeFlowAndRetrySpend(controller)
-}
-
-func closeFlowAndRetrySpend(_ controller: AdaptyFlowController) {
-    controller.dismiss(animated: true) {
-        Task { await self.spendDiamondsOnEnergy(openFlow: false) } // with the kept key
-    }
-}
-```
-
-The Adapty SDK also calls `didFinishPurchase` when the player cancels the purchase, or when the purchase is pending. In both cases, the balance stays the same, so the code leaves the flow open.
-
-If the Adapty SDK can't validate the purchase with Adapty right away, it still reports a successful purchase. The retry then fails: Adapty adds the diamonds later, when the App Store notifies Adapty of the purchase. For this retry, the code doesn't open the flow again. Tell the player in your own UI that the diamonds are on the way.
-
-Don't add diamonds from your backend for a purchase of a [linked product](create-virtual-currency#link-products): Adapty adds these diamonds, and the player would receive them twice.
-
-## 5. Add diamonds for a watched ad
-
-When a player taps the ad button, your app code receives the action ID `watch_ad`. A custom action doesn't close the flow. Your app code then asks your ad SDK to present a rewarded ad over the flow. When the ad closes, the player sees the flow again.
-
-<VcTopUpRewardCredit />
-
-Until your backend returns the balance, the following code ignores more taps on the ad button. Then it sets the balance in `diamondWallet`, and players see the new balance in the open flow. If the balance now covers the spend, the code closes the flow and retries the spend.
-
-Your `flowController(_:didPerform:)` method replaces the default handling of all actions. To keep the close button and links working, include the `.close` and `.openURL` cases. Put `import SafariServices` at the top of the file, and the rest of the code inside the view controller.
-
-```swift showLineNumbers title="Swift"
-import SafariServices
-
-private var isWatchingAd = false
-
-func flowController(
-    _ controller: AdaptyFlowController,
-    didPerform action: AdaptyUI.Action
-) {
-    switch action {
-    case .close:
-        controller.dismiss(animated: true)
-    case let .openURL(url, presentation) where presentation == .inAppBrowser:
-        controller.present(SFSafariViewController(url: url), animated: true)
-    case let .openURL(url, _):
-        UIApplication.shared.open(url)
-    case let .custom(id, _) where id == "watch_ad":
-        guard !isWatchingAd else { return } // ignore repeat taps until your backend returns the balance
-        isWatchingAd = true
-        Task {
-            defer { isWatchingAd = false }
-            // your ad SDK: returns after the ad closes, true if the player earned the reward
-            guard await AdNetwork.shared.showRewardedAd(from: controller) else {
-                return // no ad to show, or no reward: tell the player, such as in an alert
-            }
-            do {
-                // your backend returns the balance after the server of your ad network confirms the reward
-                let balance = try await GameBackend.shared.balanceAfterAdReward()
-                diamondWallet.balance = balance
-                if balance >= requiredBalance { closeFlowAndRetrySpend(controller) }
-            } catch {
-                // handle the error
+    guard purchaseResult.isPurchaseSuccess,
+          controller.flowPlacementId == "out_of_diamonds" // the top-up flow
+    else { return }
+    Task {
+        let balanceBefore = diamondWallet.balance ?? 0
+        if let available = try? await GameBackend.shared.diamondBalance() {
+            diamondWallet.balance = available
+        }
+        let diamondsArrived = (diamondWallet.balance ?? 0) > balanceBefore
+        controller.dismiss(animated: true) {
+            if diamondsArrived {
+                Task { await self.openOutOfEnergyFlow() } // the player taps a button again
+            } else {
+                // Adapty adds the diamonds later: tell the player in your own UI
             }
         }
-    default:
-        break
     }
 }
 ```
 
-If your ad SDK presents the ad with the `.fullScreen` presentation style, the ad covers the flow. The Adapty SDK then calls `flowControllerDidDisappear`, and calls `flowControllerDidAppear` after the ad closes. To detect that the player closed the flow, use the `.close` action, not `flowControllerDidDisappear`.
+When the player cancels the purchase, or when the purchase is pending, the code leaves the top-up flow open. The Adapty SDK also calls `didFinishPurchase` in these cases, but the balance stays the same.
 
-## 6. Test on a device
+When a purchase succeeds but the balance from your backend stays the same, the code closes the top-up flow and doesn't open the out-of-energy flow. In either flow, the player would see the old balance right after the purchase. The balance stays the same when the Adapty SDK can't validate the purchase with Adapty right away. Adapty adds the diamonds later, when the Adapty SDK sends the purchase to Adapty again, such as at the next app launch. Until then, tell the player in your own UI that the diamonds are on the way.
 
-The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback of the custom element.
+Don't add diamonds from your backend when a player buys a product [linked to `DIAMONDS`](create-virtual-currency#link-products): Adapty adds these diamonds, and the player would receive them twice.
+
+## 5. Test on a device
+
+The Flow & Paywall Builder can't run your app code, so on its canvas, you only see the fallbacks of the custom elements.
 
 To see the diamonds from purchases, test with a [sandbox account](test-purchases-in-sandbox). In the sandbox, a subscription renews every few minutes, and Adapty adds diamonds at each renewal. With a StoreKit configuration file in Xcode, the Adapty SDK doesn't validate purchases with Adapty, and Adapty adds no diamonds.
 
 To test the recipe:
 
-1. [Publish the flow and its copies](builder-save-publish). To see the latest published versions instead of cached ones, register the device as a [test device](test-devices).
-2. Run your app with the recipe code, and sign in as a player with no diamonds. Tap the unlimited energy button. Verify that the flow opens with the text "You need 30 more diamonds" and a balance of 0.
-3. Tap the ad button, and watch the ad. Verify that the balance in the open flow grows by 5.
-4. Buy a diamond pack. Verify that the flow closes and the player receives the energy.
-5. In the Adapty Dashboard, open the profile of the player. [Debit the balance](virtual-currency-balance#adjust-a-balance-manually) to less than 30 with the **Adjustment** operation. Tap the unlimited energy button, and buy the lower tier.
-6. Debit the balance to less than 30 again. Tap the unlimited energy button. Verify that the flow opens with the purchase button of the higher tier and no list of subscription tiers.
-7. Buy the higher tier. In the [event history](virtual-currency-balance#review-balance-changes-in-the-event-history) of the profile, verify that Adapty added the full **Credit per cycle** of the higher tier.
+1. [Publish both flows](builder-save-publish). To see the latest published versions instead of cached ones, register the device as a [test device](test-devices).
+2. Run your app with the recipe code, and sign in as a player with no diamonds. Run out of energy in the game. Verify that the out-of-energy flow opens with a balance of 0.
+3. Tap the unlimited energy button. Verify that a spinner appears in the button, and then the top-up flow opens with the text "You need 30 more diamonds".
+4. Buy a diamond pack. Verify that the out-of-energy flow opens again with the new balance.
+5. Tap the energy refill button. Verify that a checkmark appears in the button, the flow closes, and the game gives the player an energy refill.
+6. In the Adapty Dashboard, open the profile of the player. [Debit the balance](virtual-currency-balance#adjust-a-balance-manually) to less than 10 with the **Adjustment** operation. Run out of energy again, tap the energy refill button, and buy the subscription in the top-up flow. Verify that the out-of-energy flow opens again with the new balance.
+7. Tap the unlimited energy button. Verify that a checkmark appears in the button, the flow closes, and the game gives the player unlimited energy.
 8. <VcTopUpVerifyProfile />
 
-To find out why the fallback appears instead of the balance, follow the [steps to test custom elements](ios-flow-custom-elements#test-on-a-device).
+To find out why a fallback appears instead of the balance or a button, follow the [steps to test custom elements](ios-flow-custom-elements#test-on-a-device).

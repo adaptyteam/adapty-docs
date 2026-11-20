@@ -202,8 +202,8 @@ or developer can see and click.
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
-| onboarding-actions | — | marketer, dev | 22 | tutorial |
-| onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
+| onboarding-actions | — | marketer, dev | 23 | tutorial |
+| onboarding-element-visibility | — | marketer, dev | 1 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 9 | tutorial |
@@ -383,7 +383,13 @@ or developer can see and click.
   `ios-flow-custom-tags`, plus three virtual currency articles that the `products-and-offers` brief
   lists (`rg -l ios-virtual-currency-top-up src/content/docs`, 2026-11-18: nine articles and `ios.json`).
   An Android version of the recipe adds its link in each of these places, in the `InlineTooltip` form
-  that the custom element examples use.
+  that the custom element examples use. **The recipe was rebuilt on 2026-11-19** as "Spend and sell
+  virtual currency in flows": two flows, no rewarded ad, no custom action, no upgrade offer. The links
+  from `onboarding-actions` and `handle-paywall-actions` sent rewarded-ad readers to it, so their link
+  text must not promise an ad. The rebuilt recipe puts one custom element Type on two elements
+  (`spend_button` with the IDs `energy_refill` and `unlimited_energy`, one Swift view for both), and the
+  balance element (Type `currency_balance`) in both flows. A change to how the resolver receives
+  the Type and the ID, or to which resolver a flow uses, ripples into it.
 
 ## Boundaries
 
@@ -423,7 +429,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "product shows as Missing", "off this screen", "Can't publish yet", "the same product appears twice in the panel", "how do I swap a product on every screen" | `paywall-product-block#product-actions`. **Missing** = deleted from the Dashboard catalog; **off this screen** = exists but not on that screen's list (after a panel **Remove**). Two entries for one product = two product-and-offer pairs. **Replace in N places** rewrites every use on one screen and offers the same change on the other screens that use the pair. |
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
-| "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login", "watch an ad for coins", "rewarded ad button" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. **Checked 2026-11-18:** still true in effect, although iOS and Android SDK 4.4.0 both have a public `AdaptyUI.FlowConfiguration.sendAppMessage`: the flow script that the builder compiles ignores app messages (builder and transformer code, 2026-11-17), so don't document it. On iOS 4.4, `.custom(id:arguments:)` never receives arguments from a builder-made flow. A custom action also never closes the flow: the iOS default handler ignores `.custom`, and only `.close` dismisses (AdaptySDK-iOS 4.4.0 `Sources.AdaptyUI/AdaptyUI+DefaultConfiguration.swift`). So whatever app code presents for the action, such as a rewarded ad, opens over the flow; the worked case is `ios-virtual-currency-top-up`. |
+| "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login", "watch an ad for coins", "rewarded ad button" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. **Checked 2026-11-18:** still true in effect, although iOS and Android SDK 4.4.0 both have a public `AdaptyUI.FlowConfiguration.sendAppMessage`: the flow script that the builder compiles ignores app messages (builder and transformer code, 2026-11-17), so don't document it. On iOS 4.4, `.custom(id:arguments:)` never receives arguments from a builder-made flow. A custom action also never closes the flow: the iOS default handler ignores `.custom`, and only `.close` dismisses (AdaptySDK-iOS 4.4.0 `Sources.AdaptyUI/AdaptyUI+DefaultConfiguration.swift`). So whatever app code presents for the action, such as a rewarded ad, opens over the flow. `ios-virtual-currency-top-up` showed this with a rewarded ad until its 2026-11-19 rebuild dropped the ad (reviewer feedback: real games cap rewarded ads per day), so no article shows the case now. |
 | "explain why Continue is greyed out", "show a message when the button is disabled", "disable two buttons together", "condition on another element", "States tab", "is the field focused" | `element-states-in-conditions` (2026-11-16). Traps: **Selected** yields to **Disabled** (one state at a time; rule in `flow-design`'s `builder-element-states`), so "which option did users pick" is the group variable on the **Elements** tab, not the state; the canvas shows a state only after the user activates it in the element's **States** section; a condition written outside the builder as a bare comparison saves and validates, but its editor's **Add Condition** does nothing until visibility is switched away and back. **Disabled** and **Active** have no variable: the **States** tab is the only route to them. |
 | "hide an element for some users", "show only if the user is on trial", "progress bar", "step indicator", "spinner while the answer is processed" | Element-shaped tickets that are really behaviour: a state-based rule is `onboarding-element-visibility` (which also settles precedence against a Show/Hide *action* in `onboarding-actions`); progress/loading elements are `builder-loaders-and-progress-bars` because they are driven by flow state. Neither is `flow-design`. **Corrected 2026-11-18:** "show only if the user is on trial" is not a visibility rule. A condition can't read what the user owns (a subscription, a tier, an access level, a trial), because conditions read only custom variables, product variables, and element states (`onboarding-actions`, "You can't select a profile attribute or a custom tag in a condition"). `is_free_trial` is the product's offer eligibility, not the user's state. Build a separate flow per group and show it to an audience on the placement. `onboarding-actions` carried the counter-example "If not Premium, is the user on a Trial?" until 2026-11-18. |
 | "the product name on the card is wrong", "the flow shows the App Store name, not ours", "show how many coins a pack gives" | `onboarding-variables`. On a device, `prod_title` is the store's localized product name (on iOS, StoreKit's `displayName`), never the Adapty product name. The flow gets `localizedTitle`, and the product data the SDK passes to the flow carries no Adapty product name (AdaptySDK-iOS `origin/master`, 2026-11-18: `Sources.UIBuilder/cue/jsBridge.SDKProducts.cue`, `Sources/StoreKit/Entities/AdaptyProduct.swift:35-37`). The `prod_title`-to-`localizedTitle` mapping itself is builder code, not read. The canvas differs: it resolves the catalog title (see the preview row below). No product variable carries a virtual currency amount (builder code, 2026-11-17). So "500 diamonds" is typed text, the store's display name through `prod_title`, or a custom tag, and nothing keeps any of them in sync with the amount in **Link Products**. |
@@ -575,6 +581,12 @@ needed in place.
   PR #848 added the Android articles. `flow-builder-recipes.mdx:9` still ends with "(iOS-only)" after its
   custom elements link: `rg -n -i "ios-only" src/content/docs/guides/flow-builder/` finds that one line
   (2026-11-18). Not fixed in this pass.
+- **Open, unconfirmed (2026-11-19): the builder's custom element callout and Android.** The custom
+  element settings say "On Android, Flutter, React Native and other Adapty SDKs … users see the elements
+  inside this block instead" (builder code, 2026-11-17), while AdaptySDK-Android 4.4.0 renders custom
+  elements (the bullet above). Not traced: whether the callout predates Android 4.4, or the builder
+  serves Android something else. The callout shows in `vc-top-up-custom-element.webp`. A question for
+  the product team.
 - **The custom element and custom tag articles belong to no zone.** `mill:status` on 2026-11-18 lists
   as unassigned `flow-custom-elements`, `flow-custom-tags`, the seven platform `*-flow-custom-tags`
   pages, the iOS and Android `*-flow-custom-elements` pages, the three custom element recipes on each of
