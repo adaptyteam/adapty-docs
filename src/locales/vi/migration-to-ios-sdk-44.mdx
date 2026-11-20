@@ -1,10 +1,10 @@
 ---
-title: "Migrate Adapty iOS SDK lên v4.3 và v4.4"
-description: "Migrate lên Adapty iOS SDK v4.3 và v4.4: cập nhật code xử lý giá, mã lỗi, custom action và custom asset, sau đó tải xuống file fallback mới."
-metadataTitle: "Migration lên Adapty iOS SDK v4.3 và v4.4 | Tài liệu Adapty"
+title: "Migrate Adapty iOS SDK lên v4.4"
+description: "Migrate lên Adapty iOS SDK v4.4: cập nhật code custom action và custom asset, đọc billing period từ pricing terms, và tải xuống file dự phòng mới."
+metadataTitle: "Migration lên Adapty iOS SDK v4.4 | Tài liệu Adapty"
 ---
 
-Để cập nhật ứng dụng của bạn từ Adapty iOS SDK 4.1 hoặc 4.2 lên 4.4, hãy áp dụng tất cả các thay đổi trong hướng dẫn này. Nếu ứng dụng của bạn đã dùng 4.3, chỉ cần áp dụng [các thay đổi trong v4.4](#changes-in-v44). Ứng dụng đang dùng 4.0 cần thực hiện [các thay đổi v4.1](migration-to-ios-sdk-41) trước.
+Để cập nhật ứng dụng từ Adapty iOS SDK 4.3 lên 4.4, hãy áp dụng mọi thay đổi trong hướng dẫn này. Nếu ứng dụng đang dùng 4.1 hoặc 4.2, bạn cần thực hiện [các thay đổi v4.3](migration-to-ios-sdk-43) trước, và nếu đang dùng 4.0 thì cần thực hiện [các thay đổi v4.1](migration-to-ios-sdk-41) trước đó.
 
 :::warning
 Định dạng file dự phòng đã thay đổi trong phiên bản 4.4, và compiler không thể phát hiện file lỗi thời. Nếu không có [file dự phòng mới](#fallback-files), mọi placement sẽ mất đi paywall dự phòng của nó.
@@ -12,52 +12,19 @@ metadataTitle: "Migration lên Adapty iOS SDK v4.3 và v4.4 | Tài liệu Adapty
 
 ## Tham khảo nhanh \{#quick-reference\}
 
-| Trước | Sau | Phiên bản |
-|---|---|---|
-| `localizedPrice` và `currencyCode` có thể là `nil` | Cả hai thuộc tính luôn trả về một chuỗi | 4.3.0 |
-| Không có mã lỗi `billingPlanUnavailable` | `AdaptyError.ErrorCode` bao gồm `billingPlanUnavailable` | 4.3.0 |
-| `Adapty.reportTransaction` với một `Transaction` đơn thuần | `Adapty.reportTransaction` với `VerificationResult<Transaction>`; overload `Transaction` đã bị deprecated | 4.3.2 |
-| `case let .custom(id)` | `case let .custom(id, _)` | 4.4.0 |
-| `AdaptyUICustomAsset` | `AdaptyUIAsset`; `AdaptyCustomAsset` không thay đổi | 4.4.0 |
-| `.color(.uiColor(x))` và `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` và `.color(c)` | 4.4.0 |
-| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` | 4.4.0 |
-| Không có data asset | `AdaptyUIAsset` bao gồm `.data` cho data asset | 4.4.0 |
-| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` | 4.4.0 |
-| File dự phòng đã tải xuống cho 4.1–4.3 | Định dạng file dự phòng mới; tải lại file | 4.4.0 |
+| Trước | Sau |
+|---|---|
+| `case let .custom(id)` | `case let .custom(id, _)` |
+| `AdaptyUICustomAsset` | `AdaptyUIAsset`; `AdaptyCustomAsset` không thay đổi |
+| `.color(.uiColor(x))` và `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` và `.color(c)` |
+| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` |
+| Không có data asset | `AdaptyUIAsset` bao gồm `.data` cho data asset |
+| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` |
+| File dự phòng đã tải xuống cho 4.1–4.3 | Định dạng file dự phòng mới; tải lại file |
 
-## Thay đổi trong v4.3 \{#changes-in-v43\}
+## AdaptyUI.Action.custom chứa hai giá trị \{#custom-actions\}
 
-### localizedPrice và currencyCode không còn là optional nữa \{#prices-are-no-longer-optional\}
-
-Từ phiên bản 4.3, thuộc tính `localizedPrice` và `currencyCode` của `AdaptyPaywallProduct` và `AdaptySubscriptionOffer` luôn trả về một chuỗi, không bao giờ là `nil`. Code kiểm tra `nil` bằng `if let`, `guard let`, hoặc `?.` sẽ không thể biên dịch. Hãy xóa các kiểm tra này:
-
-```diff showLineNumbers
-- if let price = product.localizedPrice {
--     priceLabel.text = price
-- }
-+ priceLabel.text = product.localizedPrice
-```
-
-Xóa cả các giá trị mặc định `??` cho những thuộc tính này: chúng vẫn biên dịch được, nhưng sẽ có cảnh báo.
-
-### AdaptyError.ErrorCode bao gồm billingPlanUnavailable \{#new-error-code\}
-
-4.3 bổ sung [mã lỗi](ios-sdk-error-handling#storekit-errors) `billingPlanUnavailable`. Câu lệnh `switch` liệt kê tất cả mã lỗi mà không có nhánh `default` sẽ ngừng biên dịch. Để khắc phục, hãy thêm nhánh `case .billingPlanUnavailable` hoặc nhánh `default`.
-
-### Overload reportTransaction với Transaction đã bị deprecated \{#reporttransaction-overload-is-deprecated\}
-
-Trong phiên bản 4.3.2, overload `Adapty.reportTransaction(_:withVariationId:)` nhận một `Transaction` thuần túy (không có chữ ký App Store) sẽ hiển thị cảnh báo deprecated. Để báo cáo giao dịch kèm chữ ký App Store, hãy truyền `VerificationResult<Transaction>` mà StoreKit trả về:
-
-```diff showLineNumbers
-- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
-+ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
-```
-
-## Thay đổi trong v4.4 \{#changes-in-v44\}
-
-### AdaptyUI.Action.custom chứa hai giá trị \{#custom-actions\}
-
-Khi người dùng nhấn vào nút có custom action, ứng dụng sẽ nhận được `AdaptyUI.Action.custom`. Trong phiên bản 4.4, nó chứa thêm một giá trị thứ hai là `arguments` sau action ID. Trong closure `didPerformAction` và phương thức delegate `flowController(_:didPerform:)`, thêm `_` cho giá trị thứ hai này:
+Khi người dùng nhấn vào một nút có action tùy chỉnh, ứng dụng của bạn sẽ nhận được `AdaptyUI.Action.custom`. Trong phiên bản 4.4, nó chứa thêm giá trị thứ hai là `arguments` sau action ID. Trong closure `didPerformAction` và phương thức delegate `flowController(_:didPerform:)`, hãy thêm `_` cho giá trị thứ hai này:
 
 ```diff showLineNumbers
   switch action {
@@ -71,52 +38,47 @@ Khi người dùng nhấn vào nút có custom action, ứng dụng sẽ nhận 
   }
 ```
 
-```swift
-switch id {
-case .introductory:
-    break
-case .custom(let productId, _):
-    break
-}
+```
+Code that compares `id` to a string stops compiling until you add `_`. Other code still builds, with the warning "enum case 'custom' has 2 associated values; matching them as a tuple is deprecated". In that code, `id` contains both values, not the action ID alone. Add `_` wherever Xcode shows this warning.
 ```
 
-### Tài nguyên tùy chỉnh \{#custom-assets\}
+## Tài sản tùy chỉnh \{#custom-assets\}
 
-Trong phiên bản 4.4, `AdaptyUICustomAsset` được đổi tên thành `AdaptyUIAsset`. Tên cũ sẽ kích hoạt cảnh báo deprecation.
+Trong 4.4, `AdaptyUICustomAsset` được đổi tên thành `AdaptyUIAsset`. Tên cũ sẽ kích hoạt cảnh báo deprecation.
 
-Tài nguyên màu sắc, font chữ và dữ liệu thay đổi theo ba cách:
+Tài sản màu sắc, phông chữ và dữ liệu thay đổi theo ba cách:
 
-- **Tài nguyên màu sắc**: `.color` nhận một `Color` của SwiftUI. `AdaptyUICustomColorAsset` đã bị xóa. Hãy bọc `UIColor` trong `Color(uiColor:)` và truyền trực tiếp một `Color` của SwiftUI:
+- **Tài sản màu sắc**: `.color` nhận một `Color` của SwiftUI. `AdaptyUICustomColorAsset` đã bị xóa. Hãy bọc `UIColor` trong `Color(uiColor:)` và truyền trực tiếp một `Color` của SwiftUI:
 
   ```diff showLineNumbers
   - "brand_color": .color(.uiColor(brandColor)),
   + "brand_color": .color(Color(uiColor: brandColor)),
   ```
 
-- **Tài nguyên font**: `AdaptyUIFontAsset` nhận `color:`, `letterSpacing:`, và `lineHeight:` thay vì `defaultColor:`, `defaultLetterSpacing:`, và `defaultLineHeight:`. Tham số `color:` nhận một `Color` của SwiftUI:
+- **Font assets**: `AdaptyUIFontAsset` nhận `color:`, `letterSpacing:`, và `lineHeight:` thay vì `defaultColor:`, `defaultLetterSpacing:`, và `defaultLineHeight:`. Tham số `color:` nhận một SwiftUI `Color`:
 
   ```diff showLineNumbers
   - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
   + "title_font": .font(AdaptyUIFontAsset(font: titleFont, color: .white, lineHeight: 24)),
   ```
 
-- **Tài sản dữ liệu**: `AdaptyUIAsset` có thêm một loại tài sản mới là `.data`. Câu lệnh `switch` liệt kê mọi loại tài sản mà không có nhánh `default` sẽ không còn biên dịch được. Chỉ có [các phần tử tùy chỉnh](ios-flow-custom-elements) mới đọc tài sản dữ liệu, vì vậy nhánh mới có thể để trống: `case .data: break`.
+- **Tài sản dữ liệu**: `AdaptyUIAsset` bổ sung kiểu tài sản mới là `.data`. Câu lệnh `switch` liệt kê mọi kiểu tài sản mà không có nhánh `default` sẽ không còn biên dịch được. Chỉ có [custom elements](ios-flow-custom-elements) mới đọc tài sản dữ liệu, nên nhánh mới có thể để trống: `case .data: break`.
 
-### AdaptyProduct.localizedBillingPeriod không còn được hỗ trợ \{#localizedbillingperiod-is-deprecated\}
+## AdaptyProduct.localizedBillingPeriod không còn được hỗ trợ \{#localizedbillingperiod-is-deprecated\}
 
-`AdaptyProduct` có thuộc tính [`subscriptionPricingTerms`](fetch-paywalls-and-products) mô tả từng lần thanh toán cho sản phẩm: giá và tần suất người dùng thanh toán. Trong phiên bản 4.4, `localizedBillingPeriod` — văn bản hiển thị tần suất thanh toán — được chuyển từ `AdaptyProduct` sang `subscriptionPricingTerms`. `AdaptyProduct.localizedBillingPeriod` vẫn hoạt động nhưng sẽ hiển thị cảnh báo deprecation: nó trả về `subscriptionPricingTerms?.localizedBillingPeriod`. Để xóa cảnh báo, hãy đọc thuộc tính từ pricing terms:
+`AdaptyProduct` có thuộc tính [`subscriptionPricingTerms`](fetch-paywalls-and-products) mô tả từng lần thanh toán cho sản phẩm: giá tiền và tần suất người dùng thanh toán. Trong phiên bản 4.4, `localizedBillingPeriod` — văn bản hiển thị tần suất thanh toán — được chuyển từ `AdaptyProduct` sang `subscriptionPricingTerms`. `AdaptyProduct.localizedBillingPeriod` vẫn hoạt động nhưng sẽ hiển thị cảnh báo đã lỗi thời: nó trả về `subscriptionPricingTerms?.localizedBillingPeriod`. Để xóa cảnh báo, hãy đọc thuộc tính từ pricing terms:
 
 ```diff showLineNumbers
 - let period = product.localizedBillingPeriod
 + let period = product.subscriptionPricingTerms?.localizedBillingPeriod
 ```
 
-### Tệp dự phòng
+## Tệp dự phòng \{#fallback-files\}
 
-Định dạng [tệp dự phòng](fallback-flows) đã thay đổi trong SDK 4.4. Tải lại tệp từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks**, chọn **Adapty SDK v4.4.0 and higher**, và đóng gói vào ứng dụng của bạn.
+Định dạng [tệp dự phòng](fallback-flows) đã thay đổi trong SDK 4.4. Tải lại tệp từ **[Placements](https://app.adapty.io/placements)** > **Fallbacks**, chọn **Adapty SDK v4.4.0 and higher**, rồi đưa vào ứng dụng của bạn.
 
-Tệp được tải xuống có tên `ios_4_4_0_fallback.json`. Đặt tên tệp trùng với tên mà ứng dụng của bạn truyền vào `Bundle.main.url(forResource:withExtension:)`, hoặc cập nhật tên trong lời gọi đó.
+Tệp tải về có tên `ios_4_4_0_fallback.json`. Đặt tên tệp trùng với tên mà ứng dụng truyền vào `Bundle.main.url(forResource:withExtension:)`, hoặc cập nhật tên trong lệnh gọi đó.
 
 :::warning
-Một file dự phòng lỗi thời sẽ không gây ra lỗi biên dịch nào. Mỗi placement sẽ âm thầm mất paywall dự phòng của nó. Khi đó, log của SDK sẽ hiển thị "The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
+Một file dự phòng lỗi thời sẽ không gây ra lỗi biên dịch nào. Mọi placement đều âm thầm mất đi paywall dự phòng của mình. SDK log sau đó sẽ hiển thị "The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
 :::
