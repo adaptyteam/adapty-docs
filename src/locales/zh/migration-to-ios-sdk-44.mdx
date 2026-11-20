@@ -1,10 +1,10 @@
 ---
-title: "迁移 Adapty iOS SDK 至 v4.3 和 v4.4"
-description: "迁移至 Adapty iOS SDK v4.3 和 v4.4：更新价格、错误代码、自定义动作和自定义资产代码，然后下载新的备用文件。"
-metadataTitle: "迁移至 Adapty iOS SDK v4.3 和 v4.4 | Adapty 文档"
+title: "将 Adapty iOS SDK 迁移至 v4.4"
+description: "迁移至 Adapty iOS SDK v4.4：更新自定义操作和自定义资源代码，从定价条款中读取计费周期，并下载新的备用文件。"
+metadataTitle: "迁移至 Adapty iOS SDK v4.4 | Adapty 文档"
 ---
 
-如需将应用从 Adapty iOS SDK 4.1 或 4.2 升级至 4.4，请按照本指南完成所有更改。如果您的应用已使用 4.3，则只需应用 [v4.4 中引入的更改](#changes-in-v44)。如果应用当前使用 4.0，请先完成 [v4.1 的更改](migration-to-ios-sdk-41)。
+要将应用从 Adapty iOS SDK 4.3 升级至 4.4，请按照本指南完成每一项变更。如果应用当前使用 4.1 或 4.2 版本，需先完成 [v4.3 变更](migration-to-ios-sdk-43)；如果使用 4.0 版本，则需先完成 [v4.1 变更](migration-to-ios-sdk-41)。
 
 :::warning
 备用文件格式在 4.4 版本中有所变更，编译器无法检测到过期的文件。如果不更新[备用文件](#fallback-files)，每个版位都将失去其备用付费墙。
@@ -12,52 +12,19 @@ metadataTitle: "迁移至 Adapty iOS SDK v4.3 和 v4.4 | Adapty 文档"
 
 ## 快速参考 \{#quick-reference\}
 
-| 变更前 | 变更后 | 版本 |
-|---|---|---|
-| `localizedPrice` 和 `currencyCode` 可以为 `nil` | 两个属性始终返回字符串 | 4.3.0 |
-| 无 `billingPlanUnavailable` 错误码 | `AdaptyError.ErrorCode` 包含 `billingPlanUnavailable` | 4.3.0 |
-| `Adapty.reportTransaction` 接受裸 `Transaction` | `Adapty.reportTransaction` 接受 `VerificationResult<Transaction>`；`Transaction` 重载已废弃 | 4.3.2 |
-| `case let .custom(id)` | `case let .custom(id, _)` | 4.4.0 |
-| `AdaptyUICustomAsset` | `AdaptyUIAsset`；`AdaptyCustomAsset` 保持不变 | 4.4.0 |
-| `.color(.uiColor(x))` 和 `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` 和 `.color(c)` | 4.4.0 |
-| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` | 4.4.0 |
-| 无数据资产 | `AdaptyUIAsset` 包含 `.data` 用于数据资产 | 4.4.0 |
-| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` | 4.4.0 |
-| 适用于 4.1–4.3 的备用文件已下载 | 新备用文件格式；请重新下载文件 | 4.4.0 |
+| 变更前 | 变更后 |
+|---|---|
+| `case let .custom(id)` | `case let .custom(id, _)` |
+| `AdaptyUICustomAsset` | `AdaptyUIAsset`；`AdaptyCustomAsset` 保持不变 |
+| `.color(.uiColor(x))` 和 `.color(.swiftUIColor(c))` | `.color(Color(uiColor: x))` 和 `.color(c)` |
+| `AdaptyUICustomFontAsset(font:defaultColor:defaultLetterSpacing:defaultLineHeight:)` | `AdaptyUIFontAsset(font:color:letterSpacing:lineHeight:)` |
+| 不支持 data 资产 | `AdaptyUIAsset` 新增 `.data` 以支持 data 资产 |
+| `AdaptyProduct.localizedBillingPeriod` | `subscriptionPricingTerms?.localizedBillingPeriod` |
+| 适用于 4.1–4.3 的备用付费墙文件 | 备用付费墙文件格式已更新，请重新下载 |
 
-## v4.3 版本变更 \{#changes-in-v43\}
+## AdaptyUI.Action.custom 包含两个值 \{#custom-actions\}
 
-### localizedPrice 和 currencyCode 不再是可选类型 \{#prices-are-no-longer-optional\}
-
-在 4.3 版本中，`AdaptyPaywallProduct` 和 `AdaptySubscriptionOffer` 的 `localizedPrice` 和 `currencyCode` 属性始终返回字符串，不再返回 `nil`。使用 `if let`、`guard let` 或 `?.` 对其进行 `nil` 检查的代码将无法编译。请移除这些检查：
-
-```diff showLineNumbers
-- if let price = product.localizedPrice {
--     priceLabel.text = price
-- }
-+ priceLabel.text = product.localizedPrice
-```
-
-同样，请移除这些属性上的 `??` 默认值：虽然可以编译，但会产生警告。
-
-### AdaptyError.ErrorCode 新增 billingPlanUnavailable \{#new-error-code\}
-
-4.3 新增了 `billingPlanUnavailable` [错误码](ios-sdk-error-handling#storekit-errors)。如果你的 `switch` 语句列举了所有错误码且没有 `default` 分支，编译将会失败。解决方法是添加 `case .billingPlanUnavailable` 分支或 `default` 分支。
-
-### `reportTransaction` 的 Transaction 重载已废弃 \{#reporttransaction-overload-is-deprecated\}
-
-在 4.3.2 版本中，`Adapty.reportTransaction(_:withVariationId:)` 中接受裸 `Transaction`（不含 App Store 签名）的重载会触发废弃警告。如需上报带有 App Store 签名的交易，请传入 StoreKit 返回的 `VerificationResult<Transaction>`：
-
-```diff showLineNumbers
-- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
-+ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
-```
-
-## v4.4 版本更新 \{#changes-in-v44\}
-
-### AdaptyUI.Action.custom 包含两个值 \{#custom-actions\}
-
-当用户点击带有自定义操作的按钮时，你的应用会收到 `AdaptyUI.Action.custom`。在 4.4 版本中，它在 action ID 之后包含第二个值 `arguments`。在 `didPerformAction` 闭包和 `flowController(_:didPerform:)` 代理方法中，为第二个值添加 `_`：
+当用户点击带有自定义操作的按钮时，你的应用会收到 `AdaptyUI.Action.custom`。在 4.4 版本中，该值在 action ID 之后新增了第二个值 `arguments`。在 `didPerformAction` 闭包和 `flowController(_:didPerform:)` 代理方法中，为第二个值添加 `_`：
 
 ```diff showLineNumbers
   switch action {
@@ -73,43 +40,43 @@ metadataTitle: "迁移至 Adapty iOS SDK v4.3 和 v4.4 | Adapty 文档"
 
 Code that compares `id` to a string stops compiling until you add `_`. Other code still builds, with the warning "enum case 'custom' has 2 associated values; matching them as a tuple is deprecated". In that code, `id` contains both values, not the action ID alone. Add `_` wherever Xcode shows this warning.
 
-### 自定义资源 \{#custom-assets\}
+## 自定义资源 \{#custom-assets\}
 
-在 4.4 版本中，`AdaptyUICustomAsset` 更名为 `AdaptyUIAsset`，使用旧名称会触发弃用警告。
+在 4.4 版本中，`AdaptyUICustomAsset` 已重命名为 `AdaptyUIAsset`，旧名称会触发废弃警告。
 
 颜色、字体和数据资源有以下三处变化：
 
-- **颜色资源**：`.color` 现在接受 SwiftUI 的 `Color`，`AdaptyUICustomColorAsset` 已被移除。请将 `UIColor` 包装为 `Color(uiColor:)`，然后直接传入 SwiftUI 的 `Color`：
+- **颜色资源**：`.color` 接受 SwiftUI 的 `Color`，`AdaptyUICustomColorAsset` 已被移除。请将 `UIColor` 包装为 `Color(uiColor:)`，然后直接传入 SwiftUI 的 `Color`：
 
   ```diff showLineNumbers
   - "brand_color": .color(.uiColor(brandColor)),
   + "brand_color": .color(Color(uiColor: brandColor)),
   ```
 
-- **字体资源**：`AdaptyUIFontAsset` 使用 `color:`、`letterSpacing:` 和 `lineHeight:` 替代 `defaultColor:`、`defaultLetterSpacing:` 和 `defaultLineHeight:`。`color:` 参数接受 SwiftUI `Color`：
+- **字体资源**：`AdaptyUIFontAsset` 使用 `color:`、`letterSpacing:` 和 `lineHeight:` 替代 `defaultColor:`、`defaultLetterSpacing:` 和 `defaultLineHeight:`。`color:` 参数接受 SwiftUI 的 `Color`：
 
   ```diff showLineNumbers
   - "title_font": .font(AdaptyUICustomFontAsset(font: titleFont, defaultColor: .uiColor(.white), defaultLineHeight: 24)),
   + "title_font": .font(AdaptyUIFontAsset(font: titleFont, color: .white, lineHeight: 24)),
   ```
 
-- **数据资产**：`AdaptyUIAsset` 新增了一个资产类型 `.data`。如果 `switch` 语句列举了所有资产类型且没有 `default` 分支，代码将无法编译。由于只有[自定义元素](ios-flow-custom-elements)会读取数据资产，新分支可以留空：`case .data: break`。
+- **数据资产**：`AdaptyUIAsset` 新增了一种资产类型 `.data`。如果 `switch` 语句列举了所有资产类型且没有 `default` 分支，代码将无法编译。由于只有[自定义元素](ios-flow-custom-elements)会读取数据资产，新增的分支可以留空：`case .data: break`。
 
-### AdaptyProduct.localizedBillingPeriod 已弃用 \{#localizedbillingperiod-is-deprecated\}
+## AdaptyProduct.localizedBillingPeriod 已弃用 \{#localizedbillingperiod-is-deprecated\}
 
-`AdaptyProduct` 有一个 [`subscriptionPricingTerms`](fetch-paywalls-and-products) 属性，用于描述该产品的每次付款信息：付款金额以及付款频率。在 4.4 版本中，`localizedBillingPeriod`（显示付款频率的文本）从 `AdaptyProduct` 移至 `subscriptionPricingTerms`。`AdaptyProduct.localizedBillingPeriod` 仍然可用，但会显示弃用警告：它会返回 `subscriptionPricingTerms?.localizedBillingPeriod`。若要消除该警告，请从定价条款中读取该属性：
+`AdaptyProduct` 有一个 [`subscriptionPricingTerms`](fetch-paywalls-and-products) 属性，用于描述该产品的每次付款信息：付款金额以及用户的付款频率。在 4.4 版本中，`localizedBillingPeriod`（显示用户付款频率的文本）从 `AdaptyProduct` 移至 `subscriptionPricingTerms`。`AdaptyProduct.localizedBillingPeriod` 仍然可用，但会显示弃用警告：它返回 `subscriptionPricingTerms?.localizedBillingPeriod`。若要消除该警告，请从定价条款中读取此属性：
 
 ```diff showLineNumbers
 - let period = product.localizedBillingPeriod
 + let period = product.subscriptionPricingTerms?.localizedBillingPeriod
 ```
 
-### 备用文件 \{#fallback-files\}
+## 备用文件 \{#fallback-files\}
 
-[备用文件](fallback-flows)的格式在 SDK 4.4 中有所变更。请重新从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 下载该文件，选择 **Adapty SDK v4.4.0 and higher**，并将其打包到应用中。
+[备用文件](fallback-flows)格式在 SDK 4.4 中发生了变更。请从 **[Placements](https://app.adapty.io/placements)** > **Fallbacks** 重新下载该文件，选择 **Adapty SDK v4.4.0 and higher**，并将其打包到应用中。
 
-下载的文件名为 `ios_4_4_0_fallback.json`。请将其重命名为应用中传入 `Bundle.main.url(forResource:withExtension:)` 的文件名，或直接修改该调用中使用的文件名。
+下载的文件名为 `ios_4_4_0_fallback.json`。请将其命名为应用传入 `Bundle.main.url(forResource:withExtension:)` 的名称，或在该调用中更新文件名。
 
 :::warning
-过时的备用文件不会产生编译错误，但每个版位都会悄悄失去其备用付费墙。SDK 日志随后会显示 "The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
+使用过时的备用付费墙文件不会产生任何编译错误，但所有版位都会悄无声息地失去备用付费墙。SDK 日志将显示："The fallback paywalls version is not correct. Download a new one from the Adapty Dashboard."
 :::
