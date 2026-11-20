@@ -311,6 +311,24 @@ second callout layer around it.
 - A button, image or container gets a **Disabled** state only with a tap interaction, and most
   button presets ship without one.
 
+**Verified 2026-11-20 while documenting custom states in `builder-element-states` (builder code and builder screenshots):**
+
+- The "Add the Disabled state" route above is fixed in the article. The **States** section shows an
+  **Add state** menu (system states left, then **Custom state**); inside **States** settings it sits under
+  the list of states. The single **Disabled state** button remains only when Disabled is the one state left
+  and the element can't take a custom state.
+- Custom states: up to 5 per element; a name of up to 30 characters, no case, trimmed, not **Default**,
+  not a built-in state name or `focused`, not a repeat on the element. Allowed only where the device shows
+  them: buttons, containers, images, videos, timers and carousels with a tap action; selectables with a tap
+  action or in a group; text, email, password, number and phone inputs. Never bottom sheets, tab items,
+  tab content, date and time pickers, progress indicator steps.
+- Priority: a custom state wins over **Disabled**; among custom states the last in the list wins. The look
+  follows the custom state, and **Disabled** still blocks taps.
+- A state condition with an empty side never becomes true (custom and **Disabled**). A row with a value and
+  no variable stops the publish (**Invalid State Condition**, a generated title from the error code).
+- Unconfirmed: the article states that a video restarts and a carousel returns to its first slide on any
+  state switch, with no platform named; only one platform was observed.
+
 **Verified 2026-09-18 while documenting the Free layout direction.** Four layout mechanics that no article carried and this
 brief did not either — all from builder code, all pre-existing rather than part of that change:
 
