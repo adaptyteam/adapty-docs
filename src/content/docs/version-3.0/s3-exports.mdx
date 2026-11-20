@@ -331,6 +331,112 @@ Here is the table structure for the paywall visits:
 | **paywall_revision**  | Revision of the paywall where the transaction originated.                                                    |
 | **variation_id**      | Unique ID of the paywall that was shown. For a flow, the ID of the paywall screen inside the flow, not the A/B test variant. |
 
+## Virtual currency transactions
+
+The virtual currency export sends each change of a [virtual currency](virtual-currencies) balance to your Amazon S3 bucket. Use it to load the full history of credits, spends, expiries, and refunds into your own data warehouse.
+
+This export is separate from the events and paywall visits exports. It has its own switch and credentials, and its own bucket and folder settings. The bucket and folder can be the same as for another export.
+
+### Turn on the export
+
+1. Go to [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) and open the **Virtual currency** tab.
+2. Turn on **Export virtual currency transactions to Amazon S3**.
+3. Enter the [credentials](#how-to-create-amazon-s3-credentials): the access key ID, the secret access key, the S3 bucket name, and the folder. The fields are the same as on the **Paywall visits** tab.
+
+To export the virtual currency transactions of past days, use [manual data export](#manual-data-export).
+
+### File and schedule
+
+Every day, Adapty uploads 1 file with the virtual currency transactions of the previous calendar day in UTC. A transaction belongs to the day of its `created_at` time in UTC.
+
+The file name is `<app_id>_virtual_currency_<date>.csv`, where `<date>` is 1 day after the day of the transactions, in `YYYY-MM-DD` format. For example, the file `<app_id>_virtual_currency_2026-03-08.csv` contains the transactions of March 7, 2026. Each export has its own file name, so the files of all exports can be in one folder.
+
+The file is a UTF-8 `.csv` file with a header row. For a day with no transactions, the file has only the header row.
+
+Each row is one balance change of one currency. A transaction that changes 2 currencies, such as an exchange of gold for gems, gives 2 rows with the same `vc_transaction_id`. Sandbox transactions are in the file too, with `is_sandbox` set to `true`.
+
+When you save the settings, Adapty verifies the credentials of each export that is on. If the virtual currency credentials are invalid, Adapty doesn't save the settings. The **Save** button saves the settings of all tabs, so Adapty doesn't save your changes on the other tabs either.
+
+The virtual currency export uses its own credentials. If its daily upload fails, the events and paywall visits uploads of the app still run.
+
+### Columns
+
+The file has these columns, in this order. Adapty adds new columns only at the end of the file.
+
+| Column | Description |
+| :----- | :---------- |
+| **vc_transaction_id** | Adapty ID of the virtual currency transaction. All rows of one transaction have the same ID. This is not the `Idempotency-Key` of your API request. |
+| **created_at** | Time of the transaction, in UTC, in `YYYY-MM-DD HH:MM:SS.ffffff+00:00` format, for example `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | Adapty profile ID. |
+| **customer_user_id** | Customer user ID of the profile at the time of the export. Empty if the profile has no customer user ID or no longer exists. |
+| **operation** | The [operation](virtual-currencies#operation) of the transaction: `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration`, or `adjustment`. Empty for a server-side API transaction sent without `operation`. |
+| **transaction_type** | How Adapty recorded the transaction, for example `store_purchase`, `subscription_renewal`, `trial_start`, or `api_transaction`. `subscription_renewal` is used for each paid period of a subscription, the first one too. |
+| **currency_code** | Code of the virtual currency. |
+| **amount** | Change of the balance, as an integer. Positive for a credit, negative for a debit. |
+| **balance_after** | Balance of this currency on the profile after this change, as an integer. Never below 0. |
+| **store** | Store of the transaction: `app_store`, `play_store`, `stripe`, `paddle`, `adapty`, or the name of a custom store. Empty if the transaction has no store. |
+| **store_transaction_id** | Store transaction ID of the purchase. The same as **transaction_id** in the events table for this purchase. Empty if the transaction is not linked to a store purchase. |
+| **store_original_transaction_id** | Original store transaction ID of the purchase. All renewals of a subscription have the same value. Filled on the rows of a store purchase, its refund, and its expiry. |
+| **product_id** | Store product ID of the purchase. Empty if the row has no store transaction, or if Adapty has no record of the purchase. |
+| **expires_at** | Time when the credited amount expires, in UTC, in `YYYY-MM-DD HH:MM:SS.ffffff+00:00` format, for example `2026-04-07 14:05:09.000000+00:00`. Filled only on credit rows that expire. |
+| **feature** | The [`feature`](virtual-currencies#feature) of the transaction. |
+| **reference_id** | The `reference_id` of the transaction. |
+| **customer_placement_id** | The `customer_placement_id` of the transaction. |
+| **is_sandbox** | `true` for a sandbox transaction, `false` for a production transaction. |
+| **metadata** | The `metadata` of the transaction, as one JSON value in one cell. Empty if the transaction has no metadata. |
+
+### Join with the events table
+
+The virtual currency file has no prices. To get the price of a purchase that credited a currency, join the credit row with the events table:
+
+- Match **store_transaction_id** with **transaction_id** of the events table.
+- Match **store** too, but only for `app_store`, `play_store`, `stripe`, and `paddle`. For `adapty` and custom stores, the events table has an empty **store**.
+
+This example query assumes that you loaded the virtual currency files into the `vc_transactions` table and the events files into the `events` table:
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+The query uses the default event names. If you changed the event names in the events export settings, use your names in the query.
+
+A credit row has no matching event if the events export is off, if the events export settings exclude or rename the event type of the purchase, or if **Exclude Historical Events** excludes the event.
+
+One purchase can credit more than one currency. Each currency gets its own credit row, and all these rows join the same event. To sum revenue, count each **store_transaction_id** once.
+
+### Limitations
+
+- **No prices or refund amounts**: The virtual currency file has no purchase price and no refund amount. To get the price, [join the credit row with the events table](#join-with-the-events-table).
+- **No link between a spend and its credits**: The file doesn't show which credits a spend used, for example, purchased or granted credits.
+- **Refund rows show only the credits taken back**: A refund row shows the credits that Adapty took back from the balance. Its **amount** can be smaller than the credits that the purchase granted, for example, when the user spent part of them. If no credits were left, the file has no refund row.
+- **No refund row for a subscription upgrade**: A refund that comes from a subscription upgrade takes back no credits. The file has no refund row for it.
+
 ## Events and tags
 
 You can manage what data is communicated by the integration. The integration offers the following configuration options:

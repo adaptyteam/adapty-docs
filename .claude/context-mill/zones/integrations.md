@@ -22,9 +22,15 @@ and error troubleshooting). In the sidebar this is the "Third-party integrations
   event-name mapping. One per destination article.
 - The webhook JSON payload (`POST` to the developer's own endpoint) — canonical schema lives in
   `webhook-event-types-and-fields`.
-- The daily S3 / Google Cloud Storage gzip `.csv` export — a separate, narrower schema
+- The daily S3 / Google Cloud Storage `.csv` export — a separate, narrower schema
   (`revenue_usd`/`proceeds_usd`/`net_revenue_usd` columns), not a re-serialization of the webhook's
-  `event_properties` field names.
+  `event_properties` field names. **Corrected 2026-11-19:** this line said "gzip `.csv`"; the files
+  are plain, uncompressed UTF-8 `.csv` with a header row (backend code, 2026-11-19: the export writes
+  and uploads a `.csv` file and has no compression step). Three feeds, each with its own switch,
+  credentials, bucket, and folder: events (`<app_id>_<date>.csv`), paywall visits
+  (`<app_id>_paywalls_<date>.csv`), and virtual currency transactions
+  (`<app_id>_virtual_currency_<date>.csv`, one row per balance change of one currency). `<date>` is
+  the day after the exported UTC day (backend code and product spec, 2026-11-19).
 - In-app SDK calls the reader adds to their own app code: `setIntegrationIdentifier()` (hand a
   destination's device/user ID to Adapty) and `updateAttribution()` (push attribution data Adapty
   received from a source back into the user's profile). Documented per destination under
@@ -181,7 +187,14 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    into `export-analytics-with-ai`. Both ids are assigned to `agent-tooling` in `zones.json`. A task that
    changes webhook or export behavior should check whether either agent guide needs a matching update,
    even though neither article is in this roster.
-6. **`subscription_deferred` covers both stores since 2026-10-15** (backend code, checked 2026-11-10): a
+6. **The "Virtual currency transactions" section of `s3-exports` and `google-cloud-storage` is a
+   maintained duplicate (added 2026-11-19).** Both pages carry the same setup steps, 19-column table,
+   example SQL join with the events table, and limitations, adapted only for the destination's name and
+   credential fields. Edit both. The column order is a contract with customer loaders: product decision
+   (2026-11-19) that a new column goes only at the end. `virtual-currencies` (zone
+   `products-and-offers`) links to both sections by the anchor `#virtual-currency-transactions`, so a
+   heading rename there breaks that link.
+7. **`subscription_deferred` covers both stores since 2026-10-15** (backend code, checked 2026-11-10): a
    Google Play deferral, and an App Store renewal date extension made through the App Store Server API.
    The extension moves the subscription's expiration date and the access level with it. The event's
    description lives once, in the `WebhookEvents` reusable (rendered in `events`, `webhook`, and
@@ -282,6 +295,13 @@ repeated here.
   for the key: all seven platforms pass the raw string through the open-ended key type. Side effect:
   webhook and S3/GCS `integration_ids` gain a `singular_sdid` key. The server-side API is out of scope
   for this change, so `adapty-api.yaml` stays as is.
+- **S3 and GCS keys are checked at save time; the uploads are separate (2026-11-19, backend code).**
+  When the integration settings are saved, the backend opens the bucket of each credential set whose
+  export switch is on (events, paywall visits, virtual currency). One invalid set refuses the whole
+  save, and the dashboard's one **Save** sends all tabs, so no tab's changes are saved. After the save,
+  each feed's daily upload reads only its own credentials and catches its own error: a failed upload of
+  one feed does not stop the others. The `google-cloud-storage` warning ("all uploads will fail") and
+  its "Troubleshooting" describe the save-time check; both pages state it in the virtual currency section.
 - **Braze revenue goes out only as legacy purchases (2026-10-23, backend code + Braze docs).** Adapty
   sends revenue as the `purchases` array of `/users/track`, with no format setting in the integration.
   Braze put legacy purchase events in maintenance mode and does not enable them for new customers; such
