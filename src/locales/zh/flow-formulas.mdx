@@ -1,0 +1,289 @@
+---
+title: "公式"
+description: "在流程中根据答案、变量和产品价格计算数字或日期，并在文本元素中显示结果或将其用于条件判断。"
+metadataTitle: "公式 | 流程与付费墙 | Adapty 文档"
+---
+
+公式是一种带有计算值（数字或日期）的[自定义变量](onboarding-variables#custom-variables)。公式可以读取用户在流程中给出的答案、其他自定义变量、所选产品以及当前日期。借助流程与付费墙编辑工具中的公式，流程可以在无需编写应用代码的情况下显示计算结果：
+
+- **来自答案的结果**：测验分数之和、根据体重和身高计算的 BMI，或以英尺和英寸表示的身高。
+- **价格**：所选产品打八折后的价格。
+- **日期**：免费试用的结束日期。
+
+流程会在设备上计算公式结果。当公式读取的某个值发生变化时，流程会自动更新结果。你可以在文本元素中显示该结果，也可以在条件判断中使用它。
+
+## 创建公式 \{#create-a-formula\}
+
+1. 在流程编辑工具中打开 <Inline id="variables.svg" alt="Variables" /> Variables 面板。
+2. 添加新变量——点击 <Inline id="plus.svg" alt="Plus" />。
+3. 输入变量的 **Name**，例如 `bmi`。其他公式通过这个名称读取计算结果。
+4. 在 **Value Type** 下拉菜单中，选择 **Formula**。
+5. 在 **Expression** 字段中输入公式，例如 `round({{weight}} * 10000 / ({{height}} * {{height}}), 1)`，其中 `weight` 和 `height` 是 Number 类型变量。规则说明请参阅[编写公式](#write-a-formula)。
+6. 点击 **Create variable**。
+
+<ZoomImage id="flow-formula-create.webp" width="300px" alt="创建变量对话框，显示 Formula 类型、Expression 字段中的 BMI 公式、Number 输出类型，以及 22.9 的预览值" />
+
+当你离开 **Expression** 字段时，编辑工具会对公式进行验证。如果公式存在错误，错误提示将显示在字段下方。错误提示显示期间，**Create variable** 按钮（对于已有变量则是 **Save** 按钮）将处于禁用状态。编辑表达式后，错误提示消失，按钮重新可用。
+
+在无错误的情况下，字段下方会显示提示信息。对于日期公式，提示为"Use a formula to set a date that updates automatically. Use negative n to go back in time"；对于其他公式，提示为"Use round(x, 2) to set the decimals"。
+
+字段下方，编辑工具还会显示：
+
+- **Output type**：**Number** 或 **Date**，即结果的类型。编辑工具根据公式自动设置：当公式为[日期函数](#date-functions)或单独的 Date 值（如 `{{trial_start}}`）时，结果为 Date；其他公式的结果均为 Number。
+- **Date format**：仅适用于 Date 公式。文本元素显示结果的格式。请参阅[在文本元素中显示日期](#show-a-date-in-a-text-element)。
+- **Preview**：根据初始值和产品价格计算得出的结果。请参阅[在编辑工具中预览公式](#preview-a-formula-in-the-builder)。
+
+公式始终依赖其他值，因此没有**Initial value**。同样，您的应用程序也无法设置公式。
+
+### 插入引用和函数 \{#insert-references-and-functions\}
+
+要添加引用或函数而无需手动输入，可以使用 **Output type** 行上的两个按钮。每个按钮都会在 **Expression** 字段的光标位置插入相应文本：
+
+- <Inline id="variables.svg" alt="Insert variable" /> **Insert variable**：列出公式可读取的值，分为三组：**Variables**、**Answers** 和 **Selected product**。选择一个值可插入其引用，例如 `{{weight.value}}`。
+- <Inline id="function.svg" alt="Insert function" /> **Insert function**：列出所有函数，每个函数均附有说明和示例。在搜索框中输入函数名称即可查找。选择某个函数可插入其名称及左括号，例如 `addDays(`，然后输入参数和右括号。
+
+**插入变量**列表仅显示公式可以读取的值，不显示 String、Boolean 或 Array 类型的变量，也不显示当前正在编辑的公式本身。
+
+## 编写公式 \{#write-a-formula\}
+
+公式由数字、值引用、运算符和函数组成。函数名和变量名区分大小写：`Round(2.5)` 会报错。
+
+### 参考文献 \{#references\}
+
+将每个参考文献放在双大括号中：
+
+| 参考 | 公式含义 | 示例 |
+| :--- | :--- | :--- |
+| `{{<variable name>}}` | Number、Date 或 Formula 类型的自定义变量 | `{{discount}}` |
+| `{{<Element ID>.value}}` | [文本或数字输入框](builder-inputs-and-forms)、[数字选择器](builder-number-picker)或日期/日期时间输入框中的答案 | `{{weight.value}}` |
+| `{{<Group ID>.selectedProduct.prod_price}}` | 用户在产品组中选择的产品价格（数字形式） | `{{products.selectedProduct.prod_price}}` |
+| `{{<Group ID>.selectedProduct.offer_price}}` | 所选产品的优惠价格（数字形式） | `{{products.selectedProduct.offer_price}}` |
+| `{{<Group ID>.selectedProduct}}` | 所选产品，仅用作 `addOfferDuration` 的第二个参数 | `{{products.selectedProduct}}` |
+
+当答案为数字时，公式会将其识别为数值——支持前置负号和一位小数（小数点或小数逗号均可）。公式会自动忽略首尾空格。例如，`12`、`-5`、`1.5` 和 `1,5` 均为有效数字。其他格式（如 `abc`、`1,5,0` 或 `1e3`）会使公式返回[无值](#formulas-without-a-value)。在公式读取的数字输入框中，用户只能输入数字。选择 **Decimal (Point)** 或 **Decimal (Comma)** 格式后，用户可以输入对应的小数分隔符，因此各类键盘上的小数键均可正常使用。
+
+日期或日期与时间输入框会返回用户所选的日历日期。
+
+公式可以读取另一个公式的值，但不能读取自身，两个公式也不能相互读取。重命名变量、**Element ID** 或 **Group ID** 后，公式会显示新名称，并读取相同的值。如果删除了某个公式正在读取的变量，该公式会在对应位置显示 `{{deleted variable}}`，并出现错误。
+
+一个名称同时匹配两个值会导致错误。例如，如果自定义变量命名为 `age.value`，而某个输入框的 Element ID 为 `age`，则 `{{age.value}}` 会同时匹配两者。请重命名该自定义变量。
+
+### 数字与运算符 \{#numbers-and-operators\}
+
+- **数字**：始终使用小数点，例如 `0.8`。在函数内部，逗号用于分隔参数：`round(2,5)` 即 `round(2, 5)`，结果为 2，而非 2.5。在函数外部，数字中出现逗号会导致报错。数字或引用前的负号表示负值，例如 `-3`。
+- **运算符**：`+`、`-`、`*` 和 `/`。流程会先计算 `*` 和 `/`，再计算 `+` 和 `-`；同级运算符从左到右依次计算。使用括号可改变计算顺序，例如 `({{a}} + {{b}}) / 2`。
+
+## 数值公式 \{#number-formulas\}
+
+数值公式返回一个数字。
+
+### 数字函数 \{#number-functions\}
+
+| 函数 | 结果 | 示例 |
+| :--- | :--- | :--- |
+| `round(n)` | `n` 四舍五入到整数。正好在中间的值远离零方向舍入。 | `round(2.5)` = 3, `round(-2.5)` = -3 |
+| `round(n, digits)` | `n` 四舍五入到 `digits` 位小数。`digits` 是 0 到 6 之间的整数，须直接写在公式中，不能使用引用或计算式。 | `round(23.12, 1)` = 23.1, `round(1.005, 2)` = 1.01 |
+| `floor(n)` | 不大于 `n` 的最大整数 | `floor(2.7)` = 2, `floor(-2.5)` = -3 |
+| `mod(a, b)` | `a` 除以 `b` 的余数，符号与 `b` 相同，与电子表格中的 MOD 函数一致 | `mod(7, 3)` = 1, `mod(-7, 3)` = 2, `mod(5.5, 2)` = 1.5 |
+
+`round`、`floor` 和 `mod` 的零结果始终为 0，而非 -0。
+
+### 在文本元素中显示数字 \{#show-a-number-in-a-text-element\}
+
+要显示公式或 Date 变量，请从变量选择器的 **Custom** 选项卡中将变量[插入到文本元素](onboarding-variables#use-variables-in-text)里。顶层带有 `round` 的 Date 和数字会以设备语言显示，而非流程语言。
+
+Number 公式的显示方式取决于公式顶层的函数：
+
+- **顶层使用 `round`**：数字精确保留 `round` 所设置的小数位数。使用设备语言的小数分隔符，不带千位分隔符和货币符号。例如，`round(23.12, 1)` 在英语环境下显示"23.1"，在俄语环境下显示"23,1"；`round(15.04, 1)` 在英语环境下显示"15.0"。
+- **其他公式**：数字以原始形式显示，所有语言均使用小数点。某些小数会出现很长的数字尾：例如 `9.99 * 0.8` 显示为"7.992000000000001"。如需控制小数位数，请在公式的顶层使用 `round`，例如 `round(9.99 * 0.8, 2)`。
+
+Number 类型变量以及顶层使用 `floor` 或 `mod` 的公式，在纯文本形式中同样会正常显示。
+
+### 在条件中比较数字 \{#compare-numbers-in-conditions\}
+
+你可以在条件中选择公式或日期变量，例如在[条件可见性](onboarding-element-visibility)规则或条件动作中：
+
+- **Number formulas**：使用与 Number 变量相同的运算符：**Equals**、**Does not equal**、**Greater than**、**Less than**、**Is empty** 和 **Is not empty**。可将公式与某个数字或另一个 Number 值进行比较，例如 `bmi` **Greater than** `25`。这些运算符不包含"大于等于"或"小于等于"。如需匹配 10 及以上的整数（例如测验分数），可使用 `score` **Greater than** `9`。
+
+## 日期公式 \{#date-formulas\}
+
+日期公式返回一个日期值。如需在公式中使用固定日期（例如试用开始日期），请将其存储在日期变量中。
+
+### 创建日期变量 \{#create-a-date-variable\}
+
+1. 打开 <Inline id="variables.svg" alt="Variables" /> Variables 面板，点击 <Inline id="plus.svg" alt="Plus" />。
+2. 输入变量的 **Name**，例如 `trial_start`。
+3. 在 **Value Type** 下拉菜单中，选择 **Date**。
+4. （可选）在 **Initial value** 字段中，以 `DD.MM.YYYY` 格式输入日期，例如 `17.11.2026`，或点击该字段后在日历中选择日期，然后点击 **Apply**。编辑工具不接受不存在的日期，例如 `31.02.2027`。若不设置初始值，则变量在 [**Set variable** 操作](onboarding-actions) 赋值之前将没有任何值。
+5. （可选）在 **Date format** 下拉菜单中，选择文本元素显示日期的格式。详见[在文本元素中显示日期](#show-a-date-in-a-text-element)。
+6. 点击 **Create variable**。
+
+<ZoomImage id="flow-date-variable-create.webp" width="300px" alt="The Create variable dialog with the Date type and the Initial value 17.11.2026" />
+
+Date 变量存储一个不含时间或时区的日期。
+
+如需在用户点击某个元素时更改 Date 变量，请添加 [**Set variable**](onboarding-actions) 动作，选择该 Date 变量，然后以 `DD.MM.YYYY` 格式输入新日期，或在日历中选择。**Set variable** 动作无法修改公式，因为公式始终依赖其他值。
+
+### 日期函数 \{#date-functions\}
+
+| 函数 | 结果 | 示例 |
+| :--- | :--- | :--- |
+| `today()` | 设备上的当前日期 | `today()` |
+| `addDays(date, n)` | `date` 加 `n` 天 | `addDays(today(), 7)` |
+| `addWeeks(date, n)` | `date` 加 `n` 周 | `addWeeks({{trial_start}}, 2)` |
+| `addMonths(date, n)` | `date` 加 `n` 个月 | `addMonths({{trial_start}}, 1)` |
+| `addYears(date, n)` | `date` 加 `n` 年 | `addYears({{birth_date.value}}, 18)` |
+| `addOfferDuration(date, product)` | `date` 加上该产品优惠的时长 | `addOfferDuration(today(), {{products.selectedProduct}})` |
+
+日期函数遵循以下规则：
+
+- **`today()`**：返回设备时区当天开始的时间。流程在打开时读取当天日期，因此即使流程保持打开状态跨过午夜，该值也不会发生变化。
+- **负数和小数 `n`**：`n` 为负数时，日期向前回拨。流程会舍去 `n` 的小数部分：`addWeeks(date, 1.5)` 添加 1 周，`addDays(date, -1.9)` 回拨 1 天。
+- **短月份**：当目标月份没有对应日期时，结果为该月最后一天。例如，2027 年 1 月 31 日加 1 个月为 2027 年 2 月 28 日，2028 年 2 月 29 日加 1 年为 2029 年 2 月 28 日。
+- **`addOfferDuration`**：按顺序依次叠加 Adapty SDK 传入流程的产品各优惠阶段。每个阶段的计算方式为：该阶段的时长周期乘以其周期数，一次性完成叠加。例如，从 2026 年 11 月 10 日开始的 7 天免费试用，将于 2026 年 11 月 17 日结束。如果产品没有优惠，或某个优惠阶段的周期未知，则结果为空值。
+
+在公式中，Date 只能作为日期函数的第一个参数。在计算式中使用 Date（例如 `{{trial_start}} + 1`）会报错。Number 不能作为日期函数的第一个参数。String、Boolean 或 Array 变量不能出现在公式中。
+
+### 在文本元素中显示日期 \{#show-a-date-in-a-text-element\}
+
+若要显示公式或 Date 变量，请从变量选择器的 **Custom** 标签页将该变量[插入文本元素](onboarding-variables#use-variables-in-text)。顶层带有 `round` 的日期和数字会以设备语言显示，而非流程语言。
+
+Date 变量和 Date 公式在变量设置中均包含 **Date format** 选项。所有引用该变量的文本元素都会使用此格式，修改格式后，这些文本元素也会随之更新。新建变量默认使用 **Medium** 格式。
+
+要在同一文本元素中使用其他格式，请在 **Content** 字段中点击变量并选择一种格式。若要恢复变量的默认格式，请选择 **Variable default**。可用格式如下：
+
+| 日期格式 | 英语示例 |
+| :--- | :--- |
+| **Short** | 11/17/26 |
+| **Medium** | Nov 17, 2026 |
+| **Long** | November 17, 2026 |
+| **Month D** | November 17 |
+| **Mon D** | Nov 17 |
+
+**Short**、**Medium** 和 **Long** 会根据设备语言的日期顺序进行显示。**Month D** 和 **Mon D** 在所有语言中均将月份置于日期之前，例如俄语中显示为"ноября 17"。
+
+### 在条件中比较日期 \{#compare-dates-in-conditions\}
+
+您可以在条件中选择公式或日期变量，例如[条件可见性](onboarding-element-visibility)规则或条件动作：
+
+- **日期变量和日期公式**：使用 **Equals**、**Does not equal**、**Earlier than** 或 **Later than**。将日期与另一个日期进行比较，或与您以 `DD.MM.YYYY` 格式输入或在日历中选取的日期进行比较。
+
+日期比较针对的是日历天数，而非具体时间。例如，用户在 2026 年 11 月 17 日 21:00 选取的日期等同于 `17.11.2026`。日期不能与数字进行比较。
+
+## 无值公式 \{#formulas-without-a-value\}
+
+当公式中的某个值在设备上无法获取时，该公式将没有值：
+
+- 某个答案为空，或不是数字。
+- 产品价格未能加载。
+- 所选产品没有优惠，但公式中读取了 `offer_price` 或调用了 `addOfferDuration`。
+- 公式除以零，例如 `{{a}} / 0` 或 `mod({{a}}, 0)`。
+- 公式读取的 Date 变量没有值。
+
+读取了无值公式的公式本身也没有值。公式在没有值的情况下会按以下方式运作：
+
+- **文本元素**：公式不显示任何内容。
+- **条件**：**Is empty** 为真。**Equals**、**Does not equal** 以及公式的所有比较条件均为假。
+
+当公式所读取的值发生变化时，流程会更新公式的计算结果：用户输入答案时、**Set variable** 操作更改某个变量时，或产品价格加载完成时。如果用户返回并清空了某个答案，则在下一个页面该公式将没有对应的值。在流程更改自定义变量之前，公式读取的是该变量的初始值。
+
+## 在编辑工具中预览公式 \{#preview-a-formula-in-the-builder\}
+
+编辑工具会根据自定义变量的初始值和所选产品的 `prod_price` 来计算公式结果。当公式读取以下任何内容时，**Expression** 字段下方的 **Preview** 将显示 **No value**：
+
+- 用户输入或选择的答案
+- `offer_price`
+- `addOfferDuration` 的优惠内容
+- 没有值的变量，例如没有初始值的日期变量
+
+在这些情况下，画布上的文本元素会显示大括号中的变量名，例如 `{{trial_end}}`。要查看答案的值，请[在 Adapty 移动应用中预览流程](paywall-device-compatibility-preview)。优惠的值需要包含真实产品的应用构建版本。
+
+在画布上，顶层带有 `round` 的日期和数字会以你在预览中选择的语言显示。
+
+## 示例 \{#examples\}
+
+### 显示答案总和 \{#show-a-sum-of-answers\}
+
+在某个屏幕上，添加三个 Number 输入控件，元素 ID 分别设为 `a1`、`a2` 和 `a3`。创建一个名为 `sum` 的公式：
+
+```
+{{a1.value}} + {{a2.value}} + {{a3.value}}
+```
+
+在下一个屏幕中，将 `sum` 插入到文本元素里。如果用户分别输入 2、3、4，文本显示"9"；如果用户返回并将 4 改为 5，文本则显示"10"。
+
+### 显示 BMI 及"High"标签 \{#show-a-bmi-and-a-high-label\}
+
+添加一个元素 ID 为 `weight` 的数字输入框（用于输入体重，单位：千克），以及一个元素 ID 为 `height` 的数字输入框（用于输入身高，单位：厘米）。创建公式 `bmi`：
+
+```
+round({{weight.value}} * 10000 / ({{height.value}} * {{height.value}}), 1)
+```
+
+将 `bmi` 插入文本元素。当 BMI 为 23.12 时，英语设备语言下用户看到的是"23.1"，俄语设备语言下看到的是"23,1"。如需仅在 BMI 超过 25 时显示"High"标签，可添加一个包含"High"文字的文本元素，并为其设置[条件可见性](onboarding-element-visibility)规则：`bmi` **大于** `25`。
+
+### 显示折扣价格 \{#show-a-discounted-price\}
+
+创建一个公式 `discounted`，对所选产品的价格打八折：
+
+```
+{{products.selectedProduct.prod_price}} * 0.8
+```
+
+然后创建公式 `shown`，将其四舍五入到小数点后两位：
+
+```
+round({{discounted}}, 2)
+```
+
+将 `shown` 插入文本元素。对于价格为 9.99 的产品，文本显示"7.99"；当用户选择价格为 100 的产品时，文本显示"80.00"。数字不带货币符号。如果所选产品的价格未能加载，文本为空。
+
+### 显示试用期结束日期和提醒日期 \{#show-the-end-of-a-trial-and-a-reminder-date\}
+
+创建公式 `trial_end`：
+
+```
+addOfferDuration(today(), {{products.selectedProduct}})
+```
+
+然后创建公式 `reminder`，表示试用期结束前三天：
+
+```
+addDays({{trial_end}}, -3)
+```
+
+对于提供 7 天免费试用的产品，在 2026 年 11 月 10 日时，`trial_end` 为 2026 年 11 月 17 日，`reminder` 为 2026 年 11 月 14 日。使用 **Medium** 日期格式时，文本显示为"Nov 17, 2026"；使用 **Month D** 格式时，显示为"November 17"。
+
+### 以英尺和英寸显示身高 \{#show-a-height-in-feet-and-inches\}
+
+添加一个元素 ID 为 `height` 的数字输入框，用于输入以厘米为单位的身高。创建三个公式：
+
+- `total`：`round({{height.value}} / 2.54)`，以整英寸表示的身高。
+- `feet`：`floor({{total}} / 12)`。
+- `inches`：`mod({{total}}, 12)`。
+
+在文本元素中，插入 `feet`，输入"ft"，再插入 `inches`，然后输入"in"。输入 180 cm 时，文本显示"5 ft 11 in"；输入 140 cm 时，显示"4 ft 7 in"。
+
+## 故障排查 \{#troubleshooting\}
+
+当你离开 **Expression** 字段时，编辑工具会在该字段下方显示公式的第一个错误。以下是一些示例：
+
+| 错误文本 | 原因及修复方法 |
+| :--- | :--- |
+| `addDays() needs a date and a number` | 函数的参数数量有误，或参数类型不正确。请使用[数字函数](#number-functions)或[日期函数](#date-functions)表中列出的参数。 |
+| `Unknown function "flor". Use one of: …` | 函数名称拼写有误，或大小写不一致。请使用错误提示列表中的函数名称。如需读取变量，请将变量名放在 `{{ }}` 中。 |
+| `Use a dot in a decimal number, like 1.5` | 函数外部的数字使用了逗号。请将逗号替换为小数点。在函数内部，编辑工具会将逗号识别为参数分隔符，因此同样需要使用小数点。 |
+| `{{…}} is not a variable, an answer or a product field of this flow` | 不存在该名称的变量、元素 ID 或产品组。请修正名称，或创建该变量。 |
+| `This variable no longer exists. Pick another one.` | 公式所引用的变量已被删除，表达式中会显示为 `{{deleted variable}}`。请将其替换为其他引用。 |
+| `{{…}} is the name of a variable and of an element answer: rename the variable` | 该名称与两个值重复。请重命名自定义变量。 |
+| `{{…}} uses this formula: formulas cannot use each other in a loop` | 两个或多个公式互相引用，形成循环。请删除其中一个引用。 |
+
+<ZoomImage id="flow-formula-error.webp" width="300px" alt="Expression 字段下方的未知函数错误，以及可用函数列表" />
+
+包含错误的公式会阻止发布。**Can't publish yet** 对话框会在 **Variables** 下列出每个存在错误的公式。关于发布时可能出现的错误，请参阅[常见问题](flow-common-issues#a-flow-wont-preview-or-publish)。
+
+## 限制 \{#limitations\}
+
+- **仅限数字和日期**：公式只能返回数字或日期。如需根据结果显示文本，请在文本元素中添加[条件文本](onboarding-text#add-conditional-text)。例如，若要在 BMI 超过 25 时显示"High"，请将 **if** 条件设置为 `bmi` **Greater than** `25`，然后在 **then** 下输入"High"。
+- **产品价格**：公式只能读取每个产品组中已选产品的价格，无法读取用户未选择产品的价格，例如当用户选择年度方案时，无法读取月度方案的价格。若要在屏幕打开时显示结果，请在某张产品卡片上选择 **Set as default**。
+- **iOS 和 Android 上的优惠活动**：在 iOS 上，Adapty SDK 会向流程传递一个优惠活动。在所有对用户可用的优惠中，优先传递赢回优惠，其次是促销活动，最后是新用户优惠。在 Android 上，Adapty SDK 只传递新用户优惠的第一阶段。对于"免费试用 + 折扣价"的组合，Android 上的 `addOfferDuration` 只会计入试用阶段。
