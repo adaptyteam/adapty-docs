@@ -132,7 +132,8 @@ on one side, a non-deterministic agent on the other.
   no install command to hand over, so two articles walk its settings. `manage-adapty-with-ai` walks the
   plugin settings (**Settings → Plugins**, **Capabilities**) with two screenshots, in its claude.ai
   tab; `adapty-mcp` gives per-client connection steps (claude.ai's custom connector, the Claude Code
-  and Codex commands, Codex's `config.toml`) and no screenshots. Same limits as the first:
+  and Codex commands, Codex's `config.toml`, and since 2026-11-19 the `*.adapty.io` allowed domain in
+  claude.ai's **Capabilities**) and no screenshots. Same limits as the first:
   Anthropic-owned labels are reader-reported, and every other client gets one generic line, not a
   walkthrough. So Claude's UI has three articles in its blast radius: `developer-cli-cowork`,
   `manage-adapty-with-ai`, `adapty-mcp`.
@@ -304,6 +305,17 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
   The dashboard side of the feature is the `retention-messaging` zone; this page links there for states and metrics instead of
   restating them.
 - **2026-11-18, paywall `kind` in `developer-cli-paywalls`:** `paywalls list` rows and `paywalls get` carry a read-only `kind`, `custom` or `legacy_builder`, and `paywalls list --kind` filters by it; the server checks the value. `legacy_builder` follows the builder setting of the paywall (either builder flag), not a saved layout, and names no builder version. `paywalls update --file` with the `paywalls get --json` body ignores `kind`. Source: backend code and the adapty-cli feature branch before merge, 2026-11-18; not checked against a released CLI. Open: the CLI version that ships `--kind` is not known yet, so the page names no version for it. An update writes the older builder flag as false, so a paywall with only that flag reads `custom` after an update (backend code, 2026-11-18); the page leaves this out as a defect, not a behavior. Ripple: the same fields are named in `migrate-placements` and `growth-advisor` in `adaptyteam/adapty-skills`.
+- **2026-11-19, file uploads over MCP in claude.ai:** the MCP server can hand the assistant a
+  short-lived (3-minute) upload link on an `adapty.io` subdomain, so an image attached in claude.ai (a
+  flow image, an App Store review screenshot) goes from Claude's sandbox to Adapty with `curl`. The
+  sandbox reaches only allowed domains, so `adapty-mcp` now has a claude.ai step to add `*.adapty.io`
+  once (**Settings → Capabilities**, with **Code execution and file creation** and **Allow network
+  egress** on; on Team and Enterprise an organization owner in **Organization settings →
+  Capabilities**) and a Troubleshooting row for the 403 of the sandbox proxy. The `:::tip` in
+  `developer-cli-cowork` now names this exception: the MCP server needs an allowed domain only to send a
+  file, and the tip links the `adapty-mcp` step. Product test in claude.ai, 2026-11-18: 403 before the
+  entry, a pass after it; the first retry after the entry still got 403, so the pages say the setting
+  can take a few minutes or a new conversation. Not run: the EU upload host behind the same wildcard.
 - **2026-11-17, `adapty fallbacks get` shipped (adapty-cli 0.25.0, PR #44 merged):** moved from a section of `developer-cli-reference` to its own topic page `developer-cli-fallbacks`, because the reference became a topic index. From the merged `src/cli/commands/fallbacks/get/command.ts`: the full `--sdk-version` → format table (4.1–4.3 → 11, 4.4.0 and later → 12, down to below 3.0 → 5), flow placements only in formats 10–12, 30 downloads per hour per app shared by all tokens, the 300-second wait for the server to build the file, and the exit codes. The format table changes with the next SDK format; re-read the command's description when an SDK release changes the dashboard's Fallbacks options.
 - **2026-11-11, Apple Ads over MCP:** the `ads-manager` skill works through the MCP server and prefers
   it when both ways are ready (`adaptyteam/adapty-skills` `plugin/skills/ads-manager/SKILL.md`,
