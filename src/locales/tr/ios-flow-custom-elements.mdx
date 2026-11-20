@@ -1,0 +1,182 @@
+---
+title: "iOS SDK ile özel öğeleri görüntüleme"
+description: "Bir flow'un her özel öğesinde yerel bir SwiftUI görünümü görüntüleyin ve flow'u bir cihazda test edin."
+metadataTitle: "Özel öğeleri görüntüleme | iOS SDK | Adapty Dokümanları"
+---
+
+<FlowCustomElementsIntro />
+
+## Başlamadan önce \{#before-you-start\}
+
+Şunlara ihtiyacınız var:
+
+- **Adapty iOS SDK 4.4 veya üzeri**: Daha eski sürümler, her özel öğe için yedek gösterir.
+- **Yerel bir iOS uygulaması**: Flutter gibi çapraz platform framework'leri için Adapty SDK'ları, her özel öğe için yedek gösterir.
+- **Özel öğeler için bir adlandırma şeması**: Her yerel görünüme `lottie_animation` gibi bir Tür verin. Türlerde yalnızca küçük harf, rakam ve alt çizgi kullanın. Aynı Türden özel öğeler arasında ayrım yapmak için her birine `welcome_wave` gibi bir ID verin. Kodunuzdaki Türler ve ID'ler, [Flow & Paywall Builder](flow-custom-elements#add-and-configure)'daki ile eşleşmelidir.
+
+## Özel öğeler için görünümler oluşturun \{#create-views-for-custom-elements\}
+
+Her Type için yerel bir SwiftUI görünümü oluşturun ya da uygulamanızdaki mevcut bir görünümü yeniden kullanın. Aşağıdaki `lottie_animation` Type'ına ait görünüm, bir Lottie animasyonu oynatır:
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+### Gereksinimleri ve En İyi Uygulamaları Görüntüleyin \{#view-requirements-and-best-practices\}
+
+- **Boyutlandırma**:
+  - **Dolgu ve hizalama**: Native view'ın, Flow & Paywall Builder'da belirlediğiniz container'a (dolgu hariç) tam olarak sığdığından emin olun. View tüm alanı kaplamıyorsa varsayılan olarak alanın sol üst köşesinde görünür. Konumunu değiştirmek için özel öğenin **Layout** bölümündeki hizalama ayarını kullanın.
+  - **Hug yüksekliği**: Özel öğenin yüksekliği **Hug** olarak ayarlanmışsa, kullanılabilir alanı dolduracak şekilde genişleyen bir view (harita gibi) daralır. Bunun yerine özel öğeye [**Fixed** yüksekliği](flow-custom-elements#add-and-configure) verin.
+- **Flow aksiyonları**: Native view, bir sonraki ekrana geçiş gibi flow aksiyonlarını tetikleyemez. Navigasyon düğmelerini, satın alma düğmelerini ve flow aksiyonuna sahip diğer düğmeleri özel öğenin dışında tutun.
+- **Seçilebilir öğeler**: Özel öğeyi ürün kartlarının ve diğer [seçilebilir öğelerin](flow-selectable-elements) dışında tutun. Seçim değiştiğinde native view durumunu kaybedebilir.
+- **Navigasyon yönetimi**: Kullanıcı bir sonraki ekrana geçtiğinde SwiftUI, native view'ın `onDisappear` aksiyonunu çalıştırır. Bu aksiyonda, kamera oturumları, oynatıcılar ve konum güncellemeleri gibi view'ın başlattığı işlemleri durdurun. Asenkron işler için `.task` kullanın: SwiftUI, view kaybolduğunda bunu otomatik olarak iptal eder. Kullanıcı geri döndüğünde SDK, resolver'ı yeniden çağırır ve SwiftUI view'ın durumunu sıfırlar.
+- **UIKit view'ları**: Bunları `UIViewRepresentable` içine sarın.
+
+## Özel elementler ve görünümler için resolver yazın \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Bir resolver yazmak için, bir türü `AdaptyUICustomElementsResolver` protokolüne uyumlu hale getirin ve `view(forType:id:context:)` metodunu uygulayın.
+
+`lottie_animation` Türü için aşağıdaki resolver, `LottieElementView` döndürür. ID, uygulama paketindeki animasyon dosyasının adını belirtir; örneğin `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`default` durumunda `nil` döndürün. Uygulamayı yayınladıktan sonra [yeni bir Type ile özel bir element eklerseniz](flow-custom-elements#what-changes-require-an-app-release), yayınlanan sürümün kullanıcıları onun yedek görünümünü görür.
+
+Resolver şu gereksinimlere sahiptir:
+
+- **Ağ verisi ve oynatıcılar**: Ağ verisini ve oynatıcıları [yerel view](#create-views-for-custom-elements) içinde tutun, resolver içinde değil. SDK, ekran açıkken resolver'ı birçok kez çağırır; örneğin ürünler yüklenirken veya bir satın alma başlarken. Resolver içindeki kod her çağrıda yeniden çalıştığından ağ istekleri tekrarlanır ve oynatıcılar baştan başlar. SwiftUI, yerel view'ın durumunu çağrılar arasında korur; böylece veriler bir kez yüklenir ve oynatıcılar çalmaya devam eder. Oynatıcıları, oturumları ve ağ isteklerini `.task` içinde veya bir `@StateObject` içinde oluşturun; `@State` özelliğinin başlangıç değerinde değil. Swift, resolver her view oluşturduğunda bu başlangıç değerini yeniden hesaplar.
+- **Her özel öğe için bir yerel view**: Bazı yerel view'lar ekran açıkken değişir; örneğin verileri yüklendiğinde veya kullanıcı bunlara dokunduğunda. Bu mantığı view'ın `body`'sinde uygulayın, resolver'da değil. Resolver aynı özel öğe için farklı bir view döndürürse SwiftUI view'ın durumunu sıfırlar.
+- **Uygulama verisi**: Veriyi tutan uygulama nesnesini (örneğin [günlük streak](custom-element-lottie-animation) içeren bir `ObservableObject`) resolver'ın bir özelliğinde saklayın. Nesneyi yerel view'a geçirin ve orada `@ObservedObject` ile gözlemleyin. Resolver'a kopyaladığınız bir değer (örneğin streak sayısı), resolver'ı oluşturduğunuzda ne idiyse öyle kalır. Bu veri için environment object kullanmayın: UIKit [flow controller](ios-present-paywalls#present-flows-and-paywalls-in-uikit) kullanıldığında yerel view, uygulamanızın SwiftUI environment'ını almaz.
+
+### Yedek içerik için koşulları belirleyin \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+Bir izin için, yalnızca kullanıcı ekran açılmadan önce izni reddettiyse `nil` döndürün. Kullanıcı henüz izin isteğine yanıt vermediyse `nil` yerine native view'ı döndürün ve izni bu view içinde isteyin. Örneğin, [Bir flow'da haritada yakındaki yerleri göster](custom-element-map#3-match-the-map-to-the-custom-element) sayfasında iOS, harita görününce konum erişim iznini sorar. Native view, kullanıcı erişim izni verir vermez haritayı gösterebilir. `nil` döndürürseniz ve kullanıcı daha sonra izin verirse, kullanıcı yedek içeriği görmeye devam eder. İzin değişikliği SDK'nın resolver'ı yeniden çağırmasını sağlamaz. Native view yalnızca SDK resolver'ı tekrar çağırdıktan sonra görünür; örneğin kullanıcı ekrana geri döndüğünde.
+
+## Resolver'ı SDK'ya geçirin \{#pass-the-resolver-to-the-sdk\}
+
+Uygulama genelinde bir resolver ile başlayın. SDK, kendi resolver'ı olmayan her flow'da bunu çağırır. Kullanıcılar, bir uygulama güncellemesi olmadan yeni flow'larda ve A/B testlerinde native görünümlerinizi görür. Bu görünümler, [günlük seri](custom-element-lottie-animation) gibi verileri uygulamanızdan okuduğundan her kullanıcıya kendi verilerini göstermeye devam eder.
+
+Bir flow, yalnızca o flow açıldığında uygulamanızın sahip olduğu verilere ihtiyaç duyduğunda, o flow'a bir resolver ekleyin. Örneğin, bir paywall [kullanıcının önceki bir flow'da girdiği ağırlığı](custom-element-interactive-chart) gösteriyor ya da kullanıcının dışa aktarmak istediği belgenin önizlemesini sunuyor olabilir. Ayrıca, o flow'daki bir Type için farklı bir görünüm göstermek amacıyla da tek bir flow'a resolver ekleyebilirsiniz.
+
+### Uygulama genelinde bir resolver ayarlama \{#set-an-app-wide-resolver\}
+
+Resolver'ı her flow'da kullanmak için `AdaptyUI.setCustomElementsResolver(_:)` fonksiyonunu, örneğin uygulama başlangıcında, bir kez çağırın:
+
+```swift showLineNumbers title="Swift"
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver()
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+:::tip
+Resolver yaklaşımına daha basit ve sınırlı bir alternatif olarak, Type anahtarlarıyla bir `[String: AdaptyUICustomElementBuilder]` sözlüğü geçirebilirsiniz. Bu daha az kod gerektirir, ancak [yedek içerik için koşul belirleyemezsiniz](#set-conditions-for-fallback-content).
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+:::
+
+### Bir flow'a resolver ekleme \{#attach-a-resolver-to-one-flow\}
+
+Bir flow'a eklediğiniz resolver, o flow'daki uygulama genelindeki resolver'ın yerini alır. Bu resolver'a geçirdiğiniz değerler, flow yapılandırmasını çektiğiniz andaki haliyle kalır. Yeni değerleri göstermek için yapılandırmayı yeniden çekin.
+
+Bu flow'da uygulama genelindeki görünümleri korumak için uygulama genelindeki resolver'ı bu resolver'a geçirin ve diğer Type ile ID'ler için uygulama genelindeki resolver'ı çağırın. Aşağıdaki resolver, kullanıcının dışa aktarmak istediği belgeyi önizler ve diğer tüm özel öğeler için uygulama genelindeki resolver'ı çağırır:
+
+```swift showLineNumbers title="Swift"
+
+struct ExportPaywallResolver: AdaptyUICustomElementsResolver {
+    let document: Document // the document that the user wants to export
+    let appWideResolver: any AdaptyUICustomElementsResolver
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        if type == "document_preview" {
+            return AnyView(DocumentPreview(document: document))
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.view(forType: type, id: id, context: context)
+    }
+}
+```
+
+Flow yapılandırmasını alırken resolver'ı flow'a bağlayın:
+
+```swift showLineNumbers title="Swift"
+func showExportPaywall(flow: AdaptyFlow, document: Document) async {
+    do {
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: ExportPaywallResolver(
+                document: document,
+                appWideResolver: customElementsResolver // the instance that you set app-wide
+            )
+        )
+        // present the flow
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Çözümleyiciler yerine sözlükler kullanıyorsanız, iki sözlüğü birleştirip sonucu flow'a ekleyin: `appWideViews.merging(flowViews) { _, flowView in flowView }`. Her iki sözlükte de bulunan bir Type için bu kod, söz konusu flow'a ait view'ı korur.
+
+## Cihazda test etme \{#test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle canvas yalnızca yedek içeriği gösterir. Native view'daki bir hata uygulamanın çökmesine neden olabilir. Uygulamayı yayınlamadan önce, özel eleman içeren her ekranı bir cihazda test edin:
+
+1. Her flow'un önbelleğe alınmış sürümü yerine en son yayımlanmış sürümünü görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Cihazda, resolver'ı içeren bir build çalıştırın. Özel öğe barındıran her ekranı açın ve native görünümün belirdiğini ve özel öğeye uyduğunu doğrulayın. Görünüm kaydırılabiliyorsa veya sürükleme hareketlerine yanıt veriyorsa bu hareketleri de test edin.
+3. Native görünüm yerine yedek görünüm beliriyorsa Xcode konsolunda şu uyarıyı arayın: `custom element <type>:<id> is not served by a resolver`. Ardından şunları doğrulayın:
+   - Uyarıdaki Type ve ID, kodunuzdakilerle harf harf eşleşiyor.
+   - Uygulamanızın, görünümün ihtiyaç duyduğu dosya, veri veya izne sahip olduğunu.
+   - Uygulamanızın, özel öğe içeren ekran açılmadan önce uygulama genelindeki resolver'ı ayarladığını.
+   - [Bu flow için bir resolver](#attach-a-resolver-to-one-flow) eklediyseniz, söz konusu resolver'ın Type ve ID için bir görünüm döndürdüğünü.
+
+   Se uyarı görünmüyorsa, uygulamanın Adapty iOS SDK 4.4 veya üzerini kullandığını ve [`Adapty.logLevel`](sdk-installation-ios#logging) değerinin `.error` olmadığını doğrulayın.
+4. Yedek paywalli önizlemek için Type değeri olarak `nil` döndürün ve ekranı yeniden açın.
+
+## Örnekler \{#examples\}
+
+Her tarif, builder'daki kurulumu ve uygulamanız için gereken kodu gösterir:
+
+- [Lottie animasyonuyla kullanıcı ilerlemesini gösterme](custom-element-lottie-animation): Seri uzadıkça dolup taşan bir halka.
+- [Paywall'da etkileşimli kilo hedefi grafiği gösterme](custom-element-interactive-chart): Onboarding flow'unu takip eden paywall flow'undaki bir kilo hedefi grafiği.
+- [Flow'da yakın yerleri harita üzerinde gösterme](custom-element-map): Her kullanıcıya yakın fitness merkezlerinin haritası.

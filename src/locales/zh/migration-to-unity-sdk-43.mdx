@@ -1,0 +1,95 @@
+---
+title: "将 Adapty Unity SDK 迁移至 v4.3"
+description: "迁移至 Adapty Unity SDK v4.3：升级至 Unity 6、清理 Android 插件目录、移除 GetLogLevel、决定 Google Play 消息的显示方式，以及将流程事件的数值参数读取为 long 类型。"
+metadataTitle: "迁移至 Adapty Unity SDK v4.3 | Adapty 文档"
+---
+
+Adapty Unity SDK 4.3 要求使用 Unity 6，移除了 `Adapty.GetLogLevel`，默认显示 Google Play 应用内消息，并更改了 Android 上部分流程事件数据的 C# 类型。请逐项阅读本指南，以确保应用行为保持不变。
+
+如果您仍在使用 3.x 版本，请先参阅 [迁移到 v4.1](migration-to-unity-sdk-v4)，然后再按本指南操作。
+
+## 快速参考 \{#quick-reference\}
+
+| v4.1 | v4.3 |
+|---|---|
+| Unity 2022.3 或更高版本 | Unity 6.0 (6000.0) 或更高版本 |
+| `Adapty.GetLogLevel(...)` | 已移除——请通过 `builder.LogLevel` 或 `Adapty.SetLogLevel` 自行跟踪已设置的日志级别 |
+| 不请求 Google Play 消息 | Android 上默认显示 Google Play 消息，包括在流程中 |
+| 整数型流程事件参数在 Android 上以 `double` 形式传入 | 在两个平台上均以 `long` 形式传入 |
+
+## 安装 \{#installation\}
+
+Adapty Unity SDK 4.3 需要 **Unity 6.0 (6000.0)** 或更高版本。如果你的项目基于 Unity 2022.3，请先升级项目，或继续使用 Adapty SDK 4.1.x。
+
+:::warning
+Adapty SDK 4.1.x 不兼容 GameActivity（Unity 6 新项目的默认 Android 入口点）：completion handler 和事件无法传递到 C#。如果你在升级 SDK 之前先升级了 Unity，请将 **Application Entry Point** 保持设置为 **Activity**，直到你切换到 Adapty SDK 4.3。SDK 4.3 同时支持两种入口点。
+:::
+
+如需通过 Unity Package Manager 安装 SDK 4.3，请使用以下 Git URL：
+
+```
+https://github.com/adaptyteam/AdaptySDK-Unity.git?path=/Packages/com.adapty.unity-sdk#4.3.0-beta.1
+```
+
+如果你通过 Unity 包安装，请从 [4.3.0-beta.1 发布页面](https://github.com/adaptyteam/AdaptySDK-Unity/releases/tag/4.3.0-beta.1)下载 `adapty-unity-plugin-4.3.0-beta.1.unitypackage`。导入前请先删除 `Assets/AdaptySDK/Plugins/Android/Local` 文件夹。SDK 4.3 已不再内置该文件夹中的 Android Java 内部包装器，而导入 `.unitypackage` 不会自动删除已有文件，因此若不手动删除，旧包装器将继续留在项目中。
+
+其他要求与 4.1 保持一致：**iOS 15.0** 和 **Xcode 26**。完整配置步骤请参阅[安装 Adapty SDK](sdk-installation-unity)。
+
+## 已移除 `GetLogLevel` \{#getloglevel-is-removed\}
+
+`Adapty.GetLogLevel` 不再可用。日志级别由你在激活 SDK 时通过 `builder.LogLevel` 设置，或之后通过 `Adapty.SetLogLevel` 设置。如果你的代码需要读取当前日志级别，请自行保存所设置的值：
+
+```diff showLineNumbers
+- Adapty.GetLogLevel((level, error) => {
+-     // use level
+- });
++ var logLevel = AdaptyLogLevel.Verbose;
++ builder.LogLevel = logLevel;
++ // use logLevel
+```
+
+## 默认显示 Google Play 消息 \{#google-play-messages-are-shown-by-default\}
+
+从 4.3 版本开始，SDK 会在每次应用的 `Activity` 启动后（即激活后）自动向 Google Play 请求应用内消息，例如支付失败通知。这包括应用回到前台、流程或用户引导打开或关闭的时刻，因此消息可能会覆盖在付费墙上方。
+
+如果这对你的应用没有影响，则无需任何更改。如需自定义消息的显示时机，请在 Android 上以手动处理模式激活 SDK，并在合适的时机调用 `Adapty.ShowStoreMessages`：
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY");
+#if UNITY_ANDROID
+builder.SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual);
+#endif
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+仅在 Android 上设置手动处理，以保持 iOS 行为不变：在 iOS 16 及更高版本上，手动处理同样会暂停 App Store 消息的显示，直到应用调用 `Adapty.ShowStoreMessages`。完整 API 请参阅[控制商店消息](unity-store-messages)。
+
+:::warning
+在手动模式下，商店不会自行显示消息。如果你的应用从未调用 `Adapty.ShowStoreMessages`，用户将永远看不到付款被拒的通知。
+:::
+
+## Android 上流程事件的数字参数类型为 `long` \{#numeric-flow-event-parameters-are-long-on-android\}
+
+在 Android 上，`FlowViewDidReceiveAnalyticEvent` 的整数参数以前以 `double` 类型传递。从 4.3 版本开始，与 iOS 保持一致，改为以 `long` 类型传递。这也包括[流程输入](unity-flow-input)事件的日期和时间值。
+
+在 Android 上，直接将其强制转换为 `double` 现在会抛出异常。请使用转换而非强制转换的方式处理数字参数：
+
+```diff showLineNumbers
+- var timestamp = (double)parameters["value"];
++ var timestamp = Convert.ToInt64(parameters["value"]);
+```
+
+## 4.3 新增内容 \{#new-in-43\}
+
+以下新增功能均为选择性启用，不影响现有代码的正常运行：
+
+- **[控制商店消息](unity-store-messages)**：选择 App Store 和 Google Play 消息的显示时机。
+- **[预加载版位](unity-optimize-paywall-fetching#preload-placements)**：`Adapty.PreloadFlows` 和 `Adapty.PreloadFlowsForDefaultAudience` 可预热流程缓存。
+- **[保留流程视图](unity-present-paywalls#keep-the-view-to-present-it-again)**：`view.Dismiss(false, ...)` 保留视图以便再次展示，`view.Destroy(...)` 则释放视图。
+- **[12 个月承诺计划](set-up-12-month-commitment)**：`AdaptySubscription.PricingTerms` 属性在 iOS 上描述计划详情，访问等级和订阅会上报 `BillingPlan` 和 `CommitmentInfo`。
+- **新错误码**：`AdaptyErrorCode.BillingPlanUnavailable`（1060，仅 iOS）。当设备或商店区域不支持所请求的结算计划时，`MakePurchase` 会返回此错误。如果你的代码枚举了所有 `AdaptyErrorCode` 值，请记得处理这个新值。
+- **[观察者模式](report-transactions-observer-mode-unity)**：`Adapty.ReportTransaction` 在 iOS 上可接受可选的 `appleJWSTransaction` 参数。
+- **实验变体名称**：`AdaptyFlow.VariationName` 返回你在 Adapty 看板中设置的实验变体名称。

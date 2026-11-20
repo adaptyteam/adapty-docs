@@ -1,70 +1,69 @@
 ---
-title: "Activer les notifications serveur de l'App Store"
-description: "Activez les notifications serveur de l'App Store pour suivre les événements d'abonnement en temps réel."
-metadataTitle: "Activer les notifications serveur de l'App Store | Documentation Adapty"
+title: "Activer les notifications serveur App Store"
+description: "Activez les notifications serveur App Store pour suivre les événements d'abonnement en temps réel."
+metadataTitle: "Activer les notifications serveur App Store | Documentation Adapty"
 ---
 
-La configuration des notifications serveur de l'App Store est essentielle pour garantir la précision des données : elle vous permet de recevoir instantanément les mises à jour de l'App Store, notamment les informations sur les remboursements et autres événements.
+Le SDK Adapty signale les achats effectués dans votre application. Les notifications serveur signalent les changements qui se produisent en dehors de l'application, par exemple :
 
-:::important
-Adapty iOS SDK 2.10.0 ou version ultérieure est requis pour la prise en charge complète des notifications serveur App Store V2.
-:::
+- Un abonnement se renouvelle.
+- Un utilisateur désactive le renouvellement automatique.
+- Un paiement échoue en raison d'un problème de facturation.
+- Un abonnement expire.
+- Un utilisateur demande un remboursement. [Refund Saver](refund-saver) répond à la demande.
+- Apple rembourse un achat.
 
-1. Copiez l'**URL for App Store server notification** dans l'Adapty Dashboard.
+Entrez l'URL de notification d'Adapty dans App Store Connect, puis vérifiez que les notifications parviennent bien à Adapty.
 
-<Zoom>
-  <img src="/assets/shared/img/2901185-app_server_notifications.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Saisir l'URL de notification dans App Store Connect \{#enter-the-notification-url-in-app-store-connect\}
 
-2. Ouvrez [App Store Connect](https://appstoreconnect.apple.com/apps). Sélectionnez votre application et accédez à la section **General** → **App Information**, sous-section **App Store Server Notifications**.
-3. Collez l'**URL for App Store server notification** copiée dans les champs **Production Server URL** et **Sandbox Server URL**.
+Si un autre serveur reçoit déjà des notifications pour votre application, [configurez la transmission vers celui-ci](#raw-events-forwarding) avant de remplacer son URL.
 
-Après avoir enregistré les URLs, le statut des notifications dans l'Adapty Dashboard ne change que lorsqu'Apple envoie la première vraie notification — c'est-à-dire lors du premier événement d'abonnement, comme un achat ou un renouvellement. La notification test d'Apple ne le modifie pas. Un statut « en attente » juste après la configuration ne signifie pas que la connexion est interrompue.
+<AppStoreServerNotificationsSetup />
 
-<Zoom>
-  <img src="/assets/shared/img/86fb3d2-app_server_notifications_apple.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+## Vérifier que les notifications parviennent à Adapty \{#check-that-notifications-reach-adapty\}
 
-## Transfert brut des événements \{#raw-events-forwarding\}
+Pour confirmer que les notifications parviennent à Adapty, effectuez un [achat en sandbox](test-purchases-in-sandbox). Vérifiez ensuite le statut de la section **App Store server notifications** dans Adapty. L'achat apparaît dans Adapty même sans notifications, car le SDK le signale. Une fois qu'Apple envoie une notification concernant l'achat, Adapty fait passer le statut de **Waiting** à **Active**. Une notification de test envoyée par Apple ne modifie pas le statut.
 
-Parfois, vous souhaitez quand même recevoir les événements S2S bruts d'Apple. Pour continuer à les recevoir tout en utilisant Adapty, ajoutez simplement votre endpoint dans le champ **URL for forwarding raw Apple events**, et nous transmettrons les événements bruts tels quels depuis Apple.
+Le statut indique alors depuis combien de temps la dernière notification est arrivée :
 
-<Zoom>
-  <img src="/assets/shared/img/e9f4bba-CleanShot_2021-03-16_at_19.30.272x.webp"
-  style={{
-    border: '1px solid #727272', /* border width and color */
-    width: '700px', /* image width */
-    display: 'block', /* for alignment */
-    margin: '0 auto' /* center alignment */
-  }}
-/>
-</Zoom>
+- **Active** : il y a moins de 24 heures.
+- **Delayed** : il y a entre 24 et 72 heures.
+- **Stalled** : il y a 72 heures ou plus.
 
-:::warning
-Si les notifications cessent d'atteindre Adapty, les nouvelles transactions, renouvellements et remboursements ne s'affichent plus. Adapty ne le signale pas — consultez [Si les mises à jour cessent d'arriver](store-sync#if-updates-stop-arriving).
-:::
+**Delayed** et **Stalled** ne signifient pas forcément que quelque chose est cassé : dans une application avec peu d'abonnés, il peut se passer des jours sans aucune notification. **Active** indique seulement que des notifications parviennent à l'URL.
+
+Pour vérifier que les notifications concernent bien votre application, contrôlez la configuration :
+
+1. Dans App Store Connect, ouvrez la page **App Information** de votre application.
+2. Assurez-vous que **Production Server URL** et **Sandbox Server URL** correspondent bien à l'URL indiquée dans Adapty.
+3. Effectuez un autre achat en sandbox et vérifiez que le statut affiche **Active**.
+
+## Transmettre les notifications à un autre serveur \{#raw-events-forwarding\}
+
+Si un autre serveur a besoin des notifications Apple, Adapty peut les lui transmettre. Dans Adapty, rendez-vous dans [**App settings** > **iOS SDK**](https://app.adapty.io/settings/ios-sdk). Dans la section **App Store server notifications**, saisissez l'URL de ce serveur dans le champ **URL for forwarding raw Apple events**, puis cliquez sur **Save**.
+
+<ZoomImage id="app-settings-forwarding-url.webp" width="700px" />
+
+Adapty transfère les notifications reçues d'Apple vers l'autre serveur. Si vous renseignez l'URL de notification d'Adapty dans le champ **Sandbox Server URL** d'App Store Connect, Adapty transfère également les notifications sandbox. Le corps transféré conserve la charge utile signée d'Apple telle quelle, afin que l'autre serveur puisse vérifier la signature. Adapty ne transmet pas les en-têtes de requête d'Apple.
+
+Adapty ne transfère pas :
+
+- Les achats que le SDK signale sans notification d'Apple.
+- Une notification de test d'Apple.
+- Une notification qu'Adapty a déjà reçue au cours de la dernière heure.
+
+Pour éviter une boucle, ne renvoyez pas les notifications transférées vers l'URL de notification. N'entrez pas non plus d'URL Adapty dans le champ **URL for forwarding raw Apple events**.
+
+Si votre backend doit conserver son URL dans App Store Connect, [transmettez les notifications à Adapty depuis votre backend](forwarding-events-to-adapty) à la place.
 
 ## Authenticité des notifications \{#notification-authenticity\}
 
-Adapty ne vérifie pas l'origine des notifications entrantes de l'App Store Server au-delà de l'URL de notification elle-même — il ne vérifie ni l'adresse IP de l'expéditeur ni la signature JWS d'Apple. Traitez l'URL de notification comme un identifiant secret : toute personne qui la possède peut envoyer un payload.
+Traitez l'URL de notification comme un identifiant confidentiel. Adapty identifie l'application par l'URL seule, donc toute personne disposant de cette URL peut envoyer un payload à cette adresse.
 
-Le type de notification **TEST** du Sandbox Apple n'est jamais enregistré, quel que soit l'expéditeur, donc en envoyer une manuellement ne crée jamais d'événement dans le [Event Feed](event-feed).
+Une notification de test ne crée jamais d'événement dans le [Fil d'événements](event-feed), quelle qu'en soit la source.
 
-**Et ensuite**
+**Prochaines étapes**
 
 Configurez le SDK Adapty pour :
 
@@ -73,3 +72,6 @@ Configurez le SDK Adapty pour :
 - [Flutter](sdk-installation-flutter)
 - [Kotlin Multiplatform](sdk-installation-kotlin-multiplatform)
 - [Unity](sdk-installation-unity)
+- [Capacitor](sdk-installation-capacitor)
+
+Ensuite, [effectuez un achat sandbox pour vérifier que les notifications parviennent à Adapty](#check-that-notifications-reach-adapty).

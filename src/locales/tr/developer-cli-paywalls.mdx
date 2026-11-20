@@ -6,9 +6,9 @@ metadataTitle: "Paywall CLI Komutları | Adapty Dokümanları"
 
 Bu Adapty CLI komutları [paywall](paywalls)'ları ve her paywall'ın sattığı ürünleri yönetir, ayrıca metriklerini okur.
 
-## adapty paywalls list
+## adapty paywalls list \{#adapty-paywalls-list\}
 
-Bir uygulama için tüm [paywall'ları](paywalls) listeler.
+Bir uygulamaya ait tüm [paywall'ları](paywalls) listeler.
 
 ```bash
 adapty paywalls list --app <app-id>
@@ -17,8 +17,16 @@ adapty paywalls list --app <app-id>
 | Flag | Gerekli | Açıklama |
 |---|---|---|
 | `--app` | Evet | Uygulama ID'si (UUID) |
+| `--kind` | Hayır | Yalnızca belirli türdeki paywall'ları gösterir: `custom` veya `legacy_builder`. Adapty başka bir değeri reddeder ve hata mesajında bu iki değer belirtilir |
 
 [Sayfalama flag'lerini](developer-cli-reference#global-flags) kabul eder.
+
+Listedeki her paywall'ın salt okunur bir `kind` değeri vardır:
+
+- `custom`: Paywall, [eski Paywall Builder](adapty-paywall-builder)'ı kullanmıyor.
+- `legacy_builder`: Paywall, eski Paywall Builder'ı kullanacak şekilde ayarlanmış. `kind`, kaydedilmiş bir layout'u değil, paywall'ın builder ayarını takip eder ve builder sürümünü belirtmez.
+
+`--kind` flag'i ve `kind` alanı için CLI 0.27.0 veya sonrası gereklidir. Sürümünüzü görmek için `adapty --version` komutunu çalıştırın.
 
 ## adapty paywalls get
 
@@ -32,47 +40,67 @@ adapty paywalls get --app <app-id> <paywall-id>
 |---|---|
 | `paywall-id` | Paywall ID (UUID) |
 
-| Bayrak | Gerekli | Açıklama |
-|---|---|---|
-| `--app` | Evet | Uygulama ID'si (UUID) |
-
-## adapty paywalls create
-
-Yeni bir [paywall](paywalls) oluşturur.
-
-```bash
-adapty paywalls create --app <app-id> --title "Default Paywall" --product-id <product-id>
-```
-
 | Bayrak | Zorunlu | Açıklama |
 |---|---|---|
 | `--app` | Evet | Uygulama ID (UUID) |
-| `--title` | Evet | Paywall başlığı |
-| `--product-id` | Evet | [Ürün](product) ID (UUID). Birden fazla ürün için tekrarlayın: `--product-id <id1> --product-id <id2>` |
 
-## adapty paywalls update \{#adapty-paywalls-update\}
+Çıktı, [`paywalls list`](#adapty-paywalls-list) ile aynı değerlere sahip olan paywallın `kind` bilgisini içerir.
+
+## adapty paywalls create
+
+Yeni bir [paywall](paywalls) oluşturun.
+
+```bash
+adapty paywalls create --app <app-id> --title "Default Paywall" --products '[{"product_id":"<product-id-1>"},{"product_id":"<product-id-2>"}]'
+```
+
+| Bayrak | Gerekli | Açıklama |
+|---|---|---|
+| `--app` | Evet | Uygulama ID'si (UUID) |
+| `--title` | Evet | Paywall başlığı |
+| `--products` | Evet | Görüntüleme sırasına göre ürünlerin JSON dizisi: `[{product_id, offer_id, fallback_offer_id, billing_plan_id, flow_product_id}]`. Yalnızca `product_id` ([ürün](product) ID'si, UUID) gereklidir; diğer anahtarlar `paywalls get` komutunun yazdırdığı `products` listesinden gelir |
+| `--remote-configs` | Hayır | `{locale, data}` girişlerinden oluşan JSON dizisi; `data`, JSON dizesi olarak [remote config](customize-paywall-with-remote-config) içeriğidir |
+| `--use-paywall-builder-v4` | Hayır | Paywall'ın [Paywall Builder](adapty-paywall-builder) kullanıp kullanmadığı |
+| `--screenshot-id` | Hayır | Paywall ekran görüntüsünün görsel ID'si (bir tam sayı) veya `null` |
+| `--builder-screenshot-id` | Hayır | Builder ekran görüntüsünün görsel ID'si (bir tam sayı) veya `null` |
+| `--web-purchase-url` | Hayır | Web satın alma URL'si veya `null` |
+| `--product-id` | Hayır | Kullanımdan kaldırıldı: `--products` kullanın. Her ürün için tekrarlanan [ürün](product) ID'si (UUID). Teklif ve faturalama planı olmadan ürünleri ayarlar; `--products` ile birlikte kullanılamaz |
+
+Boş bıraktığınız bir alan, kontrol paneli varsayılanını alır: remote config yok, builder yok, ekran görüntüsü yok ve web satın alma URL'si yok. `--app`, `--title` ve `--product-id` dışındaki flag'ler CLI 0.20.0 veya üstü sürüm gerektirir.
+
+## adapty paywalls update
 
 Mevcut bir [paywall](paywalls)'ın tüm alanlarını günceller.
 
 :::important
-Bir paywall placement'a bağlandıktan sonra ürünleri değiştirilemez. Canlı bir paywall'da farklı ürünler kullanmak için yeni bir paywall oluşturun ve placement'ı bu yeni paywall'a yönlendirin.
+Bir paywall placement'a bağlandıktan sonra ürünleri değiştirilemez. Canlı bir paywall'da farklı ürünler kullanmak için yeni bir paywall oluşturun ve placement'ı buna yönlendirin.
 :::
 
+Tek bir alanı değiştirmek için önce paywall'ı okuyun, ilgili alanı düzenleyin ve dosyanın tamamını geri gönderin:
+
 ```bash
-adapty paywalls update --app <app-id> <paywall-id> --title "Default Paywall" --product-id <product-id>
+adapty paywalls get --app <app-id> <paywall-id> --json > paywall.json
+adapty paywalls update --app <app-id> <paywall-id> --file paywall.json
 ```
 
-Bu komut, ürün listesinin tamamı dahil olmak üzere tüm paywall alanlarını değiştirir.
+Bu komut, tam ürün listesi ve remote config listesinin tamamı dahil olmak üzere paywall'ın her alanını değiştirir. Her alan zorunludur: bir flag eksik olduğunda, komut 2 koduyla çıkar, eksik flag'leri listeler ve istek göndermez. Bunun için CLI 0.20.0 veya üzeri gereklidir: bu sürümden önceki sürümler yalnızca `--title` ve `--product-id` alır.
 
 | Argüman | Açıklama |
 |---|---|
 | `paywall-id` | Paywall ID (UUID) |
 
-| Bayrak | Gerekli | Açıklama |
+| Bayrak | Zorunlu | Açıklama |
 |---|---|---|
 | `--app` | Evet | Uygulama ID'si (UUID) |
-| `--title` | Evet | Paywall başlığı |
-| `--product-id` | Evet | [Ürün](product) ID'si (UUID). Birden fazla ürün için tekrarlayın: `--product-id <id1> --product-id <id2>` |
+| `--file` | Alan bayrakları yerine | Tüm paywall'ı içeren bir JSON dosyasının yolu veya stdin'den okumak için `-`. `paywalls get --json` çıktısı olduğu gibi kullanılabilir; `id` ve salt okunur `kind` alanları yok sayılır. Hiçbir alan bayrağıyla birlikte kullanılamaz |
+| `--title` | `--file` olmadan | Paywall başlığı |
+| `--products` | `--file` olmadan | [`paywalls create`](#adapty-paywalls-create) içindeki gibi ürünlerin JSON dizisi. Teklifleri ve fatura planlarını korumak için `paywalls get` çıktısındaki listeyi gönderin |
+| `--remote-configs` | `--file` olmadan | `data` alanının bir JSON string olduğu `{locale, data}` girdilerinden oluşan JSON dizisi. `[]` tüm remote config'leri siler |
+| `--use-paywall-builder-v4` veya `--no-use-paywall-builder-v4` | `--file` olmadan | Paywall'ın Paywall Builder kullanıp kullanmadığı. `paywalls get` çıktısındaki değeri gönderin: `--no-use-paywall-builder-v4` cihazlardan builder düzenini kaldırır |
+| `--screenshot-id` | `--file` olmadan | Paywall ekran görüntüsünün görsel ID'si veya `null` |
+| `--builder-screenshot-id` | `--file` olmadan | Builder ekran görüntüsünün görsel ID'si veya `null` |
+| `--web-purchase-url` | `--file` olmadan | Web satın alma URL'si veya `null` |
+| `--product-id` | Hayır | Kullanımdan kalktı: `--products` kullanın. Teklif ve fatura planı olmadan ürünleri ayarlar |
 
 ## adapty paywalls placements
 

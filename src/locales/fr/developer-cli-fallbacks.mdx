@@ -1,0 +1,52 @@
+---
+title: "Commandes fallbacks"
+description: "Commande CLI Adapty qui télécharge le fichier de secours que votre application embarque lorsqu'elle ne peut pas joindre Adapty, avec le format de fichier pour chaque version du SDK."
+metadataTitle: "Commandes CLI Fallbacks | Documentation Adapty"
+---
+
+Téléchargez le [fichier de secours](fallback-flows) que votre application embarque lorsqu'elle ne peut pas joindre Adapty. C'est le même fichier que le téléchargement **Fallbacks** sur la page **Placements**.
+
+## adapty fallbacks get
+
+```bash
+adapty fallbacks get --app <app-id> --platform ios --sdk-version 4.4.0 --output ios_fallback.json
+```
+
+| Flag | Requis | Description |
+|---|---|---|
+| `--app` | Oui | ID de l'app (UUID) |
+| `--platform` | Oui | `ios` pour l'App Store ou `android` pour Google Play. Les apps macOS et visionOS utilisent le fichier `ios`. |
+| `--sdk-version` | Oui | La version du SDK Adapty avec laquelle votre app est compilée, au format `X.Y.Z`. Pour Flutter, React Native, Unity, Kotlin Multiplatform et Capacitor, indiquez la version du plugin Adapty. |
+| `--output` | Non | Fichier de destination. Les répertoires parents sont créés automatiquement. Sans cette option, le fichier est envoyé vers la sortie standard. |
+
+Un fichier par store couvre tous les placements de l'application. Pour livrer les deux stores, lancez la commande une fois avec `--platform ios` et une fois avec `--platform android`.
+
+Le fichier ne contient que les placements actifs, donc publiez vos flows et activez leurs placements avant de le télécharger. Retéléchargez-le après chaque modification d'un placement ou mise à jour du SDK, car le fichier est un instantané.
+
+Adapty choisit le format du fichier à partir de `--sdk-version`. Le SDK n'accepte que le format pour lequel il a été compilé et rejette tout autre fichier au démarrage, sans erreur de build :
+
+| `--sdk-version` | Format de fichier |
+|---|---|
+| 4.4.0 et ultérieur | 12 |
+| 4.1.x – 4.3.x | 11 |
+| 4.0.x | 10 |
+| 3.12.x et ultérieur 3.x | 9 |
+| 3.8.x – 3.11.x | 8 |
+| 3.4.x – 3.7.x | 7 |
+| 3.0.x – 3.3.x | 6 |
+| Inférieur à 3.0 | 5 |
+
+Les placements de paywall sont présents dans tous les formats. Les placements de flow ne sont disponibles que dans les fichiers pour le SDK 4.0 et ultérieur.
+
+Avec `--output`, la CLI n'écrit le fichier qu'une fois le téléchargement entièrement réussi, ce qui préserve le fichier précédent en cas d'échec. Sans cette option, la sortie standard ne contient que le fichier et toutes les erreurs vont vers la sortie d'erreur standard. Une simple redirection `> fichier` vide le fichier avant même que la requête démarre, donc utilisez `--output`.
+
+Adapty construit l'intégralité du fichier avant de répondre, ce qui peut prendre plusieurs minutes pour une application volumineuse. La commande envoie une seule requête et ne réessaie jamais. Chaque application peut télécharger le fichier 30 fois par heure, tous tokens confondus ; au-delà, la commande échoue avec une erreur de limite de débit indiquant le temps d'attente. Téléchargez le fichier pour les builds de release, pas à chaque commit.
+
+| Code de sortie | Signification |
+|---|---|
+| `0` | Le fichier a été écrit |
+| `1` | Le fichier n'a pas pu être écrit. Le fichier précédent est inchangé. |
+| `2` | Valeur d'indicateur invalide |
+| `3` | Aucun token, ou accès refusé |
+| `4` | Erreur API, y compris la limite de débit, ou une réponse qui n'est pas un fichier de secours |
+| `5` | Adapty était inaccessible, n'a pas répondu dans les 300 secondes, ou le téléchargement a échoué |

@@ -72,7 +72,7 @@ Parameters:
 |---------|--------|-----------|
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, sits between the two: it reads the cache first while the cached copy is younger than `maxAge` seconds, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the cached flow. If nothing is cached and the server timed out or returned a server error, the SDK requests the flow from the fallback server (a CDN copy that serves only the placement's **All Users** audience). As a last resort, the SDK returns the flow from your [fallback file](ios-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 
@@ -112,7 +112,8 @@ Parameters:
 | **systemRequestsHandler** | optional      | An object conforming to `AdaptySystemRequestsHandler` that handles system permission and review requests triggered by flow actions. Required only if your flow includes such actions. |
 | **assetsResolver**       | optional       | A `[String: AdaptyCustomAsset]` dictionary that overrides images and videos in the flow/paywall. See [Customize assets](#customize-assets). |
 | **tagResolver**          | optional       | Your app's values for the flow's [custom tags](flow-custom-tags), in a `[String: String]` dictionary keyed by each tag's full name, or in an object conforming to `AdaptyTagResolver`. For details, read [Pass data to flows](ios-flow-custom-tags). |
-| **timerResolver**        | optional       | An object conforming to `AdaptyTimerResolver` that supplies end dates for developer-defined timers. See [Set up developer-defined timers](#set-up-developer-defined-timers). |
+| **timerResolver**        | optional       | An object conforming to `AdaptyTimerResolver` that returns the end date of each **Developer defined** timer in the flow, by Timer ID. See [Set up developer-defined timers](#set-up-developer-defined-timers). |
+| **customElementsResolver** | <p>optional</p><p>SDK 4.4+</p> | Your app's native views for the flow's [custom elements](flow-custom-elements), in an object conforming to `AdaptyUICustomElementsResolver`, or in a `[String: AdaptyUICustomElementBuilder]` dictionary keyed by Type. Replaces the app-wide resolver in this flow. For details, read [Display custom elements](ios-flow-custom-elements). |
 
 Once loaded, [present the flow/paywall](ios-present-paywalls).
 
@@ -204,7 +205,9 @@ If an asset is not found, the paywall/flow will fall back to its default appeara
 
 ## Set up developer-defined timers
 
-To use custom timers in your mobile app, create an object that follows the `AdaptyTimerResolver` protocol. This object defines how each custom timer should be rendered. If you prefer, you can use a `[String: Date]` dictionary directly, as it already conforms to this protocol. Here is an example:
+Use this section for a timer with the **Developer defined** behavior in the Flow & Paywall Builder. In the builder, each such timer has a **Timer ID** (see [Let your app set the end date](flow-timer#let-your-app-set-the-end-date)), and your app sets the end date for it. Use the same Timer ID in your code as in the builder, character for character, including letter case and spaces. If the IDs differ, the timer gets no end date from your app.
+
+To set the end dates, create an object that conforms to the `AdaptyTimerResolver` protocol. The object returns the end date for each Timer ID. You can also use a `[String: Date]` dictionary, because it already conforms to this protocol. Here is an example:
 
 ```swift showLineNumbers
 @MainActor
@@ -214,7 +217,11 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
         case "CUSTOM_TIMER_6H":
             Date(timeIntervalSinceNow: 3600.0 * 6.0) // 6 hours
         case "CUSTOM_TIMER_NY":
-            Calendar.current.date(from: DateComponents(year: 2025, month: 1, day: 1)) ?? Date(timeIntervalSinceNow: 3600.0)
+            Calendar.current.nextDate(
+                after: Date(),
+                matching: DateComponents(month: 1, day: 1),
+                matchingPolicy: .nextTime
+            ) ?? Date(timeIntervalSinceNow: 3600.0) // next New Year's Day
         default:
             Date(timeIntervalSinceNow: 3600.0) // 1 hour
         }
@@ -222,10 +229,26 @@ struct AdaptyTimerResolverImpl: AdaptyTimerResolver {
 }
 ```
 
-In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the **Timer ID**s of developer-defined timers you set in the Adapty Dashboard. The `timerResolver` ensures your app dynamically updates each timer with the correct value. For example:
+Pass the resolver to the `timerResolver` parameter of `getFlowConfiguration`:
 
-- `CUSTOM_TIMER_NY`: The time remaining until the timer's end, such as New Year's Day.
-- `CUSTOM_TIMER_6H`: The time left in a 6-hour period that started when the user opened the paywall.
+```swift showLineNumbers
+do {
+    let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        timerResolver: AdaptyTimerResolverImpl()
+    )
+    // present the flow
+} catch {
+    // handle the error
+}
+```
+
+In this example, `CUSTOM_TIMER_NY` and `CUSTOM_TIMER_6H` are the Timer IDs of two **Developer defined** timers in the builder:
+
+- `CUSTOM_TIMER_NY`: The time left until the next New Year's Day.
+- `CUSTOM_TIMER_6H`: A 6-hour countdown that starts again each time the user opens the screen.
+
+The SDK calls the resolver each time a screen with the timer opens. If the resolver returns a date in the past, the timer shows zero at once and its **On timer end** trigger runs. If you pass no resolver, or a dictionary with no key for a Timer ID, the timer counts down one hour from the screen open.
 
 </SDKv4>
 
@@ -291,7 +314,7 @@ Parameters:
 | **placementId** | required | The identifier of the desired [Placement](placements). This is the value you specified when creating a placement in the Adapty Dashboard. |
 | **locale** | <p>optional</p><p>default: `en`</p> | <p>The identifier of the paywall localization. This parameter is expected to be a language code composed of one or two subtags separated by the minus (**-**) character. The first subtag is for the language, the second one is for the region.</p><p></p><p>Example: `en` means English, `pt-br` represents the Brazilian Portuguese language.</p><p>See [Localizations and locale codes](localizations-and-locale-codes) for more information on locale codes and how we recommend using them.</p> |
 | **fetchPolicy** | default: `.reloadRevalidatingCacheData` | <p>`fetchPolicy` sets which layer the SDK reads first, not whether it can use the cache. By default the SDK goes to the server first and returns cached data if that request fails. We recommend this variant because it ensures your users always get the most up-to-date data.</p><p></p><p>However, if you believe your users deal with unstable internet, consider `.returnCacheDataElseLoad`, which reverses that order — it reads the cache first and goes to the server only when nothing is cached. Users might not get the absolute latest data, but they'll experience faster loading times, no matter how patchy their internet connection is. The cache is updated regularly, so it's safe to use it during the session to avoid network requests.</p><p></p><p>A third policy, `.returnCacheDataIfNotExpiredElseLoad(maxAge:)`, sits between the two: it reads the cache first while the cached copy is younger than `maxAge` seconds, and goes to the server once it is older.</p><p></p><p>Note that the cache remains intact upon restarting the app and is only cleared when the app is reinstalled or through manual cleanup.</p><p></p><p>Adapty SDK stores paywalls locally in two layers: regularly updated cache described above and [fallback paywalls](fallback-paywalls). We also use CDN to fetch paywalls faster and a stand-alone fallback server in case the CDN is unreachable. This system is designed to make sure you always get the latest version of your paywalls while ensuring reliability even in cases where internet connection is scarce.</p> |
-| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the timeout is reached, cached data or local fallback will be returned.</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
+| **loadTimeout** | default: 5 sec | <p>This value limits the timeout for this method. If the Adapty server doesn't respond in time or returns an error, the SDK returns the paywall from the fallback server (a CDN copy that serves only the placement's **All Users** audience), the cache, or your [fallback file](ios-use-fallback-paywalls).</p><p>Note that in rare cases this method can timeout slightly later than specified in `loadTimeout`, since the operation may consist of different requests under the hood.</p> |
 
 Response parameters:
 

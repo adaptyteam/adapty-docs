@@ -13,7 +13,9 @@ metadataTitle: "Capacitor SDK 中的儿童模式 | Adapty 文档"
 - [IDFA（广告标识符）](https://en.wikipedia.org/wiki/Identifier_for_Advertisers)（iOS）
 - [Android 广告 ID（AAID/GAID）](https://support.google.com/googleplay/android-developer/answer/6048248)（Android）
 - [IP 地址](https://www.ftc.gov/system/files/ftc_gov/pdf/p235402_coppa_application.pdf)
+
 此外，我们建议谨慎使用 customer user ID。以 `<FirstName.LastName>` 格式设置的用户 ID 与使用邮箱地址一样，都会被视为收集个人数据。在儿童模式下，最佳实践是使用随机或匿名的标识符（例如哈希 ID 或设备生成的 UUID），以确保合规。
+
 ## 启用儿童模式 \{#enabling-kids-mode\}
 
 ### 在 Adapty 看板中进行更新 \{#updates-in-the-adapty-dashboard\}
@@ -23,6 +25,7 @@ metadataTitle: "Capacitor SDK 中的儿童模式 | Adapty 文档"
 ### 在移动应用代码中进行更新 \{#updates-in-your-mobile-app-code\}
 
 为遵守相关政策，请禁止收集用户的 IDFA、GAID 和 IP 地址：
+
 ```typescript showLineNumbers
 
 try {
@@ -55,9 +58,15 @@ try {
 
 <SDKv4>
 
-即使在代码中禁用了 IDFA 收集（如上所述），您的构建文件仍然包含 `AdSupport` 和 `AppTrackingTransparency` 框架。App Store 儿童类别不允许使用这些框架。由于 v4 SDK 通过 Swift Package Manager 安装原生 iOS SDK，因此无法通过 Podfile 步骤将其移除。
+即使在代码中禁用了 IDFA 收集（如上所述），您的构建包仍然包含 `AdSupport` 和 `AppTrackingTransparency` 框架。App Store 儿童类别不允许使用这些框架。
 
-为符合 Apple 的要求，请将 SDK 自带的 `adapty-kids-mode` 命令添加到您应用的 `postinstall` 中。该命令会启用 SDK 的 `KidsMode` 特性，从而在编译时排除相关代码。每次执行 install 时该命令都会重新生效：
+为符合 Apple 的要求，请以儿童模式构建原生 iOS SDK，这样会在编译时移除所有 IDFA、AdSupport 和 AppTrackingTransparency 相关代码。具体启用方式取决于您 iOS 项目所使用的包管理器，详情请参阅[配置您的 iOS 项目](sdk-installation-capacitor#set-up-your-ios-project)。
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager" default>
+
+将 SDK 附带的 `adapty-kids-mode` 命令添加到应用的 `postinstall` 脚本中。它会启用 SDK 的 `KidsMode` trait，并在每次安装时重新应用：
 
 ```json showLineNumbers title="package.json"
 {
@@ -74,18 +83,58 @@ npm install
 npx cap sync ios
 ```
 
-如需关闭 Kids Mode，运行 `adapty-kids-mode disable` 并再次同步。
+要关闭儿童模式，请从 `postinstall` 中移除 `adapty-kids-mode`，或将其改为 `adapty-kids-mode disable`，然后运行 `npx adapty-kids-mode disable` 并重新同步。否则，下次执行 `npm install` 时会再次启用儿童模式。
+
+:::note
+在 SDK 4.2.0 及更高版本中，当 `adapty-kids-mode` 找不到 iOS 项目，或者你的 Podfile 与命令不匹配时（`enable` 对应 Podfile 中没有 `adapty_enable_kids_mode` 调用，或 `disable` 对应调用仍然存在），它会打印警告而不会导致安装失败。要屏蔽这些警告，请传入 `--no-warnings` 或设置 `ADAPTY_KIDS_MODE_NO_WARNINGS=1`。如果你的应用不在安装命令所在的目录下，请传入 `--app-root=path/to/app`。
+:::
+
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+此选项需要 SDK 4.2.0 或更高版本，以及来自[设置 iOS 项目](sdk-installation-capacitor#set-up-your-ios-project)的 Adapty Podfile 辅助工具。在 `ios/App/Podfile` 中，于 `post_install` 块内调用 `adapty_enable_kids_mode`：
+
+```ruby showLineNumbers title="ios/App/Podfile" {3}
+post_install do |installer|
+  assertDeploymentTarget(installer)
+  adapty_enable_kids_mode(installer)
+end
+```
+
+该助手会将 `KidsMode` 编译条件添加到 `Adapty` pod，并取消链接 AdSupport 框架。它只在 `post_install` 中生效：在 `post_integrate` 中所做的更改不会被保存。如果你项目中的另一个 pod 也链接了 AdSupport，`pod install` 将会失败，因为该框架仍会保留在构建中。
+
+然后同步 iOS 项目：
+
+```sh showLineNumbers title="Shell"
+npx cap sync ios
+```
+
+如需关闭 Kids Mode，删除 `adapty_enable_kids_mode` 这一行并重新同步。
+
+</TabItem>
+
+</Tabs>
+
+要确认儿童模式是否已激活，请检查激活日志行。原生 SDK 会在 `verbose` 级别写入该日志，时机早于应用你传入 `activate` 的 `logLevel`，因此请在激活前设置日志级别：
+
+```typescript showLineNumbers
+await adapty.setLogLevel({ logLevel: 'verbose' });
+await adapty.activate({ apiKey: 'YOUR_PUBLIC_SDK_KEY' });
+```
+
+在 Xcode 控制台中，`Calling Adapty activate` 这一行会在其参数中列出 `"kids_mode_enabled": true`。
 
 </SDKv4>
 
 <SDKv3>
 
-如果您在 iOS 上使用 CocoaPods，也可以在原生层面启用 Kids Mode：
+如果你在 iOS 上使用 CocoaPods，也可以在原生层面启用儿童模式：
 
-1. 更新您的 Podfile：
+1. 更新你的 Podfile：
 
-- 如果你**没有** `post_install` 部分，请添加下方的完整代码块。
-   - 如果你**已有** `post_install` 部分，请将高亮行合并进去。
+   - 如果您**没有** `post_install` 部分，请添加下面的完整代码块。
+   - 如果您**已有** `post_install` 部分，请将高亮行合并到其中。
 
    ```ruby showLineNumbers title="Podfile"
    def adapty_enable_kids_mode(installer)

@@ -1,0 +1,214 @@
+---
+title: "Afficher un graphique de poids interactif dans un paywall"
+description: "Affichez le poids projeté de chaque utilisateur sous forme de graphique dans un flow de paywall. Les utilisateurs font glisser leur doigt sur le graphique pour voir leur poids semaine par semaine."
+metadataTitle: "Afficher un graphique de poids interactif dans un paywall | iOS SDK | Documentation Adapty"
+---
+
+Suivez cette recette pour afficher le poids projeté de chaque utilisateur sous forme de graphique dans un flow de paywall. L'utilisateur saisit son poids actuel et son objectif dans un flow d'onboarding. Votre application collecte ces deux valeurs. Le graphique montre la progression hebdomadaire que l'utilisateur peut espérer avec votre application, de l'une à l'autre. Votre application affiche le graphique sous forme de vue native dans un [élément personnalisé](flow-custom-elements). La vue utilise Swift Charts.
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="Le paywall finalisé : l'utilisateur fait glisser son doigt sur le graphique, et un label affiche le poids prévu pour chaque semaine, jusqu'au poids cible de 72 kg." />
+
+## Avant de commencer \{#before-you-start\}
+
+- Mettez à jour votre application avec le SDK Adapty iOS 4.4 ou une version ultérieure. Les versions antérieures du SDK affichent le [contenu de secours](flow-custom-elements#set-fallback-content) pour chaque élément personnalisé.
+- Configurez votre application pour [récupérer](get-pb-paywalls) et [afficher](ios-present-paywalls) les flows.
+
+<CustomElementChartTwoFlows />
+
+## 1. Demandez le poids actuel et l'objectif dans le flow d'onboarding \{#ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+<CustomElementChartOnboardingInputs />
+
+## 2. Ajouter l'élément personnalisé à l'écran du paywall \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+<CustomElementChartBuilderSetup />
+
+## 3. Enregistrez le poids actuel et l'objectif dans votre app \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+Collectez le poids actuel et l'objectif depuis les événements `flow_user_input` du flow d'onboarding, comme dans [Traiter les données des flows](ios-flow-input). Pour savoir que l'utilisateur a atteint le dernier écran, surveillez un événement `flow_screen_showed` avec `is_last_screen` à `true`. Lorsque le flow d'onboarding se ferme après cet écran, passez les deux poids à `showWeightPaywall`, la fonction qui [ouvre le flow paywall avec le graphique](#5-match-the-chart-to-the-custom-element).
+
+Le code suivant est pour UIKit. Un seul view controller est le délégué des deux flows. Pour ajouter les méthodes d'achat et de restauration que chaque `AdaptyFlowControllerDelegate` implémente, consultez [Présenter les flows et paywalls dans UIKit](ios-present-paywalls#present-flows-and-paywalls-in-uikit).
+
+```swift showLineNumbers title="Swift"
+private var enteredWeights: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    enteredWeights[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset the entered
+    // weights whenever a flow disappears, so that the paywall doesn't open
+    // again when the user closes it.
+    let weights = enteredWeights
+    let finished = reachedLastScreen
+    enteredWeights.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings
+    guard finished,
+          let currentWeight = weights["weight"].flatMap({ Double($0) }),
+          let goalWeight = weights["goal_weight"].flatMap({ Double($0) })
+    else { return }
+
+    Task {
+        await showWeightPaywall(currentWeight: currentWeight, goalWeight: goalWeight)
+    }
+}
+```
+
+En SwiftUI, utilisez les closures `didReceiveAnalyticEvent` et `didDisappear` du modificateur `.flow` au lieu des méthodes de délégation. Présentez le flow de paywall avec un second modificateur `.flow`.
+
+## 4. Créer la vue du graphique \{#4-create-the-chart-view\}
+
+Créez un modèle de plan de poids et une vue avec le graphique. Le plan comporte une entrée par semaine, du poids actuel jusqu'au poids cible. Lorsque l'utilisateur fait glisser son doigt sur le graphique, la vue marque la semaine au point de contact et affiche le poids projeté pour cette semaine :
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+La fonctionnalité de glissement sur le graphique nécessite iOS 17 ou une version ultérieure. Sur iOS 16, les utilisateurs voient la ligne, mais ne peuvent pas la faire glisser.
+
+<CustomElementChartWeeklyChange />
+
+## 5. Associer le graphique à l'élément personnalisé \{#5-match-the-chart-to-the-custom-element\}
+
+Rédigez un [résolveur](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) qui renvoie la vue du graphique pour le Type `line_chart` et l'ID `weight_goal`. Stockez le plan de poids dans une propriété du résolveur :
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 16.0, *) // the chart needs iOS 16
+struct WeightChartResolver: AdaptyUICustomElementsResolver {
+    let plan: WeightPlan
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        guard type == "line_chart", id == "weight_goal" else {
+            return nil // another custom element: show the fallback
+        }
+        return AnyView(WeightGoalChart(entries: plan.entries))
+    }
+}
+```
+
+Attach the resolver to the paywall flow when you fetch its configuration. Create the resolver with the weight plan from the current and goal weight:
+
+```swift showLineNumbers title="Swift"
+func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
+    let plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+    do {
+        let flow = try await Adapty.getFlow(placementId: "weight_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: WeightChartResolver(plan: plan)
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+Si votre application définit un [résolveur global](ios-flow-custom-elements#set-an-app-wide-resolver), ce résolveur le remplace dans le flow du paywall. `WeightChartResolver` ne renvoie aucune vue pour les autres Types et IDs, car le flow du paywall dans cette recette ne comporte pas d'autres éléments personnalisés. Si votre flow de paywall contient d'autres éléments personnalisés, transmettez le résolveur global à celui-ci. Appelez ensuite le résolveur global pour leurs Types et IDs, comme dans [Attacher un résolveur à un seul flow](ios-flow-custom-elements#attach-a-resolver-to-one-flow).
+
+## 6. Tester sur un appareil \{#6-test-on-a-device\}
+
+Le Flow & Paywall Builder ne peut pas exécuter le code de votre application, donc son canvas affiche uniquement le paywall de secours. Pour prévisualiser le graphique :
+
+1. [Publiez les deux flows](builder-save-publish). Pour voir les dernières versions publiées plutôt que les versions mises en cache, enregistrez l'appareil en tant qu'[appareil de test](test-devices).
+2. Lancez un build de votre application incluant le resolver. Utilisez un appareil sous iOS 17 ou version ultérieure. Complétez le flow d'onboarding en saisissant un poids actuel et un poids cible. Vérifiez que la ligne du graphique part du poids actuel et se termine au poids cible.
+3. Faites glisser votre doigt sur le graphique et vérifiez que le poids projeté pour la semaine sous votre doigt apparaît au-dessus de la ligne.
+
+Pour tester le paywall de secours, faites en sorte que `WeightChartResolver` retourne `nil`, puis rouvrez le flow du paywall.
+
+Pour savoir pourquoi le paywall de secours s'affiche à la place du graphique, suivez les instructions de la section [Tester sur un appareil](ios-flow-custom-elements#test-on-a-device) du guide iOS.

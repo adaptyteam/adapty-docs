@@ -1,0 +1,105 @@
+---
+title: "Lottieアニメーションでユーザーの進捗を表示する"
+description: "デイリーストリークなど、各ユーザーの進捗をフロー画面にLottieアニメーションとして表示します。"
+metadataTitle: "Lottieアニメーションでユーザーの進捗を表示する | iOS SDK | Adapty ドキュメント"
+---
+
+<CustomElementLottieIntro />
+
+## 始める前に \{#before-you-start\}
+
+- アプリを Adapty iOS SDK 4.4 以降に更新してください。それより古い SDK バージョンでは、すべてのカスタム要素に対して[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)が表示されます。
+- アプリでフローを[取得](get-pb-paywalls)して[表示](ios-present-paywalls)できるよう設定してください。
+- Swift Package Manager を使用して、`https://github.com/airbnb/lottie-spm.git` から Lottie をアプリに追加してください。
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. カスタム要素を画面に追加する \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. アニメーションファイルをアプリに追加する \{#2-add-the-animation-file-to-your-app\}
+
+アニメーションファイルを Xcode のアプリターゲットに追加します。
+
+`.json` を除いたファイル名は、カスタム要素の ID と一致している必要があります。例えば、`streak_ring` の場合は `streak_ring.json` となります。
+
+## 3. アニメーションビューを作成する \{#3-create-the-animation-view\}
+
+ストリークのモデルと、アニメーションを再生するビューを作成します。ストリークが変化したときにアプリがモデルを更新します。ビューはモデルを読み取るため、画面が開いたときにリングが現在のストリークを表示します。
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` はリングを空の状態から `progress` まで一度だけ塗りつぶします。アプリがすでに `ObservableObject` でストリークを管理している場合は、`StreakStore` の代わりにそのオブジェクトを使用してください。
+
+## 4. アニメーションをカスタム要素に紐付ける \{#match-the-animation-to-the-custom-element\}
+
+[アプリ全体のリゾルバー](ios-flow-custom-elements#set-an-app-wide-resolver)に、ストリークモデル用のプロパティを追加します。次に、`lottie_animation` タイプと `streak_ring` IDに対してアニメーションビューを返すようにします。ハイライトされている行が追加・変更箇所です。アプリにまだアプリ全体の[リゾルバー](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)がない場合は、コード全体をコピーしてください：
+
+```swift showLineNumbers title="Swift" {2,6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`streak_ring` ケースを他の `lottie_animation` ケースより前に置いてください。Swift は最初にマッチしたケースのみを実行するためです。アプリバンドルにそのIDのファイルが存在しない場合、リゾルバーは `nil` を返し、ユーザーにはフォールバックが表示されます。
+
+ストリークモデルでリゾルバーを作成し、アプリ全体のリゾルバーとして設定します。`AdaptyUI.setCustomElementsResolver` はアプリ起動時など、一度だけ呼び出してください：
+
+```swift showLineNumbers title="Swift"
+
+// the streak model that your app updates
+@MainActor let streakStore = StreakStore()
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(streakStore: streakStore)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+## 5. デバイスでテストする \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+アニメーションの代わりにフォールバックが表示される原因を調べるには、iOSガイドの[デバイスでテストする](ios-flow-custom-elements#test-on-a-device)セクションの手順に従ってください。

@@ -9,7 +9,9 @@
   link Adapty's pricing page.
 - **Public repo**: no internal Slack, Jira keys, customer names, or closed-source details in docs, MDX
   comments, commits, or PR text.
-- **Scope**: edit release notes and whats-new only as their own task. Code samples are the developers'
+- **Scope**: never edit release notes or `whats-new.mdx` as part of a feature change, even when a
+  brief or plan lists it. The page is written once a month, on demand, with the `update-whats-new`
+  skill. Code samples are the developers'
   call: never add, drop, or merge them on the writer's authority.
 - **Rollout state**: document a flag-gated or early-access feature as available. Never mention its
   flag, gating, beta, or limited availability. Research rollout only to decide whether and when to

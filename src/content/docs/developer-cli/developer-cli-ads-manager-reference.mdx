@@ -168,7 +168,7 @@ adapty asa campaigns create --org <campaign-group-id> --name "Winter push" --ada
 | `--daily-budget` | Yes | Daily budget as a plain amount, for example `50` or `12.50` |
 | `--budget` | No | Lifetime budget |
 | `--target-cpa` | No | Target cost per acquisition. Must be lower than `--daily-budget` |
-| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | No | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--bidding-strategy` | No | `MANUAL_CPT` or `MAX_CONVERSIONS`. Apple defaults to `MANUAL_CPT` |
 | `--ad-channel-type` | No | `SEARCH` or `DISPLAY`. Default: `SEARCH` |
 | `--billing-event` | No | `TAPS` or `IMPRESSIONS`. Default: `TAPS` |
@@ -205,7 +205,7 @@ adapty asa campaigns update <campaign-id> --daily-budget 80 --status PAUSED
 | `--budget` | New lifetime budget |
 | `--target-cpa` | New target cost per acquisition |
 | `--bidding-strategy` | `MANUAL_CPT` or `MAX_CONVERSIONS` |
-| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--invoice-advertiser` | Invoicing Options: advertiser name |
 | `--invoice-order-number` | Invoicing Options: order number |
 | `--invoice-contact-name` | Invoicing Options: buyer contact name |
@@ -343,7 +343,7 @@ adapty asa ad-groups create --campaign <campaign-id> --name "Brand terms" --defa
 | `--end-time` | No | Schedule end (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | No | Let Apple add keywords automatically |
 | `--automated` | No | Create the automated ad group that a `MAX_CONVERSIONS` campaign needs |
-| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | No | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--status` | No | Initial status: `ENABLED` or `PAUSED` |
 
 `--automated` opts the ad group into automated keywords, so it cannot be combined with `--automated-keywords`. Apple schedules an automated ad group itself and keeps it enabled, so `--start-time` and `--status PAUSED` are rejected — pause the campaign instead. See [Create a Max Conversions campaign](developer-cli-ads-manager#max-conversions).
@@ -369,7 +369,7 @@ adapty asa ad-groups update <ad-group-id> --default-bid 1.50 --status PAUSED
 | `--start-time` | Schedule start (`YYYY-MM-DD`) |
 | `--end-time` | Schedule end (`YYYY-MM-DD`) |
 | `--automated-keywords` / `--no-automated-keywords` | Let Apple add keywords automatically |
-| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 
 At least one flag is required. The parent campaign is resolved on the server and is never passed.
 
@@ -385,7 +385,27 @@ List targeting keywords. Returns metadata only — read performance numbers with
 adapty asa keywords list --ad-group <ad-group-id> --status ACTIVE
 ```
 
+| Flag | Description |
+|---|---|
+| `--live-only` | Only keywords that can serve: `ACTIVE`, in an `ENABLED` ad group and an `ENABLED` campaign, with nothing deleted |
+
 Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, `--search`, and `--status` [list filters](#list-filters). Filter by `--ad-group` — without a filter, this is the widest read in the topic.
+
+### adapty asa keywords duplicates
+
+Find the keywords of one app that are repeated across ad groups and campaigns: the same text, country, and level.
+
+```bash
+adapty asa keywords duplicates --app <app-id> --country US --country DE
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID). See [`apps list`](#adapty-asa-apps-list) |
+| `--country` | No | Two-letter ISO country code. Repeat for several. Scans only these countries |
+| `--ignore-match-type` | No | Group by country and text only, merging match types |
+
+Each group lists its instances with their campaign, ad group, match type, and bid. The command returns at most 500 groups. When the list is capped, `truncated` is `true` and the command prints a warning.
 
 ### adapty asa keywords recommend
 
@@ -407,7 +427,7 @@ The `--type` flag selects the pool:
 |---|---|
 | `brand` | Your app's brand terms, their spelling variants, and organic terms that contain the brand. The output also lists the brand terms themselves |
 | `generic` | Non-brand terms that your app and its top organic competitors rank for, with every known brand term removed. `relevance_tier: top_organic` marks the terms where your app already ranks in the organic top 10 |
-| `competitor` | The brand terms of each competitor selected for the app in [AI Growth Advisor](autopilot-analysis#select-competitors), one pool per competitor. Empty until you select competitors |
+| `competitor` | The brand terms of each competitor selected for the app, one pool per competitor. Empty until you select competitors |
 
 Each keyword comes with its country, popularity, score, and median organic rank. The keywords have no bids or match types. Choose those yourself, then add the keywords with [`asa keywords add`](#adapty-asa-keywords-add).
 
@@ -443,7 +463,7 @@ adapty asa keywords add --ad-group <ad-group-id> --from-file keywords.txt
 | `--from-file` | No | File with one keyword per line. Combined with any `--text` values |
 | `--bid` | No | Bid per keyword as a plain amount |
 | `--match-type` | No | `BROAD` or `EXACT`. Default: `BROAD` |
-| `--currency` | No | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | No | Currency code for the amounts in this call. Default: the currency of the campaign group. A different currency is rejected |
 | `--status` | No | `ACTIVE` or `PAUSED`. Default: `ACTIVE` |
 
 One invalid ID fails the whole batch before Apple is called. Apple can still reject individual keywords, and each rejection is reported with its reason.
@@ -466,7 +486,7 @@ adapty asa keywords update <keyword-id> <keyword-id> --bid 2.00 --status PAUSED
 | `--status` | `ACTIVE` or `PAUSED` |
 | `--match-type` | `BROAD` or `EXACT` |
 | `--text` | New keyword text. Only meaningful for a single keyword |
-| `--currency` | Currency code for the amounts in this call. Default: `USD` |
+| `--currency` | Currency code for the amounts in this call. Default: the currency of your campaign groups. Required when your campaign groups use different currencies |
 
 One change is applied to every ID passed.
 
@@ -525,6 +545,7 @@ adapty asa search-terms list --ad-group <ad-group-id> --date-from 2026-07-01 --d
 |---|---|---|
 | `--date-from` | Today | Start of the reporting period (`YYYY-MM-DD`) |
 | `--date-to` | Today | End of the reporting period (`YYYY-MM-DD`) |
+| `--overlap-only` | Off | Only Search Match and Max Conversions terms that match a live `EXACT` keyword of the same app, in a campaign that covers the term's country, and are not blocked by a negative keyword |
 
 Accepts [pagination flags](#global-flags) and the `--campaign-group`, `--app`, `--campaign`, `--ad-group`, and `--search` [list filters](#list-filters).
 

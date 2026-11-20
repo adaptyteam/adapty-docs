@@ -84,16 +84,17 @@ Les achats Stripe et Paddle proviennent de l'extérieur de l'application, sur le
 
    <ZoomImage id="ga4-firebase-secret.webp" width="700px" alt="Écran de création du secret Measurement Protocol API de Google Analytics" />
 
-4. Configurez la façon dont Adapty transmet les données de revenus et d'utilisateurs. Les quatre paramètres partagent une même ligne dans le tableau de bord :
+4. Configurez la façon dont Adapty transmet les données de revenus et d'utilisateurs. Ces paramètres se trouvent sous **How the revenue data should be send** :
 
-   - Menu déroulant **Revenue definition** : Revenus bruts, Revenus après commission du store, ou [Revenus après commission du store et taxes](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue).
+   - Menu déroulant **Revenue definition** : Gross revenue, Proceeds after store commission, ou [Proceeds after store commission and taxes](controls-filters-grouping-compare-proceeds#display-gross-or-net-revenue).
    - Bouton **Send user properties** : Quand il est activé, les événements incluent `subscription_state` et `subscription_product_id`. Pour les utiliser dans des rapports ou des audiences, consultez [Utiliser les données d'abonnement dans les rapports](#use-subscription-data-in-reports-and-audiences).
-   - Bouton **Report user's currency** : Quand il est activé, Adapty signale chaque vente dans la devise utilisée par l'acheteur. Quand il est désactivé, les rapports sont en USD.
-   - Bouton **Send trial price** : Les démarrages d'essai ont de la valeur — la plupart des utilisateurs payants commencent par un essai. Mais l'optimisation des enchères de Google Ads ne considère comme pertinents que les événements avec des revenus. Activez cette option pour attribuer un prix fictif à chaque essai, afin que Google les considère comme des conversions et optimise les dépenses publicitaires vers l'acquisition de nouveaux utilisateurs en essai. Quand il est activé, le champ **Trial price percentage** apparaît. Définissez-y la part du prix d'abonnement complet que Google doit attribuer à chaque essai — par exemple, `50%` signale la moitié du prix de l'abonnement pendant l'essai.
+   - Bouton **Report user's currency** : Quand il est activé, Adapty reporte chaque vente dans la devise utilisée par l'acheteur. Quand il est désactivé, il reporte en USD.
+   - Bouton **Send trial price** : Les démarrages d'essai sont précieux — la plupart des utilisateurs payants commencent souvent par un essai. Mais l'optimisation des enchères de Google Ads ne considère comme intéressants que les événements avec un chiffre d'affaires. Activez-le pour attribuer un prix indicatif à chaque essai afin que Google les considère comme des conversions et optimise les dépenses publicitaires pour acquérir des utilisateurs démarrant un essai. Quand il est activé, le champ **Trial price percentage** apparaît. Définissez-le sur la part du prix d'abonnement complet que Google doit considérer comme valeur de chaque essai — par exemple, `50%` reporte la moitié du prix d'abonnement pendant l'essai.
+   - Bouton **Send virtual currency earnings** : Quand il est activé, Adapty envoie l'événement recommandé par Google Analytics `earn_virtual_currency` pour chaque [devise virtuelle](virtual-currencies) créditée par un achat ou un démarrage d'essai. Désactivé par défaut. Si votre application enregistre déjà `earn_virtual_currency` via le SDK Firebase, laissez-le désactivé — sinon Google Analytics comptabilise chaque crédit en double. Consultez [Suivre les gains en devise virtuelle](#track-virtual-currency-earnings).
 
-   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Firebase integration revenue data row with the four controls" />
+   <ZoomImage id="revenue-data-options-firebase.webp" width="700px" alt="Contrôles des données de revenus pour l'intégration Firebase, incluant le bouton Envoyer les gains en monnaie virtuelle" />
 
-5. Associez les événements Adapty aux noms d'événements Firebase/Google Analytics. Adapty propose des mappages d'événements distincts pour **iOS** et **Android**, ce qui vous permet d'utiliser des noms différents selon la plateforme. **Les achats Stripe et Paddle utilisent le mappage d'événements iOS** — il n'existe pas de mappage distinct pour l'un ou l'autre.
+5. Associez les événements Adapty aux noms d'événements Firebase/Google Analytics. Adapty propose des mappages d'événements distincts pour **iOS** et **Android**, ce qui vous permet d'utiliser des noms différents selon la plateforme. **Les achats Stripe et Paddle utilisent le mappage d'événements iOS** — il n'existe pas de mappage séparé pour l'un ou l'autre.
 
     Google Analytics impose des limites strictes dans le cadre du Measurement Protocol — noms d'événements limités à 40 caractères, noms de propriétés utilisateur à 24 caractères, valeurs de propriétés utilisateur à 36 caractères, et valeurs de paramètres d'événements à 100 caractères. Google Analytics ignore silencieusement les événements personnalisés qui dépassent ces limites. Adapty tronque les valeurs de paramètres d'événements textuels à 100 caractères pour respecter cette contrainte.
 
@@ -306,6 +307,33 @@ Pour utiliser les paramètres dans les rapports Google Analytics, enregistrez ch
 :::note
 Adapty tronque les valeurs texte à 100 caractères. Les IDs sont toujours plus courts, mais les noms peuvent être plus longs : si deux tests A/B ou flows partagent les 100 premiers caractères de leur nom, Google Analytics les affiche comme un seul. Pour les distinguer, utilisez `ab_test_id` ou `flow_id`.
 :::
+
+## Suivre les gains en monnaie virtuelle \{#track-virtual-currency-earnings\}
+
+Pour voir dans Google Analytics combien de [monnaie virtuelle](virtual-currencies) vos utilisateurs obtiennent grâce à leurs achats, activez le bouton **Send virtual currency earnings** dans les paramètres de l'intégration Firebase. Adapty envoie alors l'événement recommandé par Google Analytics `earn_virtual_currency`. L'événement apparaît dans les rapports d'événements standard et dans les rapports de jeux, sans aucun code dans votre application.
+
+Adapty envoie un événement `earn_virtual_currency` pour chaque monnaie créditée par un achat. Un achat qui crédite des pièces et des gemmes envoie deux événements. Chaque événement comporte deux paramètres :
+
+| Paramètre | Description |
+|---|---|
+| `virtual_currency_name` | Code de la devise virtuelle, tel que défini dans [les paramètres de devise](create-virtual-currency). |
+| `value` | Nombre de crédits accordés par cet achat dans cette devise. |
+
+Adapty envoie `earn_virtual_currency` dans la même requête que l'événement d'achat. Ces événements peuvent créditer de la devise :
+
+- `subscription_initial_purchase`
+- `subscription_renewed`
+- `trial_started`
+- `trial_converted`
+- `non_subscription_purchase`
+
+Adapty envoie `earn_virtual_currency` uniquement pour un achat qui a crédité de la monnaie virtuelle via un [lien de produit](create-virtual-currency#link-products). Cet événement n'est pas envoyé pour :
+
+- Les achats de produits non liés à une monnaie.
+- Les crédits et dépenses effectués via l'[API côté serveur](getting-started-with-server-side-api).
+- Les événements d'achat que vous avez désactivés dans la carte des événements.
+
+`earn_virtual_currency` rapporte les crédits gagnés, pas le solde ni les revenus : il n'a pas de paramètre `currency`, et les crédits expirés ou dépensés ne le diminuent pas. Pour obtenir le solde actuel d'un utilisateur, utilisez [Lister les soldes de devises virtuelles](api-adapty/operations/listVirtualCurrencyBalances).
 
 ## Dépannage \{#troubleshooting\}
 

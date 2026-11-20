@@ -61,6 +61,13 @@ there is no Google Play equivalent.
   image either way. It is fixed at creation: in edit mode the radios are disabled with a hint to create a new
   message. No image at creation → the default position is stored, so an image added later in edit shows the
   title below. Promo messages carry no image, so no choice.
+- **Bullet points** (dashboard code and release QA notes, 2026-11-09): Default messages only, with or without an
+  image; up to 5; each needs an icon (PNG, exactly 1024 × 1024 px, no transparency, 10 MB cap), text up to 66
+  characters, optional alt text up to 150 (empty → a default is sent). Icons are shared across locales and only
+  the text is translated; alt text is not localized. A locale with any text must fill every bullet point, and an
+  over-long or empty bullet cell blocks **Submit To Review**. Bullet points can't be reordered. Not yet shipped:
+  the **Rejected** state for an icon Apple turns down, and removing replaced icons from Apple — don't document
+  either until they land. Documented in `retention-messaging-create` → *Content* and *Localization*.
 - **Alt text is not localized** (dashboard code, 2026-10-28): one alt text is sent for the message, not per locale.
 - **Locales with an empty title and body are dropped on submit**, silently (dashboard code, 2026-10-28).
 - **Reactivation does not re-enter Apple's review.** The confirm-modal copy is explicit: deactivating
@@ -103,7 +110,7 @@ Delta from `scope.md` only.
 <!-- mill:auto:roster -->
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
-| retention-messaging | entry | — | 1 | tutorial |
+| retention-messaging | entry | — | 2 | tutorial |
 | retention-messaging-analytics | — | — | 6 | tutorial |
 | retention-messaging-create | — | — | 9 | tutorial |
 | retention-messaging-setup | — | — | 7 | tutorial |
@@ -120,6 +127,9 @@ Delta from `scope.md` only.
 - **`analytics`** — `retention-messaging-analytics` is this zone's (the Shown / Retained / Retention rate
   columns on the Retention Messaging page). `analytics-retention` is cohort retention charts in
   `analytics`, an unrelated feature with a confusingly similar name.
+- **`agent-tooling`** — `developer-cli-retention-messaging` (2026-11-18) is the CLI topic page for the same actions, and
+  `adapty-mcp` has a Retention Messaging row. They link here for message states, setup steps and metric meanings; a change to
+  those belongs here first, then the CLI page if it restates a value (the image limits and the metric formulas).
 - **`products-and-offers`** — a promo message attaches an App Store promotional offer or a plan switch,
   but creating either is `app-store-offers` / `create-product`.
 
@@ -156,6 +166,19 @@ aggregated support handoffs; the third stage has no ticket evidence yet.
 
 ## Gaps and misses
 
+- **2026-11-18, the backend does carry retention-messaging logic** (backend code, 2026-11-17, read for the CLI topic): this
+  corrects "the backend carries no retention-messaging logic that could be read" in Sources of truth for setup, messages and
+  suggestions too, not only analytics. From that read: setup status values `credentials`, `registration_status`,
+  `realtime_url_status` (`not_configured`, `configured_to_other_url`, `configured_to_adapty`) and `performance_test_status`; a
+  status read can save the test result; a list or message read asks Apple about review and can queue an approved message;
+  configuring sandbox creates a hidden test message; production configure is refused before the test passes; header image PNG
+  3840 px wide, 160–2160 px tall, no transparency, 10 MB; title position is stored as `header_position` (`above_body`,
+  `above_image`).
+- **Open question, 2026-11-18: does activation re-enter review?** `retention-messaging-create` says reactivation skips Apple's
+  review. The same backend read says `activate` moves an `inactive` message to `in_review` and that approved locales don't wait
+  for a new review. Both can be true (a state change with no new upload), but the article's sentence and the API state disagree
+  on the surface. `developer-cli-retention-messaging` states the API behavior; the create article is unchanged. Confirm with
+  product before you edit either.
 - **Resolved 2026-10-28 in favor of the dashboard code** (the docs owner's call: "trust the code"):
   `retention-messaging-create` now says a message goes live once Apple approves **at least one** locale
   (Localization step footer: "Production stays gated until at least one locale is approved."), and that

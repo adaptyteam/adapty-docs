@@ -1,0 +1,52 @@
+---
+title: "Comandos de fallbacks"
+description: "Comando de la CLI de Adapty que descarga el archivo de respaldo que tu app incluye para cuando no puede llegar a Adapty, con el formato de archivo para cada versión del SDK."
+metadataTitle: "Comandos CLI de Fallbacks | Documentación de Adapty"
+---
+
+Descarga el [archivo de respaldo](fallback-flows) que tu app incluye para cuando no puede llegar a Adapty. Es el mismo archivo que se descarga con el botón **Fallbacks** en la página **Placements**.
+
+## adapty fallbacks get
+
+```bash
+adapty fallbacks get --app <app-id> --platform ios --sdk-version 4.4.0 --output ios_fallback.json
+```
+
+| Flag | Obligatorio | Descripción |
+|---|---|---|
+| `--app` | Sí | ID de la app (UUID) |
+| `--platform` | Sí | `ios` para App Store o `android` para Google Play. Las apps de macOS y visionOS usan el archivo `ios`. |
+| `--sdk-version` | Sí | La versión del SDK de Adapty con la que está compilada tu app, en formato `X.Y.Z`. Para Flutter, React Native, Unity, Kotlin Multiplatform y Capacitor, pasa la versión del plugin de Adapty. |
+| `--output` | No | Archivo donde se escribirá la salida. Los directorios padre se crean automáticamente. Si no se especifica, el archivo se envía a la salida estándar. |
+
+Un archivo por store cubre todos los placements de la app. Para publicar en ambos stores, ejecuta el comando una vez con `--platform ios` y otra con `--platform android`.
+
+El archivo incluye solo los placements activos, así que publica tus flows y activa sus placements antes de descargarlo. Descárgalo de nuevo cada vez que cambies un placement o actualices el SDK, ya que el archivo es una instantánea.
+
+Adapty selecciona el formato del archivo a partir de `--sdk-version`. El SDK solo acepta el formato para el que fue compilado y rechaza cualquier otro archivo al iniciar, sin generar ningún error de compilación:
+
+| `--sdk-version` | Formato de archivo |
+|---|---|
+| 4.4.0 and later | 12 |
+| 4.1.x – 4.3.x | 11 |
+| 4.0.x | 10 |
+| 3.12.x and later 3.x | 9 |
+| 3.8.x – 3.11.x | 8 |
+| 3.4.x – 3.7.x | 7 |
+| 3.0.x – 3.3.x | 6 |
+| Below 3.0 | 5 |
+
+Los placements de paywall están en todos los formatos. Los placements de flow solo están en los archivos para SDK 4.0 y versiones posteriores.
+
+Con `--output`, el CLI escribe el archivo solo cuando la descarga termina correctamente, por lo que si falla la ejecución el archivo anterior se conserva. Sin él, la salida estándar lleva únicamente el archivo y todos los errores van a la salida de error estándar. Un simple redireccionamiento `> file` vacía el archivo antes de que empiece la solicitud, así que usa `--output`.
+
+Adapty construye el archivo completo antes de responder, lo que puede tardar varios minutos en apps grandes. El comando envía una sola solicitud y no reintenta. Cada app puede descargar el archivo 30 veces por hora entre todos sus tokens; pasado ese límite, el comando falla con un error de rate limit que indica cuánto tiempo esperar. Descarga el archivo para las builds de release, no en cada commit.
+
+| Código de salida | Significado |
+|---|---|
+| `0` | El archivo fue escrito |
+| `1` | El archivo no pudo escribirse. El archivo anterior no ha cambiado. |
+| `2` | Valor de flag no válido |
+| `3` | Sin token o acceso denegado |
+| `4` | Error de API, incluido el límite de velocidad, o una respuesta que no es un archivo de respaldo |
+| `5` | No se pudo contactar con Adapty, no respondió en 300 segundos o la descarga falló |

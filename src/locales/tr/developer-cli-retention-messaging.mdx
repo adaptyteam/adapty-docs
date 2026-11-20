@@ -1,0 +1,461 @@
+---
+title: "CLI ile Retention Messaging Yönetimi"
+description: "Adapty CLI ile terminalden Apple Retention Messaging'i kurun: gerçek zamanlı URL'yi bağlayın, performans testini çalıştırın, retention mesajları oluşturun, değiştirin, etkinleştirin, devre dışı bırakın ve metriklerini okuyun."
+metadataTitle: "Geliştirici CLI'da Retention Messaging | Adapty Dokümanları"
+---
+
+Adapty CLI, terminalde `adapty retention-messaging` konusu altında [Apple Retention Messaging](retention-messaging) özelliğini — yani abonelerin **Cancel Subscription** ekranında gördüğü mesajı — yönetmenizi sağlar. Bir uygulamanın kurulum durumunu okuyabilir, Apple'ı Adapty'nin gerçek zamanlı URL'sine bağlayabilir, Apple'ın performans testini çalıştırabilir, retention mesajları oluşturup düzenleyebilir, bunları etkinleştirip devre dışı bırakabilir ve her mesajın metriklerini inceleyebilirsiniz.
+
+Bir AI ajanına sizin yerinize Retention Messaging kurulumunu yaptırmak, birden fazla uygulama genelinde mesajları betiklemek veya kontrol panelini açmadan mesaj metriklerini okumak için kullanın. Komutlar, kontrol panelinin **Retention Messaging** sayfasıyla aynı işlemleri yapar ve kontrol paneli de aynı mesajları gösterir.
+
+## Başlamadan önce \{#before-you-start\}
+
+`retention-messaging` konusu, CLI'ın geri kalanıyla aynı kurulum ve oturumu kullanır. Bunu henüz ayarlamadıysanız, [hızlı başlangıç kılavuzunun](developer-cli-quickstart) 1. ve 2. adımlarını takip edin. CLI'ınızın bu konuya sahip olup olmadığını görmek için şunu çalıştırın:
+
+```bash
+adapty retention-messaging --help
+```
+
+Her komut, `--app` parametresinde uygulamanın UUID'sini alır. Bunu bulmak için şunu çalıştırın:
+
+```bash
+adapty apps list
+```
+
+Her adım için uygulamanızın ihtiyaç duyduklarından:
+
+- **Kurulum durumunu okuma**: Hiçbir şey. Her uygulama için çalışır.
+- **Gerçek zamanlı URL'yi okuma**: Adapty'de eksiksiz bir [App Store kurulumu](app-store-connection-configuration). Bu URL'yi Apple'a erişim talep ettiğinizde gönderirsiniz.
+- **Gerçek zamanlı URL'yi yapılandırma ve performans testini çalıştırma**: Ayrıca In-App Purchase anahtarı ve Apple'dan talep ettiğiniz [Retention Messaging API'ye erişim](retention-messaging-setup#request-access-from-apple). Apple'ın incelemesi bir aya kadar sürebilir, bu nedenle erişimi erken talep edin.
+- **Abonelere mesaj gösterme**: Apple'dan erişim, Adapty'ye ayarlanmış gerçek zamanlı URL, en az bir [ürün](create-product) ve Apple'ın her mesajı onaylaması.
+
+Saklama mesajları iki Apple ortamında bulunur: `sandbox` ve `production`. `--mode` bayrağı ortamı seçer. **Sandbox mode** kontrol paneli geçişinin gösterdiği gibi, her ortamın kendi mesajları vardır.
+
+Saklama Mesajlaşmasını baştan sona ayarlamak için:
+
+1. [Kurulum durumunu okuyun](#read-the-setup-status).
+2. [Gerçek zamanlı URL'yi okuyun](#connect-the-realtime-url) ve Apple'dan bu URL ile erişim talep edin.
+3. `sandbox` için [gerçek zamanlı URL'yi yapılandırın](#connect-the-realtime-url).
+4. [Performans testini çalıştırın](#run-the-performance-test) ve test geçene kadar kurulum durumunu okuyun.
+5. `production` için [gerçek zamanlı URL'yi yapılandırın](#connect-the-realtime-url).
+6. [Varsayılan mesajları oluşturun](#create-a-message), ardından promosyon mesajlarını.
+7. Apple'ın incelemesini takip etmek için [mesajları listeleyin](#list-and-read-messages).
+
+## Kurulum durumunu okuyun \{#read-the-setup-status\}
+
+```bash
+adapty retention-messaging setup-status --app <app-id>
+```
+
+Durum, kontrol panelindeki kurulum adımlarının aynısını gösterir:
+
+| Alan | Değerler |
+|---|---|
+| `credentials` | `present` veya `missing`: uygulamanın, Retention Messaging'in kullandığı App Store anahtarlarına sahip olup olmadığı. |
+| `registration_status` | `registered` veya `not_registered`: Apple'ın uygulamaya Retention Messaging API erişimi verip vermediği. |
+| `sandbox.realtime_url_status`, `production.realtime_url_status` | `not_configured`, `configured_to_other_url` veya `configured_to_adapty`: Apple'ın her ortamda isteklerini hangi adrese gönderdiği. |
+| `sandbox.performance_test_status` | `not_started`, `running`, `passed` veya `failed`. |
+
+:::note
+Bazı okuma işlemleri, kontrol panelinin yaptığı gibi Adapty'yi de günceller:
+- Performans testi çalışırken, `setup-status` Apple'dan test sonucunu alır ve kaydeder. `realtime-url configure` onay istemeden önce aynı okumayı yapar, bu nedenle reddetseniz bile sonucu kaydeder.
+- `messages list`, `messages get` ve `messages update` işleminin yazmadan önce yaptığı okuma, Apple'a her mesajın inceleme durumunu sorar ve yeni durumu kaydeder. Apple bir mesajı onaylamışsa, okuma işlemi onu hemen `live` durumuna taşır. Adapty, Apple'ın incelemesini bağımsız olarak da kontrol eder, dolayısıyla onaylanan bir mesaj okuma yapmadan da yayına geçer.
+:::
+
+## Gerçek zamanlı URL'yi bağlayın \{#connect-the-realtime-url\}
+
+Apple, bir abone **Cancel Subscription** ekranını açtığında gerçek zamanlı URL'ye istek gönderir. Adapty bu isteğe mesajınızla yanıt verir. Adapty URL'sini okumak için şunu çalıştırın:
+
+```bash
+adapty retention-messaging realtime-url get --app <app-id>
+```
+
+Aynı URL hem `sandbox` hem de `production` ortamına hizmet eder. Bu URL'yi Apple'a, [erişim talep ettiğinizde](retention-messaging-setup#request-access-from-apple) verirsiniz.
+
+Adapty URL'sini Apple'da tek bir ortam için ayarlamak üzere şunu çalıştırın:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode sandbox
+```
+
+Önce `sandbox` ortamını yapılandırın. Adapty, [performans testi](#run-the-performance-test) geçilene kadar `production` ortamına izin vermez. `sandbox` ortamını yapılandırdığınızda Adapty, performans testi için gizli bir test mesajı da oluşturur. Bu mesaj, mesaj listesinde görünmez.
+
+Apple bu ortamın isteklerini farklı bir sunucuya gönderiyorsa (`configured_to_other_url`), Adapty URL'si Apple'da o sunucunun URL'sinin yerini alır. Bu noktadan itibaren o sunucu, **Cancel Subscription** ekranından herhangi bir istek almaz. CLI, ortamın adını belirten bir uyarı gösterir. Değişikliği onaylamak için:
+
+- **Terminalde, `--json` olmadan**: Uyarıyı okuyun ve `Apply? [y/N]` istemine `y` ile yanıt verin. `--yes` geçseniz bile istem görünür.
+- **Bir script'te, bir agent'ta veya `--json` ile**: `--replace-other-url --yes` geçin. `--replace-other-url` olmadan CLI hiçbir şey göndermez ve `--yes` ile bile çıkış kodu 6 ile sonlanır.
+
+## Performans testini çalıştırın \{#run-the-performance-test\}
+
+Apple, `production` gerçek zamanlı URL'sine izin vermeden önce Adapty'nin ne kadar hızlı yanıt verdiğini test eder. Teste başlamadan önce, `sandbox` için [gerçek zamanlı URL'yi yapılandırın](#connect-the-realtime-url). Ardından bir sandbox hesabı veya TestFlight üzerinden en uzun süreli ürününüzü satın alın, aboneliği aktif tutun ve satın alma işleminin hemen ardından testi başlatın:
+
+```bash
+adapty retention-messaging performance-test start --app <app-id>
+```
+
+Test her zaman `sandbox` ortamında çalışır ve bir saate kadar sürebilir. Sonucu görmek için [kurulum durumunu](#read-the-setup-status) yeniden okuyun: `sandbox.performance_test_status` değeri `running`'den `passed` veya `failed` olarak değişir. Durum `running` iken testi yeniden başlatmayın: Adapty bunu reddeder. Testin neden başarısız olduğunu öğrenmek için bkz. [Performans testini geçme](retention-messaging-setup#pass-the-performance-test).
+
+Test geçtikten sonra production ortamına bağlanın:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode production
+```
+
+## Mesajları listele ve oku \{#list-and-read-messages\}
+
+```bash
+adapty retention-messaging messages list --app <app-id> --mode production --state live
+```
+
+`--mode` zorunludur. Liste, her mesajı adı, türü, durumu, ürün sayısı, başlangıç tarihi ve mesajın tüm yaşam süresi boyunca elde edilen şu metriklerle birlikte gösterir:
+
+| Alan | Kontrol paneli sütunu | Değer |
+|---|---|---|
+| `shown` | **Shown** | Sayı |
+| `retained` | **Retained users** | Sayı |
+| `saved_users` | **Saved users** | Sayı |
+| `retention_rate` | **Retention rate** | Yüzde, bir ondalık basamak. Hiçbir görüntülemenin sonucu yokken `0.0`. |
+| `save_rate` | **Save rate** | Yüzde, bir ondalık basamak. Hiçbir görüntüleme 24 saatten eski değilken `0.0`. |
+| `saved_revenue` | **Saved revenue** | Apple komisyonu öncesi USD, iki ondalık basamak |
+
+Adapty'nin her metriği nasıl hesapladığı hakkında bilgi için bkz. [Mesaj performansını takip etme](retention-messaging-analytics).
+
+Bir mesaj şu durumlardan birinde olabilir: `in_review`, `live`, `rejected` veya `inactive`. Her durumun ne anlama geldiği için bkz. [Mesaj durumları](retention-messaging-create#message-states).
+
+Bir mesajı metinleri, görseli, madde noktaları, ürünleri ve dilleriyle birlikte okumak için şu komutu çalıştırın:
+
+```bash
+adapty retention-messaging messages get <message-id> --app <app-id>
+```
+
+Mesajda ortam alanı bulunmaz. Metinler ve madde noktaları `en-US` kaynağıdır. Diğer her dil kendi inceleme durumunu gösterir.
+
+## Mesaj oluşturma \{#create-a-message\}
+
+Bir promosyon mesajı, aynı ürün için aynı ortamda varsayılan bir mesaj gerektirir. Önce varsayılan mesajı oluşturun. Apple'ın incelemesini beklemeniz gerekmez.
+
+Dosya için ürün kimliklerini, promosyon tekliflerini ve plan geçişlerini bulmak üzere [öneri komutlarını](#find-products-and-offers) kullanın. Mesaj oluşturmak için içeriğini bir JSON dosyasına koyun:
+
+```json title="message.json"
+{
+  "name": "Annual default",
+  "type": "default",
+  "title": "Before you go",
+  "body": "Your plan keeps every feature you use today.",
+  "alt_text": "App icon on a purple background",
+  "header_position": "above_body",
+  "products": [
+    { "store_id": "com.example.annual" }
+  ],
+  "bullet_points": [
+    { "image_path": "icons/sync.png", "text": "Sync on all your devices" },
+    { "image_path": "icons/offline.png", "text": "Work offline" }
+  ],
+  "localizations": [
+    {
+      "locale": "de-DE",
+      "title": "Bevor du gehst",
+      "body": "Dein Abo behält alle Funktionen, die du heute nutzt.",
+      "bullet_points": [
+        { "text": "Auf allen Geräten synchronisieren" },
+        { "text": "Offline arbeiten" }
+      ]
+    }
+  ]
+}
+```
+
+Then run:
+
+```bash
+adapty retention-messaging messages create --app <app-id> --mode sandbox \
+  --file message.json --image header.png
+```
+
+The file takes these keys:
+
+- **`name`, `type`, `title`, `body`**: Zorunlu. Başlık ve gövde, `en-US` kaynak metnidir; başlık en fazla 66, gövde en fazla 144 karakter olabilir.
+- **`type`**: Mesaj türü, `default` veya `promo`. Türü sonradan değiştiremezsiniz.
+- **`alt_text`**: Ekran okuyucular için resim açıklaması; en fazla 150 karakter.
+- **`header_position`**: Resimli bir default mesajda başlığın konumu. `above_image` başlığı resmin üstünde gösterir. `above_body` ise resmin altında, gövdenin üstünde gösterir. Sonradan değiştiremezsiniz.
+- **`products`**: Abonelerin mesajı göreceği ürünler; `store_id` alanında App Store ürün kimliğiyle belirtilir. Default mesajda `association` bulunmaz. Promo mesajın en az bir ürüne ihtiyacı vardır ve her ürünün `association` alanında bir teşvik tanımlanmalıdır: `{"type": "promo_offer", "store_id": "<offer-id>"}` veya `{"type": "plan_switch", "store_id": "<product-id>"}`. Bir promo mesajdaki tüm ürünler aynı teşvik türünü kullanır: hepsi `promo_offer` ya da hepsi `plan_switch`.
+- **`bullet_points`**: Yalnızca default mesajlar için, en fazla beş madde. Her maddenin `text` (1–66 karakter), isteğe bağlı `alt_text` ve `image_path` alanları bulunur; `image_path`, PNG simgesinin JSON dosyasının bulunduğu klasöre göreli yoludur. CLI, `image_index` değerini reddeder.
+- **`localizations`**: `en-US` dışındaki her yerel ayar için bir giriş; `locale`, `title`, `body` ve mesajdaki her madde noktası için aynı sırada bir `bullet_points` metni içerir.
+
+`--image` varsayılan bir mesajın görselini ekler. Promosyon mesajının görseli ve madde işaretleri yoktur.
+
+Onayınızı istemeden önce CLI her görsel dosyasını doğrular. CLI ardından [Betikler ve ajanlarda onay](#confirmation-in-scripts-and-agents) bölümünde açıklandığı gibi onay ister. Adapty, yeni mesajın metin ve görsellerini incelenmek üzere Apple'a gönderir ve mesajın durumu `in_review` olur.
+
+Bir oluşturma işlemi ağ hatası veya sunucu hatası ile başarısız olursa tekrar çalıştırmayın. Bkz. [Oluşturma veya değiştirme işlemi yanıt almazsa](#if-a-create-or-a-change-gets-no-answer).
+
+### Görsel gereksinimleri \{#image-requirements\}
+
+| Dosya | Gereksinimler |
+|---|---|
+| Görsel (`--image`) | PNG, 3840 piksel genişliğinde ve 160–2160 piksel yüksekliğinde, şeffaflık yok, en fazla 10 MB |
+| Madde imi ikonu (`image_path`) | PNG, 1024 × 1024 piksel, şeffaflık yok, en fazla 10 MB |
+
+CLI, herhangi bir şey göndermeden önce her dosyayı doğrular. Alfa kanalı olan bir PNG, tüm pikseller tam opaksa geçer. Bozuk bir PNG, `must be a PNG` hatasıyla başarısız olur. Bir dosya başarısız olursa, CLI hiçbir şey göndermez ve 2 koduyla çıkar. Hata mesajı dosyayı ve kuralı belirtir; örneğin `… must be 3840 px wide and 160–2160 px tall`.
+
+## Bir mesajı değiştirme \{#change-a-message\}
+
+:::warning
+Devre dışı bir mesajdaki değişiklik, yalnızca ad değişikliği bile olsa onu yeniden etkinleştirir. Apple mesajı onayladıktan sonra aboneler bunu görür.
+:::
+
+`messages update` yalnızca belirttiğiniz şeyleri değiştirir. Belirtmediğiniz her dil, madde işareti, simge, ürün ve görsel olduğu gibi kalır:
+
+```bash
+adapty retention-messaging messages update <message-id> --app <app-id> --title "Wait, there's more"
+```
+
+Change the name, title, body, and alt text, and the image, with flags: `--name`, `--title`, `--body`, `--alt-text`, `--image`, and `--remove-image`. Change locales, bullet points, and products with a changes file in `--file`. The changes file also takes `name`, `title`, `body`, `alt_text`, and `remove_image`. The CLI refuses a key that the changes file doesn't know. This changes file works on the message from [Create a message](#create-a-message):
+
+```json title="changes.json"
+{
+  "localizations": [
+    { "locale": "de-DE", "title": "Warte kurz", "bullet_texts": { "<bullet-id>": "Auf jedem Gerät synchronisieren" } }
+  ],
+  "bullet_points": [
+    { "bullet_id": "<bullet-id>", "text": "Sync on every device" },
+    {
+      "image_path": "icons/backup.png",
+      "text": "Daily backups",
+      "texts": { "de-DE": "Tägliche Backups" }
+    }
+  ],
+  "remove_bullet_points": ["<other-bullet-id>"]
+}
+```
+
+- **Yerelleştirmeler**: Her yerelleştirmeyi `locale` içinde kodu ile adlandırın; `title`, `body` ve söz konusu yerelleştirmenin madde noktası metinleri `bullet_texts` içinde `bullet_id`'ye göre belirtilir. Mesajın sahip olmadığı bir yerelleştirme eklenirse `title`, `body` ve her madde noktası için bir metin gerekmektedir.
+- **Madde noktaları**: Bir madde noktasını değiştirmek için `messages get` çıktısındaki `bullet_id` ile adlandırın; yeni bir simge için `text`, `alt_text` veya `image_path` kullanın. Yeni bir madde noktasının `bullet_id`'si olmaz. `image_path`, `en-US` için `text` ve mesajın her yerelleştirmesi için `texts` içinde bir metin gerektirir.
+- **Ürünler**: App Store ürün kimliğine göre `store_id` ile belirtilir. Mesajda bulunmayan bir ürün eklenir. Promosyon mesajında her ürünün bir teşvike ihtiyacı vardır: değiştirmek için yeni bir `association` gönderin. Bir üründe teşvik sunmayı durdurmak için ürünü `remove_products` ile kaldırın. Promosyon mesajına eklediğiniz bir ürünün `association` değeri olması gerekir.
+- **Kaldırma işlemleri**: Kaldırma alanlarını kullanın: `remove_localizations` (yerel ayar kodları), `remove_bullet_points` (madde noktası kimlikleri), `remove_products` (App Store ürün kimlikleri) ve `remove_image: true` ya da `--remove-image`. Kaldırılan bir madde noktası tüm yerelleştirmelerden silinir. Bir promosyon mesajı bir ürünü kullanırken, o ürünü varsayılan mesajından kaldıramazsınız.
+
+Bir promosyon mesajının türünü, `header_position` değerini veya teşvik türünü (`promo_offer` ya da `plan_switch`) değiştiremezsiniz. Farklı bir tane kullanmak istiyorsanız yeni bir mesaj oluşturun.
+
+CLI, herhangi bir şey göndermeden önce değişikliklerinizi doğrular. Giriş çelişkili ise, hiçbir şeyi değiştirmiyorsa ya da mesajda bulunmayan bir şeyi isimlendiriyor veya kaldırıyorsa CLI hiçbir şey göndermez, 2 kodu ile çıkar ve hata sorunu belirtir. Mevcut bir madde işaretinin yerel metinlerini `texts` içinde değil, yerel ayarın `bullet_texts` alanında verin.
+
+CLI onay ister, mesajı okur, değişikliklerinizi mesajla birleştirir ve tam mesajı Adapty'ye gönderir. Her güncelleme tüm mesajı Apple'ın incelemesine gönderir ve mesaj durumu `in_review` olur. `messages update` çalışırken biri kontrol panelinde mesajı değiştirirse, güncelleme o değişikliğin üzerine yazar.
+
+## Bir mesajı etkinleştirme veya devre dışı bırakma \{#activate-or-deactivate-a-message\}
+
+```bash
+adapty retention-messaging messages set-status <message-id> --app <app-id> --action deactivate
+```
+
+- **`activate`**: `inactive` durumundaki bir mesajı `in_review` durumuna taşır. Apple yalnızca daha önce onaylamadığı dilleri tekrar inceler. Apple mesajı onayladıktan sonra aboneler mesajı yeniden görmeye başlar.
+- **`deactivate`**: `live` durumundaki bir mesajı `inactive` durumuna taşır. Aboneler artık mesajı göremez. Daha önce gerçekleşen görüntülemeler metriklerde kalmaya devam eder.
+
+Adapty, `inactive` olmayan bir mesaj için `activate` isteğini ve `live` olmayan bir mesaj için `deactivate` isteğini reddeder. `in_review` durumundaki bir mesaj, Apple onayladığında yayına girer. Durdurmak için onaydan sonra devre dışı bırakın. CLI'ın mesaj silme komutu yoktur.
+
+Bir ürünün her ortamda bir varsayılan mesajı ve bir promosyon mesajı olabilir. Adapty aşağıdaki durumlarda aktivasyonu reddeder:
+
+- Bu mesaj inactive durumdayken ürüne aynı türde başka bir mesaj eklendi.
+- Mesaj bir promosyon mesajıdır ve ürünlerinden birinin bu ortamda varsayılan mesajı yoktur.
+
+Bir promosyon mesajı bir ürünü kullanırken, Adapty o ürünün varsayılan mesajını devre dışı bırakmayı reddeder. Önce promosyon mesajını devre dışı bırakın veya ürünü mesajdan kaldırın.
+
+## Ürünleri ve teklifleri bulma \{#find-products-and-offers\}
+
+Bir mesaja ekleyebileceğiniz ürünleri bulmak için şunu çalıştırın:
+
+```bash
+adapty retention-messaging products suggest --app <app-id> --mode production --type default
+```
+
+Bir mesajı değiştirirken, bu mesajın ürünlerinin `used` olarak görünmemesi için `--message-id` parametresine mesajın ID'sini geçin. `disabled_reason` bulunan bir ürün eklenemez:
+
+- **`used`**: Aynı türdeki başka bir mesaj bu ortamda ürünü zaten kullanıyor.
+- **`no_default_message`**: Ürünün bu ortamda varsayılan mesajı yok, dolayısıyla promosyon mesajı alamaz.
+
+Bir promosyon mesajı her ürünle tek bir teşvik ilişkilendirir. Bir ürünün teşviklerini bulmak için `products suggest` komutundan dönen ürün `id`'sini kullanın. Ürünün promosyon tekliflerini listelemek için şu komutu çalıştırın:
+
+```bash
+adapty retention-messaging promo-offers suggest <product-id> --app <app-id>
+```
+
+Bir abonenin geçiş yapabileceği planları listelemek için şu komutu çalıştırın:
+
+```bash
+adapty retention-messaging plan-switches suggest <product-id> --app <app-id>
+```
+
+`plan-switches suggest` özelliği, uygulama ayarlarında [App Store Connect API anahtarı](app-store-connect-api-key) gerektirir. Teklifin veya planın `store_id`'sini ürünün `association`'ına ekleyin.
+
+## Betikler ve ajanlar için onay \{#confirmation-in-scripts-and-agents\}
+
+Bu komutlar, abonelerin **Cancel Subscription** ekranında gördüklerini değiştirir. Her biri etkisini yazdırır ve değişikliği göndermeden önce hem `sandbox` hem de `production` ortamında onay ister:
+
+- `realtime-url configure`
+- `messages create`
+- `messages update`
+- `messages set-status`
+
+Onay isteme biçimi, komutun nasıl çalıştırıldığına göre farklılık gösterir:
+
+| Komutun çalışma şekli | Ne olur |
+|---|---|
+| Terminalde, `--yes` ve `--json` olmadan | CLI etkiyi yazdırır ve `Apply? [y/N]` diye sorar. `y` veya `yes` cevabı verirseniz CLI isteği gönderir. Başka bir cevap için CLI kod 1 ile çıkar ve hiçbir şey göndermez. |
+| `--yes` ile, terminalde ya da değil | CLI, `production` ortamında bile sormadan isteği gönderir. |
+| `--yes` olmadan, `--json` ile, bir pipe içinde veya terminal yokken | CLI hiçbir şey göndermez ve kod 6 ile çıkar. Hata, etkiyi açıklar. |
+
+Apple'da farklı bir gerçek zamanlı URL'yi değiştirmenin kendine özgü kuralları vardır. Bkz. [Gerçek zamanlı URL'yi bağlama](#connect-the-realtime-url).
+
+Böylece bir script veya agent, önce komutu `--yes` olmadan çalıştırarak etkisini okuyabilir, çıktıdaki etkiyi inceleyebilir ve yalnızca biri bu etkiyi onayladıktan sonra `--yes` ile tekrar çalıştırabilir.
+
+`setup-status`, `realtime-url get`, `performance-test start`, `messages list`, `messages get` ve `suggest` komutları onay istenmeden çalışır.
+
+## Hatalar \{#errors\}
+
+| Çıkış kodu | Neden | Ne yapmalı |
+|---|---|---|
+| 1 | İstemde `y` dışında bir şey girdiniz. Hiçbir şey gönderilmedi. | Göndermek istiyorsanız komutu tekrar çalıştırın. |
+| 2 | CLI, değişikliği göndermeden önce girdiyi reddetti: bir bayrak, bir görsel dosyası, girdide bir çakışma, her madde için metin içermeyen bir yerel ayar veya saklama mesajının içermediği bir şeyin kaldırılması. | Hata mesajında belirtileni düzeltin. |
+| 3 | Giriş yapmadınız ya da Adapty uygulamaya erişimi reddetti. | `adapty auth login` ile giriş yapın ve uygulama ID'sini `adapty apps list` ile bulun. |
+| 4 | Adapty isteği reddetti. Hata mesajı nedeni açıklar; `--json` ise HTTP durumunu ve `error_code` değerini verir. Bir oluşturma veya değişiklik sırasında sunucu hatası (5xx) oluşursa da kod 4 döner ve sonuç bilinmez. | [Adapty'den Gelen Mesajlar](#messages-from-adapty) bölümüne bakın. Bir oluşturma veya değişiklik sırasında sunucu hatası alırsanız [Bir oluşturma veya değişiklik yanıtsız kalırsa](#if-a-create-or-a-change-gets-no-answer) bölümüne bakın. |
+| 5 | CLI, Adapty'ye ulaşamadı. | Çevrimiçi olduğunuzdan emin olun. Bir oluşturma veya değişiklikten sonra [Bir oluşturma veya değişiklik yanıtsız kalırsa](#if-a-create-or-a-change-gets-no-answer) bölümüne bakın. |
+| 6 | Onay gerektiren bir komut `--yes` olmadan ve yanıt verecek kimse yokken çalıştırıldı ya da gerçek zamanlı bir URL değişikliği `--replace-other-url` olmadan gerçekleştirildi. Hiçbir şey gönderilmedi. | Hatadaki etkiyi okuyun, ardından komutu `--yes` ile ve değişiklik için `--replace-other-url` ile tekrar çalıştırın. |
+| 130 | İstemde Ctrl+C tuşuna bastınız. Hiçbir şey gönderilmedi. | — |
+
+### Adapty'den Gelen Mesajlar
+
+`--json` ile hata, `error_code`'u döndürür:
+
+| `error_code` | Neden | Ne yapmalı |
+|---|---|---|
+| `app_store_credentials_missing` | Uygulamanın Adapty'de App Store anahtarı yok. | [App Store kurulumunu](app-store-connection-configuration) tamamlayın. |
+| `app_store_connect_credentials_missing` | `plan-switches suggest` için App Store Connect API anahtarı gerekiyor. | [App Store Connect API anahtarını](app-store-connect-api-key) ekleyin. |
+| `realtime_url_unavailable` | Uygulamanın Adapty'de App Store sunucu bildirimleri kurulumu yok. | [App Store kurulumunu](app-store-connection-configuration) tamamlayın. |
+| `apple_rm_api_access_denied` | Apple, uygulamaya Retention Messaging API erişimi vermemiş. | [Apple'dan erişim isteyin](retention-messaging-setup#request-access-from-apple). |
+| `performance_test_required` | Performans testi geçmeden `production` yapılandırıldı. | Önce [performans testini çalıştırın](#run-the-performance-test). |
+| `performance_test_already_running` | Bir performans testi çalışıyor. | Bekleyin, ardından kurulum durumunu tekrar okuyun. |
+| `active_sandbox_transaction_missing` | Aktif sandbox aboneliği yok. | Sandbox'ta en uzun süreli ürününüzü satın alın, ardından testi yeniden başlatın. |
+| `performance_test_request_rejected` | Apple testi başlatmayı reddetti. | Yeni bir sandbox satın alımı yapın, ardından testi yeniden başlatın. |
+| `retention_product_claimed` | Aynı türdeki başka bir mesaj bu ürüne sahip. | Başka bir ürün seçin ya da diğer mesajı devre dışı bırakın. |
+| `retention_default_message_missing` | Bir promosyon mesajının varsayılan mesajı olmayan bir ürünü var. | Önce ürün için bir varsayılan mesaj oluşturun veya etkinleştirin. |
+| `retention_dependent_promo_messages` | Bir promosyon mesajı, yapılan değişiklikle varsayılan bir mesajdan alınan bir ürün kullanıyor. | Önce promosyon mesajını devre dışı bırakın ya da ürünü mesajdan kaldırın. |
+| `retention_promo_association_invalid` | Bir promosyon mesajının ürünü yok, `association` olmayan bir ürünü var ya da her iki teşvik türü de mevcut. | Her ürüne aynı türde bir `association` verin. |
+| `retention_message_type_immutable` | Yapılan değişiklik, promosyon mesajına farklı bir teşvik türü atıyor. | Yeni bir mesaj oluşturun. |
+| `retention_message_invalid_status_transition` | `inactive` olmayan bir mesajda `activate` veya `live` olmayan bir mesajda `deactivate` çağrısı yapıldı. | `messages get` ile mesajın durumunu okuyun. |
+| `retention_message_not_found` | Uygulamanın bu kimliğe sahip mesajı yok. | Kimliği `messages list` ile alın. |
+
+### Oluşturma veya değişiklik yanıt alamazsa \{#if-a-create-or-a-change-gets-no-answer\}
+
+CLI, bir oluşturma veya güncelleme isteğine ağ hatası ya da sunucu hatası nedeniyle (çıkış kodu 4 veya 5) yanıt alamazsa, Adapty'nin değişikliği kaydedip kaydetmediğini bilemez. CLI isteği yeniden göndermez. Komutu kendiniz de tekrar çalıştırmayın.
+
+- **Oluşturma işlemi sonrası**: Aynı ortam için `messages list` komutunu `--search "<name>" --page-size 100` parametreleriyle çalıştırın. Hata, tam adı ayrı bir satırda yazdırır (`--json` modunda `message_name` alanında). `meta.pagination.pages` değerine kadar her sayfayı okuyun ve her adayı `messages get` ile açın. İkinci bir oluşturma işlemi yinelenen bir mesaj oluşturabilir ve bunu Apple'ın incelemesine gönderebilir. Mesajı yalnızca hiçbir adayın sizin mesajınız olmadığı durumlarda yeniden oluşturun.
+- **Güncelleme işlemi sonrası**: `messages get` komutunu çalıştırın ve mesajın durumunu ile içeriğini okuyun.
+
+## Komut referansı \{#command-reference\}
+
+Her komut, `adapty apps list` komutundan elde edilen uygulama UUID'sini belirten `--app` parametresini alır.
+
+### `retention-messaging setup-status`
+
+Kurulum durumunu döndürür. Başka bayrak almaz.
+
+### `retention-messaging realtime-url get`
+
+Adapty gerçek zamanlı URL'sini döndürür. Başka bayrak almaz.
+
+### `retention-messaging realtime-url configure`
+
+| Flag | Gerekli | Açıklama |
+|---|---|---|
+| `--mode` | Evet | `sandbox` veya `production`. |
+| `--replace-other-url` | Hayır | Apple'daki farklı bir URL'nin değiştirilmesini onaylar. |
+| `--yes`, `-y` | Hayır | Sormadan yapılandırır. `--json` ile veya pipe içinde gereklidir. |
+
+### `retention-messaging performance-test start`
+
+Apple'ın performans testini `sandbox` ortamında başlatır. Başka bayrak almaz.
+
+### `retention-messaging messages list`
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--mode` | Evet | `sandbox` veya `production`. |
+| `--search` | Hayır | Adın bir kısmı (büyük/küçük harf fark etmez) veya tam mesaj ID'si. |
+| `--type` | Hayır | `default` veya `promo`. |
+| `--state` | Hayır | `in_review`, `live`, `rejected` veya `inactive`. |
+| `--ordering` | Hayır | `name`, `type`, `state`, `products_count` veya `started_at`. Ters sıralama için alanın önüne `-` ekleyin. Varsayılan: `-started_at`. |
+| `--page` | Hayır | Sayfa numarası. Varsayılan: 1. |
+| `--page-size` | Hayır | Sayfa başına mesaj sayısı, en fazla 100. Varsayılan: 20. |
+
+### `retention-messaging messages get`
+
+Mesaj ID'sini argüman olarak alır. Mesajın tamamını döndürür.
+
+### `retention-messaging messages create`
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--mode` | Evet | `sandbox` veya `production`. |
+| `--file` | Evet | Mesajın JSON dosyası veya standart girdiden okumak için `-`. Bkz. [Mesaj oluşturma](#create-a-message). |
+| `--image` | Hayır | Varsayılan mesajın PNG görseli. |
+| `--yes`, `-y` | Hayır | Onay sormadan oluşturur. `--json` ile veya bir pipe içinde kullanılırken zorunludur. |
+
+### `retention-messaging messages update`
+
+Argüman olarak mesaj ID'sini alır.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--name`, `--title`, `--body`, `--alt-text` | Hayır | Alanın yeni değeri. |
+| `--image` | Hayır | Yeni PNG görsel. |
+| `--remove-image` | Hayır | Görseli kaldırır. |
+| `--file` | Hayır | Değişiklikler dosyası veya standart girdiden okumak için `-`. Bkz. [Mesaj değiştirme](#change-a-message). |
+| `--yes`, `-y` | Hayır | Onay sormadan değiştirir. `--json` ile veya bir pipe içinde gereklidir. |
+
+### `retention-messaging messages set-status`
+
+Mesaj ID'sini argüman olarak alır.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--action` | Evet | `activate` veya `deactivate`. |
+| `--yes`, `-y` | Hayır | Onay sormadan durumu değiştirir. `--json` ile veya bir pipe içinde kullanılırken zorunludur. |
+
+### `retention-messaging products suggest`
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--mode` | Evet | `sandbox` veya `production`. |
+| `--type` | Evet | `default` veya `promo`: mesaj türü. |
+| `--search` | Hayır | Ürün başlığının bir parçası, büyük/küçük harf fark etmez. |
+| `--message-id` | Hayır | Değiştirdiğiniz mesajın ID'si. |
+| `--limit` | Hayır | Döndürülecek ürün sayısı, en fazla 100. Varsayılan: 10. |
+
+### `retention-messaging promo-offers suggest`
+
+`products suggest` komutunun döndürdüğü ürün ID'sini argüman olarak alır.
+
+| Bayrak | Zorunlu | Açıklama |
+|---|---|---|
+| `--search` | Hayır | Teklif başlığının bir kısmı, büyük/küçük harf fark etmez. |
+| `--limit` | Hayır | Döndürülecek teklif sayısı, en fazla 100. Varsayılan: 10. |
+
+### `retention-messaging plan-switches suggest`
+
+`products suggest` komutundan dönen ürün ID'sini argüman olarak alır.
+
+| Flag | Zorunlu | Açıklama |
+|---|---|---|
+| `--search` | Hayır | Plan başlığının bir parçası, büyük/küçük harf duyarsız. |
+| `--limit` | Hayır | Döndürülecek plan sayısı, en fazla 100. Varsayılan: 10. |
+
+## Bir yapay zeka asistanıyla çalışma \{#work-from-an-ai-assistant\}
+
+[Adapty MCP sunucusu](adapty-mcp), `retention_messaging_*` araçlarıyla aynı eylemleri sunar; örneğin `messages list` için `retention_messaging_messages_list`. Araçlar, `--type` yerine `message_type` parametresini alır.
+
+- **Onay**: Asistan, `sandbox` ve `production` ortamlarında realtime URL'yi yapılandırmadan, bir mesaj oluşturmadan veya değiştirmeden ya da durumunu değiştirmeden önce onay ister. Başka bir sunucunun realtime URL'sini değiştirmeden önce ayrı bir soru sorar. Ayrıca her konuşmada ilk kurulum durumu okumasından önce bir kez ve ilk mesaj okumasından önce bir kez onay ister; çünkü [bu okumalar Adapty'yi güncelleyebilir](#read-the-setup-status).
+- **Görseller ve madde işaretleri**: MCP araçları görsel, madde işareti simgesi veya yeni bir madde işareti ekleyemez. `retention_messaging_messages_create` bir mesajı görsel veya madde işaretleri olmadan oluşturur. Bunları eklemek için CLI'dan `messages update` komutunu çalıştırın ya da kontrol panelini kullanın.
+
+## Sırada ne var? \{#whats-next\}
+
+- [Retention Messaging için agent skill](retention-messaging-skill) — agentınızın Retention Messaging'i kurmasına ve mesajlarınızı yazmasına izin verin; her değişiklikten önce onayınız alınır.
+- [Retention Messaging'i kur](retention-messaging-setup) — kontrol panelindeki kurulum adımlarının aynısı.
+- [Retention mesajı oluştur](retention-messaging-create) — kontrol panelindeki mesaj alanları, diller ve durumlar.
+- [Mesaj performansını takip et](retention-messaging-analytics) — her metriğin ne anlama geldiği.

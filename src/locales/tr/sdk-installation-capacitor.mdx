@@ -59,7 +59,16 @@ npm install @adapty/capacitor
 npx cap sync
 ```
 
-iOS'ta Adapty SDK, yerel Adapty SDK'larını yalnızca **Swift Package Manager** aracılığıyla çeker — CocoaPods podspec kaldırılmıştır ([CocoaPods'un spec reposu Aralık 2026'da salt okunur hale geliyor](https://blog.cocoapods.org/CocoaPods-Specs-Repo/)). Uygulamanızın iOS projesinin Capacitor'ın SPM entegrasyonunu kullanması gerekmektedir:
+### iOS projenizi kurun \{#set-up-your-ios-project\}
+
+iOS'ta SDK, yerel Adapty SDK'larını (`Adapty`, `AdaptyUI`, `AdaptyPlugin`) uygulamanızın iOS projesinin paket yöneticisi aracılığıyla yükler:
+
+- **Swift Package Manager (önerilen)**: Capacitor 8, yeni iOS projelerini varsayılan olarak SPM ile oluşturur ve SDK için ekstra bir kurulum gerekmez.
+- **CocoaPods (SDK 4.2.0 ve sonrası)**: `Podfile`'ınız, native SDK'ları herkese açık CocoaPods spec repo'sundan değil, [Adapty'nin spec repo'sundan](https://github.com/adaptyteam/AdaptySDK-CocoaPods-Specs) pod olarak yükler. Herkese açık repo [Aralık 2026'da salt okunur hale gelecektir](https://blog.cocoapods.org/CocoaPods-Specs-Repo/). SDK 4.0 ve 4.1 CocoaPods'u desteklemiyor.
+
+<Tabs groupId="ios-package-manager" queryString>
+
+<TabItem value="spm" label="Swift Package Manager (recommended)" default>
 
 - Yeni uygulamalar için, iOS platformunu SPM paket yöneticisiyle ekleyin:
 
@@ -67,9 +76,56 @@ iOS'ta Adapty SDK, yerel Adapty SDK'larını yalnızca **Swift Package Manager**
   npx cap add ios --packagemanager SPM
   ```
 
-- Mevcut uygulamalar için, iOS projesini CocoaPods'tan SPM'e taşımak amacıyla [Capacitor'ın mevcut bir projede SPM kullanma kılavuzunu](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project) takip edin.
+- CocoaPods kullanan mevcut uygulamalar için, iOS projesini SPM'e geçirmek amacıyla [Capacitor'ın mevcut bir projede SPM kullanma kılavuzunu](https://capacitorjs.com/docs/ios/spm#using-spm-in-an-existing-capacitor-project) izleyin ya da CocoaPods ile devam edip **CocoaPods** sekmesini takip edin.
 
-v3'ten yükseltme mi yapıyorsunuz? Tüm API değişiklikleri için [Adapty Capacitor SDK'yı v4.1'e taşıma](migration-to-capacitor-sdk-v4) belgesine bakın.
+</TabItem>
+
+<TabItem value="cocoapods" label="CocoaPods">
+
+Bu seçenek SDK 4.2.0 veya sonraki bir sürümü gerektirir. Yeni bir uygulama için CocoaPods paket yöneticisiyle iOS platformunu ekleyin:
+
+```sh
+npx cap add ios --packagemanager CocoaPods
+```
+
+`ios/App/Podfile` dosyasında, Capacitor'ın `pods_helpers` için `require_relative` satırının **altına** Adapty Podfile yardımcılarını ekleyin. Ardından `App` hedefinde `capacitor_pods`'ın **sonrasına** `adapty_pods!` çağrısını ekleyin:
+
+```ruby showLineNumbers title="ios/App/Podfile" {2-6,10}
+require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+require Pod::Executable.execute_command('node', ['-p',
+  'require.resolve(
+    "@adapty/capacitor/ios/adapty_podfile.rb",
+    {paths: [process.argv[1]]},
+  )', __dir__]).strip
+
+target 'App' do
+  capacitor_pods
+  adapty_pods!
+  # Add your Pods here
+end
+```
+
+`npx cap sync` komutu, `Podfile` dosyasındaki ilk `require_relative` satırından `pods_helpers` satırına kadar olan kısmı ve `def capacitor_pods` metodunun tamamını yeniden oluşturur. Bu bölümlerin herhangi birine eklenen `require` veya `adapty_pods!` çağrısı, bir sonraki sync işleminde kaybolur.
+
+`adapty_pods!` çağrısı, `Adapty`, `AdaptyUI` ve `AdaptyPlugin` pod'larını tanımlar ve bunları Adapty'nin spec repo'suna bağlar; bu nedenle ayrıca bir `source` satırı eklemenize gerek yoktur. `Podfile` dosyanızdaki açık `pod 'Adapty'`, `pod 'AdaptyUI'` veya `pod 'AdaptyPlugin'` satırlarını kaldırın.
+
+Ardından iOS projesini sync edin:
+
+```sh
+npx cap sync ios
+```
+
+`@adapty/capacitor` paketini daha sonra güncellediğinizde, `pod install` komutu Adapty'nin spec repo'sunu yenilemez. Yeni sürümün gerektirdiği native SDK sürümünü yüklemek için şunu çalıştırın:
+
+```sh
+cd ios/App && pod install --repo-update
+```
+
+</TabItem>
+
+</Tabs>
+
+v3'ten mi yükseltiyorsunuz? API değişikliklerinin tam listesi için [Adapty Capacitor SDK'yı v4.1'e taşıma](migration-to-capacitor-sdk-v4) kılavuzuna bakın.
 
 ## Adapty SDK'nın Adapty modülünü etkinleştirin \{#activate-adapty-module-of-adapty-sdk\}
 
@@ -127,9 +183,10 @@ Adapty, neler olduğunu anlamanıza yardımcı olmak için hataları ve diğer �
 | Level      | Description                                                  |
 | ---------- | ------------------------------------------------------------ |
 | `error`    | Yalnızca hatalar loglanır                                    |
-| `warn`     | Kritik hatalara yol açmayan ancak dikkat edilmesi gereken hatalar ve SDK mesajları loglanır |
+| `warn`     | Hatalar ve SDK'dan gelen, kritik hatalara yol açmayan ancak dikkat edilmesi gereken mesajlar loglanır |
 | `info`     | Hatalar, uyarılar ve çeşitli bilgi mesajları loglanır |
 | `verbose`  | Hata ayıklama sırasında işe yarayabilecek her türlü ek bilgi (fonksiyon çağrıları, API sorguları vb.) loglanır |
+| `debug`    | Yukarıdakilerin tamamı, ayrıca native SDK'nın düşük seviyeli iç ayrıntıları. Android'in bunun için ayrı bir seviyesi yoktur ve `verbose` düzeyinde loglar. SDK 4.3.0 sürümünden itibaren kullanılabilir |
 
 Adapty yapılandırmasından önce veya yapılandırma sırasında uygulamanızda log seviyesini ayarlayabilirsiniz:
 
@@ -244,6 +301,25 @@ await adapty.activate({
 });
 ```
 
+### Mağaza mesajlarının yönetimi \{#store-messages-handling\}
+
+:::info
+Bu parametre SDK 4.3.0 sürümünden itibaren kullanılabilir.
+:::
+
+Varsayılan olarak, StoreKit — fiyat artışı onay istekleri, fatura sorunları bildirimleri ve geri kazanma teklifleri gibi — App Store mesajlarını uygulamanız açıkken kendi başına gösterir; SDK ise `activate` sonrasında uygulamanızın bir `Activity`'si her başladığında Google Play mesajlarını (örneğin reddedilen ödeme bildirimleri) ister. Uygulamanızın bu mesajları ne zaman göstereceğini belirlemek için `storeMessagesHandling` değerini `'manual'` olarak ayarlayın. Varsayılan değer `'auto'`'dur.
+
+```typescript showLineNumbers
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual',
+  }
+});
+```
+
+Manuel modda, mağazalar mesajları kendi başlarına göstermez; bu nedenle uygulamanızın `showStoreMessages` fonksiyonunu çağırması gerekir. Nasıl yapılacağını öğrenmek için [Mağaza mesajlarını kontrol etme](capacitor-store-messages) bölümüne bakın.
+
 ### Adapty Attribution'ı Etkinleştirin \{#enable-adapty-attribution\}
 
 :::info
@@ -293,13 +369,13 @@ Bu seçenek etkinleştirildiğinde, SDK bir kez aktive edildikten sonra aktivasy
 #### Minimum iOS sürümü hatası \{#minimum-ios-version-error\}
 
 :::note
-Bu, **SDK 3.x** kullanan CocoaPods tabanlı projeler için geçerlidir. SDK 4, iOS'a yalnızca Swift Package Manager üzerinden kurulur (`Podfile` yoktur) ve iOS 15.0 gerektirir — Xcode'da deployment target'ınızı 15.0 olarak ayarlayın.
+Bu, CocoaPods tabanlı projelere uygulanır: **SDK 3.x** sürümünde ve [CocoaPods](#set-up-your-ios-project) seçeneğiyle SDK 4.2.0 ve sonrasında. Swift Package Manager'da `Podfile` bulunmaz; bunun yerine Xcode'da deployment target'ınızı 15.0 olarak ayarlayın.
 :::
 
-SDK 3.x'te minimum iOS sürümü hatası alıyorsanız Podfile'ınızı güncelleyin:
+Minimum iOS sürümü hatası alırsanız, Podfile'ınızı güncelleyin:
 
 ```diff
--platform :ios, min_ios_version_supported
+-platform :ios, '14.0'
 +platform :ios, '15.0'
 ```
 
@@ -328,12 +404,12 @@ Satın alma işlemlerinin doğru çalışması için, satın alma akışını ba
 #### Podfile SWIFT_VERSION geçersiz kılmasından kaynaklanan Swift 6 derleme hataları \{#swift-6-build-errors-caused-by-podfile-swift-version-override\}
 
 :::note
-Bu, **SDK 3.x** kullanan CocoaPods tabanlı projeler için geçerlidir. SDK 4, yerel SDK'ları Swift Package Manager aracılığıyla yüklediğinden düzenlenecek bir `Podfile` bulunmaz.
+Bu durum, yerel iOS SDK'ları CocoaPods pod'ları olarak kurulduğunda geçerlidir: **SDK 3.x**'te ve [CocoaPods](#set-up-your-ios-project) seçeneğiyle SDK 4.2.0 ve sonrasında. Swift paketleri olarak kurulduklarında, `post_install` içindeki `SWIFT_VERSION` geçersiz kılma işlemi onlara ulaşmaz.
 :::
 
-Capacitor uygulamanızı iOS için derlerken Adapty pod hedeflerinde Swift 6 derleme hataları görebilirsiniz. Tipik belirtiler arasında `AdaptyUIBuilderLogic` içinde `@Sendable` uyumsuzlukları, Adapty türlerinde eksik `Sendable` uyumu veya actor izolasyon hataları yer alır.
+Capacitor uygulamanızı iOS için derlerken Adapty pod hedeflerinde Swift 6 derleme hatalarıyla karşılaşabilirsiniz. Tipik belirtiler arasında `AdaptyUIBuilderLogic` içinde `@Sendable` uyumsuzlukları, Adapty türlerinde eksik `Sendable` uyumu veya actor izolasyon hataları yer alır.
 
-Adapty pod'ları `s.swift_version = '6.0'` olarak tanımlıdır ve derleme için Swift 6 gerektirir. Kendi uygulama kodunuz Swift 5'te kalabilir — yalnızca Adapty pod hedeflerinin (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin`) Swift 6 ile derlenmesi gerekir.
+Adapty pod'ları `s.swift_version = '6.0'` bildirimi yapar ve derlenmek için Swift 6 gerektirir. Kendi uygulama kodunuz Swift 5'te kalabilir — yalnızca Adapty pod hedeflerinin (`Adapty`, `AdaptyUI`, `AdaptyUIBuilder`, `AdaptyLogger`, `AdaptyPlugin` ve SDK 4.2.0 ile sonrasında `AdaptyCodable`) Swift 6 ile derlenmesi gerekir.
 
 En yaygın neden, `ios/App/Podfile` dosyasındaki her pod hedefi için `SWIFT_VERSION` değerini yeniden yazan bir `post_install` hook'udur:
 
@@ -352,7 +428,7 @@ end
 ```ruby showLineNumbers title="ios/App/Podfile"
 post_install do |installer|
   installer.pods_project.targets.each do |target|
-    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin].include?(target.name)
+    next if %w[Adapty AdaptyUI AdaptyUIBuilder AdaptyLogger AdaptyPlugin AdaptyCodable].include?(target.name)
     target.build_configurations.each do |config|
       config.build_settings['SWIFT_VERSION'] = '5.9'
     end

@@ -1,0 +1,190 @@
+---
+title: "フローでマップに近くの場所を表示する"
+description: "パートナーのフィットネスセンターなど、各ユーザーの近くにある場所のマップを、フロースクリーンのカスタム要素に表示します。"
+metadataTitle: "フローでマップに近くの場所を表示する | iOS SDK | Adapty ドキュメント"
+---
+
+このレシピに従って、フローにインタラクティブなマップを追加しましょう。マップには、パートナーのフィットネスセンターなど、ユーザーの近くにある場所（半径2km以内）が表示されます。アプリは [カスタム要素](flow-custom-elements) を使用して、MapKit でマップをネイティブビューとしてレンダリングします。フロースクリーンで位置情報へのアクセスを要求します。
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="完成したフロー：マップにユーザー近くのフィットネスセンターが表示され、ユーザーがマップを別のエリアにドラッグして元に戻す様子。" />
+
+## 始める前に \{#before-you-start\}
+
+- アプリを Adapty iOS SDK 4.4 以降にアップデートしてください。それより古いバージョンの SDK では、すべてのカスタム要素に[フォールバックコンテンツ](flow-custom-elements#set-fallback-content)が表示されます。
+- アプリでフローを[取得](get-pb-paywalls)および[表示](ios-present-paywalls)できるよう設定してください。
+- ユーザーに位置情報へのアクセスを許可してもらうには、アプリの `Info.plist` ファイルに `NSLocationWhenInUseUsageDescription` キーを追加してください。その値には、「お近くのフィットネスセンターを探しましょう。」などのプロンプトのテキストを設定してください。
+
+## 1. カスタム要素をスクリーンに追加する \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementMapBuilderSetup />
+
+カスタム要素の中に、地図の画像を表示する [**Image**](custom-media#image) を追加します。以下のような場合、ユーザーにはこれが[フォールバック](flow-custom-elements#set-fallback-content)として表示されます。
+
+- アプリのバージョンが地図を表示できない。
+- スクリーンが開く前に位置情報のアクセスを拒否した。
+- デバイスが iOS 16 で動作している。
+
+<CustomElementMapLocationPrompt />
+
+## 2. マップビューを作成する \{#2-create-the-map-view\}
+
+場所のタイプと、位置情報アクセスのモデルを作成します。
+
+```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+```
+
+Create a view with a map. The view requests location access and displays a marker for each of your places within 2 km of the user:
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    let places: [Place]
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var nearbyPlaces: [Place] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+}
+```
+
+マップビューには iOS 17 以降が必要です。iOS 16 では、フォールバックが表示されます。
+
+ユーザーが画面で位置情報へのアクセスを拒否した場合、マップの代わりに設定からアクセスを許可する方法を説明するメッセージが表示されます。
+
+## 3. カスタム要素にマップを対応付ける \{#3-match-the-map-to-the-custom-element\}
+
+[アプリ全体のリゾルバー](ios-flow-custom-elements#set-an-app-wide-resolver)に、`LocationAccess` モデルとプレイスのプロパティを追加します。次に、`map` タイプと `fitness_centers` IDに対してマップビューを返します。ハイライトされた行が追加または変更する箇所です。アプリにまだアプリ全体の[リゾルバー](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)がない場合は、コード全体をコピーしてください。
+
+```swift showLineNumbers title="Swift" {5-6,14-21}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+<CustomElementMapResolverCalls />
+
+リゾルバーをプレースと共に作成し、アプリ全体のリゾルバーとして設定します。`AdaptyUI.setCustomElementsResolver` はアプリの起動時など、一度だけ呼び出してください。
+
+```swift showLineNumbers title="Swift"
+
+// your app's places, such as partner fitness centers
+@MainActor let places = [
+    Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+    Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(places: places)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+## 4. デバイスでテストする \{#4-test-on-a-device\}
+
+フロー＆ペイウォールビルダーはアプリのコードを実行できないため、キャンバスにはフォールバックのみが表示されます。マップをプレビューするには:
+
+1. [フローを公開します](builder-save-publish)。キャッシュされたバージョンではなく最新の公開バージョンを確認するには、デバイスを[テストデバイス](test-devices)として登録してください。
+2. 地図上にマーカーを表示するには、現在地から2km以内の場所をプレイスリストに追加してください。
+3. デバイスがiOS 17以降で動作していることを確認してください。リゾルバーを含めたアプリのビルドを実行し、画面を開いて位置情報へのアクセスを許可します。地図に現在地と追加したプレイスのマーカーが表示されることを確認してください。
+
+フォールバックをテストするには、位置情報へのアクセスを拒否します。**設定**アプリで **プライバシーとセキュリティ** > **位置情報サービス** > *お使いのアプリ* の順に進み、**しない** を選択してください。その後、画面を再度開いてください。
+
+マップの代わりにフォールバックが表示される理由を調べるには、iOSガイドの[デバイスでテストする](ios-flow-custom-elements#test-on-a-device)セクションの手順に従ってください。

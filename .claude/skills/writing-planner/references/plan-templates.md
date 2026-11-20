@@ -42,6 +42,8 @@ For new sections or significant rewrites:
 **Section outline:**
 
 ### [Heading — matching the article's heading style]
+Path: [what the reader does here, in at most 20 words]
+- [`act` question this section answers]
 
 [1-2 sentence intro: what this section covers and why the reader needs it]
 
@@ -56,6 +58,9 @@ For new sections or significant rewrites:
 - Heading style: [verb phrase / noun phrase — matching siblings in the article]
 - Depth: [matching existing sections, e.g. "Other sections in this article use 1-2 paragraphs per step"]
 - [Any formatting conventions from the article]
+
+**Left out:**
+- [`see` or `edge` question]: [why it stays out]
 
 **Consistency check:**
 - [Whether sibling headings stay parallel with the new one]
@@ -82,7 +87,13 @@ For new sections or significant rewrites:
 
 **Article outline:**
 
+# [Title]
+Path: [who arrives, with what goal, and where the article leaves them; at most 20 words]
+- [`act` question the intro answers]
+
 ## [H2 heading]
+Path: [what the reader does here, in at most 20 words]
+- [`act` question this section answers]
 [What this section covers. 1-2 sentences.]
 [Placeholder if needed: "Here goes the step-by-step for initial setup with a screenshot of the dashboard"]
 
@@ -90,13 +101,19 @@ For new sections or significant rewrites:
 - Key point B
 
 ### [H3 sub-heading, if needed]
+Path: [what the reader does here, within its H2]
 [What this covers]
 
 ## [H2 heading]
+Path: [what the reader does here]
 [What this section covers]
 [Placeholder: "Here goes the configuration table with all available options"]
 
 ...
+
+**Left out:**
+- [`see` or `edge` question]: [why it stays out]
+- [`owner` question]: [the article that owns it, and where this article links to it]
 
 **Callouts and warnings:**
 - [Section X]: Warning about [thing that can go wrong]

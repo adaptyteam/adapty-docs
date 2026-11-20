@@ -12,13 +12,87 @@ metadataTitle: "优化流程和付费墙获取 | Capacitor SDK | Adapty 文档"
 
 ## 规则与注意事项 \{#rules-and-pitfalls\}
 
-| 应该这样做 | 不要这样做 | 原因 |
+| 这样做 | 不要这样做 | 原因 |
 |---|---|---|
-| 只获取即将展示的版位。 | 在启动时并发预取所有版位。 | 批量预取会阻塞主线程，并在请求高峰期出现黑屏。 |
-| 在归因有机会完成解析之后再调用 `getFlow`——例如，在 `activate` 之后等待 1–2 秒，或等 `onLatestProfileLoad` 监听器触发后再调用。 | 在 `App.tsx` 的应用启动阶段调用 `getFlow`。 | 此时归因数据尚未就绪，流程会以默认目标受众进行解析，从而悄悄跳过市场细分和 ASA 个性化设置。 |
-| 设置 `loadTimeoutMs`，并为每个版位配置[备用付费墙](fallback-paywalls)。 | 无限等待 `getFlow` 返回。 | 如果没有超时限制，网络状况较差的用户会一直看到空白屏幕，直到网络恢复——或者直接关掉应用。 |
+| 获取即将展示的版位，或使用 [`preloadFlows`](#preload-placements)（SDK 4.3.0+）预热缓存。 | 在启动时自行发起并发 `getFlow` 请求。 | 手写的预取批量请求会阻塞主线程并导致黑屏。`preloadFlows` 专为此场景设计，只需一次调用即可将批量请求发送至原生 SDK。 |
+| 在归因有机会完成解析后再调用 `getFlow`，例如 `activate` 后 1–2 秒，或等到 `onLatestProfileLoad` 监听器触发之后。 | 在 `App.tsx` 的应用启动时调用 `getFlow`。 | 此时归因尚未落定。流程会按默认目标受众进行解析，悄无声息地跳过市场细分和 ASA 个性化设置。 |
+| 为每个版位设置 `loadTimeoutMs` 并配置[备用付费墙](fallback-paywalls)。 | 无限期等待 `getFlow` 返回。 | 没有超时设置时，网络状况差的用户会看到空白屏幕，直到网络恢复——或者直接关闭应用。 |
 
 有关 `fetchPolicy` 和 `loadTimeoutMs` 参数的说明，请参阅[获取自定义付费墙和产品](fetch-paywalls-and-products-capacitor)；有关选择合适版位的说明，请参阅[版位](placements)。
+
+## 预加载版位 \{#preload-placements\}
+
+:::info
+`preloadFlows` 和 `preloadFlowsForDefaultAudience` 从 SDK 4.3.0 版本开始支持。
+:::
+
+`preloadFlows` 会提前缓存流程 JSON。之后按正常流程使用即可：`getFlow` 获取流程，`createFlowView` 创建对应的视图。
+
+`fetchPolicy` 决定后续 `getFlow` 优先从哪一层读取数据，而不是决定是否能访问缓存：
+
+- `'return_cache_data_else_load'` 优先读取预加载的副本，仅在无缓存时才请求网络。`'return_cache_data_if_not_expired_else_load'` 的行为相同，但仅在副本未超过 `maxAgeSeconds` 时有效。
+- 默认值 `'reload_revalidating_cache_data'` 优先请求网络，当请求失败或超时时回退到预加载的副本。
+
+预加载在两种情况下都有收益，但方式不同：缓存优先策略会直接省去网络请求，而默认策略则保留请求并以预热的副本作为备用。在[测试设备](test-devices)上，`getFlow` 在所有策略下都会跳过缓存，仅在网络请求失败时才使用预加载的副本。
+
+适用场景：当你知道本次会话需要用到哪些版位，但暂时不想展示时——例如，用户尚未点击的按钮背后的流程。
+
+:::warning
+预加载在运行时就会确定目标受众。如果你在归因数据到达之前进行预加载，然后又以缓存优先的 `fetchPolicy` 调用 `getFlow`，用户将看到在没有归因数据的情况下所选的实验变体，从而绕过市场细分和 ASA 个性化。请在归因数据有机会解析之后再执行预加载——例如，在 `onLatestProfileLoad` 监听器触发之后——或者保持默认的 `fetchPolicy`。
+:::
+
+```typescript showLineNumbers
+
+try {
+  await adapty.preloadFlows({
+    placementIds: ['onboarding', 'main_paywall'],
+    params: { loadTimeoutMs: 5000 },
+  });
+} catch (error) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+const flow = await adapty.getFlow({
+  placementId: 'main_paywall',
+  params: { fetchPolicy: 'return_cache_data_else_load' },
+});
+```
+
+**参数：**
+
+- `placementIds`（必填）：要预加载的版位。
+- `params.loadTimeoutMs`（可选）：预加载的总体时间限制，单位为毫秒。默认值为 5000，低于 1000 的值将被提升为 1000。未在时限内加载完成的版位将按默认目标受众获取。
+
+**以下行为值得注意：**
+
+- 只有在所有版位都尝试失败后，调用才会失败，并返回一个覆盖所有失败版位的 `AdaptyError`。某个版位失败不会中断其他版位的加载，已成功加载的版位仍会保留在缓存中。
+- 预加载始终走网络请求：它没有自己的 `fetchPolicy`。
+- 预加载仅用于预热缓存，不返回内容——你仍需调用 `getFlow` 来展示内容。
+
+### 预加载涵盖的内容 \{#what-a-preload-covers\}
+
+流程到达屏幕需要经过多个层次。预加载覆盖第一层，与 `getFlow` 的作用完全相同：
+
+| 层级 | 获取方式 | 是否通过预加载预热 |
+|---|---|---|
+| Flow JSON — 所选实验变体、其产品 ID 及远程配置 | `getFlow` | 是 |
+| UI 布局 — 页面结构、样式与文案 | `createFlowView` | 否 |
+| 图片，包括用于替代视频元素的静态帧 | `createFlowView`（后台加载） | 否 |
+| 产品 | `createFlowView` 或 `getPaywallProducts` | 否 |
+| 视频文件 | 系统播放器（在页面渲染时加载） | SDK 不缓存 |
+
+因此，对于特定布局，首次调用 `createFlowView` 在预加载后仍需一次网络往返。不过，原生 SDK 随后会将该布局保存到磁盘缓存中，缓存在应用重启后依然有效，所以这部分开销只发生在第一次请求时，而非每次请求。
+
+### 跳过目标受众分群 \{#skip-audience-segmentation\}
+
+如需完全跳过目标受众分群直接预热缓存，请使用 default-audience 变体。该方式无需超时设置：
+
+```typescript showLineNumbers
+await adapty.preloadFlowsForDefaultAudience({ placementIds: ['main_paywall'] });
+```
+
+后续调用 `getFlowForDefaultAudience` 读取缓存副本的方式，与 `getFlow` 读取 `preloadFlows` 缓存副本的方式相同。
 
 ## 从应用包中显示首屏媒体内容 \{#show-first-screen-media-from-the-app-bundle\}
 

@@ -50,11 +50,11 @@ try {
 ```
 参数：
 
-| 参数 | 是否必需 | 描述 |
+| 参数 | 是否必填 | 描述 |
 |-------------------|--------|-----------|
-| **placementId**   | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时所指定的值。 |
-| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可以考虑使用 `'return_cache_data_else_load'`，该策略顺序相反——优先读取缓存，仅在无缓存时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，都能获得更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：当缓存数据的存活时间小于您传入的 `maxAgeSeconds` 时，优先读取缓存；超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后依然保留，仅在应用重新安装或手动清除时才会被清空。</p><p></p><p>Adapty SDK 将付费墙数据本地存储于两层中：上述定期更新的缓存层，以及[备用付费墙](fallback-paywalls)层。我们还使用 CDN 加快付费墙的加载速度，并设有独立的备用服务器以应对 CDN 不可达的情况。该系统旨在确保您始终获取最新版本的付费墙，同时在网络条件有限的情况下也能保持可靠性。</p> |
-| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若达到超时时间，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为该操作在底层可能由多个请求组成。</p><p>对于 Android：您可以使用扩展函数创建 `TimeInterval`（例如 `5.seconds`，其中 `.seconds` 来自 `import com.adapty.utils.seconds`），或使用 `TimeInterval.seconds(5)`。若不设置限制，请使用 `TimeInterval.INFINITE`。</p> |
+| **placementId**   | 必填 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 会先请求服务器，若请求失败则返回缓存数据。我们推荐使用此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>不过，如果您认为用户的网络环境不稳定，可以考虑使用 `'return_cache_data_else_load'`，该策略与默认策略顺序相反——优先读取缓存，仅在没有缓存时才请求服务器。用户可能无法获取最新数据，但无论网络状况如何，都能体验更快的加载速度。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：当缓存的副本比您传入的 `maxAgeSeconds` 更新时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，重启应用后缓存仍然保留，只有在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 通过两个层级在本地存储付费墙：上述定期更新的缓存，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并在 CDN 不可用时提供独立的备用服务器。该系统旨在确保您始终获取最新版本的付费墙，同时在网络状况较差时也能保证可靠性。</p> |
+| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。如果 Adapty 服务器未能及时响应或返回错误，SDK 将返回已缓存的流程。如果没有缓存且服务器超时或返回服务器错误，SDK 将从备用服务器（仅服务于版位 **All Users** 目标受众的 CDN 副本）请求流程。作为最后手段，SDK 将从您的[备用文件](react-native-use-fallback-paywalls)中返回流程。</p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为该操作在底层可能由多个不同请求组成。</p> |
 
 响应参数：
 
@@ -100,14 +100,15 @@ try {
 
 参数：
 
-| 参数                         | 是否必填 | 描述                                                         |
+| 参数 | 是否必填 | 描述 |
 | :------------------- | :------- | :----------------------------------------------------------- |
-| **flow**             | 必填 | 用于获取目标流程/付费墙控制器的 `AdaptyFlow` 对象。 |
-| **locale**           | 可选 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。若省略，视图将以 `en` 渲染，或在流程没有 `en` 时使用流程的默认本地化语言。需要 SDK 4.0.2 或更高版本。请参阅[本地化与语言代码](react-native-localizations-and-locale-codes)。 |
-| **customLayoutId**   | <p>可选</p><p>默认值：`undefined`</p><p>SDK 4.1+</p> | 预留给尚未发布的 Flow & Paywall Builder 功能。在编辑工具支持定义布局 ID 之前，传入任何值都不会匹配到任何布局，`createFlowView` 将抛出 `AdaptyError`。请勿设置此参数。 |
-| **customTags**       | 可选 | 应用中对应流程[自定义标签](flow-custom-tags)的值，以每个标签的完整名称为键的对象。详情请参阅[向流程传递数据](react-native-flow-custom-tags)。 |
-| **prefetchProducts** | 可选 | 启用后可优化屏幕上产品的展示时机。设为 `true` 时，AdaptyUI 将自动预加载所需产品。默认值：`false`。 |
-| **android.enableSafeArea** | 可选 | 仅限 Android（在 iOS 上忽略）。请以嵌套对象形式传入：`android: { enableSafeArea: true }`。设为 `true` 时，流程视图将应用安全区域内边距。模态展示（`createFlowView` + `present()`）默认为 `true`，嵌入式 `AdaptyFlowView` 组件默认为 `false`。默认值适用于大多数场景。 |
+| **flow**             | 必填 | 一个 `AdaptyFlow` 对象，用于获取所需流程/付费墙的控制器。 |
+| **locale**           | 可选 | 用于渲染视图的[流程本地化](add-paywall-locale-in-adapty-paywall-builder)标识符，例如 `en` 或 `pt-br`。若省略，视图将以 `en` 渲染；若流程没有 `en` 本地化，则使用流程的默认本地化。需要 SDK 4.0.2 或更高版本。请参阅[本地化与语言代码](react-native-localizations-and-locale-codes)。 |
+| **customLayoutId**   | <p>可选</p><p>默认值：`undefined`</p><p>SDK 4.1+</p> | 为尚未发布的 Flow & Paywall Builder 功能预留。在编辑工具支持定义布局 ID 之前，任何传入的值都不会匹配任何布局，`createFlowView` 将抛出 `AdaptyError`。请勿设置此参数。 |
+| **customTags**       | 可选 | 应用中流程[自定义标签](flow-custom-tags)对应的值，以每个标签的完整名称为键的对象。详情请参阅[向流程传递数据](react-native-flow-custom-tags)。 |
+| **customTimers**     | 可选 | 流程中**开发者定义**计时器的结束时间，以 Timer ID 映射到 `Date` 的对象形式传入。详情请参阅[使用开发者定义的计时器](react-native-present-paywalls#use-developer-defined-timer)。 |
+| **prefetchProducts** | 可选 | 启用后可优化产品在屏幕上的显示时机。设为 `true` 时，AdaptyUI 将自动预加载所需产品。默认值：`false`。 |
+| **android.enableSafeArea** | 可选 | 仅适用于 Android（iOS 上会被忽略）。以嵌套对象形式传入：`android: { enableSafeArea: true }`。设为 `true` 时，流程视图会应用安全区域内边距。模态展示（`createFlowView` + `present()`）默认为 `true`，嵌入式 `AdaptyFlowView` 组件默认为 `false`。大多数情况下使用默认值即可。 |
 
 :::note
 如果您使用多种语言，请了解如何添加[流程本地化](add-paywall-locale-in-adapty-paywall-builder)，以及如何正确使用语言区域代码（[查看详情](react-native-localizations-and-locale-codes)）。
@@ -233,12 +234,12 @@ try {
 ```
 参数：
 
-| 参数 | 是否必填 | 说明 |
+| 参数 | 是否必需 | 描述 |
 |-------------------|--------|-----------|
-| **placementId**   | 必填 | 目标[版位](placements)的标识符。即你在 Adapty 看板中创建版位时指定的值。 |
-| **locale**        | <p>可选</p><p>默认值：`en`</p> | <p>付费墙本地化的标识符。该参数应为语言代码，由一个或两个子标签组成，以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言区域代码及使用建议，请参阅[本地化与语言区域代码](localizations-and-locale-codes)。</p> |
-| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 决定 SDK 优先从哪一层读取数据，而非是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐这种方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果你认为用户的网络环境不稳定，可以考虑使用 `'return_cache_data_else_load'`，该策略会反转优先级——优先读取缓存，仅在无缓存时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况如何，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以减少网络请求是安全的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：当缓存数据的存活时间小于你传入的 `maxAgeSeconds` 时，优先读取缓存；超过该时限后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍然保留，仅在应用重新安装或手动清除时才会被清空。</p><p></p><p>Adapty SDK 在两个层级中本地存储付费墙：上述定期更新的缓存层，以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的加载，并在 CDN 不可用时提供独立的备用服务器。该机制旨在确保你始终获取最新版本的付费墙，同时在网络条件较差的情况下也能保证可用性。</p> |
-| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制此方法的超时时间。若超时，将返回缓存数据或本地备用数据。</p><p>请注意，在极少数情况下，此方法的实际超时时间可能略晚于 `loadTimeout` 中指定的值，因为该操作在底层可能包含多个请求。</p><p>对于 Android：你可以使用扩展函数创建 `TimeInterval`（例如 `5.seconds`，其中 `.seconds` 来自 `import com.adapty.utils.seconds`），或使用 `TimeInterval.seconds(5)`。如需不设限制，请使用 `TimeInterval.INFINITE`。</p> |
+| **placementId**   | 必需 | 目标[版位](placements)的标识符。这是您在 Adapty 看板中创建版位时指定的值。 |
+| **locale**        | <p>可选</p><p>默认值：`en`</p> | <p>付费墙本地化的标识符。该参数应为语言代码，由一个或两个子标签组成，以连字符（**-**）分隔。第一个子标签表示语言，第二个子标签表示地区。</p><p></p><p>示例：`en` 表示英语，`pt-br` 表示巴西葡萄牙语。</p><p>有关语言区域代码及推荐使用方式的更多信息，请参阅[本地化与语言区域代码](localizations-and-locale-codes)。</p> |
+| **fetchPolicy**   | 默认值：`'reload_revalidating_cache_data'` | <p>`fetchPolicy` 设置 SDK 优先读取哪一层数据，而非是否可以使用缓存。默认情况下，SDK 会优先请求服务器，若请求失败则返回缓存数据。我们推荐此方式，因为它能确保用户始终获取最新数据。</p><p></p><p>但如果您认为用户的网络环境不稳定，可考虑使用 `'return_cache_data_else_load'`，该策略会颠倒上述顺序——优先读取缓存，仅在无缓存时才请求服务器。用户获取的数据可能不是最新的，但无论网络状况多差，加载速度都会更快。缓存会定期更新，因此在会话期间使用缓存以避免网络请求是安全可靠的。</p><p></p><p>第三种策略 `'return_cache_data_if_not_expired_else_load'` 介于两者之间：在缓存副本的存在时间短于您传入的 `maxAgeSeconds` 时优先读取缓存，超过该时间后则请求服务器。</p><p></p><p>请注意，缓存在应用重启后仍会保留，仅在重新安装应用或手动清理时才会被清除。</p><p></p><p>Adapty SDK 在两层本地存储中保存付费墙：上述定期更新的缓存以及[备用付费墙](fallback-paywalls)。我们还使用 CDN 加速付费墙的获取，并设有独立的备用服务器以应对 CDN 不可用的情况。该系统旨在确保您始终获取最新版本的付费墙，同时在网络状况不佳时仍能保持可靠性。</p> |
+| **loadTimeoutMs** | 默认值：5 秒 | <p>该值限制本方法的超时时间。如果 Adapty 服务器未能及时响应或返回错误，SDK 将从备用服务器（仅提供版位**所有用户**目标受众的 CDN 副本）、缓存或您的[备用文件](react-native-use-fallback-paywalls)中返回付费墙。</p><p>请注意，在极少数情况下，该方法的实际超时时间可能略晚于 `loadTimeout` 中指定的时间，因为操作底层可能包含多个不同的请求。</p> |
 
 响应参数：
 

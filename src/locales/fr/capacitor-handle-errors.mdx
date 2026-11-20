@@ -6,10 +6,10 @@ metadataTitle: "Gestion des erreurs dans Capacitor | Documentation Adapty"
 
 import CrossPlatformErrors from '@site/src/locales/fr/reusable/CrossPlatformErrors.md';
 
-Chaque erreur retournée par le SDK est une instance d'`AdaptyError`. Voici un exemple :
+Chaque erreur renvoyée par le SDK est une instance d'`AdaptyError`. Voici un exemple :
 
 :::tip
-**Activez les logs verbeux avant de déboguer.** La plupart des `AdaptyError` encapsulent une erreur sous-jacente de StoreKit, Play Billing, réseau ou backend. Avec les logs verbeux activés (`adapty.setLogLevel({ logLevel: 'verbose' })` — voir [Logging](sdk-installation-capacitor#logging)), cette erreur encapsulée s'affiche dans la console, ce qui vous indique généralement la cause réelle. La propriété `detail` d'`AdaptyError` est renseignée quel que soit le niveau de log — les logs verbeux la font simplement apparaître dans la console.
+**Activez les logs verbeux avant de déboguer.** La plupart des `AdaptyError`s encapsulent une erreur sous-jacente de StoreKit, Play Billing, réseau ou backend. Avec les logs verbeux activés (`adapty.setLogLevel({ logLevel: 'verbose' })` — voir [Journalisation](sdk-installation-capacitor#logging)), cette erreur encapsulée est affichée dans la console, ce qui indique généralement la cause réelle. La propriété `detail` sur `AdaptyError` est renseignée quel que soit le niveau de log — les logs verbeux la font simplement apparaître dans la console.
 :::
 
 ```typescript showLineNumbers
@@ -51,13 +51,14 @@ try {
 
 ## Propriétés des erreurs \{#error-properties\}
 
-La classe `AdaptyError` expose les propriétés suivantes :
+La classe `AdaptyError` fournit les propriétés suivantes :
 
 | Propriété | Type | Description |
 |----------|------|-------------|
 | `adaptyCode` | `number` | Code d'erreur numérique (ex. : `1003` pour cantMakePayments) |
+| `codeName` | `ErrorCodeName \| undefined` | Nom du code d'erreur (ex. : `'cantMakePayments'`), ou `undefined` pour un code inconnu de votre version du SDK. Disponible à partir de la version 4.3.0 du SDK |
 | `localizedDescription` | `string` | Message d'erreur compréhensible par l'utilisateur |
-| `detail` | `string \| undefined` | Détails supplémentaires sur l'erreur (optionnel) |
+| `detail` | `string \| undefined` | Détails supplémentaires sur l'erreur (facultatif) |
 | `message` | `string` | Message d'erreur complet incluant le code et la description |
 
 ## Codes d'erreur \{#error-codes\}
@@ -66,7 +67,7 @@ Le SDK exporte des constantes et des utilitaires pour travailler avec les codes 
 
 ### Constante ErrorCodeName \{#errorcodename-constant\}
 
-Associe des identifiants textuels à des codes numériques :
+Associe des identifiants de chaîne à des codes numériques :
 
 ```typescript
 
@@ -77,7 +78,7 @@ ErrorCodeName.networkFailed // 2005
 
 ### Constante ErrorCode \{#errorcode-constant\}
 
-Associe des codes numériques à des identifiants textuels :
+Associe des codes numériques à des identifiants de type chaîne :
 
 ```typescript
 
@@ -97,9 +98,29 @@ getErrorCode('cantMakePayments') // 1003
 getErrorPrompt(1003) // 'cantMakePayments'
 ```
 
-### Comparer les codes d'erreur \{#comparing-error-codes\}
+Les SDK natifs peuvent retourner des codes plus récents que votre version du SDK Capacitor installée, et `error.adaptyCode` les transmet tels quels. À partir du SDK 4.3.0, son type TypeScript accepte également ces codes. Pour distinguer un code connu d'un nouveau, utilisez `isKnownErrorCode` et `getErrorCodeName` :
 
-**Important :** `error.adaptyCode` est un **nombre**, il faut donc le comparer directement avec des codes numériques :
+```typescript
+
+isKnownErrorCode(1003) // true
+getErrorCodeName(1003) // 'cantMakePayments'
+getErrorCodeName(9999) // undefined: a code unknown to this SDK version
+getErrorPrompt(9999)   // 'Unknown code: 9999'
+```
+
+Nouveaux codes pour les fonctionnalités de la version 4.3 :
+
+| Nom | Code | Description |
+|------|------|-------------|
+| `billingPlanUnavailable` | 1060 | iOS uniquement. Le produit ne propose pas le plan de facturation demandé sur cet appareil ou dans ce storefront. Un plan avec [engagement de 12 mois](app-store-12-month-commitment) requiert iOS 26.4 ou version ultérieure, ainsi qu'une app compilée avec Xcode 26.5 ou version ultérieure. |
+| `operationInProgress` | 3201 | iOS uniquement. Renvoyé par `showStoreMessages` lorsqu'un appel précédent affiche encore des [messages du store](capacitor-store-messages). Attendez qu'il se termine, puis réessayez. |
+| `resolverFailure` | 3202 | iOS uniquement. Renvoyé par `showStoreMessages` lorsqu'aucune scène de fenêtre active au premier plan n'existe. Appelez à nouveau la méthode lorsque l'app est au premier plan. |
+
+SDK 4.3.0 nomme également des codes que les versions précédentes signalaient comme inconnus : 2, 1020, 1030, 1050, 3020, et 4104–4107. Par exemple, `getErrorPrompt(1050)` retourne désormais `'paymentPendingError'` au lieu de `'Unknown code: 1050'`.
+
+### Comparaison des codes d'erreur \{#comparing-error-codes\}
+
+**Important :** `error.adaptyCode` est un **nombre**, donc comparez-le directement avec des codes numériques :
 
 ```typescript
 // Option 1: Use ErrorCodeName constant (recommended) ✅
@@ -139,7 +160,7 @@ AdaptyError.onError = (error: AdaptyError) => {
 };
 ```
 
-## Patterns courants de gestion des erreurs \{#common-error-handling-patterns\}
+## Modèles courants de gestion des erreurs \{#common-error-handling-patterns\}
 
 ### Gérer les erreurs d'achat \{#handle-purchase-errors\}
 

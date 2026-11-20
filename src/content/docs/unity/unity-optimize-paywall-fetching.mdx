@@ -14,11 +14,91 @@ The rules assume `Adapty.Activate()` and `Adapty.Identify()` have already resolv
 
 | Do this | Don't do this | Why |
 |---|---|---|
-| Fetch the placement you're about to show.                                                                                  | Prefetch all placements concurrently on launch.        | Bulk prefetch blocks the main thread and produces a black screen during the burst.                                  |
+| Fetch the placement you're about to show, or warm the cache with [`PreloadFlows`](#preload-placements) (SDK 4.3.0+). | Fan out your own concurrent `GetFlow` calls on launch. | A hand-rolled prefetch burst blocks the main thread and produces a black screen. `PreloadFlows` is built for this and sends the batch to the native SDK in one call. |
 | Fetch `GetFlow` after attribution has had a chance to resolve — for example, 1–2 seconds after `Activate` or after `OnLoadLatestProfile` fires. | Call `GetFlow` in `Awake()`.                        | Attribution hasn't landed yet. The flow resolves against the default audience and silently bypasses segments and ASA personalization. |
 | Set a `loadTimeout` and configure a [fallback paywall](fallback-paywalls) for every placement.                             | Wait on `GetFlow` indefinitely.                     | Without a timeout, users on poor connectivity see a blank screen until the network resolves — or close the app.     |
 
 See [Fetch custom paywalls and products](fetch-paywalls-and-products-unity) for the `fetchPolicy` and `loadTimeout` parameter reference, and [Placements](placements) for picking the right placement.
+
+## Preload placements
+
+:::info
+`Adapty.PreloadFlows` and `Adapty.PreloadFlowsForDefaultAudience` are available starting from SDK version 4.3.0.
+:::
+
+`Adapty.PreloadFlows` caches the flow JSON ahead of time. You then use it as usual: `GetFlow` for the flow, `CreateFlowView` for its view.
+
+`fetchPolicy` decides which layer a later `GetFlow` reads first, not whether it can reach the cache at all:
+
+- `AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad` reads the preloaded copy first and goes to the network only when nothing is cached. `AdaptyPlacementFetchPolicy.ReturnCacheDataIfNotExpiredElseLoad(maxAge)` does the same while the copy is younger than `maxAge`.
+- The default, `AdaptyPlacementFetchPolicy.Default`, goes to the network first and falls back to the preloaded copy when the request fails or times out.
+
+A preload pays off either way, but differently: a cache-first policy removes the request, while the default keeps it and gains a warm copy to fall back on. On a [test device](test-devices), `GetFlow` skips the cache with every policy and uses the preloaded copy only if the network request fails.
+
+Use it when you know which placements the session will need but don't want to show them yet — for example, right after `Activate` and `Identify` complete, for the flow behind a button the user hasn't tapped.
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlows(
+    new List<string> { "onboarding", "main_paywall" },
+    TimeSpan.FromSeconds(5),
+    (error) => {
+        if (error != null) {
+            // at least one placement failed to preload
+        }
+    }
+);
+
+// Later, when the user reaches the paywall:
+Adapty.GetFlow(
+    "main_paywall",
+    AdaptyPlacementFetchPolicy.ReturnCacheDataElseLoad,
+    TimeSpan.FromSeconds(5),
+    (flow, error) => {
+        // create the flow view
+    }
+);
+```
+
+**Parameters:**
+
+- `placementIds` (required): the placements to preload.
+- `loadTimeout` (optional): how long the preload waits for the audience-targeted flows. Defaults to 5 seconds when you pass `null` or use the overload without it. When the timeout is reached, the SDK can load the default-audience flows instead.
+
+**Behavior worth knowing:**
+
+- The call fails only after every placement has been attempted, with one `NetworkFailed` error that names all failed placements. A failure for one placement doesn't stop the others, and the placements that loaded stay in the cache.
+- Preloading always goes to the network: it has no `fetchPolicy` of its own.
+- Preloading only warms the cache. It doesn't return content — you still call `GetFlow` to display it.
+- The cache belongs to the current profile. Flows that you preload before `Identify` or `Logout` aren't found after it, so preload after the profile switch.
+
+### What a preload covers
+
+A flow reaches the screen in layers. A preload covers the first, exactly as `GetFlow` does:
+
+| Layer | Fetched by | Warmed by a preload |
+|---|---|---|
+| Flow JSON — the chosen variation, its product IDs, and the remote config | `GetFlow` | Yes |
+| UI layout — the screen's structure, styling, and text | `CreateFlowView` | No |
+| Images, including the still frame that stands in for a video element | `CreateFlowView`, in the background | No |
+| Products | `CreateFlowView` or `GetPaywallProducts` | No |
+| Video files | The system player, as the screen renders | Not cached by the SDK |
+
+So the first `CreateFlowView` for a given layout still costs a round trip after a preload. The native SDK then keeps that layout in its disk cache, which survives app restarts, so the cost falls on the first request rather than on every one.
+
+### Skip audience segmentation
+
+To warm the cache without waiting for audience segmentation at all, use the default-audience variant. It takes no timeout:
+
+```csharp showLineNumbers title="C#"
+Adapty.PreloadFlowsForDefaultAudience(
+    new List<string> { "main_paywall" },
+    (error) => {
+        // handle the error
+    }
+);
+```
+
+A later `GetFlowForDefaultAudience` reads the copy the same way `GetFlow` reads a `PreloadFlows` copy.
 
 ## Show first-screen media from the app bundle
 

@@ -1,0 +1,145 @@
+---
+title: "Unity SDK'da mağaza mesajlarını kontrol edin"
+description: "Unity uygulamanızın App Store ve Google Play'in fiyat artışları, ödeme sorunları ve reddedilen ödemelerle ilgili mesajları ne zaman göstereceğini seçin; böylece bir flow veya onboarding akışını kesintiye uğratmasın."
+metadataTitle: "Mağaza mesajlarını kontrol edin | Unity SDK | Adapty Dokümanları"
+---
+
+App Store ve Google Play, kullanıcılarınıza zaman zaman abonelikleriyle ilgili bir mesaj göstermesi gerekebilir:
+
+- **App Store**: Fiyat artışına onay isteği, fatura sorunu bildirimi veya geri kazanma teklifi. Varsayılan olarak StoreKit, uygulamanız açıkken bu mesajları kendi gösterir.
+- **Google Play**: Abonelik ödemesinin reddedildiğine ve ödeme yönteminin güncellenmesi gerektiğine dair bildirim. SDK 4.3.0 sürümünden itibaren Adapty SDK, aktivasyondan sonra uygulamanızın bir `Activity`'si her başladığında bu mesajları varsayılan olarak talep eder; buna uygulamanın ön plana dönmesi ve bir flow veya onboarding'in açılıp kapanması da dahildir.
+
+Her iki durumda da bir mesaj, bir flow'un, onboarding'in veya checkout'un üzerinde görünebilir. Mesajın ne zaman görüneceğini kendiniz belirlemek için Adapty SDK'sını manuel mesaj işleme moduna geçirin ve `Adapty.ShowStoreMessages` yöntemini kullanıcıyı rahatsız etmeyecek bir anda çağırın.
+
+:::warning
+Manuel modda mağazalar mesajları kendi başlarına göstermez. Uygulamanız hiçbir zaman `Adapty.ShowStoreMessages` çağırmazsa, kullanıcılar fiyat artışı onay talebini, fatura sorunu bildirimini veya reddedilen ödeme bildirimini asla göremez.
+:::
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty Unity SDK 4.3.0 veya üzeri**: Önceki sürümlerde store messages API'si bulunmamaktadır.
+- **iOS 16 veya üzeri** App Store mesajları için: StoreKit, önceki sürümlerdeki uygulamalara mesaj iletmez. iOS 15'te `Adapty.GetPendingStoreMessageTypes` ve `Adapty.ShowStoreMessages`, `DecodingFailed` hatasıyla başarısız olur; dolayısıyla uygulamanız iOS 15'i destekliyorsa bu yöntemleri yalnızca iOS 16 ve üzeri sürümlerde çağırın:
+
+```csharp showLineNumbers title="C#"
+#if UNITY_IOS && !UNITY_EDITOR
+var iosMajorVersion = int.Parse(UnityEngine.iOS.Device.systemVersion.Split('.')[0]);
+if (iosMajorVersion >= 16) {
+    Adapty.ShowStoreMessages((error) => {
+        // handle the error
+    });
+}
+#endif
+```
+
+## Manuel işlemeyi etkinleştirme \{#enable-manual-handling\}
+
+Store mesajlarını yalnızca uygulamanız `Adapty.ShowStoreMessages` çağırdığında göstermek için, [SDK'yı etkinleştirirken](sdk-installation-unity#activate-adapty-module-of-adapty-sdk) `SetStoreMessagesHandling` methodunu `AdaptyStoreMessagesHandling.Manual` ile çağırın:
+
+```csharp showLineNumbers title="C#"
+var builder = new AdaptyConfiguration.Builder("YOUR_PUBLIC_SDK_KEY")
+    .SetStoreMessagesHandling(AdaptyStoreMessagesHandling.Manual); // Auto is the default
+
+Adapty.Activate(builder.Build(), (error) => {
+    // handle the error
+});
+```
+
+iOS'ta SDK, her App Store mesajını mevcut uygulama oturumu için bekleyen bir listeye ekler. Android'de ise SDK, Google Play mesajlarını kendi başına istemeyi durdurur. Varsayılan `Auto` değeriyle SDK, App Store mesajlarını yakalamaz; bu nedenle iOS'ta `Adapty.GetPendingStoreMessageTypes` ve `Adapty.ShowStoreMessages` döndürecek veya gösterecek bir şey bulamaz.
+
+## Bekleyen mesaj türlerini alma \{#get-pending-message-types\}
+
+iOS'ta App Store'dan bekleyen mesaj olup olmadığını öğrenmek için `Adapty.GetPendingStoreMessageTypes` metodunu çağırın. Bu metot, bekleyen mesajları göstermeden veya kaldırmadan yalnızca türlerini döndürür:
+
+```csharp showLineNumbers title="C#"
+Adapty.GetPendingStoreMessageTypes((pendingTypes, error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+    if (pendingTypes == null) {
+        // Android: Google Play decides whether a message applies when you show it
+    } else if (pendingTypes.Contains(AdaptyStoreMessageType.BillingIssue)) {
+        // For example, skip the upsell and show the billing message first
+    }
+});
+```
+
+Android'de bu metot hata olmaksızın `null` döndürür: Google Play bekleyen mesajları bildirmez; bir mesajın uygulanıp uygulanmayacağına yalnızca uygulamanız talep ettiğinde karar verir. iOS'ta boş bir liste, bekleyen mesaj olmadığı anlamına gelir. `Adapty.Activate` tamamlanana kadar liste her zaman boştur.
+
+Her App Store mesajının şu türlerinden biri bulunur:
+
+| Tür | Mesaj |
+|:-----|:--------|
+| `AdaptyStoreMessageType.Generic` | Genel bir App Store mesajı. |
+| `AdaptyStoreMessageType.PriceIncreaseConsent` | Abonelik fiyat artışını onaylamak için bir istek. |
+| `AdaptyStoreMessageType.BillingIssue` | Abonelik faturalama sorunu hakkında bir bildirim. iOS 16.4 ve sonrasında kullanılabilir. |
+| `AdaptyStoreMessageType.WinBackOffer` | Uygun bir [geri kazanma teklifi](app-store-offers#win-back-offers). iOS 18 ve sonrasında kullanılabilir. |
+
+Yeni StoreKit mesaj türleri, `RawValue` değeri `storekit_<number>` şeklinde gelir. Bir türü kontrol etmek için yukarıdaki değerlerden biriyle `==` kullanarak karşılaştırın; diğer tüm değerleri SDK'nın tanımadığı bir tür olarak ele alın.
+
+## Mesajları göster \{#show-messages\}
+
+Uygulamanız, bir mağaza mesajının kullanıcıyı rahatsız etmeyeceği bir noktaya ulaştığında — örneğin kullanıcı bir flow'u kapattıktan veya onboarding'i tamamladıktan sonra — `Adapty.ShowStoreMessages` metodunu çağırın:
+
+```csharp showLineNumbers title="C#"
+Adapty.ShowStoreMessages((error) => {
+    if (error != null) {
+        // handle the error
+    }
+});
+```
+
+- **iOS**: SDK, bekleyen mesajları birbiri ardına gösterir. StoreKit bir mesajı gösterdikten sonra, SDK onu bekleyen listeden kaldırır. StoreKit bir mesajı göstermekte başarısız olursa, SDK mesajı bir sonraki çağrı için saklar ve diğer mesajlarla devam eder.
+- **Android**: SDK, geçerli `Activity` için Google Play mesajlarını talep eder. Google Play, bir mesajın kullanıcı için geçerli olup olmadığına karar verir; bu nedenle bir talep her zaman mesaj göstermez. Kullanıcı mesajdan ödeme yöntemini düzeltirse, SDK kullanıcının satın alımlarını Adapty ile senkronize eder ve [profil dinleyiciniz](unity-listen-subscription-changes) güncellenmiş access level'ı alır.
+
+### Android'de başlatma sırasında mesajları göster \{#show-messages-at-launch-on-android\}
+
+Varsayılan `Auto` modunda, aktivasyondan önce başlatılan bir `Activity` istek tetiklemez; bu nedenle Google Play mesajları uygulama açılışında görünmez. Açılışta göstermek için, yalnızca Android'de `Adapty.Activate` tamamlandıktan sonra bir kez `Adapty.ShowStoreMessages` çağırın:
+
+```csharp showLineNumbers title="C#"
+Adapty.Activate(builder.Build(), (error) => {
+    if (error != null) {
+        // handle the error
+        return;
+    }
+
+#if UNITY_ANDROID
+    Adapty.ShowStoreMessages((showError) => {
+        // handle the error
+    });
+#endif
+});
+```
+
+iOS'ta bu çağrıyı yapmayın: `Auto` modunda gösterecek hiçbir şey yoktur ve iOS 15'te başarısız olur.
+
+### Yalnızca bazı mesaj türlerini göster \{#show-only-some-message-types\}
+
+Bekleyen App Store mesajlarının yalnızca bir kısmını göstermek için türleri ilk argüman olarak geçirin. Diğer mesajlar beklemede kalmaya devam eder:
+
+```csharp showLineNumbers title="C#"
+var iosFilter = new List<AdaptyStoreMessageType> {
+    AdaptyStoreMessageType.BillingIssue,
+    AdaptyStoreMessageType.PriceIncreaseConsent,
+};
+
+Adapty.ShowStoreMessages(iosFilter, (error) => {
+    // handle the error
+});
+```
+
+Filtre olmadan veya `null` ile SDK, tanımadığı türler dahil tüm bekleyen mesajları gösterir. Boş bir liste hiçbirini göstermez. Android filtreyi yok sayar ve tüm Google Play mesajlarını ister.
+
+### Hatalar \{#errors\}
+
+`Adapty.ShowStoreMessages`, aşağıdaki kodlardan biriyle bir [`AdaptyError`](error-handling-on-flutter-react-native-unity) döndürerek başarısız olabilir. `WrongParam` dışındaki tüm hatalar yalnızca iOS'ta oluşur:
+
+| Kod | Ad | Neden |
+|:-----|:-----|:------|
+| 2006 | `DecodingFailed` | Cihaz iOS 15 veya önceki bir sürümü çalıştırıyor. Bu yöntemi yalnızca iOS 16 ve sonrasında çağırın. |
+| 3201 | `OperationInProgress` | Başka bir `Adapty.ShowStoreMessages` çağrısı hâlâ mesaj gösteriyor ve bu çağrının da gösterilecek mesajları var. İlk çağrı tamamlanana kadar bekleyin, ardından tekrar deneyin. |
+| 3202 | `ResolverFailure` | SDK, mesajları göstermek için ön planda aktif bir pencere sahnesi bulamadı. Uygulamanız ön plandayken yöntemi tekrar çağırın. |
+| 3001 | `WrongParam` | Filtre listesi `null` içeriyor. SDK, çağrı mağazaya ulaşmadan önce reddediyor. |

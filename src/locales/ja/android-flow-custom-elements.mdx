@@ -1,0 +1,357 @@
+---
+title: "Android SDK でカスタム要素を表示する"
+description: "フローの各カスタム要素にコンポーザブルまたは Android View を表示し、デバイスでフローをテストします。"
+metadataTitle: "カスタム要素の表示 | Android SDK | Adapty ドキュメント"
+---
+
+<FlowCustomElementsIntro />
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+
+- **Adapty Android SDK 4.4以降**: それより古いバージョンでは、すべてのカスタム要素にフォールバックが表示されます。
+- **ネイティブAndroidアプリ**: FlutterなどのクロスプラットフォームフレームワークのAdapty SDKでは、すべてのカスタム要素にフォールバックが表示されます。
+- **カスタム要素の命名規則**: 各ネイティブビューに`lottie_animation`のようなTypeを設定してください。Typeには小文字、数字、アンダースコアのみを使用できます。同じTypeのカスタム要素を区別するために、`welcome_wave`のように各要素にIDを付与します。コード内のTypeとIDは、[フロー & ペイウォールビルダー](flow-custom-elements#add-and-configure)で設定したものと一致している必要があります。
+
+iOSアプリにすでにカスタム要素が表示されている場合は、そのTypesとIDsを再利用してください。プラットフォームごとに個別の[オーディエンス](audience)を設定しない限り、iOSとAndroidのユーザーは同じフローを見ることになります。
+
+## カスタム要素用のビューを作成する \{#create-views-for-custom-elements\}
+
+各 Type に対して、コンポーザブルまたは Android の `View` を作成または再利用してください。以下のビューは `lottie_animation` Type のもので、アプリの `assets` フォルダにある Lottie アニメーションを再生します。Kotlin の例は `com.airbnb.android:lottie-compose` ライブラリを使用したコンポーザブルです。Java の例は `com.airbnb.android:lottie` ライブラリから Android の `View` を作成します：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class LottieViews {
+    public static View createLottieView(Context context, String animationFile) {
+        LottieAnimationView view = new LottieAnimationView(context);
+        view.setAnimation(animationFile);
+        view.setRepeatCount(LottieDrawable.INFINITE);
+        view.playAnimation();
+        return view;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+### 要件とベストプラクティス \{#requirements-and-best-practices\}
+
+- **サイズ調整**:
+  - **パディングと配置**: ネイティブビューが、フロー＆ペイウォールビルダーで確保したコンテナにパディングを引いたサイズで収まるようにしてください。ビューがエリア全体を占有しない場合、デフォルトではそのエリアの左上（start）コーナーに表示されます。位置を変更するには、カスタム要素の **Layout** セクションで配置を調整してください。
+  - **Hug の高さ**: カスタム要素の高さが **Hug** に設定されている場合、利用可能なスペースいっぱいに伸びるビュー（lazy list など）が折りたたまれるか、画面の高さまで伸びてしまいます。代わりにカスタム要素に [**Fixed** の高さ](flow-custom-elements#add-and-configure) を設定してください。
+- **テーマ**: Views で構築されたスクリーン上でコンポーザブルをアプリのカラーやフォントで表示するには、Compose テーマでラップしてください。
+- **フローアクション**: ネイティブビューは、次のスクリーンへの遷移などのフローアクションをトリガーできません。ナビゲーションボタン、購入ボタン、その他フローアクションを持つボタンはカスタム要素の外に置いてください。
+- **選択可能な要素**: カスタム要素をプロダクトカードや他の[選択可能な要素](flow-selectable-elements)の外に置いてください。選択状態が変わると、ネイティブビューの状態が失われることがあります。
+- **ナビゲーション処理**: ユーザーが次のスクリーンに移動すると、SDK はネイティブビューをスクリーンから削除します。カメラセッション、プレイヤー、位置情報の更新など、ビューが開始したものを停止してください:
+  - **コンポーザブル**: `DisposableEffect` の `onDispose` ブロックを使用してください。非同期処理には `LaunchedEffect` を使用してください。コンポーザブルがコンポジションから離れると、Compose がキャンセルします。
+  - **Android `View`**: `View` サブクラスで `onDetachedFromWindow` をオーバーライドするか、`View` に `View.OnAttachStateChangeListener` を追加してください。
+
+  ユーザーが戻ったとき、または回転などの設定変更後に、SDKはリゾルバーを再度呼び出し、以前のビューの状態を持たない新しいネイティブビューを作成します。
+- **カルーセル**: [カルーセル](builder-containers#carousel)では、表示中のスライドだけでなく、すべてのスライドのネイティブビューが画面が開いている間アクティブな状態を保ちます。カメラプレビューや音声付きプレーヤーはカルーセルに配置しないようにしてください。
+
+## カスタム要素とビューを照合するリゾルバーを作成する \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+リゾルバーを作成するには、`AdaptyCustomElementsResolver` インターフェースを実装します。その `resolve` メソッドはカスタム要素の Type と ID を受け取り、以下のいずれかの形式で対応するビューを返します。
+
+- **コンポーザブル**: `AdaptyCustomElementContent.compose` を返し、ラムダ内にコンポーザブルを記述します。
+- **Android の `View`**: `AdaptyCustomElementContent.view` を返し、`View` を生成する関数を渡します。Kotlin では `factory` パラメータに名前を付けてください: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`。名前を省略すると、Kotlin はトレーリングラムダをオプションの `update` パラメータへ渡すため、コードがコンパイルできません。
+
+`lottie_animation` タイプの場合、以下のリゾルバーは [Lottie ビュー](#create-views-for-custom-elements)を返します。ID は `assets` フォルダー内のアニメーションファイル名（例: `welcome_wave.json` に対する `welcome_wave`）を指定します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class CustomElementsResolver implements AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private final Set<String> animationFiles = new HashSet<>();
+
+    public CustomElementsResolver(Context context) {
+        try {
+            String[] files = context.getAssets().list("");
+            if (files != null) {
+                animationFiles.addAll(Arrays.asList(files));
+            }
+        } catch (IOException e) {
+            // no list of files: every Lottie element shows the fallback
+        }
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("lottie_animation")) {
+            // the ID names the animation file, such as welcome_wave.json
+            String file = id + ".json";
+            if (!animationFiles.contains(file)) {
+                return null; // no file for this ID: show the fallback
+            }
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> LottieViews.createLottieView(context, file)
+            );
+        }
+        return null;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+その他の Type については `null` を返してください。アプリのリリース後に[新しい Type を持つカスタム要素を追加](flow-custom-elements#what-changes-require-an-app-release)した場合、リリース済みバージョンのユーザーにはフォールバックが表示されます。
+
+リゾルバーには以下の要件があります。
+
+- **ネットワークデータとプレイヤー**: ネットワークデータとプレイヤーは、リゾルバーではなく[ネイティブビュー](#create-views-for-custom-elements)の状態として保持してください。SDKはスクリーンが開いている間、リゾルバーを何度も呼び出します。リゾルバー内のコードは呼び出しのたびに再実行されるため、ネットワークリクエストが繰り返され、プレイヤーが最初からやり直されます。SDKはこれらの呼び出しの間にネイティブビューを再作成しないため、データは一度だけ読み込まれ、プレイヤーは再生を継続します。プレイヤー、セッション、ネットワークリクエストはネイティブビュー内で作成してください：
+  - **Composable**: プレイヤーとセッションは `remember` で、ネットワークリクエストは `LaunchedEffect` で作成します。
+  - **Android `View`**: プレイヤー、セッション、ネットワークリクエストは `onAttachedToWindow` で作成します。
+- **カスタム要素ごとに1つのネイティブビュー**: ネイティブビューは、データの読み込み時やユーザーがタップした時など、スクリーンが開いている間に変化することがあります。このロジックはリゾルバーではなくネイティブビュー自体に実装してください。リゾルバーが同じカスタム要素に対して異なるComposableを返すと、Composeはビューの状態をリセットします。
+- **出現ごとに新しい `View`**: `factory` の各呼び出しで新しい `View` を作成してください。SDKは、スクリーンが開いたとき、ユーザーがスクリーンに戻ったとき、ローテーション後など、カスタム要素が表示されるたびに `factory` を呼び出します。
+- **アプリデータ**: [デイリーストリーク](android-custom-element-lottie-animation)のように、`StateFlow` や `LiveData` などのデータを保持するオブジェクトをリゾルバーのプロパティに保存します。そのオブジェクトをネイティブビューに渡し、そこでオブジェクトを監視してください：
+  - **Composable**: `StateFlow` は `collectAsState` で収集し、`LiveData` は `observeAsState` で監視します。
+  - **Android `View`**: `onAttachedToWindow` でオブジェクトを監視し、`onDetachedFromWindow` で停止します。
+
+  A value that you copy into the resolver, such as the streak number, stays as it was when you created the resolver.
+
+### フォールバックコンテンツの条件を設定する \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+パーミッションについては、スクリーンが開く前にユーザーが拒否した場合にのみ `null` を返してください。`ContextCompat.checkSelfPermission` は、アプリがユーザーにパーミッションを初めてリクエストする前と、ユーザーが拒否した後の2つのケースで同じ値 `PERMISSION_DENIED` を返します。これらのケースを区別するには、パーミッションリクエストの結果を保存し、リゾルバーでその保存した結果を読み取ってください。アプリがまだパーミッションをリクエストしていない場合は、`null` ではなくネイティブビューを返し、ビューの中でパーミッションをリクエストします。たとえば、[マップビュー](android-custom-element-map#3-match-the-map-to-the-custom-element)が表示されたときに位置情報へのアクセスをリクエストし、ユーザーがアクセスを許可したらすぐにマップを表示します。`null` を返した後にユーザーがアクセスを許可しても、フォールバックが引き続き表示されます。パーミッションの変更によって SDK がリゾルバーを再度呼び出すことはありません。ネイティブビューが表示されるのは、ユーザーがスクリーンに戻るなど SDK が再度リゾルバーを呼び出したときのみです。
+
+## リゾルバーをSDKに渡す \{#pass-the-resolver-to-the-sdk\}
+
+まずはアプリ全体のリゾルバーから始めましょう。SDKはリゾルバーを持たないすべてのフローでこのリゾルバーを呼び出します。これにより、アプリをリリースしなくても、新しいフローやA/Bテストでユーザーにネイティブビューを表示できます。これらのビューは、アプリからデータを読み取るため、[デイリーストリーク](android-custom-element-lottie-animation)のようなユーザー固有のデータも正しく表示されます。
+
+フローが開いたときにのみアプリが持っているデータを必要とする場合、特定のフローにリゾルバーをアタッチします。たとえば、ペイウォールに[ユーザーが前のフローで入力した体重](android-custom-element-interactive-chart)を表示したり、ユーザーがエクスポートしようとしているドキュメントをプレビューしたりする場合です。また、特定のフローにリゾルバーをアタッチして、そのフロー内の Type に対して異なるビューを表示することもできます。
+
+### すべてのフローでビューを表示する \{#display-views-in-every-flow\}
+
+すべてのフローでリゾルバーを使用するには、`Application` クラスの `onCreate` メソッドなど、一度だけ `AdaptyUI.setCustomElementsResolver` を呼び出してください：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class App : Application() {
+    // keep this instance: a resolver for one flow can reuse it
+    // lazy: the context isn't attached yet while App is constructed
+    val customElementsResolver by lazy { CustomElementsResolver(this) }
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(customElementsResolver)
+    }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class App extends Application {
+    // keep this instance: a resolver for one flow can reuse it
+    private CustomElementsResolver customElementsResolver;
+
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        customElementsResolver = new CustomElementsResolver(this);
+        AdaptyUI.setCustomElementsResolver(customElementsResolver);
+    }
+
+    public CustomElementsResolver getCustomElementsResolver() {
+        return customElementsResolver;
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+:::tip
+Typeのすべてのカスタム要素に同じビューを表示するには、TypeとビューのマップをAdaptyCustomElementsResolver.ofに渡します。マップはリゾルバークラスよりもコードが少なくて済みますが、[フォールバックコンテンツの条件設定](#set-conditions-for-fallback-content)はできません。
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+:::
+
+### 1つのフローのデータを表示する（エクスポートするドキュメントなど） \{#display-data-for-one-flow\}
+
+フロービューに渡すリゾルバーは、そのフロービューにおけるアプリ全体のリゾルバーを置き換えます。
+
+このフローでアプリ全体のビューを維持するには、このリゾルバーにアプリ全体のリゾルバーを渡し、他のタイプや ID についてはアプリ全体のリゾルバーを呼び出します。次のリゾルバーは、ユーザーがエクスポートしたいドキュメントをプレビューし、その他のカスタム要素についてはアプリ全体のリゾルバーを呼び出します。
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+class ExportPaywallResolver(
+    private val document: Document, // the document that the user wants to export
+    private val appWideResolver: AdaptyCustomElementsResolver,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        if (type == "document_preview") {
+            AdaptyCustomElementContent.compose { DocumentPreview(document) }
+        } else {
+            // other Types: the views of the app-wide resolver
+            appWideResolver.resolve(type, id)
+        }
+}
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+public class ExportPaywallResolver implements AdaptyCustomElementsResolver {
+    private final Document document; // the document that the user wants to export
+    private final AdaptyCustomElementsResolver appWideResolver;
+
+    public ExportPaywallResolver(Document document, AdaptyCustomElementsResolver appWideResolver) {
+        this.document = document;
+        this.appWideResolver = appWideResolver;
+    }
+
+    @Override
+    public AdaptyCustomElementContent resolve(String type, String id) {
+        if (type.equals("document_preview")) {
+            return AdaptyCustomElementContent.view(
+                    (context, elementContext) -> new DocumentPreviewView(context, document)
+            );
+        }
+        // other Types: the views of the app-wide resolver
+        return appWideResolver.resolve(type, id);
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+`customElementsResolver` パラメータにリゾルバーを渡して `AdaptyUI.getFlowView` を呼び出します：
+
+<Tabs groupId="current-os" queryString>
+<TabItem value="kotlin" label="Kotlin" default>
+
+```kotlin showLineNumbers title="Kotlin"
+val app = activity.application as App
+
+val flowView = AdaptyUI.getFlowView(
+    activity,
+    flowConfiguration,
+    products = null,
+    eventListener = eventListener,
+    customElementsResolver = ExportPaywallResolver(
+        document = document,
+        appWideResolver = app.customElementsResolver, // the instance that you set app-wide
+    ),
+)
+```
+
+</TabItem>
+<TabItem value="java" label="Java">
+
+```java showLineNumbers title="Java"
+App app = (App) activity.getApplication();
+
+AdaptyFlowView flowView = AdaptyUI.getFlowView(
+        activity,
+        flowConfiguration,
+        null, // products
+        eventListener,
+        // defaults: if your app passes other values here, keep them
+        AdaptyFlowInsets.Unspecified,
+        AdaptyCustomAssets.Empty,
+        AdaptyUiTagResolver.Default,
+        AdaptyUiTimerResolver.Default,
+        null, // observerModeHandler
+        new ExportPaywallResolver(document, app.getCustomElementsResolver())
+);
+```
+
+</TabItem>
+</Tabs>
+
+`AdaptyFlowView`を自分で作成する場合は、`showFlow`メソッドにリゾルバーを渡してください。Javaでは、`showFlow`は`activity`を除いて`getFlowView`と同じ引数を取ります。Jetpack Composeでは、`AdaptyFlowScreen`にリゾルバーを渡してください。各呼び出しの例については、[フローとペイウォールの表示](android-present-paywalls)を参照してください。
+
+`AdaptyCustomElementsResolver.of` をリゾルバークラスの代わりに使用する場合は、アプリ全体のビューのマップとこのフロー用のマップをマージしてください：`AdaptyCustomElementsResolver.of(appWideViews + flowViews)`。結果をフロービューに渡します。両方のマップに同じ Type が存在する場合、このコードはフロー用のビューを優先します。
+
+## デバイスでテストする \{#test-on-a-device\}
+
+フロー & ペイウォールビルダーはアプリのコードを実行できないため、キャンバスにはフォールバックのみが表示されます。ネイティブビューのエラーはアプリをクラッシュさせる可能性があります。アプリをリリースする前に、カスタム要素を含むすべての画面をデバイス上でテストしてください。
+
+1. 各フローの最新の公開バージョンをキャッシュ済みのものではなく確認するには、デバイスを[テストデバイス](test-devices)として登録してください。
+2. Logcat で Adapty SDK の警告を確認するには、[ログレベル](sdk-installation-android#logging)を `AdaptyLogLevel.WARN` またはより詳細なレベルに設定してください。デフォルトレベルの `AdaptyLogLevel.NONE` では、SDK は何もログ出力しません。
+3. デバイス上でリゾルバーを含むビルドを実行してください。カスタム要素があるすべての画面を開き、ネイティブビューが表示されてカスタム要素に収まっていることを確認してください。ビューがスクロールやドラッグに反応する場合は、これらのジェスチャーもテストしてください。
+4. ネイティブビューの代わりにフォールバックが表示される場合、Logcat で次の警告を探してください: `custom element <type>:<id> is not served by a resolver`。その後、以下を確認してください:
+   - 警告内の Type と ID がコード内のものと一字一句一致していること。
+   - アプリにビューが必要とするファイル、データ、または権限があること。
+   - アプリにアプリ全体のリゾルバーが設定されていること。
+   - [このフロー用のリゾルバー](#display-data-for-one-flow)を渡す場合、そのリゾルバーが該当する Type と ID に対してビューを返すこと。
+
+   警告が表示されない場合は、アプリが Adapty Android SDK 4.4 以降を使用していることを確認してください。
+5. カスタム要素が空のままの場合、Logcat で次のいずれかの警告を探してください：
+   - `custom element <type>:<id> is not served by a resolver`：カスタム要素にフォールバックコンテンツがなく、どのリゾルバーもビューを返していません。手順 4 の各項目を確認してください。
+   - `content does not report its size`：コンポーザブル自体に高さがありません。カスタム要素に[**Fixed** の高さ](flow-custom-elements#add-and-configure)を設定してください。
+
+   SDKは、コンポーザブルに対してのみサイズ警告をログに記録します。Android `View`が警告なしで空のまま表示される場合は、カスタム要素に**Fixed**の高さも設定してください。
+6. フォールバックをプレビューするには、TypeにNULLを返し、画面を再度開いてください。
+
+## 使用例 \{#examples\}
+
+各レシピには、ビルダーでの設定内容とアプリのコードが含まれています：
+
+- [Lottie アニメーションでユーザーの進捗を表示する](android-custom-element-lottie-animation): ストリークが伸びるにつれてリングが塗りつぶされます。
+- [ペイウォールにインタラクティブな体重目標チャートを表示する](android-custom-element-interactive-chart): オンボーディングフローに続くペイウォールフロー内の体重目標チャートです。
+- [フロー内で近くの場所をマップに表示する](android-custom-element-map): 各ユーザーの近くにあるフィットネスセンターのマップです。

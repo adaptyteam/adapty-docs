@@ -27,7 +27,7 @@ Most readers will either:
 This fundamentally shapes how to structure documentation:
 - **The intro must stand alone.** A reader who reads only the intro should understand what this article covers and whether it's relevant to them.
 - **Every H2 section must be self-contained.** A reader jumping to "Configure competitors" shouldn't need to have read "Configure products" first, unless there's an explicit prerequisite stated at the top of the section.
-- **Don't bury critical information.** If something applies to the entire workflow (a prerequisite, a limitation, a gotcha), put it in the intro or in a dedicated "Before you begin" section — not inside step 4 of 7.
+- **Don't bury critical information.** If something applies to the entire workflow (a prerequisite, a limitation, a gotcha), put it in the intro or in a dedicated "Before you begin" section — not inside step 4 of 7. Likewise, put a fact that concerns one step under that step, not in **Before you start**.
 - **Headings are the article's API.** Readers scan headings to decide what to read. Each heading must clearly signal what that section covers. Vague headings ("Additional options", "Other settings") force the reader to read the section to understand it.
 - **Front-load value in each section.** The first sentence of each section should tell the reader what they'll get from reading it. Don't start with background — start with the outcome.
 
@@ -116,6 +116,15 @@ If the zone brief and roster still leave candidates open, search the map:
 2. **Primary audience**: From the article's location (Dashboard guide? SDK guide? API reference?), determine whether the reader is a developer, PM, marketer, or mixed.
 3. **User workflow**: From the existing article's step sequence, determine where this feature fits in the user's workflow. Does the user encounter this during initial setup, daily use, or occasional configuration?
 4. **Feature importance**: Is this a core part of the workflow that every reader needs, or an optional setting that most users skip? This determines prominence in the structure.
+
+**Fact research** (every claim the content will make about what Adapty, the SDK, or the UI does):
+1. **Write each fact with its source.** Keep a facts list: the claim, and the file and line, doc, or test that settles it. A claim with no source is a question for the user, not a fact.
+2. **Follow a control end to end.** For a control the article documents, trace it from the frontend call through the backend route to the code that handles it. A stub (a 501, a TODO, an empty list) is a fact: record it, and don't document the control as working.
+3. **Use the owning article for side effects.** Before you record a side effect, find the article that owns that mechanism and use its facts.
+4. **Verify third-party claims on the third party's side.** What a third-party tool does with forwarded data (aggregates, deduplicates, reports) needs that tool's own docs or a test. Adapty's code settles only the Adapty side. In a compound claim, verify each part or cut the part you can't.
+5. **Check scenarios against the product.** A scenario the text puts to the reader is a claim: "if you publish a broken flow" fails when publishing blocks broken flows. A behavior claim is true only in the states you verified: list the settings and device states that can change it (alignment, element size, an open or closed display), verify it in each, and narrow the claim or add a step when one changes the outcome.
+6. **Name icons from the SVG or a screenshot**, never from the file name.
+7. **Confirm release state in code.** A ticket status, a chat announcement, or a wiki page is a claim, not proof. Find the change on the production branch. When a team brief contradicts production, document production.
 
 **Then classify the change for shipped-skill ripple.** The same feature often changes one of the
 seven skills shipped from `sdk-integration-skill`, and the plan is the moment to find out — asked
@@ -224,6 +233,23 @@ Use AskUserQuestion for structured choices where options are clear. Use direct q
 
 ### Step 5: Produce the Plan
 
+For a medium or large update, decide what the content covers before you outline it. These three rules come first; the outline follows from them.
+
+1. **Tag the reader questions.** For each goal the reader arrives with, list what they must know or decide to reach the end, and what they do next. Tag each question:
+   - `act`: the reader can't act or conclude correctly without the answer, and the screen doesn't show it.
+   - `see`: the UI answers it as soon as the reader looks or acts: navigation, defaults, and limits the UI states.
+   - `edge`: most readers never hit it.
+   - `owner`: another article owns it. Link there where the reader needs it.
+
+   Only `act` questions get a place in the content. Then match each fact from your research to the `act` question it answers. A fact that answers none stays out of the text. List the `see` and `edge` questions under **Left out** in the plan, one line each with the reason, so the user can overrule you.
+2. **Build the heading tree with path lines.** Under each heading, write one sentence of at most 20 words: what the reader does in that section, and why. Under the title, write the article's path line: who arrives, with what goal, and where the article leaves them. When readers arrive with different goals, name each one, most common first, and order their sections the same way. Under each heading, list the `act` questions it answers. Every `act` question needs a home, and no `see` or `edge` question gets one. The path lines set the order; each section still works for a reader who lands on it directly (see "Non-linear reading"). Each heading passes three tests:
+   - **One question each**: It answers an `act` question that no other heading answers. Fold a wrapper with no text of its own, an H3 that restates its H2, or a heading per field into the nearest section.
+   - **The reader's goal**: A task heading names what the reader wants to do. Often the action is the goal (`Create a placement`). When the action only serves another goal, name that goal, not the mechanism, UI element, or API call behind it. Read the heading without its body: a reader who doesn't know how the feature works should pick it for their goal. ❌ `## Publish existing flows again` ✅ `## Add iPhone Duo support to live flows`
+   - **A real contrast**: Siblings that offer a choice differ on what the reader decides by. ❌ `### Register views for every flow` / `### Register views for one flow` ✅ `### Display the same views to all users` / `### Display user-specific data, such as a daily streak`
+
+   When sections share steps, put the shared steps once in their parent section, and keep only the case-specific part in each subsection.
+3. **Limitations and troubleshooting.** A limitation earns a place only when the product can't do it in any case and a reader would plausibly try it; give its cause. Put limitations in one section at the end, unless a limit changes a step. Leave out what the product never promised and what nobody would ask. Troubleshooting covers only symptoms a reader hits in normal use, each with a fix they can apply.
+
 Generate a plan scaled to the documentation scope. Read `references/plan-templates.md` for the 4 plan format templates (small update, medium update, large update, multi-article update).
 
 If the shipped-skill classification in Step 2 fired, the plan gains an `## Affected skills`
@@ -291,14 +317,15 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **H2 (##) and H3 (###)** for main structure — these appear in TOC
 - **H4 (####)** sparingly — only to hide minor subsections from TOC
 - **Never deeper than H4** — restructure instead
-- **Consistent style within an article**: If sibling headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase ("Analytics integration"). Pick one pattern and maintain it.
-- **Prefer action-oriented** headings for task/procedure sections: Configure, Set up, Create, Enable
+- **Consistent style within an article**: If sibling task headings use verb phrases ("Configure X", "Set up Y"), don't introduce a noun phrase for another task ("Analytics integration"). Pick one pattern and maintain it. Exception: a reference section among task sections keeps its noun phrase ("Limitations", "Configuration options"); a reference section never takes a task heading.
+- **Prefer action-oriented** headings for task/procedure sections. To choose which action to name, apply the heading test **The reader's goal** in step 2 of the planning process.
 - **Use noun phrases** for concept/reference sections: Configuration options, System requirements, General requirements
 
 ### Introduction
 - Every article needs an intro paragraph before the first H2
 - The intro covers: **what** this is, **why** the reader needs it, **when** it applies
 - 2-4 sentences. Include product value without marketing copy.
+- The intro covers what the reader can build or control. Required fields, comparisons with other features, and release details go in the body.
 
 ### Non-linear reading
 - **Self-contained sections**: Each H2 section must make sense to a reader who jumped there directly. If a section depends on context from a previous section, state the prerequisite explicitly at the top ("First, configure your products as described in [section]").
@@ -312,7 +339,7 @@ These rules govern how plans should structure documentation. Apply them when pro
 - **Don't interrupt the reading flow**: Callouts must not break the default execution order. A reader following steps or reading sequentially should not be forced to jump over callouts to continue. Place callouts where they support the flow, not where they interrupt it.
 
 ### Section sizing
-- Avoid micro-subsections: Don't create an H3 for a single paragraph
+- Avoid micro-subsections: Don't create an H3 for a single paragraph. The one exception is a separate task with its own goal that the parent heading doesn't name
 - Break up text blocks longer than 200-300 words with subheadings, lists, or callouts
 - If an H2 section grows beyond 500 words, consider splitting it
 
@@ -341,7 +368,7 @@ When planning updates to existing articles, the plan must match the article's cu
 When a user pastes a long Jira task with extensive acceptance criteria, technical specs, and engineering details — assess what the documentation actually needs. A 500-word task description about backend changes to a country selector may translate to a single paragraph in the docs: "Select the target countries from the **Country** dropdown." Say this clearly: "This is a big feature change but a small documentation update."
 
 ### Always check for ripple effects
-Even when the user specifies a single article, search for other articles that mention the same feature or concept. A change to "autopilot competitor analysis" might also need a one-line update in the autopilot overview article, or a mention in a "what's new" section. Report all affected articles — the user can decide which ones to update now and which to defer, but they should know the full picture. Ripple is not only articles: classify the change for shipped-skill ripple too, per Step 2.
+Even when the user specifies a single article, search for other articles that mention the same feature or concept. A change to "autopilot competitor analysis" might also need a one-line update in the autopilot overview article. Never list `whats-new.mdx` as an affected article: it is written once a month, on demand, with the `update-whats-new` skill, never as part of a feature change. Report all affected articles — the user can decide which ones to update now and which to defer, but they should know the full picture. Ripple is not only articles: classify the change for shipped-skill ripple too, per Step 2.
 
 ### Propose, don't just ask
 After researching the existing article, come with a concrete proposal. "I'd add a 2-sentence paragraph to the 'Configure competitors' section, right after the frequency dropdown, describing the country selector and its default behavior. Does that match what you had in mind?" This gives the user something to react to instead of building the plan from scratch.

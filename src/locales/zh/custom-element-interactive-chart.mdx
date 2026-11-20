@@ -1,0 +1,214 @@
+---
+title: "在付费墙中展示可交互的体重目标图表"
+description: "在付费墙流程中以图表形式展示每位用户的预期体重变化。用户可拖动图表查看任意周的体重数据。"
+metadataTitle: "在付费墙中展示可交互的体重目标图表 | iOS SDK | Adapty 文档"
+---
+
+按照此配方，在付费墙流程中以数据图表形式展示每位用户的预期体重变化。用户在用户引导流程中输入当前体重和目标体重，你的应用会收集这两个值。数据图表展示用户使用你的应用后每周可预期的进度，从当前值到目标值。你的应用以原生视图的形式在[自定义元素](flow-custom-elements)中渲染数据图表，视图使用 Swift Charts 实现。
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="完成后的付费墙：用户沿图表拖动，标签会显示每周的预计体重，直至达到目标体重 72 公斤。" />
+
+## 开始之前 \{#before-you-start\}
+
+- 将您的应用更新至 Adapty iOS SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 配置您的应用以[获取](get-pb-paywalls)和[展示](ios-present-paywalls)流程。
+
+<CustomElementChartTwoFlows />
+
+## 1. 在用户引导流程中询问当前体重和目标体重 \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+<CustomElementChartOnboardingInputs />
+
+## 2. 将自定义元素添加到付费墙页面 \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+<CustomElementChartBuilderSetup />
+
+## 3. 在应用中保存当前体重和目标体重 \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+从用户引导流程的 `flow_user_input` 事件中收集当前体重和目标体重，具体方法参见[处理流程中的数据](ios-flow-input)。要判断用户是否到达最后一屏，可监听 `flow_screen_showed` 事件中 `is_last_screen` 值为 `true` 的情况。当用户引导流程在该屏后关闭时，将两个体重值传入 `showWeightPaywall` 函数，该函数负责[打开带有数据图表的付费墙流程](#5-match-the-chart-to-the-custom-element)。
+
+以下代码适用于 UIKit。一个视图控制器同时作为两个流程的代理。要添加每个 `AdaptyFlowControllerDelegate` 都需要实现的购买和恢复方法，请参阅[在 UIKit 中展示流程和付费墙](ios-present-paywalls#present-flows-and-paywalls-in-uikit)。
+
+```swift showLineNumbers title="Swift"
+private var enteredWeights: [String: String] = [:]
+private var reachedLastScreen = false
+
+func flowController(
+    _ controller: AdaptyFlowController,
+    didReceiveAnalyticEvent name: String,
+    params: [String: any Sendable]
+) {
+    if name == "flow_screen_showed", params["is_last_screen"] as? Bool == true {
+        reachedLastScreen = true
+        return
+    }
+    guard name == "flow_user_input",
+          let elementId = params["element_id"] as? String,
+          let value = params["value"] as? String
+    else { return }
+
+    enteredWeights[elementId] = value
+}
+
+func flowControllerDidDisappear(_ controller: AdaptyFlowController) {
+    // This delegate receives events from both flows. Reset the entered
+    // weights whenever a flow disappears, so that the paywall doesn't open
+    // again when the user closes it.
+    let weights = enteredWeights
+    let finished = reachedLastScreen
+    enteredWeights.removeAll()
+    reachedLastScreen = false
+
+    // Number inputs send their values as strings
+    guard finished,
+          let currentWeight = weights["weight"].flatMap({ Double($0) }),
+          let goalWeight = weights["goal_weight"].flatMap({ Double($0) })
+    else { return }
+
+    Task {
+        await showWeightPaywall(currentWeight: currentWeight, goalWeight: goalWeight)
+    }
+}
+```
+
+在 SwiftUI 中，请使用 `.flow` 修饰符的 `didReceiveAnalyticEvent` 和 `didDisappear` 闭包代替委托方法。使用第二个 `.flow` 修饰符呈现付费墙流程。
+
+## 4. 创建数据图表视图 \{#create-the-chart-view\}
+
+创建一个体重计划的模型，以及带有数据图表的视图。该计划每周记录一条数据，从当前体重到目标体重。当用户在图表上拖动时，视图会标记触摸点所在的那一周，并显示该周的预计体重：
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+在图表上拖动需要 iOS 17 或更高版本。在 iOS 16 上，用户可以看到折线，但无法沿其拖动。
+
+<CustomElementChartWeeklyChange />
+
+## 5. 将数据图表与自定义元素匹配 \{#5-match-the-chart-to-the-custom-element\}
+
+编写一个[解析器](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，使其为 `line_chart` 类型和 `weight_goal` ID 返回对应的数据图表视图。将体重计划存储在解析器的属性中：
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 16.0, *) // the chart needs iOS 16
+struct WeightChartResolver: AdaptyUICustomElementsResolver {
+    let plan: WeightPlan
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        guard type == "line_chart", id == "weight_goal" else {
+            return nil // another custom element: show the fallback
+        }
+        return AnyView(WeightGoalChart(entries: plan.entries))
+    }
+}
+```
+
+Attach the resolver to the paywall flow when you fetch its configuration. Create the resolver with the weight plan from the current and goal weight:
+
+```swift showLineNumbers title="Swift"
+func showWeightPaywall(currentWeight: Double, goalWeight: Double) async {
+    let plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+    do {
+        let flow = try await Adapty.getFlow(placementId: "weight_paywall")
+        let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+            forFlow: flow,
+            customElementsResolver: WeightChartResolver(plan: plan)
+        )
+        let flowController = try AdaptyUI.flowController(
+            with: flowConfiguration,
+            delegate: self
+        )
+        present(flowController, animated: true)
+    } catch {
+        // handle the error
+    }
+}
+```
+
+如果你的应用设置了[全局解析器](ios-flow-custom-elements#set-an-app-wide-resolver)，该解析器会替换付费墙流程中的对应逻辑。`WeightChartResolver` 对其他任何 Type 和 ID 均不返回视图，因为本示例中的付费墙流程没有其他自定义元素。如果你的付费墙流程包含其他自定义元素，请将全局解析器传入当前解析器，然后针对对应的 Type 和 ID 调用全局解析器，详见[将解析器绑定到单个流程](ios-flow-custom-elements#attach-a-resolver-to-one-flow)。
+
+## 6. 在设备上测试 \{#test-on-a-device\}
+
+Flow & Paywall Builder 无法运行您的应用代码，因此画布中只会显示备用内容。要预览数据图表：
+
+1. [发布两个流程](builder-save-publish)。如需查看最新发布版本（而非缓存版本），请将设备注册为[测试设备](test-devices)。
+2. 运行包含解析器的应用构建版本。使用 iOS 17 或更高版本的设备。完成用户引导流程，输入当前体重和目标体重。验证数据图表折线是否从当前体重开始，到目标体重结束。
+3. 在数据图表上拖动，验证手指所在周的预测体重是否显示在折线上方。
+
+要测试备用方案，请让 `WeightChartResolver` 返回 `nil`，然后再次打开付费墙流程。
+
+要了解为何显示备用方案而非数据图表，请按照 iOS 指南中[在设备上测试](ios-flow-custom-elements#test-on-a-device)部分的说明进行操作。

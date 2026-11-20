@@ -9,6 +9,8 @@ Every article must start with an introduction before the first heading that prov
 2. **Why it matters**: Value or benefit to the reader
 3. **When to use it**: Context for application
 
+When an article has three or more H2 sections that the reader completes in order, add a numbered overview after the intro: one item per H2, in the same order, each linking to its section.
+
 ❌ No introduction:
 ```markdown
 # Configure Placements
@@ -40,7 +42,7 @@ Placements determine which paywall users see based on their location in your app
 
 ## Parallel Heading Structure
 
-Headings at the same level must follow consistent grammatical structure — all verb phrases OR all noun phrases.
+Headings at the same level follow one grammatical shape by default — all verb phrases OR all noun phrases. The one exception: a reference section (limits, options, requirements, troubleshooting) next to task sections keeps its noun phrase. A reference section never takes a task heading, and a task section never takes a noun heading.
 
 **Procedural sections — imperative verbs:**
 ```markdown

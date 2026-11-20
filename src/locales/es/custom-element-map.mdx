@@ -1,0 +1,190 @@
+---
+title: "Mostrar lugares cercanos en un mapa en un flow"
+description: "Muestra un mapa con lugares cercanos a cada usuario, como gimnasios asociados, en un elemento personalizado de una pantalla de flow."
+metadataTitle: "Mostrar lugares cercanos en un mapa en un flow | iOS SDK | Documentación de Adapty"
+---
+
+Sigue esta guía para incluir un mapa interactivo en un flow. El mapa muestra tus lugares, como gimnasios asociados, en un radio de 2 km alrededor del usuario. Tu app renderiza el mapa como una vista nativa en un [elemento personalizado](flow-custom-elements), con MapKit. Tu app solicita acceso a la ubicación en la pantalla del flow.
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="El flow terminado: un mapa muestra gimnasios cercanos al usuario, que arrastra el mapa a otra zona y vuelve." />
+
+## Antes de empezar \{#before-you-start\}
+
+- Actualiza tu app a Adapty iOS SDK 4.4 o posterior. Las versiones anteriores del SDK muestran el [contenido de respaldo](flow-custom-elements#set-fallback-content) para cada elemento personalizado.
+- Configura tu app para [obtener](get-pb-paywalls) y [mostrar](ios-present-paywalls) flows.
+- Para solicitar a los usuarios acceso a la ubicación, añade la clave `NSLocationWhenInUseUsageDescription` al archivo `Info.plist` de tu app. Establece su valor con el texto del mensaje, por ejemplo, "Encuentra centros de fitness cerca de ti."
+
+## 1. Añade el elemento personalizado a la pantalla
+
+<CustomElementMapBuilderSetup />
+
+Dentro del elemento personalizado, añade una [**Imagen**](custom-media#image) con una foto del mapa. Los usuarios la verán como [respaldo](flow-custom-elements#set-fallback-content) cuando:
+
+- Su versión de la app no muestre el mapa.
+- Denegaron el acceso a la ubicación antes de abrir la pantalla.
+- Su dispositivo usa iOS 16.
+
+<CustomElementMapLocationPrompt />
+
+## 2. Crea la vista del mapa \{#2-create-the-map-view\}
+
+Crea un tipo para tus lugares y un modelo para el acceso a la ubicación:
+
+```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+```
+
+Crea una vista con un mapa. La vista solicita acceso a la ubicación y muestra un marcador por cada uno de tus lugares dentro de un radio de 2 km del usuario:
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    let places: [Place]
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var nearbyPlaces: [Place] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+}
+```
+
+La vista de mapa requiere iOS 17 o posterior. En iOS 16, los usuarios ven el paywall de respaldo.
+
+Si el usuario deniega el acceso a la ubicación en la pantalla, la vista reemplaza el mapa con un mensaje sobre cómo permitir el acceso en Ajustes.
+
+## 3. Asocia el mapa al elemento personalizado \{#match-the-map-to-the-custom-element\}
+
+En tu [resolver global de la app](ios-flow-custom-elements#set-an-app-wide-resolver), añade propiedades para el modelo `LocationAccess` y tus lugares. Después, devuelve la vista del mapa para el Type `map` y el ID `fitness_centers`. Las líneas resaltadas muestran qué añadir o cambiar. Si tu app aún no tiene un [resolver](ios-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) global, copia el código completo:
+
+```swift showLineNumbers title="Swift" {5-6,14-21}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+<CustomElementMapResolverCalls />
+
+Crea el resolver con tus elementos y configúralo como resolver global de la app. Llama a `AdaptyUI.setCustomElementsResolver` una vez, por ejemplo al iniciar la app:
+
+```swift showLineNumbers title="Swift"
+
+// your app's places, such as partner fitness centers
+@MainActor let places = [
+    Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+    Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
+
+// keep this instance: a resolver for one flow can reuse it
+@MainActor let customElementsResolver = CustomElementsResolver(places: places)
+
+AdaptyUI.setCustomElementsResolver(customElementsResolver)
+```
+
+## 4. Prueba en un dispositivo \{#4-test-on-a-device\}
+
+El Flow & Paywall Builder no puede ejecutar el código de tu app, por lo que el canvas solo muestra el respaldo. Para previsualizar el mapa:
+
+1. [Publica el flow](builder-save-publish). Para ver la última versión publicada en lugar de una en caché, registra el dispositivo como [dispositivo de prueba](test-devices).
+2. Para ver un marcador en el mapa, añade un lugar a menos de 2 km de tu ubicación en tu lista de lugares.
+3. Asegúrate de que el dispositivo tenga iOS 17 o posterior. Ejecuta una compilación de tu app que incluya el resolver. Abre la pantalla y permite el acceso a la ubicación. Comprueba que el mapa muestra tu ubicación y un marcador para el lugar que añadiste.
+
+Para probar el respaldo, deniega el acceso a la ubicación: en la app **Settings**, ve a **Privacy & Security** > **Location Services** > *tu app* y selecciona **Never**. Luego vuelve a abrir la pantalla.
+
+Para saber por qué aparece el respaldo en lugar del mapa, sigue las instrucciones en la sección [Probar en un dispositivo](ios-flow-custom-elements#test-on-a-device) de la guía de iOS.

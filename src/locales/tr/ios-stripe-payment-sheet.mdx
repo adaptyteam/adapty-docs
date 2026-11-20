@@ -1,0 +1,613 @@
+---
+title: "iOS flow'larında Stripe ödemelerini kabul etme"
+description: "Bir flow'da Stripe fiyatlarını gösterin, iOS uygulamanızda Stripe'ın PaymentSheet'i ile ödeme alın ve Adapty'nin erişim izni vermesine ve geliri flow'a atamasına izin verin."
+metadataTitle: "Flow'larda Stripe Ödemelerini Kabul Etme | iOS SDK | Adapty Dokümanları"
+---
+
+Adapty'nin Flow & Paywall Builder'ında oluşturduğunuz bir flow üzerinden Stripe abonelikleri satabilirsiniz. Flow, Stripe fiyatlarınızı gösterir ve düğmeler, flow'un üzerine Stripe'ın [PaymentSheet](https://docs.stripe.com/payments/accept-a-payment?platform=ios) sayfasını açar. Ödeme sonrasında Stripe, Adapty'yi bilgilendirir. Adapty, kullanıcıya access level tanır ve geliri flow'a, ilgili placement'a ve A/B testi varyantına atar. Bu yapıyı; etkinlik üyelikleri, ders kartları veya düzenli teslimatlar gibi kullanıcıların uygulama dışında yararlandığı hizmetlerin aboneliklerini satmak için kullanabilirsiniz. Gerçek dünya hizmetine ait bir planı App Store ürünü olarak da satıyorsanız, Stripe'ı aynı flow'a alternatif bir ödeme yöntemi olarak ekleyebilirsiniz.
+
+:::important
+App Store, dijital içerik ve özellikler için uygulama içi satın alma gerektirir ([kılavuz 3.1.1](https://developer.apple.com/app-store/review/guidelines/#in-app-purchase)). Stripe üzerinden yapılan uygulama içi ödeme, fiziksel ürünler ve kullanıcıların uygulama dışında tükettiği hizmetler içindir ([kılavuz 3.1.3(e)](https://developer.apple.com/app-store/review/guidelines/#other-purchase-methods)). Dijital içerik için kullanıcıları web ödeme sayfasına yönlendirmek istiyorsanız [web paywall](ios-web-paywall) kullanın.
+:::
+
+## Nasıl çalışır \{#how-it-works\}
+
+1. Uygulamanız Stripe fiyatlarını backend'inizden alır. Ardından bunları [özel etiketler](ios-flow-custom-tags) aracılığıyla flow'a iletir ve flow'u gösterir.
+2. Kullanıcı flow içindeki bir butona dokunur. Buton bir özel aksiyon tetikler ve uygulamanız aksiyon ID'sini alır.
+3. Uygulamanız backend'inizden bir Stripe aboneliği oluşturmasını ister. Backend'iniz kullanıcının ID'sini ve flow'un varyasyon ID'sini aboneliğin meta verilerine ekler.
+4. Uygulamanız flow'un üzerine PaymentSheet açar ve kullanıcı aboneliğin ilk faturasını öder.
+5. Stripe, Adapty'ye bir webhook gönderir. Adapty, kullanıcının ID'sine sahip profile access level tanır ve satın almayı flow varyasyonuna atar.
+6. Uygulamanız flow'u kapatır ve profilde access level bulunana kadar bekler.
+
+## Başlamadan önce \{#before-you-start\}
+
+Aşağıdakilere sahip olduğunuzdan emin olun:
+
+1. **Stripe, Adapty uygulamanıza bağlı olmalı**: Test modu ve canlı mod için [Stripe'ı Adapty'e Bağla](stripe#1-connect-stripe-to-adapty) adımlarını izleyin. [**Profile creation behavior**](stripe#profile-creation-behavior) ayarını **Use customer_user_id from metadata (default)** olarak bırakın.
+2. **Her plan için bir Stripe ürünü ve fiyatı**: Aylık veya yıllık gibi yinelenen fiyatlarla [Stripe'ta ürünler oluşturun](stripe#2-create-products-on-stripe).
+3. **Her Stripe fiyatı için bir Adapty ürünü**: [Stripe ürün kimliğini ve fiyat kimliğini bir Adapty ürününe ekleyin](stripe#3-add-stripe-products-to-adapty) ve planın kilidini açacağı access level'ı atayın. Access level, uygulamanızdaki dijital özellikleri değil, aktif bir üyelik gibi hizmete erişim hakkını temsil eder. Adapty ürünü olmadan Adapty satın alımı kaydetmez.
+4. **Adapty iOS SDK 4.0.0 veya üzeri**: SDK'yı Stripe'a bağladığınız Adapty uygulamasının anahtarıyla etkinleştirin. Adapty, Stripe webhook'larını yalnızca o uygulama için alır. Kullanıcıları bir customer user ID ile [tanımlayın](identifying-users) ve bu flow'u yalnızca giriş yapmış ve tanımlanmış kullanıcılara gösterin. Adapty, access level'ı alacak profili bulmak için bu kimliği kullanır.
+5. **Stripe iOS SDK**, uygulamanızda `StripePaymentSheet` modülü ile birlikte. Stripe belgelerindeki [Ödeme kabul et](https://docs.stripe.com/payments/accept-a-payment?platform=ios) sayfasına bakın.
+6. **Stripe API'sini çağırabilen bir backend**, Stripe [gizli anahtarınızla](https://docs.stripe.com/keys) ya da Müşteri ve Abonelik yazma iznine sahip kısıtlı bir anahtarla. Adapty için oluşturduğunuz kısıtlı anahtarı yeniden kullanmayın: bu anahtar Adapty'e aittir ve backend'inizin ihtiyaç duyduğu yazma izinlerine sahip değildir. Anahtarı sunucunuzda saklayın.
+
+## Flow'da Stripe fiyatlarını gösterme \{#show-stripe-prices-in-the-flow\}
+
+Flow, Stripe fiyatlarını özel etiketler aracılığıyla gösterir. Özel etiket, uygulamanızın flow'u yüklerken flow'a ilettiği bir metin değeridir. Adapty özel etiket değerini biçimlendirmez; bu nedenle her fiyatı kullanıcıların gördüğü biçimde iletin, örneğin "$29.00".
+
+1. Flow & Paywall Builder'da her fiyat için [bir **String** değişkeni oluşturun](flow-custom-tags#create-a-custom-tag), örneğin `stripe_monthly_price` ve `stripe_annual_price`, ve **Value comes from outside the app** seçeneğini belirleyin. Her değişkenin **Initial value** alanını mevcut fiyatınıza ayarlayın. Uygulamanız fiyatları yükleyemezse kullanıcılar bu başlangıç değerini görür; bu nedenle başlangıç değerlerini Stripe fiyatlarınızla aynı tutun.
+2. [Her etiketi bir metin öğesine ekleyin](flow-custom-tags#add-a-custom-tag-to-a-text-element), örneğin bir plan düğmesinin etiketine.
+3. Uygulamanızda, flow'u yüklemeden önce fiyatları backend'inizden alın.
+4. Fiyatları `getFlowConfiguration` fonksiyonunun `tagResolver` parametresine aktarın.
+
+Aşağıdaki fonksiyon, Stripe fiyatlarınızla birlikte flow'u yükler. Ayrıca flow'un `variationId` değerini döndürür; çünkü backend'iniz bu ID'yi Stripe aboneliğine yazar. Flow'u [Flow'dan PaymentSheet Açma](#open-paymentsheet-from-the-flow) bölümünde sunarsınız.
+
+```swift showLineNumbers title="Swift"
+struct StripeFlow {
+    let configuration: AdaptyUI.FlowConfiguration
+    let variationId: String
+}
+
+@MainActor
+func loadStripeFlow() async throws -> StripeFlow {
+    // If the prices fail to load, the flow shows the tags' initial values
+    let prices = (try? await Backend.fetchPrices()) ?? [:]
+
+    let flow = try await Adapty.getFlow(placementId: "YOUR_PLACEMENT_ID")
+    let configuration = try await AdaptyUI.getFlowConfiguration(
+        forFlow: flow,
+        tagResolver: [
+            "stripe_monthly_price": prices["monthly"],
+            "stripe_annual_price": prices["annual"],
+        ].compactMapValues { $0 }
+    )
+    return StripeFlow(configuration: configuration, variationId: flow.variationId)
+}
+```
+
+`Backend`, [Backend'inizde aboneliği oluşturma](#create-the-subscription-on-your-backend) bölümünden gelen backend uç noktalarınızın istemcisidir.
+
+Adapty sunum türleri iOS 16 gerektirir. Uygulamanız daha eski sürümleri destekliyorsa, bu kılavuzdaki ilgili koda `@available(iOS 16.0, *)` ekleyin.
+
+## PaymentSheet'i açan düğmeler ekleyin \{#add-buttons-that-open-paymentsheet\}
+
+Bir Stripe planı satan her düğme, özel bir eylem tetikler. Uygulamanız eylem ID'sini alır ve o plan için PaymentSheet'i açar.
+
+1. Flow & Paywall Builder'da her Stripe planı için [bir düğme ekleyin](paywall-buttons).
+2. Her düğmeye **Custom Action** eylemini atayın ve `buy_stripe_monthly` ile `buy_stripe_annual` gibi bir eylem ID'si girin.
+3. Flow'u yayınlayın ve [bir placement'a ekleyin](create-placement).
+
+Uygulamanız her aksiyon ID'sini bir plana eşler. Flow, aksiyonla birlikte uygulamanıza herhangi bir veri göndermez; bu nedenle aksiyon ID'si planı tanımlamalıdır.
+
+### Stripe'ı App Store ürünleri için ek bir ödeme yöntemi olarak ekleyin \{#add-stripe-as-another-way-to-pay-for-app-store-products\}
+
+Bu kurulumu yalnızca kullanıcıların uygulama dışında tükettiği fiziksel ürün veya hizmetler ([kural 3.1.3(e)](https://developer.apple.com/app-store/review/guidelines/#other-purchase-methods)) için kullanın; örneğin yüz yüze etkinliklere üyelikler. Dijital içerik veya özellikler için ödeme almak üzere bir [web paywall](ios-web-paywall) kullanın.
+
+Flow, App Store ürünlerinizi olağan şekilde gösterir; "Başka yöntemle öde" gibi bir bağlantıya tıklandığında PaymentSheet açılır. App Store satın alma düğmeleri değişiklik yapılmadan çalışmaya devam eder.
+
+1. Bağlantıya **Custom Action** eylemini atayın ve `pay_with_stripe` gibi bir eylem kimliği kullanın.
+2. Flow'daki her App Store ürünü için, aynı plan adına karşılık gelen bir Stripe fiyatı oluşturun.
+3. Uygulamanızda, her App Store ürün kimliğini ilgili Stripe planıyla eşleştirin.
+4. Kullanıcının seçtiği ürünü saklayın. Flow, her seçimi UIKit'te `flowController(_:didSelectProduct:)` fonksiyonuna veya SwiftUI'da `.flow` modifier'ının `didSelectProduct` closure'ına bildirir. Flow & Paywall Builder'da oluşturulan bir flow, varsayılan olarak seçilen ürünü bildirmez; bu nedenle builder'da seçili olarak ayarladığınız ürünle başlayın. Bir A/B testinin varyantları farklı ürünler seçiyorsa, her varyant için varsayılan ürünü saklayın.
+5. Uygulama `pay_with_stripe` eylemini aldığında, saklanan ürünün Stripe planıyla birlikte [Flow'dan PaymentSheet'i açma](#open-paymentsheet-from-the-flow) bölümündeki `StripeCheckout.pay(plan:variationId:over:)` fonksiyonunu çağırın.
+
+Flow, App Store'un vitrine göre farklılık gösteren ürün fiyatlarını gösterir. PaymentSheet ise Stripe fiyatını uygular. Kullanıcılar bir plana dokunmadan önce Stripe fiyatını görmelerini sağlamak için [bunu özel bir etiket olarak geçirin](#show-stripe-prices-in-the-flow) ve her planın kartında gösterin; örneğin "veya aylık 29,00 $/kart ile". Özel etiket değerleri flow açıkken değişmediğinden, seçili planın fiyatını tek bir bağlantıyla göstermek mümkün değildir.
+
+## Backend'inizde aboneliği oluşturun \{#create-the-subscription-on-your-backend\}
+
+PaymentSheet, backend'inizin oluşturduğu bir Stripe nesnesinin ödemesini yapar. Bu kılavuzda backend'iniz bir Stripe [aboneliği](https://docs.stripe.com/billing/subscriptions/overview) oluşturur ve PaymentSheet bu aboneliğin ilk faturasını öder. Backend'iniz aboneliğin [metadata](https://docs.stripe.com/metadata) alanına iki anahtar ayarlar:
+
+- `customer_user_id`: Adapty'deki kullanıcının customer user ID'si. Adapty, access level'ı bu ID'ye sahip profile verir.
+- `variation_id`: Uygulamanızın backend'e gönderdiği flow'un variation ID'si. Adapty, geliri bu flow varyantına, onun placement'ına ve A/B testine atfeder.
+
+:::warning
+Adapty, kendi başına oluşturduğunuz — bir abonelik veya fatura olmaksızın — PaymentIntent için ödeme kaydetmez. Kullanıcı ödeme yapar, ancak access level almaz.
+:::
+
+Create two endpoints. The first returns the formatted prices for the custom tags. The second creates the subscription and returns the values that PaymentSheet needs. Before it creates a subscription, the second endpoint verifies that the user has no active one, so a user can't pay twice for the same plan.
+
+This example uses Node.js with ES modules (`"type": "module"` in `package.json`), Express, and the [`stripe` library](https://github.com/stripe/stripe-node) version 18 or later. Replace `db` with your own database:
+
+```javascript showLineNumbers title="Node.js"
+
+const app = express();
+app.use(express.json());
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+const prices = {
+  monthly: 'price_...', // your Stripe price IDs
+  annual: 'price_...',
+};
+
+// Prices for the custom tags, such as { "monthly": "$29.00", "annual": "$249.00" }.
+// You can cache the response.
+app.get('/prices', async (req, res) => {
+  try {
+    const result = {};
+    for (const [plan, priceId] of Object.entries(prices)) {
+      const price = await stripe.prices.retrieve(priceId);
+      // Assumes a currency with two decimal places. Format for your users' locale.
+      result[plan] = new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: price.currency.toUpperCase(),
+      }).format(price.unit_amount / 100);
+    }
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not load prices' });
+  }
+});
+
+app.post('/subscriptions', async (req, res) => {
+  // req.user comes from your authentication middleware. Its ID is the same
+  // customer user ID that your app passes to Adapty.identify().
+  const customerUserId = req.user.id;
+  // variationId affects only attribution, so the backend doesn't need to trust it
+  const { plan, variationId } = req.body;
+  if (!prices[plan]) {
+    return res.status(400).json({ error: 'Unknown plan' });
+  }
+
+  try {
+    // One Stripe customer per user, stored in your database
+    let customerId = await db.getStripeCustomerId(customerUserId);
+    if (!customerId) {
+      const customer = await stripe.customers.create({ metadata: { customer_user_id: customerUserId } });
+      customerId = customer.id;
+      await db.saveStripeCustomerId(customerUserId, customerId);
+    }
+
+    // Don't sell a second subscription to a user who already has one
+    for (const status of ['active', 'trialing', 'past_due']) {
+      const existing = await stripe.subscriptions.list({ customer: customerId, status, limit: 1 });
+      if (existing.data.length > 0) {
+        return res.status(409).json({ error: 'You already have a subscription' });
+      }
+    }
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customerId,
+      items: [{ price: prices[plan] }],
+      payment_behavior: 'default_incomplete',
+      payment_settings: { save_default_payment_method: 'on_subscription' },
+      metadata: {
+        customer_user_id: customerUserId,
+        variation_id: variationId,
+      },
+      expand: ['latest_invoice.confirmation_secret'],
+    });
+
+    res.json({
+      subscriptionId: subscription.id,
+      clientSecret: subscription.latest_invoice.confirmation_secret.client_secret,
+      publishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Could not create the subscription' });
+  }
+});
+
+app.listen(process.env.PORT ?? 3000);
+```
+
+`payment_behavior: 'default_incomplete'` ile abonelik, ilk ödemeyi bekler. Kullanıcı PaymentSheet üzerinden ödeme yaptığında Stripe aboneliği etkinleştirir. Kullanıcı ödeme yapmadan PaymentSheet'i kapatırsa, Stripe aboneliği yaklaşık 23 saat sonra sona erdirir ve Adapty bunu kaydetmez. Stripe kurulumunun tamamı için Stripe belgelerindeki [Build a subscriptions integration](https://docs.stripe.com/billing/subscriptions/build-subscriptions?platform=ios) sayfasına bakın.
+
+Kod, `latest_invoice.confirmation_secret` alanından client secret'ı okur; bunun için `2025-03-31.basil` veya daha yeni bir Stripe API sürümü gerekir. `stripe` kütüphanesi bu sürümü 18. sürümden itibaren kullanır. Stripe API'yi kütüphane kullanmadan çağırıyorsanız `Stripe-Version` başlığını ayarlayın. Daha eski bir API sürümünde `latest_invoice.payment_intent` alanını genişleterek `payment_intent.client_secret` değerini okuyun.
+
+Uygulamanızda iki endpoint'i çağırın. Backend'inizin gerektirdiği şekilde her istekte kullanıcınızın kimlik doğrulama bilgilerini gönderin:
+
+```swift showLineNumbers title="Swift"
+enum Backend {
+    static let baseURL = URL(string: "https://YOUR_BACKEND")!
+
+    struct Subscription: Decodable {
+        let subscriptionId: String
+        let clientSecret: String
+        let publishableKey: String
+    }
+
+    struct BackendError: LocalizedError, Decodable {
+        let error: String
+        var errorDescription: String? { error }
+    }
+
+    struct HTTPError: LocalizedError {
+        let statusCode: Int
+        var errorDescription: String? { "The server returned HTTP \(statusCode)." }
+    }
+
+    static func fetchPrices() async throws -> [String: String] {
+        let request = URLRequest(url: baseURL.appendingPathComponent("prices"))
+        return try await send(request)
+    }
+
+    static func createSubscription(plan: String, variationId: String) async throws -> Subscription {
+        var request = URLRequest(url: baseURL.appendingPathComponent("subscriptions"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        // add your authentication header
+        request.httpBody = try JSONEncoder().encode([
+            "plan": plan,
+            "variationId": variationId,
+        ])
+        return try await send(request)
+    }
+
+    private static func send<T: Decodable>(_ request: URLRequest) async throws -> T {
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
+        guard statusCode == 200 else {
+            // Use the backend's message when the response has one
+            throw (try? JSONDecoder().decode(BackendError.self, from: data)) ?? HTTPError(statusCode: statusCode)
+        }
+        return try JSONDecoder().decode(T.self, from: data)
+    }
+}
+```
+
+## Flow içindeki PaymentSheet'i açma \{#open-paymentsheet-from-the-flow\}
+
+Uygulamanız, flow içindeki bir düğme özel bir eylem tetiklediğinde PaymentSheet'i açar ve ödeme başarılı olduğunda flow'u kapatır:
+
+1. Özel aksiyon ID'sini bir plana eşleyin. Uygulamanız backend'i beklerken veya PaymentSheet gösterirken dokunuşları ve flow'un kapat düğmesini yoksayın. Bu sayede tek bir dokunuş tek bir abonelik oluşturur.
+2. Backend'inizden bir abonelik isteyin ve planı ile flow'un `variationId` değerini gönderin.
+3. PaymentSheet'i flow'un üzerinde gösterin ve sonucunu işleyin:
+   - **Tamamlandı**: Flow'u kapatın. Kapandıktan sonra [access level'ı bekleyin](#unlock-access-after-the-payment).
+   - **İptal Edildi**: Hiçbir şey yapmayın. Kullanıcı flow'da kalır ve başka bir plan seçebilir.
+   - **Başarısız**: Hatayı gösterin. Kullanıcı flow'da kalır ve tekrar deneyebilir.
+4. Flow'un kapat ve URL aç aksiyonlarını işleyin. Aksiyon handler'ınız, flow'u kapatan ve URL'leri açan SDK'nın varsayılan handler'ının yerini alır.
+5. Satın alma ve geri yükleme handler'larını, SwiftUI'da ise hata handler'ını uygulayın. SDK bunları zorunlu kılar; flow'da App Store ürünü olmasa bile.
+
+2. ve 3. adımlar UIKit ve SwiftUI'da aynı olduğundan, bu kılavuz bunları tek bir sınıfta ele alır:
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class StripeCheckout {
+    // Custom action IDs from the flow, mapped to your backend's plan keys
+    static let plans = [
+        "buy_stripe_monthly": "monthly",
+        "buy_stripe_annual": "annual",
+    ]
+
+    private(set) var isPaying = false
+
+    /// Opens PaymentSheet for a plan over the flow. Returns `true` when the user paid.
+    func pay(plan: String, variationId: String, over presenter: UIViewController) async -> Bool {
+        guard !isPaying else { return false }
+        isPaying = true
+        defer { isPaying = false }
+
+        do {
+            let subscription = try await Backend.createSubscription(
+                plan: plan,
+                variationId: variationId
+            )
+            // The flow may have closed, or opened a link, while the backend responded
+            guard presenter.viewIfLoaded?.window != nil, presenter.presentedViewController == nil else {
+                return false
+            }
+
+            STPAPIClient.shared.publishableKey = subscription.publishableKey
+            var configuration = PaymentSheet.Configuration()
+            configuration.merchantDisplayName = "YOUR_BUSINESS_NAME"
+            // For payment methods that redirect to another app, such as bank apps
+            configuration.returnURL = "your-app://stripe-redirect"
+
+            let paymentSheet = PaymentSheet(
+                paymentIntentClientSecret: subscription.clientSecret,
+                configuration: configuration
+            )
+            let result = await withCheckedContinuation { continuation in
+                paymentSheet.present(from: presenter) { continuation.resume(returning: $0) }
+            }
+
+            switch result {
+            case .completed:
+                return true
+            case .canceled:
+                return false // the user stays on the flow
+            case let .failed(error):
+                showError(error, over: presenter)
+                return false
+            }
+        } catch {
+            showError(error, over: presenter)
+            return false
+        }
+    }
+
+    /// Opens a URL from the flow in the browser that the flow's button specifies.
+    func open(_ url: URL, presentation: AdaptyWebPresentation, over presenter: UIViewController) {
+        let isWebURL = url.scheme == "https" || url.scheme == "http"
+        if presentation == .inAppBrowser, isWebURL {
+            presenter.present(SFSafariViewController(url: url), animated: true)
+        } else {
+            UIApplication.shared.open(url)
+        }
+    }
+
+    private func showError(_ error: Error, over presenter: UIViewController) {
+        let alert = UIAlertController(
+            title: "The payment didn't go through",
+            message: error.localizedDescription,
+            preferredStyle: .alert
+        )
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        presenter.present(alert, animated: true)
+    }
+}
+```
+
+Ödeme yöntemlerinin başka bir uygulama açmasının ardından PaymentSheet, dönüş URL'si aracılığıyla uygulamanıza geri döner. URL şemasını uygulamanıza kaydedin; bunun için Stripe belgelerindeki [Dönüş URL'si ayarlama](https://docs.stripe.com/payments/accept-a-payment?platform=ios#ios-set-up-return-url) bölümüne bakın ve uygulama bu URL'yi açtığında Stripe'a iletin:
+
+<Tabs groupId="ios-ui-framework">
+<TabItem value="uikit" label="UIKit" default>
+
+```swift showLineNumbers title="Swift"
+
+// In your scene delegate
+func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+    guard let url = URLContexts.first?.url else { return }
+    _ = StripeAPI.handleURLCallback(with: url)
+}
+```
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI">
+
+```swift showLineNumbers title="Swift"
+
+// On your root view
+.onOpenURL { url in
+    _ = StripeAPI.handleURLCallback(with: url)
+}
+```
+
+</TabItem>
+</Tabs>
+
+Ardından flow'u sunun ve aksiyonlarını `StripeCheckout`'a aktarın:
+
+<Tabs groupId="ios-ui-framework">
+<TabItem value="uikit" label="UIKit" default>
+
+Flow'un `AdaptyFlowControllerDelegate`'ini uygulayın. PaymentSheet'i flow controller'dan sunun; böylece sheet, flow'un üzerinde açılır:
+
+```swift showLineNumbers title="Swift"
+
+final class StripeFlowDelegate: NSObject, AdaptyFlowControllerDelegate {
+    private let variationId: String
+    private let onPaid: () -> Void
+    private let checkout = StripeCheckout()
+
+    init(variationId: String, onPaid: @escaping () -> Void) {
+        self.variationId = variationId
+        self.onPaid = onPaid
+    }
+
+    func flowController(_ controller: AdaptyFlowController, didPerform action: AdaptyUI.Action) {
+        switch action {
+        case .close:
+            guard !checkout.isPaying else { return }
+            controller.dismiss(animated: true)
+        case let .openURL(url, presentation):
+            checkout.open(url, presentation: presentation, over: controller)
+        // Adapty SDK 4.0–4.3: case let .custom(id):
+        case let .custom(id, _):
+            guard let plan = StripeCheckout.plans[id] else { return }
+            Task {
+                guard await checkout.pay(plan: plan, variationId: variationId, over: controller) else { return }
+                controller.dismiss(animated: true) { [onPaid] in onPaid() }
+            }
+        }
+    }
+
+    // The SDK requires these methods. This flow sells only through Stripe.
+    func flowController(
+        _ controller: AdaptyFlowController,
+        didFinishPurchase product: AdaptyPaywallProduct,
+        purchaseResult: AdaptyPurchaseResult
+    ) {}
+
+    func flowController(
+        _ controller: AdaptyFlowController,
+        didFailPurchase product: AdaptyPaywallProduct,
+        error: AdaptyError
+    ) {}
+
+    func flowController(_ controller: AdaptyFlowController, didFinishRestoreWith profile: AdaptyProfile) {}
+
+    func flowController(_ controller: AdaptyFlowController, didFailRestoreWith error: AdaptyError) {}
+}
+```
+
+In your view controller, flow'u yükleyin ve gösterin. Delegate'i bir property'de tutun: flow controller, delegate'ini zayıf referansla (weakly) tutar.
+
+```swift showLineNumbers title="Swift"
+final class MembershipViewController: UIViewController {
+    private var flowDelegate: StripeFlowDelegate?
+    private var isLoadingFlow = false
+
+    func showStripeFlow() async {
+        guard !isLoadingFlow else { return }
+        isLoadingFlow = true
+        defer { isLoadingFlow = false }
+
+        do {
+            let stripeFlow = try await loadStripeFlow()
+            let flowDelegate = StripeFlowDelegate(variationId: stripeFlow.variationId) { [weak self] in
+                Task { await self?.unlockAfterPayment() }
+            }
+            let flowController = try AdaptyUI.flowController(
+                with: stripeFlow.configuration,
+                delegate: flowDelegate
+            )
+            self.flowDelegate = flowDelegate
+            present(flowController, animated: true)
+        } catch {
+            // handle the error
+        }
+    }
+
+    func unlockAfterPayment() async {
+        if await waitForAccess() {
+            // unlock the service
+        } else {
+            // tell the user that the payment is processing, and how to reach your support
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="swiftui" label="SwiftUI">
+
+Flow'u [`.flow` modifier](ios-present-paywalls#present-flows-and-paywalls-in-swiftui) ile gösterin ve eylemlerini `didPerformAction` closure'ında işleyin. Modifier, flow'u görünümünüzün üzerine sunar; bu nedenle PaymentSheet'i, flow olan en üstteki sunulan view controller'dan sunun:
+
+```swift showLineNumbers title="Swift"
+
+struct MembershipView: View {
+    @State private var stripeFlow: StripeFlow?
+    @State private var isFlowPresented = false
+    @State private var isLoadingFlow = false
+    @State private var didPay = false
+    @State private var checkout = StripeCheckout()
+
+    var body: some View {
+        Button("Become a member") {
+            Task { await showStripeFlow() }
+        }
+        .flow(
+            isPresented: $isFlowPresented,
+            flowConfiguration: stripeFlow?.configuration,
+            didDisappear: {
+                // Unlock after the flow has closed
+                guard didPay else { return }
+                didPay = false
+                Task { await unlockAfterPayment() }
+            },
+            didPerformAction: { action in
+                switch action {
+                case .close:
+                    guard !checkout.isPaying else { return }
+                    isFlowPresented = false
+                case let .openURL(url, presentation):
+                    guard let presenter = UIApplication.shared.topViewController else { return }
+                    checkout.open(url, presentation: presentation, over: presenter)
+                // Adapty SDK 4.0–4.3: case let .custom(id):
+                case let .custom(id, _):
+                    guard let plan = StripeCheckout.plans[id],
+                          let variationId = stripeFlow?.variationId,
+                          let presenter = UIApplication.shared.topViewController
+                    else { return }
+                    Task {
+                        guard await checkout.pay(plan: plan, variationId: variationId, over: presenter) else { return }
+                        didPay = true
+                        isFlowPresented = false
+                    }
+                }
+            },
+            // The SDK requires these closures. This flow sells only through Stripe.
+            didFinishPurchase: { _, _ in },
+            didFailPurchase: { _, _ in },
+            didFinishRestore: { _ in },
+            didFailRestore: { _ in },
+            didReceiveError: { error in
+                // The flow keeps working after these errors. Log them, and keep PaymentSheet open.
+                print("Flow error: \(error)")
+            }
+        )
+    }
+
+    func showStripeFlow() async {
+        guard !isLoadingFlow else { return }
+        isLoadingFlow = true
+        defer { isLoadingFlow = false }
+
+        do {
+            stripeFlow = try await loadStripeFlow()
+            isFlowPresented = true
+        } catch {
+            // handle the error
+        }
+    }
+
+    func unlockAfterPayment() async {
+        if await waitForAccess() {
+            // unlock the service
+        } else {
+            // tell the user that the payment is processing, and how to reach your support
+        }
+    }
+}
+
+extension UIApplication {
+    /// The view controller at the top of the active window's presentation stack.
+    var topViewController: UIViewController? {
+        let scene = connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+        var top = scene?.keyWindow?.rootViewController
+        while let presented = top?.presentedViewController {
+            top = presented
+        }
+        return top
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Flow'unuz aynı zamanda App Store ürünleri de satıyorsa, satın alma işlemlerini [Flow olaylarını yönetme](ios-handling-events) bölümünde açıklandığı şekilde satın alma handler'larında yönetin.
+
+## Ödemeden sonra erişimin kilidini açma \{#unlock-access-after-the-payment\}
+
+Ödeme sonrasında Adapty, Stripe'ın webhook'unu alır ve birkaç saniye içinde access level'ı tanımlar. SDK, profili dakikada bir yeniler; bu nedenle access level etkin olana kadar profili sorgulamaya devam edin:
+
+```swift showLineNumbers title="Swift"
+@MainActor
+func waitForAccess() async -> Bool {
+    for _ in 1...20 {
+        if let profile = try? await Adapty.getProfile(),
+           profile.accessLevels["YOUR_ACCESS_LEVEL"]?.isActive == true {
+            return true
+        }
+        try? await Task.sleep(for: .seconds(3))
+    }
+    return false
+}
+```
+
+Access level genellikle birkaç saniye içinde aktif olur. 60 saniye sonra hâlâ aktif değilse, [Stripe'ın webhook ayarları](https://dashboard.stripe.com/webhooks) üzerinden Adapty webhook endpoint'ine yapılan teslimatları kontrol edin.
+
+Ödeme sonrası bir onay ekranı (örneğin hoş geldiniz ekranı) göstermek istiyorsanız, bunu access level aktif olduğunda uygulamanızdan gösterin. Ekranı ayrı bir flow olarak oluşturup kendi placement'ına ekleyebilir ve ilk flow kapandıktan sonra gösterebilirsiniz. [Satın alma sonuçlarına yanıt verme](respond-to-purchase-outcomes) sayfasında bunun nasıl yapılacağı anlatılmaktadır.
+
+## Kullanıcıların aboneliği yönetmesine izin verin \{#let-users-manage-the-subscription\}
+
+Bir Stripe aboneliği, iOS Ayarları'ndaki kullanıcının App Store abonelikleri arasında görünmez. Kullanıcıların aboneliği iptal etmesine veya ödeme yöntemini değiştirmesine izin vermek için uygulamanıza, örneğin hesap ekranına, [Stripe müşteri portalını](https://docs.stripe.com/customer-management) açan bir düğme ekleyin. Backend'iniz, kullanıcının Stripe müşterisi için bir portal oturumu oluşturur ve URL'sini döndürür.
+
+Bir kullanıcı iptal ettiğinde, Stripe Adapty'yi bilgilendirir ve Adapty access level'ı günceller. Adapty'nin anlık ve dönem sonu iptalleri nasıl ele aldığını öğrenmek için [İptaller](stripe#cancellations) bölümüne bakın.
+
+## Entegrasyonu test edin \{#test-the-integration\}
+
+Adapty uygulamanıza bağlı Stripe'ın test modunu kullanın:
+
+1. Uygulamanızı, Stripe'a bağladığınız Adapty uygulamasının Adapty SDK anahtarıyla çalıştırın.
+2. Flow'u açın. Düğmeler, özel etiketlerin başlangıç değerlerini değil, uygulamanızın ilettiği fiyatları göstermelidir.
+3. Bir Stripe plan düğmesine dokunun. PaymentSheet'te Stripe [test kartı](https://docs.stripe.com/testing) `4242 4242 4242 4242`, gelecekte herhangi bir son kullanma tarihi ve herhangi bir CVC ile ödeme yapın.
+4. Flow'un kapandığını ve profilin access level'ının birkaç saniye içinde aktif hale geldiğini doğrulayın.
+5. Adapty Kontrol Paneli'nde [**Event Feed**](event-feed) sayfasını açın. Satın alma etkinliğinde `store`: `stripe`, flow'unuzun `flow_id` ve `flow_name` değerleri, uygulamanızın gönderdiği `variationId`'ye eşit bir `flow_variation_id` ve `developer_id` alanında placement ID'niz yer almalıdır. Stripe satın alımlarında `variation_id`, `flow_variation_id` ile aynı değere sahiptir.
+
+Test modu satın almaları `Sandbox` ortamına sahiptir. Bunlar Event Feed'de ve profilde görünür, ancak yalnızca üretim satın almalarını sayan analizlerde veya flow'un metriklerinde görünmez.
+
+Satın alma Adapty'de görünmüyorsa, uygulamanızın Stripe'a bağlı Adapty uygulamasının SDK anahtarını kullandığını, Stripe fiyatı için bir Adapty ürününün mevcut olduğunu ve aboneliğin meta verilerinde `customer_user_id` bulunduğunu doğrulayın. Ayrıca Stripe entegrasyon kılavuzundaki [Sorun Giderme](stripe#troubleshooting) bölümüne bakın.
+
+## Sınırlamalar \{#limitations\}
+
+- **Flow, Stripe sonucunu almaz**: Flow, başarılı, iptal edilmiş veya başarısız bir Stripe ödemesinin ardından başka bir ekrana geçemez. Uygulamanız flow'u kapatır ve sıradaki içeriği gösterir.
+- **Özel etiketlerdeki fiyatlar metindir**: Flow, özel etiket değerini uygulamanızın ilettiği şekliyle gösterir; haftaya düşen fiyat veya indirim gibi başka değerleri bu değerden hesaplamaz. Bu değerlerin her birini ayrı bir etiket olarak iletin.
+- **Özel etiket değerleri flow açıkken sabit kalır**: Yeni fiyatları göstermek için flow'u yeniden yükleyin.
