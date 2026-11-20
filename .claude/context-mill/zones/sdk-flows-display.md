@@ -238,6 +238,7 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flow-screen-views | ios-flow-screen-views | android-flow-screen-views | react-native-flow-screen-views | flutter-flow-screen-views | unity-flow-screen-views | kmp-flow-screen-views | capacitor-flow-screen-views |
 | get-pb-paywalls | get-pb-paywalls | android-get-pb-paywalls | react-native-get-pb-paywalls | flutter-get-pb-paywalls | unity-get-pb-paywalls | kmp-get-pb-paywalls | capacitor-get-pb-paywalls |
 | handle-paywall-actions | handle-paywall-actions | android-handle-paywall-actions | react-native-handle-paywall-actions | flutter-handle-paywall-actions | unity-handle-paywall-actions | kmp-handle-paywall-actions | capacitor-handle-paywall-actions |
+| handle-permissions | ios-handle-permissions | android-handle-permissions | react-native-handle-permissions | flutter-handle-permissions | unity-handle-permissions | kmp-handle-permissions | capacitor-handle-permissions |
 | handling-events | ios-handling-events | android-handling-events |  | flutter-handling-events | unity-handling-events | kmp-handling-events | capacitor-handling-events |
 | handling-events-1 |  |  | react-native-handling-events-1 |  |  |  |  |
 | localizations-and-locale-codes | localizations-and-locale-codes | android-localizations-and-locale-codes | react-native-localizations-and-locale-codes | flutter-localizations-and-locale-codes | unity-localizations-and-locale-codes | kmp-localizations-and-locale-codes | capacitor-localizations-and-locale-codes |
@@ -258,7 +259,8 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | android-flow-input | — | dev | 10 | android |
 | android-flow-screen-views | — | dev | 4 | android |
 | android-get-pb-paywalls | — | dev | 9 | android |
-| android-handle-paywall-actions | — | dev | 7 | android |
+| android-handle-paywall-actions | — | dev | 8 | android |
+| android-handle-permissions | — | dev | 5 | android |
 | android-handling-events | — | dev | 7 | android |
 | android-localizations-and-locale-codes | — | dev | 11 | android |
 | android-paywalls | entry | dev | 4 | android |
@@ -269,18 +271,20 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | capacitor-flow-input | — | dev | 10 | capacitor |
 | capacitor-flow-screen-views | — | dev | 4 | capacitor |
 | capacitor-get-pb-paywalls | — | dev | 9 | capacitor |
-| capacitor-handle-paywall-actions | — | dev | 7 | capacitor |
+| capacitor-handle-paywall-actions | — | dev | 8 | capacitor |
+| capacitor-handle-permissions | — | dev | 5 | capacitor |
 | capacitor-handling-events | — | dev | 4 | capacitor |
 | capacitor-localizations-and-locale-codes | — | dev | 11 | capacitor |
 | capacitor-paywalls | entry | dev | 4 | capacitor |
 | capacitor-present-flows-in-observer-mode | — | dev | 2 | capacitor |
-| capacitor-present-paywalls | — | dev | 7 | capacitor |
+| capacitor-present-paywalls | — | dev | 8 | capacitor |
 | capacitor-use-fallback-paywalls | — | dev | 4 | capacitor |
 | capacitor-web-paywall | — | dev | 3 | capacitor |
 | flutter-flow-input | — | dev | 10 | flutter |
 | flutter-flow-screen-views | — | dev | 4 | flutter |
 | flutter-get-pb-paywalls | — | dev | 11 | flutter |
-| flutter-handle-paywall-actions | — | dev | 8 | flutter |
+| flutter-handle-paywall-actions | — | dev | 9 | flutter |
+| flutter-handle-permissions | — | dev | 5 | flutter |
 | flutter-handling-events | — | dev | 7 | flutter |
 | flutter-localizations-and-locale-codes | — | dev | 11 | flutter |
 | flutter-paywalls | entry | dev | 4 | flutter |
@@ -290,9 +294,10 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | flutter-use-fallback-paywalls | — | dev | 1 | flutter |
 | flutter-web-paywall | — | dev | 1 | flutter |
 | get-pb-paywalls | — | dev | 11 | ios |
-| handle-paywall-actions | — | dev | 7 | ios |
+| handle-paywall-actions | — | dev | 8 | ios |
 | ios-flow-input | — | dev | 11 | ios |
 | ios-flow-screen-views | — | dev | 4 | ios |
+| ios-handle-permissions | — | dev | 5 | ios |
 | ios-handling-events | — | dev | 14 | ios |
 | ios-paywalls | entry | dev | 4 | ios |
 | ios-present-paywall-builder-paywalls-in-observer-mode | — | dev | 2 | ios |
@@ -304,7 +309,8 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | kmp-flow-input | — | dev | 10 | kmp |
 | kmp-flow-screen-views | — | dev | 4 | kmp |
 | kmp-get-pb-paywalls | — | dev | 9 | kmp |
-| kmp-handle-paywall-actions | — | dev | 11 | kmp |
+| kmp-handle-paywall-actions | — | dev | 12 | kmp |
+| kmp-handle-permissions | — | dev | 6 | kmp |
 | kmp-handling-events | — | dev | 16 | kmp |
 | kmp-localizations-and-locale-codes | — | dev | 11 | kmp |
 | kmp-paywalls | entry | dev | 4 | kmp |
@@ -317,7 +323,8 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | react-native-flow-input | — | dev | 10 | react-native |
 | react-native-flow-screen-views | — | dev | 4 | react-native |
 | react-native-get-pb-paywalls | — | dev | 9 | react-native |
-| react-native-handle-paywall-actions | — | dev | 7 | react-native |
+| react-native-handle-paywall-actions | — | dev | 8 | react-native |
+| react-native-handle-permissions | — | dev | 5 | react-native |
 | react-native-handling-events-1 | — | dev | 4 | react-native |
 | react-native-localizations-and-locale-codes | — | dev | 11 | react-native |
 | react-native-paywalls | entry | dev | 4 | react-native |
@@ -331,7 +338,8 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
 | unity-flow-input | — | dev | 10 | unity |
 | unity-flow-screen-views | — | dev | 4 | unity |
 | unity-get-pb-paywalls | — | dev | 11 | unity |
-| unity-handle-paywall-actions | — | dev | 10 | unity |
+| unity-handle-paywall-actions | — | dev | 11 | unity |
+| unity-handle-permissions | — | dev | 5 | unity |
 | unity-handling-events | — | dev | 8 | unity |
 | unity-localizations-and-locale-codes | — | dev | 12 | unity |
 | unity-paywalls | entry | dev | 4 | unity |
@@ -360,6 +368,15 @@ Only the delta from `scope.md`; its corpus-wide rules are not restated.
   `adapty-flow-builder` — all in the flow-design / flow-logic zones. They point at the iOS article
   only, by decision; the reader reaches the other six through the platform switcher. Renaming
   `ios-flow-input` breaks five links outside this zone.
+
+- **The `handle-permissions` family has three landing points outside its seven articles** (added
+  2026-11-20). The builder's "Your app must handle this request" callout links the
+  `handle-paywall-actions` pages at their root, with no anchor (dashboard code, 2026-11-20), so each of
+  the seven carries a `## Handle permission requests` section as the last v4 H2 plus a one-line pointer
+  under its intro. `onboarding-actions#request-permission` (flow-logic) links all seven articles, and its
+  warning lists the per-SDK no-handler outcome. The Flutter and Unity `handling-events` pages and the
+  Flutter, KMP and Unity v4 migration bullets each carry one sentence on it. A change to what happens
+  without a handler, to a minimum version, or to the handler names moves all of these.
 
 ## Boundaries
 
@@ -460,3 +477,30 @@ Verified during the `flows-with-your-own-payments` guide work; refs named per it
   - **`FlowConfiguration.sendAppMessage(_:)` exists in 4.4.0** and reaches the flow script as `applicationMsg`, but builder-generated scripts ignore that event (builder code, 2026-11-18). So no doc can tell readers to branch a builder flow on an app-reported result yet.
   - **Not verified at runtime:** the PaymentSheet return URL (cards don't redirect), the in-app browser path, and a `didReceiveError` while PaymentSheet is open. The snippets for them compile under Swift 6 only.
 
+**Verified 2026-11-20 while documenting the `handle-permissions` family** (public SDK repos at the tags
+named; builder and transformer behavior from dashboard code and transformer code, 2026-11-20):
+
+- **What happens without a handler depends on the Adapty SDK, not on the OS.** The cross-platform
+  bridges always forward the request to the wrapper (AdaptySDK-iOS `Sources.AdaptyPlugin/HostRequest/PluginSystemRequestsHandler.swift`),
+  so the wrapper decides. The flow stays on the screen with native iOS
+  (`Sources.UIBuilder/UIBuilder/Logic/AdaptyUIStateActionHandler.swift`, `guard let handler … else { return }`),
+  Flutter, Unity (logs `System requests handler is not set`) and KMP. It moves on with `denied` and no
+  dialog with native Android (`AdaptyFlowDefaultEventListener` answers `false`), React Native and
+  Capacitor (default handler logs a warning and answers `denied`, on both OSes).
+- **A throwing handler:** React Native and Capacitor answer `denied`; Flutter and Unity send no answer
+  (the flow stays); KMP crashes the app (`AdaptyUIImpl.kt`, `MainScope().launch` with no exception
+  handler, 4.1.0 and 4.3.0-beta.1); native Android doesn't catch exceptions from
+  `onShowRequestPermission`. iOS `handlePermission` can't throw.
+- **Minimum versions stated in the articles:** iOS, Android, React Native, Flutter 4.0.0; KMP and
+  Capacitor 4.1.0 (their 4.0 line shipped only as betas); Unity 4.1.0 (4.0.0-beta.1 had a different
+  signature), and 4.3.0 on Android: Unity's CHANGELOG `[4.3.0-beta.1]` says a `respond` made off Unity's
+  thread waited until the flow closed, and 4.3.0 requires Unity 6.
+- **The flow sends `push` with no custom arguments**, and never sends an app review request (no such
+  action in the builder). Flutter's base `handleAppReviewRequest` does nothing once a handler is
+  registered, so the Flutter example overrides it.
+- **Open question, not verified on a device:** on Android, Flutter, Unity, KMP and React Native before
+  4.3.0 present a modal flow in a separate activity (AdaptySDK-Android `crossplatform/…/CrossplatformUiHelper.kt`,
+  no `isPresentationEmbedded`), while permission libraries ask from the app's activity underneath.
+  Android delivers permission results to an activity only when it resumes, so the answer may arrive
+  only after the flow closes. The KMP article asks from the resumed activity; the Flutter, Unity and
+  React Native articles say nothing until an Android 13+ device check settles it.

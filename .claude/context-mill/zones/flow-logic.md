@@ -247,8 +247,8 @@ or developer can see and click.
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
-| onboarding-actions | — | marketer, dev | 22 | tutorial |
-| onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
+| onboarding-actions | — | marketer, dev | 24 | tutorial |
+| onboarding-element-visibility | — | marketer, dev | 1 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 9 | tutorial |
@@ -428,6 +428,14 @@ or developer can see and click.
   containers, quiz options, toggles, countdowns, images, videos, icons, text, carousels, bottom sheets,
   tabs, products. A new tappable element type needs an entry there and a check of the trigger table in
   `flow-show-hide-animations`.
+
+- **`onboarding-actions#request-permission` owns the builder side of Request permission (2026-11-20).**
+  Pointers to it: the seven `*-handle-permissions` articles in `sdk-flows-display` (their "Before you
+  start" flow bullet) and `respond-to-purchase-outcomes` (the actions you can't add to an outcome). The
+  section's warning names the per-SDK outcome without app setup; that list must match the
+  `sdk-flows-display` brief's 2026-11-20 findings. The Action order bullet restates the builder's warning
+  for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
+  says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
 
 ## Boundaries
 
