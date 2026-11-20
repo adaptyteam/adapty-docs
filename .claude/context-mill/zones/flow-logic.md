@@ -91,9 +91,20 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   - The editor warns, verbatim: "Navigation or Close Flow after a purchase or restore runs right away,
     before the result. Move it into an outcome of the purchase or restore." It covers **Navigate to
     Screen**, **Navigate Next**, **Navigate back** and **Close Flow**, also inside a conditional branch.
-  - Outcome actions run only on the screen, and at the stack depth, where the purchase started: a user
-    who left that screen before the result never sees them. A result that arrives during a screen
-    transition runs when the new screen appears.
+  - Outcome actions run when the result arrives. At that moment, the screen where the purchase started
+    must still be the current screen, at the same place in the navigation history. A user who went back
+    to that screen before the result still gets them; a user who navigated forward to the same screen
+    again doesn't. A result that arrives during a screen transition runs when the new screen appears.
+  - Callback order (AdaptySDK-iOS and AdaptySDK-Android 4.4.0): native iOS and Android call the app's
+    purchase or restoration callback first, then run the outcome. Closing the flow there doesn't cancel
+    the outcome: its screens are lost, but **Open URL**, custom action and **Close Flow** outcomes still
+    reach the app. The cross-platform SDKs deliver the event asynchronously, after the outcome has
+    started, which is why the docs say only that closing the flow prevents users from seeing the screens the
+    outcome actions open.
+  - Android: `AdaptyFlowEventListener` is a required parameter of `getFlowView`, `showFlow` and
+    `AdaptyFlowScreen`, and the cross-platform SDKs set their own. A listener callback that throws stops
+    the outcome and most likely crashes the app (`FlowViewModel.handleEffect` has no `catch`), so the
+    docs name no Android listener prerequisite.
   - While a purchase or restoration with outcomes waits for its result, a second tap on the same kind of
     action is ignored, for a bounded time. Actions without outcomes compile as before, with no such guard.
   - Observer mode: the SDK reports a fixed result whatever happened, **When pending** on iOS and
@@ -103,10 +114,13 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     the `PurchaseProduct` branch); the button works again once the products load. iOS answers the same
     tap with a failure, so **When failed** runs.
   - Test on device: the iOS SDK's developer tools answer every purchase, restoration and web purchase
-    with success after 1.5 s (AdaptySDK-iOS 4.2.2,
-    `Sources.DeveloperTools/AdaptyUI/Dev_AdaptyUILogic.swift`). **Unconfirmed** that the Adapty mobile
-    app renders flows through this path, and not checked for the Android app; the preview sentence in
-    `paywall-device-compatibility-preview` rests on this.
+    with success after 1.5 s. The preview opens with no products, and its mock products arrive 1.5 s
+    after it opens: a tap before then, or on a product missing from the mock list, fails, so **When
+    failed** runs (AdaptySDK-iOS 4.4.0,
+    `Sources.DeveloperTools/AdaptyUI/Dev_AdaptyUILogic.swift` and `Dev_AdaptyUITestRendererView.swift`).
+    Android's developer preview answers success but drops a tap on a product that hasn't loaded.
+    **Unconfirmed** which path the Adapty mobile app uses, so the docs say only that the preview can't
+    make real purchases.
 
 - **Figma import's ground truth is split across three places, and none of the closed-source ones is
   citable here.** The `/figma-import` landing page — its state machine, failure copy, and the mint call —
@@ -427,11 +441,11 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   refresh of Subscription state, which is the backend author's statement; and the minimum SDK version that
   sends flow screen views, which the article avoids by saying only that the SDK reports them.
 
-- **Open question (2026-11-19): what Test on device answers for a purchase.** The preview sentence in
-  `paywall-device-compatibility-preview` and its two mirrors say every purchase and restoration
-  succeeds there. That rests on the iOS SDK developer tools (see Sources of truth), not on the Adapty
-  mobile app's code, which isn't available here; the Android app was not checked. Confirm on both apps
-  before the brief treats it as settled.
+- **Open question (2026-11-19): what Test on device answers for a purchase.** The preview sentences in
+  `paywall-device-compatibility-preview` and its two mirrors say only that the preview can't make real
+  purchases. What the preview answers instead rests on the SDKs' developer tools (see Sources of
+  truth), not on the Adapty mobile app's code, which isn't available here. Confirm on both apps before
+  the docs say more.
 
 **TODO(owner):** Confirm whether `migrate-to-flows` deliberately omits links to `paywalls-legacy`/
 `onboardings-legacy` (e.g. because that zone is frozen and shouldn't be pointed at as "current"), or
