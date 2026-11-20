@@ -1,0 +1,151 @@
+---
+title: "Handle permission requests in flows - Kotlin Multiplatform"
+description: "Ask users for push notification permission from a flow in your Kotlin Multiplatform app, and return their answer to the flow."
+metadataTitle: "Handle Permission Requests in Flows - Kotlin Multiplatform | Adapty Docs"
+---
+
+A flow can ask users for permission to send push notifications, for example, on an onboarding screen that explains what the notifications are for. In the Flow & Paywall Builder, you add the **Request permission** action to an element, so the flow requests the permission when the user taps the element or when the screen opens. The SDK doesn't show the system permission dialog itself: it passes the request to your app. Your app asks the OS for the permission and returns the user's answer to the flow, and the flow continues.
+
+## Before you start
+
+You need:
+
+- **Adapty Kotlin Multiplatform SDK v4 or later**: The system requests handler doesn't exist in earlier versions.
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the action to an element's **On Tap** or **On Screen Appear** trigger, and select **Push notifications**. The actions you add to its **After response** section run when your app returns the answer. See [Actions](onboarding-actions) for how to add actions to triggers.
+- **The `POST_NOTIFICATIONS` permission in your Android manifest**: Android 13 and later shows the notification permission dialog only for apps that declare it:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## How the flow requests a permission
+
+1. The flow reaches the **Request permission** action: the user taps the element, or the screen opens.
+2. The SDK calls `handlePermission` on the `AdaptyUISystemRequestsHandler` you [register](#register-the-handler), with `AdaptyUIPermission.PUSH`.
+3. Your app requests the permission from the OS and returns `AdaptyUIPermissionResult.granted()` or `AdaptyUIPermissionResult.denied()`.
+4. The flow runs the **After response** actions. It runs the same actions whether the user granted or denied the permission.
+
+The flow waits on the screen until your app returns the answer. If the OS doesn't show the dialog, for example, because the user already answered it, your handler returns at once and the flow runs the **After response** actions right away. So with **On Screen Appear**, when those actions navigate to the next screen, a user who answered before sees the screen only for a moment.
+
+With **On Screen Appear**, the flow doesn't request the permission again when the user comes back to the screen with a back action. With **On Tap**, every tap sends a new request to your handler.
+
+## Implement the handler
+
+To answer permission requests, implement `AdaptyUISystemRequestsHandler` in common code. Return a result for every request: return `denied` for the permissions your app doesn't request, and when the platform code throws an exception.
+
+```kotlin showLineNumbers title="commonMain"
+import com.adapty.kmp.AdaptyUISystemRequestsHandler
+import com.adapty.kmp.models.AdaptyUIFlowView
+import com.adapty.kmp.models.AdaptyUIPermission
+import com.adapty.kmp.models.AdaptyUIPermissionResult
+import kotlin.coroutines.cancellation.CancellationException
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+The `detail` string you can pass to `granted` and `denied` is optional. The **Request permission** action passes no custom arguments to the handler, so you can ignore `customArgs`.
+
+The same handler also receives the flow's in-app review requests. Its default `handleAppReviewRequest` shows the native review prompt, so override it only to show your own prompt.
+
+## Register the handler
+
+To send permission requests to your handler, call `AdaptyUI.setSystemRequestsHandler` once at app startup, before your app shows the first flow. For example, call it where you call `AdaptyUI.setFlowsEventsObserver`.
+
+```kotlin showLineNumbers title="Kotlin"
+import com.adapty.kmp.AdaptyUI
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+If you don't register a handler, the SDK doesn't answer the request. The flow stays on the screen and doesn't run the **After response** actions.
+
+## Request the permission on each platform
+
+Common code can't show the system dialog, so `requestPushPermission` is an `expect` function with an `actual` implementation for each platform. If your app already uses a Kotlin Multiplatform permissions library, call it from `handlePermission` instead.
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+On iOS, ask `UNUserNotificationCenter` for authorization:
+
+```kotlin showLineNumbers title="iosMain"
+import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.UserNotifications.UNAuthorizationOptionAlert
+import platform.UserNotifications.UNAuthorizationOptionBadge
+import platform.UserNotifications.UNAuthorizationOptionSound
+import platform.UserNotifications.UNUserNotificationCenter
+import kotlin.coroutines.resume
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+On Android, the runtime permission exists from Android 13. On earlier versions, return whether notifications are turned on for the app. The request needs the activity that shows the flow. In this example, your app keeps a reference to it in `currentActivity`:
+
+```kotlin showLineNumbers title="androidMain"
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+
+// Set in your activity's onCreate, and clear in onDestroy.
+var currentActivity: ComponentActivity? = null
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = currentActivity ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+    }
+}
+```
+
+A granted permission lets your app show notifications. To receive push notifications, your app still registers the device with its push provider, such as APNs or Firebase Cloud Messaging, as it does for notifications outside flows.

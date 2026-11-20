@@ -1,89 +1,84 @@
 ---
 title: "Handle permission requests in flows - iOS"
-description: "Implement AdaptySystemRequestsHandler to respond to system permission requests triggered from paywall and onboarding flows."
+description: "Ask users for push notification permission from a flow in your iOS app, and return their answer to the flow."
 metadataTitle: "Handle Permission Requests in Flows - iOS | Adapty Docs"
-draft: true
 ---
 
-If a flow includes buttons that request system permissions (push notifications, camera access, and others), the SDK calls your `AdaptySystemRequestsHandler`. You implement this handler to request the permission from the OS and return the result.
+A flow can ask users for permission to send push notifications, for example, on an onboarding screen that explains what the notifications are for. The SDK doesn't show the system permission dialog itself. It passes the request to a handler in your app: the handler asks iOS for the permission and returns the user's answer, and the flow continues.
 
-## When the handler fires
+## Before you start
 
-The handler is invoked when the user taps a button in the rendered flow that triggers a system permission request. The SDK calls your `handlePermission` method with the permission type, you request the permission from the OS, and return the result — the flow then continues based on whether you returned `.granted` or `.denied`.
+You need:
 
-## Implement AdaptySystemRequestsHandler
+- **Adapty iOS SDK 4.0 or later**: The system requests handler is part of the v4 flow API.
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. The action requests permission for **Push notifications**. In its **After response** section, add the actions to run after the user answers, such as moving to the next screen. To learn how to add actions to triggers, see [Actions](onboarding-actions).
 
-Create a class that conforms to the `AdaptySystemRequestsHandler` protocol and implement the required `handlePermission` method. Return `.granted(_)` or `.denied(_)` to report the result back to the flow — the associated `String?` carries optional detail (often `nil`).
+## How the flow requests a permission
 
-```swift
+1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
+2. The SDK calls `handlePermission(_:withCustomArgs:)` on your handler with `.push`.
+3. Your handler requests the permission from iOS and returns `.granted` or `.denied`.
+4. The flow runs the **After response** actions. The actions are the same for both answers.
+
+The flow waits on the screen until your handler returns. iOS shows the notification permission dialog only once per app install. When the user has already answered, `requestAuthorization` returns at once without a dialog, and the flow runs the **After response** actions right away. So if those actions move to the next screen, a user who answered before sees the permission screen only for a moment.
+
+With **On Screen Appear**, the flow doesn't request the permission again when the user goes back to the screen. With **On Tap**, every tap sends a new request to your handler.
+
+## Implement the handler
+
+To answer permission requests, create a class that conforms to `AdaptySystemRequestsHandler` and implement `handlePermission(_:withCustomArgs:)`. Return `.denied` for the permissions your app doesn't request.
+
+```swift showLineNumbers title="Swift"
+import AdaptyUI
+import UIKit
 import UserNotifications
 
-class MyPermissionsHandler: AdaptySystemRequestsHandler {
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
     func handlePermission(
         _ permission: AdaptyPermission,
         withCustomArgs customArgs: [String: String]?
     ) async -> AdaptyPermissionResult {
-        switch permission {
-        case .push:
-            let center = UNUserNotificationCenter.current()
-            let granted = (try? await center.requestAuthorization(options: [.alert, .badge, .sound])) ?? false
-            return granted ? .granted(nil) : .denied(nil)
-        default:
-            return .denied(nil)
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            guard granted else { return .denied(nil) }
+
+            // Get a device token for your push provider
+            UIApplication.shared.registerForRemoteNotifications()
+            return .granted(nil)
+        } catch {
+            return .denied(error.localizedDescription)
         }
     }
 }
 ```
 
-The `customArgs` parameter contains key-value pairs configured in the Flow & Paywall Builder — use them for app-specific logic if needed.
+`.granted` and `.denied` take an optional string with details. You can pass `nil`. The **Request permission** action passes no custom arguments, so you can ignore `customArgs`.
 
-### Handle App Store review requests
+A granted permission only lets your app show notifications. To receive remote notifications, your app still registers with APNs and sends the device token to your push provider, as it does outside flows. The example calls `registerForRemoteNotifications()` after a grant, and your app delegate receives the token in `application(_:didRegisterForRemoteNotificationsWithDeviceToken:)`.
 
-When the flow includes a **Request review** action, the SDK calls `handleAppReviewRequest`. The default implementation calls `SKStoreReviewController.requestReview(in:)` — you don't need to override it unless you want custom behavior.
-
-```swift
-// Override only if you need custom behavior
-func handleAppReviewRequest() async {
-    // Custom review request logic
-}
-```
+`AdaptySystemRequestsHandler` also declares `handleAppReviewRequest()`. Its default implementation shows the App Store review prompt, so you don't need to implement it.
 
 ## Pass the handler to the flow configuration
 
-Pass your handler instance as the `systemRequestsHandler:` parameter when calling `AdaptyUI.getFlowConfiguration`:
+To send the flow's permission requests to your handler, pass the handler in the `systemRequestsHandler` parameter of `AdaptyUI.getFlowConfiguration`:
 
-```swift
+```swift showLineNumbers title="Swift"
 let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
     forFlow: flow,
-    systemRequestsHandler: MyPermissionsHandler()
+    systemRequestsHandler: PushPermissionHandler()
 )
 ```
 
-## Supported permissions
+The flow configuration keeps a strong reference to the handler, so you don't need to store one. SwiftUI and UIKit present the flow from the same configuration. For details, see [Display flows & paywalls](ios-present-paywalls).
 
-The `AdaptyPermission` enum covers the following iOS system permissions:
+:::warning
+**Without a handler, the flow stops at the permission request.** If you don't pass `systemRequestsHandler`, the SDK drops the request: iOS shows no dialog, the flow doesn't run the **After response** actions, and the flow stays on the screen that sent the request.
+:::
 
-| Case | Description | Framework |
-|---|---|---|
-| `.push` | Push notifications | `UNUserNotificationCenter` |
-| `.camera` | Camera access | `AVCaptureDevice` |
-| `.microphone` | Microphone access | `AVCaptureDevice` |
-| `.locationWhenInUse` | Location while app is in use | `CLLocationManager` |
-| `.locationAlways` | Location at all times | `CLLocationManager` |
-| `.locationFullAccuracy` | Full location accuracy | `CLLocationManager` |
-| `.photos` | Photo library access | `PHPhotoLibrary` |
-| `.contacts` | Contacts access | `CNContactStore` |
-| `.tracking` | App Tracking Transparency | `ATTrackingManager` |
-| `.calendar` | Calendar access | `EKEventStore` |
-| `.bluetooth` | Bluetooth access | `CBCentralManager` |
-| `.motion` | Motion and fitness data | `CMMotionActivityManager` |
-| `.reminders` | Reminders access | `EKEventStore` |
-| `.speech` | Speech recognition | `SFSpeechRecognizer` |
-| `.mediaLibrary` | Media library access | `MPMediaLibrary` |
-| `.localNetwork` | Local network access | — |
-| `.focusStatus` | Focus status | `INFocusStatusCenter` |
-| `.homekit` | HomeKit access | `HMHomeManager` |
-| `.health` | HealthKit access | `HKHealthStore` |
-| `.siri` | Siri authorization | `INPreferences` |
-| `.music` | Apple Music / MusicKit | `SKCloudServiceController` |
-| `.custom(String)` | Android-only or unrecognized permission | — |
+:::tip
+To see the notification permission dialog again while you test, delete the app from the device and install it again.
+:::

@@ -1,0 +1,106 @@
+---
+title: "Handle permission requests in flows - Flutter"
+description: "Show the system push notification prompt when a flow asks for it, and return the user's answer to the flow in your Flutter app."
+metadataTitle: "Handle Permission Requests in Flows - Flutter | Adapty Docs"
+---
+
+A flow can ask users to turn on push notifications, for example on an onboarding screen that explains why your app sends them. In the Flow & Paywall Builder, you add the **Request permission** action to the **On Tap** trigger of an element or to the **On Screen Appear** trigger. The flow then waits for an answer, and runs the actions under **After response** when it gets one.
+
+The Adapty SDK doesn't show the system permission dialog. When a flow reaches the **Request permission** action, the SDK passes the request to the system requests handler in your app. Your app shows the system dialog and returns the user's answer to the flow.
+
+To answer permission requests from flows:
+
+1. [Configure the platforms](#configure-the-platforms) so that the system can show the push notification dialog.
+2. [Implement a system requests handler](#implement-the-handler) that requests the permission and returns the result.
+3. [Register the handler](#register-the-handler) before you present a flow.
+
+## Before you start
+
+- **Adapty Flutter SDK**: Version 4.0.0 or later. See [Install & configure SDK](sdk-installation-flutter).
+- **A flow with the action**: A published flow with the **Request permission** action. See [Actions](onboarding-actions).
+- **A package that requests permissions**: The examples on this page use [permission_handler](https://pub.dev/packages/permission_handler). Any other package or your own platform code works the same way.
+
+:::warning
+If your app registers no system requests handler, the flow never gets an answer to the request. The actions under **After response** don't run, on iOS and on Android.
+:::
+
+## Configure the platforms
+
+- **Android**: Android 13 and later show the notification dialog only to apps that declare the `POST_NOTIFICATIONS` permission. Add the permission to `android/app/src/main/AndroidManifest.xml`. Without the permission, the system shows no dialog, and `Permission.notification.request()` returns denied. Android 12 and earlier don't ask users for this permission.
+
+  ```xml showLineNumbers title="AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **iOS**: Push notifications need no `Info.plist` key. If your app builds `permission_handler` with CocoaPods, keep `PERMISSION_NOTIFICATIONS=1` in the `Podfile`, as the [permission_handler setup](https://pub.dev/packages/permission_handler) describes. With Swift Package Manager, `permission_handler` includes the notification permission by default.
+
+## Implement the handler
+
+To answer the requests, create a class that extends `AdaptyUISystemRequestsHandler` and implement `handlePermission`. The SDK calls `handlePermission` with these parameters:
+
+- **`view`**: The flow view that sent the request.
+- **`permission`**: The permission the flow asks for. The **Request permission** action sends `AdaptyUIPermission.push`.
+- **`customArgs`**: Additional arguments of the request. The **Request permission** action sends `null`.
+
+Return `AdaptyUIPermissionResult.granted()` or `AdaptyUIPermissionResult.denied()`. The flow runs the actions under **After response** for both answers.
+
+```dart showLineNumbers title="Flutter"
+import 'package:adapty_flutter/adapty_flutter.dart';
+import 'package:permission_handler/permission_handler.dart';
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // Keeps the native app review prompt for flows that request a review
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+Make sure that `handlePermission` returns a result for every request. If it throws an error or never completes, the flow doesn't get an answer, and the actions under **After response** don't run. For this reason, the example catches errors and answers denied to permissions that the app doesn't request.
+
+:::important
+When you register a handler, the SDK also passes the app review requests from flows to its `handleAppReviewRequest` method. The method that `AdaptyUISystemRequestsHandler` provides does nothing. To keep the native app review prompt, override `handleAppReviewRequest` and call `AdaptyUI().requestAppReview()`, as in the example.
+:::
+
+## Register the handler
+
+To send the permission requests from all flows to your handler, call `AdaptyUI().setSystemRequestsHandler` once, before you present a flow. For example, call it right after you set the flow events observer:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## After the user answers
+
+- **Push token**: The handler only asks for the permission. After the user grants it, register the device for push notifications with your push provider, as you do for permission prompts that your app shows itself.
+- **Earlier answer**: If the system doesn't show the dialog, for example because the user already answered it, `Permission.notification.request()` returns the earlier answer at once. The flow runs the actions under **After response** right away, so the screen with the action shows only briefly.
+- **Repeated requests**: An action on the **On Screen Appear** trigger doesn't send the request again when the user returns to the screen with a **Back** navigation. An action on the **On Tap** trigger sends the request on every tap.
+
+## Test the handler
+
+The system shows the permission dialog only to users who haven't answered it yet. To see the dialog again on a test device, delete your app and install it again. Then open the flow and reach the **Request permission** action. If the dialog doesn't appear, make sure that your app registered the handler before it presented the flow, and that the Android app declares `POST_NOTIFICATIONS`.

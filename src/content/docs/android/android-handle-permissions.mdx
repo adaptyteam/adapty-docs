@@ -1,0 +1,109 @@
+---
+title: "Handle permission requests in flows - Android"
+description: "Ask users for push notification permission from a flow in your Android app, and return their answer to the flow."
+metadataTitle: "Handle Permission Requests in Flows - Android | Adapty Docs"
+---
+
+A [flow](adapty-flow-builder) can ask users for permission to send push notifications, for example, on an onboarding screen that explains what the notifications are for. In the Flow & Paywall Builder, you add the **Request permission** action to an element, so the flow requests the permission when the user taps the element or when the screen opens. The SDK doesn't show the system permission dialog itself: it passes the request to your app. Your app asks Android for the permission and returns the user's answer to the flow, and the flow continues.
+
+## Before you start
+
+You need:
+
+- **Adapty Android SDK v4 or later**: The `onShowRequestPermission` callback doesn't exist in earlier versions.
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the action to an element's **On Tap** or **On Screen Appear** trigger, and select **Push notifications**. The actions you add to its **After response** section run when your app returns the answer. See [Actions](onboarding-actions) for how to add actions to triggers.
+- **The `POST_NOTIFICATIONS` permission in your manifest**: Android 13 and later shows the notification permission dialog only for apps that declare it:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## How the flow requests a permission
+
+1. The flow reaches the **Request permission** action: the user taps the element, or the screen opens.
+2. The SDK calls `onShowRequestPermission` on the event listener of the flow view, with `permission` set to `"push"`.
+3. Your app requests the permission from Android and invokes `callback` with the answer.
+4. The flow runs the **After response** actions. These actions are the same for both answers.
+
+The flow waits on the screen until your app invokes `callback`. If Android doesn't show the dialog, your app gets the answer at once, and the flow runs the **After response** actions right away. Android doesn't show the dialog in these cases:
+
+- **Android 12 and earlier**: Notifications need no runtime permission, so there is no dialog to show.
+- **The user allowed notifications before**: The permission is already granted.
+- **The user denied the dialog twice**: Android stops showing the dialog for the app and denies each new request.
+
+So with **On Screen Appear**, when the **After response** actions navigate to the next screen, a user who gets no dialog sees the screen only for a moment.
+
+With **On Screen Appear**, the flow doesn't request the permission again when the user comes back to the screen with a back action. With **On Tap**, the flow requests the permission on every tap.
+
+## Answer permission requests
+
+To answer permission requests, override `onShowRequestPermission` in your event listener.
+
+:::warning
+`AdaptyFlowDefaultEventListener` answers every permission request with `false` and shows no dialog. If your listener extends `AdaptyFlowDefaultEventListener` and doesn't override `onShowRequestPermission`, the flow runs the **After response** actions at once, and the user is never asked.
+:::
+
+In this example, the activity that shows the flow registers a launcher for the permission dialog:
+
+```kotlin showLineNumbers title="Kotlin"
+import android.Manifest
+import android.content.Context
+import android.os.Build
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.app.NotificationManagerCompat
+import com.adapty.ui.listeners.AdaptyFlowDefaultEventListener
+import com.adapty.ui.listeners.AdaptyFlowEventListener
+
+class FlowActivity : ComponentActivity() {
+
+    // The flow waits for this callback while the system dialog is open.
+    private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingPermissionCallback?.invoke(granted, null)
+            pendingPermissionCallback = null
+        }
+
+    private val eventListener = object : AdaptyFlowDefaultEventListener() {
+        override fun onShowRequestPermission(
+            permission: String?,
+            customArgs: Map<String, String>?,
+            callback: AdaptyFlowEventListener.PermissionCallback,
+            context: Context,
+        ) {
+            if (permission != "push") {
+                callback(false, null)
+                return
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 12 and earlier: return whether notifications are turned on for the app.
+                callback(NotificationManagerCompat.from(context).areNotificationsEnabled(), null)
+                return
+            }
+            pendingPermissionCallback = callback
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Pass eventListener to the flow view.
+}
+```
+
+Invoke `callback` once for every request, including the permissions your app doesn't request: answer those with `false`. If your app never invokes `callback`, the flow stays on the screen and doesn't run the **After response** actions.
+
+The callback takes two arguments:
+
+- **`granted`**: The user's answer. The **After response** actions don't depend on it, but pass the real answer.
+- **`detailResult`**: An optional string with details about the answer. Pass `null` if you have none.
+
+The **Request permission** action sends no custom arguments, so you can ignore `customArgs`.
+
+In Jetpack Compose, register the launcher with `rememberLauncherForActivityResult` instead of `registerForActivityResult`.
+
+A granted permission lets your app show notifications. To receive push notifications, your app still registers the device with its push provider, such as Firebase Cloud Messaging, as it does for notifications outside flows.
+
+## Pass the listener to the flow
+
+The SDK sends permission requests to the event listener of the flow view. Pass the listener with your override as `eventListener` when you create the view: to `AdaptyUI.getFlowView()`, `AdaptyFlowView.showFlow()`, or `AdaptyFlowScreen()`. See [Display flows & paywalls](android-present-paywalls) for these calls, and [Handle flow & paywall events](android-handling-events) for the other listener methods.
