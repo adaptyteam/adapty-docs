@@ -14,11 +14,85 @@ Bu kurallar, `adapty.activate()` ve `adapty.identify()` işlemlerinin zaten tama
 
 | Bunu yapın | Bunu yapmayın | Neden |
 |---|---|---|
-| Göstereceğiniz placement'ı getirin. | Tüm placement'ları başlangıçta eş zamanlı olarak önceden getirin. | Toplu önceden getirme, ana iş parçacığını bloke eder ve bu süreçte siyah ekran oluşur. |
-| `getFlow`'u attribution'ın çözümlenme şansı bulduktan sonra getirin — örneğin, `activate`'ten 1–2 saniye sonra veya `onLatestProfileLoad` dinleyicisi tetiklendikten sonra. | `getFlow`'u `App.tsx` içinde uygulama başlangıcında çağırın. | Attribution henüz gelmemiştir. Flow, varsayılan kitleye göre çözümlenir ve segment ile ASA kişiselleştirmesini sessizce atlar. |
-| Her placement için bir `loadTimeoutMs` ayarlayın ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'u süresiz olarak bekleyin. | Zaman aşımı olmadan, bağlantısı zayıf olan kullanıcılar ağ çözümlenene kadar boş bir ekran görür — ya da uygulamayı kapatır. |
+| Göstermek üzere olduğunuz placement'ı getirin ya da önbelleği [`preloadFlows`](#preload-placements) (SDK 4.3.0+) ile önceden ısıtın. | Başlatma sırasında kendi eşzamanlı `getFlow` çağrılarınızı dağıtın. | Elle yapılmış bir prefetch patlaması ana thread'i bloke eder ve siyah ekrana neden olur. `preloadFlows` bunun için tasarlanmıştır ve grubu tek bir çağrıyla native SDK'ya gönderir. |
+| `getFlow`'u attribution'ın çözülmesine fırsat tanıdıktan sonra getirin — örneğin `activate`'ten 1–2 saniye sonra ya da `onLatestProfileLoad` dinleyicisi tetiklendikten sonra. | `App.tsx` içinde uygulama başlatılırken `getFlow`'u çağırın. | Attribution henüz gelmemiştir. Flow varsayılan kitle üzerinden çözümlenir ve segmentleri ile ASA kişiselleştirmesini sessizce atlar. |
+| Her placement için bir `loadTimeoutMs` belirleyin ve bir [yedek paywall](fallback-paywalls) yapılandırın. | `getFlow`'u süresiz bekletin. | Zaman aşımı olmadan, bağlantısı zayıf kullanıcılar ağ çözümlenene kadar boş bir ekran görür — ya da uygulamayı kapatır. |
 
 Özel paywalllar ve ürünleri getirmek için `fetchPolicy` ve `loadTimeoutMs` parametre referansına bakın: [Özel paywallları ve ürünleri getir](fetch-paywalls-and-products-capacitor). Doğru placement'ı seçmek için ise [Placement'lar](placements) sayfasına göz atın.
+
+## Placement'ları önceden yükle \{#preload-placements\}
+
+:::info
+`preloadFlows` ve `preloadFlowsForDefaultAudience`, SDK 4.3.0 sürümünden itibaren kullanılabilir.
+:::
+
+`preloadFlows`, flow JSON'ını önceden önbelleğe alır. Ardından her zamanki gibi kullanırsınız: flow için `getFlow`, görünümü için `createFlowView`.
+
+`fetchPolicy`, sonraki bir `getFlow` çağrısının önce hangi katmanı okuyacağını belirler; önbelleğe erişip erişemeyeceğini değil:
+
+- `'return_cache_data_else_load'` önce önceden yüklenmiş kopyayı okur ve yalnızca önbellekte hiçbir şey yoksa ağa gider. `'return_cache_data_if_not_expired_else_load'` kopya `maxAgeSeconds` değerinden daha yeni olduğu sürece aynı şekilde davranır.
+- Varsayılan olan `'reload_revalidating_cache_data'` önce ağa gider; istek başarısız olursa veya zaman aşımına uğrarsa önceden yüklenmiş kopyaya döner.
+
+Önbelleğe alma her iki durumda da işe yarar, ancak farklı biçimlerde: cache-first politikası isteği tamamen kaldırırken, varsayılan politika isteği korur ve geri dönüş için sıcak bir kopya edinir. [Test cihazında](test-devices), `getFlow` her politikada önbelleği atlar ve önceden yüklenmiş kopyayı yalnızca ağ isteği başarısız olursa kullanır.
+
+Oturumun hangi placement'ları kullanacağını bildiğinizde ama henüz göstermek istemediğinizde bunu kullanın — örneğin, kullanıcının henüz dokunmadığı bir düğmenin arkasındaki flow için.
+
+:::warning
+Bir preload çalıştığında kitleyi o an değerlendirir. Attribution gelmeden önce preload yaparsanız ve ardından cache-first `fetchPolicy` ile `getFlow` çağırırsanız, kullanıcı attribution olmadan seçilen varyantı görür; bu durum segmentleri ve ASA kişiselleştirmesini devre dışı bırakır. Preload işlemini attribution'ın çözümlenmesine fırsat tanıdıktan sonra yapın — örneğin `onLatestProfileLoad` dinleyicisi tetiklendikten sonra — ya da varsayılan `fetchPolicy` ayarını koruyun.
+:::
+
+```typescript showLineNumbers
+
+try {
+  await adapty.preloadFlows({
+    placementIds: ['onboarding', 'main_paywall'],
+    params: { loadTimeoutMs: 5000 },
+  });
+} catch (error) {
+  // at least one placement failed to preload
+}
+
+// Later, when the user reaches the paywall:
+const flow = await adapty.getFlow({
+  placementId: 'main_paywall',
+  params: { fetchPolicy: 'return_cache_data_else_load' },
+});
+```
+
+**Parametreler:**
+
+- `placementIds` (zorunlu): önceden yüklenecek placement'lar.
+- `params.loadTimeoutMs` (isteğe bağlı): ön yükleme için genel zaman bütçesi, milisaniye cinsinden. Varsayılan değer 5000'dir; 1000'in altındaki değerler 1000'e yükseltilir. Zaman aşımı içinde yüklenemeyen placement'lar varsayılan kitle için getirilir.
+
+**Bilmeniz gereken davranışlar:**
+
+- Çağrı yalnızca tüm placement'lar denendikten sonra başarısız olur; başarısız olan tüm placement'ları kapsayan tek bir `AdaptyError` döner. Bir placement'ın başarısız olması diğerlerini durdurmaz ve yüklenen placement'lar önbellekte kalır.
+- Preloading her zaman ağa gider: kendine ait bir `fetchPolicy` yoktur.
+- Preloading yalnızca önbelleği ısıtır. İçerik döndürmez — görüntülemek için yine `getFlow` çağrısı yapmanız gerekir.
+
+### Bir preload neyi kapsar \{#what-a-preload-covers\}
+
+Bir flow ekrana katmanlar halinde ulaşır. Preload, tıpkı `getFlow` gibi yalnızca ilk katmanı kapsar:
+
+| Katman | Kim tarafından alınır | Önceden yükleme ile hazırlanır mı |
+|---|---|---|
+| Flow JSON — seçilen varyant, ürün kimlikleri ve remote config | `getFlow` | Evet |
+| UI düzeni — ekranın yapısı, stili ve metinler | `createFlowView` | Hayır |
+| Görseller (video öğesinin yerini tutan sabit kare dahil) | `createFlowView`, arka planda | Hayır |
+| Ürünler | `createFlowView` veya `getPaywallProducts` | Hayır |
+| Video dosyaları | Ekran oluşturulurken sistem oynatıcısı tarafından | SDK tarafından önbelleğe alınmaz |
+
+Dolayısıyla belirli bir layout için ilk `createFlowView` çağrısı, bir ön yüklemeden sonra bile bir round trip maliyeti getirir. Ardından native SDK, o layout'u uygulama yeniden başlatmalarından sonra da geçerli olan disk önbelleğine alır; bu sayede maliyet her istekte değil yalnızca ilk istekte ortaya çıkar.
+
+### Kitle segmentasyonunu atla \{#skip-audience-segmentation\}
+
+Kitle segmentasyonu için hiç beklemeden önbelleği ısıtmak istiyorsan, varsayılan kitle varyantını kullan. Bu yöntem herhangi bir zaman aşımı gerektirmez:
+
+```typescript showLineNumbers
+await adapty.preloadFlowsForDefaultAudience({ placementIds: ['main_paywall'] });
+```
+
+Sonraki bir `getFlowForDefaultAudience` çağrısı, `getFlow`'un `preloadFlows` kopyasını okuduğu gibi bu kopyayı okur.
 
 ## İlk ekran medyasını uygulama paketinden gösterme \{#show-first-screen-media-from-the-app-bundle\}
 

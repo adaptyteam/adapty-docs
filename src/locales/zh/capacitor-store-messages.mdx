@@ -1,0 +1,123 @@
+---
+title: "在 Capacitor SDK 中控制商店消息"
+description: "选择 Capacitor 应用何时显示 App Store 和 Google Play 关于价格上涨、账单问题和付款拒绝的消息，以免打断流程或用户引导。"
+metadataTitle: "控制商店消息 | Capacitor SDK | Adapty 文档"
+---
+
+App Store 和 Google Play 有时需要向用户显示有关其订阅的消息：
+
+- **App Store**：请求用户同意价格上涨、账单问题通知或赢回优惠。默认情况下，StoreKit 会在应用打开时自行显示这些消息。
+- **Google Play**：通知用户订阅付款被拒且需要更新付款方式。从 SDK 4.3.0 起，Adapty SDK 默认在 `activate` 后每次应用的 `Activity` 启动时（包括应用从后台返回前台时）请求这些消息。
+
+无论哪种情况，消息都可能显示在流程、用户引导或结账界面上方。如果想自行控制显示时机，请将 Adapty SDK 切换为手动消息处理模式，并在不影响用户操作时调用 `showStoreMessages`。
+
+:::warning
+在手动模式下，商店不会自行显示消息。如果你的应用始终未调用 `showStoreMessages`，用户将永远看不到价格上涨同意请求、账单问题通知或付款失败通知。
+:::
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty Capacitor SDK 4.3.0 或更高版本**：更早的版本不支持商店消息 API。
+- **iOS 16 或更高版本**（用于 App Store 消息）：StoreKit 不会向运行更早版本的应用投递消息。在 iOS 15 上，`getPendingStoreMessageTypes` 和 `showStoreMessages` 会抛出 `decodingFailed` 错误，因此如果你的应用需要支持 iOS 15，请像下面的示例一样捕获该错误。
+
+## 启用手动处理 \{#enable-manual-handling\}
+
+若要仅在应用调用 `showStoreMessages` 时才显示商店消息，请在[激活 SDK](sdk-installation-capacitor#activate-adapty-module-of-adapty-sdk) 时将 `storeMessagesHandling` 设置为 `'manual'`：
+
+```typescript showLineNumbers
+
+await adapty.activate({
+  apiKey: 'YOUR_PUBLIC_SDK_KEY',
+  params: {
+    storeMessagesHandling: 'manual', // 'auto' is the default
+  },
+});
+```
+
+在 iOS 上，SDK 会将每条 App Store 消息添加到当前 App 会话的待处理列表中。在 Android 上，SDK 会停止自行请求 Google Play 消息。当使用默认的 `'auto'` 值时，SDK 不会捕获 App Store 消息，因此在 iOS 上，`getPendingStoreMessageTypes` 和 `showStoreMessages` 将没有任何内容可返回或显示。
+
+## 获取待处理消息类型 \{#get-pending-message-types\}
+
+在 iOS 上，若要查看是否有 App Store 消息正在等待处理，请调用 `getPendingStoreMessageTypes`。该方法会返回待处理消息的类型，但不会显示或删除这些消息：
+
+```typescript showLineNumbers
+try {
+  const pendingTypes = await adapty.getPendingStoreMessageTypes();
+
+  if (pendingTypes === null) {
+    // Android: Google Play decides whether a message applies when you show it
+    await adapty.showStoreMessages();
+  } else if (pendingTypes.includes('billing_issue')) {
+    // For example, skip the upsell and show the billing message first
+  }
+} catch (error) {
+  // On iOS 15, the call fails with decodingFailed (2006)
+}
+```
+
+在 Android 上，该方法会返回 `null` 而不调用原生 SDK：Google Play 不会主动推送待处理消息，只有当应用主动请求时，才会判断消息是否适用。空数组表示 iOS 上没有待处理消息。在 `activate` 完成之前，数组始终为空。
+
+每条 App Store 消息都属于以下类型之一：
+
+| 类型 | 消息 |
+|:-----|:--------|
+| `generic` | 通用的 App Store 消息。 |
+| `price_increase_consent` | 请求用户同意订阅涨价。 |
+| `billing_issue` | 订阅账单问题通知。适用于 iOS 16.4 及更高版本。 |
+| `win_back_offer` | 符合条件的[赢回优惠](app-store-offers#win-back-offers)。适用于 iOS 18 及更高版本。 |
+
+新的 StoreKit 消息类型会以 `storekit_<number>` 的格式出现。对于表中未列出的值，请将其视为 SDK 无法识别的类型进行处理。
+
+## 显示消息 \{#show-messages\}
+
+当应用到达一个不会打断用户的时机时——例如用户关闭流程或完成用户引导后——请调用 `showStoreMessages`：
+
+```typescript showLineNumbers
+try {
+  await adapty.showStoreMessages();
+} catch (error) {
+  // handle the error
+}
+```
+
+- **iOS**：SDK 会逐条展示待处理消息。StoreKit 显示某条消息后，SDK 会将其从待处理列表中移除。如果 StoreKit 无法显示某条消息，SDK 会保留该消息留待下次调用，并继续处理其他消息。
+- **Android**：SDK 会针对当前 `Activity` 向 Google Play 请求消息。Google Play 会自行判断消息是否适用于该用户，因此发起请求并不一定会显示消息。调用会立即返回，不会等待 Google Play，也不会上报 Google Play 错误。如果用户通过消息修复了支付方式，SDK 会将用户的购买记录同步至 Adapty，您的[用户画像监听器](capacitor-listen-subscription-changes)将收到更新后的访问等级。
+
+### 在 Android 上于启动时显示消息 \{#show-messages-at-launch-on-android\}
+
+在默认的 `'auto'` 模式下，承载应用的 `Activity` 会在 `activate` 执行之前启动，因此不会触发请求，Google Play 消息也不会在启动时显示。若要在启动时显示这些消息，请在 `activate` 之后调用一次 `showStoreMessages`，且仅限 Android：
+
+```typescript showLineNumbers
+
+await adapty.activate({ apiKey: 'YOUR_PUBLIC_SDK_KEY' });
+
+if (Capacitor.getPlatform() === 'android') {
+  await adapty.showStoreMessages();
+}
+```
+
+不要在 iOS 上调用此方法：在 `'auto'` 模式下，它没有任何内容可以显示；而在 iOS 15 上，它会直接报错。
+
+### 仅显示特定类型的消息 \{#show-only-some-message-types\}
+
+如需只显示部分待处理的 App Store 消息，请在 `ios.filter` 中传入对应的类型。其余消息将保持待处理状态：
+
+```typescript showLineNumbers
+await adapty.showStoreMessages({
+  ios: { filter: ['billing_issue', 'price_increase_consent'] },
+});
+```
+
+不设置 `filter` 时，SDK 会显示所有待处理消息，包括无法识别的类型。传入空数组则不显示任何消息。Android 会忽略 `filter`，直接请求所有 Google Play 消息。
+
+### 错误 \{#errors\}
+
+在 iOS 上，`showStoreMessages` 会抛出一个带有以下错误码之一的 [`AdaptyError`](capacitor-handle-errors)：
+
+| 代码 | 名称 | 原因 |
+|:-----|:-----|:------|
+| 2006 | `decodingFailed` | 设备运行的是 iOS 15 或更早版本。请仅在 iOS 16 及更高版本上调用此方法。 |
+| 3201 | `operationInProgress` | 另一个 `showStoreMessages` 调用仍在显示消息，而本次调用也有消息需要显示。请等待第一个调用完成后再重试。 |
+| 3202 | `resolverFailure` | SDK 未找到处于前台活跃状态的窗口场景来显示消息。在出现错误之前已显示的消息将从待处理列表中移除。待应用回到前台后，再次调用此方法以显示剩余消息。 |

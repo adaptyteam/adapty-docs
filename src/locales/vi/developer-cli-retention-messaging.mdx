@@ -1,0 +1,461 @@
+---
+title: "Quản lý Retention Messaging từ CLI"
+description: "Thiết lập Apple Retention Messaging từ terminal với Adapty CLI: kết nối URL thời gian thực, chạy kiểm tra hiệu suất, tạo, thay đổi, kích hoạt và vô hiệu hóa retention message, và đọc số liệu của chúng."
+metadataTitle: "Retention Messaging trong Developer CLI | Tài liệu Adapty"
+---
+
+Adapty CLI thiết lập [Apple Retention Messaging](retention-messaging), thông điệp mà người dùng đăng ký thấy trên màn hình **Cancel Subscription**, từ terminal, trong topic `adapty retention-messaging`. Bạn có thể đọc trạng thái thiết lập của một ứng dụng, kết nối Apple với URL realtime của Adapty để phản hồi các yêu cầu từ Apple, chạy bài kiểm tra hiệu suất của Apple, tạo và chỉnh sửa các thông điệp giữ chân người dùng, kích hoạt và vô hiệu hóa chúng, cũng như xem chỉ số của từng thông điệp.
+
+Dùng nó để nhờ AI agent thiết lập Retention Messaging cho bạn, tạo kịch bản tin nhắn trên nhiều app, hoặc đọc các chỉ số tin nhắn mà không cần mở dashboard. Các lệnh thực hiện đúng những thao tác như trên trang **Retention Messaging** của dashboard, và dashboard cũng hiển thị các tin nhắn tương tự.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Topic `retention-messaging` sử dụng cùng cách cài đặt và đăng nhập như các phần còn lại của CLI. Nếu bạn chưa thiết lập, hãy làm theo bước 1 và 2 trong [hướng dẫn quickstart](developer-cli-quickstart). Để kiểm tra xem CLI của bạn có topic này không, chạy lệnh:
+
+```bash
+adapty retention-messaging --help
+```
+
+Mỗi lệnh đều cần UUID của app trong `--app`. Để tìm UUID, chạy:
+
+```bash
+adapty apps list
+```
+
+Những gì app của bạn cần cho từng bước:
+
+- **Đọc trạng thái thiết lập**: Không cần gì. Hoạt động với mọi ứng dụng.
+- **Đọc URL thời gian thực**: Hoàn thành [thiết lập App Store](app-store-connection-configuration) trong Adapty. Bạn sẽ gửi URL này cho Apple khi yêu cầu quyền truy cập.
+- **Cấu hình URL thời gian thực và chạy kiểm tra hiệu suất**: Ngoài ra cần có In-App Purchase key và [quyền truy cập vào Retention Messaging API](retention-messaging-setup#request-access-from-apple) mà bạn yêu cầu từ Apple. Quá trình xem xét của Apple có thể mất đến một tháng, vì vậy hãy yêu cầu quyền truy cập sớm.
+- **Hiển thị tin nhắn cho người đăng ký**: Quyền truy cập từ Apple, URL thời gian thực đã được thiết lập trong Adapty, ít nhất một [sản phẩm](create-product), và sự phê duyệt của Apple cho từng tin nhắn.
+
+Thông báo giữ chân người dùng (Retention messages) tồn tại trong hai môi trường Apple: `sandbox` và `production`. Flag `--mode` dùng để chọn môi trường. Mỗi môi trường có thông báo riêng, như nút **Sandbox mode** trên dashboard hiển thị.
+
+Để thiết lập Retention Messaging từ đầu đến cuối:
+
+1. [Đọc trạng thái cài đặt](#read-the-setup-status).
+2. [Đọc URL realtime](#connect-the-realtime-url), và yêu cầu quyền truy cập từ Apple với URL đó.
+3. [Cấu hình URL realtime](#connect-the-realtime-url) cho `sandbox`.
+4. [Chạy bài kiểm tra hiệu suất](#run-the-performance-test), và đọc trạng thái cài đặt cho đến khi bài kiểm tra vượt qua.
+5. [Cấu hình URL realtime](#connect-the-realtime-url) cho `production`.
+6. [Tạo các tin nhắn mặc định](#create-a-message), sau đó là các tin nhắn promo.
+7. [Liệt kê các tin nhắn](#list-and-read-messages) để theo dõi quy trình review của Apple.
+
+## Đọc trạng thái thiết lập \{#read-the-setup-status\}
+
+```bash
+adapty retention-messaging setup-status --app <app-id>
+```
+
+Trạng thái hiển thị các bước thiết lập giống như trên dashboard:
+
+| Trường | Giá trị |
+|---|---|
+| `credentials` | `present` hoặc `missing`: cho biết ứng dụng có khóa App Store mà Retention Messaging sử dụng hay không. |
+| `registration_status` | `registered` hoặc `not_registered`: cho biết Apple đã cấp quyền truy cập vào Retention Messaging API cho ứng dụng hay chưa. |
+| `sandbox.realtime_url_status`, `production.realtime_url_status` | `not_configured`, `configured_to_other_url`, hoặc `configured_to_adapty`: nơi Apple gửi các yêu cầu trong từng môi trường. |
+| `sandbox.performance_test_status` | `not_started`, `running`, `passed`, hoặc `failed`. |
+
+:::note
+Một số thao tác đọc cũng cập nhật Adapty, giống như dashboard:
+- Trong khi bài kiểm tra hiệu suất đang chạy, `setup-status` sẽ hỏi Apple về kết quả kiểm tra và lưu lại. `realtime-url configure` thực hiện thao tác đọc tương tự trước khi yêu cầu xác nhận, vì vậy kết quả vẫn được lưu ngay cả khi bạn từ chối sau đó.
+- `messages list`, `messages get`, và thao tác đọc mà `messages update` thực hiện trước khi ghi sẽ hỏi Apple về trạng thái review của từng thông báo và lưu trạng thái mới. Nếu Apple đã phê duyệt một thông báo, thao tác đọc sẽ chuyển nó sang trạng thái `live` ngay lập tức. Adapty cũng tự kiểm tra review của Apple, vì vậy một thông báo được phê duyệt sẽ tự động được phát trực tiếp mà không cần thao tác đọc.
+:::
+
+## Kết nối realtime URL \{#connect-the-realtime-url\}
+
+Apple gửi một yêu cầu đến realtime URL khi người đăng ký mở màn hình **Cancel Subscription**. Adapty phản hồi yêu cầu này với thông điệp của bạn. Để đọc Adapty URL, chạy lệnh:
+
+```bash
+adapty retention-messaging realtime-url get --app <app-id>
+```
+
+Cùng một URL phục vụ cho cả `sandbox` và `production`. Bạn cung cấp URL này cho Apple khi [yêu cầu quyền truy cập](retention-messaging-setup#request-access-from-apple).
+
+Để thiết lập Adapty URL trong Apple cho một môi trường cụ thể, chạy lệnh:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode sandbox
+```
+
+Hãy cấu hình `sandbox` trước. Adapty sẽ từ chối `production` cho đến khi [bài kiểm tra hiệu suất](#run-the-performance-test) vượt qua. Khi bạn cấu hình `sandbox`, Adapty cũng tạo một tin nhắn test ẩn dùng cho bài kiểm tra hiệu suất. Tin nhắn này không xuất hiện trong danh sách tin nhắn.
+
+Nếu Apple đang gửi các yêu cầu của môi trường này đến một máy chủ khác (`configured_to_other_url`), URL của Adapty sẽ thay thế URL của máy chủ đó trong Apple. Từ đó trở đi, máy chủ kia sẽ không nhận được yêu cầu nào từ màn hình **Cancel Subscription** nữa. CLI sẽ hiển thị cảnh báo nêu tên môi trường đó. Để xác nhận việc thay thế:
+
+- **Trong terminal, không dùng `--json`**: Đọc cảnh báo và nhập `y` tại dấu nhắc `Apply? [y/N]`. Dấu nhắc này xuất hiện ngay cả khi bạn truyền `--yes`.
+- **Trong script, agent, hoặc với `--json`**: Truyền `--replace-other-url --yes`. Nếu không có `--replace-other-url`, CLI sẽ không gửi gì và thoát với mã lỗi 6, kể cả khi đã có `--yes`.
+
+## Chạy bài kiểm tra hiệu suất \{#run-the-performance-test\}
+
+Apple kiểm tra tốc độ phản hồi của Adapty trước khi cho phép sử dụng URL realtime `production`. Trước khi bắt đầu kiểm tra, hãy [cấu hình URL realtime](#connect-the-realtime-url) cho môi trường `sandbox`. Sau đó, mua sản phẩm có thời hạn dài nhất bằng tài khoản sandbox hoặc qua TestFlight, giữ gói đăng ký đang hoạt động, và bắt đầu kiểm tra ngay sau khi mua:
+
+```bash
+adapty retention-messaging performance-test start --app <app-id>
+```
+
+Quá trình kiểm tra luôn chạy trong `sandbox` và có thể mất tới một giờ. Để xem kết quả, hãy đọc lại [trạng thái thiết lập](#read-the-setup-status): `sandbox.performance_test_status` sẽ thay đổi từ `running` thành `passed` hoặc `failed`. Trong khi trạng thái là `running`, đừng khởi chạy lại bài kiểm tra: Adapty sẽ từ chối. Để tìm hiểu lý do bài kiểm tra thất bại, xem [Vượt qua bài kiểm tra hiệu năng](retention-messaging-setup#pass-the-performance-test).
+
+Khi bài kiểm tra vượt qua, hãy kết nối môi trường production:
+
+```bash
+adapty retention-messaging realtime-url configure --app <app-id> --mode production
+```
+
+## Danh sách và đọc tin nhắn \{#list-and-read-messages\}
+
+```bash
+adapty retention-messaging messages list --app <app-id> --mode production --state live
+```
+
+`--mode` là bắt buộc. Danh sách hiển thị mỗi tin nhắn với tên, loại, trạng thái, số sản phẩm, ngày bắt đầu, và các chỉ số sau cho toàn bộ vòng đời của tin nhắn:
+
+| Trường | Cột trên dashboard | Giá trị |
+|---|---|---|
+| `shown` | **Shown** | Số lượng |
+| `retained` | **Retained users** | Số lượng |
+| `saved_users` | **Saved users** | Số lượng |
+| `retention_rate` | **Retention rate** | Phần trăm, một chữ số thập phân. `0.0` khi chưa có lượt xem nào có kết quả. |
+| `save_rate` | **Save rate** | Phần trăm, một chữ số thập phân. `0.0` khi chưa có lượt xem nào cũ hơn 24 giờ. |
+| `saved_revenue` | **Saved revenue** | USD trước khi trừ hoa hồng của Apple, hai chữ số thập phân |
+
+Để biết cách Adapty tính từng chỉ số, xem [Theo dõi hiệu suất tin nhắn](retention-messaging-analytics).
+
+Một tin nhắn có thể ở một trong các trạng thái sau: `in_review`, `live`, `rejected`, hoặc `inactive`. Để hiểu ý nghĩa của từng trạng thái, xem [Trạng thái tin nhắn](retention-messaging-create#message-states).
+
+Để đọc một tin nhắn cùng với văn bản, hình ảnh, bullet point, sản phẩm và locale của nó, chạy lệnh:
+
+```bash
+adapty retention-messaging messages get <message-id> --app <app-id>
+```
+
+Tin nhắn không có trường môi trường. Văn bản và bullet point của nó là nguồn `en-US`. Mỗi locale khác hiển thị trạng thái review riêng của nó.
+
+## Tạo tin nhắn \{#create-a-message\}
+
+Một tin nhắn promo cần có tin nhắn mặc định cho cùng sản phẩm trong cùng môi trường. Hãy tạo tin nhắn mặc định trước. Bạn không cần chờ Apple xem xét.
+
+Để tìm ID sản phẩm, các ưu đãi promo và các lần chuyển plan cho file, hãy dùng [lệnh suggest](#find-products-and-offers). Để tạo một tin nhắn, đặt nội dung của nó vào file JSON:
+
+```json title="message.json"
+{
+  "name": "Annual default",
+  "type": "default",
+  "title": "Before you go",
+  "body": "Your plan keeps every feature you use today.",
+  "alt_text": "App icon on a purple background",
+  "header_position": "above_body",
+  "products": [
+    { "store_id": "com.example.annual" }
+  ],
+  "bullet_points": [
+    { "image_path": "icons/sync.png", "text": "Sync on all your devices" },
+    { "image_path": "icons/offline.png", "text": "Work offline" }
+  ],
+  "localizations": [
+    {
+      "locale": "de-DE",
+      "title": "Bevor du gehst",
+      "body": "Dein Abo behält alle Funktionen, die du heute nutzt.",
+      "bullet_points": [
+        { "text": "Auf allen Geräten synchronisieren" },
+        { "text": "Offline arbeiten" }
+      ]
+    }
+  ]
+}
+```
+
+Sau đó chạy:
+
+```bash
+adapty retention-messaging messages create --app <app-id> --mode sandbox \
+  --file message.json --image header.png
+```
+
+File nhận các key sau:
+
+- **`name`, `type`, `title`, `body`**: Bắt buộc. Tiêu đề và nội dung là nguồn `en-US`, tối đa 66 và 144 ký tự.
+- **`type`**: Loại tin nhắn, `default` hoặc `promo`. Không thể thay đổi loại sau khi đã tạo.
+- **`alt_text`**: Mô tả hình ảnh dành cho trình đọc màn hình, tối đa 150 ký tự.
+- **`header_position`**: Vị trí của tiêu đề trong tin nhắn default có hình ảnh. `above_image` hiển thị tiêu đề phía trên hình ảnh. `above_body` hiển thị bên dưới hình ảnh, phía trên nội dung. Không thể thay đổi sau khi đã tạo.
+- **`products`**: Các sản phẩm mà người đăng ký sẽ thấy tin nhắn, được xác định bằng ID sản phẩm App Store trong `store_id`. Tin nhắn default không có `association`. Tin nhắn promo cần ít nhất một sản phẩm, và mỗi sản phẩm cần một ưu đãi trong `association`: `{"type": "promo_offer", "store_id": "<offer-id>"}` hoặc `{"type": "plan_switch", "store_id": "<product-id>"}`. Tất cả sản phẩm trong một tin nhắn promo sử dụng cùng loại ưu đãi: toàn bộ `promo_offer` hoặc toàn bộ `plan_switch`.
+- **`bullet_points`**: Tối đa năm điểm, chỉ dùng cho tin nhắn default. Mỗi điểm có `text` (1–66 ký tự), `alt_text` tùy chọn, và `image_path`: đường dẫn đến biểu tượng PNG, tính từ thư mục chứa file JSON. CLI không chấp nhận `image_index`.
+- **`localizations`**: Một mục cho mỗi ngôn ngữ khác ngoài `en-US`, bao gồm `locale`, `title`, `body`, và một `bullet_points` text cho mỗi bullet point của tin nhắn, theo cùng thứ tự.
+
+`--image` thêm hình ảnh cho tin nhắn mặc định. Tin nhắn promo không có hình ảnh và không có danh sách bullet.
+
+Trước khi yêu cầu xác nhận, CLI sẽ kiểm tra từng file hình ảnh. CLI sau đó yêu cầu xác nhận như mô tả trong [Xác nhận trong scripts và agents](#confirmation-in-scripts-and-agents). Adapty gửi văn bản và hình ảnh của tin nhắn mới đến Apple để xem xét, và trạng thái tin nhắn sẽ là `in_review`.
+
+Nếu lệnh create thất bại do lỗi mạng hoặc lỗi server, đừng chạy lại. Xem [Nếu lệnh create hoặc change không nhận được phản hồi](#if-a-create-or-a-change-gets-no-answer).
+
+### Yêu cầu hình ảnh \{#image-requirements\}
+
+| Tệp | Yêu cầu |
+|---|---|
+| Hình ảnh (`--image`) | PNG, rộng 3840 px và cao từ 160–2160 px, không trong suốt, tối đa 10 MB |
+| Biểu tượng bullet point (`image_path`) | PNG, 1024 × 1024 px, không trong suốt, tối đa 10 MB |
+
+CLI xác thực từng tệp trước khi gửi. Một file PNG có kênh alpha vẫn hợp lệ nếu mọi pixel đều hoàn toàn mờ đục. File PNG bị hỏng sẽ thất bại với lỗi `must be a PNG`. Nếu một tệp không hợp lệ, CLI sẽ không gửi gì cả và thoát với mã lỗi 2. Thông báo lỗi sẽ nêu tên tệp và quy tắc vi phạm, ví dụ: `… must be 3840 px wide and 160–2160 px tall`.
+
+## Thay đổi một thông điệp \{#change-a-message\}
+
+:::warning
+Thay đổi một thông điệp không hoạt động sẽ kích hoạt lại nó, kể cả chỉ thay đổi tên. Sau khi Apple phê duyệt thông điệp, người đăng ký sẽ thấy nó.
+:::
+
+`messages update` chỉ thay đổi những gì bạn chỉ định. Mọi ngôn ngữ, điểm đầu dòng, biểu tượng, sản phẩm và hình ảnh mà bạn không chỉ định sẽ được giữ nguyên:
+
+```bash
+adapty retention-messaging messages update <message-id> --app <app-id> --title "Wait, there's more"
+```
+
+Thay đổi tên, tiêu đề, nội dung, văn bản thay thế và hình ảnh bằng các cờ: `--name`, `--title`, `--body`, `--alt-text`, `--image`, và `--remove-image`. Thay đổi ngôn ngữ, danh sách và sản phẩm bằng file thay đổi trong `--file`. File thay đổi cũng nhận `name`, `title`, `body`, `alt_text`, và `remove_image`. CLI sẽ từ chối bất kỳ khóa nào mà file thay đổi không nhận dạng được. File thay đổi này hoạt động trên message từ [Tạo một message](#create-a-message):
+
+```json title="changes.json"
+{
+  "localizations": [
+    { "locale": "de-DE", "title": "Warte kurz", "bullet_texts": { "<bullet-id>": "Auf jedem Gerät synchronisieren" } }
+  ],
+  "bullet_points": [
+    { "bullet_id": "<bullet-id>", "text": "Sync on every device" },
+    {
+      "image_path": "icons/backup.png",
+      "text": "Daily backups",
+      "texts": { "de-DE": "Tägliche Backups" }
+    }
+  ],
+  "remove_bullet_points": ["<other-bullet-id>"]
+}
+```
+
+- **Locales**: Đặt tên cho từng locale theo mã của nó trong `locale`, kèm theo `title`, `body` và nội dung các bullet point của locale đó trong `bullet_texts`, theo `bullet_id`. Một locale mà tin nhắn chưa có sẽ được thêm mới, và cần có `title`, `body` cùng nội dung cho từng bullet point.
+- **Bullet points**: Để thay đổi một bullet point, hãy gọi tên nó theo `bullet_id` từ `messages get`, kèm `text`, `alt_text`, hoặc `image_path` cho icon mới. Một bullet point mới không có `bullet_id`. Nó cần `image_path`, `text` cho `en-US`, và nội dung trong `texts` cho mỗi locale của tin nhắn.
+- **Sản phẩm**: Theo ID sản phẩm App Store của chúng trong `store_id`. Một sản phẩm mà tin nhắn chưa có sẽ được thêm mới. Trong promo message, mỗi sản phẩm cần có một ưu đãi: để thay đổi ưu đãi, hãy truyền một `association` mới. Để ngừng cung cấp ưu đãi cho một sản phẩm, hãy xóa sản phẩm đó bằng `remove_products`. Một sản phẩm được thêm vào promo message cần có `association`.
+- **Xóa**: Sử dụng các trường remove: `remove_localizations` (mã locale), `remove_bullet_points` (bullet ID), `remove_products` (ID sản phẩm App Store), và `remove_image: true` hoặc `--remove-image`. Một bullet point bị xóa sẽ biến mất khỏi mọi locale. Khi một promo message đang sử dụng một sản phẩm, bạn không thể xóa sản phẩm đó khỏi default message của nó.
+
+Bạn không thể thay đổi kiểu, `header_position`, hoặc kiểu khuyến khích của promo message (`promo_offer` hoặc `plan_switch`). Để dùng kiểu khác, hãy tạo message mới.
+
+CLI sẽ xác thực các thay đổi của bạn trước khi gửi đi. Nếu dữ liệu đầu vào mâu thuẫn, không thay đổi gì, hoặc đặt tên hay xóa thứ gì đó mà message không có, CLI sẽ không gửi gì cả, thoát với mã lỗi 2, và thông báo lỗi sẽ nêu rõ vấn đề. Hãy cung cấp nội dung văn bản của một bullet point hiện có trong `bullet_texts` của locale, không phải trong `texts`.
+
+CLI yêu cầu phê duyệt, đọc tin nhắn, hợp nhất các thay đổi của bạn vào đó, rồi gửi toàn bộ tin nhắn đến Adapty. Mỗi lần cập nhật đều gửi toàn bộ tin nhắn lên Apple để xem xét, và trạng thái tin nhắn sẽ chuyển thành `in_review`. Nếu ai đó thay đổi tin nhắn trên dashboard trong khi `messages update` đang chạy, bản cập nhật sẽ ghi đè lên thay đổi đó.
+
+## Kích hoạt hoặc vô hiệu hóa một tin nhắn \{#activate-or-deactivate-a-message\}
+
+```bash
+adapty retention-messaging messages set-status <message-id> --app <app-id> --action deactivate
+```
+
+- **`activate`**: Chuyển tin nhắn từ trạng thái `inactive` sang `in_review`. Apple chỉ xem xét lại các ngôn ngữ chưa được phê duyệt. Sau khi Apple phê duyệt, người đăng ký sẽ thấy tin nhắn này trở lại.
+- **`deactivate`**: Chuyển tin nhắn từ trạng thái `live` sang `inactive`. Người đăng ký sẽ không còn thấy tin nhắn này nữa. Các lượt xem đã xảy ra vẫn được giữ trong số liệu thống kê.
+
+Adapty từ chối `activate` với message không ở trạng thái `inactive`, và từ chối `deactivate` với message không ở trạng thái `live`. Message ở trạng thái `in_review` sẽ chuyển sang live khi Apple phê duyệt. Để dừng lại, hãy deactivate sau đó. CLI không có lệnh để xóa message.
+
+Mỗi sản phẩm có thể có một default message và một promo message trong mỗi môi trường. Adapty từ chối kích hoạt trong các trường hợp sau:
+
+- Một message khác cùng loại đã được thêm vào sản phẩm trong khi message này đang ở trạng thái inactive.
+- Message là promo message, và một trong các sản phẩm của nó không có default message trong môi trường này.
+
+Trong khi một thông báo khuyến mãi đang sử dụng một sản phẩm, Adapty sẽ từ chối hủy kích hoạt thông báo mặc định của sản phẩm đó. Hãy hủy kích hoạt thông báo khuyến mãi, hoặc xóa sản phẩm khỏi thông báo đó trước.
+
+## Tìm sản phẩm và ưu đãi \{#find-products-and-offers\}
+
+Để tìm các sản phẩm có thể thêm vào tin nhắn, chạy lệnh:
+
+```bash
+adapty retention-messaging products suggest --app <app-id> --mode production --type default
+```
+
+Khi bạn thay đổi một tin nhắn, hãy truyền ID của nó vào `--message-id` để các sản phẩm của tin nhắn này không hiển thị là `used`. Sản phẩm có `disabled_reason` sẽ không thể được thêm vào:
+
+- **`used`**: Một tin nhắn khác cùng loại trong môi trường này đã sử dụng sản phẩm đó.
+- **`no_default_message`**: Sản phẩm chưa có tin nhắn mặc định trong môi trường này, do đó không thể nhận tin nhắn promo.
+
+Một promo message liên kết một ưu đãi với mỗi sản phẩm. Để tìm các ưu đãi cho một sản phẩm, truyền `id` của sản phẩm từ `products suggest`. Để liệt kê các ưu đãi của sản phẩm, chạy:
+
+```bash
+adapty retention-messaging promo-offers suggest <product-id> --app <app-id>
+```
+
+Để liệt kê các gói mà người dùng đang đăng ký có thể chuyển sang, chạy:
+
+```bash
+adapty retention-messaging plan-switches suggest <product-id> --app <app-id>
+```
+
+`plan-switches suggest` cần [khóa API App Store Connect](app-store-connect-api-key) trong cài đặt ứng dụng. Đặt `store_id` của ưu đãi hoặc gói vào `association` của sản phẩm.
+
+## Xác nhận trong scripts và agents \{#confirmation-in-scripts-and-agents\}
+
+Các lệnh này thay đổi nội dung mà người dùng thấy trên màn hình **Cancel Subscription**. Mỗi lệnh sẽ in ra hiệu ứng của nó và yêu cầu xác nhận trước khi gửi thay đổi, trong cả `sandbox` và `production`:
+
+- `realtime-url configure`
+- `messages create`
+- `messages update`
+- `messages set-status`
+
+Cách yêu cầu xác nhận phụ thuộc vào cách lệnh được chạy:
+
+| Cách lệnh chạy | Điều gì xảy ra |
+|---|---|
+| Trong terminal, không có `--yes` và không có `--json` | CLI in ra kết quả và hỏi `Apply? [y/N]`. Nếu bạn trả lời `y` hoặc `yes`, CLI sẽ gửi yêu cầu. Với bất kỳ câu trả lời nào khác, CLI thoát với mã 1 và không gửi gì. |
+| Với `--yes`, trong terminal hoặc không | CLI gửi yêu cầu mà không hỏi, kể cả trong môi trường `production`. |
+| Không có `--yes`, có `--json`, trong pipe, hoặc không có terminal | CLI không gửi gì và thoát với mã 6. Lỗi mô tả kết quả. |
+
+Việc thay thế một URL thời gian thực khác trong Apple có các quy tắc riêng. Xem [Kết nối URL thời gian thực](#connect-the-realtime-url).
+
+Vì vậy, một script hoặc agent có thể đọc hiệu ứng của lệnh trước: chạy nó không có `--yes`, đọc hiệu ứng trong đầu ra, và chạy lại với `--yes` chỉ sau khi ai đó phê duyệt hiệu ứng đó.
+
+`setup-status`, `realtime-url get`, `performance-test start`, `messages list`, `messages get`, và các lệnh `suggest` chạy mà không cần hỏi.
+
+## Lỗi \{#errors\}
+
+| Mã thoát | Nguyên nhân | Cần làm gì |
+|---|---|---|
+| 1 | Bạn đã trả lời khác `y` tại dấu nhắc. Không có gì được gửi đi. | Chạy lại lệnh nếu bạn muốn tiếp tục. |
+| 2 | CLI từ chối đầu vào trước khi gửi thay đổi: một flag, một file ảnh, xung đột trong đầu vào, một locale không có văn bản cho từng điểm bullet, hoặc việc xóa thứ gì đó mà thông báo giữ chân không có. | Sửa những gì mà lỗi đã nêu. |
+| 3 | Bạn chưa đăng nhập, hoặc Adapty từ chối quyền truy cập vào ứng dụng. | Đăng nhập bằng `adapty auth login`, và tìm ID ứng dụng trong `adapty apps list`. |
+| 4 | Adapty từ chối yêu cầu. Lỗi cho biết lý do, và `--json` cung cấp HTTP status cùng `error_code`. Lỗi server (5xx) khi tạo hoặc thay đổi cũng trả về mã 4, và kết quả không xác định. | Xem [Thông báo từ Adapty](#messages-from-adapty). Sau lỗi server khi tạo hoặc thay đổi, xem [Nếu một thao tác tạo hoặc thay đổi không nhận được phản hồi](#if-a-create-or-a-change-gets-no-answer). |
+| 5 | CLI không thể kết nối đến Adapty. | Đảm bảo bạn đang có kết nối mạng. Sau thao tác tạo hoặc thay đổi, xem [Nếu một thao tác tạo hoặc thay đổi không nhận được phản hồi](#if-a-create-or-a-change-gets-no-answer). |
+| 6 | Một lệnh yêu cầu xác nhận được chạy mà không có `--yes` và không có ai để trả lời, hoặc thao tác thay thế URL realtime được chạy mà không có `--replace-other-url`. Không có gì được gửi đi. | Đọc hiệu ứng trong thông báo lỗi, sau đó chạy lại lệnh với `--yes`, và thêm `--replace-other-url` nếu là thao tác thay thế. |
+| 130 | Bạn nhấn Ctrl+C tại dấu nhắc. Không có gì được gửi đi. | — |
+
+### Tin nhắn từ Adapty
+
+Với `--json`, lỗi trả về `error_code`:
+
+| `error_code` | Nguyên nhân | Cách xử lý |
+|---|---|---|
+| `app_store_credentials_missing` | Ứng dụng chưa có App Store keys trong Adapty. | Hoàn tất [thiết lập App Store](app-store-connection-configuration). |
+| `app_store_connect_credentials_missing` | `plan-switches suggest` cần App Store Connect API key. | Thêm [App Store Connect API key](app-store-connect-api-key). |
+| `realtime_url_unavailable` | Ứng dụng chưa thiết lập App Store server notifications trong Adapty. | Hoàn tất [thiết lập App Store](app-store-connection-configuration). |
+| `apple_rm_api_access_denied` | Apple chưa cấp cho ứng dụng quyền truy cập Retention Messaging API. | [Yêu cầu quyền truy cập từ Apple](retention-messaging-setup#request-access-from-apple). |
+| `performance_test_required` | Bạn đã cấu hình `production` trước khi performance test hoàn tất. | [Chạy performance test](#run-the-performance-test) trước. |
+| `performance_test_already_running` | Đang có performance test chạy. | Chờ, sau đó đọc lại trạng thái thiết lập. |
+| `active_sandbox_transaction_missing` | Không có gói đăng ký sandbox đang hoạt động. | Mua sản phẩm có thời hạn dài nhất trong sandbox, sau đó bắt đầu lại bài test. |
+| `performance_test_request_rejected` | Apple từ chối khởi động bài test. | Thực hiện mua hàng sandbox mới, sau đó bắt đầu lại bài test. |
+| `retention_product_claimed` | Một tin nhắn khác cùng loại đã sử dụng sản phẩm này. | Chọn sản phẩm khác, hoặc hủy kích hoạt tin nhắn kia. |
+| `retention_default_message_missing` | Một tin nhắn promo có sản phẩm nhưng không có tin nhắn mặc định. | Tạo hoặc kích hoạt tin nhắn mặc định cho sản phẩm trước. |
+| `retention_dependent_promo_messages` | Một tin nhắn promo sử dụng sản phẩm mà thay đổi này sẽ lấy đi từ tin nhắn mặc định. | Hủy kích hoạt tin nhắn promo, hoặc xóa sản phẩm khỏi nó trước. |
+| `retention_promo_association_invalid` | Một tin nhắn promo không có sản phẩm, có sản phẩm không có `association`, hoặc có cả hai loại ưu đãi. | Đảm bảo mọi sản phẩm đều có `association` cùng loại. |
+| `retention_message_type_immutable` | Thay đổi này gán cho tin nhắn promo một loại ưu đãi khác. | Tạo tin nhắn mới. |
+| `retention_message_invalid_status_transition` | `activate` trên tin nhắn không ở trạng thái `inactive`, hoặc `deactivate` trên tin nhắn không ở trạng thái `live`. | Đọc trạng thái của tin nhắn bằng `messages get`. |
+| `retention_message_not_found` | Ứng dụng không có tin nhắn nào với ID này. | Lấy ID từ `messages list`. |
+
+### Nếu lệnh tạo hoặc cập nhật không nhận được phản hồi \{#if-a-create-or-a-change-gets-no-answer\}
+
+Nếu CLI không nhận được phản hồi cho một lệnh tạo hoặc cập nhật — do lỗi mạng hoặc lỗi máy chủ (mã thoát 4 hoặc 5) — CLI không thể biết Adapty có lưu thay đổi hay không. CLI sẽ không gửi lại yêu cầu. Bạn cũng không nên tự chạy lại lệnh đó.
+
+- **Sau khi tạo**: Chạy `messages list` cho cùng môi trường với `--search "<name>" --page-size 100`. Lỗi sẽ in ra tên chính xác trên một dòng riêng (`message_name` trong `--json`). Đọc từng trang cho đến `meta.pagination.pages`, và mở từng ứng viên bằng `messages get`. Tạo lần thứ hai có thể tạo ra tin nhắn trùng lặp và gửi lên để Apple xét duyệt. Chỉ tạo lại tin nhắn nếu không có ứng viên nào là tin nhắn của bạn.
+- **Sau khi cập nhật**: Chạy `messages get`, và đọc trạng thái cũng như nội dung của tin nhắn.
+
+## Tham chiếu lệnh \{#command-reference\}
+
+Mọi lệnh đều nhận `--app`, UUID của ứng dụng lấy từ `adapty apps list`.
+
+### `retention-messaging setup-status`
+
+Trả về trạng thái cài đặt. Không nhận thêm cờ nào khác.
+
+### `retention-messaging realtime-url get`
+
+Trả về URL thời gian thực của Adapty. Không nhận thêm tham số nào khác.
+
+### `retention-messaging realtime-url configure`
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--mode` | Có | `sandbox` hoặc `production`. |
+| `--replace-other-url` | Không | Phê duyệt việc thay thế URL khác trong Apple. |
+| `--yes`, `-y` | Không | Cấu hình mà không cần xác nhận. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+### `retention-messaging performance-test start`
+
+Khởi động bài kiểm tra hiệu suất của Apple trong `sandbox`. Không nhận thêm cờ nào khác.
+
+### `retention-messaging messages list`
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--mode` | Có | `sandbox` hoặc `production`. |
+| `--search` | Không | Một phần tên (không phân biệt hoa thường) hoặc ID tin nhắn chính xác. |
+| `--type` | Không | `default` hoặc `promo`. |
+| `--state` | Không | `in_review`, `live`, `rejected`, hoặc `inactive`. |
+| `--ordering` | Không | `name`, `type`, `state`, `products_count`, hoặc `started_at`. Thêm `-` trước tên trường để đảo ngược thứ tự. Mặc định: `-started_at`. |
+| `--page` | Không | Số trang. Mặc định: 1. |
+| `--page-size` | Không | Số tin nhắn mỗi trang, tối đa 100. Mặc định: 20. |
+
+### `retention-messaging messages get`
+
+Nhận ID tin nhắn làm đối số. Trả về toàn bộ tin nhắn.
+
+### `retention-messaging messages create`
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--mode` | Có | `sandbox` hoặc `production`. |
+| `--file` | Có | File JSON của tin nhắn, hoặc `-` để đọc từ standard input. Xem [Tạo tin nhắn](#create-a-message). |
+| `--image` | Không | Ảnh PNG của tin nhắn mặc định. |
+| `--yes`, `-y` | Không | Tạo mà không cần xác nhận. Bắt buộc khi dùng `--json` hoặc trong pipe. |
+
+### `retention-messaging messages update`
+
+Nhận ID tin nhắn làm đối số.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--name`, `--title`, `--body`, `--alt-text` | Không | Giá trị mới của trường. |
+| `--image` | Không | Ảnh PNG mới. |
+| `--remove-image` | Không | Xóa ảnh. |
+| `--file` | Không | File thay đổi, hoặc `-` để đọc từ standard input. Xem [Thay đổi tin nhắn](#change-a-message). |
+| `--yes`, `-y` | Không | Thay đổi mà không cần xác nhận. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+### `retention-messaging messages set-status`
+
+Nhận ID tin nhắn làm đối số.
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--action` | Có | `activate` hoặc `deactivate`. |
+| `--yes`, `-y` | Không | Thay đổi trạng thái mà không cần xác nhận. Bắt buộc khi dùng với `--json` hoặc trong pipe. |
+
+### `retention-messaging products suggest`
+
+| Cờ | Bắt buộc | Mô tả |
+|---|---|---|
+| `--mode` | Có | `sandbox` hoặc `production`. |
+| `--type` | Có | `default` hoặc `promo`: loại tin nhắn. |
+| `--search` | Không | Một phần tiêu đề sản phẩm, không phân biệt chữ hoa/thường. |
+| `--message-id` | Không | ID của tin nhắn bạn muốn thay đổi. |
+| `--limit` | Không | Số sản phẩm trả về, tối đa 100. Mặc định: 10. |
+
+### `retention-messaging promo-offers suggest`
+
+Nhận ID sản phẩm từ `products suggest` làm đối số.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--search` | Không | Một phần tiêu đề ưu đãi, không phân biệt chữ hoa/thường. |
+| `--limit` | Không | Số ưu đãi trả về, tối đa 100. Mặc định: 10. |
+
+### `retention-messaging plan-switches suggest`
+
+Nhận ID sản phẩm từ `products suggest` làm đối số.
+
+| Flag | Bắt buộc | Mô tả |
+|---|---|---|
+| `--search` | Không | Một phần tiêu đề plan, không phân biệt chữ hoa/thường. |
+| `--limit` | Không | Số plan trả về, tối đa 100. Mặc định: 10. |
+
+## Làm việc từ trợ lý AI \{#work-from-an-ai-assistant\}
+
+[Adapty MCP server](adapty-mcp) cung cấp các hành động tương tự như các công cụ `retention_messaging_*`, ví dụ `retention_messaging_messages_list` tương ứng với `messages list`. Các công cụ này nhận `message_type` thay vì `--type`.
+
+- **Phê duyệt**: Trợ lý sẽ hỏi trước khi cấu hình realtime URL, tạo hoặc thay đổi một message, hoặc thay đổi trạng thái của nó, trong `sandbox` và trong `production`. Trước khi thay thế realtime URL của một server khác, trợ lý sẽ hỏi thêm một câu riêng. Trợ lý cũng hỏi một lần trong mỗi cuộc hội thoại trước lần đọc trạng thái setup đầu tiên, và một lần trước lần đọc message đầu tiên, vì [những lần đọc này có thể cập nhật Adapty](#read-the-setup-status).
+- **Hình ảnh và bullet point**: Các công cụ MCP không thể thêm hình ảnh, biểu tượng bullet point, hoặc bullet point mới. `retention_messaging_messages_create` tạo một message không có hình ảnh hay bullet point. Để thêm chúng, hãy chạy `messages update` từ CLI, hoặc dùng dashboard.
+
+## Tiếp theo \{#whats-next\}
+
+- [Agent skill cho Retention Messaging](retention-messaging-skill) — để agent của bạn thiết lập Retention Messaging và soạn tin nhắn, với sự phê duyệt của bạn trước mỗi thay đổi.
+- [Thiết lập Retention Messaging](retention-messaging-setup) — các bước thiết lập tương tự trên dashboard.
+- [Tạo retention message](retention-messaging-create) — các trường tin nhắn, ngôn ngữ và trạng thái trên dashboard.
+- [Theo dõi hiệu suất tin nhắn](retention-messaging-analytics) — ý nghĩa của từng chỉ số.

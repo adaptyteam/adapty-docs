@@ -1,0 +1,41 @@
+---
+title: "Миграция Adapty iOS SDK на v4.3"
+description: "Миграция на Adapty iOS SDK v4.3: обновите обработку цен и кодов ошибок, а также передавайте транзакции с подписью App Store."
+metadataTitle: "Миграция на Adapty iOS SDK v4.3 | Документация Adapty"
+---
+
+Чтобы обновить приложение с Adapty iOS SDK 4.1 или 4.2 до версии 4.3, примените все изменения из этого руководства. Если приложение использует версию 4.0, сначала выполните [изменения для v4.1](migration-to-ios-sdk-41). Чтобы продолжить обновление до версии 4.4, следуйте инструкции [Миграция на v4.4](migration-to-ios-sdk-44).
+
+## Краткий справочник \{#quick-reference\}
+
+| До | После |
+|---|---|
+| `localizedPrice` и `currencyCode` могут быть `nil` | Оба свойства всегда возвращают строку |
+| Нет кода ошибки `billingPlanUnavailable` | `AdaptyError.ErrorCode` включает `billingPlanUnavailable` |
+| `Adapty.reportTransaction` с обычным `Transaction` | `Adapty.reportTransaction` с `VerificationResult<Transaction>`; перегрузка с `Transaction` устарела |
+
+## localizedPrice и currencyCode больше не являются опциональными \{#prices-are-no-longer-optional\}
+
+В версии 4.3 свойства `localizedPrice` и `currencyCode` объектов `AdaptyPaywallProduct` и `AdaptySubscriptionOffer` всегда возвращают строку и никогда не возвращают `nil`. Код, который проверяет их на `nil` с помощью `if let`, `guard let` или `?.`, не компилируется. Удалите эти проверки:
+
+```diff showLineNumbers
+- if let price = product.localizedPrice {
+-     priceLabel.text = price
+- }
++ priceLabel.text = product.localizedPrice
+```
+
+Удалите также значения по умолчанию `??` для этих свойств: они компилируются, но с предупреждением.
+
+## AdaptyError.ErrorCode включает billingPlanUnavailable \{#new-error-code\}
+
+В версии 4.3 добавлен [код ошибки](ios-sdk-error-handling#storekit-errors) `billingPlanUnavailable`. Оператор `switch`, перечисляющий все коды ошибок без ветки `default`, перестаёт компилироваться. Чтобы исправить это, добавьте ветку `case .billingPlanUnavailable` или ветку `default`.
+
+## Перегрузка Transaction метода reportTransaction устарела \{#reporttransaction-overload-is-deprecated\}
+
+В версии 4.3.2 перегрузка `Adapty.reportTransaction(_:withVariationId:)`, принимающая голый `Transaction` без подписи App Store, выдаёт предупреждение об устаревании. Чтобы передать транзакцию вместе с подписью App Store, используйте `VerificationResult<Transaction>`, который возвращает StoreKit:
+
+```diff showLineNumbers
+- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
++ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
+```

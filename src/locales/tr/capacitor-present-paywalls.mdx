@@ -22,10 +22,10 @@ Bu kılavuz yalnızca **Adapty tarafından render edilen flow'lar ve paywall'lar
 
 :::
 
-Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için, [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Her `view` yalnızca bir kez kullanılabilir. Flow'u tekrar görüntülemeniz gerekiyorsa, yeni bir `view` örneği oluşturmak için `createFlowView`'ı bir kez daha çağırın.
+Bir flow veya paywall'ı bağımsız bir ekran olarak görüntülemek için [`createFlowView`](capacitor-get-pb-paywalls#fetch-the-view-configuration) metoduyla oluşturulan `view` üzerinde `view.present()` metodunu kullanın. Varsayılan olarak, kapatılan bir `view` yok edilir. Flow'u tekrar görüntülemek için `createFlowView`'ı bir kez daha çağırarak yeni bir `view` örneği oluşturun ya da kapatırken [kapatılan flow'u ileride kullanmak üzere saklayın](#keep-a-closed-flow-for-later).
 
 :::warning
-Aynı `view`'ı yeniden oluşturmadan kullanmak yasaktır. Bu bir hataya yol açar.
+Yok edilmiş bir `view`'ı yeniden kullanmak hataya neden olur.
 :::
 
 ```typescript showLineNumbers
@@ -48,7 +48,7 @@ try {
 
 ## iOS sunum stilini yapılandırma \{#configure-ios-presentation-style\}
 
-`present()` metoduna `iosPresentationStyle` parametresini geçirerek flow'un iOS'ta nasıl sunulacağını yapılandırın. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder. Android'de flow'lar her zaman tam ekran activity olarak görüntülenir.
+Flow'un iOS'ta nasıl sunulacağını yapılandırmak için `present()` metoduna `iosPresentationStyle` parametresini geçirin. Parametre `'full_screen'` (varsayılan) veya `'page_sheet'` değerlerini kabul eder. Android'de flow'lar her zaman uygulamanızın Activity'si içinde tam ekran gösterilir.
 
 ```typescript showLineNumbers
 try {
@@ -58,17 +58,81 @@ try {
 }
 ```
 
-## Geliştirici tanımlı zamanlayıcı kullanma \{#use-developer-defined-timer\}
+## Flow'u daha sonra kullanmak için kapalı tutun \{#keep-a-closed-flow-for-later\}
 
-Mobil uygulamanızda geliştirici tanımlı zamanlayıcıları kullanmak için `timerId` değerini, bu örnekte `CUSTOM_TIMER_NY`'yi kullanın; bu, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Bu sayede uygulamanız zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak günceller.
+:::info
+`destroy` seçeneği ve `destroy()` metodu, SDK 4.3.0 sürümünden itibaren kullanılabilir.
+:::
+
+Kullanıcının yakında yeniden açabileceği bir flow'u — örneğin ayarlar ekranınızdaki bir düğmenin arkasındaki paywall — yeniden yüklenmeden ve kaldığı yerden açılması için kapalı tutun.
+
+Varsayılan olarak, `view.dismiss()` flow'u kapatır ve yerel görünümünü yok eder; bu nedenle `view` tekrar sunulamaz. Aynı flow'u daha sonra tekrar sunmak için `destroy: false` parametresini geçin. Bir sonraki `present()` çağrısı, flow'u kullanıcının kapattığı ekranda, bıraktığı durumuyla açar ve olay işleyicileriniz ayarlı kalmaya devam eder:
 
 ```typescript showLineNumbers
-const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
+// Close the flow and keep its native view in memory
+await view.dismiss({ destroy: false });
 
-const view = await createFlowView(flow, { customTimers });
+// Later: open the flow again on the same screen
+await view.present();
 ```
 
-Bu örnekte `CUSTOM_TIMER_NY`, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Zamanlayıcı, uygulamanızın zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak güncellemesini sağlar.
+Native view, siz serbest bırakana kadar bellekte kalır. Flow'a artık ihtiyacınız yoksa `destroy()` metodunu çağırın:
+
+```typescript showLineNumbers
+await view.dismiss({ destroy: false });
+// ...
+await view.destroy();
+```
+
+`destroy()`, view hâlâ ekrandaysa önce onu kapatır ve olay işleyicilerini temizler. Yalnızca `destroy: false` ile kapattığınız bir view için çağırın: normal bir `dismiss()` view'ı kendi başına serbest bırakır ve sonrasında `destroy()` çağırmak başarısız olur.
+
+Sahip olduğu bileşen kaldırıldığında, tutulan view'ı serbest bırakın — Angular'ın `ngOnDestroy` metodunda, React'ın `useEffect` temizliğinde veya Vue'nun `onUnmounted` yaşam döngüsünde. Aksi takdirde native view, oturum boyunca bellekte kalmaya devam eder. Hata yakalamayı unutmayın: view daha önce serbest bırakılmış olabilir; örneğin bir olay işleyicisi `true` döndürdükten sonra.
+
+```typescript showLineNumbers
+// For example, in a React useEffect cleanup
+return () => {
+  view.destroy().catch(() => {
+    // the view was already released
+  });
+};
+```
+
+`true` döndüren bir olay işleyicisi, flow'u normal `dismiss()` ile kapatır; bu, native view'ı daha önce korumuş olsanız bile yok eder. Varsayılan `onCloseButtonPress` ve `onError` işleyicileri `true` döndürür. `onAndroidSystemBack` gibi `true` döndürdüğünüz diğer işleyiciler için de aynısı geçerlidir. Kullanıcı kapattığında flow'u korumak istiyorsanız flow'u kendiniz kapatın ve `false` döndürün:
+
+```typescript showLineNumbers
+await view.setEventHandlers({
+  onCloseButtonPress() {
+    view.dismiss({ destroy: false }).catch(error => {
+      // handle the error
+    });
+    return false;
+  },
+});
+```
+
+## Geliştirici tanımlı zamanlayıcıyı kullanma \{#use-developer-defined-timer\}
+
+Bu bölümü, Flow & Paywall Builder'da **Developer defined** davranışına sahip bir zamanlayıcı için kullanın. Builder'da her böyle zamanlayıcının bir **Timer ID**'si vardır (bkz. [Uygulamanızın bitiş tarihini ayarlamasına izin verme](flow-timer#let-your-app-set-the-end-date)) ve uygulamanız bu zamanlayıcı için bitiş tarihini belirler. Kodunuzda, builder'dakiyle aynı Timer ID'yi kullanın; büyük-küçük harf ve boşluklar dahil, karakter karakter aynı olmalı. ID'ler farklıysa zamanlayıcı uygulamanızdan bitiş tarihi alamaz.
+
+Bitiş tarihlerini ayarlamak için `customTimers` parametresini `createFlowView`'a geçirin: her Timer ID'sini bir `Date`'e, yani zamanlayıcının bitiş tarihine eşleyen bir nesnedir.
+
+```typescript showLineNumbers
+
+const customTimers = {
+  CUSTOM_TIMER_NY: new Date(new Date().getFullYear() + 1, 0, 1), // next New Year's Day
+};
+
+try {
+  const view = await createFlowView(flow, { customTimers });
+  await view.present();
+} catch (error) {
+  // handle the error
+}
+```
+
+Bu örnekte, `CUSTOM_TIMER_NY`, builder'da **Geliştirici tanımlı** bir zamanlayıcının Timer ID'sidir. Zamanlayıcı, bir sonraki Yılbaşı Günü'ne kalan süreyi gösterir; örneğin `13d 09h 03m 34s`.
+
+SDK, `customTimers`'ı yalnızca bir kez, görünümü oluştururken okur; bu nedenle hesapladığınız bir tarih (örneğin şu andan 6 saat sonrası) o andan itibaren sayılmaya başlar. Tarih geçmişte kalırsa zamanlayıcı anında sıfırı gösterir ve **On timer end** tetikleyicisi çalışır. `customTimers`'da bir Timer ID için anahtar yoksa, zamanlayıcı ekran açılışından itibaren bir saat geri sayar.
 
 ## İletişim kutusunu göster \{#show-dialog\}
 
@@ -152,9 +216,9 @@ try {
 }
 ```
 
-## Geliştirici tanımlı zamanlayıcıyı kullanma \{#use-developer-defined-timer\}
+## Geliştirici tanımlı zamanlayıcı kullanma \{#use-developer-defined-timer\}
 
-Mobil uygulamanızda geliştirici tanımlı zamanlayıcıları kullanmak için `timerId`'yi, bu örnekte `CUSTOM_TIMER_NY`'yi, yani Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sini kullanın. Bu sayede uygulamanız zamanlayıcıyı doğru değerle dinamik olarak günceller; örneğin `13d 09h 03m 34s` (zamanlayıcının bitiş zamanı olan Yılbaşı gibi bir tarihin, o anki zamandan çıkarılmasıyla hesaplanır).
+Mobil uygulamanızda geliştirici tanımlı zamanlayıcıları kullanmak için `timerId` değerini, bu örnekte `CUSTOM_TIMER_NY`'yi kullanın; bu, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Bu sayede uygulamanız zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak günceller.
 
 ```typescript showLineNumbers
 const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
@@ -162,7 +226,7 @@ const customTimers = { 'CUSTOM_TIMER_NY': new Date(2025, 0, 1) };
 const view = await createPaywallView(paywall, { customTimers });
 ```
 
-Bu örnekte, `CUSTOM_TIMER_NY` Adapty kontrol panelinde belirlediğiniz geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Zamanlayıcı, uygulamanızın zamanlayıcıyı doğru değerle dinamik olarak güncellemesini sağlar—örneğin `13d 09h 03m 34s` (zamanlayıcının bitiş saatinden, Yılbaşı gibi, mevcut zaman çıkarılarak hesaplanır).
+Bu örnekte `CUSTOM_TIMER_NY`, Adapty kontrol panelinde ayarladığınız geliştirici tanımlı zamanlayıcının **Timer ID**'sidir. Zamanlayıcı, uygulamanızın zamanlayıcıyı doğru değerle (örneğin, zamanlayıcının bitiş zamanı olan Yılbaşı gününden mevcut zamanın çıkarılmasıyla hesaplanan `13d 09h 03m 34s` gibi) dinamik olarak güncellemesini sağlar.
 
 ## İletişim kutusu gösterme \{#show-dialog\}
 
