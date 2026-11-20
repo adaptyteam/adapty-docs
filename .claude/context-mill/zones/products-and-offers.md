@@ -101,17 +101,32 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
     path was not traced.
   - **On iOS, the credit lands before the purchase result reaches app code.** The SDK waits for its
     purchase validation request, and the backend credits inside that request. Exceptions: when
-    validation fails, the SDK still reports `.success`, and the credit arrives later with the App Store
-    server notification (the two paths can't credit twice); with a StoreKit configuration file in Xcode,
-    the SDK skips validation, so Adapty adds no credits (AdaptySDK-iOS 4.4.0
-    `Sources/StoreKit/StoreKitPurchaser.swift`, the Xcode-environment guard before `validate`). A
-    crediting error is logged and never fails the purchase. Android calls the same backend path;
-    not traced line by line.
-  - **A spend is checked twice:** against `available` (balance minus `held`, so in practice the
-    balance), then against the unexpired credit batches, expiring ones first. So `available` can
-    overstate what a spend can take while expired subscription credits wait for their reset, and the
-    spend fails with `insufficient_balance` although `available` looks sufficient. Credits from
-    one-time products never expire, so a pack-only balance is never affected.
+    validation fails, the SDK still reports `.success` and leaves the StoreKit transaction unfinished
+    (AdaptySDK-iOS 4.4.0 `Sources/StoreKit/StoreKitPurchaser.swift:364-375`). A subscription's credit
+    then arrives with the App Store server notification (the two paths can't credit twice). A one-time
+    pack has no such notification: the backend handles no App Store one-time-charge notification type
+    (backend code, 2026-11-19). The pack's credit arrives when the SDK sends the unfinished transaction
+    again, with reason `unfinished` (`Sources/StoreKit/TransactionManager.swift:155`), from
+    `syncTransactionHistory` (`Sources/Profile/ProfileManager.swift:193`), which runs when the profile
+    loads (`ProfileManager.swift:55`, `:131`), such as at the next app launch, and on a restore
+    (`Sources/StoreKit/Adapty+MakePurchase.swift:85`). **Corrected 2026-11-19:** this bullet said every
+    late credit arrives with the App Store notification, which holds for subscriptions only, and
+    `ios-virtual-currency-top-up` shipped that claim for packs. With a StoreKit configuration file in
+    Xcode, the SDK skips validation, so Adapty adds no credits (`StoreKitPurchaser.swift`, the
+    Xcode-environment guard before `validate`). A crediting error is logged and never fails the
+    purchase. Android calls the same backend path; not traced line by line, and Android's handling of
+    an unfinished purchase after a failed validation was not read.
+  - **`available` is what a spend can take (corrected 2026-11-19).** List virtual currency balances
+    (GET) returns `available` = balance − `held` − expired credits, floored at 0; the response to Create
+    virtual currency transaction (POST) returns, in `balances[].available`, what a debit can spend at
+    that moment, read from the live credit batches (backend code, merged 2026-11-18, read 2026-11-19). A
+    debit takes the unexpired credit batches, expiring ones first (backend code, 2026-11-17). Until
+    2026-11-18, `available` was balance − `held` and could overstate the spendable amount while expired
+    subscription credits waited for their reset. This bullet said so on 2026-11-18 from a read made a
+    few hours before the change merged, and `ios-virtual-currency-top-up` shipped that claim. So when a
+    spend fails with `insufficient_balance` and the missing amount (cost − `available`) comes out at 0 or
+    less, credits arrived between the spend and the read. Not re-read on 2026-11-19: whether the debit
+    still checks the balance before it reads the batches.
 - **Three claim classes belong to the stores, and no registered source can check them.** App Store
   offer types, Play's base plans and offer phases (including its console eligibility labels and phase
   rules), and store review requirements — `app-store-offers`'s "win-back needs App Review first" is one
@@ -162,7 +177,12 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
   currency fields). An unreleased AdaptySDK-iOS branch adds a read-only balance on the profile, and no
   branch of any SDK has a spend method. The app-side half of the feature, a spend from the app's backend
   and a flow on `insufficient_balance`, is the iOS recipe `ios-virtual-currency-top-up` (2026-11-18),
-  which lives in the iOS sidebar, not here.
+  which lives in the iOS sidebar, not here. **Rebuilt 2026-11-19** as "Spend and sell virtual currency
+  in flows": two flows, one where native spend buttons (custom elements) call the backend, and a top-up
+  flow with packs and a subscription that opens on `insufficient_balance`. The recipe spends only on a
+  player's tap: after a purchase, the player taps again (reviewer feedback, 2026-11-19: an automatic
+  debit is bad practice). So no article shows an automatic spend, a rewarded ad for currency, or an
+  upgrade offer; an upgrade guide is planned as a separate article.
 - **We don't write the backend mechanics established above.** The eligibility derivations, the
   write-once price field, the UI-only duration lock, and the auto-created `product_origin = SDK` row
   are here so a task can reason correctly; a reader can't act on any of them. They surface in an
@@ -185,24 +205,30 @@ reconciles them. Everything below is read out of `dashboard-backend` (`origin/de
 | offers | entry | marketer | 1 | tutorial |
 | offers-in-stores | entry | marketer | 0 | tutorial |
 | product | entry | marketer | 0 | tutorial |
-| virtual-currencies | entry | marketer | 3 | tutorial |
-| virtual-currency-balance | — | marketer | 3 | tutorial |
+| store-sync | entry | marketer | 7 | tutorial |
+| virtual-currencies | entry | marketer | 7 | tutorial |
+| virtual-currency-balance | — | marketer | 6 | tutorial |
 | virtual-currency-quickstart | — | marketer | 0 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 
 ## Ripple rules
 
-- **`ios-virtual-currency-top-up` restates the crediting rules, and its retry code depends on them
-  (2026-11-18).** Its `## Before you start` sets each pack's **Credit amount**, each tier's **Credit per
-  cycle**, and **Credit on trial start** to at least the spend price. So every purchase in the flow covers
-  the shortfall, and the retry after a top-up can fail only when validation is late (see Sources of
-  truth); the code then tells the player in the app's own UI and doesn't reopen the flow. A change to
-  when or how much Adapty credits (first purchase, trial start, upgrade, expiry) ripples into that list,
-  the recipe's upgrade paragraph, and its testing step. Three articles here link the recipe:
-  `virtual-currencies` (Use cases, **Mobile games** row), `create-virtual-currency`, and
-  `virtual-currency-quickstart` (step 3, after `insufficient_balance`). The shared builder and backend
-  steps sit in ten `VcTopUp*` reusable snippets, ready for an Android version of the recipe.
+- **`ios-virtual-currency-top-up` restates the crediting rules, and its after-purchase code depends on
+  them (2026-11-18; rebuilt as two flows 2026-11-19).** Its `## Before you start` sets each pack's
+  **Credit amount**, the subscription's **Credit per cycle**, and **Credit on trial start** to at least
+  30, the cost of the dearer of its two spend buttons, so one purchase covers either spend. After a
+  purchase, the app code reads the balance, closes the top-up flow, and opens the spend flow again; the
+  player taps again. When the balance hasn't grown (a late validation, see Sources of truth), the code
+  closes the top-up flow and tells the player in the game's own UI that the diamonds are on the way. A
+  change to when or how much Adapty credits (first purchase, trial start, expiry, late validation)
+  ripples into that list, that paragraph, and the testing step. A change to what the balance's
+  available amount means, or to `insufficient_balance`, ripples into its backend step, which computes
+  the missing amount as the cost minus the available amount from List virtual currency balances. The
+  rebuild removed the automatic retry, the rewarded ad, and the upgrade paragraph. Three articles here link the recipe: `virtual-currencies` (Use cases, **Mobile games** row),
+  `create-virtual-currency`, and `virtual-currency-quickstart` (step 3, after `insufficient_balance`);
+  their link text must not promise an ad. The shared builder and backend steps sit in the `VcTopUp*`
+  reusable snippets, ready for an Android version of the recipe.
 
 ## Boundaries
 
@@ -247,8 +273,8 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
 | "can't delete this product", "swap a product on a published paywall", "which product appears first", "product display order in the app" | Product-to-paywall coupling: `delete-product` refuses deletion while any paywall uses the product, and `add-product-to-paywall` both sets the display order (preserved SDK-side, not sorted in app code) and warns that post-publish product edits skew that paywall's metrics. For placement on the Flow Builder canvas, see `flow-logic`. |
 | "tokens", "credits", "coins", "gems", "hearts", "charge per generation", "usage allowance", "pay per use" | All virtual currency, whatever the app calls it: `virtual-currencies` for the model and its hard limits — max 20 currencies per app, and **no SDK method** to read or spend a balance, so this feature requires a backend calling the server-side API. |
 | "credits vanished", "balance reset", "lost credits after reinstall", "existing subscribers got nothing" | Three distinct causes. Expiry toggle on `create-virtual-currency` zeroes, at each renewal, only the unused credits that renewing subscription granted — credits from other subscriptions, one-time products and Server-side API grants stay (backend code, 2026-11-03); product links apply going forward only, so a current subscriber waits for their next renewal; and per `virtual-currency-balance` a balance belongs to exactly one profile, so an anonymous user loses it on reinstall or a second device. An App Store upgrade counts as a renewal of the same chain, so the lower tier's unspent expiring credits reset at the upgrade (backend code, 2026-11-17; stated in `create-virtual-currency` since 2026-11-18). |
-| "`insufficient_balance`", "double-charged tokens on a retry", "convert gems to gold" | `virtual-currency-quickstart`. Balances can't go negative, a transaction is atomic and can debit one currency while crediting another, and `Idempotency-Key` is what makes a retry safe. A failed spend releases its key, so the retry after a top-up reuses it and debits normally (backend code, 2026-11-17). The app-side pattern, a flow on `insufficient_balance` and then the retry, is `ios-virtual-currency-top-up`. |
-| "bought coins but the balance didn't change", "no credits when testing in Xcode", "the subscription's first purchase gave nothing", "the free trial gave no coins", "upgrade gave the full amount" | Five answers (2026-11-18; see Sources of truth). A StoreKit configuration file in Xcode adds no credits, because the SDK skips validation: test in the sandbox. That consequence is stated only in `ios-virtual-currency-top-up`; `local-sk-files` (zone `testing-and-release`) says only that local tests don't reach the dashboard. When validation fails, the credit arrives later with the App Store notification. A free trial credits only **Credit on trial start**, which can be empty. An upgrade credits the higher tier's full **Credit per cycle** by design. Before 2026-09-01, a first purchase lost its credit when the App Store notification arrived before the SDK's validation request tied the purchase to a profile; backend code read on 2026-11-17 replays the credit once the profile is attached, so a report from before that date is likely that defect (medium-high; not reproduced). |
+| "`insufficient_balance`", "double-charged tokens on a retry", "convert gems to gold" | `virtual-currency-quickstart`. Balances can't go negative, a transaction is atomic and can debit one currency while crediting another, and `Idempotency-Key` is what makes a retry safe. A failed spend releases its key, so the same key can send the spend again and debits normally (backend code, 2026-11-17). The app-side pattern, a spend flow and a top-up flow on `insufficient_balance`, with the player tapping again after a purchase, is `ios-virtual-currency-top-up` (rebuilt 2026-11-19). |
+| "bought coins but the balance didn't change", "no credits when testing in Xcode", "the subscription's first purchase gave nothing", "the free trial gave no coins", "upgrade gave the full amount" | Five answers (2026-11-18; see Sources of truth). A StoreKit configuration file in Xcode adds no credits, because the SDK skips validation: test in the sandbox. That consequence is stated only in `ios-virtual-currency-top-up`; `local-sk-files` (zone `testing-and-release`) says only that local tests don't reach the dashboard. When validation fails, a subscription's credit arrives with the App Store notification, and a pack's credit arrives when the SDK sends the unfinished transaction again, such as at the next app launch (corrected 2026-11-19). A free trial credits only **Credit on trial start**, which can be empty. An upgrade credits the higher tier's full **Credit per cycle** by design. Before 2026-09-01, a first purchase lost its credit when the App Store notification arrived before the SDK's validation request tied the purchase to a profile; backend code read on 2026-11-17 replays the credit once the profile is attached, so a report from before that date is likely that defect (medium-high; not reproduced). |
 
 ## Gaps and misses
 
@@ -263,10 +289,10 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
     2026-11-18:** this entry said "unexpired credits minus amounts held for a pending spend", and
     `virtual-currency-balance` said the same until 2026-11-18. Holds don't exist: `held` is always 0
     (`adapty-api.yaml`; backend code, 2026-11-17). The profile card shows the spendable amount only
-    when it is lower than the balance. A debit (API or dashboard) is checked against `available` and
-    then against the unexpired credit batches (see Sources of truth), which comes to the spendable
-    amount; the API's `available` itself can be higher than that. How the profile card computes its
-    figure was not re-checked on 2026-11-18. The dashboard
+    when it is lower than the balance. A debit (API or dashboard) takes only the unexpired credit
+    batches, which comes to the spendable amount; since 2026-11-18 the API's `available` matches it
+    (corrected 2026-11-19, see Sources of truth). How the profile card computes its figure was not
+    re-checked on 2026-11-18. The dashboard
     adjustment is gated to Owner, Admin, and Support; requires `feature`; takes an optional reference
     ID (≤128) and one-line comment (≤200); is idempotent per request key; is marked sandbox when the
     profile is a test user; and is not sent to webhooks or integrations (the last per the feature
@@ -296,3 +322,19 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
     "no SDK method to read … a balance" in `virtual-currencies`, the same claim in this brief's
     `What we document`, and the "tokens" row of `Ticket language`. Checked by branch listing and
     `git grep` on AdaptySDK-iOS (2026-11-17); the release version is not fixed in code.
+
+- **2026-11-19 — reviewer feedback on the virtual currency recipe (autolog).** Checked against backend
+  code (read 2026-11-19) and AdaptySDK-iOS 4.4.0.
+  - *Wrong in this brief, corrected in place:* (1) `available` overstating the spendable amount. True
+    until the backend change merged on 2026-11-18; the 2026-11-18 entry relied on a read from
+    2026-11-17. (2) A late credit always arriving with the App Store notification: true for
+    subscriptions, wrong for packs, which arrive when the SDK resends the unfinished transaction. Both
+    reached `ios-virtual-currency-top-up`, which its 2026-11-19 rebuild corrects. Before you repeat a
+    balance or credit claim from this brief, compare its read date with the last change to the
+    virtual currency backend.
+  - *Wrong in the corpus, not fixed here:* `adapty-api.yaml` describes `available` as "Balance available
+    to spend, computed as `balance - held`." in both balance schemas (lines 3294 and 3340, checked
+    2026-11-19). GET now subtracts expired credits too, and the POST response returns what a debit can
+    spend. The spec is the maintained reference (see `server-side-api`), so the fix is a spec edit.
+  - *Open:* Android's path for a pack whose validation failed (does the SDK resend it, and when) was
+    not read.
