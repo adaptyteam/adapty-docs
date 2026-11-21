@@ -293,6 +293,18 @@ Corpus-wide synonyms live in `aliases.md` and are not repeated here.
 
 ## Gaps and misses
 
+- **2026-11-21, 12-month commitment plans in the CLI and MCP (`developer-cli-products`, `adapty-mcp`):** written from the
+  accepted feature spec before the CLI release and the MCP deploy, so verify the names against the merged
+  `src/cli/commands/products/` and `src/cli/commands/product-offers/` in `adapty-cli` and against the live tool list before
+  the pages go live: `products monthly-plan prices`, `products monthly-plan set` (`--price-usd`, `--yes`, exit 6 with
+  `confirm_required` when it adds a plan without a yes; a re-price never asks), `product-offers create|update --billing-plan
+  upfront|monthly`, and the tools `products_monthly_plan_prices`, `products_monthly_plan_set` and the `billing_plan` argument
+  of `product_offers_create|update`. Whether `--yes` also takes `-y` is unverified. The error codes in the page's table are
+  the backend's existing commitment-plan codes (dashboard messages, backend code, 2026-11-12). Found on the way, not fixed:
+  `developer-cli-products` documents neither `--price-usd` of `products create` and `products update` nor `products push`,
+  which `adapty` `0.29.0` on npm has (`npm pack adapty`, `dist/cli/commands/products/`, 2026-11-21). The 12mc pages
+  now say the plan isn't available in the United States and Singapore (Apple's help page); `set-up-12-month-commitment`
+  keeps "A US account" as the sandbox account without the plan, which stays true.
 - **2026-11-18, `adapty retention-messaging` topic page `developer-cli-retention-messaging`:** written from the accepted feature spec
   and the backend contract before the CLI release, so verify the flag names against the merged
   `src/cli/commands/retention-messaging/` in `adapty-cli` before the page goes live (the list and suggest flags, and the
