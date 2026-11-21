@@ -1,10 +1,10 @@
 ---
 title: "Products and product offers commands"
-description: "Adapty CLI commands that list, read, create, and update products, map them to App Store and Google Play product IDs, and link store offers to them."
+description: "Adapty CLI commands that list, read, create, and update products, map them to App Store and Google Play product IDs, add 12-month commitment plans, and link store offers to them."
 metadataTitle: "Products and Offers CLI Commands | Adapty Docs"
 ---
 
-These Adapty CLI commands manage [products](product), map them to their App Store and Google Play product IDs, and link store offers to them.
+These Adapty CLI commands manage [products](product), map them to their App Store and Google Play product IDs, add 12-month commitment plans to yearly products, and link store offers to them.
 
 ## Products
 
@@ -94,6 +94,83 @@ adapty products update --app <app-id> <product-id> --title "Monthly" --access-le
 | `--title` | No | Product title |
 | `--access-level-id` | No | [Access level](access-level) ID (UUID) this product unlocks |
 
+## Commitment plans
+
+A [12-month commitment plan](app-store-12-month-commitment) lets subscribers pay for a yearly App Store subscription in 12 monthly payments. To display the commitment plan in flows and custom paywalls, add it to the yearly product in Adapty with these commands. For the full setup, see [Set up a 12-month commitment plan](set-up-12-month-commitment).
+
+Adapty doesn't add the commitment plan to App Store Connect. In App Store Connect, set up monthly billing for the subscription too, with the same monthly price. The commitment plan isn't available in the United States and Singapore, and requires iOS 26.4 or later.
+
+The product needs the `annual` period, an App Store product ID, and a USD price. To set the USD price, use `--price-usd` of `adapty products create` or `adapty products update`.
+
+`adapty products list` and `adapty products get` show the commitment plan of each product in the `Monthly plan` line: its monthly price, `price not set in Adapty`, or `none`. With `--json`, the plan is in `app_store_monthly_plan`: `vendor_product_id` and `price_usd`, or `null` when the product has no commitment plan. `price_usd` is `null` when the plan came from the first commitment-plan purchase and nobody has set its price in Adapty.
+
+:::important
+You can't remove a commitment plan from Adapty, and the CLI has no command for it. To stop the monthly payments, turn off monthly billing for the subscription in App Store Connect.
+:::
+
+### adapty products monthly-plan prices
+
+List the monthly prices that the commitment plan of a product can have.
+
+```bash
+adapty products monthly-plan prices --app <app-id> <product-id>
+```
+
+| Argument | Description |
+|---|---|
+| `product-id` | Product ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The command prints the USD price of the yearly product, then the App Store price points from 1/12 to 1/8 of that price, one per line. For example, for a yearly price of $59.99, the list runs from $5.00 to $7.49. With `--json`, the command returns `annual_price_usd` and the `prices` array.
+
+When the product can't have a commitment plan, the command lists no prices and exits with code 4. The message gives the same error code as [`adapty products monthly-plan set`](#errors-of-commitment-plan-commands).
+
+### adapty products monthly-plan set
+
+Add a commitment plan to a yearly product, or change the monthly price of its commitment plan.
+
+```bash
+adapty products monthly-plan set --app <app-id> <product-id> --price-usd 5.99
+```
+
+| Argument | Description |
+|---|---|
+| `product-id` | Product ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--price-usd` | Yes | Monthly price in USD. Use a price from `adapty products monthly-plan prices`. The price is a reference value: Adapty doesn't send it to App Store Connect |
+| `--yes` | No | Add the commitment plan without asking. Required with `--json` or in a pipe when the product has no commitment plan |
+
+When the product has no commitment plan, the command adds one, and you can't remove it from Adapty. So the command shows this effect before it sends anything:
+
+| How the command runs | What happens |
+|---|---|
+| In a terminal | The CLI prints the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI adds the commitment plan. For any other answer, the CLI exits with code 1 and sends nothing. |
+| With `--yes` | The CLI adds the commitment plan without asking. |
+| With `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The message describes the effect. With `--json`, the error code is `confirm_required`. |
+
+An agent shows the effect from the message to the user, and runs the command again with `--yes` only after the user agrees.
+
+When the product has a commitment plan, the command changes its monthly price without asking.
+
+#### Errors of commitment plan commands
+
+When the product or the price doesn't meet a rule, Adapty refuses the request and changes nothing. The command exits with code 4 and prints the error code with the message from Adapty:
+
+| Error code | Cause | What to do |
+|---|---|---|
+| `monthly_plan_requires_annual_product` | The product period isn't `annual`. | Use a yearly product. |
+| `monthly_plan_requires_product_price` | The product has no USD price. | Set the price with `--price-usd` of `adapty products update`. |
+| `monthly_plan_has_no_price_points` | No App Store price point is in the range from 1/12 to 1/8 of the yearly price. | Use a yearly product with a higher USD price. |
+| `monthly_plan_price_out_of_range` | The monthly price is outside that range. The message gives the range. | Use a price from `adapty products monthly-plan prices`. |
+| `monthly_plan_invalid_price_point` | The monthly price isn't an App Store price point. | Use a price from `adapty products monthly-plan prices`. |
+| `monthly_plan_requires_app_store_product` | The product has no App Store product ID. | Use a product with an App Store product ID. |
+
 ## Product offers
 
 Link the offers you created in App Store Connect or Google Play Console to an Adapty product, so Adapty can apply them. For what each offer type does and how to create the offer in the store, see [Add offers to Adapty](create-offer).
@@ -108,6 +185,8 @@ Don't add App Store introductory offers: they apply automatically to eligible us
 A linked offer still has to be selected for the product in a flow or a paywall before users see it. To select it in a paywall, use the Adapty dashboard: see [Display offer](create-offer#2-display-offer).
 
 `adapty products list` and `adapty products get` show how many offers are linked to each product in `offers_count`. The count includes only offers linked in Adapty, not the offers that exist in the stores.
+
+In App Store Connect, each offer belongs to one billing plan of the subscription: the upfront plan or the [commitment plan](#commitment-plans). The App Store side of an offer in Adapty has the same billing plan. `adapty product-offers list` and `adapty product-offers get` show it as `Plan: Upfront` or `Plan: Monthly`. With `--json`, it's `billing_plan_type` in `store_offers.app_store`: `monthly`, or `null` for the upfront plan. A Google Play offer has no billing plan.
 
 ### adapty product-offers list
 
@@ -156,11 +235,18 @@ adapty product-offers create --app <app-id> --product <product-id> --title "Spri
 | `--type` | Yes | Offer type: `promotional` or `win_back` |
 | `--ios-offer-id` | At least one store required | Offer ID from App Store Connect |
 | `--android-offer-id` | At least one store required | Offer ID from Google Play Console |
+| `--billing-plan` | No | Billing plan of the App Store offer: `upfront` (default) or `monthly` |
 
 Win-back offers are App Store only, so `--type win_back` takes only `--ios-offer-id`. For any Google Play offer, a free trial included, use `--type promotional`.
 
 ```bash
 adapty product-offers create --app <app-id> --product <product-id> --title "Come back" --type win_back --ios-offer-id winback_ios
+```
+
+For an offer that you set up for the commitment plan in App Store Connect, pass `--billing-plan monthly`. The billing plan applies only to the App Store side of the offer, so `monthly` requires `--ios-offer-id`. The product must also have a [commitment plan](#commitment-plans): without one, Adapty refuses the request.
+
+```bash
+adapty product-offers create --app <app-id> --product <product-id> --title "Spring monthly" --type promotional --ios-offer-id spring_monthly_ios --billing-plan monthly
 ```
 
 ### adapty product-offers update
@@ -184,8 +270,11 @@ adapty product-offers update --app <app-id> <offer-id> --title "Spring 2"
 | `--android-offer-id` | No | New Google Play offer ID |
 | `--clear-ios-offer-id` | No | Remove the App Store side of the offer |
 | `--clear-android-offer-id` | No | Remove the Google Play side of the offer |
+| `--billing-plan` | No | New billing plan of the App Store offer: `upfront` or `monthly`. `monthly` requires a [commitment plan](#commitment-plans) on the product |
 
 At least one flag besides `--app` is required. Fields you leave out keep their current values. Every offer keeps at least one store offer ID, so the command fails if it would remove the last one.
+
+To change the billing plan of an offer that a paywall displays, remove the offer from that paywall first. Otherwise, Adapty refuses the change with the `store_offer_billing_plan_in_use` error, and the message names the paywalls.
 
 :::warning
 The command reads the offer and saves it whole. If someone edits the same offer in the Adapty dashboard between that read and the save, their change is overwritten.
