@@ -1,10 +1,10 @@
 ---
 title: "Flows commands"
-description: "Adapty CLI commands that create flows, read and write their builder configs, validate and preview them, upload media, publish them, list and restore their versions, duplicate them, and read their metrics and screen funnel."
+description: "Adapty CLI commands that create flows, read and write their builder configs, validate and preview them, upload media and custom fonts, publish them, list and restore their versions, duplicate them, and read their metrics and screen funnel."
 metadataTitle: "Flows CLI Commands | Adapty Docs"
 ---
 
-[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, publication, and the [version history](flow-version-history). A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The `flows funnel` commands read the [flow funnel](flow-funnel) and need CLI version 0.19.0 or later. The commands are listed here as a reference.
+[Flows](adapty-flow-builder) are the paywalls and onboardings you build in the Flow & Paywall Builder. The CLI manages the flow record, its builder config, publication, and the [version history](flow-version-history). A builder config is a large JSON document that the Flow & Paywall Builder normally produces, and the CLI doesn't generate one. To author or edit a config from the terminal, use the [flow-generator skill](flow-generator-skill), which drives these commands for you. Before publishing, the [flow-audit skill](flow-audit-skill) checks whether the flow is ready for production. The [`fonts` commands](#custom-fonts) upload and manage the custom fonts that flows use. The `flows metrics` commands read the numbers of the [flow metrics](flow-metrics) page and need CLI version 0.15.0 or later. The `flows funnel` commands read the [flow funnel](flow-funnel) and need CLI version 0.19.0 or later. The commands are listed here as a reference.
 
 ## adapty flows list
 
@@ -95,6 +95,22 @@ adapty flows publish --app <app-id> <flow-id>
 | `--yes`, `-y` | No | Publish without asking for confirmation. Required when the output is piped or `--json` is used |
 
 Because publishing changes what your users see, the command prints the flow name and asks for confirmation. Any answer other than `y` cancels the command with exit code 1. Under `--json` or in a pipe, the command refuses with exit code 2 instead of waiting for an answer, so pass `--yes` in scripts and agent sessions.
+
+When the config uses a [custom font](#custom-fonts), the command first reads the app's current fonts. If the copy of the fonts in the config is out of date, the command saves the config with the current fonts, then publishes. The save keeps the remote configs, and fails if someone changed the config after the command read it. When the command saved the config and the publication started, its human-readable output has a `Fonts refreshed` line. The command stops before any change when it can't read the fonts, or when the config names a font family by a name that several families of the app have (exit code 2). For the shared name, rename one of the families, or name the family by its ID in the config. When the copy needs a save, the command also needs an integer `updated_at` and a `remote_configs` list in the config answer. Without them, it stops before any change with `malformed_response`. When the copy is current, the command saves nothing and publishes without them. If the save fails, nothing is published. If the publication fails after the save, the saved config stays.
+
+If you publish through the Developer API instead of the CLI, follow the same steps after a font change:
+
+1. Read the stored config, its `remote_configs`, and its `updated_at`, and read the app's current custom fonts.
+2. Rebuild the config's `_meta.fonts`: one entry for each font family the config refers to, in the order the config first refers to them. A reference is a family ID, or a family name that exactly one family of the app has, compared trimmed and in any case. Each entry has:
+   - `id` and `name` of the family;
+   - `url`, `iosName`, and `androidName` of the family's default face: its file URL, or an empty string when it has none, and its two font names;
+   - `faces`: one object for each face, with `id`, `weight`, `italic`, `isDefault`, `iosName`, `androidName`, and `url`. A face without its own file URL takes the family's `url`.
+
+   Leave out every field whose value is `null`. When no family of the app matches a reference and the stored entry for it is a font your app bundles (an `id` that starts with `user-font-` and no URL in the entry or its faces), keep that entry as it is. Drop every other entry.
+3. Only if `_meta.fonts` changed, save the config with the same `remote_configs` and with `expected_updated_at` set to the `updated_at` you read. The save then fails if someone changed the config in the meantime.
+4. Publish the flow, then poll the flow until its status is `published` or `publication_failed`.
+
+Stop at the first read or save that fails, before you publish.
 
 Publication is asynchronous: the response reports `status: publishing`, and the flow isn't live yet. Poll [`flows get`](#adapty-flows-get) until the status becomes `published` or `publication_failed`. On `publication_failed`, [`flows config get`](#adapty-flows-config-get) reports why.
 
@@ -235,6 +251,242 @@ adapty flows media upload-video --app <app-id> ./intro.mp4
 Accepted formats: MP4 and WebM. The video must be at most 30 seconds long and at most 50 MB, and its width and height must each be at least 640 pixels. GIF isn't supported, and the command doesn't convert an animated image to a video.
 
 The response contains the video URL (an HLS playlist), the preview image URL, and the video `width` and `height`. In the config, a video element takes them as `videoUrl`, `previewUrl`, `width`, and `height`.
+
+## Custom fonts
+
+The `adapty fonts` commands upload and manage the [custom fonts](using-custom-fonts-in-flow-builder) of an app. All flows of the app use the same fonts, the same as fonts you upload in the Flow & Paywall Builder. A font family has one or more faces. A face is one weight and style of a `.ttf` or `.otf` file.
+
+:::warning
+Adapty doesn't send the font files to users' devices. To show a custom font in your app, [add the same font files to your app's bundle](using-custom-fonts-in-flow-builder#add-the-font-files-to-your-apps-bundle), with the iOS and Android font names that the faces have in Adapty.
+:::
+
+To use a custom font in a flow config, set the font by font family and weight. On a text element, the font is in `props.font`: `"font": {"family": {"type": "user", "id": "<font-family-id>"}, "weight": "bold"}`. On a text style in `theme.typography`, `family` and `weight` are keys of the style's `settings`, with no `font` object around them. The family can also be named by its family name. Italic is set on a rich-text span. When you publish the flow, Adapty uses the face with that weight and style. If the family has no such face, Adapty uses the face with the closest weight in the same style, then in any style. When two faces are equally close, the lighter face wins.
+
+A command that changes a font family that flows use lists those flows in `flows_to_publish`. Publish each of them with [`flows publish`](#adapty-flows-publish) to send the change to your users. `flows_to_publish` is `null` in two cases, and the command prints a warning. With `--json`, `flows_to_publish_error` gives the reason and the next step:
+
+- **The upload stopped at a file**, the last or only file included: Adapty may have stored that file, so the changed families aren't known. Run [`fonts list`](#adapty-fonts-list) to find them, then [`fonts usage`](#adapty-fonts-usage) for each of them.
+- **Only the read of the flows failed**: Every file has its result. Run [`fonts usage`](#adapty-fonts-usage) for each family the command changed.
+
+## adapty fonts list
+
+List the custom font families of an app, with their faces.
+
+```bash
+adapty fonts list --app <app-id>
+```
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+For each face, the response contains the weight, italic, the iOS and Android font names, the default face of the family, and the file format. `metadata_status` shows whether the weight and italic of the face are known: `detected` and `confirmed` mean they are known; `needs_review` and `legacy_unconfirmed` mean they aren't. To set them, use [`fonts faces update`](#adapty-fonts-faces-update).
+
+## adapty fonts get
+
+Get one font family with its faces.
+
+```bash
+adapty fonts get --app <app-id> <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | Font family ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+## adapty fonts upload
+
+Upload font files. Adapty reads the family name stored in each file. The file joins the family with that name, in any case, or creates a new family.
+
+```bash
+adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-Italic.otf
+```
+
+| Argument | Description |
+|---|---|
+| `file` | Path to a `.ttf` or `.otf` file. To upload several files, list each of them |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--choice` | No | What to do when a file collides with faces the app already has: `replace` puts the file on every colliding face, `keep` skips the file |
+
+A static font file creates one face. A variable font file creates one face for each named style in the file. Other formats, such as WOFF and WOFF2, aren't supported. The command reads every file before it sends the first one: if it can't read a file, it stops with exit code 2 and sends nothing.
+
+The command sends one file per request. After the last file, it prints the result of each file. With `--json`, the results are in `files`:
+
+| Result | Meaning |
+|---|---|
+| `created` | The file created a new font family |
+| `added` | The faces of the file joined an existing family |
+| `partly_added` | Some faces of the file joined the family. `kept_faces` lists the faces the family already had |
+| `replaced` | The file replaced the file of the colliding faces, after `--choice replace`. `replaced_faces` lists them |
+| `kept` | The file was skipped, after `--choice keep` |
+| `refused` | Adapty refused the file. `error_code` and `message` say why |
+| `failed` | A network or authentication error, or an answer the CLI couldn't read, stopped the upload at this file. After a network error or an unreadable answer, Adapty may have stored the file: run [`fonts list`](#adapty-fonts-list) before you send it again |
+| `not_sent` | The file wasn't sent, because the upload stopped at an earlier file |
+
+A static font file collides with a face in two cases: a face of the family the file joins has the same weight and italic, or any face of the app has the same iOS font name. For the results of a variable font file, see the list after this paragraph. Two different families can each have a Regular face. Adapty refuses a colliding file, lists every colliding face in `conflicts`, and lists the `choices`. `next_step` gives the command to run again for that file only, with `--choice replace` or `--choice keep`. With `--choice replace`, the file goes on every colliding face in one step.
+
+:::warning
+`--choice replace` replaces every face that collides at the moment the command runs. The CLI reads the collisions again by itself, so the replaced faces can be more than the faces an earlier refusal listed. If nothing collides any more, the file is uploaded as a new face. Right before you decide, run the command for that file without `--choice` to see the current list. If that run stores the file (`created`, `added`, or `partly_added`), the collision is gone and the file is uploaded: stop there, and don't run it with `--choice replace`, which could replace the new face. Only if that run is refused with choices, decide, then run the command with `--choice replace` at once. Read the result to see what happened: `replaced_faces` lists the faces that were replaced, and a `created` or `added` result means the file was uploaded as a new face. Adapty doesn't keep the old files. To replace only specific faces, use [`fonts faces replace`](#adapty-fonts-faces-replace) for each of them.
+:::
+
+A variable font file gives one of these results:
+
+- **All its styles are new to the family**: `created` or `added`, like a static file.
+- **Some of its styles are in the family already**: `partly_added`. The new styles join the family, and `kept_faces` lists the styles the family already had.
+- **All its styles are in the family already**: `refused`, with no choices. To change the file of a face, use [`fonts faces replace`](#adapty-fonts-faces-replace).
+- **A new style has an iOS font name that another face of the app has**: `refused`, with choices, like any collision.
+
+A face that has no iOS or Android font name after the upload is saved, and `warnings` names it. Set the name with [`fonts faces update`](#adapty-fonts-faces-update).
+
+| Exit code | Cause | What to do |
+|---|---|---|
+| `0` | Every file was stored or skipped | — |
+| `2` | The CLI couldn't read a file. No file was sent | Correct the path, then run the whole command again |
+| `3` | Adapty refused the CLI session, or the account has no access to the app. The files after that file weren't sent | For a refused session, log in again. For no access, verify the app ID, or log in with an account that has access to the app. Then upload the files that weren't stored |
+| `4` | Adapty refused at least one file, and the other files were sent. Or the CLI couldn't read an answer, and the upload stopped at that file. Or every file has its result (stored or skipped), but the answer about the flows that use the changed families was malformed: `flows_to_publish` is `null` | Read the result of each refused file. For a `failed` file, run [`fonts list`](#adapty-fonts-list) before you send it again. When only the read of the flows failed, run [`fonts usage`](#adapty-fonts-usage) for each family the command changed |
+| `5` | A network error. The files after that file weren't sent | Run [`fonts list`](#adapty-fonts-list) to see whether the `failed` file was stored, then upload the files that weren't stored |
+
+## adapty fonts add
+
+Add the faces of font files to a font family you choose, whatever family name the files carry.
+
+```bash
+adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | Font family ID (UUID) |
+| `file` | Path to a `.ttf` or `.otf` file. To add several files, list each of them |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--choice` | No | What to do when a file collides with faces: `replace` or `keep`. A face of the family collides when it has the same weight and italic. A face of any family of the app collides when it has the same iOS font name, and Adapty refuses that file with choices too. `replace` replaces every face that collides when the command runs, in any family |
+
+The results, the collisions, and the exit codes are the same as for [`fonts upload`](#adapty-fonts-upload).
+
+## adapty fonts rename
+
+Rename a font family. The files and faces of the family don't change.
+
+```bash
+adapty fonts rename --app <app-id> <font-family-id> "Brand Sans"
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | Font family ID (UUID) |
+| `name` | The new family name |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+Another family of the app can't have the same name. A name that differs only in case is allowed.
+
+## adapty fonts usage
+
+List the flows and paywalls that use a font family.
+
+```bash
+adapty fonts usage --app <app-id> <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-family-id` | Font family ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+The response lists the flows, drafts included, and the paywalls that use the family. For each face, it lists the paywalls that use that face, or `null` when Adapty can't tell the faces apart. A flow is listed only when its config refers to the family by ID. A flow that names the family only by its name isn't listed.
+
+## adapty fonts faces update
+
+Change the weight and italic of a face, or its iOS or Android font name.
+
+```bash
+adapty fonts faces update --app <app-id> <font-face-id> --ios-name BrandSans-Bold --android-name brand_sans_bold
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | Font face ID (UUID), as [`fonts list`](#adapty-fonts-list) shows it |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--weight` | No | Font weight, such as `400` for regular or `700` for bold. Use it with `--italic` |
+| `--italic` | No | `true` for italic, `false` for upright. Use it with `--weight` |
+| `--ios-name` | No | iOS font name: the PostScript name stored in the font file. No other face of the app can have it |
+| `--android-name` | No | Android font name: the file name in `res/font/` without the extension. It starts with a lowercase letter and has only lowercase letters, digits, and underscores |
+
+After you set the weight and italic, the face's `metadata_status` becomes `confirmed`. The Android font name changes on every face of the same file. Paywalls that use a changed name get the new name.
+
+## adapty fonts faces default
+
+Make a face the default face of its family. The face that was the default stops being the default.
+
+```bash
+adapty fonts faces default --app <app-id> <font-face-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | Font face ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+
+## adapty fonts faces move
+
+Move a face to another font family. The file of the face doesn't change.
+
+```bash
+adapty fonts faces move --app <app-id> <font-face-id> --to <font-family-id>
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | Font face ID (UUID) |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--to` | Yes | ID (UUID) of the family to move the face to |
+
+The default face of a family can't move. A face whose weight and italic are known can't move into a family that already has a face with the same weight and italic.
+
+## adapty fonts faces replace
+
+Upload a new file for a face.
+
+```bash
+adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
+```
+
+| Argument | Description |
+|---|---|
+| `font-face-id` | Font face ID (UUID) |
+| `file` | Path to the new `.ttf` or `.otf` file |
+
+| Flag | Required | Description |
+|---|---|---|
+| `--app` | Yes | App ID (UUID) |
+| `--weight` | No | Font weight of the face. Use it with `--italic` |
+| `--italic` | No | `true` or `false`. Use it with `--weight` |
+| `--yes` | No | Replace the file without asking for confirmation. Required with `--json`, in a pipe, or without a terminal |
+
+The face keeps its ID, its default mark, and its Android font name. Its iOS font name changes to the name in the new file. Adapty doesn't keep the old file, and you can't restore it. For this reason, the command asks for confirmation. With `--json`, in a pipe, or without a terminal, the command needs `--yes`: without it, the command stops with exit code 6 (`confirm_required`) and changes nothing. To use a variable font file for a face whose weight and italic aren't known, pass `--weight` and `--italic`.
 
 ## adapty flows versions list
 
