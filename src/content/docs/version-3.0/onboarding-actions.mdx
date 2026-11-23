@@ -176,6 +176,34 @@ You can also add **Select product** inside a [conditional action](#conditional-a
 A **Select product** action [blocks previewing and publishing](flow-common-issues#a-flow-wont-preview-or-publish) when its target product is missing, sits on another screen, or no longer belongs to a product group. Assign a valid product or remove the action.
 :::
 
+### Request permission
+
+Asks the user to allow push notifications, for example on an onboarding screen that explains what the notifications are for. Your app shows the system permission dialog and returns the user's answer to the flow. Then the flow runs the actions in the **After response** section.
+
+You can add this action to the **On Tap** and **On Screen Appear** triggers. In the **Edit action** window, the **Permission** row shows **Push notifications**, the only permission the action requests.
+
+<ZoomImage id="request-permission-action.webp" width="500px" alt="Request permission action in the Edit action window with Push notifications as the permission and Navigate Next in After response" />
+
+The actions in **After response** run after the user answers, whether the user allows or denies the permission. A new **Request permission** action starts with **Navigate Next** in this section. Inside the section, you can't add **Purchase**, **Restore purchases**, or another **Request permission** action. If you remove every action from the section, the flow stays on the screen after the user answers. Without **After response** actions, the flow also sends the request every time the screen appears, including after **Navigate back**, and on every tap.
+
+When the system doesn't show the dialog, for example because the user already allowed notifications, your app answers at once, and the flow runs the **After response** actions right away. If those actions leave the screen, the screen appears only for a moment. How often the flow sends the request depends on the trigger:
+
+- **On Screen Appear**: The flow sends the request when the screen appears. It doesn't send it again when the user comes back to the screen with **Navigate back**.
+- **On Tap**: The flow sends the request on every tap. While a request waits for the answer, the flow sends no other permission request, from this element or any other.
+
+On a screen that explains the notifications, put the action on the **On Tap** trigger of its button, so users read the screen before the dialog covers it. Use **On Screen Appear** when an earlier screen already explained the request.
+
+:::warning
+**Set up your app to answer the request before you publish the flow.** The Adapty SDK doesn't show the system dialog: it passes the request to your app code. Without that code, the user sees no dialog, and what the flow does depends on the Adapty SDK in your app:
+
+- **iOS, Flutter, Unity, and Kotlin Multiplatform SDKs**: The flow stays on the screen and doesn't run the **After response** actions.
+- **Android, React Native, and Capacitor SDKs**: The flow runs the **After response** actions right away, and the user is never asked.
+
+A published flow also reaches app versions released before your app could answer the request. Show a flow with **Request permission** only to app versions that answer it, for example with an [audience](audience) built from a [segment](segments) on **App version (current)**.
+
+To set up your app, see the guide for [iOS](ios-handle-permissions), [Android](android-handle-permissions), [React Native](react-native-handle-permissions), [Flutter](flutter-handle-permissions), [Unity](unity-handle-permissions), [Kotlin Multiplatform](kmp-handle-permissions), or [Capacitor](capacitor-handle-permissions).
+:::
+
 ## Action order
 
 Actions start in the order listed in the **Interactions** panel, top to bottom. The flow launches each action and moves on without waiting for it to finish, so navigation or an alert never holds up the actions below it.
@@ -186,6 +214,7 @@ What this means for the actions it affects most:
 - **Navigate to screen**: The actions after it still run, but when the flow launches the next action, the user may already be on the next screen. If that action shows or hides an element on the screen they just left, the user won't see it. Place actions that change the current screen before the navigation.
 - **Show alert**: The actions after it run while the alert is open. If one of them navigates to a different screen, the alert remains open during the navigation.
 - **Purchase** and **Restore purchases**: The actions after them run on the tap, without waiting for the result. To navigate or close the flow after the result, add the navigation or **Close Flow** action for [a purchase or restoration result](respond-to-purchase-outcomes#add-actions-for-a-result) instead, such as **When succeeded**.
+- **Request permission**: The actions after it run right away, before the user answers. To navigate or close the flow after the answer, add the navigation or **Close Flow** action to the [**After response**](#request-permission) section instead. If one of the actions after the request leaves the screen, the **After response** actions don't run at all. The builder shows a warning when a navigation or **Close Flow** action follows the request in the same list.
 
 ## Custom actions
 
@@ -213,7 +242,7 @@ A **Custom** action without an **Action ID** [blocks previewing and publishing](
 A custom action does nothing on its own. You set a static Action ID in the builder, and your app code handles what happens when it receives that ID. Every use case below follows the same pattern: assign an ID in the flow, then handle it in your code.
 
 - **Trigger an in-app event**: Fire an ID such as `viewed_special_offer`, then log the event to your analytics when your app receives it.
-- **Request a system permission**: Fire an ID such as `request_location`, then call the OS permission prompt from your app. For permissions the prompt can't grant, open the phone's system settings instead. Adapty doesn't show the prompt — your app does.
+- **Request a system permission other than push notifications**: Fire an ID such as `request_location`, then call the OS permission prompt from your app. For permissions the prompt can't grant, open the phone's system settings instead. Adapty doesn't show the prompt — your app does. To ask for push notifications, use the [**Request permission**](#request-permission) action instead: its **After response** actions run after the user answers.
 - **Start native authentication**: Fire an ID such as `login_google`, then present your own login screen. The flow can't sign the user in.
 - **Apply business logic**: Fire an ID such as `apply_discount`, then unlock content or change app state on your side.
 - **Pass a quiz answer to your app**: Assign a different Action ID to each option (for example, `goal_weight_loss` and `goal_muscle`), then read the ID in your code. Use the ID to set a [custom user attribute](setting-user-attributes#custom-user-attributes) you can segment on later. Because the action carries only a fixed ID, this is the only way to report the choice — the flow can't send the selected value.

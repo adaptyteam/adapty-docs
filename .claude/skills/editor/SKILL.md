@@ -304,6 +304,8 @@ open _temp/link-report.html
 - Let the link text carry the classification instead of appending a pointer: ❌ "**has no toggle** — see [Limitations](#…)" → ✅ "is a [**permanent limitation**](#…)".
 - On a legacy full-article review this can produce many hits — group them as one finding rather than listing each.
 
+**Don't signpost a section of the same article.** The table of contents already lists every `##` heading, so a sentence that only points at one — ❌ "To answer the **Request permission** action, see [Handle permission requests](#handle-permission-requests)." in the intro — repeats the ToC and singles out one section over its siblings. Delete it. A same-page anchor earns its place only mid-step, where the reader needs another section's detail to finish the current one.
+
 Additionally check images manually: image files exist, `@assets/` not `@asset/`, descriptive alt text.
 
 **Alt text checks:**
