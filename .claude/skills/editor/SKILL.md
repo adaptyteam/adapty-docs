@@ -78,11 +78,12 @@ After writing:
 5. Verify introduction answers what, why, and when
 6. For new articles: add entry to sidebar in `src/data/sidebars/`
 7. **Scan every bullet list with bold labels** — confirm every item is `- **Label**: Capitalized explanation.` Fix any `—`, `-`, `.**`, or lowercase-after-colon patterns. ❌ `- **Label**: connects to...` → ✅ `- **Label**: Connects to...`
-8. **For UI workflow articles**: Output a screenshot capture table after the writing summary — one row per `:::note` placeholder, with filename and what the screenshot should show. This lets the user capture everything in one pass.
+8. **Place screenshot placeholders** at every UI state that needs one (see Screenshot Placeholders). Don't capture yet: the review in step 9 can still change the prose the screenshots must match.
 9. **Run the multi-role review** when the draft is a new article, or adds or rewrites a section or more — in a new article or an existing one. Start it without asking (`references/multi-review.md`), wait for the merged review, and apply every fix in it yourself.
 10. Run steps 1–2 again on the text that step 9 changed.
+11. **Capture the screenshots** without asking: every dashboard and builder placeholder, through the `mock-screenshots` skill (see Screenshot Placeholders). Check each frame against the sentence it follows, and fix the prose when the UI disagrees with it.
 
-Only after step 10, present the final content with a brief writing summary. See `references/output-templates.md` for format. The draft isn't done until the review and its fixes are over: never present it, or call it finished, before then. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
+Only after step 11, present the final content with a brief writing summary. See `references/output-templates.md` for format. The draft isn't done until the review and its fixes are over: never present it, or call it finished, before then. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
 
 ### Phase 6: Report back to the zone brief
 
@@ -314,7 +315,7 @@ Additionally check images manually: image files exist, `@assets/` not `@asset/`,
 
 **One screenshot per sentence.** Each screenshot follows the sentence that describes its screen. When two screenshots sit back to back, split the sentence between them, or drop the screenshot that repeats the other.
 
-**Screenshot placeholders**: In UI workflow articles, a UI state where the reader has to find something, choose between similar controls, or confirm the result should have a `:::note` placeholder callout. Check that sections describing such a step are not missing one. See Screenshot Placeholders section below.
+**Screenshots**: In UI workflow articles, a UI state where the reader has to find something, choose between similar controls, or confirm the result needs a screenshot. Flag a section that describes such a step without one, an unresolved `:::note` placeholder, and a screenshot whose labels no longer match the prose. When you're applying fixes, capture them yourself. See Screenshot Placeholders section below.
 
 See `references/astro-patterns.md`
 
@@ -637,15 +638,18 @@ feature-name-screen.webp
 
 **How many**: Aim for one per distinct UI state where the reader has to find something, has to choose between similar controls, or needs to confirm the result. Skip a state when the step is a single obvious click, or the image would only repeat the sentence.
 
-After drafting, output a capture table as part of the writing summary:
+**Capture them yourself.** A placeholder is a step in your work, not a request to the user. Once the prose is final, invoke the `mock-screenshots` skill for every dashboard and builder placeholder, without asking. It shoots them from mock data and replaces each placeholder with a `<ZoomImage>`. This holds whenever you edit an article — writing, applying review fixes, or addressing PR comments — and also covers a screenshot whose labels no longer match the prose: retake it. In a review-only pass, where you don't edit, report these as findings instead.
 
-| File | What to capture |
-|---|---|
-| `feature-name-screen.webp` | What is visible on screen at this point |
+- **Shipped UI** is on `master`. For UI that isn't released yet, shoot from the feature branch, and take its feature flag from the branch's E2E test.
+- **Leave a placeholder** only for what the skill can't shoot: mobile app screens, the App Store Connect and Google Play consoles, and any shot that failed or that the recorder repos aren't set up for.
 
-To capture the dashboard and builder rows, use the `mock-screenshots` skill. It takes them from mock data and replaces the placeholders with `<ZoomImage>` elements. Leave mobile app and store console rows for the user, who captures them manually.
+List those leftovers in the writing summary as a capture table, with the reason for each:
 
-In review mode, offer the same skill when an article has unresolved placeholders, or when a screenshot no longer matches the prose.
+| File | What to capture | Why it's left |
+|---|---|---|
+| `feature-name-screen.webp` | What is visible on screen at this point | Mobile app screen |
+
+When nothing is left, skip the table and name the screenshots you added.
 
 ### False Positives
 Don't flag: technical terms, industry-standard terminology, code/API names, clear sentences slightly over length, passive voice when appropriate, single value word per paragraph with specific context, descriptive adjectives like "real-time", "built-in", "automatic".
