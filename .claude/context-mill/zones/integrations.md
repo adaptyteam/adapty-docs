@@ -300,8 +300,13 @@ repeated here.
   export switch is on (events, paywall visits, virtual currency). One invalid set refuses the whole
   save, and the dashboard's one **Save** sends all tabs, so no tab's changes are saved. After the save,
   each feed's daily upload reads only its own credentials and catches its own error: a failed upload of
-  one feed does not stop the others. The `google-cloud-storage` warning ("all uploads will fail") and
-  its "Troubleshooting" describe the save-time check; both pages state it in the virtual currency section.
+  one feed does not stop the others. The `google-cloud-storage` warning and its "Troubleshooting" said "all uploads will fail";
+  corrected 2026-11-23 to the save-time check. Both pages state it in the virtual currency section.
+- **S3 and GCS default event names depend on when the integration was created (2026-11-23, backend
+  code).** Since mid-September 2025 a new S3 or GCS integration gets Adapty's internal event names as
+  defaults, so a subscription start is `subscription_initial_purchase`; an older integration keeps its
+  stored map, where it is `subscription_started`. The stored maps were not migrated. The example SQL of
+  the virtual currency section lists both names: don't "fix" it to one.
 - **Braze revenue goes out only as legacy purchases (2026-10-23, backend code + Braze docs).** Adapty
   sends revenue as the `purchases` array of `/users/track`, with no format setting in the integration.
   Braze put legacy purchase events in maintenance mode and does not enable them for new customers; such

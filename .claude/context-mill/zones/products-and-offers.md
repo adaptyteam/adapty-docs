@@ -215,8 +215,9 @@ Corpus-wide synonyms live in `aliases.md` and aren't repeated here.
     debit (API or dashboard) is checked against spendable, not against the balance. The dashboard
     adjustment is gated to Owner, Admin, and Support; requires `feature`; takes an optional reference
     ID (≤128) and one-line comment (≤200); is idempotent per request key; is marked sandbox when the
-    profile is a test user; and is not sent to webhooks or integrations (the last per the feature
-    owner, not traced in code). The comment reaches the event-history **Details** block as the
+    profile is a test user; and is not sent to webhooks or realtime integrations, but appears in the S3 and GCS virtual
+    currency export as `dashboard_transaction` (2026-11-23, backend code: the export reads the whole
+    ledger with no type filter). The comment reaches the event-history **Details** block as the
     metadata key `comment`. A **Change history** window lists manual adjustments of the last 3 months
     with the actor and role, with up to ~2 minutes of lag. Owner article: `virtual-currency-balance`.
   - *Unverified:* what makes a profile a "test user" for the sandbox flag has no UI label and no docs
