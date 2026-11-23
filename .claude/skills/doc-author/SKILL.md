@@ -87,7 +87,7 @@ The product-manager will evaluate:
 ### Phase 4: Feedback — Iterate with the User
 
 Present the draft and ask for feedback. The user may:
-- **Approve** → Done. Commit or finalize as appropriate. Brief changes from Phase 4.5 go into their own commit at the same time — see that phase.
+- **Approve** → Done. Before you commit, run the editor's newer-commits check again (Self-Review, step 11), and fix any fact whose source changed. Then commit or finalize as appropriate. Brief changes from Phase 4.5 go into their own commit at the same time — see that phase.
 - **Request changes** → Apply changes and re-present. If changes are substantial (new sections, restructured content), re-run the product-manager review on the changed sections.
 - **Disagree with a skill's recommendation** → See "Skill Evolution" below.
 
@@ -172,4 +172,4 @@ If the writing-planner assesses a "small update" but the user's feedback keeps e
 For tasks affecting multiple articles, the writing-planner will produce a multi-article plan with execution order. Follow that order. Draft each article separately through Phases 2-4, completing one before starting the next (unless the user prefers parallel drafting).
 
 ### Code snippets
-When the plan or draft calls for code snippets, use the Skill tool to invoke `snippet-master`. **REQUIRED SUB-SKILL:** `snippet-master` handles SDK code across all 7 platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor) — don't write snippets yourself.
+When the plan or draft calls for code snippets, use the Skill tool to invoke `snippet-master`. **REQUIRED SUB-SKILL:** `snippet-master` handles SDK code across all 7 platforms (iOS, Android, React Native, Flutter, Unity, Kotlin Multiplatform, Capacitor) — don't write snippets yourself. Present a draft with a new or changed code block only after `snippet-master` has compiled it, and name any block it couldn't compile.
