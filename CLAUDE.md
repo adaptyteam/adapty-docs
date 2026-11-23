@@ -50,6 +50,8 @@ Run `npm run mill` then `npm run mill:status` first: the map is regenerated from
 
 The four published OpenAPI specs are part of the zoned corpus. **For the server-side and web APIs the spec is the maintained reference**, so an endpoint or field change means editing `src/api-reference/specs/*.yaml`, not a hand-written object article.
 
+**Before you draft, check open PRs.** If an open PR already changes the articles you plan to change, build on it: add commits to its branch for what it lacks, and leave a PR comment that says what you added. Don't open a second PR for the same feature. The `writing-planner` skill has the command.
+
 ### Navigation and Placement
 
 Sidebars answer a different question than discovery: **where an article sits**, and what its neighbours are. The `src/data/sidebars/` folder stores JSON representations of the docs' structure, referencing articles by their filename-based `id`:
