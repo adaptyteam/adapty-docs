@@ -1,0 +1,82 @@
+---
+title: "Flow'larda izin isteklerini yönetme - iOS"
+description: "iOS uygulamanızda bir flow'dan push bildirimi iznini AdaptySystemRequestsHandler ile kullanıcılardan isteyin ve kullanıcının yanıtını flow'a döndürün."
+metadataTitle: "Flow İzinlerini Yönetme - iOS | Adapty Dokümanları"
+---
+
+Bir [flow](adapty-flow-builder), örneğin bildirimlerin ne işe yaradığını açıklayan bir onboarding ekranında, kullanıcıdan **Request permission** eylemiyle bildirim gönderme izni isteyebilir. Adapty SDK'sı sistem izin diyaloğunu kendisi göstermez. İsteği uygulamanızdaki bir `AdaptySystemRequestsHandler`'a iletir. Uygulamanız diyaloğu gösterir, kullanıcının yanıtını döndürür ve flow kaldığı yerden devam eder.
+
+## Başlamadan önce \{#before-you-start\}
+
+İhtiyacınız olanlar:
+
+- **Adapty iOS SDK 4.0.0 veya üzeri**: Daha eski sürümlerde `AdaptySystemRequestsHandler` bulunmaz.
+- **Request permission eylemi içeren bir flow**: Flow & Paywall Builder'da, bir öğenin **On Tap** veya **On Screen Appear** tetikleyicisine **Request permission** eylemini ekleyin. **After response** bölümünde, kullanıcı yanıt verdikten sonra çalışacak **Navigate Next** gibi eylemleri ekleyin. Eylem ayarları için bkz. [İzin isteme](onboarding-actions#request-permission).
+
+## Flow bir izin nasıl talep eder \{#how-the-flow-requests-a-permission\}
+
+1. Flow, **Request permission** eylemine ulaşır: kullanıcı öğeye dokunur ya da ekran görünür.
+2. Adapty SDK, işleyicinizde `handlePermission(_:withCustomArgs:)` fonksiyonunu `.push` parametresiyle çağırır.
+3. Uygulamanız iOS'tan izni talep eder ve `.granted` ya da `.denied` döndürür.
+4. Flow, **After response** eylemlerini çalıştırır. Her iki yanıt için de aynı eylemler geçerlidir.
+
+Flow, uygulamanız yanıt döndürene kadar ekranda bekler. Uygulamanız hiç yanıt vermezse flow ekranda kalmaya devam eder. iOS diyalogu göstermezse, örneğin kullanıcı daha önce yanıtladıysa, uygulamanız anında yanıtı alır ve flow hemen **After response** eylemlerini çalıştırır. Bu eylemler ekrandan çıkılmasına neden olursa, kullanıcı izin isteyen ekranı yalnızca bir an için görür.
+
+**On Screen Appear** ile, kullanıcı **Navigate back** eylemiyle ekrana geri döndüğünde flow yeniden istek göndermez. **On Tap** ile ise her dokunuş yeni bir istek gönderir; ancak bir istek yanıtınızı beklerken yapılan dokunuşlar bunun dışındadır.
+
+## Handler'ı uygulama \{#implement-the-handler\}
+
+İzin isteklerine yanıt vermek için `AdaptySystemRequestsHandler` protokolüne uyan bir sınıf oluşturun ve `handlePermission(_:withCustomArgs:)` metodunu uygulayın. Uygulamanızın talep etmediği izinler için `.denied` döndürün.
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            return granted ? .granted(nil) : .denied(nil)
+        } catch {
+            return .denied(error.localizedDescription)
+        }
+    }
+}
+```
+
+`handlePermission(_:withCustomArgs:)` şunları alır:
+
+- **`permission`**: Flow'un talep ettiği izin. **Request permission** eylemi `.push` gönderir.
+- **`customArgs`**: İsteğin özel argümanları. **Request permission** eylemi hiçbir şey göndermez, dolayısıyla değer `nil`'dir.
+
+`.granted` ve `.denied` isteğe bağlı bir detay dizesi alır. `nil` geçebilirsiniz.
+
+Verilen bir izin, uygulamanızın bildirim göstermesine olanak tanır. Push bildirimleri almak için cihazı APNs'e kaydedin ve cihaz token'ını push sağlayıcınıza gönderin; bu işlemi uygulamanız flow'ların dışında nasıl yapıyorsa aynı şekilde yapın.
+
+`AdaptySystemRequestsHandler` ayrıca `handleAppReviewRequest()` metodunu da tanımlar. Bu metodun varsayılan implementasyonu App Store değerlendirme isteğini gösterdiğinden, bunu ayrıca uygulamanız gerekmez.
+
+## Handler'ı flow yapılandırmasına aktarın \{#pass-the-handler-to-the-flow-configuration\}
+
+:::warning
+**Handler olmadan flow, izin isteğinde durur.** `systemRequestsHandler` parametresini geçmezseniz iOS hiçbir diyalog göstermez. Flow, isteği gönderen ekranda kalır ve **After response** eylemlerini çalıştırmaz.
+:::
+
+Flow'un izin isteklerini handler'ınıza göndermek için, `AdaptyUI.getFlowConfiguration` metodunun `systemRequestsHandler` parametresine handler'ı geçin:
+
+```swift showLineNumbers title="Swift"
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: PushPermissionHandler()
+)
+```
+
+Flow konfigürasyonu, işleyiciye güçlü bir referans tutar; bu nedenle onu ayrıca saklamanız gerekmez. Hem SwiftUI hem de UIKit, flow'u bu konfigürasyondan sunar; dolayısıyla işleyici her ikisiyle de çalışır. Ayrıntılar için bkz. [Flow ve paywallları görüntüleme](ios-present-paywalls).
+
+## İzin isteğini test etme \{#test-the-permission-request\}
+
+iOS, bildirim iletişim kutusunu her uygulama kurulumu için yalnızca bir kez gösterir. Test sırasında iletişim kutusunu tekrar görmek için uygulamayı cihazdan silip yeniden yükleyin. Ardından flow'u açın ve **Request permission** eylemine ulaşın. Ekran kalıyor ve hiçbir iletişim kutusu görünmüyorsa flow bir yanıt alamadı demektir: `systemRequestsHandler` değerini `AdaptyUI.getFlowConfiguration` metoduna geçirdiğinizden emin olun.

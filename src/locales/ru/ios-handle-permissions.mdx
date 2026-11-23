@@ -1,0 +1,82 @@
+---
+title: "Обработка запросов разрешений во флоу — iOS"
+description: "Запрашивайте у пользователей разрешение на push-уведомления из флоу в вашем iOS-приложении с помощью AdaptySystemRequestsHandler и возвращайте их ответ обратно во флоу."
+metadataTitle: "Обработка разрешений флоу — iOS | Документация Adapty"
+---
+
+[Флоу](adapty-flow-builder) может запрашивать у пользователей разрешение на отправку push-уведомлений с помощью действия **Request permission** — например, на экране онбординга, где объясняется, для чего нужны уведомления. SDK Adapty не показывает системный диалог разрешения самостоятельно. Вместо этого он передаёт запрос в `AdaptySystemRequestsHandler` вашего приложения. Приложение показывает диалог и возвращает ответ пользователя, после чего флоу продолжает работу.
+
+## Перед началом работы \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty iOS SDK 4.0.0 или новее**: более ранние версии не поддерживают `AdaptySystemRequestsHandler`.
+- **Флоу с действием Request permission**: в Flow & Paywall Builder добавьте действие **Request permission** к триггеру **On Tap** или **On Screen Appear** какого-либо элемента. В разделе **After response** добавьте действия, которые будут выполняться после ответа пользователя, например **Navigate Next**. Описание настроек действия см. в разделе [Request permission](onboarding-actions#request-permission).
+
+## Как флоу запрашивает разрешение \{#how-the-flow-requests-a-permission\}
+
+1. Флоу достигает действия **Request permission**: пользователь нажимает на элемент или появляется экран.
+2. SDK Adapty вызывает `handlePermission(_:withCustomArgs:)` на вашем обработчике с `.push`.
+3. Ваше приложение запрашивает разрешение у iOS и возвращает `.granted` или `.denied`.
+4. Флоу выполняет действия **After response**. Они одинаковы для обоих ответов.
+
+Флоу ожидает на экране, пока ваше приложение не вернёт ответ. Если приложение так и не ответит, флоу останется на экране. Если iOS не показывает диалог — например, потому что пользователь уже ответил на него раньше — приложение сразу получает ответ, и флоу немедленно выполняет действия из блока **After response**. Если эти действия переключают экран, пользователь видит экран запроса разрешения лишь на мгновение.
+
+С действием **On Screen Appear** флоу не отправляет запрос повторно, когда пользователь возвращается на экран с помощью действия **Navigate back**. С действием **On Tap** каждое нажатие отправляет новый запрос, кроме нажатий во время ожидания ответа.
+
+## Реализация обработчика \{#implement-the-handler\}
+
+Чтобы отвечать на запросы разрешений, создайте класс, который соответствует `AdaptySystemRequestsHandler`, и реализуйте `handlePermission(_:withCustomArgs:)`. Возвращайте `.denied` для разрешений, которые ваше приложение не запрашивает.
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            return granted ? .granted(nil) : .denied(nil)
+        } catch {
+            return .denied(error.localizedDescription)
+        }
+    }
+}
+```
+
+`handlePermission(_:withCustomArgs:)` получает:
+
+- **`permission`**: Разрешение, которое запрашивает флоу. Действие **Request permission** отправляет `.push`.
+- **`customArgs`**: Пользовательские аргументы запроса. Действие **Request permission** не отправляет их, поэтому значение равно `nil`.
+
+`.granted` и `.denied` принимают необязательную строку с деталями. Можно передать `nil`.
+
+Выданное разрешение позволяет приложению показывать уведомления. Чтобы получать push-уведомления, зарегистрируйте устройство в APNs и отправьте токен устройства своему push-провайдеру — так же, как это делает ваше приложение вне флоу.
+
+`AdaptySystemRequestsHandler` также объявляет `handleAppReviewRequest()`. Его реализация по умолчанию показывает запрос на оценку в App Store, поэтому реализовывать его самостоятельно не нужно.
+
+## Передайте обработчик в конфигурацию флоу \{#pass-the-handler-to-the-flow-configuration\}
+
+:::warning
+**Без обработчика флоу останавливается на запросе разрешения.** Если не передать `systemRequestsHandler`, iOS не покажет диалог. Флоу остаётся на экране, который отправил запрос, и не выполняет действия **After response**.
+:::
+
+Чтобы запросы разрешений из флоу передавались в ваш обработчик, укажите его в параметре `systemRequestsHandler` метода `AdaptyUI.getFlowConfiguration`:
+
+```swift showLineNumbers title="Swift"
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: PushPermissionHandler()
+)
+```
+
+Конфигурация флоу хранит сильную ссылку на обработчик, поэтому отдельно сохранять его не нужно. И SwiftUI, и UIKit отображают флоу из этой конфигурации, так что обработчик работает с обоими. Подробнее см. в разделе [Отображение флоу и пейволов](ios-present-paywalls).
+
+## Протестируйте запрос разрешения \{#test-the-permission-request\}
+
+iOS показывает диалог запроса уведомлений только один раз после установки приложения. Чтобы увидеть диалог снова во время тестирования флоу, удалите приложение с устройства и установите заново. Затем откройте флоу и дойдите до действия **Request permission**. Если экран остаётся на месте и диалог не появляется, флоу не получил ответа: убедитесь, что вы передаёте `systemRequestsHandler` в `AdaptyUI.getFlowConfiguration`.

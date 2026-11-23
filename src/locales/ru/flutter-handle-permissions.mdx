@@ -1,0 +1,100 @@
+---
+title: "Обработка запросов разрешений во флоу — Flutter"
+description: "Запрашивайте у пользователей разрешение на push-уведомления из флоу в вашем Flutter-приложении с помощью AdaptyUISystemRequestsHandler и передавайте их ответ обратно во флоу."
+metadataTitle: "Обработка разрешений во флоу — Flutter | Документация Adapty"
+---
+
+[Флоу](adapty-flow-builder) может запрашивать у пользователей разрешение на отправку push-уведомлений с помощью действия **Request permission** — например, на экране онбординга, где объясняется, для чего нужны уведомления. SDK не показывает системный диалог разрешений самостоятельно. Вместо этого он передаёт запрос в `AdaptyUISystemRequestsHandler` вашего приложения. Приложение показывает диалог и возвращает ответ пользователя, после чего флоу продолжается.
+
+## Перед началом \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty Flutter SDK 4.0.0 или новее**: В более ранних версиях нет `AdaptyUISystemRequestsHandler`. См. [Установка и настройка SDK](sdk-installation-flutter).
+- **Флоу с действием Request permission**: В Flow & Paywall Builder добавьте действие **Request permission** к триггеру **On Tap** или **On Screen Appear** любого элемента. В разделе **After response** укажите действия, которые должны выполниться после ответа пользователя, например **Navigate Next**. Описание настроек действия см. в разделе [Request permission](onboarding-actions#request-permission).
+- **Библиотека для отображения диалога уведомлений**: В примере используется [permission_handler](https://pub.dev/packages/permission_handler). Подойдёт любой другой пакет или собственный платформенный код.
+- **Разрешение `POST_NOTIFICATIONS` в манифесте Android и `targetSdk` 33 или выше**: Android 13 и новее показывает диалог разрешения на уведомления только приложениям, которые объявили это разрешение и нацелены на Android 13 или выше:
+
+  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **Для iOS с CocoaPods**: Добавьте `PERMISSION_NOTIFICATIONS=1` в `GCC_PREPROCESSOR_DEFINITIONS` в вашем `Podfile`, как описано в [настройке permission_handler](https://pub.dev/packages/permission_handler). Без этого `Permission.notification.request()` возвращает denied, и iOS не показывает диалог. При использовании Swift Package Manager permission_handler включает разрешение на уведомления по умолчанию.
+
+## Как флоу запрашивает разрешение \{#how-the-flow-requests-a-permission\}
+
+1. Флоу доходит до действия **Request permission**: пользователь нажимает на элемент или открывается экран.
+2. SDK Adapty вызывает `handlePermission` на вашем обработчике с `AdaptyUIPermission.push`.
+3. Ваше приложение запрашивает разрешение у ОС и возвращает `AdaptyUIPermissionResult.granted()` или `AdaptyUIPermissionResult.denied()`.
+4. Флоу выполняет действия **After response**. Они одинаковы для обоих ответов.
+
+Флоу ожидает на экране, пока ваше приложение не вернёт ответ. Если приложение так и не ответит, флоу останется на экране. Если ОС не показывает диалог — например, потому что пользователь уже ответил на него раньше — `Permission.notification.request()` немедленно возвращает предыдущий ответ, и флоу сразу выполняет действия **After response**. Если эти действия переводят пользователя на другой экран, экран с запросом разрешения мелькнёт лишь на мгновение.
+
+При использовании **On Screen Appear** флоу не отправляет запрос повторно, когда пользователь возвращается на экран с помощью действия **Navigate back**. При использовании **On Tap** каждое нажатие отправляет новый запрос, за исключением нажатий во время ожидания ответа на предыдущий запрос.
+
+## Реализуйте обработчик \{#implement-the-handler\}
+
+Чтобы отвечать на запросы разрешений, создайте класс, наследующий `AdaptyUISystemRequestsHandler`, и реализуйте метод `handlePermission`. Для разрешений, которые ваше приложение не запрашивает, возвращайте denied.
+
+```dart showLineNumbers title="Flutter"
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // The base method does nothing: this keeps the native review prompt.
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+`handlePermission` получает:
+
+- **`view`**: Вью флоу, которая отправила запрос.
+- **`permission`**: Разрешение, которое запрашивает флоу. Действие **Request permission** отправляет `AdaptyUIPermission.push`.
+- **`customArgs`**: Пользовательские аргументы запроса. Действие **Request permission** не передаёт ни одного, поэтому значение равно `null`.
+
+Если `handlePermission` выбрасывает исключение или так и не завершается, флоу не получает ответа и остаётся на экране. Именно поэтому в примере перехватываются ошибки.
+
+Предоставленное разрешение позволяет приложению показывать уведомления. Чтобы получать push-уведомления, зарегистрируйте устройство у вашего push-провайдера — так же, как это делается в приложении за пределами флоу.
+
+После регистрации обработчика SDK передаёт запросы на оценку приложения в `handleAppReviewRequest`, базовый метод которого ничего не делает. В примере сохраняется нативный запрос на оценку.
+
+## Зарегистрируйте обработчик \{#register-the-handler\}
+
+:::warning
+**Без обработчика флоу останавливается на запросе разрешения.** Если приложение не регистрирует обработчик, Adapty SDK не отправляет флоу никакого ответа — ни на iOS, ни на Android. Флоу остаётся на экране, который отправил запрос, и не выполняет действия блока **After response**.
+:::
+
+Чтобы направить запросы разрешений из всех флоу в ваш обработчик, вызовите `AdaptyUI().setSystemRequestsHandler` один раз до того, как вы откроете флоу. Например, вызовите его сразу после того, как установите наблюдатель событий флоу:
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## Протестируйте запрос разрешения \{#test-the-permission-request\}
+
+iOS показывает диалог запроса уведомлений только один раз после установки приложения. Android перестаёт показывать его после того, как пользователь разрешил уведомления или дважды отказал. Чтобы снова увидеть диалог во время тестирования флоу, удалите приложение с устройства и установите его заново. Затем откройте флоу и дойдите до действия **Request permission**. Если экран завис и диалог не появился, флоу не получил ответа: убедитесь, что ваше приложение регистрирует обработчик до того, как показывает флоу. Если флоу двигается дальше без диалога, убедитесь, что Android-приложение объявляет `POST_NOTIFICATIONS` и нацелено на Android 13 или более позднюю версию, а в `Podfile` для iOS включён `PERMISSION_NOTIFICATIONS`.

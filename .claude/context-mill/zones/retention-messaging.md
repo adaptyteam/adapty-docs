@@ -127,6 +127,9 @@ Delta from `scope.md` only.
 - **`analytics`** — `retention-messaging-analytics` is this zone's (the Shown / Retained / Retention rate
   columns on the Retention Messaging page). `analytics-retention` is cohort retention charts in
   `analytics`, an unrelated feature with a confusingly similar name.
+- **`agent-tooling`** — `developer-cli-retention-messaging` (2026-11-18) is the CLI topic page for the same actions, and
+  `adapty-mcp` has a Retention Messaging row. They link here for message states, setup steps and metric meanings; a change to
+  those belongs here first, then the CLI page if it restates a value (the image limits and the metric formulas).
 - **`products-and-offers`** — a promo message attaches an App Store promotional offer or a plan switch,
   but creating either is `app-store-offers` / `create-product`.
 
@@ -163,6 +166,19 @@ aggregated support handoffs; the third stage has no ticket evidence yet.
 
 ## Gaps and misses
 
+- **2026-11-18, the backend does carry retention-messaging logic** (backend code, 2026-11-17, read for the CLI topic): this
+  corrects "the backend carries no retention-messaging logic that could be read" in Sources of truth for setup, messages and
+  suggestions too, not only analytics. From that read: setup status values `credentials`, `registration_status`,
+  `realtime_url_status` (`not_configured`, `configured_to_other_url`, `configured_to_adapty`) and `performance_test_status`; a
+  status read can save the test result; a list or message read asks Apple about review and can queue an approved message;
+  configuring sandbox creates a hidden test message; production configure is refused before the test passes; header image PNG
+  3840 px wide, 160–2160 px tall, no transparency, 10 MB; title position is stored as `header_position` (`above_body`,
+  `above_image`).
+- **Open question, 2026-11-18: does activation re-enter review?** `retention-messaging-create` says reactivation skips Apple's
+  review. The same backend read says `activate` moves an `inactive` message to `in_review` and that approved locales don't wait
+  for a new review. Both can be true (a state change with no new upload), but the article's sentence and the API state disagree
+  on the surface. `developer-cli-retention-messaging` states the API behavior; the create article is unchanged. Confirm with
+  product before you edit either.
 - **Resolved 2026-10-28 in favor of the dashboard code** (the docs owner's call: "trust the code"):
   `retention-messaging-create` now says a message goes live once Apple approves **at least one** locale
   (Localization step footer: "Production stays gated until at least one locale is approved."), and that

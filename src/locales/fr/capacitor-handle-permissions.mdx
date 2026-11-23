@@ -1,0 +1,81 @@
+---
+title: "Gérer les demandes d'autorisation dans les flows - Capacitor"
+description: "Demandez aux utilisateurs l'autorisation de notifications push depuis un flow dans votre application Capacitor avec le gestionnaire onRequestPermission, et renvoyez leur réponse au flow."
+metadataTitle: "Gérer les autorisations de flow - Capacitor | Documentation Adapty"
+---
+
+Un [flow](adapty-flow-builder) peut demander aux utilisateurs l'autorisation d'envoyer des notifications push via l'action **Request permission**, par exemple sur un écran d'onboarding qui explique à quoi servent ces notifications. Le SDK Adapty n'affiche pas lui-même la boîte de dialogue système. Il transmet la demande au handler `onRequestPermission` de votre application. Votre application affiche la boîte de dialogue, renvoie la réponse de l'utilisateur, et le flow continue.
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin :
+
+- **Adapty Capacitor SDK 4.1.0 ou version ultérieure** : La version 4.1.0 est la première version stable avec le gestionnaire `onRequestPermission`.
+- **Un flow avec l'action Request permission** : Dans le Flow & Paywall Builder, ajoutez l'action **Request permission** à un déclencheur **On Tap** ou **On Screen Appear** d'un élément. Dans sa section **After response**, ajoutez les actions à exécuter après que l'utilisateur a répondu, comme **Navigate Next**. Pour les paramètres de l'action, consultez [Request permission](onboarding-actions#request-permission).
+- **Une bibliothèque qui affiche la boîte de dialogue de notification** : L'exemple utilise le plugin [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications). Tout autre plugin affichant la boîte de dialogue fonctionne également.
+- **La permission `POST_NOTIFICATIONS` dans votre manifeste Android, et `targetSdk` 33 ou supérieur** : Android 13 et versions ultérieures n'affichent la boîte de dialogue de permission de notification qu'aux applications qui déclarent la permission et ciblent Android 13 ou une version ultérieure :
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Comment le flow demande une autorisation \{#how-the-flow-requests-a-permission\}
+
+1. Le flow atteint l'action **Request permission** : l'utilisateur appuie sur l'élément ou l'écran s'affiche.
+2. Le SDK Adapty appelle votre gestionnaire `onRequestPermission` avec la permission `push`.
+3. Votre application affiche la boîte de dialogue système et résout la promesse du gestionnaire avec `{ status: 'granted' }` ou `{ status: 'denied' }`.
+4. Le flow exécute les actions **After response**. Elles sont identiques quelle que soit la réponse.
+
+Le flow attend sur l'écran jusqu'à ce que la promesse de votre handler soit résolue. Si la promesse ne se résout jamais, le flow reste sur l'écran. Si l'OS n'affiche pas la boîte de dialogue, par exemple parce que l'utilisateur y a déjà répondu, `PushNotifications.requestPermissions()` renvoie immédiatement le statut actuel et le flow exécute aussitôt les actions **After response**. Sur Android 12 et versions antérieures, les applications n'ont pas besoin d'autorisation runtime pour les notifications, donc le plugin renvoie `granted` sans afficher de boîte de dialogue. Si les actions **After response** quittent l'écran, l'utilisateur ne voit l'écran de demande d'autorisation qu'un bref instant.
+
+Avec **On Screen Appear**, le flow n'envoie pas de nouvelle requête quand l'utilisateur revient sur l'écran via une action **Navigate back**. Avec **On Tap**, chaque appui envoie une nouvelle requête, sauf si une requête est déjà en attente de réponse.
+
+## Implémenter le gestionnaire \{#implement-the-handler\}
+
+Le gestionnaire `onRequestPermission` est asynchrone. Il retourne une promesse qui se résout en un objet contenant la réponse de l'utilisateur :
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the current status without showing it.
+  const { receive } = await PushNotifications.requestPermissions();
+  return { status: receive === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` reçoit :
+
+- **`permission`** : La permission demandée par le flow. L'action **Request permission** envoie `push`. Retournez `denied` pour toute autre valeur, afin que le flow continue.
+- **`customArgs`** : Les arguments personnalisés de la requête. L'action **Request permission** n'en envoie aucun, donc l'objet est vide.
+
+Résolvez la promesse avec `{ status: 'granted' }` uniquement lorsque l'utilisateur a autorisé les notifications. Le SDK Adapty répond `denied` si votre handler lance une erreur ou si sa promesse est rejetée.
+
+Une permission accordée permet à votre application d'afficher des notifications. Pour recevoir des notifications push, enregistrez l'appareil auprès de votre fournisseur de notifications push, comme votre application le fait en dehors des flows.
+
+## Enregistrer le gestionnaire \{#register-the-handler\}
+
+:::warning
+**Sans gestionnaire `onRequestPermission`, l'utilisateur n'est jamais sollicité.** Sur une vue de flow sans ce gestionnaire, le SDK Adapty répond `denied` sans afficher de boîte de dialogue, consigne un avertissement dans son journal et exécute immédiatement les actions **After response**.
+:::
+
+Définissez le handler sur chaque vue de flow que votre application crée, en même temps que vos autres [gestionnaires d'événements de flow](capacitor-handling-events), avant d'afficher la vue. Les auteurs de flows peuvent ajouter l'action **Request permission** à n'importe quel flow par la suite, sans mise à jour de l'application, et une vue de flow sans ce handler répond `denied` sans demander quoi que ce soit à l'utilisateur.
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+await view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+## Tester la demande d'autorisation \{#test-the-permission-request\}
+
+iOS n'affiche la boîte de dialogue de notifications qu'une seule fois par installation de l'application. Android cesse de l'afficher une fois que l'utilisateur a accordé les notifications ou les a refusées deux fois. Pour revoir la boîte de dialogue pendant vos tests, supprimez l'application de l'appareil et réinstallez-la. Ouvrez ensuite le flow et atteignez l'action **Request permission**. Si le flow passe à l'étape suivante sans afficher de boîte de dialogue, vérifiez que la vue du flow possède le handler `onRequestPermission`, et que l'application Android déclare `POST_NOTIFICATIONS` et cible Android 13 ou une version ultérieure.

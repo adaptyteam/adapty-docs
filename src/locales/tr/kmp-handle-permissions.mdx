@@ -1,0 +1,160 @@
+---
+title: "Flow'larda izin isteklerini yönetme - Kotlin Multiplatform"
+description: "Kotlin Multiplatform uygulamanızda AdaptyUISystemRequestsHandler ile bir flow içinden kullanıcılardan push bildirim izni isteyin ve yanıtlarını flow'a döndürün."
+metadataTitle: "Flow İzinlerini Yönetme - Kotlin Multiplatform | Adapty Dokümanları"
+---
+
+Bir [flow](adapty-flow-builder), örneğin bildirimlerin ne işe yaradığını açıklayan bir onboarding ekranında, kullanıcıdan push bildirimleri göndermek için izin istemek amacıyla **Request permission** eylemini kullanabilir. Adapty SDK, sistem izin iletişim kutusunu kendisi göstermez. İsteği uygulamanızdaki bir `AdaptyUISystemRequestsHandler`'a iletir. Uygulamanız iletişim kutusunu gösterir ve kullanıcının yanıtını döndürür, ardından flow devam eder.
+
+## Başlamadan önce \{#before-you-start\}
+
+Şunlara ihtiyacınız var:
+
+- **Adapty Kotlin Multiplatform SDK 4.1.0 veya üzeri**: 4.1.0 sürümü, `AdaptyUISystemRequestsHandler` içeren ilk kararlı sürümdür.
+- **Request permission eylemi içeren bir flow**: Flow & Paywall Builder'da, bir öğenin **On Tap** veya **On Screen Appear** tetikleyicisine **Request permission** eylemini ekleyin. **After response** bölümünde, kullanıcı yanıt verdikten sonra çalıştırılacak eylemleri (örneğin **Navigate Next**) ekleyin. Eylem ayarları için bkz. [Request permission](onboarding-actions#request-permission).
+- **Android manifest dosyanızda `POST_NOTIFICATIONS` izni ve `targetSdk` 33 veya üzeri**: Android 13 ve sonrası, bildirim izni iletişim kutusunu yalnızca bu izni bildiren ve Android 13 veya üzerini hedefleyen uygulamalara gösterir:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow bir izni nasıl talep eder \{#how-the-flow-requests-a-permission\}
+
+1. Flow, **Request permission** eylemine ulaşır: kullanıcı elemana dokunur veya ekran görünür.
+2. Adapty SDK, `AdaptyUIPermission.PUSH` ile işleyicinizde `handlePermission` fonksiyonunu çağırır.
+3. Uygulamanız OS'ten izni talep eder ve `AdaptyUIPermissionResult.granted()` ya da `AdaptyUIPermissionResult.denied()` döner.
+4. Flow, **After response** eylemlerini çalıştırır. Bu eylemler her iki yanıt için de aynıdır.
+
+Flow, uygulamanız yanıt döndürene kadar ekranda bekler. Uygulamanız hiç yanıt vermezse, flow ekranda kalmaya devam eder. İşletim sistemi diyaloğu göstermezse — örneğin kullanıcı daha önce zaten yanıt verdiyse — handler'ınız hemen döner ve flow **After response** eylemlerini anında çalıştırır. Bu eylemler ekrandan çıkılmasına neden olursa, kullanıcı izin isteyen ekranı yalnızca bir an için görür.
+
+**On Screen Appear** ile kullanıcı **Navigate back** eylemiyle aynı ekrana geri döndüğünde flow yeni bir istek göndermez. **On Tap** ile her dokunuş yeni bir istek gönderir; ancak bir istek yanıt beklerken yapılan dokunuşlar bunun dışındadır.
+
+## Handler'ı uygulayın \{#implement-the-handler\}
+
+İzin isteklerine yanıt vermek için ortak kodda `AdaptyUISystemRequestsHandler` uygulayın. Her istek için bir sonuç döndürün: uygulamanızın talep etmediği izinler için `denied` döndürün ve platform kodunuzun istisnalarını yakalayın. Adapty SDK'sı `handlePermission` içindeki istisnaları yakalamaz: yakalanmayan bir istisna uygulamayı çökertir ve flow yanıt alamaz.
+
+```kotlin showLineNumbers title="commonMain"
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+`requestPushPermission` sizin platform kodunuzdur. Bkz. [Her platformda izin isteme](#request-the-permission-on-each-platform).
+
+`handlePermission` şunları alır:
+
+- **`view`**: İsteği gönderen flow view'ı.
+- **`permission`**: Flow'un talep ettiği izin. **Request permission** aksiyonu `AdaptyUIPermission.PUSH` gönderir.
+- **`customArgs`**: İsteğin özel argümanları. **Request permission** aksiyonu hiçbir şey göndermez, bu nedenle değer `null` olur.
+
+`granted` ve `denied` metodlarına geçebileceğiniz `detail` dizesi isteğe bağlıdır.
+
+Verilen izin, uygulamanızın bildirim göstermesine olanak tanır. Push bildirimleri almak için, cihazı APNs veya Firebase Cloud Messaging gibi push sağlayıcınıza kaydedin; bu işlemi flow'ların dışında yaptığınız gibi yapın.
+
+`AdaptyUISystemRequestsHandler` aynı zamanda `handleAppReviewRequest` metoduna da sahiptir. Varsayılan davranışı, yerel değerlendirme istemini gösterir; dolayısıyla bunu geçersiz kılmanız gerekmez.
+
+## Her platformda izin isteyin \{#request-the-permission-on-each-platform\}
+
+Ortak kod sistem diyaloğunu gösteremediğinden `requestPushPermission`, her platform için `actual` implementasyonuna sahip bir `expect` fonksiyonudur. Uygulamanız zaten bir Kotlin Multiplatform izin kütüphanesi kullanıyorsa bunun yerine `handlePermission` içinden çağırın.
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+iOS'ta, yetkilendirme için `UNUserNotificationCenter`'a başvurun:
+
+```kotlin showLineNumbers title="iosMain"
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+Android'de, çalışma zamanı izni Android 13'ten itibaren mevcuttur. Daha eski sürümlerde, uygulama için bildirimlerin açık olup olmadığını döndürün. İzni, o anda ekranda olan activity'den isteyin; bu, bir flow gösterilirken flow'un activity'sidir. Bu örnekte, `ResumedActivity` bunu takip eder. `Application.onCreate` içinde `registerActivityLifecycleCallbacks(ResumedActivity)` ile kaydedin:
+
+```kotlin showLineNumbers title="androidMain"
+
+object ResumedActivity : Application.ActivityLifecycleCallbacks {
+    var current: ComponentActivity? = null
+        private set
+
+    override fun onActivityResumed(activity: Activity) {
+        current = activity as? ComponentActivity
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        if (current === activity) current = null
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+}
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = ResumedActivity.current ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+        continuation.invokeOnCancellation { launcher.unregister() }
+    }
+}
+```
+
+## Handler'ı kaydedin \{#register-the-handler\}
+
+:::warning
+**Handler olmadan flow, izin isteğinde durur.** Uygulamanız hiçbir handler kaydetmezse, Adapty SDK hem iOS'ta hem de Android'de flow'a yanıt göndermez. Flow, isteği gönderen ekranda kalır ve **After response** aksiyonlarını çalıştırmaz.
+:::
+
+İzin isteklerini handler'ınıza göndermek için, uygulamanız ilk flow'u göstermeden önce uygulama başlangıcında `AdaptyUI.setSystemRequestsHandler` fonksiyonunu bir kez çağırın. Örneğin, `AdaptyUI.setFlowsEventsObserver` çağırdığınız yerde bunu da çağırabilirsiniz.
+
+```kotlin showLineNumbers title="Kotlin"
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+## İzin isteğini test etme \{#test-the-permission-request\}
+
+iOS, bildirim iletişim kutusunu uygulama başına yalnızca bir kez gösterir. Android ise kullanıcı bildirimlere izin verdiğinde veya iki kez reddettiğinde göstermeyi bırakır. Flow'u test ederken iletişim kutusunu tekrar görmek için uygulamayı cihazdan silip yeniden yükleyin. Ardından flow'u açın ve **Request permission** eylemine ulaşın. Ekran kalır ve hiçbir iletişim kutusu görünmezse flow yanıt alamamış demektir: uygulamanızın flow'u göstermeden önce handler'ı kaydettiğinden emin olun. Flow bir iletişim kutusu göstermeden ilerlerse Android uygulamasının `POST_NOTIFICATIONS` iznini bildirdiğinden ve Android 13 veya sonrasını hedeflediğinden emin olun.

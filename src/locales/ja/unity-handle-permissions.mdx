@@ -1,0 +1,169 @@
+---
+title: "フローでの権限リクエストを処理する - Unity"
+description: "IAdaptyUISystemRequestsHandlerを使用して、UnityアプリのフローからプッシュNotification権限をユーザーに要求し、その回答をフローに返します。"
+metadataTitle: "フローでの権限処理 - Unity | Adapty ドキュメント"
+---
+
+[フロー](adapty-flow-builder)は、**Request permission** アクションを使って、プッシュ通知の送信許可をユーザーに求めることができます。たとえば、通知の用途を説明するオンボーディング画面などで利用します。Adapty SDK 自体はシステムの許可ダイアログを表示しません。代わりに、アプリ内の `IAdaptyUISystemRequestsHandler` にリクエストを渡します。アプリがダイアログを表示してユーザーの回答を返すと、フローが続行されます。
+
+## 始める前に \{#before-you-start\}
+
+必要なもの:
+
+- **Adapty Unity SDK 4.1.0 以降、Android では 4.3.0 以降**: それより前のバージョンには、このシグネチャを持つ `IAdaptyUISystemRequestsHandler` がありません。Android では、4.1.x はフローが閉じた後にのみ OS パーミッションコールバックから送信された応答を返します。バージョン 4.3.0 には Unity 6 が必要です。
+- **Request permission アクションを含むフロー**: フロー & ペイウォールビルダーで、要素の **On Tap** または **On Screen Appear** トリガーに **Request permission** アクションを追加します。その **After response** セクションに、ユーザーが応答した後に実行するアクション（**Navigate Next** など）を追加します。アクションの設定については、[Request permission](onboarding-actions#request-permission) を参照してください。
+- **iOS の場合**: このガイドのハンドラーが iOS ダイアログを表示するために使用する [Mobile Notifications](https://docs.unity3d.com/Packages/com.unity.mobile.notifications@latest) パッケージ。**Project Settings > Mobile Notifications > iOS** で **Request Authorization on App Launch** をオフにして、フローが要求したときにダイアログが表示されるようにします。
+- **Android の場合**: Android マニフェストの `android.permission.POST_NOTIFICATIONS` パーミッション、および **Player Settings** でのターゲット API レベル 33 以上。Android 13 以降では、パーミッションを宣言し Android 13 以降をターゲットにしているアプリにのみ通知パーミッションダイアログが表示されます。
+
+## フローがパーミッションをリクエストする仕組み \{#how-the-flow-requests-a-permission\}
+
+1. フローが **Request permission** アクションに到達します（ユーザーが要素をタップするか、画面が表示されたとき）。
+2. Adapty SDK は、パーミッション `push` を引数として、ハンドラー上の `FlowViewDidAskPermission` を呼び出します。
+3. アプリは OS にパーミッションをリクエストし、結果を `respond` で一度だけ返します。
+4. フローは **After response** アクションを実行します。どちらの回答に対しても同じアクションが実行されます。
+
+フローは、アプリが `respond` を呼び出すまでその画面で待機します。アプリが一度も呼び出さなければ、フローはその画面のままになります。ユーザーがすでに回答済みの場合など、OSがダイアログを表示しない場合、アプリはすぐに回答を受け取り、フローは **After response** アクションを即座に実行します。それらのアクションによって画面が遷移する場合、ユーザーはパーミッションをリクエストする画面を一瞬だけ目にすることになります。
+
+**On Screen Appear** では、ユーザーが **Navigate back** アクションで前の画面に戻ってきた場合、フローはリクエストを再送しません。**On Tap** では、タップのたびに新しいリクエストが送信されますが、リクエストが回答待ちの間のタップは除きます。
+
+## ハンドラーの実装 \{#implement-the-handler\}
+
+パーミッションリクエストに応答するには、`IAdaptyUISystemRequestsHandler` インターフェースを実装します。アプリがリクエストしないパーミッションには `false` を返してください。
+
+```csharp showLineNumbers title="Unity"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using AdaptySDK;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+#if UNITY_IOS
+using Unity.Notifications.iOS;
+#endif
+
+public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsHandler
+{
+    public void FlowViewDidAskPermission(
+        AdaptyUIFlowView view,
+        string permission,
+        IReadOnlyDictionary<string, string> customArgs,
+        Action<bool, string> respond
+    ) {
+        if (permission != "push") {
+            // Answer every request, or the flow waits on the screen.
+            respond(false, null);
+            return;
+        }
+
+#if UNITY_IOS
+        StartCoroutine(RequestPushOnIOS(respond));
+#elif UNITY_ANDROID
+        RequestPushOnAndroid(respond);
+#else
+        respond(false, null);
+#endif
+    }
+
+    public void FlowViewDidRequestAppReview(AdaptyUIFlowView view)
+    {
+        // Shows the native store review prompt, as the SDK does without a handler.
+        AdaptyUI.RequestAppReview(null);
+    }
+
+#if UNITY_IOS
+    private IEnumerator RequestPushOnIOS(Action<bool, string> respond)
+    {
+        var options = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
+
+        using (var request = new AuthorizationRequest(options, false))
+        {
+            while (!request.IsFinished) {
+                yield return null;
+            }
+            respond(request.Granted, null);
+        }
+    }
+#endif
+
+#if UNITY_ANDROID
+    private void RequestPushOnAndroid(Action<bool, string> respond)
+    {
+        const string postNotifications = "android.permission.POST_NOTIFICATIONS";
+
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
+        {
+            if (version.GetStatic<int>("SDK_INT") < 33) {
+                // Android 12 and earlier: no dialog; answer whether notifications are on.
+                using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var managerClass = new AndroidJavaClass("androidx.core.app.NotificationManagerCompat"))
+                using (var manager = managerClass.CallStatic<AndroidJavaObject>("from", activity))
+                {
+                    respond(manager.Call<bool>("areNotificationsEnabled"), null);
+                }
+                return;
+            }
+        }
+
+        if (Permission.HasUserAuthorizedPermission(postNotifications)) {
+            respond(true, null);
+            return;
+        }
+
+        var callbacks = new PermissionCallbacks();
+        callbacks.PermissionGranted += _ => respond(true, null);
+        callbacks.PermissionDenied += _ => respond(false, null);
+#if UNITY_6000_0_OR_NEWER
+        callbacks.PermissionRequestDismissed += _ => respond(false, null);
+#else
+        callbacks.PermissionDeniedAndDontAskAgain += _ => respond(false, null);
+#endif
+        Permission.RequestUserPermission(postNotifications, callbacks);
+    }
+#endif
+}
+```
+
+`FlowViewDidAskPermission` が受け取る値:
+
+- **`view`**: リクエストを送信したフロービュー。
+- **`permission`**: フローがリクエストするパーミッション。**Request permission** アクションは `push` を送信します。
+- **`customArgs`**: リクエストのカスタム引数。**Request permission** アクションでは送信されないため、値は `null` です。
+- **`respond`**: フローに回答を返すコールバック。ユーザーがパーミッションを許可した場合は `true`、そうでない場合は `false` を渡します。第2引数はオプションの詳細文字列で、`null` も有効な値です。
+
+各リクエストに対して `respond` を必ず1回だけ呼び出してください。2回目の呼び出しは Adapty SDK に無視され、Unity コンソールに警告が出力されます。バージョン 4.3.0 以降では、OS のパーミッションコールバックを含む任意のスレッドから `respond` を呼び出せます。
+
+`FlowViewDidAskPermission` が `respond` を呼び出す前に例外をスローした場合、Adapty SDK はその例外をログに記録し、応答を送信しません。その結果、フローは画面に表示されたままになります。例外をキャッチして `respond(false, null)` を呼び出してください。
+
+パーミッションが許可されると、アプリはプッシュ通知を表示できるようになります。プッシュ通知を受信するには、フロー外で行うのと同様に、プッシュプロバイダーにデバイスを登録してください。
+
+`IAdaptyUISystemRequestsHandler` は `FlowViewDidRequestAppReview` も必要です。ハンドラーが登録されている場合、Adapty SDK は独自にストアレビューをリクエストしないため、ネイティブのレビュープロンプトを維持するには、例のように `AdaptyUI.RequestAppReview(null)` を呼び出してください。
+
+## ハンドラーを登録する \{#register-the-handler\}
+
+:::warning
+**ハンドラーがないと、フローはパーミッション要求のところで停止します。** ハンドラーが登録されていない場合、Adapty SDK は iOS と Android の両方でフローに応答を返さず、Unity コンソールに `System requests handler is not set` という警告が表示されます。フローはリクエストを送信した画面にとどまり、**After response** のアクションは実行されません。
+:::
+
+すべてのフローからのパーミッションリクエストをハンドラーに送信するには、フローを表示する前に `Adapty.SetSystemRequestsHandler()` でハンドラーを登録してください。登録する場所は、[フローイベントリスナーの設定](unity-handle-paywall-actions#set-up-the-flows-events-listener)と同じ箇所です。ハンドラーはアプリが起動している間ずっと存在する GameObject にアタッチし、以下のメソッドをハンドラークラスに追加してください：
+
+```csharp showLineNumbers title="Unity"
+void Awake()
+{
+    DontDestroyOnLoad(gameObject);
+    Adapty.SetSystemRequestsHandler(this);
+}
+
+void OnDestroy()
+{
+    Adapty.SetSystemRequestsHandler(null);
+}
+```
+
+`Adapty.SetSystemRequestsHandler()` はアプリ内のすべてのフローに対して1つのハンドラーを保持します。2回目の呼び出しは最初のハンドラーを置き換え、`null` を渡すと削除されます。
+
+## 権限リクエストのテスト \{#test-the-permission-request\}
+
+iOSは通知ダイアログをアプリのインストールごとに1回だけ表示します。Androidはユーザーが通知を許可するか、2回拒否した時点で表示しなくなります。フローのテスト中にダイアログを再表示するには、デバイスからアプリを削除して再インストールしてください。その後、フローを開いて **Request permission** アクションに到達します。画面が表示されたままダイアログが表示されない場合、フローは応答を受け取っていません。アプリがフローを表示する前にハンドラーを登録していることを確認してください。ダイアログなしでフローが次に進む場合は、AndroidアプリがPOST_NOTIFICATIONS`を宣言してAPIレベル33以上をターゲットにしていること、および **Request Authorization on App Launch** がオフになっていることを確認してください。
