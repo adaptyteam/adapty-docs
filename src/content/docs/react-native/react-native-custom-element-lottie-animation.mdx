@@ -1,0 +1,407 @@
+---
+title: "Show user progress with a Lottie animation"
+description: "Display the progress of each user, such as a daily streak, as a Lottie animation on a flow screen."
+metadataTitle: "Show user progress with a Lottie animation | React Native SDK | Adapty Docs"
+---
+
+<CustomElementLottieIntro />
+
+## Before you start
+
+- Update your app to Adapty React Native SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
+- Set up your app to [fetch](react-native-get-pb-paywalls) and [display](react-native-present-paywalls) flows.
+- Set up the native code of your app for custom elements, as in the [React Native guide](react-native-flow-custom-elements#before-you-start).
+- On iOS, add Lottie to your app target in Xcode with Swift Package Manager, from `https://github.com/airbnb/lottie-spm.git`.
+- On Android, set up Jetpack Compose in your app module. The animation view in this recipe is a composable. Add Lottie for Jetpack Compose to your app with Gradle, from `com.airbnb.android:lottie-compose`.
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. Add the custom element to the screen
+
+<CustomElementLottieBuilderSetup />
+
+## 2. Add the animation file to your app
+
+Your native code reads the animation file from your iOS and Android projects, not from the assets of your JavaScript code:
+
+- **iOS**: Add the file to your app target in Xcode.
+- **Android**: Put the file in `android/app/src/main/assets`, the `assets` folder of your Android app module. Keep it at the root of this folder, not in a subfolder.
+
+The file name without `.json` must match the ID of the custom element, such as `streak_ring.json` for `streak_ring`.
+
+## 3. Create the animation view
+
+Create a model for the streak, and a view that plays the animation. Your app updates the model when the streak changes. The view reads the model, so the ring shows the current streak when the screen opens:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+import Lottie
+import SwiftUI
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` fills the ring once, from empty up to `progress`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import com.airbnb.lottie.compose.LottieAnimation
+import com.airbnb.lottie.compose.LottieClipSpec
+import com.airbnb.lottie.compose.LottieCompositionSpec
+import com.airbnb.lottie.compose.rememberLottieComposition
+import kotlinx.coroutines.flow.MutableStateFlow
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` fills the ring once, from empty up to `progress`.
+
+</TabItem>
+</Tabs>
+
+## 4. Match the animation to the custom element
+
+In your [app-wide resolver](react-native-flow-custom-elements#pass-the-resolver-to-the-sdk), add a property for the streak model. Then return the animation view for the `lottie_animation` Type and the `streak_ring` ID. The highlighted lines show what to add or change. If your app has no app-wide [resolver](react-native-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {2,6,14-18}
+import AdaptyUIBuilder
+import Lottie
+import SwiftUI
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Put the `streak_ring` case before any other `lottie_animation` case, because Swift only runs the first case that matches. If the app bundle has no file for the ID, the resolver returns `nil`, and users see the fallback.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+import android.content.Context
+import com.adapty.ui.AdaptyCustomElementContent
+import com.adapty.ui.AdaptyCustomElementsResolver
+import java.io.IOException
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+If the `assets` folder has no file for the ID, the resolver returns `null`, and users see the fallback. If your resolver already returns a [view for every animation file](react-native-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), return that view instead of `null` when the ID isn't `streak_ring`. This way, users still see the animations of your other `lottie_animation` custom elements.
+
+</TabItem>
+</Tabs>
+
+Create the resolver with the streak model, and set it as the app-wide resolver at app launch:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+In `AppDelegate.swift`, add a property for the streak model, and set the resolver in the `application(_:didFinishLaunchingWithOptions:)` method. The highlighted lines show what to add. Keep the rest of the `AppDelegate` class as it is:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1,6-7,13}
+import AdaptyUI
+import UIKit
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  // the streak model that your app updates
+  let streakStore = StreakStore()
+
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+In `MainApplication.kt`, add a property for the streak model, and set the resolver in the `onCreate` method. The highlighted lines show what to add. Keep the rest of the `MainApplication` class as it is:
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,4-5,11}
+import com.adapty.ui.AdaptyUI
+
+class MainApplication : Application(), ReactApplication {
+  // the streak model that your app updates
+  val streakStore = StreakStore()
+
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    // the rest of your onCreate code
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+## 5. Send the streak from your JavaScript code
+
+Your JavaScript code keeps the streak, and the native views read it from the streak model. To update the model, send the streak to your native code through a [Turbo Native Module](https://reactnative.dev/docs/turbo-native-modules-introduction). The module has a JavaScript spec and an implementation for each platform.
+
+In a `specs` folder at the root of your project, create the spec of the module:
+
+```typescript showLineNumbers title="specs/NativeStreakStore.ts"
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  setStreak(days: number): void;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('NativeStreakStore');
+```
+
+To generate the native code of the spec, add `codegenConfig` to `package.json`. Replace `com.example.app` with the package name of your Android app, in `package.json` and in the Kotlin implementation of the module. If `package.json` already has `codegenConfig`, only add `NativeStreakStore` to the `modulesProvider` object:
+
+```json showLineNumbers title="package.json"
+"codegenConfig": {
+  "name": "AppSpecs",
+  "type": "modules",
+  "jsSrcsDir": "specs",
+  "android": {
+    "javaPackageName": "com.example.app.specs"
+  },
+  "ios": {
+    "modulesProvider": {
+      "NativeStreakStore": "RCTNativeStreakStore"
+    }
+  }
+}
+```
+
+Implement the module for each platform:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+In your app target in Xcode, create an Objective-C++ module. It sends the streak to your Swift code through `NotificationCenter`:
+
+```objectivec showLineNumbers title="RCTNativeStreakStore.h"
+#import <AppSpecs/AppSpecs.h>
+
+@interface RCTNativeStreakStore : NSObject <NativeStreakStoreSpec>
+@end
+```
+
+```objectivec showLineNumbers title="RCTNativeStreakStore.mm"
+#import "RCTNativeStreakStore.h"
+
+@implementation RCTNativeStreakStore
+
++ (NSString *)moduleName {
+  return @"NativeStreakStore";
+}
+
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params {
+  return std::make_shared<facebook::react::NativeStreakStoreSpecJSI>(params);
+}
+
+- (void)setStreak:(double)days {
+  // the AppDelegate updates the streak model when it receives this notification
+  [[NSNotificationCenter defaultCenter] postNotificationName:@"StreakDidChange"
+                                                      object:nil
+                                                    userInfo:@{@"days": @((NSInteger)days)}];
+}
+
+@end
+```
+
+To update the streak model with each new streak, observe `NotificationCenter` in your `AppDelegate` class. In the `application(_:didFinishLaunchingWithOptions:)` method, add the observer after the `AdaptyUI.setCustomElementsResolver` call:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift"
+// the streak that your JavaScript code sends through the native module
+NotificationCenter.default.addObserver(
+  forName: Notification.Name("StreakDidChange"),
+  object: nil,
+  queue: .main
+) { [streakStore] notification in
+  guard let days = notification.userInfo?["days"] as? Int else { return }
+  MainActor.assumeIsolated { streakStore.currentStreak = days }
+}
+```
+
+To generate the native code of the spec, run `pod install` in the `ios` folder.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Create the module, and a package that registers it with React Native:
+
+```kotlin showLineNumbers title="NativeStreakStoreModule.kt"
+import com.example.app.specs.NativeStreakStoreSpec
+import com.facebook.react.bridge.ReactApplicationContext
+
+class NativeStreakStoreModule(reactContext: ReactApplicationContext) :
+    NativeStreakStoreSpec(reactContext) {
+
+    override fun getName() = NAME
+
+    override fun setStreak(days: Double) {
+        val app = reactApplicationContext.applicationContext as MainApplication
+        app.streakStore.currentStreak.value = days.toInt()
+    }
+
+    companion object {
+        const val NAME = "NativeStreakStore"
+    }
+}
+```
+
+```kotlin showLineNumbers title="NativeStreakStorePackage.kt"
+import com.facebook.react.BaseReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.module.model.ReactModuleInfo
+import com.facebook.react.module.model.ReactModuleInfoProvider
+
+class NativeStreakStorePackage : BaseReactPackage() {
+    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
+        if (name == NativeStreakStoreModule.NAME) NativeStreakStoreModule(reactContext) else null
+
+    override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
+        mapOf(
+            NativeStreakStoreModule.NAME to ReactModuleInfo(
+                name = NativeStreakStoreModule.NAME,
+                className = NativeStreakStoreModule.NAME,
+                canOverrideExistingModule = false,
+                needsEagerInit = false,
+                isCxxModule = false,
+                isTurboModule = true,
+            )
+        )
+    }
+}
+```
+
+In `MainApplication.kt`, add `NativeStreakStorePackage` to the list of packages:
+
+```kotlin showLineNumbers title="MainApplication.kt" {2}
+PackageList(this).packages.apply {
+  add(NativeStreakStorePackage())
+}
+```
+
+</TabItem>
+</Tabs>
+
+In your JavaScript code, send the streak at app launch, and each time the streak changes:
+
+```typescript showLineNumbers title="sendStreak.ts"
+import NativeStreakStore from './specs/NativeStreakStore';
+
+// call at app launch, and each time the streak changes
+export function sendStreak(days: number) {
+  NativeStreakStore.setStreak(days);
+}
+```
+
+## 6. Test on a device
+
+<CustomElementLottieTest />
+
+To find out why the fallback appears instead of the animation, follow the instructions in the [Test on a device](react-native-flow-custom-elements#test-on-a-device) section of the React Native guide.
