@@ -224,6 +224,7 @@ When the SDK offers multiple ways to accomplish something (e.g., standalone scre
     - [ ] Would an experienced dev in this language approve this code?
     - [ ] Is it minimal yet complete?
     - [ ] If multiple approaches exist, are they all documented with appropriate structure?
+    - [ ] Does every comment in the block still match the code beside it, including comments the edit didn't touch?
 
 2. **Compare to Platform Style Guide**
     - Review `references/<platform>.md`
@@ -234,6 +235,11 @@ When the SDK offers multiple ways to accomplish something (e.g., standalone scre
     - Are method signatures correct?
     - Are parameter types accurate?
     - Check for convenience methods on returned objects (e.g., `.present()`, `.dismiss()`)
+
+4. **Compile Every Block**
+    - Build every new or changed block on each platform the article covers, against the SDK version the article names. Reading the code or a type-check doesn't count as a compile.
+    - Build it in a sample app that depends on the released SDK, not inside the SDK's own sources: a call that is internal to the SDK compiles there and fails in the reader's app.
+    - In the hand-off, list each block you couldn't compile, and why.
 
 ## Reviewing Existing Snippets
 
