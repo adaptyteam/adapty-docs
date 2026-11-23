@@ -1,0 +1,82 @@
+---
+title: "在 iOS 流程中处理权限请求"
+description: "使用 AdaptySystemRequestsHandler 在 iOS 应用的流程中向用户请求推送通知权限，并将用户的回答返回给流程。"
+metadataTitle: "处理流程权限 - iOS | Adapty 文档"
+---
+
+[流程](adapty-flow-builder)可以通过 **Request permission** 操作请求用户授权发送推送通知，例如在用户引导页面上解释通知用途。Adapty SDK 本身不会显示系统权限弹窗，而是将请求传递给应用中的 `AdaptySystemRequestsHandler`。由你的应用弹出权限对话框并返回用户的选择，流程随后继续执行。
+
+## 开始之前 \{#before-you-start\}
+
+你需要准备：
+
+- **Adapty iOS SDK 4.0.0 或更高版本**：早期版本不包含 `AdaptySystemRequestsHandler`。
+- **包含 Request permission 操作的流程**：在 Flow & Paywall Builder 中，将 **Request permission** 操作添加到某个元素的 **On Tap** 或 **On Screen Appear** 触发器。在其 **After response** 部分，添加用户响应后需要执行的操作，例如 **Navigate Next**。有关操作设置，请参阅 [Request permission](onboarding-actions#request-permission)。
+
+## 流程如何请求权限 \{#how-the-flow-requests-a-permission\}
+
+1. 流程触发 **Request permission** 动作：用户点击该元素，或屏幕出现时。
+2. Adapty SDK 以 `.push` 为参数，调用处理器上的 `handlePermission(_:withCustomArgs:)`。
+3. 你的应用向 iOS 请求权限，并返回 `.granted` 或 `.denied`。
+4. 流程执行 **After response** 动作。两种返回结果对应的动作相同。
+
+流程会在该屏幕上等待，直到您的应用返回结果。如果您的应用始终未返回结果，流程将一直停留在该屏幕上。如果 iOS 未显示该对话框（例如用户已经回答过），您的应用会立即获得结果，流程也会立即执行**After response**操作。如果这些操作导致屏幕跳转，用户只会短暂看到请求权限的屏幕。
+
+使用 **On Screen Appear** 时，当用户通过 **Navigate back** 操作返回该页面，流程不会重新发送请求。使用 **On Tap** 时，每次点击都会发送新请求，但在等待回答期间的点击除外。
+
+## 实现处理器 \{#implement-the-handler\}
+
+要响应权限请求，需创建一个符合 `AdaptySystemRequestsHandler` 协议的类，并实现 `handlePermission(_:withCustomArgs:)` 方法。对于应用不需要请求的权限，返回 `.denied`。
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            return granted ? .granted(nil) : .denied(nil)
+        } catch {
+            return .denied(error.localizedDescription)
+        }
+    }
+}
+```
+
+`handlePermission(_:withCustomArgs:)` 接收以下参数：
+
+- **`permission`**：流程请求的权限类型。**Request permission** 操作会发送 `.push`。
+- **`customArgs`**：请求的自定义参数。**Request permission** 操作不发送任何参数，因此该值为 `nil`。
+
+`.granted` 和 `.denied` 接受一个可选字符串用于传递详细信息，可以传 `nil`。
+
+权限授予后，你的应用即可显示通知。若要接收推送通知，需向 APNs 注册设备并将设备 token 发送给推送服务提供商，操作方式与应用在流程之外的处理方式相同。
+
+`AdaptySystemRequestsHandler` 还声明了 `handleAppReviewRequest()`。该方法的默认实现会显示 App Store 评价提示，因此你无需自行实现它。
+
+## 将处理器传入流程配置 \{#pass-the-handler-to-the-flow-configuration\}
+
+:::warning
+**如果不传入处理器，流程将在权限请求处停止。** 若未传入 `systemRequestsHandler`，iOS 不会显示任何弹窗。流程会停留在发出请求的页面，且不会执行**响应后**的操作。
+:::
+
+要将流程的权限请求发送至您的处理器，请在 `AdaptyUI.getFlowConfiguration` 的 `systemRequestsHandler` 参数中传入该处理器：
+
+```swift showLineNumbers title="Swift"
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: PushPermissionHandler()
+)
+```
+
+流程配置会对处理程序保持强引用，因此你无需自行存储。SwiftUI 和 UIKit 都通过此配置来呈现流程，因此该处理程序适用于两者。详情请参阅[展示流程与付费墙](ios-present-paywalls)。
+
+## 测试权限请求 \{#test-the-permission-request\}
+
+iOS 每次应用安装只会弹出一次通知权限对话框。若要在测试流程时再次查看该对话框，请从设备上删除应用并重新安装，然后打开流程并触发 **Request permission** 操作。如果页面停留不动且没有弹出对话框，说明流程未收到任何响应——请确认已将 `systemRequestsHandler` 传入 `AdaptyUI.getFlowConfiguration`。

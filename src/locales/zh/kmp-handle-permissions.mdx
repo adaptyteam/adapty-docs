@@ -1,0 +1,160 @@
+---
+title: "在流程中处理权限请求 - Kotlin Multiplatform"
+description: "使用 AdaptyUISystemRequestsHandler 在 Kotlin Multiplatform 应用的流程中向用户请求推送通知权限，并将用户的回答返回给流程。"
+metadataTitle: "处理流程权限 - Kotlin Multiplatform | Adapty 文档"
+---
+
+[流程](adapty-flow-builder)可以通过 **Request permission** 操作请求用户授予推送通知权限，例如在用户引导页面向用户解释通知用途。Adapty SDK 本身不会显示系统权限弹窗，而是将请求传递给应用中的 `AdaptyUISystemRequestsHandler`。应用负责显示弹窗并返回用户的选择，流程随后继续执行。
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty Kotlin Multiplatform SDK 4.1.0 或更高版本**：4.1.0 是首个支持 `AdaptyUISystemRequestsHandler` 的稳定版本。
+- **包含请求权限操作的流程**：在 Flow & Paywall Builder 中，为元素的 **On Tap** 或 **On Screen Appear** 触发器添加 **Request permission** 操作。在其 **After response** 部分，添加用户响应后要执行的操作，例如 **Navigate Next**。有关操作设置，请参阅[请求权限](onboarding-actions#request-permission)。
+- **Android 清单中的 `POST_NOTIFICATIONS` 权限以及 `targetSdk` 33 或更高版本**：Android 13 及更高版本仅向声明了该权限且目标版本为 Android 13 或更高版本的应用显示通知权限对话框：
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## 流程如何请求权限 \{#how-the-flow-requests-a-permission\}
+
+1. 流程触发 **Request permission** 动作：用户点击相应元素，或屏幕出现时自动触发。
+2. Adapty SDK 以 `AdaptyUIPermission.PUSH` 为参数调用处理器上的 `handlePermission`。
+3. 您的应用向操作系统请求权限，并返回 `AdaptyUIPermissionResult.granted()` 或 `AdaptyUIPermissionResult.denied()`。
+4. 流程执行 **After response** 动作，两种返回结果对应的动作相同。
+
+流程会在该界面上等待，直到您的应用返回结果。如果应用始终未返回结果，流程将停留在当前界面。如果操作系统未显示该对话框（例如用户已经回答过），您的处理程序会立即返回，流程随即执行 **After response** 操作。如果这些操作导致界面跳转，用户只会短暂看到请求权限的界面。
+
+使用 **On Screen Appear** 时，当用户通过 **Navigate back** 操作返回该页面，流程不会再次发送请求。使用 **On Tap** 时，每次点击都会发送新请求，但在等待您响应期间的点击除外。
+
+## 实现处理器 \{#implement-the-handler\}
+
+要响应权限请求，请在公共代码中实现 `AdaptyUISystemRequestsHandler`。每个请求都必须返回结果：对于应用未申请的权限，返回 `denied`，并捕获平台代码中的异常。Adapty SDK 不会捕获来自 `handlePermission` 的异常：未捕获的异常会导致应用崩溃，且流程将无法收到响应。
+
+```kotlin showLineNumbers title="commonMain"
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+`requestPushPermission` 是您的平台代码。请参阅[在各平台上请求权限](#request-the-permission-on-each-platform)。
+
+`handlePermission` 接收以下参数：
+
+- **`view`**：发出请求的流程视图。
+- **`permission`**：流程请求的权限。**Request permission** 操作会发送 `AdaptyUIPermission.PUSH`。
+- **`customArgs`**：请求的自定义参数。**Request permission** 操作不发送任何参数，因此该值为 `null`。
+
+传递给 `granted` 和 `denied` 的 `detail` 字符串是可选的。
+
+已授予的权限允许你的应用显示通知。要接收推送通知，请像在流程外一样，向 APNs 或 Firebase Cloud Messaging 等推送服务商注册设备。
+
+`AdaptyUISystemRequestsHandler` 还提供了 `handleAppReviewRequest`。其默认行为是显示原生评分提示，因此无需覆盖它。
+
+## 在各平台请求权限 \{#request-the-permission-on-each-platform\}
+
+通用代码无法显示系统对话框，因此 `requestPushPermission` 是一个 `expect` 函数，需要在每个平台提供 `actual` 实现。如果你的应用已经使用了 Kotlin Multiplatform 权限库，可以在 `handlePermission` 中直接调用。
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+在 iOS 上，向 `UNUserNotificationCenter` 请求授权：
+
+```kotlin showLineNumbers title="iosMain"
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+在 Android 上，运行时权限从 Android 13 开始存在。对于更早的版本，返回应用的通知是否已开启。请从当前显示在屏幕上的 Activity 发起请求——在显示流程时，这就是流程的 Activity。在本示例中，`ResumedActivity` 负责追踪它。在 `Application.onCreate` 中通过 `registerActivityLifecycleCallbacks(ResumedActivity)` 注册：
+
+```kotlin showLineNumbers title="androidMain"
+
+object ResumedActivity : Application.ActivityLifecycleCallbacks {
+    var current: ComponentActivity? = null
+        private set
+
+    override fun onActivityResumed(activity: Activity) {
+        current = activity as? ComponentActivity
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        if (current === activity) current = null
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+}
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = ResumedActivity.current ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+        continuation.invokeOnCancellation { launcher.unregister() }
+    }
+}
+```
+
+## 注册处理器 \{#register-the-handler\}
+
+:::warning
+**如果未注册处理器，流程将在权限请求处停止。** 如果你的应用未注册任何处理器，Adapty SDK 在 iOS 和 Android 上都不会向流程发送任何响应。流程将停留在发出请求的屏幕上，不会执行**After response**中的操作。
+:::
+
+如需将权限请求发送至你的处理器，请在应用启动时调用一次 `AdaptyUI.setSystemRequestsHandler`，并在应用显示第一个流程之前完成调用。例如，可以在调用 `AdaptyUI.setFlowsEventsObserver` 的同一位置调用它。
+
+```kotlin showLineNumbers title="Kotlin"
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+## 测试权限请求 \{#test-the-permission-request\}
+
+iOS 每次安装只会显示一次通知权限弹窗。Android 在用户允许通知或拒绝两次后就不再显示。如需在测试流程时再次看到弹窗，请从设备上删除应用并重新安装，然后打开流程并进入 **Request permission** 操作。如果屏幕停留不动且没有弹窗出现，说明流程未收到任何响应——请确保你的应用在展示流程之前已注册好处理程序。如果流程没有弹窗就直接继续，请确保 Android 应用已声明 `POST_NOTIFICATIONS` 权限，且目标平台为 Android 13 或更高版本。

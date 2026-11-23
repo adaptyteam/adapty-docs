@@ -1,0 +1,112 @@
+---
+title: "Обработка запросов разрешений во флоу — React Native"
+description: "Запрашивайте у пользователей разрешение на push-уведомления из флоу в приложении React Native с помощью обработчика onRequestPermission и возвращайте их ответ обратно во флоу."
+metadataTitle: "Обработка разрешений флоу — React Native | Документация Adapty"
+---
+
+[Флоу](adapty-flow-builder) может запросить у пользователя разрешение на отправку push-уведомлений с помощью действия **Request permission** — например, на экране онбординга, где объясняется, для чего нужны уведомления. SDK Adapty не показывает системный диалог разрешений самостоятельно. Он передаёт запрос в обработчик `onRequestPermission` вашего приложения. Приложение показывает диалог и возвращает ответ пользователя, после чего флоу продолжается.
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty React Native SDK 4.0.0 или новее**: В более ранних версиях обработчик `onRequestPermission` отсутствует.
+- **Флоу с действием Request permission**: В Flow & Paywall Builder добавьте действие **Request permission** к триггеру **On Tap** или **On Screen Appear** нужного элемента. В разделе **After response** укажите действия, которые должны выполняться после ответа пользователя, например **Navigate Next**. Описание настроек действия см. в разделе [Request permission](onboarding-actions#request-permission).
+- **Библиотека для отображения диалога уведомлений**: В примере используется [react-native-permissions](https://github.com/zoontek/react-native-permissions). Чтобы её настроить, следуйте [инструкции по установке](https://github.com/zoontek/react-native-permissions#setup) и добавьте `Notifications` в список iOS-разрешений. Подойдёт и любая другая библиотека, которая показывает этот диалог, например `expo-notifications` в приложении на Expo.
+- **Разрешение `POST_NOTIFICATIONS` в манифесте Android и `targetSdk` 33 или выше**: На Android 13 и новее диалог запроса разрешения на уведомления отображается только в приложениях, которые объявили это разрешение и указали Android 13 или выше в качестве целевой версии:
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Как флоу запрашивает разрешение \{#how-the-flow-requests-a-permission\}
+
+1. Флоу доходит до действия **Request permission**: пользователь нажимает на элемент, или появляется экран.
+2. SDK Adapty вызывает ваш обработчик `onRequestPermission` с разрешением `push`.
+3. Ваше приложение показывает системный диалог и разрешает промис обработчика, возвращая `{ status: 'granted' }` или `{ status: 'denied' }`.
+4. Флоу выполняет действия **After response**. Они одинаковы для обоих ответов.
+
+Флоу ожидает на экране, пока промис вашего обработчика не завершится. Если промис никогда не завершается, флоу остаётся на экране. Если ОС не показывает диалог — например, потому что пользователь уже ответил на него — `requestNotifications` немедленно возвращает прежний ответ, и флоу сразу выполняет действия из блока **After response**. Если эти действия закрывают экран, пользователь видит экран запроса разрешения лишь на мгновение.
+
+С **On Screen Appear** флоу не отправляет запрос повторно, когда пользователь возвращается на экран действием **Navigate back**. С **On Tap** каждое нажатие отправляет новый запрос, кроме нажатий во время ожидания ответа.
+
+## Реализация обработчика \{#implement-the-handler\}
+
+Обработчик `onRequestPermission` асинхронный, в отличие от остальных обработчиков флоу. Он возвращает промис, который разрешается в объект с ответом пользователя:
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the earlier answer without showing it.
+  const { status } = await requestNotifications(['alert', 'badge', 'sound']);
+  return { status: status === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` получает:
+
+- **`permission`**: Разрешение, которое запрашивает флоу. Действие **Request permission** отправляет `push`.
+- **`customArgs`**: Пользовательские аргументы запроса. Действие **Request permission** не отправляет ни одного, поэтому объект пустой.
+
+Промис возвращает объект со следующими свойствами:
+
+- **`status`**: Ответ пользователя: `granted`, если пользователь предоставил разрешение, и `denied` в противном случае.
+- **`detail`**: Необязательное. Строка с дополнительной информацией об ответе, например статус, который вернула библиотека.
+
+SDK Adapty возвращает `denied`, если обработчик выбрасывает ошибку или его промис завершается с отказом.
+
+Разрешение позволяет приложению показывать уведомления. Чтобы получать push-уведомления, зарегистрируйте устройство у своего провайдера — так же, как вы делаете это за пределами флоу.
+
+## Зарегистрируйте обработчик \{#register-the-handler\}
+
+:::warning
+**Без обработчика `onRequestPermission` пользователю никогда не показывается запрос.** Если у флоу-вью нет обработчика, Adapty SDK возвращает `denied` без диалога и записывает предупреждение в лог, а флоу сразу выполняет действия **After response**.
+:::
+
+Устанавливайте обработчик на каждом флоу-вью, которое создаёт ваше приложение. Авторы флоу могут добавить действие **Request permission** в любой флоу позже, без обновления приложения, а флоу-вью без обработчика вернёт `denied`, не спрашивая пользователя.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+Передайте обработчик в проп `onRequestPermission` компонента `AdaptyFlowView`:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={StyleSheet.absoluteFill}
+      onRequestPermission={onRequestPermission}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Зарегистрируйте обработчик через `setEventHandlers` перед показом представления:
+
+```typescript showLineNumbers title="React Native"
+
+const view = await createFlowView(flow);
+
+view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+</TabItem>
+</Tabs>
+
+## Протестируйте запрос разрешения \{#test-the-permission-request\}
+
+iOS показывает диалог запроса уведомлений только один раз после установки приложения. Android перестаёт показывать его, когда пользователь разрешает уведомления или дважды отказывает. Чтобы увидеть диалог снова во время тестирования флоу, удалите приложение с устройства и установите его заново. Затем откройте флоу и дойдите до действия **Request permission**. Если флоу продолжается без диалога, убедитесь, что у флоу-вью есть обработчик `onRequestPermission`, а приложение на Android объявляет `POST_NOTIFICATIONS` и нацелено на Android 13 или более позднюю версию.

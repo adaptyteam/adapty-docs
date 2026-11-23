@@ -1,0 +1,100 @@
+---
+title: "Обработка запросов разрешений во флоу — Android"
+description: "Запрашивайте у пользователей разрешение на push-уведомления из флоу в Android-приложении с помощью onShowRequestPermission и возвращайте ответ во флоу."
+metadataTitle: "Обработка разрешений во флоу — Android | Документация Adapty"
+---
+
+[Флоу](adapty-flow-builder) может запросить у пользователей разрешение на отправку push-уведомлений с помощью действия **Request permission** — например, на экране онбординга, где объясняется, для чего нужны уведомления. Сам SDK Adapty не показывает системный диалог разрешения. Он передаёт запрос в метод `onShowRequestPermission` вашего обработчика событий флоу. Приложение показывает диалог и возвращает ответ пользователя, после чего флоу продолжается.
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty Android SDK 4.0.0 или новее**: В более ранних версиях метода `onShowRequestPermission` нет.
+- **Флоу с действием Request permission**: В Flow & Paywall Builder добавьте действие **Request permission** к триггеру **On Tap** или **On Screen Appear** любого элемента. В разделе **After response** укажите действия, которые должны выполняться после ответа пользователя, например **Navigate Next**. Описание настроек действия см. в разделе [Request permission](onboarding-actions#request-permission).
+- **Разрешение `POST_NOTIFICATIONS` в манифесте Android и `targetSdk` 33 или выше**: Android 13 и новее показывают диалог запроса разрешения на уведомления только приложениям, которые объявили это разрешение и нацелены на Android 13 или выше:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Как флоу запрашивает разрешение \{#how-the-flow-requests-a-permission\}
+
+1. Флоу доходит до действия **Request permission**: пользователь нажимает на элемент, или появляется экран.
+2. Adapty SDK вызывает `onShowRequestPermission` у слушателя событий представления флоу, с `permission`, установленным в `"push"`.
+3. Ваше приложение запрашивает разрешение у Android и вызывает `callback` с ответом.
+4. Флоу выполняет действия **After response**. Они одинаковы для обоих ответов.
+
+Флоу ожидает на экране, пока ваше приложение не вызовет `callback`. Если вызов так и не происходит, флоу остаётся на экране. Если Android не показывает диалог, приложение немедленно получает ответ, и флоу сразу выполняет действия блока **After response**. Если эти действия закрывают экран, пользователь видит экран запроса разрешения лишь мгновение. Android не показывает диалог в следующих случаях:
+
+- **Android 12 и ниже**: уведомления не требуют разрешения во время выполнения, поэтому диалог не появляется.
+- **Пользователь уже разрешил уведомления**: разрешение уже выдано.
+- **Пользователь дважды отклонил диалог**: Android прекращает показывать диалог для приложения и отклоняет каждый новый запрос.
+
+При **On Screen Appear** флоу не отправляет запрос повторно, когда пользователь возвращается на экран с действием **Navigate back**. При **On Tap** каждое нажатие отправляет новый запрос, за исключением нажатий во время ожидания ответа на текущий запрос.
+
+## Переопределение onShowRequestPermission \{#override-onshowrequestpermission\}
+
+:::warning
+**Слушатель по умолчанию никогда не запрашивает разрешения у пользователя.** `AdaptyFlowDefaultEventListener` отвечает на каждый запрос разрешения значением `false` и не показывает никакого диалога. Если ваш слушатель расширяет `AdaptyFlowDefaultEventListener` и не переопределяет `onShowRequestPermission`, флоу немедленно выполняет действия раздела **After response**.
+:::
+
+Чтобы обрабатывать запросы разрешений, переопределите `onShowRequestPermission` в вашем слушателе событий. В этом примере активити, отображающее флоу, регистрирует лаунчер для диалога разрешений:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class FlowActivity : ComponentActivity() {
+
+    // The flow waits for this callback while the system dialog is open.
+    private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingPermissionCallback?.invoke(granted, null)
+            pendingPermissionCallback = null
+        }
+
+    private val eventListener = object : AdaptyFlowDefaultEventListener() {
+        override fun onShowRequestPermission(
+            permission: String?,
+            customArgs: Map<String, String>?,
+            callback: AdaptyFlowEventListener.PermissionCallback,
+            context: Context,
+        ) {
+            if (permission != "push") {
+                callback(false, null)
+                return
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 12 and earlier: return whether notifications are turned on for the app.
+                callback(NotificationManagerCompat.from(context).areNotificationsEnabled(), null)
+                return
+            }
+            pendingPermissionCallback = callback
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Pass eventListener to the flow view.
+}
+```
+
+`onShowRequestPermission` получает:
+
+- **`permission`**: Разрешение, которое запрашивает флоу. Действие **Request permission** передаёт `"push"`.
+- **`customArgs`**: Пользовательские аргументы запроса. Действие **Request permission** не передаёт ни одного, поэтому значение равно `null`.
+- **`callback`**: Колбэк, который возвращает ответ флоу. Первый аргумент — `granted`: `true`, если пользователь предоставил разрешение, и `false` в противном случае. Второй аргумент — `detailResult`: необязательная строка с подробностями об ответе. Передайте `null`, если подробностей нет.
+
+Вызывайте `callback` ровно один раз для каждого запроса. Для разрешений, которые приложение не запрашивает, возвращайте `false`. Adapty SDK не перехватывает исключения из `onShowRequestPermission`, поэтому перехватывайте их самостоятельно в своём переопределении и вызывайте `callback(false, null)`.
+
+В Jetpack Compose регистрируйте лаунчер через `rememberLauncherForActivityResult` вместо `registerForActivityResult`. Если activity может быть пересоздана, пока диалог открыт (например, при повороте экрана), храните ожидающий callback в `ViewModel`, чтобы новая activity могла его вызвать.
+
+Предоставленное разрешение позволяет приложению показывать уведомления. Чтобы получать push-уведомления, зарегистрируйте устройство у вашего провайдера push-уведомлений, например Firebase Cloud Messaging, — так же, как это делает приложение вне флоу.
+
+## Передайте слушатель во флоу \{#pass-the-listener-to-the-flow\}
+
+Adapty SDK отправляет запросы на разрешения слушателю событий представления флоу. Передайте слушатель с вашим переопределением как `eventListener` при создании представления: в `AdaptyUI.getFlowView()`, `AdaptyFlowView.showFlow()` или `AdaptyFlowScreen()`. Смотрите [Отображение флоу и пейволов](android-present-paywalls) для этих вызовов и [Обработка событий флоу и пейвола](android-handling-events) для остальных методов слушателя.
+
+## Протестируйте запрос разрешения \{#test-the-permission-request\}
+
+Тестируйте на устройстве с Android 13 или новее: на более ранних версиях диалог запроса уведомлений не отображается. Android перестаёт показывать диалог после того, как пользователь разрешил уведомления или дважды отказал. Чтобы снова увидеть диалог во время тестирования флоу, удалите приложение с устройства и установите его заново. Затем откройте флоу и дойдите до действия **Request permission**. Если флоу продолжается без показа диалога, убедитесь, что ваш listener переопределяет `onShowRequestPermission`, что приложение объявляет разрешение `POST_NOTIFICATIONS` и нацелено на Android 13 или новее.

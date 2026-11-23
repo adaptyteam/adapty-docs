@@ -1,0 +1,160 @@
+---
+title: "Xử lý yêu cầu quyền trong flow - Kotlin Multiplatform"
+description: "Yêu cầu người dùng cấp quyền thông báo đẩy từ một flow trong ứng dụng Kotlin Multiplatform của bạn với AdaptyUISystemRequestsHandler, và trả lời của họ về cho flow."
+metadataTitle: "Xử lý Quyền trong Flow - Kotlin Multiplatform | Tài liệu Adapty"
+---
+
+Một [flow](adapty-flow-builder) có thể yêu cầu người dùng cấp quyền gửi thông báo đẩy thông qua hành động **Request permission**, ví dụ trên màn hình onboarding giải thích mục đích của thông báo. SDK không tự hiển thị hộp thoại cấp quyền hệ thống. Thay vào đó, SDK chuyển yêu cầu đến `AdaptyUISystemRequestsHandler` trong ứng dụng của bạn. Ứng dụng của bạn hiển thị hộp thoại và trả về câu trả lời của người dùng, sau đó flow tiếp tục.
+
+## Trước khi bắt đầu
+
+Bạn cần:
+
+- **Adapty Kotlin Multiplatform SDK 4.1.0 trở lên**: Phiên bản 4.1.0 là bản phát hành ổn định đầu tiên có `AdaptyUISystemRequestsHandler`.
+- **Một flow có action Request permission**: Trong Flow & Paywall Builder, thêm action **Request permission** vào trigger **On Tap** hoặc **On Screen Appear** của một element. Trong phần **After response**, thêm các action sẽ chạy sau khi người dùng trả lời, chẳng hạn như **Navigate Next**. Để xem cài đặt action, hãy tham khảo [Request permission](onboarding-actions#request-permission).
+- **Quyền `POST_NOTIFICATIONS` trong Android manifest và `targetSdk` từ 33 trở lên**: Android 13 trở lên chỉ hiển thị hộp thoại xin quyền thông báo cho các ứng dụng khai báo quyền này và nhắm mục tiêu Android 13 trở lên:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow yêu cầu quyền như thế nào \{#how-the-flow-requests-a-permission\}
+
+1. Flow đến hành động **Request permission**: người dùng nhấn vào phần tử, hoặc màn hình xuất hiện.
+2. Adapty SDK gọi `handlePermission` trên handler của bạn với `AdaptyUIPermission.PUSH`.
+3. Ứng dụng của bạn yêu cầu quyền từ hệ điều hành và trả về `AdaptyUIPermissionResult.granted()` hoặc `AdaptyUIPermissionResult.denied()`.
+4. Flow thực thi các hành động **After response**. Chúng giống nhau cho cả hai câu trả lời.
+
+Flow sẽ dừng lại ở màn hình đó cho đến khi ứng dụng của bạn trả về kết quả. Nếu ứng dụng không bao giờ trả lời, flow sẽ tiếp tục hiển thị màn hình đó. Nếu hệ điều hành không hiển thị hộp thoại — ví dụ vì người dùng đã trả lời trước đó — handler của bạn sẽ trả về ngay lập tức và flow chạy các hành động **After response** ngay sau đó. Nếu các hành động đó chuyển khỏi màn hình hiện tại, người dùng sẽ chỉ thấy màn hình yêu cầu quyền trong một khoảnh khắc.
+
+Với **On Screen Appear**, flow sẽ không gửi lại yêu cầu khi người dùng quay lại màn hình bằng hành động **Navigate back**. Với **On Tap**, mỗi lần nhấn đều gửi một yêu cầu mới, ngoại trừ các lần nhấn trong khi yêu cầu đang chờ phản hồi từ bạn.
+
+## Triển khai handler \{#implement-the-handler\}
+
+Để xử lý các yêu cầu quyền, hãy triển khai `AdaptyUISystemRequestsHandler` trong code chung. Trả về kết quả cho mọi yêu cầu: trả về `denied` cho những quyền mà app của bạn không yêu cầu, và bắt các exception từ code nền tảng của bạn. Adapty SDK không bắt exception từ `handlePermission`: exception không được bắt sẽ làm crash app, và flow sẽ không nhận được phản hồi.
+
+```kotlin showLineNumbers title="commonMain"
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+`requestPushPermission` là code của nền tảng bạn. Xem [Yêu cầu quyền trên từng nền tảng](#request-the-permission-on-each-platform).
+
+`handlePermission` nhận:
+
+- **`view`**: View của flow đã gửi yêu cầu.
+- **`permission`**: Quyền mà flow yêu cầu. Hành động **Request permission** gửi `AdaptyUIPermission.PUSH`.
+- **`customArgs`**: Các đối số tùy chỉnh của yêu cầu. Hành động **Request permission** không gửi gì cả, vì vậy giá trị là `null`.
+
+Chuỗi `detail` bạn có thể truyền vào `granted` và `denied` là tùy chọn.
+
+Quyền được cấp cho phép ứng dụng hiển thị thông báo. Để nhận push notification, hãy đăng ký thiết bị với nhà cung cấp push của bạn, chẳng hạn như APNs hoặc Firebase Cloud Messaging, như cách ứng dụng thực hiện bên ngoài flow.
+
+`AdaptyUISystemRequestsHandler` cũng có `handleAppReviewRequest`. Mặc định của nó sẽ hiển thị prompt đánh giá gốc, vì vậy bạn không cần phải override nó.
+
+## Yêu cầu quyền trên từng nền tảng \{#request-the-permission-on-each-platform\}
+
+Code dùng chung không thể hiển thị hộp thoại hệ thống, vì vậy `requestPushPermission` là một hàm `expect` với phần triển khai `actual` cho từng nền tảng. Nếu ứng dụng của bạn đã dùng thư viện quản lý quyền Kotlin Multiplatform, hãy gọi nó từ `handlePermission` thay thế.
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+Trên iOS, yêu cầu `UNUserNotificationCenter` cấp phép:
+
+```kotlin showLineNumbers title="iosMain"
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+Trên Android, quyền runtime này tồn tại từ Android 13. Trên các phiên bản cũ hơn, hãy trả về trạng thái bật/tắt thông báo của ứng dụng. Yêu cầu từ activity đang hiển thị trên màn hình, tức là activity của flow khi flow đang được hiển thị. Trong ví dụ này, `ResumedActivity` theo dõi điều đó. Đăng ký nó trong `Application.onCreate` bằng `registerActivityLifecycleCallbacks(ResumedActivity)`:
+
+```kotlin showLineNumbers title="androidMain"
+
+object ResumedActivity : Application.ActivityLifecycleCallbacks {
+    var current: ComponentActivity? = null
+        private set
+
+    override fun onActivityResumed(activity: Activity) {
+        current = activity as? ComponentActivity
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        if (current === activity) current = null
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+}
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = ResumedActivity.current ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+        continuation.invokeOnCancellation { launcher.unregister() }
+    }
+}
+```
+
+## Đăng ký handler \{#register-the-handler\}
+
+:::warning
+**Nếu không có handler, flow sẽ dừng lại ở bước yêu cầu quyền.** Nếu ứng dụng của bạn không đăng ký handler nào, Adapty SDK sẽ không gửi phản hồi cho flow — cả trên iOS lẫn Android. Flow sẽ giữ nguyên màn hình đã gửi yêu cầu và không thực thi các hành động trong **After response**.
+:::
+
+Để gửi yêu cầu quyền đến handler của bạn, hãy gọi `AdaptyUI.setSystemRequestsHandler` một lần khi khởi động ứng dụng, trước khi ứng dụng hiển thị flow đầu tiên. Ví dụ, hãy gọi nó ở cùng nơi bạn gọi `AdaptyUI.setFlowsEventsObserver`.
+
+```kotlin showLineNumbers title="Kotlin"
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+## Kiểm tra yêu cầu quyền \{#test-the-permission-request\}
+
+iOS chỉ hiển thị hộp thoại thông báo một lần cho mỗi lần cài đặt ứng dụng. Android ngừng hiển thị sau khi người dùng cho phép thông báo hoặc từ chối hai lần. Để xem lại hộp thoại trong quá trình kiểm thử flow, hãy xóa ứng dụng khỏi thiết bị rồi cài đặt lại. Sau đó mở flow và đến bước hành động **Request permission**. Nếu màn hình vẫn hiển thị mà không có hộp thoại nào xuất hiện, flow chưa nhận được phản hồi: hãy đảm bảo rằng ứng dụng của bạn đã đăng ký handler trước khi hiển thị flow. Nếu flow chuyển tiếp mà không có hộp thoại, hãy đảm bảo rằng ứng dụng Android đã khai báo `POST_NOTIFICATIONS` và nhắm mục tiêu Android 13 trở lên.

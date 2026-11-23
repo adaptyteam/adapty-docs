@@ -1,0 +1,169 @@
+---
+title: "Обработка запросов разрешений во флоу — Unity"
+description: "Запрашивайте у пользователей разрешение на push-уведомления из флоу в вашем приложении Unity с помощью IAdaptyUISystemRequestsHandler и возвращайте их ответ обратно во флоу."
+metadataTitle: "Обработка разрешений во флоу — Unity | Документация Adapty"
+---
+
+[Флоу](adapty-flow-builder) может запрашивать у пользователей разрешение на отправку push-уведомлений с помощью действия **Request permission** — например, на экране онбординга, который объясняет, для чего нужны уведомления. SDK Adapty не показывает системный диалог разрешений самостоятельно. Вместо этого он передаёт запрос обработчику `IAdaptyUISystemRequestsHandler` в вашем приложении. Приложение показывает диалог и возвращает ответ пользователя, после чего флоу продолжается.
+
+## Прежде чем начать \{#before-you-start\}
+
+Вам понадобится:
+
+- **Adapty Unity SDK 4.1.0 или выше, и 4.3.0 или выше на Android**: В более ранних версиях отсутствует `IAdaptyUISystemRequestsHandler` с такой сигнатурой. На Android версии 4.1.x ответ, полученный из колбэка разрешений ОС, доставляется только после закрытия флоу. Версия 4.3.0 требует Unity 6.
+- **Флоу с действием Request permission**: В Flow & Paywall Builder добавьте действие **Request permission** к триггеру **On Tap** или **On Screen Appear** элемента. В разделе **After response** добавьте действия, которые должны выполняться после ответа пользователя, например **Navigate Next**. Описание настроек действия см. в разделе [Request permission](onboarding-actions#request-permission).
+- **Для iOS**: Пакет [Mobile Notifications](https://docs.unity3d.com/Packages/com.unity.mobile.notifications@latest), который использует обработчик из этого гайда для отображения диалога iOS. В **Project Settings > Mobile Notifications > iOS** отключите **Request Authorization on App Launch**, чтобы диалог появлялся в тот момент, когда флоу его запрашивает.
+- **Для Android**: Разрешение `android.permission.POST_NOTIFICATIONS` в манифесте Android и целевой уровень API 33 или выше в **Player Settings**. Android 13 и выше показывает диалог разрешения на уведомления только приложениям, которые объявляют это разрешение и нацелены на Android 13 или выше.
+
+## Как флоу запрашивает разрешение \{#how-the-flow-requests-a-permission\}
+
+1. Флоу достигает действия **Request permission**: пользователь нажимает на элемент, или появляется экран.
+2. SDK Adapty вызывает `FlowViewDidAskPermission` на вашем обработчике с разрешением `push`.
+3. Ваше приложение запрашивает разрешение у ОС и вызывает `respond` один раз с ответом.
+4. Флоу выполняет действия **After response**. Они одинаковы для обоих ответов.
+
+Флоу ожидает на экране, пока ваше приложение не вызовет `respond`. Если вызов так и не произойдёт, флоу останется на экране. Если ОС не показывает диалог — например, потому что пользователь уже ответил на него, — приложение получает ответ немедленно, и флоу сразу же выполняет действия из блока **After response**. Если эти действия закрывают экран, пользователь видит экран запроса разрешения лишь на мгновение.
+
+С **On Screen Appear** флоу не отправляет повторный запрос, когда пользователь возвращается на экран с помощью действия **Navigate back**. С **On Tap** каждое нажатие отправляет новый запрос, кроме нажатий во время ожидания вашего ответа.
+
+## Реализуйте обработчик \{#implement-the-handler\}
+
+Чтобы отвечать на запросы разрешений, реализуйте интерфейс `IAdaptyUISystemRequestsHandler`. Для разрешений, которые ваше приложение не запрашивает, возвращайте `false`.
+
+```csharp showLineNumbers title="Unity"
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using AdaptySDK;
+using UnityEngine;
+#if UNITY_ANDROID
+using UnityEngine.Android;
+#endif
+#if UNITY_IOS
+using Unity.Notifications.iOS;
+#endif
+
+public class FlowSystemRequestsHandler : MonoBehaviour, IAdaptyUISystemRequestsHandler
+{
+    public void FlowViewDidAskPermission(
+        AdaptyUIFlowView view,
+        string permission,
+        IReadOnlyDictionary<string, string> customArgs,
+        Action<bool, string> respond
+    ) {
+        if (permission != "push") {
+            // Answer every request, or the flow waits on the screen.
+            respond(false, null);
+            return;
+        }
+
+#if UNITY_IOS
+        StartCoroutine(RequestPushOnIOS(respond));
+#elif UNITY_ANDROID
+        RequestPushOnAndroid(respond);
+#else
+        respond(false, null);
+#endif
+    }
+
+    public void FlowViewDidRequestAppReview(AdaptyUIFlowView view)
+    {
+        // Shows the native store review prompt, as the SDK does without a handler.
+        AdaptyUI.RequestAppReview(null);
+    }
+
+#if UNITY_IOS
+    private IEnumerator RequestPushOnIOS(Action<bool, string> respond)
+    {
+        var options = AuthorizationOption.Alert | AuthorizationOption.Badge | AuthorizationOption.Sound;
+
+        using (var request = new AuthorizationRequest(options, false))
+        {
+            while (!request.IsFinished) {
+                yield return null;
+            }
+            respond(request.Granted, null);
+        }
+    }
+#endif
+
+#if UNITY_ANDROID
+    private void RequestPushOnAndroid(Action<bool, string> respond)
+    {
+        const string postNotifications = "android.permission.POST_NOTIFICATIONS";
+
+        using (var version = new AndroidJavaClass("android.os.Build$VERSION"))
+        {
+            if (version.GetStatic<int>("SDK_INT") < 33) {
+                // Android 12 and earlier: no dialog; answer whether notifications are on.
+                using (var player = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+                using (var activity = player.GetStatic<AndroidJavaObject>("currentActivity"))
+                using (var managerClass = new AndroidJavaClass("androidx.core.app.NotificationManagerCompat"))
+                using (var manager = managerClass.CallStatic<AndroidJavaObject>("from", activity))
+                {
+                    respond(manager.Call<bool>("areNotificationsEnabled"), null);
+                }
+                return;
+            }
+        }
+
+        if (Permission.HasUserAuthorizedPermission(postNotifications)) {
+            respond(true, null);
+            return;
+        }
+
+        var callbacks = new PermissionCallbacks();
+        callbacks.PermissionGranted += _ => respond(true, null);
+        callbacks.PermissionDenied += _ => respond(false, null);
+#if UNITY_6000_0_OR_NEWER
+        callbacks.PermissionRequestDismissed += _ => respond(false, null);
+#else
+        callbacks.PermissionDeniedAndDontAskAgain += _ => respond(false, null);
+#endif
+        Permission.RequestUserPermission(postNotifications, callbacks);
+    }
+#endif
+}
+```
+
+`FlowViewDidAskPermission` получает:
+
+- **`view`**: Вью флоу, которое отправило запрос.
+- **`permission`**: Разрешение, которое запрашивает флоу. Действие **Request permission** отправляет `push`.
+- **`customArgs`**: Пользовательские аргументы запроса. Действие **Request permission** не отправляет никаких аргументов, поэтому значение равно `null`.
+- **`respond`**: Колбэк, возвращающий ответ флоу. Передайте `true`, если пользователь предоставил разрешение, и `false` в противном случае. Второй аргумент — необязательная строка с деталями, `null` является допустимым значением.
+
+Вызывайте `respond` ровно один раз на каждый запрос. SDK игнорирует повторный вызов и выводит предупреждение в консоль Unity. Начиная с версии 4.3.0, `respond` можно вызывать из любого потока, в том числе из колбэка разрешения ОС.
+
+Если `FlowViewDidAskPermission` выбрасывает исключение до вызова `respond`, SDK логирует его и не отправляет ответ — флоу остаётся на экране. Перехватывайте исключения и вызывайте `respond(false, null)`.
+
+Полученное разрешение позволяет приложению показывать уведомления. Чтобы получать push-уведомления, зарегистрируйте устройство у своего push-провайдера так же, как вы делаете это вне флоу.
+
+`IAdaptyUISystemRequestsHandler` также требует `FlowViewDidRequestAppReview`. Если обработчик зарегистрирован, Adapty SDK не запрашивает отзыв в сторе самостоятельно — вызовите `AdaptyUI.RequestAppReview(null)` внутри него, чтобы сохранить нативный запрос отзыва, как в примере.
+
+## Зарегистрируйте обработчик \{#register-the-handler\}
+
+:::warning
+**Без обработчика флоу останавливается на запросе разрешения.** Если приложение не регистрирует обработчик, Adapty SDK не отправляет флоу никакого ответа — ни на iOS, ни на Android, а в консоли Unity появляется предупреждение `System requests handler is not set`. Флоу остаётся на экране, который отправил запрос, и не выполняет действия из блока **After response**.
+:::
+
+Чтобы направить запросы разрешений из всех флоу в ваш обработчик, зарегистрируйте его с помощью `Adapty.SetSystemRequestsHandler()` до отображения флоу — в том же месте, где вы регистрируете [слушатель событий флоу](unity-handle-paywall-actions#set-up-the-flows-events-listener). Привяжите обработчик к GameObject, который существует на протяжении всего жизненного цикла приложения, и добавьте в класс обработчика следующие методы:
+
+```csharp showLineNumbers title="Unity"
+void Awake()
+{
+    DontDestroyOnLoad(gameObject);
+    Adapty.SetSystemRequestsHandler(this);
+}
+
+void OnDestroy()
+{
+    Adapty.SetSystemRequestsHandler(null);
+}
+```
+
+`Adapty.SetSystemRequestsHandler()` хранит один обработчик для каждого флоу в приложении. Второй вызов заменяет первый обработчик, а `null` удаляет его.
+
+## Протестируйте запрос разрешения \{#test-the-permission-request\}
+
+iOS показывает диалог запроса разрешений только один раз после установки приложения. Android перестаёт его показывать, как только пользователь разрешил уведомления или дважды отказал. Чтобы снова увидеть диалог во время тестирования флоу, удалите приложение с устройства и установите заново. Затем откройте флоу и дойдите до действия **Request permission**. Если экран завис и диалог не появился — флоу не получил ответа: убедитесь, что приложение регистрирует обработчик до того, как показывает флоу. Если флоу переходит дальше без диалога — проверьте, что Android-приложение объявляет `POST_NOTIFICATIONS`, нацелено на API level 33 или выше, а **Request Authorization on App Launch** отключён.

@@ -1,0 +1,81 @@
+---
+title: "Xử lý yêu cầu quyền trong flows - Capacitor"
+description: "Yêu cầu người dùng cấp quyền thông báo đẩy từ một flow trong ứng dụng Capacitor của bạn bằng handler onRequestPermission, và trả lại câu trả lời của họ cho flow."
+metadataTitle: "Xử lý Quyền trong Flow - Capacitor | Tài liệu Adapty"
+---
+
+Một [flow](adapty-flow-builder) có thể yêu cầu người dùng cấp quyền nhận thông báo đẩy thông qua hành động **Request permission**, ví dụ trên màn hình onboarding giải thích mục đích của thông báo. SDK của Adapty không tự hiển thị hộp thoại cấp quyền hệ thống. Thay vào đó, SDK chuyển yêu cầu đến handler `onRequestPermission` trong ứng dụng của bạn. Ứng dụng hiển thị hộp thoại và trả về câu trả lời của người dùng, sau đó flow tiếp tục.
+
+## Trước khi bắt đầu
+
+Bạn cần:
+
+- **Adapty Capacitor SDK 4.1.0 trở lên**: Phiên bản 4.1.0 là bản phát hành ổn định đầu tiên có handler `onRequestPermission`.
+- **Một flow có action Request permission**: Trong Flow & Paywall Builder, thêm action **Request permission** vào trigger **On Tap** hoặc **On Screen Appear** của một phần tử. Trong phần **After response**, thêm các action sẽ chạy sau khi người dùng trả lời, chẳng hạn như **Navigate Next**. Để xem cài đặt action, xem [Request permission](onboarding-actions#request-permission).
+- **Một thư viện hiển thị hộp thoại thông báo**: Ví dụ sử dụng plugin [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications). Bất kỳ plugin nào khác hiển thị hộp thoại cũng đều hoạt động được.
+- **Quyền `POST_NOTIFICATIONS` trong Android manifest và `targetSdk` từ 33 trở lên**: Android 13 trở lên chỉ hiển thị hộp thoại cấp quyền thông báo cho các ứng dụng khai báo quyền này và nhắm mục tiêu Android 13 trở lên:
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow yêu cầu quyền như thế nào \{#how-the-flow-requests-a-permission\}
+
+1. Flow đến hành động **Request permission**: người dùng nhấn vào phần tử, hoặc màn hình xuất hiện.
+2. Adapty SDK gọi handler `onRequestPermission` của bạn với quyền `push`.
+3. Ứng dụng của bạn hiển thị hộp thoại hệ thống và resolve promise của handler thành `{ status: 'granted' }` hoặc `{ status: 'denied' }`.
+4. Flow chạy các hành động **After response**. Các hành động này giống nhau cho cả hai câu trả lời.
+
+Flow sẽ chờ trên màn hình cho đến khi promise của handler được resolve. Nếu promise không bao giờ resolve, flow sẽ ở lại trên màn hình đó. Nếu hệ điều hành không hiển thị hộp thoại — ví dụ vì người dùng đã trả lời trước đó — `PushNotifications.requestPermissions()` sẽ trả về trạng thái hiện tại ngay lập tức, và flow thực thi các hành động **After response** ngay sau. Trên Android 12 trở xuống, ứng dụng không cần quyền runtime cho thông báo, nên plugin trả về `granted` mà không hiển thị hộp thoại. Nếu các hành động **After response** chuyển khỏi màn hình đó, người dùng sẽ chỉ thấy màn hình yêu cầu quyền trong một khoảnh khắc.
+
+Với **On Screen Appear**, flow sẽ không gửi lại yêu cầu khi người dùng quay lại màn hình bằng hành động **Navigate back**. Với **On Tap**, mỗi lần nhấn đều gửi một yêu cầu mới, ngoại trừ những lần nhấn trong khi yêu cầu đang chờ phản hồi từ bạn.
+
+## Triển khai handler \{#implement-the-handler\}
+
+Handler `onRequestPermission` là bất đồng bộ. Nó trả về một promise được resolve thành một đối tượng chứa câu trả lời của người dùng:
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the current status without showing it.
+  const { receive } = await PushNotifications.requestPermissions();
+  return { status: receive === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` nhận:
+
+- **`permission`**: Quyền mà flow yêu cầu. Hành động **Request permission** sẽ gửi `push`. Trả về `denied` cho bất kỳ giá trị nào khác để flow tiếp tục.
+- **`customArgs`**: Các đối số tùy chỉnh của yêu cầu. Hành động **Request permission** không gửi gì, nên đối tượng này rỗng.
+
+Resolve promise thành `{ status: 'granted' }` chỉ khi người dùng cho phép thông báo. SDK sẽ trả về `denied` khi handler của bạn ném lỗi hoặc promise bị reject.
+
+Quyền được cấp cho phép ứng dụng của bạn hiển thị thông báo. Để nhận push notification, hãy đăng ký thiết bị với push provider của bạn, giống như ứng dụng thực hiện bên ngoài flow.
+
+## Đăng ký handler \{#register-the-handler\}
+
+:::warning
+**Nếu không có handler `onRequestPermission`, người dùng sẽ không bao giờ được hỏi.** Trên một flow view không có handler, Adapty SDK trả về `denied` mà không hiển thị hộp thoại, ghi cảnh báo vào log, và flow chạy ngay các hành động **After response**.
+:::
+
+Đặt handler trên mỗi flow view mà ứng dụng của bạn tạo ra, cùng với các [handler sự kiện flow](capacitor-handling-events) khác, trước khi hiển thị view. Tác giả flow có thể thêm action **Request permission** vào bất kỳ flow nào sau này mà không cần cập nhật ứng dụng, và một flow view không có handler sẽ trả về `denied` mà không hỏi người dùng.
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+await view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+## Kiểm tra yêu cầu quyền \{#test-the-permission-request\}
+
+iOS chỉ hiển thị hộp thoại thông báo một lần cho mỗi lần cài đặt ứng dụng. Android ngừng hiển thị sau khi người dùng cho phép thông báo hoặc từ chối hai lần. Để xem lại hộp thoại trong quá trình kiểm tra flow, hãy xóa ứng dụng khỏi thiết bị rồi cài đặt lại. Sau đó mở flow và đến bước hành động **Request permission**. Nếu flow tiếp tục mà không hiển thị hộp thoại, hãy đảm bảo rằng flow view có trình xử lý `onRequestPermission`, và ứng dụng Android đã khai báo `POST_NOTIFICATIONS` cũng như nhắm mục tiêu Android 13 trở lên.

@@ -1,0 +1,112 @@
+---
+title: "Flow'larda izin isteklerini yönetme - React Native"
+description: "React Native uygulamanızda onRequestPermission işleyicisiyle bir flow'dan kullanıcılara push bildirim izni isteyin ve yanıtlarını flow'a döndürün."
+metadataTitle: "Flow İzinlerini Yönetme - React Native | Adapty Dokümanları"
+---
+
+Bir [flow](adapty-flow-builder), kullanıcıdan bildirim gönderme izni istemek için **Request permission** eylemini kullanabilir. Örneğin, bildirimlerin ne amaçla kullanıldığını açıklayan bir onboarding ekranında bu işe yarar. Adapty SDK'sı sistem izin diyaloğunu kendisi göstermez. İsteği uygulamanızdaki `onRequestPermission` handler'ına iletir. Uygulamanız diyaloğu gösterir, kullanıcının yanıtını döndürür ve flow devam eder.
+
+## Başlamadan önce \{#before-you-start\}
+
+Şunlara ihtiyacınız var:
+
+- **Adapty React Native SDK 4.0.0 veya üzeri**: Daha eski sürümler `onRequestPermission` handler'ına sahip değildir.
+- **Request permission eylemi içeren bir flow**: Flow & Paywall Builder'da, bir öğenin **On Tap** veya **On Screen Appear** tetikleyicisine **Request permission** eylemini ekleyin. **After response** bölümünde, kullanıcı yanıt verdikten sonra çalıştırılacak eylemleri (örneğin **Navigate Next**) ekleyin. Eylem ayarları için bkz. [Request permission](onboarding-actions#request-permission).
+- **Bildirim diyaloğunu gösteren bir kütüphane**: Örnekte [react-native-permissions](https://github.com/zoontek/react-native-permissions) kullanılmaktadır. Kurulum için kütüphanenin [kurulum kılavuzunu](https://github.com/zoontek/react-native-permissions#setup) takip edin ve iOS izinlerine `Notifications` ekleyin. `expo-notifications` gibi diyaloğu gösteren başka kütüphaneler de kullanılabilir.
+- **Android manifestinizdeki `POST_NOTIFICATIONS` izni ve `targetSdk` 33 veya üzeri**: Android 13 ve sonrası, bildirim izni diyaloğunu yalnızca bu izni bildiren ve Android 13 veya üzerini hedefleyen uygulamalara gösterir:
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow bir izni nasıl talep eder \{#how-the-flow-requests-a-permission\}
+
+1. Flow, **Request permission** eylemine ulaşır: kullanıcı öğeye dokunur veya ekran görünür.
+2. Adapty SDK, `onRequestPermission` işleyicinizi `push` izniyle çağırır.
+3. Uygulamanız sistem iletişim kutusunu gösterir ve işleyicinin promise'ini `{ status: 'granted' }` veya `{ status: 'denied' }` olarak çözümler.
+4. Flow, **After response** eylemlerini çalıştırır. Bu eylemler her iki yanıt için de aynıdır.
+
+Flow, işleyicinizin promise'i çözümlenene kadar ekranda bekler. Promise hiç çözümlenmezse flow ekranda kalmaya devam eder. İşletim sistemi diyalogu göstermezse, örneğin kullanıcı daha önce yanıt vermişse, `requestNotifications` önceki yanıtı hemen döndürür ve flow **After response** eylemlerini derhal çalıştırır. Bu eylemler ekrandan çıkılmasına neden olursa, kullanıcı izin isteyen ekranı yalnızca bir an için görür.
+
+**On Screen Appear** ile, kullanıcı **Navigate back** eylemiyle ekrana geri döndüğünde flow tekrar istek göndermez. **On Tap** ile ise her dokunuş yeni bir istek gönderir; ancak bir istek yanıtınızı beklerken yapılan dokunuşlar bunun dışındadır.
+
+## Handler'ı uygulayın \{#implement-the-handler\}
+
+`onRequestPermission` handler'ı, diğer flow handler'larının aksine asenkrondur. Kullanıcının yanıtını içeren bir nesneye çözümlenen bir promise döndürür:
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the earlier answer without showing it.
+  const { status } = await requestNotifications(['alert', 'badge', 'sound']);
+  return { status: status === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` şunları alır:
+
+- **`permission`**: Flow'un talep ettiği izin. **Request permission** eylemi `push` gönderir.
+- **`customArgs`**: İsteğin özel argümanları. **Request permission** eylemi hiçbir şey göndermez, bu yüzden nesne boştur.
+
+Promise, şu özelliklere sahip bir nesneye çözümlenir:
+
+- **`status`**: Kullanıcının yanıtı: kullanıcı izin verdiyse `granted`, aksi takdirde `denied`.
+- **`detail`**: İsteğe bağlı. Kütüphanenin döndürdüğü durum gibi yanıt hakkında daha fazla bilgi içeren bir dize.
+
+Adapty SDK, işleyiciniz bir hata fırlattığında veya promise'i reddedildiğinde `denied` yanıtı verir.
+
+Verilen bir izin, uygulamanızın bildirim göstermesine olanak tanır. Push bildirimleri almak için, cihazı push sağlayıcınıza kaydedin; bunu uygulamanız flow'ların dışında nasıl yapıyorsa aynı şekilde yapın.
+
+## Handler'ı kaydedin \{#register-the-handler\}
+
+:::warning
+**`onRequestPermission` handler'ı olmadan kullanıcıya hiçbir zaman izin sorulmaz.** Handler'ı olmayan bir flow view'da Adapty SDK, herhangi bir iletişim kutusu göstermeden `denied` yanıtı döner ve log'una bir uyarı yazar; flow ise **After response** aksiyonlarını hemen çalıştırır.
+:::
+
+Handler'ı, uygulamanızın oluşturduğu her flow view'a ekleyin. Flow yazarları, **Request permission** aksiyonunu daha sonra herhangi bir flow'a ekleyebilir; uygulama güncellemesi gerekmez. Handler'ı olmayan bir flow view, kullanıcıya sormadan `denied` yanıtı döner.
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+İşleyiciyi `AdaptyFlowView`'ın `onRequestPermission` prop'una iletin:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={StyleSheet.absoluteFill}
+      onRequestPermission={onRequestPermission}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+Görünümü sunmadan önce `setEventHandlers` ile işleyiciyi kaydedin:
+
+```typescript showLineNumbers title="React Native"
+
+const view = await createFlowView(flow);
+
+view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+</TabItem>
+</Tabs>
+
+## İzin isteğini test etme \{#test-the-permission-request\}
+
+iOS, bildirim iletişim kutusunu uygulama yüklemesi başına yalnızca bir kez gösterir. Android ise kullanıcı bildirimlere izin verdikten veya iki kez reddettikten sonra bu kutuyu bir daha göstermez. Testi yaparken flow içinde iletişim kutusunu tekrar görmek için uygulamayı cihazdan silip yeniden yükleyin. Ardından flow'u açın ve **Request permission** (İzin iste) eylemine ulaşın. Eğer iletişim kutusu görünmeden flow devam ediyorsa, flow görünümünün `onRequestPermission` işleyicisine sahip olduğundan, Android uygulamasının `POST_NOTIFICATIONS` iznini bildirdiğinden ve Android 13 ya da daha yeni bir sürümü hedeflediğinden emin olun.

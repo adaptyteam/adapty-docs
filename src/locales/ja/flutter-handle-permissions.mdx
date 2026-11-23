@@ -1,0 +1,100 @@
+---
+title: "フローでの権限リクエストの処理 - Flutter"
+description: "AdaptyUISystemRequestsHandler を使用して、Flutter アプリのフローからプッシュ通知の権限をユーザーに要求し、その回答をフローに返す方法を説明します。"
+metadataTitle: "フローでの権限の処理 - Flutter | Adapty ドキュメント"
+---
+
+[フロー](adapty-flow-builder)は、**Request permission** アクションを使って、プッシュ通知の送信許可をユーザーにリクエストできます。たとえば、通知の用途を説明するオンボーディング画面などで活用できます。Adapty SDK 自体はシステムの許可ダイアログを表示しません。代わりに、アプリ内の `AdaptyUISystemRequestsHandler` にリクエストを渡します。アプリがダイアログを表示してユーザーの回答を返すと、フローが続行されます。
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+
+- **Adapty Flutter SDK 4.0.0 以降**: それ以前のバージョンには `AdaptyUISystemRequestsHandler` がありません。[SDKのインストールと設定](sdk-installation-flutter)を参照してください。
+- **Request permission アクションを含むフロー**: フロー＆ペイウォールビルダーで、要素の **On Tap** または **On Screen Appear** トリガーに **Request permission** アクションを追加します。**After response** セクションに、ユーザーが回答した後に実行するアクション（**Navigate Next** など）を追加します。アクションの設定については、[Request permission](onboarding-actions#request-permission) を参照してください。
+- **通知ダイアログを表示するライブラリ**: この例では [permission_handler](https://pub.dev/packages/permission_handler) を使用しています。他のパッケージや独自のプラットフォームコードでも同様に動作します。
+- **Android マニフェストの `POST_NOTIFICATIONS` パーミッションと `targetSdk` 33 以上**: Android 13 以降では、パーミッションを宣言し Android 13 以降をターゲットにしているアプリにのみ、通知パーミッションダイアログが表示されます。
+
+  ```xml showLineNumbers title="android/app/src/main/AndroidManifest.xml"
+  <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+      <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+      <!-- ... -->
+  </manifest>
+  ```
+
+- **CocoaPodsを使用したiOS**: [permission_handlerの設定](https://pub.dev/packages/permission_handler)に記載されているように、`Podfile`の`GCC_PREPROCESSOR_DEFINITIONS`に`PERMISSION_NOTIFICATIONS=1`を追加してください。これを設定しないと、`Permission.notification.request()`が拒否を返し、iOSにダイアログが表示されません。Swift Package Managerを使用する場合、permission_handlerはデフォルトで通知権限を含んでいます。
+
+## フローが権限をリクエストする仕組み \{#how-the-flow-requests-a-permission\}
+
+1. フローが **Request permission** アクションに到達する: ユーザーが要素をタップするか、画面が表示される。
+2. Adapty SDK が `AdaptyUIPermission.push` を引数として、ハンドラー上の `handlePermission` を呼び出す。
+3. アプリが OS に権限をリクエストし、`AdaptyUIPermissionResult.granted()` または `AdaptyUIPermissionResult.denied()` を返す。
+4. フローが **After response** アクションを実行する。どちらの回答に対しても同じアクションが実行される。
+
+フローは、アプリが応答を返すまでその画面で待機します。アプリが応答を返さない場合、フローはその画面のまま停止します。OSがダイアログを表示しない場合（例えば、ユーザーがすでに応答済みの場合）、`Permission.notification.request()` は以前の回答を即座に返し、フローはすぐに **After response** アクションを実行します。これらのアクションによって画面が遷移する場合、パーミッションをリクエストする画面はほんの一瞬だけ表示されます。
+
+**On Screen Appear** では、ユーザーが **Navigate back** アクションで前の画面に戻ってきても、フローは再度リクエストを送信しません。**On Tap** では、リクエストの回答を待っている間のタップを除き、タップのたびに新しいリクエストが送信されます。
+
+## ハンドラーを実装する \{#implement-the-handler\}
+
+パーミッションリクエストに応答するには、`AdaptyUISystemRequestsHandler` を継承したクラスを作成し、`handlePermission` を実装します。アプリがリクエストしないパーミッションには denied を返してください。
+
+```dart showLineNumbers title="Flutter"
+
+class FlowSystemRequestsHandler extends AdaptyUISystemRequestsHandler {
+  @override
+  Future<AdaptyUIPermissionResult> handlePermission(
+    AdaptyUIFlowView view,
+    AdaptyUIPermission permission,
+    Map<String, String>? customArgs,
+  ) async {
+    // Answer "denied" to every permission your app doesn't request
+    if (permission != AdaptyUIPermission.push) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+
+    try {
+      final status = await Permission.notification.request();
+      return status.isGranted
+          ? const AdaptyUIPermissionResult.granted()
+          : const AdaptyUIPermissionResult.denied();
+    } catch (_) {
+      return const AdaptyUIPermissionResult.denied();
+    }
+  }
+
+  // The base method does nothing: this keeps the native review prompt.
+  @override
+  Future<void> handleAppReviewRequest(AdaptyUIFlowView view) {
+    return AdaptyUI().requestAppReview();
+  }
+}
+```
+
+`handlePermission` が受け取る引数:
+
+- **`view`**: リクエストを送信したフロービュー。
+- **`permission`**: フローがリクエストするパーミッション。**Request permission** アクションは `AdaptyUIPermission.push` を送信します。
+- **`customArgs`**: リクエストのカスタム引数。**Request permission** アクションは何も送信しないため、値は `null` です。
+
+`handlePermission` がスローした場合や完了しない場合、フローは応答を受け取れず、画面にとどまり続けます。上記の例でエラーをキャッチしているのはこのためです。
+
+付与された権限により、アプリは通知を表示できるようになります。プッシュ通知を受信するには、フロー外でアプリが行うのと同様に、プッシュプロバイダーにデバイスを登録してください。
+
+ハンドラーが登録されると、Adapty SDK はアプリのレビューリクエストを `handleAppReviewRequest` に渡します。このメソッドのデフォルト実装は何も行いません。以下の例では、ネイティブのレビュープロンプトをそのまま表示します。
+
+## ハンドラーを登録する \{#register-the-handler\}
+
+:::warning
+**ハンドラーがないと、フローはパーミッションリクエストの手前で停止します。** アプリにハンドラーが登録されていない場合、Adapty SDK は iOS および Android の両方で、フローに対して返答を送信しません。フローはリクエストを送信した画面のまま停止し、**After response** アクションは実行されません。
+:::
+
+すべてのフローからのパーミッションリクエストをハンドラーに送るには、フローを表示する前に `AdaptyUI().setSystemRequestsHandler` を一度呼び出してください。たとえば、フローイベントオブザーバーを設定した直後に呼び出します。
+
+```dart showLineNumbers title="Flutter"
+AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
+```
+
+## パーミッションリクエストをテストする \{#test-the-permission-request\}
+
+iOSはアプリのインストールごとに通知ダイアログを1回だけ表示します。Androidはユーザーが許可するか、2回拒否した後は表示されなくなります。テスト中にフローを確認するには、デバイスからアプリを削除して再インストールしてください。その後、フローを開いて **Request permission** アクションに到達させます。画面が表示されたままでダイアログが表示されない場合、フローが返答を受け取っていません。フローを表示する前にアプリがハンドラーを登録しているか確認してください。ダイアログなしでフローが次に進んでしまう場合は、AndroidアプリがPOST_NOTIFICATIONSを宣言してAndroid 13以降をターゲットにしているか、またiOSの`Podfile`でPERMISSION_NOTIFICATIONSが有効になっているかを確認してください。

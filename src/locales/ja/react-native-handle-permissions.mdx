@@ -1,0 +1,112 @@
+---
+title: "フローでの権限リクエストの処理 - React Native"
+description: "onRequestPermission ハンドラーを使用して、React Native アプリのフローからプッシュ通知の権限をユーザーに要求し、その回答をフローに返します。"
+metadataTitle: "フローの権限処理 - React Native | Adapty ドキュメント"
+---
+
+[フロー](adapty-flow-builder)は、**Request permission** アクションを使って、たとえばプッシュ通知の目的を説明するオンボーディング画面などで、プッシュ通知の送信許可をユーザーに求めることができます。Adapty SDK はシステムの許可ダイアログを自ら表示しません。代わりに、アプリ内の `onRequestPermission` ハンドラーにリクエストを渡します。アプリがダイアログを表示してユーザーの回答を返すと、フローが続行されます。
+
+## 始める前に \{#before-you-start\}
+
+必要なもの：
+
+- **Adapty React Native SDK 4.0.0 以降**: それ以前のバージョンには `onRequestPermission` ハンドラーがありません。
+- **Request permission アクションを含むフロー**: フロー＆ペイウォールビルダーで、要素の **On Tap** または **On Screen Appear** トリガーに **Request permission** アクションを追加します。**After response** セクションには、ユーザーが回答した後に実行するアクション（**Navigate Next** など）を追加します。アクションの設定については、[Request permission](onboarding-actions#request-permission) を参照してください。
+- **通知ダイアログを表示するライブラリ**: この例では [react-native-permissions](https://github.com/zoontek/react-native-permissions) を使用します。セットアップには[セットアップガイド](https://github.com/zoontek/react-native-permissions#setup)に従い、iOS のパーミッション設定に `Notifications` を追加してください。Expo アプリの `expo-notifications` など、ダイアログを表示できる他のライブラリも使用できます。
+- **Android マニフェストの `POST_NOTIFICATIONS` パーミッションと `targetSdk` 33 以上**: Android 13 以降では、パーミッションを宣言し Android 13 以降をターゲットにしているアプリに対してのみ、通知パーミッションダイアログが表示されます。
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## フローがパーミッションをリクエストする仕組み \{#how-the-flow-requests-a-permission\}
+
+1. フローが **Request permission** アクションに到達します（ユーザーが要素をタップするか、画面が表示されたとき）。
+2. Adapty SDK が `push` パーミッションを引数として `onRequestPermission` ハンドラーを呼び出します。
+3. アプリがシステムダイアログを表示し、ハンドラーのプロミスを `{ status: 'granted' }` または `{ status: 'denied' }` で解決します。
+4. フローが **After response** アクションを実行します。どちらの回答に対しても同じアクションが実行されます。
+
+フローはハンドラーのPromiseが解決されるまで、そのスクリーンで待機します。Promiseが解決されない場合、フローはそのスクリーンに留まります。たとえばユーザーがすでに回答済みの場合など、OSがダイアログを表示しないときは、`requestNotifications`が以前の回答をすぐに返し、フローは**After response**アクションを即座に実行します。それらのアクションによってスクリーンが切り替わる場合、ユーザーは権限をリクエストするスクリーンを一瞬だけ目にすることになります。
+
+**On Screen Appear** では、ユーザーが **Navigate back** アクションで画面に戻ってきた際に、フローは再度リクエストを送信しません。**On Tap** では、タップのたびに新しいリクエストが送信されます（ただし、リクエストが回答待ちの間のタップを除く）。
+
+## ハンドラーの実装 \{#implement-the-handler\}
+
+`onRequestPermission` ハンドラーは、他のフローハンドラーとは異なり非同期です。ユーザーの回答を含むオブジェクトに解決される Promise を返します。
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the earlier answer without showing it.
+  const { status } = await requestNotifications(['alert', 'badge', 'sound']);
+  return { status: status === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` が受け取る値:
+
+- **`permission`**: フローがリクエストするパーミッション。**Request permission** アクションは `push` を送信します。
+- **`customArgs`**: リクエストのカスタム引数。**Request permission** アクションは何も送信しないため、オブジェクトは空になります。
+
+Promise は以下のプロパティを持つオブジェクトに解決されます:
+
+- **`status`**: ユーザーの回答: ユーザーがパーミッションを許可した場合は `granted`、それ以外の場合は `denied`。
+- **`detail`**: 任意。ライブラリが返したステータスなど、回答に関する詳細情報を含む文字列。
+
+Adapty SDK は、ハンドラーがエラーをスローするか、Promise が拒否された場合に `denied` を返します。
+
+権限が付与されると、アプリが通知を表示できるようになります。プッシュ通知を受け取るには、フローの外でアプリが行うのと同様に、プッシュプロバイダーにデバイスを登録してください。
+
+## ハンドラーを登録する \{#register-the-handler\}
+
+:::warning
+**`onRequestPermission` ハンドラーが設定されていないと、ユーザーへの許可リクエストは実行されません。** ハンドラーが設定されていないフロービューでは、Adapty SDK はダイアログを表示せずに `denied` を返し、ログに警告を書き込んだうえで、**After response** アクションをすぐに実行します。
+:::
+
+アプリが作成するすべてのフロービューにハンドラーを設定してください。フロー作成者はアプリのアップデートなしに、後から任意のフローに **Request permission** アクションを追加できます。ハンドラーが設定されていないフロービューは、ユーザーに確認せず `denied` を返します。
+
+<Tabs groupId="presentation-method" queryString>
+<TabItem value="platform" label="React component" default>
+
+ハンドラーを `AdaptyFlowView` の `onRequestPermission` プロパティに渡します:
+
+```typescript showLineNumbers title="React Native (TSX)"
+
+function MyFlow({ flow }: { flow: AdaptyFlow }) {
+  return (
+    <AdaptyFlowView
+      flow={flow}
+      style={StyleSheet.absoluteFill}
+      onRequestPermission={onRequestPermission}
+    />
+  );
+}
+```
+
+</TabItem>
+<TabItem value="standalone" label="Modal presentation">
+
+ビューを表示する前に、`setEventHandlers` でハンドラーを登録してください：
+
+```typescript showLineNumbers title="React Native"
+
+const view = await createFlowView(flow);
+
+view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+</TabItem>
+</Tabs>
+
+## 通知許可リクエストをテストする \{#test-the-permission-request\}
+
+iOS はアプリのインストールごとに通知ダイアログを1回だけ表示します。Android はユーザーが通知を許可するか、2回拒否した時点で表示を停止します。フローのテスト中にダイアログを再表示するには、デバイスからアプリを削除して再インストールしてください。その後、フローを開いて **Request permission** アクションに到達してください。ダイアログが表示されずにフローが進んでしまう場合は、フロービューに `onRequestPermission` ハンドラーが設定されているか、Android アプリが `POST_NOTIFICATIONS` を宣言して Android 13 以降を対象にしているかを確認してください。

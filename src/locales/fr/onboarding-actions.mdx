@@ -176,16 +176,45 @@ Vous pouvez aussi ajouter **Select product** dans une [action conditionnelle](#c
 Une action **Select product** [bloque la prévisualisation et la publication](flow-common-issues#a-flow-wont-preview-or-publish) lorsque le produit cible est manquant, se trouve sur un autre écran, ou n'appartient plus à un groupe de produits. Assignez un produit valide ou supprimez l'action.
 :::
 
+### Demander l'autorisation \{#request-permission\}
+
+Invite l'utilisateur à autoriser les notifications push, par exemple sur un écran d'onboarding qui explique à quoi servent les notifications. Votre application affiche la boîte de dialogue système et renvoie la réponse de l'utilisateur au flow. Le flow exécute ensuite les actions de la section **After response**.
+
+Vous pouvez ajouter cette action aux déclencheurs **On Tap** et **On Screen Appear**. Dans la fenêtre **Edit action**, la ligne **Permission** affiche **Push notifications**, seule autorisation demandée par cette action.
+
+<ZoomImage id="request-permission-action.webp" width="500px" alt="Action Demander une autorisation dans la fenêtre Modifier l'action avec Notifications push comme autorisation et Naviguer Suivant dans Après la réponse" />
+
+Les actions de la section **After response** s'exécutent après que l'utilisateur a répondu, qu'il ait accordé ou refusé la permission. Une nouvelle action **Request permission** commence par **Navigate Next** dans cette section. À l'intérieur de la section, vous ne pouvez pas ajouter d'action **Purchase**, **Restore purchases** ou une autre action **Request permission**. Si vous supprimez toutes les actions de la section, le flow reste sur l'écran après la réponse de l'utilisateur. Sans actions **After response**, le flow envoie également la demande à chaque fois que l'écran s'affiche, y compris après un **Navigate back**, et à chaque appui.
+
+Lorsque le système n'affiche pas la boîte de dialogue, par exemple parce que l'utilisateur a déjà autorisé les notifications, votre application répond immédiatement et le flow exécute aussitôt les actions **After response**. Si ces actions quittent l'écran, celui-ci n'apparaît qu'un instant. La fréquence à laquelle le flow envoie la demande dépend du déclencheur :
+
+- **On Screen Appear** : le flow envoie la requête dès que l'écran apparaît. Il ne la renvoie pas si l'utilisateur revient à l'écran via **Navigate back**.
+- **On Tap** : le flow envoie la requête à chaque appui. Tant qu'une requête attend une réponse, le flow n'en envoie aucune autre, que ce soit depuis cet élément ou depuis n'importe quel autre.
+
+Sur un écran qui explique les notifications, placez l'action sur le déclencheur **On Tap** de son bouton, afin que les utilisateurs lisent l'écran avant que la boîte de dialogue ne le recouvre. Utilisez **On Screen Appear** lorsqu'un écran précédent a déjà expliqué la demande.
+
+:::warning
+**Configurez votre application pour répondre à la demande avant de publier le flow.** Le SDK Adapty n'affiche pas la boîte de dialogue système : il transmet la demande au code de votre application. Sans ce code, l'utilisateur ne voit aucune boîte de dialogue, et le comportement du flow dépend du SDK Adapty intégré dans votre application :
+
+- **iOS, Flutter, Unity, et Kotlin Multiplatform SDKs** : Le flow reste à l'écran et n'exécute pas les actions **After response**.
+- **Android, React Native, et Capacitor SDKs** : Le flow exécute immédiatement les actions **After response**, sans jamais interroger l'utilisateur.
+
+Une flow publiée atteint également les versions de l'application publiées avant que votre application puisse répondre à la requête. Affichez une flow avec **Request permission** uniquement aux versions de l'application qui y répondent, par exemple avec une [audience](audience) construite à partir d'un [segment](segments) sur **App version (current)**.
+
+Pour configurer votre application, consultez le guide pour [iOS](ios-handle-permissions), [Android](android-handle-permissions), [React Native](react-native-handle-permissions), [Flutter](flutter-handle-permissions), [Unity](unity-handle-permissions), [Kotlin Multiplatform](kmp-handle-permissions), ou [Capacitor](capacitor-handle-permissions).
+:::
+
 ## Ordre des actions \{#action-order\}
 
 Les actions démarrent dans l'ordre indiqué dans le panneau **Interactions**, de haut en bas. Le flow lance chaque action et passe à la suivante sans attendre qu'elle se termine, donc une navigation ou une alerte ne bloque jamais les actions situées en dessous.
 
 Ce que cela implique pour les actions les plus concernées :
 
-- **Set variable** : la nouvelle valeur est définie avant le démarrage de l'action suivante, donc une action conditionnelle placée en dessous lit la valeur mise à jour.
-- **Navigate to screen** : les actions qui suivent s'exécutent quand même, mais au moment où le flow déclenche l'action suivante, l'utilisateur peut déjà se trouver sur l'écran suivant. Si cette action affiche ou masque un élément de l'écran précédent, l'utilisateur ne le verra pas. Placez les actions qui modifient l'écran actuel avant la navigation.
-- **Show alert** : les actions qui suivent s'exécutent pendant que l'alerte est ouverte. Si l'une d'elles navigue vers un autre écran, l'alerte reste ouverte pendant la navigation.
-- **Purchase** et **Restore purchases** : les actions qui suivent s'exécutent au moment du tap, sans attendre le résultat. Pour naviguer ou fermer le flow après le résultat, ajoutez l'action de navigation ou **Close Flow** pour [un résultat d'achat ou de restauration](respond-to-purchase-outcomes#add-actions-for-a-result), par exemple **When succeeded**.
+- **Set variable** : La nouvelle valeur est définie avant le démarrage de l'action suivante, donc une action conditionnelle placée en dessous lit la valeur mise à jour.
+- **Navigate to screen** : Les actions qui suivent s'exécutent quand même, mais au moment où le flow lance l'action suivante, l'utilisateur se trouve peut-être déjà sur l'écran suivant. Si cette action affiche ou masque un élément de l'écran qu'il vient de quitter, il ne le verra pas. Placez les actions qui modifient l'écran actuel avant la navigation.
+- **Show alert** : Les actions qui suivent s'exécutent pendant que l'alerte est ouverte. Si l'une d'elles navigue vers un autre écran, l'alerte reste ouverte pendant la navigation.
+- **Purchase** et **Restore purchases** : Les actions qui suivent s'exécutent au moment du tap, sans attendre le résultat. Pour naviguer ou fermer le flow après le résultat, ajoutez plutôt l'action de navigation ou **Close Flow** pour [un résultat d'achat ou de restauration](respond-to-purchase-outcomes#add-actions-for-a-result), par exemple **When succeeded**.
+- **Request permission** : Les actions qui suivent s'exécutent immédiatement, avant que l'utilisateur réponde. Pour naviguer ou fermer le flow après la réponse, ajoutez plutôt l'action de navigation ou **Close Flow** dans la section [**After response**](#request-permission). Si l'une des actions suivant la demande quitte l'écran, les actions **After response** ne s'exécutent pas du tout. Le builder affiche un avertissement lorsqu'une action de navigation ou **Close Flow** suit la demande dans la même liste.
 
 ## Actions personnalisées \{#custom-actions\}
 
@@ -212,11 +241,11 @@ Une action **Custom** sans **Action ID** [bloque la prévisualisation et la publ
 
 Une action personnalisée ne fait rien par elle-même. Vous définissez un identifiant d'action statique dans le builder, et votre code applicatif gère ce qui se passe lorsqu'il reçoit cet identifiant. Chaque cas d'usage ci-dessous suit le même schéma : assignez un identifiant dans le flow, puis gérez-le dans votre code.
 
-- **Déclencher un événement in-app** : Envoyez un ID tel que `viewed_special_offer`, puis enregistrez l'événement dans vos analytics quand votre application le reçoit.
-- **Demander une permission système** : Envoyez un ID tel que `request_location`, puis appelez la boîte de dialogue de permission du système d'exploitation depuis votre application. Pour les permissions que la boîte de dialogue ne peut pas accorder, ouvrez les paramètres système du téléphone à la place. Adapty n'affiche pas la boîte de dialogue — c'est votre application qui le fait.
-- **Démarrer une authentification native** : Envoyez un ID tel que `login_google`, puis affichez votre propre écran de connexion. Le flow ne peut pas connecter l'utilisateur.
-- **Appliquer une logique métier** : Envoyez un ID tel que `apply_discount`, puis déverrouillez du contenu ou modifiez l'état de l'application de votre côté.
-- **Transmettre une réponse de quiz à votre application** : Attribuez un Action ID différent à chaque option (par exemple, `goal_weight_loss` et `goal_muscle`), puis lisez l'ID dans votre code. Utilisez l'ID pour définir un [attribut utilisateur personnalisé](setting-user-attributes#custom-user-attributes) sur lequel vous pourrez segmenter ultérieurement. Étant donné que l'action ne transporte qu'un ID fixe, c'est le seul moyen de rapporter le choix — le flow ne peut pas envoyer la valeur sélectionnée.
+- **Déclencher un événement in-app** : Envoyez un identifiant comme `viewed_special_offer`, puis enregistrez l'événement dans vos analytics quand votre app le reçoit.
+- **Demander une permission système autre que les notifications push** : Envoyez un identifiant comme `request_location`, puis appelez la boîte de dialogue de permission OS depuis votre app. Pour les permissions que la boîte de dialogue ne peut pas accorder, ouvrez plutôt les paramètres système du téléphone. Adapty n'affiche pas la boîte de dialogue — c'est votre app qui le fait. Pour demander les notifications push, utilisez plutôt l'action [**Request permission**](#request-permission) : ses actions **After response** s'exécutent après que l'utilisateur a répondu.
+- **Démarrer une authentification native** : Envoyez un identifiant comme `login_google`, puis affichez votre propre écran de connexion. Le flow ne peut pas connecter l'utilisateur.
+- **Appliquer une logique métier** : Envoyez un identifiant comme `apply_discount`, puis déverrouillez du contenu ou modifiez l'état de l'app de votre côté.
+- **Transmettre une réponse de quiz à votre app** : Assignez un Action ID différent à chaque option (par exemple `goal_weight_loss` et `goal_muscle`), puis lisez l'identifiant dans votre code. Utilisez-le pour définir un [attribut utilisateur personnalisé](setting-user-attributes#custom-user-attributes) sur lequel vous pourrez segmenter plus tard. Comme l'action ne transporte qu'un identifiant fixe, c'est le seul moyen de rapporter le choix — le flow ne peut pas envoyer la valeur sélectionnée.
 
 :::important
 Une action personnalisée se déclenche dès que l'utilisateur sélectionne une option. Si l'utilisateur change sa réponse, le flow déclenche également le nouvel ID d'action. Votre application reçoit alors les deux dans l'ordre — par exemple, `goal_weight_loss`, puis `goal_muscle`. Faites en sorte que votre gestionnaire soit idempotent, de sorte que le dernier signal prévale.

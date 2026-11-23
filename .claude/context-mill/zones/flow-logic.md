@@ -59,8 +59,17 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     and the element's text only when it differs from the layer name.
   - The reference stores the internal element id, not the **Element ID** field, so renaming an
     **Element ID** does not break it.
-  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, a
-    tooltip that says the condition is always false, publishing not blocked.
+  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, and a
+    tooltip that says the condition is always false until you pick another element or state.
+    **Corrected 2026-11-20 (builder code, released 2026-11-19):** a condition that uses a deleted
+    element, state, or variable now blocks publishing. **Publish to Live** opens **Can't publish
+    yet** with the group **Broken references** and the toast "Fix N broken references before
+    publishing."; a reference that only the server rejects fails the publish as **Condition uses a
+    deleted element or state** or **Condition uses a deleted variable**. A delete of an element, a
+    state, or a custom variable that conditions use asks first (`Delete “<name>”?`, Cancel and
+    Delete). Owner rows: `flow-common-issues`, `builder-save-publish#troubleshooting`,
+    `element-states-in-conditions#troubleshooting`, `onboarding-variables`, `copy-flows`. This entry
+    used to say that publishing was not blocked.
   - The picker greys out an element that would close a loop of **Disabled** conditions; a loop
     that arrives in an imported or hand-made config blocks publishing as **Circular state
     conditions**.
@@ -247,8 +256,8 @@ or developer can see and click.
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
-| onboarding-actions | — | marketer, dev | 22 | tutorial |
-| onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
+| onboarding-actions | — | marketer, dev | 24 | tutorial |
+| onboarding-element-visibility | — | marketer, dev | 1 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 9 | tutorial |
@@ -428,6 +437,14 @@ or developer can see and click.
   containers, quiz options, toggles, countdowns, images, videos, icons, text, carousels, bottom sheets,
   tabs, products. A new tappable element type needs an entry there and a check of the trigger table in
   `flow-show-hide-animations`.
+
+- **`onboarding-actions#request-permission` owns the builder side of Request permission (2026-11-20).**
+  Pointers to it: the seven `*-handle-permissions` articles in `sdk-flows-display` (their "Before you
+  start" flow bullet) and `respond-to-purchase-outcomes` (the actions you can't add to an outcome). The
+  section's warning names the per-SDK outcome without app setup; that list must match the
+  `sdk-flows-display` brief's 2026-11-20 findings. The Action order bullet restates the builder's warning
+  for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
+  says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
 
 ## Boundaries
 
