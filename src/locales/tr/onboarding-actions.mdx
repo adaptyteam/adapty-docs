@@ -176,16 +176,47 @@ Bu eylem için **Product** alanını hedef ürün öğesine ayarlayın. Seçici,
 **Ürün seç** aksiyonu, hedef ürün eksik olduğunda, başka bir ekranda yer aldığında veya artık bir ürün grubuna ait olmadığında [önizleme ve yayınlamayı engeller](flow-common-issues#a-flow-wont-preview-or-publish). Geçerli bir ürün atayın ya da aksiyonu kaldırın.
 :::
 
+### İzin iste \{#request-permission\}
+
+Kullanıcıdan push bildirimlere izin vermesini ister; örneğin bildirimlerin ne için kullanıldığını açıklayan bir onboarding ekranında. Uygulamanız sistem izin diyaloğunu gösterir ve kullanıcının yanıtını flow'a döndürür. Ardından flow, **After response** bölümündeki aksiyonları çalıştırır.
+
+Bu aksiyonu **On Tap** ve **On Screen Appear** tetikleyicilerine ekleyebilirsiniz. **Edit action** penceresinde, **Permission** satırı yalnızca bu aksiyonun istediği izin olan **Push notifications** değerini gösterir.
+
+<ZoomImage id="request-permission-action.webp" width="500px" alt="Düzenleme eylem penceresinde Push notifications izniyle ve After response kısmında Navigate Next seçeneğiyle Request permission eylemi" />
+
+**After response** bölümündeki eylemler, kullanıcı izni versin ya da reddetsin, cevap verdikten sonra çalışır. Bu bölüme yeni bir **Request permission** eylemi eklendiğinde **Navigate Next** ile başlar. Bu bölümün içine **Purchase**, **Restore purchases** veya başka bir **Request permission** eylemi ekleyemezsiniz. Bölümdeki tüm eylemleri kaldırırsanız, kullanıcı cevap verdikten sonra flow aynı ekranda kalır. **After response** eylemleri olmadığında flow, **Navigate back** sonrasında ve her dokunuşta da dahil olmak üzere ekran her göründüğünde isteği tekrar gönderir.
+
+Sistem iletişim kutusunu göstermediğinde, örneğin kullanıcı bildirimlere zaten izin vermişse, uygulamanız hemen yanıt verir ve flow, **After response** eylemlerini anında çalıştırır. Bu eylemler ekrandan çıkılmasına neden oluyorsa, ekran yalnızca bir an görünür. Flow'un isteği ne sıklıkla göndereceği tetikleyiciye bağlıdır:
+
+- **On Screen Appear**: Flow, ekran göründüğünde isteği gönderir. Kullanıcı **Navigate back** ile ekrana geri döndüğünde isteği tekrar göndermez.
+- **On Tap**: Flow, her dokunuşta isteği gönderir. Bir istek yanıt beklerken, bu öğeden veya başka herhangi bir öğeden başka bir izin isteği gönderilmez.
+
+Bildirimleri açıklayan bir ekranda, iletişim kutusu ekranı kapatmadan önce kullanıcıların ekranı okuyabilmesi için eylemi düğmenin **On Tap** tetikleyicisine bağlayın. İsteği daha önceki bir ekran zaten açıkladıysa **On Screen Appear** kullanın.
+
+:::warning
+**Flow'u yayınlamadan önce isteği yanıtlayacak şekilde uygulamanızı ayarlayın.** Adapty SDK sistem iletişim kutusunu göstermez: isteği uygulama kodunuza iletir. Bu kod olmadan kullanıcı hiçbir iletişim kutusu görmez ve flow'un ne yapacağı uygulamanızdaki Adapty SDK'ya göre değişir:
+
+- **iOS, Flutter, Unity ve Kotlin Multiplatform SDK'ları**: Flow ekranda kalır ve **After response** eylemlerini çalıştırmaz.
+- **Android, React Native ve Capacitor SDK'ları**: Flow, **After response** eylemlerini hemen çalıştırır ve kullanıcıya hiçbir zaman soru sorulmaz.
+
+:::
+
+Yayımlanan bir flow, uygulamanızın isteği yanıtlayamadığı eski uygulama sürümlerine de ulaşır. **Request permission** içeren bir flow'u yalnızca bu isteği yanıtlayabilen uygulama sürümlerine göstermek için, örneğin **App version (current)** üzerine kurulmuş bir [segment](segments) kullanarak bir [kitle](audience) oluşturun.
+
+Uygulamanızı kurmak için şu kılavuzlara bakın: [iOS](ios-handle-permissions), [Android](android-handle-permissions), [React Native](react-native-handle-permissions), [Flutter](flutter-handle-permissions), [Unity](unity-handle-permissions), [Kotlin Multiplatform](kmp-handle-permissions) veya [Capacitor](capacitor-handle-permissions).
+:::
+
 ## Eylem sırası \{#action-order\}
 
 Eylemler, **Interactions** panelinde listelendikleri sırayla, yukarıdan aşağıya doğru başlar. Flow her eylemi başlatır ve tamamlanmasını beklemeden bir sonrakine geçer; bu nedenle bir gezinme işlemi veya uyarı, altındaki eylemleri asla bekletmez.
 
 Bu durumun en çok etkilediği eylemler açısından ne anlama geldiği:
 
-- **Değişken ayarla**: Yeni değer, bir sonraki action başlamadan önce ayarlanır; bu yüzden altındaki koşullu bir action güncellenmiş değeri okur.
-- **Ekrana git**: Sonrasındaki action'lar çalışmaya devam eder; ancak flow bir sonraki action'ı başlattığında kullanıcı zaten bir sonraki ekranda olabilir. O action, kullanıcının az önce ayrıldığı ekranda bir öğeyi gösterip gizliyorsa, kullanıcı bunu göremez. Mevcut ekranı değiştiren action'ları navigasyondan önce yerleştirin.
-- **Uyarı göster**: Sonrasındaki action'lar uyarı açıkken çalışır. Bunlardan biri farklı bir ekrana yönlendirirse, navigasyon sırasında uyarı açık kalmaya devam eder.
-- **Satın al** ve **Satın almaları geri yükle**: Sonrasındaki action'lar sonuç beklenmeksizin dokunuşta çalışır. Sonuca göre yönlendirmek veya flow'u kapatmak için navigasyon ya da **Flow'u Kapat** action'ını [bir satın alma veya geri yükleme sonucu](respond-to-purchase-outcomes#add-actions-for-a-result) için ekleyin; örneğin **Başarılı olduğunda**.
+- **Değişken ayarla**: Yeni değer, bir sonraki eylem başlamadan önce ayarlanır; bu nedenle altındaki koşullu bir eylem, güncellenmiş değeri okur.
+- **Ekrana git**: Sonrasındaki eylemler çalışmaya devam eder; ancak flow bir sonraki eylemi başlattığında, kullanıcı zaten bir sonraki ekranda olabilir. Bu eylem, kullanıcının az önce ayrıldığı ekranda bir öğeyi gösterip gizliyorsa, kullanıcı bunu görmez. Geçerli ekranda değişiklik yapan eylemleri navigasyondan önce yerleştirin.
+- **Uyarı göster**: Sonrasındaki eylemler, uyarı açıkken çalışır. Bu eylemlerden biri farklı bir ekrana yönlendirirse, uyarı navigasyon sırasında açık kalmaya devam eder.
+- **Satın alma** ve **Satın almaları geri yükle**: Sonrasındaki eylemler, sonucu beklemeden dokunuşta çalışır. Sonuca göre yönlendirme yapmak veya flow'u kapatmak için navigasyonu ya da **Flow'u kapat** eylemini [bir satın alma veya geri yükleme sonucu](respond-to-purchase-outcomes#add-actions-for-a-result) için ekleyin; örneğin **Başarılı olduğunda**.
+- **İzin iste**: Sonrasındaki eylemler, kullanıcı yanıt vermeden hemen çalışır. Yanıta göre yönlendirme yapmak veya flow'u kapatmak için navigasyonu ya da **Flow'u kapat** eylemini [**Yanıt sonrası**](#request-permission) bölümüne ekleyin. İstekten sonra gelen eylemlerden biri ekrandan ayrılırsa, **Yanıt sonrası** eylemleri hiç çalışmaz. İstemci oluşturucu, aynı listede isteğin ardından bir navigasyon veya **Flow'u kapat** eylemi geldiğinde uyarı gösterir.
 
 ## Özel eylemler \{#custom-actions\}
 
@@ -212,11 +243,11 @@ Adapty tetikleyiciyi sağlar; davranışı uygulamanız uygular:
 
 Özel bir eylemin kendi başına hiçbir işlevi yoktur. Builder'da statik bir Eylem Kimliği (Action ID) tanımlarsınız; bu kimliği aldığında ne olacağını ise uygulama kodunuz belirler. Aşağıdaki her kullanım senaryosu aynı kalıbı izler: flow'da bir kimlik atayın, ardından kodunuzda bu kimliği işleyin.
 
-- **Uygulama içi bir etkinlik tetikleyin**: `viewed_special_offer` gibi bir ID tetikleyin, ardından uygulamanız bunu aldığında olayı analytics'e kaydedin.
-- **Sistem izni isteyin**: `request_location` gibi bir ID tetikleyin, ardından uygulamanızdan OS izin penceresini açın. İznin açılamadığı durumlarda bunun yerine telefonun sistem ayarlarını açın. Adapty pencereyi göstermez — bunu uygulamanız yapar.
-- **Native kimlik doğrulamayı başlatın**: `login_google` gibi bir ID tetikleyin, ardından kendi giriş ekranınızı gösterin. Flow kullanıcıyı oturum açtıramaz.
-- **İş mantığı uygulayın**: `apply_discount` gibi bir ID tetikleyin, ardından içeriğin kilidini açın ya da uygulama durumunu kendi tarafınızda değiştirin.
-- **Bir quiz cevabını uygulamanıza iletin**: Her seçeneğe farklı bir Action ID atayın (örneğin `goal_weight_loss` ve `goal_muscle`), ardından kodunuzda bu ID'yi okuyun. Daha sonra segmentlere ayırabileceğiniz bir [özel kullanıcı özelliği](setting-user-attributes#custom-user-attributes) ayarlamak için bu ID'yi kullanın. Aksiyon yalnızca sabit bir ID taşıdığından, seçimi bildirmenin tek yolu budur — flow seçilen değeri gönderemez.
+- **Uygulama içi bir etkinlik tetikle**: `viewed_special_offer` gibi bir ID yayınla, ardından uygulamanız etkinliği aldığında analitik sistemine kaydet.
+- **Bildirim izni dışında bir sistem izni iste**: `request_location` gibi bir ID yayınla, ardından uygulamanızdan OS izin promptunu çağır. Promptun veremediği izinler için telefon sistem ayarlarını aç. Adapty promptu göstermez — uygulamanız gösterir. Bildirim izni istemek için bunun yerine [**Request permission**](#request-permission) eylemini kullan: **After response** eylemleri, kullanıcı yanıt verdikten sonra çalışır.
+- **Yerel kimlik doğrulamayı başlat**: `login_google` gibi bir ID yayınla, ardından kendi giriş ekranını göster. Flow kullanıcıyı oturum açtıramaz.
+- **İş mantığı uygula**: `apply_discount` gibi bir ID yayınla, ardından kendi tarafında içeriklerin kilidini aç veya uygulama durumunu değiştir.
+- **Bir quiz cevabını uygulamanıza ilet**: Her seçeneğe farklı bir Action ID ata (örneğin `goal_weight_loss` ve `goal_muscle`), ardından kodunuzda ID'yi oku. Daha sonra segmentleyebileceğin bir [özel kullanıcı niteliği](setting-user-attributes#custom-user-attributes) belirlemek için bu ID'yi kullan. Eylem yalnızca sabit bir ID taşıdığından, seçimi bildirmenin tek yolu budur — flow seçilen değeri gönderemez.
 
 :::important
 Özel bir action, kullanıcı bir seçenek belirlediği anda tetiklenir. Kullanıcı cevabını değiştirirse flow, yeni Action ID'yi de tetikler. Uygulamanız her ikisini sırayla alır — örneğin önce `goal_weight_loss`, ardından `goal_muscle`. Handler'ınızı idempotent yapın ki en son sinyal geçerli olsun.

@@ -176,16 +176,45 @@ Adapty 通过原生商店流程处理恢复操作。你可以[为每种恢复结
 **选择产品**操作在目标产品缺失、位于其他屏幕或不再属于某个产品组时，会[阻止预览和发布](flow-common-issues#a-flow-wont-preview-or-publish)。请分配一个有效产品或移除该操作。
 :::
 
+### 请求权限 \{#request-permission\}
+
+请求用户允许推送通知，例如在用户引导界面上说明通知的用途。您的应用会弹出系统权限对话框，并将用户的回应返回给流程。然后，流程会执行 **After response** 部分中的操作。
+
+您可以将此操作添加到 **On Tap** 和 **On Screen Appear** 触发器中。在 **Edit action** 窗口中，**Permission** 行显示 **Push notifications**，即该操作请求的唯一权限。
+
+<ZoomImage id="request-permission-action.webp" width="500px" alt="编辑动作窗口中的请求权限动作，权限类型为推送通知，响应后操作为跳转下一步" />
+
+**After response** 中的操作会在用户作出回答后执行，无论用户允许还是拒绝权限。新添加的 **Request permission** 操作在此区域默认包含 **Navigate Next**。在该区域内，不能添加 **Purchase**、**Restore purchases** 或另一个 **Request permission** 操作。如果将该区域内的所有操作都删除，流程在用户作出回答后会停留在当前屏幕。没有 **After response** 操作时，每次屏幕出现时流程都会重新发送请求，包括执行 **Navigate back** 之后，以及每次点击时。
+
+当系统不显示对话框时（例如用户已经允许了通知），你的应用会立即响应，流程也会立刻执行 **After response** 操作。如果这些操作会切换界面，当前界面只会短暂出现。流程发送请求的频率取决于触发器：
+
+- **On Screen Appear**：当页面出现时，流程发送请求。用户通过 **Navigate back** 返回该页面时，不会再次发送请求。
+- **On Tap**：每次点击时，流程都会发送请求。当一个请求等待响应时，该元素或其他任何元素都不会再发送权限请求。
+
+如果页面本身是在解释通知权限，请将该操作放在按钮的 **On Tap** 触发器上，让用户先阅读完页面内容，再由对话框覆盖屏幕。如果更早的页面已经解释过该请求，则使用 **On Screen Appear**。
+
+:::warning
+**在发布流程之前，请先配置好应用以响应该请求。** Adapty SDK 不会直接显示系统对话框，而是将请求传递给你的应用代码。如果没有相应代码，用户将看不到任何对话框，流程的后续行为取决于应用中使用的 Adapty SDK 版本：
+
+- **iOS、Flutter、Unity 和 Kotlin Multiplatform SDK**：流程停留在当前屏幕，不执行 **After response** 操作。
+- **Android、React Native 和 Capacitor SDK**：流程立即执行 **After response** 操作，用户不会收到任何询问。
+
+已发布的流程也会触达那些在应用能够响应请求之前发布的旧版本。请仅向能够响应的应用版本显示包含 **Request permission** 的流程，例如，通过基于 **App version (current)** [市场细分](segments)构建的[目标受众](audience)来实现。
+
+要设置你的应用，请参阅 [iOS](ios-handle-permissions)、[Android](android-handle-permissions)、[React Native](react-native-handle-permissions)、[Flutter](flutter-handle-permissions)、[Unity](unity-handle-permissions)、[Kotlin Multiplatform](kmp-handle-permissions) 或 [Capacitor](capacitor-handle-permissions) 的指南。
+:::
+
 ## 动作执行顺序 \{#action-order\}
 
 动作按照 **Interactions** 面板中从上到下的顺序依次启动。流程会在触发每个动作后立即继续执行下一个，不会等待当前动作完成，因此导航或弹窗提示不会阻塞其后的动作。
 
 以下是对受影响最大的几类动作的说明：
 
-- **Set variable（设置变量）**：在下一个动作开始之前，新值就已经设置完毕，因此其下方的条件动作读取到的是更新后的值。
-- **Navigate to screen（跳转到页面）**：其后的动作仍会继续执行，但当流程触发下一个动作时，用户可能已经进入了新页面。如果该动作需要显示或隐藏用户刚刚离开的页面上的某个元素，用户将看不到效果。请将修改当前页面的动作放在导航动作之前。
-- **Show alert（显示提示）**：其后的动作会在提示框打开期间继续执行。如果其中某个动作跳转到其他页面，提示框在导航过程中将保持打开状态。
-- **Purchase（购买）** 和 **Restore purchases（恢复购买）**：其后的动作会在用户点击时立即执行，不会等待操作结果。若要在操作完成后跳转或关闭流程，请为[购买或恢复结果](respond-to-purchase-outcomes#add-actions-for-a-result)添加相应的导航或 **Close Flow（关闭流程）** 动作，例如 **When succeeded（成功时）**。
+- **Set variable（设置变量）**：新值会在下一个动作开始前生效，因此位于其后的条件动作可以读取到更新后的值。
+- **Navigate to screen（跳转页面）**：其后的动作仍会继续执行，但当流程触发下一个动作时，用户可能已经进入了新页面。如果该动作试图显示或隐藏用户刚离开的页面上的某个元素，用户将看不到效果。请将修改当前页面的动作放在跳转动作之前。
+- **Show alert（显示提示）**：其后的动作会在提示框打开期间继续执行。如果其中某个动作跳转到其他页面，提示框在跳转过程中仍会保持打开状态。
+- **Purchase（购买）** 和 **Restore purchases（恢复购买）**：其后的动作会在点击时立即执行，不会等待操作结果。如需在操作结果出现后进行跳转或关闭流程，请为[购买或恢复结果](respond-to-purchase-outcomes#add-actions-for-a-result)添加跳转或 **Close Flow** 动作，例如 **When succeeded（成功时）**。
+- **Request permission（请求权限）**：其后的动作会立即执行，不会等待用户作答。如需在用户回答后进行跳转或关闭流程，请改为在 [**After response（响应后）**](#request-permission) 部分添加跳转或 **Close Flow** 动作。如果请求之后的某个动作导致用户离开当前页面，**After response** 中的动作将完全不会执行。当跳转或 **Close Flow** 动作紧跟在同一列表中的权限请求之后时，编辑工具会显示警告提示。
 
 ## 自定义动作 \{#custom-actions\}
 
@@ -212,11 +241,11 @@ Adapty 负责触发，你的应用负责实现具体行为：
 
 自定义动作本身不会执行任何操作。你需要在编辑工具中设置一个静态 Action ID，然后由应用代码来处理接收到该 ID 后的逻辑。以下所有使用场景都遵循同一模式：在流程中分配 ID，然后在代码中处理它。
 
-- **触发应用内事件**：触发一个 ID（如 `viewed_special_offer`），然后在应用收到时将该事件记录到你的分析系统。
-- **请求系统权限**：触发一个 ID（如 `request_location`），然后在应用中调用系统权限弹窗。对于无法通过弹窗授予的权限，改为打开手机的系统设置。Adapty 不显示弹窗——由你的应用来处理。
-- **启动原生身份验证**：触发一个 ID（如 `login_google`），然后展示你自己的登录界面。该流程无法直接为用户登录。
-- **执行业务逻辑**：触发一个 ID（如 `apply_discount`），然后在你这边解锁内容或更改应用状态。
-- **将问卷答案传递给应用**：为每个选项分配不同的 Action ID（例如 `goal_weight_loss` 和 `goal_muscle`），然后在代码中读取该 ID。用这个 ID 设置一个[自定义用户属性](setting-user-attributes#custom-user-attributes)，以便后续进行市场细分。由于动作只携带固定 ID，这是上报用户所选内容的唯一方式——流程本身无法发送所选的值。
+- **触发应用内事件**：发送如 `viewed_special_offer` 这样的 ID，当应用收到该事件时将其记录到你的分析系统。
+- **请求推送通知以外的系统权限**：发送如 `request_location` 这样的 ID，然后在应用中调用系统权限弹窗。对于无法通过弹窗授权的权限，直接打开手机系统设置。Adapty 不会显示弹窗——由你的应用来处理。如需请求推送通知权限，请改用 [**Request permission**](#request-permission) 操作：其 **After response** 操作会在用户响应后执行。
+- **启动原生身份验证**：发送如 `login_google` 这样的 ID，然后展示你自己的登录界面。流程本身无法为用户完成登录。
+- **执行业务逻辑**：发送如 `apply_discount` 这样的 ID，然后在你的端解锁内容或修改应用状态。
+- **将测验答案传递给应用**：为每个选项分配不同的 Action ID（例如 `goal_weight_loss` 和 `goal_muscle`），然后在代码中读取该 ID。使用该 ID 设置[自定义用户属性](setting-user-attributes#custom-user-attributes)，以便后续进行市场细分。由于该操作只携带固定 ID，这是上报用户选择的唯一方式——流程无法发送所选值本身。
 
 :::important
 自定义动作在用户选择选项的瞬间触发。如果用户更改了答案，流程也会触发新的 Action ID。你的应用会依次收到两个信号，例如先收到 `goal_weight_loss`，再收到 `goal_muscle`。请确保你的处理器是幂等的，以最新信号为准。

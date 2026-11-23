@@ -1,0 +1,100 @@
+---
+title: "Xử lý yêu cầu quyền trong flow - Android"
+description: "Yêu cầu người dùng cấp quyền thông báo đẩy từ một flow trong ứng dụng Android với onShowRequestPermission, và trả về câu trả lời của họ cho flow."
+metadataTitle: "Xử lý Quyền trong Flow - Android | Tài liệu Adapty"
+---
+
+Một [flow](adapty-flow-builder) có thể yêu cầu người dùng cấp quyền gửi thông báo đẩy thông qua hành động **Request permission**, ví dụ trên màn hình onboarding giải thích mục đích của thông báo. Adapty SDK không tự hiển thị hộp thoại cấp quyền hệ thống. Thay vào đó, SDK chuyển yêu cầu đến phương thức `onShowRequestPermission` trong flow event listener của bạn. Ứng dụng của bạn hiển thị hộp thoại và trả về câu trả lời của người dùng, sau đó flow tiếp tục.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty Android SDK 4.0.0 trở lên**: Các phiên bản cũ hơn không có `onShowRequestPermission`.
+- **Một flow có action Request permission**: Trong Flow & Paywall Builder, thêm action **Request permission** vào trigger **On Tap** hoặc **On Screen Appear** của một phần tử. Trong mục **After response**, thêm các action sẽ chạy sau khi người dùng trả lời, chẳng hạn như **Navigate Next**. Để xem cài đặt action, xem [Request permission](onboarding-actions#request-permission).
+- **Quyền `POST_NOTIFICATIONS` trong Android manifest và `targetSdk` 33 trở lên**: Android 13 trở lên chỉ hiển thị hộp thoại xin quyền thông báo với các ứng dụng khai báo quyền này và nhắm mục tiêu Android 13 trở lên:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Flow yêu cầu quyền như thế nào \{#how-the-flow-requests-a-permission\}
+
+1. Flow đến hành động **Request permission**: người dùng nhấn vào phần tử, hoặc màn hình xuất hiện.
+2. Adapty SDK gọi `onShowRequestPermission` trên event listener của flow view, với `permission` được đặt là `"push"`.
+3. Ứng dụng của bạn yêu cầu quyền từ Android và gọi `callback` với câu trả lời.
+4. Flow chạy các hành động **After response**. Các hành động này giống nhau cho cả hai câu trả lời.
+
+Flow sẽ dừng trên màn hình cho đến khi ứng dụng của bạn gọi `callback`. Nếu ứng dụng không bao giờ gọi nó, flow sẽ ở lại trên màn hình. Nếu Android không hiển thị hộp thoại, ứng dụng của bạn nhận được câu trả lời ngay lập tức và flow thực thi các hành động **After response** ngay lập tức. Nếu các hành động đó rời khỏi màn hình, người dùng sẽ chỉ thấy màn hình yêu cầu quyền trong một khoảnh khắc. Android không hiển thị hộp thoại trong những trường hợp sau:
+
+- **Android 12 trở xuống**: Thông báo không cần quyền runtime, nên sẽ không có hộp thoại nào được hiển thị.
+- **Người dùng đã cho phép thông báo trước đó**: Quyền đã được cấp.
+- **Người dùng đã từ chối hộp thoại hai lần**: Android ngừng hiển thị hộp thoại cho ứng dụng và từ chối mọi yêu cầu mới.
+
+Với **On Screen Appear**, flow sẽ không gửi lại yêu cầu khi người dùng quay lại màn hình bằng hành động **Navigate back**. Với **On Tap**, mỗi lần nhấn sẽ gửi một yêu cầu mới, ngoại trừ các lần nhấn khi một yêu cầu đang chờ phản hồi.
+
+## Ghi đè onShowRequestPermission \{#override-onshowrequestpermission\}
+
+:::warning
+**Listener mặc định không bao giờ hỏi người dùng.** `AdaptyFlowDefaultEventListener` trả lời mọi yêu cầu quyền bằng `false` và không hiển thị hộp thoại nào. Nếu listener của bạn kế thừa `AdaptyFlowDefaultEventListener` mà không ghi đè `onShowRequestPermission`, flow sẽ thực thi các hành động **After response** ngay lập tức.
+:::
+
+Để xử lý các yêu cầu quyền, hãy ghi đè `onShowRequestPermission` trong event listener của bạn. Trong ví dụ này, activity hiển thị flow đăng ký một launcher cho hộp thoại quyền:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class FlowActivity : ComponentActivity() {
+
+    // The flow waits for this callback while the system dialog is open.
+    private var pendingPermissionCallback: AdaptyFlowEventListener.PermissionCallback? = null
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            pendingPermissionCallback?.invoke(granted, null)
+            pendingPermissionCallback = null
+        }
+
+    private val eventListener = object : AdaptyFlowDefaultEventListener() {
+        override fun onShowRequestPermission(
+            permission: String?,
+            customArgs: Map<String, String>?,
+            callback: AdaptyFlowEventListener.PermissionCallback,
+            context: Context,
+        ) {
+            if (permission != "push") {
+                callback(false, null)
+                return
+            }
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+                // Android 12 and earlier: return whether notifications are turned on for the app.
+                callback(NotificationManagerCompat.from(context).areNotificationsEnabled(), null)
+                return
+            }
+            pendingPermissionCallback = callback
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    // Pass eventListener to the flow view.
+}
+```
+
+`onShowRequestPermission` nhận:
+
+- **`permission`**: Quyền mà flow yêu cầu. Hành động **Request permission** gửi `"push"`.
+- **`customArgs`**: Các đối số tùy chỉnh của yêu cầu. Hành động **Request permission** không gửi gì, nên giá trị là `null`.
+- **`callback`**: Callback trả về kết quả cho flow. Đối số đầu tiên `granted` là `true` nếu người dùng cho phép quyền đó, và `false` nếu không. Đối số thứ hai `detailResult` là một chuỗi tùy chọn chứa thông tin chi tiết về kết quả. Truyền `null` nếu bạn không có gì.
+
+Gọi `callback` một lần cho mỗi request. Trả về `false` cho những quyền mà ứng dụng không yêu cầu. Adapty SDK không bắt exception từ `onShowRequestPermission`, vì vậy hãy bắt chúng trong override của bạn và gọi `callback(false, null)`.
+
+Trong Jetpack Compose, đăng ký launcher bằng `rememberLauncherForActivityResult` thay vì `registerForActivityResult`. Nếu activity có thể bị tạo lại trong khi dialog đang mở, chẳng hạn như khi xoay màn hình, hãy giữ pending callback trong một `ViewModel` để activity mới có thể gọi nó.
+
+Quyền được cấp cho phép ứng dụng của bạn hiển thị thông báo. Để nhận push notification, hãy đăng ký thiết bị với nhà cung cấp push của bạn, chẳng hạn như Firebase Cloud Messaging, giống như cách ứng dụng của bạn thực hiện ngoài flow.
+
+## Truyền listener cho flow \{#pass-the-listener-to-the-flow\}
+
+Adapty SDK gửi các yêu cầu quyền đến event listener của flow view. Truyền listener cùng với phần override của bạn dưới dạng `eventListener` khi tạo view: vào `AdaptyUI.getFlowView()`, `AdaptyFlowView.showFlow()`, hoặc `AdaptyFlowScreen()`. Xem [Hiển thị flow & paywall](android-present-paywalls) để biết các lệnh gọi này, và [Xử lý sự kiện flow & paywall](android-handling-events) để biết các phương thức listener khác.
+
+## Kiểm tra yêu cầu cấp quyền \{#test-the-permission-request\}
+
+Kiểm tra trên thiết bị chạy Android 13 trở lên: các phiên bản cũ hơn sẽ không hiển thị hộp thoại thông báo. Android ngừng hiển thị hộp thoại sau khi người dùng cho phép thông báo hoặc từ chối hai lần. Để thấy lại hộp thoại trong quá trình kiểm tra flow, hãy xóa ứng dụng khỏi thiết bị rồi cài lại. Sau đó mở flow và đi đến action **Request permission**. Nếu flow tiếp tục mà không có hộp thoại nào xuất hiện, hãy đảm bảo rằng listener của bạn đã override `onShowRequestPermission`, ứng dụng khai báo `POST_NOTIFICATIONS` và target Android 13 trở lên.

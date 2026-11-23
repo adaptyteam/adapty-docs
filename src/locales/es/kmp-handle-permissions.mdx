@@ -1,0 +1,160 @@
+---
+title: "Gestionar solicitudes de permisos en flows - Kotlin Multiplatform"
+description: "Solicita a los usuarios permiso para notificaciones push desde un flow en tu app de Kotlin Multiplatform con AdaptyUISystemRequestsHandler, y devuelve su respuesta al flow."
+metadataTitle: "Gestionar permisos de flow - Kotlin Multiplatform | Documentación de Adapty"
+---
+
+Un [flow](adapty-flow-builder) puede pedir permiso al usuario para enviar notificaciones push mediante la acción **Request permission**, por ejemplo en una pantalla de onboarding que explique para qué son las notificaciones. El SDK de Adapty no muestra el diálogo de permisos del sistema por sí mismo. Pasa la solicitud a un `AdaptyUISystemRequestsHandler` en tu app. Tu app muestra el diálogo y devuelve la respuesta del usuario, y el flow continúa.
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **SDK de Kotlin Multiplatform de Adapty 4.1.0 o posterior**: La versión 4.1.0 es la primera versión estable con `AdaptyUISystemRequestsHandler`.
+- **Un flow con la acción Request permission**: En el Flow & Paywall Builder, añade la acción **Request permission** al disparador **On Tap** u **On Screen Appear** de un elemento. En la sección **After response**, añade las acciones que se ejecutarán después de que el usuario responda, como **Navigate Next**. Para ver la configuración de la acción, consulta [Request permission](onboarding-actions#request-permission).
+- **El permiso `POST_NOTIFICATIONS` en tu manifiesto de Android y `targetSdk` 33 o superior**: Android 13 y versiones posteriores solo muestran el diálogo de permiso de notificaciones a las apps que declaran el permiso y tienen como objetivo Android 13 o posterior:
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Cómo solicita el flow un permiso \{#how-the-flow-requests-a-permission\}
+
+1. El flow llega a la acción **Request permission**: el usuario pulsa el elemento o aparece la pantalla.
+2. El SDK de Adapty llama a `handlePermission` en tu handler con `AdaptyUIPermission.PUSH`.
+3. Tu app solicita el permiso al sistema operativo y devuelve `AdaptyUIPermissionResult.granted()` o `AdaptyUIPermissionResult.denied()`.
+4. El flow ejecuta las acciones de **After response**. Son las mismas para ambas respuestas.
+
+El flow espera en la pantalla hasta que tu app devuelva la respuesta. Si tu app nunca responde, el flow permanece en esa pantalla. Si el sistema operativo no muestra el diálogo —por ejemplo, porque el usuario ya lo respondió anteriormente—, tu handler devuelve la respuesta de inmediato y el flow ejecuta las acciones de **After response** al instante. Si esas acciones abandonan la pantalla, el usuario verá la pantalla que solicita el permiso solo por un momento.
+
+Con **On Screen Appear**, el flow no vuelve a enviar la solicitud cuando el usuario regresa a la pantalla mediante la acción **Navigate back**. Con **On Tap**, cada toque envía una nueva solicitud, excepto los toques realizados mientras una solicitud espera tu respuesta.
+
+## Implementar el handler \{#implement-the-handler\}
+
+Para responder a las solicitudes de permiso, implementa `AdaptyUISystemRequestsHandler` en el código común. Devuelve un resultado para cada solicitud: devuelve `denied` para los permisos que tu app no solicita, y captura las excepciones de tu código de plataforma. El SDK no captura las excepciones de `handlePermission`: una excepción no capturada hace que la app se cierre, y el flow no recibe respuesta.
+
+```kotlin showLineNumbers title="commonMain"
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+`requestPushPermission` es tu código de plataforma. Consulta [Solicitar el permiso en cada plataforma](#request-the-permission-on-each-platform).
+
+`handlePermission` recibe:
+
+- **`view`**: La vista del flow que envió la solicitud.
+- **`permission`**: El permiso que solicita el flow. La acción **Request permission** envía `AdaptyUIPermission.PUSH`.
+- **`customArgs`**: Argumentos personalizados de la solicitud. La acción **Request permission** no envía ninguno, por lo que el valor es `null`.
+
+El string `detail` que puedes pasar a `granted` y `denied` es opcional.
+
+Un permiso concedido permite que tu app muestre notificaciones. Para recibir notificaciones push, registra el dispositivo con tu proveedor de push, como APNs o Firebase Cloud Messaging, tal como lo hace tu app fuera de los flows.
+
+`AdaptyUISystemRequestsHandler` también tiene `handleAppReviewRequest`. Su comportamiento predeterminado muestra el diálogo nativo de valoración, por lo que no necesitas sobreescribirlo.
+
+## Solicitar el permiso en cada plataforma \{#request-the-permission-on-each-platform\}
+
+El código común no puede mostrar el diálogo del sistema, por lo que `requestPushPermission` es una función `expect` con una implementación `actual` para cada plataforma. Si tu app ya usa una biblioteca de permisos de Kotlin Multiplatform, llama a ella desde `handlePermission` en su lugar.
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+En iOS, solicita autorización a `UNUserNotificationCenter`:
+
+```kotlin showLineNumbers title="iosMain"
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+En Android, el permiso de ejecución existe a partir de Android 13. En versiones anteriores, devuelve si las notificaciones están activadas para la app. Solicítalo desde la actividad que está en pantalla, que es la actividad del flow mientras se muestra un flow. En este ejemplo, `ResumedActivity` la rastrea. Regístrala en `Application.onCreate` con `registerActivityLifecycleCallbacks(ResumedActivity)`:
+
+```kotlin showLineNumbers title="androidMain"
+
+object ResumedActivity : Application.ActivityLifecycleCallbacks {
+    var current: ComponentActivity? = null
+        private set
+
+    override fun onActivityResumed(activity: Activity) {
+        current = activity as? ComponentActivity
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        if (current === activity) current = null
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+}
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = ResumedActivity.current ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+        continuation.invokeOnCancellation { launcher.unregister() }
+    }
+}
+```
+
+## Registrar el handler
+
+:::warning
+**Sin un handler, el flow se detiene en la solicitud de permiso.** Si tu app no registra ningún handler, el SDK de Adapty no envía ninguna respuesta al flow, ni en iOS ni en Android. El flow permanece en la pantalla que envió la solicitud y no ejecuta las acciones de **After response**.
+:::
+
+Para enviar solicitudes de permiso a tu handler, llama a `AdaptyUI.setSystemRequestsHandler` una vez al arrancar la app, antes de que muestre el primer flow. Por ejemplo, llámalo donde llamas a `AdaptyUI.setFlowsEventsObserver`.
+
+```kotlin showLineNumbers title="Kotlin"
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+## Prueba la solicitud de permiso \{#test-the-permission-request\}
+
+iOS muestra el cuadro de diálogo de notificaciones solo una vez por instalación. Android deja de mostrarlo cuando el usuario permite las notificaciones o las deniega dos veces. Para volver a ver el diálogo durante las pruebas del flow, desinstala la aplicación del dispositivo y vuelve a instalarla. Luego abre el flow y llega a la acción **Request permission**. Si la pantalla se queda parada y no aparece ningún diálogo, el flow no recibió respuesta: asegúrate de que tu aplicación registre el handler antes de mostrar el flow. Si el flow avanza sin mostrar ningún diálogo, comprueba que la aplicación de Android declare `POST_NOTIFICATIONS` y tenga como objetivo Android 13 o posterior.

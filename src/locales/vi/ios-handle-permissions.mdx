@@ -1,0 +1,82 @@
+---
+title: "Xử lý yêu cầu quyền trong flow - iOS"
+description: "Yêu cầu người dùng cấp quyền thông báo đẩy từ một flow trong ứng dụng iOS của bạn bằng AdaptySystemRequestsHandler, và trả về câu trả lời của họ cho flow."
+metadataTitle: "Xử lý quyền trong Flow - iOS | Tài liệu Adapty"
+---
+
+Một [flow](adapty-flow-builder) có thể yêu cầu người dùng cấp quyền gửi thông báo đẩy thông qua hành động **Request permission**, ví dụ trên màn hình onboarding giải thích mục đích của thông báo. Adapty SDK không tự hiển thị hộp thoại cấp quyền hệ thống. Thay vào đó, SDK chuyển yêu cầu đến `AdaptySystemRequestsHandler` trong ứng dụng của bạn. Ứng dụng sẽ hiển thị hộp thoại và trả về câu trả lời của người dùng, sau đó flow tiếp tục.
+
+## Trước khi bắt đầu \{#before-you-start\}
+
+Bạn cần:
+
+- **Adapty iOS SDK 4.0.0 trở lên**: Các phiên bản cũ hơn không có `AdaptySystemRequestsHandler`.
+- **Một flow có action Request permission**: Trong Flow & Paywall Builder, thêm action **Request permission** vào trigger **On Tap** hoặc **On Screen Appear** của một phần tử. Trong phần **After response**, thêm các action sẽ chạy sau khi người dùng trả lời, chẳng hạn như **Navigate Next**. Để xem cài đặt cho action này, hãy tham khảo [Request permission](onboarding-actions#request-permission).
+
+## Flow yêu cầu quyền như thế nào \{#how-the-flow-requests-a-permission\}
+
+1. Flow đến hành động **Request permission**: người dùng nhấn vào phần tử, hoặc màn hình xuất hiện.
+2. Adapty SDK gọi `handlePermission(_:withCustomArgs:)` trên handler của bạn với `.push`.
+3. App của bạn yêu cầu quyền từ iOS và trả về `.granted` hoặc `.denied`.
+4. Flow thực thi các hành động **After response**. Các hành động này giống nhau cho cả hai câu trả lời.
+
+Flow sẽ chờ trên màn hình cho đến khi ứng dụng của bạn trả về kết quả. Nếu ứng dụng không bao giờ trả lời, flow sẽ tiếp tục hiển thị trên màn hình đó. Nếu iOS không hiển thị hộp thoại — chẳng hạn vì người dùng đã trả lời trước đó — ứng dụng của bạn sẽ nhận được kết quả ngay lập tức và flow sẽ chạy các hành động trong **After response** ngay lập tức. Nếu các hành động đó điều hướng khỏi màn hình, người dùng sẽ chỉ thấy màn hình yêu cầu quyền trong một khoảnh khắc ngắn.
+
+Với **On Screen Appear**, flow sẽ không gửi lại yêu cầu khi người dùng quay lại màn hình bằng hành động **Navigate back**. Với **On Tap**, mỗi lần nhấn đều gửi một yêu cầu mới, ngoại trừ những lần nhấn trong khi yêu cầu đang chờ phản hồi từ bạn.
+
+## Triển khai handler \{#implement-the-handler\}
+
+Để xử lý các yêu cầu quyền, hãy tạo một class tuân theo `AdaptySystemRequestsHandler` và triển khai `handlePermission(_:withCustomArgs:)`. Trả về `.denied` cho các quyền mà ứng dụng của bạn không yêu cầu.
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            return granted ? .granted(nil) : .denied(nil)
+        } catch {
+            return .denied(error.localizedDescription)
+        }
+    }
+}
+```
+
+`handlePermission(_:withCustomArgs:)` nhận:
+
+- **`permission`**: Quyền mà flow yêu cầu. Hành động **Request permission** gửi `.push`.
+- **`customArgs`**: Các đối số tùy chỉnh của yêu cầu. Hành động **Request permission** không gửi gì, nên giá trị là `nil`.
+
+`.granted` và `.denied` nhận một chuỗi tùy chọn kèm theo chi tiết. Bạn có thể truyền `nil`.
+
+Quyền được cấp cho phép ứng dụng hiển thị thông báo. Để nhận push notification, hãy đăng ký thiết bị với APNs và gửi device token đến push provider, giống như ứng dụng của bạn thực hiện bên ngoài flow.
+
+`AdaptySystemRequestsHandler` cũng khai báo `handleAppReviewRequest()`. Triển khai mặc định của nó sẽ hiển thị lời nhắc đánh giá trên App Store, vì vậy bạn không cần phải tự triển khai.
+
+## Truyền handler vào cấu hình flow \{#pass-the-handler-to-the-flow-configuration\}
+
+:::warning
+**Nếu không có handler, flow sẽ dừng lại tại bước yêu cầu quyền.** Nếu bạn không truyền `systemRequestsHandler`, iOS sẽ không hiển thị bất kỳ hộp thoại nào. Flow sẽ dừng ở màn hình đã gửi yêu cầu và không thực thi các hành động **After response**.
+:::
+
+Để gửi các yêu cầu quyền của flow đến handler của bạn, hãy truyền handler vào tham số `systemRequestsHandler` của `AdaptyUI.getFlowConfiguration`:
+
+```swift showLineNumbers title="Swift"
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: PushPermissionHandler()
+)
+```
+
+Cấu hình flow giữ một strong reference đến handler, vì vậy bạn không cần lưu trữ nó. Cả SwiftUI và UIKit đều trình bày flow từ cấu hình này, nên handler hoạt động với cả hai. Để biết thêm chi tiết, xem [Hiển thị flows & paywall](ios-present-paywalls).
+
+## Kiểm tra yêu cầu cấp quyền \{#test-the-permission-request\}
+
+iOS chỉ hiển thị hộp thoại thông báo một lần cho mỗi lần cài đặt ứng dụng. Để xem lại hộp thoại trong khi bạn kiểm thử flow, hãy xóa ứng dụng khỏi thiết bị rồi cài lại. Sau đó mở flow và đến bước action **Request permission**. Nếu màn hình đứng yên và không có hộp thoại nào xuất hiện, nghĩa là flow không nhận được câu trả lời: hãy đảm bảo bạn đã truyền `systemRequestsHandler` vào `AdaptyUI.getFlowConfiguration`.
