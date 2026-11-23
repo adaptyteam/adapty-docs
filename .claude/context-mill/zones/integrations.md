@@ -162,6 +162,15 @@ right shape, not a reusable: a 50-row table inside a callout would be unreadable
    Branch and Adjust describe their payload as "all available event fields" with a link to the webhook
    schema, so they need no row of their own; only a destination that changes the wire shape (Adjust)
    needs a sentence.
+   S3/GCS got `virtual_currency_credits` too, but only behind the opt-in export option **Add virtual
+   currency credits** (off by default; backend code, 2026-11-19), as the last CSV column, after the
+   flow and A/B test columns. The option also covers the manual export. The export rule differs from
+   the webhook: a paying row with no credits gets `[]` (the webhook leaves the field out), every other
+   row and an imported row get an empty cell, and a row of a transaction written before 2026-07-02
+   (no import marker) gets `[]` even when it was imported. So an export-column change is documented in
+   `s3-exports` (column table and "Events and tags" settings table), `google-cloud-storage` (column
+   table and settings table) and the destination list of the webhook article, and the "come at the end
+   of the file" sentence in both export articles moves with it.
 2. **`messaging`'s and `analytics-integration`'s "## Event properties" tables are a maintained
    duplicate, not a canonical-plus-copy relationship.** Confirmed byte-identical today (`diff` of the
    current table sections returns nothing). Nothing enforces that an edit to one is mirrored in the
