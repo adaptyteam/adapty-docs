@@ -22,7 +22,7 @@ anything else:
 
 | Repo | Looked for in | Override |
 |---|---|---|
-| `adapty-demo-videos` (the recorder, on GitHub) | next to the docs repo | `DEMO_VIDEOS_REPO` |
+| `adapty-demo-videos` (the recorder, on GitHub) | next to the docs repo's main checkout, also from a worktree | `DEMO_VIDEOS_REPO` |
 | `adapty-dashboard-interface` (on GitLab) | next to the recorder | `DASHBOARD_REPO` |
 
 1. If a repo isn't in that location, ask the author where their clone is, then prefix every command in
@@ -40,8 +40,8 @@ working with it. A foreign process on the port stops the run instead.
 
 ## Workflow
 
-1. **List the shots.** Take them from the article's `:::note` placeholders, or from the capture table
-   the `editor` skill produces. Read the prose around each one: the image must show what that
+1. **List the shots.** Take them from the article's `:::note` placeholders. The `editor` skill invokes
+   this skill on its own once an article's prose is final, so a placeholder means a shot to take. Read the prose around each one: the image must show what that
    sentence says.
 2. **Pick the branch.** The default is `master`, the shipped UI. For an unreleased feature, set
    `branch` to the ticket branch, and get the feature flag from its E2E test.
