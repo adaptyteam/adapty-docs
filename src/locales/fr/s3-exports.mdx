@@ -329,6 +329,114 @@ Voici la structure du tableau pour les visites de paywall :
 | **paywall_revision**  | Révision du paywall d'où provient la transaction.                                                            |
 | **variation_id**      | ID unique du paywall affiché. Pour un flow, l'ID de l'écran paywall à l'intérieur du flow, et non l'ID de la variante du test A/B. |
 
+## Transactions en devise virtuelle \{#virtual-currency-transactions\}
+
+L'export de devise virtuelle envoie chaque modification d'un solde de [devise virtuelle](virtual-currencies) vers votre compartiment Amazon S3. Utilisez-le pour charger l'historique complet des crédits, dépenses, expirations et remboursements dans votre propre entrepôt de données.
+
+Cet export est indépendant des exports d'événements et de visites de paywall. Il dispose de son propre interrupteur, de ses propres identifiants, ainsi que de ses propres paramètres de compartiment et de dossier.
+
+### Activer l'export \{#turn-on-the-export\}
+
+1. Accédez à [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) et ouvrez l'onglet **Virtual currency**.
+2. Activez **Export virtual currency transactions to Amazon S3**.
+3. Saisissez les [identifiants](#how-to-create-amazon-s3-credentials) : l'ID de clé d'accès, la clé d'accès secrète, le nom du bucket S3 et le dossier. Les champs sont identiques à ceux de l'onglet **Paywall visits**.
+
+Pour exporter les transactions en monnaie virtuelle des jours passés, utilisez l'[export manuel de données](#manual-data-export).
+
+### Fichier et planification \{#file-and-schedule\}
+
+Chaque jour, Adapty importe 1 fichier contenant les transactions en monnaie virtuelle du jour calendaire précédent en UTC. Une transaction appartient au jour correspondant à son horodatage `created_at` en UTC.
+
+Le nom du fichier est `<app_id>_virtual_currency_<date>.csv`, où `<date>` correspond au jour suivant celui des transactions, au format `YYYY-MM-DD`. Par exemple, le fichier `<app_id>_virtual_currency_2026-03-08.csv` contient les transactions du 7 mars 2026. Chaque export possède son propre nom de fichier. Conservez chaque export dans son propre dossier, afin qu'une table ou un chargeur lisant un dossier entier ne récupère qu'un seul type de fichier. Si les exports partagent un dossier, sélectionnez les fichiers de cet export par nom : `<app_id>_virtual_currency_*.csv`.
+
+Le fichier est un fichier `.csv` UTF-8 avec une ligne d'en-tête. Pour un jour sans transaction, le fichier ne contient que la ligne d'en-tête.
+
+Chaque ligne correspond à une variation de solde pour une devise donnée. Une transaction qui modifie 2 devises, comme un échange d'or contre des gemmes, génère 2 lignes avec le même `vc_transaction_id`. Les transactions sandbox sont également incluses, avec `is_sandbox` défini sur `true`.
+
+Lorsque vous enregistrez les paramètres, Adapty vérifie les identifiants de chaque export actif. Si les identifiants de la devise virtuelle sont invalides, Adapty n'enregistre pas les paramètres. Le bouton **Save** enregistre les paramètres de tous les onglets, donc Adapty n'enregistre pas non plus vos modifications sur les autres onglets.
+
+L'export de devise virtuelle utilise ses propres identifiants. Si son envoi quotidien échoue, les envois d'événements et de visites de paywall de l'application continuent de fonctionner normalement.
+
+### Colonnes
+
+Le fichier contient les colonnes suivantes, dans cet ordre. Adapty n'ajoute de nouvelles colonnes qu'à la fin du fichier.
+
+| Colonne | Description |
+| :----- | :---------- |
+| **vc_transaction_id** | ID Adapty de la transaction en devise virtuelle. Toutes les lignes d'une même transaction ont le même ID. Ce n'est pas l'`Idempotency-Key` de votre requête API. |
+| **created_at** | Heure de la transaction, en UTC, au format `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, par exemple `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | ID de profil Adapty. |
+| **customer_user_id** | ID utilisateur client du profil au moment de l'export. Vide si le profil n'a pas d'ID utilisateur client ou n'existe plus. |
+| **operation** | L'[opération](virtual-currencies#operation) de la transaction : `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration` ou `adjustment`. Vide pour une transaction API côté serveur envoyée sans `operation`. |
+| **transaction_type** | La façon dont Adapty a enregistré la transaction, par exemple `store_purchase`, `subscription_renewal`, `trial_start` ou `api_transaction`. `subscription_renewal` est utilisé pour chaque période payante d'un abonnement, y compris la première. |
+| **currency_code** | Code de la devise virtuelle. |
+| **amount** | Variation du solde, sous forme d'entier. Positif pour un crédit, négatif pour un débit. |
+| **balance_after** | Solde de cette devise sur le profil après ce changement, sous forme d'entier. Jamais inférieur à 0. |
+| **store** | Store de la transaction : `app_store`, `play_store`, `stripe`, `paddle`, `adapty`, ou le nom d'un store personnalisé. Vide si la transaction n'a pas de store. |
+| **store_transaction_id** | ID de transaction du store pour l'achat. Identique à **transaction_id** dans la table des événements pour cet achat. Vide si la transaction n'est pas liée à un achat en store. |
+| **store_original_transaction_id** | ID de transaction d'origine du store pour l'achat. Toutes les renouvellements d'un abonnement ont la même valeur. Renseigné sur les lignes d'un achat en store, de son remboursement et de son expiration. |
+| **product_id** | ID produit du store pour l'achat. Vide si la ligne n'a pas de transaction store, ou si Adapty n'a aucun enregistrement de l'achat. |
+| **expires_at** | Heure d'expiration du montant crédité, en UTC, au format `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, par exemple `2026-04-07 14:05:09.000000+00:00`. Renseigné uniquement sur les lignes de crédit soumises à expiration. |
+| **feature** | La [`feature`](virtual-currencies#feature) de la transaction. |
+| **reference_id** | Le `reference_id` de la transaction. |
+| **customer_placement_id** | Le `customer_placement_id` de la transaction. |
+| **is_sandbox** | `true` pour une transaction sandbox, `false` pour une transaction en production. |
+| **metadata** | Les `metadata` de la transaction, sous forme d'une valeur JSON dans une seule cellule. Vide si la transaction n'a pas de métadonnées. |
+
+### Jointure avec la table des événements \{#join-with-the-events-table\}
+
+Le fichier de monnaie virtuelle ne contient pas les prix. Pour obtenir le prix d'un achat ayant crédité une devise, joignez la ligne de crédit avec la table des événements :
+
+- Faites correspondre **store_transaction_id** avec **transaction_id** de la table des événements.
+- Faites correspondre **store** également, mais uniquement pour `app_store`, `play_store`, `stripe` et `paddle`. Pour `adapty` et les stores personnalisés, la table des événements contient un **store** vide.
+
+Cet exemple de requête suppose que vous avez chargé les fichiers de monnaie virtuelle dans la table `vc_transactions` et les fichiers d'événements dans la table `events` :
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+La requête liste les noms d'événements par défaut. Le démarrage d'un abonnement correspond à `subscription_initial_purchase` dans une intégration créée depuis mi-septembre 2025, et à `subscription_started` dans une intégration antérieure. Si vous avez modifié les noms d'événements dans les paramètres d'export des événements, utilisez vos propres noms dans la requête.
+
+Une ligne de crédit n'a pas d'événement correspondant si l'export des événements est désactivé, si les paramètres d'export des événements excluent ou renomment le type d'événement de l'achat, ou si **Exclude Historical Events** exclut l'événement.
+
+Un achat peut créditer plusieurs devises. Chaque devise obtient sa propre ligne de crédit, et toutes ces lignes sont associées au même événement. Pour calculer le total des revenus, ne comptez chaque **store_transaction_id** qu'une seule fois.
+
+### Limitations \{#limitations\}
+
+- **Pas de prix ni de montant de remboursement** : le fichier de monnaie virtuelle ne contient ni prix d'achat ni montant de remboursement. Pour obtenir le prix, [joignez la ligne de crédit avec la table des événements](#join-with-the-events-table).
+- **Ne pas additionner les crédits des deux fichiers** : la colonne **virtual_currency_credits** du fichier [events](#table-structure) et les lignes de crédit du fichier de monnaie virtuelle affichent les mêmes crédits d'achat. Pour comptabiliser les crédits, utilisez l'un ou l'autre, pas les deux. Leurs totaux peuvent différer : le fichier events ne contient que les crédits des achats, et uniquement pour les événements que ses paramètres exportent, tandis que le fichier de monnaie virtuelle recense chaque modification du solde, y compris les attributions via l'API et les ajustements manuels dans le tableau de bord.
+- **Aucun lien entre une dépense et ses crédits** : le fichier n'indique pas quels crédits une dépense a utilisés, par exemple des crédits achetés ou accordés.
+- **Les lignes de remboursement n'affichent que les crédits récupérés** : une ligne de remboursement indique les crédits qu'Adapty a repris sur le solde. Son **amount** peut être inférieur aux crédits accordés par l'achat, par exemple si l'utilisateur en a dépensé une partie. Si aucun crédit ne restait, le fichier ne contient aucune ligne de remboursement.
+- **Pas de ligne de remboursement pour une mise à niveau d'abonnement** : un remboursement consécutif à une mise à niveau d'abonnement ne récupère aucun crédit. Le fichier ne contient aucune ligne de remboursement pour ce cas.
+
 ## Événements et tags \{#events-and-tags\}
 
 Vous pouvez gérer les données transmises par l'intégration. Celle-ci propose les options de configuration suivantes :

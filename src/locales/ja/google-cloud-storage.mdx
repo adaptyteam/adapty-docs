@@ -18,12 +18,12 @@ AdapyはUTC 04:00に24時間ごとにGoogle Cloud Storageへデータをアッ�
 
 キュー内のファイルの総数やご自身がリクエストしたデータ量によっては、処理に数時間かかる場合があります。初回アップロードに過去のデータが含まれる場合、以降の毎日のアップロードより時間がかかります。
 
-## Google Cloud Storage連携の設定 \{#set-up-google-cloud-storage-integration\}
+## Google Cloud Storage連携のセットアップ \{#set-up-google-cloud-storage-integration\}
 
 **書き込みアクセス権**を持つ有効なGoogle Cloudサービスアカウントキーが必要です。生成方法については、[認証情報の作成](#create-google-cloud-storage-credentials)セクションの手順に従ってください。
 
 :::warning
-イベントとペイウォール訪問に対して、それぞれ異なるバケットと認証情報を使用できます。ただし、**いずれか**の認証情報が無効な場合、[**両方のアップロードが失敗します**](#troubleshooting)。
+イベント、ペイウォール訪問、バーチャル通貨トランザクションに対して、それぞれ異なるバケットと認証情報を使用できます。設定を保存すると、Adaptyは有効になっている各エクスポートの認証情報を検証します。いずれかのセットが無効な場合、Adaptyはいずれのタブの設定も保存しません。[トラブルシューティング](#troubleshooting)を参照してください。
 :::
 
 [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) に移動し、必要なタブ（**Events** または **Paywall visits**）を開きます。連携を有効にします。
@@ -187,8 +187,116 @@ Adaptyはデータを表形式でエクスポートするために`.csv`ファ�
 | **paywall_revision**  | トランザクションが発生したペイウォールのリビジョン。                                                    |
 | **variation_id**      | 表示されたペイウォールの一意の ID。フローの場合は、A/B テストのバリアントではなく、フロー内のペイウォール画面の ID。 |
 
+## バーチャルカレンシーのトランザクション \{#virtual-currency-transactions\}
+
+バーチャルカレンシーエクスポートは、[バーチャルカレンシー](virtual-currencies)の残高が変化するたびに、その変更内容を Google Cloud Storage バケットに送信します。クレジット、使用、有効期限切れ、払い戻しの全履歴を自社のデータウェアハウスに取り込む際にご利用ください。
+
+このエクスポートは、イベントエクスポートやペイウォール訪問エクスポートとは独立しています。専用のスイッチと認証情報、および専用のバケットとフォルダの設定があります。
+
+### エクスポートを有効にする \{#turn-on-the-export\}
+
+1. [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) に移動し、**Virtual currency** タブを開きます。
+2. **Export virtual currency transactions to Google Cloud Storage** をオンにします。
+3. [Google Cloud サービスアカウントキー](#create-google-cloud-storage-credentials)のファイルをアップロードし、バケットとフォルダーを指定します。フィールドの内容は **Paywall visits** タブと同じです。
+
+過去の日付の仮想通貨トランザクションをエクスポートするには、[手動データエクスポート](#manual-data-export)を使用してください。
+
+### ファイルとスケジュール
+
+Adapty は毎日、前日（UTC）の仮想通貨トランザクションを含む 1 つのファイルをアップロードします。トランザクションは、UTC での `created_at` 時刻に基づいて該当日に分類されます。
+
+ファイル名は `<app_id>_virtual_currency_<date>.csv` という形式で、`<date>` はトランザクションが発生した日の翌日を `YYYY-MM-DD` 形式で表したものです。たとえば、`<app_id>_virtual_currency_2026-03-08.csv` というファイルには2026年3月7日のトランザクションが含まれています。エクスポートごとに独自のファイル名が付きます。フォルダ全体を読み込むテーブルやローダーが1種類のファイルのみを取得できるよう、エクスポートはそれぞれ専用のフォルダに保存してください。複数のエクスポートが同じフォルダを共有する場合は、`<app_id>_virtual_currency_*.csv` というファイル名パターンでこのエクスポートのファイルを選択してください。
+
+このファイルは、ヘッダー行を含む UTF-8 エンコードの `.csv` ファイルです。トランザクションがない日は、ヘッダー行のみが含まれます。
+
+各行は、1つの通貨の残高変化を表します。ゴールドをジェムに交換するなど、2つの通貨を変化させるトランザクションは、同じ `vc_transaction_id` を持つ2行として記録されます。サンドボックストランザクションも `is_sandbox` が `true` に設定された状態でファイルに含まれます。
+
+設定を保存すると、Adapty はオンになっている各エクスポートの認証情報を検証します。バーチャル通貨の認証情報が無効な場合、Adapty は設定を保存しません。**Save** ボタンはすべてのタブの設定を保存するため、他のタブへの変更も保存されません。
+
+バーチャル通貨エクスポートは独自の認証情報を使用します。日次アップロードが失敗しても、アプリのイベントおよびペイウォール訪問のアップロードは引き続き実行されます。
+
+### カラム \{#columns\}
+
+ファイルには以下のカラムが、この順序で含まれています。Adapty が新しいカラムを追加する場合は、常にファイルの末尾に追加されます。
+
+| カラム | 説明 |
+| :----- | :---------- |
+| **vc_transaction_id** | バーチャル通貨トランザクションの Adapty ID。同一トランザクションのすべての行は同じ ID を持ちます。これは API リクエストの `Idempotency-Key` ではありません。 |
+| **created_at** | トランザクションの時刻（UTC）。形式は `YYYY-MM-DD HH:MM:SS.ffffff+00:00`（例：`2026-03-07 14:05:09.000000+00:00`）。 |
+| **profile_id** | Adapty プロファイル ID。 |
+| **customer_user_id** | エクスポート時点のプロファイルのカスタマーユーザー ID。プロファイルにカスタマーユーザー ID がない場合、またはプロファイルが存在しない場合は空欄。 |
+| **operation** | トランザクションの[オペレーション](virtual-currencies#operation)：`top_up`、`refund`、`spend`、`spend_reversal`、`reward`、`reward_reversal`、`exchange`、`expiry`、`migration`、または `adjustment`。`operation` なしで送信されたサーバーサイド API トランザクションの場合は空欄。 |
+| **transaction_type** | Adapty がトランザクションを記録した方法。例：`store_purchase`、`subscription_renewal`、`trial_start`、`api_transaction`。`subscription_renewal` はサブスクリプションの各支払い期間（最初の期間を含む）に使用されます。 |
+| **currency_code** | バーチャル通貨のコード。 |
+| **amount** | 残高の変動量（整数）。クレジットの場合は正の値、デビットの場合は負の値。 |
+| **balance_after** | この変動後のプロファイルにおけるこの通貨の残高（整数）。0 未満にはなりません。 |
+| **store** | トランザクションのストア：`app_store`、`play_store`、`stripe`、`paddle`、`adapty`、またはカスタムストアの名前。ストアが紐付いていない場合は空欄。 |
+| **store_transaction_id** | 購入のストアトランザクション ID。イベントテーブルの **transaction_id** と同一の値です。ストア購入に紐付いていない場合は空欄。 |
+| **store_original_transaction_id** | 購入のオリジナルストアトランザクション ID。サブスクリプションのすべての更新で同じ値になります。ストア購入、その払い戻し、および有効期限切れの行に入力されます。 |
+| **product_id** | 購入のストアプロダクト ID。ストアトランザクションがない行、または Adapty に購入の記録がない場合は空欄。 |
+| **expires_at** | クレジットされた金額の有効期限（UTC）。形式は `YYYY-MM-DD HH:MM:SS.ffffff+00:00`（例：`2026-04-07 14:05:09.000000+00:00`）。有効期限のあるクレジット行のみに入力されます。 |
+| **feature** | トランザクションの[`feature`](virtual-currencies#feature)。 |
+| **reference_id** | トランザクションの `reference_id`。 |
+| **customer_placement_id** | トランザクションの `customer_placement_id`。 |
+| **is_sandbox** | サンドボックストランザクションの場合は `true`、本番トランザクションの場合は `false`。 |
+| **metadata** | トランザクションの `metadata`（1 つのセル内に 1 つの JSON 値として格納）。トランザクションにメタデータがない場合は空欄。 |
+
+### イベントテーブルとの結合 \{#join-with-the-events-table\}
+
+仮想通貨ファイルには価格情報が含まれていません。通貨をクレジットした購入の価格を取得するには、クレジット行をイベントテーブルと結合します：
+
+- **store_transaction_id** をイベントテーブルの **transaction_id** と照合します。
+- **store** も照合しますが、`app_store`、`play_store`、`stripe`、`paddle` の場合のみです。`adapty` およびカスタムストアの場合、イベントテーブルの **store** は空になります。
+
+以下のクエリ例は、仮想通貨ファイルを `vc_transactions` テーブルに、イベントファイルを `events` テーブルにロード済みであることを前提としています：
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+このクエリにはデフォルトのイベント名が記載されています。サブスクリプションの開始は、2025年9月中旬以降に作成されたインテグレーションでは `subscription_initial_purchase`、それ以前のインテグレーションでは `subscription_started` となります。イベントのエクスポート設定でイベント名を変更した場合は、クエリ内でその名前を使用してください。
+
+イベントのエクスポートがオフの場合、エクスポート設定で購入のイベントタイプが除外または名前変更されている場合、または **Exclude historical events** によってイベントが除外されている場合、クレジット行に一致するイベントが存在しません。
+
+1回の購入で複数の通貨が付与される場合があります。通貨ごとにクレジット行が作成され、それらの行はすべて同じイベントに紐付きます。収益を合計するには、各 **store_transaction_id** を1回だけカウントしてください。
+
+### 制限事項 \{#limitations\}
+
+- **価格・返金額なし**：バーチャル通貨ファイルには購入価格も返金額も含まれません。価格を取得するには、[クレジット行をイベントテーブルと結合してください](#join-with-the-events-table)。
+- **2つのファイルのクレジットを合算しないでください**：[events](#events) ファイルの **virtual_currency_credits** 列と、バーチャル通貨ファイルのクレジット行は、同じ購入クレジットを示しています。クレジットを集計する場合は、どちらか一方を使用し、両方は使用しないでください。合計値が異なる場合があります。イベントファイルには購入のクレジットのみが含まれ、かつエクスポート設定の対象となるイベントのみが対象ですが、バーチャル通貨ファイルにはAPI経由の付与やダッシュボードでの手動調整を含む、すべての残高変動が記録されます。
+- **支出とクレジットの紐付けなし**：ファイルには、ある支出がどのクレジット（購入済みか付与済みかなど）を使用したかが示されていません。
+- **返金行には回収されたクレジットのみ表示**：返金行には、Adaptyが残高から回収したクレジットが表示されます。その **amount** は、購入時に付与されたクレジットより少ない場合があります（例：ユーザーが一部を使用した場合）。残高がゼロだった場合、返金行はファイルに存在しません。
+- **サブスクリプションアップグレードによる返金行なし**：サブスクリプションのアップグレードに伴う返金ではクレジットの回収が行われないため、ファイルに返金行は存在しません。
+
 ## トラブルシューティング \{#troubleshooting\}
 
-Adaptyはアップロードを開始する**前に**アクセスキーの有効性を確認します。Google Cloud Storageのキーが1つでも無効な場合、Adaptyは**アップロードを中断**してエラーをスローします。
+設定を保存すると、Adapty は有効になっている各エクスポートのキーを検証します。いずれかのキーが無効な場合、Adapty はいずれのタブの設定も保存せず、エラーを表示します。
 
-アップロードが中断されないよう、キーの有効期限が切れる前に更新してください。**イベント**のキーを更新した場合は、**ペイウォール訪問**のキーも忘れずに更新してください（逆も同様です）。
+各エクスポートは独自のキーを使用してファイルをアップロードするため、期限切れのキーはそのエクスポートのアップロードのみを停止します。アップロードを継続するには、キーが期限切れになる前に更新してください。複数のタブで同じキーを使用している場合は、それぞれのタブ（**Events**、**Paywall visits**、**Virtual currency**）で個別に更新してください。

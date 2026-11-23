@@ -20,10 +20,10 @@ El proceso puede tardar varias horas, dependiendo del número total de archivos 
 
 ## Configurar la integración con Google Cloud Storage \{#set-up-google-cloud-storage-integration\}
 
-Necesitas una clave de cuenta de servicio de Google Cloud válida con **acceso de escritura**. Para generarla, sigue los pasos de la sección [crear credenciales](#create-google-cloud-storage-credentials).
+Necesitas tener una clave de cuenta de servicio de Google Cloud válida con **acceso de escritura**. Para generarla, sigue los pasos en la sección [crear credenciales](#create-google-cloud-storage-credentials).
 
 :::warning
-Puedes usar distintos buckets con diferentes credenciales para eventos y visitas a paywalls. Sin embargo, si **cualquiera** de las credenciales es inválida, [**ambas subidas fallarán**](#troubleshooting).
+Puedes usar diferentes buckets y credenciales para eventos, visitas a paywalls y transacciones de moneda virtual. Al guardar la configuración, Adapty verifica las credenciales de cada exportación que esté activa. Si algún conjunto no es válido, Adapty no guardará la configuración de ninguna pestaña. Consulta [Solución de problemas](#troubleshooting).
 :::
 
 Ve a [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) y abre la pestaña correspondiente (**Events** o **Paywall visits**). Activa la integración.
@@ -187,8 +187,116 @@ Las columnas de flow y prueba A/B aparecen al final del archivo, seguidas única
 | **paywall_revision**  | Revisión del paywall donde se originó la transacción.                                                        |
 | **variation_id**      | ID único del paywall que se mostró. En el caso de un flow, el ID de la pantalla del paywall dentro del flow, no la variante de la prueba A/B. |
 
+## Transacciones de moneda virtual \{#virtual-currency-transactions\}
+
+La exportación de moneda virtual envía cada cambio en el saldo de una [moneda virtual](virtual-currencies) a tu bucket de Google Cloud Storage. Úsala para cargar el historial completo de créditos, gastos, vencimientos y reembolsos en tu propio almacén de datos.
+
+Esta exportación es independiente de las exportaciones de eventos y visitas a paywalls. Tiene su propio interruptor, credenciales, y configuración de bucket y carpeta.
+
+### Activar la exportación \{#turn-on-the-export\}
+
+1. Ve a [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) y abre la pestaña **Virtual currency**.
+2. Activa **Export virtual currency transactions to Google Cloud Storage**.
+3. Sube el archivo con tu [clave de cuenta de servicio de Google Cloud](#create-google-cloud-storage-credentials) y especifica el bucket y la carpeta. Los campos son los mismos que en la pestaña **Paywall visits**.
+
+Para exportar las transacciones de moneda virtual de días anteriores, utiliza la [exportación manual de datos](#manual-data-export).
+
+### Archivo y programación \{#file-and-schedule\}
+
+Cada día, Adapty sube 1 archivo con las transacciones de moneda virtual del día calendario anterior en UTC. Una transacción pertenece al día de su hora `created_at` en UTC.
+
+El nombre del archivo es `<app_id>_virtual_currency_<date>.csv`, donde `<date>` es 1 día después del día de las transacciones, en formato `YYYY-MM-DD`. Por ejemplo, el archivo `<app_id>_virtual_currency_2026-03-08.csv` contiene las transacciones del 7 de marzo de 2026. Cada exportación tiene su propio nombre de archivo. Guarda cada exportación en su propia carpeta, de modo que una tabla o cargador que lea una carpeta completa obtenga solo un tipo de archivo. Si las exportaciones comparten una carpeta, selecciona los archivos de esta exportación por nombre: `<app_id>_virtual_currency_*.csv`.
+
+El archivo es un `.csv` UTF-8 con una fila de encabezado. Para un día sin transacciones, el archivo solo contiene la fila de encabezado.
+
+Cada fila representa un cambio de saldo de una moneda. Una transacción que modifica 2 monedas, como un intercambio de oro por gemas, genera 2 filas con el mismo `vc_transaction_id`. Las transacciones sandbox también están incluidas en el archivo, con `is_sandbox` establecido en `true`.
+
+Al guardar la configuración, Adapty verifica las credenciales de cada exportación activada. Si las credenciales de la moneda virtual no son válidas, Adapty no guarda la configuración. El botón **Save** guarda la configuración de todas las pestañas, por lo que los cambios realizados en otras pestañas tampoco se guardarán.
+
+La exportación de moneda virtual usa sus propias credenciales. Si la carga diaria falla, las cargas de eventos y visitas a paywalls de la app siguen funcionando con normalidad.
+
+### Columnas \{#columns\}
+
+El archivo tiene estas columnas, en este orden. Adapty añade nuevas columnas solo al final del archivo.
+
+| Columna | Descripción |
+| :----- | :---------- |
+| **vc_transaction_id** | ID de Adapty de la transacción de moneda virtual. Todas las filas de una misma transacción comparten el mismo ID. No es el `Idempotency-Key` de tu solicitud a la API. |
+| **created_at** | Hora de la transacción, en UTC, con formato `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, por ejemplo `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | ID de perfil de Adapty. |
+| **customer_user_id** | ID de usuario del cliente del perfil en el momento de la exportación. Vacío si el perfil no tiene ID de usuario del cliente o ya no existe. |
+| **operation** | La [operación](virtual-currencies#operation) de la transacción: `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration` o `adjustment`. Vacío en transacciones de la API del servidor enviadas sin `operation`. |
+| **transaction_type** | Cómo registró Adapty la transacción, por ejemplo `store_purchase`, `subscription_renewal`, `trial_start` o `api_transaction`. `subscription_renewal` se usa para cada período de pago de una suscripción, incluido el primero. |
+| **currency_code** | Código de la moneda virtual. |
+| **amount** | Variación del saldo, como número entero. Positivo para un crédito, negativo para un débito. |
+| **balance_after** | Saldo de esta moneda en el perfil tras el cambio, como número entero. Nunca inferior a 0. |
+| **store** | Store de la transacción: `app_store`, `play_store`, `stripe`, `paddle`, `adapty` o el nombre de un store personalizado. Vacío si la transacción no tiene store. |
+| **store_transaction_id** | ID de transacción del store de la compra. Es el mismo que **transaction_id** en la tabla de eventos para esa compra. Vacío si la transacción no está vinculada a una compra en el store. |
+| **store_original_transaction_id** | ID de transacción original del store de la compra. Todas las renovaciones de una suscripción tienen el mismo valor. Se rellena en las filas de una compra en el store, su reembolso y su expiración. |
+| **product_id** | ID de producto en el store de la compra. Vacío si la fila no tiene transacción en el store, o si Adapty no tiene registro de la compra. |
+| **expires_at** | Hora en que vence el importe acreditado, en UTC, con formato `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, por ejemplo `2026-04-07 14:05:09.000000+00:00`. Solo se rellena en filas de crédito que caducan. |
+| **feature** | El [`feature`](virtual-currencies#feature) de la transacción. |
+| **reference_id** | El `reference_id` de la transacción. |
+| **customer_placement_id** | El `customer_placement_id` de la transacción. |
+| **is_sandbox** | `true` para una transacción en sandbox, `false` para una transacción en producción. |
+| **metadata** | Los `metadata` de la transacción, como un valor JSON en una sola celda. Vacío si la transacción no tiene metadatos. |
+
+### Unir con la tabla de eventos \{#join-with-the-events-table\}
+
+El archivo de moneda virtual no tiene precios. Para obtener el precio de una compra que acreditó moneda, une la fila de crédito con la tabla de eventos:
+
+- Haz coincidir **store_transaction_id** con **transaction_id** de la tabla de eventos.
+- Haz coincidir también **store**, pero solo para `app_store`, `play_store`, `stripe` y `paddle`. Para `adapty` y los stores personalizados, la tabla de eventos tiene un **store** vacío.
+
+Este ejemplo de consulta asume que cargaste los archivos de moneda virtual en la tabla `vc_transactions` y los archivos de eventos en la tabla `events`:
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+La consulta enumera los nombres de eventos predeterminados. El inicio de una suscripción es `subscription_initial_purchase` en una integración creada desde mediados de septiembre de 2025, y `subscription_started` en una anterior. Si cambiaste los nombres de eventos en la configuración de exportación de eventos, usa tus propios nombres en la consulta.
+
+Una fila de crédito no tiene evento coincidente si la exportación de eventos está desactivada, si la configuración de exportación de eventos excluye o renombra el tipo de evento de la compra, o si **Exclude historical events** excluye el evento.
+
+Una misma compra puede acreditar más de una moneda. Cada moneda obtiene su propia fila de crédito, y todas estas filas se agrupan en el mismo evento. Para sumar los ingresos, cuenta cada **store_transaction_id** una sola vez.
+
+### Limitaciones \{#limitations\}
+
+- **Sin precios ni importes de reembolso**: El archivo de moneda virtual no incluye el precio de compra ni el importe del reembolso. Para obtener el precio, [combina la fila de créditos con la tabla de eventos](#join-with-the-events-table).
+- **No sumes los créditos de los dos archivos**: La columna **virtual_currency_credits** del archivo de [eventos](#events) y las filas de créditos del archivo de moneda virtual muestran los mismos créditos de compra. Para contar créditos, usa uno de los dos, no ambos. Sus totales pueden diferir: el archivo de eventos solo incluye los créditos de las compras, y solo para los eventos que exporta según su configuración, mientras que el archivo de moneda virtual recoge cada cambio de saldo, incluidas las concesiones a través de la API y los ajustes manuales en el dashboard.
+- **Sin vínculo entre un gasto y sus créditos**: El archivo no muestra qué créditos usó un gasto, por ejemplo, si eran créditos comprados o concedidos.
+- **Las filas de reembolso solo muestran los créditos devueltos**: Una fila de reembolso muestra los créditos que Adapty devolvió al saldo. Su **amount** puede ser menor que los créditos que otorgó la compra, por ejemplo, cuando el usuario gastó parte de ellos. Si no quedaban créditos, el archivo no tiene fila de reembolso.
+- **Sin fila de reembolso para una mejora de suscripción**: Un reembolso derivado de una mejora de suscripción no recupera ningún crédito. El archivo no tiene fila de reembolso para este caso.
+
 ## Solución de problemas \{#troubleshooting\}
 
-Adapty comprueba la validez de tus claves de acceso **antes** de comenzar la subida. Aunque solo una de tus claves de Google Cloud Storage sea inválida, Adapty **cancela la subida** y genera un error.
+Cuando guardas la configuración, Adapty verifica la clave de cada exportación que está activa. Si una clave no es válida, Adapty no guarda la configuración de ninguna pestaña y muestra un error.
 
-Para garantizar subidas ininterrumpidas, reemplaza tus claves antes de que expiren. Si actualizas la clave de **eventos**, no olvides actualizar también la clave de **visitas a paywalls**, y viceversa.
+Cada exportación sube sus archivos con su propia clave, por lo que una clave caducada detiene solo las subidas de esa exportación. Para mantener las subidas en funcionamiento, reemplaza tus claves antes de que caduquen. Si varias pestañas usan la misma clave, reemplázala en cada una de ellas: **Events**, **Paywall visits** y **Virtual currency**.

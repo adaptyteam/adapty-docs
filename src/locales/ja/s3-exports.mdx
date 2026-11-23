@@ -329,6 +329,114 @@ AWS S3 連携では、Adapty はトランザクションイベントおよびペ
 | **paywall_revision**  | トランザクションが発生したペイウォールのリビジョン。                                                                    |
 | **variation_id**      | 表示されたペイウォールの一意の ID。フローの場合は、A/B テストのバリアント ID ではなく、フロー内のペイウォール画面の ID。 |
 
+## 仮想通貨トランザクション \{#virtual-currency-transactions\}
+
+仮想通貨エクスポートは、[仮想通貨](virtual-currencies)の残高が変化するたびに、その変更内容を Amazon S3 バケットに送信します。クレジット、消費、有効期限切れ、払い戻しの全履歴を自社のデータウェアハウスに読み込む際に活用できます。
+
+このエクスポートは、イベントエクスポートやペイウォール訪問エクスポートとは独立しています。専用のスイッチと認証情報、および専用のバケットとフォルダの設定を持ちます。
+
+### エクスポートを有効にする \{#turn-on-the-export\}
+
+1. [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) に移動し、**Virtual currency** タブを開きます。
+2. **Export virtual currency transactions to Amazon S3** を有効にします。
+3. [認証情報](#how-to-create-amazon-s3-credentials)（アクセスキー ID、シークレットアクセスキー、S3 バケット名、フォルダー）を入力します。各フィールドは **Paywall visits** タブと同じです。
+
+過去の日付の仮想通貨トランザクションをエクスポートするには、[手動データエクスポート](#manual-data-export)を使用してください。
+
+### ファイルとスケジュール \{#file-and-schedule\}
+
+毎日、AdaptyはUTC基準で前日のカレンダー日付における仮想通貨トランザクションを含む1ファイルをアップロードします。トランザクションは、UTCでの`created_at`時刻に基づいて該当する日に分類されます。
+
+ファイル名は `<app_id>_virtual_currency_<date>.csv` の形式で、`<date>` はトランザクションが発生した日の翌日を `YYYY-MM-DD` 形式で表したものです。たとえば、`<app_id>_virtual_currency_2026-03-08.csv` というファイルには、2026年3月7日のトランザクションが含まれています。エクスポートごとに独自のファイル名が付けられます。フォルダ全体を読み込むテーブルやローダーが1種類のファイルのみを取得できるよう、エクスポートはそれぞれ別のフォルダに保存してください。エクスポートを同じフォルダに保存する場合は、ファイル名 `<app_id>_virtual_currency_*.csv` でこのエクスポートのファイルを選択してください。
+
+ファイルはヘッダー行付きの UTF-8 `.csv` ファイルです。トランザクションがない日は、ヘッダー行のみになります。
+
+各行は、1つの通貨の残高変化を表します。ゴールドをジェムと交換するなど、2つの通貨が変化するトランザクションは、同じ `vc_transaction_id` を持つ2行として出力されます。サンドボックストランザクションも `is_sandbox` が `true` に設定された状態でファイルに含まれます。
+
+設定を保存すると、Adaptyはオンになっている各エクスポートの認証情報を検証します。バーチャル通貨の認証情報が無効な場合、Adaptyは設定を保存しません。**Save**ボタンはすべてのタブの設定を保存するため、他のタブでの変更も保存されません。
+
+バーチャル通貨エクスポートは独自の認証情報を使用します。毎日のアップロードが失敗しても、アプリのイベントおよびペイウォール訪問のアップロードは引き続き実行されます。
+
+### カラム \{#columns\}
+
+ファイルには以下のカラムが、この順番で含まれています。Adapty は新しいカラムをファイルの末尾にのみ追加します。
+
+| カラム | 説明 |
+| :----- | :---------- |
+| **vc_transaction_id** | バーチャル通貨トランザクションの Adapty ID。1つのトランザクションの全行は同じIDを持ちます。これはAPIリクエストの `Idempotency-Key` ではありません。 |
+| **created_at** | トランザクションの時刻（UTC）。`YYYY-MM-DD HH:MM:SS.ffffff+00:00` 形式（例: `2026-03-07 14:05:09.000000+00:00`）。 |
+| **profile_id** | Adapty プロファイル ID。 |
+| **customer_user_id** | エクスポート時点のプロファイルのカスタマーユーザー ID。プロファイルにカスタマーユーザー ID がない場合、またはプロファイルが存在しなくなった場合は空になります。 |
+| **operation** | トランザクションの[オペレーション](virtual-currencies#operation): `top_up`、`refund`、`spend`、`spend_reversal`、`reward`、`reward_reversal`、`exchange`、`expiry`、`migration`、または `adjustment`。`operation` なしで送信されたサーバーサイド API トランザクションの場合は空になります。 |
+| **transaction_type** | Adapty がトランザクションを記録した方法。例: `store_purchase`、`subscription_renewal`、`trial_start`、`api_transaction`。`subscription_renewal` はサブスクリプションの各課金期間（初回も含む）に使用されます。 |
+| **currency_code** | バーチャル通貨のコード。 |
+| **amount** | 残高の変化（整数）。クレジットの場合は正の値、デビットの場合は負の値。 |
+| **balance_after** | この変化後のプロファイルにおけるこの通貨の残高（整数）。0 を下回ることはありません。 |
+| **store** | トランザクションのストア: `app_store`、`play_store`、`stripe`、`paddle`、`adapty`、またはカスタムストア名。トランザクションにストアがない場合は空になります。 |
+| **store_transaction_id** | 購入のストアトランザクション ID。この購入に関するイベントテーブルの **transaction_id** と同じ値です。トランザクションがストア購入にリンクされていない場合は空になります。 |
+| **store_original_transaction_id** | 購入のオリジナルストアトランザクション ID。サブスクリプションの全更新で同じ値になります。ストア購入、その払い戻し、および有効期限切れの行に入力されます。 |
+| **product_id** | 購入のストアプロダクト ID。行にストアトランザクションがない場合、またはAdaptyに購入の記録がない場合は空になります。 |
+| **expires_at** | クレジットされた金額の有効期限（UTC）。`YYYY-MM-DD HH:MM:SS.ffffff+00:00` 形式（例: `2026-04-07 14:05:09.000000+00:00`）。有効期限のあるクレジット行のみに入力されます。 |
+| **feature** | トランザクションの[`feature`](virtual-currencies#feature)。 |
+| **reference_id** | トランザクションの `reference_id`。 |
+| **customer_placement_id** | トランザクションの `customer_placement_id`。 |
+| **is_sandbox** | サンドボックストランザクションの場合は `true`、本番トランザクションの場合は `false`。 |
+| **metadata** | トランザクションの `metadata`（1つのセルに1つのJSON値として格納）。トランザクションにメタデータがない場合は空になります。 |
+
+### イベントテーブルとの結合 \{#join-with-the-events-table\}
+
+仮想通貨ファイルには価格情報が含まれていません。通貨をクレジットした購入の価格を取得するには、クレジット行をイベントテーブルと結合します。
+
+- **store_transaction_id** をイベントテーブルの **transaction_id** と照合します。
+- **store** も照合しますが、`app_store`、`play_store`、`stripe`、`paddle` の場合のみです。`adapty` およびカスタムストアの場合、イベントテーブルの **store** は空になります。
+
+以下のクエリ例は、仮想通貨ファイルを `vc_transactions` テーブルに、イベントファイルを `events` テーブルに読み込んでいることを前提としています。
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+このクエリはデフォルトのイベント名を使用しています。2025年9月中旬以降に作成されたインテグレーションではサブスクリプション開始イベントが `subscription_initial_purchase`、それ以前のインテグレーションでは `subscription_started` となります。イベントエクスポートの設定でイベント名を変更した場合は、クエリ内でそのカスタム名を使用してください。
+
+クレジット行に対応するイベントが存在しない場合は、イベントエクスポートが無効になっているか、イベントエクスポートの設定で購入イベントタイプが除外・リネームされているか、または **Exclude Historical Events** によってそのイベントが除外されている可能性があります。
+
+1回の購入で複数の通貨にクレジットされる場合があります。通貨ごとに独立したクレジット行が作成され、これらの行はすべて同一イベントに紐づきます。収益を合計する際は、**store_transaction_id** ごとに1回だけカウントしてください。
+
+### 制限事項 \{#limitations\}
+
+- **価格や返金額なし**: バーチャル通貨ファイルには購入価格も返金額も含まれていません。価格を取得するには、[クレジット行をイベントテーブルと結合してください](#join-with-the-events-table)。
+- **2つのファイルのクレジットを合計しない**: [イベント](#table-structure)ファイルの **virtual_currency_credits** 列とバーチャル通貨ファイルのクレジット行は、同じ購入クレジットを示しています。クレジットを集計するには、どちらか一方のみを使用してください。合計値が異なる場合があります。イベントファイルにはエクスポート設定に含まれるイベントの購入クレジットのみが含まれているのに対し、バーチャル通貨ファイルにはAPI経由の付与やダッシュボードでの手動調整を含むすべての残高変更が記録されています。
+- **使用分とクレジットの対応関係なし**: ファイルには、使用したクレジットがどの購入分または付与分から来たものかが示されていません。
+- **返金行には差し戻されたクレジットのみ表示**: 返金行には、Adaptyが残高から差し戻したクレジットが表示されます。その **amount** は、購入時に付与されたクレジットより少ない場合があります（例：ユーザーが一部を使用済みの場合）。クレジットが残っていない場合、返金行はファイルに存在しません。
+- **サブスクリプションアップグレードに対する返金行なし**: サブスクリプションのアップグレードによる返金ではクレジットが差し戻されないため、ファイルに返金行は作成されません。
+
 ## イベントとタグ \{#events-and-tags\}
 
 インテグレーションで通信するデータを管理できます。このインテグレーションでは、以下の設定オプションを利用できます。

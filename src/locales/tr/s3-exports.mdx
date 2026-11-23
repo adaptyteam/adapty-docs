@@ -296,6 +296,114 @@ Paywall ziyaretlerinin tablo yapısı şu şekildedir:
 | **paywall_revision**  | İşlemin kaynaklandığı paywallın revizyonu.                                                                   |
 | **variation_id**      | Gösterilen paywallın benzersiz kimliği. Bir flow için, A/B testi varyantının değil, flow içindeki paywall ekranının kimliği. |
 
+## Sanal para birimi işlemleri \{#virtual-currency-transactions\}
+
+Sanal para birimi dışa aktarımı, bir [sanal para birimi](virtual-currencies) bakiyesindeki her değişikliği Amazon S3 bucket'ınıza gönderir. Kredi, harcama, süre sonu ve iadelerin tam geçmişini kendi veri ambarınıza yüklemek için bunu kullanabilirsiniz.
+
+Bu dışa aktarım, etkinlikler ve paywall ziyaretleri dışa aktarımlarından ayrıdır. Kendine ait anahtarı, kimlik bilgileri, bucket ve klasör ayarları vardır.
+
+### Dışa aktarmayı etkinleştirin \{#turn-on-the-export\}
+
+1. [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) bölümüne gidin ve **Virtual currency** sekmesini açın.
+2. **Export virtual currency transactions to Amazon S3** seçeneğini etkinleştirin.
+3. [Kimlik bilgilerini](#how-to-create-amazon-s3-credentials) girin: erişim anahtarı kimliği, gizli erişim anahtarı, S3 bucket adı ve klasör. Alanlar, **Paywall visits** sekmesindekilerle aynıdır.
+
+Geçmiş günlere ait sanal para birimi işlemlerini dışa aktarmak için [manuel veri dışa aktarma](#manual-data-export) özelliğini kullanın.
+
+### Dosya ve zamanlama \{#file-and-schedule\}
+
+Her gün Adapty, bir önceki takvim gününe (UTC) ait sanal para birimi işlemlerini içeren 1 dosya yükler. Bir işlem, `created_at` zamanının UTC'deki gününe göre sınıflandırılır.
+
+`<app_id>_virtual_currency_<date>.csv` dosya adı formatında, burada `<date>` işlem tarihinden 1 gün sonraki tarihi `YYYY-MM-DD` formatında belirtir. Örneğin, `<app_id>_virtual_currency_2026-03-08.csv` dosyası 7 Mart 2026 tarihine ait işlemleri içerir. Her dışa aktarımın kendine ait bir dosya adı vardır. Her dışa aktarımı ayrı bir klasörde tutun; böylece bir klasörün tamamını okuyan tablo veya yükleyici yalnızca tek tür dosyayla karşılaşır. Dışa aktarımlar aynı klasörü paylaşıyorsa, bu dışa aktarıma ait dosyaları ada göre seçin: `<app_id>_virtual_currency_*.csv`.
+
+Dosya, bir başlık satırına sahip UTF-8 `.csv` dosyasıdır. İşlem yapılmayan bir gün için dosya yalnızca başlık satırını içerir.
+
+Her satır, bir para biriminin bir bakiye değişimini temsil eder. Altını mücevhere dönüştürme gibi 2 para birimini etkileyen bir işlem, aynı `vc_transaction_id` değerine sahip 2 satır oluşturur. Sandbox işlemleri de dosyada yer alır; bu satırlarda `is_sandbox` değeri `true` olarak ayarlanmıştır.
+
+Ayarları kaydettiğinizde Adapty, açık olan her dışa aktarımın kimlik bilgilerini doğrular. Sanal para birimi kimlik bilgileri geçersizse Adapty ayarları kaydetmez. **Save** düğmesi tüm sekmelerin ayarlarını kaydettiğinden, diğer sekmelerdeki değişiklikleriniz de kaydedilmez.
+
+Sanal para birimi dışa aktarımı kendi kimlik bilgilerini kullanır. Günlük yükleme başarısız olursa uygulamanın etkinlik ve paywall ziyareti yüklemeleri çalışmaya devam eder.
+
+### Sütunlar
+
+Dosya, aşağıdaki sırayla bu sütunlara sahiptir. Adapty yeni sütunları yalnızca dosyanın sonuna ekler.
+
+| Sütun | Açıklama |
+| :----- | :---------- |
+| **vc_transaction_id** | Sanal para birimi işleminin Adapty ID'si. Bir işlemin tüm satırları aynı ID'ye sahiptir. Bu, API isteğinizin `Idempotency-Key` değeri değildir. |
+| **created_at** | İşlemin zamanı; UTC cinsinden, `YYYY-MM-DD HH:MM:SS.ffffff+00:00` formatında, örneğin `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | Adapty profil ID'si. |
+| **customer_user_id** | Dışa aktarma sırasındaki profilin müşteri kullanıcı ID'si. Profilin müşteri kullanıcı ID'si yoksa veya artık mevcut değilse boştur. |
+| **operation** | İşlemin [operasyonu](virtual-currencies#operation): `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration` veya `adjustment`. `operation` belirtilmeden gönderilen sunucu taraflı API işlemleri için boştur. |
+| **transaction_type** | Adapty'nin işlemi nasıl kaydettiği; örneğin `store_purchase`, `subscription_renewal`, `trial_start` veya `api_transaction`. `subscription_renewal`, bir aboneliğin ilk ücretli dönemi dahil her ücretli dönem için kullanılır. |
+| **currency_code** | Sanal para biriminin kodu. |
+| **amount** | Bakiye değişimi; tam sayı olarak. Alacak için pozitif, borç için negatif. |
+| **balance_after** | Bu değişiklikten sonra profildeki bu para biriminin bakiyesi; tam sayı olarak. Hiçbir zaman 0'ın altına inmez. |
+| **store** | İşlemin gerçekleştiği mağaza: `app_store`, `play_store`, `stripe`, `paddle`, `adapty` veya özel bir mağazanın adı. İşlemin mağazası yoksa boştur. |
+| **store_transaction_id** | Satın almanın mağaza işlem ID'si. Olaylar tablosundaki bu satın alma için **transaction_id** ile aynıdır. İşlem bir mağaza satın almasıyla bağlantılı değilse boştur. |
+| **store_original_transaction_id** | Satın almanın orijinal mağaza işlem ID'si. Bir aboneliğin tüm yenilemeleri aynı değere sahiptir. Mağaza satın almasının, iadesinin ve süresinin dolmasının satırlarında doldurulur. |
+| **product_id** | Satın almanın mağaza ürün ID'si. Satırda mağaza işlemi yoksa veya Adapty'nin satın alma kaydı bulunmuyorsa boştur. |
+| **expires_at** | Alacak tutarının sona erme zamanı; UTC cinsinden, `YYYY-MM-DD HH:MM:SS.ffffff+00:00` formatında, örneğin `2026-04-07 14:05:09.000000+00:00`. Yalnızca süresi dolan alacak satırlarında doldurulur. |
+| **feature** | İşlemin [`feature`](virtual-currencies#feature) değeri. |
+| **reference_id** | İşlemin `reference_id` değeri. |
+| **customer_placement_id** | İşlemin `customer_placement_id` değeri. |
+| **is_sandbox** | Sandbox işlemi için `true`, üretim işlemi için `false`. |
+| **metadata** | İşlemin `metadata` değeri; tek bir hücrede tek bir JSON değeri olarak. İşlemin metadata'sı yoksa boştur. |
+
+### Etkinlikler tablosuyla birleştirme \{#join-with-the-events-table\}
+
+Sanal para birimi dosyasında fiyat bilgisi bulunmaz. Bir para birimine kredi veren satın alımın fiyatını öğrenmek için, kredi satırını etkinlikler tablosuyla birleştirin:
+
+- **store_transaction_id** ile etkinlikler tablosunun **transaction_id** sütununu eşleştirin.
+- **store** sütununu da eşleştirin; ancak yalnızca `app_store`, `play_store`, `stripe` ve `paddle` için. `adapty` ve özel store'lar için etkinlikler tablosundaki **store** sütunu boş olur.
+
+Bu örnek sorgu, sanal para birimi dosyalarını `vc_transactions` tablosuna, etkinlik dosyalarını ise `events` tablosuna yüklediğinizi varsayar:
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+Sorgu, varsayılan etkinlik adlarını listeler. Eylül 2025 ortasından bu yana oluşturulan bir entegrasyonda abonelik başlangıcı `subscription_initial_purchase`, daha önceki bir entegrasyonda ise `subscription_started` olarak görünür. Etkinlikleri dışa aktarma ayarlarında etkinlik adlarını değiştirdiyseniz, sorguda kendi adlarınızı kullanın.
+
+Şu durumlarda bir kredi satırının eşleşen etkinliği olmaz: etkinlik dışa aktarma kapalıysa, etkinlik dışa aktarma ayarları satın alma etkinlik türünü hariç tutuyorsa veya yeniden adlandırıyorsa ya da **Exclude Historical Events** ayarı söz konusu etkinliği dışarıda bırakıyorsa.
+
+Tek bir satın alma birden fazla para birimine kredi ekleyebilir. Her para birimi kendi kredi satırını alır ve tüm bu satırlar aynı olaya bağlanır. Geliri toplamak için her **store_transaction_id**'yi yalnızca bir kez sayın.
+
+### Sınırlamalar \{#limitations\}
+
+- **Fiyat veya iade tutarı yok**: Sanal para birimi dosyasında satın alma fiyatı ve iade tutarı bulunmaz. Fiyatı öğrenmek için [kredi satırını events tablosuyla birleştirin](#join-with-the-events-table).
+- **İki dosyadaki kredileri toplamayın**: [Events](#table-structure) dosyasının **virtual_currency_credits** sütunu ile sanal para birimi dosyasının kredi satırları, aynı satın alma kredilerini gösterir. Kredileri saymak için yalnızca birini kullanın, ikisini birden değil. Toplamları farklı olabilir: events dosyasında yalnızca satın alımlara ait krediler bulunur ve yalnızca dışa aktarma ayarlarına dahil edilen olaylar için geçerlidir; sanal para birimi dosyasında ise API aracılığıyla yapılan bağışlar ve kontrol panelindeki manuel düzenlemeler dahil her bakiye değişikliği yer alır.
+- **Harcama ile krediler arasında bağlantı yok**: Dosya, bir harcamanın hangi kredileri kullandığını (örneğin satın alınan veya bağışlanan krediler) göstermez.
+- **İade satırları yalnızca geri alınan kredileri gösterir**: Bir iade satırı, Adapty'nin bakiyeden geri aldığı kredileri gösterir. Satırdaki **amount** değeri, satın alımın kazandırdığı krediden daha küçük olabilir; örneğin kullanıcı kredilerin bir kısmını harcamışsa bu durum ortaya çıkar. Hiç kredi kalmamışsa dosyada iade satırı yer almaz.
+- **Abonelik yükseltmesi için iade satırı yok**: Abonelik yükseltmesinden kaynaklanan bir iade, hiçbir krediyi geri almaz. Dosyada bu tür bir iade için satır bulunmaz.
+
 ## Etkinlikler ve etiketler \{#events-and-tags\}
 
 İntegrasyon tarafından iletilen verileri yönetebilirsiniz. İntegrasyon aşağıdaki yapılandırma seçeneklerini sunar:

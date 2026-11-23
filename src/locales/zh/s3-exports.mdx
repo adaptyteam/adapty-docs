@@ -329,6 +329,114 @@ flow 和 A/B 测试列位于文件末尾，其后仅跟 **virtual_currency_credi
 | **paywall_revision**  | 交易来源付费墙的版本号。                                                    |
 | **variation_id**      | 所展示付费墙的唯一 ID。对于流程，为流程内付费墙屏幕的 ID，而非 A/B 测试实验变体的 ID。 |
 
+## 虚拟货币交易 \{#virtual-currency-transactions\}
+
+虚拟货币导出功能会将每一次[虚拟货币](virtual-currencies)余额变动记录发送到你的 Amazon S3 存储桶。你可以用它将充值、消费、过期和退款的完整历史记录加载到自己的数据仓库中。
+
+此导出功能独立于事件和付费墙访问导出，拥有独立的开关、凭证，以及独立的存储桶和文件夹设置。
+
+### 开启导出功能 \{#turn-on-the-export\}
+
+1. 前往 [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3)，打开 **Virtual currency** 标签页。
+2. 开启 **Export virtual currency transactions to Amazon S3**。
+3. 填写[凭证信息](#how-to-create-amazon-s3-credentials)：访问密钥 ID、私有访问密钥、S3 存储桶名称以及文件夹路径。各字段与 **Paywall visits** 标签页中的设置相同。
+
+如需导出过去几天的虚拟货币交易记录，请使用[手动数据导出](#manual-data-export)功能。
+
+### 文件与计划 \{#file-and-schedule\}
+
+Adapty 每天上传 1 个文件，其中包含前一个 UTC 自然日的虚拟货币交易记录。交易所属日期以其 `created_at` 时间的 UTC 日期为准。
+
+文件名格式为 `<app_id>_virtual_currency_<date>.csv`，其中 `<date>` 是交易日期的次日，格式为 `YYYY-MM-DD`。例如，文件 `<app_id>_virtual_currency_2026-03-08.csv` 包含 2026 年 3 月 7 日的交易记录。每个导出文件都有其独立的文件名。建议将每个导出文件存放在各自的文件夹中，以便读取整个文件夹的表或加载器只获取一种类型的文件。如果多个导出文件共用同一文件夹，可通过名称筛选此导出文件：`<app_id>_virtual_currency_*.csv`。
+
+该文件是带有标题行的 UTF-8 `.csv` 文件。若某天没有任何交易记录，则文件中仅包含标题行。
+
+每行对应一种货币的一次余额变动。若某笔交易涉及两种货币（例如用金币兑换宝石），则会生成两行记录，且这两行的 `vc_transaction_id` 相同。沙盒交易也会包含在文件中，对应行的 `is_sandbox` 值为 `true`。
+
+保存设置时，Adapty 会验证所有已开启导出项的凭据。如果虚拟货币凭据无效，Adapty 将不会保存设置。**Save** 按钮会保存所有标签页的设置，因此其他标签页上的更改也不会被保存。
+
+虚拟货币导出使用独立的凭据。即使每日上传失败，应用的事件和付费墙访问记录的上传仍会正常运行。
+
+### 列说明 \{#columns\}
+
+文件包含以下列，按此顺序排列。Adapty 仅在文件末尾添加新列。
+
+| 列 | 描述 |
+| :----- | :---------- |
+| **vc_transaction_id** | 虚拟货币交易的 Adapty ID。同一笔交易的所有行共享相同的 ID。这不是您 API 请求的 `Idempotency-Key`。 |
+| **created_at** | 交易时间，UTC 时区，格式为 `YYYY-MM-DD HH:MM:SS.ffffff+00:00`，例如 `2026-03-07 14:05:09.000000+00:00`。 |
+| **profile_id** | Adapty 用户画像 ID。 |
+| **customer_user_id** | 导出时该用户画像的客户用户 ID。如果用户画像没有客户用户 ID 或已不存在，则为空。 |
+| **operation** | 交易的[操作](virtual-currencies#operation)类型：`top_up`、`refund`、`spend`、`spend_reversal`、`reward`、`reward_reversal`、`exchange`、`expiry`、`migration` 或 `adjustment`。如果服务端 API 交易未传入 `operation`，则为空。 |
+| **transaction_type** | Adapty 记录该交易的方式，例如 `store_purchase`、`subscription_renewal`、`trial_start` 或 `api_transaction`。`subscription_renewal` 用于订阅的每个付费周期，包括第一个周期。 |
+| **currency_code** | 虚拟货币的代码。 |
+| **amount** | 余额变动量，为整数。正数表示充值，负数表示扣除。 |
+| **balance_after** | 本次变动后该货币在用户画像上的余额，为整数，最低为 0。 |
+| **store** | 交易所在的商店：`app_store`、`play_store`、`stripe`、`paddle`、`adapty`，或自定义商店名称。如果交易没有关联商店，则为空。 |
+| **store_transaction_id** | 购买的商店交易 ID。与事件表中该购买的 **transaction_id** 相同。如果交易未关联商店购买，则为空。 |
+| **store_original_transaction_id** | 购买的原始商店交易 ID。订阅的所有续费记录具有相同的值。在商店购买、退款及到期的行中填充。 |
+| **product_id** | 购买的商店产品 ID。如果该行没有商店交易，或 Adapty 无该购买记录，则为空。 |
+| **expires_at** | 充值金额的到期时间，UTC 时区，格式为 `YYYY-MM-DD HH:MM:SS.ffffff+00:00`，例如 `2026-04-07 14:05:09.000000+00:00`。仅在会过期的充值行中填充。 |
+| **feature** | 交易的 [`feature`](virtual-currencies#feature) 字段。 |
+| **reference_id** | 交易的 `reference_id`。 |
+| **customer_placement_id** | 交易的 `customer_placement_id`。 |
+| **is_sandbox** | 沙盒交易为 `true`，生产环境交易为 `false`。 |
+| **metadata** | 交易的 `metadata`，以单个 JSON 值存储在一个单元格中。如果交易没有元数据，则为空。 |
+
+### 与事件表关联 \{#join-with-the-events-table\}
+
+虚拟货币文件中不包含价格信息。若要获取某次为虚拟货币充值的购买行为对应的价格，需将充值行与事件表进行关联：
+
+- 用 **store_transaction_id** 匹配事件表的 **transaction_id**。
+- 同时匹配 **store** 字段，但仅限 `app_store`、`play_store`、`stripe` 和 `paddle`。对于 `adapty` 及自定义商店，事件表中的 **store** 字段为空。
+
+以下示例查询假设你已将虚拟货币文件加载到 `vc_transactions` 表，并将事件文件加载到 `events` 表：
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+该查询列出了默认事件名称。在 2025 年 9 月中旬之后创建的集成中，订阅开始事件名称为 `subscription_initial_purchase`，而在此之前创建的集成中则为 `subscription_started`。如果你在事件导出设置中修改了事件名称，请在查询中使用你自定义的名称。
+
+如果事件导出已关闭、事件导出设置中排除或重命名了该购买的事件类型，或者 **Exclude Historical Events** 将该事件排除在外，则信用行将没有对应的匹配事件。
+
+一笔购买可以为多种货币记账。每种货币各占一行，且这些行同属一个事件。统计收入时，请对每个 **store_transaction_id** 只计数一次。
+
+### 限制 \{#limitations\}
+
+- **没有价格或退款金额**：虚拟货币文件中不包含购买价格和退款金额。如需获取价格，请[将积分行与事件表关联](#join-with-the-events-table)。
+- **不要将两个文件的积分相加**：[事件](#table-structure)文件的 **virtual_currency_credits** 列与虚拟货币文件的积分行显示的是同一笔购买积分。统计积分时，只使用其中一个来源即可。两者的总计可能存在差异：事件文件只包含购买行为产生的积分，且仅限于其设置所导出的事件；而虚拟货币文件记录了所有余额变动，包括通过 API 发放的积分以及在看板中手动调整的积分。
+- **消费记录与对应积分之间没有关联**：文件中不显示某次消费使用的是哪些积分（例如购买所得积分或发放所得积分）。
+- **退款行仅显示被扣回的积分**：退款行显示的是 Adapty 从余额中扣回的积分数量。其 **amount** 可能小于该购买当初授予的积分数，例如用户已消费了其中一部分。如果积分已全部用完，则文件中不会出现退款行。
+- **订阅升级不产生退款行**：由订阅升级触发的退款不会扣回任何积分，因此文件中不会有对应的退款行。
+
 ## 事件与标签 \{#events-and-tags\}
 
 您可以管理集成所传递的数据。该集成提供以下配置选项：

@@ -329,6 +329,114 @@ A continuación se muestra la estructura de la tabla para las visitas al paywall
 | **paywall_revision**  | Revisión del paywall en el que se originó la transacción.                                                    |
 | **variation_id**      | ID único del paywall que se mostró. En el caso de un flow, es el ID de la pantalla del paywall dentro del flow, no el de la variante de la prueba A/B. |
 
+## Transacciones de moneda virtual \{#virtual-currency-transactions\}
+
+La exportación de moneda virtual envía cada cambio en el saldo de una [moneda virtual](virtual-currencies) a tu bucket de Amazon S3. Úsala para cargar el historial completo de créditos, gastos, vencimientos y reembolsos en tu propio almacén de datos.
+
+Esta exportación es independiente de las exportaciones de eventos y visitas a paywalls. Tiene su propio interruptor y credenciales, así como su propia configuración de bucket y carpeta.
+
+### Activar la exportación \{#turn-on-the-export\}
+
+1. Ve a [**Integrations** -> **Amazon S3**](https://app.adapty.io/integrations/s3) y abre la pestaña **Virtual currency**.
+2. Activa **Export virtual currency transactions to Amazon S3**.
+3. Introduce las [credenciales](#how-to-create-amazon-s3-credentials): el ID de clave de acceso, la clave de acceso secreta, el nombre del bucket de S3 y la carpeta. Los campos son los mismos que en la pestaña **Paywall visits**.
+
+Para exportar las transacciones de moneda virtual de días anteriores, usa la [exportación manual de datos](#manual-data-export).
+
+### Archivo y programación \{#file-and-schedule\}
+
+Cada día, Adapty sube 1 archivo con las transacciones de moneda virtual del día calendario anterior en UTC. Una transacción pertenece al día de su hora `created_at` en UTC.
+
+El nombre del archivo es `<app_id>_virtual_currency_<date>.csv`, donde `<date>` es 1 día después del día de las transacciones, en formato `YYYY-MM-DD`. Por ejemplo, el archivo `<app_id>_virtual_currency_2026-03-08.csv` contiene las transacciones del 7 de marzo de 2026. Cada exportación tiene su propio nombre de archivo. Guarda cada exportación en su propia carpeta, de modo que una tabla o cargador que lea una carpeta completa obtenga solo un tipo de archivo. Si las exportaciones comparten una carpeta, selecciona los archivos de esta exportación por nombre: `<app_id>_virtual_currency_*.csv`.
+
+El archivo es un archivo `.csv` UTF-8 con una fila de encabezado. Para un día sin transacciones, el archivo solo contiene la fila de encabezado.
+
+Cada fila representa un cambio de saldo de una moneda. Una transacción que cambia 2 monedas, como un intercambio de oro por gemas, genera 2 filas con el mismo `vc_transaction_id`. Las transacciones sandbox también están en el archivo, con `is_sandbox` establecido en `true`.
+
+Cuando guardas la configuración, Adapty verifica las credenciales de cada exportación activa. Si las credenciales de la divisa virtual no son válidas, Adapty no guarda la configuración. El botón **Save** guarda la configuración de todas las pestañas, por lo que tampoco se guardarán los cambios realizados en las demás pestañas.
+
+La exportación de divisa virtual utiliza sus propias credenciales. Si la carga diaria falla, las cargas de eventos y visitas a paywall de la aplicación siguen ejecutándose.
+
+### Columnas \{#columns\}
+
+El archivo tiene estas columnas, en este orden. Adapty añade nuevas columnas únicamente al final del archivo.
+
+| Columna | Descripción |
+| :----- | :---------- |
+| **vc_transaction_id** | ID de Adapty de la transacción de moneda virtual. Todas las filas de una misma transacción tienen el mismo ID. Este no es el `Idempotency-Key` de tu solicitud de API. |
+| **created_at** | Hora de la transacción, en UTC, en formato `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, por ejemplo `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | ID de perfil de Adapty. |
+| **customer_user_id** | ID de usuario del cliente del perfil en el momento de la exportación. Vacío si el perfil no tiene ID de usuario del cliente o ya no existe. |
+| **operation** | La [operación](virtual-currencies#operation) de la transacción: `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration` o `adjustment`. Vacío en las transacciones de API del servidor enviadas sin `operation`. |
+| **transaction_type** | Cómo registró Adapty la transacción, por ejemplo `store_purchase`, `subscription_renewal`, `trial_start` o `api_transaction`. `subscription_renewal` se usa para cada período de pago de una suscripción, incluido el primero. |
+| **currency_code** | Código de la moneda virtual. |
+| **amount** | Cambio en el saldo, como número entero. Positivo para un abono, negativo para un cargo. |
+| **balance_after** | Saldo de esta moneda en el perfil después del cambio, como número entero. Nunca inferior a 0. |
+| **store** | Store de la transacción: `app_store`, `play_store`, `stripe`, `paddle`, `adapty` o el nombre de un store personalizado. Vacío si la transacción no tiene store. |
+| **store_transaction_id** | ID de transacción del store para la compra. Es el mismo que **transaction_id** en la tabla de eventos para esa compra. Vacío si la transacción no está vinculada a una compra en el store. |
+| **store_original_transaction_id** | ID de transacción original del store para la compra. Todas las renovaciones de una suscripción tienen el mismo valor. Se rellena en las filas de una compra en el store, su reembolso y su vencimiento. |
+| **product_id** | ID de producto del store para la compra. Vacío si la fila no tiene transacción en el store o si Adapty no tiene registro de la compra. |
+| **expires_at** | Hora en que vence el importe abonado, en UTC, en formato `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, por ejemplo `2026-04-07 14:05:09.000000+00:00`. Se rellena solo en las filas de abono que vencen. |
+| **feature** | El [`feature`](virtual-currencies#feature) de la transacción. |
+| **reference_id** | El `reference_id` de la transacción. |
+| **customer_placement_id** | El `customer_placement_id` de la transacción. |
+| **is_sandbox** | `true` para una transacción en sandbox, `false` para una transacción en producción. |
+| **metadata** | El `metadata` de la transacción, como un valor JSON en una sola celda. Vacío si la transacción no tiene metadatos. |
+
+### Unir con la tabla de eventos \{#join-with-the-events-table\}
+
+El archivo de moneda virtual no incluye precios. Para obtener el precio de una compra que acreditó moneda, une la fila de crédito con la tabla de eventos:
+
+- Haz coincidir **store_transaction_id** con el **transaction_id** de la tabla de eventos.
+- Haz coincidir también **store**, pero solo para `app_store`, `play_store`, `stripe` y `paddle`. Para `adapty` y stores personalizados, la tabla de eventos tiene un **store** vacío.
+
+Este ejemplo de consulta asume que cargaste los archivos de moneda virtual en la tabla `vc_transactions` y los archivos de eventos en la tabla `events`:
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+La consulta muestra los nombres de eventos predeterminados. El inicio de una suscripción es `subscription_initial_purchase` en una integración creada desde mediados de septiembre de 2025, y `subscription_started` en una anterior. Si cambiaste los nombres de los eventos en la configuración de exportación de eventos, usa tus propios nombres en la consulta.
+
+Una fila de crédito no tiene evento coincidente si la exportación de eventos está desactivada, si la configuración de exportación de eventos excluye o renombra el tipo de evento de la compra, o si **Exclude Historical Events** excluye el evento.
+
+Una misma compra puede acreditar más de una moneda. Cada moneda obtiene su propia fila de crédito, y todas estas filas pertenecen al mismo evento. Para sumar los ingresos, cuenta cada **store_transaction_id** una sola vez.
+
+### Limitaciones \{#limitations\}
+
+- **Sin precios ni importes de reembolso**: El archivo de moneda virtual no incluye el precio de compra ni el importe del reembolso. Para obtener el precio, [combina la fila de créditos con la tabla de eventos](#join-with-the-events-table).
+- **No sumes los créditos de los dos archivos**: La columna **virtual_currency_credits** del archivo de [eventos](#table-structure) y las filas de créditos del archivo de moneda virtual muestran los mismos créditos de compra. Para contar créditos, usa uno de los dos, no ambos. Sus totales pueden diferir: el archivo de eventos solo contiene los créditos de las compras, y únicamente para los eventos que su configuración exporta, mientras que el archivo de moneda virtual recoge todos los cambios de saldo, incluidas las concesiones a través de la API y los ajustes manuales en el dashboard.
+- **Sin vínculo entre un gasto y sus créditos**: El archivo no muestra qué créditos utilizó un gasto, por ejemplo, si eran créditos comprados o concedidos.
+- **Las filas de reembolso solo muestran los créditos devueltos**: Una fila de reembolso muestra los créditos que Adapty retiró del saldo. Su valor en **amount** puede ser menor que los créditos que otorgó la compra, por ejemplo, cuando el usuario gastó parte de ellos. Si no quedaban créditos, el archivo no incluye ninguna fila de reembolso.
+- **Sin fila de reembolso para una mejora de suscripción**: Un reembolso derivado de una mejora de suscripción no recupera ningún crédito. El archivo no incluye ninguna fila de reembolso para este caso.
+
 ## Eventos y etiquetas \{#events-and-tags\}
 
 Puedes gestionar qué datos comunica la integración. La integración ofrece las siguientes opciones de configuración:

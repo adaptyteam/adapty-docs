@@ -20,10 +20,10 @@ Quá trình này có thể mất đến vài giờ, tùy thuộc vào tổng s�
 
 ## Thiết lập tích hợp Google Cloud Storage \{#set-up-google-cloud-storage-integration\}
 
-Bạn cần có khóa tài khoản dịch vụ Google Cloud hợp lệ với **quyền ghi**. Để tạo khóa, làm theo các bước trong phần [tạo thông tin xác thực](#create-google-cloud-storage-credentials).
+Bạn cần có khóa tài khoản dịch vụ Google Cloud hợp lệ với **quyền ghi**. Để tạo khóa này, hãy làm theo các bước trong phần [tạo thông tin xác thực](#create-google-cloud-storage-credentials).
 
 :::warning
-Bạn có thể dùng các bucket khác nhau với thông tin xác thực khác nhau cho sự kiện và lượt xem paywall. Tuy nhiên, nếu **một trong hai** bộ thông tin xác thực không hợp lệ, [**cả hai lần tải lên đều sẽ thất bại**](#troubleshooting).
+Bạn có thể dùng các bucket và thông tin xác thực khác nhau cho sự kiện, lượt truy cập paywall và giao dịch tiền tệ ảo. Khi lưu cài đặt, Adapty sẽ xác minh thông tin xác thực của từng lần xuất đang được bật. Nếu bất kỳ bộ nào không hợp lệ, Adapty sẽ không lưu cài đặt của bất kỳ tab nào. Xem [Khắc phục sự cố](#troubleshooting).
 :::
 
 Vào [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage), mở tab cần thiết (**Events** hoặc **Paywall visits**). Bật tích hợp.
@@ -187,8 +187,116 @@ Các cột flow và A/B test xuất hiện ở cuối file, theo sau chỉ bởi
 | **paywall_revision**  | Phiên bản của paywall nơi giao dịch bắt nguồn.                                                              |
 | **variation_id**      | ID duy nhất của paywall đã được hiển thị. Đối với flow, đây là ID của màn hình paywall bên trong flow, không phải ID biến thể A/B test. |
 
+## Giao dịch tiền tệ ảo \{#virtual-currency-transactions\}
+
+Tính năng xuất tiền tệ ảo gửi mỗi thay đổi số dư [tiền tệ ảo](virtual-currencies) vào bucket Google Cloud Storage của bạn. Dùng tính năng này để tải toàn bộ lịch sử nạp tiền, chi tiêu, hết hạn và hoàn tiền vào kho dữ liệu của riêng bạn.
+
+Tính năng xuất này tách biệt với các tính năng xuất sự kiện và lượt truy cập paywall. Nó có công tắc riêng, thông tin xác thực riêng, cũng như cài đặt bucket và thư mục riêng.
+
+### Bật tính năng xuất dữ liệu \{#turn-on-the-export\}
+
+1. Truy cập [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) và mở tab **Virtual currency**.
+2. Bật **Export virtual currency transactions to Google Cloud Storage**.
+3. Tải lên tệp chứa [Google Cloud service account key](#create-google-cloud-storage-credentials) của bạn, đồng thời chỉ định bucket và thư mục. Các trường này giống với tab **Paywall visits**.
+
+Để xuất dữ liệu giao dịch virtual currency của những ngày trước, hãy sử dụng [xuất dữ liệu thủ công](#manual-data-export).
+
+### Tệp tin và lịch trình \{#file-and-schedule\}
+
+Mỗi ngày, Adapty tải lên 1 tệp chứa các giao dịch tiền tệ ảo của ngày dương lịch trước đó theo giờ UTC. Một giao dịch thuộc về ngày theo thời gian `created_at` của nó tính theo giờ UTC.
+
+Tên file là `<app_id>_virtual_currency_<date>.csv`, trong đó `<date>` là 1 ngày sau ngày phát sinh giao dịch, theo định dạng `YYYY-MM-DD`. Ví dụ, file `<app_id>_virtual_currency_2026-03-08.csv` chứa các giao dịch của ngày 7 tháng 3 năm 2026. Mỗi lần export có tên file riêng. Hãy lưu mỗi lần export vào thư mục riêng để bảng hoặc bộ nạp dữ liệu đọc toàn bộ thư mục chỉ nhận một loại file. Nếu các lần export dùng chung thư mục, hãy lọc file của lần export này theo tên: `<app_id>_virtual_currency_*.csv`.
+
+Tệp là tệp `.csv` mã hóa UTF-8 có hàng tiêu đề. Với ngày không có giao dịch nào, tệp chỉ có hàng tiêu đề.
+
+Mỗi hàng là một lần thay đổi số dư của một loại tiền tệ. Một giao dịch làm thay đổi 2 loại tiền tệ, chẳng hạn như đổi vàng lấy đá quý, sẽ tạo ra 2 hàng có cùng `vc_transaction_id`. Các giao dịch sandbox cũng có trong tệp, với `is_sandbox` được đặt thành `true`.
+
+Khi bạn lưu cài đặt, Adapty sẽ xác minh thông tin xác thực của từng export đang bật. Nếu thông tin xác thực của virtual currency không hợp lệ, Adapty sẽ không lưu cài đặt. Nút **Save** lưu cài đặt của tất cả các tab, vì vậy Adapty cũng sẽ không lưu các thay đổi của bạn trên các tab khác.
+
+Virtual currency export sử dụng thông tin xác thực riêng của nó. Nếu quá trình tải lên hàng ngày bị lỗi, các lần tải lên events và paywall visits của ứng dụng vẫn tiếp tục chạy bình thường.
+
+### Các cột
+
+File có các cột sau theo thứ tự này. Adapty chỉ thêm cột mới vào cuối file.
+
+| Cột | Mô tả |
+| :----- | :---------- |
+| **vc_transaction_id** | ID giao dịch tiền tệ ảo của Adapty. Tất cả các hàng của một giao dịch có cùng ID. Đây không phải là `Idempotency-Key` trong yêu cầu API của bạn. |
+| **created_at** | Thời gian thực hiện giao dịch, theo UTC, theo định dạng `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, ví dụ `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | ID hồ sơ người dùng Adapty. |
+| **customer_user_id** | Customer user ID của hồ sơ người dùng tại thời điểm xuất dữ liệu. Trống nếu hồ sơ người dùng không có customer user ID hoặc không còn tồn tại. |
+| **operation** | [Thao tác](virtual-currencies#operation) của giao dịch: `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration`, hoặc `adjustment`. Trống đối với giao dịch API phía server được gửi không có `operation`. |
+| **transaction_type** | Cách Adapty ghi lại giao dịch, ví dụ `store_purchase`, `subscription_renewal`, `trial_start`, hoặc `api_transaction`. `subscription_renewal` được dùng cho mỗi kỳ thanh toán của gói đăng ký, kể cả kỳ đầu tiên. |
+| **currency_code** | Mã của tiền tệ ảo. |
+| **amount** | Thay đổi số dư, dạng số nguyên. Dương khi cộng tiền, âm khi trừ tiền. |
+| **balance_after** | Số dư của tiền tệ này trên hồ sơ người dùng sau khi thay đổi, dạng số nguyên. Không bao giờ xuống dưới 0. |
+| **store** | Cửa hàng của giao dịch: `app_store`, `play_store`, `stripe`, `paddle`, `adapty`, hoặc tên của một cửa hàng tùy chỉnh. Trống nếu giao dịch không có cửa hàng. |
+| **store_transaction_id** | ID giao dịch cửa hàng của lần mua. Giống với **transaction_id** trong bảng sự kiện cho lần mua này. Trống nếu giao dịch không được liên kết với lần mua từ cửa hàng. |
+| **store_original_transaction_id** | ID giao dịch cửa hàng gốc của lần mua. Tất cả các lần gia hạn của một gói đăng ký có cùng giá trị. Được điền ở các hàng của lần mua từ cửa hàng, lần hoàn tiền và lần hết hạn của giao dịch đó. |
+| **product_id** | ID sản phẩm cửa hàng của lần mua. Trống nếu hàng không có giao dịch cửa hàng, hoặc Adapty không có bản ghi về lần mua đó. |
+| **expires_at** | Thời gian số tiền được cộng hết hạn, theo UTC, theo định dạng `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, ví dụ `2026-04-07 14:05:09.000000+00:00`. Chỉ được điền ở các hàng ghi có hết hạn. |
+| **feature** | [`feature`](virtual-currencies#feature) của giao dịch. |
+| **reference_id** | `reference_id` của giao dịch. |
+| **customer_placement_id** | `customer_placement_id` của giao dịch. |
+| **is_sandbox** | `true` đối với giao dịch sandbox, `false` đối với giao dịch production. |
+| **metadata** | `metadata` của giao dịch, dưới dạng một giá trị JSON trong một ô. Trống nếu giao dịch không có metadata. |
+
+### Kết hợp với bảng events \{#join-with-the-events-table\}
+
+File tiền tệ ảo không chứa thông tin giá. Để lấy giá của một giao dịch mua đã cộng tiền tệ, hãy kết hợp hàng credit với bảng events:
+
+- Khớp **store_transaction_id** với **transaction_id** của bảng events.
+- Khớp cả **store**, nhưng chỉ với `app_store`, `play_store`, `stripe` và `paddle`. Với `adapty` và các cửa hàng tùy chỉnh, bảng events có **store** rỗng.
+
+Ví dụ truy vấn dưới đây giả định rằng bạn đã tải các file tiền tệ ảo vào bảng `vc_transactions` và các file events vào bảng `events`:
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+Truy vấn liệt kê các tên sự kiện mặc định. Một lần bắt đầu gói đăng ký là `subscription_initial_purchase` trong integration được tạo từ giữa tháng 9 năm 2025 trở đi, và `subscription_started` trong integration được tạo trước đó. Nếu bạn đã thay đổi tên sự kiện trong cài đặt xuất sự kiện, hãy dùng tên của bạn trong truy vấn.
+
+Một dòng credit không có sự kiện tương ứng nếu tính năng xuất sự kiện bị tắt, nếu cài đặt xuất sự kiện loại trừ hoặc đổi tên loại purchase, hoặc nếu **Exclude historical events** loại trừ sự kiện đó.
+
+Một lần mua có thể cộng điểm cho nhiều loại tiền tệ. Mỗi loại tiền tệ sẽ có một dòng ghi nhận riêng, và tất cả các dòng này đều thuộc cùng một sự kiện. Để tính tổng doanh thu, chỉ đếm mỗi **store_transaction_id** một lần.
+
+### Hạn chế \{#limitations\}
+
+- **Không có giá hoặc số tiền hoàn trả**: File tiền tệ ảo không có giá mua và không có số tiền hoàn trả. Để lấy giá, [kết hợp hàng credit với bảng events](#join-with-the-events-table).
+- **Không cộng dồn credit từ hai file**: Cột **virtual_currency_credits** của file [events](#events) và các hàng credit của file tiền tệ ảo hiển thị cùng một lượng credit mua. Để đếm credit, chỉ dùng một trong hai, không dùng cả hai. Tổng của chúng có thể khác nhau: file events chỉ có credit của các giao dịch mua, và chỉ cho các sự kiện mà cài đặt của nó xuất ra, trong khi file tiền tệ ảo có mọi thay đổi số dư, bao gồm cả cấp phát qua API và điều chỉnh thủ công trên dashboard.
+- **Không có liên kết giữa một lần tiêu và credit của nó**: File không hiển thị credit nào đã được dùng trong một lần tiêu, ví dụ: credit đã mua hay đã được cấp.
+- **Hàng hoàn tiền chỉ hiển thị credit bị thu hồi**: Hàng hoàn tiền hiển thị số credit mà Adapty đã thu hồi từ số dư. **amount** của nó có thể nhỏ hơn số credit mà giao dịch mua đã cấp, ví dụ khi người dùng đã tiêu một phần. Nếu không còn credit nào, file sẽ không có hàng hoàn tiền.
+- **Không có hàng hoàn tiền cho việc nâng cấp gói đăng ký**: Khoản hoàn tiền phát sinh từ việc nâng cấp gói đăng ký không thu hồi credit nào. File không có hàng hoàn tiền cho trường hợp này.
+
 ## Xử lý sự cố \{#troubleshooting\}
 
-Adapty kiểm tra tính hợp lệ của khóa truy cập **trước khi** bắt đầu tải lên. Ngay cả khi chỉ một trong các khóa Google Cloud Storage không hợp lệ, Adapty **sẽ hủy toàn bộ quá trình tải lên** và báo lỗi.
+Khi bạn lưu cài đặt, Adapty sẽ xác minh key của từng export đang bật. Nếu một key không hợp lệ, Adapty sẽ không lưu cài đặt của bất kỳ tab nào và hiển thị lỗi.
 
-Để đảm bảo quá trình tải lên không bị gián đoạn, hãy thay thế khóa trước khi hết hạn. Nếu bạn cập nhật khóa cho **sự kiện**, đừng quên cập nhật khóa cho **lượt xem paywall**, và ngược lại.
+Mỗi export tải lên file với key riêng của nó, vì vậy một key hết hạn chỉ dừng việc tải lên của export đó. Để quá trình tải lên tiếp tục hoạt động, hãy thay thế key trước khi chúng hết hạn. Nếu nhiều tab dùng chung một key, hãy thay thế key đó trên từng tab: **Events**, **Paywall visits**, và **Virtual currency**.

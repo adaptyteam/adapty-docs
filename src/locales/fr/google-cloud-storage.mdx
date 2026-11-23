@@ -20,10 +20,10 @@ Le processus peut prendre plusieurs heures, selon le nombre total de fichiers da
 
 ## Configurer l'intégration Google Cloud Storage \{#set-up-google-cloud-storage-integration\}
 
-Vous devez disposer d'une clé de compte de service Google Cloud valide avec un accès en **écriture**. Pour la générer, suivez les étapes de la section [créer des identifiants](#create-google-cloud-storage-credentials).
+Vous devez disposer d'une clé de compte de service Google Cloud valide avec un **accès en écriture**. Pour en générer une, suivez les étapes de la section [créer des identifiants](#create-google-cloud-storage-credentials).
 
 :::warning
-Vous pouvez utiliser différents buckets avec des identifiants différents pour les événements et les visites de paywall. Cependant, si **l'un ou l'autre** ensemble d'identifiants est invalide, [**les deux envois échoueront**](#troubleshooting).
+Vous pouvez utiliser des buckets et des identifiants différents pour les événements, les visites de paywall et les transactions de monnaie virtuelle. Lorsque vous enregistrez les paramètres, Adapty vérifie les identifiants de chaque export actif. Si l'un d'eux est invalide, Adapty n'enregistre les paramètres d'aucun onglet. Voir [Dépannage](#troubleshooting).
 :::
 
 Accédez à [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) et ouvrez l'onglet souhaité (**Events** ou **Paywall visits**). Activez l'intégration.
@@ -187,8 +187,116 @@ Les colonnes flow et test A/B apparaissent à la fin du fichier, suivies uniquem
 | **paywall_revision**  | Révision du paywall d'où provient la transaction.                                                            |
 | **variation_id**      | ID unique du paywall affiché. Pour un flow, l'ID de l'écran paywall à l'intérieur du flow, et non l'ID de la variante du test A/B. |
 
+## Transactions en devise virtuelle \{#virtual-currency-transactions\}
+
+L'export en devise virtuelle envoie chaque modification du solde d'une [devise virtuelle](virtual-currencies) vers votre bucket Google Cloud Storage. Utilisez-le pour charger l'historique complet des crédits, dépenses, expirations et remboursements dans votre propre entrepôt de données.
+
+Cet export est distinct des exports d'événements et de visites de paywall. Il dispose de son propre interrupteur, de ses propres identifiants, ainsi que de ses propres paramètres de bucket et de dossier.
+
+### Activer l'export \{#turn-on-the-export\}
+
+1. Allez dans [**Integrations** -> **Google Cloud Storage**](https://app.adapty.io/integrations/google-cloud-storage) et ouvrez l'onglet **Virtual currency**.
+2. Activez **Export virtual currency transactions to Google Cloud Storage**.
+3. Importez le fichier contenant votre [clé de compte de service Google Cloud](#create-google-cloud-storage-credentials), puis indiquez le bucket et le dossier. Les champs sont les mêmes que dans l'onglet **Paywall visits**.
+
+Pour exporter les transactions en monnaie virtuelle des jours précédents, utilisez l'[export manuel des données](#manual-data-export).
+
+### Fichier et planification \{#file-and-schedule\}
+
+Chaque jour, Adapty importe 1 fichier contenant les transactions en monnaie virtuelle du jour calendaire précédent en UTC. Une transaction appartient au jour correspondant à son horodatage `created_at` en UTC.
+
+Le nom du fichier est `<app_id>_virtual_currency_<date>.csv`, où `<date>` correspond au jour suivant celui des transactions, au format `YYYY-MM-DD`. Par exemple, le fichier `<app_id>_virtual_currency_2026-03-08.csv` contient les transactions du 7 mars 2026. Chaque export possède son propre nom de fichier. Conservez chaque export dans son propre dossier, afin qu'une table ou un chargeur lisant l'ensemble d'un dossier ne récupère qu'un seul type de fichier. Si les exports partagent un dossier, sélectionnez les fichiers de cet export par nom : `<app_id>_virtual_currency_*.csv`.
+
+Le fichier est un fichier `.csv` encodé en UTF-8 avec une ligne d'en-tête. Pour un jour sans transaction, le fichier ne contient que la ligne d'en-tête.
+
+Chaque ligne correspond à une variation de solde pour une devise donnée. Une transaction qui modifie 2 devises, comme un échange d'or contre des gemmes, génère 2 lignes avec le même `vc_transaction_id`. Les transactions sandbox sont également incluses dans le fichier, avec `is_sandbox` défini à `true`.
+
+Lorsque vous enregistrez les paramètres, Adapty vérifie les identifiants de chaque export activé. Si les identifiants de la devise virtuelle sont invalides, Adapty n'enregistre pas les paramètres. Le bouton **Save** enregistre les paramètres de tous les onglets, donc Adapty n'enregistre pas non plus vos modifications sur les autres onglets.
+
+L'export de devise virtuelle utilise ses propres identifiants. Si son envoi quotidien échoue, les envois d'événements et de visites de paywall de l'application continuent de fonctionner.
+
+### Colonnes \{#columns\}
+
+Le fichier contient ces colonnes, dans cet ordre. Adapty n'ajoute de nouvelles colonnes qu'à la fin du fichier.
+
+| Colonne | Description |
+| :----- | :---------- |
+| **vc_transaction_id** | ID Adapty de la transaction en devise virtuelle. Toutes les lignes d'une même transaction partagent le même ID. Il ne s'agit pas de l'`Idempotency-Key` de votre requête API. |
+| **created_at** | Heure de la transaction, en UTC, au format `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, par exemple `2026-03-07 14:05:09.000000+00:00`. |
+| **profile_id** | ID de profil Adapty. |
+| **customer_user_id** | ID utilisateur client du profil au moment de l'export. Vide si le profil n'a pas d'ID utilisateur client ou n'existe plus. |
+| **operation** | L'[opération](virtual-currencies#operation) de la transaction : `top_up`, `refund`, `spend`, `spend_reversal`, `reward`, `reward_reversal`, `exchange`, `expiry`, `migration` ou `adjustment`. Vide pour une transaction API côté serveur envoyée sans `operation`. |
+| **transaction_type** | La façon dont Adapty a enregistré la transaction, par exemple `store_purchase`, `subscription_renewal`, `trial_start` ou `api_transaction`. `subscription_renewal` est utilisé pour chaque période payante d'un abonnement, y compris la première. |
+| **currency_code** | Code de la devise virtuelle. |
+| **amount** | Variation du solde, sous forme d'entier. Positif pour un crédit, négatif pour un débit. |
+| **balance_after** | Solde de cette devise sur le profil après cette variation, sous forme d'entier. Ne descend jamais en dessous de 0. |
+| **store** | Store de la transaction : `app_store`, `play_store`, `stripe`, `paddle`, `adapty`, ou le nom d'un store personnalisé. Vide si la transaction n'est liée à aucun store. |
+| **store_transaction_id** | ID de transaction store de l'achat. Identique à **transaction_id** dans la table des événements pour cet achat. Vide si la transaction n'est pas liée à un achat store. |
+| **store_original_transaction_id** | ID de transaction store original de l'achat. Tous les renouvellements d'un abonnement ont la même valeur. Renseigné sur les lignes d'un achat store, de son remboursement et de son expiration. |
+| **product_id** | ID de produit store de l'achat. Vide si la ligne n'a pas de transaction store, ou si Adapty n'a aucun enregistrement de l'achat. |
+| **expires_at** | Heure d'expiration du montant crédité, en UTC, au format `YYYY-MM-DD HH:MM:SS.ffffff+00:00`, par exemple `2026-04-07 14:05:09.000000+00:00`. Renseigné uniquement sur les lignes de crédit qui expirent. |
+| **feature** | La [`feature`](virtual-currencies#feature) de la transaction. |
+| **reference_id** | Le `reference_id` de la transaction. |
+| **customer_placement_id** | Le `customer_placement_id` de la transaction. |
+| **is_sandbox** | `true` pour une transaction sandbox, `false` pour une transaction de production. |
+| **metadata** | Les `metadata` de la transaction, sous forme d'une valeur JSON dans une seule cellule. Vide si la transaction n'a pas de métadonnées. |
+
+### Jointure avec la table des événements \{#join-with-the-events-table\}
+
+Le fichier de monnaie virtuelle ne contient pas les prix. Pour obtenir le prix d'un achat ayant crédité une devise, joignez la ligne de crédit avec la table des événements :
+
+- Faites correspondre **store_transaction_id** avec **transaction_id** de la table des événements.
+- Faites également correspondre **store**, mais uniquement pour `app_store`, `play_store`, `stripe` et `paddle`. Pour `adapty` et les stores personnalisés, la table des événements contient un **store** vide.
+
+Cet exemple de requête suppose que vous avez chargé les fichiers de monnaie virtuelle dans la table `vc_transactions` et les fichiers d'événements dans la table `events` :
+
+```sql title="SQL"
+SELECT
+  vc.vc_transaction_id,
+  vc.created_at,
+  vc.profile_id,
+  vc.currency_code,
+  vc.amount,
+  e.event_type,
+  e.product_id,
+  e.revenue_usd,
+  e.currency,
+  e.revenue_local
+FROM vc_transactions AS vc
+LEFT JOIN events AS e
+  ON e.transaction_id = vc.store_transaction_id
+  AND (
+    e.store = vc.store
+    OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
+  )
+  AND e.event_type IN (
+    'subscription_initial_purchase',
+    'subscription_started',
+    'subscription_renewed',
+    'trial_started',
+    'trial_converted',
+    'non_subscription_purchase'
+  )
+WHERE vc.amount > 0
+  AND COALESCE(vc.store_transaction_id, '') <> '';
+```
+
+La requête utilise les noms d'événements par défaut. Un début d'abonnement correspond à `subscription_initial_purchase` dans une intégration créée depuis mi-septembre 2025, et à `subscription_started` dans une intégration plus ancienne. Si vous avez modifié les noms d'événements dans les paramètres d'export des événements, utilisez vos propres noms dans la requête.
+
+Une ligne de crédit n'a pas d'événement correspondant si l'export des événements est désactivé, si les paramètres d'export des événements excluent ou renomment le type d'événement de l'achat, ou si **Exclude historical events** exclut l'événement.
+
+Un seul achat peut créditer plusieurs devises. Chaque devise obtient sa propre ligne de crédit, et toutes ces lignes appartiennent au même événement. Pour calculer le chiffre d'affaires total, comptez chaque **store_transaction_id** une seule fois.
+
+### Limitations \{#limitations\}
+
+- **Pas de prix ni de montant de remboursement** : le fichier de monnaie virtuelle ne contient ni prix d'achat ni montant de remboursement. Pour obtenir le prix, [joingnez la ligne de crédit avec la table des événements](#join-with-the-events-table).
+- **Ne pas additionner les crédits des deux fichiers** : la colonne **virtual_currency_credits** du fichier [events](#events) et les lignes de crédits du fichier de monnaie virtuelle affichent les mêmes crédits d'achat. Pour comptabiliser les crédits, utilisez l'un ou l'autre, pas les deux. Leurs totaux peuvent différer : le fichier des événements ne contient que les crédits des achats, et uniquement pour les événements que ses paramètres exportent, tandis que le fichier de monnaie virtuelle enregistre chaque modification de solde, y compris les attributions via l'API et les ajustements manuels dans le tableau de bord.
+- **Aucun lien entre une dépense et ses crédits** : le fichier n'indique pas quels crédits une dépense a utilisés, par exemple des crédits achetés ou accordés.
+- **Les lignes de remboursement n'affichent que les crédits récupérés** : une ligne de remboursement indique les crédits qu'Adapty a repris sur le solde. Son **amount** peut être inférieur aux crédits accordés par l'achat, par exemple si l'utilisateur en a dépensé une partie. Si aucun crédit ne restait, le fichier ne contient aucune ligne de remboursement.
+- **Pas de ligne de remboursement pour une mise à niveau d'abonnement** : un remboursement consécutif à une mise à niveau d'abonnement ne reprend aucun crédit. Le fichier ne contient aucune ligne de remboursement pour ce cas.
+
 ## Dépannage \{#troubleshooting\}
 
-Adapty vérifie la validité de vos clés d'accès **avant** de lancer l'upload. Si même une seule de vos clés Google Cloud Storage est invalide, Adapty **annule l'upload** et renvoie une erreur.
+Lorsque vous enregistrez les paramètres, Adapty vérifie la clé de chaque export activé. Si une clé est invalide, Adapty n'enregistre les paramètres d'aucun onglet et affiche une erreur.
 
-Pour garantir des uploads sans interruption, remplacez vos clés avant leur expiration. Si vous mettez à jour la clé pour les **événements**, n'oubliez pas de mettre à jour la clé pour les **visites de paywall**, et vice versa.
+Chaque export utilise sa propre clé pour envoyer ses fichiers, donc une clé expirée ne bloque que les envois de cet export. Pour maintenir les envois, remplacez vos clés avant leur expiration. Si plusieurs onglets utilisent la même clé, remplacez-la sur chacun d'eux : **Events**, **Paywall visits** et **Virtual currency**.
