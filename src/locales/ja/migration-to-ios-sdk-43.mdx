@@ -1,0 +1,41 @@
+---
+title: "Adapty iOS SDK を v4.3 に移行する"
+description: "Adapty iOS SDK v4.3 への移行：価格とエラーコードの処理を更新し、App Store の署名とともにトランザクションを報告します。"
+metadataTitle: "Adapty iOS SDK v4.3 への移行 | Adapty ドキュメント"
+---
+
+Adapty iOS SDK 4.1 または 4.2 から 4.3 にアップデートするには、このガイドのすべての変更を適用してください。4.0 をお使いの場合は、先に [v4.1 の変更](migration-to-ios-sdk-41) を適用する必要があります。4.4 に進む場合は、次に [v4.4 への移行](migration-to-ios-sdk-44) に従ってください。
+
+## クイックリファレンス \{#quick-reference\}
+
+| 変更前 | 変更後 |
+|---|---|
+| `localizedPrice` と `currencyCode` は `nil` になる場合がある | 両プロパティは常に文字列を返す |
+| `billingPlanUnavailable` エラーコードなし | `AdaptyError.ErrorCode` に `billingPlanUnavailable` を追加 |
+| `Adapty.reportTransaction` に `Transaction` を直接渡す | `Adapty.reportTransaction` に `VerificationResult<Transaction>` を渡す（`Transaction` のオーバーロードは非推奨） |
+
+## localizedPrice と currencyCode はオプショナルではなくなりました \{#prices-are-no-longer-optional\}
+
+4.3 では、`AdaptyPaywallProduct` と `AdaptySubscriptionOffer` の `localizedPrice` および `currencyCode` プロパティは常に文字列を返し、`nil` を返すことはありません。`if let`、`guard let`、または `?.` で `nil` チェックしているコードはコンパイルエラーになります。これらのチェックを削除してください：
+
+```diff showLineNumbers
+- if let price = product.localizedPrice {
+-     priceLabel.text = price
+- }
++ priceLabel.text = product.localizedPrice
+```
+
+これらのプロパティに対する `??` のデフォルト値も削除してください。コンパイル自体は通りますが、警告が発生します。
+
+## AdaptyError.ErrorCode に billingPlanUnavailable が追加されました \{#new-error-code\}
+
+4.3 では `billingPlanUnavailable` [エラーコード](ios-sdk-error-handling#storekit-errors)が追加されました。すべてのエラーコードを列挙した `switch` 文に `default` ブランチがない場合、コンパイルエラーが発生します。修正するには、`case .billingPlanUnavailable` ブランチか `default` ブランチを追加してください。
+
+## Transaction オーバーロードの reportTransaction が非推奨になりました \{#reporttransaction-overload-is-deprecated\}
+
+4.3.2 では、App Store の署名を含まないベアな `Transaction` を受け取る `Adapty.reportTransaction(_:withVariationId:)` オーバーロードが非推奨の警告を出すようになりました。App Store の署名付きでトランザクションを報告するには、StoreKit が返す `VerificationResult<Transaction>` を渡してください：
+
+```diff showLineNumbers
+- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
++ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
+```

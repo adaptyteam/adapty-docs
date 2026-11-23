@@ -1,0 +1,81 @@
+---
+title: "在 flow 中处理权限请求 - Capacitor"
+description: "使用 onRequestPermission 处理器，在 Capacitor 应用的 flow 中向用户请求推送通知权限，并将用户的回答返回给 flow。"
+metadataTitle: "在 Flow 中处理权限请求 - Capacitor | Adapty 文档"
+---
+
+[流程](adapty-flow-builder)可以通过 **Request permission** 操作向用户请求发送推送通知的权限，例如在解释通知用途的用户引导页面上。Adapty SDK 本身不会弹出系统权限对话框，而是将请求传递给应用中的 `onRequestPermission` 处理程序。由应用弹出对话框并返回用户的选择，流程随后继续执行。
+
+## 开始之前 \{#before-you-start\}
+
+你需要：
+
+- **Adapty Capacitor SDK 4.1.0 或更高版本**：4.1.0 是首个稳定版本，包含 `onRequestPermission` 处理器。
+- **包含"请求权限"操作的流程**：在流程与付费墙编辑工具中，将 **Request permission** 操作添加到某个元素的 **On Tap** 或 **On Screen Appear** 触发器。在其 **After response** 部分，添加用户响应后要执行的操作，例如 **Navigate Next**。有关操作设置，请参阅[请求权限](onboarding-actions#request-permission)。
+- **显示通知对话框的库**：示例使用 [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications) 插件。其他任何能显示该对话框的插件同样适用。
+- **Android 清单中的 `POST_NOTIFICATIONS` 权限，以及 `targetSdk` 33 或更高版本**：Android 13 及更高版本仅向已声明该权限且目标版本为 Android 13 或更高版本的应用显示通知权限对话框：
+
+  ```xml title="android/app/src/main/AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## 流程如何请求权限 \{#how-the-flow-requests-a-permission\}
+
+1. 流程触发 **Request permission** 动作：用户点击该元素，或屏幕出现时自动触发。
+2. Adapty SDK 以权限类型 `push` 调用您的 `onRequestPermission` 处理函数。
+3. 您的应用弹出系统对话框，并将处理函数的 Promise 解析为 `{ status: 'granted' }` 或 `{ status: 'denied' }`。
+4. 流程执行 **After response** 动作，两种回答结果对应的动作相同。
+
+流程会在当前屏幕上等待，直到你的处理器的 promise 解析完成。如果 promise 始终未解析，流程将停留在该屏幕上。如果操作系统没有显示对话框（例如用户已经回答过该请求），`PushNotifications.requestPermissions()` 会立即返回当前状态，流程也会立即执行 **After response** 操作。在 Android 12 及更早版本中，应用无需运行时通知权限，因此插件会直接返回 `granted`，不显示任何对话框。如果 **After response** 操作导致离开当前屏幕，用户只会短暂看到请求权限的屏幕。
+
+使用 **On Screen Appear** 时，当用户通过 **Navigate back** 操作返回该页面，流程不会重新发送请求。使用 **On Tap** 时，每次点击都会发送一个新请求，但在等待您响应期间的点击除外。
+
+## 实现处理程序 \{#implement-the-handler\}
+
+`onRequestPermission` 处理程序是异步的。它返回一个 Promise，该 Promise 解析为包含用户回答的对象：
+
+```typescript showLineNumbers title="permissions.ts"
+
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  if (permission !== 'push') {
+    // Answer every request: the flow waits on the screen until it gets the answer.
+    return { status: 'denied' };
+  }
+
+  // Shows the system dialog, or returns the current status without showing it.
+  const { receive } = await PushNotifications.requestPermissions();
+  return { status: receive === 'granted' ? 'granted' : 'denied' };
+};
+```
+
+`onRequestPermission` 接收以下参数：
+
+- **`permission`**：流程请求的权限类型。**Request permission** 操作会发送 `push`。对于其他值，返回 `denied`，让流程继续执行。
+- **`customArgs`**：请求的自定义参数。**Request permission** 操作不发送任何参数，因此该对象为空。
+
+仅当用户允许通知时，才将 Promise resolve 为 `{ status: 'granted' }`。如果处理函数抛出错误或 Promise 被 reject，Adapty SDK 会返回 `denied`。
+
+获得授权后，您的应用即可显示通知。若要接收推送通知，请向推送服务提供商注册设备，操作方式与在流程外注册设备时相同。
+
+## 注册处理程序 \{#register-the-handler\}
+
+:::warning
+**如果没有 `onRequestPermission` 处理程序，系统将永远不会请求用户授权。** 在未设置处理程序的流程视图中，Adapty SDK 会直接返回 `denied`，不弹出任何对话框，并在日志中写入警告，同时立即执行 **After response** 操作。
+:::
+
+在每次创建流程视图时，请与其他[流程事件处理器](capacitor-handling-events)一起设置该处理器，并在展示视图之前完成设置。流程作者可以在不更新应用的情况下，随时在任意流程中添加 **Request permission** 操作。若流程视图未设置该处理器，则会直接返回 `denied`，而不会向用户发起请求。
+
+```typescript showLineNumbers title="Capacitor"
+
+const view = await createFlowView(flow);
+
+await view.setEventHandlers({
+  onRequestPermission,
+});
+
+await view.present();
+```
+
+## 测试权限请求 \{#test-the-permission-request\}
+
+iOS 每次应用安装只会显示一次通知对话框。Android 在用户允许通知或拒绝两次后就不再显示。若要在测试流程时再次看到该对话框，请从设备上卸载应用并重新安装，然后打开流程，进入 **Request permission** 操作。如果流程未弹出对话框就直接继续，请确认流程视图已绑定 `onRequestPermission` 处理器，且 Android 应用已声明 `POST_NOTIFICATIONS` 权限并以 Android 13 或更高版本为目标。

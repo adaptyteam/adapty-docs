@@ -1,0 +1,41 @@
+---
+title: "Migrate Adapty iOS SDK lên v4.3"
+description: "Migrate lên Adapty iOS SDK v4.3: cập nhật cách xử lý giá và mã lỗi, đồng thời báo cáo giao dịch kèm chữ ký App Store."
+metadataTitle: "Migration lên Adapty iOS SDK v4.3 | Tài liệu Adapty"
+---
+
+Để cập nhật ứng dụng từ Adapty iOS SDK 4.1 hoặc 4.2 lên 4.3, hãy áp dụng từng thay đổi trong hướng dẫn này. Nếu ứng dụng đang dùng 4.0, bạn cần thực hiện [các thay đổi v4.1](migration-to-ios-sdk-41) trước. Để tiếp tục lên 4.4, hãy làm theo [Migrate lên v4.4](migration-to-ios-sdk-44).
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| Trước | Sau |
+|---|---|
+| `localizedPrice` và `currencyCode` có thể là `nil` | Cả hai thuộc tính luôn trả về một chuỗi |
+| Không có mã lỗi `billingPlanUnavailable` | `AdaptyError.ErrorCode` bao gồm `billingPlanUnavailable` |
+| `Adapty.reportTransaction` với một `Transaction` đơn thuần | `Adapty.reportTransaction` với một `VerificationResult<Transaction>`; overload `Transaction` đã bị deprecated |
+
+## localizedPrice và currencyCode không còn là optional \{#prices-are-no-longer-optional\}
+
+Từ phiên bản 4.3, thuộc tính `localizedPrice` và `currencyCode` của `AdaptyPaywallProduct` và `AdaptySubscriptionOffer` luôn trả về một chuỗi, không bao giờ là `nil`. Những đoạn code kiểm tra `nil` bằng `if let`, `guard let` hay `?.` sẽ không thể biên dịch. Hãy xóa các kiểm tra này:
+
+```diff showLineNumbers
+- if let price = product.localizedPrice {
+-     priceLabel.text = price
+- }
++ priceLabel.text = product.localizedPrice
+```
+
+Hãy xóa cả các giá trị mặc định `??` cho những thuộc tính này: chúng vẫn biên dịch được nhưng sẽ có cảnh báo.
+
+## AdaptyError.ErrorCode bao gồm billingPlanUnavailable \{#new-error-code\}
+
+4.3 bổ sung [mã lỗi](ios-sdk-error-handling#storekit-errors) `billingPlanUnavailable`. Câu lệnh `switch` liệt kê đầy đủ mọi mã lỗi mà không có nhánh `default` sẽ không còn biên dịch được. Để khắc phục, hãy thêm nhánh `case .billingPlanUnavailable` hoặc nhánh `default`.
+
+## Overload reportTransaction với Transaction đã bị deprecated \{#reporttransaction-overload-is-deprecated\}
+
+Trong phiên bản 4.3.2, overload `Adapty.reportTransaction(_:withVariationId:)` nhận vào một `Transaction` thuần túy (không có chữ ký App Store) sẽ hiển thị cảnh báo deprecated. Để báo cáo giao dịch kèm chữ ký App Store, hãy truyền vào `VerificationResult<Transaction>` mà StoreKit trả về:
+
+```diff showLineNumbers
+- try await Adapty.reportTransaction(transaction, withVariationId: variationId)
++ try await Adapty.reportTransaction(verificationResult, withVariationId: variationId)
+```

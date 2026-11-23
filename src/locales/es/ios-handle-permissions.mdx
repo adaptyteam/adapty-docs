@@ -1,0 +1,82 @@
+---
+title: "Gestionar solicitudes de permisos en flows - iOS"
+description: "Solicita permiso de notificaciones push desde un flow en tu app de iOS con AdaptySystemRequestsHandler, y devuelve la respuesta del usuario al flow."
+metadataTitle: "Gestionar permisos en flows - iOS | Documentación de Adapty"
+---
+
+Un [flow](adapty-flow-builder) puede solicitar permiso al usuario para enviar notificaciones push mediante la acción **Request permission**, por ejemplo en una pantalla de onboarding que explique para qué sirven las notificaciones. El SDK de Adapty no muestra el diálogo de permisos del sistema por sí solo. Pasa la solicitud a un `AdaptySystemRequestsHandler` en tu app. Tu app muestra el diálogo y devuelve la respuesta del usuario, y el flow continúa.
+
+## Antes de empezar \{#before-you-start\}
+
+Necesitas:
+
+- **Adapty iOS SDK 4.0.0 o posterior**: Las versiones anteriores no incluyen `AdaptySystemRequestsHandler`.
+- **Un flow con la acción Request permission**: En el Flow & Paywall Builder, añade la acción **Request permission** al disparador **On Tap** u **On Screen Appear** de un elemento. En su sección **After response**, añade las acciones que se ejecutarán después de que el usuario responda, como **Navigate Next**. Para ver la configuración de la acción, consulta [Request permission](onboarding-actions#request-permission).
+
+## Cómo solicita el flow un permiso \{#how-the-flow-requests-a-permission\}
+
+1. El flow llega a la acción **Request permission**: el usuario pulsa el elemento o aparece la pantalla.
+2. El SDK de Adapty llama a `handlePermission(_:withCustomArgs:)` en tu handler con `.push`.
+3. Tu app solicita el permiso a iOS y devuelve `.granted` o `.denied`.
+4. El flow ejecuta las acciones **After response**. Son las mismas para ambas respuestas.
+
+El flow espera en la pantalla hasta que tu app devuelve la respuesta. Si tu app nunca responde, el flow permanece en la pantalla. Si iOS no muestra el diálogo, por ejemplo porque el usuario ya lo respondió, tu app recibe la respuesta de inmediato y el flow ejecuta las acciones de **After response** al instante. Si esas acciones abandonan la pantalla, el usuario verá la pantalla que solicita el permiso solo por un momento.
+
+Con **On Screen Appear**, el flow no vuelve a enviar la solicitud cuando el usuario regresa a la pantalla con una acción **Navigate back**. Con **On Tap**, cada toque envía una nueva solicitud, excepto los toques mientras se espera tu respuesta.
+
+## Implementar el handler \{#implement-the-handler\}
+
+Para responder a las solicitudes de permisos, crea una clase que implemente `AdaptySystemRequestsHandler` e implementa `handlePermission(_:withCustomArgs:)`. Devuelve `.denied` para los permisos que tu app no solicite.
+
+```swift showLineNumbers title="Swift"
+
+@MainActor
+final class PushPermissionHandler: AdaptySystemRequestsHandler {
+    func handlePermission(
+        _ permission: AdaptyPermission,
+        withCustomArgs customArgs: [String: String]?
+    ) async -> AdaptyPermissionResult {
+        guard permission == .push else { return .denied(nil) }
+
+        do {
+            let granted = try await UNUserNotificationCenter.current()
+                .requestAuthorization(options: [.alert, .badge, .sound])
+            return granted ? .granted(nil) : .denied(nil)
+        } catch {
+            return .denied(error.localizedDescription)
+        }
+    }
+}
+```
+
+`handlePermission(_:withCustomArgs:)` recibe:
+
+- **`permission`**: El permiso que solicita el flow. La acción **Request permission** envía `.push`.
+- **`customArgs`**: Argumentos personalizados de la solicitud. La acción **Request permission** no envía ninguno, por lo que el valor es `nil`.
+
+`.granted` y `.denied` aceptan una cadena opcional con detalles. Puedes pasar `nil`.
+
+Un permiso concedido permite a tu app mostrar notificaciones. Para recibir notificaciones push, registra el dispositivo con APNs y envía el token del dispositivo a tu proveedor de push, igual que hace tu app fuera de los flows.
+
+`AdaptySystemRequestsHandler` también declara `handleAppReviewRequest()`. Su implementación predeterminada muestra el mensaje de valoración de la App Store, por lo que no necesitas implementarla.
+
+## Pasa el handler al flujo de configuración \{#pass-the-handler-to-the-flow-configuration\}
+
+:::warning
+**Sin un handler, el flow se detiene en la solicitud de permiso.** Si no pasas `systemRequestsHandler`, iOS no muestra ningún diálogo. El flow permanece en la pantalla que envió la solicitud y no ejecuta las acciones de **After response**.
+:::
+
+Para enviar las solicitudes de permiso del flow a tu handler, pásalo en el parámetro `systemRequestsHandler` de `AdaptyUI.getFlowConfiguration`:
+
+```swift showLineNumbers title="Swift"
+let flowConfiguration = try await AdaptyUI.getFlowConfiguration(
+    forFlow: flow,
+    systemRequestsHandler: PushPermissionHandler()
+)
+```
+
+La configuración del flow mantiene una referencia fuerte al handler, por lo que no necesitas almacenarla. Tanto SwiftUI como UIKit presentan el flow a partir de esta configuración, así que el handler funciona con ambos. Para más detalles, consulta [Mostrar flows y paywalls](ios-present-paywalls).
+
+## Probar la solicitud de permiso \{#test-the-permission-request\}
+
+iOS muestra el diálogo de notificaciones una sola vez por instalación. Para volver a ver el diálogo mientras pruebas el flow, elimina la app del dispositivo e instálala de nuevo. Luego abre el flow y llega a la acción **Request permission**. Si la pantalla se queda ahí y no aparece ningún diálogo, el flow no recibió respuesta: asegúrate de que pasas `systemRequestsHandler` a `AdaptyUI.getFlowConfiguration`.

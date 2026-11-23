@@ -5,6 +5,7 @@
 // Writes WebP files to src/assets/shared/img/ unless --out is set. Run it from the docs repo root.
 // --network prints each API response, to find the one that feeds a screen.
 // The shot-list format is in the skill's SKILL.md.
+import { execFileSync } from 'child_process';
 import { existsSync, mkdirSync } from 'fs';
 import { dirname, resolve } from 'path';
 import { pathToFileURL } from 'url';
@@ -22,7 +23,16 @@ if (!listPath) {
   process.exit(1);
 }
 
-const videos = resolve(process.env.DEMO_VIDEOS_REPO ?? '../adapty-demo-videos');
+// Next to the main checkout, so that a run from a git worktree finds the same clone.
+const mainCheckout = () => {
+  try {
+    const common = execFileSync('git', ['rev-parse', '--path-format=absolute', '--git-common-dir'], { encoding: 'utf8' });
+    return dirname(common.trim());
+  } catch {
+    return process.cwd();
+  }
+};
+const videos = resolve(process.env.DEMO_VIDEOS_REPO ?? resolve(mainCheckout(), '../adapty-demo-videos'));
 const targetModule = resolve(videos, 'recorder/target.mjs');
 if (!existsSync(targetModule)) {
   console.error(`Can't find the recorder at ${videos}. Set DEMO_VIDEOS_REPO to your adapty-demo-videos clone.`);

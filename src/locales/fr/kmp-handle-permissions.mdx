@@ -1,0 +1,160 @@
+---
+title: "Gérer les demandes de permission dans les flows - Kotlin Multiplatform"
+description: "Demandez aux utilisateurs l'autorisation pour les notifications push depuis un flow dans votre application Kotlin Multiplatform avec AdaptyUISystemRequestsHandler, et renvoyez leur réponse au flow."
+metadataTitle: "Gérer les permissions de flow - Kotlin Multiplatform | Documentation Adapty"
+---
+
+Un [flow](adapty-flow-builder) peut demander aux utilisateurs l'autorisation d'envoyer des notifications push avec l'action **Request permission**, par exemple sur un écran d'onboarding qui explique à quoi servent les notifications. Le SDK Adapty n'affiche pas lui-même la boîte de dialogue système. Il transmet la demande à un `AdaptyUISystemRequestsHandler` dans votre application. Votre app affiche la boîte de dialogue et renvoie la réponse de l'utilisateur, puis le flow continue.
+
+## Avant de commencer \{#before-you-start\}
+
+Vous avez besoin de :
+
+- **SDK Kotlin Multiplatform 4.1.0 ou version ultérieure** : La version 4.1.0 est la première version stable avec `AdaptyUISystemRequestsHandler`.
+- **Un flow avec l'action Request permission** : Dans le Flow & Paywall Builder, ajoutez l'action **Request permission** au déclencheur **On Tap** ou **On Screen Appear** d'un élément. Dans la section **After response**, ajoutez les actions à exécuter après la réponse de l'utilisateur, comme **Navigate Next**. Pour les paramètres de l'action, consultez [Request permission](onboarding-actions#request-permission).
+- **La permission `POST_NOTIFICATIONS` dans votre manifeste Android, et `targetSdk` 33 ou supérieur** : Android 13 et versions ultérieures n'affichent la boîte de dialogue de permission de notification qu'aux applications qui déclarent cette permission et ciblent Android 13 ou ultérieur :
+
+  ```xml title="AndroidManifest.xml"
+  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+  ```
+
+## Comment le flow demande une autorisation \{#how-the-flow-requests-a-permission\}
+
+1. Le flow atteint l'action **Request permission** : l'utilisateur appuie sur l'élément, ou l'écran apparaît.
+2. Le SDK Adapty appelle `handlePermission` sur votre gestionnaire avec `AdaptyUIPermission.PUSH`.
+3. Votre application demande l'autorisation au système d'exploitation et retourne `AdaptyUIPermissionResult.granted()` ou `AdaptyUIPermissionResult.denied()`.
+4. Le flow exécute les actions **After response**. Elles sont identiques quelle que soit la réponse.
+
+Le flow attend sur l'écran jusqu'à ce que votre application renvoie la réponse. Si votre application ne répond jamais, le flow reste affiché. Si le système d'exploitation n'affiche pas la boîte de dialogue — par exemple parce que l'utilisateur a déjà répondu —, votre gestionnaire retourne immédiatement et le flow exécute aussitôt les actions **After response**. Si ces actions quittent l'écran, l'utilisateur ne voit l'écran de demande de permission qu'un bref instant.
+
+Avec **On Screen Appear**, le flow n'envoie pas de nouvelle requête lorsque l'utilisateur revient à l'écran via une action **Navigate back**. Avec **On Tap**, chaque appui envoie une nouvelle requête, sauf les appuis effectués pendant qu'une requête attend votre réponse.
+
+## Implémenter le handler \{#implement-the-handler\}
+
+Pour répondre aux demandes de permissions, implémentez `AdaptyUISystemRequestsHandler` dans le code commun. Renvoyez un résultat pour chaque demande : retournez `denied` pour les permissions que votre application ne demande pas, et gérez les exceptions de votre code de plateforme. Le SDK ne capture pas les exceptions provenant de `handlePermission` : une exception non gérée fait planter l'application, et le flow ne reçoit aucune réponse.
+
+```kotlin showLineNumbers title="commonMain"
+
+class MySystemRequestsHandler : AdaptyUISystemRequestsHandler {
+    override suspend fun handlePermission(
+        view: AdaptyUIFlowView,
+        permission: AdaptyUIPermission,
+        customArgs: Map<String, String>?,
+    ): AdaptyUIPermissionResult {
+        if (permission != AdaptyUIPermission.PUSH) {
+            return AdaptyUIPermissionResult.denied()
+        }
+        return try {
+            if (requestPushPermission()) {
+                AdaptyUIPermissionResult.granted()
+            } else {
+                AdaptyUIPermissionResult.denied()
+            }
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            AdaptyUIPermissionResult.denied(e.message)
+        }
+    }
+}
+```
+
+`requestPushPermission` est votre code spécifique à la plateforme. Voir [Demander la permission sur chaque plateforme](#request-the-permission-on-each-platform).
+
+`handlePermission` reçoit :
+
+- **`view`** : La vue du flow qui a envoyé la requête.
+- **`permission`** : La permission demandée par le flow. L'action **Request permission** envoie `AdaptyUIPermission.PUSH`.
+- **`customArgs`** : Les arguments personnalisés de la requête. L'action **Request permission** n'en envoie aucun, donc la valeur est `null`.
+
+La chaîne `detail` que vous pouvez passer à `granted` et `denied` est optionnelle.
+
+Une permission accordée permet à votre application d'afficher des notifications. Pour recevoir des notifications push, enregistrez l'appareil auprès de votre fournisseur de notifications push, tel qu'APNs ou Firebase Cloud Messaging, comme votre application le fait en dehors des flows.
+
+`AdaptyUISystemRequestsHandler` possède également `handleAppReviewRequest`. Son comportement par défaut affiche le prompt natif de demande d'avis, vous n'avez donc pas besoin de le surcharger.
+
+## Demander la permission sur chaque plateforme \{#request-the-permission-on-each-platform\}
+
+Le code commun ne peut pas afficher la boîte de dialogue système, donc `requestPushPermission` est une fonction `expect` avec une implémentation `actual` pour chaque plateforme. Si votre application utilise déjà une bibliothèque de permissions Kotlin Multiplatform, appelez-la depuis `handlePermission` à la place.
+
+```kotlin title="commonMain"
+expect suspend fun requestPushPermission(): Boolean
+```
+
+Sur iOS, demandez l'autorisation à `UNUserNotificationCenter` :
+
+```kotlin showLineNumbers title="iosMain"
+
+actual suspend fun requestPushPermission(): Boolean =
+    suspendCancellableCoroutine { continuation ->
+        UNUserNotificationCenter.currentNotificationCenter().requestAuthorizationWithOptions(
+            UNAuthorizationOptionAlert or UNAuthorizationOptionBadge or UNAuthorizationOptionSound,
+        ) { granted, _ ->
+            continuation.resume(granted)
+        }
+    }
+```
+
+Sur Android, l'autorisation d'exécution existe à partir d'Android 13. Sur les versions antérieures, retourne si les notifications sont activées pour l'application. Demandez-la depuis l'activité affichée à l'écran, c'est-à-dire l'activité du flow pendant qu'un flow est affiché. Dans cet exemple, `ResumedActivity` en assure le suivi. Enregistrez-la dans `Application.onCreate` avec `registerActivityLifecycleCallbacks(ResumedActivity)` :
+
+```kotlin showLineNumbers title="androidMain"
+
+object ResumedActivity : Application.ActivityLifecycleCallbacks {
+    var current: ComponentActivity? = null
+        private set
+
+    override fun onActivityResumed(activity: Activity) {
+        current = activity as? ComponentActivity
+    }
+
+    override fun onActivityPaused(activity: Activity) {
+        if (current === activity) current = null
+    }
+
+    override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) {}
+    override fun onActivityStarted(activity: Activity) {}
+    override fun onActivityStopped(activity: Activity) {}
+    override fun onActivitySaveInstanceState(activity: Activity, outState: Bundle) {}
+    override fun onActivityDestroyed(activity: Activity) {}
+}
+
+actual suspend fun requestPushPermission(): Boolean {
+    val activity = ResumedActivity.current ?: return false
+    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+        return NotificationManagerCompat.from(activity).areNotificationsEnabled()
+    }
+    val permission = Manifest.permission.POST_NOTIFICATIONS
+    if (ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED) {
+        return true
+    }
+    return suspendCancellableCoroutine { continuation ->
+        lateinit var launcher: ActivityResultLauncher<String>
+        launcher = activity.activityResultRegistry.register(
+            "push_permission",
+            ActivityResultContracts.RequestPermission(),
+        ) { granted ->
+            launcher.unregister()
+            continuation.resume(granted)
+        }
+        launcher.launch(permission)
+        continuation.invokeOnCancellation { launcher.unregister() }
+    }
+}
+```
+
+## Enregistrer le handler
+
+:::warning
+**Sans handler, le flow s'arrête à la demande de permission.** Si votre app n'enregistre aucun handler, le SDK Adapty n'envoie aucune réponse au flow, ni sur iOS ni sur Android. Le flow reste sur l'écran qui a envoyé la demande et n'exécute pas les actions **After response**.
+:::
+
+Pour transmettre les demandes de permission à votre handler, appelez `AdaptyUI.setSystemRequestsHandler` une fois au démarrage de l'app, avant que celle-ci n'affiche le premier flow. Par exemple, appelez-le au même endroit que `AdaptyUI.setFlowsEventsObserver`.
+
+```kotlin showLineNumbers title="Kotlin"
+
+AdaptyUI.setSystemRequestsHandler(MySystemRequestsHandler())
+```
+
+## Tester la demande de permission \{#test-the-permission-request\}
+
+iOS n'affiche la boîte de dialogue de notification qu'une seule fois par installation. Android arrête de l'afficher une fois que l'utilisateur a autorisé les notifications ou les a refusées deux fois. Pour revoir cette boîte de dialogue pendant vos tests, désinstallez l'application de l'appareil et réinstallez-la. Ouvrez ensuite le flow et atteignez l'action **Request permission**. Si l'écran reste affiché sans qu'aucune boîte de dialogue n'apparaisse, le flow n'a reçu aucune réponse : assurez-vous que votre application enregistre le handler avant d'afficher le flow. Si le flow avance sans boîte de dialogue, vérifiez que l'application Android déclare `POST_NOTIFICATIONS` et cible Android 13 ou une version ultérieure.

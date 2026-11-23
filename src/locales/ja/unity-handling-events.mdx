@@ -122,7 +122,10 @@ public void FlowViewDidStartPurchase(
 
 購入が成功した場合、ユーザーが購入をキャンセルした場合、または購入が保留中（例：保護者の承認が必要な場合）に、このメソッドが呼び出されます。ユーザーによるキャンセルや保留中の支払いは、`FlowViewDidFailPurchase` ではなくこのメソッドをトリガーします。
 
-フローは購入後も閉じずに表示されたままになるため、ユーザーがアクセス権を取得したら `view.Dismiss(...)` を自分で呼び出してください。
+フローは購入後も閉じるまで表示されたままになります。購入への対応は2か所で設定できます：
+
+- **フロー内（推奨）**: 購入成功後にフローを閉じたり、サンクス画面を表示したりするには、Flow & Paywall Builder で[アウトカムアクション](respond-to-purchase-outcomes#add-actions-for-a-result)を設定してください。アプリのリリースなしに変更できます。
+- **アプリコード内**: カスタム通知など、フローでは対応できない処理に使用します。コードからフローを閉じるには、ユーザーがアクセス権を取得した後に `view.Dismiss(...)` を呼び出してください：
 
 ```csharp showLineNumbers title="Unity"
 public void FlowViewDidFinishPurchase(
@@ -211,11 +214,9 @@ public void FlowViewDidFinishPurchase(
 ```
 </Details>
 
-購入が成功した場合は、フロー画面を閉じることをお勧めします。
-
 #### 購入失敗 \{#failed-purchase\}
 
-エラーにより購入が失敗した場合、このメソッドが呼び出されます。これには、StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、およびシステムエラーが含まれます。なお、ユーザーによるキャンセルは `FlowViewDidFinishPurchase` をキャンセル結果で呼び出し、保留中の支払いはこのメソッドを呼び出しません。
+購入がエラーにより失敗した場合、このメソッドが呼び出されます。これには、StoreKit/Google Play Billing のエラー（支払い制限、無効なプロダクト、ネットワーク障害）、トランザクション検証の失敗、およびシステムエラーが含まれます。なお、ユーザーによるキャンセルは `FlowViewDidFinishPurchase` をキャンセル済みの結果でトリガーし、保留中の支払いはこのメソッドをトリガーしません。
 
 ```csharp showLineNumbers title="Unity"
 public void FlowViewDidFailPurchase(
@@ -249,9 +250,9 @@ public void FlowViewDidFailPurchase(
 ```
 </Details>
 
-#### 復元開始 \{#started-restore\}
+#### 復元の開始 \{#started-restore\}
 
-ユーザーが復元プロセスを開始したときに呼び出されます。
+ユーザーが復元プロセスを開始したときに呼び出されます：
 
 ```csharp showLineNumbers title="Unity"
 public void FlowViewDidStartRestore(AdaptyUIFlowView view) { }
@@ -298,11 +299,11 @@ public void FlowViewDidFinishRestore(
 ```
 </Details>
 
-ユーザーが必要な `accessLevel` を持っている場合は、画面を閉じることを推奨します。確認方法については、[サブスクリプションのステータス](unity-listen-subscription-changes) を参照してください。
+購入の復元後にウェルカムバック画面などの追加画面をユーザーに表示するには、Flow & Paywall Builder で[アウトカムアクション](respond-to-purchase-outcomes#respond-to-a-purchase-restoration)を設定してください。フローで対応できない処理（ユーザーがアクセス権を取得した後にアプリ内の画面を開くなど）はアプリのコードで実装します。アクセスレベルの確認方法については、[サブスクリプションステータス](unity-listen-subscription-changes)トピックを参照してください。
 
 #### 復元の失敗 \{#failed-restore\}
 
-購入の復元が失敗した場合に呼び出されます:
+購入の復元が失敗したときに呼び出されます：
 
 ```csharp showLineNumbers title="Unity"
 public void FlowViewDidFailRestore(
@@ -327,9 +328,9 @@ public void FlowViewDidFailRestore(
 ```
 </Details>
 
-#### ウェブ決済のナビゲーション完了 \{#finished-web-payment-navigation\}
+#### ウェブ決済ナビゲーションの完了 \{#finished-web-payment-navigation\}
 
-購入のために[ウェブペイウォール](web-paywall)を開こうとした後（成功・失敗を問わず）、このメソッドが呼び出されます。
+購入のために[ウェブペイウォール](web-paywall)を開こうとした後（成功・失敗にかかわらず）、このメソッドが呼び出されます：
 
 ```csharp showLineNumbers title="Unity"
 public void FlowViewDidFinishWebPaymentNavigation(
@@ -339,12 +340,12 @@ public void FlowViewDidFinishWebPaymentNavigation(
 ) { }
 ```
 
-**パラメータ：**
-- `product`: ウェブペイウォールが開かれた（または開こうとした）プロダクト、もしくは `null`
+**パラメーター:**
+- `product`: ウェブペイウォールが開かれた（または開こうとした）プロダクト。`null` の場合もあります
 - `error`: ウェブペイウォールが正常に開いた場合は `null`、失敗した場合は `AdaptyError`
 
 <Details>
-<summary>イベントの例（クリックして展開）</summary>
+<summary>イベントの例（クリックで展開）</summary>
 
 ```javascript
 // Successful navigation
@@ -450,7 +451,7 @@ public void FlowViewDidReceiveAnalyticEvent(
 
 ### システムリクエストの処理 \{#handle-system-requests\}
 
-`IAdaptyUISystemRequestsHandler`（`Adapty.SetSystemRequestsHandler(...)` で登録）は、フローからのシステムリクエスト（プッシュ通知やカメラアクセスなどの OS 権限プロンプト、アプリレビューリクエストなど）のために予約されています。フローはまだこれらのリクエストをトリガーしないため、ハンドラーを登録する必要はありません。
+`Adapty.SetSystemRequestsHandler(...)` で登録する `IAdaptyUISystemRequestsHandler` は、フローからのシステムリクエストに応答します。フローが **Request permission** アクションを実行すると、プッシュ通知の権限リクエストが送信されます。ハンドラーが登録されていない場合、リクエストへの応答がなく、送信元の画面にフローが留まったままになります。ハンドラーの実装方法については、[フローでの権限リクエストの処理](unity-handle-permissions)を参照してください。
 
 ### ナビゲーション \{#navigation\}
 
@@ -674,7 +675,7 @@ public void PaywallViewDidFailPurchase(
 ```
 
 <Details>
-<summary>イベントの例（クリックして展開）</summary>
+<summary>イベント例（クリックして展開）</summary>
 
 ```javascript
 {
@@ -697,9 +698,9 @@ public void PaywallViewDidFailPurchase(
 ```
 </Details>
 
-#### リストアの開始 \{#started-restore\}
+#### 復元開始 \{#started-restore\}
 
-ユーザーがリストアプロセスを開始したときに呼び出されます：
+ユーザーが復元プロセスを開始したときに呼び出されます。
 
 ```csharp showLineNumbers title="Unity"
 public void PaywallViewDidStartRestore(AdaptyUIPaywallView view) { }

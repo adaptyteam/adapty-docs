@@ -59,8 +59,17 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     and the element's text only when it differs from the layer name.
   - The reference stores the internal element id, not the **Element ID** field, so renaming an
     **Element ID** does not break it.
-  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, a
-    tooltip that says the condition is always false, publishing not blocked.
+  - A deleted element or state: a red label in the **Variable** field or **State** dropdown, and a
+    tooltip that says the condition is always false until you pick another element or state.
+    **Corrected 2026-11-20 (builder code, released 2026-11-19):** a condition that uses a deleted
+    element, state, or variable now blocks publishing. **Publish to Live** opens **Can't publish
+    yet** with the group **Broken references** and the toast "Fix N broken references before
+    publishing."; a reference that only the server rejects fails the publish as **Condition uses a
+    deleted element or state** or **Condition uses a deleted variable**. A delete of an element, a
+    state, or a custom variable that conditions use asks first (`Delete “<name>”?`, Cancel and
+    Delete). Owner rows: `flow-common-issues`, `builder-save-publish#troubleshooting`,
+    `element-states-in-conditions#troubleshooting`, `onboarding-variables`, `copy-flows`. This entry
+    used to say that publishing was not blocked.
   - The picker greys out an element that would close a loop of **Disabled** conditions; a loop
     that arrives in an imported or hand-made config blocks publishing as **Circular state
     conditions**.
@@ -122,6 +131,51 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
   show; the Revenue card also counts purchases on the flow's paywall screens outside the kept run, so it
   can exceed the table's sum. Flows shown without a placement are excluded. The Platform and Subscription
   state filters exist only in the funnel; other flow views never see them.
+
+- **Purchase and restoration outcomes** (builder and transformer code, 2026-11-19, before release).
+  Owner article: `respond-to-purchase-outcomes`. Facts its neighbours rest on:
+  - Labels: **Purchase** has **When succeeded**, **When failed**, **When cancelled by user**,
+    **When pending**; **Restore purchases** has **When restore completed** and **When restore failed**.
+    The **+** of a section adds a **Do nothing** action and opens its editor. A section without actions
+    runs nothing, so the flow stays on the screen.
+  - Only an **In-App Store** purchase has outcomes. Switching a **Purchase** to **Web Payment** drops
+    them (undo brings them back), and the flow never receives a Web Payment result: the SDK reports only
+    whether the checkout opened.
+  - **Purchase** and **Restore purchases** are disabled inside an outcome, at any depth, a conditional
+    action inside an outcome included.
+  - The editor warns, verbatim: "Navigation or Close Flow after a purchase or restore runs right away,
+    before the result. Move it into an outcome of the purchase or restore." It covers **Navigate to
+    Screen**, **Navigate Next**, **Navigate back** and **Close Flow**, also inside a conditional branch.
+  - Outcome actions run when the result arrives. At that moment, the screen where the purchase started
+    must still be the current screen, at the same place in the navigation history. A user who went back
+    to that screen before the result still gets them; a user who navigated forward to the same screen
+    again doesn't. A result that arrives during a screen transition runs when the new screen appears.
+  - Callback order (AdaptySDK-iOS and AdaptySDK-Android 4.4.0): native iOS and Android call the app's
+    purchase or restoration callback first, then run the outcome. Closing the flow there doesn't cancel
+    the outcome: its screens are lost, but **Open URL**, custom action and **Close Flow** outcomes still
+    reach the app. The cross-platform SDKs deliver the event asynchronously, after the outcome has
+    started, which is why the docs say only that closing the flow prevents users from seeing the screens the
+    outcome actions open.
+  - Android: `AdaptyFlowEventListener` is a required parameter of `getFlowView`, `showFlow` and
+    `AdaptyFlowScreen`, and the cross-platform SDKs set their own. A listener callback that throws stops
+    the outcome and most likely crashes the app (`FlowViewModel.handleEffect` has no `catch`), so the
+    docs name no Android listener prerequisite.
+  - While a purchase or restoration with outcomes waits for its result, a second tap on the same kind of
+    action is ignored, for a bounded time. Actions without outcomes compile as before, with no such guard.
+  - Observer mode: the SDK reports a fixed result whatever happened, **When pending** on iOS and
+    **When succeeded** on Android (the builder shows this note under the sections).
+  - Android drops a purchase of a product that Google Play hasn't returned yet, with no result at all
+    (AdaptySDK-Android 4.3.1, `adapty-ui/src/main/java/com/adapty/ui/internal/store/FlowReducer.kt`,
+    the `PurchaseProduct` branch); the button works again once the products load. iOS answers the same
+    tap with a failure, so **When failed** runs.
+  - Test on device: the iOS SDK's developer tools answer every purchase, restoration and web purchase
+    with success after 1.5 s. The preview opens with no products, and its mock products arrive 1.5 s
+    after it opens: a tap before then, or on a product missing from the mock list, fails, so **When
+    failed** runs (AdaptySDK-iOS 4.4.0,
+    `Sources.DeveloperTools/AdaptyUI/Dev_AdaptyUILogic.swift` and `Dev_AdaptyUITestRendererView.swift`).
+    Android's developer preview answers success but drops a tap on a product that hasn't loaded.
+    **Unconfirmed** which path the Adapty mobile app uses, so the docs say only that the preview can't
+    make real purchases.
 
 - **Figma import's ground truth is split across three places, and none of the closed-source ones is
   citable here.** The `/figma-import` landing page — its state machine, failure copy, and the mint call —
@@ -194,16 +248,16 @@ or developer can see and click.
 | filter-flows | — | marketer, dev | 6 | tutorial |
 | flow-ai-editor | — | marketer, dev | 15 | tutorial |
 | flow-builder-recipes | entry | marketer, dev | 0 | tutorial |
-| flow-common-issues | reference | marketer, dev | 14 | tutorial |
-| flow-funnel | — | marketer, dev | 13 | tutorial |
+| flow-common-issues | reference | marketer, dev | 16 | tutorial |
+| flow-funnel | — | marketer, dev | 14 | tutorial |
 | flow-metrics | — | marketer, dev | 25 | tutorial |
 | flow-screen-transitions | — | marketer, dev | 3 | tutorial |
 | flow-show-hide-animations | — | marketer, dev | 6 | tutorial |
 | flows-and-paywalls | entry | marketer, dev | 2 | tutorial |
 | import-from-figma | how-to | marketer, dev | 12 | tutorial |
 | migrate-to-flows | migration | marketer, dev | 8 | tutorial |
-| onboarding-actions | — | marketer, dev | 22 | tutorial |
-| onboarding-element-visibility | — | marketer, dev | 0 | tutorial |
+| onboarding-actions | — | marketer, dev | 24 | tutorial |
+| onboarding-element-visibility | — | marketer, dev | 1 | tutorial |
 | onboarding-flow-tutorial | — | marketer, dev | 10 | tutorial |
 | onboarding-navigation-branching | — | marketer, dev | 4 | tutorial |
 | onboarding-variables | — | marketer, dev | 9 | tutorial |
@@ -211,10 +265,10 @@ or developer can see and click.
 | paywall-device-compatibility-preview | — | marketer, dev | 4 | tutorial |
 | paywall-features-per-product | — | marketer, dev | 10 | tutorial |
 | paywall-onboarding-builder-deprecation | migration | marketer, dev | 5 | tutorial |
-| paywall-product-block | — | marketer, dev | 17 | tutorial |
+| paywall-product-block | — | marketer, dev | 18 | tutorial |
 | paywall-with-tabs | — | marketer, dev | 12 | tutorial |
 | paywall-with-trial-toggle | — | marketer, dev | 6 | tutorial |
-| respond-to-purchase-outcomes | — | dev, marketer | 5 | tutorial |
+| respond-to-purchase-outcomes | — | dev, marketer | 6 | tutorial |
 | show-offer-on-close | — | marketer, dev | 7 | tutorial |
 | show-plans-bottom-sheet | — | marketer, dev | 11 | tutorial |
 | strikethrough-price | — | marketer, dev | 6 | tutorial |
@@ -333,6 +387,14 @@ or developer can see and click.
   `placement-metrics.mdx`, `results-and-metrics.mdx`, and `webhook-event-types-and-fields.mdx` in one
   pass — mostly outside flow-logic, but a new revenue/proceeds/webhook field belongs in `flow-metrics`
   too whenever it lands in that cluster.
+- **Purchase and restoration outcomes are restated in many places (2026-11-19).** The owner is
+  `respond-to-purchase-outcomes`; short versions live in `onboarding-actions` (Purchase, Restore
+  purchases, Action order), `paywall-product-block` (Continue the flow after the paywall),
+  `onboarding-navigation-branching`, two `flow-common-issues` entries, the preview sentence in
+  `paywall-device-compatibility-preview`, `flows-with-your-own-payments` (observer mode), and the
+  purchase and restore callbacks of the seven `*-handling-events` pages in `sdk-flows-display`. A
+  relabelled outcome, a new result, or a change to which actions may follow a purchase moves all of
+  them.
 
 - **`flow-show-hide-animations` owns how to use Show element and Hide element (2026-11-10).** It covers
   the default (every element appears when the screen opens), which trigger fits which moment and where it
@@ -375,6 +437,14 @@ or developer can see and click.
   containers, quiz options, toggles, countdowns, images, videos, icons, text, carousels, bottom sheets,
   tabs, products. A new tappable element type needs an entry there and a check of the trigger table in
   `flow-show-hide-animations`.
+
+- **`onboarding-actions#request-permission` owns the builder side of Request permission (2026-11-20).**
+  Pointers to it: the seven `*-handle-permissions` articles in `sdk-flows-display` (their "Before you
+  start" flow bullet) and `respond-to-purchase-outcomes` (the actions you can't add to an outcome). The
+  section's warning names the per-SDK outcome without app setup; that list must match the
+  `sdk-flows-display` brief's 2026-11-20 findings. The Action order bullet restates the builder's warning
+  for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
+  says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
 
 ## Boundaries
 
@@ -429,6 +499,8 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "Set variable doesn't switch the plan", "the toggle doesn't change the selected product", "how do I assign `products.selectedProduct`" | `flow-common-issues#a-set-variable-action-doesnt-change-the-selected-product`; the mechanics are `onboarding-actions#select-product`. **The trap, which caught an agent on 2026-08-13:** the tempting explanation is "product variables are read-only", and it conflates two unrelated things. Product *variables* (`prod_price`, `offer_price`) are store-sourced display values (`onboarding-variables.mdx:52-54`), but which product is *selected* is not a variable at all — so there is nothing to assign, and variable mutability is the wrong frame entirely. Answer with **Select product**. |
 | "can't upload the image/video", "upload fails", "my logo is an SVG", "the GIF doesn't animate" | The reader-facing entry is `flow-common-issues#an-image-or-video-wont-upload`, but the limits themselves are owned by `flow-design`'s `custom-media` (Image and Video sections). Cross-zone by construction: when a format, size or duration limit changes, edit `custom-media` first and mirror it here — the troubleshooting page restates those numbers rather than sourcing them. |
 | "import from Figma", "the designer already built it", "turn our mockups into a flow", "the plugin won't run", "my import link expired", "the imported screen has no products", "the screens came in the wrong order", "the font says Select font", "my illustration is missing" | `import-from-figma`. Three traps (re-measured 2026-09-08 against two real imports read back with `adapty flows config get`). (1) The plugin is a Community plugin now, so "it doesn't appear in Figma" is a view-only file or an unsaved plugin, not the browser. (2) An import wires more than it looks: buttons get Navigate to screen actions to the *next screen in Layers-panel order*, quiz options become selectable groups with element IDs, text fields and date pickers become inputs, and pricing cards become a product-type group plus Purchase actions against placeholder product slots (`figma_import_*`). So "the buy button does nothing" is a products question (slots exist, no store product behind them), and "screens are out of order / every button opens the wrong screen" is one defect — layer order, not canvas order. (3) Missing illustrations have three known causes: a video fill, a hidden layer, or an image inside a boolean group; the chart case (auto-layout frames with solid fills) vanished for an unknown reason. Route all of these to that article's `Import limitations`, not to `paywall-product-block`. |
+| "thank-you screen after purchase", "continue the onboarding after the paywall", "the flow closes after a purchase", "the next screen opens before the purchase finishes", "show an alert when the purchase fails", "welcome-back screen after restore" | `respond-to-purchase-outcomes` for setup; `flow-common-issues#the-flow-doesnt-run-the-actions-set-for-a-purchase-result` when outcomes don't run. The usual cause of "the flow closes after a purchase" is app code that closes the flow in its purchase callback, not the flow. "Opens before the purchase finishes" is a navigation placed after **Purchase** in the same trigger. |
+| "buy button does nothing on Android", "first tap on Purchase is ignored" | `flow-common-issues#a-purchase-button-does-nothing-on-android` when the product exists: Google Play hasn't returned it yet. An unassigned product is still `paywall-product-block`. |
 | "show the close button after 3 seconds", "Show after delay is gone", "delayed close button", "make an element appear later", "fade in a headline", "animate a button" | `flow-show-hide-animations`. The usual trap is that a **Show element** action on an element that is already visible does nothing, with no animation: the target must start with **Visibility** set to **Hide**. Users can't tap a hidden element, so its own **On Tap** can never reveal it, but its own **On Screen Appear** can (that is how a converted close button is built). **Delay** tops out at 5000 ms; longer waits go through a visible, transparent Countdown (`flow-design`'s `flow-timer`). There is no toggle action: **Show element** only shows, **Hide element** only hides. |
 | "the animation doesn't play", "the delay is ignored", "it shows up instantly" | `flow-show-hide-animations#when-animation-and-delay-dont-apply`: a target with conditional visibility, anything inside a reusable component, or a bottom sheet changes at once, and publishing shows no warning. Rule out the canvas first: it plays nothing, so only **Test on device** shows the result. |
 | "auto-advance", "splash screen should move on by itself", "go to the next screen after the loader", "timer to the next screen" | `flow-screen-transitions#move-users-to-another-screen-automatically`: **On Screen Appear** + **Navigate to Screen** + **Delay**. Traps: **Delay** shows only when **Animation** isn't **None** (an animated type with **Duration** 0 switches at once after the delay); opening an alert, a bottom sheet, a date picker, or a web page, or starting a purchase or a restore, cancels the pending move; coming back to the screen starts the delay again. |
@@ -488,6 +560,11 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
   refresh of Subscription state, which is the backend author's statement; and the minimum SDK version that
   sends flow screen views, which the article avoids by saying only that the SDK reports them.
 
+- **Open question (2026-11-19): what Test on device answers for a purchase.** The preview sentences in
+  `paywall-device-compatibility-preview` and its two mirrors say only that the preview can't make real
+  purchases. What the preview answers instead rests on the SDKs' developer tools (see Sources of
+  truth), not on the Adapty mobile app's code, which isn't available here. Confirm on both apps before
+  the docs say more.
 - **Three published recipe sentences say hidden elements can't be edited** (`builder-containers.mdx:139`,
   `show-offer-on-close.mdx:33`, `show-plans-bottom-sheet.mdx:45`; found with
   `rg -n -i "can't be edited|can't edit" src/content/docs/guides/flow-builder/` on 2026-11-11). Dashboard
@@ -543,9 +620,16 @@ needed in place.
   **Is not empty** — no `>=` or `<=`. The right side takes a typed number or another number variable. A picker's
   variable is never empty, so **Is empty** never matches it. No article lists the operators; the conditional-action
   owners (`onboarding-actions`, `onboarding-element-visibility`) are where they'd go.
-- **No arithmetic.** Conditions, texts, and **Set variable** can't calculate (no arithmetic in the expression set, read
-  2026-11-17); a BMI is calculated in app code and passed back through a custom tag (`flow-custom-tags`). Unmerged
-  formula work exists in the builder; don't document it until it ships.
+- **Arithmetic lives in formulas (corrected 2026-11-19, builder code).** Conditions, texts, and **Set variable** still
+  can't calculate, but the builder gained two variable types: **Date** (a calendar day, Initial value `DD.MM.YYYY`) and
+  **Formula** (an expression that gives a Number or a Date). `flow-formulas` owns the language, the functions, the
+  no-value rule, the number and date text, and the formula errors; `onboarding-variables` lists the two types and
+  links there; the formula publish errors have rows in `flow-common-issues`. The formulas page was written to go live
+  before the builder release, because the builder's formula dialog links to `https://adapty.io/docs/flow-formulas`.
+  **Ripple:** `builder-number-picker` now points the BMI calculation to `flow-formulas` (changed with the formulas
+  page). `flow-custom-tags` (the BMI use case and the BMI example in the `<platform>-flow-custom-tags` guides) still
+  calculates a BMI in app code and passes it through a custom tag; that stays valid, but a formula now does it in
+  the flow.
 - **Navigate Next follows screen order, not answers.** It opens the next screen in the flow's order whatever users
   picked, so a branch to one of two parallel screens needs **Navigate to Screen** on both to rejoin.
 - **What sends input values.** Navigation actions (**Navigate to Screen**, **Navigate Next**, **Navigate back**),
