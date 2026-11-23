@@ -106,6 +106,14 @@ If the zone brief and roster still leave candidates open, search the map:
    - **No change needed**: Articles that mention the broader area but aren't affected by this specific change
 5. **Verify content fit per article**: When planning shared content (reusable components, callouts, or identical text) across multiple articles, don't assume that matching a structural pattern means the content applies. Read what each article actually does and verify the shared content is relevant there. For example, a note about user ID timing is irrelevant in an article that only passes device IDs.
 
+**Then check open PRs for the same articles.** Docs often wait in an open PR until the feature ships, and that PR can name a different ticket than yours. For each affected article, list the open PRs that change it:
+
+```bash
+gh pr list --state open --json number,title,author,headRefName,files --jq '.[] | select(any(.files[]; .path | endswith("/<article>.mdx"))) | "#\(.number) \(.title) by \(.author.login) (\(.headRefName))"'
+```
+
+When an open PR already covers the feature, don't draft it again. Read the PR, and plan only what it lacks or what the code changed after its last commit. Those changes go into that PR's branch as commits, with a PR comment that says what you added and why. Leave the merge to the PR's author.
+
 **Documentation research** (for each affected article):
 1. **Read the full article**: Understand the current structure, tone, depth, and heading patterns
 2. **Read neighboring articles**: Understand how this article fits in its sidebar section
@@ -157,6 +165,7 @@ When a class does fire, name the file, not the skill: resolve it from the skills
 - Any existing content that overlaps with or relates to the planned change
 - The article's heading style (verb phrases, noun phrases, or mixed)
 - Your product analysis: who reads this, what they're trying to do, and how the new feature fits their workflow
+- **Open PRs**: each open PR that changes an affected article, and what it already covers
 - **Shipped-skill ripple**: the class that fired and which file in which skill, or one line saying none
 
 ### Step 3: Assess Documentation Scope
