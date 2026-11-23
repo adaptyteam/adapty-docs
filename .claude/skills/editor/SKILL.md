@@ -74,16 +74,17 @@ After writing:
 1. Run the Review Pass Order over what you wrote
 2. Fix all violations before presenting — after each fix, re-read the whole bullet or paragraph (see After Any Edit)
 3. Verify all links point to existing pages
-4. Check sentence lengths on any sentence that looks long
+4. Check sentence lengths on any sentence that looks long, and look for clause chains in every sentence you wrote (Area 2). Split every chain you find.
 5. Verify introduction answers what, why, and when
 6. For new articles: add entry to sidebar in `src/data/sidebars/`
 7. **Scan every bullet list with bold labels** — confirm every item is `- **Label**: Capitalized explanation.` Fix any `—`, `-`, `.**`, or lowercase-after-colon patterns. ❌ `- **Label**: connects to...` → ✅ `- **Label**: Connects to...`
 8. **Place screenshot placeholders** at every UI state that needs one (see Screenshot Placeholders). Don't capture yet: the review in step 9 can still change the prose the screenshots must match.
 9. **Run the multi-role review** when the draft is a new article, or adds or rewrites a section or more — in a new article or an existing one. Start it without asking (`references/multi-review.md`), wait for the merged review, and apply every fix in it yourself.
 10. Run steps 1–2 again on the text that step 9 changed.
-11. **Capture the screenshots** without asking: every dashboard and builder placeholder, through the `mock-screenshots` skill (see Screenshot Placeholders). Check each frame against the sentence it follows, and fix the prose when the UI disagrees with it.
+11. **Re-check code facts for newer commits.** For each repo in the plan's facts list, run `git log <commit>..origin/<branch> -- <cited paths>`. Re-verify every fact whose files changed, UI labels included, and fix the text before you go on.
+12. **Capture the screenshots** without asking: every dashboard and builder placeholder, through the `mock-screenshots` skill (see Screenshot Placeholders). Check each frame against the sentence it follows, and fix the prose when the UI disagrees with it.
 
-Only after step 11, present the final content with a brief writing summary. See `references/output-templates.md` for format. The draft isn't done until the review and its fixes are over: never present it, or call it finished, before then. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
+Only after step 12, present the final content with a brief writing summary. See `references/output-templates.md` for format. The draft isn't done until the review and its fixes are over: never present it, or call it finished, before then. Don't list what the reviewers found or what you changed; mention only what needs the user (a fact nobody could settle, or a problem outside the docs).
 
 ### Phase 6: Report back to the zone brief
 
@@ -112,6 +113,7 @@ This decides scope, so it comes before any line editing.
 
 **Pass 2 — correctness.** Wrong documentation, in the order the defects actually occur:
 - Referents (Area 4) — the highest-frequency defect by a wide margin
+- Clause chains (Area 2) — a sentence the reader can't parse is wrong, not unpolished
 - Verbs (Area 5) — what, and where to
 - Claims (Area 13) — absolutes, cardinality, whose data, staleness
 - Terminology and UI labels (Area 11) — names verified against the source
@@ -144,6 +146,8 @@ Check for: sentences over 20 words (procedures) / 25 words (descriptions), vague
 
 **Split a sentence that joins two unrelated facts, even under the ceiling.** A `, and` or `, so` join is the cue. When the two clauses have different subjects and neither explains the other, split at the join. ❌ "The paywall loads its products from the store, and the close button appears after three seconds." ✅ "The paywall loads its products from the store. The close button appears after three seconds." A cause with its result, or two steps the reader takes in a row, stays one sentence. ✅ "Adapty caches the paywall, so changes appear after the next launch."
 
+**Never chain subordinate clauses: it's the most damaging sentence defect.** Two subordinate clauses, where the second hangs off the first, already make a chain: `only if … while … where`, `which … that …`. Split the sentence, or list the conditions. ❌ "The outcome runs only if the store returns the result while the user is on the screen where the purchase started." ✅ "The outcome runs when the store returns the result. At that moment, the user must still be on the screen where the purchase started."
+
 See `references/simplified-technical-english.md` → Sentence Structure + Word Choice
 
 ### 3. Value-Oriented Language
@@ -160,11 +164,16 @@ See `references/simplified-technical-english.md` → Value-Oriented Language
 **Unresolvable references** — the highest-frequency defect. Six tests:
 
 - Pronouns (`this`, `that`, `it`, `them`, `there`): can you swap in a noun from the previous sentence? If the nearest candidate is the wrong one, it's broken.
-- `the X` on first mention: has X been introduced? A name isn't an introduction: before a sentence relies on a term or a tool, say what it does. A step can't use what the reader makes in a later section ("enter the ID from the code of your app" before the app code exists).
+- `the X` on first mention: has X been introduced? A name isn't an introduction: before a sentence relies on a term or a tool, say what it does and why it fits this case. A step can't use what the reader makes in a later section ("enter the ID from the code of your app" before the app code exists). A link label isn't an introduction either. When X exists only in the label, link the thing the reader needs, not a container for it. ❌ "Enter a code from the [currency table](link)." ✅ "Enter a [currency code](link)." A label that names something on the reader's screen, or another article's title after "see", is fine: "the [Flows list](filter-flows)", "see the [Metric comparison table](metric-comparison-table)".
 - Counts, set members, and comparatives: "one of the two" — which one? A bare number needs a referent the reader can enumerate: "Adapty reports one revenue figure; PostHog stores three" — one and three of *what*? `Other`, `different`, `same`, `both`, and `the rest` need what they're compared with in the same sentence. ❌ "disabled for other relative elements, because other elements keep them below the status bar" ✅ "An element further down can't move up past the elements above it."
 - Temporal words (`already`, `afterwards`, `later`, `still`): anchored to what moment?
 - `this setting` / `that option`: is it named, and is it actually of that type?
 - Compressed noun phrases: "a saved integration doesn't prove the path is open" makes the reader decode it into "the fact that the save succeeded". Name the event the reader performed.
+
+**Quote the antecedent.** The writer always knows what a reference means, so the six tests pass when the writer runs them from memory. Run them from the text instead. For each `the X`, each `this` or `that` with a noun, and each pronoun you wrote:
+- Quote the noun it points to, from the same paragraph or the one before.
+- No noun to quote: write the noun in place of the reference. ❌ "Find the event name in the list." ✅ "Find the event name in the **Event Feed**."
+- Two nouns fit: name the one you mean. ❌ "Add the button to the screen, then give it a name." ✅ "Add the button to the screen, then give the button a name."
 
 **Pronoun at the start of a callout**: the visual break makes the antecedent unresolvable. Always use the explicit noun.
 
@@ -180,12 +189,18 @@ Name it at every section entry, in every heading, and anywhere the nearest candi
 - *Prepositions of place*: for every `in`, `under`, `next to`, `beside`, `inside`, `at the end of`, name what it modifies. If that's an abstract entity, substitute the representation. ❌ "open the context menu next to the flow" → ✅ "in the flow's row". When nothing on the screen matches the noun after the preposition, it isn't a place: rewrite without the preposition. ❌ "users in these cases see an empty area" → ✅ "When the native view doesn't appear, a custom element without a fallback stays empty."
 - *Possessives*: the possessive must be true of the representation. ✅ "the flow's row". ❌ "the flow's context menu" — the row displays the menu. ❌ "users whose app version includes the font" — the app is yours; the user installed a build of it.
 - *Reverse error*: a label is not the control. ❌ "Open **All placements**" → ✅ "Open the **All placements** filter above the list."
+- *The interface isn't the entity.* A field, panel, or tab displays an entity or one of its properties. It isn't the entity, and its label isn't the entity's name. Write about the entity, and name the field only where the reader types or selects in it. ❌ "Edit the expression to change the result." ✅ "To change the result, edit the formula in the **Expression** field."
 - *Don't stack two locatives in one instruction.* ❌ "In the Flows list, open the context menu in the flow's row" → ✅ "In the **Flows** list, find the flow. In its row, open the context menu." One location per sentence, each still leading with its location (Area 7).
 
 Also check for:
 - **Abstract nouns**: flag `figure`, `item`, `thing` — replace each with the concrete noun. Words like `value`, `data`, and `entity` are fine when bound to a named field or domain ("the value of `expires_at`", "revenue data") and vague when not ("we send the value"). The test is whether the noun is attached to something named, not the word itself. The same test covers vague states: `missing`, `situation`, `has a value`. Name what the code returns, what the user entered, or what stops happening. ❌ "shows no view because the content is missing" ✅ "returns no view, because the view needs a file that isn't on the device"
 - **Second readings**: Read each heading and sentence as a reader who knows only plain English, and look for a second meaning. It often comes from a number word that also means "a specific one" ("in one flow": a single flow, or the flow you picked?), a verb with many meanings in a heading ("Build"), or a clause that attaches to the nearer noun ("a button on the screen that opens the paywall": does the button open it, or the screen?). Rewrite until one reading is left.
-- **Missing cause-and-effect context**: A common case is a constraint that leaves the reader asking why: "Pick a valid type" leaves them asking which types are invalid, and what makes them so. For each `only`, `can't`, `invalid`, or requirement, state the rule behind it in terms the reader sees in the builder or the app. For a requirement, say what happens when it isn't met.
+- **Missing cause-and-effect context**: The reader asks "why?", and the text doesn't answer. State the reason in terms the reader sees in the builder or the app:
+  - A constraint (`only`, `can't`, `invalid`): state the rule behind it. "Pick a valid type" leaves the reader asking which types are invalid, and what makes them so.
+  - A requirement: say what happens when it isn't met.
+  - An absence or a substitution ("has no X", "X in place of Y"): say why the product works that way. ❌ "A formula has an **Expression** field in place of the **Initial value** field." ✅ "A formula always depends on other values, so it has no initial value."
+  - A step that tells the reader's code to do one thing and not another: say what the other choice would cost the user.
+- **"In your app" as a place**: A value can be set, stored, or sent in many places: the app code, the app's backend, the store listing, the Adapty Dashboard, a third-party tool, and others. "In your app", "on your side", and "in your project" point at none of them. Name the exact place, such as the call, the field, or the screen. ❌ "Set the user ID in your app." ✅ "Your app code passes the user ID to the SDK."
 - **Inaccurate metaphors**: a metaphor that contradicts the described behavior. ❌ "Works like a checklist" when evaluation stops at the first match (if/else-if/else) → remove or replace with an accurate analogy
 - **Settings by a user action**: don't describe a setting by a user action that may never happen. ❌ "**Start position**: the share of the screen the sheet covers before users scroll" ✅ "**Start position**: the share of the screen the sheet covers when the screen opens"
 - **Self-contradicting callouts**: e.g., saying an action "overrides" a setting and then saying they're "interchangeable" in the same callout — both can't be true. Flag and rewrite to resolve
@@ -200,6 +215,7 @@ Do NOT automatically flag passive voice. Only rewrite when active is clearly bet
 
 - **Missing object or destination.** For verbs of movement or change (`writes`, `sends`, `puts`, `skips`, `charges`, `separates`, `passes`), ask "what, and where to?" If the sentence can't answer, it's incomplete. ❌ "Adapty skips any event" → ✅ "Adapty doesn't send the event, and the Event Feed flags it as expired."
 - **Vague operation.** These pass the first test and still say nothing, because each is compatible with several mechanisms: `records`, `handles`, `processes`, `manages`, `tracks`, `captures`, `stores`, `logs`, `registers`, `reflects`. For each, ask whether the reader can name the operation, the medium, and the destination from the verb alone.
+- **Bare state verbs.** `keep`, `stay`, `remain`, and `start` say that something continues or begins, not what happens. Replace the verb with the action, or give it a complement. ❌ "Keep the existing view for the other IDs." ✅ "Return the existing view for the other IDs." ❌ "The fallback can stay after users grant access." ✅ "The fallback can stay on screen after users grant access."
 - **A field name needs a home.** ❌ "the ID Adapty puts in `distinct_id`" → ✅ "the ID Adapty sends as the `distinct_id` on each event."
 
 If supplying the object and destination pushes the sentence past Area 2's length ceiling, **split the sentence — don't drop the destination.** Precision sets the content; length governs how you package it. The same applies to scoping a plural or a unit (Area 4).
@@ -207,6 +223,8 @@ If supplying the object and destination pushes the sentence past Area 2's length
 **Prefer the plainest verb that stays true.** ❌ "Adapty **groups by** your app's reporting timezone" → ✅ "Adapty **uses** your app's reporting timezone."
 
 **Prefer the reader as the subject where the reader acts.** ❌ "The clipboard keeps the screen between flows" → ✅ "You can copy a screen from one flow to another, or between browser tabs." Where the mechanism acts and the reader doesn't, the mechanism stays the subject — "Adapty sends the event to PostHog" is correct. Don't give the reader an action that the app or a tool performs: ❌ "You can display a native view in each custom element" (the app displays it).
+
+**The subject is whoever performs the action.** Before you write a verb, name who performs it: the reader, the app code, the SDK, Adapty, the store, or another person. A callback, an event, a call, or a setting performs nothing: it's where or when the actor acts. ❌ "A purchase callback in your app closes the flow." ✅ "When a purchase finishes, your app closes the flow in its callback." Name only an actor the source confirms. When the source doesn't say who performs an action, keep the sentence, and ask the user in your summary instead of guessing.
 
 **State conditions as something the reader has, not something the system detects.** ❌ "This filter appears only when at least one placement uses a flow" → ✅ "…only when **you have at least one flow assigned to a placement**."
 
@@ -275,7 +293,7 @@ Check for: missing intro before first heading, H4 overuse, non-parallel headings
 - **Title/description scope mismatch**: the frontmatter `title` or `description` claims coverage the article doesn't provide. ❌ `description: "Show or hide elements and screens"` when only elements are covered → fix to match actual scope
 - **Product/feature name capitalization**: "Flow & Paywall Builder", not "Flow Builder" or "Flow & Paywall builder". Check that multi-word product names are consistently capitalized as proper nouns throughout. Current names: `references/product-terms.md`
 - **Split anything that outgrows its container**: a callout over ~3 sentences, or a troubleshooting entry that has grown subsections, gets promoted to its own section. Leave a pointer behind where it was.
-- **Parallel paragraphs are a list**: three or more consecutive paragraphs with the same shape (bold lead + explanation) → convert to a bullet list.
+- **Parallel paragraphs are a list**: three or more consecutive paragraphs with the same shape (bold lead + explanation) → convert to a bullet list. The same holds inside one sentence: three or more parallel facts, such as three minimum SDK versions, become a list under a short lead-in. Count the facts, not the platforms they apply to.
 - **Tables carry data; prose carries reasoning**: if a sentence describes a pattern that holds across items (a `_local` / `_usd` naming convention, say), that pattern is a table column, not a sentence. First confirm the set belongs in the article at all — see Area 13, don't enumerate what lives in code.
 - **Group items that share a claim under that claim**: five flat bullets, three of them about missing data → one parent bullet stating the claim, with those three as sub-bullets. A flat list hides the pattern.
 - **New code snippets** come only from verified sources (`snippet-master`, the SDK repo, an existing tested snippet). Don't write a new untested one into an article.
@@ -333,7 +351,7 @@ Check for: redundant phrases ("in order to" → "to"), wordy constructions ("mak
 **Banned words.** Substitutions, not just prohibitions:
 - **"check"** as a verb — not ESL-safe, and our docs auto-translate: it means verify, inspect, *and* tick. Use **select** for checkboxes, **review** or **verify** for inspection.
 - **"the X you want"** — filler and presumptuous. "Select one or more statuses" is shorter and documents multi-select besides.
-- **"for now" / "not yet" / "coming soon"** — leaks roadmap and half-promises a change. State the present truth: "You can't restore an archived flow."
+- **"for now" / "not yet" / "coming soon"** — leaks roadmap and half-promises a change. State the present truth: "You can't edit an archived flow."
 - **Nouned verbs as subjects** — "A publish is in progress" → "Adapty is publishing the flow." Same for "a copy", "a paste".
 
 Enforcement: `for now`, `not yet`, `coming soon`, `is in progress` are flagged anywhere. `check` and `you want` are flagged only in added or changed lines — 900+ existing instances make a full-article sweep its own project, not a review finding.
@@ -349,7 +367,7 @@ This targets duplicated **explanations and procedures**, not repeated **identifi
 
 If the same explanation appears three times in one passage (an intro plus two table rows), state it once.
 
-**Consolidate restrictions of the same kind.** If you state that something can't be done, grep the article for the other things that also can't be done to it. Scattered between a callout and body prose, restrictions read as unrelated facts — "an archived flow can't be restored" in a warning, "can't be edited or copied" three paragraphs down, leaves the reader asking "copy too?"
+**Consolidate restrictions of the same kind.** If you state that something can't be done, grep the article for the other things that also can't be done to it. Scattered between a callout and body prose, restrictions read as unrelated facts — "an archived flow can't be edited" in a warning, "can't be copied" three paragraphs down, leaves the reader asking "copy too?"
 
 The gain is usually a deletion: merging scattered constraints tends to expose that one of the fragments was saying nothing new.
 
@@ -393,7 +411,10 @@ See `references/simplified-technical-english.md` → Filler Words + Advanced STE
 
 ### 12. Framing and order
 
-**Prescribe, don't describe.** Every paragraph should tell the reader something to do, decide, or check. ❌ listing three IDs a user might end up with → ✅ state the mechanism, then the instruction. When a feature works only under several conditions, open with the goal they serve, and turn each condition into a step toward it.
+**Prescribe, don't describe.** Every paragraph should tell the reader something to do, decide, or check. ❌ listing three IDs a user might end up with. Order the paragraph by what it holds:
+- A one-sentence mechanism and an instruction: the mechanism first, then the instruction.
+- A longer mechanism and an instruction: the instruction first, then the mechanism as the reason.
+- A feature that works only under several conditions: the goal they serve first, then each condition as a step toward it.
 
 **Every claim needs a stated value.** "Repeat calls are cheap" — cheap buys the reader what? Name it, or cut the claim.
 
@@ -474,7 +495,7 @@ Corollary: `anyway` and `still` at the end of a clause are almost always a missi
 
 **Qualify absolutes that have exceptions.** "never" invites "how long never?" — if the real answer has a recoverable case, say so.
 
-**Under-scoping is the same defect.** When a sentence names one case, cause, or field, ask what else belongs in the set: another cause of the same outcome, or the second of two fields that match as a pair. Name them all, or the condition they share. ❌ "In app versions without the view, users see the fallback." ✅ "Users see the fallback when your app doesn't display the view."
+**Under-scoping is the same defect.** When a sentence names one case, cause, or field, ask what else belongs in the set: another cause of the same outcome, or the second of two fields that match as a pair. Name them all, or the condition they share. ❌ "In app versions without the view, users see the fallback." ✅ "Users see the fallback when your app doesn't display the view." The same holds for a mechanism and a symptom. A behavior verified for one product type, store, or platform covers only that one, and a troubleshooting symptom that readers hit on both stores gets a fix for each.
 
 **Whose data?** When a sentence says "the data", "the history", or "the events", name the system. ❌ "each user's history starts at their first launch of an Adapty build" — that ignores the customer's own SDK events.
 
@@ -506,7 +527,7 @@ Same ordering as above: **this rule decides whether the set is enumerated at all
 
 **Don't document a bug.** When you discover behavior by testing, ask whether a reasonable person would call it correct. If not, don't write it down — describing a defect blesses it, and the text goes stale the moment it's fixed.
 
-Write guidance that survives either resolution. ❌ three sentences explaining that archiving a live flow leaves it serving users you can no longer edit or restore → ✅ "Don't archive a live flow. Remove it from every placement that uses it first." If Adapty later blocks the archive, that line becomes the required step instead of a caution.
+Write guidance that survives either resolution. ❌ three sentences explaining that archiving a live flow leaves it serving users you can no longer edit → ✅ "Don't archive a live flow. Remove it from every placement that uses it first." If Adapty later blocks the archive, that line becomes the required step instead of a caution.
 
 If readers will hit the defect and need to recognize it, the symptom and workaround still belong in troubleshooting — describe what they see and what to do, not the mechanism as though it were designed.
 
