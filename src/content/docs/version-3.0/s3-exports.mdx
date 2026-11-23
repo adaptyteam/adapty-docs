@@ -336,7 +336,7 @@ Here is the table structure for the paywall visits:
 
 The virtual currency export sends each change of a [virtual currency](virtual-currencies) balance to your Amazon S3 bucket. Use it to load the full history of credits, spends, expiries, and refunds into your own data warehouse.
 
-This export is separate from the events and paywall visits exports. It has its own switch and credentials, and its own bucket and folder settings. The bucket and folder can be the same as for another export.
+This export is separate from the events and paywall visits exports. It has its own switch and credentials, and its own bucket and folder settings.
 
 ### Turn on the export
 
@@ -350,7 +350,7 @@ To export the virtual currency transactions of past days, use [manual data expor
 
 Every day, Adapty uploads 1 file with the virtual currency transactions of the previous calendar day in UTC. A transaction belongs to the day of its `created_at` time in UTC.
 
-The file name is `<app_id>_virtual_currency_<date>.csv`, where `<date>` is 1 day after the day of the transactions, in `YYYY-MM-DD` format. For example, the file `<app_id>_virtual_currency_2026-03-08.csv` contains the transactions of March 7, 2026. Each export has its own file name, so the files of all exports can be in one folder.
+The file name is `<app_id>_virtual_currency_<date>.csv`, where `<date>` is 1 day after the day of the transactions, in `YYYY-MM-DD` format. For example, the file `<app_id>_virtual_currency_2026-03-08.csv` contains the transactions of March 7, 2026. Each export has its own file name. Keep each export in its own folder, so that a table or loader that reads a whole folder gets only one type of file. If the exports share a folder, select the files of this export by name: `<app_id>_virtual_currency_*.csv`.
 
 The file is a UTF-8 `.csv` file with a header row. For a day with no transactions, the file has only the header row.
 
@@ -415,6 +415,7 @@ LEFT JOIN events AS e
     OR vc.store NOT IN ('app_store', 'play_store', 'stripe', 'paddle')
   )
   AND e.event_type IN (
+    'subscription_initial_purchase',
     'subscription_started',
     'subscription_renewed',
     'trial_started',
@@ -425,7 +426,7 @@ WHERE vc.amount > 0
   AND COALESCE(vc.store_transaction_id, '') <> '';
 ```
 
-The query uses the default event names. If you changed the event names in the events export settings, use your names in the query.
+The query lists the default event names. A subscription start is `subscription_initial_purchase` in an integration created since mid-September 2025, and `subscription_started` in an earlier one. If you changed the event names in the events export settings, use your names in the query.
 
 A credit row has no matching event if the events export is off, if the events export settings exclude or rename the event type of the purchase, or if **Exclude Historical Events** excludes the event.
 
@@ -434,7 +435,7 @@ One purchase can credit more than one currency. Each currency gets its own credi
 ### Limitations
 
 - **No prices or refund amounts**: The virtual currency file has no purchase price and no refund amount. To get the price, [join the credit row with the events table](#join-with-the-events-table).
-- **Don't add up credits from the two files**: The **virtual_currency_credits** column of the [events](#table-structure) file and the credit rows of the virtual currency file show the same purchase credits. To count credits, use one of them, not both. Their totals can differ: the events file has only the credits of purchases, and only for the events that its settings export, while the virtual currency file has every balance change, including grants through the API.
+- **Don't add up credits from the two files**: The **virtual_currency_credits** column of the [events](#table-structure) file and the credit rows of the virtual currency file show the same purchase credits. To count credits, use one of them, not both. Their totals can differ: the events file has only the credits of purchases, and only for the events that its settings export, while the virtual currency file has every balance change, including grants through the API and manual adjustments in the dashboard.
 - **No link between a spend and its credits**: The file doesn't show which credits a spend used, for example, purchased or granted credits.
 - **Refund rows show only the credits taken back**: A refund row shows the credits that Adapty took back from the balance. Its **amount** can be smaller than the credits that the purchase granted, for example, when the user spent part of them. If no credits were left, the file has no refund row.
 - **No refund row for a subscription upgrade**: A refund that comes from a subscription upgrade takes back no credits. The file has no refund row for it.
