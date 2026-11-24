@@ -1,0 +1,575 @@
+---
+title: "Show an interactive weight goal chart in a paywall"
+description: "Display the projected weight of each user as a chart in a paywall flow. Users drag along the chart to see the weight for any week."
+metadataTitle: "Show an interactive weight goal chart in a paywall | React Native SDK | Adapty Docs"
+---
+
+Follow this recipe to display the projected weight of each user as a chart in a paywall flow. The user enters their current and goal weight in an onboarding flow. Your app collects both values. The chart shows the weekly progress that the user can expect with your app, from one value to the other. Your app renders the chart as a native view in a [custom element](flow-custom-elements). On iOS, the view uses Swift Charts. On Android, the view draws the chart without a chart library.
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="The finished paywall: the user drags along the chart, and a label shows the projected weight for each week, down to the goal weight of 72 kg." />
+
+## Before you start
+
+- Update your app to Adapty React Native SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
+- Set up your app to [fetch](react-native-get-pb-paywalls) and [display](react-native-present-paywalls) flows.
+- Set up the native code of your app for custom elements, as in the [React Native guide](react-native-flow-custom-elements#before-you-start).
+- On iOS, the drag along the chart needs iOS 17 or later. On iOS 16, users see the line, but can't drag along it.
+- On Android, [set up Jetpack Compose](react-native-flow-custom-elements#set-up-jetpack-compose) in your app module. The chart in this recipe is a composable. Add Compose Foundation to your app with Gradle, from `androidx.compose.foundation:foundation`.
+
+<CustomElementChartTwoFlows />
+
+## 1. Ask for the current and goal weight in the onboarding flow
+
+<CustomElementChartOnboardingInputs />
+
+## 2. Add the custom element to the paywall screen
+
+<CustomElementChartBuilderSetup />
+
+## 3. Save the current and goal weight in your app
+
+Collect the current and goal weight from the `flow_user_input` events of the onboarding flow, as in [Process data from flows](react-native-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`. When the onboarding flow closes after that screen, pass both weights to `showWeightPaywall`, the function that [opens the paywall flow with the chart](#6-send-the-weights-from-your-javascript-code).
+
+The following function returns the `onAnalytics` and `onDisappeared` handlers of the onboarding flow:
+
+```typescript showLineNumbers title="weightOnboardingHandlers.ts"
+import type { FlowEventHandlers } from 'react-native-adapty';
+import { showWeightPaywall } from './showWeightPaywall';
+
+// the event handlers of the onboarding flow view
+export function weightOnboardingHandlers(): Partial<FlowEventHandlers> {
+  const enteredWeights: Record<string, string> = {};
+  let reachedLastScreen = false;
+
+  return {
+    onAnalytics(name, params) {
+      if (name === 'flow_screen_showed' && params.is_last_screen === true) {
+        reachedLastScreen = true;
+      } else if (
+        name === 'flow_user_input' &&
+        typeof params.element_id === 'string' &&
+        typeof params.value === 'string'
+      ) {
+        enteredWeights[params.element_id] = params.value;
+      }
+      return false; // keep the flow open
+    },
+    onDisappeared() {
+      // number inputs send their values as strings
+      const currentWeight = Number.parseFloat(enteredWeights.weight ?? '');
+      const goalWeight = Number.parseFloat(enteredWeights.goal_weight ?? '');
+      if (reachedLastScreen && !Number.isNaN(currentWeight) && !Number.isNaN(goalWeight)) {
+        showWeightPaywall(currentWeight, goalWeight);
+      }
+      return false;
+    },
+  };
+}
+```
+
+Before you present the onboarding flow, pass the handlers to its view:
+
+```typescript showLineNumbers title="React Native"
+const view = await createFlowView(flow);
+view.setEventHandlers(weightOnboardingHandlers());
+await view.present();
+```
+
+If your app already sets `onAnalytics` or `onDisappeared` for the onboarding flow, add the code of `weightOnboardingHandlers` to your handlers. Each handler that you pass to `setEventHandlers` replaces any earlier handler that has the same name.
+
+## 4. Create the chart view
+
+Create a model of a weight plan, and a view with the chart. The plan has one entry per week, from the current weight to the goal weight. When the user drags along the chart, the view marks the week at the touch point, and displays the projected weight for that week:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+import Charts
+import SwiftUI
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+The drag along the chart needs iOS 17 or later. On iOS 16, users see the line, but can't drag along it.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
+import kotlin.math.abs
+import kotlin.math.ceil
+import kotlin.math.roundToInt
+
+class WeightPlan(currentWeight: Double, goalWeight: Double) {
+    // one entry per week, from the current weight to the goal weight
+    val entries: List<WeightEntry> = run {
+        val weeklyChange = 0.5 // kg per week
+        val start = System.currentTimeMillis()
+        val weekMillis = 7L * 24 * 60 * 60 * 1000
+        val weeks = ceil(abs(goalWeight - currentWeight) / weeklyChange).toInt()
+        val step = if (goalWeight < currentWeight) -weeklyChange else weeklyChange
+        (0..weeks).map { week ->
+            val kilograms = if (week == weeks) goalWeight else currentWeight + step * week
+            WeightEntry(Date(start + week * weekMillis), kilograms)
+        }
+    }
+}
+
+data class WeightEntry(val date: Date, val kilograms: Double)
+
+@Composable
+fun WeightGoalChart(entries: List<WeightEntry>) {
+    // the week under the finger, or null when the user isn't dragging
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val textMeasurer = rememberTextMeasurer()
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val color = Color(0xFFAF52DE)
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 12.sp)
+    val minKg = entries.minOf { it.kilograms }
+    val kgRange = (entries.maxOf { it.kilograms } - minKg).coerceAtLeast(1.0)
+
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(entries) {
+                // horizontal drags select a week; vertical drags scroll the screen
+                detectHorizontalDragGestures(
+                    onDragEnd = { selectedIndex = null },
+                    onDragCancel = { selectedIndex = null },
+                ) { change, _ ->
+                    val index = (change.position.x / size.width * entries.lastIndex).roundToInt()
+                    selectedIndex = index.coerceIn(0, entries.lastIndex)
+                }
+            }
+    ) {
+        val startDate = textMeasurer.measure(dateFormat.format(entries.first().date), textStyle)
+        val endDate = textMeasurer.measure(dateFormat.format(entries.last().date), textStyle)
+        val dateY = size.height - startDate.size.height
+        val top = 24.dp.toPx() // room for the projected weight above the line
+        val bottom = dateY - 8.dp.toPx()
+        fun pointOf(index: Int) = Offset(
+            x = size.width * index / entries.lastIndex.coerceAtLeast(1),
+            y = bottom - ((entries[index].kilograms - minKg) / kgRange * (bottom - top)).toFloat(),
+        )
+
+        // the line from the current weight to the goal weight
+        for (index in 1..entries.lastIndex) {
+            drawLine(color, pointOf(index - 1), pointOf(index), strokeWidth = 2.dp.toPx())
+        }
+        // the dates of the first and the last week
+        drawText(startDate, topLeft = Offset(0f, dateY))
+        drawText(endDate, topLeft = Offset(size.width - endDate.size.width, dateY))
+
+        // the selected week: a point, and the projected weight above it
+        selectedIndex?.let { index ->
+            val point = pointOf(index)
+            drawCircle(color, radius = 5.dp.toPx(), center = point)
+            val weight = String.format(Locale.getDefault(), "%.1f kg", entries[index].kilograms)
+            val label = textMeasurer.measure(weight, textStyle.copy(color = color))
+            val x = (point.x - label.size.width / 2)
+                .coerceAtMost(size.width - label.size.width)
+                .coerceAtLeast(0f)
+            drawText(label, topLeft = Offset(x, point.y - label.size.height - 8.dp.toPx()))
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartWeeklyChange />
+
+## 5. Match the chart to the custom element
+
+In your [app-wide resolver](react-native-flow-custom-elements#pass-the-resolver-to-the-sdk), add a `WeightPlanStore` property. Then return the chart view for the `line_chart` Type and the `weight_goal` ID. The highlighted lines show what to add or change. If your app has no app-wide [resolver](react-native-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yet, copy the whole code:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {4-8,11,19-23}
+import AdaptyUIBuilder
+import SwiftUI
+
+// the weight plan that your JavaScript code sends before the paywall flow opens
+@MainActor
+final class WeightPlanStore {
+    var plan: WeightPlan?
+}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let weightPlanStore: WeightPlanStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "line_chart" where id == "weight_goal":
+            guard #available(iOS 16.0, *), let plan = weightPlanStore.plan else {
+                return nil // no weight plan: show the fallback
+            }
+            return AnyView(WeightGoalChart(entries: plan.entries))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {4-7,10,15-22}
+import com.adapty.ui.AdaptyCustomElementContent
+import com.adapty.ui.AdaptyCustomElementsResolver
+
+// the weight plan that your JavaScript code sends before the paywall flow opens
+class WeightPlanStore {
+    var plan: WeightPlan? = null
+}
+
+class CustomElementsResolver(
+    private val weightPlanStore: WeightPlanStore,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "line_chart" -> {
+                val plan = weightPlanStore.plan
+                if (id == "weight_goal" && plan != null) {
+                    AdaptyCustomElementContent.compose { WeightGoalChart(plan.entries) }
+                } else {
+                    null // no weight plan: show the fallback
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Until your JavaScript code sends the weights to your native code, the resolver returns no view, and users see the fallback.
+
+## 6. Send the weights from your JavaScript code
+
+Set the resolver at app launch, and fill the store from your JavaScript code through a [Turbo Native Module](https://reactnative.dev/docs/turbo-native-modules-introduction). The module has a JavaScript spec and an implementation for each platform.
+
+In a `specs` folder at the root of your project, create the spec of the module:
+
+```typescript showLineNumbers title="specs/NativeWeightPlanStore.ts"
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+
+export interface Spec extends TurboModule {
+  setWeights(currentWeight: number, goalWeight: number): void;
+}
+
+export default TurboModuleRegistry.getEnforcing<Spec>('NativeWeightPlanStore');
+```
+
+To generate the native code of the spec, add `codegenConfig` to `package.json`. Replace `com.example.app` with the package name of your Android app, in `package.json` and in the Kotlin implementation of the module. If `package.json` already has `codegenConfig`, only add `NativeWeightPlanStore` to the `modulesProvider` object:
+
+```json showLineNumbers title="package.json"
+"codegenConfig": {
+  "name": "AppSpecs",
+  "type": "modules",
+  "jsSrcsDir": "specs",
+  "android": {
+    "javaPackageName": "com.example.app.specs"
+  },
+  "ios": {
+    "modulesProvider": {
+      "NativeWeightPlanStore": "RCTNativeWeightPlanStore"
+    }
+  }
+}
+```
+
+Implement the module for each platform:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+In your app target in Xcode, create an Objective-C++ module. It sends the weights to your Swift code through `NotificationCenter`:
+
+```objectivec showLineNumbers title="RCTNativeWeightPlanStore.h"
+#import <AppSpecs/AppSpecs.h>
+
+@interface RCTNativeWeightPlanStore : NSObject <NativeWeightPlanStoreSpec>
+@end
+```
+
+```objectivec showLineNumbers title="RCTNativeWeightPlanStore.mm"
+#import "RCTNativeWeightPlanStore.h"
+
+@implementation RCTNativeWeightPlanStore
+
++ (NSString *)moduleName {
+  return @"NativeWeightPlanStore";
+}
+
+- (std::shared_ptr<facebook::react::TurboModule>)getTurboModule:
+    (const facebook::react::ObjCTurboModule::InitParams &)params {
+  return std::make_shared<facebook::react::NativeWeightPlanStoreSpecJSI>(params);
+}
+
+- (void)setWeights:(double)currentWeight goalWeight:(double)goalWeight {
+  // the AppDelegate updates the weight plan when it receives this notification
+  [[NSNotificationCenter defaultCenter] postNotificationName:@"WeightsDidChange"
+                                                      object:nil
+                                                    userInfo:@{@"current": @(currentWeight),
+                                                               @"goal": @(goalWeight)}];
+}
+
+@end
+```
+
+In `AppDelegate.swift`, add a property for the weight plan. In the `application(_:didFinishLaunchingWithOptions:)` method, set the resolver, and observe `NotificationCenter` to update the weight plan with each pair of weights. The highlighted lines show what to add. Keep the rest of the `AppDelegate` class as it is:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1,6-7,13-26}
+import AdaptyUI
+import UIKit
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  // the weight plan that your JavaScript code sends
+  let weightPlanStore = WeightPlanStore()
+
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(weightPlanStore: weightPlanStore))
+    // the weights that your JavaScript code sends through the native module
+    NotificationCenter.default.addObserver(
+      forName: Notification.Name("WeightsDidChange"),
+      object: nil,
+      queue: .main
+    ) { [weightPlanStore] notification in
+      guard let currentWeight = notification.userInfo?["current"] as? Double,
+            let goalWeight = notification.userInfo?["goal"] as? Double
+      else { return }
+      MainActor.assumeIsolated {
+        weightPlanStore.plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+      }
+    }
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+To generate the native code of the spec, run `pod install` in the `ios` folder.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Create the module, and a package that registers it with React Native:
+
+```kotlin showLineNumbers title="NativeWeightPlanStoreModule.kt"
+package com.example.app
+
+import com.example.app.specs.NativeWeightPlanStoreSpec
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.bridge.UiThreadUtil
+
+class NativeWeightPlanStoreModule(reactContext: ReactApplicationContext) :
+    NativeWeightPlanStoreSpec(reactContext) {
+
+    override fun getName() = NAME
+
+    override fun setWeights(currentWeight: Double, goalWeight: Double) {
+        val app = reactApplicationContext.applicationContext as MainApplication
+        // the resolver reads the weight plan on the main thread
+        UiThreadUtil.runOnUiThread {
+            app.weightPlanStore.plan = WeightPlan(currentWeight, goalWeight)
+        }
+    }
+
+    companion object {
+        const val NAME = "NativeWeightPlanStore"
+    }
+}
+```
+
+```kotlin showLineNumbers title="NativeWeightPlanStorePackage.kt"
+import com.facebook.react.BaseReactPackage
+import com.facebook.react.bridge.NativeModule
+import com.facebook.react.bridge.ReactApplicationContext
+import com.facebook.react.module.model.ReactModuleInfo
+import com.facebook.react.module.model.ReactModuleInfoProvider
+
+class NativeWeightPlanStorePackage : BaseReactPackage() {
+    override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? =
+        if (name == NativeWeightPlanStoreModule.NAME) NativeWeightPlanStoreModule(reactContext) else null
+
+    override fun getReactModuleInfoProvider() = ReactModuleInfoProvider {
+        mapOf(
+            NativeWeightPlanStoreModule.NAME to ReactModuleInfo(
+                name = NativeWeightPlanStoreModule.NAME,
+                className = NativeWeightPlanStoreModule.NAME,
+                canOverrideExistingModule = false,
+                needsEagerInit = false,
+                isCxxModule = false,
+                isTurboModule = true,
+            )
+        )
+    }
+}
+```
+
+In `MainApplication.kt`, add a property for the weight plan, and set the resolver in the `onCreate` method. The highlighted lines show what to add. Keep the rest of the `MainApplication` class as it is:
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,4-5,11}
+import com.adapty.ui.AdaptyUI
+
+class MainApplication : Application(), ReactApplication {
+  // the weight plan that your JavaScript code sends
+  val weightPlanStore = WeightPlanStore()
+
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(weightPlanStore))
+    // the rest of your onCreate code
+  }
+}
+```
+
+In `MainApplication.kt`, add `NativeWeightPlanStorePackage` to the list of packages:
+
+```kotlin showLineNumbers title="MainApplication.kt" {2}
+PackageList(this).packages.apply {
+  add(NativeWeightPlanStorePackage())
+}
+```
+
+</TabItem>
+</Tabs>
+
+In your JavaScript code, send the weights to the store before the paywall flow opens:
+
+```typescript showLineNumbers title="showWeightPaywall.ts"
+import { adapty, createFlowView } from 'react-native-adapty';
+import NativeWeightPlanStore from './specs/NativeWeightPlanStore';
+
+export async function showWeightPaywall(currentWeight: number, goalWeight: number) {
+  try {
+    // the native resolver builds the chart from these weights
+    NativeWeightPlanStore.setWeights(currentWeight, goalWeight);
+    const flow = await adapty.getFlow('weight_paywall');
+    const view = await createFlowView(flow);
+    await view.present();
+  } catch (error) {
+    // handle the error
+  }
+}
+```
+
+## 7. Test on a device
+
+The Flow & Paywall Builder can't run your app code, so its canvas only shows the fallback. To preview the chart:
+
+1. [Publish both flows](builder-save-publish). To see the latest published versions instead of cached ones, register the device as a [test device](test-devices).
+2. Run a build of your app that includes the resolver. On iOS, use a device with iOS 17 or later. Complete the onboarding flow with a current and a goal weight. Verify that the line of the chart starts at the current weight and ends at the goal weight.
+3. Drag along the chart, and verify that the projected weight for the week under your finger appears above the line.
+
+To test the fallback, return no view for the `line_chart` Type, and open the paywall flow again.
+
+To find out why the fallback appears instead of the chart, follow the instructions in the [Test on a device](react-native-flow-custom-elements#test-on-a-device) section of the React Native guide.
