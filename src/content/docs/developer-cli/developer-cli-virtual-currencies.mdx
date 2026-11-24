@@ -1,12 +1,12 @@
 ---
 title: "Manage virtual currencies from the CLI"
-description: "Manage virtual currencies from the terminal with the Adapty CLI: list and create currencies, change how many coins each product credits, and read the coin transactions and balances of an app or of one user."
+description: "Manage virtual currencies from the terminal with the Adapty CLI: list and create currencies, change how many credits each product grants, and read the credit transactions and balances of an app or of one user."
 metadataTitle: "Virtual Currencies in the Developer CLI | Adapty Docs"
 ---
 
-The Adapty CLI manages [virtual currencies](virtual-currencies) from the terminal, under the `adapty virtual-currencies` topic. You can list the currencies of an app, read the products that credit each currency, create a currency, change its name and description, add or change product mappings, and remove a mapping. You can also read the coin transactions of an app or of one user, and the balances of one user.
+The Adapty CLI manages [virtual currencies](virtual-currencies) from the terminal, under the `adapty virtual-currencies` topic. You can list the currencies of an app, create a currency, change its name and description, and add, change, or remove its *mappings*: the [linked products](create-virtual-currency#link-products) of the currency, with the credits each one grants. You can also read the credit transactions of an app or of one user, and the balances of one user. The CLI output calls credits *coins*.
 
-Use it to let an AI agent set up your currencies, to copy a currency setup across apps in a script, or to find out why a user has a balance without opening the dashboard. The commands do the same actions as the **Virtual currency** tab of the **Products** page and the user profile in the dashboard, and the dashboard shows the same data.
+Use it to let an AI agent set up your currencies, or to find out why a user has a balance without opening the dashboard. The currency and mapping commands do what the **Virtual currency** tab of the **Products** page does. The transaction and balance reads show the same data as the user's profile in the dashboard, but they don't change a balance. To correct one, [adjust it in the dashboard](virtual-currency-balance#adjust-a-balance-manually).
 
 ## Before you start
 
@@ -34,7 +34,7 @@ adapty products list --app <app-id>
 adapty virtual-currencies list --app <app-id>
 ```
 
-The list shows each currency with its code, name, and the number of products that credit it. It takes `--page` and `--page-size`, as the other lists of the CLI do.
+The list shows each currency with its code, name, and the number of products that grant it. It takes `--page` and `--page-size`, as the other lists of the CLI do.
 
 To read one currency with all its mappings, run:
 
@@ -49,29 +49,29 @@ The currency has these fields:
 | `virtual_currency_id` | The ID of the currency. The other commands take it as their argument. |
 | `code` | The code that the server-side API, the SDK, and the analytics filter use. You can't change it. |
 | `name`, `description` | The display name and the optional description. |
-| `products_count` | The number of products that credit the currency. |
+| `products_count` | The number of products that grant the currency. |
 | `updated_at` | The time of the last change, in milliseconds. Send it in `--expected-updated-at`, as [Protection against lost changes](#protection-against-lost-changes) describes. |
-| `mappings` | Only in `get`: the products that credit the currency, with the coins of each product. |
+| `mappings` | Only in `get`: the products that grant the currency, with the credits of each product. |
 
-A mapping sets how many coins one product credits:
+A mapping sets how many credits one product grants:
 
-- **`one-time`**: `credit_per_purchase` coins for each purchase of the product.
-- **`subscription`**: `credit_per_cycle` coins for each paid period. `expiring: true` makes the coins of a period expire when the subscription renews or ends. `credit_on_trial_start` gives the coins of a trial start, or `null` for none.
+- **`one-time`**: `credit_per_purchase` credits for each purchase of the product.
+- **`subscription`**: `credit_per_cycle` credits for each paid period. `expiring: true` makes the credits of a period expire when the subscription renews or ends. `credit_on_trial_start` gives the credits of a trial start, or `null` for none.
 
-For what each setting does, see [Create a virtual currency](create-virtual-currency#link-products).
+A mapping grants credits from the next purchase or renewal of its product, in production and in sandbox. Current subscribers get them at their next renewal. To give credits to existing users now, [grant a balance](grant-initial-balance) through the server-side API. For what each setting does, see [Create a virtual currency](create-virtual-currency#link-products).
 
 ## Create a currency
 
 :::warning
-You can't delete a currency or change its code. An app can have up to 20 currencies. Each mapping credits coins from the next purchase of its product.
+You can't delete a currency or change its code. An app can have up to 20 currencies.
 :::
 
 ```bash
-adapty virtual-currencies create --app <app-id> --code gems --name "Gems" \
+adapty virtual-currencies create --app <app-id> --code GEMS --name "Gems" \
   --description "Spent on hints" --file mappings.json
 ```
 
-`--code` takes letters, digits, and `_`, up to 32 characters, and it must be unique in the app. The letter case counts. `--name` takes up to 64 characters, and `--description` up to 256. `--file` is optional: without it, the currency has no mappings.
+`--code` takes letters, digits, and `_`, up to 32 characters, and it must be unique in the app. The CLI keeps the letter case as you type it, unlike the dashboard, which makes codes uppercase: `gems` and `GEMS` are two different codes. To match the currencies you create in the dashboard, use uppercase. The server-side API and the transaction and analytics filters need the code in the same case. `--name` takes up to 64 characters, and `--description` up to 256. `--file` is optional: without it, the currency has no mappings.
 
 The mappings file is a JSON list. Each item is a full mapping:
 
@@ -92,7 +92,7 @@ The mappings file is a JSON list. Each item is a full mapping:
 ]
 ```
 
-The CLI checks the file before it sends anything. If the file isn't a JSON list with at least one item, the CLI exits with code 2.
+In `create`, you can leave out `credit_on_trial_start`: a trial then grants no credits. The CLI checks the file before it sends anything. If the file isn't a JSON list with at least one item, the CLI exits with code 2.
 
 Before it creates the currency, the CLI shows the code, the mapped products, and that you can't delete the currency or change its code. It then asks for approval, as described in [Confirmation in scripts and agents](#confirmation-in-scripts-and-agents).
 
@@ -104,7 +104,7 @@ adapty virtual-currencies update <currency-id> --app <app-id> --name "Gold gems"
 
 Give at least one of `--name`, `--description`, and `--clear-description`. A value that you don't give stays as it is: the CLI reads the currency first and sends its current value. `--clear-description` removes the description. You can't use it together with `--description`.
 
-`update` doesn't ask for approval, because a second update reverts it. It sends the `updated_at` of its own read, so a change that someone made between this read and the write stops the update with exit code 4. This is the `virtual_currency_conflict` error, and nothing changes.
+`update` doesn't ask for approval, because a second update reverts it.
 
 ## Add or change mappings
 
@@ -112,12 +112,12 @@ Give at least one of `--name`, `--description`, and `--clear-description`. A val
 adapty virtual-currencies mappings upsert <currency-id> --app <app-id> --file mappings.json
 ```
 
-The file has the form of the [create file](#create-a-currency), with 1 to 200 items. A currency has at most 200 mappings in total. Each item replaces the mapping of its product, or adds a mapping for a product that has none. Give every field of each item: a field that you leave out isn't kept from the current mapping. A mapping that the file doesn't name stays as it is. `mappings upsert` never removes a mapping.
+The file has the form of the [create file](#create-a-currency), with 1 to 200 items. A currency has at most 200 mappings in total. Each item replaces the mapping of its product, or adds a mapping for a product that has none. Give every field of each item, also `credit_on_trial_start` (`null` for none). Adapty doesn't merge an item with the current mapping: it refuses an item with a missing or unknown field with exit code 4, and nothing changes. A mapping that the file doesn't name stays as it is. `mappings upsert` never removes a mapping.
 
 Before it sends the change, the CLI reads the currency and shows each product that changes:
 
-- A new mapping: `new` and its coins.
-- A changed mapping: the coins before and after, for example `30 → 50` coins for each purchase or each period. A change of `expiring` or `credit_on_trial_start` shows its value before and after too. The `product_type` of an item must be the type of its product: Adapty refuses a mapping whose `product_type` changes, with exit code 4.
+- A new mapping: `new` and its credits.
+- A changed mapping: the credits before and after, for example `30 → 50` for each purchase or each period. A change of `expiring` or `credit_on_trial_start` shows its value before and after too. The `product_type` of an item must be the type of its product: Adapty refuses a mapping whose `product_type` changes, with exit code 4.
 
 ## Remove a mapping
 
@@ -125,41 +125,11 @@ Before it sends the change, the CLI reads the currency and shows each product th
 adapty virtual-currencies mappings delete <currency-id> --app <app-id> --product <product-id>
 ```
 
-After the delete, purchases of the product credit no coins of this currency, and Adapty writes no transaction for them. If the product has no mapping, Adapty answers with a 404 error and exit code 4.
+After the delete, purchases of the product grant no credits of this currency, and Adapty writes no transaction for them. Credits that the product already granted stay in your users' balances. If the product has no mapping, Adapty answers with a 404 error and exit code 4.
 
-## Protection against lost changes
+## Read credit transactions
 
-Someone can change the currency in the dashboard, or another agent can change it, between your read and your write. To keep that change, `mappings upsert` and `mappings delete` send `expected_updated_at`, the `updated_at` of the currency that you read. If the currency changed after that read, Adapty refuses the write with the `virtual_currency_conflict` error, exit code 4, and changes nothing. Read the currency again, and decide again.
-
-The command sends this value:
-
-- **`--expected-updated-at` is given**: The CLI sends this value, also in a terminal. Give the `updated_at` of the read that you based your change on.
-- **In a terminal, without `--expected-updated-at`**: The CLI reads the currency, shows the change, and sends the `updated_at` of this read after your `y`.
-- **With `--yes`**: `--expected-updated-at` is required. Without it, the CLI sends nothing and exits with code 6, because `--yes` approves a change that the CLI can't show you.
-
-## Confirmation in scripts and agents
-
-These commands change how many coins your users get, and the change starts with the next purchase. Each one shows its effect and asks for approval before it sends the change:
-
-- `create`
-- `mappings upsert`
-- `mappings delete`
-
-How it asks depends on how the command runs:
-
-| How the command runs | What happens |
-|---|---|
-| In a terminal, without `--yes` and without `--json` | The CLI shows the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
-| With `--yes` | The CLI sends the request without asking. `mappings upsert` and `mappings delete` also need `--expected-updated-at`. |
-| Without `--yes`, with `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error shows the effect. For `mappings upsert` and `mappings delete`, it also names the flags to add after approval: `--yes --expected-updated-at` with the `updated_at` of the CLI's read. |
-
-So a script or an agent can read the effect of a command first: run it without `--yes`, show the effect to a person, and run it again with `--yes` only after that person approves the effect.
-
-`list`, `get`, `update`, and the transaction and balance reads run without asking.
-
-## Read coin transactions
-
-To read the coin transactions of an app, run:
+To read the credit transactions of an app, run:
 
 ```bash
 adapty virtual-currencies transactions list --app <app-id> \
@@ -190,9 +160,48 @@ For totals and trends, use the virtual currency charts of [`adapty analytics`](d
 adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
 ```
 
-Name the user by exactly one of `--profile` and `--customer-user-id`. The balances show each currency of the user with its `balance`, the `held` and `available` coins, and the expiry breakdown: the coins that don't expire, the coins that expire soonest with their expiry times, the sum of the coins that expire later, and the expired coins.
+Name the user by exactly one of `--profile` and `--customer-user-id`. The balances show each currency of the user with its `balance`, the `held` and `available` credits, and the expiry breakdown: the credits that don't expire, the credits that expire soonest with their expiry times, the sum of the credits that expire later, and the expired credits.
 
 To find out why a user has a balance, read the user's transactions and the balances together. The dashboard shows the same data on the [user's profile](virtual-currency-balance).
+
+## Protection against lost changes
+
+Someone can change the currency in the dashboard, or another agent can change it, between your read and your write. To keep that change, `mappings upsert` and `mappings delete` send `expected_updated_at`, the `updated_at` of the currency that you read. If the currency changed after that read, Adapty refuses the write with the `virtual_currency_conflict` error, exit code 4, and changes nothing. Read the currency again, and decide again.
+
+| How the command runs | The `expected_updated_at` that the CLI sends |
+|---|---|
+| With `--yes` | The value of `--expected-updated-at`. Without the flag, the CLI sends nothing and exits with code 6. |
+| In a terminal, with `--expected-updated-at` | The value of the flag, after you answer `y`. |
+| In a terminal, without `--expected-updated-at` | The `updated_at` of the CLI's own read, after you answer `y`. |
+
+A script reads `updated_at` with `get --json` and passes it after approval:
+
+```bash
+updated_at=$(adapty virtual-currencies get <currency-id> --app <app-id> --json | jq .updated_at)
+# Show the change to the person who approves it. After their yes:
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> \
+  --file mappings.json --yes --expected-updated-at "$updated_at"
+```
+
+## Confirmation in scripts and agents
+
+These commands show their effect and ask for approval before they send the change:
+
+- `create`
+- `mappings upsert`
+- `mappings delete`
+
+How they ask depends on how the command runs:
+
+| How the command runs | What happens |
+|---|---|
+| In a terminal, without `--yes` and without `--json` | The CLI shows the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
+| With `--yes` | The CLI sends the request without asking. Mapping writes also need [`--expected-updated-at`](#protection-against-lost-changes). |
+| Without `--yes`, with `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error shows the effect. |
+
+A script reads `updated_at` with `get --json`, shows the change, and runs the command with `--yes --expected-updated-at` after approval. An agent can also run the command without `--yes` and show the effect from the error.
+
+`list`, `get`, `update`, and the transaction and balance reads run without asking.
 
 ## Errors
 
@@ -200,10 +209,10 @@ To find out why a user has a balance, read the user's transactions and the balan
 |---|---|---|
 | 1 | You answered something other than `y` or `yes` at the prompt. Nothing was sent. | Run the command again if you meant to. |
 | 2 | The CLI refused the input before it sent anything: a flag, a mappings file that isn't a JSON list with at least one item, `update` without a change, `--description` with `--clear-description`, or both or neither of `--profile` and `--customer-user-id`. | Fix what the error names. |
-| 3 | You aren't logged in, or Adapty refused access to the app (HTTP status 403, also for a write on an app of another account). With `--json`, the error gives `status: 403`. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. |
+| 3 | You aren't logged in, or Adapty refused access with HTTP status 403: the app belongs to another account, or your sign-in can read the app but not change it. With `--json`, the error gives `status: 403`. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. If reads work and writes fail, ask an account owner for access that can make changes. |
 | 4 | Adapty refused the request. The error gives the reason, and `--json` gives the HTTP status and `error_code`. A server error (5xx) on a write also gives code 4, and the result is unknown. | See [Messages from Adapty](#messages-from-adapty). After a server error on a write, see [If a write gets no answer](#if-a-write-gets-no-answer). |
 | 5 | The CLI couldn't reach Adapty. | Make sure you are online. After a write, see [If a write gets no answer](#if-a-write-gets-no-answer). |
-| 6 | A command that asks for approval ran without `--yes` and with no one to answer, or `mappings upsert` or `mappings delete` ran with `--yes` and without `--expected-updated-at`. Nothing was sent. | Show the effect in the error to the person who approves the change. After that person approves it, run the command again with `--yes`, and with `--expected-updated-at` for `mappings upsert` and `mappings delete`. |
+| 6 | A command that asks for approval ran without `--yes` and with no one to answer, or a mapping write ran with `--yes` and without `--expected-updated-at`. Nothing was sent. | Show the effect in the error to the person who approves the change. After that person approves it, run the command again as [Protection against lost changes](#protection-against-lost-changes) describes. |
 | 130 | You pressed Ctrl+C at the prompt. Nothing was sent. | — |
 
 ### Messages from Adapty
@@ -219,11 +228,11 @@ With `--json`, the error gives the `error_code`:
 | `profile_does_not_exist` | The app has no user with this profile ID or customer user ID. A deleted user can't be found by the customer user ID. | Make sure that the ID is correct. For a deleted user, use `--profile`. |
 | `throttled` | More than 2 calls of the same transaction or balance read in one second for the same app. | Wait and run the command again. The CLI waits and tries a read up to 3 times. |
 
-Adapty also refuses a 21st currency in an app and a code that the app already uses, with exit code 4. A write on an app of another account gets exit code 3.
+Adapty also refuses a 21st currency in an app and a code that the app already uses, with exit code 4.
 
 ### If a write gets no answer
 
-If the CLI gets no answer to a write, because of a network error or a server error (exit code 4 or 5), it can't tell whether Adapty saved the change. The CLI doesn't send the write again. Before you run the command again, read the currency with `get`. A second write can fail although the first one passed: with `virtual_currency_conflict`, with a 404 for a mapping that is already removed, or with a used code after a create.
+If the CLI gets no answer to a write, because of a network error or a server error (exit code 4 or 5), it can't tell whether Adapty saved the change. The CLI doesn't send the write again. Before you run the command again, read what Adapty saved: after `create`, run `list` and look for the code. After any other write, read the currency with `get`. A second write can fail although the first one passed: with `virtual_currency_conflict`, with a 404 for a mapping that is already removed, or with a used code after a create.
 
 ## Command reference
 
@@ -313,13 +322,11 @@ Takes exactly one of `--profile` and `--customer-user-id`, and the flags of `tra
 
 The [Adapty MCP server](adapty-mcp) offers the same actions as `virtual_currencies_*` tools, for example `virtual_currencies_mappings_upsert` for `mappings upsert`. The tools work the same way as the commands, with these differences:
 
-- **Protection against lost changes**: `virtual_currencies_update`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete` require the `updated_at` of a read. After a `virtual_currency_conflict` error, the assistant reads the currency again.
+- **Protection against lost changes**: `virtual_currencies_update`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete` require `expected_updated_at`, the `updated_at` of a read. After a `virtual_currency_conflict` error, the assistant reads the currency again.
 - **Description**: In `virtual_currencies_update`, an empty `description` removes the description.
-- **Pages**: The transaction tools return one page. The answer has `next_cursor`, and the assistant sends it in `cursor` for the next page.
+- **Pages**: When `meta.pagination.has_more` is true, the assistant sends `meta.pagination.next_cursor` in `cursor`, with the same filters and time zone, for the next page.
 - **Approval**: The tools don't ask for approval and have no `--yes`. Before `virtual_currencies_create`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete`, the assistant shows you the change and waits for your yes.
 - **Throttling**: After a `throttled` error, the tools don't try the read again. The error says how long to wait.
-
-The [agent skill for virtual currencies](virtual-currencies-skill) shows you each change before the assistant makes it.
 
 ## What's next
 
