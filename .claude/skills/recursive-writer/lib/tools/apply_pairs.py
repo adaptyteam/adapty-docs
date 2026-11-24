@@ -2,7 +2,8 @@
 
 Usage: python3 apply_pairs.py pairs.json [--dry-run] [--stat [--lint]] [--approved]   (flags in any position)
 pairs.json: [{"file": "/abs/path.mdx", "old": "exact text", "new": "replacement"}, ...]
-Each "old" must occur exactly once in its file; otherwise nothing is written.
+Each "old" must occur exactly once in its file; otherwise nothing is written. A pair whose "new" already stands where
+its "old" is (an append, prepend or wrap applied before) is skipped and reported as already applied.
 --stat writes nothing and prints the change table: one row per file, the git diff line counts the
 pairs would produce, most changed first. Links are relative to the current directory (the VS Code
 workspace root); a docs article shows its slug (its URL path without /docs/), any other file its name. --lint also runs
@@ -32,16 +33,41 @@ if sid and (stat or "--approved" in sys.argv):  # the load gate: proposals and a
         print("NOT CHECKED: " + gate.MESSAGE + ", ".join(stale))
         sys.exit(2)
 dry = "--dry-run" in sys.argv or stat
-texts, originals, errors = {}, {}, []
+
+
+def places(t, old, new):
+    """Where `old` occurs in t, split in two: inside a copy of `new` that already stands there, and elsewhere. An append,
+    prepend or wrap keeps `old` inside `new`, so after the apply `old` still matches; that occurrence counts as applied."""
+    spans, inside, free = [], [], []
+    if old and old in new:  # every copy of `new` in the file, so any `old` within one counts as applied
+        j = t.find(new)
+        while j >= 0:
+            spans.append((j, j + len(new)))
+            j = t.find(new, j + len(new))
+    i = t.find(old) if old else -1
+    while i >= 0:
+        (inside if any(a <= i and i + len(old) <= b for a, b in spans) else free).append(i)
+        i = t.find(old, i + len(old))
+    return inside, free
+
+
+texts, originals, errors, done = {}, {}, [], []
 for i, p in enumerate(pairs):
     t = texts.setdefault(p["file"], originals.setdefault(p["file"], open(p["file"]).read()))
-    n = t.count(p["old"])
-    if n != 1:
-        errors.append(f"pair {i}: 'old' occurs {n} times in {p['file']}")
+    inside, free = places(t, p["old"], p["new"])
+    if inside and not free:  # the file already holds `new` where `old` stands: applied before
+        done.append(i)
         continue
-    texts[p["file"]] = t.replace(p["old"], p["new"], 1)
+    if len(free) != 1:
+        errors.append(f"pair {i}: 'old' occurs {len(free)} times in {p['file']}"
+                      + (f" ({len(inside)} more inside its 'new', already applied)" if inside else ""))
+        continue
+    at = free[0]
+    texts[p["file"]] = t[:at] + p["new"] + t[at + len(p["old"]):]
 if errors:
     print("NOT APPLIED:\n" + "\n".join(errors)); sys.exit(1)
+for i in done:
+    print(f"pair {i}: already applied in {pairs[i]['file']}")
 
 
 def label(f):
@@ -105,4 +131,5 @@ if not dry:
         for f in changed:
             sync.save_snapshot(f, texts[f], folder)
         print(f"snapshots: {len(changed)} in {sync.store(folder)}")
-print(f"{'checked' if dry else 'applied'} {len(pairs)} pairs in {len(texts)} files")
+print(f"{'checked' if dry else 'applied'} {len(pairs) - len(done)} pairs in {len(texts)} files"
+      + (f", {len(done)} already applied" if done else ""))
