@@ -118,6 +118,9 @@ question there. The real open question is the two Observer-mode changes below, i
 | 3.15 | migration-to-ios-315 |  |  |  |  | migration-to-kmp-315 |  |
 | 3.16 |  |  |  |  |  |  | migration-to-capacitor-316 |
 | 4.0 | migration-to-ios-sdk-v4 | migration-to-android-sdk-v4 | migration-to-react-native-sdk-v4 | migration-to-flutter-sdk-v4 | migration-to-unity-sdk-v4 | migration-to-kmp-sdk-v4 | migration-to-capacitor-sdk-v4 |
+| 4.1 | migration-to-ios-sdk-41 | migration-to-android-sdk-41 | migration-to-react-native-sdk-41 | migration-to-flutter-sdk-41 |  |  |  |
+| 4.3 |  |  |  | migration-to-flutter-sdk-43 | migration-to-unity-sdk-43 |  | migration-to-capacitor-sdk-43 |
+| 4.5 | migration-to-ios-sdk-45 |  |  |  |  |  |  |
 
 | id | role | audience | sections | sidebars |
 |---|---|---|---|---|
@@ -136,13 +139,16 @@ question there. The real open question is the two Observer-mode changes below, i
 | migration-to-android-sdk-v4 | migration | dev | 16 | android |
 | migration-to-android330 | migration | dev | 16 | android |
 | migration-to-capacitor-316 | migration | dev | 0 | capacitor |
-| migration-to-capacitor-sdk-v4 | migration | dev | 23 | capacitor |
+| migration-to-capacitor-sdk-43 | migration | dev | 8 | capacitor |
+| migration-to-capacitor-sdk-v4 | migration | dev | 30 | capacitor |
 | migration-to-flutter-sdk-34 | migration | dev | 2 | flutter |
 | migration-to-flutter-sdk-v3 | migration | dev | 4 | flutter |
 | migration-to-flutter-sdk-v4 | migration | dev | 24 | flutter |
 | migration-to-flutter330 | migration | dev | 14 | flutter |
 | migration-to-ios-315 | migration | dev | 0 | ios |
 | migration-to-ios-sdk-34 | migration | dev | 1 | ios |
+| migration-to-ios-sdk-41 | migration | — | 10 | ios |
+| migration-to-ios-sdk-45 | migration | dev | 4 | ios |
 | migration-to-ios-sdk-v3 | migration | dev | 2 | ios |
 | migration-to-ios-sdk-v4 | migration | dev | 24 | ios |
 | migration-to-ios330 | migration | dev | 18 | ios |
@@ -279,6 +285,7 @@ synonyms in `aliases.md`.
 | "purchase call signature changed", "personalized price flag", "crossgrade / subscription-update params" | `3.10` — `migration-to-android-310` (renamed subscription-update params, `AdaptyUiPersonalizedOfferResolver` removed) and `flutter-migration-guide-310` (parameter object). Unity's equivalent builder change is `3.14`. Note `flutter-migration-guide-310`'s changes still work — it documents a coming removal, so "nothing is broken yet" doesn't mean the ticket is wrong. |
 | "separate UI package is gone", "forgot to activate the UI module", "`Adapty-Info.plist` is ignored", "version mismatch between the SDK and UI artifacts" | `3.0` — the UI package was folded into the core one, which forces a package reinstall rather than a version bump: `migration-to-ios-sdk-v3` (SPM re-add + AdaptyUI activation), `migration-to-flutter-sdk-v3` (plist replaced by code activation), `migration-to-android-sdk-v3` (BoM, which is the fix for mismatched artifact versions). |
 | "Kids Mode product missing", "promoted purchases stopped working", "mock-mode key renamed", "China cluster" | `4.0` side-effects that read as unrelated regressions: Kids Mode became its own package (iOS, Flutter), promoted purchases changed on iOS, React Native's mock-mode key became `flows`, and KMP gained the China server cluster. Filed as "the v4 upgrade broke feature X," they're all in that platform's v4 guide. |
+| "`extra argument 'locale' in call`", "flow shows its default locale after the update", "the paywall isn't in English anymore" | `4.5`, iOS only (`migration-to-ios-sdk-45`): `getFlowConfiguration` takes `preferredLocales`, a list, instead of `locale`. A call without it still compiles and now shows the flow's default locale, not `en`. |
 
 ## Gaps and misses
 
