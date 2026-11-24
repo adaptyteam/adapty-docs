@@ -1,0 +1,328 @@
+---
+title: "Manage virtual currencies from the CLI"
+description: "Manage virtual currencies from the terminal with the Adapty CLI: list and create currencies, change how many coins each product credits, and read the coin transactions and balances of an app or of one user."
+metadataTitle: "Virtual Currencies in the Developer CLI | Adapty Docs"
+---
+
+The Adapty CLI manages [virtual currencies](virtual-currencies) from the terminal, under the `adapty virtual-currencies` topic. You can list the currencies of an app, read the products that credit each currency, create a currency, change its name and description, add or change product mappings, and remove a mapping. You can also read the coin transactions of an app or of one user, and the balances of one user.
+
+Use it to let an AI agent set up your currencies, to copy a currency setup across apps in a script, or to find out why a user has a balance without opening the dashboard. The commands do the same actions as the **Virtual currency** tab of the **Products** page and the user profile in the dashboard, and the dashboard shows the same data.
+
+## Before you start
+
+The `virtual-currencies` topic uses the same installation and login as the rest of the CLI. If you have not set that up, follow steps 1 and 2 of the [quickstart guide](developer-cli-quickstart). To see whether your CLI has the topic, run:
+
+```bash
+adapty virtual-currencies --help
+```
+
+Every command takes the app's UUID in `--app`. To find it, run:
+
+```bash
+adapty apps list
+```
+
+A mapping names a product by its Adapty product ID, not by its store product ID. To find the product IDs, run:
+
+```bash
+adapty products list --app <app-id>
+```
+
+## List and read currencies
+
+```bash
+adapty virtual-currencies list --app <app-id>
+```
+
+The list shows each currency with its code, name, and the number of products that credit it. It takes `--page` and `--page-size`, as the other lists of the CLI do.
+
+To read one currency with all its mappings, run:
+
+```bash
+adapty virtual-currencies get <currency-id> --app <app-id>
+```
+
+The currency has these fields:
+
+| Field | Value |
+|---|---|
+| `virtual_currency_id` | The ID of the currency. The other commands take it as their argument. |
+| `code` | The code that the server-side API, the SDK, and the analytics filter use. You can't change it. |
+| `name`, `description` | The display name and the optional description. |
+| `products_count` | The number of products that credit the currency. |
+| `updated_at` | The time of the last change, in milliseconds. Send it in `--expected-updated-at`, as [Protection against lost changes](#protection-against-lost-changes) describes. |
+| `mappings` | Only in `get`: the products that credit the currency, with the coins of each product. |
+
+A mapping sets how many coins one product credits:
+
+- **`one-time`**: `credit_per_purchase` coins for each purchase of the product.
+- **`subscription`**: `credit_per_cycle` coins for each paid period. `expiring: true` makes the coins of a period expire when the subscription renews or ends. `credit_on_trial_start` gives the coins of a trial start, or `null` for none.
+
+For what each setting does, see [Create a virtual currency](create-virtual-currency#link-products).
+
+## Create a currency
+
+:::warning
+You can't delete a currency or change its code. An app can have up to 20 currencies. Each mapping credits coins from the next purchase of its product.
+:::
+
+```bash
+adapty virtual-currencies create --app <app-id> --code gems --name "Gems" \
+  --description "Spent on hints" --file mappings.json
+```
+
+`--code` takes letters, digits, and `_`, up to 32 characters, and it must be unique in the app. The letter case counts. `--name` takes up to 64 characters, and `--description` up to 256. `--file` is optional: without it, the currency has no mappings.
+
+The mappings file is a JSON list. Each item is a full mapping:
+
+```json title="mappings.json"
+[
+  {
+    "product_id": "<one-time-product-id>",
+    "product_type": "one-time",
+    "credit_per_purchase": 100
+  },
+  {
+    "product_id": "<subscription-product-id>",
+    "product_type": "subscription",
+    "credit_per_cycle": 500,
+    "expiring": true,
+    "credit_on_trial_start": 50
+  }
+]
+```
+
+The CLI checks the file before it sends anything. If the file isn't a JSON list with at least one item, the CLI exits with code 2.
+
+Before it creates the currency, the CLI shows the code, the mapped products, and that you can't delete the currency or change its code. It then asks for approval, as described in [Confirmation in scripts and agents](#confirmation-in-scripts-and-agents).
+
+## Change the name or the description
+
+```bash
+adapty virtual-currencies update <currency-id> --app <app-id> --name "Gold gems"
+```
+
+Give at least one of `--name`, `--description`, and `--clear-description`. A value that you don't give stays as it is: the CLI reads the currency first and sends its current value. `--clear-description` removes the description. You can't use it together with `--description`.
+
+`update` doesn't ask for approval, because a second update reverts it. It sends the `updated_at` of its own read, so a change that someone made between this read and the write stops the update with exit code 4. This is the `virtual_currency_conflict` error, and nothing changes.
+
+## Add or change mappings
+
+```bash
+adapty virtual-currencies mappings upsert <currency-id> --app <app-id> --file mappings.json
+```
+
+The file has the form of the [create file](#create-a-currency), with 1 to 200 items. A currency has at most 200 mappings in total. Each item replaces the mapping of its product, or adds a mapping for a product that has none. Give every field of each item: a field that you leave out isn't kept from the current mapping. A mapping that the file doesn't name stays as it is. `mappings upsert` never removes a mapping.
+
+Before it sends the change, the CLI reads the currency and shows each product that changes:
+
+- A new mapping: `new` and its coins.
+- A changed mapping: the coins before and after, for example `30 → 50` coins for each purchase or each period. A change of `expiring` or `credit_on_trial_start` shows its value before and after too. The `product_type` of an item must be the type of its product: Adapty refuses a mapping whose `product_type` changes, with exit code 4.
+
+## Remove a mapping
+
+```bash
+adapty virtual-currencies mappings delete <currency-id> --app <app-id> --product <product-id>
+```
+
+After the delete, purchases of the product credit no coins of this currency, and Adapty writes no transaction for them. If the product has no mapping, Adapty answers with a 404 error and exit code 4.
+
+## Protection against lost changes
+
+Someone can change the currency in the dashboard, or another agent can change it, between your read and your write. To keep that change, `mappings upsert` and `mappings delete` send `expected_updated_at`, the `updated_at` of the currency that you read. If the currency changed after that read, Adapty refuses the write with the `virtual_currency_conflict` error, exit code 4, and changes nothing. Read the currency again, and decide again.
+
+The command sends this value:
+
+- **`--expected-updated-at` is given**: The CLI sends this value, also in a terminal. Give the `updated_at` of the read that you based your change on.
+- **In a terminal, without `--expected-updated-at`**: The CLI reads the currency, shows the change, and sends the `updated_at` of this read after your `y`.
+- **With `--yes`**: `--expected-updated-at` is required. Without it, the CLI sends nothing and exits with code 6, because `--yes` approves a change that the CLI can't show you.
+
+## Confirmation in scripts and agents
+
+These commands change how many coins your users get, and the change starts with the next purchase. Each one shows its effect and asks for approval before it sends the change:
+
+- `create`
+- `mappings upsert`
+- `mappings delete`
+
+How it asks depends on how the command runs:
+
+| How the command runs | What happens |
+|---|---|
+| In a terminal, without `--yes` and without `--json` | The CLI shows the effect and asks `Apply? [y/N]`. If you answer `y` or `yes`, the CLI sends the request. For any other answer, the CLI exits with code 1 and sends nothing. |
+| With `--yes` | The CLI sends the request without asking. `mappings upsert` and `mappings delete` also need `--expected-updated-at`. |
+| Without `--yes`, with `--json`, in a pipe, or with no terminal | The CLI sends nothing and exits with code 6. The error shows the effect. For `mappings upsert` and `mappings delete`, it also names the flags to add after approval: `--yes --expected-updated-at` with the `updated_at` of the CLI's read. |
+
+So a script or an agent can read the effect of a command first: run it without `--yes`, show the effect to a person, and run it again with `--yes` only after that person approves the effect.
+
+`list`, `get`, `update`, and the transaction and balance reads run without asking.
+
+## Read coin transactions
+
+To read the coin transactions of an app, run:
+
+```bash
+adapty virtual-currencies transactions list --app <app-id> \
+  --date-from 2026-11-01 --date-to 2026-11-07 --timezone Europe/Berlin
+```
+
+The period is required, at most 366 days, both days included. The days are days of `--timezone`, an IANA time zone name, or of the app time zone without it. Filter the transactions with `--currency-code`, `--operation`, `--feature`, and `--sandbox` or `--no-sandbox`. For the operation values, see [Operation](virtual-currencies#operation).
+
+To read the transactions of one user, name the user by exactly one of `--profile`, the Adapty profile ID, and `--customer-user-id`, your own user ID:
+
+```bash
+adapty virtual-currencies profiles transactions list --app <app-id> --customer-user-id <user-id>
+```
+
+The period of a user's transactions is optional. Without it, the CLI reads the whole history of the user. It takes the same filters and `--timezone`.
+
+The transactions come newest first, one page for each command. A page has 20 transactions by default, and `--page-size` sets 1 to 100. When the period has more transactions, the table ends with `More rows:` and the command for the next page: the same flags and `--cursor` with the cursor of this page. Run the next page with the same period, filters, and time zone. A cursor with other filters fails with the `cursor_filters_mismatch` error. With `--json`, the output is the answer of Adapty as it is, `data` and `meta`, and the cursor is `meta.pagination.next_cursor`.
+
+The CLI has no option to read all pages. To load every transaction into your data warehouse, use the daily export to [Amazon S3](s3-exports#virtual-currency-transactions) or [Google Cloud Storage](google-cloud-storage#virtual-currency-transactions).
+
+:::note
+For totals and trends, use the virtual currency charts of [`adapty analytics`](developer-cli-analytics), not a sum of transactions. To find the chart names, run `adapty analytics catalog`. A chart leaves out each user with a sandbox transaction, and the transaction list doesn't. So a sum of transactions can differ from a chart.
+:::
+
+## Read the balances of a user
+
+```bash
+adapty virtual-currencies profiles balances get --app <app-id> --profile <profile-id>
+```
+
+Name the user by exactly one of `--profile` and `--customer-user-id`. The balances show each currency of the user with its `balance`, the `held` and `available` coins, and the expiry breakdown: the coins that don't expire, the coins that expire soonest with their expiry times, the sum of the coins that expire later, and the expired coins.
+
+To find out why a user has a balance, read the user's transactions and the balances together. The dashboard shows the same data on the [user's profile](virtual-currency-balance).
+
+## Errors
+
+| Exit code | Cause | What to do |
+|---|---|---|
+| 1 | You answered something other than `y` or `yes` at the prompt. Nothing was sent. | Run the command again if you meant to. |
+| 2 | The CLI refused the input before it sent anything: a flag, a mappings file that isn't a JSON list with at least one item, `update` without a change, `--description` with `--clear-description`, or both or neither of `--profile` and `--customer-user-id`. | Fix what the error names. |
+| 3 | You aren't logged in, or Adapty refused access to the app (HTTP status 403, also for a write on an app of another account). With `--json`, the error gives `status: 403`. | Log in with `adapty auth login`, and find the app ID in `adapty apps list`. |
+| 4 | Adapty refused the request. The error gives the reason, and `--json` gives the HTTP status and `error_code`. A server error (5xx) on a write also gives code 4, and the result is unknown. | See [Messages from Adapty](#messages-from-adapty). After a server error on a write, see [If a write gets no answer](#if-a-write-gets-no-answer). |
+| 5 | The CLI couldn't reach Adapty. | Make sure you are online. After a write, see [If a write gets no answer](#if-a-write-gets-no-answer). |
+| 6 | A command that asks for approval ran without `--yes` and with no one to answer, or `mappings upsert` or `mappings delete` ran with `--yes` and without `--expected-updated-at`. Nothing was sent. | Show the effect in the error to the person who approves the change. After that person approves it, run the command again with `--yes`, and with `--expected-updated-at` for `mappings upsert` and `mappings delete`. |
+| 130 | You pressed Ctrl+C at the prompt. Nothing was sent. | — |
+
+### Messages from Adapty
+
+With `--json`, the error gives the `error_code`:
+
+| `error_code` | Cause | What to do |
+|---|---|---|
+| `virtual_currency_conflict` | The currency changed after the read whose `updated_at` the write sent. Nothing changed. | Read the currency with `get`, and decide again. |
+| `invalid_date_range` | The period of `transactions list` is longer than 366 days, or the period of a transaction list ends before it starts. | Use a shorter period, or give a `--date-from` that isn't after `--date-to`. |
+| `cursor_filters_mismatch` | The cursor belongs to a page with another period, other filters, or another time zone. | Run the next page with the same flags as the first page. |
+| `invalid_cursor` | The value of `--cursor` isn't a cursor from Adapty. | Copy the cursor from the `More rows:` line, or from `meta.pagination.next_cursor`. |
+| `profile_does_not_exist` | The app has no user with this profile ID or customer user ID. A deleted user can't be found by the customer user ID. | Make sure that the ID is correct. For a deleted user, use `--profile`. |
+| `throttled` | More than 2 calls of the same transaction or balance read in one second for the same app. | Wait and run the command again. The CLI waits and tries a read up to 3 times. |
+
+Adapty also refuses a 21st currency in an app and a code that the app already uses, with exit code 4. A write on an app of another account gets exit code 3.
+
+### If a write gets no answer
+
+If the CLI gets no answer to a write, because of a network error or a server error (exit code 4 or 5), it can't tell whether Adapty saved the change. The CLI doesn't send the write again. Before you run the command again, read the currency with `get`. A second write can fail although the first one passed: with `virtual_currency_conflict`, with a 404 for a mapping that is already removed, or with a used code after a create.
+
+## Command reference
+
+Every command takes `--app`, the app UUID from `adapty apps list`. The commands that take `<currency-id>` take the `virtual_currency_id` from `list`.
+
+### `virtual-currencies list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--page` | No | Page number. Default: 1. |
+| `--page-size` | No | Currencies per page, up to 100. Default: 20. |
+
+### `virtual-currencies get`
+
+Takes the currency ID as its argument. Returns the currency with all its mappings.
+
+### `virtual-currencies create`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--code` | Yes | The code of the currency. You can't change it later. |
+| `--name` | Yes | The display name. |
+| `--description` | No | The description. |
+| `--file` | No | The JSON file of the mappings. See [Create a currency](#create-a-currency). |
+| `--yes`, `-y` | No | Create without asking. Required with `--json` or in a pipe. |
+
+### `virtual-currencies update`
+
+Takes the currency ID as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--name` | No | The new display name. |
+| `--description` | No | The new description. |
+| `--clear-description` | No | Remove the description. |
+
+### `virtual-currencies mappings upsert`
+
+Takes the currency ID as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--file` | Yes | The JSON file of 1 to 200 full mappings. See [Add or change mappings](#add-or-change-mappings). |
+| `--expected-updated-at` | With `--yes` | The `updated_at` of the read that the change is based on. |
+| `--yes`, `-y` | No | Change without asking. Required with `--json` or in a pipe. |
+
+### `virtual-currencies mappings delete`
+
+Takes the currency ID as its argument.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--product` | Yes | The Adapty product ID of the mapping to remove. |
+| `--expected-updated-at` | With `--yes` | The `updated_at` of the read that the change is based on. |
+| `--yes`, `-y` | No | Remove without asking. Required with `--json` or in a pipe. |
+
+### `virtual-currencies transactions list`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--date-from`, `--date-to` | Yes | The first and the last day, `YYYY-MM-DD`, at most 366 days. |
+| `--timezone` | No | The IANA time zone of the days. Default: the app time zone. |
+| `--currency-code` | No | Only transactions of this currency. |
+| `--operation` | No | Only transactions with this operation. |
+| `--feature` | No | Only transactions with this feature. |
+| `--sandbox`, `--no-sandbox` | No | `--sandbox` for sandbox transactions only, `--no-sandbox` for production only. Default: both. |
+| `--page-size` | No | Transactions per page, 1 to 100. Default: 20. |
+| `--cursor` | No | The cursor of the next page, from the previous page. |
+
+### `virtual-currencies profiles transactions list`
+
+Takes exactly one of `--profile` and `--customer-user-id`, and the flags of `transactions list`. The period is optional.
+
+| Flag | Required | Description |
+|---|---|---|
+| `--profile` | One of the two | The Adapty profile ID of the user. |
+| `--customer-user-id` | One of the two | Your own ID of the user. |
+
+### `virtual-currencies profiles balances get`
+
+| Flag | Required | Description |
+|---|---|---|
+| `--profile` | One of the two | The Adapty profile ID of the user. |
+| `--customer-user-id` | One of the two | Your own ID of the user. |
+
+## Work from an AI assistant
+
+The [Adapty MCP server](adapty-mcp) offers the same actions as `virtual_currencies_*` tools, for example `virtual_currencies_mappings_upsert` for `mappings upsert`. The tools work the same way as the commands, with these differences:
+
+- **Protection against lost changes**: `virtual_currencies_update`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete` require the `updated_at` of a read. After a `virtual_currency_conflict` error, the assistant reads the currency again.
+- **Description**: In `virtual_currencies_update`, an empty `description` removes the description.
+- **Pages**: The transaction tools return one page. The answer has `next_cursor`, and the assistant sends it in `cursor` for the next page.
+- **Approval**: The tools don't ask for approval and have no `--yes`. Before `virtual_currencies_create`, `virtual_currencies_mappings_upsert`, and `virtual_currencies_mappings_delete`, the assistant shows you the change and waits for your yes.
+- **Throttling**: After a `throttled` error, the tools don't try the read again. The error says how long to wait.
+
+The [agent skill for virtual currencies](virtual-currencies-skill) shows you each change before the assistant makes it.
+
+## What's next
+
+- [Agent skill for virtual currencies](virtual-currencies-skill) — let your agent set up your currencies and explain a user's balance, with your yes before each change.
+- [Create a virtual currency](create-virtual-currency) — the same setup in the dashboard.
+- [Virtual currency balance](virtual-currency-balance) — the balances and the change history of a user in the dashboard.
