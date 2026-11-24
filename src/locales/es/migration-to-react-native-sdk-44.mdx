@@ -1,0 +1,68 @@
+---
+title: "Migrar el SDK de React Native de Adapty a v4.4"
+description: "Migra al SDK de React Native de Adapty v4.4: reemplaza ambos archivos de respaldo y gestiona los nuevos errores de flow en iOS y Android."
+metadataTitle: "Migración al SDK de React Native de Adapty v4.4 | Documentación de Adapty"
+---
+
+El SDK de Adapty para React Native 4.4 cambia el formato del archivo de respaldo, requiere iOS 16 para los flows e informa más errores de flow a tu app. En la versión 4.4, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` y `AdaptySubscription.billingPlan` ya no son opcionales en TypeScript. Para actualizar tu app a la versión 4.4, instala el último paquete `react-native-adapty` y reemplaza ambos archivos de respaldo en el mismo build. Las versiones anteriores del SDK rechazan los nuevos archivos. Luego revisa el resto de cambios en esta guía.
+
+Si todavía usas la versión 4.0, comienza con [Migrar a v4.1](migration-to-react-native-sdk-41) y luego sigue esta guía.
+
+:::warning
+El formato del archivo de respaldo cambió en la versión 4.4 y el compilador no puede detectar un archivo de respaldo para el SDK 4.1–4.3. Sin los [nuevos archivos de respaldo](#replace-the-fallback-files), cada placement perderá su paywall de respaldo.
+:::
+
+## Referencia rápida \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Archivos de respaldo descargados para 4.1–4.3 | Nuevo formato de archivo de respaldo; descarga ambos archivos de nuevo |
+| Los flows se abren en iOS 15 | Los flows requieren iOS 16 |
+| `AdaptyFlowView` queda vacío cuando su flow no puede cargarse | Notifica el error a su manejador `onError` |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` y `AdaptySubscription.billingPlan` son opcionales | Son obligatorios |
+
+## Instalación \{#installation\}
+
+Actualiza el paquete `react-native-adapty`:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Los requisitos no han cambiado: **iOS 15.0** y **React Native 0.75**. Los flows son la excepción: consulta [Los flows requieren iOS 16](#flows-require-ios-16). Consulta [Instalar el SDK de Adapty](sdk-installation-reactnative) para la configuración completa.
+
+## Reemplazar los archivos de respaldo \{#replace-the-fallback-files\}
+
+Para descargar de nuevo los [archivos de respaldo](react-native-use-fallback-paywalls), en **[Placements](https://app.adapty.io/placements)**, haz clic en **Fallbacks** > **Download iOS Fallback**. En la fila **Adapty SDK v4.4.0 and higher**, haz clic en **Download**. Repite el proceso con **Download Android Fallback**.
+
+Los archivos descargados se llaman `ios_4_4_0_fallback.json` y `android_4_4_0_fallback.json`. Úsalos en lugar de tus archivos de respaldo para el SDK 4.1–4.3:
+
+- **Proyecto React Native puro**: Añade el archivo de iOS a tu proyecto de Xcode. Coloca el archivo de Android en la carpeta del archivo de paywall de respaldo para 4.1–4.3, como se indica en [Usar paywalls de respaldo en un proyecto React Native puro](react-native-use-fallback-paywalls-pure).
+- **Proyecto Expo**: Coloca cada archivo en la carpeta de su archivo de respaldo para 4.1–4.3, como se indica en [Usar paywalls de respaldo en un proyecto Expo](react-native-use-fallback-paywalls-expo).
+
+Dale a cada archivo el nombre que tu app pasa a `adapty.setFallback`, o actualiza esos nombres en dicha llamada. En un proyecto Expo, usa esos mismos nombres en la opción `fallbackFile` y vuelve a ejecutar `npx expo prebuild`.
+
+Con un archivo de respaldo para el SDK 4.1–4.3, `adapty.setFallback` lanza un `AdaptyError`. Para verificar los nuevos archivos, ejecuta la app en iOS y en Android, y asegúrate de que esta llamada no lance ningún error.
+
+## Los flows requieren iOS 16 \{#flows-require-ios-16\}
+
+A partir de la versión 4.4, los flows requieren iOS 16 o posterior. En iOS 15, `createFlowView` lanza un `AdaptyError` con el código `platformNotSupported`, y `AdaptyFlowView` permanece vacío e informa el mismo error. Otras funciones del SDK, como las compras y los paywalls personalizados, siguen funcionando en iOS 15.
+
+Cuando tu app reciba este error, muestra tu propio contenido en su lugar, como un [paywall personalizado](react-native-implement-paywalls-manually).
+
+## Los errores de carga del flow llegan al handler onError \{#flow-load-errors-reach-the-onerror-handler\}
+
+El handler `onError` de `AdaptyFlowView` recibe un error cuando el componente no puede mostrar el flow. Cada vez que tu app renderiza un nuevo `AdaptyFlowView`, el error se notifica una sola vez. Antes de la versión 4.4, el componente simplemente quedaba vacío. El componente notifica los siguientes errores:
+
+- En iOS 15: `platformNotSupported`.
+- En Android, y en iOS 16 y versiones posteriores, cuando el flow no se carga: el error que `createFlowView` lanza para ese flow. Por ejemplo, el flow no se carga cuando AdaptyUI no está activado, o para un `customLayoutId` que el flow no tiene.
+
+Tu gestión de errores del flow ahora se ejecuta también en estos casos. El valor de retorno del controlador `onError` no cierra un flow embebido. Para cerrarlo, deja de renderizar el componente y muestra tu propio contenido.
+
+## Las propiedades de precio y suscripción son obligatorias \{#price-and-subscription-properties-are-required\}
+
+En TypeScript, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` y `AdaptySubscription.billingPlan` ya no son opcionales. Si tu código crea estos objetos, por ejemplo, mocks en tests, establece estas propiedades en ellos.
+
+En 4.4, cada suscripción tiene `billingPlan`: `up_front`, a menos que el usuario haya comprado un [plan de compromiso](set-up-12-month-commitment). Antes de la 4.4, solo las suscripciones de App Store tenían `billingPlan`.

@@ -1,0 +1,380 @@
+---
+title: "React Native SDK ile özel öğeleri görüntüleme"
+description: "Bir flow'un her özel öğesinde yerel bir iOS veya Android görünümü görüntüleyin ve flow'u bir cihazda test edin."
+metadataTitle: "Özel öğeleri görüntüleme | React Native SDK | Adapty Dokümanları"
+---
+
+<FlowCustomElementsIntro />
+
+## Başlamadan önce \{#before-you-start\}
+
+:::important
+Bir Expo projesinde, özel öğeler yalnızca `ios` ve `android` klasörlerini Git'te tutarsanız ve `npx expo prebuild --clean` komutunu çalıştırmazsanız çalışır. Aksi takdirde Expo bu klasörleri yeniden oluşturur ve bu sayfadaki kodları siler. Yeni Expo projelerinde bu klasörler Git dışında tutulduğundan, EAS Build her derlemede bunları yeniden oluşturur.
+:::
+
+İhtiyacınız olanlar:
+
+- **Adapty React Native SDK 4.4 veya üzeri**: Daha eski sürümler, her özel element için yedek içeriği gösterir.
+- **iOS ve Android için native kod**: Özel bir element içinde React Native bileşeni görüntüleyemezsiniz. Bu kodu iOS için Swift, Android için Kotlin dilinde yazın. Swift kodunu Xcode'da uygulama hedefinize, Kotlin kodunu ise `MainApplication.kt` dosyasının bulunduğu klasöre ekleyin.
+- **Özel elementler için bir adlandırma şeması**: Her native view'a `lottie_animation` gibi bir Tür (Type) verin. Türlerde yalnızca küçük harf, rakam ve alt çizgi kullanın. Aynı Türdeki özel elementleri birbirinden ayırt etmek için her birine `welcome_wave` gibi bir ID verin. Kodunuzdaki Türler ve ID'ler, [Flow & Paywall Builder](flow-custom-elements#add-and-configure) içindekilerle eşleşmelidir.
+
+iOS ve Android kodunuzda aynı Type'ları ve ID'leri kullanın. Her platform için ayrı bir [kitle](audience) oluşturmadığınız sürece, iOS ve Android kullanıcıları aynı flow'ları görür.
+
+## Android projenizi ayarlayın \{#set-up-your-android-project\}
+
+iOS projeniz için ekstra bir kurulum gerekmez. Android projenizde Adapty UI kütüphanesini ekleyin. Native görünümleri composable olarak oluşturmak için Jetpack Compose'u da ayarlayın.
+
+### Adapty UI kütüphanesini ekleyin \{#add-the-adapty-ui-library\}
+
+`android/app/build.gradle` dosyasındaki `dependencies` bloğuna `io.adapty:android-ui` satırını sürüm belirtmeden ekleyin. Sürümü `react-native-adapty` belirler. Farklı bir `android-ui` sürümü flow'ları bozabilir.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+Kütüphane, `compileSdkVersion` 35 veya üstünü gerektirir: `android/build.gradle` dosyasında daha düşük bir sürüm ayarlanmışsa bunu 35'e yükseltin.
+
+### Jetpack Compose Kurulumu \{#set-up-jetpack-compose\}
+
+React Native şablonu, uygulama modülünde [Compose kurulumu](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) yapmaz. Bir Android `View` için Compose kurulumuna gerek yoktur. Native view'ları composable olarak oluşturmak için, uygulamanızın Kotlin sürümüne (`android/build.gradle` dosyasındaki `kotlinVersion`) uygun Compose derleyicisini kurun:
+
+<Tabs groupId="kotlin-version" queryString>
+<TabItem value="kotlin-2" label="Kotlin 2.0 and later" default>
+
+React Native 0.77 ve sonraki sürümlerin şablonları Kotlin 2.0 veya üzerini kullanır. Compose compiler Gradle eklentisini `buildscript` bağımlılıklarına ekleyin:
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
+    }
+}
+```
+
+Ardından eklentiyi uygulama modülüne uygulayın ve `buildFeatures` bloğunda `compose true` ayarını yapın:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="kotlin-1-9" label="Kotlin 1.9">
+
+React Native 0.75 ve 0.76 şablonları Kotlin 1.9 kullanır. `android` bloğunda `compose true` ve Kotlin sürümünüzle uyumlu Compose derleyici sürümünü ayarlayın. React Native 0.75 ve 0.76, Compose derleyici 1.5.14 gerektiren Kotlin 1.9.24 ile derlenir. Diğer Kotlin sürümleri için [Compose ile Kotlin uyumluluk tablosuna](https://developer.android.com/jetpack/androidx/releases/compose-kotlin) bakın.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion "1.5.14"
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Bu sayfadaki Lottie görünümü için `com.airbnb.android:lottie-compose` bağımlılığını da ekleyin.
+
+## Özel öğeler için görünümler oluşturma \{#create-views-for-custom-elements\}
+
+Her Type için iOS ve Android'e özgü bir native görünüm oluşturun ya da mevcut native kodunuzdan birini yeniden kullanın. Aşağıdaki `lottie_animation` Type'ına ait görünümler bir Lottie animasyonu oynatır. Android görünümü, `com.airbnb.android:lottie-compose` kütüphanesini kullanan bir composable'dır:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct LottieElementView: View {
+    let animation: LottieAnimation?
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .looping()
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+@Composable
+fun LottieElement(animationFile: String) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    LottieAnimation(
+        composition = composition,
+        iterations = LottieConstants.IterateForever,
+    )
+}
+```
+
+</TabItem>
+</Tabs>
+
+### Gereksinimler ve En İyi Uygulamalar \{#requirements-and-best-practices\}
+
+- **Boyutlandırma**:
+  - **Dolgu ve hizalama**: Native view'in, Flow & Paywall Builder'da ayırdığınız kapsayıcıya (dolgu çıkarılmış haliyle) tam olarak sığdığından emin olun. View tüm alanı kaplamıyorsa varsayılan olarak alanın sol üst köşesinde görünür. Konumunu değiştirmek için özel öğenin **Layout** bölümündeki hizalama ayarını kullanın.
+  - **Hug yüksekliği**: Özel öğenin yüksekliği **Hug** olarak ayarlanmışsa, kullanılabilir alanı dolduracak şekilde uzayan bir view (harita veya lazy list gibi) ya tamamen çöker ya da ekran yüksekliğine uzar. Bunun yerine özel öğeye [**Fixed** yükseklik](flow-custom-elements#add-and-configure) verin.
+- **Tema**: Native view'ler, React Native bileşenlerinizin stillerini devralmaz. Renkleri ve fontları native kodda ayarlayın.
+- **Flow aksiyonları**: Native view, bir sonraki ekrana geçiş gibi flow aksiyonlarını çalıştıramaz. Öğe bağlamı, iOS'ta `sendMessage` ve Android'de `send` ile flow'a mesaj gönderebilir; ancak bunlar gelecekteki Flow & Paywall Builder özellikleri için ayrılmıştır. Navigasyon düğmelerini, satın alma düğmelerini ve flow aksiyonlu diğer düğmeleri özel öğenin dışında tutun.
+- **Seçilebilir öğeler**: Özel öğeyi, ürün kartlarının ve diğer [seçilebilir öğelerin](flow-selectable-elements) dışında tutun. Seçim değiştiğinde native view kendi durumunu kaybedebilir.
+- **Navigasyon yönetimi**: Kullanıcı bir sonraki ekrana geçtiğinde SDK, native view'i ekrandan kaldırır. View'in başlattığı işlemleri (kamera oturumları, oynatıcılar, konum güncellemeleri gibi) durdurun:
+  - **SwiftUI view**: `onDisappear` aksiyonunu kullanın. Asenkron işlemler için `.task` kullanın: SwiftUI, view kaybolduğunda bunu iptal eder.
+  - **Composable**: Bir `DisposableEffect`'in `onDispose` bloğunu kullanın. Asenkron işlemler için `LaunchedEffect` kullanın: Compose, composable bileşim dışına çıktığında bunu iptal eder.
+  - **Android `View`**: `View` alt sınıfınızda `onDetachedFromWindow`'u override edin ya da `View`'e bir `View.OnAttachStateChangeListener` ekleyin.
+
+  Kullanıcı geri döndüğünde SDK, resolver'ı tekrar çağırır ve native view, öncekinin state'i olmadan başlar. Android'de `present()` ile açtığınız bir flow'da, döndürme işlemi SDK'nın resolver'ı yeniden çağırmasına neden olur. Gömülü bir `AdaptyFlowView`'da ise native view, döndürme sonrasında state'ini korur.
+- **UIKit view'ları**: iOS'ta bunları `UIViewRepresentable` içine sarın.
+- **Carousel'lar**: Android'de bir [carousel](builder-containers#carousel) içindeki native view'lar, yalnızca görünen slayttaki view değil, ekran açık olduğu sürece tüm slaytlardaki view'lar aktif kalır. Kamera önizlemelerini ve sesli oynatıcıları carousel'ların dışında tutun.
+
+## Özel öğeler ve görünümler için resolver yazın \{#write-a-resolver-to-match-custom-elements-and-views\}
+
+Her platform için bir resolver yazın. Resolver, özel bir öğenin Type ve ID bilgisini alır ve eşleşen native görünümü döndürür.
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Resolver yazmak için bir türü `AdaptyUICustomElementsResolver` protokolüne uygun hale getirin ve `view(forType:id:context:)` metodunu uygulayın.
+
+`lottie_animation` Type'ı için aşağıdaki resolver `LottieElementView` döndürür. ID, animasyon dosyasının uygulama bundle'ındaki adını belirtir; örneğin `welcome_wave`:
+
+```swift showLineNumbers title="Swift"
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation":
+            // the ID names the animation file, such as welcome_wave.json
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no file for this ID: show the fallback
+            }
+            return AnyView(LottieElementView(animation: animation))
+        default:
+            return nil
+        }
+    }
+}
+```
+
+`default` durumunda `nil` döndürün.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Bir resolver yazmak için `AdaptyCustomElementsResolver` arayüzünü uygulayın. `resolve` metodu, eşleşen view'ı aşağıdaki biçimlerden biriyle döndürür:
+
+- **Bir composable**: Lambda içinde composable ile birlikte `AdaptyCustomElementContent.compose` döndürün.
+- **Bir Android `View`**: `View` oluşturan bir fonksiyonla birlikte `AdaptyCustomElementContent.view` döndürün. `factory` parametresini adlandırın: `AdaptyCustomElementContent.view(factory = { context, _ -> ChartView(context) })`. İsim belirtilmezse Kotlin, isteğe bağlı `update` parametresine sondaki lambda'yı aktarır ve kod derlenmez.
+
+`lottie_animation` Türü için, aşağıdaki resolver [Lottie görünümünü](#create-views-for-custom-elements) döndürür. ID, `assets` klasöründeki animasyon dosyasını adlandırır, `android/app/src/main/assets`, örneğin `welcome_wave.json` için `welcome_wave`:
+
+```kotlin showLineNumbers title="Kotlin"
+
+class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as welcome_wave.json
+                val file = "$id.json"
+                if (file in animationFiles) {
+                    AdaptyCustomElementContent.compose { LottieElement(file) }
+                } else {
+                    null // no file for this ID: show the fallback
+                }
+            }
+            else -> null
+        }
+}
+```
+
+Diğer tüm Type değerleri için `null` döndürün.
+
+</TabItem>
+</Tabs>
+
+Uygulamayı yayınladıktan sonra [yeni bir Type ile özel bir element eklerseniz](flow-custom-elements#what-changes-require-an-app-release), yayınlanan sürümün kullanıcıları onun yedek görünümünü görür.
+
+Resolver aşağıdaki gereksinimlere sahiptir:
+
+- **Ağ verisi ve oynatıcılar**: Ağ verisini ve oynatıcıları, resolver'da değil [native view](#create-views-for-custom-elements) içinde tutun. SDK, ekran açıkken resolver'ı defalarca çağırır. Resolver'daki kod her çağrıda yeniden çalışır, bu yüzden ağ istekleri tekrar edilir ve oynatıcılar baştan başlar. Native view bu çağrılar arasında durumunu korur, yani veri yalnızca bir kez yüklenir ve oynatıcılar çalmaya devam eder. Oynatıcıları, oturumları ve ağ isteklerini native view içinde oluşturun:
+  - **SwiftUI view**: Oynatıcıları, oturumları ve ağ isteklerini `.task` içinde veya bir `@StateObject` ile oluşturun; `@State` özelliğinin başlangıç değerinde değil. Swift, resolver view'ı her oluşturduğunda bu başlangıç değerini yeniden hesaplar.
+  - **Composable**: Oynatıcıları ve oturumları `remember` içinde, ağ isteklerini ise `LaunchedEffect` içinde oluşturun.
+  - **Android `View`**: Oynatıcıları, oturumları ve ağ isteklerini `onAttachedToWindow` içinde oluşturun.
+- **Custom element başına bir native view**: Bazı native view'lar ekran açıkken değişir; örneğin verileri yüklendiğinde veya kullanıcı bunlara dokunduğunda. Bu mantığı resolver'da değil, native view'ın kendi içinde uygulayın. Resolver aynı custom element için farklı bir view döndürürse, view durumunu kaybeder.
+- **Her görünüm için yeni bir `View`**: Android'de, `factory`'nin her çağrısında yeni bir `View` oluşturun. SDK, custom element her göründüğünde `factory`'yi çağırır; ekran açıldığında, kullanıcı ekrana geri döndüğünde veya `present()` ile açtığınız bir flow'da döndürme işleminden sonra.
+- **Uygulama verisi**: Veriyi tutan bir nesneyi (örneğin bir `ObservableObject` veya [günlük seri](react-native-custom-element-lottie-animation) içeren bir `StateFlow`) resolver'ın bir özelliğinde saklayın. Nesneyi native view'a aktarın ve orada gözlemleyin:
+  - **SwiftUI view**: Bir `ObservableObject`'i `@ObservedObject` ile gözlemleyin.
+  - **Composable**: Bir `StateFlow`'u `collectAsState` ile toplayın veya bir `LiveData`'yı `observeAsState` ile gözlemleyin.
+  - **Android `View`**: Nesneyi `onAttachedToWindow` içinde gözlemlemeye başlayın, `onDetachedFromWindow` içinde durdurun.
+
+  Çözümleyiciye kopyaladığınız bir değer, örneğin seri numarası, çözümleyiciyi oluşturduğunuz andaki haliyle sabit kalır. JavaScript kodunuzda günlük seri gibi bir veri varsa, her yeni değeri [Turbo Native Module](https://reactnative.dev/docs/turbo-native-modules-introduction) aracılığıyla native koda gönderin ve nesneyi orada güncelleyin.
+
+### Yedek içerik için koşulları ayarlama \{#set-conditions-for-fallback-content\}
+
+<FlowCustomElementsFallbackConditions />
+
+Bir izin için, yalnızca kullanıcı ekran açılmadan önce izni reddettiyse görünüm döndürme. Android'de `ContextCompat.checkSelfPermission`, iki durumda aynı değeri (`PERMISSION_DENIED`) döndürür: uygulamanız kullanıcıdan ilk kez izin istemeden önce ve kullanıcı izni reddettikten sonra. Bu iki durumu birbirinden ayırt etmek için izin isteğinin sonucunu kaydedin ve kaydedilen sonucu resolver'da okuyun. Uygulamanız henüz izin istemediyse native görünümü döndürün ve izni görünümün içinde isteyin. Örneğin, bir [harita görünümü](react-native-custom-element-map#3-match-the-map-to-the-custom-element) açıldığında konum erişimi isteyin ve kullanıcı erişim izni verir vermez haritayı gösterin. Görünüm döndürmezseniz ve kullanıcı daha sonra izin verirse, kullanıcı yine de yedek içeriği görür. Bir izin değişikliği, SDK'nın resolver'ı yeniden çağırmasını sağlamaz. Native görünüm, yalnızca kullanıcının ekrana geri dönmesi gibi durumlarda SDK resolver'ı yeniden çağırdığında görünür.
+
+## Çözümleyiciyi SDK'ya aktarın \{#pass-the-resolver-to-the-sdk\}
+
+Çözümleyiciyi her platform için uygulama başlatılırken bir kez ayarlayın. SDK, `AdaptyFlowView` ile gömülü bir flow dahil olmak üzere her flow'da bu çözümleyiciyi çağırır. Kullanıcılar, yeni flow'larda ve A/B testlerinde uygulama güncellemesi yapmadan yerel görünümlerinizi görür. Bu görünümler, [günlük seri](react-native-custom-element-lottie-animation) gibi verileri uygulamanızdan okuduğu için her kullanıcıya kendi verilerini gösterir.
+
+### iOS
+
+<Tabs groupId="ios-app-delegate" queryString>
+<TabItem value="swift" label="AppDelegate.swift" default>
+
+In `AppDelegate.swift`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver(_:)` in the `application(_:didFinishLaunchingWithOptions:)` method. The highlighted lines show what to add. Keep the rest of the `AppDelegate` class as it is:
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1,10}
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+Eğer resolver'ı da `AppDelegate.swift` içinde yazıyorsanız, oraya `AdaptyUIBuilder`'ı da import edin.
+
+Eğer `application(_:didFinishLaunchingWithOptions:)` fonksiyonu, React Native 0.88 şablonunda olduğu gibi, yalnızca `true` ile bitiyorsa, `true` ifadesini `return true` olarak değiştirin.
+
+</TabItem>
+<TabItem value="objc" label="AppDelegate.mm">
+
+Resolver'ı bir Swift sınıfı aracılığıyla ayarlayın; çünkü `AdaptyUI.setCustomElementsResolver(_:)` yalnızca Swift'te kullanılabilir:
+
+1. Uygulama hedefinize sınıfı içeren bir Swift dosyası ekleyin:
+
+   ```swift showLineNumbers title="CustomElementsSetup.swift"
+   import AdaptyUI
+
+   @objc final class CustomElementsSetup: NSObject {
+     @MainActor @objc static func register() {
+       AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
+     }
+   }
+   ```
+
+2. `AppDelegate.mm` dosyasında, Xcode'un hedef için oluşturduğu Swift başlık dosyasını, yani `<YourApp>-Swift.h` dosyasını import edin. `application:didFinishLaunchingWithOptions:` metodunun başında `[CustomElementsSetup register]` çağırın. Expo projelerinde, hedef başlık dosyanızdan önce `<ExpoModulesCore/ExpoModulesCore-Swift.h>` dosyasını import edin.
+
+   ```objectivec showLineNumbers title="ios/YourApp/AppDelegate.mm" {1,5}
+   #import "YourApp-Swift.h"
+
+   - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
+   {
+     [CustomElementsSetup register];
+     // the rest of your launch code
+   }
+   ```
+
+</TabItem>
+</Tabs>
+
+### Android
+
+In `MainApplication.kt`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver` in the `onCreate` method. The highlighted lines show what to add. Keep the rest of the `MainApplication` class as it is:
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,8}
+
+class MainApplication : Application(), ReactApplication {
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this))
+    // the rest of your onCreate code
+  }
+}
+```
+
+:::tip
+Bir Type'ın her özel elementinde aynı görünümü göstermek için, bir resolver yerine Type'lar ve görünümlerin bir map'ini geçin. Bir map, bir resolver'dan daha az kod gerektirir, ancak [yedek içerik için koşullar belirleyemezsiniz](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Map, bir `[String: AdaptyUICustomElementBuilder]` sözlüğüdür. Map'i `AppDelegate.swift` dosyasına yazarsanız, `Lottie`'yi de oraya import edin.
+
+```swift showLineNumbers title="Swift"
+AdaptyUI.setCustomElementsResolver([
+    "lottie_animation": .init { _, id, _ in LottieElementView(animation: .named(id)) },
+])
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+`AdaptyCustomElementsResolver.of` metoduna haritayı geçirin:
+
+```kotlin showLineNumbers title="Kotlin"
+val appWideViews = mapOf(
+    "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
+)
+AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
+```
+
+</TabItem>
+</Tabs>
+:::
+
+Bir flow'a resolver ekleyemezsiniz. Uygulamanızın yalnızca bir flow açıldığında sahip olduğu verileri görüntülemek için, flow açılmadan önce bu verileri native kodunuza gönderin. Ardından resolver'da verileri okuyun. Örneğin, bir paywall [kullanıcının önceki bir flow'da girdiği ağırlığı](react-native-custom-element-interactive-chart) görüntüler.
+
+## Cihazda test etme \{#test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle tuval yalnızca yedek içeriği gösterir. Native view'daki bir hata uygulamanın çökmesine neden olabilir. Uygulamayı yayınlamadan önce, özel öğe içeren her ekranı bir iOS cihazında ve bir Android cihazında test edin:
+
+1. Her flow'un önbelleğe alınmış sürümü yerine en son yayınlanan sürümünü görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Adapty SDK uyarılarını Xcode konsolunda ve Logcat'te görmek için [log seviyesini](sdk-installation-react-native-pure#logging) `warn` veya daha ayrıntılı bir seviyeye ayarlayın.
+3. Cihazda, resolver'ı içeren bir build çalıştırın. Özel öğe barındıran her ekranı açın ve yerel görünümün göründüğünü ve özel öğeye uyduğunu doğrulayın. Görünüm kaydırılıyorsa veya sürükleme hareketlerine yanıt veriyorsa bu hareketleri de test edin.
+4. Yerel görünüm yerine yedek görünüm çıkıyorsa Xcode konsolunda veya Logcat'te şu uyarıyı bulun: `custom element <type>:<id> is not served by a resolver`. Ardından şunları doğrulayın:
+   - Uyarıdaki Type ve ID, kodunuzdakilerle harf harf eşleşiyor.
+   - Uygulamanızda, görünümün ihtiyaç duyduğu dosya, veri veya izin mevcut.
+   - Uygulamanız, resolver'ı başlangıçta ayarlıyor: iOS'ta `AppDelegate` sınıfında, Android'de ise `MainApplication` sınıfında.
+
+   Uyarı görünmüyorsa, uygulamanın Adapty React Native SDK 4.4 veya sonraki bir sürümünü kullandığını doğrulayın.
+5. Android'de özel öğe boş kalıyorsa, Logcat'te şu uyarılardan birini arayın:
+   - `custom element <type>:<id> is not served by a resolver`: Özel öğenin yedek içeriği yok ve hiçbir resolver bunun için bir görünüm döndürmüyor. 4. adımdaki her öğeyi doğrulayın.
+   - `content does not report its size`: Composable'ın kendi yüksekliği yok. Özel öğeye [**Fixed** yükseklik](flow-custom-elements#add-and-configure) verin.
+
+   SDK yalnızca composable'lar için boyut uyarısını kaydeder. Bir Android `View` uyarı vermeden boş kalıyorsa, özel elemente **Fixed** yüksekliği de verin.
+6. Yedek paywalli önizlemek için Type için herhangi bir view döndürmeyin ve ekranı yeniden açın.
+
+## Örnekler \{#examples\}
+
+Her tarif, builder'daki kurulumu ve uygulamanız için kodu gösterir:
+
+- [Lottie animasyonuyla kullanıcı ilerlemesini gösterme](react-native-custom-element-lottie-animation): Bir seri büyüdükçe dolana bir halka.
+- [Paywall'da etkileşimli kilo hedefi grafiği gösterme](react-native-custom-element-interactive-chart): Onboarding flow'unu takip eden paywall flow'undaki bir kilo hedefi grafiği.
+- [Flow'da yakındaki yerleri haritada gösterme](react-native-custom-element-map): Her kullanıcının yakınındaki fitness merkezlerinin haritası.

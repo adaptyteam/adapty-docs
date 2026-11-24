@@ -1,0 +1,447 @@
+---
+title: "在流程中展示地图上的附近地点"
+description: "在流程屏幕的自定义元素中，向每位用户展示附近地点（例如合作健身中心）的地图。"
+metadataTitle: "在流程中展示地图上的附近地点 | React Native SDK | Adapty 文档"
+---
+
+按照本指南，在流程中嵌入一个交互式地图。地图会显示用户 2 km 范围内的指定地点（例如合作健身中心）。你的应用通过[自定义元素](flow-custom-elements)将地图渲染为原生视图——iOS 使用 MapKit，Android 使用 MapLibre。流程页面会向用户请求位置权限。
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="最终效果：地图显示用户附近的健身中心，用户可以拖动地图到其他区域再拖回来。" />
+
+## 开始之前 \{#before-you-start\}
+
+- 将您的应用更新至 Adapty React Native SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 设置您的应用以[获取](react-native-get-pb-paywalls)和[显示](react-native-present-paywalls)流程。
+- 按照 [React Native 指南](react-native-flow-custom-elements#before-you-start)为自定义元素配置应用的原生代码。
+- 在 iOS 上，地图视图需要 iOS 17 或更高版本。在 iOS 16 上，用户将看到备用内容。
+- 在 iOS 上，若要请求用户授予位置访问权限，请在 `ios/YourApp/Info.plist` 中添加 `NSLocationWhenInUseUsageDescription` 键，并将其值设置为提示文本，例如"Find fitness centers near you."
+- 在 Android 上，通过 Gradle 从 `org.maplibre.gl:android-sdk-opengl` 将 MapLibre 添加到您的应用中。使用此构件，Google Play 还会将您的应用提供给不支持 Vulkan 的设备（默认的 `android-sdk` 构件需要 Vulkan 支持）。
+- 在 Android 上，将 `minSdk` 设置为 23 或更高版本，因为 MapLibre 有此要求。
+
+要将您的 Android 应用限制为近似位置，请在 `android/app/src/main/AndroidManifest.xml` 的 `<manifest>` 元素内添加以下内容。请确保 `<manifest>` 元素声明了 `xmlns:tools="http://schemas.android.com/tools"`。
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<!-- removes precise location, which MapLibre declares -->
+<uses-permission
+    android:name="android.permission.ACCESS_FINE_LOCATION"
+    tools:node="remove" />
+```
+
+## 1. 将自定义元素添加到屏幕 \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementMapBuilderSetup />
+
+在自定义元素内部，添加一个带有地图图片的 [**Image**](custom-media#image)。当以下情况发生时，用户会看到它作为[备用内容](flow-custom-elements#set-fallback-content)：
+
+- 用户的应用版本不支持显示地图。
+- 用户在屏幕打开之前拒绝了位置权限。
+- 用户的设备运行 iOS 16。
+
+<CustomElementMapLocationPrompt />
+
+## 2. 创建地图视图 \{#2-create-the-map-view\}
+
+创建一个地点类型，以及一个用于访问位置的模型：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// a place of your app, such as a partner fitness center
+data class Place(val name: String, val latitude: Double, val longitude: Double)
+
+private const val PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION // approximate location
+
+// one location access model for the resolver and the map view
+class LocationAccess(context: Context) {
+    private val appContext = context.applicationContext
+    // checkSelfPermission returns the same value before the first request and after a denial: save the answer
+    private val answers = appContext.getSharedPreferences("location_access", Context.MODE_PRIVATE)
+    private var isAsking = false
+    var isMapOnScreen = false
+
+    val isAllowed: Boolean
+        get() = ContextCompat.checkSelfPermission(appContext, PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+    val isDenied: Boolean
+        get() = !isAllowed && answers.getBoolean("denied", false)
+
+    // requests location access and saves the answer
+    // unregister the returned launcher when the view leaves the screen
+    fun requestAccess(activity: ComponentActivity, onAnswer: (Boolean) -> Unit): ActivityResultLauncher<String> {
+        val isPromptOpen = isAsking // after a screen rotation, this request receives the answer from the open prompt
+        val request = activity.activityResultRegistry.register("location_access", RequestPermission()) { granted ->
+            isAsking = false
+            answers.edit().putBoolean("denied", !granted).apply()
+            onAnswer(granted)
+        }
+        if (!isPromptOpen) {
+            isAsking = true
+            request.launch(PERMISSION)
+        }
+        return request
+    }
+}
+
+// the activity that shows the flow
+tailrec fun Context.findComponentActivity(): ComponentActivity =
+    this as? ComponentActivity ?: (this as ContextWrapper).baseContext.findComponentActivity()
+```
+
+</TabItem>
+</Tabs>
+
+创建一个带有地图的视图。该视图请求位置权限，并为用户 2 公里范围内的每个地点显示一个标记：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    let places: [Place]
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var nearbyPlaces: [Place] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+}
+```
+
+地图视图需要 iOS 17 或更高版本。在 iOS 16 上，用户会看到备用付费墙。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// map tiles without an API key
+const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+
+class NearbyFitnessCentersMap(
+    context: Context,
+    private val access: LocationAccess,
+    private val places: List<Place>,
+) : FrameLayout(context), DefaultLifecycleObserver, LocationEngineCallback<LocationEngineResult> {
+    private val activity = context.findComponentActivity()
+    private val locationEngine = LocationEngineDefault.getDefaultLocationEngine(context)
+    private val mapView: MapView
+    private var permissionRequest: ActivityResultLauncher<String>? = null
+
+    init {
+        MapLibre.getInstance(context)
+        mapView = MapView(context)
+        mapView.onCreate(null)
+        mapView.getMapAsync { map -> map.setStyle(MAP_STYLE_URL) }
+        addView(mapView)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        access.isMapOnScreen = true // tells the resolver that the map is on the screen
+        activity.lifecycle.addObserver(this)
+        when {
+            access.isAllowed -> showUser()
+            access.isDenied -> showAccessOff()
+            else -> permissionRequest = access.requestAccess(activity) { granted ->
+                if (granted) showUser() else showAccessOff()
+            }
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        access.isMapOnScreen = false
+        permissionRequest?.unregister()
+        locationEngine.removeLocationUpdates(this)
+        activity.lifecycle.removeObserver(this)
+        // the SDK creates a new view each time the custom element appears: release this map
+        mapView.onPause()
+        mapView.onStop()
+        mapView.onDestroy()
+        super.onDetachedFromWindow()
+    }
+
+    // passes the lifecycle of the activity to the map
+    override fun onStart(owner: LifecycleOwner) = mapView.onStart()
+    override fun onResume(owner: LifecycleOwner) = mapView.onResume()
+    override fun onPause(owner: LifecycleOwner) = mapView.onPause()
+    override fun onStop(owner: LifecycleOwner) = mapView.onStop()
+
+    @SuppressLint("MissingPermission") // runs only after the user allows location access
+    private fun showUser() = mapView.getMapAsync { map ->
+        map.getStyle { style ->
+            val options = LocationComponentActivationOptions.builder(context, style).locationEngine(locationEngine)
+            map.locationComponent.activateLocationComponent(options.build())
+            map.locationComponent.isLocationComponentEnabled = true
+            val request = LocationEngineRequest.Builder(1_000).build() // milliseconds between updates
+            locationEngine.requestLocationUpdates(request, this, Looper.getMainLooper()) // calls onSuccess
+        }
+    }
+
+    // the first location of the user
+    override fun onSuccess(result: LocationEngineResult) {
+        val user = result.lastLocation ?: return
+        locationEngine.removeLocationUpdates(this)
+        showPlaces(user)
+    }
+
+    override fun onFailure(exception: Exception) = Unit
+
+    // a teal circle for each of your places within 2 km of the user
+    private fun showPlaces(user: Location) = mapView.getMapAsync { map ->
+        val distance = FloatArray(1)
+        val pins = places.filter { place ->
+            Location.distanceBetween(user.latitude, user.longitude, place.latitude, place.longitude, distance)
+            distance[0] <= 2_000 // meters
+        }.map { place -> Feature.fromGeometry(Point.fromLngLat(place.longitude, place.latitude)) }
+        map.getStyle { style ->
+            style.addSource(GeoJsonSource("places", FeatureCollection.fromFeatures(pins)))
+            val teal = PropertyFactory.circleColor(Color.rgb(0, 128, 128))
+            style.addLayer(CircleLayer("pins", "places").withProperties(teal, PropertyFactory.circleRadius(8f)))
+        }
+        // zoom in on the area around the user
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(user.latitude, user.longitude), 12.0))
+    }
+
+    private fun showAccessOff() {
+        mapView.visibility = GONE
+        addView(TextView(context).apply {
+            text = "Location access is off. To see fitness centers near you, allow location access in Settings."
+            gravity = Gravity.CENTER
+        })
+    }
+}
+```
+
+该视图从 OpenFreeMap 加载地图，这是一项无需 API 密钥、不保证正常运行时间的免费服务。如需切换至其他瓦片源，请修改 `MAP_STYLE_URL` 常量。
+
+</TabItem>
+</Tabs>
+
+如果用户在界面上拒绝位置访问权限，该视图将以一条提示信息替换地图，告知用户如何在"设置"中开启访问权限。
+
+## 3. 将地图与自定义元素匹配 \{#3-match-the-map-to-the-custom-element\}
+
+在你的[全局解析器](react-native-flow-custom-elements#pass-the-resolver-to-the-sdk)中，为 `LocationAccess` 模型和你的地点添加属性。然后为 `map` 类型和 `fitness_centers` ID 返回地图视图。高亮行显示了需要添加或修改的内容。如果你的应用还没有全局[解析器](react-native-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，请复制完整代码：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {5-6,14-21}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {7,9,13-24}
+
+class CustomElementsResolver(
+    context: Context,
+    private val places: List<Place>, // your app's places, such as partner fitness centers
+) : AdaptyCustomElementsResolver {
+    private val locationAccess = LocationAccess(context)
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "map" -> when (id) {
+                "fitness_centers" ->
+                    if (locationAccess.isDenied && !locationAccess.isMapOnScreen) {
+                        null // access denied before the screen opened: show the fallback
+                    } else {
+                        AdaptyCustomElementContent.view(
+                            factory = { context, _ -> NearbyFitnessCentersMap(context, locationAccess, places) },
+                        )
+                    }
+                // the other maps of your resolver
+                else -> null
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementMapResolverCalls />
+
+创建包含您自定义元素的解析器，并在应用启动时将其设置为全局解析器：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+在 `AppDelegate.swift` 中添加导入语句，并在 `application(_:didFinishLaunchingWithOptions:)` 方法中设置解析器。高亮行为需要添加的内容，其余 `AppDelegate` 类保持不变：
+
+```swift showLineNumbers title="ios/YourApp/AppDelegate.swift" {1-2,11-16}
+
+@main
+class AppDelegate: UIResponder, UIApplicationDelegate {
+  func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
+  ) -> Bool {
+    // your app's places, such as partner fitness centers
+    let places = [
+      Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+      Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+    ]
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(places: places))
+    // the rest of your launch code
+    return true
+  }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+在 `MainApplication.kt` 中，为你的版位添加一个属性，并在 `onCreate` 方法中设置 resolver。高亮行为需要添加的内容，`MainApplication` 类的其余部分保持不变：
+
+```kotlin showLineNumbers title="MainApplication.kt" {1,4-8,14}
+
+class MainApplication : Application(), ReactApplication {
+  // your app's places, such as partner fitness centers
+  val places = listOf(
+    Place("Central Fitness", latitude = 52.5219, longitude = 13.4132),
+    Place("Riverside Gym", latitude = 52.5163, longitude = 13.3777),
+  )
+
+  // the other members of your MainApplication class
+
+  override fun onCreate() {
+    super.onCreate()
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, places))
+    // the rest of your onCreate code
+  }
+}
+```
+
+</TabItem>
+</Tabs>
+
+如果你的 JavaScript 代码需要加载这些版位，可以将它们保存在一个 store 中，由原生代码通过 Turbo Native Module 填充，就像[体重目标数据图表示例](react-native-custom-element-interactive-chart)处理体重数据的方式一样。
+
+## 4. 在设备上测试 \{#test-on-a-device\}
+
+流程与付费墙编辑工具无法运行你的应用代码，因此其画布只会显示备用内容。要预览地图，请执行以下操作：
+
+1. [发布流程](builder-save-publish)。若要查看最新发布版本而非缓存版本，请将设备注册为[测试设备](test-devices)。
+2. 若要在地图上看到标记，请在距您位置 2 公里以内添加一个地点到您的地点列表。
+3. 运行包含解析器的应用构建版本。在 iOS 上，请使用运行 iOS 17 或更高版本的设备。打开该页面并允许位置访问权限，验证地图是否显示您的位置以及您添加的地点标记。
+
+如需测试备用方案，请拒绝位置访问权限：
+
+- **iOS**：在 **Settings** 应用中，前往 **Privacy & Security** > **Location Services** > *你的应用*，选择 **Never**。然后重新打开该界面。
+- **Android**：在 **Settings** 应用中，关闭你的应用的位置访问权限。打开该界面，如果出现提示，拒绝位置访问。地图视图将显示关于 Settings 的提示信息。再次打开该界面，确认备用付费墙正常显示。
+
+要了解为何显示的是备用付费墙而非地图，请参阅 React Native 指南中[在设备上测试](react-native-flow-custom-elements#test-on-a-device)部分的说明。
