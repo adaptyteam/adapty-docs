@@ -10,13 +10,55 @@ metadataTitle: "显示自定义元素 | Flutter SDK | Adapty 文档"
 
 你需要：
 
-- **Adapty Flutter SDK 4.4 或更高版本**：早期版本会对每个自定义元素显示备用付费墙。
-- **iOS 和 Android 的原生代码**：自定义元素中无法显示 Flutter widget，请在 iOS 上使用 Swift 编写视图和解析器，在 Android 上使用 Kotlin。将 Swift 代码添加到 Xcode 的 `Runner` target 中，将 Kotlin 代码添加到 `android/app/src/main/kotlin`。
-- **Android 上的 Adapty UI 库**：在 Android 应用模块的 Gradle 文件（如 `android/app/build.gradle.kts`）中，将 `implementation("io.adapty:android-ui")` 添加到 `dependencies` 块。不要添加版本号或 Adapty BOM：`adapty_flutter` 负责管理版本，使用更新的 `android-ui` 可能导致流程出错。
-- **Android 上使用 Composable 时需要 Jetpack Compose**：Flutter 模板不会在应用模块中[配置 Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler)。如需从解析器返回 composable，请应用 Compose compiler Gradle 插件，并在 `buildFeatures` 块中设置 `compose = true`。若使用 Android `View` 则无需配置 Compose。对于本页的 Lottie 视图，还需添加 `com.airbnb.android:lottie-compose`。
-- **自定义元素的命名规则**：为每个原生视图指定一个 Type，例如 `lottie_animation`。Type 中只能使用小写字母、数字和下划线。如需区分相同 Type 的不同自定义元素，请为每个元素指定一个 ID，例如 `welcome_wave`。代码中的 Type 和 ID 必须与 [Flow & 付费墙编辑工具](flow-custom-elements#add-and-configure) 中的配置保持一致。
+- **Adapty Flutter SDK 4.4 或更高版本**：旧版本会对每个自定义元素显示备用付费墙。
+- **iOS 和 Android 的原生代码**：自定义元素中无法显示 Flutter widget。iOS 请使用 Swift 编写代码，Android 请使用 Kotlin 编写代码。将 Swift 代码添加到 Xcode 的 `Runner` target，将 Kotlin 代码添加到 `MainActivity.kt` 所在的文件夹中。每个新建的 Kotlin 文件开头须包含与 `MainActivity.kt` 相同的 `package` 行。
+- **自定义元素命名规范**：为每个原生视图指定一个 Type，例如 `lottie_animation`。Type 中只能使用小写字母、数字和下划线。若要区分同一 Type 下的不同自定义元素，可为每个元素指定一个 ID，例如 `welcome_wave`。代码中的 Type 和 ID 必须与 [Flow & 付费墙编辑工具](flow-custom-elements#add-and-configure) 中的设置保持一致。
 
 在你的 iOS 和 Android 代码中使用相同的类型和 ID。除非你为每个平台单独设置了[目标受众](audience)，否则 iOS 和 Android 用户会看到相同的流程。
+
+## 配置你的 Android 项目 \{#set-up-your-android-project\}
+
+iOS 项目无需额外配置。在 Android 项目中，添加 Adapty UI 库。若要将原生视图构建为可组合项，还需配置 Jetpack Compose。
+
+### 添加 Adapty UI 库 \{#add-the-adapty-ui-library\}
+
+在你的 Android 应用模块的 Gradle 文件（例如 `android/app/build.gradle.kts`）中，将 `implementation("io.adapty:android-ui")` 添加到 `dependencies` 块中。请勿添加版本号或 Adapty BOM：`adapty_flutter` 会设置版本，而更新的 `android-ui` 可能会破坏流程。
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+### 设置 Jetpack Compose \{#set-up-jetpack-compose\}
+
+Flutter 模板不会在 app 模块中[设置 Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler)。Android `View` 无需 Compose 配置。若要将原生视图构建为 composable，请将 Compose 编译器 Gradle 插件添加到 `android/settings.gradle.kts`，并指定 Kotlin 插件 `org.jetbrains.kotlin.android` 的版本：
+
+```kotlin showLineNumbers title="android/settings.gradle.kts" {4}
+plugins {
+    // the other plugins of your project
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
+}
+```
+
+然后将插件应用到 app 模块，并在 `buildFeatures` 块中设置 `compose = true`：
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts" {4,8-10}
+plugins {
+    // the other plugins of your app module
+    id("dev.flutter.flutter-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+```
+
+如需在此页面使用 Lottie 视图，还需添加 `com.airbnb.android:lottie-compose`。
 
 ## 为自定义元素创建视图 \{#create-views-for-custom-elements\}
 
@@ -69,9 +111,9 @@ fun LottieElement(animationFile: String) {
   - **Composable**：使用 `DisposableEffect` 的 `onDispose` 块。对于异步任务，使用 `LaunchedEffect`：Composable 离开组合时 Compose 会自动取消它。
   - **Android `View`**：在 `View` 子类中重写 `onDetachedFromWindow`，或为 `View` 添加 `View.OnAttachStateChangeListener`。
 
-  当用户返回，或在 Android 上发生配置变更（如屏幕旋转）时，SDK 会重新调用解析器，原生视图将以全新状态启动，不会保留上一个视图的状态。
-- **UIKit views**：在 iOS 上，请将其包装在 `UIViewRepresentable` 中。
-- **轮播组件**：在 Android 上，[轮播](builder-containers#carousel)中所有幻灯片上的原生视图在页面打开期间始终处于激活状态，而不仅仅是当前可见幻灯片上的视图。请勿在轮播中放置摄像头预览或带声音的播放器。
+  当用户返回时，SDK 会再次调用解析器，原生视图将以全新状态启动，不保留之前的状态。在 Android 上，通过 `present()` 打开的流程中，旋转屏幕会触发 SDK 重新调用解析器。而在嵌入式 `AdaptyUIFlowPlatformView` 中，原生视图在旋转后会保留其状态。
+- **UIKit 视图**：在 iOS 上，请将其包装在 `UIViewRepresentable` 中。
+- **轮播图**：在 Android 上，[轮播图](builder-containers#carousel) 中所有幻灯片的原生视图在页面打开期间均保持活跃状态，而不仅限于当前可见幻灯片上的视图。请勿在轮播图中使用摄像头预览或带音频的播放器。
 
 ## 编写解析器以匹配自定义元素和视图 \{#write-a-resolver-to-match-custom-elements-and-views\}
 
@@ -153,16 +195,16 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 
 解析器有以下要求：
 
-- **网络数据与播放器**：将网络数据和播放器的状态保存在[原生视图](#create-views-for-custom-elements)中，而不是在解析器中。SDK 在屏幕打开期间会多次调用解析器，解析器中的代码每次调用时都会重新执行，导致网络请求重复发起、播放器从头开始播放。原生视图在这些调用之间保持状态，因此数据只加载一次，播放器也能持续播放。请在原生视图中创建播放器、会话和网络请求：
-  - **SwiftUI 视图**：在 `.task` 或 `@StateObject` 中创建播放器、会话和网络请求，而不是在 `@State` 属性的初始值中。Swift 每次解析器创建视图时都会重新求值该初始值。
+- **网络数据与播放器**：将网络数据和播放器的状态保存在[原生视图](#create-views-for-custom-elements)中，而不是解析器中。SDK 在屏幕打开期间会多次调用解析器，解析器中的代码每次调用时都会重新执行，因此网络请求会重复发送，播放器也会重新开始。原生视图在多次调用之间保持其状态，所以数据只加载一次，播放器也能持续播放。请在原生视图内创建播放器、会话和网络请求：
+  - **SwiftUI 视图**：在 `.task` 或 `@StateObject` 中创建播放器、会话和网络请求，而不是在 `@State` 属性的初始值中。Swift 在解析器每次创建视图时都会重新计算该初始值。
   - **Composable**：在 `remember` 中创建播放器和会话，在 `LaunchedEffect` 中发起网络请求。
   - **Android `View`**：在 `onAttachedToWindow` 中创建播放器、会话和网络请求。
-- **每个自定义元素对应一个原生视图**：有些原生视图在屏幕打开期间会发生变化，例如数据加载完成时或用户点击时。请在原生视图内部实现这些逻辑，而不是在解析器中。如果解析器为同一个自定义元素返回不同的视图，该视图将丢失其状态。
-- **每次出现都创建新的 `View`**：在 Android 上，每次调用 `factory` 时都要创建一个新的 `View`。SDK 每次自定义元素出现时都会调用 `factory`，例如屏幕打开时、用户返回该屏幕时或旋转屏幕后。
-- **应用数据**：将持有数据的对象（例如 `ObservableObject` 或带有[每日连续天数](flutter-custom-element-lottie-animation)的 `StateFlow`）存储在解析器的属性中。将该对象传递给原生视图，并在视图中观察它：
-  - **SwiftUI 视图**：使用 `@ObservedObject` 观察 `ObservableObject`。
-  - **Composable**：使用 `collectAsState` 收集 `StateFlow`，或使用 `observeAsState` 观察 `LiveData`。
-  - **Android `View`**：在 `onAttachedToWindow` 中开始观察对象，在 `onDetachedFromWindow` 中停止观察。
+- **每个自定义元素对应一个原生视图**：某些原生视图在屏幕打开期间会发生变化，例如数据加载完成时或用户点击时。请在原生视图内部实现这些逻辑，而不是在解析器中。如果解析器为同一个自定义元素返回不同的视图，该视图将丢失其状态。
+- **每次出现时创建新的 `View`**：在 Android 上，每次调用 `factory` 时都要创建一个新的 `View`。SDK 在每次自定义元素出现时都会调用 `factory`，例如屏幕打开时、用户返回该屏幕时，或在通过 `present()` 打开的流程中发生旋转之后。
+- **应用数据**：将保存数据的对象（例如 `ObservableObject` 或带有[每日连签](flutter-custom-element-lottie-animation)的 `StateFlow`）存储在解析器的属性中。将该对象传递给原生视图，并在原生视图中监听它：
+  - **SwiftUI 视图**：使用 `@ObservedObject` 监听 `ObservableObject`。
+  - **Composable**：使用 `collectAsState` 收集 `StateFlow`，或使用 `observeAsState` 监听 `LiveData`。
+  - **Android `View`**：在 `onAttachedToWindow` 中开始监听对象，在 `onDetachedFromWindow` 中停止监听。
 
   您复制到解析器中的值（例如连续天数）会保持创建解析器时的状态。如果您的 Dart 代码中有相关数据（例如每日连续记录），请通过[平台通道](https://docs.flutter.dev/platform-integration/platform-channels)将每个新值发送到原生代码，并在那里更新对象。
 
@@ -172,14 +214,13 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 
 仅在用户于屏幕打开前已拒绝某权限时，才返回无视图。在 Android 上，`ContextCompat.checkSelfPermission` 在两种情况下返回相同的值 `PERMISSION_DENIED`：应用首次向用户请求权限之前，以及用户拒绝后。为了区分这两种情况，请保存权限请求的结果，并在解析器中读取已保存的结果。如果应用尚未请求过该权限，则返回原生视图，并在视图内部发起权限请求。例如，在[地图视图](flutter-custom-element-map#3-match-the-map-to-the-custom-element)出现时请求位置访问权限，并在用户授权后立即显示地图。如果你返回无视图，而用户此后授予了权限，他们看到的仍是备用内容。权限变更不会触发 SDK 再次调用解析器。原生视图只有在 SDK 再次调用解析器时才会显示，例如用户返回该屏幕时。
 
-## 将解析器传入 SDK \{#pass-the-resolver-to-the-sdk\}
+## 将解析器传递给 SDK \{#pass-the-resolver-to-the-sdk\}
 
-在应用启动时为每个平台设置一次解析器。SDK 会在每个流程中调用它，包括通过 `AdaptyUIFlowPlatformView` 嵌入的流程。用户无需发布新版本即可在新流程和 A/B 测试中看到您的原生视图。这些视图仍会为每位用户展示其专属数据，例如[每日连续打卡记录](flutter-custom-element-lottie-animation)，因为它们会从您的应用中读取相应数据。
+在应用启动时，为每个平台设置一次解析器。SDK 会在每个流程中调用它，包括通过 `AdaptyUIFlowPlatformView` 嵌入的流程。用户在新流程和 A/B 测试中无需发布应用更新即可看到您的原生视图。这些视图仍会为每位用户展示其专属数据（例如[每日连签记录](flutter-custom-element-lottie-animation)），因为这些数据直接从您的应用中读取。
 
-<Tabs groupId="platform" queryString>
-<TabItem value="ios" label="iOS (Swift)" default>
+### iOS
 
-在 `ios/Runner/AppDelegate.swift` 中导入 `AdaptyUI`，并在 `application(_:didFinishLaunchingWithOptions:)` 方法中调用 `AdaptyUI.setCustomElementsResolver(_:)`。保持 `AppDelegate` 类的其余部分不变：
+在 `ios/Runner/AppDelegate.swift` 中，导入 `AdaptyUI`，并在 `application(_:didFinishLaunchingWithOptions:)` 方法中调用 `AdaptyUI.setCustomElementsResolver(_:)`。保持 `AppDelegate` 类的其余部分不变：
 
 ```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
 
@@ -187,12 +228,11 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
 ```
 
-如果你也在 `AppDelegate.swift` 中编写 resolver，还需要在此处导入 `AdaptyUIBuilder`。
+如果你也在 `AppDelegate.swift` 中编写解析器，还需要在那里导入 `AdaptyUIBuilder`。
 
-</TabItem>
-<TabItem value="android" label="Android (Kotlin)">
+### Android
 
-在 `Application` 类的 `onCreate` 方法中调用 `AdaptyUI.setCustomElementsResolver`。如果你的应用还没有 `Application` 类，请先创建一个：
+在您的 `Application` 类的 `onCreate` 方法中调用 `AdaptyUI.setCustomElementsResolver`。如果您的应用还没有 `Application` 类，请先创建一个：
 
 ```kotlin showLineNumbers title="Kotlin"
 
@@ -204,7 +244,7 @@ class App : Application() {
 }
 ```
 
-在 `android/app/src/main/AndroidManifest.xml` 中，在 `<application>` 的 `android:name` 属性里填写你的 `Application` 类名。Flutter 模板将此属性设为 `${applicationName}`，代表基础 `Application` 类：
+在 `android/app/src/main/AndroidManifest.xml` 中，通过 `<application>` 的 `android:name` 属性指定你的 `Application` 类。Flutter 模板默认将该属性设为 `${applicationName}`，代表基础 `Application` 类：
 
 ```xml showLineNumbers title="AndroidManifest.xml" {2}
 <application
@@ -214,11 +254,13 @@ class App : Application() {
 </application>
 ```
 
-</TabItem>
-</Tabs>
-
 :::tip
-要为某个 Type 的所有自定义元素显示相同的视图，可以传入 Type 与视图的映射，而不是使用 resolver。在 iOS 上，该映射为 `[String: AdaptyUICustomElementBuilder]` 字典。在 Android 上，将映射传给 `AdaptyCustomElementsResolver.of`。映射所需的代码量少于 resolver，但无法[为备用内容设置条件](#set-conditions-for-fallback-content)。
+若要在某个 Type 的所有自定义元素中显示相同的视图，可以传入一个 Types 与视图的映射表，而不是使用解析器。使用映射表比使用解析器代码量更少，但无法[为备用内容设置条件](#set-conditions-for-fallback-content)。
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+该映射表是一个 `[String: AdaptyUICustomElementBuilder]` 字典。如果你在 `AppDelegate.swift` 中编写映射表，还需要在那里导入 `Lottie`。
 
 ```swift showLineNumbers title="Swift"
 AdaptyUI.setCustomElementsResolver([
@@ -226,15 +268,23 @@ AdaptyUI.setCustomElementsResolver([
 ])
 ```
 
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+将映射传递给 `AdaptyCustomElementsResolver.of`：
+
 ```kotlin showLineNumbers title="Kotlin"
 val appWideViews = mapOf(
     "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
 )
 AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
 ```
+
+</TabItem>
+</Tabs>
 :::
 
-您无法将解析器附加到单个流程。如需显示只有在流程打开时才能获取的数据，请在流程打开前将数据传递给原生代码，然后在解析器中读取该数据。例如，付费墙展示[用户在之前流程中输入的体重](flutter-custom-element-interactive-chart)。
+您无法将解析器附加到单个流程。如需在流程打开时显示应用程序才拥有的数据，请在流程打开之前将数据发送至您的原生代码，然后在解析器中读取该数据。例如，付费墙显示[用户在之前流程中输入的体重](flutter-custom-element-interactive-chart)。
 
 ## 在设备上测试 \{#test-on-a-device\}
 

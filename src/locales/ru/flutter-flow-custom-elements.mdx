@@ -10,13 +10,55 @@ metadataTitle: "Отображение пользовательских элем
 
 Вам понадобится:
 
-- **Adapty Flutter SDK версии 4.4 или выше**: более ранние версии показывают резервный вариант для каждого кастомного элемента.
-- **Нативный код для iOS и Android**: Flutter-виджет нельзя отобразить в кастомном элементе. Напишите представления и резолвер на Swift для iOS и на Kotlin для Android. Добавьте Swift-код в таргет `Runner` в Xcode, а Kotlin-код — в `android/app/src/main/kotlin`.
-- **Библиотека Adapty UI для Android**: в Gradle-файле модуля вашего Android-приложения (например, `android/app/build.gradle.kts`) добавьте `implementation("io.adapty:android-ui")` в блок `dependencies`. Не указывайте версию и не подключайте Adapty BOM: версию задаёт `adapty_flutter`, а более новый `android-ui` может сломать флоу.
-- **Jetpack Compose на Android — для Composable-компонентов**: шаблон Flutter не [настраивает Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) в модуле приложения. Чтобы возвращать Composable из резолвера, подключите плагин Compose compiler Gradle и установите `compose = true` в блоке `buildFeatures`. Для Android `View` Compose не нужен. Для Lottie-представления, рассмотренного на этой странице, также добавьте `com.airbnb.android:lottie-compose`.
-- **Схема именования кастомных элементов**: задайте каждому нативному представлению Type, например `lottie_animation`. Используйте в Types только строчные буквы, цифры и знаки подчёркивания. Чтобы различать кастомные элементы одного Type, присвойте каждому ID, например `welcome_wave`. Types и ID в коде должны совпадать с теми, что указаны в [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+- **Adapty Flutter SDK 4.4 или новее**: более ранние версии показывают резервный пейвол для каждого кастомного элемента.
+- **Нативный код для iOS и Android**: Flutter-виджет нельзя отобразить в кастомном элементе. Пишите этот код на Swift для iOS и на Kotlin для Android. Добавьте Swift-код в таргет `Runner` в Xcode, а Kotlin-код — в папку с `MainActivity.kt`. Каждый новый Kotlin-файл начинайте со строки `package` из `MainActivity.kt`.
+- **Схема именования кастомных элементов**: задайте каждому нативному представлению тип (Type), например `lottie_animation`. Используйте в типах только строчные буквы, цифры и знаки подчёркивания. Чтобы различать кастомные элементы одного типа, присваивайте каждому идентификатор (ID), например `welcome_wave`. Типы и идентификаторы в вашем коде должны совпадать с теми, что заданы в [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
 
 Используйте одинаковые типы и идентификаторы в коде для iOS и Android. Если вы не настроили отдельную [аудиторию](audience) для каждой платформы, пользователи iOS и Android будут видеть одинаковые флоу.
+
+## Настройте свой Android-проект \{#set-up-your-android-project\}
+
+Ваш iOS-проект не требует дополнительной настройки. В Android-проекте добавьте библиотеку Adapty UI. Чтобы создавать нативные представления в виде composable-функций, также настройте Jetpack Compose.
+
+### Добавление библиотеки Adapty UI
+
+В Gradle-файл модуля вашего Android-приложения, например `android/app/build.gradle.kts`, добавьте `implementation("io.adapty:android-ui")` в блок `dependencies`. Не указывайте версию и не добавляйте Adapty BOM: версию задаёт `adapty_flutter`, а более новая `android-ui` может сломать флоу.
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+### Настройка Jetpack Compose \{#set-up-jetpack-compose\}
+
+Flutter-шаблон не [настраивает Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) в модуле приложения. Для Android `View` настройка Compose не нужна. Чтобы собирать нативные вью как composable-компоненты, добавьте Gradle-плагин компилятора Compose в `android/settings.gradle.kts` — с версией Kotlin-плагина `org.jetbrains.kotlin.android`:
+
+```kotlin showLineNumbers title="android/settings.gradle.kts" {4}
+plugins {
+    // the other plugins of your project
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
+}
+```
+
+Затем примените плагин к модулю приложения и установите `compose = true` в блоке `buildFeatures`:
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts" {4,8-10}
+plugins {
+    // the other plugins of your app module
+    id("dev.flutter.flutter-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+```
+
+Для Lottie view на этой странице также добавьте `com.airbnb.android:lottie-compose`.
 
 ## Создание представлений для пользовательских элементов \{#create-views-for-custom-elements\}
 
@@ -69,9 +111,9 @@ fun LottieElement(animationFile: String) {
   - **Composable**: используйте блок `onDispose` внутри `DisposableEffect`. Для асинхронной работы используйте `LaunchedEffect` — Compose отменяет его, когда composable покидает композицию.
   - **Android `View`**: переопределите `onDetachedFromWindow` в подклассе вашего `View` или добавьте `View.OnAttachStateChangeListener` к `View`.
 
-  Когда пользователь возвращается, или на Android после изменения конфигурации (например, поворота экрана), SDK вызывает resolver заново, и нативный вид запускается без состояния предыдущего.
+  Когда пользователь возвращается, SDK снова вызывает резолвер, и нативный вид запускается без состояния предыдущего. На Android в флоу, открытом с помощью `present()`, поворот экрана заставляет SDK снова вызвать резолвер. В встроенном `AdaptyUIFlowPlatformView` нативный вид сохраняет своё состояние после поворота.
 - **Виды UIKit**: На iOS оберните их в `UIViewRepresentable`.
-- **Карусели**: На Android в [карусели](builder-containers#carousel) нативные виды на всех слайдах остаются активными, пока экран открыт, а не только вид на видимом слайде. Не помещайте в карусели превью с камеры и плееры со звуком.
+- **Карусели**: На Android в [карусели](builder-containers#carousel) нативные виды на всех слайдах остаются активными, пока открыт экран, а не только вид на видимом слайде. Не помещайте в карусели превью с камеры и плееры со звуком.
 
 ## Написание резолвера для сопоставления пользовательских элементов и представлений \{#write-a-resolver-to-match-custom-elements-and-views\}
 
@@ -153,16 +195,16 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 
 К резолверу предъявляются следующие требования:
 
-- **Сетевые данные и плееры**: Храните сетевые данные и плееры в состоянии [нативного вью](#create-views-for-custom-elements), а не в резолвере. SDK вызывает резолвер много раз, пока экран открыт. Код в резолвере выполняется заново при каждом вызове, поэтому сетевые запросы повторяются, а плееры начинают сначала. Нативный вью сохраняет своё состояние между этими вызовами, поэтому данные загружаются один раз, а плееры продолжают воспроизведение. Создавайте плееры, сессии и сетевые запросы внутри нативного вью:
-  - **SwiftUI view**: Создавайте плееры, сессии и сетевые запросы в `.task` или `@StateObject`, а не в начальном значении свойства `@State`. Swift вычисляет это начальное значение заново каждый раз, когда резолвер создаёт вью.
+- **Сетевые данные и плееры**: Храните сетевые данные и плееры в состоянии [нативного вью](#create-views-for-custom-elements), а не в резолвере. SDK вызывает резолвер много раз, пока экран открыт. Код в резолвере выполняется заново при каждом вызове, поэтому сетевые запросы повторяются, а плееры начинают воспроизведение сначала. Нативное вью сохраняет своё состояние между вызовами, поэтому данные загружаются один раз, а плееры продолжают воспроизведение. Создавайте плееры, сессии и сетевые запросы внутри нативного вью:
+  - **SwiftUI view**: Создавайте плееры, сессии и сетевые запросы в `.task` или в `@StateObject`, но не в начальном значении свойства `@State`. Swift вычисляет это начальное значение заново каждый раз, когда резолвер создаёт вью.
   - **Composable**: Создавайте плееры и сессии в `remember`, а сетевые запросы — в `LaunchedEffect`.
   - **Android `View`**: Создавайте плееры, сессии и сетевые запросы в `onAttachedToWindow`.
-- **Один нативный вью на каждый кастомный элемент**: Некоторые нативные вью изменяются, пока экран открыт, — например, когда загружаются их данные или когда пользователь нажимает на них. Реализуйте эту логику в самом нативном вью, а не в резолвере. Если резолвер возвращает другой вью для того же кастомного элемента, вью теряет своё состояние.
-- **Новый `View` при каждом появлении**: На Android создавайте новый `View` при каждом вызове `factory`. SDK вызывает `factory` каждый раз, когда кастомный элемент появляется: при открытии экрана, при возврате пользователя на экран или после поворота.
-- **Данные приложения**: Храните объект с данными, например `ObservableObject` или `StateFlow` с [ежедневной серией](flutter-custom-element-lottie-animation), в свойстве резолвера. Передайте объект в нативный вью и наблюдайте за ним там:
+- **Одно нативное вью на каждый кастомный элемент**: Некоторые нативные вью изменяются, пока экран открыт, — например, когда загружаются их данные или когда пользователь нажимает на них. Реализуйте эту логику в самом нативном вью, а не в резолвере. Если резолвер возвращает другое вью для того же кастомного элемента, вью теряет своё состояние.
+- **Новый `View` для каждого появления**: На Android создавайте новый `View` при каждом вызове `factory`. SDK вызывает `factory` каждый раз, когда кастомный элемент появляется: при открытии экрана, при возврате пользователя на экран или, во флоу, открытом через `present()`, после поворота устройства.
+- **Данные приложения**: Храните объект с данными, например `ObservableObject` или `StateFlow` с [ежедневной серией](flutter-custom-element-lottie-animation), в свойстве резолвера. Передавайте объект в нативное вью и наблюдайте за ним там:
   - **SwiftUI view**: Наблюдайте за `ObservableObject` через `@ObservedObject`.
   - **Composable**: Собирайте `StateFlow` через `collectAsState` или наблюдайте за `LiveData` через `observeAsState`.
-  - **Android `View`**: Начинайте наблюдение за объектом в `onAttachedToWindow`, а останавливайте — в `onDetachedFromWindow`.
+  - **Android `View`**: Наблюдайте за объектом в `onAttachedToWindow` и останавливайте наблюдение в `onDetachedFromWindow`.
 
   Значение, которое вы копируете в резолвер, например номер серии дней, остаётся таким, каким оно было в момент создания резолвера. Если нужные данные, например серия дней, находятся в вашем Dart-коде — передавайте каждое новое значение в нативный код через [platform channel](https://docs.flutter.dev/platform-integration/platform-channels) и обновляйте объект там.
 
@@ -172,12 +214,11 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 
 Возвращайте пустое представление только в том случае, если пользователь уже отказал в разрешении до открытия экрана. На Android метод `ContextCompat.checkSelfPermission` возвращает одинаковое значение — `PERMISSION_DENIED` — в двух ситуациях: до того, как приложение впервые запросило разрешение, и после того, как пользователь отказал. Чтобы различить эти случаи, сохраняйте результат запроса разрешения и читайте его в резолвере. Если приложение ещё не запрашивало разрешение, возвращайте нативное представление и запрашивайте разрешение внутри него. Например, запросите доступ к геолокации, когда появляется [представление карты](flutter-custom-element-map#3-match-the-map-to-the-custom-element), и показывайте карту сразу после того, как пользователь даст разрешение. Если вы вернёте пустое представление, а пользователь затем предоставит доступ, он всё равно увидит резервный вариант. Изменение разрешения не заставляет SDK повторно вызывать резолвер. Нативное представление появится только после следующего вызова резолвера со стороны SDK — например, когда пользователь вернётся на экран.
 
-## Передайте resolver в SDK \{#pass-the-resolver-to-the-sdk\}
+## Передайте резолвер в SDK \{#pass-the-resolver-to-the-sdk\}
 
-Настройте resolver один раз для каждой платформы при запуске приложения. SDK вызывает его в каждом флоу, включая флоу, встроенный с помощью `AdaptyUIFlowPlatformView`. Пользователи видят ваши нативные элементы в новых флоу и A/B-тестах без обновления приложения. Эти элементы по-прежнему отображают данные конкретного пользователя, например [ежедневную серию](flutter-custom-element-lottie-animation), считывая их из вашего приложения.
+Задайте резолвер один раз для каждой платформы при запуске приложения. SDK вызывает его в каждом флоу, включая флоу, встроенный с помощью `AdaptyUIFlowPlatformView`. Пользователи видят ваши нативные экраны в новых флоу и A/B-тестах без выпуска обновления. Эти экраны по-прежнему отображают индивидуальные данные каждого пользователя, например [ежедневную серию](flutter-custom-element-lottie-animation), считывая их из вашего приложения.
 
-<Tabs groupId="platform" queryString>
-<TabItem value="ios" label="iOS (Swift)" default>
+### iOS
 
 В файле `ios/Runner/AppDelegate.swift` импортируйте `AdaptyUI` и вызовите `AdaptyUI.setCustomElementsResolver(_:)` в методе `application(_:didFinishLaunchingWithOptions:)`. Остальную часть класса `AppDelegate` оставьте без изменений:
 
@@ -187,10 +228,9 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
 ```
 
-Если резолвер реализован в том же файле `AppDelegate.swift`, импортируйте там и `AdaptyUIBuilder`.
+Если резолвер написан в том же файле `AppDelegate.swift`, импортируйте там и `AdaptyUIBuilder`.
 
-</TabItem>
-<TabItem value="android" label="Android (Kotlin)">
+### Android
 
 Вызовите `AdaptyUI.setCustomElementsResolver` в методе `onCreate` вашего класса `Application`. Если у вашего приложения ещё нет класса `Application`, создайте его:
 
@@ -204,7 +244,7 @@ class App : Application() {
 }
 ```
 
-В файле `android/app/src/main/AndroidManifest.xml` укажите класс `Application` в атрибуте `android:name` элемента `<application>`. Шаблон Flutter задаёт этому атрибуту значение `${applicationName}`, соответствующее базовому классу `Application`:
+В файле `android/app/src/main/AndroidManifest.xml` укажите имя вашего класса `Application` в атрибуте `android:name` элемента `<application>`. Шаблон Flutter задаёт этот атрибут как `${applicationName}`, что соответствует базовому классу `Application`:
 
 ```xml showLineNumbers title="AndroidManifest.xml" {2}
 <application
@@ -214,11 +254,13 @@ class App : Application() {
 </application>
 ```
 
-</TabItem>
-</Tabs>
-
 :::tip
-Чтобы отображать одинаковое представление для каждого кастомного элемента определённого Type, передайте словарь Types и представлений вместо resolver'а. На iOS словарь имеет тип `[String: AdaptyUICustomElementBuilder]`. На Android передайте словарь в `AdaptyCustomElementsResolver.of`. Словарь требует меньше кода, чем resolver, но не позволяет [задавать условия для резервного контента](#set-conditions-for-fallback-content).
+Чтобы одинаково отображать каждый кастомный элемент определённого типа, передайте мап типов и представлений вместо резолвера. С мапом вы пишете меньше кода, чем с резолвером, но не можете [задавать условия для резервного контента](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Мап представляет собой словарь `[String: AdaptyUICustomElementBuilder]`. Если вы добавляете мап в `AppDelegate.swift`, также импортируйте там `Lottie`.
 
 ```swift showLineNumbers title="Swift"
 AdaptyUI.setCustomElementsResolver([
@@ -226,15 +268,23 @@ AdaptyUI.setCustomElementsResolver([
 ])
 ```
 
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Передайте карту в `AdaptyCustomElementsResolver.of`:
+
 ```kotlin showLineNumbers title="Kotlin"
 val appWideViews = mapOf(
     "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
 )
 AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
 ```
+
+</TabItem>
+</Tabs>
 :::
 
-Нельзя привязать резолвер к одному флоу. Чтобы отображать данные, которые ваше приложение получает только при открытии флоу, передайте эти данные в нативный код до открытия флоу. Затем прочитайте их в резолвере. Например, пейвол отображает [вес, введённый пользователем в предыдущем флоу](flutter-custom-element-interactive-chart).
+Вы не можете прикрепить резолвер к одному флоу. Чтобы отображать данные, которые приложение получает только при открытии флоу, передайте эти данные в нативный код до открытия флоу. Затем прочитайте данные в резолвере. Например, пейвол отображает [вес, который пользователь ввёл в предыдущем флоу](flutter-custom-element-interactive-chart).
 
 ## Тестирование на устройстве \{#test-on-a-device\}
 

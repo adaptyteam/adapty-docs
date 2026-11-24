@@ -10,13 +10,55 @@ metadataTitle: "Özel öğeleri görüntüleme | Flutter SDK | Adapty Dokümanla
 
 Şunlara ihtiyacınız var:
 
-- **Adapty Flutter SDK 4.4 veya üzeri**: Daha eski sürümler her özel öğe için yedek paywall'u gösterir.
-- **iOS ve Android için native kod**: Özel bir öğede Flutter widget'ı görüntüleyemezsiniz. View'ları ve resolver'ı iOS için Swift, Android için Kotlin ile yazın. Swift kodunu Xcode'daki `Runner` hedefine, Kotlin kodunu ise `android/app/src/main/kotlin` dizinine ekleyin.
-- **Android'de Adapty UI kütüphanesi**: `android/app/build.gradle.kts` gibi Android uygulama modülünüzün Gradle dosyasında, `dependencies` bloğuna `implementation("io.adapty:android-ui")` ekleyin. Sürüm numarası veya Adapty BOM eklemeyin: sürümü `adapty_flutter` belirler; daha yeni bir `android-ui` flow'ları bozabilir.
-- **Android'de composable'lar için Jetpack Compose**: Flutter şablonu, uygulama modülünde [Compose kurulumunu](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) yapmaz. Resolver'dan composable döndürmek için Compose compiler Gradle eklentisini uygulayın ve `buildFeatures` bloğunda `compose = true` ayarlayın. Bir Android `View` için Compose kurulumu gerekmez. Bu sayfadaki Lottie view için ayrıca `com.airbnb.android:lottie-compose` da ekleyin.
-- **Özel öğeler için bir adlandırma şeması**: Her native view'a `lottie_animation` gibi bir Tür verin. Türlerde yalnızca küçük harf, rakam ve alt çizgi kullanın. Aynı Türdeki özel öğeleri birbirinden ayırt etmek için her birine `welcome_wave` gibi bir ID verin. Kodunuzdaki Türler ve ID'ler, [Flow & Paywall Builder](flow-custom-elements#add-and-configure) içindekilerle eşleşmelidir.
+- **Adapty Flutter SDK 4.4 veya üzeri**: Daha eski sürümler her özel element için yedek paywall'u gösterir.
+- **iOS ve Android için native kod**: Özel bir elementte Flutter widget'ı görüntüleyemezsiniz. Bu kodu iOS için Swift'te, Android için Kotlin'de yazın. Swift kodunu Xcode'daki `Runner` hedefine, Kotlin kodunu ise `MainActivity.kt` dosyasının bulunduğu klasöre ekleyin. Her yeni Kotlin dosyasına `MainActivity.kt` dosyasındaki `package` satırıyla başlayın.
+- **Özel elementler için bir adlandırma şeması**: Her native view'a `lottie_animation` gibi bir Tür verin. Türlerde yalnızca küçük harf, rakam ve alt çizgi kullanın. Aynı Türdeki özel elementleri birbirinden ayırt etmek için her birine `welcome_wave` gibi bir ID verin. Kodunuzdaki Türler ve ID'ler, [Flow & Paywall Builder](flow-custom-elements#add-and-configure)'dakilerle eşleşmelidir.
 
 iOS ve Android kodunuzda aynı Type ve ID'leri kullanın. Her platform için ayrı bir [kitle](audience) oluşturmadığınız sürece, iOS ve Android kullanıcıları aynı flow'ları görür.
+
+## Android projenizi ayarlayın \{#set-up-your-android-project\}
+
+iOS projeniz için ekstra bir kurulum gerekmez. Android projenizde Adapty UI kütüphanesini ekleyin. Native görünümleri composable olarak oluşturmak için Jetpack Compose'u da ayarlayın.
+
+### Adapty UI kütüphanesini ekleyin \{#add-the-adapty-ui-library\}
+
+Android uygulama modülünüzün Gradle dosyasında (örneğin `android/app/build.gradle.kts`), `dependencies` bloğuna `implementation("io.adapty:android-ui")` ekleyin. Sürüm veya Adapty BOM eklemeyin: sürümü `adapty_flutter` belirler ve daha yeni bir `android-ui` flow'ları bozabilir.
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+### Jetpack Compose'u Kurun \{#set-up-jetpack-compose\}
+
+Flutter şablonu, uygulama modülünde [Compose'u yapılandırmaz](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler). Bir Android `View` için Compose kurulumuna gerek yoktur. Yerel görünümleri composable olarak oluşturmak için `android/settings.gradle.kts` dosyasına, Kotlin eklentisinin sürümüyle birlikte `org.jetbrains.kotlin.android` Compose derleyici Gradle eklentisini ekleyin:
+
+```kotlin showLineNumbers title="android/settings.gradle.kts" {4}
+plugins {
+    // the other plugins of your project
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
+}
+```
+
+Ardından, eklentiyi app modülüne uygulayın ve `buildFeatures` bloğunda `compose = true` olarak ayarlayın:
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts" {4,8-10}
+plugins {
+    // the other plugins of your app module
+    id("dev.flutter.flutter-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+```
+
+Bu sayfadaki Lottie görünümü için `com.airbnb.android:lottie-compose` bağımlılığını da ekleyin.
 
 ## Özel öğeler için görünümler oluşturma \{#create-views-for-custom-elements\}
 
@@ -69,9 +111,9 @@ fun LottieElement(animationFile: String) {
   - **Composable**: Bir `DisposableEffect`'in `onDispose` bloğunu kullanın. Asenkron işler için `LaunchedEffect` kullanın: Compose, composable bileşim dışına çıktığında bunu iptal eder.
   - **Android `View`**: `View` alt sınıfınızda `onDetachedFromWindow`'u override edin ya da `View`'a bir `View.OnAttachStateChangeListener` ekleyin.
 
-  Kullanıcı geri döndüğünde veya Android'de döndürme gibi bir yapılandırma değişikliği sonrasında, SDK resolver'ı yeniden çağırır ve native view önceki durumu olmadan başlar.
-- **UIKit view'ları**: iOS'ta bunları `UIViewRepresentable` içine sarın.
-- **Carousel'lar**: Android'de bir [carousel](builder-containers#carousel) içinde, tüm slaytlardaki native view'lar ekran açıkken aktif kalır; yalnızca görünür slayttaki view değil. Kamera önizlemelerini ve sesli oynatıcıları carousel'lardan uzak tutun.
+  Kullanıcı geri döndüğünde SDK, resolver'ı yeniden çağırır ve native görünüm, öncekinin durumu olmadan başlar. Android'de `present()` ile açtığınız bir flow'da, döndürme işlemi SDK'nın resolver'ı yeniden çağırmasına neden olur. Gömülü bir `AdaptyUIFlowPlatformView`'da, native görünüm döndürme sonrasında durumunu korur.
+- **UIKit görünümleri**: iOS'ta bunları `UIViewRepresentable` içine sarın.
+- **Carousel'lar**: Android'de bir [carousel](builder-containers#carousel) içinde, tüm slaytlardaki native görünümler ekran açıkken aktif kalır; yalnızca görünen slayttaki görünüm değil. Kamera önizlemelerini ve sesli oynatıcıları carousel'lardan uzak tutun.
 
 ## Özel Elementler ve Görünümler İçin Bir Resolver Yazın \{#write-a-resolver-to-match-custom-elements-and-views\}
 
@@ -153,16 +195,16 @@ Uygulamayı yayımladıktan sonra [yeni bir Type ile özel öğe eklerseniz](flo
 
 Resolver aşağıdaki gereksinimlere sahiptir:
 
-- **Ağ verileri ve oynatıcılar**: Ağ verilerini ve oynatıcıları, resolver'da değil, [native view](#create-views-for-custom-elements) state'inde tutun. SDK, ekran açıkken resolver'ı defalarca çağırır. Resolver'daki kod her çağrıda yeniden çalışır, bu nedenle ağ istekleri tekrarlanır ve oynatıcılar baştan başlar. Native view, bu çağrılar arasında state'ini korur; böylece veriler yalnızca bir kez yüklenir ve oynatıcılar çalmaya devam eder. Oynatıcıları, oturumları ve ağ isteklerini native view içinde oluşturun:
-  - **SwiftUI view**: Oynatıcıları, oturumları ve ağ isteklerini `.task` içinde veya bir `@StateObject`'te oluşturun; `@State` özelliğinin başlangıç değerinde değil. Swift, bu başlangıç değerini resolver view'ı her oluşturduğunda yeniden hesaplar.
-  - **Composable**: Oynatıcıları ve oturumları `remember` içinde, ağ isteklerini ise `LaunchedEffect` içinde oluşturun.
+- **Ağ verisi ve oynatıcılar**: Ağ verisi ve oynatıcıları resolver'da değil, [native view](#create-views-for-custom-elements) state'inde tutun. SDK, ekran açıkken resolver'ı defalarca çağırır. Resolver'daki kod her çağrıda yeniden çalıştığı için ağ istekleri tekrar eder ve oynatıcılar başa döner. Native view, bu çağrılar arasında state'ini korur; böylece veri yalnızca bir kez yüklenir ve oynatıcılar çalmaya devam eder. Oynatıcıları, oturumları ve ağ isteklerini native view içinde oluşturun:
+  - **SwiftUI view**: Oynatıcıları, oturumları ve ağ isteklerini `.task` içinde veya bir `@StateObject`'te oluşturun; `@State` özelliğinin başlangıç değerinde değil. Swift, resolver her view oluşturduğunda bu başlangıç değerini yeniden hesaplar.
+  - **Composable**: Oynatıcı ve oturumları `remember` içinde, ağ isteklerini ise `LaunchedEffect` içinde oluşturun.
   - **Android `View`**: Oynatıcıları, oturumları ve ağ isteklerini `onAttachedToWindow` içinde oluşturun.
-- **Custom element başına bir native view**: Bazı native view'lar, ekran açıkken değişir; örneğin, verileri yüklendiğinde veya kullanıcı bunlara dokunduğunda. Bu mantığı resolver'da değil, native view'ın kendisinde uygulayın. Resolver, aynı custom element için farklı bir view döndürürse view, state'ini kaybeder.
-- **Her görünüm için yeni bir `View`**: Android'de `factory`'nin her çağrısında yeni bir `View` oluşturun. SDK, custom element her göründüğünde `factory`'yi çağırır; örneğin ekran açıldığında, kullanıcı ekrana geri döndüğünde veya ekran döndürüldükten sonra.
-- **Uygulama verileri**: [Günlük seri](flutter-custom-element-lottie-animation) gibi verileri tutan bir nesneyi (örneğin `ObservableObject` veya `StateFlow`) resolver'ın bir özelliğinde saklayın. Nesneyi native view'a aktarın ve orada gözlemleyin:
+- **Her özel öğe için bir native view**: Bazı native view'lar ekran açıkken değişir; örneğin veri yüklendiğinde veya kullanıcı üzerine dokunduğunda. Bu mantığı resolver'da değil, native view'ın kendisinde uygulayın. Resolver aynı özel öğe için farklı bir view döndürürse, view state'ini kaybeder.
+- **Her görünüm için yeni bir `View`**: Android'de `factory`'nin her çağrısında yeni bir `View` oluşturun. SDK, özel öğe her göründüğünde `factory`'yi çağırır; ekran açıldığında, kullanıcı ekrana geri döndüğünde veya `present()` ile açtığınız bir flow'da ekran döndürüldükten sonra.
+- **Uygulama verisi**: [günlük seri](flutter-custom-element-lottie-animation) gibi veriyi tutan bir nesneyi (örneğin `ObservableObject` veya `StateFlow`) resolver'ın bir özelliğinde saklayın. Nesneyi native view'a aktarın ve orada gözlemleyin:
   - **SwiftUI view**: Bir `ObservableObject`'i `@ObservedObject` ile gözlemleyin.
-  - **Composable**: Bir `StateFlow`'u `collectAsState` ile toplayın ya da bir `LiveData`'yı `observeAsState` ile gözlemleyin.
-  - **Android `View`**: Nesneyi `onAttachedToWindow` içinde gözlemlemeye başlayın ve `onDetachedFromWindow` içinde durdurun.
+  - **Composable**: Bir `StateFlow`'u `collectAsState` ile toplayın ya da `LiveData`'yı `observeAsState` ile gözemleyin.
+  - **Android `View`**: Nesneyi `onAttachedToWindow` içinde gözlemlemeye başlayın, `onDetachedFromWindow` içinde durdurun.
 
   Çözümleyiciye kopyaladığınız bir değer, örneğin seri numarası, çözümleyiciyi oluşturduğunuz andaki haliyle sabit kalır. Dart kodunuzda günlük seri gibi veriler bulunuyorsa her yeni değeri bir [platform channel](https://docs.flutter.dev/platform-integration/platform-channels) aracılığıyla native koda gönderin ve nesneyi orada güncelleyin.
 
@@ -172,12 +214,11 @@ Resolver aşağıdaki gereksinimlere sahiptir:
 
 Bir izin için, yalnızca kullanıcı ekran açılmadan önce izni reddettiyse görünüm döndürme. Android'de `ContextCompat.checkSelfPermission`, iki durumda aynı değeri (`PERMISSION_DENIED`) döndürür: uygulamanız kullanıcıdan izni ilk kez istemeden önce ve kullanıcı izni reddettikten sonra. Bu iki durumu birbirinden ayırt etmek için izin isteğinin sonucunu kaydedin ve resolver içinde kaydedilen sonucu okuyun. Uygulamanız henüz izin istemediyse native görünümü döndürün ve izni görünümün içinde isteyin. Örneğin, bir [harita görünümü](flutter-custom-element-map#3-match-the-map-to-the-custom-element) göründüğünde konum erişimi isteyin ve kullanıcı erişim izni verir vermez haritayı gösterin. Görünüm döndürmezseniz ve kullanıcı daha sonra izin verirse, kullanıcı yine de yedek içeriği görür. Bir izin değişikliği, SDK'nın resolver'ı tekrar çağırmasını sağlamaz. Native görünüm yalnızca SDK resolver'ı tekrar çağırdığında görünür; örneğin kullanıcı ekrana geri döndüğünde.
 
-## Resolver'ı SDK'ya Aktarın \{#pass-the-resolver-to-the-sdk\}
+## Çözücüyü SDK'ya aktarın \{#pass-the-resolver-to-the-sdk\}
 
-Resolver'ı her platform için uygulama başlangıcında bir kez ayarlayın. SDK, `AdaptyUIFlowPlatformView` ile gömülü bir flow dahil her flow'da bunu çağırır. Kullanıcılar, bir uygulama güncellemesi olmadan yeni flow'larda ve A/B testlerinde yerel görünümlerinizi görür. Bu görünümler, [günlük seri](flutter-custom-element-lottie-animation) gibi verileri uygulamanızdan okuduğundan her kullanıcıya kendi verilerini göstermeye devam eder.
+Çözücüyü her platform için uygulama başlatılırken bir kez ayarlayın. SDK, `AdaptyUIFlowPlatformView` ile gömülü bir flow dahil olmak üzere her flow'da bunu çağırır. Kullanıcılar, yeni flow'larda ve A/B testlerinde yerel görünümlerinizi bir uygulama güncellemesi olmadan görebilir. Bu görünümler, verilerinizi uygulamanızdan okuduğu için her kullanıcıya [günlük seri](flutter-custom-element-lottie-animation) gibi kendi verilerini göstermeye devam eder.
 
-<Tabs groupId="platform" queryString>
-<TabItem value="ios" label="iOS (Swift)" default>
+### iOS
 
 In `ios/Runner/AppDelegate.swift`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver(_:)` in the `application(_:didFinishLaunchingWithOptions:)` method. Keep the rest of the `AppDelegate` class as it is:
 
@@ -189,8 +230,7 @@ AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
 
 If you write the resolver in `AppDelegate.swift` too, also import `AdaptyUIBuilder` there.
 
-</TabItem>
-<TabItem value="android" label="Android (Kotlin)">
+### Android
 
 `AdaptyUI.setCustomElementsResolver` metodunu `Application` sınıfınızın `onCreate` metodunda çağırın. Uygulamanızda henüz `Application` sınıfı yoksa bir tane oluşturun:
 
@@ -204,7 +244,7 @@ class App : Application() {
 }
 ```
 
-`android/app/src/main/AndroidManifest.xml` dosyasında, `<application>` öğesinin `android:name` özelliğinde `Application` sınıfınızı belirtin. Flutter şablonu bu özelliği temel `Application` sınıfını temsil eden `${applicationName}` olarak ayarlar:
+`android/app/src/main/AndroidManifest.xml` dosyasında, `<application>` öğesinin `android:name` niteliğinde `Application` sınıfınızı belirtin. Flutter şablonu bu niteliği temel `Application` sınıfını temsil eden `${applicationName}` olarak ayarlar:
 
 ```xml showLineNumbers title="AndroidManifest.xml" {2}
 <application
@@ -214,11 +254,13 @@ class App : Application() {
 </application>
 ```
 
-</TabItem>
-</Tabs>
-
 :::tip
-Her bir Type'ın özel öğesinde aynı görünümü göstermek için, bir çözümleyici yerine Type'lar ve görünümlerin bir haritasını iletin. iOS'ta harita, `[String: AdaptyUICustomElementBuilder]` şeklinde bir sözlüktür. Android'de haritayı `AdaptyCustomElementsResolver.of` metoduna iletin. Harita, bir çözümleyiciye kıyasla daha az kod gerektirmekle birlikte [yedek içerik için koşul belirleme](#set-conditions-for-fallback-content) işlemi yapılamaz.
+Bir Type'ın her özel öğesinde aynı görünümü göstermek için, bir çözümleyici yerine Type'lar ve görünümlerin bir haritasını iletin. Harita ile [yedek içerik için koşul belirleme](#set-conditions-for-fallback-content) işlemine kıyasla daha az kod yazarsınız.
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Harita, bir `[String: AdaptyUICustomElementBuilder]` sözlüğüdür. Haritayı `AppDelegate.swift` içine yazarsanız, `Lottie`'yi de oraya import edin.
 
 ```swift showLineNumbers title="Swift"
 AdaptyUI.setCustomElementsResolver([
@@ -226,15 +268,23 @@ AdaptyUI.setCustomElementsResolver([
 ])
 ```
 
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+`AdaptyCustomElementsResolver.of` metoduna map'i geçirin:
+
 ```kotlin showLineNumbers title="Kotlin"
 val appWideViews = mapOf(
     "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
 )
 AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
 ```
+
+</TabItem>
+</Tabs>
 :::
 
-Bir resolver'ı tek bir flow'a bağlayamazsınız. Uygulamanızın yalnızca bir flow açıldığında sahip olduğu verileri görüntülemek için, flow açılmadan önce verileri native kodunuza gönderin. Ardından verileri resolver içinde okuyun. Örneğin, bir paywall [kullanıcının önceki bir flow'da girdiği ağırlığı](flutter-custom-element-interactive-chart) gösterebilir.
+Bir flow'a resolver ekleyemezsiniz. Uygulamanızın yalnızca bir flow açıldığında sahip olduğu verileri göstermek için, flow açılmadan önce verileri native kodunuza gönderin. Ardından verileri resolver'da okuyun. Örneğin, bir paywall [kullanıcının önceki bir flow'da girdiği ağırlığı](flutter-custom-element-interactive-chart) görüntüler.
 
 ## Cihazda test etme \{#test-on-a-device\}
 

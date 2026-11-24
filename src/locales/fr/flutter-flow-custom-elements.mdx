@@ -11,12 +11,54 @@ metadataTitle: "Afficher des éléments personnalisés | SDK Flutter | Documenta
 Vous avez besoin de :
 
 - **Adapty Flutter SDK 4.4 ou version ultérieure** : Les versions antérieures affichent le paywall de secours pour chaque élément personnalisé.
-- **Code natif pour iOS et Android** : Vous ne pouvez pas afficher un widget Flutter dans un élément personnalisé. Écrivez les vues et le resolver en Swift pour iOS et en Kotlin pour Android. Ajoutez le code Swift à la cible `Runner` dans Xcode, et le code Kotlin dans `android/app/src/main/kotlin`.
-- **La bibliothèque Adapty UI sur Android** : Dans le fichier Gradle de votre module d'application Android, par exemple `android/app/build.gradle.kts`, ajoutez `implementation("io.adapty:android-ui")` au bloc `dependencies`. N'ajoutez pas de version ni le BOM Adapty : `adapty_flutter` gère la version, et une version plus récente d'`android-ui` peut casser les flows.
-- **Jetpack Compose sur Android, pour les composables** : Le template Flutter ne [configure pas Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) dans le module de l'application. Pour retourner des composables depuis le resolver, appliquez le plugin Gradle du compilateur Compose et activez `compose = true` dans le bloc `buildFeatures`. Une `View` Android n'a pas besoin de configuration Compose. Pour la vue Lottie présentée sur cette page, ajoutez également `com.airbnb.android:lottie-compose`.
-- **Un schéma de nommage pour les éléments personnalisés** : Donnez à chaque vue native un Type, par exemple `lottie_animation`. N'utilisez que des lettres minuscules, des chiffres et des underscores dans les Types. Pour distinguer des éléments personnalisés du même Type, attribuez à chacun un ID, par exemple `welcome_wave`. Les Types et les IDs dans votre code doivent correspondre à ceux définis dans le [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
+- **Code natif pour iOS et Android** : Vous ne pouvez pas afficher un widget Flutter dans un élément personnalisé. Écrivez ce code en Swift pour iOS et en Kotlin pour Android. Ajoutez le code Swift à la cible `Runner` dans Xcode, et le code Kotlin dans le dossier de `MainActivity.kt`. Commencez chaque nouveau fichier Kotlin avec la ligne `package` de `MainActivity.kt`.
+- **Un schéma de nommage pour les éléments personnalisés** : Donnez à chaque vue native un Type, par exemple `lottie_animation`. Utilisez uniquement des lettres minuscules, des chiffres et des underscores dans les Types. Pour distinguer les éléments personnalisés du même Type, donnez à chacun un ID, par exemple `welcome_wave`. Les Types et les IDs dans votre code doivent correspondre à ceux définis dans le [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
 
 Utilisez les mêmes types et identifiants dans votre code iOS et Android. À moins de configurer une [audience](audience) distincte pour chaque plateforme, les utilisateurs iOS et Android voient les mêmes flows.
+
+## Configurer votre projet Android \{#set-up-your-android-project\}
+
+Votre projet iOS ne nécessite aucune configuration supplémentaire. Dans votre projet Android, ajoutez la bibliothèque Adapty UI. Pour construire des vues natives sous forme de composables, configurez également Jetpack Compose.
+
+### Ajouter la bibliothèque Adapty UI
+
+Dans le fichier Gradle de votre module d'application Android, par exemple `android/app/build.gradle.kts`, ajoutez `implementation("io.adapty:android-ui")` dans le bloc `dependencies`. N'ajoutez pas de version ni de BOM Adapty : c'est `adapty_flutter` qui définit la version, et une version plus récente d'`android-ui` peut casser les flows.
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+### Configurer Jetpack Compose \{#set-up-jetpack-compose\}
+
+Le template Flutter ne [configure pas Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) dans le module de l'application. Une `View` Android n'a pas besoin de configuration Compose. Pour créer des vues natives en tant que composables, ajoutez le plugin Gradle du compilateur Compose à `android/settings.gradle.kts`, avec la version du plugin Kotlin, `org.jetbrains.kotlin.android` :
+
+```kotlin showLineNumbers title="android/settings.gradle.kts" {4}
+plugins {
+    // the other plugins of your project
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
+}
+```
+
+Ensuite, appliquez le plugin au module app et définissez `compose = true` dans le bloc `buildFeatures` :
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts" {4,8-10}
+plugins {
+    // the other plugins of your app module
+    id("dev.flutter.flutter-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+```
+
+Pour la vue Lottie sur cette page, ajoutez également `com.airbnb.android:lottie-compose`.
 
 ## Créer des vues pour les éléments personnalisés \{#create-views-for-custom-elements\}
 
@@ -69,9 +111,9 @@ fun LottieElement(animationFile: String) {
   - **Composable** : Utilisez le bloc `onDispose` d'un `DisposableEffect`. Pour le travail asynchrone, utilisez `LaunchedEffect` : Compose l'annule lorsque le composable quitte la composition.
   - **`View` Android** : Remplacez `onDetachedFromWindow` dans votre sous-classe `View`, ou ajoutez un `View.OnAttachStateChangeListener` à la `View`.
 
-  Lorsque l'utilisateur revient, ou sur Android après un changement de configuration tel qu'une rotation, le SDK rappelle le resolver, et la vue native démarre sans l'état de la précédente.
+  Quand l'utilisateur revient, le SDK rappelle le resolver et la vue native repart sans l'état de la précédente. Sur Android, dans un flow ouvert avec `present()`, une rotation pousse le SDK à rappeler le resolver. Dans un `AdaptyUIFlowPlatformView` embarqué, la vue native conserve son état après une rotation.
 - **Vues UIKit** : Sur iOS, encapsulez-les dans `UIViewRepresentable`.
-- **Carousels** : Sur Android, dans un [carousel](builder-containers#carousel), les vues natives de toutes les diapositives restent actives pendant que l'écran est ouvert, pas seulement la vue de la diapositive visible. Évitez les aperçus de caméra et les lecteurs avec son dans les carousels.
+- **Carousels** : Sur Android, dans un [carousel](builder-containers#carousel), les vues natives de toutes les diapositives restent actives tant que l'écran est ouvert, pas seulement la vue de la diapositive visible. Évitez d'y placer des aperçus caméra et des lecteurs avec son.
 
 ## Écrire un résolveur pour faire correspondre les éléments et vues personnalisés \{#write-a-resolver-to-match-custom-elements-and-views\}
 
@@ -153,13 +195,13 @@ Si vous [ajoutez un élément personnalisé avec un nouveau Type](flow-custom-el
 
 Le resolver doit respecter les exigences suivantes :
 
-- **Données réseau et lecteurs** : Conservez les données réseau et les lecteurs dans l'état de la [vue native](#create-views-for-custom-elements), pas dans le resolver. Le SDK appelle le resolver plusieurs fois pendant que l'écran est ouvert. Le code du resolver s'exécute à nouveau à chaque appel, ce qui provoque la répétition des requêtes réseau et le redémarrage des lecteurs. La vue native conserve son état entre ces appels, de sorte que les données ne se chargent qu'une seule fois et que les lecteurs continuent de lire. Créez les lecteurs, sessions et requêtes réseau dans la vue native :
-  - **Vue SwiftUI** : Créez les lecteurs, sessions et requêtes réseau dans `.task` ou un `@StateObject`, pas dans la valeur initiale d'une propriété `@State`. Swift évalue cette valeur initiale à nouveau chaque fois que le resolver crée la vue.
+- **Données réseau et lecteurs** : Conservez les données réseau et les lecteurs dans l'état de la [vue native](#create-views-for-custom-elements), pas dans le resolver. Le SDK appelle le resolver de nombreuses fois pendant que l'écran est ouvert. Le code du resolver s'exécute à nouveau à chaque appel, ce qui relance les requêtes réseau et remet les lecteurs à zéro. La vue native, elle, conserve son état entre ces appels : les données ne se chargent qu'une fois et les lecteurs continuent de jouer. Créez les lecteurs, sessions et requêtes réseau à l'intérieur de la vue native :
+  - **Vue SwiftUI** : Créez les lecteurs, sessions et requêtes réseau dans `.task` ou un `@StateObject`, pas dans la valeur initiale d'une propriété `@State`. Swift réévalue cette valeur initiale à chaque fois que le resolver crée la vue.
   - **Composable** : Créez les lecteurs et sessions dans `remember`, et les requêtes réseau dans `LaunchedEffect`.
   - **`View` Android** : Créez les lecteurs, sessions et requêtes réseau dans `onAttachedToWindow`.
-- **Une vue native par élément personnalisé** : Certaines vues natives changent pendant que l'écran est ouvert, par exemple lorsque leurs données se chargent ou lorsque l'utilisateur appuie dessus. Implémentez cette logique dans la vue native elle-même, pas dans le resolver. Si le resolver retourne une vue différente pour le même élément personnalisé, la vue perd son état.
-- **Une nouvelle `View` à chaque apparition** : Sur Android, créez une nouvelle `View` à chaque appel de `factory`. Le SDK appelle `factory` à chaque fois que l'élément personnalisé apparaît, par exemple lorsque l'écran s'ouvre, lorsque l'utilisateur revient à l'écran ou après une rotation.
-- **Données de l'application** : Stockez un objet contenant les données, comme un `ObservableObject` ou un `StateFlow` avec une [série quotidienne](flutter-custom-element-lottie-animation), dans une propriété du resolver. Passez l'objet à la vue native et observez-le là :
+- **Une vue native par élément personnalisé** : Certaines vues natives changent pendant que l'écran est ouvert, par exemple lorsque leurs données se chargent ou que l'utilisateur appuie dessus. Implémentez cette logique dans la vue native elle-même, pas dans le resolver. Si le resolver renvoie une vue différente pour le même élément personnalisé, la vue perd son état.
+- **Une nouvelle `View` à chaque apparition** : Sur Android, créez une nouvelle `View` à chaque appel de `factory`. Le SDK appelle `factory` chaque fois que l'élément personnalisé apparaît, par exemple à l'ouverture de l'écran, lorsque l'utilisateur y revient, ou, dans un flow ouvert avec `present()`, après une rotation.
+- **Données de l'application** : Stockez un objet contenant les données, comme un `ObservableObject` ou un `StateFlow` avec un [streak quotidien](flutter-custom-element-lottie-animation), dans une propriété du resolver. Passez cet objet à la vue native et observez-le depuis celle-ci :
   - **Vue SwiftUI** : Observez un `ObservableObject` avec `@ObservedObject`.
   - **Composable** : Collectez un `StateFlow` avec `collectAsState`, ou observez un `LiveData` avec `observeAsState`.
   - **`View` Android** : Observez l'objet dans `onAttachedToWindow`, et arrêtez dans `onDetachedFromWindow`.
@@ -174,10 +216,9 @@ Pour une permission, ne renvoyez aucune vue uniquement si l'utilisateur l'a refu
 
 ## Transmettre le resolver au SDK \{#pass-the-resolver-to-the-sdk\}
 
-Configurez le resolver une seule fois pour chaque plateforme, au lancement de l'application. Le SDK l'appelle dans chaque flow, y compris un flow intégré avec `AdaptyUIFlowPlatformView`. Les utilisateurs voient vos vues natives dans les nouveaux flows et tests A/B sans mise à jour de l'application. Ces vues affichent toujours les données propres à chaque utilisateur, comme une [série quotidienne](flutter-custom-element-lottie-animation), car elles les lisent depuis votre application.
+Configurez le resolver une seule fois pour chaque plateforme, au lancement de l'application. Le SDK l'appelle dans chaque flow, y compris un flow intégré avec `AdaptyUIFlowPlatformView`. Les utilisateurs voient vos vues natives dans les nouveaux flows et tests A/B sans qu'une mise à jour de l'application soit nécessaire. Ces vues affichent toujours les données propres à chaque utilisateur, comme une [série quotidienne](flutter-custom-element-lottie-animation), car elles les lisent depuis votre application.
 
-<Tabs groupId="platform" queryString>
-<TabItem value="ios" label="iOS (Swift)" default>
+### iOS
 
 Dans `ios/Runner/AppDelegate.swift`, importez `AdaptyUI` et appelez `AdaptyUI.setCustomElementsResolver(_:)` dans la méthode `application(_:didFinishLaunchingWithOptions:)`. Conservez le reste de la classe `AppDelegate` tel quel :
 
@@ -189,8 +230,7 @@ AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
 
 Si vous écrivez le resolver dans `AppDelegate.swift` également, importez aussi `AdaptyUIBuilder`.
 
-</TabItem>
-<TabItem value="android" label="Android (Kotlin)">
+### Android
 
 Appelez `AdaptyUI.setCustomElementsResolver` dans la méthode `onCreate` de votre classe `Application`. Si votre application n'a pas encore de classe `Application`, créez-en une :
 
@@ -204,7 +244,7 @@ class App : Application() {
 }
 ```
 
-Dans `android/app/src/main/AndroidManifest.xml`, indiquez votre classe `Application` dans l'attribut `android:name` de `<application>`. Le template Flutter définit cet attribut à `${applicationName}`, qui correspond à la classe `Application` de base :
+Dans `android/app/src/main/AndroidManifest.xml`, indiquez le nom de votre classe `Application` dans l'attribut `android:name` de `<application>`. Le template Flutter définit cet attribut à `${applicationName}`, qui correspond à la classe `Application` de base :
 
 ```xml showLineNumbers title="AndroidManifest.xml" {2}
 <application
@@ -214,11 +254,13 @@ Dans `android/app/src/main/AndroidManifest.xml`, indiquez votre classe `Applicat
 </application>
 ```
 
-</TabItem>
-</Tabs>
-
 :::tip
-Pour afficher la même vue dans chaque élément personnalisé d'un Type, passez une map de Types et de vues à la place d'un resolver. Sur iOS, la map est un dictionnaire `[String: AdaptyUICustomElementBuilder]`. Sur Android, passez la map à `AdaptyCustomElementsResolver.of`. Une map nécessite moins de code qu'un resolver, mais vous ne pouvez pas [définir des conditions pour le contenu de remplacement](#set-conditions-for-fallback-content).
+Pour afficher la même vue dans chaque élément personnalisé d'un Type, passez une map de Types et de vues plutôt qu'un resolver. Avec une map, vous écrivez moins de code qu'avec un resolver, mais vous ne pouvez pas [définir des conditions pour le contenu de secours](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+La map est un dictionnaire `[String: AdaptyUICustomElementBuilder]`. Si vous écrivez la map dans `AppDelegate.swift`, importez-y également `Lottie`.
 
 ```swift showLineNumbers title="Swift"
 AdaptyUI.setCustomElementsResolver([
@@ -226,15 +268,23 @@ AdaptyUI.setCustomElementsResolver([
 ])
 ```
 
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Passez la map à `AdaptyCustomElementsResolver.of` :
+
 ```kotlin showLineNumbers title="Kotlin"
 val appWideViews = mapOf(
     "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
 )
 AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
 ```
+
+</TabItem>
+</Tabs>
 :::
 
-Vous ne pouvez pas attacher un resolver à un seul flow. Pour afficher des données que votre application n'a qu'au moment où elle ouvre un flow, envoyez les données à votre code natif avant l'ouverture du flow. Ensuite, lisez les données dans le resolver. Par exemple, un paywall affiche le [poids que l'utilisateur a saisi dans un flow précédent](flutter-custom-element-interactive-chart).
+Vous ne pouvez pas attacher un resolver à un seul flow. Pour afficher des données que votre application n'a qu'au moment d'ouvrir un flow, envoyez-les à votre code natif avant l'ouverture du flow. Lisez ensuite ces données dans le resolver. Par exemple, un paywall affiche le [poids que l'utilisateur a saisi dans un flow précédent](flutter-custom-element-interactive-chart).
 
 ## Tester sur un appareil \{#test-on-a-device\}
 
