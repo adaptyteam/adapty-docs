@@ -1,68 +1,112 @@
 ---
 title: "Handle permission requests in flows - Capacitor"
-description: "Ask users for push notification permission from a flow in your Capacitor app with the onRequestPermission handler, and return their answer to the flow."
+description: "Ask users for system permissions, such as push notifications or camera access, from a flow in your Capacitor app with the onRequestPermission handler, and return their answers to the flow."
 metadataTitle: "Handle Flow Permissions - Capacitor | Adapty Docs"
 ---
 
-A [flow](adapty-flow-builder) can ask users for permission to send push notifications with the **Request permission** action, for example on an onboarding screen that explains what the notifications are for. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to the `onRequestPermission` handler in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
+A [flow](adapty-flow-builder) can ask users for a system permission with the **Request permission** action, for example push notifications on an onboarding screen that explains what the notifications are for, or camera access before a feature that scans documents. The Adapty SDK doesn't show the system permission dialog itself. It passes the request to the `onRequestPermission` handler in your app. Your app shows the dialog and returns the user's answer, and the flow continues.
 
 ## Before you start
 
 You need:
 
 - **Adapty Capacitor SDK 4.1.0 or later**: Version 4.1.0 is the first stable release with the `onRequestPermission` handler.
-- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In its **After response** section, add the actions to run after the user answers, such as **Navigate Next**. For the action settings, see [Request permission](onboarding-actions#request-permission).
-- **A library that shows the notification dialog**: The example uses the [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications) plugin. Any other plugin that shows the dialog works too.
-- **The `POST_NOTIFICATIONS` permission in your Android manifest, and `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that declare the permission and target Android 13 or later:
-
-  ```xml title="android/app/src/main/AndroidManifest.xml"
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-  ```
+- **A flow with the Request permission action**: In the Flow & Paywall Builder, add the **Request permission** action to an element's **On Tap** or **On Screen Appear** trigger. In the action, select the permission in the **Permission** field, and add the actions to run after the user answers to its outcome sections, such as **Navigate Next** in **After response**. For the action settings, see [Request permission](onboarding-actions#request-permission).
+- **Plugins that show the permission dialogs**: The example uses the [`@capacitor/push-notifications`](https://capacitorjs.com/docs/apis/push-notifications) plugin for notifications and the [`@capacitor/camera`](https://capacitorjs.com/docs/apis/camera) plugin for camera access. Any other plugin that shows the dialogs works too.
+- **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
+- **For push notifications on Android, `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that target Android 13 or later.
 
 ## How the flow requests a permission
 
 1. The flow reaches the **Request permission** action: the user taps the element, or the screen appears.
-2. The Adapty SDK calls your `onRequestPermission` handler with the permission `push`.
-3. Your app shows the system dialog and resolves the handler's promise to `{ status: 'granted' }` or `{ status: 'denied' }`.
-4. The flow runs the **After response** actions. They are the same for both answers.
+2. The Adapty SDK calls your `onRequestPermission` handler with the permission selected in the action, such as `push` or `camera`.
+3. Your app shows the system dialog and resolves the handler's promise to an object with the answer in `status` and the status of the answer in `detail`, such as `{ status: 'denied', detail: 'denied' }`.
+4. The flow runs the actions of one outcome section.
 
-The flow waits on the screen until your handler's promise resolves. If the promise never resolves, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, `PushNotifications.requestPermissions()` returns the current status at once, and the flow runs the **After response** actions right away. On Android 12 and earlier, apps need no runtime permission for notifications, so the plugin returns `granted` without a dialog. If the **After response** actions leave the screen, the user sees the screen that requests the permission only for a moment.
+<FlowPermissionAnswers />
 
-With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action. With **On Tap**, every tap sends a new request, except taps while a request waits for your answer.
+The flow waits on the screen until your handler's promise resolves. If the promise never resolves, the flow stays on the screen. If the OS doesn't show the dialog, for example because the user already answered it, the plugin returns the current status at once, and the flow runs the outcome actions right away. On Android 12 and earlier, apps need no runtime permission for notifications, so `PushNotifications.requestPermissions()` returns `granted` without a dialog. If the outcome actions leave the screen, the user sees the screen that requests the permission only for a moment.
+
+With **On Screen Appear**, the flow doesn't send the request again when the user comes back to the screen with a **Navigate back** action, unless every outcome section of the action is empty. With **On Tap**, each tap sends a new request. The flow sends one permission request at a time: while a request waits for your answer, a tap on an element that requests a permission does nothing.
 
 ## Implement the handler
 
-The `onRequestPermission` handler is asynchronous. It returns a promise that resolves to an object with the user's answer:
+:::warning
+**Request only the permissions that your app declares, and answer `{ status: 'denied', detail: 'unsupported' }` for any other permission.** For most permissions, iOS terminates the app when the app requests a permission whose purpose string is missing from `Info.plist`. A flow author can add a request for any permission at any time, and the flow also reaches app versions released before the request was added.
+:::
+
+The `onRequestPermission` handler is asynchronous. It returns a promise that resolves to an object with the user's answer. In this example, the handler requests push notifications and camera access, and answers every other permission as unsupported without a dialog:
 
 ```typescript showLineNumbers title="permissions.ts"
-import type { FlowEventHandlers } from '@adapty/capacitor';
+import type { FlowEventHandlers, FlowPermissionResponse } from '@adapty/capacitor';
+import { Camera } from '@capacitor/camera';
 import { PushNotifications } from '@capacitor/push-notifications';
 
-export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
-  if (permission !== 'push') {
-    // Answer every request: the flow waits on the screen until it gets the answer.
-    return { status: 'denied' };
+// Converts a plugin's permission state to the answer the flow expects.
+function toFlowAnswer(state: string): FlowPermissionResponse {
+  switch (state) {
+    case 'granted':
+      return { status: 'granted', detail: 'granted' };
+    case 'limited':
+      return { status: 'granted', detail: 'limited' };
+    case 'prompt':
+    case 'prompt-with-rationale':
+      // The user closed the dialog without choosing: the flow runs After response.
+      return { status: 'denied' };
+    default:
+      return { status: 'denied', detail: 'denied' };
   }
+}
 
-  // Shows the system dialog, or returns the current status without showing it.
-  const { receive } = await PushNotifications.requestPermissions();
-  return { status: receive === 'granted' ? 'granted' : 'denied' };
+export const onRequestPermission: FlowEventHandlers['onRequestPermission'] = async (permission) => {
+  switch (permission) {
+    case 'push': {
+      // Shows the system dialog, or returns the current status without showing it.
+      const { receive } = await PushNotifications.requestPermissions();
+      return toFlowAnswer(receive);
+    }
+    case 'camera': {
+      const { camera } = await Camera.requestPermissions({ permissions: ['camera'] });
+      return toFlowAnswer(camera);
+    }
+    default:
+      // A permission this app version doesn't request: answer without a dialog.
+      return { status: 'denied', detail: 'unsupported' };
+  }
 };
 ```
 
 `onRequestPermission` receives:
 
-- **`permission`**: The permission the flow requests. The **Request permission** action sends `push`. Return `denied` for any other value, so the flow continues.
+- **`permission`**: The permission selected in the action, as a string from the **Value** column in [Declare the permissions](#declare-the-permissions).
 - **`customArgs`**: Custom arguments of the request. The **Request permission** action sends none, so the object is empty.
 
-Resolve the promise to `{ status: 'granted' }` only when the user allowed notifications. The Adapty SDK answers `denied` when your handler throws an error or its promise rejects.
+The promise resolves to an object with these properties:
 
-A granted permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
+- **`status`**: The user's answer: `granted` if the user allowed the permission, and `denied` otherwise.
+- **`detail`**: The status of the answer, such as `granted` or `permanently_denied`. The statuses from [How the flow requests a permission](#how-the-flow-requests-a-permission) go in this property, not in `status`. Without `detail`, a refusal runs **After response**.
+
+The Adapty SDK answers `denied` without a status when your handler throws an error or its promise rejects, so the flow runs **After response**.
+
+A granted notification permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
+
+## Declare the permissions
+
+The OS shows a permission dialog only to an app that declares the permission: in `ios/App/App/Info.plist` on iOS, and in `android/app/src/main/AndroidManifest.xml` on Android. For each permission that your handler requests, add these declarations:
+
+<FlowPermissionDeclarations />
+
+The handler in this guide requests notifications and camera access. On iOS, the app adds `NSCameraUsageDescription` to `Info.plist`. On Android, the app declares these permissions:
+
+```xml title="android/app/src/main/AndroidManifest.xml"
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.CAMERA" />
+```
 
 ## Register the handler
 
 :::warning
-**Without an `onRequestPermission` handler, the user is never asked.** On a flow view without the handler, the Adapty SDK answers `denied` without a dialog and writes a warning to its log, and the flow runs the **After response** actions right away.
+**Without an `onRequestPermission` handler, the user is never asked.** On a flow view without the handler, the Adapty SDK answers `denied` without a dialog and without a status, and writes a warning to its log. The flow runs the **After response** actions right away.
 :::
 
 Set the handler on every flow view your app creates, together with your other [flow event handlers](capacitor-handling-events), before you present the view. Flow authors can add the **Request permission** action to any flow later, without an app update, and a flow view without the handler answers `denied` without asking the user.
@@ -82,4 +126,8 @@ await view.present();
 
 ## Test the permission request
 
-iOS shows the notification dialog only once per app install. Android stops showing it after the user allows notifications or denies them twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that the flow view has the `onRequestPermission` handler, and that the Android app declares `POST_NOTIFICATIONS` and targets Android 13 or later.
+iOS shows each permission dialog only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the flow moves on without a dialog, make sure that the flow view has the `onRequestPermission` handler, and that the app declares the permission on both platforms. For notifications on Android, the app must also target Android 13 or later.
+
+To see which outcome section ran, read the flow's analytics events in the `onAnalytics` handler of the flow view. For details, see [Handle flow & paywall events](capacitor-handling-events).
+
+<FlowPermissionEvents />
