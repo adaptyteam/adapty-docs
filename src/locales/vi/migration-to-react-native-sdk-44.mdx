@@ -1,0 +1,68 @@
+---
+title: "Migrate Adapty React Native SDK sang v4.4"
+description: "Migrate sang Adapty React Native SDK v4.4: thay thế cả hai file dự phòng và xử lý lỗi flow mới trên iOS và Android."
+metadataTitle: "Migrate sang Adapty React Native SDK v4.4 | Tài liệu Adapty"
+---
+
+Adapty React Native SDK 4.4 thay đổi định dạng file dự phòng, yêu cầu iOS 16 cho flows, và báo cáo nhiều lỗi flow hơn cho ứng dụng của bạn. Trong 4.4, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, và `AdaptySubscription.billingPlan` không còn là optional trong TypeScript. Để cập nhật ứng dụng lên 4.4, hãy cài đặt gói `react-native-adapty` mới nhất và thay thế cả hai file dự phòng trong cùng một bản build. Các phiên bản SDK cũ hơn sẽ từ chối các file mới. Sau đó xem xét các thay đổi khác trong hướng dẫn này.
+
+Nếu bạn vẫn đang dùng 4.0, hãy bắt đầu với [Migrate to v4.1](migration-to-react-native-sdk-41) rồi làm theo hướng dẫn này.
+
+:::warning
+Định dạng file dự phòng đã thay đổi trong phiên bản 4.4, và trình biên dịch không thể phát hiện file dự phòng dành cho SDK 4.1–4.3. Nếu không có [file dự phòng mới](#replace-the-fallback-files), mọi placement sẽ mất paywall dự phòng của nó.
+:::
+
+## Tham khảo nhanh \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Các file dự phòng được tải xuống cho 4.1–4.3 | Định dạng file dự phòng mới; hãy tải lại cả hai file |
+| Flow hoạt động trên iOS 15 | Flow yêu cầu iOS 16 |
+| `AdaptyFlowView` hiển thị trống khi flow không thể tải | Nó báo lỗi về `onError` handler của nó |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, và `AdaptySubscription.billingPlan` là optional | Chúng là required |
+
+## Cài đặt \{#installation\}
+
+Cập nhật gói `react-native-adapty`:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Yêu cầu không thay đổi: **iOS 15.0** và **React Native 0.75**. Flow là ngoại lệ: xem [Flow yêu cầu iOS 16](#flows-require-ios-16). Xem [Cài đặt Adapty SDK](sdk-installation-reactnative) để biết hướng dẫn đầy đủ.
+
+## Thay thế các file dự phòng \{#replace-the-fallback-files\}
+
+Để tải lại các [file dự phòng](react-native-use-fallback-paywalls), trong **[Placements](https://app.adapty.io/placements)**, nhấp vào **Fallbacks** > **Download iOS Fallback**. Trong hàng **Adapty SDK v4.4.0 and higher**, nhấp **Download**. Lặp lại với **Download Android Fallback**.
+
+Các file tải về có tên là `ios_4_4_0_fallback.json` và `android_4_4_0_fallback.json`. Sử dụng chúng thay thế cho các file dự phòng của SDK 4.1–4.3:
+
+- **Dự án React Native thuần túy**: Thêm file iOS vào dự án Xcode của bạn. Đặt file Android vào thư mục chứa file paywall dự phòng 4.1–4.3, như hướng dẫn tại [Sử dụng paywall dự phòng trong dự án React Native thuần túy](react-native-use-fallback-paywalls-pure).
+- **Dự án Expo**: Đặt từng file vào thư mục chứa file paywall dự phòng tương ứng cho 4.1–4.3, như hướng dẫn tại [Sử dụng paywall dự phòng trong dự án Expo](react-native-use-fallback-paywalls-expo).
+
+Đặt tên mỗi file trùng với tên mà ứng dụng của bạn truyền vào `adapty.setFallback`, hoặc cập nhật tên trong lệnh gọi đó. Trong dự án Expo, hãy dùng các tên này trong tùy chọn `fallbackFile` và chạy lại `npx expo prebuild`.
+
+Nếu dùng file fallback của SDK 4.1–4.3, `adapty.setFallback` sẽ trả về `AdaptyError`. Để xác minh các file mới, hãy chạy ứng dụng trên iOS và Android, và đảm bảo rằng lệnh gọi này không còn trả về lỗi.
+
+## Flow yêu cầu iOS 16 \{#flows-require-ios-16\}
+
+Kể từ phiên bản 4.4, flow yêu cầu iOS 16 trở lên. Trên iOS 15, `createFlowView` sẽ ném ra `AdaptyError` với mã lỗi `platformNotSupported`, và `AdaptyFlowView` sẽ hiển thị trống và báo cùng lỗi đó. Các tính năng khác của SDK như mua hàng và paywall tùy chỉnh vẫn hoạt động bình thường trên iOS 15.
+
+Khi ứng dụng nhận được lỗi này, hãy hiển thị nội dung của riêng bạn thay thế, chẳng hạn như [paywall tùy chỉnh](react-native-implement-paywalls-manually).
+
+## Lỗi tải flow được chuyển đến handler onError \{#flow-load-errors-reach-the-onerror-handler\}
+
+Handler `onError` của `AdaptyFlowView` nhận lỗi khi component không thể hiển thị flow. Mỗi lần ứng dụng render một `AdaptyFlowView` mới, lỗi sẽ được báo cáo một lần. Trước phiên bản 4.4, component sẽ hiển thị trống. Component báo cáo các lỗi sau:
+
+- Trên iOS 15: `platformNotSupported`.
+- Trên Android, và trên iOS 16 trở lên, khi flow tải thất bại: lỗi mà `createFlowView` ném ra cho flow đó. Ví dụ, flow tải thất bại khi AdaptyUI chưa được kích hoạt, hoặc khi `customLayoutId` không tồn tại trong flow.
+
+Việc xử lý lỗi flow của bạn hiện cũng chạy trong các trường hợp này. Giá trị trả về của handler `onError` không đóng một flow nhúng. Để đóng nó, hãy ngừng render component và hiển thị nội dung của riêng bạn.
+
+## Các thuộc tính giá và gói đăng ký là bắt buộc \{#price-and-subscription-properties-are-required\}
+
+Trong TypeScript, `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString`, và `AdaptySubscription.billingPlan` không còn là optional nữa. Nếu code của bạn tạo ra các đối tượng này, chẳng hạn như mock trong test, hãy thiết lập các thuộc tính này cho chúng.
+
+Trong 4.4, mọi gói đăng ký đều có `billingPlan`: `up_front`, trừ khi người dùng mua [commitment plan](set-up-12-month-commitment). Trước 4.4, chỉ gói đăng ký trên App Store mới có `billingPlan`.

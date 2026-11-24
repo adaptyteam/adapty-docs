@@ -1,0 +1,68 @@
+---
+title: "Миграция React Native SDK Adapty на версию 4.4"
+description: "Миграция на Adapty React Native SDK v4.4: замените оба резервных файла и обработайте новые ошибки флоу на iOS и Android."
+metadataTitle: "Миграция на Adapty React Native SDK v4.4 | Документация Adapty"
+---
+
+Adapty React Native SDK 4.4 меняет формат резервного файла, требует iOS 16 для флоу и передаёт больше ошибок флоу в ваше приложение. В версии 4.4 `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` и `AdaptySubscription.billingPlan` больше не являются опциональными в TypeScript. Чтобы обновить приложение до версии 4.4, установите последнюю версию пакета `react-native-adapty` и замените оба резервных файла в одной сборке. Более ранние версии SDK не поддерживают новые файлы. После этого изучите остальные изменения в этом гайде.
+
+Если вы используете версию 4.0, начните с [Миграции на v4.1](migration-to-react-native-sdk-41), а затем следуйте этому руководству.
+
+:::warning
+Формат резервного файла изменился в версии 4.4, и компилятор не может обнаружить резервный файл для SDK 4.1–4.3. Без [новых резервных файлов](#replace-the-fallback-files) каждый плейсмент лишится своего резервного пейвола.
+:::
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Резервные файлы, загруженные для версий 4.1–4.3 | Новый формат резервных файлов; загрузите оба файла заново |
+| Флоу открываются на iOS 15 | Флоу требуют iOS 16 |
+| `AdaptyFlowView` остаётся пустым, если флоу не удаётся загрузить | Теперь он сообщает об ошибке в обработчик `onError` |
+| `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` и `AdaptySubscription.billingPlan` опциональны | Теперь они обязательны |
+
+## Установка \{#installation\}
+
+Обновите пакет `react-native-adapty`:
+
+```bash showLineNumbers
+npm install react-native-adapty@latest
+# or
+yarn add react-native-adapty@latest
+```
+
+Требования остались прежними: **iOS 15.0** и **React Native 0.75**. Флоу — исключение: см. [Флоу требуют iOS 16](#flows-require-ios-16). Полная инструкция по установке — в разделе [Установка Adapty SDK](sdk-installation-reactnative).
+
+## Замените резервные файлы \{#replace-the-fallback-files\}
+
+Чтобы скачать [резервные файлы](react-native-use-fallback-paywalls) заново, откройте **[Placements](https://app.adapty.io/placements)**, нажмите **Fallbacks** > **Download iOS Fallback**. В строке **Adapty SDK v4.4.0 and higher** нажмите **Download**. Повторите то же самое для **Download Android Fallback**.
+
+Скачанные файлы называются `ios_4_4_0_fallback.json` и `android_4_4_0_fallback.json`. Используйте их вместо резервных файлов для SDK 4.1–4.3:
+
+- **Чистый проект React Native**: Добавьте файл iOS в ваш Xcode-проект. Файл Android поместите в папку резервного пейвола версий 4.1–4.3, как описано в разделе [Использование резервных пейволов в чистом проекте React Native](react-native-use-fallback-paywalls-pure).
+- **Проект Expo**: Поместите каждый файл в папку соответствующего резервного пейвола версий 4.1–4.3, как описано в разделе [Использование резервных пейволов в проекте Expo](react-native-use-fallback-paywalls-expo).
+
+Присвойте каждому файлу имя, которое ваше приложение передаёт в `adapty.setFallback`, или обновите имена в этом вызове. В проекте Expo используйте эти же имена в опции `fallbackFile` и снова выполните `npx expo prebuild`.
+
+При использовании резервного файла для SDK 4.1–4.3 `adapty.setFallback` выбрасывает `AdaptyError`. Чтобы проверить новые файлы, запустите приложение на iOS и на Android и убедитесь, что этот вызов не выбрасывает ошибку.
+
+## Флоу требуют iOS 16 \{#flows-require-ios-16\}
+
+Начиная с версии 4.4, флоу требуют iOS 16 и выше. На iOS 15 метод `createFlowView` выбрасывает `AdaptyError` с кодом `platformNotSupported`, а `AdaptyFlowView` остаётся пустым и сообщает об этой же ошибке. Остальные функции SDK, такие как покупки и кастомные пейволы, по-прежнему работают на iOS 15.
+
+Если ваше приложение получает эту ошибку, покажите вместо флоу собственный контент, например [кастомный пейвол](react-native-implement-paywalls-manually).
+
+## Ошибки загрузки флоу передаются в обработчик onError \{#flow-load-errors-reach-the-onerror-handler\}
+
+Обработчик `onError` компонента `AdaptyFlowView` получает ошибку, когда компонент не может отобразить флоу. Каждый раз при рендере нового `AdaptyFlowView` ошибка сообщается один раз. До версии 4.4 компонент оставался пустым. Компонент сообщает о следующих ошибках:
+
+- На iOS 15: `platformNotSupported`.
+- На Android и на iOS 16 и выше, когда флоу не удаётся загрузить: ошибка, которую `createFlowView` выбрасывает для этого флоу. Например, флоу не загружается, если AdaptyUI не активирован, или если указан `customLayoutId`, которого у флоу нет.
+
+Теперь обработчик ошибок флоу `onError` срабатывает и в этих случаях. Возвращаемое значение обработчика `onError` не закрывает встроенный флоу. Чтобы закрыть его, прекратите рендеринг компонента и отобразите собственный контент.
+
+## Свойства цены и подписки теперь обязательны \{#price-and-subscription-properties-are-required\}
+
+В TypeScript свойства `AdaptyPrice.currencyCode`, `AdaptyPrice.localizedString` и `AdaptySubscription.billingPlan` больше не являются опциональными. Если ваш код создаёт эти объекты, например моки в тестах, задайте в них эти свойства.
+
+Начиная с версии 4.4, каждая подписка имеет `billingPlan`: `up_front`, если только пользователь не приобрёл [план с обязательством](set-up-12-month-commitment). До версии 4.4 `billingPlan` был только у подписок App Store.
