@@ -452,6 +452,11 @@ or developer can see and click.
   `sdk-flows-display` brief's 2026-11-20 findings. The Action order bullet restates the builder's warning
   for navigation placed after the request (dashboard code, 2026-11-20). The trigger table above it still
   says **On screen appear** / **On tap** while the builder labels are **On Screen Appear** / **On Tap**.
+- **Request permission's declaration table has a second copy (2026-11-24).** The builder's warning
+  callout names the `Info.plist` key and Android manifest permission of the selected kind (dashboard code,
+  2026-11-24). The same table is the `FlowPermissionDeclarations` reusable and the inline tables of the
+  iOS and Android guides in `sdk-flows-display`, so a new permission kind or a changed declaration moves
+  them together, along with the routing list in `onboarding-actions#request-permission`.
 
 ## Boundaries
 
@@ -646,3 +651,28 @@ needed in place.
 - **Same-screen updates.** Texts and visibility that read a picker's `.value` re-evaluate when the wheel settles
   (code); not run on a device.
 - **On Changed** is dropped at publish for every input (see `flow-design` Gaps); `onboarding-actions` still lists it.
+
+**Request permission, 2026-11-24 (dashboard code and transformer code).**
+
+- **Request permission covers every permission kind and has three outcome sections (2026-11-24,
+  dashboard code and transformer code).** The **Permission** field is a searchable select of 21 kinds,
+  grouped Notifications and tracking / Location / Camera and media / Personal data / Device and home,
+  labelled **Push notifications**, **App tracking (ATT)**, **Location while using the app**… The sections
+  are **When allowed**, **When denied**, **After response**, in that order. The app's answer runs one list:
+  granted → When allowed; not granted with `detailResult` `denied`, `restricted` or `permanently_denied` →
+  When denied; anything else (no status, `unsupported`) and an empty matching list → After response, so a
+  flow with only After response behaves as before. A request whose lists are all empty is sent as a bare
+  request: the screen-appear guard against re-asking after **Navigate back** applies only to requests with
+  outcomes, which is why the article keeps "sends the request every time the screen appears" for that
+  case. One request at a time, for bare requests too. Each request reports `flow_permission_requested`
+  and each answer `flow_permission_answered` (`outcome`: `granted` / `denied` / `response` / `none`) as
+  customer analytics events. The builder's warning callout now names the `Info.plist` key and Android
+  manifest permission for the selected kind; that table is mirrored in the `sdk-flows-display`
+  reusable `FlowPermissionDeclarations`, so the two must change together.
+- **The "Request a system permission other than push notifications" custom-action use case was
+  replaced (2026-11-24)** by "Open the system settings", since the action now covers every permission.
+- **The `request-permission-action.webp` screenshot still shows the push-only editor (2026-11-24)**:
+  one **Permission** row and only **After response**. No recorder checkout was available to retake it
+  with the `mock-screenshots` skill; retake it with **Location while using the app** selected and the
+  three sections visible, from the branch that ships the select until it reaches the dashboard's main
+  branch.
