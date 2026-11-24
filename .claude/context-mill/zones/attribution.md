@@ -65,20 +65,69 @@ attribution *integrations* — the ad-platform and cloud-storage connections tha
   idempotently creating or retrying *yesterday's* job, and skipped outright for companies that are
   neither paid nor in trial. "Every 24h at 4:00 UTC" is the articles' phrasing, not the code's.
 - **Web-payment attribution (Stripe, Paddle, the web pixel) lives in this zone and this service** — added
-  2026-08-17 while writing `ua-stripe`/`ua-paddle`/`ua-web-pixel`. The UA service carries `stripe_context`
-  and `paddle_context` (merchant API keys, auto-provisioned webhooks, 2-hourly polling sync at
-  `@cron('0 */2 * * *')`), and a single web-transactions assembly
-  (`analytics_context/.../web_assembly_service.py`, `@cron('*/30 * * * *')`) that unions Stripe ∪ Paddle ∪
-  FunnelFox by invoice into `events_transaction`. The checkout-side contract is one metadata key,
-  `adpt_click_id`, defined in `src/app/shared/utils/web_click_metadata.py` and read from Stripe `metadata`
-  and Paddle `custom_data`; the repo's own client-facing guide is `docs/web-attribution-pixel-integration.md`.
-  The pixel snippet is per campaign configuration (`build_web_snippet` in
-  `campaign_context/.../campaign_service.py` returns `None` for partners other than Meta/TikTok). Channel
-  for these transactions comes from `channel_of` in `src/app/shared/utils/channel_sources.py`:
-  fbclid → facebook, ttclid → tiktok, `utm_source`+`utm_medium=paid` fallback, else organic — no google on
-  this path. Stripe/Paddle cohort = the subscription's first charge date
-  (`clickhouse_web_assembly_repository.py`), matching FunnelFox's first-paid-date rule. Test-mode/sandbox
-  events are dropped on arrival on every path, so a test key connects, shows Valid, and yields nothing.
+  2026-08-17 while writing `ua-stripe`/`ua-paddle`/`ua-web-pixel`. The UA service holds merchant API keys,
+  auto-provisions webhooks and runs a polling sync every 2 hours, and a web-transactions assembly every
+  30 minutes unions Stripe ∪ Paddle ∪ FunnelFox transactions by invoice. The checkout-side contract is one
+  metadata key, `adpt_click_id`, read from Stripe `metadata` and Paddle `custom_data`. The pixel snippet is
+  per campaign configuration and exists only for Meta and TikTok. Channel for these transactions: fbclid →
+  facebook, ttclid → tiktok, gclid/gbraid/wbraid → google, `utm_source`+`utm_medium=paid` fallback, else
+  organic. (Corrected 2026-10-01 against UA service code: the brief said "no google on this path"; any
+  Google click id now maps to `google`, gbraid/wbraid being the iOS no-consent variants, and FunnelFox
+  transactions carry all three ids.) Stripe/Paddle cohort = the subscription's first charge date,
+  matching FunnelFox's first-paid-date rule. Test-mode/sandbox events are dropped on arrival on every
+  path, so a test key connects, shows Valid, and yields nothing.
+- **Google Ads has two campaign types with different wiring** (2026-09-29, UA service and dashboard
+  code). A configuration is either an app or a web campaign type (unset = web). The UI calls them the
+  **App Campaigns** and **Other Campaigns** tabs. App campaigns report through Google's App Conversion API
+  keyed on per-platform App Link IDs, with a hard-coded **Provider ID** `8222663145` shown on the campaign
+  settings page; Google does the install attribution and returns campaign/ad group/ad/keyword. Other
+  (web) campaigns go through the Data Manager API keyed on gclid/gbraid/wbraid to one selected client
+  account; saving creates one click-upload conversion action per target name, named as typed. The user
+  pastes a **Tracking template** (the `/track` link with `{lpurl}`) and, for web funnels, the **Final URL
+  suffix**; auto-tagging must be on. Google configs have no General/Settings tabs, no Additional
+  parameter, no Send all events and no Predicted LTV; Revenue override and Qualified trial exist on both
+  types. Metrics sync runs every 4 hours with a 3-day lookback (changed from 2-hourly on 2026-05-01);
+  country breakdown is exact for campaign/ad group, proportional for ad, absent for keyword. The Data
+  Manager OAuth scope was added for every company on 2026-09-10; tokens granted earlier must reconnect.
+- **Which Google campaign types fit which tab** (2026-09-29, UA service code). Nothing branches on
+  Google's advertising channel type; support follows from the wiring. App tab = App campaigns **for
+  installs** (marketers still say UAC): Adapty asks Google for install attribution at first open and
+  sends transaction events only for installs Google attributed then, so **App engagement** campaigns get
+  nothing. Pre-registration is Google-side — unverified, left out of the doc. **App campaigns are
+  documented as Android-only** (2026-10-01, product decision): the backend still wires iOS end to end
+  (verified against UA service code, 2026-10-01), but Google sends no attribution for iOS, and only one
+  link ID field is required. Don't document the iOS link ID or the reason; the dashboard may drop the
+  field. iOS apps go through the Other tab. **No SKAN anywhere in the UA service** (2026-10-01, UA
+  service code), so the article says SKAN setup isn't needed. Other tab = anything taking a tracking
+  template with auto-tagging: Search, PMax (tested end to end per product), Demand Gen, Display, Video.
+  Analytics depth: campaign metrics for all types, ad metrics where Google reports ads (PMax
+  has none → campaign only), keyword metrics for Search only. Reviewer feedback (2026-09-29): readers
+  search "UAC" and "PMax", so those words belong in the article text and keywords.
+- **Google's own rules narrow what the wiring allows** (corrected 2026-11-24, reviewer walkthrough of a
+  live Google Ads account, checked against Google's help pages). "Support follows from the wiring" is
+  only Adapty's half. **Shopping** is incompatible: its ads land on product pages of the advertiser's
+  site, never a store, and Google's Shopping policy bans digital content with recurring payment
+  subscriptions (support.google.com/merchants/answer/4752265). **PMax** suits web funnels only: Google
+  offers it under Sales, Leads, Website traffic and Local store visits, and app promotion is App
+  campaigns' objective. **Conversion window:** Adapty creates every click-upload action with a 30-day
+  click-through window and never edits an action it reuses, so an advertiser can raise it to Google's
+  90-day maximum (UA service code, 2026-11-24). **Open question:** whether Google creates the app
+  conversion action by itself on the first App Conversion API event. The UA team's product doc says it
+  does; Google documents that only for its listed App Attribution Partners, which don't include Adapty
+  (support.google.com/google-ads/answer/17086025), and describes a manual import for everyone else. The
+  guide now carries an import fallback step. **"Unverified" link ID status** is Google's documented
+  wording (support.google.com/google-ads/answer/7365001). Adapty's tracking domain `api-ua.adapty.io` is
+  on Google's certified click-tracker list (support.google.com/adspolicy/answer/13690010).
+- **Click-to-install matching: no IDFA, no Advertising ID, and the docs must not say "fingerprint"**
+  (2026-10-02, UA service and dashboard code). Deterministic = the click id in Android's Play Install
+  Referrer (`adpt_click_id`, then Google's `gclid`), default 168 h, range 1–720 h. iOS has **no**
+  deterministic matching. Probabilistic = clicks from the same IP prefix and OS, scored on time since
+  click, language, and country; past 6 h a click also needs the install's device model and OS version in
+  its User-Agent; default 6 h, range 1–24 h; applies to iOS (every user, whatever their ATT answer) and
+  Android. Each kind has an on/off switch per configuration (added 2026-10-01); Probabilistic off = iOS
+  installs from that configuration are not attributed. A product decision (2026-10-02) ruled the word
+  "fingerprint" out of the docs, because Adapty doesn't fingerprint devices, to follow Apple's rules.
+  Describe the signals, never an internal label.
 - **Some claims are the ad network's and cannot be verified here.** Meta token expiration and the
   `ads_read` permission, system-user token generation, whether Meta approves an ad URL, TikTok's
   Tracking URL field, and the meaning of Apple's ASA fields all live in the provider's product. Give
