@@ -11,12 +11,54 @@ metadataTitle: "カスタム要素を表示する | Flutter SDK | Adapty ドキ�
 必要なもの:
 
 - **Adapty Flutter SDK 4.4 以降**: それより前のバージョンでは、すべてのカスタム要素にフォールバックが表示されます。
-- **iOS および Android のネイティブコード**: カスタム要素に Flutter ウィジェットを表示することはできません。iOS では Swift、Android では Kotlin でビューとリゾルバーを記述してください。Swift コードは Xcode の `Runner` ターゲットに追加し、Kotlin コードは `android/app/src/main/kotlin` に追加します。
-- **Android の Adapty UI ライブラリ**: `android/app/build.gradle.kts` などの Android アプリモジュールの Gradle ファイルで、`dependencies` ブロックに `implementation("io.adapty:android-ui")` を追加してください。バージョンや Adapty BOM は追加しないでください。バージョンは `adapty_flutter` が設定しており、新しい `android-ui` を指定するとフローが壊れる可能性があります。
-- **Android でコンポーザブルを使用する場合の Jetpack Compose**: Flutter テンプレートはアプリモジュールに [Compose をセットアップ](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler)しません。リゾルバーからコンポーザブルを返すには、Compose コンパイラーの Gradle プラグインを適用し、`buildFeatures` ブロックで `compose = true` を設定してください。Android の `View` には Compose のセットアップは不要です。このページの Lottie ビューの場合は、`com.airbnb.android:lottie-compose` も追加してください。
-- **カスタム要素の命名規則**: 各ネイティブビューに `lottie_animation` のような Type を付けてください。Type には小文字、数字、アンダースコアのみ使用できます。同じ Type のカスタム要素を区別するために、`welcome_wave` のように各要素に ID を付けてください。コード内の Type と ID は、[フロー & ペイウォールビルダー](flow-custom-elements#add-and-configure)で設定したものと一致している必要があります。
+- **iOS と Android のネイティブコード**: カスタム要素に Flutter ウィジェットを表示することはできません。iOS は Swift、Android は Kotlin でコードを記述してください。Swift のコードは Xcode の `Runner` ターゲットに追加し、Kotlin のコードは `MainActivity.kt` と同じフォルダに追加します。新しい Kotlin ファイルには、`MainActivity.kt` の `package` 行を先頭に記述してください。
+- **カスタム要素の命名規則**: 各ネイティブビューに `lottie_animation` のような Type を付けてください。Type には小文字、数字、アンダースコアのみ使用できます。同じ Type のカスタム要素を区別するために、`welcome_wave` のような ID を各要素に付けてください。コード内の Type と ID は、[Flow & ペイウォールビルダー](flow-custom-elements#add-and-configure) で設定したものと一致させる必要があります。
 
 iOSとAndroidのコードで同じTypeとIDを使用してください。各プラットフォーム向けに別々の[オーディエンス](audience)を設定しない限り、iOSとAndroidのユーザーには同じフローが表示されます。
+
+## Android プロジェクトのセットアップ \{#set-up-your-android-project\}
+
+iOS プロジェクトは追加のセットアップは不要です。Android プロジェクトでは、Adapty UI ライブラリを追加してください。コンポーザブルとしてネイティブビューをビルドするには、Jetpack Compose もセットアップしてください。
+
+### Adapty UI ライブラリの追加 \{#add-the-adapty-ui-library\}
+
+`android/app/build.gradle.kts` のような Android アプリモジュールの Gradle ファイルで、`dependencies` ブロックに `implementation("io.adapty:android-ui")` を追加してください。バージョンや Adapty BOM は追加しないでください。バージョンは `adapty_flutter` が設定しており、新しい `android-ui` を指定するとフローが壊れる可能性があります。
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+### Jetpack Compose のセットアップ \{#set-up-jetpack-compose\}
+
+Flutter テンプレートは、アプリモジュールに [Compose のセットアップ](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) を含んでいません。Android の `View` には Compose のセットアップは不要です。ネイティブビューをコンポーザブルとして構築するには、Compose コンパイラー Gradle プラグインを `android/settings.gradle.kts` に、Kotlin プラグイン `org.jetbrains.kotlin.android` のバージョンと合わせて追加してください：
+
+```kotlin showLineNumbers title="android/settings.gradle.kts" {4}
+plugins {
+    // the other plugins of your project
+    id("org.jetbrains.kotlin.android") version "2.1.0" apply false
+    id("org.jetbrains.kotlin.plugin.compose") version "2.1.0" apply false
+}
+```
+
+次に、アプリモジュールにプラグインを適用し、`buildFeatures` ブロックで `compose = true` を設定します。
+
+```kotlin showLineNumbers title="android/app/build.gradle.kts" {4,8-10}
+plugins {
+    // the other plugins of your app module
+    id("dev.flutter.flutter-gradle-plugin")
+    id("org.jetbrains.kotlin.plugin.compose")
+}
+
+android {
+    buildFeatures {
+        compose = true
+    }
+}
+```
+
+このページの Lottie ビューを使用するには、`com.airbnb.android:lottie-compose` も追加してください。
 
 ## カスタム要素のビューを作成する \{#create-views-for-custom-elements\}
 
@@ -69,9 +111,9 @@ fun LottieElement(animationFile: String) {
   - **Composable**: `DisposableEffect` の `onDispose` ブロックを使用してください。非同期処理には `LaunchedEffect` を使用してください。コンポーザブルがコンポジションから離れると Compose がキャンセルします。
   - **Android `View`**: `View` サブクラスで `onDetachedFromWindow` をオーバーライドするか、`View` に `View.OnAttachStateChangeListener` を追加してください。
 
-  ユーザーが戻ってきたとき、またはAndroidで画面回転などの設定変更が発生したとき、SDKはリゾルバーを再度呼び出し、ネイティブビューは以前の状態を引き継がずに新たに起動します。
-- **UIKit ビュー**: iOS では `UIViewRepresentable` でラップしてください。
-- **カルーセル**: Android では、[カルーセル](builder-containers#carousel)内のネイティブビューは、表示中のスライドだけでなく、すべてのスライドのビューが画面が開いている間アクティブな状態を保ちます。カメラプレビューや音声付きプレーヤーはカルーセル内に配置しないでください。
+  ユーザーが戻ってきたとき、SDKは再びリゾルバーを呼び出し、ネイティブビューは以前の状態なしで起動します。Android では、`present()` で開いたフローで回転が発生すると、SDK がリゾルバーを再度呼び出します。埋め込み型の `AdaptyUIFlowPlatformView` では、回転後もネイティブビューの状態が保持されます。
+- **UIKit ビュー**: iOS では、`UIViewRepresentable` でラップしてください。
+- **カルーセル**: Android では、[カルーセル](builder-containers#carousel)内のすべてのスライドのネイティブビューは、表示中のスライドのビューだけでなく、画面が開いている間はすべてアクティブのままです。カメラプレビューや音声付きプレーヤーはカルーセルに含めないようにしてください。
 
 ## カスタム要素とビューを対応付けるリゾルバーを作成する \{#write-a-resolver-to-match-custom-elements-and-views\}
 
@@ -153,15 +195,15 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 
 リゾルバには以下の要件があります：
 
-- **ネットワークデータとプレイヤー**: ネットワークデータとプレイヤーは、リゾルバーではなく[ネイティブビュー](#create-views-for-custom-elements)の状態として保持してください。SDK は画面が開いている間にリゾルバーを何度も呼び出します。リゾルバー内のコードは呼び出しのたびに再実行されるため、ネットワークリクエストが繰り返され、プレイヤーが最初からやり直しになります。ネイティブビューはこれらの呼び出し間で状態を保持するため、データは一度だけ読み込まれ、プレイヤーは再生し続けます。プレイヤー、セッション、ネットワークリクエストはネイティブビュー内で作成してください。
-  - **SwiftUI ビュー**: プレイヤー、セッション、ネットワークリクエストは `.task` または `@StateObject` 内で作成し、`@State` プロパティの初期値として作成しないでください。Swift はリゾルバーがビューを作成するたびにその初期値を再評価します。
+- **ネットワークデータとプレイヤー**: ネットワークデータとプレイヤーは、リゾルバーではなく[ネイティブビュー](#create-views-for-custom-elements)のステートで管理してください。SDKはスクリーンが開いている間、リゾルバーを何度も呼び出します。リゾルバー内のコードは呼び出しのたびに再実行されるため、ネットワークリクエストが繰り返され、プレイヤーが最初からやり直しになります。ネイティブビューはこれらの呼び出しの間もステートを保持するため、データは一度だけ読み込まれ、プレイヤーは再生を続けます。プレイヤー、セッション、ネットワークリクエストはネイティブビュー内で作成してください:
+  - **SwiftUI ビュー**: プレイヤー、セッション、ネットワークリクエストは `.task` または `@StateObject` 内で作成し、`@State` プロパティの初期値には書かないでください。Swift はリゾルバーがビューを作成するたびにその初期値を再評価します。
   - **Composable**: プレイヤーとセッションは `remember` 内で、ネットワークリクエストは `LaunchedEffect` 内で作成してください。
   - **Android `View`**: プレイヤー、セッション、ネットワークリクエストは `onAttachedToWindow` 内で作成してください。
-- **カスタム要素ごとに 1 つのネイティブビュー**: ネイティブビューによっては、データの読み込み時やユーザーのタップ時など、画面が開いている間に変化するものがあります。このロジックはリゾルバーではなくネイティブビュー自体に実装してください。リゾルバーが同じカスタム要素に対して異なるビューを返すと、ビューは状態を失います。
-- **出現ごとに新しい `View` を作成**: Android では、`factory` の各呼び出しで新しい `View` を作成してください。SDK は、画面が開いたとき、ユーザーが画面に戻ったとき、画面が回転した後など、カスタム要素が表示されるたびに `factory` を呼び出します。
-- **アプリデータ**: [デイリーストリーク](flutter-custom-element-lottie-animation)など、データを保持する `ObservableObject` や `StateFlow` のようなオブジェクトは、リゾルバーのプロパティとして保存してください。そのオブジェクトをネイティブビューに渡し、ネイティブビュー内でオブジェクトを監視してください。
-  - **SwiftUI ビュー**: `ObservableObject` を `@ObservedObject` で監視してください。
-  - **Composable**: `StateFlow` を `collectAsState` で収集するか、`LiveData` を `observeAsState` で監視してください。
+- **カスタム要素ごとに1つのネイティブビュー**: ネイティブビューの中には、データの読み込み時やユーザーがタップしたときなど、スクリーンが開いている間に変化するものがあります。このロジックはリゾルバーではなくネイティブビュー自体に実装してください。同じカスタム要素に対してリゾルバーが異なるビューを返すと、ビューのステートが失われます。
+- **表示のたびに新しい `View` を作成する**: Android では、`factory` の呼び出しのたびに新しい `View` を作成してください。SDKはカスタム要素が表示されるたびに `factory` を呼び出します。たとえば、スクリーンが開いたとき、ユーザーがスクリーンに戻ったとき、または `present()` で開いたフローで回転が発生した後などです。
+- **アプリデータ**: `ObservableObject` や [デイリーストリーク](flutter-custom-element-lottie-animation) を持つ `StateFlow` など、データを保持するオブジェクトはリゾルバーのプロパティに格納してください。そのオブジェクトをネイティブビューに渡し、ネイティブビュー側でオブジェクトを監視します:
+  - **SwiftUI ビュー**: `@ObservedObject` を使って `ObservableObject` を監視してください。
+  - **Composable**: `collectAsState` で `StateFlow` を収集するか、`observeAsState` で `LiveData` を監視してください。
   - **Android `View`**: `onAttachedToWindow` でオブジェクトの監視を開始し、`onDetachedFromWindow` で停止してください。
 
   あなたがリゾルバにコピーする値（ストリーク数など）は、リゾルバを作成した時点の値のまま固定されます。Dartコードにデータ（例えばデイリーストリーク）がある場合は、[プラットフォームチャンネル](https://docs.flutter.dev/platform-integration/platform-channels)を通じてネイティブコードに新しい値を送信し、そちらでオブジェクトを更新してください。
@@ -174,12 +216,11 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 
 ## リゾルバーをSDKに渡す \{#pass-the-resolver-to-the-sdk\}
 
-各プラットフォームでアプリ起動時に一度だけリゾルバーを設定してください。SDKは`AdaptyUIFlowPlatformView`で埋め込まれたフローを含め、すべてのフローでリゾルバーを呼び出します。これらのビューはアプリのリリースなしで、新しいフローやA/B テストにユーザー独自のビューを表示できます。これらのビューは[デイリーストリーク](flutter-custom-element-lottie-animation)など、アプリからデータを読み取ることで各ユーザー固有のデータを表示します。
+リゾルバーはアプリ起動時に各プラットフォームで一度だけ設定してください。SDKは、`AdaptyUIFlowPlatformView`で埋め込まれたフローを含む、すべてのフローでリゾルバーを呼び出します。これらのビューは各ユーザー自身のデータ（[デイリーストリーク](flutter-custom-element-lottie-animation)など）をアプリから読み取るため、アプリのリリースなしに新しいフローやA/Bテストでネイティブビューが表示されます。
 
-<Tabs groupId="platform" queryString>
-<TabItem value="ios" label="iOS (Swift)" default>
+### iOS
 
-`ios/Runner/AppDelegate.swift` にて `AdaptyUI` をインポートし、`application(_:didFinishLaunchingWithOptions:)` メソッド内で `AdaptyUI.setCustomElementsResolver(_:)` を呼び出してください。`AppDelegate` クラスのそれ以外の部分はそのままにしてください：
+`ios/Runner/AppDelegate.swift` にて `AdaptyUI` をインポートし、`application(_:didFinishLaunchingWithOptions:)` メソッド内で `AdaptyUI.setCustomElementsResolver(_:)` を呼び出してください。`AppDelegate` クラスの他の部分はそのままにしておきます：
 
 ```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
 
@@ -187,12 +228,11 @@ class CustomElementsResolver(context: Context) : AdaptyCustomElementsResolver {
 AdaptyUI.setCustomElementsResolver(CustomElementsResolver())
 ```
 
-`AppDelegate.swift` 内にリゾルバーも記述する場合は、`AdaptyUIBuilder` もインポートしてください。
+リゾルバーを `AppDelegate.swift` にも記述する場合は、そのファイルで `AdaptyUIBuilder` もインポートしてください。
 
-</TabItem>
-<TabItem value="android" label="Android (Kotlin)">
+### Android
 
-`Application`クラスの`onCreate`メソッド内で`AdaptyUI.setCustomElementsResolver`を呼び出してください。アプリに`Application`クラスがない場合は、新しく作成してください：
+`AdaptyUI.setCustomElementsResolver`を`Application`クラスの`onCreate`メソッド内で呼び出してください。アプリにまだ`Application`クラスがない場合は、作成してください：
 
 ```kotlin showLineNumbers title="Kotlin"
 
@@ -204,7 +244,7 @@ class App : Application() {
 }
 ```
 
-`android/app/src/main/AndroidManifest.xml` で、`<application>` の `android:name` 属性に `Application` クラスを指定します。Flutter テンプレートでは、この属性はベースとなる `Application` クラスを表す `${applicationName}` に設定されています。
+`android/app/src/main/AndroidManifest.xml` で、`<application>` の `android:name` 属性に `Application` クラスを指定します。Flutter テンプレートでは、この属性が基底 `Application` クラスを表す `${applicationName}` に設定されています。
 
 ```xml showLineNumbers title="AndroidManifest.xml" {2}
 <application
@@ -214,11 +254,13 @@ class App : Application() {
 </application>
 ```
 
-</TabItem>
-</Tabs>
-
 :::tip
-カスタム要素の各 Type に同じビューを表示する場合は、リゾルバーの代わりに Type とビューのマップを渡してください。iOS では、マップは `[String: AdaptyUICustomElementBuilder]` ディクショナリです。Android では、`AdaptyCustomElementsResolver.of` にマップを渡します。マップはリゾルバーよりもコード量が少なくて済みますが、[フォールバックコンテンツの条件設定](#set-conditions-for-fallback-content)はできません。
+カスタム要素の各 Type に同じビューを表示したい場合は、リゾルバの代わりに Type とビューのマップを渡します。マップを使うと、リゾルバよりも少ないコードで記述できますが、[フォールバックコンテンツの条件設定](#set-conditions-for-fallback-content)はできません。
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+マップは `[String: AdaptyUICustomElementBuilder]` ディクショナリです。`AppDelegate.swift` にマップを記述する場合は、そこで `Lottie` もインポートしてください。
 
 ```swift showLineNumbers title="Swift"
 AdaptyUI.setCustomElementsResolver([
@@ -226,15 +268,23 @@ AdaptyUI.setCustomElementsResolver([
 ])
 ```
 
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+`AdaptyCustomElementsResolver.of` にマップを渡します：
+
 ```kotlin showLineNumbers title="Kotlin"
 val appWideViews = mapOf(
     "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
 )
 AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
 ```
+
+</TabItem>
+</Tabs>
 :::
 
-リゾルバーを特定のフローに紐付けることはできません。フローを開いたときにアプリが初めて取得できるデータを表示するには、フローを開く前にそのデータをネイティブコードに渡してください。その後、リゾルバー内でそのデータを読み取ります。たとえば、[ユーザーが前のフローで入力した体重をペイウォールに表示する](flutter-custom-element-interactive-chart)といった使い方ができます。
+リゾルバーを1つのフローにのみアタッチすることはできません。アプリがフローを開いたときにのみ持っているデータを表示するには、フローが開く前にそのデータをネイティブコードに送信し、リゾルバーでそのデータを読み取ります。たとえば、ペイウォールに[ユーザーが以前のフローで入力した体重](flutter-custom-element-interactive-chart)を表示するケースが挙げられます。
 
 ## デバイスでテストする \{#test-on-a-device\}
 
