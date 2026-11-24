@@ -1,0 +1,301 @@
+---
+title: "Afficher la progression de l'utilisateur avec une animation Lottie"
+description: "Affichez la progression de chaque utilisateur, par exemple une série quotidienne, sous forme d'animation Lottie sur un écran de flow."
+metadataTitle: "Afficher la progression de l'utilisateur avec une animation Lottie | Flutter SDK | Documentation Adapty"
+---
+
+<CustomElementLottieIntro />
+
+## Avant de commencer \{#before-you-start\}
+
+- Mettez à jour votre application vers Adapty Flutter SDK 4.4 ou ultérieur. Les versions antérieures du SDK affichent le [contenu de secours](flow-custom-elements#set-fallback-content) pour chaque élément personnalisé.
+- Configurez votre application pour [récupérer](flutter-get-pb-paywalls) et [afficher](flutter-present-paywalls) les flows.
+- Configurez le code natif de votre application pour les éléments personnalisés, comme indiqué dans le [guide Flutter](flutter-flow-custom-elements#before-you-start).
+- Sur iOS, ajoutez Lottie à la cible `Runner` dans Xcode avec Swift Package Manager, depuis `https://github.com/airbnb/lottie-spm.git`.
+- Sur Android, configurez Jetpack Compose dans votre module d'application. La vue d'animation dans cette recette est un composable. Ajoutez Lottie pour Jetpack Compose à votre application avec Gradle, depuis `com.airbnb.android:lottie-compose`.
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. Ajouter l'élément personnalisé à l'écran \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. Ajoutez le fichier d'animation à votre application \{#2-add-the-animation-file-to-your-app\}
+
+Votre code natif lit le fichier d'animation depuis vos projets iOS et Android, pas depuis le dossier `assets` de Flutter :
+
+- **iOS** : Ajoutez le fichier à la cible `Runner` dans Xcode.
+- **Android** : Placez le fichier dans `android/app/src/main/assets`, le dossier `assets` de votre module d'application Android. Conservez-le à la racine de ce dossier, pas dans un sous-dossier.
+
+Le nom du fichier sans `.json` doit correspondre à l'ID de l'élément personnalisé, par exemple `streak_ring.json` pour `streak_ring`.
+
+## 3. Créer la vue d'animation \{#create-the-animation-view\}
+
+Créez un modèle pour la série, et une vue qui joue l'animation. Votre application met à jour le modèle quand la série change. La vue lit le modèle, donc l'anneau affiche la série actuelle à l'ouverture de l'écran :
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` remplit l'anneau une fois, du vide jusqu'à `progress`.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` remplit l'anneau une fois, de vide jusqu'à `progress`.
+
+</TabItem>
+</Tabs>
+
+## 4. Associer l'animation à l'élément personnalisé \{#match-the-animation-to-the-custom-element\}
+
+Dans votre [resolver global](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk), ajoutez une propriété pour le modèle de série. Ensuite, retournez la vue d'animation pour le Type `lottie_animation` et l'ID `streak_ring`. Les lignes surlignées indiquent ce qu'il faut ajouter ou modifier. Si votre application n'a pas encore de [resolver](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) global, copiez le code entier :
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+Placez le cas `streak_ring` avant tout autre cas `lottie_animation`, car Swift n'exécute que le premier cas correspondant. Si le bundle de l'application ne contient aucun fichier pour cet identifiant, le resolver retourne `nil` et les utilisateurs voient le fallback.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+Si le dossier `assets` ne contient pas de fichier pour l'ID, le resolver renvoie `null`, et les utilisateurs voient le paywall de secours. Si votre resolver renvoie déjà une [vue pour chaque fichier d'animation](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), renvoyez cette vue à la place de `null` lorsque l'ID n'est pas `streak_ring`. Ainsi, les utilisateurs voient toujours les animations de vos autres éléments personnalisés `lottie_animation`.
+
+</TabItem>
+</Tabs>
+
+Créez le resolver avec le modèle de streak, puis définissez-le comme resolver global au démarrage de l'application :
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+
+@main
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // the streak model that your app updates
+  let streakStore = StreakStore()
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    }
+}
+```
+
+Nommez la classe `App` dans `android/app/src/main/AndroidManifest.xml`, comme dans [Passer le resolver au SDK](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk).
+
+</TabItem>
+</Tabs>
+
+## 5. Envoyez le streak depuis votre code Dart \{#5-send-the-streak-from-your-dart-code\}
+
+Votre code Dart gère le streak, et les vues natives le lisent depuis le modèle de streak. Pour mettre à jour le modèle, envoyez le streak à votre code natif via un [platform channel](https://docs.flutter.dev/platform-integration/platform-channels). Dans votre code iOS et Android, écoutez le channel :
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+Dans la méthode `didInitializeImplicitFlutterEngine` de votre classe `AppDelegate`, ajoutez les lignes mises en évidence :
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift" {3-14}
+func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+  GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  let streakChannel = FlutterMethodChannel(
+    name: "custom_elements/streak",
+    binaryMessenger: engineBridge.applicationRegistrar.messenger()
+  )
+  streakChannel.setMethodCallHandler { [streakStore] call, result in
+    guard call.method == "setStreak", let days = call.arguments as? Int else {
+      return result(FlutterMethodNotImplemented)
+    }
+    // the channel calls this handler on the main thread
+    MainActor.assumeIsolated { streakStore.currentStreak = days }
+    result(nil)
+  }
+}
+```
+
+:::note
+Le code `AppDelegate` dans cette recette suit le template iOS de Flutter 3.41 et versions ultérieures, qui adopte `FlutterImplicitEngineDelegate`. Si votre classe `AppDelegate` ne l'adopte pas, omettez le protocole et la méthode `didInitializeImplicitFlutterEngine`. Créez le canal dans `application(_:didFinishLaunchingWithOptions:)` à la place, avant `return super.application(...)`, avec le messenger du contrôleur de vue racine. Conservez l'appel `GeneratedPluginRegistrant` de votre template :
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+GeneratedPluginRegistrant.register(with: self)
+let controller = window?.rootViewController as! FlutterViewController
+let streakChannel = FlutterMethodChannel(
+  name: "custom_elements/streak",
+  binaryMessenger: controller.binaryMessenger
+)
+```
+:::
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Dans votre classe `MainActivity`, surchargez la méthode `configureFlutterEngine` :
+
+```kotlin showLineNumbers title="Kotlin"
+
+class MainActivity : FlutterFragmentActivity() {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        val streakStore = (application as App).streakStore
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "custom_elements/streak")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "setStreak") {
+                    streakStore.currentStreak.value = call.arguments as Int
+                    result.success(null)
+                } else {
+                    result.notImplemented()
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Dans votre code Dart, envoyez la série au lancement de l'application, et à chaque fois que la série change :
+
+```dart showLineNumbers title="Flutter"
+
+// your iOS and Android code listens to this channel
+const streakChannel = MethodChannel('custom_elements/streak');
+
+// call at app launch, and each time the streak changes
+Future<void> sendStreak(int days) async {
+  await streakChannel.invokeMethod('setStreak', days);
+}
+```
+
+## 6. Tester sur un appareil \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+Pour comprendre pourquoi le paywall de secours s'affiche à la place de l'animation, suivez les instructions de la section [Tester sur un appareil](flutter-flow-custom-elements#test-on-a-device) du guide Flutter.

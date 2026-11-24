@@ -1,0 +1,86 @@
+---
+title: "Adapty Flutter SDK'yı v4.4'e Taşıyın"
+description: "Adapty Flutter SDK v4.4'e geçiş: her iki yedek dosyayı değiştirin ve iOS ile Android'de yeni flow hatalarını ele alın."
+metadataTitle: "Adapty Flutter SDK v4.4'e Geçiş | Adapty Dokümanları"
+---
+
+Adapty Flutter SDK 4.4, yedek dosya formatını değiştiriyor, flow'lar için iOS 16 gerektiriyor ve daha fazla flow hatasını uygulamanıza bildiriyor. Uygulamanızı 4.3'ten 4.4'e güncellemek için `adapty_flutter` sürümünü `^4.4.0` olarak ayarlayın ve aynı build'de her iki yedek dosyayı da değiştirin. Eski SDK sürümleri yeni dosyaları reddeder. Ardından bu kılavuzdaki her flow hatası değişikliğini inceleyin.
+
+Hâlâ 4.1 sürümündeyseniz önce [v4.3'e geçiş](migration-to-flutter-sdk-43) rehberini takip edin, ardından bu kılavuzu uygulayın. 4.0 sürümündeyseniz önce [v4.1 değişikliklerine](migration-to-flutter-sdk-41) bakmanız gerekir.
+
+:::warning
+Yedek dosya formatı 4.4'te değişti ve derleyici eski bir dosyayı tespit edemiyor. [Yeni yedek dosyalar](#replace-the-fallback-files) olmadan her placement yedek paywall'ını kaybeder.
+:::
+
+## Hızlı başvuru \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 4.1–4.3 için indirilen yedek dosyalar | Yeni yedek dosya formatı; her iki dosyayı da yeniden indirin |
+| Flow'lar iOS 15'te açılır | Flow'lar iOS 16 gerektirir |
+| iOS'ta, `AdaptyUIFlowPlatformView` flow'unu yükleyemediğinde boş kalır | Flow hata callback'lerinize hatayı bildirir |
+| iOS'ta, AdaptyUI etkinleştirilmemişken yapılan `AdaptyUI()` ve `AdaptyUIFlowView` çağrıları `AdaptyErrorCode.unknown` ile hata fırlatır | `adaptyUINotActivated` veya `adaptyNotActivated` ile hata fırlatır |
+| Android'de SDK yalnızca flow betik hatalarını loglar | Hata callback'lerinize `AdaptyErrorCode.jsException` olarak ulaşır |
+| Varsayılan kapatma işlemi `AdaptyUIFlowPlatformView` için `dismiss()` çağırır ve bu yakalanmamış bir hata fırlatır | Varsayılan kapatma işlemi gömülü flow'u ekranda bırakır; kapatmak için widget'ı kaldırın |
+
+## Kurulum \{#installation\}
+
+`pubspec.yaml` dosyanızda `adapty_flutter` sürümünü v4.4 olarak güncelleyin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+Uygulamanız [Kids Mode](kids-mode-flutter) kullanıyorsa, bunun yerine `adapty_flutter_kids` belirtin:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+Gereksinimler 4.3'ten farklı değildir: **Flutter 3.32.0** (Dart 3.8.0) ve **iOS 15.0**. Flow'lar bu kuralın istisnasıdır: bkz. [Flow'lar iOS 16 gerektirir](#flows-require-ios-16). Tam kurulum için bkz. [Adapty SDK'yı Yükle](sdk-installation-flutter).
+
+## Yedek dosyaları değiştirme \{#replace-the-fallback-files\}
+
+[Yedek dosyaları](flutter-use-fallback-paywalls) yeniden indirmek için **[Placements](https://app.adapty.io/placements)** bölümünde **Fallbacks** > **Download iOS Fallback** seçeneğine tıklayın. **Adapty SDK v4.4.0 and higher** satırında **Download** seçeneğine tıklayın. Aynı adımı **Download Android Fallback** için de tekrarlayın.
+
+İndirilen dosyalar `ios_4_4_0_fallback.json` ve `android_4_4_0_fallback.json` olarak adlandırılmıştır. Bu dosyaları, eski dosyaların yerine geçecek şekilde projenizin `assets` klasörüne taşıyın. Her dosyaya, uygulamanızın `Adapty().setFallback` metoduna ilettiği adı verin ya da bu metoddaki adları güncelleyin.
+
+Güncel olmayan bir dosya kullanıldığında, `Adapty().setFallback` bir `AdaptyError` fırlatır. Yeni dosyaları doğrulamak için uygulamayı iOS ve Android'de çalıştırın ve bu çağrının hata fırlatmadığından emin olun.
+
+## Flow'lar iOS 16 gerektirir \{#flows-require-ios-16\}
+
+4.4 sürümünden itibaren flow'lar iOS 16 veya üzerini gerektirir. iOS 15'te `AdaptyUI().createFlowView()`, `AdaptyErrorCode.platformNotSupported` ile bir `AdaptyError` fırlatır ve `AdaptyUIFlowPlatformView` boş kalarak aynı hatayı bildirir. Onboarding'ler ve SDK'nın geri kalanı iOS 15'i desteklemeye devam eder.
+
+Uygulamanız bu hatayı aldığında, bunun yerine kendi içeriğinizi gösterin; örneğin bir [özel paywall](flutter-implement-paywalls-manually).
+
+## iOS'ta flow yükleme hataları callback'lerinize ulaşır \{#flow-load-errors-reach-your-callbacks-on-ios\}
+
+iOS'ta `AdaptyUIFlowPlatformView` kendi flow'unu gösteremediğinde, hatayı `onDidReceiveError` callback'ine ve flow olayları gözlemcinizin `flowViewDidReceiveError` metoduna bildirir. Uygulamanız widget'ı her oluşturduğunda hata bir kez raporlanır. 4.4 öncesinde widget boş kalıyordu. Android'de ise widget, flow'u yükleyemediğinde hiçbir şey bildirmez. Widget aşağıdaki hataları raporlar:
+
+- iOS 15'te: `AdaptyErrorCode.platformNotSupported`.
+- iOS 16 ve sonrasında, flow yüklenemediğinde: `AdaptyUI().createFlowView()` metodunun o flow için fırlattığı hata. Örneğin, AdaptyUI etkinleştirilmemişken flow yüklenemez ya da flow'un sahip olmadığı bir `customLayoutId` için bu hata oluşur.
+
+Ekran kapatma gibi flow hata işleme süreçleriniz artık bu durumlarda da çalışır. `AdaptyUIFlowView.dismiss()`, bu widget'ın view'u için başarısız olur; bu nedenle `flowViewDidReceiveError` bunu çağırıyorsa, [View hataları](flutter-handling-events#view-errors) bölümündeki gibi hatasını yakalayın. Widget'ı kaldırın ve kendi içeriğinizi gösterin. `AdaptyErrorCode.networkFailed` gibi geçici bir hatayı yeniden denemek için widget'ı yeni bir `Key` ile yeniden oluşturun.
+
+## iOS'ta AdaptyUI hataları yeni kodlara sahip \{#adaptyui-errors-have-new-codes-on-ios\}
+
+iOS'ta, AdaptyUI etkinleştirilmediğinde — `Adapty().activate()` tamamlanmadan önce veya `withActivateUI(false)` ile aktivasyon sonrasında — `AdaptyUI()` ya da `AdaptyUIFlowView` çağrısı yeni bir kodla hata fırlatır. Hangi kodun döneceği, uygulamanızın ne istediğine bağlıdır:
+
+- Bir flow view: `AdaptyErrorCode.adaptyUINotActivated`.
+- Bir onboarding: `AdaptyErrorCode.adaptyNotActivated`.
+
+4.4 öncesinde bu hatalar `AdaptyErrorCode.unknown` koduna sahipti. Bunları `unknown` ile yönetiyorsanız, yeni kodları da eklemeyi unutmayın. `AdaptyErrorCode.platformNotSupported` için [Flow'lar iOS 16 gerektirir](#flows-require-ios-16) bölümüne bakın.
+
+## Android'de flow script hataları callback'lerinize ulaşır \{#flow-script-errors-reach-your-callbacks-on-android\}
+
+Android'de flow script, bir SDK olayını işlerken istisna fırlatabilir. 4.4 sürümünden itibaren bu istisna, iOS'takiyle aynı şekilde `AdaptyErrorCode.jsException` olarak `flowViewDidReceiveError` ve `AdaptyUIFlowPlatformView`'un `onDidReceiveError` callback'ine ulaşır. Daha önce SDK bunu yalnızca günlüğe kaydediyordu.
+
+Uygulamanız bir flows olayları gözlemcisi ayarlamıyorsa, `AdaptyUI().createFlowView()` ile oluşturulan bir flow bu hatada kapanır. Flow'un açık kalması için `AdaptyUI().setFlowsEventsObserver()` ile bir gözlemci ayarlayın ve hatayı orada ele alın.
+
+## Widget'ı kaldırarak gömülü flow'ları kapatma \{#close-embedded-flows-by-removing-the-widget\}
+
+4.4 sürümünden itibaren, `AdaptyUIFlowPlatformView` ile gömülen bir flow için varsayılan kapatma işlemi artık `dismiss()` çağırmaz. 4.4 öncesinde bu çağrı, yakalanmayan bir `AdaptyErrorCode.wrongParam` hatasıyla her zaman başarısız oluyordu. Gömülü bir flow'u kapatmak için, `CloseAction` ve Android'de `AndroidSystemBackAction` alındığında [widget'ını kaldırın](flutter-present-paywalls#embed-in-widget-hierarchy).
+
+Bir flow olayının varsayılan işlenmesi başarısız olduğunda (örneğin bir kapatma işlemi veya URL açma), SDK artık hatayı kendi günlüğüne yazar. 4.4 öncesinde SDK, yakalanmamış bir hata fırlatıyordu. Kilitlenme raporlayıcınız bu hataları kaydediyorsa, artık raporlayıcınıza ulaşmayacaklar.

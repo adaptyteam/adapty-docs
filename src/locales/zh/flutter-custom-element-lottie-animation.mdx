@@ -1,0 +1,301 @@
+---
+title: "通过 Lottie 动画展示用户进度"
+description: "在流程屏幕中以 Lottie 动画的形式展示每位用户的进度，例如每日连续打卡记录。"
+metadataTitle: "通过 Lottie 动画展示用户进度 | Flutter SDK | Adapty 文档"
+---
+
+<CustomElementLottieIntro />
+
+## 开始之前 \{#before-you-start\}
+
+- 将你的应用更新至 Adapty Flutter SDK 4.4 或更高版本。早期 SDK 版本会为每个自定义元素显示[备用内容](flow-custom-elements#set-fallback-content)。
+- 设置你的应用以[获取](flutter-get-pb-paywalls)并[展示](flutter-present-paywalls)流程。
+- 按照 [Flutter 指南](flutter-flow-custom-elements#before-you-start)为应用的原生代码配置自定义元素支持。
+- 在 iOS 上，通过 Swift Package Manager 将 Lottie 添加到 Xcode 中的 `Runner` target，地址为 `https://github.com/airbnb/lottie-spm.git`。
+- 在 Android 上，在应用模块中配置 Jetpack Compose。本示例中的动画视图是一个 composable。通过 Gradle 将 Lottie for Jetpack Compose 添加到你的应用，依赖为 `com.airbnb.android:lottie-compose`。
+
+<CustomElementLottieAnimationRequirements />
+
+## 1. 将自定义元素添加到屏幕 \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementLottieBuilderSetup />
+
+## 2. 将动画文件添加到应用中 \{#2-add-the-animation-file-to-your-app\}
+
+原生代码从 iOS 和 Android 项目中读取动画文件，而非 Flutter 的 `assets` 目录：
+
+- **iOS**：在 Xcode 中将文件添加到 `Runner` target。
+- **Android**：将文件放入 `android/app/src/main/assets`，即 Android 应用模块的 `assets` 文件夹。请将文件放在该文件夹的根目录下，不要放入子文件夹。
+
+不含 `.json` 的文件名必须与自定义元素的 ID 匹配，例如 `streak_ring` 对应 `streak_ring.json`。
+
+## 3. 创建动画视图 \{#create-the-animation-view\}
+
+创建一个包含连续打卡数据的模型，以及播放动画的视图。当连续打卡数据变化时，你的应用会更新该模型。视图读取模型，因此打开界面时，圆环会显示当前的连续打卡数。
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// The streak that your app keeps up to date
+@MainActor
+final class StreakStore: ObservableObject {
+    @Published var currentStreak = 0 // days in a row
+}
+
+struct StreakRingView: View {
+    let animation: LottieAnimation
+    @ObservedObject var streakStore: StreakStore
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    private var progress: AnimationProgressTime {
+        min(AnimationProgressTime(streakStore.currentStreak) / 7, 1)
+    }
+
+    var body: some View {
+        LottieView(animation: animation)
+            .resizable()
+            .playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))
+    }
+}
+```
+
+`.playing(.fromProgress(0, toProgress: progress, loopMode: .playOnce))` 将动画从空到 `progress` 位置填充一次圆环。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// the streak that your app keeps up to date
+class StreakStore {
+    val currentStreak = MutableStateFlow(0) // days in a row
+}
+
+@Composable
+fun StreakRing(animationFile: String, streakStore: StreakStore) {
+    val composition by rememberLottieComposition(LottieCompositionSpec.Asset(animationFile))
+    val streak by streakStore.currentStreak.collectAsState()
+
+    // 7 days fill the ring: from 0 for an empty ring to 1 for a full one
+    val progress = minOf(streak / 7f, 1f)
+
+    LottieAnimation(
+        composition = composition,
+        modifier = Modifier.fillMaxSize(), // scale the animation to fit the custom element
+        clipSpec = LottieClipSpec.Progress(0f, progress),
+    )
+}
+```
+
+`clipSpec = LottieClipSpec.Progress(0f, progress)` 会将圆环从空状态填充至 `progress` 对应的位置。
+
+</TabItem>
+</Tabs>
+
+## 4. 将动画与自定义元素匹配 \{#4-match-the-animation-to-the-custom-element\}
+
+在你的[全局解析器](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk)中，为 streak 模型添加一个属性。然后为 `lottie_animation` 类型和 `streak_ring` ID 返回动画视图。高亮行显示了需要添加或修改的内容。如果你的应用还没有全局[解析器](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，请复制完整代码：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {6,14-18}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let streakStore: StreakStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "lottie_animation" where id == "streak_ring":
+            guard let animation = LottieAnimation.named(id) else {
+                return nil // no animation file: show the fallback
+            }
+            return AnyView(StreakRingView(animation: animation, streakStore: streakStore))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+将 `streak_ring` 的 case 放在所有其他 `lottie_animation` case 之前，因为 Swift 只会执行第一个匹配的 case。如果应用包中没有对应 ID 的文件，解析器返回 `nil`，用户将看到备用内容。
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {8,22-28}
+
+class CustomElementsResolver(
+    context: Context,
+    private val streakStore: StreakStore,
+) : AdaptyCustomElementsResolver {
+    // the animation files in the assets folder, listed once
+    private val animationFiles: Set<String> = try {
+        context.assets.list("").orEmpty().toSet()
+    } catch (e: IOException) {
+        emptySet() // no list of files: every Lottie element shows the fallback
+    }
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "lottie_animation" -> {
+                // the ID names the animation file, such as streak_ring.json
+                val file = "$id.json"
+                when {
+                    file !in animationFiles -> null // no file for this ID: show the fallback
+                    id == "streak_ring" ->
+                        AdaptyCustomElementContent.compose { StreakRing(file, streakStore) }
+                    // the other animations of your resolver
+                    else -> null
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+如果 `assets` 文件夹中没有对应 ID 的文件，resolver 会返回 `null`，用户将看到备用内容。如果你的 resolver 已经为[每个动画文件都返回了对应的视图](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views)，则在 ID 不是 `streak_ring` 时返回该视图，而不是 `null`。这样，用户仍然可以看到其他 `lottie_animation` 自定义元素的动画。
+
+</TabItem>
+</Tabs>
+
+创建包含打卡模型的 resolver，并在应用启动时将其设置为全局 resolver：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+
+@main
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // the streak model that your app updates
+  let streakStore = StreakStore()
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(streakStore: streakStore))
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // the streak model that your app updates
+    val streakStore = StreakStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, streakStore))
+    }
+}
+```
+
+在 `android/app/src/main/AndroidManifest.xml` 中声明 `App` 类，方法与[将解析器传递给 SDK](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk) 中的一致。
+
+</TabItem>
+</Tabs>
+
+## 5. 从 Dart 代码发送连续打卡天数 \{#5-send-the-streak-from-your-dart-code\}
+
+您的 Dart 代码负责维护连续打卡天数，原生视图则通过 streak 模型读取该数据。若要更新模型，请通过[平台通道](https://docs.flutter.dev/platform-integration/platform-channels)将连续打卡天数发送到原生代码。在您的 iOS 和 Android 代码中监听该通道：
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+在 `AppDelegate` 类的 `didInitializeImplicitFlutterEngine` 方法中，添加高亮显示的代码行：
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift" {3-14}
+func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+  GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+  let streakChannel = FlutterMethodChannel(
+    name: "custom_elements/streak",
+    binaryMessenger: engineBridge.applicationRegistrar.messenger()
+  )
+  streakChannel.setMethodCallHandler { [streakStore] call, result in
+    guard call.method == "setStreak", let days = call.arguments as? Int else {
+      return result(FlutterMethodNotImplemented)
+    }
+    // the channel calls this handler on the main thread
+    MainActor.assumeIsolated { streakStore.currentStreak = days }
+    result(nil)
+  }
+}
+```
+
+:::note
+`AppDelegate` 代码遵循 Flutter 3.41 及更高版本的 iOS 模板，该模板采用了 `FlutterImplicitEngineDelegate`。如果你的 `AppDelegate` 类未采用该协议，请省略该协议及 `didInitializeImplicitFlutterEngine` 方法，改为在 `application(_:didFinishLaunchingWithOptions:)` 中，于 `return super.application(...)` 之前，使用根视图控制器的 messenger 创建 channel。保留你所用模板中的 `GeneratedPluginRegistrant` 调用：
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+GeneratedPluginRegistrant.register(with: self)
+let controller = window?.rootViewController as! FlutterViewController
+let streakChannel = FlutterMethodChannel(
+  name: "custom_elements/streak",
+  binaryMessenger: controller.binaryMessenger
+)
+```
+:::
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+在你的 `MainActivity` 类中，重写 `configureFlutterEngine` 方法：
+
+```kotlin showLineNumbers title="Kotlin"
+
+class MainActivity : FlutterFragmentActivity() {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        val streakStore = (application as App).streakStore
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "custom_elements/streak")
+            .setMethodCallHandler { call, result ->
+                if (call.method == "setStreak") {
+                    streakStore.currentStreak.value = call.arguments as Int
+                    result.success(null)
+                } else {
+                    result.notImplemented()
+                }
+            }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+在你的 Dart 代码中，在应用启动时以及每次连续天数发生变化时发送连续天数：
+
+```dart showLineNumbers title="Flutter"
+
+// your iOS and Android code listens to this channel
+const streakChannel = MethodChannel('custom_elements/streak');
+
+// call at app launch, and each time the streak changes
+Future<void> sendStreak(int days) async {
+  await streakChannel.invokeMethod('setStreak', days);
+}
+```
+
+## 6. 在设备上测试 \{#test-on-a-device\}
+
+<CustomElementLottieTest />
+
+要了解为什么显示的是备用内容而不是动画，请按照 Flutter 指南中[在设备上测试](flutter-flow-custom-elements#test-on-a-device)部分的说明操作。
