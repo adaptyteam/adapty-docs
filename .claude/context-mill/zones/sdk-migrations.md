@@ -139,7 +139,7 @@ question there. The real open question is the two Observer-mode changes below, i
 | migration-to-android-sdk-v4 | migration | dev | 17 | android |
 | migration-to-android330 | migration | dev | 16 | android |
 | migration-to-capacitor-316 | migration | dev | 0 | capacitor |
-| migration-to-capacitor-sdk-43 | migration | dev | 6 | capacitor |
+| migration-to-capacitor-sdk-43 | migration | dev | 8 | capacitor |
 | migration-to-capacitor-sdk-v4 | migration | dev | 30 | capacitor |
 | migration-to-flutter-sdk-34 | migration | dev | 2 | flutter |
 | migration-to-flutter-sdk-41 | migration | — | 10 | flutter |

@@ -190,11 +190,11 @@ on one side, a non-deterministic agent on the other.
 | developer-cli | entry | dev | 0 | api |
 | developer-cli-ab-tests | reference | dev | 25 | api |
 | developer-cli-ads-manager | entry | dev | 17 | api |
-| developer-cli-ads-manager-reference | — | dev | 60 | api |
+| developer-cli-ads-manager-reference | — | dev | 61 | api |
 | developer-cli-ads-manager-skill | — | dev | 10 | api |
 | developer-cli-analytics | entry | dev | 17 | api |
 | developer-cli-apps | reference | dev | 11 | api |
-| developer-cli-authentication | — | dev | 7 | api |
+| developer-cli-authentication | — | dev | 9 | api |
 | developer-cli-cowork | how-to | dev | 6 | api |
 | developer-cli-fallbacks | reference | dev | 1 | api |
 | developer-cli-flows | reference | dev | 25 | api |
@@ -204,15 +204,17 @@ on one side, a non-deterministic agent on the other.
 | developer-cli-products | reference | dev | 11 | api |
 | developer-cli-quickstart | — | dev | 10 | api |
 | developer-cli-reference | — | dev | 3 | api |
-| developer-cli-retention-messaging | reference | dev | 27 | api |
-| export-analytics-with-ai | — | dev | 10 | tutorial |
+| developer-cli-retention-messaging | reference | dev | 29 | api |
+| developer-cli-virtual-currencies | reference | dev | 25 | api |
+| export-analytics-with-ai | — | dev | 14 | tutorial |
 | flow-agent-skills | entry | dev | 0 | tutorial |
 | flow-audit-skill | — | dev | 7 | tutorial |
 | flow-generator-skill | — | dev | 17 | tutorial |
 | handle-webhooks-with-ai | — | dev | 7 | tutorial |
-| manage-adapty-with-ai | entry | dev | 15 | tutorial |
+| manage-adapty-with-ai | entry | dev | 17 | tutorial |
 | migrate-placements-skill | — | dev | 10 | tutorial |
 | server-side-api-with-ai | — | dev | 5 | tutorial |
+| virtual-currencies-skill | how-to | dev | 6 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
 

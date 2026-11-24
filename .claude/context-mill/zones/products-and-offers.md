@@ -142,7 +142,7 @@ source id is named.
 | product | entry | marketer | 0 | tutorial |
 | store-sync | entry | marketer | 7 | tutorial |
 | virtual-currencies | entry | marketer | 7 | tutorial |
-| virtual-currency-balance | — | marketer | 4 | tutorial |
+| virtual-currency-balance | — | marketer | 6 | tutorial |
 | virtual-currency-quickstart | — | marketer | 0 | tutorial |
 <!-- /mill:auto -->
 ## Reader jobs
