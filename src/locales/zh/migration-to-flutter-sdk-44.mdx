@@ -1,0 +1,86 @@
+---
+title: "迁移 Adapty Flutter SDK 至 v4.4"
+description: "迁移至 Adapty Flutter SDK v4.4：替换两个备用文件，并处理 iOS 和 Android 上新的流程错误。"
+metadataTitle: "迁移至 Adapty Flutter SDK v4.4 | Adapty 文档"
+---
+
+Adapty Flutter SDK 4.4 更改了备用付费墙的文件格式，对流程要求 iOS 16，并向应用报告更多流程错误。若要将应用从 4.3 升级到 4.4，请将 `adapty_flutter` 版本设置为 `^4.4.0`，并在同一次构建中替换两个备用文件。旧版 SDK 不兼容新文件。然后按照本指南逐一检查每项流程错误变更。
+
+如果你当前使用的是 4.1，请先参阅[迁移到 v4.3](migration-to-flutter-sdk-43)，再按照本指南操作。如果你使用的是 4.0，则需要先完成 [v4.1 的变更](migration-to-flutter-sdk-41)。
+
+:::warning
+备用文件格式在 4.4 版本中发生了变化，编译器无法检测到过时的文件。如果不[更新备用文件](#replace-the-fallback-files)，每个版位都将失去其备用付费墙。
+:::
+
+## 快速参考 \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 为 4.1–4.3 下载的备用文件 | 新备用文件格式；请重新下载两个文件 |
+| 流程支持在 iOS 15 上打开 | 流程要求 iOS 16 |
+| 在 iOS 上，`AdaptyUIFlowPlatformView` 无法加载流程时保持空白 | 会将错误上报至您的流程错误回调 |
+| 在 iOS 上，AdaptyUI 未激活时调用 `AdaptyUI()` 和 `AdaptyUIFlowView` 会抛出 `AdaptyErrorCode.unknown` 错误 | 会抛出 `adaptyUINotActivated` 或 `adaptyNotActivated` 错误 |
+| 在 Android 上，SDK 仅记录流程脚本错误日志 | 错误会以 `AdaptyErrorCode.jsException` 的形式到达您的流程错误回调 |
+| 默认关闭处理会对 `AdaptyUIFlowPlatformView` 调用 `dismiss()`，导致未捕获的错误 | 默认关闭处理会让嵌入式流程保留在屏幕上；移除该 widget 即可关闭 |
+
+## 安装 \{#installation\}
+
+在 `pubspec.yaml` 中将 `adapty_flutter` 更新至 v4.4：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+如果你的应用使用了 [Kids Mode](kids-mode-flutter)，请改为指定 `adapty_flutter_kids`：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+环境要求与 4.3 版本保持一致：**Flutter 3.32.0**（Dart 3.8.0）及 **iOS 15.0**。流程功能例外，详见 [流程需要 iOS 16](#flows-require-ios-16)。完整安装步骤请参阅[安装 Adapty SDK](sdk-installation-flutter)。
+
+## 替换备用文件 \{#replace-the-fallback-files\}
+
+要重新下载[备用文件](flutter-use-fallback-paywalls)，请在 **[Placements](https://app.adapty.io/placements)** 中点击 **Fallbacks** > **Download iOS Fallback**。在 **Adapty SDK v4.4.0 and higher** 行中，点击 **Download**。然后对 **Download Android Fallback** 重复相同操作。
+
+下载的文件名为 `ios_4_4_0_fallback.json` 和 `android_4_4_0_fallback.json`。将它们移至项目的 `assets` 文件夹，替换旧文件。请确保文件名与你的应用传递给 `Adapty().setFallback` 的名称一致，或在该调用中更新文件名。
+
+如果文件已过期，`Adapty().setFallback` 会抛出 `AdaptyError`。请在 iOS 和 Android 上运行应用以验证新文件，确认该调用不会抛出错误。
+
+## 流程需要 iOS 16 \{#flows-require-ios-16\}
+
+从 4.4 版本开始，流程需要 iOS 16 或更高版本。在 iOS 15 上，`AdaptyUI().createFlowView()` 会抛出带有 `AdaptyErrorCode.platformNotSupported` 的 `AdaptyError`，`AdaptyUIFlowPlatformView` 也会保持空白并报告相同错误。用户引导及 SDK 其余功能仍支持 iOS 15。
+
+当你的应用收到此错误时，请改为展示自定义内容，例如[自定义付费墙](flutter-implement-paywalls-manually)。
+
+## iOS 上的流程加载错误会传递到回调函数 \{#flow-load-errors-reach-your-callbacks-on-ios\}
+
+在 iOS 上，当 `AdaptyUIFlowPlatformView` 无法显示其流程时，会将错误报告给 `onDidReceiveError` 回调函数，以及流程事件观察者的 `flowViewDidReceiveError` 方法。每次应用创建该 widget 时，错误只会报告一次。在 4.4 版本之前，该 widget 会保持空白状态。在 Android 上，当流程加载失败时，该 widget 仍不会报告任何信息。该 widget 会报告以下错误：
+
+- 在 iOS 15 上：`AdaptyErrorCode.platformNotSupported`。
+- 在 iOS 16 及更高版本上，当流程加载失败时：`AdaptyUI().createFlowView()` 抛出的错误。例如，在 AdaptyUI 未激活时流程加载失败，或者流程没有对应 `customLayoutId` 时。
+
+您的流程错误处理（例如关闭屏幕）现在也会在这些情况下运行。`AdaptyUIFlowView.dismiss()` 对此 widget 的视图会失败，因此如果您的 `flowViewDidReceiveError` 调用了它，请捕获其错误，详见[视图错误](flutter-handling-events#view-errors)。移除该 widget，并展示您自己的内容。如需重试临时性故障（例如 `AdaptyErrorCode.networkFailed`），请使用新的 `Key` 重新构建该 widget。
+
+## AdaptyUI 错误在 iOS 上使用新错误码 \{#adaptyui-errors-have-new-codes-on-ios\}
+
+在 iOS 上，当 AdaptyUI 未激活时，调用 `AdaptyUI()` 或 `AdaptyUIFlowView` 会抛出带有新错误码的错误：在 `Adapty().activate()` 完成之前，或在使用 `withActivateUI(false)` 激活后。具体错误码取决于你的请求内容：
+
+- 流程视图：`AdaptyErrorCode.adaptyUINotActivated`。
+- 用户引导：`AdaptyErrorCode.adaptyNotActivated`。
+
+在 4.4 之前，这些错误的 `AdaptyErrorCode` 为 `unknown`。如果你的代码中已针对 `unknown` 进行了处理，也请同步处理新的错误码。对于 `AdaptyErrorCode.platformNotSupported`，请参阅[流程需要 iOS 16](#flows-require-ios-16)。
+
+## Android 上流程脚本错误现在会触达回调 \{#flow-script-errors-reach-your-callbacks-on-android\}
+
+在 Android 上，流程脚本在处理 SDK 事件时可能抛出异常。从 4.4 版本开始，该异常会以 `AdaptyErrorCode.jsException` 的形式传递给 `flowViewDidReceiveError` 和 `AdaptyUIFlowPlatformView` 的 `onDidReceiveError` 回调，行为与 iOS 保持一致。此前，SDK 仅会将其记录到日志中。
+
+如果你的应用未设置流程事件观察者，来自 `AdaptyUI().createFlowView()` 的流程在遇到此错误时会自动关闭。若要保持流程继续显示，请通过 `AdaptyUI().setFlowsEventsObserver()` 设置观察者，并在其中处理该错误。
+
+## 通过移除 Widget 关闭嵌入式流程 \{#close-embedded-flows-by-removing-the-widget\}
+
+从 4.4 版本开始，默认的关闭处理不再为通过 `AdaptyUIFlowPlatformView` 嵌入的流程调用 `dismiss()`。在 4.4 之前，该调用始终会失败，并抛出未捕获的 `AdaptyErrorCode.wrongParam` 错误。如需关闭嵌入式流程，请在收到 `CloseAction` 时（Android 还需处理 `AndroidSystemBackAction`）[移除对应的 Widget](flutter-present-paywalls#embed-in-widget-hierarchy)。
+
+当流程事件的默认处理失败时（例如关闭事件或打开 URL），SDK 现在会将错误写入日志。在 4.4 版本之前，SDK 会抛出未捕获的错误。如果您的崩溃报告工具曾记录过这些错误，它们将不再上报。

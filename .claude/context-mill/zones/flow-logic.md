@@ -70,9 +70,13 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     Delete). Owner rows: `flow-common-issues`, `builder-save-publish#troubleshooting`,
     `element-states-in-conditions#troubleshooting`, `onboarding-variables`, `copy-flows`. This entry
     used to say that publishing was not blocked.
-  - The picker greys out an element that would close a loop of **Disabled** conditions; a loop
-    that arrives in an imported or hand-made config blocks publishing as **Circular state
-    conditions**.
+  - The picker greys out an element that would close a loop of **Disabled** or custom-state
+    conditions (the row reads "Circular reference: already reads this state"); a loop that arrives in
+    an imported or hand-made config blocks publishing as **Circular state conditions**.
+  - Custom states (2026-11-18, documented before release from the feature branch; rechecked 2026-11-23 after the release) have conditions
+    of their own, a fifth kind of condition that can evaluate element states; the **State** dropdown
+    lists them by name. While a state's condition is edited, the tab drops the element that owns the
+    state, for any state, not only **Disabled**.
   - The canvas does not run state conditions: it uses the state activated in the **States**
     section of each element. Only a device shows real states.
   - **A visibility condition is stored as an AND group with a `predicates` list.** Selecting
@@ -80,8 +84,8 @@ renders the finished flow in an app (that's `sdk-flows-display` for `getFlow`/re
     passes `flows config validate`, but the editor's **Add Condition** does nothing on it until the
     user switches visibility away and back (measured 2026-11-16 on a flow authored through the
     CLI).
-  - Element variables for inputs are `value` and `isValid`; no variable holds **Disabled** or
-    **Active**, so those two are reachable only through the **States** tab.
+  - Element variables for inputs are `value` and `isValid`; no variable holds **Disabled**,
+    **Active**, or a custom state, so those are reachable only through the **States** tab.
 - **Conditions on the device platform** (the picker's **System** tab; builder and transformer
   code, 2026-11-18, before release). Owner sections: `onboarding-element-visibility` ("Show an
   element on one platform only") and `onboarding-actions` ("Show a screen on one platform only").
@@ -407,7 +411,7 @@ or developer can see and click.
   `builder-containers` (a sheet ignores **Animation** and **Delay**), `flow-design`'s `builder-styling`
   (**Show** / **Hide** are starting states), `convert-paywall-to-flow` (a converted close-button delay is
   a hidden button with its own **On Screen Appear** **Show element**), `builder-loaders-and-progress-bars`
-  (a loader offers only **On Screen Appear**), and `flow-design`'s `flow-timer` (the close-button recipe).
+  (a hidden progress bar starts to fill when **Show element** reveals it; a spinner offers only **On Screen Appear**), and `flow-design`'s `flow-timer` (the close-button recipe).
 - **Auto-advance has one canon: `flow-screen-transitions#move-users-to-another-screen-automatically`
   (2026-11-10).** Five pointers link to that anchor: `onboarding-actions` (Navigate to screen),
   `onboarding-navigation-branching`, `builder-navigation-actions`, `builder-loaders-and-progress-bars`,
@@ -425,7 +429,10 @@ or developer can see and click.
   lives in `builder-element-states#when-several-states-apply-to-one-element`, and the article links
   there. A new picker tab, operand, or system state ripples into all of these. The **Circular state
   conditions** publish blocker has its row in `flow-common-issues`; the owner article covers only
-  the picker side, as an item in its "you can't pick" list.
+  the picker side, as an item in its "you can't pick" list. Custom states (2026-11-18) reached the
+  owner article's intro list, the **States** tab list, the **On Tap** rule, and both "you can't pick"
+  items; `flow-common-issues` gained an **Invalid State Condition** row (a condition row with a value
+  but no variable).
   Shipped-skill delta, flagged 2026-11-16 and not edited (the skills have their own owner):
   `flow-generator/references/verify-config.py` has no `elementState` case in its condition walker,
   so its local check rejects a flow the publish gate accepts; `flow-generator/references/flowkit.py`
@@ -485,7 +492,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "route users by quiz answer", "personalize a screen from an answer", "navigate on tap without a button" | Split by what the ticket actually wants: *which screen comes next* → `onboarding-navigation-branching`; *store the answer and reuse it in text* → `onboarding-variables`; *a worked end-to-end example* → `onboarding-flow-tutorial`. |
 | "if/then/else", "conditional action", "close the flow from a button", "exit-intent offer", "last-chance discount before they leave" | `onboarding-actions` is canon for actions and conditional actions; the close-time discount itself is the `show-offer-on-close` recipe, which implements it as a conditional action on a Boolean flag — not as a separate feature. |
 | "custom action doesn't do anything", "the flow needs the result back", "validate an SMS code inside the flow", "gate the flow behind login" | `onboarding-actions`. The load-bearing constraint: a custom action is one-way — app code receives the Action ID but cannot return a value into the flow, so anything that depends on a result is split across two placements. |
-| "explain why Continue is greyed out", "show a message when the button is disabled", "disable two buttons together", "condition on another element", "States tab", "is the field focused" | `element-states-in-conditions` (2026-11-16). Traps: **Selected** yields to **Disabled** (one state at a time; rule in `flow-design`'s `builder-element-states`), so "which option did users pick" is the group variable on the **Elements** tab, not the state; the canvas shows a state only after the user activates it in the element's **States** section; a condition written outside the builder as a bare comparison saves and validates, but its editor's **Add Condition** does nothing until visibility is switched away and back. **Disabled** and **Active** have no variable: the **States** tab is the only route to them. |
+| "explain why Continue is greyed out", "show a message when the button is disabled", "disable two buttons together", "condition on another element", "States tab", "is the field focused" | `element-states-in-conditions` (2026-11-16). Traps: **Selected** yields to **Disabled** (one state at a time; rule in `flow-design`'s `builder-element-states`), so "which option did users pick" is the group variable on the **Elements** tab, not the state; the canvas shows a state only after the user activates it in the element's **States** section; a condition written outside the builder as a bare comparison saves and validates, but its editor's **Add Condition** does nothing until visibility is switched away and back. **Disabled**, **Active**, and custom states have no variable: the **States** tab is the only route to them. |
 | "hide an element for some users", "show only if the user is on trial", "progress bar", "step indicator", "spinner while the answer is processed" | Element-shaped tickets that are really behaviour: a state-based rule is `onboarding-element-visibility` (which also settles precedence against a Show/Hide *action* in `onboarding-actions`); progress/loading elements are `builder-loaders-and-progress-bars` because they are driven by flow state. Neither is `flow-design`. |
 | "price renders empty", "trial price missing for some users", "localized price in body text", "variable name with dots" | `onboarding-variables`. The usual cause is not a typo: offer variables resolve to empty for users who aren't eligible for that offer, so the text needs a fallback. **Ask which surface the reporter is looking at first** — that is the runtime answer, and in the builder preview the three offer values never resolve at all (see the preview row below), so a ticket filed from the canvas has a different answer from one filed against a device. |
 | "monthly/yearly toggle", "segmented control", "highlight one plan and hide the rest", "slide-up plan picker", "features per tier", "crossed-out price", "percent-off badge" | The recipes, chosen by mechanic rather than by look: `paywall-with-tabs` (multiple product groups on one screen), `show-plans-bottom-sheet` (Show/Hide action), `paywall-features-per-product` (condition on the selected product), `strikethrough-price` (product-variable binding). `flow-builder-recipes` is the index if the ticket is vague, and every one of them assumes the base screen from `basic-paywall-screen` already exists. |
@@ -503,7 +510,7 @@ pre-flow era (`paywall-*`, `onboarding-*`) — the ticket's word for a thing rar
 | "buy button does nothing on Android", "first tap on Purchase is ignored" | `flow-common-issues#a-purchase-button-does-nothing-on-android` when the product exists: Google Play hasn't returned it yet. An unassigned product is still `paywall-product-block`. |
 | "show the close button after 3 seconds", "Show after delay is gone", "delayed close button", "make an element appear later", "fade in a headline", "animate a button" | `flow-show-hide-animations`. The usual trap is that a **Show element** action on an element that is already visible does nothing, with no animation: the target must start with **Visibility** set to **Hide**. Users can't tap a hidden element, so its own **On Tap** can never reveal it, but its own **On Screen Appear** can (that is how a converted close button is built). **Delay** tops out at 5000 ms; longer waits go through a visible, transparent Countdown (`flow-design`'s `flow-timer`). There is no toggle action: **Show element** only shows, **Hide element** only hides. |
 | "the animation doesn't play", "the delay is ignored", "it shows up instantly" | `flow-show-hide-animations#when-animation-and-delay-dont-apply`: a target with conditional visibility, anything inside a reusable component, or a bottom sheet changes at once, and publishing shows no warning. Rule out the canvas first: it plays nothing, so only **Test on device** shows the result. |
-| "auto-advance", "splash screen should move on by itself", "go to the next screen after the loader", "timer to the next screen" | `flow-screen-transitions#move-users-to-another-screen-automatically`: **On Screen Appear** + **Navigate to Screen** + **Delay**. Traps: **Delay** shows only when **Animation** isn't **None** (an animated type with **Duration** 0 switches at once after the delay); opening an alert, a bottom sheet, a date picker, or a web page, or starting a purchase or a restore, cancels the pending move; coming back to the screen starts the delay again. |
+| "auto-advance", "splash screen should move on by itself", "go to the next screen after the loader", "timer to the next screen" | `flow-screen-transitions#move-users-to-another-screen-automatically`: **On Screen Appear** + **Navigate to Screen** + **Delay**. Traps: **Delay** shows only when **Animation** isn't **None** (an animated type with **Duration** 0 switches at once after the delay); opening an alert, a bottom sheet, a date picker, or a web page, or starting a purchase or a restore, cancels the pending move; coming back to the screen starts the delay again. "After the loader" with a progress bar is not this answer: **On Load Complete** + **Navigate to screen** on the bar itself (`builder-loaders-and-progress-bars#run-actions-when-a-progress-bar-is-full`) waits for 100% with no Delay cap; a spinner never completes, so it still goes through Delay or a Countdown. |
 
 ## Gaps and misses
 
