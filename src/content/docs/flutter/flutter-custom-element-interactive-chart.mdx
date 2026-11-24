@@ -13,6 +13,7 @@ Follow this recipe to display the projected weight of each user as a chart in a 
 - Update your app to Adapty Flutter SDK 4.4 or later. Earlier SDK versions show the [fallback content](flow-custom-elements#set-fallback-content) for every custom element.
 - Set up your app to [fetch](flutter-get-pb-paywalls) and [display](flutter-present-paywalls) flows.
 - Set up the native code of your app for custom elements, as in the [Flutter guide](flutter-flow-custom-elements#before-you-start).
+- On iOS, the drag along the chart needs iOS 17 or later. On iOS 16, users see the line, but can't drag along it.
 - On Android, set up Jetpack Compose in your app module. The chart in this recipe is a composable. Add Compose Foundation to your app with Gradle, from `androidx.compose.foundation:foundation`.
 
 <CustomElementChartTwoFlows />
@@ -29,9 +30,9 @@ Follow this recipe to display the projected weight of each user as a chart in a 
 
 Collect the current and goal weight from the `flow_user_input` events of the onboarding flow, as in [Process data from flows](flutter-flow-input). To know that the user reached the last screen, watch for a `flow_screen_showed` event with `is_last_screen` set to `true`. When the onboarding flow closes after that screen, pass both weights to `showWeightPaywall`, the function that [opens the paywall flow with the chart](#6-send-the-weights-from-your-dart-code).
 
-One observer receives the events of both flows. Register it with `AdaptyUI().setFlowsEventsObserver`. To add the purchase, restore, and error methods that every observer implements, follow [Handle flow & paywall events](flutter-handling-events).
+One observer receives the events of both flows. Register it with `AdaptyUI().setFlowsEventsObserver` before you present the onboarding flow. The three methods at the end are required in every observer. To handle purchases, restores, and errors, see [Handle flow & paywall events](flutter-handling-events). The `showWeightPaywall` function comes from [step 6](#6-send-the-weights-from-your-dart-code).
 
-```dart showLineNumbers title="Dart"
+```dart showLineNumbers title="Flutter"
 import 'package:adapty_flutter/adapty_flutter.dart';
 
 class WeightFlowsObserver extends AdaptyUIFlowsEventsObserver {
@@ -70,10 +71,32 @@ class WeightFlowsObserver extends AdaptyUIFlowsEventsObserver {
     final goalWeight = double.tryParse(weights['goal_weight'] ?? '');
     if (!finished || currentWeight == null || goalWeight == null) return;
 
-    showWeightPaywall(currentWeight, goalWeight);
+    showWeightPaywall(currentWeight, goalWeight); // defined in step 6
   }
 
-  // the purchase, restore, and error methods of your observer
+  @override
+  void flowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchaseResult,
+  ) {
+    // handle the purchase result
+  }
+
+  @override
+  void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+    // check the access level of the user
+  }
+
+  @override
+  void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+    view.dismiss().catchError((_) {});
+  }
+}
+
+// call at app launch, before you present the onboarding flow
+void registerWeightFlowsObserver() {
+  AdaptyUI().setFlowsEventsObserver(WeightFlowsObserver());
 }
 ```
 
@@ -395,9 +418,10 @@ import UIKit
 ```
 
 :::note
-This `AppDelegate` class follows the iOS template of Flutter 3.38 and later, which adopts `FlutterImplicitEngineDelegate`. If your `AppDelegate` class doesn't adopt it, leave out the protocol and the `didInitializeImplicitFlutterEngine` method. Create the channel in `application(_:didFinishLaunchingWithOptions:)` instead, before `return super.application(...)`, with the messenger of the root view controller:
+This `AppDelegate` class follows the iOS template of Flutter 3.41 and later, which adopts `FlutterImplicitEngineDelegate`. If your `AppDelegate` class doesn't adopt it, leave out the protocol and the `didInitializeImplicitFlutterEngine` method. Create the channel in `application(_:didFinishLaunchingWithOptions:)` instead, before `return super.application(...)`, with the messenger of the root view controller. Keep the `GeneratedPluginRegistrant` call of your template:
 
 ```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+GeneratedPluginRegistrant.register(with: self)
 let controller = window?.rootViewController as! FlutterViewController
 let weightChannel = FlutterMethodChannel(
   name: "custom_elements/weight_plan",
@@ -452,7 +476,7 @@ Name the `App` class in `android/app/src/main/AndroidManifest.xml`, as in [Pass 
 
 In your Dart code, send the weights to the store before the paywall flow opens:
 
-```dart showLineNumbers title="Dart"
+```dart showLineNumbers title="Flutter"
 import 'package:adapty_flutter/adapty_flutter.dart';
 import 'package:flutter/services.dart';
 
