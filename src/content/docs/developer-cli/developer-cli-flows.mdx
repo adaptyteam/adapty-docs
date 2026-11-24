@@ -316,7 +316,7 @@ adapty fonts upload --app <app-id> ./Brand-Regular.otf ./Brand-Bold.otf ./Brand-
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--choice` | No | What to do when a file collides with faces the app already has: `replace` puts the file on every colliding face, `keep` skips the file. `keep` skips a file only when it collides: a file that collides with no face is uploaded as without `--choice` |
+| `--choice` | No | Use `replace` to put the file on every colliding face. Use `keep` to skip files with collisions. Files without collisions upload as usual |
 
 A static font file creates one face. A variable font file creates one face for each named style in the file. Other formats, such as WOFF and WOFF2, aren't supported. The command reads every file before it sends the first one: if it can't read a file, it stops with exit code 2 and sends nothing.
 
@@ -328,7 +328,7 @@ The command sends one file per request. After the last file, it prints the resul
 | `added` | The faces of the file joined an existing family |
 | `partly_added` | Some faces of the file joined the family. `kept_faces` lists the faces the family already had |
 | `replaced` | The file replaced the file of the colliding faces, after `--choice replace`. `replaced_faces` lists them |
-| `kept` | The file collided and was skipped, after `--choice keep` |
+| `kept` | `--choice keep` skipped the file because it collided with a stored face |
 | `refused` | Adapty refused the file. `error_code` and `message` say why |
 | `failed` | A network or authentication error, or an answer the CLI couldn't read, stopped the upload at this file. After a network error or an unreadable answer, Adapty may have stored the file: run [`fonts list`](#adapty-fonts-list) before you send it again |
 | `not_sent` | The file wasn't sent, because the upload stopped at an earlier file |
@@ -372,9 +372,9 @@ adapty fonts add --app <app-id> <font-family-id> ./Brand-Bold.otf
 | Flag | Required | Description |
 |---|---|---|
 | `--app` | Yes | App ID (UUID) |
-| `--choice` | No | What to do when a file collides with faces: `replace` or `keep`. A face of the family collides when it has the same weight and italic. A face of any family of the app collides when it has the same iOS font name, and Adapty refuses that file with choices too. `replace` replaces every face that collides when the command runs, in any family. `keep` skips a file only when it collides: a file that collides with no face is added as without `--choice` |
+| `--choice` | No | Use `replace` to put the file on every colliding face in the app. Use `keep` to skip files with collisions. Files without collisions are added as usual |
 
-The results, the collisions, and the exit codes are the same as for [`fonts upload`](#adapty-fonts-upload).
+The collision rules, results, and exit codes are the same as for [`fonts upload`](#adapty-fonts-upload). With `--choice keep`, a variable file still adds its new styles if its only overlaps are weight and italic pairs that the family already has.
 
 ## adapty fonts rename
 
@@ -490,7 +490,9 @@ adapty fonts faces replace --app <app-id> <font-face-id> ./Brand-Bold.otf
 | `--italic` | No | `true` or `false`. Use it with `--weight` |
 | `--yes` | No | Replace the file without asking for confirmation. Required with `--json`, in a pipe, or without a terminal |
 
-The face keeps its ID, its default mark, and its Android font name. Its iOS font name changes to the name in the new file. Adapty doesn't keep the old file, and you can't restore it. For this reason, the command asks for confirmation. With `--json`, in a pipe, or without a terminal, the command needs `--yes`: without it, the command stops with exit code 6 (`confirm_required`) and changes nothing. To use a variable font file for a face whose weight and italic aren't known, pass `--weight` and `--italic`. Adapty checks the new file before it stores it: if the file would change the weight and italic of a face whose weight and italic are known, if another face of the family has its weight and italic, or if another face of the app has its iOS font name, Adapty refuses the file, and the face and its old file stay as they were.
+The face keeps its ID, its default mark, and its Android font name. Its iOS font name comes from the new file. Adapty doesn't keep the old file, and you can't restore it. For this reason, the command asks for confirmation. With `--json`, in a pipe, or without a terminal, the command needs `--yes`: without it, the command stops with exit code 6 (`confirm_required`) and changes nothing. To use a variable font file for a face whose weight and italic aren't known, pass `--weight` and `--italic`.
+
+If the face already has a resolved weight and italic setting, the new file must match both. Adapty also refuses the file if another face in the family has the same weight and italic setting, or if another face in the app has the new file’s iOS font name. In each case, the face keeps its old file. If the iOS font name is in use, upload a file with a different PostScript name or replace the file of the face that uses the name.
 
 ## adapty flows versions list
 
