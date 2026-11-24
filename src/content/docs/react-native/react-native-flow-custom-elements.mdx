@@ -15,56 +15,76 @@ In an Expo project, custom elements work only if you keep the `ios` and `android
 You need:
 
 - **Adapty React Native SDK 4.4 or later**: Earlier versions show the fallback for every custom element.
-- **Native code for iOS and Android**: You can't display a React Native component in a custom element. Write the views and the resolver in Swift for iOS and in Kotlin for Android. Add the Swift code to your app target in Xcode, and the Kotlin code to the folder of `MainApplication.kt`.
-- **The `AppDelegate` class on iOS**: You set the resolver in `AppDelegate`. If your `AppDelegate` is in Objective-C, as in the templates of React Native 0.75 and 0.76, you also add a [Swift class](#pass-the-resolver-to-the-sdk) that sets the resolver.
-- **The Adapty UI library on Android**: In `android/app/build.gradle`, add `io.adapty:android-ui` to the `dependencies` block, without a version. `react-native-adapty` sets the version. A different `android-ui` version can break flows.
-
-  ```groovy showLineNumbers title="android/app/build.gradle"
-  dependencies {
-      implementation("io.adapty:android-ui")
-  }
-  ```
-
-  The library needs `compileSdkVersion` 35 or later: if `android/build.gradle` sets a lower version, raise it to 35.
-
-- **Jetpack Compose on Android, for composables**: The React Native template doesn't [set up Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) in the app module. An Android `View` needs no Compose setup. To return composables from the resolver, set up the Compose compiler for the Kotlin version of your app:
-  - **Kotlin 2.0 and later**, as in the templates of React Native 0.77 and later: Add the Compose compiler Gradle plugin to the `buildscript` dependencies. Then apply the plugin to the app module, and set `compose true` in the `buildFeatures` block:
-
-    ```groovy showLineNumbers title="android/build.gradle"
-    buildscript {
-        dependencies {
-            classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
-        }
-    }
-    ```
-
-    ```groovy showLineNumbers title="android/app/build.gradle"
-    apply plugin: "org.jetbrains.kotlin.plugin.compose"
-
-    android {
-        buildFeatures {
-            compose true
-        }
-    }
-    ```
-
-  - **Kotlin 1.9**, as in the templates of React Native 0.75 and 0.76: In the `android` block, set `compose true` and the Compose compiler version that matches your Kotlin version. React Native 0.75 and 0.76 build with Kotlin 1.9.24, which needs Compose compiler 1.5.14. For other Kotlin versions, see the [Compose to Kotlin compatibility map](https://developer.android.com/jetpack/androidx/releases/compose-kotlin).
-
-    ```groovy showLineNumbers title="android/app/build.gradle"
-    android {
-        buildFeatures {
-            compose true
-        }
-        composeOptions {
-            kotlinCompilerExtensionVersion "1.5.14"
-        }
-    }
-    ```
-
-  For the Lottie view on this page, also add `com.airbnb.android:lottie-compose`.
+- **Native code for iOS and Android**: You can't display a React Native component in a custom element. Write this code in Swift for iOS and in Kotlin for Android. Add the Swift code to your app target in Xcode, and the Kotlin code to the folder of `MainApplication.kt`.
 - **A naming scheme for custom elements**: Give each native view a Type, such as `lottie_animation`. Use only lowercase letters, numbers, and underscores in Types. To distinguish between custom elements of the same Type, give each one an ID, such as `welcome_wave`. The Types and IDs in your code must match the ones in the [Flow & Paywall Builder](flow-custom-elements#add-and-configure).
 
 Use the same Types and IDs in your iOS and Android code. Unless you set up a separate [audience](audience) for each platform, iOS and Android users see the same flows.
+
+## Set up your Android project
+
+Your iOS project needs no extra setup. In your Android project, add the Adapty UI library. To build native views as composables, also set up Jetpack Compose.
+
+### Add the Adapty UI library
+
+In `android/app/build.gradle`, add `io.adapty:android-ui` to the `dependencies` block, without a version. `react-native-adapty` sets the version. A different `android-ui` version can break flows.
+
+```groovy showLineNumbers title="android/app/build.gradle"
+dependencies {
+    implementation("io.adapty:android-ui")
+}
+```
+
+The library needs `compileSdkVersion` 35 or later: if `android/build.gradle` sets a lower version, raise it to 35.
+
+### Set up Jetpack Compose
+
+The React Native template doesn't [set up Compose](https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler) in the app module. An Android `View` needs no Compose setup. To build native views as composables, set up the Compose compiler for the Kotlin version of your app, the `kotlinVersion` in `android/build.gradle`:
+
+<Tabs groupId="kotlin-version" queryString>
+<TabItem value="kotlin-2" label="Kotlin 2.0 and later" default>
+
+The templates of React Native 0.77 and later use Kotlin 2.0 or later. Add the Compose compiler Gradle plugin to the `buildscript` dependencies:
+
+```groovy showLineNumbers title="android/build.gradle"
+buildscript {
+    dependencies {
+        classpath("org.jetbrains.kotlin:compose-compiler-gradle-plugin:$kotlinVersion")
+    }
+}
+```
+
+Then apply the plugin to the app module, and set `compose true` in the `buildFeatures` block:
+
+```groovy showLineNumbers title="android/app/build.gradle"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
+
+android {
+    buildFeatures {
+        compose true
+    }
+}
+```
+
+</TabItem>
+<TabItem value="kotlin-1-9" label="Kotlin 1.9">
+
+The templates of React Native 0.75 and 0.76 use Kotlin 1.9. In the `android` block, set `compose true` and the Compose compiler version that matches your Kotlin version. React Native 0.75 and 0.76 build with Kotlin 1.9.24, which needs Compose compiler 1.5.14. For other Kotlin versions, see the [Compose to Kotlin compatibility map](https://developer.android.com/jetpack/androidx/releases/compose-kotlin).
+
+```groovy showLineNumbers title="android/app/build.gradle"
+android {
+    buildFeatures {
+        compose true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion "1.5.14"
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+For the Lottie view on this page, also add `com.airbnb.android:lottie-compose`.
 
 ## Create views for custom elements
 
@@ -239,8 +259,10 @@ For a permission, return no view only when the user denied it before the screen 
 
 Set the resolver once for each platform, at app launch. The SDK calls it in every flow, including a flow embedded with `AdaptyFlowView`. Users see your native views in new flows and A/B tests without an app release. These views still show each user their own data, such as a [daily streak](react-native-custom-element-lottie-animation), because they read that data from your app.
 
-<Tabs groupId="platform" queryString>
-<TabItem value="ios" label="iOS (Swift)" default>
+### iOS
+
+<Tabs groupId="ios-app-delegate" queryString>
+<TabItem value="swift" label="AppDelegate.swift" default>
 
 In `AppDelegate.swift`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver(_:)` in the `application(_:didFinishLaunchingWithOptions:)` method. The highlighted lines show what to add. Keep the rest of the `AppDelegate` class as it is:
 
@@ -265,7 +287,10 @@ If you write the resolver in `AppDelegate.swift` too, also import `AdaptyUIBuild
 
 If `application(_:didFinishLaunchingWithOptions:)` ends with a bare `true`, as in the React Native 0.88 template, change `true` to `return true`.
 
-If your `AppDelegate` is in Objective-C, set the resolver through a Swift class, because `AdaptyUI.setCustomElementsResolver(_:)` is Swift-only:
+</TabItem>
+<TabItem value="objc" label="AppDelegate.mm">
+
+Set the resolver through a Swift class, because `AdaptyUI.setCustomElementsResolver(_:)` is Swift-only:
 
 1. Add a Swift file with the class to your app target:
 
@@ -292,7 +317,9 @@ If your `AppDelegate` is in Objective-C, set the resolver through a Swift class,
    ```
 
 </TabItem>
-<TabItem value="android" label="Android (Kotlin)">
+</Tabs>
+
+### Android
 
 In `MainApplication.kt`, import `AdaptyUI`, and call `AdaptyUI.setCustomElementsResolver` in the `onCreate` method. The highlighted lines show what to add. Keep the rest of the `MainApplication` class as it is:
 
@@ -310,11 +337,13 @@ class MainApplication : Application(), ReactApplication {
 }
 ```
 
-</TabItem>
-</Tabs>
-
 :::tip
-To show the same view in every custom element of a Type, pass a map of Types and views instead of a resolver. On iOS, the map is a `[String: AdaptyUICustomElementBuilder]` dictionary. On Android, pass the map to `AdaptyCustomElementsResolver.of`. A map demands less code than a resolver, but you cannot [set conditions for fallback content](#set-conditions-for-fallback-content). If you write the Swift map in `AppDelegate.swift`, also import `Lottie` there.
+To show the same view in every custom element of a Type, pass a map of Types and views instead of a resolver. A map demands less code than a resolver, but you cannot [set conditions for fallback content](#set-conditions-for-fallback-content).
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+The map is a `[String: AdaptyUICustomElementBuilder]` dictionary. If you write the map in `AppDelegate.swift`, also import `Lottie` there.
 
 ```swift showLineNumbers title="Swift"
 AdaptyUI.setCustomElementsResolver([
@@ -322,12 +351,20 @@ AdaptyUI.setCustomElementsResolver([
 ])
 ```
 
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+Pass the map to `AdaptyCustomElementsResolver.of`:
+
 ```kotlin showLineNumbers title="Kotlin"
 val appWideViews = mapOf(
     "confetti" to AdaptyCustomElementContent.compose { LottieElement("confetti.json") },
 )
 AdaptyUI.setCustomElementsResolver(AdaptyCustomElementsResolver.of(appWideViews))
 ```
+
+</TabItem>
+</Tabs>
 :::
 
 You can't attach a resolver to one flow. To display data that your app only has when it opens a flow, send the data to your native code before the flow opens. Then read the data in the resolver. For example, a paywall displays the [weight that the user entered in a previous flow](react-native-custom-element-interactive-chart).
