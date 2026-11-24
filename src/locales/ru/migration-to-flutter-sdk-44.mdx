@@ -1,0 +1,86 @@
+---
+title: "Миграция Adapty Flutter SDK на версию v4.4"
+description: "Миграция на Adapty Flutter SDK v4.4: замените оба резервных файла и обработайте новые ошибки флоу на iOS и Android."
+metadataTitle: "Миграция на Adapty Flutter SDK v4.4 | Документация Adapty"
+---
+
+Adapty Flutter SDK 4.4 меняет формат файла резервного пейвола, требует iOS 16 для флоу и передаёт больше ошибок флоу в ваше приложение. Чтобы обновиться с 4.3 до 4.4, укажите версию `adapty_flutter` как `^4.4.0` и замените оба файла резервных пейволов в том же билде. Более старые версии SDK не принимают новые файлы. Затем изучите каждое изменение ошибок флоу в этом гайде.
+
+Если вы всё ещё на версии 4.1, начните с [миграции на v4.3](migration-to-flutter-sdk-43), а затем следуйте этому гайду. Приложение на версии 4.0 сначала нуждается в [изменениях v4.1](migration-to-flutter-sdk-41).
+
+:::warning
+Формат резервного файла изменился в версии 4.4, и компилятор не может обнаружить устаревший файл. Без [новых резервных файлов](#replace-the-fallback-files) каждый плейсмент лишится резервного пейвола.
+:::
+
+## Краткий справочник \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| Резервные файлы, загруженные для 4.1–4.3 | Новый формат резервных файлов; загрузите оба файла заново |
+| Флоу открываются на iOS 15 | Флоу требуют iOS 16 |
+| На iOS `AdaptyUIFlowPlatformView` остаётся пустым, если флоу не удаётся загрузить | Он передаёт ошибку в колбэки ошибок флоу |
+| На iOS вызовы `AdaptyUI()` и `AdaptyUIFlowView`, выполненные пока AdaptyUI не активирован, бросают ошибки с `AdaptyErrorCode.unknown` | Они бросают ошибки с `adaptyUINotActivated` или `adaptyNotActivated` |
+| На Android SDK только логирует ошибки скрипта флоу | Они попадают в колбэки ошибок флоу как `AdaptyErrorCode.jsException` |
+| Стандартная обработка закрытия вызывает `dismiss()` для `AdaptyUIFlowPlatformView`, что выбрасывает неперехваченную ошибку | Стандартная обработка закрытия оставляет встроенный флоу на экране; удалите виджет, чтобы закрыть его |
+
+## Установка \{#installation\}
+
+Обновите `adapty_flutter` до версии v4.4 в файле `pubspec.yaml`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+Если ваше приложение использует [Kids Mode](kids-mode-flutter), укажите вместо этого `adapty_flutter_kids`:
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+Требования не изменились по сравнению с версией 4.3: **Flutter 3.32.0** (Dart 3.8.0) и **iOS 15.0**. Флоу являются исключением: см. [Флоу требуют iOS 16](#flows-require-ios-16). Полную инструкцию по настройке см. в разделе [Установка Adapty SDK](sdk-installation-flutter).
+
+## Замена резервных файлов \{#replace-the-fallback-files\}
+
+Чтобы скачать [резервные файлы](flutter-use-fallback-paywalls) повторно, в разделе **[Placements](https://app.adapty.io/placements)** нажмите **Fallbacks** > **Download iOS Fallback**. В строке **Adapty SDK v4.4.0 and higher** нажмите **Download**. Повторите то же самое для **Download Android Fallback**.
+
+Скачанные файлы называются `ios_4_4_0_fallback.json` и `android_4_4_0_fallback.json`. Переместите их в папку `assets` вашего проекта, заменив устаревшие файлы. Дайте каждому файлу то имя, которое ваше приложение передаёт в `Adapty().setFallback`, или обновите имена в этом вызове.
+
+С устаревшим файлом `Adapty().setFallback` выбрасывает `AdaptyError`. Чтобы проверить новые файлы, запустите приложение на iOS и на Android и убедитесь, что этот вызов не выбрасывает ошибку.
+
+## Флоу требуют iOS 16 \{#flows-require-ios-16\}
+
+Начиная с версии 4.4, флоу требуют iOS 16 или новее. На iOS 15 `AdaptyUI().createFlowView()` выбрасывает `AdaptyError` с кодом `AdaptyErrorCode.platformNotSupported`, а `AdaptyUIFlowPlatformView` остаётся пустым и возвращает ту же ошибку. Онбординги и остальная часть SDK по-прежнему поддерживают iOS 15.
+
+Если приложение получает эту ошибку, покажите вместо этого собственный контент, например [кастомный пейвол](flutter-implement-paywalls-manually).
+
+## Ошибки загрузки флоу доходят до ваших коллбэков на iOS \{#flow-load-errors-reach-your-callbacks-on-ios\}
+
+На iOS, когда `AdaptyUIFlowPlatformView` не может отобразить флоу, он сообщает об ошибке в коллбэк `onDidReceiveError` и в `flowViewDidReceiveError` вашего наблюдателя событий флоу. Каждый раз при создании виджета ошибка передаётся один раз. До версии 4.4 виджет просто оставался пустым. На Android виджет по-прежнему ничего не сообщает при сбое загрузки флоу. Виджет сообщает о следующих ошибках:
+
+- На iOS 15: `AdaptyErrorCode.platformNotSupported`.
+- На iOS 16 и новее, если флоу не удалось загрузить: ошибка, которую выбрасывает `AdaptyUI().createFlowView()` для этого флоу. Например, флоу не удаётся загрузить, если AdaptyUI не активирован, или при указании `customLayoutId`, которого у флоу нет.
+
+Обработка ошибок флоу, например закрытие экрана, теперь также выполняется в этих случаях. `AdaptyUIFlowView.dismiss()` завершается ошибкой для представления этого виджета, поэтому если ваш `flowViewDidReceiveError` вызывает его, перехватывайте эту ошибку, как описано в разделе [Ошибки представления](flutter-handling-events#view-errors). Удалите виджет и покажите собственный контент. Чтобы повторить попытку при временном сбое, например `AdaptyErrorCode.networkFailed`, создайте виджет заново с новым `Key`.
+
+## Коды ошибок AdaptyUI на iOS изменились \{#adaptyui-errors-have-new-codes-on-ios\}
+
+На iOS вызов `AdaptyUI()` или `AdaptyUIFlowView` выбрасывает ошибку с новым кодом, если AdaptyUI не активирован: до завершения `Adapty().activate()` или после активации с `withActivateUI(false)`. Код зависит от того, что запрашивает приложение:
+
+- Флоу-вью: `AdaptyErrorCode.adaptyUINotActivated`.
+- Онбординг: `AdaptyErrorCode.adaptyNotActivated`.
+
+До версии 4.4 эти ошибки имели код `AdaptyErrorCode.unknown`. Если ваш код обрабатывает `unknown` для них, добавьте обработку и новых кодов. Для `AdaptyErrorCode.platformNotSupported` смотрите раздел [Флоу требуют iOS 16](#flows-require-ios-16).
+
+## Ошибки скрипта флоу теперь передаются в колбэки на Android \{#flow-script-errors-reach-your-callbacks-on-android\}
+
+На Android скрипт флоу может выбросить исключение при обработке события SDK. Начиная с версии 4.4, это исключение передаётся в `flowViewDidReceiveError` и колбэк `onDidReceiveError` компонента `AdaptyUIFlowPlatformView` как `AdaptyErrorCode.jsException` — так же, как на iOS. Раньше SDK только логировал его.
+
+Если в вашем приложении не задан наблюдатель событий флоу, флоу, созданный через `AdaptyUI().createFlowView()`, закроется при этой ошибке. Чтобы флоу оставался открытым, задайте наблюдатель с помощью `AdaptyUI().setFlowsEventsObserver()` и обрабатывайте ошибку там.
+
+## Закрытие встроенных флоу путём удаления виджета \{#close-embedded-flows-by-removing-the-widget\}
+
+Начиная с версии 4.4, стандартная обработка закрытия больше не вызывает `dismiss()` для флоу, встроенного через `AdaptyUIFlowPlatformView`. До версии 4.4 этот вызов всегда завершался неудачей с необработанной ошибкой `AdaptyErrorCode.wrongParam`. Чтобы закрыть встроенный флоу, [удалите его виджет](flutter-present-paywalls#embed-in-widget-hierarchy) при получении `CloseAction`, а на Android — также `AndroidSystemBackAction`.
+
+Когда стандартная обработка события флоу завершается ошибкой — например, при закрытии или открытии URL — SDK теперь записывает ошибку в лог. До версии 4.4 SDK выбрасывал неперехваченную ошибку. Если ваш инструмент сбора крашей фиксировал такие ошибки, теперь они до него не доходят.

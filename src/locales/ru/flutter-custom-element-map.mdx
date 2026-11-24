@@ -1,0 +1,435 @@
+---
+title: "Показать ближайшие места на карте во флоу"
+description: "Отображайте карту мест рядом с пользователем, например партнёрских фитнес-центров, в кастомном элементе на экране флоу."
+metadataTitle: "Показать ближайшие места на карте во флоу | Flutter SDK | Документация Adapty"
+---
+
+Следуйте этому рецепту, чтобы добавить интерактивную карту во флоу. Карта показывает ваши заведения, например партнёрские фитнес-центры, в радиусе 2 км от пользователя. Приложение отображает карту как нативный вид в [кастомном элементе](flow-custom-elements): MapKit на iOS и MapLibre на Android. Запрос доступа к геолокации происходит прямо на экране флоу.
+
+<DocVideo id="custom-element-map-demo.mp4" width="300px" alt="Готовый флоу: на карте отображаются фитнес-центры рядом с пользователем, который перетаскивает карту в другую область и обратно." />
+
+## Прежде чем начать \{#before-you-start\}
+
+- Обновите приложение до Adapty Flutter SDK 4.4 или новее. В более ранних версиях SDK для каждого кастомного элемента отображается [резервный контент](flow-custom-elements#set-fallback-content).
+- Настройте приложение для [получения](flutter-get-pb-paywalls) и [отображения](flutter-present-paywalls) флоу.
+- Настройте нативный код приложения для кастомных элементов, как описано в [гайде для Flutter](flutter-flow-custom-elements#before-you-start).
+- На iOS карта требует iOS 17 или новее. На iOS 16 пользователи видят резервный контент.
+- На iOS, чтобы запросить у пользователей доступ к геолокации, добавьте ключ `NSLocationWhenInUseUsageDescription` в `ios/Runner/Info.plist`. В качестве значения укажите текст запроса, например: «Найдите фитнес-центры рядом с вами».
+- На Android добавьте MapLibre в приложение через Gradle из `org.maplibre.gl:android-sdk-opengl`. С этим артефактом Google Play также будет предлагать ваше приложение устройствам без поддержки Vulkan, которого требует стандартный артефакт `android-sdk`.
+- На Android установите `minSdk` равным 23 или выше, так как этого требует MapLibre.
+
+Чтобы ограничить приложение Android приблизительным определением местоположения, добавьте следующее внутрь элемента `<manifest>` в файле `android/app/src/main/AndroidManifest.xml`. Убедитесь, что элемент `<manifest>` объявляет `xmlns:tools="http://schemas.android.com/tools"`.
+
+```xml showLineNumbers title="AndroidManifest.xml"
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<!-- removes precise location, which MapLibre declares -->
+<uses-permission
+    android:name="android.permission.ACCESS_FINE_LOCATION"
+    tools:node="remove" />
+```
+
+## 1. Добавьте пользовательский элемент на экран \{#1-add-the-custom-element-to-the-screen\}
+
+<CustomElementMapBuilderSetup />
+
+Внутри пользовательского элемента добавьте [**Image**](custom-media#image) с изображением карты. Пользователи увидят его как [резервный контент](flow-custom-elements#set-fallback-content) в следующих случаях:
+
+- Версия вашего приложения не отображает карту.
+- Пользователь запретил доступ к геолокации до открытия экрана.
+- Устройство работает под управлением iOS 16.
+
+<CustomElementMapLocationPrompt />
+
+## 2. Создайте представление карты \{#2-create-the-map-view\}
+
+Создайте тип для ваших мест и модель для доступа к геолокации:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+// A place of your app, such as a partner fitness center
+struct Place: Identifiable {
+    let id = UUID()
+    let name: String
+    let coordinate: CLLocationCoordinate2D
+}
+
+// One location manager for the resolver and the map view
+@MainActor
+final class LocationAccess: NSObject, ObservableObject, CLLocationManagerDelegate {
+    @Published private(set) var status: CLAuthorizationStatus = .notDetermined
+    var isMapOnScreen = false
+    private let manager = CLLocationManager()
+
+    var isDenied: Bool { status == .denied || status == .restricted }
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        status = manager.authorizationStatus
+    }
+
+    // Shows the prompt only if the user hasn't answered it yet
+    func requestAccess() {
+        manager.requestWhenInUseAuthorization()
+    }
+
+    nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
+        let status = manager.authorizationStatus
+        Task { @MainActor in self.status = status }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// a place of your app, such as a partner fitness center
+data class Place(val name: String, val latitude: Double, val longitude: Double)
+
+private const val PERMISSION = Manifest.permission.ACCESS_COARSE_LOCATION // approximate location
+
+// one location access model for the resolver and the map view
+class LocationAccess(context: Context) {
+    private val appContext = context.applicationContext
+    // checkSelfPermission returns the same value before the first request and after a denial: save the answer
+    private val answers = appContext.getSharedPreferences("location_access", Context.MODE_PRIVATE)
+    private var isAsking = false
+    var isMapOnScreen = false
+
+    val isAllowed: Boolean
+        get() = ContextCompat.checkSelfPermission(appContext, PERMISSION) == PackageManager.PERMISSION_GRANTED
+
+    val isDenied: Boolean
+        get() = !isAllowed && answers.getBoolean("denied", false)
+
+    // requests location access and saves the answer
+    // unregister the returned launcher when the view leaves the screen
+    fun requestAccess(activity: ComponentActivity, onAnswer: (Boolean) -> Unit): ActivityResultLauncher<String> {
+        val isPromptOpen = isAsking // after a screen rotation, this request receives the answer from the open prompt
+        val request = activity.activityResultRegistry.register("location_access", RequestPermission()) { granted ->
+            isAsking = false
+            answers.edit().putBoolean("denied", !granted).apply()
+            onAnswer(granted)
+        }
+        if (!isPromptOpen) {
+            isAsking = true
+            request.launch(PERMISSION)
+        }
+        return request
+    }
+}
+
+// the activity that shows the flow
+tailrec fun Context.findComponentActivity(): ComponentActivity =
+    this as? ComponentActivity ?: (this as ContextWrapper).baseContext.findComponentActivity()
+```
+
+</TabItem>
+</Tabs>
+
+Создайте вью с картой. Вью запрашивает доступ к геолокации и отображает маркер для каждого из ваших мест в радиусе 2 км от пользователя:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+@available(iOS 17.0, *)
+struct NearbyFitnessCentersMap: View {
+    @ObservedObject var access: LocationAccess
+    let places: [Place]
+    @State private var position: MapCameraPosition = .userLocation(fallback: .automatic)
+    @State private var nearbyPlaces: [Place] = []
+
+    var body: some View {
+        ZStack {
+            if access.isDenied {
+                ContentUnavailableView(
+                    "Location access is off",
+                    systemImage: "location.slash",
+                    description: Text("To see fitness centers near you, allow location access in Settings.")
+                )
+            } else {
+                Map(position: $position) {
+                    UserAnnotation()
+                    ForEach(nearbyPlaces) { place in
+                        Marker(place.name, systemImage: "dumbbell.fill", coordinate: place.coordinate)
+                            .tint(.teal)
+                    }
+                }
+                .task {
+                    access.requestAccess()
+                    do {
+                        for try await update in CLLocationUpdate.liveUpdates() {
+                            guard let location = update.location else { continue }
+                            nearbyPlaces = places.filter { place in
+                                let placeLocation = CLLocation(
+                                    latitude: place.coordinate.latitude,
+                                    longitude: place.coordinate.longitude
+                                )
+                                return location.distance(from: placeLocation) <= 2_000 // meters
+                            }
+                            withAnimation {
+                                position = .automatic // zoom to fit the user and the places
+                            }
+                            break
+                        }
+                    } catch {
+                        // the map still shows the location of the user
+                    }
+                }
+            }
+        }
+        // Tells the resolver that the map is on the screen
+        .onAppear { access.isMapOnScreen = true }
+        .onDisappear { access.isMapOnScreen = false }
+    }
+}
+```
+
+Представление карты требует iOS 17 или новее. На iOS 16 пользователи видят резервный пейвол.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+// map tiles without an API key
+const val MAP_STYLE_URL = "https://tiles.openfreemap.org/styles/liberty"
+
+class NearbyFitnessCentersMap(
+    context: Context,
+    private val access: LocationAccess,
+    private val places: List<Place>,
+) : FrameLayout(context), DefaultLifecycleObserver, LocationEngineCallback<LocationEngineResult> {
+    private val activity = context.findComponentActivity()
+    private val locationEngine = LocationEngineDefault.getDefaultLocationEngine(context)
+    private val mapView: MapView
+    private var permissionRequest: ActivityResultLauncher<String>? = null
+
+    init {
+        MapLibre.getInstance(context)
+        mapView = MapView(context)
+        mapView.onCreate(null)
+        mapView.getMapAsync { map -> map.setStyle(MAP_STYLE_URL) }
+        addView(mapView)
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        access.isMapOnScreen = true // tells the resolver that the map is on the screen
+        activity.lifecycle.addObserver(this)
+        when {
+            access.isAllowed -> showUser()
+            access.isDenied -> showAccessOff()
+            else -> permissionRequest = access.requestAccess(activity) { granted ->
+                if (granted) showUser() else showAccessOff()
+            }
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        access.isMapOnScreen = false
+        permissionRequest?.unregister()
+        locationEngine.removeLocationUpdates(this)
+        activity.lifecycle.removeObserver(this)
+        // the SDK creates a new view each time the custom element appears: release this map
+        mapView.onPause()
+        mapView.onStop()
+        mapView.onDestroy()
+        super.onDetachedFromWindow()
+    }
+
+    // passes the lifecycle of the activity to the map
+    override fun onStart(owner: LifecycleOwner) = mapView.onStart()
+    override fun onResume(owner: LifecycleOwner) = mapView.onResume()
+    override fun onPause(owner: LifecycleOwner) = mapView.onPause()
+    override fun onStop(owner: LifecycleOwner) = mapView.onStop()
+
+    @SuppressLint("MissingPermission") // runs only after the user allows location access
+    private fun showUser() = mapView.getMapAsync { map ->
+        map.getStyle { style ->
+            val options = LocationComponentActivationOptions.builder(context, style).locationEngine(locationEngine)
+            map.locationComponent.activateLocationComponent(options.build())
+            map.locationComponent.isLocationComponentEnabled = true
+            val request = LocationEngineRequest.Builder(1_000).build() // milliseconds between updates
+            locationEngine.requestLocationUpdates(request, this, Looper.getMainLooper()) // calls onSuccess
+        }
+    }
+
+    // the first location of the user
+    override fun onSuccess(result: LocationEngineResult) {
+        val user = result.lastLocation ?: return
+        locationEngine.removeLocationUpdates(this)
+        showPlaces(user)
+    }
+
+    override fun onFailure(exception: Exception) = Unit
+
+    // a teal circle for each of your places within 2 km of the user
+    private fun showPlaces(user: Location) = mapView.getMapAsync { map ->
+        val distance = FloatArray(1)
+        val pins = places.filter { place ->
+            Location.distanceBetween(user.latitude, user.longitude, place.latitude, place.longitude, distance)
+            distance[0] <= 2_000 // meters
+        }.map { place -> Feature.fromGeometry(Point.fromLngLat(place.longitude, place.latitude)) }
+        map.getStyle { style ->
+            style.addSource(GeoJsonSource("places", FeatureCollection.fromFeatures(pins)))
+            val teal = PropertyFactory.circleColor(Color.rgb(0, 128, 128))
+            style.addLayer(CircleLayer("pins", "places").withProperties(teal, PropertyFactory.circleRadius(8f)))
+        }
+        // zoom in on the area around the user
+        map.animateCamera(CameraUpdateFactory.newLatLngZoom(LatLng(user.latitude, user.longitude), 12.0))
+    }
+
+    private fun showAccessOff() {
+        mapView.visibility = GONE
+        addView(TextView(context).apply {
+            text = "Location access is off. To see fitness centers near you, allow location access in Settings."
+            gravity = Gravity.CENTER
+        })
+    }
+}
+```
+
+Представление загружает карту из OpenFreeMap — бесплатного сервиса, не требующего API-ключа и не предоставляющего гарантий работоспособности. Чтобы сменить источник тайлов, измените константу `MAP_STYLE_URL`.
+
+</TabItem>
+</Tabs>
+
+Если пользователь отказывает в доступе к местоположению, вместо карты отображается сообщение с инструкцией о том, как разрешить доступ в настройках.
+
+## 3. Сопоставьте карту с кастомным элементом \{#match-the-map-to-the-custom-element\}
+
+В вашем [общем резолвере](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk) добавьте свойства для модели `LocationAccess` и ваших мест. Затем верните представление карты для типа `map` и ID `fitness_centers`. В выделенных строках показано, что нужно добавить или изменить. Если в вашем приложении ещё нет общего [резолвера](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views), скопируйте весь код:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {5-6,14-21}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let locationAccess = LocationAccess()
+    let places: [Place] // your app's places, such as partner fitness centers
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "map" where id == "fitness_centers":
+            guard #available(iOS 17.0, *) else {
+                return nil // iOS 16: show the fallback
+            }
+            if locationAccess.isDenied, !locationAccess.isMapOnScreen {
+                return nil // access denied before the screen opened: show the fallback
+            }
+            return AnyView(NearbyFitnessCentersMap(access: locationAccess, places: places))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {7,9,13-24}
+
+class CustomElementsResolver(
+    context: Context,
+    private val places: List<Place>, // your app's places, such as partner fitness centers
+) : AdaptyCustomElementsResolver {
+    private val locationAccess = LocationAccess(context)
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "map" -> when (id) {
+                "fitness_centers" ->
+                    if (locationAccess.isDenied && !locationAccess.isMapOnScreen) {
+                        null // access denied before the screen opened: show the fallback
+                    } else {
+                        AdaptyCustomElementContent.view(
+                            factory = { context, _ -> NearbyFitnessCentersMap(context, locationAccess, places) },
+                        )
+                    }
+                // the other maps of your resolver
+                else -> null
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementMapResolverCalls />
+
+Создайте резолвер с вашими местами и установите его в качестве глобального резолвера при запуске приложения:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+В `ios/Runner/AppDelegate.swift` добавьте импорты и установите резолвер в методе `application(_:didFinishLaunchingWithOptions:)`. Остальную часть класса `AppDelegate` оставьте без изменений:
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+
+// in application(_:didFinishLaunchingWithOptions:), before `return super.application(...)`
+// your app's places, such as partner fitness centers
+let places = [
+  Place(name: "Central Fitness", coordinate: CLLocationCoordinate2D(latitude: 52.5219, longitude: 13.4132)),
+  Place(name: "Riverside Gym", coordinate: CLLocationCoordinate2D(latitude: 52.5163, longitude: 13.3777)),
+]
+AdaptyUI.setCustomElementsResolver(CustomElementsResolver(places: places))
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // your app's places, such as partner fitness centers
+    val places = listOf(
+        Place("Central Fitness", latitude = 52.5219, longitude = 13.4132),
+        Place("Riverside Gym", latitude = 52.5163, longitude = 13.3777),
+    )
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(this, places))
+    }
+}
+```
+
+Назовите класс `App` в `android/app/src/main/AndroidManifest.xml`, как описано в разделе [Передача resolver в SDK](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk).
+
+</TabItem>
+</Tabs>
+
+Если ваш Dart-код загружает места, храните их в хранилище, которое нативный код заполняет через platform channel, как это делается в [рецепте графика целевого веса](flutter-custom-element-interactive-chart).
+
+## 4. Протестируйте на устройстве \{#4-test-on-a-device\}
+
+Flow & Paywall Builder не может выполнять код вашего приложения, поэтому на холсте отображается только резервный вариант. Чтобы посмотреть карту в превью:
+
+1. [Опубликуйте флоу](builder-save-publish). Чтобы увидеть последнюю опубликованную версию вместо кэшированной, зарегистрируйте устройство как [тестовое](test-devices).
+2. Чтобы на карте появился маркер, добавьте место в радиусе 2 км от вашего местоположения в список мест.
+3. Запустите сборку приложения с резолвером. На iOS используйте устройство с iOS 17 или более поздней версией. Откройте экран и разрешите доступ к геолокации. Убедитесь, что на карте отображается ваше местоположение и маркер добавленного места.
+
+Чтобы проверить резервный вариант, запретите доступ к геолокации:
+
+- **iOS**: В приложении **Settings** перейдите в **Privacy & Security** > **Location Services** > *ваше приложение* и выберите **Never**. Затем откройте экран снова.
+- **Android**: В приложении **Settings** отключите доступ к геолокации для вашего приложения. Откройте экран; если появится запрос, запретите доступ к геолокации. В представлении карты отобразится сообщение о настройках. Откройте экран снова и убедитесь, что отображается резервный вариант.
+
+Чтобы разобраться, почему вместо карты отображается резервный вариант, следуйте инструкциям в разделе [Тестирование на устройстве](flutter-flow-custom-elements#test-on-a-device) гайда по Flutter.

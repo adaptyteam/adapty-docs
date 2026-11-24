@@ -1,0 +1,86 @@
+---
+title: "Adapty Flutter SDK を v4.4 に移行する"
+description: "Adapty Flutter SDK v4.4 への移行: フォールバックファイルの置き換え、iOS と Android での新しいフローエラーへの対応方法を説明します。"
+metadataTitle: "Adapty Flutter SDK v4.4 への移行 | Adapty ドキュメント"
+---
+
+Adapty Flutter SDK 4.4 では、フォールバックファイルの形式が変更され、フローに iOS 16 が必要となり、フローのエラーがより多くアプリに報告されるようになります。4.3 から 4.4 へアップデートするには、`adapty_flutter` のバージョンを `^4.4.0` に設定し、同じビルドで両方のフォールバックファイルを置き換えてください。旧バージョンの SDK は新しいファイルを受け付けません。その後、このガイドで各フローエラーの変更内容を確認してください。
+
+4.1 をお使いの場合は、まず [v4.3 への移行](migration-to-flutter-sdk-43) を行ってから、このガイドに従ってください。4.0 の場合は、先に [v4.1 の変更内容](migration-to-flutter-sdk-41) を適用する必要があります。
+
+:::warning
+フォールバックファイルの形式は4.4で変更されており、コンパイラは古いファイルを検出できません。[新しいフォールバックファイル](#replace-the-fallback-files)がないと、すべてのプレースメントでフォールバックが機能しなくなります。
+:::
+
+## クイックリファレンス \{#quick-reference\}
+
+| v4.3 | v4.4 |
+|---|---|
+| 4.1〜4.3向けにダウンロードされたフォールバックファイル | 新しいフォールバックファイル形式。両方のファイルを再度ダウンロード |
+| フローはiOS 15で動作 | フローにはiOS 16が必要 |
+| iOSでは、フローを読み込めない場合に`AdaptyUIFlowPlatformView`が空のまま | フローエラーコールバックにエラーを報告するようになった |
+| iOSでは、AdaptyUIが有効化されていない状態で`AdaptyUI()`と`AdaptyUIFlowView`を呼び出すと`AdaptyErrorCode.unknown`エラーがスロー | `adaptyUINotActivated`または`adaptyNotActivated`エラーがスローされるようになった |
+| Androidでは、SDKがフローのスクリプトエラーをログに記録するのみ | `AdaptyErrorCode.jsException`としてフローエラーコールバックに渡されるようになった |
+| デフォルトのクローズ処理が`AdaptyUIFlowPlatformView`に対して`dismiss()`を呼び出し、未捕捉エラーがスロー | デフォルトのクローズ処理では埋め込みフローが画面上に残る。閉じるにはウィジェットを削除 |
+
+## インストール \{#installation\}
+
+`pubspec.yaml` の `adapty_flutter` を v4.4 に更新してください：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter: ^4.4.0
+```
+
+アプリが [Kids Mode](kids-mode-flutter) を使用している場合は、代わりに `adapty_flutter_kids` を指定してください：
+
+```yaml showLineNumbers title="pubspec.yaml"
+dependencies:
+  adapty_flutter_kids: ^4.4.0
+```
+
+要件は 4.3 から変更ありません：**Flutter 3.32.0**（Dart 3.8.0）および **iOS 15.0**。フローは例外です。詳しくは [フローには iOS 16 が必要](#flows-require-ios-16) を参照してください。完全なセットアップ手順については [Adapty SDK をインストールする](sdk-installation-flutter) を参照してください。
+
+## フォールバックファイルを置き換える \{#replace-the-fallback-files\}
+
+[フォールバックファイル](flutter-use-fallback-paywalls)を再度ダウンロードするには、**[Placements](https://app.adapty.io/placements)** で **Fallbacks** > **Download iOS Fallback** をクリックします。**Adapty SDK v4.4.0 and higher** の行で **Download** をクリックします。**Download Android Fallback** でも同様に繰り返します。
+
+ダウンロードされたファイルの名前は `ios_4_4_0_fallback.json` と `android_4_4_0_fallback.json` です。これらをプロジェクトの `assets` フォルダに移動し、古いファイルと置き換えてください。各ファイルに、アプリが `Adapty().setFallback` に渡している名前を付けるか、その呼び出し内の名前を更新してください。
+
+古いファイルを使用している場合、`Adapty().setFallback` は `AdaptyError` をスローします。新しいファイルを確認するには、iOS と Android でアプリを実行し、このコールがエラーをスローしないことを確認してください。
+
+## フローにはiOS 16が必要 \{#flows-require-ios-16\}
+
+バージョン4.4以降、フローにはiOS 16以降が必要です。iOS 15では、`AdaptyUI().createFlowView()`が`AdaptyErrorCode.platformNotSupported`を含む`AdaptyError`をスローし、`AdaptyUIFlowPlatformView`は空のままで同じエラーを報告します。オンボーディングおよびSDKのその他の機能はiOS 15を引き続きサポートします。
+
+このエラーが発生した場合は、[カスタムペイウォール](flutter-implement-paywalls-manually)など独自のコンテンツを代わりに表示してください。
+
+## iOSでのフローロードエラーのコールバック通知 \{#flow-load-errors-reach-your-callbacks-on-ios\}
+
+iOSでは、`AdaptyUIFlowPlatformView`がフローを表示できない場合、`onDidReceiveError`コールバックと、フローイベントオブザーバーの`flowViewDidReceiveError`にエラーを報告します。アプリがウィジェットを作成するたびに、エラーが1回報告されます。4.4より前のバージョンでは、ウィジェットは空白のままでした。Androidでは、フローのロードに失敗してもウィジェットは何も報告しません。ウィジェットが報告するエラーは以下のとおりです。
+
+- iOS 15 の場合: `AdaptyErrorCode.platformNotSupported`。
+- iOS 16 以降で、フローの読み込みに失敗した場合: 該当フローに対して `AdaptyUI().createFlowView()` がスローするエラー。たとえば、AdaptyUI がアクティベートされていない状態でフローの読み込みに失敗した場合や、フローに存在しない `customLayoutId` を指定した場合などです。
+
+フローのエラー処理（画面を閉じるなど）は、これらのケースでも実行されるようになりました。`AdaptyUIFlowView.dismiss()` はこのウィジェットのビューに対して失敗するため、`flowViewDidReceiveError` から呼び出す場合はそのエラーをキャッチしてください。詳しくは [ビューエラー](flutter-handling-events#view-errors) を参照してください。ウィジェットを削除して、独自のコンテンツを表示してください。`AdaptyErrorCode.networkFailed` などの一時的な障害をリトライするには、新しい `Key` を使ってウィジェットを再構築してください。
+
+## iOSでAdaptyUIエラーのコードが変更されました \{#adaptyui-errors-have-new-codes-on-ios\}
+
+iOSでは、AdaptyUIが有効化されていない場合（`Adapty().activate()`の完了前、または`withActivateUI(false)`付きで有効化された後）に、`AdaptyUI()`または`AdaptyUIFlowView`の呼び出しが新しいコードのエラーをスローします。エラーコードはリクエスト内容によって異なります：
+
+- フロービュー：`AdaptyErrorCode.adaptyUINotActivated`
+- オンボーディング：`AdaptyErrorCode.adaptyNotActivated`
+
+4.4以前、これらのエラーは`AdaptyErrorCode.unknown`を持っていました。コードでこれらに対して`unknown`を処理している場合は、新しいコードも処理してください。`AdaptyErrorCode.platformNotSupported`については、[フローにはiOS 16が必要](#flows-require-ios-16)を参照してください。
+
+## フロースクリプトのエラーがAndroidのコールバックに届くようになりました \{#flow-script-errors-reach-your-callbacks-on-android\}
+
+Androidでは、フロースクリプトがSDKイベントを処理中に例外をスローすることがあります。バージョン4.4以降、この例外は`flowViewDidReceiveError`および`AdaptyUIFlowPlatformView`の`onDidReceiveError`コールバックに`AdaptyErrorCode.jsException`として届くようになりました（iOSと同じ挙動です）。これ以前のバージョンでは、SDKはログに記録するのみでした。
+
+フローのイベントオブザーバーを設定していない場合、`AdaptyUI().createFlowView()`で作成したフローはこのエラーが発生すると閉じられます。フローを開いたままにするには、`AdaptyUI().setFlowsEventsObserver()`でオブザーバーを設定し、そこでエラーをハンドリングしてください。
+
+## ウィジェットを削除して埋め込みフローを閉じる \{#close-embedded-flows-by-removing-the-widget\}
+
+4.4以降、`AdaptyUIFlowPlatformView`で埋め込んだフローのデフォルトのクローズ処理では`dismiss()`が呼ばれなくなりました。4.4より前のバージョンでは、この呼び出しは常に失敗し、キャッチされない`AdaptyErrorCode.wrongParam`エラーが発生していました。埋め込みフローを閉じるには、`CloseAction`（Androidでは`AndroidSystemBackAction`も）を受信した際に[そのウィジェットを削除してください](flutter-present-paywalls#embed-in-widget-hierarchy)。
+
+フローイベント（画面の閉じ操作やURLの開き操作など）のデフォルト処理が失敗した場合、SDKはエラーをログに書き込むようになりました。4.4以前のバージョンでは、SDKはキャッチされない例外をスローしていました。クラッシュレポーターがこれらのエラーを記録していた場合、今後はレポーターに届かなくなります。

@@ -1,0 +1,474 @@
+---
+title: "Paywall'da interaktif bir kilo hedefi grafiği göster"
+description: "Bir paywall flow'unda her kullanıcının tahmini kilosunu grafik olarak görüntüle. Kullanıcılar grafikte sürükleyerek herhangi bir haftanın kilosunu görebilir."
+metadataTitle: "Paywall'da interaktif bir kilo hedefi grafiği göster | Flutter SDK | Adapty Dokümanları"
+---
+
+Kullanıcının mevcut ve hedef kilosunu bir paywall flow'unda grafik olarak göstermek için bu tarifi izleyin. Kullanıcı, onboarding flow'unda mevcut ve hedef kilosunu girer. Uygulamanız her iki değeri de toplar. Grafik, uygulamanızla birlikte kullanıcının bir değerden diğerine haftalık olarak ne kadar ilerleme sağlayabileceğini gösterir. Uygulamanız grafiği, bir [özel element](flow-custom-elements) içinde native view olarak render eder. iOS'ta view, Swift Charts kullanır. Android'de ise grafik bir grafik kütüphanesi olmadan çizilir.
+
+<DocVideo id="custom-element-chart-demo.mp4" width="300px" alt="Tamamlanmış paywall: kullanıcı grafik üzerinde sürüklediğinde, her hafta için tahmini ağırlık ve 72 kg hedef ağırlığa kadar olan değerleri gösteren bir etiket belirir." />
+
+## Başlamadan önce \{#before-you-start\}
+
+- Uygulamanızı Adapty Flutter SDK 4.4 veya sonraki bir sürüme güncelleyin. Daha eski SDK sürümleri her özel element için [yedek içeriği](flow-custom-elements#set-fallback-content) gösterir.
+- Uygulamanızı flow'ları [getirmek](flutter-get-pb-paywalls) ve [görüntülemek](flutter-present-paywalls) için ayarlayın.
+- Uygulamanızın yerel kodunu özel elementler için [Flutter kılavuzundaki](flutter-flow-custom-elements#before-you-start) gibi yapılandırın.
+- iOS'ta grafik boyunca sürükleme özelliği iOS 17 veya üzerini gerektirir. iOS 16'da kullanıcılar çizgiyi görebilir ancak üzerinde sürükleyemez.
+- Android'de uygulama modülünüzde Jetpack Compose'u ayarlayın. Bu tarifte yer alan grafik bir composable'dır. `androidx.compose.foundation:foundation` paketinden Gradle ile uygulamanıza Compose Foundation ekleyin.
+
+<CustomElementChartTwoFlows />
+
+## 1. Onboarding flow'unda mevcut ve hedef kiloyu sor \{#1-ask-for-the-current-and-goal-weight-in-the-onboarding-flow\}
+
+<CustomElementChartOnboardingInputs />
+
+## 2. Özel öğeyi paywall ekranına ekleyin \{#2-add-the-custom-element-to-the-paywall-screen\}
+
+<CustomElementChartBuilderSetup />
+
+## 3. Mevcut ve hedef ağırlığı uygulamanıza kaydedin \{#3-save-the-current-and-goal-weight-in-your-app\}
+
+Onboarding flow'unun `flow_user_input` olaylarından mevcut ve hedef ağırlığı toplayın; bunun için [Flow'lardan gelen verileri işleme](flutter-flow-input) bölümüne bakın. Kullanıcının son ekrana ulaştığını öğrenmek için `is_last_screen` değeri `true` olan bir `flow_screen_showed` olayını izleyin. Bu ekranın ardından onboarding flow kapandığında her iki ağırlığı da `showWeightPaywall` fonksiyonuna geçirin; bu fonksiyon [grafiği içeren paywall flow'unu açar](#6-send-the-weights-from-your-dart-code).
+
+Tek bir observer her iki flow'un olaylarını alır. Onboarding flow'unu göstermeden önce `AdaptyUI().setFlowsEventsObserver` ile kaydedin. Sonundaki üç metot her observer'da zorunludur. Satın alma, geri yükleme ve hataları ele almak için bkz. [Flow & paywall olaylarını ele alma](flutter-handling-events). `showWeightPaywall` fonksiyonu [6. adımdan](#6-send-the-weights-from-your-dart-code) gelir.
+
+```dart showLineNumbers title="Flutter"
+
+class WeightFlowsObserver extends AdaptyUIFlowsEventsObserver {
+  final _enteredWeights = <String, String>{};
+  var _reachedLastScreen = false;
+
+  @override
+  void flowViewDidReceiveAnalyticEvent(
+    AdaptyUIFlowView view,
+    String name,
+    Map<String, dynamic> params,
+  ) {
+    if (name == 'flow_screen_showed' && params['is_last_screen'] == true) {
+      _reachedLastScreen = true;
+      return;
+    }
+    final elementId = params['element_id'];
+    final value = params['value'];
+    if (name == 'flow_user_input' && elementId is String && value is String) {
+      _enteredWeights[elementId] = value;
+    }
+  }
+
+  @override
+  void flowViewDidDisappear(AdaptyUIFlowView view) {
+    // This observer receives events from both flows. Reset the entered
+    // weights whenever a flow disappears, so that the paywall doesn't open
+    // again when the user closes it.
+    final weights = Map.of(_enteredWeights);
+    final finished = _reachedLastScreen;
+    _enteredWeights.clear();
+    _reachedLastScreen = false;
+
+    // Number inputs send their values as strings
+    final currentWeight = double.tryParse(weights['weight'] ?? '');
+    final goalWeight = double.tryParse(weights['goal_weight'] ?? '');
+    if (!finished || currentWeight == null || goalWeight == null) return;
+
+    showWeightPaywall(currentWeight, goalWeight); // defined in step 6
+  }
+
+  @override
+  void flowViewDidFinishPurchase(
+    AdaptyUIFlowView view,
+    AdaptyPaywallProduct product,
+    AdaptyPurchaseResult purchaseResult,
+  ) {
+    // handle the purchase result
+  }
+
+  @override
+  void flowViewDidFinishRestore(AdaptyUIFlowView view, AdaptyProfile profile) {
+    // check the access level of the user
+  }
+
+  @override
+  void flowViewDidReceiveError(AdaptyUIFlowView view, AdaptyError error) {
+    view.dismiss().catchError((_) {});
+  }
+}
+
+// call at app launch, before you present the onboarding flow
+void registerWeightFlowsObserver() {
+  AdaptyUI().setFlowsEventsObserver(WeightFlowsObserver());
+}
+```
+
+## 4. Grafik görünümünü oluşturun \{#create-the-chart-view\}
+
+Bir kilo planı modeli ve grafikli bir görünüm oluşturun. Plan, mevcut kilodan hedef kiloya kadar haftada bir girişten oluşur. Kullanıcı grafik üzerinde sürüklediğinde, görünüm dokunulan noktadaki haftayı işaretler ve o hafta için tahmini kiloyu gösterir:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift"
+
+struct WeightPlan {
+    let entries: [WeightEntry]
+
+    // One entry per week, from the current weight to the goal weight
+    init(currentWeight: Double, goalWeight: Double) {
+        let weeklyChange = 0.5 // kg per week
+        let startDate = Date.now
+        let weeks = Int((abs(goalWeight - currentWeight) / weeklyChange).rounded(.up))
+        let step = goalWeight < currentWeight ? -weeklyChange : weeklyChange
+        entries = (0...weeks).map { week in
+            WeightEntry(
+                date: startDate.addingTimeInterval(Double(week) * 7 * 24 * 60 * 60),
+                kilograms: week == weeks ? goalWeight : currentWeight + step * Double(week)
+            )
+        }
+    }
+}
+
+struct WeightEntry: Identifiable {
+    let date: Date
+    let kilograms: Double
+    var id: Date { date }
+}
+
+@available(iOS 16.0, *) // Swift Charts needs iOS 16
+struct WeightGoalChart: View {
+    let entries: [WeightEntry]
+    @State private var selectedDate: Date?
+
+    // The entry closest to the date that the user drags to
+    private var selectedEntry: WeightEntry? {
+        guard let selectedDate else { return nil }
+        return entries.min {
+            abs($0.date.timeIntervalSince(selectedDate)) < abs($1.date.timeIntervalSince(selectedDate))
+        }
+    }
+
+    var body: some View {
+        if #available(iOS 17.0, *) {
+            chart.chartXSelection(value: $selectedDate)
+        } else {
+            chart // iOS 16: no drag selection
+        }
+    }
+
+    private var chart: some View {
+        Chart {
+            ForEach(entries) { entry in
+                LineMark(
+                    x: .value("Date", entry.date),
+                    y: .value("Weight", entry.kilograms)
+                )
+            }
+            if let selectedEntry {
+                RuleMark(x: .value("Date", selectedEntry.date))
+                    .foregroundStyle(.gray.opacity(0.3))
+                PointMark(
+                    x: .value("Date", selectedEntry.date),
+                    y: .value("Weight", selectedEntry.kilograms)
+                )
+                .annotation(position: .top) {
+                    Text("\(selectedEntry.kilograms, specifier: "%.1f") kg")
+                        .font(.caption.bold())
+                }
+            }
+        }
+        .chartYScale(domain: .automatic(includesZero: false))
+    }
+}
+```
+
+Grafikte sürükleme özelliği iOS 17 veya sonrası gerektirir. iOS 16'da kullanıcılar çizgiyi görür, ancak üzerinde sürükleyemez.
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class WeightPlan(currentWeight: Double, goalWeight: Double) {
+    // one entry per week, from the current weight to the goal weight
+    val entries: List<WeightEntry> = run {
+        val weeklyChange = 0.5 // kg per week
+        val start = System.currentTimeMillis()
+        val weekMillis = 7L * 24 * 60 * 60 * 1000
+        val weeks = ceil(abs(goalWeight - currentWeight) / weeklyChange).toInt()
+        val step = if (goalWeight < currentWeight) -weeklyChange else weeklyChange
+        (0..weeks).map { week ->
+            val kilograms = if (week == weeks) goalWeight else currentWeight + step * week
+            WeightEntry(Date(start + week * weekMillis), kilograms)
+        }
+    }
+}
+
+data class WeightEntry(val date: Date, val kilograms: Double)
+
+@Composable
+fun WeightGoalChart(entries: List<WeightEntry>) {
+    // the week under the finger, or null when the user isn't dragging
+    var selectedIndex by remember { mutableStateOf<Int?>(null) }
+    val textMeasurer = rememberTextMeasurer()
+    val dateFormat = remember { DateFormat.getDateInstance(DateFormat.MEDIUM) }
+    val color = Color(0xFFAF52DE)
+    val textStyle = TextStyle(color = Color.Gray, fontSize = 12.sp)
+    val minKg = entries.minOf { it.kilograms }
+    val kgRange = (entries.maxOf { it.kilograms } - minKg).coerceAtLeast(1.0)
+
+    Canvas(
+        Modifier
+            .fillMaxSize()
+            .pointerInput(entries) {
+                // horizontal drags select a week; vertical drags scroll the screen
+                detectHorizontalDragGestures(
+                    onDragEnd = { selectedIndex = null },
+                    onDragCancel = { selectedIndex = null },
+                ) { change, _ ->
+                    val index = (change.position.x / size.width * entries.lastIndex).roundToInt()
+                    selectedIndex = index.coerceIn(0, entries.lastIndex)
+                }
+            }
+    ) {
+        val startDate = textMeasurer.measure(dateFormat.format(entries.first().date), textStyle)
+        val endDate = textMeasurer.measure(dateFormat.format(entries.last().date), textStyle)
+        val dateY = size.height - startDate.size.height
+        val top = 24.dp.toPx() // room for the projected weight above the line
+        val bottom = dateY - 8.dp.toPx()
+        fun pointOf(index: Int) = Offset(
+            x = size.width * index / entries.lastIndex.coerceAtLeast(1),
+            y = bottom - ((entries[index].kilograms - minKg) / kgRange * (bottom - top)).toFloat(),
+        )
+
+        // the line from the current weight to the goal weight
+        for (index in 1..entries.lastIndex) {
+            drawLine(color, pointOf(index - 1), pointOf(index), strokeWidth = 2.dp.toPx())
+        }
+        // the dates of the first and the last week
+        drawText(startDate, topLeft = Offset(0f, dateY))
+        drawText(endDate, topLeft = Offset(size.width - endDate.size.width, dateY))
+
+        // the selected week: a point, and the projected weight above it
+        selectedIndex?.let { index ->
+            val point = pointOf(index)
+            drawCircle(color, radius = 5.dp.toPx(), center = point)
+            val weight = String.format(Locale.getDefault(), "%.1f kg", entries[index].kilograms)
+            val label = textMeasurer.measure(weight, textStyle.copy(color = color))
+            val x = (point.x - label.size.width / 2)
+                .coerceAtMost(size.width - label.size.width)
+                .coerceAtLeast(0f)
+            drawText(label, topLeft = Offset(x, point.y - label.size.height - 8.dp.toPx()))
+        }
+    }
+}
+```
+
+</TabItem>
+</Tabs>
+
+<CustomElementChartWeeklyChange />
+
+## 5. Grafiği özel öğeyle eşleştirin \{#match-the-chart-to-the-custom-element\}
+
+[Uygulama genelinde resolver](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk)'ınıza bir `WeightPlanStore` özelliği ekleyin. Ardından `line_chart` Türü ve `weight_goal` ID'si için grafik görünümünü döndürün. Vurgulanan satırlar, eklenecek veya değiştirilecek kısımları göstermektedir. Uygulamanızda henüz uygulama genelinde bir [resolver](flutter-flow-custom-elements#write-a-resolver-to-match-custom-elements-and-views) yoksa kodun tamamını kopyalayabilirsiniz:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="Swift" {4-8,11,19-23}
+
+// the weight plan that your Dart code sends before the paywall flow opens
+@MainActor
+final class WeightPlanStore {
+    var plan: WeightPlan?
+}
+
+struct CustomElementsResolver: AdaptyUICustomElementsResolver {
+    let weightPlanStore: WeightPlanStore
+
+    func view(
+        forType type: String,
+        id: String,
+        context: AdaptyUICustomElementContext
+    ) -> AnyView? {
+        switch type {
+        case "line_chart" where id == "weight_goal":
+            guard #available(iOS 16.0, *), let plan = weightPlanStore.plan else {
+                return nil // no weight plan: show the fallback
+            }
+            return AnyView(WeightGoalChart(entries: plan.entries))
+        // the other cases of your resolver
+        default:
+            return nil
+        }
+    }
+}
+```
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin" {4-7,10,15-22}
+
+// the weight plan that your Dart code sends before the paywall flow opens
+class WeightPlanStore {
+    var plan: WeightPlan? = null
+}
+
+class CustomElementsResolver(
+    private val weightPlanStore: WeightPlanStore,
+) : AdaptyCustomElementsResolver {
+
+    override fun resolve(type: String, id: String): AdaptyCustomElementContent? =
+        when (type) {
+            "line_chart" -> {
+                val plan = weightPlanStore.plan
+                if (id == "weight_goal" && plan != null) {
+                    AdaptyCustomElementContent.compose { WeightGoalChart(plan.entries) }
+                } else {
+                    null // no weight plan: show the fallback
+                }
+            }
+            // the other Types of your resolver
+            else -> null
+        }
+}
+```
+
+</TabItem>
+</Tabs>
+
+Dart kodunuz ağırlıkları yerel kodunuza gönderene kadar, resolver herhangi bir görünüm döndürmez ve kullanıcılar yedek paywall'ı görür.
+
+## 6. Dart kodunuzdan ağırlıkları gönderin \{#send-the-weights-from-your-dart-code\}
+
+Resolver'ı uygulama başlangıcında ayarlayın ve mağazayı Dart kodunuzdan bir [platform channel](https://docs.flutter.dev/platform-integration/platform-channels) aracılığıyla doldurun:
+
+<Tabs groupId="platform" queryString>
+<TabItem value="ios" label="iOS (Swift)" default>
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+
+@main
+@objc class AppDelegate: FlutterAppDelegate, FlutterImplicitEngineDelegate {
+  // the weight plan that your Dart code sends
+  let weightPlanStore = WeightPlanStore()
+
+  override func application(
+    _ application: UIApplication,
+    didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
+  ) -> Bool {
+    AdaptyUI.setCustomElementsResolver(CustomElementsResolver(weightPlanStore: weightPlanStore))
+    return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
+    GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+    let weightChannel = FlutterMethodChannel(
+      name: "custom_elements/weight_plan",
+      binaryMessenger: engineBridge.applicationRegistrar.messenger()
+    )
+    weightChannel.setMethodCallHandler { [weightPlanStore] call, result in
+      guard call.method == "setWeights",
+            let weights = call.arguments as? [String: Double],
+            let currentWeight = weights["current"],
+            let goalWeight = weights["goal"]
+      else {
+        return result(FlutterMethodNotImplemented)
+      }
+      // the channel calls this handler on the main thread
+      MainActor.assumeIsolated {
+        weightPlanStore.plan = WeightPlan(currentWeight: currentWeight, goalWeight: goalWeight)
+      }
+      result(nil)
+    }
+  }
+}
+```
+
+:::note
+Bu `AppDelegate` sınıfı, `FlutterImplicitEngineDelegate`'i benimseyen Flutter 3.41 ve sonraki sürümlerinin iOS şablonunu takip eder. `AppDelegate` sınıfınız bunu benimsemiyorsa, protokolü ve `didInitializeImplicitFlutterEngine` metodunu dışarıda bırakın. Bunun yerine kanalı `application(_:didFinishLaunchingWithOptions:)` içinde, `return super.application(...)` satırından önce, root view controller'ın messenger'ı ile oluşturun. Şablonunuzun `GeneratedPluginRegistrant` çağrısını koruyun:
+
+```swift showLineNumbers title="ios/Runner/AppDelegate.swift"
+GeneratedPluginRegistrant.register(with: self)
+let controller = window?.rootViewController as! FlutterViewController
+let weightChannel = FlutterMethodChannel(
+  name: "custom_elements/weight_plan",
+  binaryMessenger: controller.binaryMessenger
+)
+```
+:::
+
+</TabItem>
+<TabItem value="android" label="Android (Kotlin)">
+
+```kotlin showLineNumbers title="Kotlin"
+
+class App : Application() {
+    // the weight plan that your Dart code sends
+    val weightPlanStore = WeightPlanStore()
+
+    override fun onCreate() {
+        super.onCreate()
+        AdaptyUI.setCustomElementsResolver(CustomElementsResolver(weightPlanStore))
+    }
+}
+
+class MainActivity : FlutterFragmentActivity() {
+    override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
+        super.configureFlutterEngine(flutterEngine)
+        val weightPlanStore = (application as App).weightPlanStore
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger, "custom_elements/weight_plan")
+            .setMethodCallHandler { call, result ->
+                val currentWeight = call.argument<Double>("current")
+                val goalWeight = call.argument<Double>("goal")
+                if (call.method == "setWeights" && currentWeight != null && goalWeight != null) {
+                    weightPlanStore.plan = WeightPlan(currentWeight, goalWeight)
+                    result.success(null)
+                } else {
+                    result.notImplemented()
+                }
+            }
+    }
+}
+```
+
+`android/app/src/main/AndroidManifest.xml` dosyasındaki `App` sınıfını, [Çözümleyiciyi SDK'ya aktar](flutter-flow-custom-elements#pass-the-resolver-to-the-sdk) bölümünde açıklandığı gibi adlandırın.
+
+</TabItem>
+</Tabs>
+
+Dart kodunuzda, paywall flow'u açılmadan önce ağırlıkları mağazaya gönderin:
+
+```dart showLineNumbers title="Flutter"
+
+// your iOS and Android code listens to this channel
+const weightPlanChannel = MethodChannel('custom_elements/weight_plan');
+
+Future<void> showWeightPaywall(double currentWeight, double goalWeight) async {
+  try {
+    // the native resolver builds the chart from these weights
+    await weightPlanChannel.invokeMethod('setWeights', {
+      'current': currentWeight,
+      'goal': goalWeight,
+    });
+    final flow = await Adapty().getFlow(placementId: 'weight_paywall');
+    final view = await AdaptyUI().createFlowView(flow: flow);
+    await view.present();
+  } on AdaptyError catch (adaptyError) {
+    // handle the error
+  } catch (e) {
+    // handle the error
+  }
+}
+```
+
+## 7. Cihazda Test Edin \{#test-on-a-device\}
+
+Flow & Paywall Builder, uygulama kodunuzu çalıştıramaz; bu nedenle tuval yalnızca yedek içeriği gösterir. Grafiği önizlemek için:
+
+1. [Her iki flow'u da yayınlayın](builder-save-publish). Önbelleğe alınanlar yerine en son yayınlanan sürümleri görmek için cihazı bir [test cihazı](test-devices) olarak kaydedin.
+2. Resolver'ı içeren bir uygulama derlemesi çalıştırın. iOS'ta iOS 17 veya üstü bir cihaz kullanın. Mevcut kilo ve hedef kilo girerek onboarding flow'unu tamamlayın. Grafiğin çizgisinin mevcut kilodan başlayıp hedef kiloda bittiğini doğrulayın.
+3. Grafiği boyunca sürükleyin ve parmağınızın altındaki haftaya ait tahmini kilonun çizginin üzerinde göründüğünü doğrulayın.
+
+Yedek görünümü test etmek için `line_chart` Türü için herhangi bir görünüm döndürmeyin ve paywall flow'unu yeniden açın.
+
+Grafiğin neden yerine yedek görünümün geldiğini öğrenmek için Flutter kılavuzunun [Cihazda test etme](flutter-flow-custom-elements#test-on-a-device) bölümündeki talimatları takip edin.
