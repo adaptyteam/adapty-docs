@@ -1,0 +1,182 @@
+---
+title: "Команды Refund Saver"
+description: "Команды Adapty CLI для включения и отключения Refund Saver, настройки параметров возврата для каждого стора и отдельного профиля, проверки ключей стора, а также чтения запросов на возврат и статистики экономии."
+metadataTitle: "Команды CLI Refund Saver | Документация Adapty"
+---
+
+Управляйте [Refund Saver](refund-saver) одного приложения из терминала: включайте или отключайте его, задавайте настройки возврата средств для каждого стора, переопределяйте их для отдельного профиля, проверяйте, что у каждого стора есть ключи, необходимые Refund Saver, и просматривайте, что Refund Saver обработал и сэкономил. Для этих команд требуется CLI версии 0.31.0 или выше.
+
+Если вы ещё не настроили CLI, выполните шаги 1 и 2 [руководства по быстрому старту](developer-cli-quickstart). Чтобы узнать вашу версию, выполните `adapty --version`.
+
+Если надстройка Refund Saver не активна для вашего аккаунта, Adapty отклоняет `on`. Управлять надстройкой можно на вкладке [**Subscription & Billing**](account#subscription--billing) в настройках аккаунта, но не через CLI.
+
+Каждая команда принимает `--app` — ID приложения (UUID) из `adapty apps list` — и выводит ответ API при указании `--json`.
+
+`on`, `off`, `update` и `profile update` немедленно применяют изменения к приложению. Подтверждения они не запрашивают и флаг `--yes` не поддерживают.
+
+## adapty refund-saver get
+
+Показывает, включён ли Refund Saver для приложения, и настройки возврата средств в каждом сторе.
+
+```bash
+adapty refund-saver get --app <app-id>
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+
+При использовании `--json`, `enabled` равно `true`, если Refund Saver включён хотя бы в одном сторе. `stores` содержит настройки возврата средств для каждого стора, а также `refund_saver_needs_consent` для App Store: значение `true` соответствует политике согласия **Opt-in**.
+
+## adapty refund-saver on \{#adapty-refund-saver-on\}
+
+Включает Refund Saver для приложения в обоих сторах.
+
+```bash
+adapty refund-saver on --app <app-id>
+```
+
+| Флаг | Обязателен | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+
+Команда выводит состояние приложения и примечание о дополнении Refund Saver (`billing_note` в `--json`). Если Refund Saver уже включён в обоих сторах, команда ничего не меняет и выводит то же самое состояние и примечание.
+
+Если Adapty отказывается включить Refund Saver, команда завершается с кодом 4 и ничего не меняет. Чтобы узнать причину, прочитайте `error.code` в `--json`:
+
+| `error.code` | Что делать |
+|---|---|
+| `refund_saver_addon_inactive` | Дополнение Refund Saver не активировано для этого аккаунта. Активируйте его на вкладке **Subscription & Billing**, затем выполните команду снова. |
+| `refund_saver_apple_credentials_invalid` | Учётные данные Apple для этого аккаунта не работают. Исправьте их в **App settings**, затем выполните команду снова. |
+| `refund_saver_addon_unavailable` | Refund Saver не может быть включён для этого аккаунта. Не повторяйте попытку; обратитесь в поддержку Adapty. |
+
+## adapty refund-saver off
+
+Отключить Refund Saver для приложения в обоих сторах.
+
+```bash
+adapty refund-saver off --app <app-id>
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+
+Отключение Refund Saver не отменяет дополнение Refund Saver. Чтобы отменить его, воспользуйтесь вкладкой **Subscription & Billing** в настройках аккаунта.
+
+## adapty refund-saver update
+
+Изменяет [параметры возврата средств для каждого стора](refund-saver#set-a-default-refund-preference) и [политику согласия по умолчанию](refund-saver#set-the-default-consent-policy). Настройка, которую вы не передаёте, сохраняет текущее значение. Передайте хотя бы один флаг помимо `--app`. Команда не включает и не отключает Refund Saver — для этого используйте `adapty refund-saver on` и `adapty refund-saver off`.
+
+```bash
+adapty refund-saver update --app <app-id> --app-store-preference always_prorated
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--app-store-preference` | Нет | Предпочтение по возвратам для запросов возврата средств в App Store: `no_preference`, `always_decline`, `always_refund`, `decline_first_grant_next` или `always_prorated` |
+| `--play-store-preference` | Нет | Предпочтение по возвратам для запросов возврата средств в Google Play: `no_preference`, `always_decline`, `always_refund` или `decline_first_grant_next`. В Google Play нет `always_prorated`. |
+| `--needs-consent` / `--no-needs-consent` | Нет | Определяет, отправляет ли Refund Saver данные пользователя App Store только после его согласия. `--needs-consent` — политика согласия **Opt-in**: Adapty не передаёт Apple никаких данных о пользователе, пока ваше приложение [не получит его согласие](refund-saver#update-a-users-consent). `--no-needs-consent` — **Opt-out**, применяется по умолчанию. |
+
+Команда выводит настройки обоих сторов.
+
+## adapty refund-saver readiness
+
+Показывает, настроены ли в каждом сторе ключи, необходимые для Refund Saver.
+
+```bash
+adapty refund-saver readiness --app <app-id>
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+
+App Store требует **Bundle ID** и [ключ In-App Purchase](generate-in-app-purchase-key): Issuer ID, Key ID и приватный ключ (файл `.p8`), — в разделе **App settings** > **iOS SDK**. Google Play требует **Package name** и **Service account key file**, — в разделе **App settings** > **Android SDK**. При использовании `--json` значения `app_store` и `play_store` равны `true`, если эти данные указаны. Команда не проверяет, принимает ли стор эти данные и доходят ли уведомления стора до Adapty. Без `--json` команда выводит, какая именно настройка отсутствует для каждого стора, который не готов к работе.
+
+## adapty refund-saver profile get
+
+Показывает настройки Refund Saver для одного профиля: пользовательские предпочтения и согласие.
+
+```bash
+adapty refund-saver profile get --app <app-id> <profile-id>
+```
+
+| Аргумент или флаг | Обязательный | Описание |
+|---|---|---|
+| `<profile-id>` | Да | ID профиля Adapty (UUID), не customer user ID |
+| `--app` | Да | ID приложения (UUID) |
+
+При использовании `--json` значения `custom_preference` и `consent` равны `null`, если они не заданы. Если профиль с указанным ID не найден в приложении, команда завершается с кодом 4, а `error.code` равен `profile_not_found`.
+
+## adapty refund-saver profile update
+
+Изменить настройки Refund Saver для одного профиля. Параметр, который вы не передаёте, сохраняет текущее значение. Передайте хотя бы один флаг помимо `--app`.
+
+```bash
+adapty refund-saver profile update --app <app-id> <profile-id> --custom-preference decline
+```
+
+| Аргумент или флаг | Обязательный | Описание |
+|---|---|---|
+| `<profile-id>` | Да | ID профиля Adapty (UUID), не customer user ID |
+| `--app` | Да | ID приложения (UUID) |
+| `--custom-preference` | Нет | Персональная настройка возврата средств для этого профиля в обоих сторах: `grant`, `decline`, `grant_prorated` или `no_preference`. Значения `grant` и `decline` имеют приоритет над настройкой стора. `grant_prorated` применяется в App Store; для Google Play предпочтение не задаётся. `no_preference` возвращает профиль к настройке стора. |
+| `--consent` / `--no-consent` | Нет | Даёт ли пользователь согласие на передачу его данных в Apple через Refund Saver. Это настройка **Allow data sharing** в профиле пользователя. `--consent` отправляет данные при любой политике согласия; `--no-consent` — никогда. После установки вернуть статус «не задано» невозможно. Google Play не требует согласия. |
+
+Настройки предпочтений и согласия для конкретного профиля совпадают со значениями [настроек возврата для конкретного пользователя](refund-saver#set-refund-behavior-for-a-specific-user-in-the-dashboard) в дашборде Adapty и со значениями, которые приложение передаёт через [Adapty SDK](refund-saver#manage-refund-saver-from-your-app-code). Действует принцип «последняя запись побеждает»: более поздний вызов из приложения заменяет значения, установленные здесь.
+
+## adapty refund-saver requests
+
+Список запросов на возврат средств, обработанных Refund Saver за указанный период, начиная с самых новых.
+
+```bash
+adapty refund-saver requests --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store app_store
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--date-from` | Да | Первый день периода включительно (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Да | Последний день периода включительно (`YYYY-MM-DD`, UTC) |
+| `--store` | Нет | Только запросы из указанного стора: `app_store` или `play_store` |
+| `--page` | Нет | Номер страницы. По умолчанию: 1 |
+| `--page-size` | Нет | Запросов на страницу, не более 100. По умолчанию: 20 |
+
+Каждый запрос учитывается в тот UTC-день, когда его обработал Refund Saver. Если диапазон указан в обратном порядке, возвращается пустой список, а не ошибка. Страница за пределами последней также возвращается пустой.
+
+С флагом `--json` каждый запрос содержит поля `status`, `store_transaction_id`, `store_product_id`, `profile_id`, `customer_user_id`, `country_name`, `amount_usd`, `refund_reason`, `received_at` и `updated_at`. Значение `status` может быть `consumption_request_handled` (ответ получен, но ещё не обработан), `refunded` или `refund_declined`. Поле `amount_usd` равно `0`, если сумма неизвестна. В выходных данных также есть `meta.pagination` с количеством записей, номером страницы и общим числом страниц.
+
+## adapty refund-saver metrics
+
+Показывает, сколько удалось сохранить с помощью Refund Saver за указанный период.
+
+```bash
+adapty refund-saver metrics --app <app-id> --date-from 2026-10-01 --date-to 2026-10-31 --store play_store
+```
+
+| Флаг | Обязательный | Описание |
+|---|---|---|
+| `--app` | Да | ID приложения (UUID) |
+| `--date-from` | Да | Первый день периода, включительно (`YYYY-MM-DD`, UTC) |
+| `--date-to` | Да | Последний день периода, включительно (`YYYY-MM-DD`, UTC) |
+| `--store` | Нет | Только запросы из указанного стора: `app_store` или `play_store` |
+
+При использовании `--json` вывод содержит `saved_amount_usd` и `saved_count` (отказы стора в возврате средств), `requested_amount_usd` и `requested_count` (каждый запрос, обработанный Refund Saver), и `win_rate` (доля отказов среди запросов, по которым стор уже вынес решение). Суммы указаны в целых долларах США. `win_rate` — процент в виде текста с одним знаком после запятой. Adapty получает данные от Google Play с задержкой, поэтому за недавний период они могут быть занижены. Это те же цифры, что и в разделе [Refund Saver](refund-saver#track-savings-from-refund-requests).
+
+## Права на редактирование \{#edit-rights\}
+
+`on`, `off`, `update` и `profile update` требуют прав на редактирование в компании, которой принадлежит приложение. Аккаунт с правами только на просмотр получит ошибку `edit_rights_required` с кодом выхода 3, и никаких изменений не произойдёт. Попросите владельца или администратора компании предоставить права на редактирование перед повторной попыткой. Для приложения из другой компании возвращается `permission_denied` — тоже с кодом выхода 3.
+
+## Коды завершения \{#exit-codes\}
+
+| Код завершения | Значение |
+|---|---|
+| `0` | Успешно |
+| `2` | Некорректные входные данные, отправленные до выполнения запроса: ID приложения или профиля, не являющийся UUID; дата не в формате `YYYY-MM-DD`; неизвестная настройка или стор; либо команда `update` или `profile update` без указания параметра |
+| `3` | Отсутствует токен, приложение недоступно для данного токена или нет прав на редактирование |
+| `4` | API отклонил запрос. `error.code` в `--json` указывает причину. |
+| `5` | CLI не смог подключиться к Adapty. Проверьте соединение и повторите попытку. |
+
+Чтобы запускать эти команды с помощью AI-инструмента, см. [Скилл агента для Refund Saver](refund-saver-skill).
