@@ -96,6 +96,48 @@ The Adapty SDK answers `denied` without a status when your handler throws an err
 
 A granted notification permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
 
+## Request each permission
+
+The example uses [react-native-permissions](https://github.com/zoontek/react-native-permissions) to show the system dialogs. This table lists what the handler requests for each value, and the name to add to the iOS permissions that react-native-permissions sets up. A dash means that react-native-permissions has no such request: answer `unsupported`, or request the permission in your own native module.
+
+| Value | iOS | iOS setup name | Android |
+|:------|:----|:---------------|:--------|
+| `push` | `requestNotifications()` | `Notifications` | `requestNotifications()` |
+| `tracking` | `PERMISSIONS.IOS.APP_TRACKING_TRANSPARENCY` | `AppTrackingTransparency` | — |
+| `location_when_use` | `PERMISSIONS.IOS.LOCATION_WHEN_IN_USE` | `LocationWhenInUse` | `PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION` and `PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION`, together with `requestMultiple()` |
+| `location_always` | `PERMISSIONS.IOS.LOCATION_ALWAYS` | `LocationAlways` | `PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION` |
+| `location_full_accuracy` | `requestLocationAccuracy({ purposeKey })` | `LocationAccuracy` | `PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION` |
+| `camera` | `PERMISSIONS.IOS.CAMERA` | `Camera` | `PERMISSIONS.ANDROID.CAMERA` |
+| `microphone` | `PERMISSIONS.IOS.MICROPHONE` | `Microphone` | `PERMISSIONS.ANDROID.RECORD_AUDIO` |
+| `photos` | `PERMISSIONS.IOS.PHOTO_LIBRARY` | `PhotoLibrary` | `PERMISSIONS.ANDROID.READ_MEDIA_IMAGES`, and `PERMISSIONS.ANDROID.READ_MEDIA_VISUAL_USER_SELECTED` on Android 14 and later |
+| `media_library` | `PERMISSIONS.IOS.MEDIA_LIBRARY` | `MediaLibrary` | — |
+| `music` | — | — | — |
+| `speech` | `PERMISSIONS.IOS.SPEECH_RECOGNITION` | `SpeechRecognition` | `PERMISSIONS.ANDROID.RECORD_AUDIO` |
+| `contacts` | `PERMISSIONS.IOS.CONTACTS` | `Contacts` | `PERMISSIONS.ANDROID.READ_CONTACTS` |
+| `calendar` | `PERMISSIONS.IOS.CALENDARS` | `Calendars` | `PERMISSIONS.ANDROID.READ_CALENDAR` and `PERMISSIONS.ANDROID.WRITE_CALENDAR` |
+| `reminders` | `PERMISSIONS.IOS.REMINDERS` | `Reminders` | — |
+| `health` | — | — | — |
+| `motion` | `PERMISSIONS.IOS.MOTION` | `Motion` | `PERMISSIONS.ANDROID.ACTIVITY_RECOGNITION` |
+| `bluetooth` | `PERMISSIONS.IOS.BLUETOOTH` | `Bluetooth` | `PERMISSIONS.ANDROID.BLUETOOTH_SCAN` and `PERMISSIONS.ANDROID.BLUETOOTH_CONNECT` |
+| `local_network` | — | — | — |
+| `homekit` | — | — | — |
+| `focus_status` | — | — | — |
+| `siri` | `PERMISSIONS.IOS.SIRI` | `Siri` | — |
+
+`requestLocationAccuracy()` works on iOS 14 and later, and throws an error on Android. `PERMISSIONS.IOS.MEDIA_LIBRARY` requests the media library, not Apple Music, so the table has no request for `music`.
+
+Pass the status from the result of react-native-permissions:
+
+| Result | Status to pass | Section |
+|:-------|:---------------|:--------|
+| `RESULTS.GRANTED` | `granted` | **When allowed** |
+| `RESULTS.LIMITED` | `limited` | **When allowed** |
+| `RESULTS.DENIED` | `denied` | **When denied** |
+| `RESULTS.BLOCKED` | `permanently_denied` | **When denied** |
+| `RESULTS.UNAVAILABLE` | `unsupported` | **After response** |
+
+On iOS, react-native-permissions reports a permission that parental controls or a device policy restrict as `RESULTS.UNAVAILABLE`. Your app can't tell it from an unavailable permission, so it can't pass `restricted`, and the flow runs **After response** for it. For notifications, `requestNotifications()` returns `RESULTS.GRANTED` for provisional authorization too. To pass `provisional`, read `settings.provisional` from its result.
+
 ## Declare the permissions
 
 The OS shows a permission dialog only to an app that declares the permission: in `ios/<YourApp>/Info.plist` on iOS, and in `android/app/src/main/AndroidManifest.xml` on Android. For each permission that your handler requests, add these declarations:
@@ -109,10 +151,12 @@ The handler in this guide requests notifications and camera access. On iOS, the 
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
+
 ## Register the handler
 
 :::warning
-**Without an `onRequestPermission` handler, the user is never asked.** On a flow view without the handler, the Adapty SDK answers `denied` without a dialog and without a status, and writes a warning to its log. The flow runs the **After response** actions right away.
+**Without an `onRequestPermission` handler, the user is never asked.** On a flow view without the handler, the Adapty SDK answers `denied` without a dialog and without a status, and writes a warning to its log. The flow runs the **After response** actions right away, and reports the answer with the `outcome` `no_status`.
 :::
 
 Set the handler on every flow view your app creates. Flow authors can add the **Request permission** action to any flow later, without an app update, and a flow view without the handler answers `denied` without asking the user.

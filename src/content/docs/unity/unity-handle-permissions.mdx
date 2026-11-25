@@ -164,6 +164,45 @@ A granted notification permission lets your app show notifications. To receive p
 
 `IAdaptyUISystemRequestsHandler` also requires `FlowViewDidRequestAppReview`. With a handler registered, the Adapty SDK doesn't request a store review on its own, so call `AdaptyUI.RequestAppReview(null)` in it to keep the native review prompt, as in the example.
 
+## Request each permission
+
+Unity requests only a few permissions on iOS: camera and microphone access with `Application.RequestUserAuthorization`, notifications with the Mobile Notifications package, and tracking with the `com.unity.ads.ios-support` package. For the other permissions on iOS, write a [native plugin](https://docs.unity.com/en-us/engine/current/manual/platform-specific/iphone/ios-developing/plugins-for-ios/ios-native-plugin-call) in Objective-C or Swift that calls the iOS API, and call it from C# with `[DllImport("__Internal")]`. On Android, request each permission with `Permission.RequestUserPermission()` and its manifest name.
+
+| Value | iOS | Android |
+|:------|:----|:--------|
+| `push` | Mobile Notifications: `AuthorizationRequest` | `"android.permission.POST_NOTIFICATIONS"`, or Mobile Notifications: `PermissionRequest` |
+| `tracking` | `com.unity.ads.ios-support`: `ATTrackingStatusBinding.RequestAuthorizationTracking()` | — |
+| `location_when_use` | Native plugin | `Permission.FineLocation` and `Permission.CoarseLocation`, together with `Permission.RequestUserPermissions()` |
+| `location_always` | Native plugin | `"android.permission.ACCESS_BACKGROUND_LOCATION"`, after foreground location is granted |
+| `location_full_accuracy` | Native plugin | `Permission.FineLocation` |
+| `camera` | `Application.RequestUserAuthorization(UserAuthorization.WebCam)` | `Permission.Camera` |
+| `microphone` | `Application.RequestUserAuthorization(UserAuthorization.Microphone)` | `Permission.Microphone` |
+| `photos` | Native plugin | `"android.permission.READ_MEDIA_IMAGES"` on Android 13 and later, `Permission.ExternalStorageRead` on Android 12 and earlier |
+| `media_library` | Native plugin | `"android.permission.READ_MEDIA_AUDIO"` on Android 13 and later, `Permission.ExternalStorageRead` on Android 12 and earlier |
+| `music` | Native plugin | — |
+| `speech` | Native plugin | `Permission.Microphone` |
+| `contacts` | Native plugin | `"android.permission.READ_CONTACTS"` |
+| `calendar` | Native plugin | `"android.permission.READ_CALENDAR"` |
+| `reminders` | Native plugin | — |
+| `health` | Native plugin | Health Connect, in a native plugin |
+| `motion` | Native plugin | `"android.permission.ACTIVITY_RECOGNITION"`, on Android 10 and later |
+| `bluetooth` | Native plugin | `"android.permission.BLUETOOTH_SCAN"` and `"android.permission.BLUETOOTH_CONNECT"`, on Android 12 and later |
+| `local_network` | Native plugin | `"android.permission.ACCESS_LOCAL_NETWORK"`, on Android 17 and later |
+| `homekit` | Native plugin | — |
+| `focus_status` | Native plugin | — |
+| `siri` | Native plugin | — |
+
+A dash means that Android has no such permission: call `respond(false, "unsupported")`.
+
+Pass the status from the result of the Unity API:
+
+- **`Application.HasUserAuthorization`**: Returns only whether the user allowed access. Pass `granted` or `denied`. To pass `restricted` or `permanently_denied` on iOS, read the authorization status in a native plugin, such as `AVCaptureDevice.authorizationStatus(for:)`.
+- **Mobile Notifications on iOS**: Read `iOSNotificationCenter.GetNotificationSettings().AuthorizationStatus`. Pass `granted` for `Authorized` and `provisional` for `Provisional`. For `Denied`, pass `denied` after the dialog, or `permanently_denied` if the status was `Denied` before the request.
+- **Mobile Notifications on Android**: Pass `granted` for `PermissionStatus.Allowed`, `denied` for `PermissionStatus.Denied`, and `permanently_denied` for `PermissionStatus.NotificationsBlockedForApp`.
+- **`PermissionCallbacks` on Android**: Pass `granted` from `PermissionGranted`. From `PermissionDenied`, pass `denied` if `Permission.ShouldShowRequestPermissionRationale()` returns `true`, and `permanently_denied` otherwise.
+
+The iOS purpose strings for camera, microphone, and location have fields in **Player Settings > iOS > Other Settings**. Add the other `Info.plist` keys in a `[PostProcessBuild]` editor script with [`PlistDocument`](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityeditor/ios/xcode/plistdocument), because Unity creates the Xcode project again on a clean build and drops manual changes. Add the HealthKit, HomeKit, Siri, and Push Notifications capabilities in the same script with [`ProjectCapabilityManager`](https://docs.unity.com/en-us/engine/6000.0/script-reference/unityeditor/ios/xcode/projectcapabilitymanager).
+
 ## Declare the permissions
 
 The OS shows a permission dialog only to an app that declares the permission: in `Info.plist` of the Xcode project that Unity builds on iOS, and in the Android manifest. For each permission that your handler requests, add these declarations:
@@ -171,6 +210,8 @@ The OS shows a permission dialog only to an app that declares the permission: in
 <FlowPermissionDeclarations />
 
 The handler in this guide requests notifications and camera access. On iOS, enter the camera purpose string in **Player Settings > iOS > Other Settings > Camera Usage Description**, which Unity writes to `Info.plist` as `NSCameraUsageDescription`. On Android, the app declares `android.permission.POST_NOTIFICATIONS` and `android.permission.CAMERA` in its manifest.
+
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
 
 ## Register the handler
 

@@ -38,23 +38,28 @@ With **On Screen Appear**, the flow doesn't send the request again when the user
 The `onRequestPermission` handler is asynchronous. It returns a promise that resolves to an object with the user's answer. In this example, the handler requests push notifications and camera access, and answers every other permission as unsupported without a dialog:
 
 ```typescript showLineNumbers title="permissions.ts"
+import { Capacitor } from '@capacitor/core';
 import type { FlowEventHandlers, FlowPermissionResponse } from '@adapty/capacitor';
 import { Camera } from '@capacitor/camera';
 import { PushNotifications } from '@capacitor/push-notifications';
 
 // Converts a plugin's permission state to the answer the flow expects.
 function toFlowAnswer(state: string): FlowPermissionResponse {
+  const android = Capacitor.getPlatform() === 'android';
   switch (state) {
     case 'granted':
       return { status: 'granted', detail: 'granted' };
     case 'limited':
       return { status: 'granted', detail: 'limited' };
-    case 'prompt':
     case 'prompt-with-rationale':
-      // The user closed the dialog without choosing: the flow runs After response.
-      return { status: 'denied' };
-    default:
+      // Android: the user denied once, and Android shows the dialog again.
       return { status: 'denied', detail: 'denied' };
+    case 'denied':
+      // Android: Android no longer shows the dialog. iOS: the user denied, or a device policy restricts it.
+      return { status: 'denied', detail: android ? 'permanently_denied' : 'denied' };
+    default:
+      // 'prompt': the user closed the dialog without choosing, so the flow runs After response.
+      return { status: 'denied' };
   }
 }
 
@@ -90,6 +95,32 @@ The Adapty SDK answers `denied` without a status when your handler throws an err
 
 A granted notification permission lets your app show notifications. To receive push notifications, register the device with your push provider, as your app does outside flows.
 
+## Request each permission
+
+The official Capacitor plugins request these permissions. Each plugin's `requestPermissions()` returns a permission state for each permission. Pass the status that matches the state, as `toFlowAnswer` in the example does:
+
+| Value | Plugin and call | State to read |
+|:------|:----------------|:--------------|
+| `push` | `@capacitor/push-notifications`: `PushNotifications.requestPermissions()` | `receive` |
+| `location_when_use` | `@capacitor/geolocation`: `Geolocation.requestPermissions({ permissions: ['location'] })` | `location` |
+| `camera` | `@capacitor/camera`: `Camera.requestPermissions({ permissions: ['camera'] })` | `camera` |
+| `photos` | `@capacitor/camera`: `Camera.requestPermissions({ permissions: ['photos'] })` | `photos` |
+| `calendar` | `@capacitor/calendar`: `requestPermissions()` | `readCalendar` and `writeCalendar` |
+| `health` | `@capacitor/health-fitness`: `requestHealthPermissions()` | None: the call returns no state, so answer without a status |
+
+For the other values, the official plugins have no request: answer `unsupported`, or request the permission in a local plugin with your own native code. `@capacitor/geolocation` doesn't request background location, and `@capacitor/contacts` has no permission request. `@capacitor/motion` shows the web motion prompt, not the **Motion & Fitness** permission.
+
+| Permission state | OS | Status to pass | Section |
+|:-----------------|:---|:---------------|:--------|
+| `granted` | iOS and Android | `granted` | **When allowed** |
+| `limited` | iOS, for photos | `limited` | **When allowed** |
+| `prompt-with-rationale` | Android: the user denied once, and Android shows the dialog again | `denied` | **When denied** |
+| `denied` | Android: Android no longer shows the dialog | `permanently_denied` | **When denied** |
+| `denied` | iOS: the user denied, or a device policy restricts the permission | `denied` | **When denied** |
+| `prompt` | iOS and Android: the user closed the dialog without choosing, or the OS showed no dialog | No status | **After response** |
+
+On iOS, the Capacitor plugins report a restricted permission as `denied`, so your app can't pass `restricted`. On iOS, `@capacitor/geolocation` needs both `NSLocationWhenInUseUsageDescription` and `NSLocationAlwaysAndWhenInUseUsageDescription` in `Info.plist`. It throws an error when the user turned off location services: catch it and answer without a status.
+
 ## Declare the permissions
 
 The OS shows a permission dialog only to an app that declares the permission: in `ios/App/App/Info.plist` on iOS, and in `android/app/src/main/AndroidManifest.xml` on Android. For each permission that your handler requests, add these declarations:
@@ -103,10 +134,12 @@ The handler in this guide requests notifications and camera access. On iOS, the 
 <uses-permission android:name="android.permission.CAMERA" />
 ```
 
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
+
 ## Register the handler
 
 :::warning
-**Without an `onRequestPermission` handler, the user is never asked.** On a flow view without the handler, the Adapty SDK answers `denied` without a dialog and without a status, and writes a warning to its log. The flow runs the **After response** actions right away.
+**Without an `onRequestPermission` handler, the user is never asked.** On a flow view without the handler, the Adapty SDK answers `denied` without a dialog and without a status, and writes a warning to its log. The flow runs the **After response** actions right away, and reports the answer with the `outcome` `no_status`.
 :::
 
 Set the handler on every flow view your app creates, together with your other [flow event handlers](capacitor-handling-events), before you present the view. Flow authors can add the **Request permission** action to any flow later, without an app update, and a flow view without the handler answers `denied` without asking the user.

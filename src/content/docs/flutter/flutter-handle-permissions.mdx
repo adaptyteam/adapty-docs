@@ -15,7 +15,7 @@ You need:
 - **A library that shows the permission dialogs**: The example uses [permission_handler](https://pub.dev/packages/permission_handler). Any other package or your own platform code works the same way.
 - **The declarations of the permissions that your handler requests**: A purpose string in `Info.plist` on iOS, and a permission in the Android manifest. See [Declare the permissions](#declare-the-permissions).
 - **For push notifications on Android, `targetSdk` 33 or higher**: Android 13 and later show the notification permission dialog only to apps that target Android 13 or later.
-- **For iOS with CocoaPods**: In your `Podfile`, add a macro to `GCC_PREPROCESSOR_DEFINITIONS` for each permission that your handler requests, such as `PERMISSION_NOTIFICATIONS=1` and `PERMISSION_CAMERA=1`, as the [permission_handler setup](https://pub.dev/packages/permission_handler) describes. Without the macro, permission_handler returns denied for that permission, and iOS shows no dialog. With Swift Package Manager, permission_handler includes the notification permission by default.
+- **For iOS, permission_handler_apple 9.4.8 or later**: The Adapty Flutter SDK 4.x builds for iOS with Swift Package Manager only. With Swift Package Manager, these versions of permission_handler turn on each permission whose purpose string is in `Info.plist`. See [Request each permission](#request-each-permission).
 
 ## How the flow requests a permission
 
@@ -99,6 +99,55 @@ A granted notification permission lets your app show notifications. To receive p
 
 With a handler registered, the Adapty SDK passes app review requests to `handleAppReviewRequest`, whose base method does nothing. The example keeps the native review prompt.
 
+## Request each permission
+
+The example uses [permission_handler](https://pub.dev/packages/permission_handler) to show the system dialogs. This table lists the `Permission` that the handler requests for each value. A dash means that permission_handler has no such request: answer `unsupported`, or request the permission in your own platform code.
+
+| Value | iOS | Android |
+|:------|:----|:--------|
+| `push` | `Permission.notification` | `Permission.notification` |
+| `tracking` | `Permission.appTrackingTransparency` | — |
+| `location_when_use` | `Permission.locationWhenInUse` | `Permission.locationWhenInUse`, which requests precise and approximate location |
+| `location_always` | `Permission.locationAlways`, after `Permission.locationWhenInUse` is granted | `Permission.locationAlways`, after `Permission.locationWhenInUse` is granted |
+| `location_full_accuracy` | — | `Permission.location` |
+| `camera` | `Permission.camera` | `Permission.camera` |
+| `microphone` | `Permission.microphone` | `Permission.microphone` |
+| `photos` | `Permission.photos` | `Permission.photos` on Android 13 and later, `Permission.storage` on Android 12 and earlier |
+| `media_library` | `Permission.mediaLibrary` | — |
+| `music` | — | — |
+| `speech` | `Permission.speech` | `Permission.microphone` |
+| `contacts` | `Permission.contacts` | `Permission.contacts` |
+| `calendar` | `Permission.calendarFullAccess` | `Permission.calendarFullAccess` |
+| `reminders` | `Permission.reminders` | — |
+| `health` | — | — |
+| `motion` | `Permission.sensors` | `Permission.activityRecognition` |
+| `bluetooth` | `Permission.bluetooth` | `Permission.bluetoothScan` and `Permission.bluetoothConnect` |
+| `local_network` | — | `Permission.accessLocalNetwork`, on Android 17 and later |
+| `homekit` | — | — |
+| `focus_status` | — | — |
+| `siri` | `Permission.assistant` | — |
+
+Map the iOS-only permissions only on iOS, for example with a separate map for each platform and `Platform.isIOS`. On Android, permission_handler answers them without a dialog: `Permission.reminders` and `Permission.mediaLibrary` return granted, so the flow would run **When allowed**. `Permission.appTrackingTransparency` and `Permission.assistant` return denied. On Android, `Permission.sensors` is the body sensors permission, so request `Permission.activityRecognition` for `motion`.
+
+Pass the status from permission_handler's `PermissionStatus`:
+
+| `PermissionStatus` | Status to pass | Section |
+|:-------------------|:---------------|:--------|
+| `granted` | `granted` | **When allowed** |
+| `limited` | `limited` | **When allowed** |
+| `provisional` | `provisional` | **When allowed** |
+| `denied` | `denied` | **When denied** |
+| `restricted` | `restricted` | **When denied** |
+| `permanentlyDenied` | `permanently_denied` | **When denied** |
+
+On iOS, permission_handler returns `permanentlyDenied` for every refusal, also right after the dialog, so a refusal on iOS has the `outcome` `permanently_denied`. On Android, the first refusal is `denied`, and a later one is `permanentlyDenied`. For `Permission.locationAlways`, use permission_handler_apple 9.6.4 or later: earlier versions return `permanentlyDenied` while only location while using the app is granted.
+
+On iOS with Swift Package Manager, permission_handler_apple 9.4.8 and later include a permission only when its purpose string is in `Info.plist`, and don't need `Podfile` macros. A permission that isn't included returns denied, and iOS shows no dialog. Follow these rules from the [permission_handler README](https://pub.dev/packages/permission_handler):
+
+- **After you add or change an `Info.plist` key**: Clear the Xcode package cache once, with `rm -rf ~/Library/Developer/Xcode/DerivedData`.
+- **When you build from Xcode.app**: permission_handler can't find `Info.plist`, so it leaves out every permission, and every request returns denied. Set the `PERMISSION_HANDLER_INFO_PLIST` variable with `launchctl setenv`, as the README describes.
+- **With permission_handler_apple earlier than 9.4.8**: Add a macro to `GCC_PREPROCESSOR_DEFINITIONS` in the `Podfile` for each permission, such as `PERMISSION_NOTIFICATIONS=1` and `PERMISSION_CAMERA=1`.
+
 ## Declare the permissions
 
 The OS shows a permission dialog only to an app that declares the permission: in `ios/Runner/Info.plist` on iOS, and in `android/app/src/main/AndroidManifest.xml` on Android. For each permission that your handler requests, add these declarations:
@@ -115,6 +164,8 @@ The handler in this guide requests notifications and camera access. On iOS, the 
 </manifest>
 ```
 
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
+
 ## Register the handler
 
 :::warning
@@ -129,7 +180,7 @@ AdaptyUI().setSystemRequestsHandler(FlowSystemRequestsHandler());
 
 ## Test the permission request
 
-iOS shows each permission dialog only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms and that the iOS `Podfile` enables its permission_handler macro. For notifications on Android, the app must also target Android 13 or later.
+iOS shows each permission dialog only once per app install. Android stops showing a permission dialog after the user allows the permission or denies it twice. To see the dialog again while you test the flow, delete the app from the device and install it again. Then open the flow and reach the **Request permission** action. If the screen stays and no dialog appears, the flow got no answer: make sure that your app registers the handler before it presents the flow. If the flow moves on without a dialog, make sure that the app declares the permission on both platforms. On iOS, also make sure that you cleared DerivedData after you added the `Info.plist` key. For notifications on Android, the app must also target Android 13 or later.
 
 To see how users answer permission requests, read the flow's analytics events in the `flowViewDidReceiveAnalyticEvent` method of your flow events observer. For details, see [Handle flow & paywall events](flutter-handling-events).
 

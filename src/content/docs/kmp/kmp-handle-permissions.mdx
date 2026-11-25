@@ -89,7 +89,7 @@ A granted notification permission lets your app show notifications. To receive p
 
 ## Request the permissions on each platform
 
-Common code can't show the system dialogs, so `requestPushPermission` and `requestCameraPermission` are `expect` functions with an `actual` implementation for each platform. If your app already uses a Kotlin Multiplatform permissions library, call it from `handlePermission` instead.
+Common code can't show the system dialogs, so `requestPushPermission` and `requestCameraPermission` are `expect` functions with an `actual` implementation for each platform. If your app already uses a Kotlin Multiplatform permissions library, you can call it from `handlePermission` instead. See [Use moko-permissions](#use-moko-permissions).
 
 ```kotlin title="commonMain"
 expect suspend fun requestPushPermission(): Boolean
@@ -195,6 +195,31 @@ private suspend fun requestAndroidPermission(activity: ComponentActivity, permis
 }
 ```
 
+### Use moko-permissions
+
+[moko-permissions](https://github.com/icerockdev/moko-permissions) 0.20.1 can request the permission values in this table. For the other values, write `expect` and `actual` functions as in the example. Some moko-permissions results can't carry the status that the flow needs, so take these limits into account:
+
+| Value | moko-permissions | Limits |
+|:------|:-----------------|:-------|
+| `push` | `Permission.REMOTE_NOTIFICATION` | On iOS, it reports provisional authorization as granted, so your app can't pass `provisional`. On Android 12 and earlier, it shows no dialog. |
+| `camera` | `Permission.CAMERA` | On iOS, a restricted camera throws `IllegalStateException`. |
+| `microphone` | `Permission.RECORD_AUDIO` | On iOS, a restricted microphone throws `IllegalStateException`. |
+| `location_when_use` | `Permission.LOCATION` | On Android 12 and later, it needs both precise and approximate location, so a user who chooses approximate location gets a refusal exception. |
+| `location_always` | `Permission.BACKGROUND_LOCATION` | On iOS, it throws `DeniedException` without a dialog when location while using the app is already granted. On Android 11 and later, it requests foreground and background location together, and Android grants neither. Use your own code for this value. |
+| `photos` | `Permission.GALLERY` | On iOS, limited or restricted access throws `IllegalStateException`. On Android 13 and later, it requests images and videos, and needs both. |
+| `contacts` | `Permission.CONTACTS` | On iOS 18 and later, it reports limited access as granted. On Android, it also requests `WRITE_CONTACTS`. |
+| `bluetooth` | `Permission.BLUETOOTH_CONNECT` | On iOS, it throws `DeniedException` when Bluetooth is turned off, and reports a restricted permission as granted. |
+| `motion` | `Permission.MOTION` | Don't use it for the flow. On iOS, it returns before the user answers. On Android, it also requests `BODY_SENSORS`, and on Android 10 and 11 it requests only `BODY_SENSORS`. |
+
+Map the results of moko-permissions to the status:
+
+- **Before the request**: Read `getPermissionState()`, so that you can tell a new refusal from an earlier one.
+- **On iOS**: `DeniedAlwaysException` after the state `NotDetermined` means that the user declined the dialog: pass `denied`. After the state `DeniedAlways`, iOS showed no dialog: pass `permanently_denied`.
+- **On Android**: Pass `denied` for `DeniedException`, and `permanently_denied` for `DeniedAlwaysException`. For `RequestCanceledException`, answer without a status.
+- **For `IllegalStateException`**: Catch it, and answer without a status. moko-permissions also throws it when you request a permission before you bind its `PermissionsController` to an activity.
+
+moko-permissions has no `restricted`, `limited`, or `provisional` result. To pass these statuses, use your own `actual` code.
+
 ## Declare the permissions
 
 The OS shows a permission dialog only to an app that declares the permission: in `Info.plist` of the iOS app, and in the Android manifest. For each permission that your handler requests, add these declarations:
@@ -207,6 +232,8 @@ The handler in this guide requests notifications and camera access. On iOS, the 
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 <uses-permission android:name="android.permission.CAMERA" />
 ```
+
+For what each permission shows users, the OS versions it needs, and the status to pass for each result, see [System permissions](flow-permissions).
 
 ## Register the handler
 
